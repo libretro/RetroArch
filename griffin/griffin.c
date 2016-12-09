@@ -320,8 +320,10 @@ VIDEO DRIVER
 
 #ifndef HAVE_PSGL
 #include "../libretro-common/glsym/rglgen.c"
-#ifdef HAVE_OPENGLES2
+#if defined(HAVE_OPENGLES2)
 #include "../libretro-common/glsym/glsym_es2.c"
+#elif defined(HAVE_OPENGLES3)
+#include "../libretro-common/glsym/glsym_es3.c"
 #else
 #include "../libretro-common/glsym/glsym_gl.c"
 #endif
