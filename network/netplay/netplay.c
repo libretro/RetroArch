@@ -213,9 +213,14 @@ static bool init_tcp_socket(netplay_t *netplay, void *direct_host,
       {
          ret = true;
          if (direct_host || server)
+         {
+            netplay->connections[0].active = true;
             netplay->connections[0].fd = fd;
+         }
          else
+         {
             netplay->listen_fd = fd;
+         }
          break;
       }
 
@@ -257,9 +262,6 @@ static bool init_socket(netplay_t *netplay, void *direct_host, const char *serve
    if (!init_tcp_socket(netplay, direct_host, server, port, netplay->spectate.enabled))
       return false;
 
-   netplay_clear_socket_buffer(&netplay->send_packet_buffer);
-   netplay_clear_socket_buffer(&netplay->recv_packet_buffer);
-
    if (netplay->is_server && netplay->nat_traversal)
       init_nat_traversal(netplay);
 
@@ -283,6 +285,8 @@ static void hangup(netplay_t *netplay, struct netplay_connection *connection)
 
    socket_close(connection->fd);
    connection->active = false;
+   netplay_deinit_socket_buffer(&connection->send_packet_buffer);
+   netplay_deinit_socket_buffer(&connection->recv_packet_buffer);
 
    if (!netplay->is_server)
       netplay->self_mode = NETPLAY_CONNECTION_NONE;
@@ -303,7 +307,7 @@ static void hangup(netplay_t *netplay, struct netplay_connection *connection)
       }
    }
 
-   /* Reset things that will behave oddly if we get a new connection */
+   /* Reset things that will behave oddly if we get a new connection (FIXME) */
    netplay->remote_paused  = false;
    netplay->flip           = false;
    netplay->flip_frame     = 0;
@@ -348,10 +352,10 @@ static void send_input(netplay_t *netplay, struct netplay_connection *connection
        connection->mode >= NETPLAY_CONNECTION_CONNECTED)
    {
       netplay->input_packet_buffer[2] = htonl(netplay->self_frame_count);
-      if (!netplay_send(&netplay->send_packet_buffer, connection->fd,
+      if (!netplay_send(&connection->send_packet_buffer, connection->fd,
             netplay->input_packet_buffer,
             sizeof(netplay->input_packet_buffer)) ||
-          !netplay_send_flush(&netplay->send_packet_buffer, connection->fd,
+          !netplay_send_flush(&connection->send_packet_buffer, connection->fd,
             false))
       {
          hangup(netplay, connection);
@@ -450,12 +454,12 @@ static bool netplay_send_raw_cmd(netplay_t *netplay,
    cmdbuf[0] = htonl(cmd);
    cmdbuf[1] = htonl(size);
 
-   if (!netplay_send(&netplay->send_packet_buffer, connection->fd, cmdbuf,
+   if (!netplay_send(&connection->send_packet_buffer, connection->fd, cmdbuf,
          sizeof(cmdbuf)))
       return false;
 
    if (size > 0)
-      if (!netplay_send(&netplay->send_packet_buffer, connection->fd, data, size))
+      if (!netplay_send(&connection->send_packet_buffer, connection->fd, data, size))
          return false;
 
    return true;
@@ -533,7 +537,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
    /* FIXME: This depends on delta_frame_ready */
 
 #define RECV(buf, sz) \
-   recvd = netplay_recv(&netplay->recv_packet_buffer, connection->fd, (buf), \
+   recvd = netplay_recv(&connection->recv_packet_buffer, connection->fd, (buf), \
       (sz), false); \
    if (recvd >= 0 && recvd < (sz)) goto shrt; \
    else if (recvd < 0)
@@ -826,7 +830,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
          return netplay_cmd_nak(netplay, connection);
    }
 
-   netplay_recv_flush(&netplay->recv_packet_buffer);
+   netplay_recv_flush(&connection->recv_packet_buffer);
    netplay->timeout_cnt = 0;
    if (had_input)
       *had_input = true;
@@ -834,7 +838,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
 
 shrt:
    /* No more data, reset and try again */
-   netplay_recv_reset(&netplay->recv_packet_buffer);
+   netplay_recv_reset(&connection->recv_packet_buffer);
    return true;
 
 #undef RECV
@@ -1271,6 +1275,42 @@ static void announce_nat_traversal(netplay_t *netplay)
 }
 #endif
 
+static bool netplay_init_socket_buffers(netplay_t *netplay)
+{
+   /* Make our packet buffer big enough for a save state and frames-many frames
+    * of input data, plus the headers for each of them */
+   size_t i;
+   size_t packet_buffer_size = netplay->zbuffer_size +
+      netplay->delay_frames * WORDS_PER_FRAME + (netplay->delay_frames+1)*3;
+   netplay->packet_buffer_size = packet_buffer_size;
+
+   for (i = 0; i < netplay->connections_size; i++)
+   {
+      struct netplay_connection *connection = &netplay->connections[i];
+      if (connection->active)
+      {
+         if (connection->send_packet_buffer.data)
+         {
+            if (!netplay_resize_socket_buffer(&connection->send_packet_buffer,
+                  packet_buffer_size) ||
+                !netplay_resize_socket_buffer(&connection->recv_packet_buffer,
+                  packet_buffer_size))
+               return false;
+         }
+         else
+         {
+            if (!netplay_init_socket_buffer(&connection->send_packet_buffer,
+                  packet_buffer_size) ||
+                !netplay_init_socket_buffer(&connection->recv_packet_buffer,
+                  packet_buffer_size))
+               return false;
+         }
+      }
+   }
+
+   return true;
+}
+
 bool netplay_try_init_serialization(netplay_t *netplay)
 {
    retro_ctx_serialize_info_t serial_info;
@@ -1293,7 +1333,7 @@ bool netplay_try_init_serialization(netplay_t *netplay)
    /* Once initialized, we no longer exhibit this quirk */
    netplay->quirks &= ~((uint64_t) NETPLAY_QUIRK_INITIALIZATION);
 
-   return true;
+   return netplay_init_socket_buffers(netplay);
 }
 
 bool netplay_wait_and_init_serialization(netplay_t *netplay)
@@ -1318,28 +1358,6 @@ bool netplay_wait_and_init_serialization(netplay_t *netplay)
    }
 
    return false;
-}
-
-static bool netplay_init_socket_buffers(netplay_t *netplay)
-{
-   /* Make our packet buffer big enough for a save state and frames-many frames
-    * of input data, plus the headers for each of them */
-   size_t packet_buffer_size = netplay->zbuffer_size +
-      netplay->delay_frames * WORDS_PER_FRAME + (netplay->delay_frames+1)*3;
-
-   if (netplay->send_packet_buffer.data)
-   {
-      netplay_deinit_socket_buffer(&netplay->send_packet_buffer);
-      netplay_deinit_socket_buffer(&netplay->recv_packet_buffer);
-      netplay->send_packet_buffer.data = netplay->recv_packet_buffer.data = NULL;
-   }
-
-   if (!netplay_init_socket_buffer(&netplay->send_packet_buffer, packet_buffer_size))
-      return false;
-   if (!netplay_init_socket_buffer(&netplay->recv_packet_buffer, packet_buffer_size))
-      return false;
-
-   return true;
 }
 
 bool netplay_init_serialization(netplay_t *netplay)
@@ -1377,7 +1395,7 @@ bool netplay_init_serialization(netplay_t *netplay)
       return false;
    }
 
-   return netplay_init_socket_buffers(netplay);
+   return true;
 }
 
 static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
@@ -1399,13 +1417,10 @@ static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
    if (!netplay->buffer)
       return false;
 
-   if (!(netplay->quirks & NETPLAY_QUIRK_INITIALIZATION))
+   if (!(netplay->quirks & (NETPLAY_QUIRK_NO_SAVESTATES|NETPLAY_QUIRK_INITIALIZATION)))
       netplay_init_serialization(netplay);
 
-   if (!netplay->send_packet_buffer.data)
-      netplay_init_socket_buffers(netplay);
-
-   return true;
+   return netplay_init_socket_buffers(netplay);
 }
 
 /**
@@ -1463,12 +1478,6 @@ netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
 
    strlcpy(netplay->nick, nick[0] ? nick : RARCH_DEFAULT_NICK, sizeof(netplay->nick));
 
-   if (!netplay_init_buffers(netplay, delay_frames))
-   {
-      free(netplay);
-      return NULL;
-   }
-
    if(spectate)
       netplay->net_cbs = netplay_get_cbs_spectate();
    else
@@ -1478,6 +1487,17 @@ netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
    {
       free(netplay);
       return NULL;
+   }
+
+   if (!netplay_init_buffers(netplay, delay_frames))
+   {
+      free(netplay);
+      return NULL;
+   }
+
+   if (!netplay->is_server)
+   {
+      fprintf(stderr, "CONNECTION 0 %d\n", netplay->connections[0].active);
    }
 
    if(!netplay_info_cb(netplay, delay_frames))
@@ -1590,7 +1610,11 @@ void netplay_free(netplay_t *netplay)
    {
       struct netplay_connection *connection = &netplay->connections[i];
       if (connection->active)
+      {
          socket_close(connection->fd);
+         netplay_deinit_socket_buffer(&connection->send_packet_buffer);
+         netplay_deinit_socket_buffer(&connection->recv_packet_buffer);
+      }
    }
 
    if (netplay->spectate.enabled)
@@ -1616,9 +1640,6 @@ void netplay_free(netplay_t *netplay)
 
       free(netplay->buffer);
    }
-
-   netplay_deinit_socket_buffer(&netplay->send_packet_buffer);
-   netplay_deinit_socket_buffer(&netplay->recv_packet_buffer);
 
    if (netplay->zbuffer)
       free(netplay->zbuffer);
@@ -1701,7 +1722,8 @@ void netplay_post_frame(netplay_t *netplay)
    /* FIXME: Per-connection send buffer */
    if (netplay->connections_size > 0 &&
        netplay->connections[0].active &&
-       !netplay_send_flush(&netplay->send_packet_buffer, netplay->connections[0].fd, false))
+       !netplay_send_flush(&netplay->connections[0].send_packet_buffer,
+         netplay->connections[0].fd, false))
       hangup(netplay, &netplay->connections[0]);
 }
 
@@ -1730,7 +1752,7 @@ void netplay_frontend_paused(netplay_t *netplay, bool paused)
             paused ? NETPLAY_CMD_PAUSE : NETPLAY_CMD_RESUME, NULL, 0);
 
          /* We're not going to be polled, so we need to flush this command now */
-         netplay_send_flush(&netplay->send_packet_buffer, connection->fd, true);
+         netplay_send_flush(&connection->send_packet_buffer, connection->fd, true);
       }
    }
 }
@@ -1828,9 +1850,9 @@ void netplay_load_savestate(netplay_t *netplay,
       struct netplay_connection *connection = &netplay->connections[i];
       if (!connection->active) continue;
 
-      if (!netplay_send(&netplay->send_packet_buffer, connection->fd, header,
+      if (!netplay_send(&connection->send_packet_buffer, connection->fd, header,
             sizeof(header)) ||
-          !netplay_send(&netplay->send_packet_buffer, connection->fd,
+          !netplay_send(&connection->send_packet_buffer, connection->fd,
             netplay->zbuffer, wn))
          hangup(netplay, connection);
    }

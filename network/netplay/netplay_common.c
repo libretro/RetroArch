@@ -170,9 +170,9 @@ bool netplay_handshake_init_send(netplay_t *netplay, struct netplay_connection *
    header[2] = htonl(netplay_platform_magic());
    header[3] = htonl(NETPLAY_COMPRESSION_SUPPORTED);
 
-   if (!netplay_send(&netplay->send_packet_buffer, connection->fd, header,
+   if (!netplay_send(&connection->send_packet_buffer, connection->fd, header,
          sizeof(header)) ||
-       !netplay_send_flush(&netplay->send_packet_buffer, connection->fd, false))
+       !netplay_send_flush(&connection->send_packet_buffer, connection->fd, false))
       return false;
 
    return true;
@@ -185,10 +185,10 @@ struct nick_buf_s
 };
 
 #define RECV(buf, sz) \
-   recvd = netplay_recv(&netplay->recv_packet_buffer, connection->fd, (buf), (sz), false); \
+   recvd = netplay_recv(&connection->recv_packet_buffer, connection->fd, (buf), (sz), false); \
    if (recvd >= 0 && recvd < (sz)) \
    { \
-      netplay_recv_reset(&netplay->recv_packet_buffer); \
+      netplay_recv_reset(&connection->recv_packet_buffer); \
       return true; \
    } \
    else if (recvd < 0)
@@ -280,15 +280,15 @@ bool netplay_handshake_init(netplay_t *netplay, struct netplay_connection *conne
    nick_buf.cmd[1] = htonl(sizeof(nick_buf.nick));
    memset(nick_buf.nick, 0, sizeof(nick_buf.nick));
    strlcpy(nick_buf.nick, netplay->nick, sizeof(nick_buf.nick));
-   if (!netplay_send(&netplay->send_packet_buffer, connection->fd, &nick_buf,
+   if (!netplay_send(&connection->send_packet_buffer, connection->fd, &nick_buf,
          sizeof(nick_buf)) ||
-       !netplay_send_flush(&netplay->send_packet_buffer, connection->fd, false))
+       !netplay_send_flush(&connection->send_packet_buffer, connection->fd, false))
       return false;
 
    /* Move on to the next mode */
    connection->mode = NETPLAY_CONNECTION_PRE_NICK;
    *had_input = true;
-   netplay_recv_flush(&netplay->recv_packet_buffer);
+   netplay_recv_flush(&connection->recv_packet_buffer);
    return true;
 
 error:
@@ -377,12 +377,12 @@ bool netplay_handshake_pre_nick(netplay_t *netplay, struct netplay_connection *c
       cmd[2] = htonl(netplay->self_frame_count);
       cmd[3] = htonl(1);
 
-      if (!netplay_send(&netplay->send_packet_buffer, connection->fd, cmd,
+      if (!netplay_send(&connection->send_packet_buffer, connection->fd, cmd,
             sizeof(cmd)))
          return false;
-      if (!netplay_send(&netplay->send_packet_buffer, connection->fd,
+      if (!netplay_send(&connection->send_packet_buffer, connection->fd,
             mem_info.data, mem_info.size) ||
-          !netplay_send_flush(&netplay->send_packet_buffer, connection->fd,
+          !netplay_send_flush(&connection->send_packet_buffer, connection->fd,
             false))
          return false;
 
@@ -404,7 +404,7 @@ bool netplay_handshake_pre_nick(netplay_t *netplay, struct netplay_connection *c
    }
 
    *had_input = true;
-   netplay_recv_flush(&netplay->recv_packet_buffer);
+   netplay_recv_flush(&connection->recv_packet_buffer);
    return true;
 }
 
@@ -499,7 +499,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay, struct netplay_connection *c
    netplay->self_mode = NETPLAY_CONNECTION_PLAYING;
    netplay_handshake_ready(netplay, connection);
    *had_input = true;
-   netplay_recv_flush(&netplay->recv_packet_buffer);
+   netplay_recv_flush(&connection->recv_packet_buffer);
    return true;
 }
 

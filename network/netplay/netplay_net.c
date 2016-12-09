@@ -208,9 +208,17 @@ static bool netplay_net_pre_frame(netplay_t *netplay)
          connection->fd = new_fd;
          connection->mode = NETPLAY_CONNECTION_INIT;
 
-         /* FIXME: Should be per connection */
-         netplay_clear_socket_buffer(&netplay->send_packet_buffer);
-         netplay_clear_socket_buffer(&netplay->recv_packet_buffer);
+         if (!netplay_init_socket_buffer(&connection->send_packet_buffer,
+               netplay->packet_buffer_size) ||
+             !netplay_init_socket_buffer(&connection->recv_packet_buffer,
+               netplay->packet_buffer_size))
+         {
+            if (connection->send_packet_buffer.data)
+               netplay_deinit_socket_buffer(&connection->send_packet_buffer);
+            connection->active = false;
+            socket_close(new_fd);
+            goto process;
+         }
 
          netplay_handshake_init_send(netplay, connection);
 
@@ -366,7 +374,6 @@ static bool netplay_net_info_cb(netplay_t* netplay, unsigned frames)
    if (!netplay_is_server(netplay))
    {
       netplay_handshake_init_send(netplay, netplay->connections);
-      netplay->connections[0].active = true;
       netplay->connections[0].mode = netplay->self_mode = NETPLAY_CONNECTION_INIT;
    }
 

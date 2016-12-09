@@ -226,16 +226,31 @@ struct netplay_callbacks {
 /* Each connection gets a connection struct */
 struct netplay_connection
 {
+   /* Is this connection buffer in use? */
    bool active;
+
+   /* fd associated with this connection */
    int fd;
+
+   /* Buffers for sending and receiving data */
+   struct socket_buffer send_packet_buffer, recv_packet_buffer;
+
+   /* Mode of the connection */
    enum rarch_netplay_connection_mode mode;
+
+   /* Player # of connected player, or -1 if not a player */
    int player;
 };
 
 struct netplay
 {
+   /* Our nickname */
    char nick[32];
+
+   /* Nickname of peer */
    char other_nick[32];
+
+   /* Address of peer */
    struct sockaddr_storage other_addr;
 
    /* TCP connection for listening (server only) */
@@ -257,11 +272,14 @@ struct netplay
    bool have_player_connections;
 
    struct retro_callbacks cbs;
-   /* TCP port (if serving) */
+
+   /* TCP port (only set if serving) */
    uint16_t tcp_port;
+
    /* NAT traversal info (if NAT traversal is used and serving) */
    bool nat_traversal;
    struct natt_status nat_traversal_state;
+
    /* Which port is governed by netplay (other user)? */
    unsigned port;
 
@@ -277,6 +295,9 @@ struct netplay
    /* A buffer into which to compress frames for transfer */
    uint8_t *zbuffer;
    size_t zbuffer_size;
+
+   /* The size of our packet buffers */
+   size_t packet_buffer_size;
 
    /* Pointer where we are now. */
    size_t self_ptr;
@@ -312,9 +333,6 @@ struct netplay
 
    /* A buffer for outgoing input packets. */
    uint32_t input_packet_buffer[2 + WORDS_PER_FRAME];
-
-   /* And buffers for sending and receiving our actual data */
-   struct socket_buffer send_packet_buffer, recv_packet_buffer;
 
    /* All of our frame counts */
    uint32_t self_frame_count;
