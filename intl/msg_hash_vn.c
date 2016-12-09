@@ -355,6 +355,16 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
                "inside the menu and RetroArch won't \n"
                "shutdown.");
          break;
+      case MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE:
+         snprintf(s, len,
+               "Some cores might need \n"
+               "firmware or bios files. \n"
+               " \n"
+               "If this option is disabled, \n"
+               "it will try to load even if such \n"
+               "firmware is missing. \n"
+               "down. \n");
+         break;
       case MENU_ENUM_LABEL_PARENT_DIRECTORY:
          snprintf(s, len,
                "Go back to the parent thư mục.");
@@ -574,10 +584,6 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Input bind timer timeout (in seconds). \n"
                "Amount of seconds to wait until proceeding \n"
                "to the next bind.");
-         break;
-      case MENU_ENUM_LABEL_KEYBOARD_OVERLAY_PRESET:
-         snprintf(s, len,
-               "Path to onscreen keyboard overlay.");
          break;
       case MENU_ENUM_LABEL_OVERLAY_SCALE:
          snprintf(s, len,
@@ -960,6 +966,11 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
                "the browser starts to look for \n"
                "shaders."
                );
+         break;
+      case MENU_ENUM_LABEL_CONFIGURATION_SETTINGS:
+         snprintf(s, len,
+               "Determines how configuration files \n"
+               "are loaded and prioritized.");
          break;
       case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
          snprintf(s, len,
@@ -1606,6 +1617,10 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Setting related to Netplay.");
          break;
+      case MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS:
+         snprintf(s, len,
+               "Search for and connect to netplay hosts on the local network.");
+         break;
       case MENU_ENUM_LABEL_DYNAMIC_WALLPAPER:
          snprintf(s, len,
                "Dynamically tải a new wallpaper \n"
@@ -2070,9 +2085,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS:
          return "Configuration";
       case MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
-         return "Save Configuration On Exit";
-      case MENU_ENUM_LABEL_VALUE_CONFIRM_ON_EXIT:
-         return "Ask For Confirmation On Exit";
+         return "Save Configuration on Exit";
       case MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST:
          return "Collections";
       case MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY:
@@ -2103,10 +2116,8 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Core label";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME:
          return "Core name";
-      case MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NOTES:
-         return "Core notes";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE:
-         return "Firmware";
+         return "Firmware(s)";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES:
          return "License(s)";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS:
@@ -2216,7 +2227,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS:
          return "Frontend Counters";
       case MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS:
-         return "Tải Content-specific core options automatically";
+         return "Tải Content-Specific Core Options Automatically";
       case MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE:
          return "Create game-options file";
       case MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE:
@@ -2445,8 +2456,6 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Input Device Autoconfig Dir";
       case MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER:
          return "Joypad Driver";
-      case MENU_ENUM_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET:
-         return "Keyboard Overlay Preset";
       case MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES:
          return "Services";
       case MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED:
@@ -3224,8 +3233,8 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "FlatUI";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME:
          return "Monochrome";
-      case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME_JAGGED:
-         return "Monochrome Jagged";
+      case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_SYSTEMATIC:
+         return "Systematic";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_PIXEL:
          return "Pixel";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROACTIVE:
@@ -3282,6 +3291,10 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Bật/tắt bluetooth.";
       case MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT:
          return "Lưu cấu hình khi thoát retroarch.";
+      case MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS:
+         return "Change default settings for configuration files.";
+      case MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST:
+         return "Manage and create configuration files.";
       case MENU_ENUM_SUBLABEL_CPU_CORES:
          return "Số lượng lõi của CPU.";
       case MENU_ENUM_SUBLABEL_FPS_SHOW:
@@ -3538,8 +3551,10 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Preset Filename";
       case MSG_INTERFACE:
          return "Interface";
-      case MSG_INTERNAL_MEMORY:
-         return "Internal Memory";
+      case MSG_INTERNAL_STORAGE:
+         return "Internal Storage";
+      case MSG_REMOVABLE_STORAGE:
+         return "Removable Storage";
       case MSG_INVALID_NICKNAME_SIZE:
          return "Invalid nickname size.";
       case MSG_IN_BYTES:

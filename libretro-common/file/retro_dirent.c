@@ -28,11 +28,12 @@
 #include <boolean.h>
 #include <retro_stat.h>
 #include <retro_dirent.h>
+#include <encodings/utf.h>
 
 struct RDIR *retro_opendir(const char *name)
 {
 #if defined(_WIN32)
-   char path_buf[1024];
+   char path_buf[1024] = {0};
 #endif
    struct RDIR *rdir = (struct RDIR*)calloc(1, sizeof(*rdir));
 

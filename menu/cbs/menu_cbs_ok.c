@@ -53,6 +53,7 @@
 
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"
+#include "../../network/netplay/netplay_discovery.h"
 #endif
 
 typedef struct
@@ -71,9 +72,9 @@ typedef struct
 
 /* FIXME - Global variables, refactor */
 static char detect_content_path[PATH_MAX_LENGTH];
-unsigned rpl_entry_selection_ptr;
-unsigned rdb_entry_start_game_selection_ptr;
-size_t hack_shader_pass = 0;
+unsigned rpl_entry_selection_ptr                 = 0;
+unsigned rdb_entry_start_game_selection_ptr      = 0;
+size_t                     hack_shader_pass      = 0;
 
 #ifdef HAVE_NETWORKING
 /* HACK - we have to find some way to pass state inbetween
@@ -143,7 +144,7 @@ finish:
 /* defined in menu_cbs_deferred_push */
 static void cb_net_generic(void *task_data, void *user_data, const char *err)
 {
-   bool refresh = false;
+   bool refresh                = false;
    http_transfer_data_t *data  = (http_transfer_data_t*)task_data;
    menu_file_transfer_t *state = (menu_file_transfer_t*)user_data;
 
@@ -682,6 +683,14 @@ int generic_action_ok_displaylist_push(const char *path,
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_ONSCREEN_DISPLAY_SETTINGS_LIST;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
+      case ACTION_OK_DL_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST:
+         info.directory_ptr = idx;
+         info.type          = type;
+         info_path          = path;
+         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
       case ACTION_OK_DL_ONSCREEN_OVERLAY_SETTINGS_LIST:
          info.directory_ptr = idx;
          info.type          = type;
@@ -744,6 +753,14 @@ int generic_action_ok_displaylist_push(const char *path,
          info_path          = path;
          info_label         = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_NETPLAY_LAN_SCAN_SETTINGS_LIST:
+         info.directory_ptr = idx;
+         info.type          = type;
+         info_path          = path;
+         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_NETPLAY_LAN_SCAN_SETTINGS_LIST);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_NETPLAY_LAN_SCAN_SETTINGS_LIST;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_LAKKA_SERVICES_LIST:
@@ -972,20 +989,20 @@ static int action_ok_file_load_with_detect_core_collection(const char *path,
 static int action_ok_playlist_entry_collection(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   size_t selection;
    menu_content_ctx_playlist_info_t playlist_info;
    char new_core_path[PATH_MAX_LENGTH];
-   enum rarch_core_type action_type = CORE_TYPE_PLAIN;
+   size_t selection                        = 0;
+   size_t selection_ptr                    = 0;
+   enum rarch_core_type action_type        = CORE_TYPE_PLAIN;
    enum content_mode_load content_enum_idx = CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU;
-   size_t selection_ptr             = 0;
-   playlist_t *playlist             = NULL;
-   bool playlist_initialized        = false;
-   const char *entry_path           = NULL;
-   const char *entry_label          = NULL;
-   const char *core_path            = NULL;
-   const char *core_name            = NULL;
-   playlist_t *tmp_playlist         = NULL;
-   menu_handle_t *menu              = NULL;
+   bool playlist_initialized               = false;
+   playlist_t *playlist                    = NULL;
+   const char *entry_path                  = NULL;
+   const char *entry_label                 = NULL;
+   const char *core_path                   = NULL;
+   const char *core_name                   = NULL;
+   playlist_t *tmp_playlist                = NULL;
+   menu_handle_t *menu                     = NULL;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
@@ -1006,8 +1023,7 @@ static int action_ok_playlist_entry_collection(const char *path,
       playlist_initialized = true;
    }
 
-   playlist   = tmp_playlist;
-
+   playlist      = tmp_playlist;
    selection_ptr = entry_idx;
 
    playlist_get_index(playlist, selection_ptr,
@@ -1029,8 +1045,8 @@ static int action_ok_playlist_entry_collection(const char *path,
 
       new_display_name[0] = '\0';
 
-      core_info.inf  = NULL;
-      core_info.path = new_core_path;
+      core_info.inf       = NULL;
+      core_info.path      = new_core_path;
 
       if (!core_info_find(&core_info, new_core_path))
          found_associated_core = false;
@@ -1166,8 +1182,8 @@ static int action_ok_playlist_entry(const char *path,
 static int action_ok_playlist_entry_start_content(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   size_t selection;
    menu_content_ctx_playlist_info_t playlist_info;
+   size_t selection                 = 0;
    size_t selection_ptr             = 0;
    bool playlist_initialized        = false;
    playlist_t *playlist             = NULL;
@@ -1869,7 +1885,6 @@ static int action_ok_load_core_deferred(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_handle_t *menu                 = NULL;
-
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
@@ -2864,6 +2879,13 @@ static int action_ok_onscreen_display_list(const char *path,
          entry_idx, ACTION_OK_DL_ONSCREEN_DISPLAY_SETTINGS_LIST);
 }
 
+static int action_ok_onscreen_notifications_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, NULL, label, type, idx,
+         entry_idx, ACTION_OK_DL_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST);
+}
+
 static int action_ok_onscreen_overlay_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -2920,6 +2942,13 @@ static int action_ok_network_list(const char *path,
          entry_idx, ACTION_OK_DL_NETWORK_SETTINGS_LIST);
 }
 
+static int action_ok_netplay_lan_scan_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, NULL, label, type, idx,
+         entry_idx, ACTION_OK_DL_NETPLAY_LAN_SCAN_SETTINGS_LIST);
+}
+
 static int action_ok_lakka_services(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -2970,6 +2999,44 @@ static int action_ok_wifi(const char *path,
    if (!menu_input_dialog_start(&line))
       return -1;
    return 0;
+}
+
+static int action_ok_netplay_lan_scan(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+#ifdef HAVE_NETWORKING
+   struct netplay_host_list *hosts;
+   struct netplay_host *host;
+   bool netplay_was_on = false;
+
+   /* Figure out what host we're connecting to */
+   if (!netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, &hosts))
+      return -1;
+   if (entry_idx >= hosts->size)
+      return -1;
+   host = &hosts->hosts[entry_idx];
+
+   /* Enable Netplay client mode */
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
+   {
+      netplay_was_on = true;
+      command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+   }
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
+
+   /* Enable Netplay */
+   if (!command_event(CMD_EVENT_NETPLAY_INIT, (void *) host))
+      return -1;
+
+   /* And make sure we use its callbacks */
+   if (!netplay_was_on && !core_set_netplay_callbacks())
+      return -1;
+
+   return generic_action_ok_command(CMD_EVENT_RESUME);
+
+#else
+   return -1;
+#endif
 }
 
 static int action_ok_content_collection_list(const char *path,
@@ -3795,6 +3862,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_onscreen_display_list);
             break;
+         case MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS:
+            BIND_ACTION_OK(cbs, action_ok_onscreen_notifications_list);
+            break;
          case MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_onscreen_overlay_list);
             break;
@@ -3818,6 +3888,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_NETWORK_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_network_list);
+            break;
+         case MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS:
+            BIND_ACTION_OK(cbs, action_ok_netplay_lan_scan_list);
             break;
          case MENU_ENUM_LABEL_LAKKA_SERVICES:
             BIND_ACTION_OK(cbs, action_ok_lakka_services);
@@ -4143,6 +4216,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case MENU_WIFI:
             BIND_ACTION_OK(cbs, action_ok_wifi);
+            break;
+         case MENU_NETPLAY_LAN_SCAN:
+            BIND_ACTION_OK(cbs, action_ok_netplay_lan_scan);
             break;
          case FILE_TYPE_CURSOR:
             switch (menu_label_hash)

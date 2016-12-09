@@ -61,14 +61,14 @@
 
 #endif
 
-static enum gfx_ctx_api drm_api;
+static enum gfx_ctx_api drm_api           = GFX_CTX_NONE;
 
-static struct gbm_bo *g_bo;
-static struct gbm_bo *g_next_bo;
-static struct gbm_surface *g_gbm_surface;
-static struct gbm_device *g_gbm_dev;
+static struct gbm_bo *g_bo                = NULL;
+static struct gbm_bo *g_next_bo           = NULL;
+static struct gbm_surface *g_gbm_surface  = NULL;
+static struct gbm_device *g_gbm_dev       = NULL;
 
-static bool waiting_for_flip;
+static bool waiting_for_flip              = false;
 
 typedef struct gfx_ctx_drm_data
 {
@@ -277,8 +277,11 @@ static void gfx_ctx_drm_update_window_title(void *data)
    char buf_fps[128];
    settings_t *settings = config_get_ptr();
 
+   buf[0] = buf_fps[0]  = '\0';
+
    video_monitor_get_fps(buf, sizeof(buf),
          buf_fps, sizeof(buf_fps));
+
    if (settings->fps_show)
       runloop_msg_queue_push( buf_fps, 1, 1, false);
 }
@@ -362,7 +365,7 @@ static void *gfx_ctx_drm_init(void *video_driver)
    unsigned gpu_index                   = 0;
    const char *gpu                      = NULL;
    struct string_list *gpu_descriptors  = NULL;
-   gfx_ctx_drm_data_t *drm          = (gfx_ctx_drm_data_t*)
+   gfx_ctx_drm_data_t *drm              = (gfx_ctx_drm_data_t*)
       calloc(1, sizeof(gfx_ctx_drm_data_t));
 
    if (!drm)

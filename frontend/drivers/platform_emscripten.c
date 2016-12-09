@@ -115,8 +115,6 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
          "bundle/info", sizeof(g_defaults.dir.core_info));
    fill_pathname_join(g_defaults.dir.overlay, base_path,
          "bundle/overlays", sizeof(g_defaults.dir.overlay));
-   fill_pathname_join(g_defaults.dir.osk_overlay, base_path,
-         "bundle/overlays", sizeof(g_defaults.dir.osk_overlay));
    fill_pathname_join(g_defaults.dir.shader, base_path,
          "bundle/shaders", sizeof(g_defaults.dir.shader));
 

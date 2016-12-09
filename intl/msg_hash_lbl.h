@@ -149,7 +149,8 @@ MSG_HASH(MENU_ENUM_LABEL_COLLECTION,
 MSG_HASH(MENU_ENUM_LABEL_CONFIGURATIONS,
       "configurations")
 MSG_HASH(MENU_ENUM_LABEL_CONFIGURATION_SETTINGS,
-      "configuration_settings")
+      "Determines how configuration files \n"
+      "are loaded and prioritized.")
 MSG_HASH(MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT,
       "config_save_on_exit")
 MSG_HASH(MENU_ENUM_LABEL_CONNECT_WIFI,
@@ -272,6 +273,8 @@ MSG_HASH(MENU_ENUM_LABEL_DEFERRED_ONSCREEN_DISPLAY_SETTINGS_LIST,
       "deferred_onscreen_display_settings_list")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST,
       "deferred_onscreen_overlay_settings_list")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST,
+      "deferred_onscreen_notifications_settings_list")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST,
       "deferred_playlist_settings")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_PRIVACY_SETTINGS_LIST,
@@ -326,6 +329,8 @@ MSG_HASH(MENU_ENUM_LABEL_DPI_OVERRIDE_VALUE,
       "dpi_override_value")
 MSG_HASH(MENU_ENUM_LABEL_DRIVER_SETTINGS,
       "driver_settings")
+MSG_HASH(MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE,
+      "check_for_missing_firmware")
 MSG_HASH(MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN,
       "dummy_on_core_shutdown")
 MSG_HASH(MENU_ENUM_LABEL_DYNAMIC_WALLPAPER,
@@ -440,8 +445,6 @@ MSG_HASH(MENU_ENUM_LABEL_INPUT_MAX_USERS,
       "input_max_users")
 MSG_HASH(MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
       "input_menu_toggle_gamepad_combo")
-MSG_HASH(MENU_ENUM_LABEL_INPUT_OSK_OVERLAY_ENABLE,
-      "input_osk_overlay_enable")
 MSG_HASH(MENU_ENUM_LABEL_INPUT_OVERLAY_ENABLE,
       "input_overlay_enable")
 MSG_HASH(MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU,
@@ -502,8 +505,6 @@ MSG_HASH(MENU_ENUM_LABEL_JOYPAD_AUTOCONFIG_DIR,
       "joypad_autoconfig_dir")
 MSG_HASH(MENU_ENUM_LABEL_JOYPAD_DRIVER,
       "input_joypad_driver")
-MSG_HASH(MENU_ENUM_LABEL_KEYBOARD_OVERLAY_PRESET,
-      "input_osk_overlay")
 MSG_HASH(MENU_ENUM_LABEL_LAKKA_SERVICES,
       "lakka_services")
 MSG_HASH(MENU_ENUM_LABEL_LIBRETRO_DIR_PATH,
@@ -592,6 +593,8 @@ MSG_HASH(MENU_ENUM_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE,
       "netplay_spectator_mode_enable")
 MSG_HASH(MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT,
       "netplay_tcp_udp_port")
+MSG_HASH(MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS,
+       "Search for and connect to netplay hosts on the local network.")
 MSG_HASH(MENU_ENUM_LABEL_NETWORK_CMD_ENABLE,
       "network_cmd_enable")
 MSG_HASH(MENU_ENUM_LABEL_NETWORK_CMD_PORT,
@@ -624,6 +627,10 @@ MSG_HASH(MENU_ENUM_LABEL_NO_HISTORY_AVAILABLE,
       "no_history")
 MSG_HASH(MENU_ENUM_LABEL_NO_ITEMS,
       "no_items")
+MSG_HASH(MENU_ENUM_LABEL_NO_NETPLAY_HOSTS_FOUND,
+      "no_netplay_hosts_found")
+MSG_HASH(MENU_ENUM_LABEL_NO_NETWORKS_FOUND,
+      "no_networks_found")
 MSG_HASH(MENU_ENUM_LABEL_NO_PERFORMANCE_COUNTERS,
       "no_performance_counters")
 MSG_HASH(MENU_ENUM_LABEL_NO_PLAYLISTS,
@@ -642,12 +649,12 @@ MSG_HASH(MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS,
       "onscreen_display_settings")
 MSG_HASH(MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS,
       "onscreen_overlay_settings")
+MSG_HASH(MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
+      "onscreen_notifications_settings")
 MSG_HASH(MENU_ENUM_LABEL_OPEN_ARCHIVE,
       "open_archive")
 MSG_HASH(MENU_ENUM_LABEL_OPEN_ARCHIVE_DETECT_CORE,
       "open_archive_detect_core")
-MSG_HASH(MENU_ENUM_LABEL_OSK_OVERLAY_DIRECTORY,
-      "osk_overlay_directory")
 MSG_HASH(MENU_ENUM_LABEL_OVERLAY_AUTOLOAD_PREFERRED,
       "overlay_autoload_preferred")
 MSG_HASH(MENU_ENUM_LABEL_OVERLAY_DIRECTORY,
@@ -1038,6 +1045,10 @@ MSG_HASH(MENU_ENUM_LABEL_VIDEO_VSYNC,
       "video_vsync")
 MSG_HASH(MENU_ENUM_LABEL_VIDEO_WINDOWED_FULLSCREEN,
       "video_windowed_fullscreen")
+MSG_HASH(MENU_ENUM_LABEL_VIDEO_WINDOW_WIDTH,
+      "video_window_width")
+MSG_HASH(MENU_ENUM_LABEL_VIDEO_WINDOW_HEIGHT,
+      "video_window_height")
 MSG_HASH(MENU_ENUM_LABEL_WIFI_DRIVER,
       "wifi_driver")
 MSG_HASH(MENU_ENUM_LABEL_WIFI_SETTINGS,
@@ -1072,19 +1083,71 @@ MSG_HASH(MSG_CONNECT_DEVICE_FROM_A_VALID_PORT,
       "connect_device_from_a_valid_port")
 MSG_HASH(MSG_DEVICE_CONFIGURED_IN_PORT,
       "configured in port")
-MSG_HASH(MSG_DEVICE_NOT_CONFIGURED,
-      "not configured")
 MSG_HASH(MSG_DISCONNECTING_DEVICE_FROM_PORT,
       "disconnecting_device_from_port")
 MSG_HASH(MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
       "disconnect_device_from_a_valid_port")
-MSG_HASH(MSG_FAILED,
-      "failed")
 MSG_HASH(MSG_FAILED_TO_SET_DISK,
       "Failed to set disk")
 MSG_HASH(MSG_FAILED_TO_START_AUDIO_DRIVER,
       "failed_to_start_audio_driver")
 MSG_HASH(MSG_FOUND_LAST_STATE_SLOT,
       "found_last_state_slot")
-MSG_HASH(MSG_SUCCEEDED,
-      "succeeded")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_SELECTION,
+      "database_selection")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST,
+      "database_cursor_list")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_DEVELOPER,
+      "database_cursor_list_entry_developer")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_PUBLISHER,
+      "database_cursor_list_entry_publisher")
+MSG_HASH(MENU_ENUM_LABEL_OFF, "off")
+MSG_HASH(MENU_ENUM_LABEL_ON,  "on")
+MSG_HASH(MENU_ENUM_LABEL_DISABLED, "disabled")
+MSG_HASH(MENU_ENUM_LABEL_ENABLED,  "enabled")
+MSG_HASH(MENU_ENUM_LABEL_SECONDS,  "seconds")
+MSG_HASH(MENU_ENUM_LABEL_STATUS,   "status")
+MSG_HASH(MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,
+      "detect_core_list_ok")
+MSG_HASH(MENU_ENUM_LABEL_NO_DISK,
+      "no_disk")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS,
+      "deferred_rpl_entry_actions")
+MSG_HASH(MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE,
+      "menu_throttle_framerate")
+MSG_HASH(MENU_ENUM_LABEL_OVERLAY_SETTINGS,
+      "overlay_settings")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_ORIGIN,
+      "database_cursor_list_entry_origin")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_FRANCHISE,
+      "database_cursor_list_entry_franchise")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_ESRB_RATING,
+      "database_cursor_list_entry_esrb_rating")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_ELSPA_RATING,
+      "database_cursor_list_entry_elspa_rating")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_PEGI_RATING,
+      "database_cursor_list_entry_pegi_rating")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_CERO_RATING,
+      "database_cursor_list_entry_cero_rating")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_BBFC_RATING,
+      "database_cursor_list_entry_bbfc_rating")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_MAX_USERS,
+      "database_cursor_list_entry_max_users")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_MONTH,
+      "database_cursor_list_releasedate_by_month")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_YEAR,
+      "database_cursor_list_releasedate_by_year")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_ISSUE,
+      "database_cursor_list_edge_magazine_issue")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_RATING,
+      "database_cursor_list_edge_magazine_rating")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_DATABASE_INFO,
+      "database_info")
+MSG_HASH(MENU_ENUM_LABEL_SHADER_PIPELINE_RIBBON,
+      "shader_pipeline_ribbon")
+MSG_HASH(MENU_ENUM_LABEL_SHADER_PIPELINE_RIBBON_SIMPLIFIED,
+      "shader_pipeline_ribbon_simplified")
+MSG_HASH(MENU_ENUM_LABEL_SHADER_PIPELINE_SIMPLE_SNOW,
+      "shader_pipeline_simple_snow")
+MSG_HASH(MENU_ENUM_LABEL_SHADER_PIPELINE_SNOW,
+      "shader_pipeline_snow")

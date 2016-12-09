@@ -1518,8 +1518,6 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Carica file di override automaticamente";
       case MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
          return "Salva configurazione all'uscita";
-	  case MENU_ENUM_LABEL_VALUE_CONFIRM_ON_EXIT:
-         return "Chiedi conferma all'uscita";
 	  case MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES:
          return "Mostra files e cartelle nascoste";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH:
@@ -1808,8 +1806,6 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Latenza audio (ms)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE:
          return "Dispositivo audio";
-      case MENU_ENUM_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET:
-         return "Preimpostato Overlay Tastiera";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY:
          return "Opacità Overlay";
       case MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER:
@@ -1875,9 +1871,7 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS:
          return "Estensioni supportate";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE:
-         return "Firmware";
-      case MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NOTES:
-         return "Note del core";
+         return "Firmware(s)";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE:
          return "Data della build";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION:
@@ -2189,8 +2183,10 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Normale";
       case MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_EARLY:
          return "Presto";
-      case MSG_INTERNAL_MEMORY:
+      case MSG_INTERNAL_STORAGE:
          return "Memoria interna";
+      case MSG_REMOVABLE_STORAGE:
+         return "Removable storage";
       case MSG_EXTERNAL_APPLICATION_DIR:
          return "Directory app esterna";
       case MSG_APPLICATION_DIR:

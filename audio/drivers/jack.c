@@ -103,10 +103,11 @@ static void shutdown_cb(void *data)
 static int parse_ports(char **dest_ports, const char **jports)
 {
    int i;
-   char           *save = NULL;
-   int           parsed = 0;
-   settings_t *settings = config_get_ptr();
-   const char      *con = strtok_r(settings->audio.device, ",", &save);
+   char           *save   = NULL;
+   int           parsed   = 0;
+   settings_t *settings   = config_get_ptr();
+   char *audio_device_cpy = strdup(settings->audio.device);
+   const char      *con   = strtok_r(audio_device_cpy, ",", &save);
 
    if (con)
       dest_ports[parsed++] = strdup(con);
@@ -117,6 +118,7 @@ static int parse_ports(char **dest_ports, const char **jports)
    for (i = parsed; i < 2; i++)
       dest_ports[i] = strdup(jports[i]);
 
+   free(audio_device_cpy);
    return 2;
 }
 

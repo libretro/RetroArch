@@ -23,7 +23,7 @@
 
 #include "../connect/joypad_connection.h"
 #include "../input_defines.h"
-#include "../input_autodetect.h"
+#include "../../tasks/tasks_internal.h"
 #include "../input_hid_driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
@@ -247,7 +247,7 @@ static void iohidmanager_hid_device_remove(void *data,
 
    if (hid && adapter && (adapter->slot < MAX_USERS))
    {
-      input_config_autoconfigure_disconnect(adapter->slot, adapter->name);
+      input_autoconfigure_disconnect(adapter->slot, adapter->name);
 
       hid->buttons[adapter->slot] = 0;
       memset(hid->axes[adapter->slot], 0, sizeof(hid->axes));
@@ -309,7 +309,8 @@ static void iohidmanager_hid_device_add_autodetect(unsigned idx,
    strlcpy(params.name, device_name, sizeof(params.name));
    strlcpy(params.driver, driver_name, sizeof(params.driver));
 
-   input_config_autoconfigure_joypad(&params);
+   input_autoconfigure_connect(&params);
+
    RARCH_LOG("Port %d: %s.\n", idx, device_name);
 }
 

@@ -34,10 +34,11 @@
 #endif
 
 #include "../../frontend/drivers/platform_linux.h"
-#include "../input_autodetect.h"
 #include "../input_config.h"
+#include "../../gfx/video_driver.h"
 #include "../input_joypad_driver.h"
 #include "../drivers_keyboard/keyboard_event_android.h"
+#include "../../tasks/tasks_internal.h"
 #include "../../performance_counters.h"
 #include "../../configuration.h"
 
@@ -342,9 +343,7 @@ static void android_input_poll_main_cmd(void)
 
             runloop_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
             runloop_ctl(RUNLOOP_CTL_SET_IDLE,   &boolean);
-#ifdef HAVE_MENU
             video_driver_unset_stub_frame();
-#endif
 
             if ((android_app->sensor_state_mask
                      & (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_ENABLE))
@@ -364,9 +363,7 @@ static void android_input_poll_main_cmd(void)
 
             runloop_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
             runloop_ctl(RUNLOOP_CTL_SET_IDLE,   &boolean);
-#ifdef HAVE_MENU
             video_driver_set_stub_frame();
-#endif
 
             /* Avoid draining battery while app is not being used. */
             if ((android_app->sensor_state_mask
@@ -529,15 +526,17 @@ static INLINE int android_input_poll_event_type_motion(
    }
    else
    {
-      float x, y;
       int pointer_max = MIN(AMotionEvent_getPointerCount(event), MAX_TOUCH);
 
       for (motion_ptr = 0; motion_ptr < pointer_max; motion_ptr++)
       {
-         x = AMotionEvent_getX(event, motion_ptr);
-         y = AMotionEvent_getY(event, motion_ptr);
+         struct video_viewport vp = {0};
+         float x = AMotionEvent_getX(event, motion_ptr);
+         float y = AMotionEvent_getY(event, motion_ptr);
 
-         input_translate_coord_viewport(x, y,
+         video_driver_translate_coord_viewport_wrap(
+               &vp,
+               x, y,
                &android_data->pointer[motion_ptr].x,
                &android_data->pointer[motion_ptr].y,
                &android_data->pointer[motion_ptr].full_x,
@@ -645,7 +644,6 @@ static void handle_hotplug(android_input_data_t *android_data,
    char name_buf[256];
    int vendorId                 = 0;
    int productId                = 0;
-   bool back_mapped             = false;
    settings_t         *settings = config_get_ptr();
 
    device_name[0] = device_model[0] = name_buf[0] = '\0';
@@ -893,7 +891,6 @@ static void handle_hotplug(android_input_data_t *android_data,
 
    if (settings->input.autodetect_enable)
    {
-      bool      autoconfigured;
       autoconfig_params_t params   = {{0}};
 
       RARCH_LOG("Pads Connected: %d Port: %d\n %s VID/PID: %d/%d\n",
@@ -901,21 +898,15 @@ static void handle_hotplug(android_input_data_t *android_data,
             params.vid, params.pid);
 
       strlcpy(params.name, name_buf, sizeof(params.name));
-      params.idx = *port;
-      params.vid = vendorId;
-      params.pid = productId;
+
+      params.idx                 = *port;
+      params.vid                 = vendorId;
+      params.pid                 = productId;
       settings->input.pid[*port] = params.pid;
       settings->input.vid[*port] = params.vid;
 
       strlcpy(params.driver, android_joypad.ident, sizeof(params.driver));
-      autoconfigured = input_config_autoconfigure_joypad(&params);
-
-      if (autoconfigured)
-      {
-         if (settings->input.autoconf_binds[*port]
-               [RARCH_MENU_TOGGLE].joykey != 0)
-            back_mapped = true;
-      }
+      input_autoconfigure_connect(&params);
    }
 
    if (!string_is_empty(name_buf))

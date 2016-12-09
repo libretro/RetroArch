@@ -71,6 +71,15 @@ typedef struct nbio_handle
    unsigned status;
 } nbio_handle_t;
 
+typedef struct autoconfig_params
+{
+   char  name[255];
+   char  driver[255];
+   char  display_name[255];
+   unsigned idx;
+   int32_t vid;
+   int32_t pid;
+} autoconfig_params_t;
 
 #ifdef HAVE_NETWORKING
 typedef struct
@@ -83,6 +92,11 @@ void *task_push_http_transfer(const char *url, bool mute, const char *type,
       retro_task_callback_t cb, void *userdata);
 
 task_retriever_info_t *http_task_get_transfer_list(void);
+
+bool task_push_wifi_scan(void);
+
+bool task_push_netplay_lan_scan(void);
+
 #endif
 
 bool task_push_image_load(const char *fullpath,
@@ -141,8 +155,7 @@ bool content_push_to_history_playlist(
       const char *core_name,
       const char *core_path);
 
-/* TODO/FIXME - turn this into actual task */
-bool take_screenshot(void);
+bool take_screenshot(const char *path, bool silence);
 
 bool event_load_save_files(void);
 
@@ -153,6 +166,12 @@ void path_init_savefile_rtc(void);
 void *savefile_ptr_get(void);
 
 void path_init_savefile_new(void);
+
+bool input_autoconfigure_connect(autoconfig_params_t *params);
+
+bool input_autoconfigure_disconnect(unsigned i, const char *ident);
+
+extern const char* const input_builtin_autoconfs[];
 
 RETRO_END_DECLS
 

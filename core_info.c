@@ -26,6 +26,9 @@
 #include "config.h"
 #endif
 
+#include "runloop.h"
+#include "verbosity.h"
+
 #include "config.def.h"
 #include "core_info.h"
 #include "configuration.h"
@@ -410,7 +413,7 @@ static bool core_info_list_update_missing_firmware_internal(
 
    if (!info)
       return false;
-
+   runloop_ctl(RUNLOOP_CTL_UNSET_MISSING_BIOS, NULL);
    for (i = 0; i < info->firmware_count; i++)
    {
       if (!info->firmware[i].path)
@@ -419,6 +422,11 @@ static bool core_info_list_update_missing_firmware_internal(
       fill_pathname_join(path, systemdir,
             info->firmware[i].path, sizeof(path));
       info->firmware[i].missing = !path_file_exists(path);
+      if (info->firmware[i].missing && !info->firmware[i].optional)
+      {
+         runloop_ctl(RUNLOOP_CTL_SET_MISSING_BIOS, NULL);
+         RARCH_WARN("Firmware missing: %s\n", info->firmware[i].path);
+      }
    }
 
    return true;
@@ -522,7 +530,6 @@ bool core_info_list_update_missing_firmware(core_info_ctx_firmware_t *info)
 {
    if (!info)
       return false;
-
    return core_info_list_update_missing_firmware_internal(
          core_info_curr_list,
          info->path, info->directory.system);
@@ -757,9 +764,14 @@ bool core_info_database_supports_content_path(const char *database_path, const c
          const core_info_t *info = &core_info_curr_list->list[i];
 
          if (string_list_find_elem(info->databases_list, database))
+         {
             if (string_list_find_elem(info->supported_extensions_list, "zip") ||
                 string_list_find_elem(info->supported_extensions_list, "7z"))
-                return false;
+            {
+               free(database);
+               return false;
+            }
+         }
       }
    }
 

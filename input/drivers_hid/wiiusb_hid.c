@@ -20,7 +20,7 @@
 
 #include "../input_defines.h"
 #include "../connect/joypad_connection.h"
-#include "../input_autodetect.h"
+#include "../../tasks/tasks_internal.h"
 #include "../input_hid_driver.h"
 #include "../../verbosity.h"
 
@@ -152,7 +152,7 @@ static void wiiusb_hid_device_add_autodetect(unsigned idx,
    strlcpy(settings->input.device_names[idx], device_name,
 		sizeof(settings->input.device_names[idx]));
 
-   input_config_autoconfigure_joypad(&params);
+   input_autoconfigure_connect(&params);
 }
 
 static void wiiusb_get_description(usb_device_entry *device,
@@ -209,15 +209,17 @@ static const char *wiiusb_hid_joypad_name(void *data, unsigned pad)
 
 static int32_t wiiusb_hid_release_adapter(struct wiiusb_adapter *adapter)
 {
-   wiiusb_hid_t *hid;
-   const char *name;
+   wiiusb_hid_t *hid = NULL;
+   const char *name  = NULL;
 
    if (!adapter)
       return -1;
 
-   hid = adapter->hid;
+   hid  = adapter->hid;
    name = wiiusb_hid_joypad_name(hid, adapter->slot);
-   input_config_autoconfigure_disconnect(adapter->slot, name);
+
+   input_autoconfigure_disconnect(adapter->slot, name);
+
    pad_connection_pad_deinit(&hid->connections[adapter->slot], adapter->slot);
 
    free(adapter->send_control_buffer);

@@ -164,16 +164,12 @@ static int16_t x_mouse_state_screen(x11_input_t *x11, unsigned id)
 static int16_t x_pointer_state(x11_input_t *x11,
       unsigned idx, unsigned id, bool screen)
 {
-   bool valid, inside;
+   bool inside;
+   struct video_viewport vp = {0};
    int16_t res_x = 0, res_y = 0, res_screen_x = 0, res_screen_y = 0;
 
-   if (idx != 0)
-      return 0;
-
-   valid = input_translate_coord_viewport(x11->mouse_x, x11->mouse_y,
-         &res_x, &res_y, &res_screen_x, &res_screen_y);
-
-   if (!valid)
+   if (!(video_driver_translate_coord_viewport_wrap(&vp, x11->mouse_x, x11->mouse_y,
+         &res_x, &res_y, &res_screen_x, &res_screen_y)))
       return 0;
 
    if (screen)
@@ -254,9 +250,10 @@ static int16_t x_input_state(void *data,
 
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
-         return x_pointer_state(x11, idx, id,
-               device == RARCH_DEVICE_POINTER_SCREEN);
-
+         if (idx == 0)
+            return x_pointer_state(x11, idx, id,
+                  device == RARCH_DEVICE_POINTER_SCREEN);
+         break;
       case RETRO_DEVICE_LIGHTGUN:
          return x_lightgun_state(x11, id);
    }
@@ -319,6 +316,7 @@ static void x_input_poll_mouse(x11_input_t *x11)
             XWarpPointer(x11->display, None,
                   x11->win, 0, 0, 0, 0,
                   mid_w, mid_h);
+            XSync(x11->display, False);
          }
          x11->mouse_last_x = mid_w;
          x11->mouse_last_y = mid_h;

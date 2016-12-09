@@ -45,6 +45,8 @@
 #include "../retroarch.h"
 #include "../runloop.h"
 
+#define OSK_CHARS_PER_LINE 11
+
 static unsigned char menu_keyboard_key_state[RETROK_LAST];
 
 enum osk_type
@@ -185,7 +187,6 @@ void menu_event_keyboard_set(bool down, enum retro_key key)
 
 unsigned menu_event(uint64_t input, uint64_t trigger_input)
 {
-   unsigned menu_ok_btn, menu_cancel_btn;
    menu_animation_ctx_delta_t delta;
    float delta_time;
    /* Used for key repeat */
@@ -199,6 +200,15 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
    size_t new_scroll_accel                 = 0;
    menu_input_t *menu_input                = NULL;
    settings_t *settings                    = config_get_ptr();
+   static unsigned ok_old                  = 0;
+   unsigned menu_ok_btn                    = settings->input.menu_swap_ok_cancel_buttons ?
+      RETRO_DEVICE_ID_JOYPAD_B : RETRO_DEVICE_ID_JOYPAD_A;
+   unsigned menu_cancel_btn                = settings->input.menu_swap_ok_cancel_buttons ?
+      RETRO_DEVICE_ID_JOYPAD_A : RETRO_DEVICE_ID_JOYPAD_B;
+   unsigned ok_current                     = input & UINT64_C(1) << menu_ok_btn;
+   unsigned ok_trigger                     = ok_current & ~ok_old;
+
+   ok_old     = ok_current;
 
    if (input)
    {
@@ -292,13 +302,13 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN))
       {
          if (osk_ptr < 33)
-            osk_ptr = osk_ptr + 11;
+            osk_ptr = osk_ptr + OSK_CHARS_PER_LINE;
       }
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP))
       {
-         if (osk_ptr > 10)
-            osk_ptr = osk_ptr - 11;
+         if (osk_ptr >= OSK_CHARS_PER_LINE)
+            osk_ptr = osk_ptr - OSK_CHARS_PER_LINE;
       }
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT))
@@ -329,7 +339,7 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
             osk_idx = (enum osk_type)(OSK_TYPE_UNKNOWN + 1);
       }
 
-      if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_A))
+      if (trigger_input & (UINT64_C(1) << menu_ok_btn))
       {
          if (osk_ptr >= 0)
          {
@@ -337,7 +347,7 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
          }
       }
 
-      if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_B))
+      if (trigger_input & (UINT64_C(1) << menu_cancel_btn))
       {
          input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
       }
@@ -347,12 +357,8 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
          input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
 
       trigger_input = 0;
+      ok_trigger = 0;
    }
-
-   menu_ok_btn     = settings->input.menu_swap_ok_cancel_buttons ? 
-      RETRO_DEVICE_ID_JOYPAD_A: RETRO_DEVICE_ID_JOYPAD_B;
-   menu_cancel_btn = settings->input.menu_swap_ok_cancel_buttons ? 
-      RETRO_DEVICE_ID_JOYPAD_B: RETRO_DEVICE_ID_JOYPAD_A;
 
    if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP))
       ret = MENU_ACTION_UP;
@@ -366,10 +372,10 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
       ret = MENU_ACTION_SCROLL_UP;
    else if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R))
       ret = MENU_ACTION_SCROLL_DOWN;
-   else if (trigger_input & (UINT64_C(1) << menu_ok_btn))
-      ret = MENU_ACTION_CANCEL;
-   else if (trigger_input & (UINT64_C(1) << menu_cancel_btn))
+   else if (ok_trigger)
       ret = MENU_ACTION_OK;
+   else if (trigger_input & (UINT64_C(1) << menu_cancel_btn))
+      ret = MENU_ACTION_CANCEL;
    else if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_X))
       ret = MENU_ACTION_SEARCH;
    else if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_Y))
@@ -394,7 +400,7 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
 #ifdef HAVE_OVERLAY
    if (!mouse_enabled)
       mouse_enabled = !(settings->input.overlay_enable
-            && input_overlay_is_alive(NULL));
+            && input_overlay_is_alive(overlay_ptr));
 #endif
 
    if (!(menu_input = menu_input_get_ptr()))

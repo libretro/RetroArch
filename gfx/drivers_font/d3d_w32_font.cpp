@@ -22,9 +22,10 @@
 #include "../font_driver.h"
 
 #include "../../configuration.h"
-#include "../../runloop.h"
 
+#ifdef HAVE_D3D9
 #include "../include/d3d9/d3dx9core.h"
+#endif
 
 typedef struct
 {
@@ -45,7 +46,11 @@ static void *d3dfonts_w32_init_font(void *video_data,
       OUT_TT_PRECIS,
       CLIP_DEFAULT_PRECIS,
       DEFAULT_PITCH,
-      "Verdana" /* Hardcode FTL */
+#ifdef _MSC_VER  /* MSVC needs w_char* */
+      L"Verdana" /* Hardcode FTL */
+#else
+	  "Verdana"
+#endif
    };
 
    d3dfonts = (d3dfonts_t*)calloc(1, sizeof(*d3dfonts));

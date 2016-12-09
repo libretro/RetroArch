@@ -53,7 +53,7 @@ bool cheevos_unload(void);
 
 bool cheevos_toggle_hardcore_mode(void);
 
-bool cheevos_test(void);
+void cheevos_test(void);
 
 bool cheevos_set_cheats(void);
 
@@ -64,6 +64,10 @@ bool cheevos_get_support_cheevos(void);
 void cheevos_parse_guest_addr(cheevos_var_t *var, unsigned value);
 
 uint8_t *cheevos_get_memory(const cheevos_var_t *var);
+
+extern bool cheevos_loaded;
+extern int cheats_are_enabled;
+extern int cheats_were_enabled;
 
 RETRO_END_DECLS
 

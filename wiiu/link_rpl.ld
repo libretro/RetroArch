@@ -15,6 +15,7 @@ PHDRS {
    hdr_data    PT_LOAD                 FLAGS(0x02 | 0x04);
    hdr_srodata PT_LOAD                 FLAGS(0x04);
    hdr_sdata   PT_LOAD                 FLAGS(0x02 | 0x04);
+   hdr_sysdata PT_LOAD                 FLAGS(0x02 | 0x04);
 }
 
 SECTIONS {
@@ -112,18 +113,22 @@ SECTIONS {
 
    .ctors ALIGN(256) :
    {
+      __CTOR_LIST__ = .;
       KEEP (*crtbegin.o(.ctors)) /* MUST be first -- GCC requires it */
       KEEP (*(EXCLUDE_FILE (*crtend.o) .ctors))
       KEEP (*(SORT(.ctors.*)))
       KEEP (*(.ctors))
+      __CTOR_END__ = .;
    } : hdr_data
 
    .dtors ALIGN(256) :
    {
+      __DTOR_LIST__ = .;
       KEEP (*crtbegin.o(.dtors))
       KEEP (*(EXCLUDE_FILE (*crtend.o) .dtors))
       KEEP (*(SORT(.dtors.*)))
       KEEP (*(.dtors))
+      __DTOR_END__ = .;
    } : hdr_data
 
    __bss_start__ = .;
@@ -171,7 +176,7 @@ SECTIONS {
    /* Contains the name of RPLs, referenced by .lib.rplLibs */
    .rodata.rplNames ALIGN(32) : {
       *(.rodata.rplNames)
-   } : hdr_data
+   } : hdr_sysdata
 
    /*
     * List of RPL libraries to import, in format:
@@ -181,7 +186,7 @@ SECTIONS {
    .lib.rplLibs ALIGN(32) : {
       *(.lib.rplLibs)
       KEEP (*(.lib.rplLibs*))
-   }
+   } : hdr_sysdata
 
    /*
     * List of functions an RPL exports, in format:
@@ -189,51 +194,51 @@ SECTIONS {
     */
    .data.rplFuncStubs ALIGN(32) : {
       *(.data.rplFuncStubs)
-   }
+   } : hdr_sysdata
 
    /* Required compiler trash */
-   .fixup ALIGN(32) : { *(.fixup*) }
-   .got ALIGN(32) : { *(.got*) }
-   .gcc_except_table ALIGN(32) : { *(.gcc_except_table*) }
-   .hash ALIGN(32) : { *(.hash) }
-   .dynsym ALIGN(32) : { *(.dynsym) }
+   .fixup ALIGN(32) : { *(.fixup*) } : hdr_sysdata
+   .got ALIGN(32) : { *(.got*) } : hdr_sysdata
+   .gcc_except_table ALIGN(32) : { *(.gcc_except_table*) } : hdr_sysdata
+   .hash ALIGN(32) : { *(.hash) } : hdr_sysdata
+   .dynsym ALIGN(32) : { *(.dynsym) } : hdr_sysdata
 
    /* Put all dynamic loader relocations into one section */
    .rela.dyn ALIGN(32) : {
       *(.rela.dyn)
       *(.rela.data.rplFuncStubs)
       *(.rela.lib.rplLibs)
-   }
+   } : hdr_sysdata
 
    /* Relocations for .rodata sections */
    .rela.rodata ALIGN(32) :
    {
       *(.rela.rodata .rela.rodata.*)
-   }
+   } : hdr_sysdata
 
    /* Relocations for .text sections */
    .rela.text ALIGN(32) :
    {
       *(.rela.text .rela.text.*)
       *(.rela.rplTramp.text)
-   }
+   } : hdr_sysdata
 
    /* Relocations for .data sections */
    .rela.data ALIGN(32) :
    {
       *(.rela.data .rela.data.*)
-   }
+   } : hdr_sysdata
 
    /* Relocations for .bss sections */
    .rela.bss ALIGN(32) :
    {
       *(.rela.bss .rela.bss.*)
-   }
+   } : hdr_sysdata
 
    /* Symbol tables */
-   .shstrtab ALIGN(32) : { *(.shstrtab) }
-   .symtab ALIGN(32) : { *(.symtab) }
-   .strtab ALIGN(32) : { *(.strtab) }
+   .shstrtab ALIGN(32) : { *(.shstrtab) } : hdr_sysdata
+   .symtab ALIGN(32) : { *(.symtab) } : hdr_sysdata
+   .strtab ALIGN(32) : { *(.strtab) } : hdr_sysdata
 
    /DISCARD/ : {
       *(.interp)

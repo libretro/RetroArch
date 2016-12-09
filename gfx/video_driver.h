@@ -472,6 +472,30 @@ const video_poke_interface_t *video_driver_get_poke(void);
 void video_driver_frame(const void *data, unsigned width,
       unsigned height, size_t pitch);
 
+#define video_driver_translate_coord_viewport_wrap(vp, mouse_x, mouse_y, res_x, res_y, res_screen_x, res_screen_y) \
+   (video_driver_get_viewport_info(vp) ? video_driver_translate_coord_viewport(vp, mouse_x, mouse_y, res_x, res_y, res_screen_x, res_screen_y) : false)
+
+/**
+ * video_driver_translate_coord_viewport:
+ * @mouse_x                        : Pointer X coordinate.
+ * @mouse_y                        : Pointer Y coordinate.
+ * @res_x                          : Scaled  X coordinate.
+ * @res_y                          : Scaled  Y coordinate.
+ * @res_screen_x                   : Scaled screen X coordinate.
+ * @res_screen_y                   : Scaled screen Y coordinate.
+ *
+ * Translates pointer [X,Y] coordinates into scaled screen
+ * coordinates based on viewport info.
+ *
+ * Returns: true (1) if successful, false if video driver doesn't support
+ * viewport info.
+ **/
+bool video_driver_translate_coord_viewport(
+      void *data,
+      int mouse_x, int mouse_y,
+      int16_t *res_x, int16_t *res_y, int16_t *res_screen_x,
+      int16_t *res_screen_y);
+
 uintptr_t video_driver_display_get(void);
 
 enum rarch_display_type video_driver_display_type_get(void);
@@ -512,6 +536,7 @@ extern video_driver_t video_dispmanx;
 extern video_driver_t video_sunxi;
 extern video_driver_t video_drm;
 extern video_driver_t video_xshm;
+extern video_driver_t video_caca;
 extern video_driver_t video_null;
 
 extern const void *frame_cache_data;

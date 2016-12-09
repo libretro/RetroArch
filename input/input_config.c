@@ -134,6 +134,7 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
       DECLARE_META_BIND(2, disk_next,             RARCH_DISK_NEXT,             MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_NEXT),
       DECLARE_META_BIND(2, disk_prev,             RARCH_DISK_PREV,             MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV),
       DECLARE_META_BIND(2, grab_mouse_toggle,     RARCH_GRAB_MOUSE_TOGGLE,     MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE),
+      DECLARE_META_BIND(2, game_focus_toggle,     RARCH_GAME_FOCUS_TOGGLE,     MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE),
 #ifdef HAVE_MENU
       DECLARE_META_BIND(1, menu_toggle,           RARCH_MENU_TOGGLE,           MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE),
 #endif
@@ -469,4 +470,17 @@ void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
    snprintf(keybuf, sizeof(keybuf), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_KEY), key);
    strlcat(buf, keybuf, size);
 #endif
+}
+
+const struct retro_keybind *input_config_get_bind_auto(unsigned port, unsigned id)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned joy_idx     = 0;
+
+   if (settings)
+      joy_idx = settings->input.joypad_map[port];
+
+   if (joy_idx < MAX_USERS)
+      return &settings->input.autoconf_binds[joy_idx][id];
+   return NULL;
 }

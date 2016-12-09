@@ -163,8 +163,6 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
          "BUNDLE/DATABASE/RDB", sizeof(g_defaults.dir.database));
    fill_pathname_join(g_defaults.dir.overlay, base_path,
          "BUNDLE/OVERLAYS", sizeof(g_defaults.dir.overlay));
-   fill_pathname_join(g_defaults.dir.osk_overlay, base_path,
-         "BUNDLE/OVERLAYS", sizeof(g_defaults.dir.osk_overlay));
    fill_pathname_join(g_defaults.dir.shader, base_path,
          "BUNDLE/SHADERS", sizeof(g_defaults.dir.shader));
    */

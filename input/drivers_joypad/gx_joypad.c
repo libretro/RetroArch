@@ -15,14 +15,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../configuration.h"
-#include "../input_autodetect.h"
-
 #include <gccore.h>
 #include <ogc/pad.h>
 #ifdef HW_RVL
 #include <wiiuse/wpad.h>
 #endif
+
+#include "../../configuration.h"
+#include "../../tasks/tasks_internal.h"
 
 #ifdef GEKKO
 #define WPADInit WPAD_Init
@@ -158,7 +158,7 @@ static void handle_hotplug(unsigned port, uint32_t ptype)
       params.idx = port;
       strlcpy(params.name, gx_joypad_name(port), sizeof(params.name));
       strlcpy(params.driver, gx_joypad.ident, sizeof(params.driver));
-      input_config_autoconfigure_joypad(&params);
+      input_autoconfigure_connect(&params);
    }
 }
 

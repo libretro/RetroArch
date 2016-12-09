@@ -27,9 +27,10 @@
 #include "../../config.h"
 #endif
 
+#include "../../gfx/video_driver.h"
 #include "../../configuration.h"
 #include "../input_joypad_driver.h"
-#include "../input_autodetect.h"
+#include "../tasks/tasks_internal.h"
 
 #define MAX_PADS 8
 
@@ -212,12 +213,15 @@ static void qnx_input_autodetect_gamepad(qnx_input_t *qnx,
       strlcpy(settings->input.device_names[port],
             name_buf, sizeof(settings->input.device_names[port]));
 
-      params.idx = port;
       strlcpy(params.name, name_buf, sizeof(params.name));
+
+      params.idx = port;
       params.vid = *controller->vid;
       params.pid = *controller->pid;
+
       strlcpy(params.driver, qnx->joypad->ident, sizeof(params.driver));
-      input_config_autoconfigure_joypad(&params);
+
+      input_autoconfigure_connect(&params);
 
       controller->port = port;
       qnx->port_device[port] = controller;
@@ -420,8 +424,13 @@ static void qnx_process_touch_event(
          {
             if(qnx->pointer[i].contact_id == -1)
             {
+               struct video_viewport vp = {0};
+
                qnx->pointer[i].contact_id = contact_id;
-               input_translate_coord_viewport(pos[0], pos[1],
+
+               video_driver_translate_coord_viewport_wrap(
+                     &vp,
+                     pos[0], pos[1],
                      &qnx->pointer[i].x, &qnx->pointer[i].y,
                      &qnx->pointer[i].full_x, &qnx->pointer[i].full_y);
 
@@ -479,6 +488,7 @@ static void qnx_process_touch_event(
          {
             if(qnx->pointer[i].contact_id == contact_id)
             {
+               struct video_viewport vp = {0};
 #if 0
                gl_t *gl = (gl_t*)video_driver_get_ptr(false);
 
@@ -498,7 +508,8 @@ static void qnx_process_touch_event(
                   pos[1] = gl->full_y;
 #endif
 
-               input_translate_coord_viewport(pos[0], pos[1],
+               video_driver_translate_coord_viewport_wrap(&vp,
+                     pos[0], pos[1],
                      &qnx->pointer[i].x, &qnx->pointer[i].y,
                      &qnx->pointer[i].full_x, &qnx->pointer[i].full_y);
 #if 0

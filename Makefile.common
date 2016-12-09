@@ -183,7 +183,7 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/queues/message_queue.o \
        managers/state_manager.o \
        gfx/drivers_font_renderer/bitmapfont.o \
-       input/input_autodetect.o \
+       tasks/task_autodetect.o \
 		 input/input_autodetect_builtin.o \
        input/input_joypad_driver.o \
        input/input_config.o \
@@ -638,6 +638,7 @@ ifeq ($(HAVE_UDEV), 1)
    DEFINES += $(UDEV_CFLAGS)
    LIBS += $(UDEV_LIBS)
    OBJ += input/drivers/udev_input.o \
+			 input/common/udev_common.o \
           input/drivers_keyboard/keyboard_event_udev.o \
           input/drivers_joypad/udev_joypad.o
 endif
@@ -710,6 +711,16 @@ ifeq ($(HAVE_KMS), 1)
    OBJ += gfx/drivers_context/drm_ctx.o
    DEFINES += $(GBM_CFLAGS) $(DRM_CFLAGS) $(EGL_CFLAGS)
    LIBS += $(GBM_LIBS) $(DRM_LIBS) $(EGL_LIBS)
+endif
+
+ifeq ($(HAVE_CACA), 1)
+   DEFINES += -DHAVE_CACA
+   OBJ += gfx/drivers/caca_gfx.o gfx/drivers_font/caca_font.o
+   LIBS += -lcaca
+
+   ifeq ($(HAVE_MENU_COMMON), 1)
+      OBJ += menu/drivers_display/menu_display_caca.o
+   endif
 endif
 
 ifeq ($(HAVE_PLAIN_DRM), 1)
@@ -859,7 +870,8 @@ ifeq ($(HAVE_VULKAN), 1)
       $(wildcard $(DEPS_DIR)/glslang/glslang/hlsl/*.cpp) \
       $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM)/*.cpp)
 
-   SPIRV_CROSS_SOURCES := $(DEPS_DIR)/SPIRV-Cross/spirv_cross.cpp
+   SPIRV_CROSS_SOURCES := $(DEPS_DIR)/SPIRV-Cross/spirv_cross.cpp \
+								  $(DEPS_DIR)/SPIRV-Cross/spirv_cfg.cpp
    ifneq ($(findstring Win32,$(OS)),)
       # Trivial temporary workaround for MinGW and glslang.
       CXXFLAGS += -fpermissive
@@ -878,7 +890,7 @@ ifeq ($(HAVE_VULKAN), 1)
    CXXFLAGS += -Wno-switch -Wno-sign-compare -fno-strict-aliasing -Wno-maybe-uninitialized -Wno-reorder -Wno-parentheses -Igfx/include
    CFLAGS  += -Igfx/include
 
-   GLSLANG_OBJ := $(GLSLANG_SOURCES:.cpp=.o)
+   GLSLANG_OBJ     := $(GLSLANG_SOURCES:.cpp=.o)
    SPIRV_CROSS_OBJ := $(SPIRV_CROSS_SOURCES:.cpp=.o)
 
    OBJ += gfx/drivers/vulkan.o \
@@ -977,7 +989,9 @@ endif
 
 # Compression/Archive
 
-OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file.o
+OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file.o \
+       $(LIBRETRO_COMM_DIR)/streams/trans_stream.o \
+       $(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.o
 
 ifeq ($(HAVE_7ZIP),1)
    CFLAGS  += -I$(DEPS_DIR)/7zip
@@ -1003,7 +1017,8 @@ endif
 
 
 ifeq ($(HAVE_ZLIB), 1)
-   OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file_zlib.o
+   OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file_zlib.o \
+          $(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.o
    OBJ += $(ZLIB_OBJS)
    DEFINES += -DHAVE_ZLIB
    HAVE_COMPRESSION = 1
@@ -1083,8 +1098,11 @@ ifeq ($(HAVE_NETWORKING), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/net/net_compat.o \
           $(LIBRETRO_COMM_DIR)/net/net_http.o \
           $(LIBRETRO_COMM_DIR)/net/net_socket.o \
+	  $(LIBRETRO_COMM_DIR)/net/net_natt.o \
           network/net_http_special.o \
-          tasks/task_http.o
+          tasks/task_http.o \
+	  tasks/task_netplay_lan_scan.o \
+          tasks/task_wifi.o
 
    ifneq ($(HAVE_SOCKET_LEGACY),1)
    OBJ += $(LIBRETRO_COMM_DIR)/net/net_ifinfo.o
@@ -1104,6 +1122,7 @@ ifeq ($(HAVE_NETWORKING), 1)
 	OBJ += network/netplay/netplay_net.o \
 			 network/netplay/netplay_spectate.o \
 			 network/netplay/netplay_common.o \
+			 network/netplay/netplay_discovery.o \
 			 network/netplay/netplay.o
 
    # Retro Achievements (also depends on threads)
@@ -1119,6 +1138,10 @@ ifeq ($(HAVE_NETWORKING), 1)
    ifeq ($(HAVE_NETWORKGAMEPAD), 1)
       OBJ += input/input_remote.o \
              cores/libretro-net-retropad/net_retropad_core.o
+   endif
+
+   ifeq ($(HAVE_MINIUPNPC), 1)
+      LIBS += -lminiupnpc
    endif
 endif
 

@@ -20,6 +20,7 @@
 
 #include <net/net_compat.h>
 #include <net/net_socket.h>
+#include <net/net_natt.h>
 
 #include "netplay_private.h"
 
@@ -100,7 +101,7 @@ static bool netplay_net_pre_frame(netplay_t *netplay)
          /* If the core can't serialize properly, we must stall for the
           * remote input on EVERY frame, because we can't recover */
          netplay->quirks |= NETPLAY_QUIRK_NO_SAVESTATES;
-         netplay->stall_frames = 0;
+         netplay->delay_frames = 0;
       }
 
       /* If we can't transmit savestates, we must stall until the client is ready */

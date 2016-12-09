@@ -70,7 +70,7 @@
 #include "../audio/audio_driver.h"
 #include "../audio/audio_resampler_driver.h"
 #include "../input/input_config.h"
-#include "../input/input_autodetect.h"
+#include "../tasks/tasks_internal.h"
 #include "../config.def.h"
 #include "../ui/ui_companion_driver.h"
 #include "../performance_counters.h"
@@ -655,11 +655,21 @@ static int setting_handler(rarch_setting_t *setting, unsigned action)
          break;
       case MENU_ACTION_LEFT:
          if (setting->action_left)
-            return setting->action_left(setting, true);
+         {
+            int ret = setting->action_left(setting, false);
+            menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH, NULL);
+            menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE, NULL);
+            return ret;
+         }
          break;
       case MENU_ACTION_RIGHT:
          if (setting->action_right)
-            return setting->action_right(setting, false);
+         {
+            int ret = setting->action_right(setting, false);
+            menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH, NULL);
+            menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE, NULL);
+            return ret;
+         }
          break;
       case MENU_ACTION_SELECT:
          if (setting->action_select)
@@ -1717,7 +1727,7 @@ void general_write_handler(void *data)
       case MENU_ENUM_LABEL_NETPLAY_DELAY_FRAMES:
 #ifdef HAVE_NETWORKING
          {
-            bool val = (settings->netplay.sync_frames > 0);
+            bool val = (settings->netplay.delay_frames > 0);
             
             if (val)
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES, NULL);
@@ -2407,16 +2417,14 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 
-         if (settings->menu.show_advanced_settings)
-         {
-            CONFIG_ACTION(
-                  list, list_info,
-                  MENU_ENUM_LABEL_CORE_SETTINGS,
-                  MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group);
-         }
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_CORE_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2434,16 +2442,14 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 
-         if (settings->menu.show_advanced_settings)
-         {
-            CONFIG_ACTION(
-                  list, list_info,
-                  MENU_ENUM_LABEL_LOGGING_SETTINGS,
-                  MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group);
-         }
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_LOGGING_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2487,13 +2493,21 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
+               MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+
+         CONFIG_ACTION(
+               list, list_info,
                MENU_ENUM_LABEL_MENU_SETTINGS,
                MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
                &group_info,
                &subgroup_info,
                parent_group);
 
-#if !defined(RARCH_CONSOLE) && !defined(HAVE_LAKKA)
+#if !defined(RARCH_CONSOLE)
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS,
@@ -2704,7 +2718,7 @@ static bool setting_append_list(
       case SETTINGS_LIST_CORE:
          {
             unsigned i;
-            struct bool_entry bool_entries[4];
+            struct bool_entry bool_entries[5];
 
             START_GROUP(list, list_info, &group_info,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_SETTINGS), parent_group);
@@ -2735,11 +2749,17 @@ static bool setting_append_list(
             bool_entries[2].default_value  = true;
             bool_entries[2].flags          = SD_FLAG_ADVANCED;
 
-            bool_entries[3].target         = &settings->video.allow_rotate; 
-            bool_entries[3].name_enum_idx  = MENU_ENUM_LABEL_VIDEO_ALLOW_ROTATE;
-            bool_entries[3].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE;
-            bool_entries[3].default_value  = allow_rotate;
+            bool_entries[3].target         = &settings->check_firmware_before_loading;
+            bool_entries[3].name_enum_idx  = MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE;
+            bool_entries[3].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE;
+            bool_entries[3].default_value  = true;
             bool_entries[3].flags          = SD_FLAG_ADVANCED;
+
+            bool_entries[4].target         = &settings->video.allow_rotate;
+            bool_entries[4].name_enum_idx  = MENU_ENUM_LABEL_VIDEO_ALLOW_ROTATE;
+            bool_entries[4].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE;
+            bool_entries[4].default_value  = allow_rotate;
+            bool_entries[4].flags          = SD_FLAG_ADVANCED;
 
             for (i = 0; i < ARRAY_SIZE(bool_entries); i++)
             {
@@ -2904,7 +2924,7 @@ static bool setting_append_list(
       case SETTINGS_LIST_SAVING:
          {
             unsigned i;
-            struct bool_entry bool_entries[6];
+            struct bool_entry bool_entries[7];
 
             START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS), parent_group);
             parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SAVING_SETTINGS);
@@ -2947,6 +2967,12 @@ static bool setting_append_list(
             bool_entries[5].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD;
             bool_entries[5].default_value  = savestate_auto_load;
             bool_entries[5].flags          = SD_FLAG_NONE;
+
+            bool_entries[6].target         = &settings->savestate_thumbnail_enable;
+            bool_entries[6].name_enum_idx  = MENU_ENUM_LABEL_SAVESTATE_THUMBNAIL_ENABLE;
+            bool_entries[6].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE;
+            bool_entries[6].default_value  = savestate_thumbnail_enable;
+            bool_entries[6].flags          = SD_FLAG_NONE;
 
             for (i = 0; i < ARRAY_SIZE(bool_entries); i++)
             {
@@ -3145,7 +3171,6 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
          }
-
          CONFIG_FLOAT(
                list, list_info,
                &settings->video.refresh_rate,
@@ -3323,6 +3348,30 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 1.0, 10.0, 1.0, true, true);
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->video.window_x,
+                  MENU_ENUM_LABEL_VIDEO_WINDOW_WIDTH,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+                  0,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 7680, 8, true, true);
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->video.window_y,
+                  MENU_ENUM_LABEL_VIDEO_WINDOW_HEIGHT,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+                  0,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 4320, 8, true, true);
          }
 
          CONFIG_BOOL(
@@ -3389,6 +3438,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
 
          CONFIG_UINT(
                list, list_info,
@@ -3967,7 +4017,7 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
+            menu_settings_list_current_add_range(list, list_info, 0, 4, 1, true, true);
 
             CONFIG_BOOL(
                   list, list_info,
@@ -4518,22 +4568,6 @@ static bool setting_append_list(
                );
          (*list)[list_info->index - 1].change_handler = overlay_enable_toggle_change_handler;
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->osk.enable,
-               MENU_ENUM_LABEL_INPUT_OSK_OVERLAY_ENABLE,
-               MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_ENABLE,
-               display_keyboard_overlay,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-               );
-
          CONFIG_PATH(
                list, list_info,
                settings->path.overlay,
@@ -4584,20 +4618,6 @@ static bool setting_append_list(
          END_SUB_GROUP(list, list_info, parent_group);
 
          START_SUB_GROUP(list, list_info, "Onscreen Keyboard Overlay", &group_info, &subgroup_info, parent_group);
-
-         CONFIG_PATH(
-               list, list_info,
-               settings->path.osk_overlay,
-               sizeof(settings->path.osk_overlay),
-               MENU_ENUM_LABEL_KEYBOARD_OVERLAY_PRESET,
-               MENU_ENUM_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET,
-               dir_get_ptr(RARCH_DIR_OSK_OVERLAY),
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         menu_settings_list_current_add_values(list, list_info, "cfg");
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -5242,7 +5262,6 @@ static bool setting_append_list(
          END_GROUP(list, list_info, parent_group);
          break;
       case SETTINGS_LIST_USER_INTERFACE:
-#ifndef HAVE_LAKKA
          START_GROUP(list, list_info, &group_info,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS),
                parent_group);
@@ -5335,7 +5354,6 @@ static bool setting_append_list(
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
-#endif
          break;
       case SETTINGS_LIST_PLAYLIST:
          START_GROUP(list, list_info, &group_info,
@@ -5347,7 +5365,6 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "History", &group_info, &subgroup_info, parent_group);
 
-#ifndef HAVE_LAKKA
          CONFIG_BOOL(
                list, list_info,
                &settings->history_list_enable,
@@ -5363,7 +5380,6 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
-#endif
 
          CONFIG_UINT(
                list, list_info,
@@ -5540,10 +5556,10 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  &settings->netplay.sync_frames,
+                  &settings->netplay.delay_frames,
                   MENU_ENUM_LABEL_NETPLAY_DELAY_FRAMES,
                   MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES,
-                  0,
+                  netplay_delay_frames,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -5557,7 +5573,7 @@ static bool setting_append_list(
                   &settings->netplay.check_frames,
                   MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES,
                   MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
-                  0,
+                  netplay_check_frames,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -5571,6 +5587,21 @@ static bool setting_append_list(
                   &settings->netplay.is_spectate,
                   MENU_ENUM_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE,
                   MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE,
+                  false,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->netplay.nat_traversal,
+                  MENU_ENUM_LABEL_NETPLAY_NAT_TRAVERSAL,
+                  MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
                   false,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
@@ -6169,20 +6200,6 @@ static bool setting_append_list(
                MENU_ENUM_LABEL_OVERLAY_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
                g_defaults.dir.overlay,
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-
-         CONFIG_DIR(
-               list, list_info,
-               dir_get_ptr(RARCH_DIR_OSK_OVERLAY),
-               dir_get_size(RARCH_DIR_OSK_OVERLAY),
-               MENU_ENUM_LABEL_OSK_OVERLAY_DIRECTORY,
-               MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
-               g_defaults.dir.osk_overlay,
                MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
                &group_info,
                &subgroup_info,

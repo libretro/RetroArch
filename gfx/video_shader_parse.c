@@ -116,6 +116,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
       struct video_shader_pass *pass, unsigned i)
 {
    char tmp_str[PATH_MAX_LENGTH];
+   char tmp_path[PATH_MAX_LENGTH];
    char shader_name[64];
    char filter_name_buf[64];
    char wrap_name_buf[64];
@@ -148,8 +149,14 @@ static bool video_shader_parse_pass(config_file_t *conf,
       return false;
    }
 
-   strlcpy(pass->source.path, tmp_str, sizeof(pass->source.path));
-   
+   strlcpy(tmp_path, tmp_str, sizeof(tmp_path));
+   path_resolve_realpath(tmp_path, sizeof(tmp_path));
+
+   if (!path_file_exists(tmp_path))
+      strlcpy(pass->source.path, tmp_str, sizeof(pass->source.path));
+   else
+      strlcpy(pass->source.path, tmp_path, sizeof(pass->source.path));
+
    /* Smooth */
    snprintf(filter_name_buf, sizeof(filter_name_buf), "filter_linear%u", i);
 
@@ -323,6 +330,7 @@ static bool video_shader_parse_textures(config_file_t *conf,
    char textures[1024];
    const char *id       = NULL;
    char *save           = NULL;
+   char tmp_path[PATH_MAX_LENGTH];
 
    textures[0] = '\0';
 
@@ -347,6 +355,15 @@ static bool video_shader_parse_textures(config_file_t *conf,
       {
          RARCH_ERR("Cannot find path to texture \"%s\" ...\n", id);
          return false;
+      }
+
+      strlcpy(tmp_path, shader->lut[shader->luts].path, sizeof(tmp_path));
+      path_resolve_realpath(tmp_path, sizeof(tmp_path));
+
+      if (path_file_exists(tmp_path))
+      {
+         strlcpy(shader->lut[shader->luts].path, 
+            tmp_path, sizeof(shader->lut[shader->luts].path));
       }
 
       strlcpy(shader->lut[shader->luts].id, id,
@@ -842,12 +859,17 @@ void video_shader_write_conf_cgp(config_file_t *conf,
    for (i = 0; i < shader->passes; i++)
    {
       char key[64];
+      char tmp[PATH_MAX_LENGTH];
       const struct video_shader_pass *pass = &shader->pass[i];
 
       key[0] = '\0';
 
       snprintf(key, sizeof(key), "shader%u", i);
-      config_set_string(conf, key, pass->source.path);
+      strlcpy(tmp, pass->source.path, sizeof(tmp));
+
+      if (!path_is_absolute(tmp))
+         path_resolve_realpath(tmp, sizeof(tmp));
+      config_set_string(conf, key, tmp);
 
       if (pass->filter != RARCH_FILTER_UNSPEC)
       {

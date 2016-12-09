@@ -22,7 +22,7 @@
 
 #include "../../configuration.h"
 #include "../input_driver.h"
-#include "../input_autodetect.h"
+#include "../../tasks/tasks_internal.h"
 #include "../../verbosity.h"
 
 typedef struct _sdl_joypad
@@ -144,13 +144,14 @@ static void sdl_pad_connect(unsigned id)
    product    = guid_ptr[1];
 #endif
 #endif
-   params.idx = id;
-   strlcpy(params.name, sdl_pad_name(id), sizeof(params.name));
-   params.vid = vendor;
-   params.pid = product;
+   strlcpy(params.name,   sdl_pad_name(id), sizeof(params.name));
    strlcpy(params.driver, sdl_joypad.ident, sizeof(params.driver));
 
-   input_config_autoconfigure_joypad(&params);
+   params.idx = id;
+   params.vid = vendor;
+   params.pid = product;
+
+   input_autoconfigure_connect(&params);
 
    RARCH_LOG("[SDL]: Device #%u (%04x:%04x) connected: %s.\n", id, vendor,
              product, sdl_pad_name(id));
@@ -209,14 +210,14 @@ static void sdl_pad_disconnect(unsigned id)
    if (sdl_pads[id].controller)
    {
       SDL_GameControllerClose(sdl_pads[id].controller);
-      input_config_autoconfigure_disconnect(id, sdl_joypad.ident);
+      input_autoconfigure_disconnect(id, sdl_joypad.ident);
    }
    else
 #endif
    if (sdl_pads[id].joypad)
    {
       SDL_JoystickClose(sdl_pads[id].joypad);
-      input_config_autoconfigure_disconnect(id, sdl_joypad.ident);
+      input_autoconfigure_disconnect(id, sdl_joypad.ident);
    }
 
    settings->input.device_names[id][0] = '\0';

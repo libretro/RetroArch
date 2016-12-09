@@ -32,7 +32,6 @@
 #endif
 
 #include "../font_driver.h"
-#include "../../runloop.h"
 
 #define CT_ATLAS_ROWS 16
 #define CT_ATLAS_COLS 16

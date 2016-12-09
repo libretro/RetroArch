@@ -516,24 +516,26 @@ static bool gl_cg_compile_program(
       void *program_data,
       struct shader_program_info *program_info)
 {
-   const char *list = NULL;
    const char *argv[2 + GFX_MAX_SHADERS];
-   bool ret         = true;
-   char *listing_f  = NULL;
-   char *listing_v  = NULL;
-   unsigned i, argc = 0;
+   const char *list                  = NULL;
+   bool ret                          = true;
+   char *listing_f                   = NULL;
+   char *listing_v                   = NULL;
+   unsigned i, argc                  = 0;
    struct shader_program_cg *program = (struct shader_program_cg*)program_data;
-   cg_shader_data_t *cg = (cg_shader_data_t*)data;
+   cg_shader_data_t              *cg = (cg_shader_data_t*)data;
 
    if (!program)
       program = &cg->prg[idx];
 
    argv[argc++] = "-DPARAMETER_UNIFORM";
+
    for (i = 0; i < GFX_MAX_SHADERS; i++)
    {
       if (*(cg->alias_define[i]))
          argv[argc++] = cg->alias_define[i];
    }
+
    argv[argc] = NULL;
 
    if (program_info->is_file)
@@ -587,7 +589,7 @@ end:
 
 static void gl_cg_set_program_base_attrib(void *data, unsigned i)
 {
-   cg_shader_data_t *cg = (cg_shader_data_t*)data;
+   cg_shader_data_t      *cg = (cg_shader_data_t*)data;
    CGparameter         param = cgGetFirstParameter(
          cg->prg[i].vprg, CG_PROGRAM);
 
@@ -595,8 +597,8 @@ static void gl_cg_set_program_base_attrib(void *data, unsigned i)
    {
       uint32_t semantic_hash;
       const char *semantic = NULL;
-      if (cgGetParameterDirection(param) != CG_IN 
-            || cgGetParameterVariability(param) != CG_VARYING)
+      if (     (cgGetParameterDirection(param)   != CG_IN)
+            || (cgGetParameterVariability(param) != CG_VARYING))
          continue;
 
       semantic = cgGetParameterSemantic(param);
@@ -639,7 +641,7 @@ static void gl_cg_set_program_base_attrib(void *data, unsigned i)
 static bool gl_cg_load_stock(void *data)
 {
    struct shader_program_info program_info;
-   cg_shader_data_t *cg = (cg_shader_data_t*)data;
+   cg_shader_data_t *cg  = (cg_shader_data_t*)data;
 
    program_info.combined = stock_cg_gl_program;
    program_info.is_file  = false;
@@ -659,6 +661,7 @@ error:
 static bool gl_cg_load_plain(void *data, const char *path)
 {
    cg_shader_data_t *cg = (cg_shader_data_t*)data;
+
    if (!gl_cg_load_stock(cg))
       return false;
 
@@ -669,7 +672,12 @@ static bool gl_cg_load_plain(void *data, const char *path)
 
    cg->shader->passes = 1;
 
-   if (path)
+   if (string_is_empty(path))
+   {
+      RARCH_LOG("Loading stock Cg file.\n");
+      cg->prg[1] = cg->prg[0];
+   }
+   else
    {
       struct shader_program_info program_info;
 
@@ -682,11 +690,6 @@ static bool gl_cg_load_plain(void *data, const char *path)
       if (!gl_cg_compile_program(data, 1, &cg->prg[1], &program_info))
          return false;
    }
-   else
-   {
-      RARCH_LOG("Loading stock Cg file.\n");
-      cg->prg[1] = cg->prg[0];
-   }
 
    video_shader_resolve_parameters(NULL, cg->shader);
    return true;
@@ -697,7 +700,7 @@ static bool gl_cg_load_imports(void *data)
    unsigned i;
    retro_ctx_memory_info_t mem_info;
    struct state_tracker_info tracker_info = {0};
-   cg_shader_data_t *cg = (cg_shader_data_t*)data;
+   cg_shader_data_t                   *cg = (cg_shader_data_t*)data;
 
    if (!cg->shader->variables)
       return true;
@@ -728,9 +731,9 @@ static bool gl_cg_load_imports(void *data)
       }
    }
 
-   mem_info.data = NULL;
-   mem_info.size = 0;
-   mem_info.id   = RETRO_MEMORY_SYSTEM_RAM;
+   mem_info.data          = NULL;
+   mem_info.size          = 0;
+   mem_info.id            = RETRO_MEMORY_SYSTEM_RAM;
 
    core_get_memory(&mem_info);
 
@@ -741,7 +744,7 @@ static bool gl_cg_load_imports(void *data)
 #ifdef HAVE_PYTHON
    if (*cg->shader->script_path)
    {
-      tracker_info.script = cg->shader->script_path;
+      tracker_info.script         = cg->shader->script_path;
       tracker_info.script_is_file = true;
    }
 
@@ -759,7 +762,7 @@ static bool gl_cg_load_imports(void *data)
 static bool gl_cg_load_shader(void *data, unsigned i)
 {
    struct shader_program_info program_info;
-   cg_shader_data_t *cg = (cg_shader_data_t*)data;
+   cg_shader_data_t *cg  = (cg_shader_data_t*)data;
 
    program_info.combined = cg->shader->pass[i].source.path;
    program_info.is_file  = true;
@@ -776,7 +779,7 @@ static bool gl_cg_load_shader(void *data, unsigned i)
 static bool gl_cg_load_preset(void *data, const char *path)
 {
    unsigned i;
-   config_file_t *conf = NULL;
+   config_file_t  *conf = NULL;
    cg_shader_data_t *cg = (cg_shader_data_t*)data;
 
    if (!gl_cg_load_stock(cg))
@@ -816,11 +819,13 @@ static bool gl_cg_load_preset(void *data, const char *path)
    }
 
    for (i = 0; i < cg->shader->passes; i++)
+   {
       if (*cg->shader->pass[i].alias)
          snprintf(cg->alias_define[i],
                sizeof(cg->alias_define[i]),
                "-D%s_ALIAS",
                cg->shader->pass[i].alias);
+   }
 
    for (i = 0; i < cg->shader->passes; i++)
    {
@@ -1042,7 +1047,8 @@ static void *gl_cg_init(void *data, const char *path)
 
    memset(cg->alias_define, 0, sizeof(cg->alias_define));
 
-   if (path && string_is_equal(path_get_extension(path), "cgp"))
+   if (    !string_is_empty(path) 
+         && string_is_equal(path_get_extension(path), "cgp"))
    {
       if (!gl_cg_load_preset(cg, path))
          goto error;
@@ -1086,10 +1092,10 @@ static void *gl_cg_init(void *data, const char *path)
 
    gl_cg_compile_program(
          cg,
-         VIDEO_SHADER_MENU_SEC,
-         &cg->prg[VIDEO_SHADER_MENU_SEC],
+         VIDEO_SHADER_MENU_2,
+         &cg->prg[VIDEO_SHADER_MENU_2],
          &shader_prog_info);
-   gl_cg_set_program_base_attrib(cg, VIDEO_SHADER_MENU_SEC);
+   gl_cg_set_program_base_attrib(cg, VIDEO_SHADER_MENU_2);
 
    shader_prog_info.combined = stock_xmb_snow;
    shader_prog_info.is_file  = false;

@@ -19,48 +19,36 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <fcntl.h>
+#include <sys/epoll.h>
+
 #include "epoll_common.h"
 
 #include "../../verbosity.h"
 
-static int g_epoll;
-static bool epoll_inited;
-static bool epoll_first_inited_is_joypad;
-
-bool epoll_new(bool is_joypad)
+bool epoll_new(int *epoll_fd)
 {
-   if (epoll_inited)
-      return true;
-
-   g_epoll              = epoll_create(32);
-   if (g_epoll < 0)
+   *epoll_fd = epoll_create(32);
+   if (*epoll_fd < 0)
       return false;
-
-   epoll_first_inited_is_joypad = is_joypad;
-   epoll_inited = true;
 
    return true;
 }
 
-void epoll_free(bool is_joypad)
+void epoll_free(int *epoll_fd)
 {
-   if (!epoll_inited || (is_joypad && !epoll_first_inited_is_joypad))
-      return;
+   if (*epoll_fd >= 0)
+      close(*epoll_fd);
 
-   if (g_epoll >= 0)
-      close(g_epoll);
-   g_epoll = -1;
-
-   epoll_inited                 = false;
-   epoll_first_inited_is_joypad = false;
+   *epoll_fd = -1;
 }
 
-int epoll_waiting(struct epoll_event *events, int maxevents, int timeout)
+int epoll_waiting(int *epoll_fd, void *events, int maxevents, int timeout)
 {
-   return epoll_wait(g_epoll, events, maxevents, timeout);
+   return epoll_wait(*epoll_fd, (struct epoll_event*)events, maxevents, timeout);
 }
 
-bool epoll_add(int fd, void *device)
+bool epoll_add(int *epoll_fd, int fd, void *device)
 {
    struct epoll_event event    = {0};
 
@@ -68,7 +56,7 @@ bool epoll_add(int fd, void *device)
    event.data.ptr           = device;
 
    /* Shouldn't happen, but just check it. */
-   if (epoll_ctl(g_epoll, EPOLL_CTL_ADD, fd, &event) < 0)
+   if (epoll_ctl(*epoll_fd, EPOLL_CTL_ADD, fd, &event) < 0)
    {
       RARCH_ERR("Failed to add FD (%d) to epoll list (%s).\n",
             fd, strerror(errno));

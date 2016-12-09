@@ -41,7 +41,7 @@ class WIMPSHARED_EXPORT Wimp : public QGuiApplication
     public:
         Wimp(int argc, char *argv[]): QGuiApplication(argc, argv) {}
 
-        /* create the main QT window */
+        /* create the main Qt window */
         int CreateMainWindow();
 
         /* get a pointer to RetroArch settings */

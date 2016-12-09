@@ -25,9 +25,9 @@
 #include "config.h"
 #endif
 
-enum
+enum video_driver_enum
 {
-   VIDEO_GL = 0,
+   VIDEO_GL                 = 0,
    VIDEO_VULKAN,
    VIDEO_DRM,
    VIDEO_XVIDEO,
@@ -43,13 +43,16 @@ enum
    VIDEO_CTR,
    VIDEO_D3D9,
    VIDEO_VG,
-   VIDEO_NULL,
    VIDEO_OMAP,
    VIDEO_EXYNOS,
    VIDEO_SUNXI,
    VIDEO_DISPMANX,
+   VIDEO_NULL,
+};
 
-   AUDIO_RSOUND,
+enum audio_driver_enum
+{
+   AUDIO_RSOUND             = VIDEO_NULL + 1,
    AUDIO_OSS,
    AUDIO_ALSA,
    AUDIO_ALSATHREAD,
@@ -72,12 +75,19 @@ enum
    AUDIO_PSP,
    AUDIO_CTR,
    AUDIO_NULL,
+};
 
-   AUDIO_RESAMPLER_CC,
+enum audio_resampler_driver_enum
+{
+   AUDIO_RESAMPLER_CC       = AUDIO_NULL + 1,
    AUDIO_RESAMPLER_SINC,
    AUDIO_RESAMPLER_NEAREST,
+   AUDIO_RESAMPLER_NULL
+};
 
-   INPUT_ANDROID,
+enum input_driver_enum
+{
+   INPUT_ANDROID            = AUDIO_RESAMPLER_NULL + 1,
    INPUT_SDL,
    INPUT_SDL2,
    INPUT_X,
@@ -96,8 +106,11 @@ enum
    INPUT_QNX,
    INPUT_RWEBINPUT,
    INPUT_NULL,
+};
 
-   JOYPAD_PS3,
+enum joypad_driver_enum
+{
+   JOYPAD_PS3               = INPUT_NULL + 1,
    JOYPAD_XINPUT,
    JOYPAD_GX,
    JOYPAD_WIIU,
@@ -112,30 +125,49 @@ enum
    JOYPAD_HID,
    JOYPAD_QNX,
    JOYPAD_NULL,
+};
 
-   CAMERA_V4L2,
+enum camera_driver_enum
+{
+   CAMERA_V4L2              = JOYPAD_NULL + 1,
    CAMERA_RWEBCAM,
    CAMERA_ANDROID,
    CAMERA_AVFOUNDATION,
    CAMERA_NULL,
+};
 
-   WIFI_CONNMANCTL,
+enum wifi_driver_enum
+{
+   WIFI_CONNMANCTL          = CAMERA_NULL + 1,
    WIFI_NULL,
+};
 
-   LOCATION_ANDROID,
+enum location_driver_enum
+{
+   LOCATION_ANDROID         = WIFI_NULL + 1,
    LOCATION_CORELOCATION,
    LOCATION_NULL,
+};
 
-   OSK_PS3,
+enum osk_driver_enum
+{
+   OSK_PS3                  = LOCATION_NULL + 1,
    OSK_NULL,
+};
 
-   MENU_RGUI,
+enum menu_driver_enum
+{
+   MENU_RGUI                = OSK_NULL + 1,
    MENU_XUI,
    MENU_MATERIALUI,
    MENU_XMB,
    MENU_NUKLEAR,
+   MENU_NULL
+};
 
-   RECORD_FFMPEG,
+enum record_driver_enum
+{
+   RECORD_FFMPEG            = MENU_NULL + 1,
    RECORD_NULL
 };
 
@@ -191,12 +223,12 @@ enum
 #define AUDIO_DEFAULT_DRIVER AUDIO_PSP
 #elif defined(_3DS)
 #define AUDIO_DEFAULT_DRIVER AUDIO_CTR
+#elif defined(HAVE_PULSE)
+#define AUDIO_DEFAULT_DRIVER AUDIO_PULSE
 #elif defined(HAVE_ALSA) && defined(HAVE_VIDEOCORE)
 #define AUDIO_DEFAULT_DRIVER AUDIO_ALSATHREAD
 #elif defined(HAVE_ALSA)
 #define AUDIO_DEFAULT_DRIVER AUDIO_ALSA
-#elif defined(HAVE_PULSE)
-#define AUDIO_DEFAULT_DRIVER AUDIO_PULSE
 #elif defined(HAVE_OSS)
 #define AUDIO_DEFAULT_DRIVER AUDIO_OSS
 #elif defined(HAVE_JACK)
@@ -351,8 +383,10 @@ enum
 #define MENU_DEFAULT_DRIVER MENU_MATERIALUI
 #elif defined(HAVE_XMB)
 #define MENU_DEFAULT_DRIVER MENU_XMB
-#else
+#elif defined(HAVE_RGUI)
 #define MENU_DEFAULT_DRIVER MENU_RGUI
+#else
+#define MENU_DEFAULT_DRIVER MENU_NULL
 #endif
 
 #if defined(XENON) || defined(_XBOX360) || defined(__CELLOS_LV2__)
@@ -421,6 +455,12 @@ static const bool windowed_fullscreen = true;
  * specific monitors, 1 being the first monitor. */
 static const unsigned monitor_index = 0;
 
+/* Window */
+/* Window size. A value of 0 uses window scale
+ * multiplied by the core framebuffer size. */
+static const unsigned window_x = 0;
+static const unsigned window_y = 0;
+
 /* Fullscreen resolution. A value of 0 uses the desktop
  * resolution. */
 static const unsigned fullscreen_x = 0;
@@ -431,7 +471,7 @@ static const bool load_dummy_on_core_shutdown = false;
 #else
 static const bool load_dummy_on_core_shutdown = true;
 #endif
-
+static const bool check_firmware_before_loading = false;
 /* Forcibly disable composition.
  * Only valid on Windows Vista/7/8 for now. */
 static const bool disable_composition = false;
@@ -599,14 +639,6 @@ static bool default_auto_shaders_enable = true;
 static bool default_sort_savefiles_enable = false;
 static bool default_sort_savestates_enable = false;
 
-static unsigned default_menu_btn_ok          = RETRO_DEVICE_ID_JOYPAD_A;
-static unsigned default_menu_btn_cancel      = RETRO_DEVICE_ID_JOYPAD_B;
-static unsigned default_menu_btn_search      = RETRO_DEVICE_ID_JOYPAD_X;
-static unsigned default_menu_btn_default     = RETRO_DEVICE_ID_JOYPAD_START;
-static unsigned default_menu_btn_info        = RETRO_DEVICE_ID_JOYPAD_SELECT;
-static unsigned default_menu_btn_scroll_down = RETRO_DEVICE_ID_JOYPAD_R;
-static unsigned default_menu_btn_scroll_up   = RETRO_DEVICE_ID_JOYPAD_L;
-
 #if defined(__CELLOS_LV2__) || defined(_XBOX1) || defined(_XBOX360)
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_L3_R3;
 #elif defined(VITA)
@@ -766,6 +798,10 @@ static const unsigned autosave_interval = 0;
  * user 1 rather than user 2. */
 static const bool netplay_client_swap_input = true;
 
+static const unsigned netplay_delay_frames = 16;
+
+static const unsigned netplay_check_frames = 30;
+
 /* On save state load, block SRAM from being overwritten.
  * This could potentially lead to buggy games. */
 static const bool block_sram_overwrite = false;
@@ -782,6 +818,8 @@ static const bool savestate_auto_index = false;
  * startup if savestate_auto_load is set. */
 static const bool savestate_auto_save = false;
 static const bool savestate_auto_load = false;
+
+static const bool savestate_thumbnail_enable = false;
 
 /* Slowmotion ratio. */
 static const float slowmotion_ratio = 3.0;
@@ -959,6 +997,7 @@ static const struct retro_keybind retro_keybinds_1[] = {
    { true, RARCH_DISK_NEXT,                MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_NEXT,            RETROK_UNKNOWN, NO_BTN, 0, AXIS_NONE },
    { true, RARCH_DISK_PREV,                MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,            RETROK_UNKNOWN, NO_BTN, 0, AXIS_NONE },
    { true, RARCH_GRAB_MOUSE_TOGGLE,        MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,    RETROK_F11,     NO_BTN, 0, AXIS_NONE },
+   { true, RARCH_GAME_FOCUS_TOGGLE,        MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE,    RETROK_SCROLLOCK,  NO_BTN, 0, AXIS_NONE },
    { true, RARCH_MENU_TOGGLE,              MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,          RETROK_F1,      NO_BTN, 0, AXIS_NONE },
 };
 

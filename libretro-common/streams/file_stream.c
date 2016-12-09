@@ -63,6 +63,7 @@
 
 #include <streams/file_stream.h>
 #include <memmap.h>
+#include <retro_miscellaneous.h>
 
 struct RFILE
 {
@@ -72,6 +73,11 @@ struct RFILE
 #else
 
 #define HAVE_BUFFERED_IO 1
+
+#define MODE_STR_READ "r"
+#define MODE_STR_READ_UNBUF "rb"
+#define MODE_STR_WRITE_UNBUF "wb"
+#define MODE_STR_WRITE_PLUS "w+"
 
 #if defined(HAVE_BUFFERED_IO)
    FILE *fp;
@@ -129,7 +135,7 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
 #else
 #if defined(HAVE_BUFFERED_IO)
          if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
-            mode_str = "r";
+            mode_str = MODE_STR_READ;
 #endif
          /* No "else" here */
          flags    = O_RDONLY;
@@ -142,7 +148,7 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
 #else
 #if defined(HAVE_BUFFERED_IO)
          if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
-            mode_str = "rb";
+            mode_str = MODE_STR_READ_UNBUF;
 #endif
          /* No "else" here */
          flags    = O_RDONLY;
@@ -155,7 +161,7 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
 #else
 #if defined(HAVE_BUFFERED_IO)
          if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
-            mode_str = "wb";
+            mode_str = MODE_STR_WRITE_UNBUF;
 #endif
          else
          {
@@ -173,7 +179,7 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
 #else
 #if defined(HAVE_BUFFERED_IO)
          if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
-            mode_str = "w+";
+            mode_str = MODE_STR_WRITE_PLUS;
 #endif
          else
          {
@@ -199,6 +205,7 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
    else
 #endif
    {
+      /* FIXME: HAVE_BUFFERED_IO is always 1, but if it is ever changed, open() needs to be changed to _wopen() for WIndows. */
       stream->fd = open(path, flags);
       if (stream->fd == -1)
          goto error;

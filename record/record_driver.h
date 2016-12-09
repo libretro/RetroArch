@@ -180,6 +180,8 @@ unsigned *recording_driver_get_height(void);
 
 void recording_driver_free_state(void);
 
+extern void *recording_data;
+
 RETRO_END_DECLS
 
 #endif

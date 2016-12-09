@@ -35,13 +35,11 @@
 #include "../../config.h"
 #endif
 
-#include "../input_autodetect.h"
+#include "../../tasks/tasks_internal.h"
 #include "../input_config.h"
 
 #include "../../configuration.h"
-#include "../../runloop.h"
 #include "../../verbosity.h"
-
 
 /* Check if the definitions do not already exist.
  * Official and mingw xinput headers have different include guards.
@@ -268,7 +266,7 @@ static bool xinput_joypad_init(void *data)
          params.idx = autoconf_pad;
          strlcpy(params.name, xinput_joypad_name(autoconf_pad), sizeof(params.name));
          strlcpy(params.driver, xinput_joypad.ident, sizeof(params.driver));
-         input_config_autoconfigure_joypad(&params);
+         input_autoconfigure_connect(&params);
       }
    }
 

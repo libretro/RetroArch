@@ -51,6 +51,7 @@
 #include "../../performance_counters.h"
 
 #include "../../defines/d3d_defines.h"
+#include "../../runloop.h"
 #include "../../verbosity.h"
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
@@ -488,7 +489,7 @@ void d3d_make_d3dpp(void *data,
 {
    d3d_video_t     *d3d = (d3d_video_t*)data;
    settings_t *settings = config_get_ptr();
-#ifdef _XBOX
+#ifdef _XBOX360
    /* TODO/FIXME - get rid of global state dependencies. */
    global_t *global     = global_get_ptr();
 #endif
@@ -1166,7 +1167,6 @@ static void *d3d_init(const video_info_t *info,
    d3d->keep_aspect       = info->force_aspect;
 #ifdef _XBOX
    video_driver_set_own_driver();
-   video_input_ctl(RARCH_INPUT_CTL_SET_OWN_DRIVER, NULL);
 #endif
 
    return d3d;
@@ -1225,69 +1225,6 @@ static void d3d_free(void *data)
 
    win32_destroy_window();
 }
-
-#ifdef _XBOX
-
-#ifdef _XBOX1
-#include <formats/image.h>
-
-static bool texture_image_render(d3d_video_t *d3d,
-      struct texture_image *out_img,
-      int x, int y, int w, int h, bool force_fullscreen)
-{
-   LPDIRECT3DTEXTURE d3dt;
-   LPDIRECT3DVERTEXBUFFER d3dv;
-   void *verts           = NULL;
-   float fX              = (float)(x);
-   float fY              = (float)(y);
-
-   if (!d3d)
-      return false;
-
-   d3dt = (LPDIRECT3DTEXTURE)out_img->texture_buf;
-   d3dv = (LPDIRECT3DVERTEXBUFFER)out_img->vertex_buf;
-
-   if (!d3dt || !d3dv)
-      return false;
-
-   /* Create the new vertices. */
-   Vertex newVerts[] =
-   {
-      // x,           y,              z,     color, u ,v
-      {fX,            fY,             0.0f,  0,     0, 0},
-      {fX + w,        fY,             0.0f,  0,     1, 0},
-      {fX + w,        fY + h,         0.0f,  0,     1, 1},
-      {fX,            fY + h,         0.0f,  0,     0, 1}
-   };
-
-   /* Load the existing vertices */
-   verts = d3d_vertex_buffer_lock(d3dv);
-
-   if (!verts)
-      return false;
-
-   /* Copy the new verts over the old verts */
-   memcpy(verts, newVerts, sizeof(newVerts));
-   d3d_vertex_buffer_unlock(d3dv);
-
-   d3d_enable_blend_func(d3d->dev);
-   d3d_enable_alpha_blend_texture_func(d3d->dev);
-
-   /* Draw the quad. */
-   d3d_set_texture(d3d->dev, 0, d3dt);
-   d3d_set_stream_source(d3d->dev, 0,
-         d3dv, 0, sizeof(Vertex));
-   d3d_set_vertex_shader(d3d->dev, D3DFVF_CUSTOMVERTEX, NULL);
-
-   if (force_fullscreen)
-      d3d_set_viewport(d3d, w, h, force_fullscreen, false);
-   d3d_draw_primitive(d3d->dev, D3DPT_QUADLIST, 0, 1);
-
-   return true;
-}
-#endif
-
-#endif
 
 #ifdef HAVE_OVERLAY
 static void d3d_overlay_tex_geom(

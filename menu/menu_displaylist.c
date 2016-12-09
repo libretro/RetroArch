@@ -40,6 +40,10 @@
 #include "../cheevos.h"
 #endif
 
+#ifdef HAVE_NETWORKING
+#include "../network/netplay/netplay_discovery.h"
+#endif
+
 #ifdef __linux__
 #include "../frontend/drivers/platform_linux.h"
 #endif
@@ -70,6 +74,7 @@
 #include "../performance_counters.h"
 #include "../core_info.h"
 #include "../wifi/wifi_driver.h"
+#include "../tasks/tasks_internal.h"
 
 #ifdef HAVE_NETWORKING
 static void print_buf_lines(file_list_t *list, char *buf,
@@ -376,23 +381,18 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
          {
             if (core_info->firmware[i].desc)
             {
-               snprintf(tmp, sizeof(tmp), "	%s: %s",
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME),
-                     core_info->firmware[i].desc ?
-                     core_info->firmware[i].desc : "");
-               menu_entries_append_enum(info->list, tmp, "",
-                     MENU_ENUM_LABEL_CORE_INFO_ENTRY,
-                     MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-
-               snprintf(tmp, sizeof(tmp), "	%s: %s, %s",
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATUS),
+               snprintf(tmp, sizeof(tmp), "(!) %s, %s: %s",
                      core_info->firmware[i].missing ?
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MISSING) :
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PRESENT),
                      core_info->firmware[i].optional ?
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OPTIONAL) :
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REQUIRED)
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REQUIRED),
+                     core_info->firmware[i].desc ?
+                     core_info->firmware[i].desc :
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME)
                      );
+
                menu_entries_append_enum(info->list, tmp, "",
                      MENU_ENUM_LABEL_CORE_INFO_ENTRY,
                      MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
@@ -403,13 +403,6 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
    if (core_info->notes)
    {
-      fill_pathname_noext(tmp,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NOTES),
-            ": ",
-            sizeof(tmp));
-      menu_entries_append_enum(info->list, tmp, "",
-            MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-
       for (i = 0; i < core_info->note_list->size; i++)
       {
          strlcpy(tmp,
@@ -429,16 +422,12 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 static int menu_displaylist_parse_network_info(menu_displaylist_info_t *info)
 {
    unsigned k              = 0;
-   net_ifinfo_t      *list =
-      (net_ifinfo_t*)calloc(1, sizeof(*list));
+   net_ifinfo_t      list;
 
-   if (!list)
+   if (!net_ifinfo_new(&list))
       return -1;
 
-   if (!net_ifinfo_new(list))
-      return -1;
-
-   for (k = 0; k < list->size; k++)
+   for (k = 0; k < list.size; k++)
    {
       char tmp[255];
 
@@ -446,12 +435,12 @@ static int menu_displaylist_parse_network_info(menu_displaylist_info_t *info)
 
       snprintf(tmp, sizeof(tmp), "%s (%s) : %s\n",
             msg_hash_to_str(MSG_INTERFACE),
-            list->entries[k].name, list->entries[k].host);
+            list.entries[k].name, list.entries[k].host);
       menu_entries_append_enum(info->list, tmp, "",
             MENU_ENUM_LABEL_NETWORK_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    }
 
-   net_ifinfo_free(list);
+   net_ifinfo_free(&list);
    return 0;
 }
 #endif
@@ -1563,6 +1552,10 @@ static int menu_displaylist_parse_netplay(
          msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_SETTINGS),
          MENU_ENUM_LABEL_NETWORK_SETTINGS, MENU_SETTING_GROUP, 0, 0);
 
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_LAN_SCAN_SETTINGS),
+         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS),
+         MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS, MENU_SETTING_GROUP, 0, 0);
 #else
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
@@ -3919,7 +3912,9 @@ static bool menu_displaylist_push_internal(
 
       menu_displaylist_reset_filebrowser();
       info->type = 42;
-      strlcpy(info->exts, "lpl", sizeof(info->exts));
+      strlcpy(info->exts,
+            file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT),
+            sizeof(info->exts));
       strlcpy(info->label,
             msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
             sizeof(info->label));
@@ -3932,7 +3927,9 @@ static bool menu_displaylist_push_internal(
    {
       menu_displaylist_reset_filebrowser();
       info->type = 42;
-      strlcpy(info->exts, "lpl", sizeof(info->exts));
+      strlcpy(info->exts,
+            file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT),
+            sizeof(info->exts));
       strlcpy(info->label,
             msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
             sizeof(info->label));
@@ -3946,7 +3943,9 @@ static bool menu_displaylist_push_internal(
 
       menu_displaylist_reset_filebrowser();
       info->type = 42;
-      strlcpy(info->exts, "lpl", sizeof(info->exts));
+      strlcpy(info->exts,
+            file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT),
+            sizeof(info->exts));
       strlcpy(info->label,
             msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
             sizeof(info->label));
@@ -3979,7 +3978,9 @@ static bool menu_displaylist_push_internal(
 
       menu_displaylist_reset_filebrowser();
       info->type = 42;
-      strlcpy(info->exts, "lpl", sizeof(info->exts));
+      strlcpy(info->exts,
+            file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT),
+            sizeof(info->exts));
       strlcpy(info->label,
             msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
             sizeof(info->label));
@@ -4211,6 +4212,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_FRAME_THROTTLE_SETTINGS_LIST:
       case DISPLAYLIST_REWIND_SETTINGS_LIST:
       case DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST:
+      case DISPLAYLIST_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST:
       case DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST:
       case DISPLAYLIST_MENU_SETTINGS_LIST:
       case DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST:
@@ -4218,6 +4220,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_UPDATER_SETTINGS_LIST:
       case DISPLAYLIST_WIFI_SETTINGS_LIST:
       case DISPLAYLIST_NETWORK_SETTINGS_LIST:
+      case DISPLAYLIST_NETPLAY_LAN_SCAN_SETTINGS_LIST:
       case DISPLAYLIST_LAKKA_SERVICES_LIST:
       case DISPLAYLIST_USER_SETTINGS_LIST:
       case DISPLAYLIST_DIRECTORY_SETTINGS_LIST:
@@ -4612,6 +4615,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_SAVESTATE_AUTO_LOAD,
                PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_SAVESTATE_THUMBNAIL_ENABLE,
+               PARSE_ONLY_BOOL, false);
 
          info->need_refresh = true;
          info->need_push    = true;
@@ -4631,6 +4637,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push    = true;
          break;
       case DISPLAYLIST_FRAME_THROTTLE_SETTINGS_LIST:
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_REWIND_SETTINGS,   PARSE_ACTION, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_FASTFORWARD_RATIO,
                PARSE_ONLY_FLOAT, false);
@@ -4658,6 +4666,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST:
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS,   PARSE_ACTION, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,   PARSE_ACTION, false);
+
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
+      case DISPLAYLIST_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST:
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_VIDEO_FONT_ENABLE,
                PARSE_ONLY_BOOL, false);
@@ -4688,9 +4703,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_INPUT_OSK_OVERLAY_ENABLE,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_OVERLAY_PRESET,
                PARSE_ONLY_PATH, false);
          menu_displaylist_parse_settings_enum(menu, info,
@@ -4699,9 +4711,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_OVERLAY_SCALE,
                PARSE_ONLY_FLOAT, false);
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_KEYBOARD_OVERLAY_PRESET,
-               PARSE_ONLY_PATH, false);
 
          info->need_refresh = true;
          info->need_push    = true;
@@ -4883,27 +4892,47 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_WIFI_SETTINGS_LIST:
          if (string_is_equal(settings->wifi.driver, "null"))
             menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
-                  msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
-                  MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_NETWORKS_FOUND),
+                  MENU_ENUM_LABEL_NO_NETWORKS_FOUND,
                   0, 0, 0);
+#ifdef HAVE_NETWORKING
          else
          {
-            unsigned i;
             struct string_list *ssid_list = string_list_new();
-            driver_wifi_scan();
             driver_wifi_get_ssids(ssid_list);
 
-            for (i = 0; i < ssid_list->size; i++)
+            if (ssid_list->size == 0)
             {
-               const char *ssid = ssid_list->elems[i].data;
+               task_push_wifi_scan();
+
                menu_entries_append_enum(info->list,
-                     ssid,
-                     msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_WIFI),
-                     MENU_ENUM_LABEL_CONNECT_WIFI,
-                     MENU_WIFI, 0, 0);
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND),
+                     msg_hash_to_str(MENU_ENUM_LABEL_NO_NETWORKS_FOUND),
+                     MENU_ENUM_LABEL_NO_NETWORKS_FOUND,
+                     0, 0, 0);
+            }
+            else
+            {
+               unsigned i;
+               for (i = 0; i < ssid_list->size; i++)
+               {
+                  const char *ssid = ssid_list->elems[i].data;
+                  menu_entries_append_enum(info->list,
+                        ssid,
+                        msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_WIFI),
+                        MENU_ENUM_LABEL_CONNECT_WIFI,
+                        MENU_WIFI, 0, 0);
+               }
             }
          }
+#else
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND),
+               msg_hash_to_str(MENU_ENUM_LABEL_NO_NETWORKS_FOUND),
+               MENU_ENUM_LABEL_NO_NETWORKS_FOUND,
+               0, 0, 0);
+#endif
 
          info->need_refresh = true;
          info->need_push    = true;
@@ -4936,6 +4965,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                count++;
             if (menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_NETPLAY_CLIENT_SWAP_INPUT,
+                  PARSE_ONLY_BOOL, false) != -1)
+               count++;
+            if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_NETPLAY_NAT_TRAVERSAL,
                   PARSE_ONLY_BOOL, false) != -1)
                count++;
             if (menu_displaylist_parse_settings_enum(menu, info,
@@ -4979,6 +5012,50 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                      MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
                      0, 0, 0);
          }
+
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
+      case DISPLAYLIST_NETPLAY_LAN_SCAN_SETTINGS_LIST:
+#ifdef HAVE_NETWORKING
+         {
+            struct netplay_host_list *hosts;
+
+            if (!netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, &hosts))
+               hosts = NULL;
+
+            if (!hosts || hosts->size == 0)
+            {
+               if (!hosts)
+                  task_push_netplay_lan_scan();
+
+               menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND),
+                     msg_hash_to_str(MENU_ENUM_LABEL_NO_NETPLAY_HOSTS_FOUND),
+                     MENU_ENUM_LABEL_NO_NETPLAY_HOSTS_FOUND,
+                     0, 0, 0);
+            }
+            else
+            {
+               size_t i;
+               for (i = 0; i < hosts->size; i++)
+               {
+                  struct netplay_host *host = &hosts->hosts[i];
+                  menu_entries_append_enum(info->list,
+                        host->nick,
+                        msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_LAN),
+                        MENU_ENUM_LABEL_CONNECT_NETPLAY_LAN,
+                        MENU_NETPLAY_LAN_SCAN, 0, 0);
+               }
+            }
+         }
+#else
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND),
+               msg_hash_to_str(MENU_ENUM_LABEL_NO_NETPLAY_HOSTS_FOUND),
+               MENU_ENUM_LABEL_NO_NETPLAY_HOSTS_FOUND,
+               0, 0, 0);
+#endif
 
          info->need_refresh = true;
          info->need_push    = true;
@@ -5067,9 +5144,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                PARSE_ONLY_DIR, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_OVERLAY_DIRECTORY,
-               PARSE_ONLY_DIR, false);
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_OSK_OVERLAY_DIRECTORY,
                PARSE_ONLY_DIR, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_SCREENSHOT_DIRECTORY,
@@ -5178,6 +5252,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_VIDEO_SCALE,
                PARSE_ONLY_FLOAT, false);
          menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_WINDOW_WIDTH,
+               PARSE_ONLY_UINT, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_WINDOW_HEIGHT,
+               PARSE_ONLY_UINT, false);
+         menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
@@ -5235,6 +5315,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_VIDEO_ALLOW_ROTATE,
@@ -5369,8 +5452,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_LOGGING_SETTINGS,   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS,   PARSE_ACTION, false);
-         ret = menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_REWIND_SETTINGS,   PARSE_ACTION, false);
          if (!string_is_equal(settings->record.driver, "null"))
             ret = menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_RECORDING_SETTINGS,   PARSE_ACTION, false);
@@ -5386,6 +5467,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_WIFI_SETTINGS,   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_NETWORK_SETTINGS,   PARSE_ACTION, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS,   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_LAKKA_SERVICES,   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,

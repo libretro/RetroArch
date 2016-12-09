@@ -28,7 +28,10 @@
 #include "../../gfx/video_context_driver.h"
 #include "../../gfx/drivers/d3d.h"
 #include "../../gfx/common/d3d_common.h"
+
+#ifdef HAVE_D3D9
 #include "../../gfx/include/d3d9/d3dx9math.h"
+#endif
 
 #define BYTE_CLAMP(i) (int) ((((i) > 255) ? 255 : (((i) < 0) ? 0 : (i))))
 
@@ -202,7 +205,7 @@ static void menu_display_d3d_draw_pipeline(void *data)
    switch (draw->pipeline.id)
    {
       case VIDEO_SHADER_MENU:
-      case VIDEO_SHADER_MENU_SEC:
+      case VIDEO_SHADER_MENU_2:
       case VIDEO_SHADER_MENU_3:
          shader_info.data                = NULL;
          shader_info.idx                 = draw->pipeline.id;

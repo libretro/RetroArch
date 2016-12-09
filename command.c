@@ -294,6 +294,7 @@ static const struct cmd_map map[] = {
    { "DISK_NEXT",              RARCH_DISK_NEXT },
    { "DISK_PREV",              RARCH_DISK_PREV },
    { "GRAB_MOUSE_TOGGLE",      RARCH_GRAB_MOUSE_TOGGLE },
+   { "GAME_FOCUS_TOGGLE",           RARCH_GAME_FOCUS_TOGGLE },
    { "MENU_TOGGLE",            RARCH_MENU_TOGGLE },
    { "MENU_UP",                RETRO_DEVICE_ID_JOYPAD_UP },
    { "MENU_DOWN",              RETRO_DEVICE_ID_JOYPAD_DOWN },
@@ -1899,7 +1900,7 @@ bool command_event(enum event_command cmd, void *data)
          settings->state_slot++;
          break;
       case CMD_EVENT_TAKE_SCREENSHOT:
-         if (!take_screenshot())
+         if (!take_screenshot(path_get(RARCH_PATH_BASENAME), false))
             return false;
          break;
       case CMD_EVENT_UNLOAD_CORE:
@@ -1936,6 +1937,7 @@ bool command_event(enum event_command cmd, void *data)
          video_driver_reinit();
          /* Poll input to avoid possibly stale data to corrupt things. */
          input_driver_poll();
+         command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, (void *) -1);
 
 #ifdef HAVE_MENU
          menu_display_set_framebuffer_dirty_flag();
@@ -2034,7 +2036,8 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_OVERLAY_DEINIT:
 #ifdef HAVE_OVERLAY
-         input_overlay_free();
+         input_overlay_free(overlay_ptr);
+         overlay_ptr = NULL;
 #endif
          break;
       case CMD_EVENT_OVERLAY_INIT:
@@ -2046,7 +2049,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_OVERLAY_NEXT:
 #ifdef HAVE_OVERLAY
-         input_overlay_next(settings->input.overlay_opacity);
+         input_overlay_next(overlay_ptr, settings->input.overlay_opacity);
 #endif
          break;
       case CMD_EVENT_DSP_FILTER_DEINIT:
@@ -2184,17 +2187,17 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_OVERLAY_SET_SCALE_FACTOR:
 #ifdef HAVE_OVERLAY
-         input_overlay_set_scale_factor(NULL, settings->input.overlay_scale);
+         input_overlay_set_scale_factor(overlay_ptr, settings->input.overlay_scale);
 #endif
          break;
       case CMD_EVENT_OVERLAY_SET_ALPHA_MOD:
 #ifdef HAVE_OVERLAY
-         input_overlay_set_alpha_mod(settings->input.overlay_opacity);
+         input_overlay_set_alpha_mod(overlay_ptr, settings->input.overlay_opacity);
 #endif
          break;
       case CMD_EVENT_AUDIO_REINIT:
          {
-            int flags = DRIVER_AUDIO;
+            int flags = DRIVER_AUDIO_MASK;
             driver_ctl(RARCH_DRIVER_CTL_UNINIT, &flags);
             driver_ctl(RARCH_DRIVER_CTL_INIT, &flags);
          }
@@ -2358,7 +2361,7 @@ bool command_event(enum event_command cmd, void *data)
          command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 #ifdef HAVE_NETWORKING
          if (!init_netplay(
-              settings->netplay.is_spectate, settings->netplay.server,
+              settings->netplay.is_spectate, data, settings->netplay.server,
               settings->netplay.port))
             return false;
 #endif
@@ -2492,6 +2495,42 @@ bool command_event(enum event_command cmd, void *data)
                video_driver_hide_mouse();
             else
                video_driver_show_mouse();
+         }
+         break;
+      case CMD_EVENT_GAME_FOCUS_TOGGLE:
+         {
+            static bool game_focus_state  = false;
+            long int mode = (long int)data;
+            
+            /* mode = -1: restores current game focus state
+             * mode =  1: force set game focus, instead of toggling
+             * any other: toggle
+             */
+            if (mode == 1)
+                game_focus_state = true;
+            else if (mode != -1)
+                game_focus_state = !game_focus_state;
+
+            RARCH_LOG("%s: %s.\n",
+                  "Game focus is: ",
+                  game_focus_state ? "on" : "off");
+
+            if (game_focus_state) {
+               input_driver_grab_mouse();
+               video_driver_hide_mouse();
+               input_driver_set_hotkey_block();
+               input_driver_keyboard_mapping_set_block(1);
+               runloop_msg_queue_push(msg_hash_to_str(MSG_GAME_FOCUS_ON),
+                                                      1, 120, true);
+            } else {
+               input_driver_ungrab_mouse();
+               video_driver_show_mouse();
+               input_driver_unset_hotkey_block();
+               input_driver_keyboard_mapping_set_block(0);
+               runloop_msg_queue_push(msg_hash_to_str(MSG_GAME_FOCUS_OFF),
+                                                      1, 120, true);
+            }
+
          }
          break;
       case CMD_EVENT_PERFCNT_REPORT_FRONTEND_LOG:

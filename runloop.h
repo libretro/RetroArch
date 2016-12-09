@@ -54,6 +54,10 @@ enum runloop_ctl_state
    RUNLOOP_CTL_SET_OVERRIDES_ACTIVE,
    RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE,
 
+   RUNLOOP_CTL_IS_MISSING_BIOS,
+   RUNLOOP_CTL_SET_MISSING_BIOS,
+   RUNLOOP_CTL_UNSET_MISSING_BIOS,
+
    RUNLOOP_CTL_IS_GAME_OPTIONS_ACTIVE,
    RUNLOOP_CTL_SET_GAME_OPTIONS_ACTIVE,
    RUNLOOP_CTL_UNSET_GAME_OPTIONS_ACTIVE,
@@ -173,7 +177,7 @@ typedef struct global
          } resolutions;
 
          unsigned gamma_correction;
-         unsigned char flicker_filter_index;
+         unsigned int flicker_filter_index;
          unsigned char soft_filter_index;
          bool pal_enable;
          bool pal60_enable;
@@ -214,8 +218,6 @@ int runloop_iterate(unsigned *sleep_ms);
 
 void runloop_msg_queue_push(const char *msg, unsigned prio,
       unsigned duration, bool flush);
-
-char* runloop_msg_queue_pull(void);
 
 bool runloop_ctl(enum runloop_ctl_state state, void *data);
 

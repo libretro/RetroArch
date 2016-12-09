@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C)      2016 - Gregor Richards
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -20,7 +21,9 @@
 #include "netplay.h"
 
 #include <net/net_compat.h>
+#include <net/net_natt.h>
 #include <features/features_cpu.h>
+#include <streams/trans_stream.h>
 #include <retro_endianness.h>
 
 #include "../../core.h"
@@ -34,8 +37,9 @@
 #define WORDS_PER_FRAME 4 /* Allows us to send 128 bits worth of state per frame. */
 #define MAX_SPECTATORS 16
 #define RARCH_DEFAULT_PORT 55435
+#define RARCH_DEFAULT_NICK "Anonymous"
 
-#define NETPLAY_PROTOCOL_VERSION 2
+#define NETPLAY_PROTOCOL_VERSION 3
 
 #define PREV_PTR(x) ((x) == 0 ? netplay->buffer_size - 1 : (x) - 1)
 #define NEXT_PTR(x) ((x + 1) % netplay->buffer_size)
@@ -65,6 +69,14 @@
    (RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT)
 #define NETPLAY_QUIRK_MAP_PLATFORM_DEPENDENT \
    (RETRO_SERIALIZATION_QUIRK_PLATFORM_DEPENDENT)
+
+/* Compression protocols supported */
+#define NETPLAY_COMPRESSION_ZLIB (1<<0)
+#if HAVE_ZLIB
+#define NETPLAY_COMPRESSION_SUPPORTED NETPLAY_COMPRESSION_ZLIB
+#else
+#define NETPLAY_COMPRESSION_SUPPORTED 0
+#endif
 
 struct delta_frame
 {
@@ -115,12 +127,25 @@ struct netplay
    int fd;
    /* TCP port (if serving) */
    uint16_t tcp_port;
+   /* NAT traversal info (if NAT traversal is used and serving) */
+   bool nat_traversal;
+   struct natt_status nat_traversal_state;
    /* Which port is governed by netplay (other user)? */
    unsigned port;
    bool has_connection;
 
    struct delta_frame *buffer;
    size_t buffer_size;
+
+   /* Compression transcoder */
+   const struct trans_stream_backend *compression_backend;
+   void *compression_stream;
+   const struct trans_stream_backend *decompression_backend;
+   void *decompression_stream;
+
+   /* A buffer into which to compress frames for transfer */
+   uint8_t *zbuffer;
+   size_t zbuffer_size;
 
    /* Pointer where we are now. */
    size_t self_ptr; 
@@ -189,7 +214,7 @@ struct netplay
    bool remote_paused;
 
    /* And stalling */
-   uint32_t stall_frames;
+   uint32_t delay_frames;
    int stall;
    retro_time_t stall_time;
 
@@ -234,6 +259,8 @@ bool netplay_cmd_crc(netplay_t *netplay, struct delta_frame *delta);
 
 bool netplay_cmd_request_savestate(netplay_t *netplay);
 
-bool netplay_ad_server(netplay_t *netplay, int ad_fd);
+/* DISCOVERY: */
+
+bool netplay_lan_ad_server(netplay_t *netplay);
 
 #endif

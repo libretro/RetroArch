@@ -74,8 +74,8 @@ typedef struct video_pixel_scaler
  * Used by e.g. input drivers which bind to a window.
  * Drivers are responsible for setting these if an input driver
  * could potentially make use of this. */
-static uintptr_t video_driver_display;
-static uintptr_t video_driver_window;
+static uintptr_t video_driver_display                    = 0;
+static uintptr_t video_driver_window                     = 0;
 
 static rarch_softfilter_t *video_driver_state_filter     = NULL;
 static void               *video_driver_state_buffer     = NULL;
@@ -223,6 +223,9 @@ static const video_driver_t *video_drivers[] = {
 #endif
 #ifdef HAVE_XSHM
    &video_xshm,
+#endif
+#ifdef HAVE_CACA
+   &video_caca,
 #endif
    &video_null,
    NULL,
@@ -674,16 +677,24 @@ static bool init_video(void)
    }
    else
    {
-      if (settings->video.force_aspect)
+      if(settings->video.window_x || settings->video.window_y)
       {
-         /* Do rounding here to simplify integer scale correctness. */
-         unsigned base_width =
-            roundf(geom->base_height * video_driver_get_aspect_ratio());
-         width  = roundf(base_width * settings->video.scale);
+         width = settings->video.window_x;
+         height = settings->video.window_y;
       }
       else
-         width  = roundf(geom->base_width   * settings->video.scale);
-      height = roundf(geom->base_height * settings->video.scale);
+      {
+         if (settings->video.force_aspect)
+         {
+            /* Do rounding here to simplify integer scale correctness. */
+            unsigned base_width =
+               roundf(geom->base_height * video_driver_get_aspect_ratio());
+            width  = roundf(base_width * settings->video.scale);
+         }
+         else
+            width  = roundf(geom->base_width   * settings->video.scale);
+         height = roundf(geom->base_height * settings->video.scale);
+      }
    }
 
    if (width && height)
@@ -1103,7 +1114,7 @@ static bool video_driver_frame_filter(const void *data,
          data, width, height, pitch);
    performance_counter_stop(&softfilter_process);
 
-   if (settings->video.post_filter_record)
+   if (settings->video.post_filter_record && recording_data)
       recording_dump_frame(video_driver_state_buffer,
             *output_width, *output_height, *output_pitch);
 
@@ -1136,7 +1147,7 @@ bool video_driver_cached_frame(void)
    void *recording  = recording_driver_get_data_ptr();
 
    /* Cannot allow recording when pushing duped frames. */
-   recording_driver_clear_data_ptr();
+   recording_data   = NULL;
 
    /* Not 100% safe, since the library might have
     * freed the memory, but no known implementations do this.
@@ -1150,7 +1161,7 @@ bool video_driver_cached_frame(void)
 
    core_frame(&info);
 
-   recording_driver_set_data_ptr(recording);
+   recording_data   = recording;
 
    return true;
 }
@@ -1281,7 +1292,7 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
 #ifdef _XBOX1
    CONFIG_UINT(
          list, list_info,
-         &settings->video.swap_interval,
+         &global->console.screen.flicker_filter_index,
          MENU_ENUM_LABEL_VIDEO_FILTER_FLICKER,
          MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER,
          0,
@@ -1296,31 +1307,24 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
 }
 
 
-static void video_driver_lock(void)
-{
 #ifdef HAVE_THREADS
-   if (!display_lock)
-      return;
-   slock_lock(display_lock);
-#endif
-}
+#define video_driver_lock() \
+   if (display_lock) \
+      slock_lock(display_lock)
 
-static void video_driver_unlock(void)
-{
-#ifdef HAVE_THREADS
-   if (!display_lock)
-      return;
-   slock_unlock(display_lock);
-#endif
-}
+#define video_driver_unlock() \
+   if (display_lock) \
+      slock_unlock(display_lock)
 
-static void video_driver_lock_free(void)
-{
-#ifdef HAVE_THREADS
-   slock_free(display_lock);
-   display_lock = NULL;
+#define video_driver_lock_free() \
+   slock_free(display_lock); \
+   display_lock = NULL
+
+#else
+#define video_driver_lock()      ((void)0)
+#define video_driver_unlock()    ((void)0)
+#define video_driver_lock_free() ((void)0)
 #endif
-}
 
 static void video_driver_lock_new(void)
 {
@@ -2079,8 +2083,8 @@ void video_driver_frame(const void *data, unsigned width,
              !video_driver_state_filter
           || !settings->video.post_filter_record 
           || !data
-          || video_driver_has_gpu_record()
-         )
+          || video_driver_record_gpu_buffer
+         ) && recording_data
       )
       recording_dump_frame(data, width, height, pitch);
 
@@ -2159,5 +2163,59 @@ bool video_driver_texture_unload(uintptr_t *id)
 
    video_driver_poke->unload_texture(video_driver_data, *id);
    *id = 0;
+   return true;
+}
+
+/**
+ * video_driver_translate_coord_viewport:
+ * @mouse_x                        : Pointer X coordinate.
+ * @mouse_y                        : Pointer Y coordinate.
+ * @res_x                          : Scaled  X coordinate.
+ * @res_y                          : Scaled  Y coordinate.
+ * @res_screen_x                   : Scaled screen X coordinate.
+ * @res_screen_y                   : Scaled screen Y coordinate.
+ *
+ * Translates pointer [X,Y] coordinates into scaled screen
+ * coordinates based on viewport info.
+ *
+ * Returns: true (1) if successful, false if video driver doesn't support
+ * viewport info.
+ **/
+bool video_driver_translate_coord_viewport(
+      void *data,
+      int mouse_x,           int mouse_y,
+      int16_t *res_x,        int16_t *res_y,
+      int16_t *res_screen_x, int16_t *res_screen_y)
+{
+   int scaled_screen_x, scaled_screen_y, scaled_x, scaled_y;
+   struct video_viewport *vp = (struct video_viewport*)data;
+   int norm_full_vp_width    = (int)vp->full_width;
+   int norm_full_vp_height   = (int)vp->full_height;
+
+   if (norm_full_vp_width <= 0 || norm_full_vp_height <= 0)
+      return false;
+
+   scaled_screen_x     = (2 * mouse_x * 0x7fff) / norm_full_vp_width  - 0x7fff;
+   scaled_screen_y     = (2 * mouse_y * 0x7fff) / norm_full_vp_height - 0x7fff;
+   if (scaled_screen_x < -0x7fff || scaled_screen_x > 0x7fff)
+      scaled_screen_x  = -0x8000; /* OOB */
+   if (scaled_screen_y < -0x7fff || scaled_screen_y > 0x7fff)
+      scaled_screen_y  = -0x8000; /* OOB */
+
+   mouse_x           -= vp->x;
+   mouse_y           -= vp->y;
+
+   scaled_x           = (2 * mouse_x * 0x7fff) / norm_full_vp_width  - 0x7fff;
+   scaled_y           = (2 * mouse_y * 0x7fff) / norm_full_vp_height - 0x7fff;
+   if (scaled_x < -0x7fff || scaled_x > 0x7fff)
+      scaled_x        = -0x8000; /* OOB */
+   if (scaled_y < -0x7fff || scaled_y > 0x7fff)
+      scaled_y        = -0x8000; /* OOB */
+
+   *res_x             = scaled_x;
+   *res_y             = scaled_y;
+   *res_screen_x      = scaled_screen_x;
+   *res_screen_y      = scaled_screen_y;
+
    return true;
 }

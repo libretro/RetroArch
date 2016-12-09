@@ -55,6 +55,8 @@
 #include "../../verbosity.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
+#include "../../playlist.h"
+#include "../../runloop.h"
 
 #include "../../tasks/tasks_internal.h"
 
@@ -164,10 +166,14 @@ typedef struct xmb_handle
    float x;
    float alpha;
    uintptr_t thumbnail;
+   uintptr_t savestate_thumbnail;
    float thumbnail_width;
    float thumbnail_height;
+   float savestate_thumbnail_width;
+   float savestate_thumbnail_height;
    char background_file_path[PATH_MAX_LENGTH];
    char thumbnail_file_path[PATH_MAX_LENGTH];
+   char savestate_thumbnail_file_path[PATH_MAX_LENGTH];
 
    struct
    {
@@ -369,8 +375,8 @@ const char *xmb_theme_ident(void)
          return "pixel";
       case XMB_ICON_THEME_NEOACTIVE:
          return "neoactive";
-      case XMB_ICON_THEME_MONOCHROME_JAGGED:
-         return "monochrome-jagged";
+      case XMB_ICON_THEME_SYSTEMATIC:
+         return "systematic";
       case XMB_ICON_THEME_CUSTOM:
          return "custom";
       case XMB_ICON_THEME_MONOCHROME:
@@ -583,7 +589,7 @@ static void xmb_draw_icon(
 }
 
 static void xmb_draw_thumbnail(xmb_handle_t *xmb, float *color,
-      unsigned width, unsigned height)
+      unsigned width, unsigned height, float w, float h, uintptr_t texture)
 {
    settings_t *settings = config_get_ptr();
    unsigned i;
@@ -592,7 +598,7 @@ static void xmb_draw_thumbnail(xmb_handle_t *xmb, float *color,
    struct video_coords coords;
    math_matrix_4x4 mymat;
    float shadow[16];
-   float y = xmb->margins.screen.top + xmb->icon.size + xmb->thumbnail_height;
+   float y = xmb->margins.screen.top + xmb->icon.size + h;
    float x = xmb->margins.screen.left + xmb->icon.spacing.horizontal +
       xmb->icon.spacing.horizontal*4 - xmb->icon.size / 4;
 
@@ -610,11 +616,11 @@ static void xmb_draw_thumbnail(xmb_handle_t *xmb, float *color,
    coords.tex_coord     = NULL;
    coords.lut_tex_coord = NULL;
 
-   draw.width       = xmb->thumbnail_width;
-   draw.height      = xmb->thumbnail_height;
+   draw.width       = w;
+   draw.height      = h;
    draw.coords      = &coords;
    draw.matrix_data = &mymat;
-   draw.texture     = xmb->thumbnail;
+   draw.texture     = texture;
    draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline.id = 0;
 
@@ -833,10 +839,14 @@ end:
 static void xmb_update_thumbnail_path(void *data, unsigned i)
 {
    menu_entry_t entry;
+   char tmp_new[PATH_MAX_LENGTH];
    char             *tmp    = NULL;
    char *scrub_char_pointer = NULL;
    settings_t     *settings = config_get_ptr();
    xmb_handle_t     *xmb    = (xmb_handle_t*)data;
+   playlist_t     *playlist = NULL;
+   const char    *core_name = NULL;
+
    if (!xmb)
       return;
 
@@ -853,6 +863,21 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
 
    menu_entry_get(&entry, 0, i, NULL, true);
 
+   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
+
+   if (playlist)
+   {
+      playlist_get_index(playlist, i,
+            NULL, NULL, NULL, &core_name, NULL, NULL);
+
+      if (core_name && string_is_equal(core_name, "imageviewer"))
+      {
+         strlcpy(xmb->thumbnail_file_path, entry.label,
+               sizeof(xmb->thumbnail_file_path));
+         return;
+      }
+   }
+
    fill_pathname_join(
          xmb->thumbnail_file_path,
          settings->directory.thumbnails,
@@ -867,27 +892,76 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
     * Replace these characters in the entry name with underscores
     */
    tmp = strdup(entry.path);
-   
+
    while((scrub_char_pointer = strpbrk(tmp, "&*/:`<>?\\|")))
-   {
       *scrub_char_pointer = '_';
-   }
 
    /* Look for thumbnail file with this scrubbed filename */
-  if (tmp)
-   {
-      char tmp_new[PATH_MAX_LENGTH];
+   tmp_new[0] = '\0';
 
-      tmp_new[0] = '\0';
-
-      fill_pathname_join(tmp_new, xmb->thumbnail_file_path, tmp, sizeof(tmp_new));
-      strlcpy(xmb->thumbnail_file_path, tmp_new, sizeof(xmb->thumbnail_file_path));
-      free(tmp);
-   }
+   fill_pathname_join(tmp_new, xmb->thumbnail_file_path, tmp, sizeof(tmp_new));
+   strlcpy(xmb->thumbnail_file_path, tmp_new, sizeof(xmb->thumbnail_file_path));
+   free(tmp);
 
    strlcat(xmb->thumbnail_file_path,
          file_path_str(FILE_PATH_PNG_EXTENSION),
          sizeof(xmb->thumbnail_file_path));
+}
+
+static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
+{
+   menu_entry_t entry;
+   settings_t     *settings = config_get_ptr();
+   global_t         *global = global_get_ptr();
+   xmb_handle_t     *xmb    = (xmb_handle_t*)data;
+   playlist_t     *playlist = NULL;
+
+   if (!xmb)
+      return;
+
+   entry.path[0]       = '\0';
+   entry.label[0]      = '\0';
+   entry.sublabel[0]   = '\0';
+   entry.value[0]      = '\0';
+   entry.rich_label[0] = '\0';
+   entry.enum_idx      = MSG_UNKNOWN;
+   entry.entry_idx     = 0;
+   entry.idx           = 0;
+   entry.type          = 0;
+   entry.spacing       = 0;
+
+   menu_entry_get(&entry, 0, i, NULL, true);
+
+   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
+
+   if (settings->savestate_thumbnail_enable
+         && (string_is_equal(entry.label, "state_slot")
+         || string_is_equal(entry.label, "loadstate")
+         || string_is_equal(entry.label, "savestate")))
+   {
+      char path[PATH_MAX_LENGTH] = {0};
+      if (settings->state_slot > 0)
+         snprintf(path, sizeof(path), "%s%d",
+               global->name.savestate, settings->state_slot);
+      else if (settings->state_slot < 0)
+         fill_pathname_join_delim(path,
+               global->name.savestate, "auto", '.', sizeof(path));
+      else
+         strlcpy(path, global->name.savestate, sizeof(path));
+
+      strlcat(path, file_path_str(FILE_PATH_PNG_EXTENSION), sizeof(path));
+
+      if (path_file_exists(path))
+      {
+         strlcpy(xmb->savestate_thumbnail_file_path, path,
+               sizeof(xmb->savestate_thumbnail_file_path));
+         return;
+      }
+      else
+         xmb->savestate_thumbnail_file_path[0] = '\0';
+   }
+   else
+      xmb->savestate_thumbnail_file_path[0] = '\0';
 }
 
 static void xmb_update_thumbnail_image(void *data)
@@ -896,18 +970,26 @@ static void xmb_update_thumbnail_image(void *data)
    if (!xmb)
       return;
 
-
    if (path_file_exists(xmb->thumbnail_file_path))
-   {
-#if 0
-      RARCH_LOG("path: %s\n", xmb->thumbnail_file_path);
-#endif
       task_push_image_load(xmb->thumbnail_file_path,
             MENU_ENUM_LABEL_CB_MENU_THUMBNAIL,
             menu_display_handle_thumbnail_upload, NULL);
-   }
    else if (xmb->depth == 1)
       xmb->thumbnail = 0;
+}
+
+static void xmb_update_savestate_thumbnail_image(void *data)
+{
+   xmb_handle_t *xmb = (xmb_handle_t*)data;
+   if (!xmb)
+      return;
+
+   if (path_file_exists(xmb->savestate_thumbnail_file_path))
+      task_push_image_load(xmb->savestate_thumbnail_file_path,
+            MENU_ENUM_LABEL_CB_MENU_SAVESTATE_THUMBNAIL,
+            menu_display_handle_savestate_thumbnail_upload, NULL);
+   else
+      xmb->savestate_thumbnail = 0;
 }
 
 static void xmb_selection_pointer_changed(
@@ -962,6 +1044,8 @@ static void xmb_selection_pointer_changed(
             xmb_update_thumbnail_path(xmb, i);
             xmb_update_thumbnail_image(xmb);
          }
+         xmb_update_savestate_thumbnail_path(xmb, i);
+         xmb_update_savestate_thumbnail_image(xmb);
       }
 
       if (     (!allow_animations)
@@ -1492,7 +1576,7 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
    strlcpy(info.path,
          settings->directory.playlist,
          sizeof(info.path));
-   strlcpy(info.exts, "lpl", sizeof(info.exts));
+   strlcpy(info.exts, file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT), sizeof(info.exts));
 
    if (menu_displaylist_ctl(DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, &info))
    {
@@ -1729,6 +1813,7 @@ static void xmb_populate_entries(void *data,
       menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
       if (!string_is_equal(xmb_thumbnails_ident(), "OFF"))
          xmb_update_thumbnail_image(xmb);
+      xmb_update_savestate_thumbnail_image(xmb);
       return;
    }
 
@@ -1867,32 +1952,32 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
    return xmb->textures.list[XMB_TEXTURE_SUBSETTING];
 }
 
-char* word_wrap (char* buffer, char* string, int line_width) {
+char* word_wrap(char* buffer, char* string, int line_width) {
    unsigned i = 0;
    int k, counter;
 
-   while(i < strlen( string ) )
+   while(i < strlen(string))
    {
       /* copy string until the end of the line is reached */
-      for ( counter = 1; counter <= line_width; counter++ )
+      for (counter = 1; counter <= line_width; counter++)
       {
          /* check if end of string reached */
-         if ( i == strlen( string ) )
+         if (i == strlen(string))
          {
-            buffer[ i ] = 0;
+            buffer[i] = 0;
             return buffer;
          }
 
-         buffer[ i ] = string[ i ];
+         buffer[i] = string[i];
 
          /* check for newlines embedded in the original input
           * and reset the index */
-         if ( buffer[ i ] == '\n' )
+         if (buffer[i] == '\n')
             counter = 1;
          i++;
       }
       /* check for whitespace */
-      if ( isspace( string[ i ] ) )
+      if (string[i] == ' ')
       {
          buffer[i] = '\n';
          i++;
@@ -1900,11 +1985,11 @@ char* word_wrap (char* buffer, char* string, int line_width) {
       else
       {
          /* check for nearest whitespace back in string */
-         for ( k = i; k > 0; k--)
+         for (k = i; k > 0; k--)
          {
-            if ( isspace( string[ k ] ) )
+            if (string[k] == ' ')
             {
-               buffer[ k ] = '\n';
+               buffer[k] = '\n';
                /* set string index back to character after this one */
                i = k + 1;
                break;
@@ -1912,7 +1997,8 @@ char* word_wrap (char* buffer, char* string, int line_width) {
          }
       }
    }
-   buffer[ i ] = 0;
+
+   buffer[i] = 0;
 
    return buffer;
 }
@@ -2011,16 +2097,16 @@ static void xmb_draw_items(xmb_handle_t *xmb,
 
       menu_entry_get_value(i, list, entry_value, sizeof(entry_value));
 
-      if (string_is_equal(entry_value, "disabled") ||
-            string_is_equal(entry_value, "off"))
+      if (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
+         (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))))
       {
          if (xmb->textures.list[XMB_TEXTURE_SWITCH_OFF])
             texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_OFF];
          else
             do_draw_text = true;
       }
-      else if (string_is_equal(entry_value, "enabled") ||
-            string_is_equal(entry_value, "on"))
+      else if (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) ||
+            (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))))
       {
          if (xmb->textures.list[XMB_TEXTURE_SWITCH_ON])
             texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_ON];
@@ -2029,7 +2115,9 @@ static void xmb_draw_items(xmb_handle_t *xmb,
       }
       else
       {
-         switch (msg_hash_to_file_type(msg_hash_calculate(entry_value)))
+         enum msg_file_type type = msg_hash_to_file_type(msg_hash_calculate(entry_value));
+
+         switch (type)
          {
             case FILE_TYPE_COMPRESSED:
             case FILE_TYPE_MORE:
@@ -2062,7 +2150,8 @@ static void xmb_draw_items(xmb_handle_t *xmb,
 
       if (string_is_empty(entry_value))
       {
-         if (!string_is_equal(xmb_thumbnails_ident(), "OFF") && xmb->thumbnail)
+         if (xmb->savestate_thumbnail ||
+            (!string_is_equal(xmb_thumbnails_ident(), "OFF") && xmb->thumbnail))
             ticker_limit = 40;
          else
             ticker_limit = 70;
@@ -2288,15 +2377,18 @@ static void xmb_draw_bg(
 
       menu_display_draw_gradient(&draw);
 
-      draw.pipeline.id = VIDEO_SHADER_MENU_SEC;
+      draw.pipeline.id = VIDEO_SHADER_MENU_2;
 
       switch (settings->menu.xmb.shader_pipeline)
       {
          case XMB_SHADER_PIPELINE_RIBBON:
             draw.pipeline.id  = VIDEO_SHADER_MENU;
             break;
-         case XMB_SHADER_PIPELINE_SNOW:
+         case XMB_SHADER_PIPELINE_SIMPLE_SNOW:
             draw.pipeline.id  = VIDEO_SHADER_MENU_3;
+            break;
+         case XMB_SHADER_PIPELINE_SNOW:
+            draw.pipeline.id  = VIDEO_SHADER_MENU_4;
             break;
          default:
             break;
@@ -2436,19 +2528,10 @@ static void xmb_frame(void *data)
          xmb->margins.title.top, 1, 1, TEXT_ALIGN_LEFT,
          width, height, xmb->font);
 
-/* uncomment to print the messages on the XMB status line
-   if (string_is_empty(runloop_msg_queue_pull()))
-   {*/
-      if (menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
-         xmb_draw_text(xmb, title_msg, xmb->margins.title.left,
-               height - xmb->margins.title.bottom, 1, 1, TEXT_ALIGN_LEFT,
-               width, height, xmb->font);
-/*   }
-   else
-      xmb_draw_text(xmb, runloop_msg_queue_pull(), xmb->margins.title.left,
-         height - xmb->margins.title.bottom, 1, 1, TEXT_ALIGN_LEFT,
-         width, height);
-*/
+   if (menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
+      xmb_draw_text(xmb, title_msg, xmb->margins.title.left,
+            height - xmb->margins.title.bottom, 1, 1, TEXT_ALIGN_LEFT,
+            width, height, xmb->font);
 
    rotate_draw.matrix       = &mymat;
    rotate_draw.rotation     = 0;
@@ -2460,8 +2543,15 @@ static void xmb_frame(void *data)
    menu_display_rotate_z(&rotate_draw);
    menu_display_blend_begin();
 
-   if (!string_is_equal(xmb_thumbnails_ident(), "OFF") && xmb->thumbnail)
-      xmb_draw_thumbnail(xmb, &coord_white[0], width, height);
+   if (xmb->savestate_thumbnail)
+      xmb_draw_thumbnail(xmb, &coord_white[0], width, height,
+            xmb->savestate_thumbnail_width, xmb->savestate_thumbnail_height,
+            xmb->savestate_thumbnail);
+   else if (xmb->thumbnail
+      && !string_is_equal(xmb_thumbnails_ident(), "OFF"))
+      xmb_draw_thumbnail(xmb, &coord_white[0], width, height,
+            xmb->thumbnail_width, xmb->thumbnail_height,
+            xmb->thumbnail);
 
    /* Clock image */
    menu_display_set_alpha(coord_white, MIN(xmb->alpha, 1.00f));
@@ -2668,6 +2758,7 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
    xmb->margins.screen.top       = (256+32) * scale_factor;
 
    xmb->thumbnail_width          = 460.0 * scale_factor;
+   xmb->savestate_thumbnail_width= 460.0 * scale_factor;
    xmb->cursor.size              = 64.0;
 
    xmb->icon.spacing.horizontal  = 200.0 * scale_factor;
@@ -2720,6 +2811,7 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
    xmb->margins.screen.top       = (256+32) * scale_factor;
 
    xmb->thumbnail_width          = 460.0 * scale_factor;
+   xmb->savestate_thumbnail_width= 460.0 * scale_factor;
    xmb->cursor.size              = 64.0;
 
    xmb->icon.spacing.horizontal  = 250.0 * scale_factor;
@@ -3017,6 +3109,16 @@ static bool xmb_load_image(void *userdata, void *data, enum menu_image_type type
                   TEXTURE_FILTER_MIPMAP_LINEAR, &xmb->thumbnail);
          }
          break;
+      case MENU_IMAGE_SAVESTATE_THUMBNAIL:
+         {
+            struct texture_image *img = (struct texture_image*)data;
+            xmb->savestate_thumbnail_height = xmb->savestate_thumbnail_width
+               * (float)img->height / (float)img->width;
+            video_driver_texture_unload(&xmb->savestate_thumbnail);
+            video_driver_texture_load(data,
+                  TEXTURE_FILTER_MIPMAP_LINEAR, &xmb->savestate_thumbnail);
+         }
+         break;
    }
 
    return true;
@@ -3208,6 +3310,7 @@ static void xmb_context_reset(void *data)
 
    if (!string_is_equal(xmb_thumbnails_ident(), "OFF"))
       xmb_update_thumbnail_image(xmb);
+   xmb_update_savestate_thumbnail_image(xmb);
 }
 
 static void xmb_navigation_clear(void *data, bool pending_push)
@@ -3745,4 +3848,6 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_update_thumbnail_path,
    xmb_update_thumbnail_image,
    xmb_osk_ptr_at_pos,
+   xmb_update_savestate_thumbnail_path,
+   xmb_update_savestate_thumbnail_image
 };

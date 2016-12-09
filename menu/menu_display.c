@@ -80,6 +80,9 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #ifdef _3DS
    &menu_display_ctx_ctr,
 #endif
+#ifdef HAVE_CACA
+   &menu_display_ctx_caca,
+#endif
    &menu_display_ctx_null,
    NULL,
 };
@@ -133,6 +136,10 @@ static bool menu_display_check_compatibility(
          break;
       case MENU_VIDEO_DRIVER_CTR:
          if (string_is_equal(video_driver, "ctr"))
+            return true;
+         break;
+      case MENU_VIDEO_DRIVER_CACA:
+         if (string_is_equal(video_driver, "caca"))
             return true;
          break;
    }
@@ -653,6 +660,22 @@ void menu_display_handle_thumbnail_upload(void *task_data,
 
    load_image_info.data = img;
    load_image_info.type = MENU_IMAGE_THUMBNAIL;
+
+   menu_driver_ctl(RARCH_MENU_CTL_LOAD_IMAGE, &load_image_info);
+
+   image_texture_free(img);
+   free(img);
+   free(user_data);
+}
+
+void menu_display_handle_savestate_thumbnail_upload(void *task_data,
+      void *user_data, const char *err)
+{
+   menu_ctx_load_image_t load_image_info;
+   struct texture_image *img = (struct texture_image*)task_data;
+
+   load_image_info.data = img;
+   load_image_info.type = MENU_IMAGE_SAVESTATE_THUMBNAIL;
 
    menu_driver_ctl(RARCH_MENU_CTL_LOAD_IMAGE, &load_image_info);
 

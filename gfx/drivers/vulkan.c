@@ -2076,9 +2076,9 @@ static void vulkan_set_texture_frame(void *data,
    uint8_t *dst                       = NULL;
    const uint8_t *src                 = NULL;
    vk_t *vk                           = (vk_t*)data;
-   unsigned index                     = vk->context->current_swapchain_index;
-   struct vk_texture *texture         = &vk->menu.textures[index];
-   struct vk_texture *texture_optimal = &vk->menu.textures_optimal[index];
+   unsigned index                     = 0;
+   struct vk_texture *texture         = NULL;
+   struct vk_texture *texture_optimal = NULL;
    const VkComponentMapping br_swizzle = {
       VK_COMPONENT_SWIZZLE_B,
       VK_COMPONENT_SWIZZLE_G,
@@ -2088,6 +2088,10 @@ static void vulkan_set_texture_frame(void *data,
 
    if (!vk)
       return;
+
+   index           = vk->context->current_swapchain_index;
+   texture         = &vk->menu.textures[index];
+   texture_optimal = &vk->menu.textures_optimal[index];
 
    /* B4G4R4A4 must be supported, but R4G4B4A4 is optional,
     * just apply the swizzle in the image view instead. */
@@ -2151,16 +2155,42 @@ static uintptr_t vulkan_load_texture(void *video_data, void *data,
    vk_t *vk                    = (vk_t*)video_data;
    struct texture_image *image = (struct texture_image*)data;
    struct vk_texture *texture = (struct vk_texture*)calloc(1, sizeof(*texture));
-   if (!texture)
+   if (!image || !texture)
       return 0;
 
-   *texture = vulkan_create_texture(vk, NULL,
-         image->width, image->height, VK_FORMAT_B8G8R8A8_UNORM,
-         image->pixels, NULL, VULKAN_TEXTURE_STATIC);
+   if (!image->pixels || !image->width || !image->height)
+   {
+      /* Create a dummy texture instead. */
+#define T0 0xff000000u
+#define T1 0xffffffffu
+      static const uint32_t checkerboard[] = {
+         T0, T1, T0, T1, T0, T1, T0, T1,
+         T1, T0, T1, T0, T1, T0, T1, T0,
+         T0, T1, T0, T1, T0, T1, T0, T1,
+         T1, T0, T1, T0, T1, T0, T1, T0,
+         T0, T1, T0, T1, T0, T1, T0, T1,
+         T1, T0, T1, T0, T1, T0, T1, T0,
+         T0, T1, T0, T1, T0, T1, T0, T1,
+         T1, T0, T1, T0, T1, T0, T1, T0,
+      };
+#undef T0
+#undef T1
+      *texture = vulkan_create_texture(vk, NULL,
+            8, 8, VK_FORMAT_B8G8R8A8_UNORM,
+            checkerboard, NULL, VULKAN_TEXTURE_STATIC);
+      texture->default_smooth = false;
+      texture->mipmap = false;
+   }
+   else
+   {
+      *texture = vulkan_create_texture(vk, NULL,
+            image->width, image->height, VK_FORMAT_B8G8R8A8_UNORM,
+            image->pixels, NULL, VULKAN_TEXTURE_STATIC);
 
-   texture->default_smooth =
-      filter_type == TEXTURE_FILTER_MIPMAP_LINEAR || filter_type == TEXTURE_FILTER_LINEAR;
-   texture->mipmap = filter_type == TEXTURE_FILTER_MIPMAP_LINEAR;
+      texture->default_smooth =
+         filter_type == TEXTURE_FILTER_MIPMAP_LINEAR || filter_type == TEXTURE_FILTER_LINEAR;
+      texture->mipmap = filter_type == TEXTURE_FILTER_MIPMAP_LINEAR;
+   }
 
    return (uintptr_t)texture;
 }

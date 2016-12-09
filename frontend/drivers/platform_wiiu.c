@@ -273,6 +273,8 @@ int main(int argc, char **argv)
    DEBUG_STR(argv[0]);
    DEBUG_STR(argv[1]);
    fflush(stdout);
+
+#if 1
 #if 0
    int argc_ = 2;
 //   char* argv_[] = {WIIU_SD_PATH "retroarch/retroarch.elf", WIIU_SD_PATH "rom.nes", NULL};
@@ -296,6 +298,7 @@ int main(int argc, char **argv)
    }while(1);
 
    main_exit(NULL);
+#endif
    fflush(stdout);
    fflush(stderr);
    ProcUIShutdown();
@@ -316,8 +319,26 @@ void __eabi()
 
 }
 
-void __init();
-void __fini();
+__attribute__((weak))
+void __init(void)
+{
+   extern void(*__CTOR_LIST__[])(void);
+   void(**ctor)(void) = __CTOR_LIST__;
+   while(*ctor)
+      (*ctor++)();
+}
+
+
+__attribute__((weak))
+void __fini(void)
+{
+   extern void(*__DTOR_LIST__[])(void);
+   void(**ctor)(void) = __DTOR_LIST__;
+   while(*ctor)
+      (*ctor++)();
+}
+
+/* HBL elf entry point */
 int __entry_menu(int argc, char **argv)
 {
    InitFunctionPointers();
@@ -333,15 +354,16 @@ int __entry_menu(int argc, char **argv)
    return ret;
 }
 
+/* RPX entry point */
 __attribute__((noreturn))
 void _start(int argc, char **argv)
 {
    memoryInitialize();
    mount_sd_fat("sd");
 
-//   __init();
+   __init();
    int ret = main(argc, argv);
-//   __fini();
+   __fini();
 
    unmount_sd_fat("sd");
    memoryRelease();

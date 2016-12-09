@@ -31,7 +31,8 @@ enum font_driver_render_api
    FONT_DRIVER_RENDER_DIRECT3D_API,
    FONT_DRIVER_RENDER_VITA2D,
    FONT_DRIVER_RENDER_CTR,
-   FONT_DRIVER_RENDER_VULKAN_API
+   FONT_DRIVER_RENDER_VULKAN_API,
+   FONT_DRIVER_RENDER_CACA
 };
 
 enum text_alignment
@@ -162,6 +163,7 @@ extern font_renderer_t d3d_win32_font;
 extern font_renderer_t vita2d_vita_font;
 extern font_renderer_t ctr_font;
 extern font_renderer_t vulkan_raster_font;
+extern font_renderer_t caca_font;
 
 extern font_renderer_driver_t stb_font_renderer;
 extern font_renderer_driver_t stb_unicode_font_renderer;

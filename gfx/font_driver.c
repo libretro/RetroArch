@@ -149,6 +149,35 @@ static bool gl_font_init_first(
 }
 #endif
 
+#ifdef HAVE_CACA
+static const font_renderer_t *caca_font_backends[] = {
+   &caca_font,
+   NULL,
+};
+
+static bool caca_font_init_first(
+      const void **font_driver, void **font_handle,
+      void *video_data, const char *font_path, float font_size)
+{
+   unsigned i;
+
+   for (i = 0; caca_font_backends[i]; i++)
+   {
+      void *data = caca_font_backends[i]->init(
+            video_data, font_path, font_size);
+
+      if (!data)
+         continue;
+
+      *font_driver = caca_font_backends[i];
+      *font_handle = data;
+      return true;
+   }
+
+   return false;
+}
+#endif
+
 #ifdef HAVE_VULKAN
 static const font_renderer_t *vulkan_font_backends[] = {
    &vulkan_raster_font,
@@ -266,6 +295,11 @@ static bool font_init_first(
 #ifdef _3DS
       case FONT_DRIVER_RENDER_CTR:
          return ctr_font_init_first(font_driver, font_handle,
+               video_data, font_path, font_size);
+#endif
+#ifdef HAVE_CACA
+      case FONT_DRIVER_RENDER_CACA:
+         return caca_font_init_first(font_driver, font_handle,
                video_data, font_path, font_size);
 #endif
       case FONT_DRIVER_RENDER_DONT_CARE:

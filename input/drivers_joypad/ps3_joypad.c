@@ -17,7 +17,7 @@
 #include <stdint.h>
 #include <retro_inline.h>
 
-#include "../input_autodetect.h"
+#include "../../tasks/tasks_internal.h"
 
 #include "../../configuration.h"
 
@@ -53,7 +53,8 @@ static void ps3_joypad_autodetect_add(unsigned autoconf_pad)
    params.idx = autoconf_pad;
    strlcpy(params.name, ps3_joypad_name(autoconf_pad), sizeof(params.name));
    strlcpy(params.driver, ps3_joypad.ident, sizeof(params.driver));
-   input_config_autoconfigure_joypad(&params);
+
+   input_autoconfigure_connect(&params);
 }
 
 static bool ps3_joypad_init(void *data)
@@ -138,7 +139,7 @@ static void ps3_joypad_poll(void)
       {
          if ( (pad_info.port_status[port] & CELL_PAD_STATUS_CONNECTED) == 0 )
          {
-            input_config_autoconfigure_disconnect(port, ps3_joypad.ident);
+            input_autoconfigure_disconnect(port, ps3_joypad.ident);
             pads_connected[port] = 0;
          }
          else if ((pad_info.port_status[port] & CELL_PAD_STATUS_CONNECTED) > 0 )

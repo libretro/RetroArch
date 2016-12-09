@@ -48,7 +48,7 @@ var showError = function(error) {
 function cleanupStorage()
 {
    localStorage.clear();
-   if (BrowserFS.FileSystem.IndexedDB.isAvailable()) 
+   if (BrowserFS.FileSystem.IndexedDB.isAvailable())
    {
       var req = indexedDB.deleteDatabase("RetroArch");
       req.onsuccess = function () {
@@ -70,12 +70,12 @@ function dropboxInit()
   document.getElementById("btnDrop").disabled = true;
   $('#icnDrop').removeClass('fa-dropbox');
   $('#icnDrop').addClass('fa-spinner fa-spin');
-  
+
 
   client.authDriver(new Dropbox.AuthDriver.Redirect());
   client.authenticate({ rememberUser: true }, function(error, client)
   {
-     if (error) 
+     if (error)
      {
         return showError(error);
      }
@@ -114,10 +114,10 @@ function idbfsInit()
    $('#icnLocal').removeClass('fa-globe');
    $('#icnLocal').addClass('fa-spinner fa-spin');
    var imfs = new BrowserFS.FileSystem.InMemory();
-   if (BrowserFS.FileSystem.IndexedDB.isAvailable()) 
+   if (BrowserFS.FileSystem.IndexedDB.isAvailable())
    {
-      afs = new BrowserFS.FileSystem.AsyncMirror(imfs, 
-         new BrowserFS.FileSystem.IndexedDB(function(e, fs) 
+      afs = new BrowserFS.FileSystem.AsyncMirror(imfs,
+         new BrowserFS.FileSystem.IndexedDB(function(e, fs)
       {
          if (e)
          {
@@ -126,20 +126,20 @@ function idbfsInit()
             console.log("WEBPLAYER: error: " + e + " falling back to in-memory filesystem");
             setupFileSystem("browser");
             preLoadingComplete();
-         } 
-         else 
+         }
+         else
          {
             // initialize afs by copying files from async storage to sync storage.
-            afs.initialize(function (e) 
+            afs.initialize(function (e)
             {
-               if (e) 
+               if (e)
                {
                   afs = new BrowserFS.FileSystem.InMemory();
                   console.log("WEBPLAYER: error: " + e + " falling back to in-memory filesystem");
                   setupFileSystem("browser");
                   preLoadingComplete();
                }
-               else 
+               else
                {
                   idbfsSyncComplete();
                }
@@ -211,7 +211,7 @@ function startRetroArch()
    $('.webplayer-preview').hide();
    document.getElementById("btnDrop").disabled = true;
    document.getElementById("btnRun").disabled = true;
-  
+
    $('#btnFullscreen').removeClass('disabled');
    $('#btnMenu').removeClass('disabled');
    $('#btnAdd').removeClass('disabled');
@@ -233,13 +233,13 @@ function selectFiles(files)
    $('#icnAdd').addClass('fa-spinner spinning');
    var count = files.length;
 
-   for (var i = 0; i < files.length; i++) 
+   for (var i = 0; i < files.length; i++)
    {
       filereader = new FileReader();
       filereader.file_name = files[i].name;
       filereader.readAsArrayBuffer(files[i]);
       filereader.onload = function(){uploadData(this.result, this.file_name)};
-      filereader.onloadend = function(evt) 
+      filereader.onloadend = function(evt)
       {
          console.log("WEBPLAYER: file: " + this.file_name + " upload complete");
          if (evt.target.readyState == FileReader.DONE)
@@ -262,17 +262,17 @@ function uploadData(data,name)
    FS.unlink(name);
 }
 
-var Module = 
+var Module =
 {
   noInitialRun: true,
   arguments: ["-v", "--menu"],
   preRun: [],
   postRun: [],
-  print: (function() 
+  print: (function()
   {
      var element = document.getElementById('output');
      element.value = ''; // clear browser cache
-     return function(text) 
+     return function(text)
      {
         text = Array.prototype.slice.call(arguments).join(' ');
         element.value += text + "\n";
@@ -289,7 +289,7 @@ var Module =
   },
   canvas: document.getElementById('canvas'),
   totalDependencies: 0,
-  monitorRunDependencies: function(left) 
+  monitorRunDependencies: function(left)
   {
      this.totalDependencies = Math.max(this.totalDependencies, left);
   }
@@ -309,9 +309,14 @@ function switchStorage(backend) {
 
 // When the browser has loaded everything.
 $(function() {
-  /**
-   * Attempt to disable some default browser keys.
-   */
+   // Enable all available ToolTips.
+   $('.tooltip-enable').tooltip({
+      placement: 'right'
+   });
+
+   /**
+    * Attempt to disable some default browser keys.
+    */
 	var keys = {
     9: "tab",
     13: "enter",
@@ -361,7 +366,7 @@ $(function() {
    $('#dropdownMenu1').text(coreTitle);
 
    // Load the Core's related JavaScript.
-   $.getScript(core + '_libretro.js', function () 
+   $.getScript(core + '_libretro.js', function ()
    {
       $('#icnRun').removeClass('fa-spinner').removeClass('fa-spin');
       $('#icnRun').addClass('fa-play');
@@ -389,7 +394,7 @@ function keyPress(k)
 
 kp = function(k, event) {
    var oEvent = document.createEvent('KeyboardEvent');
- 
+
    // Chromium Hack
    Object.defineProperty(oEvent, 'keyCode', {
       get : function() {
@@ -401,19 +406,19 @@ kp = function(k, event) {
          return this.keyCodeVal;
       }
    });
- 
+
    if (oEvent.initKeyboardEvent) {
       oEvent.initKeyboardEvent(event, true, true, document.defaultView, false, false, false, false, k, k);
    } else {
       oEvent.initKeyEvent(event, true, true, document.defaultView, false, false, false, false, k, 0);
    }
- 
+
    oEvent.keyCodeVal = k;
- 
+
    if (oEvent.keyCode !== k) {
       alert("keyCode mismatch " + oEvent.keyCode + "(" + oEvent.which + ")");
    }
- 
+
    document.dispatchEvent(oEvent);
    document.getElementById('canvas').focus();
 }

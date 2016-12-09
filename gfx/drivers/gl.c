@@ -642,7 +642,7 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
    texture_fmt  = gl->texture_fmt;
 #endif
 
-#ifdef HAVE_OPENGLES2
+#ifdef HAVE_OPENGLES
    /* GLES is picky about which format we use here.
     * Without extensions, we can *only* render to 16-bit FBOs. */
 
@@ -650,7 +650,10 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
    {
       if (gl_check_capability(GL_CAPS_ARGB8))
       {
-         internal_fmt = GL_RGBA;
+         if (gl_check_capability(GL_CAPS_GLES3_SUPPORTED))
+            internal_fmt = GL_RGBA8_OES;
+         else
+            internal_fmt = GL_RGBA;
          texture_type = GL_RGBA;
          texture_fmt  = GL_UNSIGNED_BYTE;
       }

@@ -215,7 +215,7 @@ static bool load_dynamic_core(void)
       /* Try to verify that -lretro was not linked in from other modules
        * since loading it dynamically and with -l will fail hard. */
       RARCH_ERR("Serious problem. RetroArch wants to load libretro cores"
-            "dyamically, but it is already linked.\n");
+            " dynamically, but it is already linked.\n");
       RARCH_ERR("This could happen if other modules RetroArch depends on "
             "link against libretro directly.\n");
       RARCH_ERR("Proceeding could cause a crash. Aborting ...\n");

@@ -17,11 +17,11 @@
 #include <stddef.h>
 #include <string.h>
 
+#include <retro_miscellaneous.h>
 #include <windows.h>
 
 #include <boolean.h>
 #include <compat/strl.h>
-#include <retro_miscellaneous.h>
 #include <dynamic/dylib.h>
 #include <lists/file_list.h>
 #include <file/file_path.h>
@@ -168,6 +168,7 @@ static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
          }
          break;
       default:
+         sprintf(s, "Windows %i.%i", *major, *minor);
          break;
    }
 }
@@ -176,7 +177,7 @@ static void frontend_win32_init(void *data)
 {
 	typedef BOOL (WINAPI *isProcessDPIAwareProc)();
 	typedef BOOL (WINAPI *setProcessDPIAwareProc)();
-	HMODULE handle                         = GetModuleHandle(TEXT("User32.dll"));
+	HMODULE handle                         = GetModuleHandle("User32.dll");
 	isProcessDPIAwareProc  isDPIAwareProc  = (isProcessDPIAwareProc)dylib_proc(handle, "IsProcessDPIAware");
 	setProcessDPIAwareProc setDPIAwareProc = (setProcessDPIAwareProc)dylib_proc(handle, "SetProcessDPIAware");
 
@@ -271,10 +272,6 @@ static void frontend_win32_environment_get(int *argc, char *argv[],
       ":\\thumbnails", sizeof(g_defaults.dir.thumbnails));
    fill_pathname_expand_special(g_defaults.dir.overlay,
       ":\\overlays", sizeof(g_defaults.dir.overlay));
-   fill_pathname_expand_special(g_defaults.dir.osk_overlay,
-      ":\\overlays", sizeof(g_defaults.dir.osk_overlay));
-   fill_pathname_expand_special(g_defaults.dir.osk_overlay,
-      ":\\overlays", sizeof(g_defaults.dir.osk_overlay));
    fill_pathname_expand_special(g_defaults.dir.core,
       ":\\cores", sizeof(g_defaults.dir.core));
    fill_pathname_expand_special(g_defaults.dir.core_info,
@@ -324,6 +321,7 @@ static uint64_t frontend_win32_get_mem_used(void)
 static void frontend_win32_attach_console(void)
 {
 #ifdef _WIN32
+#if(_WIN32_WINNT >= 0x0500)
    if (!AttachConsole(ATTACH_PARENT_PROCESS))
    {
       AllocConsole();
@@ -332,17 +330,20 @@ static void frontend_win32_attach_console(void)
       freopen( "CON", "w", stderr );
    }
 #endif
+#endif
 }
 
 static void frontend_win32_detach_console(void)
 {
 #if defined(_WIN32) && !defined(_XBOX)
+#if(_WIN32_WINNT >= 0x0500)
    if (!AttachConsole(ATTACH_PARENT_PROCESS))
    {
       HWND wnd = GetConsoleWindow();
       FreeConsole();
       PostMessage(wnd, WM_CLOSE, 0, 0);
    }
+#endif
 #endif
 }
 

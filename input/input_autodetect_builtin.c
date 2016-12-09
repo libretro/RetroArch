@@ -19,7 +19,7 @@
 #include "../config.h"
 #endif
 
-#include "input_autodetect.h"
+#include "../tasks/tasks_internal.h"
 #include "input_config.h"
 
 #define DECL_BTN(btn, bind) "input_" #btn "_btn = " #bind "\n"
