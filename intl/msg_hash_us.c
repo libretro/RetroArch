@@ -592,10 +592,6 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Amount of seconds to wait until proceeding \n"
                "to the next bind.");
          break;
-      case MENU_ENUM_LABEL_KEYBOARD_OVERLAY_PRESET:
-         snprintf(s, len,
-               "Path to onscreen keyboard overlay.");
-         break;
       case MENU_ENUM_LABEL_OVERLAY_SCALE:
          snprintf(s, len,
                "Overlay scale.");
@@ -961,6 +957,11 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                "the browser starts to look for \n"
                "shaders."
                );
+         break;
+      case MENU_ENUM_LABEL_CONFIGURATION_SETTINGS:
+         snprintf(s, len,
+               "Determines how configuration files are \n"
+               "loaded and prioritized.");
          break;
       case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
          snprintf(s, len,
@@ -1615,6 +1616,10 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_NETPLAY_DISCONNECT:
          snprintf(s, len,
                "Disconnects an active Netplay connection.");
+         break;
+      case MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS:
+         snprintf(s, len,
+               "Search for and connect to netplay hosts on the local network.");
          break;
       case MENU_ENUM_LABEL_NETPLAY_SETTINGS:
          snprintf(s, len,

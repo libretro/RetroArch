@@ -1518,8 +1518,6 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Carica file di override automaticamente";
       case MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
          return "Salva configurazione all'uscita";
-	  case MENU_ENUM_LABEL_VALUE_CONFIRM_ON_EXIT:
-         return "Chiedi conferma all'uscita";
 	  case MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES:
          return "Mostra files e cartelle nascoste";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH:
@@ -1808,8 +1806,6 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Latenza audio (ms)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE:
          return "Dispositivo audio";
-      case MENU_ENUM_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET:
-         return "Preimpostato Overlay Tastiera";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY:
          return "Opacità Overlay";
       case MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER:

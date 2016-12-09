@@ -149,7 +149,8 @@ MSG_HASH(MENU_ENUM_LABEL_COLLECTION,
 MSG_HASH(MENU_ENUM_LABEL_CONFIGURATIONS,
       "configurations")
 MSG_HASH(MENU_ENUM_LABEL_CONFIGURATION_SETTINGS,
-      "configuration_settings")
+      "Determines how configuration files \n"
+      "are loaded and prioritized.")
 MSG_HASH(MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT,
       "config_save_on_exit")
 MSG_HASH(MENU_ENUM_LABEL_CONNECT_WIFI,
@@ -592,6 +593,8 @@ MSG_HASH(MENU_ENUM_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE,
       "netplay_spectator_mode_enable")
 MSG_HASH(MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT,
       "netplay_tcp_udp_port")
+MSG_HASH(MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS,
+       "Search for and connect to netplay hosts on the local network.")
 MSG_HASH(MENU_ENUM_LABEL_NETWORK_CMD_ENABLE,
       "network_cmd_enable")
 MSG_HASH(MENU_ENUM_LABEL_NETWORK_CMD_PORT,

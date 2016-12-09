@@ -565,10 +565,6 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Amount of seconds to wait until proceeding \n"
                "to the next bind.");
          break;
-      case MENU_ENUM_LABEL_KEYBOARD_OVERLAY_PRESET:
-         snprintf(s, len,
-               "Path to onscreen keyboard overlay.");
-         break;
       case MENU_ENUM_LABEL_OVERLAY_SCALE:
          snprintf(s, len,
                "Overlay scale.");
@@ -944,6 +940,11 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                "shaders."
                );
          break;
+      case MENU_ENUM_LABEL_CONFIGURATION_SETTINGS:
+         snprintf(s, len,
+               "Determines how configuration files are \n"
+               "loaded and prioritized.");
+         break;
       case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
          snprintf(s, len,
                "Saves config to disk on exit.\n"
@@ -965,9 +966,6 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                "manually isn't really an option."
 #endif
                );
-         break;
-      case MENU_ENUM_LABEL_CONFIRM_ON_EXIT:
-         snprintf(s, len, "你确定要退出吗？");
          break;
       case MENU_ENUM_LABEL_SHOW_HIDDEN_FILES:
          snprintf(s, len, "显示隐藏文件和文件夹。");
@@ -1585,6 +1583,10 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_NETPLAY_SETTINGS:
          snprintf(s, len,
                "Setting related to Netplay.");
+         break;
+      case MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS:
+         snprintf(s, len,
+               "Search for and connect to netplay hosts on the local network.");
          break;
       case MENU_ENUM_LABEL_DYNAMIC_WALLPAPER:
          snprintf(s, len,
@@ -2406,8 +2408,6 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
          return "输入设备自动配置目录";
       case MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER:
          return "手柄驱动";
-      case MENU_ENUM_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET:
-         return "键盘覆层预设";
       case MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES:
          return "Lakka 服务";
       case MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED:
@@ -3242,6 +3242,10 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
          return "启用或者禁止蓝牙。";
       case MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT:
          return "程序将在退出时保存修改到配置文件。";
+      case MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS:
+         return "Change default settings for configuration files.";
+      case MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST:
+         return "Manage and create configuration files.";
       case MENU_ENUM_SUBLABEL_CPU_CORES:
          return "CPU拥有的核心总数。";
       case MENU_ENUM_SUBLABEL_FPS_SHOW:
