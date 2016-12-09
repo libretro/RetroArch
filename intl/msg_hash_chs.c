@@ -3184,8 +3184,8 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
          return "FlatUI";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME:
          return "Monochrome";
-      case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME_JAGGED:
-         return "Monochrome Jagged";
+      case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_SYSTEMATIC:
+         return "Systematic";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_PIXEL:
          return "Pixel";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROACTIVE:

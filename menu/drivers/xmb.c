@@ -375,8 +375,8 @@ const char *xmb_theme_ident(void)
          return "pixel";
       case XMB_ICON_THEME_NEOACTIVE:
          return "neoactive";
-      case XMB_ICON_THEME_MONOCHROME_JAGGED:
-         return "monochrome-jagged";
+      case XMB_ICON_THEME_SYSTEMATIC:
+         return "systematic";
       case XMB_ICON_THEME_CUSTOM:
          return "custom";
       case XMB_ICON_THEME_MONOCHROME:
@@ -892,7 +892,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
     * Replace these characters in the entry name with underscores
     */
    tmp = strdup(entry.path);
-   
+
    while((scrub_char_pointer = strpbrk(tmp, "&*/:`<>?\\|")))
       *scrub_char_pointer = '_';
 
@@ -2097,7 +2097,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
 
       menu_entry_get_value(i, list, entry_value, sizeof(entry_value));
 
-      if (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) || 
+      if (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
          (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))))
       {
          if (xmb->textures.list[XMB_TEXTURE_SWITCH_OFF])
@@ -2105,7 +2105,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
          else
             do_draw_text = true;
       }
-      else if (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) || 
+      else if (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) ||
             (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))))
       {
          if (xmb->textures.list[XMB_TEXTURE_SWITCH_ON])
