@@ -1002,12 +1002,12 @@ static bool netplay_poll(void)
    /* Consider stalling */
    switch (netplay_data->stall)
    {
-      case RARCH_NETPLAY_STALL_RUNNING_FAST:
+      case NETPLAY_STALL_RUNNING_FAST:
          if (netplay_data->read_frame_count >= netplay_data->self_frame_count)
-            netplay_data->stall = RARCH_NETPLAY_STALL_NONE;
+            netplay_data->stall = NETPLAY_STALL_NONE;
          break;
 
-      case RARCH_NETPLAY_STALL_NO_CONNECTION:
+      case NETPLAY_STALL_NO_CONNECTION:
          /* We certainly haven't fixed this */
          break;
 
@@ -1015,7 +1015,7 @@ static bool netplay_poll(void)
          if (netplay_data->read_frame_count + netplay_data->delay_frames
                <= netplay_data->self_frame_count)
          {
-            netplay_data->stall      = RARCH_NETPLAY_STALL_RUNNING_FAST;
+            netplay_data->stall      = NETPLAY_STALL_RUNNING_FAST;
             netplay_data->stall_time = cpu_features_get_time_usec();
          }
    }

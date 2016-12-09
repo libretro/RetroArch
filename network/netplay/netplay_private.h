@@ -179,9 +179,9 @@ enum rarch_netplay_connection_mode
 
 enum rarch_netplay_stall_reason
 {
-   RARCH_NETPLAY_STALL_NONE = 0,
-   RARCH_NETPLAY_STALL_RUNNING_FAST,
-   RARCH_NETPLAY_STALL_NO_CONNECTION
+   NETPLAY_STALL_NONE = 0,
+   NETPLAY_STALL_RUNNING_FAST,
+   NETPLAY_STALL_NO_CONNECTION
 };
 
 struct delta_frame

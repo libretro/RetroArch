@@ -109,7 +109,7 @@ static bool netplay_net_pre_frame(netplay_t *netplay)
           (netplay->quirks & (NETPLAY_QUIRK_NO_SAVESTATES|NETPLAY_QUIRK_NO_TRANSMISSION)) &&
           (netplay->connections_size == 0 || !netplay->connections[0].active ||
            netplay->connections[0].mode < NETPLAY_CONNECTION_CONNECTED))
-         netplay->stall = RARCH_NETPLAY_STALL_NO_CONNECTION;
+         netplay->stall = NETPLAY_STALL_NO_CONNECTION;
    }
 
    if (netplay->is_server)
@@ -221,7 +221,7 @@ process:
    netplay->can_poll = true;
    input_poll_net();
 
-   return (netplay->stall != RARCH_NETPLAY_STALL_NO_CONNECTION);
+   return (netplay->stall != NETPLAY_STALL_NO_CONNECTION);
 }
 
 /**

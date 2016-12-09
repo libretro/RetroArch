@@ -325,7 +325,7 @@ static void netplay_handshake_ready(netplay_t *netplay, struct netplay_connectio
    }
 
    /* Unstall if we were waiting for this */
-   if (netplay->stall == RARCH_NETPLAY_STALL_NO_CONNECTION)
+   if (netplay->stall == NETPLAY_STALL_NO_CONNECTION)
        netplay->stall = 0;
 
    connection->mode = NETPLAY_CONNECTION_PLAYING;
