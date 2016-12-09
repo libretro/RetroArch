@@ -44,7 +44,8 @@ enum gl_capability_enum
    GL_CAPS_SRGB_FBO_ES3,
    GL_CAPS_FP_FBO,
    GL_CAPS_BGRA8888,
-   GL_CAPS_GLES3_SUPPORTED
+   GL_CAPS_GLES3_SUPPORTED,
+   GL_CAPS_TEX_STORAGE
 };
 
 bool gl_check_error(char **error_string);
