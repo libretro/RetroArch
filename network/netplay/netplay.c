@@ -61,7 +61,7 @@ static void announce_nat_traversal(netplay_t *netplay);
 #endif
 
 static int init_tcp_connection(const struct addrinfo *res,
-      bool server, bool spectate,
+      bool server,
       struct sockaddr *other_addr, socklen_t addr_size)
 {
    bool ret = true;
@@ -114,7 +114,7 @@ static int init_tcp_connection(const struct addrinfo *res,
       }
 #endif
       if (  !socket_bind(fd, (void*)res) || 
-            listen(fd, spectate ? MAX_SPECTATORS : 1) < 0)
+            listen(fd, 1024) < 0)
       {
          ret = false;
          goto end;
@@ -132,7 +132,7 @@ end:
 }
 
 static bool init_tcp_socket(netplay_t *netplay, void *direct_host,
-      const char *server, uint16_t port, bool spectate)
+      const char *server, uint16_t port)
 {
    char port_buf[16];
    bool ret                        = false;
@@ -206,7 +206,6 @@ static bool init_tcp_socket(netplay_t *netplay, void *direct_host,
       int fd = init_tcp_connection(
             tmp_info,
             direct_host || server,
-            netplay->spectate.enabled,
             (struct sockaddr*)&sad,
             sizeof(sad));
 
@@ -261,7 +260,7 @@ static bool init_socket(netplay_t *netplay, void *direct_host, const char *serve
    if (!network_init())
       return false;
 
-   if (!init_tcp_socket(netplay, direct_host, server, port, netplay->spectate.enabled))
+   if (!init_tcp_socket(netplay, direct_host, server, port))
       return false;
 
    if (netplay->is_server && netplay->nat_traversal)
@@ -349,8 +348,7 @@ static bool netplay_can_poll(netplay_t *netplay)
  * finishing the initial handshake */
 static void send_input(netplay_t *netplay, struct netplay_connection *connection)
 {
-   if (!netplay->spectate.enabled && /* Spectate sends in its own way */
-       netplay->self_mode == NETPLAY_CONNECTION_PLAYING &&
+   if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING &&
        connection->mode >= NETPLAY_CONNECTION_CONNECTED)
    {
       netplay->input_packet_buffer[2] = htonl(netplay->self_frame_count);
@@ -1434,7 +1432,6 @@ static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
  * @delay_frames         : Amount of delay frames.
  * @check_frames         : Frequency with which to check CRCs.
  * @cb                   : Libretro callbacks.
- * @spectate             : If true, enable spectator mode.
  * @nat_traversal        : If true, attempt NAT traversal.
  * @nick                 : Nickname of user.
  * @quirks               : Netplay quirks required for this session.
@@ -1446,7 +1443,7 @@ static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
  **/
 netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
       unsigned delay_frames, unsigned check_frames,
-      const struct retro_callbacks *cb, bool spectate, bool nat_traversal,
+      const struct retro_callbacks *cb, bool nat_traversal,
       const char *nick, uint64_t quirks)
 {
    netplay_t *netplay = (netplay_t*)calloc(1, sizeof(*netplay));
@@ -1457,7 +1454,6 @@ netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
    netplay->tcp_port          = port;
    netplay->cbs               = *cb;
    netplay->port              = server ? 0 : 1;
-   netplay->spectate.enabled  = spectate;
    netplay->is_server         = server == NULL;
    netplay->nat_traversal     = netplay->is_server ? nat_traversal : false;
    netplay->delay_frames      = delay_frames;
@@ -1481,10 +1477,7 @@ netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
 
    strlcpy(netplay->nick, nick[0] ? nick : RARCH_DEFAULT_NICK, sizeof(netplay->nick));
 
-   if(spectate)
-      netplay->net_cbs = netplay_get_cbs_spectate();
-   else
-      netplay->net_cbs = netplay_get_cbs_net();
+   netplay->net_cbs = netplay_get_cbs_net();
 
    if (!init_socket(netplay, direct_host, server, port))
    {
@@ -1618,15 +1611,6 @@ void netplay_free(netplay_t *netplay)
          netplay_deinit_socket_buffer(&connection->send_packet_buffer);
          netplay_deinit_socket_buffer(&connection->recv_packet_buffer);
       }
-   }
-
-   if (netplay->spectate.enabled)
-   {
-      for (i = 0; i < MAX_SPECTATORS; i++)
-         if (netplay->spectate.fds[i] >= 0)
-            socket_close(netplay->spectate.fds[i]);
-
-      free(netplay->spectate.input);
    }
 
    if (netplay->connections && netplay->connections != &netplay->one_connection)
@@ -1897,7 +1881,7 @@ void deinit_netplay(void)
  * Returns: true (1) if successful, otherwise false (0).
  **/
 
-bool init_netplay(bool is_spectate, void *direct_host, const char *server, unsigned port)
+bool init_netplay(void *direct_host, const char *server, unsigned port)
 {
    struct retro_callbacks cbs    = {0};
    settings_t *settings          = config_get_ptr();
@@ -1953,7 +1937,7 @@ bool init_netplay(bool is_spectate, void *direct_host, const char *server, unsig
          netplay_is_client ? server : NULL,
          port ? port : RARCH_DEFAULT_PORT,
          settings->netplay.delay_frames, settings->netplay.check_frames, &cbs,
-         is_spectate, settings->netplay.nat_traversal, settings->username,
+         settings->netplay.nat_traversal, settings->username,
          quirks);
 
    if (netplay_data)

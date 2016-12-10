@@ -58,7 +58,6 @@ size_t audio_sample_batch_net(const int16_t *data, size_t frames);
 
 /**
  * init_netplay
- * @is_spectate          : true if running in spectate mode
  * @server               : server address to connect to (client only)
  * @port                 : TCP port to host on/connect to
  *
@@ -68,7 +67,7 @@ size_t audio_sample_batch_net(const int16_t *data, size_t frames);
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool init_netplay(bool is_spectate, void *direct_host, const char *server, unsigned port);
+bool init_netplay(void *direct_host, const char *server, unsigned port);
 
 void deinit_netplay(void);
 

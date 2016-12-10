@@ -35,7 +35,6 @@
 #endif
 
 #define WORDS_PER_FRAME 4 /* Allows us to send 128 bits worth of state per frame. */
-#define MAX_SPECTATORS 16
 #define RARCH_DEFAULT_PORT 55435
 #define RARCH_DEFAULT_NICK "Anonymous"
 
@@ -253,6 +252,9 @@ struct netplay_connection
 
 struct netplay
 {
+   /* Are we the server? */
+   bool is_server;
+
    /* Our nickname */
    char nick[32];
 
@@ -350,23 +352,11 @@ struct netplay
    /* A buffer for outgoing input packets. */
    uint32_t input_packet_buffer[2 + WORDS_PER_FRAME];
 
-   /* And socket info */
+   /* Our local socket info */
    struct addrinfo *addr;
-   struct sockaddr_storage their_addr;
-   bool has_client_addr;
 
+   /* Counter for timeouts */
    unsigned timeout_cnt;
-
-   /* Spectating. */
-   struct {
-      bool enabled;
-      int fds[MAX_SPECTATORS];
-      uint32_t frames[MAX_SPECTATORS];
-      uint16_t *input;
-      size_t input_ptr;
-      size_t input_sz;
-   } spectate;
-   bool is_server;
 
    /* User flipping
     * Flipping state. If frame >= flip_frame, we apply the flip.
@@ -400,7 +390,6 @@ void input_poll_net(void);
  * @delay_frames         : Amount of delay frames.
  * @check_frames         : Frequency with which to check CRCs.
  * @cb                   : Libretro callbacks.
- * @spectate             : If true, enable spectator mode.
  * @nat_traversal        : If true, attempt NAT traversal.
  * @nick                 : Nickname of user.
  * @quirks               : Netplay quirks.
@@ -412,7 +401,7 @@ void input_poll_net(void);
  **/
 netplay_t *netplay_new(void *direct_host, const char *server,
       uint16_t port, unsigned delay_frames, unsigned check_frames,
-      const struct retro_callbacks *cb, bool spectate, bool nat_traversal,
+      const struct retro_callbacks *cb, bool nat_traversal,
       const char *nick, uint64_t quirks);
 
 /**
@@ -476,8 +465,6 @@ bool netplay_disconnect(netplay_t *netplay);
 
 struct netplay_callbacks* netplay_get_cbs_net(void);
 
-struct netplay_callbacks* netplay_get_cbs_spectate(void);
-
 /* Normally called at init time, unless the INITIALIZATION quirk is set */
 bool netplay_init_serialization(netplay_t *netplay);
 
@@ -502,8 +489,6 @@ bool netplay_handshake_pre_sync(netplay_t *netplay, struct netplay_connection *c
 uint32_t netplay_impl_magic(void);
 
 bool netplay_is_server(netplay_t* netplay);
-
-bool netplay_is_spectate(netplay_t* netplay);
 
 bool netplay_delta_frame_ready(netplay_t *netplay, struct delta_frame *delta, uint32_t frame);
 

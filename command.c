@@ -1227,8 +1227,7 @@ static void command_event_load_auto_state(void)
    global_t   *global   = global_get_ptr();
 
 #ifdef HAVE_NETWORKING
-   if (     netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL)
-         && !settings->netplay.is_spectate)
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
       return;
 #endif
 
@@ -2362,7 +2361,7 @@ bool command_event(enum event_command cmd, void *data)
          command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 #ifdef HAVE_NETWORKING
          if (!init_netplay(
-              settings->netplay.is_spectate, data, settings->netplay.server,
+              data, settings->netplay.server,
               settings->netplay.port))
             return false;
 #endif

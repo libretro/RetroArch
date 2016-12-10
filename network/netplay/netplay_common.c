@@ -466,13 +466,6 @@ bool netplay_is_server(netplay_t* netplay)
    return netplay->is_server;
 }
 
-bool netplay_is_spectate(netplay_t* netplay)
-{
-   if (!netplay)
-      return false;
-   return netplay->spectate.enabled;
-}
-
 bool netplay_delta_frame_ready(netplay_t *netplay, struct delta_frame *delta, uint32_t frame)
 {
    void *remember_state;

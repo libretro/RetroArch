@@ -342,7 +342,6 @@ static void retroarch_print_help(const char *arg0)
    puts("  -F, --frames=NUMBER   Delay frames when using netplay.");
    puts("      --check-frames=NUMBER\n"
         "                        Check frames when using netplay.");
-   puts("      --spectate        Connect to netplay server as spectator.");
 #if defined(HAVE_NETWORK_CMD)
    puts("      --command         Sends a command over UDP to an already "
          "running program process.");
@@ -430,7 +429,6 @@ static void retroarch_parse_input(int argc, char *argv[])
       { "frames",       1, NULL, 'F' },
       { "check-frames", 1, NULL, RA_OPT_CHECK_FRAMES },
       { "port",         1, NULL, RA_OPT_PORT },
-      { "spectate",     0, NULL, RA_OPT_SPECTATE },
 #if defined(HAVE_NETWORK_CMD)
       { "command",      1, NULL, RA_OPT_COMMAND },
 #endif
@@ -723,12 +721,6 @@ static void retroarch_parse_input(int argc, char *argv[])
             retroarch_override_setting_set(
                   RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT, NULL);
             settings->netplay.port = strtoul(optarg, NULL, 0);
-            break;
-
-         case RA_OPT_SPECTATE:
-            retroarch_override_setting_set(
-                  RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL);
-            settings->netplay.is_spectate = true;
             break;
 
 #if defined(HAVE_NETWORK_CMD)

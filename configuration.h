@@ -403,7 +403,6 @@ typedef struct settings
       unsigned port;
       unsigned delay_frames;
       unsigned check_frames;
-      bool is_spectate;
       bool swap_input;
       bool nat_traversal;
    } netplay;
