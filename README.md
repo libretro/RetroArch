@@ -24,11 +24,11 @@ interface to include support for emulators and/or game engines. libretro is comp
 
 ## Binaries
 
-Latest Windows binaries are currently hosted on the buildbot -(http://buildbot.libretro.com/).
+Latest Windows binaries are currently hosted on the [buildbot](http://buildbot.libretro.com/).
 
 ## Support
 
-To reach developers, either make an issue here on Github, make a thread on the [forum](http://www.libretro.com/forums/),
+To reach developers, either make an issue here on GitHub, make a thread on the [forum](http://www.libretro.com/forums/),
 or visit our IRC channel: #retroarch @ irc.freenode.org.
 
 ## Documentation
