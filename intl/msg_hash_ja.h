@@ -7,18 +7,6 @@ MSG_HASH(
       "不明なコンパイラ"
       )
 MSG_HASH(
-      MSG_DEVICE_DISCONNECTED_FROM_PORT,
-      "Device disconnected from port"
-      )
-MSG_HASH(
-      MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
-      "Unknown netplay command received"
-      )
-MSG_HASH(
-      MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
-      "File already exists. Saving to backup buffer"
-      )
-MSG_HASH(
       MSG_GOT_CONNECTION_FROM,
       "「%s」からの接続が確立しますた。"
       )
@@ -31,25 +19,10 @@ MSG_HASH(
       "公式IPアドレス"
       )
 MSG_HASH(
-      MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
-      "No arguments supplied and no menu builtin, displaying help..."
-      )
-MSG_HASH(
-      MSG_NETPLAY_USERS_HAS_FLIPPED,
-      "Netplay users has flipped"
-      )
-MSG_HASH(
-      MSG_SETTING_DISK_IN_TRAY,
-      "Setting disk in tray"
-      )
-MSG_HASH(
       MSG_WAITING_FOR_CLIENT,
       "クライアントに待機中"
       )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
-      "Give hardware-rendered cores their own private context. Avoids having to assume hardware state changes inbetween frames."
-      )
+
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_SETTINGS,
       "メニューの外観関係の設定を変更する。"
@@ -71,36 +44,12 @@ MSG_HASH(
       "自動検出"
       )
 MSG_HASH(
-      MSG_AUTOLOADING_SAVESTATE_FROM,
-      "Auto-loading savestate from"
-      )
-MSG_HASH(
       MSG_CAPABILITIES,
       "対応された機能"
       )
 MSG_HASH(
-      MSG_CONNECTING_TO_NETPLAY_HOST,
-      "Connecting to netplay host"
-      )
-MSG_HASH(
-      MSG_CONNECTING_TO_PORT,
-      "Connecting to port"
-      )
-MSG_HASH(
-      MSG_CONNECTION_SLOT,
-      "Connection slot"
-      )
-MSG_HASH(
-      MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY,
-      "Sorry, unimplemented: cores that don't demand content cannot participate in netplay."
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
       "パスワード"
-      )
-MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
-      "Accounts Cheevos"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
@@ -109,10 +58,6 @@ MSG_HASH(
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST,
       "アカウント"
-      )
-MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST_END,
-      "Accounts List Endpoint"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS,
@@ -140,20 +85,8 @@ MSG_HASH(
       "コンテンツをインポート"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_ARCHIVE_MODE,
-      "Archive File Association Action"
-      )
-MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE,
-      "Ask"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
       "資産"
-      )
-MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
-      "Block Frames"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
@@ -174,10 +107,6 @@ MSG_HASH(
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR,
       "オーディオフィルター"
-      )
-MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_TURBO_DEADZONE_LIST,
-      "Turbo/Deadzone"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
@@ -228,10 +157,6 @@ MSG_HASH(
       "リマップファイルを自動的にロード"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
-      "Load Shader Presets Automatically"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
       "戻る"
       )
@@ -268,10 +193,6 @@ MSG_HASH(
       "メニューに切り替え"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS,
-      "Basic menu controls"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_CONFIRM,
       "確認/了承"
       )
@@ -282,10 +203,6 @@ MSG_HASH(
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_QUIT,
       "終了"
-      )
-MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_SCROLL_UP,
-      "Scroll Up"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_START,
@@ -431,9 +348,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
       "チート"
       )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_COUNTERS,
-      "Core Counters"
-      )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_ENABLE,
       "コアの名前を表示"
       )
@@ -494,42 +408,22 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_CUSTOM_RATIO,
       "カスタム比")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
       "データーベースマネージャー")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_SELECTION,
-      "Database Selection")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
       "削除")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST,
       "ファイルを選択とコア検出")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
-      "<Content dir>")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
-      "<Default>")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_NONE,
-      "<None>")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
       "そのようなフォルダはありません。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
       "ディレクトリ")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS,
-      "Disk Cycle Tray Status")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
-      "Disk Image Append")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-      "Disk Index")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
       "ディスク設定")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DONT_CARE,
-      "Don't care")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
       "ダウンロード")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
       "コアをダウンロード...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
       "コンテンツをダウンロード")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE,
-      "DPI Override Enable")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE,
-      "DPI Override")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
       "ドライバ")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
@@ -542,10 +436,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
       "ダイナミック壁紙")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
       "有効")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR,
-      "Menu entry hover color")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_ENTRY_NORMAL_COLOR,
-      "Menu entry normal color")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FALSE,
       "偽")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -556,14 +446,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_ENABLE,
       "フレームの減速度")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
       "フレームの減速度")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
-      "Frontend Counters")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
       "コンテンツ特定のコア設定を自動的にロード")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE,
-      "Create game-options file")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE,
-      "Game-options file")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HELP,
       "ヘルプ")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
@@ -646,8 +530,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
       "デューティー比")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
       "入力のホットキーバインド")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
-      "Keyboard Gamepad Mapping Enable")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A,
       "Aボタン(右)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
@@ -764,8 +646,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_LATE,
       "遅い")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_NORMAL,
       "普通")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
-      "Prefer Front Touch")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
       "入力リマップ")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
@@ -774,8 +654,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
       "自動設定を保存")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
       "入力")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
-      "Small Keyboard Enable")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
       "タッチを有効")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
@@ -784,8 +662,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
       "ターボの期間")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
       "入力ユーザー%uのバインド")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
-      "Internal storage status")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
       "入力デバイスの自動設定")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
@@ -830,8 +706,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH,
       "コア情報")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL,
       "コアのログ出力レベル")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_LINEAR,
-      "Linear")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
       "コアでアーカイブをロード")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT,
@@ -870,10 +744,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_RED,
       "赤")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_YELLOW,
       "黄色")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY,
-      "Footer Opacity")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_HEADER_OPACITY,
-      "Header Opacity")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
       "メニューのドライバ")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
@@ -902,8 +772,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_EN
       "不明な拡張子を隠す")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
       "ナビゲーションの回り込み")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_NEAREST,
-      "Nearest")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY,
       "ネットプレイ")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
@@ -944,8 +812,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
       "ネットワーク情報")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_ENABLE,
       "ネットワークゲームパッド")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_PORT,
-      "Network Remote Base Port")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
       "ネットワーク")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO,
@@ -976,8 +842,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
       "該当するネットプレイホストが見つかりませんでした。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND,
       "該当するネットワークが見つかりませんでした。")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS,
-      "No performance counters.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_PLAYLISTS,
       "プレイリストが見つかりません。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE,
@@ -986,10 +850,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND,
       "設定が見つかりませんでした。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS,
       "シェーダーのパラメータはありません。")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_OFF,
-      "OFF")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_ON,
-      "ON")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ONLINE,
       "オンライン")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
@@ -998,8 +858,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
       "OSDディスプレイ")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS,
       "OSDオーバーレイ")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
-      "Onscreen Notifications")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
       "フォルダでアーカイブを開く")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OPTIONAL,
@@ -1052,8 +910,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
       "CERO評価")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
       "共同対応")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CRC32,
-      "CRC32")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION,
       "記述")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,
@@ -1066,8 +922,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_REVIEW,
       "Edge雑誌のレビュー")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ELSPA_RATING,
       "ELSPA評価")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW,
-      "Enhancement Hardware")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ESRB_RATING,
       "ESRB評価")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FAMITSU_MAGAZINE_RATING,
@@ -1076,8 +930,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE,
       "フランチャイズ")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE,
       "ジャンル")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MD5,
-      "MD5")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME,
       "名前")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN,
@@ -1094,8 +946,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
       "振動の対応")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
       "シリアル")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SHA1,
-      "SHA1")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_START_CONTENT,
       "コンテンツをスタート")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
@@ -1248,8 +1098,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES,
       "対応するコア")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
       "スクリーンセーバーをサスペンド")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE,
-      "System BGM Enable")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY,
       "システム/BIOS")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
@@ -1348,8 +1196,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT,
       "Python(シェーダーにスクリプト)対応")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RBMP_SUPPORT,
       "BMP対応 (RBMP)")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL,
-      "RetroRating level")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RJPEG_SUPPORT,
       "JPEG対応 (RJPEG)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ROARAUDIO_SUPPORT,
@@ -1398,22 +1244,14 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
       "サムネイル")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
       "サムネイルのアップデーター")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS,
-      "Boxarts")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS,
       "スクリーンショット")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS,
-      "Title Screens")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
       "日付と時刻を表示")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_TITLE_COLOR,
       "メニューのタイトル色")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_TRUE,
       "真")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
-      "UI Companion Enable")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
-      "UI Companion Start On Boot")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
       "メニューバー")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE,
@@ -1454,10 +1292,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
       "言語")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
       "ユーザー")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
-      "Use Builtin Image Viewer")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
-      "Use Builtin Media Player")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY,
       "<このフォルダを使用>")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
@@ -1478,8 +1312,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
       "ビデオのフィルター")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,
       "ビデオフィルター")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER,
-      "Flicker filter")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
       "OSDメッセージを表示")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
@@ -1636,10 +1468,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_YES,
       "はい")
 MSG_HASH(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
       "シェーダーのプリセット")
-MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
-      "Enable or disable achievements. For more information, visit http://retroachievements.org")
-MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
-      "Enable or disable unofficial achievements and/or beta features for testing purposes.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
       "保存状態、チート、巻き戻し、早送り、一時停止、スローモーションを全部のゲームに無効する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
@@ -1734,80 +1562,20 @@ MSG_HASH(MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
       "無線ネットワークを検索して接続する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_HELP_LIST,
       "RetroArchの使い方について学ぶ。")
-MSG_HASH(MSG_APPENDED_DISK,
-      "Appended disk")
 MSG_HASH(MSG_APPLICATION_DIR,
       "アプリフォルダ")
-MSG_HASH(MSG_APPLYING_CHEAT,
-      "Applying cheat changes.")
-MSG_HASH(MSG_APPLYING_SHADER,
-      "Applying shader")
 MSG_HASH(MSG_AUDIO_MUTED,
       "消音。")
 MSG_HASH(MSG_AUDIO_UNMUTED,
       "消音解除。")
-MSG_HASH(MSG_AUTOCONFIG_FILE_ERROR_SAVING,
-      "Error saving autoconf file.")
-MSG_HASH(MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
-      "Autoconfig file saved successfully.")
-MSG_HASH(MSG_AUTOSAVE_FAILED,
-      "Could not initialize autosave.")
-MSG_HASH(MSG_AUTO_SAVE_STATE_TO,
-      "Auto save state to")
-MSG_HASH(MSG_BLOCKING_SRAM_OVERWRITE,
-      "Blocking SRAM Overwrite")
-MSG_HASH(MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
-      "Bringing up command interface on port")
 MSG_HASH(MSG_BYTES,
       "バイト")
-MSG_HASH(MSG_CANNOT_INFER_NEW_CONFIG_PATH,
-      "Cannot infer new config path. Use current time.")
 MSG_HASH(MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
       "ハードコアモードが有効された。保存状態と巻き戻しは無効になった。")
-MSG_HASH(MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
-      "Comparing with known magic numbers...")
-MSG_HASH(MSG_COMPILED_AGAINST_API,
-      "Compiled against API")
-MSG_HASH(MSG_CONFIG_DIRECTORY_NOT_SET,
-      "Config directory not set. Cannot save new config.")
-MSG_HASH(MSG_CONNECTED_TO,
-      "Connected to")
-MSG_HASH(MSG_CONTENT_CRC32S_DIFFER,
-      "Content CRC32s differ. Cannot use different games.")
-MSG_HASH(MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT,
-      "Content loading skipped. Implementation will load it on its own.")
 MSG_HASH(MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
       "コアは保存状態の対応がありません。")
-MSG_HASH(MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
-      "Core options file created successfully.")
-MSG_HASH(MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,
-      "Could not find any next driver")
-MSG_HASH(MSG_COULD_NOT_FIND_COMPATIBLE_SYSTEM,
-      "Could not find compatible system.")
-MSG_HASH(MSG_COULD_NOT_FIND_VALID_DATA_TRACK,
-      "Could not find valid data track")
-MSG_HASH(MSG_COULD_NOT_OPEN_DATA_TRACK,
-      "could not open data track")
 MSG_HASH(MSG_COULD_NOT_READ_CONTENT_FILE,
       "コンテンツファイルの読み込みはできませんでした")
-MSG_HASH(MSG_COULD_NOT_READ_MOVIE_HEADER,
-      "Could not read movie header.")
-MSG_HASH(MSG_COULD_NOT_READ_STATE_FROM_MOVIE,
-      "Could not read state from movie.")
-MSG_HASH(MSG_CRC32_CHECKSUM_MISMATCH,
-      "CRC32 checksum mismatch between content file and saved content checksum in replay file header) replay highly likely to desync on playback.")
-MSG_HASH(MSG_CUSTOM_TIMING_GIVEN,
-      "Custom timing given")
-MSG_HASH(MSG_DECOMPRESSION_ALREADY_IN_PROGRESS,
-      "Decompression already in progress.")
-MSG_HASH(MSG_DECOMPRESSION_FAILED,
-      "Decompression failed.")
-MSG_HASH(MSG_DETECTED_VIEWPORT_OF,
-      "Detected viewport of")
-MSG_HASH(MSG_DID_NOT_FIND_A_VALID_CONTENT_PATCH,
-      "Did not find a valid content patch.")
-MSG_HASH(MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
-      "Disconnect device from a valid port.")
 MSG_HASH(MSG_DISK_CLOSED,
       "閉域")
 MSG_HASH(MSG_DISK_EJECTED,
@@ -1818,112 +1586,20 @@ MSG_HASH(MSG_DOWNLOAD_FAILED,
       "ダウンロード失敗")
 MSG_HASH(MSG_ERROR,
       "エラー")
-MSG_HASH(MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT,
-      "Libretro core requires content, but nothing was provided.")
-MSG_HASH(MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT,
-      "Libretro core requires special content, but none were provided.")
-MSG_HASH(MSG_ERROR_PARSING_ARGUMENTS,
-      "Error parsing arguments.")
-MSG_HASH(MSG_ERROR_SAVING_CORE_OPTIONS_FILE,
-      "Error saving core options file.")
-MSG_HASH(MSG_ERROR_SAVING_REMAP_FILE,
-      "Error saving remap file.")
-MSG_HASH(MSG_ERROR_SAVING_SHADER_PRESET,
-      "Error saving shader preset.")
 MSG_HASH(MSG_EXTERNAL_APPLICATION_DIR,
       "外部アプリフォルダ")
 MSG_HASH(MSG_EXTRACTING,
       "解凍中")
 MSG_HASH(MSG_EXTRACTING_FILE,
       "ファイルを解凍中")
-MSG_HASH(MSG_FAILED_SAVING_CONFIG_TO,
-      "Failed saving config to")
-MSG_HASH(MSG_FAILED_TO,
-      "Failed to")
-MSG_HASH(MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
-      "Failed to accept incoming spectator.")
-MSG_HASH(MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT,
-      "Failed to allocate memory for patched content...")
-MSG_HASH(MSG_FAILED_TO_APPLY_SHADER,
-      "Failed to apply shader.")
-MSG_HASH(MSG_FAILED_TO_BIND_SOCKET,
-      "Failed to bind socket.")
-MSG_HASH(MSG_FAILED_TO_CREATE_THE_DIRECTORY,
-      "Failed to create the directory.")
-MSG_HASH(MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
-      "Failed to extract content from compressed file")
-MSG_HASH(MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
-      "Failed to get nickname from client.")
 MSG_HASH(MSG_FAILED_TO_LOAD,
       "ロードに失敗")
 MSG_HASH(MSG_FAILED_TO_LOAD_CONTENT,
       "コンテンツをロードに失敗しました。")
-MSG_HASH(MSG_FAILED_TO_LOAD_MOVIE_FILE,
-      "Failed to load movie file")
-MSG_HASH(MSG_FAILED_TO_LOAD_OVERLAY,
-      "Failed to load overlay.")
-MSG_HASH(MSG_FAILED_TO_LOAD_STATE,
-      "Failed to load state from")
-MSG_HASH(MSG_FAILED_TO_OPEN_LIBRETRO_CORE,
-      "Failed to open libretro core")
 MSG_HASH(MSG_FAILED_TO_PATCH,
       "パッチに失敗しました")
-MSG_HASH(MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT,
-      "Failed to receive header from client.")
-MSG_HASH(MSG_FAILED_TO_RECEIVE_NICKNAME,
-      "Failed to receive nickname.")
-MSG_HASH(MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST,
-      "Failed to receive nickname from host.")
-MSG_HASH(MSG_FAILED_TO_RECEIVE_NICKNAME_SIZE_FROM_HOST,
-      "Failed to receive nickname size from host.")
-MSG_HASH(MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
-      "Failed to receive SRAM data from host.")
-MSG_HASH(MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-      "Failed to remove disk from tray.")
-MSG_HASH(MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
-      "Failed to remove temporary file")
-MSG_HASH(MSG_FAILED_TO_SAVE_SRAM,
-      "Failed to save SRAM")
-MSG_HASH(MSG_FAILED_TO_SAVE_STATE_TO,
-      "Failed to save state to")
-MSG_HASH(MSG_FAILED_TO_SEND_NICKNAME,
-      "Failed to send nickname.")
-MSG_HASH(MSG_FAILED_TO_SEND_NICKNAME_SIZE,
-      "Failed to send nickname size.")
-MSG_HASH(MSG_FAILED_TO_SEND_NICKNAME_TO_CLIENT,
-      "Failed to send nickname to client.")
-MSG_HASH(MSG_FAILED_TO_SEND_NICKNAME_TO_HOST,
-      "Failed to send nickname to host.")
-MSG_HASH(MSG_FAILED_TO_SEND_SRAM_DATA_TO_CLIENT,
-      "Failed to send SRAM data to client.")
-MSG_HASH(MSG_FAILED_TO_START_AUDIO_DRIVER,
-      "Failed to start audio driver. Will continue without audio.")
-MSG_HASH(MSG_FAILED_TO_START_MOVIE_RECORD,
-      "Failed to start movie record.")
-MSG_HASH(MSG_FAILED_TO_START_RECORDING,
-      "Failed to start recording.")
-MSG_HASH(MSG_FAILED_TO_TAKE_SCREENSHOT,
-      "Failed to take screenshot.")
-MSG_HASH(MSG_FAILED_TO_UNDO_LOAD_STATE,
-      "Failed to undo load state.")
-MSG_HASH(MSG_FAILED_TO_UNDO_SAVE_STATE,
-      "Failed to undo save state.")
-MSG_HASH(MSG_FAILED_TO_UNMUTE_AUDIO,
-      "Failed to unmute audio.")
-MSG_HASH(MSG_FATAL_ERROR_RECEIVED_IN,
-      "Fatal error received in")
 MSG_HASH(MSG_FILE_NOT_FOUND,
       "そのようなファイルはありません。")
-MSG_HASH(MSG_FOUND_AUTO_SAVESTATE_IN,
-      "Found auto savestate in")
-MSG_HASH(MSG_FOUND_DISK_LABEL,
-      "Found disk label")
-MSG_HASH(MSG_FOUND_FIRST_DATA_TRACK_ON_FILE,
-      "Found first data track on file")
-MSG_HASH(MSG_FOUND_LAST_STATE_SLOT,
-      "Found last state slot")
-MSG_HASH(MSG_FOUND_SHADER,
-      "Found shader")
 MSG_HASH(MSG_FRAMES,
       "フレーム")
 MSG_HASH(MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
@@ -1936,32 +1612,18 @@ MSG_HASH(MSG_GAME_FOCUS_ON,
       "ゲームフォーカスをオンにしました。")
 MSG_HASH(MSG_GAME_FOCUS_OFF,
       "ゲームフォーカスをオフにしました。")
-MSG_HASH(MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING,
-      "Libretro core is hardware rendered. Must use post-shaded recording as well.")
-MSG_HASH(MSG_INFLATED_CHECKSUM_DID_NOT_MATCH_CRC32,
-      "Inflated checksum did not match CRC32.")
-MSG_HASH(MSG_INPUT_CHEAT,
-      "Input Cheat")
-MSG_HASH(MSG_INPUT_CHEAT_FILENAME,
-      "Cheat Filename")
-MSG_HASH(MSG_INPUT_PRESET_FILENAME,
-      "Preset Filename")
 MSG_HASH(MSG_INTERFACE,
       "インタフェース")
 MSG_HASH(MSG_INTERNAL_STORAGE,
       "内部ストレージ")
 MSG_HASH(MSG_REMOVABLE_STORAGE,
       "リムーバブルストレージ")
-MSG_HASH(MSG_INVALID_NICKNAME_SIZE,
-      "Invalid nickname size.")
 MSG_HASH(MSG_IN_BYTES,
       "(バイトで)")
 MSG_HASH(MSG_IN_GIGABYTES,
       "(ギガバイトで)")
 MSG_HASH(MSG_IN_MEGABYTES,
       "(メガバイトで)")
-MSG_HASH(MSG_LIBRETRO_ABI_BREAK,
-      "is compiled against a different version of libretro than this libretro implementation.")
 MSG_HASH(MSG_LIBRETRO_FRONTEND,
       "libretroのフロントエンド")
 MSG_HASH(MSG_LOADED_STATE_FROM_SLOT,
@@ -1980,172 +1642,132 @@ MSG_HASH(MSG_LOADING_STATE,
       "保存状態をロード中")
 MSG_HASH(MSG_MEMORY,
       "メモリ")
-MSG_HASH(MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE,
-      "Movie file is not a valid BSV1 file.")
-MSG_HASH(MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
-      "Movie format seems to have a different serializer version. Will most likely fail.")
-MSG_HASH(MSG_MOVIE_PLAYBACK_ENDED,
-      "Movie playback ended.")
-MSG_HASH(MSG_MOVIE_RECORD_STOPPED,
-      "Stopping movie record.")
-MSG_HASH(MSG_NETPLAY_FAILED,
-      "Failed to initialize netplay.")
-MSG_HASH(MSG_NETPLAY_FAILED_MOVIE_PLAYBACK_HAS_STARTED,
-      "Movie playback has started. Cannot start netplay.")
-MSG_HASH(MSG_NO_CONTENT_STARTING_DUMMY_CORE,
-      "No content, starting dummy core.")
-MSG_HASH(MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET,
-      "No save state has been overwritten yet.")
-MSG_HASH(MSG_NO_STATE_HAS_BEEN_LOADED_YET,
-      "No state has been loaded yet.")
-MSG_HASH(MSG_OVERRIDES_ERROR_SAVING,
-      "Error saving overrides.")
-MSG_HASH(MSG_OVERRIDES_SAVED_SUCCESSFULLY,
-      "Overrides saved successfully.")
 MSG_HASH(MSG_PAUSED,
       "一時停止。")
-MSG_HASH(MSG_PROGRAM,
-      "RetroArch")
-MSG_HASH(MSG_READING_FIRST_DATA_TRACK,
-      "Reading first data track...")
-MSG_HASH(MSG_RECEIVED,
-      "received")
-MSG_HASH(MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
-      "Recording terminated due to resize.")
-MSG_HASH(MSG_RECORDING_TO,
-      "Recording to")
-MSG_HASH(MSG_REDIRECTING_CHEATFILE_TO,
-      "Redirecting cheat file to")
-MSG_HASH(MSG_REDIRECTING_SAVEFILE_TO,
-      "Redirecting save file to")
-MSG_HASH(MSG_REDIRECTING_SAVESTATE_TO,
-      "Redirecting savestate to")
-MSG_HASH(MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
-      "Remap file saved successfully.")
-MSG_HASH(MSG_REMOVED_DISK_FROM_TRAY,
-      "Removed disk from tray.")
-MSG_HASH(MSG_REMOVING_TEMPORARY_CONTENT_FILE,
-      "Removing temporary content file")
 MSG_HASH(MSG_RESET,
       "リセット")
-MSG_HASH(MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT,
-      "Restarting recording due to driver reinit.")
-MSG_HASH(MSG_RESTORED_OLD_SAVE_STATE,
-      "Restored old save state.")
-MSG_HASH(MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-      "Shaders: restoring default shader preset to")
-MSG_HASH(MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
-      "Reverting savefile directory to")
-MSG_HASH(MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
-      "Reverting savestate directory to")
 MSG_HASH(MSG_REWINDING,
       "巻き戻しています。")
-MSG_HASH(MSG_REWIND_INIT,
-      "Initializing rewind buffer with size")
-MSG_HASH(MSG_REWIND_INIT_FAILED,
-      "Failed to initialize rewind buffer. Rewinding will be disabled.")
-MSG_HASH(MSG_REWIND_INIT_FAILED_THREADED_AUDIO,
-      "Implementation uses threaded audio. Cannot use rewind.")
-MSG_HASH(MSG_REWIND_REACHED_END,
-      "Reached end of rewind buffer.")
-MSG_HASH(MSG_SAVED_NEW_CONFIG_TO,
-      "Saved new config to")
 MSG_HASH(MSG_SAVED_STATE_TO_SLOT,
       "スロット%dに状態を保存しました。")
 MSG_HASH(MSG_SAVED_STATE_TO_SLOT_AUTO,
       "スロット-1 (自動)に状態を保存しました。")
-MSG_HASH(MSG_SAVED_SUCCESSFULLY_TO,
-      "Saved successfully to")
-MSG_HASH(MSG_SAVING_RAM_TYPE,
-      "Saving RAM type")
 MSG_HASH(MSG_SAVING_STATE,
       "状態を保存中")
 MSG_HASH(MSG_SCANNING,
       "スキャン中")
 MSG_HASH(MSG_SCANNING_OF_DIRECTORY_FINISHED,
       "ディレクトリーのスキャンは完了しました。")
-MSG_HASH(MSG_SENDING_COMMAND,
-      "Sending command")
-MSG_HASH(MSG_SEVERAL_PATCHES_ARE_EXPLICITLY_DEFINED,
-      "Several patches are explicitly defined, ignoring all...")
 MSG_HASH(MSG_SHADER,
       "シェーダー")
-MSG_HASH(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY,
-      "Shader preset saved successfully.")
-MSG_HASH(MSG_SKIPPING_SRAM_LOAD,
-      "Skipping SRAM load.")
 MSG_HASH(MSG_SLOW_MOTION,
       "スローモーション。")
 MSG_HASH(MSG_SLOW_MOTION_REWIND,
       "スローモーション巻き戻し。")
-MSG_HASH(MSG_SRAM_WILL_NOT_BE_SAVED,
-      "SRAM will not be saved.")
-MSG_HASH(MSG_STARTING_MOVIE_PLAYBACK,
-      "Starting movie playback.")
-MSG_HASH(MSG_STARTING_MOVIE_RECORD_TO,
-      "Starting movie record to")
 MSG_HASH(MSG_STATE_SIZE,
       "状態のサイズ")
 MSG_HASH(MSG_STATE_SLOT,
       "保存状態のスロット")
 MSG_HASH(MSG_TAKING_SCREENSHOT,
       "スクリーンショットを撮っています。")
-MSG_HASH(MSG_TO,
-      "to")
 MSG_HASH(MSG_UNDID_LOAD_STATE,
       "保存状態のロードを前に戻した。")
-MSG_HASH(MSG_UNDOING_SAVE_STATE,
-      "Undoing save state")
 MSG_HASH(MSG_UNKNOWN,
       "不明")
 MSG_HASH(MSG_UNPAUSED,
       "一時停止が解除された。")
-MSG_HASH(MSG_UNRECOGNIZED_COMMAND,
-      "Unrecognized command")
-MSG_HASH(MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
-      "Using core name for new config.")
-MSG_HASH(MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED,
-      "Using libretro dummy core. Skipping recording.")
-MSG_HASH(MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT,
-      "Connect device from a valid port.")
-MSG_HASH(MSG_VALUE_DISCONNECTING_DEVICE_FROM_PORT,
-      "Disconnecting device from port")
 MSG_HASH(MSG_VALUE_REBOOTING,
       "再起動しています。。。")
 MSG_HASH(MSG_VALUE_SHUTTING_DOWN,
       "シャットダウンしています。。。")
-MSG_HASH(MSG_VERSION_OF_LIBRETRO_API,
-      "Version of libretro API")
-MSG_HASH(MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
-      "Viewport size calculation failed! Will continue using raw data. This will probably not work right ...")
-MSG_HASH(MSG_VIRTUAL_DISK_TRAY,
-      "virtual disk tray.")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
       "ミリ秒でのオーディオ遅延。ドライバ対応による。")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_MUTE,
       "オーディオを消音する。")
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
-      "Helps smooth out imperfections in timing when synchronizing audio and video at the same time. Be aware that if disabled, proper synchronization is nearly impossible to obtain."
-      )
 MSG_HASH(MENU_ENUM_SUBLABEL_CAMERA_ALLOW,
       "コアでのカメラ使用を許す。")
 MSG_HASH(MENU_ENUM_SUBLABEL_LOCATION_ALLOW,
       "コアでの位置情報サービスを許す。")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
       "RetroArchに最大対応のユーザー数")
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
-      "Influence how input polling is done inside RetroArch. Setting it to 'Early' or 'Late' can result in less latency, depending on your configuration."
-      )
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
       "どれでもユーザーがメニューを操作できる。オフにすると、ユーザー１のみが操作できる。")
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
-      "Audio volume (in dB). 0 dB is normal volume, no gain applied."
-      )
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_SYNC,
       "オーディオを同期する。推奨。")
+
+MSG_HASH(
+   MSG_FAILED,
+   "失敗"
+   )
+MSG_HASH(
+   MSG_SUCCEEDED,
+   "成功しました"
+   )
+MSG_HASH(
+   MSG_DEVICE_NOT_CONFIGURED,
+   "設定されていない"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST,
+   "データベースのカーソル表"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DEVELOPER,
+   "データベース - 検索条件 : 開発者"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_PUBLISHER,
+   "データベース - 検索条件 : 出版社"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_PATH,
+   "コンテンツの履歴ディレクトリ"
+   )
+MSG_HASH(
+      MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_ORIGIN,
+      "データベース - 検索条件 : Origin")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_FRANCHISE,
+      "データベース - 検索条件 : Franchise")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_ESRB_RATING,
+      "データベース - 検索条件 : ESRB評価")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_ELSPA_RATING,
+      "データベース - 検索条件 : ELSPA評価")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_PEGI_RATING,
+      "データベース - 検索条件 : PEGI評価")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_CERO_RATING,
+      "データベース - 検索条件 : CERO評価")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_BBFC_RATING,
+      "データベース - 検索条件 : BBFC評価")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_MAX_USERS,
+      "データベース - 検索条件 : Max Users")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_MONTH,
+      "データベース - 検索条件 : Releasedate By Month")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_YEAR,
+      "データベース - 検索条件 : Releasedate By Year")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_ISSUE,
+      "データベース - 検索条件 : Edge Magazine Issue")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_RATING,
+      "データベース - 検索条件 : Edge Magazine評価")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DATABASE_INFO,
+      "データベース情報")
+MSG_HASH(MSG_WIFI_SCAN_COMPLETE,
+      "Wi-Fiスキャン完了。")
+MSG_HASH(MSG_SCANNING_WIRELESS_NETWORKS,
+      "無線ネットワークをスキャン中")
+MSG_HASH(MSG_NETPLAY_LAN_SCAN_COMPLETE,
+      "ネットプレイスキャン完了。")
+MSG_HASH(MSG_NETPLAY_LAN_SCANNING,
+      "ネットプレイホストをスキャン中")
+
+/****************************************
+*	INCOMING MESSAGES TO BE TRANSLATED
+****************************************/
+MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
+	"Enable or disable achievements. For more information, visit http://retroachievements.org")
+MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
+    "Enable or disable unofficial achievements and/or beta features for testing purposes.")
+MSG_HASH( MENU_ENUM_LABEL_VALUE_ENABLED,
+	"Enabled")
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AXIS_THRESHOLD,
    "How far an axis must be tilted to result in a button press."
@@ -2191,69 +1813,451 @@ MSG_HASH(
    "The maximum change in audio input rate. You may want to increase this to enable very large changes in timing, for example running PAL cores on NTSC displays, at the cost of inaccurate audio pitch."
    )
 MSG_HASH(
-   MSG_FAILED,
-   "失敗"
-   )
+      MSG_DEVICE_DISCONNECTED_FROM_PORT,
+      "Device disconnected from port"
+      )
 MSG_HASH(
-   MSG_SUCCEEDED,
-   "成功しました"
-   )
+      MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
+      "Unknown netplay command received"
+      )
 MSG_HASH(
-   MSG_DEVICE_NOT_CONFIGURED,
-   "設定されていない"
-   )
+      MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
+      "File already exists. Saving to backup buffer"
+      )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST,
-   "データベースのカーソル表"
-   )
+      MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
+      "No arguments supplied and no menu builtin, displaying help..."
+      )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DEVELOPER,
-   "データベース - 検索条件 : 開発者"
-   )
+      MSG_NETPLAY_USERS_HAS_FLIPPED,
+      "Netplay users has flipped"
+      )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_PUBLISHER,
-   "データベース - 検索条件 : 出版社"
-   )
+      MSG_SETTING_DISK_IN_TRAY,
+      "Setting disk in tray"
+      )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ENABLED,
-   "Enabled"
-   )
+      MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
+      "Give hardware-rendered cores their own private context. Avoids having to assume hardware state changes inbetween frames."
+      )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_PATH,
-   "コンテンツの履歴ディレクトリ"
-   )
+      MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
+      "Audio volume (in dB). 0 dB is normal volume, no gain applied."
+      )
 MSG_HASH(
-      MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_ORIGIN,
-      "データベース - 検索条件 : Origin")
-MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_FRANCHISE,
-      "データベース - 検索条件 : Franchise")
-MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_ESRB_RATING,
-      "データベース - 検索条件 : ESRB評価")
-MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_ELSPA_RATING,
-      "データベース - 検索条件 : ELSPA評価")
-MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_PEGI_RATING,
-      "データベース - 検索条件 : PEGI評価")
-MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_CERO_RATING,
-      "データベース - 検索条件 : CERO評価")
-MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_BBFC_RATING,
-      "データベース - 検索条件 : BBFC評価")
-MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_MAX_USERS,
-      "データベース - 検索条件 : Max Users")
-MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_MONTH,
-      "データベース - 検索条件 : Releasedate By Month")
-MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_YEAR,
-      "データベース - 検索条件 : Releasedate By Year")
-MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_ISSUE,
-      "データベース - 検索条件 : Edge Magazine Issue")
-MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_RATING,
-      "データベース - 検索条件 : Edge Magazine評価")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DATABASE_INFO,
-      "データベース情報")
-MSG_HASH(MSG_WIFI_SCAN_COMPLETE,
-      "Wi-Fiスキャン完了。")
-MSG_HASH(MSG_SCANNING_WIRELESS_NETWORKS,
-      "無線ネットワークをスキャン中")
-MSG_HASH(MSG_NETPLAY_LAN_SCAN_COMPLETE,
-      "ネットプレイスキャン完了。")
-MSG_HASH(MSG_NETPLAY_LAN_SCANNING,
-      "ネットプレイホストをスキャン中")
+      MSG_AUTOLOADING_SAVESTATE_FROM,
+      "Auto-loading savestate from"
+      )
+MSG_HASH(
+      MSG_CONNECTING_TO_NETPLAY_HOST,
+      "Connecting to netplay host"
+      )
+MSG_HASH(
+      MSG_CONNECTING_TO_PORT,
+      "Connecting to port"
+      )
+MSG_HASH(
+      MSG_CONNECTION_SLOT,
+      "Connection slot"
+      )
+MSG_HASH(
+      MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY,
+      "Sorry, unimplemented: cores that don't demand content cannot participate in netplay."
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST_END,
+      "Accounts List Endpoint"
+      )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
+      "Keyboard Gamepad Mapping Enable")
+MSG_HASH(MSG_VERSION_OF_LIBRETRO_API,
+      "Version of libretro API")
+MSG_HASH(MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
+      "Viewport size calculation failed! Will continue using raw data. This will probably not work right ...")
+MSG_HASH(MSG_VIRTUAL_DISK_TRAY,
+      "virtual disk tray.")
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
+      "Helps smooth out imperfections in timing when synchronizing audio and video at the same time. Be aware that if disabled, proper synchronization is nearly impossible to obtain."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
+      "Influence how input polling is done inside RetroArch. Setting it to 'Early' or 'Late' can result in less latency, depending on your configuration."
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
+      "Accounts Cheevos"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_ARCHIVE_MODE,
+      "Archive File Association Action"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE,
+      "Ask"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
+      "Block Frames"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_TURBO_DEADZONE_LIST,
+      "Turbo/Deadzone"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
+      "Load Shader Presets Automatically"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_SCROLL_UP,
+      "Scroll Up"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS,
+      "Basic menu controls"
+      )
+MSG_HASH(MSG_UNRECOGNIZED_COMMAND,
+      "Unrecognized command")
+MSG_HASH(MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
+      "Using core name for new config.")
+MSG_HASH(MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED,
+      "Using libretro dummy core. Skipping recording.")
+MSG_HASH(MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT,
+      "Connect device from a valid port.")
+MSG_HASH(MSG_VALUE_DISCONNECTING_DEVICE_FROM_PORT,
+      "Disconnecting device from port")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS,
+      "Disk Cycle Tray Status")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
+      "Disk Image Append")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+      "Disk Index")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DONT_CARE,
+      "Don't care")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE,
+      "DPI Override Enable")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE,
+      "DPI Override")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_COUNTERS,
+      "Core Counters"
+      )
+MSG_HASH(MSG_FOUND_AUTO_SAVESTATE_IN,
+      "Found auto savestate in")
+MSG_HASH(MSG_FOUND_DISK_LABEL,
+      "Found disk label")
+MSG_HASH(MSG_FOUND_FIRST_DATA_TRACK_ON_FILE,
+      "Found first data track on file")
+MSG_HASH(MSG_FOUND_LAST_STATE_SLOT,
+      "Found last state slot")
+MSG_HASH(MSG_FOUND_SHADER,
+      "Found shader")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW,
+      "Enhancement Hardware")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_LINEAR,
+      "Linear")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS,
+      "No performance counters.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_OFF,
+      "OFF")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_ON,
+      "ON")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
+      "Onscreen Notifications")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY,
+      "Footer Opacity")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_HEADER_OPACITY,
+      "Header Opacity")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NEAREST,
+      "Nearest")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER,
+      "Flicker filter")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_SELECTION,
+      "Database Selection")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
+      "<Content dir>")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
+      "<Default>")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_NONE,
+      "<None>")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR,
+      "Menu entry hover color")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_ENTRY_NORMAL_COLOR,
+      "Menu entry normal color")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
+      "Frontend Counters")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE,
+      "Create game-options file")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE,
+      "Game-options file")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
+      "Prefer Front Touch")
+MSG_HASH(MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
+      "Core options file created successfully.")
+MSG_HASH(MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,
+      "Could not find any next driver")
+MSG_HASH(MSG_COULD_NOT_FIND_COMPATIBLE_SYSTEM,
+      "Could not find compatible system.")
+MSG_HASH(MSG_COULD_NOT_FIND_VALID_DATA_TRACK,
+      "Could not find valid data track")
+MSG_HASH(MSG_COULD_NOT_OPEN_DATA_TRACK,
+      "could not open data track")
+MSG_HASH(MSG_COULD_NOT_READ_MOVIE_HEADER,
+      "Could not read movie header.")
+MSG_HASH(MSG_COULD_NOT_READ_STATE_FROM_MOVIE,
+      "Could not read state from movie.")
+MSG_HASH(MSG_CRC32_CHECKSUM_MISMATCH,
+      "CRC32 checksum mismatch between content file and saved content checksum in replay file header) replay highly likely to desync on playback.")
+MSG_HASH(MSG_CUSTOM_TIMING_GIVEN,
+      "Custom timing given")
+MSG_HASH(MSG_DECOMPRESSION_ALREADY_IN_PROGRESS,
+      "Decompression already in progress.")
+MSG_HASH(MSG_DECOMPRESSION_FAILED,
+      "Decompression failed.")
+MSG_HASH(MSG_DETECTED_VIEWPORT_OF,
+      "Detected viewport of")
+MSG_HASH(MSG_DID_NOT_FIND_A_VALID_CONTENT_PATCH,
+      "Did not find a valid content patch.")
+MSG_HASH(MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
+      "Disconnect device from a valid port.")
+MSG_HASH(MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE,
+      "Movie file is not a valid BSV1 file.")
+MSG_HASH(MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
+      "Movie format seems to have a different serializer version. Will most likely fail.")
+MSG_HASH(MSG_MOVIE_PLAYBACK_ENDED,
+      "Movie playback ended.")
+MSG_HASH(MSG_MOVIE_RECORD_STOPPED,
+      "Stopping movie record.")
+MSG_HASH(MSG_NETPLAY_FAILED,
+      "Failed to initialize netplay.")
+MSG_HASH(MSG_NETPLAY_FAILED_MOVIE_PLAYBACK_HAS_STARTED,
+      "Movie playback has started. Cannot start netplay.")
+MSG_HASH(MSG_NO_CONTENT_STARTING_DUMMY_CORE,
+      "No content, starting dummy core.")
+MSG_HASH(MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET,
+      "No save state has been overwritten yet.")
+MSG_HASH(MSG_NO_STATE_HAS_BEEN_LOADED_YET,
+      "No state has been loaded yet.")
+MSG_HASH(MSG_OVERRIDES_ERROR_SAVING,
+      "Error saving overrides.")
+MSG_HASH(MSG_OVERRIDES_SAVED_SUCCESSFULLY,
+      "Overrides saved successfully.")
+MSG_HASH(MSG_PROGRAM,
+      "RetroArch")
+MSG_HASH(MSG_READING_FIRST_DATA_TRACK,
+      "Reading first data track...")
+MSG_HASH(MSG_RECEIVED,
+      "received")
+MSG_HASH(MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
+      "Recording terminated due to resize.")
+MSG_HASH(MSG_RECORDING_TO,
+      "Recording to")
+MSG_HASH(MSG_REDIRECTING_CHEATFILE_TO,
+      "Redirecting cheat file to")
+MSG_HASH(MSG_REDIRECTING_SAVEFILE_TO,
+      "Redirecting save file to")
+MSG_HASH(MSG_REDIRECTING_SAVESTATE_TO,
+      "Redirecting savestate to")
+MSG_HASH(MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
+      "Remap file saved successfully.")
+MSG_HASH(MSG_REMOVED_DISK_FROM_TRAY,
+      "Removed disk from tray.")
+MSG_HASH(MSG_REMOVING_TEMPORARY_CONTENT_FILE,
+      "Removing temporary content file")
+MSG_HASH(MSG_TO,
+      "to")
+MSG_HASH(MSG_UNDOING_SAVE_STATE,
+      "Undoing save state")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE,
+      "System BGM Enable")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SHA1,
+      "SHA1")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MD5,
+      "MD5")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CRC32,
+      "CRC32")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
+      "Internal storage status")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
+      "Small Keyboard Enable")
+MSG_HASH(MSG_APPENDED_DISK,
+      "Appended disk")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL,
+      "RetroRating level")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
+      "UI Companion Enable")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
+      "UI Companion Start On Boot")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
+      "Use Builtin Image Viewer")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
+      "Use Builtin Media Player")
+MSG_HASH(MSG_APPLYING_CHEAT,
+      "Applying cheat changes.")
+MSG_HASH(MSG_APPLYING_SHADER,
+      "Applying shader")
+MSG_HASH(MSG_AUTOCONFIG_FILE_ERROR_SAVING,
+      "Error saving autoconf file.")
+MSG_HASH(MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
+      "Autoconfig file saved successfully.")
+MSG_HASH(MSG_AUTOSAVE_FAILED,
+      "Could not initialize autosave.")
+MSG_HASH(MSG_AUTO_SAVE_STATE_TO,
+      "Auto save state to")
+MSG_HASH(MSG_BLOCKING_SRAM_OVERWRITE,
+      "Blocking SRAM Overwrite")
+MSG_HASH(MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
+      "Bringing up command interface on port")
+MSG_HASH(MSG_CANNOT_INFER_NEW_CONFIG_PATH,
+      "Cannot infer new config path. Use current time.")
+MSG_HASH(MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
+      "Comparing with known magic numbers...")
+MSG_HASH(MSG_COMPILED_AGAINST_API,
+      "Compiled against API")
+MSG_HASH(MSG_CONFIG_DIRECTORY_NOT_SET,
+      "Config directory not set. Cannot save new config.")
+MSG_HASH(MSG_CONNECTED_TO,
+      "Connected to")
+MSG_HASH(MSG_CONTENT_CRC32S_DIFFER,
+      "Content CRC32s differ. Cannot use different games.")
+MSG_HASH(MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT,
+      "Content loading skipped. Implementation will load it on its own.")
+MSG_HASH(MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT,
+      "Libretro core requires content, but nothing was provided.")
+MSG_HASH(MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT,
+      "Libretro core requires special content, but none were provided.")
+MSG_HASH(MSG_ERROR_PARSING_ARGUMENTS,
+      "Error parsing arguments.")
+MSG_HASH(MSG_ERROR_SAVING_CORE_OPTIONS_FILE,
+      "Error saving core options file.")
+MSG_HASH(MSG_ERROR_SAVING_REMAP_FILE,
+      "Error saving remap file.")
+MSG_HASH(MSG_ERROR_SAVING_SHADER_PRESET,
+      "Error saving shader preset.")
+MSG_HASH(MSG_FAILED_SAVING_CONFIG_TO,
+      "Failed saving config to")
+MSG_HASH(MSG_FAILED_TO,
+      "Failed to")
+MSG_HASH(MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
+      "Failed to accept incoming spectator.")
+MSG_HASH(MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT,
+      "Failed to allocate memory for patched content...")
+MSG_HASH(MSG_FAILED_TO_APPLY_SHADER,
+      "Failed to apply shader.")
+MSG_HASH(MSG_FAILED_TO_BIND_SOCKET,
+      "Failed to bind socket.")
+MSG_HASH(MSG_FAILED_TO_CREATE_THE_DIRECTORY,
+      "Failed to create the directory.")
+MSG_HASH(MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
+      "Failed to extract content from compressed file")
+MSG_HASH(MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
+      "Failed to get nickname from client.")
+MSG_HASH(MSG_FAILED_TO_LOAD_MOVIE_FILE,
+      "Failed to load movie file")
+MSG_HASH(MSG_FAILED_TO_LOAD_OVERLAY,
+      "Failed to load overlay.")
+MSG_HASH(MSG_FAILED_TO_LOAD_STATE,
+      "Failed to load state from")
+MSG_HASH(MSG_FAILED_TO_OPEN_LIBRETRO_CORE,
+      "Failed to open libretro core")
+MSG_HASH(MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT,
+      "Failed to receive header from client.")
+MSG_HASH(MSG_FAILED_TO_RECEIVE_NICKNAME,
+      "Failed to receive nickname.")
+MSG_HASH(MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST,
+      "Failed to receive nickname from host.")
+MSG_HASH(MSG_FAILED_TO_RECEIVE_NICKNAME_SIZE_FROM_HOST,
+      "Failed to receive nickname size from host.")
+MSG_HASH(MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
+      "Failed to receive SRAM data from host.")
+MSG_HASH(MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+      "Failed to remove disk from tray.")
+MSG_HASH(MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
+      "Failed to remove temporary file")
+MSG_HASH(MSG_FAILED_TO_SAVE_SRAM,
+      "Failed to save SRAM")
+MSG_HASH(MSG_FAILED_TO_SAVE_STATE_TO,
+      "Failed to save state to")
+MSG_HASH(MSG_FAILED_TO_SEND_NICKNAME,
+      "Failed to send nickname.")
+MSG_HASH(MSG_FAILED_TO_SEND_NICKNAME_SIZE,
+      "Failed to send nickname size.")
+MSG_HASH(MSG_FAILED_TO_SEND_NICKNAME_TO_CLIENT,
+      "Failed to send nickname to client.")
+MSG_HASH(MSG_FAILED_TO_SEND_NICKNAME_TO_HOST,
+      "Failed to send nickname to host.")
+MSG_HASH(MSG_FAILED_TO_SEND_SRAM_DATA_TO_CLIENT,
+      "Failed to send SRAM data to client.")
+MSG_HASH(MSG_FAILED_TO_START_AUDIO_DRIVER,
+      "Failed to start audio driver. Will continue without audio.")
+MSG_HASH(MSG_FAILED_TO_START_MOVIE_RECORD,
+      "Failed to start movie record.")
+MSG_HASH(MSG_FAILED_TO_START_RECORDING,
+      "Failed to start recording.")
+MSG_HASH(MSG_FAILED_TO_TAKE_SCREENSHOT,
+      "Failed to take screenshot.")
+MSG_HASH(MSG_FAILED_TO_UNDO_LOAD_STATE,
+      "Failed to undo load state.")
+MSG_HASH(MSG_FAILED_TO_UNDO_SAVE_STATE,
+      "Failed to undo save state.")
+MSG_HASH(MSG_FAILED_TO_UNMUTE_AUDIO,
+      "Failed to unmute audio.")
+MSG_HASH(MSG_FATAL_ERROR_RECEIVED_IN,
+      "Fatal error received in")
+MSG_HASH(MSG_LIBRETRO_ABI_BREAK,
+      "is compiled against a different version of libretro than this libretro implementation.")
+MSG_HASH(MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT,
+      "Restarting recording due to driver reinit.")
+MSG_HASH(MSG_RESTORED_OLD_SAVE_STATE,
+      "Restored old save state.")
+MSG_HASH(MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
+      "Shaders: restoring default shader preset to")
+MSG_HASH(MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
+      "Reverting savefile directory to")
+MSG_HASH(MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
+      "Reverting savestate directory to")
+MSG_HASH(MSG_REWIND_INIT,
+      "Initializing rewind buffer with size")
+MSG_HASH(MSG_REWIND_INIT_FAILED,
+      "Failed to initialize rewind buffer. Rewinding will be disabled.")
+MSG_HASH(MSG_REWIND_INIT_FAILED_THREADED_AUDIO,
+      "Implementation uses threaded audio. Cannot use rewind.")
+MSG_HASH(MSG_REWIND_REACHED_END,
+      "Reached end of rewind buffer.")
+MSG_HASH(MSG_SAVED_NEW_CONFIG_TO,
+      "Saved new config to")
+MSG_HASH(MSG_SAVED_SUCCESSFULLY_TO,
+      "Saved successfully to")
+MSG_HASH(MSG_SAVING_RAM_TYPE,
+      "Saving RAM type")
+MSG_HASH(MSG_SENDING_COMMAND,
+      "Sending command")
+MSG_HASH(MSG_SEVERAL_PATCHES_ARE_EXPLICITLY_DEFINED,
+      "Several patches are explicitly defined, ignoring all...")
+MSG_HASH(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY,
+      "Shader preset saved successfully.")
+MSG_HASH(MSG_SKIPPING_SRAM_LOAD,
+      "Skipping SRAM load.")
+MSG_HASH(MSG_SRAM_WILL_NOT_BE_SAVED,
+      "SRAM will not be saved.")
+MSG_HASH(MSG_STARTING_MOVIE_PLAYBACK,
+      "Starting movie playback.")
+MSG_HASH(MSG_STARTING_MOVIE_RECORD_TO,
+      "Starting movie record to")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS,
+      "Boxarts")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS,
+      "Title Screens")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_PORT,
+      "Network Remote Base Port")
+MSG_HASH(MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING,
+      "Libretro core is hardware rendered. Must use post-shaded recording as well.")
+MSG_HASH(MSG_INFLATED_CHECKSUM_DID_NOT_MATCH_CRC32,
+      "Inflated checksum did not match CRC32.")
+MSG_HASH(MSG_INPUT_CHEAT,
+      "Input Cheat")
+MSG_HASH(MSG_INPUT_CHEAT_FILENAME,
+      "Cheat Filename")
+MSG_HASH(MSG_INPUT_PRESET_FILENAME,
+      "Preset Filename")
+MSG_HASH(MSG_INVALID_NICKNAME_SIZE,
+      "Invalid nickname size.")
