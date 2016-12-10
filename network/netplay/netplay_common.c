@@ -262,7 +262,7 @@ static void netplay_handshake_ready(netplay_t *netplay, struct netplay_connectio
 
    if (netplay->is_server)
    {
-      netplay_log_connection(&netplay->other_addr, 0, connection->nick);
+      netplay_log_connection(&connection->addr, 0, connection->nick);
 
       /* Send them the savestate */
       if (!(netplay->quirks & (NETPLAY_QUIRK_NO_SAVESTATES|NETPLAY_QUIRK_NO_TRANSMISSION)))

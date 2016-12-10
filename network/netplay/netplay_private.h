@@ -232,6 +232,9 @@ struct netplay_connection
    /* fd associated with this connection */
    int fd;
 
+   /* Address of peer */
+   struct sockaddr_storage addr;
+
    /* Nickname of peer */
    char nick[32];
 
@@ -249,9 +252,6 @@ struct netplay
 {
    /* Our nickname */
    char nick[32];
-
-   /* Address of peer */
-   struct sockaddr_storage other_addr;
 
    /* TCP connection for listening (server only) */
    int listen_fd;

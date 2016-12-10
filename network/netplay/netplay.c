@@ -202,12 +202,13 @@ static bool init_tcp_socket(netplay_t *netplay, void *direct_host,
 
    while (tmp_info)
    {
+      struct sockaddr_storage sad;
       int fd = init_tcp_connection(
             tmp_info,
             direct_host || server,
             netplay->spectate.enabled,
-            (struct sockaddr*)&netplay->other_addr,
-            sizeof(netplay->other_addr));
+            (struct sockaddr*)&sad,
+            sizeof(sad));
 
       if (fd >= 0)
       {
@@ -216,6 +217,7 @@ static bool init_tcp_socket(netplay_t *netplay, void *direct_host,
          {
             netplay->connections[0].active = true;
             netplay->connections[0].fd = fd;
+            netplay->connections[0].addr = sad;
          }
          else
          {
