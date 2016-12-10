@@ -153,9 +153,6 @@ void gl_renderchain_convert_geometry(gl_t *gl,
    }
 }
 
-
-
-
 static bool gl_recreate_fbo(
       struct video_fbo_rect *fbo_rect,
       GLuint fbo,
@@ -168,27 +165,27 @@ static bool gl_recreate_fbo(
    glBindTexture(GL_TEXTURE_2D, *texture);
 #ifndef HAVE_OPENGLES2
    if (gl_check_capability(GL_CAPS_TEX_STORAGE))
-      glTexStorage2D(GL_TEXTURE_2D, 1, RARCH_GL_INTERNAL_FORMAT32, fbo_rect->width, fbo_rect->height);
+      glTexStorage2D(GL_TEXTURE_2D, 1, RARCH_GL_INTERNAL_FORMAT32,
+            fbo_rect->width, fbo_rect->height);
    else
 #endif
       glTexImage2D(GL_TEXTURE_2D,
-         0, RARCH_GL_INTERNAL_FORMAT32,
-         fbo_rect->width,
-         fbo_rect->height,
-         0, RARCH_GL_TEXTURE_TYPE32,
-         RARCH_GL_FORMAT32, NULL);
+            0, RARCH_GL_INTERNAL_FORMAT32,
+            fbo_rect->width,
+            fbo_rect->height,
+            0, RARCH_GL_TEXTURE_TYPE32,
+            RARCH_GL_FORMAT32, NULL);
 
    glFramebufferTexture2D(RARCH_GL_FRAMEBUFFER,
          RARCH_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
          *texture, 0);
 
-   if (glCheckFramebufferStatus(RARCH_GL_FRAMEBUFFER) != RARCH_GL_FRAMEBUFFER_COMPLETE)
-   {
-      RARCH_WARN("Failed to reinitialize FBO texture.\n");
-      return false;
-   }
+   if (glCheckFramebufferStatus(RARCH_GL_FRAMEBUFFER) 
+         == RARCH_GL_FRAMEBUFFER_COMPLETE)
+      return true;
 
-   return true;
+   RARCH_WARN("Failed to reinitialize FBO texture.\n");
+   return false;
 }
 
 static void gl_check_fbo_dimension(gl_t *gl, unsigned i,
