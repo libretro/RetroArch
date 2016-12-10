@@ -141,7 +141,7 @@ bool natt_open_port(struct natt_status *status, struct sockaddr *addr, socklen_t
       status->have_inet4 = true;
       status->ext_inet4_addr = *((struct sockaddr_in *) ext_addrinfo->ai_addr);
    }
-#ifdef AF_INET6
+#if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY)
    else if (ext_addrinfo->ai_family == AF_INET6 &&
             ext_addrinfo->ai_addrlen >= sizeof(struct sockaddr_in6))
    {

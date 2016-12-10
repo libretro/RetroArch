@@ -45,7 +45,7 @@ struct natt_status {
    /** True if we've resolved an external IPv6 address */
    bool have_inet6;
 
-#ifdef AF_INET6
+#if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY)
    /** External IPv6 address */
    struct sockaddr_in6 ext_inet6_addr;
 #endif
