@@ -842,3 +842,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
       "Pause gameplay when window focus is lost.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
       "Enable or disable composition (Windows only).")
+MSG_HASH(MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
+      "Enable or disable recent playlist for games, images, music, and videos.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
+      "Limit the number of entries in recent playlist for games, images, music, and videos.")
