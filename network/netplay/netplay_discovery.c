@@ -43,6 +43,10 @@
 #include "netplay_discovery.h"
 #include "netplay_private.h"
 
+#if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY)
+#define HAVE_INET6 1
+#endif
+
 struct ad_packet
 {
    uint32_t header;
@@ -260,7 +264,7 @@ static int16_t htons_for_morons(int16_t value)
       int16_t s[2];
    } val;
    val.l = htonl(value);
-   return val.s[2];
+   return val.s[1];
 }
 #ifndef htons
 #define htons htons_for_morons
@@ -310,7 +314,7 @@ bool netplay_lan_ad_client(void)
             sin->sin_port = htons(ntohl(ad_packet_buffer.port));
 
          }
-#ifdef AF_INET6
+#ifdef HAVE_INET6
          else if (their_addr.sa_family == AF_INET6)
          {
             struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *) &their_addr;

@@ -42,6 +42,10 @@
 #define MAX_RETRIES                 16
 #define RETRY_MS                    500
 
+#if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY)
+#define HAVE_INET6 1
+#endif
+
 enum
 {
    CMD_OPT_ALLOWED_IN_SPECTATE_MODE = 0x1,
@@ -102,7 +106,7 @@ static int init_tcp_connection(const struct addrinfo *res,
    }
    else
    {
-#if defined(AF_INET6) && defined(IPPROTO_IPV6) && defined(IPV6_V6ONLY)
+#if defined(HAVE_INET6) && defined(IPPROTO_IPV6) && defined(IPV6_V6ONLY)
       /* Make sure we accept connections on both IPv6 and IPv4 */
       int on = 0;
       if (res->ai_family == AF_INET6)
@@ -142,7 +146,7 @@ static bool init_tcp_socket(netplay_t *netplay, void *direct_host,
 
    if (!direct_host)
    {
-#ifdef AF_INET6
+#ifdef HAVE_INET6
       /* Default to hosting on IPv6 and IPv4 */
       if (!server)
          hints.ai_family = AF_INET6;
@@ -154,7 +158,7 @@ static bool init_tcp_socket(netplay_t *netplay, void *direct_host,
       snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
       if (getaddrinfo_retro(server, port_buf, &hints, &res) < 0)
       {
-#ifdef AF_INET6
+#ifdef HAVE_INET6
          if (!server)
          {
             /* Didn't work with IPv6, try wildcard */
@@ -186,7 +190,7 @@ static bool init_tcp_socket(netplay_t *netplay, void *direct_host,
 
    /* If we're serving on IPv6, make sure we accept all connections, including
     * IPv4 */
-#ifdef AF_INET6
+#ifdef HAVE_INET6
    if (!direct_host && !server && res->ai_family == AF_INET6)
    {
       struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *) res->ai_addr;
@@ -1110,7 +1114,7 @@ static void announce_nat_traversal(netplay_t *netplay)
          return;
 
    }
-#ifdef AF_INET6
+#ifdef HAVE_INET6
    else if (netplay->nat_traversal_state.have_inet6)
    {
       if (getnameinfo((const struct sockaddr *) &netplay->nat_traversal_state.ext_inet6_addr,
