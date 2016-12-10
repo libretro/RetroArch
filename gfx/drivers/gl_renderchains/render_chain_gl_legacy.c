@@ -532,7 +532,8 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
    {
       RARCH_LOG("[GL]: FBO pass #%d is floating-point.\n", i);
       if (gl_check_capability(GL_CAPS_TEX_STORAGE))
-         glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA32F, gl->fbo_rect[i].width, gl->fbo_rect[i].height);
+         glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA32F,
+               gl->fbo_rect[i].width, gl->fbo_rect[i].height);
       else
          glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F,
             gl->fbo_rect[i].width, gl->fbo_rect[i].height,
@@ -566,7 +567,8 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
                GL_UNSIGNED_BYTE, NULL);
 #else
          if (gl_check_capability(GL_CAPS_TEX_STORAGE))
-            glTexStorage2D(GL_TEXTURE_2D, 1, GL_SRGB8_ALPHA8, gl->fbo_rect[i].width, gl->fbo_rect[i].height);
+            glTexStorage2D(GL_TEXTURE_2D, 1, GL_SRGB8_ALPHA8,
+                  gl->fbo_rect[i].width, gl->fbo_rect[i].height);
          else
             glTexImage2D(GL_TEXTURE_2D,
                0, GL_SRGB8_ALPHA8,
@@ -586,7 +588,8 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
          /* Avoid potential performance 
           * reductions on particular platforms. */
          if (gl_check_capability(GL_CAPS_TEX_STORAGE))
-            glTexStorage2D(GL_TEXTURE_2D, 1, RARCH_GL_INTERNAL_FORMAT32, gl->fbo_rect[i].width, gl->fbo_rect[i].height);
+            glTexStorage2D(GL_TEXTURE_2D, 1, RARCH_GL_INTERNAL_FORMAT32,
+                  gl->fbo_rect[i].width, gl->fbo_rect[i].height);
          else
             glTexImage2D(GL_TEXTURE_2D,
                0, RARCH_GL_INTERNAL_FORMAT32,
