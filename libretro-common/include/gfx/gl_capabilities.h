@@ -58,4 +58,6 @@ void gl_query_core_context_unset(void);
 
 bool gl_check_capability(enum gl_capability_enum enum_idx);
 
+bool gl_query_extension(const char *ext);
+
 #endif

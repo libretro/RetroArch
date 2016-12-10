@@ -48,7 +48,7 @@ void gl_query_core_context_unset(void)
    gl_core_context = false;
 }
 
-static bool gl_query_extension(const char *ext)
+bool gl_query_extension(const char *ext)
 {
    bool ret = false;
 

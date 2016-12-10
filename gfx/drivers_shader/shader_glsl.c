@@ -932,8 +932,21 @@ static void *gl_glsl_init(void *data, const char *path)
    }
 
 #ifdef HAVE_SHADERPIPELINE
-   shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_ribbon_modern : stock_vertex_xmb_ribbon_legacy;
-   shader_prog_info.fragment = stock_fragment_xmb;
+#ifdef HAVE_OPENGLES
+   if (gl_query_extension("GL_OES_standard_derivatives"))
+   {
+      shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_ribbon_modern : stock_vertex_xmb_ribbon_legacy;
+      shader_prog_info.fragment = stock_fragment_xmb;
+   }
+   else
+   {
+      shader_prog_info.vertex   = stock_vertex_xmb_ribbon_simple_legacy;
+      shader_prog_info.fragment = stock_fragment_xmb_ribbon_simple;
+   }
+#else
+      shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_ribbon_modern : stock_vertex_xmb_ribbon_legacy;
+      shader_prog_info.fragment = stock_fragment_xmb;
+#endif
    shader_prog_info.is_file  = false;
 
    gl_glsl_compile_program(
