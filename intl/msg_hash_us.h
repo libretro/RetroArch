@@ -20,7 +20,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_GOT_CONNECTION_FROM,
-      "Got connection from"
+      "Got connection from: \"%s\""
+      )
+MSG_HASH(
+      MSG_GOT_CONNECTION_FROM_NAME,
+      "Got connection from: \"%s (%s)\""
       )
 MSG_HASH(
       MSG_PUBLIC_ADDRESS,

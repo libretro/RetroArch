@@ -1922,7 +1922,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER:
          return "Ttệp đã tồn tại. Đang lưu vào backup buffer";
       case MSG_GOT_CONNECTION_FROM:
-         return "Được kết nối từ";
+         return "Được kết nối từ: \"%s\"";
       case MSG_NETPLAY_USERS_HAS_FLIPPED:
          return "Người dùng Netplay đã flipped";
       case MSG_SUCCEEDED:
