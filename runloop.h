@@ -21,10 +21,6 @@
 #include <retro_miscellaneous.h>
 #include <retro_common_api.h>
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #define runloop_cmd_triggered(trigger_input, id) (BIT64_GET(trigger_input, id))
 
 #define runloop_cmd_press(current_input, id)     (BIT64_GET(current_input, id))
@@ -192,14 +188,6 @@ typedef struct global
       bool softfilter_enable;
    } console;
 } global_t;
-
-typedef struct runloop_ctx_msg_info
-{
-   const char *msg;
-   unsigned prio;
-   unsigned duration;
-   bool flush;
-} runloop_ctx_msg_info_t;
 
 global_t *global_get_ptr(void);
 

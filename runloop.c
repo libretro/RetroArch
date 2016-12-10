@@ -101,6 +101,14 @@ enum  runloop_state
    RUNLOOP_STATE_QUIT
 };
 
+typedef struct runloop_ctx_msg_info
+{
+   const char *msg;
+   unsigned prio;
+   unsigned duration;
+   bool flush;
+} runloop_ctx_msg_info_t;
+
 static rarch_system_info_t runloop_system;
 static struct retro_frame_time_callback runloop_frame_time;
 static retro_keyboard_event_t runloop_key_event            = NULL;
