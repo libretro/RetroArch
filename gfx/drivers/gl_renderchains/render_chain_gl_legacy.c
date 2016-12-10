@@ -194,28 +194,16 @@ static bool gl_recreate_fbo(
 static void gl_check_fbo_dimension(gl_t *gl, unsigned i,
       bool update_feedback)
 {
-   unsigned img_width, img_height, max, pow2_size;
-   bool check_dimensions         = false;
    struct video_fbo_rect *fbo_rect = &gl->fbo_rect[i];
-
-   if (!fbo_rect)
-      return;
-
-   check_dimensions = 
-      (fbo_rect->max_img_width > fbo_rect->width) ||
-      (fbo_rect->max_img_height > fbo_rect->height);
-
-   if (!check_dimensions)
-      return;
-
    /* Check proactively since we might suddently 
     * get sizes of tex_w width or tex_h height. */
-   img_width             = fbo_rect->max_img_width;
-   img_height            = fbo_rect->max_img_height;
-   max                   = img_width > img_height ? img_width : img_height;
-   pow2_size             = next_pow2(max);
+   unsigned img_width              = fbo_rect->max_img_width;
+   unsigned img_height             = fbo_rect->max_img_height;
+   unsigned max                    = img_width > img_height ? img_width : img_height;
+   unsigned pow2_size              = next_pow2(max);
 
-   fbo_rect->width = fbo_rect->height = pow2_size;
+   fbo_rect->width                 = pow2_size;
+   fbo_rect->height                = pow2_size;
 
    gl_recreate_fbo(fbo_rect, gl->fbo[i], &gl->fbo_texture[i]);
 
@@ -249,7 +237,12 @@ void gl_check_fbo_dimensions(gl_t *gl)
    {
       bool update_feedback = gl->fbo_feedback_enable 
          && (unsigned)i == gl->fbo_feedback_pass;
-      gl_check_fbo_dimension(gl, i, update_feedback);
+      struct video_fbo_rect *fbo_rect = &gl->fbo_rect[i];
+      bool check_dimensions = 
+         (fbo_rect->max_img_width  > fbo_rect->width) ||
+         (fbo_rect->max_img_height > fbo_rect->height);
+      if (fbo_rect && check_dimensions)
+         gl_check_fbo_dimension(gl, i, update_feedback);
    }
 }
 void gl_renderchain_render(gl_t *gl,
