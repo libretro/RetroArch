@@ -163,7 +163,7 @@ static bool gl_recreate_fbo(
    glDeleteTextures(1, texture);
    glGenTextures(1, texture);
    glBindTexture(GL_TEXTURE_2D, *texture);
-#ifndef HAVE_OPENGLES2
+#if !defined(HAVE_OPENGLES2) && !defined(HAVE_PSGL)
    if (gl_check_capability(GL_CAPS_TEX_STORAGE))
       glTexStorage2D(GL_TEXTURE_2D, 1, RARCH_GL_INTERNAL_FORMAT32,
             fbo_rect->width, fbo_rect->height);
@@ -524,14 +524,16 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
          RARCH_ERR("[GL]: Floating-point FBO was requested, but is not supported. Falling back to UNORM. Result may band/clip/etc.!\n");
    }
 
-#ifndef HAVE_OPENGLES2
+#if !defined(HAVE_OPENGLES2)
    if (fp_fbo && gl->has_fp_fbo)
    {
       RARCH_LOG("[GL]: FBO pass #%d is floating-point.\n", i);
+#if !defined(HAVE_PSGL)
       if (gl_check_capability(GL_CAPS_TEX_STORAGE))
          glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA32F,
                gl->fbo_rect[i].width, gl->fbo_rect[i].height);
       else
+#endif
          glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F,
             gl->fbo_rect[i].width, gl->fbo_rect[i].height,
             0, GL_RGBA, GL_FLOAT, NULL);
@@ -576,7 +578,7 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
       else
 #endif
       {
-#ifdef HAVE_OPENGLES2
+#if defined(HAVE_OPENGLES2) || defined(HAVE_PSGL)
          glTexImage2D(GL_TEXTURE_2D,
                0, GL_RGBA,
                gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,

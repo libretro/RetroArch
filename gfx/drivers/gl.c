@@ -655,9 +655,11 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
    {
       if (gl_check_capability(GL_CAPS_ARGB8))
       {
+#if !defined(HAVE_PSGL)
          if (gl_check_capability(GL_CAPS_GLES3_SUPPORTED))
             internal_fmt = GL_RGBA8_OES;
          else
+#endif
             internal_fmt = GL_RGBA;
          texture_type = GL_RGBA;
          texture_fmt  = GL_UNSIGNED_BYTE;
