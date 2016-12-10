@@ -1614,6 +1614,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_YES,
       "Ja")
 MSG_HASH(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
       "Shader Preset")
+MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
+      "Enable or disable achievements. For more information, visit http://retroachievements.org")
+MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
+      "Enable or disable unofficial achievements and/or beta features for testing purposes.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
       "Enable or disable savestates, cheats, rewind, fast-forward, pause, and slow-motion for all games.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,

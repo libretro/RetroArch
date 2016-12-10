@@ -1636,6 +1636,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_YES,
       "はい")
 MSG_HASH(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
       "シェーダーのプリセット")
+MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
+      "Enable or disable achievements. For more information, visit http://retroachievements.org")
+MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
+      "Enable or disable unofficial achievements and/or beta features for testing purposes.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
       "保存状態、チート、巻き戻し、早送り、一時停止、スローモーションを全部のゲームに無効する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
