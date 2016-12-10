@@ -97,6 +97,7 @@ static bool netplay_spectate_pre_frame(netplay_t *netplay)
          return true;
       }
 
+#if 0
       if (!netplay_get_nickname(netplay, new_fd))
       {
          RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT));
@@ -110,6 +111,7 @@ static bool netplay_spectate_pre_frame(netplay_t *netplay)
          socket_close(new_fd);
          return true;
       }
+#endif
 
       /* Wait until it's safe to serialize */
       if (netplay->quirks & NETPLAY_QUIRK_INITIALIZATION)
@@ -278,11 +280,13 @@ static bool netplay_spectate_info_cb(netplay_t* netplay, unsigned frames)
    }
    else
    {
+#if 0
       if (!netplay_send_nickname(netplay, netplay->connections[0].fd))
          return false;
 
       if (!netplay_get_nickname(netplay, netplay->connections[0].fd))
          return false;
+#endif
    }
 
    netplay->connections[0].mode = netplay->self_mode = NETPLAY_CONNECTION_PLAYING;

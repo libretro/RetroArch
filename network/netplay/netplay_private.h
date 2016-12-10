@@ -232,6 +232,9 @@ struct netplay_connection
    /* fd associated with this connection */
    int fd;
 
+   /* Nickname of peer */
+   char nick[32];
+
    /* Buffers for sending and receiving data */
    struct socket_buffer send_packet_buffer, recv_packet_buffer;
 
@@ -246,9 +249,6 @@ struct netplay
 {
    /* Our nickname */
    char nick[32];
-
-   /* Nickname of peer */
-   char other_nick[32];
 
    /* Address of peer */
    struct sockaddr_storage other_addr;

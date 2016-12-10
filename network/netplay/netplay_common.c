@@ -29,51 +29,6 @@
 #include "../../runloop.h"
 #include "../../version.h"
 
-bool netplay_get_nickname(netplay_t *netplay, int fd)
-{
-   uint8_t nick_size;
-
-   if (!socket_receive_all_blocking(fd, &nick_size, sizeof(nick_size)))
-   {
-      RARCH_ERR("%s\n",
-            msg_hash_to_str(MSG_FAILED_TO_RECEIVE_NICKNAME_SIZE_FROM_HOST));
-      return false;
-   }
-
-   if (nick_size >= sizeof(netplay->other_nick))
-   {
-      RARCH_ERR("%s\n",
-            msg_hash_to_str(MSG_INVALID_NICKNAME_SIZE));
-      return false;
-   }
-
-   if (!socket_receive_all_blocking(fd, netplay->other_nick, nick_size))
-   {
-      RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_RECEIVE_NICKNAME));
-      return false;
-   }
-
-   return true;
-}
-bool netplay_send_nickname(netplay_t *netplay, int fd)
-{
-   uint8_t nick_size = strlen(netplay->nick);
-
-   if (!socket_send_all_blocking(fd, &nick_size, sizeof(nick_size), false))
-   {
-      RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_SEND_NICKNAME_SIZE));
-      return false;
-   }
-
-   if (!socket_send_all_blocking(fd, netplay->nick, nick_size, false))
-   {
-      RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_SEND_NICKNAME));
-      return false;
-   }
-
-   return true;
-}
-
 /**
  * netplay_impl_magic:
  *
@@ -307,7 +262,7 @@ static void netplay_handshake_ready(netplay_t *netplay, struct netplay_connectio
 
    if (netplay->is_server)
    {
-      netplay_log_connection(&netplay->other_addr, 0, netplay->other_nick);
+      netplay_log_connection(&netplay->other_addr, 0, connection->nick);
 
       /* Send them the savestate */
       if (!(netplay->quirks & (NETPLAY_QUIRK_NO_SAVESTATES|NETPLAY_QUIRK_NO_TRANSMISSION)))
@@ -319,7 +274,7 @@ static void netplay_handshake_ready(netplay_t *netplay, struct netplay_connectio
    {
       snprintf(msg, sizeof(msg), "%s: \"%s\"",
             msg_hash_to_str(MSG_CONNECTED_TO),
-            netplay->other_nick);
+            connection->nick);
       RARCH_LOG("%s\n", msg);
       runloop_msg_queue_push(msg, 1, 180, false);
    }
@@ -359,9 +314,9 @@ bool netplay_handshake_pre_nick(netplay_t *netplay, struct netplay_connection *c
       return false;
    }
 
-   strlcpy(netplay->other_nick, nick_buf.nick,
-      (sizeof(netplay->other_nick) < sizeof(nick_buf.nick)) ?
-      sizeof(netplay->other_nick) : sizeof(nick_buf.nick));
+   strlcpy(connection->nick, nick_buf.nick,
+      (sizeof(connection->nick) < sizeof(nick_buf.nick)) ?
+      sizeof(connection->nick) : sizeof(nick_buf.nick));
 
    if (netplay->is_server)
    {
