@@ -61,7 +61,9 @@ static netplay_t *netplay_data = NULL;
 /* Used to avoid recursive netplay calls */
 static bool in_netplay = false;
 
+#ifndef HAVE_SOCKET_LEGACY
 static void announce_nat_traversal(netplay_t *netplay);
+#endif
 
 static int init_tcp_connection(const struct addrinfo *res,
       bool server, bool spectate,
@@ -236,8 +238,10 @@ static void init_nat_traversal(netplay_t *netplay)
 
    natt_open_port_any(&netplay->nat_traversal_state, netplay->tcp_port, SOCKET_PROTOCOL_TCP);
 
+#ifndef HAVE_SOCKET_LEGACY
    if (!netplay->nat_traversal_state.request_outstanding)
       announce_nat_traversal(netplay);
+#endif
 }
 
 static bool init_socket(netplay_t *netplay, void *direct_host, const char *server, uint16_t port)
@@ -1093,16 +1097,16 @@ void netplay_log_connection(const struct sockaddr_storage *their_addr,
 
 #endif
 
+#ifndef HAVE_SOCKET_LEGACY
 static void announce_nat_traversal(netplay_t *netplay)
 {
    char msg[512], host[PATH_MAX_LENGTH], port[6];
 
-#ifndef HAVE_SOCKET_LEGACY
    if (netplay->nat_traversal_state.have_inet4)
    {
       if (getnameinfo((const struct sockaddr *) &netplay->nat_traversal_state.ext_inet4_addr,
-         sizeof(struct sockaddr_in),
-         host, PATH_MAX_LENGTH, port, 6, NI_NUMERICHOST|NI_NUMERICSERV) != 0)
+               sizeof(struct sockaddr_in),
+               host, PATH_MAX_LENGTH, port, 6, NI_NUMERICHOST|NI_NUMERICSERV) != 0)
          return;
 
    }
@@ -1110,18 +1114,14 @@ static void announce_nat_traversal(netplay_t *netplay)
    else if (netplay->nat_traversal_state.have_inet6)
    {
       if (getnameinfo((const struct sockaddr *) &netplay->nat_traversal_state.ext_inet6_addr,
-         sizeof(struct sockaddr_in6),
-         host, PATH_MAX_LENGTH, port, 6, NI_NUMERICHOST|NI_NUMERICSERV) != 0)
+               sizeof(struct sockaddr_in6),
+               host, PATH_MAX_LENGTH, port, 6, NI_NUMERICHOST|NI_NUMERICSERV) != 0)
          return;
 
    }
 #endif
-   else return;
-
-#else
-   return;
-
-#endif
+   else
+      return;
 
    snprintf(msg, sizeof(msg), "%s: %s:%s\n",
          msg_hash_to_str(MSG_PUBLIC_ADDRESS),
@@ -1129,7 +1129,7 @@ static void announce_nat_traversal(netplay_t *netplay)
    runloop_msg_queue_push(msg, 1, 180, false);
    RARCH_LOG("%s\n", msg);
 }
-
+#endif
 
 bool netplay_try_init_serialization(netplay_t *netplay)
 {
@@ -1472,9 +1472,11 @@ bool netplay_pre_frame(netplay_t *netplay)
          if (socket_select(netplay->nat_traversal_state.nfds, &fds, NULL, NULL, &tmptv) > 0)
             natt_read(&netplay->nat_traversal_state);
 
+#ifndef HAVE_SOCKET_LEGACY
          if (!netplay->nat_traversal_state.request_outstanding ||
              netplay->nat_traversal_state.have_inet4)
             announce_nat_traversal(netplay);
+#endif
       }
    }
 
