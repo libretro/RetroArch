@@ -66,12 +66,12 @@ static void netplay_handle_frame_hash(netplay_t *netplay, struct delta_frame *de
 }
 
 /**
- * netplay_net_pre_frame:
+ * netplay_sync_pre_frame:
  * @netplay              : pointer to netplay object
  *
- * Pre-frame for Netplay (normal version).
+ * Pre-frame for Netplay synchronization.
  **/
-static bool netplay_net_pre_frame(netplay_t *netplay)
+bool netplay_sync_pre_frame(netplay_t *netplay)
 {
    retro_ctx_serialize_info_t serial_info;
 
@@ -235,13 +235,13 @@ process:
 }
 
 /**
- * netplay_net_post_frame:
+ * netplay_sync_post_frame:
  * @netplay              : pointer to netplay object
  *
- * Post-frame for Netplay (normal version).
+ * Post-frame for Netplay synchronization.
  * We check if we have new input and replay from recorded input.
  **/
-static void netplay_net_post_frame(netplay_t *netplay)
+void netplay_sync_post_frame(netplay_t *netplay)
 {
    netplay->self_ptr = NEXT_PTR(netplay->self_ptr);
    netplay->self_frame_count++;
@@ -369,25 +369,4 @@ static void netplay_net_post_frame(netplay_t *netplay)
 
       core_unserialize(&serial_info);
    }
-}
-
-static bool netplay_net_info_cb(netplay_t* netplay, unsigned frames)
-{
-   if (!netplay_is_server(netplay))
-   {
-      netplay_handshake_init_send(netplay, netplay->connections);
-      netplay->connections[0].mode = netplay->self_mode = NETPLAY_CONNECTION_INIT;
-   }
-
-   return true;
-}
-
-struct netplay_callbacks* netplay_get_cbs_net(void)
-{
-   static struct netplay_callbacks cbs = {
-      &netplay_net_pre_frame,
-      &netplay_net_post_frame,
-      &netplay_net_info_cb
-   };
-   return &cbs;
 }

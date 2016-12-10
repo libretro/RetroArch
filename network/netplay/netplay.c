@@ -315,11 +315,6 @@ static void hangup(netplay_t *netplay, struct netplay_connection *connection)
    netplay->stall          = 0;
 }
 
-static bool netplay_info_cb(netplay_t* netplay, unsigned delay_frames)
-{
-   return netplay->net_cbs->info_cb(netplay, delay_frames);
-}
-
 /**
  * netplay_should_skip:
  * @netplay              : pointer to netplay object
@@ -1477,8 +1472,6 @@ netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
 
    strlcpy(netplay->nick, nick[0] ? nick : RARCH_DEFAULT_NICK, sizeof(netplay->nick));
 
-   netplay->net_cbs = netplay_get_cbs_net();
-
    if (!init_socket(netplay, direct_host, server, port))
    {
       free(netplay);
@@ -1493,11 +1486,9 @@ netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
 
    if (!netplay->is_server)
    {
-      fprintf(stderr, "CONNECTION 0 %d\n", netplay->connections[0].active);
+      netplay_handshake_init_send(netplay, &netplay->connections[0]);
+      netplay->connections[0].mode = netplay->self_mode = NETPLAY_CONNECTION_INIT;
    }
-
-   if(!netplay_info_cb(netplay, delay_frames))
-      goto error;
 
    /* FIXME: Not really the right place to do this, socket initialization needs
     * to be fixed in general */
@@ -1652,7 +1643,7 @@ void netplay_free(netplay_t *netplay)
  **/
 bool netplay_pre_frame(netplay_t *netplay)
 {
-   retro_assert(netplay && netplay->net_cbs->pre_frame);
+   retro_assert(netplay);
 
    /* FIXME: This is an ugly way to learn we're not paused anymore */
    if (netplay->local_paused)
@@ -1687,7 +1678,7 @@ bool netplay_pre_frame(netplay_t *netplay)
       }
    }
 
-   if (!netplay->net_cbs->pre_frame(netplay))
+   if (!netplay_sync_pre_frame(netplay))
       return false;
 
    return (!netplay->have_player_connections ||
@@ -1704,9 +1695,8 @@ bool netplay_pre_frame(netplay_t *netplay)
  **/
 void netplay_post_frame(netplay_t *netplay)
 {
-   retro_assert(netplay && netplay->net_cbs->post_frame);
-   netplay->net_cbs->post_frame(netplay);
-   /* FIXME: Per-connection send buffer */
+   retro_assert(netplay);
+   netplay_sync_post_frame(netplay);
    if (netplay->connections_size > 0 &&
        netplay->connections[0].active &&
        !netplay_send_flush(&netplay->connections[0].send_packet_buffer,

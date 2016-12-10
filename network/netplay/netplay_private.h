@@ -216,12 +216,6 @@ struct socket_buffer
    size_t read;
 };
 
-struct netplay_callbacks {
-   bool (*pre_frame) (netplay_t *netplay);
-   void (*post_frame)(netplay_t *netplay);
-   bool (*info_cb)   (netplay_t *netplay, unsigned frames);
-};
-
 /* Each connection gets a connection struct */
 struct netplay_connection
 {
@@ -376,8 +370,6 @@ struct netplay
 
    /* Frequency with which to check CRCs */
    uint32_t check_frames;
-
-   struct netplay_callbacks* net_cbs;
 };
 
 void input_poll_net(void);
@@ -463,7 +455,9 @@ void netplay_load_savestate(netplay_t *netplay, retro_ctx_serialize_info_t *seri
  **/
 bool netplay_disconnect(netplay_t *netplay);
 
-struct netplay_callbacks* netplay_get_cbs_net(void);
+bool netplay_sync_pre_frame(netplay_t *netplay);
+
+void netplay_sync_post_frame(netplay_t *netplay);
 
 /* Normally called at init time, unless the INITIALIZATION quirk is set */
 bool netplay_init_serialization(netplay_t *netplay);
