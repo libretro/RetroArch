@@ -57,7 +57,7 @@ RetroArch also emphasizes on being easy to integrate into various launcher front
 
 RetroArch has been ported to the following platforms outside PC:
 
-   - PlayStation3
+   - PlayStation 3
    - Xbox 360 (Libxenon/XeXDK)
    - Xbox 1
    - Wii, Gamecube (Libogc)
@@ -154,7 +154,7 @@ open ./pkg/apple/build/Release/RetroArch.app/
 <b>PC</b><br/>
 Instructions for compiling on PC can be found in the [wiki](https://github.com/Themaister/RetroArch/wiki).
 
-<b>PlayStation3</b><br/>
+<b>PlayStation 3</b><br/>
 
 RetroArch PS3 needs to be compiled in the following order:
 
@@ -166,7 +166,7 @@ RetroArch PS3 needs to be compiled in the following order:
 
 <tt>make -f Makefile.ps3</tt>
 
-<b>PlayStation3 - Creating a PKG installable file</b><br />
+<b>PlayStation 3 - Creating a PKG installable file</b><br />
 
 You can add `pkg` as a parameter in order to make a PKG file - for example:
 
