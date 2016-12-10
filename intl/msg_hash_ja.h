@@ -2257,3 +2257,7 @@ MSG_HASH(MSG_NETPLAY_LAN_SCAN_COMPLETE,
       "ネットプレイスキャン完了。")
 MSG_HASH(MSG_NETPLAY_LAN_SCANNING,
       "ネットプレイホストをスキャン中")
+MSG_HASH(MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
+      "Pause gameplay when window focus is lost.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
+      "Enable or disable composition (Windows only).")
