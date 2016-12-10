@@ -47,7 +47,7 @@ enum video_driver_enum
    VIDEO_EXYNOS,
    VIDEO_SUNXI,
    VIDEO_DISPMANX,
-   VIDEO_NULL,
+   VIDEO_NULL
 };
 
 enum audio_driver_enum
@@ -74,7 +74,7 @@ enum audio_driver_enum
    AUDIO_RWEBAUDIO,
    AUDIO_PSP,
    AUDIO_CTR,
-   AUDIO_NULL,
+   AUDIO_NULL
 };
 
 enum audio_resampler_driver_enum
@@ -105,7 +105,7 @@ enum input_driver_enum
    INPUT_COCOA,
    INPUT_QNX,
    INPUT_RWEBINPUT,
-   INPUT_NULL,
+   INPUT_NULL
 };
 
 enum joypad_driver_enum
@@ -124,7 +124,7 @@ enum joypad_driver_enum
    JOYPAD_SDL,
    JOYPAD_HID,
    JOYPAD_QNX,
-   JOYPAD_NULL,
+   JOYPAD_NULL
 };
 
 enum camera_driver_enum
@@ -133,26 +133,26 @@ enum camera_driver_enum
    CAMERA_RWEBCAM,
    CAMERA_ANDROID,
    CAMERA_AVFOUNDATION,
-   CAMERA_NULL,
+   CAMERA_NULL
 };
 
 enum wifi_driver_enum
 {
    WIFI_CONNMANCTL          = CAMERA_NULL + 1,
-   WIFI_NULL,
+   WIFI_NULL
 };
 
 enum location_driver_enum
 {
    LOCATION_ANDROID         = WIFI_NULL + 1,
    LOCATION_CORELOCATION,
-   LOCATION_NULL,
+   LOCATION_NULL
 };
 
 enum osk_driver_enum
 {
    OSK_PS3                  = LOCATION_NULL + 1,
-   OSK_NULL,
+   OSK_NULL
 };
 
 enum menu_driver_enum
