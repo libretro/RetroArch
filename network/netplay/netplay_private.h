@@ -246,6 +246,9 @@ struct netplay_connection
 
    /* Player # of connected player, or -1 if not a player */
    int player;
+
+   /* Force send a savestate, to this connection only */
+   bool force_send_savestate;
 };
 
 struct netplay
@@ -299,16 +302,25 @@ struct netplay
    /* The size of our packet buffers */
    size_t packet_buffer_size;
 
-   /* Pointer where we are now. */
+   /* The current frame seen by the frontend */
    size_t self_ptr;
-   /* Points to the last reliable state that self ever had. */
+   uint32_t self_frame_count;
+
+   /* The first frame at which some data might be unreliable */
    size_t other_ptr;
+   uint32_t other_frame_count;
+
    /* Pointer to where we are reading.
-    * Generally, other_ptr <= read_ptr <= self_ptr. */
+    * Generally, other_ptr <= read_ptr <= self_ptr, but read_ptr can get ahead
+    * of self_ptr if the peer is running fast. */
    size_t read_ptr;
+   uint32_t read_frame_count;
+
    /* A pointer used temporarily for replay. */
    size_t replay_ptr;
+   uint32_t replay_frame_count;
 
+   /* Size of savestates */
    size_t state_size;
 
    /* Are we replaying old frames? */
@@ -324,21 +336,19 @@ struct netplay
    /* Quirks in the savestate implementation */
    uint64_t quirks;
 
-   /* Force our state to be sent to the other side. Used when they request a
-    * savestate, to send at the next pre-frame. */
-   bool force_send_savestate;
+   /* Force our state to be sent to all connections. Used when we explicitly
+    * load a state. */
+   bool force_send_savestate_all;
+
+   /* Set if there is at least one client which must be sent the state, usually
+    * because they've requested it or just connected. */
+   bool force_send_savestate_one;
 
    /* Have we requested a savestate as a sync point? */
    bool savestate_request_outstanding;
 
    /* A buffer for outgoing input packets. */
    uint32_t input_packet_buffer[2 + WORDS_PER_FRAME];
-
-   /* All of our frame counts */
-   uint32_t self_frame_count;
-   uint32_t read_frame_count;
-   uint32_t other_frame_count;
-   uint32_t replay_frame_count;
 
    /* And socket info */
    struct addrinfo *addr;
