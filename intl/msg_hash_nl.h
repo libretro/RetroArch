@@ -2237,3 +2237,7 @@ MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_RATING,
       "Database - Filter : Edge Magazine Rating")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DATABASE_INFO,
       "Database Info")
+MSG_HASH(MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
+      "Pause gameplay when window focus is lost.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
+      "Enable or disable composition (Windows only).")

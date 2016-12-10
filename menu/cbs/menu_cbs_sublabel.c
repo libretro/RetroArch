@@ -110,6 +110,8 @@ default_sublabel_macro(action_bind_sublabel_dummy_check_missing_firmware,  MENU_
 default_sublabel_macro(action_bind_sublabel_video_refresh_rate,            MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE)
 default_sublabel_macro(action_bind_sublabel_audio_enable,                  MENU_ENUM_SUBLABEL_AUDIO_ENABLE)
 default_sublabel_macro(action_bind_sublabel_audio_max_timing_skew,         MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW)
+default_sublabel_macro(action_bind_sublabel_pause_nonactive,               MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE)
+default_sublabel_macro(action_bind_sublabel_video_disable_composition,     MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -394,6 +396,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_VIDEO_SCALE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_window_scale);
+            break;
+         case MENU_ENUM_LABEL_PAUSE_NONACTIVE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_pause_nonactive);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_DISABLE_COMPOSITION:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_disable_composition);
             break;
          default:
          case MSG_UNKNOWN:

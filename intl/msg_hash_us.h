@@ -2269,3 +2269,7 @@ MSG_HASH(MSG_NETPLAY_LAN_SCAN_COMPLETE,
       "Netplay scan complete.")
 MSG_HASH(MSG_NETPLAY_LAN_SCANNING,
       "Scanning for netplay hosts...")
+MSG_HASH(MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
+      "Pause gameplay when window focus is lost.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
+      "Enable or disable composition (Windows only).")
