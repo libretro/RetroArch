@@ -375,7 +375,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_OFF, /* Don't change. Needed for XMB atm. (Would 
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ON, /* Don't change. Needed for XMB atm. (Would be, "AUS") */
       "ON")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
-      "Online-Aktualisierungen")
+      "Online-Aktualisierung")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
       "OSD-Einstellungen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,

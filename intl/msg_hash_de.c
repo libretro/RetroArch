@@ -413,6 +413,18 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Positive X-Achse ist rechts. \n"
                "Positive Y-Achse ist unten.");
          break;
+      case MENU_ENUM_LABEL_VALUE_SAMBA_ENABLE:
+         snprintf(s, len,
+               "SAMBA aktivieren");
+         break;
+      case MENU_ENUM_LABEL_VALUE_SHUTDOWN:
+         snprintf(s, len,
+               "Herunterfahren");
+         break;
+      case MENU_ENUM_LABEL_VALUE_SSH_ENABLE:
+         snprintf(s, len,
+               "SSH aktivieren");
+         break;
       case MSG_UNKNOWN:
       default:
          /* TODO/FIXME - translate */
