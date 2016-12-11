@@ -585,6 +585,13 @@ uint64_t input_menu_keys_pressed(
    if (!current_input || !current_input_data)
       goto end;
 
+   if (settings->menu.unified_controls)
+      return input_keys_pressed(
+            old_input,
+            last_input,
+            trigger_input,
+            runloop_paused);
+
    for (i = 0; i < settings->input.max_users; i++)
    {
       struct retro_keybind *auto_binds    = settings->input.autoconf_binds[i];
