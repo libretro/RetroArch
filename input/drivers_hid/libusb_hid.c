@@ -442,9 +442,6 @@ static bool libusb_hid_joypad_button(void *data,
 {
    uint64_t buttons          = libusb_hid_joypad_get_buttons(data, port);
 
-   if (joykey == NO_BTN)
-      return false;
-
    /* Check hat. */
    if (GET_HAT_DIR(joykey))
       return false;

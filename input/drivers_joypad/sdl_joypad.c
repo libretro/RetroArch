@@ -289,14 +289,9 @@ error:
 
 static bool sdl_joypad_button(unsigned port, uint16_t joykey)
 {
-   sdl_joypad_t *pad = NULL;
    unsigned hat_dir  = 0;
-
-   if (joykey == NO_BTN)
-      return false;
-
-   pad = (sdl_joypad_t*)&sdl_pads[port];
-   if (!pad->joypad)
+   sdl_joypad_t *pad = (sdl_joypad_t*)&sdl_pads[port];
+   if (!pad || !pad->joypad)
       return false;
 
    hat_dir = GET_HAT_DIR(joykey);

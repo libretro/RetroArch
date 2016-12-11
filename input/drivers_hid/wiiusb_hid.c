@@ -493,9 +493,6 @@ static bool wiiusb_hid_joypad_button(void *data, unsigned port, uint16_t joykey)
 {
    uint64_t buttons = wiiusb_hid_joypad_get_buttons(data, port);
 
-   if (joykey == NO_BTN)
-      return false;
-
    /* Check hat. */
    if (GET_HAT_DIR(joykey))
       return false;

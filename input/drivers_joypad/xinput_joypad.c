@@ -318,15 +318,11 @@ static const uint16_t button_index_to_bitmap_code[] =  {
 
 static bool xinput_joypad_button(unsigned port_num, uint16_t joykey)
 {
-   int xuser;
    uint16_t btn_word    = 0;
    unsigned num_buttons = 0;
    unsigned hat_dir     = 0;
+   int xuser            = pad_index_to_xuser_index(port_num);
 
-   if (joykey == NO_BTN)
-      return false;
-
-   xuser = pad_index_to_xuser_index(port_num);
    if (xuser == -1)
       return dinput_joypad.button(port_num, joykey);
 

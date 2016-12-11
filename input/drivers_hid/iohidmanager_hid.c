@@ -73,9 +73,6 @@ static bool iohidmanager_hid_joypad_button(void *data,
       iohidmanager_hid_joypad_get_buttons(data, port);
    iohidmanager_hid_t *hid   = (iohidmanager_hid_t*)data;
 
-   if (joykey == NO_BTN)
-      return false;
-
    /* Check hat. */
    if (GET_HAT_DIR(joykey))
       return false;
