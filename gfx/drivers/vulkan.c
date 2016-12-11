@@ -1282,7 +1282,7 @@ static void vulkan_set_rotation(void *data, unsigned rotation)
    if (!vk)
       return;
 
-   vk->rotation = 90 * rotation;
+   vk->rotation = 270 * rotation;
    vulkan_set_projection(vk, &ortho, true);
 }
 
