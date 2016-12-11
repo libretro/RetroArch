@@ -193,6 +193,13 @@ static void menu_display_gl_draw_pipeline(void *data)
             uniform_param.lookup.ident      = "time";
             uniform_param.result.f.v0       = t;
 
+            video_shader_driver_set_parameter(uniform_param);            
+
+            uniform_param.type              = UNIFORM_2F;
+            uniform_param.lookup.ident      = "OutputSize";
+            uniform_param.result.f.v0       = draw->width;
+            uniform_param.result.f.v1       = draw->height;
+
             video_shader_driver_set_parameter(uniform_param);
          }
          break;
