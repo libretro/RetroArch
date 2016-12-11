@@ -150,22 +150,22 @@ static void playlist_free_entry(struct playlist_entry *entry)
    if (!entry)
       return;
 
-   if (entry->path)
+   if (!string_is_empty(entry->path))
       free(entry->path);
 
-   if (entry->label)
+   if (!string_is_empty(entry->label))
       free(entry->label);
 
-   if (entry->core_path)
+   if (!string_is_empty(entry->core_path))
       free(entry->core_path);
 
-   if (entry->core_name)
+   if (!string_is_empty(entry->core_name))
       free(entry->core_name);
 
-   if (entry->db_name)
+   if (!string_is_empty(entry->db_name))
       free(entry->db_name);
 
-   if (entry->crc32)
+   if (!string_is_empty(entry->crc32))
       free(entry->crc32);
 
    entry->path      = NULL;
