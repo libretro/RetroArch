@@ -42,7 +42,6 @@ struct rarch_dir_list
 
 static struct rarch_dir_list dir_shader_list;
 
-static char dir_osk_overlay[PATH_MAX_LENGTH]            = {0};
 static char dir_system[PATH_MAX_LENGTH]                 = {0};
 static char dir_savefile[PATH_MAX_LENGTH]               = {0};
 static char current_savefile_dir[PATH_MAX_LENGTH]       = {0};
@@ -183,8 +182,6 @@ bool dir_is_empty(enum rarch_dir_type type)
          return string_is_empty(dir_savestate);
       case RARCH_DIR_CURRENT_SAVESTATE:
          return string_is_empty(current_savestate_dir);
-      case RARCH_DIR_OSK_OVERLAY:
-         return string_is_empty(dir_osk_overlay);
       case RARCH_DIR_NONE:
          break;
    }
@@ -208,8 +205,6 @@ size_t dir_get_size(enum rarch_dir_type type)
          return sizeof(dir_savefile);
       case RARCH_DIR_CURRENT_SAVEFILE:
          return sizeof(current_savefile_dir);
-      case RARCH_DIR_OSK_OVERLAY:
-         return sizeof(dir_osk_overlay);
       case RARCH_DIR_NONE:
          break;
    }
@@ -238,9 +233,6 @@ void dir_clear(enum rarch_dir_type type)
       case RARCH_DIR_SYSTEM:
          *dir_system = '\0';
          break;
-      case RARCH_DIR_OSK_OVERLAY:
-         *dir_osk_overlay = '\0';
-         break;
       case RARCH_DIR_NONE:
          break;
    }
@@ -249,7 +241,6 @@ void dir_clear(enum rarch_dir_type type)
 void dir_clear_all(void)
 {
    dir_clear(RARCH_DIR_SYSTEM);
-   dir_clear(RARCH_DIR_OSK_OVERLAY);
    dir_clear(RARCH_DIR_SAVEFILE);
    dir_clear(RARCH_DIR_SAVESTATE);
 }
@@ -260,8 +251,6 @@ char *dir_get_ptr(enum rarch_dir_type type)
 {
    switch (type)
    {
-      case RARCH_DIR_OSK_OVERLAY:
-         return dir_osk_overlay;
       case RARCH_DIR_SAVEFILE:
          return dir_savefile;
       case RARCH_DIR_CURRENT_SAVEFILE:
@@ -283,8 +272,6 @@ const char *dir_get(enum rarch_dir_type type)
 {
    switch (type)
    {
-      case RARCH_DIR_OSK_OVERLAY:
-         return dir_osk_overlay;
       case RARCH_DIR_SAVEFILE:
          return dir_savefile;
       case RARCH_DIR_CURRENT_SAVEFILE:
@@ -325,10 +312,6 @@ void dir_set(enum rarch_dir_type type, const char *path)
       case RARCH_DIR_SYSTEM:
          strlcpy(dir_system, path,
                sizeof(dir_system));
-         break;
-      case RARCH_DIR_OSK_OVERLAY:
-         strlcpy(dir_osk_overlay, path,
-               sizeof(dir_osk_overlay));
          break;
       case RARCH_DIR_NONE:
          break;

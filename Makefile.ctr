@@ -101,7 +101,7 @@ $(error "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to>dev
 endif
 
 ifeq ($(strip $(CTRULIB)),)
-	CTRULIB = $(DEVKITPRO)/ctrulib
+	CTRULIB = $(DEVKITPRO)/libctru
 endif
 
 APP_TITLE         := $(shell echo "$(APP_TITLE)" | cut -c1-128)

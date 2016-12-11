@@ -525,8 +525,9 @@ static void mui_render(void *data)
 
    if (settings->menu.pointer.enable)
    {
-      int16_t pointer_y = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
-      float    old_accel_val, new_accel_val;
+      int16_t        pointer_y = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
+      float    old_accel_val   = 0.0f;
+      float new_accel_val      = 0.0f;
       unsigned new_pointer_val = 
          (pointer_y - mui->line_height + mui->scroll_y - 16)
          / mui->line_height;
@@ -632,18 +633,22 @@ static void mui_render_label_value(mui_handle_t *mui,
          y + mui->line_height / 2 + label_offset,
          width, height, color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
 
-   if (string_is_equal(value, "disabled") || string_is_equal(value, "off"))
+   if (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) || 
+         (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))))
    {
-      if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF]) {
+      if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF])
+      {
          texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_OFF];
          switch_is_on = false;
       }
       else
          do_draw_text = true;
    }
-   else if (string_is_equal(value, "enabled") || string_is_equal(value, "on"))
+   else if (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) || 
+            (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))))
    {
-      if (mui->textures.list[MUI_TEXTURE_SWITCH_ON]) {
+      if (mui->textures.list[MUI_TEXTURE_SWITCH_ON])
+      {
          texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_ON];
          switch_is_on = true;
       }
@@ -652,7 +657,9 @@ static void mui_render_label_value(mui_handle_t *mui,
    }
    else
    {
-      switch (msg_hash_to_file_type(msg_hash_calculate(value)))
+      enum msg_file_type type = msg_hash_to_file_type(msg_hash_calculate(value));
+
+      switch (type)
       {
          case FILE_TYPE_COMPRESSED:
          case FILE_TYPE_MORE:
@@ -1449,6 +1456,7 @@ static bool mui_load_image(void *userdata, void *data, enum menu_image_type type
          menu_display_allocate_white_texture();
          break;
       case MENU_IMAGE_THUMBNAIL:
+      case MENU_IMAGE_SAVESTATE_THUMBNAIL:
          break;
    }
 
@@ -1866,4 +1874,6 @@ menu_ctx_driver_t menu_ctx_mui = {
    NULL,
    NULL,
    mui_osk_ptr_at_pos,
+   NULL,
+   NULL
 };

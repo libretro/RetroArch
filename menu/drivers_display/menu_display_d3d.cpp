@@ -23,13 +23,15 @@
 
 #include "../menu_display.h"
 
-#include "../../config.def.h"
 #include "../../retroarch.h"
 #include "../../gfx/font_driver.h"
 #include "../../gfx/video_context_driver.h"
 #include "../../gfx/drivers/d3d.h"
 #include "../../gfx/common/d3d_common.h"
+
+#ifdef HAVE_D3D9
 #include "../../gfx/include/d3d9/d3dx9math.h"
+#endif
 
 #define BYTE_CLAMP(i) (int) ((((i) > 255) ? 255 : (((i) < 0) ? 0 : (i))))
 
@@ -175,8 +177,8 @@ static void menu_display_d3d_draw(void *data)
    if (!mat)
       mat                         = (math_matrix_4x4*)
          menu_display_d3d_get_default_mvp();
-   video_shader_driver_set_coords(d3d, draw->coords);
-   video_shader_driver_set_mvp(d3d, mat);
+   video_shader_driver_set_coords(draw->coords);
+   video_shader_driver_set_mvp(mat);
 #endif
 
    d3d_draw_primitive(d3d->dev, (D3DPRIMITIVETYPE)
@@ -203,12 +205,13 @@ static void menu_display_d3d_draw_pipeline(void *data)
    switch (draw->pipeline.id)
    {
       case VIDEO_SHADER_MENU:
-      case VIDEO_SHADER_MENU_SEC:
-         shader_info.data       = NULL;
-         shader_info.idx        = draw->pipeline.id;
-         shader_info.set_active = true;
+      case VIDEO_SHADER_MENU_2:
+      case VIDEO_SHADER_MENU_3:
+         shader_info.data                = NULL;
+         shader_info.idx                 = draw->pipeline.id;
+         shader_info.set_active          = true;
 
-         video_shader_driver_use(&shader_info);
+         video_shader_driver_use(shader_info);
 
          t += 0.01;
 
@@ -221,7 +224,7 @@ static void menu_display_d3d_draw_pipeline(void *data)
          uniform_param.lookup.ident      = "time";
          uniform_param.result.f.v0       = t;
 
-         video_shader_driver_set_parameter(&uniform_param);
+         video_shader_driver_set_parameter(uniform_param);
          break;
    }
 #endif

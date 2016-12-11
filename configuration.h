@@ -54,6 +54,8 @@ typedef struct settings
       char driver[32];
       char context_driver[32];
       float scale;
+      unsigned window_x;
+      unsigned window_y;
       bool fullscreen;
       bool windowed_fullscreen;
       unsigned monitor_index;
@@ -202,6 +204,8 @@ typedef struct settings
       {
          unsigned menu_color_theme;
       } materialui;
+
+      bool unified_controls;
    } menu;
 #endif
 
@@ -294,8 +298,9 @@ typedef struct settings
       bool input_descriptor_hide_unbound;
 
       unsigned menu_toggle_gamepad_combo;
-      bool back_as_menu_toggle_enable;
       bool all_users_control_menu;
+
+      bool menu_swap_ok_cancel_buttons;
 #if defined(VITA)
       bool backtouch_enable;
       bool backtouch_toggle;
@@ -307,13 +312,6 @@ typedef struct settings
       unsigned keyboard_gamepad_mapping_type;
       unsigned poll_type_behavior;
    } input;
-
-   struct
-   {
-      bool enable;
-      float opacity;
-      float scale;
-   } osk;
 
    struct
    {
@@ -356,7 +354,6 @@ typedef struct settings
    {
       char cheat_database[PATH_MAX_LENGTH];
       char content_database[PATH_MAX_LENGTH];
-      char osk_overlay[PATH_MAX_LENGTH];
       char overlay[PATH_MAX_LENGTH];
       char menu_wallpaper[PATH_MAX_LENGTH];
       char audio_dsp_plugin[PATH_MAX_LENGTH];
@@ -404,10 +401,11 @@ typedef struct settings
    {
       char server[255];
       unsigned port;
-      unsigned sync_frames;
+      unsigned delay_frames;
       unsigned check_frames;
       bool is_spectate;
       bool swap_input;
+      bool nat_traversal;
    } netplay;
 #endif
 
@@ -432,6 +430,7 @@ typedef struct settings
    bool savestate_auto_index;
    bool savestate_auto_save;
    bool savestate_auto_load;
+   bool savestate_thumbnail_enable;
 
    bool network_cmd_enable;
    unsigned network_cmd_port;
@@ -445,6 +444,7 @@ typedef struct settings
 #endif
    bool fps_show;
    bool load_dummy_on_core_shutdown;
+   bool check_firmware_before_loading;
 
    bool game_specific_options;
    bool auto_overrides_enable;
@@ -453,14 +453,6 @@ typedef struct settings
 
    bool sort_savefiles_enable;
    bool sort_savestates_enable;
-
-   unsigned menu_ok_btn;
-   unsigned menu_cancel_btn;
-   unsigned menu_search_btn;
-   unsigned menu_default_btn;
-   unsigned menu_info_btn;
-   unsigned menu_scroll_down_btn;
-   unsigned menu_scroll_up_btn;
 
    char username[32];
 #ifdef HAVE_LANGEXTRA
@@ -504,15 +496,6 @@ const char *config_get_default_wifi(void);
  * Returns: Default location driver.
  **/
 const char *config_get_default_location(void);
-
-/**
- * config_get_default_osk:
- *
- * Gets default OSK driver.
- *
- * Returns: Default OSK driver.
- **/
-const char *config_get_default_osk(void);
 
 /**
  * config_get_default_video:

@@ -65,6 +65,16 @@ ARCHIVE FILE
 #endif
 
 /*============================================================
+COMPRESSION
+============================================================ */
+#include "../libretro-common/streams/trans_stream.c"
+#include "../libretro-common/streams/trans_stream_pipe.c"
+
+#ifdef HAVE_ZLIB
+#include "../libretro-common/streams/trans_stream_zlib.c"
+#endif
+
+/*============================================================
 ENCODINGS
 ============================================================ */
 #include "../libretro-common/encodings/encoding_utf.c"
@@ -310,8 +320,10 @@ VIDEO DRIVER
 
 #ifndef HAVE_PSGL
 #include "../libretro-common/glsym/rglgen.c"
-#ifdef HAVE_OPENGLES2
+#if defined(HAVE_OPENGLES2)
 #include "../libretro-common/glsym/glsym_es2.c"
+#elif defined(HAVE_OPENGLES3)
+#include "../libretro-common/glsym/glsym_es3.c"
 #else
 #include "../libretro-common/glsym/glsym_gl.c"
 #endif
@@ -386,6 +398,10 @@ FONTS
 #include "../gfx/drivers_font/ctr_font.c"
 #endif
 
+#if defined(HAVE_CACA)
+#include "../gfx/drivers_font/caca_font.c"
+#endif
+
 
 #if defined(HAVE_VULKAN)
 #include "../gfx/drivers_font/vulkan_raster_font.c"
@@ -394,7 +410,7 @@ FONTS
 /*============================================================
 INPUT
 ============================================================ */
-#include "../input/input_autodetect.c"
+#include "../tasks/task_autodetect.c"
 #include "../input/input_joypad_driver.c"
 #include "../input/input_config.c"
 #include "../input/input_keymaps.c"
@@ -463,6 +479,7 @@ INPUT
 #endif
 
 #ifdef HAVE_UDEV
+#include "../input/common/udev_common.c"
 #include "../input/drivers/udev_input.c"
 #include "../input/drivers_keyboard/keyboard_event_udev.c"
 #include "../input/drivers_joypad/udev_joypad.c"
@@ -865,14 +882,18 @@ NETPLAY
 #include "../network/netplay/netplay_net.c"
 #include "../network/netplay/netplay_spectate.c"
 #include "../network/netplay/netplay_common.c"
+#include "../network/netplay/netplay_discovery.c"
 #include "../network/netplay/netplay.c"
 #include "../libretro-common/net/net_compat.c"
 #include "../libretro-common/net/net_socket.c"
 #include "../libretro-common/net/net_http.c"
+#include "../libretro-common/net/net_natt.c"
 #ifndef HAVE_SOCKET_LEGACY
 #include "../libretro-common/net/net_ifinfo.c"
 #endif
 #include "../tasks/task_http.c"
+#include "../tasks/task_netplay_lan_scan.c"
+#include "../tasks/task_wifi.c"
 #endif
 
 /*============================================================
@@ -958,6 +979,10 @@ MENU
 
 #ifdef _3DS
 #include "../menu/drivers_display/menu_display_ctr.c"
+#endif
+
+#ifdef HAVE_CACA
+#include "../menu/drivers_display/menu_display_caca.c"
 #endif
 
 #endif

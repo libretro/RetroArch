@@ -31,7 +31,8 @@ enum font_driver_render_api
    FONT_DRIVER_RENDER_DIRECT3D_API,
    FONT_DRIVER_RENDER_VITA2D,
    FONT_DRIVER_RENDER_CTR,
-   FONT_DRIVER_RENDER_VULKAN_API
+   FONT_DRIVER_RENDER_VULKAN_API,
+   FONT_DRIVER_RENDER_CACA
 };
 
 enum text_alignment
@@ -138,8 +139,6 @@ typedef struct
 int font_renderer_create_default(const void **driver,
       void **handle, const char *font_path, unsigned font_size);
       
-bool font_driver_has_render_msg(void);
-
 void font_driver_render_msg(void *font_data, const char *msg, const struct font_params *params);
 
 void font_driver_bind_block(void *font_data, void *block);
@@ -164,6 +163,7 @@ extern font_renderer_t d3d_win32_font;
 extern font_renderer_t vita2d_vita_font;
 extern font_renderer_t ctr_font;
 extern font_renderer_t vulkan_raster_font;
+extern font_renderer_t caca_font;
 
 extern font_renderer_driver_t stb_font_renderer;
 extern font_renderer_driver_t stb_unicode_font_renderer;

@@ -1,4 +1,5 @@
 LOCAL_PATH := $(call my-dir)
+
 include $(CLEAR_VARS)
 
 RARCH_DIR := ../../../..
@@ -12,6 +13,11 @@ DEFINES     :=
 
 LIBRETRO_COMM_DIR := $(RARCH_DIR)/libretro-common
 DEPS_DIR          := $(RARCH_DIR)/deps
+
+GIT_VERSION := $(shell git rev-parse --short HEAD 2>/dev/null)
+ifneq ($(GIT_VERSION),)
+   DEFINES += -DHAVE_GIT_VERSION -DGIT_VERSION=$(GIT_VERSION)
+endif
 
 include $(CLEAR_VARS)
 ifeq ($(TARGET_ARCH),arm)
@@ -55,9 +61,10 @@ ifeq ($(GLES),3)
    DEFINES += -DHAVE_OPENGLES3
 else
    GLES_LIB := -lGLESv2
+   DEFINES += -DHAVE_OPENGLES2
 endif
 
-DEFINES += -DRARCH_MOBILE -DHAVE_GRIFFIN -DHAVE_LANGEXTRA -DANDROID -DHAVE_DYNAMIC -DHAVE_OPENGL -DHAVE_FBO -DHAVE_OVERLAY -DHAVE_OPENGLES -DHAVE_OPENGLES2 -DGLSL_DEBUG -DHAVE_DYLIB -DHAVE_EGL -DHAVE_GLSL -DHAVE_MENU -DHAVE_RGUI -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA -DINLINE=inline -DHAVE_THREADS -D__LIBRETRO__ -DHAVE_RSOUND -DHAVE_NETWORKGAMEPAD -DHAVE_NETWORKING -DRARCH_INTERNAL -DHAVE_FILTERS_BUILTIN -DHAVE_MATERIALUI -DHAVE_XMB -DHAVE_SHADERPIPELINE -DHAVE_LIBRETRODB -DHAVE_STB_FONT -DHAVE_IMAGEVIEWER -DHAVE_UPDATE_ASSETS
+DEFINES += -DRARCH_MOBILE -DHAVE_GRIFFIN -DHAVE_LANGEXTRA -DANDROID -DHAVE_DYNAMIC -DHAVE_OPENGL -DHAVE_FBO -DHAVE_OVERLAY -DHAVE_OPENGLES -DGLSL_DEBUG -DHAVE_DYLIB -DHAVE_EGL -DHAVE_GLSL -DHAVE_MENU -DHAVE_RGUI -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA -DINLINE=inline -DHAVE_THREADS -D__LIBRETRO__ -DHAVE_RSOUND -DHAVE_NETWORKGAMEPAD -DHAVE_NETWORKING -DRARCH_INTERNAL -DHAVE_FILTERS_BUILTIN -DHAVE_MATERIALUI -DHAVE_XMB -DHAVE_SHADERPIPELINE -DHAVE_LIBRETRODB -DHAVE_STB_FONT -DHAVE_IMAGEVIEWER -DHAVE_UPDATE_ASSETS
 DEFINES += -DWANT_IFADDRS
 
 ifeq ($(HAVE_VULKAN),1)
@@ -99,6 +106,7 @@ LOCAL_SRC_FILES += $(DEPS_DIR)/glslang/glslang.cpp \
 						 $(DEPS_DIR)/glslang/glslang/OGLCompilersDLL/InitializeDll.cpp \
 						 $(DEPS_DIR)/glslang/glslang/glslang/GenericCodeGen/Link.cpp \
 						 $(DEPS_DIR)/glslang/glslang/glslang/GenericCodeGen/CodeGen.cpp \
+						 $(DEPS_DIR)/glslang/glslang/hlsl/hlslAttributes.cpp \
 						 $(DEPS_DIR)/glslang/glslang/hlsl/hlslGrammar.cpp \
 						 $(DEPS_DIR)/glslang/glslang/hlsl/hlslOpMap.cpp \
 						 $(DEPS_DIR)/glslang/glslang/hlsl/hlslTokenStream.cpp \
@@ -115,9 +123,11 @@ LOCAL_SRC_FILES += $(DEPS_DIR)/glslang/glslang.cpp \
 						 $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/Initialize.cpp \
 						 $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/SymbolTable.cpp \
 						 $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/parseConst.cpp \
+						 $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/ParseContextBase.cpp \
 						 $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/ParseHelper.cpp \
 						 $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/ShaderLang.cpp \
 						 $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/IntermTraverse.cpp \
+						 $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/iomapper.cpp \
 						 $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/InfoSink.cpp \
 						 $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/Constant.cpp \
 						 $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/Scan.cpp \

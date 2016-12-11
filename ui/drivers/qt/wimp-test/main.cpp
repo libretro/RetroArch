@@ -15,7 +15,7 @@ void *initGui(void *arg)
 {
     char **arguments = (char**)arg;
     t = ctrWimp(i,arguments);
-    CreateMainWindow(t); //-->uncomment this to open the QT gui
+    CreateMainWindow(t); //-->uncomment this to open the Qt GUI
     return 0;
 }
 

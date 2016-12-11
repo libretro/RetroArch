@@ -18,13 +18,8 @@
 
 #include <string/stdstring.h>
 
-#ifdef HAVE_CONFIG_H
-#include "../../runloop.h"
-#endif
-
 #include "../d3d/d3d.h"
 #include "../font_driver.h"
-#include "../../runloop.h"
 
 #include "../drivers/d3d_shaders/font.hlsl.d3d9.h"
 
@@ -630,7 +625,6 @@ static void xdk360_free_font(void *data)
 
 static void xdk360_render_msg_post(xdk360_video_font_t * font)
 {
-   /* Cache the global pointer into a register */
    LPDIRECT3DDEVICE d3dr = font->d3d->dev;
 
    d3d_set_texture(d3dr, 0, NULL);

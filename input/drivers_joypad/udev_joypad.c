@@ -23,7 +23,6 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/poll.h>
 #include <libudev.h>
 #include <linux/types.h>
 #include <linux/input.h>
@@ -32,10 +31,12 @@
 #include <compat/strl.h>
 #include <string/stdstring.h>
 
-#include "../input_autodetect.h"
+#include "../../tasks/tasks_internal.h"
 #include "../input_driver.h"
+
+#include "../common/udev_common.h"
+
 #include "../../configuration.h"
-#include "../../runloop.h"
 #include "../../verbosity.h"
 
 /* Udev/evdev Linux joypad driver.
@@ -82,8 +83,8 @@ struct udev_joypad
    int32_t pid;
 };
 
-static struct udev *g_udev;
-static struct udev_monitor *g_udev_mon;
+static struct udev *udev_joypad_fd             = NULL;
+static struct udev_monitor *udev_joypad_mon    = NULL;
 static struct udev_joypad udev_pads[MAX_USERS];
 
 static INLINE int16_t udev_compute_axis(const struct input_absinfo *info, int value)
@@ -160,19 +161,6 @@ static void udev_poll_pad(struct udev_joypad *pad, unsigned p)
    }
 }
 
-static bool udev_hotplug_available(void)
-{
-   struct pollfd fds = {0};
-
-   if (!g_udev_mon)
-      return false;
-
-   fds.fd     = udev_monitor_get_fd(g_udev_mon);
-   fds.events = POLLIN;
-
-   return (poll(&fds, 1, 0) == 1) && (fds.revents & POLLIN);
-}
-
 static int udev_find_vacant_pad(void)
 {
    unsigned i;
@@ -194,7 +182,7 @@ static int udev_open_joystick(const char *path)
    if (fd < 0)
       return fd;
 
-   if ((ioctl(fd, EVIOCGBIT(0, sizeof(evbit)), evbit) < 0) ||
+   if (  (ioctl(fd, EVIOCGBIT(0,      sizeof(evbit)),  evbit)  < 0) ||
          (ioctl(fd, EVIOCGBIT(EV_KEY, sizeof(keybit)), keybit) < 0) ||
          (ioctl(fd, EVIOCGBIT(EV_ABS, sizeof(absbit)), absbit) < 0))
       goto error;
@@ -291,17 +279,21 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
    pad->fd     = fd;
    pad->path   = strdup(path);
 
-   if (*pad->ident)
+   if (!string_is_empty(pad->ident))
    {
-      params.idx = p;
       strlcpy(params.name, pad->ident, sizeof(params.name));
-      params.vid = pad->vid;
-      params.pid = pad->pid;
+
+      params.idx             = p;
+      params.vid             = pad->vid;
+      params.pid             = pad->pid;
       settings->input.pid[p] = params.pid;
       settings->input.vid[p] = params.vid;
-      strlcpy(settings->input.device_names[p], params.name, sizeof(settings->input.device_names[p]));
-      strlcpy(params.driver, udev_joypad.ident, sizeof(params.driver));
-      input_config_autoconfigure_joypad(&params);
+
+      strlcpy(settings->input.device_names[p],
+            params.name, sizeof(settings->input.device_names[p]));
+      strlcpy(params.driver, udev_joypad.ident,
+            sizeof(params.driver));
+      input_autoconfigure_connect(&params);
 
       ret = 1;
    }
@@ -314,13 +306,15 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
                p, path);
 
       if (ioctl(fd, EVIOCGEFFECTS, &pad->num_effects) >= 0)
-         RARCH_LOG("[udev]: Pad #%u (%s) supports %d force feedback effects.\n", p, path, pad->num_effects);
+         RARCH_LOG(
+               "[udev]: Pad #%u (%s) supports %d force feedback effects.\n",
+               p, path, pad->num_effects);
    }
 
    return ret;
 }
 
-static void udev_check_device(struct udev_device *dev, const char *path, bool hotplugged)
+static void udev_check_device(struct udev_device *dev, const char *path)
 {
    int ret;
    int pad, fd;
@@ -334,7 +328,9 @@ static void udev_check_device(struct udev_device *dev, const char *path, bool ho
    {
       if (st.st_rdev == udev_pads[i].device)
       {
-         RARCH_LOG("[udev]: Device ID %u is already plugged.\n", (unsigned)st.st_rdev);
+         RARCH_LOG(
+               "[udev]: Device ID %u is already plugged.\n",
+               (unsigned)st.st_rdev);
          return;
       }
    }
@@ -360,16 +356,6 @@ static void udev_check_device(struct udev_device *dev, const char *path, bool ho
          break;
       case 0:
       default:
-         if (hotplugged)
-         {
-            char msg[255];
-
-            msg[0] = '\0';
-
-            snprintf(msg, sizeof(msg), "Device connected: #%u (%s).", pad, path);
-            runloop_msg_queue_push(msg, 0, 60, false);
-            RARCH_LOG("[udev]: %s\n", msg);
-         }
          break;
    }
 }
@@ -396,9 +382,10 @@ static void udev_joypad_remove_device(const char *path)
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      if (udev_pads[i].path && string_is_equal(udev_pads[i].path, path))
+      if (     !string_is_empty(udev_pads[i].path)
+            &&  string_is_equal(udev_pads[i].path, path))
       {
-         input_config_autoconfigure_disconnect(i, udev_pads[i].ident);
+         input_autoconfigure_disconnect(i, udev_pads[i].ident);
          udev_free_pad(i);
          break;
       }
@@ -412,26 +399,21 @@ static void udev_joypad_destroy(void)
    for (i = 0; i < MAX_USERS; i++)
       udev_free_pad(i);
 
-   if (g_udev_mon)
-      udev_monitor_unref(g_udev_mon);
-   g_udev_mon = NULL;
-   if (g_udev)
-      udev_unref(g_udev);
-   g_udev = NULL;
+   if (udev_joypad_mon)
+      udev_monitor_unref(udev_joypad_mon);
+
+   if (udev_joypad_fd)
+      udev_unref(udev_joypad_fd);
+
+   udev_joypad_mon = NULL;
+   udev_joypad_fd  = NULL;
 }
 
-static void udev_joypad_handle_hotplug(void)
+static void udev_joypad_handle_hotplug(struct udev_device *dev)
 {
-   struct udev_device *dev = udev_monitor_receive_device(g_udev_mon);
-   const char *val;
-   const char *action;
-   const char *devnode;
-   if (!dev)
-      return;
-
-   val     = udev_device_get_property_value(dev, "ID_INPUT_JOYSTICK");
-   action  = udev_device_get_action(dev);
-   devnode = udev_device_get_devnode(dev);
+   const char *val     = udev_device_get_property_value(dev, "ID_INPUT_JOYSTICK");
+   const char *action  = udev_device_get_action(dev);
+   const char *devnode = udev_device_get_devnode(dev);
 
    if (!val || !string_is_equal(val, "1") || !devnode)
       goto end;
@@ -439,7 +421,7 @@ static void udev_joypad_handle_hotplug(void)
    if (string_is_equal(action, "add"))
    {
       RARCH_LOG("[udev]: Hotplug add: %s.\n", devnode);
-      udev_check_device(dev, devnode, true);
+      udev_check_device(dev, devnode);
    }
    else if (string_is_equal(action, "remove"))
    {
@@ -451,7 +433,8 @@ end:
    udev_device_unref(dev);
 }
 
-static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, uint16_t strength)
+static bool udev_set_rumble(unsigned i,
+      enum retro_rumble_effect effect, uint16_t strength)
 {
    int old_effect;
    uint16_t old_strength;
@@ -523,8 +506,13 @@ static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, uint16_
 static void udev_joypad_poll(void)
 {
    unsigned i;
-   while (udev_hotplug_available())
-      udev_joypad_handle_hotplug();
+
+   while (udev_joypad_mon && udev_hotplug_available(udev_joypad_mon))
+   {
+      struct udev_device *dev = udev_monitor_receive_device(udev_joypad_mon);
+      if (dev)
+         udev_joypad_handle_hotplug(dev);
+   }
 
    for (i = 0; i < MAX_USERS; i++)
       udev_poll_pad(&udev_pads[i], i);
@@ -542,18 +530,19 @@ static bool udev_joypad_init(void *data)
    for (i = 0; i < MAX_USERS; i++)
       udev_pads[i].fd = -1;
 
-   g_udev = udev_new();
-   if (!g_udev)
+   udev_joypad_fd = udev_new();
+   if (!udev_joypad_fd)
       return false;
 
-   g_udev_mon = udev_monitor_new_from_netlink(g_udev, "udev");
-   if (g_udev_mon)
+   udev_joypad_mon = udev_monitor_new_from_netlink(udev_joypad_fd, "udev");
+   if (udev_joypad_mon)
    {
-      udev_monitor_filter_add_match_subsystem_devtype(g_udev_mon, "input", NULL);
-      udev_monitor_enable_receiving(g_udev_mon);
+      udev_monitor_filter_add_match_subsystem_devtype(
+            udev_joypad_mon, "input", NULL);
+      udev_monitor_enable_receiving(udev_joypad_mon);
    }
 
-   enumerate = udev_enumerate_new(g_udev);
+   enumerate = udev_enumerate_new(udev_joypad_fd);
    if (!enumerate)
       goto error;
 
@@ -564,11 +553,11 @@ static bool udev_joypad_init(void *data)
    for (item = devs; item; item = udev_list_entry_get_next(item))
    {
       const char         *name = udev_list_entry_get_name(item);
-      struct udev_device  *dev = udev_device_new_from_syspath(g_udev, name);
+      struct udev_device  *dev = udev_device_new_from_syspath(udev_joypad_fd, name);
       const char      *devnode = udev_device_get_devnode(dev);
 
       if (devnode)
-         udev_check_device(dev, devnode, false);
+         udev_check_device(dev, devnode);
       udev_device_unref(dev);
    }
 
@@ -580,14 +569,15 @@ error:
    return false;
 }
 
-static bool udev_joypad_hat(const struct udev_joypad *pad, uint16_t hat)
+static bool udev_joypad_button_hat(const void *data, uint16_t joykey, unsigned hat_dir)
 {
-   unsigned h = GET_HAT(hat);
+   const struct udev_joypad *pad = (const struct udev_joypad*)data;
+   unsigned h                    = GET_HAT(joykey);
 
    if (h >= NUM_HATS)
       return false;
 
-   switch (GET_HAT_DIR(hat))
+   switch (hat_dir)
    {
       case HAT_LEFT_MASK:
          return pad->hats[h][0] < 0;
@@ -605,9 +595,10 @@ static bool udev_joypad_hat(const struct udev_joypad *pad, uint16_t hat)
 static bool udev_joypad_button(unsigned port, uint16_t joykey)
 {
    const struct udev_joypad *pad = (const struct udev_joypad*)&udev_pads[port];
+   unsigned hat_dir = GET_HAT_DIR(joykey);
 
-   if (GET_HAT_DIR(joykey))
-      return udev_joypad_hat(pad, joykey);
+   if (hat_dir)
+      return udev_joypad_button_hat(pad, joykey, hat_dir);
    return joykey < UDEV_NUM_BUTTONS && BIT64_GET(pad->buttons, joykey);
 }
 
@@ -649,10 +640,10 @@ static bool udev_joypad_query_pad(unsigned pad)
 
 static const char *udev_joypad_name(unsigned pad)
 {
-   if (pad >= MAX_USERS)
+   if (pad >= MAX_USERS || string_is_empty(udev_pads[pad].ident))
       return NULL;
 
-   return *udev_pads[pad].ident ? udev_pads[pad].ident : NULL;
+   return udev_pads[pad].ident;
 }
 
 input_device_driver_t udev_joypad = {

@@ -19,6 +19,7 @@
 
 #include "netplay_private.h"
 #include <net/net_socket.h>
+#include <compat/strl.h>
 
 #include <encodings/crc32.h>
 
@@ -166,8 +167,9 @@ bool netplay_handshake(netplay_t *netplay)
    char msg[512];
    uint32_t *content_crc_ptr = NULL;
    void *sram                = NULL;
-   uint32_t header[4]        = {0};
+   uint32_t header[5]        = {0};
    bool is_server            = netplay->is_server;
+   int compression           = 0;
 
    msg[0] = '\0';
 
@@ -182,28 +184,28 @@ bool netplay_handshake(netplay_t *netplay)
    header[1] = htonl(netplay_impl_magic());
    header[2] = htonl(mem_info.size);
    header[3] = htonl(local_pmagic);
+   header[4] = htonl(NETPLAY_COMPRESSION_SUPPORTED);
 
    if (!socket_send_all_blocking(netplay->fd, header, sizeof(header), false))
       return false;
 
    if (!socket_receive_all_blocking(netplay->fd, header, sizeof(header)))
    {
-      RARCH_ERR("%s\n",
-            msg_hash_to_str(MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT));
-      return false;
+      strlcpy(msg, msg_hash_to_str(MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT), sizeof(msg));
+      goto error;
    }
 
    if (*content_crc_ptr != ntohl(header[0]))
    {
-      RARCH_ERR("%s\n", msg_hash_to_str(MSG_CONTENT_CRC32S_DIFFER));
-      return false;
+      strlcpy(msg, msg_hash_to_str(MSG_CONTENT_CRC32S_DIFFER), sizeof(msg));
+      goto error;
    }
 
    if (netplay_impl_magic() != ntohl(header[1]))
    {
-      RARCH_ERR("Implementations differ, make sure you're using exact same "
-            "libretro implementations and RetroArch version.\n");
-      return false;
+      strlcpy(msg, "Implementations differ. Make sure you're using exact same "
+         "libretro implementations and RetroArch version.", sizeof(msg));
+      goto error;
    }
 
    /* Some cores only report the correct sram size late, so we can't actually
@@ -221,12 +223,46 @@ bool netplay_handshake(netplay_t *netplay)
        netplay_endian_mismatch(local_pmagic, remote_pmagic))
    {
       RARCH_ERR("Endianness mismatch with an endian-sensitive core.\n");
-      return false;
+      strlcpy(msg, "This core does not support inter-architecture netplay "
+         "between these systems.", sizeof(msg));
+      goto error;
    }
    if ((netplay->quirks & NETPLAY_QUIRK_PLATFORM_DEPENDENT) &&
        (local_pmagic != remote_pmagic))
    {
       RARCH_ERR("Platform mismatch with a platform-sensitive core.\n");
+      strlcpy(msg, "This core does not support inter-architecture netplay.",
+         sizeof(msg));
+      goto error;
+   }
+
+   /* Clear any existing compression */
+   if (netplay->compression_stream)
+      netplay->compression_backend->stream_free(netplay->compression_stream);
+   if (netplay->decompression_stream)
+      netplay->decompression_backend->stream_free(netplay->decompression_stream);
+
+   /* Check what compression is supported */
+   compression = ntohl(header[4]);
+   compression &= NETPLAY_COMPRESSION_SUPPORTED;
+   if (compression & NETPLAY_COMPRESSION_ZLIB)
+   {
+      netplay->compression_backend = trans_stream_get_zlib_deflate_backend();
+      if (!netplay->compression_backend)
+         netplay->compression_backend = trans_stream_get_pipe_backend();
+   }
+   else
+   {
+      netplay->compression_backend = trans_stream_get_pipe_backend();
+   }
+   netplay->decompression_backend = netplay->compression_backend->reverse;
+
+   /* Allocate our compression stream */
+   netplay->compression_stream = netplay->compression_backend->stream_new();
+   netplay->decompression_stream = netplay->decompression_backend->stream_new();
+   if (!netplay->compression_stream || !netplay->decompression_stream)
+   {
+      RARCH_ERR("Failed to allocate compression transcoder!\n");
       return false;
    }
 
@@ -235,21 +271,22 @@ bool netplay_handshake(netplay_t *netplay)
    {
       if (!netplay_send_nickname(netplay, netplay->fd))
       {
-         RARCH_ERR("%s\n",
-               msg_hash_to_str(MSG_FAILED_TO_SEND_NICKNAME_TO_HOST));
-         return false;
+         strlcpy(msg, msg_hash_to_str(MSG_FAILED_TO_SEND_NICKNAME_TO_HOST),
+            sizeof(msg));
+         goto error;
       }
    }
 
    if (!netplay_get_nickname(netplay, netplay->fd))
    {
       if (is_server)
-         RARCH_ERR("%s\n",
-               msg_hash_to_str(MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT));
+         strlcpy(msg, msg_hash_to_str(MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT),
+            sizeof(msg));
       else
-         RARCH_ERR("%s\n", 
-               msg_hash_to_str(MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST));
-      return false;
+         strlcpy(msg,
+            msg_hash_to_str(MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST),
+            sizeof(msg));
+      goto error;
    }
 
    if (is_server)
@@ -346,6 +383,14 @@ bool netplay_handshake(netplay_t *netplay)
    }
 
    return true;
+
+error:
+   if (msg[0])
+   {
+      RARCH_ERR("%s\n", msg);
+      runloop_msg_queue_push(msg, 1, 180, false);
+   }
+   return false;
 }
 
 bool netplay_is_server(netplay_t* netplay)
@@ -387,104 +432,4 @@ uint32_t netplay_delta_frame_crc(netplay_t *netplay, struct delta_frame *delta)
    if (!netplay->state_size)
       return 0;
    return encoding_crc32(0L, (const unsigned char*)delta->state, netplay->state_size);
-}
-
-/*
- * AD PACKET FORMAT:
- *
- * Request:
- *    1 word: RANQ (RetroArch Netplay Query)
- *    1 word: Netplay protocol version
- *
- * Reply:
- *    1 word : RANS (RetroArch Netplay Server)
- *    1 word : Netplay protocol version
- *    1 word : Port
- *    8 words: RetroArch version
- *    8 words: Nick
- *    8 words: Core name
- *    8 words: Core version
- *    8 words: Content name (currently always blank)
- */
-
-#define AD_PACKET_MAX_SIZE       512
-#define AD_PACKET_STRING_SIZE    32
-#define AD_PACKET_STRING_WORDS   (AD_PACKET_STRING_SIZE/sizeof(uint32_t))
-static uint32_t *ad_packet_buffer = NULL;
-
-bool netplay_ad_server(netplay_t *netplay, int ad_fd)
-{
-   fd_set fds;
-   struct timeval tmp_tv = {0};
-   struct sockaddr their_addr;
-   socklen_t addr_size;
-   rarch_system_info_t *info = NULL;
-   size_t bufloc;
-
-   if (!ad_packet_buffer)
-   {
-      ad_packet_buffer = (uint32_t *) malloc(AD_PACKET_MAX_SIZE);
-      if (!ad_packet_buffer)
-         return false;
-   }
-
-   /* Check for any ad queries */
-   while (1)
-   {
-      FD_ZERO(&fds);
-      FD_SET(ad_fd, &fds);
-      if (socket_select(ad_fd + 1, &fds, NULL, NULL, &tmp_tv) <= 0)
-         break;
-      if (!FD_ISSET(ad_fd, &fds))
-         break;
-
-      /* Somebody queried, so check that it's valid */
-      if (recvfrom(ad_fd, (char*)ad_packet_buffer, AD_PACKET_MAX_SIZE, 0,
-                   &their_addr, &addr_size) >= (ssize_t) (2*sizeof(uint32_t)))
-      {
-         /* Make sure it's a valid query */
-         if (memcmp(ad_packet_buffer, "RANQ", 4))
-            continue;
-
-         /* For this version */
-         if (ntohl(ad_packet_buffer[1]) != NETPLAY_PROTOCOL_VERSION)
-            continue;
-
-         runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
-
-         /* Now build our response */
-         memset(ad_packet_buffer, 0, AD_PACKET_MAX_SIZE);
-         memcpy(ad_packet_buffer, "RANS", 4);
-         ad_packet_buffer[1] = htonl(NETPLAY_PROTOCOL_VERSION);
-         ad_packet_buffer[2] = htonl(netplay->tcp_port);
-         bufloc = 3;
-         strncpy((char *) (ad_packet_buffer + bufloc),
-                 PACKAGE_VERSION, AD_PACKET_STRING_SIZE);
-         bufloc += AD_PACKET_STRING_WORDS;
-         strncpy((char *) (ad_packet_buffer + bufloc),
-                 netplay->nick, AD_PACKET_STRING_SIZE);
-         bufloc += AD_PACKET_STRING_WORDS;
-         if (info)
-         {
-            strncpy((char *) (ad_packet_buffer + bufloc),
-                    info->info.library_name, AD_PACKET_STRING_SIZE);
-            bufloc += AD_PACKET_STRING_WORDS;
-            strncpy((char *) (ad_packet_buffer + bufloc),
-                    info->info.library_version, AD_PACKET_STRING_SIZE);
-            bufloc += AD_PACKET_STRING_WORDS;
-            /* Blank content */
-            bufloc += AD_PACKET_STRING_WORDS;
-         }
-         else
-         {
-            bufloc += 3*AD_PACKET_STRING_WORDS;
-         }
-
-         /* And send it */
-         sendto(ad_fd, (const char*)ad_packet_buffer, bufloc*sizeof(uint32_t), 0,
-                &their_addr, addr_size);
-      }
-   }
-
-   return true;
 }

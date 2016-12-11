@@ -1177,8 +1177,6 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Che cosa è un core?";
       case MENU_ENUM_LABEL_VALUE_INFORMATION_LIST:
          return "Informazioni";
-      case MENU_ENUM_LABEL_VALUE_INPUT_BACK_AS_MENU_TOGGLE_ENABLE:
-         return "Indietro quando il menù a comparsa è abilitato";
       case MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE:
          return "Tipologia di mappatura gamepad tastiera";
       case MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
@@ -1229,41 +1227,16 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Aggiorna le info dei core";
       case MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER:
          return "Usa Media Player interno";
-#if 0
       case MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU:
          return "Menú orizzontale";
-#else
-      case MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU:
-         return "Horizontal Menu";
-#endif
-#if 0
 	  case MENU_ENUM_LABEL_VALUE_SETTINGS_TAB:
          return "Settaggi scheda";
-#else
-      case MENU_ENUM_LABEL_VALUE_SETTINGS_TAB:
-         return "Settings tab";
-#endif
-#if 0
       case MENU_ENUM_LABEL_VALUE_HISTORY_TAB:
          return "Cronologia scheda";
-#else
-      case MENU_ENUM_LABEL_VALUE_HISTORY_TAB:
-         return "History tab";
-#endif
-#if 1
-      case MENU_ENUM_LABEL_VALUE_ADD_TAB:
-         return "Add tab";
-#else
       case MENU_ENUM_LABEL_VALUE_ADD_TAB:
          return "Aggiungi scheda";
-#endif
-#if 0
       case MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB:
          return "Scheda Playlist";
-#else
-      case MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB:
-         return "Playlists tab";
-#endif
       case MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND:
          return "Nessun settaggio trovato.";
       case MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS:
@@ -1394,10 +1367,6 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Directory Shader Video";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR:
          return "Directory Filtro Video";
-      case MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY:
-         return "Directory Overlay";
-      case MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY:
-         return "Directory Overlay OSK";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT:
          return "Giocatore 2 usa Controller 1 in rete";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE:
@@ -1520,8 +1489,6 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Carica file di override automaticamente";
       case MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
          return "Salva configurazione all'uscita";
-	  case MENU_ENUM_LABEL_VALUE_CONFIRM_ON_EXIT:
-         return "Chiedi conferma all'uscita";
 	  case MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES:
          return "Mostra files e cartelle nascoste";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH:
@@ -1536,10 +1503,6 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Intervallo di swap vsync";
 	  case MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES:
          return "Massimo swapchain di immagini";
-      case MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC:
-         return "VSync";
-      case MENU_ENUM_LABEL_VALUE_VIDEO_THREADED:
-         return "Threaded Video";
       case MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION:
          return "Rotazione";
       case MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT:
@@ -1810,8 +1773,6 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Latenza audio (ms)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE:
          return "Dispositivo audio";
-      case MENU_ENUM_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET:
-         return "Preimpostato Overlay Tastiera";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY:
          return "Opacità Overlay";
       case MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER:
@@ -1822,8 +1783,6 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Opzioni di rimappatura degli input del core";
       case MENU_ENUM_LABEL_VALUE_THUMBNAILS:
          return "Miniature";
-	  case MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS:
-         return "Shaders";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS:
          return "Antemprima Parametri Shader";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PARAMETERS:
@@ -1877,9 +1836,7 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS:
          return "Estensioni supportate";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE:
-         return "Firmware";
-      case MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NOTES:
-         return "Note del core";
+         return "Firmware(s)";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE:
          return "Data della build";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION:
@@ -2191,8 +2148,10 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Normale";
       case MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_EARLY:
          return "Presto";
-      case MSG_INTERNAL_MEMORY:
+      case MSG_INTERNAL_STORAGE:
          return "Memoria interna";
+      case MSG_REMOVABLE_STORAGE:
+         return "Removable storage";
       case MSG_EXTERNAL_APPLICATION_DIR:
          return "Directory app esterna";
       case MSG_APPLICATION_DIR:

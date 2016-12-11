@@ -182,6 +182,10 @@ if [ "$HAVE_NETWORKING" = 'yes' ]; then
    fi
    HAVE_NETWORK_CMD=yes
    HAVE_NETWORKGAMEPAD=yes
+
+   if [ "$HAVE_MINIUPNPC" != "no" ]; then
+      check_lib MINIUPNPC "-lminiupnpc"
+   fi
 else
    echo "Warning: All networking features have been disabled."
    HAVE_NETWORK_CMD='no'
@@ -205,6 +209,7 @@ if [ "$HAVE_DYLIB" = 'no' ] && [ "$HAVE_DYNAMIC" = 'yes' ]; then
 fi
 
 check_pkgconf ALSA alsa
+check_lib CACA -lcaca
 check_header OSS sys/soundcard.h
 check_header OSS_BSD soundcard.h
 check_lib OSS_LIB -lossaudio

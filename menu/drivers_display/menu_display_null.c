@@ -18,7 +18,6 @@
 #include <queues/message_queue.h>
 #include <retro_miscellaneous.h>
 
-#include "../../config.def.h"
 #include "../../gfx/font_driver.h"
 #include "../../gfx/video_context_driver.h"
 

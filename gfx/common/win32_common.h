@@ -94,9 +94,12 @@ void win32_check_window(bool *quit,
 void win32_set_window(unsigned *width, unsigned *height,
       bool fullscreen, bool windowed_full, void *rect_data);
 
+#ifndef _XBOX
+/* FIXME: It should not be necessary to add the W after MONITORINFOEX, but linking fails without it. */
 void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
 	unsigned *width, unsigned *height, bool fullscreen, bool windowed_full,
 	RECT *rect, RECT *mon_rect, DWORD *style);
+#endif
 
 void win32_window_reset(void);
 

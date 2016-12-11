@@ -28,7 +28,7 @@
 #include "../menu_shader.h"
 #include "../menu_display.h"
 
-#include "../../input/input_autodetect.h"
+#include "../../tasks/tasks_internal.h"
 #include "../../input/input_config.h"
 
 #include "../../core.h"
@@ -224,6 +224,16 @@ static void menu_action_setting_disp_set_label_pipeline(
          strlcpy(s,
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON), len);
+         break;
+      case XMB_SHADER_PIPELINE_SIMPLE_SNOW:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SIMPLE_SNOW), len);
+         break;
+      case XMB_SHADER_PIPELINE_SNOW:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOW), len);
          break;
    }
 
@@ -470,7 +480,7 @@ static void menu_action_setting_disp_set_label_input_desc(
    keybind = (const struct retro_keybind*)
       &settings->input.binds[inp_desc_user][remap_id];
    auto_bind = (const struct retro_keybind*)
-      input_get_auto_bind(inp_desc_user, remap_id);
+      input_config_get_bind_auto(inp_desc_user, remap_id);
 
    input_config_get_bind_string(descriptor,
       keybind, auto_bind, sizeof(descriptor));
@@ -747,9 +757,9 @@ static void menu_action_setting_disp_set_label_xmb_theme(
          strlcpy(s,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_NEOACTIVE), len);
          break;
-      case XMB_ICON_THEME_MONOCHROME_JAGGED:
+      case XMB_ICON_THEME_SYSTEMATIC:
          strlcpy(s,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME_JAGGED), len);
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_SYSTEMATIC), len);
 	 break;
       case XMB_ICON_THEME_CUSTOM:
          strlcpy(s,

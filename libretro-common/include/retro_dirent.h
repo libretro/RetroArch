@@ -24,6 +24,7 @@
 #define __RETRO_DIRENT_H
 
 #include <retro_common_api.h>
+#include <retro_miscellaneous.h>
 
 #include <boolean.h>
 
@@ -65,6 +66,7 @@ struct RDIR
    WIN32_FIND_DATA entry;
    HANDLE directory;
    bool next;
+   char path[PATH_MAX_LENGTH];
 #elif defined(VITA) || defined(PSP)
    SceUID directory;
    SceIoDirent entry;

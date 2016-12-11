@@ -29,7 +29,7 @@
 #include "../../verbosity.h"
 #include "../../frontend/frontend_driver.h"
 
-bool g_egl_inited;
+bool g_egl_inited    = false;
 
 unsigned g_egl_major = 0;
 unsigned g_egl_minor = 0;

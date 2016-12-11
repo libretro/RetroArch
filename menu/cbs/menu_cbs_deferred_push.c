@@ -150,6 +150,11 @@ static int deferred_push_onscreen_display_settings_list(menu_displaylist_info_t 
    return deferred_push_dlist(info, DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST);
 }
 
+static int deferred_push_onscreen_notifications_settings_list(menu_displaylist_info_t *info)
+{
+   return deferred_push_dlist(info, DISPLAYLIST_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST);
+}
+
 static int deferred_push_onscreen_overlay_settings_list(menu_displaylist_info_t *info)
 {
    return deferred_push_dlist(info, DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST);
@@ -183,6 +188,11 @@ static int deferred_push_wifi_settings_list(menu_displaylist_info_t *info)
 static int deferred_push_network_settings_list(menu_displaylist_info_t *info)
 {
    return deferred_push_dlist(info, DISPLAYLIST_NETWORK_SETTINGS_LIST);
+}
+
+static int deferred_push_netplay_lan_scan_settings_list(menu_displaylist_info_t *info)
+{
+   return deferred_push_dlist(info, DISPLAYLIST_NETPLAY_LAN_SCAN_SETTINGS_LIST);
 }
 
 static int deferred_push_lakka_services_list(menu_displaylist_info_t *info)
@@ -688,11 +698,6 @@ static int deferred_push_input_overlay(menu_displaylist_info_t *info)
    return deferred_push_dlist(info, DISPLAYLIST_OVERLAYS);
 }
 
-static int deferred_push_input_osk_overlay(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_OVERLAYS);
-}
-
 static int deferred_push_video_font_path(menu_displaylist_info_t *info)
 {
    return deferred_push_dlist(info, DISPLAYLIST_FONTS);
@@ -747,6 +752,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_onscreen_display_settings_list);
       return 0;
    }
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_onscreen_notifications_settings_list);
+      return 0;
+   }
    if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_onscreen_overlay_settings_list);
@@ -784,6 +794,12 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
    if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_wifi_settings_list);
+      return 0;
+   }
+
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_NETPLAY_LAN_SCAN_SETTINGS_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_netplay_lan_scan_settings_list);
       return 0;
    }
 
@@ -1055,9 +1071,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_ENUM_LABEL_INPUT_OVERLAY:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_overlay);
                break;
-            case MENU_ENUM_LABEL_INPUT_OSK_OVERLAY:
-               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_osk_overlay);
-               break;
             case MENU_ENUM_LABEL_VIDEO_FONT_PATH:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_font_path);
                break;
@@ -1317,9 +1330,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
                break;
             case MENU_LABEL_INPUT_OVERLAY:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_overlay);
-               break;
-            case MENU_LABEL_INPUT_OSK_OVERLAY:
-               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_osk_overlay);
                break;
             case MENU_LABEL_VIDEO_FONT_PATH:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_font_path);

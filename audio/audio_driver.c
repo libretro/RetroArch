@@ -488,21 +488,22 @@ void audio_driver_set_nonblocking_state(bool enable)
  **/
 static bool audio_driver_flush(const int16_t *data, size_t samples)
 {
+   struct resampler_data src_data;
    static struct retro_perf_counter resampler_proc      = {0};
    static struct retro_perf_counter audio_convert_s16   = {0};
-   struct resampler_data src_data;
-   const void *output_data                     = NULL;
-   unsigned output_frames                      = 0;
-   size_t   output_size                        = sizeof(float);
-   settings_t *settings                        = config_get_ptr();
+   const void *output_data                              = NULL;
+   unsigned output_frames                               = 0;
+   size_t   output_size                                 = sizeof(float);
+   settings_t *settings                                 = config_get_ptr();
 
-   src_data.data_in                            = NULL;
-   src_data.data_out                           = NULL;
-   src_data.input_frames                       = 0;
-   src_data.output_frames                      = 0;
-   src_data.ratio                              = 0.0f;
+   src_data.data_in                                     = NULL;
+   src_data.data_out                                    = NULL;
+   src_data.input_frames                                = 0;
+   src_data.output_frames                               = 0;
+   src_data.ratio                                       = 0.0f;
 
-   recording_push_audio(data, samples);
+   if (recording_data)
+      recording_push_audio(data, samples);
 
    if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) || settings->audio.mute_enable)
       return true;
@@ -867,7 +868,7 @@ bool audio_driver_set_callback(const void *data)
 
 bool audio_driver_enable_callback(void)
 {
-   if (!audio_driver_has_callback())
+   if (!audio_callback.callback)
       return false; 
    if (audio_callback.set_state)
       audio_callback.set_state(true);
@@ -876,7 +877,7 @@ bool audio_driver_enable_callback(void)
 
 bool audio_driver_disable_callback(void)
 {
-   if (!audio_driver_has_callback())
+   if (!audio_callback.callback)
       return false;
 
    if (audio_callback.set_state)
@@ -897,7 +898,7 @@ void audio_driver_monitor_set_rate(void)
 
 bool audio_driver_callback(void)
 {
-   if (!audio_driver_has_callback())
+   if (!audio_callback.callback)
       return false;
 
    if (audio_callback.callback)
@@ -955,10 +956,11 @@ void audio_driver_unset_callback(void)
 
 bool audio_driver_alive(void)
 {
-   if (!current_audio || !current_audio->alive 
-         || !audio_driver_context_audio_data)
-      return false;
-   return current_audio->alive(audio_driver_context_audio_data);
+   if (     current_audio 
+         && current_audio->alive 
+         && audio_driver_context_audio_data)
+      return current_audio->alive(audio_driver_context_audio_data);
+   return false;
 }
 
 void audio_driver_frame_is_reverse(void)
@@ -997,11 +999,6 @@ void audio_driver_set_active(void)
 void audio_driver_unset_active(void)
 {
    audio_driver_active = false;
-}
-
-bool audio_driver_is_active(void)
-{
-   return audio_driver_active;
 }
 
 void audio_driver_destroy(void)

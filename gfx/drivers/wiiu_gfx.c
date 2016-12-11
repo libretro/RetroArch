@@ -16,6 +16,7 @@
 #include "../../driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
+#include "performance_counters.h"
 
 #include <string.h>
 #include <coreinit/screen.h>
@@ -474,6 +475,9 @@ static void* wiiu_gfx_init(const video_info_t* video,
    wiiu->vp.full_height = 480;
    video_driver_set_size(&wiiu->vp.width, &wiiu->vp.height);
 
+   float refresh_rate = 60.0f / 1.001f;
+   driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &refresh_rate);
+
    return wiiu;
 }
 static void wiiu_gfx_free(void* data)
@@ -582,15 +586,16 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
    printf("\rfps: %8.8f frames : %5i", fps, wiiu->frames++);
    fflush(stdout);
 
+   static struct retro_perf_counter gfx_frame_perf = {0};
+   performance_counter_init(&gfx_frame_perf, "gfx_frame");
+   performance_counter_start(&gfx_frame_perf);
 
    if (wiiu->should_resize)
       wiiu_gfx_update_viewport(wiiu);
 
-
    GX2ClearColor(&wiiu->color_buffer, 0.0f, 0.0f, 0.0f, 1.0f);
    /* can't call GX2ClearColor after GX2SetContextState for whatever reason */
    GX2SetContextState(wiiu->ctx_state);
-
 
    if(frame)
    {
@@ -655,6 +660,7 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
       GX2SetPixelSampler(&wiiu->sampler_linear, wiiu->shader->sampler.location);
 
       GX2DrawEx(GX2_PRIMITIVE_MODE_QUADS, 4, 0, 1);
+      GX2DrawDone();
    }
 
    GX2CopyColorBufferToScanBuffer(&wiiu->color_buffer, GX2_SCAN_TARGET_DRC);
@@ -662,6 +668,7 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
 
    GX2SwapScanBuffers();
    GX2Flush();
+   performance_counter_stop(&gfx_frame_perf);
 
    return true;
 }

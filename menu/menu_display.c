@@ -45,11 +45,24 @@
 #include "menu_animation.h"
 #include "menu_display.h"
 
-
+#define PARTICLES_COUNT            100
 
 uintptr_t menu_display_white_texture;
 
 static enum menu_toggle_reason menu_display_toggle_reason = MENU_TOGGLE_REASON_NONE;
+
+static video_coord_array_t menu_disp_ca;
+
+static unsigned menu_display_framebuf_width      = 0;
+static unsigned menu_display_framebuf_height     = 0;
+static size_t menu_display_framebuf_pitch        = 0;
+static unsigned menu_display_header_height       = 0;
+static bool menu_display_msg_force               = false;
+static bool menu_display_font_alloc_framebuf     = false;
+static bool menu_display_framebuf_dirty          = false;
+static const uint8_t *menu_display_font_framebuf = NULL;
+static msg_queue_t *menu_display_msg_queue       = NULL;
+static menu_display_ctx_driver_t *menu_disp      = NULL;
 
 static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #ifdef HAVE_D3D
@@ -66,6 +79,9 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #endif
 #ifdef _3DS
    &menu_display_ctx_ctr,
+#endif
+#ifdef HAVE_CACA
+   &menu_display_ctx_caca,
 #endif
    &menu_display_ctx_null,
    NULL,
@@ -122,6 +138,10 @@ static bool menu_display_check_compatibility(
          if (string_is_equal(video_driver, "ctr"))
             return true;
          break;
+      case MENU_VIDEO_DRIVER_CACA:
+         if (string_is_equal(video_driver, "caca"))
+            return true;
+         break;
    }
 
    return false;
@@ -160,18 +180,6 @@ void menu_display_timedate(menu_display_ctx_datetime_t *datetime)
          break;
    }
 }
-
-static video_coord_array_t menu_disp_ca;
-static unsigned menu_display_framebuf_width      = 0;
-static unsigned menu_display_framebuf_height     = 0;
-static size_t menu_display_framebuf_pitch        = 0;
-static unsigned menu_display_header_height       = 0;
-static bool menu_display_msg_force               = false;
-static bool menu_display_font_alloc_framebuf     = false;
-static bool menu_display_framebuf_dirty          = false;
-static const uint8_t *menu_display_font_framebuf = NULL;
-static msg_queue_t *menu_display_msg_queue       = NULL;
-static menu_display_ctx_driver_t *menu_disp      = NULL;
 
 void menu_display_blend_begin(void)
 {
@@ -660,6 +668,22 @@ void menu_display_handle_thumbnail_upload(void *task_data,
    free(user_data);
 }
 
+void menu_display_handle_savestate_thumbnail_upload(void *task_data,
+      void *user_data, const char *err)
+{
+   menu_ctx_load_image_t load_image_info;
+   struct texture_image *img = (struct texture_image*)task_data;
+
+   load_image_info.data = img;
+   load_image_info.type = MENU_IMAGE_SAVESTATE_THUMBNAIL;
+
+   menu_driver_ctl(RARCH_MENU_CTL_LOAD_IMAGE, &load_image_info);
+
+   image_texture_free(img);
+   free(img);
+   free(user_data);
+}
+
 void menu_display_handle_wallpaper_upload(void *task_data,
       void *user_data, const char *err)
 {
@@ -743,12 +767,10 @@ void menu_display_push_quad(
       const float *colors, int x1, int y1,
       int x2, int y2)
 {
-   menu_display_ctx_coord_draw_t coord_draw;
    float vertex[8];
    video_coords_t coords;
-   video_coord_array_t *ca   = NULL;
-
-   ca = menu_display_get_coords_array();
+   menu_display_ctx_coord_draw_t coord_draw;
+   video_coord_array_t *ca = menu_display_get_coords_array();
 
    vertex[0]             = x1 / (float)width;
    vertex[1]             = y1 / (float)height;
@@ -778,8 +800,6 @@ void menu_display_push_quad(
 
    video_coord_array_append(ca, &coords, 3);
 }
-
-#define PARTICLES_COUNT            100
 
 void menu_display_snow(int width, int height)
 {

@@ -121,12 +121,14 @@ static const char *glsl_prefixes[] = {
 #ifdef HAVE_SHADERPIPELINE
 #include "../drivers/gl_shaders/legacy_pipeline_xmb_ribbon_simple.glsl.vert.h"
 #include "../drivers/gl_shaders/modern_pipeline_xmb_ribbon_simple.glsl.vert.h"
+#include "../drivers/gl_shaders/modern_pipeline_snow.glsl.vert.h"
 #include "../drivers/gl_shaders/pipeline_xmb_ribbon_simple.glsl.frag.h"
-#if !defined(HAVE_OPENGLES)
+#include "../drivers/gl_shaders/pipeline_snow.glsl.frag.h"
+#include "../drivers/gl_shaders/pipeline_snow_simple.glsl.frag.h"
+#include "../drivers/gl_shaders/legacy_pipeline_snow.glsl.vert.h"
 #include "../drivers/gl_shaders/legacy_pipeline_xmb_ribbon.glsl.vert.h"
 #include "../drivers/gl_shaders/modern_pipeline_xmb_ribbon.glsl.vert.h"
 #include "../drivers/gl_shaders/pipeline_xmb_ribbon.glsl.frag.h"
-#endif
 #endif
 
 typedef struct glsl_shader_data
@@ -412,12 +414,7 @@ static bool gl_glsl_load_source_path(struct video_shader_pass *pass,
       const char *path)
 {
    ssize_t len;
-   int nitems = 0;
-
-   if (!pass)
-      return false;
-
-   nitems = filestream_read_file(path,
+   int nitems = filestream_read_file(path,
          (void**)&pass->source.string.vertex, &len);
 
    if (nitems <= 0 || len <= 0)
@@ -448,17 +445,18 @@ static bool gl_glsl_compile_programs(
        * load the file here, and pretend
        * we were really using XML all along.
        */
-      if (*pass->source.path && !gl_glsl_load_source_path(
-               pass, pass->source.path))
+      if (     !string_is_empty(pass->source.path) 
+            && !gl_glsl_load_source_path(pass, pass->source.path))
       {
          RARCH_ERR("Failed to load GLSL shader: %s.\n",
                pass->source.path);
          return false;
       }
-      *pass->source.path = '\0';
 
-      vertex   = pass->source.string.vertex;
-      fragment = pass->source.string.fragment;
+      *pass->source.path        = '\0';
+
+      vertex                    = pass->source.string.vertex;
+      fragment                  = pass->source.string.fragment;
 
       shader_prog_info.vertex   = vertex;
       shader_prog_info.fragment = fragment;
@@ -558,10 +556,10 @@ static void gl_glsl_find_uniforms_frame(glsl_shader_data_t *glsl,
 
    texture[0] = texture_size[0] = input_size[0] = tex_coord[0] = '\0';
 
-   snprintf(texture, sizeof(texture), "%s%s", base, "Texture");
+   snprintf(texture,      sizeof(texture),      "%s%s", base, "Texture");
    snprintf(texture_size, sizeof(texture_size), "%s%s", base, "TextureSize");
-   snprintf(input_size, sizeof(input_size), "%s%s", base, "InputSize");
-   snprintf(tex_coord, sizeof(tex_coord), "%s%s", base, "TexCoord");
+   snprintf(input_size,   sizeof(input_size),   "%s%s", base, "InputSize");
+   snprintf(tex_coord,    sizeof(tex_coord),    "%s%s", base, "TexCoord");
 
    if (frame->texture < 0)
       frame->texture = gl_glsl_get_uniform(glsl, prog, texture);
@@ -885,7 +883,7 @@ static void *gl_glsl_init(void *data, const char *path)
       retro_ctx_memory_info_t mem_info;
       struct state_tracker_info info = {0};
 
-      mem_info.id = RETRO_MEMORY_SYSTEM_RAM;
+      mem_info.id    = RETRO_MEMORY_SYSTEM_RAM;
 
       core_get_memory(&mem_info);
 
@@ -934,12 +932,20 @@ static void *gl_glsl_init(void *data, const char *path)
    }
 
 #ifdef HAVE_SHADERPIPELINE
-#if defined(HAVE_OPENGLES)
-   shader_prog_info.vertex   = stock_vertex_xmb_simple_legacy;
-   shader_prog_info.fragment = stock_fragment_xmb_simple;
+#ifdef HAVE_OPENGLES
+   if (gl_query_extension("GL_OES_standard_derivatives"))
+   {
+      shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_ribbon_modern : stock_vertex_xmb_ribbon_legacy;
+      shader_prog_info.fragment = stock_fragment_xmb;
+   }
+   else
+   {
+      shader_prog_info.vertex   = stock_vertex_xmb_ribbon_simple_legacy;
+      shader_prog_info.fragment = stock_fragment_xmb_ribbon_simple;
+   }
 #else
-   shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_modern : stock_vertex_xmb_legacy;
-   shader_prog_info.fragment = stock_fragment_xmb;
+      shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_ribbon_modern : stock_vertex_xmb_ribbon_legacy;
+      shader_prog_info.fragment = stock_fragment_xmb;
 #endif
    shader_prog_info.is_file  = false;
 
@@ -951,16 +957,46 @@ static void *gl_glsl_init(void *data, const char *path)
    gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU].id,
          &glsl->uniforms[VIDEO_SHADER_MENU]);
 
-   shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_simple_modern : stock_vertex_xmb_simple_legacy;
-   shader_prog_info.fragment = stock_fragment_xmb_simple;
+   shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_simple_modern : stock_vertex_xmb_ribbon_simple_legacy;
+   shader_prog_info.fragment = stock_fragment_xmb_ribbon_simple;
 
    gl_glsl_compile_program(
          glsl,
-         VIDEO_SHADER_MENU_SEC,
-         &glsl->prg[VIDEO_SHADER_MENU_SEC],
+         VIDEO_SHADER_MENU_2,
+         &glsl->prg[VIDEO_SHADER_MENU_2],
          &shader_prog_info);
-   gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_SEC].id,
-         &glsl->uniforms[VIDEO_SHADER_MENU_SEC]);
+   gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_2].id,
+         &glsl->uniforms[VIDEO_SHADER_MENU_2]);
+
+#if defined(HAVE_OPENGLES)
+   shader_prog_info.vertex   = stock_vertex_xmb_snow_modern;
+#else
+   shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_snow_modern : stock_vertex_xmb_snow_legacy;
+#endif
+   shader_prog_info.fragment = stock_fragment_xmb_simple_snow;
+
+   gl_glsl_compile_program(
+         glsl,
+         VIDEO_SHADER_MENU_3,
+         &glsl->prg[VIDEO_SHADER_MENU_3],
+         &shader_prog_info);
+   gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_3].id,
+         &glsl->uniforms[VIDEO_SHADER_MENU_3]);
+
+#if defined(HAVE_OPENGLES)
+   shader_prog_info.vertex   = stock_vertex_xmb_snow_modern;
+#else
+   shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_snow_modern : stock_vertex_xmb_snow_legacy;
+#endif
+   shader_prog_info.fragment = stock_fragment_xmb_snow;
+
+   gl_glsl_compile_program(
+         glsl,
+         VIDEO_SHADER_MENU_4,
+         &glsl->prg[VIDEO_SHADER_MENU_4],
+         &shader_prog_info);
+   gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_4].id,
+         &glsl->uniforms[VIDEO_SHADER_MENU_4]);
 #endif
 
    gl_glsl_reset_attrib(glsl);

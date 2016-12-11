@@ -21,7 +21,6 @@
 #include <boolean.h>
 #include <libretro.h>
 
-#include <retro_miscellaneous.h>
 #include <retro_common_api.h>
 
 #include "core_type.h"

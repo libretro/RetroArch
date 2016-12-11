@@ -20,7 +20,15 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_GOT_CONNECTION_FROM,
-      "Got connection from"
+      "Got connection from: \"%s\""
+      )
+MSG_HASH(
+      MSG_GOT_CONNECTION_FROM_NAME,
+      "Got connection from: \"%s (%s)\""
+      )
+MSG_HASH(
+      MSG_PUBLIC_ADDRESS,
+      "Public address"
       )
 MSG_HASH(
       MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
@@ -141,7 +149,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
-      "Assets Dir"
+      "Assets"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
@@ -165,7 +173,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR,
-      "Audio Filter Dir"
+      "Audio Filter"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_TURBO_DEADZONE_LIST,
+      "Turbo/Deadzone"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
@@ -185,7 +197,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
-      "Audio Rate Control Delta"
+      "Dynamic Audio Rate Control"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
@@ -301,7 +313,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
-      "Cache Dir"
+      "Cache"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
@@ -321,7 +333,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH,
-      "Cheat File Dir"
+      "Cheat File"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEAT_FILE,
@@ -389,11 +401,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT,
-      "Save Configuration On Exit"
-      )
-MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_CONFIRM_ON_EXIT,
-      "Ask For Confirmation On Exit"
+      "Save Configuration on Exit"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
@@ -401,11 +409,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
-      "Content Database Dir"
+      "Content Database"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONTENT_DIR,
-      "Content Dir"
+      "Content"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE,
@@ -413,9 +421,9 @@ MSG_HASH(
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
       "Quick Menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
-      "Core Assets Dir")
+      "Core Assets")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
-      "Downloads Dir")
+      "Downloads")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
       "Cheats")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_COUNTERS,
@@ -432,10 +440,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL,
       "Core label")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME,
       "Core name")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NOTES,
-      "Core notes")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
-      "Firmware")
+      "Firmware(s)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES,
       "License(s)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
@@ -471,7 +477,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CPU_CORES,
       "CPU Cores:")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY,
-      "Cursor Dir")
+      "Cursor")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
       "Cursor Manager")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CUSTOM_RATIO,
@@ -494,8 +500,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
       "Directory not found.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
       "Directory")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DISABLED,
-      "Disabled")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS,
       "Disk Cycle Tray Status")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
@@ -507,7 +511,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DONT_CARE,
       "Don't care")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
-      "Downloads Dir")
+      "Downloads")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
       "Download Core...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
@@ -520,10 +524,12 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
       "Driver")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
       "Load Dummy on Core Shutdown")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE,
+      "Check for Missing Firmware Before Loading")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,
-      "Dynamic Wallpaper")
+      "Dynamic Background")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
-      "Dynamic Wallpapers Dir")
+      "Dynamic Backgrounds")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
       "Enable Achievements")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR,
@@ -543,7 +549,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
       "Frontend Counters")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
-      "Load Content-specific core options automatically")
+      "Load Content-Specific Core Options Automatically")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE,
       "Create game-options file")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE,
@@ -607,9 +613,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
       "Autoconfig Enable")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD,
-      "Input Axis Threshold")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_BACK_AS_MENU_ENUM_TOGGLE_ENABLE,
-      "Back As Menu Toggle Enable")
+      "Analog Stick Deadzone")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
+      "Menu Swap Ok & Cancel Buttons")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
       "Bind All")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL,
@@ -696,6 +702,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
       "Fullscreen toggle")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
       "Grab mouse toggle")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE,
+      "Game focus toggle")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
       "Load state")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
@@ -736,8 +744,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN,
       "Volume -")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,
       "Volume +")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_ENABLE,
-      "Display Keyboard Overlay")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
       "Display Overlay")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
@@ -753,7 +759,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_NORMAL,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
       "Prefer Front Touch")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
-      "Input Remapping Dir")
+      "Input Remapping")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
       "Remap Binds Enable")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
@@ -773,13 +779,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
       "Internal storage status")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
-      "Input Device Autoconfig Dir")
+      "Input Autoconfig")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
       "Joypad Driver")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET,
-      "Keyboard Overlay Preset")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES,
-      "Lakka Services")
+      "Services")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED,
       "Chinese (Simplified)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_CHINESE_TRADITIONAL,
@@ -813,9 +817,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
       "Left Analog")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
-      "Core Dir")
+      "Core")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH,
-      "Core Info Dir")
+      "Core Info")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL,
       "Core Logging Level")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LINEAR,
@@ -873,9 +877,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
       "Menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
-      "Menu Wallpaper")
+      "Background")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
-      "Wallpaper opacity")
+      "Background opacity")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MISSING,
       "Missing")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MORE,
@@ -910,6 +914,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
       "Start hosting")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
       "Server Address")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_LAN_SCAN_SETTINGS,
+      "Scan local network")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_MODE,
       "Netplay Client Enable")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
@@ -920,6 +926,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE,
       "Netplay Spectator Enable")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
       "Netplay TCP/UDP Port")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
+      "Netplay NAT Traversal")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
       "Network Commands")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETWORK_CMD_PORT,
@@ -956,6 +964,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE,
       "No information is available.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_ITEMS,
       "No items.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
+      "No netplay hosts found.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND,
+      "No networks found.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS,
       "No performance counters.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_PLAYLISTS,
@@ -978,18 +990,18 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
       "Onscreen Display")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS,
       "Onscreen Overlay")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
+      "Onscreen Notifications")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
       "Open Archive As Folder")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OPTIONAL,
       "Optional")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
-      "OSK Overlay Dir")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OVERLAY,
       "Overlay")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
       "Autoload Preferred Overlay")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
-      "Overlay Dir")
+      "Overlay")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
       "Overlay Opacity")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
@@ -1011,7 +1023,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
       "Playlists")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
-      "Playlist Dir")
+      "Playlist")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
       "Playlists")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
@@ -1083,21 +1095,21 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REBOOT,
       "Reboot")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY,
-      "Recording Config Dir")
+      "Recording Config")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY,
-      "Recording Output Dir")
+      "Recording Output")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
       "Recording")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RECORD_CONFIG,
-      "Record Config")
+      "Load Recording Config...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
       "Record Driver")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RECORD_ENABLE,
-      "Record Enable")
+      "Enable Recording")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RECORD_PATH,
-      "Output File")
+      "Save Output Recording as...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY,
-      "Use Output Dir")
+      "Save Recordings in Output Dir")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE,
       "Remap File")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
@@ -1120,8 +1132,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RETROKEYBOARD,
       "RetroKeyboard")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RETROPAD,
       "RetroPad")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_RETROPAD_WITH_ANALOG,
+      "RetroPad w/ Analog")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
-      "Retro Achievements")
+      "Achievements")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_ENABLE,
       "Rewind Enable")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
@@ -1129,9 +1143,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
       "Rewind")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-      "File Browser Dir")
+      "File Browser")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
-      "Config Dir")
+      "Config")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
       "Show Start Screen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
@@ -1141,7 +1155,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAMBA_ENABLE,
       "SAMBA Enable")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
-      "Savefile Dir")
+      "Savefile")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
       "Save State Auto Index")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
@@ -1149,7 +1163,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
       "Auto Save State")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
-      "Savestate Dir")
+      "Savestate")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
+      "Savestate Thumbnails")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
       "Save Current Configuration")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
@@ -1169,7 +1185,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SCAN_FILE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY,
       "<Scan This Directory>")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
-      "Screenshot Dir")
+      "Screenshot")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
       "Screen Resolution")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SEARCH,
@@ -1190,6 +1206,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON,
       "Ribbon")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON_SIMPLIFIED,
       "Ribbon (simplified)")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SIMPLE_SNOW,
+      "Simple Snow")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOW,
+      "Snow")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
       "Show Advanced Settings")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES,
@@ -1223,7 +1243,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE,
       "System BGM Enable")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY,
-      "System/BIOS Dir")
+      "System/BIOS")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
       "System Information")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT,
@@ -1367,7 +1387,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAILS,
       "Thumbnails")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
-      "Thumbnails Dir")
+      "Thumbnails")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
       "Thumbnails Updater")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS,
@@ -1449,7 +1469,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
       "Video Filter")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,
-      "Video Filter Dir")
+      "Video Filter")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER,
       "Flicker filter")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
@@ -1469,7 +1489,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA,
       "Video Gamma")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
-      "GPU Record Enable")
+      "Use GPU Recording")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
       "GPU Screenshot Enable")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
@@ -1485,9 +1505,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
       "Monitor Index")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD,
-      "Post filter record Enable")
+      "Use Post Filter Recording")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
-      "Refresh Rate")
+      "Vertical Refresh Rate")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
       "Estimated Monitor Framerate")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
@@ -1499,7 +1519,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
       "Video")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
-      "Video Shader Dir")
+      "Video Shader")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES,
       "Shader Passes")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
@@ -1521,7 +1541,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
       "Soft Filter Enable")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
-      "VSync Swap Interval")
+      "Vertical Sync (Vsync) Swap Interval")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
       "Video")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
@@ -1533,15 +1553,19 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
       "Custom Viewport Width")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
-      "Custom Viewport X")
+      "Custom Viewport X Pos.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
-      "Custom Viewport Y")
+      "Custom Viewport Y Pos.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
       "Set VI Screen Width")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
-      "VSync")
+      "Vertical Sync (Vsync)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
       "Windowed Fullscreen Mode")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+      "Window Width")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+      "Window Height")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
       "Wi-Fi Driver")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
@@ -1556,8 +1580,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_FLATUI,
       "FlatUI")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME,
       "Monochrome")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME_JAGGED,
-      "Monochrome Jagged")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_SYSTEMATIC,
+      "Systematic")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_NEOACTIVE,
       "NeoActive")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_PIXEL,
@@ -1608,10 +1632,40 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_YES,
       "Yes")
 MSG_HASH(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
       "Shader Preset")
+MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
+      "Enable or disable achievements. For more information, visit http://retroachievements.org")
+MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
+      "Enable or disable unofficial achievements and/or beta features for testing purposes.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
       "Enable or disable savestates, cheats, rewind, fast-forward, pause, and slow-motion for all games.")
+MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
+      "Change drivers for this system.")
+MSG_HASH(MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
+      "Change settings for the achievements.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_SETTINGS,
       "Change settings for the core.")
+MSG_HASH(MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
+      "Change settings for the recording.")
+MSG_HASH(MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
+      "Change settings for display overlay, keyboard overlay and onscreen notifications.")
+MSG_HASH(MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
+      "Change settings for rewinding, fast-forwarding, and slow-motion.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
+      "Change settings for the saving.")
+MSG_HASH(MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
+      "Change settings for the logging.")
+MSG_HASH(MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
+      "Change settings for the user interface.")
+MSG_HASH(MENU_ENUM_SUBLABEL_USER_SETTINGS,
+      "Change accounts, username, and language.")
+MSG_HASH(MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS,
+      "Change your privacy settings.")
+MSG_HASH(MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
+      "Change default directories for this system.")
+MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
+      "Change settings for the playlists.")
+MSG_HASH(MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
+      "Change settings for the network.")
 MSG_HASH(MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
       "Scan contents and add to the database.")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
@@ -1620,6 +1674,10 @@ MSG_HASH(MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE,
       "Enable or disable bluetooth.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
       "Saves changes to configuration file on exit.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
+      "Change default settings for configuration files.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
+      "Manage and create configuration files.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CPU_CORES,
       "Amount of cores that the CPU has.")
 MSG_HASH(MENU_ENUM_SUBLABEL_FPS_SHOW,
@@ -1636,8 +1694,10 @@ MSG_HASH(MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
       "Enable or disable logging to the terminal.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY,
       "Join or host a netplay session.")
+MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_LAN_SCAN_SETTINGS,
+      "Search for and connect to netplay hosts on the local network.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
-      "Display information for core, network, and system.\nDisplay manager for database and cursor.")
+      "Display information for core, network, and system. Display manager for database and cursor.")
 MSG_HASH(MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
       "Download add-ons, components and contents for RetroArch.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAMBA_ENABLE,
@@ -1650,6 +1710,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SSH_ENABLE,
       "Enable or disable remote command line access.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
       "Prevents your system's screensaver from becoming active.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
+      "Sets the window size relative to the core viewport size. Alternatively you can set a window width and height below for a fixed window size")
 MSG_HASH(MENU_ENUM_SUBLABEL_USER_LANGUAGE,
       "Sets the language of the interface.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
@@ -1668,6 +1730,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
       "Adjusts settings for video output.")
 MSG_HASH(MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
       "Scans for wireless networks and establishes connection.")
+MSG_HASH(MENU_ENUM_SUBLABEL_HELP_LIST,
+      "Learn more about how it works.")
 MSG_HASH(MSG_APPENDED_DISK,
       "Appended disk")
 MSG_HASH(MSG_APPLICATION_DIR,
@@ -1866,6 +1930,10 @@ MSG_HASH(MSG_GOT_INVALID_DISK_INDEX,
       "Got invalid disk index.")
 MSG_HASH(MSG_GRAB_MOUSE_STATE,
       "Grab mouse state")
+MSG_HASH(MSG_GAME_FOCUS_ON,
+      "Game focus on")
+MSG_HASH(MSG_GAME_FOCUS_OFF,
+      "Game focus off")
 MSG_HASH(MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING,
       "Libretro core is hardware rendered. Must use post-shaded recording as well.")
 MSG_HASH(MSG_INFLATED_CHECKSUM_DID_NOT_MATCH_CRC32,
@@ -1878,8 +1946,10 @@ MSG_HASH(MSG_INPUT_PRESET_FILENAME,
       "Preset Filename")
 MSG_HASH(MSG_INTERFACE,
       "Interface")
-MSG_HASH(MSG_INTERNAL_MEMORY,
-      "Internal Memory")
+MSG_HASH(MSG_INTERNAL_STORAGE,
+      "Internal Storage")
+MSG_HASH(MSG_REMOVABLE_STORAGE,
+      "Removable Storage")
 MSG_HASH(MSG_INVALID_NICKNAME_SIZE,
       "Invalid nickname size.")
 MSG_HASH(MSG_IN_BYTES,
@@ -1898,6 +1968,8 @@ MSG_HASH(MSG_LOADED_STATE_FROM_SLOT_AUTO,
       "Loaded state from slot #-1 (auto).")
 MSG_HASH(MSG_LOADING,
       "Loading")
+MSG_HASH(MSG_FIRMWARE,
+      "One or more firmware files are missing")
 MSG_HASH(MSG_LOADING_CONTENT_FILE,
       "Loading content file")
 MSG_HASH(MSG_LOADING_HISTORY_FILE,
@@ -2046,3 +2118,166 @@ MSG_HASH(MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
       "Viewport size calculation failed! Will continue using raw data. This will probably not work right ...")
 MSG_HASH(MSG_VIRTUAL_DISK_TRAY,
       "virtual disk tray.")
+MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
+      "Desired audio latency in milliseconds. Might not be honored if the audio driver can't provide given latency.")
+MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_MUTE,
+      "Mute/unmute audio.")
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
+      "Helps smooth out imperfections in timing when synchronizing audio and video at the same time. Be aware that if disabled, proper synchronization is nearly impossible to obtain."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CAMERA_ALLOW,
+      "Allow or disallow camera access by cores."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_LOCATION_ALLOW,
+      "Allow or disallow location services access by cores."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
+      "Maximum amount of users supported by RetroArch."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
+      "Influence how input polling is done inside RetroArch. Setting it to 'Early' or 'Late' can result in less latency, depending on your configuration."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
+      "Allows any user to control the menu. If disabled, only User 1 can control the menu."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
+      "Audio volume (in dB). 0 dB is normal volume, no gain applied."
+      )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_SYNC,
+   "Synchronize audio. Recommended."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AXIS_THRESHOLD,
+   "How far an axis must be tilted to result in a button press."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
+   "Amount of seconds to wait until proceeding to the next bind."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
+   "Describes the period of which turbo-enabled buttons toggle. Numbers are described in frames."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
+   "Describes how long the period of a turbo-enabled button should be. Numbers are described in frames."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   "Synchronizes the output video of the graphics card to the refresh rate of the monitor. Recommended."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ALLOW_ROTATE,
+   "Allow cores to set rotation. When disabled, rotation requests are ignored. Useful for setups where one manually rotates the monitor."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN,
+   "Some cores might have a shutdown feature. If enabled, it will prevent the core from shutting RetroArch down. Instead, it loads a dummy core."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
+   "Check if all the required firmware is present before attempting to load content."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
+   "Vertical refresh rate of your monitor. Used to calculate a suitable audio input rate. NOTE: This will be ignored if 'Threaded Video' is enabled."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
+   "Enable audio output."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
+   "The maximum change in audio input rate. You may want to increase this to enable very large changes in timing, for example running PAL cores on NTSC displays, at the cost of inaccurate audio pitch."
+   )
+MSG_HASH(
+   MSG_FAILED,
+   "failed"
+   )
+MSG_HASH(
+   MSG_SUCCEEDED,
+   "succeeded"
+   )
+MSG_HASH(
+   MSG_DEVICE_NOT_CONFIGURED,
+   "not configured"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST,
+   "Database Cursor List"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DEVELOPER,
+   "Database - Filter : Developer"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_PUBLISHER,
+   "Database - Filter : Publisher"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISABLED,
+   "Disabled"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ENABLED,
+   "Enabled"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_PATH,
+   "Content History Path"
+   )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ORIGIN,
+      "Database - Filter : Origin")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_FRANCHISE,
+      "Database - Filter : Franchise")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ESRB_RATING,
+      "Database - Filter : ESRB Rating")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ELSPA_RATING,
+      "Database - Filter : ELSPA Rating")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_PEGI_RATING,
+      "Database - Filter : PEGI Rating")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_CERO_RATING,
+      "Database - Filter : CERO Rating")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_BBFC_RATING,
+      "Database - Filter : BBFC Rating")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_MAX_USERS,
+      "Database - Filter : Max Users")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_MONTH,
+      "Database - Filter : Releasedate By Month")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_YEAR,
+      "Database - Filter : Releasedate By Year")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_ISSUE,
+      "Database - Filter : Edge Magazine Issue")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_RATING,
+      "Database - Filter : Edge Magazine Rating")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DATABASE_INFO,
+      "Database Info")
+MSG_HASH(MSG_WIFI_SCAN_COMPLETE,
+      "Wi-Fi scan complete.")
+MSG_HASH(MSG_SCANNING_WIRELESS_NETWORKS,
+      "Scanning wireless networks...")
+MSG_HASH(MSG_NETPLAY_LAN_SCAN_COMPLETE,
+      "Netplay scan complete.")
+MSG_HASH(MSG_NETPLAY_LAN_SCANNING,
+      "Scanning for netplay hosts...")
+MSG_HASH(MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
+      "Pause gameplay when window focus is lost.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
+      "Enable or disable composition (Windows only).")
+MSG_HASH(MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
+      "Enable or disable recent playlist for games, images, music, and videos.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
+      "Limit the number of entries in recent playlist for games, images, music, and videos.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
+      "Unified Menu Controls")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
+      "Use the same controls for both the menu and the game. Applies to the keyboard.")

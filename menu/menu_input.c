@@ -36,9 +36,6 @@
 
 #include "../configuration.h"
 
-static int mouse_old_x;
-static int mouse_old_y;
-
 enum menu_mouse_action
 {
    MENU_MOUSE_ACTION_NONE = 0,
@@ -51,6 +48,9 @@ enum menu_mouse_action
    MENU_MOUSE_ACTION_HORIZ_WHEEL_UP,
    MENU_MOUSE_ACTION_HORIZ_WHEEL_DOWN
 };
+
+static int mouse_old_x  = 0;
+static int mouse_old_y  = 0;
 
 menu_input_t *menu_input_get_ptr(void)
 {
@@ -87,16 +87,10 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
          pointer_dragging      = false;
          break;
       case MENU_INPUT_CTL_MOUSE_PTR:
-         {
-            unsigned *ptr = (unsigned*)data;
-            menu_input->mouse.ptr = *ptr;
-         }
+         menu_input->mouse.ptr = (*(unsigned*)data);
          break;
       case MENU_INPUT_CTL_POINTER_PTR:
-         {
-            unsigned *ptr = (unsigned*)data;
-            menu_input->pointer.ptr = *ptr;
-         }
+         menu_input->pointer.ptr = (*(unsigned*)data);
          break;
       case MENU_INPUT_CTL_POINTER_ACCEL_READ:
          {
@@ -105,10 +99,7 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
          }
          break;
       case MENU_INPUT_CTL_POINTER_ACCEL_WRITE:
-         {
-            float *ptr = (float*)data;
-            menu_input->pointer.accel = *ptr;
-         }
+         menu_input->pointer.accel = (*(float*)data);
          break;
       case MENU_INPUT_CTL_IS_POINTER_DRAGGED:
          return pointer_dragging;
@@ -136,7 +127,7 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
    if (
          !settings->menu.mouse.enable
 #ifdef HAVE_OVERLAY
-         || (settings->input.overlay_enable && input_overlay_is_alive(NULL))
+         || (settings->input.overlay_enable && input_overlay_is_alive(overlay_ptr))
 #endif
          )
    {
@@ -385,7 +376,7 @@ static int menu_input_pointer_post_iterate(
 #ifdef HAVE_OVERLAY
    if (!check_overlay)
       check_overlay = (settings->input.overlay_enable 
-            && input_overlay_is_alive(NULL));
+            && input_overlay_is_alive(overlay_ptr));
 #endif
 
    if (check_overlay)

@@ -25,6 +25,8 @@
 #include <sys/un.h>
 #include <poll.h>
 
+#include <compat/strl.h>
+
 #include <GL/osmesa.h>
 
 #include "../../runloop.h"
@@ -73,7 +75,7 @@ static void osmesa_fifo_open(gfx_ctx_osmesa_data_t *osmesa)
 
    saun.sun_family = AF_UNIX;
 
-   strcpy(saun.sun_path, g_osmesa_fifo);
+   strlcpy(saun.sun_path, g_osmesa_fifo, sizeof(saun.sun_path));
 
    unlink(g_osmesa_fifo);
 

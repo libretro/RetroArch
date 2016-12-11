@@ -21,7 +21,6 @@
 #include <math.h>
 
 #include <compat/strl.h>
-#include <retro_inline.h>
 #include <retro_assert.h>
 #include <file/file_path.h>
 #include <queues/message_queue.h>
@@ -57,7 +56,6 @@
 #endif
 
 #include "autosave.h"
-#include "core_info.h"
 #include "configuration.h"
 #include "driver.h"
 #include "movie.h"
@@ -103,6 +101,14 @@ enum  runloop_state
    RUNLOOP_STATE_QUIT
 };
 
+typedef struct runloop_ctx_msg_info
+{
+   const char *msg;
+   unsigned prio;
+   unsigned duration;
+   bool flush;
+} runloop_ctx_msg_info_t;
+
 static rarch_system_info_t runloop_system;
 static struct retro_frame_time_callback runloop_frame_time;
 static retro_keyboard_event_t runloop_key_event            = NULL;
@@ -116,8 +122,6 @@ static unsigned runloop_pending_windowed_scale             = 0;
 static retro_usec_t runloop_frame_time_last                = 0;
 static unsigned runloop_max_frames                         = false;
 static bool runloop_force_nonblock                         = false;
-static bool runloop_frame_time_last_enable                 = false;
-static bool runloop_set_frame_limit                        = false;
 static bool runloop_paused                                 = false;
 static bool runloop_idle                                   = false;
 static bool runloop_exec                                   = false;
@@ -127,6 +131,9 @@ static bool runloop_core_shutdown_initiated                = false;
 static bool runloop_perfcnt_enable                         = false;
 static bool runloop_overrides_active                       = false;
 static bool runloop_game_options_active                    = false;
+static bool runloop_missing_bios                           = false;
+static retro_time_t frame_limit_minimum_time               = 0.0;
+static retro_time_t frame_limit_last_time                  = 0.0;
 
 global_t *global_get_ptr(void)
 {
@@ -173,14 +180,6 @@ void runloop_msg_queue_push(const char *msg,
 #ifdef HAVE_THREADS
    slock_unlock(_runloop_msg_queue_lock);
 #endif
-}
-
-char* runloop_msg_queue_pull(void)
-{
-   runloop_ctx_msg_info_t msg_info;
-   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_PULL, &msg_info);
-
-   return strdup(msg_info.msg);
 }
 
 #ifdef HAVE_MENU
@@ -331,7 +330,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          memset(&runloop_system, 0, sizeof(rarch_system_info_t));
          break;
       case RUNLOOP_CTL_SET_FRAME_TIME_LAST:
-         runloop_frame_time_last_enable = true;
+         runloop_frame_time_last        = 0;
          break;
       case RUNLOOP_CTL_SET_OVERRIDES_ACTIVE:
          runloop_overrides_active = true;
@@ -341,6 +340,14 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_IS_OVERRIDES_ACTIVE:
          return runloop_overrides_active;
+      case RUNLOOP_CTL_SET_MISSING_BIOS:
+         runloop_missing_bios = true;
+         break;
+      case RUNLOOP_CTL_UNSET_MISSING_BIOS:
+         runloop_missing_bios = false;
+         break;
+      case RUNLOOP_CTL_IS_MISSING_BIOS:
+         return runloop_missing_bios;
       case RUNLOOP_CTL_SET_GAME_OPTIONS_ACTIVE:
          runloop_game_options_active = true;
          break;
@@ -350,7 +357,18 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
       case RUNLOOP_CTL_IS_GAME_OPTIONS_ACTIVE:
          return runloop_game_options_active;
       case RUNLOOP_CTL_SET_FRAME_LIMIT:
-         runloop_set_frame_limit = true;
+         {
+            settings_t *settings       = config_get_ptr();
+            struct retro_system_av_info *av_info =
+               video_viewport_get_system_av_info();
+            float fastforward_ratio              =
+               (settings->fastforward_ratio == 0.0f)
+               ? 1.0f : settings->fastforward_ratio;
+
+            frame_limit_last_time    = cpu_features_get_time_usec();
+            frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f
+                  / (av_info->timing.fps * fastforward_ratio));
+         }
          break;
       case RUNLOOP_CTL_GET_PERFCNT:
          {
@@ -418,8 +436,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          runloop_idle                      = false;
          runloop_paused                    = false;
          runloop_slowmotion                = false;
-         runloop_frame_time_last_enable    = false;
-         runloop_set_frame_limit           = false;
          runloop_overrides_active          = false;
          runloop_ctl(RUNLOOP_CTL_FRAME_TIME_FREE, NULL);
          break;
@@ -722,87 +738,26 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
  * d) Video driver no longer alive.
  * e) End of BSV movie and BSV EOF exit is true. (TODO/FIXME - explain better)
  */
-static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
-{
-   settings_t *settings          = config_get_ptr();
-   bool time_to_exit             = runloop_shutdown_initiated;
-   time_to_exit                  = time_to_exit || quit_key_pressed;
-   time_to_exit                  = time_to_exit || !video_driver_is_alive();
-   time_to_exit                  = time_to_exit || bsv_movie_ctl(BSV_MOVIE_CTL_END_EOF, NULL);
-   time_to_exit                  = time_to_exit || (runloop_max_frames && 
-                                   (*(video_driver_get_frame_count_ptr()) 
-                                    >= runloop_max_frames));
-   time_to_exit                  = time_to_exit || runloop_exec;
+#define time_to_exit(quit_key_pressed) (runloop_shutdown_initiated || quit_key_pressed || !video_driver_is_alive() || bsv_movie_ctl(BSV_MOVIE_CTL_END_EOF, NULL) || (runloop_max_frames && (*(video_driver_get_frame_count_ptr()) >= runloop_max_frames)) || runloop_exec)
 
-   if (!time_to_exit)
-      return 1;
-
-   if (runloop_exec)
-      runloop_exec = false;
-
-   if (runloop_core_shutdown_initiated &&
-         settings && settings->load_dummy_on_core_shutdown)
-   {
-      content_ctx_info_t content_info = {0};
-      if (!task_push_content_load_default(
-               NULL, NULL,
-               &content_info,
-               CORE_TYPE_DUMMY,
-               CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
-               NULL, NULL))
-         return -1;
-
-      /* Loads dummy core instead of exiting RetroArch completely.
-       * Aborts core shutdown if invoked. */
-      runloop_shutdown_initiated      = false;
-      runloop_core_shutdown_initiated = false;
-
-      return 1;
-   }
-
-   /* Quits out of RetroArch main loop. */
-   return -1;
-}
-
-void runloop_external_state_checks(uint64_t trigger_input)
-{
-}
+#define runloop_check_cheevos() (settings->cheevos.enable && cheevos_loaded && (!cheats_are_enabled && !cheats_were_enabled))
 
 static enum runloop_state runloop_check_state(
       settings_t *settings,
       uint64_t current_input,
       uint64_t old_input,
+      uint64_t trigger_input,
       unsigned *sleep_ms)
 {
    static bool old_focus            = true;
 #ifdef HAVE_OVERLAY
    static char prev_overlay_restore = false;
-   bool osk_enable                  = input_driver_is_onscreen_keyboard_enabled();
 #endif
 #ifdef HAVE_NETWORKING
    bool tmp                         = false;
 #endif
    bool focused                     = true;
-   uint64_t trigger_input           = current_input & ~old_input;
    bool pause_pressed               = runloop_cmd_triggered(trigger_input, RARCH_PAUSE_TOGGLE);
-
-   if (input_driver_is_flushing_input())
-   {
-      input_driver_unset_flushing_input();
-      if (current_input)
-      {
-         current_input = 0;
-
-         /* If core was paused before entering menu, evoke
-          * pause toggle to wake it up. */
-         if (runloop_paused)
-            BIT64_SET(current_input, RARCH_PAUSE_TOGGLE);
-         input_driver_set_flushing_input();
-      }
-   }
-
-   if (menu_driver_is_binding_state())
-      trigger_input = 0;
 
    if (runloop_cmd_triggered(trigger_input, RARCH_OVERLAY_NEXT))
       command_event(CMD_EVENT_OVERLAY_NEXT, NULL);
@@ -824,17 +779,9 @@ static enum runloop_state runloop_check_state(
 
 
 #ifdef HAVE_OVERLAY
-   if (osk_enable && !input_keyboard_ctl(
+   if (input_keyboard_ctl(
             RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED, NULL))
    {
-      input_driver_unset_onscreen_keyboard_enabled();
-      prev_overlay_restore  = true;
-      command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
-   }
-   else if (!osk_enable && input_keyboard_ctl(
-            RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED, NULL))
-   {
-      input_driver_set_onscreen_keyboard_enabled();
       prev_overlay_restore  = false;
       command_event(CMD_EVENT_OVERLAY_INIT, NULL);
    }
@@ -846,46 +793,65 @@ static enum runloop_state runloop_check_state(
    }
 #endif
 
-   if (runloop_iterate_time_to_exit(
-            runloop_cmd_press(trigger_input, RARCH_QUIT_KEY)) != 1)
-      return RUNLOOP_STATE_QUIT;
+   if (time_to_exit(runloop_cmd_press(trigger_input, RARCH_QUIT_KEY)))
+   {
+      if (runloop_exec)
+         runloop_exec = false;
 
-      #ifdef HAVE_MENU
-         if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
-         {
-            menu_ctx_iterate_t iter;
-            bool skip = false;
-            core_poll();
-      #ifdef HAVE_OVERLAY
-            skip = osk_enable && input_keyboard_return_pressed();
-      #endif
+      if (runloop_core_shutdown_initiated && settings->load_dummy_on_core_shutdown)
+      {
+         content_ctx_info_t content_info = {0};
+         if (!task_push_content_load_default(
+                  NULL, NULL,
+                  &content_info,
+                  CORE_TYPE_DUMMY,
+                  CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
+                  NULL, NULL))
+            return RUNLOOP_STATE_QUIT;
 
-            if (!skip)
-            {
-               enum menu_action action = (enum menu_action)menu_event(current_input, trigger_input);
-               bool focused            = settings->pause_nonactive ? video_driver_is_focused() : true;
+         /* Loads dummy core instead of exiting RetroArch completely.
+          * Aborts core shutdown if invoked. */
+         runloop_shutdown_initiated      = false;
+         runloop_core_shutdown_initiated = false;
+      }
+      else
+         return RUNLOOP_STATE_QUIT;
+   }
 
-               focused                 = focused && !ui_companion_is_on_foreground();
+#ifdef HAVE_MENU
+   if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+   {
+      menu_ctx_iterate_t iter;
+      core_poll();
 
-               iter.action             = action;
+      {
+         enum menu_action action = (enum menu_action)menu_event(current_input, trigger_input);
+         bool focused            = settings->pause_nonactive ? video_driver_is_focused() : true;
 
-               if (!menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &iter))
-                  rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+         focused                 = focused && !ui_companion_is_on_foreground();
 
-               if (focused || !runloop_idle)
-                  menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
+         iter.action             = action;
 
-               if (!focused)
-                  return RUNLOOP_STATE_SLEEP;
+         if (!menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &iter))
+            rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
 
-               if (action == MENU_ACTION_QUIT && !menu_driver_is_binding_state())
-                  return RUNLOOP_STATE_QUIT;
-            }
-         }
-      #endif
+         if (focused || !runloop_idle)
+            menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
+
+         if (!focused)
+            return RUNLOOP_STATE_SLEEP;
+
+         if (action == MENU_ACTION_QUIT && !menu_driver_is_binding_state())
+            return RUNLOOP_STATE_QUIT;
+      }
+   }
+#endif
 
    if (runloop_idle)
       return RUNLOOP_STATE_SLEEP;
+
+   if (runloop_cmd_triggered(trigger_input, RARCH_GAME_FOCUS_TOGGLE))
+      command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, NULL);
 
 #ifdef HAVE_MENU
    if (menu_event_keyboard_is_set(RETROK_F1) == 1)
@@ -900,7 +866,8 @@ static enum runloop_state runloop_check_state(
          }
       }
    }
-   else if ((!menu_event_keyboard_is_set(RETROK_F1) && runloop_cmd_menu_press(current_input, old_input, trigger_input)) ||
+   else if ((!menu_event_keyboard_is_set(RETROK_F1) && 
+            runloop_cmd_menu_press(current_input, old_input, trigger_input)) ||
          rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
    {
       if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
@@ -962,7 +929,8 @@ static enum runloop_state runloop_check_state(
     * unpause the libretro core. */
 
    /* FRAMEADVANCE will set us into pause mode. */
-   pause_pressed |= !runloop_paused && runloop_cmd_triggered(trigger_input, RARCH_FRAMEADVANCE);
+   pause_pressed |= !runloop_paused 
+      && runloop_cmd_triggered(trigger_input, RARCH_FRAMEADVANCE);
 
    if (focused && pause_pressed)
       command_event(CMD_EVENT_PAUSE_TOGGLE, NULL);
@@ -1074,9 +1042,11 @@ static enum runloop_state runloop_check_state(
       }
 
       if (state_manager_frame_is_reversed())
-         runloop_msg_queue_push(msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 2, 30, true);
+         runloop_msg_queue_push(
+               msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 2, 30, true);
       else
-         runloop_msg_queue_push(msg_hash_to_str(MSG_SLOW_MOTION), 2, 30, true);
+         runloop_msg_queue_push(
+               msg_hash_to_str(MSG_SLOW_MOTION), 2, 30, true);
    }
 
    if (runloop_cmd_triggered(trigger_input, RARCH_MOVIE_RECORD_TOGGLE))
@@ -1106,6 +1076,7 @@ static enum runloop_state runloop_check_state(
    return RUNLOOP_STATE_ITERATE;
 }
 
+#define runloop_menu_unified_controls_pressed() (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
 
 /**
  * runloop_iterate:
@@ -1120,36 +1091,19 @@ int runloop_iterate(unsigned *sleep_ms)
 {
    unsigned i;
    retro_time_t current, target, to_sleep_ms;
+   uint64_t trigger_input                       = 0;
    static uint64_t last_input                   = 0;
-   enum runloop_state runloop_status            = RUNLOOP_STATE_NONE;
-   static retro_time_t frame_limit_minimum_time = 0.0;
-   static retro_time_t frame_limit_last_time    = 0.0;
    settings_t *settings                         = config_get_ptr();
-   uint64_t current_input                       = menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL) ? input_menu_keys_pressed() : input_keys_pressed();
    uint64_t old_input                           = last_input;
+   uint64_t current_input                       =
 
-   last_input                                   = current_input;
-
-   if (runloop_frame_time_last_enable)
-   {
-      runloop_frame_time_last        = 0;
-      runloop_frame_time_last_enable = false;
-   }
-
-   if (runloop_set_frame_limit)
-   {
-      struct retro_system_av_info *av_info =
-         video_viewport_get_system_av_info();
-      float fastforward_ratio              =
-         (settings->fastforward_ratio == 0.0f)
-         ? 1.0f : settings->fastforward_ratio;
-
-      frame_limit_last_time    = cpu_features_get_time_usec();
-      frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f
-            / (av_info->timing.fps * fastforward_ratio));
-
-      runloop_set_frame_limit = false;
-   }
+#ifdef HAVE_MENU
+      runloop_menu_unified_controls_pressed() ? 
+      input_menu_keys_pressed(old_input,
+            &last_input, &trigger_input, runloop_paused) :
+#endif
+      input_keys_pressed(old_input, &last_input,
+            &trigger_input, runloop_paused);
 
    if (runloop_frame_time.callback)
    {
@@ -1160,7 +1114,7 @@ int runloop_iterate(unsigned *sleep_ms)
       retro_time_t delta       = current - runloop_frame_time_last;
       bool is_locked_fps       = (runloop_paused ||
                                   input_driver_is_nonblock_state()) |
-                                  !!recording_driver_get_data_ptr();
+                                  !!recording_data;
 
 
       if (!runloop_frame_time_last || is_locked_fps)
@@ -1177,33 +1131,42 @@ int runloop_iterate(unsigned *sleep_ms)
       runloop_frame_time.callback(delta);
    }
 
-   runloop_status = runloop_check_state(settings, current_input,
-         old_input, sleep_ms);
-
-   switch (runloop_status)
+   switch ((enum runloop_state)
+         runloop_check_state(
+            settings,
+            current_input,
+            old_input,
+            trigger_input,
+            sleep_ms))
    {
       case RUNLOOP_STATE_QUIT:
          frame_limit_last_time = 0.0;
          command_event(CMD_EVENT_QUIT, NULL);
          return -1;
       case RUNLOOP_STATE_SLEEP:
+         core_poll();
+#ifdef HAVE_NETWORKING
+         /* FIXME: This is an ugly way to tell Netplay this... */
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
+#endif
+         *sleep_ms = 10;
+         return 1;
       case RUNLOOP_STATE_END:
+         core_poll();
+#ifdef HAVE_NETWORKING
+         /* FIXME: This is an ugly way to tell Netplay this... */
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
+#endif
+         goto end;
       case RUNLOOP_STATE_MENU_ITERATE:
          core_poll();
 #ifdef HAVE_NETWORKING
          /* FIXME: This is an ugly way to tell Netplay this... */
          netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
 #endif
-         if (runloop_status == RUNLOOP_STATE_SLEEP)
-            *sleep_ms = 10;
-         if (runloop_status == RUNLOOP_STATE_END)
-            goto end;
-         if (runloop_status == RUNLOOP_STATE_MENU_ITERATE)
-            return 0;
-         return 1;
+         return 0;
       case RUNLOOP_STATE_ITERATE:
       case RUNLOOP_STATE_NONE:
-      default:
          break;
    }
 
@@ -1217,13 +1180,15 @@ int runloop_iterate(unsigned *sleep_ms)
    /* Update binds for analog dpad modes. */
    for (i = 0; i < settings->input.max_users; i++)
    {
-      if (!settings->input.analog_dpad_mode[i])
+      struct retro_keybind *general_binds = settings->input.binds[i];
+      struct retro_keybind *auto_binds    = settings->input.autoconf_binds[i];
+      enum analog_dpad_mode dpad_mode     = (enum analog_dpad_mode)settings->input.analog_dpad_mode[i];
+
+      if (dpad_mode == ANALOG_DPAD_NONE)
          continue;
 
-      input_push_analog_dpad(settings->input.binds[i],
-            settings->input.analog_dpad_mode[i]);
-      input_push_analog_dpad(settings->input.autoconf_binds[i],
-            settings->input.analog_dpad_mode[i]);
+      input_push_analog_dpad(general_binds, dpad_mode);
+      input_push_analog_dpad(auto_binds,    dpad_mode);
    }
 
    if ((settings->video.frame_delay > 0) &&
@@ -1233,16 +1198,21 @@ int runloop_iterate(unsigned *sleep_ms)
    core_run();
 
 #ifdef HAVE_CHEEVOS
-   cheevos_test();
+   if (runloop_check_cheevos())
+      cheevos_test();
 #endif
 
    for (i = 0; i < settings->input.max_users; i++)
    {
-      if (!settings->input.analog_dpad_mode[i])
+      struct retro_keybind *general_binds = settings->input.binds[i];
+      struct retro_keybind *auto_binds    = settings->input.autoconf_binds[i];
+      enum analog_dpad_mode dpad_mode     = (enum analog_dpad_mode)settings->input.analog_dpad_mode[i];
+
+      if (dpad_mode == ANALOG_DPAD_NONE)
          continue;
 
-      input_pop_analog_dpad(settings->input.binds[i]);
-      input_pop_analog_dpad(settings->input.autoconf_binds[i]);
+      input_pop_analog_dpad(general_binds);
+      input_pop_analog_dpad(auto_binds);
    }
 
    if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))

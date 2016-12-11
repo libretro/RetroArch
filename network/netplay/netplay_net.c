@@ -20,6 +20,7 @@
 
 #include <net/net_compat.h>
 #include <net/net_socket.h>
+#include <net/net_natt.h>
 
 #include "netplay_private.h"
 
@@ -100,7 +101,7 @@ static bool netplay_net_pre_frame(netplay_t *netplay)
          /* If the core can't serialize properly, we must stall for the
           * remote input on EVERY frame, because we can't recover */
          netplay->quirks |= NETPLAY_QUIRK_NO_SAVESTATES;
-         netplay->stall_frames = 0;
+         netplay->delay_frames = 0;
       }
 
       /* If we can't transmit savestates, we must stall until the client is ready */
@@ -138,7 +139,14 @@ static bool netplay_net_pre_frame(netplay_t *netplay)
 #if defined(IPPROTO_TCP) && defined(TCP_NODELAY)
          {
             int flag = 1;
-            if (setsockopt(netplay->fd, IPPROTO_TCP, TCP_NODELAY, (void*)&flag, sizeof(int)) < 0)
+            if (setsockopt(netplay->fd, IPPROTO_TCP, TCP_NODELAY,
+#ifdef _WIN32
+               (const char*)
+#else
+               (const void*)
+#endif
+               &flag,
+               sizeof(int)) < 0)
                RARCH_WARN("Could not set netplay TCP socket to nodelay. Expect jitter.\n");
          }
 #endif

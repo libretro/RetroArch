@@ -108,7 +108,7 @@ static int ra_clock_gettime(int clk_ik, struct timespec *t)
 }
 #endif
 
-#if defined(__MACH__) && __IPHONE_OS_VERSION_MAX_ALLOWED < 100000
+#if defined(__MACH__) && __IPHONE_OS_VERSION_MIN_REQUIRED < 100000
 #else
 #define ra_clock_gettime clock_gettime
 #endif

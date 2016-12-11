@@ -14,32 +14,69 @@ mkdir -p ../pkg/wiiu/wiiu/apps/
 
 make -C ../ -f Makefile.${platform} clean || exit 1
 
+lookup()
+{
+   cat | grep "$1 = " | sed "s/$1 = \"//" | sed s/\"//
+}
+
 gen_meta_xml()
 {
    info="$1"_libretro.info
    if [  -e $info ] ; then
-      display_name=`cat $info | grep "display_name = " | sed "s/display_name = \"//" | sed s/\"//`
-      corename=`cat $info | grep "corename = " | sed "s/corename = \"//" | sed s/\"//`
-      authors=`cat $info | grep "authors = " | sed "s/authors = \"//" | sed s/\"// | sed s/\|/\ -\ /g`
-      echo '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' > "$libretro"_meta.xml
-      echo '<app version="1">' >> "$libretro"_meta.xml
-      echo '  <name>'$corename'</name>' >> "$libretro"_meta.xml
-      echo '  <coder>'$authors'</coder>' >> "$libretro"_meta.xml
-      echo '  <version>'$RARCH_VERSION'</version>' >> "$libretro"_meta.xml
-      echo '  <release_date>'`date +%Y%m%d%H%M%S`'</release_date>' >> "$libretro"_meta.xml
-      echo '  <short_description>RetroArch</short_description>' >> "$libretro"_meta.xml
-      echo '  <long_description>'$display_name'</long_description>' >> "$libretro"_meta.xml
-      echo '</app>' >> "$libretro"_meta.xml
+      display_name=`cat $info | lookup "display_name"`
+      corename=`cat $info | lookup "corename"`
+      authors=`cat $info | lookup "authors" | sed s/\|/\ -\ /g`
+      systemname=`cat $info | lookup "systemname"`
+      license=`cat $info | lookup "license"`
+      date=`date +%Y%m%d%H%M%S`
+      build_hash=`git rev-parse --short HEAD 2>/dev/null`
+      echo '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' > "$1"_meta.xml
+      echo '<app version="1">' >> "$1"_meta.xml
+      echo '  <name>'$corename'</name>' >> "$1"_meta.xml
+      echo '  <coder>'$authors'</coder>' >> "$1"_meta.xml
+      echo '  <version>'$RARCH_VERSION' r'$build_hash'</version>' >> "$1"_meta.xml
+      echo '  <release_date>'$date'</release_date>' >> "$1"_meta.xml
+      echo '  <short_description>RetroArch</short_description>' >> "$1"_meta.xml
+      echo -e '  <long_description>'$display_name'\n\nSystem: '$systemname'\nLicense: '$license'</long_description>' >> "$1"_meta.xml
+      echo '  <category>emu</category>' >> "$1"_meta.xml
+      echo '  <url>https://github.com/libretro</url>' >> "$1"_meta.xml
+      echo '</app>' >> "$1"_meta.xml
    fi
 }
 
 for f in `ls -v *_${platform}.${EXT}`; do
    name=`echo "$f" | sed "s/\(_libretro_${platform}\|\).${EXT}$//"`
    whole_archive=
+   build_hbl_elf=1
+   build_rpx=1
 
    if [ $name = "nxengine" ] ; then
       echo "Applying whole archive linking..."
       whole_archive="WHOLE_ARCHIVE_LINK=1"
+   fi
+
+   if [ $name = "mame2003" ] ; then
+      build_hbl_elf=0
+   fi
+
+   if [ $name = "fbalpha2012" ] ; then
+      build_hbl_elf=0
+   fi
+
+   if [ $name = "mame2003_midway" ] ; then
+      build_rpx=0
+   fi
+   if [ $name = "fbalpha2012_cps1" ] ; then
+      build_rpx=0
+   fi
+   if [ $name = "fbalpha2012_cps2" ] ; then
+      build_rpx=0
+   fi
+   if [ $name = "fbalpha2012_cps3" ] ; then
+      build_rpx=0
+   fi
+   if [ $name = "fbalpha2012_neogeo" ] ; then
+      build_rpx=0
    fi
 
    echo "-- Building core: $name --"
@@ -47,21 +84,41 @@ for f in `ls -v *_${platform}.${EXT}`; do
    echo NAME: $name
 
    # Compile core
-   make -C ../ -f Makefile.${platform} LIBRETRO=$name $whole_archive -j3 || exit 1
-   mkdir -p ../pkg/wiiu/wiiu/apps/${name}_libretro
-   mv -f ../retroarch_wiiu.elf ../pkg/wiiu/wiiu/apps/${name}_libretro/${name}_libretro.elf
-
+   make -C ../ -f Makefile.${platform} LIBRETRO=$name BUILD_HBL_ELF=$build_hbl_elf BUILD_RPX=$build_rpx $whole_archive -j3 || exit 1
    gen_meta_xml $name
-   if [  -e $info ] ; then
-      mv -f "$libretro"_meta.xml ../pkg/wiiu/wiiu/apps/${name}_libretro/meta.xml
-   else
-      cp -f ../pkg/wiiu/meta.xml ../pkg/wiiu/wiiu/apps/${name}_libretro/meta.xml
+
+   if [  -e ../retroarch_wiiu.elf ] ; then
+      mkdir -p ../pkg/wiiu/wiiu/apps/${name}_libretro
+      mv -f ../retroarch_wiiu.elf ../pkg/wiiu/wiiu/apps/${name}_libretro/${name}_libretro.elf
+      if [  -e ${name}_meta.xml ] ; then
+         cp -f ${name}_meta.xml ../pkg/wiiu/wiiu/apps/${name}_libretro/meta.xml
+      else
+         cp -f ../pkg/wiiu/meta.xml ../pkg/wiiu/wiiu/apps/${name}_libretro/meta.xml
+      fi
+      if [  -e $name.png ] ; then
+         cp -f $name.png ../pkg/wiiu/wiiu/apps/${name}_libretro/icon.png
+      else
+         cp -f ../pkg/wiiu/icon.png ../pkg/wiiu/wiiu/apps/${name}_libretro/icon.png
+      fi
    fi
-   if [  -e $name.png ] ; then
-      cp -f $name.png ../pkg/wiiu/wiiu/apps/${name}_libretro/icon.png
-   else
-      cp -f ../pkg/wiiu/icon.png ../pkg/wiiu/wiiu/apps/${name}_libretro/icon.png
+   if [  -e ../retroarch_wiiu.rpx ] ; then
+      mkdir -p ../pkg/wiiu/rpx/wiiu/apps/${name}_libretro
+      mv -f ../retroarch_wiiu.rpx ../pkg/wiiu/rpx/wiiu/apps/${name}_libretro/${name}_libretro.rpx
+      rm -f ../retroarch_wiiu.rpx.elf
+      if [  -e ${name}_meta.xml ] ; then
+         cp -f ${name}_meta.xml ../pkg/wiiu/rpx/wiiu/apps/${name}_libretro/meta.xml
+      else
+         cp -f ../pkg/wiiu/meta.xml ../pkg/wiiu/rpx/wiiu/apps/${name}_libretro/meta.xml
+      fi
+      if [  -e $name.png ] ; then
+         cp -f $name.png ../pkg/wiiu/rpx/wiiu/apps/${name}_libretro/icon.png
+      else
+         cp -f ../pkg/wiiu/icon.png ../pkg/wiiu/rpx/wiiu/apps/${name}_libretro/icon.png
+      fi
    fi
+   rm -rf ${name}_meta.xml
+   rm -rf $name.png
+
 done
 
 # Additional build step

@@ -22,7 +22,6 @@
 
 #include "../menu_display.h"
 
-#include "../../config.def.h"
 #include "../../gfx/font_driver.h"
 #include "../../gfx/video_context_driver.h"
 #include "../../gfx/common/vulkan_common.h"
@@ -74,7 +73,7 @@ static unsigned to_menu_pipeline(
    {
       case VIDEO_SHADER_MENU:
          return 4 + (type == MENU_DISPLAY_PRIM_TRIANGLESTRIP);
-      case VIDEO_SHADER_MENU_SEC:
+      case VIDEO_SHADER_MENU_2:
          return 6 + (type == MENU_DISPLAY_PRIM_TRIANGLESTRIP);
       default:
          return 0;
@@ -174,7 +173,7 @@ static void menu_display_vk_draw(void *data)
    {
 #ifdef HAVE_SHADERPIPELINE
       case VIDEO_SHADER_MENU:
-      case VIDEO_SHADER_MENU_SEC:
+      case VIDEO_SHADER_MENU_2:
       {
          const struct vk_draw_triangles call = {
             vk->display.pipelines[

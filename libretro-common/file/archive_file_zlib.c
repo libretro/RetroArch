@@ -22,12 +22,15 @@
 
 #include <stdlib.h>
 
-#include <compat/zlib.h>
 #include <file/archive_file.h>
 #include <streams/file_stream.h>
+#include <streams/trans_stream.h>
 #include <string.h>
 #include <retro_miscellaneous.h>
 #include <encodings/crc32.h>
+
+/* Only for MAX_WBITS */
+#include <compat/zlib.h>
 
 #ifndef CENTRAL_FILE_HEADER_SIGNATURE
 #define CENTRAL_FILE_HEADER_SIGNATURE 0x02014b50
@@ -37,107 +40,14 @@
 #define END_OF_CENTRAL_DIR_SIGNATURE 0x06054b50
 #endif
 
-static void* zlib_stream_new(void)
+static void *zlib_stream_new(void)
 {
-   return (z_stream*)calloc(1, sizeof(z_stream));
+   return zlib_inflate_backend.stream_new();
 }
 
-static void zlib_stream_free(void *data)
+static void zlib_stream_free(void *stream)
 {
-   z_stream *ret = (z_stream*)data;
-   if (ret)
-      inflateEnd(ret);
-}
-
-static void zlib_stream_set(void *data,
-      uint32_t       avail_in,
-      uint32_t       avail_out,
-      const uint8_t *next_in,
-      uint8_t       *next_out
-      )
-{
-   z_stream *stream = (z_stream*)data;
-
-   if (!stream)
-      return;
-
-   stream->avail_in  = avail_in;
-   stream->avail_out = avail_out;
-
-   stream->next_in   = (uint8_t*)next_in;
-   stream->next_out  = next_out;
-}
-
-static uint32_t zlib_stream_get_avail_in(void *data)
-{
-   z_stream *stream = (z_stream*)data;
-
-   if (!stream)
-      return 0;
-
-   return stream->avail_in;
-}
-
-static uint32_t zlib_stream_get_avail_out(void *data)
-{
-   z_stream *stream = (z_stream*)data;
-
-   if (!stream)
-      return 0;
-
-   return stream->avail_out;
-}
-
-static uint64_t zlib_stream_get_total_out(void *data)
-{
-   z_stream *stream = (z_stream*)data;
-
-   if (!stream)
-      return 0;
-
-   return stream->total_out;
-}
-
-static void zlib_stream_decrement_total_out(void *data, unsigned subtraction)
-{
-   z_stream *stream = (z_stream*)data;
-
-   if (stream)
-      stream->total_out  -= subtraction;
-}
-
-static void zlib_stream_compress_free(void *data)
-{
-   z_stream *ret = (z_stream*)data;
-   if (ret)
-      deflateEnd(ret);
-}
-
-static int zlib_stream_compress_data_to_file(void *data)
-{
-   int zstatus;
-   z_stream *stream = (z_stream*)data;
-
-   if (!stream)
-      return -1;
-
-   zstatus = deflate(stream, Z_FINISH);
-
-   if (zstatus == Z_STREAM_END)
-      return 1;
-
-   return 0;
-}
-
-static bool zlib_stream_decompress_init(void *data)
-{
-   z_stream *stream = (z_stream*)data;
-
-   if (!stream)
-      return false;
-   if (inflateInit(stream) != Z_OK)
-      return false;
-   return true;
+   zlib_inflate_backend.stream_free(stream);
 }
 
 static bool zlib_stream_decompress_data_to_file_init(
@@ -147,59 +57,51 @@ static bool zlib_stream_decompress_data_to_file_init(
    if (!handle)
       return false;
 
-   if (!(handle->stream = (z_stream*)zlib_stream_new()))
+   if (!(handle->stream = zlib_inflate_backend.stream_new()))
       goto error;
 
-   if (inflateInit2((z_streamp)handle->stream, -MAX_WBITS) != Z_OK)
-      goto error;
+   if (zlib_inflate_backend.define)
+      zlib_inflate_backend.define(handle->stream, "window_bits", (uint32_t)-MAX_WBITS);
 
    handle->data = (uint8_t*)malloc(size);
 
    if (!handle->data)
       goto error;
 
-   zlib_stream_set(handle->stream, csize, size,
-         (const uint8_t*)cdata, handle->data);
+   zlib_inflate_backend.set_in(handle->stream, 
+         (const uint8_t*)cdata, csize);
+   zlib_inflate_backend.set_out(handle->stream,
+         handle->data, size);
 
    return true;
 
 error:
-   zlib_stream_free(handle->stream);
-   free(handle->stream);
+   if (handle->stream)
+      zlib_inflate_backend.stream_free(handle->stream);
    if (handle->data)
       free(handle->data);
 
    return false;
 }
 
-static int zlib_stream_decompress_data_to_file_iterate(void *data)
+static int zlib_stream_decompress_data_to_file_iterate(void *stream)
 {
-   int zstatus;
-   z_stream *stream = (z_stream*)data;
+   bool zstatus;
+   uint32_t rd, wn;
+   enum trans_stream_error terror;
 
    if (!stream)
-      goto error;
+      return -1;
 
-   zstatus = inflate(stream, Z_NO_FLUSH);
+   zstatus = zlib_inflate_backend.trans(stream, false, &rd, &wn, &terror);
 
-   if (zstatus == Z_STREAM_END)
+   if (!zstatus && terror != TRANS_STREAM_ERROR_BUFFER_FULL)
+      return -1;
+
+   if (zstatus && !terror)
       return 1;
 
-   if (zstatus != Z_OK && zstatus != Z_BUF_ERROR)
-      goto error;
-
    return 0;
-
-error:
-   return -1;
-}
-
-static void zlib_stream_compress_init(void *data, int level)
-{
-   z_stream *stream = (z_stream*)data;
-
-   if (stream)
-      deflateInit(stream, level);
 }
 
 static uint32_t zlib_stream_crc32_calculate(uint32_t crc,
@@ -462,17 +364,8 @@ static int zip_parse_file_iterate_step(file_archive_transfer_t *state,
 const struct file_archive_file_backend zlib_backend = {
    zlib_stream_new,
    zlib_stream_free,
-   zlib_stream_set,
-   zlib_stream_get_avail_in,
-   zlib_stream_get_avail_out,
-   zlib_stream_get_total_out,
-   zlib_stream_decrement_total_out,
-   zlib_stream_decompress_init,
    zlib_stream_decompress_data_to_file_init,
    zlib_stream_decompress_data_to_file_iterate,
-   zlib_stream_compress_init,
-   zlib_stream_compress_free,
-   zlib_stream_compress_data_to_file,
    zlib_stream_crc32_calculate,
    zip_file_read,
    zip_parse_file_init,

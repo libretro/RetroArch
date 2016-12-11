@@ -52,7 +52,7 @@ static bool recording_enable                   = false;
 static bool recording_use_output_dir           = false;
 
 static const record_driver_t *recording_driver = NULL;
-static void *recording_data                    = NULL;
+void *recording_data                           = NULL;
 
 /**
  * record_driver_find_ident:
@@ -187,9 +187,6 @@ void recording_dump_frame(const void *data, unsigned width,
 {
    struct ffemu_video_data ffemu_data = {0};
 
-   if (!recording_data)
-      return;
-
    ffemu_data.pitch   = pitch;
    ffemu_data.width   = width;
    ffemu_data.height  = height;
@@ -282,9 +279,6 @@ void recording_set_state(bool state)
 void recording_push_audio(const int16_t *data, size_t samples)
 {
    struct ffemu_audio_data ffemu_data;
-
-   if (!recording_data)
-      return;
 
    ffemu_data.data                    = data;
    ffemu_data.frames                  = samples / 2;

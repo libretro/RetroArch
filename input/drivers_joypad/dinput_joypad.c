@@ -28,12 +28,11 @@
 #include "../../config.h"
 #endif
 
-#include "../input_autodetect.h"
+#include "../../tasks/tasks_internal.h"
 #include "../input_config.h"
 #include "../input_joypad_driver.h"
 #include "../input_keymaps.h"
 #include "../../configuration.h"
-#include "../../runloop.h"
 #include "../../verbosity.h"
 
 struct dinput_joypad
@@ -108,7 +107,7 @@ static BOOL CALLBACK enum_axes_cb(const DIDEVICEOBJECTINSTANCE *inst, void *p)
    return DIENUM_CONTINUE;
 }
 
-
+#ifdef HAVE_XINPUT
 /* Based on SDL2's implementation. */
 static bool guid_is_xinput_device(const GUID* product_guid)
 {
@@ -174,6 +173,7 @@ static bool guid_is_xinput_device(const GUID* product_guid)
    raw_devs = NULL;
    return false;
 }
+#endif
 
 static const char *dinput_joypad_name(unsigned pad)
 {
@@ -270,13 +270,22 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
             dinput_joypad_name(g_joypad_cnt),
             sizeof(settings->input.device_names[g_joypad_cnt]));
 
+      strlcpy(params.name,
+            dinput_joypad_name(g_joypad_cnt),
+            sizeof(params.name));
+      strlcpy(params.display_name,
+            dinput_joypad_friendly_name(g_joypad_cnt),
+            sizeof(params.driver));
+      strlcpy(params.driver,
+            dinput_joypad.ident,
+            sizeof(params.driver));
+
       params.idx = g_joypad_cnt;
-      strlcpy(params.name, dinput_joypad_name(g_joypad_cnt), sizeof(params.name));
-      strlcpy(params.display_name, dinput_joypad_friendly_name(g_joypad_cnt), sizeof(params.driver));
-      strlcpy(params.driver, dinput_joypad.ident, sizeof(params.driver));
       params.vid = dinput_joypad_vid(g_joypad_cnt);
       params.pid = dinput_joypad_pid(g_joypad_cnt);
-      input_config_autoconfigure_joypad(&params);
+
+      input_autoconfigure_connect(&params);
+
       settings->input.pid[g_joypad_cnt] = params.pid;
       settings->input.vid[g_joypad_cnt] = params.vid;
    }
@@ -315,17 +324,16 @@ static bool dinput_joypad_init(void *data)
 
 static bool dinput_joypad_button(unsigned port_num, uint16_t joykey)
 {
-   const struct dinput_joypad *pad = NULL;
-
-   if (joykey == NO_BTN)
+   unsigned hat_dir                = 0;
+   const struct dinput_joypad *pad = &g_pads[port_num];
+   if (!pad || !pad->joypad)
       return false;
 
-   pad = &g_pads[port_num];
-   if (!pad->joypad)
-      return false;
+   hat_dir = GET_HAT_DIR(joykey);
 
    /* Check hat. */
-   if (GET_HAT_DIR(joykey))
+
+   if (hat_dir)
    {
       unsigned pov;
       unsigned hat   = GET_HAT(joykey);
@@ -340,7 +348,7 @@ static bool dinput_joypad_button(unsigned port_num, uint16_t joykey)
       /* Magic numbers I'm not sure where originate from. */
       if (pov < 36000)
       {
-         switch (GET_HAT_DIR(joykey))
+         switch (hat_dir)
          {
             case HAT_UP_MASK:
                return (pov >= 31500) || (pov <= 4500);

@@ -1074,10 +1074,8 @@ const char *msg_hash_to_str_pt(enum msg_hash_enums msg)
          return "Rótulo do core";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME:
          return "Nome do core";
-      case MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NOTES:
-         return "Notas do core";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE:
-         return "Firmware";
+         return "Firmware(s)";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES:
          return "Licença(s)";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS:
@@ -1210,8 +1208,6 @@ const char *msg_hash_to_str_pt(enum msg_hash_enums msg)
          return "Autoconfigurações de Dispositivos de Entrada";
       case MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER:
          return "Driver de Joypad";
-      case MENU_ENUM_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET:
-         return "Predefinições de Overlay de Teclado";
       case MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED:
          return "Chinês (Simplificado)";
       case MENU_ENUM_LABEL_VALUE_LANG_CHINESE_TRADITIONAL:

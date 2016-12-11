@@ -47,6 +47,8 @@
 extern "C" {
 #endif
 
+#include <encodings/utf.h>
+
 LRESULT win32_menu_loop(HWND owner, WPARAM wparam);
 
 #ifndef _MSC_VER
@@ -111,8 +113,8 @@ typedef REASON_CONTEXT POWER_REQUEST_CONTEXT, *PPOWER_REQUEST_CONTEXT, *LPPOWER_
 #endif
 
 static HMONITOR win32_monitor_last;
-static unsigned win32_monitor_count;
 static HMONITOR win32_monitor_all[MAX_MONITORS];
+static unsigned win32_monitor_count              = 0;
 
 extern "C"
 {
@@ -215,7 +217,7 @@ void win32_monitor_get_info(void)
    memset(&current_mon, 0, sizeof(current_mon));
    current_mon.cbSize = sizeof(MONITORINFOEX);
 
-   GetMonitorInfo(win32_monitor_last, (MONITORINFO*)&current_mon);
+   GetMonitorInfo(win32_monitor_last, (MONITORINFOEX*)&current_mon);
    ChangeDisplaySettingsEx(current_mon.szDevice, NULL, NULL, 0, NULL);
 }
 
@@ -253,7 +255,7 @@ void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
 
    memset(mon, 0, sizeof(*mon));
    mon->cbSize = sizeof(MONITORINFOEX);
-   GetMonitorInfo(*hm_to_use, (MONITORINFO*)mon);
+   GetMonitorInfo(*hm_to_use, (MONITORINFOEX*)mon);
 }
 
 /* Get the count of the files dropped */
@@ -269,7 +271,7 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
       core_info_list_t *core_info_list = NULL;
       const core_info_t *core_info     = NULL;
 
-      DragQueryFile((HDROP)wparam, 0, szFilename, 1024);
+      DragQueryFile((HDROP)wparam, 0, szFilename, sizeof(szFilename));
 
       core_info_get_list(&core_info_list);
 
@@ -588,6 +590,7 @@ static bool win32_monitor_set_fullscreen(unsigned width, unsigned height,
 
    RARCH_LOG("Setting fullscreen to %ux%u @ %uHz on device %s.\n",
          width, height, refresh, dev_name);
+
    return ChangeDisplaySettingsEx(dev_name, &devmode,
          NULL, CDS_FULLSCREEN, NULL) == DISP_CHANGE_SUCCESSFUL;
 #endif
@@ -646,7 +649,7 @@ bool win32_suppress_screensaver(void *data, bool enable)
          typedef HANDLE (WINAPI * PowerCreateRequestPtr)(REASON_CONTEXT *context);
          typedef BOOL   (WINAPI * PowerSetRequestPtr)(HANDLE PowerRequest,
                POWER_REQUEST_TYPE RequestType);
-         HMODULE kernel32 = GetModuleHandleW(L"kernel32.dll");
+         HMODULE kernel32 = GetModuleHandle("kernel32.dll");
          PowerCreateRequestPtr powerCreateRequest =
             (PowerCreateRequestPtr)GetProcAddress(kernel32, "PowerCreateRequest");
          PowerSetRequestPtr    powerSetRequest =
@@ -679,6 +682,7 @@ bool win32_suppress_screensaver(void *data, bool enable)
 #endif
 }
 
+/* FIXME: It should not be necessary to add the W after MONITORINFOEX, but linking fails without it. */
 void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
 	unsigned *width, unsigned *height, bool fullscreen, bool windowed_full,
 	RECT *rect, RECT *mon_rect, DWORD *style)
@@ -711,7 +715,7 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
 			 {}
 
          /* Display settings might have changed, get new coordinates. */
-         GetMonitorInfo(*hm_to_use, (MONITORINFO*)current_mon);
+         GetMonitorInfo(*hm_to_use, (MONITORINFOEX*)current_mon);
          *mon_rect = current_mon->rcMonitor;
       }
    }

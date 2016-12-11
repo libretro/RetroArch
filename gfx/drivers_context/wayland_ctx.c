@@ -75,7 +75,7 @@ typedef struct gfx_ctx_wayland_data
 #endif
 } gfx_ctx_wayland_data_t;
 
-static enum gfx_ctx_api wl_api;
+static enum gfx_ctx_api wl_api   = GFX_CTX_NONE;
 
 #ifndef EGL_OPENGL_ES3_BIT_KHR
 #define EGL_OPENGL_ES3_BIT_KHR 0x0040
@@ -138,8 +138,9 @@ static void display_handle_geometry(void *data,
    (void)transform;
 
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   wl->physical_width = physical_width;
-   wl->physical_height = physical_height;
+   wl->physical_width         = physical_width;
+   wl->physical_height        = physical_height;
+
    RARCH_LOG("[Wayland]: Physical width: %d mm x %d mm.\n",
          physical_width, physical_height);
 }
@@ -155,8 +156,8 @@ static void display_handle_mode(void *data,
    (void)flags;
 
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   wl->width = width;
-   wl->height = height;
+   wl->width                  = width;
+   wl->height                 = height;
 
    /* Certain older Wayland implementations report in Hz,
     * but it should be mHz. */
@@ -192,8 +193,8 @@ static const struct wl_output_listener output_listener = {
 static void registry_handle_global(void *data, struct wl_registry *reg,
       uint32_t id, const char *interface, uint32_t version)
 {
+   struct wl_output *output   = NULL;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   struct wl_output *output;
 
    (void)version;
 
@@ -302,7 +303,7 @@ static void flush_wayland_fd(gfx_ctx_wayland_data_t *wl)
    wl_display_dispatch_pending(wl->dpy);
    wl_display_flush(wl->dpy);
 
-   fd.fd = wl->fd;
+   fd.fd     = wl->fd;
    fd.events = POLLIN | POLLOUT | POLLERR | POLLHUP;
 
    if (poll(&fd, 1, 0) > 0)
@@ -324,14 +325,14 @@ static void gfx_ctx_wl_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height,
       unsigned frame_count)
 {
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    unsigned new_width, new_height;
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
    (void)frame_count;
 
    flush_wayland_fd(wl);
 
-   new_width = *width;
+   new_width  = *width;
    new_height = *height;
 
    gfx_ctx_wl_get_video_size(data, &new_width, &new_height);
@@ -620,16 +621,19 @@ static EGLint *egl_fill_attribs(gfx_ctx_wayland_data_t *wl, EGLint *attr)
 #ifdef EGL_KHR_create_context
       case GFX_CTX_OPENGL_API:
       {
-         bool debug = false;
+         bool debug       = false;
 #ifdef HAVE_OPENGL
          unsigned version = wl->egl.major * 1000 + wl->egl.minor;
-         bool core = version >= 3001;
-#ifdef GL_DEBUG
-         debug = true;
-#else
+         bool core        = version >= 3001;
+#ifndef GL_DEBUG
          struct retro_hw_render_callback *hwr =
             video_driver_get_hw_context();
-         debug = hwr->debug_context;
+#endif
+
+#ifdef GL_DEBUG
+         debug            = true;
+#else
+         debug            = hwr->debug_context;
 #endif
 
          if (core)

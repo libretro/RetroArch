@@ -165,11 +165,14 @@ int getaddrinfo_retro(const char *node, const char *service,
    (void)in_addr;
    (void)info;
 
+   if (!hints->ai_family)
+   {
 #if defined(_WIN32) || defined(HAVE_SOCKET_LEGACY)
-   hints->ai_family    = AF_INET;
+      hints->ai_family    = AF_INET;
 #else
-   hints->ai_family    = AF_UNSPEC;
+      hints->ai_family    = AF_UNSPEC;
 #endif
+   }
 
 #ifdef HAVE_SOCKET_LEGACY
    info = (struct addrinfo*)calloc(1, sizeof(*info));

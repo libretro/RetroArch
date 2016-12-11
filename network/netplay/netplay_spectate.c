@@ -243,7 +243,7 @@ static void netplay_spectate_post_frame(netplay_t *netplay)
       }
 
       /* If the server gets significantly ahead, skip to catch up */
-      if (netplay->self_frame_count + netplay->stall_frames <= netplay->read_frame_count)
+      if (netplay->self_frame_count + netplay->delay_frames <= netplay->read_frame_count)
       {
          /* "Replay" into the future */
          netplay->is_replay = true;

@@ -35,13 +35,11 @@
 #include "../../config.h"
 #endif
 
-#include "../input_autodetect.h"
+#include "../../tasks/tasks_internal.h"
 #include "../input_config.h"
 
 #include "../../configuration.h"
-#include "../../runloop.h"
 #include "../../verbosity.h"
-
 
 /* Check if the definitions do not already exist.
  * Official and mingw xinput headers have different include guards.
@@ -268,7 +266,7 @@ static bool xinput_joypad_init(void *data)
          params.idx = autoconf_pad;
          strlcpy(params.name, xinput_joypad_name(autoconf_pad), sizeof(params.name));
          strlcpy(params.driver, xinput_joypad.ident, sizeof(params.driver));
-         input_config_autoconfigure_joypad(&params);
+         input_autoconfigure_connect(&params);
       }
    }
 
@@ -320,14 +318,11 @@ static const uint16_t button_index_to_bitmap_code[] =  {
 
 static bool xinput_joypad_button(unsigned port_num, uint16_t joykey)
 {
-   uint16_t btn_word;
-   int xuser;
+   uint16_t btn_word    = 0;
    unsigned num_buttons = 0;
+   unsigned hat_dir     = 0;
+   int xuser            = pad_index_to_xuser_index(port_num);
 
-   if (joykey == NO_BTN)
-      return false;
-
-   xuser = pad_index_to_xuser_index(port_num);
    if (xuser == -1)
       return dinput_joypad.button(port_num, joykey);
 
@@ -335,10 +330,11 @@ static bool xinput_joypad_button(unsigned port_num, uint16_t joykey)
       return false;
 
    btn_word = g_xinput_states[xuser].xstate.Gamepad.wButtons;
+   hat_dir  = GET_HAT_DIR(joykey);
 
-   if (GET_HAT_DIR(joykey))
+   if (hat_dir)
    {
-      switch (GET_HAT_DIR(joykey))
+      switch (hat_dir)
       {
          case HAT_UP_MASK:
             return btn_word & XINPUT_GAMEPAD_DPAD_UP;
@@ -349,6 +345,7 @@ static bool xinput_joypad_button(unsigned port_num, uint16_t joykey)
          case HAT_RIGHT_MASK:
             return btn_word & XINPUT_GAMEPAD_DPAD_RIGHT;
       }
+
       return false; /* hat requested and no hat button down. */
    }
 

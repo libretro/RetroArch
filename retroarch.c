@@ -220,7 +220,7 @@ static void retroarch_print_features(void)
    _PSUPP(cocoa,           "Cocoa",           "Cocoa UI companion support "
                                               "(for OSX and/or iOS)");
 
-   _PSUPP(qt,              "QT",              "QT UI companion support");
+   _PSUPP(qt,              "Qt",              "Qt UI companion support");
    _PSUPP(avfoundation,    "AVFoundation",    "Camera driver");
    _PSUPP(v4l2,            "Video4Linux2",    "Camera driver");
 }
@@ -339,7 +339,7 @@ static void retroarch_print_help(const char *arg0)
    puts("  -H, --host            Host netplay as user 1.");
    puts("  -C, --connect=HOST    Connect to netplay server as user 2.");
    puts("      --port=PORT       Port used to netplay. Default is 55435.");
-   puts("  -F, --frames=NUMBER   Sync frames when using netplay.");
+   puts("  -F, --frames=NUMBER   Delay frames when using netplay.");
    puts("      --check-frames=NUMBER\n"
         "                        Check frames when using netplay.");
    puts("      --spectate        Connect to netplay server as spectator.");
@@ -708,7 +708,7 @@ static void retroarch_parse_input(int argc, char *argv[])
             break;
 
          case 'F':
-            settings->netplay.sync_frames = strtol(optarg, NULL, 0);
+            settings->netplay.delay_frames = strtol(optarg, NULL, 0);
             retroarch_override_setting_set(
                   RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES, NULL);
             break;

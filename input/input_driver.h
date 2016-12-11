@@ -160,24 +160,20 @@ bool input_sensor_set_state(unsigned port,
 
 float input_sensor_get_input(unsigned port, unsigned id);
 
+#define inherit_joyaxis(binds) (((binds)[x_plus].joyaxis == (binds)[x_minus].joyaxis) || (  (binds)[y_plus].joyaxis == (binds)[y_minus].joyaxis))
+
 /**
- * input_translate_coord_viewport:
- * @mouse_x                        : Pointer X coordinate.
- * @mouse_y                        : Pointer Y coordinate.
- * @res_x                          : Scaled  X coordinate.
- * @res_y                          : Scaled  Y coordinate.
- * @res_screen_x                   : Scaled screen X coordinate.
- * @res_screen_y                   : Scaled screen Y coordinate.
+ * input_pop_analog_dpad:
+ * @binds                          : Binds to modify.
  *
- * Translates pointer [X,Y] coordinates into scaled screen
- * coordinates based on viewport info.
- *
- * Returns: true (1) if successful, false if video driver doesn't support
- * viewport info.
+ * Restores binds temporarily overridden by input_push_analog_dpad().
  **/
-bool input_translate_coord_viewport(int mouse_x, int mouse_y,
-      int16_t *res_x, int16_t *res_y, int16_t *res_screen_x,
-      int16_t *res_screen_y);
+#define input_pop_analog_dpad(binds) \
+{ \
+   unsigned j; \
+   for (j = RETRO_DEVICE_ID_JOYPAD_UP; j <= RETRO_DEVICE_ID_JOYPAD_RIGHT; j++) \
+      (binds)[j].joyaxis = (binds)[j].orig_joyaxis; \
+}
 
 /**
  * input_push_analog_dpad:
@@ -189,15 +185,30 @@ bool input_translate_coord_viewport(int mouse_x, int mouse_y,
  *
  * Push analog to D-Pad mappings to binds.
  **/
-void input_push_analog_dpad(struct retro_keybind *binds, unsigned mode);
-
-/**
- * input_pop_analog_dpad:
- * @binds                          : Binds to modify.
- *
- * Restores binds temporarily overridden by input_push_analog_dpad().
- **/
-void input_pop_analog_dpad(struct retro_keybind *binds);
+#define input_push_analog_dpad(binds, mode) \
+{ \
+   unsigned k; \
+   unsigned x_plus      =  RARCH_ANALOG_RIGHT_X_PLUS; \
+   unsigned y_plus      =  RARCH_ANALOG_RIGHT_Y_PLUS; \
+   unsigned x_minus     =  RARCH_ANALOG_RIGHT_X_MINUS; \
+   unsigned y_minus     =  RARCH_ANALOG_RIGHT_Y_MINUS; \
+   if ((mode) == ANALOG_DPAD_LSTICK) \
+   { \
+      x_plus            =  RARCH_ANALOG_LEFT_X_PLUS; \
+      y_plus            =  RARCH_ANALOG_LEFT_Y_PLUS; \
+      x_minus           =  RARCH_ANALOG_LEFT_X_MINUS; \
+      y_minus           =  RARCH_ANALOG_LEFT_Y_MINUS; \
+   } \
+   for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++) \
+      (binds)[k].orig_joyaxis = (binds)[k].joyaxis; \
+   if (!inherit_joyaxis(binds)) \
+   { \
+      unsigned j = x_plus + 3; \
+      /* Inherit joyaxis from analogs. */ \
+      for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++) \
+         (binds)[k].joyaxis = (binds)[j--].joyaxis; \
+   } \
+}
 
 /**
  * input_poll:
@@ -221,9 +232,19 @@ void input_poll(void);
 int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id);
 
-uint64_t input_keys_pressed(void);
+uint64_t input_keys_pressed(
+      uint64_t old_input,
+      uint64_t *last_input,
+      uint64_t *trigger_input,
+      bool runloop_paused);
 
-uint64_t input_menu_keys_pressed(void);
+#ifdef HAVE_MENU
+uint64_t input_menu_keys_pressed(
+      uint64_t old_input,
+      uint64_t *last_input,
+      uint64_t *trigger_input,
+      bool runloop_paused);
+#endif
 
 void *input_driver_get_data(void);
 
@@ -253,15 +274,9 @@ bool input_driver_find_driver(void);
 
 void input_driver_set_flushing_input(void);
 
-void input_driver_unset_flushing_input(void);
-
-bool input_driver_is_flushing_input(void);
-
-void input_driver_set_hotkey_block(void);
-
 void input_driver_unset_hotkey_block(void);
 
-bool input_driver_is_hotkey_blocked(void);
+void input_driver_set_hotkey_block(void);
 
 void input_driver_set_libretro_input_blocked(void);
 
@@ -281,12 +296,6 @@ void input_driver_unset_own_driver(void);
 
 bool input_driver_owns_driver(void);
 
-void input_driver_set_onscreen_keyboard_enabled(void);
-
-void input_driver_unset_onscreen_keyboard_enabled(void);
-
-bool input_driver_is_onscreen_keyboard_enabled(void);
-
 void input_driver_deinit_command(void);
 
 bool input_driver_init_command(void);
@@ -300,8 +309,6 @@ bool input_driver_grab_mouse(void);
 bool input_driver_ungrab_mouse(void);
 
 bool input_driver_is_data_ptr_same(void *data);
-
-extern const struct retro_keybind *libretro_input_binds[MAX_USERS];
 
 extern input_driver_t input_android;
 extern input_driver_t input_sdl;

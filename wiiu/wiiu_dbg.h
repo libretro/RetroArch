@@ -11,6 +11,10 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
+void* OSGetSymbolName(u32 addr, char* out, u32 out_size);
+void DisassemblePPCRange(void *start, void *end, void* printf_func, void* GetSymbolName_func, u32 flags);
+
+#define DEBUG_DISASM(start, count) DisassemblePPCRange((void*)start, (u32*)(start) + (count), printf, OSGetSymbolName, 0)
 
 //#define DEBUG_HOLD() do{printf("%s@%s:%d.\n",__FUNCTION__, __FILE__, __LINE__);fflush(stdout);wait_for_input();}while(0)
 #define DEBUG_LINE() do{printf("%s@%s:%d.\n",__FUNCTION__, __FILE__, __LINE__);fflush(stdout);}while(0)

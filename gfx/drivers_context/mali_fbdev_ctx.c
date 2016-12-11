@@ -50,12 +50,12 @@ typedef struct
    unsigned width, height;
 } mali_ctx_data_t;
 
-static enum gfx_ctx_api mali_api;
+static enum gfx_ctx_api mali_api           = GFX_CTX_NONE;
 
 static void gfx_ctx_mali_fbdev_destroy(void *data)
 {
    int fb;
-   RFILE *fd;
+   RFILE             *fd = NULL;
    mali_ctx_data_t *mali = (mali_ctx_data_t*)data;
 
    if (mali)
@@ -160,11 +160,11 @@ static bool gfx_ctx_mali_fbdev_set_resize(void *data,
 
 static void gfx_ctx_mali_fbdev_update_window_title(void *data)
 {
-   char buf[128]        = {0};
-   char buf_fps[128]    = {0};
+   char buf[128];
+   char buf_fps[128];
    settings_t *settings = config_get_ptr();
 
-   (void)data;
+   buf[0] = buf_fps[0]  = '\0';
 
    video_monitor_get_fps(buf, sizeof(buf),
          buf_fps, sizeof(buf_fps));

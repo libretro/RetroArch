@@ -30,7 +30,6 @@
 #include "../file_path_special.h"
 #include "../configuration.h"
 #include "../paths.h"
-#include "../runloop.h"
 #include "../verbosity.h"
 
 #include "../gfx/video_shader_driver.h"
@@ -163,10 +162,10 @@ void menu_shader_manager_set_preset(void *data,
       unsigned type, const char *preset_path)
 {
 #ifdef HAVE_SHADER_MANAGER
-   struct video_shader *shader = (struct video_shader*)data;
-   config_file_t *conf         = NULL;
-   bool refresh                = false;
-   settings_t *settings        = config_get_ptr();
+   struct video_shader *shader   = (struct video_shader*)data;
+   config_file_t *conf           = NULL;
+   bool refresh                  = false;
+   settings_t *settings          = config_get_ptr();
 
    settings->video.shader_enable = false;
 
@@ -314,11 +313,29 @@ bool menu_shader_manager_save_preset(
       dirs[2] = config_directory;
    }
 
-   if (!(conf = (config_file_t*)config_file_new(NULL)))
+   conf = (config_file_t*)config_file_new(NULL);
+
+   if (!conf)
       return false;
+
    video_shader_write_conf_cgp(conf, shader);
 
-   if (!fullpath)
+   if (fullpath)
+   {
+      if (!string_is_empty(basename))
+         strlcpy(preset_path, buffer, sizeof(preset_path));
+
+      if (config_file_write(conf, preset_path))
+      {
+         RARCH_LOG("Saved shader preset to %s.\n", preset_path);
+         if (apply)
+            menu_shader_manager_set_preset(NULL, type, preset_path);
+         ret = true;
+      }
+      else
+         RARCH_LOG("Failed writing shader preset to %s.\n", preset_path);
+   }
+   else
    {
       for (d = 0; d < ARRAY_SIZE(dirs); d++)
       {
@@ -339,20 +356,6 @@ bool menu_shader_manager_save_preset(
          else
             RARCH_LOG("Failed writing shader preset to %s.\n", preset_path);
       }
-   }
-   else
-   {
-      if (!string_is_empty(basename))
-         strlcpy(preset_path, buffer, sizeof(preset_path));
-      if (config_file_write(conf, preset_path))
-      {
-         RARCH_LOG("Saved shader preset to %s.\n", preset_path);
-         if (apply)
-            menu_shader_manager_set_preset(NULL, type, preset_path);
-         ret = true;
-      }
-      else
-         RARCH_LOG("Failed writing shader preset to %s.\n", preset_path);
    }
 
    config_file_free(conf);

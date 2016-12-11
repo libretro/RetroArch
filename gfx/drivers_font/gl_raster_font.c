@@ -259,12 +259,12 @@ static void gl_raster_font_draw_vertices(gl_raster_t *font, const video_coords_t
    coords_data.handle_data = NULL;
    coords_data.data        = coords;
 
-   video_shader_driver_set_coords(&coords_data);
+   video_shader_driver_set_coords(coords_data);
 
    mvp.data = font->gl;
    mvp.matrix = &font->gl->mvp_no_rot;
 
-   video_shader_driver_set_mvp(&mvp);
+   video_shader_driver_set_mvp(mvp);
 
    glDrawArrays(GL_TRIANGLES, 0, coords->vertices);
 }
@@ -430,7 +430,7 @@ static void gl_raster_font_setup_viewport(gl_raster_t *font, bool full_screen)
    shader_info.idx        = VIDEO_SHADER_STOCK_BLEND;
    shader_info.set_active = true;
 
-   video_shader_driver_use(&shader_info);
+   video_shader_driver_use(shader_info);
 }
 
 static void gl_raster_font_restore_viewport(gl_t *gl, bool full_screen)

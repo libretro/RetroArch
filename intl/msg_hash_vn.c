@@ -38,42 +38,42 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
       {
          case RARCH_FAST_FORWARD_KEY:
             snprintf(s, len,
-                  "Bật/tắt between fast-forwarding and \n"
-                  "normal speed."
+                  "Chọn giữa tốc độ nhanh và \n"
+                  "bình thường."
                   );
             break;
          case RARCH_FAST_FORWARD_HOLD_KEY:
             snprintf(s, len,
-                  "Hold for fast-forward. \n"
+                  "Nhấn nút để xem nhanh. \n"
                   " \n"
-                  "Releasing button disables fast-forward."
+                  "Thả nút để ngừng xem nhanh."
                   );
             break;
          case RARCH_PAUSE_TOGGLE:
             snprintf(s, len,
-                  "Toggle between paused and non-paused state.");
+                  "Bật/tắt chức năng tạm dừng.");
             break;
          case RARCH_FRAMEADVANCE:
             snprintf(s, len,
-                  "Frame advance when content is paused.");
+                  "Xem Frame kế tiếp khi đã tạm dừng.");
             break;
          case RARCH_SHADER_NEXT:
             snprintf(s, len,
-                  "Applies next shader in directory.");
+                  "Áp dụng shader kế tiếp trong thư mục.");
             break;
          case RARCH_SHADER_PREV:
             snprintf(s, len,
-                  "Applies previous shader in directory.");
+                  "Áp dụng shader trước trong thư mục.");
             break;
          case RARCH_CHEAT_INDEX_PLUS:
          case RARCH_CHEAT_INDEX_MINUS:
          case RARCH_CHEAT_TOGGLE:
             snprintf(s, len,
-                  "Cheats.");
+                  "Gian lận.");
             break;
          case RARCH_RESET:
             snprintf(s, len,
-                  "Reset the content.");
+                  "Đặt lại nội dung.");
             break;
          case RARCH_SCREENSHOT:
             snprintf(s, len,
@@ -93,7 +93,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
          case RARCH_SLOWMOTION:
             snprintf(s, len,
-                  "Hold for slowmotion.");
+                  "Nhấn để xem chậm.");
             break;
          case RARCH_ENABLE_HOTKEY:
             snprintf(s, len,
@@ -122,20 +122,20 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
          case RARCH_OVERLAY_NEXT:
             snprintf(s, len,
-                  "Switches to next overlay. Wraps around.");
+                  "Đổi qua overlay kế tiếp.");
             break;
          case RARCH_DISK_EJECT_TOGGLE:
             snprintf(s, len,
-                  "Bật/tắt eject for disks. \n"
+                  "Bật/tắt nhả đĩa. \n"
                   " \n"
-                  "Used for multiple-disk content. ");
+                  "Được sử dụng cho nội dung có nhiều đĩa. ");
             break;
          case RARCH_DISK_NEXT:
          case RARCH_DISK_PREV:
             snprintf(s, len,
-                  "Cycles through disk images. Use after ejecting. \n"
+                  "Xem qua các đĩa game. Sử dụng sau khi nhả đĩa. \n"
                   " \n"
-                  "Complete by toggling eject again.");
+                  "Bấm nút 'Bật/tắt nhả đĩa' để chọn đĩa.");
             break;
          case RARCH_GRAB_MOUSE_TOGGLE:
             snprintf(s, len,
@@ -159,7 +159,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
          case RARCH_QUIT_KEY:
             snprintf(s, len,
-                  "Key to exit RetroArch cleanly. \n"
+                  "Nút để an toàn thoát RetroArch. \n"
                   " \n"
                   "Killing it in any hard way (SIGKILL, etc.) will \n"
                   "terminate RetroArch without saving RAM, etc."
@@ -182,17 +182,17 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
          case RARCH_SAVE_STATE_KEY:
             snprintf(s, len,
-                  "Saves state.");
+                  "Lưu state.");
             break;
          case RARCH_REWIND:
             snprintf(s, len,
-                  "Hold button down to rewind. \n"
+                  "Giữ nút đễ quay lại. \n"
                   " \n"
-                  "Rewinding must be enabled.");
+                  "Cần phải bật chức năng quay lại.");
             break;
          case RARCH_MOVIE_RECORD_TOGGLE:
             snprintf(s, len,
-                  "Toggle between recording and not.");
+                  "Bật/tắt ghi chép video.");
             break;
          default:
             if (string_is_empty(s))
@@ -206,21 +206,21 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
    switch (msg)
    {
       case MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS:
-         snprintf(s, len, "Login details for your \n"
-               "Retro Achievements account. \n"
+         snprintf(s, len, "Chi tiết đăng nhập cho tài khoản \n"
+               "Retro Achievements của bạn. \n"
                " \n"
-               "Visit retroachievements.org and sign up \n"
-               "for a free account. \n"
+               "Truy cập retroachievements.org đễ \n"
+               "đăng ký tài khoản miễn phí. \n"
                " \n"
-               "After you are done registering, you need \n"
-               "to input the username and password into \n"
+               "Sau khi đăng ký, bạn phải \n"
+               "cung cấp tên tài khoản và mật mã vào \n"
                "RetroArch.");
          break;
       case MENU_ENUM_LABEL_CHEEVOS_USERNAME:
-         snprintf(s, len, "Username for your Retro Achievements account.");
+         snprintf(s, len, "Tên tài khoản của Retro Achievements.");
          break;
       case MENU_ENUM_LABEL_CHEEVOS_PASSWORD:
-         snprintf(s, len, "Password for your Retro Achievements account.");
+         snprintf(s, len, "Mật mã của Retro Achievements tài khoản.");
          break;
       case MENU_ENUM_LABEL_USER_LANGUAGE:
          snprintf(s, len, "Localizes the menu and all onscreen messages \n"
@@ -280,7 +280,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len, "Create a screenshot. \n"
                " \n"
                "The screenshot will be stored inside the \n"
-               "Screenshot Directory.");
+               "Screenshot Thư mục.");
          break;
       case MENU_ENUM_LABEL_RUN:
          snprintf(s, len, "Start the content.");
@@ -306,39 +306,39 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY:
          snprintf(s, len,
-               "Select this to scan the current directory \n"
+               "Select this to scan the current thư mục \n"
                "for content.");
          break;
       case MENU_ENUM_LABEL_USE_THIS_DIRECTORY:
          snprintf(s, len,
-               "Select this to set this as the directory.");
+               "Select this to set this as the thư mục.");
          break;
       case MENU_ENUM_LABEL_CONTENT_DATABASE_DIRECTORY:
          snprintf(s, len,
-               "Content Database Directory. \n"
+               "Content Database thư mục. \n"
                " \n"
                "Path to content database \n"
-               "directory.");
+               "thư mục.");
          break;
       case MENU_ENUM_LABEL_THUMBNAILS_DIRECTORY:
          snprintf(s, len,
-               "Thumbnails Directory. \n"
+               "Thumbnails thư mục. \n"
                " \n"
                "To store thumbnail files.");
          break;
       case MENU_ENUM_LABEL_LIBRETRO_INFO_PATH:
          snprintf(s, len,
-               "Core Info Directory. \n"
+               "Core Info thư mục. \n"
                " \n"
-               "A directory for where to search \n"
+               "A thư mục for where to search \n"
                "for libretro core information.");
          break;
       case MENU_ENUM_LABEL_PLAYLIST_DIRECTORY:
          snprintf(s, len,
-               "Playlist Directory. \n"
+               "Playlist thư mục. \n"
                " \n"
                "Save all playlist files to this \n"
-               "directory.");
+               "thư mục.");
          break;
       case MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN:
          snprintf(s, len,
@@ -355,9 +355,19 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
                "inside the menu and RetroArch won't \n"
                "shutdown.");
          break;
+      case MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE:
+         snprintf(s, len,
+               "Some cores might need \n"
+               "firmware or bios files. \n"
+               " \n"
+               "If this option is disabled, \n"
+               "it will try to load even if such \n"
+               "firmware is missing. \n"
+               "down. \n");
+         break;
       case MENU_ENUM_LABEL_PARENT_DIRECTORY:
          snprintf(s, len,
-               "Go back to the parent directory.");
+               "Go back to the parent thư mục.");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_SHADER_PRESET:
          snprintf(s, len,
@@ -431,16 +441,16 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY:
          snprintf(s, len,
-               "Directory. \n"
+               "thư mục. \n"
                " \n"
-               "Select it to open this directory.");
+               "Select it to open this thư mục.");
          break;
       case MENU_ENUM_LABEL_CACHE_DIRECTORY:
          snprintf(s, len,
-               "Cache Directory. \n"
+               "Cache thư mục. \n"
                " \n"
                "Content decompressed by RetroArch will be \n"
-               "temporarily extracted to this directory.");
+               "temporarily extracted to this thư mục.");
          break;
       case MENU_ENUM_LABEL_HISTORY_LIST_ENABLE:
          snprintf(s, len,
@@ -450,9 +460,9 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY:
          snprintf(s, len,
-               "File Browser Directory. \n"
+               "File Browser thư mục. \n"
                " \n"
-               "Sets start directory for menu file browser.");
+               "Sets start thư mục for menu file browser.");
          break;
       case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
          snprintf(s, len,
@@ -575,10 +585,6 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Amount of seconds to wait until proceeding \n"
                "to the next bind.");
          break;
-      case MENU_ENUM_LABEL_KEYBOARD_OVERLAY_PRESET:
-         snprintf(s, len,
-               "Path to onscreen keyboard overlay.");
-         break;
       case MENU_ENUM_LABEL_OVERLAY_SCALE:
          snprintf(s, len,
                "Overlay scale.");
@@ -601,12 +607,12 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "Browse for a libretro core \n"
                "implementation. Where the browser \n"
-               "starts depends on your Core Directory \n"
+               "starts depends on your Core thư mục \n"
                "path. If blank, it will start in root. \n"
                " \n"
-               "If Core Directory is a directory, the menu \n"
+               "If Core thư mục is a thư mục, the menu \n"
                "will use that as top folder. If Core \n"
-               "Directory is a full path, it will start \n"
+               "thư mục is a full path, it will start \n"
                "in the folder where the file is.");
          break;
       case MENU_ENUM_LABEL_VALUE_MENU_ENUM_CONTROLS_PROLOG:
@@ -742,7 +748,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "To control where the menu starts \n"
                "to browse for content, set  \n"
-               "'File Browser Directory'. \n"
+               "'File Browser thư mục'. \n"
                "If not set, it will start in root. \n"
                " \n"
                "The browser will filter out \n"
@@ -759,7 +765,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
                "core combinations are saved to history. \n"
                " \n"
                "The history is saved to a file in the same \n"
-               "directory as the RetroArch config file. If \n"
+               "thư mục as the RetroArch config file. If \n"
                "no config file was loaded in startup, history \n"
                "will not be saved or loaded, and will not exist \n"
                "in the main menu."
@@ -956,10 +962,15 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
                "All shaders must be of the same \n"
                "type (i.e. CG, GLSL or HLSL). \n"
                " \n"
-               "Set Shader Directory to set where \n"
+               "Set Shader thư mục to set where \n"
                "the browser starts to look for \n"
                "shaders."
                );
+         break;
+      case MENU_ENUM_LABEL_CONFIGURATION_SETTINGS:
+         snprintf(s, len,
+               "Determines how configuration files \n"
+               "are loaded and prioritized.");
          break;
       case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
          snprintf(s, len,
@@ -1060,7 +1071,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
                "settings are saved to a temporary file (either \n"
                "menu.cgp or menu.glslp) and loaded. The file \n"
                "persists after RetroArch exits. The file is \n"
-               "saved to Shader Directory."
+               "saved to Shader thư mục."
                );
          break;
       case MENU_ENUM_LABEL_MENU_TOGGLE:
@@ -1148,9 +1159,9 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_LIBRETRO_DIR_PATH:
          snprintf(s, len,
-               "Core Directory. \n"
+               "Core thư mục. \n"
                " \n"
-               "A directory for where to search for \n"
+               "A thư mục for where to search for \n"
                "libretro core implementations.");
          break;
       case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
@@ -1298,11 +1309,11 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_SYSTEM_DIRECTORY:
          snprintf(s, len,
-               "System Directory. \n"
+               "System thư mục. \n"
                " \n"
-               "Sets the 'system' directory.\n"
+               "Sets the 'system' thư mục.\n"
                "Cores can query for this\n"
-               "directory to tải BIOSes, \n"
+               "thư mục to tải BIOSes, \n"
                "system-specific configs, etc.");
          break;
       case MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE:
@@ -1419,9 +1430,9 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_SCREENSHOT_DIRECTORY:
          snprintf(s, len,
-               "Screenshot Directory. \n"
+               "Screenshot thư mục. \n"
                " \n"
-               "Directory to dump screenshots to."
+               "thư mục to dump screenshots to."
                );
          break;
       case MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL:
@@ -1433,10 +1444,10 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_SAVEFILE_DIRECTORY:
          snprintf(s, len,
-               "Savefile Directory. \n"
+               "Savefile thư mục. \n"
                " \n"
                "Save all save files (*.srm) to this \n"
-               "directory. This includes related files like \n"
+               "thư mục. This includes related files like \n"
                ".bsv, .rt, .psrm, etc...\n"
                " \n"
                "This will be overridden by explicit command line\n"
@@ -1444,17 +1455,17 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_SAVESTATE_DIRECTORY:
          snprintf(s, len,
-               "Savestate Directory. \n"
+               "Savestate thư mục. \n"
                " \n"
                "Save all save states (*.state) to this \n"
-               "directory.\n"
+               "thư mục.\n"
                " \n"
                "This will be overridden by explicit command line\n"
                "options.");
          break;
       case MENU_ENUM_LABEL_ASSETS_DIRECTORY:
          snprintf(s, len,
-               "Assets Directory. \n"
+               "Assets thư mục. \n"
                " \n"
                " This location is queried by default when \n"
                "menu interfaces try to look for loadable \n"
@@ -1462,7 +1473,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY:
          snprintf(s, len,
-               "Dynamic Wallpapers Directory. \n"
+               "Dynamic Wallpapers thư mục. \n"
                " \n"
                " The place to store wallpapers that will \n"
                "be loaded dynamically by the menu depending \n"
@@ -1516,7 +1527,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len, "Enable touch input inside the menu.");
          break;
       case MENU_ENUM_LABEL_MENU_WALLPAPER:
-         snprintf(s, len, "Path to an image to set as menu wallpaper.");
+         snprintf(s, len, "Path to an image to set as the background.");
          break;
       case MENU_ENUM_LABEL_NAVIGATION_WRAPAROUND:
          snprintf(s, len,
@@ -1606,6 +1617,10 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Setting related to Netplay.");
          break;
+      case MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS:
+         snprintf(s, len,
+               "Search for and connect to netplay hosts on the local network.");
+         break;
       case MENU_ENUM_LABEL_DYNAMIC_WALLPAPER:
          snprintf(s, len,
                "Dynamically tải a new wallpaper \n"
@@ -1613,12 +1628,12 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL:
          snprintf(s, len,
-               "URL to core updater directory on the \n"
+               "URL to core updater thư mục on the \n"
                "Libretro buildbot.");
          break;
       case MENU_ENUM_LABEL_BUILDBOT_ASSETS_URL:
          snprintf(s, len,
-               "URL to assets updater directory on the \n"
+               "URL to assets updater thư mục on the \n"
                "Libretro buildbot.");
          break;
       case MENU_ENUM_LABEL_INPUT_REMAP_BINDS_ENABLE:
@@ -1629,9 +1644,9 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_OVERLAY_DIRECTORY:
          snprintf(s, len,
-               "Overlay Directory. \n"
+               "Overlay thư mục. \n"
                " \n"
-               "Defines a directory where overlays are \n"
+               "Defines a thư mục where overlays are \n"
                "kept for easy access.");
          break;
       case MENU_ENUM_LABEL_INPUT_MAX_USERS:
@@ -1776,11 +1791,11 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_SHADER_PREV:
          snprintf(s, len,
-               "Applies previous shader in directory.");
+               "Áp dụng previous shader in thư mục.");
          break;
       case MENU_ENUM_LABEL_SHADER_NEXT:
          snprintf(s, len,
-               "Applies next shader in directory.");
+               "Áp dụng next shader in thư mục.");
          break;
       case MENU_ENUM_LABEL_RESET:
          snprintf(s, len,
@@ -1884,1155 +1899,38 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
    return 0;
 }
 
-#ifdef HAVE_MENU
-static const char *menu_hash_to_str_vn_label_enum(enum msg_hash_enums msg)
+const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
 {
-   if (msg <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END &&
-         msg >= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN)
-   {
-      static char hotkey_lbl[128] = {0};
-      unsigned idx = msg - MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN;
-      snprintf(hotkey_lbl, sizeof(hotkey_lbl), "input_hotkey_binds_%d", idx);
-      return hotkey_lbl;
-   }
-
    switch (msg)
    {
-      case MENU_ENUM_LABEL_ACCOUNTS_CHEEVOS_USERNAME:
-         return "accounts_cheevos_username";
-      case MENU_ENUM_LABEL_ACCOUNTS_LIST:
-         return "accounts_list";
-      case MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS:
-         return "retro_achievements";
-      case MENU_ENUM_LABEL_ACHIEVEMENT_LIST:
-         return "achievement_list";
-      case MENU_ENUM_LABEL_ADD_CONTENT_LIST:
-         return "add_content";
-      case MENU_ENUM_LABEL_ADD_TAB:
-         return "add_tab";
-      case MENU_ENUM_LABEL_ARCHIVE_MODE:
-         return "archive_mode";
-      case MENU_ENUM_LABEL_ASSETS_DIRECTORY:
-         return "assets_directory";
-      case MENU_ENUM_LABEL_AUDIO_BLOCK_FRAMES:
-         return "audio_block_frames";
-      case MENU_ENUM_LABEL_AUDIO_DEVICE:
-         return "audio_device";
-      case MENU_ENUM_LABEL_AUDIO_DRIVER:
-         return "audio_driver";
-      case MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN:
-         return "audio_dsp_plugin";
-      case MENU_ENUM_LABEL_AUDIO_ENABLE:
-         return "audio_enable";
-      case MENU_ENUM_LABEL_AUDIO_FILTER_DIR:
-         return "audio_filter_dir";
-      case MENU_ENUM_LABEL_AUDIO_LATENCY:
-         return "audio_latency";
-      case MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW:
-         return "audio_max_timing_skew";
-      case MENU_ENUM_LABEL_AUDIO_MUTE:
-         return "audio_mute_enable";
-      case MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE:
-         return "audio_output_rate";
-      case MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA:
-         return "audio_rate_control_delta";
-      case MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER:
-         return "audio_resampler_driver";
-      case MENU_ENUM_LABEL_AUDIO_SETTINGS:
-         return "audio_settings";
-      case MENU_ENUM_LABEL_AUDIO_SYNC:
-         return "audio_sync";
-      case MENU_ENUM_LABEL_AUDIO_VOLUME:
-         return "audio_volume";
-      case MENU_ENUM_LABEL_AUTOSAVE_INTERVAL:
-         return "autosave_interval";
-      case MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE:
-         return "auto_overrides_enable";
-      case MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE:
-         return "auto_remaps_enable";
-      case MENU_ENUM_LABEL_AUTO_SHADERS_ENABLE:
-         return "auto_shaders_enable";
-      case MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE:
-         return "block_sram_overwrite";
-      case MENU_ENUM_LABEL_BLUETOOTH_ENABLE:
-         return "bluetooth_enable";
-      case MENU_ENUM_LABEL_BUILDBOT_ASSETS_URL:
-         return "buildbot_assets_url";
-      case MENU_ENUM_LABEL_CACHE_DIRECTORY:
-         return "cache_directory";
-      case MENU_ENUM_LABEL_CAMERA_ALLOW:
-         return "camera_allow";
-      case MENU_ENUM_LABEL_CAMERA_DRIVER:
-         return "camera_driver";
-      case MENU_ENUM_LABEL_CB_CORE_CONTENT_DIRS_LIST:
-         return "cb_core_content_dirs_list";
-      case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
-         return "cb_core_content_download";
-      case MENU_ENUM_LABEL_CB_CORE_CONTENT_LIST:
-         return "cb_core_content_list";
-      case MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD:
-         return "cb_core_thumbnails_download";
-      case MENU_ENUM_LABEL_CB_CORE_UPDATER_DOWNLOAD:
-         return "cb_core_updater_download";
-      case MENU_ENUM_LABEL_CB_CORE_UPDATER_LIST:
-         return "cb_core_updater_list";
-      case MENU_ENUM_LABEL_CB_DOWNLOAD_URL:
-         return "cb_download_url";
-      case MENU_ENUM_LABEL_CB_LAKKA_DOWNLOAD:
-         return "cb_lakka_download";
-      case MENU_ENUM_LABEL_CB_LAKKA_LIST:
-         return "cb_lakka_list";
-      case MENU_ENUM_LABEL_CB_MENU_THUMBNAIL:
-         return "cb_menu_thumbnail";
-      case MENU_ENUM_LABEL_CB_MENU_WALLPAPER:
-         return "cb_menu_wallpaper";
-      case MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_DOWNLOAD:
-         return "cb_thumbnails_updater_download";
-      case MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_LIST:
-         return "cb_thumbnails_updater_list";
-      case MENU_ENUM_LABEL_CB_UPDATE_ASSETS:
-         return "cb_update_assets";
-      case MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES:
-         return "cb_update_autoconfig_profiles";
-      case MENU_ENUM_LABEL_CB_UPDATE_CHEATS:
-         return "cb_update_cheats";
-      case MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES:
-         return "cb_update_core_info_files";
-      case MENU_ENUM_LABEL_CB_UPDATE_DATABASES:
-         return "cb_update_databases";
-      case MENU_ENUM_LABEL_CB_UPDATE_OVERLAYS:
-         return "cb_update_overlays";
-      case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG:
-         return "cb_update_shaders_cg";
-      case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_GLSL:
-         return "cb_update_shaders_glsl";
-      case MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES:
-         return "cheat_apply_changes";
-      case MENU_ENUM_LABEL_CHEAT_DATABASE_PATH:
-         return "cheat_database_path";
-      case MENU_ENUM_LABEL_CHEAT_FILE_LOAD:
-         return "cheat_file_load";
-      case MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS:
-         return "cheat_file_save_as";
-      case MENU_ENUM_LABEL_CHEAT_NUM_PASSES:
-         return "cheat_num_passes";
-      case MENU_ENUM_LABEL_CHEEVOS_DESCRIPTION:
-         return "cheevos_description";
-      case MENU_ENUM_LABEL_CHEEVOS_ENABLE:
-         return "cheevos_enable";
-      case MENU_ENUM_LABEL_CHEEVOS_HARDCORE_MODE_ENABLE:
-         return "cheevos_hardcore_mode_enable";
-      case MENU_ENUM_LABEL_CHEEVOS_LOCKED_ACHIEVEMENTS:
-         return "cheevos_locked_achievements";
-      case MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY:
-         return "cheevos_locked_entry";
-      case MENU_ENUM_LABEL_CHEEVOS_PASSWORD:
-         return "cheevos_password";
-      case MENU_ENUM_LABEL_CHEEVOS_TEST_UNOFFICIAL:
-         return "cheevos_test_unofficial";
-      case MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ACHIEVEMENTS:
-         return "cheevos_unlocked_achievements";
-      case MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY:
-         return "cheevos_unlocked_entry";
-      case MENU_ENUM_LABEL_CHEEVOS_USERNAME:
-         return "cheevos_username";
-      case MENU_ENUM_LABEL_CLOSE_CONTENT:
-         return "unload_core";
-      case MENU_ENUM_LABEL_COLLECTION:
-         return "collection";
-      case MENU_ENUM_LABEL_CONFIGURATIONS:
-         return "configurations";
-      case MENU_ENUM_LABEL_CONFIGURATION_SETTINGS:
-         return "configuration_settings";
-      case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
-         return "config_save_on_exit";
-      case MENU_ENUM_LABEL_CONFIRM_ON_EXIT:
-         return "confirm_on_exit";
-      case MENU_ENUM_LABEL_CONNECT_WIFI:
-         return "connect_wifi";
-      case MENU_ENUM_LABEL_CONTENT_ACTIONS:
-         return "content_actions";
-      case MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST:
-         return "select_from_collection";
-      case MENU_ENUM_LABEL_CONTENT_DATABASE_DIRECTORY:
-         return "content_database_path";
-      case MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE:
-         return "content_history_size";
-      case MENU_ENUM_LABEL_CONTENT_SETTINGS:
-         return "quick_menu";
-      case MENU_ENUM_LABEL_CORE_ASSETS_DIRECTORY:
-         return "core_assets_directory";
-      case MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS:
-         return "core_cheat_options";
-      case MENU_ENUM_LABEL_CORE_COUNTERS:
-         return "core_counters";
-      case MENU_ENUM_LABEL_CORE_ENABLE:
-         return "menu_core_enable";
-      case MENU_ENUM_LABEL_CORE_INFORMATION:
-         return "core_information";
-      case MENU_ENUM_LABEL_CORE_INFO_ENTRY:
-         return "core_info_entry";
-      case MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
-         return "core_input_remapping_options";
-      case MENU_ENUM_LABEL_CORE_LIST:
-         return "load_core";
-      case MENU_ENUM_LABEL_CORE_OPTIONS:
-         return "core_options";
-      case MENU_ENUM_LABEL_CORE_OPTION_ENTRY:
-         return "core_option_entry";
-      case MENU_ENUM_LABEL_CORE_SETTINGS:
-         return "core_settings";
-      case MENU_ENUM_LABEL_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE:
-         return "core_set_supports_no_content_enable";
-      case MENU_ENUM_LABEL_CORE_SPECIFIC_CONFIG:
-         return "core_specific_config";
-      case MENU_ENUM_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
-         return "core_updater_auto_extract_archive";
-      case MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL:
-         return "core_updater_buildbot_url";
-      case MENU_ENUM_LABEL_CORE_UPDATER_LIST:
-         return "core_updater_list";
-      case MENU_ENUM_LABEL_CPU_ARCHITECTURE:
-         return "system_information_cpu_architecture";
-      case MENU_ENUM_LABEL_CPU_CORES:
-         return "system_information_cpu_cores";
-      case MENU_ENUM_LABEL_CURSOR_DIRECTORY:
-         return "cursor_directory";
-      case MENU_ENUM_LABEL_CURSOR_MANAGER_LIST:
-         return "cursor_manager_list";
-      case MENU_ENUM_LABEL_CUSTOM_BIND:
-         return "custom_bind";
-      case MENU_ENUM_LABEL_CUSTOM_BIND_ALL:
-         return "custom_bind_all";
-      case MENU_ENUM_LABEL_CUSTOM_RATIO:
-         return "custom_ratio";
-      case MENU_ENUM_LABEL_DATABASE_MANAGER_LIST:
-         return "database_manager_list";
-      case MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST:
-         return "deferred_accounts_cheevos_list";
-      case MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_LIST:
-         return "deferred_accounts_list";
-      case MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION:
-         return "deferred_archive_action";
-      case MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE:
-         return "deferred_archive_action_detect_core";
-      case MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN:
-         return "deferred_archive_open";
-      case MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE:
-         return "deferred_archive_open_detect_core";
-      case MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST:
-         return "deferred_audio_settings_list";
-      case MENU_ENUM_LABEL_DEFERRED_CONFIGURATION_SETTINGS_LIST:
-         return "deferred_configuration_settings_list";
-      case MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_LIST:
-         return "deferred_core_content_dirs_list";
-      case MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_SUBDIR_LIST:
-         return "deferred_core_content_dirs_subdir_list";
-      case MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_LIST:
-         return "deferred_core_content_list";
-      case MENU_ENUM_LABEL_DEFERRED_CORE_LIST:
-         return "deferred_core_list";
-      case MENU_ENUM_LABEL_DEFERRED_CORE_LIST_SET:
-         return "deferred_core_list_set";
-      case MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST:
-         return "deferred_core_settings_list";
-      case MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST:
-         return "core_updater";
-      case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST:
-         return "deferred_cursor_manager_list";
-      case MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
-         return "deferred_database_manager_list";
-      case MENU_ENUM_LABEL_DEFERRED_DIRECTORY_SETTINGS_LIST:
-         return "deferred_directory_settings_list";
-      case MENU_ENUM_LABEL_DEFERRED_DRIVER_SETTINGS_LIST:
-         return "deferred_driver_settings_list";
-      case MENU_ENUM_LABEL_DEFERRED_FRAME_THROTTLE_SETTINGS_LIST:
-         return "deferred_frame_throttle_settings_list";
-      case MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST:
-         return "deferred_input_hotkey_binds";
-      case MENU_ENUM_LABEL_DEFERRED_INPUT_SETTINGS_LIST:
-         return "deferred_input_settings_list";
-      case MENU_ENUM_LABEL_DEFERRED_LAKKA_LIST:
-         return "deferred_lakka_list";
-      case MENU_ENUM_LABEL_DEFERRED_LAKKA_SERVICES_LIST:
-         return "deferred_lakka_services_list";
-      case MENU_ENUM_LABEL_DEFERRED_LOGGING_SETTINGS_LIST:
-         return "deferred_logging_settings_list";
-      case MENU_ENUM_LABEL_DEFERRED_MENU_FILE_BROWSER_SETTINGS_LIST:
-         return "deferred_menu_file_browser_settings_list";
-      case MENU_ENUM_LABEL_DEFERRED_MENU_SETTINGS_LIST:
-         return "deferred_menu_settings_list";
-      case MENU_ENUM_LABEL_DEFERRED_NETWORK_SETTINGS_LIST:
-         return "deferred_network_settings_list";
-      case MENU_ENUM_LABEL_DEFERRED_ONSCREEN_DISPLAY_SETTINGS_LIST:
-         return "deferred_onscreen_display_settings_list";
-      case MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST:
-         return "deferred_onscreen_overlay_settings_list";
-      case MENU_ENUM_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST:
-         return "deferred_playlist_settings";
-      case MENU_ENUM_LABEL_DEFERRED_PRIVACY_SETTINGS_LIST:
-         return "deferred_privacy_settings_list";
-      case MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL:
-         return "deferred_rdb_entry_detail";
-      case MENU_ENUM_LABEL_DEFERRED_RECORDING_SETTINGS_LIST:
-         return "deferred_recording_settings";
-      case MENU_ENUM_LABEL_DEFERRED_RETRO_ACHIEVEMENTS_SETTINGS_LIST:
-         return "deferred_retro_achievements_settings_list";
-      case MENU_ENUM_LABEL_DEFERRED_REWIND_SETTINGS_LIST:
-         return "deferred_rewind_settings_list";
-      case MENU_ENUM_LABEL_DEFERRED_SAVING_SETTINGS_LIST:
-         return "deferred_saving_settings_list";
-      case MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST:
-         return "deferred_thumbnails_updater_list";
-      case MENU_ENUM_LABEL_DEFERRED_UPDATER_SETTINGS_LIST:
-         return "deferred_updater_settings_list";
-      case MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST:
-         return "deferred_user_binds_list";
-      case MENU_ENUM_LABEL_DEFERRED_USER_INTERFACE_SETTINGS_LIST:
-         return "deferred_user_interface_settings_list";
-      case MENU_ENUM_LABEL_DEFERRED_USER_SETTINGS_LIST:
-         return "deferred_user_settings_list";
-      case MENU_ENUM_LABEL_DEFERRED_VIDEO_FILTER:
-         return "deferred_video_filter";
-      case MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST:
-         return "deferred_video_settings_list";
-      case MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST:
-         return "deferred_wifi_settings_list";
-      case MENU_ENUM_LABEL_DELETE_ENTRY:
-         return "delete_entry";
-      case MENU_ENUM_LABEL_DETECT_CORE_LIST:
-         return "detect_core_list";
-      case MENU_ENUM_LABEL_DIRECTORY_SETTINGS:
-         return "directory_settings";
-      case MENU_ENUM_LABEL_DISK_CYCLE_TRAY_STATUS:
-         return "disk_cycle_tray_status";
-      case MENU_ENUM_LABEL_DISK_IMAGE_APPEND:
-         return "disk_image_append";
-      case MENU_ENUM_LABEL_DISK_OPTIONS:
-         return "core_disk_options";
-      case MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
-         return "downloaded_file_detect_core_list";
-      case MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT:
-         return "download_core_content";
-      case MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS:
-         return "download_core_content_dirs";
-      case MENU_ENUM_LABEL_DPI_OVERRIDE_ENABLE:
-         return "dpi_override_enable";
-      case MENU_ENUM_LABEL_DPI_OVERRIDE_VALUE:
-         return "dpi_override_value";
-      case MENU_ENUM_LABEL_DRIVER_SETTINGS:
-         return "driver_settings";
-      case MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN:
-         return "dummy_on_core_shutdown";
-      case MENU_ENUM_LABEL_DYNAMIC_WALLPAPER:
-         return "menu_dynamic_wallpaper_enable";
-      case MENU_ENUM_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY:
-         return "dynamic_wallpapers_directory";
-      case MENU_ENUM_LABEL_ENTRY_HOVER_COLOR:
-         return "menu_entry_hover_color";
-      case MENU_ENUM_LABEL_ENTRY_NORMAL_COLOR:
-         return "menu_entry_normal_color";
-      case MENU_ENUM_LABEL_FASTFORWARD_RATIO:
-         return "fastforward_ratio";
-      case MENU_ENUM_LABEL_FILE_BROWSER_CORE:
-         return "file_browser_core";
-      case MENU_ENUM_LABEL_FILE_BROWSER_CORE_DETECTED:
-         return "file_browser_core_detected";
-      case MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION:
-         return "file_browser_core_select_from_collection";
-      case MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY:
-         return "file_browser_directory";
-      case MENU_ENUM_LABEL_FILE_BROWSER_IMAGE:
-         return "file_browser_image";
-      case MENU_ENUM_LABEL_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER:
-         return "file_browser_image_open_with_viewer";
-      case MENU_ENUM_LABEL_FILE_BROWSER_MOVIE_OPEN:
-         return "file_browser_movie_open";
-      case MENU_ENUM_LABEL_FILE_BROWSER_MUSIC_OPEN:
-         return "file_browser_music_open";
-      case MENU_ENUM_LABEL_FILE_BROWSER_PLAIN_FILE:
-         return "file_browser_plain_file";
-      case MENU_ENUM_LABEL_FILE_BROWSER_REMAP:
-         return "file_browser_remap";
-      case MENU_ENUM_LABEL_FILE_BROWSER_SHADER:
-         return "file_browser_shader";
-      case MENU_ENUM_LABEL_FILE_BROWSER_SHADER_PRESET:
-         return "file_browser_shader_preset";
-      case MENU_ENUM_LABEL_FPS_SHOW:
-         return "fps_show";
-      case MENU_ENUM_LABEL_FRAME_THROTTLE_ENABLE:
-         return "fastforward_ratio_throttle_enable";
-      case MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS:
-         return "frame_throttle_settings";
-      case MENU_ENUM_LABEL_FRONTEND_COUNTERS:
-         return "frontend_counters";
-      case MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS:
-         return "game_specific_options";
-      case MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_CREATE:
-         return "game_specific_options_create";
-      case MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_IN_USE:
-         return "game_specific_options_in_use";
-      case MENU_ENUM_LABEL_HELP:
-         return "help";
-      case MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
-         return "help_audio_video_troubleshooting";
-      case MENU_ENUM_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD:
-         return "help_change_virtual_gamepad";
-      case MENU_ENUM_LABEL_HELP_CONTROLS:
-         return "help_controls";
-      case MENU_ENUM_LABEL_HELP_LIST:
-         return "help_list";
-      case MENU_ENUM_LABEL_HELP_LOADING_CONTENT:
-         return "help_loading_content";
-      case MENU_ENUM_LABEL_HELP_SCANNING_CONTENT:
-         return "help_scanning_content";
-      case MENU_ENUM_LABEL_HELP_WHAT_IS_A_CORE:
-         return "help_what_is_a_core";
-      case MENU_ENUM_LABEL_HISTORY_LIST_ENABLE:
-         return "history_list_enable";
-      case MENU_ENUM_LABEL_HISTORY_TAB:
-         return "history_tab";
-      case MENU_ENUM_LABEL_HORIZONTAL_MENU:
-         return "horizontal_menu";
-      case MENU_ENUM_LABEL_IMAGES_TAB:
-         return "images_tab";
-      case MENU_ENUM_LABEL_INFORMATION:
-         return "information";
-      case MENU_ENUM_LABEL_INFORMATION_LIST:
-         return "information_list";
-      case MENU_ENUM_LABEL_INFO_SCREEN:
-         return "info_screen";
-      case MENU_ENUM_LABEL_INPUT_ALL_USERS_CONTROL_MENU:
-         return "all_users_control_menu";
-      case MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE:
-         return "input_autodetect_enable";
-      case MENU_ENUM_LABEL_INPUT_AXIS_THRESHOLD:
-         return "input_axis_threshold";
-      case MENU_ENUM_LABEL_INPUT_BACK_AS_MENU_ENUM_TOGGLE_ENABLE:
-         return "back_as_menu_toggle_enable";
-      case MENU_ENUM_LABEL_INPUT_BIND_MODE:
-         return "input_bind_mode";
-      case MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT:
-         return "input_bind_timeout";
-      case MENU_ENUM_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND:
-         return "input_descriptor_hide_unbound";
-      case MENU_ENUM_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW:
-         return "input_descriptor_label_show";
-      case MENU_ENUM_LABEL_INPUT_DRIVER:
-         return "input_driver";
-      case MENU_ENUM_LABEL_INPUT_DUTY_CYCLE:
-         return "input_duty_cycle";
-      case MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS:
-         return "input_hotkey_binds";
-      case MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS_BEGIN:
-         return "input_hotkey_binds_begin";
-      case MENU_ENUM_LABEL_INPUT_ICADE_ENABLE:
-         return "input_icade_enable";
-      case MENU_ENUM_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE:
-         return "keyboard_gamepad_mapping_type";
-      case MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE:
-         return "input_libretro_device_p%u";
-      case MENU_ENUM_LABEL_INPUT_MAX_USERS:
-         return "input_max_users";
-      case MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
-         return "input_menu_toggle_gamepad_combo";
-      case MENU_ENUM_LABEL_INPUT_OSK_OVERLAY_ENABLE:
-         return "input_osk_overlay_enable";
-      case MENU_ENUM_LABEL_INPUT_OVERLAY_ENABLE:
-         return "input_overlay_enable";
-      case MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU:
-         return "overlay_hide_in_menu";
-      case MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE:
-         return "input_player%u_analog_dpad_mode";
-      case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
-         return "input_poll_type_behavior";
-      case MENU_ENUM_LABEL_INPUT_PREFER_FRONT_TOUCH:
-         return "input_prefer_front_touch";
-      case MENU_ENUM_LABEL_INPUT_REMAPPING_DIRECTORY:
-         return "input_remapping_directory";
-      case MENU_ENUM_LABEL_INPUT_REMAP_BINDS_ENABLE:
-         return "input_remap_binds_enable";
-      case MENU_ENUM_LABEL_INPUT_SETTINGS:
-         return "input_settings";
-      case MENU_ENUM_LABEL_INPUT_SETTINGS_BEGIN:
-         return "input_settings_begin";
-      case MENU_ENUM_LABEL_INPUT_SMALL_KEYBOARD_ENABLE:
-         return "input_small_keyboard_enable";
-      case MENU_ENUM_LABEL_INPUT_TOUCH_ENABLE:
-         return "input_touch_enable";
-      case MENU_ENUM_LABEL_INPUT_TURBO_PERIOD:
-         return "input_turbo_period";
-      case MENU_ENUM_LABEL_INPUT_USER_10_BINDS:
-         return "10_input_binds_list";
-      case MENU_ENUM_LABEL_INPUT_USER_11_BINDS:
-         return "11_input_binds_list";
-      case MENU_ENUM_LABEL_INPUT_USER_12_BINDS:
-         return "12_input_binds_list";
-      case MENU_ENUM_LABEL_INPUT_USER_13_BINDS:
-         return "13_input_binds_list";
-      case MENU_ENUM_LABEL_INPUT_USER_14_BINDS:
-         return "14_input_binds_list";
-      case MENU_ENUM_LABEL_INPUT_USER_15_BINDS:
-         return "15_input_binds_list";
-      case MENU_ENUM_LABEL_INPUT_USER_16_BINDS:
-         return "16_input_binds_list";
-      case MENU_ENUM_LABEL_INPUT_USER_1_BINDS:
-         return "1_input_binds_list";
-      case MENU_ENUM_LABEL_INPUT_USER_2_BINDS:
-         return "2_input_binds_list";
-      case MENU_ENUM_LABEL_INPUT_USER_3_BINDS:
-         return "3_input_binds_list";
-      case MENU_ENUM_LABEL_INPUT_USER_4_BINDS:
-         return "4_input_binds_list";
-      case MENU_ENUM_LABEL_INPUT_USER_5_BINDS:
-         return "5_input_binds_list";
-      case MENU_ENUM_LABEL_INPUT_USER_6_BINDS:
-         return "6_input_binds_list";
-      case MENU_ENUM_LABEL_INPUT_USER_7_BINDS:
-         return "7_input_binds_list";
-      case MENU_ENUM_LABEL_INPUT_USER_8_BINDS:
-         return "8_input_binds_list";
-      case MENU_ENUM_LABEL_INPUT_USER_9_BINDS:
-         return "9_input_binds_list";
-      case MENU_ENUM_LABEL_JOYPAD_AUTOCONFIG_DIR:
-         return "joypad_autoconfig_dir";
-      case MENU_ENUM_LABEL_JOYPAD_DRIVER:
-         return "input_joypad_driver";
-      case MENU_ENUM_LABEL_KEYBOARD_OVERLAY_PRESET:
-         return "input_osk_overlay";
-      case MENU_ENUM_LABEL_LAKKA_SERVICES:
-         return "lakka_services";
-      case MENU_ENUM_LABEL_LIBRETRO_DIR_PATH:
-         return "libretro_dir_path";
-      case MENU_ENUM_LABEL_LIBRETRO_INFO_PATH:
-         return "libretro_info_path";
-      case MENU_ENUM_LABEL_LIBRETRO_LOG_LEVEL:
-         return "libretro_log_level";
-      case MENU_ENUM_LABEL_LOAD_ARCHIVE:
-         return "load_archive";
-      case MENU_ENUM_LABEL_LOAD_ARCHIVE_DETECT_CORE:
-         return "load_archive_detect_core";
-      case MENU_ENUM_LABEL_LOAD_CONTENT:
-         return "load_content_default";
-      case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
-         return "load_recent";
-      case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
-         return "load_content";
-      case MENU_ENUM_LABEL_LOAD_STATE:
-         return "loadstate";
-      case MENU_ENUM_LABEL_LOCATION_ALLOW:
-         return "location_allow";
-      case MENU_ENUM_LABEL_LOCATION_DRIVER:
-         return "location_driver";
-      case MENU_ENUM_LABEL_LOGGING_SETTINGS:
-         return "logging_settings";
-      case MENU_ENUM_LABEL_LOG_VERBOSITY:
-         return "log_verbosity";
-      case MENU_ENUM_LABEL_MAIN_MENU:
-         return "main_menu";
-      case MENU_ENUM_LABEL_MANAGEMENT:
-         return "database_settings";
-      case MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME:
-         return "materialui_menu_color_theme";
-      case MENU_ENUM_LABEL_MATERIALUI_MENU_FOOTER_OPACITY:
-         return "materialui_menu_footer_opacity";
-      case MENU_ENUM_LABEL_MATERIALUI_MENU_HEADER_OPACITY:
-         return "materialui_menu_header_opacity";
-      case MENU_ENUM_LABEL_MENU_DRIVER:
-         return "menu_driver";
-      case MENU_ENUM_LABEL_MENU_ENUM_THROTTLE_FRAMERATE:
-         return "menu_throttle_framerate";
-      case MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS:
-         return "menu_file_browser_settings";
-      case MENU_ENUM_LABEL_MENU_LINEAR_FILTER:
-         return "menu_linear_filter";
-      case MENU_ENUM_LABEL_MENU_SETTINGS:
-         return "menu_settings";
-      case MENU_ENUM_LABEL_MENU_WALLPAPER:
-         return "menu_wallpaper";
-      case MENU_ENUM_LABEL_MENU_WALLPAPER_OPACITY:
-         return "menu_wallpaper_opacity";
-      case MENU_ENUM_LABEL_MOUSE_ENABLE:
-         return "menu_mouse_enable";
-      case MENU_ENUM_LABEL_MUSIC_TAB:
-         return "music_tab";
-      case MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
-         return "menu_navigation_browser_filter_supported_extensions_enable";
-      case MENU_ENUM_LABEL_NAVIGATION_WRAPAROUND:
-         return "menu_navigation_wraparound_enable";
-      case MENU_ENUM_LABEL_NETPLAY:
-         return "netplay";
-      case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
-         return "netplay_check_frames";
-      case MENU_ENUM_LABEL_NETPLAY_CLIENT_SWAP_INPUT:
-         return "netplay_client_swap_input";
-      case MENU_ENUM_LABEL_NETPLAY_DELAY_FRAMES:
-         return "netplay_delay_frames";
-      case MENU_ENUM_LABEL_NETPLAY_DISCONNECT:
-         return "menu_netplay_disconnect";
-      case MENU_ENUM_LABEL_NETPLAY_ENABLE:
-         return "netplay_enable";
-      case MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT:
-         return "menu_netplay_enable_client";
-      case MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST:
-         return "menu_netplay_enable_host";
-      case MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS:
-         return "netplay_ip_address";
-      case MENU_ENUM_LABEL_NETPLAY_MODE:
-         return "netplay_mode";
-      case MENU_ENUM_LABEL_NETPLAY_NICKNAME:
-         return "netplay_nickname";
-      case MENU_ENUM_LABEL_NETPLAY_SETTINGS:
-         return "menu_netplay_settings";
-      case MENU_ENUM_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE:
-         return "netplay_spectator_mode_enable";
-      case MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT:
-         return "netplay_tcp_udp_port";
-      case MENU_ENUM_LABEL_NETWORK_CMD_ENABLE:
-         return "network_cmd_enable";
-      case MENU_ENUM_LABEL_NETWORK_CMD_PORT:
-         return "network_cmd_port";
-      case MENU_ENUM_LABEL_NETWORK_INFORMATION:
-         return "network_information";
-      case MENU_ENUM_LABEL_NETWORK_INFO_ENTRY:
-         return "network_info_entry";
-      case MENU_ENUM_LABEL_NETWORK_REMOTE_ENABLE:
-         return "network_remote_enable";
-      case MENU_ENUM_LABEL_NETWORK_REMOTE_PORT:
-         return "network_remote_base_port";
-      case MENU_ENUM_LABEL_NETWORK_REMOTE_USER_1_ENABLE:
-         return "network_remote_user_1_enable";
-      case MENU_ENUM_LABEL_NETWORK_REMOTE_USER_LAST_ENABLE:
-         return "network_remote_user_last_enable";
-      case MENU_ENUM_LABEL_NETWORK_SETTINGS:
-         return "network_settings";
-      case MENU_ENUM_LABEL_NO_ACHIEVEMENTS_TO_DISPLAY:
-         return "no_achievements_to_display";
-      case MENU_ENUM_LABEL_NO_CORES_AVAILABLE:
-         return "no_cores_available";
-      case MENU_ENUM_LABEL_NO_CORE_INFORMATION_AVAILABLE:
-         return "no_core_information_available";
-      case MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE:
-         return "no_core_options_available";
-      case MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY:
-         return "no_entries_to_display";
-      case MENU_ENUM_LABEL_NO_HISTORY_AVAILABLE:
-         return "no_history";
-      case MENU_ENUM_LABEL_NO_ITEMS:
-         return "no_items";
-      case MENU_ENUM_LABEL_NO_PERFORMANCE_COUNTERS:
-         return "no_performance_counters";
-      case MENU_ENUM_LABEL_NO_PLAYLISTS:
-         return "no_playlists";
-      case MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE:
-         return "no_playlist_entries_available";
-      case MENU_ENUM_LABEL_NO_SETTINGS_FOUND:
-         return "menu_label_no_settings_found";
-      case MENU_ENUM_LABEL_NO_SHADER_PARAMETERS:
-         return "no_shader_parameters.";
-      case MENU_ENUM_LABEL_ONLINE_UPDATER:
-         return "online_updater";
-      case MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS:
-         return "onscreen_display_settings";
-      case MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS:
-         return "onscreen_overlay_settings";
-      case MENU_ENUM_LABEL_OPEN_ARCHIVE:
-         return "open_archive";
-      case MENU_ENUM_LABEL_OPEN_ARCHIVE_DETECT_CORE:
-         return "open_archive_detect_core";
-      case MENU_ENUM_LABEL_OSK_OVERLAY_DIRECTORY:
-         return "osk_overlay_directory";
-      case MENU_ENUM_LABEL_OVERLAY_AUTOLOAD_PREFERRED:
-         return "overlay_autoload_preferred";
-      case MENU_ENUM_LABEL_OVERLAY_DIRECTORY:
-         return "overlay_directory";
-      case MENU_ENUM_LABEL_OVERLAY_OPACITY:
-         return "input_overlay_opacity";
-      case MENU_ENUM_LABEL_OVERLAY_PRESET:
-         return "input_overlay";
-      case MENU_ENUM_LABEL_OVERLAY_SCALE:
-         return "input_overlay_scale";
-      case MENU_ENUM_LABEL_PAL60_ENABLE:
-         return "pal60_enable";
-      case MENU_ENUM_LABEL_PARENT_DIRECTORY:
-         return "parent_directory";
-      case MENU_ENUM_LABEL_PAUSE_LIBRETRO:
-         return "menu_pause_libretro";
-      case MENU_ENUM_LABEL_PAUSE_NONACTIVE:
-         return "pause_nonactive";
-      case MENU_ENUM_LABEL_PERFCNT_ENABLE:
-         return "perfcnt_enable";
-      case MENU_ENUM_LABEL_PLAYLISTS_TAB:
-         return "playlists_tab";
-      case MENU_ENUM_LABEL_PLAYLIST_COLLECTION_ENTRY:
-         return "playlist_collection_entry";
-      case MENU_ENUM_LABEL_PLAYLIST_DIRECTORY:
-         return "playlist_directory";
-      case MENU_ENUM_LABEL_PLAYLIST_ENTRY:
-         return "playlist_entry";
-      case MENU_ENUM_LABEL_PLAYLIST_SETTINGS:
-         return "playlist_settings";
-      case MENU_ENUM_LABEL_PLAYLIST_SETTINGS_BEGIN:
-         return "playlist_settings_begin";
-      case MENU_ENUM_LABEL_POINTER_ENABLE:
-         return "menu_pointer_enable";
-      case MENU_ENUM_LABEL_PRIVACY_SETTINGS:
-         return "privacy_settings";
-      case MENU_ENUM_LABEL_QUIT_RETROARCH:
-         return "quit_retroarch";
-      case MENU_ENUM_LABEL_RDB_ENTRY:
-         return "rdb_entry";
-      case MENU_ENUM_LABEL_RDB_ENTRY_ANALOG:
-         return "rdb_entry_analog";
-      case MENU_ENUM_LABEL_RDB_ENTRY_BBFC_RATING:
-         return "rdb_entry_bbfc_rating";
-      case MENU_ENUM_LABEL_RDB_ENTRY_CERO_RATING:
-         return "rdb_entry_cero_rating";
-      case MENU_ENUM_LABEL_RDB_ENTRY_CRC32:
-         return "rdb_entry_crc32";
-      case MENU_ENUM_LABEL_RDB_ENTRY_DESCRIPTION:
-         return "rdb_entry_description";
-      case MENU_ENUM_LABEL_RDB_ENTRY_DEVELOPER:
-         return "rdb_entry_developer";
-      case MENU_ENUM_LABEL_RDB_ENTRY_EDGE_MAGAZINE_ISSUE:
-         return "rdb_entry_edge_magazine_issue";
-      case MENU_ENUM_LABEL_RDB_ENTRY_EDGE_MAGAZINE_RATING:
-         return "rdb_entry_edge_magazine_rating";
-      case MENU_ENUM_LABEL_RDB_ENTRY_EDGE_MAGAZINE_REVIEW:
-         return "rdb_entry_edge_magazine_review";
-      case MENU_ENUM_LABEL_RDB_ENTRY_ELSPA_RATING:
-         return "rdb_entry_elspa_rating";
-      case MENU_ENUM_LABEL_RDB_ENTRY_ENHANCEMENT_HW:
-         return "rdb_entry_enhancement_hw";
-      case MENU_ENUM_LABEL_RDB_ENTRY_ESRB_RATING:
-         return "rdb_entry_esrb_rating";
-      case MENU_ENUM_LABEL_RDB_ENTRY_FAMITSU_MAGAZINE_RATING:
-         return "rdb_entry_famitsu_magazine_rating";
-      case MENU_ENUM_LABEL_RDB_ENTRY_FRANCHISE:
-         return "rdb_entry_franchise";
-      case MENU_ENUM_LABEL_RDB_ENTRY_GENRE:
-         return "rdb_entry_genre";
-      case MENU_ENUM_LABEL_RDB_ENTRY_MAX_USERS:
-         return "rdb_entry_max_users";
-      case MENU_ENUM_LABEL_RDB_ENTRY_MD5:
-         return "rdb_entry_md5";
-      case MENU_ENUM_LABEL_RDB_ENTRY_NAME:
-         return "rdb_entry_name";
-      case MENU_ENUM_LABEL_RDB_ENTRY_ORIGIN:
-         return "rdb_entry_origin";
-      case MENU_ENUM_LABEL_RDB_ENTRY_PEGI_RATING:
-         return "rdb_entry_pegi_rating";
-      case MENU_ENUM_LABEL_RDB_ENTRY_PUBLISHER:
-         return "rdb_entry_publisher";
-      case MENU_ENUM_LABEL_RDB_ENTRY_RELEASE_MONTH:
-         return "rdb_entry_releasemonth";
-      case MENU_ENUM_LABEL_RDB_ENTRY_RELEASE_YEAR:
-         return "rdb_entry_releaseyear";
-      case MENU_ENUM_LABEL_RDB_ENTRY_SERIAL:
-         return "rdb_entry_serial";
-      case MENU_ENUM_LABEL_RDB_ENTRY_SHA1:
-         return "rdb_entry_sha1";
-      case MENU_ENUM_LABEL_RDB_ENTRY_START_CONTENT:
-         return "rdb_entry_start_content";
-      case MENU_ENUM_LABEL_RDB_ENTRY_TGDB_RATING:
-         return "rdb_entry_tgdb_rating";
-      case MENU_ENUM_LABEL_REBOOT:
-         return "reboot";
-      case MENU_ENUM_LABEL_RECORDING_CONFIG_DIRECTORY:
-         return "recording_config_directory";
-      case MENU_ENUM_LABEL_RECORDING_OUTPUT_DIRECTORY:
-         return "recording_output_directory";
-      case MENU_ENUM_LABEL_RECORDING_SETTINGS:
-         return "recording_settings";
-      case MENU_ENUM_LABEL_RECORD_CONFIG:
-         return "record_config";
-      case MENU_ENUM_LABEL_RECORD_DRIVER:
-         return "record_driver";
-      case MENU_ENUM_LABEL_RECORD_ENABLE:
-         return "record_enable";
-      case MENU_ENUM_LABEL_RECORD_PATH:
-         return "record_path";
-      case MENU_ENUM_LABEL_RECORD_USE_OUTPUT_DIRECTORY:
-         return "record_use_output_directory";
-      case MENU_ENUM_LABEL_REMAP_FILE_LOAD:
-         return "remap_file_load";
-      case MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE:
-         return "remap_file_save_core";
-      case MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME:
-         return "remap_file_save_game";
-      case MENU_ENUM_LABEL_RESTART_CONTENT:
-         return "restart_content";
-      case MENU_ENUM_LABEL_RESTART_RETROARCH:
-         return "restart_retroarch";
-      case MENU_ENUM_LABEL_RESUME_CONTENT:
-         return "resume_content";
-      case MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS:
-         return "retro_achievements_settings";
-      case MENU_ENUM_LABEL_REWIND_ENABLE:
-         return "rewind_enable";
-      case MENU_ENUM_LABEL_REWIND_GRANULARITY:
-         return "rewind_granularity";
-      case MENU_ENUM_LABEL_REWIND_SETTINGS:
-         return "rewind_settings";
-      case MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY:
-         return "rgui_browser_directory";
-      case MENU_ENUM_LABEL_RGUI_CONFIG_DIRECTORY:
-         return "rgui_config_directory";
-      case MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN:
-         return "rgui_show_start_screen";
-      case MENU_ENUM_LABEL_RUN:
-         return "collection";
-      case MENU_ENUM_LABEL_SAMBA_ENABLE:
-         return "samba_enable";
-      case MENU_ENUM_LABEL_SAVEFILE_DIRECTORY:
-         return "savefile_directory";
-      case MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX:
-         return "savestate_auto_index";
-      case MENU_ENUM_LABEL_SAVESTATE_AUTO_LOAD:
-         return "savestate_auto_load";
-      case MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE:
-         return "savestate_auto_save";
-      case MENU_ENUM_LABEL_SAVESTATE_DIRECTORY:
-         return "savestate_directory";
-      case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG:
-         return "save_current_config";
-      case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
-         return "save_current_config_override_core";
-      case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
-         return "save_current_config_override_game";
-      case MENU_ENUM_LABEL_SAVE_NEW_CONFIG:
-         return "save_new_config";
-      case MENU_ENUM_LABEL_SAVE_STATE:
-         return "savestate";
-      case MENU_ENUM_LABEL_SAVING_SETTINGS:
-         return "saving_settings";
-      case MENU_ENUM_LABEL_SCAN_DIRECTORY:
-         return "scan_directory";
-      case MENU_ENUM_LABEL_SCAN_FILE:
-         return "scan_file";
-      case MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY:
-         return "scan_this_directory";
-      case MENU_ENUM_LABEL_SCREENSHOT_DIRECTORY:
-         return "screenshot_directory";
-      case MENU_ENUM_LABEL_SCREEN_RESOLUTION:
-         return "screen_resolution";
-      case MENU_ENUM_LABEL_SETTINGS:
-         return "settings";
-      case MENU_ENUM_LABEL_SETTINGS_TAB:
-         return "settings_tab";
-      case MENU_ENUM_LABEL_SHADER_APPLY_CHANGES:
-         return "shader_apply_changes";
-      case MENU_ENUM_LABEL_SHADER_OPTIONS:
-         return "shader_options";
-      case MENU_ENUM_LABEL_SHADER_PARAMETERS_ENTRY:
-         return "shader_parameters_entry";
-      case MENU_ENUM_LABEL_SHOW_ADVANCED_SETTINGS:
-         return "menu_show_advanced_settings";
-      case MENU_ENUM_LABEL_SHOW_HIDDEN_FILES:
-         return "show_hidden_files";
-      case MENU_ENUM_LABEL_SHUTDOWN:
-         return "shutdown";
-      case MENU_ENUM_LABEL_SLOWMOTION_RATIO:
-         return "slowmotion_ratio";
-      case MENU_ENUM_LABEL_SORT_SAVEFILES_ENABLE:
-         return "sort_savefiles_enable";
-      case MENU_ENUM_LABEL_SORT_SAVESTATES_ENABLE:
-         return "sort_savestates_enable";
-      case MENU_ENUM_LABEL_SSH_ENABLE:
-         return "ssh_enable";
-      case MENU_ENUM_LABEL_START_CORE:
-         return "start_core";
-      case MENU_ENUM_LABEL_START_NET_RETROPAD:
-         return "menu_start_net_retropad";
-      case MENU_ENUM_LABEL_START_VIDEO_PROCESSOR:
-         return "menu_start_video_processor";
-      case MENU_ENUM_LABEL_STATE_SLOT:
-         return "state_slot";
-      case MENU_ENUM_LABEL_STDIN_CMD_ENABLE:
-         return "stdin_commands";
-      case MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE:
-         return "suspend_screensaver_enable";
-      case MENU_ENUM_LABEL_SYSTEM_BGM_ENABLE:
-         return "system_bgm_enable";
-      case MENU_ENUM_LABEL_SYSTEM_DIRECTORY:
-         return "system_directory";
-      case MENU_ENUM_LABEL_SYSTEM_INFORMATION:
-         return "system_information";
-      case MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY:
-         return "system_info_entry";
-      case MENU_ENUM_LABEL_TAKE_SCREENSHOT:
-         return "take_screenshot";
-      case MENU_ENUM_LABEL_THREADED_DATA_RUNLOOP_ENABLE:
-         return "threaded_data_runloop_enable";
-      case MENU_ENUM_LABEL_THUMBNAILS:
-         return "thumbnails";
-      case MENU_ENUM_LABEL_THUMBNAILS_DIRECTORY:
-         return "thumbnails_directory";
-      case MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST:
-         return "thumbnails_updater_list";
-      case MENU_ENUM_LABEL_TIMEDATE_ENABLE:
-         return "menu_timedate_enable";
-      case MENU_ENUM_LABEL_TITLE_COLOR:
-         return "menu_title_color";
-      case MENU_ENUM_LABEL_UI_COMPANION_ENABLE:
-         return "ui_companion_enable";
-      case MENU_ENUM_LABEL_UI_COMPANION_START_ON_BOOT:
-         return "ui_companion_start_on_boot";
-      case MENU_ENUM_LABEL_UI_MENUBAR_ENABLE:
-         return "ui_menubar_enable";
-      case MENU_ENUM_LABEL_UNDO_LOAD_STATE:
-         return "undoloadstate";
-      case MENU_ENUM_LABEL_UNDO_SAVE_STATE:
-         return "undosavestate";
-      case MENU_ENUM_LABEL_UPDATER_SETTINGS:
-         return "updater_settings";
-      case MENU_ENUM_LABEL_UPDATE_ASSETS:
-         return "update_assets";
-      case MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES:
-         return "update_autoconfig_profiles";
-      case MENU_ENUM_LABEL_UPDATE_CG_SHADERS:
-         return "update_cg_shaders";
-      case MENU_ENUM_LABEL_UPDATE_CHEATS:
-         return "update_cheats";
-      case MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES:
-         return "update_core_info_files";
-      case MENU_ENUM_LABEL_UPDATE_DATABASES:
-         return "update_databases";
-      case MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS:
-         return "update_glsl_shaders";
-      case MENU_ENUM_LABEL_UPDATE_LAKKA:
-         return "update_lakka";
-      case MENU_ENUM_LABEL_UPDATE_OVERLAYS:
-         return "update_overlays";
-      case MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS:
-         return "update_slang_shaders";
-      case MENU_ENUM_LABEL_URL_ENTRY:
-         return "url_entry";
-      case MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS:
-         return "user_interface_settings";
-      case MENU_ENUM_LABEL_USER_LANGUAGE:
-         return "user_language";
-      case MENU_ENUM_LABEL_USER_SETTINGS:
-         return "user_settings";
-      case MENU_ENUM_LABEL_USE_BUILTIN_IMAGE_VIEWER:
-         return "use_builtin_image_viewer";
-      case MENU_ENUM_LABEL_USE_BUILTIN_PLAYER:
-         return "use_builtin_player";
-      case MENU_ENUM_LABEL_USE_THIS_DIRECTORY:
-         return "use_this_directory";
-      case MENU_ENUM_LABEL_VIDEO_ALLOW_ROTATE:
-         return "video_allow_rotate";
-      case MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_AUTO:
-         return "video_aspect_ratio_auto";
-      case MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_INDEX:
-         return "aspect_ratio_index";
-      case MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION:
-         return "video_black_frame_insertion";
-      case MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN:
-         return "video_crop_overscan";
-      case MENU_ENUM_LABEL_VIDEO_DISABLE_COMPOSITION:
-         return "video_disable_composition";
-      case MENU_ENUM_LABEL_VIDEO_DRIVER:
-         return "video_driver";
-      case MENU_ENUM_LABEL_VIDEO_FILTER:
-         return "video_filter";
-      case MENU_ENUM_LABEL_VIDEO_FILTER_DIR:
-         return "video_filter_dir";
-      case MENU_ENUM_LABEL_VIDEO_FILTER_FLICKER:
-         return "video_filter_flicker";
-      case MENU_ENUM_LABEL_VIDEO_FONT_ENABLE:
-         return "video_font_enable";
-      case MENU_ENUM_LABEL_VIDEO_FONT_PATH:
-         return "video_font_path";
-      case MENU_ENUM_LABEL_VIDEO_FONT_SIZE:
-         return "video_font_size";
-      case MENU_ENUM_LABEL_VIDEO_FORCE_ASPECT:
-         return "video_force_aspect";
-      case MENU_ENUM_LABEL_VIDEO_FORCE_SRGB_DISABLE:
-         return "video_force_srgb_disable";
-      case MENU_ENUM_LABEL_VIDEO_FRAME_DELAY:
-         return "video_frame_delay";
-      case MENU_ENUM_LABEL_VIDEO_FULLSCREEN:
-         return "video_fullscreen";
-      case MENU_ENUM_LABEL_VIDEO_GAMMA:
-         return "video_gamma";
-      case MENU_ENUM_LABEL_VIDEO_GPU_RECORD:
-         return "video_gpu_record";
-      case MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT:
-         return "video_gpu_screenshot";
-      case MENU_ENUM_LABEL_VIDEO_HARD_SYNC:
-         return "video_hard_sync";
-      case MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES:
-         return "video_hard_sync_frames";
-      case MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
-         return "video_max_swapchain_images";
-      case MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X:
-         return "video_message_pos_x";
-      case MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_Y:
-         return "video_message_pos_y";
-      case MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX:
-         return "video_monitor_index";
-      case MENU_ENUM_LABEL_VIDEO_POST_FILTER_RECORD:
-         return "video_post_filter_record";
-      case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE:
-         return "video_refresh_rate";
-      case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
-         return "video_refresh_rate_auto";
-      case MENU_ENUM_LABEL_VIDEO_ROTATION:
-         return "video_rotation";
-      case MENU_ENUM_LABEL_VIDEO_SCALE:
-         return "video_scale";
-      case MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER:
-         return "video_scale_integer";
-      case MENU_ENUM_LABEL_VIDEO_SETTINGS:
-         return "video_settings";
-      case MENU_ENUM_LABEL_VIDEO_SHADER_DIR:
-         return "video_shader_dir";
-      case MENU_ENUM_LABEL_VIDEO_SHADER_FILTER_PASS:
-         return "video_shader_filter_pass";
-      case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:
-         return "video_shader_num_passes";
-      case MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS:
-         return "video_shader_parameters";
-      case MENU_ENUM_LABEL_VIDEO_SHADER_PASS:
-         return "video_shader_pass";
-      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
-         return "video_shader_preset";
-      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
-         return "video_shader_preset_parameters";
-      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:
-         return "video_shader_preset_save_as";
-      case MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS:
-         return "video_shader_scale_pass";
-      case MENU_ENUM_LABEL_VIDEO_SHARED_CONTEXT:
-         return "video_shared_context";
-      case MENU_ENUM_LABEL_VIDEO_SMOOTH:
-         return "video_smooth";
-      case MENU_ENUM_LABEL_VIDEO_SOFT_FILTER:
-         return "soft_filter";
-      case MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL:
-         return "video_swap_interval";
-      case MENU_ENUM_LABEL_VIDEO_TAB:
-         return "video_tab";
-      case MENU_ENUM_LABEL_VIDEO_THREADED:
-         return "video_threaded";
-      case MENU_ENUM_LABEL_VIDEO_VFILTER:
-         return "video_vfilter";
-      case MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT:
-         return "video_viewport_custom_height";
-      case MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH:
-         return "video_viewport_custom_width";
-      case MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_X:
-         return "video_viewport_custom_x";
-      case MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_Y:
-         return "video_viewport_custom_y";
-      case MENU_ENUM_LABEL_VIDEO_VI_WIDTH:
-         return "video_vi_width";
-      case MENU_ENUM_LABEL_VIDEO_VSYNC:
-         return "video_vsync";
-      case MENU_ENUM_LABEL_VIDEO_WINDOWED_FULLSCREEN:
-         return "video_windowed_fullscreen";
-      case MENU_ENUM_LABEL_WIFI_DRIVER:
-         return "wifi_driver";
-      case MENU_ENUM_LABEL_WIFI_SETTINGS:
-         return "wifi_settings";
-      case MENU_ENUM_LABEL_XMB_ALPHA_FACTOR:
-         return "xmb_alpha_factor";
-      case MENU_ENUM_LABEL_XMB_FONT:
-         return "xmb_font";
-      case MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME:
-         return "xmb_menu_color_theme";
-      case MENU_ENUM_LABEL_XMB_RIBBON_ENABLE:
-         return "xmb_ribbon_enable";
-      case MENU_ENUM_LABEL_XMB_SCALE_FACTOR:
-         return "xmb_scale_factor";
-      case MENU_ENUM_LABEL_XMB_SHADOWS_ENABLE:
-         return "xmb_shadows_enable";
-      case MENU_ENUM_LABEL_XMB_SHOW_HISTORY:
-         return "xmb_show_history";
-      case MENU_ENUM_LABEL_XMB_SHOW_IMAGES:
-         return "xmb_show_images";
-      case MENU_ENUM_LABEL_XMB_SHOW_MUSIC:
-         return "xmb_show_music";
-      case MENU_ENUM_LABEL_XMB_SHOW_SETTINGS:
-         return "xmb_show_settings";
-      case MENU_ENUM_LABEL_XMB_SHOW_VIDEO:
-         return "xmb_show_video";
-      case MENU_ENUM_LABEL_XMB_THEME:
-         return "xmb_theme";
       case MENU_ENUM_SUBLABEL_MENU_SETTINGS:
          return "Điều chỉnh thiết lập related to the appearance of the menu screen.";
-      case MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC:
-         return "Hard-synchronize the CPU and GPU. Reduces latency at the cost of performance.";
-      case MENU_ENUM_SUBLABEL_VIDEO_THREADED:
-         return "Improves performance at the cost of latency and more video stuttering. Use only if you cannot obtain full speed otherwise.";
       case MSG_AUDIO_VOLUME:
          return "Âm lượng âm thanh";
       case MSG_AUTODETECT:
          return "Tự động phát hiện";
       case MSG_AUTOLOADING_SAVESTATE_FROM:
          return "Đang tự đông tải savestate từ";
-      case MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT:
-         return "bringing_up_command_interface_at_port";
       case MSG_CONNECTING_TO_NETPLAY_HOST:
          return "Đang kết nối vào máy chủ netplay";
       case MSG_CONNECTING_TO_PORT:
          return "Đang kết nối vào port";
       case MSG_CONNECTION_SLOT:
          return "Khe kết nối";
-      case MSG_CONNECT_DEVICE_FROM_A_VALID_PORT:
-         return "connect_device_from_a_valid_port";
-      case MSG_DEVICE_CONFIGURED_IN_PORT:
-         return "configured in port";
-      case MSG_DEVICE_DISCONNECTED_FROM_PORT:
-        return "Device disconnected from port";
-      case MSG_DEVICE_NOT_CONFIGURED:
-         return "not configured";
-      case MSG_DISCONNECTING_DEVICE_FROM_PORT:
-         return "disconnecting_device_from_port";
-      case MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT:
-         return "disconnect_device_from_a_valid_port";
       case MSG_FAILED:
          return "Bị Lỗi";
-      case MSG_FAILED_TO_SET_DISK:
-         return "Failed to set disk";
-      case MSG_FAILED_TO_START_AUDIO_DRIVER:
-         return "failed_to_start_audio_driver";
       case MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER:
          return "Ttệp đã tồn tại. Đang lưu vào backup buffer";
-      case MSG_FOUND_LAST_STATE_SLOT:
-         return "found_last_state_slot";
       case MSG_GOT_CONNECTION_FROM:
-         return "Được kết nối từ";
+         return "Được kết nối từ: \"%s\"";
       case MSG_NETPLAY_USERS_HAS_FLIPPED:
          return "Người dùng Netplay đã flipped";
-      case MSG_SETTING_DISK_IN_TRAY:
-         return "Setting disk in tray";
       case MSG_SUCCEEDED:
          return "Đã thành công";
       case MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED:
          return "Netplay không biết lệnh nhận được";
       case MSG_WAITING_FOR_CLIENT:
          return "Đang đợi máy khách  ...";
-      default:
-         break;
-   }
-
-   return "null";
-}
-#endif
-
-const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
-{
-#ifdef HAVE_MENU
-   const char *ret = menu_hash_to_str_vn_label_enum(msg);
-
-   if (ret && !string_is_equal(ret, "null"))
-      return ret;
-#endif
-
-   switch (msg)
-   {
 	  case MSG_SHADER:
          return "Shader";
       case  MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY:
@@ -3184,9 +2082,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS:
          return "Configuration";
       case MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
-         return "Save Configuration On Exit";
-      case MENU_ENUM_LABEL_VALUE_CONFIRM_ON_EXIT:
-         return "Ask For Confirmation On Exit";
+         return "Save Configuration on Exit";
       case MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST:
          return "Collections";
       case MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY:
@@ -3217,10 +2113,8 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Core label";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME:
          return "Core name";
-      case MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NOTES:
-         return "Core notes";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE:
-         return "Firmware";
+         return "Firmware(s)";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES:
          return "License(s)";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS:
@@ -3308,9 +2202,9 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
 /* FIXME? Translate 'Load Dummy on Core Shutdown' */
          return "Load Dummy on Core Shutdown";
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER:
-         return "Dynamic Wallpaper";
+         return "Dynamic Background";
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
-         return "Dynamic Wallpapers Dir";
+         return "Dynamic Background Dir";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE:
          return "Enable";
       case MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR:
@@ -3330,7 +2224,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS:
          return "Frontend Counters";
       case MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS:
-         return "Tải Content-specific core options automatically";
+         return "Tải Content-Specific Core Options Automatically";
       case MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE:
          return "Create game-options file";
       case MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE:
@@ -3395,8 +2289,6 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Autoconfig Enable";
       case MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD:
          return "Input Axis Threshold";
-      case MENU_ENUM_LABEL_VALUE_INPUT_BACK_AS_MENU_ENUM_TOGGLE_ENABLE:
-         return "Back As Menu Toggle Enable";
       case MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL:
          return "Bind All";
       case MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL:
@@ -3561,10 +2453,8 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Input Device Autoconfig Dir";
       case MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER:
          return "Joypad Driver";
-      case MENU_ENUM_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET:
-         return "Keyboard Overlay Preset";
       case MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES:
-         return "Lakka Services";
+         return "Services";
       case MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED:
          return "Tiếng Trung Quốc (Chữ Hán giản thể)";
       case MENU_ENUM_LABEL_VALUE_LANG_CHINESE_TRADITIONAL:
@@ -3658,9 +2548,9 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_MENU_SETTINGS:
          return "Menu";
       case MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER:
-         return "Menu Wallpaper";
+         return "Background";
       case MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY:
-         return "Wallpaper opacity";
+         return "Background opacity";
       case MENU_ENUM_LABEL_VALUE_MISSING:
          return "Missing";
       case MENU_ENUM_LABEL_VALUE_MORE:
@@ -3872,15 +2762,15 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS:
          return "Recording";
       case MENU_ENUM_LABEL_VALUE_RECORD_CONFIG:
-         return "Record Config";
+         return "Load Recording Config...";
       case MENU_ENUM_LABEL_VALUE_RECORD_DRIVER:
          return "Record Driver";
       case MENU_ENUM_LABEL_VALUE_RECORD_ENABLE:
-         return "Record Enable";
+         return "Enabel Recording";
       case MENU_ENUM_LABEL_VALUE_RECORD_PATH:
-         return "Output File";
+         return "Save Recording Output as...";
       case MENU_ENUM_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY:
-         return "Use Output Dir";
+         return "Save Recordings in Output Dir";
       case MENU_ENUM_LABEL_VALUE_REMAP_FILE:
          return "Remap File";
       case MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD:
@@ -4252,7 +3142,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA:
          return "Video Gamma";
       case MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD:
-         return "GPU Record Enable";
+         return "Use GPU Recording";
       case MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT:
          return "GPU Screenshot Enable";
       case MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC:
@@ -4268,7 +3158,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX:
          return "Monitor Index";
       case MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD:
-         return "Post filter record Enable";
+         return "Enable Post Filter Recording";
       case MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE:
          return "Refresh Rate";
       case MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO:
@@ -4340,8 +3230,8 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "FlatUI";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME:
          return "Monochrome";
-      case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME_JAGGED:
-         return "Monochrome Jagged";
+      case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_SYSTEMATIC:
+         return "Systematic";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_PIXEL:
          return "Pixel";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROACTIVE:
@@ -4398,6 +3288,10 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Bật/tắt bluetooth.";
       case MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT:
          return "Lưu cấu hình khi thoát retroarch.";
+      case MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS:
+         return "Change default settings for configuration files.";
+      case MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST:
+         return "Manage and create configuration files.";
       case MENU_ENUM_SUBLABEL_CPU_CORES:
          return "Số lượng lõi của CPU.";
       case MENU_ENUM_SUBLABEL_FPS_SHOW:
@@ -4654,8 +3548,10 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Preset Filename";
       case MSG_INTERFACE:
          return "Interface";
-      case MSG_INTERNAL_MEMORY:
-         return "Internal Memory";
+      case MSG_INTERNAL_STORAGE:
+         return "Internal Storage";
+      case MSG_REMOVABLE_STORAGE:
+         return "Removable Storage";
       case MSG_INVALID_NICKNAME_SIZE:
          return "Invalid nickname size.";
       case MSG_IN_BYTES:

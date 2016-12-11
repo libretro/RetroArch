@@ -65,7 +65,7 @@ enum xmb_icon_theme
    XMB_ICON_THEME_RETROACTIVE,
    XMB_ICON_THEME_PIXEL,
    XMB_ICON_THEME_NEOACTIVE,
-   XMB_ICON_THEME_MONOCHROME_JAGGED,
+   XMB_ICON_THEME_SYSTEMATIC,
    XMB_ICON_THEME_CUSTOM
 };
 
@@ -74,6 +74,8 @@ enum xmb_shader_pipeline
    XMB_SHADER_PIPELINE_WALLPAPER = 0,
    XMB_SHADER_PIPELINE_SIMPLE_RIBBON,
    XMB_SHADER_PIPELINE_RIBBON,
+   XMB_SHADER_PIPELINE_SIMPLE_SNOW,
+   XMB_SHADER_PIPELINE_SNOW,
    XMB_SHADER_PIPELINE_LAST
 };
 
@@ -91,7 +93,8 @@ enum menu_display_driver_type
    MENU_VIDEO_DRIVER_VULKAN,
    MENU_VIDEO_DRIVER_DIRECT3D,
    MENU_VIDEO_DRIVER_VITA2D,
-   MENU_VIDEO_DRIVER_CTR
+   MENU_VIDEO_DRIVER_CTR,
+   MENU_VIDEO_DRIVER_CACA
 };
 
 typedef struct menu_display_ctx_clearcolor
@@ -247,6 +250,9 @@ void menu_display_handle_wallpaper_upload(void *task_data,
 void menu_display_handle_thumbnail_upload(void *task_data,
       void *user_data, const char *err);
 
+void menu_display_handle_savestate_thumbnail_upload(void *task_data,
+      void *user_data, const char *err);
+
 void menu_display_push_quad(
       unsigned width, unsigned height,
       const float *colors, int x1, int y1,
@@ -282,6 +288,7 @@ extern menu_display_ctx_driver_t menu_display_ctx_vulkan;
 extern menu_display_ctx_driver_t menu_display_ctx_d3d;
 extern menu_display_ctx_driver_t menu_display_ctx_vita2d;
 extern menu_display_ctx_driver_t menu_display_ctx_ctr;
+extern menu_display_ctx_driver_t menu_display_ctx_caca;
 extern menu_display_ctx_driver_t menu_display_ctx_null;
 
 RETRO_END_DECLS

@@ -81,7 +81,7 @@ void d3d_lock_rectangle_clear(LPDIRECT3DTEXTURE tex,
 void d3d_unlock_rectangle(LPDIRECT3DTEXTURE tex);
 
 void d3d_set_texture(LPDIRECT3DDEVICE dev, unsigned sampler,
-      LPDIRECT3DTEXTURE tex);
+      void *tex_data);
 
 HRESULT d3d_set_vertex_shader(LPDIRECT3DDEVICE dev, unsigned index,
       void *data);

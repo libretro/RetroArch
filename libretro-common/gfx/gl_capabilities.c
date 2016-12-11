@@ -48,7 +48,7 @@ void gl_query_core_context_unset(void)
    gl_core_context = false;
 }
 
-static bool gl_query_extension(const char *ext)
+bool gl_query_extension(const char *ext)
 {
    bool ret = false;
 
@@ -120,6 +120,7 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
       major = minor = 0;
 
    (void)vendor;
+   (void)renderer;
 
    switch (enum_idx)
    {
@@ -195,7 +196,8 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
       case GL_CAPS_ARGB8:
 #ifdef HAVE_OPENGLES
          if (gl_query_extension("OES_rgb8_rgba8")
-               || gl_query_extension("ARM_argb8"))
+               || gl_query_extension("ARM_rgba8")
+                  || major >= 3)
             return true;
 #else
          /* TODO/FIXME - implement this for non-GLES? */
@@ -302,6 +304,15 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
             return true;
 #else
          return true;
+#endif
+         break;
+      case GL_CAPS_TEX_STORAGE:
+#ifdef HAVE_OPENGLES
+         if (major >= 3)
+            return true;
+#else
+         if (gl_query_extension("ARB_texture_storage"))
+            return true;
 #endif
          break;
       case GL_CAPS_NONE:

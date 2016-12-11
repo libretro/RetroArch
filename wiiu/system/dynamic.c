@@ -1,18 +1,19 @@
 #include <coreinit/dynload.h>
 #include <coreinit/debug.h>
 
-#define EXPORT(name) void* addr_##name
-#define EXPORT_BEGIN(lib)
-#define EXPORT_END()
-#include "exports/all.h"
+#define IMPORT(name) void* addr_##name
+#define IMPORT_BEGIN(lib)
+#define IMPORT_END()
+#include "imports.h"
 
-#undef EXPORT
-#undef EXPORT_BEGIN
-//#undef EXPORT_END
+#undef IMPORT
+#undef IMPORT_BEGIN
+#undef IMPORT_END
 
-#define EXPORT(name)       do{if(OSDynLoad_FindExport(handle, 0, #name, &addr_##name) < 0)OSFatal("Function " # name " is NULL");} while(0)
-#define EXPORT_BEGIN(lib)  OSDynLoad_Acquire(#lib, &handle)
-//#define EXPORT_END()       OSDynLoad_Release(handle)
+#define IMPORT(name)       do{if(OSDynLoad_FindExport(handle, 0, #name, &addr_##name) < 0)OSFatal("Function " # name " is NULL");} while(0)
+#define IMPORT_BEGIN(lib)  OSDynLoad_Acquire(#lib ".rpl", &handle)
+//#define IMPORT_END()       OSDynLoad_Release(handle)
+#define IMPORT_END()
 
 void InitFunctionPointers(void)
 {
@@ -20,6 +21,6 @@ void InitFunctionPointers(void)
    addr_OSDynLoad_Acquire = *(void**)0x00801500;
    addr_OSDynLoad_FindExport = *(void**)0x00801504;
 
-#include "exports/all.h"
+#include "imports.h"
 
 }

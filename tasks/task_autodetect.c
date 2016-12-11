@@ -18,23 +18,28 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+#include <compat/strl.h>
 #include <lists/dir_list.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
 
-#include "input_config.h"
-#include "input_autodetect.h"
+#include "../input/input_config.h"
 
 #include "../configuration.h"
 #include "../file_path_special.h"
 #include "../list_special.h"
-#include "../msg_hash.h"
-#include "../runloop.h"
 #include "../verbosity.h"
+
+#include "tasks_internal.h"
+
+typedef struct autoconfig_disconnect
+{
+   char msg[255];
+} autoconfig_disconnect_t;
 
 /* Adds an index for devices with the same name,
  * so they can be identified in the GUI. */
-static void input_reindex_devices(void)
+static void input_autoconfigure_joypad_reindex_devices(void)
 {
    unsigned i;
    settings_t      *settings = config_get_ptr();
@@ -71,17 +76,17 @@ static void input_autoconfigure_joypad_conf(config_file_t *conf,
    }
 }
 
-static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
+static int input_autoconfigure_joypad_try_from_conf(config_file_t *conf,
       autoconfig_params_t *params)
 {
    char ident[256];
    char input_driver[32];
-   int tmp_int                        = 0;
-   int                      input_vid = 0;
-   int                      input_pid = 0;
-   int                          score = 0;
+   int tmp_int                = 0;
+   int              input_vid = 0;
+   int              input_pid = 0;
+   int                  score = 0;
 
-   ident[0] = input_driver[0]         = '\0';
+   ident[0] = input_driver[0] = '\0';
 
    config_get_array(conf, "input_device", ident, sizeof(ident));
    config_get_array(conf, "input_driver", input_driver, sizeof(input_driver));
@@ -95,10 +100,10 @@ static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
    /* Check for VID/PID */
    if (     (params->vid == input_vid)
          && (params->pid == input_pid)
-         && params->vid != 0
-         && params->pid != 0
-         && input_vid   != 0
-         && input_pid   != 0)
+         && (params->vid != 0)
+         && (params->pid != 0)
+         && (input_vid   != 0)
+         && (input_pid   != 0))
       score += 3;
 
    /* Check for name match */
@@ -106,8 +111,8 @@ static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
       score += 2;
    else
    {
-      if (!string_is_empty(ident) 
-            && string_is_equal(params->name, ident))
+      if (     !string_is_empty(ident) 
+            &&  string_is_equal(params->name, ident))
          score += 1;
    }
 
@@ -115,13 +120,12 @@ static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
 }
 
 static void input_autoconfigure_joypad_add(config_file_t *conf,
-      autoconfig_params_t *params)
+      autoconfig_params_t *params, retro_task_t *task)
 {
    char msg[128];
    char display_name[128];
    char device_type[128];
    bool block_osd_spam                = false;
-   static bool remote_is_bound        = false;
    settings_t      *settings          = config_get_ptr();
 
    msg[0] = display_name[0] = device_type[0] = '\0';
@@ -137,7 +141,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    /* This will be the case if input driver is reinitialized.
     * No reason to spam autoconfigure messages every time. */
    block_osd_spam = settings->input.autoconfigured[params->idx]
-      && *params->name;
+      && !string_is_empty(params->name);
 
    settings->input.autoconfigured[params->idx] = true;
    input_autoconfigure_joypad_conf(conf,
@@ -145,11 +149,13 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
 
    if (string_is_equal(device_type, "remote"))
    {
+      static bool remote_is_bound        = false;
+
       snprintf(msg, sizeof(msg), "%s configured.",
             string_is_empty(display_name) ? params->name : display_name);
 
       if(!remote_is_bound)
-         runloop_msg_queue_push(msg, 2, 60, false);
+         task->title = strdup(msg);
       remote_is_bound = true;
    }
    else
@@ -160,19 +166,19 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
             params->idx);
 
       if (!block_osd_spam)
-          runloop_msg_queue_push(msg, 2, 60, false);
+         task->title = strdup(msg);
    }
-   input_reindex_devices();
+   input_autoconfigure_joypad_reindex_devices();
 }
 
 static int input_autoconfigure_joypad_from_conf(
-      config_file_t *conf, autoconfig_params_t *params)
+      config_file_t *conf, autoconfig_params_t *params, retro_task_t *task)
 {
-   int ret = input_try_autoconfigure_joypad_from_conf(conf,
+   int ret = input_autoconfigure_joypad_try_from_conf(conf,
          params);
 
    if (ret)
-      input_autoconfigure_joypad_add(conf, params);
+      input_autoconfigure_joypad_add(conf, params, task);
 
    config_file_free(conf);
 
@@ -180,7 +186,7 @@ static int input_autoconfigure_joypad_from_conf(
 }
 
 static bool input_autoconfigure_joypad_from_conf_dir(
-      autoconfig_params_t *params)
+      autoconfig_params_t *params, retro_task_t *task)
 {
    size_t i;
    char path[PATH_MAX_LENGTH];
@@ -216,7 +222,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
       conf = config_file_new(list->elems[i].data);
 
       if (conf)
-         ret  = input_try_autoconfigure_joypad_from_conf(conf, params);
+         ret  = input_autoconfigure_joypad_try_from_conf(conf, params);
 
       if(ret >= current_best)
       {
@@ -239,7 +245,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
          config_get_config_path(conf, conf_path, sizeof(conf_path));
 
          RARCH_LOG("Autodetect: selected configuration: %s\n", conf_path);
-         input_autoconfigure_joypad_add(conf, params);
+         input_autoconfigure_joypad_add(conf, params, task);
          config_file_free(conf);
          ret = 1;
       }
@@ -255,7 +261,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
 }
 
 static bool input_autoconfigure_joypad_from_conf_internal(
-      autoconfig_params_t *params)
+      autoconfig_params_t *params, retro_task_t *task)
 {
    size_t i;
    settings_t *settings = config_get_ptr();
@@ -265,7 +271,7 @@ static bool input_autoconfigure_joypad_from_conf_internal(
    {
       config_file_t *conf = config_file_new_from_string(
             input_builtin_autoconfs[i]);
-      if (conf && input_autoconfigure_joypad_from_conf(conf, params))
+      if (conf && input_autoconfigure_joypad_from_conf(conf, params, task))
          return true;
    }
 
@@ -274,7 +280,7 @@ static bool input_autoconfigure_joypad_from_conf_internal(
    return false;
 }
 
-static bool input_config_autoconfigure_joypad_init(autoconfig_params_t *params)
+static bool input_autoconfigure_joypad_init(autoconfig_params_t *params)
 {
    size_t i;
    settings_t *settings = config_get_ptr();
@@ -294,57 +300,108 @@ static bool input_config_autoconfigure_joypad_init(autoconfig_params_t *params)
    return true;
 }
 
-bool input_config_autoconfigure_joypad(autoconfig_params_t *params)
+static void input_autoconfigure_connect_handler(retro_task_t *task)
 {
-   char msg[255];
+   autoconfig_params_t *params = (autoconfig_params_t*)task->state;
 
-   msg[0] = '\0';
+   if (!params || !input_autoconfigure_joypad_init(params) || string_is_empty(params->name))
+   {
+      free(params);
+      task->finished = true;
+      return;
+   }
 
-   if (!input_config_autoconfigure_joypad_init(params))
-      goto error;
+   if (     !input_autoconfigure_joypad_from_conf_dir(params, task)
+         && !input_autoconfigure_joypad_from_conf_internal(params, task))
+   {
+      char msg[255];
 
-   if (!*params->name)
-      goto error;
+      msg[0] = '\0';
 
-   if (input_autoconfigure_joypad_from_conf_dir(params))
-      return true;
-   if (input_autoconfigure_joypad_from_conf_internal(params))
-      return true;
+      RARCH_LOG("Autodetect: no profiles found for %s (%d/%d).\n",
+            params->name, params->vid, params->pid);
 
-   RARCH_LOG("Autodetect: no profiles found for %s (%d/%d).\n",
-         params->name, params->vid, params->pid);
-   snprintf(msg, sizeof(msg), "%s (%ld/%ld) %s.",
-         params->name, (long)params->vid, (long)params->pid,
-         msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED));
-   runloop_msg_queue_push(msg, 2, 60, false);
+      snprintf(msg, sizeof(msg), "%s (%ld/%ld) %s.",
+            params->name, (long)params->vid, (long)params->pid,
+            msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED));
+      task->title = strdup(msg);
+   }
 
-error:
-   return false;
+   free(params);
+   task->finished = true;
 }
 
-const struct retro_keybind *input_get_auto_bind(unsigned port, unsigned id)
+static void input_autoconfigure_disconnect_handler(retro_task_t *task)
 {
-   settings_t *settings = config_get_ptr();
-   unsigned joy_idx     = 0;
+   autoconfig_disconnect_t *params = (autoconfig_disconnect_t*)task->state;
 
-   if (settings)
-      joy_idx = settings->input.joypad_map[port];
+   task->title    = strdup(params->msg);
+   task->finished = true;
 
-   if (joy_idx < MAX_USERS)
-      return &settings->input.autoconf_binds[joy_idx][id];
-   return NULL;
+   RARCH_LOG("%s: %s\n", msg_hash_to_str(MSG_AUTODETECT), params->msg);
+
+   free(params);
 }
 
-void input_config_autoconfigure_disconnect(unsigned i, const char *ident)
+bool input_autoconfigure_disconnect(unsigned i, const char *ident)
 {
    char msg[255];
+   retro_task_t         *task     = (retro_task_t*)calloc(1, sizeof(*task));
+   autoconfig_disconnect_t *state = (autoconfig_disconnect_t*)calloc(1, sizeof(*state));
 
    msg[0] = '\0';
 
    snprintf(msg, sizeof(msg), "%s #%u (%s).", 
          msg_hash_to_str(MSG_DEVICE_DISCONNECTED_FROM_PORT),
          i, ident);
-   runloop_msg_queue_push(msg, 2, 60, false);
-   RARCH_LOG("%s: %s\n", msg_hash_to_str(MSG_AUTODETECT), 
-         msg);
+
+   if (!task || !state)
+      goto error;
+
+   strlcpy(state->msg, msg, sizeof(state->msg));
+
+   task->state   = state;
+   task->handler = input_autoconfigure_disconnect_handler;
+
+   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+
+   return true;
+
+error:
+   if (state)
+      free(state);
+   if (task)
+      free(task);
+
+   return false;
+}
+
+bool input_autoconfigure_connect(autoconfig_params_t *params)
+{
+   retro_task_t         *task = (retro_task_t*)calloc(1, sizeof(*task));
+   autoconfig_params_t *state = (autoconfig_params_t*)calloc(1, sizeof(*state));
+
+   if (!task || !state)
+      goto error;
+
+   strlcpy(state->name, params->name, sizeof(state->name));
+
+   state->idx    = params->idx;
+   state->vid    = params->vid;
+   state->pid    = params->pid;
+
+   task->state   = state;
+   task->handler = input_autoconfigure_connect_handler;
+
+   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+
+   return true;
+
+error:
+   if (state)
+      free(state);
+   if (task)
+      free(task);
+
+   return false;
 }

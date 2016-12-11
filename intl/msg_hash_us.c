@@ -146,6 +146,13 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "the window to allow relative mouse input to \n"
                   "work better.");
             break;
+         case RARCH_GAME_FOCUS_TOGGLE:
+             snprintf(s, len,
+                   "Toggles game focus.\n"
+                   " \n"
+                   "When a game has focus, RetroArch will both disable \n"
+                   "hotkeys and keep/warp the mouse pointer inside the window.");
+             break;
          case RARCH_MENU_TOGGLE:
             snprintf(s, len, "Toggles menu.");
             break;
@@ -342,7 +349,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN:
          snprintf(s, len,
-               "Some libretro cores might have \n"
+               "Some cores might have \n"
                "a shutdown feature. \n"
                " \n"
                "If this option is left disabled, \n"
@@ -354,6 +361,16 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                "dummy core instead so that we remain \n"
                "inside the menu and RetroArch won't \n"
                "shutdown.");
+         break;
+      case MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE:
+         snprintf(s, len,
+               "Some cores might need \n"
+               "firmware or bios files. \n"
+               " \n"
+               "If this option is disabled, \n"
+               "it will try to load even if such \n"
+               "firmware is missing. \n"
+               "down. \n");
          break;
       case MENU_ENUM_LABEL_PARENT_DIRECTORY:
          snprintf(s, len,
@@ -574,10 +591,6 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Input bind timer timeout (in seconds). \n"
                "Amount of seconds to wait until proceeding \n"
                "to the next bind.");
-         break;
-      case MENU_ENUM_LABEL_KEYBOARD_OVERLAY_PRESET:
-         snprintf(s, len,
-               "Path to onscreen keyboard overlay.");
          break;
       case MENU_ENUM_LABEL_OVERLAY_SCALE:
          snprintf(s, len,
@@ -945,6 +958,11 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                "shaders."
                );
          break;
+      case MENU_ENUM_LABEL_CONFIGURATION_SETTINGS:
+         snprintf(s, len,
+               "Determines how configuration files \n"
+               "are loaded and prioritized.");
+         break;
       case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
          snprintf(s, len,
                "Saves config to disk on exit.\n"
@@ -1059,6 +1077,13 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                "mouse, and keeps the mouse pointer inside \n"
                "the window to allow relative mouse input to \n"
                "work better.");
+         break;
+      case MENU_ENUM_LABEL_GAME_FOCUS_TOGGLE:
+         snprintf(s, len,
+               "Toggles game focus.\n"
+               " \n"
+               "When a game has focus, RetroArch will both disable \n"
+               "hotkeys and keep/warp the mouse pointer inside the window.");
          break;
       case MENU_ENUM_LABEL_DISK_NEXT:
          snprintf(s, len,
@@ -1448,7 +1473,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Dynamic Wallpapers Directory. \n"
                " \n"
-               " The place to store wallpapers that will \n"
+               " The place to store backgrounds that will \n"
                "be loaded dynamically by the menu depending \n"
                "on context.");
          break;
@@ -1500,7 +1525,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len, "Enable touch input inside the menu.");
          break;
       case MENU_ENUM_LABEL_MENU_WALLPAPER:
-         snprintf(s, len, "Path to an image to set as menu wallpaper.");
+         snprintf(s, len, "Path to an image to set as the background.");
          break;
       case MENU_ENUM_LABEL_NAVIGATION_WRAPAROUND:
          snprintf(s, len,
@@ -1548,6 +1573,12 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                "no checks. This value is only used on the \n"
                "netplay host. \n");
          break;
+      case MENU_ENUM_LABEL_NETPLAY_NAT_TRAVERSAL:
+         snprintf(s, len,
+               "When hosting, attempt to listen for\n"
+               "connections from the public internet, using\n"
+               "UPnP or similar technologies to escape LANs. \n");
+         break;
       case MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
          snprintf(s, len,
                "Maximum amount of swapchain images. This \n"
@@ -1586,13 +1617,17 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Disconnects an active Netplay connection.");
          break;
+      case MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS:
+         snprintf(s, len,
+               "Search for and connect to netplay hosts on the local network.");
+         break;
       case MENU_ENUM_LABEL_NETPLAY_SETTINGS:
          snprintf(s, len,
                "Setting related to Netplay.");
          break;
       case MENU_ENUM_LABEL_DYNAMIC_WALLPAPER:
          snprintf(s, len,
-               "Dynamically load a new wallpaper \n"
+               "Dynamically load a new background \n"
                "depending on context.");
          break;
       case MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL:
@@ -1681,7 +1716,9 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                "3 - Press Start + Select simultaneously.");
          break;
       case MENU_ENUM_LABEL_INPUT_ALL_USERS_CONTROL_MENU:
-         snprintf(s, len, "Allow any RetroPad to control the menu.");
+         snprintf(s, len, "Allows any user to control the menu. \n"
+               " \n"
+               "When disabled, only user 1 can control the menu.");
          break;
       case MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE:
          snprintf(s, len,
@@ -1868,8 +1905,6 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
    return 0;
 }
 
-#define MSG_HASH(Id, str) case Id: return str;
-
 #ifdef HAVE_MENU
 static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
 {
@@ -1911,11 +1946,12 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
       default:
 #if 0
          RARCH_LOG("Unimplemented: [%d]\n", msg);
+         {
+            RARCH_LOG("[%d] : %s\n", msg - 1, msg_hash_to_str(((enum msg_hash_enums)(msg - 1))));
+         }
 #endif
          break;
    }
 
    return "null";
 }
-
-#undef MSG_HASH

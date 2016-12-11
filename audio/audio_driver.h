@@ -94,8 +94,6 @@ void audio_driver_set_active(void);
 
 void audio_driver_unset_active(void);
 
-bool audio_driver_is_active(void);
-
 void audio_driver_destroy(void);
 
 void audio_driver_deinit_resampler(void);

@@ -19,7 +19,6 @@
 #include "../../config.h"
 #endif
 
-#include "../../config.def.h"
 #include "../../retroarch.h"
 #include "../../gfx/font_driver.h"
 #include "../../gfx/video_context_driver.h"
@@ -86,11 +85,11 @@ static void menu_display_gl_blend_begin(void)
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-   shader_info.data = NULL;
-   shader_info.idx  = VIDEO_SHADER_STOCK_BLEND;
+   shader_info.data       = NULL;
+   shader_info.idx        = VIDEO_SHADER_STOCK_BLEND;
    shader_info.set_active = true;
 
-   video_shader_driver_use(&shader_info);
+   video_shader_driver_use(shader_info);
 }
 
 static void menu_display_gl_blend_end(void)
@@ -141,13 +140,13 @@ static void menu_display_gl_draw(void *data)
    coords.handle_data = gl;
    coords.data        = draw->coords;
    
-   video_shader_driver_set_coords(&coords);
+   video_shader_driver_set_coords(coords);
 
    mvp.data   = gl;
    mvp.matrix = draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data 
       : (math_matrix_4x4*)menu_display_gl_get_default_mvp();
 
-   video_shader_driver_set_mvp(&mvp);
+   video_shader_driver_set_mvp(mvp);
 
    glDrawArrays(menu_display_prim_to_gl_enum(
             draw->prim_type), 0, draw->coords->vertices);
@@ -169,7 +168,9 @@ static void menu_display_gl_draw_pipeline(void *data)
    switch (draw->pipeline.id)
    {
       case VIDEO_SHADER_MENU:
-      case VIDEO_SHADER_MENU_SEC:
+      case VIDEO_SHADER_MENU_2:
+      case VIDEO_SHADER_MENU_3:
+      case VIDEO_SHADER_MENU_4:
          {
             static float t                    = 0;
             video_shader_ctx_info_t shader_info;
@@ -179,7 +180,7 @@ static void menu_display_gl_draw_pipeline(void *data)
             shader_info.idx        = draw->pipeline.id;
             shader_info.set_active = true;
 
-            video_shader_driver_use(&shader_info);
+            video_shader_driver_use(shader_info);
 
             t += 0.01;
 
@@ -192,7 +193,14 @@ static void menu_display_gl_draw_pipeline(void *data)
             uniform_param.lookup.ident      = "time";
             uniform_param.result.f.v0       = t;
 
-            video_shader_driver_set_parameter(&uniform_param);
+            video_shader_driver_set_parameter(uniform_param);            
+
+            uniform_param.type              = UNIFORM_2F;
+            uniform_param.lookup.ident      = "OutputSize";
+            uniform_param.result.f.v0       = draw->width;
+            uniform_param.result.f.v1       = draw->height;
+
+            video_shader_driver_set_parameter(uniform_param);
          }
          break;
    }

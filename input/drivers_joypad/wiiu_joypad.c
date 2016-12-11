@@ -22,9 +22,8 @@
 
 #include "../input_joypad_driver.h"
 #include "../input_driver.h"
-#include "../input_autodetect.h"
+#include "../../tasks/tasks_internal.h"
 #include "../../configuration.h"
-#include "../../runloop.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../command.h"
@@ -62,7 +61,8 @@ static void wiiu_joypad_autodetect_add(unsigned autoconf_pad)
    params.idx = autoconf_pad;
    strlcpy(params.name, wiiu_joypad_name(autoconf_pad), sizeof(params.name));
    strlcpy(params.driver, wiiu_joypad.ident, sizeof(params.driver));
-   input_config_autoconfigure_joypad(&params);
+
+   input_autoconfigure_connect(&params);
 }
 
 static bool wiiu_joypad_button(unsigned port_num, uint16_t key)

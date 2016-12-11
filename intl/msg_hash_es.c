@@ -1298,8 +1298,6 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
          return "¿Qué es un núcleo?";
       case MENU_ENUM_LABEL_VALUE_INFORMATION_LIST:
          return "Información";
-      case MENU_ENUM_LABEL_VALUE_INPUT_BACK_AS_MENU_ENUM_TOGGLE_ENABLE:
-         return "Permitir alternar Back como menú";
       case MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE:
          return "Activar asignar mando al teclado";
       case MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE:
@@ -1617,10 +1615,8 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
          return "Etiqueta del núcleo";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME:
          return "Nombre del núcleo";
-      case MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NOTES:
-         return "Notas del núcleo";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE:
-         return "Firmware";
+         return "Firmware(s)";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES:
          return "Licencia(s)";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS:
@@ -1762,8 +1758,6 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
          return "Carpeta de autoconfiguración de dispositivo de entrada";
       case MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER:
          return "Controlador de joypad";
-      case MENU_ENUM_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET:
-         return "Preajuste de teclado superpuesto";
       case MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED:
          return "Chino (Simplificado)";
       case MENU_ENUM_LABEL_VALUE_LANG_CHINESE_TRADITIONAL:

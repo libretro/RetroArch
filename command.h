@@ -204,6 +204,8 @@ enum event_command
    CMD_EVENT_RUMBLE_STOP,
    /* Toggles mouse grab. */
    CMD_EVENT_GRAB_MOUSE_TOGGLE,
+   /* Toggles game focus. */
+   CMD_EVENT_GAME_FOCUS_TOGGLE,
    /* Toggles fullscreen mode. */
    CMD_EVENT_FULLSCREEN_TOGGLE,
    CMD_EVENT_PERFCNT_REPORT_FRONTEND_LOG,

@@ -20,6 +20,7 @@
 #include <sys/mman.h>
 #include <errno.h>
 
+#include <compat/strl.h>
 #include <rthreads/rthreads.h>
 #include <string/stdstring.h>
 
@@ -377,7 +378,7 @@ static void drm_format_name(const unsigned int fourcc, char *format_str)
 	for (i = 0; i < ARRAY_SIZE(format_info); i++)
    {
 		if (format_info[i].format == fourcc)
-			strcpy(format_str, format_info[i].name);
+			strlcpy(format_str, format_info[i].name, sizeof(format_str));
 	}
 }
 
@@ -728,10 +729,13 @@ static void *drm_gfx_init(const video_info_t *video,
    if (!init_drm())
    {
       RARCH_ERR ("DRM: Failed to initialize DRM\n");
+      free(_drmvars);
       return NULL;
    }
    else
-      RARCH_LOG ("DRM: Init succesful.\n");
+   {
+      RARCH_LOG ("DRM: Init successful.\n");
+   }
 
    _drmvars->kms_width  = drm.current_mode->hdisplay;  
    _drmvars->kms_height = drm.current_mode->vdisplay;  

@@ -46,7 +46,6 @@
 #include "file_path_special.h"
 
 #include "paths.h"
-#include "runloop.h"
 #include "verbosity.h"
 
 void fill_pathname_expand_special(char *out_path,
@@ -208,6 +207,7 @@ void fill_pathname_application_path(char *s, size_t len)
 #endif
 #ifdef _WIN32
    DWORD ret;
+   wchar_t ws[PATH_MAX_LENGTH] = {0};
 #endif
 #ifdef __HAIKU__
    image_info info;
