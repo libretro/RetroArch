@@ -1860,7 +1860,15 @@ static int cheevos_login(retro_time_t *timeout)
       free((void*)json);
 
       if (!res)
+       {
+         char msg[256];
+         snprintf(msg, sizeof(msg), "RetroAchievements: logged in as \"%s\".",
+            username);
+         msg[sizeof(msg) - 1] = 0;
+         runloop_msg_queue_push(msg, 0, 3 * 60, false);
+         RARCH_LOG("CHEEVOS %s\n", msg);
          return 0;
+      }
    }
 
    runloop_msg_queue_push("Retro Achievements login error.",
