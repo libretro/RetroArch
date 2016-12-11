@@ -232,14 +232,16 @@ void gl_check_fbo_dimensions(gl_t *gl)
    /* Check if we have to recreate our FBO textures. */
    for (i = 0; i < gl->fbo_pass; i++)
    {
-      bool update_feedback = gl->fbo_feedback_enable 
-         && (unsigned)i == gl->fbo_feedback_pass;
       struct video_fbo_rect *fbo_rect = &gl->fbo_rect[i];
-      bool check_dimensions = 
-         (fbo_rect->max_img_width  > fbo_rect->width) ||
-         (fbo_rect->max_img_height > fbo_rect->height);
-      if (fbo_rect && check_dimensions)
-         gl_check_fbo_dimension(gl, i, update_feedback);
+      if (fbo_rect)
+      {
+         bool update_feedback = gl->fbo_feedback_enable 
+            && (unsigned)i == gl->fbo_feedback_pass;
+
+         if ((fbo_rect->max_img_width  > fbo_rect->width) ||
+             (fbo_rect->max_img_height > fbo_rect->height))
+               gl_check_fbo_dimension(gl, i, update_feedback);
+      }
    }
 }
 void gl_renderchain_render(gl_t *gl,
