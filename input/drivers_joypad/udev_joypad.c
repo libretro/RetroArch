@@ -561,10 +561,10 @@ error:
    return false;
 }
 
-static bool udev_joypad_hat(const struct udev_joypad *pad, uint16_t hat,
-      unsigned hat_dir)
+static bool udev_joypad_button_hat(const void *data, uint16_t joykey, unsigned hat_dir)
 {
-   unsigned h = GET_HAT(hat);
+   const struct udev_joypad *pad = (const struct udev_joypad*)data;
+   unsigned h                    = GET_HAT(joykey);
 
    if (h >= NUM_HATS)
       return false;
@@ -590,7 +590,7 @@ static bool udev_joypad_button(unsigned port, uint16_t joykey)
    unsigned hat_dir = GET_HAT_DIR(joykey);
 
    if (hat_dir)
-      return udev_joypad_hat(pad, joykey, hat_dir);
+      return udev_joypad_button_hat(pad, joykey, hat_dir);
    return joykey < UDEV_NUM_BUTTONS && BIT64_GET(pad->buttons, joykey);
 }
 
