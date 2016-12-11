@@ -1227,41 +1227,16 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Aggiorna le info dei core";
       case MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER:
          return "Usa Media Player interno";
-#if 0
       case MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU:
          return "Menú orizzontale";
-#else
-      case MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU:
-         return "Horizontal Menu";
-#endif
-#if 0
 	  case MENU_ENUM_LABEL_VALUE_SETTINGS_TAB:
          return "Settaggi scheda";
-#else
-      case MENU_ENUM_LABEL_VALUE_SETTINGS_TAB:
-         return "Settings tab";
-#endif
-#if 0
       case MENU_ENUM_LABEL_VALUE_HISTORY_TAB:
          return "Cronologia scheda";
-#else
-      case MENU_ENUM_LABEL_VALUE_HISTORY_TAB:
-         return "History tab";
-#endif
-#if 1
-      case MENU_ENUM_LABEL_VALUE_ADD_TAB:
-         return "Add tab";
-#else
       case MENU_ENUM_LABEL_VALUE_ADD_TAB:
          return "Aggiungi scheda";
-#endif
-#if 0
       case MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB:
          return "Scheda Playlist";
-#else
-      case MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB:
-         return "Playlists tab";
-#endif
       case MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND:
          return "Nessun settaggio trovato.";
       case MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS:
@@ -1392,10 +1367,6 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Directory Shader Video";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR:
          return "Directory Filtro Video";
-      case MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY:
-         return "Directory Overlay";
-      case MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY:
-         return "Directory Overlay OSK";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT:
          return "Giocatore 2 usa Controller 1 in rete";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE:
@@ -1532,10 +1503,6 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Intervallo di swap vsync";
 	  case MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES:
          return "Massimo swapchain di immagini";
-      case MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC:
-         return "VSync";
-      case MENU_ENUM_LABEL_VALUE_VIDEO_THREADED:
-         return "Threaded Video";
       case MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION:
          return "Rotazione";
       case MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT:
@@ -1816,8 +1783,6 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Opzioni di rimappatura degli input del core";
       case MENU_ENUM_LABEL_VALUE_THUMBNAILS:
          return "Miniature";
-	  case MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS:
-         return "Shaders";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS:
          return "Antemprima Parametri Shader";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PARAMETERS:
