@@ -204,6 +204,8 @@ typedef struct settings
       {
          unsigned menu_color_theme;
       } materialui;
+
+      bool unified_controls;
    } menu;
 #endif
 

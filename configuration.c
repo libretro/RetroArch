@@ -773,6 +773,7 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("video_vfilter",                 &settings->video.vfilter, true, video_vfilter, false);
 #endif
 #ifdef HAVE_MENU
+   SETTING_BOOL("menu_unified_controls",         &settings->menu.unified_controls, true, false, false);
 #ifdef HAVE_THREADS
    SETTING_BOOL("threaded_data_runloop_enable",  &settings->threaded_data_runloop_enable, true, threaded_data_runloop_enable, false);
 #endif

@@ -5377,6 +5377,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                PARSE_ONLY_BOOL, false);
 #endif
          ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_INPUT_UNIFIED_MENU_CONTROLS,
+               PARSE_ONLY_BOOL, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR,
                PARSE_ONLY_UINT, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,

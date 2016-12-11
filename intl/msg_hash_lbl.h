@@ -1151,3 +1151,5 @@ MSG_HASH(MENU_ENUM_LABEL_SHADER_PIPELINE_SIMPLE_SNOW,
       "shader_pipeline_simple_snow")
 MSG_HASH(MENU_ENUM_LABEL_SHADER_PIPELINE_SNOW,
       "shader_pipeline_snow")
+MSG_HASH(MENU_ENUM_LABEL_INPUT_UNIFIED_MENU_CONTROLS,
+      "unified_menu_controls")

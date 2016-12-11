@@ -1076,6 +1076,8 @@ static enum runloop_state runloop_check_state(
    return RUNLOOP_STATE_ITERATE;
 }
 
+#define runloop_menu_unified_controls_pressed() (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL) && settings->menu.unified_controls)
+
 /**
  * runloop_iterate:
  *
@@ -1090,15 +1092,19 @@ int runloop_iterate(unsigned *sleep_ms)
    unsigned i;
    retro_time_t current, target, to_sleep_ms;
    uint64_t trigger_input                       = 0;
+   uint64_t current_input                       = 0;
    static uint64_t last_input                   = 0;
    settings_t *settings                         = config_get_ptr();
    uint64_t old_input                           = last_input;
-   uint64_t current_input                       = 
+
 #ifdef HAVE_MENU
-      menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL) ? 
-      input_menu_keys_pressed(old_input, &last_input, &trigger_input, runloop_paused) : 
+   if (!runloop_menu_unified_controls_pressed())
+         current_input = input_menu_keys_pressed(old_input,
+               &last_input, &trigger_input, runloop_paused);
+   else
 #endif
-      input_keys_pressed     (old_input, &last_input, &trigger_input, runloop_paused);
+      current_input = input_keys_pressed(old_input, &last_input,
+            &trigger_input, runloop_paused);
 
    if (runloop_frame_time.callback)
    {
