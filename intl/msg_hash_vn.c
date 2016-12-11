@@ -1527,7 +1527,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len, "Enable touch input inside the menu.");
          break;
       case MENU_ENUM_LABEL_MENU_WALLPAPER:
-         snprintf(s, len, "Path to an image to set as menu wallpaper.");
+         snprintf(s, len, "Path to an image to set as the background.");
          break;
       case MENU_ENUM_LABEL_NAVIGATION_WRAPAROUND:
          snprintf(s, len,
@@ -2202,9 +2202,9 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
 /* FIXME? Translate 'Load Dummy on Core Shutdown' */
          return "Load Dummy on Core Shutdown";
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER:
-         return "Dynamic Wallpaper";
+         return "Dynamic Background";
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
-         return "Dynamic Wallpapers Dir";
+         return "Dynamic Background Dir";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE:
          return "Enable";
       case MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR:
@@ -2548,9 +2548,9 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_MENU_SETTINGS:
          return "Menu";
       case MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER:
-         return "Menu Wallpaper";
+         return "Background";
       case MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY:
-         return "Wallpaper opacity";
+         return "Background opacity";
       case MENU_ENUM_LABEL_VALUE_MISSING:
          return "Missing";
       case MENU_ENUM_LABEL_VALUE_MORE:
