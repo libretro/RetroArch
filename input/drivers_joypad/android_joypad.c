@@ -31,19 +31,22 @@ static bool android_joypad_init(void *data)
 
 static bool android_joypad_button(unsigned port, uint16_t joykey)
 {
-   uint8_t *buf             = android_keyboard_state_get(port);
+   unsigned hat_dir                = 0;
+   uint8_t *buf                    = android_keyboard_state_get(port);
    struct android_app *android_app = (struct android_app*)g_android;
 
    if (port >= MAX_PADS)
       return false;
 
-   if (GET_HAT_DIR(joykey))
+   hat_dir = GET_HAT_DIR(joykey);
+
+   if (hat_dir)
    {
       unsigned h = GET_HAT(joykey);
       if (h > 0)
          return false;
 
-      switch (GET_HAT_DIR(joykey))
+      switch (hat_dir)
       {
          case HAT_LEFT_MASK:
             return android_app->hat_state[port][0] == -1;

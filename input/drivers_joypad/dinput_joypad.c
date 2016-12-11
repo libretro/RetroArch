@@ -325,6 +325,7 @@ static bool dinput_joypad_init(void *data)
 static bool dinput_joypad_button(unsigned port_num, uint16_t joykey)
 {
    const struct dinput_joypad *pad = NULL;
+   unsigned hat_dir                = 0;
 
    if (joykey == NO_BTN)
       return false;
@@ -333,8 +334,11 @@ static bool dinput_joypad_button(unsigned port_num, uint16_t joykey)
    if (!pad->joypad)
       return false;
 
+   hat_dir = GET_HAT_DIR(joykey);
+
    /* Check hat. */
-   if (GET_HAT_DIR(joykey))
+
+   if (hat_dir)
    {
       unsigned pov;
       unsigned hat   = GET_HAT(joykey);
@@ -349,7 +353,7 @@ static bool dinput_joypad_button(unsigned port_num, uint16_t joykey)
       /* Magic numbers I'm not sure where originate from. */
       if (pov < 36000)
       {
-         switch (GET_HAT_DIR(joykey))
+         switch (hat_dir)
          {
             case HAT_UP_MASK:
                return (pov >= 31500) || (pov <= 4500);

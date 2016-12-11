@@ -290,6 +290,8 @@ error:
 static bool sdl_joypad_button(unsigned port, uint16_t joykey)
 {
    sdl_joypad_t *pad = NULL;
+   unsigned hat_dir  = 0;
+
    if (joykey == NO_BTN)
       return false;
 
@@ -297,17 +299,19 @@ static bool sdl_joypad_button(unsigned port, uint16_t joykey)
    if (!pad->joypad)
       return false;
 
+   hat_dir = GET_HAT_DIR(joykey);
    /* Check hat. */
-   if (GET_HAT_DIR(joykey))
+   if (hat_dir)
    {
       uint8_t  dir;
       uint16_t hat = GET_HAT(joykey);
+
       if (hat >= pad->num_hats)
          return false;
 
       dir = sdl_pad_get_hat(pad, hat);
 
-      switch (GET_HAT_DIR(joykey))
+      switch (hat_dir)
       {
          case HAT_UP_MASK:
             return dir & SDL_HAT_UP;
@@ -333,7 +337,7 @@ static bool sdl_joypad_button(unsigned port, uint16_t joykey)
 static int16_t sdl_joypad_axis(unsigned port, uint32_t joyaxis)
 {
    sdl_joypad_t *pad;
-   int16_t val;
+   int16_t val       = 0;
 
    if (joyaxis == AXIS_NONE)
       return 0;
@@ -342,7 +346,6 @@ static int16_t sdl_joypad_axis(unsigned port, uint32_t joyaxis)
    if (!pad->joypad)
       return false;
 
-   val = 0;
    if (AXIS_NEG_GET(joyaxis) < pad->num_axes)
    {
       val = sdl_pad_get_axis(pad, AXIS_NEG_GET(joyaxis));
@@ -391,9 +394,9 @@ static void sdl_joypad_poll(void)
 #ifdef HAVE_SDL2
 static bool sdl_joypad_set_rumble(unsigned pad, enum retro_rumble_effect effect, uint16_t strength)
 {
+   SDL_HapticEffect efx;
    sdl_joypad_t *joypad = (sdl_joypad_t*)&sdl_pads[pad];
 
-   SDL_HapticEffect efx;
    memset(&efx, 0, sizeof(efx));
 
    if (!joypad->joypad || !joypad->haptic)
