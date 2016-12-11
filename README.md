@@ -120,6 +120,7 @@ To configure joypads, use the built-in menu or the `retroarch-joyconfig` command
 
 ## Compiling and installing
 **Linux**
+
 - Prerequisites:
 ```bash
 sudo apt-get install -y make git-core curl g++ pkg-config libglu1-mesa-dev freeglut3-dev mesa-common-dev libsdl1.2-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev
@@ -131,6 +132,7 @@ make
 ```
 
 **Mac**
+
 - Prerequisites: [XCode](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&cad=rja&uact=8&ved=0CB4QFjAA&url=https%3A%2F%2Fitunes.apple.com%2Fus%2Fapp%2Fxcode%2Fid497799835%3Fmt%3D12&ei=ZmfeVNPtIILVoASBnoCYBw&usg=AFQjCNGrxKmVtXUdvUU3MhqZhP4MHT6Gtg&sig2=RIXKsWQ79YTQBt_lK5fdKA&bvm=bv.85970519,d.cGU), [Cg](https://developer.nvidia.com/cg-toolkit-download).
 - You can open the project (**pkg/apple/RetroArch.xcodeproj**) in the Xcode IDE and build (**&#8984;-B**) and run (**&#8984;-R**) it there. Or you can use the command line...
 - Debug:
@@ -149,6 +151,7 @@ open ./pkg/apple/build/Release/RetroArch.app/
 ```
 
 **PC**
+
 Instructions for compiling on PC can be found in the [wiki](https://github.com/Themaister/RetroArch/wiki).
 
 **PlayStation 3**
