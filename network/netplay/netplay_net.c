@@ -247,10 +247,10 @@ void netplay_sync_post_frame(netplay_t *netplay)
    netplay->self_frame_count++;
 
    /* Only relevant if we're connected */
-   if (!netplay->have_player_connections)
+   if (!netplay->connected_players)
    {
-      netplay->read_frame_count = netplay->other_frame_count = netplay->self_frame_count;
-      netplay->read_ptr = netplay->other_ptr = netplay->self_ptr;
+      netplay->other_frame_count = netplay->self_frame_count;
+      netplay->other_ptr = netplay->self_ptr;
       return;
    }
 
@@ -259,15 +259,20 @@ void netplay_sync_post_frame(netplay_t *netplay)
    {
       /* Skip ahead if we predicted correctly.
        * Skip until our simulation failed. */
-      while (netplay->other_frame_count < netplay->read_frame_count &&
-            netplay->other_frame_count < netplay->self_frame_count)
+      while (netplay->other_frame_count < netplay->unread_frame_count &&
+             netplay->other_frame_count < netplay->self_frame_count)
       {
          struct delta_frame *ptr = &netplay->buffer[netplay->other_ptr];
+         size_t i;
 
-         if (memcmp(ptr->simulated_input_state, ptr->real_input_state,
-                  sizeof(ptr->real_input_state)) != 0
-               && !ptr->used_real)
-            break;
+         for (i = 0; i < MAX_USERS; i++)
+         {
+            if (memcmp(ptr->simulated_input_state[i], ptr->remote_input_state[i],
+                     sizeof(ptr->remote_input_state[i])) != 0
+                  && !ptr->used_real[i])
+               break;
+         }
+         if (i != MAX_USERS) break;
          netplay_handle_frame_hash(netplay, ptr);
          netplay->other_ptr = NEXT_PTR(netplay->other_ptr);
          netplay->other_frame_count++;
@@ -277,7 +282,7 @@ void netplay_sync_post_frame(netplay_t *netplay)
 
    /* Now replay the real input if we've gotten ahead of it */
    if (netplay->force_rewind ||
-       (netplay->other_frame_count < netplay->read_frame_count &&
+       (netplay->other_frame_count < netplay->unread_frame_count &&
         netplay->other_frame_count < netplay->self_frame_count))
    {
       retro_ctx_serialize_info_t serial_info;
@@ -310,11 +315,11 @@ void netplay_sync_post_frame(netplay_t *netplay)
          /* Remember the current state */
          memset(serial_info.data, 0, serial_info.size);
          core_serialize(&serial_info);
-         if (netplay->replay_frame_count < netplay->read_frame_count)
+         if (netplay->replay_frame_count < netplay->unread_frame_count)
             netplay_handle_frame_hash(netplay, ptr);
 
          /* Simulate this frame's input */
-         if (netplay->replay_frame_count >= netplay->read_frame_count)
+         if (netplay->replay_frame_count >= netplay->unread_frame_count)
             netplay_simulate_input(netplay, netplay->replay_ptr, true);
 
          autosave_lock();
@@ -340,10 +345,10 @@ void netplay_sync_post_frame(netplay_t *netplay)
 #endif
       }
 
-      if (netplay->read_frame_count < netplay->self_frame_count)
+      if (netplay->unread_frame_count < netplay->self_frame_count)
       {
-         netplay->other_ptr = netplay->read_ptr;
-         netplay->other_frame_count = netplay->read_frame_count;
+         netplay->other_ptr = netplay->unread_ptr;
+         netplay->other_frame_count = netplay->unread_frame_count;
       }
       else
       {

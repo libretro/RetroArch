@@ -34,11 +34,13 @@
 #define HAVE_IPV6
 #endif
 
-#define WORDS_PER_FRAME 4 /* Allows us to send 128 bits worth of state per frame. */
-#define RARCH_DEFAULT_PORT 55435
-#define RARCH_DEFAULT_NICK "Anonymous"
+#define WORDS_PER_INPUT 3 /* Buttons, left stick, right stick */
+#define WORDS_PER_FRAME (WORDS_PER_INPUT+2) /* + frameno, playerno */
 
 #define NETPLAY_PROTOCOL_VERSION 4
+
+#define RARCH_DEFAULT_PORT 55435
+#define RARCH_DEFAULT_NICK "Anonymous"
 
 #define PREV_PTR(x) ((x) == 0 ? netplay->buffer_size - 1 : (x) - 1)
 #define NEXT_PTR(x) ((x + 1) % netplay->buffer_size)
@@ -145,6 +147,10 @@ enum netplay_cmd
    NETPLAY_CMD_CFG_ACK        = 0x0062
 };
 
+#define NETPLAY_CMD_INPUT_BIT_SERVER   (1U<<31)
+#define NETPLAY_CMD_MODE_BIT_PLAYING   (1U<<17)
+#define NETPLAY_CMD_MODE_BIT_YOU       (1U<<16)
+
 /* These are the configurations sent by NETPLAY_CMD_CFG. */
 enum netplay_cmd_cfg
 {
@@ -183,6 +189,8 @@ enum rarch_netplay_stall_reason
    NETPLAY_STALL_NO_CONNECTION
 };
 
+typedef uint32_t netplay_input_state_t[WORDS_PER_INPUT];
+
 struct delta_frame
 {
    bool used; /* a bit derpy, but this is how we know if the delta's been used at all */
@@ -194,18 +202,18 @@ struct delta_frame
    /* The CRC-32 of the serialized state if we've calculated it, else 0 */
    uint32_t crc;
 
-   uint32_t real_input_state[WORDS_PER_FRAME - 1];
-   uint32_t simulated_input_state[WORDS_PER_FRAME - 1];
-   uint32_t self_state[WORDS_PER_FRAME - 1];
+   netplay_input_state_t remote_input_state[MAX_USERS];
+   netplay_input_state_t simulated_input_state[MAX_USERS];
+   netplay_input_state_t self_state;
 
    /* Have we read local input? */
    bool have_local;
 
    /* Have we read the real remote input? */
-   bool have_remote;
+   bool have_remote[MAX_USERS];
 
    /* Is the current state as of self_frame_count using the real remote data? */
-   bool used_real;
+   bool used_real[MAX_USERS];
 };
 
 struct socket_buffer
@@ -237,7 +245,7 @@ struct netplay_connection
    /* Mode of the connection */
    enum rarch_netplay_connection_mode mode;
 
-   /* Player # of connected player, or -1 if not a player */
+   /* Player # of connected player */
    int player;
 
    /* Force send a savestate, to this connection only */
@@ -255,8 +263,8 @@ struct netplay
    /* TCP connection for listening (server only) */
    int listen_fd;
 
-   /* Our connection number */
-   uint32_t self_connection_num;
+   /* Our player number */
+   uint32_t self_player;
 
    /* Our mode and status */
    enum rarch_netplay_connection_mode self_mode;
@@ -266,9 +274,9 @@ struct netplay
    size_t connections_size;
    struct netplay_connection one_connection; /* Client only */
 
-   /* True if any of our connections are players (i.e., we actually need to do
-    * netplay) */
-   bool have_player_connections;
+   /* Bitmap of players with controllers (whether local or remote) (low bit is
+    * player 1) */
+   int connected_players;
 
    struct retro_callbacks cbs;
 
@@ -278,9 +286,6 @@ struct netplay
    /* NAT traversal info (if NAT traversal is used and serving) */
    bool nat_traversal;
    struct natt_status nat_traversal_state;
-
-   /* Which port is governed by netplay (other user)? */
-   unsigned port;
 
    struct delta_frame *buffer;
    size_t buffer_size;
@@ -306,11 +311,21 @@ struct netplay
    size_t other_ptr;
    uint32_t other_frame_count;
 
-   /* Pointer to where we are reading.
-    * Generally, other_ptr <= read_ptr <= self_ptr, but read_ptr can get ahead
+   /* Pointer to the first frame for which we're missing the data of at least
+    * one connected player excluding ourself.
+    * Generally, other_ptr <= unread_ptr <= self_ptr, but unread_ptr can get ahead
     * of self_ptr if the peer is running fast. */
-   size_t read_ptr;
-   uint32_t read_frame_count;
+   size_t unread_ptr;
+   uint32_t unread_frame_count;
+
+   /* Pointer to the next frame to read from each player */
+   size_t foo_read_ptr[MAX_USERS];
+   uint32_t foo_read_frame_count[MAX_USERS];
+
+   /* Pointer to the next frame to read from the server (as it might not be a
+    * player but still synchronizes) */
+   size_t server_ptr;
+   uint32_t server_frame_count;
 
    /* A pointer used temporarily for replay. */
    size_t replay_ptr;
@@ -491,6 +506,10 @@ uint32_t netplay_delta_frame_crc(netplay_t *netplay, struct delta_frame *delta);
 bool netplay_cmd_crc(netplay_t *netplay, struct delta_frame *delta);
 
 bool netplay_cmd_request_savestate(netplay_t *netplay);
+
+bool netplay_cmd_mode(netplay_t *netplay,
+   struct netplay_connection *connection,
+   enum rarch_netplay_connection_mode mode);
 
 /* DISCOVERY: */
 

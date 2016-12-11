@@ -283,9 +283,6 @@ static void netplay_handshake_ready(netplay_t *netplay, struct netplay_connectio
    /* Unstall if we were waiting for this */
    if (netplay->stall == NETPLAY_STALL_NO_CONNECTION)
        netplay->stall = 0;
-
-   connection->mode = NETPLAY_CONNECTION_PLAYING;
-   netplay->have_player_connections = true;
 }
 
 bool netplay_handshake_pre_nick(netplay_t *netplay, struct netplay_connection *connection, bool *had_input)
@@ -322,16 +319,15 @@ bool netplay_handshake_pre_nick(netplay_t *netplay, struct netplay_connection *c
    if (netplay->is_server)
    {
       /* If we're the server, now we send sync info */
-      uint32_t cmd[4];
+      uint32_t cmd[3];
       retro_ctx_memory_info_t mem_info;
 
       mem_info.id = RETRO_MEMORY_SAVE_RAM;
       core_get_memory(&mem_info);
 
       cmd[0] = htonl(NETPLAY_CMD_SYNC);
-      cmd[1] = htonl(2*sizeof(uint32_t) + mem_info.size);
+      cmd[1] = htonl(sizeof(uint32_t) + mem_info.size);
       cmd[2] = htonl(netplay->self_frame_count);
-      cmd[3] = htonl(1);
 
       if (!netplay_send(&connection->send_packet_buffer, connection->fd, cmd,
             sizeof(cmd)))
@@ -342,13 +338,8 @@ bool netplay_handshake_pre_nick(netplay_t *netplay, struct netplay_connection *c
             false))
          return false;
 
-      /* They start one frame after us */
-      netplay->other_frame_count = netplay->read_frame_count =
-         netplay->self_frame_count + 1;
-      netplay->other_ptr = netplay->read_ptr =
-         NEXT_PTR(netplay->self_ptr);
-
       /* Now we're ready! */
+      connection->mode = NETPLAY_CONNECTION_SPECTATING;
       netplay_handshake_ready(netplay, connection);
 
    }
@@ -368,7 +359,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay, struct netplay_connection *c
 {
    uint32_t cmd[2];
    uint32_t local_sram_size, remote_sram_size;
-   uint32_t new_frame_count, self_connection_num;
+   uint32_t new_frame_count;
    size_t i;
    ssize_t recvd;
    retro_ctx_memory_info_t mem_info;
@@ -378,7 +369,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay, struct netplay_connection *c
 
    /* Only expecting a sync command */
    if (ntohl(cmd[0]) != NETPLAY_CMD_SYNC ||
-       ntohl(cmd[1]) < 2*sizeof(uint32_t))
+       ntohl(cmd[1]) < sizeof(uint32_t))
    {
       RARCH_ERR("%s\n",
             msg_hash_to_str(MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST));
@@ -390,14 +381,11 @@ bool netplay_handshake_pre_sync(netplay_t *netplay, struct netplay_connection *c
       return false;
    new_frame_count = ntohl(new_frame_count);
 
-   /* And the connection number */
-   RECV(&self_connection_num, sizeof(self_connection_num))
-      return false;
-   netplay->self_connection_num = ntohl(self_connection_num);
-
    /* Reset our frame buffer so it's consistent between server and client */
+   /* FIXME: Assuming server is player 0 */
    netplay->self_frame_count = netplay->other_frame_count =
-      netplay->read_frame_count = new_frame_count;
+      netplay->unread_frame_count = netplay->server_frame_count =
+      netplay->foo_read_frame_count[0] = new_frame_count;
    for (i = 0; i < netplay->buffer_size; i++)
    {
       struct delta_frame *ptr = &netplay->buffer[i];
@@ -409,7 +397,8 @@ bool netplay_handshake_pre_sync(netplay_t *netplay, struct netplay_connection *c
          netplay_delta_frame_ready(netplay, ptr, 0);
          ptr->frame = new_frame_count;
          ptr->have_local = true;
-         netplay->other_ptr = netplay->read_ptr = i;
+         netplay->other_ptr = netplay->unread_ptr = netplay->server_ptr =
+            netplay->foo_read_ptr[0] = i;
 
       }
    }
@@ -419,7 +408,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay, struct netplay_connection *c
    core_get_memory(&mem_info);
 
    local_sram_size = mem_info.size;
-   remote_sram_size = ntohl(cmd[1]) - 2*sizeof(uint32_t);
+   remote_sram_size = ntohl(cmd[1]) - sizeof(uint32_t);
 
    if (local_sram_size != 0 && local_sram_size == remote_sram_size)
    {
@@ -452,11 +441,15 @@ bool netplay_handshake_pre_sync(netplay_t *netplay, struct netplay_connection *c
    }
 
    /* We're ready! */
-   netplay->self_mode = NETPLAY_CONNECTION_PLAYING;
+   netplay->self_mode = NETPLAY_CONNECTION_SPECTATING;
+   connection->mode = NETPLAY_CONNECTION_PLAYING;
+   netplay->connected_players = 1;
    netplay_handshake_ready(netplay, connection);
    *had_input = true;
    netplay_recv_flush(&connection->recv_packet_buffer);
-   return true;
+
+   /* Ask to go to player mode */
+   return netplay_cmd_mode(netplay, connection, NETPLAY_CONNECTION_PLAYING);
 }
 
 bool netplay_is_server(netplay_t* netplay)
