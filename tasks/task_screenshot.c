@@ -325,6 +325,9 @@ static bool take_screenshot_choice(const char *name_base, bool savestate)
          && string_is_empty(name_base))
       return false;
 
+   if (savestate)
+      return take_screenshot_raw(name_base, NULL, savestate);
+
    if (video_driver_supports_viewport_read())
    {
       /* Avoid taking screenshot of GUI overlays. */
