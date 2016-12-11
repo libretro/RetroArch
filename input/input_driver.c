@@ -499,6 +499,7 @@ static INLINE bool input_menu_keys_pressed_internal(unsigned i)
    {
       int port;
       int port_max = 1;
+
       if (settings->input.all_users_control_menu)
          port_max  = settings->input.max_users;
 
@@ -509,16 +510,10 @@ static INLINE bool input_menu_keys_pressed_internal(unsigned i)
          const input_device_driver_t *sec   = current_input->get_sec_joypad_driver 
             ? current_input->get_sec_joypad_driver(current_input_data) : NULL;
 
-         if (sec)
-         {
-            if (input_joypad_pressed(sec, port, settings->input.binds[0], i))
-               return true;
-         }
-         if (first)
-         {
-            if (input_joypad_pressed(first, port, settings->input.binds[0], i))
-               return true;
-         }
+         if (sec && input_joypad_pressed(sec, port, settings->input.binds[0], i))
+            return true;
+         if (first && input_joypad_pressed(first, port, settings->input.binds[0], i))
+            return true;
       }
    }
 
@@ -790,17 +785,17 @@ uint64_t input_keys_pressed(
       bool runloop_paused)
 {
    unsigned i;
-   uint64_t                      ret      = 0;
-   settings_t              *settings      = config_get_ptr();
-   const struct retro_keybind *binds      = settings->input.binds[0];
-   const struct retro_keybind *binds_auto = &settings->input.autoconf_binds[0][RARCH_ENABLE_HOTKEY];
-   const struct retro_keybind *normal     = &binds[RARCH_ENABLE_HOTKEY];
+   uint64_t                      ret            = 0;
+   settings_t              *settings            = config_get_ptr();
+   const struct retro_keybind *binds            = settings->input.binds[0];
+   const struct retro_keybind *binds_auto       = &settings->input.autoconf_binds[0][RARCH_ENABLE_HOTKEY];
+   const struct retro_keybind *normal           = &binds[RARCH_ENABLE_HOTKEY];
 
    const struct retro_keybind *focus_binds_auto = &settings->input.autoconf_binds[0][RARCH_GAME_FOCUS_TOGGLE];
    const struct retro_keybind *focus_normal     = &binds[RARCH_GAME_FOCUS_TOGGLE];
 
-   input_driver_block_libretro_input      = false;
-   input_driver_block_hotkey              = false;
+   input_driver_block_libretro_input            = false;
+   input_driver_block_hotkey                    = false;
 
    /* Don't block the check to RARCH_ENABLE_HOTKEY
     * unless we're really supposed to. */
