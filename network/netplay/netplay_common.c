@@ -386,6 +386,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay, struct netplay_connection *c
    netplay->self_frame_count = netplay->other_frame_count =
       netplay->unread_frame_count = netplay->server_frame_count =
       netplay->read_frame_count[0] = new_frame_count;
+   netplay->connected_players = 1;
    for (i = 0; i < netplay->buffer_size; i++)
    {
       struct delta_frame *ptr = &netplay->buffer[i];
@@ -443,7 +444,6 @@ bool netplay_handshake_pre_sync(netplay_t *netplay, struct netplay_connection *c
    /* We're ready! */
    netplay->self_mode = NETPLAY_CONNECTION_SPECTATING;
    connection->mode = NETPLAY_CONNECTION_PLAYING;
-   netplay->connected_players = 1;
    netplay_handshake_ready(netplay, connection);
    *had_input = true;
    netplay_recv_flush(&connection->recv_packet_buffer);

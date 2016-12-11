@@ -400,31 +400,30 @@ static void send_input(netplay_t *netplay, struct netplay_connection *connection
 }
 
 /* Send a specified input frame */
-static void send_input_frame(netplay_t *netplay, uint32_t frame, uint32_t *state)
+static void send_input_frame(netplay_t *netplay,
+   struct netplay_connection *except, uint32_t frame, uint32_t player,
+   uint32_t *state)
 {
-   if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING)
+   uint32_t buffer[2 + WORDS_PER_FRAME];
+   size_t i;
+
+   buffer[0] = htonl(NETPLAY_CMD_INPUT);
+   buffer[1] = htonl(WORDS_PER_FRAME * sizeof(uint32_t));
+   buffer[2] = htonl(frame);
+   buffer[3] = htonl(player);
+   buffer[4] = htonl(state[0]);
+   buffer[5] = htonl(state[1]);
+   buffer[6] = htonl(state[2]);
+
+   for (i = 0; i < netplay->connections_size; i++)
    {
-      uint32_t buffer[2 + WORDS_PER_FRAME];
-      size_t i;
-
-      buffer[0] = htonl(NETPLAY_CMD_INPUT);
-      buffer[1] = htonl(WORDS_PER_FRAME * sizeof(uint32_t));
-      buffer[2] = htonl(netplay->self_frame_count);
-      buffer[3] = htonl(netplay->self_player |
-         (netplay->is_server ?  NETPLAY_CMD_INPUT_BIT_SERVER : 0));
-      buffer[4] = htonl(state[0]);
-      buffer[5] = htonl(state[1]);
-      buffer[6] = htonl(state[2]);
-
-      for (i = 0; i < netplay->connections_size; i++)
+      struct netplay_connection *connection = &netplay->connections[i];
+      if (connection == except) continue;
+      if (connection->active && connection->mode >= NETPLAY_CONNECTION_CONNECTED)
       {
-         struct netplay_connection *connection = &netplay->connections[i];
-         if (connection->active && connection->mode >= NETPLAY_CONNECTION_CONNECTED)
-         {
-            if (!netplay_send(&connection->send_packet_buffer, connection->fd,
+         if (!netplay_send(&connection->send_packet_buffer, connection->fd,
                   buffer, sizeof(buffer)))
-               hangup(netplay, connection);
-         }
+            hangup(netplay, connection);
       }
    }
 }
@@ -439,8 +438,8 @@ static void send_input_frame(netplay_t *netplay, uint32_t frame, uint32_t *state
  **/
 static bool get_self_input_state(netplay_t *netplay)
 {
-   uint32_t state[WORDS_PER_FRAME - 1] = {0, 0, 0};
-   struct delta_frame *ptr             = &netplay->buffer[netplay->self_ptr];
+   uint32_t state[WORDS_PER_INPUT] = {0, 0, 0};
+   struct delta_frame *ptr = &netplay->buffer[netplay->self_ptr];
    size_t i;
 
    if (!netplay_delta_frame_ready(netplay, ptr, netplay->self_frame_count))
@@ -733,11 +732,15 @@ static bool netplay_get_cmd(netplay_t *netplay,
                /* FIXME: Catastrophe! */
                return netplay_cmd_nak(netplay, connection);
             }
-            dframe->have_remote[player] = true;
             memcpy(dframe->remote_input_state[player], buffer + 2,
                WORDS_PER_INPUT*sizeof(uint32_t));
+            dframe->have_remote[player] = true;
             netplay->read_ptr[player] = NEXT_PTR(netplay->read_ptr[player]);
             netplay->read_frame_count[player]++;
+
+            if (netplay->is_server)
+               /* Forward it on */
+               send_input_frame(netplay, connection, buffer[0], player, buffer + 2);
 
             /* If this was server data, advance our server pointer too */
             if (!netplay->is_server && (buffer[1] & NETPLAY_CMD_INPUT_BIT_SERVER))
@@ -820,11 +823,25 @@ static bool netplay_get_cmd(netplay_t *netplay,
       case NETPLAY_CMD_PLAY:
       {
          uint32_t payload[2];
-         uint32_t player = 1; /* FIXME */
+         uint32_t player = 0;
          payload[0] = htonl(netplay->self_frame_count + 1);
 
          if (!netplay->is_server)
             return netplay_cmd_nak(netplay, connection);
+
+         /* Find an available player slot */
+         for (player = 0; player < MAX_USERS; player++)
+         {
+            if (!(netplay->self_mode == NETPLAY_CONNECTION_PLAYING &&
+                  netplay->self_player == player) &&
+                !(netplay->connected_players & player))
+               break;
+         }
+         if (player == MAX_USERS)
+         {
+            /* FIXME */
+            return netplay_cmd_nak(netplay, connection);
+         }
 
          if (connection->mode != NETPLAY_CONNECTION_PLAYING)
          {
@@ -913,7 +930,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                   {
                      memcpy(dframe->remote_input_state[player], dframe->self_state, sizeof(dframe->self_state));
                      dframe->have_remote[player] = true;
-                     send_input_frame(netplay, frame, dframe->self_state);
+                     send_input_frame(netplay, NULL, dframe->frame, player, dframe->self_state);
                      if (dframe->frame == netplay->self_frame_count) break;
                      NEXT();
                   }
@@ -2163,6 +2180,8 @@ void netplay_load_savestate(netplay_t *netplay,
       return;
 
    /* Compress it */
+   if (!netplay->compression_backend)
+      return;
    netplay->compression_backend->set_in(netplay->compression_stream,
       (const uint8_t*)serial_info->data_const, serial_info->size);
    netplay->compression_backend->set_out(netplay->compression_stream,
