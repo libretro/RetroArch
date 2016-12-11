@@ -160,6 +160,10 @@ UI
 #include "../ui/drivers/qt/ui_qt_application.cpp"
 #endif
 
+#if defined(HAVE_QT_WRAPPER)
+#include "../ui/drivers/ui_qt.cpp"
+#endif
+
 /*============================================================
 VIDEO DRIVER
 ============================================================ */

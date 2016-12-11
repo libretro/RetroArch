@@ -30,7 +30,7 @@ ApplicationWindow {
     initialPage: Page {
         id: page
 
-        title: "RetroArch"
+        title: "QT!"
 
         tabs: navDrawer.enabled ? [] : sectionTitles
 
@@ -98,55 +98,7 @@ ApplicationWindow {
             }
         }
 
-        TabView {
-            id: tabView
-            anchors.fill: parent
-            currentIndex: page.selectedTab
-            model: sections
 
-
-            delegate: Item {
-                width: tabView.width
-                height: tabView.height
-                clip: true
-
-                Sidebar {
-                    id: sidebar
-
-                    expanded: !navDrawer.enabled
-
-                    Column {
-                        width: parent.width
-
-                        Repeater {
-                            model: modelData
-                            delegate: ListItem.Standard {
-                                text: modelData
-                                selected: modelData == selectedItem
-                                onClicked: selectedItem = modelData
-                            }
-                        }
-                    }
-                }
-                Flickable {
-                    id: flickable
-                    anchors {
-                        left: sidebar.right
-                        right: parent.right
-                        top: parent.top
-                        bottom: parent.bottom
-                    }
-                    clip: true
-                    Column {
-                        width: parent.width
-                    }
-
-                }
-                Scrollbar {
-                    flickableItem: flickable
-                }
-            }
-        }
     }
 
     Dialog {
