@@ -5900,37 +5900,43 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                      (void*)menu->deferred_path,
                      &cores_names_len, &cores_names_size);
 
-            if (!path_is_empty(RARCH_PATH_CORE))
+            if (cores_names_size == 0)
             {
-               const char *core_name            = NULL;
-               struct retro_system_info *system = NULL;
+               if (!path_is_empty(RARCH_PATH_CORE))
+               {
 
-               menu_entries_append_enum(info->list,
-                     path_get(RARCH_PATH_CORE),
-                     path_get(RARCH_PATH_CORE),
-                     MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,
-                     FILE_TYPE_DIRECT_LOAD,
-                     0,
-                     0);
+                  menu_entries_append_enum(info->list,
+                        path_get(RARCH_PATH_CORE),
+                        path_get(RARCH_PATH_CORE),
+                        MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,
+                        FILE_TYPE_DIRECT_LOAD,
+                        0,
+                        0);
 
-               menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
-                     &system);
+                  {
+                     const char *core_name            = NULL;
+                     struct retro_system_info *system = NULL;
 
-               if (system)
-                  core_name = system->library_name;
+                     menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
+                           &system);
 
-               if (!string_is_empty(core_name))
-                  menu_entries_set_alt_at_offset(info->list, 0,
-                        core_name);
-            }
-            else if (cores_names_size == 0)
-            {
-               menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORES_AVAILABLE),
-                     msg_hash_to_str(MENU_ENUM_LABEL_NO_CORES_AVAILABLE),
-                     MENU_ENUM_LABEL_NO_CORES_AVAILABLE,
-                     0, 0, 0);
-               info->download_core = true;
+                     if (system)
+                        core_name = system->library_name;
+
+                     if (!string_is_empty(core_name))
+                        menu_entries_set_alt_at_offset(info->list, 0,
+                              core_name);
+                  }
+               }
+               else
+               {
+                  menu_entries_append_enum(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORES_AVAILABLE),
+                        msg_hash_to_str(MENU_ENUM_LABEL_NO_CORES_AVAILABLE),
+                        MENU_ENUM_LABEL_NO_CORES_AVAILABLE,
+                        0, 0, 0);
+                  info->download_core = true;
+               }
             }
 
             if (cores_names_size != 0)
@@ -5957,8 +5963,20 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                         break;
                   }
 
-                  menu_entries_set_alt_at_offset(info->list, i,
-                        cores_names->elems[i].data);
+                  if (     !path_is_empty(RARCH_PATH_CORE) &&
+                           string_is_equal(cores_paths->elems[i].data, path_get(RARCH_PATH_CORE)))
+                  {
+                     char newstring[1024];
+
+                     newstring[0] = '\0';
+                     snprintf(newstring, sizeof(newstring), "%s (Current core)", cores_names->elems[i].data);
+
+                     menu_entries_set_alt_at_offset(info->list, i,
+                           newstring);
+                  }
+                  else
+                     menu_entries_set_alt_at_offset(info->list, i,
+                           cores_names->elems[i].data);
                }
 
                string_list_free(cores_paths);
