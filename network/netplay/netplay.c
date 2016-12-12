@@ -635,6 +635,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
    uint32_t flip_frame;
    uint32_t cmd_size;
    ssize_t recvd;
+   char msg[512];
 
    /* We don't handle the initial handshake here */
    switch (connection->mode)
@@ -830,6 +831,12 @@ static bool netplay_get_cmd(netplay_t *netplay,
             /* Tell everyone */
             payload[1] = htonl(connection->player);
             netplay_send_raw_cmd_all(netplay, connection, NETPLAY_CMD_MODE, payload, sizeof(payload));
+
+            /* Announce it */
+            msg[sizeof(msg)-1] = '\0';
+            snprintf(msg, sizeof(msg)-1, "Player %d has left", connection->player+1);
+            RARCH_LOG("%s\n", msg);
+            runloop_msg_queue_push(msg, 1, 180, false);
          }
          else
          {
@@ -875,6 +882,13 @@ static bool netplay_get_cmd(netplay_t *netplay,
             /* Tell everyone */
             payload[1] = htonl(NETPLAY_CMD_MODE_BIT_PLAYING | connection->player);
             netplay_send_raw_cmd_all(netplay, connection, NETPLAY_CMD_MODE, payload, sizeof(payload));
+
+            /* Announce it */
+            msg[sizeof(msg)-1] = '\0';
+            snprintf(msg, sizeof(msg)-1, "Player %d has joined", player+1);
+            RARCH_LOG("%s\n", msg);
+            runloop_msg_queue_push(msg, 1, 180, false);
+
          }
 
          /* Tell the player even if they were confused */
@@ -894,6 +908,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
          uint32_t frame, mode, player;
          size_t ptr;
          struct delta_frame *dframe;
+
 #define START(which) \
          do { \
             ptr = which; \
@@ -973,12 +988,23 @@ static bool netplay_get_cmd(netplay_t *netplay,
 
                }
 
+               /* Announce it */
+               msg[sizeof(msg)-1] = '\0';
+               snprintf(msg, sizeof(msg)-1, "You have joined as player %d", player+1);
+               RARCH_LOG("%s\n", msg);
+               runloop_msg_queue_push(msg, 1, 180, false);
+
             }
             else /* YOU && !PLAYING */
             {
                /* I'm no longer playing, but I should already know this */
                if (netplay->self_mode != NETPLAY_CONNECTION_SPECTATING)
                   return netplay_cmd_nak(netplay, connection);
+
+               /* Announce it */
+               strlcpy(msg, "You have left the game", sizeof(msg));
+               RARCH_LOG("%s\n", msg);
+               runloop_msg_queue_push(msg, 1, 180, false);
 
             }
 
@@ -995,10 +1021,23 @@ static bool netplay_get_cmd(netplay_t *netplay,
 
                netplay->read_ptr[player] = netplay->server_ptr;
                netplay->read_frame_count[player] = netplay->server_frame_count;
+
+               /* Announce it */
+               msg[sizeof(msg)-1] = '\0';
+               snprintf(msg, sizeof(msg)-1, "Player %d has joined", player+1);
+               RARCH_LOG("%s\n", msg);
+               runloop_msg_queue_push(msg, 1, 180, false);
+
             }
             else
             {
                netplay->connected_players &= ~(1<<player);
+
+               /* Announce it */
+               msg[sizeof(msg)-1] = '\0';
+               snprintf(msg, sizeof(msg)-1, "Player %d has left", player+1);
+               RARCH_LOG("%s\n", msg);
+               runloop_msg_queue_push(msg, 1, 180, false);
             }
 
          }
