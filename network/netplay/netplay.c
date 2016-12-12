@@ -443,11 +443,11 @@ static bool send_cur_input(netplay_t *netplay, struct netplay_connection *connec
          continue;
       if ((netplay->connected_players & (1<<player)))
       {
-         if (dframe->have_remote[player])
+         if (dframe->have_real[player])
          {
             if (!send_input_frame(netplay, connection, NULL,
                   netplay->self_frame_count, player,
-                  dframe->remote_input_state[player]))
+                  dframe->real_input_state[player]))
                return false;
          }
       }
@@ -518,9 +518,9 @@ static bool get_self_input_state(netplay_t *netplay)
    /* If we're playing, copy it in as real input */
    if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING)
    {
-      memcpy(ptr->remote_input_state[netplay->self_player], state,
+      memcpy(ptr->real_input_state[netplay->self_player], state,
          sizeof(state));
-      ptr->have_remote[netplay->self_player] = true;
+      ptr->have_real[netplay->self_player] = true;
    }
 
    /* And send this input to our peers */
@@ -751,9 +751,9 @@ static bool netplay_get_cmd(netplay_t *netplay,
                /* FIXME: Catastrophe! */
                return netplay_cmd_nak(netplay, connection);
             }
-            memcpy(dframe->remote_input_state[player], buffer + 2,
+            memcpy(dframe->real_input_state[player], buffer + 2,
                WORDS_PER_INPUT*sizeof(uint32_t));
-            dframe->have_remote[player] = true;
+            dframe->have_real[player] = true;
             netplay->read_ptr[player] = NEXT_PTR(netplay->read_ptr[player]);
             netplay->read_frame_count[player]++;
 
@@ -762,7 +762,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                /* Forward it on if it's past data*/
                if (dframe->frame <= netplay->self_frame_count)
                   send_input_frame(netplay, NULL, connection, buffer[0],
-                     player, dframe->remote_input_state[player]);
+                     player, dframe->real_input_state[player]);
             }
 
             /* If this was server data, advance our server pointer too */
@@ -951,8 +951,8 @@ static bool netplay_get_cmd(netplay_t *netplay,
                   START(netplay->server_ptr);
                   while (dframe->used && dframe->frame <= netplay->self_frame_count)
                   {
-                     memcpy(dframe->remote_input_state[player], dframe->self_state, sizeof(dframe->self_state));
-                     dframe->have_remote[player] = true;
+                     memcpy(dframe->real_input_state[player], dframe->self_state, sizeof(dframe->self_state));
+                     dframe->have_real[player] = true;
                      send_input_frame(netplay, NULL, NULL, dframe->frame, player, dframe->self_state);
                      if (dframe->frame == netplay->self_frame_count) break;
                      NEXT();
@@ -966,7 +966,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                   while (dframe->used && dframe->frame < frame)
                   {
                      memset(dframe->self_state, 0, sizeof(dframe->self_state));
-                     memset(dframe->remote_input_state[player], 0, sizeof(dframe->self_state));
+                     memset(dframe->real_input_state[player], 0, sizeof(dframe->self_state));
                      dframe->have_local = true;
                      NEXT();
                   }
@@ -1336,14 +1336,14 @@ void netplay_simulate_input(netplay_t *netplay, uint32_t sim_ptr, bool resim)
                             (1U<<RETRO_DEVICE_ID_JOYPAD_LEFT) |
                             (1U<<RETRO_DEVICE_ID_JOYPAD_RIGHT);
       uint32_t sim_state = simframe->simulated_input_state[0][0] & keep;
-      sim_state |= pframe->remote_input_state[0][0] & ~keep;
+      sim_state |= pframe->real_input_state[0][0] & ~keep;
       simframe->simulated_input_state[0][0] = sim_state;
    }
    else
    {
       memcpy(simframe->simulated_input_state,
-             pframe->remote_input_state,
-             sizeof(pframe->remote_input_state));
+             pframe->real_input_state,
+             sizeof(pframe->real_input_state));
    }
 }
 
@@ -1383,7 +1383,7 @@ static bool netplay_poll(void)
    }
 
    /* Simulate the input if we don't have real input */
-   if (!netplay_data->buffer[netplay_data->self_ptr].have_remote)
+   if (!netplay_data->buffer[netplay_data->self_ptr].have_real)
       netplay_simulate_input(netplay_data, netplay_data->self_ptr, false);
 
    /* Consider stalling */
@@ -1504,10 +1504,10 @@ static int16_t netplay_input_state(netplay_t *netplay,
       return 0;
    }
 
-   if (netplay->buffer[ptr].have_remote[port])
+   if (netplay->buffer[ptr].have_real[port])
    {
       netplay->buffer[ptr].used_real[port] = true;
-      curr_input_state = netplay->buffer[ptr].remote_input_state[port];
+      curr_input_state = netplay->buffer[ptr].real_input_state[port];
    }
    else
    {

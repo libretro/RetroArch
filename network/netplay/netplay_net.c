@@ -267,8 +267,8 @@ void netplay_sync_post_frame(netplay_t *netplay)
 
          for (i = 0; i < MAX_USERS; i++)
          {
-            if (memcmp(ptr->simulated_input_state[i], ptr->remote_input_state[i],
-                     sizeof(ptr->remote_input_state[i])) != 0
+            if (memcmp(ptr->simulated_input_state[i], ptr->real_input_state[i],
+                     sizeof(ptr->real_input_state[i])) != 0
                   && !ptr->used_real[i])
                break;
          }

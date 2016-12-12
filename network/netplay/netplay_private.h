@@ -202,17 +202,19 @@ struct delta_frame
    /* The CRC-32 of the serialized state if we've calculated it, else 0 */
    uint32_t crc;
 
-   netplay_input_state_t remote_input_state[MAX_USERS];
+   /* The real, simulated and local input. If we're playing, self_state is
+    * mirrored to the appropriate real_input_state player. */
+   netplay_input_state_t real_input_state[MAX_USERS];
    netplay_input_state_t simulated_input_state[MAX_USERS];
    netplay_input_state_t self_state;
 
    /* Have we read local input? */
    bool have_local;
 
-   /* Have we read the real remote input? */
-   bool have_remote[MAX_USERS];
+   /* Have we read the real (remote) input? */
+   bool have_real[MAX_USERS];
 
-   /* Is the current state as of self_frame_count using the real remote data? */
+   /* Is the current state as of self_frame_count using the real (remote) data? */
    bool used_real[MAX_USERS];
 };
 
