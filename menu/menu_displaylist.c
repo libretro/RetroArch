@@ -433,7 +433,7 @@ static int menu_displaylist_parse_network_info(menu_displaylist_info_t *info)
 
       tmp[0] = '\0';
 
-      snprintf(tmp, sizeof(tmp), "%s (%s) : %s\n",
+      snprintf(tmp, sizeof(tmp), "%s (%s): %s\n",
             msg_hash_to_str(MSG_INTERFACE),
             list.entries[k].name, list.entries[k].host);
       menu_entries_append_enum(info->list, tmp, "",
@@ -644,7 +644,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
       if (frontend->get_os)
       {
          frontend->get_os(tmp2, sizeof(tmp2), &major, &minor);
-         snprintf(tmp, sizeof(tmp), "%s : %s %d.%d",
+         snprintf(tmp, sizeof(tmp), "%s: %s %d.%d",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS),
                frontend->get_os
                ? tmp2 : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
@@ -654,9 +654,9 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
       }
 
-      snprintf(tmp, sizeof(tmp), "%s : %d",
+      snprintf(tmp, sizeof(tmp), "%s: %d",
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL),
-            frontend->get_rating ? frontend->get_rating() : -1);
+            frontend->get_rating ? frontend->get_rating(): -1);
       menu_entries_append_enum(info->list, tmp, "",
             MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
             MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
@@ -696,14 +696,14 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
                   );
 #elif defined(__STDC_VERSION__) && __STDC_VERSION__>=199901L
             snprintf(tmp, sizeof(tmp),
-                  "%s %s  : %llu/%llu B",
+                  "%s %s: %llu/%llu B",
                   msg_hash_to_str(MSG_MEMORY),
                   msg_hash_to_str(MSG_IN_BYTES),
                   (unsigned long long)memory_used,
                   (unsigned long long)memory_total
                   );
             snprintf(tmp2, sizeof(tmp2),
-                  "%s %s : %llu/%llu MB",
+                  "%s %s: %llu/%llu MB",
                   msg_hash_to_str(MSG_MEMORY),
                   msg_hash_to_str(MSG_IN_MEGABYTES),
                   (unsigned long long)bytes_to_mb(memory_used),
@@ -725,14 +725,14 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
                   memory_total
                   );
             snprintf(tmp2, sizeof(tmp2),
-                  "%s %s : %lu/%lu MB",
+                  "%s %s: %lu/%lu MB",
                   msg_hash_to_str(MSG_MEMORY),
                   msg_hash_to_str(MSG_IN_MEGABYTES),
                   bytes_to_mb(memory_used),
                   bytes_to_mb(memory_total)
                   );
             snprintf(tmp3, sizeof(tmp3),
-                  "%s %s : %lu/%lu GB",
+                  "%s %s: %lu/%lu GB",
                   msg_hash_to_str(MSG_MEMORY),
                   msg_hash_to_str(MSG_IN_GIGABYTES),
                   bytes_to_gb(memory_used),
@@ -919,7 +919,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "%s : %s",
+         "%s: %s",
          msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT),
          _network_command_supp
@@ -930,7 +930,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    snprintf(feat_str, sizeof(feat_str),
-         "%s : %s",
+         "%s: %s",
          msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_REMOTE_SUPPORT),
          _network_gamepad_supp ?
@@ -1655,7 +1655,7 @@ static int create_string_list_rdb_entry_int(
 
    string_list_join_concat(output_label, str_len, str_list, "|");
 
-   snprintf(tmp, sizeof(tmp), "%s : %d", desc, actual_int);
+   snprintf(tmp, sizeof(tmp), "%s: %d", desc, actual_int);
    menu_entries_append_enum(list, tmp, output_label,
          enum_idx,
          0, 0, 0);
@@ -3184,7 +3184,7 @@ static int menu_displaylist_parse_options_remappings(
                continue;
 
             snprintf(desc_label, sizeof(desc_label),
-                  "%s %u %s : ", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER),
+                  "%s %u %s: ", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER),
                   user, description);
             menu_entries_append_enum(info->list, desc_label, "",
                   MSG_UNKNOWN,
