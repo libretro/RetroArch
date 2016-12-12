@@ -3200,15 +3200,7 @@ static int menu_displaylist_parse_options_remappings(
    return 0;
 }
 
-enum filebrowser_enums
-{
-   FILEBROWSER_NONE = 0,
-   FILEBROWSER_SELECT_DIR,
-   FILEBROWSER_SCAN_DIR,
-   FILEBROWSER_SELECT_COLLECTION
-};
-
-static unsigned filebrowser_types = 0;
+unsigned filebrowser_types = 0;
 
 static int menu_displaylist_parse_playlists(
       menu_displaylist_info_t *info, bool horizontal)
@@ -3561,7 +3553,7 @@ static int menu_displaylist_parse_generic(
             true, settings->show_hidden_files, true, false);
 
 #ifdef HAVE_LIBRETRODB
-   if (BIT32_GET(filebrowser_types, FILEBROWSER_SCAN_DIR))
+   if (filebrowser_types == FILEBROWSER_SCAN_DIR)
       menu_entries_prepend(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY),
             msg_hash_to_str(MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY),
@@ -3569,7 +3561,7 @@ static int menu_displaylist_parse_generic(
             FILE_TYPE_SCAN_DIRECTORY, 0 ,0);
 #endif
 
-   if (BIT32_GET(filebrowser_types, FILEBROWSER_SELECT_DIR))
+   if (filebrowser_types == FILEBROWSER_SELECT_DIR)
       menu_entries_prepend(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY),
             msg_hash_to_str(MENU_ENUM_LABEL_USE_THIS_DIRECTORY),
@@ -3641,9 +3633,9 @@ static int menu_displaylist_parse_generic(
 
          if (!is_dir)
          {
-            if (BIT32_GET(filebrowser_types, FILEBROWSER_SELECT_DIR))
+            if (filebrowser_types == FILEBROWSER_SELECT_DIR)
                continue;
-            if (BIT32_GET(filebrowser_types, FILEBROWSER_SCAN_DIR))
+            if (filebrowser_types == FILEBROWSER_SCAN_DIR)
                continue;
          }
 
@@ -3653,7 +3645,7 @@ static int menu_displaylist_parse_generic(
          if (*info->path && !path_is_compressed)
             path = path_basename(path);
 
-         if (BIT32_GET(filebrowser_types, FILEBROWSER_SELECT_COLLECTION))
+         if (filebrowser_types == FILEBROWSER_SELECT_COLLECTION)
          {
             if (is_dir)
                file_type = FILE_TYPE_DIRECTORY;
@@ -3738,9 +3730,9 @@ static int menu_displaylist_parse_generic(
    }
 
    /* We don't want to show 'filter by extension' for this. */
-   if (BIT32_GET(filebrowser_types, FILEBROWSER_SELECT_DIR))
+   if (filebrowser_types == FILEBROWSER_SELECT_DIR)
       goto end;
-   if (BIT32_GET(filebrowser_types, FILEBROWSER_SCAN_DIR))
+   if (filebrowser_types == FILEBROWSER_SCAN_DIR)
       goto end;
 
    if (!extensions_honored)
@@ -3926,8 +3918,7 @@ static bool menu_displaylist_push_internal(
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MUSIC_TAB)))
    {
-
-      menu_displaylist_reset_filebrowser();
+      filebrowser_types = FILEBROWSER_NONE;
       info->type = 42;
       strlcpy(info->exts,
             file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT),
@@ -3942,7 +3933,7 @@ static bool menu_displaylist_push_internal(
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_TAB)))
    {
-      menu_displaylist_reset_filebrowser();
+      filebrowser_types = FILEBROWSER_NONE;
       info->type = 42;
       strlcpy(info->exts,
             file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT),
@@ -3958,7 +3949,7 @@ static bool menu_displaylist_push_internal(
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_IMAGES_TAB)))
    {
 
-      menu_displaylist_reset_filebrowser();
+      filebrowser_types = FILEBROWSER_NONE;
       info->type = 42;
       strlcpy(info->exts,
             file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT),
@@ -3993,7 +3984,7 @@ static bool menu_displaylist_push_internal(
    {
       settings_t *settings  = config_get_ptr();
 
-      menu_displaylist_reset_filebrowser();
+      filebrowser_types = FILEBROWSER_NONE;
       info->type = 42;
       strlcpy(info->exts,
             file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT),
@@ -4080,11 +4071,6 @@ static bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry)
    }
 
    return true;
-}
-
-void menu_displaylist_reset_filebrowser(void)
-{
-   BIT32_CLEAR_ALL(filebrowser_types);
 }
 
 static void menu_displaylist_parse_playlist_history(
@@ -4259,24 +4245,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_ARCHIVE_ACTION:
       case DISPLAYLIST_ARCHIVE_ACTION_DETECT_CORE:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         break;
-      default:
-         break;
-   }
-
-   switch (type)
-   {
-      case DISPLAYLIST_FILE_BROWSER_SCAN_DIR:
-         menu_displaylist_reset_filebrowser();
-         BIT32_SET(filebrowser_types, FILEBROWSER_SCAN_DIR);
-         break;
-      case DISPLAYLIST_FILE_BROWSER_SELECT_DIR:
-         menu_displaylist_reset_filebrowser();
-         BIT32_SET(filebrowser_types, FILEBROWSER_SELECT_DIR);
-         break;
-      case DISPLAYLIST_FILE_BROWSER_SELECT_COLLECTION:
-         menu_displaylist_reset_filebrowser();
-         BIT32_SET(filebrowser_types, FILEBROWSER_SELECT_COLLECTION);
          break;
       default:
          break;
@@ -5552,6 +5520,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_refresh = true;
          break;
       case DISPLAYLIST_LOAD_CONTENT_LIST:
+         if (frontend_driver_parse_drive_list(info->list) != 0)
+            menu_entries_append_enum(info->list, "/",
+                  msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+                  MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+                  MENU_SETTING_ACTION, 0, 0);
+
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST),
                msg_hash_to_str(MENU_ENUM_LABEL_DETECT_CORE_LIST),
@@ -6063,7 +6037,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push = true;
          break;
       case DISPLAYLIST_DATABASES:
-         menu_displaylist_reset_filebrowser();
+         filebrowser_types = FILEBROWSER_NONE;
          info->type_default = FILE_TYPE_RDB;
          strlcpy(info->exts,
                file_path_str(FILE_PATH_RDB_EXTENSION),
@@ -6102,7 +6076,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push = true;
          break;
       case DISPLAYLIST_DATABASE_CURSORS:
-         menu_displaylist_reset_filebrowser();
+         filebrowser_types = FILEBROWSER_NONE;
          info->type_default = FILE_TYPE_CURSOR;
          strlcpy(info->exts, "dbc", sizeof(info->exts));
          strlcpy(info->path, settings->directory.cursor, sizeof(info->path));
@@ -6113,14 +6087,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             ext_name[0] = '\0';
 
-            menu_displaylist_reset_filebrowser();
+            filebrowser_types = FILEBROWSER_NONE;
             info->type_default = FILE_TYPE_PLAIN;
             if (frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
                strlcpy(info->exts, ext_name, sizeof(info->exts));
          }
          break;
       case DISPLAYLIST_CONFIG_FILES:
-         menu_displaylist_reset_filebrowser();
+         filebrowser_types = FILEBROWSER_NONE;
          info->type_default = FILE_TYPE_CONFIG;
          strlcpy(info->exts, "cfg", sizeof(info->exts));
          break;
@@ -6131,7 +6105,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             (void)attr;
 
-            menu_displaylist_reset_filebrowser();
+            filebrowser_types = FILEBROWSER_NONE;
             info->type_default = FILE_TYPE_SHADER_PRESET;
 
 #ifdef HAVE_CG
@@ -6152,7 +6126,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             union string_list_elem_attr attr = {0};
             struct string_list *str_list     = string_list_new();
 
-            menu_displaylist_reset_filebrowser();
+            filebrowser_types = FILEBROWSER_NONE;
             info->type_default = FILE_TYPE_SHADER;
 
             (void)attr;
@@ -6171,12 +6145,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          }
          break;
       case DISPLAYLIST_VIDEO_FILTERS:
-         menu_displaylist_reset_filebrowser();
+         filebrowser_types = FILEBROWSER_NONE;
          info->type_default = FILE_TYPE_VIDEOFILTER;
          strlcpy(info->exts, "filt", sizeof(info->exts));
          break;
       case DISPLAYLIST_IMAGES:
-         menu_displaylist_reset_filebrowser();
+         filebrowser_types = FILEBROWSER_NONE;
          info->type_default = FILE_TYPE_IMAGE;
          {
             union string_list_elem_attr attr = {0};
@@ -6200,37 +6174,37 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          }
          break;
       case DISPLAYLIST_AUDIO_FILTERS:
-         menu_displaylist_reset_filebrowser();
+         filebrowser_types = FILEBROWSER_NONE;
          info->type_default = FILE_TYPE_AUDIOFILTER;
          strlcpy(info->exts, "dsp", sizeof(info->exts));
          break;
       case DISPLAYLIST_CHEAT_FILES:
-         menu_displaylist_reset_filebrowser();
+         filebrowser_types = FILEBROWSER_NONE;
          info->type_default = FILE_TYPE_CHEAT;
          strlcpy(info->exts, "cht", sizeof(info->exts));
          break;
       case DISPLAYLIST_CONTENT_HISTORY:
-         menu_displaylist_reset_filebrowser();
+         filebrowser_types = FILEBROWSER_NONE;
          info->type_default = FILE_TYPE_PLAIN;
          strlcpy(info->exts, "lpl", sizeof(info->exts));
          break;
       case DISPLAYLIST_FONTS:
-         menu_displaylist_reset_filebrowser();
+         filebrowser_types = FILEBROWSER_NONE;
          info->type_default = FILE_TYPE_FONT;
          strlcpy(info->exts, "ttf", sizeof(info->exts));
          break;
       case DISPLAYLIST_OVERLAYS:
-         menu_displaylist_reset_filebrowser();
+         filebrowser_types = FILEBROWSER_NONE;
          info->type_default = FILE_TYPE_OVERLAY;
          strlcpy(info->exts, "cfg", sizeof(info->exts));
          break;
       case DISPLAYLIST_RECORD_CONFIG_FILES:
-         menu_displaylist_reset_filebrowser();
+         filebrowser_types = FILEBROWSER_NONE;
          info->type_default = FILE_TYPE_RECORD_CONFIG;
          strlcpy(info->exts, "cfg", sizeof(info->exts));
          break;
       case DISPLAYLIST_REMAP_FILES:
-         menu_displaylist_reset_filebrowser();
+         filebrowser_types = FILEBROWSER_NONE;
          info->type_default = FILE_TYPE_REMAP;
          strlcpy(info->exts, "rmp", sizeof(info->exts));
          break;
