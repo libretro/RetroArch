@@ -556,10 +556,10 @@ FIFO BUFFER
 /*============================================================
 AUDIO RESAMPLER
 ============================================================ */
-#include "../audio/audio_resampler_driver.c"
-#include "../audio/drivers_resampler/sinc_resampler.c"
-#include "../audio/drivers_resampler/nearest_resampler.c"
-#include "../audio/drivers_resampler/null_resampler.c"
+#include "../libretro-common/audio/resampler/audio_resampler.c"
+#include "../libretro-common/audio/resampler/drivers/sinc_resampler.c"
+#include "../libretro-common/audio/resampler/drivers/nearest_resampler.c"
+#include "../libretro-common/audio/resampler/drivers/null_resampler.c"
 #ifdef HAVE_CC_RESAMPLER
 #include "../audio/drivers_resampler/cc_resampler.c"
 #endif

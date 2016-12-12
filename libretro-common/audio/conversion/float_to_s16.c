@@ -29,7 +29,7 @@
 #endif
 
 #include <features/features_cpu.h>
-#include <conversion/float_to_s16.h>
+#include <audio/conversion/float_to_s16.h>
 
 /**
  * convert_float_to_s16_C:

@@ -27,7 +27,7 @@
 
 #include <boolean.h>
 #include <features/features_cpu.h>
-#include <conversion/s16_to_float.h>
+#include <audio/conversion/s16_to_float.h>
 
 /**
  * convert_s16_to_float_C:

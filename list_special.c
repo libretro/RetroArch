@@ -21,6 +21,8 @@
 #include <lists/string_list.h>
 #include <compat/strl.h>
 
+#include <audio/audio_resampler.h>
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -49,7 +51,6 @@
 #include "input/input_hid_driver.h"
 #include "input/input_joypad_driver.h"
 #include "audio/audio_driver.h"
-#include "audio/audio_resampler_driver.h"
 #include "record/record_driver.h"
 #include "configuration.h"
 

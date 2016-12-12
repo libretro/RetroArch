@@ -30,8 +30,9 @@
 #include <gfx/scaler/scaler.h>
 #include <gfx/video_frame.h>
 #include <file/config_file.h>
-#include <conversion/float_to_s16.h>
-#include <conversion/s16_to_float.h>
+#include <audio/audio_resampler.h>
+#include <audio/conversion/float_to_s16.h>
+#include <audio/conversion/s16_to_float.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -68,7 +69,6 @@ extern "C" {
 
 #include "../../configuration.h"
 #include "../../gfx/video_driver.h"
-#include "../../audio/audio_resampler_driver.h"
 #include "../../verbosity.h"
 
 

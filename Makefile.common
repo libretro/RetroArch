@@ -210,11 +210,11 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/gfx/scaler/scaler_filter.o \
        gfx/font_driver.o \
        gfx/video_filter.o \
-       audio/audio_resampler_driver.o \
+       $(LIBRETRO_COMM_DIR)/audio/resampler/audio_resampler.o \
        audio/audio_dsp_filter.o \
-       audio/drivers_resampler/sinc_resampler.o \
-       audio/drivers_resampler/nearest_resampler.o \
-       audio/drivers_resampler/null_resampler.o \
+       $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler.o \
+       $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/nearest_resampler.o \
+       $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/null_resampler.o \
        location/drivers/nulllocation.o \
        camera/drivers/nullcamera.o \
        wifi/drivers/nullwifi.o \
@@ -431,12 +431,12 @@ ifeq ($(HAVE_NEON),1)
    DEFINES += -DSINC_LOWER_QUALITY
 endif
 
-OBJ += $(LIBRETRO_COMM_DIR)/conversion/s16_to_float.o \
-       $(LIBRETRO_COMM_DIR)/conversion/float_to_s16.o
+OBJ += $(LIBRETRO_COMM_DIR)/audio/conversion/s16_to_float.o \
+       $(LIBRETRO_COMM_DIR)/audio/conversion/float_to_s16.o
 
 ifeq ($(HAVE_NEON),1)
-   OBJ += $(LIBRETRO_COMM_DIR)/conversion/s16_to_float_neon.o \
-          $(LIBRETRO_COMM_DIR)/conversion/float_to_s16_neon.o
+   OBJ += $(LIBRETRO_COMM_DIR)/audio/conversion/s16_to_float_neon.o \
+          $(LIBRETRO_COMM_DIR)/audio/conversion/float_to_s16_neon.o
 endif
 
 ifneq ($(findstring Win32,$(OS)),)

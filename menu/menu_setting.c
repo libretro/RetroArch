@@ -29,6 +29,8 @@
 
 #include <compat/strl.h>
 
+#include <audio/audio_resampler.h>
+
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
@@ -69,7 +71,6 @@
 #include "../location/location_driver.h"
 #include "../record/record_driver.h"
 #include "../audio/audio_driver.h"
-#include "../audio/audio_resampler_driver.h"
 #include "../input/input_config.h"
 #include "../tasks/tasks_internal.h"
 #include "../config.def.h"
