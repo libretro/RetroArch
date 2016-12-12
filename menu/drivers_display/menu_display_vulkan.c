@@ -174,6 +174,8 @@ static void menu_display_vk_draw(void *data)
 #ifdef HAVE_SHADERPIPELINE
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
+      case VIDEO_SHADER_MENU_3:
+      case VIDEO_SHADER_MENU_4:
       {
          const struct vk_draw_triangles call = {
             vk->display.pipelines[
