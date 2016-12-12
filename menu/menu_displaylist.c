@@ -76,6 +76,9 @@
 #include "../wifi/wifi_driver.h"
 #include "../tasks/tasks_internal.h"
 
+static char new_path_entry[4096] = {0};
+static char new_entry[4096]      = {0};
+
 #ifdef HAVE_NETWORKING
 static void print_buf_lines(file_list_t *list, char *buf,
       const char *label, int buf_size,
@@ -3874,6 +3877,20 @@ static bool menu_displaylist_push_list_process(menu_displaylist_info_t *info)
    }
 #endif
 
+   if (!string_is_empty(new_entry))
+   {
+      menu_entries_prepend(info->list,
+            new_path_entry,
+            new_entry,
+            MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,
+            FILE_TYPE_CORE, 0, 0);
+      menu_entries_set_alt_at_offset(info->list, 0,
+            new_entry);
+
+      new_path_entry[0] = '\0';
+      new_entry[0]      = '\0';
+   }
+
    if (info->need_refresh)
       menu_entries_ctl(MENU_ENTRIES_CTL_REFRESH, info->list);
 
@@ -5941,6 +5958,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             if (cores_names_size != 0)
             {
+               unsigned j = 0;
                struct string_list *cores_paths =
                   string_list_new_special(STRING_LIST_SUPPORTED_CORES_PATHS,
                         (void*)menu->deferred_path,
@@ -5948,35 +5966,34 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
                for (i = 0; i < cores_names_size; i++)
                {
-                  switch (type)
-                  {
-                     case DISPLAYLIST_CORES_COLLECTION_SUPPORTED:
-                        menu_entries_append_enum(info->list, cores_paths->elems[i].data, "",
-                              MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
-                              FILE_TYPE_CORE, 0, 0);
-                        break;
-                     default:
-                        menu_entries_append_enum(info->list, cores_paths->elems[i].data,
-                              msg_hash_to_str(MENU_ENUM_LABEL_DETECT_CORE_LIST_OK),
-                              MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,
-                              FILE_TYPE_CORE, 0, 0);
-                        break;
-                  }
-
                   if (     !path_is_empty(RARCH_PATH_CORE) &&
-                           string_is_equal(cores_paths->elems[i].data, path_get(RARCH_PATH_CORE)))
+                           string_is_equal(cores_paths->elems[i].data, path_get(RARCH_PATH_CORE))
+                           && type != DISPLAYLIST_CORES_COLLECTION_SUPPORTED)
                   {
-                     char newstring[1024];
-
-                     newstring[0] = '\0';
-                     snprintf(newstring, sizeof(newstring), "%s (Current core)", cores_names->elems[i].data);
-
-                     menu_entries_set_alt_at_offset(info->list, i,
-                           newstring);
+                     strlcpy(new_path_entry, cores_paths->elems[i].data, sizeof(new_path_entry));
+                     snprintf(new_entry, sizeof(new_entry), "Current core (%s)", cores_names->elems[i].data);
                   }
                   else
-                     menu_entries_set_alt_at_offset(info->list, i,
+                  {
+                     switch (type)
+                     {
+                        case DISPLAYLIST_CORES_COLLECTION_SUPPORTED:
+                           menu_entries_append_enum(info->list, cores_paths->elems[i].data, "",
+                                 MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
+                                 FILE_TYPE_CORE, 0, 0);
+                           break;
+                        default:
+                           menu_entries_append_enum(info->list, cores_paths->elems[i].data,
+                                 msg_hash_to_str(MENU_ENUM_LABEL_DETECT_CORE_LIST_OK),
+                                 MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,
+                                 FILE_TYPE_CORE, 0, 0);
+                           break;
+                     }
+
+                     menu_entries_set_alt_at_offset(info->list, j,
                            cores_names->elems[i].data);
+                     j++;
+                  }
                }
 
                string_list_free(cores_paths);
