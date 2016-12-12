@@ -68,7 +68,7 @@
 #define XMB_DELAY 10
 #endif
 
-#if 0
+#if 1
 #define XMB_DEBUG
 #endif
 
@@ -938,7 +938,7 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 
    menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
 
-   if (settings->savestate_thumbnail_enable
+   if (     (settings->savestate_thumbnail_enable)
          && (string_is_equal(entry.label, "state_slot")
          || string_is_equal(entry.label, "loadstate")
          || string_is_equal(entry.label, "savestate")))
@@ -2734,18 +2734,17 @@ static void xmb_frame(void *data)
 static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
 {
    unsigned new_font_size, new_header_height;
-   float scale_factor;
-   settings_t *settings = config_get_ptr();
+   settings_t *settings          = config_get_ptr();
 
-   scale_factor = (settings->menu.xmb.scale_factor * width) / (1920.0 * 100);
+   float scale_factor            = (settings->menu.xmb.scale_factor * width) / (1920.0 * 100);
 
-   xmb->above_subitem_offset    =   1.5;
-   xmb->above_item_offset       =  -1.0;
-   xmb->active_item_factor      =   3.0;
-   xmb->under_item_offset       =   5.0;
+   xmb->above_subitem_offset     =   1.5;
+   xmb->above_item_offset        =  -1.0;
+   xmb->active_item_factor       =   3.0;
+   xmb->under_item_offset        =   5.0;
 
-   xmb->categories.active.zoom  = 1.0;
-   xmb->categories.passive.zoom = 0.5;
+   xmb->categories.active.zoom   = 1.0;
+   xmb->categories.passive.zoom  = 0.5;
    xmb->items.active.zoom        = 1.0;
    xmb->items.passive.zoom       = 0.5;
 
@@ -2802,10 +2801,9 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
 static void xmb_layout_psp(xmb_handle_t *xmb, int width)
 {
    unsigned new_font_size, new_header_height;
-   float scale_factor;
-   settings_t *settings = config_get_ptr();
+   settings_t *settings          = config_get_ptr();
+   float scale_factor            = ((settings->menu.xmb.scale_factor * width) / (1920.0 * 100)) * 1.5;
 
-   scale_factor = ((settings->menu.xmb.scale_factor * width) / (1920.0 * 100)) * 1.5;
 #ifdef _3DS
    scale_factor = settings->menu.xmb.scale_factor / 400.0;
 #endif
