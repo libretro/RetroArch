@@ -1318,44 +1318,55 @@ static int poll_input(netplay_t *netplay, bool block)
  *
  * "Simulate" input by assuming it hasn't changed since the last read input.
  */
-void netplay_simulate_input(netplay_t *netplay, uint32_t sim_ptr, bool resim)
+void netplay_simulate_input(netplay_t *netplay, size_t sim_ptr, bool resim)
 {
-   size_t prev = PREV_PTR(netplay->unread_ptr);
-   struct delta_frame *pframe = &netplay->buffer[prev],
-                      *simframe = &netplay->buffer[sim_ptr];
-   if (resim)
+   uint32_t player;
+   size_t prev;
+   struct delta_frame *simframe, *pframe;
+
+   simframe = &netplay->buffer[sim_ptr];
+
+   for (player = 0; player < MAX_USERS; player++)
    {
-      /* In resimulation mode, we only copy the buttons. The reason for this
-       * is nonobvious:
-       *
-       * If we resimulated nothing, then the /duration/ with which any input
-       * was pressed would be approximately correct, since the original
-       * simulation came in as the input came in, but the /number of times/
-       * the input was pressed would be wrong, as there would be an
-       * advancing wavefront of real data overtaking the simulated data
-       * (which is really just real data offset by some frames).
-       *
-       * That's acceptable for arrows in most situations, since the amount
-       * you move is tied to the duration, but unacceptable for buttons,
-       * which will seem to jerkily be pressed numerous times with those
-       * wavefronts.
-       */
-      const uint32_t keep = (1U<<RETRO_DEVICE_ID_JOYPAD_UP) |
-                            (1U<<RETRO_DEVICE_ID_JOYPAD_DOWN) |
-                            (1U<<RETRO_DEVICE_ID_JOYPAD_LEFT) |
-                            (1U<<RETRO_DEVICE_ID_JOYPAD_RIGHT);
-      uint32_t sim_state = simframe->simulated_input_state[0][0] & keep;
-      sim_state |= pframe->real_input_state[0][0] & ~keep;
-      simframe->simulated_input_state[0][0] = sim_state;
-   }
-   else
-   {
-      memcpy(simframe->simulated_input_state,
-             pframe->real_input_state,
-             sizeof(pframe->real_input_state));
+      if (!(netplay->connected_players & (1<<player))) continue;
+      if (simframe->have_real[player]) continue;
+
+      prev = PREV_PTR(netplay->read_ptr[player]);
+      pframe = &netplay->buffer[prev];
+
+      if (resim)
+      {
+         /* In resimulation mode, we only copy the buttons. The reason for this
+          * is nonobvious:
+          *
+          * If we resimulated nothing, then the /duration/ with which any input
+          * was pressed would be approximately correct, since the original
+          * simulation came in as the input came in, but the /number of times/
+          * the input was pressed would be wrong, as there would be an
+          * advancing wavefront of real data overtaking the simulated data
+          * (which is really just real data offset by some frames).
+          *
+          * That's acceptable for arrows in most situations, since the amount
+          * you move is tied to the duration, but unacceptable for buttons,
+          * which will seem to jerkily be pressed numerous times with those
+          * wavefronts.
+          */
+         const uint32_t keep = (1U<<RETRO_DEVICE_ID_JOYPAD_UP) |
+                               (1U<<RETRO_DEVICE_ID_JOYPAD_DOWN) |
+                               (1U<<RETRO_DEVICE_ID_JOYPAD_LEFT) |
+                               (1U<<RETRO_DEVICE_ID_JOYPAD_RIGHT);
+         uint32_t sim_state = simframe->simulated_input_state[player][0] & keep;
+         sim_state |= pframe->real_input_state[player][0] & ~keep;
+         simframe->simulated_input_state[player][0] = sim_state;
+      }
+      else
+      {
+         memcpy(simframe->simulated_input_state[player],
+                pframe->real_input_state[player],
+                WORDS_PER_INPUT * sizeof(uint32_t));
+      }
    }
 }
-
 
 /**
  * netplay_poll:
@@ -1392,8 +1403,7 @@ static bool netplay_poll(void)
    }
 
    /* Simulate the input if we don't have real input */
-   if (!netplay_data->buffer[netplay_data->self_ptr].have_real)
-      netplay_simulate_input(netplay_data, netplay_data->self_ptr, false);
+   netplay_simulate_input(netplay_data, netplay_data->self_ptr, false);
 
    /* Consider stalling */
    switch (netplay_data->stall)

@@ -318,9 +318,8 @@ void netplay_sync_post_frame(netplay_t *netplay)
          if (netplay->replay_frame_count < netplay->unread_frame_count)
             netplay_handle_frame_hash(netplay, ptr);
 
-         /* Simulate this frame's input */
-         if (netplay->replay_frame_count >= netplay->unread_frame_count)
-            netplay_simulate_input(netplay, netplay->replay_ptr, true);
+         /* Re-simulate this frame's input */
+         netplay_simulate_input(netplay, netplay->replay_ptr, true);
 
          autosave_lock();
          core_run();
