@@ -2553,9 +2553,16 @@ static void xmb_frame(void *data)
             xmb->savestate_thumbnail);
    else if (xmb->thumbnail
       && !string_is_equal(xmb_thumbnails_ident(), "OFF"))
+   {
+#ifdef XMB_DEBUG
+      RARCH_LOG("[XMB thumbnail] width: %.2f, height: %.2f\n", xmb->thumbnail_width, xmb->thumbnail_height);
+      RARCH_LOG("[XMB thumbnail] w: %.2f, h: %.2f\n", width, height);
+#endif
+
       xmb_draw_thumbnail(xmb, &coord_white[0], width, height,
             xmb->thumbnail_width, xmb->thumbnail_height,
             xmb->thumbnail);
+   }
 
    /* Clock image */
    menu_display_set_alpha(coord_white, MIN(xmb->alpha, 1.00f));
