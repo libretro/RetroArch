@@ -319,15 +319,24 @@ bool netplay_handshake_pre_nick(netplay_t *netplay, struct netplay_connection *c
    if (netplay->is_server)
    {
       /* If we're the server, now we send sync info */
-      uint32_t cmd[3];
+      uint32_t cmd[5];
+      uint32_t connected_players;
       retro_ctx_memory_info_t mem_info;
 
       mem_info.id = RETRO_MEMORY_SAVE_RAM;
       core_get_memory(&mem_info);
 
       cmd[0] = htonl(NETPLAY_CMD_SYNC);
-      cmd[1] = htonl(sizeof(uint32_t) + mem_info.size);
+      cmd[1] = htonl(3*sizeof(uint32_t) + mem_info.size);
       cmd[2] = htonl(netplay->self_frame_count);
+      connected_players = netplay->connected_players;
+      if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING)
+         connected_players |= 1<<netplay->self_player;
+      cmd[3] = htonl(connected_players);
+      if (netplay->flip)
+         cmd[4] = htonl(netplay->flip_frame);
+      else
+         cmd[4] = htonl(0);
 
       if (!netplay_send(&connection->send_packet_buffer, connection->fd, cmd,
             sizeof(cmd)))
@@ -358,8 +367,8 @@ bool netplay_handshake_pre_nick(netplay_t *netplay, struct netplay_connection *c
 bool netplay_handshake_pre_sync(netplay_t *netplay, struct netplay_connection *connection, bool *had_input)
 {
    uint32_t cmd[2];
+   uint32_t new_frame_count, connected_players, flip_frame;
    uint32_t local_sram_size, remote_sram_size;
-   uint32_t new_frame_count;
    size_t i;
    ssize_t recvd;
    retro_ctx_memory_info_t mem_info;
@@ -369,7 +378,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay, struct netplay_connection *c
 
    /* Only expecting a sync command */
    if (ntohl(cmd[0]) != NETPLAY_CMD_SYNC ||
-       ntohl(cmd[1]) < sizeof(uint32_t))
+       ntohl(cmd[1]) < 3*sizeof(uint32_t))
    {
       RARCH_ERR("%s\n",
             msg_hash_to_str(MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST));
@@ -381,12 +390,23 @@ bool netplay_handshake_pre_sync(netplay_t *netplay, struct netplay_connection *c
       return false;
    new_frame_count = ntohl(new_frame_count);
 
-   /* Reset our frame buffer so it's consistent between server and client */
-   /* FIXME: Assuming server is player 0 */
+   /* Get the connected players */
+   RECV(&connected_players, sizeof(connected_players))
+      return false;
+   connected_players = ntohl(connected_players);
+   netplay->connected_players = connected_players;
+
+   /* And the flip state */
+   RECV(&flip_frame, sizeof(flip_frame))
+      return false;
+   flip_frame = ntohl(flip_frame);
+   netplay->flip = !!flip_frame;
+   netplay->flip_frame = flip_frame;
+
+   /* Set our frame counters as requested */
    netplay->self_frame_count = netplay->other_frame_count =
       netplay->unread_frame_count = netplay->server_frame_count =
-      netplay->read_frame_count[0] = new_frame_count;
-   netplay->connected_players = 1;
+      new_frame_count;
    for (i = 0; i < netplay->buffer_size; i++)
    {
       struct delta_frame *ptr = &netplay->buffer[i];
@@ -398,9 +418,16 @@ bool netplay_handshake_pre_sync(netplay_t *netplay, struct netplay_connection *c
          netplay_delta_frame_ready(netplay, ptr, 0);
          ptr->frame = new_frame_count;
          ptr->have_local = true;
-         netplay->other_ptr = netplay->unread_ptr = netplay->server_ptr =
-            netplay->read_ptr[0] = i;
+         netplay->other_ptr = netplay->unread_ptr = netplay->server_ptr = i;
 
+      }
+   }
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      if (connected_players & (1<<i))
+      {
+         netplay->read_ptr[i] = netplay->self_ptr;
+         netplay->read_frame_count[i] = netplay->self_frame_count;
       }
    }
 
@@ -409,7 +436,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay, struct netplay_connection *c
    core_get_memory(&mem_info);
 
    local_sram_size = mem_info.size;
-   remote_sram_size = ntohl(cmd[1]) - sizeof(uint32_t);
+   remote_sram_size = ntohl(cmd[1]) - 3*sizeof(uint32_t);
 
    if (local_sram_size != 0 && local_sram_size == remote_sram_size)
    {
