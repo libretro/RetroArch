@@ -32,10 +32,6 @@
 #include "audio_thread_wrapper.h"
 #include "../record/record_driver.h"
 
-#ifdef HAVE_NETWORKING
-#include "../network/netplay/netplay.h"
-#endif
-
 #include "../command.h"
 #include "../driver.h"
 #include "../configuration.h"
@@ -852,13 +848,6 @@ bool audio_driver_deinit(void)
 bool audio_driver_set_callback(const void *data)
 {
    const struct retro_audio_callback *cb = (const struct retro_audio_callback*)data;
-#ifdef HAVE_NETWORKING
-   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
-      return false;
-#endif
-
-   if (recording_driver_get_data_ptr()) /* A/V sync is a must. */
-      return false;
 
    if (cb)
       audio_callback = *cb;

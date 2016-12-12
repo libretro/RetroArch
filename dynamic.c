@@ -36,6 +36,10 @@
 #include "cheevos.h"
 #endif
 
+#ifdef HAVE_NETWORKING
+#include "network/netplay/netplay.h"
+#endif
+
 #include "dynamic.h"
 #include "command.h"
 
@@ -1286,6 +1290,12 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 #ifdef HAVE_THREADS
       {
          RARCH_LOG("Environ SET_AUDIO_CALLBACK.\n");
+#ifdef HAVE_NETWORKING
+         if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+            return false;
+#endif
+         if (recording_driver_get_data_ptr()) /* A/V sync is a must. */
+            return false;
          audio_driver_set_callback(data);
       }
 #endif
