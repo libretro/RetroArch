@@ -1535,7 +1535,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_PAUSE_LIBRETRO:
          snprintf(s, len,
-               "If disabled, the libretro core will keep \n"
+               "If disabled, the game will keep \n"
                "running in the background when we are in the \n"
                "menu.");
          break;
