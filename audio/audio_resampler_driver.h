@@ -135,7 +135,9 @@ typedef struct audio_frame_float
 } audio_frame_float_t;
 
 extern rarch_resampler_t sinc_resampler;
+#ifdef HAVE_CC_RESAMPLER
 extern rarch_resampler_t CC_resampler;
+#endif
 extern rarch_resampler_t nearest_resampler;
 extern rarch_resampler_t null_resampler;
 
