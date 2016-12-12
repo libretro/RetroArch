@@ -2547,22 +2547,6 @@ static void xmb_frame(void *data)
    menu_display_rotate_z(&rotate_draw);
    menu_display_blend_begin();
 
-   if (xmb->savestate_thumbnail)
-      xmb_draw_thumbnail(xmb, &coord_white[0], width, height,
-            xmb->savestate_thumbnail_width, xmb->savestate_thumbnail_height,
-            xmb->savestate_thumbnail);
-   else if (xmb->thumbnail
-      && !string_is_equal(xmb_thumbnails_ident(), "OFF"))
-   {
-#ifdef XMB_DEBUG
-      RARCH_LOG("[XMB thumbnail] width: %.2f, height: %.2f\n", xmb->thumbnail_width, xmb->thumbnail_height);
-      RARCH_LOG("[XMB thumbnail] w: %.2f, h: %.2f\n", width, height);
-#endif
-
-      xmb_draw_thumbnail(xmb, &coord_white[0], width, height,
-            xmb->thumbnail_width, xmb->thumbnail_height,
-            xmb->thumbnail);
-   }
 
    /* Clock image */
    menu_display_set_alpha(coord_white, MIN(xmb->alpha, 1.00f));
@@ -2734,6 +2718,23 @@ static void xmb_frame(void *data)
          menu_input_mouse_state(MENU_MOUSE_Y_AXIS),
          width,
          height);
+
+   if (xmb->savestate_thumbnail)
+      xmb_draw_thumbnail(xmb, &coord_white[0], width, height,
+            xmb->savestate_thumbnail_width, xmb->savestate_thumbnail_height,
+            xmb->savestate_thumbnail);
+   else if (xmb->thumbnail
+      && !string_is_equal(xmb_thumbnails_ident(), "OFF"))
+   {
+#ifdef XMB_DEBUG
+      RARCH_LOG("[XMB thumbnail] width: %.2f, height: %.2f\n", xmb->thumbnail_width, xmb->thumbnail_height);
+      RARCH_LOG("[XMB thumbnail] w: %.2f, h: %.2f\n", width, height);
+#endif
+
+      xmb_draw_thumbnail(xmb, &coord_white[0], width, height,
+            xmb->thumbnail_width, xmb->thumbnail_height,
+            xmb->thumbnail);
+   }
 
    menu_display_unset_viewport();
 }
