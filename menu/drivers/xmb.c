@@ -2755,7 +2755,7 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
    new_font_size                 = 32.0  * scale_factor;
    xmb->font2_size               = 24.0  * scale_factor;
    new_header_height             = 128.0 * scale_factor;
-   xmb->margins.screen.top       = (256+32) * scale_factor;
+
 
    xmb->thumbnail_width          = 460.0 * scale_factor;
    xmb->savestate_thumbnail_width= 460.0 * scale_factor;
@@ -2764,15 +2764,33 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
    xmb->icon.spacing.horizontal  = 200.0 * scale_factor;
    xmb->icon.spacing.vertical    = 64.0 * scale_factor;
 
+   xmb->margins.screen.top       = (256+32) * scale_factor;
    xmb->margins.screen.left      = 336.0 * scale_factor;
+
    xmb->margins.title.left       = 60 * scale_factor;
    xmb->margins.title.top        = 60 * scale_factor + new_font_size / 3;
    xmb->margins.title.bottom     = 60 * scale_factor - new_font_size / 3;
+
    xmb->margins.label.left       = 85.0 * scale_factor;
    xmb->margins.label.top        = new_font_size / 3.0;
+
    xmb->margins.setting.left     = 600.0 * scale_factor;
+
    xmb->icon.size                = 128.0 * scale_factor;
    xmb->font_size                = new_font_size;
+
+#if 0
+   RARCH_LOG("[XMB] margin screen left: %.2f\n",  xmb->margins.screen.left);
+   RARCH_LOG("[XMB] margin screen top:  %.2f\n",  xmb->margins.screen.top);
+   RARCH_LOG("[XMB] margin title left:  %.2f\n",  xmb->margins.title.left);
+   RARCH_LOG("[XMB] margin title top:   %.2f\n",  xmb->margins.title.top);
+   RARCH_LOG("[XMB] margin title bott:  %.2f\n",  xmb->margins.title.bottom);
+   RARCH_LOG("[XMB] margin label left:  %.2f\n",  xmb->margins.label.left);
+   RARCH_LOG("[XMB] margin label top:   %.2f\n",  xmb->margins.label.top);
+   RARCH_LOG("[XMB] margin sett left:   %.2f\n",  xmb->margins.setting.left);
+   RARCH_LOG("[XMB] icon spacing hor:   %.2f\n",  xmb->icon.spacing.horizontal);
+   RARCH_LOG("[XMB] icon spacing ver:   %.2f\n",  xmb->icon.spacing.vertical);
+#endif
 
    menu_display_set_header_height(new_header_height);
 }
@@ -2826,6 +2844,19 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
    xmb->margins.setting.left     = 600.0 * scale_factor;
    xmb->icon.size                = 128.0 * scale_factor;
    xmb->font_size                = new_font_size;
+
+#if 0
+   RARCH_LOG("[XMB] margin screen left: %.2f\n",  xmb->margins.screen.left);
+   RARCH_LOG("[XMB] margin screen top:  %.2f\n",  xmb->margins.screen.top);
+   RARCH_LOG("[XMB] margin title left:  %.2f\n",  xmb->margins.title.left);
+   RARCH_LOG("[XMB] margin title top:   %.2f\n",  xmb->margins.title.top);
+   RARCH_LOG("[XMB] margin title bott:  %.2f\n",  xmb->margins.title.bottom);
+   RARCH_LOG("[XMB] margin label left:  %.2f\n",  xmb->margins.label.left);
+   RARCH_LOG("[XMB] margin label top:   %.2f\n",  xmb->margins.label.top);
+   RARCH_LOG("[XMB] margin sett left:   %.2f\n",  xmb->margins.setting.left);
+   RARCH_LOG("[XMB] icon spacing hor:   %.2f\n",  xmb->icon.spacing.horizontal);
+   RARCH_LOG("[XMB] icon spacing ver:   %.2f\n",  xmb->icon.spacing.vertical);
+#endif
 
    menu_display_set_header_height(new_header_height);
 }
