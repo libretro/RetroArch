@@ -3882,7 +3882,7 @@ static bool menu_displaylist_push_list_process(menu_displaylist_info_t *info)
       menu_entries_prepend(info->list,
             new_path_entry,
             new_entry,
-            MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,
+            MENU_ENUM_LABEL_DETECT_CORE_LIST_OK_CURRENT_CORE,
             FILE_TYPE_CORE, 0, 0);
       menu_entries_set_alt_at_offset(info->list, 0,
             new_entry);
