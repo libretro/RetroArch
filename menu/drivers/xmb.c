@@ -139,8 +139,8 @@ enum
    XMB_SYSTEM_TAB_SETTINGS,
    XMB_SYSTEM_TAB_HISTORY,
 #ifdef HAVE_FFMPEG
-   XMB_SYSTEM_TAB_VIDEO,
    XMB_SYSTEM_TAB_MUSIC,
+   XMB_SYSTEM_TAB_VIDEO,
 #endif
 #ifdef HAVE_IMAGEVIEWER
    XMB_SYSTEM_TAB_IMAGES,
@@ -1404,10 +1404,10 @@ static xmb_node_t* xmb_get_node(xmb_handle_t *xmb, unsigned i)
          return &xmb->images_tab_node;
 #endif
 #ifdef HAVE_FFMPEG
-      case XMB_SYSTEM_TAB_VIDEO:
-         return &xmb->video_tab_node;
       case XMB_SYSTEM_TAB_MUSIC:
          return &xmb->music_tab_node;
+      case XMB_SYSTEM_TAB_VIDEO:
+         return &xmb->video_tab_node;
 #endif
       case XMB_SYSTEM_TAB_HISTORY:
          return &xmb->history_tab_node;
@@ -3045,10 +3045,10 @@ static void *xmb_init(void **userdata)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_IMAGES;
 #endif
 #ifdef HAVE_FFMPEG
-   if (settings->menu.xmb.show_video)
-      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_VIDEO;
    if (settings->menu.xmb.show_music)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_MUSIC;
+   if (settings->menu.xmb.show_video)
+      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_VIDEO;
 #endif
 #ifdef HAVE_LIBRETRODB
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_ADD;
@@ -3587,17 +3587,17 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
                break;
 #endif
 #ifdef HAVE_FFMPEG
-            case XMB_SYSTEM_TAB_VIDEO:
-               menu_stack->list[stack_size - 1].label =
-                  strdup(msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_TAB));
-               menu_stack->list[stack_size - 1].type =
-                  MENU_VIDEO_TAB;
-               break;
             case XMB_SYSTEM_TAB_MUSIC:
                menu_stack->list[stack_size - 1].label =
                   strdup(msg_hash_to_str(MENU_ENUM_LABEL_MUSIC_TAB));
                menu_stack->list[stack_size - 1].type =
                   MENU_MUSIC_TAB;
+               break;
+            case XMB_SYSTEM_TAB_VIDEO:
+               menu_stack->list[stack_size - 1].label =
+                  strdup(msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_TAB));
+               menu_stack->list[stack_size - 1].type =
+                  MENU_VIDEO_TAB;
                break;
 #endif
             case XMB_SYSTEM_TAB_HISTORY:

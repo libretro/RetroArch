@@ -2252,7 +2252,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU:
          return "Horizontal Menu";
       case MENU_ENUM_LABEL_VALUE_IMAGES_TAB:
-         return "Images";
+         return "Image";
       case MENU_ENUM_LABEL_VALUE_INFORMATION:
          return "Information";
       case MENU_ENUM_LABEL_VALUE_INFORMATION_LIST:
@@ -2846,7 +2846,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION:
          return "Screen Resolution";
       case MENU_ENUM_LABEL_VALUE_SEARCH:
-         return "Search:";
+         return "Search";
       case MENU_ENUM_LABEL_VALUE_SECONDS:
          return "seconds";
       case MENU_ENUM_LABEL_VALUE_SETTINGS:
