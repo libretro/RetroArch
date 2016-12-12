@@ -1920,6 +1920,7 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_MENU
          menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_DEINIT, NULL);
 #endif
+         path_clear(RARCH_PATH_CORE);
 #else
          core_unload_game();
          core_unload();
