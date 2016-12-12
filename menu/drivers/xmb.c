@@ -68,7 +68,7 @@
 #define XMB_DELAY 10
 #endif
 
-#if 1
+#if 0
 #define XMB_DEBUG
 #endif
 
@@ -2793,6 +2793,7 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
    RARCH_LOG("[XMB] margin sett left:   %.2f\n",  xmb->margins.setting.left);
    RARCH_LOG("[XMB] icon spacing hor:   %.2f\n",  xmb->icon.spacing.horizontal);
    RARCH_LOG("[XMB] icon spacing ver:   %.2f\n",  xmb->icon.spacing.vertical);
+   RARCH_LOG("[XMB] icon size:          %.2f\n",  xmb->icon.size);
 #endif
 
    menu_display_set_header_height(new_header_height);
@@ -2858,6 +2859,7 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
    RARCH_LOG("[XMB] margin sett left:   %.2f\n",  xmb->margins.setting.left);
    RARCH_LOG("[XMB] icon spacing hor:   %.2f\n",  xmb->icon.spacing.horizontal);
    RARCH_LOG("[XMB] icon spacing ver:   %.2f\n",  xmb->icon.spacing.vertical);
+   RARCH_LOG("[XMB] icon size:          %.2f\n",  xmb->icon.size);
 #endif
 
    menu_display_set_header_height(new_header_height);
