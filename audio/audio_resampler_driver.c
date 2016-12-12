@@ -18,10 +18,9 @@
 
 #include <string/stdstring.h>
 #include <features/features_cpu.h>
+#include <file/config_file_userdata.h>
 
 #include "audio_resampler_driver.h"
-#include "../config_file_userdata.h"
-#include "../performance_counters.h"
 
 static const rarch_resampler_t *resampler_drivers[] = {
    &sinc_resampler,
@@ -108,11 +107,6 @@ static const rarch_resampler_t *find_resampler_driver(const char *ident)
    return resampler_drivers[0];
 }
 
-static resampler_simd_mask_t resampler_get_cpu_features(void)
-{
-   return cpu_features_get();
-}
-
 /**
  * resampler_append_plugs:
  * @re                         : Resampler handle
@@ -127,7 +121,7 @@ static bool resampler_append_plugs(void **re,
       const rarch_resampler_t **backend,
       double bw_ratio)
 {
-   resampler_simd_mask_t mask = resampler_get_cpu_features();
+   resampler_simd_mask_t mask = cpu_features_get();
 
    *re = (*backend)->init(&resampler_config, bw_ratio, mask);
 

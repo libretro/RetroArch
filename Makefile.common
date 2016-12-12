@@ -199,7 +199,7 @@ OBJ += frontend/frontend.o \
        managers/cheat_manager.o \
        core_info.o \
        $(LIBRETRO_COMM_DIR)/file/config_file.o \
-       config_file_userdata.o \
+       $(LIBRETRO_COMM_DIR)/file/config_file_userdata.o \
        tasks/task_screenshot.o \
        $(LIBRETRO_COMM_DIR)/gfx/scaler/scaler.o \
        gfx/drivers_shader/shader_null.o \

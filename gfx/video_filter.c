@@ -17,6 +17,7 @@
 #include <stdlib.h>
 
 #include <file/file_path.h>
+#include <file/config_file_userdata.h>
 #include <lists/dir_list.h>
 #include <dynamic/dylib.h>
 #include <features/features_cpu.h>
@@ -28,7 +29,6 @@
 #endif
 
 #include "../frontend/frontend_driver.h"
-#include "../config_file_userdata.h"
 #include "../dynamic.h"
 #include "../performance_counters.h"
 #include "../verbosity.h"
