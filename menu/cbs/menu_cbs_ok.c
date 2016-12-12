@@ -1944,6 +1944,13 @@ static int action_ok_file_load_imageviewer(const char *path,
          CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU);
 }
 
+static int action_ok_file_load_current_core(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_file_load(path, detect_content_path,
+         CORE_TYPE_FFMPEG, CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU);
+}
+
 static int action_ok_file_load_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -3797,6 +3804,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_DETECT_CORE_LIST_OK:
             BIND_ACTION_OK(cbs, action_ok_file_load_detect_core);
+            break;
+         case MENU_ENUM_LABEL_DETECT_CORE_LIST_OK_CURRENT_CORE:
+            BIND_ACTION_OK(cbs, action_ok_file_load_current_core);
             break;
          case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
          case MENU_ENUM_LABEL_CURSOR_MANAGER_LIST:
