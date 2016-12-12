@@ -22,7 +22,6 @@
 #include "audio_resampler_driver.h"
 #include "../config_file_userdata.h"
 #include "../performance_counters.h"
-#include "../list_special.h"
 
 static const rarch_resampler_t *resampler_drivers[] = {
    &sinc_resampler,
@@ -88,18 +87,6 @@ const char *audio_resampler_driver_find_ident(int idx)
    if (!drv)
       return NULL;
    return drv->ident;
-}
-
-/**
- * config_get_audio_resampler_driver_options:
- *
- * Get an enumerated list of all resampler driver names, separated by '|'.
- *
- * Returns: string listing of all resampler driver names, separated by '|'.
- **/
-const char* config_get_audio_resampler_driver_options(void)
-{
-   return char_list_new_special(STRING_LIST_AUDIO_RESAMPLER_DRIVERS, NULL);
 }
 
 /**

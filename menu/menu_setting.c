@@ -61,6 +61,7 @@
 #include "../dirs.h"
 #include "../paths.h"
 #include "../dynamic.h"
+#include "../list_special.h"
 #include "../runloop.h"
 #include "../verbosity.h"
 #include "../camera/camera_driver.h"
@@ -2120,6 +2121,18 @@ static bool setting_append_list_input_player_options(
    END_GROUP(list, list_info, parent_group);
 
    return true;
+}
+
+/**
+ * config_get_audio_resampler_driver_options:
+ *
+ * Get an enumerated list of all resampler driver names, separated by '|'.
+ *
+ * Returns: string listing of all resampler driver names, separated by '|'.
+ **/
+static const char* config_get_audio_resampler_driver_options(void)
+{
+   return char_list_new_special(STRING_LIST_AUDIO_RESAMPLER_DRIVERS, NULL);
 }
 
 static bool setting_append_list(
