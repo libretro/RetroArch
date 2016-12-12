@@ -906,7 +906,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
 
          mode = ntohl(payload[1]);
          player = mode & 0xFFFF;
-         if (player > MAX_USERS)
+         if (player >= MAX_USERS)
             return netplay_cmd_nak(netplay, connection);
 
          if (mode & NETPLAY_CMD_MODE_BIT_YOU)
