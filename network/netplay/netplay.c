@@ -310,12 +310,6 @@ static void hangup(netplay_t *netplay, struct netplay_connection *connection)
          netplay_send_raw_cmd_all(netplay, connection, NETPLAY_CMD_MODE, payload, sizeof(payload));
       }
    }
-
-   /* Reset things that will behave oddly if we get a new connection (FIXME) */
-   netplay->remote_paused  = false;
-   netplay->flip           = false;
-   netplay->flip_frame     = 0;
-   netplay->stall          = 0;
 }
 
 /**
@@ -1256,19 +1250,23 @@ static int poll_input(netplay_t *netplay, bool block)
 
       netplay->timeout_cnt++;
 
-      /* If we're not ready for input, wait until we are.
-       * Could fill the TCP buffer, stalling the other side. */
-      /* FIXME: This won't work with uneven input, need to somehow stall */
-      if (netplay_delta_frame_ready(netplay,
-               &netplay->buffer[netplay->unread_ptr],
-               netplay->unread_frame_count))
+      /* Make sure we're actually ready for data */
+      update_unread_ptr(netplay);
+      if (!netplay_delta_frame_ready(netplay,
+         &netplay->buffer[netplay->unread_ptr], netplay->unread_frame_count))
+         break;
+      if (!netplay->is_server &&
+          !netplay_delta_frame_ready(netplay,
+            &netplay->buffer[netplay->server_ptr],
+            netplay->server_frame_count))
+         break;
+
+      /* Read input from each connection */
+      for (i = 0; i < netplay->connections_size; i++)
       {
-         for (i = 0; i < netplay->connections_size; i++)
-         {
-            struct netplay_connection *connection = &netplay->connections[i];
-            if (connection->active && !netplay_get_cmd(netplay, connection, &had_input))
-               hangup(netplay, connection);
-         }
+         struct netplay_connection *connection = &netplay->connections[i];
+         if (connection->active && !netplay_get_cmd(netplay, connection, &had_input))
+            hangup(netplay, connection);
       }
 
       if (block)
@@ -1816,9 +1814,6 @@ static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
     * Other is allowed to drift as much as 'frames' frames behind
     * Read is allowed to drift as much as 'frames' frames ahead */
    netplay->buffer_size = frames * 2 + 1;
-
-   /* FIXME: Really terrible temporary solution for multiplayer */
-   netplay->buffer_size *= 10;
 
    netplay->buffer = (struct delta_frame*)calloc(netplay->buffer_size,
          sizeof(*netplay->buffer));
