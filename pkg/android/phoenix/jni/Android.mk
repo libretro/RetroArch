@@ -33,9 +33,9 @@ ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
 
 ifeq ($(HAVE_NEON),1)
 	DEFINES += -D__ARM_NEON__
-   LOCAL_SRC_FILES += $(LIBRETRO_COMM_DIR)/conversion/s16_to_float_neon.S.neon \
-							 $(LIBRETRO_COMM_DIR)/conversion/float_to_s16_neon.S.neon \
-							 $(RARCH_DIR)/audio/drivers_resampler/sinc_resampler_neon.S.neon \
+   LOCAL_SRC_FILES += $(LIBRETRO_COMM_DIR)/audio/conversion/s16_to_float_neon.S.neon \
+							 $(LIBRETRO_COMM_DIR)/audio/conversion/float_to_s16_neon.S.neon \
+							 $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler_neon.S.neon \
 							 $(RARCH_DIR)/audio/drivers_resampler/cc_resampler_neon.S.neon
 endif
 DEFINES += -DSINC_LOWER_QUALITY 
