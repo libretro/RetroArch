@@ -160,12 +160,11 @@ bool rarch_resampler_realloc(void **re, const rarch_resampler_t **backend,
    *backend = find_resampler_driver(ident);
 
    if (!resampler_append_plugs(re, backend, bw_ratio))
-      goto error;
+   {
+      if (!*re)
+         *backend = NULL;
+      return false;
+   }
 
    return true;
-
-error:
-   if (!*re)
-      *backend = NULL;
-   return false;
 }
