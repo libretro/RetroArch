@@ -91,6 +91,10 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                   "Netplay flip users.");
             break;
+         case RARCH_NETPLAY_GAME_WATCH:
+            snprintf(s, len,
+                  "Netplay toggle play/spectate mode.");
+            break;
          case RARCH_SLOWMOTION:
             snprintf(s, len,
                   "Hold for slowmotion.");
@@ -1786,6 +1790,10 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_NETPLAY_FLIP_PLAYERS:
          snprintf(s, len,
                "Netplay flip users.");
+         break;
+      case MENU_ENUM_LABEL_NETPLAY_GAME_WATCH:
+         snprintf(s, len,
+               "Netplay toggle play/spectate mode.");
          break;
       case MENU_ENUM_LABEL_CHEAT_INDEX_PLUS:
          snprintf(s, len,

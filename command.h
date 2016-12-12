@@ -173,6 +173,8 @@ enum event_command
    CMD_EVENT_NETPLAY_DEINIT,
    /* Flip netplay players. */
    CMD_EVENT_NETPLAY_FLIP_PLAYERS,
+   /* Switch between netplay gaming and watching. */
+   CMD_EVENT_NETPLAY_GAME_WATCH,
    /* Initializes BSV movie. */
    CMD_EVENT_BSV_MOVIE_INIT,
    /* Deinitializes BSV movie. */

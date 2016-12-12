@@ -286,6 +286,7 @@ static const struct cmd_map map[] = {
    { "MUTE",                   RARCH_MUTE },
    { "OSK",                    RARCH_OSK },
    { "NETPLAY_FLIP",           RARCH_NETPLAY_FLIP },
+   { "NETPLAY_GAME_WATCH",     RARCH_NETPLAY_GAME_WATCH },
    { "SLOWMOTION",             RARCH_SLOWMOTION },
    { "VOLUME_UP",              RARCH_VOLUME_UP },
    { "VOLUME_DOWN",            RARCH_VOLUME_DOWN },
@@ -2369,6 +2370,11 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_NETPLAY_FLIP_PLAYERS:
 #ifdef HAVE_NETWORKING
          netplay_driver_ctl(RARCH_NETPLAY_CTL_FLIP_PLAYERS, NULL);
+#endif
+         break;
+      case CMD_EVENT_NETPLAY_GAME_WATCH:
+#ifdef HAVE_NETWORKING
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_GAME_WATCH, NULL);
 #endif
          break;
       case CMD_EVENT_FULLSCREEN_TOGGLE:

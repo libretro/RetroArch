@@ -831,6 +831,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
 
             /* Mark them as not playing anymore */
             connection->mode = NETPLAY_CONNECTION_SPECTATING;
+            netplay->connected_players &= ~(1<<connection->player);
 
             /* Tell everyone */
             payload[1] = htonl(connection->player);
@@ -924,8 +925,6 @@ static bool netplay_get_cmd(netplay_t *netplay,
             return netplay_cmd_nak(netplay, connection);
 
          frame = ntohl(payload[0]);
-         if (frame != netplay->server_frame_count)
-            return netplay_cmd_nak(netplay, connection);
 
          /* We're changing past input, so must replay it */
          if (frame < netplay->self_frame_count)
@@ -941,6 +940,9 @@ static bool netplay_get_cmd(netplay_t *netplay,
             /* A change to me! */
             if (mode & NETPLAY_CMD_MODE_BIT_PLAYING)
             {
+               if (frame != netplay->server_frame_count)
+                  return netplay_cmd_nak(netplay, connection);
+
                /* Hooray, I get to play now! */
                if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING)
                   return netplay_cmd_nak(netplay, connection);
@@ -992,6 +994,9 @@ static bool netplay_get_cmd(netplay_t *netplay,
             /* Somebody else is joining or parting */
             if (mode & NETPLAY_CMD_MODE_BIT_PLAYING)
             {
+               if (frame != netplay->server_frame_count)
+                  return netplay_cmd_nak(netplay, connection);
+
                netplay->connected_players |= (1<<player);
 
                netplay->read_ptr[player] = netplay->server_ptr;
@@ -1978,6 +1983,35 @@ static void netplay_flip_users(netplay_t *netplay)
    netplay->flip_frame  = flip_frame;
 }
 
+/* Toggle between play mode and spectate mode */
+static void netplay_toggle_play_spectate(netplay_t *netplay)
+{
+   uint32_t cmd;
+   size_t i;
+
+   if (netplay->is_server)
+   {
+      /* FIXME */
+      return;
+   }
+
+   if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING)
+   {
+      /* Switch to spectator mode immediately */
+      netplay->self_mode = NETPLAY_CONNECTION_SPECTATING;
+      cmd = NETPLAY_CMD_SPECTATE;
+   }
+   else if (netplay->self_mode == NETPLAY_CONNECTION_SPECTATING)
+   {
+      /* Switch only after getting permission */
+      cmd = NETPLAY_CMD_PLAY;
+   }
+   else return;
+
+   netplay_send_raw_cmd_all(netplay, NULL, cmd, NULL, 0);
+}
+
+
 /**
  * netplay_free:
  * @netplay              : pointer to netplay object
@@ -2425,6 +2459,9 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
             if (*state)
                netplay_flip_users(netplay_data);
          }
+         break;
+      case RARCH_NETPLAY_CTL_GAME_WATCH:
+         netplay_toggle_play_spectate(netplay_data);
          break;
       case RARCH_NETPLAY_CTL_PAUSE:
          netplay_frontend_paused(netplay_data, true);
