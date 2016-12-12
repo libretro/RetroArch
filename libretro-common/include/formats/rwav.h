@@ -23,6 +23,7 @@
 #ifndef __LIBRETRO_SDK_FORMAT_RWAV_H__
 #define __LIBRETRO_SDK_FORMAT_RWAV_H__
 
+#include <retro_common_api.h>
 #include <stdint.h>
 
 RETRO_BEGIN_DECLS
