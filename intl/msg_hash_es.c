@@ -1372,8 +1372,6 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
          return "Error:";
       case MSG_FAILED_TO_APPLY_SHADER:
          return "Error al aplicar shader.";
-      case MSG_FAILED_TO_LOAD_CONTENT:
-         return "Error al cargar el contenido";
       case MSG_FAILED_TO_LOAD_MOVIE_FILE:
          return "Error al cargar el archivo de película";
       case MSG_FAILED_TO_LOAD_OVERLAY:
@@ -1794,8 +1792,6 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
          return "Nivel de registro del núcleo";
       case MENU_ENUM_LABEL_VALUE_LINEAR:
          return "Lineal";
-      case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT:
-         return "Seleccionar archivo";
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY:
          return "Cargar archivos recientes";
       case MENU_ENUM_LABEL_VALUE_LOAD_STATE:
