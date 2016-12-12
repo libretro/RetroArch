@@ -462,6 +462,10 @@ static bool send_cur_input(netplay_t *netplay, struct netplay_connection *connec
       }
    }
 
+   if (!netplay_send_flush(&connection->send_packet_buffer, connection->fd,
+         false))
+      return false;
+
    return true;
 }
 
