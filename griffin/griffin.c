@@ -1080,8 +1080,8 @@ XML
 /*============================================================
  AUDIO UTILS
 ============================================================ */
-#include "../libretro-common/conversion/s16_to_float.c"
-#include "../libretro-common/conversion/float_to_s16.c"
+#include "../libretro-common/audio/conversion/s16_to_float.c"
+#include "../libretro-common/audio/conversion/float_to_s16.c"
 
 /*============================================================
  LIBRETRODB
