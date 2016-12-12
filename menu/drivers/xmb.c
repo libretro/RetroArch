@@ -68,6 +68,10 @@
 #define XMB_DELAY 10
 #endif
 
+#if 0
+#define XMB_DEBUG
+#endif
+
 typedef struct
 {
    float alpha;
@@ -2779,7 +2783,7 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
    xmb->icon.size                = 128.0 * scale_factor;
    xmb->font_size                = new_font_size;
 
-#if 0
+#ifdef XMB_DEBUG
    RARCH_LOG("[XMB] margin screen left: %.2f\n",  xmb->margins.screen.left);
    RARCH_LOG("[XMB] margin screen top:  %.2f\n",  xmb->margins.screen.top);
    RARCH_LOG("[XMB] margin title left:  %.2f\n",  xmb->margins.title.left);
@@ -2845,7 +2849,7 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
    xmb->icon.size                = 128.0 * scale_factor;
    xmb->font_size                = new_font_size;
 
-#if 0
+#ifdef XMB_DEBUG
    RARCH_LOG("[XMB] margin screen left: %.2f\n",  xmb->margins.screen.left);
    RARCH_LOG("[XMB] margin screen top:  %.2f\n",  xmb->margins.screen.top);
    RARCH_LOG("[XMB] margin title left:  %.2f\n",  xmb->margins.title.left);
