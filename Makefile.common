@@ -215,7 +215,6 @@ OBJ += frontend/frontend.o \
        audio/drivers_resampler/sinc_resampler.o \
        audio/drivers_resampler/nearest_resampler.o \
        audio/drivers_resampler/null_resampler.o \
-       audio/drivers_resampler/cc_resampler.o \
        location/drivers/nulllocation.o \
        camera/drivers/nullcamera.o \
        wifi/drivers/nullwifi.o \
@@ -231,6 +230,11 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/features/features_cpu.o \
        performance_counters.o \
        verbosity.o
+
+ifeq ($(HAVE_CC_RESAMPLER), 1)
+DEFINES += -DHAVE_CC_RESAMPLER
+OBJ += audio/drivers_resampler/cc_resampler.o
+endif
 
 ifeq ($(HAVE_LANGEXTRA), 1)
 DEFINES += -DHAVE_LANGEXTRA

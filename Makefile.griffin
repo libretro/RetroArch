@@ -1,6 +1,7 @@
 DEBUG			               = 0
 HAVE_LOGGER		            = 0
 HAVE_FILE_LOGGER	         = 0
+HAVE_CC_RESAMPLER          = 1
 WHOLE_ARCHIVE_LINK         = 0
 BIG_STACK		            = 1
 PC_DEVELOPMENT_IP_ADDRESS	= 255.255.255.255

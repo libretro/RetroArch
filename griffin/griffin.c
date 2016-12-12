@@ -560,7 +560,9 @@ AUDIO RESAMPLER
 #include "../audio/drivers_resampler/sinc_resampler.c"
 #include "../audio/drivers_resampler/nearest_resampler.c"
 #include "../audio/drivers_resampler/null_resampler.c"
+#ifdef HAVE_CC_RESAMPLER
 #include "../audio/drivers_resampler/cc_resampler.c"
+#endif
 
 /*============================================================
 CAMERA
