@@ -125,8 +125,6 @@ enum msg_file_type
    FILE_TYPE_ISO,
    FILE_TYPE_LUTRO,
 
-   FILE_TYPE_DIRECT_LOAD,
-
    FILE_TYPE_LAST
 };
 
@@ -1171,6 +1169,7 @@ enum msg_hash_enums
    MENU_LABEL(DETECT_CORE_LIST_OK),
    MENU_LABEL(DETECT_CORE_LIST),
    MENU_LABEL(START_CORE),
+   MENU_LABEL(LOAD_CONTENT),
    MENU_LABEL(CORE_UPDATER_LIST),
    MENU_LABEL(CORE_UPDATER_AUTO_EXTRACT_ARCHIVE),
    MENU_LABEL(CORE_UPDATER_BUILDBOT_URL),
@@ -1750,6 +1749,7 @@ enum msg_hash_enums
 #define MENU_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING                            0xd44d395cU
 
 /* Main menu */
+#define MENU_LABEL_LOAD_CONTENT                                                0x828943c3U
 #define MENU_LABEL_LOAD_CONTENT_LIST                                           0x5745de1fU
 #define MENU_LABEL_LOAD_CONTENT_HISTORY                                        0xfe1d79e5U
 #define MENU_LABEL_ADD_CONTENT_LIST                                            0x046f4668U

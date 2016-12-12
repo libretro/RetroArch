@@ -1729,6 +1729,8 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Nessun oggetto.";
       case MENU_ENUM_LABEL_VALUE_CORE_LIST:
          return "Carica Core";
+      case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT:
+         return "Seleziona contenuto";
       case MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT:
          return "Chiudi";
       case MENU_ENUM_LABEL_VALUE_MANAGEMENT:

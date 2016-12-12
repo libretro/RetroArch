@@ -103,6 +103,24 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                break;
          }
          break;
+      case MENU_ENUM_LABEL_LOAD_CONTENT:
+         snprintf(s, len,
+               "Lade Content. \n"
+               "Suche nach Content. \n"
+               " \n"
+               "Um Content zu laden benötigst du den passenden \n"
+               "Libretro-Core und die Content-Datei. \n"
+               " \n"
+               "Um einzustellen, welcher Ordner standardmäßig \n"
+               "geöffnet wird, um nach Content zu suchen, solltest \n"
+               "du das Content-Verzeichnis setzen. Wenn es nicht \n"
+               "gesetzt ist, wird es im Root-Verzeichen starten. \n"
+               " \n"
+               "Der Browser wird nur Dateierweiterungen des \n"
+               "zuletzt geladenen Cores zeigen und diesen Core \n"
+               "nutzen, wenn Content geladen wird."
+               );
+         break;
       case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
          snprintf(s, len,
                "Lade Content aus dem Verlauf. \n"

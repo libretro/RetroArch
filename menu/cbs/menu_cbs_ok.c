@@ -3789,6 +3789,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_scan_directory_list);
             break;
          case MENU_ENUM_LABEL_SCAN_FILE:
+         case MENU_ENUM_LABEL_LOAD_CONTENT:
          case MENU_ENUM_LABEL_DETECT_CORE_LIST:
             BIND_ACTION_OK(cbs, action_ok_push_content_list);
             break;
@@ -3993,6 +3994,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_SCAN_FILE:
          case MENU_LABEL_SCAN_DIRECTORY:
+         case MENU_LABEL_LOAD_CONTENT:
          case MENU_LABEL_DETECT_CORE_LIST:
             BIND_ACTION_OK(cbs, action_ok_push_content_list);
             break;
@@ -4303,9 +4305,6 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case FILE_TYPE_IMAGEVIEWER:
             /* TODO/FIXME - handle scan case */
             BIND_ACTION_OK(cbs, action_ok_file_load_imageviewer);
-            break;
-         case FILE_TYPE_DIRECT_LOAD:
-            BIND_ACTION_OK(cbs, action_ok_file_load);
             break;
          case MENU_SETTINGS:
          case MENU_SETTING_GROUP:

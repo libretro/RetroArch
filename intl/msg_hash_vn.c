@@ -2497,6 +2497,8 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Linear";
       case MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE:
          return "Tải Archive With Core";
+      case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT:
+         return "Select File";
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY:
          return "Tải Recent";
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST:
