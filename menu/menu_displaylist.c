@@ -5536,19 +5536,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_LOAD_CONTENT_LIST:
          menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT),
-               msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT),
-               MENU_ENUM_LABEL_LOAD_CONTENT,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST),
+               msg_hash_to_str(MENU_ENUM_LABEL_DETECT_CORE_LIST),
+               MENU_ENUM_LABEL_DETECT_CORE_LIST,
                MENU_SETTING_ACTION, 0, 0);
 
          if (core_info_list_num_info_files(list))
          {
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST),
-                  msg_hash_to_str(MENU_ENUM_LABEL_DETECT_CORE_LIST),
-                  MENU_ENUM_LABEL_DETECT_CORE_LIST,
-                  MENU_SETTING_ACTION, 0, 0);
-
             menu_entries_append_enum(info->list,
                   msg_hash_to_str(
                      MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
@@ -5906,7 +5900,30 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                      (void*)menu->deferred_path,
                      &cores_names_len, &cores_names_size);
 
-            if (cores_names_size == 0)
+            if (!path_is_empty(RARCH_PATH_CORE))
+            {
+               const char *core_name            = NULL;
+               struct retro_system_info *system = NULL;
+
+               menu_entries_append_enum(info->list,
+                     path_get(RARCH_PATH_CORE),
+                     path_get(RARCH_PATH_CORE),
+                     MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,
+                     FILE_TYPE_DIRECT_LOAD,
+                     0,
+                     0);
+
+               menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
+                     &system);
+
+               if (system)
+                  core_name = system->library_name;
+
+               if (!string_is_empty(core_name))
+                  menu_entries_set_alt_at_offset(info->list, 0,
+                        core_name);
+            }
+            else if (cores_names_size == 0)
             {
                menu_entries_append_enum(info->list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORES_AVAILABLE),
@@ -5915,7 +5932,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                      0, 0, 0);
                info->download_core = true;
             }
-            else
+
+            if (cores_names_size != 0)
             {
                struct string_list *cores_paths =
                   string_list_new_special(STRING_LIST_SUPPORTED_CORES_PATHS,
@@ -5947,6 +5965,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             }
 
             string_list_free(cores_names);
+
          }
          break;
       case DISPLAYLIST_CORE_INFO:
