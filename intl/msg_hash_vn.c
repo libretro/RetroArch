@@ -3191,7 +3191,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
 /* FIXME? Translate 'Enable Hardware Shared Context' */
          return "Enable Hardware Shared Context";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH:
-         return "HW Bilinear Filtering";
+         return "Hardware Bilinear Filtering";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER:
          return "Soft Filter Enable";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL:
@@ -3718,6 +3718,10 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "virtual disk tray.";
       case MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
          return "Extract files from an archive to a single subdirectory after downloading.";
+      case MENU_ENUM_SUBLABEL_VIDEO_SMOOTH:
+         return "Smoothens the video using bilinear filtering. This option should be disabled when using shaders.";
+	  case MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER:
+         return "Scales video in integer steps based on geometry and aspect ratio.";
       default:
 #if 0
          RARCH_LOG("Unimplemented: [%d]\n", msg);

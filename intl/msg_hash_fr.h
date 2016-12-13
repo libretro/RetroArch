@@ -2219,3 +2219,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
       "Show onscreen messages.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
       "Extract files from an archive to a single subdirectory after downloading.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+      "Smoothens the video using bilinear filtering. This option should be disabled when using shaders.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
+      "Scales video in integer steps based on geometry and aspect ratio.")
+

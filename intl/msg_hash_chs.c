@@ -3674,6 +3674,10 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
          return "virtual disk tray.";
       case MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
          return "Extract files from an archive to a single subdirectory after downloading.";
+      case MENU_ENUM_SUBLABEL_VIDEO_SMOOTH:
+         return "Smoothens the video using bilinear filtering. This option should be disabled when using shaders.";
+	  case MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER:
+         return "Scales video in integer steps based on geometry and aspect ratio.";
       default:
 #if 0
          RARCH_LOG("Unimplemented: [%d]\n", msg);
