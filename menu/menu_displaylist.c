@@ -3573,6 +3573,14 @@ static int menu_displaylist_parse_generic(
             MENU_ENUM_LABEL_USE_THIS_DIRECTORY,
             FILE_TYPE_USE_DIRECTORY, 0 ,0);
 
+	  menu_entries_append_enum(info->list,
+		   msg_hash_to_str(
+		   MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
+		   msg_hash_to_str(
+		   MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST),
+		   MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST,
+		   MENU_SETTING_ACTION, 0, 0);
+
    if (!str_list)
    {
       const char *str = path_is_compressed
