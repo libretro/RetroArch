@@ -1861,7 +1861,7 @@ static int cheevos_login(retro_time_t *timeout)
 
       if (!res)
       {
-         if(verbosity_is_enabled())
+         if(settings->video.msg_verbosity)
          {
             char msg[256];
             snprintf(msg, sizeof(msg), "RetroAchievements: logged in as \"%s\".",
@@ -2690,7 +2690,7 @@ found:
          free((void*)json);
          cheevos_loaded = true;
          
-         if(verbosity_is_enabled())
+         if(settings->video.msg_verbosity)
          {
             int number_of_cheevos        = cheevos_locals.core.count;
             const cheevo_t* cheevo       = cheevos_locals.core.cheevos;
