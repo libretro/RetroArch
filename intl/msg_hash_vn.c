@@ -1919,6 +1919,9 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Khe kết nối";
       case MSG_FAILED:
          return "Bị Lỗi";
+      case MSG_WRITE_FAILED:
+/* Translate "Write failed." */
+         return "Bị Lỗi";
       case MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER:
          return "Ttệp đã tồn tại. Đang lưu vào backup buffer";
       case MSG_GOT_CONNECTION_FROM:

@@ -1884,6 +1884,9 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
          return "设置磁盘失败";
       case MSG_FAILED:
          return "已失败";
+      case MSG_WRITE_FAILED:
+/* Translate "Write failed." */
+         return "已失败";
       case MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER:
          return "文件已存在. Saving to backup buffer";
       case MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD:

@@ -1908,6 +1908,8 @@ MSG_HASH(MSG_FAILED_TO_UNDO_SAVE_STATE,
       "Failed to undo save state.")
 MSG_HASH(MSG_FAILED_TO_UNMUTE_AUDIO,
       "Failed to unmute audio.")
+MSG_HASH(MSG_WRITE_FAILED,
+      "Write failed.")
 MSG_HASH(MSG_FATAL_ERROR_RECEIVED_IN,
       "Fatal error received in")
 MSG_HASH(MSG_FILE_NOT_FOUND,
