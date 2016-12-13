@@ -3299,12 +3299,8 @@ static int menu_displaylist_parse_playlists(
 
    string_list_free(str_list);
 
-   if (items_found == 0)
-   {
-      if (horizontal)
-         return 0;
+   if (items_found == 0 && !horizontal)
       goto no_playlists;
-   }
 
    return 0;
 
