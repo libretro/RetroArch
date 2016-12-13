@@ -568,7 +568,7 @@ static int general_push(menu_displaylist_info_t *info,
          }
          break;
       case PUSH_DETECT_CORE_LIST:
-         if (!string_is_empty(list->all_ext))
+         if (list && !string_is_empty(list->all_ext))
             strlcpy(info->exts, list->all_ext, sizeof(info->exts));
          else if (system_menu->valid_extensions)
          {
