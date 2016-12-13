@@ -1829,6 +1829,7 @@ static int action_ok_remap_file_save_game(const char *path,
 int action_ok_path_use_directory(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   filebrowser_types  = FILEBROWSER_NONE;
    return generic_action_ok(NULL, label, type, idx, entry_idx,
          ACTION_OK_SET_DIRECTORY, MSG_UNKNOWN);
 }
@@ -3164,6 +3165,7 @@ int action_ok_push_filebrowser_list_dir_select(const char *path,
 static int action_ok_push_default(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   filebrowser_types = FILEBROWSER_NONE;
    return generic_action_ok_displaylist_push(path, NULL, label, type, idx,
          entry_idx, ACTION_OK_DL_PUSH_DEFAULT);
 }
