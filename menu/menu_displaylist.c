@@ -3210,7 +3210,7 @@ static int menu_displaylist_parse_playlists(
    unsigned items_found         = 0;
    settings_t *settings         = config_get_ptr();
 
-   if (!*info->path)
+   if (string_is_empty(info->path))
    {
       if (frontend_driver_parse_drive_list(info->list) != 0)
          menu_entries_append_enum(info->list, "/", "",
@@ -3324,7 +3324,7 @@ static int menu_displaylist_parse_cores(
    unsigned items_found         = 0;
    settings_t *settings         = config_get_ptr();
 
-   if (!*info->path)
+   if (string_is_empty(info->path))
    {
       if (frontend_driver_parse_drive_list(info->list) != 0)
          menu_entries_append_enum(info->list, "/", "",
@@ -3414,7 +3414,7 @@ static int menu_displaylist_parse_cores(
       /* Need to preserve slash first time. */
       path = str_list->elems[i].data;
 
-      if (*info->path)
+      if (!string_is_empty(info->path))
          path = path_basename(path);
 
 #ifndef HAVE_DYNAMIC
@@ -3523,7 +3523,7 @@ static int menu_displaylist_parse_generic(
    unsigned items_found         = 0;
    settings_t *settings         = config_get_ptr();
 
-   if (!*info->path)
+   if (string_is_empty(info->path))
    {
       if (frontend_driver_parse_drive_list(info->list) != 0)
          menu_entries_append_enum(info->list, "/", "",
@@ -3638,7 +3638,7 @@ static int menu_displaylist_parse_generic(
          /* Need to preserve slash first time. */
          path = str_list->elems[i].data;
 
-         if (*info->path && !path_is_compressed)
+         if (!string_is_empty(info->path) && !path_is_compressed)
             path = path_basename(path);
 
          if (filebrowser_types == FILEBROWSER_SELECT_COLLECTION)
