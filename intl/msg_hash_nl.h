@@ -739,7 +739,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
       "Overlay Weergeven")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
-      "Verberg Overlay In Menu")
+      "Verberg Overlay in Menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
       "Poll Type Behavior")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_EARLY,
@@ -989,7 +989,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
       "Overlay Transparantie")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
-      "Overlay Preset")
+      "Load Overlay Preset...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE,
       "Overlay Schalering")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS,
@@ -2267,3 +2267,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
       "Override the current input binds with the remapped binds set for the core you are about to load.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
       "Enable or disable input autodetection along with on-the-fly configuration changes to almost always support your joypads out of the box.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
+      "Enable or disable the overlay.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
+      "Enable or disable the overlay from appearing inside the menu.")

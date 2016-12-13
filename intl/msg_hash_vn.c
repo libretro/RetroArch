@@ -2416,9 +2416,9 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_ENABLE:
          return "Display Keyboard Overlay";
       case MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE:
-         return "Display Overlay";
+         return "Enable Display Overlay";
       case MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU:
-         return "Hide Overlay In Menu";
+         return "Hide Overlay in Menu";
       case MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR:
          return "Poll Type Behavior";
       case MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_EARLY:
@@ -2666,7 +2666,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY:
          return "Overlay Opacity";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET:
-         return "Overlay Preset";
+         return "Load Overlay Preset...";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE:
          return "Overlay Scale";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS:
@@ -3732,6 +3732,10 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Override the current input binds with the remapped binds set for the core you are about to load.";
       case MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE:
          return "Enable or disable input autodetection along with on-the-fly configuration changes to almost always support your joypads out of the box.";
+      case MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE:
+         return "Enable or disable the overlay.";
+      case MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU:
+         return "Enable or disable the overlay from appearing inside the menu.";
       default:
 #if 0
          RARCH_LOG("Unimplemented: [%d]\n", msg);

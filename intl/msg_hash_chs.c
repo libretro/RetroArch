@@ -3688,6 +3688,10 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
          return "Override the current input binds with the remapped binds set for the core you are about to load.";
       case MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE:
          return "Enable or disable input autodetection along with on-the-fly configuration changes to almost always support your joypads out of the box.";
+      case MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE:
+         return "Enable or disable the overlay.";
+      case MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU:
+         return "Enable or disable the overlay from appearing inside the menu.";
       default:
 #if 0
          RARCH_LOG("Unimplemented: [%d]\n", msg);
