@@ -25,6 +25,7 @@
 
 #include "../../movie.h"
 #include "../../msg_hash.h"
+#include "../../configuration.h"
 #include "../../content.h"
 #include "../../runloop.h"
 #include "../../version.h"
@@ -320,13 +321,17 @@ bool netplay_handshake_pre_nick(netplay_t *netplay, struct netplay_connection *c
       /* If we're the server, now we send sync info */
       uint32_t cmd[5];
       uint32_t connected_players;
+      settings_t *settings = config_get_ptr();
+      size_t i;
+      uint32_t device;
       retro_ctx_memory_info_t mem_info;
 
       mem_info.id = RETRO_MEMORY_SAVE_RAM;
       core_get_memory(&mem_info);
 
+      /* Send basic sync info */
       cmd[0] = htonl(NETPLAY_CMD_SYNC);
-      cmd[1] = htonl(3*sizeof(uint32_t) + mem_info.size);
+      cmd[1] = htonl(3*sizeof(uint32_t) + MAX_USERS*sizeof(uint32_t) + mem_info.size);
       cmd[2] = htonl(netplay->self_frame_count);
       connected_players = netplay->connected_players;
       if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING)
@@ -340,6 +345,17 @@ bool netplay_handshake_pre_nick(netplay_t *netplay, struct netplay_connection *c
       if (!netplay_send(&connection->send_packet_buffer, connection->fd, cmd,
             sizeof(cmd)))
          return false;
+
+      /* Now send the device info */
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         device = htonl(settings->input.libretro_device[i]);
+         if (!netplay_send(&connection->send_packet_buffer, connection->fd,
+               &device, sizeof(device)))
+            return false;
+      }
+
+      /* And finally, the SRAM */
       if (!netplay_send(&connection->send_packet_buffer, connection->fd,
             mem_info.data, mem_info.size) ||
           !netplay_send_flush(&connection->send_packet_buffer, connection->fd,
@@ -367,9 +383,12 @@ bool netplay_handshake_pre_sync(netplay_t *netplay, struct netplay_connection *c
 {
    uint32_t cmd[2];
    uint32_t new_frame_count, connected_players, flip_frame;
+   uint32_t device;
    uint32_t local_sram_size, remote_sram_size;
    size_t i;
    ssize_t recvd;
+   settings_t *settings = config_get_ptr();
+   retro_ctx_controller_info_t pad;
    retro_ctx_memory_info_t mem_info;
 
    RECV(cmd, sizeof(cmd))
@@ -377,7 +396,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay, struct netplay_connection *c
 
    /* Only expecting a sync command */
    if (ntohl(cmd[0]) != NETPLAY_CMD_SYNC ||
-       ntohl(cmd[1]) < 3*sizeof(uint32_t))
+       ntohl(cmd[1]) < 3*sizeof(uint32_t) + MAX_USERS*sizeof(uint32_t))
    {
       RARCH_ERR("%s\n",
             msg_hash_to_str(MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST));
@@ -430,12 +449,22 @@ bool netplay_handshake_pre_sync(netplay_t *netplay, struct netplay_connection *c
       }
    }
 
+   /* Get and set each pad */
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      RECV(&device, sizeof(device))
+         return false;
+      pad.port = i;
+      pad.device = ntohl(device);
+      core_set_controller_port_device(&pad);
+   }
+
    /* Now check the SRAM */
    mem_info.id = RETRO_MEMORY_SAVE_RAM;
    core_get_memory(&mem_info);
 
    local_sram_size = mem_info.size;
-   remote_sram_size = ntohl(cmd[1]) - 3*sizeof(uint32_t);
+   remote_sram_size = ntohl(cmd[1]) - 3*sizeof(uint32_t) - MAX_USERS*sizeof(uint32_t);
 
    if (local_sram_size != 0 && local_sram_size == remote_sram_size)
    {

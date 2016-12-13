@@ -165,13 +165,15 @@ Payload:
        frame number: uint32
        connected players: uint32
        flip frame: uint32
+       controller devices: uint32[16]
        sram: variable
     }
 Description:
     Initial state synchronization. Mandatory handshake command from server to
     client only. Sent after receiving client's NICK. Connected players is a
     bitmap with the lowest bit being player 0. Flip frame is 0 if players
-    aren't flipped.
+    aren't flipped. Controller devices are the devices plugged into each
+    controller port, and 16 is really MAX_USERS.
 
 Command: SPECTATE
 Payload: None
