@@ -3692,6 +3692,10 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
          return "Enable or disable the overlay.";
       case MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU:
          return "Enable or disable the overlay from appearing inside the menu.";
+      case MENU_ENUM_SUBLABEL_OVERLAY_AUTOLOAD_PREFERRED:
+         return "Enable or disable preferred overlay automatically.";
+      case MENU_ENUM_SUBLABEL_OVERLAY_PRESET:
+         return "Choose an overlay preset to use.";
       default:
 #if 0
          RARCH_LOG("Unimplemented: [%d]\n", msg);

@@ -2271,3 +2271,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
       "Enable or disable the overlay.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
       "Enable or disable the overlay from appearing inside the menu.")
+MSG_HASH(MENU_ENUM_SUBLABEL_OVERLAY_AUTOLOAD_PREFERRED,
+      "Enable or disable preferred overlay automatically.")
+MSG_HASH(MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
+      "Choose an overlay preset to use.")

@@ -124,9 +124,10 @@ default_sublabel_macro(action_bind_sublabel_video_rotation,                MENU_
 default_sublabel_macro(action_bind_sublabel_menu_input_swap_ok_cancel,     MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL)
 default_sublabel_macro(action_bind_sublabel_input_remap_binds_enable,      MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE)
 default_sublabel_macro(action_bind_sublabel_input_autodetect_enable,       MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE)
-
 default_sublabel_macro(action_bind_sublabel_input_overlay_enable,          MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE)
 default_sublabel_macro(action_bind_sublabel_input_overlay_hide_in_menu,    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU)
+default_sublabel_macro(action_bind_sublabel_overlay_autoload_preferred,    MENU_ENUM_SUBLABEL_OVERLAY_AUTOLOAD_PREFERRED)
+default_sublabel_macro(action_bind_sublabel_overlay_preset,                MENU_ENUM_SUBLABEL_OVERLAY_PRESET)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -459,6 +460,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_hide_in_menu);
+            break;
+         case MENU_ENUM_LABEL_OVERLAY_AUTOLOAD_PREFERRED:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_autoload_preferred);
+            break;
+         case MENU_ENUM_LABEL_OVERLAY_PRESET:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_preset);
             break;
 
          default:
