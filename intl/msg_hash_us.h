@@ -2293,3 +2293,5 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
       "Changes the orientation of your screen with four different options: Normal, 90°, 180°, or 270°.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX,
       "Aarrr, matey.")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
+      "Rearrange the default functions for the X and O buttons to help with cultural differences.")

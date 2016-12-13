@@ -121,6 +121,7 @@ default_sublabel_macro(action_bind_sublabel_video_smooth,                  MENU_
 default_sublabel_macro(action_bind_sublabel_video_scale_integer,           MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER)
 default_sublabel_macro(action_bind_sublabel_video_aspect_ratio_index,      MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX)
 default_sublabel_macro(action_bind_sublabel_video_rotation,                MENU_ENUM_SUBLABEL_VIDEO_ROTATION)
+default_sublabel_macro(action_bind_sublabel_menu_input_swap_ok_cancel,     MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -438,6 +439,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
 		 case MENU_ENUM_LABEL_VIDEO_ROTATION:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_rotation);
+            break;
+         case MENU_ENUM_LABEL_MENU_INPUT_SWAP_OK_CANCEL:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_input_swap_ok_cancel);
             break;
          default:
          case MSG_UNKNOWN:

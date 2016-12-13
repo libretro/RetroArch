@@ -3726,6 +3726,8 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Changes the orientation of your screen with four different options: Normal, 90°, 180°, or 270°.";
 	  case MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX:
          return "Aarrr, matey.";
+      case MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL:
+         return "Rearrange the default functions for the X and O buttons to help with cultural differences.";
       default:
 #if 0
          RARCH_LOG("Unimplemented: [%d]\n", msg);
