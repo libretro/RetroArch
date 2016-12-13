@@ -3672,6 +3672,8 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
          return "Viewport size calculation failed! Will continue using raw data. This will probably not work right ...";
       case MSG_VIRTUAL_DISK_TRAY:
          return "virtual disk tray.";
+      case MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
+         return "Extract files from an archive to a single subdirectory after downloading.";
       default:
 #if 0
          RARCH_LOG("Unimplemented: [%d]\n", msg);
