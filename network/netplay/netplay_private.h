@@ -79,6 +79,9 @@
 #define NETPLAY_COMPRESSION_SUPPORTED 0
 #endif
 
+/* Netplay connection flags */
+#define NETPLAY_FLAG_PASSWORD_REQUIRED (1<<0)
+
 enum netplay_cmd
 {
    /* Basic commands */
@@ -103,17 +106,20 @@ enum netplay_cmd
    /* Inform the other side of our nick (must be first command) */
    NETPLAY_CMD_NICK           = 0x0020,
 
+   /* Give the connection password */
+   NETPLAY_CMD_PASSWORD       = 0x0021,
+
    /* Initial synchronization info (frame, sram, player info) */
-   NETPLAY_CMD_SYNC           = 0x0021,
+   NETPLAY_CMD_SYNC           = 0x0022,
 
    /* Join spectator mode */
-   NETPLAY_CMD_SPECTATE       = 0x0022,
+   NETPLAY_CMD_SPECTATE       = 0x0023,
 
    /* Join play mode */
-   NETPLAY_CMD_PLAY           = 0x0023,
+   NETPLAY_CMD_PLAY           = 0x0024,
 
    /* Report player mode */
-   NETPLAY_CMD_MODE           = 0x0024,
+   NETPLAY_CMD_MODE           = 0x0025,
 
    /* Loading and synchronization */
 
@@ -177,6 +183,7 @@ enum rarch_netplay_connection_mode
    /* Initialization: */
    NETPLAY_CONNECTION_INIT, /* Waiting for header */
    NETPLAY_CONNECTION_PRE_NICK, /* Waiting for nick */
+   NETPLAY_CONNECTION_PRE_PASSWORD, /* Waiting for password */
    NETPLAY_CONNECTION_PRE_SYNC, /* Waiting for sync */
 
    /* Ready: */
@@ -267,6 +274,9 @@ struct netplay
 
    /* TCP connection for listening (server only) */
    int listen_fd;
+
+   /* Password required to connect (server only) */
+   char password[128];
 
    /* Our player number */
    uint32_t self_player;
@@ -394,6 +404,7 @@ void input_poll_net(void);
  * @direct_host          : Netplay host discovered from scanning.
  * @server               : IP address of server.
  * @port                 : Port of server.
+ * @password             : Password required to connect.
  * @delay_frames         : Amount of delay frames.
  * @check_frames         : Frequency with which to check CRCs.
  * @cb                   : Libretro callbacks.
@@ -407,9 +418,9 @@ void input_poll_net(void);
  * Returns: new netplay handle.
  **/
 netplay_t *netplay_new(void *direct_host, const char *server,
-      uint16_t port, unsigned delay_frames, unsigned check_frames,
-      const struct retro_callbacks *cb, bool nat_traversal,
-      const char *nick, uint64_t quirks);
+      uint16_t port, const char *password, unsigned delay_frames,
+      unsigned check_frames, const struct retro_callbacks *cb,
+      bool nat_traversal, const char *nick, uint64_t quirks);
 
 /**
  * netplay_free:
@@ -493,6 +504,7 @@ bool netplay_send_nickname(netplay_t *netplay, int fd);
 bool netplay_handshake_init_send(netplay_t *netplay, struct netplay_connection *connection);
 bool netplay_handshake_init(netplay_t *netplay, struct netplay_connection *connection, bool *had_input);
 bool netplay_handshake_pre_nick(netplay_t *netplay, struct netplay_connection *connection, bool *had_input);
+bool netplay_handshake_pre_password(netplay_t *netplay, struct netplay_connection *connection, bool *had_input);
 bool netplay_handshake_pre_sync(netplay_t *netplay, struct netplay_connection *connection, bool *had_input);
 
 uint32_t netplay_impl_magic(void);

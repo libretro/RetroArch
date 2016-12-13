@@ -405,6 +405,7 @@ typedef struct settings
       unsigned check_frames;
       bool swap_input;
       bool nat_traversal;
+      char password[127];
    } netplay;
 #endif
 

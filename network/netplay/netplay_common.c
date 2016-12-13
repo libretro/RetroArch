@@ -27,8 +27,10 @@
 #include "../../msg_hash.h"
 #include "../../configuration.h"
 #include "../../content.h"
+#include "../../retroarch.h"
 #include "../../runloop.h"
 #include "../../version.h"
+#include "../../menu/widgets/menu_input_dialog.h"
 
 /**
  * netplay_impl_magic:
@@ -117,7 +119,7 @@ static bool netplay_endian_mismatch(uint32_t pma, uint32_t pmb)
 bool netplay_handshake_init_send(netplay_t *netplay, struct netplay_connection *connection)
 {
    uint32_t *content_crc_ptr = NULL;
-   uint32_t header[4] = {0};
+   uint32_t header[5] = {0};
 
    content_get_crc(&content_crc_ptr);
 
@@ -125,6 +127,8 @@ bool netplay_handshake_init_send(netplay_t *netplay, struct netplay_connection *
    header[1] = htonl(*content_crc_ptr);
    header[2] = htonl(netplay_platform_magic());
    header[3] = htonl(NETPLAY_COMPRESSION_SUPPORTED);
+   header[4] = htonl((netplay->is_server && netplay->password[0]) ?
+      NETPLAY_FLAG_PASSWORD_REQUIRED : 0);
 
    if (!netplay_send(&connection->send_packet_buffer, connection->fd, header,
          sizeof(header)) ||
@@ -140,6 +144,12 @@ struct nick_buf_s
    char nick[32];
 };
 
+struct password_buf_s
+{
+   uint32_t cmd[2];
+   char password[128];
+};
+
 #define RECV(buf, sz) \
    recvd = netplay_recv(&connection->recv_packet_buffer, connection->fd, (buf), (sz), false); \
    if (recvd >= 0 && recvd < (sz)) \
@@ -149,9 +159,30 @@ struct nick_buf_s
    } \
    else if (recvd < 0)
 
+static netplay_t *handshake_password_netplay;
+
+static void handshake_password(void *ignore, const char *line)
+{
+   uint32_t cmd[2];
+   netplay_t *netplay = handshake_password_netplay;
+   struct netplay_connection *connection = &netplay->connections[0];
+
+   memset(netplay->password, 0, sizeof(netplay->password));
+   strlcpy(netplay->password, line, sizeof(netplay->password));
+   cmd[0] = ntohl(NETPLAY_CMD_PASSWORD);
+   cmd[1] = ntohl(sizeof(netplay->password));
+
+   netplay_send(&connection->send_packet_buffer, connection->fd, cmd, sizeof(cmd)) &&
+   netplay_send(&connection->send_packet_buffer, connection->fd, netplay->password, sizeof(netplay->password)) &&
+   netplay_send_flush(&connection->send_packet_buffer, connection->fd, false);
+
+   menu_input_dialog_end();
+   rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+}
+
 bool netplay_handshake_init(netplay_t *netplay, struct netplay_connection *connection, bool *had_input)
 {
-   uint32_t header[4] = {0};
+   uint32_t header[5] = {0};
    ssize_t recvd;
    char msg[512];
    struct nick_buf_s nick_buf;
@@ -231,6 +262,19 @@ bool netplay_handshake_init(netplay_t *netplay, struct netplay_connection *conne
       return false;
    }
 
+   /* If a password is demanded, ask for it */
+   if (!netplay->is_server && (ntohl(header[4]) & NETPLAY_FLAG_PASSWORD_REQUIRED))
+   {
+      menu_input_ctx_line_t line;
+      rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
+      memset(&line, 0, sizeof(line));
+      handshake_password_netplay = netplay;
+      line.label = "Enter Netplay server password:";
+      line.label_setting = "no_setting";
+      line.cb = handshake_password;
+      menu_input_dialog_start(&line);
+   }
+
    /* Send our nick */
    nick_buf.cmd[0] = htonl(NETPLAY_CMD_NICK);
    nick_buf.cmd[1] = htonl(sizeof(nick_buf.nick));
@@ -285,6 +329,59 @@ static void netplay_handshake_ready(netplay_t *netplay, struct netplay_connectio
        netplay->stall = 0;
 }
 
+bool netplay_handshake_sync(netplay_t *netplay, struct netplay_connection *connection)
+{
+   /* If we're the server, now we send sync info */
+   uint32_t cmd[5];
+   uint32_t connected_players;
+   settings_t *settings = config_get_ptr();
+   size_t i;
+   uint32_t device;
+   retro_ctx_memory_info_t mem_info;
+
+   mem_info.id = RETRO_MEMORY_SAVE_RAM;
+   core_get_memory(&mem_info);
+
+   /* Send basic sync info */
+   cmd[0] = htonl(NETPLAY_CMD_SYNC);
+   cmd[1] = htonl(3*sizeof(uint32_t) + MAX_USERS*sizeof(uint32_t) + mem_info.size);
+   cmd[2] = htonl(netplay->self_frame_count);
+   connected_players = netplay->connected_players;
+   if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING)
+      connected_players |= 1<<netplay->self_player;
+   cmd[3] = htonl(connected_players);
+   if (netplay->flip)
+      cmd[4] = htonl(netplay->flip_frame);
+   else
+      cmd[4] = htonl(0);
+
+   if (!netplay_send(&connection->send_packet_buffer, connection->fd, cmd,
+            sizeof(cmd)))
+      return false;
+
+   /* Now send the device info */
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      device = htonl(settings->input.libretro_device[i]);
+      if (!netplay_send(&connection->send_packet_buffer, connection->fd,
+               &device, sizeof(device)))
+         return false;
+   }
+
+   /* And finally, the SRAM */
+   if (!netplay_send(&connection->send_packet_buffer, connection->fd,
+            mem_info.data, mem_info.size) ||
+         !netplay_send_flush(&connection->send_packet_buffer, connection->fd,
+            false))
+      return false;
+
+   /* Now we're ready! */
+   connection->mode = NETPLAY_CONNECTION_SPECTATING;
+   netplay_handshake_ready(netplay, connection);
+
+   return true;
+}
+
 bool netplay_handshake_pre_nick(netplay_t *netplay, struct netplay_connection *connection, bool *had_input)
 {
    struct nick_buf_s nick_buf;
@@ -318,53 +415,16 @@ bool netplay_handshake_pre_nick(netplay_t *netplay, struct netplay_connection *c
 
    if (netplay->is_server)
    {
-      /* If we're the server, now we send sync info */
-      uint32_t cmd[5];
-      uint32_t connected_players;
-      settings_t *settings = config_get_ptr();
-      size_t i;
-      uint32_t device;
-      retro_ctx_memory_info_t mem_info;
-
-      mem_info.id = RETRO_MEMORY_SAVE_RAM;
-      core_get_memory(&mem_info);
-
-      /* Send basic sync info */
-      cmd[0] = htonl(NETPLAY_CMD_SYNC);
-      cmd[1] = htonl(3*sizeof(uint32_t) + MAX_USERS*sizeof(uint32_t) + mem_info.size);
-      cmd[2] = htonl(netplay->self_frame_count);
-      connected_players = netplay->connected_players;
-      if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING)
-         connected_players |= 1<<netplay->self_player;
-      cmd[3] = htonl(connected_players);
-      if (netplay->flip)
-         cmd[4] = htonl(netplay->flip_frame);
-      else
-         cmd[4] = htonl(0);
-
-      if (!netplay_send(&connection->send_packet_buffer, connection->fd, cmd,
-            sizeof(cmd)))
-         return false;
-
-      /* Now send the device info */
-      for (i = 0; i < MAX_USERS; i++)
+      if (netplay->password[0])
       {
-         device = htonl(settings->input.libretro_device[i]);
-         if (!netplay_send(&connection->send_packet_buffer, connection->fd,
-               &device, sizeof(device)))
+         /* There's a password, so just put them in PRE_PASSWORD mode */
+         connection->mode = NETPLAY_CONNECTION_PRE_PASSWORD;
+      }
+      else
+      {
+         if (!netplay_handshake_sync(netplay, connection))
             return false;
       }
-
-      /* And finally, the SRAM */
-      if (!netplay_send(&connection->send_packet_buffer, connection->fd,
-            mem_info.data, mem_info.size) ||
-          !netplay_send_flush(&connection->send_packet_buffer, connection->fd,
-            false))
-         return false;
-
-      /* Now we're ready! */
-      connection->mode = NETPLAY_CONNECTION_SPECTATING;
-      netplay_handshake_ready(netplay, connection);
 
    }
    else
@@ -373,6 +433,44 @@ bool netplay_handshake_pre_nick(netplay_t *netplay, struct netplay_connection *c
       connection->mode = NETPLAY_CONNECTION_PRE_SYNC;
 
    }
+
+   *had_input = true;
+   netplay_recv_flush(&connection->recv_packet_buffer);
+   return true;
+}
+
+bool netplay_handshake_pre_password(netplay_t *netplay, struct netplay_connection *connection, bool *had_input)
+{
+   struct password_buf_s password_buf;
+   ssize_t recvd;
+   char msg[512];
+
+   msg[0] = '\0';
+
+   RECV(&password_buf, sizeof(password_buf));
+
+   /* Expecting only a nick command */
+   if (recvd < 0 ||
+       ntohl(password_buf.cmd[0]) != NETPLAY_CMD_PASSWORD ||
+       ntohl(password_buf.cmd[1]) != sizeof(password_buf.password))
+   {
+      if (netplay->is_server)
+         strlcpy(msg, msg_hash_to_str(MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT),
+            sizeof(msg));
+      else
+         strlcpy(msg,
+            msg_hash_to_str(MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST),
+            sizeof(msg));
+      RARCH_ERR("%s\n", msg);
+      runloop_msg_queue_push(msg, 1, 180, false);
+      return false;
+   }
+
+   if (strncmp(netplay->password, password_buf.password, sizeof(password_buf.password)))
+      return false;
+
+   if (!netplay_handshake_sync(netplay, connection))
+      return false;
 
    *had_input = true;
    netplay_recv_flush(&connection->recv_packet_buffer);

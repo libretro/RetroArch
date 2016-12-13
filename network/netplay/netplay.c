@@ -667,6 +667,14 @@ static bool netplay_get_cmd(netplay_t *netplay,
             return false;
          return ret;
       }
+      case NETPLAY_CONNECTION_PRE_PASSWORD:
+      {
+         bool ret = netplay_handshake_pre_password(netplay, connection, had_input);
+         if (connection->mode >= NETPLAY_CONNECTION_CONNECTED &&
+             !send_cur_input(netplay, connection))
+            return false;
+         return ret;
+      }
       case NETPLAY_CONNECTION_PRE_SYNC:
       {
          bool ret = netplay_handshake_pre_sync(netplay, connection, had_input);
@@ -1920,6 +1928,7 @@ static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
  * @direct_host          : Netplay host discovered from scanning.
  * @server               : IP address of server.
  * @port                 : Port of server.
+ * @password             : Password required to connect.
  * @delay_frames         : Amount of delay frames.
  * @check_frames         : Frequency with which to check CRCs.
  * @cb                   : Libretro callbacks.
@@ -1933,9 +1942,9 @@ static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
  * Returns: new netplay handle.
  **/
 netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
-      unsigned delay_frames, unsigned check_frames,
-      const struct retro_callbacks *cb, bool nat_traversal,
-      const char *nick, uint64_t quirks)
+   const char *password, unsigned delay_frames, unsigned check_frames,
+   const struct retro_callbacks *cb, bool nat_traversal, const char *nick,
+   uint64_t quirks)
 {
    netplay_t *netplay = (netplay_t*)calloc(1, sizeof(*netplay));
    if (!netplay)
@@ -1967,6 +1976,7 @@ netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
    }
 
    strlcpy(netplay->nick, nick[0] ? nick : RARCH_DEFAULT_NICK, sizeof(netplay->nick));
+   strlcpy(netplay->password, password ? password : "", sizeof(netplay->password));
 
    if (!init_socket(netplay, direct_host, server, port))
    {
@@ -2452,7 +2462,11 @@ void deinit_netplay(void)
 }
 
 /**
- * init_netplay:
+ * init_netplay
+ * @direct_host          : Host to connect to directly, if applicable (client only)
+ * @server               : server address to connect to (client only)
+ * @port                 : TCP port to host on/connect to
+ * @password             : Password required to connect (server only)
  *
  * Initializes netplay.
  *
@@ -2460,8 +2474,8 @@ void deinit_netplay(void)
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-
-bool init_netplay(void *direct_host, const char *server, unsigned port)
+bool init_netplay(void *direct_host, const char *server, unsigned port,
+   const char *password)
 {
    struct retro_callbacks cbs    = {0};
    settings_t *settings          = config_get_ptr();
@@ -2516,6 +2530,7 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
          netplay_is_client ? direct_host : NULL,
          netplay_is_client ? server : NULL,
          port ? port : RARCH_DEFAULT_PORT,
+         password,
          settings->netplay.delay_frames, settings->netplay.check_frames, &cbs,
          settings->netplay.nat_traversal, settings->username,
          quirks);

@@ -2363,7 +2363,8 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_NETWORKING
          if (!init_netplay(
               data, settings->netplay.server,
-              settings->netplay.port))
+              settings->netplay.port,
+              settings->netplay.password))
             return false;
 #endif
          break;
