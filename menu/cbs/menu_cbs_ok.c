@@ -1889,6 +1889,47 @@ static int action_ok_core_deferred_set(const char *path,
    return menu_cbs_exit();
 }
 
+static int action_ok_core_deferred_set_current_core(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   size_t selection;
+   char core_display_name[PATH_MAX_LENGTH];
+   const char            *entry_path       = NULL;
+   const char           *entry_label       = NULL;
+   const char           *entry_crc32       = NULL;
+   const char               *db_name       = NULL;
+   playlist_t               *playlist      = NULL;
+
+   core_display_name[0] = '\0';
+
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+      return menu_cbs_exit();
+
+   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
+
+   retro_assert(playlist != NULL);
+
+   core_info_get_name(path, core_display_name, sizeof(core_display_name));
+
+   idx = rdb_entry_start_game_selection_ptr;
+
+   playlist_get_index(playlist, idx,
+         &entry_path, &entry_label, NULL, NULL, &entry_crc32, &db_name);
+
+   playlist_update(playlist, idx,
+         entry_path, entry_label,
+         path , core_display_name,
+         entry_crc32,
+         db_name);
+
+   playlist_write_file(playlist);
+
+   menu_entries_pop_stack(&selection, 0, 1);
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
+
+   return 0;
+}
+
 static int action_ok_deferred_list_stub(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -3642,6 +3683,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION:
             BIND_ACTION_OK(cbs, action_ok_core_deferred_set);
+            break;
+         case MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION_CURRENT_CORE:
+            BIND_ACTION_OK(cbs, action_ok_core_deferred_set_current_core);
             break;
          case MENU_ENUM_LABEL_START_CORE:
             BIND_ACTION_OK(cbs, action_ok_start_core);

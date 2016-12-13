@@ -349,6 +349,8 @@ MSG_HASH(MENU_ENUM_LABEL_FILE_BROWSER_CORE_DETECTED,
       "file_browser_core_detected")
 MSG_HASH(MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
       "file_browser_core_select_from_collection")
+MSG_HASH(MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION_CURRENT_CORE,
+      "file_browser_core_select_from_collection_current_core")
 MSG_HASH(MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY,
       "file_browser_directory")
 MSG_HASH(MENU_ENUM_LABEL_FILE_BROWSER_IMAGE,
