@@ -3728,6 +3728,10 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Aarrr, matey.";
       case MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL:
          return "Rearrange the default functions for the X and O buttons to help with cultural differences.";
+      case MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE:
+         return "Override the current input binds with the remapped binds set for the core you are about to load.";
+      case MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE:
+         return "Enable or disable input autodetection along with on-the-fly configuration changes to almost always support your joypads out of the box.";
       default:
 #if 0
          RARCH_LOG("Unimplemented: [%d]\n", msg);

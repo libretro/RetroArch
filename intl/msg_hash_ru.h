@@ -2257,3 +2257,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX,
       "Aarrr, matey.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
       "Rearrange the default functions for the X and O buttons to help with cultural differences.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
+      "Override the current input binds with the remapped binds set for the core you are about to load.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
+      "Enable or disable input autodetection along with on-the-fly configuration changes to almost always support your joypads out of the box.")
