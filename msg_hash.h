@@ -1171,7 +1171,7 @@ enum msg_hash_enums
 
    MENU_LABEL(DETECT_CORE_LIST_OK_CURRENT_CORE),
    MENU_LABEL(DETECT_CORE_LIST_OK),
-   MENU_LABEL(DETECT_CORE_LIST),
+   MENU_LABEL(FAVORITES),
    MENU_LABEL(START_CORE),
    MENU_LABEL(CORE_UPDATER_LIST),
    MENU_LABEL(CORE_UPDATER_AUTO_EXTRACT_ARCHIVE),
@@ -1695,6 +1695,7 @@ enum msg_hash_enums
 #define MENU_LABEL_RDB_ENTRY_RELEASE_YEAR                                      0x14c9c6bfU
 #define MENU_LABEL_RDB_ENTRY_MAX_USERS                                         0xfae91cc4U
 
+#define MENU_LABEL_FAVORITES                                                   0x67325138U
 #define MENU_LABEL_DETECT_CORE_LIST                                            0xaa07c341U
 #define MENU_LABEL_DETECT_CORE_LIST_OK                                         0xabba2a7aU
 #define MENU_LABEL_CORE_LIST                                                   0xa22bb14dU
