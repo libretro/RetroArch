@@ -60,6 +60,10 @@ static bool in_netplay = false;
 static void announce_nat_traversal(netplay_t *netplay);
 #endif
 
+static bool netplay_send_raw_cmd(netplay_t *netplay,
+   struct netplay_connection *connection, uint32_t cmd, const void *data,
+   size_t size);
+
 static void netplay_send_raw_cmd_all(netplay_t *netplay,
    struct netplay_connection *except, uint32_t cmd, const void *data,
    size_t size);
@@ -430,30 +434,45 @@ static bool send_cur_input(netplay_t *netplay, struct netplay_connection *connec
    struct delta_frame *dframe = &netplay->buffer[netplay->self_ptr];
    uint32_t player;
 
-   for (player = 0; player < MAX_USERS; player++)
+   if (netplay->is_server)
    {
-      if (connection->mode == NETPLAY_CONNECTION_PLAYING &&
-          connection->player == player)
-         continue;
-      if ((netplay->connected_players & (1<<player)))
+      /* Send the other players' input data */
+      for (player = 0; player < MAX_USERS; player++)
       {
-         if (dframe->have_real[player])
+         if (connection->mode == NETPLAY_CONNECTION_PLAYING &&
+               connection->player == player)
+            continue;
+         if ((netplay->connected_players & (1<<player)))
          {
-            if (!send_input_frame(netplay, connection, NULL,
-                  netplay->self_frame_count, player,
-                  dframe->real_input_state[player]))
-               return false;
+            if (dframe->have_real[player])
+            {
+               if (!send_input_frame(netplay, connection, NULL,
+                        netplay->self_frame_count, player,
+                        dframe->real_input_state[player]))
+                  return false;
+            }
          }
       }
-      else if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING &&
-            netplay->self_player == player)
+
+      /* If we're not playing, send a NOINPUT */
+      if (netplay->self_mode != NETPLAY_CONNECTION_PLAYING)
       {
-         if (!send_input_frame(netplay, connection, NULL,
-               netplay->self_frame_count,
-               (netplay->is_server ? NETPLAY_CMD_INPUT_BIT_SERVER : 0) | player,
-               dframe->self_state))
+         uint32_t payload = htonl(netplay->self_frame_count);
+         if (!netplay_send_raw_cmd(netplay, connection, NETPLAY_CMD_NOINPUT,
+               &payload, sizeof(payload)))
             return false;
       }
+
+   }
+
+   /* Send our own data */
+   if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING)
+   {
+      if (!send_input_frame(netplay, connection, NULL,
+            netplay->self_frame_count,
+            (netplay->is_server ?  NETPLAY_CMD_INPUT_BIT_SERVER : 0) | netplay->self_player,
+            dframe->self_state))
+         return false;
    }
 
    if (!netplay_send_flush(&connection->send_packet_buffer, connection->fd,
@@ -770,6 +789,25 @@ static bool netplay_get_cmd(netplay_t *netplay,
                netplay->server_ptr = netplay->read_ptr[player];
                netplay->server_frame_count = netplay->read_frame_count[player];
             }
+            break;
+         }
+
+      case NETPLAY_CMD_NOINPUT:
+         {
+            uint32_t frame;
+
+            if (netplay->is_server)
+               return netplay_cmd_nak(netplay, connection);
+
+            RECV(&frame, sizeof(frame))
+               return netplay_cmd_nak(netplay, connection);
+            frame = ntohl(frame);
+
+            if (frame != netplay->server_frame_count)
+               return netplay_cmd_nak(netplay, connection);
+
+            netplay->server_ptr = NEXT_PTR(netplay->server_ptr);
+            netplay->server_frame_count++;
             break;
          }
 
@@ -2046,29 +2084,54 @@ static void netplay_flip_users(netplay_t *netplay)
 /* Toggle between play mode and spectate mode */
 static void netplay_toggle_play_spectate(netplay_t *netplay)
 {
-   uint32_t cmd;
-   size_t i;
-
    if (netplay->is_server)
    {
-      /* FIXME */
-      return;
-   }
+      /* FIXME: Duplication */
+      uint32_t payload[2];
+      payload[0] = htonl(netplay->self_frame_count+1);
+      if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING)
+      {
+         /* Mark us as no longer playing */
+         payload[1] = htonl(netplay->self_player);
+         netplay->self_mode = NETPLAY_CONNECTION_SPECTATING;
+      }
+      else if (netplay->self_mode == NETPLAY_CONNECTION_SPECTATING)
+      {
+         uint32_t player;
 
-   if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING)
-   {
-      /* Switch to spectator mode immediately */
-      netplay->self_mode = NETPLAY_CONNECTION_SPECTATING;
-      cmd = NETPLAY_CMD_SPECTATE;
-   }
-   else if (netplay->self_mode == NETPLAY_CONNECTION_SPECTATING)
-   {
-      /* Switch only after getting permission */
-      cmd = NETPLAY_CMD_PLAY;
-   }
-   else return;
+         /* Take a player number */
+         for (player = 0; player < MAX_USERS; player++)
+            if (!(netplay->connected_players & (1<<player))) break;
+         if (player == MAX_USERS) return; /* Failure! */
 
-   netplay_send_raw_cmd_all(netplay, NULL, cmd, NULL, 0);
+         payload[1] = htonl(NETPLAY_CMD_MODE_BIT_PLAYING | player);
+         netplay->self_mode = NETPLAY_CONNECTION_PLAYING;
+         netplay->self_player = player;
+      }
+
+      netplay_send_raw_cmd_all(netplay, NULL, NETPLAY_CMD_MODE, payload, sizeof(payload));
+
+   }
+   else
+   {
+      uint32_t cmd;
+      size_t i;
+
+      if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING)
+      {
+         /* Switch to spectator mode immediately */
+         netplay->self_mode = NETPLAY_CONNECTION_SPECTATING;
+         cmd = NETPLAY_CMD_SPECTATE;
+      }
+      else if (netplay->self_mode == NETPLAY_CONNECTION_SPECTATING)
+      {
+         /* Switch only after getting permission */
+         cmd = NETPLAY_CMD_PLAY;
+      }
+      else return;
+
+      netplay_send_raw_cmd_all(netplay, NULL, cmd, NULL, 0);
+   }
 }
 
 

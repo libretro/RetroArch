@@ -95,6 +95,9 @@ enum netplay_cmd
    /* Input data */
    NETPLAY_CMD_INPUT          = 0x0003,
 
+   /* Non-input data */
+   NETPLAY_CMD_NOINPUT        = 0x0004,
+
    /* Initialization commands */
 
    /* Inform the other side of our nick (must be first command) */
