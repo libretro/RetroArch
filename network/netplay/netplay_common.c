@@ -267,8 +267,7 @@ static void netplay_handshake_ready(netplay_t *netplay, struct netplay_connectio
       /* Send them the savestate */
       if (!(netplay->quirks & (NETPLAY_QUIRK_NO_SAVESTATES|NETPLAY_QUIRK_NO_TRANSMISSION)))
       {
-         connection->force_send_savestate = true;
-         netplay->force_send_savestate_one = true;
+         netplay->force_send_savestate = true;
       }
    }
    else

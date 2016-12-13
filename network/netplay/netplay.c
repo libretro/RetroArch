@@ -1119,8 +1119,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
       case NETPLAY_CMD_REQUEST_SAVESTATE:
          /* Delay until next frame so we don't send the savestate after the
           * input */
-         connection->force_send_savestate = true;
-         netplay->force_send_savestate_one = true;
+         netplay->force_send_savestate = true;
          break;
 
       case NETPLAY_CMD_LOAD_SAVESTATE:

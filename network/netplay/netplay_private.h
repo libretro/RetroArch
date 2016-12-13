@@ -249,9 +249,6 @@ struct netplay_connection
 
    /* Player # of connected player */
    int player;
-
-   /* Force send a savestate, to this connection only */
-   bool force_send_savestate;
 };
 
 struct netplay
@@ -349,13 +346,8 @@ struct netplay
    /* Quirks in the savestate implementation */
    uint64_t quirks;
 
-   /* Force our state to be sent to all connections. Used when we explicitly
-    * load a state. */
-   bool force_send_savestate_all;
-
-   /* Set if there is at least one client which must be sent the state, usually
-    * because they've requested it or just connected. */
-   bool force_send_savestate_one;
+   /* Force our state to be sent to all connections */
+   bool force_send_savestate;
 
    /* Have we requested a savestate as a sync point? */
    bool savestate_request_outstanding;
