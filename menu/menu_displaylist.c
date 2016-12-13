@@ -3223,7 +3223,9 @@ static int menu_displaylist_parse_playlists(
    if (!str_list)
    {
       const char *str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND);
-      (void)str;
+
+      menu_entries_append_enum(info->list, str, "",
+            MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND, 0, 0, 0);
       return 0;
    }
 
