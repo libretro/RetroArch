@@ -3106,7 +3106,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY:
          return "<Use this directory>";
       case MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE:
-         return "Allow rotation";
+         return "Allow Rotation";
       case MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_AUTO:
          return "Auto Aspect Ratio";
       case MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX:
