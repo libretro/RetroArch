@@ -1118,7 +1118,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_settings_list);
                break;
             case MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
-            case MENU_ENUM_LABEL_DETECT_CORE_LIST:
+            case MENU_ENUM_LABEL_FAVORITES:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_detect_core_list);
                break;
             default:

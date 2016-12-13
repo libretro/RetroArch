@@ -1653,8 +1653,8 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
          return "Proporción personalizada";
       case MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER:
          return "Gestor de bases de datos";
-      case MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST:
-         return "Seleccionar archivo y detectar núcleo";
+      case MENU_ENUM_LABEL_VALUE_FAVORITES:
+         return "Seleccionar archivo y detectar núcleo"; /* TODO/FIXME - update */
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT:
          return "(Carpeta de contenido)";
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT:

@@ -2162,8 +2162,8 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Database Selection";
       case MENU_ENUM_LABEL_VALUE_DELETE_ENTRY:
          return "Remove";
-      case MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST:
-         return "Select File And Detect Core";
+      case MENU_ENUM_LABEL_VALUE_FAVORITES:
+         return "Favorites";
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT:
          return "<Content dir>";
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT:

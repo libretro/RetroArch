@@ -5526,11 +5526,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
                   MENU_SETTING_ACTION, 0, 0);
 
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST),
-               msg_hash_to_str(MENU_ENUM_LABEL_DETECT_CORE_LIST),
-               MENU_ENUM_LABEL_DETECT_CORE_LIST,
-               MENU_SETTING_ACTION, 0, 0);
+         if (!string_is_empty(settings->directory.menu_content))
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES),
+                  msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
+                  MENU_ENUM_LABEL_FAVORITES,
+                  MENU_SETTING_ACTION, 0, 0);
 
          if (core_info_list_num_info_files(list))
          {

@@ -1094,8 +1094,8 @@ const char *msg_hash_to_str_pt(enum msg_hash_enums msg)
          return "Relação de Aspecto Personalizada";
       case MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER:
          return "Gerenciador de Databases";
-      case MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST:
-         return "Selecionar Arquivo e Detectar Core";
+      case MENU_ENUM_LABEL_VALUE_FAVORITES:
+         return "Selecionar Arquivo e Detectar Core"; /* TODO/FIXME - update */
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT:
          return "<Diretório de Conteúdo>";
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT:
