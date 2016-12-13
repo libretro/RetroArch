@@ -42,6 +42,10 @@
 #define RARCH_DEFAULT_PORT 55435
 #define RARCH_DEFAULT_NICK "Anonymous"
 
+#define NETPLAY_NICK_LEN      32
+#define NETPLAY_PASS_LEN      128
+#define NETPLAY_PASS_HASH_LEN 64 /* length of a SHA-256 hash */
+
 #define PREV_PTR(x) ((x) == 0 ? netplay->buffer_size - 1 : (x) - 1)
 #define NEXT_PTR(x) ((x + 1) % netplay->buffer_size)
 
@@ -246,7 +250,7 @@ struct netplay_connection
    struct sockaddr_storage addr;
 
    /* Nickname of peer */
-   char nick[32];
+   char nick[NETPLAY_NICK_LEN];
 
    /* Salt associated with password transaction */
    uint32_t salt;
@@ -270,13 +274,13 @@ struct netplay
    bool is_server;
 
    /* Our nickname */
-   char nick[32];
+   char nick[NETPLAY_NICK_LEN];
 
    /* TCP connection for listening (server only) */
    int listen_fd;
 
    /* Password required to connect (server only) */
-   char password[128];
+   char password[NETPLAY_PASS_LEN];
 
    /* Our player number */
    uint32_t self_player;

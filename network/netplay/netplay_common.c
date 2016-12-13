@@ -152,13 +152,13 @@ bool netplay_handshake_init_send(netplay_t *netplay, struct netplay_connection *
 struct nick_buf_s
 {
    uint32_t cmd[2];
-   char nick[32];
+   char nick[NETPLAY_NICK_LEN];
 };
 
 struct password_buf_s
 {
    uint32_t cmd[2];
-   char password[64];
+   char password[NETPLAY_PASS_HASH_LEN];
 };
 
 #define RECV(buf, sz) \
@@ -175,7 +175,7 @@ static netplay_t *handshake_password_netplay;
 static void handshake_password(void *ignore, const char *line)
 {
    struct password_buf_s password_buf;
-   char password[8+128]; /* 8 for salt, 128 for password */
+   char password[8+NETPLAY_PASS_LEN]; /* 8 for salt, 128 for password */
    uint32_t cmd[2];
    netplay_t *netplay = handshake_password_netplay;
    struct netplay_connection *connection = &netplay->connections[0];
@@ -456,7 +456,7 @@ bool netplay_handshake_pre_nick(netplay_t *netplay, struct netplay_connection *c
 bool netplay_handshake_pre_password(netplay_t *netplay, struct netplay_connection *connection, bool *had_input)
 {
    struct password_buf_s password_buf, corr_password_buf;
-   char password[8+128]; /* 8 for salt, 128 for password */
+   char password[8+NETPLAY_PASS_LEN]; /* 8 for salt */
    ssize_t recvd;
    char msg[512];
 
