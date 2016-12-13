@@ -79,9 +79,6 @@
 #define NETPLAY_COMPRESSION_SUPPORTED 0
 #endif
 
-/* Netplay connection flags */
-#define NETPLAY_FLAG_PASSWORD_REQUIRED (1<<0)
-
 enum netplay_cmd
 {
    /* Basic commands */
@@ -250,6 +247,9 @@ struct netplay_connection
 
    /* Nickname of peer */
    char nick[32];
+
+   /* Salt associated with password transaction */
+   uint32_t salt;
 
    /* Buffers for sending and receiving data */
    struct socket_buffer send_packet_buffer, recv_packet_buffer;

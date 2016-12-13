@@ -159,6 +159,15 @@ Payload:
 Description:
     Send nickname. Mandatory handshake command.
 
+Command: PASSWORD
+Payload:
+    {
+       password hash: char[64]
+    }
+Description:
+    Send hashed password to server. Mandatory handshake command for clients if
+    the server demands a password.
+
 Command: SYNC
 Payload:
     {

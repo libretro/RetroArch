@@ -19,6 +19,7 @@
 
 #include "netplay_private.h"
 #include <net/net_socket.h>
+#include <rhash.h>
 #include <compat/strl.h>
 
 #include <encodings/crc32.h>
@@ -127,8 +128,18 @@ bool netplay_handshake_init_send(netplay_t *netplay, struct netplay_connection *
    header[1] = htonl(*content_crc_ptr);
    header[2] = htonl(netplay_platform_magic());
    header[3] = htonl(NETPLAY_COMPRESSION_SUPPORTED);
-   header[4] = htonl((netplay->is_server && netplay->password[0]) ?
-      NETPLAY_FLAG_PASSWORD_REQUIRED : 0);
+   if (netplay->is_server && netplay->password[0])
+   {
+      /* Demand a password */
+      /* FIXME: Better randomness, or at least seed it */
+      connection->salt = rand();
+      if (connection->salt == 0) connection->salt = 1;
+      header[4] = htonl(connection->salt);
+   }
+   else
+   {
+      header[4] = htonl(0);
+   }
 
    if (!netplay_send(&connection->send_packet_buffer, connection->fd, header,
          sizeof(header)) ||
@@ -147,7 +158,7 @@ struct nick_buf_s
 struct password_buf_s
 {
    uint32_t cmd[2];
-   char password[128];
+   char password[64];
 };
 
 #define RECV(buf, sz) \
@@ -163,17 +174,20 @@ static netplay_t *handshake_password_netplay;
 
 static void handshake_password(void *ignore, const char *line)
 {
+   struct password_buf_s password_buf;
+   char password[8+128]; /* 8 for salt, 128 for password */
    uint32_t cmd[2];
    netplay_t *netplay = handshake_password_netplay;
    struct netplay_connection *connection = &netplay->connections[0];
 
-   memset(netplay->password, 0, sizeof(netplay->password));
-   strlcpy(netplay->password, line, sizeof(netplay->password));
-   cmd[0] = ntohl(NETPLAY_CMD_PASSWORD);
-   cmd[1] = ntohl(sizeof(netplay->password));
+   snprintf(password, sizeof(password), "%08X", connection->salt);
+   strlcpy(password + 8, line, sizeof(password)-8);
 
-   netplay_send(&connection->send_packet_buffer, connection->fd, cmd, sizeof(cmd)) &&
-   netplay_send(&connection->send_packet_buffer, connection->fd, netplay->password, sizeof(netplay->password)) &&
+   password_buf.cmd[0] = htonl(NETPLAY_CMD_PASSWORD);
+   password_buf.cmd[1] = htonl(sizeof(password_buf.password));
+   sha256_hash(password_buf.password, (uint8_t *) password, strlen(password));
+
+   netplay_send(&connection->send_packet_buffer, connection->fd, &password_buf, sizeof(password_buf)) &&
    netplay_send_flush(&connection->send_packet_buffer, connection->fd, false);
 
    menu_input_dialog_end();
@@ -263,7 +277,7 @@ bool netplay_handshake_init(netplay_t *netplay, struct netplay_connection *conne
    }
 
    /* If a password is demanded, ask for it */
-   if (!netplay->is_server && (ntohl(header[4]) & NETPLAY_FLAG_PASSWORD_REQUIRED))
+   if (!netplay->is_server && (connection->salt = ntohl(header[4])))
    {
       menu_input_ctx_line_t line;
       rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
@@ -441,7 +455,8 @@ bool netplay_handshake_pre_nick(netplay_t *netplay, struct netplay_connection *c
 
 bool netplay_handshake_pre_password(netplay_t *netplay, struct netplay_connection *connection, bool *had_input)
 {
-   struct password_buf_s password_buf;
+   struct password_buf_s password_buf, corr_password_buf;
+   char password[8+128]; /* 8 for salt, 128 for password */
    ssize_t recvd;
    char msg[512];
 
@@ -449,7 +464,7 @@ bool netplay_handshake_pre_password(netplay_t *netplay, struct netplay_connectio
 
    RECV(&password_buf, sizeof(password_buf));
 
-   /* Expecting only a nick command */
+   /* Expecting only a password command */
    if (recvd < 0 ||
        ntohl(password_buf.cmd[0]) != NETPLAY_CMD_PASSWORD ||
        ntohl(password_buf.cmd[1]) != sizeof(password_buf.password))
@@ -466,7 +481,13 @@ bool netplay_handshake_pre_password(netplay_t *netplay, struct netplay_connectio
       return false;
    }
 
-   if (strncmp(netplay->password, password_buf.password, sizeof(password_buf.password)))
+   /* Calculate the correct password */
+   snprintf(password, sizeof(password), "%08X", connection->salt);
+   strlcpy(password + 8, netplay->password, sizeof(password)-8);
+   sha256_hash(corr_password_buf.password, (uint8_t *) password, strlen(password));
+
+   /* Compare them */
+   if (memcmp(password_buf.password, corr_password_buf.password, sizeof(password_buf.password)))
       return false;
 
    if (!netplay_handshake_sync(netplay, connection))
