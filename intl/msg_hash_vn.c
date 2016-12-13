@@ -3120,7 +3120,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER:
          return "Video Driver";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FILTER:
-         return "Video Filter";
+         return "Load Video Filter...";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR:
          return "Video Filter Dir";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER:
@@ -3150,7 +3150,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES:
          return "Hard GPU Sync Frames";
       case MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES:
-         return "Max swapchain images";
+         return "Max Swapchain Images";
       case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X:
          return "OSD Message X Position";
       case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y:
@@ -3164,7 +3164,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO:
          return "Estimated Monitor Framerate";
       case MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION:
-         return "Rotation";
+         return "Screen Rotation";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SCALE:
          return "Windowed Scale";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER:
