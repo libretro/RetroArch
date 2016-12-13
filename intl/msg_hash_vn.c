@@ -2576,13 +2576,13 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES:
          return "Netplay Delay Frames";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT:
-         return "Disconnect";
+         return "Disconnect Netplay";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE:
          return "Netplay Enable";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT:
-         return "Connect to Netplay host";
+         return "Connect Netplay";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST:
-         return "Start hosting";
+         return "Start Netplay";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS:
          return "Server Address";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_MODE:
