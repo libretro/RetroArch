@@ -3678,6 +3678,10 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
          return "Smoothens the video using bilinear filtering. This option should be disabled when using shaders.";
 	  case MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER:
          return "Scales video in integer steps based on geometry and aspect ratio.";
+	  case MENU_ENUM_SUBLABEL_VIDEO_ROTATION:
+         return "Changes the orientation of your screen with four different options: Normal, 90°, 180°, or 270°.";
+	  case MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX:
+         return "Aarrr, matey.";
       default:
 #if 0
          RARCH_LOG("Unimplemented: [%d]\n", msg);

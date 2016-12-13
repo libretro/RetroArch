@@ -894,3 +894,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
       "Smoothens the video using bilinear filtering. This option should be disabled when using shaders.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
       "Scales video in integer steps based on geometry and aspect ratio.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
+      "Changes the orientation of your screen with four different options: Normal, 90°, 180°, or 270°.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX,
+      "Aarrr, matey.")
