@@ -161,7 +161,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
-      "Audio DSP Plugin"
+      "Load Audio DSP Plugin..."
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,

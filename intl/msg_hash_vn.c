@@ -1966,7 +1966,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER:
          return "Audio Driver";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN:
-         return "Audio DSP Plugin";
+         return "Load Audio DSP Plugin...";
       case MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE:
          return "Audio Enable";
       case MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR:
