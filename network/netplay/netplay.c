@@ -344,7 +344,7 @@ static bool netplay_can_poll(netplay_t *netplay)
  * earliest unread frame count of any connected player */
 static void update_unread_ptr(netplay_t *netplay)
 {
-   if (!netplay->connected_players)
+   if (netplay->is_server && !netplay->connected_players)
    {
       /* Nothing at all to read! */
       netplay->unread_ptr = netplay->self_ptr;
@@ -396,11 +396,6 @@ static bool send_input_frame(netplay_t *netplay,
 
    if (only)
    {
-      if (only->mode == NETPLAY_CONNECTION_PLAYING && only->player == player)
-      {
-         hangup(netplay, only);
-         return false;
-      }
       if (!netplay_send(&only->send_packet_buffer, only->fd, buffer, sizeof(buffer)))
       {
          hangup(netplay, only);
@@ -1006,7 +1001,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                   {
                      memcpy(dframe->real_input_state[player], dframe->self_state, sizeof(dframe->self_state));
                      dframe->have_real[player] = true;
-                     send_input_frame(netplay, NULL, NULL, dframe->frame, player, dframe->self_state);
+                     send_input_frame(netplay, connection, NULL, dframe->frame, player, dframe->self_state);
                      if (dframe->frame == netplay->self_frame_count) break;
                      NEXT();
                   }
@@ -2088,12 +2083,18 @@ static void netplay_toggle_play_spectate(netplay_t *netplay)
    {
       /* FIXME: Duplication */
       uint32_t payload[2];
-      payload[0] = htonl(netplay->self_frame_count+1);
+      char msg[512];
+      payload[0] = htonl(netplay->self_frame_count);
       if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING)
       {
          /* Mark us as no longer playing */
          payload[1] = htonl(netplay->self_player);
          netplay->self_mode = NETPLAY_CONNECTION_SPECTATING;
+
+         strlcpy(msg, "You have left the game", sizeof(msg));
+         RARCH_LOG("%s\n", msg);
+         runloop_msg_queue_push(msg, 1, 180, false);
+
       }
       else if (netplay->self_mode == NETPLAY_CONNECTION_SPECTATING)
       {
@@ -2107,6 +2108,11 @@ static void netplay_toggle_play_spectate(netplay_t *netplay)
          payload[1] = htonl(NETPLAY_CMD_MODE_BIT_PLAYING | player);
          netplay->self_mode = NETPLAY_CONNECTION_PLAYING;
          netplay->self_player = player;
+
+         msg[sizeof(msg)-1] = '\0';
+         snprintf(msg, sizeof(msg)-1, "You have joined as player %d", player+1);
+         RARCH_LOG("%s\n", msg);
+         runloop_msg_queue_push(msg, 1, 180, false);
       }
 
       netplay_send_raw_cmd_all(netplay, NULL, NETPLAY_CMD_MODE, payload, sizeof(payload));

@@ -245,7 +245,7 @@ void netplay_sync_post_frame(netplay_t *netplay)
    netplay->self_frame_count++;
 
    /* Only relevant if we're connected */
-   if (!netplay->connected_players)
+   if (netplay->is_server && !netplay->connected_players)
    {
       netplay->other_frame_count = netplay->self_frame_count;
       netplay->other_ptr = netplay->self_ptr;
