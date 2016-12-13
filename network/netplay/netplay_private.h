@@ -249,6 +249,9 @@ struct netplay_connection
 
    /* Player # of connected player */
    int player;
+
+   /* Is this player paused? */
+   bool paused;
 };
 
 struct netplay

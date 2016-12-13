@@ -1239,12 +1239,29 @@ static bool netplay_get_cmd(netplay_t *netplay,
          }
 
       case NETPLAY_CMD_PAUSE:
+         connection->paused = true;
          netplay->remote_paused = true;
+         netplay_send_raw_cmd_all(netplay, connection, NETPLAY_CMD_PAUSE, NULL, 0);
          break;
 
       case NETPLAY_CMD_RESUME:
+      {
+         size_t i;
+         connection->paused = false;
          netplay->remote_paused = false;
+         for (i = 0; i < netplay->connections_size; i++)
+         {
+            struct netplay_connection *sc = &netplay->connections[i];
+            if (sc->active && sc->paused)
+            {
+               netplay->remote_paused = true;
+               break;
+            }
+         }
+         if (!netplay->remote_paused && !netplay->local_paused)
+            netplay_send_raw_cmd_all(netplay, connection, NETPLAY_CMD_RESUME, NULL, 0);
          break;
+      }
 
       default:
          RARCH_ERR("%s.\n", msg_hash_to_str(MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED));
@@ -2201,6 +2218,12 @@ void netplay_frontend_paused(netplay_t *netplay, bool paused)
       return;
 
    netplay->local_paused = paused;
+
+   /* If other connections are paused, nothing to say */
+   if (netplay->remote_paused)
+      return;
+
+   /* Have to send manually because every buffer must be flushed immediately */
    for (i = 0; i < netplay->connections_size; i++)
    {
       struct netplay_connection *connection = &netplay->connections[i];
