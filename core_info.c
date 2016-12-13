@@ -22,6 +22,8 @@
 #include <lists/dir_list.h>
 #include <file/archive_file.h>
 
+#include <retro_stat.h>
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -162,15 +164,15 @@ static void core_info_list_free(core_info_list_t *core_info_list)
    free(core_info_list);
 }
 
-static config_file_t *core_info_list_iterate(
+static bool core_info_list_iterate(
+      char *s, size_t len,
       struct string_list *contents, size_t i)
 {
    char info_path_base[PATH_MAX_LENGTH] = {0};
-   char info_path[PATH_MAX_LENGTH]      = {0};
    settings_t                 *settings = config_get_ptr();
 
-   if (!contents->elems[i].data)
-      return NULL;
+   if (!contents || !contents->elems[i].data)
+      return false;
 
    fill_pathname_base_noext(info_path_base, contents->elems[i].data,
          sizeof(info_path_base));
@@ -185,12 +187,12 @@ static config_file_t *core_info_list_iterate(
          file_path_str(FILE_PATH_CORE_INFO_EXTENSION),
          sizeof(info_path_base));
 
-   fill_pathname_join(info_path,
+   fill_pathname_join(s,
          (!string_is_empty(settings->path.libretro_info)) ?
          settings->path.libretro_info : settings->directory.libretro,
-         info_path_base, sizeof(info_path));
+         info_path_base, len);
 
-   return config_file_new(info_path);
+   return true;
 }
 
 static core_info_list_t *core_info_list_new(void)
@@ -224,12 +226,18 @@ static core_info_list_t *core_info_list_new(void)
 
    for (i = 0; i < contents->size; i++)
    {
-      config_file_t *conf = core_info_list_iterate(contents, i);
+      char info_path[PATH_MAX_LENGTH];
 
-      if (conf)
+      info_path[0]        = '\0';
+
+      if ( 
+            core_info_list_iterate(info_path, sizeof(info_path),
+            contents, i) 
+            && path_is_valid(info_path))
       {
-         bool tmp_bool  = false;
-         unsigned count = 0;
+         bool tmp_bool       = false;
+         unsigned count      = 0;
+         config_file_t *conf = config_file_new(info_path);
 
          config_get_string(conf, "display_name",
                &core_info[i].display_name);
@@ -653,15 +661,19 @@ void core_info_get_name(const char *path, char *s, size_t len)
 
    for (i = 0; i < contents->size; i++)
    {
-      config_file_t *conf = NULL;
+      char info_path[PATH_MAX_LENGTH];
+
+      info_path[0]        = '\0';
 
       if (!string_is_equal(contents->elems[i].data, path))
          continue;
 
-      conf = core_info_list_iterate(contents, i);
-
-      if (conf)
+      if (core_info_list_iterate(info_path,
+               sizeof(info_path), contents, i)
+            && path_is_valid(info_path))
       {
+         config_file_t *conf = config_file_new(info_path);
+
          config_get_string(conf, "corename",
                &core_info[i].core_name);
          core_info[i].config_data = (void*)conf;
