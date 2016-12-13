@@ -390,7 +390,10 @@ static int frontend_ctr_parse_drive_list(void *data)
       return -1;
 
    menu_entries_append_enum(list,
-         "sdmc:/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         "sdmc:/",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
 #endif
 
    return 0;
