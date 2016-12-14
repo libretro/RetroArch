@@ -89,10 +89,7 @@ static void core_info_list_resolve_all_firmware(
       core_info_t *info     = (core_info_t*)&core_info_list->list[i];
       config_file_t *config = (config_file_t*)info->config_data;
 
-      if (!config)
-         continue;
-
-      if (!config_get_uint(config, "firmware_count", &count))
+      if (!config || !config_get_uint(config, "firmware_count", &count))
          continue;
 
       info->firmware = (core_info_firmware_t*)
@@ -103,9 +100,11 @@ static void core_info_list_resolve_all_firmware(
 
       for (c = 0; c < count; c++)
       {
-         char path_key[64] = {0};
-         char desc_key[64] = {0};
-         char opt_key[64]  = {0};
+         char path_key[64];
+         char desc_key[64];
+         char opt_key[64];
+
+         path_key[0] = desc_key[0] = opt_key[0] = '\0';
 
          snprintf(path_key, sizeof(path_key), "firmware%u_path", c);
          snprintf(desc_key, sizeof(desc_key), "firmware%u_desc", c);
@@ -168,17 +167,20 @@ static bool core_info_list_iterate(
       char *s, size_t len,
       struct string_list *contents, size_t i)
 {
-   char info_path_base[PATH_MAX_LENGTH] = {0};
+   char info_path_base[PATH_MAX_LENGTH];
+   char                       *substr   = NULL;
    settings_t                 *settings = config_get_ptr();
 
    if (!contents || !contents->elems[i].data)
       return false;
 
+   info_path_base[0] = '\0';
+
    fill_pathname_base_noext(info_path_base, contents->elems[i].data,
          sizeof(info_path_base));
 
 #if defined(RARCH_MOBILE) || (defined(RARCH_CONSOLE) && !defined(PSP) && !defined(_3DS) && !defined(VITA))
-   char *substr = strrchr(info_path_base, '_');
+   substr = strrchr(info_path_base, '_');
    if (substr)
       *substr = '\0';
 #endif
@@ -195,20 +197,13 @@ static bool core_info_list_iterate(
    return true;
 }
 
-static core_info_list_t *core_info_list_new(void)
+static core_info_list_t *core_info_list_new(const char *path)
 {
    size_t i;
    core_info_t *core_info           = NULL;
    core_info_list_t *core_info_list = NULL;
-   struct string_list *contents     = NULL;
-   settings_t *settings             = config_get_ptr();
-
-   if (!settings)
-      return NULL;
-
-   contents = dir_list_new_special(
-         settings->directory.libretro,
-         DIR_LIST_CORES, NULL);
+   struct string_list *contents     = dir_list_new_special(
+                                      path, DIR_LIST_CORES, NULL);
 
    if (!contents)
       return NULL;
@@ -411,20 +406,22 @@ static bool core_info_list_update_missing_firmware_internal(
       const char *systemdir)
 {
    size_t i;
-   char path[PATH_MAX_LENGTH] = {0};
+   char path[PATH_MAX_LENGTH];
    core_info_t          *info = NULL;
 
    if (!core_info_list || !core)
       return false;
 
-   info = core_info_find_internal(core_info_list, core);
+   path[0] = '\0';
+   info    = core_info_find_internal(core_info_list, core);
 
    if (!info)
       return false;
+
    runloop_ctl(RUNLOOP_CTL_UNSET_MISSING_BIOS, NULL);
    for (i = 0; i < info->firmware_count; i++)
    {
-      if (!info->firmware[i].path)
+      if (string_is_empty(info->firmware[i].path))
          continue;
 
       fill_pathname_join(path, systemdir,
@@ -460,12 +457,13 @@ static void core_info_list_get_missing_firmware(
       const core_info_firmware_t **firmware, size_t *num_firmware)
 {
    size_t i;
-   char path[PATH_MAX_LENGTH] = {0};
+   char path[PATH_MAX_LENGTH];
    core_info_t          *info = NULL;
 
    if (!core_info_list || !core)
       return;
 
+   path[0]       = '\0';
    *firmware     = NULL;
    *num_firmware = 0;
 
@@ -519,7 +517,10 @@ void core_info_deinit_list(void)
 
 bool core_info_init_list(void)
 {
-   core_info_curr_list = core_info_list_new();
+   settings_t *settings = config_get_ptr();
+
+   if (settings)
+      core_info_curr_list = core_info_list_new(settings->directory.libretro);
 
    if (!core_info_curr_list)
       return false;
