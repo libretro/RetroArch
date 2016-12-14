@@ -15,23 +15,18 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <compat/strl.h>
-#include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
 
-#include <net/net_compat.h>
-#include <net/net_socket.h>
-#include <net/net_natt.h>
+#include <boolean.h>
 
 #include "netplay_private.h"
-
-#include "retro_assert.h"
 
 #include "../../autosave.h"
 
 #if 0
 #define DEBUG_NONDETERMINISTIC_CORES
 #endif
-
 
 /**
  * netplay_update_unread_ptr

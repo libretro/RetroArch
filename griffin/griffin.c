@@ -884,7 +884,7 @@ NETPLAY
 #include "../network/netplay/netplay_frontend.c"
 #include "../network/netplay/netplay_init.c"
 #include "../network/netplay/netplay_io.c"
-#include "../network/netplay/netplay_net.c"
+#include "../network/netplay/netplay_sync.c"
 #include "../network/netplay/netplay_common.c"
 #include "../network/netplay/netplay_discovery.c"
 #include "../libretro-common/net/net_compat.c"
