@@ -221,7 +221,7 @@ static core_info_list_t *core_info_list_new(void)
    if (!core_info)
       goto error;
 
-   core_info_list->list = core_info;
+   core_info_list->list  = core_info;
    core_info_list->count = contents->size;
 
    for (i = 0; i < contents->size; i++)
@@ -692,10 +692,8 @@ size_t core_info_list_num_info_files(core_info_list_t *core_info_list)
 bool core_info_unsupported_content_path(const char *path)
 {
    size_t i;
-   const char *delim;
    const char *archive_path = NULL;
-
-   delim = path_get_archive_delim(path);
+   const char *delim        = path_get_archive_delim(path);
 
    if (delim)
       archive_path = delim - 1;
@@ -720,9 +718,8 @@ bool core_info_unsupported_content_path(const char *path)
    for (i = 0; i < core_info_curr_list->count; i++)
    {
       const core_info_t *info = &core_info_curr_list->list[i];
-      bool path_in_ext_list = string_list_find_elem(info->supported_extensions_list, path_get_extension(path));
 
-      if (path_in_ext_list)
+      if (string_list_find_elem(info->supported_extensions_list, path_get_extension(path)))
          return false;
    }
 
@@ -732,8 +729,8 @@ bool core_info_unsupported_content_path(const char *path)
 bool core_info_database_supports_content_path(const char *database_path, const char *path)
 {
    size_t i;
-   char *database;
-   const char *delim;
+   char *database           = NULL;
+   const char *delim        = NULL;
    const char *archive_path = NULL;
 
    if (!core_info_curr_list)
@@ -756,31 +753,30 @@ bool core_info_database_supports_content_path(const char *database_path, const c
       {
          const core_info_t *info = &core_info_curr_list->list[i];
 
-         if (string_list_find_elem(info->databases_list, database))
-         {
-            if (string_list_find_elem(info->supported_extensions_list, "zip") ||
-                string_list_find_elem(info->supported_extensions_list, "7z"))
-            {
-               free(database);
-               return false;
-            }
-         }
+         if (!string_list_find_elem(info->databases_list, database))
+            continue;
+
+         if (     !string_list_find_elem(info->supported_extensions_list, "zip")
+               && !string_list_find_elem(info->supported_extensions_list, "7z"))
+            continue;
+
+         free(database);
+         return false;
       }
    }
 
    for (i = 0; i < core_info_curr_list->count; i++)
    {
       const core_info_t *info = &core_info_curr_list->list[i];
-      bool path_in_ext_list = string_list_find_elem(info->supported_extensions_list, path_get_extension(path));
 
-      if (path_in_ext_list)
-      {
-         if (string_list_find_elem(info->databases_list, database))
-         {
-            free(database);
-            return true;
-         }
-      }
+      if (!string_list_find_elem(info->supported_extensions_list, path_get_extension(path)))
+         continue;
+
+      if (!string_list_find_elem(info->databases_list, database))
+         continue;
+
+      free(database);
+      return true;
    }
 
    free(database);
