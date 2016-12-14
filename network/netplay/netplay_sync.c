@@ -131,7 +131,7 @@ void netplay_simulate_input(netplay_t *netplay, size_t sim_ptr, bool resim)
 static void netplay_handle_frame_hash(netplay_t *netplay, struct delta_frame *delta)
 {
    static bool crcs_valid = true;
-   if (netplay_is_server(netplay))
+   if (netplay->is_server)
    {
       if (netplay->check_frames &&
           (delta->frame % netplay->check_frames == 0 || delta->frame == 1))

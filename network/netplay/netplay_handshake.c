@@ -15,23 +15,112 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+
+#include <boolean.h>
 #include <compat/strl.h>
+#include <rhash.h>
 
 #include "netplay_private.h"
-#include <net/net_socket.h>
-#include <rhash.h>
-#include <compat/strl.h>
 
-#include <encodings/crc32.h>
-
-#include "../../movie.h"
-#include "../../msg_hash.h"
 #include "../../configuration.h"
 #include "../../content.h"
 #include "../../retroarch.h"
 #include "../../runloop.h"
 #include "../../version.h"
 #include "../../menu/widgets/menu_input_dialog.h"
+
+#ifndef HAVE_SOCKET_LEGACY
+/* Custom inet_ntop. Win32 doesn't seem to support this ... */
+void netplay_log_connection(const struct sockaddr_storage *their_addr,
+      unsigned slot, const char *nick)
+{
+   union
+   {
+      const struct sockaddr_storage *storage;
+      const struct sockaddr_in *v4;
+      const struct sockaddr_in6 *v6;
+   } u;
+   const char *str               = NULL;
+   char buf_v4[INET_ADDRSTRLEN]  = {0};
+   char buf_v6[INET6_ADDRSTRLEN] = {0};
+   char msg[512];
+
+   msg[0] = '\0';
+
+   u.storage = their_addr;
+
+   switch (their_addr->ss_family)
+   {
+      case AF_INET:
+         {
+            struct sockaddr_in in;
+
+            memset(&in, 0, sizeof(in));
+
+            str           = buf_v4;
+            in.sin_family = AF_INET;
+            memcpy(&in.sin_addr, &u.v4->sin_addr, sizeof(struct in_addr));
+
+            getnameinfo((struct sockaddr*)&in, sizeof(struct sockaddr_in),
+                  buf_v4, sizeof(buf_v4),
+                  NULL, 0, NI_NUMERICHOST);
+         }
+         break;
+      case AF_INET6:
+         {
+            struct sockaddr_in6 in;
+            memset(&in, 0, sizeof(in));
+
+            str            = buf_v6;
+            in.sin6_family = AF_INET6;
+            memcpy(&in.sin6_addr, &u.v6->sin6_addr, sizeof(struct in6_addr));
+
+            getnameinfo((struct sockaddr*)&in, sizeof(struct sockaddr_in6),
+                  buf_v6, sizeof(buf_v6), NULL, 0, NI_NUMERICHOST);
+         }
+         break;
+      default:
+         break;
+   }
+
+   if (str)
+   {
+      snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_GOT_CONNECTION_FROM_NAME),
+            nick, str);
+      runloop_msg_queue_push(msg, 1, 180, false);
+      RARCH_LOG("%s\n", msg);
+   }
+   else
+   {
+      snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_GOT_CONNECTION_FROM),
+            nick);
+      runloop_msg_queue_push(msg, 1, 180, false);
+      RARCH_LOG("%s\n", msg);
+   }
+   RARCH_LOG("%s %u\n", msg_hash_to_str(MSG_CONNECTION_SLOT),
+         slot);
+}
+
+#else
+void netplay_log_connection(const struct sockaddr_storage *their_addr,
+      unsigned slot, const char *nick)
+{
+   char msg[512];
+
+   msg[0] = '\0';
+
+   snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_GOT_CONNECTION_FROM),
+         nick);
+   runloop_msg_queue_push(msg, 1, 180, false);
+   RARCH_LOG("%s\n", msg);
+   RARCH_LOG("%s %u\n",
+         msg_hash_to_str(MSG_CONNECTION_SLOT), slot);
+}
+
+#endif
 
 /**
  * netplay_impl_magic:
@@ -648,38 +737,4 @@ bool netplay_handshake_pre_sync(netplay_t *netplay, struct netplay_connection *c
 
    /* Ask to go to player mode */
    return netplay_cmd_mode(netplay, connection, NETPLAY_CONNECTION_PLAYING);
-}
-
-bool netplay_is_server(netplay_t* netplay)
-{
-   if (!netplay)
-      return false;
-   return netplay->is_server;
-}
-
-bool netplay_delta_frame_ready(netplay_t *netplay, struct delta_frame *delta, uint32_t frame)
-{
-   void *remember_state;
-   if (delta->used)
-   {
-      if (delta->frame == frame) return true;
-      if (netplay->other_frame_count <= delta->frame)
-      {
-         /* We haven't even replayed this frame yet, so we can't overwrite it! */
-         return false;
-      }
-   }
-   remember_state = delta->state;
-   memset(delta, 0, sizeof(struct delta_frame));
-   delta->used = true;
-   delta->frame = frame;
-   delta->state = remember_state;
-   return true;
-}
-
-uint32_t netplay_delta_frame_crc(netplay_t *netplay, struct delta_frame *delta)
-{
-   if (!netplay->state_size)
-      return 0;
-   return encoding_crc32(0L, (const unsigned char*)delta->state, netplay->state_size);
 }
