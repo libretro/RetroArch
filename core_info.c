@@ -633,8 +633,6 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
 void core_info_get_name(const char *path, char *s, size_t len)
 {
    size_t i;
-   core_info_t *core_info           = NULL;
-   core_info_list_t *core_info_list = NULL;
    struct string_list *contents     = NULL;
    settings_t             *settings = config_get_ptr();
 
@@ -648,47 +646,35 @@ void core_info_get_name(const char *path, char *s, size_t len)
    if (!contents)
       return;
 
-   core_info_list = (core_info_list_t*)calloc(1, sizeof(*core_info_list));
-   if (!core_info_list)
-      goto error;
-
-   core_info = (core_info_t*)calloc(contents->size, sizeof(*core_info));
-   if (!core_info)
-      goto error;
-
-   core_info_list->list = core_info;
-   core_info_list->count = contents->size;
-
    for (i = 0; i < contents->size; i++)
    {
       char info_path[PATH_MAX_LENGTH];
+      config_file_t *conf             = NULL;
+      char *new_core_name             = NULL;
 
       info_path[0]        = '\0';
 
       if (!string_is_equal(contents->elems[i].data, path))
          continue;
 
-      if (core_info_list_iterate(info_path,
+      if (!core_info_list_iterate(info_path,
                sizeof(info_path), contents, i)
             && path_is_valid(info_path))
-      {
-         config_file_t *conf = config_file_new(info_path);
+         continue;
 
-         config_get_string(conf, "corename",
-               &core_info[i].core_name);
-         core_info[i].config_data = (void*)conf;
-      }
+      conf = config_file_new(info_path);
 
-      core_info[i].path = strdup(contents->elems[i].data);
+      config_get_string(conf, "corename",
+            &new_core_name);
+      strlcpy(s, new_core_name, len);
 
-      strlcpy(s, core_info[i].core_name, len);
+      config_file_free(conf);
+      break;
    }
 
-error:
    if (contents)
       dir_list_free(contents);
    contents = NULL;
-   core_info_list_free(core_info_list);
 }
 
 size_t core_info_list_num_info_files(core_info_list_t *core_info_list)
