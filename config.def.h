@@ -798,6 +798,8 @@ static const unsigned autosave_interval = 0;
  * user 1 rather than user 2. */
 static const bool netplay_client_swap_input = true;
 
+static const bool netplay_nat_traversal = false;
+
 static const unsigned netplay_delay_frames = 16;
 
 static const unsigned netplay_check_frames = 30;
