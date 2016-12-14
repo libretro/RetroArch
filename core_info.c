@@ -234,6 +234,9 @@ static core_info_list_t *core_info_list_new(const char *path)
          unsigned count      = 0;
          config_file_t *conf = config_file_new(info_path);
 
+         if (!conf)
+            continue;
+
          config_get_string(conf, "display_name",
                &core_info[i].display_name);
          config_get_string(conf, "corename",
@@ -660,9 +663,15 @@ void core_info_get_name(const char *path, char *s, size_t len)
 
       conf = config_file_new(info_path);
 
-      config_get_string(conf, "corename",
-            &new_core_name);
-      strlcpy(s, new_core_name, len);
+      if (!conf)
+         continue;
+
+      if (config_get_string(conf, "corename",
+            &new_core_name))
+      {
+         strlcpy(s, new_core_name, len);
+         free(new_core_name);
+      }
 
       config_file_free(conf);
       break;
