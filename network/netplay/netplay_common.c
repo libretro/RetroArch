@@ -117,6 +117,29 @@ static bool netplay_endian_mismatch(uint32_t pma, uint32_t pmb)
    return (pma & ebit) != (pmb & ebit);
 }
 
+static unsigned long simple_rand_next = 1;
+
+static int simple_rand()
+{
+   simple_rand_next = simple_rand_next * 1103515245 + 12345;
+   return((unsigned)(simple_rand_next/65536) % 32768);
+}
+
+static void simple_srand(unsigned int seed) {
+   simple_rand_next = seed;
+}
+
+static uint32_t simple_rand_uint32()
+{
+   uint32_t parts[3];
+   parts[0] = simple_rand();
+   parts[1] = simple_rand();
+   parts[2] = simple_rand();
+   return ((parts[0] << 30) +
+           (parts[1] << 15) +
+            parts[2]);
+}
+
 bool netplay_handshake_init_send(netplay_t *netplay, struct netplay_connection *connection)
 {
    uint32_t *content_crc_ptr = NULL;
@@ -131,8 +154,9 @@ bool netplay_handshake_init_send(netplay_t *netplay, struct netplay_connection *
    if (netplay->is_server && netplay->password[0])
    {
       /* Demand a password */
-      /* FIXME: Better randomness, or at least seed it */
-      connection->salt = rand();
+      if (simple_rand_next == 1)
+         simple_srand(time(NULL));
+      connection->salt = simple_rand_uint32();
       if (connection->salt == 0) connection->salt = 1;
       header[4] = htonl(connection->salt);
    }
