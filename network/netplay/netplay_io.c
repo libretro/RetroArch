@@ -27,6 +27,30 @@
 #include "../../runloop.h"
 
 /**
+ * remote_unpaused
+ *
+ * Mark a particular remote connection as unpaused and, if relevant, inform
+ * every one else that they may resume.
+ */
+static void remote_unpaused(netplay_t *netplay, struct netplay_connection *connection)
+{
+    size_t i;
+    connection->paused = false;
+    netplay->remote_paused = false;
+    for (i = 0; i < netplay->connections_size; i++)
+    {
+       struct netplay_connection *sc = &netplay->connections[i];
+       if (sc->active && sc->paused)
+       {
+          netplay->remote_paused = true;
+          break;
+       }
+    }
+    if (!netplay->remote_paused && !netplay->local_paused)
+       netplay_send_raw_cmd_all(netplay, connection, NETPLAY_CMD_RESUME, NULL, 0);
+}
+
+/**
  * netplay_hangup:
  *
  * Disconnects an active Netplay connection due to an error
@@ -70,6 +94,10 @@ void netplay_hangup(netplay_t *netplay, struct netplay_connection *connection)
       }
 
    }
+
+   /* Unpause them */
+   if (connection->paused)
+      remote_unpaused(netplay, connection);
 }
 
 /* Send the specified input data */
@@ -925,23 +953,8 @@ static bool netplay_get_cmd(netplay_t *netplay,
          break;
 
       case NETPLAY_CMD_RESUME:
-      {
-         size_t i;
-         connection->paused = false;
-         netplay->remote_paused = false;
-         for (i = 0; i < netplay->connections_size; i++)
-         {
-            struct netplay_connection *sc = &netplay->connections[i];
-            if (sc->active && sc->paused)
-            {
-               netplay->remote_paused = true;
-               break;
-            }
-         }
-         if (!netplay->remote_paused && !netplay->local_paused)
-            netplay_send_raw_cmd_all(netplay, connection, NETPLAY_CMD_RESUME, NULL, 0);
+         remote_unpaused(netplay, connection);
          break;
-      }
 
       default:
          RARCH_ERR("%s.\n", msg_hash_to_str(MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED));
