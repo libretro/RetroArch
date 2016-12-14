@@ -140,6 +140,9 @@ static void core_info_list_free(core_info_list_t *core_info_list)
    {
       core_info_t *info = (core_info_t*)&core_info_list->list[i];
 
+      if (!info)
+         continue;
+
       free(info->path);
       free(info->core_name);
       free(info->systemname);
@@ -152,8 +155,7 @@ static void core_info_list_free(core_info_list_t *core_info_list)
       free(info->categories);
       free(info->databases);
       free(info->notes);
-      if (info->supported_extensions_list)
-         string_list_free(info->supported_extensions_list);
+      string_list_free(info->supported_extensions_list);
       string_list_free(info->authors_list);
       string_list_free(info->note_list);
       string_list_free(info->permissions_list);
@@ -534,8 +536,9 @@ static void core_info_list_get_missing_firmware(
    path[0]       = '\0';
    *firmware     = NULL;
    *num_firmware = 0;
+   info          = core_info_find_internal(core_info_list, core);
 
-   if (!(info = core_info_find_internal(core_info_list, core)))
+   if (!info)
       return;
 
    *firmware = info->firmware;
@@ -716,7 +719,7 @@ void core_info_get_name(const char *path, char *s, size_t len)
       config_file_t *conf             = NULL;
       char *new_core_name             = NULL;
 
-      info_path[0]        = '\0';
+      info_path[0]                    = '\0';
 
       if (!string_is_equal(contents->elems[i].data, path))
          continue;
