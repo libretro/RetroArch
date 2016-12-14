@@ -633,13 +633,8 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
 void core_info_get_name(const char *path, char *s, size_t len)
 {
    size_t i;
-   struct string_list *contents     = NULL;
    settings_t             *settings = config_get_ptr();
-
-   if (!settings)
-      return;
-
-   contents     = dir_list_new_special(
+   struct string_list *contents     = dir_list_new_special(
          settings->directory.libretro,
          DIR_LIST_CORES, NULL);
 
