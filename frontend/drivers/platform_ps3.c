@@ -497,29 +497,65 @@ static int frontend_ps3_parse_drive_list(void *data)
    file_list_t *list = (file_list_t*)data;
 
    menu_entries_append_enum(list,
-         "/app_home/",   "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         "/app_home/",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(list,
-         "/dev_hdd0/",   "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         "/dev_hdd0/",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(list,
-         "/dev_hdd1/",   "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         "/dev_hdd1/",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(list,
-         "/dev_bdvd/",   "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         "/dev_bdvd/",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(list,
-         "/host_root/",  "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         "/host_root/",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(list,
-         "/dev_usb000/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         "/dev_usb000/",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(list,
-         "/dev_usb001/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         "/dev_usb001/",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(list,
-         "/dev_usb002/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         "/dev_usb002/",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(list,
-         "/dev_usb003/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         "/dev_usb003/",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(list,
-         "/dev_usb004/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         "/dev_usb004/",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(list,
-         "/dev_usb005/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         "/dev_usb005/",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(list,
-         "/dev_usb006/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         "/dev_usb006/",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
 #endif
 
    return 0;

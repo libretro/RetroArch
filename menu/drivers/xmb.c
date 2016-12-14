@@ -1867,6 +1867,11 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
       case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
          return xmb->textures.list[XMB_TEXTURE_SAVESTATE];
+      case MENU_ENUM_LABEL_FAVORITES:
+      case MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
+         return xmb->textures.list[XMB_TEXTURE_FOLDER];
+      case MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR:
+         return xmb->textures.list[XMB_TEXTURE_RDB];
       default:
          break;
    }
@@ -1908,6 +1913,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case FILE_TYPE_MOVIE:
          return xmb->textures.list[XMB_TEXTURE_MOVIE];
       case FILE_TYPE_CORE:
+      case FILE_TYPE_DIRECT_LOAD:
          return xmb->textures.list[XMB_TEXTURE_CORE];
       case FILE_TYPE_RDB:
          return xmb->textures.list[XMB_TEXTURE_RDB];
@@ -2126,6 +2132,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
             case FILE_TYPE_COMPRESSED:
             case FILE_TYPE_MORE:
             case FILE_TYPE_CORE:
+            case FILE_TYPE_DIRECT_LOAD:
             case FILE_TYPE_RDB:
             case FILE_TYPE_CURSOR:
             case FILE_TYPE_PLAIN:

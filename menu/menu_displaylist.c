@@ -76,6 +76,11 @@
 #include "../wifi/wifi_driver.h"
 #include "../tasks/tasks_internal.h"
 
+static char new_path_entry[4096] = {0};
+static char new_lbl_entry[4096]  = {0};
+static char new_entry[4096]      = {0};
+enum menu_displaylist_ctl_state new_type = 0;
+
 #ifdef HAVE_NETWORKING
 static void print_buf_lines(file_list_t *list, char *buf,
       const char *label, int buf_size,
@@ -176,16 +181,20 @@ static void print_buf_lines(file_list_t *list, char *buf,
                   path_remove_extension(core_path);
 
                   last = (char*)strrchr(core_path, '_');
+
                   if (!string_is_empty(last))
                   {
                      if (!string_is_equal(last, "_libretro"))
                         *last = '\0';
                   }
+
                   strlcat(core_path,
                         file_path_str(FILE_PATH_CORE_INFO_EXTENSION),
                         sizeof(core_path));
 
-                  if (core_info_get_display_name(
+                  if (
+                           path_file_exists(core_path) 
+                        && core_info_get_display_name(
                            core_path, display_name, sizeof(display_name)))
                      menu_entries_set_alt_at_offset(list, j, display_name);
                }
@@ -3197,15 +3206,7 @@ static int menu_displaylist_parse_options_remappings(
    return 0;
 }
 
-enum filebrowser_enums
-{
-   FILEBROWSER_NONE = 0,
-   FILEBROWSER_SELECT_DIR,
-   FILEBROWSER_SCAN_DIR,
-   FILEBROWSER_SELECT_COLLECTION
-};
-
-static unsigned filebrowser_types = 0;
+unsigned filebrowser_types = 0;
 
 static int menu_displaylist_parse_playlists(
       menu_displaylist_info_t *info, bool horizontal)
@@ -3215,7 +3216,7 @@ static int menu_displaylist_parse_playlists(
    unsigned items_found         = 0;
    settings_t *settings         = config_get_ptr();
 
-   if (!*info->path)
+   if (string_is_empty(info->path))
    {
       if (frontend_driver_parse_drive_list(info->list) != 0)
          menu_entries_append_enum(info->list, "/", "",
@@ -3304,12 +3305,8 @@ static int menu_displaylist_parse_playlists(
 
    string_list_free(str_list);
 
-   if (items_found == 0)
-   {
-      if (horizontal)
-         return 0;
+   if (items_found == 0 && !horizontal)
       goto no_playlists;
-   }
 
    return 0;
 
@@ -3333,7 +3330,7 @@ static int menu_displaylist_parse_cores(
    unsigned items_found         = 0;
    settings_t *settings         = config_get_ptr();
 
-   if (!*info->path)
+   if (string_is_empty(info->path))
    {
       if (frontend_driver_parse_drive_list(info->list) != 0)
          menu_entries_append_enum(info->list, "/", "",
@@ -3423,7 +3420,7 @@ static int menu_displaylist_parse_cores(
       /* Need to preserve slash first time. */
       path = str_list->elems[i].data;
 
-      if (*info->path)
+      if (!string_is_empty(info->path))
          path = path_basename(path);
 
 #ifndef HAVE_DYNAMIC
@@ -3532,7 +3529,7 @@ static int menu_displaylist_parse_generic(
    unsigned items_found         = 0;
    settings_t *settings         = config_get_ptr();
 
-   if (!*info->path)
+   if (string_is_empty(info->path))
    {
       if (frontend_driver_parse_drive_list(info->list) != 0)
          menu_entries_append_enum(info->list, "/", "",
@@ -3558,7 +3555,7 @@ static int menu_displaylist_parse_generic(
             true, settings->show_hidden_files, true, false);
 
 #ifdef HAVE_LIBRETRODB
-   if (BIT32_GET(filebrowser_types, FILEBROWSER_SCAN_DIR))
+   if (filebrowser_types == FILEBROWSER_SCAN_DIR)
       menu_entries_prepend(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY),
             msg_hash_to_str(MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY),
@@ -3566,7 +3563,7 @@ static int menu_displaylist_parse_generic(
             FILE_TYPE_SCAN_DIRECTORY, 0 ,0);
 #endif
 
-   if (BIT32_GET(filebrowser_types, FILEBROWSER_SELECT_DIR))
+   if (filebrowser_types == FILEBROWSER_SELECT_DIR)
       menu_entries_prepend(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY),
             msg_hash_to_str(MENU_ENUM_LABEL_USE_THIS_DIRECTORY),
@@ -3638,19 +3635,19 @@ static int menu_displaylist_parse_generic(
 
          if (!is_dir)
          {
-            if (BIT32_GET(filebrowser_types, FILEBROWSER_SELECT_DIR))
+            if (filebrowser_types == FILEBROWSER_SELECT_DIR)
                continue;
-            if (BIT32_GET(filebrowser_types, FILEBROWSER_SCAN_DIR))
+            if (filebrowser_types == FILEBROWSER_SCAN_DIR)
                continue;
          }
 
          /* Need to preserve slash first time. */
          path = str_list->elems[i].data;
 
-         if (*info->path && !path_is_compressed)
+         if (!string_is_empty(info->path) && !path_is_compressed)
             path = path_basename(path);
 
-         if (BIT32_GET(filebrowser_types, FILEBROWSER_SELECT_COLLECTION))
+         if (filebrowser_types == FILEBROWSER_SELECT_COLLECTION)
          {
             if (is_dir)
                file_type = FILE_TYPE_DIRECTORY;
@@ -3735,9 +3732,9 @@ static int menu_displaylist_parse_generic(
    }
 
    /* We don't want to show 'filter by extension' for this. */
-   if (BIT32_GET(filebrowser_types, FILEBROWSER_SELECT_DIR))
+   if (filebrowser_types == FILEBROWSER_SELECT_DIR)
       goto end;
-   if (BIT32_GET(filebrowser_types, FILEBROWSER_SCAN_DIR))
+   if (filebrowser_types == FILEBROWSER_SCAN_DIR)
       goto end;
 
    if (!extensions_honored)
@@ -3874,6 +3871,22 @@ static bool menu_displaylist_push_list_process(menu_displaylist_info_t *info)
    }
 #endif
 
+   if (!string_is_empty(new_entry))
+   {
+      menu_entries_prepend(info->list,
+            new_path_entry,
+            new_lbl_entry,
+            new_type,
+            FILE_TYPE_CORE, 0, 0);
+      menu_entries_set_alt_at_offset(info->list, 0,
+            new_entry);
+
+      new_type          = 0;
+      new_lbl_entry[0]  = '\0';
+      new_path_entry[0] = '\0';
+      new_entry[0]      = '\0';
+   }
+
    if (info->need_refresh)
       menu_entries_ctl(MENU_ENTRIES_CTL_REFRESH, info->list);
 
@@ -3909,8 +3922,7 @@ static bool menu_displaylist_push_internal(
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MUSIC_TAB)))
    {
-
-      menu_displaylist_reset_filebrowser();
+      filebrowser_types = FILEBROWSER_NONE;
       info->type = 42;
       strlcpy(info->exts,
             file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT),
@@ -3925,7 +3937,7 @@ static bool menu_displaylist_push_internal(
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_TAB)))
    {
-      menu_displaylist_reset_filebrowser();
+      filebrowser_types = FILEBROWSER_NONE;
       info->type = 42;
       strlcpy(info->exts,
             file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT),
@@ -3941,7 +3953,7 @@ static bool menu_displaylist_push_internal(
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_IMAGES_TAB)))
    {
 
-      menu_displaylist_reset_filebrowser();
+      filebrowser_types = FILEBROWSER_NONE;
       info->type = 42;
       strlcpy(info->exts,
             file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT),
@@ -3976,7 +3988,7 @@ static bool menu_displaylist_push_internal(
    {
       settings_t *settings  = config_get_ptr();
 
-      menu_displaylist_reset_filebrowser();
+      filebrowser_types = FILEBROWSER_NONE;
       info->type = 42;
       strlcpy(info->exts,
             file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT),
@@ -4063,11 +4075,6 @@ static bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry)
    }
 
    return true;
-}
-
-void menu_displaylist_reset_filebrowser(void)
-{
-   BIT32_CLEAR_ALL(filebrowser_types);
 }
 
 static void menu_displaylist_parse_playlist_history(
@@ -4242,24 +4249,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_ARCHIVE_ACTION:
       case DISPLAYLIST_ARCHIVE_ACTION_DETECT_CORE:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         break;
-      default:
-         break;
-   }
-
-   switch (type)
-   {
-      case DISPLAYLIST_FILE_BROWSER_SCAN_DIR:
-         menu_displaylist_reset_filebrowser();
-         BIT32_SET(filebrowser_types, FILEBROWSER_SCAN_DIR);
-         break;
-      case DISPLAYLIST_FILE_BROWSER_SELECT_DIR:
-         menu_displaylist_reset_filebrowser();
-         BIT32_SET(filebrowser_types, FILEBROWSER_SELECT_DIR);
-         break;
-      case DISPLAYLIST_FILE_BROWSER_SELECT_COLLECTION:
-         menu_displaylist_reset_filebrowser();
-         BIT32_SET(filebrowser_types, FILEBROWSER_SELECT_COLLECTION);
          break;
       default:
          break;
@@ -5535,20 +5524,21 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_refresh = true;
          break;
       case DISPLAYLIST_LOAD_CONTENT_LIST:
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT),
-               msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT),
-               MENU_ENUM_LABEL_LOAD_CONTENT,
-               MENU_SETTING_ACTION, 0, 0);
+         if (frontend_driver_parse_drive_list(info->list) != 0)
+            menu_entries_append_enum(info->list, "/",
+                  msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+                  MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+                  MENU_SETTING_ACTION, 0, 0);
+
+         if (!string_is_empty(settings->directory.menu_content))
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES),
+                  msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
+                  MENU_ENUM_LABEL_FAVORITES,
+                  MENU_SETTING_ACTION, 0, 0);
 
          if (core_info_list_num_info_files(list))
          {
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST),
-                  msg_hash_to_str(MENU_ENUM_LABEL_DETECT_CORE_LIST),
-                  MENU_ENUM_LABEL_DETECT_CORE_LIST,
-                  MENU_SETTING_ACTION, 0, 0);
-
             menu_entries_append_enum(info->list,
                   msg_hash_to_str(
                      MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
@@ -5908,15 +5898,46 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             if (cores_names_size == 0)
             {
-               menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORES_AVAILABLE),
-                     msg_hash_to_str(MENU_ENUM_LABEL_NO_CORES_AVAILABLE),
-                     MENU_ENUM_LABEL_NO_CORES_AVAILABLE,
-                     0, 0, 0);
-               info->download_core = true;
+               if (!path_is_empty(RARCH_PATH_CORE))
+               {
+
+                  menu_entries_append_enum(info->list,
+                        path_get(RARCH_PATH_CORE),
+                        path_get(RARCH_PATH_CORE),
+                        MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,
+                        FILE_TYPE_DIRECT_LOAD,
+                        0,
+                        0);
+
+                  {
+                     const char *core_name            = NULL;
+                     struct retro_system_info *system = NULL;
+
+                     menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
+                           &system);
+
+                     if (system)
+                        core_name = system->library_name;
+
+                     if (!string_is_empty(core_name))
+                        menu_entries_set_alt_at_offset(info->list, 0,
+                              core_name);
+                  }
+               }
+               else
+               {
+                  menu_entries_append_enum(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORES_AVAILABLE),
+                        msg_hash_to_str(MENU_ENUM_LABEL_NO_CORES_AVAILABLE),
+                        MENU_ENUM_LABEL_NO_CORES_AVAILABLE,
+                        0, 0, 0);
+                  info->download_core = true;
+               }
             }
-            else
+
+            if (cores_names_size != 0)
             {
+               unsigned j = 0;
                struct string_list *cores_paths =
                   string_list_new_special(STRING_LIST_SUPPORTED_CORES_PATHS,
                         (void*)menu->deferred_path,
@@ -5924,29 +5945,50 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
                for (i = 0; i < cores_names_size; i++)
                {
-                  switch (type)
+                  if (     !path_is_empty(RARCH_PATH_CORE) &&
+                           string_is_equal(cores_paths->elems[i].data, path_get(RARCH_PATH_CORE)))
                   {
-                     case DISPLAYLIST_CORES_COLLECTION_SUPPORTED:
-                        menu_entries_append_enum(info->list, cores_paths->elems[i].data, "",
-                              MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
-                              FILE_TYPE_CORE, 0, 0);
-                        break;
-                     default:
-                        menu_entries_append_enum(info->list, cores_paths->elems[i].data,
-                              msg_hash_to_str(MENU_ENUM_LABEL_DETECT_CORE_LIST_OK),
-                              MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,
-                              FILE_TYPE_CORE, 0, 0);
-                        break;
+                     strlcpy(new_path_entry, cores_paths->elems[i].data, sizeof(new_path_entry));
+                     snprintf(new_entry, sizeof(new_entry), "Current core (%s)", cores_names->elems[i].data);
+                     if (type == DISPLAYLIST_CORES_COLLECTION_SUPPORTED)
+                     {
+                        new_lbl_entry[0] = '\0';
+                        new_type         = MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION_CURRENT_CORE;
+                     }
+                     else
+                     {
+                        strlcpy(new_lbl_entry, cores_paths->elems[i].data, sizeof(new_lbl_entry));
+                        new_type = MENU_ENUM_LABEL_DETECT_CORE_LIST_OK_CURRENT_CORE;
+                     }
                   }
+                  else
+                  {
+                     switch (type)
+                     {
+                        case DISPLAYLIST_CORES_COLLECTION_SUPPORTED:
+                           menu_entries_append_enum(info->list, cores_paths->elems[i].data, "",
+                                 MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
+                                 FILE_TYPE_CORE, 0, 0);
+                           break;
+                        default:
+                           menu_entries_append_enum(info->list, cores_paths->elems[i].data,
+                                 msg_hash_to_str(MENU_ENUM_LABEL_DETECT_CORE_LIST_OK),
+                                 MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,
+                                 FILE_TYPE_CORE, 0, 0);
+                           break;
+                     }
 
-                  menu_entries_set_alt_at_offset(info->list, i,
-                        cores_names->elems[i].data);
+                     menu_entries_set_alt_at_offset(info->list, j,
+                           cores_names->elems[i].data);
+                     j++;
+                  }
                }
 
                string_list_free(cores_paths);
             }
 
             string_list_free(cores_names);
+
          }
          break;
       case DISPLAYLIST_CORE_INFO:
@@ -6009,7 +6051,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push = true;
          break;
       case DISPLAYLIST_DATABASES:
-         menu_displaylist_reset_filebrowser();
+         filebrowser_types = FILEBROWSER_NONE;
          info->type_default = FILE_TYPE_RDB;
          strlcpy(info->exts,
                file_path_str(FILE_PATH_RDB_EXTENSION),
@@ -6048,7 +6090,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push = true;
          break;
       case DISPLAYLIST_DATABASE_CURSORS:
-         menu_displaylist_reset_filebrowser();
+         filebrowser_types = FILEBROWSER_NONE;
          info->type_default = FILE_TYPE_CURSOR;
          strlcpy(info->exts, "dbc", sizeof(info->exts));
          strlcpy(info->path, settings->directory.cursor, sizeof(info->path));
@@ -6059,14 +6101,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             ext_name[0] = '\0';
 
-            menu_displaylist_reset_filebrowser();
+            filebrowser_types = FILEBROWSER_NONE;
             info->type_default = FILE_TYPE_PLAIN;
             if (frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
                strlcpy(info->exts, ext_name, sizeof(info->exts));
          }
          break;
       case DISPLAYLIST_CONFIG_FILES:
-         menu_displaylist_reset_filebrowser();
+         filebrowser_types = FILEBROWSER_NONE;
          info->type_default = FILE_TYPE_CONFIG;
          strlcpy(info->exts, "cfg", sizeof(info->exts));
          break;
@@ -6077,7 +6119,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             (void)attr;
 
-            menu_displaylist_reset_filebrowser();
+            filebrowser_types = FILEBROWSER_NONE;
             info->type_default = FILE_TYPE_SHADER_PRESET;
 
 #ifdef HAVE_CG
@@ -6098,7 +6140,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             union string_list_elem_attr attr = {0};
             struct string_list *str_list     = string_list_new();
 
-            menu_displaylist_reset_filebrowser();
+            filebrowser_types = FILEBROWSER_NONE;
             info->type_default = FILE_TYPE_SHADER;
 
             (void)attr;
@@ -6117,12 +6159,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          }
          break;
       case DISPLAYLIST_VIDEO_FILTERS:
-         menu_displaylist_reset_filebrowser();
+         filebrowser_types = FILEBROWSER_NONE;
          info->type_default = FILE_TYPE_VIDEOFILTER;
          strlcpy(info->exts, "filt", sizeof(info->exts));
          break;
       case DISPLAYLIST_IMAGES:
-         menu_displaylist_reset_filebrowser();
+         filebrowser_types = FILEBROWSER_NONE;
          info->type_default = FILE_TYPE_IMAGE;
          {
             union string_list_elem_attr attr = {0};
@@ -6146,37 +6188,37 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          }
          break;
       case DISPLAYLIST_AUDIO_FILTERS:
-         menu_displaylist_reset_filebrowser();
+         filebrowser_types = FILEBROWSER_NONE;
          info->type_default = FILE_TYPE_AUDIOFILTER;
          strlcpy(info->exts, "dsp", sizeof(info->exts));
          break;
       case DISPLAYLIST_CHEAT_FILES:
-         menu_displaylist_reset_filebrowser();
+         filebrowser_types = FILEBROWSER_NONE;
          info->type_default = FILE_TYPE_CHEAT;
          strlcpy(info->exts, "cht", sizeof(info->exts));
          break;
       case DISPLAYLIST_CONTENT_HISTORY:
-         menu_displaylist_reset_filebrowser();
+         filebrowser_types = FILEBROWSER_NONE;
          info->type_default = FILE_TYPE_PLAIN;
          strlcpy(info->exts, "lpl", sizeof(info->exts));
          break;
       case DISPLAYLIST_FONTS:
-         menu_displaylist_reset_filebrowser();
+         filebrowser_types = FILEBROWSER_NONE;
          info->type_default = FILE_TYPE_FONT;
          strlcpy(info->exts, "ttf", sizeof(info->exts));
          break;
       case DISPLAYLIST_OVERLAYS:
-         menu_displaylist_reset_filebrowser();
+         filebrowser_types = FILEBROWSER_NONE;
          info->type_default = FILE_TYPE_OVERLAY;
          strlcpy(info->exts, "cfg", sizeof(info->exts));
          break;
       case DISPLAYLIST_RECORD_CONFIG_FILES:
-         menu_displaylist_reset_filebrowser();
+         filebrowser_types = FILEBROWSER_NONE;
          info->type_default = FILE_TYPE_RECORD_CONFIG;
          strlcpy(info->exts, "cfg", sizeof(info->exts));
          break;
       case DISPLAYLIST_REMAP_FILES:
-         menu_displaylist_reset_filebrowser();
+         filebrowser_types = FILEBROWSER_NONE;
          info->type_default = FILE_TYPE_REMAP;
          strlcpy(info->exts, "rmp", sizeof(info->exts));
          break;

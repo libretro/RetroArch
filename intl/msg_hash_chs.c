@@ -2116,8 +2116,8 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
          return "选择数据库";
       case MENU_ENUM_LABEL_VALUE_DELETE_ENTRY:
          return "移除";
-      case MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST:
-         return "选择文件并探测核心";
+      case MENU_ENUM_LABEL_VALUE_FAVORITES:
+         return "选择文件并探测核心"; /* TODO/FIXME - update */
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT:
          return "<游戏内容目录>";
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT:
@@ -2452,8 +2452,6 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
          return "线性";
       case MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE:
          return "使用核心加载压缩包";
-      case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT:
-         return "选择文件";
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY:
          return "加载最近的游戏内容";
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST:

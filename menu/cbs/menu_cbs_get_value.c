@@ -1620,6 +1620,18 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_VIDEO_DRIVER:
+         case MENU_ENUM_LABEL_AUDIO_DRIVER:
+         case MENU_ENUM_LABEL_INPUT_DRIVER:
+         case MENU_ENUM_LABEL_JOYPAD_DRIVER:
+         case MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER:
+         case MENU_ENUM_LABEL_RECORD_DRIVER:
+         case MENU_ENUM_LABEL_LOCATION_DRIVER:
+         case MENU_ENUM_LABEL_CAMERA_DRIVER:
+         case MENU_ENUM_LABEL_WIFI_DRIVER:
+         case MENU_ENUM_LABEL_MENU_DRIVER:
+            BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label);
+            break;
          case MENU_ENUM_LABEL_STATE_SLOT:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_state);
@@ -1703,8 +1715,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST:
          case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
          case MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
-         case MENU_ENUM_LABEL_DETECT_CORE_LIST:
-         case MENU_ENUM_LABEL_LOAD_CONTENT:
+         case MENU_ENUM_LABEL_FAVORITES:
          case MENU_ENUM_LABEL_CORE_OPTIONS:
          case MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS:
          case MENU_ENUM_LABEL_SHADER_OPTIONS:
@@ -1778,6 +1789,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
                menu_action_setting_disp_set_label_core_option_create);
             break;
          case FILE_TYPE_CORE:
+         case FILE_TYPE_DIRECT_LOAD:
             BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_core);
             break;

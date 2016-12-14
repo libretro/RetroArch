@@ -125,6 +125,8 @@ enum msg_file_type
    FILE_TYPE_ISO,
    FILE_TYPE_LUTRO,
 
+   FILE_TYPE_DIRECT_LOAD,
+
    FILE_TYPE_LAST
 };
 
@@ -672,6 +674,7 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_FILE_BROWSER_FONT,
    MENU_ENUM_LABEL_FILE_BROWSER_RDB,
    MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
+   MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION_CURRENT_CORE,
    MENU_ENUM_LABEL_FILE_BROWSER_CORE_DETECTED,
    MENU_ENUM_LABEL_FILE_BROWSER_IMAGE,
    MENU_ENUM_LABEL_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER,
@@ -831,6 +834,7 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST,
    MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_LIST,
 
+   MENU_LABEL(FILE_DETECT_CORE_LIST_PUSH_DIR),
    MENU_LABEL(DOWNLOADED_FILE_DETECT_CORE_LIST),
 
    MENU_ENUM_LABEL_VALUE_SEARCH,
@@ -1166,10 +1170,10 @@ enum msg_hash_enums
    MENU_LABEL(DUMMY_ON_CORE_SHUTDOWN),
    MENU_LABEL(CHECK_FOR_MISSING_FIRMWARE),
 
+   MENU_LABEL(DETECT_CORE_LIST_OK_CURRENT_CORE),
    MENU_LABEL(DETECT_CORE_LIST_OK),
-   MENU_LABEL(DETECT_CORE_LIST),
+   MENU_LABEL(FAVORITES),
    MENU_LABEL(START_CORE),
-   MENU_LABEL(LOAD_CONTENT),
    MENU_LABEL(CORE_UPDATER_LIST),
    MENU_LABEL(CORE_UPDATER_AUTO_EXTRACT_ARCHIVE),
    MENU_LABEL(CORE_UPDATER_BUILDBOT_URL),
@@ -1692,6 +1696,7 @@ enum msg_hash_enums
 #define MENU_LABEL_RDB_ENTRY_RELEASE_YEAR                                      0x14c9c6bfU
 #define MENU_LABEL_RDB_ENTRY_MAX_USERS                                         0xfae91cc4U
 
+#define MENU_LABEL_FAVORITES                                                   0x67325138U
 #define MENU_LABEL_DETECT_CORE_LIST                                            0xaa07c341U
 #define MENU_LABEL_DETECT_CORE_LIST_OK                                         0xabba2a7aU
 #define MENU_LABEL_CORE_LIST                                                   0xa22bb14dU
@@ -1749,7 +1754,6 @@ enum msg_hash_enums
 #define MENU_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING                            0xd44d395cU
 
 /* Main menu */
-#define MENU_LABEL_LOAD_CONTENT                                                0x828943c3U
 #define MENU_LABEL_LOAD_CONTENT_LIST                                           0x5745de1fU
 #define MENU_LABEL_LOAD_CONTENT_HISTORY                                        0xfe1d79e5U
 #define MENU_LABEL_ADD_CONTENT_LIST                                            0x046f4668U

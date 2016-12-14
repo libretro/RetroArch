@@ -1611,8 +1611,8 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Abilita riavvolgi";
       case MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST:
          return "Collezione";
-      case MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST:
-         return "Seleziona il file ed intercetta il core";
+      case MENU_ENUM_LABEL_VALUE_FAVORITES:
+         return "Seleziona il file ed intercetta il core"; /* TODO/FIXME - update */
       case MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST:
          return "Scarica su directories";
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY:
@@ -1729,8 +1729,6 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Nessun oggetto.";
       case MENU_ENUM_LABEL_VALUE_CORE_LIST:
          return "Carica Core";
-      case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT:
-         return "Seleziona contenuto";
       case MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT:
          return "Chiudi";
       case MENU_ENUM_LABEL_VALUE_MANAGEMENT:
