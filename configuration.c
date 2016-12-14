@@ -2174,6 +2174,7 @@ static bool config_load_file(const char *path, bool set_defaults,
       {
          if (!check_shader_compatibility((enum file_path_enum)i))
          {
+            /* TODO/FIXME - this check is always triggered even with an empty shader path */
             RARCH_LOG("Incompatible shader for backend %s, clearing...\n", settings->video.driver);
             settings->path.shader[0] = '\0';
             break;
