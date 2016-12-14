@@ -19,23 +19,18 @@
 #pragma comment(lib, "ws2_32")
 #endif
 
+#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <sys/types.h>
 
+#include <boolean.h>
 #include <compat/strl.h>
-#include <retro_assert.h>
-#include <net/net_compat.h>
-#include <net/net_socket.h>
-#include <features/features_cpu.h>
-#include <retro_endianness.h>
 
 #include "netplay_private.h"
+
 #include "netplay_discovery.h"
 
 #include "../../autosave.h"
-#include "../../configuration.h"
-#include "../../command.h"
-#include "../../movie.h"
 #include "../../runloop.h"
 
 #if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY)
@@ -231,106 +226,6 @@ static bool init_socket(netplay_t *netplay, void *direct_host, const char *serve
       netplay_init_nat_traversal(netplay);
 
    return true;
-}
-
-/**
- * netplay_update_unread_ptr
- *
- * Update the global unread_ptr and unread_frame_count to correspond to the
- * earliest unread frame count of any connected player */
-void netplay_update_unread_ptr(netplay_t *netplay)
-{
-   if (netplay->is_server && !netplay->connected_players)
-   {
-      /* Nothing at all to read! */
-      netplay->unread_ptr = netplay->self_ptr;
-      netplay->unread_frame_count = netplay->self_frame_count;
-
-   }
-   else
-   {
-      size_t new_unread_ptr = 0;
-      uint32_t new_unread_frame_count = (uint32_t) -1;
-      uint32_t player;
-
-      for (player = 0; player < MAX_USERS; player++)
-      {
-         if (!(netplay->connected_players & (1<<player))) continue;
-         if (netplay->read_frame_count[player] < new_unread_frame_count)
-         {
-            new_unread_ptr = netplay->read_ptr[player];
-            new_unread_frame_count = netplay->read_frame_count[player];
-         }
-      }
-
-      if (!netplay->is_server && netplay->server_frame_count < new_unread_frame_count)
-      {
-         new_unread_ptr = netplay->server_ptr;
-         new_unread_frame_count = netplay->server_frame_count;
-      }
-
-      netplay->unread_ptr = new_unread_ptr;
-      netplay->unread_frame_count = new_unread_frame_count;
-   }
-}
-
-/**
- * netplay_simulate_input:
- * @netplay             : pointer to netplay object
- * @sim_ptr             : frame index for which to simulate input
- * @resim               : are we resimulating, or simulating this frame for the
- *                        first time?
- *
- * "Simulate" input by assuming it hasn't changed since the last read input.
- */
-void netplay_simulate_input(netplay_t *netplay, size_t sim_ptr, bool resim)
-{
-   uint32_t player;
-   size_t prev;
-   struct delta_frame *simframe, *pframe;
-
-   simframe = &netplay->buffer[sim_ptr];
-
-   for (player = 0; player < MAX_USERS; player++)
-   {
-      if (!(netplay->connected_players & (1<<player))) continue;
-      if (simframe->have_real[player]) continue;
-
-      prev = PREV_PTR(netplay->read_ptr[player]);
-      pframe = &netplay->buffer[prev];
-
-      if (resim)
-      {
-         /* In resimulation mode, we only copy the buttons. The reason for this
-          * is nonobvious:
-          *
-          * If we resimulated nothing, then the /duration/ with which any input
-          * was pressed would be approximately correct, since the original
-          * simulation came in as the input came in, but the /number of times/
-          * the input was pressed would be wrong, as there would be an
-          * advancing wavefront of real data overtaking the simulated data
-          * (which is really just real data offset by some frames).
-          *
-          * That's acceptable for arrows in most situations, since the amount
-          * you move is tied to the duration, but unacceptable for buttons,
-          * which will seem to jerkily be pressed numerous times with those
-          * wavefronts.
-          */
-         const uint32_t keep = (1U<<RETRO_DEVICE_ID_JOYPAD_UP) |
-                               (1U<<RETRO_DEVICE_ID_JOYPAD_DOWN) |
-                               (1U<<RETRO_DEVICE_ID_JOYPAD_LEFT) |
-                               (1U<<RETRO_DEVICE_ID_JOYPAD_RIGHT);
-         uint32_t sim_state = simframe->simulated_input_state[player][0] & keep;
-         sim_state |= pframe->real_input_state[player][0] & ~keep;
-         simframe->simulated_input_state[player][0] = sim_state;
-      }
-      else
-      {
-         memcpy(simframe->simulated_input_state[player],
-                pframe->real_input_state[player],
-                WORDS_PER_INPUT * sizeof(uint32_t));
-      }
-   }
 }
 
 #ifndef HAVE_SOCKET_LEGACY
