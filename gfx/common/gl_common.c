@@ -65,21 +65,34 @@ void gl_load_texture_image(GLenum target,
 {
 #ifndef HAVE_PSGL
 #ifdef HAVE_OPENGLES2
-   if (gl_check_capability(GL_CAPS_TEX_STORAGE_EXT)) {
-      if (internalFormat == GL_RGB)
-         internalFormat = GL_RGB565;
-      else if (internalFormat == GL_RGBA)
-         internalFormat = GL_RGBA8_OES;
-      else if (internalFormat == GL_BGRA_EXT)
-         internalFormat = GL_BGRA8_EXT;
+   if (gl_check_capability(GL_CAPS_TEX_STORAGE_EXT))
+   {
+      switch (internalFormat)
+      {
+         case GL_RGB:
+            internalFormat = GL_RGB565;
+            break;
+         case GL_RGBA:
+            internalFormat = GL_RGBA8_OES;
+            break;
+         case GL_BGRA_EXT:
+            internalFormat = GL_BGRA8_EXT;
+            break;
+      }
       glTexStorage2DEXT(target, 1, internalFormat, width, height);
    }
 #else
-   if (gl_check_capability(GL_CAPS_TEX_STORAGE)) {
-      if (internalFormat == GL_RGB)
-         internalFormat = GL_RGB565;
-      else if (internalFormat == GL_RGBA)
-         internalFormat = GL_RGBA8;
+   if (gl_check_capability(GL_CAPS_TEX_STORAGE))
+   {
+      switch (internalFormat)
+      {
+         case GL_RGB:
+            internalFormat = GL_RGB565;
+            break;
+         case GL_RGBA:
+            internalFormat = GL_RGBA8;
+            break;
+      }
       glTexStorage2D(target, 1, internalFormat, width, height);
    }
 #endif
