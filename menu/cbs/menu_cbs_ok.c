@@ -2324,27 +2324,28 @@ static void cb_generic_download(void *task_data,
       case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG:
       case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_GLSL:
       case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_SLANG:
-      {
-         static char shaderdir[PATH_MAX_LENGTH]       = {0};
-         const char *dirname                          = NULL;
-         if (transf->enum_idx == MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG)
-         dirname                                      = "shaders_cg";
-         else if (transf->enum_idx == MENU_ENUM_LABEL_CB_UPDATE_SHADERS_GLSL)
-         dirname                                      = "shaders_glsl";
-         else if (transf->enum_idx == MENU_ENUM_LABEL_CB_UPDATE_SHADERS_SLANG)
-         dirname                                      = "shaders_slang";
+         {
+            static char shaderdir[PATH_MAX_LENGTH]       = {0};
+            const char *dirname                          = NULL;
 
-         fill_pathname_join(shaderdir,
-               settings->directory.video_shader,
-               dirname,
-               sizeof(shaderdir));
-         if (!path_file_exists(shaderdir))
-            if (!path_mkdir(shaderdir))
+            if (transf->enum_idx == MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG)
+               dirname                                   = "shaders_cg";
+            else if (transf->enum_idx == MENU_ENUM_LABEL_CB_UPDATE_SHADERS_GLSL)
+               dirname                                   = "shaders_glsl";
+            else if (transf->enum_idx == MENU_ENUM_LABEL_CB_UPDATE_SHADERS_SLANG)
+               dirname                                   = "shaders_slang";
+
+            fill_pathname_join(shaderdir,
+                  settings->directory.video_shader,
+                  dirname,
+                  sizeof(shaderdir));
+
+            if (!path_file_exists(shaderdir) && !path_mkdir(shaderdir))
                goto finish;
 
-         dir_path = shaderdir;
+            dir_path = shaderdir;
+         }
          break;
-      }
       case MENU_ENUM_LABEL_CB_LAKKA_DOWNLOAD:
          dir_path = LAKKA_UPDATE_DIR;
          break;
@@ -3654,16 +3655,19 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       {
          unsigned first_char = 0;
          const char     *str = msg_hash_to_str(cbs->enum_idx);
+
          if (!str)
             continue;
          if (!strstr(str, "input_binds_list"))
             continue;
+
          first_char = atoi(&str[0]);
-         if (first_char == (i+1))
-         {
-            BIND_ACTION_OK(cbs, action_ok_push_user_binds_list);
-            return 0;
-         }
+
+         if (first_char != (i+1))
+            continue;
+
+         BIND_ACTION_OK(cbs, action_ok_push_user_binds_list);
+         return 0;
       }
    }
 
