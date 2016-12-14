@@ -173,6 +173,8 @@ typedef struct xmb_handle
    uintptr_t savestate_thumbnail;
    float thumbnail_width;
    float thumbnail_height;
+   float thumbnail_orig_width;
+   float thumbnail_orig_height;
    float savestate_thumbnail_width;
    float savestate_thumbnail_height;
    char background_file_path[PATH_MAX_LENGTH];
@@ -3165,8 +3167,10 @@ static bool xmb_load_image(void *userdata, void *data, enum menu_image_type type
          break;
       case MENU_IMAGE_THUMBNAIL:
          {
-            struct texture_image *img = (struct texture_image*)data;
-            xmb->thumbnail_height = xmb->thumbnail_width
+            struct texture_image *img  = (struct texture_image*)data;
+            xmb->thumbnail_orig_width  = (float)img->width;
+            xmb->thumbnail_orig_height = (float)img->height;
+            xmb->thumbnail_height      = xmb->thumbnail_width
                * (float)img->height / (float)img->width;
             video_driver_texture_unload(&xmb->thumbnail);
             video_driver_texture_load(data,
@@ -3175,7 +3179,9 @@ static bool xmb_load_image(void *userdata, void *data, enum menu_image_type type
          break;
       case MENU_IMAGE_SAVESTATE_THUMBNAIL:
          {
-            struct texture_image *img = (struct texture_image*)data;
+            struct texture_image *img       = (struct texture_image*)data;
+            xmb->thumbnail_orig_width       = (float)img->width;
+            xmb->thumbnail_orig_height      = (float)img->height;
             xmb->savestate_thumbnail_height = xmb->savestate_thumbnail_width
                * (float)img->height / (float)img->width;
             video_driver_texture_unload(&xmb->savestate_thumbnail);
