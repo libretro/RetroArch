@@ -227,8 +227,8 @@ else ifeq ($(platform), vita)
 							deps/libvita2d/shader/compiled/texture_f_gxp.o \
 							deps/libvita2d/shader/compiled/texture_tint_f_gxp.o
   PLATOBJS +=		  \
-						  libretro-common/conversion/s16_to_float_neon.o \
-						  libretro-common/conversion/float_to_s16_neon.o \
+						  libretro-common/audio/conversion/s16_to_float_neon.o \
+						  libretro-common/audio/conversion/float_to_s16_neon.o \
 						  memory/neon/memcpy-neon.o \
 						  libretro-common/audio/resampler/drivers/sinc_resampler_neon.o \
 						  audio/drivers_resampler/cc_resampler_neon.o
