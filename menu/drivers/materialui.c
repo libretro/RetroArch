@@ -1675,6 +1675,12 @@ static int mui_list_push(void *data, void *userdata,
       case DISPLAYLIST_LOAD_CONTENT_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
+         if (frontend_driver_parse_drive_list(info->list) != 0)
+            menu_entries_append_enum(info->list, "/",
+                  msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+                  MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+                  MENU_SETTING_ACTION, 0, 0);
+
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES),
                msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
