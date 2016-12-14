@@ -47,6 +47,8 @@
 #define NETPLAY_PASS_HASH_LEN 64 /* length of a SHA-256 hash */
 
 #define MAX_STALL_TIME_USEC         (10*1000*1000)
+#define MAX_RETRIES                 16
+#define RETRY_MS                    500
 
 #define PREV_PTR(x) ((x) == 0 ? netplay->buffer_size - 1 : (x) - 1)
 #define NEXT_PTR(x) ((x + 1) % netplay->buffer_size)
