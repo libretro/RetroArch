@@ -79,7 +79,7 @@
 static char new_path_entry[4096] = {0};
 static char new_lbl_entry[4096]  = {0};
 static char new_entry[4096]      = {0};
-enum menu_displaylist_ctl_state new_type = 0;
+enum msg_hash_enums new_type     = MSG_UNKNOWN;
 
 #ifdef HAVE_NETWORKING
 static void print_buf_lines(file_list_t *list, char *buf,
@@ -3881,7 +3881,7 @@ static bool menu_displaylist_push_list_process(menu_displaylist_info_t *info)
       menu_entries_set_alt_at_offset(info->list, 0,
             new_entry);
 
-      new_type          = 0;
+      new_type          = MSG_UNKNOWN;
       new_lbl_entry[0]  = '\0';
       new_path_entry[0] = '\0';
       new_entry[0]      = '\0';
