@@ -881,8 +881,8 @@ THREAD
 NETPLAY
 ============================================================ */
 #ifdef HAVE_NETWORKING
+#include "../network/netplay/netplay_frontend.c"
 #include "../network/netplay/netplay_net.c"
-#include "../network/netplay/netplay_spectate.c"
 #include "../network/netplay/netplay_common.c"
 #include "../network/netplay/netplay_discovery.c"
 #include "../network/netplay/netplay.c"

@@ -1122,11 +1122,12 @@ ifeq ($(HAVE_NETWORKING), 1)
 
    # Netplay
 	DEFINES += -DHAVE_NETWORK_CMD
-	OBJ += network/netplay/netplay_net.o \
-			 network/netplay/netplay_common.o \
-			 network/netplay/netplay_discovery.o \
-			 network/netplay/netplay_buf.o \
-			 network/netplay/netplay.o
+	OBJ += network/netplay/netplay_frontend.o \
+			network/netplay/netplay_net.o \
+			network/netplay/netplay_common.o \
+			network/netplay/netplay_discovery.o \
+			network/netplay/netplay_buf.o \
+			network/netplay/netplay.o
 
    # Retro Achievements (also depends on threads)
 

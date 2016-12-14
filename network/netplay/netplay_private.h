@@ -46,6 +46,8 @@
 #define NETPLAY_PASS_LEN      128
 #define NETPLAY_PASS_HASH_LEN 64 /* length of a SHA-256 hash */
 
+#define MAX_STALL_TIME_USEC         (10*1000*1000)
+
 #define PREV_PTR(x) ((x) == 0 ? netplay->buffer_size - 1 : (x) - 1)
 #define NEXT_PTR(x) ((x + 1) % netplay->buffer_size)
 
@@ -526,6 +528,29 @@ bool netplay_cmd_request_savestate(netplay_t *netplay);
 bool netplay_cmd_mode(netplay_t *netplay,
    struct netplay_connection *connection,
    enum rarch_netplay_connection_mode mode);
+
+bool netplay_send_cur_input(netplay_t *netplay,
+   struct netplay_connection *connection);
+
+int netplay_poll_net_input(netplay_t *netplay, bool block);
+
+void netplay_hangup(netplay_t *netplay, struct netplay_connection *connection);
+
+void netplay_update_unread_ptr(netplay_t *netplay);
+
+bool netplay_flip_port(netplay_t *netplay);
+
+bool netplay_send_raw_cmd(netplay_t *netplay,
+   struct netplay_connection *connection, uint32_t cmd, const void *data,
+   size_t size);
+
+void netplay_send_raw_cmd_all(netplay_t *netplay,
+   struct netplay_connection *except, uint32_t cmd, const void *data,
+   size_t size);
+
+bool netplay_try_init_serialization(netplay_t *netplay);
+
+void netplay_init_nat_traversal(netplay_t *netplay);
 
 /* DISCOVERY: */
 
