@@ -163,7 +163,7 @@ static bool gl_recreate_fbo(
    glDeleteTextures(1, texture);
    glGenTextures(1, texture);
    glBindTexture(GL_TEXTURE_2D, *texture);
-   loadTexture(GL_TEXTURE_2D,
+   gl_load_texture_image(GL_TEXTURE_2D,
          0, RARCH_GL_INTERNAL_FORMAT32,
          fbo_rect->width,
          fbo_rect->height,
@@ -524,7 +524,7 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
    if (fp_fbo && gl->has_fp_fbo)
    {
       RARCH_LOG("[GL]: FBO pass #%d is floating-point.\n", i);
-      loadTexture(GL_TEXTURE_2D, 0, GL_RGBA32F,
+      gl_load_texture_image(GL_TEXTURE_2D, 0, GL_RGBA32F,
          gl->fbo_rect[i].width, gl->fbo_rect[i].height,
          0, GL_RGBA, GL_FLOAT, NULL);
    }
@@ -555,7 +555,7 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
                gl->has_srgb_fbo_gles3 ? GL_RGBA : GL_SRGB_ALPHA_EXT,
                GL_UNSIGNED_BYTE, NULL);
 #else
-         loadTexture(GL_TEXTURE_2D,
+         gl_load_texture_image(GL_TEXTURE_2D,
             0, GL_SRGB8_ALPHA8,
             gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
             GL_RGBA, GL_UNSIGNED_BYTE, NULL);
@@ -572,7 +572,7 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
 #else
          /* Avoid potential performance 
           * reductions on particular platforms. */
-         loadTexture(GL_TEXTURE_2D,
+         gl_load_texture_image(GL_TEXTURE_2D,
             0, RARCH_GL_INTERNAL_FORMAT32,
             gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
             RARCH_GL_TEXTURE_TYPE32, RARCH_GL_FORMAT32, NULL);

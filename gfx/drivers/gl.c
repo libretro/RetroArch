@@ -606,7 +606,7 @@ static void gl_init_textures_reference(gl_t *gl, unsigned i,
    if (gl->egl_images)
       return;
 
-   loadTexture(GL_TEXTURE_2D,
+   gl_load_texture_image(GL_TEXTURE_2D,
       0, internal_fmt, gl->tex_w, gl->tex_h, 0, texture_type,
       texture_fmt, gl->empty_buf ? gl->empty_buf : NULL);
 #endif
