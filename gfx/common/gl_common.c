@@ -15,6 +15,7 @@
  */
 
 #include <gfx/math/matrix_4x4.h>
+#include <gfx/gl_capabilities.h>
 
 #include "../drivers/gl_symlinks.h"
 #include "../video_coord_array.h"
@@ -48,4 +49,29 @@ void gl_ff_matrix(const math_matrix_4x4 *mat)
    matrix_4x4_identity(&ident);
    glLoadMatrixf(ident.data);
 #endif
+}
+
+/* This function should only be used without mipmaps
+   and when data == NULL */
+void loadTexture(GLenum target,
+      GLint level,
+      GLint internalFormat,
+      GLsizei width,
+      GLsizei height,
+      GLint border,
+      GLenum format,
+      GLenum type,
+      const GLvoid * data)
+{
+#ifndef HAVE_PSGL
+#ifdef HAVE_OPENGLES2
+   if (gl_check_capability(GL_CAPS_TEX_STORAGE_EXT))
+      glTexStorage2DEXT(target, 1, internalFormat, width, height);
+#else
+   if (gl_check_capability(GL_CAPS_TEX_STORAGE))
+      glTexStorage2D(target, 1, internalFormat, width, height);
+#endif
+   else
+#endif
+      glTexImage2D(target, level, internalFormat, width, height, border, format, type, data);
 }
