@@ -463,7 +463,7 @@ static bool playlist_read_file(
          if (!filestream_gets(file, buf[i], sizeof(buf[i])))
             goto end;
 
-         /* Read playlist entry and terminate string with NULL
+         /* Read playlist entry and terminate string with NUL character
           * regardless of Windows or Unix line endings
           */
           if((last = strrchr(buf[i], '\r')))
