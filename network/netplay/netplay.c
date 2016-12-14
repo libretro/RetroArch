@@ -298,21 +298,28 @@ static void hangup(netplay_t *netplay, struct netplay_connection *connection)
    netplay_deinit_socket_buffer(&connection->recv_packet_buffer);
 
    if (!netplay->is_server)
-      netplay->self_mode = NETPLAY_CONNECTION_NONE;
-
-   /* Remove this player */
-   if (connection->mode == NETPLAY_CONNECTION_PLAYING)
    {
-      netplay->connected_players &= ~(1<<connection->player);
+      netplay->self_mode = NETPLAY_CONNECTION_NONE;
+      netplay->connected_players = 0;
 
-      /* FIXME: Duplication */
-      if (netplay->is_server)
+   }
+   else
+   {
+      /* Remove this player */
+      if (connection->mode == NETPLAY_CONNECTION_PLAYING)
       {
-         uint32_t payload[2];
-         payload[0] = htonl(netplay->read_frame_count[connection->player]);
-         payload[1] = htonl(connection->player);
-         netplay_send_raw_cmd_all(netplay, connection, NETPLAY_CMD_MODE, payload, sizeof(payload));
+         netplay->connected_players &= ~(1<<connection->player);
+
+         /* FIXME: Duplication */
+         if (netplay->is_server)
+         {
+            uint32_t payload[2];
+            payload[0] = htonl(netplay->read_frame_count[connection->player]);
+            payload[1] = htonl(connection->player);
+            netplay_send_raw_cmd_all(netplay, connection, NETPLAY_CMD_MODE, payload, sizeof(payload));
+         }
       }
+
    }
 }
 
