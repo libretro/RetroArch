@@ -422,8 +422,11 @@ static bool core_info_does_support_any_file(const core_info_t *core,
 static bool core_info_does_support_file(
       const core_info_t *core, const char *path)
 {
-   if (!path || !core || !core->supported_extensions_list)
+   if (!core || !core->supported_extensions_list)
       return false;
+   if (string_is_empty(path))
+      return false;
+
    return string_list_find_elem_prefix(
          core->supported_extensions_list, ".", path_get_extension(path));
 }
@@ -456,7 +459,7 @@ static core_info_t *core_info_find_internal(
    {
       core_info_t *info = core_info_get(list, i);
 
-      if (!info)
+      if (!info || !info->path)
          continue;
       if (string_is_equal(info->path, core))
          return info;
