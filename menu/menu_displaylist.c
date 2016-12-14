@@ -181,16 +181,20 @@ static void print_buf_lines(file_list_t *list, char *buf,
                   path_remove_extension(core_path);
 
                   last = (char*)strrchr(core_path, '_');
+
                   if (!string_is_empty(last))
                   {
                      if (!string_is_equal(last, "_libretro"))
                         *last = '\0';
                   }
+
                   strlcat(core_path,
                         file_path_str(FILE_PATH_CORE_INFO_EXTENSION),
                         sizeof(core_path));
 
-                  if (core_info_get_display_name(
+                  if (
+                           path_file_exists(core_path) 
+                        && core_info_get_display_name(
                            core_path, display_name, sizeof(display_name)))
                      menu_entries_set_alt_at_offset(list, j, display_name);
                }

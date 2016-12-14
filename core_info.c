@@ -709,9 +709,11 @@ bool core_info_unsupported_content_path(const char *path)
       {
          const core_info_t *info = &core_info_curr_list->list[i];
 
-         if (string_list_find_elem(info->supported_extensions_list, "zip") ||
-             string_list_find_elem(info->supported_extensions_list, "7z"))
-             return false;
+         if (     !string_list_find_elem(info->supported_extensions_list, "zip")
+               && !string_list_find_elem(info->supported_extensions_list, "7z"))
+            continue;
+
+         return false;
       }
    }
 
@@ -794,12 +796,15 @@ bool core_info_list_get_display_name(core_info_list_t *core_info_list,
    for (i = 0; i < core_info_list->count; i++)
    {
       const core_info_t *info = &core_info_list->list[i];
-      if (string_is_equal(path_basename(info->path), path_basename(path))
-            && info->display_name)
-      {
-         strlcpy(s, info->display_name, len);
-         return true;
-      }
+
+      if (!string_is_equal(path_basename(info->path), path_basename(path)))
+         continue;
+
+      if (!info->display_name)
+         continue;
+
+      strlcpy(s, info->display_name, len);
+      return true;
    }
 
    return false;
@@ -807,40 +812,25 @@ bool core_info_list_get_display_name(core_info_list_t *core_info_list,
 
 bool core_info_get_display_name(const char *path, char *s, size_t len)
 {
-   char       *core_name    = NULL;
+   bool               ret   = true;
    char       *display_name = NULL;
-   config_file_t *conf      = NULL;
-
-   if (!path_file_exists(path))
-      return false;
-
-   conf = config_file_new(path);
+   config_file_t *conf      = config_file_new(path);
 
    if (!conf)
-      return false;
-
-   config_get_string(conf, "corename",
-         &core_name);
-   config_get_string(conf, "display_name",
-         &display_name);
-
-   if (!core_name || !display_name)
+   {
+      ret = false;
       goto error;
+   }
 
-   config_file_free(conf);
+   config_get_string(conf, "display_name", &display_name);
 
-   snprintf(s, len,"%s",display_name);
-
-   free(core_name);
-   free(display_name);
-
-   return true;
+   if (display_name)
+      snprintf(s, len, "%s", display_name);
 
 error:
    config_file_free(conf);
-   if (core_name)
-      free(core_name);
    if (display_name)
       free(display_name);
-   return false;
+
+   return ret;
 }
