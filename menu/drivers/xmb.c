@@ -537,10 +537,11 @@ static void xmb_draw_icon(
    settings_t *settings = config_get_ptr();
 
    if (
-         x < (-icon_size / 2.0f) ||
-         x > width ||
-         y < (icon_size  / 2.0f) ||
-         y > height + icon_size)
+         (x < (-icon_size / 2.0f)) ||
+         (x > width)               ||
+         (y < (icon_size  / 2.0f)) ||
+         (y > height + icon_size)
+      )
       return;
 
    coords.vertices      = 4;
@@ -548,12 +549,11 @@ static void xmb_draw_icon(
    coords.tex_coord     = NULL;
    coords.lut_tex_coord = NULL;
 
-#if defined(VITA)
-   draw.width           = icon_size*scale_factor;
-   draw.height          = icon_size*scale_factor;
-#else
    draw.width           = icon_size;
    draw.height          = icon_size;
+#if defined(VITA)
+   draw.width          *= scale_factor;
+   draw.height         *= scale_factor;
 #endif
    draw.coords          = &coords;
    draw.matrix_data     = mymat;
@@ -571,10 +571,12 @@ static void xmb_draw_icon(
       coords.color      = shadow;
       draw.x            = x + shadow_offset;
       draw.y            = height - y - shadow_offset;
+
 #if defined(VITA)
-      if(scale_factor<1){
-        draw.x            = draw.x + (icon_size-draw.width)/2;
-        draw.y            = draw.y + (icon_size-draw.width)/2;
+      if(scale_factor < 1)
+      {
+         draw.x         = draw.x + (icon_size-draw.width)/2;
+         draw.y         = draw.y + (icon_size-draw.width)/2;
       }
 #endif
       menu_display_draw(&draw);
@@ -583,8 +585,10 @@ static void xmb_draw_icon(
    coords.color         = (const float*)color;
    draw.x               = x;
    draw.y               = height - y;
+
 #if defined(VITA)
-   if(scale_factor<1){
+   if(scale_factor < 1)
+   {
       draw.x            = draw.x + (icon_size-draw.width)/2;
       draw.y            = draw.y + (icon_size-draw.width)/2;
    }
@@ -595,15 +599,17 @@ static void xmb_draw_icon(
 static void xmb_draw_thumbnail(xmb_handle_t *xmb, float *color,
       unsigned width, unsigned height, float w, float h, uintptr_t texture)
 {
-   settings_t *settings = config_get_ptr();
    unsigned i;
    menu_display_ctx_rotate_draw_t rotate_draw;
    menu_display_ctx_draw_t draw;
    struct video_coords coords;
    math_matrix_4x4 mymat;
    float shadow[16];
-   float y = xmb->margins.screen.top + xmb->icon.size + h;
-   float x = xmb->margins.screen.left + xmb->icon.spacing.horizontal +
+   settings_t *settings     = config_get_ptr();
+   float y                  = 
+      xmb->margins.screen.top + xmb->icon.size + h;
+   float x                  = 
+      xmb->margins.screen.left + xmb->icon.spacing.horizontal +
       xmb->icon.spacing.horizontal*4 - xmb->icon.size / 4;
 
    rotate_draw.matrix       = &mymat;
@@ -615,18 +621,18 @@ static void xmb_draw_thumbnail(xmb_handle_t *xmb, float *color,
 
    menu_display_rotate_z(&rotate_draw);
 
-   coords.vertices      = 4;
-   coords.vertex        = NULL;
-   coords.tex_coord     = NULL;
-   coords.lut_tex_coord = NULL;
+   coords.vertices          = 4;
+   coords.vertex            = NULL;
+   coords.tex_coord         = NULL;
+   coords.lut_tex_coord     = NULL;
 
-   draw.width       = w;
-   draw.height      = h;
-   draw.coords      = &coords;
-   draw.matrix_data = &mymat;
-   draw.texture     = texture;
-   draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
-   draw.pipeline.id = 0;
+   draw.width               = w;
+   draw.height              = h;
+   draw.coords              = &coords;
+   draw.matrix_data         = &mymat;
+   draw.texture             = texture;
+   draw.prim_type           = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.pipeline.id         = 0;
 
    if (settings->menu.xmb.shadows_enable)
    {
@@ -635,17 +641,18 @@ static void xmb_draw_thumbnail(xmb_handle_t *xmb, float *color,
 
       menu_display_set_alpha(shadow, color[3] * 0.35f);
 
-      coords.color      = shadow;
-      draw.x            = x + xmb->shadow_offset;
-      draw.y            = height - y - xmb->shadow_offset;
+      coords.color          = shadow;
+      draw.x                = x + xmb->shadow_offset;
+      draw.y                = height - y - xmb->shadow_offset;
 
       menu_display_draw(&draw);
    }
 
-   coords.color         = (const float*)color;
+   coords.color             = (const float*)color;
+   draw.x                   = x;
+   draw.y                   = height - y;
+
    menu_display_set_alpha((float*)coords.color, 1.0f);
-   draw.x               = x;
-   draw.y               = height - y;
 
    menu_display_draw(&draw);
 }
@@ -661,9 +668,9 @@ static void xmb_draw_text(xmb_handle_t *xmb,
    settings_t *settings = config_get_ptr();
 
    if (alpha > xmb->alpha)
-      alpha = xmb->alpha;
+      alpha             = xmb->alpha;
 
-   a8 = 255 * alpha;
+   a8                   = 255 * alpha;
 
    /* Avoid drawing 100% transparent text */
    if (a8 == 0)
@@ -681,7 +688,7 @@ static void xmb_messagebox(void *data, const char *message)
 {
    xmb_handle_t *xmb = (xmb_handle_t*)data;
 
-   if (!xmb || !message || !*message)
+   if (!xmb || string_is_empty(message))
       return;
 
    strlcpy(xmb->box_message, message, sizeof(xmb->box_message));
@@ -719,9 +726,9 @@ static void xmb_render_keyboard(xmb_handle_t *xmb, const char *grid[], unsigned 
 
    for (i = 0; i < 44; i++)
    {
-      int line_y = (i / 11)*height/10.0;
-
+      int line_y        = (i / 11) * height / 10.0;
       uintptr_t texture = xmb->textures.list[XMB_TEXTURE_KEY];
+
       if (i == id)
          texture = xmb->textures.list[XMB_TEXTURE_KEY_HOVER];
 
@@ -834,7 +841,9 @@ static void xmb_render_messagebox_internal(
    }
 
    if (menu_input_dialog_get_display_kb())
-      xmb_render_keyboard(xmb, menu_event_get_osk_grid(), menu_event_get_osk_ptr());
+      xmb_render_keyboard(xmb,
+            menu_event_get_osk_grid(),
+            menu_event_get_osk_ptr());
 
 end:
    string_list_free(list);
@@ -891,9 +900,10 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
    fill_pathname_join(xmb->thumbnail_file_path, xmb->thumbnail_file_path,
          xmb_thumbnails_ident(), sizeof(xmb->thumbnail_file_path));
 
-   /* Scrub characters that are not cross-platform and/or violate the No-Intro filename standard:
+   /* Scrub characters that are not cross-platform and/or violate the 
+    * No-Intro filename standard:
     * http://datomatic.no-intro.org/stuff/The%20Official%20No-Intro%20Convention%20(20071030).zip
-    * Replace these characters in the entry name with underscores
+    * Replace these characters in the entry name with underscores.
     */
    tmp = strdup(entry.path);
 
@@ -903,8 +913,11 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
    /* Look for thumbnail file with this scrubbed filename */
    tmp_new[0] = '\0';
 
-   fill_pathname_join(tmp_new, xmb->thumbnail_file_path, tmp, sizeof(tmp_new));
-   strlcpy(xmb->thumbnail_file_path, tmp_new, sizeof(xmb->thumbnail_file_path));
+   fill_pathname_join(tmp_new,
+         xmb->thumbnail_file_path,
+         tmp, sizeof(tmp_new));
+   strlcpy(xmb->thumbnail_file_path,
+         tmp_new, sizeof(xmb->thumbnail_file_path));
    free(tmp);
 
    strlcat(xmb->thumbnail_file_path,
@@ -938,12 +951,17 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 
    menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
 
+   xmb->savestate_thumbnail_file_path[0] = '\0';
+
    if (     (settings->savestate_thumbnail_enable)
          && (string_is_equal(entry.label, "state_slot")
-         || string_is_equal(entry.label, "loadstate")
-         || string_is_equal(entry.label, "savestate")))
+         || (string_is_equal(entry.label, "loadstate"))
+         || (string_is_equal(entry.label, "savestate"))))
    {
-      char path[PATH_MAX_LENGTH] = {0};
+      char path[PATH_MAX_LENGTH];
+
+      path[0] = '\0';
+
       if (settings->state_slot > 0)
          snprintf(path, sizeof(path), "%s%d",
                global->name.savestate, settings->state_slot);
@@ -959,13 +977,8 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
       {
          strlcpy(xmb->savestate_thumbnail_file_path, path,
                sizeof(xmb->savestate_thumbnail_file_path));
-         return;
       }
-      else
-         xmb->savestate_thumbnail_file_path[0] = '\0';
    }
-   else
-      xmb->savestate_thumbnail_file_path[0] = '\0';
 }
 
 static void xmb_update_thumbnail_image(void *data)
@@ -1563,7 +1576,7 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
    menu_displaylist_info_t info = {0};
    settings_t *settings         = config_get_ptr();
 
-   xmb->horizontal_list     = (file_list_t*)calloc(1, sizeof(file_list_t));
+   xmb->horizontal_list         = (file_list_t*)calloc(1, sizeof(file_list_t));
 
    if (!xmb->horizontal_list)
       return;
@@ -3805,8 +3818,8 @@ static int xmb_list_push(void *data, void *userdata,
 static bool xmb_menu_init_list(void *data)
 {
    menu_displaylist_info_t info = {0};
-   file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
+   file_list_t *selection_buf   = menu_entries_get_selection_buf_ptr(0);
 
    strlcpy(info.label,
          msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU), sizeof(info.label));
