@@ -588,7 +588,12 @@ static bool netplay_get_cmd(netplay_t *netplay,
             return netplay_cmd_nak(netplay, connection);
 
          if (!connection->can_play)
+         {
+            /* Not allowed to play */
+            payload[0] = htonl(NETPLAY_CMD_MODE_REFUSED_REASON_UNPRIVILEGED);
+            netplay_send_raw_cmd(netplay, connection, NETPLAY_CMD_MODE_REFUSED, payload, sizeof(uint32_t));
             break;
+         }
 
          /* Find an available player slot */
          for (player = 0; player <= netplay->player_max; player++)
@@ -600,7 +605,9 @@ static bool netplay_get_cmd(netplay_t *netplay,
          }
          if (player > netplay->player_max)
          {
-            /* Sorry, you can't play! */
+            /* No slots free! */
+            payload[0] = htonl(NETPLAY_CMD_MODE_REFUSED_REASON_NO_SLOTS);
+            netplay_send_raw_cmd(netplay, connection, NETPLAY_CMD_MODE_REFUSED, payload, sizeof(uint32_t));
             break;
          }
 
@@ -779,6 +786,37 @@ static bool netplay_get_cmd(netplay_t *netplay,
 #undef START
 #undef NEXT
       }
+
+      case NETPLAY_CMD_MODE_REFUSED:
+         {
+            uint32_t reason;
+            char msg[512];
+
+            if (cmd_size != sizeof(uint32_t))
+               return netplay_cmd_nak(netplay, connection);
+
+            RECV(&reason, sizeof(reason))
+               return netplay_cmd_nak(netplay, connection);
+            reason = ntohl(reason);
+
+            switch (reason)
+            {
+               case NETPLAY_CMD_MODE_REFUSED_REASON_UNPRIVILEGED:
+                  strlcpy(msg, "You do not have permission to play.", sizeof(msg));
+                  break;
+
+               case NETPLAY_CMD_MODE_REFUSED_REASON_NO_SLOTS:
+                  strlcpy(msg, "There are no free player slots.", sizeof(msg));
+                  break;
+
+               default:
+                  strlcpy(msg, "Cannot switch to play mode.", sizeof(msg));
+            }
+
+            RARCH_LOG("%s\n", msg);
+            runloop_msg_queue_push(msg, 1, 180, false);
+            break;
+         }
 
       case NETPLAY_CMD_DISCONNECT:
          netplay_hangup(netplay, connection);

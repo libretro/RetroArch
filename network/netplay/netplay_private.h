@@ -121,6 +121,9 @@ enum netplay_cmd
    /* Report player mode */
    NETPLAY_CMD_MODE           = 0x0025,
 
+   /* Report player mode refused */
+   NETPLAY_CMD_MODE_REFUSED   = 0x0026,
+
    /* Loading and synchronization */
 
    /* Send the CRC hash of a frame's state */
@@ -159,6 +162,19 @@ enum netplay_cmd
 #define NETPLAY_CMD_INPUT_BIT_SERVER   (1U<<31)
 #define NETPLAY_CMD_MODE_BIT_PLAYING   (1U<<17)
 #define NETPLAY_CMD_MODE_BIT_YOU       (1U<<16)
+
+/* These are the reasons given for mode changes to be rejected */
+enum netplay_cmd_mode_reasons
+{
+   /* Other/unknown reason */
+   NETPLAY_CMD_MODE_REFUSED_REASON_OTHER,
+
+   /* You don't have permission to play */
+   NETPLAY_CMD_MODE_REFUSED_REASON_UNPRIVILEGED,
+
+   /* There are no free player slots */
+   NETPLAY_CMD_MODE_REFUSED_REASON_NO_SLOTS
+};
 
 /* These are the configurations sent by NETPLAY_CMD_CFG. */
 enum netplay_cmd_cfg

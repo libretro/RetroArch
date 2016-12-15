@@ -214,6 +214,14 @@ Description:
     players the frame number must be later than the last frame of the relevant
     player's input that has been transmitted.
 
+Command: MODE_REFUSED
+Payload:
+    {
+       reason: uint32
+    }
+Description:
+    Inform a client that its request to change modes has been refused.
+
 Command: CRC
 Payload:
     {
