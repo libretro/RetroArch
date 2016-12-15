@@ -1388,7 +1388,7 @@ static void menu_action_setting_disp_set_label_menu_file_cheat(
       char *s2, size_t len2)
 {
    menu_action_setting_generic_disp_set_label(w, s, len,
-         path, "(CHEAT)", s2, len2);
+         path, NULL, s2, len2);
 }
 
 static void menu_action_setting_disp_set_label_core_option_create(

@@ -1966,7 +1966,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER:
          return "Audio Driver";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN:
-         return "Audio DSP Plugin";
+         return "Load Audio DSP Plugin...";
       case MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE:
          return "Audio Enable";
       case MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR:
@@ -2139,7 +2139,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CORE_SPECIFIC_CONFIG:
          return "Configuration Per-Core";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
-         return "Automatically extract downloaded archive";
+         return "Extract Archives Automatically";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL:
          return "Buildbot Cores URL";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST:
@@ -2246,7 +2246,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE:
          return "What Is A Core?";
       case MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE:
-         return "History List Enable";
+         return "Enable History List";
       case MENU_ENUM_LABEL_VALUE_HISTORY_TAB:
          return "History";
       case MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU:
@@ -2416,9 +2416,9 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_ENABLE:
          return "Display Keyboard Overlay";
       case MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE:
-         return "Display Overlay";
+         return "Enable Display Overlay";
       case MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU:
-         return "Hide Overlay In Menu";
+         return "Hide Overlay in Menu";
       case MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR:
          return "Poll Type Behavior";
       case MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_EARLY:
@@ -2574,13 +2574,13 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES:
          return "Netplay Delay Frames";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT:
-         return "Disconnect";
+         return "Disconnect Netplay";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE:
          return "Netplay Enable";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT:
-         return "Connect to Netplay host";
+         return "Connect Netplay";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST:
-         return "Start hosting";
+         return "Start Netplay";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS:
          return "Server Address";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_MODE:
@@ -2664,7 +2664,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY:
          return "Overlay Opacity";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET:
-         return "Overlay Preset";
+         return "Load Overlay Preset...";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE:
          return "Overlay Scale";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS:
@@ -2886,7 +2886,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_STATUS:
          return "Status";
       case MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE:
-         return "stdin Commands";
+         return "Enable stdin Commands";
       case MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES:
          return "Supported cores";
       case MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE:
@@ -3104,7 +3104,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY:
          return "<Use this directory>";
       case MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE:
-         return "Allow rotation";
+         return "Allow Rotation";
       case MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_AUTO:
          return "Auto Aspect Ratio";
       case MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX:
@@ -3118,7 +3118,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER:
          return "Video Driver";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FILTER:
-         return "Video Filter";
+         return "Load Video Filter...";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR:
          return "Video Filter Dir";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER:
@@ -3148,7 +3148,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES:
          return "Hard GPU Sync Frames";
       case MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES:
-         return "Max swapchain images";
+         return "Max Swapchain Images";
       case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X:
          return "OSD Message X Position";
       case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y:
@@ -3162,7 +3162,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO:
          return "Estimated Monitor Framerate";
       case MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION:
-         return "Rotation";
+         return "Screen Rotation";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SCALE:
          return "Windowed Scale";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER:
@@ -3180,7 +3180,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PARAMETERS:
          return "Menu Shader Parameters";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS:
-         return "Save Shader Preset As";
+         return "Save Shader Preset as...";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE:
          return "Save Core Preset";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME:
@@ -3189,7 +3189,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
 /* FIXME? Translate 'Enable Hardware Shared Context' */
          return "Enable Hardware Shared Context";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH:
-         return "HW Bilinear Filtering";
+         return "Hardware Bilinear Filtering";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER:
          return "Soft Filter Enable";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL:
@@ -3714,6 +3714,30 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Viewport size calculation failed! Will continue using raw data. This will probably not work right ...";
       case MSG_VIRTUAL_DISK_TRAY:
          return "virtual disk tray.";
+      case MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
+         return "Extract files from an archive to a single subdirectory after downloading.";
+      case MENU_ENUM_SUBLABEL_VIDEO_SMOOTH:
+         return "Smoothens the video using bilinear filtering. This option should be disabled when using shaders.";
+	  case MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER:
+         return "Scales video in integer steps based on geometry and aspect ratio.";
+	  case MENU_ENUM_SUBLABEL_VIDEO_ROTATION:
+         return "Changes the orientation of your screen with four different options: Normal, 90°, 180°, or 270°.";
+	  case MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX:
+         return "Aarrr, matey.";
+      case MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL:
+         return "Rearrange the default functions for the X and O buttons to help with cultural differences.";
+      case MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE:
+         return "Override the current input binds with the remapped binds set for the core you are about to load.";
+      case MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE:
+         return "Enable or disable input autodetection along with on-the-fly configuration changes to almost always support your joypads out of the box.";
+      case MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE:
+         return "Enable or disable the overlay.";
+      case MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU:
+         return "Enable or disable the overlay from appearing inside the menu.";
+      case MENU_ENUM_SUBLABEL_OVERLAY_AUTOLOAD_PREFERRED:
+         return "Enable or disable preferred overlay automatically.";
+      case MENU_ENUM_SUBLABEL_OVERLAY_PRESET:
+         return "Choose an overlay preset to use.";
       default:
 #if 0
          RARCH_LOG("Unimplemented: [%d]\n", msg);

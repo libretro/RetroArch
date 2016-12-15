@@ -331,17 +331,17 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT, /* TODO, Original stri
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES,
       "Verzögere Netplay-Frames")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
-      "Disconnect")
+      "Disconnect Netplay")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
       "Aktiviere Netplay")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
-      "Connect to Netplay host")
+      "Connect Netplay")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
-      "Start hosting")
+      "Start Netplay")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS, /* TODO, Original string changed */
       "IP-Addresse für Netplay")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_LAN_SCAN_SETTINGS,
-      "Scan local network")
+      "Scan Local Network")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_MODE,
       "Aktiviere Netplay-Client")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
@@ -807,7 +807,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
       "Geschätzte Bildwiederholrate")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
-      "Rotation")
+      "Screen Rotation")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
       "Fenterskalierung")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
@@ -886,3 +886,27 @@ MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
       "Use the same controls for both the menu and the game. Applies to the keyboard.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
       "Show onscreen messages.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
+      "Extract files from an archive to a single subdirectory after downloading.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+      "Smoothens the video using bilinear filtering. This option should be disabled when using shaders.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
+      "Scales video in integer steps based on geometry and aspect ratio.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
+      "Changes the orientation of your screen with four different options: Normal, 90°, 180°, or 270°.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX,
+      "Aarrr, matey.")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
+      "Rearrange the default functions for the X and O buttons to help with cultural differences.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
+      "Override the current input binds with the remapped binds set for the core you are about to load.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
+      "Enable or disable input autodetection along with on-the-fly configuration changes to almost always support your joypads out of the box.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
+      "Enable or disable the overlay.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
+      "Enable or disable the overlay from appearing inside the menu.")
+MSG_HASH(MENU_ENUM_SUBLABEL_OVERLAY_AUTOLOAD_PREFERRED,
+      "Enable or disable preferred overlay automatically.")
+MSG_HASH(MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
+      "Choose an overlay preset to use.")

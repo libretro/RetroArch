@@ -3572,6 +3572,14 @@ static int menu_displaylist_parse_generic(
             MENU_ENUM_LABEL_USE_THIS_DIRECTORY,
             FILE_TYPE_USE_DIRECTORY, 0 ,0);
 
+	  menu_entries_append_enum(info->list,
+		   msg_hash_to_str(
+		   MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
+		   msg_hash_to_str(
+		   MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST),
+		   MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST,
+		   MENU_SETTING_ACTION, 0, 0);
+
    if (!str_list)
    {
       const char *str = path_is_compressed
@@ -3855,29 +3863,18 @@ static bool menu_displaylist_push_list_process(menu_displaylist_info_t *info)
 
    if (info->push_builtin_cores)
    {
-      menu_entries_prepend(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR),
-            msg_hash_to_str(MENU_ENUM_LABEL_START_VIDEO_PROCESSOR),
-            MENU_ENUM_LABEL_START_VIDEO_PROCESSOR,
-            MENU_SETTING_ACTION, 0, 0);
-
-      menu_entries_prepend(info->list,
+      menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD),
             msg_hash_to_str(MENU_ENUM_LABEL_START_NET_RETROPAD),
             MENU_ENUM_LABEL_START_NET_RETROPAD,
             MENU_SETTING_ACTION, 0, 0);
-   }
 
-#ifdef HAVE_NETWORKING
-   if (info->download_core)
-   {
-      menu_entries_prepend(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE),
-            msg_hash_to_str(MENU_ENUM_LABEL_CORE_UPDATER_LIST),
-            MENU_ENUM_LABEL_CORE_UPDATER_LIST,
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR),
+            msg_hash_to_str(MENU_ENUM_LABEL_START_VIDEO_PROCESSOR),
+            MENU_ENUM_LABEL_START_VIDEO_PROCESSOR,
             MENU_SETTING_ACTION, 0, 0);
    }
-#endif
 
    if (!string_is_empty(new_entry))
    {
@@ -4696,10 +4693,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_INPUT_OVERLAY_ENABLE,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_OVERLAY_AUTOLOAD_PREFERRED,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU,
+               MENU_ENUM_LABEL_OVERLAY_AUTOLOAD_PREFERRED,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_OVERLAY_PRESET,

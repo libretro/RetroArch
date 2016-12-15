@@ -116,6 +116,18 @@ default_sublabel_macro(action_bind_sublabel_history_list_enable,           MENU_
 default_sublabel_macro(action_bind_sublabel_content_history_size,          MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE)
 default_sublabel_macro(action_bind_sublabel_menu_input_unified_controls,   MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS)
 default_sublabel_macro(action_bind_sublabel_onscreen_notifications_enable, MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE)
+default_sublabel_macro(action_bind_sublabel_updater_auto_extract_archive,  MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE)
+default_sublabel_macro(action_bind_sublabel_video_smooth,                  MENU_ENUM_SUBLABEL_VIDEO_SMOOTH)
+default_sublabel_macro(action_bind_sublabel_video_scale_integer,           MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER)
+default_sublabel_macro(action_bind_sublabel_video_aspect_ratio_index,      MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX)
+default_sublabel_macro(action_bind_sublabel_video_rotation,                MENU_ENUM_SUBLABEL_VIDEO_ROTATION)
+default_sublabel_macro(action_bind_sublabel_menu_input_swap_ok_cancel,     MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL)
+default_sublabel_macro(action_bind_sublabel_input_remap_binds_enable,      MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE)
+default_sublabel_macro(action_bind_sublabel_input_autodetect_enable,       MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE)
+default_sublabel_macro(action_bind_sublabel_input_overlay_enable,          MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE)
+default_sublabel_macro(action_bind_sublabel_input_overlay_hide_in_menu,    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU)
+default_sublabel_macro(action_bind_sublabel_overlay_autoload_preferred,    MENU_ENUM_SUBLABEL_OVERLAY_AUTOLOAD_PREFERRED)
+default_sublabel_macro(action_bind_sublabel_overlay_preset,                MENU_ENUM_SUBLABEL_OVERLAY_PRESET)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -419,6 +431,43 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_history_size);
             break;
+		 case MENU_ENUM_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_updater_auto_extract_archive);
+            break;
+		 case MENU_ENUM_LABEL_VIDEO_SMOOTH:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_smooth);
+            break;
+		 case MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_scale_integer);
+            break;
+		 case MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_INDEX:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_aspect_ratio_index);
+            break;
+		 case MENU_ENUM_LABEL_VIDEO_ROTATION:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_rotation);
+            break;
+         case MENU_ENUM_LABEL_MENU_INPUT_SWAP_OK_CANCEL:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_input_swap_ok_cancel);
+            break;
+         case MENU_ENUM_LABEL_INPUT_REMAP_BINDS_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_remap_binds_enable);
+            break;
+         case MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_autodetect_enable);
+            break;
+         case MENU_ENUM_LABEL_INPUT_OVERLAY_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_enable);
+            break;
+         case MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_hide_in_menu);
+            break;
+         case MENU_ENUM_LABEL_OVERLAY_AUTOLOAD_PREFERRED:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_autoload_preferred);
+            break;
+         case MENU_ENUM_LABEL_OVERLAY_PRESET:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_preset);
+            break;
+
          default:
          case MSG_UNKNOWN:
             return -1;

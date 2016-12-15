@@ -337,11 +337,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
-      "Load Cheat File"
+      "Load Cheat File..."
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
-      "Save Cheat File As"
+      "Save Cheat File as..."
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEAT_NUM_PASSES,
@@ -389,7 +389,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
-      "Load Configuration"
+      "Load Configuration..."
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
@@ -889,13 +889,13 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES,
       "Netplay Delay Frames")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
-      "Disconnect")
+      "Disconnect Netplay")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
       "Autoriser le jeu en réseau")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
-      "Connect to Netplay host")
+      "Connect Netplay")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
-      "Start hosting")
+      "Start Netplay")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
       "Adresse IP")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_MODE,
@@ -1449,7 +1449,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
       "Hard GPU Sync Frames")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
-      "Max swapchain images")
+      "Max Swapchain Images")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
       "Position X")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
@@ -1463,7 +1463,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
       "Fréquence estimée de l'écran")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
-      "Rotation")
+      "Screen Rotation")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
       "Zoom (en fenêtre)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
@@ -1477,11 +1477,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
       "Preview Shader Parameters")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
-      "Load Shader Preset")
+      "Load Shader Preset...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PARAMETERS,
       "Menu Shader Parameters")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
-      "Save Shader Preset As")
+      "Save Shader Preset as...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE,
       "Save Core Preset")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME,
@@ -2215,3 +2215,27 @@ MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
       "Use the same controls for both the menu and the game. Applies to the keyboard.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
       "Show onscreen messages.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
+      "Extract files from an archive to a single subdirectory after downloading.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+      "Smoothens the video using bilinear filtering. This option should be disabled when using shaders.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
+      "Scales video in integer steps based on geometry and aspect ratio.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
+      "Changes the orientation of your screen with four different options: Normal, 90°, 180°, or 270°.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX,
+      "Aarrr, matey.")
+MSG_HASH(MENU_ENUM_LABEL_MENU_INPUT_SWAP_OK_CANCEL,
+      "Rearrange the default functions for the X and O buttons to help with cultural differences.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
+      "Override the current input binds with the remapped binds set for the core you are about to load.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
+      "Enable or disable input autodetection along with on-the-fly configuration changes to almost always support your joypads out of the box.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
+      "Enable or disable the overlay.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
+      "Enable or disable the overlay from appearing inside the menu.")
+MSG_HASH(MENU_ENUM_SUBLABEL_OVERLAY_AUTOLOAD_PREFERRED,
+      "Enable or disable preferred overlay automatically.")
+MSG_HASH(MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
+      "Choose an overlay preset to use.")

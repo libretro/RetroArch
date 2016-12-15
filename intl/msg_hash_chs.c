@@ -3670,6 +3670,30 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
          return "Viewport size calculation failed! Will continue using raw data. This will probably not work right ...";
       case MSG_VIRTUAL_DISK_TRAY:
          return "virtual disk tray.";
+      case MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
+         return "Extract files from an archive to a single subdirectory after downloading.";
+      case MENU_ENUM_SUBLABEL_VIDEO_SMOOTH:
+         return "Smoothens the video using bilinear filtering. This option should be disabled when using shaders.";
+	  case MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER:
+         return "Scales video in integer steps based on geometry and aspect ratio.";
+	  case MENU_ENUM_SUBLABEL_VIDEO_ROTATION:
+         return "Changes the orientation of your screen with four different options: Normal, 90°, 180°, or 270°.";
+	  case MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX:
+         return "Aarrr, matey.";
+      case MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL:
+         return "Rearrange the default functions for the X and O buttons to help with cultural differences.";
+      case MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE:
+         return "Override the current input binds with the remapped binds set for the core you are about to load.";
+      case MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE:
+         return "Enable or disable input autodetection along with on-the-fly configuration changes to almost always support your joypads out of the box.";
+      case MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE:
+         return "Enable or disable the overlay.";
+      case MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU:
+         return "Enable or disable the overlay from appearing inside the menu.";
+      case MENU_ENUM_SUBLABEL_OVERLAY_AUTOLOAD_PREFERRED:
+         return "Enable or disable preferred overlay automatically.";
+      case MENU_ENUM_SUBLABEL_OVERLAY_PRESET:
+         return "Choose an overlay preset to use.";
       default:
 #if 0
          RARCH_LOG("Unimplemented: [%d]\n", msg);

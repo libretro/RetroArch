@@ -161,7 +161,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
-      "Audio DSP Plugin"
+      "Load Audio DSP Plugin..."
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
@@ -337,7 +337,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
-      "Load Cheat File"
+      "Load Cheat File..."
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
@@ -739,7 +739,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
       "Overlay Weergeven")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
-      "Verberg Overlay In Menu")
+      "Verberg Overlay in Menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
       "Poll Type Behavior")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_EARLY,
@@ -895,13 +895,13 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES,
       "Netplay Vertraging Frames")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
-      "Disconnect")
+      "Disconnect Netplay")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
       "Netplay Activeren")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
-      "Connect to Netplay host")
+      "Connect Netplay")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
-      "Start hosting")
+      "Start Netplay")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
       "Server Adres")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_MODE,
@@ -987,7 +987,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
       "Overlay Transparantie")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
-      "Overlay Preset")
+      "Load Overlay Preset...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE,
       "Overlay Schalering")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS,
@@ -1447,9 +1447,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
       "Video Driver")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
-      "Video Filter")
+      "Load Video Filter...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,
-      "Video Filter")
+      "Video Filter Dir")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER,
       "Flicker filter")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
@@ -1477,7 +1477,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
       "Harde GPU Sync Frames")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
-      "Max swapchain images")
+      "Max Swapchain Images")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
       "OSD Berichten X-as positie")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
@@ -1505,7 +1505,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
       "Voorbeeldweergave Shader Parameters")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
-      "Load Shader Preset")
+      "Load Shader Preset...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PARAMETERS,
       "Menu Shader Parameters")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -1517,7 +1517,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
       "Activeer Gedeelde Hardware Context")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
-      "HW Bilinear Filtering")
+      "Hardware Bilinear Filtering")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
       "Soft Filter Enable")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
@@ -1689,7 +1689,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SSH_ENABLE,
 MSG_HASH(MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
       "Prevents your system's screensaver from becoming active.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
-      "Sets the window size relative to the core viewport size. Alternatively you can set a window width and height below for a fixed window size")
+      "Sets the window size relative to the core viewport size. Alternatively you can set a window width and height below for a fixed window size.")
 MSG_HASH(MENU_ENUM_SUBLABEL_USER_LANGUAGE,
       "Sets the language of the interface.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
@@ -2249,3 +2249,27 @@ MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
       "Use the same controls for both the menu and the game. Applies to the keyboard.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
       "Show onscreen messages.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
+      "Extract files from an archive to a single subdirectory after downloading.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+      "Smoothens the video using bilinear filtering. This option should be disabled when using shaders.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
+      "Scales video in integer steps based on geometry and aspect ratio.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
+      "Changes the orientation of your screen with four different options: Normal, 90°, 180°, or 270°.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX,
+      "Aarrr, matey.")
+MSG_HASH(MENU_ENUM_LABEL_MENU_INPUT_SWAP_OK_CANCEL,
+      "Rearrange the default functions for the X and O buttons to help with cultural differences.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
+      "Override the current input binds with the remapped binds set for the core you are about to load.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
+      "Enable or disable input autodetection along with on-the-fly configuration changes to almost always support your joypads out of the box.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
+      "Enable or disable the overlay.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
+      "Enable or disable the overlay from appearing inside the menu.")
+MSG_HASH(MENU_ENUM_SUBLABEL_OVERLAY_AUTOLOAD_PREFERRED,
+      "Enable or disable preferred overlay automatically.")
+MSG_HASH(MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
+      "Choose an overlay preset to use.")
