@@ -68,7 +68,9 @@ static int file_decompressed_subdir(const char *name,
             cdata, cmode, csize, size, crc32, userdata))
       goto error;
 
+#if 0
    RARCH_LOG("[deflate subdir] Path: %s, CRC32: 0x%x\n", name, crc32);
+#endif
 
 next_file:
    return 1;
@@ -107,7 +109,9 @@ static int file_decompressed(const char *name, const char *valid_exts,
             cdata, cmode, csize, size, crc32, userdata))
       goto error;
 
+#if 0
    RARCH_LOG("[deflate] Path: %s, CRC32: 0x%x\n", name, crc32);
+#endif
 
 next_file:
    return 1;
