@@ -927,6 +927,9 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
       case RARCH_NETPLAY_CTL_UNPAUSE:
          netplay_frontend_paused(netplay_data, false);
          break;
+      case RARCH_NETPLAY_CTL_CATCH_UP:
+         ret = netplay_data->catch_up;
+         break;
       case RARCH_NETPLAY_CTL_LOAD_SAVESTATE:
          netplay_load_savestate(netplay_data, (retro_ctx_serialize_info_t*)data, true);
          break;

@@ -347,6 +347,7 @@ void netplay_sync_post_frame(netplay_t *netplay)
    {
       netplay->other_frame_count = netplay->self_frame_count;
       netplay->other_ptr = netplay->self_ptr;
+      netplay->catch_up = false;
       return;
    }
 
@@ -453,6 +454,12 @@ void netplay_sync_post_frame(netplay_t *netplay)
       netplay->is_replay = false;
       netplay->force_rewind = false;
    }
+
+   /* If we're behind, try to catch up */
+   if (netplay->self_frame_count < netplay->unread_frame_count - 2)
+      netplay->catch_up = true;
+   else
+      netplay->catch_up = false;
 
    /* If we're supposed to stall, rewind (we shouldn't get this far if we're
     * stalled, so this is a last resort) */

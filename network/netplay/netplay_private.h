@@ -409,6 +409,9 @@ struct netplay
    enum rarch_netplay_stall_reason stall;
    retro_time_t stall_time;
 
+   /* Opposite of stalling, should we be catching up? */
+   bool catch_up;
+
    /* Frequency with which to check CRCs */
    uint32_t check_frames;
 };
