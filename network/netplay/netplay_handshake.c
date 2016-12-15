@@ -677,7 +677,12 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
    retro_ctx_memory_info_t mem_info;
 
    RECV(cmd, sizeof(cmd))
+   {
+      char *msg = "Incorrect password.";
+      RARCH_ERR("%s\n", msg);
+      runloop_msg_queue_push(msg, 1, 180, false);
       return false;
+   }
 
    /* Only expecting a sync command */
    if (ntohl(cmd[0]) != NETPLAY_CMD_SYNC ||

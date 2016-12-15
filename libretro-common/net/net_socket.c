@@ -74,8 +74,15 @@ ssize_t socket_receive_all_nonblocking(int fd, bool *error,
    const uint8_t *data = (const uint8_t*)data_;
    ssize_t         ret = recv(fd, (char*)data, size, 0);
 
-   if (ret >= 0)
+   if (ret > 0)
       return ret;
+
+   if (ret == 0)
+   {
+      /* Socket closed */
+      *error = true;
+      return -1;
+   }
 
    if (isagain(ret))
       return 0;
