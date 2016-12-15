@@ -3543,8 +3543,6 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
          return "Stopping movie record.";
       case MSG_NETPLAY_FAILED:
          return "Failed to initialize netplay.";
-      case MSG_NETPLAY_FAILED_MOVIE_PLAYBACK_HAS_STARTED:
-         return "Movie playback has started. Cannot start netplay.";
       case MSG_NO_CONTENT_STARTING_DUMMY_CORE:
          return "No content, starting dummy core.";
       case MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET:

@@ -324,31 +324,30 @@ bool netplay_handshake_init(netplay_t *netplay,
 {
    uint32_t header[5] = {0};
    ssize_t recvd;
-   char msg[512];
+   const char *dmsg;
    struct nick_buf_s nick_buf;
    uint32_t *content_crc_ptr = NULL;
    uint32_t local_pmagic, remote_pmagic;
    uint32_t compression;
 
-   msg[0] = '\0';
+   dmsg = NULL;
 
    RECV(header, sizeof(header))
    {
-      strlcpy(msg, msg_hash_to_str(MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT), sizeof(msg));
+      dmsg = msg_hash_to_str(MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT);
       goto error;
    }
 
    if (netplay_impl_magic() != ntohl(header[0]))
    {
-      strlcpy(msg, "Implementations differ. Make sure you're using exact same "
-         "libretro implementations and RetroArch version.", sizeof(msg));
+      dmsg = msg_hash_to_str(MSG_NETPLAY_IMPLEMENTATIONS_DIFFER);
       goto error;
    }
 
    content_get_crc(&content_crc_ptr);
    if (*content_crc_ptr != ntohl(header[1]))
    {
-      strlcpy(msg, msg_hash_to_str(MSG_CONTENT_CRC32S_DIFFER), sizeof(msg));
+      dmsg = msg_hash_to_str(MSG_CONTENT_CRC32S_DIFFER);
       goto error;
    }
 
@@ -359,16 +358,14 @@ bool netplay_handshake_init(netplay_t *netplay,
        netplay_endian_mismatch(local_pmagic, remote_pmagic))
    {
       RARCH_ERR("Endianness mismatch with an endian-sensitive core.\n");
-      strlcpy(msg, "This core does not support inter-architecture netplay "
-         "between these systems.", sizeof(msg));
+      dmsg = msg_hash_to_str(MSG_NETPLAY_ENDIAN_DEPENDENT);
       goto error;
    }
    if ((netplay->quirks & NETPLAY_QUIRK_PLATFORM_DEPENDENT) &&
        (local_pmagic != remote_pmagic))
    {
       RARCH_ERR("Platform mismatch with a platform-sensitive core.\n");
-      strlcpy(msg, "This core does not support inter-architecture netplay.",
-         sizeof(msg));
+      dmsg = msg_hash_to_str(MSG_NETPLAY_PLATFORM_DEPENDENT);
       goto error;
    }
 
@@ -409,7 +406,7 @@ bool netplay_handshake_init(netplay_t *netplay,
       rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
       memset(&line, 0, sizeof(line));
       handshake_password_netplay = netplay;
-      line.label = "Enter Netplay server password:";
+      line.label = msg_hash_to_str(MSG_NETPLAY_ENTER_PASSWORD);
       line.label_setting = "no_setting";
       line.cb = handshake_password;
       menu_input_dialog_start(&line);
@@ -432,10 +429,10 @@ bool netplay_handshake_init(netplay_t *netplay,
    return true;
 
 error:
-   if (msg[0])
+   if (dmsg)
    {
-      RARCH_ERR("%s\n", msg);
-      runloop_msg_queue_push(msg, 1, 180, false);
+      RARCH_ERR("%s\n", dmsg);
+      runloop_msg_queue_push(dmsg, 1, 180, false);
    }
    return false;
 }
@@ -678,7 +675,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
 
    RECV(cmd, sizeof(cmd))
    {
-      char *msg = "Incorrect password.";
+      const char *msg = msg_hash_to_str(MSG_NETPLAY_INCORRECT_PASSWORD);
       RARCH_ERR("%s\n", msg);
       runloop_msg_queue_push(msg, 1, 180, false);
       return false;

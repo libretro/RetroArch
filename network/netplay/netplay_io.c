@@ -57,13 +57,31 @@ static void remote_unpaused(netplay_t *netplay, struct netplay_connection *conne
  */
 void netplay_hangup(netplay_t *netplay, struct netplay_connection *connection)
 {
+   char msg[512];
+   const char *dmsg;
+
    if (!netplay)
       return;
    if (!connection->active)
       return;
 
-   RARCH_WARN("Netplay has disconnected. Will continue without connection ...\n");
-   runloop_msg_queue_push("Netplay has disconnected. Will continue without connection.", 0, 480, false);
+   msg[0] = msg[sizeof(msg)-1] = '\0';
+   dmsg = msg;
+
+   /* Report this disconnection */
+   if (netplay->is_server)
+   {
+      if (connection->nick[0])
+         snprintf(msg, sizeof(msg)-1, msg_hash_to_str(MSG_NETPLAY_SERVER_NAMED_HANGUP), connection->nick);
+      else
+         dmsg = msg_hash_to_str(MSG_NETPLAY_SERVER_HANGUP);
+   }
+   else
+   {
+      dmsg = msg_hash_to_str(MSG_NETPLAY_CLIENT_HANGUP);
+   }
+   RARCH_LOG("%s\n", dmsg);
+   runloop_msg_queue_push(dmsg, 1, 180, false);
 
    socket_close(connection->fd);
    connection->active = false;
@@ -74,6 +92,7 @@ void netplay_hangup(netplay_t *netplay, struct netplay_connection *connection)
    {
       netplay->self_mode = NETPLAY_CONNECTION_NONE;
       netplay->connected_players = 0;
+      netplay->stall = NETPLAY_STALL_NONE;
 
    }
    else
@@ -431,7 +450,10 @@ static bool netplay_get_cmd(netplay_t *netplay,
             {
                /* Ignore the claimed player #, must be this client */
                if (connection->mode != NETPLAY_CONNECTION_PLAYING)
+               {
+                  RARCH_ERR("Netplay input from non-participating player.\n");
                   return netplay_cmd_nak(netplay, connection);
+               }
                player = connection->player;
             }
             else
@@ -440,7 +462,10 @@ static bool netplay_get_cmd(netplay_t *netplay,
             }
 
             if (player >= MAX_USERS || !(netplay->connected_players & (1<<player)))
+            {
+               RARCH_ERR("Invalid NETPLAY_CMD_INPUT player number.\n");
                return netplay_cmd_nak(netplay, connection);
+            }
 
             if (buffer[0] < netplay->read_frame_count[player])
             {
@@ -450,6 +475,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
             else if (buffer[0] > netplay->read_frame_count[player])
             {
                /* Out of order = out of luck */
+               RARCH_ERR("Netplay input out of order.\n");
                return netplay_cmd_nak(netplay, connection);
             }
 
@@ -458,6 +484,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
             if (!netplay_delta_frame_ready(netplay, dframe, netplay->read_frame_count[player]))
             {
                /* FIXME: Catastrophe! */
+               RARCH_ERR("Netplay input without a ready delta frame!\n");
                return netplay_cmd_nak(netplay, connection);
             }
             memcpy(dframe->real_input_state[player], buffer + 2,
@@ -488,14 +515,23 @@ static bool netplay_get_cmd(netplay_t *netplay,
             uint32_t frame;
 
             if (netplay->is_server)
+            {
+               RARCH_ERR("NETPLAY_CMD_NOINPUT from a client.\n");
                return netplay_cmd_nak(netplay, connection);
+            }
 
             RECV(&frame, sizeof(frame))
+            {
+               RARCH_ERR("Failed to receive NETPLAY_CMD_NOINPUT payload.\n");
                return netplay_cmd_nak(netplay, connection);
+            }
             frame = ntohl(frame);
 
             if (frame != netplay->server_frame_count)
+            {
+               RARCH_ERR("NETPLAY_CMD_NOINPUT for invalid frame.\n");
                return netplay_cmd_nak(netplay, connection);
+            }
 
             netplay->server_ptr = NEXT_PTR(netplay->server_ptr);
             netplay->server_frame_count++;
@@ -516,7 +552,10 @@ static bool netplay_get_cmd(netplay_t *netplay,
          }
 
          if (netplay->is_server)
+         {
+            RARCH_ERR("NETPLAY_CMD_FLIP_PLAYERS from a client.\n");
             return netplay_cmd_nak(netplay, connection);
+         }
 
          flip_frame = ntohl(flip_frame);
 
@@ -546,7 +585,10 @@ static bool netplay_get_cmd(netplay_t *netplay,
          uint32_t payload[2];
 
          if (!netplay->is_server)
+         {
+            RARCH_ERR("NETPLAY_CMD_SPECTATE from a server.\n");
             return netplay_cmd_nak(netplay, connection);
+         }
 
          if (connection->mode == NETPLAY_CONNECTION_PLAYING)
          {
@@ -585,7 +627,10 @@ static bool netplay_get_cmd(netplay_t *netplay,
          payload[0] = htonl(netplay->self_frame_count + 1);
 
          if (!netplay->is_server)
+         {
+            RARCH_ERR("NETPLAY_CMD_PLAY from a server.\n");
             return netplay_cmd_nak(netplay, connection);
+         }
 
          if (!connection->can_play)
          {
@@ -661,16 +706,16 @@ static bool netplay_get_cmd(netplay_t *netplay,
 
          if (cmd_size != sizeof(payload) ||
              netplay->is_server)
+         {
+            RARCH_ERR("Invalid payload size for NETPLAY_CMD_MODE.\n");
             return netplay_cmd_nak(netplay, connection);
+         }
 
          RECV(payload, sizeof(payload))
          {
             RARCH_ERR("NETPLAY_CMD_MODE failed to receive payload.\n");
             return netplay_cmd_nak(netplay, connection);
          }
-
-         if (netplay->is_server)
-            return netplay_cmd_nak(netplay, connection);
 
          frame = ntohl(payload[0]);
 
@@ -681,7 +726,10 @@ static bool netplay_get_cmd(netplay_t *netplay,
          mode = ntohl(payload[1]);
          player = mode & 0xFFFF;
          if (player >= MAX_USERS)
+         {
+            RARCH_ERR("Received NETPLAY_CMD_MODE for a higher player number than we support.\n");
             return netplay_cmd_nak(netplay, connection);
+         }
 
          if (mode & NETPLAY_CMD_MODE_BIT_YOU)
          {
@@ -689,11 +737,17 @@ static bool netplay_get_cmd(netplay_t *netplay,
             if (mode & NETPLAY_CMD_MODE_BIT_PLAYING)
             {
                if (frame != netplay->server_frame_count)
+               {
+                  RARCH_ERR("Received mode change out of order.\n");
                   return netplay_cmd_nak(netplay, connection);
+               }
 
                /* Hooray, I get to play now! */
                if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING)
+               {
+                  RARCH_ERR("Received player mode change even though I'm already a player.\n");
                   return netplay_cmd_nak(netplay, connection);
+               }
 
                netplay->self_mode = NETPLAY_CONNECTION_PLAYING;
                netplay->self_player = player;
@@ -738,7 +792,10 @@ static bool netplay_get_cmd(netplay_t *netplay,
             {
                /* I'm no longer playing, but I should already know this */
                if (netplay->self_mode != NETPLAY_CONNECTION_SPECTATING)
+               {
+                  RARCH_ERR("Received mode change to spectator unprompted.\n");
                   return netplay_cmd_nak(netplay, connection);
+               }
 
                /* Announce it */
                strlcpy(msg, "You have left the game", sizeof(msg));
@@ -754,7 +811,10 @@ static bool netplay_get_cmd(netplay_t *netplay,
             if (mode & NETPLAY_CMD_MODE_BIT_PLAYING)
             {
                if (frame != netplay->server_frame_count)
+               {
+                  RARCH_ERR("Received mode change out of order.\n");
                   return netplay_cmd_nak(netplay, connection);
+               }
 
                netplay->connected_players |= (1<<player);
 
@@ -790,31 +850,46 @@ static bool netplay_get_cmd(netplay_t *netplay,
       case NETPLAY_CMD_MODE_REFUSED:
          {
             uint32_t reason;
-            char msg[512];
+            const char *dmsg = NULL;
+
+            if (netplay->is_server)
+            {
+               RARCH_ERR("NETPLAY_CMD_MODE_REFUSED from client.\n");
+               return netplay_cmd_nak(netplay, connection);
+            }
 
             if (cmd_size != sizeof(uint32_t))
+            {
+               RARCH_ERR("Received invalid payload size for NETPLAY_CMD_MODE_REFUSED.\n");
                return netplay_cmd_nak(netplay, connection);
+            }
 
             RECV(&reason, sizeof(reason))
+            {
+               RARCH_ERR("Failed to receive NETPLAY_CMD_MODE_REFUSED payload.\n");
                return netplay_cmd_nak(netplay, connection);
+            }
             reason = ntohl(reason);
 
             switch (reason)
             {
                case NETPLAY_CMD_MODE_REFUSED_REASON_UNPRIVILEGED:
-                  strlcpy(msg, "You do not have permission to play.", sizeof(msg));
+                  dmsg = msg_hash_to_str(MSG_NETPLAY_CANNOT_PLAY_UNPRIVILEGED);
                   break;
 
                case NETPLAY_CMD_MODE_REFUSED_REASON_NO_SLOTS:
-                  strlcpy(msg, "There are no free player slots.", sizeof(msg));
+                  dmsg = msg_hash_to_str(MSG_NETPLAY_CANNOT_PLAY_NO_SLOTS);
                   break;
 
                default:
-                  strlcpy(msg, "Cannot switch to play mode.", sizeof(msg));
+                  dmsg = msg_hash_to_str(MSG_NETPLAY_CANNOT_PLAY);
             }
 
-            RARCH_LOG("%s\n", msg);
-            runloop_msg_queue_push(msg, 1, 180, false);
+            if (dmsg)
+            {
+               RARCH_LOG("%s\n", dmsg);
+               runloop_msg_queue_push(dmsg, 1, 180, false);
+            }
             break;
          }
 
@@ -918,12 +993,18 @@ static bool netplay_get_cmd(netplay_t *netplay,
 
             /* Only players may load states */
             if (connection->mode != NETPLAY_CONNECTION_PLAYING)
+            {
+               RARCH_ERR("Netplay state load from a spectator.\n");
                return netplay_cmd_nak(netplay, connection);
+            }
 
             /* We only allow players to load state if we're in a simple
              * two-player situation */
             if (netplay->is_server && netplay->connections_size > 1)
+            {
+               RARCH_ERR("Netplay state load from a client with other clients connected disallowed.\n");
                return netplay_cmd_nak(netplay, connection);
+            }
 
             /* There is a subtlty in whether the load comes before or after the
              * current frame:

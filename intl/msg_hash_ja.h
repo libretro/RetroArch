@@ -1997,8 +1997,6 @@ MSG_HASH(MSG_MOVIE_RECORD_STOPPED,
       "Stopping movie record.")
 MSG_HASH(MSG_NETPLAY_FAILED,
       "Failed to initialize netplay.")
-MSG_HASH(MSG_NETPLAY_FAILED_MOVIE_PLAYBACK_HAS_STARTED,
-      "Movie playback has started. Cannot start netplay.")
 MSG_HASH(MSG_NO_CONTENT_STARTING_DUMMY_CORE,
       "No content, starting dummy core.")
 MSG_HASH(MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET,

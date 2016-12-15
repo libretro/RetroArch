@@ -172,6 +172,10 @@ static bool netplay_poll(void)
 
    get_self_input_state(netplay_data);
 
+   /* If we're not connected, we're done */
+   if (netplay_data->self_mode == NETPLAY_CONNECTION_NONE)
+      return true;
+
    /* Read Netplay input, block if we're configured to stall for input every
     * frame */
    if (netplay_data->delay_frames == 0 &&
@@ -682,6 +686,7 @@ static void netplay_toggle_play_spectate(netplay_t *netplay)
       /* FIXME: Duplication */
       uint32_t payload[2];
       char msg[512];
+      const char *dmsg;
       payload[0] = htonl(netplay->self_frame_count);
       if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING)
       {
@@ -689,9 +694,7 @@ static void netplay_toggle_play_spectate(netplay_t *netplay)
          payload[1] = htonl(netplay->self_player);
          netplay->self_mode = NETPLAY_CONNECTION_SPECTATING;
 
-         strlcpy(msg, "You have left the game", sizeof(msg));
-         RARCH_LOG("%s\n", msg);
-         runloop_msg_queue_push(msg, 1, 180, false);
+         dmsg = msg_hash_to_str(MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME);
 
       }
       else if (netplay->self_mode == NETPLAY_CONNECTION_SPECTATING)
@@ -707,11 +710,13 @@ static void netplay_toggle_play_spectate(netplay_t *netplay)
          netplay->self_mode = NETPLAY_CONNECTION_PLAYING;
          netplay->self_player = player;
 
+         dmsg = msg;
          msg[sizeof(msg)-1] = '\0';
-         snprintf(msg, sizeof(msg)-1, "You have joined as player %d", player+1);
-         RARCH_LOG("%s\n", msg);
-         runloop_msg_queue_push(msg, 1, 180, false);
+         snprintf(msg, sizeof(msg)-1, msg_hash_to_str(MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N), player+1);
       }
+
+      RARCH_LOG("%s\n", dmsg);
+      runloop_msg_queue_push(dmsg, 1, 180, false);
 
       netplay_send_raw_cmd_all(netplay, NULL, NETPLAY_CMD_MODE, payload, sizeof(payload));
 
@@ -787,16 +792,6 @@ bool init_netplay(void *direct_host, const char *server, unsigned port,
 
    if (!netplay_enabled)
       return false;
-
-#if 0
-   /* FIXME: This may still be relevant? */
-   if (bsv_movie_ctl(BSV_MOVIE_CTL_START_PLAYBACK, NULL))
-   {
-      RARCH_WARN("%s\n",
-            msg_hash_to_str(MSG_NETPLAY_FAILED_MOVIE_PLAYBACK_HAS_STARTED));
-      return false;
-   }
-#endif
 
    core_set_default_callbacks(&cbs);
 

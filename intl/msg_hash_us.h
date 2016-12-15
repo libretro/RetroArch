@@ -47,6 +47,58 @@ MSG_HASH(
       "Waiting for client ..."
       )
 MSG_HASH(
+      MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
+      "You have left the game."
+      )
+MSG_HASH(
+      MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N,
+      "You have joined as player %d."
+      )
+MSG_HASH(
+      MSG_NETPLAY_IMPLEMENTATIONS_DIFFER,
+      "Implementations differ. Make sure you're using the exact same versions of RetroArch and the core."
+      )
+MSG_HASH(
+      MSG_NETPLAY_ENDIAN_DEPENDENT,
+      "This core does not support inter-architecture netplay between these systems."
+      )
+MSG_HASH(
+      MSG_NETPLAY_PLATFORM_DEPENDENT,
+      "This core does not support inter-architecture netplay."
+      )
+MSG_HASH(
+      MSG_NETPLAY_ENTER_PASSWORD,
+      "Enter netplay server password:"
+      )
+MSG_HASH(
+      MSG_NETPLAY_INCORRECT_PASSWORD,
+      "Incorrect password."
+      )
+MSG_HASH(
+      MSG_NETPLAY_SERVER_NAMED_HANGUP,
+      "\"%s\" has disconnected."
+      )
+MSG_HASH(
+      MSG_NETPLAY_SERVER_HANGUP,
+      "A netplay client has disconnected."
+      )
+MSG_HASH(
+      MSG_NETPLAY_CLIENT_HANGUP,
+      "Netplay disconnected."
+      )
+MSG_HASH(
+      MSG_NETPLAY_CANNOT_PLAY_UNPRIVILEGED,
+      "You do not have permission to play."
+      )
+MSG_HASH(
+      MSG_NETPLAY_CANNOT_PLAY_NO_SLOTS,
+      "There are no free player slots."
+      )
+MSG_HASH(
+      MSG_NETPLAY_CANNOT_PLAY,
+      "Cannot switch to play mode."
+      )
+MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
       "Give hardware-rendered cores their own private context. Avoids having to assume hardware state changes inbetween frames."
       )
@@ -1992,8 +2044,6 @@ MSG_HASH(MSG_MOVIE_RECORD_STOPPED,
       "Stopping movie record.")
 MSG_HASH(MSG_NETPLAY_FAILED,
       "Failed to initialize netplay.")
-MSG_HASH(MSG_NETPLAY_FAILED_MOVIE_PLAYBACK_HAS_STARTED,
-      "Movie playback has started. Cannot start netplay.")
 MSG_HASH(MSG_NO_CONTENT_STARTING_DUMMY_CORE,
       "No content, starting dummy core.")
 MSG_HASH(MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET,

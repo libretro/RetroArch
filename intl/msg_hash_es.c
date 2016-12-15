@@ -1418,8 +1418,6 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
          return "Deteniendo grabación de vídeo.";
       case MSG_NETPLAY_FAILED:
          return "Error al iniciar el juego en red.";
-      case MSG_NETPLAY_FAILED_MOVIE_PLAYBACK_HAS_STARTED:
-         return "Se ha iniciado una reproducción. No se puede ejecutar el juego en red.";
       case MSG_PAUSED:
          return "En pausa.";
       case MSG_PROGRAM:
