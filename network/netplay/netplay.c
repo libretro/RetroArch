@@ -1575,6 +1575,11 @@ void netplay_load_savestate(netplay_t *netplay,
             }
          }
       }
+      else
+      {
+         /* FIXME: This is a critical failure! */
+         return;
+      }
    }
 
    /* We need to ignore any intervening data from the other side, 
