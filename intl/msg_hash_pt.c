@@ -989,7 +989,7 @@ const char *msg_hash_to_str_pt(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS:
          return "Áudio";
       case MENU_ENUM_LABEL_VALUE_AUDIO_SYNC:
-         return "Ativar Sincronismo de Áudio";
+         return "Sincronismo de Áudio";
       case MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME:
          return "Volume de Áudio (dB)";
       case MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL:

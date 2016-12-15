@@ -1626,7 +1626,7 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME:
          return "Livello volume audio (dB)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_SYNC:
-         return "Abilita sincro audio";
+         return "Sincro audio";
       case MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA:
          return "Delta di controllo frequenza audio";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES:

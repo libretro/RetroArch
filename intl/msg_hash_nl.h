@@ -205,7 +205,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
-      "Audio Synchronizatie Activeren"
+      "Audio Synchronizatie"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,

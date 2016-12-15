@@ -1986,7 +1986,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS:
          return "Audio";
       case MENU_ENUM_LABEL_VALUE_AUDIO_SYNC:
-         return "Audio Sync Enable";
+         return "Audio Sync";
       case MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME:
          return "Audio Volume Level (dB)";
       case MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL:

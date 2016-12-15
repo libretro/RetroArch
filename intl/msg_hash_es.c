@@ -1550,7 +1550,7 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS:
          return "Sonido";
       case MENU_ENUM_LABEL_VALUE_AUDIO_SYNC:
-         return "Activar sincronía de sonido";
+         return "Sincronía de sonido";
       case MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME:
          return "Volumen de sonido (dB)";
       case MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL:
