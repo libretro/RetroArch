@@ -882,6 +882,11 @@ static bool netplay_get_cmd(netplay_t *netplay,
             if (connection->mode != NETPLAY_CONNECTION_PLAYING)
                return netplay_cmd_nak(netplay, connection);
 
+            /* We only allow players to load state if we're in a simple
+             * two-player situation */
+            if (netplay->is_server && netplay->connections_size > 1)
+               return netplay_cmd_nak(netplay, connection);
+
             /* There is a subtlty in whether the load comes before or after the
              * current frame:
              *
