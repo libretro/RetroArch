@@ -481,6 +481,7 @@ static bool playlist_read_file(
          entry->path      = strdup(buf[0]);
       if (*buf[1])
          entry->label     = strdup(buf[1]);
+
       entry->core_path    = strdup(buf[2]);
       entry->core_name    = strdup(buf[3]);
       if (*buf[4])
@@ -528,19 +529,11 @@ error:
    return NULL;
 }
 
-static const char *playlist_entry_get_label(
-      const struct playlist_entry *entry)
-{
-   if (!entry)
-      return NULL;
-   return entry->label;
-}
-
 static int playlist_qsort_func(const struct playlist_entry *a,
       const struct playlist_entry *b)
 {
-   const char *a_label = playlist_entry_get_label(a);
-   const char *b_label = playlist_entry_get_label(b);
+   const char *a_label = a ? a->label : NULL;
+   const char *b_label = b ? b->label : NULL;
 
    if (!a_label || !b_label)
       return 0;
