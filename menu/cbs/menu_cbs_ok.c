@@ -1087,7 +1087,10 @@ static int action_ok_playlist_entry_collection(const char *path,
    playlist_info.idx  = selection_ptr;
 
    if (!menu_content_playlist_load(&playlist_info))
+   {
+      runloop_msg_queue_push("File could not be loaded from playlist.\n", 1, 100, true);
       return menu_cbs_exit();
+   }
 
    playlist_get_index(playlist,
          playlist_info.idx, &path, NULL, NULL, NULL, NULL, NULL);
@@ -1171,7 +1174,10 @@ static int action_ok_playlist_entry(const char *path,
    playlist_info.idx  = selection_ptr;
 
    if (!menu_content_playlist_load(&playlist_info))
+   {
+      runloop_msg_queue_push("File could not be loaded from playlist.\n", 1, 100, true);
       return menu_cbs_exit();
+   }
 
    playlist_get_index(playlist,
          playlist_info.idx, &path, NULL, NULL, NULL, NULL, NULL);
@@ -1274,7 +1280,10 @@ static int action_ok_playlist_entry_start_content(const char *path,
    playlist_info.idx  = selection_ptr;
 
    if (!menu_content_playlist_load(&playlist_info))
+   {
+      runloop_msg_queue_push("File could not be loaded from playlist.\n", 1, 100, true);
       return menu_cbs_exit();
+   }
 
    playlist_get_index(playlist,
          playlist_info.idx, &path, NULL, NULL, NULL, NULL, NULL);

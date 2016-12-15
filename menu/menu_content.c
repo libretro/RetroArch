@@ -30,14 +30,9 @@
 #include "menu_shader.h"
 
 #include "../core_info.h"
-#include "../content.h"
 #include "../configuration.h"
-#include "../dynamic.h"
 #include "../defaults.h"
-#include "../frontend/frontend.h"
 #include "../playlist.h"
-#include "../retroarch.h"
-#include "../runloop.h"
 #include "../verbosity.h"
 
 /**
@@ -58,7 +53,9 @@ bool menu_content_playlist_load(menu_content_ctx_playlist_info_t *info)
    playlist_get_index(playlist,
          info->idx, &path, NULL, NULL, NULL, NULL, NULL);
 
-   if (!string_is_empty(path))
+   if (string_is_empty(path))
+      return false;
+
    {
       unsigned i;
       bool valid_path     = false;
@@ -84,14 +81,10 @@ bool menu_content_playlist_load(menu_content_ctx_playlist_info_t *info)
       free(path_check);
 
       if (!valid_path)
-         goto error;
+         return false;
    }
 
    return true;
-
-error:
-   runloop_msg_queue_push("File could not be loaded from playlist.\n", 1, 100, true);
-   return false;
 }
 
 bool menu_content_playlist_find_associated_core(const char *path, char *s, size_t len)
@@ -106,20 +99,21 @@ bool menu_content_playlist_find_associated_core(const char *path, char *s, size_
 
    for (j = 0; j < existing_core_names->size; j++)
    {
-      if (string_is_equal(path, existing_core_names->elems[j].data))
-      {
-         if (existing_core_paths)
-         {
-            const char *existing_core = existing_core_paths->elems[j].data;
+      if (!string_is_equal(path, existing_core_names->elems[j].data))
+         continue;
 
-            if (existing_core)
-            {
-               strlcpy(s, existing_core, len);
-               ret = true;
-            }
+      if (existing_core_paths)
+      {
+         const char *existing_core = existing_core_paths->elems[j].data;
+
+         if (existing_core)
+         {
+            strlcpy(s, existing_core, len);
+            ret = true;
          }
-         break;
       }
+
+      break;
    }
 
    string_list_free(existing_core_names);
@@ -148,15 +142,9 @@ bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info,
       char *new_core_path, size_t len)
 {
    const core_info_t *info                 = NULL;
-   core_info_list_t *core_info             = NULL;
-   const char *default_info_dir            = NULL;
    size_t supported                        = 0;
-
-   if (def_info)
-   {
-      core_info         = (core_info_list_t*)def_info->data;
-      default_info_dir  = def_info->dir;
-   }
+   core_info_list_t *core_info             = (core_info_list_t*)def_info->data;
+   const char *default_info_dir            = def_info->dir;
 
    if (!string_is_empty(default_info_dir))
    {
