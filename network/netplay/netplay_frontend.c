@@ -824,7 +824,8 @@ void deinit_netplay(void)
  * @direct_host          : Host to connect to directly, if applicable (client only)
  * @server               : server address to connect to (client only)
  * @port                 : TCP port to host on/connect to
- * @password             : Password required to connect (server only)
+ * @play_password        : Password required to play (server only)
+ * @spectate_password    : Password required to connect (server only)
  *
  * Initializes netplay.
  *
@@ -833,7 +834,7 @@ void deinit_netplay(void)
  * Returns: true (1) if successful, otherwise false (0).
  **/
 bool init_netplay(void *direct_host, const char *server, unsigned port,
-   const char *password)
+   const char *play_password, const char *spectate_password)
 {
    struct retro_callbacks cbs    = {0};
    settings_t *settings          = config_get_ptr();
@@ -889,7 +890,7 @@ bool init_netplay(void *direct_host, const char *server, unsigned port,
          netplay_is_client ? direct_host : NULL,
          netplay_is_client ? server : NULL,
          port ? port : RARCH_DEFAULT_PORT,
-         password,
+         play_password, spectate_password,
          settings->netplay.delay_frames, settings->netplay.check_frames, &cbs,
          settings->netplay.nat_traversal, settings->username,
          quirks);

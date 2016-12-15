@@ -240,7 +240,7 @@ bool netplay_handshake_init_send(netplay_t *netplay, struct netplay_connection *
    header[1] = htonl(*content_crc_ptr);
    header[2] = htonl(netplay_platform_magic());
    header[3] = htonl(NETPLAY_COMPRESSION_SUPPORTED);
-   if (netplay->is_server && netplay->password[0])
+   if (netplay->is_server && (netplay->play_password[0] || netplay->spectate_password[0]))
    {
       /* Demand a password */
       if (simple_rand_next == 1)
@@ -542,13 +542,14 @@ bool netplay_handshake_pre_nick(netplay_t *netplay, struct netplay_connection *c
 
    if (netplay->is_server)
    {
-      if (netplay->password[0])
+      if (netplay->play_password[0] || netplay->spectate_password[0])
       {
          /* There's a password, so just put them in PRE_PASSWORD mode */
          connection->mode = NETPLAY_CONNECTION_PRE_PASSWORD;
       }
       else
       {
+         connection->can_play = true;
          if (!netplay_handshake_sync(netplay, connection))
             return false;
       }
@@ -572,6 +573,7 @@ bool netplay_handshake_pre_password(netplay_t *netplay, struct netplay_connectio
    char password[8+NETPLAY_PASS_LEN]; /* 8 for salt */
    ssize_t recvd;
    char msg[512];
+   bool correct;
 
    msg[0] = '\0';
 
@@ -594,15 +596,32 @@ bool netplay_handshake_pre_password(netplay_t *netplay, struct netplay_connectio
       return false;
    }
 
-   /* Calculate the correct password */
+   /* Calculate the correct password hash(es) and compare */
+   correct = false;
    snprintf(password, sizeof(password), "%08X", connection->salt);
-   strlcpy(password + 8, netplay->password, sizeof(password)-8);
-   sha256_hash(corr_password_buf.password, (uint8_t *) password, strlen(password));
+   if (netplay->play_password[0])
+   {
+      strlcpy(password + 8, netplay->play_password, sizeof(password)-8);
+      sha256_hash(corr_password_buf.password, (uint8_t *) password, strlen(password));
+      if (!memcmp(password_buf.password, corr_password_buf.password, sizeof(password_buf.password)))
+      {
+         correct = true;
+         connection->can_play = true;
+      }
+   }
+   if (netplay->spectate_password[0])
+   {
+      strlcpy(password + 8, netplay->spectate_password, sizeof(password)-8);
+      sha256_hash(corr_password_buf.password, (uint8_t *) password, strlen(password));
+      if (!memcmp(password_buf.password, corr_password_buf.password, sizeof(password_buf.password)))
+         correct = true;
+   }
 
-   /* Compare them */
-   if (memcmp(password_buf.password, corr_password_buf.password, sizeof(password_buf.password)))
+   /* Just disconnect if it was wrong */
+   if (!correct)
       return false;
 
+   /* Otherwise, we're ready! */
    if (!netplay_handshake_sync(netplay, connection))
       return false;
 

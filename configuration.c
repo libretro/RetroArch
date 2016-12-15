@@ -608,6 +608,7 @@ static int populate_settings_path(settings_t *settings, struct config_path_setti
 #ifdef HAVE_NETWORKING
    SETTING_PATH("netplay_ip_address",       settings->netplay.server, false, NULL, true);
    SETTING_PATH("netplay_password",           settings->netplay.password, false, NULL, true);
+   SETTING_PATH("netplay_spectate_password",  settings->netplay.spectate_password, false, NULL, true);
 #endif
    SETTING_PATH("recording_output_directory",
          global->record.output_dir, false, NULL, true);

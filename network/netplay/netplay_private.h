@@ -260,6 +260,9 @@ struct netplay_connection
    /* Salt associated with password transaction */
    uint32_t salt;
 
+   /* Is this connection allowed to play (server only)? */
+   bool can_play;
+
    /* Buffers for sending and receiving data */
    struct socket_buffer send_packet_buffer, recv_packet_buffer;
 
@@ -288,8 +291,11 @@ struct netplay
    /* TCP connection for listening (server only) */
    int listen_fd;
 
+   /* Password required to play (server only) */
+   char play_password[NETPLAY_PASS_LEN];
+
    /* Password required to connect (server only) */
-   char password[NETPLAY_PASS_LEN];
+   char spectate_password[NETPLAY_PASS_LEN];
 
    /* Our player number */
    uint32_t self_player;
@@ -420,23 +426,24 @@ void input_poll_net(void);
  * @direct_host          : Netplay host discovered from scanning.
  * @server               : IP address of server.
  * @port                 : Port of server.
- * @password             : Password required to connect.
+ * @play_password        : Password required to play.
+ * @spectate_password    : Password required to connect.
  * @delay_frames         : Amount of delay frames.
  * @check_frames         : Frequency with which to check CRCs.
  * @cb                   : Libretro callbacks.
  * @nat_traversal        : If true, attempt NAT traversal.
  * @nick                 : Nickname of user.
- * @quirks               : Netplay quirks.
+ * @quirks               : Netplay quirks required for this session.
  *
- * Creates a new netplay handle. A NULL host means we're
+ * Creates a new netplay handle. A NULL host means we're 
  * hosting (user 1).
  *
  * Returns: new netplay handle.
  **/
-netplay_t *netplay_new(void *direct_host, const char *server,
-      uint16_t port, const char *password, unsigned delay_frames,
-      unsigned check_frames, const struct retro_callbacks *cb,
-      bool nat_traversal, const char *nick, uint64_t quirks);
+netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
+   const char *play_password, const char *spectate_password,
+   unsigned delay_frames, unsigned check_frames, const struct retro_callbacks
+   *cb, bool nat_traversal, const char *nick, uint64_t quirks);
 
 /**
  * netplay_free:

@@ -2364,7 +2364,8 @@ bool command_event(enum event_command cmd, void *data)
          if (!init_netplay(
               data, settings->netplay.server,
               settings->netplay.port,
-              settings->netplay.password))
+              settings->netplay.password,
+              settings->netplay.spectate_password))
             return false;
 #endif
          break;

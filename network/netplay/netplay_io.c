@@ -566,6 +566,9 @@ static bool netplay_get_cmd(netplay_t *netplay,
          if (!netplay->is_server)
             return netplay_cmd_nak(netplay, connection);
 
+         if (!connection->can_play)
+            break;
+
          /* Find an available player slot */
          for (player = 0; player <= netplay->player_max; player++)
          {
