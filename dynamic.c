@@ -243,16 +243,17 @@ static bool load_dynamic_core(void)
    RARCH_LOG("Loading dynamic libretro core from: \"%s\"\n",
          path_get(RARCH_PATH_CORE));
    lib_handle = dylib_load(path_get(RARCH_PATH_CORE));
-   if (!lib_handle)
-   {
-      RARCH_ERR("Failed to open libretro core: \"%s\"\n",
-            path_get(RARCH_PATH_CORE));
-      RARCH_ERR("Error(s): %s\n", dylib_error());
-      runloop_msg_queue_push(msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE), 1, 180, true);
-      return false;
-   }
 
-   return true;
+   if (lib_handle)
+      return true;
+
+   RARCH_ERR("Failed to open libretro core: \"%s\"\n",
+         path_get(RARCH_PATH_CORE));
+   RARCH_ERR("Error(s): %s\n", dylib_error());
+
+   runloop_msg_queue_push(msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE), 1, 180, true);
+
+   return false;
 }
 
 static dylib_t libretro_get_system_info_lib(const char *path,
@@ -348,16 +349,19 @@ bool libretro_get_system_info(const char *path,
 {
 #ifdef HAVE_DYNAMIC
    struct retro_system_info dummy_info = {0};
-   dylib_t lib = libretro_get_system_info_lib(path,
-         &dummy_info, load_no_content);
+   dylib_t lib                         = libretro_get_system_info_lib(
+         path, &dummy_info, load_no_content);
+
    if (!lib)
       return false;
 
    memcpy(info, &dummy_info, sizeof(*info));
-   info->library_name    = strdup(dummy_info.library_name);
-   info->library_version = strdup(dummy_info.library_version);
+   info->library_name        = strdup(dummy_info.library_name);
+   info->library_version     = strdup(dummy_info.library_version);
+
    if (dummy_info.valid_extensions)
       info->valid_extensions = strdup(dummy_info.valid_extensions);
+
    dylib_close(lib);
 #else
    if (!libretro_get_system_info_static(info, load_no_content))
@@ -808,11 +812,13 @@ static bool mmap_preprocess_descriptors(rarch_memory_descriptor_t *first, unsign
          if ((desc->core.len & (desc->core.len - 1)) != 0)
             return false;
          
-         desc->core.select = top_addr & ~mmap_inflate(mmap_add_bits_down(desc->core.len - 1), desc->core.disconnect);
+         desc->core.select = top_addr & ~mmap_inflate(mmap_add_bits_down(desc->core.len - 1),
+               desc->core.disconnect);
       }
       
       if (desc->core.len == 0)
-         desc->core.len = mmap_add_bits_down(mmap_reduce(top_addr & ~desc->core.select, desc->core.disconnect)) + 1;
+         desc->core.len = mmap_add_bits_down(mmap_reduce(top_addr & ~desc->core.select,
+                  desc->core.disconnect)) + 1;
       
       if (desc->core.start & ~desc->core.select)
          return false;
@@ -979,7 +985,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          {
             struct retro_variable *var = (struct retro_variable*)data;
 
-            if (var) {
+            if (var)
+            {
                RARCH_LOG("Environ GET_VARIABLE %s: not implemented.\n", var->key);
                var->value = NULL;
             }
