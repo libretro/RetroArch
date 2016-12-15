@@ -410,7 +410,7 @@ static const char *xmb_thumbnails_ident(void)
          break;
    }
 
-   return "OFF";
+   return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
 }
 
 static float *xmb_gradient_ident(void)
@@ -1058,7 +1058,8 @@ static void xmb_selection_pointer_changed(
          iz = xmb->items.active.zoom;
 
          depth = xmb_list_get_size(xmb, MENU_LIST_PLAIN);
-         if (!string_is_equal(xmb_thumbnails_ident(), "OFF") && depth == 1)
+         if (!string_is_equal(xmb_thumbnails_ident(),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)) && depth == 1)
          {
             xmb_update_thumbnail_path(xmb, i);
             xmb_update_thumbnail_image(xmb);
@@ -1510,7 +1511,8 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    xmb_list_switch_new(xmb, selection_buf, dir, selection);
    xmb->categories.active.idx_old = xmb->categories.selection_ptr;
 
-   if (!string_is_equal(xmb_thumbnails_ident(), "OFF"))
+   if (!string_is_equal(xmb_thumbnails_ident(),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
    {
       xmb_update_thumbnail_path(xmb, 0);
       xmb_update_thumbnail_image(xmb);
@@ -1830,7 +1832,8 @@ static void xmb_populate_entries(void *data,
    {
       xmb_selection_pointer_changed(xmb, false);
       menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
-      if (!string_is_equal(xmb_thumbnails_ident(), "OFF"))
+      if (!string_is_equal(xmb_thumbnails_ident(),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
          xmb_update_thumbnail_image(xmb);
       xmb_update_savestate_thumbnail_image(xmb);
       return;
@@ -2177,7 +2180,12 @@ static void xmb_draw_items(xmb_handle_t *xmb,
       if (string_is_empty(entry_value))
       {
          if (xmb->savestate_thumbnail ||
-            (!string_is_equal(xmb_thumbnails_ident(), "OFF") && xmb->thumbnail))
+               (!string_is_equal
+                (
+                 xmb_thumbnails_ident(),
+                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)) 
+                && xmb->thumbnail)
+            )
             ticker_limit = 40;
          else
             ticker_limit = 70;
@@ -2711,7 +2719,8 @@ static void xmb_frame(void *data)
             xmb->savestate_thumbnail_width, xmb->savestate_thumbnail_height,
             xmb->savestate_thumbnail);
    else if (xmb->thumbnail
-      && !string_is_equal(xmb_thumbnails_ident(), "OFF"))
+      && !string_is_equal(xmb_thumbnails_ident(),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
    {
 #ifdef XMB_DEBUG
       RARCH_LOG("[XMB thumbnail] width: %.2f, height: %.2f\n", xmb->thumbnail_width, xmb->thumbnail_height);
@@ -3378,7 +3387,8 @@ static void xmb_context_reset(void *data)
    xmb_context_reset_background(iconpath);
    xmb_context_reset_horizontal_list(xmb);
 
-   if (!string_is_equal(xmb_thumbnails_ident(), "OFF"))
+   if (!string_is_equal(xmb_thumbnails_ident(),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
       xmb_update_thumbnail_image(xmb);
    xmb_update_savestate_thumbnail_image(xmb);
 }
