@@ -429,6 +429,8 @@ netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
    netplay->nat_traversal     = netplay->is_server ? nat_traversal : false;
    netplay->delay_frames      = delay_frames;
    netplay->check_frames      = check_frames;
+   netplay->crc_validity_checked = false;
+   netplay->crcs_valid        = true;
    netplay->quirks            = quirks;
    netplay->self_mode         = netplay->is_server ?
                                 NETPLAY_CONNECTION_PLAYING :

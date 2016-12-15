@@ -430,6 +430,12 @@ struct netplay
 
    /* Frequency with which to check CRCs */
    uint32_t check_frames;
+
+   /* Have we checked whether CRCs are valid at all? */
+   bool crc_validity_checked;
+
+   /* Are they valid? */
+   bool crcs_valid;
 };
 
 

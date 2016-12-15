@@ -131,33 +131,36 @@ void netplay_simulate_input(netplay_t *netplay, size_t sim_ptr, bool resim)
 
 static void netplay_handle_frame_hash(netplay_t *netplay, struct delta_frame *delta)
 {
-   static bool crcs_valid = true;
    if (netplay->is_server)
    {
       if (netplay->check_frames &&
-          (delta->frame % netplay->check_frames == 0 || delta->frame == 1))
+          delta->frame % netplay->check_frames == 0)
       {
          delta->crc = netplay_delta_frame_crc(netplay, delta);
          netplay_cmd_crc(netplay, delta);
       }
    }
-   else if (delta->crc && crcs_valid)
+   else if (delta->crc && netplay->crcs_valid)
    {
       /* We have a remote CRC, so check it */
       uint32_t local_crc = netplay_delta_frame_crc(netplay, delta);
       if (local_crc != delta->crc)
       {
-         if (delta->frame == 1)
+         if (!netplay->crc_validity_checked)
          {
-            /* We check frame 1 just to make sure the CRCs make sense at all.
-             * If we've diverged at frame 1, we assume CRCs are not useful. */
-            crcs_valid = false;
+            /* If the very first check frame is wrong, they probably just don't
+             * work */
+            netplay->crcs_valid = false;
          }
-         else if (crcs_valid)
+         else if (netplay->crcs_valid)
          {
             /* Fix this! */
             netplay_cmd_request_savestate(netplay);
          }
+      }
+      else if (!netplay->crc_validity_checked)
+      {
+         netplay->crc_validity_checked = true;
       }
    }
 }
