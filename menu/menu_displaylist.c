@@ -3689,9 +3689,9 @@ static int menu_displaylist_parse_generic(
          switch (file_type)
          {
             case FILE_TYPE_PLAIN:
-   #if 0
+#if 0
                enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_PLAIN_FILE;
-   #endif
+#endif
                break;
             case FILE_TYPE_MOVIE:
                enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_MOVIE_OPEN;

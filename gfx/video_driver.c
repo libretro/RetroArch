@@ -1941,9 +1941,6 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
    int padding_y        = 0;
    settings_t *settings = config_get_ptr();
 
-   if (!vp)
-      return;
-
    if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
       struct video_viewport *custom = video_viewport_get_custom();
