@@ -4694,6 +4694,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   PARSE_ONLY_STRING, false) != -1)
                count++;
             if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD,
+                  PARSE_ONLY_STRING, false) != -1)
+               count++;
+            if (menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_NETPLAY_DELAY_FRAMES,
                   PARSE_ONLY_UINT, false) != -1)
                count++;

@@ -1702,6 +1702,12 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                "The password for connecting to the netplay \n"
                "host. Used only in host mode.");
          break;
+      case MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD:
+         snprintf(s, len,
+               "The password for connecting to the netplay \n"
+               "host with only spectator privileges. Used \n"
+               "only in host mode.");
+         break;
       case MENU_ENUM_LABEL_STDIN_CMD_ENABLE:
          snprintf(s, len,
                "Enable stdin command interface.");

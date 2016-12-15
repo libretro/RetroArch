@@ -5591,6 +5591,20 @@ static bool setting_append_list(
                   general_read_handler);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
+            CONFIG_STRING(
+                  list, list_info,
+                  settings->netplay.spectate_password,
+                  sizeof(settings->netplay.spectate_password),
+                  MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD,
+                  MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
+                  "",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+
             CONFIG_UINT(
                   list, list_info,
                   &settings->netplay.delay_frames,
