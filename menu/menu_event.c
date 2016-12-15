@@ -51,7 +51,7 @@ static unsigned char menu_keyboard_key_state[RETROK_LAST];
 
 enum osk_type
 {
-   OSK_TYPE_UNKNOWN = 0U,
+   OSK_TYPE_UNKNOWN    = 0U,
    OSK_LOWERCASE_LATIN,
    OSK_UPPERCASE_LATIN,
    OSK_HIRAGANA_PAGE1,
@@ -61,8 +61,8 @@ enum osk_type
    OSK_TYPE_LAST
 };
 
-static enum osk_type osk_idx = OSK_LOWERCASE_LATIN;
-static int osk_ptr;
+static int osk_ptr               = 0;
+static enum osk_type osk_idx     = OSK_LOWERCASE_LATIN;
 static const char *osk_grid[45];
 
 static const char *uppercase_grid[] = {
@@ -113,24 +113,24 @@ void menu_event_set_osk_ptr(int i)
 
 void menu_event_osk_append(int ptr)
 {
-   if (ptr >= 0)
-   {
-      if (string_is_equal(osk_grid[ptr],"⇦"))
-         input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
-      else if (string_is_equal(osk_grid[ptr],"⏎"))
-         input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
-      else if (string_is_equal(osk_grid[ptr],"⇧"))
-         osk_idx = OSK_UPPERCASE_LATIN;
-      else if (string_is_equal(osk_grid[ptr],"⇩"))
-         osk_idx = OSK_LOWERCASE_LATIN;
-      else if (string_is_equal(osk_grid[ptr],"⊕"))
-         if (osk_idx < OSK_TYPE_LAST - 1)
-            osk_idx = (enum osk_type)(osk_idx + 1);
-         else
-            osk_idx = (enum osk_type)(OSK_TYPE_UNKNOWN + 1);
+   if (ptr < 0)
+      return;
+
+   if (string_is_equal(osk_grid[ptr],"⇦"))
+      input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
+   else if (string_is_equal(osk_grid[ptr],"⏎"))
+      input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
+   else if (string_is_equal(osk_grid[ptr],"⇧"))
+      osk_idx = OSK_UPPERCASE_LATIN;
+   else if (string_is_equal(osk_grid[ptr],"⇩"))
+      osk_idx = OSK_LOWERCASE_LATIN;
+   else if (string_is_equal(osk_grid[ptr],"⊕"))
+      if (osk_idx < OSK_TYPE_LAST - 1)
+         osk_idx = (enum osk_type)(osk_idx + 1);
       else
-         input_keyboard_line_append(osk_grid[ptr]);
-   }
+         osk_idx = (enum osk_type)(OSK_TYPE_UNKNOWN + 1);
+   else
+      input_keyboard_line_append(osk_grid[ptr]);
 }
 
 const char** menu_event_get_osk_grid(void)
@@ -182,7 +182,7 @@ void menu_event_keyboard_set(bool down, enum retro_key key)
          menu_keyboard_key_state[i] = (menu_keyboard_key_state[i] & 1) << 1;
    }
    else
-      menu_keyboard_key_state[key] = ((menu_keyboard_key_state[key] & 1) << 1) | down;
+      menu_keyboard_key_state[key]  = ((menu_keyboard_key_state[key] & 1) << 1) | down;
 }
 
 unsigned menu_event(uint64_t input, uint64_t trigger_input)
@@ -208,7 +208,7 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
    unsigned ok_current                     = input & UINT64_C(1) << menu_ok_btn;
    unsigned ok_trigger                     = ok_current & ~ok_old;
 
-   ok_old     = ok_current;
+   ok_old                                  = ok_current;
 
    if (input)
    {
@@ -267,36 +267,24 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
       switch (osk_idx)
       {
          case OSK_HIRAGANA_PAGE1:
-         {
             memcpy(osk_grid, hiragana_page1_grid, sizeof(hiragana_page1_grid));
             break;
-         }
          case OSK_HIRAGANA_PAGE2:
-         {
             memcpy(osk_grid, hiragana_page2_grid, sizeof(hiragana_page2_grid));
             break;
-         }
          case OSK_KATAKANA_PAGE1:
-         {
             memcpy(osk_grid, katakana_page1_grid, sizeof(katakana_page1_grid));
             break;
-         }
          case OSK_KATAKANA_PAGE2:
-         {
             memcpy(osk_grid, katakana_page2_grid, sizeof(katakana_page2_grid));
             break;
-         }
          case OSK_UPPERCASE_LATIN:
-         {
             memcpy(osk_grid, uppercase_grid, sizeof(uppercase_grid));
             break;
-         }
          case OSK_LOWERCASE_LATIN:
          default:
-         {
             memcpy(osk_grid, lowercase_grid, sizeof(lowercase_grid));
             break;
-         }
       }
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN))
@@ -342,9 +330,7 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
       if (trigger_input & (UINT64_C(1) << menu_ok_btn))
       {
          if (osk_ptr >= 0)
-         {
             menu_event_osk_append(osk_ptr);
-         }
       }
 
       if (trigger_input & (UINT64_C(1) << menu_cancel_btn))
@@ -357,7 +343,7 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
          input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
 
       trigger_input = 0;
-      ok_trigger = 0;
+      ok_trigger    = 0;
    }
 
    if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP))
