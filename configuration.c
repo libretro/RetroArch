@@ -2349,18 +2349,16 @@ bool config_unload_override(void)
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_SAVE_PATH,  NULL);
 
-   if (config_load_file(path_get(RARCH_PATH_CONFIG), false, config_get_ptr()))
-   {
-      RARCH_LOG("[overrides] configuration overrides unloaded, original configuration restored.\n");
+   if (!config_load_file(path_get(RARCH_PATH_CONFIG), false, config_get_ptr()))
+      return false;
 
-      /* Reset save paths */
-      retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
-      retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL);
+   RARCH_LOG("[overrides] configuration overrides unloaded, original configuration restored.\n");
 
-      return true;
-   }
+   /* Reset save paths */
+   retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
+   retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL);
 
-   return false;
+   return true;
 }
 
 /**
