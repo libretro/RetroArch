@@ -32,7 +32,8 @@
  * netplay_update_unread_ptr
  *
  * Update the global unread_ptr and unread_frame_count to correspond to the
- * earliest unread frame count of any connected player */
+ * earliest unread frame count of any connected player
+ */
 void netplay_update_unread_ptr(netplay_t *netplay)
 {
    if (netplay->is_server && !netplay->connected_players)
@@ -70,7 +71,7 @@ void netplay_update_unread_ptr(netplay_t *netplay)
 }
 
 /**
- * netplay_simulate_input:
+ * netplay_simulate_input
  * @netplay             : pointer to netplay object
  * @sim_ptr             : frame index for which to simulate input
  * @resim               : are we resimulating, or simulating this frame for the
@@ -162,11 +163,11 @@ static void netplay_handle_frame_hash(netplay_t *netplay, struct delta_frame *de
 }
 
 /**
- * netplay_sync_pre_frame:
+ * netplay_sync_pre_frame
  * @netplay              : pointer to netplay object
  *
  * Pre-frame for Netplay synchronization.
- **/
+ */
 bool netplay_sync_pre_frame(netplay_t *netplay)
 {
    retro_ctx_serialize_info_t serial_info;
@@ -329,12 +330,12 @@ process:
 }
 
 /**
- * netplay_sync_post_frame:
+ * netplay_sync_post_frame
  * @netplay              : pointer to netplay object
  *
  * Post-frame for Netplay synchronization.
  * We check if we have new input and replay from recorded input.
- **/
+ */
 void netplay_sync_post_frame(netplay_t *netplay)
 {
    netplay->self_ptr = NEXT_PTR(netplay->self_ptr);

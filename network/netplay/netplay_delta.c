@@ -23,7 +23,17 @@
 
 #include "netplay_private.h"
 
-bool netplay_delta_frame_ready(netplay_t *netplay, struct delta_frame *delta, uint32_t frame)
+/**
+ * netplay_delta_frame_ready
+ *
+ * Prepares, if possible, a delta frame for input, and reports whether it is
+ * ready.
+ *
+ * Returns: True if the delta frame is ready for input at the given frame,
+ * false otherwise.
+ */
+bool netplay_delta_frame_ready(netplay_t *netplay, struct delta_frame *delta,
+   uint32_t frame)
 {
    void *remember_state;
    if (delta->used)
@@ -43,6 +53,11 @@ bool netplay_delta_frame_ready(netplay_t *netplay, struct delta_frame *delta, ui
    return true;
 }
 
+/**
+ * netplay_delta_frame_crc
+ *
+ * Get the CRC for the serialization of this frame.
+ */
 uint32_t netplay_delta_frame_crc(netplay_t *netplay, struct delta_frame *delta)
 {
    if (!netplay->state_size)

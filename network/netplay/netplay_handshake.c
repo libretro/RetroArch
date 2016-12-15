@@ -229,7 +229,13 @@ static uint32_t simple_rand_uint32()
             parts[2]);
 }
 
-bool netplay_handshake_init_send(netplay_t *netplay, struct netplay_connection *connection)
+/**
+ * netplay_handshake_init_send
+ *
+ * Initialize our handshake and send the first part of the handshake protocol.
+ */
+bool netplay_handshake_init_send(netplay_t *netplay,
+   struct netplay_connection *connection)
 {
    uint32_t *content_crc_ptr = NULL;
    uint32_t header[5] = {0};
@@ -307,7 +313,14 @@ static void handshake_password(void *ignore, const char *line)
    rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
 }
 
-bool netplay_handshake_init(netplay_t *netplay, struct netplay_connection *connection, bool *had_input)
+/**
+ * netplay_handshake_init
+ *
+ * Data receiver for the initial part of the handshake, i.e., waiting for the
+ * netplay header.
+ */
+bool netplay_handshake_init(netplay_t *netplay,
+   struct netplay_connection *connection, bool *had_input)
 {
    uint32_t header[5] = {0};
    ssize_t recvd;
@@ -509,7 +522,14 @@ bool netplay_handshake_sync(netplay_t *netplay, struct netplay_connection *conne
    return true;
 }
 
-bool netplay_handshake_pre_nick(netplay_t *netplay, struct netplay_connection *connection, bool *had_input)
+/**
+ * netplay_handshake_pre_nick
+ *
+ * Data receiver for the second stage of handshake, receiving the other side's
+ * nickname.
+ */
+bool netplay_handshake_pre_nick(netplay_t *netplay,
+   struct netplay_connection *connection, bool *had_input)
 {
    struct nick_buf_s nick_buf;
    ssize_t recvd;
@@ -567,7 +587,14 @@ bool netplay_handshake_pre_nick(netplay_t *netplay, struct netplay_connection *c
    return true;
 }
 
-bool netplay_handshake_pre_password(netplay_t *netplay, struct netplay_connection *connection, bool *had_input)
+/**
+ * netplay_handshake_pre_password
+ *
+ * Data receiver for the third, optional stage of server handshake, receiving
+ * the password.
+ */
+bool netplay_handshake_pre_password(netplay_t *netplay,
+   struct netplay_connection *connection, bool *had_input)
 {
    struct password_buf_s password_buf, corr_password_buf;
    char password[8+NETPLAY_PASS_LEN]; /* 8 for salt */
@@ -630,7 +657,14 @@ bool netplay_handshake_pre_password(netplay_t *netplay, struct netplay_connectio
    return true;
 }
 
-bool netplay_handshake_pre_sync(netplay_t *netplay, struct netplay_connection *connection, bool *had_input)
+/**
+ * netplay_handshake_pre_sync
+ *
+ * Data receiver for the client's third handshake stage, receiving the
+ * synchronization information.
+ */
+bool netplay_handshake_pre_sync(netplay_t *netplay,
+   struct netplay_connection *connection, bool *had_input)
 {
    uint32_t cmd[2];
    uint32_t new_frame_count, connected_players, flip_frame;

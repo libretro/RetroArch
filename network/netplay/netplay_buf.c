@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdlib.h>
+
 #include <net/net_compat.h>
 #include <net/net_socket.h>
 
@@ -47,6 +49,11 @@ static size_t buf_remaining(struct socket_buffer *sbuf)
    return sbuf->bufsz - buf_used(sbuf) - 1;
 }
 
+/**
+ * netplay_init_socket_buffer
+ *
+ * Initialize a new socket buffer.
+ */
 bool netplay_init_socket_buffer(struct socket_buffer *sbuf, size_t size)
 {
    sbuf->data = malloc(size);
@@ -57,6 +64,11 @@ bool netplay_init_socket_buffer(struct socket_buffer *sbuf, size_t size)
    return true;
 }
 
+/**
+ * netplay_resize_socket_buffer
+ *
+ * Resize the given socket_buffer's buffer to the requested size.
+ */
 bool netplay_resize_socket_buffer(struct socket_buffer *sbuf, size_t newsize)
 {
    unsigned char *newdata = malloc(newsize);
@@ -91,6 +103,11 @@ bool netplay_resize_socket_buffer(struct socket_buffer *sbuf, size_t newsize)
     return true;
 }
 
+/**
+ * netplay_deinit_socket_buffer
+ *
+ * Free a socket buffer.
+ */
 void netplay_deinit_socket_buffer(struct socket_buffer *sbuf)
 {
    if (sbuf->data)
@@ -102,7 +119,13 @@ void netplay_clear_socket_buffer(struct socket_buffer *sbuf)
    sbuf->start = sbuf->read = sbuf->end = 0;
 }
 
-bool netplay_send(struct socket_buffer *sbuf, int sockfd, const void *buf, size_t len)
+/**
+ * netplay_send
+ *
+ * Queue the given data for sending.
+ */
+bool netplay_send(struct socket_buffer *sbuf, int sockfd, const void *buf,
+   size_t len)
 {
    if (buf_remaining(sbuf) < len)
    {
@@ -143,6 +166,14 @@ bool netplay_send(struct socket_buffer *sbuf, int sockfd, const void *buf, size_
    return netplay_send_flush(sbuf, sockfd, false);
 }
 
+/**
+ * netplay_send_flush
+ *
+ * Flush unsent data in the given socket buffer, blocking to do so if
+ * requested.
+ *
+ * Returns false only on socket failures, true otherwise.
+ */
 bool netplay_send_flush(struct socket_buffer *sbuf, int sockfd, bool block)
 {
    ssize_t sent;
@@ -205,7 +236,15 @@ bool netplay_send_flush(struct socket_buffer *sbuf, int sockfd, bool block)
    return true;
 }
 
-ssize_t netplay_recv(struct socket_buffer *sbuf, int sockfd, void *buf, size_t len, bool block)
+/**
+ * netplay_recv
+ *
+ * Receive buffered or fresh data.
+ *
+ * Returns number of bytes returned, which may be short or 0, or -1 on error.
+ */
+ssize_t netplay_recv(struct socket_buffer *sbuf, int sockfd, void *buf,
+   size_t len, bool block)
 {
    bool error;
    ssize_t recvd;
@@ -295,11 +334,23 @@ ssize_t netplay_recv(struct socket_buffer *sbuf, int sockfd, void *buf, size_t l
    return recvd;
 }
 
+/**
+ * netplay_recv_reset
+ *
+ * Reset our recv buffer so that future netplay_recvs will read the same data
+ * again.
+ */
 void netplay_recv_reset(struct socket_buffer *sbuf)
 {
    sbuf->read = sbuf->start;
 }
 
+/**
+ * netplay_recv_flush
+ *
+ * Flush our recv buffer, so a future netplay_recv_reset will reset to this
+ * point.
+ */
 void netplay_recv_flush(struct socket_buffer *sbuf)
 {
    sbuf->start = sbuf->read;

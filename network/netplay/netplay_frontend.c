@@ -28,10 +28,6 @@
 #include "../../input/input_driver.h"
 #include "../../runloop.h"
 
-#ifndef HAVE_SOCKET_LEGACY
-static void announce_nat_traversal(netplay_t *netplay);
-#endif
-
 /* Only used before init_netplay */
 static bool netplay_enabled = false;
 static bool netplay_is_client = false;
@@ -286,13 +282,18 @@ static bool netplay_poll(void)
    return true;
 }
 
-/* Netplay polling callbacks */
+/**
+ * input_poll_net
+ *
+ * Poll the network if necessary.
+ */
 void input_poll_net(void)
 {
    if (!netplay_should_skip(netplay_data) && netplay_can_poll(netplay_data))
       netplay_poll();
 }
 
+/* Netplay polling callbacks */
 void video_frame_net(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
@@ -437,6 +438,42 @@ static void netplay_flip_users(netplay_t *netplay)
 }
 
 /**
+ * netplay_frontend_paused
+ * @netplay              : pointer to netplay object
+ * @paused               : true if frontend is paused
+ *
+ * Inform Netplay of the frontend's pause state (paused or otherwise)
+ */
+static void netplay_frontend_paused(netplay_t *netplay, bool paused)
+{
+   size_t i;
+
+   /* Nothing to do if we already knew this */
+   if (netplay->local_paused == paused)
+      return;
+
+   netplay->local_paused = paused;
+
+   /* If other connections are paused, nothing to say */
+   if (netplay->remote_paused)
+      return;
+
+   /* Have to send manually because every buffer must be flushed immediately */
+   for (i = 0; i < netplay->connections_size; i++)
+   {
+      struct netplay_connection *connection = &netplay->connections[i];
+      if (connection->active && connection->mode >= NETPLAY_CONNECTION_CONNECTED)
+      {
+         netplay_send_raw_cmd(netplay, connection,
+            paused ? NETPLAY_CMD_PAUSE : NETPLAY_CMD_RESUME, NULL, 0);
+
+         /* We're not going to be polled, so we need to flush this command now */
+         netplay_send_flush(&connection->send_packet_buffer, connection->fd, true);
+      }
+   }
+}
+
+/**
  * netplay_pre_frame:   
  * @netplay              : pointer to netplay object
  *
@@ -478,7 +515,7 @@ bool netplay_pre_frame(netplay_t *netplay)
 #ifndef HAVE_SOCKET_LEGACY
          if (!netplay->nat_traversal_state.request_outstanding ||
              netplay->nat_traversal_state.have_inet4)
-            announce_nat_traversal(netplay);
+            netplay_announce_nat_traversal(netplay);
 #endif
       }
    }
@@ -512,42 +549,6 @@ void netplay_post_frame(netplay_t *netplay)
           !netplay_send_flush(&connection->send_packet_buffer, connection->fd,
             false))
          netplay_hangup(netplay, &netplay->connections[0]);
-   }
-}
-
-/**
- * netplay_frontend_paused
- * @netplay              : pointer to netplay object
- * @paused               : true if frontend is paused
- *
- * Inform Netplay of the frontend's pause state (paused or otherwise)
- **/
-void netplay_frontend_paused(netplay_t *netplay, bool paused)
-{
-   size_t i;
-
-   /* Nothing to do if we already knew this */
-   if (netplay->local_paused == paused)
-      return;
-
-   netplay->local_paused = paused;
-
-   /* If other connections are paused, nothing to say */
-   if (netplay->remote_paused)
-      return;
-
-   /* Have to send manually because every buffer must be flushed immediately */
-   for (i = 0; i < netplay->connections_size; i++)
-   {
-      struct netplay_connection *connection = &netplay->connections[i];
-      if (connection->active && connection->mode >= NETPLAY_CONNECTION_CONNECTED)
-      {
-         netplay_send_raw_cmd(netplay, connection,
-            paused ? NETPLAY_CMD_PAUSE : NETPLAY_CMD_RESUME, NULL, 0);
-
-         /* We're not going to be polled, so we need to flush this command now */
-         netplay_send_flush(&connection->send_packet_buffer, connection->fd, true);
-      }
    }
 }
 
@@ -668,63 +669,6 @@ void netplay_load_savestate(netplay_t *netplay,
          netplay_hangup(netplay, connection);
    }
 }
-
-/**
- * netplay_init_nat_traversal
- *
- * Initialize the NAT traversal library and try to open a port
- */
-void netplay_init_nat_traversal(netplay_t *netplay)
-{
-   natt_init();
-
-   if (!natt_new(&netplay->nat_traversal_state))
-   {
-      netplay->nat_traversal = false;
-      return;
-   }
-
-   natt_open_port_any(&netplay->nat_traversal_state, netplay->tcp_port, SOCKET_PROTOCOL_TCP);
-
-#ifndef HAVE_SOCKET_LEGACY
-   if (!netplay->nat_traversal_state.request_outstanding)
-      announce_nat_traversal(netplay);
-#endif
-}
-
-#ifndef HAVE_SOCKET_LEGACY
-static void announce_nat_traversal(netplay_t *netplay)
-{
-   char msg[512], host[PATH_MAX_LENGTH], port[6];
-
-   if (netplay->nat_traversal_state.have_inet4)
-   {
-      if (getnameinfo((const struct sockaddr *) &netplay->nat_traversal_state.ext_inet4_addr,
-               sizeof(struct sockaddr_in),
-               host, PATH_MAX_LENGTH, port, 6, NI_NUMERICHOST|NI_NUMERICSERV) != 0)
-         return;
-
-   }
-#ifdef HAVE_INET6
-   else if (netplay->nat_traversal_state.have_inet6)
-   {
-      if (getnameinfo((const struct sockaddr *) &netplay->nat_traversal_state.ext_inet6_addr,
-               sizeof(struct sockaddr_in6),
-               host, PATH_MAX_LENGTH, port, 6, NI_NUMERICHOST|NI_NUMERICSERV) != 0)
-         return;
-
-   }
-#endif
-   else
-      return;
-
-   snprintf(msg, sizeof(msg), "%s: %s:%s\n",
-         msg_hash_to_str(MSG_PUBLIC_ADDRESS),
-         host, port);
-   runloop_msg_queue_push(msg, 1, 180, false);
-   RARCH_LOG("%s\n", msg);
-}
-#endif
 
 /**
  * netplay_toggle_play_spectate

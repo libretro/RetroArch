@@ -54,7 +54,7 @@ static void remote_unpaused(netplay_t *netplay, struct netplay_connection *conne
  * netplay_hangup:
  *
  * Disconnects an active Netplay connection due to an error
- **/
+ */
 void netplay_hangup(netplay_t *netplay, struct netplay_connection *connection)
 {
    if (!netplay)
@@ -145,7 +145,13 @@ static bool send_input_frame(netplay_t *netplay,
    return true;
 }
 
-/* Send the current input frame */
+/**
+ * netplay_send_cur_input
+ *
+ * Send the current input frame to a given connection.
+ *
+ * Returns true if successful, false otherwise.
+ */
 bool netplay_send_cur_input(netplay_t *netplay,
    struct netplay_connection *connection)
 {
@@ -203,9 +209,9 @@ bool netplay_send_cur_input(netplay_t *netplay,
 /**
  * netplay_send_raw_cmd
  *
- * Send a raw Netplay command to the given connection
+ * Send a raw Netplay command to the given connection.
  *
- * Returns true on success, false on failure
+ * Returns true on success, false on failure.
  */
 bool netplay_send_raw_cmd(netplay_t *netplay,
    struct netplay_connection *connection, uint32_t cmd, const void *data,
@@ -258,6 +264,11 @@ static bool netplay_cmd_nak(netplay_t *netplay,
    return false;
 }
 
+/**
+ * netplay_cmd_crc
+ *
+ * Send a CRC command to all active clients.
+ */
 bool netplay_cmd_crc(netplay_t *netplay, struct delta_frame *delta)
 {
    uint32_t payload[2];
@@ -275,6 +286,11 @@ bool netplay_cmd_crc(netplay_t *netplay, struct delta_frame *delta)
    return success;
 }
 
+/**
+ * netplay_cmd_request_savestate
+ *
+ * Send a savestate request command.
+ */
 bool netplay_cmd_request_savestate(netplay_t *netplay)
 {
    if (netplay->connections_size == 0 ||
@@ -288,6 +304,11 @@ bool netplay_cmd_request_savestate(netplay_t *netplay)
       NETPLAY_CMD_REQUEST_SAVESTATE, NULL, 0);
 }
 
+/**
+ * netplay_cmd_mode
+ *
+ * Send a mode request command to either play or spectate.
+ */
 bool netplay_cmd_mode(netplay_t *netplay,
    struct netplay_connection *connection,
    enum rarch_netplay_connection_mode mode)
@@ -1078,4 +1099,66 @@ bool netplay_flip_port(netplay_t *netplay)
       frame = netplay->replay_frame_count;
 
    return netplay->flip ^ (frame < netplay->flip_frame);
+}
+
+/**
+ * netplay_announce_nat_traversal
+ *
+ * Announce successful NAT traversal.
+ */
+void netplay_announce_nat_traversal(netplay_t *netplay)
+{
+#ifndef HAVE_SOCKET_LEGACY
+   char msg[512], host[PATH_MAX_LENGTH], port[6];
+
+   if (netplay->nat_traversal_state.have_inet4)
+   {
+      if (getnameinfo((const struct sockaddr *) &netplay->nat_traversal_state.ext_inet4_addr,
+               sizeof(struct sockaddr_in),
+               host, PATH_MAX_LENGTH, port, 6, NI_NUMERICHOST|NI_NUMERICSERV) != 0)
+         return;
+
+   }
+#ifdef HAVE_INET6
+   else if (netplay->nat_traversal_state.have_inet6)
+   {
+      if (getnameinfo((const struct sockaddr *) &netplay->nat_traversal_state.ext_inet6_addr,
+               sizeof(struct sockaddr_in6),
+               host, PATH_MAX_LENGTH, port, 6, NI_NUMERICHOST|NI_NUMERICSERV) != 0)
+         return;
+
+   }
+#endif
+   else
+      return;
+
+   snprintf(msg, sizeof(msg), "%s: %s:%s\n",
+         msg_hash_to_str(MSG_PUBLIC_ADDRESS),
+         host, port);
+   runloop_msg_queue_push(msg, 1, 180, false);
+   RARCH_LOG("%s\n", msg);
+#endif
+}
+
+/**
+ * netplay_init_nat_traversal
+ *
+ * Initialize the NAT traversal library and try to open a port
+ */
+void netplay_init_nat_traversal(netplay_t *netplay)
+{
+   natt_init();
+
+   if (!natt_new(&netplay->nat_traversal_state))
+   {
+      netplay->nat_traversal = false;
+      return;
+   }
+
+   natt_open_port_any(&netplay->nat_traversal_state, netplay->tcp_port, SOCKET_PROTOCOL_TCP);
+
+#ifndef HAVE_SOCKET_LEGACY
+   if (!netplay->nat_traversal_state.request_outstanding)
+      netplay_announce_nat_traversal(netplay);
+#endif
 }

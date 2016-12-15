@@ -264,62 +264,6 @@ static bool netplay_init_socket_buffers(netplay_t *netplay)
    return true;
 }
 
-/**
- * netplay_try_init_serialization
- *
- * Try to initialize serialization. For quirky cores.
- *
- * Returns true if serialization is now ready, false otherwise.
- */
-bool netplay_try_init_serialization(netplay_t *netplay)
-{
-   retro_ctx_serialize_info_t serial_info;
-   size_t packet_buffer_size;
-
-   if (netplay->state_size)
-      return true;
-
-   if (!netplay_init_serialization(netplay))
-      return false;
-
-   /* Check if we can actually save */
-   serial_info.data_const = NULL;
-   serial_info.data = netplay->buffer[netplay->self_ptr].state;
-   serial_info.size = netplay->state_size;
-
-   if (!core_serialize(&serial_info))
-      return false;
-
-   /* Once initialized, we no longer exhibit this quirk */
-   netplay->quirks &= ~((uint64_t) NETPLAY_QUIRK_INITIALIZATION);
-
-   return netplay_init_socket_buffers(netplay);
-}
-
-bool netplay_wait_and_init_serialization(netplay_t *netplay)
-{
-   int frame;
-
-   if (netplay->state_size)
-      return true;
-
-   /* Wait a maximum of 60 frames */
-   for (frame = 0; frame < 60; frame++) {
-      if (netplay_try_init_serialization(netplay))
-         return true;
-
-#if defined(HAVE_THREADS)
-      autosave_lock();
-#endif
-      core_run();
-#if defined(HAVE_THREADS)
-      autosave_unlock();
-#endif
-   }
-
-   return false;
-}
-
 bool netplay_init_serialization(netplay_t *netplay)
 {
    unsigned i;
@@ -356,6 +300,70 @@ bool netplay_init_serialization(netplay_t *netplay)
    }
 
    return true;
+}
+
+/**
+ * netplay_try_init_serialization
+ *
+ * Try to initialize serialization. For quirky cores.
+ *
+ * Returns true if serialization is now ready, false otherwise.
+ */
+bool netplay_try_init_serialization(netplay_t *netplay)
+{
+   retro_ctx_serialize_info_t serial_info;
+   size_t packet_buffer_size;
+
+   if (netplay->state_size)
+      return true;
+
+   if (!netplay_init_serialization(netplay))
+      return false;
+
+   /* Check if we can actually save */
+   serial_info.data_const = NULL;
+   serial_info.data = netplay->buffer[netplay->self_ptr].state;
+   serial_info.size = netplay->state_size;
+
+   if (!core_serialize(&serial_info))
+      return false;
+
+   /* Once initialized, we no longer exhibit this quirk */
+   netplay->quirks &= ~((uint64_t) NETPLAY_QUIRK_INITIALIZATION);
+
+   return netplay_init_socket_buffers(netplay);
+}
+
+/**
+ * netplay_wait_and_init_serialization
+ *
+ * Try very hard to initialize serialization, simulating multiple frames if
+ * necessary. For quirky cores.
+ *
+ * Returns true if serialization is now ready, false otherwise.
+ */
+bool netplay_wait_and_init_serialization(netplay_t *netplay)
+{
+   int frame;
+
+   if (netplay->state_size)
+      return true;
+
+   /* Wait a maximum of 60 frames */
+   for (frame = 0; frame < 60; frame++) {
+      if (netplay_try_init_serialization(netplay))
+         return true;
+
+#if defined(HAVE_THREADS)
+      autosave_lock();
+#endif
+      core_run();
+#if defined(HAVE_THREADS)
+      autosave_unlock();
+#endif
+   }
+
+   return false;
 }
 
 static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
@@ -397,15 +405,16 @@ static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
  * @nick                 : Nickname of user.
  * @quirks               : Netplay quirks required for this session.
  *
- * Creates a new netplay handle. A NULL host means we're 
- * hosting (user 1).
+ * Creates a new netplay handle. A NULL server means we're 
+ * hosting.
  *
- * Returns: new netplay handle.
- **/
+ * Returns: new netplay data.
+ */
 netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
    const char *play_password, const char *spectate_password,
-   unsigned delay_frames, unsigned check_frames, const struct retro_callbacks
-   *cb, bool nat_traversal, const char *nick, uint64_t quirks)
+   unsigned delay_frames, unsigned check_frames,
+   const struct retro_callbacks *cb, bool nat_traversal, const char *nick,
+   uint64_t quirks)
 {
    netplay_t *netplay = (netplay_t*)calloc(1, sizeof(*netplay));
    if (!netplay)
@@ -486,11 +495,11 @@ error:
 }
 
 /**
- * netplay_free:
+ * netplay_free
  * @netplay              : pointer to netplay object
  *
- * Frees netplay handle.
- **/
+ * Frees netplay data/
+ */
 void netplay_free(netplay_t *netplay)
 {
    size_t i;
