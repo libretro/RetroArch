@@ -913,10 +913,8 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          goto done;
       case RARCH_NETPLAY_CTL_FLIP_PLAYERS:
          {
-            if (!netplay_data->is_server)
-               return false;
             bool *state = (bool*)data;
-            if (*state)
+            if (netplay_data->is_server && *state)
                netplay_flip_users(netplay_data);
          }
          break;
