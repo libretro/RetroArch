@@ -414,6 +414,7 @@ netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
    netplay->tcp_port          = port;
    netplay->cbs               = *cb;
    netplay->connected_players = 0;
+   netplay->player_max        = 1;
    netplay->is_server         = server == NULL;
    netplay->nat_traversal     = netplay->is_server ? nat_traversal : false;
    netplay->delay_frames      = delay_frames;

@@ -304,7 +304,10 @@ struct netplay
 
    /* Bitmap of players with controllers (whether local or remote) (low bit is
     * player 1) */
-   int connected_players;
+   uint32_t connected_players;
+
+   /* Maximum player number */
+   uint32_t player_max;
 
    struct retro_callbacks cbs;
 

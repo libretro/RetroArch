@@ -567,17 +567,17 @@ static bool netplay_get_cmd(netplay_t *netplay,
             return netplay_cmd_nak(netplay, connection);
 
          /* Find an available player slot */
-         for (player = 0; player < MAX_USERS; player++)
+         for (player = 0; player <= netplay->player_max; player++)
          {
             if (!(netplay->self_mode == NETPLAY_CONNECTION_PLAYING &&
                   netplay->self_player == player) &&
                 !(netplay->connected_players & (1<<player)))
                break;
          }
-         if (player == MAX_USERS)
+         if (player > netplay->player_max)
          {
-            /* FIXME */
-            return netplay_cmd_nak(netplay, connection);
+            /* Sorry, you can't play! */
+            break;
          }
 
          if (connection->mode != NETPLAY_CONNECTION_PLAYING)

@@ -333,6 +333,9 @@ static int16_t netplay_input_state(netplay_t *netplay,
       return 0;
    }
 
+   if (port > netplay->player_max)
+      netplay->player_max = port;
+
    if (netplay->buffer[ptr].have_real[port])
    {
       netplay->buffer[ptr].used_real[port] = true;
