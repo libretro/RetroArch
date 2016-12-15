@@ -332,7 +332,9 @@ static bool gfx_ctx_x_set_resize(void *data,
 
 static void *gfx_ctx_x_init(void *data)
 {
-   int nelements, major, minor;
+   int nelements           = 0;
+   int major               = 0;
+   int minor               = 0;
 #ifdef HAVE_OPENGL
    static const int visual_attribs[] = {
       GLX_X_RENDERABLE     , True,

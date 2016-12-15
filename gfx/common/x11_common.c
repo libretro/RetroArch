@@ -46,6 +46,8 @@ static bool g_x11_has_focus                 = false;
 static bool g_x11_true_full                 = false;
 Display *g_x11_dpy                          = NULL;
 
+unsigned g_x11_screen                       = 0;
+
 Colormap g_x11_cmap;
 Window   g_x11_win;
 
@@ -56,8 +58,6 @@ static Atom XA_NET_MOVERESIZE_WINDOW;
 static Atom g_x11_quit_atom;
 static XIM g_x11_xim;
 static XIC g_x11_xic;
-
-unsigned g_x11_screen;
 
 #define XA_INIT(x) XA##x = XInternAtom(dpy, #x, False)
 #define _NET_WM_STATE_ADD 1
