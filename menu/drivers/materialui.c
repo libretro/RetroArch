@@ -674,7 +674,8 @@ static void mui_render_label_value(mui_handle_t *mui,
          case FILE_TYPE_MOVIE:
             break;
          case FILE_TYPE_BOOL_ON:
-            if (mui->textures.list[MUI_TEXTURE_SWITCH_ON]) {
+            if (mui->textures.list[MUI_TEXTURE_SWITCH_ON])
+            {
                texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_ON];
                switch_is_on = true;
             }
@@ -682,7 +683,8 @@ static void mui_render_label_value(mui_handle_t *mui,
                do_draw_text = true;
             break;
          case FILE_TYPE_BOOL_OFF:
-            if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF]) {
+            if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF])
+            {
                texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_OFF];
                switch_is_on = false;
             }
