@@ -182,7 +182,9 @@ static bool core_info_list_iterate(
       struct string_list *contents, size_t i)
 {
    char info_path_base[PATH_MAX_LENGTH];
+#if defined(RARCH_MOBILE) || (defined(RARCH_CONSOLE) && !defined(PSP) && !defined(_3DS) && !defined(VITA))
    char                       *substr   = NULL;
+#endif
    settings_t                 *settings = config_get_ptr();
 
    if (!contents || !contents->elems[i].data)
