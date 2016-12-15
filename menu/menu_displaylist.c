@@ -3523,6 +3523,8 @@ static int menu_displaylist_parse_generic(
       bool extensions_honored)
 {
    size_t i, list_size;
+   unsigned files_count         = 0;
+   unsigned dirs_count          = 0;
    bool path_is_compressed      = false;
    bool filter_ext              = false;
    struct string_list *str_list = NULL;
@@ -3692,21 +3694,27 @@ static int menu_displaylist_parse_generic(
 #if 0
                enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_PLAIN_FILE;
 #endif
+               files_count++;
                break;
             case FILE_TYPE_MOVIE:
                enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_MOVIE_OPEN;
+               files_count++;
                break;
             case FILE_TYPE_MUSIC:
                enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_MUSIC_OPEN;
+               files_count++;
                break;
             case FILE_TYPE_IMAGE:
                enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_IMAGE;
+               files_count++;
                break;
             case FILE_TYPE_IMAGEVIEWER:
                enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER;
+               files_count++;
                break;
             case FILE_TYPE_DIRECTORY:
                enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
+               dirs_count++;
                break;
             default:
                break;
@@ -3737,7 +3745,7 @@ static int menu_displaylist_parse_generic(
    if (filebrowser_types == FILEBROWSER_SCAN_DIR)
       goto end;
 
-   if (!extensions_honored)
+   if (!extensions_honored && files_count > 0)
       menu_entries_prepend(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE),
             msg_hash_to_str(MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE),
