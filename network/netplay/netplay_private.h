@@ -46,7 +46,8 @@
 #define NETPLAY_PASS_LEN      128
 #define NETPLAY_PASS_HASH_LEN 64 /* length of a SHA-256 hash */
 
-#define MAX_STALL_TIME_USEC         (10*1000*1000)
+#define MAX_SERVER_STALL_TIME_USEC  (5*1000*1000)
+#define MAX_CLIENT_STALL_TIME_USEC  (10*1000*1000)
 #define MAX_RETRIES                 16
 #define RETRY_MS                    500
 
@@ -270,6 +271,10 @@ struct netplay_connection
 
    /* Is this player paused? */
    bool paused;
+
+   /* Is this connection stalling? */
+   enum rarch_netplay_stall_reason stall;
+   retro_time_t stall_time;
 };
 
 struct netplay

@@ -169,6 +169,8 @@ static bool get_self_input_state(netplay_t *netplay)
 static bool netplay_poll(void)
 {
    int res;
+   uint32_t player;
+   size_t i;
 
    netplay_data->can_poll = false;
 
@@ -184,7 +186,6 @@ static bool netplay_poll(void)
    if (res == -1)
    {
       /* Catastrophe! */
-      size_t i;
       for (i = 0; i < netplay_data->connections_size; i++)
          netplay_hangup(netplay_data, &netplay_data->connections[i]);
       return false;
@@ -199,7 +200,15 @@ static bool netplay_poll(void)
       case NETPLAY_STALL_RUNNING_FAST:
          netplay_update_unread_ptr(netplay_data);
          if (netplay_data->unread_frame_count >= netplay_data->self_frame_count)
+         {
             netplay_data->stall = NETPLAY_STALL_NONE;
+            for (i = 0; i < netplay_data->connections_size; i++)
+            {
+               struct netplay_connection *connection = &netplay_data->connections[i];
+               if (connection->active && connection->stall)
+                  connection->stall = NETPLAY_STALL_NONE;
+            }
+         }
          break;
 
       case NETPLAY_STALL_NO_CONNECTION:
@@ -213,6 +222,29 @@ static bool netplay_poll(void)
          {
             netplay_data->stall      = NETPLAY_STALL_RUNNING_FAST;
             netplay_data->stall_time = cpu_features_get_time_usec();
+
+            /* Figure out who to blame */
+            if (netplay_data->is_server)
+            {
+               for (player = 0; player < MAX_USERS; player++)
+               {
+                  if (!(netplay_data->connected_players & (1<<player))) continue;
+                  if (netplay_data->read_frame_count[player] > netplay_data->unread_frame_count) continue;
+                  for (i = 0; i < netplay_data->connections_size; i++)
+                  {
+                     struct netplay_connection *connection = &netplay_data->connections[i];
+                     if (connection->active &&
+                         connection->mode == NETPLAY_CONNECTION_PLAYING &&
+                         connection->player == player)
+                     {
+                        connection->stall = NETPLAY_STALL_RUNNING_FAST;
+                        connection->stall_time = netplay_data->stall_time;
+                        break;
+                     }
+                  }
+               }
+            }
+
          }
    }
 
@@ -224,12 +256,29 @@ static bool netplay_poll(void)
       /* Don't stall out while they're paused */
       if (netplay_data->remote_paused)
          netplay_data->stall_time = now;
-      else if (now - netplay_data->stall_time >= MAX_STALL_TIME_USEC)
+      else if (now - netplay_data->stall_time >=
+               (netplay_data->is_server ? MAX_SERVER_STALL_TIME_USEC :
+                                          MAX_CLIENT_STALL_TIME_USEC))
       {
-         /* Stalled out! (FIXME: Shouldn't be so nuclear) */
-         size_t i;
-         for (i = 0; i < netplay_data->connections_size; i++)
-            netplay_hangup(netplay_data, &netplay_data->connections[i]);
+         /* Stalled out! */
+         if (netplay_data->is_server)
+         {
+            for (i = 0; i < netplay_data->connections_size; i++)
+            {
+               struct netplay_connection *connection = &netplay_data->connections[i];
+               if (connection->active &&
+                   connection->mode == NETPLAY_CONNECTION_PLAYING &&
+                   connection->stall &&
+                   now - connection->stall_time >= MAX_SERVER_STALL_TIME_USEC)
+               {
+                  netplay_hangup(netplay_data, connection);
+               }
+            }
+         }
+         else
+         {
+            netplay_hangup(netplay_data, &netplay_data->connections[0]);
+         }
          return false;
       }
    }

@@ -453,7 +453,7 @@ static void netplay_handshake_ready(netplay_t *netplay, struct netplay_connectio
 
    /* Unstall if we were waiting for this */
    if (netplay->stall == NETPLAY_STALL_NO_CONNECTION)
-       netplay->stall = 0;
+       netplay->stall = NETPLAY_STALL_NONE;
 }
 
 bool netplay_handshake_sync(netplay_t *netplay, struct netplay_connection *connection)
