@@ -5723,12 +5723,35 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                }
                else
                {
-                  menu_entries_append_enum(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORES_AVAILABLE),
-                        msg_hash_to_str(MENU_ENUM_LABEL_NO_CORES_AVAILABLE),
-                        MENU_ENUM_LABEL_NO_CORES_AVAILABLE,
-                        0, 0, 0);
-                  info->download_core = true;
+#ifndef HAVE_DYNAMIC
+                  const char *core_name            = NULL;
+                  struct retro_system_info *system = NULL;
+
+                  menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
+                        &system);
+
+                  if (system)
+                  {
+                     core_name = system->library_name;
+
+                     menu_entries_append_enum(info->list,
+                           core_name,
+                           core_name,
+                           MENU_ENUM_LABEL_DETECT_CORE_LIST_OK_CURRENT_CORE,
+                           FILE_TYPE_DIRECT_LOAD,
+                           0,
+                           0);
+                  }
+                  else
+#endif
+                  {
+                     menu_entries_append_enum(info->list,
+                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORES_AVAILABLE),
+                           msg_hash_to_str(MENU_ENUM_LABEL_NO_CORES_AVAILABLE),
+                           MENU_ENUM_LABEL_NO_CORES_AVAILABLE,
+                           0, 0, 0);
+                     info->download_core = true;
+                  }
                }
             }
 
