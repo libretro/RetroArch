@@ -344,8 +344,6 @@ process:
  */
 void netplay_sync_post_frame(netplay_t *netplay)
 {
-   int catch_up_ct;
-
    netplay->self_ptr = NEXT_PTR(netplay->self_ptr);
    netplay->self_frame_count++;
 
@@ -355,7 +353,13 @@ void netplay_sync_post_frame(netplay_t *netplay)
    {
       netplay->other_frame_count = netplay->self_frame_count;
       netplay->other_ptr = netplay->self_ptr;
-      netplay->catch_up = false;
+      /* FIXME: Duplication */
+      if (netplay->catch_up)
+      {
+         netplay->catch_up = false;
+         input_driver_unset_nonblock_state();
+         driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
+      }
       return;
    }
 
@@ -480,22 +484,27 @@ void netplay_sync_post_frame(netplay_t *netplay)
    }
 
    /* If we're behind, try to catch up */
-   /* FIXME: Any use in interacting with the real fast forwarding? */
    if (netplay->catch_up)
-      catch_up_ct = 0;
-   else
-      catch_up_ct = 2;
-   if (netplay->self_frame_count < netplay->unread_frame_count - catch_up_ct)
    {
-      netplay->catch_up = true;
-      input_driver_set_nonblock_state();
+      /* Are we caught up? */
+      if (netplay->self_frame_count >= netplay->unread_frame_count)
+      {
+         netplay->catch_up = false;
+         input_driver_unset_nonblock_state();
+         driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
+      }
+
    }
    else
    {
-      netplay->catch_up = false;
-      input_driver_unset_nonblock_state();
+      /* Are we falling behind? */
+      if (netplay->self_frame_count < netplay->unread_frame_count - 2)
+      {
+         netplay->catch_up = true;
+         input_driver_set_nonblock_state();
+         driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
+      }
    }
-   driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
 
    /* If we're supposed to stall, rewind (we shouldn't get this far if we're
     * stalled, so this is a last resort) */
