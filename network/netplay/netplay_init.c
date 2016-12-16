@@ -376,6 +376,11 @@ static bool netplay_init_buffers(netplay_t *netplay)
    /* Enough to get ahead or behind by MAX_STALL_FRAMES frames */
    netplay->buffer_size = NETPLAY_MAX_STALL_FRAMES + 1;
 
+   /* If we're the server, we need enough to get ahead AND behind by
+    * MAX_STALL_FRAMES frame */
+   if (netplay->is_server)
+      netplay->buffer_size *= 2;
+
    netplay->buffer = (struct delta_frame*)calloc(netplay->buffer_size,
          sizeof(*netplay->buffer));
 
