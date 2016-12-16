@@ -286,8 +286,6 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
       params.idx             = p;
       params.vid             = pad->vid;
       params.pid             = pad->pid;
-      settings->input.pid[p] = params.pid;
-      settings->input.vid[p] = params.vid;
 
       strlcpy(params.driver, udev_joypad.ident,
             sizeof(params.driver));

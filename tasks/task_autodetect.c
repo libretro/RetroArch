@@ -170,9 +170,12 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
          task->title = strdup(msg);
    }
 
-   strlcpy(settings->input.device_names[params->idx],
-         params->name,
-         sizeof(settings->input.device_names[params->idx]));
+   if (!string_is_empty(params->name))
+      strlcpy(settings->input.device_names[params->idx],
+            params->name,
+            sizeof(settings->input.device_names[params->idx]));
+   settings->input.pid[params->idx] = params->pid;
+   settings->input.vid[params->idx] = params->vid;
 
    input_autoconfigure_joypad_reindex_devices();
 }
