@@ -140,12 +140,9 @@ static const char *gx_joypad_name(unsigned pad)
 
 static void handle_hotplug(unsigned port, uint32_t ptype)
 {
-   settings_t *settings                 = config_get_ptr();
-
    pad_type[port] = ptype;
 
-   if (ptype != WPAD_EXP_NOCONTROLLER 
-         && settings->input.autodetect_enable)
+   if (ptype != WPAD_EXP_NOCONTROLLER)
    {
       autoconfig_params_t params = {{0}};
 
@@ -498,13 +495,17 @@ static bool gx_joypad_query_pad(unsigned pad)
 static void gx_joypad_destroy(void)
 {
 #ifdef HW_RVL
+#if 0
    int i;
    for (i = 0; i < MAX_PADS; i++)
    {
-   // Commenting this out fixes the Wii remote not reconnecting after core load, exit, etc.
-   //   WPAD_Flush(i);
-   //   WPADDisconnect(i);
+      /* Commenting this out fixes the Wii 
+       * remote not reconnecting after 
+       * core load, exit, etc. */
+      WPAD_Flush(i);
+      WPADDisconnect(i);
    }
+#endif
 #endif
 }
 
