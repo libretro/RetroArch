@@ -77,10 +77,10 @@
 #include "../wifi/wifi_driver.h"
 #include "../tasks/tasks_internal.h"
 
-static char new_path_entry[4096] = {0};
-static char new_lbl_entry[4096]  = {0};
-static char new_entry[4096]      = {0};
-enum msg_hash_enums new_type     = MSG_UNKNOWN;
+static char new_path_entry[4096]        = {0};
+static char new_lbl_entry[4096]         = {0};
+static char new_entry[4096]             = {0};
+static enum msg_hash_enums new_type     = MSG_UNKNOWN;
 
 #ifdef HAVE_NETWORKING
 static void print_buf_lines(file_list_t *list, char *buf,
