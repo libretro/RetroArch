@@ -935,6 +935,7 @@ MENU
 #include "../menu/menu_cbs.c"
 #include "../menu/menu_content.c"
 #include "../menu/widgets/menu_entry.c"
+#include "../menu/widgets/menu_filebrowser.c"
 #include "../menu/widgets/menu_dialog.c"
 #include "../menu/widgets/menu_input_dialog.c"
 #include "../menu/widgets/menu_input_bind_dialog.c"
