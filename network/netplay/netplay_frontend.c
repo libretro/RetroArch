@@ -178,7 +178,7 @@ static bool netplay_poll(void)
 
    /* Read Netplay input, block if we're configured to stall for input every
     * frame */
-   if (netplay_data->delay_frames == 0 &&
+   if (netplay_data->stateless_mode &&
        netplay_data->unread_frame_count <= netplay_data->self_frame_count)
       res = netplay_poll_net_input(netplay_data, true);
    else
@@ -226,9 +226,9 @@ static bool netplay_poll(void)
          if (netplay_data->frame_run_time_avg)
             max_ahead = 50000 / netplay_data->frame_run_time_avg;
          else
-            max_ahead = netplay_data->delay_frames;
-         if (max_ahead > netplay_data->delay_frames)
-            max_ahead = netplay_data->delay_frames;
+            max_ahead = NETPLAY_MAX_STALL_FRAMES;
+         if (max_ahead > NETPLAY_MAX_STALL_FRAMES)
+            max_ahead = NETPLAY_MAX_STALL_FRAMES;
 
          /* Are we too far ahead? */
          netplay_update_unread_ptr(netplay_data);
@@ -846,7 +846,7 @@ bool init_netplay(void *direct_host, const char *server, unsigned port,
          netplay_is_client ? server : NULL,
          port ? port : RARCH_DEFAULT_PORT,
          play_password, spectate_password,
-         settings->netplay.delay_frames, settings->netplay.check_frames, &cbs,
+         settings->netplay.stateless_mode, settings->netplay.check_frames, &cbs,
          settings->netplay.nat_traversal, settings->username,
          quirks);
 

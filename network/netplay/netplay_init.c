@@ -230,11 +230,11 @@ static bool init_socket(netplay_t *netplay, void *direct_host, const char *serve
 
 static bool netplay_init_socket_buffers(netplay_t *netplay)
 {
-   /* Make our packet buffer big enough for a save state and frames-many frames
-    * of input data, plus the headers for each of them */
+   /* Make our packet buffer big enough for a save state and stall-frames-many
+    * frames of input data, plus the headers for each of them */
    size_t i;
    size_t packet_buffer_size = netplay->zbuffer_size +
-      netplay->delay_frames * WORDS_PER_FRAME + (netplay->delay_frames+1)*3;
+      NETPLAY_MAX_STALL_FRAMES * WORDS_PER_FRAME + (NETPLAY_MAX_STALL_FRAMES+1)*3;
    netplay->packet_buffer_size = packet_buffer_size;
 
    for (i = 0; i < netplay->connections_size; i++)
@@ -366,18 +366,15 @@ bool netplay_wait_and_init_serialization(netplay_t *netplay)
    return false;
 }
 
-static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
+static bool netplay_init_buffers(netplay_t *netplay)
 {
    size_t packet_buffer_size;
 
    if (!netplay)
       return false;
 
-   /* * 2 + 1 because:
-    * Self sits in the middle,
-    * Other is allowed to drift as much as 'frames' frames behind
-    * Read is allowed to drift as much as 'frames' frames ahead */
-   netplay->buffer_size = frames * 2 + 1;
+   /* Enough to get ahead or behind by MAX_STALL_FRAMES frames */
+   netplay->buffer_size = NETPLAY_MAX_STALL_FRAMES + 1;
 
    netplay->buffer = (struct delta_frame*)calloc(netplay->buffer_size,
          sizeof(*netplay->buffer));
@@ -398,7 +395,7 @@ static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
  * @port                 : Port of server.
  * @play_password        : Password required to play.
  * @spectate_password    : Password required to connect.
- * @delay_frames         : Amount of delay frames.
+ * @stateless_mode       : Shall we use stateless mode?
  * @check_frames         : Frequency with which to check CRCs.
  * @cb                   : Libretro callbacks.
  * @nat_traversal        : If true, attempt NAT traversal.
@@ -412,7 +409,7 @@ static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
  */
 netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
    const char *play_password, const char *spectate_password,
-   unsigned delay_frames, unsigned check_frames,
+   bool stateless_mode, unsigned check_frames,
    const struct retro_callbacks *cb, bool nat_traversal, const char *nick,
    uint64_t quirks)
 {
@@ -427,7 +424,7 @@ netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
    netplay->player_max        = 1;
    netplay->is_server         = server == NULL;
    netplay->nat_traversal     = netplay->is_server ? nat_traversal : false;
-   netplay->delay_frames      = delay_frames;
+   netplay->stateless_mode    = stateless_mode;
    netplay->check_frames      = check_frames;
    netplay->crc_validity_checked = false;
    netplay->crcs_valid        = true;
@@ -458,7 +455,7 @@ netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
       return NULL;
    }
 
-   if (!netplay_init_buffers(netplay, delay_frames))
+   if (!netplay_init_buffers(netplay))
    {
       free(netplay);
       return NULL;

@@ -15,6 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
 
@@ -203,7 +204,7 @@ bool netplay_sync_pre_frame(netplay_t *netplay)
          /* If the core can't serialize properly, we must stall for the
           * remote input on EVERY frame, because we can't recover */
          netplay->quirks |= NETPLAY_QUIRK_NO_SAVESTATES;
-         netplay->delay_frames = 0;
+         netplay->stateless_mode = true;
       }
 
       /* If we can't transmit savestates, we must stall until the client is ready */

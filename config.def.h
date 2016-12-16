@@ -794,6 +794,9 @@ static const bool pause_nonactive = true;
  * It is measured in seconds. A value of 0 disables autosave. */
 static const unsigned autosave_interval = 0;
 
+/* Netplay without savestates/rewind */
+static const bool netplay_stateless_mode = false;
+
 /* When being client over netplay, use keybinds for
  * user 1 rather than user 2. */
 static const bool netplay_client_swap_input = true;

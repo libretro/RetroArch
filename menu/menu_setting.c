@@ -1721,16 +1721,9 @@ void general_write_handler(void *data)
          retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL);
 #endif
          break;
-      case MENU_ENUM_LABEL_NETPLAY_DELAY_FRAMES:
+      case MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE:
 #ifdef HAVE_NETWORKING
-         {
-            bool val = (settings->netplay.delay_frames > 0);
-            
-            if (val)
-               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES, NULL);
-            else
-               retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES, NULL);
-         }
+         retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_STATELESS_MODE, NULL);
 #endif
          break;
       case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
@@ -5605,19 +5598,20 @@ static bool setting_append_list(
                   general_read_handler);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
-            CONFIG_UINT(
+            CONFIG_BOOL(
                   list, list_info,
-                  &settings->netplay.delay_frames,
-                  MENU_ENUM_LABEL_NETPLAY_DELAY_FRAMES,
-                  MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES,
-                  netplay_delay_frames,
+                  &settings->netplay.stateless_mode,
+                  MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE,
+                  MENU_ENUM_LABEL_VALUE_NETPLAY_STATELESS_MODE,
+                  false,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
-                  general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0, 60, 1, true, false);
-            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+                  general_read_handler,
+                  SD_FLAG_NONE);
 
             CONFIG_UINT(
                   list, list_info,

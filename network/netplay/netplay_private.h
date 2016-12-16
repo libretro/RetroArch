@@ -45,7 +45,8 @@
 #define MAX_RETRIES                 16
 #define RETRY_MS                    500
 
-#define NETPLAY_FRAME_RUN_TIME_WINDOW 128
+#define NETPLAY_MAX_STALL_FRAMES       60
+#define NETPLAY_FRAME_RUN_TIME_WINDOW  120
 
 #define PREV_PTR(x) ((x) == 0 ? netplay->buffer_size - 1 : (x) - 1)
 #define NEXT_PTR(x) ((x + 1) % netplay->buffer_size)
@@ -176,22 +177,6 @@ enum netplay_cmd_mode_reasons
 
    /* There are no free player slots */
    NETPLAY_CMD_MODE_REFUSED_REASON_NO_SLOTS
-};
-
-/* These are the configurations sent by NETPLAY_CMD_CFG. */
-enum netplay_cmd_cfg
-{
-   /* Nickname */
-   NETPLAY_CFG_NICK           = 0x0001,
-
-   /* input.netplay_client_swap_input */
-   NETPLAY_CFG_SWAP_INPUT     = 0x0002,
-
-   /* netplay.delay_frames */
-   NETPLAY_CFG_DELAY_FRAMES   = 0x0004,
-
-   /* For more than 2 players */
-   NETPLAY_CFG_PLAYER_SLOT    = 0x0008
 };
 
 enum rarch_netplay_connection_mode
@@ -421,8 +406,8 @@ struct netplay
    bool local_paused;
    bool remote_paused;
 
-   /* Old-style stalling (to be removed) */
-   uint32_t delay_frames;
+   /* If true, never progress without peer input (stateless/rewindless mode) */
+   bool stateless_mode;
 
    /* We stall if we're far enough ahead that we couldn't transparently rewind.
     * To know if we could transparently rewind, we need to know how long
@@ -661,7 +646,7 @@ bool netplay_wait_and_init_serialization(netplay_t *netplay);
  * @port                 : Port of server.
  * @play_password        : Password required to play.
  * @spectate_password    : Password required to connect.
- * @delay_frames         : Amount of delay frames.
+ * @stateless_mode       : Shall we run in stateless mode?
  * @check_frames         : Frequency with which to check CRCs.
  * @cb                   : Libretro callbacks.
  * @nat_traversal        : If true, attempt NAT traversal.
@@ -675,7 +660,7 @@ bool netplay_wait_and_init_serialization(netplay_t *netplay);
  */
 netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
    const char *play_password, const char *spectate_password,
-   unsigned delay_frames, unsigned check_frames,
+   bool stateless_mode, unsigned check_frames,
    const struct retro_callbacks *cb, bool nat_traversal, const char *nick,
    uint64_t quirks);
 
