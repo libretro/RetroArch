@@ -116,6 +116,14 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
             break;
          }
       }
+
+      //We failed to find a matching pad, set up one without an iface
+      if (!s->connected)
+      {
+         s->iface = NULL;
+         s->data = data;
+         s->connected = true;
+      }
    }
 
    return pad;
