@@ -6198,7 +6198,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_DEFAULT:
       case DISPLAYLIST_CORES_DETECTED:
       case DISPLAYLIST_CONTENT_HISTORY:
-         if (filebrowser_parse(menu, info, type, extensions_honored) == 0)
+         if (filebrowser_parse(info, type, extensions_honored) == 0)
          {
             info->need_refresh = true;
             info->need_push    = true;

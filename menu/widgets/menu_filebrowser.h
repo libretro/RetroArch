@@ -38,7 +38,7 @@ void filebrowser_clear_type(void);
 
 void filebrowser_set_type(enum filebrowser_enums type);
 
-int filebrowser_parse(void *data, void *data2,
+int filebrowser_parse(void *data,
       unsigned type,
       bool extensions_honored);
 

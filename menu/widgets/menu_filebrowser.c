@@ -48,9 +48,7 @@ void filebrowser_set_type(enum filebrowser_enums type)
    filebrowser_types = type;
 }
 
-int filebrowser_parse(void *data, void *data2,
-      unsigned type_data,
-      bool extensions_honored)
+int filebrowser_parse(void *data, unsigned type_data, bool extensions_honored)
 {
    size_t i, list_size;
    bool path_is_compressed              = false;
@@ -60,8 +58,7 @@ int filebrowser_parse(void *data, void *data2,
    unsigned files_count                 = 0;
    unsigned dirs_count                  = 0;
    settings_t *settings                 = config_get_ptr();
-   menu_handle_t *menu                  = (menu_handle_t*)data;
-   menu_displaylist_info_t *info        = (menu_displaylist_info_t*)data2;
+   menu_displaylist_info_t *info        = (menu_displaylist_info_t*)data;
    enum menu_displaylist_ctl_state type = (enum menu_displaylist_ctl_state)
                                           type_data;
 
