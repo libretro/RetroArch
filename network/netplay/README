@@ -27,7 +27,7 @@ local and remote players.
 
 Self is where the emulator believes itself to be, which may be ahead or behind
 of what it's read from the peer. Generally speaking, self progresses at 1 frame
-per frame, except when the network stalls, described later.
+per frame, but both fast-forwarding and stalling occur and are described later.
 
 Other is where it was most recently in perfect sync: i.e., other-1 is the last
 frame from which both local and remote input have been actioned. As such, other
@@ -73,6 +73,10 @@ other and self > other. If so, it first checks whether its simulated remote
 data was correct. If it was, it simply moves other up. If not, it rewinds to
 other (by loading the serialized state there) and runs the core in replay mode
 with the real data up to the least of self and read, then sets other to that.
+To avoid latency building up, if the input from the network is too far ahead
+(i.e., unread is too far ahead of self), the frame limiter is momentarily
+disabled to catch up. Note that since network latency is expected, the normal
+case is the opposite: unread is behind self.
 
 When in Netplay mode, the callback for receiving input is replaced by
 input_state_net. It is the role of input_state_net to combine the true local
