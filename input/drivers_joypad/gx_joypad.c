@@ -140,6 +140,8 @@ static const char *gx_joypad_name(unsigned pad)
 
 static void handle_hotplug(unsigned port, uint32_t ptype)
 {
+   settings_t *settings                 = config_get_ptr();
+
    pad_type[port] = ptype;
 
    if (ptype != WPAD_EXP_NOCONTROLLER 
