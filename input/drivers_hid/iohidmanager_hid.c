@@ -237,6 +237,7 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
 static void iohidmanager_hid_device_remove(void *data,
       IOReturn result, void* sender)
 {
+   settings_t                     *settings = config_get_ptr();
    struct iohidmanager_hid_adapter *adapter = 
       (struct iohidmanager_hid_adapter*)data;
    iohidmanager_hid_t *hid = (iohidmanager_hid_t*)
@@ -245,6 +246,8 @@ static void iohidmanager_hid_device_remove(void *data,
    if (hid && adapter && (adapter->slot < MAX_USERS))
    {
       input_autoconfigure_disconnect(adapter->slot, adapter->name);
+
+      settings->input.device_names[adapter->slot][0] = '\0';
 
       hid->buttons[adapter->slot] = 0;
       memset(hid->axes[adapter->slot], 0, sizeof(hid->axes));
