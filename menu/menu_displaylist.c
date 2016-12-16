@@ -5679,6 +5679,115 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 #endif
 
       case DISPLAYLIST_CORES_SUPPORTED:
+         info->need_sort    = true;
+         info->need_refresh = true;
+         info->need_push    = true;
+
+         {
+            unsigned cores_names_len;
+            size_t cores_names_size;
+            unsigned cores_paths_len;
+            size_t cores_paths_size;
+            struct string_list *cores_names =
+               string_list_new_special(STRING_LIST_SUPPORTED_CORES_NAMES,
+                     (void*)menu->deferred_path,
+                     &cores_names_len, &cores_names_size);
+
+            if (cores_names_size == 0)
+            {
+               if (!path_is_empty(RARCH_PATH_CORE))
+               {
+
+                  menu_entries_append_enum(info->list,
+                        path_get(RARCH_PATH_CORE),
+                        path_get(RARCH_PATH_CORE),
+                        MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,
+                        FILE_TYPE_DIRECT_LOAD,
+                        0,
+                        0);
+
+                  {
+                     const char *core_name            = NULL;
+                     struct retro_system_info *system = NULL;
+
+                     menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
+                           &system);
+
+                     if (system)
+                        core_name = system->library_name;
+
+                     if (!string_is_empty(core_name))
+                        menu_entries_set_alt_at_offset(info->list, 0,
+                              core_name);
+                  }
+               }
+               else
+               {
+                  menu_entries_append_enum(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORES_AVAILABLE),
+                        msg_hash_to_str(MENU_ENUM_LABEL_NO_CORES_AVAILABLE),
+                        MENU_ENUM_LABEL_NO_CORES_AVAILABLE,
+                        0, 0, 0);
+                  info->download_core = true;
+               }
+            }
+
+            if (cores_names_size != 0)
+            {
+               unsigned j = 0;
+               struct string_list *cores_paths =
+                  string_list_new_special(STRING_LIST_SUPPORTED_CORES_PATHS,
+                        (void*)menu->deferred_path,
+                        &cores_paths_len, &cores_paths_size);
+
+               for (i = 0; i < cores_names_size; i++)
+               {
+                  if (     !path_is_empty(RARCH_PATH_CORE) &&
+                           string_is_equal(cores_paths->elems[i].data, path_get(RARCH_PATH_CORE)))
+                  {
+                     strlcpy(new_path_entry, cores_paths->elems[i].data, sizeof(new_path_entry));
+                     snprintf(new_entry, sizeof(new_entry), "Current core (%s)", cores_names->elems[i].data);
+                     if (type == DISPLAYLIST_CORES_COLLECTION_SUPPORTED)
+                     {
+                        new_lbl_entry[0] = '\0';
+                        new_type         = MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION_CURRENT_CORE;
+                     }
+                     else
+                     {
+                        strlcpy(new_lbl_entry, cores_paths->elems[i].data, sizeof(new_lbl_entry));
+                        new_type = MENU_ENUM_LABEL_DETECT_CORE_LIST_OK_CURRENT_CORE;
+                     }
+                  }
+                  else
+                  {
+                     switch (type)
+                     {
+                        case DISPLAYLIST_CORES_COLLECTION_SUPPORTED:
+                           menu_entries_append_enum(info->list, cores_paths->elems[i].data, "",
+                                 MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
+                                 FILE_TYPE_CORE, 0, 0);
+                           break;
+                        default:
+                           menu_entries_append_enum(info->list, cores_paths->elems[i].data,
+                                 msg_hash_to_str(MENU_ENUM_LABEL_DETECT_CORE_LIST_OK),
+                                 MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,
+                                 FILE_TYPE_CORE, 0, 0);
+                           break;
+                     }
+
+                     menu_entries_set_alt_at_offset(info->list, j,
+                           cores_names->elems[i].data);
+                     j++;
+                  }
+               }
+
+               string_list_free(cores_paths);
+            }
+
+            string_list_free(cores_names);
+
+         }
+         break;
       case DISPLAYLIST_CORES_COLLECTION_SUPPORTED:
          info->need_sort    = true;
          info->need_refresh = true;
