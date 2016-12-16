@@ -1575,7 +1575,6 @@ static int menu_displaylist_parse_shader_options(menu_displaylist_info_t *info)
    return 0;
 }
 
-
 #ifdef HAVE_LIBRETRODB
 static int create_string_list_rdb_entry_string(
       enum msg_hash_enums enum_idx,
@@ -1676,11 +1675,9 @@ static int create_string_list_rdb_entry_int(
 
    return 0;
 }
-#endif
 
 static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
 {
-#ifdef HAVE_LIBRETRODB
    unsigned i, j, k;
    char path_playlist[PATH_MAX_LENGTH];
    char path_base[PATH_MAX_LENGTH];
@@ -2101,15 +2098,11 @@ error:
    playlist_free(playlist);
 
    return -1;
-#else
-   return 0;
-#endif
 }
 
 static int menu_database_parse_query(file_list_t *list, const char *path,
       const char *query)
 {
-#ifdef HAVE_LIBRETRODB
    unsigned i;
    database_info_list_t *db_list = database_info_list_new(path, query);
 
@@ -2125,10 +2118,11 @@ static int menu_database_parse_query(file_list_t *list, const char *path,
 
    database_info_list_free(db_list);
    free(db_list);
-#endif
 
    return 0;
 }
+#endif
+
 
 #ifdef HAVE_SHADER_MANAGER
 static int deferred_push_video_shader_parameters_common(
@@ -5376,14 +5370,23 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             string_list_free(str_list);
          }
+
+#ifdef HAVE_LIBRETRODB
          ret = menu_displaylist_parse_database_entry(info);
+#else
+         ret = 0;
+#endif
 
          info->need_push    = true;
          break;
       case DISPLAYLIST_DATABASE_QUERY:
+#ifdef HAVE_LIBRETRODB
          ret = menu_database_parse_query(info->list,
                info->path, string_is_empty(info->path_c)
                ? NULL : info->path_c);
+#else
+         ret = 0;
+#endif
          strlcpy(info->path, info->path_b, sizeof(info->path));
 
          info->need_sort    = true;
