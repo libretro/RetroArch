@@ -220,6 +220,70 @@ static void print_buf_lines(file_list_t *list, char *buf,
    /* If the buffer was completely full, and didn't end
     * with a newline, just ignore the partial last line. */
 }
+
+static int menu_displaylist_parse_netplay(
+      menu_displaylist_info_t *info)
+{
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST),
+         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST),
+         MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST,
+         MENU_SETTING_ACTION, 0, 0);
+
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT),
+         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT),
+         MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT,
+         MENU_SETTING_ACTION, 0, 0);
+
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT),
+         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_DISCONNECT),
+         MENU_ENUM_LABEL_NETPLAY_DISCONNECT,
+         MENU_SETTING_ACTION, 0, 0);
+
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS),
+         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_SETTINGS),
+         MENU_ENUM_LABEL_NETWORK_SETTINGS, MENU_SETTING_GROUP, 0, 0);
+
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_LAN_SCAN_SETTINGS),
+         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS),
+         MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS, MENU_SETTING_GROUP, 0, 0);
+
+   return 0;
+}
+
+#ifndef HAVE_SOCKET_LEGACY
+#include <net/net_ifinfo.h>
+
+static int menu_displaylist_parse_network_info(menu_displaylist_info_t *info)
+{
+   unsigned k              = 0;
+   net_ifinfo_t      list;
+
+   if (!net_ifinfo_new(&list))
+      return -1;
+
+   for (k = 0; k < list.size; k++)
+   {
+      char tmp[255];
+
+      tmp[0] = '\0';
+
+      snprintf(tmp, sizeof(tmp), "%s (%s) : %s\n",
+            msg_hash_to_str(MSG_INTERFACE),
+            list.entries[k].name, list.entries[k].host);
+      menu_entries_append_enum(info->list, tmp, "",
+            MENU_ENUM_LABEL_NETWORK_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   }
+
+   net_ifinfo_free(&list);
+   return 0;
+}
+#endif
+
 #endif
 
 static void menu_displaylist_push_perfcounter(
@@ -425,36 +489,6 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
    return 0;
 }
 
-#ifdef HAVE_NETWORKING
-#ifndef HAVE_SOCKET_LEGACY
-#include <net/net_ifinfo.h>
-
-static int menu_displaylist_parse_network_info(menu_displaylist_info_t *info)
-{
-   unsigned k              = 0;
-   net_ifinfo_t      list;
-
-   if (!net_ifinfo_new(&list))
-      return -1;
-
-   for (k = 0; k < list.size; k++)
-   {
-      char tmp[255];
-
-      tmp[0] = '\0';
-
-      snprintf(tmp, sizeof(tmp), "%s (%s) : %s\n",
-            msg_hash_to_str(MSG_INTERFACE),
-            list.entries[k].name, list.entries[k].host);
-      menu_entries_append_enum(info->list, tmp, "",
-            MENU_ENUM_LABEL_NETWORK_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-   }
-
-   net_ifinfo_free(&list);
-   return 0;
-}
-#endif
-#endif
 
 static uint64_t bytes_to_kb(uint64_t bytes)
 {
@@ -1535,47 +1569,6 @@ static int menu_displaylist_parse_shader_options(menu_displaylist_info_t *info)
    return 0;
 }
 
-static int menu_displaylist_parse_netplay(
-      menu_displaylist_info_t *info)
-{
-#ifdef HAVE_NETWORKING
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST),
-         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST),
-         MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST,
-         MENU_SETTING_ACTION, 0, 0);
-
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT),
-         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT),
-         MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT,
-         MENU_SETTING_ACTION, 0, 0);
-
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT),
-         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_DISCONNECT),
-         MENU_ENUM_LABEL_NETPLAY_DISCONNECT,
-         MENU_SETTING_ACTION, 0, 0);
-
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS),
-         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_SETTINGS),
-         MENU_ENUM_LABEL_NETWORK_SETTINGS, MENU_SETTING_GROUP, 0, 0);
-
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_LAN_SCAN_SETTINGS),
-         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS),
-         MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS, MENU_SETTING_GROUP, 0, 0);
-#else
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
-         msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
-         MENU_ENUM_LABEL_NO_ITEMS,
-         MENU_SETTING_NO_ITEM, 0, 0);
-#endif
-
-   return 0;
-}
 
 #ifdef HAVE_LIBRETRODB
 static int create_string_list_rdb_entry_string(
@@ -5411,7 +5404,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push    = true;
          break;
       case DISPLAYLIST_NETPLAY:
+#ifdef HAVE_NETWORKING
          ret = menu_displaylist_parse_netplay(info);
+#else
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
+               msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
+               MENU_ENUM_LABEL_NO_ITEMS,
+               MENU_SETTING_NO_ITEM, 0, 0);
+         ret = 0;
+#endif
 
          info->need_push    = true;
          break;
