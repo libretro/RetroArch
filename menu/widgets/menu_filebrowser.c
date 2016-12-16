@@ -33,7 +33,6 @@
 #include "../menu_displaylist.h"
 
 #include "../../configuration.h"
-#include "../../frontend/frontend_driver.h"
 #include "../../paths.h"
 
 static enum filebrowser_enums filebrowser_types = FILEBROWSER_NONE;
@@ -51,8 +50,6 @@ void filebrowser_set_type(enum filebrowser_enums type)
 int filebrowser_parse(void *data, unsigned type_data, bool extensions_honored)
 {
    size_t i, list_size;
-   bool path_is_compressed              = false;
-   bool filter_ext                      = false;
    struct string_list *str_list         = NULL;
    unsigned items_found                 = 0;
    unsigned files_count                 = 0;
@@ -61,17 +58,8 @@ int filebrowser_parse(void *data, unsigned type_data, bool extensions_honored)
    menu_displaylist_info_t *info        = (menu_displaylist_info_t*)data;
    enum menu_displaylist_ctl_state type = (enum menu_displaylist_ctl_state)
                                           type_data;
-
-   if (string_is_empty(info->path))
-   {
-      if (frontend_driver_parse_drive_list(info->list) != 0)
-         menu_entries_append_enum(info->list, "/", "",
-               MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
-      return 0;
-   }
-
-   path_is_compressed = path_is_compressed_file(info->path);
-   filter_ext         =
+   bool path_is_compressed              = path_is_compressed_file(info->path);
+   bool filter_ext                      =
       settings->menu.navigation.browser.filter.supported_extensions_enable;
 
    if (string_is_equal(info->label,

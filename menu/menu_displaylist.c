@@ -6198,7 +6198,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_DEFAULT:
       case DISPLAYLIST_CORES_DETECTED:
       case DISPLAYLIST_CONTENT_HISTORY:
-         if (filebrowser_parse(info, type, extensions_honored) == 0)
+         if (string_is_empty(info->path))
+         {
+            if (frontend_driver_parse_drive_list(info->list) != 0)
+               menu_entries_append_enum(info->list, "/", "",
+                     MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+            info->need_refresh = true;
+            info->need_push    = true;
+         }
+         else if (filebrowser_parse(info, type, extensions_honored) == 0)
          {
             info->need_refresh = true;
             info->need_push    = true;
