@@ -23,6 +23,8 @@
 #include "netplay_private.h"
 
 #include "../../autosave.h"
+#include "../../driver.h"
+#include "../../input/input_driver.h"
 
 #if 0
 #define DEBUG_NONDETERMINISTIC_CORES
@@ -341,6 +343,8 @@ process:
  */
 void netplay_sync_post_frame(netplay_t *netplay)
 {
+   int catch_up_ct;
+
    netplay->self_ptr = NEXT_PTR(netplay->self_ptr);
    netplay->self_frame_count++;
 
@@ -407,10 +411,14 @@ void netplay_sync_post_frame(netplay_t *netplay)
 
       while (netplay->replay_frame_count < netplay->self_frame_count)
       {
+         retro_time_t start, tm;
+
          struct delta_frame *ptr = &netplay->buffer[netplay->replay_ptr];
          serial_info.data       = ptr->state;
          serial_info.size       = netplay->state_size;
          serial_info.data_const = NULL;
+
+         start = cpu_features_get_time_usec();
 
          /* Remember the current state */
          memset(serial_info.data, 0, serial_info.size);
@@ -442,7 +450,19 @@ void netplay_sync_post_frame(netplay_t *netplay)
             RARCH_LOG("POST %u: %X\n", netplay->replay_frame_count-1, netplay_delta_frame_crc(netplay, ptr));
          }
 #endif
+
+         /* Get our time window */
+         tm = cpu_features_get_time_usec() - start;
+         netplay->frame_run_time_sum -= netplay->frame_run_time[netplay->frame_run_time_ptr];
+         netplay->frame_run_time[netplay->frame_run_time_ptr] = tm;
+         netplay->frame_run_time_sum += tm;
+         netplay->frame_run_time_ptr++;
+         if (netplay->frame_run_time_ptr >= NETPLAY_FRAME_RUN_TIME_WINDOW)
+            netplay->frame_run_time_ptr = 0;
       }
+
+      /* Average our time */
+      netplay->frame_run_time_avg = netplay->frame_run_time_sum / NETPLAY_FRAME_RUN_TIME_WINDOW;
 
       if (netplay->unread_frame_count < netplay->self_frame_count)
       {
@@ -459,10 +479,22 @@ void netplay_sync_post_frame(netplay_t *netplay)
    }
 
    /* If we're behind, try to catch up */
-   if (netplay->self_frame_count < netplay->unread_frame_count - 2)
-      netplay->catch_up = true;
+   /* FIXME: Any use in interacting with the real fast forwarding? */
+   if (netplay->catch_up)
+      catch_up_ct = 0;
    else
+      catch_up_ct = 2;
+   if (netplay->self_frame_count < netplay->unread_frame_count - catch_up_ct)
+   {
+      netplay->catch_up = true;
+      input_driver_set_nonblock_state();
+   }
+   else
+   {
       netplay->catch_up = false;
+      input_driver_unset_nonblock_state();
+   }
+   driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
 
    /* If we're supposed to stall, rewind (we shouldn't get this far if we're
     * stalled, so this is a last resort) */

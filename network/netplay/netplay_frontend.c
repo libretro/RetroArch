@@ -216,8 +216,23 @@ static bool netplay_poll(void)
          break;
 
       default: /* not stalling */
+      {
+         retro_time_t max_ahead;
+
+         /* Figure out how many frames we're allowed to be ahead: Ideally we need to be
+          * able to run our entire stall worth of frames in one real frame. In
+          * practice, we'll allow a couple jitter frames.  (FIXME: hard coded
+          * as three 60FPS frame) */
+         if (netplay_data->frame_run_time_avg)
+            max_ahead = 50000 / netplay_data->frame_run_time_avg;
+         else
+            max_ahead = netplay_data->delay_frames;
+         if (max_ahead > netplay_data->delay_frames)
+            max_ahead = netplay_data->delay_frames;
+
+         /* Are we too far ahead? */
          netplay_update_unread_ptr(netplay_data);
-         if (netplay_data->unread_frame_count + netplay_data->delay_frames
+         if (netplay_data->unread_frame_count + max_ahead
                <= netplay_data->self_frame_count)
          {
             netplay_data->stall      = NETPLAY_STALL_RUNNING_FAST;
@@ -246,6 +261,7 @@ static bool netplay_poll(void)
             }
 
          }
+      }
    }
 
    /* If we're stalling, consider disconnection */
@@ -921,9 +937,6 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          break;
       case RARCH_NETPLAY_CTL_UNPAUSE:
          netplay_frontend_paused(netplay_data, false);
-         break;
-      case RARCH_NETPLAY_CTL_CATCH_UP:
-         ret = netplay_data->catch_up;
          break;
       case RARCH_NETPLAY_CTL_LOAD_SAVESTATE:
          netplay_load_savestate(netplay_data, (retro_ctx_serialize_info_t*)data, true);

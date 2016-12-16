@@ -1226,11 +1226,6 @@ int runloop_iterate(unsigned *sleep_ms)
    if (!settings->fastforward_ratio)
       return 0;
 
-#ifdef HAVE_NETWORKING
-   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_CATCH_UP, NULL))
-      return 0;
-#endif
-
 end:
 
    current                        = cpu_features_get_time_usec();

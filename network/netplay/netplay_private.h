@@ -45,6 +45,8 @@
 #define MAX_RETRIES                 16
 #define RETRY_MS                    500
 
+#define NETPLAY_FRAME_RUN_TIME_WINDOW 128
+
 #define PREV_PTR(x) ((x) == 0 ? netplay->buffer_size - 1 : (x) - 1)
 #define NEXT_PTR(x) ((x + 1) % netplay->buffer_size)
 
@@ -415,14 +417,25 @@ struct netplay
    bool flip;
    uint32_t flip_frame;
 
-   /* Netplay pausing
-    */
+   /* Netplay pausing */
    bool local_paused;
    bool remote_paused;
 
-   /* And stalling */
+   /* Old-style stalling (to be removed) */
    uint32_t delay_frames;
+
+   /* We stall if we're far enough ahead that we couldn't transparently rewind.
+    * To know if we could transparently rewind, we need to know how long
+    * running a frame takes. We record that every frame and get a running
+    * (window) average */
+   retro_time_t frame_run_time[NETPLAY_FRAME_RUN_TIME_WINDOW];
+   int frame_run_time_ptr;
+   retro_time_t frame_run_time_sum, frame_run_time_avg;
+
+   /* Are we stalled? */
    enum rarch_netplay_stall_reason stall;
+
+   /* How long have we been stalled? */
    retro_time_t stall_time;
 
    /* Opposite of stalling, should we be catching up? */
