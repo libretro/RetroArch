@@ -5701,7 +5701,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   menu_entries_append_enum(info->list,
                         path_get(RARCH_PATH_CORE),
                         path_get(RARCH_PATH_CORE),
-                        MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,
+                        MENU_ENUM_LABEL_DETECT_CORE_LIST_OK_CURRENT_CORE,
                         FILE_TYPE_DIRECT_LOAD,
                         0,
                         0);
