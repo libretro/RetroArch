@@ -28,11 +28,9 @@
 #endif
 
 #include "menu_filebrowser.h"
-#include "menu_input_dialog.h"
 
 #include "../menu_driver.h"
 #include "../menu_displaylist.h"
-#include "../menu_navigation.h"
 
 #include "../../configuration.h"
 #include "../../frontend/frontend_driver.h"
