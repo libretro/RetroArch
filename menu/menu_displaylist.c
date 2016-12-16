@@ -6206,8 +6206,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             info->need_refresh = true;
             info->need_push    = true;
          }
-         else if (filebrowser_parse(info, type, extensions_honored) == 0)
+         else
          {
+            filebrowser_parse(info, type, extensions_honored);
             info->need_refresh = true;
             info->need_push    = true;
          }

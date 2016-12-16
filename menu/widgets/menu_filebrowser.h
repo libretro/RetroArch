@@ -38,8 +38,7 @@ void filebrowser_clear_type(void);
 
 void filebrowser_set_type(enum filebrowser_enums type);
 
-int filebrowser_parse(void *data,
-      unsigned type,
+void filebrowser_parse(void *data, unsigned type,
       bool extensions_honored);
 
 RETRO_END_DECLS

@@ -47,7 +47,7 @@ void filebrowser_set_type(enum filebrowser_enums type)
    filebrowser_types = type;
 }
 
-int filebrowser_parse(void *data, unsigned type_data, bool extensions_honored)
+void filebrowser_parse(void *data, unsigned type_data, bool extensions_honored)
 {
    size_t i, list_size;
    struct string_list *str_list         = NULL;
@@ -278,6 +278,4 @@ end:
          info->path,
          MENU_ENUM_LABEL_PARENT_DIRECTORY,
          FILE_TYPE_PARENT_DIRECTORY, 0, 0);
-
-   return 0;
 }
