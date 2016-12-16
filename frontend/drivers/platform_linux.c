@@ -58,6 +58,7 @@
 #include "../../defaults.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
+#include "../../paths.h"
 #include "platform_linux.h"
 
 #ifdef HAVE_MENU
@@ -1907,7 +1908,7 @@ static bool frontend_linux_set_fork(enum frontend_fork fork_mode)
          {
             char executable_path[PATH_MAX_LENGTH] = {0};
             fill_pathname_application_path(executable_path, sizeof(executable_path));
-            config_set_active_core_path(executable_path);
+            path_set(RARCH_PATH_CORE, executable_path);
          }
          command_event(CMD_EVENT_QUIT, NULL);
          break;
