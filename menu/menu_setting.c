@@ -5731,7 +5731,7 @@ static bool setting_append_list(
                char s1[64], s2[64];
 
                snprintf(s1, sizeof(s1), "%s_user_p%d", msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_REMOTE_ENABLE), user + 1);
-               snprintf(s2, sizeof(s2), "User %d Remote Enable", user + 1);
+               snprintf(s2, sizeof(s2), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_USER_REMOTE_ENABLE), user + 1);
 
 
                CONFIG_BOOL_ALT(
