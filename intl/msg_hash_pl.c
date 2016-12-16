@@ -1,4 +1,4 @@
-/*  RetroArch - A frontend for libretro.
+﻿/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2016 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -16,6 +16,11 @@
 #include <string.h>
 
 #include "../msg_hash.h"
+
+#if defined(_MSC_VER) && !defined(_XBOX)
+/* https://support.microsoft.com/en-us/kb/980263 */
+#pragma execution_character_set("utf-8")
+#endif
 
 int menu_hash_get_help_pl_enum(enum msg_hash_enums msg, char *s, size_t len)
 {

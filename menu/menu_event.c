@@ -1,4 +1,4 @@
-/*  RetroArch - A frontend for libretro.
+﻿/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
  *  Copyright (C) 2014-2016 - Jean-André Santoni
@@ -44,6 +44,11 @@
 #include "../content.h"
 #include "../retroarch.h"
 #include "../runloop.h"
+
+#if defined(_MSC_VER) && !defined(_XBOX)
+/* https://support.microsoft.com/en-us/kb/980263 */
+#pragma execution_character_set("utf-8")
+#endif
 
 #define OSK_CHARS_PER_LINE 11
 
