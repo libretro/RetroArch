@@ -247,8 +247,6 @@ static void iohidmanager_hid_device_remove(void *data,
    {
       input_autoconfigure_disconnect(adapter->slot, adapter->name);
 
-      settings->input.device_names[adapter->slot][0] = '\0';
-
       hid->buttons[adapter->slot] = 0;
       memset(hid->axes[adapter->slot], 0, sizeof(hid->axes));
 

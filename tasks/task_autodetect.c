@@ -34,6 +34,7 @@
 
 typedef struct autoconfig_disconnect
 {
+   unsigned idx;
    char msg[255];
 } autoconfig_disconnect_t;
 
@@ -334,9 +335,12 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
 static void input_autoconfigure_disconnect_handler(retro_task_t *task)
 {
    autoconfig_disconnect_t *params = (autoconfig_disconnect_t*)task->state;
+   settings_t            *settings = config_get_ptr();
 
    task->title    = strdup(params->msg);
    task->finished = true;
+
+   settings->input.device_names[params->idx][0] = '\0';
 
    RARCH_LOG("%s: %s\n", msg_hash_to_str(MSG_AUTODETECT), params->msg);
 
@@ -349,7 +353,9 @@ bool input_autoconfigure_disconnect(unsigned i, const char *ident)
    retro_task_t         *task     = (retro_task_t*)calloc(1, sizeof(*task));
    autoconfig_disconnect_t *state = (autoconfig_disconnect_t*)calloc(1, sizeof(*state));
 
-   msg[0] = '\0';
+   msg[0]      = '\0';
+
+   state->idx  = i;
 
    snprintf(msg, sizeof(msg), "%s #%u (%s).", 
          msg_hash_to_str(MSG_DEVICE_DISCONNECTED_FROM_PORT),
