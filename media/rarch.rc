@@ -4,13 +4,9 @@
 #include "../ui/drivers/ui_win32_resource.h"
 #include <windows.h>
 
-
-
-
-//
 // Menu resources
 //
-LANGUAGE 0, SUBLANG_NEUTRAL
+LANGUAGE LANG_ENGLISH, SUBLANG_NEUTRAL
 IDR_MENU MENU
 {
     POPUP "File"
@@ -82,7 +78,7 @@ IDR_MENU MENU
 //
 // Dialog resources
 //
-LANGUAGE 0, SUBLANG_NEUTRAL
+LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 IDD_PICKCORE DIALOG 0, 0, 225, 118
 STYLE DS_3DLOOK | DS_CENTER | DS_MODALFRAME | DS_SHELLFONT | WS_CAPTION | WS_VISIBLE | WS_POPUP | WS_SYSMENU
 CAPTION "Pick Core"
@@ -99,7 +95,7 @@ FONT 8, "Ms Shell Dlg"
 //
 // Icon resources
 //
-LANGUAGE 0, SUBLANG_NEUTRAL
+LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 1                  ICON           "icon_light.ico"
 
 
@@ -107,5 +103,7 @@ LANGUAGE 0, SUBLANG_NEUTRAL
 //
 // Manifest resources
 //
-LANGUAGE 0, SUBLANG_NEUTRAL
+LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 2                  RT_MANIFEST    "rarch.manifest"
+
+#include "rarch_ja.rc"
