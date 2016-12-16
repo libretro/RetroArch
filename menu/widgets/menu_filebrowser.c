@@ -27,28 +27,45 @@
 #include "../../config.h"
 #endif
 
+#include "menu_filebrowser.h"
 #include "menu_input_dialog.h"
+
+#include "../menu_driver.h"
+#include "../menu_displaylist.h"
+#include "../menu_navigation.h"
 
 #include "../../configuration.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../paths.h"
-#include "../menu_driver.h"
-#include "../menu_navigation.h"
+
+static enum filebrowser_enums filebrowser_types = FILEBROWSER_NONE;
+
+void filebrowser_clear_type(void)
+{
+   filebrowser_types = FILEBROWSER_NONE;
+}
+
+void filebrowser_set_type(enum filebrowser_enums type)
+{
+   filebrowser_types = type;
+}
 
 int filebrowser_parse(void *data, void *data2,
-      enum menu_displaylist_ctl_state type,
+      unsigned type_data,
       bool extensions_honored)
 {
    size_t i, list_size;
-   unsigned files_count         = 0;
-   unsigned dirs_count          = 0;
-   bool path_is_compressed      = false;
-   bool filter_ext              = false;
-   struct string_list *str_list = NULL;
-   unsigned items_found         = 0;
-   settings_t *settings         = config_get_ptr();
-   menu_handle_t *menu          = (menu_handle_t*)data;
-   menu_displaylist_info_t *info= (menu_displaylist_info_t*)data2;
+   bool path_is_compressed              = false;
+   bool filter_ext                      = false;
+   struct string_list *str_list         = NULL;
+   unsigned items_found                 = 0;
+   unsigned files_count                 = 0;
+   unsigned dirs_count                  = 0;
+   settings_t *settings                 = config_get_ptr();
+   menu_handle_t *menu                  = (menu_handle_t*)data;
+   menu_displaylist_info_t *info        = (menu_displaylist_info_t*)data2;
+   enum menu_displaylist_ctl_state type = (enum menu_displaylist_ctl_state)
+                                          type_data;
 
    if (string_is_empty(info->path))
    {
@@ -62,7 +79,8 @@ int filebrowser_parse(void *data, void *data2,
    filter_ext         =
       settings->menu.navigation.browser.filter.supported_extensions_enable;
 
-   if (string_is_equal(info->label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE)))
+   if (string_is_equal(info->label,
+            msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE)))
       filter_ext = false;
 
    if (extensions_honored)
@@ -176,8 +194,9 @@ int filebrowser_parse(void *data, void *data2,
                file_type = FILE_TYPE_PLAYLIST_COLLECTION;
          }
 
-         if (!is_dir && (settings->multimedia.builtin_mediaplayer_enable ||
-               settings->multimedia.builtin_imageviewer_enable))
+         if (!is_dir && 
+               (settings->multimedia.builtin_mediaplayer_enable ||
+                settings->multimedia.builtin_imageviewer_enable))
          {
             switch (path_is_media_type(path))
             {

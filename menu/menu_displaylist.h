@@ -159,14 +159,6 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_PENDING_CLEAR
 };
 
-enum filebrowser_enums
-{
-   FILEBROWSER_NONE = 0,
-   FILEBROWSER_SELECT_DIR,
-   FILEBROWSER_SCAN_DIR,
-   FILEBROWSER_SELECT_COLLECTION
-};
-
 typedef struct menu_displaylist_info
 {
    bool need_sort;
@@ -212,8 +204,6 @@ typedef struct menu_displaylist_ctx_entry
 void menu_displaylist_reset_filebrowser(void);
 
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data);
-
-extern unsigned filebrowser_types;
 
 RETRO_END_DECLS
 

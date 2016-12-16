@@ -24,12 +24,22 @@
 
 #include <retro_common_api.h>
 
-#include "../menu_displaylist.h"
-
 RETRO_BEGIN_DECLS
 
+enum filebrowser_enums
+{
+   FILEBROWSER_NONE              = 0,
+   FILEBROWSER_SELECT_DIR,
+   FILEBROWSER_SCAN_DIR,
+   FILEBROWSER_SELECT_COLLECTION
+};
+
+void filebrowser_clear_type(void);
+
+void filebrowser_set_type(enum filebrowser_enums type);
+
 int filebrowser_parse(void *data, void *data2,
-      enum menu_displaylist_ctl_state type,
+      unsigned type,
       bool extensions_honored);
 
 RETRO_END_DECLS
