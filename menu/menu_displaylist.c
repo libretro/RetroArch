@@ -276,7 +276,8 @@ static int menu_displaylist_parse_network_info(menu_displaylist_info_t *info)
             msg_hash_to_str(MSG_INTERFACE),
             list.entries[k].name, list.entries[k].host);
       menu_entries_append_enum(info->list, tmp, "",
-            MENU_ENUM_LABEL_NETWORK_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+            MENU_ENUM_LABEL_NETWORK_INFO_ENTRY,
+            MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    }
 
    net_ifinfo_free(&list);
@@ -305,7 +306,9 @@ static void menu_displaylist_push_perfcounter(
    for (i = 0; i < num; i++)
       if (counters[i] && counters[i]->ident)
          menu_entries_append_enum(info->list,
-               counters[i]->ident, "", (enum msg_hash_enums)(id + i), id + i , 0, 0);
+               counters[i]->ident, "",
+               (enum msg_hash_enums)(id + i),
+               id + i , 0, 0);
 }
 
 static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
@@ -513,6 +516,9 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 #endif
    char tmp[PATH_MAX_LENGTH];
    char feat_str[255];
+#ifdef ANDROID
+   bool perms                            = false;
+#endif
    const char *tmp_string                = NULL;
    const frontend_ctx_driver_t *frontend = frontend_get_ptr();
    settings_t                  *settings = config_get_ptr();
@@ -541,7 +547,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
          MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
 #ifdef ANDROID
-   bool perms = test_permissions(internal_storage_path);
+   perms = test_permissions(internal_storage_path);
 
    snprintf(tmp, sizeof(tmp), "%s: %s",
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS),
