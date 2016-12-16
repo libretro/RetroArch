@@ -140,7 +140,6 @@ static void wiiusb_hid_device_add_autodetect(unsigned idx,
       uint16_t dev_vid, uint16_t dev_pid)
 {
    autoconfig_params_t params = {{0}};
-   settings_t *settings       = config_get_ptr();
 
    params.idx = idx;
    params.vid = dev_vid;
@@ -148,9 +147,6 @@ static void wiiusb_hid_device_add_autodetect(unsigned idx,
 
    strlcpy(params.name, device_name, sizeof(params.name));
    strlcpy(params.driver, driver_name, sizeof(params.driver));
-
-   strlcpy(settings->input.device_names[idx], device_name,
-		sizeof(settings->input.device_names[idx]));
 
    input_autoconfigure_connect(&params);
 }

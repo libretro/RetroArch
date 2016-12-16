@@ -237,7 +237,6 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
 static void iohidmanager_hid_device_remove(void *data,
       IOReturn result, void* sender)
 {
-   settings_t                     *settings = config_get_ptr();
    struct iohidmanager_hid_adapter *adapter = 
       (struct iohidmanager_hid_adapter*)data;
    iohidmanager_hid_t *hid = (iohidmanager_hid_t*)
@@ -304,7 +303,7 @@ static void iohidmanager_hid_device_add_autodetect(unsigned idx,
    params.vid = dev_vid;
    params.pid = dev_pid;
 
-   strlcpy(params.name, device_name, sizeof(params.name));
+   strlcpy(params.name,   device_name, sizeof(params.name));
    strlcpy(params.driver, driver_name, sizeof(params.driver));
 
    input_autoconfigure_connect(&params);
@@ -317,8 +316,6 @@ static void iohidmanager_hid_device_add(void *data, IOReturn result,
 {
    IOReturn ret;
    uint16_t dev_vid, dev_pid;
-
-   settings_t                     *settings = config_get_ptr();
    iohidmanager_hid_t                  *hid = (iohidmanager_hid_t*)
       hid_driver_get_data();
    struct iohidmanager_hid_adapter *adapter = (struct iohidmanager_hid_adapter*)
@@ -367,9 +364,6 @@ static void iohidmanager_hid_device_add(void *data, IOReturn result,
 
    if (string_is_empty(adapter->name))
       goto error;
-
-   strlcpy(settings->input.device_names[adapter->slot],
-         adapter->name, sizeof(settings->input.device_names[adapter->slot]));
 
    iohidmanager_hid_device_add_autodetect(adapter->slot,
          adapter->name, iohidmanager_hid.ident, dev_vid, dev_pid);

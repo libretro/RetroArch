@@ -47,10 +47,6 @@ static void xdk_joypad_autodetect_add(unsigned autoconf_pad)
    autoconfig_params_t params = {{0}};
    settings_t *settings       = config_get_ptr();
 
-   strlcpy(settings->input.device_names[autoconf_pad],
-         "XInput Controller",
-         sizeof(settings->input.device_names[autoconf_pad]));
-
    /* TODO - implement VID/PID? */
    params.idx = autoconf_pad;
    strlcpy(params.name, xdk_joypad_name(autoconf_pad), sizeof(params.name));

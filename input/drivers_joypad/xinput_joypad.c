@@ -258,10 +258,6 @@ static bool xinput_joypad_init(void *data)
       {
          autoconfig_params_t params = {{0}};
 
-         strlcpy(settings->input.device_names[autoconf_pad],
-               xinput_joypad_name(autoconf_pad),
-               sizeof(settings->input.device_names[autoconf_pad]));
-
          /* TODO - implement VID/PID? */
          params.idx = autoconf_pad;
          strlcpy(params.name, xinput_joypad_name(autoconf_pad), sizeof(params.name));

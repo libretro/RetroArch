@@ -98,7 +98,6 @@ static void sdl_pad_connect(unsigned id)
    bool success               = false;
    int32_t product            = 0;
    int32_t vendor             = 0;
-   settings_t *settings       = config_get_ptr();
    autoconfig_params_t params = {{0}};
 
 #ifdef HAVE_SDL2
@@ -130,8 +129,6 @@ static void sdl_pad_connect(unsigned id)
 
       return;
    }
-
-   strlcpy(settings->input.device_names[id], sdl_pad_name(id), sizeof(settings->input.device_names[id]));
 
 #ifdef HAVE_SDL2
    guid       = SDL_JoystickGetGUID(pad->joypad);
@@ -202,7 +199,6 @@ static void sdl_pad_connect(unsigned id)
 
 static void sdl_pad_disconnect(unsigned id)
 {
-   settings_t *settings = config_get_ptr();
 #ifdef HAVE_SDL2
    if (sdl_pads[id].haptic)
       SDL_HapticClose(sdl_pads[id].haptic);
@@ -219,8 +215,6 @@ static void sdl_pad_disconnect(unsigned id)
       SDL_JoystickClose(sdl_pads[id].joypad);
       input_autoconfigure_disconnect(id, sdl_joypad.ident);
    }
-
-   settings->input.device_names[id][0] = '\0';
 
    memset(&sdl_pads[id], 0, sizeof(sdl_pads[id]));
 }

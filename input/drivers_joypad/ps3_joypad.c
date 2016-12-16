@@ -43,11 +43,7 @@ static const char *ps3_joypad_name(unsigned pad)
 
 static void ps3_joypad_autodetect_add(unsigned autoconf_pad)
 {
-   settings_t *settings = config_get_ptr();
    autoconfig_params_t params = {{0}};
-   strlcpy(settings->input.device_names[autoconf_pad],
-         "SixAxis Controller",
-         sizeof(settings->input.device_names[autoconf_pad]));
 
    /* TODO - implement VID/PID? */
    params.idx = autoconf_pad;

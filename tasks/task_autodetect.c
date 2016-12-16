@@ -169,6 +169,11 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
       if (!block_osd_spam)
          task->title = strdup(msg);
    }
+
+   strlcpy(settings->input.device_names[params->idx],
+         params->name,
+         sizeof(settings->input.device_names[params->idx]));
+
    input_autoconfigure_joypad_reindex_devices();
 }
 

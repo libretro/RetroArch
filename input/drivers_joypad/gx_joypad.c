@@ -142,17 +142,10 @@ static void handle_hotplug(unsigned port, uint32_t ptype)
 {
    pad_type[port] = ptype;
 
-   if (ptype != WPAD_EXP_NOCONTROLLER)
+   if (ptype != WPAD_EXP_NOCONTROLLER 
+         && settings->input.autodetect_enable)
    {
       autoconfig_params_t params = {{0}};
-      settings_t *settings       = config_get_ptr();
-
-      if (!settings->input.autodetect_enable)
-         return;
-
-      strlcpy(settings->input.device_names[port],
-            gx_joypad_name(port),
-            sizeof(settings->input.device_names[port]));
 
       /* TODO - implement VID/PID? */
       params.idx = port;
