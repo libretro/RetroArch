@@ -131,11 +131,11 @@ int filebrowser_parse(void *data, void *data2,
    {
       for (i = 0; i < list_size; i++)
       {
-         bool is_dir;
          char label[PATH_MAX_LENGTH];
-         const char *path              = NULL;
+         bool is_dir                   = false;
          enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
          enum msg_file_type file_type  = FILE_TYPE_NONE;
+         const char *path              = str_list->elems[i].data;
 
          label[0] = '\0';
 
@@ -155,11 +155,11 @@ int filebrowser_parse(void *data, void *data2,
                file_type = (enum msg_file_type)info->type_default;
                switch (type)
                {
+                  /* in case of deferred_core_list we have to interpret
+                   * every archive as an archive to disallow instant loading
+                   */
                   case DISPLAYLIST_CORES_DETECTED:
-                     /* in case of deferred_core_list we have to interpret
-                      * every archive as an archive to disallow instant loading
-                      */
-                     if (path_is_compressed_file(str_list->elems[i].data))
+                     if (path_is_compressed_file(path))
                         file_type = FILE_TYPE_CARCHIVE;
                      break;
                   default:
@@ -179,7 +179,6 @@ int filebrowser_parse(void *data, void *data2,
          }
 
          /* Need to preserve slash first time. */
-         path = str_list->elems[i].data;
 
          if (!string_is_empty(info->path) && !path_is_compressed)
             path = path_basename(path);
