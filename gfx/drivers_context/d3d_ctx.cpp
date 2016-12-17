@@ -87,10 +87,12 @@ static void gfx_ctx_d3d_swap_buffers(void *data)
 
 static void gfx_ctx_d3d_update_title(void *data)
 {
-   char buf[128]             = {0};
-   char buffer_fps[128]      = {0};
+   char buf[128];
+   char buffer_fps[128];
    settings_t *settings      = config_get_ptr();
    const ui_window_t *window = ui_companion_driver_get_window_ptr();
+
+   buf[0] = buffer_fps[0]    = '\0';
 
    if (window && video_monitor_get_fps(buf, sizeof(buf),
             buffer_fps, sizeof(buffer_fps)))
@@ -104,7 +106,9 @@ static void gfx_ctx_d3d_update_title(void *data)
    {
 #ifdef _XBOX
       MEMORYSTATUS stat;
-      char mem[128] = {0};
+      char mem[128];
+
+      mem[0] = '\0';
 
       GlobalMemoryStatus(&stat);
       snprintf(mem, sizeof(mem), "|| MEM: %.2f/%.2fMB",

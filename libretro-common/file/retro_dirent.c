@@ -33,7 +33,7 @@
 struct RDIR *retro_opendir(const char *name)
 {
 #if defined(_WIN32)
-   char path_buf[1024] = {0};
+   char path_buf[1024];
 #endif
    struct RDIR *rdir = (struct RDIR*)calloc(1, sizeof(*rdir));
 
@@ -41,6 +41,7 @@ struct RDIR *retro_opendir(const char *name)
       return NULL;
 
 #if defined(_WIN32)
+   path_buf[0] = '\0';
    snprintf(path_buf, sizeof(path_buf), "%s\\*", name);
    rdir->directory = FindFirstFile(path_buf, &rdir->entry);
 #elif defined(VITA) || defined(PSP)

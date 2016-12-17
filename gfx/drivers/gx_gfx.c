@@ -1438,12 +1438,14 @@ static bool gx_frame(void *data, const void *frame,
       uint64_t frame_count, unsigned pitch,
       const char *msg)
 {
+   char fps_txt[128];
+   char fps_text_buf[128];
    static struct retro_perf_counter gx_frame = {0};
-   char fps_txt[128]                  = {0};
-   char fps_text_buf[128]             = {0};
    gx_video_t *gx                     = (gx_video_t*)data;
    u8                       clear_efb = GX_FALSE;
    settings_t               *settings = config_get_ptr();
+
+   fps_txt[0] = fps_text_buf[0]       = '\0';
 
    performance_counter_init(&gx_frame, "gx_frame");
    performance_counter_start(&gx_frame);
@@ -1540,10 +1542,12 @@ static bool gx_frame(void *data, const void *frame,
 
    if (settings->fps_show)
    {
-      char mem1_txt[128] = {0};
-      char mem2_txt[128] = {0};
+      char mem1_txt[128];
+      char mem2_txt[128];
       unsigned x         = 15;
       unsigned y         = 35;
+
+      mem1_txt[0] = mem2_txt[0] = '\0';
 
       (void)mem2_txt;
 

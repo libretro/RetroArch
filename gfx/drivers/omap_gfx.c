@@ -178,10 +178,12 @@ static int omapfb_detect_screen(omapfb_data_t *pdata)
    int i, ret;
    int w, h;
    FILE *f;
-   int fb_id, overlay_id = -1, display_id = -1;
-   char buff[64]         = {0};
-   char manager_name[64] = {0};
-   char display_name[64] = {0};
+   char buff[64];
+   char manager_name[64];
+   char display_name[64];
+   int fb_id, overlay_id = -1, display_id      = -1;
+
+   buff[0] = manager_name[0] = display_name[0] = '\0';
 
    /* Find out the native screen resolution, which is needed to 
     * properly center the scaled image data. */

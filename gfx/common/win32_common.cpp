@@ -261,7 +261,9 @@ void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
 /* Get the count of the files dropped */
 static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
 {
-   char szFilename[1024] = {0};
+   char szFilename[1024];
+
+   szFilename[0] = '\0';
 
    if (DragQueryFile((HDROP)wparam, 0xFFFFFFFF, NULL, 0))
    {

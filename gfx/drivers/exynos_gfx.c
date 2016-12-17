@@ -1306,8 +1306,11 @@ static bool exynos_gfx_frame(void *data, const void *frame, unsigned width,
 
    if (settings->fps_show)
    {
-      char buffer[128]     = {0};
-      char buffer_fps[128] = {0};
+      char buffer[128];
+      char buffer_fps[128];
+
+      buffer[0] = buffer_fps[0] = '\0';
+
       video_monitor_get_fps(buffer, sizeof(buffer),
             settings->fps_show ? buffer_fps : NULL, sizeof(buffer_fps));
       runloop_msg_queue_push(buffer_fps, 1, 1, false);

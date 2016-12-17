@@ -101,10 +101,12 @@ bool input_remapping_save_file(const char *path)
 {
    bool ret;
    unsigned i, j;
-   char buf[PATH_MAX_LENGTH]         = {0};
-   char remap_file[PATH_MAX_LENGTH]  = {0};
+   char buf[PATH_MAX_LENGTH];
+   char remap_file[PATH_MAX_LENGTH];
    config_file_t               *conf = NULL;
    settings_t              *settings = config_get_ptr();
+
+   buf[0] = remap_file[0]            = '\0';
 
    fill_pathname_join(buf, settings->directory.input_remapping,
          path, sizeof(buf));
@@ -122,13 +124,15 @@ bool input_remapping_save_file(const char *path)
 
    for (i = 0; i < settings->input.max_users; i++)
    {
-      char buf[64] = {0};
+      char buf[64];
       char key_ident[RARCH_FIRST_CUSTOM_BIND + 4][128]   = {{0}};
       char key_strings[RARCH_FIRST_CUSTOM_BIND + 4][128] = {
          "b", "y", "select", "start",
          "up", "down", "left", "right",
          "a", "x", "l", "r", "l2", "r2",
          "l3", "r3", "l_x", "l_y", "r_x", "r_y" };
+
+      buf[0] = '\0';
 
       snprintf(buf, sizeof(buf), "input_player%u", i + 1);
 
