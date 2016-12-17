@@ -24,6 +24,7 @@
 #include <compat/strl.h>
 
 #include "tasks_internal.h"
+#include "../file_path_special.h"
 #include "../verbosity.h"
 #include "../msg_hash.h"
 
@@ -98,7 +99,7 @@ static int file_decompressed(const char *name, const char *valid_exts,
 
    /* Make directory */
    fill_pathname_join(path, dec->target_dir, name, sizeof(path));
-   path_basedir(path);
+   path_basedir_wrapper(path);
 
    if (!path_mkdir(path))
       goto error;

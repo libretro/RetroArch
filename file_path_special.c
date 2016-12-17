@@ -80,7 +80,7 @@ void fill_pathname_expand_special(char *out_path,
       application_dir[0] = '\0';
 
       fill_pathname_application_path(application_dir, sizeof(application_dir));
-      path_basedir(application_dir);
+      path_basedir_wrapper(application_dir);
 
       src_size   = strlcpy(out_path, application_dir, size);
       retro_assert(src_size < size);
@@ -122,7 +122,7 @@ void fill_pathname_abbreviate_special(char *out_path,
    notations [2] = NULL;
 
    fill_pathname_application_path(application_dir, sizeof(application_dir));
-   path_basedir(application_dir);
+   path_basedir_wrapper(application_dir);
    
    for (i = 0; candidates[i]; i++)
    {
@@ -457,4 +457,80 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
       default:
          break;
    }
+}
+
+/**
+ * fill_short_pathname_representation:
+ * @out_rep            : output representation
+ * @in_path            : input path
+ * @size               : size of output representation
+ *
+ * Generates a short representation of path. It should only
+ * be used for displaying the result; the output representation is not
+ * binding in any meaningful way (for a normal path, this is the same as basename)
+ * In case of more complex URLs, this should cut everything except for
+ * the main image file.
+ *
+ * E.g.: "/path/to/game.img" -> game.img
+ *       "/path/to/myarchive.7z#folder/to/game.img" -> game.img
+ */
+void fill_short_pathname_representation_wrapper(char* out_rep,
+      const char *in_path, size_t size)
+{
+   char path_short[PATH_MAX_LENGTH];
+#ifdef HAVE_COMPRESSION
+   char *last_slash                  = NULL;
+#endif
+
+   path_short[0] = '\0';
+
+   fill_pathname(path_short, path_basename(in_path), "",
+            sizeof(path_short));
+
+#ifdef HAVE_COMPRESSION
+   last_slash  = find_last_slash(path_short);
+   if (last_slash != NULL)
+   {
+      /* We handle paths like:
+       * /path/to/file.7z#mygame.img
+       * short_name: mygame.img:
+       *
+       * We check whether something is actually
+       * after the hash to avoid going over the buffer.
+       */
+      retro_assert(strlen(last_slash) > 1);
+      strlcpy(out_rep, last_slash + 1, size);
+      return;
+   }
+#endif
+
+   fill_short_pathname_representation(out_rep, in_path, size);
+}
+
+/**
+ * path_basedir:
+ * @path               : path
+ *
+ * Extracts base directory by mutating path.
+ * Keeps trailing '/'.
+ **/
+void path_basedir_wrapper(char *path)
+{
+   char *last = NULL;
+   if (strlen(path) < 2)
+      return;
+
+#ifdef HAVE_COMPRESSION
+   /* We want to find the directory with the archive in basedir. */
+   last = (char*)path_get_archive_delim(path);
+   if (last)
+      *last = '\0';
+#endif
+
+   last = find_last_slash(path);
+
+   if (last)
+      last[1] = '\0';
+   else
+      snprintf(path, 3, ".%s", path_default_slash());
 }

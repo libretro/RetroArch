@@ -2370,7 +2370,7 @@ static void cb_generic_download(void *task_data,
             transf->path, sizeof(output_path));
 
    /* Make sure the directory exists */
-   path_basedir(output_path);
+   path_basedir_wrapper(output_path);
 
    if (!path_mkdir(output_path))
    {

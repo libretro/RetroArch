@@ -1047,7 +1047,7 @@ static void update_firmware_status(void)
    else
    {
       strlcpy(s, path_get(RARCH_PATH_CONTENT) ,sizeof(s));
-      path_basedir(s);
+      path_basedir_wrapper(s);
       firmware_info.directory.system = s;
    }
 
