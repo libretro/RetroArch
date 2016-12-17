@@ -4699,7 +4699,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                count++;
             if (menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE,
-                  PARSE_ONLY_UINT, false) != -1)
+                  PARSE_ONLY_BOOL, false) != -1)
                count++;
             if (menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES,
