@@ -102,6 +102,24 @@ early (i.e., it only forwards data on the frame it's reached), it must also
 inform all clients of its own current frame even if it has no input. The
 NOINPUT command is provided for that purpose.
 
+The handshake procedure (this part is done by both server and client):
+1) Send connection header
+2) Receive and verify connection header
+3) Send nickname
+4) Receive nickname
+
+For the client:
+5) Send PASSWORD if applicable
+4) Receive INFO
+5) Send INFO
+6) Receive SYNC
+
+For the server:
+5) Receive PASSWORD if applicable
+6) Send INFO
+7) Receive INFO
+8) Send SYNC
+
 
 * Guarantee not actually a guarantee.
 
@@ -171,6 +189,20 @@ Payload:
 Description:
     Send hashed password to server. Mandatory handshake command for clients if
     the server demands a password.
+
+Command: INFO
+Payload
+    {
+       core name: char[32]
+       core version: char[32]
+       content CRC: uint32
+    }
+Description:
+    Send core/content info. Mandatory handshake command. Sent by server first,
+    then by client, and must match. Server may send INFO with no payload, in
+    which case the client sends its own info and expects the server to load the
+    appropriate core and content then send a new INFO command. If mutual
+    agreement cannot be achieved, the correct solution is to simply disconnect.
 
 Command: SYNC
 Payload:

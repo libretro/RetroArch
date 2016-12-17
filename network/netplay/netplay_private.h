@@ -112,20 +112,23 @@ enum netplay_cmd
    /* Give the connection password */
    NETPLAY_CMD_PASSWORD       = 0x0021,
 
+   /* Give core/content info */
+   NETPLAY_CMD_INFO           = 0x0022,
+
    /* Initial synchronization info (frame, sram, player info) */
-   NETPLAY_CMD_SYNC           = 0x0022,
+   NETPLAY_CMD_SYNC           = 0x0023,
 
    /* Join spectator mode */
-   NETPLAY_CMD_SPECTATE       = 0x0023,
+   NETPLAY_CMD_SPECTATE       = 0x0024,
 
    /* Join play mode */
-   NETPLAY_CMD_PLAY           = 0x0024,
+   NETPLAY_CMD_PLAY           = 0x0025,
 
    /* Report player mode */
-   NETPLAY_CMD_MODE           = 0x0025,
+   NETPLAY_CMD_MODE           = 0x0026,
 
    /* Report player mode refused */
-   NETPLAY_CMD_MODE_REFUSED   = 0x0026,
+   NETPLAY_CMD_MODE_REFUSED   = 0x0027,
 
    /* Loading and synchronization */
 
@@ -187,6 +190,7 @@ enum rarch_netplay_connection_mode
    NETPLAY_CONNECTION_INIT, /* Waiting for header */
    NETPLAY_CONNECTION_PRE_NICK, /* Waiting for nick */
    NETPLAY_CONNECTION_PRE_PASSWORD, /* Waiting for password */
+   NETPLAY_CONNECTION_PRE_INFO, /* Waiting for core/content info */
    NETPLAY_CONNECTION_PRE_SYNC, /* Waiting for sync */
 
    /* Ready: */
@@ -580,39 +584,11 @@ bool netplay_handshake_init_send(netplay_t *netplay,
    struct netplay_connection *connection);
 
 /**
- * netplay_handshake_init
+ * netplay_handshake
  *
- * Data receiver for the initial part of the handshake, i.e., waiting for the
- * netplay header.
+ * Data receiver for all handshake states.
  */
-bool netplay_handshake_init(netplay_t *netplay,
-   struct netplay_connection *connection, bool *had_input);
-
-/**
- * netplay_handshake_pre_nick
- *
- * Data receiver for the second stage of handshake, receiving the other side's
- * nickname.
- */
-bool netplay_handshake_pre_nick(netplay_t *netplay,
-   struct netplay_connection *connection, bool *had_input);
-
-/**
- * netplay_handshake_pre_password
- *
- * Data receiver for the third, optional stage of server handshake, receiving
- * the password.
- */
-bool netplay_handshake_pre_password(netplay_t *netplay,
-   struct netplay_connection *connection, bool *had_input);
-
-/**
- * netplay_handshake_pre_sync
- *
- * Data receiver for the client's third handshake stage, receiving the
- * synchronization information.
- */
-bool netplay_handshake_pre_sync(netplay_t *netplay,
+bool netplay_handshake(netplay_t *netplay,
    struct netplay_connection *connection, bool *had_input);
 
 

@@ -125,51 +125,20 @@ void netplay_log_connection(const struct sockaddr_storage *their_addr,
 /**
  * netplay_impl_magic:
  *
- * Not really a hash, but should be enough to differentiate 
- * implementations from each other.
- *
- * Subtle differences in the implementation will not be possible to spot.
- * The alternative would have been checking serialization sizes, but it 
- * was troublesome for cross platform compat.
- **/
+ * A pseudo-hash of the RetroArch and Netplay version, so only compatible
+ * versions play together.
+ */
 uint32_t netplay_impl_magic(void)
 {
    size_t i, len;
-   retro_ctx_api_info_t api_info;
-   unsigned api;
    uint32_t res                        = 0;
-   rarch_system_info_t *info           = NULL;
-   const char *lib                     = NULL;
    const char *ver                     = PACKAGE_VERSION;
-
-   core_api_version(&api_info);
-
-   api                                 = api_info.version;
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
-
-   res |= api;
-
-   if (info)
-   {
-      lib = info->info.library_name;
-
-      len = strlen(lib);
-      for (i = 0; i < len; i++)
-         res ^= lib[i] << (i & 0xf);
-
-      lib = info->info.library_version;
-      len = strlen(lib);
-
-      for (i = 0; i < len; i++)
-         res ^= lib[i] << (i & 0xf);
-   }
 
    len = strlen(ver);
    for (i = 0; i < len; i++)
-      res ^= ver[i] << ((i & 0xf) + 16);
+      res ^= ver[i] << (i & 0xf);
 
-   res ^= NETPLAY_PROTOCOL_VERSION << 24;
+   res ^= NETPLAY_PROTOCOL_VERSION << (i & 0xf);
 
    return res;
 }
@@ -237,15 +206,11 @@ static uint32_t simple_rand_uint32()
 bool netplay_handshake_init_send(netplay_t *netplay,
    struct netplay_connection *connection)
 {
-   uint32_t *content_crc_ptr = NULL;
-   uint32_t header[5] = {0};
-
-   content_get_crc(&content_crc_ptr);
+   uint32_t header[4] = {0};
 
    header[0] = htonl(netplay_impl_magic());
-   header[1] = htonl(*content_crc_ptr);
-   header[2] = htonl(netplay_platform_magic());
-   header[3] = htonl(NETPLAY_COMPRESSION_SUPPORTED);
+   header[1] = htonl(netplay_platform_magic());
+   header[2] = htonl(NETPLAY_COMPRESSION_SUPPORTED);
    if (netplay->is_server && (netplay->play_password[0] || netplay->spectate_password[0]))
    {
       /* Demand a password */
@@ -253,11 +218,11 @@ bool netplay_handshake_init_send(netplay_t *netplay,
          simple_srand(time(NULL));
       connection->salt = simple_rand_uint32();
       if (connection->salt == 0) connection->salt = 1;
-      header[4] = htonl(connection->salt);
+      header[3] = htonl(connection->salt);
    }
    else
    {
-      header[4] = htonl(0);
+      header[3] = htonl(0);
    }
 
    if (!netplay_send(&connection->send_packet_buffer, connection->fd, header,
@@ -278,6 +243,14 @@ struct password_buf_s
 {
    uint32_t cmd[2];
    char password[NETPLAY_PASS_HASH_LEN];
+};
+
+struct info_buf_s
+{
+   uint32_t cmd[2];
+   char core_name[NETPLAY_NICK_LEN];
+   char core_version[NETPLAY_NICK_LEN];
+   uint32_t content_crc;
 };
 
 #define RECV(buf, sz) \
@@ -322,11 +295,10 @@ static void handshake_password(void *ignore, const char *line)
 bool netplay_handshake_init(netplay_t *netplay,
    struct netplay_connection *connection, bool *had_input)
 {
-   uint32_t header[5] = {0};
+   uint32_t header[4] = {0};
    ssize_t recvd;
    const char *dmsg;
    struct nick_buf_s nick_buf;
-   uint32_t *content_crc_ptr = NULL;
    uint32_t local_pmagic, remote_pmagic;
    uint32_t compression;
 
@@ -344,16 +316,9 @@ bool netplay_handshake_init(netplay_t *netplay,
       goto error;
    }
 
-   content_get_crc(&content_crc_ptr);
-   if (*content_crc_ptr != ntohl(header[1]))
-   {
-      dmsg = msg_hash_to_str(MSG_CONTENT_CRC32S_DIFFER);
-      goto error;
-   }
-
    /* We only care about platform magic if our core is quirky */
    local_pmagic = netplay_platform_magic();
-   remote_pmagic = ntohl(header[2]);
+   remote_pmagic = ntohl(header[1]);
    if ((netplay->quirks & NETPLAY_QUIRK_ENDIAN_DEPENDENT) &&
        netplay_endian_mismatch(local_pmagic, remote_pmagic))
    {
@@ -376,7 +341,7 @@ bool netplay_handshake_init(netplay_t *netplay,
       netplay->decompression_backend->stream_free(netplay->decompression_stream);
 
    /* Check what compression is supported */
-   compression = ntohl(header[3]);
+   compression = ntohl(header[2]);
    compression &= NETPLAY_COMPRESSION_SUPPORTED;
    if (compression & NETPLAY_COMPRESSION_ZLIB)
    {
@@ -400,7 +365,7 @@ bool netplay_handshake_init(netplay_t *netplay,
    }
 
    /* If a password is demanded, ask for it */
-   if (!netplay->is_server && (connection->salt = ntohl(header[4])))
+   if (!netplay->is_server && (connection->salt = ntohl(header[3])))
    {
       menu_input_ctx_line_t line;
       rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
@@ -466,6 +431,57 @@ static void netplay_handshake_ready(netplay_t *netplay, struct netplay_connectio
        netplay->stall = NETPLAY_STALL_NONE;
 }
 
+/**
+ * netplay_handshake_info
+ *
+ * Send an INFO command.
+ */
+bool netplay_handshake_info(netplay_t *netplay, struct netplay_connection *connection)
+{
+   struct info_buf_s info_buf;
+   rarch_system_info_t *core_info;
+   uint32_t *content_crc_ptr;
+
+   memset(&info_buf, 0, sizeof(info_buf));
+   info_buf.cmd[0] = htonl(NETPLAY_CMD_INFO);
+   info_buf.cmd[1] = htonl(sizeof(info_buf) - 2*sizeof(uint32_t));
+
+   /* Get our core info */
+   core_info = NULL;
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &core_info);
+   if (core_info)
+   {
+      strlcpy(info_buf.core_name, core_info->info.library_name, sizeof(info_buf.core_name));
+      strlcpy(info_buf.core_version, core_info->info.library_version, sizeof(info_buf.core_version));
+   }
+   else
+   {
+      strlcpy(info_buf.core_name, "UNKNOWN", sizeof(info_buf.core_name));
+      strlcpy(info_buf.core_version, "UNKNOWN", sizeof(info_buf.core_version));
+   }
+
+   /* Get our content CRC */
+   content_crc_ptr = NULL;
+   content_get_crc(&content_crc_ptr);
+   if (content_crc_ptr)
+      info_buf.content_crc = htonl(*content_crc_ptr);
+
+   /* Send it off and wait for info back */
+   if (!netplay_send(&connection->send_packet_buffer, connection->fd,
+         &info_buf, sizeof(info_buf)) ||
+       !netplay_send_flush(&connection->send_packet_buffer, connection->fd,
+         false))
+      return false;
+
+   connection->mode = NETPLAY_CONNECTION_PRE_INFO;
+   return true;
+}
+
+/**
+ * netplay_handshake_sync
+ *
+ * Send a SYNC command.
+ */
 bool netplay_handshake_sync(netplay_t *netplay, struct netplay_connection *connection)
 {
    /* If we're the server, now we send sync info */
@@ -567,15 +583,16 @@ bool netplay_handshake_pre_nick(netplay_t *netplay,
       else
       {
          connection->can_play = true;
-         if (!netplay_handshake_sync(netplay, connection))
+         if (!netplay_handshake_info(netplay, connection))
             return false;
+         connection->mode = NETPLAY_CONNECTION_PRE_INFO;
       }
 
    }
    else
    {
-      /* Client needs to wait for sync info */
-      connection->mode = NETPLAY_CONNECTION_PRE_SYNC;
+      /* Client needs to wait for INFO */
+      connection->mode = NETPLAY_CONNECTION_PRE_INFO;
 
    }
 
@@ -588,7 +605,7 @@ bool netplay_handshake_pre_nick(netplay_t *netplay,
  * netplay_handshake_pre_password
  *
  * Data receiver for the third, optional stage of server handshake, receiving
- * the password.
+ * the password and sending core/content info.
  */
 bool netplay_handshake_pre_password(netplay_t *netplay,
    struct netplay_connection *connection, bool *had_input)
@@ -645,15 +662,92 @@ bool netplay_handshake_pre_password(netplay_t *netplay,
    if (!correct)
       return false;
 
-   /* Otherwise, we're ready! */
-   if (!netplay_handshake_sync(netplay, connection))
+   /* Otherwise, exchange info */
+   if (!netplay_handshake_info(netplay, connection))
       return false;
 
    *had_input = true;
+   connection->mode = NETPLAY_CONNECTION_PRE_INFO;
    netplay_recv_flush(&connection->recv_packet_buffer);
    return true;
 }
 
+/**
+ * netplay_handshake_pre_info
+ *
+ * Data receiver for the third stage of server handshake, receiving
+ * the password.
+ */
+bool netplay_handshake_pre_info(netplay_t *netplay,
+   struct netplay_connection *connection, bool *had_input)
+{
+   struct info_buf_s info_buf;
+   ssize_t recvd;
+   rarch_system_info_t *core_info;
+   uint32_t *content_crc_ptr;
+   const char *dmsg = NULL;
+
+   RECV(&info_buf, sizeof(info_buf));
+
+   if (recvd < 0 ||
+       ntohl(info_buf.cmd[0]) != NETPLAY_CMD_INFO ||
+       ntohl(info_buf.cmd[1]) != sizeof(info_buf) - 2*sizeof(uint32_t))
+   {
+      RARCH_ERR("Failed to receive netplay info.\n");
+      return false;
+   }
+
+   /* Check the core info */
+   core_info = NULL;
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &core_info);
+   if (core_info)
+   {
+      if (strncmp(info_buf.core_name, core_info->info.library_name, sizeof(info_buf.core_name)) ||
+          strncmp(info_buf.core_version, core_info->info.library_version, sizeof(info_buf.core_version)))
+      {
+         dmsg = msg_hash_to_str(MSG_NETPLAY_IMPLEMENTATIONS_DIFFER);
+         goto error;
+      }
+   }
+
+   /* Check the content CRC */
+   content_crc_ptr = NULL;
+   content_get_crc(&content_crc_ptr);
+   if (content_crc_ptr)
+   {
+      if (ntohl(info_buf.content_crc) != *content_crc_ptr)
+      {
+         dmsg = msg_hash_to_str(MSG_CONTENT_CRC32S_DIFFER);
+         goto error;
+      }
+   }
+
+   /* Now switch to the right mode */
+   if (netplay->is_server)
+   {
+      if (!netplay_handshake_sync(netplay, connection))
+         return false;
+
+   }
+   else
+   {
+      if (!netplay_handshake_info(netplay, connection))
+         return false;
+      connection->mode = NETPLAY_CONNECTION_PRE_SYNC;
+   }
+
+   *had_input = true;
+   netplay_recv_flush(&connection->recv_packet_buffer);
+   return true;
+
+error:
+   if (dmsg)
+   {
+      RARCH_ERR("%s\n", dmsg);
+      runloop_msg_queue_push(dmsg, 1, 180, false);
+   }
+   return false;
+}
 /**
  * netplay_handshake_pre_sync
  *
@@ -784,12 +878,53 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
    }
 
    /* We're ready! */
+   *had_input = true;
    netplay->self_mode = NETPLAY_CONNECTION_SPECTATING;
    connection->mode = NETPLAY_CONNECTION_PLAYING;
    netplay_handshake_ready(netplay, connection);
-   *had_input = true;
    netplay_recv_flush(&connection->recv_packet_buffer);
 
    /* Ask to go to player mode */
    return netplay_cmd_mode(netplay, connection, NETPLAY_CONNECTION_PLAYING);
+}
+
+/**
+ * netplay_handshake
+ *
+ * Data receiver for all handshake states.
+ */
+bool netplay_handshake(netplay_t *netplay,
+   struct netplay_connection *connection, bool *had_input)
+{
+   bool ret;
+
+   switch (connection->mode)
+   {
+      case NETPLAY_CONNECTION_NONE:
+         /* Huh?! */
+         return false;
+      case NETPLAY_CONNECTION_INIT:
+         ret = netplay_handshake_init(netplay, connection, had_input);
+         break;
+      case NETPLAY_CONNECTION_PRE_NICK:
+         ret = netplay_handshake_pre_nick(netplay, connection, had_input);
+         break;
+      case NETPLAY_CONNECTION_PRE_PASSWORD:
+         ret = netplay_handshake_pre_password(netplay, connection, had_input);
+         break;
+      case NETPLAY_CONNECTION_PRE_INFO:
+         ret = netplay_handshake_pre_info(netplay, connection, had_input);
+         break;
+      case NETPLAY_CONNECTION_PRE_SYNC:
+         ret = netplay_handshake_pre_sync(netplay, connection, had_input);
+         break;
+      default:
+         return false;
+   }
+
+   if (connection->mode >= NETPLAY_CONNECTION_CONNECTED &&
+         !netplay_send_cur_input(netplay, connection))
+      return false;
+
+   return ret;
 }

@@ -359,40 +359,8 @@ static bool netplay_get_cmd(netplay_t *netplay,
    char msg[512];
 
    /* We don't handle the initial handshake here */
-   switch (connection->mode)
-   {
-      case NETPLAY_CONNECTION_NONE:
-         /* Huh?! */
-         return false;
-      case NETPLAY_CONNECTION_INIT:
-         return netplay_handshake_init(netplay, connection, had_input);
-      case NETPLAY_CONNECTION_PRE_NICK:
-      {
-         bool ret = netplay_handshake_pre_nick(netplay, connection, had_input);
-         if (connection->mode >= NETPLAY_CONNECTION_CONNECTED &&
-             !netplay_send_cur_input(netplay, connection))
-            return false;
-         return ret;
-      }
-      case NETPLAY_CONNECTION_PRE_PASSWORD:
-      {
-         bool ret = netplay_handshake_pre_password(netplay, connection, had_input);
-         if (connection->mode >= NETPLAY_CONNECTION_CONNECTED &&
-             !netplay_send_cur_input(netplay, connection))
-            return false;
-         return ret;
-      }
-      case NETPLAY_CONNECTION_PRE_SYNC:
-      {
-         bool ret = netplay_handshake_pre_sync(netplay, connection, had_input);
-         if (connection->mode >= NETPLAY_CONNECTION_CONNECTED &&
-             !netplay_send_cur_input(netplay, connection))
-            return false;
-         return ret;
-      }
-      default:
-         break;
-   }
+   if (connection->mode < NETPLAY_CONNECTION_CONNECTED)
+      return netplay_handshake(netplay, connection, had_input);
 
    /* FIXME: This depends on delta_frame_ready */
 
