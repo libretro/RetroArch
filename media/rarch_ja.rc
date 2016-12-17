@@ -7,8 +7,8 @@ IDR_MENU MENU
 {
     POPUP "ファイル"
     {
-        MENUITEM "コアをロード", ID_M_LOAD_CORE
-        MENUITEM "コンテンツをロード", ID_M_LOAD_CONTENT
+        MENUITEM "コアをロード...", ID_M_LOAD_CORE
+        MENUITEM "コンテンツをロード...", ID_M_LOAD_CONTENT
         MENUITEM SEPARATOR
         MENUITEM "終了", ID_M_QUIT
     }

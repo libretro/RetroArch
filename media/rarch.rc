@@ -11,8 +11,8 @@ IDR_MENU MENU
 {
     POPUP "File"
     {
-        MENUITEM "Load Core", ID_M_LOAD_CORE
-        MENUITEM "Load Content", ID_M_LOAD_CONTENT
+        MENUITEM "Load Core...", ID_M_LOAD_CORE
+        MENUITEM "Load Content...", ID_M_LOAD_CONTENT
         MENUITEM SEPARATOR
         MENUITEM "Close", ID_M_QUIT
     }
