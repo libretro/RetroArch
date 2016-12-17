@@ -159,26 +159,6 @@ char *path_remove_extension(char *path)
 }
 
 /**
- * path_contains_compressed_file:
- * @path               : path
- *
- * Checks if path contains a compressed file.
- *
- * Currently we only check for a hash symbol (#) inside the pathname
- * that is preceded by an archive extension. If path is ever expanded
- * to a general URI, we should check for that here.
- *
- * Example:  Somewhere in the path there might be a compressed file
- * E.g.: /path/to/file.7z#mygame.img
- *
- * Returns: true (1) if path contains compressed file, otherwise false (0).
- **/
-bool path_contains_compressed_file(const char *path)
-{
-   return path_get_archive_delim(path) != NULL;
-}
-
-/**
  * path_is_compressed_file:
  * @path               : path
  *
@@ -190,11 +170,9 @@ bool path_is_compressed_file(const char* path)
 {
    const char *ext = path_get_extension(path);
 
-   if (string_is_equal_noncase(ext, "zip") ||
-             string_is_equal_noncase(ext, "apk"))
-      return true;
-
-   if (string_is_equal_noncase(ext, "7z"))
+   if (     string_is_equal_noncase(ext, "zip") 
+         || string_is_equal_noncase(ext, "apk")
+         || string_is_equal_noncase(ext, "7z"))
       return true;
 
    return false;
@@ -307,6 +285,9 @@ void fill_pathname_slash(char *path, size_t size)
    if (last_slash && (last_slash != (path + path_len - 1)))
    {
       char join_str[2];
+
+      join_str[0] = '\0';
+
       strlcpy(join_str, last_slash, sizeof(join_str));
       retro_assert(strlcat(path, join_str, size) < size);
    }
@@ -510,15 +491,13 @@ void path_parent_dir(char *path)
  **/
 const char *path_basename(const char *path)
 {
-   /* We cut either at the first compression-related hash or the last slash; whichever comes last */
-   const char *last = find_last_slash(path);
-
-#ifdef HAVE_COMPRESSION
+   /* We cut either at the first compression-related hash 
+    * or the last slash; whichever comes last */
+   const char *last  = find_last_slash(path);
    const char *delim = path_get_archive_delim(path);
 
    if (delim)
       return delim + 1;
-#endif
 
    if (last)
       return last + 1;
@@ -540,8 +519,10 @@ bool path_is_absolute(const char *path)
       return true;
 #ifdef _WIN32
    /* Many roads lead to Rome ... */
-   if ((strstr(path, "\\\\") == path)
-         || strstr(path, ":/") || strstr(path, ":\\") || strstr(path, ":\\\\"))
+   if ((    strstr(path, "\\\\") == path)
+         || strstr(path, ":/") 
+         || strstr(path, ":\\") 
+         || strstr(path, ":\\\\"))
       return true;
 #endif
    return false;

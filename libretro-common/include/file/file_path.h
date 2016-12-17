@@ -72,7 +72,7 @@ bool path_is_compressed_file(const char *path);
  *
  * Returns: true (1) if path contains compressed file, otherwise false (0).
  **/
-bool path_contains_compressed_file(const char *path);
+#define path_contains_compressed_file(path) (path_get_archive_delim((path)) != NULL)
 
 /**
  * path_file_exists:
