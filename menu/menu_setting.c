@@ -2951,13 +2951,13 @@ static bool setting_append_list(
             bool_entries[0].name_enum_idx  = MENU_ENUM_LABEL_SORT_SAVEFILES_ENABLE;
             bool_entries[0].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE;
             bool_entries[0].default_value  = default_sort_savefiles_enable;
-            bool_entries[0].flags          = SD_FLAG_NONE;
+            bool_entries[0].flags          = SD_FLAG_ADVANCED;
 
             bool_entries[1].target         = &settings->sort_savestates_enable;
             bool_entries[1].name_enum_idx  = MENU_ENUM_LABEL_SORT_SAVESTATES_ENABLE;
             bool_entries[1].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE;
             bool_entries[1].default_value  = default_sort_savestates_enable;
-            bool_entries[1].flags          = SD_FLAG_NONE;
+            bool_entries[1].flags          = SD_FLAG_ADVANCED;
 
             bool_entries[2].target         = &settings->block_sram_overwrite;
             bool_entries[2].name_enum_idx  = MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE;
