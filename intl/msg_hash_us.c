@@ -1605,6 +1605,10 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Shows current core inside menu.");
          break;
+      case MENU_ENUM_LABEL_HELP_ENABLE:
+         snprintf(s, len,
+               "Shows Help inside menu.");
+         break;
       case MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST:
          snprintf(s, len,
                "Enables Netplay in host (server) mode.");

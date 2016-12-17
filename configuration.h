@@ -126,6 +126,7 @@ typedef struct settings
       bool pause_libretro;
       bool timedate_enable;
       bool core_enable;
+      bool help_enable;
       bool dynamic_wallpaper_enable;
       unsigned thumbnails;
       bool throttle;
