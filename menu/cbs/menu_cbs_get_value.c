@@ -1603,7 +1603,7 @@ static void menu_action_setting_disp_set_label_setting_path(file_list_t* list,
       char *s2, size_t len2)
 {
    rarch_setting_t *setting = menu_setting_find(list->list[i].label);
-   const char *basename     = setting ? path_basename(setting->value.target.string) : NULL;
+   const char *basename     = setting ? path_basename_special(setting->value.target.string) : NULL;
 
    *w = 19;
 
