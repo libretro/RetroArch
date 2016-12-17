@@ -521,6 +521,8 @@ static void netplay_frontend_paused(netplay_t *netplay, bool paused)
  **/
 bool netplay_pre_frame(netplay_t *netplay)
 {
+   bool sync_stalled;
+
    retro_assert(netplay);
 
    /* FIXME: This is an ugly way to learn we're not paused anymore */
@@ -556,11 +558,18 @@ bool netplay_pre_frame(netplay_t *netplay)
       }
    }
 
-   if (!netplay_sync_pre_frame(netplay))
-      return false;
+   sync_stalled = !netplay_sync_pre_frame(netplay);
 
-   return (!netplay->connected_players ||
-           (!netplay->stall && !netplay->remote_paused));
+   if (sync_stalled ||
+       (netplay->connected_players &&
+        (netplay->stall || netplay->remote_paused)))
+   {
+      /* We may have received data even if we're stalled, so run post-frame
+       * sync */
+      netplay_sync_post_frame(netplay, true);
+      return false;
+   }
+   return true;
 }
 
 /**
@@ -576,7 +585,7 @@ void netplay_post_frame(netplay_t *netplay)
    size_t i;
    retro_assert(netplay);
    netplay_update_unread_ptr(netplay);
-   netplay_sync_post_frame(netplay);
+   netplay_sync_post_frame(netplay, false);
 
    for (i = 0; i < netplay->connections_size; i++)
    {

@@ -777,10 +777,11 @@ bool netplay_sync_pre_frame(netplay_t *netplay);
 /**
  * netplay_sync_post_frame
  * @netplay              : pointer to netplay object
+ * @stalled              : true if we're currently stalled
  *
  * Post-frame for Netplay synchronization.
  * We check if we have new input and replay from recorded input.
  */
-void netplay_sync_post_frame(netplay_t *netplay);
+void netplay_sync_post_frame(netplay_t *netplay, bool stalled);
 
 #endif

@@ -342,10 +342,14 @@ process:
  * Post-frame for Netplay synchronization.
  * We check if we have new input and replay from recorded input.
  */
-void netplay_sync_post_frame(netplay_t *netplay)
+void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
 {
-   netplay->self_ptr = NEXT_PTR(netplay->self_ptr);
-   netplay->self_frame_count++;
+   /* Unless we're stalling, we've just finished running a frame */
+   if (!stalled)
+   {
+      netplay->self_ptr = NEXT_PTR(netplay->self_ptr);
+      netplay->self_frame_count++;
+   }
 
    /* Only relevant if we're connected */
    if ((netplay->is_server && !netplay->connected_players) ||
@@ -504,21 +508,5 @@ void netplay_sync_post_frame(netplay_t *netplay)
          input_driver_set_nonblock_state();
          driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
       }
-   }
-
-   /* If we're supposed to stall, rewind (we shouldn't get this far if we're
-    * stalled, so this is a last resort) */
-   if (netplay->stall)
-   {
-      retro_ctx_serialize_info_t serial_info;
-
-      netplay->self_ptr = PREV_PTR(netplay->self_ptr);
-      netplay->self_frame_count--;
-
-      serial_info.data       = NULL;
-      serial_info.data_const = netplay->buffer[netplay->self_ptr].state;
-      serial_info.size       = netplay->state_size;
-
-      core_unserialize(&serial_info);
    }
 }
