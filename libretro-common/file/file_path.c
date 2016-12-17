@@ -98,11 +98,9 @@ end:
  */
 const char *path_get_archive_delim(const char *path)
 {
-#ifdef HAVE_COMPRESSION
    const char *last = find_last_slash(path);
    const char *delim = NULL;
 
-#ifdef HAVE_ZLIB
    if (last)
    {
       delim = strcasestr(last, ".zip#");
@@ -113,17 +111,12 @@ const char *path_get_archive_delim(const char *path)
 
    if (delim)
       return delim + 4;
-#endif
 
-#ifdef HAVE_7ZIP
    if (last)
       delim = strcasestr(last, ".7z#");
 
    if (delim)
       return delim + 3;
-#endif
-
-#endif
 
    return NULL;
 }
@@ -195,21 +188,14 @@ bool path_contains_compressed_file(const char *path)
  **/
 bool path_is_compressed_file(const char* path)
 {
-#ifdef HAVE_COMPRESSION
    const char *ext = path_get_extension(path);
 
-#ifdef HAVE_ZLIB
    if (string_is_equal_noncase(ext, "zip") ||
              string_is_equal_noncase(ext, "apk"))
       return true;
-#endif
 
-#ifdef HAVE_7ZIP
    if (string_is_equal_noncase(ext, "7z"))
       return true;
-#endif
-
-#endif
 
    return false;
 }
