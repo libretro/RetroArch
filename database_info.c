@@ -425,8 +425,8 @@ database_info_handle_t *database_info_dir_init(const char *dir,
 
          if (path_is_compressed_file(path) && !path_contains_compressed_file(path))
          {
-            struct string_list *archive_list =
-                  file_archive_get_file_list(path, NULL);
+            struct string_list *archive_list = path_is_compressed_file(path) ?
+                  file_archive_get_file_list(path, NULL) : NULL;
 
             if (archive_list && archive_list->size > 0)
             {
@@ -487,8 +487,8 @@ database_info_handle_t *database_info_file_init(const char *path,
 
    if (path_is_compressed_file(path))
    {
-      struct string_list *archive_list =
-            file_archive_get_file_list(path, NULL);
+      struct string_list *archive_list =path_is_compressed_file(path) ?
+            file_archive_get_file_list(path, NULL) : NULL;
 
       if (archive_list && archive_list->size > 0)
       {

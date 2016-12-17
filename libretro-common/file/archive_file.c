@@ -575,13 +575,6 @@ struct string_list *file_archive_get_file_list(const char *path,
 {
    struct archive_extract_userdata userdata = {{0}};
 
-#ifdef HAVE_COMPRESSION
-   if (!path_is_compressed_file(path))
-      return NULL;
-#else
-   return NULL;
-#endif
-
    userdata.list_only = true;
    strlcpy(userdata.archive_path, path, sizeof(userdata.archive_path));
 
