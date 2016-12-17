@@ -136,6 +136,13 @@ error:
    return -1;
 }
 
+void handle_xkb_state_mask(uint32_t depressed, uint32_t latched, uint32_t locked, uint32_t group)
+{
+   if (!xkb_state)
+      return;
+   xkb_state_update_mask(xkb_state, depressed, latched, locked, 0, 0, group);
+}
+
 /* FIXME: Don't handle composed and dead-keys properly. 
  * Waiting for support in libxkbcommon ... */
 int handle_xkb(int code, int value)

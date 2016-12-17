@@ -107,6 +107,7 @@ static enum gfx_ctx_api wl_api   = GFX_CTX_NONE;
 /* FIXME: Move this into a header? */
 int init_xkb(int fd, size_t size);
 int handle_xkb(int code, int value);
+void handle_xkb_state_mask(uint32_t depressed, uint32_t latched, uint32_t locked, uint32_t group);
 void free_xkb(void);
 #endif
 
@@ -176,7 +177,7 @@ static void keyboard_handle_key(void *data,
    }
 
 #ifdef HAVE_XKBCOMMON
-   if (handle_xkb(key, state) == 0)
+   if (handle_xkb(key, value) == 0)
       return;
 #endif
    input_keyboard_event(value,
@@ -195,10 +196,14 @@ static void keyboard_handle_modifiers(void *data,
    (void)data;
    (void)keyboard;
    (void)serial;
+#ifdef HAVE_XKBCOMMON
+   handle_xkb_state_mask(modsDepressed, modsLatched, modsLocked, group);
+#else
    (void)modsDepressed;
    (void)modsLatched;
    (void)modsLocked;
    (void)group;
+#endif
 }
 
 static void keyboard_handle_repeat_info(void *data,
