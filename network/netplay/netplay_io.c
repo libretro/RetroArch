@@ -26,7 +26,7 @@
 
 #include "../../runloop.h"
 
-#if 1
+#if 0
 #define DEBUG_NETPLAY_STEPS 1
 
 static void print_state(netplay_t *netplay)
@@ -50,6 +50,9 @@ static void print_state(netplay_t *netplay)
    msg[sizeof(msg)-1] = '\0';
 
    RARCH_LOG("%s\n", msg);
+
+#undef APPEND
+#undef M
 }
 #endif
 
@@ -1239,12 +1242,7 @@ int netplay_poll_net_input(netplay_t *netplay, bool block)
          netplay_update_unread_ptr(netplay);
          if (!netplay_delta_frame_ready(netplay,
                &netplay->buffer[netplay->unread_ptr], netplay->unread_frame_count))
-         {
-            fprintf(stderr, "CATASTROPHE: Cannot load %u (%lu=%u) while at %u (%lu)\n",
-                  netplay->unread_frame_count, netplay->unread_ptr, netplay->buffer[netplay->unread_ptr].frame,
-                  netplay->self_frame_count, netplay->self_ptr);
             break;
-         }
       }
 
       /* Read input from each connection */
