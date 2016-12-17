@@ -385,6 +385,13 @@
 					</File>
 				</Filter>
 				<Filter
+					Name="compat"
+					Filter="">
+					<File
+						RelativePath="..\..\libretro-common\compat\compat_strcasestr.c">
+					</File>
+				</Filter>
+				<Filter
 					Name="file"
 					Filter="">
 					<File
