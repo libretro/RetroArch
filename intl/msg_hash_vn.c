@@ -1,4 +1,4 @@
-/*  RetroArch - A frontend for libretro.
+﻿/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2016 - Daniel De Matteis
  *  Copyright (C) 2016 - Brad Parker
  *
@@ -23,6 +23,11 @@
 #include "../msg_hash.h"
 #include "../configuration.h"
 #include "../verbosity.h"
+
+#if defined(_MSC_VER) && !defined(_XBOX)
+/* https://support.microsoft.com/en-us/kb/980263 */
+#pragma execution_character_set("utf-8")
+#endif
 
 int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
@@ -1527,7 +1532,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len, "Enable touch input inside the menu.");
          break;
       case MENU_ENUM_LABEL_MENU_WALLPAPER:
-         snprintf(s, len, "Path to an image to set as menu wallpaper.");
+         snprintf(s, len, "Path to an image to set as the background.");
          break;
       case MENU_ENUM_LABEL_NAVIGATION_WRAPAROUND:
          snprintf(s, len,
@@ -1986,7 +1991,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS:
          return "Audio";
       case MENU_ENUM_LABEL_VALUE_AUDIO_SYNC:
-         return "Audio Sync Enable";
+         return "Audio Sync";
       case MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME:
          return "Audio Volume Level (dB)";
       case MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL:
@@ -2162,8 +2167,8 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Database Selection";
       case MENU_ENUM_LABEL_VALUE_DELETE_ENTRY:
          return "Remove";
-      case MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST:
-         return "Select File And Detect Core";
+      case MENU_ENUM_LABEL_VALUE_FAVORITES:
+         return "Favorites";
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT:
          return "<Content dir>";
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT:
@@ -2202,9 +2207,9 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
 /* FIXME? Translate 'Load Dummy on Core Shutdown' */
          return "Load Dummy on Core Shutdown";
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER:
-         return "Dynamic Wallpaper";
+         return "Dynamic Background";
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
-         return "Dynamic Wallpapers Dir";
+         return "Dynamic Background Dir";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE:
          return "Enable";
       case MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR:
@@ -2252,7 +2257,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU:
          return "Horizontal Menu";
       case MENU_ENUM_LABEL_VALUE_IMAGES_TAB:
-         return "Images";
+         return "Image";
       case MENU_ENUM_LABEL_VALUE_INFORMATION:
          return "Information";
       case MENU_ENUM_LABEL_VALUE_INFORMATION_LIST:
@@ -2497,8 +2502,6 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Linear";
       case MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE:
          return "Tải Archive With Core";
-      case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT:
-         return "Select File";
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY:
          return "Tải Recent";
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST:
@@ -2548,9 +2551,9 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_MENU_SETTINGS:
          return "Menu";
       case MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER:
-         return "Menu Wallpaper";
+         return "Background";
       case MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY:
-         return "Wallpaper opacity";
+         return "Background opacity";
       case MENU_ENUM_LABEL_VALUE_MISSING:
          return "Missing";
       case MENU_ENUM_LABEL_VALUE_MORE:
@@ -2846,7 +2849,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION:
          return "Screen Resolution";
       case MENU_ENUM_LABEL_VALUE_SEARCH:
-         return "Search:";
+         return "Search";
       case MENU_ENUM_LABEL_VALUE_SECONDS:
          return "seconds";
       case MENU_ENUM_LABEL_VALUE_SETTINGS:

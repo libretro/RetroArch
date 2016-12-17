@@ -98,11 +98,9 @@ end:
  */
 const char *path_get_archive_delim(const char *path)
 {
-#ifdef HAVE_COMPRESSION
    const char *last = find_last_slash(path);
    const char *delim = NULL;
 
-#ifdef HAVE_ZLIB
    if (last)
    {
       delim = strcasestr(last, ".zip#");
@@ -113,17 +111,12 @@ const char *path_get_archive_delim(const char *path)
 
    if (delim)
       return delim + 4;
-#endif
 
-#ifdef HAVE_7ZIP
    if (last)
       delim = strcasestr(last, ".7z#");
 
    if (delim)
       return delim + 3;
-#endif
-
-#endif
 
    return NULL;
 }
@@ -195,21 +188,14 @@ bool path_contains_compressed_file(const char *path)
  **/
 bool path_is_compressed_file(const char* path)
 {
-#ifdef HAVE_COMPRESSION
    const char *ext = path_get_extension(path);
 
-#ifdef HAVE_ZLIB
    if (string_is_equal_noncase(ext, "zip") ||
              string_is_equal_noncase(ext, "apk"))
       return true;
-#endif
 
-#ifdef HAVE_7ZIP
    if (string_is_equal_noncase(ext, "7z"))
       return true;
-#endif
-
-#endif
 
    return false;
 }
@@ -491,13 +477,6 @@ void path_basedir(char *path)
    if (strlen(path) < 2)
       return;
 
-#ifdef HAVE_COMPRESSION
-   /* We want to find the directory with the archive in basedir. */
-   last = (char*)path_get_archive_delim(path);
-   if (last)
-      *last = '\0';
-#endif
-
    last = find_last_slash(path);
 
    if (last)
@@ -735,32 +714,13 @@ void fill_short_pathname_representation(char* out_rep,
       const char *in_path, size_t size)
 {
    char path_short[PATH_MAX_LENGTH];
-#ifdef HAVE_COMPRESSION
-   char *last_slash                  = NULL;
-#endif
 
    path_short[0] = '\0';
 
    fill_pathname(path_short, path_basename(in_path), "",
             sizeof(path_short));
 
-#ifdef HAVE_COMPRESSION
-   last_slash  = find_last_slash(path_short);
-   if (last_slash != NULL)
-   {
-      /* We handle paths like:
-       * /path/to/file.7z#mygame.img
-       * short_name: mygame.img:
-       *
-       * We check whether something is actually
-       * after the hash to avoid going over the buffer.
-       */
-      retro_assert(strlen(last_slash) > 1);
-      strlcpy(out_rep, last_slash + 1, size);
-   }
-   else
-#endif
-      strlcpy(out_rep, path_short, size);
+   strlcpy(out_rep, path_short, size);
 }
 
 void fill_short_pathname_representation_noext(char* out_rep,

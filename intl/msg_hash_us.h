@@ -209,7 +209,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
-      "Audio Sync Enable"
+      "Audio Sync"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
@@ -488,8 +488,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_SELECTION,
       "Database Selection")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
       "Remove")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST,
-      "Select File And Detect Core")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_FAVORITES,
+      "Favorites")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
       "<Content dir>")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
@@ -527,9 +527,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE,
       "Check for Missing Firmware Before Loading")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,
-      "Dynamic Wallpaper")
+      "Dynamic Background")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
-      "Dynamic Wallpapers")
+      "Dynamic Backgrounds")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
       "Enable Achievements")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR,
@@ -577,7 +577,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU,
       "Horizontal Menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
-      "Images")
+      "Image")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INFORMATION,
       "Information")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
@@ -826,8 +826,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_LINEAR,
       "Linear")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
       "Load Archive With Core")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT,
-      "Select File")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
       "Load Recent")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
@@ -877,9 +875,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
       "Menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
-      "Menu Wallpaper")
+      "Background")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
-      "Wallpaper opacity")
+      "Background opacity")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MISSING,
       "Missing")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MORE,
@@ -1189,7 +1187,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
       "Screen Resolution")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SEARCH,
-      "Search:")
+      "Search")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SECONDS,
       "seconds")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS,
@@ -1619,7 +1617,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_HISTORY,
       "Show History Tab")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_IMAGES,
-      "Show Images Tab")
+      "Show Image Tab")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_MUSIC,
       "Show Music Tab")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_SETTINGS,
@@ -1632,6 +1630,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_YES,
       "Yes")
 MSG_HASH(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
       "Shader Preset")
+MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
+      "Enable or disable achievements. For more information, visit http://retroachievements.org")
+MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
+      "Enable or disable unofficial achievements and/or beta features for testing purposes.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
       "Enable or disable savestates, cheats, rewind, fast-forward, pause, and slow-motion for all games.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
@@ -2265,3 +2267,19 @@ MSG_HASH(MSG_NETPLAY_LAN_SCAN_COMPLETE,
       "Netplay scan complete.")
 MSG_HASH(MSG_NETPLAY_LAN_SCANNING,
       "Scanning for netplay hosts...")
+MSG_HASH(MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
+      "Pause gameplay when window focus is lost.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
+      "Enable or disable composition (Windows only).")
+MSG_HASH(MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
+      "Enable or disable recent playlist for games, images, music, and videos.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
+      "Limit the number of entries in recent playlist for games, images, music, and videos.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
+      "Unified Menu Controls")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
+      "Use the same controls for both the menu and the game. Applies to the keyboard.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
+      "Show onscreen messages.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETWORK_USER_REMOTE_ENABLE,
+      "User %d Remote Enable")

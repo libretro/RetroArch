@@ -32,7 +32,7 @@ addons:
       - curl
       - pkg-config
       - libglu1-mesa-dev
-      - freeglut3-mesa
+      - freeglut3-dev
       - mesa-common-dev
       - libsdl1.2-dev
       - libsdl-image1.2-dev

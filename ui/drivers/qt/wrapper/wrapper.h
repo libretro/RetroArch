@@ -17,8 +17,6 @@
 #define HAVE_MENU
 #endif
 
-#include <retro_common_api.h>
-
 #include "config.h"
 #include "configuration.h"
 

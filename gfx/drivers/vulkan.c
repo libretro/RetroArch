@@ -208,20 +208,20 @@ static void vulkan_init_pipelines(
 #include "vulkan_shaders/font.frag.inc"
       ;
 
-   static const uint32_t ribbon_vert[] =
-#include "vulkan_shaders/ribbon.vert.inc"
+   static const uint32_t pipeline_ribbon_vert[] =
+#include "vulkan_shaders/pipeline_ribbon.vert.inc"
       ;
 
-   static const uint32_t ribbon_frag[] =
-#include "vulkan_shaders/ribbon.frag.inc"
+   static const uint32_t pipeline_ribbon_frag[] =
+#include "vulkan_shaders/pipeline_ribbon.frag.inc"
       ;
 
-   static const uint32_t ribbon_simple_vert[] =
-#include "vulkan_shaders/ribbon_simple.vert.inc"
+   static const uint32_t pipeline_ribbon_simple_vert[] =
+#include "vulkan_shaders/pipeline_ribbon_simple.vert.inc"
       ;
 
-   static const uint32_t ribbon_simple_frag[] =
-#include "vulkan_shaders/ribbon_simple.frag.inc"
+   static const uint32_t pipeline_ribbon_simple_frag[] =
+#include "vulkan_shaders/pipeline_ribbon_simple.frag.inc"
       ;
 
    unsigned i;
@@ -393,13 +393,13 @@ static void vulkan_init_pipelines(
    {
       if (i & 2)
       {
-         module_info.codeSize   = sizeof(ribbon_simple_vert);
-         module_info.pCode      = ribbon_simple_vert;
+         module_info.codeSize   = sizeof(pipeline_ribbon_simple_vert);
+         module_info.pCode      = pipeline_ribbon_simple_vert;
       }
       else
       {
-         module_info.codeSize   = sizeof(ribbon_vert);
-         module_info.pCode      = ribbon_vert;
+         module_info.codeSize   = sizeof(pipeline_ribbon_vert);
+         module_info.pCode      = pipeline_ribbon_vert;
       }
 
       shader_stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -409,13 +409,13 @@ static void vulkan_init_pipelines(
 
       if (i & 2)
       {
-         module_info.codeSize   = sizeof(ribbon_simple_frag);
-         module_info.pCode      = ribbon_simple_frag;
+         module_info.codeSize   = sizeof(pipeline_ribbon_simple_frag);
+         module_info.pCode      = pipeline_ribbon_simple_frag;
       }
       else
       {
-         module_info.codeSize   = sizeof(ribbon_frag);
-         module_info.pCode      = ribbon_frag;
+         module_info.codeSize   = sizeof(pipeline_ribbon_frag);
+         module_info.pCode      = pipeline_ribbon_frag;
       }
 
       shader_stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -1282,7 +1282,7 @@ static void vulkan_set_rotation(void *data, unsigned rotation)
    if (!vk)
       return;
 
-   vk->rotation = 90 * rotation;
+   vk->rotation = 270 * rotation;
    vulkan_set_projection(vk, &ortho, true);
 }
 

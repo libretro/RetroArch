@@ -58,9 +58,11 @@
 #include "../../defaults.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
+#include "../../paths.h"
 #include "platform_linux.h"
 
 #ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
 #include "../../menu/menu_display.h"
 #include "../../menu/menu_entries.h"
 #endif
@@ -1857,24 +1859,29 @@ static int frontend_linux_parse_drive_list(void *data)
    menu_entries_append_enum(list,
          app_dir,
          msg_hash_to_str(MSG_APPLICATION_DIR),
-         MSG_APPLICATION_DIR, FILE_TYPE_DIRECTORY, 0, 0);
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(list,
          internal_storage_app_path,
          msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
-         MSG_EXTERNAL_APPLICATION_DIR,
-         FILE_TYPE_DIRECTORY, 0, 0);
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(list,
          internal_storage_path,
          msg_hash_to_str(MSG_INTERNAL_STORAGE),
-         MSG_INTERNAL_STORAGE, FILE_TYPE_DIRECTORY, 0, 0);
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(list,
          "/storage",
          msg_hash_to_str(MSG_REMOVABLE_STORAGE),
-         MSG_REMOVABLE_STORAGE, FILE_TYPE_DIRECTORY, 0, 0);
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
 #endif
 
-   menu_entries_append_enum(list, "/", "",
-         MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+   menu_entries_append_enum(list, "/",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
 #endif
 
    return 0;
@@ -1901,7 +1908,7 @@ static bool frontend_linux_set_fork(enum frontend_fork fork_mode)
          {
             char executable_path[PATH_MAX_LENGTH] = {0};
             fill_pathname_application_path(executable_path, sizeof(executable_path));
-            config_set_active_core_path(executable_path);
+            path_set(RARCH_PATH_CORE, executable_path);
          }
          command_event(CMD_EVENT_QUIT, NULL);
          break;

@@ -917,7 +917,7 @@ static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/apple/
 #elif defined(_WIN32) && !defined(_XBOX)
 #if defined(__x86_64__)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/win-x86_64/latest/";
-#elif defined(__i386__) || defined(__i486__) || defined(__i686__)
+#elif defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_IX86) || defined(_M_IA64)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/win-x86/latest/";
 #endif
 #elif defined(__linux__)

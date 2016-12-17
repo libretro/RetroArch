@@ -315,6 +315,10 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
             return true;
 #endif
          break;
+      case GL_CAPS_TEX_STORAGE_EXT:
+         if (gl_query_extension("EXT_texture_storage"))
+            return true;
+         break;
       case GL_CAPS_NONE:
       default:
          break;

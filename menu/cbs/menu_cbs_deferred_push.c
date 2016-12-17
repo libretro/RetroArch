@@ -533,12 +533,13 @@ static int general_push(menu_displaylist_info_t *info,
             strlcpy(info->exts, list->all_ext, sizeof(info->exts));
          else if (system_menu->valid_extensions)
          {
-            if (*system_menu->valid_extensions)
+            if (!string_is_empty(system_menu->valid_extensions))
                strlcpy(info->exts, system_menu->valid_extensions,
                      sizeof(info->exts));
          }
          else
             strlcpy(info->exts, system->valid_extensions, sizeof(info->exts));
+
          break;
       case PUSH_ARCHIVE_OPEN:
          if (system_menu->valid_extensions)
@@ -567,8 +568,14 @@ static int general_push(menu_displaylist_info_t *info,
          }
          break;
       case PUSH_DETECT_CORE_LIST:
-         if (!string_is_empty(list->all_ext))
+         if (list && !string_is_empty(list->all_ext))
             strlcpy(info->exts, list->all_ext, sizeof(info->exts));
+         else if (system_menu->valid_extensions)
+         {
+            if (!string_is_empty(system_menu->valid_extensions))
+               strlcpy(info->exts, system_menu->valid_extensions,
+                     sizeof(info->exts));
+         }
          break;
    }
 
@@ -1111,7 +1118,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_settings_list);
                break;
             case MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
-            case MENU_ENUM_LABEL_DETECT_CORE_LIST:
+            case MENU_ENUM_LABEL_FAVORITES:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_detect_core_list);
                break;
             default:
@@ -1341,7 +1348,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_history_path);
                break;
             case MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
-            case MENU_LABEL_DETECT_CORE_LIST:
+            case MENU_LABEL_FAVORITES:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_detect_core_list);
                break;
             default:

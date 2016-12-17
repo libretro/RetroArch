@@ -773,6 +773,7 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("video_vfilter",                 &settings->video.vfilter, true, video_vfilter, false);
 #endif
 #ifdef HAVE_MENU
+   SETTING_BOOL("menu_unified_controls",         &settings->menu.unified_controls, true, false, false);
 #ifdef HAVE_THREADS
    SETTING_BOOL("threaded_data_runloop_enable",  &settings->threaded_data_runloop_enable, true, threaded_data_runloop_enable, false);
 #endif
@@ -2173,6 +2174,7 @@ static bool config_load_file(const char *path, bool set_defaults,
       {
          if (!check_shader_compatibility((enum file_path_enum)i))
          {
+            /* TODO/FIXME - this check is always triggered even with an empty shader path */
             RARCH_LOG("Incompatible shader for backend %s, clearing...\n", settings->video.driver);
             settings->path.shader[0] = '\0';
             break;
@@ -2347,18 +2349,16 @@ bool config_unload_override(void)
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_SAVE_PATH,  NULL);
 
-   if (config_load_file(path_get(RARCH_PATH_CONFIG), false, config_get_ptr()))
-   {
-      RARCH_LOG("[overrides] configuration overrides unloaded, original configuration restored.\n");
+   if (!config_load_file(path_get(RARCH_PATH_CONFIG), false, config_get_ptr()))
+      return false;
 
-      /* Reset save paths */
-      retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
-      retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL);
+   RARCH_LOG("[overrides] configuration overrides unloaded, original configuration restored.\n");
 
-      return true;
-   }
+   /* Reset save paths */
+   retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
+   retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL);
 
-   return false;
+   return true;
 }
 
 /**

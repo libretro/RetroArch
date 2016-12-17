@@ -28,16 +28,12 @@ static const char *qnx_joypad_name(unsigned pad)
 static bool qnx_joypad_init(void *data)
 {
    unsigned autoconf_pad;
-   settings_t *settings = config_get_ptr();
 
    (void)data;
 
    for (autoconf_pad = 0; autoconf_pad < MAX_USERS; autoconf_pad++)
    {
       autoconfig_params_t params = {{0}};
-
-      strlcpy(settings->input.device_names[autoconf_pad], "None",
-            sizeof(settings->input.device_names[autoconf_pad]));
 
       /* TODO - implement VID/PID? */
       params.idx = autoconf_pad;

@@ -45,13 +45,12 @@ typedef struct sdl_input
 
 static void *sdl_input_init(void)
 {
-   settings_t *settings;
-   sdl_input_t *sdl;
-   input_keymaps_init_keyboard_lut(rarch_key_map_sdl);
-   settings = config_get_ptr();
-   sdl = (sdl_input_t*)calloc(1, sizeof(*sdl));
+   settings_t *settings = config_get_ptr();
+   sdl_input_t     *sdl = (sdl_input_t*)calloc(1, sizeof(*sdl));
    if (!sdl)
       return NULL;
+
+   input_keymaps_init_keyboard_lut(rarch_key_map_sdl);
 
    sdl->joypad = input_joypad_init_driver(settings->input.joypad_driver, sdl);
 

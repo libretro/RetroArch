@@ -480,8 +480,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_SELECTION,
       "Database Selection")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
       "Remove")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST,
-      "Via les fichiers (détecter le coeur)")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_FAVORITES,
+      "Via les fichiers") /* TODO/FIXME - update */
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
       "<Dossier de contenu>")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
@@ -567,7 +567,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU,
       "Horizontal Menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
-      "Images")
+      "Image")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INFORMATION,
       "Information")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
@@ -812,8 +812,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_LINEAR,
       "Linéaire")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
       "Charger l'archive")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT,
-      "Via les fichiers")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
       "Récemment ouvert")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
@@ -865,7 +863,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
       "Fond d'écran")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
-      "Wallpaper opacity")
+      "Background opacity")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MISSING,
       "Manquant")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MORE,
@@ -1569,7 +1567,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_HISTORY,
       "Show History Tab")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_IMAGES,
-      "Show Images Tab")
+      "Show Image Tab")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_MUSIC,
       "Show Music Tab")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_SETTINGS,
@@ -1582,6 +1580,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_YES,
       "Oui")
 MSG_HASH(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
       "Shader Preset")
+MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
+      "Enable or disable achievements. For more information, visit http://retroachievements.org")
+MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
+      "Enable or disable unofficial achievements and/or beta features for testing purposes.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
       "Enable or disable savestates, cheats, rewind, fast-forward, pause, and slow-motion for all games.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
@@ -2199,3 +2201,17 @@ MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_RATING,
       "Database - Filter : Edge Magazine Rating")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DATABASE_INFO,
       "Database Info")
+MSG_HASH(MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
+      "Pause gameplay when window focus is lost.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
+      "Enable or disable composition (Windows only).")
+MSG_HASH(MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
+      "Enable or disable recent playlist for games, images, music, and videos.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
+      "Limit the number of entries in recent playlist for games, images, music, and videos.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
+      "Unified Menu Controls")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
+      "Use the same controls for both the menu and the game. Applies to the keyboard.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
+      "Show onscreen messages.")

@@ -258,10 +258,6 @@ static bool xinput_joypad_init(void *data)
       {
          autoconfig_params_t params = {{0}};
 
-         strlcpy(settings->input.device_names[autoconf_pad],
-               xinput_joypad_name(autoconf_pad),
-               sizeof(settings->input.device_names[autoconf_pad]));
-
          /* TODO - implement VID/PID? */
          params.idx = autoconf_pad;
          strlcpy(params.name, xinput_joypad_name(autoconf_pad), sizeof(params.name));
@@ -318,14 +314,11 @@ static const uint16_t button_index_to_bitmap_code[] =  {
 
 static bool xinput_joypad_button(unsigned port_num, uint16_t joykey)
 {
-   uint16_t btn_word;
-   int xuser;
+   uint16_t btn_word    = 0;
    unsigned num_buttons = 0;
+   unsigned hat_dir     = 0;
+   int xuser            = pad_index_to_xuser_index(port_num);
 
-   if (joykey == NO_BTN)
-      return false;
-
-   xuser = pad_index_to_xuser_index(port_num);
    if (xuser == -1)
       return dinput_joypad.button(port_num, joykey);
 
@@ -333,10 +326,11 @@ static bool xinput_joypad_button(unsigned port_num, uint16_t joykey)
       return false;
 
    btn_word = g_xinput_states[xuser].xstate.Gamepad.wButtons;
+   hat_dir  = GET_HAT_DIR(joykey);
 
-   if (GET_HAT_DIR(joykey))
+   if (hat_dir)
    {
-      switch (GET_HAT_DIR(joykey))
+      switch (hat_dir)
       {
          case HAT_UP_MASK:
             return btn_word & XINPUT_GAMEPAD_DPAD_UP;
@@ -347,6 +341,7 @@ static bool xinput_joypad_button(unsigned port_num, uint16_t joykey)
          case HAT_RIGHT_MASK:
             return btn_word & XINPUT_GAMEPAD_DPAD_RIGHT;
       }
+
       return false; /* hat requested and no hat button down. */
    }
 

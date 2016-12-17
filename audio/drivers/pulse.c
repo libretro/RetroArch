@@ -125,6 +125,7 @@ static void stream_latency_update_cb(pa_stream *s, void *data)
 
 static void underrun_update_cb(pa_stream *s, void *data)
 {
+#if 0
    pa_t *pa = (pa_t*)data;
 
    (void)s;
@@ -132,6 +133,7 @@ static void underrun_update_cb(pa_stream *s, void *data)
    RARCH_LOG("[PulseAudio]: Underrun (Buffer: %u, Writable size: %u).\n",
          (unsigned)pa->buffer_size,
          (unsigned)pa_stream_writable_size(pa->stream));
+#endif
 }
 
 static void buffer_attr_cb(pa_stream *s, void *data)
@@ -141,7 +143,9 @@ static void buffer_attr_cb(pa_stream *s, void *data)
    if (server_attr)
       pa->buffer_size = server_attr->tlength;
 
+#if 0
    RARCH_LOG("[PulseAudio]: Got new buffer size %u.\n", (unsigned)pa->buffer_size);
+#endif
 }
 
 static void *pulse_init(const char *device, unsigned rate, unsigned latency)

@@ -237,7 +237,7 @@ void path_set_basename(const char *path)
     * directory then and the name of srm and states are meaningful.
     *
     */
-   path_basedir(path_main_basename);
+   path_basedir_wrapper(path_main_basename);
    fill_pathname_dir(path_main_basename, path, "", sizeof(path_main_basename));
 #endif
 

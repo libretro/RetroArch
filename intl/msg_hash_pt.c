@@ -90,26 +90,6 @@ int menu_hash_get_help_pt_enum(enum msg_hash_enums msg, char *s, size_t len)
                break;
          }
          break;
-      case MENU_ENUM_LABEL_LOAD_CONTENT:
-         snprintf(s, len,
-               "Carregar Conteúdo. \n"
-               "Busca conteúdo. \n"
-               " \n"
-               "Para carregar conteúdo, você precisa de \n"
-               "um core libretro para usar, e um arquivo \n"
-               "de conteúdo. \n"
-               " \n"
-               "Para controlar onde o menu começa a \n"
-               "buscar conteúdo, defina o Diretório \n"
-               "de Navegação. Se não estiver definido, \n"
-               "o Retroarch começará no diretório raiz. \n"
-               " \n"
-               "O navegador vai filtrar pelas extensões \n"
-               "do mais recente core definido em 'Core', \n"
-               "e o usará quando o conteúdo estiver \n"
-               "carregado."
-               );
-         break;
       case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
          snprintf(s, len,
                "Carregando conteúdo do histórico. \n"
@@ -1009,7 +989,7 @@ const char *msg_hash_to_str_pt(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS:
          return "Áudio";
       case MENU_ENUM_LABEL_VALUE_AUDIO_SYNC:
-         return "Ativar Sincronismo de Áudio";
+         return "Sincronismo de Áudio";
       case MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME:
          return "Volume de Áudio (dB)";
       case MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL:
@@ -1114,8 +1094,8 @@ const char *msg_hash_to_str_pt(enum msg_hash_enums msg)
          return "Relação de Aspecto Personalizada";
       case MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER:
          return "Gerenciador de Databases";
-      case MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST:
-         return "Selecionar Arquivo e Detectar Core";
+      case MENU_ENUM_LABEL_VALUE_FAVORITES:
+         return "Selecionar Arquivo e Detectar Core"; /* TODO/FIXME - update */
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT:
          return "<Diretório de Conteúdo>";
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT:
@@ -1246,8 +1226,6 @@ const char *msg_hash_to_str_pt(enum msg_hash_enums msg)
          return "Linear";
       case MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE:
          return "Carregar Arquivo";
-      case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT:
-         return "Selecionar Arquivo";
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY:
          return "Selecionar do Histórico";
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST:

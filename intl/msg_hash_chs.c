@@ -1,4 +1,4 @@
-/*  RetroArch - A frontend for libretro.
+﻿/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2016 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -22,6 +22,11 @@
 #include "../msg_hash.h"
 #include "../configuration.h"
 #include "../verbosity.h"
+
+#if defined(_MSC_VER) && !defined(_XBOX)
+/* https://support.microsoft.com/en-us/kb/980263 */
+#pragma execution_character_set("utf-8")
+#endif
 
 int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
@@ -2116,8 +2121,8 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
          return "选择数据库";
       case MENU_ENUM_LABEL_VALUE_DELETE_ENTRY:
          return "移除";
-      case MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST:
-         return "选择文件并探测核心";
+      case MENU_ENUM_LABEL_VALUE_FAVORITES:
+         return "选择文件并探测核心"; /* TODO/FIXME - update */
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT:
          return "<游戏内容目录>";
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT:
@@ -2452,8 +2457,6 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
          return "线性";
       case MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE:
          return "使用核心加载压缩包";
-      case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT:
-         return "选择文件";
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY:
          return "加载最近的游戏内容";
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST:

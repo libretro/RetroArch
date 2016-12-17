@@ -74,6 +74,7 @@ typedef struct
    unsigned height;
    int pitch;
    bool bgr24;
+   bool silence;
    void *userbuf;
 } screenshot_task_state_t;
 
@@ -152,7 +153,7 @@ static void task_screenshot_handler(retro_task_t *task)
 #endif
 
 #ifdef HAVE_IMAGEVIEWER
-   if (ret)
+   if (ret && !state->silence)
       if (content_push_to_history_playlist(g_defaults.image_history,
                state->filename,
                "imageviewer", "builtin"))
@@ -192,6 +193,7 @@ static bool screenshot_dump(
    state->pitch   = pitch;
    state->frame   = frame;
    state->userbuf = userbuf;
+   state->silence = savestate;
 
    if (savestate)
    {

@@ -664,6 +664,7 @@ static void mui_render_label_value(mui_handle_t *mui,
          case FILE_TYPE_COMPRESSED:
          case FILE_TYPE_MORE:
          case FILE_TYPE_CORE:
+         case FILE_TYPE_DIRECT_LOAD:
          case FILE_TYPE_RDB:
          case FILE_TYPE_CURSOR:
          case FILE_TYPE_PLAIN:
@@ -673,7 +674,8 @@ static void mui_render_label_value(mui_handle_t *mui,
          case FILE_TYPE_MOVIE:
             break;
          case FILE_TYPE_BOOL_ON:
-            if (mui->textures.list[MUI_TEXTURE_SWITCH_ON]) {
+            if (mui->textures.list[MUI_TEXTURE_SWITCH_ON])
+            {
                texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_ON];
                switch_is_on = true;
             }
@@ -681,7 +683,8 @@ static void mui_render_label_value(mui_handle_t *mui,
                do_draw_text = true;
             break;
          case FILE_TYPE_BOOL_OFF:
-            if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF]) {
+            if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF])
+            {
                texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_OFF];
                switch_is_on = false;
             }
@@ -1673,21 +1676,22 @@ static int mui_list_push(void *data, void *userdata,
    {
       case DISPLAYLIST_LOAD_CONTENT_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+
+         if (frontend_driver_parse_drive_list(info->list) != 0)
+            menu_entries_append_enum(info->list, "/",
+                  msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+                  MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+                  MENU_SETTING_ACTION, 0, 0);
+
          menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT),
-               msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT),
-               MENU_ENUM_LABEL_LOAD_CONTENT,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES),
+               msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
+               MENU_ENUM_LABEL_FAVORITES,
                MENU_SETTING_ACTION, 0, 0);
 
          core_info_get_list(&list);
          if (core_info_list_num_info_files(list))
          {
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST),
-                  msg_hash_to_str(MENU_ENUM_LABEL_DETECT_CORE_LIST),
-                  MENU_ENUM_LABEL_DETECT_CORE_LIST,
-                  MENU_SETTING_ACTION, 0, 0);
-
             menu_entries_append_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
                   msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST),

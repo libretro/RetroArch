@@ -176,8 +176,7 @@ static void qnx_process_gamepad_event(
 static void qnx_input_autodetect_gamepad(qnx_input_t *qnx,
       qnx_input_device_t* controller, int port)
 {
-   char name_buf[256]   = {0};
-   settings_t *settings = config_get_ptr();
+   char name_buf[256];
 
    if (!qnx)
       return;
@@ -209,9 +208,6 @@ static void qnx_input_autodetect_gamepad(qnx_input_t *qnx,
    if (!string_is_empty(name_buf))
    {
       autoconfig_params_t params = {{0}};
-
-      strlcpy(settings->input.device_names[port],
-            name_buf, sizeof(settings->input.device_names[port]));
 
       strlcpy(params.name, name_buf, sizeof(params.name));
 

@@ -294,7 +294,7 @@ static const struct cmd_map map[] = {
    { "DISK_NEXT",              RARCH_DISK_NEXT },
    { "DISK_PREV",              RARCH_DISK_PREV },
    { "GRAB_MOUSE_TOGGLE",      RARCH_GRAB_MOUSE_TOGGLE },
-   { "GAME_FOCUS_TOGGLE",           RARCH_GAME_FOCUS_TOGGLE },
+   { "GAME_FOCUS_TOGGLE",      RARCH_GAME_FOCUS_TOGGLE },
    { "MENU_TOGGLE",            RARCH_MENU_TOGGLE },
    { "MENU_UP",                RETRO_DEVICE_ID_JOYPAD_UP },
    { "MENU_DOWN",              RETRO_DEVICE_ID_JOYPAD_DOWN },
@@ -1920,6 +1920,7 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_MENU
          menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_DEINIT, NULL);
 #endif
+         path_clear(RARCH_PATH_CORE);
 #else
          core_unload_game();
          core_unload();
@@ -2500,7 +2501,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_GAME_FOCUS_TOGGLE:
          {
             static bool game_focus_state  = false;
-            long int mode = (long int)data;
+            long int                 mode = (long int)data;
             
             /* mode = -1: restores current game focus state
              * mode =  1: force set game focus, instead of toggling
@@ -2515,20 +2516,25 @@ bool command_event(enum event_command cmd, void *data)
                   "Game focus is: ",
                   game_focus_state ? "on" : "off");
 
-            if (game_focus_state) {
+            if (game_focus_state)
+            {
                input_driver_grab_mouse();
                video_driver_hide_mouse();
                input_driver_set_hotkey_block();
                input_driver_keyboard_mapping_set_block(1);
-               runloop_msg_queue_push(msg_hash_to_str(MSG_GAME_FOCUS_ON),
-                                                      1, 120, true);
-            } else {
+               if (mode != -1)
+                  runloop_msg_queue_push(msg_hash_to_str(MSG_GAME_FOCUS_ON),
+                        1, 120, true);
+            }
+            else
+            {
                input_driver_ungrab_mouse();
                video_driver_show_mouse();
                input_driver_unset_hotkey_block();
                input_driver_keyboard_mapping_set_block(0);
-               runloop_msg_queue_push(msg_hash_to_str(MSG_GAME_FOCUS_OFF),
-                                                      1, 120, true);
+               if (mode != -1)
+                  runloop_msg_queue_push(msg_hash_to_str(MSG_GAME_FOCUS_OFF),
+                        1, 120, true);
             }
 
          }

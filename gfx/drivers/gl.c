@@ -606,14 +606,9 @@ static void gl_init_textures_reference(gl_t *gl, unsigned i,
    if (gl->egl_images)
       return;
 
-#ifndef HAVE_OPENGLES2
-   if (gl_check_capability(GL_CAPS_TEX_STORAGE))
-      glTexStorage2D(GL_TEXTURE_2D, 1, internal_fmt, gl->tex_w, gl->tex_h);
-   else
-#endif
-      glTexImage2D(GL_TEXTURE_2D,
-         0, internal_fmt, gl->tex_w, gl->tex_h, 0, texture_type,
-         texture_fmt, gl->empty_buf ? gl->empty_buf : NULL);
+   gl_load_texture_image(GL_TEXTURE_2D,
+      0, internal_fmt, gl->tex_w, gl->tex_h, 0, texture_type,
+      texture_fmt, gl->empty_buf ? gl->empty_buf : NULL);
 #endif
 }
 
@@ -647,7 +642,7 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
    texture_fmt  = gl->texture_fmt;
 #endif
 
-#ifdef HAVE_OPENGLES
+#ifdef HAVE_OPENGLES2
    /* GLES is picky about which format we use here.
     * Without extensions, we can *only* render to 16-bit FBOs. */
 
@@ -655,12 +650,7 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
    {
       if (gl_check_capability(GL_CAPS_ARGB8))
       {
-#if !defined(HAVE_PSGL)
-         if (gl_check_capability(GL_CAPS_GLES3_SUPPORTED))
-            internal_fmt = GL_RGBA8_OES;
-         else
-#endif
-            internal_fmt = GL_RGBA;
+         internal_fmt = GL_RGBA;
          texture_type = GL_RGBA;
          texture_fmt  = GL_UNSIGNED_BYTE;
       }

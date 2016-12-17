@@ -27,7 +27,7 @@
 #include <memalign.h>
 #include <math/float_minmax.h>
 
-#include "../audio_resampler_driver.h"
+#include <audio/audio_resampler.h>
 
 /* Since SSE and NEON don't provide support for trigonometric functions
  * we approximate those with polynoms

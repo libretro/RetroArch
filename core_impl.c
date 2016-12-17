@@ -390,7 +390,10 @@ bool core_run(void)
 #ifdef HAVE_NETWORKING
    if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_PRE_FRAME, NULL))
    {
-      /* Paused due to Netplay */
+      /* Paused due to netplay. We must poll and display something so that a
+       * netplay peer pausing doesn't just hang. */
+      input_poll();
+      video_driver_cached_frame();
       return true;
    }
 #endif

@@ -50,6 +50,8 @@ default_sublabel_macro(action_bind_sublabel_frame_throttle_settings_list,  MENU_
 default_sublabel_macro(action_bind_sublabel_onscreen_display_settings_list,MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_core_settings_list,            MENU_ENUM_SUBLABEL_CORE_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_information_list_list,         MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST)
+default_sublabel_macro(action_bind_sublabel_cheevos_enable,                MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE)
+default_sublabel_macro(action_bind_sublabel_cheevos_test_unofficial,       MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL)
 default_sublabel_macro(action_bind_sublabel_cheevos_hardcore_mode_enable,  MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE)
 default_sublabel_macro(action_bind_sublabel_menu_settings_list,            MENU_ENUM_SUBLABEL_MENU_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_video_settings_list,           MENU_ENUM_SUBLABEL_VIDEO_SETTINGS)
@@ -108,6 +110,12 @@ default_sublabel_macro(action_bind_sublabel_dummy_check_missing_firmware,  MENU_
 default_sublabel_macro(action_bind_sublabel_video_refresh_rate,            MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE)
 default_sublabel_macro(action_bind_sublabel_audio_enable,                  MENU_ENUM_SUBLABEL_AUDIO_ENABLE)
 default_sublabel_macro(action_bind_sublabel_audio_max_timing_skew,         MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW)
+default_sublabel_macro(action_bind_sublabel_pause_nonactive,               MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE)
+default_sublabel_macro(action_bind_sublabel_video_disable_composition,     MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION)
+default_sublabel_macro(action_bind_sublabel_history_list_enable,           MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE)
+default_sublabel_macro(action_bind_sublabel_content_history_size,          MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE)
+default_sublabel_macro(action_bind_sublabel_menu_input_unified_controls,   MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS)
+default_sublabel_macro(action_bind_sublabel_onscreen_notifications_enable, MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -149,6 +157,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_VIDEO_FONT_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_onscreen_notifications_enable);
+            break;
+         case MENU_ENUM_LABEL_INPUT_UNIFIED_MENU_CONTROLS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_input_unified_controls);
+            break;
          case MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_max_timing_skew);
             break;
@@ -218,6 +232,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY:
          case MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_entry);
+            break;
+         case MENU_ENUM_LABEL_CHEEVOS_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_enable);
+            break;
+         case MENU_ENUM_LABEL_CHEEVOS_TEST_UNOFFICIAL:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_test_unofficial);
             break;
          case MENU_ENUM_LABEL_CHEEVOS_HARDCORE_MODE_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_hardcore_mode_enable);
@@ -386,6 +406,18 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_VIDEO_SCALE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_window_scale);
+            break;
+         case MENU_ENUM_LABEL_PAUSE_NONACTIVE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_pause_nonactive);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_DISABLE_COMPOSITION:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_disable_composition);
+            break;
+         case MENU_ENUM_LABEL_HISTORY_LIST_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_history_list_enable);
+            break;
+         case MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_history_size);
             break;
          default:
          case MSG_UNKNOWN:

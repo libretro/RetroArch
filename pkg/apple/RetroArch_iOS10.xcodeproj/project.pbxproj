@@ -116,15 +116,15 @@
 		0FDA2A911BE1AFA800F2B5DA /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0FDA2A921BE1AFA800F2B5DA /* RetroArch_iOS9-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "RetroArch_iOS9-Info.plist"; path = "/Users/buildbot/buildbot/ios/retroarch/pkg/apple/RetroArch_iOS9-Info.plist"; sourceTree = "<absolute>"; };
 		501232C9192E5FC40063A359 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
-		501232CB192E5FDC0063A359 /* sinc_resampler_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = sinc_resampler_neon.S; path = ../../audio/drivers_resampler/sinc_resampler_neon.S; sourceTree = SOURCE_ROOT; };
-		501232CD192E5FE30063A359 /* s16_to_float_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = s16_to_float_neon.S; path = "../../libretro-common/conversion/s16_to_float_neon.S"; sourceTree = SOURCE_ROOT; };
+		501232CB192E5FDC0063A359 /* sinc_resampler_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = sinc_resampler_neon.S; path = ../../libretro-common/audio/resampler/drivers/sinc_resampler_neon.S; sourceTree = SOURCE_ROOT; };
+		501232CD192E5FE30063A359 /* s16_to_float_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = s16_to_float_neon.S; path = "../../libretro-common/audio/conversion/s16_to_float_neon.S"; sourceTree = SOURCE_ROOT; };
 		501881EB184BAD6D006F665D /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		501881ED184BB54C006F665D /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
 		503700AD1ACA18E400A51A37 /* RetroArch copy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "RetroArch copy.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		503700AE1ACA18E400A51A37 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = iOS/Info.plist; sourceTree = SOURCE_ROOT; };
 		5040F04F1AE47ED4006F6972 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
 		50521A431AA23BF500185CC9 /* griffin_objc.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = griffin_objc.m; path = ../../griffin/griffin_objc.m; sourceTree = SOURCE_ROOT; };
-		507E056A1CE9C67500E023D3 /* float_to_s16_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = float_to_s16_neon.S; path = "../../libretro-common/conversion/float_to_s16_neon.S"; sourceTree = SOURCE_ROOT; };
+		507E056A1CE9C67500E023D3 /* float_to_s16_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = float_to_s16_neon.S; path = "../../libretro-common/audio/conversion/float_to_s16_neon.S"; sourceTree = SOURCE_ROOT; };
 		50C3B1AD1AB1107100F478D3 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		50CCC827185E0E7D001F5BC8 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
 		50D00E8D19D117C400EBA71E /* cc_resampler_neon.S */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.asm; name = cc_resampler_neon.S; path = ../../audio/drivers_resampler/cc_resampler_neon.S; sourceTree = SOURCE_ROOT; };
@@ -649,6 +649,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
+               "-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-D__LIBRETRO__",
@@ -727,6 +728,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
+               "-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-D__LIBRETRO__",
@@ -776,6 +778,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
+               "-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-D__LIBRETRO__",
@@ -855,6 +858,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
+               "-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-D__LIBRETRO__",
@@ -928,6 +932,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
+               "-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-D__LIBRETRO__",
@@ -974,6 +979,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
+               "-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-D__LIBRETRO__",
@@ -1047,6 +1053,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
+               "-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-D__LIBRETRO__",
@@ -1124,6 +1131,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
+               "-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-D__LIBRETRO__",
@@ -1173,6 +1181,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
+               "-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-D__LIBRETRO__",
@@ -1256,6 +1265,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
+               "-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-DHAVE_THREADS",
@@ -1324,6 +1334,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
+               "-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-DHAVE_THREADS",
@@ -1392,6 +1403,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
+               "-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-D__LIBRETRO__",
@@ -1469,6 +1481,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
+               "-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-D__LIBRETRO__",
@@ -1518,6 +1531,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
+               "-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-D__LIBRETRO__",

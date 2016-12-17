@@ -1,32 +1,38 @@
-/*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- * 
- *  RetroArch is free software: you can redistribute it and/or modify it under the terms
- *  of the GNU General Public License as published by the Free Software Found-
- *  ation, either version 3 of the License, or (at your option) any later version.
+/* Copyright  (C) 2010-2016 The RetroArch team
  *
- *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- *  PURPOSE.  See the GNU General Public License for more details.
+ * ---------------------------------------------------------------------------------------
+ * The following license statement only applies to this file (audio_resampler.c).
+ * ---------------------------------------------------------------------------------------
  *
- *  You should have received a copy of the GNU General Public License along with RetroArch.
- *  If not, see <http://www.gnu.org/licenses/>.
+ * Permission is hereby granted, free of charge,
+ * to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+ * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 #include <string.h>
 
 #include <string/stdstring.h>
 #include <features/features_cpu.h>
+#include <file/config_file_userdata.h>
 
-#include "audio_resampler_driver.h"
-#include "../config_file_userdata.h"
-#include "../performance_counters.h"
-#include "../list_special.h"
+#include <audio/audio_resampler.h>
 
 static const rarch_resampler_t *resampler_drivers[] = {
    &sinc_resampler,
+#ifdef HAVE_CC_RESAMPLER
    &CC_resampler,
+#endif
    &nearest_resampler,
    &null_resampler,
    NULL,
@@ -91,18 +97,6 @@ const char *audio_resampler_driver_find_ident(int idx)
 }
 
 /**
- * config_get_audio_resampler_driver_options:
- *
- * Get an enumerated list of all resampler driver names, separated by '|'.
- *
- * Returns: string listing of all resampler driver names, separated by '|'.
- **/
-const char* config_get_audio_resampler_driver_options(void)
-{
-   return char_list_new_special(STRING_LIST_AUDIO_RESAMPLER_DRIVERS, NULL);
-}
-
-/**
  * find_resampler_driver:
  * @ident                      : Identifier of resampler driver to find.
  *
@@ -121,11 +115,6 @@ static const rarch_resampler_t *find_resampler_driver(const char *ident)
    return resampler_drivers[0];
 }
 
-static resampler_simd_mask_t resampler_get_cpu_features(void)
-{
-   return cpu_features_get();
-}
-
 /**
  * resampler_append_plugs:
  * @re                         : Resampler handle
@@ -140,7 +129,7 @@ static bool resampler_append_plugs(void **re,
       const rarch_resampler_t **backend,
       double bw_ratio)
 {
-   resampler_simd_mask_t mask = resampler_get_cpu_features();
+   resampler_simd_mask_t mask = cpu_features_get();
 
    *re = (*backend)->init(&resampler_config, bw_ratio, mask);
 
@@ -171,12 +160,11 @@ bool rarch_resampler_realloc(void **re, const rarch_resampler_t **backend,
    *backend = find_resampler_driver(ident);
 
    if (!resampler_append_plugs(re, backend, bw_ratio))
-      goto error;
+   {
+      if (!*re)
+         *backend = NULL;
+      return false;
+   }
 
    return true;
-
-error:
-   if (!*re)
-      *backend = NULL;
-   return false;
 }

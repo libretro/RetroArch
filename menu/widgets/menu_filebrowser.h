@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2014-2016 - Ali Bouhlel ( aliaspider@gmail.com )
+ *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2016 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -13,36 +14,33 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef _MENU_FILEBROWSER_H
+#define _MENU_FILEBROWSER_H
+
 #include <stdint.h>
 #include <stdlib.h>
-#include <math.h>
- 
-#include "../audio_resampler_driver.h"
-typedef struct rarch_null_resampler
+
+#include <boolean.h>
+
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
+
+enum filebrowser_enums
 {
-   void *empty;
-} rarch_null_resampler_t;
- 
-static void resampler_null_process(
-      void *re_, struct resampler_data *data)
-{
-}
- 
-static void resampler_null_free(void *re_)
-{
-}
- 
-static void *resampler_null_init(const struct resampler_config *config,
-      double bandwidth_mod, resampler_simd_mask_t mask)
-{
-   return (void*)0;
-}
- 
-rarch_resampler_t null_resampler = {
-   resampler_null_init,
-   resampler_null_process,
-   resampler_null_free,
-   RESAMPLER_API_VERSION,
-   "null",
-   "null"
+   FILEBROWSER_NONE              = 0,
+   FILEBROWSER_SELECT_DIR,
+   FILEBROWSER_SCAN_DIR,
+   FILEBROWSER_SELECT_COLLECTION
 };
+
+void filebrowser_clear_type(void);
+
+void filebrowser_set_type(enum filebrowser_enums type);
+
+void filebrowser_parse(void *data, unsigned type,
+      bool extensions_honored);
+
+RETRO_END_DECLS
+
+#endif

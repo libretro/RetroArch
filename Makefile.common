@@ -199,7 +199,7 @@ OBJ += frontend/frontend.o \
        managers/cheat_manager.o \
        core_info.o \
        $(LIBRETRO_COMM_DIR)/file/config_file.o \
-       config_file_userdata.o \
+       $(LIBRETRO_COMM_DIR)/file/config_file_userdata.o \
        tasks/task_screenshot.o \
        $(LIBRETRO_COMM_DIR)/gfx/scaler/scaler.o \
        gfx/drivers_shader/shader_null.o \
@@ -210,12 +210,11 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/gfx/scaler/scaler_filter.o \
        gfx/font_driver.o \
        gfx/video_filter.o \
-       audio/audio_resampler_driver.o \
+       $(LIBRETRO_COMM_DIR)/audio/resampler/audio_resampler.o \
        audio/audio_dsp_filter.o \
-       audio/drivers_resampler/sinc_resampler.o \
-       audio/drivers_resampler/nearest_resampler.o \
-       audio/drivers_resampler/null_resampler.o \
-       audio/drivers_resampler/cc_resampler.o \
+       $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler.o \
+       $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/nearest_resampler.o \
+       $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/null_resampler.o \
        location/drivers/nulllocation.o \
        camera/drivers/nullcamera.o \
        wifi/drivers/nullwifi.o \
@@ -231,6 +230,11 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/features/features_cpu.o \
        performance_counters.o \
        verbosity.o
+
+ifeq ($(HAVE_CC_RESAMPLER), 1)
+DEFINES += -DHAVE_CC_RESAMPLER
+OBJ += audio/drivers_resampler/cc_resampler.o
+endif
 
 ifeq ($(HAVE_LANGEXTRA), 1)
 DEFINES += -DHAVE_LANGEXTRA
@@ -272,8 +276,13 @@ endif
 
 # Qt
 
+ifeq ($(HAVE_QT_WRAPPER), 1)
+OBJ += ui/drivers/ui_qt.o
+LIBS += -lQt5Quick -lQt5Widgets -lQt5Gui -lQt5Qml -lQt5Network -lQt5Core -L./ui/drivers/qt/build/release/
+LIBS += -lwrapper
+endif
+
 ifeq ($(HAVE_QT), 1)
-HAVE_QT_WRAPPER=0
 OBJ += ui/drivers/ui_qt.o \
        ui/drivers/qt/ui_qt_application.o \
        ui/drivers/qt/ui_qt_window.o \
@@ -282,13 +291,6 @@ OBJ += ui/drivers/ui_qt.o \
 
 ifneq ($(findstring Linux,$(OS)),)
 DEFINES += -I/usr/include/qt -fPIC
-endif
-
-# TODO/FIXME - figure out which libraries we need to link against
-LIBS += -lQt5Quick -lQt5Widgets -lQt5Gui -lQt5Qml -lQt5Network -lQt5Core -L./ui/drivers/qt/wrapper/build/release
-
-ifeq ($(HAVE_QT_WRAPPER), 1)
-LIBS += -lwrapper
 endif
 endif
 
@@ -418,7 +420,7 @@ endif
 # Audio Resamplers
 
 ifeq ($(HAVE_NEON),1)
-   OBJ += audio/drivers_resampler/sinc_resampler_neon.o \
+   OBJ += $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler_neon.o \
           audio/drivers_resampler/cc_resampler_neon.o
    # When compiled without this, tries to attempt to compile sinc lerp,
    # which will error out
@@ -429,12 +431,12 @@ ifeq ($(HAVE_NEON),1)
    DEFINES += -DSINC_LOWER_QUALITY
 endif
 
-OBJ += $(LIBRETRO_COMM_DIR)/conversion/s16_to_float.o \
-       $(LIBRETRO_COMM_DIR)/conversion/float_to_s16.o
+OBJ += $(LIBRETRO_COMM_DIR)/audio/conversion/s16_to_float.o \
+       $(LIBRETRO_COMM_DIR)/audio/conversion/float_to_s16.o
 
 ifeq ($(HAVE_NEON),1)
-   OBJ += $(LIBRETRO_COMM_DIR)/conversion/s16_to_float_neon.o \
-          $(LIBRETRO_COMM_DIR)/conversion/float_to_s16_neon.o
+   OBJ += $(LIBRETRO_COMM_DIR)/audio/conversion/s16_to_float_neon.o \
+          $(LIBRETRO_COMM_DIR)/audio/conversion/float_to_s16_neon.o
 endif
 
 ifneq ($(findstring Win32,$(OS)),)
@@ -518,6 +520,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/menu_navigation.o  \
           menu/menu_setting.o \
           menu/menu_shader.o \
+			 menu/widgets/menu_filebrowser.o \
 			 menu/widgets/menu_dialog.o \
 			 menu/widgets/menu_input_dialog.o \
 			 menu/widgets/menu_input_bind_dialog.o \

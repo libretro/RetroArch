@@ -201,8 +201,6 @@ typedef struct menu_displaylist_ctx_entry
    file_list_t *list;
 } menu_displaylist_ctx_entry_t;
 
-void menu_displaylist_reset_filebrowser(void);
-
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data);
 
 RETRO_END_DECLS

@@ -642,6 +642,7 @@ static void handle_hotplug(android_input_data_t *android_data,
    char device_name[256];
    char device_model[256];
    char name_buf[256];
+   autoconfig_params_t params   = {{0}};
    int vendorId                 = 0;
    int productId                = 0;
    settings_t         *settings = config_get_ptr();
@@ -889,25 +890,14 @@ static void handle_hotplug(android_input_data_t *android_data,
    if (*port < 0)
       *port = android_data->pads_connected;
 
-   if (settings->input.autodetect_enable)
-   {
-      autoconfig_params_t params   = {{0}};
+   strlcpy(params.name, name_buf, sizeof(params.name));
 
-      RARCH_LOG("Pads Connected: %d Port: %d\n %s VID/PID: %d/%d\n",
-            android_data->pads_connected, *port, name_buf,
-            params.vid, params.pid);
+   params.idx                 = *port;
+   params.vid                 = vendorId;
+   params.pid                 = productId;
 
-      strlcpy(params.name, name_buf, sizeof(params.name));
-
-      params.idx                 = *port;
-      params.vid                 = vendorId;
-      params.pid                 = productId;
-      settings->input.pid[*port] = params.pid;
-      settings->input.vid[*port] = params.vid;
-
-      strlcpy(params.driver, android_joypad.ident, sizeof(params.driver));
-      input_autoconfigure_connect(&params);
-   }
+   strlcpy(params.driver, android_joypad.ident, sizeof(params.driver));
+   input_autoconfigure_connect(&params);
 
    if (!string_is_empty(name_buf))
    {
@@ -1031,7 +1021,8 @@ static bool android_input_key_pressed(void *data, int key)
    android_input_t *android = (android_input_t*)data;		
    settings_t *settings     = config_get_ptr();		
 
-   if(settings->input.binds[0][key].valid && android_keyboard_port_input_pressed(settings->input.binds[0],key))		
+   if(       settings->input.binds[0][key].valid 
+         && android_keyboard_port_input_pressed(settings->input.binds[0],key))		
       return true;		
 
    if (settings->input.binds[0][key].valid &&		

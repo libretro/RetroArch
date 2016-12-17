@@ -18,6 +18,8 @@
 #include <compat/posix_string.h>
 #include <string/stdstring.h>
 
+#include <audio/audio_resampler.h>
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -30,7 +32,6 @@
 #include "msg_hash.h"
 
 #include "audio/audio_driver.h"
-#include "audio/audio_resampler_driver.h"
 #include "camera/camera_driver.h"
 #include "record/record_driver.h"
 #include "location/location_driver.h"

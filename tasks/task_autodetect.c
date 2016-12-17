@@ -34,6 +34,7 @@
 
 typedef struct autoconfig_disconnect
 {
+   unsigned idx;
    char msg[255];
 } autoconfig_disconnect_t;
 
@@ -168,6 +169,14 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
       if (!block_osd_spam)
          task->title = strdup(msg);
    }
+
+   if (!string_is_empty(params->name))
+      strlcpy(settings->input.device_names[params->idx],
+            params->name,
+            sizeof(settings->input.device_names[params->idx]));
+   settings->input.pid[params->idx] = params->pid;
+   settings->input.vid[params->idx] = params->vid;
+
    input_autoconfigure_joypad_reindex_devices();
 }
 
@@ -334,9 +343,12 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
 static void input_autoconfigure_disconnect_handler(retro_task_t *task)
 {
    autoconfig_disconnect_t *params = (autoconfig_disconnect_t*)task->state;
+   settings_t            *settings = config_get_ptr();
 
    task->title    = strdup(params->msg);
    task->finished = true;
+
+   settings->input.device_names[params->idx][0] = '\0';
 
    RARCH_LOG("%s: %s\n", msg_hash_to_str(MSG_AUTODETECT), params->msg);
 
@@ -349,7 +361,9 @@ bool input_autoconfigure_disconnect(unsigned i, const char *ident)
    retro_task_t         *task     = (retro_task_t*)calloc(1, sizeof(*task));
    autoconfig_disconnect_t *state = (autoconfig_disconnect_t*)calloc(1, sizeof(*state));
 
-   msg[0] = '\0';
+   msg[0]      = '\0';
+
+   state->idx  = i;
 
    snprintf(msg, sizeof(msg), "%s #%u (%s).", 
          msg_hash_to_str(MSG_DEVICE_DISCONNECTED_FROM_PORT),
@@ -380,8 +394,9 @@ bool input_autoconfigure_connect(autoconfig_params_t *params)
 {
    retro_task_t         *task = (retro_task_t*)calloc(1, sizeof(*task));
    autoconfig_params_t *state = (autoconfig_params_t*)calloc(1, sizeof(*state));
+   settings_t       *settings = config_get_ptr();
 
-   if (!task || !state)
+   if (!task || !state || !settings->input.autodetect_enable)
       goto error;
 
    strlcpy(state->name, params->name, sizeof(state->name));

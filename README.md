@@ -1,8 +1,5 @@
 [![Build Status](https://travis-ci.org/libretro/RetroArch.svg?branch=master)](https://travis-ci.org/libretro/RetroArch)
-<a href="https://scan.coverity.com/projects/retroarch">
-  <img alt="Coverity Scan Build Status"
-       src="https://scan.coverity.com/projects/8936/badge.svg"/>
-</a>
+[![Coverity Scan Build Status](https://scan.coverity.com/projects/8936/badge.svg)](https://scan.coverity.com/projects/retroarch)
 
 # RetroArch
 
@@ -24,11 +21,11 @@ interface to include support for emulators and/or game engines. libretro is comp
 
 ## Binaries
 
-Latest Windows binaries are currently hosted on the buildbot -(http://buildbot.libretro.com/).
+Latest Windows binaries are currently hosted on the [buildbot](http://buildbot.libretro.com/).
 
 ## Support
 
-To reach developers, either make an issue here on Github, make a thread on the [forum](http://www.libretro.com/forums/),
+To reach developers, either make an issue here on GitHub, make a thread on the [forum](http://www.libretro.com/forums/),
 or visit our IRC channel: #retroarch @ irc.freenode.org.
 
 ## Documentation
@@ -119,10 +116,11 @@ A sample configuration file is installed to /etc/retroarch.cfg. This is the syst
 RetroArch will on startup create a config file in $XDG\_CONFIG\_HOME/retroarch/retroarch.cfg if doesn't exist.
 Users only need to configure a certain option if the desired value deviates from the value defined in config.def.h.
 
-To configure joypads, use the built-in menu or the <tt>retroarch-joyconfig</tt> command-line tool.
+To configure joypads, use the built-in menu or the `retroarch-joyconfig` command-line tool.
 
 ## Compiling and installing
-<b>Linux</b><br/>
+**Linux**
+
 - Prerequisites:
 ```bash
 sudo apt-get install -y make git-core curl g++ pkg-config libglu1-mesa-dev freeglut3-dev mesa-common-dev libsdl1.2-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev
@@ -133,7 +131,8 @@ sudo apt-get install -y make git-core curl g++ pkg-config libglu1-mesa-dev freeg
 make
 ```
 
-<b>Mac</b><br/>
+**Mac**
+
 - Prerequisites: [XCode](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&cad=rja&uact=8&ved=0CB4QFjAA&url=https%3A%2F%2Fitunes.apple.com%2Fus%2Fapp%2Fxcode%2Fid497799835%3Fmt%3D12&ei=ZmfeVNPtIILVoASBnoCYBw&usg=AFQjCNGrxKmVtXUdvUU3MhqZhP4MHT6Gtg&sig2=RIXKsWQ79YTQBt_lK5fdKA&bvm=bv.85970519,d.cGU), [Cg](https://developer.nvidia.com/cg-toolkit-download).
 - You can open the project (**pkg/apple/RetroArch.xcodeproj**) in the Xcode IDE and build (**&#8984;-B**) and run (**&#8984;-R**) it there. Or you can use the command line...
 - Debug:
@@ -151,62 +150,63 @@ xcodebuild -target RetroArch -configuration Release -project pkg/apple/RetroArch
 open ./pkg/apple/build/Release/RetroArch.app/
 ```
 
-<b>PC</b><br/>
+**PC**
+
 Instructions for compiling on PC can be found in the [wiki](https://github.com/Themaister/RetroArch/wiki).
 
-<b>PlayStation 3</b><br/>
+**PlayStation 3**
 
 RetroArch PS3 needs to be compiled in the following order:
 
 1) Compile RetroArch Salamander
 
-<tt>make -f Makefile.ps3.salamander</tt>
+    make -f Makefile.ps3.salamander
 
 2) Finally, compile RetroArch packed together with the GUI:
 
-<tt>make -f Makefile.ps3</tt>
+    make -f Makefile.ps3
 
-<b>PlayStation 3 - Creating a PKG installable file</b><br />
+**PlayStation 3 - Creating a PKG installable file**
 
 You can add `pkg` as a parameter in order to make a PKG file - for example:
 
-<tt>make -f Makefile.ps3 pkg</tt>
+    make -f Makefile.ps3 pkg
 
 This creates an NPDRM package. This can be installed on debug PS3s.
 
 To make a non-NPDRM package that can be installed on a jailbroken/CFW PS3 (such as PSGroove or PS3 CFWs and other 3.55 CFW derivatives), do:
 
-<tt>make -f Makefile.ps3 pkg-signed</tt>
+    make -f Makefile.ps3 pkg-signed
 
 If you're using Kmeaw 3.55 firmware, the package needs to be signed:
 
-<tt>make -f Makefile.ps3 pkg-signed-cfw</tt>
+    make -f Makefile.ps3 pkg-signed-cfw
 
-NOTE: A pre-existing libretro library needs to be present in the root directory in order to link RetroArch PS3. This file needs to be called <em><b>`libretro_ps3.a`</b></em>.
+NOTE: A pre-existing libretro library needs to be present in the root directory in order to link RetroArch PS3. This file needs to be called ***`libretro_ps3.a`***.
 
-<b> Xbox 360 (XeXDK)</b><br />
+**Xbox 360 (XeXDK)**
 
 You will need Microsoft Visual Studio 2010 installed (or higher) in order to compile RetroArch 360.
 
 The solution file can be found at the following location:
 
-<tt>pkg/msvc-360/RetroArch-360.sln</tt>
+    pkg/msvc-360/RetroArch-360.sln
 
 NOTE: A pre-existing libretro library needs to be present in the `pkg/msvc-360/RetroArch-360/Release` directory in order to link RetroArch 360. This file needs to be
-called <em><b>`libretro_xdk360.lib`</b></em>.
+called ***`libretro_xdk360.lib`***.
 
-<b> Xbox 360 (Libxenon)</b><br />
+**Xbox 360 (Libxenon)**
 
 You will need to have the libxenon libraries and a working Devkit Xenon toolchain installed in order to compile RetroArch 360 Libxenon.
 
-<tt>make -f Makefile.xenon</tt>
+    make -f Makefile.xenon
 
-NOTE: A pre-existing libretro library needs to be present in the root directory in order to link RetroArch 360 Libxenon. This file needs to be called <em><b>`libretro_xenon360.a`</b></em>.
+NOTE: A pre-existing libretro library needs to be present in the root directory in order to link RetroArch 360 Libxenon. This file needs to be called ***`libretro_xenon360.a`***.
 
-<b> Wii</b><br >
+**Wii**
 
 You will need to have the libogc libraries and a working Devkit PPC toolchain installed in order to compile RetroArch Wii.
 
-<tt>make -f Makefile.griffin platform=wii</tt>
+    make -f Makefile.griffin platform=wii
 
-NOTE: A pre-existing libretro library needs to be present in the root directory in order to link RetroArch Wii. This file needs to be called <em><b>`libretro_wii.a`</b></em>.
+NOTE: A pre-existing libretro library needs to be present in the root directory in order to link RetroArch Wii. This file needs to be called ***`libretro_wii.a`***.

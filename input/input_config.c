@@ -21,6 +21,7 @@
 
 #include <compat/strl.h>
 #include <file/file_path.h>
+#include <file/config_file.h>
 #include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
@@ -181,12 +182,13 @@ const char *input_config_bind_map_get_desc(unsigned i)
    return msg_hash_to_str(keybind->desc);
 }
 
-void input_config_parse_key(config_file_t *conf,
+void input_config_parse_key(void *data,
       const char *prefix, const char *btn,
       struct retro_keybind *bind)
 {
    char tmp[64];
    char key[64];
+   config_file_t *conf = (config_file_t*)data;
 
    tmp[0] = key[0] = '\0';
 
@@ -290,7 +292,7 @@ static void parse_hat(struct retro_keybind *bind, const char *str)
       bind->joykey = HAT_MAP(hat, hat_dir);
 }
 
-void input_config_parse_joy_button(config_file_t *conf, const char *prefix,
+void input_config_parse_joy_button(void *data, const char *prefix,
       const char *btn, struct retro_keybind *bind)
 {
    char str[256];
@@ -298,6 +300,7 @@ void input_config_parse_joy_button(config_file_t *conf, const char *prefix,
    char key[64];
    char key_label[64]       = {0};
    char *tmp_a              = NULL;
+   config_file_t *conf      = (config_file_t*)data;
 
    str[0] = tmp[0] = key[0] = '\0';
 
@@ -329,14 +332,15 @@ void input_config_parse_joy_button(config_file_t *conf, const char *prefix,
    }
 }
 
-void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
+void input_config_parse_joy_axis(void *data, const char *prefix,
       const char *axis, struct retro_keybind *bind)
 {
    char str[256];
    char       tmp[64];
    char       key[64];
    char key_label[64];
-   char        *tmp_a = NULL;
+   char        *tmp_a       = NULL;
+   config_file_t *conf      = (config_file_t*)data;
 
    str[0] = tmp[0] = key[0] = key_label[0] = '\0';
 

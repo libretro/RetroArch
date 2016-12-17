@@ -163,18 +163,12 @@ static bool gl_recreate_fbo(
    glDeleteTextures(1, texture);
    glGenTextures(1, texture);
    glBindTexture(GL_TEXTURE_2D, *texture);
-#if !defined(HAVE_OPENGLES2) && !defined(HAVE_PSGL)
-   if (gl_check_capability(GL_CAPS_TEX_STORAGE))
-      glTexStorage2D(GL_TEXTURE_2D, 1, RARCH_GL_INTERNAL_FORMAT32,
-            fbo_rect->width, fbo_rect->height);
-   else
-#endif
-      glTexImage2D(GL_TEXTURE_2D,
-            0, RARCH_GL_INTERNAL_FORMAT32,
-            fbo_rect->width,
-            fbo_rect->height,
-            0, RARCH_GL_TEXTURE_TYPE32,
-            RARCH_GL_FORMAT32, NULL);
+   gl_load_texture_image(GL_TEXTURE_2D,
+         0, RARCH_GL_INTERNAL_FORMAT32,
+         fbo_rect->width,
+         fbo_rect->height,
+         0, RARCH_GL_TEXTURE_TYPE32,
+         RARCH_GL_FORMAT32, NULL);
 
    glFramebufferTexture2D(RARCH_GL_FRAMEBUFFER,
          RARCH_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
@@ -232,14 +226,16 @@ void gl_check_fbo_dimensions(gl_t *gl)
    /* Check if we have to recreate our FBO textures. */
    for (i = 0; i < gl->fbo_pass; i++)
    {
-      bool update_feedback = gl->fbo_feedback_enable 
-         && (unsigned)i == gl->fbo_feedback_pass;
       struct video_fbo_rect *fbo_rect = &gl->fbo_rect[i];
-      bool check_dimensions = 
-         (fbo_rect->max_img_width  > fbo_rect->width) ||
-         (fbo_rect->max_img_height > fbo_rect->height);
-      if (fbo_rect && check_dimensions)
-         gl_check_fbo_dimension(gl, i, update_feedback);
+      if (fbo_rect)
+      {
+         bool update_feedback = gl->fbo_feedback_enable 
+            && (unsigned)i == gl->fbo_feedback_pass;
+
+         if ((fbo_rect->max_img_width  > fbo_rect->width) ||
+             (fbo_rect->max_img_height > fbo_rect->height))
+               gl_check_fbo_dimension(gl, i, update_feedback);
+      }
    }
 }
 void gl_renderchain_render(gl_t *gl,
@@ -528,15 +524,9 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
    if (fp_fbo && gl->has_fp_fbo)
    {
       RARCH_LOG("[GL]: FBO pass #%d is floating-point.\n", i);
-#if !defined(HAVE_PSGL)
-      if (gl_check_capability(GL_CAPS_TEX_STORAGE))
-         glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA32F,
-               gl->fbo_rect[i].width, gl->fbo_rect[i].height);
-      else
-#endif
-         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F,
-            gl->fbo_rect[i].width, gl->fbo_rect[i].height,
-            0, GL_RGBA, GL_FLOAT, NULL);
+      gl_load_texture_image(GL_TEXTURE_2D, 0, GL_RGBA32F,
+         gl->fbo_rect[i].width, gl->fbo_rect[i].height,
+         0, GL_RGBA, GL_FLOAT, NULL);
    }
    else
 #endif
@@ -565,14 +555,10 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
                gl->has_srgb_fbo_gles3 ? GL_RGBA : GL_SRGB_ALPHA_EXT,
                GL_UNSIGNED_BYTE, NULL);
 #else
-         if (gl_check_capability(GL_CAPS_TEX_STORAGE))
-            glTexStorage2D(GL_TEXTURE_2D, 1, GL_SRGB8_ALPHA8,
-                  gl->fbo_rect[i].width, gl->fbo_rect[i].height);
-         else
-            glTexImage2D(GL_TEXTURE_2D,
-               0, GL_SRGB8_ALPHA8,
-               gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
-               GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+         gl_load_texture_image(GL_TEXTURE_2D,
+            0, GL_SRGB8_ALPHA8,
+            gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
+            GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 #endif
       }
       else
@@ -586,14 +572,10 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
 #else
          /* Avoid potential performance 
           * reductions on particular platforms. */
-         if (gl_check_capability(GL_CAPS_TEX_STORAGE))
-            glTexStorage2D(GL_TEXTURE_2D, 1, RARCH_GL_INTERNAL_FORMAT32,
-                  gl->fbo_rect[i].width, gl->fbo_rect[i].height);
-         else
-            glTexImage2D(GL_TEXTURE_2D,
-               0, RARCH_GL_INTERNAL_FORMAT32,
-               gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
-               RARCH_GL_TEXTURE_TYPE32, RARCH_GL_FORMAT32, NULL);
+         gl_load_texture_image(GL_TEXTURE_2D,
+            0, RARCH_GL_INTERNAL_FORMAT32,
+            gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
+            RARCH_GL_TEXTURE_TYPE32, RARCH_GL_FORMAT32, NULL);
 #endif
       }
    }

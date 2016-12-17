@@ -83,8 +83,8 @@ struct udev_joypad
    int32_t pid;
 };
 
-static struct udev *udev_joypad_fd;
-static struct udev_monitor *udev_joypad_mon;
+static struct udev *udev_joypad_fd             = NULL;
+static struct udev_monitor *udev_joypad_mon    = NULL;
 static struct udev_joypad udev_pads[MAX_USERS];
 
 static INLINE int16_t udev_compute_axis(const struct input_absinfo *info, int value)
@@ -286,11 +286,9 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
       params.idx             = p;
       params.vid             = pad->vid;
       params.pid             = pad->pid;
-      settings->input.pid[p] = params.pid;
-      settings->input.vid[p] = params.vid;
 
-      strlcpy(settings->input.device_names[p], params.name, sizeof(settings->input.device_names[p]));
-      strlcpy(params.driver, udev_joypad.ident, sizeof(params.driver));
+      strlcpy(params.driver, udev_joypad.ident,
+            sizeof(params.driver));
       input_autoconfigure_connect(&params);
 
       ret = 1;
@@ -304,7 +302,9 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
                p, path);
 
       if (ioctl(fd, EVIOCGEFFECTS, &pad->num_effects) >= 0)
-         RARCH_LOG("[udev]: Pad #%u (%s) supports %d force feedback effects.\n", p, path, pad->num_effects);
+         RARCH_LOG(
+               "[udev]: Pad #%u (%s) supports %d force feedback effects.\n",
+               p, path, pad->num_effects);
    }
 
    return ret;
@@ -324,7 +324,9 @@ static void udev_check_device(struct udev_device *dev, const char *path)
    {
       if (st.st_rdev == udev_pads[i].device)
       {
-         RARCH_LOG("[udev]: Device ID %u is already plugged.\n", (unsigned)st.st_rdev);
+         RARCH_LOG(
+               "[udev]: Device ID %u is already plugged.\n",
+               (unsigned)st.st_rdev);
          return;
       }
    }
@@ -427,7 +429,8 @@ end:
    udev_device_unref(dev);
 }
 
-static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, uint16_t strength)
+static bool udev_set_rumble(unsigned i,
+      enum retro_rumble_effect effect, uint16_t strength)
 {
    int old_effect;
    uint16_t old_strength;
@@ -530,7 +533,8 @@ static bool udev_joypad_init(void *data)
    udev_joypad_mon = udev_monitor_new_from_netlink(udev_joypad_fd, "udev");
    if (udev_joypad_mon)
    {
-      udev_monitor_filter_add_match_subsystem_devtype(udev_joypad_mon, "input", NULL);
+      udev_monitor_filter_add_match_subsystem_devtype(
+            udev_joypad_mon, "input", NULL);
       udev_monitor_enable_receiving(udev_joypad_mon);
    }
 
@@ -561,14 +565,15 @@ error:
    return false;
 }
 
-static bool udev_joypad_hat(const struct udev_joypad *pad, uint16_t hat)
+static bool udev_joypad_button_hat(const void *data, uint16_t joykey, unsigned hat_dir)
 {
-   unsigned h = GET_HAT(hat);
+   const struct udev_joypad *pad = (const struct udev_joypad*)data;
+   unsigned h                    = GET_HAT(joykey);
 
    if (h >= NUM_HATS)
       return false;
 
-   switch (GET_HAT_DIR(hat))
+   switch (hat_dir)
    {
       case HAT_LEFT_MASK:
          return pad->hats[h][0] < 0;
@@ -586,9 +591,10 @@ static bool udev_joypad_hat(const struct udev_joypad *pad, uint16_t hat)
 static bool udev_joypad_button(unsigned port, uint16_t joykey)
 {
    const struct udev_joypad *pad = (const struct udev_joypad*)&udev_pads[port];
+   unsigned hat_dir = GET_HAT_DIR(joykey);
 
-   if (GET_HAT_DIR(joykey))
-      return udev_joypad_hat(pad, joykey);
+   if (hat_dir)
+      return udev_joypad_button_hat(pad, joykey, hat_dir);
    return joykey < UDEV_NUM_BUTTONS && BIT64_GET(pad->buttons, joykey);
 }
 

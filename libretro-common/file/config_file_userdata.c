@@ -23,7 +23,7 @@
 #include <file/file_path.h>
 #include <lists/string_list.h>
 
-#include "config_file_userdata.h"
+#include <file/config_file_userdata.h>
 
 int config_userdata_get_float(void *userdata, const char *key_str,
       float *value, float default_value)

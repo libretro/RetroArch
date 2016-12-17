@@ -37,8 +37,6 @@ int main(int argc, char *argv[])
         Sleep(1000);
         printf("test = %d\n",i);
         i++;
-        if(j < 2)
-            t->SetTitle("test");
     }
 
     pthread_join(gui,NULL);

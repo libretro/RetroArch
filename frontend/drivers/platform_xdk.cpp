@@ -1373,18 +1373,36 @@ static int frontend_xdk_parse_drive_list(void *data)
 
 #if defined(_XBOX1)
    menu_entries_append_enum(list,
-         "C:", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         "C:",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(list,
-         "D:", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         "D:",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(list,
-         "E:", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         "E:",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(list,
-         "F:", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         "F:",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(list,
-         "G:", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         "G:",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
 #elif defined(_XBOX360)
    menu_entries_append_enum(list,
-         "game:", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         "game:",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
 #endif
 #endif
 

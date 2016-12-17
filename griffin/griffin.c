@@ -122,7 +122,7 @@ CONFIG FILE
 #endif
 
 #include "../libretro-common/file/config_file.c"
-#include "../config_file_userdata.c"
+#include "../libretro-common/file/config_file_userdata.c"
 #include "../managers/core_option_manager.c"
 
 /*============================================================
@@ -556,11 +556,13 @@ FIFO BUFFER
 /*============================================================
 AUDIO RESAMPLER
 ============================================================ */
-#include "../audio/audio_resampler_driver.c"
-#include "../audio/drivers_resampler/sinc_resampler.c"
-#include "../audio/drivers_resampler/nearest_resampler.c"
-#include "../audio/drivers_resampler/null_resampler.c"
+#include "../libretro-common/audio/resampler/audio_resampler.c"
+#include "../libretro-common/audio/resampler/drivers/sinc_resampler.c"
+#include "../libretro-common/audio/resampler/drivers/nearest_resampler.c"
+#include "../libretro-common/audio/resampler/drivers/null_resampler.c"
+#ifdef HAVE_CC_RESAMPLER
 #include "../audio/drivers_resampler/cc_resampler.c"
+#endif
 
 /*============================================================
 CAMERA
@@ -933,6 +935,7 @@ MENU
 #include "../menu/menu_cbs.c"
 #include "../menu/menu_content.c"
 #include "../menu/widgets/menu_entry.c"
+#include "../menu/widgets/menu_filebrowser.c"
 #include "../menu/widgets/menu_dialog.c"
 #include "../menu/widgets/menu_input_dialog.c"
 #include "../menu/widgets/menu_input_bind_dialog.c"
@@ -1078,8 +1081,8 @@ XML
 /*============================================================
  AUDIO UTILS
 ============================================================ */
-#include "../libretro-common/conversion/s16_to_float.c"
-#include "../libretro-common/conversion/float_to_s16.c"
+#include "../libretro-common/audio/conversion/s16_to_float.c"
+#include "../libretro-common/audio/conversion/float_to_s16.c"
 
 /*============================================================
  LIBRETRODB

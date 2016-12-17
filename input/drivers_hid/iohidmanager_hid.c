@@ -21,11 +21,12 @@
 #include <IOKit/hid/IOHIDManager.h>
 #include <IOKit/hid/IOHIDKeys.h>
 
+#include <retro_miscellaneous.h>
+
 #include "../connect/joypad_connection.h"
 #include "../input_defines.h"
 #include "../../tasks/tasks_internal.h"
 #include "../input_hid_driver.h"
-#include "../../configuration.h"
 #include "../../verbosity.h"
 
 typedef struct apple_hid
@@ -72,9 +73,6 @@ static bool iohidmanager_hid_joypad_button(void *data,
    uint64_t buttons          = 
       iohidmanager_hid_joypad_get_buttons(data, port);
    iohidmanager_hid_t *hid   = (iohidmanager_hid_t*)data;
-
-   if (joykey == NO_BTN)
-      return false;
 
    /* Check hat. */
    if (GET_HAT_DIR(joykey))
@@ -306,7 +304,7 @@ static void iohidmanager_hid_device_add_autodetect(unsigned idx,
    params.vid = dev_vid;
    params.pid = dev_pid;
 
-   strlcpy(params.name, device_name, sizeof(params.name));
+   strlcpy(params.name,   device_name, sizeof(params.name));
    strlcpy(params.driver, driver_name, sizeof(params.driver));
 
    input_autoconfigure_connect(&params);
@@ -319,8 +317,6 @@ static void iohidmanager_hid_device_add(void *data, IOReturn result,
 {
    IOReturn ret;
    uint16_t dev_vid, dev_pid;
-
-   settings_t                     *settings = config_get_ptr();
    iohidmanager_hid_t                  *hid = (iohidmanager_hid_t*)
       hid_driver_get_data();
    struct iohidmanager_hid_adapter *adapter = (struct iohidmanager_hid_adapter*)
@@ -369,9 +365,6 @@ static void iohidmanager_hid_device_add(void *data, IOReturn result,
 
    if (string_is_empty(adapter->name))
       goto error;
-
-   strlcpy(settings->input.device_names[adapter->slot],
-         adapter->name, sizeof(settings->input.device_names[adapter->slot]));
 
    iohidmanager_hid_device_add_autodetect(adapter->slot,
          adapter->name, iohidmanager_hid.ident, dev_vid, dev_pid);

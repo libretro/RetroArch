@@ -19,8 +19,6 @@
 
 #include <stdint.h>
 
-#include <file/config_file.h>
-
 #include "input_driver.h"
 
 const char *input_config_bind_map_get_base(unsigned i);
@@ -59,14 +57,14 @@ const char *input_config_get_prefix(unsigned user, bool meta);
  **/
 unsigned input_config_translate_str_to_bind_id(const char *str);
 
-void input_config_parse_key(config_file_t *conf,
+void input_config_parse_key(void *data,
       const char *prefix, const char *btn,
       struct retro_keybind *bind);
 
-void input_config_parse_joy_button(config_file_t *conf, const char *prefix,
+void input_config_parse_joy_button(void *data, const char *prefix,
       const char *btn, struct retro_keybind *bind);
 
-void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
+void input_config_parse_joy_axis(void *data, const char *prefix,
       const char *axis, struct retro_keybind *bind);
 
 const struct retro_keybind *input_config_get_bind_auto(unsigned port, unsigned id);

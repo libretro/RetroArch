@@ -250,7 +250,7 @@ bool input_joypad_pressed(
    uint64_t                        joykey = (binds[key].joykey != NO_BTN)
       ? binds[key].joykey : auto_binds[key].joykey;
 
-   if (!drv->button(joy_idx, (uint16_t)joykey))
+   if ((uint16_t)joykey == NO_BTN || !drv->button(joy_idx, (uint16_t)joykey))
    {
       uint32_t joyaxis     = (binds[key].joyaxis != AXIS_NONE) 
          ? binds[key].joyaxis : auto_binds[key].joyaxis;

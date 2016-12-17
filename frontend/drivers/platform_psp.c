@@ -468,18 +468,36 @@ static int frontend_psp_parse_drive_list(void *data)
 
 #ifdef VITA
    menu_entries_append_enum(list,
-         "app0:/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         "app0:/",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(list,
-         "ur0:/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         "ur0:/",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(list,
-         "ux0:/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         "ux0:/",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
 #else
    menu_entries_append_enum(list,
-         "ms0:/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         "ms0:/",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(list,
-         "ef0:/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         "ef0:/",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(list,
-         "host0:/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         "host0:/",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
 #endif
 #endif
 
