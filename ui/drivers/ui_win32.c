@@ -524,8 +524,11 @@ static bool win32_browser(
 
       /* These need to be big enough to hold the path/name of any file the user may select.
        * FIXME: We should really handle the error case when this isn't big enough. */
-      char new_title[TITLE_MAX] = {0};
-      char new_file[FULLPATH_MAX] = {0};
+      char new_title[TITLE_MAX];
+      char new_file[FULLPATH_MAX];
+
+      new_title[0] = '\0';
+      new_file[0] = '\0';
 
       if (title && *title)
          strlcpy(new_title, title, sizeof(new_title));
