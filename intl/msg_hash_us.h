@@ -48,11 +48,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
-      "You have left the game."
+      "You have left the game"
       )
 MSG_HASH(
       MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N,
-      "You have joined as player %d."
+      "You have joined as player %d"
       )
 MSG_HASH(
       MSG_NETPLAY_IMPLEMENTATIONS_DIFFER,
@@ -60,11 +60,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_NETPLAY_ENDIAN_DEPENDENT,
-      "This core does not support inter-architecture netplay between these systems."
+      "This core does not support inter-architecture netplay between these systems"
       )
 MSG_HASH(
       MSG_NETPLAY_PLATFORM_DEPENDENT,
-      "This core does not support inter-architecture netplay."
+      "This core does not support inter-architecture netplay"
       )
 MSG_HASH(
       MSG_NETPLAY_ENTER_PASSWORD,
@@ -72,35 +72,35 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_NETPLAY_INCORRECT_PASSWORD,
-      "Incorrect password."
+      "Incorrect password"
       )
 MSG_HASH(
       MSG_NETPLAY_SERVER_NAMED_HANGUP,
-      "\"%s\" has disconnected."
+      "\"%s\" has disconnected"
       )
 MSG_HASH(
       MSG_NETPLAY_SERVER_HANGUP,
-      "A netplay client has disconnected."
+      "A netplay client has disconnected"
       )
 MSG_HASH(
       MSG_NETPLAY_CLIENT_HANGUP,
-      "Netplay disconnected."
+      "Netplay disconnected"
       )
 MSG_HASH(
       MSG_NETPLAY_CANNOT_PLAY_UNPRIVILEGED,
-      "You do not have permission to play."
+      "You do not have permission to play"
       )
 MSG_HASH(
       MSG_NETPLAY_CANNOT_PLAY_NO_SLOTS,
-      "There are no free player slots."
+      "There are no free player slots"
       )
 MSG_HASH(
       MSG_NETPLAY_CANNOT_PLAY,
-      "Cannot switch to play mode."
+      "Cannot switch to play mode"
       )
 MSG_HASH(
       MSG_NETPLAY_PEER_PAUSED,
-      "Netplay peer \"%s\" paused."
+      "Netplay peer \"%s\" paused"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
