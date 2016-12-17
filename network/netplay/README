@@ -255,11 +255,18 @@ Description:
     serialized state is zlib compressed. Otherwise it is uncompressed.
 
 Command: PAUSE
-Payload: None
+Payload:
+    {
+       nickname: char[32]
+    }
+Description:
     Indicates that the core is paused. The receiving peer should also pause.
+    The server should pass it on, using the known correct name rather than the
+    provided name.
 
 Command: RESUME
 Payload: None
+Description:
     Indicates that the core is no longer paused.
 
 Command: CHEATS

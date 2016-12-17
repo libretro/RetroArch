@@ -1095,10 +1095,43 @@ static bool netplay_get_cmd(netplay_t *netplay,
          }
 
       case NETPLAY_CMD_PAUSE:
-         connection->paused = true;
-         netplay->remote_paused = true;
-         netplay_send_raw_cmd_all(netplay, connection, NETPLAY_CMD_PAUSE, NULL, 0);
-         break;
+         {
+            char msg[512], nick[NETPLAY_NICK_LEN];
+            msg[sizeof(msg)-1] = '\0';
+
+            /* Read in the paused nick */
+            if (cmd_size != sizeof(nick))
+            {
+               RARCH_ERR("NETPLAY_CMD_PAUSE received invalid payload size.\n");
+               return netplay_cmd_nak(netplay, connection);
+            }
+            RECV(nick, sizeof(nick))
+            {
+               RARCH_ERR("Failed to receive paused nickname.\n");
+               return netplay_cmd_nak(netplay, connection);
+            }
+            nick[sizeof(nick)-1] = '\0';
+
+            /* We outright ignore pausing from spectators */
+            if (connection->mode != NETPLAY_CONNECTION_PLAYING)
+               break;
+
+            connection->paused = true;
+            netplay->remote_paused = true;
+            if (netplay->is_server)
+            {
+               snprintf(msg, sizeof(msg)-1, msg_hash_to_str(MSG_NETPLAY_PEER_PAUSED), connection->nick);
+               netplay_send_raw_cmd_all(netplay, connection, NETPLAY_CMD_PAUSE,
+                     connection->nick, NETPLAY_NICK_LEN);
+            }
+            else
+            {
+               snprintf(msg, sizeof(msg)-1, msg_hash_to_str(MSG_NETPLAY_PEER_PAUSED), nick);
+            }
+            RARCH_LOG("%s\n", msg);
+            runloop_msg_queue_push(msg, 1, 180, false);
+            break;
+         }
 
       case NETPLAY_CMD_RESUME:
          remote_unpaused(netplay, connection);
