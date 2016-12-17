@@ -141,11 +141,12 @@ static void libusb_hid_device_add_autodetect(unsigned idx,
       const char *device_name, const char *driver_name,
       uint16_t dev_vid, uint16_t dev_pid)
 {
-   autoconfig_params_t params = {{0}};
+   autoconfig_params_t params;
 
-   params.idx = idx;
-   params.vid = dev_vid;
-   params.pid = dev_pid;
+   params.idx             = idx;
+   params.vid             = dev_vid;
+   params.pid             = dev_pid;
+   params.display_name[0] = '\0';
 
    strlcpy(params.name, device_name, sizeof(params.name));
    strlcpy(params.driver, driver_name, sizeof(params.driver));

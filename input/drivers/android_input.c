@@ -642,7 +642,7 @@ static void handle_hotplug(android_input_data_t *android_data,
    char device_name[256];
    char device_model[256];
    char name_buf[256];
-   autoconfig_params_t params   = {{0}};
+   autoconfig_params_t params;
    int vendorId                 = 0;
    int productId                = 0;
    settings_t         *settings = config_get_ptr();
@@ -895,6 +895,7 @@ static void handle_hotplug(android_input_data_t *android_data,
    params.idx                 = *port;
    params.vid                 = vendorId;
    params.pid                 = productId;
+   params.display_name[0]     = '\0';
 
    strlcpy(params.driver, android_joypad.ident, sizeof(params.driver));
    input_autoconfigure_connect(&params);

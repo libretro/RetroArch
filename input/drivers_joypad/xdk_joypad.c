@@ -44,11 +44,15 @@ static const char *xdk_joypad_name(unsigned pad)
 
 static void xdk_joypad_autodetect_add(unsigned autoconf_pad)
 {
-   autoconfig_params_t params = {{0}};
+   autoconfig_params_t params;
    settings_t *settings       = config_get_ptr();
 
    /* TODO - implement VID/PID? */
-   params.idx = autoconf_pad;
+   params.idx             = autoconf_pad;
+   params.vid             = 0;
+   params.pid             = 0;
+   params.display_name[0] = '\0';
+
    strlcpy(params.name, xdk_joypad_name(autoconf_pad), sizeof(params.name));
    strlcpy(params.driver, xdk_joypad.ident, sizeof(params.driver));
    input_autoconfigure_connect(&params);

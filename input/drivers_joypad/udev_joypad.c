@@ -202,6 +202,7 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
 {
    int i;
    struct stat st;
+   autoconfig_params_t params;
    int ret                              = 0;
    const char *buf                      = NULL;
    unsigned buttons                     = 0;
@@ -211,7 +212,6 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
    unsigned long keybit[NBITS(KEY_MAX)] = {0};
    unsigned long absbit[NBITS(ABS_MAX)] = {0};
    unsigned long ffbit[NBITS(FF_MAX)]   = {0};
-   autoconfig_params_t params           = {{0}};
    settings_t *settings                 = config_get_ptr();
 
    strlcpy(pad->ident, settings->input.device_names[p], sizeof(pad->ident));
@@ -283,6 +283,7 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
    {
       strlcpy(params.name, pad->ident, sizeof(params.name));
 
+      params.display_name[0] = '\0';
       params.idx             = p;
       params.vid             = pad->vid;
       params.pid             = pad->pid;

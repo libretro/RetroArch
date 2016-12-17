@@ -136,7 +136,7 @@ static void handle_plugged_pad(void)
       for (i = 0; i < rc; i += event->len + sizeof(struct inotify_event))
       {
          unsigned idx;
-         autoconfig_params_t params = {{0}};
+         autoconfig_params_t params;
 
          event = (struct inotify_event*)&event_buf[i];
 
@@ -146,6 +146,12 @@ static void handle_plugged_pad(void)
          idx = strtoul(event->name + 2, NULL, 0);
          if (idx >= MAX_USERS)
             continue;
+
+         /* TODO - implement VID/PID? */
+         params.display_name[0] = '\0';
+         params.vid             = 0;
+         params.pid             = 0;
+         params.idx             = idx;
 
          if (event->mask & IN_DELETE)
          {
@@ -160,8 +166,6 @@ static void handle_plugged_pad(void)
                linuxraw_pads[idx].fd = -1;
                *linuxraw_pads[idx].ident = '\0';
 
-               /* TODO - implement VID/PID? */
-               params.idx = idx;
 
                input_autoconfigure_connect(&params);
             }
@@ -178,10 +182,8 @@ static void handle_plugged_pad(void)
             if (     !string_is_empty(linuxraw_pads[idx].ident) 
                   && linuxraw_joypad_init_pad(path, &linuxraw_pads[idx]))
             {
-               params.idx = idx;
                strlcpy(params.name,   linuxraw_pads[idx].ident, sizeof(params.name));
                strlcpy(params.driver, linuxraw_joypad.ident, sizeof(params.driver));
-               /* TODO - implement VID/PID? */
 
                input_autoconfigure_connect(&params);
             }
