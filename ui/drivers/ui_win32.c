@@ -41,6 +41,7 @@
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
+#include <compat/strl.h>
 
 #include "../ui_companion_driver.h"
 #include "../../msg_hash.h"
@@ -512,7 +513,6 @@ static bool win32_browser(
       const char *initial_dir)
 {
    bool result = false;
-   char empty[1] = {0};
    const ui_browser_window_t *browser = 
       ui_companion_driver_get_browser_window_ptr();
 
@@ -520,7 +520,7 @@ static bool win32_browser(
    {
       ui_browser_window_state_t browser_state;
       /* OPENFILENAME.lpstrFilter requires a null separated list of name/ext pairs terminated by a second null at the end. */
-      char *all_files[] = {"All Files", "*.*", ""};
+      char *all_files[] = {"All Files (*.*)", "*.*", ""};
 
       /* These need to be big enough to hold the path/name of any file the user may select.
        * FIXME: We should really handle the error case when this isn't big enough. */
@@ -538,7 +538,7 @@ static bool win32_browser(
 
       browser_state.filters  = all_files[0];
       browser_state.title    = new_title;
-      browser_state.startdir = (initial_dir && *initial_dir) ? strdup(initial_dir) : strdup(empty);
+      browser_state.startdir = strdup("");
       browser_state.path     = new_file;
       browser_state.window   = owner;
 
@@ -563,12 +563,12 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
       case ID_M_LOAD_CONTENT:
          {
             char win32_file[PATH_MAX_LENGTH] = {0};
-            wchar_t title_wide[PATH_MAX] = {0};
-            char title_cp[PATH_MAX] = {0};
+            wchar_t title_wide[PATH_MAX];
+            char title_cp[PATH_MAX];
             const char *extensions  = NULL;
             const char *title       = NULL;
             const char *initial_dir = NULL;
-       size_t converted        = 0;
+            size_t converted        = 0;
 
             switch (mode)
             {
@@ -578,17 +578,18 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
                   initial_dir = settings->directory.libretro;
                   break;
                case ID_M_LOAD_CONTENT:
-                  extensions  = "All Files\0*.*\0";
+                  extensions  = "All Files (*.*)\0*.*\0";
                   title       = msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST);
                   initial_dir = settings->directory.menu_content;
                   break;
             }
 
-       /* Convert UTF8 to UTF16, then back to the local code page.
-        * This is needed for proper multi-byte string display until Unicode is fully supported. */
-       MultiByteToWideChar(CP_UTF8, 0, title, -1, title_wide, sizeof(title_wide) / sizeof(title_wide[0]));
-       wcstombs_s(&converted, title_cp, sizeof(title_cp), title_wide, sizeof(title_cp) - 1);
+            /* Convert UTF8 to UTF16, then back to the local code page.
+             * This is needed for proper multi-byte string display until Unicode is fully supported.
+             */
+            MultiByteToWideChar(CP_UTF8, 0, title, -1, title_wide, sizeof(title_wide) / sizeof(title_wide[0]));
+            wcstombs_s(&converted, title_cp, sizeof(title_cp), title_wide, sizeof(title_cp) - 1);
 
             if (!win32_browser(owner, win32_file,
                      extensions, title_cp, initial_dir))
