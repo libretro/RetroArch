@@ -18,6 +18,7 @@
 #include <unistd.h>
 
 #include <wayland-client.h>
+#include <wayland-cursor.h>
 
 #include <string/stdstring.h>
 
@@ -70,6 +71,7 @@ typedef struct gfx_ctx_wayland_data
    struct wl_keyboard *wl_keyboard;
    struct wl_pointer  *wl_pointer;
    struct wl_seat *seat;
+   struct wl_shm *shm;
    unsigned swap_interval;
    bool core_hw_context_enable; 
 
@@ -89,6 +91,16 @@ typedef struct gfx_ctx_wayland_data
       bool focus;
       bool left, right, middle;
    } mouse;
+
+   struct
+   {
+      struct wl_cursor *default_cursor;
+      struct wl_cursor_theme *theme;
+      struct wl_surface *surface;
+      uint32_t serial;
+      bool visible;
+   } cursor;
+
    const input_device_driver_t *joypad;
    bool blocked;
 
@@ -215,6 +227,7 @@ static void keyboard_handle_repeat_info(void *data,
    (void)wl_keyboard;
    (void)rate;
    (void)delay;
+   /* TODO: Seems like we'll need this to get repeat working. We'll have to do it on our own. */
 }
 
 static const struct wl_keyboard_listener keyboard_listener = {
@@ -225,6 +238,8 @@ static const struct wl_keyboard_listener keyboard_listener = {
    keyboard_handle_modifiers,
    keyboard_handle_repeat_info,
 };
+
+static void gfx_ctx_wl_show_mouse(void *data, bool state);
 
 static void pointer_handle_enter(void *data,
       struct wl_pointer *pointer,
@@ -243,6 +258,9 @@ static void pointer_handle_enter(void *data,
    wl->mouse.x = wl->mouse.last_x;
    wl->mouse.y = wl->mouse.last_y;
    wl->mouse.focus = true;
+   wl->cursor.serial = serial;
+
+   gfx_ctx_wl_show_mouse(data, wl->cursor.visible);
 }
 
 static void pointer_handle_leave(void *data,
@@ -492,6 +510,8 @@ static void registry_handle_global(void *data, struct wl_registry *reg,
    else if (string_is_equal(interface, "wl_shell"))
       wl->shell = (struct wl_shell*)
          wl_registry_bind(reg, id, &wl_shell_interface, 1);
+   else if (string_is_equal(interface, "wl_shm"))
+      wl->shm = wl_registry_bind(reg, id, &wl_shm_interface, 1);
    else if (string_is_equal(interface, "wl_seat"))
    {
       wl->seat = wl_registry_bind(reg, id, &wl_seat_interface, 4);
@@ -559,6 +579,11 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
       wl_keyboard_destroy(wl->wl_keyboard);
    if (wl->wl_pointer)
       wl_pointer_destroy(wl->wl_pointer);
+
+   if (wl->cursor.theme)
+      wl_cursor_theme_destroy(wl->cursor.theme);
+   if (wl->cursor.surface)
+      wl_surface_destroy(wl->cursor.surface);
 
    if (wl->seat)
       wl_seat_destroy(wl->seat);
@@ -862,6 +887,12 @@ static void *gfx_ctx_wl_init(void *video_driver)
       goto error;
    }
 
+   if (!wl->shm)
+   {
+      RARCH_ERR("Failed to create shm.\n");
+      goto error;
+   }
+
    if (!wl->shell)
    {
       RARCH_ERR("Failed to create shell.\n");
@@ -901,6 +932,11 @@ static void *gfx_ctx_wl_init(void *video_driver)
 
    wl->keyboard_focus = true;
    wl->mouse.focus = true;
+
+   wl->cursor.surface = wl_compositor_create_surface(wl->compositor);
+   wl->cursor.theme = wl_cursor_theme_load(NULL, 16, wl->shm);
+   wl->cursor.default_cursor = wl_cursor_theme_get_cursor(wl->cursor.theme, "left_ptr");
+   flush_wayland_fd(wl);
 
    return wl;
 
@@ -1122,6 +1158,14 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
       default:
          break;
    }
+
+   if (fullscreen)
+   {
+      wl->cursor.visible = false;
+      gfx_ctx_wl_show_mouse(wl, false);
+   }
+   else
+      wl->cursor.visible = true;
 
    return true;
 
@@ -1592,6 +1636,26 @@ static void gfx_ctx_wl_set_flags(void *data, uint32_t flags)
       wl->core_hw_context_enable = true;
 }
 
+static void gfx_ctx_wl_show_mouse(void *data, bool state)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   if (!wl->wl_pointer)
+      return;
+
+   if (state)
+   {
+      struct wl_cursor_image *image = wl->cursor.default_cursor->images[0];
+      wl_pointer_set_cursor(wl->wl_pointer, wl->cursor.serial, wl->cursor.surface, image->hotspot_x, image->hotspot_y);
+      wl_surface_attach(wl->cursor.surface, wl_cursor_image_get_buffer(image), 0, 0);
+      wl_surface_damage(wl->cursor.surface, 0, 0, image->width, image->height);
+      wl_surface_commit(wl->cursor.surface);
+   }
+   else
+      wl_pointer_set_cursor(wl->wl_pointer, wl->cursor.serial, NULL, 0, 0);
+
+   wl->cursor.visible = state;
+}
+
 const gfx_ctx_driver_t gfx_ctx_wayland = {
    gfx_ctx_wl_init,
    gfx_ctx_wl_destroy,
@@ -1615,7 +1679,7 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
    gfx_ctx_wl_get_proc_address,
    NULL,
    NULL,
-   NULL,
+   gfx_ctx_wl_show_mouse,
    "wayland",
    gfx_ctx_wl_get_flags,
    gfx_ctx_wl_set_flags,
@@ -1625,5 +1689,5 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
 #else
    NULL,
 #endif
-   NULL
+   NULL,
 };
