@@ -491,13 +491,17 @@ bool netplay_handshake_sync(netplay_t *netplay, struct netplay_connection *conne
    size_t i;
    uint32_t device;
    retro_ctx_memory_info_t mem_info;
+   size_t nicklen, nickmangle;
+   int matchct;
+   bool nick_matched;
 
    mem_info.id = RETRO_MEMORY_SAVE_RAM;
    core_get_memory(&mem_info);
 
    /* Send basic sync info */
    cmd[0] = htonl(NETPLAY_CMD_SYNC);
-   cmd[1] = htonl(3*sizeof(uint32_t) + MAX_USERS*sizeof(uint32_t) + mem_info.size);
+   cmd[1] = htonl(3*sizeof(uint32_t) + MAX_USERS*sizeof(uint32_t) +
+      NETPLAY_NICK_LEN + mem_info.size);
    cmd[2] = htonl(netplay->self_frame_count);
    connected_players = netplay->connected_players;
    if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING)
@@ -520,6 +524,43 @@ bool netplay_handshake_sync(netplay_t *netplay, struct netplay_connection *conne
                &device, sizeof(device)))
          return false;
    }
+
+   /* Now see if we need to mangle their nick */
+   nicklen = strlen(connection->nick);
+   if (nicklen > NETPLAY_NICK_LEN - 5)
+      nickmangle = NETPLAY_NICK_LEN - 5;
+   else
+      nickmangle = nicklen;
+   matchct = 1;
+   do {
+      nick_matched = false;
+      for (i = 0; i < netplay->connections_size; i++)
+      {
+         struct netplay_connection *sc = &netplay->connections[i];
+         if (sc == connection) continue;
+         if (sc->active &&
+             sc->mode >= NETPLAY_CONNECTION_CONNECTED &&
+             !strncmp(connection->nick, sc->nick, NETPLAY_NICK_LEN))
+         {
+            nick_matched = true;
+            break;
+         }
+      }
+      if (!strncmp(connection->nick, netplay->nick, NETPLAY_NICK_LEN))
+         nick_matched = true;
+
+      if (nick_matched)
+      {
+         /* Somebody has this nick, make a new one! */
+         snprintf(connection->nick + nickmangle, NETPLAY_NICK_LEN - nickmangle, " (%d)", ++matchct);
+         connection->nick[NETPLAY_NICK_LEN - 1] = '\0';
+      }
+   } while (nick_matched);
+
+   /* Send the nick */
+   if (!netplay_send(&connection->send_packet_buffer, connection->fd,
+         connection->nick, NETPLAY_NICK_LEN))
+      return false;
 
    /* And finally, the SRAM */
    if (!netplay_send(&connection->send_packet_buffer, connection->fd,
@@ -765,6 +806,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
    ssize_t recvd;
    settings_t *settings = config_get_ptr();
    retro_ctx_controller_info_t pad;
+   char new_nick[NETPLAY_NICK_LEN];
    retro_ctx_memory_info_t mem_info;
 
    RECV(cmd, sizeof(cmd))
@@ -777,7 +819,8 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
 
    /* Only expecting a sync command */
    if (ntohl(cmd[0]) != NETPLAY_CMD_SYNC ||
-       ntohl(cmd[1]) < 3*sizeof(uint32_t) + MAX_USERS*sizeof(uint32_t))
+       ntohl(cmd[1]) < 3*sizeof(uint32_t) + MAX_USERS*sizeof(uint32_t) +
+         NETPLAY_NICK_LEN)
    {
       RARCH_ERR("%s\n",
             msg_hash_to_str(MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST));
@@ -840,12 +883,25 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
       core_set_controller_port_device(&pad);
    }
 
+   /* Get our nick */
+   RECV(new_nick, NETPLAY_NICK_LEN)
+      return false;
+   if (strncmp(netplay->nick, new_nick, NETPLAY_NICK_LEN))
+   {
+      char msg[512];
+      strlcpy(netplay->nick, new_nick, NETPLAY_NICK_LEN);
+      snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_NETPLAY_CHANGED_NICK), netplay->nick);
+      RARCH_LOG("%s\n", msg);
+      runloop_msg_queue_push(msg, 1, 180, false);
+   }
+
    /* Now check the SRAM */
    mem_info.id = RETRO_MEMORY_SAVE_RAM;
    core_get_memory(&mem_info);
 
    local_sram_size = mem_info.size;
-   remote_sram_size = ntohl(cmd[1]) - 3*sizeof(uint32_t) - MAX_USERS*sizeof(uint32_t);
+   remote_sram_size = ntohl(cmd[1]) - 3*sizeof(uint32_t) -
+      MAX_USERS*sizeof(uint32_t) - NETPLAY_NICK_LEN;
 
    if (local_sram_size != 0 && local_sram_size == remote_sram_size)
    {

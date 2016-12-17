@@ -211,14 +211,16 @@ Payload:
        connected players: uint32
        flip frame: uint32
        controller devices: uint32[16]
+       client nick: char[32]
        sram: variable
     }
 Description:
     Initial state synchronization. Mandatory handshake command from server to
-    client only. Sent after receiving client's NICK. Connected players is a
-    bitmap with the lowest bit being player 0. Flip frame is 0 if players
-    aren't flipped. Controller devices are the devices plugged into each
-    controller port, and 16 is really MAX_USERS.
+    client only. Connected players is a bitmap with the lowest bit being player
+    0. Flip frame is 0 if players aren't flipped. Controller devices are the
+    devices plugged into each controller port, and 16 is really MAX_USERS.
+    Client is forced to have a different nick if multiple clients have the same
+    nick.
 
 Command: SPECTATE
 Payload: None

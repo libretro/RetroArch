@@ -103,6 +103,10 @@ MSG_HASH(
       "Netplay peer \"%s\" paused"
       )
 MSG_HASH(
+      MSG_NETPLAY_CHANGED_NICK,
+      "Your nickname changed to \"%s\""
+      )
+MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
       "Give hardware-rendered cores their own private context. Avoids having to assume hardware state changes inbetween frames."
       )
