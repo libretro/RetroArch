@@ -1152,15 +1152,24 @@ int netplay_poll_net_input(netplay_t *netplay, bool block)
       netplay->timeout_cnt++;
 
       /* Make sure we're actually ready for data */
-      netplay_update_unread_ptr(netplay);
-      if (!netplay_delta_frame_ready(netplay,
-         &netplay->buffer[netplay->unread_ptr], netplay->unread_frame_count))
-         break;
-      if (!netplay->is_server &&
-          !netplay_delta_frame_ready(netplay,
-            &netplay->buffer[netplay->server_ptr],
-            netplay->server_frame_count))
-         break;
+      if (netplay->self_mode >= NETPLAY_CONNECTION_CONNECTED)
+      {
+          netplay_update_unread_ptr(netplay);
+          if (!netplay_delta_frame_ready(netplay,
+             &netplay->buffer[netplay->unread_ptr], netplay->unread_frame_count))
+          {
+             fprintf(stderr, "CATASTROPHE: Cannot load %u (%lu) while at %u (%lu)\n", netplay->self_frame_count, netplay->self_ptr, netplay->unread_frame_count, netplay->unread_ptr);
+             break;
+          }
+          if (!netplay->is_server &&
+              !netplay_delta_frame_ready(netplay,
+                &netplay->buffer[netplay->server_ptr],
+                netplay->server_frame_count))
+          {
+             fprintf(stderr, "CATASTROPHE DEUX\n");
+             break;
+          }
+      }
 
       /* Read input from each connection */
       for (i = 0; i < netplay->connections_size; i++)
