@@ -178,9 +178,9 @@ static int file_archive_get_file_list_cb(
       struct archive_extract_userdata *userdata)
 {
    union string_list_elem_attr attr;
+   int ret                      = 0;
    struct string_list *ext_list = NULL;
-   const char *file_ext         = NULL;
-   size_t pathLen = strlen(path);
+   size_t path_len              = strlen(path);
 
    (void)cdata;
    (void)cmode;
@@ -190,7 +190,7 @@ static int file_archive_get_file_list_cb(
 
    memset(&attr, 0, sizeof(attr));
 
-   if (!pathLen)
+   if (!path_len)
       return 0;
 
    if (valid_exts)
@@ -198,8 +198,9 @@ static int file_archive_get_file_list_cb(
 
    if (ext_list)
    {
+      const char *file_ext         = NULL;
       /* Checks if this entry is a directory or a file. */
-      char last_char = path[pathLen-1];
+      char last_char = path[path_len-1];
 
       /* Skip if directory. */
       if (last_char == '/' || last_char == '\\' )
@@ -207,9 +208,14 @@ static int file_archive_get_file_list_cb(
 
       file_ext = path_get_extension(path);
 
-      if (!file_ext ||
-            !string_list_find_elem_prefix(ext_list, ".", file_ext))
+      if (!file_ext)
          goto error;
+      
+      if (!string_list_find_elem_prefix(ext_list, ".", file_ext))
+      {
+         ret = -1;
+         goto error;
+      }
 
       attr.i = RARCH_COMPRESSED_FILE_IN_ARCHIVE;
       string_list_free(ext_list);
@@ -219,7 +225,7 @@ static int file_archive_get_file_list_cb(
 
 error:
    string_list_free(ext_list);
-   return 0;
+   return ret;
 }
 
 static int file_archive_extract_cb(const char *name, const char *valid_exts,
@@ -573,6 +579,7 @@ end:
 struct string_list *file_archive_get_file_list(const char *path,
       const char *valid_exts)
 {
+   int ret;
    struct archive_extract_userdata userdata = {{0}};
 
    userdata.list_only = true;
@@ -583,9 +590,12 @@ struct string_list *file_archive_get_file_list(const char *path,
    if (!userdata.list)
       goto error;
 
-   if (!file_archive_walk(path, valid_exts,
-            file_archive_get_file_list_cb, &userdata))
-      goto error;
+   if ((ret = file_archive_walk(path, valid_exts,
+            file_archive_get_file_list_cb, &userdata)) <= 0)
+   {
+      if (ret != -1)
+         goto error;
+   }
 
    return userdata.list;
 
