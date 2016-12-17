@@ -3413,7 +3413,7 @@ static int menu_displaylist_parse_cores(
       path = str_list->elems[i].data;
 
       if (!string_is_empty(info->path))
-         path = path_basename_special(path);
+         path = path_basename(path);
 
 #ifndef HAVE_DYNAMIC
       if (frontend_driver_has_fork())

@@ -908,7 +908,7 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
    if (system)
       core_name = system->info.library_name;
 
-   game_name = path_basename_special(path_get(RARCH_PATH_BASENAME));
+   game_name = path_basename(path_get(RARCH_PATH_BASENAME));
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;

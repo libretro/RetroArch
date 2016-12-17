@@ -328,7 +328,7 @@ bool task_push_decompress(
    t->user_data   = user_data;
 
    snprintf(tmp, sizeof(tmp), "%s '%s'",
-         msg_hash_to_str(MSG_EXTRACTING), path_basename_special(source_file));
+         msg_hash_to_str(MSG_EXTRACTING), path_basename(source_file));
 
    t->title       = strdup(tmp);
 

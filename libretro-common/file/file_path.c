@@ -510,7 +510,15 @@ void path_parent_dir(char *path)
  **/
 const char *path_basename(const char *path)
 {
+   /* We cut either at the first compression-related hash or the last slash; whichever comes last */
    const char *last = find_last_slash(path);
+
+#ifdef HAVE_COMPRESSION
+   const char *delim = path_get_archive_delim(path);
+
+   if (delim)
+      return delim + 1;
+#endif
 
    if (last)
       return last + 1;

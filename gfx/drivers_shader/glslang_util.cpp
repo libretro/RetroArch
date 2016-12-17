@@ -28,8 +28,6 @@
 #include "glslang_util.hpp"
 #include "glslang.hpp"
 
-#include "../../file_path_special.h"
-
 #include "../../verbosity.h"
 
 using namespace std;
@@ -42,7 +40,7 @@ static bool read_shader_file(const char *path, vector<string> *output, bool root
    char                          *ptr = NULL;
    char                          *buf = nullptr;
    ssize_t                        len = 0;
-   const char *basename               = path_basename_special(path);
+   const char *basename               = path_basename(path);
 
    include_path[0] = tmp[0] = '\0';
 
