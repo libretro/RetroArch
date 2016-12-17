@@ -1457,6 +1457,8 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
    vkGetPhysicalDeviceMemoryProperties(vk->context.gpu,
          &vk->context.memory_properties);
 
+   RARCH_LOG("[Vulkan]: Using GPU: %s\n", vk->context.gpu_properties.deviceName);
+
    if (vk->context.device == VK_NULL_HANDLE)
    {
       VkQueueFamilyProperties *queue_properties = NULL;

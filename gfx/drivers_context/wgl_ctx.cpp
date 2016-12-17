@@ -276,12 +276,12 @@ void *dinput_wgl;
 static void gfx_ctx_wgl_swap_interval(void *data, unsigned interval)
 {
    (void)data;
-   win32_interval = interval;
 
    switch (win32_api)
    {
       case GFX_CTX_OPENGL_API:
 #ifdef HAVE_OPENGL
+         win32_interval = interval;
          if (!win32_hrc)
             return;
          if (!p_swap_interval)
@@ -306,6 +306,7 @@ static void gfx_ctx_wgl_swap_interval(void *data, unsigned interval)
 
       case GFX_CTX_NONE:
       default:
+         win32_interval = interval;
          break;
    }
 }
