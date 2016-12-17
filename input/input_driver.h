@@ -314,7 +314,6 @@ extern input_driver_t input_android;
 extern input_driver_t input_sdl;
 extern input_driver_t input_dinput;
 extern input_driver_t input_x;
-extern input_driver_t input_wayland;
 extern input_driver_t input_ps3;
 extern input_driver_t input_psp;
 extern input_driver_t input_ctr;
