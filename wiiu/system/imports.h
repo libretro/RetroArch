@@ -71,6 +71,11 @@ IMPORT(FSGetMountSource);
 IMPORT(FSMount);
 IMPORT(FSUnmount);
 
+IMPORT(IOS_Open);
+IMPORT(IOS_Close);
+IMPORT(IOS_Ioctl);
+IMPORT(IOS_IoctlAsync);
+
 IMPORT_END();
 
 /* nsysnet */
