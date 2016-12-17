@@ -98,8 +98,8 @@ LD      := $(CXX)
 
 ELF2RPL   := $(WUT_ROOT)/tools/bin/elf2rpl
 
-INCDIRS := -I. -Ideps/zlib -Ideps/7zip -Ilibretro-common/include -Iwiiu -I$(WUT_ROOT)/include
-LIBDIRS := -L.
+INCDIRS := -I. -Ideps/zlib -Ideps/7zip -Ilibretro-common/include -Iwiiu -I$(WUT_ROOT)/include -I$(DEVKITPRO)/portlibs/ppc/include
+LIBDIRS := -L. -L$(DEVKITPRO)/portlibs/ppc/lib
 
 CFLAGS  := -mrvl -mcpu=750 -meabi -mhard-float
 LDFLAGS :=
@@ -117,7 +117,7 @@ CFLAGS +=  -ffast-math -Werror=implicit-function-declaration
 #CFLAGS += -fomit-frame-pointer -mword-relocations
 #CFLAGS	+= -Wall
 CFLAGS += -Dstatic_assert=_Static_assert
-CFLAGS += -DWIIU -DMSB_FIRST
+CFLAGS += -DWIIU -D__wiiu__ -DMSB_FIRST
 CFLAGS += -DHAVE_MAIN
 CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE
 CFLAGS += -DHAVE_FILTERS_BUILTIN $(DEFINES)
@@ -138,7 +138,7 @@ CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions
 
 LDFLAGS  += -Wl,--gc-sections
 
-LIBS	:= $(WHOLE_START) -lretro_wiiu $(WHOLE_END) -lm
+LIBS	:= $(WHOLE_START) -lretro_wiiu $(WHOLE_END) -lm -lfat -liosuhax
 
 
 RPX_OBJ           = wiiu/system/stubs_rpl.o
