@@ -24,6 +24,9 @@
 #pragma comment( lib, "comctl32" )
 #endif
 
+#define TITLE_MAX PATH_MAX
+#define FULLPATH_MAX 32768
+
 #define IDI_ICON 1
 
 #ifndef _WIN32_WINNT
@@ -36,6 +39,7 @@
 #include <commctrl.h>
 
 #include <retro_inline.h>
+#include <retro_miscellaneous.h>
 #include <file/file_path.h>
 
 #include "../ui_companion_driver.h"
@@ -508,25 +512,36 @@ static bool win32_browser(
       const char *initial_dir)
 {
    bool result = false;
+   char empty[1] = {0};
    const ui_browser_window_t *browser = 
       ui_companion_driver_get_browser_window_ptr();
 
    if (browser)
    {
       ui_browser_window_state_t browser_state;
+      /* OPENFILENAME.lpstrFilter requires a null separated list of name/ext pairs terminated by a second null at the end. */
+      char *all_files[] = {"All Files", "*.*", ""};
 
-      browser_state.filters  = strdup(extensions);
-      browser_state.title    = strdup(title);
-      browser_state.startdir = strdup(initial_dir);
-      browser_state.path     = strdup(filename);
+      /* These need to be big enough to hold the path/name of any file the user may select.
+       * FIXME: We should really handle the error case when this isn't big enough. */
+      char new_title[TITLE_MAX] = {0};
+      char new_file[FULLPATH_MAX] = {0};
+
+      if (title && *title)
+         strlcpy(new_title, title, sizeof(new_title));
+
+      if (filename && *filename)
+         strlcpy(new_file, filename, sizeof(new_file));
+
+      browser_state.filters  = all_files[0];
+      browser_state.title    = new_title;
+      browser_state.startdir = (initial_dir && *initial_dir) ? strdup(initial_dir) : strdup(empty);
+      browser_state.path     = new_file;
       browser_state.window   = owner;
 
       result = browser->open(&browser_state);
 
-      free(browser_state.filters);
-      free(browser_state.title);
       free(browser_state.startdir);
-      free(browser_state.path);
    }
 
    return result;
@@ -539,15 +554,18 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
    bool do_wm_close     = false;
    settings_t *settings = config_get_ptr();
 
-	switch (mode)
+   switch (mode)
    {
       case ID_M_LOAD_CORE:
       case ID_M_LOAD_CONTENT:
          {
             char win32_file[PATH_MAX_LENGTH] = {0};
+            wchar_t title_wide[PATH_MAX] = {0};
+            char title_cp[PATH_MAX] = {0};
             const char *extensions  = NULL;
             const char *title       = NULL;
             const char *initial_dir = NULL;
+       size_t converted        = 0;
 
             switch (mode)
             {
@@ -564,8 +582,13 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
                   break;
             }
 
+       /* Convert UTF8 to UTF16, then back to the local code page.
+        * This is needed for proper multi-byte string display until Unicode is fully supported. */
+       MultiByteToWideChar(CP_UTF8, 0, title, -1, title_wide, sizeof(title_wide) / sizeof(title_wide[0]));
+       wcstombs_s(&converted, title_cp, sizeof(title_cp), title_wide, sizeof(title_cp) - 1);
+
             if (!win32_browser(owner, win32_file,
-                     extensions, title, initial_dir))
+                     extensions, title_cp, initial_dir))
                break;
 
             switch (mode)
@@ -657,13 +680,13 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
          break;
    }
 
-	if (cmd != CMD_EVENT_NONE)
-		command_event(cmd, NULL);
+   if (cmd != CMD_EVENT_NONE)
+      command_event(cmd, NULL);
 
-	if (do_wm_close)
-		PostMessage(owner, WM_CLOSE, 0, 0);
-	
-	return 0L;
+   if (do_wm_close)
+      PostMessage(owner, WM_CLOSE, 0, 0);
+   
+   return 0L;
 }
 
 static void ui_companion_win32_deinit(void *data)
