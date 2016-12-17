@@ -23,6 +23,8 @@
 #include <net/net_compat.h>
 #include <retro_stat.h>
 
+#include "../file_path_special.h"
+
 #include "../msg_hash.h"
 #include "../verbosity.h"
 #include "tasks_internal.h"
@@ -291,7 +293,7 @@ void *task_push_http_transfer(const char *url, bool mute, const char *type,
    t->progress             = -1;
 
    snprintf(tmp, sizeof(tmp), "%s '%s'",
-         msg_hash_to_str(MSG_DOWNLOADING), path_basename(url));
+         msg_hash_to_str(MSG_DOWNLOADING), path_basename_special(url));
 
    t->title                = strdup(tmp);
 

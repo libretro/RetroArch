@@ -534,3 +534,25 @@ void path_basedir_wrapper(char *path)
    else
       snprintf(path, 3, ".%s", path_default_slash());
 }
+
+/**
+ * path_basename:
+ * @path               : path
+ *
+ * Get basename from @path.
+ *
+ * Returns: basename from path.
+ **/
+const char *path_basename_special(const char *path)
+{
+#ifdef HAVE_COMPRESSION
+   /* We cut either at the first compression-related 
+    * hash or the last slash; whichever comes last. */
+   const char *delim = path_get_archive_delim(path);
+
+   if (delim)
+      return delim + 1;
+#endif
+
+   return path_basename(path);
+}

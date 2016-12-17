@@ -2233,7 +2233,7 @@ bool config_load_override(void)
 
    if (system)
       core_name = system->info.library_name;
-   game_name = path_basename(path_get(RARCH_PATH_BASENAME));
+   game_name = path_basename_special(path_get(RARCH_PATH_BASENAME));
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
@@ -2390,7 +2390,7 @@ bool config_load_remap(void)
    if (system)
       core_name = system->info.library_name;
 
-   game_name = path_basename(path_get(RARCH_PATH_BASENAME));
+   game_name = path_basename_special(path_get(RARCH_PATH_BASENAME));
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
@@ -2492,7 +2492,7 @@ bool config_load_shader_preset(void)
    if (system)
       core_name = system->info.library_name;
 
-   game_name = path_basename(path_get(RARCH_PATH_BASENAME));
+   game_name = path_basename_special(path_get(RARCH_PATH_BASENAME));
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
@@ -3092,7 +3092,7 @@ bool config_save_overrides(int override_type)
    if (system)
       core_name = system->info.library_name;
 
-   game_name = path_basename(path_get(RARCH_PATH_BASENAME));
+   game_name = path_basename_special(path_get(RARCH_PATH_BASENAME));
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;

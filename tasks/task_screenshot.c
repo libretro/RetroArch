@@ -202,7 +202,8 @@ static bool screenshot_dump(
    else
    {
       if (settings->auto_screenshot_filename)
-         fill_str_dated_filename(state->shotname, path_basename(name_base),
+         fill_str_dated_filename(state->shotname,
+               path_basename(name_base),
                IMG_EXT, sizeof(state->shotname));
       else
          snprintf(state->shotname, sizeof(state->shotname),

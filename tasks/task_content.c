@@ -393,7 +393,7 @@ static bool load_content_from_compressed_archive(
    attributes.i   = 0;
 
    fill_pathname_join(new_path, new_basedir,
-         path_basename(path), sizeof(new_path));
+         path_basename_special(path), sizeof(new_path));
 
    ret = file_archive_compressed_read(path, NULL, new_path, &new_path_len);
 
