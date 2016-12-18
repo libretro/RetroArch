@@ -165,23 +165,11 @@ typedef struct
    uint8_t *img_buffer_original;
 } rjpeg__context;
 
-static uint8_t *rjpeg__jpeg_load(rjpeg__context *s, unsigned *x, unsigned *y, int *comp, int req_comp);
-
 #define rjpeg__err(x,y)  0
 
 #define rjpeg__errpf(x,y)   ((float *) (rjpeg__err(x,y)?NULL:NULL))
 #define rjpeg__errpuc(x,y)  ((unsigned char *) (rjpeg__err(x,y)?NULL:NULL))
 
-static uint8_t *rjpeg_load_from_memory(const uint8_t *buffer, int len,
-      unsigned *x, unsigned *y, int *comp, int req_comp)
-{
-   rjpeg__context s;
-   s.io.read             = NULL;
-   s.img_buffer          = (uint8_t*)buffer;
-   s.img_buffer_original = (uint8_t*)buffer;
-   s.img_buffer_end      = (uint8_t*)buffer+len;
-   return rjpeg__jpeg_load(&s,x,y,comp,req_comp);
-}
 
 static INLINE uint8_t rjpeg__get8(rjpeg__context *s)
 {
@@ -2524,12 +2512,20 @@ error:
    return NULL;
 }
 
-static unsigned char *rjpeg__jpeg_load(rjpeg__context *s,
+static uint8_t *rjpeg_load_from_memory(const uint8_t *buffer, int len,
       unsigned *x, unsigned *y, int *comp, int req_comp)
 {
    rjpeg__jpeg j;
-   j.s = s;
+   rjpeg__context s;
+
+   s.io.read             = NULL;
+   s.img_buffer          = (uint8_t*)buffer;
+   s.img_buffer_original = (uint8_t*)buffer;
+   s.img_buffer_end      = (uint8_t*)buffer+len;
+
+   j.s                   = &s;
    rjpeg__setup_jpeg(&j);
+
    return rjpeg_load_jpeg_image(&j, x,y,comp,req_comp);
 }
 
