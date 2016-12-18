@@ -520,6 +520,7 @@
 					"-DHAVE_SHADERPIPELINE",
 					"-DHAVE_MMAP",
 					"-DHAVE_LIBRETRODB",
+					"-DHAVE_GETOPT_LONG",
 				);
 				PREBINDING = NO;
 				SDKROOT = macosx;
@@ -573,6 +574,7 @@
 					"-DHAVE_SHADERPIPELINE",
 					"-DHAVE_MMAP",
 					"-DHAVE_LIBRETRODB",
+					"-DHAVE_GETOPT_LONG",
 				);
 				PREBINDING = NO;
 				SDKROOT = macosx;
