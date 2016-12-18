@@ -154,9 +154,6 @@ typedef struct
    int      img_n;
    int      img_out_n;
 
-   rjpeg_io_callbacks io;
-   void *io_user_data;
-
    int      buflen;
    uint8_t  buffer_start[128];
 
@@ -173,44 +170,9 @@ static INLINE uint8_t rjpeg__get8(rjpeg__context *s)
    return 0;
 }
 
-static INLINE int rjpeg__at_eof(rjpeg__context *s)
-{
-   if (s->io.read)
-   {
-      if (!(s->io.eof)(s->io_user_data))
-         return 0;
-   }
+#define RJPEG__AT_EOF(s)    ((s)->img_buffer >= (s)->img_buffer_end)
 
-   return s->img_buffer >= s->img_buffer_end;
-}
-
-static void rjpeg__skip(rjpeg__context *s, int n)
-{
-   if (n < 0)
-   {
-      s->img_buffer = s->img_buffer_end;
-      return;
-   }
-
-   if (s->io.read)
-   {
-      int blen = (int) (s->img_buffer_end - s->img_buffer);
-
-      if (blen < n)
-      {
-         s->img_buffer = s->img_buffer_end;
-         (s->io.skip)(s->io_user_data, n - blen);
-         return;
-      }
-   }
-   s->img_buffer += n;
-}
-
-static int rjpeg__get16be(rjpeg__context *s)
-{
-   int z = rjpeg__get8(s);
-   return (z << 8) + rjpeg__get8(s);
-}
+#define RJPEG__GET16BE(s)   ((rjpeg__get8((s)) << 8) + rjpeg__get8((s)))
 
 #define RJPEG__BYTECAST(x)  ((uint8_t) ((x) & 255))  /* truncate int to byte without warnings */
 
@@ -407,7 +369,7 @@ static void rjpeg__grow_buffer_unsafe(rjpeg__jpeg *j)
          }
       }
       j->code_buffer |= b << (24 - j->code_bits);
-      j->code_bits += 8;
+      j->code_bits   += 8;
    } while (j->code_bits <= 24);
 }
 
@@ -1573,14 +1535,14 @@ static int rjpeg__process_marker(rjpeg__jpeg *z, int m)
       case 0xDD: /* DRI - specify restart interval */
 
          /* Bad DRI length. Corrupt JPEG? */
-         if (rjpeg__get16be(z->s) != 4)
+         if (RJPEG__GET16BE(z->s) != 4)
             return 0;
 
-         z->restart_interval = rjpeg__get16be(z->s);
+         z->restart_interval = RJPEG__GET16BE(z->s);
          return 1;
 
       case 0xDB: /* DQT - define quantization table */
-         L = rjpeg__get16be(z->s)-2;
+         L = RJPEG__GET16BE(z->s)-2;
          while (L > 0)
          {
             int q = rjpeg__get8(z->s);
@@ -1602,7 +1564,7 @@ static int rjpeg__process_marker(rjpeg__jpeg *z, int m)
          return L==0;
 
       case 0xC4: /* DHT - define huffman table */
-         L = rjpeg__get16be(z->s)-2;
+         L = RJPEG__GET16BE(z->s)-2;
          while (L > 0)
          {
             int sizes[16],i,n=0;
@@ -1646,7 +1608,13 @@ static int rjpeg__process_marker(rjpeg__jpeg *z, int m)
    /* check for comment block or APP blocks */
    if ((m >= 0xE0 && m <= 0xEF) || m == 0xFE)
    {
-      rjpeg__skip(z->s, rjpeg__get16be(z->s)-2);
+      int n = RJPEG__GET16BE(z->s)-2;
+
+      if (n < 0)
+         z->s->img_buffer = z->s->img_buffer_end;
+      else
+         z->s->img_buffer += n;
+
       return 1;
    }
    return 0;
@@ -1657,7 +1625,7 @@ static int rjpeg__process_scan_header(rjpeg__jpeg *z)
 {
    int i;
    int aa;
-   int Ls    = rjpeg__get16be(z->s);
+   int Ls    = RJPEG__GET16BE(z->s);
 
    z->scan_n = rjpeg__get8(z->s);
 
@@ -1726,7 +1694,7 @@ static int rjpeg__process_frame_header(rjpeg__jpeg *z, int scan)
 {
    rjpeg__context *s = z->s;
    int Lf,p,i,q, h_max=1,v_max=1,c;
-   Lf = rjpeg__get16be(s);
+   Lf = RJPEG__GET16BE(s);
    
    /* JPEG */
 
@@ -1742,7 +1710,7 @@ static int rjpeg__process_frame_header(rjpeg__jpeg *z, int scan)
    if (p != 8)
       return 0;
 
-   s->img_y = rjpeg__get16be(s);
+   s->img_y = RJPEG__GET16BE(s);
 
    /* Legal, but we don't handle it--but neither does IJG */
 
@@ -1750,7 +1718,7 @@ static int rjpeg__process_frame_header(rjpeg__jpeg *z, int scan)
    if (s->img_y == 0)
       return 0;
 
-   s->img_x = rjpeg__get16be(s);
+   s->img_x = RJPEG__GET16BE(s);
   
    /* No header width. Corrupt JPEG? */
    if (s->img_x == 0)
@@ -1926,7 +1894,7 @@ static int rjpeg__decode_jpeg_header(rjpeg__jpeg *z, int scan)
          /* some files have extra padding after their blocks, so ok, we'll scan */
 
          /* No SOF. Corrupt JPEG? */
-         if (rjpeg__at_eof(z->s))
+         if (RJPEG__AT_EOF(z->s))
             return 0;
 
          m = rjpeg__get_marker(z);
@@ -1964,7 +1932,8 @@ static int rjpeg__decode_jpeg_image(rjpeg__jpeg *j)
          if (j->marker == RJPEG__MARKER_NONE )
          {
             /* handle 0s at the end of image data from IP Kamera 9060 */
-            while (!rjpeg__at_eof(j->s))
+
+            while (!RJPEG__AT_EOF(j->s))
             {
                int x = rjpeg__get8(j->s);
                if (x == 255)
@@ -1975,6 +1944,7 @@ static int rjpeg__decode_jpeg_image(rjpeg__jpeg *j)
                else if (x != 0) /* Junk before marker. Corrupt JPEG? */
                   return 0;
             }
+
             /* if we reach eof without hitting a marker, 
              * rjpeg__get_marker() below will fail and we'll eventually return 0 */
          }
@@ -2579,7 +2549,6 @@ static uint8_t *rjpeg_load_from_memory(const uint8_t *buffer, int len,
    rjpeg__jpeg j;
    rjpeg__context s;
 
-   s.io.read             = NULL;
    s.img_buffer          = (uint8_t*)buffer;
    s.img_buffer_original = (uint8_t*)buffer;
    s.img_buffer_end      = (uint8_t*)buffer+len;
