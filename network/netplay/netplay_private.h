@@ -234,7 +234,7 @@ bool netplay_init_serialization(netplay_t *netplay);
 /* Force serialization to be ready by fast-forwarding the core */
 bool netplay_wait_and_init_serialization(netplay_t *netplay);
 
-void netplay_simulate_input(netplay_t *netplay, uint32_t sim_ptr);
+void netplay_simulate_input(netplay_t *netplay, uint32_t sim_ptr, bool resim);
 
 void   netplay_log_connection(const struct sockaddr_storage *their_addr,
       unsigned slot, const char *nick);
