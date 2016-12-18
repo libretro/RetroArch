@@ -166,6 +166,7 @@ enum netplay_cmd
 };
 
 #define NETPLAY_CMD_INPUT_BIT_SERVER   (1U<<31)
+#define NETPLAY_CMD_SYNC_BIT_PAUSED    (1U<<31)
 #define NETPLAY_CMD_MODE_BIT_PLAYING   (1U<<17)
 #define NETPLAY_CMD_MODE_BIT_YOU       (1U<<16)
 

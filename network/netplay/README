@@ -208,7 +208,8 @@ Command: SYNC
 Payload:
     {
        frame number: uint32
-       connected players: uint32
+       paused?: 1 bit
+       connected players: 31 bits
        flip frame: uint32
        controller devices: uint32[16]
        client nick: char[32]

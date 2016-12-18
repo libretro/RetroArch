@@ -191,7 +191,7 @@ bool netplay_sync_pre_frame(netplay_t *netplay)
       }
       else if (!(netplay->quirks & NETPLAY_QUIRK_NO_SAVESTATES) && core_serialize(&serial_info))
       {
-         if (netplay->force_send_savestate && !netplay->stall)
+         if (netplay->force_send_savestate && !netplay->stall && !netplay->remote_paused)
          {
             /* Send this along to the other side */
             serial_info.data_const = netplay->buffer[netplay->self_ptr].state;

@@ -506,6 +506,8 @@ bool netplay_handshake_sync(netplay_t *netplay, struct netplay_connection *conne
    connected_players = netplay->connected_players;
    if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING)
       connected_players |= 1<<netplay->self_player;
+   if (netplay->local_paused || netplay->remote_paused)
+      connected_players |= NETPLAY_CMD_SYNC_BIT_PAUSED;
    cmd[3] = htonl(connected_players);
    if (netplay->flip)
       cmd[4] = htonl(netplay->flip_frame);
@@ -852,10 +854,15 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
       return false;
    new_frame_count = ntohl(new_frame_count);
 
-   /* Get the connected players */
+   /* Get the connected players and pause mode */
    RECV(&connected_players, sizeof(connected_players))
       return false;
    connected_players = ntohl(connected_players);
+   if (connected_players & NETPLAY_CMD_SYNC_BIT_PAUSED)
+   {
+      netplay->remote_paused = true;
+      connected_players ^= NETPLAY_CMD_SYNC_BIT_PAUSED;
+   }
    netplay->connected_players = connected_players;
 
    /* And the flip state */
