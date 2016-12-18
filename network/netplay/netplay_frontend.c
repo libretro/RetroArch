@@ -152,6 +152,26 @@ static bool get_self_input_state(netplay_t *netplay)
    return true;
 }
 
+static uint32_t netplay_max_ahead(netplay_t *netplay)
+{
+   uint32_t max_ahead;
+
+   /* Figure out how many frames we're allowed to be ahead: Ideally we need to be
+    * able to run our entire stall worth of frames in one real frame. In
+    * practice, we'll allow a couple jitter frames.  (FIXME: hard coded
+    * as three 60FPS frames) */
+   if (netplay_data->frame_run_time_avg)
+      max_ahead = 50000 / netplay_data->frame_run_time_avg;
+   else
+      max_ahead = NETPLAY_MAX_STALL_FRAMES;
+   if (max_ahead > NETPLAY_MAX_STALL_FRAMES)
+      max_ahead = NETPLAY_MAX_STALL_FRAMES;
+   if (max_ahead < 2)
+      max_ahead = 2;
+
+   return max_ahead;
+}
+
 /**
  * netplay_poll:
  * @netplay              : pointer to netplay object
@@ -198,8 +218,11 @@ static bool netplay_poll(void)
    switch (netplay_data->stall)
    {
       case NETPLAY_STALL_RUNNING_FAST:
+      {
+         uint32_t max_ahead = netplay_max_ahead(netplay_data);
          netplay_update_unread_ptr(netplay_data);
-         if (netplay_data->unread_frame_count >= netplay_data->self_frame_count)
+         if (netplay_data->unread_frame_count + max_ahead - 2
+               > netplay_data->self_frame_count)
          {
             netplay_data->stall = NETPLAY_STALL_NONE;
             for (i = 0; i < netplay_data->connections_size; i++)
@@ -210,6 +233,7 @@ static bool netplay_poll(void)
             }
          }
          break;
+      }
 
       case NETPLAY_STALL_NO_CONNECTION:
          /* We certainly haven't fixed this */
@@ -217,18 +241,7 @@ static bool netplay_poll(void)
 
       default: /* not stalling */
       {
-         retro_time_t max_ahead;
-
-         /* Figure out how many frames we're allowed to be ahead: Ideally we need to be
-          * able to run our entire stall worth of frames in one real frame. In
-          * practice, we'll allow a couple jitter frames.  (FIXME: hard coded
-          * as three 60FPS frame) */
-         if (netplay_data->frame_run_time_avg)
-            max_ahead = 50000 / netplay_data->frame_run_time_avg;
-         else
-            max_ahead = NETPLAY_MAX_STALL_FRAMES;
-         if (max_ahead > NETPLAY_MAX_STALL_FRAMES)
-            max_ahead = NETPLAY_MAX_STALL_FRAMES;
+         uint32_t max_ahead = netplay_max_ahead(netplay_data);
 
          /* Are we too far ahead? */
          netplay_update_unread_ptr(netplay_data);

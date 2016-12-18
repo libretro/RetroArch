@@ -479,9 +479,8 @@ static bool netplay_get_cmd(netplay_t *netplay,
             dframe = &netplay->buffer[netplay->read_ptr[player]];
             if (!netplay_delta_frame_ready(netplay, dframe, netplay->read_frame_count[player]))
             {
-               /* FIXME: Catastrophe! */
-               RARCH_ERR("Netplay input from %u without a ready delta frame!\n", player);
-               return netplay_cmd_nak(netplay, connection);
+               /* Hopefully we'll be ready after another round of input */
+               goto shrt;
             }
             memcpy(dframe->real_input_state[player], buffer + 2,
                WORDS_PER_INPUT*sizeof(uint32_t));
@@ -1078,8 +1077,8 @@ static bool netplay_get_cmd(netplay_t *netplay,
 
             if (!netplay_delta_frame_ready(netplay, &netplay->buffer[netplay->read_ptr[connection->player]], frame))
             {
-               RARCH_ERR("CMD_LOAD_SAVESTATE with unready delta frame.\n");
-               return netplay_cmd_nak(netplay, connection);
+               /* Hopefully it will be after another round of input */
+               goto shrt;
             }
 
             RECV(&isize, sizeof(isize))
@@ -1235,15 +1234,6 @@ int netplay_poll_net_input(netplay_t *netplay, bool block)
       had_input = false;
 
       netplay->timeout_cnt++;
-
-      /* Make sure we're actually ready for data */
-      if (netplay->self_mode >= NETPLAY_CONNECTION_CONNECTED)
-      {
-         netplay_update_unread_ptr(netplay);
-         if (!netplay_delta_frame_ready(netplay,
-               &netplay->buffer[netplay->unread_ptr], netplay->unread_frame_count))
-            break;
-      }
 
       /* Read input from each connection */
       for (i = 0; i < netplay->connections_size; i++)
