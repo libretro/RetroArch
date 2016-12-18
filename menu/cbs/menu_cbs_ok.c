@@ -3084,7 +3084,6 @@ static int action_ok_netplay_lan_scan(const char *path,
 #ifdef HAVE_NETWORKING
    struct netplay_host_list *hosts;
    struct netplay_host *host;
-   bool netplay_was_on = false;
 
    /* Figure out what host we're connecting to */
    if (!netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, &hosts))
@@ -3095,18 +3094,11 @@ static int action_ok_netplay_lan_scan(const char *path,
 
    /* Enable Netplay client mode */
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
-   {
-      netplay_was_on = true;
       command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
-   }
    netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
    /* Enable Netplay */
    if (!command_event(CMD_EVENT_NETPLAY_INIT, (void *) host))
-      return -1;
-
-   /* And make sure we use its callbacks */
-   if (!netplay_was_on && !core_set_netplay_callbacks())
       return -1;
 
    return generic_action_ok_command(CMD_EVENT_RESUME);
@@ -3531,16 +3523,8 @@ static int action_ok_netplay_enable_host(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
 #ifdef HAVE_NETWORKING
-   bool netplay_was_on = false;
-
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
-   {
-      netplay_was_on = true;
-
-      /* Netplay is already on. Kill it. */
       command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
-   }
-
    netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
 
    /* If we haven't yet started, this will load on its own */
@@ -3556,10 +3540,6 @@ static int action_ok_netplay_enable_host(const char *path,
    if (!command_event(CMD_EVENT_NETPLAY_INIT, NULL))
       return -1;
 
-   /* Then make sure we use Netplay's callbacks */
-   if (!netplay_was_on && !core_set_netplay_callbacks())
-      return -1;
-
    return generic_action_ok_command(CMD_EVENT_RESUME);
 
 #else
@@ -3572,17 +3552,10 @@ static int action_ok_netplay_enable_client(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
 #ifdef HAVE_NETWORKING
-   bool netplay_was_on  = false;
    settings_t *settings = config_get_ptr();
 
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
-   {
-      netplay_was_on = true;
-
-      /* Kill it! */
       command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
-   }
-
    netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
    /* We can't do anything without a host specified */
@@ -3605,10 +3578,6 @@ static int action_ok_netplay_enable_client(const char *path,
 
    /* Enable Netplay itself */
    if (!command_event(CMD_EVENT_NETPLAY_INIT, NULL))
-      return -1;
-
-   /* Then make sure we use Netplay's callbacks */
-   if (!netplay_was_on && !core_set_netplay_callbacks())
       return -1;
 
    return generic_action_ok_command(CMD_EVENT_RESUME);

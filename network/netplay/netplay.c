@@ -1654,6 +1654,7 @@ void deinit_netplay(void)
    if (netplay_data)
       netplay_free(netplay_data);
    netplay_data = NULL;
+   core_unset_netplay_callbacks();
 }
 
 /**
@@ -1684,6 +1685,8 @@ bool init_netplay(bool is_spectate, void *direct_host, const char *server, unsig
    }
 
    core_set_default_callbacks(&cbs);
+   if (!core_set_netplay_callbacks())
+      return false;
 
    /* Map the core's quirks to our quirks */
    serialization_quirks = core_serialization_quirks();
@@ -1780,7 +1783,8 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
       case RARCH_NETPLAY_CTL_IS_DATA_INITED:
          goto done;
       case RARCH_NETPLAY_CTL_DISABLE:
-         ret = false;
+         netplay_enabled = false;
+         deinit_netplay();
          goto done;
       case RARCH_NETPLAY_CTL_IS_ENABLED:
          goto done;

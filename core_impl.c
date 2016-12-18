@@ -184,7 +184,7 @@ bool core_set_rewind_callbacks(void)
  * core_set_netplay_callbacks:
  *
  * Set the I/O callbacks to use netplay's interceding callback system. Should
- * only be called once.
+ * only be called while initializing netplay.
  **/
 bool core_set_netplay_callbacks(void)
 {
@@ -196,6 +196,26 @@ bool core_set_netplay_callbacks(void)
    core.retro_set_audio_sample(audio_sample_net);
    core.retro_set_audio_sample_batch(audio_sample_batch_net);
    core.retro_set_input_state(input_state_net);
+
+   return true;
+}
+
+/**
+ * core_unset_netplay_callbacks
+ *
+ * Unset the I/O callbacks from having used netplay's interceding callback
+ * system. Should only be called while uninitializing netplay.
+ */
+bool core_unset_netplay_callbacks(void)
+{
+   struct retro_callbacks cbs;
+   if (!core_set_default_callbacks(&cbs))
+      return false;
+
+   core.retro_set_video_refresh(cbs.frame_cb);
+   core.retro_set_audio_sample(cbs.sample_cb);
+   core.retro_set_audio_sample_batch(cbs.sample_batch_cb);
+   core.retro_set_input_state(cbs.state_cb);
 
    return true;
 }
