@@ -57,7 +57,9 @@ static bool zlib_stream_decompress_data_to_file_init(
    if (!handle)
       return false;
 
-   if (!(handle->stream = zlib_inflate_backend.stream_new()))
+   handle->stream = zlib_inflate_backend.stream_new();
+
+   if (!handle->stream)
       goto error;
 
    if (zlib_inflate_backend.define)
@@ -123,10 +125,12 @@ static bool zip_file_decompressed_handle(
             handle, cdata, csize, size))
       return false;
 
-   do{
+   do
+   {
       ret = handle->backend->stream_decompress_data_to_file_iterate(
             handle->stream);
    }while(ret == 0);
+
 #if 0
    handle->real_checksum = handle->backend->stream_crc_calculate(0,
          handle->data, size);
@@ -231,11 +235,11 @@ static int zip_file_read(
       const char *optional_outfile)
 {
    file_archive_transfer_t zlib;
-   bool returnerr = true;
-   int ret        = 0;
    struct archive_extract_userdata userdata = {{0}};
+   bool returnerr                    = true;
+   int ret                           = 0;
 
-   zlib.type      = ARCHIVE_TRANSFER_INIT;
+   zlib.type                         = ARCHIVE_TRANSFER_INIT;
 
    userdata.decomp_state.needle      = NULL;
    userdata.decomp_state.opt_file    = NULL;

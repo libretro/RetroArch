@@ -58,17 +58,15 @@ static void* sevenzip_stream_new(void)
    struct sevenzip_context_t *sevenzip_context =
          (struct sevenzip_context_t*)calloc(1, sizeof(struct sevenzip_context_t));
 
-   memset(sevenzip_context, 0, sizeof(struct sevenzip_context_t));
-
    /* These are the allocation routines - currently using
     * the non-standard 7zip choices. */
    sevenzip_context->allocImp.Alloc     = SzAlloc;
    sevenzip_context->allocImp.Free      = SzFree;
    sevenzip_context->allocTempImp.Alloc = SzAllocTemp;
    sevenzip_context->allocTempImp.Free  = SzFreeTemp;
-   sevenzip_context->block_index = 0xFFFFFFFF;
-   sevenzip_context->output = NULL;
-   sevenzip_context->handle = NULL;
+   sevenzip_context->block_index        = 0xFFFFFFFF;
+   sevenzip_context->output             = NULL;
+   sevenzip_context->handle             = NULL;
 
    return sevenzip_context;
 }
@@ -83,7 +81,7 @@ static void sevenzip_stream_free(void *data)
    if (sevenzip_context->output)
    {
       IAlloc_Free(&sevenzip_context->allocImp, sevenzip_context->output);
-      sevenzip_context->output = NULL;
+      sevenzip_context->output       = NULL;
       sevenzip_context->handle->data = NULL;
    }
 
@@ -262,7 +260,7 @@ static int sevenzip_stream_decompress_data_to_file_iterate(void *data)
    struct sevenzip_context_t *sevenzip_context =
          (struct sevenzip_context_t*)data;
 
-   SRes res = SZ_ERROR_FAIL;
+   SRes res                = SZ_ERROR_FAIL;
    size_t output_size      = 0;
    size_t offset           = 0;
    size_t outSizeProcessed = 0;
