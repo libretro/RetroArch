@@ -83,9 +83,10 @@ static void osk_update_last_codepoint(const char *word)
 
 static void osk_update_last_char(const char c)
 {
-   char array[2] = {0};
+   char array[2];
 
    array[0] = c;
+   array[1] = 0;
 
    osk_update_last_codepoint(array);
 }

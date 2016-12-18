@@ -178,9 +178,9 @@ static int file_archive_get_file_list_cb(
       struct archive_extract_userdata *userdata)
 {
    union string_list_elem_attr attr;
+   int ret                      = 0;
    struct string_list *ext_list = NULL;
-   const char *file_ext         = NULL;
-   size_t pathLen = strlen(path);
+   size_t path_len              = strlen(path);
 
    (void)cdata;
    (void)cmode;
@@ -190,7 +190,7 @@ static int file_archive_get_file_list_cb(
 
    memset(&attr, 0, sizeof(attr));
 
-   if (!pathLen)
+   if (!path_len)
       return 0;
 
    if (valid_exts)
@@ -198,8 +198,9 @@ static int file_archive_get_file_list_cb(
 
    if (ext_list)
    {
+      const char *file_ext         = NULL;
       /* Checks if this entry is a directory or a file. */
-      char last_char = path[pathLen-1];
+      char last_char = path[path_len-1];
 
       /* Skip if directory. */
       if (last_char == '/' || last_char == '\\' )
@@ -207,9 +208,15 @@ static int file_archive_get_file_list_cb(
 
       file_ext = path_get_extension(path);
 
-      if (!file_ext ||
-            !string_list_find_elem_prefix(ext_list, ".", file_ext))
+      if (!file_ext)
          goto error;
+      
+      if (!string_list_find_elem_prefix(ext_list, ".", file_ext))
+      {
+         /* keep iterating */
+         ret = -1;
+         goto error;
+      }
 
       attr.i = RARCH_COMPRESSED_FILE_IN_ARCHIVE;
       string_list_free(ext_list);
@@ -219,7 +226,7 @@ static int file_archive_get_file_list_cb(
 
 error:
    string_list_free(ext_list);
-   return 0;
+   return ret;
 }
 
 static int file_archive_extract_cb(const char *name, const char *valid_exts,
@@ -295,9 +302,9 @@ static int file_archive_parse_file_init(file_archive_transfer_t *state,
       return -1;
 
    state->archive_size = file_archive_size(state->handle);
-   state->data   = file_archive_data(state->handle);
-   state->footer = 0;
-   state->directory = 0;
+   state->data         = file_archive_data(state->handle);
+   state->footer       = 0;
+   state->directory    = 0;
 
    return state->backend->archive_parse_file_init(state, path);
 }
@@ -396,7 +403,8 @@ int file_archive_parse_file_iterate(
             if (userdata)
             {
                userdata->context = state->stream;
-               strlcpy(userdata->archive_path, file, sizeof(userdata->archive_path));
+               strlcpy(userdata->archive_path, file,
+                     sizeof(userdata->archive_path));
             }
             state->type = ARCHIVE_TRANSFER_ITERATE;
          }
@@ -408,8 +416,10 @@ int file_archive_parse_file_iterate(
          {
             const struct file_archive_file_backend *backend =
                file_archive_get_file_backend(file);
-            int ret = backend->archive_parse_file_iterate_step(state,
+            int ret                                         = 
+               backend->archive_parse_file_iterate_step(state,
                   valid_exts, userdata, file_cb);
+
             if (ret != 1)
                state->type = ARCHIVE_TRANSFER_DEINIT;
             if (ret == -1)
@@ -427,6 +437,7 @@ int file_archive_parse_file_iterate(
             file_archive_free(state->handle);
             state->handle = NULL;
          }
+
          if (state->stream && state->backend)
          {
             if (state->backend->stream_free)
@@ -443,7 +454,7 @@ int file_archive_parse_file_iterate(
          break;
    }
 
-   if (state->type == ARCHIVE_TRANSFER_DEINIT ||
+   if (  state->type == ARCHIVE_TRANSFER_DEINIT ||
          state->type == ARCHIVE_TRANSFER_DEINIT_ERROR)
       return -1;
 
@@ -467,7 +478,7 @@ static bool file_archive_walk(const char *file, const char *valid_exts,
       file_archive_file_cb file_cb, struct archive_extract_userdata *userdata)
 {
    file_archive_transfer_t state = {0};
-   bool returnerr        = true;
+   bool returnerr                = true;
 
    state.type = ARCHIVE_TRANSFER_INIT;
 
@@ -573,14 +584,8 @@ end:
 struct string_list *file_archive_get_file_list(const char *path,
       const char *valid_exts)
 {
+   int ret;
    struct archive_extract_userdata userdata = {{0}};
-
-#ifdef HAVE_COMPRESSION
-   if (!path_is_compressed_file(path))
-      return NULL;
-#else
-   return NULL;
-#endif
 
    userdata.list_only = true;
    strlcpy(userdata.archive_path, path, sizeof(userdata.archive_path));
@@ -590,9 +595,12 @@ struct string_list *file_archive_get_file_list(const char *path,
    if (!userdata.list)
       goto error;
 
-   if (!file_archive_walk(path, valid_exts,
-            file_archive_get_file_list_cb, &userdata))
-      goto error;
+   if ((ret = file_archive_walk(path, valid_exts,
+            file_archive_get_file_list_cb, &userdata)) <= 0)
+   {
+      if (ret != -1)
+         goto error;
+   }
 
    return userdata.list;
 
@@ -618,14 +626,18 @@ bool file_archive_perform_mode(const char *path, const char *valid_exts,
             int ret = 0;
             file_archive_file_handle_t handle = {0};
 
-            handle.backend = file_archive_get_file_backend(userdata->archive_path);
-            handle.stream = userdata->context;
+            handle.backend  = file_archive_get_file_backend(userdata->archive_path);
+            handle.stream   = userdata->context;
 
-            if (!handle.backend || !handle.backend->stream_decompress_data_to_file_init(&handle,
+            if (!handle.backend)
+               goto error;
+
+            if (!handle.backend->stream_decompress_data_to_file_init(&handle,
                      cdata, csize, size))
                goto error;
 
-            do{
+            do
+            {
                ret = handle.backend->stream_decompress_data_to_file_iterate(
                      handle.stream);
             }while(ret == 0);
@@ -658,11 +670,9 @@ static struct string_list *file_archive_filename_split(const char *path)
 {
    union string_list_elem_attr attr;
    struct string_list *list = string_list_new();
-   const char *delim        = NULL;
+   const char *delim        = path_get_archive_delim(path);
 
    memset(&attr, 0, sizeof(attr));
-
-   delim = path_get_archive_delim(path);
 
    if (delim)
    {
@@ -783,8 +793,9 @@ const struct file_archive_file_backend* file_archive_get_file_backend(const char
 #endif
 
 #ifdef HAVE_ZLIB
-   if (string_is_equal_noncase(file_ext, "zip") ||
-             string_is_equal_noncase(file_ext, "apk"))
+   if (     string_is_equal_noncase(file_ext, "zip")
+         || string_is_equal_noncase(file_ext, "apk")
+      )
       return &zlib_backend;
 #endif
 

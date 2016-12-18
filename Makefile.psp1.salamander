@@ -41,6 +41,7 @@ OBJS = frontend/frontend_salamander.o \
 		 libretro-common/lists/dir_list.o \
 		 libretro-common/file/retro_dirent.o \
 		 libretro-common/compat/compat_strl.o \
+		 libretro-common/compat/compat_strcasestr.o \
 		 libretro-common/file/config_file.o \
 		 libretro-common/streams/file_stream.o \
 		 libretro-common/file/retro_stat.o \

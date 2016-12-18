@@ -37,9 +37,9 @@
 
 typedef struct
 {
-   int      (*read)  (void *user,char *data,int size);   /* fill 'data' with 'size' bytes.  return number of bytes actually read */
-   void     (*skip)  (void *user,int n);                 /* skip the next 'n' bytes, or 'unget' the last -n bytes if negative */
-   int      (*eof)   (void *user);                       /* returns nonzero if we are at end of file/data */
+   int      (*read)  (void *user,char *data,int size);   
+   void     (*skip)  (void *user,int n);
+   int      (*eof)   (void *user);
 } rbmp_io_callbacks;
 
 typedef struct
@@ -70,19 +70,18 @@ static void rbmp__refill_buffer(rbmp__context *s);
 /* initialize a memory-decode context */
 static void rbmp__start_mem(rbmp__context *s, unsigned char const *buffer, int len)
 {
-   s->io.read = NULL;
+   s->io.read             = NULL;
    s->read_from_callbacks = 0;
-   s->img_buffer = s->img_buffer_original = (unsigned char *) buffer;
-   s->img_buffer_end = (unsigned char *) buffer+len;
+   s->img_buffer          = (unsigned char*)buffer;
+   s->img_buffer_original = (unsigned char*)buffer;
+   s->img_buffer_end      = (unsigned char*)buffer+len;
 }
 
-static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y, int *comp, int req_comp);
+static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
+      int *comp, int req_comp);
 
-#define rbmp__err(x,y)  0
-#define rbmp__errpf(x,y)   ((float *) (rbmp__err(x,y)?NULL:NULL))
-#define rbmp__errpuc(x,y)  ((unsigned char *) (rbmp__err(x,y)?NULL:NULL))
-
-static unsigned char *rbmp_load_from_memory(unsigned char const *buffer, int len, unsigned *x, unsigned *y, int *comp, int req_comp)
+static unsigned char *rbmp_load_from_memory(unsigned char const *buffer, int len,
+      unsigned *x, unsigned *y, int *comp, int req_comp)
 {
    rbmp__context s;
    rbmp__start_mem(&s,buffer,len);
@@ -155,7 +154,8 @@ static uint32_t rbmp__get32le(rbmp__context *s)
    return z + (rbmp__get16le(s) << 16);
 }
 
-#define RBMP__BYTECAST(x)  ((unsigned char) ((x) & 255))  /* truncate int to byte without warnings */
+/* truncate int to byte without warnings */
+#define RBMP__BYTECAST(x)  ((unsigned char) ((x) & 255))  
 
 static unsigned char rbmp__compute_y(int r, int g, int b)
 {
@@ -172,14 +172,17 @@ static unsigned char *rbmp__convert_format(
    int i,j;
    unsigned char *good;
 
-   if (req_comp == img_n) return data;
+   if (req_comp == img_n)
+      return data;
+
    retro_assert(req_comp >= 1 && req_comp <= 4);
 
    good = (unsigned char *) malloc(req_comp * x * y);
    if (good == NULL)
    {
+      /* Out of memory */
       free(data);
-      return rbmp__errpuc("outofmem", "Out of memory");
+      return 0;
    }
 
    for (j=0; j < (int) y; ++j)
@@ -254,7 +257,8 @@ static unsigned char *rbmp__convert_format(
 static int rbmp__high_bit(unsigned int z)
 {
    int n=0;
-   if (z == 0) return -1;
+   if (z == 0)
+      return -1;
    if (z >= 0x10000) n += 16, z >>= 16;
    if (z >= 0x00100) n +=  8, z >>=  8;
    if (z >= 0x00010) n +=  4, z >>=  4;
@@ -294,24 +298,28 @@ static int rbmp__shiftsigned(int v, int shift, int bits)
    return result;
 }
 
-static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y, int *comp, int req_comp)
+static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
+      int *comp, int req_comp)
 {
    unsigned char *out;
-   unsigned int mr=0,mg=0,mb=0,ma=0;
    unsigned char pal[256][4];
-   int psize=0,i,j,compress=0,width;
    int bpp, flip_vertically, pad, target, offset, hsz;
+   int psize=0,i,j,compress=0,width;
+   unsigned int mr=0,mg=0,mb=0,ma=0;
 
+   /* Corrupt BMP? */
    if (rbmp__get8(s) != 'B' || rbmp__get8(s) != 'M')
-      return rbmp__errpuc("not BMP", "Corrupt BMP");
+      return 0;
 
    rbmp__get32le(s); /* discard filesize */
    rbmp__get16le(s); /* discard reserved */
    rbmp__get16le(s); /* discard reserved */
    offset = rbmp__get32le(s);
    hsz = rbmp__get32le(s);
+
+   /* BMP type not supported? */
    if (hsz != 12 && hsz != 40 && hsz != 56 && hsz != 108 && hsz != 124)
-      return rbmp__errpuc("unknown BMP", "BMP type not supported: unknown");
+      return 0;
 
    if (hsz == 12)
    {
@@ -323,11 +331,17 @@ static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
       s->img_x = rbmp__get32le(s);
       s->img_y = rbmp__get32le(s);
    }
+
+   /* Bad BMP? */
    if (rbmp__get16le(s) != 1)
-      return rbmp__errpuc("bad BMP", "bad BMP");
+      return 0;
+
    bpp = rbmp__get16le(s);
+
+   /* BMP 1-bit type not supported? */
    if (bpp == 1)
-      return rbmp__errpuc("monochrome", "BMP type not supported: 1-bit");
+      return 0;
+
    flip_vertically = ((int) s->img_y) > 0;
    s->img_y = abs((int) s->img_y);
 
@@ -340,14 +354,16 @@ static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
    {
       compress = rbmp__get32le(s);
 
+      /* BMP RLE type not supported? */
       if (compress == 1 || compress == 2)
-         return rbmp__errpuc("BMP RLE", "BMP type not supported: RLE");
+         return 0;
 
       rbmp__get32le(s); /* discard sizeof */
       rbmp__get32le(s); /* discard hres */
       rbmp__get32le(s); /* discard vres */
       rbmp__get32le(s); /* discard colors used */
       rbmp__get32le(s); /* discard max important */
+
       if (hsz == 40 || hsz == 56)
       {
          if (hsz == 56)
@@ -382,14 +398,18 @@ static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
                   mr = rbmp__get32le(s);
                   mg = rbmp__get32le(s);
                   mb = rbmp__get32le(s);
-                  /* not documented, but generated by photoshop and handled by mspaint */
+                  /* not documented, but generated by 
+                   * Photoshop and handled by MS Paint */
+                  /* Bad BMP ?*/
                   if (mr == mg && mg == mb)
-                     return rbmp__errpuc("bad BMP", "bad BMP");
+                     return 0;
                   break;
                default:
                   break;
             }
-            return rbmp__errpuc("bad BMP", "bad BMP");
+
+            /* Bad BMP? */
+            return 0;
          }
       }
       else
@@ -399,35 +419,40 @@ static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
          mg = rbmp__get32le(s);
          mb = rbmp__get32le(s);
          ma = rbmp__get32le(s);
-         rbmp__get32le(s); /* discard color space */
+         rbmp__get32le(s); /* Discard color space */
          for (i=0; i < 12; ++i)
-            rbmp__get32le(s); /* discard color space parameters */
+            rbmp__get32le(s); /* Discard color space parameters */
          if (hsz == 124)
          {
-            rbmp__get32le(s); /* discard rendering intent */
-            rbmp__get32le(s); /* discard offset of profile data */
-            rbmp__get32le(s); /* discard size of profile data */
-            rbmp__get32le(s); /* discard reserved */
+            rbmp__get32le(s); /* Discard rendering intent */
+            rbmp__get32le(s); /* Discard offset of profile data */
+            rbmp__get32le(s); /* Discard size of profile data */
+            rbmp__get32le(s); /* Discard reserved */
          }
       }
       if (bpp < 16)
          psize = (offset - 14 - hsz) >> 2;
    }
    s->img_n = ma ? 4 : 3;
-   if (req_comp && req_comp >= 3) /* we can directly decode 3 or 4 */
+   if (req_comp && req_comp >= 3) /* We can directly decode 3 or 4 */
       target = req_comp;
    else
-      target = s->img_n; /* if they want monochrome, we'll post-convert */
+      target = s->img_n; /* If they want monochrome, we'll post-convert */
+
    out = (unsigned char *) malloc(target * s->img_x * s->img_y);
+
    if (!out)
-      return rbmp__errpuc("outofmem", "Out of memory");
+      return 0;
+
    if (bpp < 16)
    {
       int z=0;
+
+      /* Corrupt BMP? */
       if (psize == 0 || psize > 256)
       {
          free(out);
-         return rbmp__errpuc("invalid", "Corrupt BMP");
+         return 0;
       }
 
       for (i=0; i < psize; ++i)
@@ -446,9 +471,11 @@ static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
          width = s->img_x;
       else
       {
+         /* Corrupt BMP */
          free(out);
-         return rbmp__errpuc("bad bpp", "Corrupt BMP");
+         return 0;
       }
+
       pad = (-width)&3;
       for (j=0; j < (int) s->img_y; ++j)
       {
@@ -500,11 +527,13 @@ static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
 
       if (!easy)
       {
+         /* Corrupt BMP? */
          if (!mr || !mg || !mb)
          {
             free(out);
-            return rbmp__errpuc("bad masks", "Corrupt BMP");
+            return 0;
          }
+
          /* right shift amt to put high bit in position #7 */
          rshift = rbmp__high_bit(mr)-7; rcount = rbmp__bitcount(mr);
          gshift = rbmp__high_bit(mg)-7; gcount = rbmp__bitcount(mg);
@@ -589,7 +618,8 @@ int rbmp_process_image(rbmp_t *rbmp, void **buf_data,
    if (!rbmp)
       return IMAGE_PROCESS_ERROR;
 
-   rbmp->output_image   = (uint32_t*)rbmp_load_from_memory(rbmp->buff_data, size, width, height, &comp, 4);
+   rbmp->output_image   = (uint32_t*)rbmp_load_from_memory(rbmp->buff_data,
+                           size, width, height, &comp, 4);
    *buf_data             = rbmp->output_image;
 
    rbmp_convert_frame(rbmp->output_image, *width, *height);

@@ -44,11 +44,19 @@ enum
    RJPEG_RGB_ALPHA
 };
 
+enum
+{
+   RJPEG_SCAN_LOAD = 0,
+   RJPEG_SCAN_TYPE,
+   RJPEG_SCAN_HEADER
+};
+
+
 typedef struct
 {
-   int      (*read)  (void *user,char *data,int size);   /* fill 'data' with 'size' bytes.  return number of bytes actually read */
-   void     (*skip)  (void *user,int n);                 /* skip the next 'n' bytes, or 'unget' the last -n bytes if negative */
-   int      (*eof)   (void *user);                       /* returns nonzero if we are at end of file/data */
+   int      (*read)  (void *user,char *data,int size);
+   void     (*skip)  (void *user,int n);
+   int      (*eof)   (void *user);
 } rjpeg_io_callbacks;
 
 typedef uint8_t *(*rjpeg_resample_row_func)(uint8_t *out, uint8_t *in0, uint8_t *in1,
@@ -141,152 +149,30 @@ struct rjpeg
 
 typedef struct
 {
-   uint32_t img_x, img_y;
-   int img_n, img_out_n;
+   uint32_t img_x;
+   uint32_t img_y;
+   int      img_n;
+   int      img_out_n;
 
-   rjpeg_io_callbacks io;
-   void *io_user_data;
+   int      buflen;
+   uint8_t  buffer_start[128];
 
-   int read_from_callbacks;
-   int buflen;
-   uint8_t buffer_start[128];
-
-   uint8_t *img_buffer, *img_buffer_end;
+   uint8_t *img_buffer;
+   uint8_t *img_buffer_end;
    uint8_t *img_buffer_original;
 } rjpeg__context;
-
-static uint8_t *rjpeg__jpeg_load(rjpeg__context *s, unsigned *x, unsigned *y, int *comp, int req_comp);
-
-#define rjpeg__err(x,y)  0
-
-#define rjpeg__errpf(x,y)   ((float *) (rjpeg__err(x,y)?NULL:NULL))
-#define rjpeg__errpuc(x,y)  ((unsigned char *) (rjpeg__err(x,y)?NULL:NULL))
-
-static int rjpeg__vertically_flip_on_load = 0;
-
-static unsigned char *rjpeg__load_flip(rjpeg__context *s, unsigned *x, unsigned *y, int *comp, int req_comp)
-{
-   unsigned char *result = rjpeg__jpeg_load(s,x,y,comp,req_comp);
-
-   if (rjpeg__vertically_flip_on_load && result != NULL)
-   {
-      int row,col,z;
-      int w     = *x, h = *y;
-      int depth = req_comp ? req_comp : *comp;
-
-      for (row = 0; row < (h>>1); row++)
-      {
-         for (col = 0; col < w; col++)
-         {
-            for (z = 0; z < depth; z++)
-            {
-               uint8_t temp = result[(row * w + col) * depth + z];
-               result[(row * w + col) * depth + z] = result[((h - row - 1) * w + col) * depth + z];
-               result[((h - row - 1) * w + col) * depth + z] = temp;
-            }
-         }
-      }
-   }
-
-   return result;
-}
-
-static uint8_t *rjpeg_load_from_memory(const uint8_t *buffer, int len, unsigned *x, unsigned *y, int *comp, int req_comp)
-{
-   rjpeg__context s;
-   s.io.read             = NULL;
-   s.read_from_callbacks = 0;
-   s.img_buffer          = s.img_buffer_original = (uint8_t *) buffer;
-   s.img_buffer_end      = (uint8_t *) buffer+len;
-   return rjpeg__load_flip(&s,x,y,comp,req_comp);
-}
-
-enum
-{
-   RJPEG_SCAN_LOAD = 0,
-   RJPEG_SCAN_TYPE,
-   RJPEG_SCAN_HEADER
-};
-
-static void rjpeg__refill_buffer(rjpeg__context *s)
-{
-   int n = (s->io.read)(s->io_user_data,(char*)s->buffer_start,s->buflen);
-
-   if (n == 0)
-   {
-      /* at end of file, treat same as if from memory, but need to handle case
-       * where s->img_buffer isn't pointing to safe memory, e.g. 0-byte file */
-      s->read_from_callbacks = 0;
-      s->img_buffer = s->buffer_start;
-      s->img_buffer_end = s->buffer_start+1;
-      *s->img_buffer = 0;
-   }
-   else
-   {
-      s->img_buffer = s->buffer_start;
-      s->img_buffer_end = s->buffer_start + n;
-   }
-}
 
 static INLINE uint8_t rjpeg__get8(rjpeg__context *s)
 {
    if (s->img_buffer < s->img_buffer_end)
       return *s->img_buffer++;
 
-   if (s->read_from_callbacks)
-   {
-      rjpeg__refill_buffer(s);
-      return *s->img_buffer++;
-   }
-
    return 0;
 }
 
-static INLINE int rjpeg__at_eof(rjpeg__context *s)
-{
-   if (s->io.read)
-   {
-      if (!(s->io.eof)(s->io_user_data))
-         return 0;
+#define RJPEG__AT_EOF(s)    ((s)->img_buffer >= (s)->img_buffer_end)
 
-      /* if feof() is true, check if buffer = end
-       * special case: we've only got the special 
-       * 0 character at the end */
-
-      if (s->read_from_callbacks == 0)
-         return 1;
-   }
-
-   return s->img_buffer >= s->img_buffer_end;
-}
-
-static void rjpeg__skip(rjpeg__context *s, int n)
-{
-   if (n < 0)
-   {
-      s->img_buffer = s->img_buffer_end;
-      return;
-   }
-
-   if (s->io.read)
-   {
-      int blen = (int) (s->img_buffer_end - s->img_buffer);
-
-      if (blen < n)
-      {
-         s->img_buffer = s->img_buffer_end;
-         (s->io.skip)(s->io_user_data, n - blen);
-         return;
-      }
-   }
-   s->img_buffer += n;
-}
-
-static int rjpeg__get16be(rjpeg__context *s)
-{
-   int z = rjpeg__get8(s);
-   return (z << 8) + rjpeg__get8(s);
-}
+#define RJPEG__GET16BE(s)   ((rjpeg__get8((s)) << 8) + rjpeg__get8((s)))
 
 #define RJPEG__BYTECAST(x)  ((uint8_t) ((x) & 255))  /* truncate int to byte without warnings */
 
@@ -331,13 +217,14 @@ typedef struct
       void *raw_data, *raw_coeff;
       uint8_t *linebuf;
       short   *coeff;            /* progressive only */
-      int      coeff_w, coeff_h; /* number of 8x8 coefficient blocks */
+      int      coeff_w;          /* number of 8x8 coefficient blocks */
+      int      coeff_h;          /* number of 8x8 coefficient blocks */
    } img_comp[4];
 
-   uint32_t       code_buffer; /* jpeg entropy-coded buffer */
-   int            code_bits;   /* number of valid bits */
-   unsigned char  marker;      /* marker seen while filling entropy buffer */
-   int            nomore;      /* flag if we saw a marker so must stop */
+   uint32_t       code_buffer;   /* jpeg entropy-coded buffer */
+   int            code_bits;     /* number of valid bits */
+   unsigned char  marker;        /* marker seen while filling entropy buffer */
+   int            nomore;        /* flag if we saw a marker so must stop */
 
    int            progressive;
    int            spec_start;
@@ -351,14 +238,16 @@ typedef struct
 
    /* kernels */
    void (*idct_block_kernel)(uint8_t *out, int out_stride, short data[64]);
-   void (*YCbCr_to_RGB_kernel)(uint8_t *out, const uint8_t *y, const uint8_t *pcb, const uint8_t *pcr, int count, int step);
-   uint8_t *(*resample_row_hv_2_kernel)(uint8_t *out, uint8_t *in_near, uint8_t *in_far, int w, int hs);
+   void (*YCbCr_to_RGB_kernel)(uint8_t *out, const uint8_t *y, const uint8_t *pcb,
+         const uint8_t *pcr, int count, int step);
+   uint8_t *(*resample_row_hv_2_kernel)(uint8_t *out, uint8_t *in_near,
+         uint8_t *in_far, int w, int hs);
 } rjpeg__jpeg;
 
 #define rjpeg__f2f(x)  ((int) (((x) * 4096 + 0.5)))
 #define rjpeg__fsh(x)  ((x) << 12)
 
-#define RJPEG__MARKER_none  0xff
+#define RJPEG__MARKER_NONE  0xff
 /* if there's a pending marker from the entropy stream, return that
  * otherwise, fetch from the stream and get a marker. if there's no
  * marker, return 0xff, which is never a valid marker value
@@ -401,8 +290,10 @@ static int rjpeg__build_huffman(rjpeg__huffman *h, int *count)
       {
          while (h->size[k] == j)
             h->code[k++] = (uint16_t) (code++);
+
+         /* Bad code lengths, corrupt JPEG? */
          if (code-1 >= (1 << j))
-            return rjpeg__err("bad code lengths","Corrupt JPEG");
+            return 0;
       }
       /* compute largest code + 1 for this size, preshifted as needed later */
       h->maxcode[j] = code << (16-j);
@@ -478,7 +369,7 @@ static void rjpeg__grow_buffer_unsafe(rjpeg__jpeg *j)
          }
       }
       j->code_buffer |= b << (24 - j->code_bits);
-      j->code_bits += 8;
+      j->code_bits   += 8;
    } while (j->code_bits <= 24);
 }
 
@@ -565,7 +456,8 @@ static INLINE int rjpeg__extend_receive(rjpeg__jpeg *j, int n)
 static INLINE int rjpeg__jpeg_get_bits(rjpeg__jpeg *j, int n)
 {
    unsigned int k;
-   if (j->code_bits < n) rjpeg__grow_buffer_unsafe(j);
+   if (j->code_bits < n)
+      rjpeg__grow_buffer_unsafe(j);
    k = rjpeg_lrot(j->code_buffer, n);
    j->code_buffer = k & ~rjpeg__bmask[n];
    k &= rjpeg__bmask[n];
@@ -576,7 +468,9 @@ static INLINE int rjpeg__jpeg_get_bits(rjpeg__jpeg *j, int n)
 static INLINE int rjpeg__jpeg_get_bit(rjpeg__jpeg *j)
 {
    unsigned int k;
-   if (j->code_bits < 1) rjpeg__grow_buffer_unsafe(j);
+   if (j->code_bits < 1)
+      rjpeg__grow_buffer_unsafe(j);
+
    k = j->code_buffer;
    j->code_buffer <<= 1;
    --j->code_bits;
@@ -615,8 +509,10 @@ static int rjpeg__jpeg_decode_block(
    if (j->code_bits < 16)
       rjpeg__grow_buffer_unsafe(j);
    t = rjpeg__jpeg_huff_decode(j, hdc);
+
+   /* Bad huffman code. Corrupt JPEG? */
    if (t < 0)
-      return rjpeg__err("bad huffman code","Corrupt JPEG");
+      return 0;
 
    /* 0 all the ac values now so we can do it 32-bits at a time */
    memset(data,0,64*sizeof(data[0]));
@@ -650,8 +546,11 @@ static int rjpeg__jpeg_decode_block(
       else
       {
          int rs = rjpeg__jpeg_huff_decode(j, hac);
+
+         /* Bad huffman code. Corrupt JPEG? */
          if (rs < 0)
-            return rjpeg__err("bad huffman code","Corrupt JPEG");
+            return 0;
+
          s = rs & 15;
          r = rs >> 4;
          if (s == 0)
@@ -678,8 +577,9 @@ static int rjpeg__jpeg_decode_block_prog_dc(
       rjpeg__huffman *hdc,
       int b)
 {
+   /* Can't merge DC and AC. Corrupt JPEG? */
    if (j->spec_end != 0)
-      return rjpeg__err("can't merge dc and ac", "Corrupt JPEG");
+      return 0;
 
    if (j->code_bits < 16)
       rjpeg__grow_buffer_unsafe(j);
@@ -714,8 +614,10 @@ static int rjpeg__jpeg_decode_block_prog_ac(
       int16_t *fac)
 {
    int k;
+
+   /* Can't merge DC and AC. Corrupt JPEG? */
    if (j->spec_start == 0)
-      return rjpeg__err("can't merge dc and ac", "Corrupt JPEG");
+      return 0;
 
    if (j->succ_high == 0)
    {
@@ -728,7 +630,8 @@ static int rjpeg__jpeg_decode_block_prog_ac(
       }
 
       k = j->spec_start;
-      do {
+      do
+      {
          unsigned int zig;
          int c,r,s;
          if (j->code_bits < 16) rjpeg__grow_buffer_unsafe(j);
@@ -746,7 +649,11 @@ static int rjpeg__jpeg_decode_block_prog_ac(
          else
          {
             int rs = rjpeg__jpeg_huff_decode(j, hac);
-            if (rs < 0) return rjpeg__err("bad huffman code","Corrupt JPEG");
+
+            /* Bad huffman code. Corrupt JPEG? */
+            if (rs < 0)
+               return 0;
+
             s = rs & 15;
             r = rs >> 4;
             if (s == 0)
@@ -760,14 +667,18 @@ static int rjpeg__jpeg_decode_block_prog_ac(
                   break;
                }
                k += 16;
-            } else {
+            }
+            else
+            {
                k += r;
                zig = rjpeg__jpeg_dezigzag[k++];
                data[zig] = (short) (rjpeg__extend_receive(j,s) << shift);
             }
          }
       } while (k <= j->spec_end);
-   } else {
+   }
+   else
+   {
       /* refinement scan for these AC coefficients */
 
       short bit = (short) (1 << j->succ_low);
@@ -788,12 +699,19 @@ static int rjpeg__jpeg_decode_block_prog_ac(
                         *p -= bit;
                   }
          }
-      } else {
+      }
+      else
+      {
          k = j->spec_start;
-         do {
+         do
+         {
             int r,s;
             int rs = rjpeg__jpeg_huff_decode(j, hac);
-            if (rs < 0) return rjpeg__err("bad huffman code","Corrupt JPEG");
+
+            /* Bad huffman code. Corrupt JPEG? */
+            if (rs < 0)
+               return 0;
+
             s = rs & 15;
             r = rs >> 4;
             if (s == 0)
@@ -804,13 +722,20 @@ static int rjpeg__jpeg_decode_block_prog_ac(
                   if (r)
                      j->eob_run += rjpeg__jpeg_get_bits(j, r);
                   r = 64; /* force end of block */
-               } else {
+               }
+               else
+               {
                   /* r=15 s=0 should write 16 0s, so we just do
                    * a run of 15 0s and then write s (which is 0),
                    * so we don't have to do anything special here */
                }
-            } else {
-               if (s != 1) return rjpeg__err("bad huffman code", "Corrupt JPEG");
+            }
+            else
+            {
+               /* Bad huffman code. Corrupt JPEG? */
+               if (s != 1)
+                  return 0;
+
                /* sign bit */
                if (rjpeg__jpeg_get_bit(j))
                   s = bit;
@@ -1355,16 +1280,17 @@ static void rjpeg__idct_simd(uint8_t *out, int out_stride, short data[64])
 static uint8_t rjpeg__get_marker(rjpeg__jpeg *j)
 {
    uint8_t x;
-   if (j->marker != RJPEG__MARKER_none)
+
+   if (j->marker != RJPEG__MARKER_NONE)
    {
       x = j->marker;
-      j->marker = RJPEG__MARKER_none;
+      j->marker = RJPEG__MARKER_NONE;
       return x;
    }
 
    x = rjpeg__get8(j->s);
    if (x != 0xff)
-      return RJPEG__MARKER_none;
+      return RJPEG__MARKER_NONE;
    while (x == 0xff)
       x = rjpeg__get8(j->s);
    return x;
@@ -1376,13 +1302,16 @@ static uint8_t rjpeg__get_marker(rjpeg__jpeg *j)
  */
 static void rjpeg__jpeg_reset(rjpeg__jpeg *j)
 {
-   j->code_bits = 0;
-   j->code_buffer = 0;
-   j->nomore = 0;
-   j->img_comp[0].dc_pred = j->img_comp[1].dc_pred = j->img_comp[2].dc_pred = 0;
-   j->marker = RJPEG__MARKER_none;
-   j->todo = j->restart_interval ? j->restart_interval : 0x7fffffff;
-   j->eob_run = 0;
+   j->code_bits           = 0;
+   j->code_buffer         = 0;
+   j->nomore              = 0;
+   j->img_comp[0].dc_pred = 0;
+   j->img_comp[1].dc_pred = 0;
+   j->img_comp[2].dc_pred = 0;
+   j->marker              = RJPEG__MARKER_NONE;
+   j->todo                = j->restart_interval ? j->restart_interval : 0x7fffffff;
+   j->eob_run             = 0;
+
    /* no more than 1<<31 MCUs if no restart_interal? that's plenty safe,
     * since we don't even allow 1<<30 pixels */
 }
@@ -1390,96 +1319,21 @@ static void rjpeg__jpeg_reset(rjpeg__jpeg *j)
 static int rjpeg__parse_entropy_coded_data(rjpeg__jpeg *z)
 {
    rjpeg__jpeg_reset(z);
-   if (!z->progressive)
+
+   if (z->scan_n == 1)
    {
-      if (z->scan_n == 1)
-      {
-         int i,j;
-         RJPEG_SIMD_ALIGN(short, data[64]);
-         int n = z->order[0];
-         /* non-interleaved data, we just need to process one block at a time,
-          * in trivial scanline order
-          * number of blocks to do just depends on how many actual "pixels" this
-          * component has, independent of interleaved MCU blocking and such */
-         int w = (z->img_comp[n].x+7) >> 3;
-         int h = (z->img_comp[n].y+7) >> 3;
+      int i,j;
+      int n = z->order[0];
+      int w = (z->img_comp[n].x+7) >> 3;
+      int h = (z->img_comp[n].y+7) >> 3;
 
-         for (j=0; j < h; ++j)
-         {
-            for (i=0; i < w; ++i)
-            {
-               int ha = z->img_comp[n].ha;
-               if (!rjpeg__jpeg_decode_block(z, data, z->huff_dc+z->img_comp[n].hd, z->huff_ac+ha, z->fast_ac[ha], n, z->dequant[z->img_comp[n].tq])) return 0;
-               z->idct_block_kernel(z->img_comp[n].data+z->img_comp[n].w2*j*8+i*8, z->img_comp[n].w2, data);
-               /* every data block is an MCU, so countdown the restart interval */
-               if (--z->todo <= 0)
-               {
-                  if (z->code_bits < 24) rjpeg__grow_buffer_unsafe(z);
-                  /* if it's NOT a restart, then just bail, 
-                   * so we get corrupt data rather than no data */
-                  if (!RJPEG__RESTART(z->marker)) return 1;
-                  rjpeg__jpeg_reset(z);
-               }
-            }
-         }
-      }
-      else
-      {
-         /* interleaved */
-         int i,j,k,x,y;
-         RJPEG_SIMD_ALIGN(short, data[64]);
-         for (j=0; j < z->img_mcu_y; ++j)
-         {
-            for (i=0; i < z->img_mcu_x; ++i)
-            {
-               /* scan an interleaved mcu... 
-                * process scan_n components in order */
-               for (k=0; k < z->scan_n; ++k)
-               {
-                  int n = z->order[k];
-                  /* scan out an mcu's worth of this component; 
-                   * that's just determined by the basic H 
-                   * and V specified for the component */
-                  for (y=0; y < z->img_comp[n].v; ++y)
-                  {
-                     for (x=0; x < z->img_comp[n].h; ++x)
-                     {
-                        int x2 = (i*z->img_comp[n].h + x)*8;
-                        int y2 = (j*z->img_comp[n].v + y)*8;
-                        int ha = z->img_comp[n].ha;
-                        if (!rjpeg__jpeg_decode_block(z, data, z->huff_dc+z->img_comp[n].hd, z->huff_ac+ha, z->fast_ac[ha], n, z->dequant[z->img_comp[n].tq]))
-                           return 0;
-                        z->idct_block_kernel(z->img_comp[n].data+z->img_comp[n].w2*y2+x2, z->img_comp[n].w2, data);
-                     }
-                  }
-               }
-               /* after all interleaved components, that's an interleaved MCU,
-                * so now count down the restart interval */
-               if (--z->todo <= 0)
-               {
-                  if (z->code_bits < 24) rjpeg__grow_buffer_unsafe(z);
-                  if (!RJPEG__RESTART(z->marker)) return 1;
-                  rjpeg__jpeg_reset(z);
-               }
-            }
-         }
-      }
-      return 1;
-   }
-   else
-   {
-      if (z->scan_n == 1)
-      {
-         int i,j;
-         int n = z->order[0];
-         int w = (z->img_comp[n].x+7) >> 3;
-         int h = (z->img_comp[n].y+7) >> 3;
+      /* non-interleaved data, we just need to process one block at a time,
+       * in trivial scanline order
+       * number of blocks to do just depends on how many actual "pixels" this
+       * component has, independent of interleaved MCU blocking and such */
 
-         /* non-interleaved data, we just need to process one block at a time,
-          * in trivial scanline order
-          * number of blocks to do just depends on how many actual "pixels" this
-          * component has, independent of interleaved MCU blocking and such */
-
+      if (z->progressive)
+      {
          for (j=0; j < h; ++j)
          {
             for (i=0; i < w; ++i)
@@ -1489,7 +1343,9 @@ static int rjpeg__parse_entropy_coded_data(rjpeg__jpeg *z)
                {
                   if (!rjpeg__jpeg_decode_block_prog_dc(z, data, &z->huff_dc[z->img_comp[n].hd], n))
                      return 0;
-               } else {
+               }
+               else
+               {
                   int ha = z->img_comp[n].ha;
                   if (!rjpeg__jpeg_decode_block_prog_ac(z, data, &z->huff_ac[ha], z->fast_ac[ha]))
                      return 0;
@@ -1498,8 +1354,11 @@ static int rjpeg__parse_entropy_coded_data(rjpeg__jpeg *z)
                /* every data block is an MCU, so countdown the restart interval */
                if (--z->todo <= 0)
                {
-                  if (z->code_bits < 24) rjpeg__grow_buffer_unsafe(z);
-                  if (!RJPEG__RESTART(z->marker)) return 1;
+                  if (z->code_bits < 24)
+                     rjpeg__grow_buffer_unsafe(z);
+
+                  if (!RJPEG__RESTART(z->marker))
+                     return 1;
                   rjpeg__jpeg_reset(z);
                }
             }
@@ -1507,9 +1366,43 @@ static int rjpeg__parse_entropy_coded_data(rjpeg__jpeg *z)
       }
       else
       {
-         /* interleaved */
-         int i,j,k,x,y;
+         RJPEG_SIMD_ALIGN(short, data[64]);
 
+         for (j=0; j < h; ++j)
+         {
+            for (i=0; i < w; ++i)
+            {
+               int ha = z->img_comp[n].ha;
+               if (!rjpeg__jpeg_decode_block(z, data, z->huff_dc+z->img_comp[n].hd,
+                        z->huff_ac+ha, z->fast_ac[ha], n, z->dequant[z->img_comp[n].tq]))
+                  return 0;
+
+               z->idct_block_kernel(z->img_comp[n].data+z->img_comp[n].w2*j*8+i*8,
+                     z->img_comp[n].w2, data);
+
+               /* every data block is an MCU, so countdown the restart interval */
+               if (--z->todo <= 0)
+               {
+                  if (z->code_bits < 24)
+                     rjpeg__grow_buffer_unsafe(z);
+
+                  /* if it's NOT a restart, then just bail, 
+                   * so we get corrupt data rather than no data */
+                  if (!RJPEG__RESTART(z->marker))
+                     return 1;
+                  rjpeg__jpeg_reset(z);
+               }
+            }
+         }
+      }
+   }
+   else
+   {
+      /* interleaved */
+      int i,j,k,x,y;
+
+      if (z->progressive)
+      {
          for (j=0; j < z->img_mcu_y; ++j)
          {
             for (i=0; i < z->img_mcu_x; ++i)
@@ -1532,19 +1425,70 @@ static int rjpeg__parse_entropy_coded_data(rjpeg__jpeg *z)
                      }
                   }
                }
+
                /* after all interleaved components, that's an interleaved MCU,
                 * so now count down the restart interval */
                if (--z->todo <= 0)
                {
-                  if (z->code_bits < 24) rjpeg__grow_buffer_unsafe(z);
-                  if (!RJPEG__RESTART(z->marker)) return 1;
+                  if (z->code_bits < 24)
+                     rjpeg__grow_buffer_unsafe(z);
+                  if (!RJPEG__RESTART(z->marker))
+                     return 1;
                   rjpeg__jpeg_reset(z);
                }
             }
          }
       }
-      return 1;
+      else
+      {
+         RJPEG_SIMD_ALIGN(short, data[64]);
+
+         for (j=0; j < z->img_mcu_y; ++j)
+         {
+            for (i=0; i < z->img_mcu_x; ++i)
+            {
+               /* scan an interleaved MCU... process scan_n components in order */
+               for (k=0; k < z->scan_n; ++k)
+               {
+                  int n = z->order[k];
+                  /* scan out an MCU's worth of this component; that's just determined
+                   * by the basic H and V specified for the component */
+                  for (y=0; y < z->img_comp[n].v; ++y)
+                  {
+                     for (x=0; x < z->img_comp[n].h; ++x)
+                     {
+                        int x2 = (i*z->img_comp[n].h + x)*8;
+                        int y2 = (j*z->img_comp[n].v + y)*8;
+                        int ha = z->img_comp[n].ha;
+
+                        if (!rjpeg__jpeg_decode_block(z, data,
+                                 z->huff_dc+z->img_comp[n].hd,
+                                 z->huff_ac+ha, z->fast_ac[ha],
+                                 n, z->dequant[z->img_comp[n].tq]))
+                           return 0;
+
+                        z->idct_block_kernel(z->img_comp[n].data+z->img_comp[n].w2*y2+x2,
+                              z->img_comp[n].w2, data);
+                     }
+                  }
+               }
+
+               /* after all interleaved components, that's an interleaved MCU,
+                * so now count down the restart interval */
+               if (--z->todo <= 0)
+               {
+                  if (z->code_bits < 24)
+                     rjpeg__grow_buffer_unsafe(z);
+                  if (!RJPEG__RESTART(z->marker))
+                     return 1;
+                  rjpeg__jpeg_reset(z);
+               }
+            }
+         }
+      }
    }
+
+   return 1;
 }
 
 static void rjpeg__jpeg_dequantize(short *data, uint8_t *dequant)
@@ -1556,22 +1500,24 @@ static void rjpeg__jpeg_dequantize(short *data, uint8_t *dequant)
 
 static void rjpeg__jpeg_finish(rjpeg__jpeg *z)
 {
-   if (z->progressive)
+   int i,j,n;
+
+   if (!z->progressive)
+      return;
+
+   /* dequantize and IDCT the data */
+   for (n=0; n < z->s->img_n; ++n)
    {
-      /* dequantize and IDCT the data */
-      int i,j,n;
-      for (n=0; n < z->s->img_n; ++n)
+      int w = (z->img_comp[n].x+7) >> 3;
+      int h = (z->img_comp[n].y+7) >> 3;
+      for (j=0; j < h; ++j)
       {
-         int w = (z->img_comp[n].x+7) >> 3;
-         int h = (z->img_comp[n].y+7) >> 3;
-         for (j=0; j < h; ++j)
+         for (i=0; i < w; ++i)
          {
-            for (i=0; i < w; ++i)
-            {
-               short *data = z->img_comp[n].coeff + 64 * (i + j * z->img_comp[n].coeff_w);
-               rjpeg__jpeg_dequantize(data, z->dequant[z->img_comp[n].tq]);
-               z->idct_block_kernel(z->img_comp[n].data+z->img_comp[n].w2*j*8+i*8, z->img_comp[n].w2, data);
-            }
+            short *data = z->img_comp[n].coeff + 64 * (i + j * z->img_comp[n].coeff_w);
+            rjpeg__jpeg_dequantize(data, z->dequant[z->img_comp[n].tq]);
+            z->idct_block_kernel(z->img_comp[n].data+z->img_comp[n].w2*j*8+i*8,
+                  z->img_comp[n].w2, data);
          }
       }
    }
@@ -1582,25 +1528,35 @@ static int rjpeg__process_marker(rjpeg__jpeg *z, int m)
    int L;
    switch (m)
    {
-      case RJPEG__MARKER_none: /* no marker found */
-         return rjpeg__err("expected marker","Corrupt JPEG");
+      case RJPEG__MARKER_NONE: /* no marker found */
+         /* Expected marker. Corrupt JPEG? */
+         return 0;
 
       case 0xDD: /* DRI - specify restart interval */
-         if (rjpeg__get16be(z->s) != 4) return rjpeg__err("bad DRI len","Corrupt JPEG");
-         z->restart_interval = rjpeg__get16be(z->s);
+
+         /* Bad DRI length. Corrupt JPEG? */
+         if (RJPEG__GET16BE(z->s) != 4)
+            return 0;
+
+         z->restart_interval = RJPEG__GET16BE(z->s);
          return 1;
 
       case 0xDB: /* DQT - define quantization table */
-         L = rjpeg__get16be(z->s)-2;
+         L = RJPEG__GET16BE(z->s)-2;
          while (L > 0)
          {
             int q = rjpeg__get8(z->s);
             int p = q >> 4;
             int t = q & 15,i;
+
+            /* Bad DQT type. Corrupt JPEG? */
             if (p != 0)
-               return rjpeg__err("bad DQT type","Corrupt JPEG");
+               return 0;
+
+            /* Bad DQT table. Corrupt JPEG? */
             if (t > 3)
-               return rjpeg__err("bad DQT table","Corrupt JPEG");
+               return 0;
+
             for (i=0; i < 64; ++i)
                z->dequant[t][rjpeg__jpeg_dezigzag[i]] = rjpeg__get8(z->s);
             L -= 65;
@@ -1608,7 +1564,7 @@ static int rjpeg__process_marker(rjpeg__jpeg *z, int m)
          return L==0;
 
       case 0xC4: /* DHT - define huffman table */
-         L = rjpeg__get16be(z->s)-2;
+         L = RJPEG__GET16BE(z->s)-2;
          while (L > 0)
          {
             int sizes[16],i,n=0;
@@ -1616,8 +1572,10 @@ static int rjpeg__process_marker(rjpeg__jpeg *z, int m)
             int q      = rjpeg__get8(z->s);
             int tc     = q >> 4;
             int th     = q & 15;
+
+            /* Bad DHT header. Corrupt JPEG? */
             if (tc > 1 || th > 3)
-               return rjpeg__err("bad DHT header","Corrupt JPEG");
+               return 0;
 
             for (i=0; i < 16; ++i)
             {
@@ -1650,7 +1608,13 @@ static int rjpeg__process_marker(rjpeg__jpeg *z, int m)
    /* check for comment block or APP blocks */
    if ((m >= 0xE0 && m <= 0xEF) || m == 0xFE)
    {
-      rjpeg__skip(z->s, rjpeg__get16be(z->s)-2);
+      int n = RJPEG__GET16BE(z->s)-2;
+
+      if (n < 0)
+         z->s->img_buffer = z->s->img_buffer_end;
+      else
+         z->s->img_buffer += n;
+
       return 1;
    }
    return 0;
@@ -1660,18 +1624,23 @@ static int rjpeg__process_marker(rjpeg__jpeg *z, int m)
 static int rjpeg__process_scan_header(rjpeg__jpeg *z)
 {
    int i;
-   int Ls    = rjpeg__get16be(z->s);
+   int aa;
+   int Ls    = RJPEG__GET16BE(z->s);
 
    z->scan_n = rjpeg__get8(z->s);
 
+   /* Bad SOS component count. Corrupt JPEG? */
    if (z->scan_n < 1 || z->scan_n > 4 || z->scan_n > (int) z->s->img_n)
-      return rjpeg__err("bad SOS component count","Corrupt JPEG");
+      return 0;
+
+   /* Bad SOS length. Corrupt JPEG? */
    if (Ls != 6+2*z->scan_n)
-      return rjpeg__err("bad SOS len","Corrupt JPEG");
+      return 0;
 
    for (i=0; i < z->scan_n; ++i)
    {
-      int id = rjpeg__get8(z->s), which;
+      int which;
+      int id = rjpeg__get8(z->s);
       int q  = rjpeg__get8(z->s);
 
       for (which = 0; which < z->s->img_n; ++which)
@@ -1680,37 +1649,42 @@ static int rjpeg__process_scan_header(rjpeg__jpeg *z)
       if (which == z->s->img_n)
          return 0; /* no match */
 
+      /* Bad DC huff. Corrupt JPEG? */
       z->img_comp[which].hd = q >> 4;   if (z->img_comp[which].hd > 3)
-         return rjpeg__err("bad DC huff","Corrupt JPEG");
+         return 0;
+
+      /* Bad AC huff. Corrupt JPEG? */
       z->img_comp[which].ha = q & 15;   if (z->img_comp[which].ha > 3)
-         return rjpeg__err("bad AC huff","Corrupt JPEG");
+         return 0;
+
       z->order[i] = which;
    }
 
+   z->spec_start = rjpeg__get8(z->s);
+   z->spec_end   = rjpeg__get8(z->s); /* should be 63, but might be 0 */
+   aa            = rjpeg__get8(z->s);
+   z->succ_high  = (aa >> 4);
+   z->succ_low   = (aa & 15);
+
+   if (z->progressive)
    {
-      int aa;
-      z->spec_start = rjpeg__get8(z->s);
-      z->spec_end   = rjpeg__get8(z->s); /* should be 63, but might be 0 */
-      aa = rjpeg__get8(z->s);
-      z->succ_high = (aa >> 4);
-      z->succ_low  = (aa & 15);
-      if (z->progressive)
-      {
-         if (  z->spec_start > 63 || 
-               z->spec_end > 63   || 
-               z->spec_start > z->spec_end || 
-               z->succ_high > 13           || 
-               z->succ_low > 13)
-            return rjpeg__err("bad SOS", "Corrupt JPEG");
-      }
-      else
-      {
-         if (z->spec_start != 0)
-            return rjpeg__err("bad SOS","Corrupt JPEG");
-         if (z->succ_high != 0 || z->succ_low != 0)
-            return rjpeg__err("bad SOS","Corrupt JPEG");
-         z->spec_end = 63;
-      }
+      /* Bad SOS. Corrupt JPEG? */
+      if (  z->spec_start > 63 || 
+            z->spec_end > 63   || 
+            z->spec_start > z->spec_end || 
+            z->succ_high > 13           || 
+            z->succ_low > 13)
+         return 0;
+   }
+   else
+   {
+      /* Bad SOS. Corrupt JPEG? */
+      if (z->spec_start != 0)
+         return 0;
+      if (z->succ_high != 0 || z->succ_low != 0)
+         return 0;
+
+      z->spec_end = 63;
    }
 
    return 1;
@@ -1720,34 +1694,43 @@ static int rjpeg__process_frame_header(rjpeg__jpeg *z, int scan)
 {
    rjpeg__context *s = z->s;
    int Lf,p,i,q, h_max=1,v_max=1,c;
-   Lf = rjpeg__get16be(s);
+   Lf = RJPEG__GET16BE(s);
    
    /* JPEG */
+
+   /* Bad SOF len. Corrupt JPEG? */
    if (Lf < 11)
-      return rjpeg__err("bad SOF len","Corrupt JPEG");
+      return 0;
 
    p  = rjpeg__get8(s);
 
    /* JPEG baseline */
-   if (p != 8)
-      return rjpeg__err("only 8-bit","JPEG format not supported: 8-bit only");
 
-   s->img_y = rjpeg__get16be(s);
+   /* Only 8-bit. JPEG format not supported? */
+   if (p != 8)
+      return 0;
+
+   s->img_y = RJPEG__GET16BE(s);
 
    /* Legal, but we don't handle it--but neither does IJG */
-   if (s->img_y == 0)
-      return rjpeg__err("no header height", "JPEG format not supported: delayed height");
 
-   s->img_x = rjpeg__get16be(s);
+   /* No header height, JPEG format not supported? */
+   if (s->img_y == 0)
+      return 0;
+
+   s->img_x = RJPEG__GET16BE(s);
   
+   /* No header width. Corrupt JPEG? */
    if (s->img_x == 0)
-      return rjpeg__err("0 width","Corrupt JPEG"); /* JPEG requires */
+      return 0;
 
    c = rjpeg__get8(s);
 
    /* JFIF requires */
+
+   /* Bad component count. Corrupt JPEG? */
    if (c != 3 && c != 1)
-      return rjpeg__err("bad component count","Corrupt JPEG");
+      return 0;
 
    s->img_n = c;
 
@@ -1757,35 +1740,50 @@ static int rjpeg__process_frame_header(rjpeg__jpeg *z, int scan)
       z->img_comp[i].linebuf = NULL;
    }
 
+   /* Bad SOF length. Corrupt JPEG? */
    if (Lf != 8+3*s->img_n)
-      return rjpeg__err("bad SOF len","Corrupt JPEG");
+      return 0;
 
    for (i=0; i < s->img_n; ++i)
    {
       z->img_comp[i].id = rjpeg__get8(s);
       if (z->img_comp[i].id != i+1)   /* JFIF requires */
          if (z->img_comp[i].id != i)  /* some version of jpegtran outputs non-JFIF-compliant files! */
-            return rjpeg__err("bad component ID","Corrupt JPEG");
+            return 0;
+
       q = rjpeg__get8(s);
       z->img_comp[i].h = (q >> 4);
+
+      /* Bad H. Corrupt JPEG? */
       if (!z->img_comp[i].h || z->img_comp[i].h > 4)
-         return rjpeg__err("bad H","Corrupt JPEG");
+         return 0;
+
       z->img_comp[i].v = q & 15;
+
+      /* Bad V. Corrupt JPEG? */
       if (!z->img_comp[i].v || z->img_comp[i].v > 4)
-         return rjpeg__err("bad V","Corrupt JPEG");
+         return 0;
+
       z->img_comp[i].tq = rjpeg__get8(s);
+
+      /* Bad TQ. Corrupt JPEG? */
       if (z->img_comp[i].tq > 3)
-         return rjpeg__err("bad TQ","Corrupt JPEG");
+         return 0;
    }
 
-   if (scan != RJPEG_SCAN_LOAD) return 1;
+   if (scan != RJPEG_SCAN_LOAD)
+      return 1;
 
-   if ((1 << 30) / s->img_x / s->img_n < s->img_y) return rjpeg__err("too large", "Image too large to decode");
+   /* Image too large to decode? */
+   if ((1 << 30) / s->img_x / s->img_n < s->img_y)
+      return 0;
 
    for (i=0; i < s->img_n; ++i)
    {
-      if (z->img_comp[i].h > h_max) h_max = z->img_comp[i].h;
-      if (z->img_comp[i].v > v_max) v_max = z->img_comp[i].v;
+      if (z->img_comp[i].h > h_max)
+         h_max = z->img_comp[i].h;
+      if (z->img_comp[i].v > v_max)
+         v_max = z->img_comp[i].v;
    }
 
    /* compute interleaved MCU info */
@@ -1796,40 +1794,74 @@ static int rjpeg__process_frame_header(rjpeg__jpeg *z, int scan)
    z->img_mcu_x = (s->img_x + z->img_mcu_w-1) / z->img_mcu_w;
    z->img_mcu_y = (s->img_y + z->img_mcu_h-1) / z->img_mcu_h;
 
-   for (i=0; i < s->img_n; ++i)
+   if (z->progressive)
    {
-      /* number of effective pixels (e.g. for non-interleaved MCU) */
-      z->img_comp[i].x = (s->img_x * z->img_comp[i].h + h_max-1) / h_max;
-      z->img_comp[i].y = (s->img_y * z->img_comp[i].v + v_max-1) / v_max;
-      /* to simplify generation, we'll allocate enough memory to decode
-       * the bogus oversized data from using interleaved MCUs and their
-       * big blocks (e.g. a 16x16 iMCU on an image of width 33); we won't
-       * discard the extra data until colorspace conversion */
-      z->img_comp[i].w2 = z->img_mcu_x * z->img_comp[i].h * 8;
-      z->img_comp[i].h2 = z->img_mcu_y * z->img_comp[i].v * 8;
-      z->img_comp[i].raw_data = malloc(z->img_comp[i].w2 * z->img_comp[i].h2+15);
-
-      if (z->img_comp[i].raw_data == NULL)
+      for (i=0; i < s->img_n; ++i)
       {
-         for(--i; i >= 0; --i)
+         /* number of effective pixels (e.g. for non-interleaved MCU) */
+         z->img_comp[i].x        = (s->img_x * z->img_comp[i].h + h_max-1) / h_max;
+         z->img_comp[i].y        = (s->img_y * z->img_comp[i].v + v_max-1) / v_max;
+
+         /* to simplify generation, we'll allocate enough memory to decode
+          * the bogus oversized data from using interleaved MCUs and their
+          * big blocks (e.g. a 16x16 iMCU on an image of width 33); we won't
+          * discard the extra data until colorspace conversion */
+         z->img_comp[i].w2       = z->img_mcu_x * z->img_comp[i].h * 8;
+         z->img_comp[i].h2       = z->img_mcu_y * z->img_comp[i].v * 8;
+         z->img_comp[i].raw_data = malloc(z->img_comp[i].w2 * z->img_comp[i].h2+15);
+
+         /* Out of memory? */
+         if (z->img_comp[i].raw_data == NULL)
          {
-            free(z->img_comp[i].raw_data);
-            z->img_comp[i].data = NULL;
-         }
-         return rjpeg__err("outofmem", "Out of memory");
-      }
+            for(--i; i >= 0; --i)
+            {
+               free(z->img_comp[i].raw_data);
+               z->img_comp[i].data = NULL;
+            }
 
-      /* align blocks for IDCT using MMX/SSE */
-      z->img_comp[i].data = (uint8_t*) (((size_t) z->img_comp[i].raw_data + 15) & ~15);
-      z->img_comp[i].linebuf = NULL;
-      if (z->progressive)
+            return 0;
+         }
+
+         /* align blocks for IDCT using MMX/SSE */
+         z->img_comp[i].data      = (uint8_t*) (((size_t) z->img_comp[i].raw_data + 15) & ~15);
+         z->img_comp[i].linebuf   = NULL;
+         z->img_comp[i].coeff_w   = (z->img_comp[i].w2 + 7) >> 3;
+         z->img_comp[i].coeff_h   = (z->img_comp[i].h2 + 7) >> 3;
+         z->img_comp[i].raw_coeff = malloc(z->img_comp[i].coeff_w * 
+                                    z->img_comp[i].coeff_h * 64 * sizeof(short) + 15);
+         z->img_comp[i].coeff     = (short*) (((size_t) z->img_comp[i].raw_coeff + 15) & ~15);
+      }
+   }
+   else
+   {
+      for (i=0; i < s->img_n; ++i)
       {
-         z->img_comp[i].coeff_w = (z->img_comp[i].w2 + 7) >> 3;
-         z->img_comp[i].coeff_h = (z->img_comp[i].h2 + 7) >> 3;
-         z->img_comp[i].raw_coeff = malloc(z->img_comp[i].coeff_w * z->img_comp[i].coeff_h * 64 * sizeof(short) + 15);
-         z->img_comp[i].coeff = (short*) (((size_t) z->img_comp[i].raw_coeff + 15) & ~15);
-      } else {
-         z->img_comp[i].coeff = 0;
+         /* number of effective pixels (e.g. for non-interleaved MCU) */
+         z->img_comp[i].x        = (s->img_x * z->img_comp[i].h + h_max-1) / h_max;
+         z->img_comp[i].y        = (s->img_y * z->img_comp[i].v + v_max-1) / v_max;
+
+         /* to simplify generation, we'll allocate enough memory to decode
+          * the bogus oversized data from using interleaved MCUs and their
+          * big blocks (e.g. a 16x16 iMCU on an image of width 33); we won't
+          * discard the extra data until colorspace conversion */
+         z->img_comp[i].w2       = z->img_mcu_x * z->img_comp[i].h * 8;
+         z->img_comp[i].h2       = z->img_mcu_y * z->img_comp[i].v * 8;
+         z->img_comp[i].raw_data = malloc(z->img_comp[i].w2 * z->img_comp[i].h2+15);
+
+         /* Out of memory? */
+         if (z->img_comp[i].raw_data == NULL)
+         {
+            for(--i; i >= 0; --i)
+            {
+               free(z->img_comp[i].raw_data);
+               z->img_comp[i].data = NULL;
+            }
+         }
+
+         /* align blocks for IDCT using MMX/SSE */
+         z->img_comp[i].data      = (uint8_t*) (((size_t) z->img_comp[i].raw_data + 15) & ~15);
+         z->img_comp[i].linebuf   = NULL;
+         z->img_comp[i].coeff     = 0;
          z->img_comp[i].raw_coeff = 0;
       }
    }
@@ -1841,11 +1873,12 @@ static int rjpeg__process_frame_header(rjpeg__jpeg *z, int scan)
 static int rjpeg__decode_jpeg_header(rjpeg__jpeg *z, int scan)
 {
    int m;
-   z->marker = RJPEG__MARKER_none; /* initialize cached marker to empty */
+   z->marker = RJPEG__MARKER_NONE; /* initialize cached marker to empty */
    m = rjpeg__get_marker(z);
 
+   /* No SOI. Corrupt JPEG? */
    if (!rjpeg__SOI(m))
-      return rjpeg__err("no SOI","Corrupt JPEG");
+      return 0;
 
    if (scan == RJPEG_SCAN_TYPE)
       return 1;
@@ -1856,16 +1889,20 @@ static int rjpeg__decode_jpeg_header(rjpeg__jpeg *z, int scan)
       if (!rjpeg__process_marker(z,m))
          return 0;
       m = rjpeg__get_marker(z);
-      while (m == RJPEG__MARKER_none)
+      while (m == RJPEG__MARKER_NONE)
       {
          /* some files have extra padding after their blocks, so ok, we'll scan */
-         if (rjpeg__at_eof(z->s))
-            return rjpeg__err("no SOF", "Corrupt JPEG");
+
+         /* No SOF. Corrupt JPEG? */
+         if (RJPEG__AT_EOF(z->s))
+            return 0;
+
          m = rjpeg__get_marker(z);
       }
    }
    z->progressive = rjpeg__SOF_progressive(m);
-   if (!rjpeg__process_frame_header(z, scan)) return 0;
+   if (!rjpeg__process_frame_header(z, scan))
+      return 0;
    return 1;
 }
 
@@ -1892,10 +1929,11 @@ static int rjpeg__decode_jpeg_image(rjpeg__jpeg *j)
          if (!rjpeg__parse_entropy_coded_data(j))
             return 0;
 
-         if (j->marker == RJPEG__MARKER_none )
+         if (j->marker == RJPEG__MARKER_NONE )
          {
             /* handle 0s at the end of image data from IP Kamera 9060 */
-            while (!rjpeg__at_eof(j->s))
+
+            while (!RJPEG__AT_EOF(j->s))
             {
                int x = rjpeg__get8(j->s);
                if (x == 255)
@@ -1903,10 +1941,12 @@ static int rjpeg__decode_jpeg_image(rjpeg__jpeg *j)
                   j->marker = rjpeg__get8(j->s);
                   break;
                }
-               else if (x != 0)
-                  return rjpeg__err("junk before marker", "Corrupt JPEG");
+               else if (x != 0) /* Junk before marker. Corrupt JPEG? */
+                  return 0;
             }
-            /* if we reach eof without hitting a marker, rjpeg__get_marker() below will fail and we'll eventually return 0 */
+
+            /* if we reach eof without hitting a marker, 
+             * rjpeg__get_marker() below will fail and we'll eventually return 0 */
          }
       }
       else
@@ -1924,7 +1964,8 @@ static int rjpeg__decode_jpeg_image(rjpeg__jpeg *j)
 
 /* static jfif-centered resampling (across block boundaries) */
 
-static uint8_t *rjpeg_resample_row_1(uint8_t *out, uint8_t *in_near, uint8_t *in_far, int w, int hs)
+static uint8_t *rjpeg_resample_row_1(uint8_t *out, uint8_t *in_near,
+      uint8_t *in_far, int w, int hs)
 {
    (void)out;
    (void)in_far;
@@ -1933,7 +1974,8 @@ static uint8_t *rjpeg_resample_row_1(uint8_t *out, uint8_t *in_near, uint8_t *in
    return in_near;
 }
 
-static uint8_t* rjpeg__resample_row_v_2(uint8_t *out, uint8_t *in_near, uint8_t *in_far, int w, int hs)
+static uint8_t* rjpeg__resample_row_v_2(uint8_t *out, uint8_t *in_near,
+      uint8_t *in_far, int w, int hs)
 {
    /* need to generate two samples vertically for every one in input */
    int i;
@@ -1943,7 +1985,8 @@ static uint8_t* rjpeg__resample_row_v_2(uint8_t *out, uint8_t *in_near, uint8_t 
    return out;
 }
 
-static uint8_t*  rjpeg__resample_row_h_2(uint8_t *out, uint8_t *in_near, uint8_t *in_far, int w, int hs)
+static uint8_t*  rjpeg__resample_row_h_2(uint8_t *out, uint8_t *in_near,
+      uint8_t *in_far, int w, int hs)
 {
    /* need to generate two samples horizontally for every one in input */
    int i;
@@ -1975,7 +2018,8 @@ static uint8_t*  rjpeg__resample_row_h_2(uint8_t *out, uint8_t *in_near, uint8_t
 }
 
 
-static uint8_t *rjpeg__resample_row_hv_2(uint8_t *out, uint8_t *in_near, uint8_t *in_far, int w, int hs)
+static uint8_t *rjpeg__resample_row_hv_2(uint8_t *out, uint8_t *in_near,
+      uint8_t *in_far, int w, int hs)
 {
    /* need to generate 2x2 samples for every one in input */
    int i,t0,t1;
@@ -2002,7 +2046,8 @@ static uint8_t *rjpeg__resample_row_hv_2(uint8_t *out, uint8_t *in_near, uint8_t
 }
 
 #if defined(__SSE2__) || defined(RJPEG_NEON)
-static uint8_t *rjpeg__resample_row_hv_2_simd(uint8_t *out, uint8_t *in_near, uint8_t *in_far, int w, int hs)
+static uint8_t *rjpeg__resample_row_hv_2_simd(uint8_t *out, uint8_t *in_near,
+      uint8_t *in_far, int w, int hs)
 {
    /* need to generate 2x2 samples for every one in input */
    int i=0,t0,t1;
@@ -2124,7 +2169,8 @@ static uint8_t *rjpeg__resample_row_hv_2_simd(uint8_t *out, uint8_t *in_near, ui
 }
 #endif
 
-static uint8_t *rjpeg__resample_row_generic(uint8_t *out, uint8_t *in_near, uint8_t *in_far, int w, int hs)
+static uint8_t *rjpeg__resample_row_generic(uint8_t *out,
+      uint8_t *in_near, uint8_t *in_far, int w, int hs)
 {
    /* resample with nearest-neighbor */
    int i,j;
@@ -2142,7 +2188,8 @@ static uint8_t *rjpeg__resample_row_generic(uint8_t *out, uint8_t *in_near, uint
 #define float2fixed(x)  (((int) ((x) * 4096.0f + 0.5f)) << 8)
 #endif
 
-static void rjpeg__YCbCr_to_RGB_row(uint8_t *out, const uint8_t *y, const uint8_t *pcb, const uint8_t *pcr, int count, int step)
+static void rjpeg__YCbCr_to_RGB_row(uint8_t *out, const uint8_t *y,
+      const uint8_t *pcb, const uint8_t *pcr, int count, int step)
 {
    int i;
    for (i=0; i < count; ++i)
@@ -2171,7 +2218,8 @@ static void rjpeg__YCbCr_to_RGB_row(uint8_t *out, const uint8_t *y, const uint8_
 }
 
 #if defined(__SSE2__) || defined(RJPEG_NEON)
-static void rjpeg__YCbCr_to_RGB_simd(uint8_t *out, const uint8_t *y, const uint8_t *pcb, const uint8_t *pcr, int count, int step)
+static void rjpeg__YCbCr_to_RGB_simd(uint8_t *out, const uint8_t *y,
+      const uint8_t *pcb, const uint8_t *pcr, int count, int step)
 {
    int i = 0;
 
@@ -2370,7 +2418,8 @@ static void rjpeg__cleanup_jpeg(rjpeg__jpeg *j)
    }
 }
 
-static uint8_t *rjpeg_load_jpeg_image(rjpeg__jpeg *z, unsigned *out_x, unsigned *out_y, int *comp, int req_comp)
+static uint8_t *rjpeg_load_jpeg_image(rjpeg__jpeg *z,
+      unsigned *out_x, unsigned *out_y, int *comp, int req_comp)
 {
    int n, decode_n;
    int k;
@@ -2381,8 +2430,10 @@ static uint8_t *rjpeg_load_jpeg_image(rjpeg__jpeg *z, unsigned *out_x, unsigned 
    z->s->img_n         = 0; /* make rjpeg__cleanup_jpeg safe */
 
    /* validate req_comp */
+
+   /* Internal error? */
    if (req_comp < 0 || req_comp > 4)
-      return rjpeg__errpuc("bad req_comp", "Internal error");
+      return NULL;
 
    /* load a jpeg image from whichever source, but leave in YCbCr format */
    if (!rjpeg__decode_jpeg_image(z))
@@ -2492,11 +2543,19 @@ error:
    return NULL;
 }
 
-static unsigned char *rjpeg__jpeg_load(rjpeg__context *s, unsigned *x, unsigned *y, int *comp, int req_comp)
+static uint8_t *rjpeg_load_from_memory(const uint8_t *buffer, int len,
+      unsigned *x, unsigned *y, int *comp, int req_comp)
 {
    rjpeg__jpeg j;
-   j.s = s;
+   rjpeg__context s;
+
+   s.img_buffer          = (uint8_t*)buffer;
+   s.img_buffer_original = (uint8_t*)buffer;
+   s.img_buffer_end      = (uint8_t*)buffer+len;
+
+   j.s                   = &s;
    rjpeg__setup_jpeg(&j);
+
    return rjpeg_load_jpeg_image(&j, x,y,comp,req_comp);
 }
 
@@ -2536,7 +2595,7 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
       unsigned int G     = texel & 0x0000FF00;
       unsigned int R     = texel & 0x000000FF;
       ((unsigned int*)pixels)[size_tex] = A | (R << 16) | G | (B >> 16);
-   };
+   }
 
    free(img);
 

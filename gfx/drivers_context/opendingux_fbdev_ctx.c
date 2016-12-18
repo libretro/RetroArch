@@ -144,9 +144,11 @@ static bool gfx_ctx_opendingux_set_resize(void *data,
 
 static void gfx_ctx_opendingux_update_window_title(void *data)
 {
-   char buf[128]        = {0};
-   char buf_fps[128]    = {0};
+   char buf[128];
+   char buf_fps[128];
    settings_t *settings = config_get_ptr();
+
+   buf[0] = buf_fps[0]  = '\0';
 
    video_monitor_get_fps(buf, sizeof(buf),
          buf_fps, sizeof(buf_fps));

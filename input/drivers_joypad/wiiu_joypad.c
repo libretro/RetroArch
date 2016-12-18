@@ -47,10 +47,14 @@ static const char *wiiu_joypad_name(unsigned pad)
 
 static void wiiu_joypad_autodetect_add(unsigned autoconf_pad)
 {
-   autoconfig_params_t params = {{0}};
+   autoconfig_params_t params;
 
    /* TODO - implement VID/PID? */
-   params.idx = autoconf_pad;
+   params.idx             = autoconf_pad;
+   params.display_name[0] = '\0';
+   params.vid             = 0;
+   params.pid             = 0;
+
    strlcpy(params.name, wiiu_joypad_name(autoconf_pad), sizeof(params.name));
    strlcpy(params.driver, wiiu_joypad.ident, sizeof(params.driver));
 

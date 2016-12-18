@@ -264,7 +264,7 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    if (!is_xinput_pad)
 #endif
    {
-      autoconfig_params_t params = {{0}};
+      autoconfig_params_t params;
 
       strlcpy(params.name,
             dinput_joypad_name(g_joypad_cnt),

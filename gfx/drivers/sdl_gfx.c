@@ -332,12 +332,14 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
       unsigned height, uint64_t frame_count,
       unsigned pitch, const char *msg)
 {
-   char                       buf[128] = {0};
+   char                       buf[128];
    static struct retro_perf_counter sdl_scale = {0};
    sdl_video_t                    *vid = (sdl_video_t*)data;
 
    if (!frame)
       return true;
+
+   buf[0] = '\0';
 
    if (SDL_MUSTLOCK(vid->screen))
       SDL_LockSurface(vid->screen);

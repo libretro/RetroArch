@@ -3512,8 +3512,6 @@ static void menu_displaylist_parse_playlist_associations(
       menu_displaylist_info_t *info)
 {
    settings_t      *settings    = config_get_ptr();
-   struct string_list *stnames  = string_split(settings->playlist_names, ";");
-   struct string_list *stcores  = string_split(settings->playlist_cores, ";");
    struct string_list *str_list = dir_list_new_special(settings->directory.playlist,
             DIR_LIST_COLLECTIONS, NULL);
 
@@ -3522,6 +3520,8 @@ static void menu_displaylist_parse_playlist_associations(
       unsigned i;
       char new_playlist_names[PATH_MAX_LENGTH];
       char new_playlist_cores[PATH_MAX_LENGTH];
+      struct string_list *stnames  = string_split(settings->playlist_names, ";");
+      struct string_list *stcores  = string_split(settings->playlist_cores, ";");
 
       new_playlist_names[0] = new_playlist_cores[0] = '\0';
 
@@ -3555,7 +3555,7 @@ static void menu_displaylist_parse_playlist_associations(
          path_remove_extension(path_base);
          menu_entries_append_enum(info->list,
                path_base,
-               str_list->elems[i].data,
+               path,
                MENU_ENUM_LABEL_PLAYLIST_ENTRY,
                MENU_SETTINGS_PLAYLIST_ASSOCIATION_START + i,
                0, 0);
@@ -3570,11 +3570,12 @@ static void menu_displaylist_parse_playlist_associations(
             new_playlist_names, sizeof(settings->playlist_names));
       strlcpy(settings->playlist_cores,
             new_playlist_cores, sizeof(settings->playlist_cores));
+
+      string_list_free(stnames);
+      string_list_free(stcores);
    }
 
    string_list_free(str_list);
-   string_list_free(stnames);
-   string_list_free(stcores);
 }
 
 static bool menu_displaylist_push_list_process(menu_displaylist_info_t *info)
@@ -5004,9 +5005,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_VIDEO_VFILTER,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_VIDEO_SMOOTH,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_VIDEO_ROTATION,
                PARSE_ONLY_UINT, false);
          menu_displaylist_parse_settings_enum(menu, info,
@@ -5038,6 +5036,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_SMOOTH,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_VIDEO_FILTER,

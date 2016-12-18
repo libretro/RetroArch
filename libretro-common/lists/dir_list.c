@@ -167,7 +167,9 @@ static int parse_dir_entry(const char *name, char *file_path,
  * NULL in case of error. Has to be freed manually.
  **/
 struct string_list *dir_list_new(const char *dir,
-      const char *ext, bool include_dirs, bool include_hidden, bool include_compressed, bool recursive)
+      const char *ext, bool include_dirs,
+      bool include_hidden, bool include_compressed,
+      bool recursive)
 {
    struct string_list *ext_list   = NULL;
    struct string_list *list       = NULL;
@@ -178,7 +180,9 @@ struct string_list *dir_list_new(const char *dir,
    if (ext)
       ext_list = string_split(ext, "|");
 
-   if(dir_list_read(dir, list, ext_list, include_dirs, include_hidden, include_compressed, recursive) == -1) {
+   if(dir_list_read(dir, list, ext_list, include_dirs,
+            include_hidden, include_compressed, recursive) == -1)
+   {
       string_list_free(list);
       string_list_free(ext_list);
       return NULL;
@@ -202,7 +206,10 @@ struct string_list *dir_list_new(const char *dir,
  *
  * Returns: -1 on error, 0 on success.
  **/
-int dir_list_read(const char *dir, struct string_list *list, struct string_list *ext_list, bool include_dirs, bool include_hidden, bool include_compressed, bool recursive)
+int dir_list_read(const char *dir,
+      struct string_list *list, struct string_list *ext_list,
+      bool include_dirs, bool include_hidden,
+      bool include_compressed, bool recursive)
 {
    struct RDIR *entry = retro_opendir(dir);
 
@@ -241,11 +248,13 @@ int dir_list_read(const char *dir, struct string_list *list, struct string_list 
             continue;
       }
 
-      if(is_dir && recursive) {
+      if(is_dir && recursive)
+      {
          if(strstr(name, ".") || strstr(name, ".."))
             continue;
 
-         dir_list_read(file_path, list, ext_list, include_dirs, include_hidden, include_compressed, recursive);
+         dir_list_read(file_path, list, ext_list, include_dirs,
+               include_hidden, include_compressed, recursive);
       }
 
       ret    = parse_dir_entry(name, file_path, is_dir,

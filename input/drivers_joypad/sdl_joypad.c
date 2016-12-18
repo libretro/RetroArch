@@ -94,11 +94,11 @@ static int16_t sdl_pad_get_axis(sdl_joypad_t *pad, unsigned axis)
 
 static void sdl_pad_connect(unsigned id)
 {
+   autoconfig_params_t params;
    sdl_joypad_t *pad          = (sdl_joypad_t*)&sdl_pads[id];
    bool success               = false;
    int32_t product            = 0;
    int32_t vendor             = 0;
-   autoconfig_params_t params = {{0}};
 
 #ifdef HAVE_SDL2
    SDL_JoystickGUID guid;
@@ -144,9 +144,10 @@ static void sdl_pad_connect(unsigned id)
    strlcpy(params.name,   sdl_pad_name(id), sizeof(params.name));
    strlcpy(params.driver, sdl_joypad.ident, sizeof(params.driver));
 
-   params.idx = id;
-   params.vid = vendor;
-   params.pid = product;
+   params.idx             = id;
+   params.vid             = vendor;
+   params.pid             = product;
+   params.display_name[0] = '\0';
 
    input_autoconfigure_connect(&params);
 

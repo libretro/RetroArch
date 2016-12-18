@@ -86,9 +86,11 @@ int string_parse_html_anchor(const char *line, char *link, char *name,
 #ifndef RARCH_INTERNAL
 int main(int argc, char *argv[])
 {
+   char link[1024];
+   char name[1024];
    const char *line = "<a href=\"http://www.test.com/somefile.zip\">Test</a>\n";
-   char link[1024] = {0};
-   char name[1024] = {0};
+
+   link[0] = name[0] = '\0';
 
    string_parse_html_anchor(line, link, name, sizeof(link), sizeof(name));
 

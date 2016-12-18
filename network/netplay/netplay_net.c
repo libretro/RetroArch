@@ -280,7 +280,7 @@ static void netplay_net_post_frame(netplay_t *netplay)
 
          /* Simulate this frame's input */
          if (netplay->replay_frame_count >= netplay->read_frame_count)
-            netplay_simulate_input(netplay, netplay->replay_ptr);
+            netplay_simulate_input(netplay, netplay->replay_ptr, true);
 
          autosave_lock();
          core_run();

@@ -100,7 +100,7 @@ struct udev_input
 };
 
 #ifdef HAVE_XKBCOMMON
-int  init_xkb(void);
+int init_xkb(int fd, size_t size);
 #endif
 
 static void udev_handle_touchpad(void *data,
@@ -629,7 +629,7 @@ static void *udev_input_init(void)
    }
 
 #ifdef HAVE_XKBCOMMON
-   if (init_xkb() == -1)
+   if (init_xkb(-1, 0) == -1)
       goto error;
 #endif
 

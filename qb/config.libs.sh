@@ -395,6 +395,7 @@ check_pkgconf XCB xcb
 [ "$HAVE_X11" = "no" ] && HAVE_XEXT=no && HAVE_XF86VM=no && HAVE_XINERAMA=no && HAVE_XSHM=no
 
 check_pkgconf WAYLAND wayland-egl
+check_pkgconf WAYLAND_CURSOR wayland-cursor
 
 check_pkgconf XKBCOMMON xkbcommon 0.3.2
 check_pkgconf DBUS dbus-1

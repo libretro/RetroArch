@@ -3191,10 +3191,10 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME:
          return "Save Game Preset";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT:
-/* FIXME? Translate 'Enable Hardware Shared Context' */
+         /* FIXME? Translate 'Enable Hardware Shared Context' */
          return "Enable Hardware Shared Context";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH:
-         return "HW Bilinear Filtering";
+         return "Bilinear Filtering";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER:
          return "Soft Filter Enable";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL:

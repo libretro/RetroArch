@@ -260,7 +260,9 @@ static bool hlsl_load_shader(hlsl_shader_data_t *hlsl,
 	void *data, const char *cgp_path, unsigned i)
 {
    struct shader_program_info program_info;
-   char path_buf[PATH_MAX_LENGTH] = {0};
+   char path_buf[PATH_MAX_LENGTH];
+
+   path_buf[0]           = '\0';
 
    program_info.combined = path_buf;
    program_info.is_file  = true;
