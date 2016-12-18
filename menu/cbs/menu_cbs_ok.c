@@ -1268,10 +1268,15 @@ static int action_ok_playlist_entry_collection(const char *path,
 
    menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET, &info);
 
+   /* If the currently loaded core's name is equal 
+    * to the core name from the playlist entry,
+    * then we directly load this game with the current core.
+    */
    if (info && 
          string_is_equal(info->info.library_name, core_name))
       return action_ok_file_load(menu->deferred_path, label, type, idx, entry_idx);
 
+   /* Is the core path / name of the playlist entry not yet filled in? */
    if (     string_is_equal(core_path, file_path_str(FILE_PATH_DETECT))
          && string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))
    {
