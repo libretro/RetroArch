@@ -723,6 +723,7 @@ bool netplay_handshake_pre_info(netplay_t *netplay,
    struct netplay_connection *connection, bool *had_input)
 {
    struct info_buf_s info_buf;
+   uint32_t cmd_size;
    ssize_t recvd;
    rarch_system_info_t *core_info;
    uint32_t *content_crc_ptr;
@@ -731,11 +732,30 @@ bool netplay_handshake_pre_info(netplay_t *netplay,
    RECV(&info_buf, sizeof(info_buf));
 
    if (recvd < 0 ||
-       ntohl(info_buf.cmd[0]) != NETPLAY_CMD_INFO ||
-       ntohl(info_buf.cmd[1]) != sizeof(info_buf) - 2*sizeof(uint32_t))
+       ntohl(info_buf.cmd[0]) != NETPLAY_CMD_INFO)
    {
       RARCH_ERR("Failed to receive netplay info.\n");
       return false;
+   }
+
+   cmd_size = ntohl(info_buf.cmd[1]);
+   if (cmd_size != sizeof(info_buf) - 2*sizeof(uint32_t))
+   {
+      /* Either the host doesn't have anything loaded, or this is just screwy */
+      if (cmd_size != 0)
+      {
+         /* Huh? */
+         RARCH_ERR("Invalid NETPLAY_CMD_INFO payload size.\n");
+         return false;
+      }
+
+      /* Send our info and hope they load it! */
+      if (!netplay_handshake_info(netplay, connection))
+         return false;
+
+      *had_input = true;
+      netplay_recv_flush(&connection->recv_packet_buffer);
+      return true;
    }
 
    /* Check the core info */
