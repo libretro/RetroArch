@@ -165,12 +165,6 @@ typedef struct
    uint8_t *img_buffer_original;
 } rjpeg__context;
 
-#define rjpeg__err(x,y)  0
-
-#define rjpeg__errpf(x,y)   ((float *) (rjpeg__err(x,y)?NULL:NULL))
-#define rjpeg__errpuc(x,y)  ((unsigned char *) (rjpeg__err(x,y)?NULL:NULL))
-
-
 static INLINE uint8_t rjpeg__get8(rjpeg__context *s)
 {
    if (s->img_buffer < s->img_buffer_end)
@@ -334,8 +328,10 @@ static int rjpeg__build_huffman(rjpeg__huffman *h, int *count)
       {
          while (h->size[k] == j)
             h->code[k++] = (uint16_t) (code++);
+
+         /* Bad code lengths, corrupt JPEG? */
          if (code-1 >= (1 << j))
-            return rjpeg__err("bad code lengths","Corrupt JPEG");
+            return 0;
       }
       /* compute largest code + 1 for this size, preshifted as needed later */
       h->maxcode[j] = code << (16-j);
@@ -551,8 +547,10 @@ static int rjpeg__jpeg_decode_block(
    if (j->code_bits < 16)
       rjpeg__grow_buffer_unsafe(j);
    t = rjpeg__jpeg_huff_decode(j, hdc);
+
+   /* Bad huffman code. Corrupt JPEG? */
    if (t < 0)
-      return rjpeg__err("bad huffman code","Corrupt JPEG");
+      return 0;
 
    /* 0 all the ac values now so we can do it 32-bits at a time */
    memset(data,0,64*sizeof(data[0]));
@@ -586,8 +584,11 @@ static int rjpeg__jpeg_decode_block(
       else
       {
          int rs = rjpeg__jpeg_huff_decode(j, hac);
+
+         /* Bad huffman code. Corrupt JPEG? */
          if (rs < 0)
-            return rjpeg__err("bad huffman code","Corrupt JPEG");
+            return 0;
+
          s = rs & 15;
          r = rs >> 4;
          if (s == 0)
@@ -614,8 +615,9 @@ static int rjpeg__jpeg_decode_block_prog_dc(
       rjpeg__huffman *hdc,
       int b)
 {
+   /* Can't merge DC and AC. Corrupt JPEG? */
    if (j->spec_end != 0)
-      return rjpeg__err("can't merge dc and ac", "Corrupt JPEG");
+      return 0;
 
    if (j->code_bits < 16)
       rjpeg__grow_buffer_unsafe(j);
@@ -650,8 +652,10 @@ static int rjpeg__jpeg_decode_block_prog_ac(
       int16_t *fac)
 {
    int k;
+
+   /* Can't merge DC and AC. Corrupt JPEG? */
    if (j->spec_start == 0)
-      return rjpeg__err("can't merge dc and ac", "Corrupt JPEG");
+      return 0;
 
    if (j->succ_high == 0)
    {
@@ -683,8 +687,11 @@ static int rjpeg__jpeg_decode_block_prog_ac(
          else
          {
             int rs = rjpeg__jpeg_huff_decode(j, hac);
+
+            /* Bad huffman code. Corrupt JPEG? */
             if (rs < 0)
-               return rjpeg__err("bad huffman code","Corrupt JPEG");
+               return 0;
+
             s = rs & 15;
             r = rs >> 4;
             if (s == 0)
@@ -738,8 +745,11 @@ static int rjpeg__jpeg_decode_block_prog_ac(
          {
             int r,s;
             int rs = rjpeg__jpeg_huff_decode(j, hac);
+
+            /* Bad huffman code. Corrupt JPEG? */
             if (rs < 0)
-               return rjpeg__err("bad huffman code","Corrupt JPEG");
+               return 0;
+
             s = rs & 15;
             r = rs >> 4;
             if (s == 0)
@@ -760,8 +770,10 @@ static int rjpeg__jpeg_decode_block_prog_ac(
             }
             else
             {
+               /* Bad huffman code. Corrupt JPEG? */
                if (s != 1)
-                  return rjpeg__err("bad huffman code", "Corrupt JPEG");
+                  return 0;
+
                /* sign bit */
                if (rjpeg__jpeg_get_bit(j))
                   s = bit;
@@ -1555,11 +1567,15 @@ static int rjpeg__process_marker(rjpeg__jpeg *z, int m)
    switch (m)
    {
       case RJPEG__MARKER_NONE: /* no marker found */
-         return rjpeg__err("expected marker","Corrupt JPEG");
+         /* Expected marker. Corrupt JPEG? */
+         return 0;
 
       case 0xDD: /* DRI - specify restart interval */
+
+         /* Bad DRI length. Corrupt JPEG? */
          if (rjpeg__get16be(z->s) != 4)
-            return rjpeg__err("bad DRI len","Corrupt JPEG");
+            return 0;
+
          z->restart_interval = rjpeg__get16be(z->s);
          return 1;
 
@@ -1570,10 +1586,15 @@ static int rjpeg__process_marker(rjpeg__jpeg *z, int m)
             int q = rjpeg__get8(z->s);
             int p = q >> 4;
             int t = q & 15,i;
+
+            /* Bad DQT type. Corrupt JPEG? */
             if (p != 0)
-               return rjpeg__err("bad DQT type","Corrupt JPEG");
+               return 0;
+
+            /* Bad DQT table. Corrupt JPEG? */
             if (t > 3)
-               return rjpeg__err("bad DQT table","Corrupt JPEG");
+               return 0;
+
             for (i=0; i < 64; ++i)
                z->dequant[t][rjpeg__jpeg_dezigzag[i]] = rjpeg__get8(z->s);
             L -= 65;
@@ -1589,8 +1610,10 @@ static int rjpeg__process_marker(rjpeg__jpeg *z, int m)
             int q      = rjpeg__get8(z->s);
             int tc     = q >> 4;
             int th     = q & 15;
+
+            /* Bad DHT header. Corrupt JPEG? */
             if (tc > 1 || th > 3)
-               return rjpeg__err("bad DHT header","Corrupt JPEG");
+               return 0;
 
             for (i=0; i < 16; ++i)
             {
@@ -1638,10 +1661,13 @@ static int rjpeg__process_scan_header(rjpeg__jpeg *z)
 
    z->scan_n = rjpeg__get8(z->s);
 
+   /* Bad SOS component count. Corrupt JPEG? */
    if (z->scan_n < 1 || z->scan_n > 4 || z->scan_n > (int) z->s->img_n)
-      return rjpeg__err("bad SOS component count","Corrupt JPEG");
+      return 0;
+
+   /* Bad SOS length. Corrupt JPEG? */
    if (Ls != 6+2*z->scan_n)
-      return rjpeg__err("bad SOS len","Corrupt JPEG");
+      return 0;
 
    for (i=0; i < z->scan_n; ++i)
    {
@@ -1655,10 +1681,14 @@ static int rjpeg__process_scan_header(rjpeg__jpeg *z)
       if (which == z->s->img_n)
          return 0; /* no match */
 
+      /* Bad DC huff. Corrupt JPEG? */
       z->img_comp[which].hd = q >> 4;   if (z->img_comp[which].hd > 3)
-         return rjpeg__err("bad DC huff","Corrupt JPEG");
+         return 0;
+
+      /* Bad AC huff. Corrupt JPEG? */
       z->img_comp[which].ha = q & 15;   if (z->img_comp[which].ha > 3)
-         return rjpeg__err("bad AC huff","Corrupt JPEG");
+         return 0;
+
       z->order[i] = which;
    }
 
@@ -1670,19 +1700,22 @@ static int rjpeg__process_scan_header(rjpeg__jpeg *z)
 
    if (z->progressive)
    {
+      /* Bad SOS. Corrupt JPEG? */
       if (  z->spec_start > 63 || 
             z->spec_end > 63   || 
             z->spec_start > z->spec_end || 
             z->succ_high > 13           || 
             z->succ_low > 13)
-         return rjpeg__err("bad SOS", "Corrupt JPEG");
+         return 0;
    }
    else
    {
+      /* Bad SOS. Corrupt JPEG? */
       if (z->spec_start != 0)
-         return rjpeg__err("bad SOS","Corrupt JPEG");
+         return 0;
       if (z->succ_high != 0 || z->succ_low != 0)
-         return rjpeg__err("bad SOS","Corrupt JPEG");
+         return 0;
+
       z->spec_end = 63;
    }
 
@@ -1696,31 +1729,40 @@ static int rjpeg__process_frame_header(rjpeg__jpeg *z, int scan)
    Lf = rjpeg__get16be(s);
    
    /* JPEG */
+
+   /* Bad SOF len. Corrupt JPEG? */
    if (Lf < 11)
-      return rjpeg__err("bad SOF len","Corrupt JPEG");
+      return 0;
 
    p  = rjpeg__get8(s);
 
    /* JPEG baseline */
+
+   /* Only 8-bit. JPEG format not supported? */
    if (p != 8)
-      return rjpeg__err("only 8-bit","JPEG format not supported: 8-bit only");
+      return 0;
 
    s->img_y = rjpeg__get16be(s);
 
    /* Legal, but we don't handle it--but neither does IJG */
+
+   /* No header height, JPEG format not supported? */
    if (s->img_y == 0)
-      return rjpeg__err("no header height", "JPEG format not supported: delayed height");
+      return 0;
 
    s->img_x = rjpeg__get16be(s);
   
+   /* No header width. Corrupt JPEG? */
    if (s->img_x == 0)
-      return rjpeg__err("0 width","Corrupt JPEG"); /* JPEG requires */
+      return 0;
 
    c = rjpeg__get8(s);
 
    /* JFIF requires */
+
+   /* Bad component count. Corrupt JPEG? */
    if (c != 3 && c != 1)
-      return rjpeg__err("bad component count","Corrupt JPEG");
+      return 0;
 
    s->img_n = c;
 
@@ -1730,32 +1772,43 @@ static int rjpeg__process_frame_header(rjpeg__jpeg *z, int scan)
       z->img_comp[i].linebuf = NULL;
    }
 
+   /* Bad SOF length. Corrupt JPEG? */
    if (Lf != 8+3*s->img_n)
-      return rjpeg__err("bad SOF len","Corrupt JPEG");
+      return 0;
 
    for (i=0; i < s->img_n; ++i)
    {
       z->img_comp[i].id = rjpeg__get8(s);
       if (z->img_comp[i].id != i+1)   /* JFIF requires */
          if (z->img_comp[i].id != i)  /* some version of jpegtran outputs non-JFIF-compliant files! */
-            return rjpeg__err("bad component ID","Corrupt JPEG");
+            return 0;
+
       q = rjpeg__get8(s);
       z->img_comp[i].h = (q >> 4);
+
+      /* Bad H. Corrupt JPEG? */
       if (!z->img_comp[i].h || z->img_comp[i].h > 4)
-         return rjpeg__err("bad H","Corrupt JPEG");
+         return 0;
+
       z->img_comp[i].v = q & 15;
+
+      /* Bad V. Corrupt JPEG? */
       if (!z->img_comp[i].v || z->img_comp[i].v > 4)
-         return rjpeg__err("bad V","Corrupt JPEG");
+         return 0;
+
       z->img_comp[i].tq = rjpeg__get8(s);
+
+      /* Bad TQ. Corrupt JPEG? */
       if (z->img_comp[i].tq > 3)
-         return rjpeg__err("bad TQ","Corrupt JPEG");
+         return 0;
    }
 
    if (scan != RJPEG_SCAN_LOAD)
       return 1;
 
+   /* Image too large to decode? */
    if ((1 << 30) / s->img_x / s->img_n < s->img_y)
-      return rjpeg__err("too large", "Image too large to decode");
+      return 0;
 
    for (i=0; i < s->img_n; ++i)
    {
@@ -1789,6 +1842,7 @@ static int rjpeg__process_frame_header(rjpeg__jpeg *z, int scan)
          z->img_comp[i].h2       = z->img_mcu_y * z->img_comp[i].v * 8;
          z->img_comp[i].raw_data = malloc(z->img_comp[i].w2 * z->img_comp[i].h2+15);
 
+         /* Out of memory? */
          if (z->img_comp[i].raw_data == NULL)
          {
             for(--i; i >= 0; --i)
@@ -1796,7 +1850,8 @@ static int rjpeg__process_frame_header(rjpeg__jpeg *z, int scan)
                free(z->img_comp[i].raw_data);
                z->img_comp[i].data = NULL;
             }
-            return rjpeg__err("outofmem", "Out of memory");
+
+            return 0;
          }
 
          /* align blocks for IDCT using MMX/SSE */
@@ -1825,6 +1880,7 @@ static int rjpeg__process_frame_header(rjpeg__jpeg *z, int scan)
          z->img_comp[i].h2       = z->img_mcu_y * z->img_comp[i].v * 8;
          z->img_comp[i].raw_data = malloc(z->img_comp[i].w2 * z->img_comp[i].h2+15);
 
+         /* Out of memory? */
          if (z->img_comp[i].raw_data == NULL)
          {
             for(--i; i >= 0; --i)
@@ -1832,7 +1888,6 @@ static int rjpeg__process_frame_header(rjpeg__jpeg *z, int scan)
                free(z->img_comp[i].raw_data);
                z->img_comp[i].data = NULL;
             }
-            return rjpeg__err("outofmem", "Out of memory");
          }
 
          /* align blocks for IDCT using MMX/SSE */
@@ -1853,8 +1908,9 @@ static int rjpeg__decode_jpeg_header(rjpeg__jpeg *z, int scan)
    z->marker = RJPEG__MARKER_NONE; /* initialize cached marker to empty */
    m = rjpeg__get_marker(z);
 
+   /* No SOI. Corrupt JPEG? */
    if (!rjpeg__SOI(m))
-      return rjpeg__err("no SOI","Corrupt JPEG");
+      return 0;
 
    if (scan == RJPEG_SCAN_TYPE)
       return 1;
@@ -1868,8 +1924,11 @@ static int rjpeg__decode_jpeg_header(rjpeg__jpeg *z, int scan)
       while (m == RJPEG__MARKER_NONE)
       {
          /* some files have extra padding after their blocks, so ok, we'll scan */
+
+         /* No SOF. Corrupt JPEG? */
          if (rjpeg__at_eof(z->s))
-            return rjpeg__err("no SOF", "Corrupt JPEG");
+            return 0;
+
          m = rjpeg__get_marker(z);
       }
    }
@@ -1913,8 +1972,8 @@ static int rjpeg__decode_jpeg_image(rjpeg__jpeg *j)
                   j->marker = rjpeg__get8(j->s);
                   break;
                }
-               else if (x != 0)
-                  return rjpeg__err("junk before marker", "Corrupt JPEG");
+               else if (x != 0) /* Junk before marker. Corrupt JPEG? */
+                  return 0;
             }
             /* if we reach eof without hitting a marker, 
              * rjpeg__get_marker() below will fail and we'll eventually return 0 */
@@ -2401,8 +2460,10 @@ static uint8_t *rjpeg_load_jpeg_image(rjpeg__jpeg *z,
    z->s->img_n         = 0; /* make rjpeg__cleanup_jpeg safe */
 
    /* validate req_comp */
+
+   /* Internal error? */
    if (req_comp < 0 || req_comp > 4)
-      return rjpeg__errpuc("bad req_comp", "Internal error");
+      return NULL;
 
    /* load a jpeg image from whichever source, but leave in YCbCr format */
    if (!rjpeg__decode_jpeg_image(z))
