@@ -44,6 +44,14 @@ enum
    RJPEG_RGB_ALPHA
 };
 
+enum
+{
+   RJPEG_SCAN_LOAD = 0,
+   RJPEG_SCAN_TYPE,
+   RJPEG_SCAN_HEADER
+};
+
+
 typedef struct
 {
    int      (*read)  (void *user,char *data,int size);   /* fill 'data' with 'size' bytes.  return number of bytes actually read */
@@ -191,7 +199,8 @@ static unsigned char *rjpeg__load_flip(rjpeg__context *s, unsigned *x, unsigned 
    return result;
 }
 
-static uint8_t *rjpeg_load_from_memory(const uint8_t *buffer, int len, unsigned *x, unsigned *y, int *comp, int req_comp)
+static uint8_t *rjpeg_load_from_memory(const uint8_t *buffer, int len,
+      unsigned *x, unsigned *y, int *comp, int req_comp)
 {
    rjpeg__context s;
    s.io.read             = NULL;
@@ -200,13 +209,6 @@ static uint8_t *rjpeg_load_from_memory(const uint8_t *buffer, int len, unsigned 
    s.img_buffer_end      = (uint8_t *) buffer+len;
    return rjpeg__load_flip(&s,x,y,comp,req_comp);
 }
-
-enum
-{
-   RJPEG_SCAN_LOAD = 0,
-   RJPEG_SCAN_TYPE,
-   RJPEG_SCAN_HEADER
-};
 
 static void rjpeg__refill_buffer(rjpeg__context *s)
 {
@@ -217,14 +219,14 @@ static void rjpeg__refill_buffer(rjpeg__context *s)
       /* at end of file, treat same as if from memory, but need to handle case
        * where s->img_buffer isn't pointing to safe memory, e.g. 0-byte file */
       s->read_from_callbacks = 0;
-      s->img_buffer = s->buffer_start;
-      s->img_buffer_end = s->buffer_start+1;
-      *s->img_buffer = 0;
+      s->img_buffer          = s->buffer_start;
+      s->img_buffer_end      = s->buffer_start+1;
+      *s->img_buffer         = 0;
    }
    else
    {
-      s->img_buffer = s->buffer_start;
-      s->img_buffer_end = s->buffer_start + n;
+      s->img_buffer          = s->buffer_start;
+      s->img_buffer_end      = s->buffer_start + n;
    }
 }
 
@@ -2586,7 +2588,7 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
       unsigned int G     = texel & 0x0000FF00;
       unsigned int R     = texel & 0x000000FF;
       ((unsigned int*)pixels)[size_tex] = A | (R << 16) | G | (B >> 16);
-   };
+   }
 
    free(img);
 
