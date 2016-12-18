@@ -1901,6 +1901,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case FILE_TYPE_DIRECTORY:
          return xmb->textures.list[XMB_TEXTURE_FOLDER];
       case FILE_TYPE_PLAIN:
+      case FILE_TYPE_IN_CARCHIVE:
          return xmb->textures.list[XMB_TEXTURE_FILE];
       case FILE_TYPE_RPL_ENTRY:
          if (core_node)
@@ -2149,6 +2150,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
 
          switch (type)
          {
+            case FILE_TYPE_IN_CARCHIVE:
             case FILE_TYPE_COMPRESSED:
             case FILE_TYPE_MORE:
             case FILE_TYPE_CORE:
