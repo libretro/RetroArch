@@ -139,7 +139,7 @@ static INLINE int pad_index_to_xuser_index(unsigned pad)
 /* Generic "XInput" instead of "Xbox 360", because there are
  * some other non-xbox third party PC controllers.
  */
-static const char* const XBOX_CONTROLLER_NAMES[4] = 
+static const char* const XBOX_CONTROLLER_NAMES[4] =
 {
    "XInput Controller (User 1)",
    "XInput Controller (User 2)",
@@ -147,13 +147,25 @@ static const char* const XBOX_CONTROLLER_NAMES[4] =
    "XInput Controller (User 4)"
 };
 
+static const char* const XBOX_ONE_CONTROLLER_NAMES[4] =
+{
+   "XBOX One Controller (User 1)",
+   "XBOX One Controller (User 2)",
+   "XBOX One Controller (User 3)",
+   "XBOX One Controller (User 4)"
+};
+
 const char *xinput_joypad_name(unsigned pad)
 {
    int xuser = pad_index_to_xuser_index(pad);
-
+   /* Use the real controller name for XBOX One controllers since
+      they are slightly different  */
    if (xuser < 0)
       return dinput_joypad.name(pad);
-   /* TODO: Different name if disconnected? */
+
+   if (strstr(dinput_joypad.name(pad), "Xbox One For Windows"))
+      return XBOX_ONE_CONTROLLER_NAMES[xuser];
+
    return XBOX_CONTROLLER_NAMES[xuser];
 }
 
