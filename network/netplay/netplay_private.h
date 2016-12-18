@@ -274,12 +274,24 @@ struct netplay_connection
    /* Player # of connected player */
    int player;
 
+   /* What compression does this peer support? */
+   uint32_t compression_supported;
+
    /* Is this player paused? */
    bool paused;
 
    /* Is this connection stalling? */
    enum rarch_netplay_stall_reason stall;
    retro_time_t stall_time;
+};
+
+/* Compression transcoder */
+struct compression_transcoder
+{
+   const struct trans_stream_backend *compression_backend;
+   void *compression_stream;
+   const struct trans_stream_backend *decompression_backend;
+   void *decompression_stream;
 };
 
 struct netplay
@@ -330,10 +342,8 @@ struct netplay
    size_t buffer_size;
 
    /* Compression transcoder */
-   const struct trans_stream_backend *compression_backend;
-   void *compression_stream;
-   const struct trans_stream_backend *decompression_backend;
-   void *decompression_stream;
+   struct compression_transcoder compress_nil,
+                                 compress_zlib;
 
    /* A buffer into which to compress frames for transfer */
    uint8_t *zbuffer;

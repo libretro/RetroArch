@@ -540,8 +540,16 @@ void netplay_free(netplay_t *netplay)
    if (netplay->zbuffer)
       free(netplay->zbuffer);
 
-   if (netplay->compression_stream)
-      netplay->compression_backend->stream_free(netplay->compression_stream);
+   if (netplay->compress_nil.compression_stream)
+   {
+      netplay->compress_nil.compression_backend->stream_free(netplay->compress_nil.compression_stream);
+      netplay->compress_nil.decompression_backend->stream_free(netplay->compress_nil.decompression_stream);
+   }
+   if (netplay->compress_zlib.compression_stream)
+   {
+      netplay->compress_zlib.compression_backend->stream_free(netplay->compress_zlib.compression_stream);
+      netplay->compress_zlib.decompression_backend->stream_free(netplay->compress_zlib.decompression_stream);
+   }
 
    if (netplay->addr)
       freeaddrinfo_retro(netplay->addr);

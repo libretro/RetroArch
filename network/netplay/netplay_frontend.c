@@ -611,6 +611,59 @@ void netplay_post_frame(netplay_t *netplay)
 }
 
 /**
+ * netplay_send_savestate
+ * @netplay              : pointer to netplay object
+ * @serial_info          : the savestate being loaded
+ * @cx                   : compression type
+ * @z                    : compression backend to use
+ *
+ * Send a loaded savestate to those connected peers using the given compression
+ * scheme.
+ */
+void netplay_send_savestate(netplay_t *netplay,
+   retro_ctx_serialize_info_t *serial_info, uint32_t cx,
+   struct compression_transcoder *z)
+{
+   uint32_t header[4];
+   uint32_t rd, wn;
+   size_t i;
+
+   /* Compress it */
+   z->compression_backend->set_in(z->compression_stream,
+      (const uint8_t*)serial_info->data_const, serial_info->size);
+   z->compression_backend->set_out(z->compression_stream,
+      netplay->zbuffer, netplay->zbuffer_size);
+   if (!z->compression_backend->trans(z->compression_stream, true, &rd,
+         &wn, NULL))
+   {
+      /* Catastrophe! */
+      for (i = 0; i < netplay->connections_size; i++)
+         netplay_hangup(netplay, &netplay->connections[i]);
+      return;
+   }
+
+   /* Send it to relevant peers */
+   header[0] = htonl(NETPLAY_CMD_LOAD_SAVESTATE);
+   header[1] = htonl(wn + 2*sizeof(uint32_t));
+   header[2] = htonl(netplay->self_frame_count);
+   header[3] = htonl(serial_info->size);
+
+   for (i = 0; i < netplay->connections_size; i++)
+   {
+      struct netplay_connection *connection = &netplay->connections[i];
+      if (!connection->active ||
+          connection->mode < NETPLAY_CONNECTION_CONNECTED ||
+          connection->compression_supported != cx) continue;
+
+      if (!netplay_send(&connection->send_packet_buffer, connection->fd, header,
+            sizeof(header)) ||
+          !netplay_send(&connection->send_packet_buffer, connection->fd,
+            netplay->zbuffer, wn))
+         netplay_hangup(netplay, connection);
+   }
+}
+
+/**
  * netplay_load_savestate
  * @netplay              : pointer to netplay object
  * @serial_info          : the savestate being loaded, NULL means 
@@ -623,10 +676,7 @@ void netplay_post_frame(netplay_t *netplay)
 void netplay_load_savestate(netplay_t *netplay,
       retro_ctx_serialize_info_t *serial_info, bool save)
 {
-   uint32_t header[4];
    retro_ctx_serialize_info_t tmp_serial_info;
-   uint32_t rd, wn;
-   size_t i;
 
    /* Record it in our own buffer */
    if (save || !serial_info)
@@ -693,39 +743,12 @@ void netplay_load_savestate(netplay_t *netplay,
             | NETPLAY_QUIRK_NO_TRANSMISSION))
       return;
 
-   /* Compress it */
-   if (!netplay->compression_backend)
-      return;
-   netplay->compression_backend->set_in(netplay->compression_stream,
-      (const uint8_t*)serial_info->data_const, serial_info->size);
-   netplay->compression_backend->set_out(netplay->compression_stream,
-      netplay->zbuffer, netplay->zbuffer_size);
-   if (!netplay->compression_backend->trans(netplay->compression_stream,
-      true, &rd, &wn, NULL))
-   {
-      /* Catastrophe! */
-      for (i = 0; i < netplay->connections_size; i++)
-         netplay_hangup(netplay, &netplay->connections[i]);
-      return;
-   }
-
-   /* And send it to the peers */
-   header[0] = htonl(NETPLAY_CMD_LOAD_SAVESTATE);
-   header[1] = htonl(wn + 2*sizeof(uint32_t));
-   header[2] = htonl(netplay->self_frame_count);
-   header[3] = htonl(serial_info->size);
-
-   for (i = 0; i < netplay->connections_size; i++)
-   {
-      struct netplay_connection *connection = &netplay->connections[i];
-      if (!connection->active || connection->mode < NETPLAY_CONNECTION_CONNECTED) continue;
-
-      if (!netplay_send(&connection->send_packet_buffer, connection->fd, header,
-            sizeof(header)) ||
-          !netplay_send(&connection->send_packet_buffer, connection->fd,
-            netplay->zbuffer, wn))
-         netplay_hangup(netplay, connection);
-   }
+   /* Send this to every peer */
+   if (netplay->compress_nil.compression_backend)
+      netplay_send_savestate(netplay, serial_info, 0, &netplay->compress_nil);
+   if (netplay->compress_zlib.compression_backend)
+      netplay_send_savestate(netplay, serial_info, NETPLAY_COMPRESSION_ZLIB,
+         &netplay->compress_zlib);
 }
 
 /**

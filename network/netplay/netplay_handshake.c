@@ -301,6 +301,7 @@ bool netplay_handshake_init(netplay_t *netplay,
    struct nick_buf_s nick_buf;
    uint32_t local_pmagic, remote_pmagic;
    uint32_t compression;
+   struct compression_transcoder *ctrans;
 
    dmsg = NULL;
 
@@ -334,31 +335,41 @@ bool netplay_handshake_init(netplay_t *netplay,
       goto error;
    }
 
-   /* Clear any existing compression */
-   if (netplay->compression_stream)
-      netplay->compression_backend->stream_free(netplay->compression_stream);
-   if (netplay->decompression_stream)
-      netplay->decompression_backend->stream_free(netplay->decompression_stream);
-
    /* Check what compression is supported */
    compression = ntohl(header[2]);
    compression &= NETPLAY_COMPRESSION_SUPPORTED;
    if (compression & NETPLAY_COMPRESSION_ZLIB)
    {
-      netplay->compression_backend = trans_stream_get_zlib_deflate_backend();
-      if (!netplay->compression_backend)
-         netplay->compression_backend = trans_stream_get_pipe_backend();
+      ctrans = &netplay->compress_zlib;
+      if (!ctrans->compression_backend)
+      {
+         ctrans->compression_backend =
+            trans_stream_get_zlib_deflate_backend();
+         if (!ctrans->compression_backend)
+            ctrans->compression_backend = trans_stream_get_pipe_backend();
+      }
+      connection->compression_supported = NETPLAY_COMPRESSION_ZLIB;
    }
    else
    {
-      netplay->compression_backend = trans_stream_get_pipe_backend();
+      ctrans = &netplay->compress_nil;
+      if (!ctrans->compression_backend)
+      {
+         ctrans->compression_backend =
+            trans_stream_get_pipe_backend();
+      }
+      connection->compression_supported = 0;
    }
-   netplay->decompression_backend = netplay->compression_backend->reverse;
+   if (!ctrans->decompression_backend)
+      ctrans->decompression_backend = ctrans->compression_backend->reverse;
 
    /* Allocate our compression stream */
-   netplay->compression_stream = netplay->compression_backend->stream_new();
-   netplay->decompression_stream = netplay->decompression_backend->stream_new();
-   if (!netplay->compression_stream || !netplay->decompression_stream)
+   if (!ctrans->compression_stream)
+   {
+      ctrans->compression_stream = ctrans->compression_backend->stream_new();
+      ctrans->decompression_stream = ctrans->decompression_backend->stream_new();
+   }
+   if (!ctrans->compression_stream || !ctrans->decompression_stream)
    {
       RARCH_ERR("Failed to allocate compression transcoder!\n");
       return false;

@@ -1013,6 +1013,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
             uint32_t isize;
             uint32_t rd, wn;
             uint32_t player;
+            struct compression_transcoder *ctrans;
 
             /* Make sure we're ready for it */
             if (netplay->quirks & NETPLAY_QUIRK_INITIALIZATION)
@@ -1101,12 +1102,20 @@ static bool netplay_get_cmd(netplay_t *netplay,
             }
 
             /* And decompress it */
-            netplay->decompression_backend->set_in(netplay->decompression_stream,
+            switch (connection->compression_supported)
+            {
+               case NETPLAY_COMPRESSION_ZLIB:
+                  ctrans = &netplay->compress_zlib;
+                  break;
+               default:
+                  ctrans = &netplay->compress_nil;
+            }
+            ctrans->decompression_backend->set_in(ctrans->decompression_stream,
                netplay->zbuffer, cmd_size - 2*sizeof(uint32_t));
-            netplay->decompression_backend->set_out(netplay->decompression_stream,
+            ctrans->decompression_backend->set_out(ctrans->decompression_stream,
                (uint8_t*)netplay->buffer[netplay->read_ptr[connection->player]].state,
                netplay->state_size);
-            netplay->decompression_backend->trans(netplay->decompression_stream,
+            ctrans->decompression_backend->trans(ctrans->decompression_stream,
                true, &rd, &wn, NULL);
 
             /* Skip ahead if it's past where we are */
