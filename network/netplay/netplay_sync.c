@@ -344,6 +344,8 @@ process:
  */
 void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
 {
+   uint32_t cmp_frame_count;
+
    /* Unless we're stalling, we've just finished running a frame */
    if (!stalled)
    {
@@ -487,11 +489,16 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
       netplay->force_rewind = false;
    }
 
+   if (netplay->is_server)
+      cmp_frame_count = netplay->unread_frame_count;
+   else
+      cmp_frame_count = netplay->server_frame_count;
+
    /* If we're behind, try to catch up */
    if (netplay->catch_up)
    {
       /* Are we caught up? */
-      if (netplay->self_frame_count >= netplay->unread_frame_count)
+      if (netplay->self_frame_count >= cmp_frame_count)
       {
          netplay->catch_up = false;
          input_driver_unset_nonblock_state();
@@ -499,10 +506,10 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
       }
 
    }
-   else
+   else if (!stalled)
    {
       /* Are we falling behind? */
-      if (netplay->self_frame_count < netplay->unread_frame_count - 2)
+      if (netplay->self_frame_count < cmp_frame_count - 2)
       {
          netplay->catch_up = true;
          input_driver_set_nonblock_state();
