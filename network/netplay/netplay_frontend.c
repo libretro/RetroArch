@@ -108,8 +108,6 @@ static bool get_self_input_state(netplay_t *netplay)
 
    if (!input_driver_is_libretro_input_blocked() && netplay->self_frame_count > 0)
    {
-      settings_t *settings = config_get_ptr();
-
       /* First frame we always give zero input since relying on 
        * input from first frame screws up when we use -F 0. */
       retro_input_state_t cb = netplay->cbs.state_cb;
@@ -801,7 +799,6 @@ static void netplay_toggle_play_spectate(netplay_t *netplay)
    else
    {
       uint32_t cmd;
-      size_t i;
 
       if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING)
       {
