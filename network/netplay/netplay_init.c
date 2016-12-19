@@ -312,7 +312,6 @@ bool netplay_init_serialization(netplay_t *netplay)
 bool netplay_try_init_serialization(netplay_t *netplay)
 {
    retro_ctx_serialize_info_t serial_info;
-   size_t packet_buffer_size;
 
    if (netplay->state_size)
       return true;
@@ -368,8 +367,6 @@ bool netplay_wait_and_init_serialization(netplay_t *netplay)
 
 static bool netplay_init_buffers(netplay_t *netplay)
 {
-   size_t packet_buffer_size;
-
    if (!netplay)
       return false;
 

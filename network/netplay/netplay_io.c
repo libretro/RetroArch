@@ -379,6 +379,13 @@ bool netplay_cmd_mode(netplay_t *netplay,
    return netplay_send_raw_cmd(netplay, connection, cmd, NULL, 0);
 }
 
+#undef RECV
+#define RECV(buf, sz) \
+recvd = netplay_recv(&connection->recv_packet_buffer, connection->fd, (buf), \
+(sz), false); \
+if (recvd >= 0 && recvd < (sz)) goto shrt; \
+else if (recvd < 0)
+
 static bool netplay_get_cmd(netplay_t *netplay,
    struct netplay_connection *connection, bool *had_input)
 {
@@ -391,12 +398,6 @@ static bool netplay_get_cmd(netplay_t *netplay,
    /* We don't handle the initial handshake here */
    if (connection->mode < NETPLAY_CONNECTION_CONNECTED)
       return netplay_handshake(netplay, connection, had_input);
-
-#define RECV(buf, sz) \
-   recvd = netplay_recv(&connection->recv_packet_buffer, connection->fd, (buf), \
-      (sz), false); \
-   if (recvd >= 0 && recvd < (sz)) goto shrt; \
-   else if (recvd < 0)
 
    RECV(&cmd, sizeof(cmd))
       return false;

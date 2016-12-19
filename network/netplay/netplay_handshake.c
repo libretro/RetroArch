@@ -268,7 +268,6 @@ static void handshake_password(void *ignore, const char *line)
 {
    struct password_buf_s password_buf;
    char password[8+NETPLAY_PASS_LEN]; /* 8 for salt, 128 for password */
-   uint32_t cmd[2];
    netplay_t *netplay = handshake_password_netplay;
    struct netplay_connection *connection = &netplay->connections[0];
 
@@ -415,7 +414,6 @@ error:
 
 static void netplay_handshake_ready(netplay_t *netplay, struct netplay_connection *connection)
 {
-   size_t i;
    char msg[512];
 
    if (netplay->is_server)
@@ -837,7 +835,6 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
    uint32_t local_sram_size, remote_sram_size;
    size_t i;
    ssize_t recvd;
-   settings_t *settings = config_get_ptr();
    retro_ctx_controller_info_t pad;
    char new_nick[NETPLAY_NICK_LEN];
    retro_ctx_memory_info_t mem_info;
