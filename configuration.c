@@ -787,6 +787,7 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("menu_mouse_enable",             &settings->menu.mouse.enable, true, def_mouse_enable, false);
    SETTING_BOOL("menu_pointer_enable",           &settings->menu.pointer.enable, true, pointer_enable, false);
    SETTING_BOOL("menu_timedate_enable",          &settings->menu.timedate_enable, true, true, false);
+   SETTING_BOOL("menu_battery_level_enable",     &settings->menu.battery_level_enable, true, true, false);
    SETTING_BOOL("menu_core_enable",              &settings->menu.core_enable, true, true, false);
    SETTING_BOOL("menu_dynamic_wallpaper_enable", &settings->menu.dynamic_wallpaper_enable, true, false, false);
 #ifdef HAVE_XMB

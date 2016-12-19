@@ -1163,3 +1163,5 @@ MSG_HASH(MENU_ENUM_LABEL_INPUT_UNIFIED_MENU_CONTROLS,
       "unified_menu_controls")
 MSG_HASH(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
       "detect_core_list_push_dir")
+MSG_HASH(MENU_ENUM_LABEL_BATTERY_LEVEL_ENABLE,
+      "menu_battery_level_enable")

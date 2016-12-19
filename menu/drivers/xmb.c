@@ -29,6 +29,7 @@
 #include <lists/string_list.h>
 #include <gfx/math/matrix_4x4.h>
 #include <encodings/utf.h>
+#include <features/features_cpu.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -67,6 +68,8 @@
 #ifndef XMB_DELAY
 #define XMB_DELAY 10
 #endif
+
+#define BATTERY_LEVEL_CHECK_INTERVAL (30 * 1000000)
 
 #if 0
 #define XMB_DEBUG
@@ -126,6 +129,8 @@ enum
    XMB_TEXTURE_SWITCH_ON,
    XMB_TEXTURE_SWITCH_OFF,
    XMB_TEXTURE_CLOCK,
+   XMB_TEXTURE_BATTERY_FULL,
+   XMB_TEXTURE_BATTERY_CHARGING,
    XMB_TEXTURE_POINTER,
    XMB_TEXTURE_ADD,
    XMB_TEXTURE_KEY,
@@ -2515,6 +2520,7 @@ static void xmb_draw_dark_layer(
 static void xmb_frame(void *data)
 {
    size_t selection;
+   size_t datetime_width = 0;
    math_matrix_4x4 mymat;
    unsigned i, width, height;
    float item_color[16], coord_black[16], coord_white[16];
@@ -2591,7 +2597,6 @@ static void xmb_frame(void *data)
    menu_display_rotate_z(&rotate_draw);
    menu_display_blend_begin();
 
-
    /* Clock image */
    menu_display_set_alpha(coord_white, MIN(xmb->alpha, 1.00f));
 
@@ -2622,10 +2627,74 @@ static void xmb_frame(void *data)
 
       menu_display_timedate(&datetime);
 
+      datetime_width = font_driver_get_message_width(xmb->font, timedate, utf8len(timedate), 1);
+
       xmb_draw_text(xmb, timedate,
             width - xmb->margins.title.left - xmb->icon.size / 4,
             xmb->margins.title.top, 1, 1, TEXT_ALIGN_RIGHT,
             width, height, xmb->font);
+   }
+
+   if (settings->menu.battery_level_enable)
+   {
+      static retro_time_t last_time = 0;
+      static int percent = 0;
+      static enum frontend_powerstate state = FRONTEND_POWERSTATE_NONE;
+      int seconds = 0;
+      bool time_to_update = false;
+      const frontend_ctx_driver_t *frontend = frontend_get_ptr();
+      retro_time_t current_time = cpu_features_get_time_usec();
+
+      if (current_time - last_time >= BATTERY_LEVEL_CHECK_INTERVAL)
+         time_to_update = true;
+
+      if (frontend && frontend->get_powerstate)
+      {
+         char msg[12];
+         bool charging = (state == FRONTEND_POWERSTATE_CHARGING);
+
+	 if (time_to_update)
+            state = frontend->get_powerstate(&seconds, &percent);
+
+         *msg = '\0';
+
+         last_time = current_time;
+
+         if (percent > 0)
+         {
+            size_t x_pos = 0;
+            size_t x_pos_icon = xmb->margins.title.left / 2;
+
+            if (datetime_width)
+               x_pos_icon += datetime_width + (xmb->icon.size / 2) + (xmb->margins.title.left / 2);
+
+            if (coord_white[3] != 0)
+               xmb_draw_icon(
+                     xmb->icon.size,
+                     &mymat,
+                     xmb->textures.list[charging ? XMB_TEXTURE_BATTERY_CHARGING : XMB_TEXTURE_BATTERY_FULL],
+                     width - (xmb->icon.size / 2) - x_pos_icon,
+                     xmb->icon.size,
+                     width,
+                     height,
+                     1,
+                     0,
+                     1,
+                     &coord_white[0],
+                     xmb->shadow_offset);
+
+            snprintf(msg, sizeof(msg), "%d%%", percent);
+
+            if (datetime_width)
+               x_pos = datetime_width + (xmb->icon.size / 5) +
+                     xmb->margins.title.left;
+
+            xmb_draw_text(xmb, msg,
+                  width - xmb->margins.title.left - x_pos,
+                  xmb->margins.title.top, 1, 1, TEXT_ALIGN_RIGHT,
+                  width, height, xmb->font);
+         }
+      }
    }
 
    /* Arrow image */
@@ -3258,6 +3327,10 @@ static const char *xmb_texture_path(unsigned id)
          return "resume.png";
       case XMB_TEXTURE_CLOCK:
          return "clock.png";
+      case XMB_TEXTURE_BATTERY_FULL:
+         return "battery-full.png";
+      case XMB_TEXTURE_BATTERY_CHARGING:
+         return "battery-charging.png";
       case XMB_TEXTURE_POINTER:
          return "pointer.png";
       case XMB_TEXTURE_SAVESTATE:

@@ -5183,6 +5183,21 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
+               &settings->menu.battery_level_enable,
+               MENU_ENUM_LABEL_BATTERY_LEVEL_ENABLE,
+               MENU_ENUM_LABEL_VALUE_BATTERY_LEVEL_ENABLE,
+               true,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_ADVANCED);
+
+         CONFIG_BOOL(
+               list, list_info,
                &settings->menu.core_enable,
                MENU_ENUM_LABEL_CORE_ENABLE,
                MENU_ENUM_LABEL_VALUE_CORE_ENABLE,
