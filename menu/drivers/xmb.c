@@ -126,7 +126,7 @@ enum
    XMB_TEXTURE_SWITCH_ON,
    XMB_TEXTURE_SWITCH_OFF,
    XMB_TEXTURE_CLOCK,
-   XMB_TEXTURE_BATTERY,
+   XMB_TEXTURE_BATTERY_FULL,
    XMB_TEXTURE_BATTERY_CHARGING,
    XMB_TEXTURE_POINTER,
    XMB_TEXTURE_ADD,
@@ -2652,15 +2652,15 @@ static void xmb_frame(void *data)
             size_t x_pos_icon = xmb->margins.title.left / 2;
 
             if (datetime_width)
-               x_pos_icon += datetime_width + (xmb->icon.size / 2.5) + (xmb->margins.title.left / 2);
+               x_pos_icon += datetime_width + (xmb->icon.size / 2) + (xmb->margins.title.left / 2);
 
             if (coord_white[3] != 0)
                xmb_draw_icon(
-                     xmb->icon.size / 4,
+                     xmb->icon.size,
                      &mymat,
-                     xmb->textures.list[charging ? XMB_TEXTURE_BATTERY_CHARGING : XMB_TEXTURE_BATTERY],
-                     width - (xmb->icon.size / 4) - x_pos_icon,
-                     xmb->icon.size / 1.75,
+                     xmb->textures.list[charging ? XMB_TEXTURE_BATTERY_CHARGING : XMB_TEXTURE_BATTERY_FULL],
+                     width - (xmb->icon.size / 2) - x_pos_icon,
+                     xmb->icon.size,
                      width,
                      height,
                      1,
@@ -3313,8 +3313,8 @@ static const char *xmb_texture_path(unsigned id)
          return "resume.png";
       case XMB_TEXTURE_CLOCK:
          return "clock.png";
-      case XMB_TEXTURE_BATTERY:
-         return "battery.png";
+      case XMB_TEXTURE_BATTERY_FULL:
+         return "battery-full.png";
       case XMB_TEXTURE_BATTERY_CHARGING:
          return "battery-charging.png";
       case XMB_TEXTURE_POINTER:
