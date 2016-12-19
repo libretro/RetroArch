@@ -699,7 +699,7 @@ static bool gl_cg_load_imports(void *data)
 {
    unsigned i;
    retro_ctx_memory_info_t mem_info;
-   struct state_tracker_info tracker_info = {0};
+   struct state_tracker_info tracker_info;
    cg_shader_data_t                   *cg = (cg_shader_data_t*)data;
 
    if (!cg->shader->variables)
@@ -731,15 +731,17 @@ static bool gl_cg_load_imports(void *data)
       }
    }
 
-   mem_info.data          = NULL;
-   mem_info.size          = 0;
-   mem_info.id            = RETRO_MEMORY_SYSTEM_RAM;
+   mem_info.data                  = NULL;
+   mem_info.size                  = 0;
+   mem_info.id                    = RETRO_MEMORY_SYSTEM_RAM;
 
    core_get_memory(&mem_info);
 
-   tracker_info.wram      = (uint8_t*)mem_info.data;
-   tracker_info.info      = cg->shader->variable;
-   tracker_info.info_elem = cg->shader->variables;
+   tracker_info.wram              = (uint8_t*)mem_info.data;
+   tracker_info.info              = cg->shader->variable;
+   tracker_info.info_elem         = cg->shader->variables;
+   tracker_info.script            = NULL;
+   tracker_info.script_is_file    = false;
 
 #ifdef HAVE_PYTHON
    if (*cg->shader->script_path)
