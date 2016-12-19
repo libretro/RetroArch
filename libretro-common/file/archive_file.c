@@ -598,18 +598,34 @@ struct string_list *file_archive_get_file_list(const char *path,
       const char *valid_exts)
 {
    int ret;
-   struct archive_extract_userdata userdata = {{0}};
+   struct archive_extract_userdata userdata;
 
-   userdata.list_only = true;
    strlcpy(userdata.archive_path, path, sizeof(userdata.archive_path));
+   userdata.first_extracted_file_path       = NULL;
+   userdata.extracted_file_path             = NULL;
+   userdata.extraction_directory            = NULL;
+   userdata.archive_path_size               = 0;
+   userdata.ext                             = NULL;
+   userdata.list                            = string_list_new();
+   userdata.found_file                      = false;
+   userdata.list_only                       = true;
+   userdata.context                         = NULL;
+   userdata.archive_name[0]                 = '\0';
+   userdata.crc                             = 0;
+   userdata.dec                             = NULL;
 
-   userdata.list = string_list_new();
+   userdata.decomp_state.opt_file           = NULL;
+   userdata.decomp_state.needle             = NULL;
+   userdata.decomp_state.size               = 0;
+   userdata.decomp_state.found              = NULL;
 
    if (!userdata.list)
       goto error;
 
-   if ((ret = file_archive_walk(path, valid_exts,
-            file_archive_get_file_list_cb, &userdata)) <= 0)
+   ret = file_archive_walk(path, valid_exts,
+         file_archive_get_file_list_cb, &userdata);
+
+   if (ret <= 0)
    {
       if (ret != -1)
          goto error;
