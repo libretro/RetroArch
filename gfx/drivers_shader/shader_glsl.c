@@ -881,23 +881,27 @@ static void *gl_glsl_init(void *data, const char *path)
    if (glsl->shader->variables)
    {
       retro_ctx_memory_info_t mem_info;
-      struct state_tracker_info info = {0};
+      struct state_tracker_info info;
 
-      mem_info.id    = RETRO_MEMORY_SYSTEM_RAM;
+      mem_info.id         = RETRO_MEMORY_SYSTEM_RAM;
 
       core_get_memory(&mem_info);
 
-      info.wram      = (uint8_t*)mem_info.data;
-      info.info      = glsl->shader->variable;
-      info.info_elem = glsl->shader->variables;
+      info.wram           = (uint8_t*)mem_info.data;
+      info.info           = glsl->shader->variable;
+      info.info_elem      = glsl->shader->variables;
 
+      info.script         = NULL;
+      info.script_class   = NULL;
 #ifdef HAVE_PYTHON
-      info.script = glsl->shader->script;
-      info.script_class = *glsl->shader->script_class ?
-         glsl->shader->script_class : NULL;
+      info.script         = glsl->shader->script;
+      if (*glsl->shader->script_class)
+         info.script_class= glsl->shader->script_class;
 #endif
+      info.script_is_file = NULL;
 
       glsl->state_tracker = state_tracker_init(&info);
+
       if (!glsl->state_tracker)
          RARCH_WARN("Failed to init state tracker.\n");
    }
