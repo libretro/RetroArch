@@ -23,32 +23,6 @@ typedef void *GLeglImageOES;
 typedef GLint GLfixed;
 #endif
 
-#if (__STDC_VERSION__ <= 199409L) || (OSX && !MAC_OS_X_VERSION_10_7)
-#ifndef GLint64
-typedef long long int GLint64;
-#endif
-
-#ifndef GLuint64
-typedef unsigned long long int GLuint64;
-#endif
-
-#ifndef GLuint64EXT
-typedef unsigned long long int GLuint64EXT;
-#endif
-
-typedef struct __GLsync *GLsync;
-#else
-
-#ifndef GLint64
-typedef int64_t  GLint64;
-#endif
-
-#ifndef GLuint64
-typedef uint64_t GLuint64;
-#endif
-
-#endif
-
 typedef void (GL_APIENTRYP RGLSYMGLBLENDBARRIERKHRPROC) (void);
 typedef void (GL_APIENTRYP RGLSYMGLDEBUGMESSAGECONTROLKHRPROC) (GLenum source, GLenum type, GLenum severity, GLsizei count, const GLuint *ids, GLboolean enabled);
 typedef void (GL_APIENTRYP RGLSYMGLDEBUGMESSAGEINSERTKHRPROC) (GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *buf);
@@ -147,8 +121,6 @@ typedef void (GL_APIENTRYP RGLSYMGLQUERYCOUNTEREXTPROC) (GLuint id, GLenum targe
 typedef void (GL_APIENTRYP RGLSYMGLGETQUERYIVEXTPROC) (GLenum target, GLenum pname, GLint *params);
 typedef void (GL_APIENTRYP RGLSYMGLGETQUERYOBJECTIVEXTPROC) (GLuint id, GLenum pname, GLint *params);
 typedef void (GL_APIENTRYP RGLSYMGLGETQUERYOBJECTUIVEXTPROC) (GLuint id, GLenum pname, GLuint *params);
-typedef void (GL_APIENTRYP RGLSYMGLGETQUERYOBJECTI64VEXTPROC) (GLuint id, GLenum pname, GLint64 *params);
-typedef void (GL_APIENTRYP RGLSYMGLGETQUERYOBJECTUI64VEXTPROC) (GLuint id, GLenum pname, GLuint64 *params);
 typedef void (GL_APIENTRYP RGLSYMGLDRAWBUFFERSEXTPROC) (GLsizei n, const GLenum *bufs);
 typedef void (GL_APIENTRYP RGLSYMGLENABLEIEXTPROC) (GLenum target, GLuint index);
 typedef void (GL_APIENTRYP RGLSYMGLDISABLEIEXTPROC) (GLenum target, GLuint index);
@@ -352,8 +324,6 @@ typedef void (GL_APIENTRYP RGLSYMGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVRPROC
 #define glGetQueryivEXT __rglgen_glGetQueryivEXT
 #define glGetQueryObjectivEXT __rglgen_glGetQueryObjectivEXT
 #define glGetQueryObjectuivEXT __rglgen_glGetQueryObjectuivEXT
-#define glGetQueryObjecti64vEXT __rglgen_glGetQueryObjecti64vEXT
-#define glGetQueryObjectui64vEXT __rglgen_glGetQueryObjectui64vEXT
 #define glDrawBuffersEXT __rglgen_glDrawBuffersEXT
 #define glEnableiEXT __rglgen_glEnableiEXT
 #define glDisableiEXT __rglgen_glDisableiEXT
@@ -557,8 +527,6 @@ extern RGLSYMGLQUERYCOUNTEREXTPROC __rglgen_glQueryCounterEXT;
 extern RGLSYMGLGETQUERYIVEXTPROC __rglgen_glGetQueryivEXT;
 extern RGLSYMGLGETQUERYOBJECTIVEXTPROC __rglgen_glGetQueryObjectivEXT;
 extern RGLSYMGLGETQUERYOBJECTUIVEXTPROC __rglgen_glGetQueryObjectuivEXT;
-extern RGLSYMGLGETQUERYOBJECTI64VEXTPROC __rglgen_glGetQueryObjecti64vEXT;
-extern RGLSYMGLGETQUERYOBJECTUI64VEXTPROC __rglgen_glGetQueryObjectui64vEXT;
 extern RGLSYMGLDRAWBUFFERSEXTPROC __rglgen_glDrawBuffersEXT;
 extern RGLSYMGLENABLEIEXTPROC __rglgen_glEnableiEXT;
 extern RGLSYMGLDISABLEIEXTPROC __rglgen_glDisableiEXT;
