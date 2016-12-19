@@ -457,7 +457,7 @@ static bool init_content_file_extract(
       strlcpy(temp_content, content->elems[i].data,
             sizeof(temp_content));
 
-      if (!file_archive_extract_file(temp_content,
+      if (!valid_ext || !file_archive_extract_file(temp_content,
                sizeof(temp_content), valid_ext,
                *settings->directory.cache ?
                settings->directory.cache : NULL,

@@ -477,10 +477,17 @@ int file_archive_parse_file_iterate(
 static bool file_archive_walk(const char *file, const char *valid_exts,
       file_archive_file_cb file_cb, struct archive_extract_userdata *userdata)
 {
-   file_archive_transfer_t state = {0};
+   file_archive_transfer_t state;
    bool returnerr                = true;
 
-   state.type = ARCHIVE_TRANSFER_INIT;
+   state.type                    = ARCHIVE_TRANSFER_INIT;
+   state.archive_size            = 0;
+   state.handle                  = NULL;
+   state.stream                  = NULL;
+   state.footer                  = NULL;
+   state.directory               = NULL;
+   state.data                    = NULL;
+   state.backend                 = NULL;
 
    for (;;)
    {
@@ -525,28 +532,34 @@ bool file_archive_extract_file(
       const char *extraction_directory,
       char *out_path, size_t len)
 {
-   struct string_list *list             = NULL;
-   bool ret                             = true;
-   struct archive_extract_userdata userdata = {{0}};
+   struct archive_extract_userdata userdata;
+   bool ret                                 = true;
+   struct string_list *list                 = string_split(valid_exts, "|");
 
-   /* We cannot extract if the libretro
-    * implementation does not have any valid extensions. */
-   if (!valid_exts)
-      return false;
-
-   list = string_split(valid_exts, "|");
    if (!list)
    {
       ret = false;
       goto end;
    }
 
-   userdata.archive_path_size    = archive_path_size;
-   userdata.extraction_directory = extraction_directory;
-   userdata.ext                  = list;
-   userdata.list                 = NULL;
-   userdata.context              = NULL;
-   userdata.list_only            = false;
+   userdata.archive_path[0]           = '\0';
+   userdata.first_extracted_file_path = NULL;
+   userdata.extracted_file_path       = NULL;
+   userdata.extraction_directory      = extraction_directory;
+   userdata.archive_path_size         = archive_path_size;
+   userdata.ext                       = list;
+   userdata.list                      = NULL;
+   userdata.found_file                = false;
+   userdata.list_only                 = false;
+   userdata.context                   = NULL;
+   userdata.archive_name[0]           = '\0';
+   userdata.crc                       = 0;
+   userdata.dec                       = NULL;
+
+   userdata.decomp_state.opt_file     = NULL;
+   userdata.decomp_state.needle       = NULL;
+   userdata.decomp_state.size         = 0;
+   userdata.decomp_state.found        = NULL;
 
    if (!file_archive_walk(archive_path, valid_exts,
             file_archive_extract_cb, &userdata))
@@ -624,10 +637,12 @@ bool file_archive_perform_mode(const char *path, const char *valid_exts,
       case ARCHIVE_MODE_COMPRESSED:
          {
             int ret = 0;
-            file_archive_file_handle_t handle = {0};
+            file_archive_file_handle_t handle;
 
-            handle.backend  = file_archive_get_file_backend(userdata->archive_path);
-            handle.stream   = userdata->context;
+            handle.stream        = userdata->context;
+            handle.data          = NULL;
+            handle.real_checksum = 0;
+            handle.backend       = file_archive_get_file_backend(userdata->archive_path);
 
             if (!handle.backend)
                goto error;
@@ -812,8 +827,8 @@ const struct file_archive_file_backend* file_archive_get_file_backend(const char
  **/
 uint32_t file_archive_get_file_crc32(const char *path)
 {
+   file_archive_transfer_t state;
    const struct file_archive_file_backend *backend = file_archive_get_file_backend(path);
-   file_archive_transfer_t state                   = {0};
    struct archive_extract_userdata userdata        = {{0}};
    bool returnerr                                  = false;
    bool contains_compressed                        = false;
@@ -833,7 +848,14 @@ uint32_t file_archive_get_file_crc32(const char *path)
          archive_path += 1;
    }
 
-   state.type = ARCHIVE_TRANSFER_INIT;
+   state.type          = ARCHIVE_TRANSFER_INIT;
+   state.archive_size  = 0;
+   state.handle        = NULL;
+   state.stream        = NULL;
+   state.footer        = NULL;
+   state.directory     = NULL;
+   state.data          = NULL;
+   state.backend       = NULL;
 
    /* Initialize and open archive first.
       Sets next state type to ITERATE. */
