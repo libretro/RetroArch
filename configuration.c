@@ -948,7 +948,7 @@ static int populate_settings_int(settings_t *settings, struct config_int_setting
    SETTING_INT("state_slot",                   (unsigned*)&settings->state_slot, false, 0 /* TODO */, false);
 #ifdef HAVE_NETWORKING
    SETTING_INT("netplay_ip_port",              &settings->netplay.port,         true, RARCH_DEFAULT_PORT, false);
-   SETTING_INT("netplay_check_frames",         &settings->netplay.check_frames, true, netplay_check_frames, false);
+   SETTING_INT("netplay_check_frames",         (unsigned*)&settings->netplay.check_frames, true, netplay_check_frames, false);
 #endif
 #ifdef HAVE_LANGEXTRA
    SETTING_INT("user_language",                &settings->user_language, true, RETRO_LANGUAGE_ENGLISH, false);

@@ -805,7 +805,7 @@ static const bool netplay_nat_traversal = false;
 
 static const unsigned netplay_delay_frames = 16;
 
-static const unsigned netplay_check_frames = 30;
+static const int netplay_check_frames = 30;
 
 /* On save state load, block SRAM from being overwritten.
  * This could potentially lead to buggy games. */
