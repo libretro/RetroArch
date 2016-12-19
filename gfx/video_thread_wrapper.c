@@ -365,7 +365,14 @@ static bool video_thread_handle_packet(
 
       case CMD_READ_VIEWPORT:
       {
-         struct video_viewport vp = {0};
+         struct video_viewport vp;
+
+         vp.x                     = 0;
+         vp.y                     = 0;
+         vp.width                 = 0;
+         vp.height                = 0;
+         vp.full_width            = 0;
+         vp.full_height           = 0;
 
          thr->driver->viewport_info(thr->driver_data, &vp);
 
@@ -587,11 +594,18 @@ static void video_thread_loop(void *data)
 
       if (updated)
       {
+         struct video_viewport vp;
          bool                 ret = false;
          bool               alive = false;
          bool               focus = false;
          bool        has_windowed = true;
-         struct video_viewport vp = {0};
+
+         vp.x                     = 0;
+         vp.y                     = 0;
+         vp.width                 = 0;
+         vp.height                = 0;
+         vp.full_width            = 0;
+         vp.full_height           = 0;
 
          slock_lock(thr->frame.lock);
 
