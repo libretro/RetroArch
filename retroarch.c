@@ -104,6 +104,7 @@
 enum
 {
    RA_OPT_MENU = 256, /* must be outside the range of a char */
+   RA_OPT_STATELESS,
    RA_OPT_CHECK_FRAMES,
    RA_OPT_PORT,
    RA_OPT_SPECTATE,
@@ -143,7 +144,7 @@ static bool has_set_state_path                          = false;
 static bool has_set_netplay_mode                        = false;
 static bool has_set_netplay_ip_address                  = false;
 static bool has_set_netplay_ip_port                     = false;
-static bool has_set_netplay_delay_frames                = false;
+static bool has_set_netplay_stateless_mode              = false;
 static bool has_set_netplay_check_frames                = false;
 static bool has_set_ups_pref                            = false;
 static bool has_set_bps_pref                            = false;
@@ -339,10 +340,10 @@ static void retroarch_print_help(const char *arg0)
    puts("  -H, --host            Host netplay as user 1.");
    puts("  -C, --connect=HOST    Connect to netplay server as user 2.");
    puts("      --port=PORT       Port used to netplay. Default is 55435.");
-   puts("  -F, --frames=NUMBER   Delay frames when using netplay.");
+   puts("      --stateless       Use \"stateless\" mode for netplay");
+   puts("                        (requires a very fast network).");
    puts("      --check-frames=NUMBER\n"
         "                        Check frames when using netplay.");
-   puts("      --spectate        Connect to netplay server as spectator.");
 #if defined(HAVE_NETWORK_CMD)
    puts("      --command         Sends a command over UDP to an already "
          "running program process.");
@@ -427,10 +428,9 @@ static void retroarch_parse_input(int argc, char *argv[])
 #ifdef HAVE_NETWORKING
       { "host",         0, NULL, 'H' },
       { "connect",      1, NULL, 'C' },
-      { "frames",       1, NULL, 'F' },
+      { "stateless",    0, NULL, RA_OPT_STATELESS },
       { "check-frames", 1, NULL, RA_OPT_CHECK_FRAMES },
       { "port",         1, NULL, RA_OPT_PORT },
-      { "spectate",     0, NULL, RA_OPT_SPECTATE },
 #if defined(HAVE_NETWORK_CMD)
       { "command",      1, NULL, RA_OPT_COMMAND },
 #endif
@@ -707,10 +707,10 @@ static void retroarch_parse_input(int argc, char *argv[])
                   sizeof(settings->netplay.server));
             break;
 
-         case 'F':
-            settings->netplay.delay_frames = strtol(optarg, NULL, 0);
+         case RA_OPT_STATELESS:
+            settings->netplay.stateless_mode = true;
             retroarch_override_setting_set(
-                  RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES, NULL);
+                  RARCH_OVERRIDE_SETTING_NETPLAY_STATELESS_MODE, NULL);
             break;
 
          case RA_OPT_CHECK_FRAMES:
@@ -723,12 +723,6 @@ static void retroarch_parse_input(int argc, char *argv[])
             retroarch_override_setting_set(
                   RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT, NULL);
             settings->netplay.port = strtoul(optarg, NULL, 0);
-            break;
-
-         case RA_OPT_SPECTATE:
-            retroarch_override_setting_set(
-                  RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL);
-            settings->netplay.is_spectate = true;
             break;
 
 #if defined(HAVE_NETWORK_CMD)
@@ -1369,8 +1363,8 @@ bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx, voi
          return has_set_netplay_ip_address;
       case RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT:
          return has_set_netplay_ip_port;
-      case RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES:
-         return has_set_netplay_delay_frames;
+      case RARCH_OVERRIDE_SETTING_NETPLAY_STATELESS_MODE:
+         return has_set_netplay_stateless_mode;
       case RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES:
          return has_set_netplay_check_frames;
       case RARCH_OVERRIDE_SETTING_UPS_PREF:
@@ -1426,8 +1420,8 @@ void retroarch_override_setting_set(enum rarch_override_setting enum_idx, void *
       case RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT:
          has_set_netplay_ip_port = true;
          break;
-      case RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES:
-         has_set_netplay_delay_frames = true;
+      case RARCH_OVERRIDE_SETTING_NETPLAY_STATELESS_MODE:
+         has_set_netplay_stateless_mode = true;
          break;
       case RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES:
          has_set_netplay_check_frames = true;
@@ -1485,8 +1479,8 @@ void retroarch_override_setting_unset(enum rarch_override_setting enum_idx, void
       case RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT:
          has_set_netplay_ip_port = false;
          break;
-      case RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES:
-         has_set_netplay_delay_frames = false;
+      case RARCH_OVERRIDE_SETTING_NETPLAY_STATELESS_MODE:
+         has_set_netplay_stateless_mode = false;
          break;
       case RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES:
          has_set_netplay_check_frames = false;

@@ -286,6 +286,7 @@ static const struct cmd_map map[] = {
    { "MUTE",                   RARCH_MUTE },
    { "OSK",                    RARCH_OSK },
    { "NETPLAY_FLIP",           RARCH_NETPLAY_FLIP },
+   { "NETPLAY_GAME_WATCH",     RARCH_NETPLAY_GAME_WATCH },
    { "SLOWMOTION",             RARCH_SLOWMOTION },
    { "VOLUME_UP",              RARCH_VOLUME_UP },
    { "VOLUME_DOWN",            RARCH_VOLUME_DOWN },
@@ -1227,8 +1228,7 @@ static void command_event_load_auto_state(void)
    global_t   *global   = global_get_ptr();
 
 #ifdef HAVE_NETWORKING
-   if (     netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL)
-         && !settings->netplay.is_spectate)
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
       return;
 #endif
 
@@ -2362,14 +2362,21 @@ bool command_event(enum event_command cmd, void *data)
          command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 #ifdef HAVE_NETWORKING
          if (!init_netplay(
-              settings->netplay.is_spectate, data, settings->netplay.server,
-              settings->netplay.port))
+              data, settings->netplay.server,
+              settings->netplay.port,
+              settings->netplay.password,
+              settings->netplay.spectate_password))
             return false;
 #endif
          break;
       case CMD_EVENT_NETPLAY_FLIP_PLAYERS:
 #ifdef HAVE_NETWORKING
          netplay_driver_ctl(RARCH_NETPLAY_CTL_FLIP_PLAYERS, NULL);
+#endif
+         break;
+      case CMD_EVENT_NETPLAY_GAME_WATCH:
+#ifdef HAVE_NETWORKING
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_GAME_WATCH, NULL);
 #endif
          break;
       case CMD_EVENT_FULLSCREEN_TOGGLE:

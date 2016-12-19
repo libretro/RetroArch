@@ -794,9 +794,14 @@ static const bool pause_nonactive = true;
  * It is measured in seconds. A value of 0 disables autosave. */
 static const unsigned autosave_interval = 0;
 
+/* Netplay without savestates/rewind */
+static const bool netplay_stateless_mode = false;
+
 /* When being client over netplay, use keybinds for
  * user 1 rather than user 2. */
 static const bool netplay_client_swap_input = true;
+
+static const bool netplay_nat_traversal = false;
 
 static const unsigned netplay_delay_frames = 16;
 
@@ -987,7 +992,8 @@ static const struct retro_keybind retro_keybinds_1[] = {
    { true, RARCH_SCREENSHOT,               MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,           RETROK_F8,      NO_BTN, 0, AXIS_NONE },
    { true, RARCH_MUTE,                     MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,                 RETROK_F9,      NO_BTN, 0, AXIS_NONE },
    { true, RARCH_OSK,                      MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,                  RETROK_F12,      NO_BTN, 0, AXIS_NONE },
-   { true, RARCH_NETPLAY_FLIP,             MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FLIP,         RETROK_i,       NO_BTN, 0, AXIS_NONE },
+   { true, RARCH_NETPLAY_FLIP,             MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FLIP,         RETROK_UNKNOWN, NO_BTN, 0, AXIS_NONE },
+   { true, RARCH_NETPLAY_GAME_WATCH,       MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH,   RETROK_i,       NO_BTN, 0, AXIS_NONE },
    { true, RARCH_SLOWMOTION,               MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION,           RETROK_e,       NO_BTN, 0, AXIS_NONE },
    { true, RARCH_ENABLE_HOTKEY,            MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,        RETROK_UNKNOWN, NO_BTN, 0, AXIS_NONE },
    { true, RARCH_VOLUME_UP,                MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,            RETROK_KP_PLUS, NO_BTN, 0, AXIS_NONE },

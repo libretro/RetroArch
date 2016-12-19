@@ -607,6 +607,8 @@ static int populate_settings_path(settings_t *settings, struct config_path_setti
    SETTING_PATH("core_updater_buildbot_assets_url", settings->network.buildbot_assets_url, false, NULL, true);
 #ifdef HAVE_NETWORKING
    SETTING_PATH("netplay_ip_address",       settings->netplay.server, false, NULL, true);
+   SETTING_PATH("netplay_password",           settings->netplay.password, false, NULL, true);
+   SETTING_PATH("netplay_spectate_password",  settings->netplay.spectate_password, false, NULL, true);
 #endif
    SETTING_PATH("recording_output_directory",
          global->record.output_dir, false, NULL, true);
@@ -716,6 +718,7 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("all_users_control_menu",        &settings->input.all_users_control_menu, true, all_users_control_menu, false);
    SETTING_BOOL("menu_swap_ok_cancel_buttons",                 &settings->input.menu_swap_ok_cancel_buttons, true, menu_swap_ok_cancel_buttons, false);
 #ifdef HAVE_NETWORKING
+   SETTING_BOOL("netplay_stateless_mode",        &settings->netplay.stateless_mode, false, netplay_stateless_mode, false);
    SETTING_BOOL("netplay_client_swap_input",     &settings->netplay.swap_input, true, netplay_client_swap_input, false);
 #endif
    SETTING_BOOL("input_descriptor_label_show",   &settings->input.input_descriptor_label_show, true, input_descriptor_label_show, false);
@@ -822,7 +825,6 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("network_remote_enable",        &settings->network_remote_enable, false, false /* TODO */, false);
 #endif
 #ifdef HAVE_NETWORKING
-   SETTING_BOOL("netplay_spectator_mode_enable",&settings->netplay.is_spectate, false, false /* TODO */, false);
    SETTING_BOOL("netplay_nat_traversal",       &settings->netplay.nat_traversal, true, true, false);
 #endif
    SETTING_BOOL("block_sram_overwrite",         &settings->block_sram_overwrite, true, block_sram_overwrite, false);
@@ -946,7 +948,6 @@ static int populate_settings_int(settings_t *settings, struct config_int_setting
    SETTING_INT("state_slot",                   (unsigned*)&settings->state_slot, false, 0 /* TODO */, false);
 #ifdef HAVE_NETWORKING
    SETTING_INT("netplay_ip_port",              &settings->netplay.port,         true, RARCH_DEFAULT_PORT, false);
-   SETTING_INT("netplay_delay_frames",         &settings->netplay.delay_frames, true, netplay_delay_frames, false);
    SETTING_INT("netplay_check_frames",         &settings->netplay.check_frames, true, netplay_check_frames, false);
 #endif
 #ifdef HAVE_LANGEXTRA
@@ -1807,13 +1808,6 @@ static bool config_load_file(const char *path, bool set_defaults,
    if (!rarch_ctl(RARCH_CTL_IS_FORCE_FULLSCREEN, NULL))
       CONFIG_GET_BOOL_BASE(conf, settings, video.fullscreen, "video_fullscreen");
 
-#ifdef HAVE_NETWORKING
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL))
-   {
-      CONFIG_GET_BOOL_BASE(conf, settings, netplay.is_spectate,
-            "netplay_spectator_mode_enable");
-   }
-#endif
 #ifdef HAVE_NETWORKGAMEPAD
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -1862,8 +1856,8 @@ static bool config_load_file(const char *path, bool set_defaults,
    }
 
 #ifdef HAVE_NETWORKING
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES, NULL))
-      CONFIG_GET_INT_BASE(conf, settings, netplay.delay_frames, "netplay_delay_frames");
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_STATELESS_MODE, NULL))
+      CONFIG_GET_BOOL_BASE(conf, settings, netplay.stateless_mode, "netplay_stateless_mode");
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES, NULL))
       CONFIG_GET_INT_BASE(conf, settings, netplay.check_frames, "netplay_check_frames");
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT, NULL))

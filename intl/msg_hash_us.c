@@ -91,6 +91,10 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                   "Netplay flip users.");
             break;
+         case RARCH_NETPLAY_GAME_WATCH:
+            snprintf(s, len,
+                  "Netplay toggle play/spectate mode.");
+            break;
          case RARCH_SLOWMOTION:
             snprintf(s, len,
                   "Hold for slowmotion.");
@@ -1557,6 +1561,15 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Increasing this value will increase \n"
                "performance, but introduce more latency.");
          break;
+      case MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE:
+         snprintf(s, len,
+               "Whether to run netplay in a mode not requiring\n"
+               "save states. \n"
+               " \n"
+               "If set to true, a very fast network is required,\n"
+               "but no rewinding is performed, so there will be\n"
+               "no netplay jitter.\n");
+         break;
       case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
          snprintf(s, len,
                "The frequency in frames with which netplay \n"
@@ -1693,6 +1706,17 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "The address of the host to connect to.");
          break;
+      case MENU_ENUM_LABEL_NETPLAY_PASSWORD:
+         snprintf(s, len,
+               "The password for connecting to the netplay \n"
+               "host. Used only in host mode.");
+         break;
+      case MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD:
+         snprintf(s, len,
+               "The password for connecting to the netplay \n"
+               "host with only spectator privileges. Used \n"
+               "only in host mode.");
+         break;
       case MENU_ENUM_LABEL_STDIN_CMD_ENABLE:
          snprintf(s, len,
                "Enable stdin command interface.");
@@ -1786,6 +1810,10 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_NETPLAY_FLIP_PLAYERS:
          snprintf(s, len,
                "Netplay flip users.");
+         break;
+      case MENU_ENUM_LABEL_NETPLAY_GAME_WATCH:
+         snprintf(s, len,
+               "Netplay toggle play/spectate mode.");
          break;
       case MENU_ENUM_LABEL_CHEAT_INDEX_PLUS:
          snprintf(s, len,

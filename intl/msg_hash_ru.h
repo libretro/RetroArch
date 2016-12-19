@@ -1961,8 +1961,6 @@ MSG_HASH(MSG_MOVIE_RECORD_STOPPED,
       "Запись остановлена.")
 MSG_HASH(MSG_NETPLAY_FAILED,
       "Ошибка запуска сетевой игры.")
-MSG_HASH(MSG_NETPLAY_FAILED_MOVIE_PLAYBACK_HAS_STARTED,
-      "Воспроизведение записи. Невозможно начать сетевую игру.")
 MSG_HASH(MSG_NO_CONTENT_STARTING_DUMMY_CORE,
       "No content, starting dummy core.")
 MSG_HASH(MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET,

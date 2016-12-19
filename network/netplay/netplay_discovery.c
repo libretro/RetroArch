@@ -32,6 +32,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <compat/strl.h>
@@ -191,6 +192,11 @@ error:
    return false;
 }
 
+/**
+ * netplay_lan_ad_server
+ *
+ * Respond to any LAN ad queries that the netplay server has received.
+ */
 bool netplay_lan_ad_server(netplay_t *netplay)
 {
    fd_set fds;

@@ -925,8 +925,6 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
          return "Zatrzymano nagrywanie filmu.";
       case MSG_NETPLAY_FAILED:
          return "Nie udało się zainicjalizować gry sieciowej.";
-      case MSG_NETPLAY_FAILED_MOVIE_PLAYBACK_HAS_STARTED:
-         return "Odtwarzanie filmu w toku. Nie można rozpocząć gry sieciowej.";
       case MSG_PAUSED:
          return "Wstrzymano.";
       case MSG_PROGRAM:

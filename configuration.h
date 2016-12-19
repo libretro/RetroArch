@@ -401,11 +401,12 @@ typedef struct settings
    {
       char server[255];
       unsigned port;
-      unsigned delay_frames;
-      unsigned check_frames;
-      bool is_spectate;
+      bool stateless_mode;
+      int check_frames;
       bool swap_input;
       bool nat_traversal;
+      char password[128];
+      char spectate_password[128];
    } netplay;
 #endif
 

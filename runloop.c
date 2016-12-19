@@ -922,6 +922,9 @@ static enum runloop_state runloop_check_state(
 #ifdef HAVE_NETWORKING
    tmp = runloop_cmd_triggered(trigger_input, RARCH_NETPLAY_FLIP);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_FLIP_PLAYERS, &tmp);
+   tmp = runloop_cmd_triggered(trigger_input, RARCH_NETPLAY_GAME_WATCH);
+   if (tmp)
+      netplay_driver_ctl(RARCH_NETPLAY_CTL_GAME_WATCH, NULL);
    tmp = runloop_cmd_triggered(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY);
 #endif
 

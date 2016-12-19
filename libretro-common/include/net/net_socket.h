@@ -69,6 +69,9 @@ int socket_select(int nfds, fd_set *readfs, fd_set *writefds,
 
 int socket_send_all_blocking(int fd, const void *data_, size_t size, bool no_signal);
 
+ssize_t socket_send_all_nonblocking(int fd, const void *data_, size_t size,
+      bool no_signal);
+
 int socket_receive_all_blocking(int fd, void *data_, size_t size);
 
 ssize_t socket_receive_all_nonblocking(int fd, bool *error,

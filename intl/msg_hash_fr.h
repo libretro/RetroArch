@@ -1928,8 +1928,6 @@ MSG_HASH(MSG_MOVIE_RECORD_STOPPED,
       "Arrêt de l'enregistrement vidéo.")
 MSG_HASH(MSG_NETPLAY_FAILED,
       "Échec de l'initialisation du jeu en réseau")
-MSG_HASH(MSG_NETPLAY_FAILED_MOVIE_PLAYBACK_HAS_STARTED,
-      "Lecture en cours. Impossible d'activer le jeu en réseau.")
 MSG_HASH(MSG_NO_CONTENT_STARTING_DUMMY_CORE,
       "No content, starting dummy core.")
 MSG_HASH(MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET,
