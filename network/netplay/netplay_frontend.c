@@ -872,6 +872,8 @@ bool init_netplay(void *direct_host, const char *server, unsigned port,
       return false;
 
    core_set_default_callbacks(&cbs);
+   if (!core_set_netplay_callbacks())
+      return false;
 
    /* Map the core's quirks to our quirks */
    serialization_quirks = core_serialization_quirks();
