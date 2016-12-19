@@ -137,7 +137,7 @@ static void netplay_handle_frame_hash(netplay_t *netplay, struct delta_frame *de
    if (netplay->is_server)
    {
       if (netplay->check_frames &&
-          delta->frame % netplay->check_frames == 0)
+          delta->frame % abs(netplay->check_frames) == 0)
       {
          delta->crc = netplay_delta_frame_crc(netplay, delta);
          netplay_cmd_crc(netplay, delta);
@@ -158,7 +158,15 @@ static void netplay_handle_frame_hash(netplay_t *netplay, struct delta_frame *de
          else if (netplay->crcs_valid)
          {
             /* Fix this! */
-            netplay_cmd_request_savestate(netplay);
+            if (netplay->check_frames < 0)
+            {
+               /* Just report */
+               RARCH_ERR("Netplay CRCs mismatch!\n");
+            }
+            else
+            {
+               netplay_cmd_request_savestate(netplay);
+            }
          }
       }
       else if (!netplay->crc_validity_checked)

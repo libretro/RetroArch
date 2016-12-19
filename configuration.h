@@ -402,7 +402,7 @@ typedef struct settings
       char server[255];
       unsigned port;
       bool stateless_mode;
-      unsigned check_frames;
+      int check_frames;
       bool swap_input;
       bool nat_traversal;
       char password[128];

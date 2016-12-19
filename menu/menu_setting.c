@@ -1728,15 +1728,9 @@ void general_write_handler(void *data)
          break;
       case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
 #ifdef HAVE_NETWORKING
-         {
-            bool val = (settings->netplay.check_frames > 0);
-
-            if (val)
-               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES, NULL);
-            else
-               retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES, NULL);
-         }
+         retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES, NULL);
 #endif
+         break;
       default:
          break;
    }
@@ -5624,7 +5618,7 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0, 600, 1, true, false);
+            menu_settings_list_current_add_range(list, list_info, -600, 600, 1, true, false);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
             CONFIG_BOOL(

@@ -442,7 +442,7 @@ struct netplay
    bool catch_up;
 
    /* Frequency with which to check CRCs */
-   uint32_t check_frames;
+   int check_frames;
 
    /* Have we checked whether CRCs are valid at all? */
    bool crc_validity_checked;
@@ -647,7 +647,7 @@ bool netplay_wait_and_init_serialization(netplay_t *netplay);
  */
 netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
    const char *play_password, const char *spectate_password,
-   bool stateless_mode, unsigned check_frames,
+   bool stateless_mode, int check_frames,
    const struct retro_callbacks *cb, bool nat_traversal, const char *nick,
    uint64_t quirks);
 
