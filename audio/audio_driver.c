@@ -438,6 +438,12 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
          RARCH_WARN("Audio rate control was desired, but driver does not support needed features.\n");
    }
 
+   if (!audio_cb_inited && audio_driver_active && settings->audio.mute_enable)
+   {
+      /* If we start muted, stop the audio driver, so subsequent unmute works. */
+      audio_driver_stop();
+   }
+
    command_event(CMD_EVENT_DSP_FILTER_INIT, NULL);
 
    audio_driver_free_samples_count = 0;
