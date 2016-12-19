@@ -29,6 +29,7 @@
 #include <lists/string_list.h>
 #include <gfx/math/matrix_4x4.h>
 #include <encodings/utf.h>
+#include <features/features_cpu.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -67,6 +68,8 @@
 #ifndef XMB_DELAY
 #define XMB_DELAY 10
 #endif
+
+#define BATTERY_LEVEL_CHECK_INTERVAL (30 * 1000000)
 
 #if 0
 #define XMB_DEBUG
@@ -2635,8 +2638,14 @@ static void xmb_frame(void *data)
    if (settings->menu.battery_level_enable)
    {
       const frontend_ctx_driver_t *frontend = frontend_get_ptr();
+      static retro_time_t last_time = 0;
+      retro_time_t current_time = cpu_features_get_time_usec();
+      bool time_to_update = false;
 
-      if (frontend && frontend->get_powerstate)
+      if (current_time - last_time >= BATTERY_LEVEL_CHECK_INTERVAL)
+         time_to_update = true;
+
+      if (time_to_update && frontend && frontend->get_powerstate)
       {
          char msg[12];
          int seconds = 0, percent = 0;
@@ -2645,6 +2654,8 @@ static void xmb_frame(void *data)
          bool charging = (state == FRONTEND_POWERSTATE_CHARGING);
 
          *msg = '\0';
+
+         last_time = current_time;
 
          if (percent > 0)
          {
