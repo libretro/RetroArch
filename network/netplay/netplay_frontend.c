@@ -763,7 +763,7 @@ static void netplay_toggle_play_spectate(netplay_t *netplay)
       /* FIXME: Duplication */
       uint32_t payload[2];
       char msg[512];
-      const char *dmsg;
+      const char *dmsg = NULL;
       payload[0] = htonl(netplay->self_frame_count);
       if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING)
       {
