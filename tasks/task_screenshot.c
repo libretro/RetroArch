@@ -239,13 +239,20 @@ static bool screenshot_dump(
 static bool take_screenshot_viewport(const char *name_base, bool savestate)
 {
    char screenshot_path[PATH_MAX_LENGTH];
+   struct video_viewport vp;
    const char *screenshot_dir            = NULL;
    uint8_t *buffer                       = NULL;
    bool retval                           = false;
-   struct video_viewport vp              = {0};
    settings_t *settings                  = config_get_ptr();
 
    screenshot_path[0]                    = '\0';
+
+   vp.x                                  = 0;
+   vp.y                                  = 0;
+   vp.width                              = 0;
+   vp.height                             = 0;
+   vp.full_width                         = 0;
+   vp.full_height                        = 0;
 
    video_driver_get_viewport_info(&vp);
 

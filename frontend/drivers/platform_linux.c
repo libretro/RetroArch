@@ -636,7 +636,7 @@ static void check_proc_acpi_battery(const char * node, bool * have_battery,
       bool * charging, int *seconds, int *percent)
 {
    const char *base  = proc_acpi_battery_path;
-   char path[1024]   = {0};
+   char path[1024];
    ssize_t length    = 0;
    char         *ptr = NULL;
    char  *buf        = NULL;
@@ -649,6 +649,8 @@ static void check_proc_acpi_battery(const char * node, bool * have_battery,
    int     remaining = -1;
    int          secs = -1;
    int           pct = -1;
+
+   path[0]           = '\0';
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "state");
 
@@ -762,7 +764,7 @@ static void check_proc_acpi_sysfs_battery(const char *node,
       int *seconds, int *percent)
 {
    unsigned capacity;
-   char path[1024]   = {0};
+   char path[1024];
    const char *base  = proc_acpi_sysfs_battery_path;
    char        *buf  = NULL;
    char         *ptr = NULL;
@@ -778,6 +780,8 @@ static void check_proc_acpi_sysfs_battery(const char *node,
 
    if (!strstr(node, "BAT"))
       return;
+
+   path[0]           = '\0';
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "status");
    if (!path_file_exists(path))
@@ -806,13 +810,15 @@ end:
 
 static void check_proc_acpi_ac_adapter(const char * node, bool *have_ac)
 {
-   char path[1024]  = {0};
+   char path[1024];
    const char *base = proc_acpi_ac_adapter_path;
    char       *buf  = NULL;
    char        *ptr = NULL;
    char        *key = NULL;
    char        *val = NULL;
    ssize_t length   = 0;
+
+   path[0]          = '\0';
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "state");
    if (!path_file_exists(path))
@@ -838,10 +844,12 @@ static void check_proc_acpi_ac_adapter(const char * node, bool *have_ac)
 
 static void check_proc_acpi_sysfs_ac_adapter(const char * node, bool *have_ac)
 {
-   char  path[1024] = {0};
+   char  path[1024];
    ssize_t length   = 0;
    char     *buf    = NULL;
    const char *base = proc_acpi_sysfs_ac_adapter_path;
+
+   path[0]          = '\0';
 
    snprintf(path, sizeof(path), "%s/%s", base, "online");
    if (!path_file_exists(path))

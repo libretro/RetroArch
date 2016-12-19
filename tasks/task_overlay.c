@@ -32,7 +32,8 @@
 #include "../configuration.h"
 #include "../verbosity.h"
 
-typedef struct {
+typedef struct
+{
    enum overlay_status state;
    enum overlay_image_transfer_status loading_status;
    config_file_t *conf;
@@ -48,7 +49,7 @@ typedef struct {
 
 static void task_overlay_image_done(struct overlay *overlay)
 {
-   overlay->pos = 0;
+   overlay->pos           = 0;
    /* Divide iteration steps by half of total descs if size is even,
     * otherwise default to 8 (arbitrary value for now to speed things up). */
    overlay->pos_increment = (overlay->size / 2) ? (overlay->size / 2) : 8;
