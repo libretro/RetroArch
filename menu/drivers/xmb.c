@@ -2664,11 +2664,11 @@ static void xmb_frame(void *data)
 
          if (percent > 0)
          {
-            size_t x_pos = 0;
+            size_t x_pos = xmb->margins.title.left / 2;
             size_t x_pos_icon = xmb->margins.title.left;
 
             if (datetime_width)
-               x_pos_icon += datetime_width + (xmb->icon.size / 2) + (xmb->margins.title.left / 2);
+               x_pos_icon += datetime_width + (xmb->icon.size / 2) + (xmb->margins.title.left / 2) - xmb->margins.title.left / 2;
 
             if (coord_white[3] != 0)
                xmb_draw_icon(
@@ -2688,11 +2688,11 @@ static void xmb_frame(void *data)
             snprintf(msg, sizeof(msg), "%d%%", percent);
 
             if (datetime_width)
-               x_pos = datetime_width + (xmb->icon.size / 5) +
+               x_pos = datetime_width + (xmb->icon.size / 4) +
                      xmb->margins.title.left;
 
             xmb_draw_text(xmb, msg,
-                  width - xmb->margins.title.left*1.5 - x_pos,
+                  width - xmb->margins.title.left - x_pos,
                   xmb->margins.title.top, 1, 1, TEXT_ALIGN_RIGHT,
                   width, height, xmb->font);
          }
