@@ -125,6 +125,7 @@ typedef struct settings
       char driver[32];
       bool pause_libretro;
       bool timedate_enable;
+      bool battery_level_enable;
       bool core_enable;
       bool dynamic_wallpaper_enable;
       unsigned thumbnails;
