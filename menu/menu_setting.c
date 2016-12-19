@@ -5610,7 +5610,7 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
 
-            CONFIG_UINT(
+            CONFIG_INT(
                   list, list_info,
                   &settings->netplay.check_frames,
                   MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES,
