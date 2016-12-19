@@ -1423,6 +1423,8 @@ static config_file_t *open_default_config_file(void)
    if (!fill_pathname_application_data(application_data,
             sizeof(application_data)))
       return NULL;
+   // Group config file with menu configs, remaps, etc:
+   strlcat(application_data, "/config", sizeof(application_data));
 
    path_mkdir(application_data);
 
