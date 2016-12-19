@@ -299,11 +299,11 @@ void input_config_parse_joy_button(void *data, const char *prefix,
    char str[256];
    char tmp[64];
    char key[64];
-   char key_label[64]       = {0};
+   char key_label[64];
    char *tmp_a              = NULL;
    config_file_t *conf      = (config_file_t*)data;
 
-   str[0] = tmp[0] = key[0] = '\0';
+   str[0] = tmp[0] = key[0] = key_label[0] = '\0';
 
    fill_pathname_join_delim(str, prefix, btn,
          '_', sizeof(str));
