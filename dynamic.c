@@ -1050,7 +1050,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             const char *fullpath = path_get(RARCH_PATH_CONTENT);
             if (!string_is_empty(fullpath))
             {
-               char temp_path[PATH_MAX_LENGTH] = {0};
+               char temp_path[PATH_MAX_LENGTH];
+
+               temp_path[0] = '\0';
 
                RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",
                      fullpath);
