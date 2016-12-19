@@ -602,7 +602,7 @@ bool netplay_handshake_pre_nick(netplay_t *netplay,
 
    msg[0] = '\0';
 
-   RECV(&nick_buf, sizeof(nick_buf));
+   RECV(&nick_buf, sizeof(nick_buf)) {}
 
    /* Expecting only a nick command */
    if (recvd < 0 ||
@@ -670,7 +670,7 @@ bool netplay_handshake_pre_password(netplay_t *netplay,
 
    msg[0] = '\0';
 
-   RECV(&password_buf, sizeof(password_buf));
+   RECV(&password_buf, sizeof(password_buf)) {}
 
    /* Expecting only a password command */
    if (recvd < 0 ||
@@ -740,7 +740,7 @@ bool netplay_handshake_pre_info(netplay_t *netplay,
    uint32_t *content_crc_ptr;
    const char *dmsg = NULL;
 
-   RECV(&info_buf, sizeof(info_buf));
+   RECV(&info_buf, sizeof(info_buf)) {}
 
    if (recvd < 0 ||
        ntohl(info_buf.cmd[0]) != NETPLAY_CMD_INFO)
