@@ -2637,21 +2637,24 @@ static void xmb_frame(void *data)
 
    if (settings->menu.battery_level_enable)
    {
-      const frontend_ctx_driver_t *frontend = frontend_get_ptr();
       static retro_time_t last_time = 0;
-      retro_time_t current_time = cpu_features_get_time_usec();
+      static int percent = 0;
+      static enum frontend_powerstate state = FRONTEND_POWERSTATE_NONE;
+      int seconds = 0;
       bool time_to_update = false;
+      const frontend_ctx_driver_t *frontend = frontend_get_ptr();
+      retro_time_t current_time = cpu_features_get_time_usec();
 
       if (current_time - last_time >= BATTERY_LEVEL_CHECK_INTERVAL)
          time_to_update = true;
 
-      if (time_to_update && frontend && frontend->get_powerstate)
+      if (frontend && frontend->get_powerstate)
       {
          char msg[12];
-         int seconds = 0, percent = 0;
-         enum frontend_powerstate state =
-            frontend->get_powerstate(&seconds, &percent);
          bool charging = (state == FRONTEND_POWERSTATE_CHARGING);
+
+	 if (time_to_update)
+            state = frontend->get_powerstate(&seconds, &percent);
 
          *msg = '\0';
 
