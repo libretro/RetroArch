@@ -1576,31 +1576,37 @@ static void xmb_context_destroy_horizontal_list(xmb_handle_t *xmb)
 
 static void xmb_init_horizontal_list(xmb_handle_t *xmb)
 {
-   size_t i;
-   menu_displaylist_info_t info = {0};
+   menu_displaylist_info_t info;
    settings_t *settings         = config_get_ptr();
 
-   xmb->horizontal_list         = (file_list_t*)calloc(1, sizeof(file_list_t));
-
-   if (!xmb->horizontal_list)
-      return;
-
-   info.list         = xmb->horizontal_list;
-   info.menu_list    = NULL;
-   info.type         = 0;
-   info.flags        = 0;
-   info.type_default = FILE_TYPE_PLAIN;
-   info.enum_idx     = MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST;
+   info.need_sort               = false;
+   info.need_refresh            = false;
+   info.need_entries_refresh    = false;
+   info.need_push               = false;
+   info.push_builtin_cores      = false;
+   info.download_core           = false;
+   info.need_navigation_clear   = false;
+   info.list                    = xmb->horizontal_list;
+   info.menu_list               = NULL;
+   strlcpy(info.path, settings->directory.playlist, sizeof(info.path));
+   info.path_b[0]               = '\0';
+   info.path_c[0]               = '\0';
    strlcpy(info.label,
          msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
          sizeof(info.label));
-   strlcpy(info.path,
-         settings->directory.playlist,
-         sizeof(info.path));
-   strlcpy(info.exts, file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT), sizeof(info.exts));
+   info.label_hash              = 0;
+   strlcpy(info.exts,
+         file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT), sizeof(info.exts));
+   info.type                    = 0;
+   info.type_default            = FILE_TYPE_PLAIN;
+   info.directory_ptr           = 0;
+   info.flags                   = 0;
+   info.enum_idx                = MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST;
+   info.setting                 = NULL;
 
    if (menu_displaylist_ctl(DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, &info))
    {
+      size_t i;
       for (i=0; i < xmb->horizontal_list->size; i++)
          xmb_node_allocate_userdata(xmb, i);
       menu_displaylist_ctl(DISPLAYLIST_PROCESS, &info);
@@ -1737,7 +1743,11 @@ static void xmb_refresh_horizontal_list(xmb_handle_t *xmb)
 
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
 
-   xmb_init_horizontal_list(xmb);
+   xmb->horizontal_list         = (file_list_t*)calloc(1, sizeof(file_list_t));
+
+   if (xmb->horizontal_list)
+      xmb_init_horizontal_list(xmb);
+
    xmb_context_reset_horizontal_list(xmb);
 }
 
@@ -3101,7 +3111,10 @@ static void *xmb_init(void **userdata)
 
    menu_display_allocate_white_texture();
 
-   xmb_init_horizontal_list(xmb);
+   xmb->horizontal_list         = (file_list_t*)calloc(1, sizeof(file_list_t));
+
+   if (xmb->horizontal_list)
+      xmb_init_horizontal_list(xmb);
 
    xmb_init_ribbon(xmb);
 

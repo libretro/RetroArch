@@ -1595,6 +1595,7 @@ void general_write_handler(void *data)
          if (*setting->value.target.boolean)
          {
             menu_displaylist_info_t info = {0};
+
             info.list          = menu_stack;
             info.type          = 0; 
             info.directory_ptr = 0;
@@ -1865,13 +1866,13 @@ static bool setting_append_list_input_player_options(
    static char buffer[MAX_USERS][13+2+1];
    static char group_lbl[MAX_USERS][255];
    unsigned i;
-   rarch_setting_group_info_t group_info    = {0};
-   rarch_setting_group_info_t subgroup_info = {0};
-   settings_t *settings = config_get_ptr();
+   rarch_setting_group_info_t group_info      = {0};
+   rarch_setting_group_info_t subgroup_info   = {0};
+   settings_t *settings                       = config_get_ptr();
+   rarch_system_info_t *system                = NULL;
    const char *temp_value                     = NULL;
    const struct retro_keybind* const defaults =
       (user == 0) ? retro_keybinds_1 : retro_keybinds_rest;
-   rarch_system_info_t *system = NULL;
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
@@ -2129,8 +2130,8 @@ static bool setting_append_list(
    unsigned user;
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
-   settings_t *settings  = config_get_ptr();
-   global_t   *global   = global_get_ptr();
+   settings_t *settings                     = config_get_ptr();
+   global_t   *global                       = global_get_ptr();
 
    (void)settings;
    (void)global;
