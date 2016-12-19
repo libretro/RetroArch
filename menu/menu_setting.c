@@ -1895,7 +1895,7 @@ static bool setting_append_list_input_player_options(
          parent_group);
 
    {
-      char tmp_string[PATH_MAX_LENGTH] = {0};
+      char tmp_string[PATH_MAX_LENGTH];
       /* These constants match the string lengths.
        * Keep them up to date or you'll get some really obvious bugs.
        * 2 is the length of '99'; we don't need more users than that.
@@ -1914,6 +1914,8 @@ static bool setting_append_list_input_player_options(
       static char label_bind_all[MAX_USERS][64];
       static char label_bind_all_save_autoconfig[MAX_USERS][64];
       static char label_bind_defaults[MAX_USERS][64];
+
+      tmp_string[0] = '\0';
 
       snprintf(tmp_string, sizeof(tmp_string), "input_player%u", user + 1);
 

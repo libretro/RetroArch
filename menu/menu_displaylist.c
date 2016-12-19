@@ -3529,7 +3529,7 @@ static void menu_displaylist_parse_playlist_associations(
       {
          char path_base[PATH_MAX_LENGTH];
          char core_path[PATH_MAX_LENGTH];
-         unsigned found = 0;
+         unsigned found                   = 0;
          union string_list_elem_attr attr = {0};
          const char *path                 =
             path_basename(str_list->elems[i].data);
