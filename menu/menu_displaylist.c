@@ -1583,7 +1583,7 @@ static int create_string_list_rdb_entry_string(
       file_list_t *list)
 {
    char tmp[PATH_MAX_LENGTH];
-   union string_list_elem_attr attr = {0};
+   union string_list_elem_attr attr;
    char *output_label               = NULL;
    int str_len                      = 0;
    struct string_list *str_list     = string_list_new();
@@ -1591,6 +1591,7 @@ static int create_string_list_rdb_entry_string(
    if (!str_list)
       return -1;
 
+   attr.i = 0;
    tmp[0] = '\0';
 
    str_len += strlen(label) + 1;
@@ -1633,7 +1634,7 @@ static int create_string_list_rdb_entry_int(
 {
    char tmp[PATH_MAX_LENGTH];
    char str[PATH_MAX_LENGTH];
-   union string_list_elem_attr attr = {0};
+   union string_list_elem_attr attr;
    char *output_label               = NULL;
    int str_len                      = 0;
    struct string_list *str_list     = string_list_new();
@@ -1641,6 +1642,7 @@ static int create_string_list_rdb_entry_int(
    if (!str_list)
       return -1;
 
+   attr.i = 0;
    tmp[0] = str[0] = '\0';
 
    str_len += strlen(label) + 1;
@@ -3529,11 +3531,12 @@ static void menu_displaylist_parse_playlist_associations(
       {
          char path_base[PATH_MAX_LENGTH];
          char core_path[PATH_MAX_LENGTH];
+         union string_list_elem_attr attr;
          unsigned found                   = 0;
-         union string_list_elem_attr attr = {0};
          const char *path                 =
             path_basename(str_list->elems[i].data);
 
+         attr.i       = 0;
          path_base[0] = core_path[0]      = '\0';
 
          if (!menu_content_playlist_find_associated_core(
@@ -6052,10 +6055,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_SHADER_PRESET:
          {
-            union string_list_elem_attr attr = {0};
+            union string_list_elem_attr attr;
             struct string_list *str_list     = string_list_new();
 
-            (void)attr;
+            attr.i = 0;
 
             filebrowser_clear_type();
             info->type_default = FILE_TYPE_SHADER_PRESET;
@@ -6075,13 +6078,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_SHADER_PASS:
          {
-            union string_list_elem_attr attr = {0};
+            union string_list_elem_attr attr;
             struct string_list *str_list     = string_list_new();
 
             filebrowser_clear_type();
             info->type_default = FILE_TYPE_SHADER;
 
-            (void)attr;
+            attr.i = 0;
 
 #ifdef HAVE_CG
             string_list_append(str_list, "cg", attr);
@@ -6105,8 +6108,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          filebrowser_clear_type();
          info->type_default = FILE_TYPE_IMAGE;
          {
-            union string_list_elem_attr attr = {0};
+            union string_list_elem_attr attr;
             struct string_list *str_list     = string_list_new();
+
+            attr.i = 0;
 
 #ifdef HAVE_RBMP
             string_list_append(str_list, "bmp", attr);
