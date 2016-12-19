@@ -2653,12 +2653,14 @@ static void xmb_frame(void *data)
          char msg[12];
          bool charging = (state == FRONTEND_POWERSTATE_CHARGING);
 
-	 if (time_to_update)
+         if (time_to_update)
+         {
             state = frontend->get_powerstate(&seconds, &percent);
+            time_to_update = false;
+            last_time = current_time;
+         }
 
          *msg = '\0';
-
-         last_time = current_time;
 
          if (percent > 0)
          {
