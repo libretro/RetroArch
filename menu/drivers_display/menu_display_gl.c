@@ -174,7 +174,7 @@ static void menu_display_gl_draw_pipeline(void *data)
          {
             static float t                    = 0;
             video_shader_ctx_info_t shader_info;
-            struct uniform_info uniform_param = {0};
+            struct uniform_info uniform_param;
 
             shader_info.data       = NULL;
             shader_info.idx        = draw->pipeline.id;
@@ -184,13 +184,17 @@ static void menu_display_gl_draw_pipeline(void *data)
 
             t += 0.01;
 
-            uniform_param.enabled           = true;
-            uniform_param.lookup.enable     = true;
-            uniform_param.lookup.add_prefix = true;
-            uniform_param.lookup.idx        = draw->pipeline.id;
-            uniform_param.lookup.type       = SHADER_PROGRAM_VERTEX;
             uniform_param.type              = UNIFORM_1F;
+            uniform_param.enabled           = true;
+            uniform_param.location          = 0;
+            uniform_param.count             = 0;
+
+            uniform_param.lookup.type       = SHADER_PROGRAM_VERTEX;
             uniform_param.lookup.ident      = "time";
+            uniform_param.lookup.idx        = draw->pipeline.id;
+            uniform_param.lookup.add_prefix = true;
+            uniform_param.lookup.enable     = true;
+
             uniform_param.result.f.v0       = t;
 
             video_shader_driver_set_parameter(uniform_param);            
