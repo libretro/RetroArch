@@ -269,7 +269,7 @@ void x11_move_window(Display *dpy, Window win, int x, int y,
 
 static void x11_set_window_class(Display *dpy, Window win)
 {
-   XClassHint hint = {0};
+   XClassHint hint;
 
    hint.res_name   = (char*)"retroarch"; /* Broken header. */
    hint.res_class  = (char*)"retroarch";
