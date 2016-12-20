@@ -19,7 +19,7 @@
 #include "../../frontend/frontend_driver.h"
 #include "tasks_internal.h"
 
-static int power_percent = 0;
+static int              power_percent = 0;
 static enum frontend_powerstate state = FRONTEND_POWERSTATE_NONE;
 
 typedef struct
@@ -62,7 +62,7 @@ static void task_powerstate_handler(retro_task_t *task)
    task->finished = true;
 }
 
-void task_push_get_powerstate()
+void task_push_get_powerstate(void)
 {
    retro_task_t *task = (retro_task_t*)calloc(1, sizeof(*task));
    powerstate_t *state = (powerstate_t*)calloc(1, sizeof(*state));

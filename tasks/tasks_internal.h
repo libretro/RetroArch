@@ -172,7 +172,7 @@ bool input_autoconfigure_connect(autoconfig_params_t *params);
 
 bool input_autoconfigure_disconnect(unsigned i, const char *ident);
 
-void task_push_get_powerstate();
+void task_push_get_powerstate(void);
 
 enum frontend_powerstate get_last_powerstate(int *percent);
 
