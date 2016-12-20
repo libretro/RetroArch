@@ -2520,7 +2520,7 @@ static void xmb_draw_dark_layer(
 static void xmb_frame(void *data)
 {
    size_t selection;
-   size_t datetime_width = 0;
+   size_t percent_width = 0;
    math_matrix_4x4 mymat;
    unsigned i, width, height;
    float item_color[16], coord_black[16], coord_white[16];
@@ -2600,41 +2600,6 @@ static void xmb_frame(void *data)
    /* Clock image */
    menu_display_set_alpha(coord_white, MIN(xmb->alpha, 1.00f));
 
-   if (settings->menu.timedate_enable && coord_white[3] != 0)
-      xmb_draw_icon(
-            xmb->icon.size,
-            &mymat,
-            xmb->textures.list[XMB_TEXTURE_CLOCK],
-            width - xmb->icon.size,
-            xmb->icon.size,width,
-            height,
-            1,
-            0,
-            1,
-            &coord_white[0],
-            xmb->shadow_offset);
-
-   if (settings->menu.timedate_enable)
-   {
-      menu_display_ctx_datetime_t datetime;
-      char timedate[255];
-
-      timedate[0]        = '\0';
-
-      datetime.s         = timedate;
-      datetime.len       = sizeof(timedate);
-      datetime.time_mode = 4;
-
-      menu_display_timedate(&datetime);
-
-      datetime_width = font_driver_get_message_width(xmb->font, timedate, utf8len(timedate), 1);
-
-      xmb_draw_text(xmb, timedate,
-            width - xmb->margins.title.left - xmb->icon.size / 4,
-            xmb->margins.title.top, 1, 1, TEXT_ALIGN_RIGHT,
-            width, height, xmb->font);
-   }
-
    if (settings->menu.battery_level_enable)
    {
       static retro_time_t last_time = 0;
@@ -2663,9 +2628,6 @@ static void xmb_frame(void *data)
          size_t x_pos = xmb->icon.size / 6;
          size_t x_pos_icon = xmb->margins.title.left;
 
-         if (datetime_width)
-            x_pos_icon += datetime_width + (xmb->icon.size / 2) + (xmb->margins.title.left / 2) - xmb->margins.title.left / 3;
-
          if (coord_white[3] != 0)
             xmb_draw_icon(
                   xmb->icon.size,
@@ -2687,15 +2649,57 @@ static void xmb_frame(void *data)
 #endif
          snprintf(msg, sizeof(msg), "%d%%", percent);
 
-         if (datetime_width)
-            x_pos = datetime_width + (xmb->icon.size / 4) +
-                  xmb->margins.title.left;
+         percent_width = font_driver_get_message_width(xmb->font, msg, utf8len(msg), 1);
 
          xmb_draw_text(xmb, msg,
                width - xmb->margins.title.left - x_pos,
                xmb->margins.title.top, 1, 1, TEXT_ALIGN_RIGHT,
                width, height, xmb->font);
       }
+   }
+
+   if (settings->menu.timedate_enable && coord_white[3] != 0)
+   {
+      int x_pos = 0;
+
+      if (percent_width)
+         x_pos = percent_width + (xmb->icon.size / 2.5);
+
+      xmb_draw_icon(
+            xmb->icon.size,
+            &mymat,
+            xmb->textures.list[XMB_TEXTURE_CLOCK],
+            width - xmb->icon.size - x_pos,
+            xmb->icon.size,width,
+            height,
+            1,
+            0,
+            1,
+            &coord_white[0],
+            xmb->shadow_offset);
+   }
+
+   if (settings->menu.timedate_enable)
+   {
+      menu_display_ctx_datetime_t datetime;
+      char timedate[255];
+      int x_pos = 0;
+
+      timedate[0]        = '\0';
+
+      datetime.s         = timedate;
+      datetime.len       = sizeof(timedate);
+      datetime.time_mode = 4;
+
+      menu_display_timedate(&datetime);
+
+      if (percent_width)
+         x_pos = percent_width + (xmb->icon.size / 2.5);
+
+      xmb_draw_text(xmb, timedate,
+            width - xmb->margins.title.left - xmb->icon.size / 4 - x_pos,
+            xmb->margins.title.top, 1, 1, TEXT_ALIGN_RIGHT,
+            width, height, xmb->font);
    }
 
    /* Arrow image */
