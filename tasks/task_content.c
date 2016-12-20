@@ -599,41 +599,52 @@ error:
 
 static const struct retro_subsystem_info *content_file_init_subsystem(
       content_information_ctx_t *content_ctx,
+      char *error_string,
       bool *ret)
 {
+   char msg[1024];
    struct string_list *subsystem              = path_get_subsystem_list();
    const struct retro_subsystem_info *special = libretro_find_subsystem_info(
             content_ctx->subsystem.data, content_ctx->subsystem.size,
             path_get(RARCH_PATH_SUBSYSTEM));
 
+   msg[0] = '\0';
+
    if (!special)
    {
-      RARCH_ERR(
+      snprintf(msg, sizeof(msg),
             "Failed to find subsystem \"%s\" in libretro implementation.\n",
             path_get(RARCH_PATH_SUBSYSTEM));
+      error_string = strdup(msg);
       goto error;
    }
 
    if (special->num_roms && !subsystem)
    {
-      RARCH_ERR("%s\n",
+      snprintf(msg, sizeof(msg),
+            "%s\n",
             msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT));
+      error_string = strdup(msg);
       goto error;
    }
    else if (special->num_roms && (special->num_roms != subsystem->size))
    {
-      RARCH_ERR("Libretro core requires %u content files for "
+      snprintf(msg, sizeof(msg),
+            "Libretro core requires %u content files for "
             "subsystem \"%s\", but %u content files were provided.\n",
             special->num_roms, special->desc,
             (unsigned)subsystem->size);
+      error_string = strdup(msg);
       goto error;
    }
    else if (!special->num_roms && subsystem && subsystem->size)
    {
-      RARCH_ERR("Libretro core takes no content for subsystem \"%s\", "
+      snprintf(msg, sizeof(msg),
+            "Libretro core takes no content for subsystem \"%s\", "
             "but %u content files were provided.\n",
             special->desc,
             (unsigned)subsystem->size);
+      error_string = strdup(msg);
       goto error;
    }
 
@@ -712,7 +723,7 @@ static bool content_file_init(struct string_list *temporary_content,
    bool ret                                   = path_is_empty(RARCH_PATH_SUBSYSTEM) 
       ? true : false;
    const struct retro_subsystem_info *special = path_is_empty(RARCH_PATH_SUBSYSTEM) 
-      ? NULL : content_file_init_subsystem(content_ctx, &ret);
+      ? NULL : content_file_init_subsystem(content_ctx, error_string, &ret);
 
    if (!ret)
       goto error;
