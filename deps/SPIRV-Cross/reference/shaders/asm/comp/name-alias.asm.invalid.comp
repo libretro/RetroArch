@@ -1,0 +1,37 @@
+#version 310 es
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+struct alias
+{
+    vec3 alias[100];
+};
+
+struct alias_1
+{
+    vec4 alias;
+    vec2 alias_1[10];
+    alias alias_2[2];
+};
+
+struct alias_2
+{
+    vec4 alias;
+    alias_1 alias_1;
+};
+
+layout(binding = 0, std430) buffer _10
+{
+    alias_2 alias;
+} alias_3;
+
+layout(binding = 1, std140) buffer _15
+{
+    alias_2 alias;
+} alias_4;
+
+void main()
+{
+    alias_2 alias_5 = alias_3.alias;
+    alias_4.alias = alias_5;
+}
+
