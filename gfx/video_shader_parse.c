@@ -29,6 +29,10 @@
 #include "../verbosity.h"
 #include "video_shader_parse.h"
 
+#ifdef HAVE_SLANG
+#include "drivers_shader/slang_preprocess.h"
+#endif
+
 #define WRAP_MODE_CLAMP_TO_BORDER      0x3676ed11U
 #define WRAP_MODE_CLAMP_TO_EDGE        0x9427a608U
 #define WRAP_MODE_REPEAT               0x192dec66U
@@ -483,6 +487,17 @@ bool video_shader_resolve_parameters(config_file_t *conf,
 
    for (i = 0; i < shader->passes; i++)
    {
+#ifdef HAVE_SLANG
+      /* First try to use the more robust slang implementation to support #includes. */
+      /* FIXME: The check for slang can be removed if it's sufficiently tested for
+       * GLSL/Cg as well, it should be the same implementation. */
+      if (string_is_equal(path_get_extension(shader->pass[i].source.path), "slang") &&
+            slang_preprocess_parse_parameters(shader->pass[i].source.path, shader))
+         continue;
+      /* If that doesn't work, fallback to the old path.
+       * Ideally, we'd get rid of this path sooner or later. */
+#endif
+
       char line[4096];
       RFILE *file = filestream_open(shader->pass[i].source.path, RFILE_MODE_READ_TEXT, -1);
 
