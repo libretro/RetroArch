@@ -453,6 +453,64 @@ end:
    return ret;
 }
 
+
+static int deferred_push_cursor_manager_list_generic(
+      menu_displaylist_info_t *info, enum database_query_type type)
+{
+   int ret                       = -1;
+#ifdef HAVE_LIBRETRODB
+   char query[PATH_MAX_LENGTH];
+   struct string_list *str_list  = string_split(info->path, "|"); 
+
+   query[0] = '\0';
+
+   database_info_build_query_enum(query, sizeof(query), type, str_list->elems[0].data);
+
+   if (string_is_empty(query))
+      goto end;
+
+   strlcpy(info->path,   str_list->elems[1].data, sizeof(info->path));
+   strlcpy(info->path_b, str_list->elems[0].data, sizeof(info->path_b));
+   strlcpy(info->path_c, query, sizeof(info->path_c));
+
+   ret = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
+
+end:
+   string_list_free(str_list);
+#endif
+   return ret;
+}
+
+static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_enhancement_hw(
+      menu_displaylist_info_t *info)
+{
+   return deferred_push_cursor_manager_list_generic(info, DATABASE_QUERY_ENTRY_ENHANCEMENT_HW);
+}
+
+static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_franchise(
+      menu_displaylist_info_t *info)
+{
+   return deferred_push_cursor_manager_list_generic(info, DATABASE_QUERY_ENTRY_FRANCHISE);
+}
+
+static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_publisher(
+      menu_displaylist_info_t *info)
+{
+   return deferred_push_cursor_manager_list_generic(info, DATABASE_QUERY_ENTRY_PUBLISHER);
+}
+
+static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_developer(
+      menu_displaylist_info_t *info)
+{
+   return deferred_push_cursor_manager_list_generic(info, DATABASE_QUERY_ENTRY_DEVELOPER);
+}
+
+static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_origin(
+      menu_displaylist_info_t *info)
+{
+   return deferred_push_cursor_manager_list_generic(info, DATABASE_QUERY_ENTRY_ORIGIN);
+}
+
 static int deferred_push_cursor_manager_list_deferred_query_subsearch(
       menu_displaylist_info_t *info)
 {
@@ -480,7 +538,6 @@ end:
 #endif
    return ret;
 }
-
 
 static int general_push(menu_displaylist_info_t *info,
       unsigned id, enum menu_displaylist_ctl_state state)
@@ -995,10 +1052,20 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred);
                break;
             case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PUBLISHER:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_publisher);
+               break;
             case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_DEVELOPER:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_developer);
+               break;
             case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ORIGIN:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_origin);
+               break;
             case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FRANCHISE:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_franchise);
+               break;
             case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ENHANCEMENT_HW:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_enhancement_hw);
+               break;
             case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ESRB_RATING:
             case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_BBFC_RATING:
             case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ELSPA_RATING:
@@ -1255,10 +1322,20 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred);
                break;
             case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PUBLISHER:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_publisher);
+               break;
             case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_DEVELOPER:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_developer);
+               break;
             case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ORIGIN:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_origin);
+               break;
             case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FRANCHISE:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_franchise);
+               break;
             case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ENHANCEMENT_HW:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_enhancement_hw);
+               break;
             case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ESRB_RATING:
             case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_BBFC_RATING:
             case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ELSPA_RATING:
