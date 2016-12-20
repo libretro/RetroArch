@@ -2664,7 +2664,7 @@ static void xmb_frame(void *data)
 
          if (percent > 0)
          {
-            size_t x_pos = xmb->margins.title.left / 2;
+            size_t x_pos = xmb->icon.size / 5;
             size_t x_pos_icon = xmb->margins.title.left;
 
             if (datetime_width)
