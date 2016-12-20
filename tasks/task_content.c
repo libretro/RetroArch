@@ -487,7 +487,7 @@ static bool content_file_init_extract(
 #endif
 
 /**
- * load_content:
+ * content_file_load:
  * @special          : subsystem of content to be loaded. Can be NULL.
  * content           :
  *
@@ -495,7 +495,7 @@ static bool content_file_init_extract(
  *
  * Returns : true if successful, otherwise false.
  **/
-static bool load_content(
+static bool content_file_load(
       struct string_list *temporary_content,
       struct retro_game_info *info,
       const struct string_list *content,
@@ -754,7 +754,7 @@ static bool content_file_init(struct string_list *temporary_content,
    if (info)
    {
       unsigned i;
-      ret = load_content(temporary_content, info, content, special);
+      ret = content_file_load(temporary_content, info, content, special);
 
       for (i = 0; i < content->size; i++)
          free((void*)info[i].data);
@@ -843,7 +843,14 @@ bool content_init(void)
 end:
    if (error_string)
    {
-      RARCH_ERR("%s\n", error_string);
+      if (ret)
+      {
+         RARCH_LOG("%s\n", error_string);
+      }
+      else
+      {
+         RARCH_ERR("%s\n", error_string);
+      }
       runloop_msg_queue_push(error_string, 2, ret ? 1 : 180, true);
       free(error_string);
    }
