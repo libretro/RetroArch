@@ -495,8 +495,11 @@ static bool content_file_load(
 {
    unsigned i;
    retro_ctx_load_content_info_t load_info;
+   char msg[1024];
    char *error_string                         = NULL;
    struct string_list *additional_path_allocs = string_list_new();
+
+   msg[0] = '\0';
 
    if (!additional_path_allocs)
       return false;
@@ -504,14 +507,16 @@ static bool content_file_load(
    for (i = 0; i < content->size; i++)
    {
       int         attr     = content->elems[i].attr.i;
+      const char *path     = content->elems[i].data;
       bool need_fullpath   = attr & 2;
       bool require_content = attr & 4;
-      const char *path     = content->elems[i].data;
 
       if (require_content && string_is_empty(path))
       {
-         RARCH_LOG("%s\n",
+         snprintf(msg, sizeof(msg),
+               "%s\n",
                msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT));
+         error_string = strdup(msg);
          goto error;
       }
 
@@ -528,9 +533,11 @@ static bool content_file_load(
 
          if (!load_content_into_memory(i, path, (void**)&info[i].data, &len))
          {
-            RARCH_ERR("%s \"%s\".\n",
+            snprintf(msg, sizeof(msg),
+                  "%s \"%s\".\n",
                   msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
                   path);
+            error_string = strdup(msg);
             goto error;
          }
 
@@ -560,7 +567,9 @@ static bool content_file_load(
 
    if (!core_load_game(&load_info))
    {
-      RARCH_ERR("%s.\n", msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
+      snprintf(msg, sizeof(msg),
+            "%s.\n", msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
+      error_string = strdup(msg);
       goto error;
    }
 
@@ -582,12 +591,6 @@ static bool content_file_load(
    return true;
 
 error:
-   if (error_string)
-   {
-      RARCH_ERR("%s\n", error_string);
-      free(error_string);
-   }
-
    if (additional_path_allocs)
       string_list_free(additional_path_allocs);
    
