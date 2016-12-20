@@ -1,0 +1,26 @@
+language: cpp
+os:
+  - linux
+  - osx
+
+# Use Ubuntu 14.04 LTS (Trusty) as the Linux testing environment.
+sudo: required
+dist: trusty
+
+# We check out glslang at a specific revision to avoid test output mismatches
+env:
+  - GLSLANG_REV=b56f4ac72c57f5c50f14ddb0bf1f78eaaef21c2b
+
+before_script:
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install python3; fi
+  - git clone https://github.com/KhronosGroup/glslang.git glslang
+  - git clone https://github.com/KhronosGroup/SPIRV-Tools SPIRV-Tools
+  - git clone https://github.com/KhronosGroup/SPIRV-Headers.git SPIRV-Tools/external/spirv-headers
+
+script:
+  - git -C glslang checkout $GLSLANG_REV
+  - cd glslang && cmake . && make -j2 && cd ..
+  - cd SPIRV-Tools && cmake . && make -j2 && cd ..
+  - make -j2
+  - PATH=./glslang/StandAlone:./SPIRV-Tools/tools:$PATH
+  - ./test_shaders.py shaders

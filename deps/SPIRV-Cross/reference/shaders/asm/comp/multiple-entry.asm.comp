@@ -1,0 +1,27 @@
+#version 310 es
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout(binding = 0, std430) restrict buffer _6
+{
+    ivec4 _0;
+    uvec4 _1;
+} _8;
+
+layout(binding = 1, std430) restrict buffer _7
+{
+    uvec4 _0;
+    ivec4 _1;
+} _9;
+
+void main()
+{
+    _9._0 = _8._1 + uvec4(_8._0);
+    _9._0 = uvec4(_8._0) + _8._1;
+    _9._0 = _8._1 + _8._1;
+    _9._0 = uvec4(_8._0 + _8._0);
+    _9._1 = ivec4(_8._1 + _8._1);
+    _9._1 = _8._0 + _8._0;
+    _9._1 = ivec4(_8._1) + _8._0;
+    _9._1 = _8._0 + ivec4(_8._1);
+}
+

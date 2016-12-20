@@ -1,0 +1,124 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 1
+; Bound: 48
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %4 "main"
+               OpExecutionMode %4 LocalSize 1 1 1
+               OpSource ESSL 310
+               OpName %4 "alias"
+               OpName %15 "alias"
+               OpMemberName %15 0 "alias"
+               OpName %18 "alias"
+               OpMemberName %18 0 "alias"
+               OpMemberName %18 1 "alias"
+               OpMemberName %18 2 "alias"
+               OpName %19 "alias"
+               OpMemberName %19 0 "alias"
+               OpMemberName %19 1 "alias"
+               OpName %21 "alias"
+               OpName %24 "alias"
+               OpMemberName %24 0 "alias"
+               OpName %26 "alias"
+               OpMemberName %26 0 "alias"
+               OpMemberName %26 1 "alias"
+               OpMemberName %26 2 "alias"
+               OpName %27 "alias"
+               OpMemberName %27 0 "alias"
+               OpMemberName %27 1 "alias"
+               OpName %28 "alias"
+               OpMemberName %28 0 "alias"
+               OpName %30 "alias"
+               OpName %38 "alias"
+               OpMemberName %38 0 "alias"
+               OpName %40 "alias"
+               OpMemberName %40 0 "alias"
+               OpMemberName %40 1 "alias"
+               OpMemberName %40 2 "alias"
+               OpName %41 "alias"
+               OpMemberName %41 0 "alias"
+               OpMemberName %41 1 "alias"
+               OpName %42 "alias"
+               OpMemberName %42 0 "alias"
+               OpName %44 "alias"
+               OpDecorate %22 ArrayStride 8
+               OpDecorate %23 ArrayStride 16
+               OpMemberDecorate %24 0 Offset 0
+               OpDecorate %25 ArrayStride 1600
+               OpMemberDecorate %26 0 Offset 0
+               OpMemberDecorate %26 1 Offset 16
+               OpMemberDecorate %26 2 Offset 96
+               OpMemberDecorate %27 0 Offset 0
+               OpMemberDecorate %27 1 Offset 16
+               OpMemberDecorate %28 0 Offset 0
+               OpDecorate %28 BufferBlock
+               OpDecorate %30 DescriptorSet 0
+               OpDecorate %30 Binding 0
+               OpDecorate %36 ArrayStride 16
+               OpDecorate %37 ArrayStride 16
+               OpMemberDecorate %38 0 Offset 0
+               OpDecorate %39 ArrayStride 1600
+               OpMemberDecorate %40 0 Offset 0
+               OpMemberDecorate %40 1 Offset 16
+               OpMemberDecorate %40 2 Offset 176
+               OpMemberDecorate %41 0 Offset 0
+               OpMemberDecorate %41 1 Offset 16
+               OpMemberDecorate %42 0 Offset 0
+               OpDecorate %42 BufferBlock
+               OpDecorate %44 DescriptorSet 0
+               OpDecorate %44 Binding 1
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeVector %6 4
+          %8 = OpTypeVector %6 2
+          %9 = OpTypeInt 32 0
+         %10 = OpConstant %9 10
+         %11 = OpTypeArray %8 %10
+         %12 = OpTypeVector %6 3
+         %13 = OpConstant %9 100
+         %14 = OpTypeArray %12 %13
+         %15 = OpTypeStruct %14
+         %16 = OpConstant %9 2
+         %17 = OpTypeArray %15 %16
+         %18 = OpTypeStruct %7 %11 %17
+         %19 = OpTypeStruct %7 %18
+         %20 = OpTypePointer Function %19
+         %22 = OpTypeArray %8 %10
+         %23 = OpTypeArray %12 %13
+         %24 = OpTypeStruct %23
+         %25 = OpTypeArray %24 %16
+         %26 = OpTypeStruct %7 %22 %25
+         %27 = OpTypeStruct %7 %26
+         %28 = OpTypeStruct %27
+         %29 = OpTypePointer Uniform %28
+         %30 = OpVariable %29 Uniform
+         %31 = OpTypeInt 32 1
+         %32 = OpConstant %31 0
+         %33 = OpTypePointer Uniform %27
+         %36 = OpTypeArray %8 %10
+         %37 = OpTypeArray %12 %13
+         %38 = OpTypeStruct %37
+         %39 = OpTypeArray %38 %16
+         %40 = OpTypeStruct %7 %36 %39
+         %41 = OpTypeStruct %7 %40
+         %42 = OpTypeStruct %41
+         %43 = OpTypePointer Uniform %42
+         %44 = OpVariable %43 Uniform
+         %46 = OpTypePointer Uniform %41
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %21 = OpVariable %20 Function
+         %34 = OpAccessChain %33 %30 %32
+         %35 = OpLoad %27 %34
+; This shader has an illegal aliased store for testing purposes. spirv-val is not run for this shader.
+               OpStore %21 %35
+         %45 = OpLoad %19 %21
+         %47 = OpAccessChain %46 %44 %32
+; This shader has an illegal aliased store for testing purposes. spirv-val is not run for this shader.
+               OpStore %47 %45
+               OpReturn
+               OpFunctionEnd
