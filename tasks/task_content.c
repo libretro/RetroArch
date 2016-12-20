@@ -578,7 +578,7 @@ error:
    return false;
 }
 
-static const struct retro_subsystem_info *init_content_file_subsystem(bool *ret)
+static const struct retro_subsystem_info *content_file_init_subsystem(bool *ret)
 {
    const struct retro_subsystem_info *special = NULL;
    rarch_system_info_t *system                = NULL;
@@ -710,7 +710,7 @@ static bool content_file_init(struct string_list *temporary_content,
    struct retro_game_info               *info = NULL;
    struct string_list *content                = NULL;
    bool ret                                   = false;
-   const struct retro_subsystem_info *special = init_content_file_subsystem(&ret);
+   const struct retro_subsystem_info *special = content_file_init_subsystem(&ret);
 
    if (!ret)
       goto error;
