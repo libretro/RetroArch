@@ -108,8 +108,10 @@ typedef struct content_stream
 typedef struct content_information_ctx
 {
    char *valid_extensions;
+   char *directory_cache;
    bool block_extract;
    bool need_fullpath;
+   bool set_supports_no_game_enable;
 } content_information_ctx_t;
 
 static struct string_list *temporary_content                  = NULL;
@@ -349,7 +351,6 @@ static bool load_content_from_compressed_archive(
    char new_basedir[PATH_MAX_LENGTH];
    ssize_t new_path_len              = 0;
    bool ret                          = false;
-   settings_t *settings              = config_get_ptr();
 
    if (content_ctx->block_extract)
       return true;
@@ -359,7 +360,7 @@ static bool load_content_from_compressed_archive(
    RARCH_LOG("Compressed file in case of need_fullpath."
          " Now extracting to temporary directory.\n");
 
-   strlcpy(new_basedir, settings->directory.cache,
+   strlcpy(new_basedir, content_ctx->directory_cache,
          sizeof(new_basedir));
 
    if (string_is_empty(new_basedir) || !path_is_directory(new_basedir))
@@ -411,7 +412,6 @@ static bool content_file_init_extract(
       )
 {
    unsigned i;
-   settings_t *settings          = config_get_ptr();
 
    for (i = 0; i < content->size; i++)
    {
@@ -444,8 +444,8 @@ static bool content_file_init_extract(
 
       if (!valid_ext || !file_archive_extract_file(temp_content,
                sizeof(temp_content), valid_ext,
-               !string_is_empty(settings->directory.cache) ?
-               settings->directory.cache : NULL,
+               !string_is_empty(content_ctx->directory_cache) ?
+               content_ctx->directory_cache : NULL,
                new_path, sizeof(new_path)))
       {
          char str[1024];
@@ -601,12 +601,12 @@ static const struct retro_subsystem_info *content_file_init_subsystem(
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &sys_info);
 
-   if (sys_info)
-      special =
-         libretro_find_subsystem_info(
-               sys_info->subsystem.data,
-               sys_info->subsystem.size,
-               path_get(RARCH_PATH_SUBSYSTEM));
+   if (!sys_info)
+      goto error;
+
+   special = libretro_find_subsystem_info(
+            sys_info->subsystem.data, sys_info->subsystem.size,
+            path_get(RARCH_PATH_SUBSYSTEM));
 
    if (!special)
    {
@@ -674,15 +674,13 @@ static bool content_file_init_set_attribs(
    }
    else
    {
-      settings_t *settings          = config_get_ptr();
-
       attr.i               = content_ctx->block_extract;
       attr.i              |= content_ctx->need_fullpath << 1;
       attr.i              |= (!content_does_not_need_content())  << 2;
 
       if (path_is_empty(RARCH_PATH_CONTENT)
             && content_does_not_need_content()
-            && settings->set_supports_no_game_enable)
+            && content_ctx->set_supports_no_game_enable)
          string_list_append(content, "", attr);
       else
       {
@@ -809,20 +807,25 @@ bool content_init(void)
    content_information_ctx_t content_ctx;
    bool ret                       = true;
    char *error_string             = NULL;
-   temporary_content              = string_list_new();
    rarch_system_info_t *sys_info  = NULL;
+   settings_t *settings           = config_get_ptr();
+   temporary_content              = string_list_new();
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &sys_info);
 
-   content_ctx.valid_extensions    = NULL;
-   content_ctx.block_extract       = false;
-   content_ctx.need_fullpath       = false;
+   content_ctx.directory_cache                = NULL;
+   content_ctx.valid_extensions               = NULL;
+   content_ctx.block_extract                  = false;
+   content_ctx.need_fullpath                  = false;
+   content_ctx.set_supports_no_game_enable    = false;
    
    if (sys_info)
    {
-      content_ctx.valid_extensions = strdup(sys_info->info.valid_extensions);
-      content_ctx.block_extract    = sys_info->info.block_extract;
-      content_ctx.need_fullpath    = sys_info->info.need_fullpath;
+      content_ctx.set_supports_no_game_enable = settings->set_supports_no_game_enable;
+      content_ctx.directory_cache             = strdup(settings->directory.cache);
+      content_ctx.valid_extensions            = strdup(sys_info->info.valid_extensions);
+      content_ctx.block_extract               = sys_info->info.block_extract;
+      content_ctx.need_fullpath               = sys_info->info.need_fullpath;
    }
 
    if (     !temporary_content 
@@ -837,6 +840,8 @@ bool content_init(void)
    _content_is_inited = true;
 
 end:
+   if (content_ctx.directory_cache)
+      free(content_ctx.directory_cache);
    if (content_ctx.valid_extensions)
       free(content_ctx.valid_extensions);
 
