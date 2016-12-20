@@ -650,7 +650,7 @@ error:
 }
 
 
-static bool init_content_file_set_attribs(
+static bool content_file_init_set_attribs(
       struct string_list *temporary_content,
       struct string_list *content,
       const struct retro_subsystem_info *special)
@@ -729,7 +729,7 @@ static bool content_file_init(struct string_list *temporary_content)
    if (!content)
       goto error;
 
-   if (!init_content_file_set_attribs(temporary_content,
+   if (!content_file_init_set_attribs(temporary_content,
             content, special))
       goto error;
 
@@ -819,6 +819,7 @@ bool content_init(void)
       goto error;
 
    _content_is_inited = true;
+
    return true;
 
 error:
@@ -874,8 +875,8 @@ static bool task_load_content(content_ctx_info_t *content_info,
       bool launched_from_menu,
       enum content_mode_load mode)
 {
-   char name[256];
-   char msg[256];
+   char name[255];
+   char msg[255];
 
    name[0] = msg[0] = '\0';
 
@@ -904,7 +905,7 @@ static bool task_load_content(content_ctx_info_t *content_info,
       goto error;
 
    /* Push entry to top of history playlist */
-   if (content_is_inited() || content_does_not_need_content())
+   if (_content_is_inited || content_does_not_need_content())
    {
       char tmp[PATH_MAX_LENGTH];
       struct retro_system_info *info = NULL;
@@ -1028,7 +1029,7 @@ static bool command_event_cmd_exec(const char *data,
    return true;
 }
 
-static void update_firmware_status(void)
+static void task_push_content_update_firmware_status(void)
 {
    char s[PATH_MAX_LENGTH];
    core_info_ctx_firmware_t firmware_info;
@@ -1275,7 +1276,7 @@ bool task_push_content_load_default(
 #endif
       case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
-         update_firmware_status();
+         task_push_content_update_firmware_status();
          if(runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL) && 
                settings->check_firmware_before_loading)
                goto skip;
