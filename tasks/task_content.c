@@ -107,6 +107,12 @@ typedef struct content_stream
 
 typedef struct content_information_ctx
 {
+   struct
+   {
+      struct retro_subsystem_info *data;
+      unsigned size;
+   } subsystem;
+
    char *valid_extensions;
    char *directory_cache;
    bool block_extract;
@@ -589,17 +595,9 @@ static const struct retro_subsystem_info *content_file_init_subsystem(
       content_information_ctx_t *content_ctx,
       bool *ret)
 {
-   const struct retro_subsystem_info *special = NULL;
-   rarch_system_info_t *sys_info              = NULL;
    struct string_list *subsystem              = path_get_subsystem_list();
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &sys_info);
-
-   if (!sys_info)
-      goto error;
-
-   special = libretro_find_subsystem_info(
-            sys_info->subsystem.data, sys_info->subsystem.size,
+   const struct retro_subsystem_info *special = libretro_find_subsystem_info(
+            content_ctx->subsystem.data, content_ctx->subsystem.size,
             path_get(RARCH_PATH_SUBSYSTEM));
 
    if (!special)
@@ -814,6 +812,9 @@ bool content_init(void)
    content_ctx.block_extract                  = false;
    content_ctx.need_fullpath                  = false;
    content_ctx.set_supports_no_game_enable    = false;
+
+   content_ctx.subsystem.data                 = NULL;
+   content_ctx.subsystem.size                 = 0;
    
    if (sys_info)
    {
@@ -822,6 +823,9 @@ bool content_init(void)
       content_ctx.valid_extensions            = strdup(sys_info->info.valid_extensions);
       content_ctx.block_extract               = sys_info->info.block_extract;
       content_ctx.need_fullpath               = sys_info->info.need_fullpath;
+
+      content_ctx.subsystem.data              = sys_info->subsystem.data;
+      content_ctx.subsystem.size              = sys_info->subsystem.size;
    }
 
    if (     !temporary_content 
