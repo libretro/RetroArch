@@ -659,31 +659,3 @@ void database_info_list_free(database_info_list_t *database_info_list)
 
    free(database_info_list->list);
 }
-
-void database_info_set_type(database_info_handle_t *handle, enum database_type type)
-{
-   if (!handle)
-      return;
-   handle->type = type;
-}
-
-enum database_type database_info_get_type(database_info_handle_t *handle)
-{
-   if (!handle)
-      return DATABASE_TYPE_NONE;
-   return handle->type;
-}
-
-const char *database_info_get_current_name(database_state_handle_t *handle)
-{
-   if (!handle || !handle->list)
-      return NULL;
-   return handle->list->elems[handle->list_index].data;
-}
-
-const char *database_info_get_current_element_name(database_info_handle_t *handle)
-{
-   if (!handle || !handle->list)
-      return NULL;
-   return handle->list->elems[handle->list_ptr].data;
-}

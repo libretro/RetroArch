@@ -42,6 +42,19 @@
 #define COLLECTION_SIZE                99999
 #endif
 
+typedef struct database_state_handle
+{
+   database_info_list_t *info;
+   struct string_list *list;
+   size_t list_index;
+   size_t entry_index;
+   uint32_t crc;
+   uint32_t archive_crc;
+   uint8_t *buf;
+   char archive_name[255];
+   char serial[4096];
+} database_state_handle_t;
+
 typedef struct db_handle
 {
    database_state_handle_t state;
@@ -49,6 +62,34 @@ typedef struct db_handle
    msg_queue_t *msg_queue;
    unsigned status;
 } db_handle_t;
+
+static void database_info_set_type(database_info_handle_t *handle, enum database_type type)
+{
+   if (!handle)
+      return;
+   handle->type = type;
+}
+
+static enum database_type database_info_get_type(database_info_handle_t *handle)
+{
+   if (!handle)
+      return DATABASE_TYPE_NONE;
+   return handle->type;
+}
+
+static const char *database_info_get_current_name(database_state_handle_t *handle)
+{
+   if (!handle || !handle->list)
+      return NULL;
+   return handle->list->elems[handle->list_index].data;
+}
+
+static const char *database_info_get_current_element_name(database_info_handle_t *handle)
+{
+   if (!handle || !handle->list)
+      return NULL;
+   return handle->list->elems[handle->list_ptr].data;
+}
 
 static int task_database_iterate_start(database_info_handle_t *db,
       const char *name)
