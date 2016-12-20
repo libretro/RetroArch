@@ -593,12 +593,6 @@ static const struct retro_subsystem_info *content_file_init_subsystem(
    rarch_system_info_t *sys_info              = NULL;
    struct string_list *subsystem              = path_get_subsystem_list();
 
-   if (path_is_empty(RARCH_PATH_SUBSYSTEM))
-   {
-      *ret = true;
-      return NULL;
-   }
-
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &sys_info);
 
    if (!sys_info)
@@ -711,8 +705,10 @@ static bool content_file_init(struct string_list *temporary_content,
 {
    struct retro_game_info               *info = NULL;
    struct string_list *content                = NULL;
-   bool ret                                   = false;
-   const struct retro_subsystem_info *special = content_file_init_subsystem(content_ctx, &ret);
+   bool ret                                   = path_is_empty(RARCH_PATH_SUBSYSTEM) 
+      ? true : false;
+   const struct retro_subsystem_info *special = path_is_empty(RARCH_PATH_SUBSYSTEM) 
+      ? NULL : content_file_init_subsystem(content_ctx, &ret);
 
    if (!ret)
       goto error;
