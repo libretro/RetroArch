@@ -15,7 +15,7 @@
 
 #include "glslang.hpp"
 
-#include "ShaderLang.h"
+#include "glslang/glslang/Public/ShaderLang.h"
 #include "GlslangToSpv.h"
 #include <vector>
 #include <iostream>
