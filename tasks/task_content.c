@@ -978,33 +978,33 @@ static bool task_load_content(content_ctx_info_t *content_info,
             path_resolve_realpath(tmp, sizeof(tmp));
       }
 
-      if (info && *tmp)
+      if (info && !string_is_empty(tmp))
       {
-         const char *core_path     = NULL;
-         const char *core_name     = NULL;
-         playlist_t *playlist_tmp  = g_defaults.content_history;
+         const char *core_path      = NULL;
+         const char *core_name      = NULL;
+         playlist_t *playlist_tmp   = g_defaults.content_history;
 
          switch (path_is_media_type(tmp))
          {
             case RARCH_CONTENT_MOVIE:
 #ifdef HAVE_FFMPEG
-               playlist_tmp = g_defaults.video_history;
-               core_name = "movieplayer";
-               core_path = "builtin";
+               playlist_tmp         = g_defaults.video_history;
+               core_name            = "movieplayer";
+               core_path            = "builtin";
 #endif
                break;
             case RARCH_CONTENT_MUSIC:
 #ifdef HAVE_FFMPEG
-               playlist_tmp = g_defaults.music_history;
-               core_name = "musicplayer";
-               core_path = "builtin";
+               playlist_tmp         = g_defaults.music_history;
+               core_name            = "musicplayer";
+               core_path            = "builtin";
 #endif
                break;
             case RARCH_CONTENT_IMAGE:
 #ifdef HAVE_IMAGEVIEWER
-               playlist_tmp = g_defaults.image_history;
-               core_name = "imageviewer";
-               core_path = "builtin";
+               playlist_tmp         = g_defaults.image_history;
+               core_name            = "imageviewer";
+               core_path            = "builtin";
 #endif
                break;
             default:
@@ -1324,7 +1324,6 @@ bool task_push_content_load_default(
          break;
    }
 
-   RARCH_LOG("MODE: %d\n", mode);
    /* Load content */
    switch (mode)
    {
