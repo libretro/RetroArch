@@ -355,7 +355,8 @@ static bool load_content_from_compressed_archive(
       struct string_list *temporary_content,
       struct retro_game_info *info, unsigned i,
       struct string_list* additional_path_allocs,
-      bool need_fullpath, const char *path)
+      bool need_fullpath, const char *path,
+      char *error_string)
 {
    union string_list_elem_attr attributes;
    char new_path[PATH_MAX_LENGTH];
@@ -399,9 +400,11 @@ static bool load_content_from_compressed_archive(
 
    if (!ret || new_path_len < 0)
    {
-      RARCH_ERR("%s \"%s\".\n",
+      char str[1024];
+      snprintf(str, sizeof(str), "%s \"%s\".\n",
             msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
             path);
+      error_string = strdup(str);
       return false;
    }
 
@@ -415,11 +418,12 @@ static bool load_content_from_compressed_archive(
    return true;
 }
 
-static bool init_content_file_extract(
+static bool content_file_init_extract(
       struct string_list *temporary_content,
       struct string_list *content,
       const struct retro_subsystem_info *special,
-      union string_list_elem_attr *attr
+      union string_list_elem_attr *attr,
+      char *error_string
       )
 {
    unsigned i;
@@ -463,13 +467,12 @@ static bool init_content_file_extract(
                settings->directory.cache : NULL,
                new_path, sizeof(new_path)))
       {
-         RARCH_ERR("%s: %s.\n",
+         char str[1024];
+
+         snprintf(str, sizeof(str), "%s: %s.\n",
                msg_hash_to_str(
                   MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
                temp_content);
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE)
-               , 2, 180, true);
          return false;
       }
 
@@ -501,6 +504,7 @@ static bool load_content(
 {
    unsigned i;
    retro_ctx_load_content_info_t load_info;
+   char *error_string                         = NULL;
    struct string_list *additional_path_allocs = string_list_new();
 
    if (!additional_path_allocs)
@@ -551,7 +555,8 @@ static bool load_content(
          if (!load_content_from_compressed_archive(
                   temporary_content,
                   &info[i], i,
-                  additional_path_allocs, need_fullpath, path))
+                  additional_path_allocs, need_fullpath, path,
+                  error_string))
             goto error;
 #endif
       }
@@ -585,6 +590,12 @@ static bool load_content(
    return true;
 
 error:
+   if (error_string)
+   {
+      RARCH_ERR("%s\n", error_string);
+      free(error_string);
+   }
+
    if (additional_path_allocs)
       string_list_free(additional_path_allocs);
    
@@ -653,7 +664,8 @@ error:
 static bool content_file_init_set_attribs(
       struct string_list *temporary_content,
       struct string_list *content,
-      const struct retro_subsystem_info *special)
+      const struct retro_subsystem_info *special,
+      char *error_string)
 {
    union string_list_elem_attr attr;
    struct string_list *subsystem    = path_get_subsystem_list();
@@ -700,8 +712,10 @@ static bool content_file_init_set_attribs(
 
 #ifdef HAVE_COMPRESSION
    /* Try to extract all content we're going to load if appropriate. */
-   init_content_file_extract(temporary_content,
-            content, special, &attr);
+   if (!content_file_init_extract(temporary_content,
+            content, special, &attr, error_string))
+   {
+   }
 #endif
    return true;
 }
@@ -714,7 +728,8 @@ static bool content_file_init_set_attribs(
  *
  * Returns : true if successful, otherwise false.
  **/
-static bool content_file_init(struct string_list *temporary_content)
+static bool content_file_init(struct string_list *temporary_content,
+      char *error_string)
 {
    struct retro_game_info               *info = NULL;
    struct string_list *content                = NULL;
@@ -730,7 +745,7 @@ static bool content_file_init(struct string_list *temporary_content)
       goto error;
 
    if (!content_file_init_set_attribs(temporary_content,
-            content, special))
+            content, special, error_string))
       goto error;
 
    info                   = (struct retro_game_info*)
@@ -811,20 +826,29 @@ void content_deinit(void)
  * selected libretro core. */
 bool content_init(void)
 {
-   temporary_content = string_list_new();
-   if (!temporary_content)
-      goto error;
+   bool ret           = true;
+   char *error_string = NULL;
+   temporary_content  = string_list_new();
 
-   if (!content_file_init(temporary_content))
-      goto error;
+   if (!temporary_content || !content_file_init(temporary_content, error_string))
+   {
+      content_deinit();
+
+      ret = false;
+      goto end;
+   }
 
    _content_is_inited = true;
 
-   return true;
+end:
+   if (error_string)
+   {
+      RARCH_ERR("%s\n", error_string);
+      runloop_msg_queue_push(error_string, 2, ret ? 1 : 180, true);
+      free(error_string);
+   }
 
-error:
-   content_deinit();
-   return false;
+   return ret;
 }
 
 #ifdef HAVE_MENU
@@ -873,7 +897,8 @@ static void menu_content_environment_get(int *argc, char *argv[],
  **/
 static bool task_load_content(content_ctx_info_t *content_info,
       bool launched_from_menu,
-      enum content_mode_load mode)
+      enum content_mode_load mode,
+      char *error_string)
 {
    char name[255];
    char msg[255];
@@ -897,7 +922,7 @@ static bool task_load_content(content_ctx_info_t *content_info,
          snprintf(msg, sizeof(msg), "%s %s ...",
                msg_hash_to_str(MSG_LOADING),
                name);
-         runloop_msg_queue_push(msg, 2, 1, true);
+         error_string = strdup(msg);
       }
    }
 
@@ -983,14 +1008,15 @@ error:
          snprintf(msg, sizeof(msg), "%s %s.\n",
                msg_hash_to_str(MSG_FAILED_TO_LOAD),
                name);
-         runloop_msg_queue_push(msg, 2, 90, true);
+         error_string = strdup(msg);
       }
    }
    return false;
 }
 
 static bool command_event_cmd_exec(const char *data,
-      enum content_mode_load mode)
+      enum content_mode_load mode,
+      char *error_string)
 {
 #if defined(HAVE_DYNAMIC)
    content_ctx_info_t content_info;
@@ -1013,13 +1039,8 @@ static bool command_event_cmd_exec(const char *data,
    }
 
 #if defined(HAVE_DYNAMIC)
-   if (!task_load_content(&content_info, false, mode))
-   {
-#ifdef HAVE_MENU
-      rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
-#endif
+   if (!task_load_content(&content_info, false, mode, error_string))
       return false;
-   }
 #else
    frontend_driver_set_fork(FRONTEND_FORK_CORE_WITH_ARGS);
 #endif
@@ -1065,6 +1086,7 @@ bool task_push_content_load_default(
       void *user_data)
 {
    bool loading_from_menu = false;
+   char *error_string     = NULL;
    settings_t *settings   = config_get_ptr();
 
    if (!content_info)
@@ -1179,8 +1201,8 @@ bool task_push_content_load_default(
    switch (mode)
    {
       case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
-         if (!command_event_cmd_exec(fullpath, mode))
-            return false;
+         if (!command_event_cmd_exec(fullpath, mode, error_string))
+            goto error;
 #ifndef HAVE_DYNAMIC
          runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
 #ifdef HAVE_MENU
@@ -1255,7 +1277,7 @@ bool task_push_content_load_default(
    switch (mode)
    {
       case CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE:
-         if (!task_load_content(content_info, loading_from_menu, mode))
+         if (!task_load_content(content_info, loading_from_menu, mode, error_string))
             goto error;
          break;
       case CONTENT_MODE_LOAD_FROM_CLI:
@@ -1279,12 +1301,12 @@ bool task_push_content_load_default(
                settings->check_firmware_before_loading)
                goto skip;
 
-         if (!task_load_content(content_info, loading_from_menu, mode))
+         if (!task_load_content(content_info, loading_from_menu, mode, error_string))
             goto error;
          break;
 #ifndef HAVE_DYNAMIC
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
-         command_event_cmd_exec(path_get(RARCH_PATH_CONTENT), mode);
+         command_event_cmd_exec(path_get(RARCH_PATH_CONTENT), mode, error_string);
          command_event(CMD_EVENT_QUIT, NULL);
          break;
 #endif
@@ -1310,9 +1332,17 @@ bool task_push_content_load_default(
    return true;
 
 error:
+
+   if (error_string)
+   {
+      runloop_msg_queue_push(error_string, 2, 90, true);
+      free(error_string);
+   }
+
 #ifdef HAVE_MENU
    switch (mode)
    {
+      case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
       case CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_NOTHING_WITH_VIDEO_PROCESSOR_CORE_FROM_MENU:
@@ -1326,6 +1356,7 @@ error:
          break;
    }
 #endif
+
    return false;
 
 skip:
