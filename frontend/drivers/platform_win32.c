@@ -8,7 +8,8 @@
  * RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
  * PURPOSE. See the GNU General Public License for more details.
- * * You should have received a copy of the GNU General Public License along with RetroArch.
+ *
+ * You should have received a copy of the GNU General Public License along with RetroArch.
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
@@ -16,11 +17,11 @@
 #include <stddef.h>
 #include <string.h>
 
+#include <retro_miscellaneous.h>
 #include <windows.h>
 
 #include <boolean.h>
 #include <compat/strl.h>
-#include <retro_miscellaneous.h>
 #include <dynamic/dylib.h>
 #include <lists/file_list.h>
 #include <file/file_path.h>
@@ -167,6 +168,7 @@ static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
          }
          break;
       default:
+         sprintf(s, "Windows %i.%i", *major, *minor);
          break;
    }
 }
@@ -175,7 +177,7 @@ static void frontend_win32_init(void *data)
 {
 	typedef BOOL (WINAPI *isProcessDPIAwareProc)();
 	typedef BOOL (WINAPI *setProcessDPIAwareProc)();
-	HMODULE handle                         = GetModuleHandle(TEXT("User32.dll"));
+	HMODULE handle                         = GetModuleHandle("User32.dll");
 	isProcessDPIAwareProc  isDPIAwareProc  = (isProcessDPIAwareProc)dylib_proc(handle, "IsProcessDPIAware");
 	setProcessDPIAwareProc setDPIAwareProc = (setProcessDPIAwareProc)dylib_proc(handle, "SetProcessDPIAware");
 
@@ -234,7 +236,10 @@ static int frontend_win32_parse_drive_list(void *data)
       drive[0] = 'A' + i;
       if (drives & (1 << i))
          menu_entries_append_enum(list,
-               drive, "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+               drive,
+               msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+               MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+               MENU_SETTING_ACTION, 0, 0);
    }
 #endif
 
@@ -247,55 +252,51 @@ static void frontend_win32_environment_get(int *argc, char *argv[],
    gfx_set_dwm();
 
    fill_pathname_expand_special(g_defaults.dir.assets,
-      ":/assets", sizeof(g_defaults.dir.assets));
+      ":\\assets", sizeof(g_defaults.dir.assets));
    fill_pathname_expand_special(g_defaults.dir.audio_filter,
-      ":/filters/audio", sizeof(g_defaults.dir.audio_filter));
+      ":\\filters\\audio", sizeof(g_defaults.dir.audio_filter));
    fill_pathname_expand_special(g_defaults.dir.video_filter,
-      ":/filters/video", sizeof(g_defaults.dir.video_filter));
+      ":\\filters\\video", sizeof(g_defaults.dir.video_filter));
    fill_pathname_expand_special(g_defaults.dir.cheats,
-      ":/cheats", sizeof(g_defaults.dir.cheats));
+      ":\\cheats", sizeof(g_defaults.dir.cheats));
    fill_pathname_expand_special(g_defaults.dir.database,
-      ":/database/rdb", sizeof(g_defaults.dir.database));
+      ":\\database\\rdb", sizeof(g_defaults.dir.database));
    fill_pathname_expand_special(g_defaults.dir.cursor,
-   ":/database/cursors", sizeof(g_defaults.dir.cursor));
+      ":\\database\\cursors", sizeof(g_defaults.dir.cursor));
    fill_pathname_expand_special(g_defaults.dir.playlist,
-      ":/playlists", sizeof(g_defaults.dir.assets));
+      ":\\playlists", sizeof(g_defaults.dir.assets));
    fill_pathname_expand_special(g_defaults.dir.menu_config,
-      ":/config", sizeof(g_defaults.dir.menu_config));
+      ":\\config", sizeof(g_defaults.dir.menu_config));
    fill_pathname_expand_special(g_defaults.dir.remap,
-      ":/config/remaps", sizeof(g_defaults.dir.remap));
+      ":\\config\\remaps", sizeof(g_defaults.dir.remap));
    fill_pathname_expand_special(g_defaults.dir.wallpapers,
-      ":/assets/wallpapers", sizeof(g_defaults.dir.wallpapers));
+      ":\\assets\\wallpapers", sizeof(g_defaults.dir.wallpapers));
    fill_pathname_expand_special(g_defaults.dir.thumbnails,
-      ":/thumbnails", sizeof(g_defaults.dir.thumbnails));
+      ":\\thumbnails", sizeof(g_defaults.dir.thumbnails));
    fill_pathname_expand_special(g_defaults.dir.overlay,
-      ":/overlays", sizeof(g_defaults.dir.overlay));
-   fill_pathname_expand_special(g_defaults.dir.osk_overlay,
-      ":/overlays", sizeof(g_defaults.dir.osk_overlay));
-   fill_pathname_expand_special(g_defaults.dir.osk_overlay,
-      ":/overlays", sizeof(g_defaults.dir.osk_overlay));
+      ":\\overlays", sizeof(g_defaults.dir.overlay));
    fill_pathname_expand_special(g_defaults.dir.core,
-      ":/cores", sizeof(g_defaults.dir.core));
+      ":\\cores", sizeof(g_defaults.dir.core));
    fill_pathname_expand_special(g_defaults.dir.core_info,
-      ":/info", sizeof(g_defaults.dir.core_info));
+      ":\\info", sizeof(g_defaults.dir.core_info));
    fill_pathname_expand_special(g_defaults.dir.autoconfig,
-      ":/autoconfig", sizeof(g_defaults.dir.autoconfig));
+      ":\\autoconfig", sizeof(g_defaults.dir.autoconfig));
    fill_pathname_expand_special(g_defaults.dir.shader,
-      ":/shaders", sizeof(g_defaults.dir.shader));
+      ":\\shaders", sizeof(g_defaults.dir.shader));
    fill_pathname_expand_special(g_defaults.dir.core_assets,
-      ":/downloads", sizeof(g_defaults.dir.core_assets));
+      ":\\downloads", sizeof(g_defaults.dir.core_assets));
    fill_pathname_expand_special(g_defaults.dir.screenshot,
-      ":/screenshots", sizeof(g_defaults.dir.screenshot));
+      ":\\screenshots", sizeof(g_defaults.dir.screenshot));
 
 /* don't force this in the driver anymore, these will be handled by
    a dummy config file  so they can be reset to content dir
 
    fill_pathname_expand_special(g_defaults.dir.sram,
-      ":/saves", sizeof(g_defaults.dir.sram));
+      ":\\saves", sizeof(g_defaults.dir.sram));
    fill_pathname_expand_special(g_defaults.dir.savestate,
-      ":/states", sizeof(g_defaults.dir.savestate));
+      ":\\states", sizeof(g_defaults.dir.savestate));
    fill_pathname_expand_special(g_defaults.dir.system,
-      ":/system", sizeof(g_defaults.dir.system));
+      ":\\system", sizeof(g_defaults.dir.system));
 */
 #ifdef HAVE_MENU
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
@@ -323,22 +324,29 @@ static uint64_t frontend_win32_get_mem_used(void)
 static void frontend_win32_attach_console(void)
 {
 #ifdef _WIN32
+#if(_WIN32_WINNT >= 0x0500)
    if (!AttachConsole(ATTACH_PARENT_PROCESS))
    {
       AllocConsole();
       AttachConsole( GetCurrentProcessId()) ;
+      freopen( "CON", "w", stdout );
+      freopen( "CON", "w", stderr );
    }
-   freopen( "CON", "w", stdout );
-   freopen( "CON", "w", stderr );
+#endif
 #endif
 }
 
 static void frontend_win32_detach_console(void)
 {
 #if defined(_WIN32) && !defined(_XBOX)
-   HWND wnd = GetConsoleWindow();
-   FreeConsole();
-   PostMessage(wnd, WM_CLOSE, 0, 0);
+#if(_WIN32_WINNT >= 0x0500)
+   if (!AttachConsole(ATTACH_PARENT_PROCESS))
+   {
+      HWND wnd = GetConsoleWindow();
+      FreeConsole();
+      PostMessage(wnd, WM_CLOSE, 0, 0);
+   }
+#endif
 #endif
 }
 

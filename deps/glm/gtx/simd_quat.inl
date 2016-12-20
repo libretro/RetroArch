@@ -11,39 +11,20 @@
 namespace glm{
 namespace detail{
 
-
-//////////////////////////////////////
-// Debugging
-#if 0
-void print(__m128 v)
-{
-    GLM_ALIGN(16) float result[4];
-    _mm_store_ps(result, v);
-
-    printf("__m128:    %f %f %f %f\n", result[0], result[1], result[2], result[3]);
-}
-
-void print(const fvec4SIMD &v)
-{
-    printf("fvec4SIMD: %f %f %f %f\n", v.x, v.y, v.z, v.w);
-}
-#endif
-
-
 //////////////////////////////////////
 // Implicit basic constructors
 
-GLM_FUNC_QUALIFIER fquatSIMD::fquatSIMD()
+inline fquatSIMD::fquatSIMD()
 #ifdef GLM_SIMD_ENABLE_DEFAULT_INIT
     : Data(_mm_set_ps(1.0f, 0.0f, 0.0f, 0.0f))
 #endif
 {}
 
-GLM_FUNC_QUALIFIER fquatSIMD::fquatSIMD(__m128 const & Data) :
+inline fquatSIMD::fquatSIMD(__m128 const & Data) :
 	Data(Data)
 {}
 
-GLM_FUNC_QUALIFIER fquatSIMD::fquatSIMD(fquatSIMD const & q) :
+inline fquatSIMD::fquatSIMD(fquatSIMD const & q) :
 	Data(q.Data)
 {}
 
@@ -51,15 +32,15 @@ GLM_FUNC_QUALIFIER fquatSIMD::fquatSIMD(fquatSIMD const & q) :
 //////////////////////////////////////
 // Explicit basic constructors
 
-GLM_FUNC_QUALIFIER fquatSIMD::fquatSIMD(float const & w, float const & x, float const & y, float const & z) :
+inline fquatSIMD::fquatSIMD(float const & w, float const & x, float const & y, float const & z) :
 	Data(_mm_set_ps(w, z, y, x))
 {}
 
-GLM_FUNC_QUALIFIER fquatSIMD::fquatSIMD(quat const & q) :
+inline fquatSIMD::fquatSIMD(quat const & q) :
 	Data(_mm_set_ps(q.w, q.z, q.y, q.x))
 {}
 
-GLM_FUNC_QUALIFIER fquatSIMD::fquatSIMD(vec3 const & eulerAngles)
+inline fquatSIMD::fquatSIMD(vec3 const & eulerAngles)
 {
     vec3 c = glm::cos(eulerAngles * 0.5f);
 	vec3 s = glm::sin(eulerAngles * 0.5f);
@@ -75,19 +56,19 @@ GLM_FUNC_QUALIFIER fquatSIMD::fquatSIMD(vec3 const & eulerAngles)
 //////////////////////////////////////
 // Unary arithmetic operators
 
-GLM_FUNC_QUALIFIER fquatSIMD& fquatSIMD::operator=(fquatSIMD const & q)
+inline fquatSIMD& fquatSIMD::operator=(fquatSIMD const & q)
 {
     this->Data = q.Data;
     return *this;
 }
 
-GLM_FUNC_QUALIFIER fquatSIMD& fquatSIMD::operator*=(float const & s)
+inline fquatSIMD& fquatSIMD::operator*=(float const & s)
 {
 	this->Data = _mm_mul_ps(this->Data, _mm_set_ps1(s));
 	return *this;
 }
 
-GLM_FUNC_QUALIFIER fquatSIMD& fquatSIMD::operator/=(float const & s)
+inline fquatSIMD& fquatSIMD::operator/=(float const & s)
 {
 	this->Data = _mm_div_ps(Data, _mm_set1_ps(s));
 	return *this;
@@ -96,19 +77,19 @@ GLM_FUNC_QUALIFIER fquatSIMD& fquatSIMD::operator/=(float const & s)
 
 
 // negate operator
-GLM_FUNC_QUALIFIER fquatSIMD operator- (fquatSIMD const & q)
+inline fquatSIMD operator- (fquatSIMD const & q)
 {
     return fquatSIMD(_mm_mul_ps(q.Data, _mm_set_ps(-1.0f, -1.0f, -1.0f, -1.0f)));
 }
 
 // operator+
-GLM_FUNC_QUALIFIER fquatSIMD operator+ (fquatSIMD const & q1, fquatSIMD const & q2)
+inline fquatSIMD operator+ (fquatSIMD const & q1, fquatSIMD const & q2)
 {
 	return fquatSIMD(_mm_add_ps(q1.Data, q2.Data));
 }
 
 //operator*
-GLM_FUNC_QUALIFIER fquatSIMD operator* (fquatSIMD const & q1, fquatSIMD const & q2)
+inline fquatSIMD operator* (fquatSIMD const & q1, fquatSIMD const & q2)
 {
     // SSE2 STATS:
     //    11 shuffle
@@ -170,7 +151,7 @@ GLM_FUNC_QUALIFIER fquatSIMD operator* (fquatSIMD const & q1, fquatSIMD const & 
     return detail::fquatSIMD(w, x, y, z);
 }
 
-GLM_FUNC_QUALIFIER fvec4SIMD operator* (fquatSIMD const & q, fvec4SIMD const & v)
+inline fvec4SIMD operator* (fquatSIMD const & q, fvec4SIMD const & v)
 {
     static const __m128 two = _mm_set1_ps(2.0f);
 
@@ -192,24 +173,24 @@ GLM_FUNC_QUALIFIER fvec4SIMD operator* (fquatSIMD const & q, fvec4SIMD const & v
     return _mm_add_ps(v.Data, _mm_add_ps(uv, uuv));
 }
 
-GLM_FUNC_QUALIFIER fvec4SIMD operator* (fvec4SIMD const & v, fquatSIMD const & q)
+inline fvec4SIMD operator* (fvec4SIMD const & v, fquatSIMD const & q)
 {
 	return glm::inverse(q) * v;
 }
 
-GLM_FUNC_QUALIFIER fquatSIMD operator* (fquatSIMD const & q, float s)
+inline fquatSIMD operator* (fquatSIMD const & q, float s)
 {
 	return fquatSIMD(_mm_mul_ps(q.Data, _mm_set1_ps(s)));
 }
 
-GLM_FUNC_QUALIFIER fquatSIMD operator* (float s, fquatSIMD const & q)
+inline fquatSIMD operator* (float s, fquatSIMD const & q)
 {
 	return fquatSIMD(_mm_mul_ps(_mm_set1_ps(s), q.Data));
 }
 
 
 //operator/
-GLM_FUNC_QUALIFIER fquatSIMD operator/ (fquatSIMD const & q, float s)
+inline fquatSIMD operator/ (fquatSIMD const & q, float s)
 {
 	return fquatSIMD(_mm_div_ps(q.Data, _mm_set1_ps(s)));
 }
@@ -218,7 +199,7 @@ GLM_FUNC_QUALIFIER fquatSIMD operator/ (fquatSIMD const & q, float s)
 }//namespace detail
 
 
-GLM_FUNC_QUALIFIER quat quat_cast
+inline quat quat_cast
 (
 	detail::fquatSIMD const & x
 )
@@ -230,7 +211,7 @@ GLM_FUNC_QUALIFIER quat quat_cast
 }
 
 template <typename T>
-GLM_FUNC_QUALIFIER detail::fquatSIMD quatSIMD_cast_impl(const T m0[], const T m1[], const T m2[])
+inline detail::fquatSIMD quatSIMD_cast_impl(const T m0[], const T m1[], const T m2[])
 {
     T trace = m0[0] + m1[1] + m2[2] + T(1.0);
     if (trace > T(0))
@@ -285,7 +266,7 @@ GLM_FUNC_QUALIFIER detail::fquatSIMD quatSIMD_cast_impl(const T m0[], const T m1
     }
 }
 
-GLM_FUNC_QUALIFIER detail::fquatSIMD quatSIMD_cast
+inline detail::fquatSIMD quatSIMD_cast
 (
 	detail::fmat4x4SIMD const & m
 )
@@ -303,7 +284,7 @@ GLM_FUNC_QUALIFIER detail::fquatSIMD quatSIMD_cast
 }
 
 template <typename T, precision P>
-GLM_FUNC_QUALIFIER detail::fquatSIMD quatSIMD_cast
+inline detail::fquatSIMD quatSIMD_cast
 (
     detail::tmat4x4<T, P> const & m
 )
@@ -312,7 +293,7 @@ GLM_FUNC_QUALIFIER detail::fquatSIMD quatSIMD_cast
 }
 
 template <typename T, precision P>
-GLM_FUNC_QUALIFIER detail::fquatSIMD quatSIMD_cast
+inline detail::fquatSIMD quatSIMD_cast
 (
     detail::tmat3x3<T, P> const & m
 )
@@ -321,7 +302,7 @@ GLM_FUNC_QUALIFIER detail::fquatSIMD quatSIMD_cast
 }
 
 
-GLM_FUNC_QUALIFIER detail::fmat4x4SIMD mat4SIMD_cast
+inline detail::fmat4x4SIMD mat4SIMD_cast
 (
 	detail::fquatSIMD const & q
 )
@@ -376,7 +357,7 @@ GLM_FUNC_QUALIFIER detail::fmat4x4SIMD mat4SIMD_cast
     return result;
 }
 
-GLM_FUNC_QUALIFIER mat4 mat4_cast
+inline mat4 mat4_cast
 (
 	detail::fquatSIMD const & q
 )
@@ -386,7 +367,7 @@ GLM_FUNC_QUALIFIER mat4 mat4_cast
 
 
 
-GLM_FUNC_QUALIFIER float length
+inline float length
 (
 	detail::fquatSIMD const & q
 )
@@ -394,7 +375,7 @@ GLM_FUNC_QUALIFIER float length
     return glm::sqrt(dot(q, q));
 }
 
-GLM_FUNC_QUALIFIER detail::fquatSIMD normalize
+inline detail::fquatSIMD normalize
 (
 	detail::fquatSIMD const & q
 )
@@ -402,7 +383,7 @@ GLM_FUNC_QUALIFIER detail::fquatSIMD normalize
     return _mm_mul_ps(q.Data, _mm_set1_ps(1.0f / length(q)));
 }
 
-GLM_FUNC_QUALIFIER float dot
+inline float dot
 (
 	detail::fquatSIMD const & q1,
 	detail::fquatSIMD const & q2
@@ -414,7 +395,7 @@ GLM_FUNC_QUALIFIER float dot
     return result;
 }
 
-GLM_FUNC_QUALIFIER detail::fquatSIMD mix
+inline detail::fquatSIMD mix
 (
 	detail::fquatSIMD const & x, 
 	detail::fquatSIMD const & y, 
@@ -440,7 +421,7 @@ GLM_FUNC_QUALIFIER detail::fquatSIMD mix
     }
 }
 
-GLM_FUNC_QUALIFIER detail::fquatSIMD lerp
+inline detail::fquatSIMD lerp
 (
 	detail::fquatSIMD const & x, 
 	detail::fquatSIMD const & y, 
@@ -454,7 +435,7 @@ GLM_FUNC_QUALIFIER detail::fquatSIMD lerp
     return _mm_add_ps(x.Data, _mm_mul_ps(_mm_set1_ps(a), _mm_sub_ps(y.Data, x.Data)));
 }
 
-GLM_FUNC_QUALIFIER detail::fquatSIMD slerp
+inline detail::fquatSIMD slerp
 (
 	detail::fquatSIMD const & x, 
 	detail::fquatSIMD const & y, 
@@ -492,7 +473,7 @@ GLM_FUNC_QUALIFIER detail::fquatSIMD slerp
 }
 
 
-GLM_FUNC_QUALIFIER detail::fquatSIMD fastMix
+inline detail::fquatSIMD fastMix
 (
 	detail::fquatSIMD const & x, 
 	detail::fquatSIMD const & y, 
@@ -520,7 +501,7 @@ GLM_FUNC_QUALIFIER detail::fquatSIMD fastMix
     }
 }
 
-GLM_FUNC_QUALIFIER detail::fquatSIMD fastSlerp
+inline detail::fquatSIMD fastSlerp
 (
 	detail::fquatSIMD const & x, 
 	detail::fquatSIMD const & y, 
@@ -558,7 +539,7 @@ GLM_FUNC_QUALIFIER detail::fquatSIMD fastSlerp
 
 
 
-GLM_FUNC_QUALIFIER detail::fquatSIMD conjugate
+inline detail::fquatSIMD conjugate
 (
 	detail::fquatSIMD const & q
 )
@@ -566,7 +547,7 @@ GLM_FUNC_QUALIFIER detail::fquatSIMD conjugate
 	return detail::fquatSIMD(_mm_mul_ps(q.Data, _mm_set_ps(1.0f, -1.0f, -1.0f, -1.0f)));
 }
 
-GLM_FUNC_QUALIFIER detail::fquatSIMD inverse
+inline detail::fquatSIMD inverse
 (
 	detail::fquatSIMD const & q
 )
@@ -575,7 +556,7 @@ GLM_FUNC_QUALIFIER detail::fquatSIMD inverse
 }
 
 
-GLM_FUNC_QUALIFIER detail::fquatSIMD angleAxisSIMD
+inline detail::fquatSIMD angleAxisSIMD
 (
 	float const & angle,
 	vec3 const & v
@@ -596,7 +577,7 @@ GLM_FUNC_QUALIFIER detail::fquatSIMD angleAxisSIMD
 		v.x * s);
 }
 
-GLM_FUNC_QUALIFIER detail::fquatSIMD angleAxisSIMD
+inline detail::fquatSIMD angleAxisSIMD
 (
 	float const & angle, 
 	float const & x, 
@@ -608,7 +589,7 @@ GLM_FUNC_QUALIFIER detail::fquatSIMD angleAxisSIMD
 }
 
 
-GLM_FUNC_QUALIFIER __m128 fastSin(__m128 x)
+inline __m128 fastSin(__m128 x)
 {
     static const __m128 c0 = _mm_set1_ps(0.16666666666666666666666666666667f);
     static const __m128 c1 = _mm_set1_ps(0.00833333333333333333333333333333f);

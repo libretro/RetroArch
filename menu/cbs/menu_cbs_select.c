@@ -24,8 +24,6 @@
 #include "../menu_cbs.h"
 #include "../menu_setting.h"
 
-#include "../../runloop.h"
-
 #ifndef BIND_ACTION_SELECT
 #define BIND_ACTION_SELECT(cbs, name) \
    cbs->action_select = name; \
@@ -61,7 +59,7 @@ static int action_select_default(const char *path, const char *label, unsigned t
     
    if (cbs->setting)
    {
-      switch (cbs->setting->type)
+      switch (setting_get_type(cbs->setting))
       {
          case ST_BOOL:
          case ST_INT:

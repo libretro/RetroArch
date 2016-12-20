@@ -93,8 +93,8 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
    NULL
 };
 
-static const gfx_ctx_driver_t *current_video_context = NULL;
-static void *video_context_data                      = NULL;
+const gfx_ctx_driver_t *current_video_context = NULL;
+void *video_context_data                      = NULL;
 
 /**
  * find_video_context_driver_driver_index:
@@ -268,40 +268,39 @@ const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
 
 bool video_context_driver_check_window(gfx_ctx_size_t *size_data)
 {
-   uint64_t       *frame_count = NULL;
-   frame_count                 = video_driver_get_frame_count_ptr();
+   if (     video_context_data 
+         && current_video_context 
+         && current_video_context->check_window)
+   {
+      current_video_context->check_window(video_context_data,
+            size_data->quit,
+            size_data->resize,
+            size_data->width,
+            size_data->height, ((unsigned int)*video_driver_get_frame_count_ptr()));
+      return true;
+   }
 
-   if (!video_context_data || !size_data)
-      return false;
-   if (!current_video_context || !current_video_context->check_window)
-      return false;
-
-   current_video_context->check_window(video_context_data,
-         size_data->quit,
-         size_data->resize,
-         size_data->width,
-         size_data->height, (unsigned int)*frame_count);
-   return true;
+   return false;
 }
 
 bool video_context_driver_init_image_buffer(const video_info_t *data)
 {
-   if (!current_video_context || !current_video_context->image_buffer_init)
-      return false;
-   if (!current_video_context->image_buffer_init(video_context_data, data))
-      return false;
-   return true;
+   if (     current_video_context 
+         && current_video_context->image_buffer_init
+         && current_video_context->image_buffer_init(video_context_data, data))
+      return true;
+   return false;
 }
 
 bool video_context_driver_write_to_image_buffer(gfx_ctx_image_t *img)
 {
-   if (!current_video_context || !current_video_context->image_buffer_write)
-      return false;
-   if (!current_video_context->image_buffer_write(video_context_data,
+   if (     current_video_context
+         && current_video_context->image_buffer_write
+         && current_video_context->image_buffer_write(video_context_data,
             img->frame, img->width, img->height, img->pitch,
             img->rgb32, img->index, img->handle))
-      return false;
-   return true;
+      return true;
+   return false;
 }
 
 bool video_context_driver_get_video_output_prev(void)
@@ -332,10 +331,8 @@ bool video_context_driver_bind_hw_render(bool *enable)
 
 void video_context_driver_make_current(bool release)
 {
-   if (!current_video_context || !current_video_context->make_current)
-      return;
-
-   current_video_context->make_current(release);
+   if (current_video_context && current_video_context->make_current)
+      current_video_context->make_current(release);
 }
 
 bool video_context_driver_set(const gfx_ctx_driver_t *data)
@@ -351,31 +348,6 @@ void video_context_driver_destroy(void)
    current_video_context = NULL;
 }
 
-bool video_context_driver_update_window_title(void)
-{
-   if (!current_video_context || !current_video_context->update_window_title)
-      return false;
-   current_video_context->update_window_title(video_context_data);
-   return true;
-}
-
-bool video_context_driver_swap_buffers(void)
-{
-   if (!current_video_context || !current_video_context->swap_buffers)
-      return false;
-   current_video_context->swap_buffers(video_context_data);
-   return true;
-}
-
-bool video_context_driver_focus(void)
-{
-   if (!video_context_data || !current_video_context->has_focus)
-      return false;
-   if (!current_video_context->has_focus(video_context_data))
-      return false;
-   return true;
-}
-
 bool video_context_driver_translate_aspect(gfx_ctx_aspect_t *aspect)
 {
    if (!video_context_data || !aspect)
@@ -384,15 +356,6 @@ bool video_context_driver_translate_aspect(gfx_ctx_aspect_t *aspect)
       return false;
    *aspect->aspect = current_video_context->translate_aspect(
          video_context_data, aspect->width, aspect->height);
-   return true;
-}
-
-bool video_context_driver_has_windowed(void)
-{
-   if (!video_context_data)
-      return false;
-   if (!current_video_context->has_windowed(video_context_data))
-      return false;
    return true;
 }
 
@@ -435,13 +398,13 @@ bool video_context_driver_get_proc_address(gfx_ctx_proc_address_t *proc)
 
 bool video_context_driver_get_metrics(gfx_ctx_metrics_t *metrics)
 {
-   if (!current_video_context || !current_video_context->get_metrics)
-      return false;
-   if (!current_video_context->get_metrics(video_context_data,
+   if (     current_video_context 
+         && current_video_context->get_metrics
+         && current_video_context->get_metrics(video_context_data,
             metrics->type,
             metrics->value))
-      return false;
-   return true;
+      return true;
+   return false;
 }
 
 bool video_context_driver_input_driver(gfx_ctx_input_t *inp)
@@ -455,12 +418,12 @@ bool video_context_driver_input_driver(gfx_ctx_input_t *inp)
 
 bool video_context_driver_suppress_screensaver(bool *bool_data)
 {
-   if (!video_context_data || !current_video_context)
-      return false;
-   if (!current_video_context->suppress_screensaver(
+   if (     video_context_data 
+         && current_video_context
+         && current_video_context->suppress_screensaver(
             video_context_data, *bool_data))
-      return false;
-   return true;
+      return true;
+   return false;
 }
 
 bool video_context_driver_get_ident(gfx_ctx_ident_t *ident)

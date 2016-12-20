@@ -207,9 +207,6 @@ static void apple_gamecontroller_joypad_destroy(void)
 
 static bool apple_gamecontroller_joypad_button(unsigned port, uint16_t joykey)
 {
-   if (joykey == NO_BTN)
-      return false;
-
    /* Check hat. */
    if (GET_HAT_DIR(joykey))
       return false;

@@ -27,7 +27,7 @@
 #include "../../gfx/video_context_driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
-#include "../input_autodetect.h"
+#include "../../tasks/tasks_internal.h"
 #include "../input_config.h"
 #include "../input_joypad_driver.h"
 #include "../input_keymaps.h"
@@ -45,13 +45,12 @@ typedef struct sdl_input
 
 static void *sdl_input_init(void)
 {
-   settings_t *settings;
-   sdl_input_t *sdl;
-   input_keymaps_init_keyboard_lut(rarch_key_map_sdl);
-   settings = config_get_ptr();
-   sdl = (sdl_input_t*)calloc(1, sizeof(*sdl));
+   settings_t *settings = config_get_ptr();
+   sdl_input_t     *sdl = (sdl_input_t*)calloc(1, sizeof(*sdl));
    if (!sdl)
       return NULL;
+
+   input_keymaps_init_keyboard_lut(rarch_key_map_sdl);
 
    sdl->joypad = input_joypad_init_driver(settings->input.joypad_driver, sdl);
 
@@ -172,16 +171,12 @@ static int16_t sdl_mouse_device_state(sdl_input_t *sdl, unsigned id)
 static int16_t sdl_pointer_device_state(sdl_input_t *sdl,
       unsigned idx, unsigned id, bool screen)
 {
-   bool valid, inside;
+   bool inside              = false;
+   struct video_viewport vp = {0};
    int16_t res_x = 0, res_y = 0, res_screen_x = 0, res_screen_y = 0;
 
-   if (idx != 0)
-      return 0;
-
-   valid = input_translate_coord_viewport(sdl->mouse_abs_x, sdl->mouse_abs_y,
-         &res_x, &res_y, &res_screen_x, &res_screen_y);
-
-   if (!valid)
+   if (!(video_driver_translate_coord_viewport_wrap(&vp, sdl->mouse_abs_x, sdl->mouse_abs_y,
+         &res_x, &res_y, &res_screen_x, &res_screen_y)))
       return 0;
 
    if (screen)
@@ -247,7 +242,9 @@ static int16_t sdl_input_state(void *data_, const struct retro_keybind **binds,
          return sdl_mouse_device_state(data, id);
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
-         return sdl_pointer_device_state(data, idx, id, device == RARCH_DEVICE_POINTER_SCREEN);
+         if (idx == 0)
+            return sdl_pointer_device_state(data, idx, id, device == RARCH_DEVICE_POINTER_SCREEN);
+         break;
       case RETRO_DEVICE_KEYBOARD:
          return sdl_keyboard_device_state(data, id);
       case RETRO_DEVICE_LIGHTGUN:

@@ -16,7 +16,7 @@
 
 #include <stdint.h>
 
-#include "../input_autodetect.h"
+#include "../../tasks/tasks_internal.h"
 
 #include "../../configuration.h"
 
@@ -72,18 +72,18 @@ static const char *psp_joypad_name(unsigned pad)
 
 static void psp_joypad_autodetect_add(unsigned autoconf_pad)
 {
-   settings_t *settings = config_get_ptr();
-   autoconfig_params_t params = {{0}};
-
-   strlcpy(settings->input.device_names[autoconf_pad],
-         psp_joypad_name(autoconf_pad),
-         sizeof(settings->input.device_names[autoconf_pad]));
+   autoconfig_params_t params;
 
    /* TODO - implement VID/PID? */
-   params.idx = autoconf_pad;
+   params.idx             = autoconf_pad;
+   params.display_name[0] = '\0';
+   params.vid             = 0;
+   params.pid             = 0;
+
    strlcpy(params.name, psp_joypad_name(autoconf_pad), sizeof(params.name));
    strlcpy(params.driver, psp_joypad.ident, sizeof(params.driver));
-   input_config_autoconfigure_joypad(&params);
+
+   input_autoconfigure_connect(&params);
 }
 
 static bool psp_joypad_init(void *data)
@@ -190,7 +190,7 @@ static void psp_joypad_poll(void)
          if (old_ctrl_info.port[player + 1] != SCE_CTRL_TYPE_UNPAIRED &&
                curr_ctrl_info.port[player + 1] == SCE_CTRL_TYPE_UNPAIRED) {
             memset(&actuators[player], 0, sizeof(SceCtrlActuator));
-            input_config_autoconfigure_disconnect(player, psp_joypad.ident);
+            input_autoconfigure_disconnect(player, psp_joypad.ident);
          }
 
          if (old_ctrl_info.port[player + 1] == SCE_CTRL_TYPE_UNPAIRED &&

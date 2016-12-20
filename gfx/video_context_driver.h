@@ -56,6 +56,7 @@ enum display_flags
    GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES
 };
 
+
 typedef void (*gfx_ctx_proc_t)(void);
 
 typedef struct gfx_ctx_driver
@@ -166,6 +167,7 @@ typedef struct gfx_ctx_driver
     * active for this thread. */
    void (*make_current)(bool release);
 } gfx_ctx_driver_t;
+
 
 typedef struct gfx_ctx_flags
 {
@@ -288,11 +290,15 @@ bool video_context_driver_set(const gfx_ctx_driver_t *data);
 
 void video_context_driver_destroy(void);
 
-bool video_context_driver_update_window_title(void);
+#define video_context_driver_update_window_title() \
+   if (current_video_context && current_video_context->update_window_title) \
+      current_video_context->update_window_title(video_context_data)
 
-bool video_context_driver_swap_buffers(void);
+#define video_context_driver_swap_buffers() \
+   if (current_video_context && current_video_context->swap_buffers) \
+      current_video_context->swap_buffers(video_context_data)
 
-bool video_context_driver_focus(void);
+#define video_context_driver_focus() ((video_context_data && current_video_context->has_focus && current_video_context->has_focus(video_context_data)) ? true : false)
 
 bool video_context_driver_get_video_output_size(gfx_ctx_size_t *size_data);
 
@@ -326,9 +332,13 @@ bool video_context_driver_translate_aspect(gfx_ctx_aspect_t *aspect);
 
 bool video_context_driver_input_driver(gfx_ctx_input_t *inp);
 
-bool video_context_driver_has_windowed(void);
+#define video_context_driver_has_windowed() ((video_context_data && current_video_context->has_windowed(video_context_data)) ? true : false)
 
 void video_context_driver_free(void);
+
+extern const gfx_ctx_driver_t *current_video_context;
+
+extern void *video_context_data;
 
 RETRO_END_DECLS
 

@@ -18,14 +18,7 @@
 #define __RETROARCH_RUNLOOP_H
 
 #include <boolean.h>
-#include <retro_miscellaneous.h>
 #include <retro_common_api.h>
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-#include "input/input_defines.h"
 
 #define runloop_cmd_triggered(trigger_input, id) (BIT64_GET(trigger_input, id))
 
@@ -55,6 +48,10 @@ enum runloop_ctl_state
    RUNLOOP_CTL_IS_OVERRIDES_ACTIVE,
    RUNLOOP_CTL_SET_OVERRIDES_ACTIVE,
    RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE,
+
+   RUNLOOP_CTL_IS_MISSING_BIOS,
+   RUNLOOP_CTL_SET_MISSING_BIOS,
+   RUNLOOP_CTL_UNSET_MISSING_BIOS,
 
    RUNLOOP_CTL_IS_GAME_OPTIONS_ACTIVE,
    RUNLOOP_CTL_SET_GAME_OPTIONS_ACTIVE,
@@ -135,27 +132,27 @@ typedef struct global
 {
    struct
    {
-      char savefile[PATH_MAX_LENGTH];
-      char savestate[PATH_MAX_LENGTH];
-      char cheatfile[PATH_MAX_LENGTH];
-      char ups[PATH_MAX_LENGTH];
-      char bps[PATH_MAX_LENGTH];
-      char ips[PATH_MAX_LENGTH];
-      char remapfile[PATH_MAX_LENGTH];
+      char savefile[4096];
+      char savestate[4096];
+      char cheatfile[4096];
+      char ups[4096];
+      char bps[4096];
+      char ips[4096];
+      char remapfile[4096];
    } name;
 
    /* Recording. */
    struct
    {
-      char path[PATH_MAX_LENGTH];
-      char config[PATH_MAX_LENGTH];
+      char path[4096];
+      char config[4096];
       unsigned width;
       unsigned height;
 
       size_t gpu_width;
       size_t gpu_height;
-      char output_dir[PATH_MAX_LENGTH];
-      char config_dir[PATH_MAX_LENGTH];
+      char output_dir[4096];
+      char config_dir[4096];
       bool use_output_dir;
    } record;
 
@@ -175,7 +172,7 @@ typedef struct global
          } resolutions;
 
          unsigned gamma_correction;
-         unsigned char flicker_filter_index;
+         unsigned int flicker_filter_index;
          unsigned char soft_filter_index;
          bool pal_enable;
          bool pal60_enable;
@@ -190,14 +187,6 @@ typedef struct global
       bool softfilter_enable;
    } console;
 } global_t;
-
-typedef struct runloop_ctx_msg_info
-{
-   const char *msg;
-   unsigned prio;
-   unsigned duration;
-   bool flush;
-} runloop_ctx_msg_info_t;
 
 global_t *global_get_ptr(void);
 
@@ -216,11 +205,6 @@ int runloop_iterate(unsigned *sleep_ms);
 
 void runloop_msg_queue_push(const char *msg, unsigned prio,
       unsigned duration, bool flush);
-
-char* runloop_msg_queue_pull(void);
-
-bool runloop_is_quit_confirm(void);
-void runloop_set_quit_confirm(bool on);
 
 bool runloop_ctl(enum runloop_ctl_state state, void *data);
 

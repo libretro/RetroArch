@@ -126,7 +126,8 @@ else LIBRETRO="-lretro"
 fi
 
 [ "$HAVE_DYNAMIC" = 'yes' ] || {
-   check_lib_cxx RETRO "$LIBRETRO" retro_init "$DYLIB" "Cannot find libretro."
+   #check_lib RETRO "$LIBRETRO" retro_init "$DYLIB" "Cannot find libretro, did you forget --with-libretro=\"-lretro\"?"
+   check_lib RETRO "$LIBRETRO" "$DYLIB" "Cannot find libretro, did you forget --with-libretro=\"-lretro\"?"
    add_define_make libretro "$LIBRETRO"
 }
 
@@ -182,6 +183,10 @@ if [ "$HAVE_NETWORKING" = 'yes' ]; then
    fi
    HAVE_NETWORK_CMD=yes
    HAVE_NETWORKGAMEPAD=yes
+
+   if [ "$HAVE_MINIUPNPC" != "no" ]; then
+      check_lib MINIUPNPC "-lminiupnpc"
+   fi
 else
    echo "Warning: All networking features have been disabled."
    HAVE_NETWORK_CMD='no'
@@ -205,6 +210,7 @@ if [ "$HAVE_DYLIB" = 'no' ] && [ "$HAVE_DYNAMIC" = 'yes' ]; then
 fi
 
 check_pkgconf ALSA alsa
+check_lib CACA -lcaca
 check_header OSS sys/soundcard.h
 check_header OSS_BSD soundcard.h
 check_lib OSS_LIB -lossaudio
@@ -389,6 +395,7 @@ check_pkgconf XCB xcb
 [ "$HAVE_X11" = "no" ] && HAVE_XEXT=no && HAVE_XF86VM=no && HAVE_XINERAMA=no && HAVE_XSHM=no
 
 check_pkgconf WAYLAND wayland-egl
+check_pkgconf WAYLAND_CURSOR wayland-cursor
 
 check_pkgconf XKBCOMMON xkbcommon 0.3.2
 check_pkgconf DBUS dbus-1

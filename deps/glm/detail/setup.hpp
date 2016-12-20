@@ -210,17 +210,6 @@
 #		define GLM_COMPILER GLM_COMPILER_INTEL
 #	endif
 
-// CUDA
-#elif defined(__CUDACC__)
-#	if !defined(CUDA_VERSION) && !defined(GLM_FORCE_CUDA)
-#		include <cuda.h>  // make sure version is defined since nvcc does not define it itself! 
-#	endif
-#	if CUDA_VERSION < 3000
-#		error "GLM requires CUDA 3.0 or higher"
-#	else
-#		define GLM_COMPILER GLM_COMPILER_CUDA
-#	endif
-
 // Visual C++
 #elif defined(_MSC_VER)
 #	if _MSC_VER < 1400
@@ -497,13 +486,6 @@
 // http://gcc.gnu.org/projects/cxx0x.html
 // http://msdn.microsoft.com/en-us/library/vstudio/hh567368(v=vs.120).aspx
 
-// N1720
-#define GLM_HAS_STATIC_ASSERT ( \
-	(GLM_LANG & GLM_LANG_CXX11_FLAG) || \
-	((GLM_LANG & GLM_LANG_CXX0X_FLAG) && (GLM_COMPILER & GLM_COMPILER_VC) && (GLM_COMPILER >= GLM_COMPILER_VC10)) || \
-	((GLM_LANG & GLM_LANG_CXX0X_FLAG) && (GLM_COMPILER & GLM_COMPILER_GCC) && (GLM_COMPILER >= GLM_COMPILER_GCC43)) || \
-	__has_feature(cxx_static_assert))
-
 // N1988
 #define GLM_HAS_EXTENDED_INTEGER_TYPE ( \
 	(GLM_LANG & GLM_LANG_CXX11_FLAG) || \
@@ -511,37 +493,12 @@
 	((GLM_LANG & GLM_LANG_CXX0X_FLAG) && (GLM_COMPILER & GLM_COMPILER_GCC) && (GLM_COMPILER >= GLM_COMPILER_GCC43)) || \
 	((GLM_LANG & GLM_LANG_CXX0X_FLAG) && (GLM_COMPILER & GLM_COMPILER_CLANG) && (GLM_COMPILER >= GLM_COMPILER_CLANG29)))
 
-// N2235
-#define GLM_HAS_CONSTEXPR ( \
-	(GLM_LANG & GLM_LANG_CXX11_FLAG) || \
-	((GLM_LANG & GLM_LANG_CXX0X_FLAG) && (GLM_COMPILER & GLM_COMPILER_GCC) && (GLM_COMPILER >= GLM_COMPILER_GCC46)) || \
-	__has_feature(cxx_constexpr))
-
 // N2672
 #define GLM_HAS_INITIALIZER_LISTS ( \
 	(GLM_LANG & GLM_LANG_CXX11_FLAG) || \
 	((GLM_LANG & GLM_LANG_CXX0X_FLAG) && ((GLM_COMPILER & GLM_COMPILER_VC) && (GLM_COMPILER >= GLM_COMPILER_VC12))) || \
 	((GLM_LANG & GLM_LANG_CXX0X_FLAG) && (GLM_COMPILER & GLM_COMPILER_GCC) && (GLM_COMPILER >= GLM_COMPILER_GCC44)) || \
 	__has_feature(cxx_generalized_initializers))
-
-// OpenMP
-#ifdef _OPENMP 
-#	if(GLM_COMPILER & GLM_COMPILER_GCC)
-#		if(GLM_COMPILER > GLM_COMPILER_GCC47)
-#			define GLM_HAS_OPENMP 31
-#		elif(GLM_COMPILER > GLM_COMPILER_GCC44)
-#			define GLM_HAS_OPENMP 30
-#		elif(GLM_COMPILER > GLM_COMPILER_GCC42)
-#			define GLM_HAS_OPENMP 25
-#		endif
-#	endif//(GLM_COMPILER & GLM_COMPILER_GCC)
-
-#	if(GLM_COMPILER & GLM_COMPILER_VC)
-#		if(GLM_COMPILER > GLM_COMPILER_VC8)
-#			define GLM_HAS_OPENMP 20
-#		endif
-#	endif//(GLM_COMPILER & GLM_COMPILER_GCC)
-#endif
 
 // Not standard
 #define GLM_HAS_ANONYMOUS_UNION (GLM_LANG & GLM_LANG_CXXMS_FLAG)
@@ -649,54 +606,18 @@
 //#define GLM_FORCE_RADIANS
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-// Static assert
-
-#if GLM_HAS_STATIC_ASSERT
-#	define GLM_STATIC_ASSERT(x, message) static_assert(x, message)
-#elif(defined(BOOST_STATIC_ASSERT))
-#	define GLM_STATIC_ASSERT(x, message) BOOST_STATIC_ASSERT(x)
-#elif(GLM_COMPILER & GLM_COMPILER_VC)
-#	define GLM_STATIC_ASSERT(x, message) typedef char __CASSERT__##__LINE__[(x) ? 1 : -1]
-#else
-#	define GLM_STATIC_ASSERT(x, message)
-#	define GLM_STATIC_ASSERT_NULL
-#endif//GLM_LANG
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
 // Qualifiers 
 
 // User defines: GLM_FORCE_INLINE GLM_FORCE_CUDA
 
-#if(defined(GLM_FORCE_CUDA) || (GLM_COMPILER & GLM_COMPILER_CUDA))
-#	define GLM_CUDA_FUNC_DEF __device__ __host__ 
-#	define GLM_CUDA_FUNC_DECL __device__ __host__ 
-#else
 #	define GLM_CUDA_FUNC_DEF
 #	define GLM_CUDA_FUNC_DECL
-#endif
 
 #if GLM_COMPILER & GLM_COMPILER_GCC
 #	define GLM_VAR_USED __attribute__ ((unused))
 #else
 #	define GLM_VAR_USED
 #endif
-
-#if(defined(GLM_FORCE_INLINE))
-#	if((GLM_COMPILER & GLM_COMPILER_VC) && (GLM_COMPILER >= GLM_COMPILER_VC8))
-#		define GLM_INLINE __forceinline
-#	elif((GLM_COMPILER & GLM_COMPILER_GCC) && (GLM_COMPILER >= GLM_COMPILER_GCC34))
-#		define GLM_INLINE __attribute__((always_inline)) inline
-#	elif(GLM_COMPILER & GLM_COMPILER_CLANG)
-#		define GLM_INLINE __attribute__((always_inline))
-#	else
-#		define GLM_INLINE inline
-#	endif//GLM_COMPILER
-#else
-#	define GLM_INLINE inline
-#endif//defined(GLM_FORCE_INLINE)
-
-#define GLM_FUNC_DECL GLM_CUDA_FUNC_DECL
-#define GLM_FUNC_QUALIFIER GLM_CUDA_FUNC_DEF GLM_INLINE
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Swizzle operators
@@ -764,11 +685,5 @@ namespace glm
 #	define GLM_RESTRICT
 #	define GLM_RESTRICT_VAR
 #endif//GLM_COMPILER
-
-#if GLM_HAS_CONSTEXPR
-#	define GLM_CONSTEXPR constexpr
-#else
-#	define GLM_CONSTEXPR
-#endif
 
 #endif//GLM_SETUP_INCLUDED

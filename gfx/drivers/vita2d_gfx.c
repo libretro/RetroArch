@@ -43,7 +43,6 @@ static void *vita2d_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
    vita_video_t *vita   = (vita_video_t *)calloc(1, sizeof(vita_video_t));
-   settings_t *settings = config_get_ptr();
    unsigned temp_width                = PSP_FB_WIDTH;
    unsigned temp_height               = PSP_FB_HEIGHT;
 
@@ -133,7 +132,6 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
    vita_video_t *vita = (vita_video_t *)data;
    settings_t *settings = config_get_ptr();
    
-   
    if (frame)
    {
       if(!(vita->texture&&vita2d_texture_get_datap(vita->texture)==frame)){
@@ -207,8 +205,11 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
    
    if (settings->fps_show)
    {
-      char buffer[128]     = {0};
-      char buffer_fps[128] = {0};
+      char buffer[128];
+      char buffer_fps[128];
+
+      buffer[0] = buffer_fps[0] = '\0';
+
       video_monitor_get_fps(buffer, sizeof(buffer),
             settings->fps_show ? buffer_fps : NULL, sizeof(buffer_fps));
       runloop_msg_queue_push(buffer_fps, 1, 1, false);

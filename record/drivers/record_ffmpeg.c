@@ -28,9 +28,11 @@
 #include <queues/fifo_queue.h>
 #include <rthreads/rthreads.h>
 #include <gfx/scaler/scaler.h>
+#include <gfx/video_frame.h>
 #include <file/config_file.h>
-#include <conversion/float_to_s16.h>
-#include <conversion/s16_to_float.h>
+#include <audio/audio_resampler.h>
+#include <audio/conversion/float_to_s16.h>
+#include <audio/conversion/s16_to_float.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -63,15 +65,12 @@ extern "C" {
 }
 #endif
 
-
 #include "../record_driver.h"
 
 #include "../../configuration.h"
 #include "../../gfx/video_driver.h"
-#include "../../audio/audio_resampler_driver.h"
 #include "../../verbosity.h"
 
-#include "../../gfx/video_frame.h"
 
 #ifndef PIX_FMT_RGB32
 #define PIX_FMT_RGB32 AV_PIX_FMT_RGB32

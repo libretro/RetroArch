@@ -504,12 +504,19 @@ static void undo_save_state_cb(void *task_data,
 static void task_save_handler_finished(retro_task_t *task,
       save_task_state_t *state)
 {
+   save_task_state_t *task_data = NULL;
+
    task->finished = true;
 
    filestream_close(state->file);
 
    if (!task->error && task->cancelled)
       task->error = strdup("Task canceled");
+
+   task_data = (save_task_state_t*)calloc(1, sizeof(*task_data));
+   memcpy(task_data, state, sizeof(*state));
+
+   task->task_data = task_data;
 
    if (state->data)
    {
@@ -594,15 +601,14 @@ static void task_save_handler(retro_task_t *task)
       else
       {
          if (settings->state_slot < 0)
-            snprintf(msg, sizeof(msg), "%s #-1 (auto).",
-                  msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT));
+            strlcpy(msg, msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT_AUTO), sizeof(msg));
          else
-            snprintf(msg, sizeof(msg), "%s #%d.", msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT),
+            snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT),
                   settings->state_slot);
       }
 
       if (!task->mute)
-         runloop_msg_queue_push(msg, 2, 180, true);
+         task->title = strdup(msg);
 
       task_save_handler_finished(task, state);
 
@@ -779,19 +785,18 @@ static void task_load_handler(retro_task_t *task)
                state->path,
                msg_hash_to_str(MSG_SUCCEEDED));
          if (!task->mute)
-            runloop_msg_queue_push(msg, 1, 180, true);
+            task->title = strdup(msg);
       }
       else
       {
          if (settings->state_slot < 0)
-            snprintf(msg, sizeof(msg), "%s #-1 (auto).",
-                  msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT));
+            strlcpy(msg, msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT_AUTO), sizeof(msg));
          else
-            snprintf(msg, sizeof(msg), "%s #%d.", msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT),
+            snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT),
                   settings->state_slot);
 
          if (!task->mute)
-            runloop_msg_queue_push(msg, 2, 180, true);
+            task->title = strdup(msg);
       }
 
       task_load_handler_finished(task, state);
@@ -973,6 +978,24 @@ error:
 }
 
 /**
+ * save_state_cb:
+ *
+ * Called after the save state is done. Takes a screenshot if needed.
+ **/
+static void save_state_cb(void *task_data,
+                           void *user_data, const char *error)
+{
+   settings_t *settings = config_get_ptr();
+   save_task_state_t *state = (save_task_state_t*)task_data;
+   char               *path = strdup(state->path);
+
+   if (settings->savestate_thumbnail_enable)
+      take_screenshot(path, true);
+
+   free(path);
+}
+
+/**
  * task_push_save_state:
  * @path : file path of the save state
  * @data : the save state data to write
@@ -997,6 +1020,7 @@ static void task_push_save_state(const char *path, void *data, size_t size, bool
    task->type      = TASK_TYPE_BLOCKING;
    task->state     = state;
    task->handler   = task_save_handler;
+   task->callback  = save_state_cb;
    task->title     = strdup(msg_hash_to_str(MSG_SAVING_STATE));
    task->mute      = state->mute;
 

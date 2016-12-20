@@ -56,7 +56,7 @@ namespace glm
 	/// @see <a href="http://www.opengl.org/sdk/docs/manglsl/xhtml/pow.xml">GLSL pow man page</a>
 	/// @see <a href="http://www.opengl.org/registry/doc/GLSLangSpec.4.20.8.pdf">GLSL 4.20.8 specification, section 8.2 Exponential Functions</a>
 	template <typename genType> 
-	GLM_FUNC_DECL genType pow(genType const & base, genType const & exponent);
+	 genType pow(genType const & base, genType const & exponent);
 
 	/// Returns the natural exponentiation of x, i.e., e^x.
 	///
@@ -66,7 +66,7 @@ namespace glm
 	/// @see <a href="http://www.opengl.org/sdk/docs/manglsl/xhtml/exp.xml">GLSL exp man page</a>
 	/// @see <a href="http://www.opengl.org/registry/doc/GLSLangSpec.4.20.8.pdf">GLSL 4.20.8 specification, section 8.2 Exponential Functions</a>
 	template <typename genType> 
-	GLM_FUNC_DECL genType exp(genType const & x);
+	 genType exp(genType const & x);
 
 	/// Returns the natural logarithm of x, i.e., 
 	/// returns the value y which satisfies the equation x = e^y. 
@@ -78,7 +78,7 @@ namespace glm
 	/// @see <a href="http://www.opengl.org/sdk/docs/manglsl/xhtml/log.xml">GLSL log man page</a>
 	/// @see <a href="http://www.opengl.org/registry/doc/GLSLangSpec.4.20.8.pdf">GLSL 4.20.8 specification, section 8.2 Exponential Functions</a>
 	template <typename genType> 
-	GLM_FUNC_DECL genType log(genType const & x);
+	 genType log(genType const & x);
 
 	/// Returns 2 raised to the x power.
 	/// 
@@ -88,7 +88,7 @@ namespace glm
 	/// @see <a href="http://www.opengl.org/sdk/docs/manglsl/xhtml/exp2.xml">GLSL exp2 man page</a>
 	/// @see <a href="http://www.opengl.org/registry/doc/GLSLangSpec.4.20.8.pdf">GLSL 4.20.8 specification, section 8.2 Exponential Functions</a>
 	template <typename genType> 
-	GLM_FUNC_DECL genType exp2(genType const & x);
+	 genType exp2(genType const & x);
 
 	/// Returns the base 2 log of x, i.e., returns the value y, 
 	/// which satisfies the equation x = 2 ^ y.
@@ -99,7 +99,7 @@ namespace glm
 	/// @see <a href="http://www.opengl.org/sdk/docs/manglsl/xhtml/log2.xml">GLSL log2 man page</a>
 	/// @see <a href="http://www.opengl.org/registry/doc/GLSLangSpec.4.20.8.pdf">GLSL 4.20.8 specification, section 8.2 Exponential Functions</a>
 	template <typename genType>
-	GLM_FUNC_DECL genType log2(genType x);
+	 genType log2(genType x);
 
 	/// Returns the positive square root of x.
 	/// 
@@ -109,10 +109,10 @@ namespace glm
 	/// @see <a href="http://www.opengl.org/sdk/docs/manglsl/xhtml/sqrt.xml">GLSL sqrt man page</a>
 	/// @see <a href="http://www.opengl.org/registry/doc/GLSLangSpec.4.20.8.pdf">GLSL 4.20.8 specification, section 8.2 Exponential Functions</a>
 	//template <typename genType>
-	//GLM_FUNC_DECL genType sqrt(genType const & x);
+	// genType sqrt(genType const & x);
 
 	template <typename T, precision P, template <typename, precision> class vecType>
-	GLM_FUNC_DECL vecType<T, P> sqrt(vecType<T, P> const & x);
+	 vecType<T, P> sqrt(vecType<T, P> const & x);
 	
 	/// Returns the reciprocal of the positive square root of x.
 	/// 
@@ -122,7 +122,7 @@ namespace glm
 	/// @see <a href="http://www.opengl.org/sdk/docs/manglsl/xhtml/inversesqrt.xml">GLSL inversesqrt man page</a>
 	/// @see <a href="http://www.opengl.org/registry/doc/GLSLangSpec.4.20.8.pdf">GLSL 4.20.8 specification, section 8.2 Exponential Functions</a>
 	template <typename genType> 
-	GLM_FUNC_DECL genType inversesqrt(genType const & x);
+	 genType inversesqrt(genType const & x);
 
 	/// @}
 }//namespace glm

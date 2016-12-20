@@ -49,6 +49,9 @@ enum menu_mouse_action
    MENU_MOUSE_ACTION_HORIZ_WHEEL_DOWN
 };
 
+static int mouse_old_x  = 0;
+static int mouse_old_y  = 0;
+
 menu_input_t *menu_input_get_ptr(void)
 {
    static menu_input_t menu_input_state;
@@ -84,16 +87,10 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
          pointer_dragging      = false;
          break;
       case MENU_INPUT_CTL_MOUSE_PTR:
-         {
-            unsigned *ptr = (unsigned*)data;
-            menu_input->mouse.ptr = *ptr;
-         }
+         menu_input->mouse.ptr = (*(unsigned*)data);
          break;
       case MENU_INPUT_CTL_POINTER_PTR:
-         {
-            unsigned *ptr = (unsigned*)data;
-            menu_input->pointer.ptr = *ptr;
-         }
+         menu_input->pointer.ptr = (*(unsigned*)data);
          break;
       case MENU_INPUT_CTL_POINTER_ACCEL_READ:
          {
@@ -102,10 +99,7 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
          }
          break;
       case MENU_INPUT_CTL_POINTER_ACCEL_WRITE:
-         {
-            float *ptr = (float*)data;
-            menu_input->pointer.accel = *ptr;
-         }
+         menu_input->pointer.accel = (*(float*)data);
          break;
       case MENU_INPUT_CTL_IS_POINTER_DRAGGED:
          return pointer_dragging;
@@ -133,7 +127,7 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
    if (
          !settings->menu.mouse.enable
 #ifdef HAVE_OVERLAY
-         || (settings->input.overlay_enable && input_overlay_is_alive(NULL))
+         || (settings->input.overlay_enable && input_overlay_is_alive(overlay_ptr))
 #endif
          )
    {
@@ -229,7 +223,10 @@ static int menu_input_mouse_frame(
       point.x      = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
       point.y      = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
       menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
-      menu_event_set_osk_ptr(point.retcode);
+      if (mouse_old_x != point.x || mouse_old_y != point.y)
+         menu_event_set_osk_ptr(point.retcode);
+      mouse_old_x = point.x;
+      mouse_old_y = point.y;
    }
 
    if (BIT64_GET(mouse_state, MENU_MOUSE_ACTION_BUTTON_L))
@@ -249,7 +246,7 @@ static int menu_input_mouse_frame(
          if (point.retcode > -1)
          {
             menu_event_set_osk_ptr(point.retcode);
-            input_keyboard_line_append(menu_event_get_osk_grid()[point.retcode]);
+            menu_event_osk_append(point.retcode);
          }
       }
       else
@@ -379,7 +376,7 @@ static int menu_input_pointer_post_iterate(
 #ifdef HAVE_OVERLAY
    if (!check_overlay)
       check_overlay = (settings->input.overlay_enable 
-            && input_overlay_is_alive(NULL));
+            && input_overlay_is_alive(overlay_ptr));
 #endif
 
    if (check_overlay)
@@ -451,7 +448,7 @@ static int menu_input_pointer_post_iterate(
                if (point.retcode > -1)
                {
                   menu_event_set_osk_ptr(point.retcode);
-                  input_keyboard_line_append(menu_event_get_osk_grid()[point.retcode]);
+                  menu_event_osk_append(point.retcode);
                }
             }
             else

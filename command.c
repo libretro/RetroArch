@@ -286,6 +286,7 @@ static const struct cmd_map map[] = {
    { "MUTE",                   RARCH_MUTE },
    { "OSK",                    RARCH_OSK },
    { "NETPLAY_FLIP",           RARCH_NETPLAY_FLIP },
+   { "NETPLAY_GAME_WATCH",     RARCH_NETPLAY_GAME_WATCH },
    { "SLOWMOTION",             RARCH_SLOWMOTION },
    { "VOLUME_UP",              RARCH_VOLUME_UP },
    { "VOLUME_DOWN",            RARCH_VOLUME_DOWN },
@@ -294,6 +295,7 @@ static const struct cmd_map map[] = {
    { "DISK_NEXT",              RARCH_DISK_NEXT },
    { "DISK_PREV",              RARCH_DISK_PREV },
    { "GRAB_MOUSE_TOGGLE",      RARCH_GRAB_MOUSE_TOGGLE },
+   { "GAME_FOCUS_TOGGLE",      RARCH_GAME_FOCUS_TOGGLE },
    { "MENU_TOGGLE",            RARCH_MENU_TOGGLE },
    { "MENU_UP",                RETRO_DEVICE_ID_JOYPAD_UP },
    { "MENU_DOWN",              RETRO_DEVICE_ID_JOYPAD_DOWN },
@@ -1226,8 +1228,7 @@ static void command_event_load_auto_state(void)
    global_t   *global   = global_get_ptr();
 
 #ifdef HAVE_NETWORKING
-   if (     netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL)
-         && !settings->netplay.is_spectate)
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
       return;
 #endif
 
@@ -1714,13 +1715,6 @@ static void command_event_main_state(unsigned cmd)
 
 void handle_quit_event(void)
 {
-#ifdef HAVE_MENU
-   settings_t *settings      = config_get_ptr();
-   if (settings && settings->confirm_on_exit &&
-         menu_dialog_is_active())
-      return;
-#endif
-
    command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
    command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
    command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
@@ -1906,7 +1900,7 @@ bool command_event(enum event_command cmd, void *data)
          settings->state_slot++;
          break;
       case CMD_EVENT_TAKE_SCREENSHOT:
-         if (!take_screenshot())
+         if (!take_screenshot(path_get(RARCH_PATH_BASENAME), false))
             return false;
          break;
       case CMD_EVENT_UNLOAD_CORE:
@@ -1926,23 +1920,13 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_MENU
          menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_DEINIT, NULL);
 #endif
+         path_clear(RARCH_PATH_CORE);
 #else
          core_unload_game();
          core_unload();
 #endif
          break;
-      case CMD_EVENT_QUIT_CONFIRM:
-         handle_quit_event();
-         break;
       case CMD_EVENT_QUIT:
-#ifdef HAVE_MENU
-         if (settings && settings->confirm_on_exit &&
-                !menu_dialog_is_active() && !runloop_is_quit_confirm())
-         {
-            menu_dialog_show_message(MENU_DIALOG_QUIT_CONFIRM, MENU_ENUM_LABEL_CONFIRM_ON_EXIT);
-            break;
-         }
-#endif
          handle_quit_event();
          break;
       case CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE:
@@ -1951,28 +1935,16 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_REINIT:
-         {
-            struct retro_hw_render_callback *hwr =
-               video_driver_get_hw_context();
-
-            if (hwr->cache_context)
-               video_driver_set_video_cache_context();
-            else
-               video_driver_unset_video_cache_context();
-
-            video_driver_unset_video_cache_context_ack();
-            command_event(CMD_EVENT_RESET_CONTEXT, NULL);
-            video_driver_unset_video_cache_context();
-
-            /* Poll input to avoid possibly stale data to corrupt things. */
-            input_driver_poll();
+         video_driver_reinit();
+         /* Poll input to avoid possibly stale data to corrupt things. */
+         input_driver_poll();
+         command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, (void *) -1);
 
 #ifdef HAVE_MENU
-            menu_display_set_framebuffer_dirty_flag();
-            if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
-               command_event(CMD_EVENT_VIDEO_SET_BLOCKING_STATE, NULL);
+         menu_display_set_framebuffer_dirty_flag();
+         if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+            command_event(CMD_EVENT_VIDEO_SET_BLOCKING_STATE, NULL);
 #endif
-         }
          break;
       case CMD_EVENT_CHEATS_DEINIT:
          cheat_manager_state_free();
@@ -2065,7 +2037,8 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_OVERLAY_DEINIT:
 #ifdef HAVE_OVERLAY
-         input_overlay_free();
+         input_overlay_free(overlay_ptr);
+         overlay_ptr = NULL;
 #endif
          break;
       case CMD_EVENT_OVERLAY_INIT:
@@ -2077,7 +2050,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_OVERLAY_NEXT:
 #ifdef HAVE_OVERLAY
-         input_overlay_next(settings->input.overlay_opacity);
+         input_overlay_next(overlay_ptr, settings->input.overlay_opacity);
 #endif
          break;
       case CMD_EVENT_DSP_FILTER_DEINIT:
@@ -2215,17 +2188,17 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_OVERLAY_SET_SCALE_FACTOR:
 #ifdef HAVE_OVERLAY
-         input_overlay_set_scale_factor(NULL, settings->input.overlay_scale);
+         input_overlay_set_scale_factor(overlay_ptr, settings->input.overlay_scale);
 #endif
          break;
       case CMD_EVENT_OVERLAY_SET_ALPHA_MOD:
 #ifdef HAVE_OVERLAY
-         input_overlay_set_alpha_mod(settings->input.overlay_opacity);
+         input_overlay_set_alpha_mod(overlay_ptr, settings->input.overlay_opacity);
 #endif
          break;
       case CMD_EVENT_AUDIO_REINIT:
          {
-            int flags = DRIVER_AUDIO;
+            int flags = DRIVER_AUDIO_MASK;
             driver_ctl(RARCH_DRIVER_CTL_UNINIT, &flags);
             driver_ctl(RARCH_DRIVER_CTL_INIT, &flags);
          }
@@ -2389,14 +2362,21 @@ bool command_event(enum event_command cmd, void *data)
          command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 #ifdef HAVE_NETWORKING
          if (!init_netplay(
-              settings->netplay.is_spectate, settings->netplay.server,
-              settings->netplay.port))
+              data, settings->netplay.server,
+              settings->netplay.port,
+              settings->netplay.password,
+              settings->netplay.spectate_password))
             return false;
 #endif
          break;
       case CMD_EVENT_NETPLAY_FLIP_PLAYERS:
 #ifdef HAVE_NETWORKING
          netplay_driver_ctl(RARCH_NETPLAY_CTL_FLIP_PLAYERS, NULL);
+#endif
+         break;
+      case CMD_EVENT_NETPLAY_GAME_WATCH:
+#ifdef HAVE_NETWORKING
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_GAME_WATCH, NULL);
 #endif
          break;
       case CMD_EVENT_FULLSCREEN_TOGGLE:
@@ -2523,6 +2503,47 @@ bool command_event(enum event_command cmd, void *data)
                video_driver_hide_mouse();
             else
                video_driver_show_mouse();
+         }
+         break;
+      case CMD_EVENT_GAME_FOCUS_TOGGLE:
+         {
+            static bool game_focus_state  = false;
+            long int                 mode = (long int)data;
+            
+            /* mode = -1: restores current game focus state
+             * mode =  1: force set game focus, instead of toggling
+             * any other: toggle
+             */
+            if (mode == 1)
+                game_focus_state = true;
+            else if (mode != -1)
+                game_focus_state = !game_focus_state;
+
+            RARCH_LOG("%s: %s.\n",
+                  "Game focus is: ",
+                  game_focus_state ? "on" : "off");
+
+            if (game_focus_state)
+            {
+               input_driver_grab_mouse();
+               video_driver_hide_mouse();
+               input_driver_set_hotkey_block();
+               input_driver_keyboard_mapping_set_block(1);
+               if (mode != -1)
+                  runloop_msg_queue_push(msg_hash_to_str(MSG_GAME_FOCUS_ON),
+                        1, 120, true);
+            }
+            else
+            {
+               input_driver_ungrab_mouse();
+               video_driver_show_mouse();
+               input_driver_unset_hotkey_block();
+               input_driver_keyboard_mapping_set_block(0);
+               if (mode != -1)
+                  runloop_msg_queue_push(msg_hash_to_str(MSG_GAME_FOCUS_OFF),
+                        1, 120, true);
+            }
+
          }
          break;
       case CMD_EVENT_PERFCNT_REPORT_FRONTEND_LOG:

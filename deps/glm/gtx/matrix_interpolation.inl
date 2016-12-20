@@ -10,7 +10,7 @@
 namespace glm
 {
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER void axisAngle
+	inline void axisAngle
 	(
 		detail::tmat4x4<T, P> const & mat,
 		detail::tvec3<T, P> & axis,
@@ -85,7 +85,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, P> axisAngleMatrix
+	inline detail::tmat4x4<T, P> axisAngleMatrix
 	(
 		detail::tvec3<T, P> const & axis,
 		T const angle
@@ -105,7 +105,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, P> extractMatrixRotation
+	inline detail::tmat4x4<T, P> extractMatrixRotation
 	(
 		detail::tmat4x4<T, P> const & mat
 	)
@@ -119,7 +119,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, P> interpolate
+	inline detail::tmat4x4<T, P> interpolate
 	(
 		detail::tmat4x4<T, P> const & m1,
 		detail::tmat4x4<T, P> const & m2,

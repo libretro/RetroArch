@@ -132,6 +132,7 @@ mg_static_assert(sizeof(void *) >= sizeof(int), "data type size check");
 #include <mach/mach_time.h>
 #include <assert.h>
 
+#include <compat/strl.h>
 
 /* clock_gettime is not implemented on OSX */
 int clock_gettime(int clk_id, struct timespec *t);
@@ -5654,8 +5655,8 @@ mg_modify_passwords_file(const char *fname,
   }
 
   /* Create a temporary file name. Length has been checked before. */
-  strcpy(tmp, fname);
-  strcat(tmp, ".tmp");
+  strlcpy(tmp, fname,  sizeof(tmp));
+  strlcat(tmp, ".tmp", sizeof(tmp));
 
   /* Create the file if does not exist */
   /* Use of fopen here is OK, since fname is only ASCII */

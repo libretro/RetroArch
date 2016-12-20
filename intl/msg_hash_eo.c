@@ -42,7 +42,7 @@ const char *msg_hash_to_str_eo(enum msg_hash_enums msg)
 {
    switch (msg)
    {
-      case 0:
+      #include "msg_hash_eo.h"
       default:
          break;
    }

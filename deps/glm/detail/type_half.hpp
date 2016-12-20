@@ -34,16 +34,10 @@
 namespace glm{
 namespace detail
 {
-	typedef short hdata;
-
-	GLM_FUNC_DECL float toFloat32(hdata value);
-	GLM_FUNC_DECL hdata toFloat16(float const & value);
+	float toFloat32(int16_t value);
+	int16_t toFloat16(float const & value);
 
 }//namespace detail
-
-	/// half-precision floating-point numbers.
-	//typedef detail::hdata		half;
-		
 }//namespace glm
 
 #include "type_half.inl"

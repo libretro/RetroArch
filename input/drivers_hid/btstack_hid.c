@@ -32,6 +32,7 @@
 #include <dynamic/dylib.h>
 #endif
 
+#include "../input_defines.h"
 #include "../input_hid_driver.h"
 #define BUILDING_BTDYNAMIC
 #include "../connect/joypad_connection.h"
@@ -1370,9 +1371,6 @@ static uint64_t btstack_hid_joypad_get_buttons(void *data, unsigned port)
 static bool btstack_hid_joypad_button(void *data, unsigned port, uint16_t joykey)
 {
    uint64_t buttons          = btstack_hid_joypad_get_buttons(data, port);
-
-   if (joykey == NO_BTN)
-      return false;
 
    /* Check hat. */
    if (GET_HAT_DIR(joykey))

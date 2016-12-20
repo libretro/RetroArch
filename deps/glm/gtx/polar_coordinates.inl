@@ -10,7 +10,7 @@
 namespace glm
 {
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> polar
+	inline detail::tvec3<T, P> polar
 	(
 		detail::tvec3<T, P> const & euclidean
 	)
@@ -34,7 +34,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> euclidean
+	inline detail::tvec3<T, P> euclidean
 	(
 		detail::tvec2<T, P> const & polar
 	)

@@ -60,7 +60,6 @@ enum event_command
    CMD_EVENT_TAKE_SCREENSHOT,
    /* Quits RetroArch. */
    CMD_EVENT_QUIT,
-   CMD_EVENT_QUIT_CONFIRM,
    /* Reinitialize all drivers. */
    CMD_EVENT_REINIT,
    /* Toggles cheevos hardcore mode. */
@@ -174,6 +173,8 @@ enum event_command
    CMD_EVENT_NETPLAY_DEINIT,
    /* Flip netplay players. */
    CMD_EVENT_NETPLAY_FLIP_PLAYERS,
+   /* Switch between netplay gaming and watching. */
+   CMD_EVENT_NETPLAY_GAME_WATCH,
    /* Initializes BSV movie. */
    CMD_EVENT_BSV_MOVIE_INIT,
    /* Deinitializes BSV movie. */
@@ -205,6 +206,8 @@ enum event_command
    CMD_EVENT_RUMBLE_STOP,
    /* Toggles mouse grab. */
    CMD_EVENT_GRAB_MOUSE_TOGGLE,
+   /* Toggles game focus. */
+   CMD_EVENT_GAME_FOCUS_TOGGLE,
    /* Toggles fullscreen mode. */
    CMD_EVENT_FULLSCREEN_TOGGLE,
    CMD_EVENT_PERFCNT_REPORT_FRONTEND_LOG,

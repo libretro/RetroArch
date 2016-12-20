@@ -183,7 +183,7 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/queues/message_queue.o \
        managers/state_manager.o \
        gfx/drivers_font_renderer/bitmapfont.o \
-       input/input_autodetect.o \
+       tasks/task_autodetect.o \
 		 input/input_autodetect_builtin.o \
        input/input_joypad_driver.o \
        input/input_config.o \
@@ -199,7 +199,7 @@ OBJ += frontend/frontend.o \
        managers/cheat_manager.o \
        core_info.o \
        $(LIBRETRO_COMM_DIR)/file/config_file.o \
-       config_file_userdata.o \
+       $(LIBRETRO_COMM_DIR)/file/config_file_userdata.o \
        tasks/task_screenshot.o \
        $(LIBRETRO_COMM_DIR)/gfx/scaler/scaler.o \
        gfx/drivers_shader/shader_null.o \
@@ -210,13 +210,11 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/gfx/scaler/scaler_filter.o \
        gfx/font_driver.o \
        gfx/video_filter.o \
-       gfx/video_frame.o \
-       audio/audio_resampler_driver.o \
+       $(LIBRETRO_COMM_DIR)/audio/resampler/audio_resampler.o \
        audio/audio_dsp_filter.o \
-       audio/drivers_resampler/sinc_resampler.o \
-       audio/drivers_resampler/nearest_resampler.o \
-       audio/drivers_resampler/null_resampler.o \
-       audio/drivers_resampler/cc_resampler.o \
+       $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler.o \
+       $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/nearest_resampler.o \
+       $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/null_resampler.o \
        location/drivers/nulllocation.o \
        camera/drivers/nullcamera.o \
        wifi/drivers/nullwifi.o \
@@ -233,6 +231,11 @@ OBJ += frontend/frontend.o \
        performance_counters.o \
        verbosity.o
 
+ifeq ($(HAVE_CC_RESAMPLER), 1)
+DEFINES += -DHAVE_CC_RESAMPLER
+OBJ += audio/drivers_resampler/cc_resampler.o
+endif
+
 ifeq ($(HAVE_LANGEXTRA), 1)
 DEFINES += -DHAVE_LANGEXTRA
 DEFINES += -finput-charset=UTF-8
@@ -242,7 +245,7 @@ OBJ += intl/msg_hash_de.o \
        intl/msg_hash_es.o \
        intl/msg_hash_fr.o \
        intl/msg_hash_it.o \
-       intl/msg_hash_jp.o \
+       intl/msg_hash_ja.o \
        intl/msg_hash_nl.o \
        intl/msg_hash_pl.o \
        intl/msg_hash_pt.o \
@@ -273,8 +276,13 @@ endif
 
 # Qt
 
+ifeq ($(HAVE_QT_WRAPPER), 1)
+OBJ += ui/drivers/ui_qt.o
+LIBS += -lQt5Quick -lQt5Widgets -lQt5Gui -lQt5Qml -lQt5Network -lQt5Core -L./ui/drivers/qt/build/release/
+LIBS += -lwrapper
+endif
+
 ifeq ($(HAVE_QT), 1)
-HAVE_QT_WRAPPER=0
 OBJ += ui/drivers/ui_qt.o \
        ui/drivers/qt/ui_qt_application.o \
        ui/drivers/qt/ui_qt_window.o \
@@ -283,13 +291,6 @@ OBJ += ui/drivers/ui_qt.o \
 
 ifneq ($(findstring Linux,$(OS)),)
 DEFINES += -I/usr/include/qt -fPIC
-endif
-
-# TODO/FIXME - figure out which libraries we need to link against
-LIBS += -lQt5Quick -lQt5Widgets -lQt5Gui -lQt5Qml -lQt5Network -lQt5Core -L./ui/drivers/qt/wrapper/build/release
-
-ifeq ($(HAVE_QT_WRAPPER), 1)
-LIBS += -lwrapper
 endif
 endif
 
@@ -419,7 +420,7 @@ endif
 # Audio Resamplers
 
 ifeq ($(HAVE_NEON),1)
-   OBJ += audio/drivers_resampler/sinc_resampler_neon.o \
+   OBJ += $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler_neon.o \
           audio/drivers_resampler/cc_resampler_neon.o
    # When compiled without this, tries to attempt to compile sinc lerp,
    # which will error out
@@ -430,12 +431,12 @@ ifeq ($(HAVE_NEON),1)
    DEFINES += -DSINC_LOWER_QUALITY
 endif
 
-OBJ += $(LIBRETRO_COMM_DIR)/conversion/s16_to_float.o \
-       $(LIBRETRO_COMM_DIR)/conversion/float_to_s16.o
+OBJ += $(LIBRETRO_COMM_DIR)/audio/conversion/s16_to_float.o \
+       $(LIBRETRO_COMM_DIR)/audio/conversion/float_to_s16.o
 
 ifeq ($(HAVE_NEON),1)
-   OBJ += $(LIBRETRO_COMM_DIR)/conversion/s16_to_float_neon.o \
-          $(LIBRETRO_COMM_DIR)/conversion/float_to_s16_neon.o
+   OBJ += $(LIBRETRO_COMM_DIR)/audio/conversion/s16_to_float_neon.o \
+          $(LIBRETRO_COMM_DIR)/audio/conversion/float_to_s16_neon.o
 endif
 
 ifneq ($(findstring Win32,$(OS)),)
@@ -508,7 +509,6 @@ endif
 
 ifeq ($(HAVE_LAKKA), 1)
    DEFINES += -DHAVE_LAKKA
-   DEFINES += -DLAKKA_PROJECT=$(LAKKA_PROJECT)
 endif
 
 ifeq ($(HAVE_MENU_COMMON), 1)
@@ -520,6 +520,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/menu_navigation.o  \
           menu/menu_setting.o \
           menu/menu_shader.o \
+			 menu/widgets/menu_filebrowser.o \
 			 menu/widgets/menu_dialog.o \
 			 menu/widgets/menu_input_dialog.o \
 			 menu/widgets/menu_input_bind_dialog.o \
@@ -553,6 +554,7 @@ endif
 
 ifeq ($(HAVE_STB_FONT), 1)
    OBJ += gfx/drivers_font_renderer/stb.o
+   OBJ += gfx/drivers_font_renderer/stb_unicode.o
 endif
 
 ifeq ($(HAVE_FREETYPE), 1)
@@ -578,8 +580,8 @@ endif
 
 ifeq ($(HAVE_WAYLAND), 1)
  OBJ += gfx/drivers_context/wayland_ctx.o
- DEFINES += $(WAYLAND_CFLAGS)
- LIBS += $(WAYLAND_LIBS)
+ DEFINES += $(WAYLAND_CFLAGS) $(WAYLAND_CURSOR_CFLAGS)
+ LIBS += $(WAYLAND_LIBS) $(WAYLAND_CURSOR_LIBS)
 endif
 
 #Input
@@ -639,6 +641,7 @@ ifeq ($(HAVE_UDEV), 1)
    DEFINES += $(UDEV_CFLAGS)
    LIBS += $(UDEV_LIBS)
    OBJ += input/drivers/udev_input.o \
+			 input/common/udev_common.o \
           input/drivers_keyboard/keyboard_event_udev.o \
           input/drivers_joypad/udev_joypad.o
 endif
@@ -711,6 +714,16 @@ ifeq ($(HAVE_KMS), 1)
    OBJ += gfx/drivers_context/drm_ctx.o
    DEFINES += $(GBM_CFLAGS) $(DRM_CFLAGS) $(EGL_CFLAGS)
    LIBS += $(GBM_LIBS) $(DRM_LIBS) $(EGL_LIBS)
+endif
+
+ifeq ($(HAVE_CACA), 1)
+   DEFINES += -DHAVE_CACA
+   OBJ += gfx/drivers/caca_gfx.o gfx/drivers_font/caca_font.o
+   LIBS += -lcaca
+
+   ifeq ($(HAVE_MENU_COMMON), 1)
+      OBJ += menu/drivers_display/menu_display_caca.o
+   endif
 endif
 
 ifeq ($(HAVE_PLAIN_DRM), 1)
@@ -860,7 +873,8 @@ ifeq ($(HAVE_VULKAN), 1)
       $(wildcard $(DEPS_DIR)/glslang/glslang/hlsl/*.cpp) \
       $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM)/*.cpp)
 
-   SPIRV_CROSS_SOURCES := $(DEPS_DIR)/SPIRV-Cross/spirv_cross.cpp
+   SPIRV_CROSS_SOURCES := $(DEPS_DIR)/SPIRV-Cross/spirv_cross.cpp \
+								  $(DEPS_DIR)/SPIRV-Cross/spirv_cfg.cpp
    ifneq ($(findstring Win32,$(OS)),)
       # Trivial temporary workaround for MinGW and glslang.
       CXXFLAGS += -fpermissive
@@ -879,7 +893,7 @@ ifeq ($(HAVE_VULKAN), 1)
    CXXFLAGS += -Wno-switch -Wno-sign-compare -fno-strict-aliasing -Wno-maybe-uninitialized -Wno-reorder -Wno-parentheses -Igfx/include
    CFLAGS  += -Igfx/include
 
-   GLSLANG_OBJ := $(GLSLANG_SOURCES:.cpp=.o)
+   GLSLANG_OBJ     := $(GLSLANG_SOURCES:.cpp=.o)
    SPIRV_CROSS_OBJ := $(SPIRV_CROSS_SOURCES:.cpp=.o)
 
    OBJ += gfx/drivers/vulkan.o \
@@ -978,7 +992,9 @@ endif
 
 # Compression/Archive
 
-OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file.o
+OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file.o \
+       $(LIBRETRO_COMM_DIR)/streams/trans_stream.o \
+       $(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.o
 
 ifeq ($(HAVE_7ZIP),1)
    CFLAGS  += -I$(DEPS_DIR)/7zip
@@ -1004,7 +1020,8 @@ endif
 
 
 ifeq ($(HAVE_ZLIB), 1)
-   OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file_zlib.o
+   OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file_zlib.o \
+          $(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.o
    OBJ += $(ZLIB_OBJS)
    DEFINES += -DHAVE_ZLIB
    HAVE_COMPRESSION = 1
@@ -1084,8 +1101,11 @@ ifeq ($(HAVE_NETWORKING), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/net/net_compat.o \
           $(LIBRETRO_COMM_DIR)/net/net_http.o \
           $(LIBRETRO_COMM_DIR)/net/net_socket.o \
+	  $(LIBRETRO_COMM_DIR)/net/net_natt.o \
           network/net_http_special.o \
-          tasks/task_http.o
+          tasks/task_http.o \
+	  tasks/task_netplay_lan_scan.o \
+          tasks/task_wifi.o
 
    ifneq ($(HAVE_SOCKET_LEGACY),1)
    OBJ += $(LIBRETRO_COMM_DIR)/net/net_ifinfo.o
@@ -1102,10 +1122,14 @@ ifeq ($(HAVE_NETWORKING), 1)
 
    # Netplay
 	DEFINES += -DHAVE_NETWORK_CMD
-	OBJ += network/netplay/netplay_net.o \
-			 network/netplay/netplay_spectate.o \
-			 network/netplay/netplay_common.o \
-			 network/netplay/netplay.o
+	OBJ += network/netplay/netplay_delta.o \
+			network/netplay/netplay_frontend.o \
+			network/netplay/netplay_handshake.o \
+			network/netplay/netplay_init.o \
+			network/netplay/netplay_io.o \
+			network/netplay/netplay_sync.o \
+			network/netplay/netplay_discovery.o \
+			network/netplay/netplay_buf.o
 
    # Retro Achievements (also depends on threads)
 
@@ -1120,6 +1144,10 @@ ifeq ($(HAVE_NETWORKING), 1)
    ifeq ($(HAVE_NETWORKGAMEPAD), 1)
       OBJ += input/input_remote.o \
              cores/libretro-net-retropad/net_retropad_core.o
+   endif
+
+   ifeq ($(HAVE_MINIUPNPC), 1)
+      LIBS += -lminiupnpc
    endif
 endif
 

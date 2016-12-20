@@ -53,7 +53,7 @@ namespace glm
 	//! Projects x on Normal.
 	//! From GLM_GTX_projection extension.
 	template <typename vecType> 
-	GLM_FUNC_DECL vecType proj(
+	vecType proj(
 		vecType const & x, 
 		vecType const & Normal);
 

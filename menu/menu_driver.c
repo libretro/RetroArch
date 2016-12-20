@@ -90,7 +90,7 @@ static menu_handle_t *menu_driver_data          = NULL;
 static const menu_ctx_driver_t *menu_driver_ctx = NULL;
 static void *menu_userdata                      = NULL;
 
-bool menu_driver_is_binding_state()
+bool menu_driver_is_binding_state(void)
 {
    return menu_driver_is_binding;
 }
@@ -919,7 +919,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
       case RARCH_MENU_CTL_OSK_PTR_AT_POS:
          {
             menu_ctx_pointer_t *point = (menu_ctx_pointer_t*)data;
-            if (!menu_driver_ctx || !menu_driver_ctx->pointer_tap)
+            if (!menu_driver_ctx || !menu_driver_ctx->osk_ptr_at_pos)
             {
                point->retcode = 0;
                return false;
@@ -961,6 +961,24 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             if (!menu_driver_ctx || !menu_driver_ctx->update_thumbnail_image)
                return false;
             menu_driver_ctx->update_thumbnail_image(menu_userdata);
+         }
+         break;
+      case RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH:
+         {
+            size_t selection;
+            if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+               return false;
+
+            if (!menu_driver_ctx || !menu_driver_ctx->update_savestate_thumbnail_path)
+               return false;
+            menu_driver_ctx->update_savestate_thumbnail_path(menu_userdata, selection);
+         }
+         break;
+      case RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE:
+         {
+            if (!menu_driver_ctx || !menu_driver_ctx->update_savestate_thumbnail_image)
+               return false;
+            menu_driver_ctx->update_savestate_thumbnail_image(menu_userdata);
          }
          break;
       default:

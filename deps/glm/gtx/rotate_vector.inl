@@ -10,7 +10,7 @@
 namespace glm
 {
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec2<T, P> rotate
+	inline detail::tvec2<T, P> rotate
 	(
 		detail::tvec2<T, P> const & v,
 		T const & angle
@@ -31,7 +31,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> rotate
+	inline detail::tvec3<T, P> rotate
 	(
 		detail::tvec3<T, P> const & v,
 		T const & angle,
@@ -40,20 +40,8 @@ namespace glm
 	{
 		return detail::tmat3x3<T, P>(glm::rotate(angle, normal)) * v;
 	}
-	/*
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> rotateGTX(
-		const detail::tvec3<T, P>& x,
-		T angle,
-		const detail::tvec3<T, P>& normal)
-	{
-		const T Cos = cos(radians(angle));
-		const T Sin = sin(radians(angle));
-		return x * Cos + ((x * normal) * (T(1) - Cos)) * normal + cross(x, normal) * Sin;
-	}
-	*/
-	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec4<T, P> rotate
+	inline detail::tvec4<T, P> rotate
 	(
 		detail::tvec4<T, P> const & v,
 		T const & angle,
@@ -64,7 +52,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> rotateX
+	inline detail::tvec3<T, P> rotateX
 	(
 		detail::tvec3<T, P> const & v,
 		T const & angle
@@ -87,7 +75,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> rotateY
+	inline detail::tvec3<T, P> rotateY
 	(
 		detail::tvec3<T, P> const & v,
 		T const & angle
@@ -110,7 +98,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> rotateZ
+	inline detail::tvec3<T, P> rotateZ
 	(
 		detail::tvec3<T, P> const & v,
 		T const & angle
@@ -133,7 +121,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec4<T, P> rotateX
+	inline detail::tvec4<T, P> rotateX
 	(
 		detail::tvec4<T, P> const & v,
 		T const & angle
@@ -156,7 +144,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec4<T, P> rotateY
+	inline detail::tvec4<T, P> rotateY
 	(
 		detail::tvec4<T, P> const & v,
 		T const & angle
@@ -179,7 +167,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec4<T, P> rotateZ
+	inline detail::tvec4<T, P> rotateZ
 	(
 		detail::tvec4<T, P> const & v,
 		T const & angle
@@ -202,7 +190,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, P> orientation
+	inline detail::tmat4x4<T, P> orientation
 	(
 		detail::tvec3<T, P> const & Normal,
 		detail::tvec3<T, P> const & Up

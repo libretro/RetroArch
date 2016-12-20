@@ -414,6 +414,8 @@ void settings_data_list_current_add_free_flags(
       rarch_setting_info_t *list_info,
       unsigned values);
 
+#define setting_get_type(setting) ((setting) ? setting->type : ST_NONE)
+
 rarch_setting_t setting_terminator_setting(void);
 
 RETRO_END_DECLS

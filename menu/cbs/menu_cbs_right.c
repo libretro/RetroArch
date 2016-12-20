@@ -285,7 +285,8 @@ static int action_right_shader_filter_default(unsigned type, const char *label,
    rarch_setting_t *setting = menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_SMOOTH);
    if (!setting)
       return menu_cbs_exit();
-   return menu_action_handle_setting(setting, setting->type, MENU_ACTION_RIGHT,
+   return menu_action_handle_setting(setting,
+         setting_get_type(setting), MENU_ACTION_RIGHT,
          wraparound);
 #else
    return 0;
@@ -526,7 +527,7 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
       const char *parent_group   = cbs->setting->parent_group;
 
       if (string_is_equal(parent_group, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU)) 
-               && (cbs->setting->type == ST_GROUP))
+               && (setting_get_type(cbs->setting) == ST_GROUP))
       {
          BIND_ACTION_RIGHT(cbs, action_right_scroll);
          return 0;

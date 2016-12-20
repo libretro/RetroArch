@@ -25,7 +25,7 @@
 
 #include <compat/strl.h>
 
-#include "../input_autodetect.h"
+#include "../../tasks/tasks_internal.h"
 #include "../input_driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
@@ -232,12 +232,12 @@ static void parport_free_pad(struct parport_joypad *pad)
 static bool parport_joypad_init(void *data)
 {
    unsigned i, j;
+   autoconfig_params_t params;
    bool found_enabled_button             = false;
    bool found_disabled_button            = false;
    char buf[PARPORT_NUM_BUTTONS * 3 + 1] = {0};
    char pin[3 + 1]                       = {0};
    settings_t *settings                  = config_get_ptr();
-   autoconfig_params_t params            = {{0}};
 
    (void)data;
 
@@ -253,7 +253,10 @@ static bool parport_joypad_init(void *data)
 
       snprintf(path, sizeof(path), "/dev/parport%u", i);
 
-      params.idx = i;
+      params.idx             = i;
+      params.display_name[0] = '\0';
+      params.vid             = 0;
+      params.pid             = 0;
 
       if (parport_joypad_init_pad(path, pad))
       {
@@ -306,7 +309,8 @@ static bool parport_joypad_init(void *data)
             parport_free_pad(pad);
          }
       }
-      input_config_autoconfigure_joypad(&params);
+
+      input_autoconfigure_connect(&params);
    }
 
    return true;

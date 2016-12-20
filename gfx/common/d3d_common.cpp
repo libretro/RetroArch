@@ -18,7 +18,9 @@
 
 #include "d3d_common.h"
 
+#ifdef HAVE_D3D9
 #include "../include/d3d9/d3dx9tex.h"
+#endif
 
 bool d3d_swap(void *data, LPDIRECT3DDEVICE dev)
 {
@@ -367,8 +369,9 @@ void d3d_set_viewports(LPDIRECT3DDEVICE dev, D3DVIEWPORT *vp)
 }
 
 void d3d_set_texture(LPDIRECT3DDEVICE dev, unsigned sampler,
-      LPDIRECT3DTEXTURE tex)
+      void *tex_data)
 {
+   LPDIRECT3DTEXTURE tex = (LPDIRECT3DTEXTURE)tex_data;
 #if defined(_XBOX1)
    D3DDevice_SetTexture(sampler, tex);
 #elif defined(_XBOX360)
@@ -475,8 +478,10 @@ void d3d_frame_postprocess(void *data)
 
    if (!dev)
       return;
+#if 0
    if (!d3d_restore_device(dev))
       return;
+#endif
 
    dev->SetFlickerFilter(global->console.screen.flicker_filter_index);
    dev->SetSoftDisplayFilter(global->console.softfilter_enable);

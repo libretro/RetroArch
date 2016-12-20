@@ -1,6 +1,7 @@
 DEBUG			               = 0
 HAVE_LOGGER		            = 0
 HAVE_FILE_LOGGER	         = 0
+HAVE_CC_RESAMPLER          = 1
 WHOLE_ARCHIVE_LINK         = 0
 BIG_STACK		            = 1
 PC_DEVELOPMENT_IP_ADDRESS	= 255.255.255.255
@@ -213,23 +214,24 @@ else ifeq ($(platform), vita)
   INCLUDE += -Ideps/zlib
   PLATCFLAGS := -marm -mfloat-abi=hard -fsingle-precision-constant \
        -mword-relocations -fno-unwind-tables -fno-asynchronous-unwind-tables -ftree-vectorize -fno-optimize-sibling-calls
-  LIBS += -lSceKernel_stub -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub\
+  LIBS += -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub\
 			 -lSceSysmodule_stub -lSceCtrl_stub -lSceTouch_stub -lSceAudio_stub -lSceFiber_stub\
 			 -lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lScePgf_stub \
 			 -lSceMotion_stub -lSceAppMgr_stub -lpng -lm -lc
 
-  PLATEXTRA := deps/libvita2d/shader/compiled/clear_v_gxp.o \
-				  deps/libvita2d/shader/compiled/clear_f_gxp.o \
-				  deps/libvita2d/shader/compiled/color_v_gxp.o \
-				  deps/libvita2d/shader/compiled/color_f_gxp.o \
-				  deps/libvita2d/shader/compiled/texture_v_gxp.o \
-				  deps/libvita2d/shader/compiled/texture_f_gxp.o \
-				  deps/libvita2d/shader/compiled/texture_tint_f_gxp.o
-  PLATOBJS +=			  libretro-common/conversion/s16_to_float_neon.o \
-                    libretro-common/conversion/float_to_s16_neon.o \
-                    memory/neon/memcpy-neon.o \
-				            audio/drivers_resampler/sinc_resampler_neon.o \
-                    audio/drivers_resampler/cc_resampler_neon.o
+  PLATEXTRA := 		deps/libvita2d/shader/compiled/clear_v_gxp.o \
+	  						deps/libvita2d/shader/compiled/clear_f_gxp.o \
+							deps/libvita2d/shader/compiled/color_v_gxp.o \
+							deps/libvita2d/shader/compiled/color_f_gxp.o \
+							deps/libvita2d/shader/compiled/texture_v_gxp.o \
+							deps/libvita2d/shader/compiled/texture_f_gxp.o \
+							deps/libvita2d/shader/compiled/texture_tint_f_gxp.o
+  PLATOBJS +=		  \
+						  libretro-common/audio/conversion/s16_to_float_neon.o \
+						  libretro-common/audio/conversion/float_to_s16_neon.o \
+						  memory/neon/memcpy-neon.o \
+						  libretro-common/audio/resampler/drivers/sinc_resampler_neon.o \
+						  audio/drivers_resampler/cc_resampler_neon.o
 
   LIBDIRS += -L.
   LDFLAGS +=  -Wl,-q

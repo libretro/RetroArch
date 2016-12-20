@@ -37,6 +37,9 @@ static int action_cancel_pop_default(const char *path,
    menu_entries_pop_stack(&new_selection_ptr, 0, 1);
    menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &new_selection_ptr);
 
+   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH, NULL);
+   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE, NULL);
+
    return 0;
 }
 

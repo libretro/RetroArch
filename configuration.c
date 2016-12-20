@@ -158,7 +158,9 @@ bool config_init(void)
  **/
 const char *config_get_default_audio(void)
 {
-   switch (AUDIO_DEFAULT_DRIVER)
+   enum audio_driver_enum default_driver = AUDIO_DEFAULT_DRIVER;
+
+   switch (default_driver)
    {
       case AUDIO_RSOUND:
          return "rsound";
@@ -194,6 +196,8 @@ const char *config_get_default_audio(void)
          return "ps3";
       case AUDIO_WII:
          return "gx";
+      case AUDIO_WIIU:
+         return "AX";
       case AUDIO_PSP:
 #ifdef VITA
          return "vita";
@@ -204,7 +208,9 @@ const char *config_get_default_audio(void)
          return "csnd";
       case AUDIO_RWEBAUDIO:
          return "rwebaudio";
-      default:
+      case AUDIO_JACK:
+         return "jack";
+      case AUDIO_NULL:
          break;
    }
 
@@ -213,11 +219,13 @@ const char *config_get_default_audio(void)
 
 const char *config_get_default_record(void)
 {
-   switch (RECORD_DEFAULT_DRIVER)
+   enum record_driver_enum default_driver = RECORD_DEFAULT_DRIVER;
+
+   switch (default_driver)
    {
       case RECORD_FFMPEG:
          return "ffmpeg";
-      default:
+      case RECORD_NULL:
          break;
    }
 
@@ -233,7 +241,9 @@ const char *config_get_default_record(void)
  **/
 const char *config_get_default_audio_resampler(void)
 {
-   switch (AUDIO_DEFAULT_RESAMPLER_DRIVER)
+   enum audio_resampler_driver_enum default_driver = AUDIO_DEFAULT_RESAMPLER_DRIVER;
+
+   switch (default_driver)
    {
       case AUDIO_RESAMPLER_CC:
          return "cc";
@@ -241,7 +251,7 @@ const char *config_get_default_audio_resampler(void)
          return "sinc";
       case AUDIO_RESAMPLER_NEAREST:
          return "nearest";
-      default:
+      case AUDIO_RESAMPLER_NULL:
          break;
    }
 
@@ -257,7 +267,9 @@ const char *config_get_default_audio_resampler(void)
  **/
 const char *config_get_default_video(void)
 {
-   switch (VIDEO_DEFAULT_DRIVER)
+   enum video_driver_enum default_driver = VIDEO_DEFAULT_DRIVER;
+
+   switch (default_driver)
    {
       case VIDEO_GL:
          return "gl";
@@ -298,7 +310,7 @@ const char *config_get_default_video(void)
          return "dispmanx";
       case VIDEO_SUNXI:
          return "sunxi";
-      default:
+      case VIDEO_NULL:
          break;
    }
 
@@ -314,7 +326,9 @@ const char *config_get_default_video(void)
  **/
 const char *config_get_default_input(void)
 {
-   switch (INPUT_DEFAULT_DRIVER)
+   enum input_driver_enum default_driver = INPUT_DEFAULT_DRIVER;
+
+   switch (default_driver)
    {
       case INPUT_ANDROID:
          return "android";
@@ -356,8 +370,8 @@ const char *config_get_default_input(void)
       	 return "qnx_input";
       case INPUT_RWEBINPUT:
       	 return "rwebinput";
-      default:
-         break;
+      case INPUT_NULL:
+          break;
    }
 
    return "null";
@@ -372,7 +386,9 @@ const char *config_get_default_input(void)
  **/
 const char *config_get_default_joypad(void)
 {
-   switch (JOYPAD_DEFAULT_DRIVER)
+   enum joypad_driver_enum default_driver = JOYPAD_DEFAULT_DRIVER;
+
+   switch (default_driver)
    {
       case JOYPAD_PS3:
          return "ps3";
@@ -410,7 +426,7 @@ const char *config_get_default_joypad(void)
          return "hid";
       case JOYPAD_QNX:
          return "qnx";
-      default:
+      case JOYPAD_NULL:
          break;
    }
 
@@ -427,7 +443,9 @@ const char *config_get_default_joypad(void)
  **/
 const char *config_get_default_camera(void)
 {
-   switch (CAMERA_DEFAULT_DRIVER)
+   enum camera_driver_enum default_driver = CAMERA_DEFAULT_DRIVER;
+
+   switch (default_driver)
    {
       case CAMERA_V4L2:
          return "video4linux2";
@@ -437,7 +455,7 @@ const char *config_get_default_camera(void)
          return "android";
       case CAMERA_AVFOUNDATION:
          return "avfoundation";
-      default:
+      case CAMERA_NULL:
          break;
    }
 
@@ -453,11 +471,13 @@ const char *config_get_default_camera(void)
  **/
 const char *config_get_default_wifi(void)
 {
-   switch (WIFI_DEFAULT_DRIVER)
+   enum wifi_driver_enum default_driver = WIFI_DEFAULT_DRIVER;
+
+   switch (default_driver)
    {
       case WIFI_CONNMANCTL:
          return "connmanctl";
-      default:
+      case WIFI_NULL:
          break;
    }
 
@@ -473,13 +493,15 @@ const char *config_get_default_wifi(void)
  **/
 const char *config_get_default_location(void)
 {
-   switch (LOCATION_DEFAULT_DRIVER)
+   enum location_driver_enum default_driver = LOCATION_DEFAULT_DRIVER;
+
+   switch (default_driver)
    {
       case LOCATION_ANDROID:
          return "android";
       case LOCATION_CORELOCATION:
          return "corelocation";
-      default:
+      case LOCATION_NULL:
          break;
    }
 
@@ -496,10 +518,12 @@ const char *config_get_default_location(void)
  **/
 const char *config_get_default_menu(void)
 {
+   enum menu_driver_enum default_driver = MENU_DEFAULT_DRIVER;
+
    if (!string_is_empty(g_defaults.settings.menu))
       return g_defaults.settings.menu;
 
-   switch (MENU_DEFAULT_DRIVER)
+   switch (default_driver)
    {
       case MENU_RGUI:
          return "rgui";
@@ -511,26 +535,13 @@ const char *config_get_default_menu(void)
          return "xmb";
       case MENU_NUKLEAR:
          return "nuklear";
-      default:
+      case MENU_NULL:
          break;
    }
 
    return "null";
 }
 
-static unsigned config_menu_btn_ok_default(void)
-{
-   if (g_defaults.menu.controls.set)
-      return g_defaults.menu.controls.menu_btn_ok;
-   return default_menu_btn_ok;
-}
-
-static unsigned config_menu_btn_cancel_default(void)
-{
-   if (g_defaults.menu.controls.set)
-      return g_defaults.menu.controls.menu_btn_cancel;
-   return default_menu_btn_cancel;
-}
 #endif
 
 bool config_overlay_enable_default(void)
@@ -596,6 +607,8 @@ static int populate_settings_path(settings_t *settings, struct config_path_setti
    SETTING_PATH("core_updater_buildbot_assets_url", settings->network.buildbot_assets_url, false, NULL, true);
 #ifdef HAVE_NETWORKING
    SETTING_PATH("netplay_ip_address",       settings->netplay.server, false, NULL, true);
+   SETTING_PATH("netplay_password",           settings->netplay.password, false, NULL, true);
+   SETTING_PATH("netplay_spectate_password",  settings->netplay.spectate_password, false, NULL, true);
 #endif
    SETTING_PATH("recording_output_directory",
          global->record.output_dir, false, NULL, true);
@@ -628,8 +641,6 @@ static int populate_settings_path(settings_t *settings, struct config_path_setti
 #ifdef HAVE_OVERLAY
    SETTING_PATH("input_overlay",
          settings->path.overlay, false, NULL, true);
-   SETTING_PATH("input_osk_overlay",
-         settings->path.osk_overlay, false, NULL, true);
 #endif
    SETTING_PATH("video_font_path",
          settings->path.font, false, NULL, true);
@@ -679,10 +690,6 @@ static int populate_settings_path(settings_t *settings, struct config_path_setti
    SETTING_PATH("overlay_directory",
          settings->directory.overlay, true, NULL, true);
 #endif
-#ifdef HAVE_OVERLAY
-   SETTING_PATH("osk_overlay_directory",
-         dir_get_ptr(RARCH_DIR_OSK_OVERLAY), true, NULL, true);
-#endif
 #ifndef HAVE_DYNAMIC
    SETTING_PATH("libretro_path", 
          path_get_ptr(RARCH_PATH_CORE), false, NULL, false);
@@ -708,14 +715,16 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("ui_companion_enable",           &settings->ui.companion_enable, true, ui_companion_enable, false);
    SETTING_BOOL("video_gpu_record",              &settings->video.gpu_record, true, gpu_record, false);
    SETTING_BOOL("input_remap_binds_enable",      &settings->input.remap_binds_enable, true, true, false);
-   SETTING_BOOL("back_as_menu_toggle_enable",    &settings->input.back_as_menu_toggle_enable, true, true, false);
    SETTING_BOOL("all_users_control_menu",        &settings->input.all_users_control_menu, true, all_users_control_menu, false);
+   SETTING_BOOL("menu_swap_ok_cancel_buttons",                 &settings->input.menu_swap_ok_cancel_buttons, true, menu_swap_ok_cancel_buttons, false);
 #ifdef HAVE_NETWORKING
+   SETTING_BOOL("netplay_stateless_mode",        &settings->netplay.stateless_mode, false, netplay_stateless_mode, false);
    SETTING_BOOL("netplay_client_swap_input",     &settings->netplay.swap_input, true, netplay_client_swap_input, false);
 #endif
    SETTING_BOOL("input_descriptor_label_show",   &settings->input.input_descriptor_label_show, true, input_descriptor_label_show, false);
    SETTING_BOOL("input_descriptor_hide_unbound", &settings->input.input_descriptor_hide_unbound, true, input_descriptor_hide_unbound, false);
    SETTING_BOOL("load_dummy_on_core_shutdown",   &settings->load_dummy_on_core_shutdown, true, load_dummy_on_core_shutdown, false);
+   SETTING_BOOL("check_firmware_before_loading", &settings->check_firmware_before_loading, true, check_firmware_before_loading, false);
    SETTING_BOOL("builtin_mediaplayer_enable",    &settings->multimedia.builtin_mediaplayer_enable, false, false /* TODO */, false);
    SETTING_BOOL("builtin_imageviewer_enable",    &settings->multimedia.builtin_imageviewer_enable, true, true, false);
    SETTING_BOOL("fps_show",                      &settings->fps_show, true, false, false);
@@ -767,6 +776,7 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("video_vfilter",                 &settings->video.vfilter, true, video_vfilter, false);
 #endif
 #ifdef HAVE_MENU
+   SETTING_BOOL("menu_unified_controls",         &settings->menu.unified_controls, true, false, false);
 #ifdef HAVE_THREADS
    SETTING_BOOL("threaded_data_runloop_enable",  &settings->threaded_data_runloop_enable, true, threaded_data_runloop_enable, false);
 #endif
@@ -777,6 +787,7 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("menu_mouse_enable",             &settings->menu.mouse.enable, true, def_mouse_enable, false);
    SETTING_BOOL("menu_pointer_enable",           &settings->menu.pointer.enable, true, pointer_enable, false);
    SETTING_BOOL("menu_timedate_enable",          &settings->menu.timedate_enable, true, true, false);
+   SETTING_BOOL("menu_battery_level_enable",     &settings->menu.battery_level_enable, true, true, false);
    SETTING_BOOL("menu_core_enable",              &settings->menu.core_enable, true, true, false);
    SETTING_BOOL("menu_dynamic_wallpaper_enable", &settings->menu.dynamic_wallpaper_enable, true, false, false);
 #ifdef HAVE_XMB
@@ -806,7 +817,6 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("input_overlay_enable",         &settings->input.overlay_enable, true, config_overlay_enable_default(), false);
    SETTING_BOOL("input_overlay_enable_autopreferred", &settings->input.overlay_enable_autopreferred, true, true, false);
    SETTING_BOOL("input_overlay_hide_in_menu",   &settings->input.overlay_hide_in_menu, true, overlay_hide_in_menu, false);
-   SETTING_BOOL("input_osk_overlay_enable",     &settings->osk.enable, true, true, false);
 #endif
 #ifdef HAVE_COMMAND
    SETTING_BOOL("network_cmd_enable",           &settings->network_cmd_enable, true, network_cmd_enable, false);
@@ -816,12 +826,13 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("network_remote_enable",        &settings->network_remote_enable, false, false /* TODO */, false);
 #endif
 #ifdef HAVE_NETWORKING
-   SETTING_BOOL("netplay_spectator_mode_enable",&settings->netplay.is_spectate, false, false /* TODO */, false);
+   SETTING_BOOL("netplay_nat_traversal",       &settings->netplay.nat_traversal, true, true, false);
 #endif
    SETTING_BOOL("block_sram_overwrite",         &settings->block_sram_overwrite, true, block_sram_overwrite, false);
    SETTING_BOOL("savestate_auto_index",         &settings->savestate_auto_index, true, savestate_auto_index, false);
    SETTING_BOOL("savestate_auto_save",          &settings->savestate_auto_save, true, savestate_auto_save, false);
    SETTING_BOOL("savestate_auto_load",          &settings->savestate_auto_load, true, savestate_auto_load, false);
+   SETTING_BOOL("savestate_thumbnail_enable",   &settings->savestate_thumbnail_enable, true, savestate_thumbnail_enable, false);
    SETTING_BOOL("history_list_enable",          &settings->history_list_enable, true, def_history_list_enable, false);
    SETTING_BOOL("game_specific_options",        &settings->game_specific_options, true, default_game_specific_options, false);
    SETTING_BOOL("auto_overrides_enable",        &settings->auto_overrides_enable, true, default_auto_overrides_enable, false);
@@ -830,7 +841,6 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("sort_savefiles_enable",        &settings->sort_savefiles_enable, true, default_sort_savefiles_enable, false);
    SETTING_BOOL("sort_savestates_enable",       &settings->sort_savestates_enable, true, default_sort_savestates_enable, false);
    SETTING_BOOL("config_save_on_exit",          &settings->config_save_on_exit, true, config_save_on_exit, false);
-   SETTING_BOOL("confirm_on_exit",              &settings->confirm_on_exit, true, confirm_on_exit, false);
    SETTING_BOOL("show_hidden_files",            &settings->show_hidden_files, true, show_hidden_files, false);
    SETTING_BOOL("input_autodetect_enable",      &settings->input.autodetect_enable, true, input_autodetect_enable, false);
    SETTING_BOOL("audio_rate_control",           &settings->audio.rate_control, true, rate_control, false);
@@ -894,23 +904,19 @@ static int populate_settings_int(settings_t *settings, struct config_int_setting
    SETTING_INT("keyboard_gamepad_mapping_type",&settings->input.keyboard_gamepad_mapping_type, true, 1, false);
    SETTING_INT("input_poll_type_behavior",     &settings->input.poll_type_behavior, true, 2, false);
 #ifdef HAVE_MENU
-   SETTING_INT("menu_ok_btn",                  &settings->menu_ok_btn,     true, config_menu_btn_ok_default(), false);
-   SETTING_INT("menu_cancel_btn",              &settings->menu_cancel_btn, true, config_menu_btn_cancel_default(), false);
-   SETTING_INT("menu_search_btn",              &settings->menu_search_btn, true, default_menu_btn_search, false);
-   SETTING_INT("menu_info_btn",                &settings->menu_info_btn,   true, default_menu_btn_info, false);
-   SETTING_INT("menu_default_btn",             &settings->menu_default_btn, true, default_menu_btn_default, false);
-   SETTING_INT("menu_scroll_down_btn",         &settings->menu_scroll_down_btn, true, default_menu_btn_scroll_down, false);
+
 #endif
    SETTING_INT("video_monitor_index",          &settings->video.monitor_index, true, monitor_index, false);
    SETTING_INT("video_fullscreen_x",           &settings->video.fullscreen_x,  true, fullscreen_x, false);
    SETTING_INT("video_fullscreen_y",           &settings->video.fullscreen_y,  true, fullscreen_y, false);
+   SETTING_INT("video_window_x",               &settings->video.window_x,  true, fullscreen_x, false);
+   SETTING_INT("video_window_y",               &settings->video.window_y,  true, fullscreen_y, false);
 #ifdef HAVE_COMMAND
    SETTING_INT("network_cmd_port",             &settings->network_cmd_port,    true, network_cmd_port, false);
 #endif
 #ifdef HAVE_NETWORKGAMEPAD
    SETTING_INT("network_remote_base_port",     &settings->network_remote_base_port, true, network_remote_base_port, false);
 #endif
-   SETTING_INT("menu_scroll_up_btn",           &settings->menu_scroll_up_btn, true, default_menu_btn_scroll_up, false);
 #ifdef HAVE_GEKKO
    SETTING_INT("video_viwidth",                &settings->video.viwidth, true, video_viwidth, false);
 #endif
@@ -942,9 +948,8 @@ static int populate_settings_int(settings_t *settings, struct config_int_setting
    SETTING_INT("aspect_ratio_index",           &settings->video.aspect_ratio_idx, true, aspect_ratio_idx, false);
    SETTING_INT("state_slot",                   (unsigned*)&settings->state_slot, false, 0 /* TODO */, false);
 #ifdef HAVE_NETWORKING
-   SETTING_INT("netplay_ip_port",              &settings->netplay.port, false, 0 /* TODO */, false);
-   SETTING_INT("netplay_delay_frames",         &settings->netplay.sync_frames, true, 16, false);
-   SETTING_INT("netplay_check_frames",         &settings->netplay.check_frames, false, 30, false);
+   SETTING_INT("netplay_ip_port",              &settings->netplay.port,         true, RARCH_DEFAULT_PORT, false);
+   SETTING_INT("netplay_check_frames",         (unsigned*)&settings->netplay.check_frames, true, netplay_check_frames, false);
 #endif
 #ifdef HAVE_LANGEXTRA
    SETTING_INT("user_language",                &settings->user_language, true, RETRO_LANGUAGE_ENGLISH, false);
@@ -1282,31 +1287,8 @@ static void config_set_defaults(void)
                   sizeof(settings->path.overlay));
 #endif
    }
-
-   if (!string_is_empty(g_defaults.dir.osk_overlay))
-   {
-      char temp_path[PATH_MAX_LENGTH];
-
-      temp_path[0] = '\0';
-
-      fill_pathname_expand_special(temp_path,
-            g_defaults.dir.osk_overlay, sizeof(temp_path));
-
-      dir_set(RARCH_DIR_OSK_OVERLAY, temp_path);
-   }
-   else
-   {
-      char temp_path[PATH_MAX_LENGTH];
-
-      temp_path[0] = '\0';
-
-      strlcpy(temp_path,
-            settings->directory.overlay,
-            sizeof(temp_path));
-
-      dir_set(RARCH_DIR_OSK_OVERLAY, temp_path);
-   }
 #endif
+
 #ifdef HAVE_MENU
    if (!string_is_empty(g_defaults.dir.menu_config))
       strlcpy(settings->directory.menu_config,
@@ -1442,6 +1424,9 @@ static config_file_t *open_default_config_file(void)
    if (!fill_pathname_application_data(application_data,
             sizeof(application_data)))
       return NULL;
+
+   /* Group config file with menu configs, remaps, etc: */
+   strlcat(application_data, "/config", sizeof(application_data));
 
    path_mkdir(application_data);
 
@@ -1644,6 +1629,28 @@ static void config_read_keybinds_conf(config_file_t *conf)
       read_keybinds_user(conf, i);
 }
 
+static bool check_shader_compatibility(enum file_path_enum enum_idx)
+{
+   settings_t *settings = config_get_ptr();
+
+   if (string_is_equal("vulkan", settings->video.driver))
+   {
+      if (enum_idx != FILE_PATH_SLANGP_EXTENSION)
+         return false;
+      return true;
+   }
+
+   if (string_is_equal("gl", settings->video.driver) || 
+       string_is_equal("d3d9", settings->video.driver))
+   {
+      if (enum_idx == FILE_PATH_SLANGP_EXTENSION)
+         return false;
+      return true;
+   }
+
+   return false;
+}
+
 #if 0
 static bool config_read_keybinds(const char *path)
 {
@@ -1805,13 +1812,6 @@ static bool config_load_file(const char *path, bool set_defaults,
    if (!rarch_ctl(RARCH_CTL_IS_FORCE_FULLSCREEN, NULL))
       CONFIG_GET_BOOL_BASE(conf, settings, video.fullscreen, "video_fullscreen");
 
-#ifdef HAVE_NETWORKING
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL))
-   {
-      CONFIG_GET_BOOL_BASE(conf, settings, netplay.is_spectate,
-            "netplay_spectator_mode_enable");
-   }
-#endif
 #ifdef HAVE_NETWORKGAMEPAD
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -1860,8 +1860,8 @@ static bool config_load_file(const char *path, bool set_defaults,
    }
 
 #ifdef HAVE_NETWORKING
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES, NULL))
-      CONFIG_GET_INT_BASE(conf, settings, netplay.sync_frames, "netplay_delay_frames");
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_STATELESS_MODE, NULL))
+      CONFIG_GET_BOOL_BASE(conf, settings, netplay.stateless_mode, "netplay_stateless_mode");
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES, NULL))
       CONFIG_GET_INT_BASE(conf, settings, netplay.check_frames, "netplay_check_frames");
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT, NULL))
@@ -2103,8 +2103,6 @@ static bool config_load_file(const char *path, bool set_defaults,
 #ifdef HAVE_OVERLAY
    if (string_is_equal(settings->directory.overlay, "default"))
       *settings->directory.overlay = '\0';
-   if (string_is_equal(dir_get(RARCH_DIR_OSK_OVERLAY), "default"))
-      dir_clear(RARCH_DIR_OSK_OVERLAY);
 #endif
    if (string_is_equal(settings->directory.system, "default"))
       *settings->directory.system = '\0';
@@ -2167,6 +2165,20 @@ static bool config_load_file(const char *path, bool set_defaults,
    config_read_keybinds_conf(conf);
 
    ret = true;
+   
+   for(i = FILE_PATH_CGP_EXTENSION; i <= FILE_PATH_SLANGP_EXTENSION; i++)
+   {
+      if(strstr(file_path_str((enum file_path_enum)(i)), path_get_extension(settings->path.shader)))
+      {
+         if (!check_shader_compatibility((enum file_path_enum)i))
+         {
+            /* TODO/FIXME - this check is always triggered even with an empty shader path */
+            RARCH_LOG("Incompatible shader for backend %s, clearing...\n", settings->video.driver);
+            settings->path.shader[0] = '\0';
+            break;
+         }
+      }
+   }
 
 end:
    if (conf)
@@ -2335,18 +2347,16 @@ bool config_unload_override(void)
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_SAVE_PATH,  NULL);
 
-   if (config_load_file(path_get(RARCH_PATH_CONFIG), false, config_get_ptr()))
-   {
-      RARCH_LOG("[overrides] configuration overrides unloaded, original configuration restored.\n");
+   if (!config_load_file(path_get(RARCH_PATH_CONFIG), false, config_get_ptr()))
+      return false;
 
-      /* Reset save paths */
-      retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
-      retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL);
+   RARCH_LOG("[overrides] configuration overrides unloaded, original configuration restored.\n");
 
-      return true;
-   }
+   /* Reset save paths */
+   retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
+   retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL);
 
-   return false;
+   return true;
 }
 
 /**
@@ -2451,28 +2461,6 @@ bool config_load_remap(void)
    return false;
 }
 
-static bool check_shader_compatibility(enum file_path_enum enum_idx)
-{
-   settings_t *settings = config_get_ptr();
-
-   if (string_is_equal("vulkan", settings->video.driver))
-   {
-      if (enum_idx != FILE_PATH_SLANGP_EXTENSION)
-         return false;
-      return true;
-   }
-
-   if (string_is_equal("gl", settings->video.driver) || 
-       string_is_equal("d3d9", settings->video.driver))
-   {
-      if (enum_idx == FILE_PATH_SLANGP_EXTENSION)
-         return false;
-      return true;
-   }
-
-   return false;
-}
-
 /**
  * config_load_shader_preset:
  *
@@ -2519,7 +2507,7 @@ bool config_load_shader_preset(void)
 
    RARCH_LOG("Shaders: preset directory: %s\n", shader_directory);
 
-   for(idx = FILE_PATH_CGP_EXTENSION; idx < FILE_PATH_SLANGP_EXTENSION; idx++)
+   for(idx = FILE_PATH_CGP_EXTENSION; idx <= FILE_PATH_SLANGP_EXTENSION; idx++)
    {
       config_file_t *new_conf = NULL;
 
@@ -2556,7 +2544,7 @@ bool config_load_shader_preset(void)
       return true;
    }
 
-   for(idx = FILE_PATH_CGP_EXTENSION; idx < FILE_PATH_SLANGP_EXTENSION; idx++)
+   for(idx = FILE_PATH_CGP_EXTENSION; idx <= FILE_PATH_SLANGP_EXTENSION; idx++)
    {
       config_file_t *new_conf = NULL;
 
@@ -3214,6 +3202,33 @@ bool config_save_overrides(int override_type)
                   path_overrides[i].ident, path_overrides[i].ptr);
             config_set_path(conf, path_overrides[i].ident,
                   path_overrides[i].ptr);
+         }
+      }
+
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         char cfg[64];
+
+         cfg[0] = '\0';
+         if (settings->input.device[i] != overrides->input.device[i])
+         {
+            snprintf(cfg, sizeof(cfg), "input_device_p%u", i + 1);
+            config_set_int(conf, cfg, overrides->input.device[i]);
+         }
+         if (settings->input.joypad_map[i] != overrides->input.joypad_map[i])
+         {
+            snprintf(cfg, sizeof(cfg), "input_player%u_joypad_index", i + 1);
+            config_set_int(conf, cfg, overrides->input.joypad_map[i]);
+         }
+         if (settings->input.libretro_device[i] != overrides->input.libretro_device[i])
+         {
+            snprintf(cfg, sizeof(cfg), "input_libretro_device_p%u", i + 1);
+            config_set_int(conf, cfg, overrides->input.libretro_device[i]);
+         }
+         if (settings->input.analog_dpad_mode[i] != overrides->input.analog_dpad_mode[i])
+         {
+            snprintf(cfg, sizeof(cfg), "input_player%u_analog_dpad_mode", i + 1);
+            config_set_int(conf, cfg, overrides->input.analog_dpad_mode[i]);
          }
       }
 

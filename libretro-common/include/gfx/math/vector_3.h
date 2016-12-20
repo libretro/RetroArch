@@ -25,6 +25,10 @@
 
 #include <stdint.h>
 
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
+
 typedef float vec3_t[3];
 
 float vec3_dot(const float *a, const float *b);
@@ -42,6 +46,8 @@ void vec3_scale(float *dst, const float scale);
 void vec3_copy(float *dst, const float *src);
 
 void vec3_normalize(float *dst);
+
+RETRO_END_DECLS
 
 #endif
 

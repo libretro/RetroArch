@@ -33,7 +33,7 @@
 namespace glm{
 namespace detail
 {
-	GLM_FUNC_QUALIFIER float overflow()
+	inline float overflow()
 	{
 		volatile float f = 1e10;
 
@@ -45,15 +45,15 @@ namespace detail
 
 	union uif32
 	{
-		GLM_FUNC_QUALIFIER uif32() :
+		inline uif32() :
 			i(0)
 		{}
 
-		GLM_FUNC_QUALIFIER uif32(float f) :
+		inline uif32(float f) :
 			f(f)
 		{}
 
-		GLM_FUNC_QUALIFIER uif32(uint32 i) :
+		inline uif32(uint32 i) :
 			i(i)
 		{}
 
@@ -61,7 +61,7 @@ namespace detail
 		uint32 i;
 	};
 
-	GLM_FUNC_QUALIFIER float toFloat32(hdata value)
+	inline float toFloat32(int16_t value)
 	{
 		int s = (value >> 15) & 0x00000001;
 		int e = (value >> 10) & 0x0000001f;
@@ -135,140 +135,137 @@ namespace detail
 		return Result.f;
 	}
 
-	GLM_FUNC_QUALIFIER hdata toFloat16(float const & f)
-	{
-		uif32 Entry;
-		Entry.f = f;
-		int i = (int)Entry.i;
+	inline int16_t toFloat16(float const & f)
+   {
+      uif32 Entry;
+      Entry.f = f;
+      int i = (int)Entry.i;
 
-		//
-		// Our floating point number, f, is represented by the bit
-		// pattern in integer i.  Disassemble that bit pattern into
-		// the sign, s, the exponent, e, and the significand, m.
-		// Shift s into the position where it will go in in the
-		// resulting half number.
-		// Adjust e, accounting for the different exponent bias
-		// of float and half (127 versus 15).
-		//
+      //
+      // Our floating point number, f, is represented by the bit
+      // pattern in integer i.  Disassemble that bit pattern into
+      // the sign, s, the exponent, e, and the significand, m.
+      // Shift s into the position where it will go in in the
+      // resulting half number.
+      // Adjust e, accounting for the different exponent bias
+      // of float and half (127 versus 15).
+      //
 
-		int s =  (i >> 16) & 0x00008000;
-		int e = ((i >> 23) & 0x000000ff) - (127 - 15);
-		int m =   i        & 0x007fffff;
+      int s =  (i >> 16) & 0x00008000;
+      int e = ((i >> 23) & 0x000000ff) - (127 - 15);
+      int m =   i        & 0x007fffff;
 
-		//
-		// Now reassemble s, e and m into a half:
-		//
+      //
+      // Now reassemble s, e and m into a half:
+      //
 
-		if(e <= 0)
-		{
-			if(e < -10)
-			{
-				//
-				// E is less than -10.  The absolute value of f is
-				// less than half_MIN (f may be a small normalized
-				// float, a denormalized float or a zero).
-				//
-				// We convert f to a half zero.
-				//
+      if(e <= 0)
+      {
+         if(e < -10)
+         {
+            //
+            // E is less than -10.  The absolute value of f is
+            // less than half_MIN (f may be a small normalized
+            // float, a denormalized float or a zero).
+            //
+            // We convert f to a half zero.
+            //
 
-				return hdata(s);
-			}
+            return (int16_t)(s);
+         }
 
-			//
-			// E is between -10 and 0.  F is a normalized float,
-			// whose magnitude is less than __half_NRM_MIN.
-			//
-			// We convert f to a denormalized half.
-			// 
+         //
+         // E is between -10 and 0.  F is a normalized float,
+         // whose magnitude is less than __half_NRM_MIN.
+         //
+         // We convert f to a denormalized half.
+         // 
 
-			m = (m | 0x00800000) >> (1 - e);
+         m = (m | 0x00800000) >> (1 - e);
 
-			//
-			// Round to nearest, round "0.5" up.
-			//
-			// Rounding may cause the significand to overflow and make
-			// our number normalized.  Because of the way a half's bits
-			// are laid out, we don't have to treat this case separately;
-			// the code below will handle it correctly.
-			// 
+         //
+         // Round to nearest, round "0.5" up.
+         //
+         // Rounding may cause the significand to overflow and make
+         // our number normalized.  Because of the way a half's bits
+         // are laid out, we don't have to treat this case separately;
+         // the code below will handle it correctly.
+         // 
 
-			if(m & 0x00001000) 
-				m += 0x00002000;
+         if(m & 0x00001000) 
+            m += 0x00002000;
 
-			//
-			// Assemble the half from s, e (zero) and m.
-			//
+         //
+         // Assemble the half from s, e (zero) and m.
+         //
 
-			return hdata(s | (m >> 13));
-		}
-		else if(e == 0xff - (127 - 15))
-		{
-			if(m == 0)
-			{
-				//
-				// F is an infinity; convert f to a half
-				// infinity with the same sign as f.
-				//
+         return (int16_t)(s | (m >> 13));
+      }
 
-				return hdata(s | 0x7c00);
-			}
-			else
-			{
-				//
-				// F is a NAN; we produce a half NAN that preserves
-				// the sign bit and the 10 leftmost bits of the
-				// significand of f, with one exception: If the 10
-				// leftmost bits are all zero, the NAN would turn 
-				// into an infinity, so we have to set at least one
-				// bit in the significand.
-				//
+      if(e == 0xff - (127 - 15))
+      {
+         if(m == 0)
+         {
+            //
+            // F is an infinity; convert f to a half
+            // infinity with the same sign as f.
+            //
 
-				m >>= 13;
+            return (int16_t)(s | 0x7c00);
+         }
 
-				return hdata(s | 0x7c00 | m | (m == 0));
-			}
-		}
-		else
-		{
-			//
-			// E is greater than zero.  F is a normalized float.
-			// We try to convert f to a normalized half.
-			//
+         //
+         // F is a NAN; we produce a half NAN that preserves
+         // the sign bit and the 10 leftmost bits of the
+         // significand of f, with one exception: If the 10
+         // leftmost bits are all zero, the NAN would turn 
+         // into an infinity, so we have to set at least one
+         // bit in the significand.
+         //
 
-			//
-			// Round to nearest, round "0.5" up
-			//
+         m >>= 13;
 
-			if(m &  0x00001000)
-			{
-				m += 0x00002000;
+         return (int16_t)(s | 0x7c00 | m | (m == 0));
+      }
 
-				if(m & 0x00800000)
-				{
-					m =  0;     // overflow in significand,
-					e += 1;     // adjust exponent
-				}
-			}
+      //
+      // E is greater than zero.  F is a normalized float.
+      // We try to convert f to a normalized half.
+      //
 
-			//
-			// Handle exponent overflow
-			//
+      //
+      // Round to nearest, round "0.5" up
+      //
 
-			if (e > 30)
-			{
-				overflow();        // Cause a hardware floating point overflow;
+      if(m &  0x00001000)
+      {
+         m += 0x00002000;
 
-				return hdata(s | 0x7c00);
-				// if this returns, the half becomes an
-			}   // infinity with the same sign as f.
+         if(m & 0x00800000)
+         {
+            m =  0;     // overflow in significand,
+            e += 1;     // adjust exponent
+         }
+      }
 
-			//
-			// Assemble the half from s, e and m.
-			//
+      //
+      // Handle exponent overflow
+      //
 
-			return hdata(s | (e << 10) | (m >> 13));
-		}
-	}
+      if (e > 30)
+      {
+         overflow();        // Cause a hardware floating point overflow;
+
+         return (int16_t)(s | 0x7c00);
+         // if this returns, the half becomes an
+      }   // infinity with the same sign as f.
+
+      //
+      // Assemble the half from s, e and m.
+      //
+
+      return (int16_t)(s | (e << 10) | (m >> 13));
+   }
 
 }//namespace detail
 }//namespace glm

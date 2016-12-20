@@ -177,7 +177,7 @@ static int sd_fat_open_r (struct _reent *r, void *fileStruct, const char *path, 
         return -1;
     }
 
-    int result = FSOpenFile(dev->pClient, dev->pCmd, real_path, mode_str, &fd, -1);
+    int result = FSOpenFile(dev->pClient, dev->pCmd, real_path, mode_str, (FSFileHandle*)&fd, -1);
 
     free(real_path);
 
@@ -299,7 +299,9 @@ static ssize_t sd_fat_write_r (struct _reent *r, int fd, const char *ptr, size_t
         memcpy(tmpBuf, ptr + done, write_size);
 
         int result = FSWriteFile(file->dev->pClient, file->dev->pCmd, tmpBuf, 0x01, write_size, file->fd, 0, -1);
+#if 0
         FSFlushFile(file->dev->pClient, file->dev->pCmd, file->fd, -1);
+#endif
         if(result < 0)
         {
             r->_errno = result;
@@ -740,7 +742,7 @@ static DIR_ITER *sd_fat_diropen_r (struct _reent *r, DIR_ITER *dirState, const c
 
     int dirHandle;
 
-    int result = FSOpenDir(dev->pClient, dev->pCmd, real_path, &dirHandle, -1);
+    int result = FSOpenDir(dev->pClient, dev->pCmd, real_path, (FSDirectoryHandle*)&dirHandle, -1);
 
     free(real_path);
 

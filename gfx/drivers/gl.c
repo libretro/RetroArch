@@ -38,6 +38,7 @@
 #include <libretro.h>
 
 #include <gfx/gl_capabilities.h>
+#include <gfx/video_frame.h>
 
 #include "gl_renderchains/render_chain_gl.h"
 
@@ -56,7 +57,6 @@
 
 #include "../font_driver.h"
 #include "../video_context_driver.h"
-#include "../video_frame.h"
 
 #ifdef HAVE_GLSL
 #include "../drivers_shader/shader_glsl.h"
@@ -234,7 +234,7 @@ static void gl_render_overlay(gl_t *gl)
    shader_info.idx        = VIDEO_SHADER_STOCK_BLEND;
    shader_info.set_active = true;
 
-   video_shader_driver_use(&shader_info);
+   video_shader_driver_use(shader_info);
 
    gl->coords.vertex    = gl->overlay_vertex_coord;
    gl->coords.tex_coord = gl->overlay_tex_coord;
@@ -244,12 +244,12 @@ static void gl_render_overlay(gl_t *gl)
    coords.handle_data   = NULL;
    coords.data          = &gl->coords;
 
-   video_shader_driver_set_coords(&coords);
+   video_shader_driver_set_coords(coords);
 
    mvp.data             = gl;
    mvp.matrix           = &gl->mvp_no_rot;
 
-   video_shader_driver_set_mvp(&mvp);
+   video_shader_driver_set_mvp(mvp);
 
    for (i = 0; i < gl->overlays; i++)
    {
@@ -521,7 +521,6 @@ static void gl_update_input_size(gl_t *gl, unsigned width,
    GLfloat xamt, yamt;
    bool set_coords = false;
 
-
    if ((width != gl->last_width[gl->tex_index] ||
             height != gl->last_height[gl->tex_index]) && gl->empty_buf)
    {
@@ -607,9 +606,9 @@ static void gl_init_textures_reference(gl_t *gl, unsigned i,
    if (gl->egl_images)
       return;
 
-   glTexImage2D(GL_TEXTURE_2D,
-         0, internal_fmt, gl->tex_w, gl->tex_h, 0, texture_type,
-         texture_fmt, gl->empty_buf ? gl->empty_buf : NULL);
+   gl_load_texture_image(GL_TEXTURE_2D,
+      0, internal_fmt, gl->tex_w, gl->tex_h, 0, texture_type,
+      texture_fmt, gl->empty_buf ? gl->empty_buf : NULL);
 #endif
 }
 
@@ -826,7 +825,7 @@ static INLINE void gl_set_shader_viewport(gl_t *gl, unsigned idx)
    shader_info.idx        = idx;
    shader_info.set_active = true;
 
-   video_shader_driver_use(&shader_info);
+   video_shader_driver_use(shader_info);
    gl_set_viewport(gl, width, height, false, true);
 }
 
@@ -1041,19 +1040,19 @@ static INLINE void gl_draw_texture(gl_t *gl)
    shader_info.idx        = VIDEO_SHADER_STOCK_BLEND;
    shader_info.set_active = true;
 
-   video_shader_driver_use(&shader_info);
+   video_shader_driver_use(shader_info);
 
    gl->coords.vertices  = 4;
 
    coords.handle_data   = NULL;
    coords.data          = &gl->coords;
 
-   video_shader_driver_set_coords(&coords);
+   video_shader_driver_set_coords(coords);
 
    mvp.data             = gl;
    mvp.matrix           = &gl->mvp_no_rot;
 
-   video_shader_driver_set_mvp(&mvp);
+   video_shader_driver_set_mvp(mvp);
 
    glEnable(GL_BLEND);
 
@@ -1109,7 +1108,7 @@ static bool gl_frame(void *data, const void *frame,
    shader_info.idx        = 1;
    shader_info.set_active = true;
 
-   video_shader_driver_use(&shader_info);
+   video_shader_driver_use(shader_info);
 
 #ifdef IOS
    /* Apparently the viewport is lost each frame, thanks Apple. */
@@ -1241,18 +1240,18 @@ static bool gl_frame(void *data, const void *frame,
    params.fbo_info      = NULL;
    params.fbo_info_cnt  = 0;
 
-   video_shader_driver_set_parameters(&params);
+   video_shader_driver_set_parameters(params);
 
    gl->coords.vertices = 4;
    coords.handle_data   = NULL;
    coords.data          = &gl->coords;
 
-   video_shader_driver_set_coords(&coords);
+   video_shader_driver_set_coords(coords);
 
    mvp.data             = gl;
    mvp.matrix           = &gl->mvp;
 
-   video_shader_driver_set_mvp(&mvp);
+   video_shader_driver_set_mvp(mvp);
 
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -1274,7 +1273,7 @@ static bool gl_frame(void *data, const void *frame,
    }
 #endif
 
-   if (font_driver_has_render_msg() && msg)
+   if (msg)
       font_driver_render_msg(NULL, msg, NULL);
 
 #ifdef HAVE_OVERLAY
@@ -1293,7 +1292,7 @@ static bool gl_frame(void *data, const void *frame,
       shader_info.idx        = 0;
       shader_info.set_active = true;
 
-      video_shader_driver_use(&shader_info);
+      video_shader_driver_use(shader_info);
 
       glBindTexture(GL_TEXTURE_2D, 0);
 #ifndef NO_GL_FF_VERTEX
@@ -1978,7 +1977,10 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 #endif
 
    if (!video_shader_driver_init_first())
+   {
+      RARCH_ERR("[GL:]: Shader driver initialization failed.\n");
       goto error;
+   }
 
    video_shader_driver_get_ident(&ident_info);
 
@@ -2001,7 +2003,10 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    }
 
    if (!video_shader_driver_info(&shader_info))
+   {
+      RARCH_ERR("[GL]: Shader driver info check failed.\n");
       goto error;
+   }
 
    RARCH_LOG("[GL]: Using %u textures.\n", gl->textures);
    RARCH_LOG("[GL]: Loaded %u program(s).\n",
@@ -2074,7 +2079,10 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    if (gl->hw_render_use &&
          !gl_init_hw_render(gl, gl->tex_w, gl->tex_h))
+   {
+      RARCH_ERR("[GL]: Hardware rendering context initialization failed.\n");
       goto error;
+   }
 #endif
 
    inp.input      = input;

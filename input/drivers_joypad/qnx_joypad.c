@@ -15,7 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../input_autodetect.h"
+#include "../../tasks/tasks_internal.h"
 
 #include "../../configuration.h"
 
@@ -28,22 +28,23 @@ static const char *qnx_joypad_name(unsigned pad)
 static bool qnx_joypad_init(void *data)
 {
    unsigned autoconf_pad;
-   settings_t *settings = config_get_ptr();
 
    (void)data;
 
    for (autoconf_pad = 0; autoconf_pad < MAX_USERS; autoconf_pad++)
    {
-      autoconfig_params_t params = {{0}};
-
-      strlcpy(settings->input.device_names[autoconf_pad], "None",
-            sizeof(settings->input.device_names[autoconf_pad]));
+      autoconfig_params_t params;
 
       /* TODO - implement VID/PID? */
-      params.idx = autoconf_pad;
-      strlcpy(params.name, qnx_joypad_name(autoconf_pad), sizeof(params.name));
+      params.idx             = autoconf_pad;
+      params.vid             = 0;
+      params.pid             = 0;
+      params.display_name[0] = '\0';
+
+      strlcpy(params.name,   qnx_joypad_name(autoconf_pad), sizeof(params.name));
       strlcpy(params.driver, qnx_joypad.ident, sizeof(params.driver));
-      input_config_autoconfigure_joypad(&params);
+
+      input_autoconfigure_connect(&params);
    }
 
    return true;

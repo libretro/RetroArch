@@ -118,6 +118,9 @@
 #ifndef GL_BGRA_EXT
 #define GL_BGRA_EXT 0x80E1
 #endif
+#ifndef GL_BGRA8_EXT
+#define GL_BGRA8_EXT 0x93A1
+#endif
 #ifdef IOS
 /* Stupid Apple. */
 #define RARCH_GL_INTERNAL_FORMAT32 GL_RGBA

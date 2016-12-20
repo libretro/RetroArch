@@ -21,6 +21,8 @@
 
 #include "input_keyboard.h"
 
+#include <encodings/utf.h>
+
 #include "../configuration.h"
 #include "../runloop.h"
 
@@ -40,30 +42,58 @@ struct input_keyboard_line
 };
 
 static bool input_driver_keyboard_linefeed_enable = false;
-static input_keyboard_line_t *g_keyboard_line;
+static input_keyboard_line_t *g_keyboard_line     = NULL;
+
+static void *g_keyboard_press_data                = NULL;
+
+static bool kb_return_pressed                     = false;
+
+static unsigned osk_last_codepoint                = 0;
+static unsigned osk_last_codepoint_len            = 0;
 
 static input_keyboard_press_t g_keyboard_press_cb;
 
-static void *g_keyboard_press_data;
-
-static bool return_pressed;
-
-bool input_keyboard_return_pressed()
+static void osk_update_last_codepoint(const char *word)
 {
-   return return_pressed;
+   const char *letter = word;
+   const char    *pos = letter;
+
+   if (letter[0] == 0)
+   {
+      osk_last_codepoint = 0;
+      osk_last_codepoint_len = 0;
+      return;
+   }
+
+   for (;;)
+   {
+      unsigned codepoint = utf8_walk(&letter);
+      unsigned       len = letter - pos;
+
+      if (letter[0] == 0)
+      {
+         osk_last_codepoint = codepoint;
+         osk_last_codepoint_len = len;
+         break;
+      }
+
+      pos = letter;
+   }
 }
 
-static void input_keyboard_line_toggle_osk(bool enable)
+static void osk_update_last_char(const char c)
 {
-   settings_t *settings = config_get_ptr();
+   char array[2];
 
-   if (!settings->osk.enable)
-      return;
+   array[0] = c;
+   array[1] = 0;
 
-   if (enable)
-      input_driver_keyboard_linefeed_enable = true;
-   else
-      input_driver_keyboard_linefeed_enable = false;
+   osk_update_last_codepoint(array);
+}
+
+bool input_keyboard_return_pressed(void)
+{
+   return kb_return_pressed;
 }
 
 /**
@@ -79,8 +109,6 @@ static void input_keyboard_line_free(input_keyboard_line_t *state)
 
    free(state->buffer);
    free(state);
-
-   input_keyboard_line_toggle_osk(false);
 }
 
 /**
@@ -105,8 +133,6 @@ static input_keyboard_line_t *input_keyboard_line_new(void *userdata,
    state->cb       = cb;
    state->userdata = userdata;
 
-   input_keyboard_line_toggle_osk(true);
-
    return state;
 }
 
@@ -123,12 +149,14 @@ static bool input_keyboard_line_event(
       input_keyboard_line_t *state, uint32_t character)
 {
    char c = character >= 128 ? '?' : character;
+
    /* Treat extended chars as ? as we cannot support 
     * printable characters for unicode stuff. */
 
    if (c == '\r' || c == '\n')
    {
       state->cb(state->userdata, state->buffer);
+      osk_update_last_char(c);
       return true;
    }
 
@@ -136,12 +164,20 @@ static bool input_keyboard_line_event(
    {
       if (state->ptr)
       {
-         memmove(state->buffer + state->ptr - 1,
-               state->buffer + state->ptr,
-               state->size - state->ptr + 1);
-         state->ptr--;
-         state->size--;
+         unsigned i;
+
+         for (i = 0; i < osk_last_codepoint_len; i++)
+         {
+            memmove(state->buffer + state->ptr - 1,
+                  state->buffer + state->ptr,
+                  state->size - state->ptr + 1);
+            state->ptr--;
+            state->size--;
+         }
+
+         osk_update_last_codepoint(state->buffer);
       }
+
    }
    else if (isprint((int)c))
    {
@@ -161,6 +197,8 @@ static bool input_keyboard_line_event(
       newbuf[state->size] = '\0';
 
       state->buffer = newbuf;
+
+      osk_update_last_char(c);
    }
 
    return false;
@@ -168,11 +206,12 @@ static bool input_keyboard_line_event(
 
 bool input_keyboard_line_append(const char *word)
 {
-   unsigned i = 0;
+   unsigned i   = 0;
    unsigned len = strlen(word);
-
    char *newbuf = (char*)
-         realloc(g_keyboard_line->buffer, g_keyboard_line->size + len*2);
+         realloc(g_keyboard_line->buffer,
+               g_keyboard_line->size + len*2);
+
    if (!newbuf)
       return false;
 
@@ -190,6 +229,8 @@ bool input_keyboard_line_append(const char *word)
    newbuf[g_keyboard_line->size] = '\0';
 
    g_keyboard_line->buffer = newbuf;
+
+   osk_update_last_codepoint(word);
 
    return false;
 }
@@ -236,7 +277,7 @@ void input_keyboard_event(bool down, unsigned code,
    static bool deferred_wait_keys;
 
    if (code == RETROK_RETURN || (!down && code == RETROK_UNKNOWN))
-      return_pressed = down;
+      kb_return_pressed = down;
 
    if (deferred_wait_keys)
    {

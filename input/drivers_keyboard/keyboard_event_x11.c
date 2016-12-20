@@ -16,6 +16,7 @@
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <X11/keysymdef.h>
 #include <X11/extensions/xf86vmode.h>
 
 #include <boolean.h>
@@ -37,7 +38,8 @@
 void x11_handle_key_event(XEvent *event, XIC ic, bool filter)
 {
    int i;
-   unsigned state, key;
+   unsigned key;
+   unsigned state = event->xkey.state;
    uint16_t mod = 0;
    uint32_t chars[32];
 
@@ -47,32 +49,41 @@ void x11_handle_key_event(XEvent *event, XIC ic, bool filter)
    
    chars[0] = '\0';
 
-   if (down && !filter)
+   if (!filter)
    {
-      char keybuf[32];
+      if (down)
+      {
+         char keybuf[32];
 
-      keybuf[0] = '\0';
+         keybuf[0] = '\0';
 #ifdef X_HAVE_UTF8_STRING
-      Status status = 0;
+         Status status = 0;
 
-      /* XwcLookupString doesn't seem to work. */
-      num = Xutf8LookupString(ic, &event->xkey, keybuf, ARRAY_SIZE(keybuf), &keysym, &status);
+         /* XwcLookupString doesn't seem to work. */
+         num = Xutf8LookupString(ic, &event->xkey, keybuf, ARRAY_SIZE(keybuf), &keysym, &status);
 
-      /* libc functions need UTF-8 locale to work properly, 
-       * which makes mbrtowc a bit impractical.
-       *
-       * Use custom UTF8 -> UTF-32 conversion. */
-      num = utf8_conv_utf32(chars, ARRAY_SIZE(chars), keybuf, num);
+         /* libc functions need UTF-8 locale to work properly, 
+          * which makes mbrtowc a bit impractical.
+          *
+          * Use custom UTF8 -> UTF-32 conversion. */
+         num = utf8_conv_utf32(chars, ARRAY_SIZE(chars), keybuf, num);
 #else
-      (void)ic;
-      num = XLookupString(&event->xkey, keybuf, sizeof(keybuf), &keysym, NULL); /* ASCII only. */
-      for (i = 0; i < num; i++)
-         chars[i] = keybuf[i] & 0x7f;
+         (void)ic;
+         num = XLookupString(&event->xkey, keybuf, sizeof(keybuf), &keysym, NULL); /* ASCII only. */
+         for (i = 0; i < num; i++)
+            chars[i] = keybuf[i] & 0x7f;
 #endif
+      }
+      else
+         keysym = XLookupKeysym(&event->xkey, (state & ShiftMask) || (state & LockMask));
    }
 
+   /* We can't feed uppercase letters to the keycode translator. Seems like a bad idea
+    * to feed it keysyms anyway, so here is a little hack... */
+   if (keysym >= XK_A && keysym <= XK_Z)
+       keysym += XK_z - XK_Z;
+
    key   = input_keymaps_translate_keysym_to_rk(keysym);
-   state = event->xkey.state;
 
    if (state & ShiftMask)
       mod |= RETROKMOD_SHIFT;

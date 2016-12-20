@@ -44,6 +44,7 @@
 #include "verbosity.h"
 #include "gfx/video_driver.h"
 #include "audio/audio_driver.h"
+#include "cheevos.h"
 
 static struct retro_core_t core;
 static unsigned            core_poll_type;
@@ -83,7 +84,7 @@ void core_set_input_state(retro_ctx_input_state_info_t *info)
  * core_init_libretro_cbs:
  * @data           : pointer to retro_callbacks object
  *
- * Initializes libretro callbacks, and binds the libretro callbacks 
+ * Initializes libretro callbacks, and binds the libretro callbacks
  * to default callback functions.
  **/
 static bool core_init_libretro_cbs(void *data)
@@ -183,7 +184,7 @@ bool core_set_rewind_callbacks(void)
  * core_set_netplay_callbacks:
  *
  * Set the I/O callbacks to use netplay's interceding callback system. Should
- * only be called once.
+ * only be called while initializing netplay.
  **/
 bool core_set_netplay_callbacks(void)
 {
@@ -195,6 +196,26 @@ bool core_set_netplay_callbacks(void)
    core.retro_set_audio_sample(audio_sample_net);
    core.retro_set_audio_sample_batch(audio_sample_batch_net);
    core.retro_set_input_state(input_state_net);
+
+   return true;
+}
+
+/**
+ * core_unset_netplay_callbacks
+ *
+ * Unset the I/O callbacks from having used netplay's interceding callback
+ * system. Should only be called while uninitializing netplay.
+ */
+bool core_unset_netplay_callbacks(void)
+{
+   struct retro_callbacks cbs;
+   if (!core_set_default_callbacks(&cbs))
+      return false;
+
+   core.retro_set_video_refresh(cbs.frame_cb);
+   core.retro_set_audio_sample(cbs.sample_cb);
+   core.retro_set_audio_sample_batch(cbs.sample_batch_cb);
+   core.retro_set_input_state(cbs.state_cb);
 
    return true;
 }
@@ -355,6 +376,9 @@ bool core_get_system_av_info(struct retro_system_av_info *av_info)
 bool core_reset(void)
 {
    core.retro_reset();
+#ifdef HAVE_CHEEVOS
+   cheevos_reset_game();
+#endif
    return true;
 }
 
@@ -386,7 +410,10 @@ bool core_run(void)
 #ifdef HAVE_NETWORKING
    if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_PRE_FRAME, NULL))
    {
-      /* Paused due to Netplay */
+      /* Paused due to netplay. We must poll and display something so that a
+       * netplay peer pausing doesn't just hang. */
+      input_poll();
+      video_driver_cached_frame();
       return true;
    }
 #endif
@@ -435,10 +462,10 @@ bool core_load(void)
 bool core_verify_api_version(void)
 {
    unsigned api_version = core.retro_api_version();
-   RARCH_LOG("%s: %u\n", 
+   RARCH_LOG("%s: %u\n",
          msg_hash_to_str(MSG_VERSION_OF_LIBRETRO_API),
          api_version);
-   RARCH_LOG("%s: %u\n",    
+   RARCH_LOG("%s: %u\n",
          msg_hash_to_str(MSG_COMPILED_AGAINST_API),
          RETRO_API_VERSION);
 

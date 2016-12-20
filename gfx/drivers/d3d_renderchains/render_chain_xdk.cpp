@@ -17,6 +17,12 @@
 #include <string.h>
 #include <retro_inline.h>
 #include "render_chain_driver.h"
+
+#include "../d3d.h"
+#include "../../common/d3d_common.h"
+
+#include "../../video_shader_driver.h"
+
 #include "../../../configuration.h"
 #include "../../../verbosity.h"
 
@@ -41,7 +47,9 @@ typedef struct xdk_renderchain
 static void renderchain_set_mvp(void *data, unsigned vp_width,
       unsigned vp_height, unsigned rotation)
 {
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
    video_shader_ctx_mvp_t mvp;
+#endif
    d3d_video_t      *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 
@@ -51,7 +59,7 @@ static void renderchain_set_mvp(void *data, unsigned vp_width,
    mvp.data   = d3d;
    mvp.matrix = NULL;
 
-   video_shadser_driver_set_mvp(&mvp);
+   video_shadser_driver_set_mvp(mvp);
 #elif defined(HAVE_D3D8)
    D3DXMATRIX p_out, p_rotate, mat;
    D3DXMatrixOrthoOffCenterLH(&mat, 0, vp_width,  vp_height, 0, 0.0f, 1.0f);
@@ -135,9 +143,11 @@ static bool renderchain_create_first_pass(void *data,
 static void renderchain_set_vertices(void *data, unsigned pass,
       unsigned vert_width, unsigned vert_height, uint64_t frame_count)
 {
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
 #ifdef _XBOX
    video_shader_ctx_params_t params;
    video_shader_ctx_info_t shader_info;
+#endif
 #endif
    unsigned width, height;
    d3d_video_t *d3d         = (d3d_video_t*)data;
@@ -225,7 +235,7 @@ static void renderchain_set_vertices(void *data, unsigned pass,
    shader_info.idx  = pass;
    shader_info.set_active = true;
 
-   video_shader_driver_use(&shader_info);
+   video_shader_driver_use(shader_info);
 
    params.data          = d3d;
    params.width         = vert_width;
@@ -241,7 +251,7 @@ static void renderchain_set_vertices(void *data, unsigned pass,
    params.fbo_info      = NULL;
    params.fbo_info_cnt  = 0;
 
-   video_shader_driver_set_parameters(&params);
+   video_shader_driver_set_parameters(params);
 #endif
 #endif
 }

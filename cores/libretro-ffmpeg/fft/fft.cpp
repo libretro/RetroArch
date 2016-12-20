@@ -9,13 +9,12 @@
 #include <retro_miscellaneous.h>
 #include <filters.h>
 #include <math/complex.h>
+#include <gfx/math/matrix_4x4.h>
 
 #define GLM_SWIZZLE
 #define GLM_FORCE_RADIANS
-#include <glm/glm.hpp>
+#include <glm/packing.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-using namespace glm;
 
 #if GL_DEBUG
 #define GL_CHECK_ERROR() do { \
@@ -150,14 +149,176 @@ static GLuint fft_compile_program(glfft_t *fft,
    return prog;
 }
 
+#define USE_GLM
+//#define GLM_USE_DEBUG
+
 static void fft_render(glfft_t *fft, GLuint backbuffer, unsigned width, unsigned height)
 {
-   vec3 eye        = vec3(0, 80, -60);
-   vec3 center     = eye + vec3(0.0f, 0.0f, 1.0f);
-   vec3 up         = vec3(0.0f, 1.0f, 0.0f);
-   mat4 mvp_persp  = perspective((float)M_HALF_PI, (float)width / height, 1.0f, 500.0f);
-   mat4 mvp_lookat = lookAt(eye, center, up);
-   mat4 mvp        = mvp_persp * mvp_lookat;
+#ifdef USE_GLM
+   glm::vec3 eye        = glm::vec3(0, 80, -60);
+   glm::vec3 center     = eye + glm::vec3(0.0f, 0.0f, 1.0f);
+
+#ifdef GLM_USE_DEBUG
+   printf("center : %.2f, %.2f, %.2f\n", center.x, center.y, center.z);
+#endif
+   glm::vec3 up         = glm::vec3(0.0f, 1.0f, 0.0f);
+   glm::mat4 mvp_persp  = glm::perspective((float)M_HALF_PI, (float)width / height, 
+1.0f, 500.0f);
+#ifdef GLM_USE_DEBUG
+   printf("mvp_persp: \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n\n",
+         mvp_persp[0][0],
+         mvp_persp[0][1],
+         mvp_persp[0][2],
+         mvp_persp[0][3],
+         mvp_persp[1][0],
+         mvp_persp[1][1],
+         mvp_persp[1][2],
+         mvp_persp[1][3],
+         mvp_persp[2][0],
+         mvp_persp[2][1],
+         mvp_persp[2][2],
+         mvp_persp[2][3],
+         mvp_persp[3][0],
+         mvp_persp[3][1],
+         mvp_persp[3][2],
+         mvp_persp[3][3]
+         );
+#endif
+   glm::mat4 mvp_lookat = glm::lookAt(eye, center, up);
+#ifdef GLM_USE_DEBUG
+   printf("eye %.2f %.2f %.2f\n", eye.x, eye.y, eye.z);
+   printf("center %.2f %.2f %.2f\n", center.x, center.y, center.z);
+   printf("up %.2f %.2f %.2f\n", up.x, up.y, up.z);
+   printf("mvp_lookat: \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n\n",
+         mvp_lookat[0][0],
+         mvp_lookat[0][1],
+         mvp_lookat[0][2],
+         mvp_lookat[0][3],
+         mvp_lookat[1][0],
+         mvp_lookat[1][1],
+         mvp_lookat[1][2],
+         mvp_lookat[1][3],
+         mvp_lookat[2][0],
+         mvp_lookat[2][1],
+         mvp_lookat[2][2],
+         mvp_lookat[2][3],
+         mvp_lookat[3][0],
+         mvp_lookat[3][1],
+         mvp_lookat[3][2],
+         mvp_lookat[3][3]
+         );
+#endif
+   glm::mat4 mvp        = mvp_persp * mvp_lookat;
+
+#ifdef GLM_USE_DEBUG
+   printf("mvp: \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n\n",
+         mvp[0][0],
+         mvp[0][1],
+         mvp[0][2],
+         mvp[0][3],
+         mvp[1][0],
+         mvp[1][1],
+         mvp[1][2],
+         mvp[1][3],
+         mvp[2][0],
+         mvp[2][1],
+         mvp[2][2],
+         mvp[2][3],
+         mvp[3][0],
+         mvp[3][1],
+         mvp[3][2],
+         mvp[3][3]
+         );
+#endif
+#else
+   vec3_t eye, center, up;
+   math_matrix_4x4 mvp_lookat, mvp, mvp_persp;
+
+   eye[0]               = 0.0f;
+   eye[1]               = 80.0f;
+   eye[2]               = -60.0f;
+
+   up[0]                = 0.0f;
+   up[1]                = 1.0f;
+   up[2]                = 0.0f;
+
+   center[0]            = 0.0f;
+   center[1]            = 0.0f;
+   center[2]            = 1.0f;
+
+   vec3_add(&center[0], &eye[0]);
+
+#ifdef GLM_USE_DEBUG
+   printf("center : %.2f, %.2f, %.2f\n", center[0], center[1], center[2]);
+#endif
+
+   matrix_4x4_projection(&mvp_persp, (float)M_HALF_PI, (float)width / height, 1.0f, 500.0f);
+#ifdef GLM_USE_DEBUG
+   printf("mvp_persp: \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n\n",
+         MAT_ELEM_4X4(mvp_persp, 0, 0),
+         MAT_ELEM_4X4(mvp_persp, 0, 1),
+         MAT_ELEM_4X4(mvp_persp, 0, 2),
+         MAT_ELEM_4X4(mvp_persp, 0, 3),
+         MAT_ELEM_4X4(mvp_persp, 1, 0),
+         MAT_ELEM_4X4(mvp_persp, 1, 1),
+         MAT_ELEM_4X4(mvp_persp, 1, 2),
+         MAT_ELEM_4X4(mvp_persp, 1, 3),
+         MAT_ELEM_4X4(mvp_persp, 2, 0),
+         MAT_ELEM_4X4(mvp_persp, 2, 1),
+         MAT_ELEM_4X4(mvp_persp, 2, 2),
+         MAT_ELEM_4X4(mvp_persp, 2, 3),
+         MAT_ELEM_4X4(mvp_persp, 3, 0),
+         MAT_ELEM_4X4(mvp_persp, 3, 1),
+         MAT_ELEM_4X4(mvp_persp, 3, 2),
+         MAT_ELEM_4X4(mvp_persp, 3, 3)
+         );
+   printf("eye %.2f %.2f %.2f\n", eye[0], eye[1], eye[2]);
+   printf("center %.2f %.2f %.2f\n", center[0], center[1], center[2]);
+   printf("up %.2f %.2f %.2f\n", up[0], up[1], up[2]);
+#endif
+   matrix_4x4_lookat(&mvp_lookat, eye, center, up);
+#ifdef GLM_USE_DEBUG
+   printf("mvp_lookat: \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n\n",
+         MAT_ELEM_4X4(mvp_lookat, 0, 0),
+         MAT_ELEM_4X4(mvp_lookat, 0, 1),
+         MAT_ELEM_4X4(mvp_lookat, 0, 2),
+         MAT_ELEM_4X4(mvp_lookat, 0, 3),
+         MAT_ELEM_4X4(mvp_lookat, 1, 0),
+         MAT_ELEM_4X4(mvp_lookat, 1, 1),
+         MAT_ELEM_4X4(mvp_lookat, 1, 2),
+         MAT_ELEM_4X4(mvp_lookat, 1, 3),
+         MAT_ELEM_4X4(mvp_lookat, 2, 0),
+         MAT_ELEM_4X4(mvp_lookat, 2, 1),
+         MAT_ELEM_4X4(mvp_lookat, 2, 2),
+         MAT_ELEM_4X4(mvp_lookat, 2, 3),
+         MAT_ELEM_4X4(mvp_lookat, 3, 0),
+         MAT_ELEM_4X4(mvp_lookat, 3, 1),
+         MAT_ELEM_4X4(mvp_lookat, 3, 2),
+         MAT_ELEM_4X4(mvp_lookat, 3, 3)
+         );
+#endif
+   matrix_4x4_multiply(&mvp, &mvp_persp, &mvp_lookat);
+#ifdef GLM_USE_DEBUG
+   printf("mvp: \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n\n",
+         MAT_ELEM_4X4(mvp, 0, 0),
+         MAT_ELEM_4X4(mvp, 0, 1),
+         MAT_ELEM_4X4(mvp, 0, 2),
+         MAT_ELEM_4X4(mvp, 0, 3),
+         MAT_ELEM_4X4(mvp, 1, 0),
+         MAT_ELEM_4X4(mvp, 1, 1),
+         MAT_ELEM_4X4(mvp, 1, 2),
+         MAT_ELEM_4X4(mvp, 1, 3),
+         MAT_ELEM_4X4(mvp, 2, 0),
+         MAT_ELEM_4X4(mvp, 2, 1),
+         MAT_ELEM_4X4(mvp, 2, 2),
+         MAT_ELEM_4X4(mvp, 2, 3),
+         MAT_ELEM_4X4(mvp, 3, 0),
+         MAT_ELEM_4X4(mvp, 3, 1),
+         MAT_ELEM_4X4(mvp, 3, 2),
+         MAT_ELEM_4X4(mvp, 3, 3)
+         );
+#endif
+#endif
 
    /* Render scene. */
    glBindFramebuffer(GL_FRAMEBUFFER, fft->ms_fbo ? fft->ms_fbo : backbuffer);
@@ -166,8 +327,13 @@ static void fft_render(glfft_t *fft, GLuint backbuffer, unsigned width, unsigned
    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
    glUseProgram(fft->block.prog);
+#ifdef USE_GLM
    glUniformMatrix4fv(glGetUniformLocation(fft->block.prog, "uMVP"),
-         1, GL_FALSE, value_ptr(mvp));
+         1, GL_FALSE, (&mvp[0].x));
+#else
+   glUniformMatrix4fv(glGetUniformLocation(fft->block.prog, "uMVP"),
+         1, GL_FALSE, (&(MAT_ELEM_4X4(mvp, 0, 0))));
+#endif
    glUniform2i(glGetUniformLocation(fft->block.prog, "uOffset"),
          (-int(fft->block_size) + 1) / 2, fft->output_ptr);
    glUniform4f(glGetUniformLocation(fft->block.prog, "uHeightmapParams"),
@@ -348,12 +514,12 @@ void fft_build_params(glfft_t *fft, GLuint *buffer,
 
          unsigned read_a       = (step == 0) ? bitinverse(a, size) : a;
          unsigned read_b       = (step == 0) ? bitinverse(b, size) : b;
-         vec2 tmp              = vec2(twiddle.real, twiddle.imag);
+         glm::vec2 tmp         = glm::vec2(twiddle.real, twiddle.imag);
 
          buffer[2 * a + 0]     = (read_a << 16) | read_b;
-         buffer[2 * a + 1]     = packHalf2x16(tmp);
+         buffer[2 * a + 1]     = glm::packHalf2x16(tmp);
          buffer[2 * b + 0]     = (read_a << 16) | read_b;
-         buffer[2 * b + 1]     = packHalf2x16(-tmp);
+         buffer[2 * b + 1]     = glm::packHalf2x16(-tmp);
       }
    }
 }

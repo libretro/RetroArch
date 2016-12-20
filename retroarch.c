@@ -104,6 +104,7 @@
 enum
 {
    RA_OPT_MENU = 256, /* must be outside the range of a char */
+   RA_OPT_STATELESS,
    RA_OPT_CHECK_FRAMES,
    RA_OPT_PORT,
    RA_OPT_SPECTATE,
@@ -143,7 +144,7 @@ static bool has_set_state_path                          = false;
 static bool has_set_netplay_mode                        = false;
 static bool has_set_netplay_ip_address                  = false;
 static bool has_set_netplay_ip_port                     = false;
-static bool has_set_netplay_delay_frames                = false;
+static bool has_set_netplay_stateless_mode              = false;
 static bool has_set_netplay_check_frames                = false;
 static bool has_set_ups_pref                            = false;
 static bool has_set_bps_pref                            = false;
@@ -220,7 +221,7 @@ static void retroarch_print_features(void)
    _PSUPP(cocoa,           "Cocoa",           "Cocoa UI companion support "
                                               "(for OSX and/or iOS)");
 
-   _PSUPP(qt,              "QT",              "QT UI companion support");
+   _PSUPP(qt,              "Qt",              "Qt UI companion support");
    _PSUPP(avfoundation,    "AVFoundation",    "Camera driver");
    _PSUPP(v4l2,            "Video4Linux2",    "Camera driver");
 }
@@ -339,10 +340,10 @@ static void retroarch_print_help(const char *arg0)
    puts("  -H, --host            Host netplay as user 1.");
    puts("  -C, --connect=HOST    Connect to netplay server as user 2.");
    puts("      --port=PORT       Port used to netplay. Default is 55435.");
-   puts("  -F, --frames=NUMBER   Sync frames when using netplay.");
+   puts("      --stateless       Use \"stateless\" mode for netplay");
+   puts("                        (requires a very fast network).");
    puts("      --check-frames=NUMBER\n"
         "                        Check frames when using netplay.");
-   puts("      --spectate        Connect to netplay server as spectator.");
 #if defined(HAVE_NETWORK_CMD)
    puts("      --command         Sends a command over UDP to an already "
          "running program process.");
@@ -427,10 +428,9 @@ static void retroarch_parse_input(int argc, char *argv[])
 #ifdef HAVE_NETWORKING
       { "host",         0, NULL, 'H' },
       { "connect",      1, NULL, 'C' },
-      { "frames",       1, NULL, 'F' },
+      { "stateless",    0, NULL, RA_OPT_STATELESS },
       { "check-frames", 1, NULL, RA_OPT_CHECK_FRAMES },
       { "port",         1, NULL, RA_OPT_PORT },
-      { "spectate",     0, NULL, RA_OPT_SPECTATE },
 #if defined(HAVE_NETWORK_CMD)
       { "command",      1, NULL, RA_OPT_COMMAND },
 #endif
@@ -499,7 +499,7 @@ static void retroarch_parse_input(int argc, char *argv[])
 #ifndef HAVE_MENU
    if (argc == 1)
    {
-      printf("No arguments supplied and no menu builtin, displaying help...\n");
+      printf("%s\n", msg_hash_to_str(MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN));
       retroarch_print_help(argv[0]);
       exit(0);
    }
@@ -511,7 +511,7 @@ static void retroarch_parse_input(int argc, char *argv[])
       int c = getopt_long(argc, argv, optstring, opts, NULL);
 
 #if 0
-      RARCH_LOG("c is: %c, optarg is: [%s]\n", c, string_is_empty(optarg) ? "" : optarg);
+      fprintf(stderr, "c is: %c (%d), optarg is: [%s]\n", c, c, string_is_empty(optarg) ? "" : optarg);
 #endif
 
       if (c == -1)
@@ -707,10 +707,10 @@ static void retroarch_parse_input(int argc, char *argv[])
                   sizeof(settings->netplay.server));
             break;
 
-         case 'F':
-            settings->netplay.sync_frames = strtol(optarg, NULL, 0);
+         case RA_OPT_STATELESS:
+            settings->netplay.stateless_mode = true;
             retroarch_override_setting_set(
-                  RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES, NULL);
+                  RARCH_OVERRIDE_SETTING_NETPLAY_STATELESS_MODE, NULL);
             break;
 
          case RA_OPT_CHECK_FRAMES:
@@ -723,12 +723,6 @@ static void retroarch_parse_input(int argc, char *argv[])
             retroarch_override_setting_set(
                   RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT, NULL);
             settings->netplay.port = strtoul(optarg, NULL, 0);
-            break;
-
-         case RA_OPT_SPECTATE:
-            retroarch_override_setting_set(
-                  RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL);
-            settings->netplay.is_spectate = true;
             break;
 
 #if defined(HAVE_NETWORK_CMD)
@@ -1032,7 +1026,7 @@ bool retroarch_main_init(int argc, char *argv[])
 
       RARCH_LOG_OUTPUT("=== Build =======================================\n");
       retroarch_get_capabilities(RARCH_CAPABILITIES_CPU, str, sizeof(str));
-      fprintf(stderr, "Capabilities: %s\n", str);
+      fprintf(stderr, "%s: %s\n", msg_hash_to_str(MSG_CAPABILITIES), str);
       fprintf(stderr, "Built: %s\n", __DATE__);
       RARCH_LOG_OUTPUT("Version: %s\n", PACKAGE_VERSION);
 #ifdef HAVE_GIT_VERSION
@@ -1369,8 +1363,8 @@ bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx, voi
          return has_set_netplay_ip_address;
       case RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT:
          return has_set_netplay_ip_port;
-      case RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES:
-         return has_set_netplay_delay_frames;
+      case RARCH_OVERRIDE_SETTING_NETPLAY_STATELESS_MODE:
+         return has_set_netplay_stateless_mode;
       case RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES:
          return has_set_netplay_check_frames;
       case RARCH_OVERRIDE_SETTING_UPS_PREF:
@@ -1426,8 +1420,8 @@ void retroarch_override_setting_set(enum rarch_override_setting enum_idx, void *
       case RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT:
          has_set_netplay_ip_port = true;
          break;
-      case RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES:
-         has_set_netplay_delay_frames = true;
+      case RARCH_OVERRIDE_SETTING_NETPLAY_STATELESS_MODE:
+         has_set_netplay_stateless_mode = true;
          break;
       case RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES:
          has_set_netplay_check_frames = true;
@@ -1485,8 +1479,8 @@ void retroarch_override_setting_unset(enum rarch_override_setting enum_idx, void
       case RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT:
          has_set_netplay_ip_port = false;
          break;
-      case RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES:
-         has_set_netplay_delay_frames = false;
+      case RARCH_OVERRIDE_SETTING_NETPLAY_STATELESS_MODE:
+         has_set_netplay_stateless_mode = false;
          break;
       case RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES:
          has_set_netplay_check_frames = false;
@@ -1573,24 +1567,31 @@ int retroarch_get_capabilities(enum rarch_capabilities type,
          break;
       case RARCH_CAPABILITIES_COMPILER:
 #if defined(_MSC_VER)
-         snprintf(s, len, "Compiler: MSVC (%d) %u-bit", _MSC_VER, (unsigned)
+         snprintf(s, len, "%s: MSVC (%d) %u-bit",
+               msg_hash_to_str(MSG_COMPILER),
+               _MSC_VER, (unsigned)
                (CHAR_BIT * sizeof(size_t)));
 #elif defined(__SNC__)
-         snprintf(s, len, "Compiler: SNC (%d) %u-bit",
+         snprintf(s, len, "%s: SNC (%d) %u-bit",
+               msg_hash_to_str(MSG_COMPILER),
                __SN_VER__, (unsigned)(CHAR_BIT * sizeof(size_t)));
 #elif defined(_WIN32) && defined(__GNUC__)
-         snprintf(s, len, "Compiler: MinGW (%d.%d.%d) %u-bit",
+         snprintf(s, len, "%s: MinGW (%d.%d.%d) %u-bit",
+               msg_hash_to_str(MSG_COMPILER),
                __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, (unsigned)
                (CHAR_BIT * sizeof(size_t)));
 #elif defined(__clang__)
-         snprintf(s, len, "Compiler: Clang/LLVM (%s) %u-bit",
+         snprintf(s, len, "%s: Clang/LLVM (%s) %u-bit",
+               msg_hash_to_str(MSG_COMPILER),
                __clang_version__, (unsigned)(CHAR_BIT * sizeof(size_t)));
 #elif defined(__GNUC__)
-         snprintf(s, len, "Compiler: GCC (%d.%d.%d) %u-bit",
+         snprintf(s, len, "%s: GCC (%d.%d.%d) %u-bit",
+               msg_hash_to_str(MSG_COMPILER),
                __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, (unsigned)
                (CHAR_BIT * sizeof(size_t)));
 #else
-         snprintf(s, len, "Unknown compiler %u-bit",
+         snprintf(s, len, "%s %u-bit",
+               msg_hash_to_str(MSG_UNKNOWN_COMPILER),
                (unsigned)(CHAR_BIT * sizeof(size_t)));
 #endif
          break;

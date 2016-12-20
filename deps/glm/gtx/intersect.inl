@@ -14,7 +14,7 @@
 namespace glm
 {
 	template <typename genType>
-	GLM_FUNC_QUALIFIER bool intersectRayPlane
+	inline bool intersectRayPlane
 	(
 		genType const & orig, genType const & dir,
 		genType const & planeOrig, genType const & planeNormal,
@@ -34,7 +34,7 @@ namespace glm
 	}
 
 	template <typename genType>
-	GLM_FUNC_QUALIFIER bool intersectRayTriangle
+	inline bool intersectRayTriangle
 	(
 		genType const & orig, genType const & dir,
 		genType const & v0, genType const & v1, genType const & v2,
@@ -74,7 +74,7 @@ namespace glm
 	}
 
 	//template <typename genType>
-	//GLM_FUNC_QUALIFIER bool intersectRayTriangle
+	//inline bool intersectRayTriangle
 	//(
 	//	genType const & orig, genType const & dir,
 	//	genType const & vert0, genType const & vert1, genType const & vert2,
@@ -111,7 +111,7 @@ namespace glm
 	//}
 
 	template <typename genType>
-	GLM_FUNC_QUALIFIER bool intersectLineTriangle
+	inline bool intersectLineTriangle
 	(
 		genType const & orig, genType const & dir,
 		genType const & vert0, genType const & vert1, genType const & vert2,
@@ -149,7 +149,7 @@ namespace glm
 	}
 
 	template <typename genType>
-	GLM_FUNC_QUALIFIER bool intersectRaySphere
+	inline bool intersectRaySphere
 	(
 		genType const & rayStarting, genType const & rayNormalizedDirection,
 		genType const & sphereCenter, const typename genType::value_type sphereRadiusSquered,
@@ -170,7 +170,7 @@ namespace glm
 	}
 
 	template <typename genType>
-	GLM_FUNC_QUALIFIER bool intersectRaySphere
+	inline bool intersectRaySphere
 	(
 		genType const & rayStarting, genType const & rayNormalizedDirection,
 		genType const & sphereCenter, const typename genType::value_type sphereRadius,
@@ -188,7 +188,7 @@ namespace glm
 	}
 
 	template <typename genType>
-	GLM_FUNC_QUALIFIER bool intersectLineSphere
+	inline bool intersectLineSphere
 	(
 		genType const & point0, genType const & point1,
 		genType const & sphereCenter, typename genType::value_type sphereRadius,

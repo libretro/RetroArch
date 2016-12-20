@@ -36,7 +36,9 @@
 
 #define VIDEO_SHADER_STOCK_BLEND (GFX_MAX_SHADERS - 1)
 #define VIDEO_SHADER_MENU        (GFX_MAX_SHADERS - 2)
-#define VIDEO_SHADER_MENU_SEC    (GFX_MAX_SHADERS - 3)
+#define VIDEO_SHADER_MENU_2      (GFX_MAX_SHADERS - 3)
+#define VIDEO_SHADER_MENU_3      (GFX_MAX_SHADERS - 4)
+#define VIDEO_SHADER_MENU_4      (GFX_MAX_SHADERS - 5)
 
 #endif
 
@@ -276,9 +278,13 @@ bool video_shader_driver_direct_get_current_shader(video_shader_ctx_t *shader);
 
 bool video_shader_driver_deinit(void);
 
-bool video_shader_driver_set_parameter(struct uniform_info *param);
+#define video_shader_driver_set_parameter(param) \
+   if (current_shader && current_shader->set_uniform_parameter) \
+      current_shader->set_uniform_parameter(shader_data, &param, NULL)
 
-bool video_shader_driver_set_parameters(video_shader_ctx_params_t *params);
+#define video_shader_driver_set_parameters(params) \
+   if (current_shader && current_shader->set_params) \
+      current_shader->set_params(params.data, shader_data, params.width, params.height, params.tex_width, params.tex_height, params.out_width, params.out_height, params.frame_counter, params.info, params.prev_info, params.feedback_info, params.fbo_info, params.fbo_info_cnt)
 
 bool video_shader_driver_init_first(void);
 
@@ -288,21 +294,30 @@ bool video_shader_driver_get_feedback_pass(unsigned *data);
 
 bool video_shader_driver_mipmap_input(unsigned *index);
 
-bool video_shader_driver_set_coords(video_shader_ctx_coords_t *coords);
+#define video_shader_driver_set_coords(coords) \
+   if (current_shader && current_shader->set_coords) \
+      current_shader->set_coords(coords.handle_data, shader_data, (const struct video_coords*)coords.data)
 
 bool video_shader_driver_scale(video_shader_ctx_scale_t *scaler);
 
 bool video_shader_driver_info(video_shader_ctx_info_t *shader_info);
 
-bool video_shader_driver_set_mvp(video_shader_ctx_mvp_t *mvp);
+#define video_shader_driver_set_mvp(mvp) \
+   if (mvp.matrix && current_shader && current_shader->set_mvp) \
+      current_shader->set_mvp(mvp.data, shader_data, mvp.matrix) \
 
 bool video_shader_driver_filter_type(video_shader_ctx_filter_t *filter);
 
 bool video_shader_driver_compile_program(struct shader_program_info *program_info);
 
-bool video_shader_driver_use(video_shader_ctx_info_t *shader_info);
+#define video_shader_driver_use(shader_info) \
+   if (current_shader) \
+      current_shader->use(shader_info.data, shader_data, shader_info.idx, shader_info.set_active)
 
 bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap);
+
+extern const shader_backend_t *current_shader;
+extern void *shader_data;
 
 extern const shader_backend_t gl_glsl_backend;
 extern const shader_backend_t hlsl_backend;

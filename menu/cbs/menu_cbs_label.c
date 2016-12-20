@@ -18,7 +18,6 @@
 
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
-#include "../menu_navigation.h"
 #include "../../file_path_special.h"
 
 #ifndef BIND_ACTION_LABEL
@@ -52,7 +51,17 @@ static int action_bind_label_internal_memory(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   strlcpy(s, msg_hash_to_str(MSG_INTERNAL_MEMORY), len);
+   strlcpy(s, msg_hash_to_str(MSG_INTERNAL_STORAGE), len);
+   return 0;
+}
+
+static int action_bind_label_removable_storage(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   strlcpy(s, msg_hash_to_str(MSG_REMOVABLE_STORAGE), len);
    return 0;
 }
 
@@ -110,8 +119,11 @@ int menu_cbs_init_bind_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_PLAYLIST_COLLECTION_ENTRY:
             BIND_ACTION_LABEL(cbs, action_bind_label_playlist_collection_entry);
             break;
-         case MSG_INTERNAL_MEMORY:
+         case MSG_INTERNAL_STORAGE:
             BIND_ACTION_LABEL(cbs, action_bind_label_internal_memory);
+            break;
+         case MSG_REMOVABLE_STORAGE:
+            BIND_ACTION_LABEL(cbs, action_bind_label_removable_storage);
             break;
          case MSG_APPLICATION_DIR:
             BIND_ACTION_LABEL(cbs, action_bind_label_application_dir);

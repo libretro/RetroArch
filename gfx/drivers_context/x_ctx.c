@@ -107,6 +107,7 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
 #ifdef HAVE_OPENGL
             if (x->g_ctx)
             {
+               glXSwapBuffers(g_x11_dpy, x->g_glx_win);
                glFinish();
                glXMakeContextCurrent(g_x11_dpy, None, None, NULL);
 
@@ -331,7 +332,9 @@ static bool gfx_ctx_x_set_resize(void *data,
 
 static void *gfx_ctx_x_init(void *data)
 {
-   int nelements, major, minor;
+   int nelements           = 0;
+   int major               = 0;
+   int minor               = 0;
 #ifdef HAVE_OPENGL
    static const int visual_attribs[] = {
       GLX_X_RENDERABLE     , True,

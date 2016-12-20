@@ -18,6 +18,8 @@
 #include <compat/posix_string.h>
 #include <string/stdstring.h>
 
+#include <audio/audio_resampler.h>
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -30,7 +32,6 @@
 #include "msg_hash.h"
 
 #include "audio/audio_driver.h"
-#include "audio/audio_resampler_driver.h"
 #include "camera/camera_driver.h"
 #include "record/record_driver.h"
 #include "location/location_driver.h"
@@ -293,17 +294,17 @@ static bool driver_update_system_av_info(const struct retro_system_av_info *info
  **/
 static void init_drivers(int flags)
 {
-   if (flags & DRIVER_VIDEO)
+   if (flags & DRIVER_VIDEO_MASK)
       video_driver_unset_own_driver();
-   if (flags & DRIVER_AUDIO)
+   if (flags & DRIVER_AUDIO_MASK)
       audio_driver_unset_own_driver();
-   if (flags & DRIVER_INPUT)
+   if (flags & DRIVER_INPUT_MASK)
       input_driver_unset_own_driver();
-   if (flags & DRIVER_CAMERA)
+   if (flags & DRIVER_CAMERA_MASK)
       camera_driver_ctl(RARCH_CAMERA_CTL_UNSET_OWN_DRIVER, NULL);
-   if (flags & DRIVER_LOCATION)
+   if (flags & DRIVER_LOCATION_MASK)
       location_driver_ctl(RARCH_LOCATION_CTL_UNSET_OWN_DRIVER, NULL);
-   if (flags & DRIVER_WIFI)
+   if (flags & DRIVER_WIFI_MASK)
       wifi_driver_ctl(RARCH_WIFI_CTL_UNSET_OWN_DRIVER, NULL);
 
 #ifdef HAVE_MENU
@@ -311,10 +312,10 @@ static void init_drivers(int flags)
    menu_driver_ctl(RARCH_MENU_CTL_SET_OWN_DRIVER, NULL);
 #endif
 
-   if (flags & (DRIVER_VIDEO | DRIVER_AUDIO))
+   if (flags & (DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK))
       driver_adjust_system_rates();
 
-   if (flags & DRIVER_VIDEO)
+   if (flags & DRIVER_VIDEO_MASK)
    {
       struct retro_hw_render_callback *hwr =
          video_driver_get_hw_context();
@@ -330,29 +331,29 @@ static void init_drivers(int flags)
       runloop_ctl(RUNLOOP_CTL_SET_FRAME_TIME_LAST, NULL);
    }
 
-   if (flags & DRIVER_AUDIO)
+   if (flags & DRIVER_AUDIO_MASK)
    {
       audio_driver_init();
       audio_driver_new_devices_list();
    }
 
    /* Only initialize camera driver if we're ever going to use it. */
-   if ((flags & DRIVER_CAMERA) && camera_driver_ctl(RARCH_CAMERA_CTL_IS_ACTIVE, NULL))
+   if ((flags & DRIVER_CAMERA_MASK) && camera_driver_ctl(RARCH_CAMERA_CTL_IS_ACTIVE, NULL))
       camera_driver_ctl(RARCH_CAMERA_CTL_INIT, NULL);
 
    /* Only initialize location driver if we're ever going to use it. */
-   if ((flags & DRIVER_LOCATION) && location_driver_ctl(RARCH_LOCATION_CTL_IS_ACTIVE, NULL))
+   if ((flags & DRIVER_LOCATION_MASK) && location_driver_ctl(RARCH_LOCATION_CTL_IS_ACTIVE, NULL))
       init_location();
 
 #ifdef HAVE_MENU
-   if (flags & DRIVER_MENU)
+   if (flags & DRIVER_MENU_MASK)
    {
       menu_driver_ctl(RARCH_MENU_CTL_INIT, NULL);
       menu_driver_ctl(RARCH_MENU_CTL_CONTEXT_RESET, NULL);
    }
 #endif
 
-   if (flags & (DRIVER_VIDEO | DRIVER_AUDIO))
+   if (flags & (DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK))
    {
       /* Keep non-throttled state as good as possible. */
       if (input_driver_is_nonblock_state())
@@ -388,32 +389,32 @@ static void init_drivers(int flags)
 static void uninit_drivers(int flags)
 {
 #ifdef HAVE_MENU
-   if (flags & DRIVER_MENU)
+   if (flags & DRIVER_MENU_MASK)
       menu_driver_ctl(RARCH_MENU_CTL_DEINIT, NULL);
 #endif
 
-   if ((flags & DRIVER_LOCATION) && !location_driver_ctl(RARCH_LOCATION_CTL_OWNS_DRIVER, NULL))
+   if ((flags & DRIVER_LOCATION_MASK) && !location_driver_ctl(RARCH_LOCATION_CTL_OWNS_DRIVER, NULL))
       location_driver_ctl(RARCH_LOCATION_CTL_DEINIT, NULL);
 
-   if ((flags & DRIVER_CAMERA) && !camera_driver_ctl(RARCH_CAMERA_CTL_OWNS_DRIVER, NULL))
+   if ((flags & DRIVER_CAMERA_MASK) && !camera_driver_ctl(RARCH_CAMERA_CTL_OWNS_DRIVER, NULL))
       camera_driver_ctl(RARCH_CAMERA_CTL_DEINIT, NULL);
 
-   if (flags & DRIVER_AUDIO)
+   if (flags & DRIVER_AUDIO_MASK)
       audio_driver_deinit();
 
-   if ((flags & DRIVER_WIFI) && !wifi_driver_ctl(RARCH_WIFI_CTL_OWNS_DRIVER, NULL))
+   if ((flags & DRIVER_WIFI_MASK) && !wifi_driver_ctl(RARCH_WIFI_CTL_OWNS_DRIVER, NULL))
       wifi_driver_ctl(RARCH_WIFI_CTL_DEINIT, NULL);
 
    if (flags & DRIVERS_VIDEO_INPUT)
       video_driver_deinit();
 
-   if ((flags & DRIVER_VIDEO) && !video_driver_owns_driver())
+   if ((flags & DRIVER_VIDEO_MASK) && !video_driver_owns_driver())
       video_driver_destroy_data();
 
-   if ((flags & DRIVER_INPUT) && !input_driver_owns_driver())
+   if ((flags & DRIVER_INPUT_MASK) && !input_driver_owns_driver())
       input_driver_destroy_data();
 
-   if ((flags & DRIVER_AUDIO) && !audio_driver_owns_driver())
+   if ((flags & DRIVER_AUDIO_MASK) && !audio_driver_owns_driver())
       audio_driver_destroy_data();
 }
 

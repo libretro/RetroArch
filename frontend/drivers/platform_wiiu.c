@@ -43,11 +43,16 @@
 #include "system/memory.h"
 #include "system/exception_handler.h"
 #include "system/exception.h"
-#include "utils/logger.h"
 #include <sys/iosupport.h>
 
-#include <coreinit/screen.h>
+#include <coreinit/foreground.h>
+#include <proc_ui/procui.h>
 #include <vpad/input.h>
+#include <sysapp/launch.h>
+
+#include <fat.h>
+#include <iosuhax.h>
+#include "ios.h"
 
 #include "wiiu_dbg.h"
 
@@ -55,8 +60,12 @@
 #include "../../menu/menu_driver.h"
 #endif
 
+//#define WIIU_SD_PATH "/vol/external01/"
+#define WIIU_SD_PATH "sd:/"
+#define WIIU_USB_PATH "usb:/"
+
 static enum frontend_fork wiiu_fork_mode = FRONTEND_FORK_NONE;
-static const char* elf_path_cst = "sd:/retroarch/retroarch.elf";
+static const char* elf_path_cst = WIIU_SD_PATH "retroarch/retroarch.elf";
 
 static void frontend_wiiu_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
@@ -134,8 +143,15 @@ static int frontend_wiiu_parse_drive_list(void *data)
    if (!list)
       return -1;
 
-   menu_entries_append_enum(list,
-         "sd:/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+   menu_entries_append_enum(list, WIIU_SD_PATH,
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
+
+   menu_entries_append_enum(list, WIIU_USB_PATH,
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
 
    return 0;
 }
@@ -170,7 +186,7 @@ frontend_ctx_driver_t frontend_ctx_wiiu = {
 static int log_socket = -1;
 static volatile int log_lock = 0;
 
-void log_init(const char * ipString)
+void log_init(const char * ipString, int port)
 {
 	log_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (log_socket < 0)
@@ -179,7 +195,7 @@ void log_init(const char * ipString)
 	struct sockaddr_in connect_addr;
 	memset(&connect_addr, 0, sizeof(connect_addr));
 	connect_addr.sin_family = AF_INET;
-	connect_addr.sin_port = 4405;
+	connect_addr.sin_port = port;
 	inet_aton(ipString, &connect_addr.sin_addr);
 
 	if(connect(log_socket, (struct sockaddr*)&connect_addr, sizeof(connect_addr)) < 0)
@@ -226,80 +242,228 @@ void net_print(const char* str)
    log_write(NULL, 0, str, strlen(str));
 }
 
+void net_print_exp(const char* str)
+{
+   send(log_socket, str, strlen(str), 0);
+}
+
 static devoptab_t dotab_stdout = {
-   "stdout",   // device name
-   0,          // size of file structure
-   NULL,       // device open
-   NULL,       // device close
-   log_write,       // device write
-   NULL,       // device read
-   NULL,       // device seek
-   NULL,       // device fstat
-   NULL,       // device stat
-   NULL,       // device link
-   NULL,       // device unlink
-   NULL,       // device chdir
-   NULL,       // device rename
-   NULL,       // device mkdir
-   0,          // dirStateSize
-   NULL,       // device diropen_r
-   NULL,       // device dirreset_r
-   NULL,       // device dirnext_r
-   NULL,       // device dirclose_r
-   NULL,       // device statvfs_r
-   NULL,       // device ftrunctate_r
-   NULL,       // device fsync_r
-   NULL,       // deviceData;
+   "stdout_net", // device name
+   0,            // size of file structure
+   NULL,         // device open
+   NULL,         // device close
+   log_write,    // device write
+   NULL,
+   /* ... */
 };
 
-int __entry_menu(int argc, char **argv)
+void SaveCallback()
 {
-   InitFunctionPointers();
+   OSSavesDone_ReadyToRelease();
+}
+
+int main(int argc, char **argv)
+{   
+#if 1
+   setup_os_exceptions();
+#else
+   InstallExceptionHandler();
+#endif
+
+   ProcUIInit(&SaveCallback);
+
    socket_lib_init();
-   log_init("10.42.0.1");
+#if defined(PC_DEVELOPMENT_IP_ADDRESS) && defined(PC_DEVELOPMENT_TCP_PORT)
+   log_init(PC_DEVELOPMENT_IP_ADDRESS, PC_DEVELOPMENT_TCP_PORT);
    devoptab_list[STD_OUT] = &dotab_stdout;
    devoptab_list[STD_ERR] = &dotab_stdout;
-   memoryInitialize();
-   mount_sd_fat("sd");
-   setup_os_exceptions();
-//   InstallExceptionHandler();
+#endif
    VPADInit();
-   OSScreenInit();
 
    verbosity_enable();
    DEBUG_VAR(argc);
    DEBUG_STR(argv[0]);
    DEBUG_STR(argv[1]);
+   fflush(stdout);
+
+#if 1
 #if 0
    int argc_ = 2;
-   char* argv_[] = {"sd:/retroarch/retroarch.elf", "sd:/smb3.nes", NULL};
+//   char* argv_[] = {WIIU_SD_PATH "retroarch/retroarch.elf", WIIU_SD_PATH "rom.nes", NULL};
+   char* argv_[] = {WIIU_SD_PATH "retroarch/retroarch.elf", WIIU_SD_PATH "rom.sfc", NULL};
+
    rarch_main(argc_, argv_, NULL);
 #else
    rarch_main(argc, argv, NULL);
 #endif
-//   int frames = 0;
    do
    {
       unsigned sleep_ms = 0;
       int ret = runloop_iterate(&sleep_ms);
 
-//      if (ret == 1 && sleep_ms > 0)
-//       retro_sleep(sleep_ms);
-      task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
+      if (ret == 1 && sleep_ms > 0)
+       retro_sleep(sleep_ms);
+      task_queue_ctl(TASK_QUEUE_CTL_WAIT, NULL);
       if (ret == -1)
        break;
 
    }while(1);
-//   }while(frames++ < 300);
 
    main_exit(NULL);
+#endif
+   fflush(stdout);
+   fflush(stderr);
+   ProcUIShutdown();
 
-
-   printf("Unmount SD\n");
-   unmount_sd_fat("sd");
-   printf("Release memory\n");
-   memoryRelease();
+#if defined(PC_DEVELOPMENT_IP_ADDRESS) && defined(PC_DEVELOPMENT_TCP_PORT)
    log_deinit();
-
+#endif
    return 0;
+}
+
+unsigned long _times_r(struct _reent *r, struct tms *tmsbuf)
+{
+   return 0;
+}
+
+void __eabi()
+{
+
+}
+
+__attribute__((weak))
+void __init(void)
+{
+   extern void(*__CTOR_LIST__[])(void);
+   void(**ctor)(void) = __CTOR_LIST__;
+   while(*ctor)
+      (*ctor++)();
+}
+
+
+__attribute__((weak))
+void __fini(void)
+{
+   extern void(*__DTOR_LIST__[])(void);
+   void(**ctor)(void) = __DTOR_LIST__;
+   while(*ctor)
+      (*ctor++)();
+}
+
+/* libiosuhax related */
+
+//just to be able to call async
+void someFunc(void *arg)
+{
+    (void)arg;
+}
+
+static int mcp_hook_fd = -1;
+int MCPHookOpen()
+{
+    //take over mcp thread
+    mcp_hook_fd = IOS_Open("/dev/mcp", 0);
+    if(mcp_hook_fd < 0)
+        return -1;
+    IOS_IoctlAsync(mcp_hook_fd, 0x62, (void*)0, 0, (void*)0, 0, someFunc, (void*)0);
+    //let wupserver start up
+    retro_sleep(1000);
+    if(IOSUHAX_Open("/dev/mcp") < 0)
+    {
+        IOS_Close(mcp_hook_fd);
+        mcp_hook_fd = -1;
+        return -1;
+    }
+    return 0;
+}
+
+void MCPHookClose()
+{
+    if(mcp_hook_fd < 0)
+        return;
+    //close down wupserver, return control to mcp
+    IOSUHAX_Close();
+    //wait for mcp to return
+    retro_sleep(1000);
+    IOS_Close(mcp_hook_fd);
+    mcp_hook_fd = -1;
+}
+
+/* HBL elf entry point */
+int __entry_menu(int argc, char **argv)
+{
+   InitFunctionPointers();
+   memoryInitialize();
+
+   int iosuhaxMount = 0;
+   int res = IOSUHAX_Open(NULL);
+   if(res < 0)
+      res = MCPHookOpen();
+
+   if(res < 0)
+      mount_sd_fat("sd");
+   else
+   {
+      iosuhaxMount = 1;
+      fatInitDefault();
+   }
+
+   __init();
+   int ret = main(argc, argv);
+   __fini();
+
+   if(iosuhaxMount)
+   {
+      fatUnmount("sd:");
+      fatUnmount("usb:");
+      if(mcp_hook_fd >= 0)
+         MCPHookClose();
+      else
+         IOSUHAX_Close();
+   }
+   else
+      unmount_sd_fat("sd");
+
+   memoryRelease();
+   return ret;
+}
+
+/* RPX entry point */
+__attribute__((noreturn))
+void _start(int argc, char **argv)
+{
+   memoryInitialize();
+
+   int iosuhaxMount = 0;
+   int res = IOSUHAX_Open(NULL);
+   if(res < 0)
+      res = MCPHookOpen();
+
+   if(res < 0)
+      mount_sd_fat("sd");
+   else
+   {
+      iosuhaxMount = 1;
+      fatInitDefault();
+   }
+
+   __init();
+   int ret = main(argc, argv);
+   __fini();
+
+   if(iosuhaxMount)
+   {
+      fatUnmount("sd:");
+      fatUnmount("usb:");
+      if(mcp_hook_fd >= 0)
+         MCPHookClose();
+      else
+         IOSUHAX_Close();
+   }
+   else
+      unmount_sd_fat("sd");
+
+   memoryRelease();
+   SYSRelaunchTitle(argc, argv);
+   exit(ret);
 }

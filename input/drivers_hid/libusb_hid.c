@@ -25,7 +25,7 @@
 
 #include "../connect/joypad_connection.h"
 #include "../input_defines.h"
-#include "../input_autodetect.h"
+#include "../../tasks/tasks_internal.h"
 #include "../input_config.h"
 #include "../input_driver.h"
 #include "../input_hid_driver.h"
@@ -141,16 +141,17 @@ static void libusb_hid_device_add_autodetect(unsigned idx,
       const char *device_name, const char *driver_name,
       uint16_t dev_vid, uint16_t dev_pid)
 {
-   autoconfig_params_t params = {{0}};
+   autoconfig_params_t params;
 
-   params.idx = idx;
-   params.vid = dev_vid;
-   params.pid = dev_pid;
+   params.idx             = idx;
+   params.vid             = dev_vid;
+   params.pid             = dev_pid;
+   params.display_name[0] = '\0';
 
    strlcpy(params.name, device_name, sizeof(params.name));
    strlcpy(params.driver, driver_name, sizeof(params.driver));
 
-   input_config_autoconfigure_joypad(&params);
+   input_autoconfigure_connect(&params);
 }
 
 static void libusb_get_description(struct libusb_device *device,
@@ -367,9 +368,9 @@ static int remove_adapter(void *data, struct libusb_device *dev)
    if (adapter->next->device == dev)
    {
       struct libusb_adapter *new_next = NULL;
-      const char *name = (const char*)adapter->next->name;
+      const char                *name = (const char*)adapter->next->name;
 
-      input_config_autoconfigure_disconnect(adapter->slot, name);
+      input_autoconfigure_disconnect(adapter->slot, name);
 
       adapter->next->quitting = true;
       sthread_join(adapter->next->thread);
@@ -441,9 +442,6 @@ static bool libusb_hid_joypad_button(void *data,
       unsigned port, uint16_t joykey)
 {
    uint64_t buttons          = libusb_hid_joypad_get_buttons(data, port);
-
-   if (joykey == NO_BTN)
-      return false;
 
    /* Check hat. */
    if (GET_HAT_DIR(joykey))

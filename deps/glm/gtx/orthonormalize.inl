@@ -10,7 +10,7 @@
 namespace glm
 {
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tmat3x3<T, P> orthonormalize
+	inline detail::tmat3x3<T, P> orthonormalize
 	(
 		const detail::tmat3x3<T, P>& m
 	)
@@ -32,7 +32,7 @@ namespace glm
 	}
 
 	template <typename T, precision P> 
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> orthonormalize
+	inline detail::tvec3<T, P> orthonormalize
 	(
 		const detail::tvec3<T, P>& x, 
 		const detail::tvec3<T, P>& y

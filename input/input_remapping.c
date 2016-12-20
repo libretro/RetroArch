@@ -82,18 +82,6 @@ bool input_remapping_load_file(void *data, const char *path)
             settings->input.remap_ids[i][RARCH_FIRST_CUSTOM_BIND + j] =
                key_remap;
       }
-
-      snprintf(buf, sizeof(buf), "input_player%u_joypad_index", i + 1);
-      CONFIG_GET_INT_BASE(conf, settings, input.joypad_map[i], buf);
-
-      snprintf(buf, sizeof(buf), "input_player%u_analog_dpad_mode", i + 1);
-      CONFIG_GET_INT_BASE(conf, settings, input.analog_dpad_mode[i], buf);
-
-      if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &i))
-      {
-         snprintf(buf, sizeof(buf), "input_libretro_device_p%u", i + 1);
-         CONFIG_GET_INT_BASE(conf, settings, input.libretro_device[i], buf);
-      }
    }
 
    config_file_free(conf);
@@ -113,10 +101,12 @@ bool input_remapping_save_file(const char *path)
 {
    bool ret;
    unsigned i, j;
-   char buf[PATH_MAX_LENGTH]         = {0};
-   char remap_file[PATH_MAX_LENGTH]  = {0};
+   char buf[PATH_MAX_LENGTH];
+   char remap_file[PATH_MAX_LENGTH];
    config_file_t               *conf = NULL;
    settings_t              *settings = config_get_ptr();
+
+   buf[0] = remap_file[0]            = '\0';
 
    fill_pathname_join(buf, settings->directory.input_remapping,
          path, sizeof(buf));
@@ -134,13 +124,15 @@ bool input_remapping_save_file(const char *path)
 
    for (i = 0; i < settings->input.max_users; i++)
    {
-      char buf[64] = {0};
+      char buf[64];
       char key_ident[RARCH_FIRST_CUSTOM_BIND + 4][128]   = {{0}};
       char key_strings[RARCH_FIRST_CUSTOM_BIND + 4][128] = {
          "b", "y", "select", "start",
          "up", "down", "left", "right",
          "a", "x", "l", "r", "l2", "r2",
          "l3", "r3", "l_x", "l_y", "r_x", "r_y" };
+
+      buf[0] = '\0';
 
       snprintf(buf, sizeof(buf), "input_player%u", i + 1);
 
@@ -165,12 +157,6 @@ bool input_remapping_save_file(const char *path)
                config_unset(conf,key_ident[j]);
          }
       }
-
-
-      snprintf(buf, sizeof(buf), "input_libretro_device_p%u", i + 1);
-      config_set_int(conf, buf, settings->input.libretro_device[i]);
-      snprintf(buf, sizeof(buf), "input_player%u_analog_dpad_mode", i + 1);
-      config_set_int(conf, buf, settings->input.analog_dpad_mode[i]);
    }
 
    ret = config_file_write(conf, remap_file);
@@ -190,29 +176,5 @@ void input_remapping_set_defaults(void)
          settings->input.remap_ids[i][j] = settings->input.binds[i][j].id;
       for (j = 0; j < 4; j++)
          settings->input.remap_ids[i][RARCH_FIRST_CUSTOM_BIND + j] = j;
-   }
-}
-
-void input_remapping_state(unsigned port,
-      unsigned *device, unsigned *idx, unsigned *id)
-{
-   settings_t *settings = config_get_ptr();
-
-   switch (*device)
-   {
-      case RETRO_DEVICE_JOYPAD:
-         if (*id < RARCH_FIRST_CUSTOM_BIND)
-            *id = settings->input.remap_ids[port][*id];
-         break;
-      case RETRO_DEVICE_ANALOG:
-         if (*idx < 2 && *id < 2)
-         {
-            unsigned new_id = RARCH_FIRST_CUSTOM_BIND + (*idx * 2 + *id);
-
-            new_id = settings->input.remap_ids[port][new_id];
-            *idx   = (new_id & 2) >> 1;
-            *id    = new_id & 1;
-         }
-         break;
    }
 }

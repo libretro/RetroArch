@@ -73,6 +73,7 @@
 #include "tasks_internal.h"
 
 #include "../command.h"
+#include "../core_info.h"
 #include "../content.h"
 #include "../configuration.h"
 #include "../defaults.h"
@@ -456,7 +457,7 @@ static bool init_content_file_extract(
       strlcpy(temp_content, content->elems[i].data,
             sizeof(temp_content));
 
-      if (!file_archive_extract_file(temp_content,
+      if (!valid_ext || !file_archive_extract_file(temp_content,
                sizeof(temp_content), valid_ext,
                *settings->directory.cache ?
                settings->directory.cache : NULL,
@@ -1027,6 +1028,34 @@ static bool command_event_cmd_exec(const char *data,
    return true;
 }
 
+static void update_firmware_status(void)
+{
+   char s[PATH_MAX_LENGTH];
+   core_info_ctx_firmware_t firmware_info;
+
+   core_info_t *core_info     = NULL;
+   settings_t *settings       = config_get_ptr();
+
+   core_info_get_current_core(&core_info);
+
+   if (!core_info || !settings)
+      return;
+
+   firmware_info.path         = core_info->path;
+   if (!string_is_empty(settings->directory.system))
+      firmware_info.directory.system = settings->directory.system;
+   else
+   {
+      strlcpy(s, path_get(RARCH_PATH_CONTENT) ,sizeof(s));
+      path_basedir_wrapper(s);
+      firmware_info.directory.system = s;
+   }
+
+   RARCH_LOG("Updating firmware status for: %s on %s\n", core_info->path, 
+         firmware_info.directory.system);
+   core_info_list_update_missing_firmware(&firmware_info);
+}
+
 bool task_push_content_load_default(
       const char *core_path,
       const char *fullpath,
@@ -1037,6 +1066,7 @@ bool task_push_content_load_default(
       void *user_data)
 {
    bool loading_from_menu = false;
+   settings_t *settings   = config_get_ptr();
 
    if (!content_info)
       return false;
@@ -1221,10 +1251,14 @@ bool task_push_content_load_default(
          break;
    }
 
+   RARCH_LOG("MODE: %d\n", mode);
    /* Load content */
    switch (mode)
    {
       case CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE:
+         if (!task_load_content(content_info, loading_from_menu, mode))
+            goto error;
+         break;
       case CONTENT_MODE_LOAD_FROM_CLI:
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
       case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
@@ -1241,6 +1275,11 @@ bool task_push_content_load_default(
 #endif
       case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
+         update_firmware_status();
+         if(runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL) && 
+               settings->check_firmware_before_loading)
+               goto skip;
+
          if (!task_load_content(content_info, loading_from_menu, mode))
             goto error;
          break;
@@ -1289,4 +1328,10 @@ error:
    }
 #endif
    return false;
+
+skip:
+   runloop_msg_queue_push(msg_hash_to_str(MSG_FIRMWARE), 100, 500, true);
+   RARCH_LOG("Load content blocked. Reason:  %s\n", msg_hash_to_str(MSG_FIRMWARE));
+
+   return true;
 }

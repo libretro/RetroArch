@@ -23,20 +23,53 @@
 #ifndef __LIBRETRO_SDK_GFX_MATH_MATRIX_4X4_H__
 #define __LIBRETRO_SDK_GFX_MATH_MATRIX_4X4_H__
 
+#include <retro_inline.h>
+#include <retro_common_api.h>
+
+#include <gfx/math/vector_3.h>
+
 /* Column-major matrix (OpenGL-style).
  * Reimplements functionality from FF OpenGL pipeline to be able 
  * to work on GLES 2.0 and modern GL variants.
  */
+
+#define MAT_ELEM_4X4(mat, row, column) ((mat).data[4 * (column) + (row)])
+
+RETRO_BEGIN_DECLS
 
 typedef struct math_matrix_4x4
 {
    float data[16];
 } math_matrix_4x4;
 
-#define MAT_ELEM_4X4(mat, r, c) ((mat).data[4 * (c) + (r)])
+/*
+ * Sets mat to an identity matrix
+ */
+static INLINE void matrix_4x4_identity(math_matrix_4x4 *mat)
+{
+   unsigned i;
+
+   MAT_ELEM_4X4(*mat, 0, 1)    = 0.0f;
+   MAT_ELEM_4X4(*mat, 0, 2)    = 0.0f;
+   MAT_ELEM_4X4(*mat, 0, 3)    = 0.0f;
+
+   MAT_ELEM_4X4(*mat, 1, 0)    = 0.0f;
+   MAT_ELEM_4X4(*mat, 1, 2)    = 0.0f;
+   MAT_ELEM_4X4(*mat, 1, 3)    = 0.0f;
+
+   MAT_ELEM_4X4(*mat, 2, 0)    = 0.0f;
+   MAT_ELEM_4X4(*mat, 2, 1)    = 0.0f;
+   MAT_ELEM_4X4(*mat, 2, 3)    = 0.0f;
+
+   MAT_ELEM_4X4(*mat, 3, 0)    = 0.0f;
+   MAT_ELEM_4X4(*mat, 3, 1)    = 0.0f;
+   MAT_ELEM_4X4(*mat, 3, 2)    = 0.0f;
+
+   for (i = 0; i < 4; i++)
+      MAT_ELEM_4X4(*mat, i, i) = 1.0f;
+}
 
 void matrix_4x4_copy(math_matrix_4x4 *dst, const math_matrix_4x4 *src);
-void matrix_4x4_identity(math_matrix_4x4 *mat);
 void matrix_4x4_transpose(math_matrix_4x4 *out, const math_matrix_4x4 *in);
 
 void matrix_4x4_rotate_x(math_matrix_4x4 *mat, float rad);
@@ -48,11 +81,18 @@ void matrix_4x4_ortho(math_matrix_4x4 *mat,
       float bottom, float top,
       float znear, float zfar);
 
+void matrix_4x4_lookat(math_matrix_4x4 *out,
+      vec3_t eye,
+      vec3_t center,
+      vec3_t up);
+
 void matrix_4x4_multiply(math_matrix_4x4 *out, const math_matrix_4x4 *a, const math_matrix_4x4 *b);
 
 void matrix_4x4_scale(math_matrix_4x4 *out, float x, float y, float z);
 void matrix_4x4_translate(math_matrix_4x4 *out, float x, float y, float z);
 void matrix_4x4_projection(math_matrix_4x4 *out, float y_fov, float aspect, float znear, float zfar);
+
+RETRO_END_DECLS
 
 #endif
 

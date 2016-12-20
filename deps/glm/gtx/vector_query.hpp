@@ -55,32 +55,32 @@ namespace glm
 	//! Check whether two vectors are collinears.
 	/// @see gtx_vector_query extensions.
 	template <typename T, precision P, template <typename, precision> class vecType>
-	GLM_FUNC_DECL bool areCollinear(vecType<T, P> const & v0, vecType<T, P> const & v1, T const & epsilon);
+	bool areCollinear(vecType<T, P> const & v0, vecType<T, P> const & v1, T const & epsilon);
 		
 	//! Check whether two vectors are orthogonals.
 	/// @see gtx_vector_query extensions.
 	template <typename T, precision P, template <typename, precision> class vecType>
-	GLM_FUNC_DECL bool areOrthogonal(vecType<T, P> const & v0, vecType<T, P> const & v1, T const & epsilon);
+	bool areOrthogonal(vecType<T, P> const & v0, vecType<T, P> const & v1, T const & epsilon);
 
 	//! Check whether a vector is normalized.
 	/// @see gtx_vector_query extensions.
 	template <typename T, precision P, template <typename, precision> class vecType>
-	GLM_FUNC_DECL bool isNormalized(vecType<T, P> const & v, T const & epsilon);
+	bool isNormalized(vecType<T, P> const & v, T const & epsilon);
 		
 	//! Check whether a vector is null.
 	/// @see gtx_vector_query extensions.
 	template <typename T, precision P, template <typename, precision> class vecType>
-	GLM_FUNC_DECL bool isNull(vecType<T, P> const & v, T const & epsilon);
+	bool isNull(vecType<T, P> const & v, T const & epsilon);
 
 	//! Check whether a each component of a vector is null.
 	/// @see gtx_vector_query extensions.
 	template <typename T, precision P, template <typename, precision> class vecType>
-	GLM_FUNC_DECL vecType<bool, P> isCompNull(vecType<T, P> const & v, T const & epsilon);
+	vecType<bool, P> isCompNull(vecType<T, P> const & v, T const & epsilon);
 
 	//! Check whether two vectors are orthonormal.
 	/// @see gtx_vector_query extensions.
 	template <typename T, precision P, template <typename, precision> class vecType>
-	GLM_FUNC_DECL bool areOrthonormal(vecType<T, P> const & v0, vecType<T, P> const & v1, T const & epsilon);
+	bool areOrthonormal(vecType<T, P> const & v0, vecType<T, P> const & v1, T const & epsilon);
 
 	/// @}
 }// namespace glm

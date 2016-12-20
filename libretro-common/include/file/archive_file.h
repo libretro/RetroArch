@@ -121,19 +121,9 @@ struct file_archive_file_backend
 {
    void *(*stream_new)(void);
    void  (*stream_free)(void *);
-   void  (*stream_set)(void *, uint32_t, uint32_t,
-         const uint8_t *, uint8_t *);
-   uint32_t (*stream_get_avail_in)(void*);
-   uint32_t (*stream_get_avail_out)(void*);
-   uint64_t (*stream_get_total_out)(void*);
-   void     (*stream_decrement_total_out)(void *, unsigned);
-   bool     (*stream_decompress_init)(void *);
    bool     (*stream_decompress_data_to_file_init)(
          file_archive_file_handle_t *, const uint8_t *,  uint32_t, uint32_t);
    int      (*stream_decompress_data_to_file_iterate)(void *);
-   void     (*stream_compress_init)(void *, int);
-   void     (*stream_compress_free)(void *);
-   int      (*stream_compress_data_to_file)(void *);
    uint32_t (*stream_crc_calculate)(uint32_t, const uint8_t *, size_t);
    int (*compressed_file_read)(const char *path, const char *needle, void **buf,
          const char *optional_outfile);

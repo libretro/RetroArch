@@ -65,6 +65,16 @@ ARCHIVE FILE
 #endif
 
 /*============================================================
+COMPRESSION
+============================================================ */
+#include "../libretro-common/streams/trans_stream.c"
+#include "../libretro-common/streams/trans_stream_pipe.c"
+
+#ifdef HAVE_ZLIB
+#include "../libretro-common/streams/trans_stream_zlib.c"
+#endif
+
+/*============================================================
 ENCODINGS
 ============================================================ */
 #include "../libretro-common/encodings/encoding_utf.c"
@@ -112,7 +122,7 @@ CONFIG FILE
 #endif
 
 #include "../libretro-common/file/config_file.c"
-#include "../config_file_userdata.c"
+#include "../libretro-common/file/config_file_userdata.c"
 #include "../managers/core_option_manager.c"
 
 /*============================================================
@@ -310,8 +320,10 @@ VIDEO DRIVER
 
 #ifndef HAVE_PSGL
 #include "../libretro-common/glsym/rglgen.c"
-#ifdef HAVE_OPENGLES2
+#if defined(HAVE_OPENGLES2)
 #include "../libretro-common/glsym/glsym_es2.c"
+#elif defined(HAVE_OPENGLES3)
+#include "../libretro-common/glsym/glsym_es3.c"
 #else
 #include "../libretro-common/glsym/glsym_gl.c"
 #endif
@@ -354,6 +366,7 @@ FONTS
 #include "../gfx/font_driver.c"
 
 #if defined(HAVE_STB_FONT)
+#include "../gfx/drivers_font_renderer/stb_unicode.c"
 #include "../gfx/drivers_font_renderer/stb.c"
 #endif
 
@@ -385,6 +398,10 @@ FONTS
 #include "../gfx/drivers_font/ctr_font.c"
 #endif
 
+#if defined(HAVE_CACA)
+#include "../gfx/drivers_font/caca_font.c"
+#endif
+
 
 #if defined(HAVE_VULKAN)
 #include "../gfx/drivers_font/vulkan_raster_font.c"
@@ -393,7 +410,7 @@ FONTS
 /*============================================================
 INPUT
 ============================================================ */
-#include "../input/input_autodetect.c"
+#include "../tasks/task_autodetect.c"
 #include "../input/input_joypad_driver.c"
 #include "../input/input_config.c"
 #include "../input/input_keymaps.c"
@@ -462,6 +479,7 @@ INPUT
 #endif
 
 #ifdef HAVE_UDEV
+#include "../input/common/udev_common.c"
 #include "../input/drivers/udev_input.c"
 #include "../input/drivers_keyboard/keyboard_event_udev.c"
 #include "../input/drivers_joypad/udev_joypad.c"
@@ -538,11 +556,13 @@ FIFO BUFFER
 /*============================================================
 AUDIO RESAMPLER
 ============================================================ */
-#include "../audio/audio_resampler_driver.c"
-#include "../audio/drivers_resampler/sinc_resampler.c"
-#include "../audio/drivers_resampler/nearest_resampler.c"
-#include "../audio/drivers_resampler/null_resampler.c"
+#include "../libretro-common/audio/resampler/audio_resampler.c"
+#include "../libretro-common/audio/resampler/drivers/sinc_resampler.c"
+#include "../libretro-common/audio/resampler/drivers/nearest_resampler.c"
+#include "../libretro-common/audio/resampler/drivers/null_resampler.c"
+#ifdef HAVE_CC_RESAMPLER
 #include "../audio/drivers_resampler/cc_resampler.c"
+#endif
 
 /*============================================================
 CAMERA
@@ -679,7 +699,6 @@ DYNAMIC
 #include "../libretro-common/dynamic/dylib.c"
 #include "../dynamic.c"
 #include "../gfx/video_filter.c"
-#include "../gfx/video_frame.c"
 #include "../audio/audio_dsp_filter.c"
 
 /*============================================================
@@ -812,7 +831,7 @@ RETROARCH
 #include "../intl/msg_hash_eo.c"
 #include "../intl/msg_hash_fr.c"
 #include "../intl/msg_hash_it.c"
-#include "../intl/msg_hash_jp.c"
+#include "../intl/msg_hash_ja.c"
 #include "../intl/msg_hash_nl.c"
 #include "../intl/msg_hash_pt.c"
 #include "../intl/msg_hash_pl.c"
@@ -862,17 +881,24 @@ THREAD
 NETPLAY
 ============================================================ */
 #ifdef HAVE_NETWORKING
-#include "../network/netplay/netplay_net.c"
-#include "../network/netplay/netplay_spectate.c"
-#include "../network/netplay/netplay_common.c"
-#include "../network/netplay/netplay.c"
+#include "../network/netplay/netplay_delta.c"
+#include "../network/netplay/netplay_frontend.c"
+#include "../network/netplay/netplay_handshake.c"
+#include "../network/netplay/netplay_init.c"
+#include "../network/netplay/netplay_io.c"
+#include "../network/netplay/netplay_sync.c"
+#include "../network/netplay/netplay_discovery.c"
+#include "../network/netplay/netplay_buf.c"
 #include "../libretro-common/net/net_compat.c"
 #include "../libretro-common/net/net_socket.c"
 #include "../libretro-common/net/net_http.c"
+#include "../libretro-common/net/net_natt.c"
 #ifndef HAVE_SOCKET_LEGACY
 #include "../libretro-common/net/net_ifinfo.c"
 #endif
 #include "../tasks/task_http.c"
+#include "../tasks/task_netplay_lan_scan.c"
+#include "../tasks/task_wifi.c"
 #endif
 
 /*============================================================
@@ -912,6 +938,7 @@ MENU
 #include "../menu/menu_cbs.c"
 #include "../menu/menu_content.c"
 #include "../menu/widgets/menu_entry.c"
+#include "../menu/widgets/menu_filebrowser.c"
 #include "../menu/widgets/menu_dialog.c"
 #include "../menu/widgets/menu_input_dialog.c"
 #include "../menu/widgets/menu_input_bind_dialog.c"
@@ -958,6 +985,10 @@ MENU
 
 #ifdef _3DS
 #include "../menu/drivers_display/menu_display_ctr.c"
+#endif
+
+#ifdef HAVE_CACA
+#include "../menu/drivers_display/menu_display_caca.c"
 #endif
 
 #endif
@@ -1053,8 +1084,8 @@ XML
 /*============================================================
  AUDIO UTILS
 ============================================================ */
-#include "../libretro-common/conversion/s16_to_float.c"
-#include "../libretro-common/conversion/float_to_s16.c"
+#include "../libretro-common/audio/conversion/s16_to_float.c"
+#include "../libretro-common/audio/conversion/float_to_s16.c"
 
 /*============================================================
  LIBRETRODB

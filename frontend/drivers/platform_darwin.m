@@ -352,8 +352,6 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dir.assets, home_dir_buf, "assets", sizeof(g_defaults.dir.assets));
    fill_pathname_join(g_defaults.dir.system, home_dir_buf, "system", sizeof(g_defaults.dir.system));
    fill_pathname_join(g_defaults.dir.menu_config, home_dir_buf, "config", sizeof(g_defaults.dir.menu_config));
-   fill_pathname_join(g_defaults.path.config, g_defaults.dir.menu_config,
-        file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
    fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.menu_config, "remaps", sizeof(g_defaults.dir.remap));
    fill_pathname_join(g_defaults.dir.database, home_dir_buf, "database/rdb", sizeof(g_defaults.dir.database));
    fill_pathname_join(g_defaults.dir.cursor, home_dir_buf, "database/cursors", sizeof(g_defaults.dir.cursor));
@@ -361,7 +359,6 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dir.thumbnails, home_dir_buf, "thumbnails", sizeof(g_defaults.dir.thumbnails));
    fill_pathname_join(g_defaults.dir.sram, home_dir_buf, "saves", sizeof(g_defaults.dir.sram));
    fill_pathname_join(g_defaults.dir.savestate, home_dir_buf, "states", sizeof(g_defaults.dir.savestate));
-   fill_pathname_join(g_defaults.dir.menu_config, home_dir_buf, "config", sizeof(g_defaults.dir.menu_config));
 #if defined(IOS)
    fill_pathname_join(g_defaults.dir.playlist, home_dir_buf, "playlists", sizeof(g_defaults.dir.playlist));
 #endif
@@ -378,8 +375,6 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dir.playlist, application_data, "playlists", sizeof(g_defaults.dir.playlist));
    fill_pathname_join(g_defaults.dir.thumbnails, application_data, "thumbnails", sizeof(g_defaults.dir.thumbnails));
    fill_pathname_join(g_defaults.dir.menu_config, application_data, "config", sizeof(g_defaults.dir.menu_config));
-   fill_pathname_join(g_defaults.path.config, g_defaults.dir.menu_config,
-        file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
    fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.menu_config, "remaps", sizeof(g_defaults.dir.remap));
    fill_pathname_join(g_defaults.dir.core_assets, application_data, "downloads", sizeof(g_defaults.dir.core_assets));
    fill_pathname_join(g_defaults.dir.screenshot, application_data, "screenshots", sizeof(g_defaults.dir.screenshot));
@@ -640,9 +635,14 @@ static int frontend_darwin_parse_drive_list(void *data)
    CFSearchPathForDirectoriesInDomains(CFDocumentDirectory, CFUserDomainMask, 1, home_dir_buf, sizeof(home_dir_buf));
 
    menu_entries_append_enum(list,
-         home_dir_buf, "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_append_enum(list, "/", "",
-         MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         home_dir_buf,
+        msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+        MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+        MENU_SETTING_ACTION, 0, 0);
+   menu_entries_append_enum(list, "/",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+        MENU_SETTING_ACTION, 0, 0);
 
    ret = 0;
 

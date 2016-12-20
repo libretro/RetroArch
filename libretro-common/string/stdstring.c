@@ -27,7 +27,7 @@
 
 bool string_is_empty(const char *data)
 {
-   return data==NULL || *data=='\0';
+   return (data == NULL) || (*data == '\0');
 }
 
 bool string_is_equal(const char *a, const char *b)

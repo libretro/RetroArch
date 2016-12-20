@@ -62,8 +62,8 @@ namespace glm
 
     public:
       
-      GLM_FUNC_DECL explicit precision_guard();
-      GLM_FUNC_DECL         ~precision_guard();
+      explicit precision_guard();
+      ~precision_guard();
                 
     private:
 
@@ -77,8 +77,8 @@ namespace glm
 	public:
 		enum order_t { column_major, row_major, };
 
-		GLM_FUNC_DECL explicit format_guard();
-		GLM_FUNC_DECL         ~format_guard();
+		explicit format_guard();
+      ~format_guard();
 
 	private:
 
@@ -87,59 +87,59 @@ namespace glm
 	};
 
     // decimal places (dflt: 3)
-    GLM_FUNC_DECL unsigned& precision();
+    unsigned& precision();
 
     // sign + value + '.' + decimals (dflt: 1 + 4 + 1 + precision())
-    GLM_FUNC_DECL unsigned& value_width();
+    unsigned& value_width();
 
     // matrix output order (dflt: row_major)
-    GLM_FUNC_DECL format_guard::order_t& order();
+    format_guard::order_t& order();
 
     // carriage/return char (dflt: '\n')
-    GLM_FUNC_DECL char& cr();
+    char& cr();
 
     // matrix output order -> column_major
-    GLM_FUNC_DECL std::ios_base& column_major(std::ios_base&);
+    std::ios_base& column_major(std::ios_base&);
 
     // matrix output order -> row_major
-    GLM_FUNC_DECL std::ios_base& row_major   (std::ios_base&);
+    std::ios_base& row_major   (std::ios_base&);
 
     // carriage/return char -> '\n'
-    GLM_FUNC_DECL std::ios_base& formatted   (std::ios_base&);
+    std::ios_base& formatted   (std::ios_base&);
 
     // carriage/return char -> ' '
-    GLM_FUNC_DECL std::ios_base& unformatted (std::ios_base&);
+    std::ios_base& unformatted (std::ios_base&);
 
   }//namespace io
 
   namespace detail
   {
     template <typename CTy, typename CTr, typename T, precision P>
-    GLM_FUNC_DECL std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>&, tquat<T,P> const&);
+    std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>&, tquat<T,P> const&);
     template <typename CTy, typename CTr, typename T, precision P>
-    GLM_FUNC_DECL std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>&, tvec2<T,P> const&);
+    std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>&, tvec2<T,P> const&);
     template <typename CTy, typename CTr, typename T, precision P>
-    GLM_FUNC_DECL std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>&, tvec3<T,P> const&);
+    std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>&, tvec3<T,P> const&);
     template <typename CTy, typename CTr, typename T, precision P>
-    GLM_FUNC_DECL std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>&, tvec4<T,P> const&);
+    std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>&, tvec4<T,P> const&);
     template <typename CTy, typename CTr, typename T, precision P>
-    GLM_FUNC_DECL std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>&, tmat2x2<T,P> const&);
+    std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>&, tmat2x2<T,P> const&);
     template <typename CTy, typename CTr, typename T, precision P>
-    GLM_FUNC_DECL std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>&, tmat2x3<T,P> const&);
+    std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>&, tmat2x3<T,P> const&);
     template <typename CTy, typename CTr, typename T, precision P>
-    GLM_FUNC_DECL std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>&, tmat2x4<T,P> const&);
+    std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>&, tmat2x4<T,P> const&);
     template <typename CTy, typename CTr, typename T, precision P>
-    GLM_FUNC_DECL std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>&, tmat3x2<T,P> const&);
+    std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>&, tmat3x2<T,P> const&);
     template <typename CTy, typename CTr, typename T, precision P>
-    GLM_FUNC_DECL std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>&, tmat3x3<T,P> const&);
+    std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>&, tmat3x3<T,P> const&);
     template <typename CTy, typename CTr, typename T, precision P>
-    GLM_FUNC_DECL std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>&, tmat3x4<T,P> const&);
+    std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>&, tmat3x4<T,P> const&);
     template <typename CTy, typename CTr, typename T, precision P>
-    GLM_FUNC_DECL std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>&, tmat4x2<T,P> const&);
+    std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>&, tmat4x2<T,P> const&);
     template <typename CTy, typename CTr, typename T, precision P>
-    GLM_FUNC_DECL std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>&, tmat4x3<T,P> const&);
+    std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>&, tmat4x3<T,P> const&);
     template <typename CTy, typename CTr, typename T, precision P>
-    GLM_FUNC_DECL std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>&, tmat4x4<T,P> const&);
+    std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>&, tmat4x4<T,P> const&);
 
 	/// @}  
 }//namespace detail

@@ -40,7 +40,7 @@ namespace glm{
 namespace gtc
 {
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec4<T, P> grad4(T const & j, detail::tvec4<T, P> const & ip)
+	inline detail::tvec4<T, P> grad4(T const & j, detail::tvec4<T, P> const & ip)
 	{
 		detail::tvec3<T, P> pXYZ = floor(fract(detail::tvec3<T, P>(j) * detail::tvec3<T, P>(ip)) * T(7)) * ip[2] - T(1);
 		T pW = static_cast<T>(1.5) - dot(abs(pXYZ), detail::tvec3<T, P>(1));
@@ -52,7 +52,7 @@ namespace gtc
 
 	// Classic Perlin noise
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T perlin(detail::tvec2<T, P> const & Position)
+	inline T perlin(detail::tvec2<T, P> const & Position)
 	{
 		detail::tvec4<T, P> Pi = glm::floor(detail::tvec4<T, P>(Position.x, Position.y, Position.x, Position.y)) + detail::tvec4<T, P>(0.0, 0.0, 1.0, 1.0);
 		detail::tvec4<T, P> Pf = glm::fract(detail::tvec4<T, P>(Position.x, Position.y, Position.x, Position.y)) - detail::tvec4<T, P>(0.0, 0.0, 1.0, 1.0);
@@ -93,7 +93,7 @@ namespace gtc
 
 	// Classic Perlin noise
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T perlin(detail::tvec3<T, P> const & Position)
+	inline T perlin(detail::tvec3<T, P> const & Position)
 	{
 		detail::tvec3<T, P> Pi0 = floor(Position); // Integer part for indexing
 		detail::tvec3<T, P> Pi1 = Pi0 + T(1); // Integer part + 1
@@ -164,7 +164,7 @@ namespace gtc
 	/*
 	// Classic Perlin noise
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T perlin(detail::tvec3<T, P> const & P)
+	inline T perlin(detail::tvec3<T, P> const & P)
 	{
 		detail::tvec3<T, P> Pi0 = floor(P); // Integer part for indexing
 		detail::tvec3<T, P> Pi1 = Pi0 + T(1); // Integer part + 1
@@ -237,7 +237,7 @@ namespace gtc
 	*/
 	// Classic Perlin noise
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T perlin(detail::tvec4<T, P> const & Position)
+	inline T perlin(detail::tvec4<T, P> const & Position)
 	{
 		detail::tvec4<T, P> Pi0 = floor(Position);	// Integer part for indexing
 		detail::tvec4<T, P> Pi1 = Pi0 + T(1);		// Integer part + 1
@@ -373,7 +373,7 @@ namespace gtc
 
 	// Classic Perlin noise, periodic variant
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T perlin(detail::tvec2<T, P> const & Position, detail::tvec2<T, P> const & rep)
+	inline T perlin(detail::tvec2<T, P> const & Position, detail::tvec2<T, P> const & rep)
 	{
 		detail::tvec4<T, P> Pi = floor(detail::tvec4<T, P>(Position.x, Position.y, Position.x, Position.y)) + detail::tvec4<T, P>(0.0, 0.0, 1.0, 1.0);
 		detail::tvec4<T, P> Pf = fract(detail::tvec4<T, P>(Position.x, Position.y, Position.x, Position.y)) - detail::tvec4<T, P>(0.0, 0.0, 1.0, 1.0);
@@ -415,7 +415,7 @@ namespace gtc
 
 	// Classic Perlin noise, periodic variant
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T perlin(detail::tvec3<T, P> const & Position, detail::tvec3<T, P> const & rep)
+	inline T perlin(detail::tvec3<T, P> const & Position, detail::tvec3<T, P> const & rep)
 	{
 		detail::tvec3<T, P> Pi0 = mod(floor(Position), rep); // Integer part, modulo period
 		detail::tvec3<T, P> Pi1 = mod(Pi0 + detail::tvec3<T, P>(T(1)), rep); // Integer part + 1, mod period
@@ -486,7 +486,7 @@ namespace gtc
 
 	// Classic Perlin noise, periodic version
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T perlin(detail::tvec4<T, P> const & Position, detail::tvec4<T, P> const & rep)
+	inline T perlin(detail::tvec4<T, P> const & Position, detail::tvec4<T, P> const & rep)
 	{
 		detail::tvec4<T, P> Pi0 = mod(floor(Position), rep); // Integer part modulo rep
 		detail::tvec4<T, P> Pi1 = mod(Pi0 + T(1), rep); // Integer part + 1 mod rep
@@ -619,7 +619,7 @@ namespace gtc
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T simplex(glm::detail::tvec2<T, P> const & v)
+	inline T simplex(glm::detail::tvec2<T, P> const & v)
 	{
 		detail::tvec4<T, P> const C = detail::tvec4<T, P>(
 			T( 0.211324865405187),  // (3.0 -  sqrt(3.0)) / 6.0
@@ -676,7 +676,7 @@ namespace gtc
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T simplex(detail::tvec3<T, P> const & v)
+	inline T simplex(detail::tvec3<T, P> const & v)
 	{
 		detail::tvec2<T, P> const C(1.0 / 6.0, 1.0 / 3.0);
 		detail::tvec4<T, P> const D(0.0, 0.5, 1.0, 2.0);
@@ -751,7 +751,7 @@ namespace gtc
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T simplex(detail::tvec4<T, P> const & v)
+	inline T simplex(detail::tvec4<T, P> const & v)
 	{
 		detail::tvec4<T, P> const C(
 			0.138196601125011,  // (5 - sqrt(5))/20  G4

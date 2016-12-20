@@ -19,6 +19,7 @@
 
 #include <retro_assert.h>
 #include <gfx/scaler/scaler.h>
+#include <gfx/video_frame.h>
 #include <retro_assert.h>
 #include "../../verbosity.h"
 
@@ -37,7 +38,6 @@
 #include "../../runloop.h"
 #include "../../performance_counters.h"
 
-#include "../video_frame.h"
 #include "../video_context_driver.h"
 #include "../font_driver.h"
 
@@ -332,12 +332,14 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
       unsigned height, uint64_t frame_count,
       unsigned pitch, const char *msg)
 {
-   char                       buf[128] = {0};
+   char                       buf[128];
    static struct retro_perf_counter sdl_scale = {0};
    sdl_video_t                    *vid = (sdl_video_t*)data;
 
    if (!frame)
       return true;
+
+   buf[0] = '\0';
 
    if (SDL_MUSTLOCK(vid->screen))
       SDL_LockSurface(vid->screen);

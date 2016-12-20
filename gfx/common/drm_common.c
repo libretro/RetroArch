@@ -20,17 +20,18 @@
 
 #include "drm_common.h"
 
-uint32_t g_connector_id;
-int g_drm_fd;
-uint32_t g_crtc_id;
-
-static drmModeCrtc *g_orig_crtc;
 struct pollfd g_drm_fds;
 
-static drmModeRes *g_drm_resources;
-drmModeConnector *g_drm_connector;
-static drmModeEncoder *g_drm_encoder;
-drmModeModeInfo *g_drm_mode;
+uint32_t g_connector_id               = 0;
+int g_drm_fd                          = 0;
+uint32_t g_crtc_id                    = 0;
+
+static drmModeCrtc *g_orig_crtc       = NULL;
+
+static drmModeRes *g_drm_resources    = NULL;
+drmModeConnector *g_drm_connector     = NULL;
+static drmModeEncoder *g_drm_encoder  = NULL;
+drmModeModeInfo *g_drm_mode           = NULL;
 
 drmEventContext g_drm_evctx;
 

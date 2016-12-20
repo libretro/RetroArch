@@ -94,8 +94,6 @@ void audio_driver_set_active(void);
 
 void audio_driver_unset_active(void);
 
-bool audio_driver_is_active(void);
-
 void audio_driver_destroy(void);
 
 void audio_driver_deinit_resampler(void);
@@ -204,6 +202,7 @@ extern audio_driver_t audio_coreaudio;
 extern audio_driver_t audio_xenon360;
 extern audio_driver_t audio_ps3;
 extern audio_driver_t audio_gx;
+extern audio_driver_t audio_ax;
 extern audio_driver_t audio_psp;
 extern audio_driver_t audio_ctr_csnd;
 extern audio_driver_t audio_ctr_dsp;

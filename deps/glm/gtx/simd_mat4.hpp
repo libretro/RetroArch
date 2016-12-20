@@ -69,7 +69,7 @@ namespace detail
 		typedef fmat4x4SIMD type;
 		typedef fmat4x4SIMD transpose_type;
 
-		GLM_FUNC_DECL length_t length() const;
+		length_t length() const;
 
 		fvec4SIMD Data[4];
 

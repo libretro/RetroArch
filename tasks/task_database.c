@@ -53,8 +53,6 @@ typedef struct db_handle
 static int task_database_iterate_start(database_info_handle_t *db,
       const char *name)
 {
-  
-
    char msg[128];
 
    msg[0] = msg[127] = '\0';
@@ -345,7 +343,8 @@ static int task_database_iterate_crc_lookup(
 
       query[0] = '\0';
 
-      db_supports_content = core_info_database_supports_content_path(db_state->list->elems[db_state->list_index].data, name);
+      db_supports_content = core_info_database_supports_content_path(
+            db_state->list->elems[db_state->list_index].data, name);
       unsupported_content = core_info_unsupported_content_path(name);
 
       /* don't scan files that can't be in this database */
@@ -354,7 +353,8 @@ static int task_database_iterate_crc_lookup(
 
       snprintf(query, sizeof(query),
             "{crc:or(b\"%08X\",b\"%08X\")}",
-            swap_if_big32(db_state->crc), swap_if_big32(db_state->archive_crc));
+            swap_if_big32(db_state->crc),
+            swap_if_big32(db_state->archive_crc));
 
       database_info_list_iterate_new(db_state, query);
    }
@@ -421,10 +421,10 @@ static int task_database_iterate_playlist_lutro(
       const char *path)
 {
    char db_playlist_path[PATH_MAX_LENGTH];
-   playlist_t   *playlist                      = NULL;
-   settings_t           *settings              = config_get_ptr();
+   playlist_t   *playlist                  = NULL;
+   settings_t           *settings          = config_get_ptr();
 
-   db_playlist_path[0] = '\0';
+   db_playlist_path[0]                     = '\0';
 
    fill_pathname_join(db_playlist_path,
          settings->directory.playlist,

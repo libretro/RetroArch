@@ -43,7 +43,7 @@ namespace glm
 {
 	// uaddCarry
 	template <>
-	GLM_FUNC_QUALIFIER uint uaddCarry
+	inline uint uaddCarry
 	(
 		uint const & x,
 		uint const & y,
@@ -57,7 +57,7 @@ namespace glm
 	}
 
 	template <>
-	GLM_FUNC_QUALIFIER uvec2 uaddCarry
+	inline uvec2 uaddCarry
 	(
 		uvec2 const & x,
 		uvec2 const & y,
@@ -70,7 +70,7 @@ namespace glm
 	}
 
 	template <>
-	GLM_FUNC_QUALIFIER uvec3 uaddCarry
+	inline uvec3 uaddCarry
 	(
 		uvec3 const & x,
 		uvec3 const & y,
@@ -84,7 +84,7 @@ namespace glm
 	}
 
 	template <>
-	GLM_FUNC_QUALIFIER uvec4 uaddCarry
+	inline uvec4 uaddCarry
 	(
 		uvec4 const & x,
 		uvec4 const & y,
@@ -100,24 +100,21 @@ namespace glm
 
 	// usubBorrow
 	template <>
-	GLM_FUNC_QUALIFIER uint usubBorrow
+	inline uint usubBorrow
 	(
 		uint const & x,
 		uint const & y,
 		uint & Borrow
 	)
 	{
-		GLM_STATIC_ASSERT(sizeof(uint) == sizeof(uint32), "uint and uint32 size mismatch");
-
 		Borrow = x >= y ? static_cast<uint32>(0) : static_cast<uint32>(1);
 		if(y >= x)
 			return y - x;
-		else
-			return static_cast<uint32>((static_cast<int64>(1) << static_cast<int64>(32)) + (static_cast<int64>(y) - static_cast<int64>(x)));
+      return static_cast<uint32>((static_cast<int64>(1) << static_cast<int64>(32)) + (static_cast<int64>(y) - static_cast<int64>(x)));
 	}
 
 	template <>
-	GLM_FUNC_QUALIFIER uvec2 usubBorrow
+	inline uvec2 usubBorrow
 	(
 		uvec2 const & x,
 		uvec2 const & y,
@@ -130,7 +127,7 @@ namespace glm
 	}
 
 	template <>
-	GLM_FUNC_QUALIFIER uvec3 usubBorrow
+	inline uvec3 usubBorrow
 	(
 		uvec3 const & x,
 		uvec3 const & y,
@@ -144,7 +141,7 @@ namespace glm
 	}
 
 	template <>
-	GLM_FUNC_QUALIFIER uvec4 usubBorrow
+	inline uvec4 usubBorrow
 	(
 		uvec4 const & x,
 		uvec4 const & y,
@@ -160,7 +157,7 @@ namespace glm
 
 	// umulExtended
 	template <>
-	GLM_FUNC_QUALIFIER void umulExtended
+	inline void umulExtended
 	(
 		uint const & x,
 		uint const & y,
@@ -168,15 +165,13 @@ namespace glm
 		uint & lsb
 	)
 	{
-		GLM_STATIC_ASSERT(sizeof(uint) == sizeof(uint32), "uint and uint32 size mismatch");
-
 		uint64 Value64 = static_cast<uint64>(x) * static_cast<uint64>(y);
 		msb = Value64 >> 32;
 		lsb = Value64;
 	}
 
 	template <>
-	GLM_FUNC_QUALIFIER void umulExtended
+	inline void umulExtended
 	(
 		uvec2 const & x,
 		uvec2 const & y,
@@ -189,7 +184,7 @@ namespace glm
 	}
 
 	template <>
-	GLM_FUNC_QUALIFIER void umulExtended
+	inline void umulExtended
 	(
 		uvec3 const & x,
 		uvec3 const & y,
@@ -203,7 +198,7 @@ namespace glm
 	}
 
 	template <>
-	GLM_FUNC_QUALIFIER void umulExtended
+	inline void umulExtended
 	(
 		uvec4 const & x,
 		uvec4 const & y,
@@ -219,7 +214,7 @@ namespace glm
 
 	// imulExtended
 	template <>
-	GLM_FUNC_QUALIFIER void imulExtended
+	inline void imulExtended
 	(
 		int const & x,
 		int const & y,
@@ -227,15 +222,13 @@ namespace glm
 		int & lsb
 	)
 	{
-		GLM_STATIC_ASSERT(sizeof(int) == sizeof(int32), "int and int32 size mismatch");
-
 		int64 Value64 = static_cast<int64>(x) * static_cast<int64>(y);
 		msb = Value64 >> 32;
 		lsb = Value64;
 	}
 
 	template <>
-	GLM_FUNC_QUALIFIER void imulExtended
+	inline void imulExtended
 	(
 		ivec2 const & x,
 		ivec2 const & y,
@@ -248,7 +241,7 @@ namespace glm
 	}
 
 	template <>
-	GLM_FUNC_QUALIFIER void imulExtended
+	inline void imulExtended
 	(
 		ivec3 const & x,
 		ivec3 const & y,
@@ -262,7 +255,7 @@ namespace glm
 	}
 
 	template <>
-	GLM_FUNC_QUALIFIER void imulExtended
+	inline void imulExtended
 	(
 		ivec4 const & x,
 		ivec4 const & y,
@@ -278,7 +271,7 @@ namespace glm
 
 	// bitfieldExtract
 	template <typename genIUType>
-	GLM_FUNC_QUALIFIER genIUType bitfieldExtract
+	inline genIUType bitfieldExtract
 	(
 		genIUType const & Value,
 		int const & Offset,
@@ -296,7 +289,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec2<T, P> bitfieldExtract
+	inline detail::tvec2<T, P> bitfieldExtract
 	(
 		detail::tvec2<T, P> const & Value,
 		int const & Offset,
@@ -309,7 +302,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> bitfieldExtract
+	inline detail::tvec3<T, P> bitfieldExtract
 	(
 		detail::tvec3<T, P> const & Value,
 		int const & Offset,
@@ -323,7 +316,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec4<T, P> bitfieldExtract
+	inline detail::tvec4<T, P> bitfieldExtract
 	(
 		detail::tvec4<T, P> const & Value,
 		int const & Offset,
@@ -339,7 +332,7 @@ namespace glm
 
 	// bitfieldInsert
 	template <typename genIUType>
-	GLM_FUNC_QUALIFIER genIUType bitfieldInsert
+	inline genIUType bitfieldInsert
 	(
 		genIUType const & Base,
 		genIUType const & Insert,
@@ -347,7 +340,6 @@ namespace glm
 		int const & Bits
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genIUType>::is_integer, "'bitfieldInsert' only accept integer values");
 		assert(Offset + Bits <= sizeof(genIUType));
 
 		if(Bits == 0)
@@ -361,7 +353,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec2<T, P> bitfieldInsert
+	inline detail::tvec2<T, P> bitfieldInsert
 	(
 		detail::tvec2<T, P> const & Base,
 		detail::tvec2<T, P> const & Insert,
@@ -375,7 +367,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> bitfieldInsert
+	inline detail::tvec3<T, P> bitfieldInsert
 	(
 		detail::tvec3<T, P> const & Base,
 		detail::tvec3<T, P> const & Insert,
@@ -390,7 +382,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec4<T, P> bitfieldInsert
+	inline detail::tvec4<T, P> bitfieldInsert
 	(
 		detail::tvec4<T, P> const & Base,
 		detail::tvec4<T, P> const & Insert,
@@ -407,10 +399,8 @@ namespace glm
 
 	// bitfieldReverse
 	template <typename genIUType>
-	GLM_FUNC_QUALIFIER genIUType bitfieldReverse(genIUType const & Value)
+	inline genIUType bitfieldReverse(genIUType const & Value)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genIUType>::is_integer, "'bitfieldReverse' only accept integer values");
-
 		genIUType Out = 0;
 		std::size_t BitSize = sizeof(genIUType) * 8;
 		for(std::size_t i = 0; i < BitSize; ++i)
@@ -423,10 +413,8 @@ namespace glm
 
 	// bitCount
 	template <typename genIUType>
-	GLM_FUNC_QUALIFIER int bitCount(genIUType const & Value)
+	inline int bitCount(genIUType const & Value)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genIUType>::is_integer, "'bitCount' only accept integer values");
-
 		int Count = 0;
 		for(std::size_t i = 0; i < sizeof(genIUType) * std::size_t(8); ++i)
 		{
@@ -437,7 +425,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec2<int, P> bitCount
+	inline detail::tvec2<int, P> bitCount
 	(
 		detail::tvec2<T, P> const & value
 	)
@@ -448,7 +436,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec3<int, P> bitCount
+	inline detail::tvec3<int, P> bitCount
 	(
 		detail::tvec3<T, P> const & value
 	)
@@ -460,7 +448,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec4<int, P> bitCount
+	inline detail::tvec4<int, P> bitCount
 	(
 		detail::tvec4<T, P> const & value
 	)
@@ -474,12 +462,11 @@ namespace glm
 
 	// findLSB
 	template <typename genIUType>
-	GLM_FUNC_QUALIFIER int findLSB
+	inline int findLSB
 	(
 		genIUType const & Value
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genIUType>::is_integer, "'findLSB' only accept integer values");
 		if(Value == 0)
 			return -1;
 
@@ -489,7 +476,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec2<int, P> findLSB
+	inline detail::tvec2<int, P> findLSB
 	(
 		detail::tvec2<T, P> const & value
 	)
@@ -500,7 +487,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec3<int, P> findLSB
+	inline detail::tvec3<int, P> findLSB
 	(
 		detail::tvec3<T, P> const & value
 	)
@@ -512,7 +499,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec4<int, P> findLSB
+	inline detail::tvec4<int, P> findLSB
 	(
 		detail::tvec4<T, P> const & value
 	)
@@ -528,12 +515,11 @@ namespace glm
 #if((GLM_ARCH != GLM_ARCH_PURE) && (GLM_COMPILER & GLM_COMPILER_VC))
 
 	template <typename genIUType>
-	GLM_FUNC_QUALIFIER int findMSB
+	inline int findMSB
 	(
 		genIUType const & Value
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genIUType>::is_integer, "'findMSB' only accept integer values");
 		if(Value == 0)
 			return -1;
 
@@ -541,29 +527,6 @@ namespace glm
 		_BitScanReverse(&Result, Value);
 		return int(Result);
 	}
-/*
-// __builtin_clz seems to be buggy as it crasks for some values, from 0x00200000 to 80000000
-#elif((GLM_ARCH != GLM_ARCH_PURE) && (GLM_COMPILER & GLM_COMPILER_GCC) && (GLM_COMPILER >= GLM_COMPILER_GCC40))
-
-	template <typename genIUType>
-	GLM_FUNC_QUALIFIER int findMSB
-	(
-		genIUType const & Value
-	)
-	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genIUType>::is_integer, "'findMSB' only accept integer values");
-		if(Value == 0)
-			return -1;
-
-		// clz returns the number or trailing 0-bits; see
-		// http://gcc.gnu.org/onlinedocs/gcc-4.7.1/gcc/Other-Builtins.html
-		//
-		// NoteBecause __builtin_clz only works for unsigned ints, this
-		// implementation will not work for 64-bit integers.
-		//
-		return 31 - __builtin_clzl(Value);
-	}
-*/
 #else
 
 /* SSE implementation idea
@@ -585,13 +548,11 @@ namespace glm
 */
 
 	template <typename genIUType>
-	GLM_FUNC_QUALIFIER int findMSB
+	inline int findMSB
 	(
 		genIUType const & Value
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genIUType>::is_integer, "'findMSB' only accept integer values");
-		
 		if(Value == genIUType(0) || Value == genIUType(-1))
 			return -1;
 		else if(Value > 0)
@@ -613,7 +574,7 @@ namespace glm
 #endif//(GLM_COMPILER)
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec2<int, P> findMSB
+	inline detail::tvec2<int, P> findMSB
 	(
 		detail::tvec2<T, P> const & value
 	)
@@ -624,7 +585,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec3<int, P> findMSB
+	inline detail::tvec3<int, P> findMSB
 	(
 		detail::tvec3<T, P> const & value
 	)
@@ -636,7 +597,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec4<int, P> findMSB
+	inline detail::tvec4<int, P> findMSB
 	(
 		detail::tvec4<T, P> const & value
 	)

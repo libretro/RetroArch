@@ -32,7 +32,8 @@
 #include "../configuration.h"
 #include "../verbosity.h"
 
-typedef struct {
+typedef struct
+{
    enum overlay_status state;
    enum overlay_image_transfer_status loading_status;
    config_file_t *conf;
@@ -48,7 +49,7 @@ typedef struct {
 
 static void task_overlay_image_done(struct overlay *overlay)
 {
-   overlay->pos = 0;
+   overlay->pos           = 0;
    /* Divide iteration steps by half of total descs if size is even,
     * otherwise default to 8 (arbitrary value for now to speed things up). */
    overlay->pos_increment = (overlay->size / 2) ? (overlay->size / 2) : 8;
@@ -64,8 +65,8 @@ static void task_overlay_load_desc_image(
    char image_path[PATH_MAX_LENGTH];
    config_file_t              *conf = loader->conf;
 
-   overlay_desc_image_key[0] = '\0';
-   image_path[0]             = '\0';
+   overlay_desc_image_key[0]        = '\0';
+   image_path[0]                    = '\0';
 
    snprintf(overlay_desc_image_key, sizeof(overlay_desc_image_key),
          "overlay%u_desc%u_overlay", ol_idx, desc_idx);
@@ -729,10 +730,10 @@ static bool task_overlay_finder(retro_task_t *task, void *user_data)
 static bool task_push_overlay_load(const char *overlay_path,
       retro_task_callback_t cb, void *user_data)
 {
+   task_finder_data_t find_data;
    retro_task_t *t          = NULL;
    config_file_t *conf      = NULL;
    overlay_loader_t *loader = (overlay_loader_t*)calloc(1, sizeof(*loader));
-   task_finder_data_t find_data;
 
    if (!loader)
       goto error;
@@ -799,9 +800,7 @@ bool task_push_overlay_load_default(
       retro_task_callback_t cb, void *user_data)
 {
    settings_t *settings = config_get_ptr();
-   bool osk_enable      = input_driver_is_onscreen_keyboard_enabled();
-   const char *path     = osk_enable ? settings->path.osk_overlay : 
-      settings->path.overlay;
+   const char *path     = settings->path.overlay;
 
    if (string_is_empty(path))
       return false;

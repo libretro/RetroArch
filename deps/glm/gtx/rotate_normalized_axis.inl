@@ -29,7 +29,7 @@
 namespace glm
 {
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, P> rotateNormalizedAxis
+	inline detail::tmat4x4<T, P> rotateNormalizedAxis
 	(
 		detail::tmat4x4<T, P> const & m,
 		T const & angle,
@@ -71,7 +71,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tquat<T, P> rotateNormalizedAxis
+	inline detail::tquat<T, P> rotateNormalizedAxis
 	(
 		detail::tquat<T, P> const & q, 
 		T const & angle,

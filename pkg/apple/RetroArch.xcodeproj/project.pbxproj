@@ -77,8 +77,8 @@
 		089C165DFE840E0CC02AAC07 /* InfoPlist.strings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = InfoPlist.strings; path = OSX/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		1DDD58150DA1D0A300B32029 /* MainMenu.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = MainMenu.xib; path = OSX/en.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
-		5008453A1B89300700CE6073 /* RetroArchCg.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "RetroArchCg.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		5008453B1B89300700CE6073 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "Info.plist"; path = "/../../pkg/apple/OSX/Info.plist"; sourceTree = SOURCE_ROOT; };
+		5008453A1B89300700CE6073 /* RetroArchCg.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArchCg.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5008453B1B89300700CE6073 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = /../../pkg/apple/OSX/Info.plist; sourceTree = SOURCE_ROOT; };
 		5061C8A31AE47E510080AE14 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
 		509F0C9C1AA23AFC00619ECC /* griffin_objc.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = griffin_objc.m; path = ../../griffin/griffin_objc.m; sourceTree = "<group>"; };
 		840222FB1A889EE2009AB261 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
@@ -90,7 +90,7 @@
 		84DD5EB21A89E6C0007336C1 /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = /System/Library/Frameworks/AudioUnit.framework; sourceTree = "<absolute>"; };
 		84DD5EB41A89E737007336C1 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = ../../../../../../System/Library/Frameworks/IOKit.framework; sourceTree = "<group>"; };
 		84DD5EB71A89F1C7007336C1 /* retroarch.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = retroarch.icns; path = ../../media/retroarch.icns; sourceTree = "<group>"; };
-		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "Info.plist"; path = "OSX/Info.plist"; sourceTree = "<group>"; };
+		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = OSX/Info.plist; sourceTree = "<group>"; };
 		8D1107320486CEB800E47090 /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -378,52 +378,15 @@
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
 				);
-				INFOPLIST_FILE = "OSX/Info.plist";
+				INFOPLIST_FILE = OSX/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				OTHER_CFLAGS = (
-					"-DHAVE_GRIFFIN",
-               "-DHAVE_UPDATE_ASSETS",
-               "-DHAVE_LANGEXTRA",
-               "-DHAVE_CHEEVOS",
-					"-DHAVE_IMAGEVIEWER",
-					"-DHAVE_CORETEXT",
-					"-DHAVE_IOHIDMANAGER",
-					"-DHAVE_RGUI",
-					"-DHAVE_MENU",
-					"-DOSX",
-					"-DHAVE_OPENGL",
-					"-DHAVE_FBO",
-					"-DHAVE_GLSL",
-					"-DINLINE=inline",
-					"-D__LIBRETRO__",
-					"-DHAVE_COREAUDIO",
-					"-DHAVE_DYNAMIC",
-					"-DHAVE_OVERLAY",
-					"-DHAVE_ZLIB",
-					"-DHAVE_RPNG",
-					"-DHAVE_RJPEG",
-					"-DHAVE_RBMP",
-					"-DHAVE_RTGA",
-					"-DHAVE_COCOA",
-					"-DHAVE_MAIN",
-					"-DSINC_LOWER_QUALITY",
-               "-DHAVE_NETWORKGAMEPAD",
-					"-DHAVE_NETWORKING",
-					"-DRARCH_INTERNAL",
-					"-DHAVE_THREADS",
-					"-DHAVE_DYLIB",
+					"$(inherited)",
 					"-DHAVE_CG",
-					"-DHAVE_7ZIP",
-					"-DHAVE_MATERIALUI",
-					"-DHAVE_HID",
-					"-DHAVE_XMB",
-               "-DHAVE_SHADERPIPELINE",
-               "-DHAVE_MMAP",
-					"-DHAVE_LIBRETRODB",
 				);
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
-				PRODUCT_NAME = "RetroArchCg";
+				PRODUCT_NAME = RetroArchCg;
 			};
 			name = Debug;
 		};
@@ -444,52 +407,15 @@
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
 				);
-				INFOPLIST_FILE = "OSX/Info.plist";
+				INFOPLIST_FILE = OSX/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				OTHER_CFLAGS = (
-					"-DHAVE_GRIFFIN",
-               "-DHAVE_UPDATE_ASSETS",
-               "-DHAVE_LANGEXTRA",
-               "-DHAVE_CHEEVOS",
-					"-DHAVE_IMAGEVIEWER",
-					"-DHAVE_IOHIDMANAGER",
-					"-DHAVE_CORETEXT",
-					"-DHAVE_RGUI",
-					"-DHAVE_MENU",
-					"-DOSX",
-					"-DHAVE_OPENGL",
-					"-DHAVE_FBO",
-					"-DHAVE_GLSL",
-					"-DINLINE=inline",
-					"-D__LIBRETRO__",
-					"-DHAVE_COREAUDIO",
-					"-DHAVE_DYNAMIC",
-					"-DHAVE_OVERLAY",
-					"-DHAVE_ZLIB",
-					"-DHAVE_RPNG",
-					"-DHAVE_RJPEG",
-					"-DHAVE_RBMP",
-					"-DHAVE_RTGA",
-					"-DHAVE_COCOA",
-					"-DHAVE_MAIN",
-					"-DSINC_LOWER_QUALITY",
-               "-DHAVE_NETWORKGAMEPAD",
-					"-DHAVE_NETWORKING",
-					"-DRARCH_INTERNAL",
-					"-DHAVE_THREADS",
-					"-DHAVE_DYLIB",
+					"$(inherited)",
 					"-DHAVE_CG",
-					"-DHAVE_7ZIP",
-					"-DHAVE_MATERIALUI",
-					"-DHAVE_HID",
-					"-DHAVE_XMB",
-               "-DHAVE_SHADERPIPELINE",
-               "-DHAVE_MMAP",
-					"-DHAVE_LIBRETRODB",
 				);
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
-				PRODUCT_NAME = "RetroArchCg";
+				PRODUCT_NAME = RetroArchCg;
 			};
 			name = Release;
 		};
@@ -515,46 +441,6 @@
 				INFOPLIST_FILE = "$(SRCROOT)/OSX/Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
-				OTHER_CFLAGS = (
-					"-DHAVE_GRIFFIN",
-               "-DHAVE_UPDATE_ASSETS",
-               "-DHAVE_LANGEXTRA",
-               "-DHAVE_CHEEVOS",
-					"-DHAVE_IMAGEVIEWER",
-					"-DHAVE_CORETEXT",
-					"-DHAVE_IOHIDMANAGER",
-					"-DHAVE_RGUI",
-					"-DHAVE_MENU",
-					"-DOSX",
-					"-DHAVE_OPENGL",
-					"-DHAVE_FBO",
-					"-DHAVE_GLSL",
-					"-DINLINE=inline",
-					"-D__LIBRETRO__",
-					"-DHAVE_COREAUDIO",
-					"-DHAVE_DYNAMIC",
-					"-DHAVE_OVERLAY",
-					"-DHAVE_ZLIB",
-					"-DHAVE_RPNG",
-					"-DHAVE_RJPEG",
-					"-DHAVE_RBMP",
-					"-DHAVE_RTGA",
-					"-DHAVE_COCOA",
-					"-DHAVE_MAIN",
-					"-DSINC_LOWER_QUALITY",
-               "-DHAVE_NETWORKGAMEPAD",
-					"-DHAVE_NETWORKING",
-					"-DRARCH_INTERNAL",
-					"-DHAVE_THREADS",
-					"-DHAVE_DYLIB",
-					"-DHAVE_7ZIP",
-					"-DHAVE_MATERIALUI",
-					"-DHAVE_HID",
-					"-DHAVE_XMB",
-               "-DHAVE_SHADERPIPELINE",
-               "-DHAVE_MMAP",
-					"-DHAVE_LIBRETRODB",
-				);
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
 				PRODUCT_NAME = RetroArch;
 			};
@@ -580,46 +466,6 @@
 				INFOPLIST_FILE = "$(SRCROOT)/OSX/Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
-				OTHER_CFLAGS = (
-					"-DHAVE_GRIFFIN",
-               "-DHAVE_UPDATE_ASSETS",
-               "-DHAVE_LANGEXTRA",
-               "-DHAVE_CHEEVOS",
-					"-DHAVE_IMAGEVIEWER",
-					"-DHAVE_IOHIDMANAGER",
-					"-DHAVE_CORETEXT",
-					"-DHAVE_RGUI",
-					"-DHAVE_MENU",
-					"-DOSX",
-					"-DHAVE_OPENGL",
-					"-DHAVE_FBO",
-					"-DHAVE_GLSL",
-					"-DINLINE=inline",
-					"-D__LIBRETRO__",
-					"-DHAVE_COREAUDIO",
-					"-DHAVE_DYNAMIC",
-					"-DHAVE_OVERLAY",
-					"-DHAVE_ZLIB",
-					"-DHAVE_RPNG",
-					"-DHAVE_RJPEG",
-					"-DHAVE_RBMP",
-					"-DHAVE_RTGA",
-					"-DHAVE_COCOA",
-					"-DHAVE_MAIN",
-					"-DSINC_LOWER_QUALITY",
-               "-DHAVE_NETWORKGAMEPAD",
-					"-DHAVE_NETWORKING",
-					"-DRARCH_INTERNAL",
-					"-DHAVE_THREADS",
-					"-DHAVE_DYLIB",
-					"-DHAVE_7ZIP",
-					"-DHAVE_MATERIALUI",
-					"-DHAVE_HID",
-					"-DHAVE_XMB",
-               "-DHAVE_SHADERPIPELINE",
-               "-DHAVE_MMAP",
-					"-DHAVE_LIBRETRODB",
-				);
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
 				PRODUCT_NAME = RetroArch;
 			};
@@ -634,6 +480,48 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				ONLY_ACTIVE_ARCH = NO;
+				OTHER_CFLAGS = (
+					"-DHAVE_GRIFFIN",
+					"-DHAVE_UPDATE_ASSETS",
+					"-DHAVE_LANGEXTRA",
+					"-DHAVE_CHEEVOS",
+					"-DHAVE_IMAGEVIEWER",
+					"-DHAVE_IOHIDMANAGER",
+					"-DHAVE_CORETEXT",
+					"-DHAVE_RGUI",
+					"-DHAVE_MENU",
+					"-DOSX",
+					"-DHAVE_OPENGL",
+					"-DHAVE_FBO",
+					"-DHAVE_CC_RESAMPLER",
+					"-DHAVE_GLSL",
+					"-DINLINE=inline",
+					"-D__LIBRETRO__",
+					"-DHAVE_COREAUDIO",
+					"-DHAVE_DYNAMIC",
+					"-DHAVE_OVERLAY",
+					"-DHAVE_ZLIB",
+					"-DHAVE_RPNG",
+					"-DHAVE_RJPEG",
+					"-DHAVE_RBMP",
+					"-DHAVE_RTGA",
+					"-DHAVE_COCOA",
+					"-DHAVE_MAIN",
+					"-DSINC_LOWER_QUALITY",
+					"-DHAVE_NETWORKGAMEPAD",
+					"-DHAVE_NETWORKING",
+					"-DRARCH_INTERNAL",
+					"-DHAVE_THREADS",
+					"-DHAVE_DYLIB",
+					"-DHAVE_7ZIP",
+					"-DHAVE_MATERIALUI",
+					"-DHAVE_HID",
+					"-DHAVE_XMB",
+					"-DHAVE_SHADERPIPELINE",
+					"-DHAVE_MMAP",
+					"-DHAVE_LIBRETRODB",
+					"-DHAVE_GETOPT_LONG",
+				);
 				PREBINDING = NO;
 				SDKROOT = macosx;
 			};
@@ -646,6 +534,48 @@
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				OTHER_CFLAGS = (
+					"-DHAVE_GRIFFIN",
+					"-DHAVE_UPDATE_ASSETS",
+					"-DHAVE_LANGEXTRA",
+					"-DHAVE_CHEEVOS",
+					"-DHAVE_IMAGEVIEWER",
+					"-DHAVE_IOHIDMANAGER",
+					"-DHAVE_CORETEXT",
+					"-DHAVE_RGUI",
+					"-DHAVE_MENU",
+					"-DOSX",
+					"-DHAVE_OPENGL",
+					"-DHAVE_FBO",
+					"-DHAVE_CC_RESAMPLER",
+					"-DHAVE_GLSL",
+					"-DINLINE=inline",
+					"-D__LIBRETRO__",
+					"-DHAVE_COREAUDIO",
+					"-DHAVE_DYNAMIC",
+					"-DHAVE_OVERLAY",
+					"-DHAVE_ZLIB",
+					"-DHAVE_RPNG",
+					"-DHAVE_RJPEG",
+					"-DHAVE_RBMP",
+					"-DHAVE_RTGA",
+					"-DHAVE_COCOA",
+					"-DHAVE_MAIN",
+					"-DSINC_LOWER_QUALITY",
+					"-DHAVE_NETWORKGAMEPAD",
+					"-DHAVE_NETWORKING",
+					"-DRARCH_INTERNAL",
+					"-DHAVE_THREADS",
+					"-DHAVE_DYLIB",
+					"-DHAVE_7ZIP",
+					"-DHAVE_MATERIALUI",
+					"-DHAVE_HID",
+					"-DHAVE_XMB",
+					"-DHAVE_SHADERPIPELINE",
+					"-DHAVE_MMAP",
+					"-DHAVE_LIBRETRODB",
+					"-DHAVE_GETOPT_LONG",
+				);
 				PREBINDING = NO;
 				SDKROOT = macosx;
 			};

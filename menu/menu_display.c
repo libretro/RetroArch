@@ -45,11 +45,24 @@
 #include "menu_animation.h"
 #include "menu_display.h"
 
-
+#define PARTICLES_COUNT            100
 
 uintptr_t menu_display_white_texture;
 
 static enum menu_toggle_reason menu_display_toggle_reason = MENU_TOGGLE_REASON_NONE;
+
+static video_coord_array_t menu_disp_ca;
+
+static unsigned menu_display_framebuf_width      = 0;
+static unsigned menu_display_framebuf_height     = 0;
+static size_t menu_display_framebuf_pitch        = 0;
+static unsigned menu_display_header_height       = 0;
+static bool menu_display_msg_force               = false;
+static bool menu_display_font_alloc_framebuf     = false;
+static bool menu_display_framebuf_dirty          = false;
+static const uint8_t *menu_display_font_framebuf = NULL;
+static msg_queue_t *menu_display_msg_queue       = NULL;
+static menu_display_ctx_driver_t *menu_disp      = NULL;
 
 static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #ifdef HAVE_D3D
@@ -66,6 +79,9 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #endif
 #ifdef _3DS
    &menu_display_ctx_ctr,
+#endif
+#ifdef HAVE_CACA
+   &menu_display_ctx_caca,
 #endif
    &menu_display_ctx_null,
    NULL,
@@ -122,6 +138,10 @@ static bool menu_display_check_compatibility(
          if (string_is_equal(video_driver, "ctr"))
             return true;
          break;
+      case MENU_VIDEO_DRIVER_CACA:
+         if (string_is_equal(video_driver, "caca"))
+            return true;
+         break;
    }
 
    return false;
@@ -160,18 +180,6 @@ void menu_display_timedate(menu_display_ctx_datetime_t *datetime)
          break;
    }
 }
-
-static video_coord_array_t menu_disp_ca;
-static unsigned menu_display_framebuf_width      = 0;
-static unsigned menu_display_framebuf_height     = 0;
-static size_t menu_display_framebuf_pitch        = 0;
-static unsigned menu_display_header_height       = 0;
-static bool menu_display_msg_force               = false;
-static bool menu_display_font_alloc_framebuf     = false;
-static bool menu_display_framebuf_dirty          = false;
-static const uint8_t *menu_display_font_framebuf = NULL;
-static msg_queue_t *menu_display_msg_queue       = NULL;
-static menu_display_ctx_driver_t *menu_disp      = NULL;
 
 void menu_display_blend_begin(void)
 {
@@ -576,6 +584,39 @@ void menu_display_draw_quad(
    menu_display_blend_end();
 }
 
+void menu_display_draw_texture(
+      int x, int y, unsigned w, unsigned h,
+      unsigned width, unsigned height,
+      float *color, uintptr_t texture)
+{
+   menu_display_ctx_draw_t draw;
+   menu_display_ctx_rotate_draw_t rotate_draw;
+   struct video_coords coords;
+   math_matrix_4x4 mymat;
+   rotate_draw.matrix       = &mymat;
+   rotate_draw.rotation     = 0.0;
+   rotate_draw.scale_x      = 1.0;
+   rotate_draw.scale_y      = 1.0;
+   rotate_draw.scale_z      = 1;
+   rotate_draw.scale_enable = true;
+   coords.vertices          = 4;
+   coords.vertex            = NULL;
+   coords.tex_coord         = NULL;
+   coords.lut_tex_coord     = NULL;
+   draw.width               = w;
+   draw.height              = h;
+   draw.coords              = &coords;
+   draw.matrix_data         = &mymat;
+   draw.prim_type           = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.pipeline.id         = 0;
+   coords.color             = (const float*)color;
+   menu_display_rotate_z(&rotate_draw);
+   draw.texture             = texture;
+   draw.x                   = x;
+   draw.y                   = height - y;
+   menu_display_draw(&draw);
+}
+
 void menu_display_rotate_z(menu_display_ctx_rotate_draw_t *draw)
 {
 #if !defined(VITA)
@@ -619,6 +660,22 @@ void menu_display_handle_thumbnail_upload(void *task_data,
 
    load_image_info.data = img;
    load_image_info.type = MENU_IMAGE_THUMBNAIL;
+
+   menu_driver_ctl(RARCH_MENU_CTL_LOAD_IMAGE, &load_image_info);
+
+   image_texture_free(img);
+   free(img);
+   free(user_data);
+}
+
+void menu_display_handle_savestate_thumbnail_upload(void *task_data,
+      void *user_data, const char *err)
+{
+   menu_ctx_load_image_t load_image_info;
+   struct texture_image *img = (struct texture_image*)task_data;
+
+   load_image_info.data = img;
+   load_image_info.type = MENU_IMAGE_SAVESTATE_THUMBNAIL;
 
    menu_driver_ctl(RARCH_MENU_CTL_LOAD_IMAGE, &load_image_info);
 
@@ -710,12 +767,10 @@ void menu_display_push_quad(
       const float *colors, int x1, int y1,
       int x2, int y2)
 {
-   menu_display_ctx_coord_draw_t coord_draw;
    float vertex[8];
    video_coords_t coords;
-   video_coord_array_t *ca   = NULL;
-
-   ca = menu_display_get_coords_array();
+   menu_display_ctx_coord_draw_t coord_draw;
+   video_coord_array_t *ca = menu_display_get_coords_array();
 
    vertex[0]             = x1 / (float)width;
    vertex[1]             = y1 / (float)height;
@@ -745,8 +800,6 @@ void menu_display_push_quad(
 
    video_coord_array_append(ca, &coords, 3);
 }
-
-#define PARTICLES_COUNT            100
 
 void menu_display_snow(int width, int height)
 {
@@ -819,10 +872,37 @@ void menu_display_snow(int width, int height)
    }
 }
 
-void menu_display_draw_text(const font_data_t *font, const char *msg,
-      int width, int height, struct font_params *params)
+void menu_display_draw_text(
+      const font_data_t *font, const char *text,
+      float x, float y, int width, int height,
+      uint32_t color, enum text_alignment text_align,
+      float scale, bool shadows_enable, float shadow_offset)
 {
-   video_driver_set_osd_msg(msg, params, (void*)font);
+   struct font_params params;
+
+   /* Don't draw outside of the screen */
+   if (x < -64 || x > width + 64
+         || y < -64 || y > height + 64)
+      return;
+
+   params.x           = x / width;
+   params.y           = 1.0f - y / height;
+   params.scale       = scale;
+   params.drop_mod    = 0.0f;
+   params.drop_x      = 0.0f;
+   params.drop_y      = 0.0f;
+   params.color       = color;
+   params.full_screen = true;
+   params.text_align  = text_align;
+
+   if (shadows_enable)
+   {
+      params.drop_x      = shadow_offset;
+      params.drop_y      = -shadow_offset;
+      params.drop_alpha  = 0.35f;
+   }
+
+   video_driver_set_osd_msg(text, &params, (void*)font);
 }
 
 void menu_display_set_alpha(float *color, float alpha_value)

@@ -28,6 +28,14 @@
 
 #include "../video_context_driver.h"
 
+#ifndef EGL_CONTEXT_FLAGS_KHR
+#define EGL_CONTEXT_FLAGS_KHR 0x30FC
+#endif
+
+#ifndef EGL_CONTEXT_OPENGL_DEBUG_BIT_KHR
+#define EGL_CONTEXT_OPENGL_DEBUG_BIT_KHR 0x00000001
+#endif
+
 RETRO_BEGIN_DECLS
 
 /* Put this structure as the first member of egl-based contexts

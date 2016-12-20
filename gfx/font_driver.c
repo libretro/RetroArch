@@ -34,7 +34,11 @@ static const font_renderer_driver_t *font_backends[] = {
    &coretext_font_renderer,
 #endif
 #ifdef HAVE_STB_FONT
+#if defined(VITA) || defined(ANDROID) || defined(_WIN32) && !defined(_XBOX)
+   &stb_unicode_font_renderer,
+#else
    &stb_font_renderer,
+#endif
 #endif
    &bitmap_font_renderer,
    NULL
@@ -137,6 +141,35 @@ static bool gl_font_init_first(
          continue;
 
       *font_driver = gl_font_backends[i];
+      *font_handle = data;
+      return true;
+   }
+
+   return false;
+}
+#endif
+
+#ifdef HAVE_CACA
+static const font_renderer_t *caca_font_backends[] = {
+   &caca_font,
+   NULL,
+};
+
+static bool caca_font_init_first(
+      const void **font_driver, void **font_handle,
+      void *video_data, const char *font_path, float font_size)
+{
+   unsigned i;
+
+   for (i = 0; caca_font_backends[i]; i++)
+   {
+      void *data = caca_font_backends[i]->init(
+            video_data, font_path, font_size);
+
+      if (!data)
+         continue;
+
+      *font_driver = caca_font_backends[i];
       *font_handle = data;
       return true;
    }
@@ -264,6 +297,11 @@ static bool font_init_first(
          return ctr_font_init_first(font_driver, font_handle,
                video_data, font_path, font_size);
 #endif
+#ifdef HAVE_CACA
+      case FONT_DRIVER_RENDER_CACA:
+         return caca_font_init_first(font_driver, font_handle,
+               video_data, font_path, font_size);
+#endif
       case FONT_DRIVER_RENDER_DONT_CARE:
          /* TODO/FIXME - lookup graphics driver's 'API' */
          break;
@@ -272,11 +310,6 @@ static bool font_init_first(
    }
 
    return false;
-}
-
-bool font_driver_has_render_msg(void)
-{
-   return true;
 }
 
 void font_driver_render_msg(void *font_data,

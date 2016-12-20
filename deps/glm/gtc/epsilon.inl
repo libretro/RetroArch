@@ -37,7 +37,7 @@
 namespace glm
 {
 	template <>
-	GLM_FUNC_QUALIFIER bool epsilonEqual
+	inline bool epsilonEqual
 	(
 		float const & x,
 		float const & y,
@@ -48,7 +48,7 @@ namespace glm
 	}
 
 	template <>
-	GLM_FUNC_QUALIFIER bool epsilonEqual
+	inline bool epsilonEqual
 	(
 		double const & x,
 		double const & y,
@@ -59,7 +59,7 @@ namespace glm
 	}
 
 	template <>
-	GLM_FUNC_QUALIFIER bool epsilonNotEqual
+	inline bool epsilonNotEqual
 	(
 		float const & x,
 		float const & y,
@@ -70,7 +70,7 @@ namespace glm
 	}
 
 	template <>
-	GLM_FUNC_QUALIFIER bool epsilonNotEqual
+	inline bool epsilonNotEqual
 	(
 		double const & x,
 		double const & y,
@@ -81,7 +81,7 @@ namespace glm
 	}
 
 	template <typename T, precision P, template <typename, precision> class vecType>
-	GLM_FUNC_QUALIFIER vecType<bool, P> epsilonEqual
+	inline vecType<bool, P> epsilonEqual
 	(
 		vecType<T, P> const & x,
 		vecType<T, P> const & y,
@@ -92,7 +92,7 @@ namespace glm
 	}
 
 	template <typename T, precision P, template <typename, precision> class vecType>
-	GLM_FUNC_QUALIFIER vecType<bool, P> epsilonEqual
+	inline vecType<bool, P> epsilonEqual
 	(
 		vecType<T, P> const & x,
 		vecType<T, P> const & y,
@@ -103,7 +103,7 @@ namespace glm
 	}
 
 	template <typename T, precision P, template <typename, precision> class vecType>
-	GLM_FUNC_QUALIFIER vecType<bool, P> epsilonNotEqual
+	inline vecType<bool, P> epsilonNotEqual
 	(
 		vecType<T, P> const & x,
 		vecType<T, P> const & y,
@@ -114,7 +114,7 @@ namespace glm
 	}
 
 	template <typename T, precision P, template <typename, precision> class vecType>
-	GLM_FUNC_QUALIFIER vecType<bool, P> epsilonNotEqual
+	inline vecType<bool, P> epsilonNotEqual
 	(
 		vecType<T, P> const & x,
 		vecType<T, P> const & y,
@@ -125,7 +125,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec4<bool, P> epsilonEqual
+	inline detail::tvec4<bool, P> epsilonEqual
 	(
 		detail::tquat<T, P> const & x,
 		detail::tquat<T, P> const & y,
@@ -137,7 +137,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec4<bool, P> epsilonNotEqual
+	inline detail::tvec4<bool, P> epsilonNotEqual
 	(
 		detail::tquat<T, P> const & x,
 		detail::tquat<T, P> const & y,

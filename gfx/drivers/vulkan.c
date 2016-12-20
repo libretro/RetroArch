@@ -208,20 +208,20 @@ static void vulkan_init_pipelines(
 #include "vulkan_shaders/font.frag.inc"
       ;
 
-   static const uint32_t ribbon_vert[] =
-#include "vulkan_shaders/ribbon.vert.inc"
+   static const uint32_t pipeline_ribbon_vert[] =
+#include "vulkan_shaders/pipeline_ribbon.vert.inc"
       ;
 
-   static const uint32_t ribbon_frag[] =
-#include "vulkan_shaders/ribbon.frag.inc"
+   static const uint32_t pipeline_ribbon_frag[] =
+#include "vulkan_shaders/pipeline_ribbon.frag.inc"
       ;
 
-   static const uint32_t ribbon_simple_vert[] =
-#include "vulkan_shaders/ribbon_simple.vert.inc"
+   static const uint32_t pipeline_ribbon_simple_vert[] =
+#include "vulkan_shaders/pipeline_ribbon_simple.vert.inc"
       ;
 
-   static const uint32_t ribbon_simple_frag[] =
-#include "vulkan_shaders/ribbon_simple.frag.inc"
+   static const uint32_t pipeline_ribbon_simple_frag[] =
+#include "vulkan_shaders/pipeline_ribbon_simple.frag.inc"
       ;
 
    unsigned i;
@@ -393,13 +393,13 @@ static void vulkan_init_pipelines(
    {
       if (i & 2)
       {
-         module_info.codeSize   = sizeof(ribbon_simple_vert);
-         module_info.pCode      = ribbon_simple_vert;
+         module_info.codeSize   = sizeof(pipeline_ribbon_simple_vert);
+         module_info.pCode      = pipeline_ribbon_simple_vert;
       }
       else
       {
-         module_info.codeSize   = sizeof(ribbon_vert);
-         module_info.pCode      = ribbon_vert;
+         module_info.codeSize   = sizeof(pipeline_ribbon_vert);
+         module_info.pCode      = pipeline_ribbon_vert;
       }
 
       shader_stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -409,13 +409,13 @@ static void vulkan_init_pipelines(
 
       if (i & 2)
       {
-         module_info.codeSize   = sizeof(ribbon_simple_frag);
-         module_info.pCode      = ribbon_simple_frag;
+         module_info.codeSize   = sizeof(pipeline_ribbon_simple_frag);
+         module_info.pCode      = pipeline_ribbon_simple_frag;
       }
       else
       {
-         module_info.codeSize   = sizeof(ribbon_frag);
-         module_info.pCode      = ribbon_frag;
+         module_info.codeSize   = sizeof(pipeline_ribbon_frag);
+         module_info.pCode      = pipeline_ribbon_frag;
       }
 
       shader_stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -1282,7 +1282,7 @@ static void vulkan_set_rotation(void *data, unsigned rotation)
    if (!vk)
       return;
 
-   vk->rotation = 90 * rotation;
+   vk->rotation = 270 * rotation;
    vulkan_set_projection(vk, &ortho, true);
 }
 
@@ -1492,7 +1492,7 @@ static void vulkan_inject_black_frame(vk_t *vk)
 
    vulkan_image_layout_transition(vk, vk->cmd, chain->backbuffer.image,
          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-         VK_ACCESS_TRANSFER_WRITE_BIT, 0,
+         VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
          VK_PIPELINE_STAGE_TRANSFER_BIT,
          VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
 
@@ -1818,7 +1818,7 @@ static bool vulkan_frame(void *data, const void *frame,
             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
             VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
             0,
-            0,
+            VK_ACCESS_MEMORY_READ_BIT,
             VK_PIPELINE_STAGE_TRANSFER_BIT,
             VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
 
@@ -1832,7 +1832,7 @@ static bool vulkan_frame(void *data, const void *frame,
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-            0,
+            VK_ACCESS_MEMORY_READ_BIT,
             VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
             VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
    }
@@ -2076,9 +2076,9 @@ static void vulkan_set_texture_frame(void *data,
    uint8_t *dst                       = NULL;
    const uint8_t *src                 = NULL;
    vk_t *vk                           = (vk_t*)data;
-   unsigned index                     = vk->context->current_swapchain_index;
-   struct vk_texture *texture         = &vk->menu.textures[index];
-   struct vk_texture *texture_optimal = &vk->menu.textures_optimal[index];
+   unsigned index                     = 0;
+   struct vk_texture *texture         = NULL;
+   struct vk_texture *texture_optimal = NULL;
    const VkComponentMapping br_swizzle = {
       VK_COMPONENT_SWIZZLE_B,
       VK_COMPONENT_SWIZZLE_G,
@@ -2088,6 +2088,10 @@ static void vulkan_set_texture_frame(void *data,
 
    if (!vk)
       return;
+
+   index           = vk->context->current_swapchain_index;
+   texture         = &vk->menu.textures[index];
+   texture_optimal = &vk->menu.textures_optimal[index];
 
    /* B4G4R4A4 must be supported, but R4G4B4A4 is optional,
     * just apply the swizzle in the image view instead. */
@@ -2151,16 +2155,42 @@ static uintptr_t vulkan_load_texture(void *video_data, void *data,
    vk_t *vk                    = (vk_t*)video_data;
    struct texture_image *image = (struct texture_image*)data;
    struct vk_texture *texture = (struct vk_texture*)calloc(1, sizeof(*texture));
-   if (!texture)
+   if (!image || !texture)
       return 0;
 
-   *texture = vulkan_create_texture(vk, NULL,
-         image->width, image->height, VK_FORMAT_B8G8R8A8_UNORM,
-         image->pixels, NULL, VULKAN_TEXTURE_STATIC);
+   if (!image->pixels || !image->width || !image->height)
+   {
+      /* Create a dummy texture instead. */
+#define T0 0xff000000u
+#define T1 0xffffffffu
+      static const uint32_t checkerboard[] = {
+         T0, T1, T0, T1, T0, T1, T0, T1,
+         T1, T0, T1, T0, T1, T0, T1, T0,
+         T0, T1, T0, T1, T0, T1, T0, T1,
+         T1, T0, T1, T0, T1, T0, T1, T0,
+         T0, T1, T0, T1, T0, T1, T0, T1,
+         T1, T0, T1, T0, T1, T0, T1, T0,
+         T0, T1, T0, T1, T0, T1, T0, T1,
+         T1, T0, T1, T0, T1, T0, T1, T0,
+      };
+#undef T0
+#undef T1
+      *texture = vulkan_create_texture(vk, NULL,
+            8, 8, VK_FORMAT_B8G8R8A8_UNORM,
+            checkerboard, NULL, VULKAN_TEXTURE_STATIC);
+      texture->default_smooth = false;
+      texture->mipmap = false;
+   }
+   else
+   {
+      *texture = vulkan_create_texture(vk, NULL,
+            image->width, image->height, VK_FORMAT_B8G8R8A8_UNORM,
+            image->pixels, NULL, VULKAN_TEXTURE_STATIC);
 
-   texture->default_smooth =
-      filter_type == TEXTURE_FILTER_MIPMAP_LINEAR || filter_type == TEXTURE_FILTER_LINEAR;
-   texture->mipmap = filter_type == TEXTURE_FILTER_MIPMAP_LINEAR;
+      texture->default_smooth =
+         filter_type == TEXTURE_FILTER_MIPMAP_LINEAR || filter_type == TEXTURE_FILTER_LINEAR;
+      texture->mipmap = filter_type == TEXTURE_FILTER_MIPMAP_LINEAR;
+   }
 
    return (uintptr_t)texture;
 }

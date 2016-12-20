@@ -32,7 +32,7 @@
 #include "configuration.h"
 #include "config.def.h"
 #include "input/input_config.h"
-#include "input/input_autodetect.h"
+#include "tasks/tasks_internal.h"
 #include "setting_list.h"
 
 rarch_setting_t setting_terminator_setting(void)
@@ -309,7 +309,7 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
    max          = setting->max;
    flags        = setting->flags;
 
-   switch (setting->type)
+   switch (setting_get_type(setting))
    {
       case ST_INT:
          sscanf(value, "%d", setting->value.target.integer);
@@ -463,7 +463,7 @@ static void setting_reset_setting(rarch_setting_t* setting)
    if (!setting)
       return;
 
-   switch (setting->type)
+   switch (setting_get_type(setting))
    {
       case ST_BOOL:
          *setting->value.target.boolean          = setting->default_value.boolean;
@@ -486,7 +486,7 @@ static void setting_reset_setting(rarch_setting_t* setting)
       case ST_DIR:
          if (setting->default_value.string)
          {
-            if (setting->type == ST_STRING)
+            if (setting_get_type(setting) == ST_STRING)
                setting_set_with_string_representation(setting, setting->default_value.string);
             else
                fill_pathname_expand_special(setting->value.target.string,
@@ -603,7 +603,7 @@ static void setting_get_string_representation_st_bind(void *data,
    index_offset = setting->index_offset;
    keybind      = (const struct retro_keybind*)setting->value.target.keybind;
    auto_bind    = (const struct retro_keybind*)
-      input_get_auto_bind(index_offset, keybind->id);
+      input_config_get_bind_auto(index_offset, keybind->id);
 
    input_config_get_bind_string(s, keybind, auto_bind, len);
 }
@@ -2020,7 +2020,7 @@ static int setting_generic_action_ok_linefeed(void *data, bool wraparound)
 
    (void)wraparound;
 
-   switch (setting->type)
+   switch (setting_get_type(setting))
    {
       case ST_UINT:
          cb = menu_input_st_uint_cb;

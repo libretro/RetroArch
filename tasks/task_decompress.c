@@ -24,6 +24,7 @@
 #include <compat/strl.h>
 
 #include "tasks_internal.h"
+#include "../file_path_special.h"
 #include "../verbosity.h"
 #include "../msg_hash.h"
 
@@ -68,7 +69,9 @@ static int file_decompressed_subdir(const char *name,
             cdata, cmode, csize, size, crc32, userdata))
       goto error;
 
+#if 0
    RARCH_LOG("[deflate subdir] Path: %s, CRC32: 0x%x\n", name, crc32);
+#endif
 
 next_file:
    return 1;
@@ -96,7 +99,7 @@ static int file_decompressed(const char *name, const char *valid_exts,
 
    /* Make directory */
    fill_pathname_join(path, dec->target_dir, name, sizeof(path));
-   path_basedir(path);
+   path_basedir_wrapper(path);
 
    if (!path_mkdir(path))
       goto error;
@@ -107,7 +110,9 @@ static int file_decompressed(const char *name, const char *valid_exts,
             cdata, cmode, csize, size, crc32, userdata))
       goto error;
 
+#if 0
    RARCH_LOG("[deflate] Path: %s, CRC32: 0x%x\n", name, crc32);
+#endif
 
 next_file:
    return 1;

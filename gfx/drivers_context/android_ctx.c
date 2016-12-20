@@ -40,13 +40,13 @@
 #include "../../configuration.h"
 #include "../../runloop.h"
 
-static enum gfx_ctx_api android_api;
+static enum gfx_ctx_api android_api           = GFX_CTX_NONE;
 
 /* forward declaration */
 int system_property_get(const char *cmd, const char *args, char *value);
 
 #ifdef HAVE_OPENGLES
-static bool g_es3;
+static bool g_es3                             = false;
 
 #ifndef EGL_OPENGL_ES3_BIT_KHR
 #define EGL_OPENGL_ES3_BIT_KHR                  0x0040
@@ -105,8 +105,15 @@ static void *android_gfx_ctx_init(void *video_driver)
 #ifdef HAVE_OPENGLES
    EGLint n, major, minor;
    EGLint format;
+#if 0
+   struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
+   bool debug = hwr->debug_context;
+#endif
    EGLint context_attributes[] = {
       EGL_CONTEXT_CLIENT_VERSION, g_es3 ? 3 : 2,
+#if 0
+      EGL_CONTEXT_FLAGS_KHR, debug ? EGL_CONTEXT_OPENGL_DEBUG_BIT_KHR : 0,
+#endif
       EGL_NONE
    };
    EGLint attribs[] = {
@@ -244,8 +251,8 @@ static void android_gfx_ctx_check_window(void *data, bool *quit,
 #ifdef HAVE_VULKAN
          /* Swapchains are recreated in set_resize as a 
           * central place, so use that to trigger swapchain reinit. */
-         *resize = and->vk.need_new_swapchain;
-         new_width = and->width;
+         *resize    = and->vk.need_new_swapchain;
+         new_width  = and->width;
          new_height = and->height;
 #endif
          break;
@@ -273,7 +280,7 @@ static bool android_gfx_ctx_set_resize(void *data,
       unsigned width, unsigned height)
 {
 #ifdef HAVE_VULKAN
-   android_ctx_data_t *and  = (android_ctx_data_t*)data;
+   android_ctx_data_t        *and  = (android_ctx_data_t*)data;
    struct android_app *android_app = (struct android_app*)g_android;
 #endif
    (void)data;
@@ -308,9 +315,11 @@ static bool android_gfx_ctx_set_resize(void *data,
 
 static void android_gfx_ctx_update_window_title(void *data)
 {
-   char buf[128]        = {0};
-   char buf_fps[128]    = {0};
+   char buf[128];
+   char buf_fps[128];
    settings_t *settings = config_get_ptr();
+
+   buf[0] = buf_fps[0] = '\0';
 
    video_monitor_get_fps(buf, sizeof(buf),
          buf_fps, sizeof(buf_fps));
@@ -362,7 +371,7 @@ static void android_gfx_ctx_input_driver(void *data,
 
    (void)data;
 
-   *input = androidinput ? &input_android : NULL;
+   *input      = androidinput ? &input_android : NULL;
    *input_data = androidinput;
 }
 
@@ -398,6 +407,7 @@ static bool android_gfx_ctx_bind_api(void *data,
 #else
          break;
 #endif
+      case GFX_CTX_NONE:
       default:
          break;
    }
@@ -407,7 +417,7 @@ static bool android_gfx_ctx_bind_api(void *data,
 
 static bool android_gfx_ctx_has_focus(void *data)
 {
-   bool focused;
+   bool                    focused = false;
    struct android_app *android_app = (struct android_app*)g_android;
    if (!android_app)
       return true;
@@ -444,7 +454,6 @@ static bool android_gfx_ctx_get_metrics(void *data,
 	enum display_metric_types type, float *value)
 {
    static int dpi = -1;
-   char density[PROP_VALUE_MAX] = {0};
 
    switch (type)
    {
@@ -455,6 +464,9 @@ static bool android_gfx_ctx_get_metrics(void *data,
       case DISPLAY_METRIC_DPI:
          if (dpi == -1)
          {
+            char density[PROP_VALUE_MAX];
+            density[0] = '\0';
+
             dpi_get_density(density, sizeof(density));
             if (string_is_empty(density))
                goto dpi_fallback;

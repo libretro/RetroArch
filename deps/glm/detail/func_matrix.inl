@@ -43,7 +43,7 @@ namespace detail
 	template <typename T, precision P>
 	struct compute_outerProduct<detail::tvec2, detail::tvec2, T, P>
 	{
-		GLM_FUNC_QUALIFIER static typename detail::outerProduct_trait<T, P, detail::tvec2, detail::tvec2>::type call(detail::tvec2<T, P> const & c, detail::tvec2<T, P> const & r)
+		inline static typename detail::outerProduct_trait<T, P, detail::tvec2, detail::tvec2>::type call(detail::tvec2<T, P> const & c, detail::tvec2<T, P> const & r)
 		{
 			detail::tmat2x2<T, P> m(detail::tmat2x2<T, P>::_null);
 			m[0][0] = c[0] * r[0];
@@ -57,7 +57,7 @@ namespace detail
 	template <typename T, precision P>
 	struct compute_outerProduct<detail::tvec3, detail::tvec3, T, P>
 	{
-		GLM_FUNC_QUALIFIER static typename detail::outerProduct_trait<T, P, detail::tvec3, detail::tvec3>::type call(detail::tvec3<T, P> const & c, detail::tvec3<T, P> const & r)
+		inline static typename detail::outerProduct_trait<T, P, detail::tvec3, detail::tvec3>::type call(detail::tvec3<T, P> const & c, detail::tvec3<T, P> const & r)
 		{
 			detail::tmat3x3<T, P> m(detail::tmat3x3<T, P>::_null);
 			for(length_t i(0); i < m.length(); ++i)
@@ -69,7 +69,7 @@ namespace detail
 	template <typename T, precision P>
 	struct compute_outerProduct<detail::tvec4, detail::tvec4, T, P>
 	{
-		GLM_FUNC_QUALIFIER static typename detail::outerProduct_trait<T, P, detail::tvec4, detail::tvec4>::type call(detail::tvec4<T, P> const & c, detail::tvec4<T, P> const & r)
+		inline static typename detail::outerProduct_trait<T, P, detail::tvec4, detail::tvec4>::type call(detail::tvec4<T, P> const & c, detail::tvec4<T, P> const & r)
 		{
 			detail::tmat4x4<T, P> m(detail::tmat4x4<T, P>::_null);
 			for(length_t i(0); i < m.length(); ++i)
@@ -81,7 +81,7 @@ namespace detail
 	template <typename T, precision P>
 	struct compute_outerProduct<detail::tvec3, detail::tvec2, T, P>
 	{
-		GLM_FUNC_QUALIFIER static typename detail::outerProduct_trait<T, P, detail::tvec3, detail::tvec2>::type call(detail::tvec3<T, P> const & c, detail::tvec2<T, P> const & r)
+		inline static typename detail::outerProduct_trait<T, P, detail::tvec3, detail::tvec2>::type call(detail::tvec3<T, P> const & c, detail::tvec2<T, P> const & r)
 		{
 			detail::tmat2x3<T, P> m(detail::tmat2x3<T, P>::_null);
 			m[0][0] = c.x * r.x;
@@ -97,7 +97,7 @@ namespace detail
 	template <typename T, precision P>
 	struct compute_outerProduct<detail::tvec2, detail::tvec3, T, P>
 	{
-		GLM_FUNC_QUALIFIER static typename detail::outerProduct_trait<T, P, detail::tvec2, detail::tvec3>::type call(detail::tvec2<T, P> const & c, detail::tvec3<T, P> const & r)
+		inline static typename detail::outerProduct_trait<T, P, detail::tvec2, detail::tvec3>::type call(detail::tvec2<T, P> const & c, detail::tvec3<T, P> const & r)
 		{
 			detail::tmat3x2<T, P> m(detail::tmat3x2<T, P>::_null);
 			m[0][0] = c.x * r.x;
@@ -113,7 +113,7 @@ namespace detail
 	template <typename T, precision P>
 	struct compute_outerProduct<detail::tvec4, detail::tvec2, T, P>
 	{
-		GLM_FUNC_QUALIFIER static typename detail::outerProduct_trait<T, P, detail::tvec4, detail::tvec2>::type call(detail::tvec4<T, P> const & c, detail::tvec2<T, P> const & r)
+		inline static typename detail::outerProduct_trait<T, P, detail::tvec4, detail::tvec2>::type call(detail::tvec4<T, P> const & c, detail::tvec2<T, P> const & r)
 		{
 			detail::tmat2x4<T, P> m(detail::tmat2x4<T, P>::_null);
 			m[0][0] = c.x * r.x;
@@ -131,7 +131,7 @@ namespace detail
 	template <typename T, precision P>
 	struct compute_outerProduct<detail::tvec2, detail::tvec4, T, P>
 	{
-		GLM_FUNC_QUALIFIER static typename detail::outerProduct_trait<T, P, detail::tvec2, detail::tvec4>::type call(detail::tvec2<T, P> const & c, detail::tvec4<T, P> const & r)
+		inline static typename detail::outerProduct_trait<T, P, detail::tvec2, detail::tvec4>::type call(detail::tvec2<T, P> const & c, detail::tvec4<T, P> const & r)
 		{
 			detail::tmat4x2<T, P> m(detail::tmat4x2<T, P>::_null);
 			m[0][0] = c.x * r.x;
@@ -149,7 +149,7 @@ namespace detail
 	template <typename T, precision P>
 	struct compute_outerProduct<detail::tvec4, detail::tvec3, T, P>
 	{
-		GLM_FUNC_QUALIFIER static typename detail::outerProduct_trait<T, P, detail::tvec4, detail::tvec3>::type call(detail::tvec4<T, P> const & c, detail::tvec3<T, P> const & r)
+		inline static typename detail::outerProduct_trait<T, P, detail::tvec4, detail::tvec3>::type call(detail::tvec4<T, P> const & c, detail::tvec3<T, P> const & r)
 		{
 			detail::tmat3x4<T, P> m(detail::tmat3x4<T, P>::_null);
 			m[0][0] = c.x * r.x;
@@ -171,7 +171,7 @@ namespace detail
 	template <typename T, precision P>
 	struct compute_outerProduct<detail::tvec3, detail::tvec4, T, P>
 	{
-		GLM_FUNC_QUALIFIER static typename detail::outerProduct_trait<T, P, detail::tvec3, detail::tvec4>::type call(detail::tvec3<T, P> const & c, detail::tvec4<T, P> const & r)
+		inline static typename detail::outerProduct_trait<T, P, detail::tvec3, detail::tvec4>::type call(detail::tvec3<T, P> const & c, detail::tvec4<T, P> const & r)
 		{
 			detail::tmat4x3<T, P> m(detail::tmat4x3<T, P>::_null);
 			m[0][0] = c.x * r.x;
@@ -196,7 +196,7 @@ namespace detail
 	template <typename T, precision P>
 	struct compute_transpose<detail::tmat2x2, T, P>
 	{
-		GLM_FUNC_QUALIFIER static detail::tmat2x2<T, P> call(detail::tmat2x2<T, P> const & m)
+		inline static detail::tmat2x2<T, P> call(detail::tmat2x2<T, P> const & m)
 		{
 			detail::tmat2x2<T, P> result(detail::tmat2x2<T, P>::_null);
 			result[0][0] = m[0][0];
@@ -210,7 +210,7 @@ namespace detail
 	template <typename T, precision P>
 	struct compute_transpose<detail::tmat2x3, T, P>
 	{
-		GLM_FUNC_QUALIFIER static detail::tmat3x2<T, P> call(detail::tmat2x3<T, P> const & m)
+		inline static detail::tmat3x2<T, P> call(detail::tmat2x3<T, P> const & m)
 		{
 			detail::tmat3x2<T, P> result(detail::tmat3x2<T, P>::_null);
 			result[0][0] = m[0][0];
@@ -226,7 +226,7 @@ namespace detail
 	template <typename T, precision P>
 	struct compute_transpose<detail::tmat2x4, T, P>
 	{
-		GLM_FUNC_QUALIFIER static detail::tmat4x2<T, P> call(detail::tmat2x4<T, P> const & m)
+		inline static detail::tmat4x2<T, P> call(detail::tmat2x4<T, P> const & m)
 		{
 			detail::tmat4x2<T, P> result(detail::tmat4x2<T, P>::_null);
 			result[0][0] = m[0][0];
@@ -244,7 +244,7 @@ namespace detail
 	template <typename T, precision P>
 	struct compute_transpose<detail::tmat3x2, T, P>
 	{
-		GLM_FUNC_QUALIFIER static detail::tmat2x3<T, P> call(detail::tmat3x2<T, P> const & m)
+		inline static detail::tmat2x3<T, P> call(detail::tmat3x2<T, P> const & m)
 		{
 			detail::tmat2x3<T, P> result(detail::tmat2x3<T, P>::_null);
 			result[0][0] = m[0][0];
@@ -260,7 +260,7 @@ namespace detail
 	template <typename T, precision P>
 	struct compute_transpose<detail::tmat3x3, T, P>
 	{
-		GLM_FUNC_QUALIFIER static detail::tmat3x3<T, P> call(detail::tmat3x3<T, P> const & m)
+		inline static detail::tmat3x3<T, P> call(detail::tmat3x3<T, P> const & m)
 		{
 			detail::tmat3x3<T, P> result(detail::tmat3x3<T, P>::_null);
 			result[0][0] = m[0][0];
@@ -281,7 +281,7 @@ namespace detail
 	template <typename T, precision P>
 	struct compute_transpose<detail::tmat3x4, T, P>
 	{
-		GLM_FUNC_QUALIFIER static detail::tmat4x3<T, P> call(detail::tmat3x4<T, P> const & m)
+		inline static detail::tmat4x3<T, P> call(detail::tmat3x4<T, P> const & m)
 		{
 			detail::tmat4x3<T, P> result(detail::tmat4x3<T, P>::_null);
 			result[0][0] = m[0][0];
@@ -303,7 +303,7 @@ namespace detail
 	template <typename T, precision P>
 	struct compute_transpose<detail::tmat4x2, T, P>
 	{
-		GLM_FUNC_QUALIFIER static detail::tmat2x4<T, P> call(detail::tmat4x2<T, P> const & m)
+		inline static detail::tmat2x4<T, P> call(detail::tmat4x2<T, P> const & m)
 		{
 			detail::tmat2x4<T, P> result(detail::tmat2x4<T, P>::_null);
 			result[0][0] = m[0][0];
@@ -321,7 +321,7 @@ namespace detail
 	template <typename T, precision P>
 	struct compute_transpose<detail::tmat4x3, T, P>
 	{
-		GLM_FUNC_QUALIFIER static detail::tmat3x4<T, P> call(detail::tmat4x3<T, P> const & m)
+		inline static detail::tmat3x4<T, P> call(detail::tmat4x3<T, P> const & m)
 		{
 			detail::tmat3x4<T, P> result(detail::tmat3x4<T, P>::_null);
 			result[0][0] = m[0][0];
@@ -343,7 +343,7 @@ namespace detail
 	template <typename T, precision P>
 	struct compute_transpose<detail::tmat4x4, T, P>
 	{
-		GLM_FUNC_QUALIFIER static detail::tmat4x4<T, P> call(detail::tmat4x4<T, P> const & m)
+		inline static detail::tmat4x4<T, P> call(detail::tmat4x4<T, P> const & m)
 		{
 			detail::tmat4x4<T, P> result(detail::tmat4x4<T, P>::_null);
 			result[0][0] = m[0][0];
@@ -375,7 +375,7 @@ namespace detail
 	template <typename T, precision P>
 	struct compute_determinant<detail::tmat2x2, T, P>
 	{
-		GLM_FUNC_QUALIFIER static T call(detail::tmat2x2<T, P> const & m)
+		inline static T call(detail::tmat2x2<T, P> const & m)
 		{
 			return m[0][0] * m[1][1] - m[1][0] * m[0][1];
 		}
@@ -384,7 +384,7 @@ namespace detail
 	template <typename T, precision P>
 	struct compute_determinant<detail::tmat3x3, T, P>
 	{
-		GLM_FUNC_QUALIFIER static T call(detail::tmat3x3<T, P> const & m)
+		inline static T call(detail::tmat3x3<T, P> const & m)
 		{
 			return
 				+ m[0][0] * (m[1][1] * m[2][2] - m[2][1] * m[1][2])
@@ -396,7 +396,7 @@ namespace detail
 	template <typename T, precision P>
 	struct compute_determinant<detail::tmat4x4, T, P>
 	{
-		GLM_FUNC_QUALIFIER static T call(detail::tmat4x4<T, P> const & m)
+		inline static T call(detail::tmat4x4<T, P> const & m)
 		{
 			T SubFactor00 = m[2][2] * m[3][3] - m[3][2] * m[2][3];
 			T SubFactor01 = m[2][1] * m[3][3] - m[3][1] * m[2][3];
@@ -419,10 +419,8 @@ namespace detail
 }//namespace detail
 
 	template <typename T, precision P, template <typename, precision> class matType>
-	GLM_FUNC_QUALIFIER matType<T, P> matrixCompMult(matType<T, P> const & x, matType<T, P> const & y)
+	inline matType<T, P> matrixCompMult(matType<T, P> const & x, matType<T, P> const & y)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'matrixCompMult' only accept floating-point inputs");
-
 		matType<T, P> result(matType<T, P>::_null);
 		for(length_t i = 0; i < result.length(); ++i)
 			result[i] = x[i] * y[i];
@@ -430,30 +428,26 @@ namespace detail
 	}
 
 	template<typename T, precision P, template <typename, precision> class vecTypeA, template <typename, precision> class vecTypeB>
-	GLM_FUNC_QUALIFIER typename detail::outerProduct_trait<T, P, vecTypeA, vecTypeB>::type outerProduct(vecTypeA<T, P> const & c, vecTypeB<T, P> const & r)
+	inline typename detail::outerProduct_trait<T, P, vecTypeA, vecTypeB>::type outerProduct(vecTypeA<T, P> const & c, vecTypeB<T, P> const & r)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'outerProduct' only accept floating-point inputs");
 		return detail::compute_outerProduct<vecTypeA, vecTypeB, T, P>::call(c, r);
 	}
 
 	template <typename T, precision P, template <typename, precision> class matType>
-	GLM_FUNC_QUALIFIER typename matType<T, P>::transpose_type transpose(matType<T, P> const & m)
+	inline typename matType<T, P>::transpose_type transpose(matType<T, P> const & m)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'transpose' only accept floating-point inputs");
 		return detail::compute_transpose<matType, T, P>::call(m);
 	}
 
 	template <typename T, precision P, template <typename, precision> class matType>
-	GLM_FUNC_QUALIFIER T determinant(matType<T, P> const & m)
+	inline T determinant(matType<T, P> const & m)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'determinant' only accept floating-point inputs");
 		return detail::compute_determinant<matType, T, P>::call(m);
 	}
 
 	template <typename T, precision P, template <typename, precision> class matType>
-	GLM_FUNC_QUALIFIER matType<T, P> inverse(matType<T, P> const & m)
+	inline matType<T, P> inverse(matType<T, P> const & m)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'inverse' only accept floating-point inputs");
 		return detail::compute_inverse<matType, T, P>::call(m);
 	}
 

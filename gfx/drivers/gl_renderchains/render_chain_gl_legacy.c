@@ -38,6 +38,7 @@
 #include <libretro.h>
 
 #include <gfx/gl_capabilities.h>
+#include <gfx/video_frame.h>
 
 #include "../../../driver.h"
 #include "../../../configuration.h"
@@ -56,7 +57,6 @@
 
 #include "../../font_driver.h"
 #include "../../video_context_driver.h"
-#include "../../video_frame.h"
 
 #ifdef HAVE_GLSL
 #include "../../drivers_shader/shader_glsl.h"
@@ -153,19 +153,17 @@ void gl_renderchain_convert_geometry(gl_t *gl,
    }
 }
 
-
-
-
 static bool gl_recreate_fbo(
       struct video_fbo_rect *fbo_rect,
       GLuint fbo,
-      GLuint texture
+      GLuint* texture
       )
 {
    glBindFramebuffer(RARCH_GL_FRAMEBUFFER, fbo);
-   glBindTexture(GL_TEXTURE_2D, texture);
-
-   glTexImage2D(GL_TEXTURE_2D,
+   glDeleteTextures(1, texture);
+   glGenTextures(1, texture);
+   glBindTexture(GL_TEXTURE_2D, *texture);
+   gl_load_texture_image(GL_TEXTURE_2D,
          0, RARCH_GL_INTERNAL_FORMAT32,
          fbo_rect->width,
          fbo_rect->height,
@@ -174,51 +172,38 @@ static bool gl_recreate_fbo(
 
    glFramebufferTexture2D(RARCH_GL_FRAMEBUFFER,
          RARCH_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-         texture, 0);
+         *texture, 0);
 
-   if (glCheckFramebufferStatus(RARCH_GL_FRAMEBUFFER) != RARCH_GL_FRAMEBUFFER_COMPLETE)
-   {
-      RARCH_WARN("Failed to reinitialize FBO texture.\n");
-      return false;
-   }
+   if (glCheckFramebufferStatus(RARCH_GL_FRAMEBUFFER) 
+         == RARCH_GL_FRAMEBUFFER_COMPLETE)
+      return true;
 
-   return true;
+   RARCH_WARN("Failed to reinitialize FBO texture.\n");
+   return false;
 }
 
 static void gl_check_fbo_dimension(gl_t *gl, unsigned i,
-      GLuint fbo, GLuint texture, bool update_feedback)
+      bool update_feedback)
 {
-   unsigned img_width, img_height, max, pow2_size;
-   bool check_dimensions         = false;
    struct video_fbo_rect *fbo_rect = &gl->fbo_rect[i];
-
-   if (!fbo_rect)
-      return;
-
-   check_dimensions = 
-      (fbo_rect->max_img_width > fbo_rect->width) ||
-      (fbo_rect->max_img_height > fbo_rect->height);
-
-   if (!check_dimensions)
-      return;
-
    /* Check proactively since we might suddently 
     * get sizes of tex_w width or tex_h height. */
-   img_width             = fbo_rect->max_img_width;
-   img_height            = fbo_rect->max_img_height;
-   max                   = img_width > img_height ? img_width : img_height;
-   pow2_size             = next_pow2(max);
+   unsigned img_width              = fbo_rect->max_img_width;
+   unsigned img_height             = fbo_rect->max_img_height;
+   unsigned max                    = img_width > img_height ? img_width : img_height;
+   unsigned pow2_size              = next_pow2(max);
 
-   fbo_rect->width = fbo_rect->height = pow2_size;
+   fbo_rect->width                 = pow2_size;
+   fbo_rect->height                = pow2_size;
 
-   gl_recreate_fbo(fbo_rect, fbo, texture);
+   gl_recreate_fbo(fbo_rect, gl->fbo[i], &gl->fbo_texture[i]);
 
    /* Update feedback texture in-place so we avoid having to 
     * juggle two different fbo_rect structs since they get updated here. */
    if (update_feedback)
    {
       if (gl_recreate_fbo(fbo_rect, gl->fbo_feedback,
-               gl->fbo_feedback_texture))
+               &gl->fbo_feedback_texture))
       {
          /* Make sure the feedback textures are cleared 
           * so we don't feedback noise. */
@@ -241,10 +226,16 @@ void gl_check_fbo_dimensions(gl_t *gl)
    /* Check if we have to recreate our FBO textures. */
    for (i = 0; i < gl->fbo_pass; i++)
    {
-      bool update_feedback = gl->fbo_feedback_enable 
-         && (unsigned)i == gl->fbo_feedback_pass;
-      gl_check_fbo_dimension(gl, i, gl->fbo[i],
-            gl->fbo_texture[i], update_feedback);
+      struct video_fbo_rect *fbo_rect = &gl->fbo_rect[i];
+      if (fbo_rect)
+      {
+         bool update_feedback = gl->fbo_feedback_enable 
+            && (unsigned)i == gl->fbo_feedback_pass;
+
+         if ((fbo_rect->max_img_width  > fbo_rect->width) ||
+             (fbo_rect->max_img_height > fbo_rect->height))
+               gl_check_fbo_dimension(gl, i, update_feedback);
+      }
    }
 }
 void gl_renderchain_render(gl_t *gl,
@@ -302,7 +293,7 @@ void gl_renderchain_render(gl_t *gl,
       shader_info.idx        = i + 1;
       shader_info.set_active = true;
 
-      video_shader_driver_use(&shader_info);
+      video_shader_driver_use(shader_info);
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i - 1]);
 
       mip_level = i + 1;
@@ -330,19 +321,19 @@ void gl_renderchain_render(gl_t *gl,
       params.fbo_info      = fbo_tex_info;
       params.fbo_info_cnt  = fbo_tex_info_cnt;
 
-      video_shader_driver_set_parameters(&params);
+      video_shader_driver_set_parameters(params);
 
       gl->coords.vertices = 4;
 
       coords.handle_data  = NULL;
       coords.data         = &gl->coords;
 
-      video_shader_driver_set_coords(&coords);
+      video_shader_driver_set_coords(coords);
 
       mvp.data = gl;
       mvp.matrix = &gl->mvp;
 
-      video_shader_driver_set_mvp(&mvp);
+      video_shader_driver_set_mvp(mvp);
 
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    }
@@ -377,7 +368,7 @@ void gl_renderchain_render(gl_t *gl,
    shader_info.idx        = gl->fbo_pass + 1;
    shader_info.set_active = true;
 
-   video_shader_driver_use(&shader_info);
+   video_shader_driver_use(shader_info);
 
    glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);
 
@@ -404,7 +395,7 @@ void gl_renderchain_render(gl_t *gl,
    params.fbo_info      = fbo_tex_info;
    params.fbo_info_cnt  = fbo_tex_info_cnt;
 
-   video_shader_driver_set_parameters(&params);
+   video_shader_driver_set_parameters(params);
 
    gl->coords.vertex    = gl->vertex_ptr;
 
@@ -413,12 +404,12 @@ void gl_renderchain_render(gl_t *gl,
    coords.handle_data   = NULL;
    coords.data          = &gl->coords;
 
-   video_shader_driver_set_coords(&coords);
+   video_shader_driver_set_coords(coords);
 
    mvp.data             = gl;
    mvp.matrix           = &gl->mvp;
 
-   video_shader_driver_set_mvp(&mvp);
+   video_shader_driver_set_mvp(mvp);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
    gl->coords.tex_coord = gl->tex_info.coord;
@@ -529,13 +520,13 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
          RARCH_ERR("[GL]: Floating-point FBO was requested, but is not supported. Falling back to UNORM. Result may band/clip/etc.!\n");
    }
 
-#ifndef HAVE_OPENGLES2
+#if !defined(HAVE_OPENGLES2)
    if (fp_fbo && gl->has_fp_fbo)
    {
       RARCH_LOG("[GL]: FBO pass #%d is floating-point.\n", i);
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F,
-            gl->fbo_rect[i].width, gl->fbo_rect[i].height,
-            0, GL_RGBA, GL_FLOAT, NULL);
+      gl_load_texture_image(GL_TEXTURE_2D, 0, GL_RGBA32F,
+         gl->fbo_rect[i].width, gl->fbo_rect[i].height,
+         0, GL_RGBA, GL_FLOAT, NULL);
    }
    else
 #endif
@@ -564,16 +555,16 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
                gl->has_srgb_fbo_gles3 ? GL_RGBA : GL_SRGB_ALPHA_EXT,
                GL_UNSIGNED_BYTE, NULL);
 #else
-         glTexImage2D(GL_TEXTURE_2D,
-               0, GL_SRGB8_ALPHA8,
-               gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
-               GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+         gl_load_texture_image(GL_TEXTURE_2D,
+            0, GL_SRGB8_ALPHA8,
+            gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
+            GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 #endif
       }
       else
 #endif
       {
-#ifdef HAVE_OPENGLES2
+#if defined(HAVE_OPENGLES2) || defined(HAVE_PSGL)
          glTexImage2D(GL_TEXTURE_2D,
                0, GL_RGBA,
                gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
@@ -581,10 +572,10 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
 #else
          /* Avoid potential performance 
           * reductions on particular platforms. */
-         glTexImage2D(GL_TEXTURE_2D,
-               0, RARCH_GL_INTERNAL_FORMAT32,
-               gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
-               RARCH_GL_TEXTURE_TYPE32, RARCH_GL_FORMAT32, NULL);
+         gl_load_texture_image(GL_TEXTURE_2D,
+            0, RARCH_GL_INTERNAL_FORMAT32,
+            gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
+            RARCH_GL_TEXTURE_TYPE32, RARCH_GL_FORMAT32, NULL);
 #endif
       }
    }
@@ -869,12 +860,6 @@ bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
 
    depth   = hwr->depth;
    stencil = hwr->stencil;
-
-#ifdef HAVE_OPENGLES
-   if (!gl_check_capability(GL_CAPS_PACKED_DEPTH_STENCIL))
-      return false;
-   RARCH_LOG("[GL]: Supports Packed depth stencil.\n");
-#endif
 
    if (depth)
    {

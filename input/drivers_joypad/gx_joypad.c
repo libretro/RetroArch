@@ -15,14 +15,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../configuration.h"
-#include "../input_autodetect.h"
-
 #include <gccore.h>
 #include <ogc/pad.h>
 #ifdef HW_RVL
 #include <wiiuse/wpad.h>
 #endif
+
+#include "../../configuration.h"
+#include "../../tasks/tasks_internal.h"
 
 #ifdef GEKKO
 #define WPADInit WPAD_Init
@@ -144,21 +144,16 @@ static void handle_hotplug(unsigned port, uint32_t ptype)
 
    if (ptype != WPAD_EXP_NOCONTROLLER)
    {
-      autoconfig_params_t params = {{0}};
-      settings_t *settings       = config_get_ptr();
-
-      if (!settings->input.autodetect_enable)
-         return;
-
-      strlcpy(settings->input.device_names[port],
-            gx_joypad_name(port),
-            sizeof(settings->input.device_names[port]));
+      autoconfig_params_t params;
 
       /* TODO - implement VID/PID? */
-      params.idx = port;
+      params.idx             = port;
+      params.vid             = 0;
+      params.pid             = 0;
+      params.display_name[0] = '\0';
       strlcpy(params.name, gx_joypad_name(port), sizeof(params.name));
       strlcpy(params.driver, gx_joypad.ident, sizeof(params.driver));
-      input_config_autoconfigure_joypad(&params);
+      input_autoconfigure_connect(&params);
    }
 }
 
@@ -503,13 +498,17 @@ static bool gx_joypad_query_pad(unsigned pad)
 static void gx_joypad_destroy(void)
 {
 #ifdef HW_RVL
+#if 0
    int i;
    for (i = 0; i < MAX_PADS; i++)
    {
-   // Commenting this out fixes the Wii remote not reconnecting after core load, exit, etc.
-   //   WPAD_Flush(i);
-   //   WPADDisconnect(i);
+      /* Commenting this out fixes the Wii 
+       * remote not reconnecting after 
+       * core load, exit, etc. */
+      WPAD_Flush(i);
+      WPADDisconnect(i);
    }
+#endif
 #endif
 }
 

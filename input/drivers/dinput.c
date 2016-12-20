@@ -44,7 +44,8 @@
 
 #include "../../configuration.h"
 #include "../../verbosity.h"
-#include "../input_autodetect.h"
+#include "../../tasks/tasks_internal.h"
+#include "../../gfx/video_driver.h"
 #include "../input_config.h"
 #include "../input_joypad_driver.h"
 #include "../input_keymaps.h"
@@ -203,6 +204,9 @@ void unset_doubleclick_on_titlebar(void);
 static void dinput_poll(void *data)
 {
    struct dinput_input *di = (struct dinput_input*)data;
+
+   if (!di)
+      return;
 
    memset(di->state, 0, sizeof(di->state));
    if (di->keyboard)
@@ -398,10 +402,11 @@ static int16_t dinput_mouse_state_screen(struct dinput_input *di, unsigned id)
 static int16_t dinput_pointer_state(struct dinput_input *di,
       unsigned idx, unsigned id, bool screen)
 {
-   bool pointer_down, valid, inside;
+   bool pointer_down, inside;
    int x, y;
+   struct video_viewport vp = {0};
    int16_t res_x = 0, res_y = 0, res_screen_x = 0, res_screen_y = 0;
-   unsigned num = 0;
+   unsigned num  = 0;
    struct pointer_status *check_pos = di->pointer_head.next;
 
    while (check_pos && num < idx)
@@ -423,10 +428,8 @@ static int16_t dinput_pointer_state(struct dinput_input *di,
       pointer_down = true;
    }
 
-   valid           = input_translate_coord_viewport(x, y,
-         &res_x, &res_y, &res_screen_x, &res_screen_y);
-
-   if (!valid)
+   if (!(video_driver_translate_coord_viewport_wrap(&vp, x, y,
+         &res_x, &res_y, &res_screen_x, &res_screen_y)))
       return 0;
 
    if (screen)
@@ -474,11 +477,14 @@ static int16_t dinput_input_state(void *data,
 
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
+         {
             ret = dinput_pressed_analog(di, binds[port], idx, id);
-         if (!ret && binds[port])
-            ret = input_joypad_analog(di->joypad, port,
+            if (!ret)
+               ret = input_joypad_analog(di->joypad, port,
                   idx, id, settings->input.binds[port]);
-         return ret;
+            return ret;
+         }
+         return 0;
 
       case RETRO_DEVICE_MOUSE:
          return dinput_mouse_state(di, id);

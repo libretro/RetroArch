@@ -11,7 +11,7 @@ namespace glm
 {
 	// fastPow:
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType fastPow(genType const & x, genType const & y)
+	inline genType fastPow(genType const & x, genType const & y)
 	{
 		return exp(y * log(x));
 	}
@@ -19,7 +19,7 @@ namespace glm
 	VECTORIZE_VEC_VEC(fastPow)
 
 	template <typename T>
-	GLM_FUNC_QUALIFIER T fastPow(const T x, int y)
+	inline T fastPow(const T x, int y)
 	{
 		T f = static_cast<T>(1);
 		for(int i = 0; i < y; ++i)
@@ -28,7 +28,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec2<T, P> fastPow(
+	inline detail::tvec2<T, P> fastPow(
 		const detail::tvec2<T, P>& x, 
 		const detail::tvec2<int, P>& y)
 	{
@@ -38,7 +38,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> fastPow(
+	inline detail::tvec3<T, P> fastPow(
 		const detail::tvec3<T, P>& x, 
 		const detail::tvec3<int, P>& y)
 	{
@@ -49,7 +49,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec4<T, P> fastPow(
+	inline detail::tvec4<T, P> fastPow(
 		const detail::tvec4<T, P>& x, 
 		const detail::tvec4<int, P>& y)
 	{
@@ -63,7 +63,7 @@ namespace glm
 	// fastExp
 	// Note: This function provides accurate results only for value between -1 and 1, else avoid it.
 	template <typename T>
-	GLM_FUNC_QUALIFIER T fastExp(const T x)
+	inline T fastExp(const T x)
 	{
 		// This has a better looking and same performance in release mode than the following code. However, in debug mode it's slower.
 		// return 1.0f + x * (1.0f + x * 0.5f * (1.0f + x * 0.3333333333f * (1.0f + x * 0.25 * (1.0f + x * 0.2f))));
@@ -74,7 +74,7 @@ namespace glm
 		return T(1) + x + (x2 * T(0.5)) + (x3 * T(0.1666666667)) + (x4 * T(0.041666667)) + (x5 * T(0.008333333333));
 	}
 	/*  // Try to handle all values of float... but often shower than std::exp, glm::floor and the loop kill the performance
-	GLM_FUNC_QUALIFIER float fastExp(float x)
+	inline float fastExp(float x)
 	{
 		const float e = 2.718281828f;
 		const float IntegerPart = floor(x);
@@ -92,7 +92,7 @@ namespace glm
 	}
 
 	// Increase accuracy on number bigger that 1 and smaller than -1 but it's not enough for high and negative numbers
-	GLM_FUNC_QUALIFIER float fastExp(float x)
+	inline float fastExp(float x)
 	{
 		// This has a better looking and same performance in release mode than the following code. However, in debug mode it's slower.
 		// return 1.0f + x * (1.0f + x * 0.5f * (1.0f + x * 0.3333333333f * (1.0f + x * 0.25 * (1.0f + x * 0.2f))));
@@ -111,13 +111,13 @@ namespace glm
 
 	// fastLog
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType fastLog(genType const & x)
+	inline genType fastLog(genType const & x)
 	{
 		return std::log(x);
 	}
 
 	/* Slower than the VC7.1 function...
-	GLM_FUNC_QUALIFIER float fastLog(float x)
+	inline float fastLog(float x)
 	{
 		float y1 = (x - 1.0f) / (x + 1.0f);
 		float y2 = y1 * y1;
@@ -129,7 +129,7 @@ namespace glm
 
 	//fastExp2, ln2 = 0.69314718055994530941723212145818f
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType fastExp2(genType const & x)
+	inline genType fastExp2(genType const & x)
 	{
 		return fastExp(0.69314718055994530941723212145818f * x);
 	}
@@ -138,7 +138,7 @@ namespace glm
 
 	// fastLog2, ln2 = 0.69314718055994530941723212145818f
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType fastLog2(genType const & x)
+	inline genType fastLog2(genType const & x)
 	{
 		return fastLog(x) / 0.69314718055994530941723212145818f;
 	}

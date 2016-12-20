@@ -105,6 +105,7 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_NETWORK_INFO,
    DISPLAYLIST_SYSTEM_INFO,
    DISPLAYLIST_ACHIEVEMENT_LIST,
+   DISPLAYLIST_ACHIEVEMENT_LIST_HARDCORE,
    DISPLAYLIST_USER_BINDS_LIST,
    DISPLAYLIST_ACCOUNTS_LIST,
    DISPLAYLIST_DRIVER_SETTINGS_LIST,
@@ -120,12 +121,14 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST,
    DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST,
    DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST,
+   DISPLAYLIST_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST,
    DISPLAYLIST_MENU_SETTINGS_LIST,
    DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST,
    DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST,
    DISPLAYLIST_UPDATER_SETTINGS_LIST,
    DISPLAYLIST_WIFI_SETTINGS_LIST,
    DISPLAYLIST_NETWORK_SETTINGS_LIST,
+   DISPLAYLIST_NETPLAY_LAN_SCAN_SETTINGS_LIST,
    DISPLAYLIST_LAKKA_SERVICES_LIST,
    DISPLAYLIST_USER_SETTINGS_LIST,
    DISPLAYLIST_DIRECTORY_SETTINGS_LIST,
@@ -144,6 +147,7 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_OPTIONS_SHADERS,
    DISPLAYLIST_NETPLAY,
    DISPLAYLIST_ADD_CONTENT_LIST,
+   DISPLAYLIST_CONFIGURATIONS_LIST,
    DISPLAYLIST_SCAN_DIRECTORY_LIST,
    DISPLAYLIST_ARCHIVE_ACTION,
    DISPLAYLIST_ARCHIVE_ACTION_DETECT_CORE,
@@ -162,6 +166,8 @@ typedef struct menu_displaylist_info
    bool need_entries_refresh;
    bool need_push;
    bool need_clear;
+   bool push_builtin_cores;
+   bool download_core;
    bool need_navigation_clear;
    file_list_t *list;
    file_list_t *menu_list;
@@ -194,8 +200,6 @@ typedef struct menu_displaylist_ctx_entry
    file_list_t *stack;
    file_list_t *list;
 } menu_displaylist_ctx_entry_t;
-
-void menu_displaylist_reset_filebrowser(void);
 
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data);
 

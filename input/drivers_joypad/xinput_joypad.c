@@ -35,13 +35,11 @@
 #include "../../config.h"
 #endif
 
-#include "../input_autodetect.h"
+#include "../../tasks/tasks_internal.h"
 #include "../input_config.h"
 
 #include "../../configuration.h"
-#include "../../runloop.h"
 #include "../../verbosity.h"
-
 
 /* Check if the definitions do not already exist.
  * Official and mingw xinput headers have different include guards.
@@ -141,7 +139,7 @@ static INLINE int pad_index_to_xuser_index(unsigned pad)
 /* Generic "XInput" instead of "Xbox 360", because there are
  * some other non-xbox third party PC controllers.
  */
-static const char* const XBOX_CONTROLLER_NAMES[4] = 
+static const char* const XBOX_CONTROLLER_NAMES[4] =
 {
    "XInput Controller (User 1)",
    "XInput Controller (User 2)",
@@ -149,13 +147,25 @@ static const char* const XBOX_CONTROLLER_NAMES[4] =
    "XInput Controller (User 4)"
 };
 
+static const char* const XBOX_ONE_CONTROLLER_NAMES[4] =
+{
+   "XBOX One Controller (User 1)",
+   "XBOX One Controller (User 2)",
+   "XBOX One Controller (User 3)",
+   "XBOX One Controller (User 4)"
+};
+
 const char *xinput_joypad_name(unsigned pad)
 {
    int xuser = pad_index_to_xuser_index(pad);
-
+   /* Use the real controller name for XBOX One controllers since
+      they are slightly different  */
    if (xuser < 0)
       return dinput_joypad.name(pad);
-   /* TODO: Different name if disconnected? */
+
+   if (strstr(dinput_joypad.name(pad), "Xbox One For Windows"))
+      return XBOX_ONE_CONTROLLER_NAMES[xuser];
+
    return XBOX_CONTROLLER_NAMES[xuser];
 }
 
@@ -258,17 +268,17 @@ static bool xinput_joypad_init(void *data)
    {
       if (pad_index_to_xuser_index(autoconf_pad) > -1)
       {
-         autoconfig_params_t params = {{0}};
-
-         strlcpy(settings->input.device_names[autoconf_pad],
-               xinput_joypad_name(autoconf_pad),
-               sizeof(settings->input.device_names[autoconf_pad]));
+         autoconfig_params_t params;
 
          /* TODO - implement VID/PID? */
-         params.idx = autoconf_pad;
+         params.idx             = autoconf_pad;
+         params.display_name[0] = '\0';
+         params.vid             = 0;
+         params.pid             = 0;
+
          strlcpy(params.name, xinput_joypad_name(autoconf_pad), sizeof(params.name));
          strlcpy(params.driver, xinput_joypad.ident, sizeof(params.driver));
-         input_config_autoconfigure_joypad(&params);
+         input_autoconfigure_connect(&params);
       }
    }
 
@@ -320,14 +330,11 @@ static const uint16_t button_index_to_bitmap_code[] =  {
 
 static bool xinput_joypad_button(unsigned port_num, uint16_t joykey)
 {
-   uint16_t btn_word;
-   int xuser;
+   uint16_t btn_word    = 0;
    unsigned num_buttons = 0;
+   unsigned hat_dir     = 0;
+   int xuser            = pad_index_to_xuser_index(port_num);
 
-   if (joykey == NO_BTN)
-      return false;
-
-   xuser = pad_index_to_xuser_index(port_num);
    if (xuser == -1)
       return dinput_joypad.button(port_num, joykey);
 
@@ -335,10 +342,11 @@ static bool xinput_joypad_button(unsigned port_num, uint16_t joykey)
       return false;
 
    btn_word = g_xinput_states[xuser].xstate.Gamepad.wButtons;
+   hat_dir  = GET_HAT_DIR(joykey);
 
-   if (GET_HAT_DIR(joykey))
+   if (hat_dir)
    {
-      switch (GET_HAT_DIR(joykey))
+      switch (hat_dir)
       {
          case HAT_UP_MASK:
             return btn_word & XINPUT_GAMEPAD_DPAD_UP;
@@ -349,6 +357,7 @@ static bool xinput_joypad_button(unsigned port_num, uint16_t joykey)
          case HAT_RIGHT_MASK:
             return btn_word & XINPUT_GAMEPAD_DPAD_RIGHT;
       }
+
       return false; /* hat requested and no hat button down. */
    }
 

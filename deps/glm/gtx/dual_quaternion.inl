@@ -33,19 +33,19 @@ namespace glm{
 namespace detail
 {
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER GLM_CONSTEXPR int tdualquat<T, P>::length() const
+	inline int tdualquat<T, P>::length() const
 	{
 		return 8;
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tdualquat<T, P>::tdualquat() :
+	inline tdualquat<T, P>::tdualquat() :
 		real(tquat<T, P>()),
 		dual(tquat<T, P>(T(0), T(0), T(0), T(0)))
 	{}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tdualquat<T, P>::tdualquat
+	inline tdualquat<T, P>::tdualquat
 	(
 		tquat<T, P> const & r
 	) :
@@ -54,7 +54,7 @@ namespace detail
 	{}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tdualquat<T, P>::tdualquat
+	inline tdualquat<T, P>::tdualquat
 	(
 		tquat<T, P> const & r,
 		tquat<T, P> const & d
@@ -64,7 +64,7 @@ namespace detail
 	{}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tdualquat<T, P>::tdualquat
+	inline tdualquat<T, P>::tdualquat
 	(
 		tquat<T, P> const & q,
 		tvec3<T, P> const& p
@@ -80,7 +80,7 @@ namespace detail
 	//////////////////////////////////////////////////////////////
 	// tdualquat conversions
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tdualquat<T, P>::tdualquat
+	inline tdualquat<T, P>::tdualquat
 	(
 		tmat2x4<T, P> const & m
 	)
@@ -89,7 +89,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tdualquat<T, P>::tdualquat
+	inline tdualquat<T, P>::tdualquat
 	(
 		tmat3x4<T, P> const & m
 	)
@@ -101,14 +101,14 @@ namespace detail
 	// tdualquat<T, P> accesses
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER typename tdualquat<T, P>::part_type & tdualquat<T, P>::operator [] (int i)
+	inline typename tdualquat<T, P>::part_type & tdualquat<T, P>::operator [] (int i)
 	{
 		assert(i >= 0 && i < this->length());
 		return (&real)[i];
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER typename tdualquat<T, P>::part_type const & tdualquat<T, P>::operator [] (int i) const
+	inline typename tdualquat<T, P>::part_type const & tdualquat<T, P>::operator [] (int i) const
 	{
 		assert(i >= 0 && i < this->length());
 		return (&real)[i];
@@ -118,7 +118,7 @@ namespace detail
 	// tdualquat<valType> operators
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tdualquat<T, P> & tdualquat<T, P>::operator *=
+	inline tdualquat<T, P> & tdualquat<T, P>::operator *=
 	(
 		T const & s
 	)
@@ -129,7 +129,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tdualquat<T, P> & tdualquat<T, P>::operator /=
+	inline tdualquat<T, P> & tdualquat<T, P>::operator /=
 	(
 		T const & s
 	)
@@ -143,7 +143,7 @@ namespace detail
 	// tquat<valType> external operators
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tdualquat<T, P> operator-
+	inline detail::tdualquat<T, P> operator-
 	(
 		detail::tdualquat<T, P> const & q
 	)
@@ -152,7 +152,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tdualquat<T, P> operator+
+	inline detail::tdualquat<T, P> operator+
 	(
 		detail::tdualquat<T, P> const & q,
 		detail::tdualquat<T, P> const & p
@@ -162,7 +162,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tdualquat<T, P> operator*
+	inline detail::tdualquat<T, P> operator*
 	(
 		detail::tdualquat<T, P> const & p,
 		detail::tdualquat<T, P> const & o
@@ -173,7 +173,7 @@ namespace detail
 
 	// Transformation
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> operator*
+	inline detail::tvec3<T, P> operator*
 	(
 		detail::tdualquat<T, P> const & q,
 		detail::tvec3<T, P> const & v
@@ -185,7 +185,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> operator*
+	inline detail::tvec3<T, P> operator*
 	(
 		detail::tvec3<T, P> const & v,
 		detail::tdualquat<T, P> const & q
@@ -195,7 +195,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec4<T, P> operator*
+	inline detail::tvec4<T, P> operator*
 	(
 		detail::tdualquat<T, P> const & q,
 		detail::tvec4<T, P> const & v
@@ -205,7 +205,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec4<T, P> operator*
+	inline detail::tvec4<T, P> operator*
 	(
 		detail::tvec4<T, P> const & v,
 		detail::tdualquat<T, P> const & q
@@ -215,7 +215,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tdualquat<T, P> operator*
+	inline detail::tdualquat<T, P> operator*
 	(
 		detail::tdualquat<T, P> const & q,
 		T const & s
@@ -225,7 +225,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tdualquat<T, P> operator*
+	inline detail::tdualquat<T, P> operator*
 	(
 		T const & s,
 		detail::tdualquat<T, P> const & q
@@ -235,7 +235,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tdualquat<T, P> operator/
+	inline detail::tdualquat<T, P> operator/
 	(
 		detail::tdualquat<T, P> const & q,
 		T const & s
@@ -247,7 +247,7 @@ namespace detail
 	//////////////////////////////////////
 	// Boolean operators
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER bool operator==
+	inline bool operator==
 	(
 		detail::tdualquat<T, P> const & q1,
 		detail::tdualquat<T, P> const & q2
@@ -257,7 +257,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER bool operator!=
+	inline bool operator!=
 	(
 		detail::tdualquat<T, P> const & q1,
 		detail::tdualquat<T, P> const & q2
@@ -269,7 +269,7 @@ namespace detail
 
 	////////////////////////////////////////////////////////
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tdualquat<T, P> normalize
+	inline detail::tdualquat<T, P> normalize
 	(
 		detail::tdualquat<T, P> const & q
 	)
@@ -278,7 +278,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tdualquat<T, P> lerp
+	inline detail::tdualquat<T, P> lerp
 	(
 		detail::tdualquat<T, P> const & x,
 		detail::tdualquat<T, P> const & y,
@@ -295,7 +295,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tdualquat<T, P> inverse
+	inline detail::tdualquat<T, P> inverse
 	(
 		detail::tdualquat<T, P> const & q
 	)
@@ -306,7 +306,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tmat2x4<T, P> mat2x4_cast
+	inline detail::tmat2x4<T, P> mat2x4_cast
 	(
 		detail::tdualquat<T, P> const & x
 	)
@@ -315,7 +315,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tmat3x4<T, P> mat3x4_cast
+	inline detail::tmat3x4<T, P> mat3x4_cast
 	(
 		detail::tdualquat<T, P> const & x
 	)
@@ -354,7 +354,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tdualquat<T, P> dualquat_cast
+	inline detail::tdualquat<T, P> dualquat_cast
 	(
 		detail::tmat2x4<T, P> const & x
 	)
@@ -365,7 +365,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tdualquat<T, P> dualquat_cast
+	inline detail::tdualquat<T, P> dualquat_cast
 	(
 		detail::tmat3x4<T, P> const & x
 	)

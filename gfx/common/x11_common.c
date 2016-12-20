@@ -40,24 +40,24 @@ static DBusConnection* dbus_connection      = NULL;
 static unsigned int dbus_screensaver_cookie = 0;
 #endif
 
-static bool xdg_screensaver_available = true;
+static bool xdg_screensaver_available       = true;
+bool g_x11_entered                          = false;
+static bool g_x11_has_focus                 = false;
+static bool g_x11_true_full                 = false;
+Display *g_x11_dpy                          = NULL;
+
+unsigned g_x11_screen                       = 0;
 
 Colormap g_x11_cmap;
 Window   g_x11_win;
-Display *g_x11_dpy;
 
 static Atom XA_NET_WM_STATE;
 static Atom XA_NET_WM_STATE_FULLSCREEN;
 static Atom XA_NET_MOVERESIZE_WINDOW;
 
 static Atom g_x11_quit_atom;
-static bool g_x11_has_focus;
 static XIM g_x11_xim;
 static XIC g_x11_xic;
-static bool g_x11_true_full;
-bool g_x11_entered            = false;
-
-unsigned g_x11_screen;
 
 #define XA_INIT(x) XA##x = XInternAtom(dpy, #x, False)
 #define _NET_WM_STATE_ADD 1
@@ -269,7 +269,7 @@ void x11_move_window(Display *dpy, Window win, int x, int y,
 
 static void x11_set_window_class(Display *dpy, Window win)
 {
-   XClassHint hint = {0};
+   XClassHint hint;
 
    hint.res_name   = (char*)"retroarch"; /* Broken header. */
    hint.res_class  = (char*)"retroarch";
@@ -563,7 +563,7 @@ bool x11_alive(void *data)
 
    while (XPending(g_x11_dpy))
    {
-      bool filter;
+      bool filter = false;
 
       /* Can get events from older windows. Check this. */
       XNextEvent(g_x11_dpy, &event);

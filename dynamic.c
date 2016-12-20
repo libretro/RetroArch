@@ -36,6 +36,10 @@
 #include "cheevos.h"
 #endif
 
+#ifdef HAVE_NETWORKING
+#include "network/netplay/netplay.h"
+#endif
+
 #include "dynamic.h"
 #include "command.h"
 
@@ -215,7 +219,7 @@ static bool load_dynamic_core(void)
       /* Try to verify that -lretro was not linked in from other modules
        * since loading it dynamically and with -l will fail hard. */
       RARCH_ERR("Serious problem. RetroArch wants to load libretro cores"
-            "dyamically, but it is already linked.\n");
+            " dynamically, but it is already linked.\n");
       RARCH_ERR("This could happen if other modules RetroArch depends on "
             "link against libretro directly.\n");
       RARCH_ERR("Proceeding could cause a crash. Aborting ...\n");
@@ -239,16 +243,17 @@ static bool load_dynamic_core(void)
    RARCH_LOG("Loading dynamic libretro core from: \"%s\"\n",
          path_get(RARCH_PATH_CORE));
    lib_handle = dylib_load(path_get(RARCH_PATH_CORE));
-   if (!lib_handle)
-   {
-      RARCH_ERR("Failed to open libretro core: \"%s\"\n",
-            path_get(RARCH_PATH_CORE));
-      RARCH_ERR("Error(s): %s\n", dylib_error());
-      runloop_msg_queue_push(msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE), 1, 180, true);
-      return false;
-   }
 
-   return true;
+   if (lib_handle)
+      return true;
+
+   RARCH_ERR("Failed to open libretro core: \"%s\"\n",
+         path_get(RARCH_PATH_CORE));
+   RARCH_ERR("Error(s): %s\n", dylib_error());
+
+   runloop_msg_queue_push(msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE), 1, 180, true);
+
+   return false;
 }
 
 static dylib_t libretro_get_system_info_lib(const char *path,
@@ -344,16 +349,19 @@ bool libretro_get_system_info(const char *path,
 {
 #ifdef HAVE_DYNAMIC
    struct retro_system_info dummy_info = {0};
-   dylib_t lib = libretro_get_system_info_lib(path,
-         &dummy_info, load_no_content);
+   dylib_t lib                         = libretro_get_system_info_lib(
+         path, &dummy_info, load_no_content);
+
    if (!lib)
       return false;
 
    memcpy(info, &dummy_info, sizeof(*info));
-   info->library_name    = strdup(dummy_info.library_name);
-   info->library_version = strdup(dummy_info.library_version);
+   info->library_name        = strdup(dummy_info.library_name);
+   info->library_version     = strdup(dummy_info.library_version);
+
    if (dummy_info.valid_extensions)
       info->valid_extensions = strdup(dummy_info.valid_extensions);
+
    dylib_close(lib);
 #else
    if (!libretro_get_system_info_static(info, load_no_content))
@@ -778,52 +786,53 @@ static size_t mmap_highest_bit(size_t n)
    return n ^ (n >> 1);
 }
 
-static bool mmap_preprocess_descriptors(struct retro_memory_descriptor *first, unsigned count)
+static bool mmap_preprocess_descriptors(rarch_memory_descriptor_t *first, unsigned count)
 {
-   size_t disconnect_mask;
-   size_t                           top_addr = 1;
-   struct retro_memory_descriptor *desc      = NULL;
-   const struct retro_memory_descriptor *end = first + count;
+   size_t                      top_addr = 1;
+   rarch_memory_descriptor_t *desc      = NULL;
+   const rarch_memory_descriptor_t *end = first + count;
    
    for (desc = first; desc < end; desc++)
    {
-      if (desc->select != 0)
-         top_addr |= desc->select;
+      if (desc->core.select != 0)
+         top_addr |= desc->core.select;
       else
-         top_addr |= desc->start + desc->len - 1;
+         top_addr |= desc->core.start + desc->core.len - 1;
    }
    
    top_addr = mmap_add_bits_down(top_addr);
    
    for (desc = first; desc < end; desc++)
    {
-      if (desc->select == 0)
+      if (desc->core.select == 0)
       {
-         if (desc->len == 0)
+         if (desc->core.len == 0)
             return false;
          
-         if ((desc->len & (desc->len - 1)) != 0)
+         if ((desc->core.len & (desc->core.len - 1)) != 0)
             return false;
          
-         desc->select = top_addr & ~mmap_inflate(mmap_add_bits_down(desc->len - 1), desc->disconnect);
+         desc->core.select = top_addr & ~mmap_inflate(mmap_add_bits_down(desc->core.len - 1),
+               desc->core.disconnect);
       }
       
-      if (desc->len == 0)
-         desc->len = mmap_add_bits_down(mmap_reduce(top_addr & ~desc->select, desc->disconnect)) + 1;
+      if (desc->core.len == 0)
+         desc->core.len = mmap_add_bits_down(mmap_reduce(top_addr & ~desc->core.select,
+                  desc->core.disconnect)) + 1;
       
-      if (desc->start & ~desc->select)
+      if (desc->core.start & ~desc->core.select)
          return false;
        
-      while (mmap_reduce(top_addr & ~desc->select, desc->disconnect) >> 1 > desc->len - 1)
-         desc->disconnect |= mmap_highest_bit(top_addr & ~desc->select & ~desc->disconnect);
+      while (mmap_reduce(top_addr & ~desc->core.select, desc->core.disconnect) >> 1 > desc->core.len - 1)
+         desc->core.disconnect |= mmap_highest_bit(top_addr & ~desc->core.select & ~desc->core.disconnect);
       
-      disconnect_mask = mmap_add_bits_down(desc->len - 1);
-      desc->disconnect &= disconnect_mask;
+      desc->disconnect_mask = mmap_add_bits_down(desc->core.len - 1);
+      desc->core.disconnect &= desc->disconnect_mask;
       
-      while ((~disconnect_mask) >> 1 & desc->disconnect)
+      while ((~desc->disconnect_mask) >> 1 & desc->core.disconnect)
       {
-         disconnect_mask >>= 1;
-         desc->disconnect &= disconnect_mask;
+         desc->disconnect_mask >>= 1;
+         desc->core.disconnect &= desc->disconnect_mask;
       }
    }
    
@@ -976,7 +985,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          {
             struct retro_variable *var = (struct retro_variable*)data;
 
-            if (var) {
+            if (var)
+            {
                RARCH_LOG("Environ GET_VARIABLE %s: not implemented.\n", var->key);
                var->value = NULL;
             }
@@ -1040,7 +1050,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             const char *fullpath = path_get(RARCH_PATH_CONTENT);
             if (!string_is_empty(fullpath))
             {
-               char temp_path[PATH_MAX_LENGTH] = {0};
+               char temp_path[PATH_MAX_LENGTH];
+
+               temp_path[0] = '\0';
 
                RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",
                      fullpath);
@@ -1287,6 +1299,12 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 #ifdef HAVE_THREADS
       {
          RARCH_LOG("Environ SET_AUDIO_CALLBACK.\n");
+#ifdef HAVE_NETWORKING
+         if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+            return false;
+#endif
+         if (recording_driver_get_data_ptr()) /* A/V sync is a must. */
+            return false;
          audio_driver_set_callback(data);
       }
 #endif
@@ -1486,22 +1504,24 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             unsigned i;
             const struct retro_memory_map *mmaps        =
                (const struct retro_memory_map*)data;
-            struct retro_memory_descriptor *descriptors = NULL;
+            rarch_memory_descriptor_t *descriptors = NULL;
 
             RARCH_LOG("Environ SET_MEMORY_MAPS.\n");
             free((void*)system->mmaps.descriptors);
             system->mmaps.num_descriptors = 0;
-            descriptors = (struct retro_memory_descriptor*)
+            descriptors = (rarch_memory_descriptor_t*)
                calloc(mmaps->num_descriptors,
-                     sizeof(*system->mmaps.descriptors));
+                     sizeof(*descriptors));
 
             if (!descriptors)
                return false;
 
             system->mmaps.descriptors = descriptors;
-            memcpy((void*)system->mmaps.descriptors, mmaps->descriptors,
-                  mmaps->num_descriptors * sizeof(*system->mmaps.descriptors));
             system->mmaps.num_descriptors = mmaps->num_descriptors;
+
+            for (i = 0; i < mmaps->num_descriptors; i++)
+               system->mmaps.descriptors[i].core = mmaps->descriptors[i];
+
             mmap_preprocess_descriptors(descriptors, mmaps->num_descriptors);
 
             if (sizeof(void *) == 8)
@@ -1511,38 +1531,38 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
             for (i = 0; i < system->mmaps.num_descriptors; i++)
             {
-               const struct retro_memory_descriptor *desc =
+               const rarch_memory_descriptor_t *desc =
                   &system->mmaps.descriptors[i];
                char flags[7];
 
                flags[0] = 'M';
-               if ((desc->flags & RETRO_MEMDESC_MINSIZE_8) == RETRO_MEMDESC_MINSIZE_8)
+               if ((desc->core.flags & RETRO_MEMDESC_MINSIZE_8) == RETRO_MEMDESC_MINSIZE_8)
                   flags[1] = '8';
-               else if ((desc->flags & RETRO_MEMDESC_MINSIZE_4) == RETRO_MEMDESC_MINSIZE_4)
+               else if ((desc->core.flags & RETRO_MEMDESC_MINSIZE_4) == RETRO_MEMDESC_MINSIZE_4)
                   flags[1] = '4';
-               else if ((desc->flags & RETRO_MEMDESC_MINSIZE_2) == RETRO_MEMDESC_MINSIZE_2)
+               else if ((desc->core.flags & RETRO_MEMDESC_MINSIZE_2) == RETRO_MEMDESC_MINSIZE_2)
                   flags[1] = '2';
                else
                   flags[1] = '1';
 
                flags[2] = 'A';
-               if ((desc->flags & RETRO_MEMDESC_ALIGN_8) == RETRO_MEMDESC_ALIGN_8)
+               if ((desc->core.flags & RETRO_MEMDESC_ALIGN_8) == RETRO_MEMDESC_ALIGN_8)
                   flags[3] = '8';
-               else if ((desc->flags & RETRO_MEMDESC_ALIGN_4) == RETRO_MEMDESC_ALIGN_4)
+               else if ((desc->core.flags & RETRO_MEMDESC_ALIGN_4) == RETRO_MEMDESC_ALIGN_4)
                   flags[3] = '4';
-               else if ((desc->flags & RETRO_MEMDESC_ALIGN_2) == RETRO_MEMDESC_ALIGN_2)
+               else if ((desc->core.flags & RETRO_MEMDESC_ALIGN_2) == RETRO_MEMDESC_ALIGN_2)
                   flags[3] = '2';
                else
                   flags[3] = '1';
 
-               flags[4] = (desc->flags & RETRO_MEMDESC_BIGENDIAN) ? 'B' : 'b';
-               flags[5] = (desc->flags & RETRO_MEMDESC_CONST) ? 'C' : 'c';
+               flags[4] = (desc->core.flags & RETRO_MEMDESC_BIGENDIAN) ? 'B' : 'b';
+               flags[5] = (desc->core.flags & RETRO_MEMDESC_CONST) ? 'C' : 'c';
                flags[6] = 0;
 
                RARCH_LOG("   %03u %s %p %08X %08X %08X %08X %08X %s\n",
-                     i + 1, flags, desc->ptr, desc->offset, desc->start,
-                     desc->select, desc->disconnect, desc->len,
-                     desc->addrspace ? desc->addrspace : "");
+                     i + 1, flags, desc->core.ptr, desc->core.offset, desc->core.start,
+                     desc->core.select, desc->core.disconnect, desc->core.len,
+                     desc->core.addrspace ? desc->core.addrspace : "");
             }
          }
          else

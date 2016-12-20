@@ -64,10 +64,6 @@ namespace detail
 
 	__m128 sse_modf_ps(__m128 x, __m128i & i);
 
-	//GLM_FUNC_QUALIFIER __m128 sse_min_ps(__m128 x, __m128 y)
-
-	//GLM_FUNC_QUALIFIER __m128 sse_max_ps(__m128 x, __m128 y)
-
 	__m128 sse_clp_ps(__m128 v, __m128 minVal, __m128 maxVal);
 
 	__m128 sse_mix_ps(__m128 v1, __m128 v2, __m128 a);

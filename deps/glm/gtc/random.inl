@@ -38,36 +38,30 @@ namespace detail
 	struct compute_linearRand
 	{
 		template <typename T>
-		GLM_FUNC_QUALIFIER T operator() (T const & Min, T const & Max) const;
-/*
-		{
-			GLM_STATIC_ASSERT(0, "'linearRand' invalid template parameter type. GLM_GTC_random only supports floating-point template types.");
-			return Min;
-		}
-*/
+		inline T operator() (T const & Min, T const & Max) const;
 	};
 
 	template <>
-	GLM_FUNC_QUALIFIER float compute_linearRand::operator()<float> (float const & Min, float const & Max) const
+	inline float compute_linearRand::operator()<float> (float const & Min, float const & Max) const
 	{
 		return float(std::rand()) / float(RAND_MAX) * (Max - Min) + Min;
 	}
 
 	template <>
-	GLM_FUNC_QUALIFIER double compute_linearRand::operator()<double> (double const & Min, double const & Max) const
+	inline double compute_linearRand::operator()<double> (double const & Min, double const & Max) const
 	{
 		return double(std::rand()) / double(RAND_MAX) * (Max - Min) + Min;
 	}
 
 	template <>
-	GLM_FUNC_QUALIFIER long double compute_linearRand::operator()<long double> (long double const & Min, long double const & Max) const
+	inline long double compute_linearRand::operator()<long double> (long double const & Min, long double const & Max) const
 	{
 		return (long double)(std::rand()) / (long double)(RAND_MAX) * (Max - Min) + Min;
 	}
 }//namespace detail
 
 	template <typename genType> 
-	GLM_FUNC_QUALIFIER genType linearRand
+	inline genType linearRand
 	(
 		genType const & Min,
 		genType const & Max
@@ -79,7 +73,7 @@ namespace detail
 	VECTORIZE_VEC_VEC(linearRand)
 
 	template <typename genType> 
-	GLM_FUNC_QUALIFIER genType gaussRand
+	inline genType gaussRand
 	(
 		genType const & Mean,	
 		genType const & Deviation
@@ -101,7 +95,7 @@ namespace detail
 	VECTORIZE_VEC_VEC(gaussRand)
 
 	template <typename T>
-	GLM_FUNC_QUALIFIER detail::tvec2<T, defaultp> diskRand
+	inline detail::tvec2<T, defaultp> diskRand
 	(
 		T const & Radius
 	)
@@ -122,7 +116,7 @@ namespace detail
 	}
 	
 	template <typename T>
-	GLM_FUNC_QUALIFIER detail::tvec3<T, defaultp> ballRand
+	inline detail::tvec3<T, defaultp> ballRand
 	(
 		T const & Radius
 	)
@@ -143,7 +137,7 @@ namespace detail
 	}
 	
 	template <typename T>
-	GLM_FUNC_QUALIFIER detail::tvec2<T, defaultp> circularRand
+	inline detail::tvec2<T, defaultp> circularRand
 	(
 		T const & Radius
 	)
@@ -153,7 +147,7 @@ namespace detail
 	}
 	
 	template <typename T>
-	GLM_FUNC_QUALIFIER detail::tvec3<T, defaultp> sphericalRand
+	inline detail::tvec3<T, defaultp> sphericalRand
 	(
 		T const & Radius
 	)

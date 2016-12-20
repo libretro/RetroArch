@@ -29,7 +29,7 @@
 namespace glm
 {
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType row
+	inline genType row
 	(
 		genType const & m,
 		length_t const & index,
@@ -45,7 +45,7 @@ namespace glm
 	}
 
 	template <typename genType>
-	GLM_FUNC_QUALIFIER typename genType::row_type row
+	inline typename genType::row_type row
 	(
 		genType const & m,
 		length_t const & index
@@ -60,7 +60,7 @@ namespace glm
 	}
 
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType column
+	inline genType column
 	(
 		genType const & m,
 		length_t const & index,
@@ -75,7 +75,7 @@ namespace glm
 	}
 
 	template <typename genType>
-	GLM_FUNC_QUALIFIER typename genType::col_type column
+	inline typename genType::col_type column
 	(
 		genType const & m,
 		length_t const & index

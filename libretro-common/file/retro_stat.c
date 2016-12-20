@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <retro_miscellaneous.h>
 
 #if defined(_WIN32)
 #ifdef _MSC_VER
@@ -102,7 +103,9 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
 #elif defined(_WIN32)
    WIN32_FILE_ATTRIBUTE_DATA file_info;
    GET_FILEEX_INFO_LEVELS fInfoLevelId = GetFileExInfoStandard;
+
    DWORD ret = GetFileAttributesEx(path, fInfoLevelId, &file_info);
+
    if (ret == 0)
       return false;
 #else

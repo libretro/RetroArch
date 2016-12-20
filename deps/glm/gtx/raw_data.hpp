@@ -70,6 +70,4 @@ namespace glm
 	/// @}
 }// namespace glm
 
-#include "raw_data.inl"
-
 #endif//GLM_GTX_raw_data

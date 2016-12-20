@@ -34,7 +34,10 @@
 #include "../driver.h"
 #include "../paths.h"
 #include "../retroarch.h"
+
+#ifndef HAVE_MAIN
 #include "../runloop.h"
+#endif
 
 /**
  * main_exit:
@@ -115,7 +118,7 @@ int rarch_main(int argc, char *argv[], void *data)
                CONTENT_MODE_LOAD_FROM_CLI,
                NULL,
                NULL))
-         return 0;
+         return 1;
    }
 
    ui_companion_driver_init_first();

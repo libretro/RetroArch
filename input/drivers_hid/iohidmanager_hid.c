@@ -21,10 +21,12 @@
 #include <IOKit/hid/IOHIDManager.h>
 #include <IOKit/hid/IOHIDKeys.h>
 
+#include <retro_miscellaneous.h>
+
 #include "../connect/joypad_connection.h"
-#include "../input_autodetect.h"
+#include "../input_defines.h"
+#include "../../tasks/tasks_internal.h"
 #include "../input_hid_driver.h"
-#include "../../configuration.h"
 #include "../../verbosity.h"
 
 typedef struct apple_hid
@@ -71,9 +73,6 @@ static bool iohidmanager_hid_joypad_button(void *data,
    uint64_t buttons          = 
       iohidmanager_hid_joypad_get_buttons(data, port);
    iohidmanager_hid_t *hid   = (iohidmanager_hid_t*)data;
-
-   if (joykey == NO_BTN)
-      return false;
 
    /* Check hat. */
    if (GET_HAT_DIR(joykey))
@@ -246,7 +245,7 @@ static void iohidmanager_hid_device_remove(void *data,
 
    if (hid && adapter && (adapter->slot < MAX_USERS))
    {
-      input_config_autoconfigure_disconnect(adapter->slot, adapter->name);
+      input_autoconfigure_disconnect(adapter->slot, adapter->name);
 
       hid->buttons[adapter->slot] = 0;
       memset(hid->axes[adapter->slot], 0, sizeof(hid->axes));
@@ -299,16 +298,18 @@ static void iohidmanager_hid_device_add_autodetect(unsigned idx,
       const char *device_name, const char *driver_name,
       uint16_t dev_vid, uint16_t dev_pid)
 {
-   autoconfig_params_t params = {{0}};
+   autoconfig_params_t params;
 
-   params.idx = idx;
-   params.vid = dev_vid;
-   params.pid = dev_pid;
+   params.idx             = idx;
+   params.vid             = dev_vid;
+   params.pid             = dev_pid;
+   params.display_name[0] = '\0';
 
-   strlcpy(params.name, device_name, sizeof(params.name));
+   strlcpy(params.name,   device_name, sizeof(params.name));
    strlcpy(params.driver, driver_name, sizeof(params.driver));
 
-   input_config_autoconfigure_joypad(&params);
+   input_autoconfigure_connect(&params);
+
    RARCH_LOG("Port %d: %s.\n", idx, device_name);
 }
 
@@ -317,8 +318,6 @@ static void iohidmanager_hid_device_add(void *data, IOReturn result,
 {
    IOReturn ret;
    uint16_t dev_vid, dev_pid;
-
-   settings_t                     *settings = config_get_ptr();
    iohidmanager_hid_t                  *hid = (iohidmanager_hid_t*)
       hid_driver_get_data();
    struct iohidmanager_hid_adapter *adapter = (struct iohidmanager_hid_adapter*)
@@ -367,9 +366,6 @@ static void iohidmanager_hid_device_add(void *data, IOReturn result,
 
    if (string_is_empty(adapter->name))
       goto error;
-
-   strlcpy(settings->input.device_names[adapter->slot],
-         adapter->name, sizeof(settings->input.device_names[adapter->slot]));
 
    iohidmanager_hid_device_add_autodetect(adapter->slot,
          adapter->name, iohidmanager_hid.ident, dev_vid, dev_pid);

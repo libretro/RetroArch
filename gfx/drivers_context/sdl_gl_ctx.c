@@ -269,13 +269,15 @@ static void sdl_ctx_get_video_size(void *data,
 
 static void sdl_ctx_update_window_title(void *data)
 {
-   char buf[128]           = {0};
-   char buf_fps[128]       = {0};
+   char buf[128];
+   char buf_fps[128];
    settings_t *settings    = config_get_ptr();
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;
 
    if (!sdl)
       return;
+
+   buf[0] = buf_fps[0] = '\0';
 
    if (video_monitor_get_fps(buf, sizeof(buf),
             buf_fps, sizeof(buf_fps)))
@@ -382,7 +384,8 @@ static void sdl_ctx_swap_buffers(void *data)
 {
 #ifdef HAVE_SDL2
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;
-   SDL_GL_SwapWindow(sdl->g_win);
+   if (sdl)
+      SDL_GL_SwapWindow(sdl->g_win);
 #else
    SDL_GL_SwapBuffers();
 #endif

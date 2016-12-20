@@ -17,7 +17,7 @@
 #include <stdint.h>
 
 #include "../../configuration.h"
-#include "../input_autodetect.h"
+#include "../../tasks/tasks_internal.h"
 
 static uint64_t pad_state[MAX_PADS];
 static int16_t analog_state[MAX_PADS][2][2];
@@ -44,18 +44,18 @@ static const char *xdk_joypad_name(unsigned pad)
 
 static void xdk_joypad_autodetect_add(unsigned autoconf_pad)
 {
-   autoconfig_params_t params = {{0}};
+   autoconfig_params_t params;
    settings_t *settings       = config_get_ptr();
 
-   strlcpy(settings->input.device_names[autoconf_pad],
-         "XInput Controller",
-         sizeof(settings->input.device_names[autoconf_pad]));
-
    /* TODO - implement VID/PID? */
-   params.idx = autoconf_pad;
+   params.idx             = autoconf_pad;
+   params.vid             = 0;
+   params.pid             = 0;
+   params.display_name[0] = '\0';
+
    strlcpy(params.name, xdk_joypad_name(autoconf_pad), sizeof(params.name));
    strlcpy(params.driver, xdk_joypad.ident, sizeof(params.driver));
-   input_config_autoconfigure_joypad(&params);
+   input_autoconfigure_connect(&params);
 }
 
 static bool xdk_joypad_init(void *data)
@@ -162,10 +162,10 @@ static void xdk_joypad_poll(void)
          if(gamepads[port])
             XInputClose(gamepads[port]);
 
-         gamepads[port] = 0;
+         gamepads[port]  = 0;
          pad_state[port] = 0;
 
-         input_config_autoconfigure_disconnect(port, xdk_joypad.ident);
+         input_autoconfigure_disconnect(port, xdk_joypad.ident);
       }
 
       /* handle inserted devices. */

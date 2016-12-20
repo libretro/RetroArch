@@ -21,6 +21,7 @@
 #include <string.h>
 
 #include <file/file_path.h>
+#include <compat/strl.h>
 #include <string/stdstring.h>
 #include <lists/string_list.h>
 #include <lists/dir_list.h>

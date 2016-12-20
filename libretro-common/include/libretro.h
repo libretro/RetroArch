@@ -1691,7 +1691,8 @@ struct retro_hw_render_callback
     * be providing preallocated framebuffers. */
    retro_hw_get_current_framebuffer_t get_current_framebuffer;
 
-   /* Set by frontend. */
+   /* Set by frontend.
+    * Can return all relevant functions, including glClear on Windows. */
    retro_hw_get_proc_address_t get_proc_address;
 
    /* Set if render buffers should have depth component attached.

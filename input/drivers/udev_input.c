@@ -24,7 +24,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include <sys/poll.h>
 #include <sys/epoll.h>
 
 #include <libudev.h>
@@ -41,13 +40,16 @@
 #include <string/stdstring.h>
 
 #include "../drivers_keyboard/keyboard_event_udev.h"
+#include "../../gfx/video_driver.h"
 #include "../common/linux_common.h"
+#include "../common/udev_common.h"
+#include "../common/epoll_common.h"
 
 #include "../input_config.h"
 #include "../input_joypad_driver.h"
 #include "../input_keymaps.h"
+
 #include "../../configuration.h"
-#include "../../runloop.h"
 #include "../../verbosity.h"
 
 typedef struct udev_input udev_input_t;
@@ -98,7 +100,7 @@ struct udev_input
 };
 
 #ifdef HAVE_XKBCOMMON
-int  init_xkb(void);
+int init_xkb(int fd, size_t size);
 #endif
 
 static void udev_handle_touchpad(void *data,
@@ -226,27 +228,13 @@ static void udev_handle_mouse(void *data,
    }
 }
 
-static bool udev_input_hotplug_available(udev_input_t *udev)
-{
-   struct pollfd fds = {0};
-
-   if (!udev || !udev->monitor)
-      return false;
-
-   fds.fd     = udev_monitor_get_fd(udev->monitor);
-   fds.events = POLLIN;
-
-   return (poll(&fds, 1, 0) == 1) && (fds.revents & POLLIN);
-}
-
-static bool add_device(udev_input_t *udev,
+static bool udev_input_add_device(udev_input_t *udev,
       const char *devnode, device_handle_cb cb)
 {
    int fd;
    udev_input_device_t **tmp;
    udev_input_device_t *device = NULL;
    struct stat st              = {0};
-   struct epoll_event event    = {0};
 
    if (stat(devnode, &st) < 0)
       return false;
@@ -280,13 +268,7 @@ static bool add_device(udev_input_t *udev,
    tmp[udev->num_devices++] = device;
    udev->devices            = tmp;
 
-   event.events             = EPOLLIN;
-   event.data.ptr           = device;
-
-   /* Shouldn't happen, but just check it. */
-   if (epoll_ctl(udev->epfd, EPOLL_CTL_ADD, fd, &event) < 0)
-      RARCH_ERR("Failed to add FD (%d) to epoll list (%s).\n",
-            fd, strerror(errno));
+   epoll_add(&udev->epfd, fd, device);
 
    return true;
 
@@ -357,7 +339,7 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
          cb = udev_handle_mouse;
 
       RARCH_LOG("[udev]: Hotplug add %s: %s.\n", devtype, devnode);
-      add_device(udev, devnode, cb);
+      udev_input_add_device(udev, devnode, cb);
    }
    else if (string_is_equal(action, "remove"))
    {
@@ -382,10 +364,10 @@ static void udev_input_poll(void *data)
    udev->mouse_wu  = udev->mouse_wd  = 0;
    udev->mouse_whu = udev->mouse_whd = 0;
 
-   while (udev_input_hotplug_available(udev))
+   while (udev->monitor && udev_hotplug_available(udev->monitor))
       udev_input_handle_hotplug(udev);
 
-   ret = epoll_wait(udev->epfd, events, ARRAY_SIZE(events), 0);
+   ret = epoll_waiting(&udev->epfd, events, ARRAY_SIZE(events), 0);
 
    for (i = 0; i < ret; i++)
    {
@@ -478,12 +460,12 @@ static int16_t udev_analog_pressed(const struct retro_keybind *binds, unsigned i
 static int16_t udev_pointer_state(udev_input_t *udev,
       unsigned idx, unsigned id, bool screen)
 {
-   bool inside   = false;
+   bool inside              = false;
+   struct video_viewport vp = {0};
    int16_t res_x = 0, res_y = 0, res_screen_x = 0, res_screen_y = 0;
-   bool valid    = input_translate_coord_viewport(udev->mouse_x, udev->mouse_y,
-         &res_x, &res_y, &res_screen_x, &res_screen_y);
 
-   if (!valid)
+   if (!(video_driver_translate_coord_viewport_wrap(&vp, udev->mouse_x, udev->mouse_y,
+         &res_x, &res_y, &res_screen_x, &res_screen_y)))
       return 0;
 
    if (screen)
@@ -516,6 +498,9 @@ static int16_t udev_input_state(void *data, const struct retro_keybind **binds,
    int16_t ret;
    udev_input_t *udev = (udev_input_t*)data;
 
+   if (!udev)
+      return 0;
+
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
@@ -536,11 +521,10 @@ static int16_t udev_input_state(void *data, const struct retro_keybind **binds,
 
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
-         if (idx != 0)
-            return 0;
-         return udev_pointer_state(udev, idx, id,
-               device == RARCH_DEVICE_POINTER_SCREEN);
-
+         if (idx == 0)
+            return udev_pointer_state(udev, idx, id,
+                  device == RARCH_DEVICE_POINTER_SCREEN);
+         break;
       case RETRO_DEVICE_LIGHTGUN:
          return udev_lightgun_state(udev, id);
    }
@@ -564,8 +548,7 @@ static void udev_input_free(void *data)
    if (udev->joypad)
       udev->joypad->destroy();
 
-   if (udev->epfd >= 0)
-      close(udev->epfd);
+   epoll_free(&udev->epfd);
 
    for (i = 0; i < udev->num_devices; i++)
    {
@@ -611,7 +594,7 @@ static bool open_devices(udev_input_t *udev, const char *type, device_handle_cb 
          int fd = open(devnode, O_RDONLY | O_NONBLOCK);
 
          RARCH_LOG("[udev] Adding device %s as type %s.\n", devnode, type);
-         if (!add_device(udev, devnode, cb))
+         if (!udev_input_add_device(udev, devnode, cb))
             RARCH_ERR("[udev] Failed to open device: %s (%s).\n", devnode, strerror(errno));
          close(fd);
       }
@@ -646,12 +629,11 @@ static void *udev_input_init(void)
    }
 
 #ifdef HAVE_XKBCOMMON
-   if (init_xkb() == -1)
+   if (init_xkb(-1, 0) == -1)
       goto error;
 #endif
 
-   udev->epfd = epoll_create(32);
-   if (udev->epfd < 0)
+   if (!epoll_new(&udev->epfd))
    {
       RARCH_ERR("Failed to create epoll FD.\n");
       goto error;

@@ -30,7 +30,7 @@ namespace glm{
 namespace detail
 {
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER GLM_CONSTEXPR length_t tmat4x4<T, P>::length() const
+	inline length_t tmat4x4<T, P>::length() const
 	{
 		return 4;
 	}
@@ -39,7 +39,7 @@ namespace detail
 	// Accesses
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER typename tmat4x4<T, P>::col_type &
+	inline typename tmat4x4<T, P>::col_type &
 	tmat4x4<T, P>::operator[]
 	(
 		length_t i
@@ -50,7 +50,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER typename tmat4x4<T, P>::col_type const &
+	inline typename tmat4x4<T, P>::col_type const &
 	tmat4x4<T, P>::operator[]
 	(
 		length_t i
@@ -64,7 +64,7 @@ namespace detail
 	// Constructors
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P>::tmat4x4()
+	inline tmat4x4<T, P>::tmat4x4()
 	{
 		T Zero(0);
 		T One(1);
@@ -75,7 +75,7 @@ namespace detail
 	}
 	
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P>::tmat4x4
+	inline tmat4x4<T, P>::tmat4x4
 	(
 		tmat4x4<T, P> const & m
 	)
@@ -88,7 +88,7 @@ namespace detail
 
 	template <typename T, precision P>
 	template <precision Q>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P>::tmat4x4
+	inline tmat4x4<T, P>::tmat4x4
 	(
 		tmat4x4<T, Q> const & m
 	)
@@ -100,14 +100,14 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P>::tmat4x4
+	inline tmat4x4<T, P>::tmat4x4
 	(
 		ctor
 	)
 	{}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P>::tmat4x4
+	inline tmat4x4<T, P>::tmat4x4
 	(
 		T const & s
 	)
@@ -120,7 +120,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P>::tmat4x4
+	inline tmat4x4<T, P>::tmat4x4
 	(
 		T const & x0, T const & y0, T const & z0, T const & w0,
 		T const & x1, T const & y1, T const & z1, T const & w1,
@@ -135,7 +135,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P>::tmat4x4
+	inline tmat4x4<T, P>::tmat4x4
 	(
 		col_type const & v0,
 		col_type const & v1,
@@ -151,7 +151,7 @@ namespace detail
 
 	template <typename T, precision P>
 	template <typename U, precision Q>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P>::tmat4x4
+	inline tmat4x4<T, P>::tmat4x4
 	(
 		tmat4x4<U, Q> const & m
 	)
@@ -170,7 +170,7 @@ namespace detail
 		typename X2, typename Y2, typename Z2, typename W2,
 		typename X3, typename Y3, typename Z3, typename W3,
 		typename X4, typename Y4, typename Z4, typename W4>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P>::tmat4x4
+	inline tmat4x4<T, P>::tmat4x4
 	(
 		X1 const & x1, Y1 const & y1, Z1 const & z1, W1 const & w1,
 		X2 const & x2, Y2 const & y2, Z2 const & z2, W2 const & w2,
@@ -178,26 +178,6 @@ namespace detail
 		X4 const & x4, Y4 const & y4, Z4 const & z4, W4 const & w4
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<X1>::is_iec559 || std::numeric_limits<X1>::is_integer, "*mat4x4 constructor only takes float and integer types, 1st parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<Y1>::is_iec559 || std::numeric_limits<Y1>::is_integer, "*mat4x4 constructor only takes float and integer types, 2nd parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<Z1>::is_iec559 || std::numeric_limits<Z1>::is_integer, "*mat4x4 constructor only takes float and integer types, 3rd parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<W1>::is_iec559 || std::numeric_limits<W1>::is_integer, "*mat4x4 constructor only takes float and integer types, 4th parameter type invalid.");
-
-		GLM_STATIC_ASSERT(std::numeric_limits<X2>::is_iec559 || std::numeric_limits<X2>::is_integer, "*mat4x4 constructor only takes float and integer types, 5th parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<Y2>::is_iec559 || std::numeric_limits<Y2>::is_integer, "*mat4x4 constructor only takes float and integer types, 6th parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<Z2>::is_iec559 || std::numeric_limits<Z2>::is_integer, "*mat4x4 constructor only takes float and integer types, 7th parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<W2>::is_iec559 || std::numeric_limits<W2>::is_integer, "*mat4x4 constructor only takes float and integer types, 8th parameter type invalid.");
-
-		GLM_STATIC_ASSERT(std::numeric_limits<X3>::is_iec559 || std::numeric_limits<X3>::is_integer, "*mat4x4 constructor only takes float and integer types, 9th parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<Y3>::is_iec559 || std::numeric_limits<Y3>::is_integer, "*mat4x4 constructor only takes float and integer types, 10th parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<Z3>::is_iec559 || std::numeric_limits<Z3>::is_integer, "*mat4x4 constructor only takes float and integer types, 11th parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<W3>::is_iec559 || std::numeric_limits<W3>::is_integer, "*mat4x4 constructor only takes float and integer types, 12th parameter type invalid.");
-
-		GLM_STATIC_ASSERT(std::numeric_limits<X4>::is_iec559 || std::numeric_limits<X4>::is_integer, "*mat4x4 constructor only takes float and integer types, 13th parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<Y4>::is_iec559 || std::numeric_limits<Y4>::is_integer, "*mat4x4 constructor only takes float and integer types, 14th parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<Z4>::is_iec559 || std::numeric_limits<Z4>::is_integer, "*mat4x4 constructor only takes float and integer types, 15th parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<W4>::is_iec559 || std::numeric_limits<W4>::is_integer, "*mat4x4 constructor only takes float and integer types, 16th parameter type invalid.");
-
 		this->value[0] = col_type(static_cast<T>(x1), value_type(y1), value_type(z1), value_type(w1));
 		this->value[1] = col_type(static_cast<T>(x2), value_type(y2), value_type(z2), value_type(w2));
 		this->value[2] = col_type(static_cast<T>(x3), value_type(y3), value_type(z3), value_type(w3));
@@ -206,7 +186,7 @@ namespace detail
 	
 	template <typename T, precision P>
 	template <typename V1, typename V2, typename V3, typename V4>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P>::tmat4x4
+	inline tmat4x4<T, P>::tmat4x4
 	(
 		tvec4<V1, P> const & v1,
 		tvec4<V2, P> const & v2,
@@ -214,11 +194,6 @@ namespace detail
 		tvec4<V4, P> const & v4
 	)		
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<V1>::is_iec559 || std::numeric_limits<V1>::is_integer, "*mat4x4 constructor only takes float and integer types, 1st parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<V2>::is_iec559 || std::numeric_limits<V2>::is_integer, "*mat4x4 constructor only takes float and integer types, 2nd parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<V3>::is_iec559 || std::numeric_limits<V3>::is_integer, "*mat4x4 constructor only takes float and integer types, 3rd parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<V4>::is_iec559 || std::numeric_limits<V4>::is_integer, "*mat4x4 constructor only takes float and integer types, 4th parameter type invalid.");
-
 		this->value[0] = col_type(v1);
 		this->value[1] = col_type(v2);
 		this->value[2] = col_type(v3);
@@ -228,7 +203,7 @@ namespace detail
 	//////////////////////////////////////
 	// Matrix convertion constructors
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P>::tmat4x4
+	inline tmat4x4<T, P>::tmat4x4
 	(
 		tmat2x2<T, P> const & m
 	)
@@ -240,7 +215,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P>::tmat4x4
+	inline tmat4x4<T, P>::tmat4x4
 	(
 		tmat3x3<T, P> const & m
 	)
@@ -252,7 +227,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P>::tmat4x4
+	inline tmat4x4<T, P>::tmat4x4
 	(
 		tmat2x3<T, P> const & m
 	)
@@ -264,7 +239,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P>::tmat4x4
+	inline tmat4x4<T, P>::tmat4x4
 	(
 		tmat3x2<T, P> const & m
 	)
@@ -276,7 +251,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P>::tmat4x4
+	inline tmat4x4<T, P>::tmat4x4
 	(
 		tmat2x4<T, P> const & m
 	)
@@ -288,7 +263,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P>::tmat4x4
+	inline tmat4x4<T, P>::tmat4x4
 	(
 		tmat4x2<T, P> const & m
 	)
@@ -300,7 +275,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P>::tmat4x4
+	inline tmat4x4<T, P>::tmat4x4
 	(
 		tmat3x4<T, P> const & m
 	)
@@ -312,7 +287,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P>::tmat4x4
+	inline tmat4x4<T, P>::tmat4x4
 	(
 		tmat4x3<T, P> const & m
 	)
@@ -327,7 +302,7 @@ namespace detail
 	// Operators
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P>& tmat4x4<T, P>::operator=
+	inline tmat4x4<T, P>& tmat4x4<T, P>::operator=
 	(
 		tmat4x4<T, P> const & m
 	)
@@ -343,7 +318,7 @@ namespace detail
 
 	template <typename T, precision P> 
 	template <typename U> 
-	GLM_FUNC_QUALIFIER tmat4x4<T, P>& tmat4x4<T, P>::operator=
+	inline tmat4x4<T, P>& tmat4x4<T, P>::operator=
 	(
 		tmat4x4<U, P> const & m
 	)
@@ -359,7 +334,7 @@ namespace detail
 
 	template <typename T, precision P>
 	template <typename U>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P>& tmat4x4<T, P>::operator+= (U s)
+	inline tmat4x4<T, P>& tmat4x4<T, P>::operator+= (U s)
 	{
 		this->value[0] += s;
 		this->value[1] += s;
@@ -370,7 +345,7 @@ namespace detail
 
 	template <typename T, precision P>
 	template <typename U>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P>& tmat4x4<T, P>::operator+= (tmat4x4<U, P> const & m)
+	inline tmat4x4<T, P>& tmat4x4<T, P>::operator+= (tmat4x4<U, P> const & m)
 	{
 		this->value[0] += m[0];
 		this->value[1] += m[1];
@@ -381,7 +356,7 @@ namespace detail
 
 	template <typename T, precision P>
 	template <typename U>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P> & tmat4x4<T, P>::operator-= (U s)
+	inline tmat4x4<T, P> & tmat4x4<T, P>::operator-= (U s)
 	{
 		this->value[0] -= s;
 		this->value[1] -= s;
@@ -392,7 +367,7 @@ namespace detail
 
 	template <typename T, precision P>
 	template <typename U>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P> & tmat4x4<T, P>::operator-= (tmat4x4<U, P> const & m)
+	inline tmat4x4<T, P> & tmat4x4<T, P>::operator-= (tmat4x4<U, P> const & m)
 	{
 		this->value[0] -= m[0];
 		this->value[1] -= m[1];
@@ -403,7 +378,7 @@ namespace detail
 
 	template <typename T, precision P>
 	template <typename U>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P> & tmat4x4<T, P>::operator*= (U s)
+	inline tmat4x4<T, P> & tmat4x4<T, P>::operator*= (U s)
 	{
 		this->value[0] *= s;
 		this->value[1] *= s;
@@ -414,14 +389,14 @@ namespace detail
 
 	template <typename T, precision P>
 	template <typename U>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P> & tmat4x4<T, P>::operator*= (tmat4x4<U, P> const & m)
+	inline tmat4x4<T, P> & tmat4x4<T, P>::operator*= (tmat4x4<U, P> const & m)
 	{
 		return (*this = *this * m);
 	}
 
 	template <typename T, precision P>
 	template <typename U>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P> & tmat4x4<T, P>::operator/= (U s)
+	inline tmat4x4<T, P> & tmat4x4<T, P>::operator/= (U s)
 	{
 		this->value[0] /= s;
 		this->value[1] /= s;
@@ -432,13 +407,13 @@ namespace detail
 
 	template <typename T, precision P>
 	template <typename U>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P> & tmat4x4<T, P>::operator/= (tmat4x4<U, P> const & m)
+	inline tmat4x4<T, P> & tmat4x4<T, P>::operator/= (tmat4x4<U, P> const & m)
 	{
 		return (*this = *this * detail::compute_inverse<detail::tmat4x4, T, P>::call(m));
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P> & tmat4x4<T, P>::operator++ ()
+	inline tmat4x4<T, P> & tmat4x4<T, P>::operator++ ()
 	{
 		++this->value[0];
 		++this->value[1];
@@ -448,7 +423,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P> & tmat4x4<T, P>::operator-- ()
+	inline tmat4x4<T, P> & tmat4x4<T, P>::operator-- ()
 	{
 		--this->value[0];
 		--this->value[1];
@@ -458,7 +433,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P> tmat4x4<T, P>::operator++(int)
+	inline tmat4x4<T, P> tmat4x4<T, P>::operator++(int)
 	{
 		tmat4x4<T, P> Result(*this);
 		++*this;
@@ -466,7 +441,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P> tmat4x4<T, P>::operator--(int)
+	inline tmat4x4<T, P> tmat4x4<T, P>::operator--(int)
 	{
 		tmat4x4<T, P> Result(*this);
 		--*this;
@@ -536,7 +511,7 @@ namespace detail
 
 	// Binary operators
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P> operator+
+	inline tmat4x4<T, P> operator+
 	(
 		tmat4x4<T, P> const & m,
 		T const & s
@@ -550,7 +525,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P> operator+
+	inline tmat4x4<T, P> operator+
 	(
 		T const & s,
 		tmat4x4<T, P> const & m
@@ -564,7 +539,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P> operator+
+	inline tmat4x4<T, P> operator+
 	(
 		tmat4x4<T, P> const & m1,
 		tmat4x4<T, P> const & m2
@@ -578,7 +553,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P> operator-
+	inline tmat4x4<T, P> operator-
 	(
 		tmat4x4<T, P> const & m,
 		T const & s
@@ -592,7 +567,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P> operator-
+	inline tmat4x4<T, P> operator-
 	(
 		T const & s,
 		tmat4x4<T, P> const & m
@@ -606,7 +581,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P> operator-
+	inline tmat4x4<T, P> operator-
 	(
 		tmat4x4<T, P> const & m1,
 		tmat4x4<T, P> const & m2
@@ -620,7 +595,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P> operator*
+	inline tmat4x4<T, P> operator*
 	(
 		tmat4x4<T, P> const & m,
 		T const  & s
@@ -634,7 +609,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P> operator*
+	inline tmat4x4<T, P> operator*
 	(
 		T const & s,
 		tmat4x4<T, P> const & m
@@ -648,7 +623,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER typename tmat4x4<T, P>::col_type operator*
+	inline typename tmat4x4<T, P>::col_type operator*
 	(
 		tmat4x4<T, P> const & m,
 		typename tmat4x4<T, P>::row_type const & v
@@ -696,7 +671,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER typename tmat4x4<T, P>::row_type operator*
+	inline typename tmat4x4<T, P>::row_type operator*
 	(
 		typename tmat4x4<T, P>::col_type const & v,
 		tmat4x4<T, P> const & m
@@ -710,7 +685,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat2x4<T, P> operator*
+	inline tmat2x4<T, P> operator*
 	(
 		tmat4x4<T, P> const & m1,
 		tmat2x4<T, P> const & m2
@@ -728,7 +703,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat3x4<T, P> operator*
+	inline tmat3x4<T, P> operator*
 	(
 		tmat4x4<T, P> const & m1,
 		tmat3x4<T, P> const & m2
@@ -750,7 +725,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P> operator*
+	inline tmat4x4<T, P> operator*
 	(
 		tmat4x4<T, P> const & m1,
 		tmat4x4<T, P> const & m2
@@ -775,7 +750,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P> operator/
+	inline tmat4x4<T, P> operator/
 	(
 		tmat4x4<T, P> const & m,
 		T const & s
@@ -789,7 +764,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P> operator/
+	inline tmat4x4<T, P> operator/
 	(
 		T const & s,
 		tmat4x4<T, P> const & m
@@ -803,7 +778,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER typename tmat4x4<T, P>::col_type operator/
+	inline typename tmat4x4<T, P>::col_type operator/
 	(
 		tmat4x4<T, P> const & m,
 		typename tmat4x4<T, P>::row_type const & v
@@ -813,7 +788,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER typename tmat4x4<T, P>::row_type operator/
+	inline typename tmat4x4<T, P>::row_type operator/
 	(
 		typename tmat4x4<T, P>::col_type const & v,
 		tmat4x4<T, P> const & m
@@ -823,7 +798,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P> operator/
+	inline tmat4x4<T, P> operator/
 	(
 		tmat4x4<T, P> const & m1,
 		tmat4x4<T, P> const & m2
@@ -835,7 +810,7 @@ namespace detail
 
 	// Unary constant operators
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P> const operator-
+	inline tmat4x4<T, P> const operator-
 	(
 		tmat4x4<T, P> const & m
 	)
@@ -848,7 +823,7 @@ namespace detail
 	}
 
 	template <typename T, precision P> 
-	GLM_FUNC_QUALIFIER tmat4x4<T, P> const operator++
+	inline tmat4x4<T, P> const operator++
 	(
 		tmat4x4<T, P> const & m,
 		int
@@ -862,7 +837,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER tmat4x4<T, P> const operator--
+	inline tmat4x4<T, P> const operator--
 	(
 		tmat4x4<T, P> const & m,
 		int
@@ -879,7 +854,7 @@ namespace detail
 	// Boolean operators
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER bool operator==
+	inline bool operator==
 	(
 		tmat4x4<T, P> const & m1,
 		tmat4x4<T, P> const & m2
@@ -889,7 +864,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER bool operator!=
+	inline bool operator!=
 	(
 		tmat4x4<T, P> const & m1,
 		tmat4x4<T, P> const & m2

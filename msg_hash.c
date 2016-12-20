@@ -189,6 +189,7 @@ uint32_t msg_hash_calculate(const char *s)
 #define MENU_VALUE_SHA1                                                        0x7c9de632U
 #define MENU_VALUE_CRC                                                         0x0b88671dU
 #define MENU_VALUE_MORE                                                        0x0b877cafU
+#define MENU_VALUE_CFILE                                                       0xac3ec4f9U
 #define MENU_VALUE_ON                                                          0x005974c2U
 #define MENU_VALUE_OFF                                                         0x0b880c40U
 #define MENU_VALUE_COMP                                                        0x6a166ba5U
@@ -232,6 +233,8 @@ enum msg_file_type msg_hash_to_file_type(uint32_t hash)
       case HASH_EXTENSION_ZIP_UPP:
       case FILE_HASH_APK:
          return FILE_TYPE_COMPRESSED;
+      case MENU_VALUE_CFILE:
+         return FILE_TYPE_IN_CARCHIVE;
       case MENU_VALUE_MORE:
          return FILE_TYPE_MORE;
       case MENU_VALUE_CORE:

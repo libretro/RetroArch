@@ -22,6 +22,7 @@
 #include <xgraphics.h>
 
 #include <file/file_path.h>
+#include <compat/strl.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -35,12 +36,15 @@
 
 #include "../frontend_driver.h"
 #include "../../defaults.h"
+#include "../../file_path_special.h"
+#include "../../paths.h"
 #ifndef IS_SALAMANDER
 #include "../../retroarch.h"
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
 #endif
 #endif
+#include "../../verbosity.h"
 
 #ifdef _XBOX360
 
@@ -1271,7 +1275,7 @@ static void frontend_xdk_exec(const char *path, bool should_load_game)
       snprintf((char*)ptr.Data, sizeof(ptr.Data), "%s", path_get(RARCH_PATH_CONTENT));
 
    if (!string_is_empty(path))
-      XLaunchNewImage(path, !string_is_empty(ptr.Data) ? &ptr : NULL);
+      XLaunchNewImage(path, !string_is_empty((const char*)ptr.Data) ? &ptr : NULL);
 #elif defined(_XBOX360)
    char game_path[1024] = {0};
 
@@ -1369,18 +1373,36 @@ static int frontend_xdk_parse_drive_list(void *data)
 
 #if defined(_XBOX1)
    menu_entries_append_enum(list,
-         "C:", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         "C:",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(list,
-         "D:", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         "D:",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(list,
-         "E:", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         "E:",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(list,
-         "F:", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         "F:",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(list,
-         "G:", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         "G:",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
 #elif defined(_XBOX360)
    menu_entries_append_enum(list,
-         "game:", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         "game:",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         MENU_SETTING_ACTION, 0, 0);
 #endif
 #endif
 

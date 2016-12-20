@@ -11,13 +11,13 @@ namespace glm{
 
 // Min comparison between 2 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER U associatedMin(T x, U a, T y, U b)
+inline U associatedMin(T x, U a, T y, U b)
 {
 	return x < y ? a : b;
 }
 
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec2<U, P> associatedMin
+inline detail::tvec2<U, P> associatedMin
 (
 	const detail::tvec2<T, P>& x, const detail::tvec2<U, P>& a,
 	const detail::tvec2<T, P>& y, const detail::tvec2<U, P>& b
@@ -32,7 +32,7 @@ GLM_FUNC_QUALIFIER detail::tvec2<U, P> associatedMin
 }
 
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec3<U, P> associatedMin
+inline detail::tvec3<U, P> associatedMin
 (
 	const detail::tvec3<T, P>& x, const detail::tvec3<U, P>& a,
 	const detail::tvec3<T, P>& y, const detail::tvec3<U, P>& b
@@ -45,7 +45,7 @@ GLM_FUNC_QUALIFIER detail::tvec3<U, P> associatedMin
 }
 
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec4<U, P> associatedMin
+inline detail::tvec4<U, P> associatedMin
 (
 	const detail::tvec4<T, P>& x, const detail::tvec4<U, P>& a,
 	const detail::tvec4<T, P>& y, const detail::tvec4<U, P>& b
@@ -58,7 +58,7 @@ GLM_FUNC_QUALIFIER detail::tvec4<U, P> associatedMin
 }
 
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec2<U, P> associatedMin
+inline detail::tvec2<U, P> associatedMin
 (
 	T x, const detail::tvec2<U, P>& a,
 	T y, const detail::tvec2<U, P>& b
@@ -71,7 +71,7 @@ GLM_FUNC_QUALIFIER detail::tvec2<U, P> associatedMin
 }
 
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec3<U, P> associatedMin
+inline detail::tvec3<U, P> associatedMin
 (
 	T x, const detail::tvec3<U, P>& a,
 	T y, const detail::tvec3<U, P>& b
@@ -84,7 +84,7 @@ GLM_FUNC_QUALIFIER detail::tvec3<U, P> associatedMin
 }
 
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec4<U, P> associatedMin
+inline detail::tvec4<U, P> associatedMin
 (
 	T x, const detail::tvec4<U, P>& a,
 	T y, const detail::tvec4<U, P>& b
@@ -97,7 +97,7 @@ GLM_FUNC_QUALIFIER detail::tvec4<U, P> associatedMin
 }
 
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec2<U, P> associatedMin
+inline detail::tvec2<U, P> associatedMin
 (
 	detail::tvec2<T, P> const & x, U a,
 	detail::tvec2<T, P> const & y, U b
@@ -110,7 +110,7 @@ GLM_FUNC_QUALIFIER detail::tvec2<U, P> associatedMin
 }
 
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec3<U, P> associatedMin
+inline detail::tvec3<U, P> associatedMin
 (
 	const detail::tvec3<T, P>& x, U a,
 	const detail::tvec3<T, P>& y, U b
@@ -123,7 +123,7 @@ GLM_FUNC_QUALIFIER detail::tvec3<U, P> associatedMin
 }
 
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec4<U, P> associatedMin
+inline detail::tvec4<U, P> associatedMin
 (
 	const detail::tvec4<T, P>& x, U a,
 	const detail::tvec4<T, P>& y, U b
@@ -137,7 +137,7 @@ GLM_FUNC_QUALIFIER detail::tvec4<U, P> associatedMin
 
 // Min comparison between 3 variables
 template<typename T, typename U>
-GLM_FUNC_QUALIFIER U associatedMin
+inline U associatedMin
 (
 	T x, U a,
 	T y, U b,
@@ -149,7 +149,7 @@ GLM_FUNC_QUALIFIER U associatedMin
 }
 
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec2<U, P> associatedMin
+inline detail::tvec2<U, P> associatedMin
 (
 	const detail::tvec2<T, P>& x, const detail::tvec2<U, P>& a,
 	const detail::tvec2<T, P>& y, const detail::tvec2<U, P>& b,
@@ -163,7 +163,7 @@ GLM_FUNC_QUALIFIER detail::tvec2<U, P> associatedMin
 }
 
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec3<U, P> associatedMin
+inline detail::tvec3<U, P> associatedMin
 (
 	const detail::tvec3<T, P>& x, const detail::tvec3<U, P>& a,
 	const detail::tvec3<T, P>& y, const detail::tvec3<U, P>& b,
@@ -177,7 +177,7 @@ GLM_FUNC_QUALIFIER detail::tvec3<U, P> associatedMin
 }
 
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec4<U, P> associatedMin
+inline detail::tvec4<U, P> associatedMin
 (
 	const detail::tvec4<T, P>& x, const detail::tvec4<U, P>& a,
 	const detail::tvec4<T, P>& y, const detail::tvec4<U, P>& b,
@@ -192,7 +192,7 @@ GLM_FUNC_QUALIFIER detail::tvec4<U, P> associatedMin
 
 // Min comparison between 4 variables
 template<typename T, typename U>
-GLM_FUNC_QUALIFIER U associatedMin
+inline U associatedMin
 (
 	T x, U a,
 	T y, U b,
@@ -210,7 +210,7 @@ GLM_FUNC_QUALIFIER U associatedMin
 
 // Min comparison between 4 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec2<U, P> associatedMin
+inline detail::tvec2<U, P> associatedMin
 (
 	const detail::tvec2<T, P>& x, const detail::tvec2<U, P>& a,
 	const detail::tvec2<T, P>& y, const detail::tvec2<U, P>& b,
@@ -232,7 +232,7 @@ GLM_FUNC_QUALIFIER detail::tvec2<U, P> associatedMin
 
 // Min comparison between 4 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec3<U, P> associatedMin
+inline detail::tvec3<U, P> associatedMin
 (
 	const detail::tvec3<T, P>& x, const detail::tvec3<U, P>& a,
 	const detail::tvec3<T, P>& y, const detail::tvec3<U, P>& b,
@@ -254,7 +254,7 @@ GLM_FUNC_QUALIFIER detail::tvec3<U, P> associatedMin
 
 // Min comparison between 4 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec4<U, P> associatedMin
+inline detail::tvec4<U, P> associatedMin
 (
 	const detail::tvec4<T, P>& x, const detail::tvec4<U, P>& a,
 	const detail::tvec4<T, P>& y, const detail::tvec4<U, P>& b,
@@ -276,7 +276,7 @@ GLM_FUNC_QUALIFIER detail::tvec4<U, P> associatedMin
 
 // Min comparison between 4 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec2<U, P> associatedMin
+inline detail::tvec2<U, P> associatedMin
 (
 	T x, const detail::tvec2<U, P>& a,
 	T y, const detail::tvec2<U, P>& b,
@@ -299,7 +299,7 @@ GLM_FUNC_QUALIFIER detail::tvec2<U, P> associatedMin
 
 // Min comparison between 4 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec3<U, P> associatedMin
+inline detail::tvec3<U, P> associatedMin
 (
 	T x, const detail::tvec3<U, P>& a,
 	T y, const detail::tvec3<U, P>& b,
@@ -322,7 +322,7 @@ GLM_FUNC_QUALIFIER detail::tvec3<U, P> associatedMin
 
 // Min comparison between 4 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec4<U, P> associatedMin
+inline detail::tvec4<U, P> associatedMin
 (
 	T x, const detail::tvec4<U, P>& a,
 	T y, const detail::tvec4<U, P>& b,
@@ -345,7 +345,7 @@ GLM_FUNC_QUALIFIER detail::tvec4<U, P> associatedMin
 
 // Min comparison between 4 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec2<U, P> associatedMin
+inline detail::tvec2<U, P> associatedMin
 (
 	const detail::tvec2<T, P>& x, U a,
 	const detail::tvec2<T, P>& y, U b,
@@ -367,7 +367,7 @@ GLM_FUNC_QUALIFIER detail::tvec2<U, P> associatedMin
 
 // Min comparison between 4 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec3<U, P> associatedMin
+inline detail::tvec3<U, P> associatedMin
 (
 	const detail::tvec3<T, P>& x, U a,
 	const detail::tvec3<T, P>& y, U b,
@@ -389,7 +389,7 @@ GLM_FUNC_QUALIFIER detail::tvec3<U, P> associatedMin
 
 // Min comparison between 4 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec4<U, P> associatedMin
+inline detail::tvec4<U, P> associatedMin
 (
 	const detail::tvec4<T, P>& x, U a,
 	const detail::tvec4<T, P>& y, U b,
@@ -411,14 +411,14 @@ GLM_FUNC_QUALIFIER detail::tvec4<U, P> associatedMin
 
 // Max comparison between 2 variables
 template<typename T, typename U>
-GLM_FUNC_QUALIFIER U associatedMax(T x, U a, T y, U b)
+inline U associatedMax(T x, U a, T y, U b)
 {
 	return x > y ? a : b;
 }
 
 // Max comparison between 2 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec2<U, P> associatedMax
+inline detail::tvec2<U, P> associatedMax
 (
 	const detail::tvec2<T, P>& x, const detail::tvec2<U, P>& a,
 	const detail::tvec2<T, P>& y, const detail::tvec2<U, P>& b
@@ -432,7 +432,7 @@ GLM_FUNC_QUALIFIER detail::tvec2<U, P> associatedMax
 
 // Max comparison between 2 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec3<U, P> associatedMax
+inline detail::tvec3<U, P> associatedMax
 (
 	const detail::tvec3<T, P>& x, const detail::tvec3<U, P>& a,
 	const detail::tvec3<T, P>& y, const detail::tvec3<U, P>& b
@@ -446,7 +446,7 @@ GLM_FUNC_QUALIFIER detail::tvec3<U, P> associatedMax
 
 // Max comparison between 2 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec4<U, P> associatedMax
+inline detail::tvec4<U, P> associatedMax
 (
 	const detail::tvec4<T, P>& x, const detail::tvec4<U, P>& a,
 	const detail::tvec4<T, P>& y, const detail::tvec4<U, P>& b
@@ -460,7 +460,7 @@ GLM_FUNC_QUALIFIER detail::tvec4<U, P> associatedMax
 
 // Max comparison between 2 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec2<U, P> associatedMax
+inline detail::tvec2<U, P> associatedMax
 (
 	T x, const detail::tvec2<U, P>& a,
 	T y, const detail::tvec2<U, P>& b
@@ -474,7 +474,7 @@ GLM_FUNC_QUALIFIER detail::tvec2<U, P> associatedMax
 
 // Max comparison between 2 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec3<U, P> associatedMax
+inline detail::tvec3<U, P> associatedMax
 (
 	T x, const detail::tvec3<U, P>& a,
 	T y, const detail::tvec3<U, P>& b
@@ -488,7 +488,7 @@ GLM_FUNC_QUALIFIER detail::tvec3<U, P> associatedMax
 
 // Max comparison between 2 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec4<U, P> associatedMax
+inline detail::tvec4<U, P> associatedMax
 (
 	T x, const detail::tvec4<U, P>& a,
 	T y, const detail::tvec4<U, P>& b
@@ -502,7 +502,7 @@ GLM_FUNC_QUALIFIER detail::tvec4<U, P> associatedMax
 
 // Max comparison between 2 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec2<U, P> associatedMax
+inline detail::tvec2<U, P> associatedMax
 (
 	const detail::tvec2<T, P>& x, U a,
 	const detail::tvec2<T, P>& y, U b
@@ -516,7 +516,7 @@ GLM_FUNC_QUALIFIER detail::tvec2<U, P> associatedMax
 
 // Max comparison between 2 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec3<U, P> associatedMax
+inline detail::tvec3<U, P> associatedMax
 (
 	const detail::tvec3<T, P>& x, U a,
 	const detail::tvec3<T, P>& y, U b
@@ -530,7 +530,7 @@ GLM_FUNC_QUALIFIER detail::tvec3<U, P> associatedMax
 
 // Max comparison between 2 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec4<U, P> associatedMax
+inline detail::tvec4<U, P> associatedMax
 (
 	const detail::tvec4<T, P>& x, U a,
 	const detail::tvec4<T, P>& y, U b
@@ -544,7 +544,7 @@ GLM_FUNC_QUALIFIER detail::tvec4<U, P> associatedMax
 
 // Max comparison between 3 variables
 template<typename T, typename U>
-GLM_FUNC_QUALIFIER U associatedMax
+inline U associatedMax
 (
 	T x, U a,
 	T y, U b,
@@ -557,7 +557,7 @@ GLM_FUNC_QUALIFIER U associatedMax
 
 // Max comparison between 3 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec2<U, P> associatedMax
+inline detail::tvec2<U, P> associatedMax
 (
 	const detail::tvec2<T, P>& x, const detail::tvec2<U, P>& a,
 	const detail::tvec2<T, P>& y, const detail::tvec2<U, P>& b,
@@ -572,7 +572,7 @@ GLM_FUNC_QUALIFIER detail::tvec2<U, P> associatedMax
 
 // Max comparison between 3 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec3<U, P> associatedMax
+inline detail::tvec3<U, P> associatedMax
 (
 	const detail::tvec3<T, P>& x, const detail::tvec3<U, P>& a,
 	const detail::tvec3<T, P>& y, const detail::tvec3<U, P>& b,
@@ -587,7 +587,7 @@ GLM_FUNC_QUALIFIER detail::tvec3<U, P> associatedMax
 
 // Max comparison between 3 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec4<U, P> associatedMax
+inline detail::tvec4<U, P> associatedMax
 (
 	const detail::tvec4<T, P>& x, const detail::tvec4<U, P>& a,
 	const detail::tvec4<T, P>& y, const detail::tvec4<U, P>& b,
@@ -602,7 +602,7 @@ GLM_FUNC_QUALIFIER detail::tvec4<U, P> associatedMax
 
 // Max comparison between 3 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec2<U, P> associatedMax
+inline detail::tvec2<U, P> associatedMax
 (
 	T x, const detail::tvec2<U, P>& a,
 	T y, const detail::tvec2<U, P>& b,
@@ -617,7 +617,7 @@ GLM_FUNC_QUALIFIER detail::tvec2<U, P> associatedMax
 
 // Max comparison between 3 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec3<U, P> associatedMax
+inline detail::tvec3<U, P> associatedMax
 (
 	T x, const detail::tvec3<U, P>& a,
 	T y, const detail::tvec3<U, P>& b,
@@ -632,7 +632,7 @@ GLM_FUNC_QUALIFIER detail::tvec3<U, P> associatedMax
 
 // Max comparison between 3 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec4<U, P> associatedMax
+inline detail::tvec4<U, P> associatedMax
 (
 	T x, const detail::tvec4<U, P>& a,
 	T y, const detail::tvec4<U, P>& b,
@@ -647,7 +647,7 @@ GLM_FUNC_QUALIFIER detail::tvec4<U, P> associatedMax
 
 // Max comparison between 3 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec2<U, P> associatedMax
+inline detail::tvec2<U, P> associatedMax
 (
 	const detail::tvec2<T, P>& x, U a,
 	const detail::tvec2<T, P>& y, U b,
@@ -662,7 +662,7 @@ GLM_FUNC_QUALIFIER detail::tvec2<U, P> associatedMax
 
 // Max comparison between 3 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec3<U, P> associatedMax
+inline detail::tvec3<U, P> associatedMax
 (
 	const detail::tvec3<T, P>& x, U a,
 	const detail::tvec3<T, P>& y, U b,
@@ -677,7 +677,7 @@ GLM_FUNC_QUALIFIER detail::tvec3<U, P> associatedMax
 
 // Max comparison between 3 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec4<U, P> associatedMax
+inline detail::tvec4<U, P> associatedMax
 (
 	const detail::tvec4<T, P>& x, U a,
 	const detail::tvec4<T, P>& y, U b,
@@ -692,7 +692,7 @@ GLM_FUNC_QUALIFIER detail::tvec4<U, P> associatedMax
 
 // Max comparison between 4 variables
 template<typename T, typename U>
-GLM_FUNC_QUALIFIER U associatedMax
+inline U associatedMax
 (
 	T x, U a,
 	T y, U b,
@@ -710,7 +710,7 @@ GLM_FUNC_QUALIFIER U associatedMax
 
 // Max comparison between 4 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec2<U, P> associatedMax
+inline detail::tvec2<U, P> associatedMax
 (
 	const detail::tvec2<T, P>& x, const detail::tvec2<U, P>& a,
 	const detail::tvec2<T, P>& y, const detail::tvec2<U, P>& b,
@@ -732,7 +732,7 @@ GLM_FUNC_QUALIFIER detail::tvec2<U, P> associatedMax
 
 // Max comparison between 4 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec3<U, P> associatedMax
+inline detail::tvec3<U, P> associatedMax
 (
 	const detail::tvec3<T, P>& x, const detail::tvec3<U, P>& a,
 	const detail::tvec3<T, P>& y, const detail::tvec3<U, P>& b,
@@ -754,7 +754,7 @@ GLM_FUNC_QUALIFIER detail::tvec3<U, P> associatedMax
 
 // Max comparison between 4 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec4<U, P> associatedMax
+inline detail::tvec4<U, P> associatedMax
 (
 	const detail::tvec4<T, P>& x, const detail::tvec4<U, P>& a,
 	const detail::tvec4<T, P>& y, const detail::tvec4<U, P>& b,
@@ -776,7 +776,7 @@ GLM_FUNC_QUALIFIER detail::tvec4<U, P> associatedMax
 
 // Max comparison between 4 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec2<U, P> associatedMax
+inline detail::tvec2<U, P> associatedMax
 (
 	T x, const detail::tvec2<U, P>& a,
 	T y, const detail::tvec2<U, P>& b,
@@ -799,7 +799,7 @@ GLM_FUNC_QUALIFIER detail::tvec2<U, P> associatedMax
 
 // Max comparison between 4 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec3<U, P> associatedMax
+inline detail::tvec3<U, P> associatedMax
 (
 	T x, const detail::tvec3<U, P>& a,
 	T y, const detail::tvec3<U, P>& b,
@@ -822,7 +822,7 @@ GLM_FUNC_QUALIFIER detail::tvec3<U, P> associatedMax
 
 // Max comparison between 4 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec4<U, P> associatedMax
+inline detail::tvec4<U, P> associatedMax
 (
 	T x, const detail::tvec4<U, P>& a,
 	T y, const detail::tvec4<U, P>& b,
@@ -845,7 +845,7 @@ GLM_FUNC_QUALIFIER detail::tvec4<U, P> associatedMax
 
 // Max comparison between 4 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec2<U, P> associatedMax
+inline detail::tvec2<U, P> associatedMax
 (
 	const detail::tvec2<T, P>& x, U a,
 	const detail::tvec2<T, P>& y, U b,
@@ -867,7 +867,7 @@ GLM_FUNC_QUALIFIER detail::tvec2<U, P> associatedMax
 
 // Max comparison between 4 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec3<U, P> associatedMax
+inline detail::tvec3<U, P> associatedMax
 (
 	const detail::tvec3<T, P>& x, U a,
 	const detail::tvec3<T, P>& y, U b,
@@ -889,7 +889,7 @@ GLM_FUNC_QUALIFIER detail::tvec3<U, P> associatedMax
 
 // Max comparison between 4 variables
 template<typename T, typename U, precision P>
-GLM_FUNC_QUALIFIER detail::tvec4<U, P> associatedMax
+inline detail::tvec4<U, P> associatedMax
 (
 	const detail::tvec4<T, P>& x, U a,
 	const detail::tvec4<T, P>& y, U b,

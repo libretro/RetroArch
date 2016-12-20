@@ -98,11 +98,9 @@ end:
  */
 const char *path_get_archive_delim(const char *path)
 {
-#ifdef HAVE_COMPRESSION
    const char *last = find_last_slash(path);
    const char *delim = NULL;
 
-#ifdef HAVE_ZLIB
    if (last)
    {
       delim = strcasestr(last, ".zip#");
@@ -113,17 +111,12 @@ const char *path_get_archive_delim(const char *path)
 
    if (delim)
       return delim + 4;
-#endif
 
-#ifdef HAVE_7ZIP
    if (last)
       delim = strcasestr(last, ".7z#");
 
    if (delim)
       return delim + 3;
-#endif
-
-#endif
 
    return NULL;
 }
@@ -166,26 +159,6 @@ char *path_remove_extension(char *path)
 }
 
 /**
- * path_contains_compressed_file:
- * @path               : path
- *
- * Checks if path contains a compressed file.
- *
- * Currently we only check for a hash symbol (#) inside the pathname
- * that is preceded by an archive extension. If path is ever expanded
- * to a general URI, we should check for that here.
- *
- * Example:  Somewhere in the path there might be a compressed file
- * E.g.: /path/to/file.7z#mygame.img
- *
- * Returns: true (1) if path contains compressed file, otherwise false (0).
- **/
-bool path_contains_compressed_file(const char *path)
-{
-   return path_get_archive_delim(path) != NULL;
-}
-
-/**
  * path_is_compressed_file:
  * @path               : path
  *
@@ -195,21 +168,12 @@ bool path_contains_compressed_file(const char *path)
  **/
 bool path_is_compressed_file(const char* path)
 {
-#ifdef HAVE_COMPRESSION
    const char *ext = path_get_extension(path);
 
-#ifdef HAVE_ZLIB
-   if (string_is_equal_noncase(ext, "zip") ||
-             string_is_equal_noncase(ext, "apk"))
+   if (     string_is_equal_noncase(ext, "zip") 
+         || string_is_equal_noncase(ext, "apk")
+         || string_is_equal_noncase(ext, "7z"))
       return true;
-#endif
-
-#ifdef HAVE_7ZIP
-   if (string_is_equal_noncase(ext, "7z"))
-      return true;
-#endif
-
-#endif
 
    return false;
 }
@@ -321,6 +285,9 @@ void fill_pathname_slash(char *path, size_t size)
    if (last_slash && (last_slash != (path + path_len - 1)))
    {
       char join_str[2];
+
+      join_str[0] = '\0';
+
       strlcpy(join_str, last_slash, sizeof(join_str));
       retro_assert(strlcat(path, join_str, size) < size);
    }
@@ -491,13 +458,6 @@ void path_basedir(char *path)
    if (strlen(path) < 2)
       return;
 
-#ifdef HAVE_COMPRESSION
-   /* We want to find the directory with the archive in basedir. */
-   last = (char*)path_get_archive_delim(path);
-   if (last)
-      *last = '\0';
-#endif
-
    last = find_last_slash(path);
 
    if (last)
@@ -531,15 +491,13 @@ void path_parent_dir(char *path)
  **/
 const char *path_basename(const char *path)
 {
-   /* We cut either at the first compression-related hash or the last slash; whichever comes last */
-   const char *last = find_last_slash(path);
-
-#ifdef HAVE_COMPRESSION
+   /* We cut either at the first compression-related hash 
+    * or the last slash; whichever comes last */
+   const char *last  = find_last_slash(path);
    const char *delim = path_get_archive_delim(path);
 
    if (delim)
       return delim + 1;
-#endif
 
    if (last)
       return last + 1;
@@ -561,8 +519,10 @@ bool path_is_absolute(const char *path)
       return true;
 #ifdef _WIN32
    /* Many roads lead to Rome ... */
-   if ((strstr(path, "\\\\") == path)
-         || strstr(path, ":/") || strstr(path, ":\\") || strstr(path, ":\\\\"))
+   if ((    strstr(path, "\\\\") == path)
+         || strstr(path, ":/") 
+         || strstr(path, ":\\") 
+         || strstr(path, ":\\\\"))
       return true;
 #endif
    return false;
@@ -735,32 +695,13 @@ void fill_short_pathname_representation(char* out_rep,
       const char *in_path, size_t size)
 {
    char path_short[PATH_MAX_LENGTH];
-#ifdef HAVE_COMPRESSION
-   char *last_slash                  = NULL;
-#endif
 
    path_short[0] = '\0';
 
    fill_pathname(path_short, path_basename(in_path), "",
             sizeof(path_short));
 
-#ifdef HAVE_COMPRESSION
-   last_slash  = find_last_slash(path_short);
-   if (last_slash != NULL)
-   {
-      /* We handle paths like:
-       * /path/to/file.7z#mygame.img
-       * short_name: mygame.img:
-       *
-       * We check whether something is actually
-       * after the hash to avoid going over the buffer.
-       */
-      retro_assert(strlen(last_slash) > 1);
-      strlcpy(out_rep, last_slash + 1, size);
-   }
-   else
-#endif
-      strlcpy(out_rep, path_short, size);
+   strlcpy(out_rep, path_short, size);
 }
 
 void fill_short_pathname_representation_noext(char* out_rep,

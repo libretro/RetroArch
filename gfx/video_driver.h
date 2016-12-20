@@ -213,10 +213,18 @@ struct aspect_ratio_elem
 
 extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 
-void video_driver_lock(void);
-void video_driver_unlock(void);
-void video_driver_lock_free(void);
-void video_driver_lock_new(void);
+#define video_driver_is_alive()   ((current_video) ? current_video->alive(video_driver_data) : true)
+
+#define video_driver_is_focused() (current_video->focus(video_driver_data))
+
+#if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
+#define video_driver_has_windowed() (false)
+#else
+#define video_driver_has_windowed() (current_video->has_windowed(video_driver_data))
+#endif
+
+#define video_driver_cached_frame_has_valid_framebuffer() (frame_cache_data ? (frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID) : false)
+
 void video_driver_destroy(void);
 void video_driver_set_cached_frame_ptr(const void *data);
 void video_driver_set_stub_frame(void);
@@ -244,11 +252,7 @@ void video_driver_set_nonblock_state(bool toggle);
 bool video_driver_find_driver(void);
 void video_driver_apply_state_changes(void);
 bool video_driver_read_viewport(uint8_t *buffer);
-bool video_driver_cached_frame_has_valid_framebuffer(void);
 bool video_driver_cached_frame(void);
-bool video_driver_is_alive(void);
-bool video_driver_is_focused(void);
-bool video_driver_has_windowed(void);
 uint64_t *video_driver_get_frame_count_ptr(void);
 bool video_driver_frame_filter_alive(void);
 bool video_driver_frame_filter_is_32bit(void);
@@ -266,14 +270,10 @@ const struct retro_hw_render_context_negotiation_interface
 *video_driver_get_context_negotiation_interface(void);
 void video_driver_set_context_negotiation_interface(const struct 
       retro_hw_render_context_negotiation_interface *iface);
-void video_driver_set_video_cache_context(void);
-void video_driver_unset_video_cache_context(void);
 bool video_driver_is_video_cache_context(void);
 void video_driver_set_video_cache_context_ack(void);
-void video_driver_unset_video_cache_context_ack(void);
 bool video_driver_is_video_cache_context_ack(void);
 void video_driver_set_active(void);
-void video_driver_unset_active(void);
 bool video_driver_is_active(void);
 bool video_driver_has_gpu_record(void);
 uint8_t *video_driver_get_gpu_record(void);
@@ -374,6 +374,8 @@ void video_driver_get_size(unsigned *width, unsigned *height);
 
 void video_driver_set_size(unsigned *width, unsigned *height);
 
+void video_driver_unset_video_cache_context_ack(void);
+
 float video_driver_get_aspect_ratio(void);
 
 void video_driver_set_aspect_ratio_value(float value);
@@ -470,6 +472,30 @@ const video_poke_interface_t *video_driver_get_poke(void);
 void video_driver_frame(const void *data, unsigned width,
       unsigned height, size_t pitch);
 
+#define video_driver_translate_coord_viewport_wrap(vp, mouse_x, mouse_y, res_x, res_y, res_screen_x, res_screen_y) \
+   (video_driver_get_viewport_info(vp) ? video_driver_translate_coord_viewport(vp, mouse_x, mouse_y, res_x, res_y, res_screen_x, res_screen_y) : false)
+
+/**
+ * video_driver_translate_coord_viewport:
+ * @mouse_x                        : Pointer X coordinate.
+ * @mouse_y                        : Pointer Y coordinate.
+ * @res_x                          : Scaled  X coordinate.
+ * @res_y                          : Scaled  Y coordinate.
+ * @res_screen_x                   : Scaled screen X coordinate.
+ * @res_screen_y                   : Scaled screen Y coordinate.
+ *
+ * Translates pointer [X,Y] coordinates into scaled screen
+ * coordinates based on viewport info.
+ *
+ * Returns: true (1) if successful, false if video driver doesn't support
+ * viewport info.
+ **/
+bool video_driver_translate_coord_viewport(
+      void *data,
+      int mouse_x, int mouse_y,
+      int16_t *res_x, int16_t *res_y, int16_t *res_screen_x,
+      int16_t *res_screen_y);
+
 uintptr_t video_driver_display_get(void);
 
 enum rarch_display_type video_driver_display_type_get(void);
@@ -487,6 +513,8 @@ bool video_driver_texture_load(void *data,
       uintptr_t *id);
 
 bool video_driver_texture_unload(uintptr_t *id);
+
+void video_driver_reinit(void);
 
 extern video_driver_t video_gl;
 extern video_driver_t video_vulkan;
@@ -508,7 +536,13 @@ extern video_driver_t video_dispmanx;
 extern video_driver_t video_sunxi;
 extern video_driver_t video_drm;
 extern video_driver_t video_xshm;
+extern video_driver_t video_caca;
 extern video_driver_t video_null;
+
+extern const void *frame_cache_data;
+
+extern void *video_driver_data;
+extern video_driver_t *current_video;
 
 RETRO_END_DECLS
 

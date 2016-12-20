@@ -21,7 +21,6 @@
 #include <boolean.h>
 #include <libretro.h>
 
-#include <retro_miscellaneous.h>
 #include <retro_common_api.h>
 
 #include "core_type.h"
@@ -42,6 +41,18 @@ enum
     * retro_input_state per frame. */
    POLL_TYPE_LATE
 };
+
+typedef struct rarch_memory_descriptor
+{
+   struct retro_memory_descriptor core;
+   size_t disconnect_mask;
+} rarch_memory_descriptor_t;
+
+typedef struct rarch_memory_map
+{
+   rarch_memory_descriptor_t *descriptors;
+   unsigned num_descriptors;
+} rarch_memory_map_t;
 
 typedef struct rarch_system_info
 {
@@ -68,7 +79,7 @@ typedef struct rarch_system_info
       unsigned size;
    } ports;
    
-   struct retro_memory_map mmaps;
+   rarch_memory_map_t mmaps;
 } rarch_system_info_t;
 
 typedef struct retro_ctx_input_state_info
@@ -155,7 +166,11 @@ bool core_set_default_callbacks(void *data);
 
 bool core_set_rewind_callbacks(void);
 
+#ifdef HAVE_NETWORKING
 bool core_set_netplay_callbacks(void);
+
+bool core_unset_netplay_callbacks(void);
+#endif
 
 bool core_set_poll_type(unsigned *type);
 

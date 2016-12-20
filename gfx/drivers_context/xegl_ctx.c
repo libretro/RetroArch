@@ -263,17 +263,17 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
 {
    XEvent event;
    EGLint egl_attribs[16];
-   EGLint *attr;
    EGLint vid, num_visuals;
-   bool windowed_full;
-   bool true_full = false;
-   int x_off = 0;
-   int y_off = 0;
-   XVisualInfo temp = {0};
+   EGLint *attr             = NULL;
+   bool windowed_full       = false;
+   bool true_full           = false;
+   int x_off                = 0;
+   int y_off                = 0;
+   XVisualInfo temp         = {0};
    XSetWindowAttributes swa = {0};
-   XVisualInfo *vi = NULL;
-   settings_t *settings = config_get_ptr();
-   xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
+   XVisualInfo *vi          = NULL;
+   settings_t *settings     = config_get_ptr();
+   xegl_ctx_data_t *xegl    = (xegl_ctx_data_t*)data;
 
    int (*old_handler)(Display*, XErrorEvent*) = NULL;
 

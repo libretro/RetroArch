@@ -13,7 +13,7 @@
 
 @ void* memcpy(void *destination, const void *source, size_t num)
 .global memcpy_neon
-
+.type memcpy_neon, %function
 /*
  * ENABLE_UNALIGNED_MEM_ACCESSES macro can be defined to permit the use
  * of unaligned load/store memory accesses supported since ARMv6. This

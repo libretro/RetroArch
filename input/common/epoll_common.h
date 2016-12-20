@@ -18,17 +18,14 @@
 
 #include <stdint.h>
 
-#include <fcntl.h>
-#include <sys/epoll.h>
-
 #include <boolean.h>
 
-bool epoll_new(bool is_joypad);
+bool epoll_new(int *epoll_fd);
 
-void epoll_free(bool is_joypad);
+void epoll_free(int *epoll_fd);
 
-int epoll_waiting(struct epoll_event *events, int maxevents, int timeout);
+int epoll_waiting(int *epoll_fd, void *events, int maxevents, int timeout);
 
-bool epoll_add(int fd, void *device);
+bool epoll_add(int *epoll_fd, int fd, void *device);
 
 #endif

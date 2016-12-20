@@ -22,7 +22,7 @@
 
 #include "../../configuration.h"
 #include "../input_driver.h"
-#include "../input_autodetect.h"
+#include "../../tasks/tasks_internal.h"
 #include "../../verbosity.h"
 
 typedef struct _sdl_joypad
@@ -94,12 +94,11 @@ static int16_t sdl_pad_get_axis(sdl_joypad_t *pad, unsigned axis)
 
 static void sdl_pad_connect(unsigned id)
 {
+   autoconfig_params_t params;
    sdl_joypad_t *pad          = (sdl_joypad_t*)&sdl_pads[id];
    bool success               = false;
    int32_t product            = 0;
    int32_t vendor             = 0;
-   settings_t *settings       = config_get_ptr();
-   autoconfig_params_t params = {{0}};
 
 #ifdef HAVE_SDL2
    SDL_JoystickGUID guid;
@@ -131,8 +130,6 @@ static void sdl_pad_connect(unsigned id)
       return;
    }
 
-   strlcpy(settings->input.device_names[id], sdl_pad_name(id), sizeof(settings->input.device_names[id]));
-
 #ifdef HAVE_SDL2
    guid       = SDL_JoystickGetGUID(pad->joypad);
    guid_ptr   = (uint16_t*)guid.data;
@@ -144,13 +141,15 @@ static void sdl_pad_connect(unsigned id)
    product    = guid_ptr[1];
 #endif
 #endif
-   params.idx = id;
-   strlcpy(params.name, sdl_pad_name(id), sizeof(params.name));
-   params.vid = vendor;
-   params.pid = product;
+   strlcpy(params.name,   sdl_pad_name(id), sizeof(params.name));
    strlcpy(params.driver, sdl_joypad.ident, sizeof(params.driver));
 
-   input_config_autoconfigure_joypad(&params);
+   params.idx             = id;
+   params.vid             = vendor;
+   params.pid             = product;
+   params.display_name[0] = '\0';
+
+   input_autoconfigure_connect(&params);
 
    RARCH_LOG("[SDL]: Device #%u (%04x:%04x) connected: %s.\n", id, vendor,
              product, sdl_pad_name(id));
@@ -201,7 +200,6 @@ static void sdl_pad_connect(unsigned id)
 
 static void sdl_pad_disconnect(unsigned id)
 {
-   settings_t *settings = config_get_ptr();
 #ifdef HAVE_SDL2
    if (sdl_pads[id].haptic)
       SDL_HapticClose(sdl_pads[id].haptic);
@@ -209,17 +207,15 @@ static void sdl_pad_disconnect(unsigned id)
    if (sdl_pads[id].controller)
    {
       SDL_GameControllerClose(sdl_pads[id].controller);
-      input_config_autoconfigure_disconnect(id, sdl_joypad.ident);
+      input_autoconfigure_disconnect(id, sdl_joypad.ident);
    }
    else
 #endif
    if (sdl_pads[id].joypad)
    {
       SDL_JoystickClose(sdl_pads[id].joypad);
-      input_config_autoconfigure_disconnect(id, sdl_joypad.ident);
+      input_autoconfigure_disconnect(id, sdl_joypad.ident);
    }
-
-   settings->input.device_names[id][0] = '\0';
 
    memset(&sdl_pads[id], 0, sizeof(sdl_pads[id]));
 }
@@ -288,25 +284,24 @@ error:
 
 static bool sdl_joypad_button(unsigned port, uint16_t joykey)
 {
-   sdl_joypad_t *pad = NULL;
-   if (joykey == NO_BTN)
+   unsigned hat_dir  = 0;
+   sdl_joypad_t *pad = (sdl_joypad_t*)&sdl_pads[port];
+   if (!pad || !pad->joypad)
       return false;
 
-   pad = (sdl_joypad_t*)&sdl_pads[port];
-   if (!pad->joypad)
-      return false;
-
+   hat_dir = GET_HAT_DIR(joykey);
    /* Check hat. */
-   if (GET_HAT_DIR(joykey))
+   if (hat_dir)
    {
       uint8_t  dir;
       uint16_t hat = GET_HAT(joykey);
+
       if (hat >= pad->num_hats)
          return false;
 
       dir = sdl_pad_get_hat(pad, hat);
 
-      switch (GET_HAT_DIR(joykey))
+      switch (hat_dir)
       {
          case HAT_UP_MASK:
             return dir & SDL_HAT_UP;
@@ -332,7 +327,7 @@ static bool sdl_joypad_button(unsigned port, uint16_t joykey)
 static int16_t sdl_joypad_axis(unsigned port, uint32_t joyaxis)
 {
    sdl_joypad_t *pad;
-   int16_t val;
+   int16_t val       = 0;
 
    if (joyaxis == AXIS_NONE)
       return 0;
@@ -341,7 +336,6 @@ static int16_t sdl_joypad_axis(unsigned port, uint32_t joyaxis)
    if (!pad->joypad)
       return false;
 
-   val = 0;
    if (AXIS_NEG_GET(joyaxis) < pad->num_axes)
    {
       val = sdl_pad_get_axis(pad, AXIS_NEG_GET(joyaxis));
@@ -390,9 +384,9 @@ static void sdl_joypad_poll(void)
 #ifdef HAVE_SDL2
 static bool sdl_joypad_set_rumble(unsigned pad, enum retro_rumble_effect effect, uint16_t strength)
 {
+   SDL_HapticEffect efx;
    sdl_joypad_t *joypad = (sdl_joypad_t*)&sdl_pads[pad];
 
-   SDL_HapticEffect efx;
    memset(&efx, 0, sizeof(efx));
 
    if (!joypad->joypad || !joypad->haptic)

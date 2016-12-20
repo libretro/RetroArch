@@ -10,7 +10,7 @@
 namespace glm
 {
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> rgb2YCoCg
+	inline detail::tvec3<T, P> rgb2YCoCg
 	(
 		detail::tvec3<T, P> const & rgbColor
 	)
@@ -23,7 +23,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> rgb2YCoCgR
+	inline detail::tvec3<T, P> rgb2YCoCgR
 	(
 		detail::tvec3<T, P> const & rgbColor
 	)
@@ -36,7 +36,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> YCoCg2rgb
+	inline detail::tvec3<T, P> YCoCg2rgb
 	(
 		detail::tvec3<T, P> const & YCoCgColor
 	)
@@ -49,7 +49,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> YCoCgR2rgb
+	inline detail::tvec3<T, P> YCoCgR2rgb
 	(
 		detail::tvec3<T, P> const & YCoCgRColor
 	)

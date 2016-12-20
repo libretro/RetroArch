@@ -17,81 +17,81 @@ namespace glm{
 namespace io
 {
   
-    /* explicit */ GLM_FUNC_QUALIFIER
+    /* explicit */ inline
     precision_guard::precision_guard()
       : precision_  (precision()),
         value_width_(value_width())
     {}
 
-    GLM_FUNC_QUALIFIER
+    inline
     precision_guard::~precision_guard()
     {
       value_width() = value_width_;
       precision()   = precision_;
     }
 
-    /* explicit */ GLM_FUNC_QUALIFIER
+    /* explicit */ inline
     format_guard::format_guard()
       : order_(order()),
         cr_   (cr())
     {}
 
-    GLM_FUNC_QUALIFIER
+    inline
     format_guard::~format_guard()
     {
       cr()    = cr_;
       order() = order_;
     }
 
-    GLM_FUNC_QUALIFIER unsigned& precision()
+    inline unsigned& precision()
     {
       static unsigned p(3);
 
       return p;
     }
     
-    GLM_FUNC_QUALIFIER unsigned& value_width()
+    inline unsigned& value_width()
     {
       static unsigned p(9);
 
       return p;
     }
     
-    GLM_FUNC_QUALIFIER format_guard::order_t& order()
+    inline format_guard::order_t& order()
     {
       static format_guard::order_t p(format_guard::row_major);
 
       return p;
     }
     
-    GLM_FUNC_QUALIFIER char&
+    inline char&
     cr()
     {
       static char p('\n'); return p;
     }
     
-    GLM_FUNC_QUALIFIER std::ios_base& column_major(std::ios_base& os)
+    inline std::ios_base& column_major(std::ios_base& os)
     {
       order() = format_guard::column_major;
       
       return os;
     }
     
-    GLM_FUNC_QUALIFIER std::ios_base& row_major(std::ios_base& os)
+    inline std::ios_base& row_major(std::ios_base& os)
     {
       order() = format_guard::row_major;
       
       return os;
     }
 
-    GLM_FUNC_QUALIFIER std::ios_base& formatted(std::ios_base& os)
+    inline std::ios_base& formatted(std::ios_base& os)
     {
       cr() = '\n';
       
       return os;
     }
     
-    GLM_FUNC_QUALIFIER std::ios_base& unformatted(std::ios_base& os)
+    inline std::ios_base& unformatted(std::ios_base& os)
     {
       cr() = ' ';
       
@@ -104,7 +104,7 @@ namespace detail
     // functions, inlined (inline)
 
     template <typename CTy, typename CTr, typename T, precision P>
-    GLM_FUNC_QUALIFIER std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>& os, tquat<T,P> const& a)
+    inline std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>& os, tquat<T,P> const& a)
     {
       typename std::basic_ostream<CTy,CTr>::sentry const cerberus(os);
 
@@ -124,7 +124,7 @@ namespace detail
     }
     
     template <typename CTy, typename CTr, typename T, precision P>
-    GLM_FUNC_QUALIFIER std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>& os, tvec2<T,P> const& a)
+    inline std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>& os, tvec2<T,P> const& a)
     {
       typename std::basic_ostream<CTy,CTr>::sentry const cerberus(os);
 
@@ -142,7 +142,7 @@ namespace detail
     }
   
     template <typename CTy, typename CTr, typename T, precision P>
-    GLM_FUNC_QUALIFIER std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>& os, tvec3<T,P> const& a)
+    inline std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>& os, tvec3<T,P> const& a)
     {
       typename std::basic_ostream<CTy,CTr>::sentry const cerberus(os);
 
@@ -161,7 +161,7 @@ namespace detail
     }
 
     template <typename CTy, typename CTr, typename T, precision P>
-    GLM_FUNC_QUALIFIER std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>& os, tvec4<T,P> const& a)
+    inline std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>& os, tvec4<T,P> const& a)
     {
       typename std::basic_ostream<CTy,CTr>::sentry const cerberus(os);
 
@@ -181,7 +181,7 @@ namespace detail
     }
 
     template <typename CTy, typename CTr, typename T, precision P>
-    GLM_FUNC_QUALIFIER std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>& os, tmat2x2<T,P> const& m)
+    inline std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>& os, tmat2x2<T,P> const& m)
     {
       typename std::basic_ostream<CTy,CTr>::sentry const cerberus(os);
 
@@ -196,7 +196,7 @@ namespace detail
     }
 
     template <typename CTy, typename CTr, typename T, precision P>
-    GLM_FUNC_QUALIFIER std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>& os, tmat2x3<T,P> const& m)
+    inline std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>& os, tmat2x3<T,P> const& m)
     {
       typename std::basic_ostream<CTy,CTr>::sentry const cerberus(os);
 
@@ -211,7 +211,7 @@ namespace detail
     }
 
     template <typename CTy, typename CTr, typename T, precision P>
-    GLM_FUNC_QUALIFIER std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>& os, tmat2x4<T,P> const& m)
+    inline std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>& os, tmat2x4<T,P> const& m)
     {
       typename std::basic_ostream<CTy,CTr>::sentry const cerberus(os);
 
@@ -226,7 +226,7 @@ namespace detail
     }
 
     template <typename CTy, typename CTr, typename T, precision P>
-    GLM_FUNC_QUALIFIER std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>& os, tmat3x2<T,P> const& m)
+    inline std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>& os, tmat3x2<T,P> const& m)
     {
       typename std::basic_ostream<CTy,CTr>::sentry const cerberus(os);
 
@@ -242,7 +242,7 @@ namespace detail
     }
 
     template <typename CTy, typename CTr, typename T, precision P>
-    GLM_FUNC_QUALIFIER std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>& os, tmat3x3<T,P> const& m)
+    inline std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>& os, tmat3x3<T,P> const& m)
     {
       typename std::basic_ostream<CTy,CTr>::sentry const cerberus(os);
 
@@ -258,7 +258,7 @@ namespace detail
     }
 
     template <typename CTy, typename CTr, typename T, precision P>
-    GLM_FUNC_QUALIFIER std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>& os, tmat3x4<T,P> const& m)
+    inline std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>& os, tmat3x4<T,P> const& m)
     {
       typename std::basic_ostream<CTy,CTr>::sentry const cerberus(os);
 
@@ -274,7 +274,7 @@ namespace detail
     }
 
     template <typename CTy, typename CTr, typename T, precision P>
-    GLM_FUNC_QUALIFIER std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>& os, tmat4x2<T,P> const& m)
+    inline std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>& os, tmat4x2<T,P> const& m)
     {
       typename std::basic_ostream<CTy,CTr>::sentry const cerberus(os);
 
@@ -291,7 +291,7 @@ namespace detail
     }
 
     template <typename CTy, typename CTr, typename T, precision P>
-    GLM_FUNC_QUALIFIER std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>& os, tmat4x3<T,P> const& m)
+    inline std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>& os, tmat4x3<T,P> const& m)
     {
       typename std::basic_ostream<CTy,CTr>::sentry const cerberus(os);
 
@@ -308,7 +308,7 @@ namespace detail
     }
 
     template <typename CTy, typename CTr, typename T, precision P>
-    GLM_FUNC_QUALIFIER std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>& os, tmat4x4<T,P> const& m)
+    inline std::basic_ostream<CTy,CTr>& operator<<(std::basic_ostream<CTy,CTr>& os, tmat4x4<T,P> const& m)
     {
       typename std::basic_ostream<CTy,CTr>::sentry const cerberus(os);
 

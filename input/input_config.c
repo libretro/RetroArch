@@ -21,6 +21,7 @@
 
 #include <compat/strl.h>
 #include <file/file_path.h>
+#include <file/config_file.h>
 #include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
@@ -124,7 +125,8 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
       DECLARE_META_BIND(2, screenshot,            RARCH_SCREENSHOT,            MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT),
       DECLARE_META_BIND(2, audio_mute,            RARCH_MUTE,                  MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE),
       DECLARE_META_BIND(2, osk_toggle,            RARCH_OSK,                   MENU_ENUM_LABEL_VALUE_INPUT_META_OSK),
-      DECLARE_META_BIND(2, netplay_flip_players,  RARCH_NETPLAY_FLIP,          MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FLIP),
+      DECLARE_META_BIND(2, netplay_flip_players_1_2, RARCH_NETPLAY_FLIP,       MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FLIP),
+      DECLARE_META_BIND(2, netplay_game_watch,    RARCH_NETPLAY_GAME_WATCH,    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH),
       DECLARE_META_BIND(2, slowmotion,            RARCH_SLOWMOTION,            MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION),
       DECLARE_META_BIND(2, enable_hotkey,         RARCH_ENABLE_HOTKEY,         MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY),
       DECLARE_META_BIND(2, volume_up,             RARCH_VOLUME_UP,             MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP),
@@ -134,6 +136,7 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
       DECLARE_META_BIND(2, disk_next,             RARCH_DISK_NEXT,             MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_NEXT),
       DECLARE_META_BIND(2, disk_prev,             RARCH_DISK_PREV,             MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV),
       DECLARE_META_BIND(2, grab_mouse_toggle,     RARCH_GRAB_MOUSE_TOGGLE,     MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE),
+      DECLARE_META_BIND(2, game_focus_toggle,     RARCH_GAME_FOCUS_TOGGLE,     MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE),
 #ifdef HAVE_MENU
       DECLARE_META_BIND(1, menu_toggle,           RARCH_MENU_TOGGLE,           MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE),
 #endif
@@ -180,12 +183,13 @@ const char *input_config_bind_map_get_desc(unsigned i)
    return msg_hash_to_str(keybind->desc);
 }
 
-void input_config_parse_key(config_file_t *conf,
+void input_config_parse_key(void *data,
       const char *prefix, const char *btn,
       struct retro_keybind *bind)
 {
    char tmp[64];
    char key[64];
+   config_file_t *conf = (config_file_t*)data;
 
    tmp[0] = key[0] = '\0';
 
@@ -289,16 +293,17 @@ static void parse_hat(struct retro_keybind *bind, const char *str)
       bind->joykey = HAT_MAP(hat, hat_dir);
 }
 
-void input_config_parse_joy_button(config_file_t *conf, const char *prefix,
+void input_config_parse_joy_button(void *data, const char *prefix,
       const char *btn, struct retro_keybind *bind)
 {
    char str[256];
    char tmp[64];
    char key[64];
-   char key_label[64]       = {0};
+   char key_label[64];
    char *tmp_a              = NULL;
+   config_file_t *conf      = (config_file_t*)data;
 
-   str[0] = tmp[0] = key[0] = '\0';
+   str[0] = tmp[0] = key[0] = key_label[0] = '\0';
 
    fill_pathname_join_delim(str, prefix, btn,
          '_', sizeof(str));
@@ -328,14 +333,15 @@ void input_config_parse_joy_button(config_file_t *conf, const char *prefix,
    }
 }
 
-void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
+void input_config_parse_joy_axis(void *data, const char *prefix,
       const char *axis, struct retro_keybind *bind)
 {
    char str[256];
    char       tmp[64];
    char       key[64];
    char key_label[64];
-   char        *tmp_a = NULL;
+   char        *tmp_a       = NULL;
+   config_file_t *conf      = (config_file_t*)data;
 
    str[0] = tmp[0] = key[0] = key_label[0] = '\0';
 
@@ -466,7 +472,20 @@ void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
    if (string_is_equal(key, file_path_str(FILE_PATH_NUL)))
       *key = '\0';
 
-   snprintf(keybuf, sizeof(keybuf), "(Key: %s)", key);
+   snprintf(keybuf, sizeof(keybuf), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_KEY), key);
    strlcat(buf, keybuf, size);
 #endif
+}
+
+const struct retro_keybind *input_config_get_bind_auto(unsigned port, unsigned id)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned joy_idx     = 0;
+
+   if (settings)
+      joy_idx = settings->input.joypad_map[port];
+
+   if (joy_idx < MAX_USERS)
+      return &settings->input.autoconf_binds[joy_idx][id];
+   return NULL;
 }

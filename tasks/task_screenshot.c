@@ -35,6 +35,7 @@
 #include <compat/strl.h>
 #include <string/stdstring.h>
 #include <gfx/scaler/scaler.h>
+#include <gfx/video_frame.h>
 
 #ifdef HAVE_RBMP
 #include <formats/rbmp.h>
@@ -54,11 +55,11 @@
 #include "../msg_hash.h"
 
 #include "../gfx/video_driver.h"
-#include "../gfx/video_frame.h"
 
 #include "tasks_internal.h"
 
-typedef struct {
+typedef struct
+{
 #ifdef _XBOX1
    D3DSurface *surf;
 #endif
@@ -73,6 +74,7 @@ typedef struct {
    unsigned height;
    int pitch;
    bool bgr24;
+   bool silence;
    void *userbuf;
 } screenshot_task_state_t;
 
@@ -85,9 +87,8 @@ typedef struct {
 static void task_screenshot_handler(retro_task_t *task)
 {
    screenshot_task_state_t *state = (screenshot_task_state_t*)task->state;
-   char *msg = NULL;
-   bool is_paused = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
-   bool ret = false;
+   bool is_paused                 = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
+   bool ret                       = false;
 
    if (task->progress == 100)
    {
@@ -105,13 +106,24 @@ static void task_screenshot_handler(retro_task_t *task)
       ret = true;
    state->surf->Release();
 #elif defined(HAVE_RPNG)
-   video_frame_convert_to_bgr24(
-         &state->scaler,
-         state->out_buffer,
-         (const uint8_t*)state->frame + ((int)state->height - 1) * state->pitch,
-         state->width, state->height,
-         -state->pitch,
-         state->bgr24);
+   {
+      struct scaler_ctx *scaler = (struct scaler_ctx*)&state->scaler;
+
+      if (state->bgr24)
+         scaler->in_fmt   = SCALER_FMT_BGR24;
+      else if (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_XRGB8888)
+         scaler->in_fmt   = SCALER_FMT_ARGB8888;
+      else
+         scaler->in_fmt   = SCALER_FMT_RGB565;
+
+      video_frame_convert_to_bgr24(
+            scaler,
+            state->out_buffer,
+            (const uint8_t*)state->frame + ((int)state->height - 1) 
+            * state->pitch,
+            state->width, state->height,
+            -state->pitch);
+   }
 
    scaler_ctx_gen_reset(&state->scaler);
 
@@ -141,8 +153,9 @@ static void task_screenshot_handler(retro_task_t *task)
 #endif
 
 #ifdef HAVE_IMAGEVIEWER
-   if (ret)
-      if (content_push_to_history_playlist(g_defaults.image_history, state->filename,
+   if (ret && !state->silence)
+      if (content_push_to_history_playlist(g_defaults.image_history,
+               state->filename,
                "imageviewer", "builtin"))
          playlist_write_file(g_defaults.image_history);
 #endif
@@ -151,8 +164,9 @@ static void task_screenshot_handler(retro_task_t *task)
 
    if (!ret)
    {
-      msg = strdup(msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT));
+      char *msg = strdup(msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT));
       runloop_msg_queue_push(msg, 1, is_paused ? 1 : 180, true);
+      free(msg);
    }
 }
 
@@ -163,33 +177,43 @@ static bool screenshot_dump(
       const void *frame,
       unsigned width,
       unsigned height,
-      int pitch, bool bgr24, void *userbuf)
+      int pitch, bool bgr24, void *userbuf, bool savestate)
 {
+#ifdef _XBOX1
+   d3d_video_t *d3d               = (d3d_video_t*)video_driver_get_ptr(true);
+#endif
    settings_t *settings           = config_get_ptr();
-   retro_task_t *task = (retro_task_t*)calloc(1, sizeof(*task));
+   retro_task_t *task             = (retro_task_t*)calloc(1, sizeof(*task));
    screenshot_task_state_t *state = (screenshot_task_state_t*)
          calloc(1, sizeof(*state));
 
-   state->bgr24 = bgr24;
-   state->height = height;
-   state->width = width;
-   state->pitch = pitch;
-   state->frame = frame;
+   state->bgr24   = bgr24;
+   state->height  = height;
+   state->width   = width;
+   state->pitch   = pitch;
+   state->frame   = frame;
    state->userbuf = userbuf;
+   state->silence = savestate;
 
-   if (settings->auto_screenshot_filename)
-      fill_str_dated_filename(state->shotname, path_basename(name_base),
-            IMG_EXT, sizeof(state->shotname));
+   if (savestate)
+   {
+      snprintf(state->filename, sizeof(state->filename), "%s.png", name_base);
+   }
    else
-      snprintf(state->shotname, sizeof(state->shotname), "%s.png", path_basename(name_base));
+   {
+      if (settings->auto_screenshot_filename)
+         fill_str_dated_filename(state->shotname, path_basename(name_base),
+               IMG_EXT, sizeof(state->shotname));
+      else
+         snprintf(state->shotname, sizeof(state->shotname),
+               "%s.png", path_basename(name_base));
 
-   fill_pathname_join(state->filename, folder, state->shotname, sizeof(state->filename));
+      fill_pathname_join(state->filename, folder,
+            state->shotname, sizeof(state->filename));
+   }
 
 #ifdef _XBOX1
-   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(true);
-
    d3d->dev->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &state->surf);
-
 #elif defined(HAVE_RPNG)
    state->out_buffer = (uint8_t*)malloc(width * height * 3);
    if (!state->out_buffer)
@@ -201,26 +225,34 @@ static bool screenshot_dump(
    }
 #endif
 
-   task->type = TASK_TYPE_BLOCKING;
-   task->state = state;
+   task->type    = TASK_TYPE_BLOCKING;
+   task->state   = state;
    task->handler = task_screenshot_handler;
-   task->title = strdup(msg_hash_to_str(MSG_TAKING_SCREENSHOT));
+   if (!savestate)
+      task->title   = strdup(msg_hash_to_str(MSG_TAKING_SCREENSHOT));
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
 
    return true;
 }
 
 #if !defined(VITA)
-static bool take_screenshot_viewport(const char *name_base)
+static bool take_screenshot_viewport(const char *name_base, bool savestate)
 {
    char screenshot_path[PATH_MAX_LENGTH];
+   struct video_viewport vp;
    const char *screenshot_dir            = NULL;
    uint8_t *buffer                       = NULL;
    bool retval                           = false;
-   struct video_viewport vp              = {0};
    settings_t *settings                  = config_get_ptr();
 
    screenshot_path[0]                    = '\0';
+
+   vp.x                                  = 0;
+   vp.y                                  = 0;
+   vp.width                              = 0;
+   vp.height                             = 0;
+   vp.full_width                         = 0;
+   vp.full_height                        = 0;
 
    video_driver_get_viewport_info(&vp);
 
@@ -245,8 +277,9 @@ static bool take_screenshot_viewport(const char *name_base)
    }
 
    /* Data read from viewport is in bottom-up order, suitable for BMP. */
-   if (!screenshot_dump(name_base, screenshot_dir, buffer, vp.width, vp.height,
-            vp.width * 3, true, buffer))
+   if (!screenshot_dump(name_base, screenshot_dir,
+            buffer, vp.width, vp.height,
+            vp.width * 3, true, buffer, savestate))
       goto error;
 
    return true;
@@ -258,10 +291,11 @@ error:
 }
 #endif
 
-static bool take_screenshot_raw(const char *name_base, void *userbuf)
+static bool take_screenshot_raw(const char *name_base, void *userbuf,
+      bool savestate)
 {
-   unsigned width, height;
    size_t pitch;
+   unsigned width, height;
    char screenshot_path[PATH_MAX_LENGTH];
    const void *data                      = NULL;
    settings_t *settings                  = config_get_ptr();
@@ -283,18 +317,19 @@ static bool take_screenshot_raw(const char *name_base, void *userbuf)
     */
    if (!screenshot_dump(name_base, screenshot_dir,
          (const uint8_t*)data + (height - 1) * pitch,
-         width, height, -pitch, false, userbuf))
+         width, height, -pitch, false, userbuf, savestate))
       return false;
 
    return true;
 }
 
-static bool take_screenshot_choice(const char *name_base)
+static bool take_screenshot_choice(const char *name_base, bool savestate)
 {
    settings_t *settings = config_get_ptr();
 
    /* No way to infer screenshot directory. */
-   if (string_is_empty(settings->directory.screenshot) && (!*name_base))
+   if (     string_is_empty(settings->directory.screenshot)
+         && string_is_empty(name_base))
       return false;
 
    if (video_driver_supports_viewport_read())
@@ -304,19 +339,19 @@ static bool take_screenshot_choice(const char *name_base)
       if (!runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
          video_driver_cached_frame();
 #if defined(VITA)
-      return take_screenshot_raw(name_base, NULL);
+      return take_screenshot_raw(name_base, NULL, savestate);
 #else
-      return take_screenshot_viewport(name_base);
+      return take_screenshot_viewport(name_base, savestate);
 #endif
    }
 
    if (!video_driver_cached_frame_has_valid_framebuffer())
-      return take_screenshot_raw(name_base, NULL);
+      return take_screenshot_raw(name_base, NULL, savestate);
 
    if (video_driver_supports_read_frame_raw())
    {
-      unsigned old_width, old_height;
       size_t old_pitch;
+      unsigned old_width, old_height;
       bool ret             = false;
       void *frame_data     = NULL;
       const void* old_data = NULL;
@@ -333,7 +368,7 @@ static bool take_screenshot_choice(const char *name_base)
       if (frame_data)
       {
          video_driver_set_cached_frame_ptr(frame_data);
-         if (take_screenshot_raw(name_base, frame_data))
+         if (take_screenshot_raw(name_base, frame_data, savestate))
             ret = true;
       }
 
@@ -343,30 +378,14 @@ static bool take_screenshot_choice(const char *name_base)
    return false;
 }
 
-/**
- * take_screenshot:
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool take_screenshot(void)
+bool take_screenshot(const char *name_base, bool silence)
 {
-   char *name_base            = strdup(path_get(RARCH_PATH_BASENAME));
-   bool            is_paused  = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
-   bool             ret       = take_screenshot_choice(name_base);
-   const char *msg_screenshot = ret
-      ? msg_hash_to_str(MSG_TAKING_SCREENSHOT)  :
-        msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT);
-   const char *msg            = msg_screenshot;
+   bool ret = take_screenshot_choice(name_base, silence);
 
-   free(name_base);
-
-   runloop_msg_queue_push(msg, 1, is_paused ? 1 : 180, true);
-
-   if (is_paused)
-   {
-      if (!runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
+   if (     runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL)
+         && !runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL)
+      )
          video_driver_cached_frame();
-   }
 
    return ret;
 }

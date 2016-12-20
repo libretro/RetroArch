@@ -10,7 +10,7 @@
 namespace glm
 {
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType extend
+	inline genType extend
 	(
 		genType const & Origin, 
 		genType const & Source, 
@@ -21,7 +21,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec2<T, P> extend
+	inline detail::tvec2<T, P> extend
 	(
 		detail::tvec2<T, P> const & Origin,
 		detail::tvec2<T, P> const & Source,
@@ -32,7 +32,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> extend
+	inline detail::tvec3<T, P> extend
 	(
 		detail::tvec3<T, P> const & Origin,
 		detail::tvec3<T, P> const & Source,
@@ -43,7 +43,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec4<T, P> extend
+	inline detail::tvec4<T, P> extend
 	(
 		detail::tvec4<T, P> const & Origin,
 		detail::tvec4<T, P> const & Source,

@@ -53,14 +53,14 @@ namespace glm
 	/// Min comparison between 2 variables
 	/// @see gtx_associated_min_max
 	template<typename genTypeT, typename genTypeU>
-	GLM_FUNC_DECL genTypeU associatedMin(
+	genTypeU associatedMin(
 		const genTypeT& x, const genTypeU& a, 
 		const genTypeT& y, const genTypeU& b);
 
 	/// Min comparison between 3 variables
 	/// @see gtx_associated_min_max
 	template<typename genTypeT, typename genTypeU>
-	GLM_FUNC_DECL genTypeU associatedMin(
+	genTypeU associatedMin(
 		const genTypeT& x, const genTypeU& a, 
 		const genTypeT& y, const genTypeU& b, 
 		const genTypeT& z, const genTypeU& c);
@@ -68,7 +68,7 @@ namespace glm
 	/// Min comparison between 4 variables
 	/// @see gtx_associated_min_max
 	template<typename genTypeT, typename genTypeU>
-	GLM_FUNC_DECL genTypeU associatedMin(
+	genTypeU associatedMin(
 		const genTypeT& x, const genTypeU& a, 
 		const genTypeT& y, const genTypeU& b, 
 		const genTypeT& z, const genTypeU& c, 
@@ -77,14 +77,14 @@ namespace glm
 	/// Max comparison between 2 variables
 	/// @see gtx_associated_min_max
 	template<typename genTypeT, typename genTypeU>
-	GLM_FUNC_DECL genTypeU associatedMax(
+	genTypeU associatedMax(
 		const genTypeT& x, const genTypeU& a, 
 		const genTypeT& y, const genTypeU& b);
 
 	/// Max comparison between 3 variables
 	/// @see gtx_associated_min_max
 	template<typename genTypeT, typename genTypeU>
-	GLM_FUNC_DECL genTypeU associatedMax(
+	genTypeU associatedMax(
 		const genTypeT& x, const genTypeU& a, 
 		const genTypeT& y, const genTypeU& b, 
 		const genTypeT& z, const genTypeU& c);
@@ -92,7 +92,7 @@ namespace glm
 	/// Max comparison between 4 variables
 	/// @see gtx_associated_min_max
 	template<typename genTypeT, typename genTypeU>
-	GLM_FUNC_DECL genTypeU associatedMax(
+	genTypeU associatedMax(
 		const genTypeT& x, const genTypeU& a, 
 		const genTypeT& y, const genTypeU& b, 
 		const genTypeT& z, const genTypeU& c, 

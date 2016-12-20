@@ -68,6 +68,8 @@ void menu_dialog_show_message(
 
 bool menu_dialog_is_active(void);
 
+void menu_dialog_set_current_id(unsigned id);
+
 void menu_dialog_set_active(bool on);
 
 enum menu_dialog_type menu_dialog_get_current_type(void);

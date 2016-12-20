@@ -36,7 +36,7 @@
 
 #define VECTORIZE1_VEC(func)						\
 	template <typename T, precision P>				\
-	GLM_FUNC_QUALIFIER detail::tvec1<T, P> func(	\
+	inline detail::tvec1<T, P> func(	\
 		detail::tvec1<T, P> const & v)				\
 	{												\
 		return detail::tvec1<T, P>(					\
@@ -45,7 +45,7 @@
 
 #define VECTORIZE2_VEC(func)						\
 	template <typename T, precision P>				\
-	GLM_FUNC_QUALIFIER detail::tvec2<T, P> func(	\
+	inline detail::tvec2<T, P> func(	\
 		detail::tvec2<T, P> const & v)				\
 	{												\
 		return detail::tvec2<T, P>(					\
@@ -55,7 +55,7 @@
 
 #define VECTORIZE3_VEC(func)						\
 	template <typename T, precision P>				\
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> func(	\
+	inline detail::tvec3<T, P> func(	\
 		detail::tvec3<T, P> const & v)				\
 	{												\
 		return detail::tvec3<T, P>(					\
@@ -66,7 +66,7 @@
 
 #define VECTORIZE4_VEC(func)						\
 	template <typename T, precision P>				\
-	GLM_FUNC_QUALIFIER detail::tvec4<T, P> func(	\
+	inline detail::tvec4<T, P> func(	\
 		detail::tvec4<T, P> const & v)				\
 	{												\
 		return detail::tvec4<T, P>(					\
@@ -84,7 +84,7 @@
 
 #define VECTORIZE1_VEC_SCA(func)							\
 	template <typename T, precision P>						\
-	GLM_FUNC_QUALIFIER detail::tvec1<T, P> func				\
+	inline detail::tvec1<T, P> func				\
 	(														\
 		detail::tvec1<T, P> const & x,						\
 		T const & y											\
@@ -96,7 +96,7 @@
 
 #define VECTORIZE2_VEC_SCA(func)							\
 	template <typename T, precision P>						\
-	GLM_FUNC_QUALIFIER detail::tvec2<T, P> func				\
+	inline detail::tvec2<T, P> func				\
 	(														\
 		detail::tvec2<T, P> const & x,						\
 		T const & y	\
@@ -109,7 +109,7 @@
 
 #define VECTORIZE3_VEC_SCA(func)							\
 	template <typename T, precision P>						\
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> func				\
+	inline detail::tvec3<T, P> func				\
 	(														\
 		detail::tvec3<T, P> const & x,						\
 		T const & y	\
@@ -123,7 +123,7 @@
 
 #define VECTORIZE4_VEC_SCA(func)							\
 	template <typename T, precision P>						\
-	GLM_FUNC_QUALIFIER detail::tvec4<T, P> func				\
+	inline detail::tvec4<T, P> func				\
 	(														\
 		detail::tvec4<T, P> const & x,						\
 		T const & y	\
@@ -144,7 +144,7 @@
 
 #define VECTORIZE2_VEC_VEC(func)					\
 	template <typename T, precision P>				\
-	GLM_FUNC_QUALIFIER detail::tvec2<T, P> func		\
+	inline detail::tvec2<T, P> func		\
 	(												\
 		detail::tvec2<T, P> const & x,				\
 		detail::tvec2<T, P> const & y				\
@@ -157,7 +157,7 @@
 
 #define VECTORIZE3_VEC_VEC(func)					\
 	template <typename T, precision P>				\
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> func		\
+	inline detail::tvec3<T, P> func		\
 	(												\
 		detail::tvec3<T, P> const & x,				\
 		detail::tvec3<T, P> const & y				\
@@ -171,7 +171,7 @@
 
 #define VECTORIZE4_VEC_VEC(func)				\
 	template <typename T, precision P>			\
-	GLM_FUNC_QUALIFIER detail::tvec4<T, P> func	\
+	inline detail::tvec4<T, P> func	\
 	(											\
 		detail::tvec4<T, P> const & x,			\
 		detail::tvec4<T, P> const & y			\
@@ -196,7 +196,7 @@ namespace detail
 	struct If
 	{
 		template<typename F, typename T>
-		static GLM_FUNC_QUALIFIER T apply(F functor, const T& val)
+		static inline T apply(F functor, const T& val)
 		{
 			return functor(val);
 		}
@@ -206,7 +206,7 @@ namespace detail
 	struct If<false>
 	{
 		template<typename F, typename T>
-		static GLM_FUNC_QUALIFIER T apply(F, const T& val)
+		static inline T apply(F, const T& val)
 		{
 			return val;
 		}

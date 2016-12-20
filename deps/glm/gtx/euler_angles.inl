@@ -10,7 +10,7 @@
 namespace glm
 {
 	template <typename T>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, defaultp> eulerAngleX
+	inline detail::tmat4x4<T, defaultp> eulerAngleX
 	(
 		T const & angleX
 	)
@@ -26,7 +26,7 @@ namespace glm
 	}
 
 	template <typename T>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, defaultp> eulerAngleY
+	inline detail::tmat4x4<T, defaultp> eulerAngleY
 	(
 		T const & angleY
 	)
@@ -42,7 +42,7 @@ namespace glm
 	}
 
 	template <typename T>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, defaultp> eulerAngleZ
+	inline detail::tmat4x4<T, defaultp> eulerAngleZ
 	(
 		T const & angleZ
 	)
@@ -58,7 +58,7 @@ namespace glm
 	}
 
 	template <typename T>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, defaultp> eulerAngleXY
+	inline detail::tmat4x4<T, defaultp> eulerAngleXY
 	(
 		T const & angleX,
 		T const & angleY
@@ -77,7 +77,7 @@ namespace glm
 	}
 
 	template <typename T>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, defaultp> eulerAngleYX
+	inline detail::tmat4x4<T, defaultp> eulerAngleYX
 	(
 		T const & angleY,
 		T const & angleX
@@ -96,7 +96,7 @@ namespace glm
 	}
 
 	template <typename T>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, defaultp> eulerAngleXZ
+	inline detail::tmat4x4<T, defaultp> eulerAngleXZ
 	(
 		T const & angleX,
 		T const & angleZ
@@ -106,7 +106,7 @@ namespace glm
 	}
 
 	template <typename T>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, defaultp> eulerAngleZX
+	inline detail::tmat4x4<T, defaultp> eulerAngleZX
 	(
 		T const & angleZ,
 		T const & angleX
@@ -116,7 +116,7 @@ namespace glm
 	}
 
 	template <typename T>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, defaultp> eulerAngleYZ
+	inline detail::tmat4x4<T, defaultp> eulerAngleYZ
 	(
 		T const & angleY,
 		T const & angleZ
@@ -126,7 +126,7 @@ namespace glm
 	}
 
 	template <typename T>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, defaultp> eulerAngleZY
+	inline detail::tmat4x4<T, defaultp> eulerAngleZY
 	(
 		T const & angleZ,
 		T const & angleY
@@ -136,7 +136,7 @@ namespace glm
 	}
 
 	template <typename T>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, defaultp> eulerAngleYXZ
+	inline detail::tmat4x4<T, defaultp> eulerAngleYXZ
 	(
 		T const & yaw,
 		T const & pitch,
@@ -171,7 +171,7 @@ namespace glm
 	}
 
 	template <typename T>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, defaultp> yawPitchRoll
+	inline detail::tmat4x4<T, defaultp> yawPitchRoll
 	(
 		T const & yaw,
 		T const & pitch,
@@ -206,7 +206,7 @@ namespace glm
 	}
 
 	template <typename T>
-	GLM_FUNC_QUALIFIER detail::tmat2x2<T, defaultp> orientate2
+	inline detail::tmat2x2<T, defaultp> orientate2
 	(
 		T const & angle
 	)
@@ -223,7 +223,7 @@ namespace glm
 	}
 
 	template <typename T>
-	GLM_FUNC_QUALIFIER detail::tmat3x3<T, defaultp> orientate3
+	inline detail::tmat3x3<T, defaultp> orientate3
 	(
 		T const & angle
 	)
@@ -245,7 +245,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tmat3x3<T, P> orientate3
+	inline detail::tmat3x3<T, P> orientate3
 	(
 		detail::tvec3<T, P> const & angles
 	)
@@ -254,7 +254,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, P> orientate4
+	inline detail::tmat4x4<T, P> orientate4
 	(
 		detail::tvec3<T, P> const & angles
 	)

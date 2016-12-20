@@ -13,7 +13,7 @@
 namespace glm
 {
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> closestPointOnLine
+	inline detail::tvec3<T, P> closestPointOnLine
 	(
 		detail::tvec3<T, P> const & point,
 		detail::tvec3<T, P> const & a,

@@ -36,18 +36,6 @@ void matrix_4x4_copy(math_matrix_4x4 *dst, const math_matrix_4x4 *src)
 }
 
 /*
- * Sets mat to an identity matrix
- */
-void matrix_4x4_identity(math_matrix_4x4 *mat)
-{
-   unsigned i;
-
-   memset(mat, 0, sizeof(*mat));
-   for (i = 0; i < 4; i++)
-      MAT_ELEM_4X4(*mat, i, i) = 1.0f;
-}
-
-/*
  * Sets out to the transposed matrix of in
  */
 void matrix_4x4_transpose(math_matrix_4x4 *out, const math_matrix_4x4 *in)
@@ -67,15 +55,25 @@ void matrix_4x4_transpose(math_matrix_4x4 *out, const math_matrix_4x4 *in)
  */
 void matrix_4x4_rotate_x(math_matrix_4x4 *mat, float rad)
 {
-   float cosine = cosf(rad);
-   float sine   = sinf(rad);
+   float cosine             = cosf(rad);
+   float sine               = sinf(rad);
 
-   matrix_4x4_identity(mat);
-
+   MAT_ELEM_4X4(*mat, 0, 0) = 1.0f;
+   MAT_ELEM_4X4(*mat, 0, 1) = 0.0f;
+   MAT_ELEM_4X4(*mat, 0, 2) = 0.0f;
+   MAT_ELEM_4X4(*mat, 0, 3) = 0.0f;
+   MAT_ELEM_4X4(*mat, 1, 0) = 0.0f;
    MAT_ELEM_4X4(*mat, 1, 1) = cosine;
-   MAT_ELEM_4X4(*mat, 2, 2) = cosine;
    MAT_ELEM_4X4(*mat, 1, 2) = -sine;
+   MAT_ELEM_4X4(*mat, 1, 3) = 0.0f;
+   MAT_ELEM_4X4(*mat, 2, 0) = 0.0f;
    MAT_ELEM_4X4(*mat, 2, 1) = sine;
+   MAT_ELEM_4X4(*mat, 2, 2) = cosine;
+   MAT_ELEM_4X4(*mat, 2, 3) = 0.0f;
+   MAT_ELEM_4X4(*mat, 3, 0) = 0.0f;
+   MAT_ELEM_4X4(*mat, 3, 1) = 0.0f;
+   MAT_ELEM_4X4(*mat, 3, 2) = 0.0f;
+   MAT_ELEM_4X4(*mat, 3, 3) = 1.0f;
 }
 
 /*
@@ -84,15 +82,28 @@ void matrix_4x4_rotate_x(math_matrix_4x4 *mat, float rad)
  */
 void matrix_4x4_rotate_y(math_matrix_4x4 *mat, float rad)
 {
-   float cosine = cosf(rad);
-   float sine   = sinf(rad);
-
-   matrix_4x4_identity(mat);
+   float cosine             = cosf(rad);
+   float sine               = sinf(rad);
 
    MAT_ELEM_4X4(*mat, 0, 0) = cosine;
-   MAT_ELEM_4X4(*mat, 2, 2) = cosine;
+   MAT_ELEM_4X4(*mat, 0, 1) = 0.0f;
    MAT_ELEM_4X4(*mat, 0, 2) = -sine;
+   MAT_ELEM_4X4(*mat, 0, 3) = 0.0f;
+
+   MAT_ELEM_4X4(*mat, 1, 0) = 0.0f;
+   MAT_ELEM_4X4(*mat, 1, 1) = 1.0f;
+   MAT_ELEM_4X4(*mat, 1, 2) = 0.0f;
+   MAT_ELEM_4X4(*mat, 1, 3) = 0.0f;
+
    MAT_ELEM_4X4(*mat, 2, 0) = sine;
+   MAT_ELEM_4X4(*mat, 2, 1) = 0.0f;
+   MAT_ELEM_4X4(*mat, 2, 2) = cosine;
+   MAT_ELEM_4X4(*mat, 2, 3) = 0.0f;
+
+   MAT_ELEM_4X4(*mat, 3, 0) = 0.0f;
+   MAT_ELEM_4X4(*mat, 3, 1) = 0.0f;
+   MAT_ELEM_4X4(*mat, 3, 2) = 0.0f;
+   MAT_ELEM_4X4(*mat, 3, 3) = 1.0f;
 }
 
 /*
@@ -101,15 +112,25 @@ void matrix_4x4_rotate_y(math_matrix_4x4 *mat, float rad)
  */
 void matrix_4x4_rotate_z(math_matrix_4x4 *mat, float rad)
 {
-   float cosine = cosf(rad);
-   float sine   = sinf(rad);
-
-   matrix_4x4_identity(mat);
+   float cosine             = cosf(rad);
+   float sine               = sinf(rad);
 
    MAT_ELEM_4X4(*mat, 0, 0) = cosine;
-   MAT_ELEM_4X4(*mat, 1, 1) = cosine;
    MAT_ELEM_4X4(*mat, 0, 1) = -sine;
+   MAT_ELEM_4X4(*mat, 0, 2) = 0.0f;
+   MAT_ELEM_4X4(*mat, 0, 3) = 0.0f;
    MAT_ELEM_4X4(*mat, 1, 0) = sine;
+   MAT_ELEM_4X4(*mat, 1, 1) = cosine;
+   MAT_ELEM_4X4(*mat, 1, 2) = 0.0f;
+   MAT_ELEM_4X4(*mat, 1, 3) = 0.0f;
+   MAT_ELEM_4X4(*mat, 2, 0) = 0.0f;
+   MAT_ELEM_4X4(*mat, 2, 1) = 0.0f;
+   MAT_ELEM_4X4(*mat, 2, 2) = 1.0f;
+   MAT_ELEM_4X4(*mat, 2, 3) = 0.0f;
+   MAT_ELEM_4X4(*mat, 3, 0) = 0.0f;
+   MAT_ELEM_4X4(*mat, 3, 1) = 0.0f;
+   MAT_ELEM_4X4(*mat, 3, 2) = 0.0f;
+   MAT_ELEM_4X4(*mat, 3, 3) = 1.0f;
 }
 
 /*
@@ -120,27 +141,46 @@ void matrix_4x4_ortho(math_matrix_4x4 *mat,
       float bottom, float top,
       float znear, float zfar)
 {
-   float rl = right - left;
-   float tb = top   - bottom;
-   float fn = zfar  - znear;
-
-   matrix_4x4_identity(mat);
+   float rl                 = right - left;
+   float tb                 = top   - bottom;
+   float fn                 = zfar  - znear;
 
    MAT_ELEM_4X4(*mat, 0, 0) =  2.0f / rl;
-   MAT_ELEM_4X4(*mat, 1, 1) =  2.0f / tb;
-   MAT_ELEM_4X4(*mat, 2, 2) = -2.0f / fn;
+   MAT_ELEM_4X4(*mat, 0, 1) =  0.0f;
+   MAT_ELEM_4X4(*mat, 0, 2) =  0.0f;
    MAT_ELEM_4X4(*mat, 0, 3) = -(left + right)  / rl;
+   MAT_ELEM_4X4(*mat, 1, 0) =  0.0f;
+   MAT_ELEM_4X4(*mat, 1, 1) =  2.0f / tb;
+   MAT_ELEM_4X4(*mat, 1, 2) =  0.0f;
    MAT_ELEM_4X4(*mat, 1, 3) = -(top  + bottom) / tb;
+   MAT_ELEM_4X4(*mat, 2, 0) =  0.0f;
+   MAT_ELEM_4X4(*mat, 2, 1) =  0.0f;
+   MAT_ELEM_4X4(*mat, 2, 2) = -2.0f / fn;
    MAT_ELEM_4X4(*mat, 2, 3) = -(zfar + znear)  / fn;
+   MAT_ELEM_4X4(*mat, 3, 0) =  0.0f;
+   MAT_ELEM_4X4(*mat, 3, 1) =  0.0f;
+   MAT_ELEM_4X4(*mat, 3, 2) =  0.0f;
+   MAT_ELEM_4X4(*mat, 3, 3) =  1.0f;
 }
 
 void matrix_4x4_scale(math_matrix_4x4 *out, float x, float y,
       float z)
 {
-   memset(out, 0, sizeof(*out));
    MAT_ELEM_4X4(*out, 0, 0) = x;
+   MAT_ELEM_4X4(*out, 0, 1) = 0.0f;
+   MAT_ELEM_4X4(*out, 0, 2) = 0.0f;
+   MAT_ELEM_4X4(*out, 0, 3) = 0.0f;
+   MAT_ELEM_4X4(*out, 1, 0) = 0.0f;
    MAT_ELEM_4X4(*out, 1, 1) = y;
+   MAT_ELEM_4X4(*out, 1, 2) = 0.0f;
+   MAT_ELEM_4X4(*out, 1, 3) = 0.0f;
+   MAT_ELEM_4X4(*out, 2, 0) = 0.0f;
+   MAT_ELEM_4X4(*out, 2, 1) = 0.0f;
    MAT_ELEM_4X4(*out, 2, 2) = z;
+   MAT_ELEM_4X4(*out, 2, 3) = 0.0f;
+   MAT_ELEM_4X4(*out, 3, 0) = 0.0f;
+   MAT_ELEM_4X4(*out, 3, 1) = 0.0f;
+   MAT_ELEM_4X4(*out, 3, 2) = 0.0f;
    MAT_ELEM_4X4(*out, 3, 3) = 1.0f;
 }
 
@@ -152,10 +192,22 @@ void matrix_4x4_scale(math_matrix_4x4 *out, float x, float y,
 void matrix_4x4_translate(math_matrix_4x4 *out, float x,
       float y, float z)
 {
-   matrix_4x4_identity(out);
+   MAT_ELEM_4X4(*out, 0, 0) = 1.0f;
+   MAT_ELEM_4X4(*out, 0, 1) = 0.0f;
+   MAT_ELEM_4X4(*out, 0, 2) = 0.0f;
    MAT_ELEM_4X4(*out, 0, 3) = x;
+   MAT_ELEM_4X4(*out, 1, 0) = 0.0f;
+   MAT_ELEM_4X4(*out, 1, 1) = 1.0f;
+   MAT_ELEM_4X4(*out, 1, 2) = 1.0f;
    MAT_ELEM_4X4(*out, 1, 3) = y;
+   MAT_ELEM_4X4(*out, 2, 0) = 0.0f;
+   MAT_ELEM_4X4(*out, 2, 1) = 0.0f;
+   MAT_ELEM_4X4(*out, 2, 2) = 1.0f;
    MAT_ELEM_4X4(*out, 2, 3) = z;
+   MAT_ELEM_4X4(*out, 3, 0) = 0.0f;
+   MAT_ELEM_4X4(*out, 3, 1) = 0.0f;
+   MAT_ELEM_4X4(*out, 3, 2) = 0.0f;
+   MAT_ELEM_4X4(*out, 3, 3) = 1.0f;
 }
 
 /*
@@ -167,54 +219,63 @@ void matrix_4x4_projection(math_matrix_4x4 *out,
       float znear,
       float zfar)
 {
-   float const a = 1.f / tan(y_fov / 2.f);
-   float delta_z = zfar - znear;
+   float const a            = 1.f / tan(y_fov / 2.f);
+   float delta_z            = zfar - znear;
 
-   memset(out, 0, sizeof(*out));
    MAT_ELEM_4X4(*out, 0, 0) = a / aspect;
+   MAT_ELEM_4X4(*out, 0, 1) = 0.0f;
+   MAT_ELEM_4X4(*out, 0, 2) = 0.0f;
+   MAT_ELEM_4X4(*out, 0, 3) = 0.0f;
+   MAT_ELEM_4X4(*out, 1, 0) = 0.0f;
    MAT_ELEM_4X4(*out, 1, 1) = a;
+   MAT_ELEM_4X4(*out, 1, 2) = 0.0f;
+   MAT_ELEM_4X4(*out, 1, 3) = 0.0f;
+   MAT_ELEM_4X4(*out, 2, 0) = 0.0f;
+   MAT_ELEM_4X4(*out, 2, 1) = 0.0f;
    MAT_ELEM_4X4(*out, 2, 2) = -((zfar + znear) / delta_z);
    MAT_ELEM_4X4(*out, 2, 3) = -1.f;
+   MAT_ELEM_4X4(*out, 3, 0) = 0.0f;
+   MAT_ELEM_4X4(*out, 3, 1) = 0.0f;
    MAT_ELEM_4X4(*out, 3, 2) = -((2.f * zfar * znear) / delta_z);
+   MAT_ELEM_4X4(*out, 3, 3) = 0.0f;
 }
 
-/* TODO/FIXME - finish */
 void matrix_4x4_lookat(math_matrix_4x4 *out,
       vec3_t eye,
       vec3_t center,
       vec3_t up)
 {
-   vec3_t s, t, f;
+   vec3_t zaxis;   /* the "forward" vector */
+   vec3_t xaxis;   /* the "right"   vector */
+   vec3_t yaxis;   /* the "up"      vector */
 
-   vec3_copy(&f[0], center);
-   vec3_subtract(&f[0], eye);
-   vec3_normalize(&f[0]);
+   vec3_copy(&zaxis[0], center);
+   vec3_subtract(&zaxis[0], eye);
+   vec3_normalize(&zaxis[0]);
 
-   vec3_cross(&s[0], &f[0], up);
-   vec3_normalize(&s[0]);
+   vec3_cross(&xaxis[0], &zaxis[0], up);
+   vec3_normalize(&xaxis[0]);
+   vec3_cross(&yaxis[0], &xaxis[0], zaxis);
 
-   vec3_cross(&t[0], &s[0], f);
+   MAT_ELEM_4X4(*out, 0, 0) = xaxis[0];
+   MAT_ELEM_4X4(*out, 0, 1) = yaxis[0];
+   MAT_ELEM_4X4(*out, 0, 2) = -zaxis[0];
+   MAT_ELEM_4X4(*out, 0, 3) = 0.0;
 
-   memset(out, 0, sizeof(*out));
+   MAT_ELEM_4X4(*out, 1, 0) = xaxis[1];
+   MAT_ELEM_4X4(*out, 1, 1) = yaxis[1];
+   MAT_ELEM_4X4(*out, 1, 2) = -zaxis[1];
+   MAT_ELEM_4X4(*out, 1, 3) = 0.0f;
 
-   MAT_ELEM_4X4(*out, 0, 0) = s[0];
-   MAT_ELEM_4X4(*out, 0, 1) = t[0];
-   MAT_ELEM_4X4(*out, 0, 2) = -f[0];
+   MAT_ELEM_4X4(*out, 2, 0) = xaxis[2];
+   MAT_ELEM_4X4(*out, 2, 1) = yaxis[2];
+   MAT_ELEM_4X4(*out, 2, 2) = -zaxis[2];
+   MAT_ELEM_4X4(*out, 2, 3) = 0.0f;
 
-   MAT_ELEM_4X4(*out, 1, 0) = s[1];
-   MAT_ELEM_4X4(*out, 1, 1) = t[1];
-   MAT_ELEM_4X4(*out, 1, 2) = -f[1];
-
-   MAT_ELEM_4X4(*out, 2, 0) = s[2];
-   MAT_ELEM_4X4(*out, 2, 1) = t[2];
-   MAT_ELEM_4X4(*out, 2, 2) = -f[2];
-
+   MAT_ELEM_4X4(*out, 3, 0) = -(xaxis[0] * eye[0] + xaxis[1] * eye[1] + xaxis[2] * eye[2]);
+   MAT_ELEM_4X4(*out, 3, 1) = -(yaxis[0] * eye[0] + yaxis[1] * eye[1] + yaxis[2] * eye[2]);
+   MAT_ELEM_4X4(*out, 3, 2) = -(zaxis[0] * eye[0] + zaxis[1] * eye[1] + zaxis[2] * eye[2]);
    MAT_ELEM_4X4(*out, 3, 3) = 1.f;
-
-#if 0
-   mat4x4_translate_in_place(m, -eye[0], -eye[1], -eye[2]);
-#endif
-
 }
 
 /*

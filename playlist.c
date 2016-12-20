@@ -150,22 +150,22 @@ static void playlist_free_entry(struct playlist_entry *entry)
    if (!entry)
       return;
 
-   if (entry->path)
+   if (!string_is_empty(entry->path))
       free(entry->path);
 
-   if (entry->label)
+   if (!string_is_empty(entry->label))
       free(entry->label);
 
-   if (entry->core_path)
+   if (!string_is_empty(entry->core_path))
       free(entry->core_path);
 
-   if (entry->core_name)
+   if (!string_is_empty(entry->core_name))
       free(entry->core_name);
 
-   if (entry->db_name)
+   if (!string_is_empty(entry->db_name))
       free(entry->db_name);
 
-   if (entry->crc32)
+   if (!string_is_empty(entry->crc32))
       free(entry->crc32);
 
    entry->path      = NULL;
@@ -463,9 +463,13 @@ static bool playlist_read_file(
          if (!filestream_gets(file, buf[i], sizeof(buf[i])))
             goto end;
 
-         last = strrchr(buf[i], '\n');
-         if (last)
-            *last = '\0';
+         /* Read playlist entry and terminate string with NUL character
+          * regardless of Windows or Unix line endings
+          */
+          if((last = strrchr(buf[i], '\r')))
+             *last = '\0';
+          else if((last = strrchr(buf[i], '\n')))
+             *last = '\0';	
       }
 
       entry = &playlist->entries[playlist->size];
@@ -477,6 +481,7 @@ static bool playlist_read_file(
          entry->path      = strdup(buf[0]);
       if (*buf[1])
          entry->label     = strdup(buf[1]);
+
       entry->core_path    = strdup(buf[2]);
       entry->core_name    = strdup(buf[3]);
       if (*buf[4])
@@ -524,19 +529,11 @@ error:
    return NULL;
 }
 
-static const char *playlist_entry_get_label(
-      const struct playlist_entry *entry)
-{
-   if (!entry)
-      return NULL;
-   return entry->label;
-}
-
 static int playlist_qsort_func(const struct playlist_entry *a,
       const struct playlist_entry *b)
 {
-   const char *a_label = playlist_entry_get_label(a);
-   const char *b_label = playlist_entry_get_label(b);
+   const char *a_label = a ? a->label : NULL;
+   const char *b_label = b ? b->label : NULL;
 
    if (!a_label || !b_label)
       return 0;

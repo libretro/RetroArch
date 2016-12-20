@@ -10,7 +10,7 @@
 namespace glm
 {
 	// pow
-	GLM_FUNC_QUALIFIER int pow(int x, int y)
+	inline int pow(int x, int y)
 	{
 		if(y == 0)
 			return 1;
@@ -21,7 +21,7 @@ namespace glm
 	}
 
 	// sqrt: From Christopher J. Musial, An integer square root, Graphics Gems, 1990, page 387
-	GLM_FUNC_QUALIFIER int sqrt(int x)
+	inline int sqrt(int x)
 	{
 		if(x <= 1) return x;
 
@@ -40,7 +40,7 @@ namespace glm
 // Henry Gordon Dietz: http://aggregate.org/MAGIC/
 namespace detail
 {
-	GLM_FUNC_QUALIFIER unsigned int ones32(unsigned int x)
+	inline unsigned int ones32(unsigned int x)
 	{
 		/* 32-bit recursive reduction using SWAR...
 		but first step is mapping 2-bit values
@@ -58,7 +58,7 @@ namespace detail
 	struct compute_log2<false>
 	{
 		template <typename T>
-		GLM_FUNC_QUALIFIER T operator() (T const & Value) const
+		inline T operator() (T const & Value) const
 		{
 #if(GLM_COMPILER & (GLM_COMPILER_VC | GLM_COMPILER_GCC))
 			return Value <= static_cast<T>(1) ? T(0) : T(32) - nlz(Value - T(1));
@@ -71,7 +71,7 @@ namespace detail
 
 	// Henry Gordon Dietz: http://aggregate.org/MAGIC/
 /*
-	GLM_FUNC_QUALIFIER unsigned int floor_log2(unsigned int x)
+	inline unsigned int floor_log2(unsigned int x)
 	{
 		x |= (x >> 1);
 		x |= (x >> 2);
@@ -83,14 +83,14 @@ namespace detail
 	}
 */
 	// mod
-	GLM_FUNC_QUALIFIER int mod(int x, int y)
+	inline int mod(int x, int y)
 	{
 		return x - y * (x / y);
 	}
 
 	// factorial (!12 max, integer only)
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType factorial(genType const & x)
+	inline genType factorial(genType const & x)
 	{
 		genType Temp = x;
 		genType Result;
@@ -100,7 +100,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec2<T, P> factorial(
+	inline detail::tvec2<T, P> factorial(
 		detail::tvec2<T, P> const & x)
 	{
 		return detail::tvec2<T, P>(
@@ -109,7 +109,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> factorial(
+	inline detail::tvec3<T, P> factorial(
 		detail::tvec3<T, P> const & x)
 	{
 		return detail::tvec3<T, P>(
@@ -119,7 +119,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec4<T, P> factorial(
+	inline detail::tvec4<T, P> factorial(
 		detail::tvec4<T, P> const & x)
 	{
 		return detail::tvec4<T, P>(
@@ -129,7 +129,7 @@ namespace detail
 			factorial(x.w));
 	}
 
-	GLM_FUNC_QUALIFIER uint pow(uint x, uint y)
+	inline uint pow(uint x, uint y)
 	{
 		uint result = x;
 		for(uint i = 1; i < y; ++i)
@@ -137,7 +137,7 @@ namespace detail
 		return result;
 	}
 
-	GLM_FUNC_QUALIFIER uint sqrt(uint x)
+	inline uint sqrt(uint x)
 	{
 		if(x <= 1) return x;
 
@@ -153,14 +153,14 @@ namespace detail
 		return CurrentAnswer;
 	}
 
-	GLM_FUNC_QUALIFIER uint mod(uint x, uint y)
+	inline uint mod(uint x, uint y)
 	{
 		return x - y * (x / y);
 	}
 
 #if(GLM_COMPILER & (GLM_COMPILER_VC | GLM_COMPILER_GCC))
 
-	GLM_FUNC_QUALIFIER unsigned int nlz(unsigned int x) 
+	inline unsigned int nlz(unsigned int x) 
 	{
 		return 31u - findMSB(x);
 	}
@@ -168,7 +168,7 @@ namespace detail
 #else
 
 	// Hackers Delight: http://www.hackersdelight.org/HDcode/nlz.c.txt
-	GLM_FUNC_QUALIFIER unsigned int nlz(unsigned int x) 
+	inline unsigned int nlz(unsigned int x) 
 	{
 		int y, m, n;
 

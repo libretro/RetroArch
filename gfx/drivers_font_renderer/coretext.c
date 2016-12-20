@@ -32,16 +32,24 @@
 #endif
 
 #include "../font_driver.h"
-#include "../../runloop.h"
 
 #define CT_ATLAS_ROWS 16
 #define CT_ATLAS_COLS 16
 #define CT_ATLAS_SIZE (CT_ATLAS_ROWS * CT_ATLAS_COLS)
 
+typedef struct coretext_atlas_slot
+{
+    struct font_glyph glyph;
+    unsigned charcode;
+    unsigned last_used;
+    struct coretext_atlas_slot *next;
+} coretext_atlas_slot_t;
+
 typedef struct coretext_renderer
 {
   struct font_atlas atlas;
-  struct font_glyph glyphs[CT_ATLAS_SIZE];
+  coretext_atlas_slot_t atlas_slots[CT_ATLAS_SIZE];
+  coretext_atlas_slot_t *uc_map[0x100];
   CGFloat metrics_height;
 } ct_font_renderer_t;
 
@@ -53,15 +61,18 @@ static struct font_atlas *font_renderer_ct_get_atlas(void *data)
   return &handle->atlas;
 }
 
-static const struct font_glyph *font_renderer_ct_get_glyph(void *data, uint32_t code)
+static const struct font_glyph *font_renderer_ct_get_glyph(
+    void *data, uint32_t charcode)
 {
-   ct_font_renderer_t *handle   = (ct_font_renderer_t*)data;
+   coretext_atlas_slot_t *atlas_slot = NULL;
+   ct_font_renderer_t        *handle = (ct_font_renderer_t*)data;
 
-   if (!handle)
+   if (!handle || charcode >= CT_ATLAS_SIZE)
       return NULL;
-   if (code >= CT_ATLAS_SIZE)
-      return NULL;
-   return &handle->glyphs[code];
+
+   atlas_slot = (coretext_atlas_slot_t*)&handle->atlas_slots[charcode];
+    
+   return &atlas_slot->glyph;
 }
 
 static void font_renderer_ct_free(void *data)
@@ -75,7 +86,7 @@ static void font_renderer_ct_free(void *data)
   free(handle);
 }
 
-static bool font_renderer_create_atlas(CTFontRef face, ct_font_renderer_t *handle)
+static bool coretext_font_renderer_create_atlas(CTFontRef face, ct_font_renderer_t *handle)
 {
    int max_width, max_height;
    unsigned i;
@@ -126,7 +137,7 @@ static bool font_renderer_create_atlas(CTFontRef face, ct_font_renderer_t *handl
    for (i = 0; i < CT_ATLAS_SIZE; i++)
    {
       int origin_x, origin_y;
-      struct font_glyph *glyph = &handle->glyphs[i];
+      struct font_glyph *glyph = &handle->atlas_slots[i].glyph;
 
       if (!glyph)
          continue;
@@ -157,10 +168,7 @@ static bool font_renderer_create_atlas(CTFontRef face, ct_font_renderer_t *handl
       calloc(handle->atlas.width * handle->atlas.height, 1);
 
    if (!handle->atlas.buffer)
-   {
-      ret = false;
-      goto end;
-   }
+      return false;
 
    bytesPerRow = max_width;
    bitmapData  = calloc(max_height, bytesPerRow);
@@ -182,7 +190,7 @@ static bool font_renderer_create_atlas(CTFontRef face, ct_font_renderer_t *handl
       CFStringRef glyph_cfstr;
       CFAttributedStringRef attrString;
       CTLineRef line;
-      struct font_glyph *glyph = &handle->glyphs[i];
+      struct font_glyph *glyph = &handle->atlas_slots[i].glyph;
       
       if (!glyph)
          continue;
@@ -240,7 +248,6 @@ static bool font_renderer_create_atlas(CTFontRef face, ct_font_renderer_t *handl
    offscreen = NULL;
    free(bitmapData);
 
-end:
    return ret;
 }
 
@@ -273,7 +280,7 @@ static void *font_renderer_ct_init(const char *font_path, float font_size)
       goto error;
    }
 
-   if (!font_renderer_create_atlas(face, handle))
+   if (!coretext_font_renderer_create_atlas(face, handle))
    {
       err = 1;
       goto error;

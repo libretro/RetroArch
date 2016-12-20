@@ -28,6 +28,7 @@
 #include <boolean.h>
 #include <retro_stat.h>
 #include <retro_dirent.h>
+#include <encodings/utf.h>
 
 struct RDIR *retro_opendir(const char *name)
 {
@@ -40,6 +41,7 @@ struct RDIR *retro_opendir(const char *name)
       return NULL;
 
 #if defined(_WIN32)
+   path_buf[0] = '\0';
    snprintf(path_buf, sizeof(path_buf), "%s\\*", name);
    rdir->directory = FindFirstFile(path_buf, &rdir->entry);
 #elif defined(VITA) || defined(PSP)

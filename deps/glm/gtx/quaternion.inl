@@ -12,7 +12,7 @@
 namespace glm
 {
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> cross
+	inline detail::tvec3<T, P> cross
 	(
 		detail::tvec3<T, P> const & v,
 		detail::tquat<T, P> const & q
@@ -22,7 +22,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> cross
+	inline detail::tvec3<T, P> cross
 	(
 		detail::tquat<T, P> const & q,
 		detail::tvec3<T, P> const & v
@@ -32,7 +32,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tquat<T, P> squad
+	inline detail::tquat<T, P> squad
 	(
 		detail::tquat<T, P> const & q1,
 		detail::tquat<T, P> const & q2,
@@ -44,7 +44,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tquat<T, P> intermediate
+	inline detail::tquat<T, P> intermediate
 	(
 		detail::tquat<T, P> const & prev,
 		detail::tquat<T, P> const & curr,
@@ -56,7 +56,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tquat<T, P> exp
+	inline detail::tquat<T, P> exp
 	(
 		detail::tquat<T, P> const & q
 	)
@@ -68,7 +68,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tquat<T, P> log
+	inline detail::tquat<T, P> log
 	(
 		detail::tquat<T, P> const & q
 	)
@@ -92,7 +92,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tquat<T, P> pow
+	inline detail::tquat<T, P> pow
 	(
 		detail::tquat<T, P> const & x,
 		T const & y
@@ -111,7 +111,7 @@ namespace glm
 	}
 
 	//template <typename T, precision P>
-	//GLM_FUNC_QUALIFIER detail::tquat<T, P> sqrt
+	//inline detail::tquat<T, P> sqrt
 	//(
 	//	detail::tquat<T, P> const & q
 	//)
@@ -121,7 +121,7 @@ namespace glm
 	//}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> rotate
+	inline detail::tvec3<T, P> rotate
 	(
 		detail::tquat<T, P> const & q,
 		detail::tvec3<T, P> const & v
@@ -131,7 +131,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec4<T, P> rotate
+	inline detail::tvec4<T, P> rotate
 	(
 		detail::tquat<T, P> const & q,
 		detail::tvec4<T, P> const & v
@@ -141,7 +141,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T extractRealComponent
+	inline T extractRealComponent
 	(
 		detail::tquat<T, P> const & q
 	)
@@ -154,7 +154,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T length2
+	inline T length2
 	(
 		detail::tquat<T, P> const & q
 	)
@@ -163,7 +163,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tquat<T, P> shortMix
+	inline detail::tquat<T, P> shortMix
 	(
 		detail::tquat<T, P> const & x,
 		detail::tquat<T, P> const & y,
@@ -205,7 +205,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tquat<T, P> fastMix
+	inline detail::tquat<T, P> fastMix
 	(
 		detail::tquat<T, P> const & x,
 		detail::tquat<T, P> const & y,
@@ -216,7 +216,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tquat<T, P> rotation
+	inline detail::tquat<T, P> rotation
 	(
 		detail::tvec3<T, P> const & orig,
 		detail::tvec3<T, P> const & dest
