@@ -481,6 +481,60 @@ end:
    return ret;
 }
 
+static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_max_users(
+      menu_displaylist_info_t *info)
+{
+   return deferred_push_cursor_manager_list_generic(info, DATABASE_QUERY_ENTRY_MAX_USERS);
+}
+
+static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_famitsu_magazine_rating(
+      menu_displaylist_info_t *info)
+{
+   return deferred_push_cursor_manager_list_generic(info, DATABASE_QUERY_ENTRY_FAMITSU_MAGAZINE_RATING);
+}
+
+static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_edge_magazine_rating(
+      menu_displaylist_info_t *info)
+{
+   return deferred_push_cursor_manager_list_generic(info, DATABASE_QUERY_ENTRY_EDGE_MAGAZINE_RATING);
+}
+
+static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_edge_magazine_issue(
+      menu_displaylist_info_t *info)
+{
+   return deferred_push_cursor_manager_list_generic(info, DATABASE_QUERY_ENTRY_EDGE_MAGAZINE_ISSUE);
+}
+
+static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_elspa_rating(
+      menu_displaylist_info_t *info)
+{
+   return deferred_push_cursor_manager_list_generic(info, DATABASE_QUERY_ENTRY_ELSPA_RATING);
+}
+
+static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_cero_rating(
+      menu_displaylist_info_t *info)
+{
+   return deferred_push_cursor_manager_list_generic(info, DATABASE_QUERY_ENTRY_CERO_RATING);
+}
+
+static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_pegi_rating(
+      menu_displaylist_info_t *info)
+{
+   return deferred_push_cursor_manager_list_generic(info, DATABASE_QUERY_ENTRY_PEGI_RATING);
+}
+
+static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_bbfc_rating(
+      menu_displaylist_info_t *info)
+{
+   return deferred_push_cursor_manager_list_generic(info, DATABASE_QUERY_ENTRY_BBFC_RATING);
+}
+
+static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_esrb_rating(
+      menu_displaylist_info_t *info)
+{
+   return deferred_push_cursor_manager_list_generic(info, DATABASE_QUERY_ENTRY_ESRB_RATING);
+}
+
 static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_enhancement_hw(
       menu_displaylist_info_t *info)
 {
@@ -511,6 +565,19 @@ static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_origin(
    return deferred_push_cursor_manager_list_generic(info, DATABASE_QUERY_ENTRY_ORIGIN);
 }
 
+static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_releasemonth(
+      menu_displaylist_info_t *info)
+{
+   return deferred_push_cursor_manager_list_generic(info, DATABASE_QUERY_ENTRY_RELEASEDATE_MONTH);
+}
+
+static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_releaseyear(
+      menu_displaylist_info_t *info)
+{
+   return deferred_push_cursor_manager_list_generic(info, DATABASE_QUERY_ENTRY_RELEASEDATE_YEAR);
+}
+
+#if 0
 static int deferred_push_cursor_manager_list_deferred_query_subsearch(
       menu_displaylist_info_t *info)
 {
@@ -538,6 +605,7 @@ end:
 #endif
    return ret;
 }
+#endif
 
 static int general_push(menu_displaylist_info_t *info,
       unsigned id, enum menu_displaylist_ctl_state state)
@@ -1067,17 +1135,37 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_enhancement_hw);
                break;
             case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ESRB_RATING:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_esrb_rating);
+               break;
             case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_BBFC_RATING:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_bbfc_rating);
+               break;
             case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ELSPA_RATING:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_elspa_rating);
+               break;
             case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PEGI_RATING:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_pegi_rating);
+               break;
             case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_CERO_RATING:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_cero_rating);
+               break;
             case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_RATING:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_edge_magazine_rating);
+               break;
             case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_ISSUE:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_edge_magazine_issue);
+               break;
             case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FAMITSU_MAGAZINE_RATING:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_famitsu_magazine_rating);
+               break;
             case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_MAX_USERS:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_max_users);
+               break;
             case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEMONTH:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_releasemonth);
+               break;
             case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEYEAR:
-               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_subsearch);
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_releaseyear);
                break;
             case MENU_ENUM_LABEL_CORE_INFORMATION:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_information);
@@ -1337,17 +1425,37 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_enhancement_hw);
                break;
             case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ESRB_RATING:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_esrb_rating);
+               break;
             case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_BBFC_RATING:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_bbfc_rating);
+               break;
             case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ELSPA_RATING:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_elspa_rating);
+               break;
             case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PEGI_RATING:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_pegi_rating);
+               break;
             case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_CERO_RATING:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_cero_rating);
+               break;
             case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_RATING:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_edge_magazine_rating);
+               break;
             case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_ISSUE:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_edge_magazine_issue);
+               break;
             case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FAMITSU_MAGAZINE_RATING:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_famitsu_magazine_rating);
+               break;
             case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_MAX_USERS:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_max_users);
+               break;
             case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEMONTH:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_releasemonth);
+               break;
             case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEYEAR:
-               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_subsearch);
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_releaseyear);
                break;
             case MENU_LABEL_CORE_INFORMATION:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_information);

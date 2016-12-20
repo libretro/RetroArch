@@ -110,6 +110,7 @@ static void database_info_build_query_add_glob_close(char *s, size_t len)
    strlcat(s, "*')", len);
 }
 
+#if 0
 int database_info_build_query(char *s, size_t len,
       const char *label, const char *path)
 {
@@ -205,6 +206,7 @@ int database_info_build_query(char *s, size_t len,
 
    return 0;
 }
+#endif
 
 int database_info_build_query_enum(char *s, size_t len,
       enum database_query_type type,
@@ -243,6 +245,9 @@ int database_info_build_query_enum(char *s, size_t len,
       case DATABASE_QUERY_ENTRY_ELSPA_RATING:
          strlcat(s, "elspa_rating", len);
          break;
+      case DATABASE_QUERY_ENTRY_ESRB_RATING:
+         strlcat(s, "esrb_rating", len);
+         break;
       case DATABASE_QUERY_ENTRY_PEGI_RATING:
          strlcat(s, "pegi_rating", len);
          break;
@@ -276,7 +281,7 @@ int database_info_build_query_enum(char *s, size_t len,
          strlcat(s, "users", len);
          add_quotes = false;
          break;
-      default:
+      case DATABASE_QUERY_NONE:
          RARCH_LOG("Unknown type: %d\n", type);
          break;
    }

@@ -58,6 +58,7 @@ enum database_query_type
    DATABASE_QUERY_ENTRY_RATING,
    DATABASE_QUERY_ENTRY_BBFC_RATING,
    DATABASE_QUERY_ENTRY_ELSPA_RATING,
+   DATABASE_QUERY_ENTRY_ESRB_RATING,
    DATABASE_QUERY_ENTRY_PEGI_RATING,
    DATABASE_QUERY_ENTRY_CERO_RATING,
    DATABASE_QUERY_ENTRY_ENHANCEMENT_HW,
@@ -132,8 +133,10 @@ database_info_handle_t *database_info_file_init(const char *path,
 
 void database_info_free(database_info_handle_t *handle);
 
+#if 0
 int database_info_build_query(
       char *query, size_t len, const char *label, const char *path);
+#endif
 
 int database_info_build_query_enum(
       char *query, size_t len, enum database_query_type type, const char *path);
