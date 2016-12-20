@@ -755,133 +755,6 @@ error:
    return ret;
 }
 
-bool content_does_not_need_content(void)
-{
-   return core_does_not_need_content;
-}
-
-void content_set_does_not_need_content(void)
-{
-   core_does_not_need_content = true;
-}
-
-void content_unset_does_not_need_content(void)
-{
-   core_does_not_need_content = false;
-}
-
-bool content_get_crc(uint32_t **content_crc_ptr)
-{
-   if (!content_crc_ptr)
-      return false;
-   *content_crc_ptr = &content_crc;
-   return true;
-}
-
-bool content_is_inited(void)
-{
-   return _content_is_inited;
-}
-
-void content_deinit(void)
-{
-   unsigned i;
-
-   if (temporary_content)
-   {
-      for (i = 0; i < temporary_content->size; i++)
-      {
-         const char *path = temporary_content->elems[i].data;
-
-         RARCH_LOG("%s: %s.\n",
-               msg_hash_to_str(MSG_REMOVING_TEMPORARY_CONTENT_FILE), path);
-         if (remove(path) < 0)
-            RARCH_ERR("%s: %s.\n",
-                  msg_hash_to_str(MSG_FAILED_TO_REMOVE_TEMPORARY_FILE),
-                  path);
-      }
-      string_list_free(temporary_content);
-   }
-
-   temporary_content          = NULL;
-   content_crc                = 0;
-   _content_is_inited         = false;
-   core_does_not_need_content = false;
-}
-
-/* Initializes and loads a content file for the currently
- * selected libretro core. */
-bool content_init(void)
-{
-   content_information_ctx_t content_ctx;
-   bool ret                       = true;
-   char *error_string             = NULL;
-   rarch_system_info_t *sys_info  = NULL;
-   settings_t *settings           = config_get_ptr();
-   temporary_content              = string_list_new();
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &sys_info);
-
-   content_ctx.history_list_enable            = false;
-   content_ctx.directory_system               = NULL;
-   content_ctx.directory_cache                = NULL;
-   content_ctx.valid_extensions               = NULL;
-   content_ctx.block_extract                  = false;
-   content_ctx.need_fullpath                  = false;
-   content_ctx.set_supports_no_game_enable    = false;
-
-   content_ctx.subsystem.data                 = NULL;
-   content_ctx.subsystem.size                 = 0;
-   
-   if (sys_info)
-   {
-      content_ctx.history_list_enable         = settings->history_list_enable;
-      content_ctx.set_supports_no_game_enable = settings->set_supports_no_game_enable;
-      content_ctx.directory_system            = strdup(settings->directory.system);
-      content_ctx.directory_cache             = strdup(settings->directory.cache);
-      content_ctx.valid_extensions            = strdup(sys_info->info.valid_extensions);
-      content_ctx.block_extract               = sys_info->info.block_extract;
-      content_ctx.need_fullpath               = sys_info->info.need_fullpath;
-
-      content_ctx.subsystem.data              = sys_info->subsystem.data;
-      content_ctx.subsystem.size              = sys_info->subsystem.size;
-   }
-
-   if (     !temporary_content 
-         || !content_file_init(temporary_content, &content_ctx, error_string))
-   {
-      content_deinit();
-
-      ret = false;
-      goto end;
-   }
-
-   _content_is_inited = true;
-
-end:
-   if (content_ctx.directory_system)
-      free(content_ctx.directory_system);
-   if (content_ctx.directory_cache)
-      free(content_ctx.directory_cache);
-   if (content_ctx.valid_extensions)
-      free(content_ctx.valid_extensions);
-
-   if (error_string)
-   {
-      if (ret)
-      {
-         RARCH_LOG("%s\n", error_string);
-      }
-      else
-      {
-         RARCH_ERR("%s\n", error_string);
-      }
-      runloop_msg_queue_push(error_string, 2, ret ? 1 : 180, true);
-      free(error_string);
-   }
-
-   return ret;
-}
 
 #ifdef HAVE_MENU
 static void menu_content_environment_get(int *argc, char *argv[],
@@ -1424,4 +1297,132 @@ cleanup:
 
    return false;
 #endif
+}
+
+bool content_does_not_need_content(void)
+{
+   return core_does_not_need_content;
+}
+
+void content_set_does_not_need_content(void)
+{
+   core_does_not_need_content = true;
+}
+
+void content_unset_does_not_need_content(void)
+{
+   core_does_not_need_content = false;
+}
+
+bool content_get_crc(uint32_t **content_crc_ptr)
+{
+   if (!content_crc_ptr)
+      return false;
+   *content_crc_ptr = &content_crc;
+   return true;
+}
+
+bool content_is_inited(void)
+{
+   return _content_is_inited;
+}
+
+void content_deinit(void)
+{
+   unsigned i;
+
+   if (temporary_content)
+   {
+      for (i = 0; i < temporary_content->size; i++)
+      {
+         const char *path = temporary_content->elems[i].data;
+
+         RARCH_LOG("%s: %s.\n",
+               msg_hash_to_str(MSG_REMOVING_TEMPORARY_CONTENT_FILE), path);
+         if (remove(path) < 0)
+            RARCH_ERR("%s: %s.\n",
+                  msg_hash_to_str(MSG_FAILED_TO_REMOVE_TEMPORARY_FILE),
+                  path);
+      }
+      string_list_free(temporary_content);
+   }
+
+   temporary_content          = NULL;
+   content_crc                = 0;
+   _content_is_inited         = false;
+   core_does_not_need_content = false;
+}
+
+/* Initializes and loads a content file for the currently
+ * selected libretro core. */
+bool content_init(void)
+{
+   content_information_ctx_t content_ctx;
+   bool ret                       = true;
+   char *error_string             = NULL;
+   rarch_system_info_t *sys_info  = NULL;
+   settings_t *settings           = config_get_ptr();
+   temporary_content              = string_list_new();
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &sys_info);
+
+   content_ctx.history_list_enable            = false;
+   content_ctx.directory_system               = NULL;
+   content_ctx.directory_cache                = NULL;
+   content_ctx.valid_extensions               = NULL;
+   content_ctx.block_extract                  = false;
+   content_ctx.need_fullpath                  = false;
+   content_ctx.set_supports_no_game_enable    = false;
+
+   content_ctx.subsystem.data                 = NULL;
+   content_ctx.subsystem.size                 = 0;
+   
+   if (sys_info)
+   {
+      content_ctx.history_list_enable         = settings->history_list_enable;
+      content_ctx.set_supports_no_game_enable = settings->set_supports_no_game_enable;
+      content_ctx.directory_system            = strdup(settings->directory.system);
+      content_ctx.directory_cache             = strdup(settings->directory.cache);
+      content_ctx.valid_extensions            = strdup(sys_info->info.valid_extensions);
+      content_ctx.block_extract               = sys_info->info.block_extract;
+      content_ctx.need_fullpath               = sys_info->info.need_fullpath;
+
+      content_ctx.subsystem.data              = sys_info->subsystem.data;
+      content_ctx.subsystem.size              = sys_info->subsystem.size;
+   }
+
+   if (     !temporary_content 
+         || !content_file_init(temporary_content, &content_ctx, error_string))
+   {
+      content_deinit();
+
+      ret = false;
+      goto end;
+   }
+
+   _content_is_inited = true;
+
+end:
+   if (content_ctx.directory_system)
+      free(content_ctx.directory_system);
+   if (content_ctx.directory_cache)
+      free(content_ctx.directory_cache);
+   if (content_ctx.valid_extensions)
+      free(content_ctx.valid_extensions);
+
+   if (error_string)
+   {
+      if (ret)
+      {
+         RARCH_LOG("%s\n", error_string);
+      }
+      else
+      {
+         RARCH_ERR("%s\n", error_string);
+      }
+      runloop_msg_queue_push(error_string, 2, ret ? 1 : 180, true);
+      free(error_string);
+   }
+
+   return ret;
 }
