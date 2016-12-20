@@ -439,7 +439,7 @@ static bool content_file_init_extract(
 
       if (!valid_ext || !file_archive_extract_file(temp_content,
                sizeof(temp_content), valid_ext,
-               *settings->directory.cache ?
+               !string_is_empty(settings->directory.cache) ?
                settings->directory.cache : NULL,
                new_path, sizeof(new_path)))
       {
@@ -1056,6 +1056,7 @@ static void task_push_content_update_firmware_status(void)
       return;
 
    firmware_info.path         = core_info->path;
+
    if (!string_is_empty(settings->directory.system))
       firmware_info.directory.system = settings->directory.system;
    else
