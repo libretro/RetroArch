@@ -2664,11 +2664,11 @@ static void xmb_frame(void *data)
 
          if (percent > 0)
          {
-            size_t x_pos = xmb->icon.size / 5;
+            size_t x_pos = xmb->icon.size / 6;
             size_t x_pos_icon = xmb->margins.title.left;
 
             if (datetime_width)
-               x_pos_icon += datetime_width + (xmb->icon.size / 2) + (xmb->margins.title.left / 2) - xmb->margins.title.left / 2;
+               x_pos_icon += datetime_width + (xmb->icon.size / 2) + (xmb->margins.title.left / 2) - xmb->margins.title.left / 3;
 
             if (coord_white[3] != 0)
                xmb_draw_icon(
