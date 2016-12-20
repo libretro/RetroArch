@@ -62,8 +62,6 @@
 
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
-#include "../menu/menu_display.h"
-#include "../menu/menu_content.h"
 #endif
 
 #ifdef HAVE_CHEEVOS
@@ -939,27 +937,6 @@ static bool task_load_content(content_ctx_info_t *content_info,
    char msg[255];
 
    name[0] = msg[0] = '\0';
-
-   if (launched_from_menu)
-   {
-#ifdef HAVE_MENU
-      /* redraw menu frame */
-      menu_display_set_msg_force(true);
-      menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
-
-      if (!path_is_empty(RARCH_PATH_CONTENT))
-         fill_pathname_base(name, path_get(RARCH_PATH_CONTENT), sizeof(name));
-#endif
-
-      /** Show loading OSD message */
-      if (!string_is_empty(path_get(RARCH_PATH_CONTENT)))
-      {
-         snprintf(msg, sizeof(msg), "%s %s ...",
-               msg_hash_to_str(MSG_LOADING),
-               name);
-         error_string = strdup(msg);
-      }
-   }
 
    if (!content_load(content_info))
       goto error;
