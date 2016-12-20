@@ -32,7 +32,7 @@
 
 using namespace std;
 
-static bool read_shader_file(const char *path, vector<string> *output, bool root_file)
+bool glslang_read_shader_file(const char *path, vector<string> *output, bool root_file)
 {
    vector<const char *> lines;
    char include_path[PATH_MAX_LENGTH];
@@ -122,7 +122,7 @@ static bool read_shader_file(const char *path, vector<string> *output, bool root
 
          fill_pathname_resolve_relative(include_path, path, c, sizeof(include_path));
 
-         if (!read_shader_file(include_path, output, false))
+         if (!glslang_read_shader_file(include_path, output, false))
          {
             free(buf);
             return false;
@@ -268,7 +268,7 @@ static glslang_format glslang_find_format(const char *fmt)
    return SLANG_FORMAT_UNKNOWN;
 }
 
-static bool glslang_parse_meta(const vector<string> &lines, glslang_meta *meta)
+bool glslang_parse_meta(const vector<string> &lines, glslang_meta *meta)
 {
    char id[64]   = {};
    char desc[64] = {};
@@ -362,7 +362,7 @@ bool glslang_compile_shader(const char *shader_path, glslang_output *output)
    vector<string> lines;
 
    RARCH_LOG("[slang]: Compiling shader \"%s\".\n", shader_path);
-   if (!read_shader_file(shader_path, &lines, true))
+   if (!glslang_read_shader_file(shader_path, &lines, true))
       return false;
 
    if (!glslang_parse_meta(lines, &output->meta))

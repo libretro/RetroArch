@@ -90,5 +90,9 @@ struct glslang_output
 bool glslang_compile_shader(const char *shader_path, glslang_output *output);
 const char *glslang_format_to_string(enum glslang_format fmt);
 
+// Helpers for internal use.
+bool glslang_read_shader_file(const char *path, std::vector<std::string> *output, bool root_file);
+bool glslang_parse_meta(const std::vector<std::string> &lines, glslang_meta *meta);
+
 #endif
 

@@ -904,6 +904,7 @@ ifeq ($(HAVE_VULKAN), 1)
           gfx/drivers_shader/shader_vulkan.o \
           gfx/drivers_shader/glslang_util.o \
           gfx/drivers_shader/slang_reflection.o \
+          gfx/drivers_shader/slang_preprocess.o \
           $(GLSLANG_OBJ) \
           $(SPIRV_CROSS_OBJ)
 
@@ -914,6 +915,7 @@ ifeq ($(HAVE_VULKAN), 1)
       OBJ += menu/drivers_display/menu_display_vulkan.o
    endif
    LIBS += -lstdc++
+   DEFINES += -DHAVE_SLANG
 endif
 
 
