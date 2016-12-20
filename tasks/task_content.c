@@ -115,6 +115,9 @@ typedef struct content_information_ctx
 
    char *valid_extensions;
    char *directory_cache;
+   char *directory_system;
+
+   bool history_list_enable;
    bool block_extract;
    bool need_fullpath;
    bool set_supports_no_game_enable;
@@ -807,6 +810,8 @@ bool content_init(void)
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &sys_info);
 
+   content_ctx.history_list_enable            = false;
+   content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
    content_ctx.valid_extensions               = NULL;
    content_ctx.block_extract                  = false;
@@ -818,7 +823,9 @@ bool content_init(void)
    
    if (sys_info)
    {
+      content_ctx.history_list_enable         = settings->history_list_enable;
       content_ctx.set_supports_no_game_enable = settings->set_supports_no_game_enable;
+      content_ctx.directory_system            = strdup(settings->directory.system);
       content_ctx.directory_cache             = strdup(settings->directory.cache);
       content_ctx.valid_extensions            = strdup(sys_info->info.valid_extensions);
       content_ctx.block_extract               = sys_info->info.block_extract;
@@ -840,6 +847,8 @@ bool content_init(void)
    _content_is_inited = true;
 
 end:
+   if (content_ctx.directory_system)
+      free(content_ctx.directory_system);
    if (content_ctx.directory_cache)
       free(content_ctx.directory_cache);
    if (content_ctx.valid_extensions)
@@ -907,6 +916,7 @@ static void menu_content_environment_get(int *argc, char *argv[],
  * Returns: true (1) if successful, otherwise false (0).
  **/
 static bool task_load_content(content_ctx_info_t *content_info,
+      content_information_ctx_t *content_ctx,
       bool launched_from_menu,
       enum content_mode_load mode,
       char *error_string)
@@ -1037,6 +1047,7 @@ error:
 }
 
 static bool command_event_cmd_exec(const char *data,
+      content_information_ctx_t *content_ctx,
       enum content_mode_load mode,
       char *error_string)
 {
@@ -1061,7 +1072,8 @@ static bool command_event_cmd_exec(const char *data,
    }
 
 #if defined(HAVE_DYNAMIC)
-   if (!task_load_content(&content_info, false, mode, error_string))
+   if (!task_load_content(&content_info, content_ctx,
+            false, mode, error_string))
       return false;
 #else
    frontend_driver_set_fork(FRONTEND_FORK_CORE_WITH_ARGS);
@@ -1071,7 +1083,7 @@ static bool command_event_cmd_exec(const char *data,
 }
 
 static void task_push_content_update_firmware_status(
-      const char *system_directory)
+      content_information_ctx_t *content_ctx)
 {
    char s[PATH_MAX_LENGTH];
    core_info_ctx_firmware_t firmware_info;
@@ -1085,8 +1097,8 @@ static void task_push_content_update_firmware_status(
 
    firmware_info.path         = core_info->path;
 
-   if (!string_is_empty(system_directory))
-      firmware_info.directory.system = system_directory;
+   if (!string_is_empty(content_ctx->directory_system))
+      firmware_info.directory.system = content_ctx->directory_system;
    else
    {
       strlcpy(s, path_get(RARCH_PATH_CONTENT) ,sizeof(s));
@@ -1108,12 +1120,30 @@ bool task_push_content_load_default(
       retro_task_callback_t cb,
       void *user_data)
 {
+   content_information_ctx_t content_ctx;
    bool loading_from_menu = false;
    char *error_string     = NULL;
    settings_t *settings   = config_get_ptr();
 
    if (!content_info)
       return false;
+
+   content_ctx.history_list_enable            = false;
+   content_ctx.directory_system               = NULL;
+   content_ctx.directory_cache                = NULL;
+   content_ctx.valid_extensions               = NULL;
+   content_ctx.block_extract                  = false;
+   content_ctx.need_fullpath                  = false;
+   content_ctx.set_supports_no_game_enable    = false;
+
+   content_ctx.subsystem.data                 = NULL;
+   content_ctx.subsystem.size                 = 0;
+
+   if (settings)
+   {
+      content_ctx.history_list_enable = settings->history_list_enable;
+      content_ctx.directory_system    = strdup(settings->directory.system);
+   }
 
    /* First we determine if we are loading from a menu */
    switch (mode)
@@ -1224,7 +1254,7 @@ bool task_push_content_load_default(
    switch (mode)
    {
       case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
-         if (!command_event_cmd_exec(fullpath, mode, error_string))
+         if (!command_event_cmd_exec(fullpath, &content_ctx, mode, error_string))
             goto error;
 #ifndef HAVE_DYNAMIC
          runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
@@ -1258,7 +1288,7 @@ bool task_push_content_load_default(
    {
      case CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU:
          if (!frontend_driver_set_fork(FRONTEND_FORK_CORE))
-            return false;
+            goto cleanup;
          break;
       default:
          break;
@@ -1300,7 +1330,8 @@ bool task_push_content_load_default(
    switch (mode)
    {
       case CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE:
-         if (!task_load_content(content_info, loading_from_menu, mode, error_string))
+         if (!task_load_content(content_info, &content_ctx,
+                  loading_from_menu, mode, error_string))
             goto error;
          break;
       case CONTENT_MODE_LOAD_FROM_CLI:
@@ -1319,18 +1350,20 @@ bool task_push_content_load_default(
 #endif
       case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
-         if (settings)
-            task_push_content_update_firmware_status(settings->directory.system);
+         task_push_content_update_firmware_status(&content_ctx);
+
          if(runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL) && 
                settings->check_firmware_before_loading)
                goto skip;
 
-         if (!task_load_content(content_info, loading_from_menu, mode, error_string))
+         if (!task_load_content(content_info, &content_ctx,
+                  loading_from_menu, mode, error_string))
             goto error;
          break;
 #ifndef HAVE_DYNAMIC
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
-         command_event_cmd_exec(path_get(RARCH_PATH_CONTENT), mode, error_string);
+         command_event_cmd_exec(path_get(RARCH_PATH_CONTENT), &content_ctx, 
+               mode, error_string);
          command_event(CMD_EVENT_QUIT, NULL);
          break;
 #endif
@@ -1352,6 +1385,9 @@ bool task_push_content_load_default(
 #endif
          break;
    }
+
+   if (content_ctx.directory_system)
+      free(content_ctx.directory_system);
 
    return true;
 
@@ -1381,6 +1417,9 @@ error:
    }
 #endif
 
+   if (content_ctx.directory_system)
+      free(content_ctx.directory_system);
+
    return false;
 
 skip:
@@ -1388,4 +1427,12 @@ skip:
    RARCH_LOG("Load content blocked. Reason:  %s\n", msg_hash_to_str(MSG_FIRMWARE));
 
    return true;
+
+#ifndef HAVE_DYNAMIC
+cleanup:
+   if (content_ctx.directory_system)
+      free(content_ctx.directory_system);
+
+   return false;
+#endif
 }
