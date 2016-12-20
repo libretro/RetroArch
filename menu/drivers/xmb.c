@@ -2658,6 +2658,10 @@ static void xmb_frame(void *data)
             state = frontend->get_powerstate(&seconds, &percent);
             time_to_update = false;
             last_time = current_time;
+#ifdef _WIN32
+            if (percent == 255)
+               percent = 0;
+#endif
          }
 
          *msg = '\0';
