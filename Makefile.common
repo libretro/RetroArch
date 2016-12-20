@@ -201,6 +201,7 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/file/config_file.o \
        $(LIBRETRO_COMM_DIR)/file/config_file_userdata.o \
        tasks/task_screenshot.o \
+       tasks/task_powerstate.o \
        $(LIBRETRO_COMM_DIR)/gfx/scaler/scaler.o \
        gfx/drivers_shader/shader_null.o \
        gfx/video_shader_driver.o \

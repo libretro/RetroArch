@@ -2638,68 +2638,63 @@ static void xmb_frame(void *data)
    if (settings->menu.battery_level_enable)
    {
       static retro_time_t last_time = 0;
-      static int percent = 0;
-      static enum frontend_powerstate state = FRONTEND_POWERSTATE_NONE;
-      int seconds = 0;
       bool time_to_update = false;
-      const frontend_ctx_driver_t *frontend = frontend_get_ptr();
       retro_time_t current_time = cpu_features_get_time_usec();
+      int percent = 0;
+      enum frontend_powerstate state = get_last_powerstate(&percent);
 
       if (current_time - last_time >= BATTERY_LEVEL_CHECK_INTERVAL)
          time_to_update = true;
 
-      if (frontend && frontend->get_powerstate)
+      char msg[12];
+      bool charging = (state == FRONTEND_POWERSTATE_CHARGING);
+
+      if (time_to_update)
       {
-         char msg[12];
-         bool charging = (state == FRONTEND_POWERSTATE_CHARGING);
+         time_to_update = false;
+         last_time = current_time;
+         task_push_get_powerstate();
+      }
 
-         if (time_to_update)
-         {
-            state = frontend->get_powerstate(&seconds, &percent);
-            time_to_update = false;
-            last_time = current_time;
+      *msg = '\0';
+
+      if (percent > 0)
+      {
+         size_t x_pos = xmb->icon.size / 6;
+         size_t x_pos_icon = xmb->margins.title.left;
+
+         if (datetime_width)
+            x_pos_icon += datetime_width + (xmb->icon.size / 2) + (xmb->margins.title.left / 2) - xmb->margins.title.left / 3;
+
+         if (coord_white[3] != 0)
+            xmb_draw_icon(
+                  xmb->icon.size,
+                  &mymat,
+                  xmb->textures.list[charging ? XMB_TEXTURE_BATTERY_CHARGING : XMB_TEXTURE_BATTERY_FULL],
+                  width - (xmb->icon.size / 2) - x_pos_icon,
+                  xmb->icon.size,
+                  width,
+                  height,
+                  1,
+                  0,
+                  1,
+                  &coord_white[0],
+                  xmb->shadow_offset);
+
 #ifdef _WIN32
-            if (percent == 255)
-               percent = 0;
+         if (percent == 255)
+            percent = 0;
 #endif
-         }
+         snprintf(msg, sizeof(msg), "%d%%", percent);
 
-         *msg = '\0';
+         if (datetime_width)
+            x_pos = datetime_width + (xmb->icon.size / 4) +
+                  xmb->margins.title.left;
 
-         if (percent > 0)
-         {
-            size_t x_pos = xmb->icon.size / 6;
-            size_t x_pos_icon = xmb->margins.title.left;
-
-            if (datetime_width)
-               x_pos_icon += datetime_width + (xmb->icon.size / 2) + (xmb->margins.title.left / 2) - xmb->margins.title.left / 3;
-
-            if (coord_white[3] != 0)
-               xmb_draw_icon(
-                     xmb->icon.size,
-                     &mymat,
-                     xmb->textures.list[charging ? XMB_TEXTURE_BATTERY_CHARGING : XMB_TEXTURE_BATTERY_FULL],
-                     width - (xmb->icon.size / 2) - x_pos_icon,
-                     xmb->icon.size,
-                     width,
-                     height,
-                     1,
-                     0,
-                     1,
-                     &coord_white[0],
-                     xmb->shadow_offset);
-
-            snprintf(msg, sizeof(msg), "%d%%", percent);
-
-            if (datetime_width)
-               x_pos = datetime_width + (xmb->icon.size / 4) +
-                     xmb->margins.title.left;
-
-            xmb_draw_text(xmb, msg,
-                  width - xmb->margins.title.left - x_pos,
-                  xmb->margins.title.top, 1, 1, TEXT_ALIGN_RIGHT,
-                  width, height, xmb->font);
-         }
+         xmb_draw_text(xmb, msg,
+               width - xmb->margins.title.left - x_pos,
+               xmb->margins.title.top, 1, 1, TEXT_ALIGN_RIGHT,
+               width, height, xmb->font);
       }
    }
 
