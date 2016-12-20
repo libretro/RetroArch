@@ -105,6 +105,13 @@ typedef struct content_stream
    uint32_t crc;
 } content_stream_t;
 
+typedef struct content_information_ctx
+{
+   char *valid_extensions;
+   bool block_extract;
+   bool need_fullpath;
+} content_information_ctx_t;
+
 static struct string_list *temporary_content                  = NULL;
 static bool _content_is_inited                                = false;
 static bool core_does_not_need_content                        = false;
@@ -329,9 +336,12 @@ static bool load_content_into_memory(unsigned i, const char *path, void **buf,
 #ifdef HAVE_COMPRESSION
 static bool load_content_from_compressed_archive(
       struct string_list *temporary_content,
-      struct retro_game_info *info, unsigned i,
+      content_information_ctx_t *content_ctx,
+      struct retro_game_info *info,
+      unsigned i,
       struct string_list* additional_path_allocs,
-      bool need_fullpath, const char *path,
+      bool need_fullpath,
+      const char *path,
       char *error_string)
 {
    union string_list_elem_attr attributes;
@@ -339,12 +349,9 @@ static bool load_content_from_compressed_archive(
    char new_basedir[PATH_MAX_LENGTH];
    ssize_t new_path_len              = 0;
    bool ret                          = false;
-   rarch_system_info_t      *sys_info= NULL;
    settings_t *settings              = config_get_ptr();
 
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &sys_info);
-
-   if (sys_info && sys_info->info.block_extract)
+   if (content_ctx->block_extract)
       return true;
    if (!need_fullpath || !path_contains_compressed_file(path))
       return true;
@@ -397,6 +404,7 @@ static bool load_content_from_compressed_archive(
 static bool content_file_init_extract(
       struct string_list *temporary_content,
       struct string_list *content,
+      content_information_ctx_t *content_ctx,
       const struct retro_subsystem_info *special,
       union string_list_elem_attr *attr,
       char *error_string
@@ -404,9 +412,6 @@ static bool content_file_init_extract(
 {
    unsigned i;
    settings_t *settings          = config_get_ptr();
-   rarch_system_info_t *sys_info = NULL;
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &sys_info);
 
    for (i = 0; i < content->size; i++)
    {
@@ -414,7 +419,7 @@ static bool content_file_init_extract(
       char new_path[PATH_MAX_LENGTH];
       bool contains_compressed           = NULL;
       bool block_extract                 = content->elems[i].attr.i & 1;
-      const char *valid_ext              = sys_info->info.valid_extensions;
+      const char *valid_ext              = content_ctx->valid_extensions;
 
       /* Block extract check. */
       if (block_extract)
@@ -475,6 +480,7 @@ static bool content_file_load(
       struct string_list *temporary_content,
       struct retro_game_info *info,
       const struct string_list *content,
+      content_information_ctx_t *content_ctx,
       const struct retro_subsystem_info *special
       )
 {
@@ -530,6 +536,7 @@ static bool content_file_load(
 #ifdef HAVE_COMPRESSION
          if (!load_content_from_compressed_archive(
                   temporary_content,
+                  content_ctx,
                   &info[i], i,
                   additional_path_allocs, need_fullpath, path,
                   error_string))
@@ -578,7 +585,9 @@ error:
    return false;
 }
 
-static const struct retro_subsystem_info *content_file_init_subsystem(bool *ret)
+static const struct retro_subsystem_info *content_file_init_subsystem(
+      content_information_ctx_t *content_ctx,
+      bool *ret)
 {
    const struct retro_subsystem_info *special = NULL;
    rarch_system_info_t *sys_info              = NULL;
@@ -638,11 +647,11 @@ error:
    return NULL;
 }
 
-
 static bool content_file_init_set_attribs(
       struct string_list *temporary_content,
       struct string_list *content,
       const struct retro_subsystem_info *special,
+      content_information_ctx_t *content_ctx,
       char *error_string)
 {
    union string_list_elem_attr attr;
@@ -665,16 +674,10 @@ static bool content_file_init_set_attribs(
    }
    else
    {
-      rarch_system_info_t *sys_info = NULL;
       settings_t *settings          = config_get_ptr();
 
-      runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &sys_info);
-
-      if (sys_info)
-      {
-         attr.i               = sys_info->info.block_extract;
-         attr.i              |= sys_info->info.need_fullpath << 1;
-      }
+      attr.i               = content_ctx->block_extract;
+      attr.i              |= content_ctx->need_fullpath << 1;
       attr.i              |= (!content_does_not_need_content())  << 2;
 
       if (path_is_empty(RARCH_PATH_CONTENT)
@@ -690,10 +693,8 @@ static bool content_file_init_set_attribs(
 
 #ifdef HAVE_COMPRESSION
    /* Try to extract all content we're going to load if appropriate. */
-   if (!content_file_init_extract(temporary_content,
-            content, special, &attr, error_string))
-   {
-   }
+   content_file_init_extract(temporary_content,
+         content, content_ctx, special, &attr, error_string);
 #endif
    return true;
 }
@@ -707,12 +708,13 @@ static bool content_file_init_set_attribs(
  * Returns : true if successful, otherwise false.
  **/
 static bool content_file_init(struct string_list *temporary_content,
+      content_information_ctx_t *content_ctx,
       char *error_string)
 {
    struct retro_game_info               *info = NULL;
    struct string_list *content                = NULL;
    bool ret                                   = false;
-   const struct retro_subsystem_info *special = content_file_init_subsystem(&ret);
+   const struct retro_subsystem_info *special = content_file_init_subsystem(content_ctx, &ret);
 
    if (!ret)
       goto error;
@@ -723,7 +725,7 @@ static bool content_file_init(struct string_list *temporary_content,
       goto error;
 
    if (!content_file_init_set_attribs(temporary_content,
-            content, special, error_string))
+            content, special, content_ctx, error_string))
       goto error;
 
    info                   = (struct retro_game_info*)
@@ -732,7 +734,7 @@ static bool content_file_init(struct string_list *temporary_content,
    if (info)
    {
       unsigned i;
-      ret = content_file_load(temporary_content, info, content, special);
+      ret = content_file_load(temporary_content, info, content, content_ctx, special);
 
       for (i = 0; i < content->size; i++)
          free((void*)info[i].data);
@@ -804,12 +806,27 @@ void content_deinit(void)
  * selected libretro core. */
 bool content_init(void)
 {
-   bool ret           = true;
-   char *error_string = NULL;
-   temporary_content  = string_list_new();
+   content_information_ctx_t content_ctx;
+   bool ret                       = true;
+   char *error_string             = NULL;
+   temporary_content              = string_list_new();
+   rarch_system_info_t *sys_info  = NULL;
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &sys_info);
+
+   content_ctx.valid_extensions    = NULL;
+   content_ctx.block_extract       = false;
+   content_ctx.need_fullpath       = false;
+   
+   if (sys_info)
+   {
+      content_ctx.valid_extensions = strdup(sys_info->info.valid_extensions);
+      content_ctx.block_extract    = sys_info->info.block_extract;
+      content_ctx.need_fullpath    = sys_info->info.need_fullpath;
+   }
 
    if (     !temporary_content 
-         || !content_file_init(temporary_content, error_string))
+         || !content_file_init(temporary_content, &content_ctx, error_string))
    {
       content_deinit();
 
@@ -820,6 +837,9 @@ bool content_init(void)
    _content_is_inited = true;
 
 end:
+   if (content_ctx.valid_extensions)
+      free(content_ctx.valid_extensions);
+
    if (error_string)
    {
       if (ret)
