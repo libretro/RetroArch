@@ -994,9 +994,7 @@ static bool command_event_cmd_exec(const char *data,
 {
 #if defined(HAVE_DYNAMIC)
    content_ctx_info_t content_info;
-#endif
 
-#if defined(HAVE_DYNAMIC)
    content_info.argc        = 0;
    content_info.argv        = NULL;
    content_info.args        = NULL;
