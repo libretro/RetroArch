@@ -403,10 +403,10 @@ static bool content_file_init_extract(
       )
 {
    unsigned i;
-   settings_t *settings        = config_get_ptr();
-   rarch_system_info_t *system = NULL;
+   settings_t *settings          = config_get_ptr();
+   rarch_system_info_t *sys_info = NULL;
 
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &sys_info);
 
    for (i = 0; i < content->size; i++)
    {
@@ -414,7 +414,7 @@ static bool content_file_init_extract(
       char new_path[PATH_MAX_LENGTH];
       bool contains_compressed           = NULL;
       bool block_extract                 = content->elems[i].attr.i & 1;
-      const char *valid_ext              = system->info.valid_extensions;
+      const char *valid_ext              = sys_info->info.valid_extensions;
 
       /* Block extract check. */
       if (block_extract)
@@ -581,7 +581,7 @@ error:
 static const struct retro_subsystem_info *content_file_init_subsystem(bool *ret)
 {
    const struct retro_subsystem_info *special = NULL;
-   rarch_system_info_t *system                = NULL;
+   rarch_system_info_t *sys_info              = NULL;
    struct string_list *subsystem              = path_get_subsystem_list();
 
    if (path_is_empty(RARCH_PATH_SUBSYSTEM))
@@ -590,12 +590,14 @@ static const struct retro_subsystem_info *content_file_init_subsystem(bool *ret)
       return NULL;
    }
 
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &sys_info);
 
-   if (system)
+   if (sys_info)
       special =
-         libretro_find_subsystem_info(system->subsystem.data,
-               system->subsystem.size, path_get(RARCH_PATH_SUBSYSTEM));
+         libretro_find_subsystem_info(
+               sys_info->subsystem.data,
+               sys_info->subsystem.size,
+               path_get(RARCH_PATH_SUBSYSTEM));
 
    if (!special)
    {
@@ -663,15 +665,15 @@ static bool content_file_init_set_attribs(
    }
    else
    {
-      rarch_system_info_t *system = NULL;
-      settings_t *settings        = config_get_ptr();
+      rarch_system_info_t *sys_info = NULL;
+      settings_t *settings          = config_get_ptr();
 
-      runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+      runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &sys_info);
 
-      if (system)
+      if (sys_info)
       {
-         attr.i               = system->info.block_extract;
-         attr.i              |= system->info.need_fullpath << 1;
+         attr.i               = sys_info->info.block_extract;
+         attr.i              |= sys_info->info.need_fullpath << 1;
       }
       attr.i              |= (!content_does_not_need_content())  << 2;
 
@@ -806,7 +808,8 @@ bool content_init(void)
    char *error_string = NULL;
    temporary_content  = string_list_new();
 
-   if (!temporary_content || !content_file_init(temporary_content, error_string))
+   if (     !temporary_content 
+         || !content_file_init(temporary_content, error_string))
    {
       content_deinit();
 
@@ -918,13 +921,13 @@ static bool task_load_content(content_ctx_info_t *content_info,
    {
       char tmp[PATH_MAX_LENGTH];
       struct retro_system_info *info = NULL;
-      rarch_system_info_t *system    = NULL;
+      rarch_system_info_t *sys_info  = NULL;
 
       tmp[0] = '\0';
 
-      runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
-      if (system)
-         info = &system->info;
+      runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &sys_info);
+      if (sys_info)
+         info = &sys_info->info;
 
 #ifdef HAVE_MENU
       if (launched_from_menu)
