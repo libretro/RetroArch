@@ -1694,8 +1694,8 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       goto error;
 
-   database_info_build_query(query, sizeof(query),
-         "displaylist_parse_database_entry", info->path_b);
+   database_info_build_query_enum(query, sizeof(query),
+         DATABASE_QUERY_ENTRY, info->path_b);
 
    db_info = database_info_list_new(info->path, query);
    if (!db_info)

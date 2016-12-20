@@ -47,6 +47,28 @@ enum database_type
    DATABASE_TYPE_CRC_LOOKUP
 };
 
+enum database_query_type
+{
+   DATABASE_QUERY_NONE = 0,
+   DATABASE_QUERY_ENTRY,
+   DATABASE_QUERY_ENTRY_PUBLISHER,
+   DATABASE_QUERY_ENTRY_DEVELOPER,
+   DATABASE_QUERY_ENTRY_ORIGIN,
+   DATABASE_QUERY_ENTRY_FRANCHISE,
+   DATABASE_QUERY_ENTRY_RATING,
+   DATABASE_QUERY_ENTRY_BBFC_RATING,
+   DATABASE_QUERY_ENTRY_ELSPA_RATING,
+   DATABASE_QUERY_ENTRY_PEGI_RATING,
+   DATABASE_QUERY_ENTRY_CERO_RATING,
+   DATABASE_QUERY_ENTRY_ENHANCEMENT_HW,
+   DATABASE_QUERY_ENTRY_EDGE_MAGAZINE_RATING,
+   DATABASE_QUERY_ENTRY_EDGE_MAGAZINE_ISSUE,
+   DATABASE_QUERY_ENTRY_FAMITSU_MAGAZINE_RATING,
+   DATABASE_QUERY_ENTRY_RELEASEDATE_MONTH,
+   DATABASE_QUERY_ENTRY_RELEASEDATE_YEAR,
+   DATABASE_QUERY_ENTRY_MAX_USERS
+};
+
 typedef struct
 {
    enum database_status status;
@@ -112,6 +134,9 @@ void database_info_free(database_info_handle_t *handle);
 
 int database_info_build_query(
       char *query, size_t len, const char *label, const char *path);
+
+int database_info_build_query_enum(
+      char *query, size_t len, enum database_query_type type, const char *path);
 
 /* NOTE: Allocates memory, it is the caller's responsibility to free the
  * memory after it is no longer required. */
