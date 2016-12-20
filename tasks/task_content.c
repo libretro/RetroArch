@@ -913,7 +913,6 @@ static bool task_load_content(content_ctx_info_t *content_info,
 {
    char name[255];
    char msg[255];
-   settings_t *settings = config_get_ptr();
 
    name[0] = msg[0] = '\0';
 
@@ -971,9 +970,10 @@ static bool task_load_content(content_ctx_info_t *content_info,
 
       if (info && *tmp)
       {
-         const char *core_path            = NULL;
-         const char *core_name            = NULL;
-         playlist_t *playlist_tmp         = g_defaults.content_history;
+         const char *core_path     = NULL;
+         const char *core_name     = NULL;
+         playlist_t *playlist_tmp  = g_defaults.content_history;
+         settings_t *settings      = config_get_ptr();
 
          switch (path_is_media_type(tmp))
          {
@@ -1070,23 +1070,23 @@ static bool command_event_cmd_exec(const char *data,
    return true;
 }
 
-static void task_push_content_update_firmware_status(void)
+static void task_push_content_update_firmware_status(
+      const char *system_directory)
 {
    char s[PATH_MAX_LENGTH];
    core_info_ctx_firmware_t firmware_info;
 
    core_info_t *core_info     = NULL;
-   settings_t *settings       = config_get_ptr();
 
    core_info_get_current_core(&core_info);
 
-   if (!core_info || !settings)
+   if (!core_info)
       return;
 
    firmware_info.path         = core_info->path;
 
-   if (!string_is_empty(settings->directory.system))
-      firmware_info.directory.system = settings->directory.system;
+   if (!string_is_empty(system_directory))
+      firmware_info.directory.system = system_directory;
    else
    {
       strlcpy(s, path_get(RARCH_PATH_CONTENT) ,sizeof(s));
@@ -1319,7 +1319,8 @@ bool task_push_content_load_default(
 #endif
       case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
-         task_push_content_update_firmware_status();
+         if (settings)
+            task_push_content_update_firmware_status(settings->directory.system);
          if(runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL) && 
                settings->check_firmware_before_loading)
                goto skip;
