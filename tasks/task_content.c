@@ -983,7 +983,6 @@ static bool task_load_content(content_ctx_info_t *content_info,
          const char *core_path     = NULL;
          const char *core_name     = NULL;
          playlist_t *playlist_tmp  = g_defaults.content_history;
-         settings_t *settings      = config_get_ptr();
 
          switch (path_is_media_type(tmp))
          {
@@ -1015,7 +1014,7 @@ static bool task_load_content(content_ctx_info_t *content_info,
          }
 
          if (
-                  settings->history_list_enable 
+                  content_ctx->history_list_enable 
                && playlist_tmp 
                && playlist_push(
                   playlist_tmp,
