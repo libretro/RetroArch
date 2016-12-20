@@ -150,12 +150,6 @@ void task_image_load_free(retro_task_t *task);
 
 void task_file_load_handler(retro_task_t *task);
 
-bool content_push_to_history_playlist(
-      void *data,
-      const char *path,
-      const char *core_name,
-      const char *core_path);
-
 bool take_screenshot(const char *path, bool silence);
 
 bool event_load_save_files(void);

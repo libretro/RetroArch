@@ -86,6 +86,7 @@ typedef struct
  **/
 static void task_screenshot_handler(retro_task_t *task)
 {
+   settings_t *settings           = config_get_ptr();
    screenshot_task_state_t *state = (screenshot_task_state_t*)task->state;
    bool is_paused                 = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
    bool ret                       = false;
@@ -154,9 +155,19 @@ static void task_screenshot_handler(retro_task_t *task)
 
 #ifdef HAVE_IMAGEVIEWER
    if (ret && !state->silence)
-      if (content_push_to_history_playlist(g_defaults.image_history,
+      if (
+            settings->history_list_enable 
+            && g_defaults.image_history 
+            && playlist_push(
+               g_defaults.image_history,
                state->filename,
-               "imageviewer", "builtin"))
+               NULL,
+               "builtin",
+               "imageviewer",
+               NULL,
+               NULL
+               )
+         )
          playlist_write_file(g_defaults.image_history);
 #endif
 

@@ -134,30 +134,6 @@ static int content_file_read(const char *path, void **buf, ssize_t *length)
    return filestream_read_file(path, buf, length);
 }
 
-bool content_push_to_history_playlist(
-      void *data,
-      const char *path,
-      const char *core_name,
-      const char *core_path)
-{
-   playlist_t *playlist   = (playlist_t*)data;
-   settings_t *settings   = config_get_ptr();
-
-   /* If the history list is not enabled, early return. */
-   if (!settings || !settings->history_list_enable)
-      return false;
-   if (!playlist)
-      return false;
-
-   return playlist_push(playlist,
-         path,
-         NULL,
-         core_path,
-         core_name,
-         NULL,
-         NULL);
-}
-
 /**
  * content_load_init_wrap:
  * @args                 : Input arguments.
@@ -909,6 +885,7 @@ static bool task_load_content(content_ctx_info_t *content_info,
 {
    char name[255];
    char msg[255];
+   settings_t *settings = config_get_ptr();
 
    name[0] = msg[0] = '\0';
 
@@ -999,8 +976,18 @@ static bool task_load_content(content_ctx_info_t *content_info,
                break;
          }
 
-         if (content_push_to_history_playlist(playlist_tmp, tmp,
-                  core_name, core_path))
+         if (
+                  settings->history_list_enable 
+               && playlist_tmp 
+               && playlist_push(
+                  playlist_tmp,
+                  tmp,
+                  NULL,
+                  core_path,
+                  core_name,
+                  NULL,
+                  NULL)
+               )
             playlist_write_file(playlist_tmp);
       }
    }
