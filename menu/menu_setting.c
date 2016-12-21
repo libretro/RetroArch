@@ -2506,7 +2506,6 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 
-#if !defined(RARCH_CONSOLE)
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS,
@@ -2514,7 +2513,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-#endif
 
          CONFIG_ACTION(
                list, list_info,
