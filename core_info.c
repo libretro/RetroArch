@@ -140,9 +140,6 @@ static void core_info_list_free(core_info_list_t *core_info_list)
    {
       core_info_t *info = (core_info_t*)&core_info_list->list[i];
 
-      if (!info)
-         continue;
-
       free(info->path);
       free(info->core_name);
       free(info->systemname);
