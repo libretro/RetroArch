@@ -62,8 +62,6 @@ size_t audio_sample_batch_net(const int16_t *data, size_t frames);
  * @direct_host          : Host to connect to directly, if applicable (client only)
  * @server               : server address to connect to (client only)
  * @port                 : TCP port to host on/connect to
- * @play_password        : Password required to play (server only)
- * @spectate_password    : Password required to connect (server only)
  *
  * Initializes netplay.
  *
@@ -71,8 +69,7 @@ size_t audio_sample_batch_net(const int16_t *data, size_t frames);
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool init_netplay(void *direct_host, const char *server, unsigned port,
-   const char *play_password, const char *spectate_password);
+bool init_netplay(void *direct_host, const char *server, unsigned port);
 
 void deinit_netplay(void);
 
