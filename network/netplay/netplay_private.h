@@ -306,12 +306,6 @@ struct netplay
    /* TCP connection for listening (server only) */
    int listen_fd;
 
-   /* Password required to play (server only) */
-   char play_password[NETPLAY_PASS_LEN];
-
-   /* Password required to connect (server only) */
-   char spectate_password[NETPLAY_PASS_LEN];
-
    /* Our player number */
    uint32_t self_player;
 
@@ -632,8 +626,6 @@ bool netplay_wait_and_init_serialization(netplay_t *netplay);
  * @direct_host          : Netplay host discovered from scanning.
  * @server               : IP address of server.
  * @port                 : Port of server.
- * @play_password        : Password required to play.
- * @spectate_password    : Password required to connect.
  * @stateless_mode       : Shall we run in stateless mode?
  * @check_frames         : Frequency with which to check CRCs.
  * @cb                   : Libretro callbacks.
@@ -647,7 +639,6 @@ bool netplay_wait_and_init_serialization(netplay_t *netplay);
  * Returns: new netplay data.
  */
 netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
-   const char *play_password, const char *spectate_password,
    bool stateless_mode, int check_frames,
    const struct retro_callbacks *cb, bool nat_traversal, const char *nick,
    uint64_t quirks);

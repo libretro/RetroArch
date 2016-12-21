@@ -395,8 +395,6 @@ static bool netplay_init_buffers(netplay_t *netplay)
  * @direct_host          : Netplay host discovered from scanning.
  * @server               : IP address of server.
  * @port                 : Port of server.
- * @play_password        : Password required to play.
- * @spectate_password    : Password required to connect.
  * @stateless_mode       : Shall we use stateless mode?
  * @check_frames         : Frequency with which to check CRCs.
  * @cb                   : Libretro callbacks.
@@ -410,7 +408,6 @@ static bool netplay_init_buffers(netplay_t *netplay)
  * Returns: new netplay data.
  */
 netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
-   const char *play_password, const char *spectate_password,
    bool stateless_mode, int check_frames,
    const struct retro_callbacks *cb, bool nat_traversal, const char *nick,
    uint64_t quirks)
@@ -448,8 +445,6 @@ netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
    }
 
    strlcpy(netplay->nick, nick[0] ? nick : RARCH_DEFAULT_NICK, sizeof(netplay->nick));
-   strlcpy(netplay->play_password, play_password ? play_password : "", sizeof(netplay->play_password));
-   strlcpy(netplay->spectate_password, spectate_password ? spectate_password : "", sizeof(netplay->spectate_password));
 
    if (!init_socket(netplay, direct_host, server, port))
    {
