@@ -1011,7 +1011,9 @@ bool task_push_content_load_default(
    if (settings)
    {
       content_ctx.history_list_enable         = settings->history_list_enable;
-      content_ctx.directory_system            = strdup(settings->directory.system);
+
+      if (!string_is_empty(settings->directory.system))
+         content_ctx.directory_system         = strdup(settings->directory.system);
    }
 
    /* First we determine if we are loading from a menu */
