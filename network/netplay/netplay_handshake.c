@@ -384,7 +384,8 @@ bool netplay_handshake_init(netplay_t *netplay,
       line.label = msg_hash_to_str(MSG_NETPLAY_ENTER_PASSWORD);
       line.label_setting = "no_setting";
       line.cb = handshake_password;
-      menu_input_dialog_start(&line);
+      if (!menu_input_dialog_start(&line))
+         return false;
    }
 
    /* Send our nick */
@@ -892,7 +893,8 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
       if (i == netplay->self_ptr)
       {
          /* Clear out any current data but still use this frame */
-         netplay_delta_frame_ready(netplay, ptr, 0);
+         if (!netplay_delta_frame_ready(netplay, ptr, 0))
+            return false;
          ptr->frame = new_frame_count;
          ptr->have_local = true;
          netplay->other_ptr = netplay->unread_ptr = netplay->server_ptr = i;

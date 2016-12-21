@@ -419,24 +419,14 @@ bool netplay_command(netplay_t* netplay, struct netplay_connection *connection,
    enum netplay_cmd cmd, void* data, size_t sz, const char* command_str,
    const char* success_msg)
 {
-   char m[256];
-   const char* msg         = NULL;
-
    retro_assert(netplay);
 
    if (!netplay_send_raw_cmd(netplay, connection, cmd, data, sz))
-      goto error;
+      return false;
 
    runloop_msg_queue_push(success_msg, 1, 180, false);
 
    return true;
-
-error:
-   if (msg)
-      snprintf(m, sizeof(m), msg, command_str);
-   RARCH_WARN("%s\n", m);
-   runloop_msg_queue_push(m, 1, 180, false);
-   return false;
 }
 
 /**
