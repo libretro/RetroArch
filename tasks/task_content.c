@@ -428,13 +428,14 @@ static bool content_file_init_extract(
       char new_path[PATH_MAX_LENGTH];
       bool contains_compressed           = NULL;
       bool block_extract                 = content->elems[i].attr.i & 1;
+      const char *path                   = content->elems[i].data;
       const char *valid_ext              = content_ctx->valid_extensions;
 
       /* Block extract check. */
       if (block_extract)
          continue;
 
-      contains_compressed   = path_contains_compressed_file(content->elems[i].data);
+      contains_compressed   = path_contains_compressed_file(path);
 
       if (special)
          valid_ext          = special->roms[i].valid_extensions;
@@ -442,14 +443,13 @@ static bool content_file_init_extract(
       if (!contains_compressed)
       {
          /* just use the first file in the archive */
-         if (!path_is_compressed_file(content->elems[i].data))
+         if (!path_is_compressed_file(path))
             continue;
       }
 
       temp_content[0] = new_path[0] = '\0';
 
-      strlcpy(temp_content, content->elems[i].data,
-            sizeof(temp_content));
+      strlcpy(temp_content, path, sizeof(temp_content));
 
       if (!valid_ext || !file_archive_extract_file(temp_content,
                sizeof(temp_content), valid_ext,
@@ -575,10 +575,11 @@ static bool content_file_load(
    if (!special)
    {
       const void *load_data = NULL;
+      const char *path      = content->elems[0].data;
 
       cheevos_set_cheats();
 
-      if (!string_is_empty(content->elems[0].data))
+      if (!string_is_empty(path))
          load_data = info;
       cheevos_load(load_data);
    }
