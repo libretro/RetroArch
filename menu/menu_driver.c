@@ -35,7 +35,6 @@
 #include "widgets/menu_list.h"
 #include "menu_shader.h"
 
-#include "../config.def.h"
 #include "../content.h"
 #include "../configuration.h"
 #include "../dynamic.h"
