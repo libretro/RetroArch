@@ -51,11 +51,12 @@ void gl_ff_matrix(const math_matrix_4x4 *mat)
 #endif
 }
 
-void size_format(GLint* internalFormat)
+static void gl_size_format(GLint* internalFormat)
 {
    switch (*internalFormat)
    {
       case GL_RGB:
+         /* FIXME: PS3 does not support this, neither does it have GL_RGB565_OES. */
          *internalFormat = GL_RGB565;
          break;
       case GL_RGBA:
@@ -83,13 +84,13 @@ void gl_load_texture_image(GLenum target,
 #ifdef HAVE_OPENGLES2
    if (gl_check_capability(GL_CAPS_TEX_STORAGE_EXT))
    {
-      size_format(&internalFormat);
+      gl_size_format(&internalFormat);
       glTexStorage2DEXT(target, 1, internalFormat, width, height);
    }
 #else
    if (gl_check_capability(GL_CAPS_TEX_STORAGE))
    {
-      size_format(&internalFormat);
+      gl_size_format(&internalFormat);
       glTexStorage2D(target, 1, internalFormat, width, height);
    }
 #endif
@@ -99,7 +100,7 @@ void gl_load_texture_image(GLenum target,
 #ifdef HAVE_OPENGLES
       if (gl_check_capability(GL_CAPS_GLES3_SUPPORTED))
 #endif
-         size_format(&internalFormat);
+         gl_size_format(&internalFormat);
       glTexImage2D(target, level, internalFormat, width, height, border, format, type, data);
    }
 }
