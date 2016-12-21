@@ -426,19 +426,16 @@ static bool content_file_init_extract(
    {
       char temp_content[PATH_MAX_LENGTH];
       char new_path[PATH_MAX_LENGTH];
-      bool contains_compressed           = NULL;
       bool block_extract                 = content->elems[i].attr.i & 1;
       const char *path                   = content->elems[i].data;
-      const char *valid_ext              = content_ctx->valid_extensions;
+      const char *valid_ext              = special ?
+                                           special->roms[i].valid_extensions :
+                                           content_ctx->valid_extensions;
+      bool contains_compressed           = path_contains_compressed_file(path);
 
       /* Block extract check. */
       if (block_extract)
          continue;
-
-      contains_compressed   = path_contains_compressed_file(path);
-
-      if (special)
-         valid_ext          = special->roms[i].valid_extensions;
 
       if (!contains_compressed)
       {
@@ -451,11 +448,14 @@ static bool content_file_init_extract(
 
       strlcpy(temp_content, path, sizeof(temp_content));
 
-      if (!valid_ext || !file_archive_extract_file(temp_content,
-               sizeof(temp_content), valid_ext,
+      if (!valid_ext || !file_archive_extract_file(
+               temp_content,
+               sizeof(temp_content),
+               valid_ext,
                !string_is_empty(content_ctx->directory_cache) ?
                content_ctx->directory_cache : NULL,
-               new_path, sizeof(new_path)))
+               new_path,
+               sizeof(new_path)))
       {
          char str[1024];
 
@@ -467,6 +467,7 @@ static bool content_file_init_extract(
       }
 
       string_list_set(content, i, new_path);
+
       if (!string_list_append(content_ctx->temporary_content,
                new_path, *attr))
          return false;
