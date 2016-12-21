@@ -38,6 +38,8 @@
 /* truncate int to byte without warnings */
 #define RBMP__BYTECAST(x)  ((unsigned char) ((x) & 255))  
 
+#define RBMP_COMPUTE_Y(r, g, b) ((unsigned char) ((((r) * 77) + ((g) * 150) +  (29 * (b))) >> 8))
+
 typedef struct
 {
    uint32_t img_x;
@@ -90,11 +92,6 @@ static uint32_t rbmp__get32le(rbmp__context *s)
    return z + (rbmp__get16le(s) << 16);
 }
 
-static unsigned char rbmp__compute_y(int r, int g, int b)
-{
-   return (unsigned char) (((r*77) + (g*150) +  (29*b)) >> 8);
-}
-
 static unsigned char *rbmp__convert_format(
       unsigned char *data,
       int img_n,
@@ -103,14 +100,13 @@ static unsigned char *rbmp__convert_format(
       unsigned int y)
 {
    int i,j;
-   unsigned char *good;
-
-   retro_assert(req_comp >= 1 && req_comp <= 4);
-
-   good = (unsigned char *)malloc(req_comp * x * y);
+   unsigned char *good = (unsigned char *)malloc(req_comp * x * y);
 
    if (!good)
-      goto error;
+   {
+      free(data);
+      return NULL;
+   }
 
    for (j=0; j < (int) y; ++j)
    {
@@ -149,19 +145,19 @@ static unsigned char *rbmp__convert_format(
             break;
          case ((3)*8+(1)):
             for(i=x-1; i >= 0; --i, src += 3, dest += 1)
-               dest[0]=rbmp__compute_y(src[0],src[1],src[2]);
+               dest[0] = RBMP_COMPUTE_Y(src[0],src[1],src[2]);
             break;
          case ((3)*8+(2)):
             for(i=x-1; i >= 0; --i, src += 3, dest += 2)
-               dest[0]=rbmp__compute_y(src[0],src[1],src[2]), dest[1] = 255;
+               dest[0] = RBMP_COMPUTE_Y(src[0],src[1],src[2]), dest[1] = 255;
             break;
          case ((4)*8+(1)):
             for(i=x-1; i >= 0; --i, src += 4, dest += 1)
-               dest[0]=rbmp__compute_y(src[0],src[1],src[2]);
+               dest[0] = RBMP_COMPUTE_Y(src[0],src[1],src[2]);
             break;
          case ((4)*8+(2)):
             for(i=x-1; i >= 0; --i, src += 4, dest += 2)
-               dest[0]=rbmp__compute_y(src[0],src[1],src[2]), dest[1] = src[3];
+               dest[0] = RBMP_COMPUTE_Y(src[0],src[1],src[2]), dest[1] = src[3];
             break;
          case ((4)*8+(3)):
             for(i=x-1; i >= 0; --i, src += 4, dest += 3)
@@ -176,11 +172,6 @@ static unsigned char *rbmp__convert_format(
 
    free(data);
    return good;
-
-error:
-   /* Out of memory */
-   free(data);
-   return NULL;
 }
 
 /* Microsoft/Windows BMP image */
@@ -236,7 +227,7 @@ static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
    unsigned char *out;
    unsigned char pal[256][4];
    int bpp, flip_vertically, pad, target, offset, hsz;
-   int psize=0,i,j,compress=0,width;
+   int psize=0,i,j,width;
    unsigned int mr=0,mg=0,mb=0,ma=0;
 
    /* Corrupt BMP? */
@@ -275,7 +266,7 @@ static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
       return 0;
 
    flip_vertically = ((int) s->img_y) > 0;
-   s->img_y = abs((int) s->img_y);
+   s->img_y        = abs((int) s->img_y);
 
    if (hsz == 12)
    {
@@ -284,7 +275,7 @@ static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
    }
    else
    {
-      compress = rbmp__get32le(s);
+      int compress = rbmp__get32le(s);
 
       /* BMP RLE type not supported? */
       if (compress == 1 || compress == 2)
@@ -422,20 +413,33 @@ static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
             out[z++] = pal[v][0];
             out[z++] = pal[v][1];
             out[z++] = pal[v][2];
-            if (target == 4) out[z++] = 255;
-            if (i+1 == (int) s->img_x) break;
+            if (target == 4)
+               out[z++] = 255;
+
+            if (i+1 == (int)s->img_x)
+               break;
+
             v = (bpp == 8) ? rbmp__get8(s) : v2;
             out[z++] = pal[v][0];
             out[z++] = pal[v][1];
             out[z++] = pal[v][2];
-            if (target == 4) out[z++] = 255;
+
+            if (target == 4)
+               out[z++] = 255;
          }
          rbmp__skip(s, pad);
       }
    }
    else
    {
-      int rshift=0,gshift=0,bshift=0,ashift=0,rcount=0,gcount=0,bcount=0,acount=0;
+      int rshift=0;
+      int gshift=0;
+      int bshift=0;
+      int ashift=0;
+      int rcount=0;
+      int gcount=0;
+      int bcount=0;
+      int acount=0;
       int z = 0;
       int easy=0;
 
@@ -515,6 +519,7 @@ static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
          rbmp__skip(s, pad);
       }
    }
+
    if (flip_vertically)
    {
       unsigned char t;
@@ -528,8 +533,11 @@ static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
          }
       }
    }
-
-   if (req_comp && req_comp != target)
+   
+   if (
+            req_comp
+         && (req_comp >= 1 && req_comp <= 4)
+         && (req_comp != target))
    {
       out = rbmp__convert_format(out, target, req_comp, s->img_x, s->img_y);
 
