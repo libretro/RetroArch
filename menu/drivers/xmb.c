@@ -2623,6 +2623,10 @@ static void xmb_frame(void *data)
 
       *msg = '\0';
 
+#ifdef _WIN32
+      if (percent == 255)
+         percent = 0;
+#endif
       if (percent > 0)
       {
          size_t x_pos = xmb->icon.size / 6;
@@ -2643,10 +2647,6 @@ static void xmb_frame(void *data)
                   &coord_white[0],
                   xmb->shadow_offset);
 
-#ifdef _WIN32
-         if (percent == 255)
-            percent = 0;
-#endif
          snprintf(msg, sizeof(msg), "%d%%", percent);
 
          percent_width = font_driver_get_message_width(xmb->font, msg, utf8len(msg), 1);
