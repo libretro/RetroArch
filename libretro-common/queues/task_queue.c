@@ -433,13 +433,10 @@ static void threaded_worker(void *userdata)
          continue;
       }
 
+      task_queue_remove(&tasks_running, task);
       slock_unlock(running_lock);
 
       task->handler(task);
-
-      slock_lock(running_lock);
-      task_queue_remove(&tasks_running, task);
-      slock_unlock(running_lock);
 
       /* Update queue */
       if (!task->finished)
