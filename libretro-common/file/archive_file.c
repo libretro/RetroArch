@@ -577,7 +577,7 @@ bool file_archive_extract_file(
       goto end;
    }
 
-   if (*userdata.first_extracted_file_path)
+   if (!string_is_empty(userdata.first_extracted_file_path))
       strlcpy(out_path, userdata.first_extracted_file_path, len);
 
 end:
