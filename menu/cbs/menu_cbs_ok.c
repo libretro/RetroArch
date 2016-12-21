@@ -1274,7 +1274,11 @@ static int action_ok_playlist_entry_collection(const char *path,
     */
    if (info && 
          string_is_equal(info->info.library_name, core_name))
+   {
+      if (playlist_initialized)
+         playlist_free(tmp_playlist);
       return action_ok_file_load(menu->deferred_path, label, type, idx, entry_idx);
+   }
 
    /* Is the core path / name of the playlist entry not yet filled in? */
    if (     string_is_equal(core_path, file_path_str(FILE_PATH_DETECT))
