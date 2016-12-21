@@ -361,6 +361,9 @@ bool input_autoconfigure_disconnect(unsigned i, const char *ident)
    retro_task_t         *task     = (retro_task_t*)calloc(1, sizeof(*task));
    autoconfig_disconnect_t *state = (autoconfig_disconnect_t*)calloc(1, sizeof(*state));
 
+   if (!state || !task)
+      goto error;
+
    msg[0]      = '\0';
 
    state->idx  = i;
@@ -368,9 +371,6 @@ bool input_autoconfigure_disconnect(unsigned i, const char *ident)
    snprintf(msg, sizeof(msg), "%s #%u (%s).", 
          msg_hash_to_str(MSG_DEVICE_DISCONNECTED_FROM_PORT),
          i, ident);
-
-   if (!task || !state)
-      goto error;
 
    strlcpy(state->msg, msg, sizeof(state->msg));
 
