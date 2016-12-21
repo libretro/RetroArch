@@ -199,12 +199,14 @@ static void menu_display_gl_draw_pipeline(void *data)
 
             video_shader_driver_set_parameter(uniform_param);            
 
+#ifndef HAVE_PSGL
             uniform_param.type              = UNIFORM_2F;
             uniform_param.lookup.ident      = "OutputSize";
             uniform_param.result.f.v0       = draw->width;
             uniform_param.result.f.v1       = draw->height;
 
             video_shader_driver_set_parameter(uniform_param);
+#endif
          }
          break;
    }
