@@ -52,6 +52,66 @@ MSG_HASH(
       "クライアントに待機中"
       )
 MSG_HASH(
+      MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
+      "ゲームから退出しました"
+      )
+MSG_HASH(
+      MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N,
+      "「プレイヤー%d」で接続しました"
+      )
+MSG_HASH(
+      MSG_NETPLAY_IMPLEMENTATIONS_DIFFER,
+      "Implementations differ. Make sure you're using the exact same versions of RetroArch and the core."
+      )
+MSG_HASH(
+      MSG_NETPLAY_ENDIAN_DEPENDENT,
+      "This core does not support inter-architecture netplay between these systems"
+      )
+MSG_HASH(
+      MSG_NETPLAY_PLATFORM_DEPENDENT,
+      "This core does not support inter-architecture netplay"
+      )
+MSG_HASH(
+      MSG_NETPLAY_ENTER_PASSWORD,
+      "ネットプレイサーバーのパスワードを入力してください:"
+      )
+MSG_HASH(
+      MSG_NETPLAY_INCORRECT_PASSWORD,
+      "不正なパスワード"
+      )
+MSG_HASH(
+      MSG_NETPLAY_SERVER_NAMED_HANGUP,
+      "「%s」は退出しました"
+      )
+MSG_HASH(
+      MSG_NETPLAY_SERVER_HANGUP,
+      "ネットプレイのクライアントが切断されました"
+      )
+MSG_HASH(
+      MSG_NETPLAY_CLIENT_HANGUP,
+      "ネットプレイが切断されました"
+      )
+MSG_HASH(
+      MSG_NETPLAY_CANNOT_PLAY_UNPRIVILEGED,
+      "プレイする許可はありません"
+      )
+MSG_HASH(
+      MSG_NETPLAY_CANNOT_PLAY_NO_SLOTS,
+      "空きプレイヤースロットはありません"
+      )
+MSG_HASH(
+      MSG_NETPLAY_CANNOT_PLAY,
+      "プレイモードを切り替えに出来ませんでした"
+      )
+MSG_HASH(
+      MSG_NETPLAY_PEER_PAUSED,
+      "ネットプレイのピア「%s」が一時停止にしました"
+      )
+MSG_HASH(
+      MSG_NETPLAY_CHANGED_NICK,
+      "ニックネームは「%s」に設定しました"
+      )
+MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
       "Give hardware-rendered cores their own private context. Avoids having to assume hardware state changes inbetween frames."
       )
@@ -836,7 +896,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL,
       "コアのログ出力レベル")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LINEAR,
-      "Linear")
+      "リニア")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
       "コアでアーカイブをロード")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
@@ -906,7 +966,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_EN
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
       "ナビゲーションの回り込み")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NEAREST,
-      "Nearest")
+      "最近傍補間")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY,
       "ネットプレイ")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
