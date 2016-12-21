@@ -214,6 +214,10 @@ enum frontend_powerstate frontend_win32_get_powerstate(int *seconds, int *percen
 	*percent  = (int)status.BatteryLifePercent;
 	*seconds  = (int)status.BatteryLifeTime;
 
+#ifdef _WIN32
+      if (*percent == 255)
+         *percent = 0;
+#endif
 	return ret;
 }
 

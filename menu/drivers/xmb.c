@@ -2623,10 +2623,6 @@ static void xmb_frame(void *data)
 
       *msg = '\0';
 
-#ifdef _WIN32
-      if (percent == 255)
-         percent = 0;
-#endif
       if (percent > 0)
       {
          size_t x_pos = xmb->icon.size / 6;
