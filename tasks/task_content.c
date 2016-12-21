@@ -1391,7 +1391,9 @@ bool content_init(void)
       content_ctx.set_supports_no_game_enable = settings->set_supports_no_game_enable;
       content_ctx.directory_system            = strdup(settings->directory.system);
       content_ctx.directory_cache             = strdup(settings->directory.cache);
-      content_ctx.valid_extensions            = strdup(sys_info->info.valid_extensions);
+
+      if (!string_is_empty(sys_info->info.valid_extensions))
+         content_ctx.valid_extensions         = strdup(sys_info->info.valid_extensions);
       content_ctx.block_extract               = sys_info->info.block_extract;
       content_ctx.need_fullpath               = sys_info->info.need_fullpath;
 
