@@ -37,8 +37,7 @@ static INLINE int16_t convert_u8_to_s16(uint8_t val)
 
 static const char *ps3_joypad_name(unsigned pad)
 {
-   settings_t *settings = config_get_ptr();
-   return settings ? settings->input.device_names[pad] : NULL;
+   return "SixAxis Controller";
 }
 
 static void ps3_joypad_autodetect_add(unsigned autoconf_pad)
@@ -51,7 +50,7 @@ static void ps3_joypad_autodetect_add(unsigned autoconf_pad)
    params.vid             = 0;
    params.pid             = 0;
 
-   strlcpy(params.name, ps3_joypad_name(autoconf_pad), sizeof(params.name));
+   strlcpy(params.name,   ps3_joypad_name(autoconf_pad), sizeof(params.name));
    strlcpy(params.driver, ps3_joypad.ident, sizeof(params.driver));
 
    input_autoconfigure_connect(&params);
