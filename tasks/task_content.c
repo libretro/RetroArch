@@ -119,6 +119,8 @@ typedef struct content_information_ctx
    bool block_extract;
    bool need_fullpath;
    bool set_supports_no_game_enable;
+
+   struct string_list *temporary_content;
 } content_information_ctx_t;
 
 static struct string_list *temporary_content                  = NULL;
@@ -344,7 +346,6 @@ static bool load_content_into_memory(unsigned i, const char *path, void **buf,
 
 #ifdef HAVE_COMPRESSION
 static bool load_content_from_compressed_archive(
-      struct string_list *temporary_content,
       content_information_ctx_t *content_ctx,
       struct retro_game_info *info,
       unsigned i,
@@ -405,14 +406,13 @@ static bool load_content_from_compressed_archive(
    info[i].path =
       additional_path_allocs->elems[additional_path_allocs->size -1 ].data;
 
-   if (!string_list_append(temporary_content, new_path, attributes))
+   if (!string_list_append(content_ctx->temporary_content, new_path, attributes))
       return false;
 
    return true;
 }
 
 static bool content_file_init_extract(
-      struct string_list *temporary_content,
       struct string_list *content,
       content_information_ctx_t *content_ctx,
       const struct retro_subsystem_info *special,
@@ -467,7 +467,7 @@ static bool content_file_init_extract(
       }
 
       string_list_set(content, i, new_path);
-      if (!string_list_append(temporary_content,
+      if (!string_list_append(content_ctx->temporary_content,
                new_path, *attr))
          return false;
    }
@@ -486,7 +486,6 @@ static bool content_file_init_extract(
  * Returns : true if successful, otherwise false.
  **/
 static bool content_file_load(
-      struct string_list *temporary_content,
       struct retro_game_info *info,
       const struct string_list *content,
       content_information_ctx_t *content_ctx,
@@ -551,7 +550,6 @@ static bool content_file_load(
 
 #ifdef HAVE_COMPRESSION
          if (!load_content_from_compressed_archive(
-                  temporary_content,
                   content_ctx,
                   &info[i], i,
                   additional_path_allocs, need_fullpath, path,
@@ -665,7 +663,6 @@ error:
 }
 
 static bool content_file_init_set_attribs(
-      struct string_list *temporary_content,
       struct string_list *content,
       const struct retro_subsystem_info *special,
       content_information_ctx_t *content_ctx,
@@ -708,8 +705,7 @@ static bool content_file_init_set_attribs(
 
 #ifdef HAVE_COMPRESSION
    /* Try to extract all content we're going to load if appropriate. */
-   content_file_init_extract(temporary_content,
-         content, content_ctx, special, &attr, error_string);
+   content_file_init_extract(content, content_ctx, special, &attr, error_string);
 #endif
    return true;
 }
@@ -722,7 +718,7 @@ static bool content_file_init_set_attribs(
  *
  * Returns : true if successful, otherwise false.
  **/
-static bool content_file_init(struct string_list *temporary_content,
+static bool content_file_init(
       content_information_ctx_t *content_ctx,
       char *error_string)
 {
@@ -741,8 +737,7 @@ static bool content_file_init(struct string_list *temporary_content,
    if (!content)
       goto error;
 
-   if (!content_file_init_set_attribs(temporary_content,
-            content, special, content_ctx, error_string))
+   if (!content_file_init_set_attribs(content, special, content_ctx, error_string))
       goto error;
 
    info                   = (struct retro_game_info*)
@@ -751,7 +746,7 @@ static bool content_file_init(struct string_list *temporary_content,
    if (info)
    {
       unsigned i;
-      ret = content_file_load(temporary_content, info, content, content_ctx, error_string,
+      ret = content_file_load(info, content, content_ctx, error_string,
             special);
 
       for (i = 0; i < content->size; i++)
@@ -997,9 +992,10 @@ bool task_push_content_load_default(
       void *user_data)
 {
    content_information_ctx_t content_ctx;
-   bool loading_from_menu = false;
-   char *error_string     = NULL;
-   settings_t *settings   = config_get_ptr();
+  
+   bool loading_from_menu                     = false;
+   char *error_string                         = NULL;
+   settings_t *settings                       = config_get_ptr();
 
    if (!content_info)
       return false;
@@ -1017,8 +1013,8 @@ bool task_push_content_load_default(
 
    if (settings)
    {
-      content_ctx.history_list_enable = settings->history_list_enable;
-      content_ctx.directory_system    = strdup(settings->directory.system);
+      content_ctx.history_list_enable         = settings->history_list_enable;
+      content_ctx.directory_system            = strdup(settings->directory.system);
    }
 
    /* First we determine if we are loading from a menu */
@@ -1371,14 +1367,16 @@ void content_deinit(void)
 bool content_init(void)
 {
    content_information_ctx_t content_ctx;
-   bool ret                       = true;
-   char *error_string             = NULL;
-   rarch_system_info_t *sys_info  = NULL;
-   settings_t *settings           = config_get_ptr();
-   temporary_content              = string_list_new();
+
+   bool ret                                   = true;
+   char *error_string                         = NULL;
+   rarch_system_info_t *sys_info              = NULL;
+   settings_t *settings                       = config_get_ptr();
+   temporary_content                          = string_list_new();
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &sys_info);
 
+   content_ctx.temporary_content              = temporary_content;
    content_ctx.history_list_enable            = false;
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
@@ -1405,7 +1403,7 @@ bool content_init(void)
    }
 
    if (     !temporary_content 
-         || !content_file_init(temporary_content, &content_ctx, error_string))
+         || !content_file_init(&content_ctx, error_string))
    {
       content_deinit();
 
