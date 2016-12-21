@@ -103,10 +103,7 @@ static unsigned char *rbmp__convert_format(
    unsigned char *good = (unsigned char *)malloc(req_comp * x * y);
 
    if (!good)
-   {
-      free(data);
       return NULL;
-   }
 
    for (j=0; j < (int) y; ++j)
    {
@@ -170,7 +167,6 @@ static unsigned char *rbmp__convert_format(
 
    }
 
-   free(data);
    return good;
 }
 
@@ -225,7 +221,6 @@ static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
       int *comp, int req_comp)
 {
    unsigned char *out;
-   unsigned char pal[256][4];
    int bpp, flip_vertically, pad, target, offset, hsz;
    int psize=0,i,j,width;
    unsigned int mr=0,mg=0,mb=0,ma=0;
@@ -369,6 +364,7 @@ static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
 
    if (bpp < 16)
    {
+      unsigned char pal[256][4];
       int z=0;
 
       /* Corrupt BMP? */
@@ -539,10 +535,15 @@ static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
          && (req_comp >= 1 && req_comp <= 4)
          && (req_comp != target))
    {
-      out = rbmp__convert_format(out, target, req_comp, s->img_x, s->img_y);
+      unsigned char *tmp = rbmp__convert_format(out, target, req_comp, s->img_x, s->img_y);
 
-      if (!out)
-         return out; /* rbmp__convert_format frees input on failure */
+      free(out);
+      out = NULL;
+
+      if (!tmp)
+         return NULL;
+
+      out = tmp;
    }
 
    *x = s->img_x;
