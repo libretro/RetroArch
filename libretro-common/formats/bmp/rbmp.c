@@ -35,26 +35,21 @@
 #include <formats/image.h>
 #include <formats/rbmp.h>
 
-typedef struct
-{
-   int      (*read)  (void *user,char *data,int size);   
-   void     (*skip)  (void *user,int n);
-   int      (*eof)   (void *user);
-} rbmp_io_callbacks;
+/* truncate int to byte without warnings */
+#define RBMP__BYTECAST(x)  ((unsigned char) ((x) & 255))  
 
 typedef struct
 {
-   uint32_t img_x, img_y;
-   int img_n, img_out_n;
+   uint32_t img_x;
+   uint32_t img_y;
+   int img_n;
+   int img_out_n;
 
-   rbmp_io_callbacks io;
-   void *io_user_data;
-
-   int read_from_callbacks;
    int buflen;
    unsigned char buffer_start[128];
 
-   unsigned char *img_buffer, *img_buffer_end;
+   unsigned char *img_buffer;
+   unsigned char *img_buffer_end;
    unsigned char *img_buffer_original;
 } rbmp__context;
 
@@ -62,61 +57,12 @@ struct rbmp
 {
    uint8_t *buff_data;
    uint32_t *output_image;
-   void *empty;
 };
-
-static void rbmp__refill_buffer(rbmp__context *s);
-
-/* initialize a memory-decode context */
-static void rbmp__start_mem(rbmp__context *s, unsigned char const *buffer, int len)
-{
-   s->io.read             = NULL;
-   s->read_from_callbacks = 0;
-   s->img_buffer          = (unsigned char*)buffer;
-   s->img_buffer_original = (unsigned char*)buffer;
-   s->img_buffer_end      = (unsigned char*)buffer+len;
-}
-
-static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
-      int *comp, int req_comp);
-
-static unsigned char *rbmp_load_from_memory(unsigned char const *buffer, int len,
-      unsigned *x, unsigned *y, int *comp, int req_comp)
-{
-   rbmp__context s;
-   rbmp__start_mem(&s,buffer,len);
-   return rbmp__bmp_load(&s,x,y,comp,req_comp);
-}
-
-static void rbmp__refill_buffer(rbmp__context *s)
-{
-   int n = (s->io.read)(s->io_user_data,(char*)s->buffer_start,s->buflen);
-   if (n == 0)
-   {
-      /* at end of file, treat same as if from memory, but need to handle case
-       * where s->img_buffer isn't pointing to safe memory, e.g. 0-byte file */
-      s->read_from_callbacks = 0;
-      s->img_buffer = s->buffer_start;
-      s->img_buffer_end = s->buffer_start+1;
-      *s->img_buffer = 0;
-   }
-   else
-   {
-      s->img_buffer = s->buffer_start;
-      s->img_buffer_end = s->buffer_start + n;
-   }
-}
 
 static INLINE unsigned char rbmp__get8(rbmp__context *s)
 {
    if (s->img_buffer < s->img_buffer_end)
       return *s->img_buffer++;
-
-   if (s->read_from_callbacks)
-   {
-      rbmp__refill_buffer(s);
-      return *s->img_buffer++;
-   }
 
    return 0;
 }
@@ -129,16 +75,6 @@ static void rbmp__skip(rbmp__context *s, int n)
       return;
    }
 
-   if (s->io.read)
-   {
-      int blen = (int) (s->img_buffer_end - s->img_buffer);
-      if (blen < n)
-      {
-         s->img_buffer = s->img_buffer_end;
-         (s->io.skip)(s->io_user_data, n - blen);
-         return;
-      }
-   }
    s->img_buffer += n;
 }
 
@@ -153,9 +89,6 @@ static uint32_t rbmp__get32le(rbmp__context *s)
    uint32_t z = rbmp__get16le(s);
    return z + (rbmp__get16le(s) << 16);
 }
-
-/* truncate int to byte without warnings */
-#define RBMP__BYTECAST(x)  ((unsigned char) ((x) & 255))  
 
 static unsigned char rbmp__compute_y(int r, int g, int b)
 {
@@ -172,18 +105,12 @@ static unsigned char *rbmp__convert_format(
    int i,j;
    unsigned char *good;
 
-   if (req_comp == img_n)
-      return data;
-
    retro_assert(req_comp >= 1 && req_comp <= 4);
 
-   good = (unsigned char *) malloc(req_comp * x * y);
-   if (good == NULL)
-   {
-      /* Out of memory */
-      free(data);
-      return 0;
-   }
+   good = (unsigned char *)malloc(req_comp * x * y);
+
+   if (!good)
+      goto error;
 
    for (j=0; j < (int) y; ++j)
    {
@@ -249,6 +176,11 @@ static unsigned char *rbmp__convert_format(
 
    free(data);
    return good;
+
+error:
+   /* Out of memory */
+   free(data);
+   return NULL;
 }
 
 /* Microsoft/Windows BMP image */
@@ -506,10 +438,16 @@ static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
       int rshift=0,gshift=0,bshift=0,ashift=0,rcount=0,gcount=0,bcount=0,acount=0;
       int z = 0;
       int easy=0;
+
       rbmp__skip(s, offset - 14 - hsz);
-      if (bpp == 24) width = 3 * s->img_x;
-      else if (bpp == 16) width = 2*s->img_x;
-      else /* bpp = 32 and pad = 0 */ width=0;
+
+      if (bpp == 24)
+         width = 3 * s->img_x;
+      else if (bpp == 16)
+         width = 2*s->img_x;
+      else /* bpp = 32 and pad = 0 */
+         width=0;
+
       pad = (-width) & 3;
 
       switch (bpp)
@@ -535,10 +473,14 @@ static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
          }
 
          /* right shift amt to put high bit in position #7 */
-         rshift = rbmp__high_bit(mr)-7; rcount = rbmp__bitcount(mr);
-         gshift = rbmp__high_bit(mg)-7; gcount = rbmp__bitcount(mg);
-         bshift = rbmp__high_bit(mb)-7; bcount = rbmp__bitcount(mb);
-         ashift = rbmp__high_bit(ma)-7; acount = rbmp__bitcount(ma);
+         rshift = rbmp__high_bit(mr)-7;
+         rcount = rbmp__bitcount(mr);
+         gshift = rbmp__high_bit(mg)-7;
+         gcount = rbmp__bitcount(mg);
+         bshift = rbmp__high_bit(mb)-7;
+         bcount = rbmp__bitcount(mb);
+         ashift = rbmp__high_bit(ma)-7;
+         acount = rbmp__bitcount(ma);
       }
       for (j=0; j < (int) s->img_y; ++j)
       {
@@ -552,7 +494,8 @@ static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
                out[z+0] = rbmp__get8(s);
                z += 3;
                a = (easy == 2 ? rbmp__get8(s) : 255);
-               if (target == 4) out[z++] = a;
+               if (target == 4)
+                  out[z++] = a;
             }
          }
          else
@@ -565,7 +508,8 @@ static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
                out[z++] = RBMP__BYTECAST(rbmp__shiftsigned(v & mg, gshift, gcount));
                out[z++] = RBMP__BYTECAST(rbmp__shiftsigned(v & mb, bshift, bcount));
                a = (ma ? rbmp__shiftsigned(v & ma, ashift, acount) : 255);
-               if (target == 4) out[z++] = RBMP__BYTECAST(a);
+               if (target == 4)
+                  out[z++] = RBMP__BYTECAST(a);
             }
          }
          rbmp__skip(s, pad);
@@ -588,14 +532,30 @@ static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
    if (req_comp && req_comp != target)
    {
       out = rbmp__convert_format(out, target, req_comp, s->img_x, s->img_y);
-      if (out == NULL)
+
+      if (!out)
          return out; /* rbmp__convert_format frees input on failure */
    }
 
    *x = s->img_x;
    *y = s->img_y;
-   if (comp) *comp = s->img_n;
+
+   if (comp)
+      *comp = s->img_n;
+
    return out;
+}
+
+static unsigned char *rbmp_load_from_memory(unsigned char const *buffer, int len,
+      unsigned *x, unsigned *y, int *comp, int req_comp)
+{
+   rbmp__context s;
+
+   s.img_buffer          = (unsigned char*)buffer;
+   s.img_buffer_original = (unsigned char*)buffer;
+   s.img_buffer_end      = (unsigned char*)buffer+len;
+
+   return rbmp__bmp_load(&s,x,y,comp,req_comp);
 }
 
 static void rbmp_convert_frame(uint32_t *frame, unsigned width, unsigned height)
