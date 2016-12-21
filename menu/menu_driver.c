@@ -38,8 +38,6 @@
 #include "../config.def.h"
 #include "../content.h"
 #include "../configuration.h"
-#include "../core.h"
-#include "../core_info.h"
 #include "../dynamic.h"
 #include "../driver.h"
 #include "../retroarch.h"
@@ -183,9 +181,6 @@ static bool menu_init(menu_handle_t *menu_data)
    settings_t *settings        = config_get_ptr();
 
    if (!menu_entries_ctl(MENU_ENTRIES_CTL_INIT, NULL))
-      return false;
-
-   if (!core_info_init_current_core())
       return false;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_SHADER_INIT, NULL))
@@ -580,8 +575,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
             command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
 
-            core_info_deinit_list();
-            core_info_free_current_core();
             menu_dialog_reset();
 
             free(menu_driver_data);

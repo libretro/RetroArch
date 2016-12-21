@@ -38,6 +38,7 @@
 #include "wifi/wifi_driver.h"
 #include "configuration.h"
 #include "core.h"
+#include "core_info.h"
 #include "driver.h"
 #include "runloop.h"
 #include "verbosity.h"
@@ -345,6 +346,8 @@ static void init_drivers(int flags)
    if ((flags & DRIVER_LOCATION_MASK) && location_driver_ctl(RARCH_LOCATION_CTL_IS_ACTIVE, NULL))
       init_location();
 
+   core_info_init_current_core();
+
 #ifdef HAVE_MENU
    if (flags & DRIVER_MENU_MASK)
    {
@@ -388,6 +391,9 @@ static void init_drivers(int flags)
  **/
 static void uninit_drivers(int flags)
 {
+   core_info_deinit_list();
+   core_info_free_current_core();
+
 #ifdef HAVE_MENU
    if (flags & DRIVER_MENU_MASK)
       menu_driver_ctl(RARCH_MENU_CTL_DEINIT, NULL);
