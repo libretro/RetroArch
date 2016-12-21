@@ -53,6 +53,7 @@ void gl_ff_matrix(const math_matrix_4x4 *mat)
 
 static void gl_size_format(GLint* internalFormat)
 {
+#ifndef HAVE_PSGL
    switch (*internalFormat)
    {
       case GL_RGB:
@@ -67,7 +68,9 @@ static void gl_size_format(GLint* internalFormat)
 #endif
          break;
    }
+#endif
 }
+
 /* This function should only be used without mipmaps
    and when data == NULL */
 void gl_load_texture_image(GLenum target,
