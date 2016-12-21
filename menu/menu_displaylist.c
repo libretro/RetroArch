@@ -3601,31 +3601,31 @@ static bool menu_displaylist_push_list_process(menu_displaylist_info_t *info)
    if (info->need_sort)
       file_list_sort_on_alt(info->list);
 
-   if (info->push_builtin_cores)
-   {
-      menu_entries_prepend(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR),
-            msg_hash_to_str(MENU_ENUM_LABEL_START_VIDEO_PROCESSOR),
-            MENU_ENUM_LABEL_START_VIDEO_PROCESSOR,
-            MENU_SETTING_ACTION, 0, 0);
-
-      menu_entries_prepend(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD),
-            msg_hash_to_str(MENU_ENUM_LABEL_START_NET_RETROPAD),
-            MENU_ENUM_LABEL_START_NET_RETROPAD,
-            MENU_SETTING_ACTION, 0, 0);
-   }
-
 #ifdef HAVE_NETWORKING
    if (info->download_core)
    {
-      menu_entries_prepend(info->list,
+      menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE),
             msg_hash_to_str(MENU_ENUM_LABEL_CORE_UPDATER_LIST),
             MENU_ENUM_LABEL_CORE_UPDATER_LIST,
             MENU_SETTING_ACTION, 0, 0);
    }
 #endif
+   
+   if (info->push_builtin_cores)
+   {
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR),
+            msg_hash_to_str(MENU_ENUM_LABEL_START_VIDEO_PROCESSOR),
+            MENU_ENUM_LABEL_START_VIDEO_PROCESSOR,
+            MENU_SETTING_ACTION, 0, 0);
+
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD),
+            msg_hash_to_str(MENU_ENUM_LABEL_START_NET_RETROPAD),
+            MENU_ENUM_LABEL_START_NET_RETROPAD,
+            MENU_SETTING_ACTION, 0, 0);
+   }
 
    if (!string_is_empty(new_entry))
    {
