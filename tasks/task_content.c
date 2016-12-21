@@ -432,12 +432,9 @@ static bool content_file_init_extract(
       if (block_extract)
          continue;
 
-      if (!contains_compressed)
-      {
-         /* just use the first file in the archive */
-         if (!path_is_compressed_file(path))
-            continue;
-      }
+      /* just use the first file in the archive */
+      if (!contains_compressed && !path_is_compressed_file(path))
+         continue;
 
       temp_content[0] = new_path[0] = '\0';
 
