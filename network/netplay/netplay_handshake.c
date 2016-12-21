@@ -217,7 +217,7 @@ bool netplay_handshake_init_send(netplay_t *netplay,
    {
       /* Demand a password */
       if (simple_rand_next == 1)
-         simple_srand(time(NULL));
+         simple_srand((unsigned int) time(NULL));
       connection->salt = simple_rand_uint32();
       if (connection->salt == 0) connection->salt = 1;
       header[3] = htonl(connection->salt);
@@ -280,8 +280,9 @@ static void handshake_password(void *ignore, const char *line)
    password_buf.cmd[1] = htonl(sizeof(password_buf.password));
    sha256_hash(password_buf.password, (uint8_t *) password, strlen(password));
 
-   netplay_send(&connection->send_packet_buffer, connection->fd, &password_buf, sizeof(password_buf)) &&
-   netplay_send_flush(&connection->send_packet_buffer, connection->fd, false);
+   /* We have no way to handle an error here, so we'll let the next function error out */
+   if (netplay_send(&connection->send_packet_buffer, connection->fd, &password_buf, sizeof(password_buf)))
+      netplay_send_flush(&connection->send_packet_buffer, connection->fd, false);
 
    menu_input_dialog_end();
    rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
