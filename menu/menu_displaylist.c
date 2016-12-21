@@ -3319,7 +3319,6 @@ static int menu_displaylist_parse_cores(
       enum menu_displaylist_ctl_state type)
 {
    size_t i, list_size;
-   bool filter_ext              = true;
    struct string_list *str_list = NULL;
    unsigned items_found         = 0;
    settings_t *settings         = config_get_ptr();
@@ -3332,8 +3331,7 @@ static int menu_displaylist_parse_cores(
       return 0;
    }
 
-   str_list = dir_list_new(info->path,
-         filter_ext ? info->exts : NULL,
+   str_list = dir_list_new(info->path, info->exts,
          true, settings->show_hidden_files, true, false);
 
 
