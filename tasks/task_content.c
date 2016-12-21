@@ -360,11 +360,6 @@ static bool load_content_from_compressed_archive(
    ssize_t new_path_len              = 0;
    bool ret                          = false;
 
-   if (content_ctx->block_extract)
-      return true;
-   if (!need_fullpath || !path_contains_compressed_file(path))
-      return true;
-
    RARCH_LOG("Compressed file in case of need_fullpath."
          " Now extracting to temporary directory.\n");
 
@@ -550,7 +545,10 @@ static bool content_file_load(
                   MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT));
 
 #ifdef HAVE_COMPRESSION
-         if (!load_content_from_compressed_archive(
+         if (     !content_ctx->block_extract
+               && need_fullpath
+               && path_contains_compressed_file(path)
+               && !load_content_from_compressed_archive(
                   content_ctx,
                   &info[i], i,
                   additional_path_allocs, need_fullpath, path,
