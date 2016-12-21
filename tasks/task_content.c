@@ -395,6 +395,8 @@ static bool load_content_from_compressed_archive(
       snprintf(str, sizeof(str), "%s \"%s\".\n",
             msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
             path);
+      if (error_string)
+         free(error_string);
       error_string = strdup(str);
       return false;
    }
@@ -488,13 +490,13 @@ static bool content_file_load(
       struct retro_game_info *info,
       const struct string_list *content,
       content_information_ctx_t *content_ctx,
+      char *error_string,
       const struct retro_subsystem_info *special
       )
 {
    unsigned i;
    retro_ctx_load_content_info_t load_info;
    char msg[1024];
-   char *error_string                         = NULL;
    struct string_list *additional_path_allocs = string_list_new();
 
    msg[0] = '\0';
@@ -613,6 +615,8 @@ static const struct retro_subsystem_info *content_file_init_subsystem(
       snprintf(msg, sizeof(msg),
             "Failed to find subsystem \"%s\" in libretro implementation.\n",
             path_get(RARCH_PATH_SUBSYSTEM));
+      if (error_string)
+         free(error_string);
       error_string = strdup(msg);
       goto error;
    }
@@ -622,6 +626,8 @@ static const struct retro_subsystem_info *content_file_init_subsystem(
       snprintf(msg, sizeof(msg),
             "%s\n",
             msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT));
+      if (error_string)
+         free(error_string);
       error_string = strdup(msg);
       goto error;
    }
@@ -632,6 +638,8 @@ static const struct retro_subsystem_info *content_file_init_subsystem(
             "subsystem \"%s\", but %u content files were provided.\n",
             special->num_roms, special->desc,
             (unsigned)subsystem->size);
+      if (error_string)
+         free(error_string);
       error_string = strdup(msg);
       goto error;
    }
@@ -642,6 +650,8 @@ static const struct retro_subsystem_info *content_file_init_subsystem(
             "but %u content files were provided.\n",
             special->desc,
             (unsigned)subsystem->size);
+      if (error_string)
+         free(error_string);
       error_string = strdup(msg);
       goto error;
    }
@@ -741,7 +751,8 @@ static bool content_file_init(struct string_list *temporary_content,
    if (info)
    {
       unsigned i;
-      ret = content_file_load(temporary_content, info, content, content_ctx, special);
+      ret = content_file_load(temporary_content, info, content, content_ctx, error_string,
+            special);
 
       for (i = 0; i < content->size; i++)
          free((void*)info[i].data);
@@ -903,6 +914,8 @@ error:
          snprintf(msg, sizeof(msg), "%s %s.\n",
                msg_hash_to_str(MSG_FAILED_TO_LOAD),
                name);
+         if (error_string)
+            free(error_string);
          error_string = strdup(msg);
       }
    }
