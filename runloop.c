@@ -505,23 +505,18 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
       case RUNLOOP_CTL_IS_PAUSED:
          return runloop_paused;
       case RUNLOOP_CTL_MSG_QUEUE_PULL:
-#ifdef HAVE_THREADS
-         slock_lock(_runloop_msg_queue_lock);
-#endif
          {
             const char **ret = (const char**)data;
             if (!ret)
-            {
-#ifdef HAVE_THREADS
-               slock_unlock(_runloop_msg_queue_lock);
-#endif
                return false;
-            }
-            *ret = msg_queue_pull(runloop_msg_queue);
-         }
 #ifdef HAVE_THREADS
-         slock_unlock(_runloop_msg_queue_lock);
+            slock_lock(_runloop_msg_queue_lock);
 #endif
+            *ret = msg_queue_pull(runloop_msg_queue);
+#ifdef HAVE_THREADS
+            slock_unlock(_runloop_msg_queue_lock);
+#endif
+         }
          break;
       case RUNLOOP_CTL_MSG_QUEUE_DEINIT:
          if (!runloop_msg_queue)
