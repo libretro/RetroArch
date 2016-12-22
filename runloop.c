@@ -294,12 +294,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_IS_MISSING_BIOS:
          return runloop_missing_bios;
-      case RUNLOOP_CTL_SET_GAME_OPTIONS_ACTIVE:
-         runloop_game_options_active = true;
-         break;
-      case RUNLOOP_CTL_UNSET_GAME_OPTIONS_ACTIVE:
-         runloop_game_options_active = false;
-         break;
       case RUNLOOP_CTL_IS_GAME_OPTIONS_ACTIVE:
          return runloop_game_options_active;
       case RUNLOOP_CTL_SET_FRAME_LIMIT:
@@ -532,8 +526,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 
             if(ret)
             {
-               runloop_ctl(RUNLOOP_CTL_SET_GAME_OPTIONS_ACTIVE, NULL);
-               runloop_core_options =
+               runloop_game_options_active = true;
+               runloop_core_options        =
                   core_option_manager_new(game_options_path, vars);
                free(game_options_path);
             }
@@ -554,7 +548,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
                   options_path = buf;
                }
 
-               runloop_ctl(RUNLOOP_CTL_UNSET_GAME_OPTIONS_ACTIVE, NULL);
+               runloop_game_options_active = false;
 
                if (!string_is_empty(options_path))
                   runloop_core_options =
@@ -584,8 +578,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             else
                core_option_manager_flush(runloop_core_options);
 
-            if (runloop_ctl(RUNLOOP_CTL_IS_GAME_OPTIONS_ACTIVE, NULL))
-               runloop_ctl(RUNLOOP_CTL_UNSET_GAME_OPTIONS_ACTIVE, NULL);
+            if (runloop_game_options_active)
+               runloop_game_options_active = false;
 
             runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_FREE, NULL);
          }
