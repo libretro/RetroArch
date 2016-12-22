@@ -16,6 +16,7 @@
 #include <compat/strl.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
+#include <retro_miscellaneous.h>
 
 #include "../wifi_driver.h"
 #include "../../runloop.h"
