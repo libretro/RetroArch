@@ -1630,11 +1630,9 @@ void video_driver_init(void)
 {
    bool initialized = false;
    video_driver_lock_new();
+   video_driver_msg_queue_init();
 
-   initialized = init_video();
-
-   if (initialized)
-      video_driver_msg_queue_init();
+   init_video();
 }
 
 void video_driver_destroy_data(void)
