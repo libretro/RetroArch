@@ -58,7 +58,7 @@
 #include "../core.h"
 #include "../command.h"
 #include "../msg_hash.h"
-#include "ui/ui_companion_driver.h"
+#include "../ui/ui_companion_driver.h"
 #include "../verbosity.h"
 
 #define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
