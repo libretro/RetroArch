@@ -1174,6 +1174,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          rarch_block_config_read = false;
          rarch_force_fullscreen  = false;
 
+         runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_DEINIT, NULL);
          driver_ctl(RARCH_DRIVER_CTL_UNINIT_ALL, NULL);
          command_event(CMD_EVENT_LOG_FILE_DEINIT, NULL);
 
@@ -1239,6 +1240,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
                settings->input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
          }
          runloop_ctl(RUNLOOP_CTL_HTTPSERVER_INIT, NULL);
+         runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_INIT, NULL);
          break;
       case RARCH_CTL_SET_PATHS_REDIRECT:
          if (content_does_not_need_content())

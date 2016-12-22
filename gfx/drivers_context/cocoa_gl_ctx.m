@@ -39,7 +39,6 @@
 #include <compat/apple_compat.h>
 
 #import "../../ui/drivers/cocoa/cocoa_common.h"
-#include "../video_driver.h"
 #include "../video_context_driver.h"
 #include "../../configuration.h"
 #include "../../runloop.h"
@@ -437,7 +436,7 @@ static void cocoagl_gfx_ctx_update_window_title(void *data)
        window->set_title(&view, buf);
 #endif
     if (settings->fps_show)
-        video_driver_msg_queue_push(buf_fps, 1, 1, false);
+        runloop_msg_queue_push(buf_fps, 1, 1, false);
 }
 
 static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types type,

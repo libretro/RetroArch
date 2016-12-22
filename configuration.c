@@ -32,7 +32,6 @@
 
 #include "file_path_special.h"
 #include "audio/audio_driver.h"
-#include "gfx/video_driver.h"
 #include "configuration.h"
 #include "content.h"
 #include "config.def.h"
@@ -2321,7 +2320,7 @@ bool config_load_override(void)
    /* Restore the libretro_path we're using
     * since it will be overwritten by the override when reloading. */
    path_set(RARCH_PATH_CORE, buf);
-   video_driver_msg_queue_push("Configuration override loaded.", 1, 100, true);
+   runloop_msg_queue_push("Configuration override loaded.", 1, 100, true);
 
    /* Reset save paths. */
    retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
@@ -2428,7 +2427,7 @@ bool config_load_remap(void)
       RARCH_LOG("Remaps: game-specific remap found at %s.\n", game_path);
       if (input_remapping_load_file(new_conf, game_path))
       {
-         video_driver_msg_queue_push("Game remap file loaded.", 1, 100, true);
+         runloop_msg_queue_push("Game remap file loaded.", 1, 100, true);
          return true;
       }
    }
@@ -2447,7 +2446,7 @@ bool config_load_remap(void)
       RARCH_LOG("Remaps: core-specific remap found at %s.\n", core_path);
       if (input_remapping_load_file(new_conf, core_path))
       {
-         video_driver_msg_queue_push("Core remap file loaded.", 1, 100, true);
+         runloop_msg_queue_push("Core remap file loaded.", 1, 100, true);
          return true;
       }
    }

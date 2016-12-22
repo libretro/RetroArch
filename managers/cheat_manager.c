@@ -38,8 +38,6 @@
 #include "../core.h"
 #include "../verbosity.h"
 
-#include "../gfx/video_driver.h"
-
 struct item_cheat
 {
    char *desc;
@@ -99,9 +97,8 @@ void cheat_manager_apply_cheats(void)
          core_set_cheat(&cheat_info);
       }
    }
-
-   video_driver_msg_queue_push(msg_hash_to_str(MSG_APPLYING_CHEAT), 1, 180, true);
-   RARCH_LOG("%s\n", msg_hash_to_str(MSG_APPLYING_CHEAT));
+    runloop_msg_queue_push(msg_hash_to_str(MSG_APPLYING_CHEAT), 1, 180, true);
+    RARCH_LOG("%s\n", msg_hash_to_str(MSG_APPLYING_CHEAT));
 
 #ifdef HAVE_CHEEVOS
    data_bool = idx != 0;
@@ -348,7 +345,7 @@ void cheat_manager_update(cheat_manager_t *handle, unsigned handle_idx)
          (handle->cheats[handle_idx].desc) ?
          (handle->cheats[handle_idx].desc) : (handle->cheats[handle_idx].code)
          );
-   video_driver_msg_queue_push(msg, 1, 180, true);
+   runloop_msg_queue_push(msg, 1, 180, true);
    RARCH_LOG("%s\n", msg);
 }
 

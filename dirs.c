@@ -34,8 +34,6 @@
 #include "runloop.h"
 #include "verbosity.h"
 
-#include "gfx/video_driver.h"
-
 struct rarch_dir_list
 {
    struct string_list *list;
@@ -158,7 +156,7 @@ void dir_check_shader(bool pressed_next, bool pressed_prev)
    snprintf(msg, sizeof(msg), "%s #%u: \"%s\".",
          msg_hash_to_str(MSG_SHADER),
          (unsigned)dir_list->ptr, shader);
-   video_driver_msg_queue_push(msg, 2, 120, true);
+   runloop_msg_queue_push(msg, 2, 120, true);
 
    RARCH_LOG("%s \"%s\".\n",
          msg_hash_to_str(MSG_APPLYING_SHADER),

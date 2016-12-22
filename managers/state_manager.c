@@ -31,7 +31,6 @@
 #include "../performance_counters.h"
 #include "../verbosity.h"
 #include "../audio/audio_driver.h"
-#include "../gfx/video_driver.h"
 
 /* This makes Valgrind throw errors if a core overflows its savestate size. */
 /* Keep it off unless you're chasing a core bug, it slows things down. */
@@ -589,7 +588,7 @@ void state_manager_check_rewind(bool pressed)
 
          audio_driver_setup_rewind();
 
-         video_driver_msg_queue_push(
+         runloop_msg_queue_push(
                msg_hash_to_str(MSG_REWINDING), 0,
                runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) 
                ? 1 : 30, true);
@@ -603,7 +602,7 @@ void state_manager_check_rewind(bool pressed)
             bsv_movie_ctl(BSV_MOVIE_CTL_FRAME_REWIND, NULL);
       }
       else
-         video_driver_msg_queue_push(
+         runloop_msg_queue_push(
                msg_hash_to_str(MSG_REWIND_REACHED_END),
                0, 30, true);
    }

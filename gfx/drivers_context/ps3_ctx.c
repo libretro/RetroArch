@@ -29,7 +29,6 @@
 #include "../../runloop.h"
 #include "../../defines/ps3_defines.h"
 #include "../common/gl_common.h"
-#include "../video_driver.h"
 #include "../video_context_driver.h"
 
 #ifdef HAVE_CONFIG_H
@@ -212,7 +211,7 @@ static void gfx_ctx_ps3_update_window_title(void *data)
    video_monitor_get_fps(buf, sizeof(buf),
          buf_fps, sizeof(buf_fps));
    if (settings->fps_show)
-      video_driver_msg_queue_push(buf_fps, 1, 1, false);
+      runloop_msg_queue_push(buf_fps, 1, 1, false);
 }
 
 static void gfx_ctx_ps3_get_video_size(void *data,

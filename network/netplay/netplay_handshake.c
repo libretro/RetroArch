@@ -27,7 +27,6 @@
 
 #include "../../configuration.h"
 #include "../../content.h"
-#include "../../gfx/video_driver.h"
 #include "../../retroarch.h"
 #include "../../runloop.h"
 #include "../../version.h"
@@ -91,14 +90,14 @@ void netplay_log_connection(const struct sockaddr_storage *their_addr,
    {
       snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_GOT_CONNECTION_FROM_NAME),
             nick, str);
-      video_driver_msg_queue_push(msg, 1, 180, false);
+      runloop_msg_queue_push(msg, 1, 180, false);
       RARCH_LOG("%s\n", msg);
    }
    else
    {
       snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_GOT_CONNECTION_FROM),
             nick);
-      video_driver_msg_queue_push(msg, 1, 180, false);
+      runloop_msg_queue_push(msg, 1, 180, false);
       RARCH_LOG("%s\n", msg);
    }
    RARCH_LOG("%s %u\n", msg_hash_to_str(MSG_CONNECTION_SLOT),
@@ -115,7 +114,7 @@ void netplay_log_connection(const struct sockaddr_storage *their_addr,
 
    snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_GOT_CONNECTION_FROM),
          nick);
-   video_driver_msg_queue_push(msg, 1, 180, false);
+   runloop_msg_queue_push(msg, 1, 180, false);
    RARCH_LOG("%s\n", msg);
    RARCH_LOG("%s %u\n",
          msg_hash_to_str(MSG_CONNECTION_SLOT), slot);
@@ -412,7 +411,7 @@ error:
    if (dmsg)
    {
       RARCH_ERR("%s\n", dmsg);
-      video_driver_msg_queue_push(dmsg, 1, 180, false);
+      runloop_msg_queue_push(dmsg, 1, 180, false);
    }
    return false;
 }
@@ -437,7 +436,7 @@ static void netplay_handshake_ready(netplay_t *netplay, struct netplay_connectio
             msg_hash_to_str(MSG_CONNECTED_TO),
             connection->nick);
       RARCH_LOG("%s\n", msg);
-      video_driver_msg_queue_push(msg, 1, 180, false);
+      runloop_msg_queue_push(msg, 1, 180, false);
    }
 
    /* Unstall if we were waiting for this */
@@ -623,7 +622,7 @@ bool netplay_handshake_pre_nick(netplay_t *netplay,
             msg_hash_to_str(MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST),
             sizeof(msg));
       RARCH_ERR("%s\n", msg);
-      video_driver_msg_queue_push(msg, 1, 180, false);
+      runloop_msg_queue_push(msg, 1, 180, false);
       return false;
    }
 
@@ -692,7 +691,7 @@ bool netplay_handshake_pre_password(netplay_t *netplay,
             msg_hash_to_str(MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST),
             sizeof(msg));
       RARCH_ERR("%s\n", msg);
-      video_driver_msg_queue_push(msg, 1, 180, false);
+      runloop_msg_queue_push(msg, 1, 180, false);
       return false;
    }
 
@@ -823,7 +822,7 @@ error:
    if (dmsg)
    {
       RARCH_ERR("%s\n", dmsg);
-      video_driver_msg_queue_push(dmsg, 1, 180, false);
+      runloop_msg_queue_push(dmsg, 1, 180, false);
    }
    return false;
 }
@@ -850,7 +849,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
    {
       const char *msg = msg_hash_to_str(MSG_NETPLAY_INCORRECT_PASSWORD);
       RARCH_ERR("%s\n", msg);
-      video_driver_msg_queue_push(msg, 1, 180, false);
+      runloop_msg_queue_push(msg, 1, 180, false);
       return false;
    }
 
@@ -935,7 +934,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
       strlcpy(netplay->nick, new_nick, NETPLAY_NICK_LEN);
       snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_NETPLAY_CHANGED_NICK), netplay->nick);
       RARCH_LOG("%s\n", msg);
-      video_driver_msg_queue_push(msg, 1, 180, false);
+      runloop_msg_queue_push(msg, 1, 180, false);
    }
 
    /* Now check the SRAM */

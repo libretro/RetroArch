@@ -91,6 +91,11 @@ enum runloop_ctl_state
    RUNLOOP_CTL_KEY_EVENT_GET,
    RUNLOOP_CTL_DATA_DEINIT,
 
+   /* Message queue */
+   RUNLOOP_CTL_MSG_QUEUE_INIT,
+   RUNLOOP_CTL_MSG_QUEUE_DEINIT,
+   RUNLOOP_CTL_MSG_QUEUE_PULL,
+
    /* Core options */
    RUNLOOP_CTL_HAS_CORE_OPTIONS,
    RUNLOOP_CTL_GET_CORE_OPTION_SIZE,
@@ -195,6 +200,9 @@ global_t *global_get_ptr(void);
  * RetroArch iteration loop. 
  **/
 int runloop_iterate(unsigned *sleep_ms);
+
+void runloop_msg_queue_push(const char *msg, unsigned prio,
+      unsigned duration, bool flush);
 
 bool runloop_ctl(enum runloop_ctl_state state, void *data);
 

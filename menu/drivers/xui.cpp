@@ -431,7 +431,6 @@ static void xui_frame(void *data)
 
    XuiRenderSetViewTransform( app.GetDC(), &matOrigView );
 
-#if 0
    runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_PULL, &message);
 
    if (message)
@@ -443,7 +442,6 @@ static void xui_frame(void *data)
       if (message)
          xui_render_message(message);
    }
-#endif
 
    XuiRenderEnd( app.GetDC() );
 

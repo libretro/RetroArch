@@ -28,7 +28,6 @@
 #include "tasks_internal.h"
 
 #include "../database_info.h"
-#include "../gfx/video_driver.h"
 
 #include "../configuration.h"
 #include "../file_path_special.h"
@@ -112,7 +111,7 @@ static int task_database_iterate_start(database_info_handle_t *db,
          name);
 
    if (!string_is_empty(msg))
-      video_driver_msg_queue_push(msg, 1, 180, true);
+      runloop_msg_queue_push(msg, 1, 180, true);
 
 #if 0
    RARCH_LOG("msg: %s\n", msg);
@@ -657,7 +656,7 @@ static void task_database_handler(retro_task_t *task)
          }
          else
          {
-            video_driver_msg_queue_push(
+            runloop_msg_queue_push(
                   msg_hash_to_str(MSG_SCANNING_OF_DIRECTORY_FINISHED),
                   0, 180, true);
             goto task_finished;

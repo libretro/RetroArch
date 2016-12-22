@@ -241,7 +241,7 @@ void video_driver_unset_rgba(void);
 bool video_driver_supports_rgba(void);
 bool video_driver_get_next_video_out(void);
 bool video_driver_get_prev_video_out(void);
-void video_driver_init(void);
+bool video_driver_init(void);
 void video_driver_destroy_data(void);
 void video_driver_deinit(void);
 void video_driver_monitor_reset(void);
@@ -543,10 +543,6 @@ extern const void *frame_cache_data;
 
 extern void *video_driver_data;
 extern video_driver_t *current_video;
-
-void video_driver_msg_queue_push(const char *msg,
-      unsigned prio, unsigned duration,
-      bool flush);
 
 RETRO_END_DECLS
 

@@ -27,7 +27,6 @@
 #include <gfx/scaler/pixconv.h>
 #include <gfx/scaler/scaler.h>
 #include <gfx/video_frame.h>
-#include <queues/message_queue.h>
 #include <formats/image.h>
 
 #ifdef HAVE_CONFIG_H
@@ -42,7 +41,6 @@
 #include "../menu/menu_setting.h"
 #endif
 
-#include "video_driver.h"
 #include "video_thread_wrapper.h"
 #include "video_context_driver.h"
 
@@ -58,7 +56,6 @@
 #include "../core.h"
 #include "../command.h"
 #include "../msg_hash.h"
-#include "../ui/ui_companion_driver.h"
 #include "../verbosity.h"
 
 #define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
@@ -66,14 +63,6 @@
 #define TIME_TO_FPS(last_time, new_time, frames) ((1000000.0f * (frames)) / ((new_time) - (last_time)))
 
 #define FPS_UPDATE_INTERVAL 256
-
-typedef struct video_driver_ctx_msg_info
-{
-   const char *msg;
-   unsigned prio;
-   unsigned duration;
-   bool flush;
-} video_driver_ctx_msg_info_t;
 
 typedef struct video_pixel_scaler
 {
@@ -149,10 +138,7 @@ static uint8_t *video_driver_record_gpu_buffer           = NULL;
 
 #ifdef HAVE_THREADS
 static slock_t *display_lock                             = NULL;
-static slock_t *_video_driver_msg_queue_lock             = NULL;
 #endif
-
-static msg_queue_t *video_driver_msg_queue               = NULL;
 
 struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
    { "4:3",           1.3333f },
@@ -958,7 +944,7 @@ void video_monitor_set_refresh_rate(float hz)
 
    snprintf(msg, sizeof(msg),
          "Setting refresh rate to: %.3f Hz.", hz);
-   video_driver_msg_queue_push(msg, 1, 180, false);
+   runloop_msg_queue_push(msg, 1, 180, false);
    RARCH_LOG("%s\n", msg);
 
    settings->video.refresh_rate = hz;
@@ -1554,87 +1540,10 @@ bool video_driver_get_prev_video_out(void)
    return true;
 }
 
-static void video_driver_msg_queue_init(void)
+bool video_driver_init(void)
 {
-   video_driver_msg_queue = msg_queue_new(8);
-   retro_assert(video_driver_msg_queue);
-
-#ifdef HAVE_THREADS
-   _video_driver_msg_queue_lock = slock_new();
-   retro_assert(_video_driver_msg_queue_lock);
-#endif
-}
-
-static void video_driver_msg_queue_free(void)
-{
-#ifdef HAVE_THREADS
-   slock_lock(_video_driver_msg_queue_lock);
-#endif
-
-   msg_queue_free(video_driver_msg_queue);
-
-#ifdef HAVE_THREADS
-   slock_unlock(_video_driver_msg_queue_lock);
-#endif
-
-#ifdef HAVE_THREADS
-   slock_free(_video_driver_msg_queue_lock);
-   _video_driver_msg_queue_lock = NULL;
-#endif
-
-   video_driver_msg_queue = NULL;
-}
-
-void video_driver_msg_queue_push(const char *msg,
-      unsigned prio, unsigned duration,
-      bool flush)
-{
-   video_driver_ctx_msg_info_t msg_info;
-   settings_t *settings = config_get_ptr();
-
-   if (!settings || !settings->video.font_enable)
-      return;
-
-#ifdef HAVE_THREADS
-   slock_lock(_video_driver_msg_queue_lock);
-#endif
-
-   if (flush)
-      msg_queue_clear(video_driver_msg_queue);
-
-   msg_info.msg      = msg;
-   msg_info.prio     = prio;
-   msg_info.duration = duration;
-   msg_info.flush    = flush;
-
-   if (video_driver_msg_queue)
-   {
-      msg_queue_push(video_driver_msg_queue, msg_info.msg,
-            msg_info.prio, msg_info.duration);
-
-      if (ui_companion_is_on_foreground())
-      {
-         const ui_companion_driver_t *ui = ui_companion_get_ptr();
-         if (ui->msg_queue_push)
-            ui->msg_queue_push(msg_info.msg,
-                  msg_info.prio, msg_info.duration, msg_info.flush);
-      }
-   }
-
-#ifdef HAVE_THREADS
-   slock_unlock(_video_driver_msg_queue_lock);
-#endif
-}
-
-void video_driver_init(void)
-{
-   bool initialized = false;
    video_driver_lock_new();
-
-   initialized = init_video();
-
-   if (initialized)
-      video_driver_msg_queue_init();
+   return init_video();
 }
 
 void video_driver_destroy_data(void)
@@ -1645,10 +1554,6 @@ void video_driver_destroy_data(void)
 void video_driver_deinit(void)
 {
    uninit_video_input();
-
-   if (video_driver_msg_queue)
-      video_driver_msg_queue_free();
-
    video_driver_lock_free();
    video_driver_data = NULL;
 }
@@ -2192,17 +2097,7 @@ void video_driver_frame(const void *data, unsigned width,
 
    video_driver_msg[0] = '\0';
 
-#ifdef HAVE_THREADS
-   slock_lock(_video_driver_msg_queue_lock);
-#endif
-
-   msg = msg_queue_pull(video_driver_msg_queue);
-
-#ifdef HAVE_THREADS
-   slock_unlock(_video_driver_msg_queue_lock);
-#endif
-
-   if (msg)
+   if (runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_PULL, &msg) && msg)
       strlcpy(video_driver_msg, msg, sizeof(video_driver_msg));
 
    if (!current_video || !current_video->frame(

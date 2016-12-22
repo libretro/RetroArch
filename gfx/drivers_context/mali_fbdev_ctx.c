@@ -36,7 +36,6 @@
 #include "../common/gl_common.h"
 #endif
 
-#include "../video_driver.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../configuration.h"
 #include "../../runloop.h"
@@ -171,7 +170,7 @@ static void gfx_ctx_mali_fbdev_update_window_title(void *data)
    video_monitor_get_fps(buf, sizeof(buf),
          buf_fps, sizeof(buf_fps));
    if (settings->fps_show)
-      video_driver_msg_queue_push(buf_fps, 1, 1, false);
+      runloop_msg_queue_push(buf_fps, 1, 1, false);
 }
 
 static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,

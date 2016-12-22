@@ -22,8 +22,6 @@
 
 #include <string/stdstring.h>
 
-#include <linux/input.h>
-
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
@@ -44,13 +42,13 @@
 #include "../common/gl_common.h"
 #endif
 
-#include "../video_driver.h"
 #include "../../configuration.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../runloop.h"
 #include "../../input/input_keyboard.h"
 #include "../../input/input_keymaps.h"
 #include "../../input/input_joypad_driver.h"
+#include <linux/input.h>
 
 typedef struct gfx_ctx_wayland_data
 {
@@ -736,7 +734,7 @@ static void gfx_ctx_wl_update_window_title(void *data)
       wl_shell_surface_set_title(wl->shell_surf, buf);
 
    if (settings->fps_show)
-      video_driver_msg_queue_push(buf_fps, 1, 1, false);
+      runloop_msg_queue_push(buf_fps, 1, 1, false);
 }
 
 

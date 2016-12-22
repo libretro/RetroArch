@@ -32,7 +32,6 @@
 #include "../../configuration.h"
 #include "../../runloop.h"
 #include "../../configuration.h"
-#include "../video_driver.h"
 #include "../video_context_driver.h"
 
 typedef int CGSConnectionID;
@@ -125,7 +124,7 @@ static void gfx_ctx_cgl_update_window_title(void *data)
    video_monitor_get_fps(buf, sizeof(buf),
       buf_fps, sizeof(buf_fps));
    if (settings->fps_show)
-      video_driver_msg_queue_push(buf_fps, 1, 1, false);
+      runloop_msg_queue_push(buf_fps, 1, 1, false);
 }
 
 

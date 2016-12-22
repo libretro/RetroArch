@@ -76,7 +76,6 @@
 #include "../configuration.h"
 #include "../defaults.h"
 #include "../frontend/frontend.h"
-#include "../gfx/video_driver.h"
 #include "../playlist.h"
 #include "../paths.h"
 #include "../retroarch.h"
@@ -1272,7 +1271,7 @@ error:
 
    if (error_string)
    {
-      video_driver_msg_queue_push(error_string, 2, 90, true);
+      runloop_msg_queue_push(error_string, 2, 90, true);
       free(error_string);
    }
 
@@ -1300,7 +1299,7 @@ error:
    return false;
 
 skip:
-   video_driver_msg_queue_push(msg_hash_to_str(MSG_FIRMWARE), 100, 500, true);
+   runloop_msg_queue_push(msg_hash_to_str(MSG_FIRMWARE), 100, 500, true);
    RARCH_LOG("Load content blocked. Reason:  %s\n", msg_hash_to_str(MSG_FIRMWARE));
 
    return true;
@@ -1442,7 +1441,7 @@ end:
       {
          RARCH_ERR("%s\n", error_string);
       }
-      video_driver_msg_queue_push(error_string, 2, ret ? 1 : 180, true);
+      runloop_msg_queue_push(error_string, 2, ret ? 1 : 180, true);
       free(error_string);
    }
 

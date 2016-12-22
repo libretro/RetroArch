@@ -26,7 +26,7 @@
 
 #include "../../configuration.h"
 #include "../../input/input_driver.h"
-#include "../../gfx/video_driver.h"
+#include "../../runloop.h"
 
 /* Only used before init_netplay */
 static bool netplay_enabled = false;
@@ -424,7 +424,7 @@ bool netplay_command(netplay_t* netplay, struct netplay_connection *connection,
    if (!netplay_send_raw_cmd(netplay, connection, cmd, data, sz))
       return false;
 
-   video_driver_msg_queue_push(success_msg, 1, 180, false);
+   runloop_msg_queue_push(success_msg, 1, 180, false);
 
    return true;
 }
@@ -781,7 +781,7 @@ static void netplay_toggle_play_spectate(netplay_t *netplay)
       }
 
       RARCH_LOG("%s\n", dmsg);
-      video_driver_msg_queue_push(dmsg, 1, 180, false);
+      runloop_msg_queue_push(dmsg, 1, 180, false);
 
       netplay_send_raw_cmd_all(netplay, NULL, NETPLAY_CMD_MODE, payload, sizeof(payload));
 
@@ -884,7 +884,7 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
    else
    {
       RARCH_LOG("%s\n", msg_hash_to_str(MSG_WAITING_FOR_CLIENT));
-      video_driver_msg_queue_push(
+      runloop_msg_queue_push(
          msg_hash_to_str(MSG_WAITING_FOR_CLIENT),
          0, 180, false);
    }
@@ -902,7 +902,7 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
 
    RARCH_WARN("%s\n", msg_hash_to_str(MSG_NETPLAY_FAILED));
 
-   video_driver_msg_queue_push(
+   runloop_msg_queue_push(
          msg_hash_to_str(MSG_NETPLAY_FAILED),
          0, 180, false);
    return false;

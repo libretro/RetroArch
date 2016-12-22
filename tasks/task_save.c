@@ -48,7 +48,6 @@
 #include "../configuration.h"
 #include "../msg_hash.h"
 #include "../retroarch.h"
-#include "../gfx/video_driver.h"
 #include "../runloop.h"
 #include "../verbosity.h"
 #include "tasks_internal.h"
@@ -968,7 +967,7 @@ error:
                           load_data->path);
 
    if (!load_data->mute)
-      video_driver_msg_queue_push(err_buf, 1, 180, true);
+      runloop_msg_queue_push(err_buf, 1, 180, true);
 
    RARCH_ERR("%s \"%s\".\n",
          msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE),

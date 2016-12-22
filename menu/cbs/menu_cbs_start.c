@@ -37,7 +37,6 @@
 #include "../../runloop.h"
 #include "../../performance_counters.h"
 
-#include "../../gfx/video_driver.h"
 #include "../../gfx/video_shader_driver.h"
 
 #include "../../input/input_remapping.h"
@@ -322,7 +321,7 @@ static int action_start_video_resolution(unsigned type, const char *label)
       video_driver_set_video_mode(width, height, true);
 
       strlcpy(msg, "Resetting to: DEFAULT", sizeof(msg));
-      video_driver_msg_queue_push(msg, 1, 100, true);
+      runloop_msg_queue_push(msg, 1, 100, true);
    }
 
    return 0;

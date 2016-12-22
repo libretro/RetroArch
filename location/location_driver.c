@@ -30,8 +30,6 @@
 #include "../list_special.h"
 #include "../verbosity.h"
 
-#include "../gfx/video_driver.h"
-
 static const location_driver_t *location_drivers[] = {
 #ifdef ANDROID
    &location_android,
@@ -142,7 +140,7 @@ bool driver_location_start(void)
       if (settings->location.allow)
          return location_driver->start(location_data);
 
-      video_driver_msg_queue_push("Location is explicitly disabled.\n", 1, 180, true);
+      runloop_msg_queue_push("Location is explicitly disabled.\n", 1, 180, true);
    }
    return false;
 }

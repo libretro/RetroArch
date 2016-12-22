@@ -50,7 +50,6 @@
 #include "core.h"
 #include "driver.h"
 #include "performance_counters.h"
-#include "gfx/video_driver.h"
 #include "gfx/video_context_driver.h"
 
 #include "cores/internal_cores.h"
@@ -252,7 +251,7 @@ static bool load_dynamic_core(void)
          path_get(RARCH_PATH_CORE));
    RARCH_ERR("Error(s): %s\n", dylib_error());
 
-   video_driver_msg_queue_push(msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE), 1, 180, true);
+   runloop_msg_queue_push(msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE), 1, 180, true);
 
    return false;
 }
@@ -1011,7 +1010,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       {
          const struct retro_message *msg = (const struct retro_message*)data;
          RARCH_LOG("Environ SET_MESSAGE: %s\n", msg->msg);
-         video_driver_msg_queue_push(msg->msg, 3, msg->frames, true);
+         runloop_msg_queue_push(msg->msg, 3, msg->frames, true);
          break;
       }
 
