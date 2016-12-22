@@ -880,6 +880,12 @@ static bool task_load_content(content_ctx_info_t *content_info,
                break;
          }
 
+         if (mode == CONTENT_MODE_LOAD_FROM_CLI)
+         {
+            settings_t *settings                       = config_get_ptr();
+            content_ctx->history_list_enable = settings->history_list_enable;
+         }
+
          if (
                   content_ctx->history_list_enable 
                && playlist_tmp 
