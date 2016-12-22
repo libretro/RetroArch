@@ -176,7 +176,7 @@ static void task_screenshot_handler(retro_task_t *task)
    if (!ret)
    {
       char *msg = strdup(msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT));
-      runloop_msg_queue_push(msg, 1, is_paused ? 1 : 180, true);
+      video_driver_msg_queue_push(msg, 1, is_paused ? 1 : 180, true);
       free(msg);
    }
 }

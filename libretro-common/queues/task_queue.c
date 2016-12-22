@@ -56,7 +56,7 @@ static void task_queue_msg_push(unsigned prio, unsigned duration,
       bool flush, const char *fmt, ...)
 {
 #ifdef RARCH_INTERNAL
-   extern void runloop_msg_queue_push(const char *msg, unsigned prio,
+   extern void video_driver_msg_queue_push(const char *msg, unsigned prio,
          unsigned duration, bool flush);
 #endif
    char buf[1024];
@@ -72,7 +72,7 @@ static void task_queue_msg_push(unsigned prio, unsigned duration,
 
 #ifdef RARCH_INTERNAL
    /* TODO/FIXME - ugly */
-   runloop_msg_queue_push(buf, prio, duration, flush);
+   video_driver_msg_queue_push(buf, prio, duration, flush);
 #endif
 }
 

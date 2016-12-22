@@ -23,7 +23,6 @@
 #include <compat/strl.h>
 #include <retro_assert.h>
 #include <file/file_path.h>
-#include <queues/message_queue.h>
 #include <queues/task_queue.h>
 #include <string/stdstring.h>
 #include <features/features_cpu.h>
@@ -101,23 +100,11 @@ enum  runloop_state
    RUNLOOP_STATE_QUIT
 };
 
-typedef struct runloop_ctx_msg_info
-{
-   const char *msg;
-   unsigned prio;
-   unsigned duration;
-   bool flush;
-} runloop_ctx_msg_info_t;
-
 static rarch_system_info_t runloop_system;
 static struct retro_frame_time_callback runloop_frame_time;
 static retro_keyboard_event_t runloop_key_event            = NULL;
 static retro_keyboard_event_t runloop_frontend_key_event   = NULL;
 static core_option_manager_t *runloop_core_options         = NULL;
-#ifdef HAVE_THREADS
-static slock_t *_runloop_msg_queue_lock                    = NULL;
-#endif
-static msg_queue_t *runloop_msg_queue                      = NULL;
 static unsigned runloop_pending_windowed_scale             = 0;
 static retro_usec_t runloop_frame_time_last                = 0;
 static unsigned runloop_max_frames                         = false;
@@ -139,47 +126,6 @@ global_t *global_get_ptr(void)
 {
    static struct global g_extern;
    return &g_extern;
-}
-
-void runloop_msg_queue_push(const char *msg,
-      unsigned prio, unsigned duration,
-      bool flush)
-{
-   runloop_ctx_msg_info_t msg_info;
-   settings_t *settings = config_get_ptr();
-
-   if (!settings || !settings->video.font_enable)
-      return;
-
-#ifdef HAVE_THREADS
-   slock_lock(_runloop_msg_queue_lock);
-#endif
-
-   if (flush)
-      msg_queue_clear(runloop_msg_queue);
-
-   msg_info.msg      = msg;
-   msg_info.prio     = prio;
-   msg_info.duration = duration;
-   msg_info.flush    = flush;
-
-   if (runloop_msg_queue)
-   {
-      msg_queue_push(runloop_msg_queue, msg_info.msg,
-            msg_info.prio, msg_info.duration);
-
-      if (ui_companion_is_on_foreground())
-      {
-         const ui_companion_driver_t *ui = ui_companion_get_ptr();
-         if (ui->msg_queue_push)
-            ui->msg_queue_push(msg_info.msg,
-                  msg_info.prio, msg_info.duration, msg_info.flush);
-      }
-   }
-
-#ifdef HAVE_THREADS
-   slock_unlock(_runloop_msg_queue_lock);
-#endif
 }
 
 #ifdef HAVE_MENU
@@ -510,56 +456,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_IS_PAUSED:
          return runloop_paused;
-      case RUNLOOP_CTL_MSG_QUEUE_PULL:
-#ifdef HAVE_THREADS
-         slock_lock(_runloop_msg_queue_lock);
-#endif
-         {
-            const char **ret = (const char**)data;
-            if (!ret)
-            {
-#ifdef HAVE_THREADS
-               slock_unlock(_runloop_msg_queue_lock);
-#endif
-               return false;
-            }
-            *ret = msg_queue_pull(runloop_msg_queue);
-         }
-#ifdef HAVE_THREADS
-         slock_unlock(_runloop_msg_queue_lock);
-#endif
-         break;
-      case RUNLOOP_CTL_MSG_QUEUE_DEINIT:
-         if (!runloop_msg_queue)
-            return true;
-
-#ifdef HAVE_THREADS
-         slock_lock(_runloop_msg_queue_lock);
-#endif
-
-         msg_queue_free(runloop_msg_queue);
-
-#ifdef HAVE_THREADS
-         slock_unlock(_runloop_msg_queue_lock);
-#endif
-
-#ifdef HAVE_THREADS
-         slock_free(_runloop_msg_queue_lock);
-         _runloop_msg_queue_lock = NULL;
-#endif
-
-         runloop_msg_queue = NULL;
-         break;
-      case RUNLOOP_CTL_MSG_QUEUE_INIT:
-         runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_DEINIT, NULL);
-         runloop_msg_queue = msg_queue_new(8);
-         retro_assert(runloop_msg_queue);
-
-#ifdef HAVE_THREADS
-         _runloop_msg_queue_lock = slock_new();
-         retro_assert(_runloop_msg_queue_lock);
-#endif
-         break;
       case RUNLOOP_CTL_TASK_INIT:
          {
 #ifdef HAVE_THREADS
@@ -1001,7 +897,7 @@ static enum runloop_state runloop_check_state(
             msg_hash_to_str(MSG_STATE_SLOT),
             settings->state_slot);
 
-      runloop_msg_queue_push(msg, 2, 180, true);
+      video_driver_msg_queue_push(msg, 2, 180, true);
 
       RARCH_LOG("%s\n", msg);
    }
@@ -1018,7 +914,7 @@ static enum runloop_state runloop_check_state(
             msg_hash_to_str(MSG_STATE_SLOT),
             settings->state_slot);
 
-      runloop_msg_queue_push(msg, 2, 180, true);
+      video_driver_msg_queue_push(msg, 2, 180, true);
 
       RARCH_LOG("%s\n", msg);
    }
@@ -1045,10 +941,10 @@ static enum runloop_state runloop_check_state(
       }
 
       if (state_manager_frame_is_reversed())
-         runloop_msg_queue_push(
+         video_driver_msg_queue_push(
                msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 2, 30, true);
       else
-         runloop_msg_queue_push(
+         video_driver_msg_queue_push(
                msg_hash_to_str(MSG_SLOW_MOTION), 2, 30, true);
    }
 

@@ -42,6 +42,7 @@
 #include "../../configuration.h"
 #include "../../dynamic.h"
 #include "../../runloop.h"
+#include "../video_driver.h"
 #include "../video_context_driver.h"
 
 #include "../common/win32_common.h"
@@ -399,7 +400,7 @@ static void gfx_ctx_wgl_update_window_title(void *data)
             buf_fps, sizeof(buf_fps)))
       window->set_title(&main_window, buf);
    if (settings->fps_show)
-      runloop_msg_queue_push(buf_fps, 1, 1, false);
+      video_driver_msg_queue_push(buf_fps, 1, 1, false);
 }
 
 static void gfx_ctx_wgl_get_video_size(void *data,

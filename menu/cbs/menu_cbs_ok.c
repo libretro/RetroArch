@@ -40,6 +40,7 @@
 #include "../../core.h"
 #include "../../configuration.h"
 #include "../../core_info.h"
+#include "../../gfx/video_driver.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../defaults.h"
 #include "../../managers/cheat_manager.h"
@@ -1339,7 +1340,7 @@ static int action_ok_playlist_entry_collection(const char *path,
 
    if (!menu_content_playlist_load(&playlist_info))
    {
-      runloop_msg_queue_push("File could not be loaded from playlist.\n", 1, 100, true);
+      video_driver_msg_queue_push("File could not be loaded from playlist.\n", 1, 100, true);
       return menu_cbs_exit();
    }
 
@@ -1426,7 +1427,7 @@ static int action_ok_playlist_entry(const char *path,
 
    if (!menu_content_playlist_load(&playlist_info))
    {
-      runloop_msg_queue_push("File could not be loaded from playlist.\n", 1, 100, true);
+      video_driver_msg_queue_push("File could not be loaded from playlist.\n", 1, 100, true);
       return menu_cbs_exit();
    }
 
@@ -1532,7 +1533,7 @@ static int action_ok_playlist_entry_start_content(const char *path,
 
    if (!menu_content_playlist_load(&playlist_info))
    {
-      runloop_msg_queue_push("File could not be loaded from playlist.\n", 1, 100, true);
+      video_driver_msg_queue_push("File could not be loaded from playlist.\n", 1, 100, true);
       return menu_cbs_exit();
    }
 
@@ -1691,11 +1692,11 @@ static void menu_input_st_string_cb_save_preset(void *userdata,
          ret = menu_shader_manager_save_preset(str, false, false);
 
       if(ret)
-         runloop_msg_queue_push(
+         video_driver_msg_queue_push(
                msg_hash_to_str(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY),
                1, 100, true);
       else
-         runloop_msg_queue_push(
+         video_driver_msg_queue_push(
                msg_hash_to_str(MSG_ERROR_SAVING_SHADER_PRESET),
                1, 100, true);
    }
@@ -1774,11 +1775,11 @@ static int generic_action_ok_shader_preset_save(const char *path,
    }
 
    if(menu_shader_manager_save_preset(file, false, true))
-      runloop_msg_queue_push(
+      video_driver_msg_queue_push(
             msg_hash_to_str(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY),
             1, 100, true);
    else
-      runloop_msg_queue_push(
+      video_driver_msg_queue_push(
             msg_hash_to_str(MSG_ERROR_SAVING_SHADER_PRESET),
             1, 100, true);
 
@@ -1885,11 +1886,11 @@ static int generic_action_ok_remap_file_save(const char *path,
        path_mkdir(directory);
 
    if(input_remapping_save_file(file))
-      runloop_msg_queue_push(
+      video_driver_msg_queue_push(
             msg_hash_to_str(MSG_REMAP_FILE_SAVED_SUCCESSFULLY),
             1, 100, true);
    else
-      runloop_msg_queue_push(
+      video_driver_msg_queue_push(
             msg_hash_to_str(MSG_ERROR_SAVING_REMAP_FILE),
             1, 100, true);
 
@@ -2684,7 +2685,7 @@ static int action_ok_option_create(const char *path,
 
    if (!retroarch_validate_game_options(game_path, sizeof(game_path), true))
    {
-      runloop_msg_queue_push(
+      video_driver_msg_queue_push(
             msg_hash_to_str(MSG_ERROR_SAVING_CORE_OPTIONS_FILE),
             1, 100, true);
       return 0;
@@ -2701,7 +2702,7 @@ static int action_ok_option_create(const char *path,
 
    if(config_file_write(conf, game_path))
    {
-      runloop_msg_queue_push(
+      video_driver_msg_queue_push(
             msg_hash_to_str(MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY),
             1, 100, true);
       path_set(RARCH_PATH_CORE_OPTIONS, game_path);
@@ -3522,7 +3523,7 @@ static int action_ok_video_resolution(const char *path,
          snprintf(msg, sizeof(msg),
                "Applying: %dx%d\n START to reset",
                width, height);
-      runloop_msg_queue_push(msg, 1, 100, true);
+      video_driver_msg_queue_push(msg, 1, 100, true);
    }
 
    return 0;
@@ -3539,7 +3540,7 @@ static int action_ok_netplay_enable_host(const char *path,
    /* If we haven't yet started, this will load on its own */
    if (!content_is_inited())
    {
-      runloop_msg_queue_push(
+      video_driver_msg_queue_push(
             "Netplay will start when content is loaded.",
             1, 480, true);
       return 0;
@@ -3570,7 +3571,7 @@ static int action_ok_netplay_enable_client(const char *path,
    /* We can't do anything without a host specified */
    if (!settings->netplay.server[0])
    {
-      runloop_msg_queue_push(
+      video_driver_msg_queue_push(
             "Please specify the Netplay server's IP address or hostname.",
             1, 480, true);
       return -1;
@@ -3579,7 +3580,7 @@ static int action_ok_netplay_enable_client(const char *path,
    /* If we haven't yet started, this will load on its own */
    if (!content_is_inited())
    {
-      runloop_msg_queue_push(
+      video_driver_msg_queue_push(
             "Netplay will start when content is loaded.",
             1, 480, true);
       return 0;

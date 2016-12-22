@@ -34,6 +34,7 @@
 #include "cheevos.h"
 #include "command.h"
 #include "dynamic.h"
+#include "gfx/video_driver.h"
 #include "network/net_http_special.h"
 #include "tasks/tasks_internal.h"
 #include "configuration.h"
@@ -1831,8 +1832,8 @@ static int cheevos_login(retro_time_t *timeout)
 
    if (!username || !*username || !password || !*password)
    {
-      runloop_msg_queue_push("Missing Retro Achievements account information.", 0, 5 * 60, false);
-      runloop_msg_queue_push("Please fill in your account information in Settings.", 0, 5 * 60, false);
+      video_driver_msg_queue_push("Missing Retro Achievements account information.", 0, 5 * 60, false);
+      video_driver_msg_queue_push("Please fill in your account information in Settings.", 0, 5 * 60, false);
       RARCH_ERR("CHEEVOS username and/or password not informed.\n");
       return -1;
    }
@@ -1863,7 +1864,7 @@ static int cheevos_login(retro_time_t *timeout)
          return 0;
    }
 
-   runloop_msg_queue_push("Retro Achievements login error.",
+   video_driver_msg_queue_push("Retro Achievements login error.",
          0, 5 * 60, false);
    RARCH_ERR("CHEEVOS error getting user token.\n");
    return -1;
@@ -1938,8 +1939,8 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
             RARCH_LOG("CHEEVOS awarding cheevo %u: %s (%s).\n",
                   cheevo->id, cheevo->title, cheevo->description);
 
-            runloop_msg_queue_push(cheevo->title, 0, 3 * 60, false);
-            runloop_msg_queue_push(cheevo->description, 0, 5 * 60, false);
+            video_driver_msg_queue_push(cheevo->title, 0, 3 * 60, false);
+            video_driver_msg_queue_push(cheevo->description, 0, 5 * 60, false);
 
             cheevos_make_unlock_url(cheevo, url, sizeof(url));
             task_push_http_transfer(url, true, NULL, cheevos_unlocked, cheevo);
@@ -2687,7 +2688,7 @@ found:
       free((void*)json);
    }
 
-   runloop_msg_queue_push("Error loading achievements.", 0, 5 * 60, false);
+   video_driver_msg_queue_push("Error loading achievements.", 0, 5 * 60, false);
    RARCH_ERR("CHEEVOS error loading achievements.\n");
    return false;
 }
@@ -2860,7 +2861,7 @@ bool cheevos_toggle_hardcore_mode(void)
          command_event(CMD_EVENT_REWIND_DEINIT, NULL);
 
       RARCH_LOG("%s\n", msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_ENABLE));
-      runloop_msg_queue_push(
+      video_driver_msg_queue_push(
             msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_ENABLE), 0, 3 * 60, true);
    }
    else

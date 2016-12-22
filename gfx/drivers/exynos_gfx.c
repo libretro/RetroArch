@@ -35,10 +35,10 @@
 #include "../../config.h"
 #endif
 
+#include "../video_driver.h"
 #include "../common/drm_common.h"
 #include "../font_driver.h"
 #include "../../retroarch.h"
-#include "../../runloop.h"
 #include "../../runloop.h"
 
 /* TODO: Honor these properties: vsync, menu rotation, menu alpha, aspect ratio change */
@@ -1313,7 +1313,7 @@ static bool exynos_gfx_frame(void *data, const void *frame, unsigned width,
 
       video_monitor_get_fps(buffer, sizeof(buffer),
             settings->fps_show ? buffer_fps : NULL, sizeof(buffer_fps));
-      runloop_msg_queue_push(buffer_fps, 1, 1, false);
+      video_driver_msg_queue_push(buffer_fps, 1, 1, false);
    }
 
    /* If at this point the dimension parameters are still zero, setup some  *

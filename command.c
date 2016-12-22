@@ -65,6 +65,7 @@
 #include "audio/audio_driver.h"
 #include "record/record_driver.h"
 #include "file_path_special.h"
+#include "gfx/video_driver.h"
 #include "autosave.h"
 #include "core_info.h"
 #include "core_type.h"
@@ -185,7 +186,7 @@ static bool command_set_shader(const char *arg)
    }
 
    snprintf(msg, sizeof(msg), "Shader: \"%s\"", arg);
-   runloop_msg_queue_push(msg, 1, 120, true);
+   video_driver_msg_queue_push(msg, 1, 120, true);
    RARCH_LOG("%s \"%s\".\n",
          msg_hash_to_str(MSG_APPLYING_SHADER),
          arg);
@@ -889,7 +890,7 @@ static void command_event_disk_control_set_eject(bool new_state, bool print_log)
 
       /* Only noise in menu. */
       if (print_log)
-         runloop_msg_queue_push(msg, 1, 180, true);
+         video_driver_msg_queue_push(msg, 1, 180, true);
    }
 }
 
@@ -949,7 +950,7 @@ static void command_event_disk_control_set_index(unsigned idx)
          RARCH_ERR("%s\n", msg);
       else
          RARCH_LOG("%s\n", msg);
-      runloop_msg_queue_push(msg, 1, 180, true);
+      video_driver_msg_queue_push(msg, 1, 180, true);
    }
 }
 
@@ -992,7 +993,7 @@ static bool command_event_disk_control_append_image(const char *path)
    snprintf(msg, sizeof(msg), "%s: ", msg_hash_to_str(MSG_APPENDED_DISK));
    strlcat(msg, path, sizeof(msg));
    RARCH_LOG("%s\n", msg);
-   runloop_msg_queue_push(msg, 0, 180, true);
+   video_driver_msg_queue_push(msg, 0, 180, true);
 
    command_event(CMD_EVENT_AUTOSAVE_DEINIT, NULL);
 
@@ -1099,7 +1100,7 @@ static void command_event_set_volume(float gain)
    snprintf(msg, sizeof(msg), "%s: %.1f dB",
          msg_hash_to_str(MSG_AUDIO_VOLUME),
          settings->audio.volume);
-   runloop_msg_queue_push(msg, 1, 180, true);
+   video_driver_msg_queue_push(msg, 1, 180, true);
    RARCH_LOG("%s\n", msg);
 
    audio_driver_set_volume_gain(db_to_gain(settings->audio.volume));
@@ -1511,7 +1512,7 @@ static bool command_event_save_core_config(void)
             sizeof(config_dir));
    else
    {
-      runloop_msg_queue_push(msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET), 1, 180, true);
+      video_driver_msg_queue_push(msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET), 1, 180, true);
       RARCH_ERR("%s\n", msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET));
       return false;
    }
@@ -1576,7 +1577,7 @@ static bool command_event_save_core_config(void)
 
    command_event_save_config(config_path, msg, sizeof(msg));
 
-   runloop_msg_queue_push(msg, 1, 180, true);
+   video_driver_msg_queue_push(msg, 1, 180, true);
 
    if (overrides_active)
       runloop_ctl(RUNLOOP_CTL_SET_OVERRIDES_ACTIVE, NULL);
@@ -1616,7 +1617,7 @@ static void command_event_save_current_config(int override_type)
       command_event_save_config(path_get(RARCH_PATH_CONFIG), msg, sizeof(msg));
 
    if (!string_is_empty(msg))
-      runloop_msg_queue_push(msg, 1, 180, true);
+      video_driver_msg_queue_push(msg, 1, 180, true);
 }
 
 static void command_event_undo_save_state(char *s, size_t len)
@@ -1709,7 +1710,7 @@ static void command_event_main_state(unsigned cmd)
                MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES), sizeof(msg));
 
    if (push_msg)
-      runloop_msg_queue_push(msg, 2, 180, true);
+      video_driver_msg_queue_push(msg, 2, 180, true);
    RARCH_LOG("%s\n", msg);
 }
 
@@ -1778,7 +1779,7 @@ bool command_event(enum event_command cmd, void *data)
                   snprintf(msg, sizeof(msg),"%s: %dx%d",
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION),
                         width, height);
-               runloop_msg_queue_push(msg, 1, 100, true);
+               video_driver_msg_queue_push(msg, 1, 100, true);
             }
          }
 #endif
@@ -1873,7 +1874,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_RESET:
          RARCH_LOG("%s.\n", msg_hash_to_str(MSG_RESET));
-         runloop_msg_queue_push(msg_hash_to_str(MSG_RESET), 1, 120, true);
+         video_driver_msg_queue_push(msg_hash_to_str(MSG_RESET), 1, 120, true);
 
 #ifdef HAVE_CHEEVOS
          cheevos_set_cheats();
@@ -2031,7 +2032,7 @@ bool command_event(enum event_command cmd, void *data)
                return false;
             }
 
-            runloop_msg_queue_push(msg, 1, 180, true);
+            video_driver_msg_queue_push(msg, 1, 180, true);
             RARCH_LOG("%s\n", msg);
          }
          break;
@@ -2226,7 +2227,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_SHUTDOWN:
 #if defined(__linux__) && !defined(ANDROID)
-         runloop_msg_queue_push(msg_hash_to_str(MSG_VALUE_SHUTTING_DOWN), 1, 180, true);
+         video_driver_msg_queue_push(msg_hash_to_str(MSG_VALUE_SHUTTING_DOWN), 1, 180, true);
 	 command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
          command_event(CMD_EVENT_QUIT, NULL);
          system("shutdown -P now");
@@ -2234,7 +2235,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_REBOOT:
 #if defined(__linux__) && !defined(ANDROID)
-         runloop_msg_queue_push(msg_hash_to_str(MSG_VALUE_REBOOTING), 1, 180, true);
+         video_driver_msg_queue_push(msg_hash_to_str(MSG_VALUE_REBOOTING), 1, 180, true);
 	 command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
          command_event(CMD_EVENT_QUIT, NULL);
          system("shutdown -r now");
@@ -2279,7 +2280,7 @@ bool command_event(enum event_command cmd, void *data)
             command_event(CMD_EVENT_AUDIO_STOP, NULL);
 
             is_paused  = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
-            runloop_msg_queue_push(msg_hash_to_str(MSG_PAUSED), 1, is_paused ? 1: 30, true);
+            video_driver_msg_queue_push(msg_hash_to_str(MSG_PAUSED), 1, is_paused ? 1: 30, true);
 
             if (settings->video.black_frame_insertion || is_paused)
             {
@@ -2427,7 +2428,7 @@ bool command_event(enum event_command cmd, void *data)
             }
          }
          else
-            runloop_msg_queue_push(
+            video_driver_msg_queue_push(
                   msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS),
                   1, 120, true);
          break;
@@ -2447,7 +2448,7 @@ bool command_event(enum event_command cmd, void *data)
             command_event_check_disk_next(control);
          }
          else
-            runloop_msg_queue_push(
+            video_driver_msg_queue_push(
                   msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS),
                   1, 120, true);
          break;
@@ -2467,7 +2468,7 @@ bool command_event(enum event_command cmd, void *data)
             command_event_check_disk_prev(control);
          }
          else
-            runloop_msg_queue_push(
+            video_driver_msg_queue_push(
                   msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS),
                   1, 120, true);
          break;
@@ -2528,7 +2529,7 @@ bool command_event(enum event_command cmd, void *data)
                input_driver_set_hotkey_block();
                input_driver_keyboard_mapping_set_block(1);
                if (mode != -1)
-                  runloop_msg_queue_push(msg_hash_to_str(MSG_GAME_FOCUS_ON),
+                  video_driver_msg_queue_push(msg_hash_to_str(MSG_GAME_FOCUS_ON),
                         1, 120, true);
             }
             else
@@ -2538,7 +2539,7 @@ bool command_event(enum event_command cmd, void *data)
                input_driver_unset_hotkey_block();
                input_driver_keyboard_mapping_set_block(0);
                if (mode != -1)
-                  runloop_msg_queue_push(msg_hash_to_str(MSG_GAME_FOCUS_OFF),
+                  video_driver_msg_queue_push(msg_hash_to_str(MSG_GAME_FOCUS_OFF),
                         1, 120, true);
             }
 

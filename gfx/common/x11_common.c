@@ -32,6 +32,7 @@
 #include "../../input/common/input_x11_common.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
+#include "../../gfx/video_driver.h"
 #include "../../runloop.h"
 
 #ifdef HAVE_DBUS
@@ -730,7 +731,7 @@ void x11_update_window_title(void *data)
    if (video_monitor_get_fps(buf, sizeof(buf), buf_fps, sizeof(buf_fps)))
       XStoreName(g_x11_dpy, g_x11_win, buf);
    if (settings->fps_show)
-      runloop_msg_queue_push(buf_fps, 1, 1, false);
+      video_driver_msg_queue_push(buf_fps, 1, 1, false);
 }
 
 bool x11_input_ctx_new(bool true_full)

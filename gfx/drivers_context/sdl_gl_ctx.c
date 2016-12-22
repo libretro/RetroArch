@@ -289,7 +289,7 @@ static void sdl_ctx_update_window_title(void *data)
 #endif
    }
    if (settings->fps_show)
-      runloop_msg_queue_push(buf_fps, 1, 1, false);
+      video_driver_msg_queue_push(buf_fps, 1, 1, false);
 }
 
 static void sdl_ctx_check_window(void *data, bool *quit, bool *resize,unsigned *width,

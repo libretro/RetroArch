@@ -29,6 +29,7 @@
 
 #include <GL/osmesa.h>
 
+#include "../video_driver.h"
 #include "../../runloop.h"
 #include "../common/gl_common.h"
 
@@ -311,8 +312,8 @@ static void osmesa_ctx_update_window_title(void *data)
 {
    static char buf[128]           = {0};
    static char buf_fps[128]       = {0};
-   settings_t *settings    = config_get_ptr();
-   gfx_ctx_osmesa_data_t *osmesa = (gfx_ctx_osmesa_data_t*)data;
+   settings_t *settings           = config_get_ptr();
+   gfx_ctx_osmesa_data_t *osmesa  = (gfx_ctx_osmesa_data_t*)data;
 
    if (!osmesa)
       return;
@@ -320,7 +321,7 @@ static void osmesa_ctx_update_window_title(void *data)
    video_monitor_get_fps(buf, sizeof(buf), buf_fps, sizeof(buf_fps));
 
    if (settings->fps_show)
-      runloop_msg_queue_push(buf_fps, 1, 1, false);
+      video_driver_msg_queue_push(buf_fps, 1, 1, false);
 }
 
 static void osmesa_ctx_check_window(void *data, bool *quit, bool *resize,unsigned *width,

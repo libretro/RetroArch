@@ -29,6 +29,8 @@
 #include "../list_special.h"
 #include "../verbosity.h"
 
+#include "../gfx/video_driver.h"
+
 static const camera_driver_t *camera_drivers[] = {
 #ifdef HAVE_V4L2
    &camera_v4l2,
@@ -191,7 +193,7 @@ bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data)
            if (settings->camera.allow)
               return camera_driver->start(camera_data);
 
-           runloop_msg_queue_push(
+           video_driver_msg_queue_push(
                  "Camera is explicitly disabled.\n", 1, 180, false);
         }
         break;

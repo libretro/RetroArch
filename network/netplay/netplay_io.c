@@ -24,7 +24,7 @@
 
 #include "netplay_private.h"
 
-#include "../../runloop.h"
+#include "../../gfx/video_driver.h"
 
 #if 0
 #define DEBUG_NETPLAY_STEPS 1
@@ -111,7 +111,7 @@ void netplay_hangup(netplay_t *netplay, struct netplay_connection *connection)
       dmsg = msg_hash_to_str(MSG_NETPLAY_CLIENT_HANGUP);
    }
    RARCH_LOG("%s\n", dmsg);
-   runloop_msg_queue_push(dmsg, 1, 180, false);
+   video_driver_msg_queue_push(dmsg, 1, 180, false);
 
    socket_close(connection->fd);
    connection->active = false;
@@ -576,7 +576,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
             netplay->force_rewind = true;
 
          RARCH_LOG("%s.\n", msg_hash_to_str(MSG_NETPLAY_USERS_HAS_FLIPPED));
-         runloop_msg_queue_push(
+         video_driver_msg_queue_push(
                msg_hash_to_str(MSG_NETPLAY_USERS_HAS_FLIPPED), 1, 180, false);
 
          break;
@@ -608,7 +608,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
             msg[sizeof(msg)-1] = '\0';
             snprintf(msg, sizeof(msg)-1, "Player %d has left", connection->player+1);
             RARCH_LOG("%s\n", msg);
-            runloop_msg_queue_push(msg, 1, 180, false);
+            video_driver_msg_queue_push(msg, 1, 180, false);
          }
          else
          {
@@ -672,8 +672,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
             msg[sizeof(msg)-1] = '\0';
             snprintf(msg, sizeof(msg)-1, "Player %d has joined", player+1);
             RARCH_LOG("%s\n", msg);
-            runloop_msg_queue_push(msg, 1, 180, false);
-
+            video_driver_msg_queue_push(msg, 1, 180, false);
          }
 
          /* Tell the player even if they were confused */
@@ -805,7 +804,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                msg[sizeof(msg)-1] = '\0';
                snprintf(msg, sizeof(msg)-1, "You have joined as player %d", player+1);
                RARCH_LOG("%s\n", msg);
-               runloop_msg_queue_push(msg, 1, 180, false);
+               video_driver_msg_queue_push(msg, 1, 180, false);
 
 #ifdef DEBUG_NETPLAY_STEPS
                RARCH_LOG("Received mode change self->%u\n", player);
@@ -825,7 +824,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                /* Announce it */
                strlcpy(msg, "You have left the game", sizeof(msg));
                RARCH_LOG("%s\n", msg);
-               runloop_msg_queue_push(msg, 1, 180, false);
+               video_driver_msg_queue_push(msg, 1, 180, false);
 
 #ifdef DEBUG_NETPLAY_STEPS
                RARCH_LOG("Received mode change %u self->spectating\n", netplay->self_player);
@@ -855,7 +854,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                msg[sizeof(msg)-1] = '\0';
                snprintf(msg, sizeof(msg)-1, "Player %d has joined", player+1);
                RARCH_LOG("%s\n", msg);
-               runloop_msg_queue_push(msg, 1, 180, false);
+               video_driver_msg_queue_push(msg, 1, 180, false);
 
 #ifdef DEBUG_NETPLAY_STEPS
                RARCH_LOG("Received mode change spectator->%u\n", player);
@@ -871,7 +870,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                msg[sizeof(msg)-1] = '\0';
                snprintf(msg, sizeof(msg)-1, "Player %d has left", player+1);
                RARCH_LOG("%s\n", msg);
-               runloop_msg_queue_push(msg, 1, 180, false);
+               video_driver_msg_queue_push(msg, 1, 180, false);
 
 #ifdef DEBUG_NETPLAY_STEPS
                RARCH_LOG("Received mode change %u->spectator\n", player);
@@ -929,7 +928,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
             if (dmsg)
             {
                RARCH_LOG("%s\n", dmsg);
-               runloop_msg_queue_push(dmsg, 1, 180, false);
+               video_driver_msg_queue_push(dmsg, 1, 180, false);
             }
             break;
          }
@@ -1191,7 +1190,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                snprintf(msg, sizeof(msg)-1, msg_hash_to_str(MSG_NETPLAY_PEER_PAUSED), nick);
             }
             RARCH_LOG("%s\n", msg);
-            runloop_msg_queue_push(msg, 1, 180, false);
+            video_driver_msg_queue_push(msg, 1, 180, false);
             break;
          }
 
@@ -1343,7 +1342,7 @@ void netplay_announce_nat_traversal(netplay_t *netplay)
    snprintf(msg, sizeof(msg), "%s: %s:%s\n",
          msg_hash_to_str(MSG_PUBLIC_ADDRESS),
          host, port);
-   runloop_msg_queue_push(msg, 1, 180, false);
+   video_driver_msg_queue_push(msg, 1, 180, false);
    RARCH_LOG("%s\n", msg);
 #endif
 }

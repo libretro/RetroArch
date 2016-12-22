@@ -17,6 +17,7 @@
 #include "../../config.h"
 #endif
 
+#include "../video_driver.h"
 #include "../../configuration.h"
 #include "../../runloop.h"
 #include "../../frontend/frontend_driver.h"
@@ -124,7 +125,7 @@ static void gfx_ctx_khr_display_update_window_title(void *data)
    video_monitor_get_fps(buf, sizeof(buf),
          buf_fps, sizeof(buf_fps));
    if (settings->fps_show)
-      runloop_msg_queue_push(buf_fps, 1, 1, false);
+      video_driver_msg_queue_push(buf_fps, 1, 1, false);
 }
 
 static bool gfx_ctx_khr_display_set_video_mode(void *data,

@@ -31,6 +31,8 @@
 #include "msg_hash.h"
 #include "verbosity.h"
 
+#include "gfx/video_driver.h"
+
 #include "command.h"
 #include "file_path_special.h"
 
@@ -319,7 +321,7 @@ static void bsv_movie_init_state(void)
       }
 
       bsv_movie_state.movie_playback = true;
-      runloop_msg_queue_push(msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK),
+      video_driver_msg_queue_push(msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK),
             2, 180, false);
       RARCH_LOG("%s.\n", msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK));
       settings->rewind_granularity = 1;
@@ -335,14 +337,14 @@ static void bsv_movie_init_state(void)
       if (!(bsv_movie_init_handle(bsv_movie_state.movie_start_path,
                   RARCH_MOVIE_RECORD)))
       {
-         runloop_msg_queue_push(
+         video_driver_msg_queue_push(
                msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD),
                1, 180, true);
          RARCH_ERR("%s.\n", msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
          return;
       }
 
-      runloop_msg_queue_push(msg, 1, 180, true);
+      video_driver_msg_queue_push(msg, 1, 180, true);
       RARCH_LOG("%s \"%s\".\n",
             msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
             bsv_movie_state.movie_start_path);
@@ -468,7 +470,7 @@ static bool runloop_check_movie_playback(void)
    if (!bsv_movie_ctl(BSV_MOVIE_CTL_END, NULL))
       return false;
 
-   runloop_msg_queue_push(
+   video_driver_msg_queue_push(
          msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED), 2, 180, false);
    RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED));
 
@@ -486,7 +488,7 @@ static bool runloop_check_movie_record(void)
    if (!bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
       return false;
 
-   runloop_msg_queue_push(
+   video_driver_msg_queue_push(
          msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED), 2, 180, true);
    RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED));
 
@@ -527,14 +529,14 @@ static bool runloop_check_movie_init(void)
 
    if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
    {
-      runloop_msg_queue_push(msg, 2, 180, true);
+      video_driver_msg_queue_push(msg, 2, 180, true);
       RARCH_LOG("%s \"%s\".\n",
             msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
             path);
    }
    else
    {
-      runloop_msg_queue_push(
+      video_driver_msg_queue_push(
             msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD),
             2, 180, true);
       RARCH_ERR("%s\n",

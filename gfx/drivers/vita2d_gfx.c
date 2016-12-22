@@ -30,6 +30,7 @@
 #include "../../defines/psp_defines.h"
 #include "../common/vita2d_common.h"
 #include "../../driver.h"
+#include "../video_driver.h"
 #include "../../runloop.h"
 #include "../video_coord_array.h"
 
@@ -212,7 +213,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
 
       video_monitor_get_fps(buffer, sizeof(buffer),
             settings->fps_show ? buffer_fps : NULL, sizeof(buffer_fps));
-      runloop_msg_queue_push(buffer_fps, 1, 1, false);
+      video_driver_msg_queue_push(buffer_fps, 1, 1, false);
    }
 
 #ifdef HAVE_OVERLAY

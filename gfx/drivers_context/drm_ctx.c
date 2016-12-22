@@ -35,6 +35,7 @@
 #include <lists/dir_list.h>
 #include <streams/file_stream.h>
 
+#include "../video_driver.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
 #include "../../runloop.h"
@@ -283,7 +284,7 @@ static void gfx_ctx_drm_update_window_title(void *data)
          buf_fps, sizeof(buf_fps));
 
    if (settings->fps_show)
-      runloop_msg_queue_push( buf_fps, 1, 1, false);
+      video_driver_msg_queue_push( buf_fps, 1, 1, false);
 }
 
 static void gfx_ctx_drm_get_video_size(void *data,

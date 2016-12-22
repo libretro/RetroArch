@@ -19,6 +19,8 @@
 #include <retro_miscellaneous.h>
 
 #include "../wifi_driver.h"
+
+#include "../../gfx/video_driver.h"
 #include "../../runloop.h"
 #include "../../lakka.h"
 
@@ -62,7 +64,7 @@ static void connmanctl_scan(void)
 
    pclose(popen("connmanctl scan wifi", "r"));
 
-   runloop_msg_queue_push("Wi-Fi scan complete.", 1, 180, true);
+   video_driver_msg_queue_push("Wi-Fi scan complete.", 1, 180, true);
 
    serv_file = popen("connmanctl services", "r");
    while (fgets (line, 512, serv_file) != NULL)
@@ -213,9 +215,8 @@ static bool connmanctl_connect_ssid(unsigned i, const char* passphrase)
    command_file = popen(command, "r");
 
    while (fgets (ln, 512, command_file) != NULL)
-   {
-      runloop_msg_queue_push(ln, 1, 180, true);
-   }
+      video_driver_msg_queue_push(ln, 1, 180, true);
+
    pclose(command_file);
    
    return true;

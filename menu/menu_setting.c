@@ -44,6 +44,7 @@
 
 #endif
 
+#include "../gfx/video_driver.h"
 #include "../frontend/frontend_driver.h"
 
 #include "widgets/menu_input_bind_dialog.h"
@@ -1324,10 +1325,10 @@ static int setting_action_ok_bind_all_save_autoconfig(void *data, bool wraparoun
 
    if(config_save_autoconf_profile(
             settings->input.device_names[index_offset], index_offset))
-      runloop_msg_queue_push(
+      video_driver_msg_queue_push(
             msg_hash_to_str(MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY), 1, 100, true);
    else
-      runloop_msg_queue_push(
+      video_driver_msg_queue_push(
             msg_hash_to_str(MSG_AUTOCONFIG_FILE_ERROR_SAVING), 1, 100, true);
 
    return 0;

@@ -26,6 +26,7 @@
 
 #include <compat/strl.h>
 
+#include "../video_driver.h"
 #include "../drivers/d3d.h"
 #include "../common/win32_common.h"
 
@@ -115,7 +116,7 @@ static void gfx_ctx_d3d_update_title(void *data)
             stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
       strlcat(buffer_fps, mem, sizeof(buffer_fps));
 #endif
-      runloop_msg_queue_push(buffer_fps, 1, 1, false);
+      video_driver_msg_queue_push(buffer_fps, 1, 1, false);
    }
 }
 
