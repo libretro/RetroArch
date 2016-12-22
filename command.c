@@ -2208,13 +2208,11 @@ bool command_event(enum event_command cmd, void *data)
          {
             /* RARCH_DRIVER_CTL_UNINIT clears the callback struct so we
              * need to make sure to keep a copy */
-            struct retro_hw_render_callback *hwr = NULL;
-            const struct retro_hw_render_context_negotiation_interface *iface = NULL;
             struct retro_hw_render_callback hwr_copy;
-            int flags = DRIVERS_CMD_ALL;
-
-            hwr = video_driver_get_hw_context();
-            iface = video_driver_get_context_negotiation_interface();
+            int flags                            = DRIVERS_CMD_ALL;
+            struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
+            const struct retro_hw_render_context_negotiation_interface *iface = 
+               video_driver_get_context_negotiation_interface();
             memcpy(&hwr_copy, hwr, sizeof(hwr_copy));
 
             driver_ctl(RARCH_DRIVER_CTL_UNINIT, &flags);
@@ -2228,7 +2226,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_SHUTDOWN:
 #if defined(__linux__) && !defined(ANDROID)
          video_driver_msg_queue_push(msg_hash_to_str(MSG_VALUE_SHUTTING_DOWN), 1, 180, true);
-	 command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+         command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
          command_event(CMD_EVENT_QUIT, NULL);
          system("shutdown -P now");
 #endif
@@ -2236,7 +2234,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_REBOOT:
 #if defined(__linux__) && !defined(ANDROID)
          video_driver_msg_queue_push(msg_hash_to_str(MSG_VALUE_REBOOTING), 1, 180, true);
-	 command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+         command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
          command_event(CMD_EVENT_QUIT, NULL);
          system("shutdown -r now");
 #endif
