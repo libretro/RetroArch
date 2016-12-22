@@ -21,6 +21,8 @@
 #include "../menu_cbs.h"
 #include "../../msg_hash.h"
 
+#include "../widgets/menu_filebrowser.h"
+
 #ifndef BIND_ACTION_CANCEL
 #define BIND_ACTION_CANCEL(cbs, name) \
    cbs->action_cancel = name; \
@@ -32,6 +34,20 @@ static int action_cancel_pop_default(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    size_t new_selection_ptr;
+   const char *menu_label              = NULL;
+
+   menu_entries_get_last_stack(NULL, &menu_label, NULL, NULL, NULL);
+
+#if 0
+   RARCH_LOG("menu_label: %s\n", menu_label);
+#endif
+
+   if (!string_is_empty(menu_label) && 
+         string_is_equal(menu_label,
+            msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST)
+            )
+      )
+      filebrowser_clear_type();
 
    menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &new_selection_ptr);
    menu_entries_pop_stack(&new_selection_ptr, 0, 1);
