@@ -3176,6 +3176,13 @@ static int action_ok_push_content_list(const char *path,
          entry_idx, ACTION_OK_DL_CONTENT_LIST);
 }
 
+static int action_ok_push_scan_file(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   filebrowser_clear_type();
+   return action_ok_push_content_list(path, label, type, idx, entry_idx);
+}
+
 static int action_ok_scan_directory_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -3870,6 +3877,8 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_scan_directory_list);
             break;
          case MENU_ENUM_LABEL_SCAN_FILE:
+            BIND_ACTION_OK(cbs, action_ok_push_scan_file);
+            break;
          case MENU_ENUM_LABEL_FAVORITES:
             BIND_ACTION_OK(cbs, action_ok_push_content_list);
             break;
@@ -4079,6 +4088,8 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_push_accounts_cheevos_list);
             break;
          case MENU_LABEL_SCAN_FILE:
+            BIND_ACTION_OK(cbs, action_ok_push_scan_file);
+            break;
          case MENU_LABEL_SCAN_DIRECTORY:
          case MENU_LABEL_FAVORITES:
             BIND_ACTION_OK(cbs, action_ok_push_content_list);
