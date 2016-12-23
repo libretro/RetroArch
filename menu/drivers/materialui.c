@@ -92,6 +92,7 @@ typedef struct mui_handle
    unsigned margin;
    unsigned glyph_width;
    char box_message[1024];
+   bool mouse_show;
 
    struct
    {
@@ -1323,14 +1324,15 @@ static void mui_frame(void *data)
       mui->box_message[0] = '\0';
    }
 
-   menu_display_draw_cursor(
-         &white_bg[0],
-         mui->cursor.size,
-         mui->textures.list[MUI_TEXTURE_POINTER],
-         menu_input_mouse_state(MENU_MOUSE_X_AXIS),
-         menu_input_mouse_state(MENU_MOUSE_Y_AXIS),
-         width,
-         height);
+   if (mui->mouse_show)
+      menu_display_draw_cursor(
+            &white_bg[0],
+            mui->cursor.size,
+            mui->textures.list[MUI_TEXTURE_POINTER],
+            menu_input_mouse_state(MENU_MOUSE_X_AXIS),
+            menu_input_mouse_state(MENU_MOUSE_Y_AXIS),
+            width,
+            height);
 
    menu_display_restore_clear_color();
    menu_display_unset_viewport();
@@ -1570,8 +1572,20 @@ static void mui_context_reset(void *data)
 
 static int mui_environ(enum menu_environ_cb type, void *data, void *userdata)
 {
+   mui_handle_t *mui              = (mui_handle_t*)userdata;
+
    switch (type)
    {
+      case MENU_ENVIRON_ENABLE_MOUSE_CURSOR:
+         if (!mui)
+            return -1;
+         mui->mouse_show = true;
+         break;
+      case MENU_ENVIRON_DISABLE_MOUSE_CURSOR:
+         if (!mui)
+            return -1;
+         mui->mouse_show = false;
+         break;
       case 0:
       default:
          break;

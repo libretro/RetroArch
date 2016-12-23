@@ -35,6 +35,7 @@
 #include "menu_event.h"
 
 #include "../configuration.h"
+#include "../performance_counters.h"
 
 enum menu_mouse_action
 {
@@ -51,6 +52,8 @@ enum menu_mouse_action
 
 static int mouse_old_x  = 0;
 static int mouse_old_y  = 0;
+
+static rarch_timer_t mouse_activity_timer = {0};
 
 menu_input_t *menu_input_get_ptr(void)
 {
@@ -118,7 +121,7 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
 }
 
 static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
-      menu_file_list_cbs_t *cbs, unsigned action)
+      menu_file_list_cbs_t *cbs, unsigned action, bool *mouse_activity)
 {
    settings_t *settings       = config_get_ptr();
    static bool mouse_oldleft  = false;
@@ -165,6 +168,8 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
          {
             BIT64_SET(*input_mouse, MENU_MOUSE_ACTION_BUTTON_L_SET_NAVIGATION);
          }
+
+         *mouse_activity = true;
       }
    }
    else
@@ -176,6 +181,7 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
       {
          mouse_oldright = true;
          BIT64_SET(*input_mouse, MENU_MOUSE_ACTION_BUTTON_R);
+         *mouse_activity = true;
       }
    }
    else
@@ -184,21 +190,25 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
    if (menu_input_mouse_state(MENU_MOUSE_WHEEL_DOWN))
    {
       BIT64_SET(*input_mouse, MENU_MOUSE_ACTION_WHEEL_DOWN);
+      *mouse_activity = true;
    }
 
    if (menu_input_mouse_state(MENU_MOUSE_WHEEL_UP))
    {
       BIT64_SET(*input_mouse, MENU_MOUSE_ACTION_WHEEL_UP);
+      *mouse_activity = true;
    }
 
    if (menu_input_mouse_state(MENU_MOUSE_HORIZ_WHEEL_DOWN))
    {
       BIT64_SET(*input_mouse, MENU_MOUSE_ACTION_HORIZ_WHEEL_DOWN);
+      *mouse_activity = true;
    }
 
    if (menu_input_mouse_state(MENU_MOUSE_HORIZ_WHEEL_UP))
    {
       BIT64_SET(*input_mouse, MENU_MOUSE_ACTION_HORIZ_WHEEL_UP);
+      *mouse_activity = true;
    }
 
    return 0;
@@ -208,13 +218,15 @@ static int menu_input_mouse_frame(
       menu_file_list_cbs_t *cbs, menu_entry_t *entry,
       unsigned action)
 {
+   bool mouse_activity      = false;
+   bool no_mouse_activity   = false;
    uint64_t mouse_state     = MENU_MOUSE_ACTION_NONE;
    int ret                  = 0;
    settings_t *settings     = config_get_ptr();
    menu_input_t *menu_input = menu_input_get_ptr();
 
    if (settings->menu.mouse.enable)
-      ret  = menu_input_mouse_post_iterate(&mouse_state, cbs, action);
+      ret  = menu_input_mouse_post_iterate(&mouse_state, cbs, action, &mouse_activity);
 
    if (settings->menu.pointer.enable || settings->menu.mouse.enable)
    {
@@ -222,8 +234,21 @@ static int menu_input_mouse_frame(
       point.x      = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
       point.y      = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
       menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
+
+      if (rarch_timer_is_running(&mouse_activity_timer))
+         rarch_timer_tick(&mouse_activity_timer);
+
       if (mouse_old_x != point.x || mouse_old_y != point.y)
+      {
+         if (!rarch_timer_is_running(&mouse_activity_timer))
+            mouse_activity = true;
          menu_event_set_osk_ptr(point.retcode);
+      }
+      else
+      {
+         if (rarch_timer_has_expired(&mouse_activity_timer))
+            no_mouse_activity = true;
+      }
       mouse_old_x = point.x;
       mouse_old_y = point.y;
    }
@@ -282,6 +307,28 @@ static int menu_input_mouse_frame(
    if (BIT64_GET(mouse_state, MENU_MOUSE_ACTION_HORIZ_WHEEL_DOWN))
    {
       /* stub */
+   }
+
+   if (mouse_activity)
+   {
+      menu_ctx_environment_t menu_environ;
+
+      rarch_timer_begin(&mouse_activity_timer, 4);
+      menu_environ.type = MENU_ENVIRON_ENABLE_MOUSE_CURSOR;
+      menu_environ.data = NULL;
+
+      menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
+   }
+
+   if (no_mouse_activity)
+   {
+      menu_ctx_environment_t menu_environ;
+
+      rarch_timer_end(&mouse_activity_timer);
+      menu_environ.type = MENU_ENVIRON_DISABLE_MOUSE_CURSOR;
+      menu_environ.data = NULL;
+
+      menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
    }
 
    return ret;

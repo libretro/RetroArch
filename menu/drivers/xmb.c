@@ -186,6 +186,8 @@ typedef struct xmb_handle
    char thumbnail_file_path[PATH_MAX_LENGTH];
    char savestate_thumbnail_file_path[PATH_MAX_LENGTH];
 
+   bool mouse_show;
+
    struct
    {
       struct
@@ -1758,17 +1760,25 @@ static void xmb_refresh_horizontal_list(xmb_handle_t *xmb)
 
 static int xmb_environ(enum menu_environ_cb type, void *data, void *userdata)
 {
+   xmb_handle_t *xmb        = (xmb_handle_t*)userdata;
+
    switch (type)
    {
+      case MENU_ENVIRON_ENABLE_MOUSE_CURSOR:
+         if (!xmb)
+            return -1;
+         xmb->mouse_show = true;
+         break;
+      case MENU_ENVIRON_DISABLE_MOUSE_CURSOR:
+         if (!xmb)
+            return -1;
+         xmb->mouse_show = false;
+         break;
       case MENU_ENVIRON_RESET_HORIZONTAL_LIST:
-         {
-            xmb_handle_t *xmb        = (xmb_handle_t*)userdata;
+         if (!xmb)
+            return -1;
 
-            if (!xmb)
-               return -1;
-
-            xmb_refresh_horizontal_list(xmb);
-         }
+         xmb_refresh_horizontal_list(xmb);
          break;
       default:
          return -1;
@@ -2841,16 +2851,18 @@ static void xmb_frame(void *data)
    }
 
    /* Cursor image */
-   menu_display_set_alpha(coord_white, MIN(xmb->alpha, 1.00f));
-   menu_display_draw_cursor(
-         &coord_white[0],
-         xmb->cursor.size,
-         xmb->textures.list[XMB_TEXTURE_POINTER],
-         menu_input_mouse_state(MENU_MOUSE_X_AXIS),
-         menu_input_mouse_state(MENU_MOUSE_Y_AXIS),
-         width,
-         height);
-
+   if (xmb->mouse_show)
+   {
+      menu_display_set_alpha(coord_white, MIN(xmb->alpha, 1.00f));
+      menu_display_draw_cursor(
+            &coord_white[0],
+            xmb->cursor.size,
+            xmb->textures.list[XMB_TEXTURE_POINTER],
+            menu_input_mouse_state(MENU_MOUSE_X_AXIS),
+            menu_input_mouse_state(MENU_MOUSE_Y_AXIS),
+            width,
+            height);
+   }
 
    menu_display_unset_viewport();
 }
