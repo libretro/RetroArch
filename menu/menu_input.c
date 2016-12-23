@@ -216,8 +216,7 @@ static int menu_input_mouse_frame(
    if (settings->menu.mouse.enable)
       ret  = menu_input_mouse_post_iterate(&mouse_state, cbs, action);
 
-   if (menu_input_dialog_get_display_kb() &&
-         (settings->menu.pointer.enable || settings->menu.mouse.enable))
+   if (settings->menu.pointer.enable || settings->menu.mouse.enable)
    {
       menu_ctx_pointer_t point;
       point.x      = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
