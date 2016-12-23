@@ -571,7 +571,7 @@ uint64_t input_menu_keys_pressed(
       bool runloop_paused)
 {
    unsigned i;
-   unsigned ids[11][2];
+   unsigned ids[13][2];
    uint64_t             ret                     = 0;
    settings_t     *settings                     = config_get_ptr();
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
@@ -631,24 +631,6 @@ uint64_t input_menu_keys_pressed(
    if (menu_input_dialog_get_display_kb())
       goto end;
 
-   if (current_input->input_state(current_input_data, binds, 0,
-      RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN))
-   {
-      if (!settings->input.menu_swap_ok_cancel_buttons)
-         BIT64_SET(ret, RETRO_DEVICE_ID_JOYPAD_A);
-      else
-         BIT64_SET(ret, RETRO_DEVICE_ID_JOYPAD_B);
-   }
-
-   if (current_input->input_state(current_input_data, binds, 0,
-      RETRO_DEVICE_KEYBOARD, 0, RETROK_BACKSPACE))
-   {
-      if (!settings->input.menu_swap_ok_cancel_buttons)
-         BIT64_SET(ret, RETRO_DEVICE_ID_JOYPAD_B);
-      else
-         BIT64_SET(ret, RETRO_DEVICE_ID_JOYPAD_A);
-   }
-
    ids[0][0]  = RETROK_SPACE;
    ids[0][1]  = RETRO_DEVICE_ID_JOYPAD_START;
    ids[1][0]  = RETROK_SLASH;
@@ -671,8 +653,18 @@ uint64_t input_menu_keys_pressed(
    ids[9][1]  = RARCH_QUIT_KEY;
    ids[10][0] = settings->input.binds[0][RARCH_FULLSCREEN_TOGGLE_KEY].key;
    ids[10][1] = RARCH_FULLSCREEN_TOGGLE_KEY;
+   ids[11][0] = RETROK_BACKSPACE;
+   ids[11][1] = RETRO_DEVICE_ID_JOYPAD_B;
+   ids[12][0] = RETROK_RETURN;
+   ids[12][1] = RETRO_DEVICE_ID_JOYPAD_A;
 
-   for (i = 0; i < 11; i++)
+   if (settings->input.menu_swap_ok_cancel_buttons)
+      ids[11][1] = RETRO_DEVICE_ID_JOYPAD_A;
+
+   if (settings->input.menu_swap_ok_cancel_buttons)
+      ids[12][1] = RETRO_DEVICE_ID_JOYPAD_B;
+
+   for (i = 0; i < 13; i++)
    {
       if (current_input->input_state(current_input_data, binds, 0,
                RETRO_DEVICE_KEYBOARD, 0, ids[i][0]))
