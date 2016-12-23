@@ -5792,15 +5792,20 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   }
                   else
                   {
+                     const char *core_path = cores_paths->elems[i].data;
+                      
+                     if (core_path)
+                     {
+                      
                      switch (type)
                      {
                         case DISPLAYLIST_CORES_COLLECTION_SUPPORTED:
-                           menu_entries_append_enum(info->list, cores_paths->elems[i].data, "",
+                           menu_entries_append_enum(info->list, core_path, "",
                                  MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
                                  FILE_TYPE_CORE, 0, 0);
                            break;
                         default:
-                           menu_entries_append_enum(info->list, cores_paths->elems[i].data,
+                           menu_entries_append_enum(info->list, core_path,
                                  msg_hash_to_str(MENU_ENUM_LABEL_DETECT_CORE_LIST_OK),
                                  MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,
                                  FILE_TYPE_CORE, 0, 0);
@@ -5810,6 +5815,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                      menu_entries_set_alt_at_offset(info->list, j,
                            cores_names->elems[i].data);
                      j++;
+                     }
                   }
                }
 
