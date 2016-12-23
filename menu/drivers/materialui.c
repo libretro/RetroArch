@@ -596,8 +596,14 @@ static void mui_render_label_value(mui_handle_t *mui,
    uintptr_t texture_switch        = 0;
    bool do_draw_text               = false;
    size_t usable_width             = width - (mui->margin * 2);
-
    label_str[0] = value_str[0] = sublabel_str[0] = '\0';
+   uint32_t sublabel_color;
+
+#ifdef VITA
+   sublabel_color = 0xff888888;
+#else
+   sublabel_color = 0x888888ff;
+#endif
 
    if (value_len * mui->glyph_width > usable_width / 2)
       value_len = (usable_width/2) / mui->glyph_width;
@@ -625,7 +631,7 @@ static void mui_render_label_value(mui_handle_t *mui,
       menu_display_draw_text(mui->font2, sublabel_str,
             mui->margin,
             y + mui->line_height / 2 + mui->font->size / 1,
-            width, height, 0x888888ff, TEXT_ALIGN_LEFT, 1.0f, false, 0);
+            width, height, sublabel_color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
    }
 
    menu_display_draw_text(mui->font, label_str,
