@@ -2369,21 +2369,21 @@ static bool setting_append_list(
 #if defined(HAVE_LAKKA)
          CONFIG_ACTION(
                list, list_info,
-               MENU_ENUM_LABEL_SHUTDOWN,
-               MENU_ENUM_LABEL_VALUE_SHUTDOWN,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_SHUTDOWN);
-
-         CONFIG_ACTION(
-               list, list_info,
                MENU_ENUM_LABEL_REBOOT,
                MENU_ENUM_LABEL_VALUE_REBOOT,
                &group_info,
                &subgroup_info,
                parent_group);
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REBOOT);
+
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_SHUTDOWN,
+               MENU_ENUM_LABEL_VALUE_SHUTDOWN,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_SHUTDOWN);
 #endif
 
          CONFIG_ACTION(
