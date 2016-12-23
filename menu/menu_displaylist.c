@@ -1559,13 +1559,13 @@ static int menu_displaylist_parse_shader_options(menu_displaylist_info_t *info)
             MENU_ENUM_LABEL_VIDEO_SHADER_PASS,
             MENU_SETTINGS_SHADER_PASS_0 + i, 0, 0);
 
-      snprintf(buf, sizeof(buf), "%s Filter", buf_tmp);
+      snprintf(buf, sizeof(buf), "%s %s", buf_tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FILTER));
       menu_entries_append_enum(info->list, buf,
             msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_FILTER_PASS),
             MENU_ENUM_LABEL_VIDEO_SHADER_FILTER_PASS,
             MENU_SETTINGS_SHADER_PASS_FILTER_0 + i, 0, 0);
 
-      snprintf(buf, sizeof(buf), "%s Scale", buf_tmp);
+      snprintf(buf, sizeof(buf), "%s %s", buf_tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCALE));
       menu_entries_append_enum(info->list, buf,
             msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS),
             MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS,
