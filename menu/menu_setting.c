@@ -1537,8 +1537,6 @@ void general_write_handler(void *data)
    enum event_command rarch_cmd = CMD_EVENT_NONE;
    rarch_setting_t *setting     = (rarch_setting_t*)data;
    settings_t *settings         = config_get_ptr();
-   global_t *global             = global_get_ptr();
-   file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
 
    if (!setting)
       return;
@@ -1595,6 +1593,7 @@ void general_write_handler(void *data)
          if (*setting->value.target.boolean)
          {
             menu_displaylist_info_t info = {0};
+            file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
 
             info.list          = menu_stack;
             info.type          = 0; 
@@ -1687,10 +1686,13 @@ void general_write_handler(void *data)
          rarch_cmd = CMD_EVENT_AUDIO_REINIT;
          break;
       case MENU_ENUM_LABEL_PAL60_ENABLE:
-         if (*setting->value.target.boolean && global->console.screen.pal_enable)
-            rarch_cmd = CMD_EVENT_REINIT;
-         else
-            setting_set_with_string_representation(setting, "false");
+         {
+            global_t *global             = global_get_ptr();
+            if (*setting->value.target.boolean && global->console.screen.pal_enable)
+               rarch_cmd = CMD_EVENT_REINIT;
+            else
+               setting_set_with_string_representation(setting, "false");
+         }
          break;
       case MENU_ENUM_LABEL_SYSTEM_BGM_ENABLE:
          if (*setting->value.target.boolean)
