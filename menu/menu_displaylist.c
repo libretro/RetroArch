@@ -5774,10 +5774,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
                for (i = 0; i < cores_names_size; i++)
                {
+                  const char *core_path = cores_paths->elems[i].data;
+
                   if (     !path_is_empty(RARCH_PATH_CORE) &&
-                           string_is_equal(cores_paths->elems[i].data, path_get(RARCH_PATH_CORE)))
+                           string_is_equal(core_path, path_get(RARCH_PATH_CORE)))
                   {
-                     strlcpy(new_path_entry, cores_paths->elems[i].data, sizeof(new_path_entry));
+                     strlcpy(new_path_entry, core_path, sizeof(new_path_entry));
                      snprintf(new_entry, sizeof(new_entry), "Current core (%s)", cores_names->elems[i].data);
                      if (type == DISPLAYLIST_CORES_COLLECTION_SUPPORTED)
                      {
@@ -5786,17 +5788,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                      }
                      else
                      {
-                        strlcpy(new_lbl_entry, cores_paths->elems[i].data, sizeof(new_lbl_entry));
+                        strlcpy(new_lbl_entry, core_path, sizeof(new_lbl_entry));
                         new_type = MENU_ENUM_LABEL_DETECT_CORE_LIST_OK_CURRENT_CORE;
                      }
                   }
-                  else
+                  else if (core_path)
                   {
-                     const char *core_path = cores_paths->elems[i].data;
-                      
-                     if (core_path)
-                     {
-                      
                      switch (type)
                      {
                         case DISPLAYLIST_CORES_COLLECTION_SUPPORTED:
@@ -5815,7 +5812,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                      menu_entries_set_alt_at_offset(info->list, j,
                            cores_names->elems[i].data);
                      j++;
-                     }
                   }
                }
 
