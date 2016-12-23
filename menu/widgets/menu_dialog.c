@@ -66,7 +66,7 @@ int menu_dialog_iterate(char *s, size_t len, const char *label)
                   MENU_ENUM_LABEL_WELCOME_TO_RETROARCH,
                   s, len);
 
-            if (rarch_timer_has_expired(&timer))
+            if (!timer.timer_end && rarch_timer_has_expired(&timer))
             {
                rarch_timer_end(&timer);
                do_exit     = true;

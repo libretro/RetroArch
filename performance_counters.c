@@ -165,9 +165,7 @@ bool rarch_timer_is_running(rarch_timer_t *timer)
 
 bool rarch_timer_has_expired(rarch_timer_t *timer)
 {
-   if (!timer)
-      return true;
-   if (!timer->timer_end && timer->timeout <= 0)
+   if (!timer || timer->timeout <= 0)
       return true;
    return false;
 }
