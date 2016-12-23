@@ -5775,12 +5775,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                for (i = 0; i < cores_names_size; i++)
                {
                   const char *core_path = cores_paths->elems[i].data;
+                  const char *core_name = cores_names->elems[i].data;
 
                   if (     !path_is_empty(RARCH_PATH_CORE) &&
                            string_is_equal(core_path, path_get(RARCH_PATH_CORE)))
                   {
                      strlcpy(new_path_entry, core_path, sizeof(new_path_entry));
-                     snprintf(new_entry, sizeof(new_entry), "Current core (%s)", cores_names->elems[i].data);
+                     snprintf(new_entry, sizeof(new_entry), "Current core (%s)", core_name);
                      if (type == DISPLAYLIST_CORES_COLLECTION_SUPPORTED)
                      {
                         new_lbl_entry[0] = '\0';
@@ -5809,8 +5810,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                            break;
                      }
 
-                     menu_entries_set_alt_at_offset(info->list, j,
-                           cores_names->elems[i].data);
+                     menu_entries_set_alt_at_offset(info->list, j, core_name);
                      j++;
                   }
                }
@@ -5886,11 +5886,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
                for (i = 0; i < cores_names_size; i++)
                {
+                  const char *core_path = cores_paths->elems[i].data;
+                  const char *core_name = cores_names->elems[i].data;
+
                   if (     !path_is_empty(RARCH_PATH_CORE) &&
-                           string_is_equal(cores_paths->elems[i].data, path_get(RARCH_PATH_CORE)))
+                           string_is_equal(core_path, path_get(RARCH_PATH_CORE)))
                   {
-                     strlcpy(new_path_entry, cores_paths->elems[i].data, sizeof(new_path_entry));
-                     snprintf(new_entry, sizeof(new_entry), "Current core (%s)", cores_names->elems[i].data);
+                     strlcpy(new_path_entry, core_path, sizeof(new_path_entry));
+                     snprintf(new_entry, sizeof(new_entry), "Current core (%s)", core_name);
                      if (type == DISPLAYLIST_CORES_COLLECTION_SUPPORTED)
                      {
                         new_lbl_entry[0] = '\0';
@@ -5898,29 +5901,28 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                      }
                      else
                      {
-                        strlcpy(new_lbl_entry, cores_paths->elems[i].data, sizeof(new_lbl_entry));
+                        strlcpy(new_lbl_entry, core_path, sizeof(new_lbl_entry));
                         new_type = MENU_ENUM_LABEL_DETECT_CORE_LIST_OK_CURRENT_CORE;
                      }
                   }
-                  else
+                  else if (core_path)
                   {
                      switch (type)
                      {
                         case DISPLAYLIST_CORES_COLLECTION_SUPPORTED:
-                           menu_entries_append_enum(info->list, cores_paths->elems[i].data, "",
+                           menu_entries_append_enum(info->list, core_path, "",
                                  MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
                                  FILE_TYPE_CORE, 0, 0);
                            break;
                         default:
-                           menu_entries_append_enum(info->list, cores_paths->elems[i].data,
+                           menu_entries_append_enum(info->list, core_path,
                                  msg_hash_to_str(MENU_ENUM_LABEL_DETECT_CORE_LIST_OK),
                                  MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,
                                  FILE_TYPE_CORE, 0, 0);
                            break;
                      }
 
-                     menu_entries_set_alt_at_offset(info->list, j,
-                           cores_names->elems[i].data);
+                     menu_entries_set_alt_at_offset(info->list, j, core_name);
                      j++;
                   }
                }
