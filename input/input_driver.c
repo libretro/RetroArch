@@ -571,6 +571,7 @@ uint64_t input_menu_keys_pressed(
       bool runloop_paused)
 {
    unsigned i;
+   unsigned ids[11][2];
    uint64_t             ret                     = 0;
    settings_t     *settings                     = config_get_ptr();
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
@@ -648,49 +649,35 @@ uint64_t input_menu_keys_pressed(
          BIT64_SET(ret, RETRO_DEVICE_ID_JOYPAD_A);
    }
 
-   if (current_input->input_state(current_input_data, binds, 0,
-      RETRO_DEVICE_KEYBOARD, 0, RETROK_SPACE))
-      BIT64_SET(ret, RETRO_DEVICE_ID_JOYPAD_START);
+   ids[0][0]  = RETROK_SPACE;
+   ids[0][1]  = RETRO_DEVICE_ID_JOYPAD_START;
+   ids[1][0]  = RETROK_SLASH;
+   ids[1][1]  = RETRO_DEVICE_ID_JOYPAD_X;
+   ids[2][0]  = RETROK_RSHIFT;
+   ids[2][1]  = RETRO_DEVICE_ID_JOYPAD_SELECT;
+   ids[3][0]  = RETROK_RIGHT;
+   ids[3][1]  = RETRO_DEVICE_ID_JOYPAD_RIGHT;
+   ids[4][0]  = RETROK_LEFT;
+   ids[4][1]  = RETRO_DEVICE_ID_JOYPAD_LEFT;
+   ids[5][0]  = RETROK_DOWN;
+   ids[5][1]  = RETRO_DEVICE_ID_JOYPAD_DOWN;
+   ids[6][0]  = RETROK_UP;
+   ids[6][1]  = RETRO_DEVICE_ID_JOYPAD_UP;
+   ids[7][0]  = RETROK_PAGEUP;
+   ids[7][1]  = RETRO_DEVICE_ID_JOYPAD_L;
+   ids[8][0]  = RETROK_PAGEDOWN;
+   ids[8][1]  = RETRO_DEVICE_ID_JOYPAD_R;
+   ids[9][0]  = settings->input.binds[0][RARCH_QUIT_KEY].key;
+   ids[9][1]  = RARCH_QUIT_KEY;
+   ids[10][0] = settings->input.binds[0][RARCH_FULLSCREEN_TOGGLE_KEY].key;
+   ids[10][1] = RARCH_FULLSCREEN_TOGGLE_KEY;
 
-   if (current_input->input_state(current_input_data, binds, 0,
-      RETRO_DEVICE_KEYBOARD, 0, RETROK_SLASH))
-      BIT64_SET(ret, RETRO_DEVICE_ID_JOYPAD_X);
-
-   if (current_input->input_state(current_input_data, binds, 0,
-      RETRO_DEVICE_KEYBOARD, 0, RETROK_RSHIFT))
-      BIT64_SET(ret, RETRO_DEVICE_ID_JOYPAD_SELECT);
-
-   if (current_input->input_state(current_input_data, binds, 0,
-      RETRO_DEVICE_KEYBOARD, 0, RETROK_RIGHT))
-      BIT64_SET(ret, RETRO_DEVICE_ID_JOYPAD_RIGHT);
-
-   if (current_input->input_state(current_input_data, binds, 0,
-      RETRO_DEVICE_KEYBOARD, 0, RETROK_LEFT))
-      BIT64_SET(ret, RETRO_DEVICE_ID_JOYPAD_LEFT);
-
-   if (current_input->input_state(current_input_data, binds, 0,
-      RETRO_DEVICE_KEYBOARD, 0, RETROK_DOWN))
-      BIT64_SET(ret, RETRO_DEVICE_ID_JOYPAD_DOWN);
-
-   if (current_input->input_state(current_input_data, binds, 0,
-      RETRO_DEVICE_KEYBOARD, 0, RETROK_UP))
-      BIT64_SET(ret, RETRO_DEVICE_ID_JOYPAD_UP);
-
-   if (current_input->input_state(current_input_data, binds, 0,
-      RETRO_DEVICE_KEYBOARD, 0, RETROK_PAGEUP))
-      BIT64_SET(ret, RETRO_DEVICE_ID_JOYPAD_L);
-
-   if (current_input->input_state(current_input_data, binds, 0,
-      RETRO_DEVICE_KEYBOARD, 0, RETROK_PAGEDOWN))
-      BIT64_SET(ret, RETRO_DEVICE_ID_JOYPAD_R);
-
-   if (current_input->input_state(current_input_data, binds, 0,
-      RETRO_DEVICE_KEYBOARD, 0, settings->input.binds[0][RARCH_QUIT_KEY].key ))
-      BIT64_SET(ret, RARCH_QUIT_KEY);
-
-   if (current_input->input_state(current_input_data, binds, 0,
-      RETRO_DEVICE_KEYBOARD, 0, settings->input.binds[0][RARCH_FULLSCREEN_TOGGLE_KEY].key ))
-      BIT64_SET(ret, RARCH_FULLSCREEN_TOGGLE_KEY);
+   for (i = 0; i < 11; i++)
+   {
+      if (current_input->input_state(current_input_data, binds, 0,
+               RETRO_DEVICE_KEYBOARD, 0, ids[i][0]))
+         BIT64_SET(ret, ids[i][1]);
+   }
 
 end:
    *trigger_input = ret & ~old_input;
