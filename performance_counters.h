@@ -80,7 +80,11 @@ bool rarch_timer_has_expired(rarch_timer_t *timer);
 
 void rarch_timer_begin(rarch_timer_t *timer, uint64_t ms);
 
+void rarch_timer_begin_new_time(rarch_timer_t *timer, uint64_t sec);
+
 void rarch_timer_end(rarch_timer_t *timer);
+
+int rarch_timer_get_timeout(rarch_timer_t *timer);
 
 RETRO_END_DECLS
 

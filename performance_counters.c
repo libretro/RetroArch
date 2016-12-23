@@ -156,6 +156,13 @@ void rarch_timer_tick(rarch_timer_t *timer)
    timer->timeout = (timer->timeout_end - timer->current) / 1000000;
 }
 
+int rarch_timer_get_timeout(rarch_timer_t *timer)
+{
+   if (!timer)
+      return 0;
+   return timer->timeout;
+}
+
 bool rarch_timer_is_running(rarch_timer_t *timer)
 {
    if (!timer)
@@ -179,11 +186,18 @@ void rarch_timer_end(rarch_timer_t *timer)
    timer->timeout_end = 0;
 }
 
-void rarch_timer_begin(rarch_timer_t *timer, uint64_t sec)
+void rarch_timer_begin_new_time(rarch_timer_t *timer, uint64_t sec)
 {
    if (!timer)
       return;
    timer->timeout_end = cpu_features_get_time_usec() + sec * 1000000;
+}
+
+void rarch_timer_begin(rarch_timer_t *timer, uint64_t sec)
+{
+   if (!timer)
+      return;
+   rarch_timer_begin_new_time(timer, sec);
    timer->timer_begin = true;
    timer->timer_end   = false;
 }
