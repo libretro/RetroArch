@@ -18,6 +18,7 @@
 #define _PERFORMANCE_COUNTERS_H
 
 #include <stdint.h>
+#include <boolean.h>
 
 #include <retro_common_api.h>
 #include <libretro.h>
@@ -27,6 +28,15 @@ RETRO_BEGIN_DECLS
 #ifndef MAX_COUNTERS
 #define MAX_COUNTERS 64
 #endif
+
+typedef struct rarch_timer
+{
+   int64_t current;
+   int64_t timeout;
+   int64_t timeout_end;
+   bool timer_begin;
+   bool timer_end;
+} rarch_timer_t;
 
 struct retro_perf_counter **retro_get_perf_counter_rarch(void);
 
@@ -61,6 +71,16 @@ void performance_counter_start(struct retro_perf_counter *perf);
  * Stop performance counter. 
  **/
 void performance_counter_stop(struct retro_perf_counter *perf);
+
+void rarch_timer_tick(rarch_timer_t *timer);
+
+bool rarch_timer_is_running(rarch_timer_t *timer);
+
+bool rarch_timer_has_expired(rarch_timer_t *timer);
+
+void rarch_timer_begin(rarch_timer_t *timer, uint64_t ms);
+
+void rarch_timer_end(rarch_timer_t *timer);
 
 RETRO_END_DECLS
 

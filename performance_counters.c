@@ -147,3 +147,45 @@ void performance_counter_stop(struct retro_perf_counter *perf)
 
    perf->total += cpu_features_get_perf_counter() - perf->start;
 }
+
+void rarch_timer_tick(rarch_timer_t *timer)
+{
+   if (!timer)
+      return;
+   timer->current = cpu_features_get_time_usec();
+   timer->timeout = (timer->timeout_end - timer->current) / 1000000;
+}
+
+bool rarch_timer_is_running(rarch_timer_t *timer)
+{
+   if (!timer)
+      return false;
+   return timer->timer_begin;
+}
+
+bool rarch_timer_has_expired(rarch_timer_t *timer)
+{
+   if (!timer)
+      return true;
+   if (!timer->timer_end && timer->timeout <= 0)
+      return true;
+   return false;
+}
+
+void rarch_timer_end(rarch_timer_t *timer)
+{
+   if (!timer)
+      return;
+   timer->timer_end   = true;
+   timer->timer_begin = false;
+   timer->timeout_end = 0;
+}
+
+void rarch_timer_begin(rarch_timer_t *timer, uint64_t sec)
+{
+   if (!timer)
+      return;
+   timer->timeout_end = cpu_features_get_time_usec() + sec * 1000000;
+   timer->timer_begin = true;
+   timer->timer_end   = false;
+}
