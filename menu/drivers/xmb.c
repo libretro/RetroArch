@@ -2612,21 +2612,18 @@ static void xmb_frame(void *data)
 
    if (settings->menu.battery_level_enable)
    {
-      static retro_time_t last_time = 0;
-      bool time_to_update = false;
-      retro_time_t current_time = cpu_features_get_time_usec();
-      int percent = 0;
+      char msg[12];
+      static retro_time_t last_time  = 0;
+      bool charging                  = false;
+      retro_time_t current_time      = cpu_features_get_time_usec();
+      int percent                    = 0;
       enum frontend_powerstate state = get_last_powerstate(&percent);
 
+      if (state == FRONTEND_POWERSTATE_CHARGING)
+         charging = true;
+
       if (current_time - last_time >= BATTERY_LEVEL_CHECK_INTERVAL)
-         time_to_update = true;
-
-      char msg[12];
-      bool charging = (state == FRONTEND_POWERSTATE_CHARGING);
-
-      if (time_to_update)
       {
-         time_to_update = false;
          last_time = current_time;
          task_push_get_powerstate();
       }
@@ -2635,14 +2632,15 @@ static void xmb_frame(void *data)
 
       if (percent > 0)
       {
-         size_t x_pos = xmb->icon.size / 6;
+         size_t x_pos      = xmb->icon.size / 6;
          size_t x_pos_icon = xmb->margins.title.left;
 
          if (coord_white[3] != 0)
             xmb_draw_icon(
                   xmb->icon.size,
                   &mymat,
-                  xmb->textures.list[charging ? XMB_TEXTURE_BATTERY_CHARGING : XMB_TEXTURE_BATTERY_FULL],
+                  xmb->textures.list[charging 
+                  ? XMB_TEXTURE_BATTERY_CHARGING : XMB_TEXTURE_BATTERY_FULL],
                   width - (xmb->icon.size / 2) - x_pos_icon,
                   xmb->icon.size,
                   width,
