@@ -22,7 +22,6 @@
 #include <string/stdstring.h>
 #include <lists/dir_list.h>
 #include <file/file_path.h>
-#include <queues/message_queue.h>
 #include <encodings/crc32.h>
 #include <streams/file_stream.h>
 #include "tasks_internal.h"
@@ -59,7 +58,6 @@ typedef struct db_handle
 {
    database_state_handle_t state;
    database_info_handle_t *handle;
-   msg_queue_t *msg_queue;
    unsigned status;
 } db_handle_t;
 
