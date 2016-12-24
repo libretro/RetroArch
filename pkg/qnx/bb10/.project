@@ -3,6 +3,7 @@
 	<name>RetroArch</name>
 	<comment></comment>
 	<projects>
+		<project>RetroArch_</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
@@ -38,7 +39,7 @@
 		<link>
 			<name>src/float_to_s16_neon.S</name>
 			<type>1</type>
-			<locationURI>PARENT-3-PROJECT_LOC/libretro-common/conversion/float_to_s16_neon.S</locationURI>
+			<locationURI>PARENT-3-PROJECT_LOC/libretro-common/audio/conversion/float_to_s16_neon.S</locationURI>
 		</link>
 		<link>
 			<name>src/griffin.c</name>
@@ -48,12 +49,12 @@
 		<link>
 			<name>src/s16_to_float_neon.S</name>
 			<type>1</type>
-			<locationURI>PARENT-3-PROJECT_LOC/libretro-common/conversion/s16_to_float_neon.S</locationURI>
+			<locationURI>PARENT-3-PROJECT_LOC/libretro-common/audio/conversion/s16_to_float_neon.S</locationURI>
 		</link>
 		<link>
-			<name>src/sinc_neon.S</name>
+			<name>src/sinc_resampler_neon.S</name>
 			<type>1</type>
-			<locationURI>PARENT-3-PROJECT_LOC/audio/drivers_resampler/sinc_resampler_neon.S</locationURI>
+			<locationURI>PARENT-3-PROJECT_LOC/libretro-common/audio/resampler/drivers/sinc_resampler_neon.S</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>

@@ -22,12 +22,36 @@
 								<option id="com.qnx.qcc.option.compiler.optlevel.1785341332" name="Optimization Level" superClass="com.qnx.qcc.option.compiler.optlevel" value="com.qnx.qcc.option.compiler.optlevel.0" valueType="enumerated"/>
 								<option id="com.qnx.qcc.option.compile.debug.750054689" name="Debug (-g)" superClass="com.qnx.qcc.option.compile.debug" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.includePath.1332494375" name="Include Directories (-I)" superClass="com.qnx.qcc.option.compiler.includePath" valueType="includePath">
-									<listOptionValue builtIn="false" value="${QNX_TARGET}/usr/include/freetype2"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}}/../../../libretro-common/include&quot;"/>
-									<listOptionValue builtIn="false" value="${QNX_TARGET}/../target-override/usr/include"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/../../../libretro-common/include/&quot;"/>
 								</option>
 								<option id="com.qnx.qcc.option.compiler.security.1348091274" name="Enhanced Security (-fstack-protector-strong)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.107606349" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
+								</option>
+								<option id="com.qnx.qcc.option.compiler.qccoptions.282576124" name="QCC Options" superClass="com.qnx.qcc.option.compiler.qccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-frecord-gcc-switches"/>
+									<listOptionValue builtIn="false" value="-marm"/>
+									<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
+									<listOptionValue builtIn="false" value="-mfpu=neon"/>
+								</option>
+								<option id="com.qnx.qcc.option.compiler.ccoptions.564437396" name="Compiler Options (-Wc,)" superClass="com.qnx.qcc.option.compiler.ccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-std=gnu99"/>
+								</option>
+								<inputType id="com.qnx.qcc.inputType.compiler.664364443" superClass="com.qnx.qcc.inputType.compiler"/>
+							</tool>
+							<tool id="com.qnx.qcc.tool.assembler.2035959754" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler">
+								<option id="com.qnx.qcc.option.assembler.debug.540367047" name="Debug (-g)" superClass="com.qnx.qcc.option.assembler.debug" value="true" valueType="boolean"/>
+								<option id="com.qnx.qcc.option.assembler.includePath.1451631500" name="Include Directories (-I)" superClass="com.qnx.qcc.option.assembler.includePath" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${QNX_TARGET}/usr/include/freetype2&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${QNX_TARGET}/../target-override/usr/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/../../../libretro-common/include/&quot;"/>
+								</option>
+								<option id="com.qnx.qcc.option.assembler.qccoptions.733664237" name="QCC Options" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
+									<listOptionValue builtIn="false" value="-marm"/>
+									<listOptionValue builtIn="false" value="-mfpu=neon"/>
+								</option>
+								<option id="com.qnx.qcc.option.assembler.defines.103275832" name="Defines (-D)" superClass="com.qnx.qcc.option.assembler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_RPNG"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGL"/>
 									<listOptionValue builtIn="false" value="HAVE_BB10"/>
@@ -59,25 +83,6 @@
 									<listOptionValue builtIn="false" value="HAVE_GLSL"/>
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
 								</option>
-								<option id="com.qnx.qcc.option.compiler.qccoptions.282576124" name="QCC Options" superClass="com.qnx.qcc.option.compiler.qccoptions" valueType="stringList">
-									<listOptionValue builtIn="false" value="-frecord-gcc-switches"/>
-									<listOptionValue builtIn="false" value="-marm"/>
-									<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
-									<listOptionValue builtIn="false" value="-mfpu=neon"/>
-								</option>
-								<option id="com.qnx.qcc.option.compiler.ccoptions.564437396" name="Compiler Options (-Wc,)" superClass="com.qnx.qcc.option.compiler.ccoptions" valueType="stringList">
-									<listOptionValue builtIn="false" value="-std=gnu99"/>
-								</option>
-								<inputType id="com.qnx.qcc.inputType.compiler.664364443" superClass="com.qnx.qcc.inputType.compiler"/>
-							</tool>
-							<tool id="com.qnx.qcc.tool.assembler.2035959754" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler">
-								<option id="com.qnx.qcc.option.assembler.debug.540367047" name="Debug (-g)" superClass="com.qnx.qcc.option.assembler.debug" value="true" valueType="boolean"/>
-								<option id="com.qnx.qcc.option.assembler.includePath.1451631500" name="Include Directories (-I)" superClass="com.qnx.qcc.option.assembler.includePath"/>
-								<option id="com.qnx.qcc.option.assembler.qccoptions.733664237" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
-									<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
-									<listOptionValue builtIn="false" value="-marm"/>
-									<listOptionValue builtIn="false" value="-mfpu=neon"/>
-								</option>
 								<inputType id="com.qnx.qcc.inputType.assembler.1280447837" superClass="com.qnx.qcc.inputType.assembler"/>
 							</tool>
 							<tool id="com.qnx.qcc.tool.linker.743621919" name="QCC Linker" superClass="com.qnx.qcc.tool.linker">
@@ -108,7 +113,7 @@
 							<tool id="com.qnx.qcc.tool.archiver.235941332" name="QCC Archiver" superClass="com.qnx.qcc.tool.archiver"/>
 						</toolChain>
 					</folderInfo>
-					<fileInfo id="com.qnx.qcc.configuration.exe.debug.381170420.1258732047" name="sinc_neon.S" rcbsApplicability="disable" resourcePath="src/sinc_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.2035959754.991633861">
+					<fileInfo id="com.qnx.qcc.configuration.exe.debug.381170420.1258732047" name="sinc_neon.S" rcbsApplicability="disable" resourcePath="src/sinc_resampler_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.2035959754.991633861">
 						<tool command="qcc" commandLinePattern="${COMMAND}  ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS} ${FLAGS}" id="com.qnx.qcc.tool.assembler.2035959754.991633861" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler.2035959754">
 							<option id="com.qnx.qcc.option.assembler.qccoptions.1129161676" name="QCC Options" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
 								<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
@@ -154,13 +159,35 @@
 							<builder buildPath="${workspace_loc:/RetroArch}/Device-Release" id="com.qnx.nto.976773955" keepEnvironmentInBuildfile="false" name="CDT Internal Builder" parallelBuildOn="true" parallelizationNumber="optimal" superClass="com.qnx.nto"/>
 							<tool id="com.qnx.qcc.tool.compiler.1610619833" name="QCC Compiler" superClass="com.qnx.qcc.tool.compiler">
 								<option id="com.qnx.qcc.option.compiler.optlevel.423851397" name="Optimization Level" superClass="com.qnx.qcc.option.compiler.optlevel" value="com.qnx.qcc.option.compiler.optlevel.2" valueType="enumerated"/>
-								<option id="com.qnx.qcc.option.compiler.includePath.1876922510" name="Include Directories (-I)" superClass="com.qnx.qcc.option.compiler.includePath" valueType="includePath">
-									<listOptionValue builtIn="false" value="${QNX_TARGET}/usr/include/freetype2"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}}/../../../libretro-common/include&quot;"/>
-									<listOptionValue builtIn="false" value="${QNX_TARGET}/../target-override/usr/include"/>
-								</option>
+								<option id="com.qnx.qcc.option.compiler.includePath.1876922510" name="Include Directories (-I)" superClass="com.qnx.qcc.option.compiler.includePath"/>
 								<option id="com.qnx.qcc.option.compiler.security.1255305436" name="Enhanced Security (-fstack-protector-strong)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.1244683608" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
+								</option>
+								<option id="com.qnx.qcc.option.compiler.pie.927304226" name="Position Independent Executable (-fPIE)" superClass="com.qnx.qcc.option.compiler.pie" value="true" valueType="boolean"/>
+								<option id="com.qnx.qcc.option.compiler.qccoptions.1557923547" name="QCC Options" superClass="com.qnx.qcc.option.compiler.qccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-frecord-gcc-switches"/>
+									<listOptionValue builtIn="false" value="-marm"/>
+									<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
+									<listOptionValue builtIn="false" value="-mfpu=neon"/>
+								</option>
+								<option id="com.qnx.qcc.option.compiler.ccoptions.56955297" name="Compiler Options (-Wc,)" superClass="com.qnx.qcc.option.compiler.ccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-std=gnu99"/>
+								</option>
+								<inputType id="com.qnx.qcc.inputType.compiler.1229442623" superClass="com.qnx.qcc.inputType.compiler"/>
+							</tool>
+							<tool id="com.qnx.qcc.tool.assembler.599691721" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler">
+								<option id="com.qnx.qcc.option.assembler.includePath.23458603" name="Include Directories (-I)" superClass="com.qnx.qcc.option.assembler.includePath" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${QNX_TARGET}/usr/include/freetype2&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${QNX_TARGET}/../target-override/usr/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/../../../libretro-common/include/&quot;"/>
+								</option>
+								<option id="com.qnx.qcc.option.assembler.qccoptions.1576391120" name="QCC Options" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
+									<listOptionValue builtIn="false" value="-marm"/>
+									<listOptionValue builtIn="false" value="-mfpu=neon"/>
+								</option>
+								<option id="com.qnx.qcc.option.assembler.defines.334766340" name="Defines (-D)" superClass="com.qnx.qcc.option.assembler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_RPNG"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGL"/>
 									<listOptionValue builtIn="false" value="HAVE_BB10"/>
@@ -192,25 +219,6 @@
 									<listOptionValue builtIn="false" value="HAVE_GLSL"/>
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
 								</option>
-								<option id="com.qnx.qcc.option.compiler.pie.927304226" name="Position Independent Executable (-fPIE)" superClass="com.qnx.qcc.option.compiler.pie" value="true" valueType="boolean"/>
-								<option id="com.qnx.qcc.option.compiler.qccoptions.1557923547" name="QCC Options" superClass="com.qnx.qcc.option.compiler.qccoptions" valueType="stringList">
-									<listOptionValue builtIn="false" value="-frecord-gcc-switches"/>
-									<listOptionValue builtIn="false" value="-marm"/>
-									<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
-									<listOptionValue builtIn="false" value="-mfpu=neon"/>
-								</option>
-								<option id="com.qnx.qcc.option.compiler.ccoptions.56955297" name="Compiler Options (-Wc,)" superClass="com.qnx.qcc.option.compiler.ccoptions" valueType="stringList">
-									<listOptionValue builtIn="false" value="-std=gnu99"/>
-								</option>
-								<inputType id="com.qnx.qcc.inputType.compiler.1229442623" superClass="com.qnx.qcc.inputType.compiler"/>
-							</tool>
-							<tool id="com.qnx.qcc.tool.assembler.599691721" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler">
-								<option id="com.qnx.qcc.option.assembler.includePath.23458603" name="Include Directories (-I)" superClass="com.qnx.qcc.option.assembler.includePath"/>
-								<option id="com.qnx.qcc.option.assembler.qccoptions.1576391120" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
-									<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
-									<listOptionValue builtIn="false" value="-marm"/>
-									<listOptionValue builtIn="false" value="-mfpu=neon"/>
-								</option>
 								<inputType id="com.qnx.qcc.inputType.assembler.1962946740" superClass="com.qnx.qcc.inputType.assembler"/>
 							</tool>
 							<tool id="com.qnx.qcc.tool.linker.387550249" name="QCC Linker" superClass="com.qnx.qcc.tool.linker">
@@ -241,7 +249,7 @@
 							<tool id="com.qnx.qcc.tool.archiver.1590791010" name="QCC Archiver" superClass="com.qnx.qcc.tool.archiver"/>
 						</toolChain>
 					</folderInfo>
-					<fileInfo id="com.qnx.qcc.configuration.exe.release.648144057.1567247301" name="sinc_neon.S" rcbsApplicability="disable" resourcePath="src/sinc_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.599691721.61424297">
+					<fileInfo id="com.qnx.qcc.configuration.exe.release.648144057.1567247301" name="sinc_neon.S" rcbsApplicability="disable" resourcePath="src/sinc_resampler_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.599691721.61424297">
 						<tool id="com.qnx.qcc.tool.assembler.599691721.61424297" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler.599691721">
 							<option id="com.qnx.qcc.option.assembler.qccoptions.1232679431" name="QCC Options" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
 								<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
@@ -289,13 +297,35 @@
 								<option id="com.qnx.qcc.option.compiler.optlevel.2138094522" name="Optimization Level" superClass="com.qnx.qcc.option.compiler.optlevel" value="com.qnx.qcc.option.compiler.optlevel.0" valueType="enumerated"/>
 								<option id="com.qnx.qcc.option.compile.debug.174302674" name="Debug (-g)" superClass="com.qnx.qcc.option.compile.debug" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.profile2.989655670" name="Build for Profiling (Function Instrumentation) (-finstrument-functions)" superClass="com.qnx.qcc.option.compiler.profile2" value="true" valueType="boolean"/>
-								<option id="com.qnx.qcc.option.compiler.includePath.1712657826" name="Include Directories (-I)" superClass="com.qnx.qcc.option.compiler.includePath" valueType="includePath">
-									<listOptionValue builtIn="false" value="${QNX_TARGET}/usr/include/freetype2"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}}/../../../libretro-common/include&quot;"/>
-									<listOptionValue builtIn="false" value="${QNX_TARGET}/../target-override/usr/include"/>
-								</option>
+								<option id="com.qnx.qcc.option.compiler.includePath.1712657826" name="Include Directories (-I)" superClass="com.qnx.qcc.option.compiler.includePath"/>
 								<option id="com.qnx.qcc.option.compiler.security.700151333" name="Enhanced Security (-fstack-protector-strong)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.1248635115" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
+								</option>
+								<option id="com.qnx.qcc.option.compiler.qccoptions.1772388389" name="QCC Options" superClass="com.qnx.qcc.option.compiler.qccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-frecord-gcc-switches"/>
+									<listOptionValue builtIn="false" value="-marm"/>
+									<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
+									<listOptionValue builtIn="false" value="-mfpu=neon"/>
+								</option>
+								<option id="com.qnx.qcc.option.compiler.ccoptions.1492385380" name="Compiler Options (-Wc,)" superClass="com.qnx.qcc.option.compiler.ccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-std=gnu99"/>
+								</option>
+								<inputType id="com.qnx.qcc.inputType.compiler.1771657852" superClass="com.qnx.qcc.inputType.compiler"/>
+							</tool>
+							<tool id="com.qnx.qcc.tool.assembler.1306097437" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler">
+								<option id="com.qnx.qcc.option.assembler.debug.1137048691" name="Debug (-g)" superClass="com.qnx.qcc.option.assembler.debug" value="true" valueType="boolean"/>
+								<option id="com.qnx.qcc.option.assembler.includePath.1044527515" name="Include Directories (-I)" superClass="com.qnx.qcc.option.assembler.includePath" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${QNX_TARGET}/usr/include/freetype2&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${QNX_TARGET}/../target-override/usr/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/../../../libretro-common/include/&quot;"/>
+								</option>
+								<option id="com.qnx.qcc.option.assembler.qccoptions.762564972" name="QCC Options" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
+									<listOptionValue builtIn="false" value="-marm"/>
+									<listOptionValue builtIn="false" value="-mfpu=neon"/>
+								</option>
+								<option id="com.qnx.qcc.option.assembler.defines.1449414362" name="Defines (-D)" superClass="com.qnx.qcc.option.assembler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_RPNG"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGL"/>
 									<listOptionValue builtIn="false" value="HAVE_BB10"/>
@@ -326,25 +356,6 @@
 									<listOptionValue builtIn="false" value="HAVE_OVERLAY"/>
 									<listOptionValue builtIn="false" value="HAVE_GLSL"/>
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
-								</option>
-								<option id="com.qnx.qcc.option.compiler.qccoptions.1772388389" name="QCC Options" superClass="com.qnx.qcc.option.compiler.qccoptions" valueType="stringList">
-									<listOptionValue builtIn="false" value="-frecord-gcc-switches"/>
-									<listOptionValue builtIn="false" value="-marm"/>
-									<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
-									<listOptionValue builtIn="false" value="-mfpu=neon"/>
-								</option>
-								<option id="com.qnx.qcc.option.compiler.ccoptions.1492385380" name="Compiler Options (-Wc,)" superClass="com.qnx.qcc.option.compiler.ccoptions" valueType="stringList">
-									<listOptionValue builtIn="false" value="-std=gnu99"/>
-								</option>
-								<inputType id="com.qnx.qcc.inputType.compiler.1771657852" superClass="com.qnx.qcc.inputType.compiler"/>
-							</tool>
-							<tool id="com.qnx.qcc.tool.assembler.1306097437" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler">
-								<option id="com.qnx.qcc.option.assembler.debug.1137048691" name="Debug (-g)" superClass="com.qnx.qcc.option.assembler.debug" value="true" valueType="boolean"/>
-								<option id="com.qnx.qcc.option.assembler.includePath.1044527515" name="Include Directories (-I)" superClass="com.qnx.qcc.option.assembler.includePath"/>
-								<option id="com.qnx.qcc.option.assembler.qccoptions.762564972" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
-									<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
-									<listOptionValue builtIn="false" value="-marm"/>
-									<listOptionValue builtIn="false" value="-mfpu=neon"/>
 								</option>
 								<inputType id="com.qnx.qcc.inputType.assembler.798923162" superClass="com.qnx.qcc.inputType.assembler"/>
 							</tool>
@@ -377,7 +388,7 @@
 							<tool id="com.qnx.qcc.tool.archiver.509463185" name="QCC Archiver" superClass="com.qnx.qcc.tool.archiver"/>
 						</toolChain>
 					</folderInfo>
-					<fileInfo id="com.qnx.qcc.configuration.exe.profile.617031134.1663499231" name="sinc_neon.S" rcbsApplicability="disable" resourcePath="src/sinc_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.1306097437.1064225480">
+					<fileInfo id="com.qnx.qcc.configuration.exe.profile.617031134.1663499231" name="sinc_neon.S" rcbsApplicability="disable" resourcePath="src/sinc_resampler_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.1306097437.1064225480">
 						<tool id="com.qnx.qcc.tool.assembler.1306097437.1064225480" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler.1306097437">
 							<option id="com.qnx.qcc.option.assembler.qccoptions.655240149" name="QCC Options" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
 								<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
@@ -426,9 +437,9 @@
 								<option id="com.qnx.qcc.option.compile.debug.1579739343" name="Debug (-g)" superClass="com.qnx.qcc.option.compile.debug" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.coverage.779423611" name="Build for Code Coverage (-Wc,-ftest-coverage -Wc,-fprofile-arcs)" superClass="com.qnx.qcc.option.compiler.coverage" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.includePath.367068219" name="Include Directories (-I)" superClass="com.qnx.qcc.option.compiler.includePath" valueType="includePath">
-									<listOptionValue builtIn="false" value="${QNX_TARGET}/usr/include/freetype2"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}}/../../../libretro-common/include&quot;"/>
-									<listOptionValue builtIn="false" value="${QNX_TARGET}/../target-override/usr/include"/>
+									<listOptionValue builtIn="false" value="&quot;${QNX_TARGET}/usr/include/freetype2&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${QNX_TARGET}/../target-override/usr/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/../../../libretro-common/include/&quot;"/>
 								</option>
 								<option id="com.qnx.qcc.option.compiler.security.2107949508" name="Enhanced Security (-fstack-protector-strong)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.1697783072" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
@@ -477,11 +488,12 @@
 							<tool id="com.qnx.qcc.tool.assembler.483492359" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler">
 								<option id="com.qnx.qcc.option.assembler.debug.589118876" name="Debug (-g)" superClass="com.qnx.qcc.option.assembler.debug" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.assembler.includePath.1898320536" name="Include Directories (-I)" superClass="com.qnx.qcc.option.assembler.includePath"/>
-								<option id="com.qnx.qcc.option.assembler.qccoptions.567273228" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
+								<option id="com.qnx.qcc.option.assembler.qccoptions.567273228" name="QCC Options" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
 									<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
 									<listOptionValue builtIn="false" value="-marm"/>
 									<listOptionValue builtIn="false" value="-mfpu=neon"/>
 								</option>
+								<option id="com.qnx.qcc.option.assembler.defines.1687103152" name="Defines (-D)" superClass="com.qnx.qcc.option.assembler.defines"/>
 								<inputType id="com.qnx.qcc.inputType.assembler.1675252516" superClass="com.qnx.qcc.inputType.assembler"/>
 							</tool>
 							<tool id="com.qnx.qcc.tool.linker.1634675728" name="QCC Linker" superClass="com.qnx.qcc.tool.linker">
@@ -513,7 +525,7 @@
 							<tool id="com.qnx.qcc.tool.archiver.147959592" name="QCC Archiver" superClass="com.qnx.qcc.tool.archiver"/>
 						</toolChain>
 					</folderInfo>
-					<fileInfo id="com.qnx.qcc.configuration.exe.profile.coverage.2128233679.502727032" name="sinc_neon.S" rcbsApplicability="disable" resourcePath="src/sinc_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.483492359.863211175">
+					<fileInfo id="com.qnx.qcc.configuration.exe.profile.coverage.2128233679.502727032" name="sinc_neon.S" rcbsApplicability="disable" resourcePath="src/sinc_resampler_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.483492359.863211175">
 						<tool id="com.qnx.qcc.tool.assembler.483492359.863211175" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler.483492359">
 							<option id="com.qnx.qcc.option.assembler.qccoptions.1877438134" name="QCC Options" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
 								<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
@@ -560,12 +572,73 @@
 								<option id="com.qnx.qcc.option.compiler.optlevel.591258865" name="Optimization Level" superClass="com.qnx.qcc.option.compiler.optlevel" value="com.qnx.qcc.option.compiler.optlevel.0" valueType="enumerated"/>
 								<option id="com.qnx.qcc.option.compile.debug.902054966" name="Debug (-g)" superClass="com.qnx.qcc.option.compile.debug" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.includePath.807696075" name="Include Directories (-I)" superClass="com.qnx.qcc.option.compiler.includePath" valueType="includePath">
-									<listOptionValue builtIn="false" value="${QNX_TARGET}/usr/include/freetype2"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}}/../../../libretro-common/include&quot;"/>
-									<listOptionValue builtIn="false" value="${QNX_TARGET}/../target-override/usr/include"/>
+									<listOptionValue builtIn="false" value="C:/bbndk/host_10_3_1_12/win32/x86/usr/lib/gcc/arm-unknown-nto-qnx8.0.0eabi/4.6.3/include"/>
 								</option>
 								<option id="com.qnx.qcc.option.compiler.security.1257406027" name="Enhanced Security (-fstack-protector-strong)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.1727063462" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="__THUMB_INTERWORK__=1"/>
+									<listOptionValue builtIn="false" value="__FLT_EPSILON__=1.1920928955078125e-7F"/>
+									<listOptionValue builtIn="false" value="__DBL_MIN__=((double)2.2250738585072014e-308L)"/>
+									<listOptionValue builtIn="false" value="__DBL_DENORM_MIN__=((double)4.9406564584124654e-324L)"/>
+									<listOptionValue builtIn="false" value="__GXX_TYPEINFO_EQUALITY_INLINE=0"/>
+									<listOptionValue builtIn="false" value="__LDBL_MANT_DIG__=53"/>
+									<listOptionValue builtIn="false" value="__LDBL_DIG__=15"/>
+									<listOptionValue builtIn="false" value="__LDBL_DENORM_MIN__=4.9406564584124654e-324L"/>
+									<listOptionValue builtIn="false" value="__APCS_32__=1"/>
+									<listOptionValue builtIn="false" value="__LDBL_MIN_10_EXP__=(-307)"/>
+									<listOptionValue builtIn="false" value="__ARM_EABI__=1"/>
+									<listOptionValue builtIn="false" value="__LDBL_MAX_EXP__=1024"/>
+									<listOptionValue builtIn="false" value="__ARM_ARCH_7A__=1"/>
+									<listOptionValue builtIn="false" value="__LDBL_MIN_EXP__=(-1021)"/>
+									<listOptionValue builtIn="false" value="__arm__=1"/>
+									<listOptionValue builtIn="false" value="__DBL_MAX__=((double)1.7976931348623157e+308L)"/>
+									<listOptionValue builtIn="false" value="__FLT_EVAL_METHOD__=0"/>
+									<listOptionValue builtIn="false" value="__ARMEL__=1"/>
+									<listOptionValue builtIn="false" value="__LDBL_EPSILON__=2.2204460492503131e-16L"/>
+									<listOptionValue builtIn="false" value="__VFP_FP__=1"/>
+									<listOptionValue builtIn="false" value="__FLT_DENORM_MIN__=1.4012984643248171e-45F"/>
+									<listOptionValue builtIn="false" value="__ARM_FEATURE_DSP=1"/>
+									<listOptionValue builtIn="false" value="__thumb__=1"/>
+									<listOptionValue builtIn="false" value="__SIZEOF_LONG_DOUBLE__=8"/>
+									<listOptionValue builtIn="false" value="__FLT_MIN__=1.1754943508222875e-38F"/>
+									<listOptionValue builtIn="false" value="__DBL_EPSILON__=((double)2.2204460492503131e-16L)"/>
+									<listOptionValue builtIn="false" value="__THUMBEL__=1"/>
+									<listOptionValue builtIn="false" value="__BIGGEST_ALIGNMENT__=8"/>
+									<listOptionValue builtIn="false" value="__LDBL_MIN__=2.2250738585072014e-308L"/>
+									<listOptionValue builtIn="false" value="__ARM_PCS=1"/>
+									<listOptionValue builtIn="false" value="__FLT_MAX__=3.4028234663852886e+38F"/>
+									<listOptionValue builtIn="false" value="__thumb2__=1"/>
+									<listOptionValue builtIn="false" value="__ARM__=1"/>
+									<listOptionValue builtIn="false" value="__DECIMAL_DIG__=17"/>
+									<listOptionValue builtIn="false" value="__LDBL_MAX_10_EXP__=308"/>
+									<listOptionValue builtIn="false" value="__LDBL_MAX__=1.7976931348623157e+308L"/>
+									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
+								</option>
+								<option id="com.qnx.qcc.option.compiler.qccoptions.1044410373" name="QCC Options" superClass="com.qnx.qcc.option.compiler.qccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-frecord-gcc-switches"/>
+									<listOptionValue builtIn="false" value="-marm"/>
+									<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
+									<listOptionValue builtIn="false" value="-mfpu=neon"/>
+								</option>
+								<option id="com.qnx.qcc.option.compiler.ccoptions.149878220" name="Compiler Options (-Wc,)" superClass="com.qnx.qcc.option.compiler.ccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-std=gnu99"/>
+								</option>
+								<inputType id="com.qnx.qcc.inputType.compiler.362756193" superClass="com.qnx.qcc.inputType.compiler"/>
+							</tool>
+							<tool id="com.qnx.qcc.tool.assembler.2099172774" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler">
+								<option id="com.qnx.qcc.option.assembler.debug.2120837207" name="Debug (-g)" superClass="com.qnx.qcc.option.assembler.debug" value="true" valueType="boolean"/>
+								<option id="com.qnx.qcc.option.assembler.includePath.2147079756" name="Include Directories (-I)" superClass="com.qnx.qcc.option.assembler.includePath" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${QNX_TARGET}/usr/include/freetype2&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${QNX_TARGET}/../target-override/usr/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/../../../libretro-common/include/&quot;"/>
+									<listOptionValue builtIn="false" value="C:/bbndk/host_10_3_1_12/win32/x86/usr/lib/gcc/arm-unknown-nto-qnx8.0.0eabi/4.6.3/include"/>
+								</option>
+								<option id="com.qnx.qcc.option.assembler.qccoptions.1203245351" name="QCC Options" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
+									<listOptionValue builtIn="false" value="-marm"/>
+									<listOptionValue builtIn="false" value="-mfpu=neon"/>
+								</option>
+								<option id="com.qnx.qcc.option.assembler.defines.1270605337" name="Defines (-D)" superClass="com.qnx.qcc.option.assembler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_RPNG"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGL"/>
 									<listOptionValue builtIn="false" value="HAVE_BB10"/>
@@ -596,25 +669,42 @@
 									<listOptionValue builtIn="false" value="HAVE_OVERLAY"/>
 									<listOptionValue builtIn="false" value="HAVE_GLSL"/>
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
-								</option>
-								<option id="com.qnx.qcc.option.compiler.qccoptions.1044410373" name="QCC Options" superClass="com.qnx.qcc.option.compiler.qccoptions" valueType="stringList">
-									<listOptionValue builtIn="false" value="-frecord-gcc-switches"/>
-									<listOptionValue builtIn="false" value="-marm"/>
-									<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
-									<listOptionValue builtIn="false" value="-mfpu=neon"/>
-								</option>
-								<option id="com.qnx.qcc.option.compiler.ccoptions.149878220" name="Compiler Options (-Wc,)" superClass="com.qnx.qcc.option.compiler.ccoptions" valueType="stringList">
-									<listOptionValue builtIn="false" value="-std=gnu99"/>
-								</option>
-								<inputType id="com.qnx.qcc.inputType.compiler.362756193" superClass="com.qnx.qcc.inputType.compiler"/>
-							</tool>
-							<tool id="com.qnx.qcc.tool.assembler.2099172774" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler">
-								<option id="com.qnx.qcc.option.assembler.debug.2120837207" name="Debug (-g)" superClass="com.qnx.qcc.option.assembler.debug" value="true" valueType="boolean"/>
-								<option id="com.qnx.qcc.option.assembler.includePath.2147079756" name="Include Directories (-I)" superClass="com.qnx.qcc.option.assembler.includePath"/>
-								<option id="com.qnx.qcc.option.assembler.qccoptions.1203245351" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
-									<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
-									<listOptionValue builtIn="false" value="-marm"/>
-									<listOptionValue builtIn="false" value="-mfpu=neon"/>
+									<listOptionValue builtIn="false" value="__THUMB_INTERWORK__=1"/>
+									<listOptionValue builtIn="false" value="__FLT_EPSILON__=1.1920928955078125e-7F"/>
+									<listOptionValue builtIn="false" value="__DBL_MIN__=((double)2.2250738585072014e-308L)"/>
+									<listOptionValue builtIn="false" value="__DBL_DENORM_MIN__=((double)4.9406564584124654e-324L)"/>
+									<listOptionValue builtIn="false" value="__GXX_TYPEINFO_EQUALITY_INLINE=0"/>
+									<listOptionValue builtIn="false" value="__LDBL_MANT_DIG__=53"/>
+									<listOptionValue builtIn="false" value="__LDBL_DIG__=15"/>
+									<listOptionValue builtIn="false" value="__LDBL_DENORM_MIN__=4.9406564584124654e-324L"/>
+									<listOptionValue builtIn="false" value="__APCS_32__=1"/>
+									<listOptionValue builtIn="false" value="__LDBL_MIN_10_EXP__=(-307)"/>
+									<listOptionValue builtIn="false" value="__ARM_EABI__=1"/>
+									<listOptionValue builtIn="false" value="__LDBL_MAX_EXP__=1024"/>
+									<listOptionValue builtIn="false" value="__ARM_ARCH_7A__=1"/>
+									<listOptionValue builtIn="false" value="__LDBL_MIN_EXP__=(-1021)"/>
+									<listOptionValue builtIn="false" value="__arm__=1"/>
+									<listOptionValue builtIn="false" value="__DBL_MAX__=((double)1.7976931348623157e+308L)"/>
+									<listOptionValue builtIn="false" value="__FLT_EVAL_METHOD__=0"/>
+									<listOptionValue builtIn="false" value="__ARMEL__=1"/>
+									<listOptionValue builtIn="false" value="__LDBL_EPSILON__=2.2204460492503131e-16L"/>
+									<listOptionValue builtIn="false" value="__VFP_FP__=1"/>
+									<listOptionValue builtIn="false" value="__FLT_DENORM_MIN__=1.4012984643248171e-45F"/>
+									<listOptionValue builtIn="false" value="__ARM_FEATURE_DSP=1"/>
+									<listOptionValue builtIn="false" value="__thumb__=1"/>
+									<listOptionValue builtIn="false" value="__SIZEOF_LONG_DOUBLE__=8"/>
+									<listOptionValue builtIn="false" value="__FLT_MIN__=1.1754943508222875e-38F"/>
+									<listOptionValue builtIn="false" value="__DBL_EPSILON__=((double)2.2204460492503131e-16L)"/>
+									<listOptionValue builtIn="false" value="__THUMBEL__=1"/>
+									<listOptionValue builtIn="false" value="__BIGGEST_ALIGNMENT__=8"/>
+									<listOptionValue builtIn="false" value="__LDBL_MIN__=2.2250738585072014e-308L"/>
+									<listOptionValue builtIn="false" value="__ARM_PCS=1"/>
+									<listOptionValue builtIn="false" value="__FLT_MAX__=3.4028234663852886e+38F"/>
+									<listOptionValue builtIn="false" value="__thumb2__=1"/>
+									<listOptionValue builtIn="false" value="__ARM__=1"/>
+									<listOptionValue builtIn="false" value="__DECIMAL_DIG__=17"/>
+									<listOptionValue builtIn="false" value="__LDBL_MAX_10_EXP__=308"/>
+									<listOptionValue builtIn="false" value="__LDBL_MAX__=1.7976931348623157e+308L"/>
 								</option>
 								<inputType id="com.qnx.qcc.inputType.assembler.1240528500" superClass="com.qnx.qcc.inputType.assembler"/>
 							</tool>
@@ -646,7 +736,7 @@
 							<tool id="com.qnx.qcc.tool.archiver.987519416" name="QCC Archiver" superClass="com.qnx.qcc.tool.archiver"/>
 						</toolChain>
 					</folderInfo>
-					<fileInfo id="com.qnx.qcc.configuration.exe.debug.647263012.1858756515" name="sinc_neon.S" rcbsApplicability="disable" resourcePath="src/sinc_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.2099172774.486453221">
+					<fileInfo id="com.qnx.qcc.configuration.exe.debug.647263012.1858756515" name="sinc_neon.S" rcbsApplicability="disable" resourcePath="src/sinc_resampler_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.2099172774.486453221">
 						<tool id="com.qnx.qcc.tool.assembler.2099172774.486453221" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler.2099172774">
 							<option id="com.qnx.qcc.option.assembler.qccoptions.1756931693" name="QCC Options" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
 								<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
@@ -694,12 +784,73 @@
 								<option id="com.qnx.qcc.option.compile.debug.58377108" name="Debug (-g)" superClass="com.qnx.qcc.option.compile.debug" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.profile2.1771192630" name="Build for Profiling (Function Instrumentation) (-finstrument-functions)" superClass="com.qnx.qcc.option.compiler.profile2" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.includePath.194963129" name="Include Directories (-I)" superClass="com.qnx.qcc.option.compiler.includePath" valueType="includePath">
-									<listOptionValue builtIn="false" value="${QNX_TARGET}/usr/include/freetype2"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}}/../../../libretro-common/include&quot;"/>
-									<listOptionValue builtIn="false" value="${QNX_TARGET}/../target-override/usr/include"/>
+									<listOptionValue builtIn="false" value="C:/bbndk/host_10_3_1_12/win32/x86/usr/lib/gcc/arm-unknown-nto-qnx8.0.0eabi/4.6.3/include"/>
 								</option>
 								<option id="com.qnx.qcc.option.compiler.security.183506287" name="Enhanced Security (-fstack-protector-strong)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.969286898" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="__THUMB_INTERWORK__=1"/>
+									<listOptionValue builtIn="false" value="__FLT_EPSILON__=1.1920928955078125e-7F"/>
+									<listOptionValue builtIn="false" value="__DBL_MIN__=((double)2.2250738585072014e-308L)"/>
+									<listOptionValue builtIn="false" value="__DBL_DENORM_MIN__=((double)4.9406564584124654e-324L)"/>
+									<listOptionValue builtIn="false" value="__GXX_TYPEINFO_EQUALITY_INLINE=0"/>
+									<listOptionValue builtIn="false" value="__LDBL_MANT_DIG__=53"/>
+									<listOptionValue builtIn="false" value="__LDBL_DIG__=15"/>
+									<listOptionValue builtIn="false" value="__LDBL_DENORM_MIN__=4.9406564584124654e-324L"/>
+									<listOptionValue builtIn="false" value="__APCS_32__=1"/>
+									<listOptionValue builtIn="false" value="__LDBL_MIN_10_EXP__=(-307)"/>
+									<listOptionValue builtIn="false" value="__ARM_EABI__=1"/>
+									<listOptionValue builtIn="false" value="__LDBL_MAX_EXP__=1024"/>
+									<listOptionValue builtIn="false" value="__ARM_ARCH_7A__=1"/>
+									<listOptionValue builtIn="false" value="__LDBL_MIN_EXP__=(-1021)"/>
+									<listOptionValue builtIn="false" value="__arm__=1"/>
+									<listOptionValue builtIn="false" value="__DBL_MAX__=((double)1.7976931348623157e+308L)"/>
+									<listOptionValue builtIn="false" value="__FLT_EVAL_METHOD__=0"/>
+									<listOptionValue builtIn="false" value="__ARMEL__=1"/>
+									<listOptionValue builtIn="false" value="__LDBL_EPSILON__=2.2204460492503131e-16L"/>
+									<listOptionValue builtIn="false" value="__VFP_FP__=1"/>
+									<listOptionValue builtIn="false" value="__FLT_DENORM_MIN__=1.4012984643248171e-45F"/>
+									<listOptionValue builtIn="false" value="__ARM_FEATURE_DSP=1"/>
+									<listOptionValue builtIn="false" value="__thumb__=1"/>
+									<listOptionValue builtIn="false" value="__SIZEOF_LONG_DOUBLE__=8"/>
+									<listOptionValue builtIn="false" value="__FLT_MIN__=1.1754943508222875e-38F"/>
+									<listOptionValue builtIn="false" value="__DBL_EPSILON__=((double)2.2204460492503131e-16L)"/>
+									<listOptionValue builtIn="false" value="__THUMBEL__=1"/>
+									<listOptionValue builtIn="false" value="__BIGGEST_ALIGNMENT__=8"/>
+									<listOptionValue builtIn="false" value="__LDBL_MIN__=2.2250738585072014e-308L"/>
+									<listOptionValue builtIn="false" value="__ARM_PCS=1"/>
+									<listOptionValue builtIn="false" value="__FLT_MAX__=3.4028234663852886e+38F"/>
+									<listOptionValue builtIn="false" value="__thumb2__=1"/>
+									<listOptionValue builtIn="false" value="__ARM__=1"/>
+									<listOptionValue builtIn="false" value="__DECIMAL_DIG__=17"/>
+									<listOptionValue builtIn="false" value="__LDBL_MAX_10_EXP__=308"/>
+									<listOptionValue builtIn="false" value="__LDBL_MAX__=1.7976931348623157e+308L"/>
+									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
+								</option>
+								<option id="com.qnx.qcc.option.compiler.qccoptions.1593979854" name="QCC Options" superClass="com.qnx.qcc.option.compiler.qccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-frecord-gcc-switches"/>
+									<listOptionValue builtIn="false" value="-marm"/>
+									<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
+									<listOptionValue builtIn="false" value="-mfpu=neon"/>
+								</option>
+								<option id="com.qnx.qcc.option.compiler.ccoptions.1632717884" name="Compiler Options (-Wc,)" superClass="com.qnx.qcc.option.compiler.ccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-std=gnu99"/>
+								</option>
+								<inputType id="com.qnx.qcc.inputType.compiler.685005258" superClass="com.qnx.qcc.inputType.compiler"/>
+							</tool>
+							<tool id="com.qnx.qcc.tool.assembler.752341444" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler">
+								<option id="com.qnx.qcc.option.assembler.debug.1893841439" name="Debug (-g)" superClass="com.qnx.qcc.option.assembler.debug" value="true" valueType="boolean"/>
+								<option id="com.qnx.qcc.option.assembler.includePath.1526962100" name="Include Directories (-I)" superClass="com.qnx.qcc.option.assembler.includePath" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${QNX_TARGET}/usr/include/freetype2&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${QNX_TARGET}/../target-override/usr/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/../../../libretro-common/include/&quot;"/>
+									<listOptionValue builtIn="false" value="C:/bbndk/host_10_3_1_12/win32/x86/usr/lib/gcc/arm-unknown-nto-qnx8.0.0eabi/4.6.3/include"/>
+								</option>
+								<option id="com.qnx.qcc.option.assembler.qccoptions.1401154300" name="QCC Options" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
+									<listOptionValue builtIn="false" value="-marm"/>
+									<listOptionValue builtIn="false" value="-mfpu=neon"/>
+								</option>
+								<option id="com.qnx.qcc.option.assembler.defines.1681878587" name="Defines (-D)" superClass="com.qnx.qcc.option.assembler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_RPNG"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGL"/>
 									<listOptionValue builtIn="false" value="HAVE_BB10"/>
@@ -730,25 +881,42 @@
 									<listOptionValue builtIn="false" value="HAVE_OVERLAY"/>
 									<listOptionValue builtIn="false" value="HAVE_GLSL"/>
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
-								</option>
-								<option id="com.qnx.qcc.option.compiler.qccoptions.1593979854" name="QCC Options" superClass="com.qnx.qcc.option.compiler.qccoptions" valueType="stringList">
-									<listOptionValue builtIn="false" value="-frecord-gcc-switches"/>
-									<listOptionValue builtIn="false" value="-marm"/>
-									<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
-									<listOptionValue builtIn="false" value="-mfpu=neon"/>
-								</option>
-								<option id="com.qnx.qcc.option.compiler.ccoptions.1632717884" name="Compiler Options (-Wc,)" superClass="com.qnx.qcc.option.compiler.ccoptions" valueType="stringList">
-									<listOptionValue builtIn="false" value="-std=gnu99"/>
-								</option>
-								<inputType id="com.qnx.qcc.inputType.compiler.685005258" superClass="com.qnx.qcc.inputType.compiler"/>
-							</tool>
-							<tool id="com.qnx.qcc.tool.assembler.752341444" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler">
-								<option id="com.qnx.qcc.option.assembler.debug.1893841439" name="Debug (-g)" superClass="com.qnx.qcc.option.assembler.debug" value="true" valueType="boolean"/>
-								<option id="com.qnx.qcc.option.assembler.includePath.1526962100" name="Include Directories (-I)" superClass="com.qnx.qcc.option.assembler.includePath"/>
-								<option id="com.qnx.qcc.option.assembler.qccoptions.1401154300" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
-									<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
-									<listOptionValue builtIn="false" value="-marm"/>
-									<listOptionValue builtIn="false" value="-mfpu=neon"/>
+									<listOptionValue builtIn="false" value="__THUMB_INTERWORK__=1"/>
+									<listOptionValue builtIn="false" value="__FLT_EPSILON__=1.1920928955078125e-7F"/>
+									<listOptionValue builtIn="false" value="__DBL_MIN__=((double)2.2250738585072014e-308L)"/>
+									<listOptionValue builtIn="false" value="__DBL_DENORM_MIN__=((double)4.9406564584124654e-324L)"/>
+									<listOptionValue builtIn="false" value="__GXX_TYPEINFO_EQUALITY_INLINE=0"/>
+									<listOptionValue builtIn="false" value="__LDBL_MANT_DIG__=53"/>
+									<listOptionValue builtIn="false" value="__LDBL_DIG__=15"/>
+									<listOptionValue builtIn="false" value="__LDBL_DENORM_MIN__=4.9406564584124654e-324L"/>
+									<listOptionValue builtIn="false" value="__APCS_32__=1"/>
+									<listOptionValue builtIn="false" value="__LDBL_MIN_10_EXP__=(-307)"/>
+									<listOptionValue builtIn="false" value="__ARM_EABI__=1"/>
+									<listOptionValue builtIn="false" value="__LDBL_MAX_EXP__=1024"/>
+									<listOptionValue builtIn="false" value="__ARM_ARCH_7A__=1"/>
+									<listOptionValue builtIn="false" value="__LDBL_MIN_EXP__=(-1021)"/>
+									<listOptionValue builtIn="false" value="__arm__=1"/>
+									<listOptionValue builtIn="false" value="__DBL_MAX__=((double)1.7976931348623157e+308L)"/>
+									<listOptionValue builtIn="false" value="__FLT_EVAL_METHOD__=0"/>
+									<listOptionValue builtIn="false" value="__ARMEL__=1"/>
+									<listOptionValue builtIn="false" value="__LDBL_EPSILON__=2.2204460492503131e-16L"/>
+									<listOptionValue builtIn="false" value="__VFP_FP__=1"/>
+									<listOptionValue builtIn="false" value="__FLT_DENORM_MIN__=1.4012984643248171e-45F"/>
+									<listOptionValue builtIn="false" value="__ARM_FEATURE_DSP=1"/>
+									<listOptionValue builtIn="false" value="__thumb__=1"/>
+									<listOptionValue builtIn="false" value="__SIZEOF_LONG_DOUBLE__=8"/>
+									<listOptionValue builtIn="false" value="__FLT_MIN__=1.1754943508222875e-38F"/>
+									<listOptionValue builtIn="false" value="__DBL_EPSILON__=((double)2.2204460492503131e-16L)"/>
+									<listOptionValue builtIn="false" value="__THUMBEL__=1"/>
+									<listOptionValue builtIn="false" value="__BIGGEST_ALIGNMENT__=8"/>
+									<listOptionValue builtIn="false" value="__LDBL_MIN__=2.2250738585072014e-308L"/>
+									<listOptionValue builtIn="false" value="__ARM_PCS=1"/>
+									<listOptionValue builtIn="false" value="__FLT_MAX__=3.4028234663852886e+38F"/>
+									<listOptionValue builtIn="false" value="__thumb2__=1"/>
+									<listOptionValue builtIn="false" value="__ARM__=1"/>
+									<listOptionValue builtIn="false" value="__DECIMAL_DIG__=17"/>
+									<listOptionValue builtIn="false" value="__LDBL_MAX_10_EXP__=308"/>
+									<listOptionValue builtIn="false" value="__LDBL_MAX__=1.7976931348623157e+308L"/>
 								</option>
 								<inputType id="com.qnx.qcc.inputType.assembler.540233515" superClass="com.qnx.qcc.inputType.assembler"/>
 							</tool>
@@ -781,7 +949,7 @@
 							<tool id="com.qnx.qcc.tool.archiver.189229959" name="QCC Archiver" superClass="com.qnx.qcc.tool.archiver"/>
 						</toolChain>
 					</folderInfo>
-					<fileInfo id="com.qnx.qcc.configuration.exe.profile.398924846.1522534830" name="sinc_neon.S" rcbsApplicability="disable" resourcePath="src/sinc_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.752341444.244474138">
+					<fileInfo id="com.qnx.qcc.configuration.exe.profile.398924846.1522534830" name="sinc_neon.S" rcbsApplicability="disable" resourcePath="src/sinc_resampler_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.752341444.244474138">
 						<tool id="com.qnx.qcc.tool.assembler.752341444.244474138" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler.752341444">
 							<option id="com.qnx.qcc.option.assembler.qccoptions.651615185" name="QCC Options" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
 								<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
@@ -829,12 +997,73 @@
 								<option id="com.qnx.qcc.option.compile.debug.263682548" name="Debug (-g)" superClass="com.qnx.qcc.option.compile.debug" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.coverage.1236157951" name="Build for Code Coverage (-Wc,-ftest-coverage -Wc,-fprofile-arcs)" superClass="com.qnx.qcc.option.compiler.coverage" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.includePath.1535443271" name="Include Directories (-I)" superClass="com.qnx.qcc.option.compiler.includePath" valueType="includePath">
-									<listOptionValue builtIn="false" value="${QNX_TARGET}/usr/include/freetype2"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}}/../../../libretro-common/include&quot;"/>
-									<listOptionValue builtIn="false" value="${QNX_TARGET}/../target-override/usr/include"/>
+									<listOptionValue builtIn="false" value="C:/bbndk/host_10_3_1_12/win32/x86/usr/lib/gcc/arm-unknown-nto-qnx8.0.0eabi/4.6.3/include"/>
 								</option>
 								<option id="com.qnx.qcc.option.compiler.security.735354154" name="Enhanced Security (-fstack-protector-strong)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.1893860105" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="__THUMB_INTERWORK__=1"/>
+									<listOptionValue builtIn="false" value="__FLT_EPSILON__=1.1920928955078125e-7F"/>
+									<listOptionValue builtIn="false" value="__DBL_MIN__=((double)2.2250738585072014e-308L)"/>
+									<listOptionValue builtIn="false" value="__DBL_DENORM_MIN__=((double)4.9406564584124654e-324L)"/>
+									<listOptionValue builtIn="false" value="__GXX_TYPEINFO_EQUALITY_INLINE=0"/>
+									<listOptionValue builtIn="false" value="__LDBL_MANT_DIG__=53"/>
+									<listOptionValue builtIn="false" value="__LDBL_DIG__=15"/>
+									<listOptionValue builtIn="false" value="__LDBL_DENORM_MIN__=4.9406564584124654e-324L"/>
+									<listOptionValue builtIn="false" value="__APCS_32__=1"/>
+									<listOptionValue builtIn="false" value="__LDBL_MIN_10_EXP__=(-307)"/>
+									<listOptionValue builtIn="false" value="__ARM_EABI__=1"/>
+									<listOptionValue builtIn="false" value="__LDBL_MAX_EXP__=1024"/>
+									<listOptionValue builtIn="false" value="__ARM_ARCH_7A__=1"/>
+									<listOptionValue builtIn="false" value="__LDBL_MIN_EXP__=(-1021)"/>
+									<listOptionValue builtIn="false" value="__arm__=1"/>
+									<listOptionValue builtIn="false" value="__DBL_MAX__=((double)1.7976931348623157e+308L)"/>
+									<listOptionValue builtIn="false" value="__FLT_EVAL_METHOD__=0"/>
+									<listOptionValue builtIn="false" value="__ARMEL__=1"/>
+									<listOptionValue builtIn="false" value="__LDBL_EPSILON__=2.2204460492503131e-16L"/>
+									<listOptionValue builtIn="false" value="__VFP_FP__=1"/>
+									<listOptionValue builtIn="false" value="__FLT_DENORM_MIN__=1.4012984643248171e-45F"/>
+									<listOptionValue builtIn="false" value="__ARM_FEATURE_DSP=1"/>
+									<listOptionValue builtIn="false" value="__thumb__=1"/>
+									<listOptionValue builtIn="false" value="__SIZEOF_LONG_DOUBLE__=8"/>
+									<listOptionValue builtIn="false" value="__FLT_MIN__=1.1754943508222875e-38F"/>
+									<listOptionValue builtIn="false" value="__DBL_EPSILON__=((double)2.2204460492503131e-16L)"/>
+									<listOptionValue builtIn="false" value="__THUMBEL__=1"/>
+									<listOptionValue builtIn="false" value="__BIGGEST_ALIGNMENT__=8"/>
+									<listOptionValue builtIn="false" value="__LDBL_MIN__=2.2250738585072014e-308L"/>
+									<listOptionValue builtIn="false" value="__ARM_PCS=1"/>
+									<listOptionValue builtIn="false" value="__FLT_MAX__=3.4028234663852886e+38F"/>
+									<listOptionValue builtIn="false" value="__thumb2__=1"/>
+									<listOptionValue builtIn="false" value="__ARM__=1"/>
+									<listOptionValue builtIn="false" value="__DECIMAL_DIG__=17"/>
+									<listOptionValue builtIn="false" value="__LDBL_MAX_10_EXP__=308"/>
+									<listOptionValue builtIn="false" value="__LDBL_MAX__=1.7976931348623157e+308L"/>
+									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
+								</option>
+								<option id="com.qnx.qcc.option.compiler.qccoptions.1130769157" name="QCC Options" superClass="com.qnx.qcc.option.compiler.qccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-frecord-gcc-switches"/>
+									<listOptionValue builtIn="false" value="-marm"/>
+									<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
+									<listOptionValue builtIn="false" value="-mfpu=neon"/>
+								</option>
+								<option id="com.qnx.qcc.option.compiler.ccoptions.778819887" name="Compiler Options (-Wc,)" superClass="com.qnx.qcc.option.compiler.ccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-std=gnu99"/>
+								</option>
+								<inputType id="com.qnx.qcc.inputType.compiler.1111317695" superClass="com.qnx.qcc.inputType.compiler"/>
+							</tool>
+							<tool id="com.qnx.qcc.tool.assembler.435181371" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler">
+								<option id="com.qnx.qcc.option.assembler.debug.748271361" name="Debug (-g)" superClass="com.qnx.qcc.option.assembler.debug" value="true" valueType="boolean"/>
+								<option id="com.qnx.qcc.option.assembler.includePath.1509746206" name="Include Directories (-I)" superClass="com.qnx.qcc.option.assembler.includePath" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${QNX_TARGET}/usr/include/freetype2&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${QNX_TARGET}/../target-override/usr/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/../../../libretro-common/include/&quot;"/>
+									<listOptionValue builtIn="false" value="C:/bbndk/host_10_3_1_12/win32/x86/usr/lib/gcc/arm-unknown-nto-qnx8.0.0eabi/4.6.3/include"/>
+								</option>
+								<option id="com.qnx.qcc.option.assembler.qccoptions.1148138367" name="QCC Options" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
+									<listOptionValue builtIn="false" value="-marm"/>
+									<listOptionValue builtIn="false" value="-mfpu=neon"/>
+								</option>
+								<option id="com.qnx.qcc.option.assembler.defines.1665479254" name="Defines (-D)" superClass="com.qnx.qcc.option.assembler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_RPNG"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGL"/>
 									<listOptionValue builtIn="false" value="HAVE_BB10"/>
@@ -865,25 +1094,42 @@
 									<listOptionValue builtIn="false" value="HAVE_OVERLAY"/>
 									<listOptionValue builtIn="false" value="HAVE_GLSL"/>
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
-								</option>
-								<option id="com.qnx.qcc.option.compiler.qccoptions.1130769157" name="QCC Options" superClass="com.qnx.qcc.option.compiler.qccoptions" valueType="stringList">
-									<listOptionValue builtIn="false" value="-frecord-gcc-switches"/>
-									<listOptionValue builtIn="false" value="-marm"/>
-									<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
-									<listOptionValue builtIn="false" value="-mfpu=neon"/>
-								</option>
-								<option id="com.qnx.qcc.option.compiler.ccoptions.778819887" name="Compiler Options (-Wc,)" superClass="com.qnx.qcc.option.compiler.ccoptions" valueType="stringList">
-									<listOptionValue builtIn="false" value="-std=gnu99"/>
-								</option>
-								<inputType id="com.qnx.qcc.inputType.compiler.1111317695" superClass="com.qnx.qcc.inputType.compiler"/>
-							</tool>
-							<tool id="com.qnx.qcc.tool.assembler.435181371" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler">
-								<option id="com.qnx.qcc.option.assembler.debug.748271361" name="Debug (-g)" superClass="com.qnx.qcc.option.assembler.debug" value="true" valueType="boolean"/>
-								<option id="com.qnx.qcc.option.assembler.includePath.1509746206" name="Include Directories (-I)" superClass="com.qnx.qcc.option.assembler.includePath"/>
-								<option id="com.qnx.qcc.option.assembler.qccoptions.1148138367" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
-									<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
-									<listOptionValue builtIn="false" value="-marm"/>
-									<listOptionValue builtIn="false" value="-mfpu=neon"/>
+									<listOptionValue builtIn="false" value="__THUMB_INTERWORK__=1"/>
+									<listOptionValue builtIn="false" value="__FLT_EPSILON__=1.1920928955078125e-7F"/>
+									<listOptionValue builtIn="false" value="__DBL_MIN__=((double)2.2250738585072014e-308L)"/>
+									<listOptionValue builtIn="false" value="__DBL_DENORM_MIN__=((double)4.9406564584124654e-324L)"/>
+									<listOptionValue builtIn="false" value="__GXX_TYPEINFO_EQUALITY_INLINE=0"/>
+									<listOptionValue builtIn="false" value="__LDBL_MANT_DIG__=53"/>
+									<listOptionValue builtIn="false" value="__LDBL_DIG__=15"/>
+									<listOptionValue builtIn="false" value="__LDBL_DENORM_MIN__=4.9406564584124654e-324L"/>
+									<listOptionValue builtIn="false" value="__APCS_32__=1"/>
+									<listOptionValue builtIn="false" value="__LDBL_MIN_10_EXP__=(-307)"/>
+									<listOptionValue builtIn="false" value="__ARM_EABI__=1"/>
+									<listOptionValue builtIn="false" value="__LDBL_MAX_EXP__=1024"/>
+									<listOptionValue builtIn="false" value="__ARM_ARCH_7A__=1"/>
+									<listOptionValue builtIn="false" value="__LDBL_MIN_EXP__=(-1021)"/>
+									<listOptionValue builtIn="false" value="__arm__=1"/>
+									<listOptionValue builtIn="false" value="__DBL_MAX__=((double)1.7976931348623157e+308L)"/>
+									<listOptionValue builtIn="false" value="__FLT_EVAL_METHOD__=0"/>
+									<listOptionValue builtIn="false" value="__ARMEL__=1"/>
+									<listOptionValue builtIn="false" value="__LDBL_EPSILON__=2.2204460492503131e-16L"/>
+									<listOptionValue builtIn="false" value="__VFP_FP__=1"/>
+									<listOptionValue builtIn="false" value="__FLT_DENORM_MIN__=1.4012984643248171e-45F"/>
+									<listOptionValue builtIn="false" value="__ARM_FEATURE_DSP=1"/>
+									<listOptionValue builtIn="false" value="__thumb__=1"/>
+									<listOptionValue builtIn="false" value="__SIZEOF_LONG_DOUBLE__=8"/>
+									<listOptionValue builtIn="false" value="__FLT_MIN__=1.1754943508222875e-38F"/>
+									<listOptionValue builtIn="false" value="__DBL_EPSILON__=((double)2.2204460492503131e-16L)"/>
+									<listOptionValue builtIn="false" value="__THUMBEL__=1"/>
+									<listOptionValue builtIn="false" value="__BIGGEST_ALIGNMENT__=8"/>
+									<listOptionValue builtIn="false" value="__LDBL_MIN__=2.2250738585072014e-308L"/>
+									<listOptionValue builtIn="false" value="__ARM_PCS=1"/>
+									<listOptionValue builtIn="false" value="__FLT_MAX__=3.4028234663852886e+38F"/>
+									<listOptionValue builtIn="false" value="__thumb2__=1"/>
+									<listOptionValue builtIn="false" value="__ARM__=1"/>
+									<listOptionValue builtIn="false" value="__DECIMAL_DIG__=17"/>
+									<listOptionValue builtIn="false" value="__LDBL_MAX_10_EXP__=308"/>
+									<listOptionValue builtIn="false" value="__LDBL_MAX__=1.7976931348623157e+308L"/>
 								</option>
 								<inputType id="com.qnx.qcc.inputType.assembler.377665819" superClass="com.qnx.qcc.inputType.assembler"/>
 							</tool>
@@ -916,7 +1162,7 @@
 							<tool id="com.qnx.qcc.tool.archiver.42203404" name="QCC Archiver" superClass="com.qnx.qcc.tool.archiver"/>
 						</toolChain>
 					</folderInfo>
-					<fileInfo id="com.qnx.qcc.configuration.exe.profile.coverage.817388964.209316731" name="sinc_neon.S" rcbsApplicability="disable" resourcePath="src/sinc_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.435181371.1251968865">
+					<fileInfo id="com.qnx.qcc.configuration.exe.profile.coverage.817388964.209316731" name="sinc_neon.S" rcbsApplicability="disable" resourcePath="src/sinc_resampler_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.435181371.1251968865">
 						<tool id="com.qnx.qcc.tool.assembler.435181371.1251968865" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler.435181371">
 							<option id="com.qnx.qcc.option.assembler.qccoptions.1241557846" name="QCC Options" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
 								<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>

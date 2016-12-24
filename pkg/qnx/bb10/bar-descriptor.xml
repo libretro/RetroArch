@@ -10,7 +10,6 @@
     <initialWindow>
         <autoOrients>true</autoOrients>
         <systemChrome>none</systemChrome>
-        <transparent>false</transparent>
     </initialWindow>
     <category>core.games</category>
     <asset path="../../../media/assets">assets</asset>

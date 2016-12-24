@@ -30,7 +30,7 @@
 #include "../../gfx/video_driver.h"
 #include "../../configuration.h"
 #include "../input_joypad_driver.h"
-#include "../tasks/tasks_internal.h"
+#include "../../tasks/tasks_internal.h"
 
 #define MAX_PADS 8
 
@@ -79,7 +79,7 @@ typedef struct qnx_input
 
    int touch_map[MAX_TOUCH];
    /*
-    * The first pointer_count indices of touch_map will be a valid, 
+    * The first pointer_count indices of touch_map will be a valid,
     * active index in pointer array.
     * Saves us from searching through pointer array when polling state.
     */
@@ -167,8 +167,8 @@ static void qnx_process_gamepad_event(
 
    /* Only user 1
     * TODO: Am I missing something? Is there a better way? */
-   if((controller->port == 0) && 
-         (controller->buttons & 
+   if((controller->port == 0) &&
+         (controller->buttons &
           settings->input.binds[0][RARCH_MENU_TOGGLE].joykey))
       qnx->lifecycle_state ^= (UINT64_C(1) << RARCH_MENU_TOGGLE);
 }
@@ -184,7 +184,7 @@ static void qnx_input_autodetect_gamepad(qnx_input_t *qnx,
    name_buf[0] = '\0';
 
    /* ID: A-BBBB-CCCC-D.D
-    * A is the device's index in the array 
+    * A is the device's index in the array
     * returned by screen_get_context_property_pv()
     * BBBB is the device's Vendor ID (in hexadecimal)
     * CCCC is the device's Product ID (also in hexadecimal)
@@ -237,7 +237,7 @@ static void qnx_handle_device(qnx_input_t *qnx,
    screen_get_device_property_cv(controller->handle,
          SCREEN_PROPERTY_PRODUCT, sizeof(controller->id), controller->pid);
 
-   if (controller->type == SCREEN_EVENT_GAMEPAD || 
+   if (controller->type == SCREEN_EVENT_GAMEPAD ||
          controller->type == SCREEN_EVENT_JOYSTICK)
    {
       screen_get_device_property_iv(controller->handle,
@@ -253,7 +253,7 @@ static void qnx_handle_device(qnx_input_t *qnx,
          ++controller->analogCount;
    }
 
-   /* Screen service will map supported controllers, 
+   /* Screen service will map supported controllers,
     * we still might need to adjust. */
    qnx_input_autodetect_gamepad(qnx, controller, controller->port);
 
@@ -299,7 +299,7 @@ static void qnx_discover_controllers(qnx_input_t *qnx)
             devices_found[i], SCREEN_PROPERTY_TYPE, &type);
 
       if (
-            type == SCREEN_EVENT_GAMEPAD  || 
+            type == SCREEN_EVENT_GAMEPAD  ||
             type == SCREEN_EVENT_JOYSTICK ||
             type == SCREEN_EVENT_KEYBOARD)
       {
@@ -374,7 +374,7 @@ static void qnx_process_keyboard_event(
    for (b = 0; b < RARCH_FIRST_CUSTOM_BIND; ++b)
    {
       if ((unsigned int)
-            settings->input.binds[controller->port][b].joykey 
+            settings->input.binds[controller->port][b].joykey
             == (unsigned int)(sym & 0xFF))
       {
          if (flags & KEY_DOWN)
@@ -389,7 +389,7 @@ static void qnx_process_keyboard_event(
 
    /* TODO: Am I missing something? Is there a better way? */
    if((controller->port == 0) && ((unsigned int)
-            settings->input.binds[0][RARCH_MENU_TOGGLE].joykey 
+            settings->input.binds[0][RARCH_MENU_TOGGLE].joykey
             == (unsigned int)(sym&0xFF)))
    {
       if (flags & KEY_DOWN)
@@ -436,8 +436,8 @@ static void qnx_process_touch_event(
 #if 0
          printf("New Touch: x:%d, y:%d, id:%d\n", pos[0], pos[1], contact_id);
          fflush(stdout);
-         printf("Map: %d %d %d %d %d %d\n", qnx->touch_map[0], qnx->touch_map[1], 
-               qnx->touch_map[2], qnx->touch_map[3], qnx->touch_map[4], 
+         printf("Map: %d %d %d %d %d %d\n", qnx->touch_map[0], qnx->touch_map[1],
+               qnx->touch_map[2], qnx->touch_map[3], qnx->touch_map[4],
                qnx->touch_map[5]);
          fflush(stdout);
 #endif
@@ -451,7 +451,7 @@ static void qnx_process_touch_event(
                /* Invalidate the finger. */
                qnx->pointer[i].contact_id = -1;
 
-               /* Remove pointer from map and shift 
+               /* Remove pointer from map and shift
                 * remaining valid ones to the front. */
                qnx->touch_map[qnx->pointer[i].map] = -1;
                for(j = qnx->pointer[i].map; j < qnx->pointer_count; ++j)
@@ -467,8 +467,8 @@ static void qnx_process_touch_event(
 #if 0
          printf("Release: x:%d, y:%d, id:%d\n", pos[0], pos[1], contact_id);
          fflush(stdout);
-         printf("Map: %d %d %d %d %d %d\n", qnx->touch_map[0], qnx->touch_map[1], 
-               qnx->touch_map[2], qnx->touch_map[3], qnx->touch_map[4], 
+         printf("Map: %d %d %d %d %d %d\n", qnx->touch_map[0], qnx->touch_map[1],
+               qnx->touch_map[2], qnx->touch_map[3], qnx->touch_map[4],
                qnx->touch_map[5]);
          fflush(stdout);
 #endif
@@ -484,8 +484,8 @@ static void qnx_process_touch_event(
 #if 0
                gl_t *gl = (gl_t*)video_driver_get_ptr(false);
 
-               /*During a move, we can go ~30 pixel into the 
-                * bezel which gives negative numbers or 
+               /*During a move, we can go ~30 pixel into the
+                * bezel which gives negative numbers or
                 * numbers larger than the screen resolution.
                 *
                 * Normalize. */
@@ -505,7 +505,7 @@ static void qnx_process_touch_event(
                      &qnx->pointer[i].x, &qnx->pointer[i].y,
                      &qnx->pointer[i].full_x, &qnx->pointer[i].full_y);
 #if 0
-               printf("Move: x:%d, y:%d, id:%d\n", pos[0], pos[1], 
+               printf("Move: x:%d, y:%d, id:%d\n", pos[0], pos[1],
                      contact_id);
                fflush(stdout);
 #endif
@@ -553,7 +553,7 @@ static void qnx_handle_screen_event(qnx_input_t *qnx, bps_event_t *event)
                screen_get_device_property_iv(device,
                      SCREEN_PROPERTY_TYPE, &type);
 
-            if (attached && 
+            if (attached &&
                   (
                    type == SCREEN_EVENT_GAMEPAD ||
                    type == SCREEN_EVENT_JOYSTICK ||
@@ -747,7 +747,7 @@ static int16_t qnx_pointer_screen_input_state(qnx_input_t *qnx,
       case RETRO_DEVICE_ID_POINTER_PRESSED:
          return (
                idx < qnx->pointer_count)
-            && (qnx->pointer[idx].full_x != -0x8000) 
+            && (qnx->pointer[idx].full_x != -0x8000)
             && (qnx->pointer[idx].full_y != -0x8000);
    }
 
