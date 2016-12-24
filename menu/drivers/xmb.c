@@ -3177,6 +3177,7 @@ static void *xmb_init(void **userdata)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_VIDEO;
 #endif
 #ifdef HAVE_LIBRETRODB
+	if (settings->menu.xmb.show_add)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_ADD;
 #endif
 
