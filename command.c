@@ -1939,7 +1939,6 @@ bool command_event(enum event_command cmd, void *data)
          /* Poll input to avoid possibly stale data to corrupt things. */
          input_driver_poll();
          command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, (void *) -1);
-
 #ifdef HAVE_MENU
          menu_display_set_framebuffer_dirty_flag();
          if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
@@ -2383,6 +2382,10 @@ bool command_event(enum event_command cmd, void *data)
           * reinitialize to be safe. */
          settings->video.fullscreen = !settings->video.fullscreen;
          command_event(CMD_EVENT_REINIT, NULL);
+         if (settings->video.fullscreen)
+            video_driver_hide_mouse();
+         else
+            video_driver_show_mouse();
          break;
       case CMD_EVENT_COMMAND_DEINIT:
          input_driver_deinit_command();
