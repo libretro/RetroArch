@@ -606,6 +606,9 @@ static bool xmb_show_music       = true;
 static bool xmb_show_video       = true;
 #endif
 static bool xmb_show_history     = true;
+#ifdef HAVE_LIBRETRODB
+static bool xmb_show_add     	 = true;
+#endif
 #endif
 
 static float menu_wallpaper_opacity = 0.300;

@@ -5084,6 +5084,23 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
+				  
+#ifdef HAVE_LIBRETRODB
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->menu.xmb.show_add,
+                  MENU_ENUM_LABEL_XMB_SHOW_ADD,
+                  MENU_ENUM_LABEL_VALUE_XMB_SHOW_ADD,
+                  xmb_show_add,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+#endif				  
          }
 
 #endif

@@ -199,6 +199,7 @@ typedef struct settings
          bool     show_music;
          bool     show_video;
          bool     show_history;
+         bool     show_add;
       } xmb;
 
       struct

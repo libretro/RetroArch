@@ -801,6 +801,9 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("xmb_show_video",                &settings->menu.xmb.show_video, true, xmb_show_video, false);
 #endif
    SETTING_BOOL("xmb_show_history",              &settings->menu.xmb.show_history, true, xmb_show_history, false);
+#ifdef HAVE_LIBRETRODB 
+   SETTING_BOOL("xmb_show_add",                  &settings->menu.xmb.show_add, true, xmb_show_add, false);
+#endif
 #endif
    SETTING_BOOL("rgui_show_start_screen",        &settings->menu_show_start_screen, false, false /* TODO */, false);
    SETTING_BOOL("menu_navigation_wraparound_enable", &settings->menu.navigation.wraparound.enable, true, true, false);
