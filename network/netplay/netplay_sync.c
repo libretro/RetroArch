@@ -283,7 +283,7 @@ bool netplay_sync_pre_frame(netplay_t *netplay)
          {
             if (connection_num == 0)
             {
-               netplay->connections = malloc(sizeof(struct netplay_connection));
+               netplay->connections = (netplay_connection*)malloc(sizeof(struct netplay_connection));
                if (netplay->connections == NULL)
                {
                   socket_close(new_fd);
@@ -295,7 +295,7 @@ bool netplay_sync_pre_frame(netplay_t *netplay)
             else
             {
                size_t new_connections_size = netplay->connections_size * 2;
-               struct netplay_connection *new_connections =
+               struct netplay_connection *new_connections = (netplay_connection*)
                   realloc(netplay->connections,
                      new_connections_size*sizeof(struct netplay_connection));
                if (new_connections == NULL)

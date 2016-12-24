@@ -56,7 +56,7 @@ static size_t buf_remaining(struct socket_buffer *sbuf)
  */
 bool netplay_init_socket_buffer(struct socket_buffer *sbuf, size_t size)
 {
-   sbuf->data = malloc(size);
+   sbuf->data = (unsigned char*)malloc(size);
    if (sbuf->data == NULL)
       return false;
    sbuf->bufsz = size;
@@ -71,7 +71,7 @@ bool netplay_init_socket_buffer(struct socket_buffer *sbuf, size_t size)
  */
 bool netplay_resize_socket_buffer(struct socket_buffer *sbuf, size_t newsize)
 {
-   unsigned char *newdata = malloc(newsize);
+   unsigned char *newdata = (unsigned char*)malloc(newsize);
    if (newdata == NULL)
       return false;
 
