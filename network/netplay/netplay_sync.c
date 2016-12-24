@@ -352,7 +352,7 @@ process:
  */
 void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
 {
-   uint32_t cmp_frame_count;
+   uint32_t lo_frame_count, hi_frame_count;
 
    /* Unless we're stalling, we've just finished running a frame */
    if (!stalled)
@@ -498,15 +498,29 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
    }
 
    if (netplay->is_server)
-      cmp_frame_count = netplay->unread_frame_count;
+   {
+      uint32_t player;
+
+      lo_frame_count = hi_frame_count = netplay->unread_frame_count;
+
+      /* Look for players that are ahead of us */
+      for (player = 0; player < MAX_USERS; player++)
+      {
+         if (!(netplay->connected_players & (1<<player))) continue;
+         if (netplay->read_frame_count[player] > hi_frame_count)
+            hi_frame_count = netplay->read_frame_count[player];
+      }
+   }
    else
-      cmp_frame_count = netplay->server_frame_count;
+   {
+      lo_frame_count = hi_frame_count = netplay->server_frame_count;
+   }
 
    /* If we're behind, try to catch up */
    if (netplay->catch_up)
    {
       /* Are we caught up? */
-      if (netplay->self_frame_count >= cmp_frame_count)
+      if (netplay->self_frame_count >= lo_frame_count)
       {
          netplay->catch_up = false;
          input_driver_unset_nonblock_state();
@@ -516,12 +530,43 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
    }
    else if (!stalled)
    {
-      /* Are we falling behind? */
-      if (netplay->self_frame_count < cmp_frame_count - 2)
+      if (netplay->self_frame_count + 2 < lo_frame_count)
       {
+         /* Are we falling behind? */
          netplay->catch_up = true;
          input_driver_set_nonblock_state();
          driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
+
+      }
+      else if (netplay->self_frame_count + 2 < hi_frame_count)
+      {
+         size_t i;
+
+         /* We're falling behind some clients but not others, so request that
+          * clients ahead of us stall */
+         for (i = 0; i < netplay->connections_size; i++)
+         {
+            struct netplay_connection *connection = &netplay->connections[i];
+            int player;
+            if (!connection->active ||
+                connection->mode != NETPLAY_CONNECTION_PLAYING)
+               continue;
+            player = connection->player;
+
+            /* Are they ahead? */
+            if (netplay->self_frame_count + 2 < netplay->read_frame_count[player])
+            {
+               /* Tell them to stall */
+               if (connection->stall_frame + NETPLAY_MAX_REQ_STALL_FREQUENCY <
+                     netplay->self_frame_count)
+               {
+                  connection->stall_frame = netplay->self_frame_count;
+                  netplay_cmd_stall(netplay, connection,
+                     netplay->read_frame_count[player] -
+                     netplay->self_frame_count + 1);
+               }
+            }
+         }
       }
    }
 }

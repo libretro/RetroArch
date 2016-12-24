@@ -379,11 +379,24 @@ bool netplay_cmd_mode(netplay_t *netplay,
    return netplay_send_raw_cmd(netplay, connection, cmd, NULL, 0);
 }
 
+/**
+ * netplay_cmd_stall
+ *
+ * Send a stall command.
+ */
+bool netplay_cmd_stall(netplay_t *netplay,
+   struct netplay_connection *connection,
+   uint32_t frames)
+{
+   frames = htonl(frames);
+   return netplay_send_raw_cmd(netplay, connection, NETPLAY_CMD_STALL, &frames, sizeof(frames));
+}
+
 #undef RECV
 #define RECV(buf, sz) \
 recvd = netplay_recv(&connection->recv_packet_buffer, connection->fd, (buf), \
 (sz), false); \
-if (recvd >= 0 && recvd < (sz)) goto shrt; \
+if (recvd >= 0 && recvd < (ssize_t) (sz)) goto shrt; \
 else if (recvd < 0)
 
 static bool netplay_get_cmd(netplay_t *netplay,
@@ -1198,6 +1211,42 @@ static bool netplay_get_cmd(netplay_t *netplay,
       case NETPLAY_CMD_RESUME:
          remote_unpaused(netplay, connection);
          break;
+
+      case NETPLAY_CMD_STALL:
+         {
+            uint32_t frames;
+
+            if (cmd_size != sizeof(uint32_t))
+            {
+               RARCH_ERR("NETPLAY_CMD_STALL with incorrect payload size.\n");
+               return netplay_cmd_nak(netplay, connection);
+            }
+
+            RECV(&frames, sizeof(frames))
+            {
+               RARCH_ERR("Failed to receive NETPLAY_CMD_STALL payload.\n");
+               return netplay_cmd_nak(netplay, connection);
+            }
+            frames = ntohl(frames);
+            if (frames > NETPLAY_MAX_REQ_STALL_TIME)
+               frames = NETPLAY_MAX_REQ_STALL_TIME;
+
+            if (netplay->is_server)
+            {
+               /* Only servers can request a stall! */
+               RARCH_ERR("Netplay client requested a stall?\n");
+               return netplay_cmd_nak(netplay, connection);
+            }
+
+            /* We can only stall for one reason at a time */
+            if (!netplay->stall)
+            {
+               connection->stall = netplay->stall = NETPLAY_STALL_SERVER_REQUESTED;
+               netplay->stall_time = 0;
+               connection->stall_frame = frames;
+            }
+            break;
+         }
 
       default:
          RARCH_ERR("%s.\n", msg_hash_to_str(MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED));

@@ -257,7 +257,7 @@ struct info_buf_s
 
 #define RECV(buf, sz) \
    recvd = netplay_recv(&connection->recv_packet_buffer, connection->fd, (buf), (sz), false); \
-   if (recvd >= 0 && recvd < (sz)) \
+   if (recvd >= 0 && recvd < (ssize_t) (sz)) \
    { \
       netplay_recv_reset(&connection->recv_packet_buffer); \
       return true; \

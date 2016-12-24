@@ -142,7 +142,7 @@ bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state, 
          /* And send it off */
          if (sendto(lan_ad_client_fd, (const char *) &ad_packet_buffer,
             2*sizeof(uint32_t), 0, addr->ai_addr, addr->ai_addrlen) <
-            2*sizeof(uint32_t))
+            (ssize_t) (2*sizeof(uint32_t)))
             RARCH_WARN("Failed to send netplay discovery response.\n");
 
          freeaddrinfo_retro(addr);

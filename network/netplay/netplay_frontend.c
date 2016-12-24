@@ -150,26 +150,6 @@ static bool get_self_input_state(netplay_t *netplay)
    return true;
 }
 
-static uint32_t netplay_max_ahead(netplay_t *netplay)
-{
-   uint32_t max_ahead;
-
-   /* Figure out how many frames we're allowed to be ahead: Ideally we need to be
-    * able to run our entire stall worth of frames in one real frame. In
-    * practice, we'll allow a couple jitter frames.  (FIXME: hard coded
-    * as three 60FPS frames) */
-   if (netplay_data->frame_run_time_avg)
-      max_ahead = 50000 / netplay_data->frame_run_time_avg;
-   else
-      max_ahead = NETPLAY_MAX_STALL_FRAMES;
-   if (max_ahead > NETPLAY_MAX_STALL_FRAMES)
-      max_ahead = NETPLAY_MAX_STALL_FRAMES;
-   if (max_ahead < 2)
-      max_ahead = 2;
-
-   return max_ahead;
-}
-
 /**
  * netplay_poll:
  * @netplay              : pointer to netplay object
@@ -217,9 +197,8 @@ static bool netplay_poll(void)
    {
       case NETPLAY_STALL_RUNNING_FAST:
       {
-         uint32_t max_ahead = netplay_max_ahead(netplay_data);
          netplay_update_unread_ptr(netplay_data);
-         if (netplay_data->unread_frame_count + max_ahead - 2
+         if (netplay_data->unread_frame_count + NETPLAY_MAX_STALL_FRAMES - 2
                > netplay_data->self_frame_count)
          {
             netplay_data->stall = NETPLAY_STALL_NONE;
@@ -233,17 +212,31 @@ static bool netplay_poll(void)
          break;
       }
 
+      case NETPLAY_STALL_SERVER_REQUESTED:
+      {
+         /* See if the stall is done */
+         if (netplay_data->connections[0].stall_frame == 0)
+         {
+            /* Stop stalling! */
+            netplay_data->connections[0].stall = NETPLAY_STALL_NONE;
+            netplay_data->stall = NETPLAY_STALL_NONE;
+         }
+         else
+         {
+            netplay_data->connections[0].stall_frame--;
+         }
+         break;
+      }
+
       case NETPLAY_STALL_NO_CONNECTION:
          /* We certainly haven't fixed this */
          break;
 
       default: /* not stalling */
       {
-         uint32_t max_ahead = netplay_max_ahead(netplay_data);
-
          /* Are we too far ahead? */
          netplay_update_unread_ptr(netplay_data);
-         if (netplay_data->unread_frame_count + max_ahead
+         if (netplay_data->unread_frame_count + NETPLAY_MAX_STALL_FRAMES
                <= netplay_data->self_frame_count)
          {
             netplay_data->stall      = NETPLAY_STALL_RUNNING_FAST;
@@ -276,7 +269,7 @@ static bool netplay_poll(void)
    }
 
    /* If we're stalling, consider disconnection */
-   if (netplay_data->stall)
+   if (netplay_data->stall && netplay_data->stall_time)
    {
       retro_time_t now = cpu_features_get_time_usec();
 

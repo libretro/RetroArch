@@ -322,7 +322,7 @@ ssize_t netplay_recv(struct socket_buffer *sbuf, int sockfd, void *buf,
    if (block)
    {
       sbuf->start = sbuf->read;
-      if (recvd < len)
+      if (recvd < 0 || recvd < (ssize_t) len)
       {
          if (!socket_receive_all_blocking(sockfd, (unsigned char *) buf + recvd, len - recvd))
             return -1;
