@@ -66,6 +66,14 @@ unsigned menu_shader_manager_get_type(const void *data);
  **/
 void menu_shader_manager_apply_changes(void);
 
+int menu_shader_manager_clear_parameter(unsigned i);
+
+int menu_shader_manager_clear_pass_filter(unsigned i);
+
+void menu_shader_manager_clear_pass_scale(unsigned i);
+
+void menu_shader_manager_clear_pass_path(unsigned i);
+
 RETRO_END_DECLS
 
 #endif

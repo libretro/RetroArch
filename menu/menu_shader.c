@@ -361,6 +361,85 @@ bool menu_shader_manager_save_preset(
    return false;
 }
 
+int menu_shader_manager_clear_parameter(unsigned i)
+{
+   struct video_shader *shader          = NULL;
+   struct video_shader_parameter *param = NULL;
+
+   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
+         &shader);
+
+   if (!shader)
+      return 0;
+
+   param          = &shader->parameters[i];
+   param->current = param->initial;
+   param->current = MIN(MAX(param->minimum, param->current), param->maximum);
+
+   return 0;
+}
+
+int menu_shader_manager_clear_pass_filter(unsigned i)
+{
+#ifdef HAVE_SHADER_MANAGER
+   struct video_shader *shader           = NULL;
+   struct video_shader_pass *shader_pass = NULL;
+
+   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
+         &shader);
+
+   if (!shader)
+      return -1;
+   shader_pass = &shader->pass[i];
+   if (!shader_pass)
+      return -1;
+
+   shader_pass->filter = RARCH_FILTER_UNSPEC;
+
+   return 0;
+#else
+   return -1;
+#endif
+}
+
+void menu_shader_manager_clear_pass_scale(unsigned i)
+{
+#ifdef HAVE_SHADER_MANAGER
+   struct video_shader *shader           = NULL;
+   struct video_shader_pass *shader_pass = NULL;
+
+   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
+         &shader);
+
+   if (shader)
+      shader_pass = &shader->pass[i];
+
+   if (shader_pass)
+   {
+      shader_pass->fbo.scale_x = 0;
+      shader_pass->fbo.scale_y = 0;
+      shader_pass->fbo.valid   = false;
+   }
+#endif
+}
+
+void menu_shader_manager_clear_pass_path(unsigned i)
+{
+#ifdef HAVE_SHADER_MANAGER
+   struct video_shader *shader           = NULL;
+   struct video_shader_pass *shader_pass = NULL;
+
+   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
+         &shader);
+
+   if (shader)
+      shader_pass = &shader->pass[i];
+
+   if (shader_pass)
+      *shader_pass->source.path = '\0';
+#endif
+}
+
 /**
  * menu_shader_manager_get_type:
  * @shader                   : shader handle     

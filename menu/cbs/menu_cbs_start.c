@@ -142,40 +142,20 @@ static int action_start_shader_action_parameter(unsigned type, const char *label
 static int action_start_shader_action_preset_parameter(unsigned type, const char *label)
 {
 #ifdef HAVE_SHADER_MANAGER
-   struct video_shader *shader          = NULL;
-   struct video_shader_parameter *param = NULL;
-
-   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
-         &shader);
-
-   if (!shader)
-      return 0;
-
-   param = &shader->parameters[type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0];
-   param->current = param->initial;
-   param->current = MIN(MAX(param->minimum, param->current), param->maximum);
-#endif
-
+   unsigned parameter = type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0;
+   return menu_shader_manager_clear_parameter(parameter);
+#else
    return 0;
+#endif
 }
 
 static int action_start_shader_pass(unsigned type, const char *label)
 {
 #ifdef HAVE_SHADER_MANAGER
-   struct video_shader *shader           = NULL;
-   struct video_shader_pass *shader_pass = NULL;
    hack_shader_pass                      = type - MENU_SETTINGS_SHADER_PASS_0;
 
-   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
-         &shader);
-
-   if (shader)
-      shader_pass = &shader->pass[hack_shader_pass];
-
-   if (shader_pass)
-      *shader_pass->source.path = '\0';
+   menu_shader_manager_clear_pass_path(hack_shader_pass);
 #endif
-
    return 0;
 }
 
@@ -183,21 +163,9 @@ static int action_start_shader_pass(unsigned type, const char *label)
 static int action_start_shader_scale_pass(unsigned type, const char *label)
 {
 #ifdef HAVE_SHADER_MANAGER
-   struct video_shader *shader           = NULL;
-   struct video_shader_pass *shader_pass = NULL;
    unsigned pass                         = type - MENU_SETTINGS_SHADER_PASS_SCALE_0;
 
-   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
-         &shader);
-
-   if (shader)
-      shader_pass = &shader->pass[pass];
-
-   if (shader_pass)
-   {
-      shader_pass->fbo.scale_x = shader_pass->fbo.scale_y = 0;
-      shader_pass->fbo.valid = false;
-   }
+   menu_shader_manager_clear_pass_scale(pass);
 #endif
 
    return 0;
@@ -207,19 +175,7 @@ static int action_start_shader_filter_pass(unsigned type, const char *label)
 {
 #ifdef HAVE_SHADER_MANAGER
    unsigned pass                         = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
-   struct video_shader *shader           = NULL;
-   struct video_shader_pass *shader_pass = NULL;
-
-   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
-         &shader);
-
-   if (!shader)
-      return -1;
-   shader_pass = &shader->pass[pass];
-   if (!shader_pass)
-      return -1;
-
-   shader_pass->filter = RARCH_FILTER_UNSPEC;
+   return menu_shader_manager_clear_pass_filter(pass);
 #endif
 
    return 0;
