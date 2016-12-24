@@ -454,11 +454,11 @@ end:
 }
 
 
+#ifdef HAVE_LIBRETRODB
 static int deferred_push_cursor_manager_list_generic(
       menu_displaylist_info_t *info, enum database_query_type type)
 {
    int ret                       = -1;
-#ifdef HAVE_LIBRETRODB
    char query[PATH_MAX_LENGTH];
    struct string_list *str_list  = string_split(info->path, "|"); 
 
@@ -477,7 +477,6 @@ static int deferred_push_cursor_manager_list_generic(
 
 end:
    string_list_free(str_list);
-#endif
    return ret;
 }
 
@@ -576,6 +575,7 @@ static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_releaseyea
 {
    return deferred_push_cursor_manager_list_generic(info, DATABASE_QUERY_ENTRY_RELEASEDATE_YEAR);
 }
+#endif
 
 #if 0
 static int deferred_push_cursor_manager_list_deferred_query_subsearch(
@@ -1119,6 +1119,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred);
                break;
+#ifdef HAVE_LIBRETRODB
             case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PUBLISHER:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_publisher);
                break;
@@ -1167,6 +1168,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEYEAR:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_releaseyear);
                break;
+#endif
             case MENU_ENUM_LABEL_CORE_INFORMATION:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_information);
                break;
@@ -1406,6 +1408,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_database_manager_list_deferred);
                break;
+#ifdef HAVE_LIBRETRODB
             case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred);
                break;
@@ -1457,6 +1460,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEYEAR:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_releaseyear);
                break;
+#endif
             case MENU_LABEL_CORE_INFORMATION:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_information);
                break;

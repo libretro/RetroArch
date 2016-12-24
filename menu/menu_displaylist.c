@@ -6057,10 +6057,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_SHADER_PRESET:
          {
+            struct string_list *str_list;
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_VULKAN)
             union string_list_elem_attr attr;
-            struct string_list *str_list     = string_list_new();
-
             attr.i = 0;
+#endif
+            str_list = string_list_new();
 
             filebrowser_clear_type();
             info->type_default = FILE_TYPE_SHADER_PRESET;
@@ -6080,13 +6082,17 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_SHADER_PASS:
          {
+            struct string_list *str_list;
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_VULKAN)
             union string_list_elem_attr attr;
-            struct string_list *str_list     = string_list_new();
+            attr.i = 0;
+#endif
+
+            str_list = string_list_new();
 
             filebrowser_clear_type();
             info->type_default = FILE_TYPE_SHADER;
 
-            attr.i = 0;
 
 #ifdef HAVE_CG
             string_list_append(str_list, "cg", attr);
