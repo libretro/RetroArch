@@ -653,8 +653,7 @@ static int general_push(menu_displaylist_info_t *info,
    switch (id)
    {
       case PUSH_ARCHIVE_OPEN_DETECT_CORE:
-  
-         if (!string_is_empty(list->all_ext))
+         if (list && !string_is_empty(list->all_ext))
             strlcpy(info->exts, list->all_ext, sizeof(info->exts));
          else if (system_menu->valid_extensions)
          {
