@@ -47,6 +47,8 @@
 
 #define NETPLAY_MAX_STALL_FRAMES       60
 #define NETPLAY_FRAME_RUN_TIME_WINDOW  120
+#define NETPLAY_MAX_REQ_STALL_TIME     60
+#define NETPLAY_MAX_REQ_STALL_FREQUENCY 120
 
 #define PREV_PTR(x) ((x) == 0 ? netplay->buffer_size - 1 : (x) - 1)
 #define NEXT_PTR(x) ((x + 1) % netplay->buffer_size)
@@ -148,8 +150,11 @@ enum netplay_cmd
    /* Resumes the game, takes no arguments */
    NETPLAY_CMD_RESUME         = 0x0044,
 
+   /* Request that a client stall because it's running fast */
+   NETPLAY_CMD_STALL          = 0x0045,
+
    /* Sends over cheats enabled on client (unsupported) */
-   NETPLAY_CMD_CHEATS         = 0x0045,
+   NETPLAY_CMD_CHEATS         = 0x0046,
 
    /* Misc. commands */
 
@@ -205,6 +210,7 @@ enum rarch_netplay_stall_reason
 {
    NETPLAY_STALL_NONE = 0,
    NETPLAY_STALL_RUNNING_FAST,
+   NETPLAY_STALL_SERVER_REQUESTED,
    NETPLAY_STALL_NO_CONNECTION
 };
 
@@ -273,7 +279,7 @@ struct netplay_connection
    enum rarch_netplay_connection_mode mode;
 
    /* Player # of connected player */
-   int player;
+   uint32_t player;
 
    /* What compression does this peer support? */
    uint32_t compression_supported;
@@ -284,6 +290,10 @@ struct netplay_connection
    /* Is this connection stalling? */
    enum rarch_netplay_stall_reason stall;
    retro_time_t stall_time;
+
+   /* For the server: When was the last time we requested this client to stall?
+    * For the client: How many frames of stall do we have left? */
+   uint32_t stall_frame;
 };
 
 /* Compression transcoder */
@@ -716,6 +726,15 @@ bool netplay_cmd_request_savestate(netplay_t *netplay);
 bool netplay_cmd_mode(netplay_t *netplay,
    struct netplay_connection *connection,
    enum rarch_netplay_connection_mode mode);
+
+/**
+ * netplay_cmd_stall
+ *
+ * Send a stall command.
+ */
+bool netplay_cmd_stall(netplay_t *netplay,
+   struct netplay_connection *connection,
+   uint32_t frames);
 
 /**
  * netplay_poll_net_input

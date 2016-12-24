@@ -304,6 +304,14 @@ Payload: None
 Description:
     Indicates that the core is no longer paused.
 
+Command: STALL
+Payload:
+    {
+       frames: uint32
+    }
+Description:
+    Request that a client stall for the given number of frames.
+
 Command: CHEATS
 Unused
 
