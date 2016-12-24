@@ -1188,7 +1188,7 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_LANG_POLISH:
          return "Polacco";
       case MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE:
-         return "Carica archivio con il core";
+         return "Carica archivio con il core"; /* TODO/FIXME */
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST:
          return "Carica Contenuto";
       case MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY:
@@ -1196,7 +1196,7 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY:
          return "Nessuna voce da mostrare.";
       case MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE:
-         return "Apri archivio come cartella";
+         return "Apri archivio come cartella"; /* TODO/FIXME */
       case MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED:
          return "Autocarica overlay preferito";
       case MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS:
