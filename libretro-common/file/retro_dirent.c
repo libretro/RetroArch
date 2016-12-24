@@ -77,10 +77,9 @@ int retro_readdir(struct RDIR *rdir)
 #if defined(_WIN32)
    if(rdir->next)
       return (FindNextFile(rdir->directory, &rdir->entry) != 0);
-   else {
-      rdir->next = true;
-      return (rdir->directory != INVALID_HANDLE_VALUE);
-   }
+
+   rdir->next = true;
+   return (rdir->directory != INVALID_HANDLE_VALUE);
 #elif defined(VITA) || defined(PSP)
    return (sceIoDread(rdir->directory, &rdir->entry) > 0);
 #elif defined(__CELLOS_LV2__)
