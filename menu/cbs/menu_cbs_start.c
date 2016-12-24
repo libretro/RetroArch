@@ -141,64 +141,38 @@ static int action_start_shader_action_parameter(unsigned type, const char *label
 
 static int action_start_shader_action_preset_parameter(unsigned type, const char *label)
 {
-#ifdef HAVE_SHADER_MANAGER
    unsigned parameter = type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0;
    return menu_shader_manager_clear_parameter(parameter);
-#else
-   return 0;
-#endif
 }
 
 static int action_start_shader_pass(unsigned type, const char *label)
 {
-#ifdef HAVE_SHADER_MANAGER
    hack_shader_pass                      = type - MENU_SETTINGS_SHADER_PASS_0;
 
    menu_shader_manager_clear_pass_path(hack_shader_pass);
-#endif
+
    return 0;
 }
 
 
 static int action_start_shader_scale_pass(unsigned type, const char *label)
 {
-#ifdef HAVE_SHADER_MANAGER
    unsigned pass                         = type - MENU_SETTINGS_SHADER_PASS_SCALE_0;
 
    menu_shader_manager_clear_pass_scale(pass);
-#endif
 
    return 0;
 }
 
 static int action_start_shader_filter_pass(unsigned type, const char *label)
 {
-#ifdef HAVE_SHADER_MANAGER
    unsigned pass                         = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
    return menu_shader_manager_clear_pass_filter(pass);
-#endif
-
-   return 0;
 }
 
 static int action_start_shader_num_passes(unsigned type, const char *label)
 {
-#ifdef HAVE_SHADER_MANAGER
-   bool refresh                = false;
-   struct video_shader *shader = NULL;
-
-   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
-         &shader);
-
-   if (!shader)
-      return -1;
-   if (shader->passes)
-      shader->passes = 0;
-
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   video_shader_resolve_parameters(NULL, shader);
-#endif
-   return 0;
+   return menu_shader_manager_clear_num_passes();
 }
 
 static int action_start_cheat_num_passes(unsigned type, const char *label)

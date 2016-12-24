@@ -361,8 +361,30 @@ bool menu_shader_manager_save_preset(
    return false;
 }
 
+int menu_shader_manager_clear_num_passes(void)
+{
+#ifdef HAVE_SHADER_MANAGER
+   bool refresh                = false;
+   struct video_shader *shader = NULL;
+
+   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
+         &shader);
+
+   if (!shader)
+      return -1;
+   if (shader->passes)
+      shader->passes = 0;
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   video_shader_resolve_parameters(NULL, shader);
+#endif
+
+   return 0;
+}
+
 int menu_shader_manager_clear_parameter(unsigned i)
 {
+#ifdef HAVE_SHADER_MANAGER
    struct video_shader *shader          = NULL;
    struct video_shader_parameter *param = NULL;
 
@@ -375,6 +397,7 @@ int menu_shader_manager_clear_parameter(unsigned i)
    param          = &shader->parameters[i];
    param->current = param->initial;
    param->current = MIN(MAX(param->minimum, param->current), param->maximum);
+#endif
 
    return 0;
 }
