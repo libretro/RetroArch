@@ -224,16 +224,9 @@ bool menu_shader_manager_save_preset(
    bool ret                               = false;
    struct video_shader *shader            = NULL;
    settings_t *settings                   = config_get_ptr();
-   menu_handle_t *menu                    = NULL;
 
    buffer[0] = config_directory[0]        = '\0';
    preset_path[0]                         = '\0';
-
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-   {
-      RARCH_ERR("Cannot save shader preset.\n");
-      return false;
-   }
 
    menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
          &shader);
