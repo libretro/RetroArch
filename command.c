@@ -1763,12 +1763,8 @@ static bool command_event_resize_windowed_scale(void)
  **/
 bool command_event(enum event_command cmd, void *data)
 {
-   content_ctx_info_t content_info = {0};
-   unsigned i                = 0;
    bool boolean              = false;
    settings_t *settings      = config_get_ptr();
-
-   (void)i;
 
    switch (cmd)
    {
@@ -1906,27 +1902,30 @@ bool command_event(enum event_command cmd, void *data)
             return false;
          break;
       case CMD_EVENT_UNLOAD_CORE:
-         command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
-         command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
-         command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
+         {
+            content_ctx_info_t content_info = {0};
+            command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
+            command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
+            command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
 
-         if (content_is_inited())
-            if (!task_push_content_load_default(
-                     NULL, NULL,
-                     &content_info,
-                     CORE_TYPE_DUMMY,
-                     CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
-                     NULL, NULL))
-               return false;
+            if (content_is_inited())
+               if (!task_push_content_load_default(
+                        NULL, NULL,
+                        &content_info,
+                        CORE_TYPE_DUMMY,
+                        CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
+                        NULL, NULL))
+                  return false;
 #ifdef HAVE_DYNAMIC
 #ifdef HAVE_MENU
-         menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_DEINIT, NULL);
+            menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_DEINIT, NULL);
 #endif
-         path_clear(RARCH_PATH_CORE);
+            path_clear(RARCH_PATH_CORE);
 #else
-         core_unload_game();
-         core_unload();
+            core_unload_game();
+            core_unload();
 #endif
+         }
          break;
       case CMD_EVENT_QUIT:
          handle_quit_event();
@@ -2490,10 +2489,13 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_RUMBLE_STOP:
-         for (i = 0; i < MAX_USERS; i++)
          {
-            input_driver_set_rumble_state(i, RETRO_RUMBLE_STRONG, 0);
-            input_driver_set_rumble_state(i, RETRO_RUMBLE_WEAK, 0);
+            unsigned i;
+            for (i = 0; i < MAX_USERS; i++)
+            {
+               input_driver_set_rumble_state(i, RETRO_RUMBLE_STRONG, 0);
+               input_driver_set_rumble_state(i, RETRO_RUMBLE_WEAK, 0);
+            }
          }
          break;
       case CMD_EVENT_GRAB_MOUSE_TOGGLE:
