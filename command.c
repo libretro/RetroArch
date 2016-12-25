@@ -1731,6 +1731,28 @@ void handle_quit_event(void)
 #endif
 }
 
+static bool command_event_resize_windowed_scale(void)
+{
+   unsigned idx           = 0;
+   unsigned *window_scale = NULL;
+   settings_t *settings   = config_get_ptr();
+
+   if (runloop_ctl(RUNLOOP_CTL_GET_WINDOWED_SCALE, &window_scale))
+   {
+      if (!window_scale || *window_scale == 0)
+         return false;
+
+      settings->video.scale = *window_scale;
+   }
+
+   if (!settings->video.fullscreen)
+      command_event(CMD_EVENT_REINIT, NULL);
+
+   runloop_ctl(RUNLOOP_CTL_SET_WINDOWED_SCALE, &idx);
+
+   return true;
+}
+
 /**
  * command_event:
  * @cmd                  : Event command index.
@@ -1842,24 +1864,7 @@ bool command_event(enum event_command cmd, void *data)
          command_event_main_state(cmd);
          break;
       case CMD_EVENT_RESIZE_WINDOWED_SCALE:
-         {
-            unsigned idx = 0;
-            unsigned *window_scale = NULL;
-
-            if (runloop_ctl(RUNLOOP_CTL_GET_WINDOWED_SCALE, &window_scale))
-            {
-               if (!window_scale || *window_scale == 0)
-                  return false;
-
-               settings->video.scale = *window_scale;
-            }
-
-            if (!settings->video.fullscreen)
-               command_event(CMD_EVENT_REINIT, NULL);
-
-            runloop_ctl(RUNLOOP_CTL_SET_WINDOWED_SCALE, &idx);
-         }
-         break;
+         return command_event_resize_windowed_scale();
       case CMD_EVENT_MENU_TOGGLE:
 #ifdef HAVE_MENU
          if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
