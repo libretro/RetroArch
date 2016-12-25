@@ -1767,9 +1767,6 @@ bool command_event(enum event_command cmd, void *data)
    unsigned i                = 0;
    bool boolean              = false;
    settings_t *settings      = config_get_ptr();
-   rarch_system_info_t *info = NULL;
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
    (void)i;
 
@@ -2420,62 +2417,77 @@ bool command_event(enum event_command cmd, void *data)
             return command_event_disk_control_append_image(path);
          }
       case CMD_EVENT_DISK_EJECT_TOGGLE:
-         if (info && info->disk_control_cb.get_num_images)
          {
-            const struct retro_disk_control_callback *control =
-               (const struct retro_disk_control_callback*)
-               &info->disk_control_cb;
+            rarch_system_info_t *info = NULL;
+            runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
-            if (control)
+            if (info && info->disk_control_cb.get_num_images)
             {
-               bool new_state = !control->get_eject_state();
-               command_event_disk_control_set_eject(new_state, true);
+               const struct retro_disk_control_callback *control =
+                  (const struct retro_disk_control_callback*)
+                  &info->disk_control_cb;
+
+               if (control)
+               {
+                  bool new_state = !control->get_eject_state();
+                  command_event_disk_control_set_eject(new_state, true);
+               }
             }
+            else
+               runloop_msg_queue_push(
+                     msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS),
+                     1, 120, true);
          }
-         else
-            runloop_msg_queue_push(
-                  msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS),
-                  1, 120, true);
          break;
       case CMD_EVENT_DISK_NEXT:
-         if (info && info->disk_control_cb.get_num_images)
          {
-            const struct retro_disk_control_callback *control =
-               (const struct retro_disk_control_callback*)
-               &info->disk_control_cb;
+            rarch_system_info_t *info = NULL;
+            runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
-            if (!control)
-               return false;
+            if (info && info->disk_control_cb.get_num_images)
+            {
+               const struct retro_disk_control_callback *control =
+                  (const struct retro_disk_control_callback*)
+                  &info->disk_control_cb;
 
-            if (!control->get_eject_state())
-               return false;
+               if (!control)
+                  return false;
 
-            command_event_check_disk_next(control);
+               if (!control->get_eject_state())
+                  return false;
+
+               command_event_check_disk_next(control);
+            }
+            else
+               runloop_msg_queue_push(
+                     msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS),
+                     1, 120, true);
          }
-         else
-            runloop_msg_queue_push(
-                  msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS),
-                  1, 120, true);
          break;
       case CMD_EVENT_DISK_PREV:
-         if (info && info->disk_control_cb.get_num_images)
          {
-            const struct retro_disk_control_callback *control =
-               (const struct retro_disk_control_callback*)
-               &info->disk_control_cb;
+            rarch_system_info_t *info = NULL;
+            runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
-            if (!control)
-               return false;
+            if (info && info->disk_control_cb.get_num_images)
+            {
+               const struct retro_disk_control_callback *control =
+                  (const struct retro_disk_control_callback*)
+                  &info->disk_control_cb;
 
-            if (!control->get_eject_state())
-               return false;
+               if (!control)
+                  return false;
 
-            command_event_check_disk_prev(control);
+               if (!control->get_eject_state())
+                  return false;
+
+               command_event_check_disk_prev(control);
+            }
+            else
+               runloop_msg_queue_push(
+                     msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS),
+                     1, 120, true);
          }
-         else
-            runloop_msg_queue_push(
-                  msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS),
-                  1, 120, true);
          break;
       case CMD_EVENT_RUMBLE_STOP:
          for (i = 0; i < MAX_USERS; i++)
