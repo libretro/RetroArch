@@ -2062,7 +2062,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_DSP_FILTER_INIT:
          command_event(CMD_EVENT_DSP_FILTER_DEINIT, NULL);
-         if (!*settings->path.audio_dsp_plugin)
+         if (string_is_empty(settings->path.audio_dsp_plugin))
             break;
          audio_driver_dsp_filter_init(settings->path.audio_dsp_plugin);
          break;
