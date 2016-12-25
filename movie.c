@@ -208,6 +208,7 @@ static void bsv_movie_free(bsv_movie_t *handle)
 static bsv_movie_t *bsv_movie_init(const char *path,
       enum rarch_movie_type type)
 {
+   size_t *frame_pos   = NULL;
    bsv_movie_t *handle = (bsv_movie_t*)calloc(1, sizeof(*handle));
    if (!handle)
       return NULL;
@@ -222,8 +223,10 @@ static bsv_movie_t *bsv_movie_init(const char *path,
 
    /* Just pick something really large 
     * ~1 million frames rewind should do the trick. */
-   if (!(handle->frame_pos = (size_t*)calloc((1 << 20), sizeof(size_t))))
+   if (!(frame_pos = (size_t*)calloc((1 << 20), sizeof(size_t))))
       goto error; 
+
+   handle->frame_pos       = frame_pos;
 
    handle->frame_pos[0]    = handle->min_file_pos;
    handle->frame_mask      = (1 << 20) - 1;
