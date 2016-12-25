@@ -2581,7 +2581,6 @@ bool command_event(enum event_command cmd, void *data)
          command_event_restore_default_shader_preset();
          break;
       case CMD_EVENT_NONE:
-      default:
          return false;
    }
 
