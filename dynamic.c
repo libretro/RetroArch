@@ -1452,12 +1452,17 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
          if (system)
          {
+            struct retro_subsystem_info *info_ptr = NULL;
             free(system->subsystem.data);
-            system->subsystem.data = (struct retro_subsystem_info*)
-               calloc(i, sizeof(*system->subsystem.data));
+            system->subsystem.data = NULL;
 
-            if (!system->subsystem.data)
+            info_ptr = (struct retro_subsystem_info*)
+               calloc(i, sizeof(*info_ptr));
+
+            if (!info_ptr)
                return false;
+
+            system->subsystem.data = info_ptr;
 
             memcpy(system->subsystem.data, info,
                   i * sizeof(*system->subsystem.data));
@@ -1484,12 +1489,16 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
          if (system)
          {
+            struct retro_controller_info *info_ptr = NULL;
+
             free(system->ports.data);
-            system->ports.data = (struct retro_controller_info*)
-               calloc(i, sizeof(*system->ports.data));
-            if (!system->ports.data)
+            system->ports.data = NULL;
+
+            info_ptr = (struct retro_controller_info*)calloc(i, sizeof(*info_ptr));
+            if (!info_ptr)
                return false;
 
+            system->ports.data = info_ptr;
             memcpy(system->ports.data, info,
                   i * sizeof(*system->ports.data));
             system->ports.size = i;
@@ -1516,7 +1525,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             if (!descriptors)
                return false;
 
-            system->mmaps.descriptors = descriptors;
+            system->mmaps.descriptors     = descriptors;
             system->mmaps.num_descriptors = mmaps->num_descriptors;
 
             for (i = 0; i < mmaps->num_descriptors; i++)
