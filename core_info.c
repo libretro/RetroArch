@@ -45,7 +45,9 @@ static core_info_list_t *core_info_curr_list        = NULL;
 static void core_info_list_resolve_all_extensions(
       core_info_list_t *core_info_list)
 {
-   size_t i, all_ext_len = 0;
+   size_t i              = 0;
+   size_t all_ext_len    = 0;
+   char *all_ext         = NULL;
 
    if (!core_info_list)
       return;
@@ -58,10 +60,12 @@ static void core_info_list_resolve_all_extensions(
    }
 
    if (all_ext_len)
-      core_info_list->all_ext = (char*)calloc(1, all_ext_len);
+      all_ext = (char*)calloc(1, all_ext_len);
 
-   if (!core_info_list->all_ext)
+   if (!all_ext)
       return;
+
+   core_info_list->all_ext = all_ext;
 
    for (i = 0; i < core_info_list->count; i++)
    {
@@ -80,23 +84,22 @@ static void core_info_list_resolve_all_firmware(
    size_t i;
    unsigned c;
 
-   if (!core_info_list)
-      return;
-
    for (i = 0; i < core_info_list->count; i++)
    {
-      unsigned count        = 0;
-      core_info_t *info     = (core_info_t*)&core_info_list->list[i];
-      config_file_t *config = (config_file_t*)info->config_data;
+      unsigned count                  = 0;
+      core_info_firmware_t *firmware  = NULL;
+      core_info_t *info               = (core_info_t*)&core_info_list->list[i];
+      config_file_t *config           = (config_file_t*)info->config_data;
 
       if (!config || !config_get_uint(config, "firmware_count", &count))
          continue;
 
-      info->firmware = (core_info_firmware_t*)
-         calloc(count, sizeof(*info->firmware));
+      firmware = (core_info_firmware_t*)calloc(count, sizeof(*firmware));
 
-      if (!info->firmware)
+      if (!firmware)
          continue;
+
+      info->firmware = firmware;
 
       for (c = 0; c < count; c++)
       {
@@ -366,7 +369,9 @@ static core_info_list_t *core_info_list_new(const char *path)
    }
 
    core_info_list_resolve_all_extensions(core_info_list);
-   core_info_list_resolve_all_firmware(core_info_list);
+
+   if (core_info_list)
+      core_info_list_resolve_all_firmware(core_info_list);
 
    dir_list_free(contents);
    return core_info_list;

@@ -310,16 +310,16 @@ bool playlist_push(playlist_t *playlist,
    memmove(playlist->entries + 1, playlist->entries,
          (playlist->cap - 1) * sizeof(struct playlist_entry));
 
-   playlist->entries[0].path      = NULL;
-   playlist->entries[0].label     = NULL;
-   playlist->entries[0].core_path = NULL;
-   playlist->entries[0].core_name = NULL;
-   playlist->entries[0].db_name   = NULL;
-   playlist->entries[0].crc32     = NULL;
+   playlist->entries[0].path         = NULL;
+   playlist->entries[0].label        = NULL;
+   playlist->entries[0].core_path    = NULL;
+   playlist->entries[0].core_name    = NULL;
+   playlist->entries[0].db_name      = NULL;
+   playlist->entries[0].crc32        = NULL;
    if (!string_is_empty(path))
-      playlist->entries[0].path   = strdup(path);
+      playlist->entries[0].path      = strdup(path);
    if (!string_is_empty(label))
-      playlist->entries[0].label  = strdup(label);
+      playlist->entries[0].label     = strdup(label);
    if (!string_is_empty(core_path))
       playlist->entries[0].core_path = strdup(core_path);
    if (!string_is_empty(core_name))
@@ -507,26 +507,25 @@ end:
  **/
 playlist_t *playlist_init(const char *path, size_t size)
 {
-   playlist_t *playlist = (playlist_t*)
-      calloc(1, sizeof(*playlist));
+   struct playlist_entry *entries = NULL;
+   playlist_t           *playlist = (playlist_t*)calloc(1, sizeof(*playlist));
    if (!playlist)
       return NULL;
 
-   playlist->entries = (struct playlist_entry*)calloc(size,
-         sizeof(*playlist->entries));
-   if (!playlist->entries)
-      goto error;
+   entries = (struct playlist_entry*)calloc(size, sizeof(*entries));
+   if (!entries)
+   {
+      free(playlist);
+      return NULL;
+   }
 
-   playlist->cap = size;
+   playlist->entries   = entries;
+   playlist->cap       = size;
 
    playlist_read_file(playlist, path);
 
    playlist->conf_path = strdup(path);
    return playlist;
-
-error:
-   playlist_free(playlist);
-   return NULL;
 }
 
 static int playlist_qsort_func(const struct playlist_entry *a,
