@@ -120,10 +120,6 @@ char *string_replace_substring(const char *in,
    return out;
 }
 
-/* Non-GPL licensed versions of whitespace trimming:
- * http://stackoverflow.com/questions/656542/trim-a-string-in-c
- */
-
 /* Remove leading whitespaces */
 char *string_trim_whitespace_left(char *const s)
 {
