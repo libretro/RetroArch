@@ -1764,7 +1764,6 @@ static bool command_event_resize_windowed_scale(void)
 bool command_event(enum event_command cmd, void *data)
 {
    bool boolean              = false;
-   settings_t *settings      = config_get_ptr();
 
    switch (cmd)
    {
@@ -1838,17 +1837,20 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_LOAD_STATE:
-         /* Immutable - disallow savestate load when
-          * we absolutely cannot change game state. */
-         if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
-            return false;
+         {
+            settings_t *settings      = config_get_ptr();
+            /* Immutable - disallow savestate load when
+             * we absolutely cannot change game state. */
+            if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
+               return false;
 
 #ifdef HAVE_CHEEVOS
-         if (settings->cheevos.hardcore_mode_enable)
-            return false;
+            if (settings->cheevos.hardcore_mode_enable)
+               return false;
 #endif
 
-         command_event_main_state(cmd);
+            command_event_main_state(cmd);
+         }
          break;
       case CMD_EVENT_UNDO_LOAD_STATE:
          command_event_main_state(cmd);
@@ -1879,23 +1881,32 @@ bool command_event(enum event_command cmd, void *data)
          core_reset();
          break;
       case CMD_EVENT_SAVE_STATE:
+         {
+            settings_t *settings      = config_get_ptr();
 #ifdef HAVE_CHEEVOS
-         if (settings->cheevos.hardcore_mode_enable)
-            return false;
+            if (settings->cheevos.hardcore_mode_enable)
+               return false;
 #endif
 
-         if (settings->savestate_auto_index)
-            settings->state_slot++;
+            if (settings->savestate_auto_index)
+               settings->state_slot++;
 
-         command_event_main_state(cmd);
+            command_event_main_state(cmd);
+         }
          break;
       case CMD_EVENT_SAVE_STATE_DECREMENT:
-         /* Slot -1 is (auto) slot. */
-         if (settings->state_slot >= 0)
-            settings->state_slot--;
+         {
+            settings_t *settings      = config_get_ptr();
+            /* Slot -1 is (auto) slot. */
+            if (settings->state_slot >= 0)
+               settings->state_slot--;
+         }
          break;
       case CMD_EVENT_SAVE_STATE_INCREMENT:
-         settings->state_slot++;
+         {
+            settings_t *settings      = config_get_ptr();
+            settings->state_slot++;
+         }
          break;
       case CMD_EVENT_TAKE_SCREENSHOT:
          if (!take_screenshot(path_get(RARCH_PATH_BASENAME), false))
@@ -1957,32 +1968,41 @@ bool command_event(enum event_command cmd, void *data)
          cheat_manager_apply_cheats();
          break;
       case CMD_EVENT_REWIND_DEINIT:
+         {
+            settings_t *settings      = config_get_ptr();
 #ifdef HAVE_NETWORKING
-         if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
-            return false;
+            if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
+               return false;
 #endif
 #ifdef HAVE_CHEEVOS
-         if (settings->cheevos.hardcore_mode_enable)
-            return false;
+            if (settings->cheevos.hardcore_mode_enable)
+               return false;
 #endif
 
-         state_manager_event_deinit();
+            state_manager_event_deinit();
+         }
          break;
       case CMD_EVENT_REWIND_INIT:
+         {
+            settings_t *settings      = config_get_ptr();
 #ifdef HAVE_CHEEVOS
-         if (settings->cheevos.hardcore_mode_enable)
-            return false;
+            if (settings->cheevos.hardcore_mode_enable)
+               return false;
 #endif
 #ifdef HAVE_NETWORKING
-         if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
+            if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
 #endif
-            state_manager_event_init();
+               state_manager_event_init();
+         }
          break;
       case CMD_EVENT_REWIND_TOGGLE:
-         if (settings->rewind_enable)
-            command_event(CMD_EVENT_REWIND_INIT, NULL);
-         else
-            command_event(CMD_EVENT_REWIND_DEINIT, NULL);
+         {
+            settings_t *settings      = config_get_ptr();
+            if (settings->rewind_enable)
+               command_event(CMD_EVENT_REWIND_INIT, NULL);
+            else
+               command_event(CMD_EVENT_REWIND_DEINIT, NULL);
+         }
          break;
       case CMD_EVENT_AUTOSAVE_DEINIT:
 #ifdef HAVE_THREADS
@@ -2008,18 +2028,22 @@ bool command_event(enum event_command cmd, void *data)
             return false;
          break;
       case CMD_EVENT_AUDIO_START:
-         if (audio_driver_alive())
-            return false;
-
-         if (settings && !settings->audio.mute_enable && !audio_driver_start())
          {
-            RARCH_ERR("%s\n",
-                  msg_hash_to_str(MSG_FAILED_TO_START_AUDIO_DRIVER));
-            audio_driver_unset_active();
+            settings_t *settings      = config_get_ptr();
+            if (audio_driver_alive())
+               return false;
+
+            if (settings && !settings->audio.mute_enable && !audio_driver_start())
+            {
+               RARCH_ERR("%s\n",
+                     msg_hash_to_str(MSG_FAILED_TO_START_AUDIO_DRIVER));
+               audio_driver_unset_active();
+            }
          }
          break;
       case CMD_EVENT_AUDIO_MUTE_TOGGLE:
          {
+            settings_t *settings      = config_get_ptr();
             const char *msg = !settings->audio.mute_enable ?
                msg_hash_to_str(MSG_AUDIO_MUTED):
                msg_hash_to_str(MSG_AUDIO_UNMUTED);
@@ -2042,25 +2066,34 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_OVERLAY_INIT:
-         command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
+         {
+            settings_t *settings      = config_get_ptr();
+            command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
 #ifdef HAVE_OVERLAY
-         if (settings->input.overlay_enable)
-            task_push_overlay_load_default(input_overlay_loaded, NULL);
+            if (settings->input.overlay_enable)
+               task_push_overlay_load_default(input_overlay_loaded, NULL);
 #endif
+         }
          break;
       case CMD_EVENT_OVERLAY_NEXT:
+         {
+            settings_t *settings      = config_get_ptr();
 #ifdef HAVE_OVERLAY
-         input_overlay_next(overlay_ptr, settings->input.overlay_opacity);
+            input_overlay_next(overlay_ptr, settings->input.overlay_opacity);
 #endif
+         }
          break;
       case CMD_EVENT_DSP_FILTER_DEINIT:
          audio_driver_dsp_filter_free();
          break;
       case CMD_EVENT_DSP_FILTER_INIT:
-         command_event(CMD_EVENT_DSP_FILTER_DEINIT, NULL);
-         if (string_is_empty(settings->path.audio_dsp_plugin))
-            break;
-         audio_driver_dsp_filter_init(settings->path.audio_dsp_plugin);
+         {
+            settings_t *settings      = config_get_ptr();
+            command_event(CMD_EVENT_DSP_FILTER_DEINIT, NULL);
+            if (string_is_empty(settings->path.audio_dsp_plugin))
+               break;
+            audio_driver_dsp_filter_init(settings->path.audio_dsp_plugin);
+         }
          break;
       case CMD_EVENT_GPU_RECORD_DEINIT:
          video_driver_gpu_record_deinit();
@@ -2108,50 +2141,56 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_HISTORY_INIT:
-         command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
-         if (!settings->history_list_enable)
-            return false;
+         {
+            settings_t *settings      = config_get_ptr();
+            command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
+            if (!settings->history_list_enable)
+               return false;
 
-         RARCH_LOG("%s: [%s].\n",
-               msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
-               settings->path.content_history);
-         g_defaults.content_history = playlist_init(
-               settings->path.content_history,
-               settings->content_history_size);
+            RARCH_LOG("%s: [%s].\n",
+                  msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
+                  settings->path.content_history);
+            g_defaults.content_history = playlist_init(
+                  settings->path.content_history,
+                  settings->content_history_size);
 
 #ifdef HAVE_FFMPEG
-         RARCH_LOG("%s: [%s].\n",
-               msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
-               settings->path.content_music_history);
-         g_defaults.music_history = playlist_init(
-               settings->path.content_music_history,
-               settings->content_history_size);
+            RARCH_LOG("%s: [%s].\n",
+                  msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
+                  settings->path.content_music_history);
+            g_defaults.music_history = playlist_init(
+                  settings->path.content_music_history,
+                  settings->content_history_size);
 
-         RARCH_LOG("%s: [%s].\n",
-               msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
-               settings->path.content_video_history);
-         g_defaults.video_history = playlist_init(
-               settings->path.content_video_history,
-               settings->content_history_size);
+            RARCH_LOG("%s: [%s].\n",
+                  msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
+                  settings->path.content_video_history);
+            g_defaults.video_history = playlist_init(
+                  settings->path.content_video_history,
+                  settings->content_history_size);
 #endif
 
 #ifdef HAVE_IMAGEVIEWER
-         RARCH_LOG("%s: [%s].\n",
-               msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
-               settings->path.content_image_history);
-         g_defaults.image_history = playlist_init(
-               settings->path.content_image_history,
-               settings->content_history_size);
+            RARCH_LOG("%s: [%s].\n",
+                  msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
+                  settings->path.content_image_history);
+            g_defaults.image_history = playlist_init(
+                  settings->path.content_image_history,
+                  settings->content_history_size);
 #endif
+         }
          break;
       case CMD_EVENT_CORE_INFO_DEINIT:
          core_info_deinit_list();
          break;
       case CMD_EVENT_CORE_INFO_INIT:
-         command_event(CMD_EVENT_CORE_INFO_DEINIT, NULL);
+         {
+            settings_t *settings      = config_get_ptr();
+            command_event(CMD_EVENT_CORE_INFO_DEINIT, NULL);
 
-         if (!string_is_empty(settings->directory.libretro))
-            core_info_init_list();
+            if (!string_is_empty(settings->directory.libretro))
+               core_info_init_list();
+         }
          break;
       case CMD_EVENT_CORE_DEINIT:
          {
@@ -2187,14 +2226,20 @@ bool command_event(enum event_command cmd, void *data)
          audio_driver_set_nonblocking_state(boolean);
          break;
       case CMD_EVENT_OVERLAY_SET_SCALE_FACTOR:
+         {
 #ifdef HAVE_OVERLAY
-         input_overlay_set_scale_factor(overlay_ptr, settings->input.overlay_scale);
+            settings_t *settings      = config_get_ptr();
+            input_overlay_set_scale_factor(overlay_ptr, settings->input.overlay_scale);
 #endif
+         }
          break;
       case CMD_EVENT_OVERLAY_SET_ALPHA_MOD:
+         {
 #ifdef HAVE_OVERLAY
-         input_overlay_set_alpha_mod(overlay_ptr, settings->input.overlay_opacity);
+            settings_t *settings      = config_get_ptr();
+            input_overlay_set_alpha_mod(overlay_ptr, settings->input.overlay_opacity);
 #endif
+         }
          break;
       case CMD_EVENT_AUDIO_REINIT:
          {
@@ -2272,6 +2317,7 @@ bool command_event(enum event_command cmd, void *data)
          if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
          {
             bool is_paused = false;
+            settings_t *settings      = config_get_ptr();
 
             RARCH_LOG("%s\n", msg_hash_to_str(MSG_PAUSED));
             command_event(CMD_EVENT_AUDIO_STOP, NULL);
@@ -2310,20 +2356,24 @@ bool command_event(enum event_command cmd, void *data)
          command_event(CMD_EVENT_PAUSE_CHECKS, NULL);
          break;
       case CMD_EVENT_MENU_PAUSE_LIBRETRO:
+         {
 #ifdef HAVE_MENU
-         if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
-         {
-            if (settings->menu.pause_libretro)
-               command_event(CMD_EVENT_AUDIO_STOP, NULL);
+            settings_t *settings      = config_get_ptr();
+
+            if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+            {
+               if (settings->menu.pause_libretro)
+                  command_event(CMD_EVENT_AUDIO_STOP, NULL);
+               else
+                  command_event(CMD_EVENT_AUDIO_START, NULL);
+            }
             else
-               command_event(CMD_EVENT_AUDIO_START, NULL);
-         }
-         else
-         {
-            if (settings->menu.pause_libretro)
-               command_event(CMD_EVENT_AUDIO_START, NULL);
-         }
+            {
+               if (settings->menu.pause_libretro)
+                  command_event(CMD_EVENT_AUDIO_START, NULL);
+            }
 #endif
+         }
          break;
       case CMD_EVENT_SHADER_DIR_DEINIT:
          dir_free_shader();
@@ -2357,13 +2407,16 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_NETPLAY_INIT:
-         command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+         {
+            settings_t *settings      = config_get_ptr();
+            command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 #ifdef HAVE_NETWORKING
-         if (!init_netplay(
-              data, settings->netplay.server,
-              settings->netplay.port))
-            return false;
+            if (!init_netplay(
+                     data, settings->netplay.server,
+                     settings->netplay.port))
+               return false;
 #endif
+         }
          break;
       case CMD_EVENT_NETPLAY_FLIP_PLAYERS:
 #ifdef HAVE_NETWORKING
@@ -2376,17 +2429,20 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_FULLSCREEN_TOGGLE:
-         if (!video_driver_has_windowed())
-            return false;
+         {
+            settings_t *settings      = config_get_ptr();
+            if (!video_driver_has_windowed())
+               return false;
 
-         /* If we go fullscreen we drop all drivers and
-          * reinitialize to be safe. */
-         settings->video.fullscreen = !settings->video.fullscreen;
-         command_event(CMD_EVENT_REINIT, NULL);
-         if (settings->video.fullscreen)
-            video_driver_hide_mouse();
-         else
-            video_driver_show_mouse();
+            /* If we go fullscreen we drop all drivers and
+             * reinitialize to be safe. */
+            settings->video.fullscreen = !settings->video.fullscreen;
+            command_event(CMD_EVENT_REINIT, NULL);
+            if (settings->video.fullscreen)
+               video_driver_hide_mouse();
+            else
+               video_driver_show_mouse();
+         }
          break;
       case CMD_EVENT_COMMAND_DEINIT:
          input_driver_deinit_command();
