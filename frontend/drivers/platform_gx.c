@@ -223,6 +223,9 @@ static void frontend_gx_get_environment_settings(
 
    fill_pathname_join(g_defaults.dir.core_info, g_defaults.dir.core,
          "info", sizeof(g_defaults.dir.core_info));
+   fill_pathname_join(g_defaults.dir.autoconfig,
+         g_defaults.dir.core, "autoconfig",
+         sizeof(g_defaults.dir.autoconfig));
    fill_pathname_join(g_defaults.dir.overlay, g_defaults.dir.core,
          "overlays", sizeof(g_defaults.dir.overlay));
    fill_pathname_join(g_defaults.path.config, g_defaults.dir.port,

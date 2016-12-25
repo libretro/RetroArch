@@ -1838,7 +1838,9 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_LOAD_STATE:
          {
+#ifdef HAVE_CHEEVOS
             settings_t *settings      = config_get_ptr();
+#endif
             /* Immutable - disallow savestate load when
              * we absolutely cannot change game state. */
             if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
@@ -1969,7 +1971,9 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_REWIND_DEINIT:
          {
+#ifdef HAVE_CHEEVOS
             settings_t *settings      = config_get_ptr();
+#endif
 #ifdef HAVE_NETWORKING
             if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
                return false;
@@ -1984,8 +1988,8 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_REWIND_INIT:
          {
-            settings_t *settings      = config_get_ptr();
 #ifdef HAVE_CHEEVOS
+            settings_t *settings      = config_get_ptr();
             if (settings->cheevos.hardcore_mode_enable)
                return false;
 #endif
@@ -2408,7 +2412,9 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_NETPLAY_INIT:
          {
+#ifdef HAVE_NETWORKING
             settings_t *settings      = config_get_ptr();
+#endif
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 #ifdef HAVE_NETWORKING
             if (!init_netplay(
