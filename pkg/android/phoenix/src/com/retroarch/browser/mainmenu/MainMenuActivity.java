@@ -14,6 +14,9 @@ import android.os.Environment;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
+import android.app.Activity;
+import android.content.pm.PackageManager;
+import android.app.AlertDialog.Builder;
 
 /**
  * {@link PreferenceActivity} subclass that provides all of the
@@ -21,6 +24,8 @@ import android.provider.Settings;
  */
 public final class MainMenuActivity extends PreferenceActivity
 {
+int MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE = 0; 
+
 	public static void startRetroActivity(Intent retro, String contentPath, String corePath,
 			String configFilePath, String imePath, String dataDirPath, String dataSourcePath)
 	{
@@ -46,6 +51,28 @@ public final class MainMenuActivity extends PreferenceActivity
 
 		// Bind audio stream to hardware controls.
 		setVolumeControlStream(AudioManager.STREAM_MUSIC);
+		
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+		{
+		   if (this.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED) {
+
+		      // Should we show an explanation?
+		      if (this.shouldShowRequestPermissionRationale(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+		         // Show an explanation to the user *asynchronously* -- don't block
+		         // this thread waiting for the user's response! After the user
+		         // sees the explanation, try again to request the permission.
+
+		      } else {
+		         // No explanation needed, we can request the permission.
+		         this.requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+		            MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE);
+
+		         // MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE is an
+		         // app-defined int constant. The callback method gets the
+		         // result of the request.
+	              }
+	           }
+		}
 
 		UserPreferences.updateConfigFile(this);
 		final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -71,5 +98,30 @@ public final class MainMenuActivity extends PreferenceActivity
 				getApplicationInfo().sourceDir);
 		startActivity(retro);
 		finish();
+	}
+	
+	@Override
+	public void onRequestPermissionsResult(int requestCode,
+	      String permissions[], int[] grantResults) {
+	   switch (requestCode) {
+	      case MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE: {
+	         // If request is cancelled, the result arrays are empty.
+            	 if (grantResults.length > 0
+	               && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+		    // permission granted
+            	 } else {
+		    // permission denied
+		    AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+		    builder.setMessage("External SDCard acesss will not be available.") //hardcoded because the rest of retroarch is...
+		    .setNeutralButton("Ok", new DialogInterface.OnClickListener() {
+		       public void onClick(DialogInterface dialog, int id) {
+                          // Nothing lul
+                       }
+		    })
+		    builder.create();
+		 }
+		 return;
+	      }
+	   }
 	}
 }
