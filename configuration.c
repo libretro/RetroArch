@@ -920,7 +920,7 @@ static int populate_settings_int(settings_t *settings, struct config_int_setting
 #ifdef HAVE_NETWORKGAMEPAD
    SETTING_INT("network_remote_base_port",     &settings->network_remote_base_port, true, network_remote_base_port, false);
 #endif
-#ifdef HAVE_GEKKO
+#ifdef GEKKO
    SETTING_INT("video_viwidth",                &settings->video.viwidth, true, video_viwidth, false);
 #endif
 #ifdef HAVE_MENU
