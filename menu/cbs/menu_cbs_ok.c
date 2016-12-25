@@ -3548,7 +3548,7 @@ static int action_ok_netplay_enable_host(const char *path,
    if (!content_is_inited())
    {
       runloop_msg_queue_push(
-            "Netplay will start when content is loaded.",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
             1, 480, true);
       return 0;
    }
@@ -3588,7 +3588,7 @@ static int action_ok_netplay_enable_client(const char *path,
    if (!content_is_inited())
    {
       runloop_msg_queue_push(
-            "Netplay will start when content is loaded.",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
             1, 480, true);
       return 0;
    }

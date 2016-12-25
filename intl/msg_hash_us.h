@@ -2361,3 +2361,5 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_FILTER,
       "Filter")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SCALE,
       "Scale")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
+      "Netplay will start when content is loaded.")
