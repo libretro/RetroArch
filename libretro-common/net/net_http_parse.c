@@ -46,10 +46,12 @@ int string_parse_html_anchor(const char *line, char *link, char *name,
    memset(link, 0, link_size);
    memset(name, 0, name_size);
 
-   if(!(line = strcasestr(line, "<a href=\"")))
+   line = strcasestr(line, "<a href=\"");
+
+   if (!line)
       return 1;
-   else
-      line += 9;
+
+   line += 9;
 
    if (line && *line)
    {
@@ -69,7 +71,7 @@ int string_parse_html_anchor(const char *line, char *link, char *name,
       if (!*name)
       {
          char *start = strstr(line, "\">");
-         char *end = strstr(start, "</a>");
+         char *end   = strstr(start, "</a>");
 
          if (!start || !end)
             return 1;
@@ -88,7 +90,7 @@ int main(int argc, char *argv[])
 {
    char link[1024];
    char name[1024];
-   const char *line = "<a href=\"http://www.test.com/somefile.zip\">Test</a>\n";
+   const char *line  = "<a href=\"http://www.test.com/somefile.zip\">Test</a>\n";
 
    link[0] = name[0] = '\0';
 
