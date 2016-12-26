@@ -68,7 +68,7 @@ static void gl_size_format(GLint* internalFormat)
 #ifdef HAVE_OPENGLES2
          *internalFormat = GL_RGBA8_OES;
 #else
-         *internalFormat = GL_RGBA8;
+         *internalFormat = GL_BGRA_EXT;
 #endif
          break;
    }
