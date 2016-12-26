@@ -551,7 +551,7 @@ bool config_overlay_enable_default(void)
    return true;
 }
 
-static int populate_settings_array(settings_t *settings, struct config_array_setting **out)
+static struct config_array_setting *populate_settings_array(settings_t *settings, int *size)
 {
    unsigned count                        = 0;
    struct config_array_setting *tmp      = NULL;
@@ -583,14 +583,12 @@ static int populate_settings_array(settings_t *settings, struct config_array_set
    SETTING_ARRAY("bundle_assets_dst_path",   settings->path.bundle_assets_dst, false, NULL, true);
    SETTING_ARRAY("bundle_assets_dst_path_subdir", settings->path.bundle_assets_dst_subdir, false, NULL, true);
 
-   *out = 
-      (struct config_array_setting*) malloc(count * sizeof(struct config_array_setting));
-   memcpy(*out, tmp, sizeof(struct config_array_setting) * count);
-   free(tmp);
-   return count;
+   *size = count;
+
+   return tmp;
 }
 
-static int populate_settings_path(settings_t *settings, struct config_path_setting **out)
+static struct config_path_setting *populate_settings_path(settings_t *settings, int *size)
 {
    unsigned count = 0;
    struct config_path_setting     *tmp = NULL;
@@ -702,14 +700,12 @@ static int populate_settings_path(settings_t *settings, struct config_path_setti
             global->record.config_dir, false, NULL, true);
    }
 
-   *out = 
-      (struct config_path_setting*) malloc(count * sizeof(struct config_path_setting));
-   memcpy(*out, tmp, sizeof(struct config_path_setting) * count);
-   free(tmp);
-   return count;
+   *size = count;
+
+   return tmp;
 }
 
-static int populate_settings_bool(settings_t *settings, struct config_bool_setting **out)
+static struct config_bool_setting *populate_settings_bool(settings_t *settings, int *size)
 {
    unsigned count                      = 0;
    global_t   *global                  = global_get_ptr();
@@ -856,14 +852,12 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
       SETTING_BOOL("custom_bgm_enable",             &global->console.sound.system_bgm_enable, true, false, false);
    }
 
-   *out = 
-      (struct config_bool_setting*) malloc(count *sizeof(struct config_bool_setting));
-   memcpy(*out, tmp, sizeof(struct config_bool_setting) * count);
-   free(tmp);
-   return count;
+   *size = count;
+
+   return tmp;
 }
 
-static int populate_settings_float(settings_t *settings, struct config_float_setting **out)
+static struct config_float_setting *populate_settings_float(settings_t *settings, int *size)
 {
    unsigned count = 0;
    struct config_float_setting       *tmp = NULL;
@@ -890,14 +884,12 @@ static int populate_settings_float(settings_t *settings, struct config_float_set
    SETTING_FLOAT("slowmotion_ratio",         &settings->slowmotion_ratio,     true, slowmotion_ratio, false);
    SETTING_FLOAT("input_axis_threshold",     &settings->input.axis_threshold, true, axis_threshold, false);
 
-   *out = 
-      (struct config_float_setting*) malloc(count * sizeof(struct config_float_setting));
-   memcpy(*out, tmp, sizeof(struct config_float_setting) * count);
-   free(tmp);
-   return count;
+   *size = count;
+
+   return tmp;
 }
 
-static int populate_settings_int(settings_t *settings, struct config_int_setting **out)
+static struct config_int_setting *populate_settings_int(settings_t *settings, int *size)
 {
    unsigned count                     = 0;
    struct config_int_setting     *tmp = NULL;
@@ -968,10 +960,9 @@ static int populate_settings_int(settings_t *settings, struct config_int_setting
    SETTING_INT("bundle_assets_extract_version_current", &settings->bundle_assets_extract_version_current, true, 0, false);
    SETTING_INT("bundle_assets_extract_last_version",    &settings->bundle_assets_extract_last_version, true, 0, false);
 
-   *out = (struct config_int_setting*)malloc(count * sizeof(struct config_int_setting));
-   memcpy(*out, tmp, sizeof(struct config_int_setting) * count);
-   free(tmp);
-   return count;
+   *size = count;
+
+   return tmp;
 }
 
 /**
@@ -982,6 +973,9 @@ static int populate_settings_int(settings_t *settings, struct config_int_setting
 static void config_set_defaults(void)
 {
    unsigned i, j;
+   int float_settings_size         = 0;
+   int bool_settings_size          = 0;
+   int int_settings_size           = 0;
    settings_t *settings            = config_get_ptr();
    const char *def_video           = config_get_default_video();
    const char *def_audio           = config_get_default_audio();
@@ -1001,9 +995,9 @@ static void config_set_defaults(void)
 #ifdef HAVE_MENU
    static bool first_initialized   = true;
 #endif
-   unsigned float_settings_size    = populate_settings_float  (settings, &float_settings);
-   unsigned bool_settings_size     = populate_settings_bool  (settings, &bool_settings);
-   int int_settings_size           = populate_settings_int   (settings, &int_settings);
+   float_settings                  = populate_settings_float  (settings, &float_settings_size);
+   bool_settings                   = populate_settings_bool  (settings, &bool_settings_size);
+   int_settings                    = populate_settings_int   (settings, &int_settings_size);
 
    if (bool_settings && (bool_settings_size > 0))
    {
@@ -1738,25 +1732,25 @@ static bool config_load_file(const char *path, bool set_defaults,
 {
    unsigned i;
    char tmp_str[PATH_MAX_LENGTH];
+   int int_settings_size                           = 0;
+   int float_settings_size                         = 0;
+   int bool_settings_size                          = 0;
+   int array_settings_size                         = 0;
+   int path_settings_size                          = 0;
    bool ret                                        = false;
    bool tmp_bool                                   = false;
    char *save                                      = NULL;
    unsigned msg_color                              = 0;
    config_file_t *conf                             = NULL;
-   struct config_int_setting       *int_settings   = NULL;
-   struct config_float_setting     *float_settings = NULL;
-   struct config_bool_setting     *bool_settings   = NULL;
-   struct config_array_setting     *array_settings = NULL;
-   struct config_path_setting     *path_settings   = NULL;
    char *override_username                         = NULL;
 #ifdef HAVE_NETWORKING
    char *override_netplay_ip_address               = NULL;
 #endif
-   int bool_settings_size                          = populate_settings_bool  (settings, &bool_settings);
-   int float_settings_size                         = populate_settings_float (settings, &float_settings);
-   int int_settings_size                           = populate_settings_int   (settings, &int_settings);
-   int array_settings_size                         = populate_settings_array (settings, &array_settings);
-   int path_settings_size                          = populate_settings_path  (settings, &path_settings);
+   struct config_bool_setting *bool_settings       = populate_settings_bool  (settings, &bool_settings_size);
+   struct config_float_setting *float_settings     = populate_settings_float (settings, &float_settings_size);
+   struct config_int_setting *int_settings         = populate_settings_int   (settings, &int_settings_size);
+   struct config_array_setting *array_settings     = populate_settings_array (settings, &array_settings_size);
+   struct config_path_setting *path_settings       = populate_settings_path  (settings, &path_settings_size);
 
    tmp_str[0] = '\0';
 
@@ -2951,11 +2945,11 @@ bool config_save_file(const char *path)
       return false;
    }
 
-   bool_settings_size   = populate_settings_bool  (settings, &bool_settings);
-   int_settings_size    = populate_settings_int   (settings, &int_settings);
-   float_settings_size  = populate_settings_float (settings, &float_settings);
-   array_settings_size  = populate_settings_array (settings, &array_settings);
-   path_settings_size   = populate_settings_path  (settings, &path_settings);
+   bool_settings   = populate_settings_bool  (settings, &bool_settings_size);
+   int_settings    = populate_settings_int   (settings, &int_settings_size);
+   float_settings  = populate_settings_float (settings, &float_settings_size);
+   array_settings  = populate_settings_array (settings, &array_settings_size);
+   path_settings   = populate_settings_path  (settings, &path_settings_size);
 
    /* Path settings */
    if (path_settings && (path_settings_size > 0))
@@ -3110,6 +3104,7 @@ bool config_save_overrides(int override_type)
    char override_directory[PATH_MAX_LENGTH];
    char core_path[PATH_MAX_LENGTH];
    char game_path[PATH_MAX_LENGTH];
+   int tmp_i                                   = 0;
    unsigned i                                  = 0;
    int bool_settings_size                      = 0;
    int int_settings_size                       = 0;
@@ -3176,16 +3171,25 @@ bool config_save_overrides(int override_type)
    /* Load the original config file in memory */
    config_load_file(path_get(RARCH_PATH_CONFIG), false, settings);
 
-   bool_settings_size =  populate_settings_bool(settings, &bool_settings);
-   populate_settings_bool (overrides, &bool_overrides);
-   int_settings_size  = populate_settings_int(settings, &int_settings);
-   populate_settings_int (overrides, &int_overrides);
-   float_settings_size = populate_settings_float(settings, &float_settings);
-   populate_settings_float (overrides, &float_overrides);
-   array_settings_size = populate_settings_array(settings, &array_settings);
-   populate_settings_array (overrides, &array_overrides);
-   path_settings_size = populate_settings_path(settings, &path_settings);
-   populate_settings_path (overrides, &path_overrides);
+   bool_settings       = populate_settings_bool(settings,   &bool_settings_size);
+   tmp_i               = 0;
+   bool_overrides      = populate_settings_bool(overrides,  &tmp_i);
+
+   int_settings        = populate_settings_int(settings,    &int_settings_size);
+   tmp_i               = 0;
+   int_overrides       = populate_settings_int (overrides,  &tmp_i);
+
+   float_settings      = populate_settings_float(settings,  &float_settings_size);
+   tmp_i               = 0;
+   float_overrides     = populate_settings_float(overrides, &tmp_i);
+
+   array_settings      = populate_settings_array(settings,  &array_settings_size);
+   tmp_i               = 0;
+   array_overrides     = populate_settings_array (overrides, &tmp_i);
+
+   path_settings       = populate_settings_path(settings, &path_settings_size);
+   tmp_i               = 0;
+   path_overrides      = populate_settings_path (overrides, &tmp_i);
 
    RARCH_LOG("[overrides] looking for changed settings... \n");
 
