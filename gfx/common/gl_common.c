@@ -55,26 +55,6 @@ void gl_ff_matrix(const math_matrix_4x4 *mat)
 #endif
 }
 
-static void gl_size_format(GLint* internalFormat)
-{
-#ifndef HAVE_PSGL
-   switch (*internalFormat)
-   {
-      case GL_RGB:
-         /* FIXME: PS3 does not support this, neither does it have GL_RGB565_OES. */
-         *internalFormat = GL_RGB565;
-         break;
-      case GL_RGBA:
-#ifdef HAVE_OPENGLES2
-         *internalFormat = GL_RGBA8_OES;
-#else
-         *internalFormat = GL_RGBA8;
-#endif
-         break;
-   }
-#endif
-}
-
 /* This function should only be used without mipmaps
    and when data == NULL */
 void gl_load_texture_image(GLenum target,
@@ -91,23 +71,36 @@ void gl_load_texture_image(GLenum target,
 #ifdef HAVE_OPENGLES2
    if (gl_check_capability(GL_CAPS_TEX_STORAGE_EXT))
    {
-      gl_size_format(&internalFormat);
+      switch (internalFormat)
+      {
+         case GL_RGB:
+            internalFormat = GL_RGB565;
+            break;
+         case GL_RGBA:
+            internalFormat = GL_RGBA8_OES;
+            break;
+         case GL_BGRA_EXT:
+            internalFormat = GL_BGRA8_EXT;
+            break;
+      }
       glTexStorage2DEXT(target, 1, internalFormat, width, height);
    }
 #else
    if (gl_check_capability(GL_CAPS_TEX_STORAGE))
    {
-      gl_size_format(&internalFormat);
+      switch (internalFormat)
+      {
+         case GL_RGB:
+            internalFormat = GL_RGB565;
+            break;
+         case GL_RGBA:
+            internalFormat = GL_RGBA8;
+            break;
+      }
       glTexStorage2D(target, 1, internalFormat, width, height);
    }
 #endif
    else
 #endif
-   {
-#ifdef HAVE_OPENGLES
-      if (gl_check_capability(GL_CAPS_GLES3_SUPPORTED))
-#endif
-         gl_size_format(&internalFormat);
       glTexImage2D(target, level, internalFormat, width, height, border, format, type, data);
-   }
 }
