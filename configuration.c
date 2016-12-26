@@ -2929,14 +2929,19 @@ bool config_save_file(const char *path)
    path_settings_size   = populate_settings_path  (settings, &path_settings);
 
    /* Path settings */
-   for (i = 0; i < (unsigned)path_settings_size; i++)
+   if (path_settings && (path_settings_size > 0))
    {
-      const char *value = path_settings[i].ptr;
+      for (i = 0; i < (unsigned)path_settings_size; i++)
+      {
+         const char *value = path_settings[i].ptr;
 
-      if (path_settings[i].def_enable && string_is_empty(path_settings[i].ptr))
-         value = "default";
+         if (path_settings[i].def_enable && string_is_empty(path_settings[i].ptr))
+            value = "default";
 
-      config_set_path(conf, path_settings[i].ident, value);
+         config_set_path(conf, path_settings[i].ident, value);
+      }
+
+      free(path_settings);
    }
 
 #ifdef HAVE_MENU
@@ -2945,19 +2950,37 @@ bool config_save_file(const char *path)
 #endif
 
    /* String settings  */
-   for (i = 0; i < (unsigned)array_settings_size; i++)
-      config_set_string(conf, array_settings[i].ident,
-            array_settings[i].ptr);
+   if (array_settings && (array_settings_size > 0))
+   {
+      for (i = 0; i < (unsigned)array_settings_size; i++)
+         config_set_string(conf,
+               array_settings[i].ident,
+               array_settings[i].ptr);
+
+      free(array_settings);
+   }
 
    /* Float settings  */
-   for (i = 0; i < (unsigned)float_settings_size; i++)
-      config_set_float(conf, float_settings[i].ident,
-            *float_settings[i].ptr);
+   if (float_settings && (float_settings_size > 0))
+   {
+      for (i = 0; i < (unsigned)float_settings_size; i++)
+         config_set_float(conf,
+               float_settings[i].ident,
+               *float_settings[i].ptr);
+
+      free(float_settings);
+   }
 
    /* Integer settings */
-   for (i = 0; i < (unsigned)int_settings_size; i++)
-      config_set_int(conf, int_settings[i].ident,
-            *int_settings[i].ptr);
+   if (int_settings && (int_settings_size > 0))
+   {
+      for (i = 0; i < (unsigned)int_settings_size; i++)
+         config_set_int(conf,
+               int_settings[i].ident,
+               *int_settings[i].ptr);
+
+      free(int_settings);
+   }
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -2976,9 +2999,14 @@ bool config_save_file(const char *path)
    }
 
    /* Boolean settings */
-   for (i = 0; i < (unsigned)bool_settings_size; i++)
-      config_set_bool(conf, bool_settings[i].ident,
-            *bool_settings[i].ptr);
+   if (bool_settings && (bool_settings_size > 0))
+   {
+      for (i = 0; i < (unsigned)bool_settings_size; i++)
+         config_set_bool(conf, bool_settings[i].ident,
+               *bool_settings[i].ptr);
+
+      free(bool_settings);
+   }
 
 #ifdef HAVE_NETWORKGAMEPAD
    for (i = 0; i < MAX_USERS; i++)
@@ -3035,17 +3063,6 @@ bool config_save_file(const char *path)
 
    ret = config_file_write(conf, path);
    config_file_free(conf);
-
-   if (bool_settings)
-      free(bool_settings);
-   if (int_settings)
-      free(int_settings);
-   if (float_settings)
-      free(float_settings);
-   if (array_settings)
-      free(array_settings);
-   if (path_settings)
-      free(path_settings);
 
    return ret;
 }
