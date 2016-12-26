@@ -2246,3 +2246,15 @@ MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
       "Use the same controls for both the menu and the game. Applies to the keyboard.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
       "Show onscreen messages.")
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_BROWSE_URL_LIST,
+      "Browse URL"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_BROWSE_URL,
+      "URL Path"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_BROWSE_START,
+      "Start"
+      )

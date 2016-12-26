@@ -3901,6 +3901,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
    switch (type)
    {
+      case DISPLAYLIST_BROWSE_URL_LIST:
       case DISPLAYLIST_HELP_SCREEN_LIST:
       case DISPLAYLIST_MAIN_MENU:
       case DISPLAYLIST_SETTINGS_ALL:
@@ -4088,6 +4089,21 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_SETTING_NO_ITEM, 0, 0);
          ret = 0;
 #endif
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
+      case DISPLAYLIST_BROWSE_URL_LIST:
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BROWSE_URL),
+               msg_hash_to_str(MENU_ENUM_LABEL_BROWSE_URL),
+               MENU_ENUM_LABEL_BROWSE_URL,
+               0, 0, 0);
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BROWSE_START),
+               msg_hash_to_str(MENU_ENUM_LABEL_BROWSE_START),
+               MENU_ENUM_LABEL_BROWSE_START,
+               0, 0, 0);
+
          info->need_refresh = true;
          info->need_push    = true;
          break;
@@ -5307,6 +5323,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST),
                msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
                MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST,
+               MENU_SETTING_ACTION, 0, 0);
+#endif
+
+#if 0
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BROWSE_URL_LIST),
+               msg_hash_to_str(MENU_ENUM_LABEL_BROWSE_URL_LIST),
+               MENU_ENUM_LABEL_BROWSE_URL_LIST,
                MENU_SETTING_ACTION, 0, 0);
 #endif
 

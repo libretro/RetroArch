@@ -2363,3 +2363,15 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SCALE,
       "Scale")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
       "Netplay will start when content is loaded.")
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_BROWSE_URL_LIST,
+      "Browse URL"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_BROWSE_URL,
+      "URL Path"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_BROWSE_START,
+      "Start"
+      )

@@ -346,6 +346,8 @@ typedef struct settings
    } cheevos;
 #endif
 
+   char browse_url[4096];
+
    int state_slot;
 
    bool bundle_assets_extract_enable;

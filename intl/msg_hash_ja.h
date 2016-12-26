@@ -2368,3 +2368,15 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SCALE,
       "スケール")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
       "コンテンツをロードする後にネットプレイは開始します。")
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_BROWSE_URL_LIST,
+      "Browse URL"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_BROWSE_URL,
+      "URL Path"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_BROWSE_START,
+      "Start"
+      )

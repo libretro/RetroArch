@@ -785,7 +785,10 @@ enum msg_hash_enums
 
    MENU_ENUM_LABEL_WELCOME_TO_RETROARCH,
 
+   MENU_LABEL(BROWSE_URL),
+   MENU_LABEL(BROWSE_START),
    /* Deferred */
+   MENU_ENUM_LABEL_DEFERRED_BROWSE_URL_LIST,
    MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE,
    MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION,
    MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE,
@@ -1304,6 +1307,7 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_COLLECTION,
    MENU_LABEL(CONFIGURATIONS),
    MENU_LABEL(CONTENT_COLLECTION_LIST),
+   MENU_LABEL(BROWSE_URL_LIST),
 
    MENU_ENUM_LABEL_CUSTOM_BIND,
 
@@ -1552,6 +1556,7 @@ enum msg_hash_enums
 
 /* Deferred */
 
+#define MENU_LABEL_DEFERRED_BROWSE_URL_LIST                                    0x6358c2c4U
 #define MENU_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST                            0x364dfa2bU
 #define MENU_LABEL_DEFERRED_VIDEO_FILTER                                       0x966ad201U
 #define MENU_LABEL_DEFERRED_CORE_LIST_SET                                      0xa6d5fdb4U
@@ -1793,6 +1798,8 @@ enum msg_hash_enums
 #define MENU_LABEL_HELP                                                        0x7c97d2eeU
 #define MENU_VALUE_HORIZONTAL_MENU                                             0x35761704U
 #define MENU_LABEL_QUIT_RETROARCH                                              0x84b0bc71U
+
+#define MENU_LABEL_BROWSE_URL_LIST                                             0xa7d1a004U
 
 const char *msg_hash_to_str(enum msg_hash_enums msg);
 

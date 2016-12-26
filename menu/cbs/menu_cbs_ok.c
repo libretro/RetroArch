@@ -435,6 +435,14 @@ int generic_action_ok_displaylist_push(const char *path,
          info_label         = label;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_CORE;
          break;
+      case ACTION_OK_DL_BROWSE_URL_LIST:
+         info.directory_ptr = idx;
+         info.type          = type;
+         info_path          = path;
+         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_BROWSE_URL_LIST);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_BROWSE_URL_LIST;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
       case ACTION_OK_DL_CONTENT_COLLECTION_LIST:
          filebrowser_set_type(FILEBROWSER_SELECT_COLLECTION);
          info.type          = type;
@@ -3117,6 +3125,13 @@ static int action_ok_netplay_lan_scan(const char *path,
 #endif
 }
 
+static int action_ok_browse_url_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, NULL, label, type, idx,
+         entry_idx, ACTION_OK_DL_BROWSE_URL_LIST);
+}
+
 static int action_ok_content_collection_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -3925,6 +3940,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST:
             BIND_ACTION_OK(cbs, action_ok_content_collection_list);
+            break;
+         case MENU_ENUM_LABEL_BROWSE_URL_LIST:
+            BIND_ACTION_OK(cbs, action_ok_browse_url_list);
             break;
          case MENU_ENUM_LABEL_CORE_LIST:
             BIND_ACTION_OK(cbs, action_ok_core_list);
