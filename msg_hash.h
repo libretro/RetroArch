@@ -788,6 +788,7 @@ enum msg_hash_enums
    MENU_LABEL(BROWSE_URL),
    MENU_LABEL(BROWSE_START),
    /* Deferred */
+   MENU_ENUM_LABEL_DEFERRED_BROWSE_URL_START,
    MENU_ENUM_LABEL_DEFERRED_BROWSE_URL_LIST,
    MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE,
    MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION,
@@ -1599,7 +1600,7 @@ enum msg_hash_enums
 #define MENU_LABEL_DEFERRED_LAKKA_LIST                                         0x3db437c4U
 #define MENU_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST                            0x10b41d97U
 #define MENU_LABEL_DEFERRED_CONFIGURATIONS_LIST                                0x679a1b0bU
-
+#define MENU_LABEL_DEFERRED_BROWSE_URL_START                                   0xcef58296U
 
 /* Cheevos settings */
 

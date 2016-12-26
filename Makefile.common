@@ -1103,12 +1103,13 @@ ifeq ($(HAVE_NETWORKING), 1)
    DEFINES += -DHAVE_NETWORKING
    OBJ += $(LIBRETRO_COMM_DIR)/net/net_compat.o \
           $(LIBRETRO_COMM_DIR)/net/net_http.o \
+          $(LIBRETRO_COMM_DIR)/net/net_http_parse.o \
           $(LIBRETRO_COMM_DIR)/net/net_socket.o \
-	  $(LIBRETRO_COMM_DIR)/net/net_natt.o \
-          network/net_http_special.o \
-          tasks/task_http.o \
-	  tasks/task_netplay_lan_scan.o \
-          tasks/task_wifi.o
+			 $(LIBRETRO_COMM_DIR)/net/net_natt.o \
+			 network/net_http_special.o \
+			 tasks/task_http.o \
+			 tasks/task_netplay_lan_scan.o \
+			 tasks/task_wifi.o
 
    ifneq ($(HAVE_SOCKET_LEGACY),1)
    OBJ += $(LIBRETRO_COMM_DIR)/net/net_ifinfo.o

@@ -779,6 +779,11 @@ static int deferred_push_browse_url_list(menu_displaylist_info_t *info)
    return deferred_push_dlist(info, DISPLAYLIST_BROWSE_URL_LIST);
 }
 
+static int deferred_push_browse_url_start(menu_displaylist_info_t *info)
+{
+   return deferred_push_dlist(info, DISPLAYLIST_BROWSE_URL_START);
+}
+
 static int deferred_push_core_list(menu_displaylist_info_t *info)
 {
    return deferred_push_dlist(info, DISPLAYLIST_CORES);
@@ -856,6 +861,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
    if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_BROWSE_URL_LIST)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_browse_url_list);
+      return 0;
+   }
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_BROWSE_URL_START)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_browse_url_start);
       return 0;
    }
    if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST)))

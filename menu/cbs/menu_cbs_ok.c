@@ -253,6 +253,15 @@ int generic_action_ok_displaylist_push(const char *path,
 
    switch (action_type)
    {
+      case ACTION_OK_DL_BROWSE_URL_START:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = new_path_tmp;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_BROWSE_URL_START);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_BROWSE_URL_START;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
       case ACTION_OK_DL_USER_BINDS_LIST:
          info.type          = type;
          info.directory_ptr = idx;
@@ -1639,6 +1648,7 @@ int  generic_action_ok_help(const char *path,
          entry_idx, ACTION_OK_DL_HELP);
 }
 
+
 static void menu_input_st_cheat_cb(void *userdata, const char *str)
 {
    (void)userdata;
@@ -2869,6 +2879,13 @@ end:
 extern size_t hack_shader_pass;
 #endif
 
+static int action_ok_browse_url_start(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, NULL, label, type, idx,
+         entry_idx, ACTION_OK_DL_BROWSE_URL_START);
+}
+
 static int action_ok_shader_pass(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -3705,6 +3722,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_BROWSE_START:
+            BIND_ACTION_OK(cbs, action_ok_browse_url_start);
+            break;
          case MENU_ENUM_LABEL_FILE_BROWSER_CORE:
             BIND_ACTION_OK(cbs, action_ok_load_core);
             break;

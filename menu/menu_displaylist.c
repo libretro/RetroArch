@@ -41,6 +41,7 @@
 #endif
 
 #ifdef HAVE_NETWORKING
+#include <net/net_http_parse.h>
 #include "../network/netplay/netplay_discovery.h"
 #endif
 
@@ -3902,6 +3903,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
    switch (type)
    {
       case DISPLAYLIST_BROWSE_URL_LIST:
+      case DISPLAYLIST_BROWSE_URL_START:
       case DISPLAYLIST_HELP_SCREEN_LIST:
       case DISPLAYLIST_MAIN_MENU:
       case DISPLAYLIST_SETTINGS_ALL:
@@ -4089,6 +4091,28 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_SETTING_NO_ITEM, 0, 0);
          ret = 0;
 #endif
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
+      case DISPLAYLIST_BROWSE_URL_START:
+#ifdef HAVE_NETWORKING
+         {
+            char link[1024];
+            char name[1024];
+            const char *line  = "<a href=\"http://www.test.com/somefile.zip\">Test</a>\n";
+
+            link[0] = name[0] = '\0';
+
+            string_parse_html_anchor(line, link, name, sizeof(link), sizeof(name));
+
+            menu_entries_append_enum(info->list,
+                  link,
+                  name,
+                  MSG_UNKNOWN,
+                  0, 0, 0);
+         }
+#endif
+
          info->need_refresh = true;
          info->need_push    = true;
          break;
