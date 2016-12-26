@@ -479,6 +479,7 @@ void CORE_PREFIX(retro_run)(void)
       glfft_init_multisample(fft, fft_width, fft_height, fft_multisample);
    
    if (fft && (old_glfft != glfft))
+   {
       glfft_free(fft);
       fft = NULL;
    }
