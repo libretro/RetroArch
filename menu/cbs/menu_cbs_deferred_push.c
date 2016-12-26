@@ -26,9 +26,7 @@
 #include "../menu_cbs.h"
 #include "../../msg_hash.h"
 
-#ifdef HAVE_LIBRETRODB
 #include "../../database_info.h"
-#endif
 
 #include "../../cores/internal_cores.h"
 
