@@ -562,7 +562,10 @@ static void task_save_handler(retro_task_t *task)
 
    state->written += written;
 
+#if 0
+   /* TODO/FIXME - data race */
    task->progress  = (state->written / (float)state->size) * 100;
+#endif
 
    if (task->cancelled || written != remaining)
    {
@@ -736,8 +739,11 @@ static void task_load_handler(retro_task_t *task)
          (uint8_t*)state->data + state->bytes_read, remaining);
    state->bytes_read += bytes_read;
 
+#if 0
+   /* TODO/FIXME - data race */
    if (state->size > 0)
       task->progress  = (state->bytes_read / (float)state->size) * 100;
+#endif
 
    if (task->cancelled || bytes_read != remaining)
    {
