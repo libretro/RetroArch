@@ -2420,7 +2420,10 @@ bool command_event(enum event_command cmd, void *data)
             if (!init_netplay(
                      data, settings->netplay.server,
                      settings->netplay.port))
+            {
+               command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                return false;
+            }
 #endif
          }
          break;
