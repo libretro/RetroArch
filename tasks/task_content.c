@@ -1239,7 +1239,7 @@ bool task_push_content_load_default(
 #ifndef HAVE_DYNAMIC
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
          command_event_cmd_exec(path_get(RARCH_PATH_CONTENT), &content_ctx, 
-               mode, error_string);
+               mode, &error_string);
          command_event(CMD_EVENT_QUIT, NULL);
          break;
 #endif
