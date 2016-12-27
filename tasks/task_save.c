@@ -817,15 +817,12 @@ static void content_load_state_cb(void *task_data,
    retro_ctx_serialize_info_t serial_info;
    unsigned i;
    bool ret;
-   char err_buf[1024];
    load_task_data_t *load_data = (load_task_data_t*)task_data;
    ssize_t size                = load_data->size;
    unsigned num_blocks         = 0;
    void *buf                   = load_data->data;
    struct sram_block *blocks   = NULL;
    settings_t *settings        = config_get_ptr();
-
-   err_buf[0] = '\0';
 
    RARCH_LOG("%s: \"%s\".\n",
          msg_hash_to_str(MSG_LOADING_STATE),
@@ -950,20 +947,6 @@ static void content_load_state_cb(void *task_data,
    return;
 
 error:
-   if (load_data->autoload)
-      snprintf(err_buf, sizeof(err_buf), "%s \"%s\" %s.",
-            msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
-            load_data->path,
-            msg_hash_to_str(MSG_FAILED)
-            );
-   else
-      snprintf(err_buf, sizeof(err_buf), "%s \"%s\".\n",
-                          msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE),
-                          load_data->path);
-
-   if (!load_data->mute)
-      runloop_msg_queue_push(err_buf, 1, 180, true);
-
    RARCH_ERR("%s \"%s\".\n",
          msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE),
          load_data->path);
