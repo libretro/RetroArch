@@ -2395,48 +2395,58 @@ bool command_event(enum event_command cmd, void *data)
          command_event(CMD_EVENT_BSV_MOVIE_DEINIT, NULL);
          bsv_movie_ctl(BSV_MOVIE_CTL_INIT, NULL);
          break;
-      case CMD_EVENT_NETPLAY_DEINIT:
 #ifdef HAVE_NETWORKING
+      case CMD_EVENT_NETPLAY_DEINIT:
          deinit_netplay();
-#endif
          break;
       case CMD_EVENT_NETWORK_DEINIT:
-#ifdef HAVE_NETWORKING
          network_deinit();
-#endif
          break;
       case CMD_EVENT_NETWORK_INIT:
-#ifdef HAVE_NETWORKING
          network_init();
-#endif
          break;
       case CMD_EVENT_NETPLAY_INIT:
          {
-#ifdef HAVE_NETWORKING
-            settings_t *settings      = config_get_ptr();
-#endif
+            char *hostname = (char *) data;
+            settings_t *settings = config_get_ptr();
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
-#ifdef HAVE_NETWORKING
             if (!init_netplay(
-                     data, settings->netplay.server,
+                     NULL, hostname ? hostname : settings->netplay.server,
                      settings->netplay.port))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                return false;
             }
-#endif
+         }
+         break;
+      case CMD_EVENT_NETPLAY_INIT_DIRECT:
+         {
+            settings_t *settings = config_get_ptr();
+            command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+            if (!init_netplay(
+                     data, NULL, settings->netplay.port))
+            {
+               command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+               return false;
+            }
          }
          break;
       case CMD_EVENT_NETPLAY_FLIP_PLAYERS:
-#ifdef HAVE_NETWORKING
          netplay_driver_ctl(RARCH_NETPLAY_CTL_FLIP_PLAYERS, NULL);
-#endif
          break;
       case CMD_EVENT_NETPLAY_GAME_WATCH:
-#ifdef HAVE_NETWORKING
          netplay_driver_ctl(RARCH_NETPLAY_CTL_GAME_WATCH, NULL);
-#endif
          break;
+#else
+      case CMD_EVENT_NETPLAY_DEINIT:
+      case CMD_EVENT_NETWORK_DEINIT:
+      case CMD_EVENT_NETWORK_INIT:
+      case CMD_EVENT_NETPLAY_INIT:
+      case CMD_EVENT_NETPLAY_INIT_DIRECT:
+      case CMD_EVENT_NETPLAY_FLIP_PLAYERS:
+      case CMD_EVENT_NETPLAY_GAME_WATCH:
+         return false;
+#endif
       case CMD_EVENT_FULLSCREEN_TOGGLE:
          {
             settings_t *settings      = config_get_ptr();

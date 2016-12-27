@@ -3132,7 +3132,7 @@ static int action_ok_netplay_lan_scan(const char *path,
    netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
    /* Enable Netplay */
-   if (!command_event(CMD_EVENT_NETPLAY_INIT, (void *) host))
+   if (!command_event(CMD_EVENT_NETPLAY_INIT_DIRECT, (void *) host))
       return -1;
 
    return generic_action_ok_command(CMD_EVENT_RESUME);
@@ -3597,6 +3597,19 @@ static int action_ok_netplay_enable_host(const char *path,
 #endif
 }
 
+static void action_ok_netplay_enable_client_hostname_cb(
+   void *ignore, const char *hostname)
+{
+   char tmp_hostname[512];
+   strlcpy(tmp_hostname, hostname, sizeof(tmp_hostname));
+   if (hostname[0])
+      command_event(CMD_EVENT_NETPLAY_INIT, (void *) tmp_hostname);
+   menu_input_dialog_end();
+
+   /* Force the menu to close */
+   rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+}
+
 static int action_ok_netplay_enable_client(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -3607,21 +3620,25 @@ static int action_ok_netplay_enable_client(const char *path,
       command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
-   /* We can't do anything without a host specified */
-   if (!settings->netplay.server[0])
-   {
-      runloop_msg_queue_push(
-            "Please specify the Netplay server's IP address or hostname.",
-            1, 480, true);
-      return -1;
-   }
-
    /* If we haven't yet started, this will load on its own */
    if (!content_is_inited())
    {
       runloop_msg_queue_push(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
             1, 480, true);
+      return 0;
+   }
+
+   /* If no host was specified in the config, ask for one */
+   if (!settings->netplay.server[0])
+   {
+      menu_input_ctx_line_t line;
+      memset(&line, 0, sizeof(line));
+      line.label = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS);
+      line.label_setting = "no_setting";
+      line.cb = action_ok_netplay_enable_client_hostname_cb;
+      if (!menu_input_dialog_start(&line))
+         return -1;
       return 0;
    }
 
