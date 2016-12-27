@@ -301,8 +301,13 @@ static bool audio_driver_init_resampler(void)
 
 static bool audio_driver_init_internal(bool audio_cb_inited)
 {
-   size_t outsamples_max, max_bufsamples = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
-   settings_t *settings = config_get_ptr();
+   float   *aud_inp_data = NULL;
+   float *samples_buf    = NULL;
+   int16_t *conv_buf     = NULL;
+   int16_t *rewind_buf   = NULL;
+   size_t outsamples_max = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
+   size_t max_bufsamples = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
+   settings_t *settings  = config_get_ptr();
 
    convert_s16_to_float_init_simd();
    convert_float_to_s16_init_simd();
@@ -311,27 +316,28 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    outsamples_max = max_bufsamples * AUDIO_MAX_RATIO * 
       settings->slowmotion_ratio;
 
-   audio_driver_output_samples_conv_buf =
-      (int16_t*)malloc(outsamples_max * sizeof(int16_t));
+   conv_buf = (int16_t*)malloc(outsamples_max 
+         * sizeof(int16_t));
    /* Used for recording even if audio isn't enabled. */
-   retro_assert(audio_driver_output_samples_conv_buf != NULL);
+   retro_assert(conv_buf != NULL);
 
-   if (!audio_driver_output_samples_conv_buf)
+   if (!conv_buf)
       goto error;
 
-   audio_driver_chunk_block_size    = AUDIO_CHUNK_SIZE_BLOCKING;
-   audio_driver_chunk_nonblock_size = AUDIO_CHUNK_SIZE_NONBLOCKING;
-   audio_driver_chunk_size          = audio_driver_chunk_block_size;
+   audio_driver_output_samples_conv_buf = conv_buf;
+   audio_driver_chunk_block_size        = AUDIO_CHUNK_SIZE_BLOCKING;
+   audio_driver_chunk_nonblock_size     = AUDIO_CHUNK_SIZE_NONBLOCKING;
+   audio_driver_chunk_size              = audio_driver_chunk_block_size;
 
    /* Needs to be able to hold full content of a full max_bufsamples
     * in addition to its own. */
-   audio_driver_rewind_buf = (int16_t*)malloc
-      (max_bufsamples * sizeof(int16_t));
-   retro_assert(audio_driver_rewind_buf != NULL);
+   rewind_buf = (int16_t*)malloc(max_bufsamples * sizeof(int16_t));
+   retro_assert(rewind_buf != NULL);
 
-   if (!audio_driver_rewind_buf)
+   if (!rewind_buf)
       goto error;
 
+   audio_driver_rewind_buf              = rewind_buf;
    audio_driver_rewind_size             = max_bufsamples;
 
    if (!settings->audio.enable)
@@ -400,26 +406,27 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
       audio_driver_active = false;
    }
 
-   audio_driver_input_data = (float*)
-      malloc(max_bufsamples * sizeof(float));
-   retro_assert(audio_driver_input_data != NULL);
+   aud_inp_data = (float*)malloc(max_bufsamples * sizeof(float));
+   retro_assert(aud_inp_data != NULL);
 
-   if (!audio_driver_input_data)
+   if (!aud_inp_data)
       goto error;
 
-   audio_driver_data_ptr = 0;
+   audio_driver_input_data = aud_inp_data;
+   audio_driver_data_ptr   = 0;
 
    retro_assert(settings->audio.out_rate <
          audio_driver_input * AUDIO_MAX_RATIO);
 
-   audio_driver_output_samples_buf = (float*)
-      malloc(outsamples_max * sizeof(float));
-   retro_assert(audio_driver_output_samples_buf != NULL);
+   samples_buf = (float*)malloc(outsamples_max * sizeof(float));
+   retro_assert(samples_buf != NULL);
 
-   if (!audio_driver_output_samples_buf)
+   if (!samples_buf)
       goto error;
 
-   audio_driver_control = false;
+   audio_driver_output_samples_buf = samples_buf;
+   audio_driver_control            = false;
+
    if (
          !audio_cb_inited
          && audio_driver_active 
