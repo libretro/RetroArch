@@ -116,7 +116,6 @@ static size_t attachments_size;
 
 #ifdef HAVE_GL_FFT
 static glfft_t *fft;
-static bool glfft;
 unsigned fft_width;
 unsigned fft_height;
 unsigned fft_multisample;
@@ -254,7 +253,7 @@ void CORE_PREFIX(retro_get_system_av_info)(struct retro_system_av_info *info)
    info->timing.sample_rate = actx[0] ? media.sample_rate : 32000.0;
 
 #ifdef HAVE_GL_FFT
-   if (audio_streams_num > 0 && video_stream < 0 && glfft)
+   if (audio_streams_num > 0 && video_stream < 0)
    {
       width = fft_width;
       height = fft_height;
@@ -275,7 +274,6 @@ void CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
       { "ffmpeg_temporal_interp", "Temporal Interpolation; enabled|disabled" },
 #ifdef HAVE_GL_FFT
-      { "ffmpeg_fft", "GLFFT; enabled|disabled" },
       { "ffmpeg_fft_resolution", "GLFFT Resolution; 1280x720|1920x1080|640x360|320x180" },
       { "ffmpeg_fft_multisample", "GLFFT Multisample; 1x|2x|4x" },
 #endif
@@ -332,7 +330,6 @@ static void check_variables(void)
    struct retro_variable var        = {0};
 #endif
 #ifdef HAVE_GL_FFT
-   struct retro_variable fft_on_var = {0};
    struct retro_variable fft_var    = {0};
    struct retro_variable fft_ms_var = {0};
 #endif
@@ -349,16 +346,6 @@ static void check_variables(void)
    }
 
 #ifdef HAVE_GL_FFT
-   fft_on_var.key = "ffmpeg_fft";
-
-   if (CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &fft_on_var) && fft_on_var.value)
-   {
-      if (!strcmp(fft_on_var.value, "enabled"))
-         glfft = true;
-      else if (!strcmp(fft_on_var.value, "disabled"))
-         glfft = false;
-   }
-   
    fft_var.key = "ffmpeg_fft_resolution";
 
    fft_width       = 1280;
@@ -454,7 +441,6 @@ void CORE_PREFIX(retro_run)(void)
    int seek_frames              = 0;
    bool updated                 = false;
 #ifdef HAVE_GL_FFT
-   unsigned old_glfft           = glfft ;
    unsigned old_fft_width       = fft_width;
    unsigned old_fft_height      = fft_height;
    unsigned old_fft_multisample = fft_multisample;
@@ -477,12 +463,6 @@ void CORE_PREFIX(retro_run)(void)
 
    if (fft && (old_fft_multisample != fft_multisample))
       glfft_init_multisample(fft, fft_width, fft_height, fft_multisample);
-   
-   if (fft && (old_glfft != glfft))
-   {
-      glfft_free(fft);
-      fft = NULL;
-   }
 #endif
 
    CORE_PREFIX(input_poll_cb)();
@@ -1418,7 +1398,7 @@ static void context_reset(void)
    unsigned i;
 
 #ifdef HAVE_GL_FFT
-   if (audio_streams_num > 0 && video_stream < 0 && glfft)
+   if (audio_streams_num > 0 && video_stream < 0)
    {
       fft = glfft_new(11, hw_render.get_proc_address);
       if (fft)
@@ -1623,7 +1603,7 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
    }
 
 #ifdef HAVE_GL_FFT
-   is_glfft = audio_streams_num > 0 && video_stream < 0 && glfft;
+   is_glfft = video_stream < 0 && audio_streams_num > 0;
 #endif
 
    if (video_stream >= 0 || is_glfft)
