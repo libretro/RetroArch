@@ -322,8 +322,8 @@ void autosave_deinit(void)
       {
          autosave_free(handle);
          free(autosave_state.list[i]);
-         autosave_state.list[i] = NULL;
       }
+      autosave_state.list[i] = NULL;
    }
 
    free(autosave_state.list);
@@ -345,8 +345,9 @@ void autosave_lock(void)
 
    for (i = 0; i < autosave_state.num; i++)
    {
-      if (autosave_state.list[i])
-         slock_lock(autosave_state.list[i]->lock);
+      autosave_t *handle = autosave_state.list[i];
+      if (handle)
+         slock_lock(handle->lock);
    }
 #endif
 }
@@ -363,9 +364,9 @@ void autosave_unlock(void)
 
    for (i = 0; i < autosave_state.num; i++)
    {
-      autosave_t *list = autosave_state.list[i];
-      if (list)
-         slock_unlock(list->lock);
+      autosave_t *handle = autosave_state.list[i];
+      if (handle)
+         slock_unlock(handle->lock);
    }
 #endif
 }
