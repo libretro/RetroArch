@@ -352,7 +352,7 @@ static bool load_content_from_compressed_archive(
       struct string_list* additional_path_allocs,
       bool need_fullpath,
       const char *path,
-      char *error_string)
+      char **error_string)
 {
    union string_list_elem_attr attributes;
    char new_path[PATH_MAX_LENGTH];
@@ -393,7 +393,7 @@ static bool load_content_from_compressed_archive(
             path);
       if (error_string)
          free(error_string);
-      error_string = strdup(str);
+      *error_string = strdup(str);
       return false;
    }
 
@@ -412,7 +412,7 @@ static bool content_file_init_extract(
       content_information_ctx_t *content_ctx,
       const struct retro_subsystem_info *special,
       union string_list_elem_attr *attr,
-      char *error_string
+      char **error_string
       )
 {
    unsigned i;
@@ -482,7 +482,7 @@ static bool content_file_load(
       struct retro_game_info *info,
       const struct string_list *content,
       content_information_ctx_t *content_ctx,
-      char *error_string,
+      char **error_string,
       const struct retro_subsystem_info *special
       )
 {
@@ -508,7 +508,7 @@ static bool content_file_load(
          snprintf(msg, sizeof(msg),
                "%s\n",
                msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT));
-         error_string = strdup(msg);
+         *error_string = strdup(msg);
          goto error;
       }
 
@@ -529,7 +529,7 @@ static bool content_file_load(
                   "%s \"%s\".\n",
                   msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
                   path);
-            error_string = strdup(msg);
+            *error_string = strdup(msg);
             goto error;
          }
 
@@ -563,7 +563,7 @@ static bool content_file_load(
    {
       snprintf(msg, sizeof(msg),
             "%s.\n", msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
-      error_string = strdup(msg);
+      *error_string = strdup(msg);
       goto error;
    }
 
@@ -594,7 +594,7 @@ error:
 
 static const struct retro_subsystem_info *content_file_init_subsystem(
       content_information_ctx_t *content_ctx,
-      char *error_string,
+      char **error_string,
       bool *ret)
 {
    char msg[1024];
@@ -612,7 +612,7 @@ static const struct retro_subsystem_info *content_file_init_subsystem(
             path_get(RARCH_PATH_SUBSYSTEM));
       if (error_string)
          free(error_string);
-      error_string = strdup(msg);
+      *error_string = strdup(msg);
       goto error;
    }
 
@@ -623,7 +623,7 @@ static const struct retro_subsystem_info *content_file_init_subsystem(
             msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT));
       if (error_string)
          free(error_string);
-      error_string = strdup(msg);
+      *error_string = strdup(msg);
       goto error;
    }
    else if (special->num_roms && (special->num_roms != subsystem->size))
@@ -635,7 +635,7 @@ static const struct retro_subsystem_info *content_file_init_subsystem(
             (unsigned)subsystem->size);
       if (error_string)
          free(error_string);
-      error_string = strdup(msg);
+      *error_string = strdup(msg);
       goto error;
    }
    else if (!special->num_roms && subsystem && subsystem->size)
@@ -647,7 +647,7 @@ static const struct retro_subsystem_info *content_file_init_subsystem(
             (unsigned)subsystem->size);
       if (error_string)
          free(error_string);
-      error_string = strdup(msg);
+      *error_string = strdup(msg);
       goto error;
    }
 
@@ -663,7 +663,7 @@ static bool content_file_init_set_attribs(
       struct string_list *content,
       const struct retro_subsystem_info *special,
       content_information_ctx_t *content_ctx,
-      char *error_string)
+      char **error_string)
 {
    union string_list_elem_attr attr;
    struct string_list *subsystem    = path_get_subsystem_list();
@@ -717,7 +717,7 @@ static bool content_file_init_set_attribs(
  **/
 static bool content_file_init(
       content_information_ctx_t *content_ctx,
-      char *error_string)
+      char **error_string)
 {
    struct retro_game_info               *info = NULL;
    struct string_list *content                = NULL;
@@ -807,7 +807,7 @@ static bool task_load_content(content_ctx_info_t *content_info,
       content_information_ctx_t *content_ctx,
       bool launched_from_menu,
       enum content_mode_load mode,
-      char *error_string)
+      char **error_string)
 {
    char name[255];
    char msg[255];
@@ -914,7 +914,7 @@ error:
                name);
          if (error_string)
             free(error_string);
-         error_string = strdup(msg);
+         *error_string = strdup(msg);
       }
    }
    return false;
@@ -923,7 +923,7 @@ error:
 static bool command_event_cmd_exec(const char *data,
       content_information_ctx_t *content_ctx,
       enum content_mode_load mode,
-      char *error_string)
+      char **error_string)
 {
 #if defined(HAVE_DYNAMIC)
    content_ctx_info_t content_info;
@@ -1131,7 +1131,7 @@ bool task_push_content_load_default(
    switch (mode)
    {
       case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
-         if (!command_event_cmd_exec(fullpath, &content_ctx, mode, error_string))
+         if (!command_event_cmd_exec(fullpath, &content_ctx, mode, &error_string))
             goto error;
 #ifndef HAVE_DYNAMIC
          runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
@@ -1207,7 +1207,7 @@ bool task_push_content_load_default(
    {
       case CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE:
          if (!task_load_content(content_info, &content_ctx,
-                  loading_from_menu, mode, error_string))
+                  loading_from_menu, mode, &error_string))
             goto error;
          break;
       case CONTENT_MODE_LOAD_FROM_CLI:
@@ -1233,7 +1233,7 @@ bool task_push_content_load_default(
                goto skip;
 
          if (!task_load_content(content_info, &content_ctx,
-                  loading_from_menu, mode, error_string))
+                  loading_from_menu, mode, &error_string))
             goto error;
          break;
 #ifndef HAVE_DYNAMIC
@@ -1413,7 +1413,7 @@ bool content_init(void)
    }
 
    if (     !temporary_content 
-         || !content_file_init(&content_ctx, error_string))
+         || !content_file_init(&content_ctx, &error_string))
    {
       content_deinit();
 
