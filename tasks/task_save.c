@@ -594,10 +594,8 @@ static void task_save_handler(retro_task_t *task)
 
    if (state->written == state->size)
    {
-      char msg[1024];
+      char       *msg      = NULL;
       settings_t *settings = config_get_ptr();
-
-      msg[0] = '\0';
 
       if (task->title)
          free(task->title);
@@ -605,21 +603,14 @@ static void task_save_handler(retro_task_t *task)
       task->title = NULL;
 
       if (state->undo_save)
-      {
-         strlcpy(msg, msg_hash_to_str(MSG_RESTORED_OLD_SAVE_STATE),
-               sizeof(msg));
-      }
+         msg = strdup(msg_hash_to_str(MSG_RESTORED_OLD_SAVE_STATE));
+      else if (settings->state_slot < 0)
+         msg = strdup(msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT_AUTO));
       else
-      {
-         if (settings->state_slot < 0)
-            strlcpy(msg, msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT_AUTO), sizeof(msg));
-         else
-            snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT),
-                  settings->state_slot);
-      }
+         msg = strdup(msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT));
 
-      if (!task->mute)
-         task->title = strdup(msg);
+      if (!task->mute && msg)
+         task->title = msg;
 
       task_save_handler_finished(task, state);
    }
@@ -764,9 +755,7 @@ static void task_load_handler(retro_task_t *task)
          task->error = strdup(msg);
       }
       else
-      {
          task->error = strdup(msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE));
-      }
 
       free(state->data);
       state->data = NULL;
@@ -792,8 +781,6 @@ static void task_load_handler(retro_task_t *task)
                msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
                state->path,
                msg_hash_to_str(MSG_SUCCEEDED));
-         if (!task->mute)
-            task->title = strdup(msg);
       }
       else
       {
@@ -803,9 +790,10 @@ static void task_load_handler(retro_task_t *task)
             snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT),
                   settings->state_slot);
 
-         if (!task->mute)
-            task->title = strdup(msg);
       }
+
+      if (!task->mute)
+         task->title = strdup(msg);
 
       task_load_handler_finished(task, state);
    }
@@ -991,7 +979,7 @@ error:
 static void save_state_cb(void *task_data,
                            void *user_data, const char *error)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t     *settings = config_get_ptr();
    save_task_state_t *state = (save_task_state_t*)task_data;
    char               *path = strdup(state->path);
 
