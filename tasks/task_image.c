@@ -206,8 +206,6 @@ static void task_image_load_free_internal(nbio_handle_t *nbio)
 
    image->handle                 = NULL;
    image->cb                     = NULL;
-
-   free(image);
 }
 
 static int cb_nbio_generic(nbio_handle_t *nbio, size_t *len)
@@ -240,6 +238,12 @@ static int cb_nbio_generic(nbio_handle_t *nbio, size_t *len)
 
 error:
    task_image_load_free_internal(nbio);
+   if (nbio)
+   {
+      if (nbio->data)
+         free(nbio->data);
+      nbio->data = NULL;
+   }
    return -1;
 }
 
@@ -391,9 +395,13 @@ void task_image_load_free(retro_task_t *task)
 {
    nbio_handle_t       *nbio  = task ? (nbio_handle_t*)task->state : NULL;
 
-   if (nbio) {
+   if (nbio)
+   {
       task_image_load_free_internal(nbio);
+      if (nbio->data)
+         free(nbio->data);
       nbio_free(nbio->handle);
+      nbio->data        = NULL;
       nbio->handle      = NULL;
       free(nbio);
    }
