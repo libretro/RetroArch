@@ -246,9 +246,6 @@ error:
  **/
 static void autosave_free(autosave_t *handle)
 {
-   if (!handle)
-      return;
-
    slock_lock(handle->cond_lock);
    handle->quit = true;
    slock_unlock(handle->cond_lock);
@@ -259,8 +256,9 @@ static void autosave_free(autosave_t *handle)
    slock_free(handle->cond_lock);
    scond_free(handle->cond);
 
-   free(handle->buffer);
-   free(handle);
+   if (handle->buffer)
+      free(handle->buffer);
+   handle->buffer = NULL;
 }
 
 
@@ -318,10 +316,17 @@ void autosave_deinit(void)
    unsigned i;
 
    for (i = 0; i < autosave_state.num; i++)
-      autosave_free(autosave_state.list[i]);
+   {
+      autosave_t *handle = autosave_state.list[i];
+      if (handle)
+      {
+         autosave_free(handle);
+         free(autosave_state.list[i]);
+         autosave_state.list[i] = NULL;
+      }
+   }
 
-   if (autosave_state.list)
-      free(autosave_state.list);
+   free(autosave_state.list);
 
    autosave_state.list     = NULL;
    autosave_state.num      = 0;
