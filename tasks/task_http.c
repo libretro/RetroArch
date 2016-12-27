@@ -124,8 +124,10 @@ static int task_http_iterate_transfer(retro_task_t *task)
 
    if (!net_http_update(http->handle, &pos, &tot))
    {
+#if 0
       /* TODO/FIXME - race issue */
-      //task->progress = (tot == 0) ? -1 : (signed)(pos * 100 / tot);
+      task->progress = (tot == 0) ? -1 : (signed)(pos * 100 / tot);
+#endif
       return -1;
    }
 
@@ -232,7 +234,9 @@ static bool task_http_retriever(retro_task_t *task, void *data)
 
    /* Fill HTTP info link */
    strlcpy(info->url, http->connection.url, sizeof(info->url));
-   //info->progress = task->progress;
+#if 0
+   info->progress = task->progress;
+#endif
    return true;
 }
 
