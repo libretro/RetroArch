@@ -606,7 +606,14 @@ static void task_save_handler(retro_task_t *task)
       else if (settings->state_slot < 0)
          msg = strdup(msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT_AUTO));
       else
-         msg = strdup(msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT));
+      {
+         char new_msg[128];
+         new_msg[0] = '\0';
+
+         snprintf(new_msg, sizeof(new_msg), msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT),
+               settings->state_slot);
+         msg = strdup(new_msg);
+      }
 
       if (!task->mute && msg)
          task->title = msg;
