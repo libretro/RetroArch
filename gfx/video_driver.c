@@ -382,6 +382,7 @@ static void deinit_video_filter(void)
 static void init_video_filter(enum retro_pixel_format colfmt)
 {
    unsigned width, height, pow2_x, pow2_y, maxsize;
+   void *buf                        = NULL;
    struct retro_game_geometry *geom = NULL;
    settings_t *settings             = config_get_ptr();
    struct retro_system_av_info *av_info =
@@ -437,14 +438,14 @@ static void init_video_filter(enum retro_pixel_format colfmt)
 
    /* TODO: Aligned output. */
 #ifdef _3DS
-   video_driver_state_buffer    = linearMemAlign(width 
-         * height * video_driver_state_out_bpp, 0x80);
+   buf = linearMemAlign(width * height * video_driver_state_out_bpp, 0x80);
 #else
-   video_driver_state_buffer    = malloc(width 
-         * height * video_driver_state_out_bpp);
+   buf = malloc(width * height * video_driver_state_out_bpp);
 #endif
-   if (!video_driver_state_buffer)
+   if (!buf)
       goto error;
+
+   video_driver_state_buffer    = buf;
 
    return;
 
@@ -569,6 +570,9 @@ static bool init_video_pixel_converter(unsigned size)
 {
    struct retro_hw_render_callback *hwr =
       video_driver_get_hw_context();
+   void *scalr_out                      = NULL;
+   video_pixel_scaler_t          *scalr = NULL;
+   struct scaler_ctx        *scalr_ctx  = NULL;
 
    /* If pixel format is not 0RGB1555, we don't need to do
     * any internal pixel conversion. */
@@ -581,32 +585,34 @@ static bool init_video_pixel_converter(unsigned size)
 
    RARCH_WARN("0RGB1555 pixel format is deprecated, and will be slower. For 15/16-bit, RGB565 format is preferred.\n");
 
-   video_driver_scaler_ptr = (video_pixel_scaler_t*)
-      calloc(1, sizeof(*video_driver_scaler_ptr));
+   scalr = (video_pixel_scaler_t*)calloc(1, sizeof(*scalr));
 
-   if (!video_driver_scaler_ptr)
+   if (!scalr)
       goto error;
 
-   video_driver_scaler_ptr->scaler = (struct scaler_ctx*)
-      calloc(1, sizeof(*video_driver_scaler_ptr->scaler));
+   video_driver_scaler_ptr         = scalr;
 
-   if (!video_driver_scaler_ptr->scaler)
+   scalr_ctx = (struct scaler_ctx*)calloc(1, sizeof(*scalr_ctx));
+
+   if (!scalr_ctx)
       goto error;
 
+   video_driver_scaler_ptr->scaler              = scalr_ctx;
    video_driver_scaler_ptr->scaler->scaler_type = SCALER_TYPE_POINT;
    video_driver_scaler_ptr->scaler->in_fmt      = SCALER_FMT_0RGB1555;
 
    /* TODO: Pick either ARGB8888 or RGB565 depending on driver. */
    video_driver_scaler_ptr->scaler->out_fmt     = SCALER_FMT_RGB565;
 
-   if (!scaler_ctx_gen_filter(video_driver_scaler_ptr->scaler))
+   if (!scaler_ctx_gen_filter(scalr_ctx))
       goto error;
 
-   video_driver_scaler_ptr->scaler_out = 
-      calloc(sizeof(uint16_t), size * size);
+   scalr_out = calloc(sizeof(uint16_t), size * size);
 
-   if (!video_driver_scaler_ptr->scaler_out)
+   if (!scalr_out)
       goto error;
+
+   video_driver_scaler_ptr->scaler_out          = scalr_out;
 
    return true;
 
