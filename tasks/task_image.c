@@ -275,38 +275,41 @@ error:
 
 bool task_image_load_handler(retro_task_t *task)
 {
-   nbio_handle_t       *nbio  = (nbio_handle_t*)task->state;
+   nbio_handle_t            *nbio  = (nbio_handle_t*)task->state;
    struct nbio_image_handle *image = (struct nbio_image_handle*)nbio->data;
 
-   switch (image->status)
+   if (image)
    {
-      case IMAGE_STATUS_PROCESS_TRANSFER:
-         if (task_image_iterate_process_transfer(nbio) == -1)
-            image->status = IMAGE_STATUS_PROCESS_TRANSFER_PARSE;
-         break;
-      case IMAGE_STATUS_TRANSFER_PARSE:
-         task_image_iterate_transfer_parse(nbio);
-         if (image->is_blocking_on_processing)
-            image->status = IMAGE_STATUS_PROCESS_TRANSFER;
-         break;
-      case IMAGE_STATUS_TRANSFER:
-         if (!image->is_blocking)
-            if (task_image_iterate_transfer(nbio) == -1)
-               image->status = IMAGE_STATUS_TRANSFER_PARSE;
-         break;
-      case IMAGE_STATUS_PROCESS_TRANSFER_PARSE:
-         task_image_iterate_transfer_parse(nbio);
-         if (!image->is_finished)
+      switch (image->status)
+      {
+         case IMAGE_STATUS_PROCESS_TRANSFER:
+            if (task_image_iterate_process_transfer(nbio) == -1)
+               image->status = IMAGE_STATUS_PROCESS_TRANSFER_PARSE;
             break;
-      case IMAGE_STATUS_TRANSFER_PARSE_FREE:
-      case IMAGE_STATUS_POLL:
-      default:
-         break;
+         case IMAGE_STATUS_TRANSFER_PARSE:
+            task_image_iterate_transfer_parse(nbio);
+            if (image->is_blocking_on_processing)
+               image->status = IMAGE_STATUS_PROCESS_TRANSFER;
+            break;
+         case IMAGE_STATUS_TRANSFER:
+            if (!image->is_blocking)
+               if (task_image_iterate_transfer(nbio) == -1)
+                  image->status = IMAGE_STATUS_TRANSFER_PARSE;
+            break;
+         case IMAGE_STATUS_PROCESS_TRANSFER_PARSE:
+            task_image_iterate_transfer_parse(nbio);
+            if (!image->is_finished)
+               break;
+         case IMAGE_STATUS_TRANSFER_PARSE_FREE:
+         case IMAGE_STATUS_POLL:
+         default:
+            break;
+      }
    }
 
-   if (     nbio->is_finished 
-         && image->is_finished 
-         && !task->cancelled)
+   if (     (nbio  && nbio->is_finished )
+         && (image && image->is_finished )
+         && (task  && !task->cancelled))
    {
       task->task_data = malloc(sizeof(image->ti));
 
