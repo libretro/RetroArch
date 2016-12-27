@@ -167,8 +167,10 @@ enum event_command
    CMD_EVENT_NETWORK_DEINIT,
    /* Initializes network system. */
    CMD_EVENT_NETWORK_INIT,
-   /* Initializes netplay system. */
+   /* Initializes netplay system with a string or no host specified. */
    CMD_EVENT_NETPLAY_INIT,
+   /* Initializes netplay system with a direct host specified. */
+   CMD_EVENT_NETPLAY_INIT_DIRECT,
    /* Deinitializes netplay system. */
    CMD_EVENT_NETPLAY_DEINIT,
    /* Flip netplay players. */
