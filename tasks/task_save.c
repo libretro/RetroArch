@@ -358,8 +358,9 @@ void autosave_unlock(void)
 
    for (i = 0; i < autosave_state.num; i++)
    {
-      if (autosave_state.list[i])
-         slock_unlock(autosave_state.list[i]->lock);
+      autosave_t *list = autosave_state.list[i];
+      if (list)
+         slock_unlock(list->lock);
    }
 #endif
 }
@@ -1396,7 +1397,6 @@ bool content_save_ram_file(unsigned slot)
 
    if (!content_get_memory(&mem_info, &ram, slot))
       return false;
-
 
    RARCH_LOG("%s #%u %s \"%s\".\n",
          msg_hash_to_str(MSG_SAVING_RAM_TYPE),
