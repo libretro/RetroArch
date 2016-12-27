@@ -1467,21 +1467,21 @@ static bool command_event_save_auto_state(void)
 static bool command_event_save_config(const char *config_path,
       char *s, size_t len)
 {
-   if (config_save_file(config_path))
+   if (string_is_empty(config_path) || !config_save_file(config_path))
    {
       snprintf(s, len, "%s \"%s\".",
-            msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
+            msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
             path_get(RARCH_PATH_CONFIG));
-      RARCH_LOG("%s\n", s);
-      return true;
+      RARCH_ERR("%s\n", s);
+
+      return false;
    }
 
    snprintf(s, len, "%s \"%s\".",
-         msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
+         msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
          path_get(RARCH_PATH_CONFIG));
-   RARCH_ERR("%s\n", s);
-
-   return false;
+   RARCH_LOG("%s\n", s);
+   return true;
 }
 
 /**
