@@ -90,11 +90,13 @@ struct string_list *string_list_new(void)
    if (!list)
       return NULL;
 
-   if (string_list_capacity(list, 32))
-      return list;
+   if (!string_list_capacity(list, 32))
+   {
+      string_list_free(list);
+      return NULL;
+   }
 
-   string_list_free(list);
-   return NULL;
+   return list;
 }
 
 /**
@@ -299,9 +301,8 @@ bool string_list_find_elem_prefix(const struct string_list *list,
 
    for (i = 0; i < list->size; i++)
    {
-      const char *data = list->elems[i].data;
-      if (     (strcasecmp(data, elem)     == 0)
-            || (strcasecmp(data, prefixed) == 0))
+      if (strcasecmp(list->elems[i].data, elem) == 0 ||
+            strcasecmp(list->elems[i].data, prefixed) == 0)
          return true;
    }
 

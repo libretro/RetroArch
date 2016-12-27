@@ -142,7 +142,7 @@ static void autosave_thread(void *data)
    bool first_log   = true;
    autosave_t *save = (autosave_t*)data;
 
-   while (save && !save->quit)
+   while (!save->quit)
    {
       bool differ;
 
@@ -207,7 +207,6 @@ static autosave_t *autosave_new(const char *path,
       const void *data, size_t size,
       unsigned interval)
 {
-   void *buffer         = NULL;
    autosave_t *handle   = (autosave_t*)calloc(1, sizeof(*handle));
    if (!handle)
       goto error;
@@ -215,19 +214,18 @@ static autosave_t *autosave_new(const char *path,
    handle->bufsize      = size;
    handle->interval     = interval;
    handle->path         = path;
+   handle->buffer       = malloc(size);
    handle->retro_buffer = data;
 
-   buffer               = malloc(size);
-
-   if (!buffer)
+   if (!handle->buffer)
       goto error;
 
-   memcpy(buffer, handle->retro_buffer, handle->bufsize);
+   memcpy(handle->buffer, handle->retro_buffer, handle->bufsize);
 
-   handle->buffer       = buffer;
    handle->lock         = slock_new();
    handle->cond_lock    = slock_new();
    handle->cond         = scond_new();
+
    handle->thread       = sthread_create(autosave_thread, handle);
 
    return handle;
@@ -279,35 +277,26 @@ void autosave_init(void)
    autosave_state.list = list;
    autosave_state.num  = task_save_files->size;
 
-   if (!task_save_files)
-      return;
-
    for (i = 0; i < task_save_files->size; i++)
    {
       retro_ctx_memory_info_t mem_info;
-      autosave_t *autosave = NULL;
-      const char *path     = task_save_files->elems[i].data;
-      unsigned    type     = task_save_files->elems[i].attr.i;
+      const char *path = task_save_files->elems[i].data;
+      unsigned    type = task_save_files->elems[i].attr.i;
 
-      mem_info.id          = type;
+      mem_info.id = type;
 
       core_get_memory(&mem_info);
 
       if (mem_info.size <= 0)
          continue;
 
-      autosave               = autosave_new(path,
+      autosave_state.list[i] = autosave_new(path,
             mem_info.data,
             mem_info.size,
             settings->autosave_interval);
 
-      if (!autosave)
-      {
+      if (!autosave_state.list[i])
          RARCH_WARN("%s\n", msg_hash_to_str(MSG_AUTOSAVE_FAILED));
-         continue;
-      }
-
-      autosave_state.list[i] = autosave;
    }
 }
 
@@ -620,6 +609,8 @@ static void task_save_handler(retro_task_t *task)
          task->title = msg;
 
       task_save_handler_finished(task, state);
+
+      return;
    }
 }
 
@@ -640,15 +631,15 @@ static bool task_push_undo_save_state(const char *path, void *data, size_t size)
       goto error;
 
    strlcpy(state->path, path, sizeof(state->path));
-   state->data      = data;
-   state->size      = size;
+   state->data = data;
+   state->size = size;
    state->undo_save = true;
 
-   task->type       = TASK_TYPE_BLOCKING;
-   task->state      = state;
-   task->handler    = task_save_handler;
-   task->callback   = undo_save_state_cb;
-   task->title      = strdup(msg_hash_to_str(MSG_UNDOING_SAVE_STATE));
+   task->type = TASK_TYPE_BLOCKING;
+   task->state = state;
+   task->handler = task_save_handler;
+   task->callback = undo_save_state_cb;
+   task->title = strdup(msg_hash_to_str(MSG_UNDOING_SAVE_STATE));
 
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
 
@@ -674,7 +665,8 @@ error:
 bool content_undo_save_state(void)
 {
    return task_push_undo_save_state(undo_save_buf.path,
-         undo_save_buf.data, undo_save_buf.size);
+                             undo_save_buf.data,
+                             undo_save_buf.size);
 }
 
 /**
@@ -803,6 +795,8 @@ static void task_load_handler(retro_task_t *task)
          task->title = strdup(msg);
 
       task_load_handler_finished(task, state);
+
+      return;
    }
 
    return;
@@ -824,11 +818,11 @@ static void content_load_state_cb(void *task_data,
    unsigned i;
    bool ret;
    char err_buf[1024];
-   unsigned num_blocks         = 0;
-   struct sram_block *blocks   = NULL;
    load_task_data_t *load_data = (load_task_data_t*)task_data;
    ssize_t size                = load_data->size;
+   unsigned num_blocks         = 0;
    void *buf                   = load_data->data;
+   struct sram_block *blocks   = NULL;
    settings_t *settings        = config_get_ptr();
 
    err_buf[0] = '\0';
