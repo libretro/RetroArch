@@ -421,6 +421,7 @@ typedef struct settings
    bool auto_screenshot_filename;
 
    bool history_list_enable;
+   bool playlist_entry_remove;
    bool rewind_enable;
    size_t rewind_buffer_size;
    unsigned rewind_granularity;

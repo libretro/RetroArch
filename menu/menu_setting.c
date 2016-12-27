@@ -5440,6 +5440,26 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(list, list_info, 0, 0, 1.0, true, false);
 
          END_SUB_GROUP(list, list_info, parent_group);
+		 
+		 START_SUB_GROUP(list, list_info, "Playlist", &group_info, &subgroup_info, parent_group);
+
+		 CONFIG_BOOL(
+               list, list_info,
+               &settings->playlist_entry_remove,
+               MENU_ENUM_LABEL_PLAYLIST_ENTRY_REMOVE,
+               MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE,
+               def_playlist_entry_remove,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+		 
+         END_SUB_GROUP(list, list_info, parent_group);
+		 
          END_GROUP(list, list_info, parent_group);
          break;
       case SETTINGS_LIST_CHEEVOS:
