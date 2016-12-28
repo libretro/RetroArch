@@ -3200,7 +3200,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL:
          return "VSync Swap Interval";
       case MENU_ENUM_LABEL_VALUE_VIDEO_TAB:
-         return "Video";
+         return "Videos";
       case MENU_ENUM_LABEL_VALUE_VIDEO_THREADED:
          return "Threaded Video";
       case MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER:
@@ -3276,7 +3276,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_XMB_SHOW_SETTINGS:
          return "Show thiết lập Tab";
       case MENU_ENUM_LABEL_VALUE_XMB_SHOW_VIDEO:
-         return "Show Video Tab";
+         return "Show Videos Tab";
       case MENU_ENUM_LABEL_VALUE_XMB_THEME:
          return "Menu Icon Theme";
       case MENU_ENUM_LABEL_VALUE_YES:
