@@ -25,6 +25,7 @@
 #include <lists/string_list.h>
 #include <rhash.h>
 
+#include "../gfx/video_driver.h"
 #include "../file_path_special.h"
 #include "../verbosity.h"
 
@@ -331,6 +332,7 @@ bool task_push_image_load(const char *fullpath,
    retro_task_t             *t       = NULL;
    struct nbio_t             *handle = NULL;
    struct nbio_image_handle   *image = NULL;
+   bool supports_rgba                = video_driver_supports_rgba();
 
    if (enum_idx == MSG_UNKNOWN)
       goto error_msg;
@@ -348,6 +350,9 @@ bool task_push_image_load(const char *fullpath,
       goto error;
 
    nbio->handle       = handle;
+
+   if (supports_rgba)
+      BIT32_SET(nbio->status_flags, NBIO_FLAG_IMAGE_SUPPORTS_RGBA);
 
    image              = (struct nbio_image_handle*)calloc(1, sizeof(*image));   
    if (!image)

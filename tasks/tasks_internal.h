@@ -20,6 +20,7 @@
 
 #include <boolean.h>
 #include <retro_common_api.h>
+#include <retro_miscellaneous.h>
 
 #include <queues/message_queue.h>
 #include <queues/task_queue.h>
@@ -60,6 +61,12 @@ enum nbio_status_enum
    NBIO_STATUS_TRANSFER_PARSE_FREE
 };
 
+enum nbio_status_flags
+{
+   NBIO_FLAG_NONE = 0,
+   NBIO_FLAG_IMAGE_SUPPORTS_RGBA
+};
+
 typedef struct nbio_handle
 {
    enum image_type_enum image_type;
@@ -70,6 +77,7 @@ typedef struct nbio_handle
    unsigned pos_increment;
    msg_queue_t *msg_queue;
    unsigned status;
+   uint32_t status_flags;
 } nbio_handle_t;
 
 typedef struct autoconfig_params
