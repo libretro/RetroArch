@@ -5,6 +5,7 @@ import com.retroarch.browser.retroactivity.RetroActivityFuture;
 import com.retroarch.browser.retroactivity.RetroActivityPast;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.media.AudioManager;
 import android.os.Build;
@@ -74,6 +75,7 @@ int MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE = 0;
 		}
 
 		UserPreferences.updateConfigFile(this);
+		final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
 		Intent retro;
 		
 		if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB))
@@ -89,7 +91,7 @@ int MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE = 0;
 		startRetroActivity(
 				retro,
 				null,
-				(getApplicationInfo().dataDir + "/cores/"),
+				prefs.getString("libretro_path", getApplicationInfo().dataDir + "/cores/"),
 				UserPreferences.getDefaultConfigPath(this),
 				Settings.Secure.getString(getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD),
 				getApplicationInfo().dataDir,
