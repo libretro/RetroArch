@@ -289,31 +289,11 @@ static bool input_autoconfigure_joypad_from_conf_internal(
    return false;
 }
 
-static bool input_autoconfigure_joypad_init(autoconfig_params_t *params)
-{
-   size_t i;
-   settings_t *settings = config_get_ptr();
-
-   if (!settings || !settings->input.autodetect_enable)
-      return false;
-
-   for (i = 0; i < RARCH_BIND_LIST_END; i++)
-   {
-      settings->input.autoconf_binds[params->idx][i].joykey           = NO_BTN;
-      settings->input.autoconf_binds[params->idx][i].joyaxis          = AXIS_NONE;
-      settings->input.autoconf_binds[params->idx][i].joykey_label[0]  = '\0';
-      settings->input.autoconf_binds[params->idx][i].joyaxis_label[0] = '\0';
-   }
-   settings->input.autoconfigured[params->idx] = false;
-
-   return true;
-}
-
 static void input_autoconfigure_connect_handler(retro_task_t *task)
 {
    autoconfig_params_t *params = (autoconfig_params_t*)task->state;
 
-   if (!params || !input_autoconfigure_joypad_init(params) || string_is_empty(params->name))
+   if (!params || string_is_empty(params->name))
    {
       free(params);
       task->finished = true;
@@ -343,12 +323,9 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
 static void input_autoconfigure_disconnect_handler(retro_task_t *task)
 {
    autoconfig_disconnect_t *params = (autoconfig_disconnect_t*)task->state;
-   settings_t            *settings = config_get_ptr();
 
    task->title    = strdup(params->msg);
    task->finished = true;
-
-   settings->input.device_names[params->idx][0] = '\0';
 
    RARCH_LOG("%s: %s\n", msg_hash_to_str(MSG_AUTODETECT), params->msg);
 
@@ -358,8 +335,9 @@ static void input_autoconfigure_disconnect_handler(retro_task_t *task)
 bool input_autoconfigure_disconnect(unsigned i, const char *ident)
 {
    char msg[255];
-   retro_task_t         *task     = (retro_task_t*)calloc(1, sizeof(*task));
-   autoconfig_disconnect_t *state = (autoconfig_disconnect_t*)calloc(1, sizeof(*state));
+   retro_task_t         *task      = (retro_task_t*)calloc(1, sizeof(*task));
+   autoconfig_disconnect_t *state  = (autoconfig_disconnect_t*)calloc(1, sizeof(*state));
+   settings_t            *settings = config_get_ptr();
 
    if (!state || !task)
       goto error;
@@ -373,6 +351,8 @@ bool input_autoconfigure_disconnect(unsigned i, const char *ident)
          i, ident);
 
    strlcpy(state->msg, msg, sizeof(state->msg));
+
+   settings->input.device_names[state->idx][0] = '\0';
 
    task->state   = state;
    task->handler = input_autoconfigure_disconnect_handler;
@@ -392,6 +372,7 @@ error:
 
 bool input_autoconfigure_connect(autoconfig_params_t *params)
 {
+   unsigned i;
    retro_task_t         *task = (retro_task_t*)calloc(1, sizeof(*task));
    autoconfig_params_t *state = (autoconfig_params_t*)calloc(1, sizeof(*state));
    settings_t       *settings = config_get_ptr();
@@ -400,6 +381,15 @@ bool input_autoconfigure_connect(autoconfig_params_t *params)
       goto error;
 
    strlcpy(state->name, params->name, sizeof(state->name));
+
+   for (i = 0; i < RARCH_BIND_LIST_END; i++)
+   {
+      settings->input.autoconf_binds[params->idx][i].joykey           = NO_BTN;
+      settings->input.autoconf_binds[params->idx][i].joyaxis          = AXIS_NONE;
+      settings->input.autoconf_binds[params->idx][i].joykey_label[0]  = '\0';
+      settings->input.autoconf_binds[params->idx][i].joyaxis_label[0] = '\0';
+   }
+   settings->input.autoconfigured[params->idx] = false;
 
    state->idx    = params->idx;
    state->vid    = params->vid;
