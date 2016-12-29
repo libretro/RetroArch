@@ -100,9 +100,12 @@ bool task_push_netplay_lan_scan(void);
 
 #endif
 
-bool task_push_image_load(const char *fullpath,
+bool task_push_image_load(
+      bool supports_rgba,
+      const char *fullpath,
       enum msg_hash_enums enum_idx,
-      retro_task_callback_t cb, void *userdata);
+      retro_task_callback_t cb,
+      void *userdata);
 
 #ifdef HAVE_LIBRETRODB
 bool task_push_dbscan(const char *fullpath,

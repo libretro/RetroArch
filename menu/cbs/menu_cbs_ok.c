@@ -1058,7 +1058,9 @@ static int generic_action_ok(const char *path,
 
             strlcpy(settings->path.menu_wallpaper,
                   action_path, sizeof(settings->path.menu_wallpaper));
-            task_push_image_load(action_path,
+            task_push_image_load(
+                  video_driver_supports_rgba(),
+                  action_path,
                   MENU_ENUM_LABEL_CB_MENU_WALLPAPER,
                   menu_display_handle_wallpaper_upload, NULL);
          }

@@ -38,19 +38,8 @@ enum video_image_format
    IMAGE_FORMAT_BMP
 };
 
-static bool image_texture_supports_rgba = false;
-
-void image_texture_set_rgba(void)
-{
-   image_texture_supports_rgba = true;
-}
-
-void image_texture_unset_rgba(void)
-{
-   image_texture_supports_rgba = false;
-}
-
 bool image_texture_set_color_shifts(
+      struct texture_image *out_img,
       unsigned *r_shift, unsigned *g_shift, unsigned *b_shift,
       unsigned *a_shift)
 {
@@ -59,7 +48,7 @@ bool image_texture_set_color_shifts(
    *g_shift             = 8;
    *b_shift             = 0;
 
-   if (image_texture_supports_rgba)
+   if (out_img->supports_rgba)
    {
       *r_shift = 0;
       *b_shift = 16;
@@ -283,7 +272,8 @@ bool image_texture_load(struct texture_image *out_img,
    void                   *ptr = NULL;
    enum video_image_format fmt = image_texture_get_type(path);
 
-   image_texture_set_color_shifts(&r_shift, &g_shift, &b_shift,
+   image_texture_set_color_shifts(out_img,
+         &r_shift, &g_shift, &b_shift,
          &a_shift);
 
    if (fmt != IMAGE_FORMAT_NONE)

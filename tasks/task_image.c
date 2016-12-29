@@ -55,6 +55,12 @@ struct nbio_image_handle
    enum image_status_enum status;
 };
 
+struct nbio_wrapper_handle
+{
+   nbio_handle_t *nbio;
+   bool supports_rgba;
+};
+
 static int cb_image_menu_upload_generic(void *data, size_t len)
 {
    unsigned r_shift, g_shift, b_shift, a_shift;
@@ -68,7 +74,9 @@ static int cb_image_menu_upload_generic(void *data, size_t len)
          image->processing_final_state == IMAGE_PROCESS_ERROR_END)
       return -1;
 
-   image_texture_set_color_shifts(&r_shift, &g_shift, &b_shift,
+   image_texture_set_color_shifts(
+         &image->ti,
+         &r_shift, &g_shift, &b_shift,
          &a_shift);
 
    image_texture_color_convert(r_shift, g_shift, b_shift,
@@ -249,25 +257,25 @@ error:
 
 static int cb_nbio_image_menu_thumbnail(void *data, size_t len)
 {
-   struct nbio_image_handle *image = NULL;
-   void *handle               = NULL;
-   nbio_handle_t *nbio        = (nbio_handle_t*)data; 
+   struct nbio_image_handle *image  = NULL;
+   void *handle                     = NULL;
+   struct nbio_wrapper_handle *nbio = (struct nbio_wrapper_handle*)data;
 
    if (!nbio)
       goto error;
 
-   handle = image_transfer_new(nbio->image_type);
+   handle = image_transfer_new(nbio->nbio->image_type);
 
    if (!handle)
       goto error;
 
-   image         = (struct nbio_image_handle*)nbio->data;
+   image         = (struct nbio_image_handle*)nbio->nbio->data;
  
    image->handle = handle;
    image->size   = len;
    image->cb     = &cb_image_menu_thumbnail;
 
-   return cb_nbio_generic(nbio, &len);
+   return cb_nbio_generic(nbio->nbio, &len);
 
 error:
    return -1;
@@ -275,29 +283,29 @@ error:
 
 bool task_image_load_handler(retro_task_t *task)
 {
-   nbio_handle_t            *nbio  = (nbio_handle_t*)task->state;
-   struct nbio_image_handle *image = (struct nbio_image_handle*)nbio->data;
+   struct nbio_wrapper_handle *nbio = (struct nbio_wrapper_handle *)task->state;
+   struct nbio_image_handle *image  = (struct nbio_image_handle*)nbio->nbio->data;
 
    if (image)
    {
       switch (image->status)
       {
          case IMAGE_STATUS_PROCESS_TRANSFER:
-            if (task_image_iterate_process_transfer(nbio) == -1)
+            if (task_image_iterate_process_transfer(nbio->nbio) == -1)
                image->status = IMAGE_STATUS_PROCESS_TRANSFER_PARSE;
             break;
          case IMAGE_STATUS_TRANSFER_PARSE:
-            task_image_iterate_transfer_parse(nbio);
+            task_image_iterate_transfer_parse(nbio->nbio);
             if (image->is_blocking_on_processing)
                image->status = IMAGE_STATUS_PROCESS_TRANSFER;
             break;
          case IMAGE_STATUS_TRANSFER:
             if (!image->is_blocking)
-               if (task_image_iterate_transfer(nbio) == -1)
+               if (task_image_iterate_transfer(nbio->nbio) == -1)
                   image->status = IMAGE_STATUS_TRANSFER_PARSE;
             break;
          case IMAGE_STATUS_PROCESS_TRANSFER_PARSE:
-            task_image_iterate_transfer_parse(nbio);
+            task_image_iterate_transfer_parse(nbio->nbio);
             if (!image->is_finished)
                break;
          case IMAGE_STATUS_TRANSFER_PARSE_FREE:
@@ -307,7 +315,7 @@ bool task_image_load_handler(retro_task_t *task)
       }
    }
 
-   if (     (nbio  && nbio->is_finished )
+   if (     (nbio->nbio  && nbio->nbio->is_finished )
          && (image && image->is_finished )
          && (task  && !task_get_cancelled(task)))
    {
@@ -324,70 +332,76 @@ bool task_image_load_handler(retro_task_t *task)
    return true;
 }
 
-bool task_push_image_load(const char *fullpath,
+bool task_push_image_load(bool supports_rgba,
+      const char *fullpath,
       enum msg_hash_enums enum_idx, retro_task_callback_t cb, void *user_data)
 {
-   nbio_handle_t             *nbio   = NULL;
-   retro_task_t             *t       = NULL;
+   retro_task_t             *task    = NULL;
    struct nbio_t             *handle = NULL;
    struct nbio_image_handle   *image = NULL;
+   struct nbio_wrapper_handle *nbio  = NULL;
 
    if (enum_idx == MSG_UNKNOWN)
       goto error_msg;
 
-   t = (retro_task_t*)calloc(1, sizeof(*t));
-   if (!t)
+   task = (retro_task_t*)calloc(1, sizeof(*task));
+   if (!task)
       goto error_msg;
 
-   nbio = (nbio_handle_t*)calloc(1, sizeof(*nbio));
+   nbio = (struct nbio_wrapper_handle*)calloc(1, sizeof(*nbio));
    if (!nbio)
       goto error;
 
-   handle = nbio_open(fullpath, NBIO_READ);
+   nbio->nbio = (nbio_handle_t*)calloc(1, sizeof(*nbio->nbio));
+   if (!nbio->nbio)
+      goto error;
+
+   handle             = nbio_open(fullpath, NBIO_READ);
    if (!handle)
       goto error;
 
-   nbio->handle       = handle;
+   nbio->supports_rgba      = supports_rgba;
+   nbio->nbio->handle       = handle;
 
-   image              = (struct nbio_image_handle*)calloc(1, sizeof(*image));   
+   image                    = (struct nbio_image_handle*)calloc(1, sizeof(*image));   
    if (!image)
       goto error;
 
-   image->status      = IMAGE_STATUS_TRANSFER;
+   image->status            = IMAGE_STATUS_TRANSFER;
 
-   nbio->data         = (struct nbio_image_handle*)image;
-   nbio->is_finished  = false;
-   nbio->cb           = &cb_nbio_image_menu_thumbnail;
-   nbio->status       = NBIO_STATUS_TRANSFER;
+   nbio->nbio->data         = (struct nbio_image_handle*)image;
+   nbio->nbio->is_finished  = false;
+   nbio->nbio->cb           = &cb_nbio_image_menu_thumbnail;
+   nbio->nbio->status       = NBIO_STATUS_TRANSFER;
 
    if (strstr(fullpath, file_path_str(FILE_PATH_PNG_EXTENSION)))
-      nbio->image_type = IMAGE_TYPE_PNG;
+      nbio->nbio->image_type = IMAGE_TYPE_PNG;
    else if (strstr(fullpath, file_path_str(FILE_PATH_JPEG_EXTENSION)) 
          || strstr(fullpath, file_path_str(FILE_PATH_JPG_EXTENSION)))
-      nbio->image_type = IMAGE_TYPE_JPEG;
+      nbio->nbio->image_type = IMAGE_TYPE_JPEG;
    else if (strstr(fullpath, file_path_str(FILE_PATH_BMP_EXTENSION)))
-      nbio->image_type = IMAGE_TYPE_BMP;
+      nbio->nbio->image_type = IMAGE_TYPE_BMP;
    else if (strstr(fullpath, file_path_str(FILE_PATH_TGA_EXTENSION)))
-      nbio->image_type = IMAGE_TYPE_TGA;
+      nbio->nbio->image_type = IMAGE_TYPE_TGA;
 
    nbio_begin_read(handle);
 
-   t->state     = nbio;
-   t->handler   = task_file_load_handler;
-   t->cleanup   = task_image_load_free;
-   t->callback  = cb;
-   t->user_data = user_data;
+   task->state     = nbio;
+   task->handler   = task_file_load_handler;
+   task->cleanup   = task_image_load_free;
+   task->callback  = cb;
+   task->user_data = user_data;
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, t);
+   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
 
    return true;
 
 error:
    nbio_free(handle);
-   task_image_load_free(t);
-   free(t);
-   if (nbio)
-      free(nbio);
+   task_image_load_free(task);
+   free(task);
+   if (nbio->nbio)
+      free(nbio->nbio);
 
 error_msg:
    RARCH_ERR("[image load] Failed to open '%s': %s.\n",
