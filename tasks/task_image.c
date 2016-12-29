@@ -70,7 +70,7 @@ static int cb_image_menu_upload_generic(void *data, size_t len)
       return -1;
 
    image_texture_set_color_shifts(&r_shift, &g_shift, &b_shift,
-         &a_shift);
+         &a_shift, &image->ti);
 
    image_texture_color_convert(r_shift, g_shift, b_shift,
          a_shift, &image->ti);

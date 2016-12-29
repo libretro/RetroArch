@@ -132,10 +132,12 @@ static void nk_menu_context_reset_textures(nk_menu_handle_t *nk,
       struct texture_image ti;
       char path[PATH_MAX_LENGTH];
 
-      ti.width    = 0;
-      ti.height   = 0;
-      ti.pixels   = NULL;
       path[0]     = '\0';
+
+      ti.width         = 0;
+      ti.height        = 0;
+      ti.pixels        = NULL;
+      ti.supports_rgba = video_driver_supports_rgba();
 
       switch(i)
       {

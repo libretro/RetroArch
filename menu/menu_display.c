@@ -923,6 +923,7 @@ void menu_display_reset_textures_list(const char *texture_path, const char *icon
    ti.width                    = 0;
    ti.height                   = 0;
    ti.pixels                   = NULL;
+   ti.supports_rgba            = video_driver_supports_rgba();
 
    if (!string_is_empty(texture_path))
       fill_pathname_join(path, iconpath, texture_path, sizeof(path));

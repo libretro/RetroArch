@@ -239,6 +239,10 @@ static bool imageviewer_load(const char *path, int image_index)
          &comp,
          4);
 #else
+#ifdef RARCH_INTERNAL
+   extern bool video_driver_supports_rgba();
+   image_texture.supports_rgba = video_driver_supports_rgba();
+#endif
    if (!image_texture_load(&image_texture, path))
       return false;
    image_buffer = (uint32_t*)image_texture.pixels;
