@@ -44,7 +44,6 @@ struct texture_image
    unsigned width;
    unsigned height;
    uint32_t *pixels;
-   bool supports_rgba;
 };
 
 enum image_type_enum
@@ -56,9 +55,7 @@ enum image_type_enum
    IMAGE_TYPE_TGA
 };
 
-bool image_texture_set_color_shifts(
-      struct texture_image *out_img,
-      unsigned *r_shift, unsigned *g_shift,
+bool image_texture_set_color_shifts(unsigned *r_shift, unsigned *g_shift,
       unsigned *b_shift, unsigned *a_shift);
 
 bool image_texture_color_convert(unsigned r_shift,
@@ -67,6 +64,8 @@ bool image_texture_color_convert(unsigned r_shift,
 
 bool image_texture_load(struct texture_image *img, const char *path);
 void image_texture_free(struct texture_image *img);
+void image_texture_set_rgba(void);
+void image_texture_unset_rgba(void);
 
 /* Image transfer */
 

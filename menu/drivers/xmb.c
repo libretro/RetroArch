@@ -997,9 +997,7 @@ static void xmb_update_thumbnail_image(void *data)
       return;
 
    if (path_file_exists(xmb->thumbnail_file_path))
-      task_push_image_load(
-            video_driver_supports_rgba(),
-            xmb->thumbnail_file_path,
+      task_push_image_load(xmb->thumbnail_file_path,
             MENU_ENUM_LABEL_CB_MENU_THUMBNAIL,
             menu_display_handle_thumbnail_upload, NULL);
    else if (xmb->depth == 1)
@@ -1013,9 +1011,7 @@ static void xmb_update_savestate_thumbnail_image(void *data)
       return;
 
    if (path_file_exists(xmb->savestate_thumbnail_file_path))
-      task_push_image_load(
-            video_driver_supports_rgba(),
-            xmb->savestate_thumbnail_file_path,
+      task_push_image_load(xmb->savestate_thumbnail_file_path,
             MENU_ENUM_LABEL_CB_MENU_SAVESTATE_THUMBNAIL,
             menu_display_handle_savestate_thumbnail_upload, NULL);
    else
@@ -1359,9 +1355,7 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
        {
            if(path_file_exists(path))
            {
-              task_push_image_load(
-                    video_driver_supports_rgba(),
-                    path,
+              task_push_image_load(path,
                     MENU_ENUM_LABEL_CB_MENU_WALLPAPER,
                   menu_display_handle_wallpaper_upload, NULL);
               strlcpy(xmb->background_file_path,
@@ -3467,9 +3461,7 @@ static void xmb_context_reset_background(const char *iconpath)
 
 
    if (path_file_exists(path))
-      task_push_image_load(
-            video_driver_supports_rgba(),
-            path,
+      task_push_image_load(path,
             MENU_ENUM_LABEL_CB_MENU_WALLPAPER,
             menu_display_handle_wallpaper_upload, NULL);
 }

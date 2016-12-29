@@ -1565,8 +1565,7 @@ static void mui_context_reset(void *data)
    menu_display_allocate_white_texture();
    mui_context_reset_textures(mui);
 
-   task_push_image_load(video_driver_supports_rgba(),
-         settings->path.menu_wallpaper, 
+   task_push_image_load(settings->path.menu_wallpaper, 
          MENU_ENUM_LABEL_CB_MENU_WALLPAPER,
          menu_display_handle_wallpaper_upload, NULL);
 }
