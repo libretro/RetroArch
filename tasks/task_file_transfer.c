@@ -70,7 +70,7 @@ void task_file_load_handler(retro_task_t *task)
    {
       case NBIO_STATUS_TRANSFER_PARSE:
          if (task_file_transfer_iterate_parse(nbio) == -1)
-            task->cancelled = true;
+            task_set_cancelled(task, true);
          nbio->status = NBIO_STATUS_TRANSFER_PARSE_FREE;
          break;
       case NBIO_STATUS_TRANSFER:
@@ -90,17 +90,17 @@ void task_file_load_handler(retro_task_t *task)
       case IMAGE_TYPE_TGA:
       case IMAGE_TYPE_BMP:
          if (!task_image_load_handler(task))
-            task->finished = true;
+            task_set_finished(task, true);
          break;
       case 0:
          if (nbio->is_finished)
-            task->finished = true;
+            task_set_finished(task, true);
          break;
    }
 
-   if (task->cancelled)
+   if (task_get_cancelled(task))
    {
-      task->error = strdup("Task canceled.");
-      task->finished = true;
+      task_set_error(task, strdup("Task canceled."));
+      task_set_finished(task, true);
    }
 }

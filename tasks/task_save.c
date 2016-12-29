@@ -515,17 +515,17 @@ static void task_save_handler_finished(retro_task_t *task,
 {
    save_task_state_t *task_data = NULL;
 
-   task->finished = true;
+   task_set_finished(task, true);
 
    filestream_close(state->file);
 
-   if (!task->error && task->cancelled)
-      task->error = strdup("Task canceled");
+   if (!task_get_error(task) && task_get_cancelled(task))
+      task_set_error(task, strdup("Task canceled"));
 
    task_data = (save_task_state_t*)calloc(1, sizeof(*task_data));
    memcpy(task_data, state, sizeof(*state));
 
-   task->task_data = task_data;
+   task_set_data(task, task_data);
 
    if (state->data)
    {
@@ -564,12 +564,9 @@ static void task_save_handler(retro_task_t *task)
 
    state->written += written;
 
-#if 0
-   /* TODO/FIXME - data race */
-   task->progress  = (state->written / (float)state->size) * 100;
-#endif
+   task_set_progress(task, (state->written / (float)state->size) * 100);
 
-   if (task->cancelled || written != remaining)
+   if (task_get_cancelled(task) || written != remaining)
    {
       char err[PATH_MAX_LENGTH];
 
@@ -588,7 +585,7 @@ static void task_save_handler(retro_task_t *task)
       else
          snprintf(err, sizeof(err), "%s %s", msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO), state->path);
 
-      task->error = strdup(err);
+      task_set_error(task, strdup(err));
       task_save_handler_finished(task, state);
       return;
    }
@@ -597,10 +594,7 @@ static void task_save_handler(retro_task_t *task)
    {
       char       *msg      = NULL;
 
-      if (task->title)
-         free(task->title);
-
-      task->title = NULL;
+      task_free_title(task);
 
       if (state->undo_save)
          msg = strdup(msg_hash_to_str(MSG_RESTORED_OLD_SAVE_STATE));
@@ -616,8 +610,8 @@ static void task_save_handler(retro_task_t *task)
          msg = strdup(new_msg);
       }
 
-      if (!task->mute && msg)
-         task->title = msg;
+      if (!task_get_mute(task) && msg)
+         task_set_title(task, msg);
 
       task_save_handler_finished(task, state);
 
@@ -694,18 +688,18 @@ static void task_load_handler_finished(retro_task_t *task,
 {
    load_task_data_t *task_data = NULL;
 
-   task->finished              = true;
+   task_set_finished(task, true);
 
    if (state->file)
       filestream_close(state->file);
 
-   if (!task->error && task->cancelled)
-      task->error = strdup("Task canceled");
+   if (!task_get_error(task) && task_get_cancelled(task))
+      task_set_error(task, strdup("Task canceled"));
 
    task_data = (load_task_data_t*)calloc(1, sizeof(*task_data));
    memcpy(task_data, state, sizeof(*task_data));
 
-   task->task_data = task_data;
+   task_set_data(task, task_data);
 
    free(state);
 }
@@ -749,13 +743,10 @@ static void task_load_handler(retro_task_t *task)
          (uint8_t*)state->data + state->bytes_read, remaining);
    state->bytes_read += bytes_read;
 
-#if 0
-   /* TODO/FIXME - data race */
    if (state->size > 0)
-      task->progress  = (state->bytes_read / (float)state->size) * 100;
-#endif
+      task_set_progress(task, (state->bytes_read / (float)state->size) * 100);
 
-   if (task->cancelled || bytes_read != remaining)
+   if (task_get_cancelled(task) || bytes_read != remaining)
    {
       if (state->autoload)
       {
@@ -767,10 +758,10 @@ static void task_load_handler(retro_task_t *task)
                msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
                state->path,
                msg_hash_to_str(MSG_FAILED));
-         task->error = strdup(msg);
+         task_set_error(task, strdup(msg));
       }
       else
-         task->error = strdup(msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE));
+         task_set_error(task, strdup(msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE)));
 
       free(state->data);
       state->data = NULL;
@@ -784,10 +775,7 @@ static void task_load_handler(retro_task_t *task)
 
       msg[0] = '\0';
 
-      if (task->title)
-         free(task->title);
-
-      task->title = NULL;
+      task_free_title(task);
 
       if (state->autoload)
       {
@@ -806,8 +794,8 @@ static void task_load_handler(retro_task_t *task)
 
       }
 
-      if (!task->mute)
-         task->title = strdup(msg);
+      if (!task_get_mute(task))
+         task_set_title(task, strdup(msg));
 
       task_load_handler_finished(task, state);
 

@@ -124,10 +124,7 @@ static int task_http_iterate_transfer(retro_task_t *task)
 
    if (!net_http_update(http->handle, &pos, &tot))
    {
-#if 0
-      /* TODO/FIXME - race issue */
-      task->progress = (tot == 0) ? -1 : (signed)(pos * 100 / tot);
-#endif
+      task_set_progress(task, (tot == 0) ? -1 : (signed)(pos * 100 / tot));
       return -1;
    }
 
@@ -139,7 +136,7 @@ static void task_http_transfer_handler(retro_task_t *task)
    http_transfer_data_t *data = NULL;
    http_handle_t        *http = (http_handle_t*)task->state;
 
-   if (task->cancelled)
+   if (task_get_cancelled(task))
       goto task_finished;
 
    switch (http->status)
@@ -168,7 +165,7 @@ static void task_http_transfer_handler(retro_task_t *task)
 
    return;
 task_finished:
-   task->finished = true;
+   task_set_finished(task, true);
 
    if (http->handle)
    {
@@ -178,17 +175,17 @@ task_finished:
       if (tmp && http->cb)
          http->cb(tmp, len);
 
-      if (net_http_error(http->handle) || task->cancelled)
+      if (net_http_error(http->handle) || task_get_cancelled(task))
       {
          tmp = (char*)net_http_data(http->handle, &len, true);
 
          if (tmp)
             free(tmp);
 
-         if (task->cancelled)
-            task->error = strdup("Task cancelled.");
+         if (task_get_cancelled(task))
+            task_set_error(task, strdup("Task cancelled."));
          else
-            task->error = strdup("Download failed.");
+            task_set_error(task, strdup("Download failed."));
       }
       else
       {
@@ -196,12 +193,12 @@ task_finished:
          data->data = tmp;
          data->len  = len;
 
-         task->task_data = data;
+         task_set_data(task, data);
       }
 
       net_http_delete(http->handle);
    } else if (http->error)
-      task->error = strdup("Internal error.");
+      task_set_error(task, strdup("Internal error."));
 
    free(http);
 }
@@ -234,9 +231,7 @@ static bool task_http_retriever(retro_task_t *task, void *data)
 
    /* Fill HTTP info link */
    strlcpy(info->url, http->connection.url, sizeof(info->url));
-#if 0
-   info->progress = task->progress;
-#endif
+   info->progress = task_get_progress(task);
    return true;
 }
 

@@ -202,6 +202,36 @@ void task_queue_retriever_info_free(task_retriever_info_t *list);
 
 void task_queue_cancel_task(void *task);
 
+void task_set_finished(retro_task_t *task, bool finished);
+
+void task_set_mute(retro_task_t *task, bool mute);
+
+void task_set_error(retro_task_t *task, char *error);
+
+void task_set_progress(retro_task_t *task, int8_t progress);
+
+void task_set_title(retro_task_t *task, char *title);
+
+void task_set_data(retro_task_t *task, void *data);
+
+void task_set_cancelled(retro_task_t *task, bool cancelled);
+
+void task_free_title(retro_task_t *task);
+
+bool task_get_cancelled(retro_task_t *task);
+
+bool task_get_finished(retro_task_t *task);
+
+bool task_get_mute(retro_task_t *task);
+
+char* task_get_error(retro_task_t *task);
+
+int8_t task_get_progress(retro_task_t *task);
+
+char* task_get_title(retro_task_t *task);
+
+void* task_get_data(retro_task_t *task);
+
 RETRO_END_DECLS
 
 #endif

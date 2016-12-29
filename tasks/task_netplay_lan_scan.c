@@ -72,9 +72,9 @@ static void task_netplay_lan_scan_handler(retro_task_t *task)
             RARCH_NETPLAY_DISCOVERY_CTL_LAN_SEND_QUERY, NULL);
    }
 
-   task->progress = 100;
-   task->title = strdup(msg_hash_to_str(MSG_NETPLAY_LAN_SCANNING));
-   task->finished = true;
+   task_set_progress(task, 100);
+   task_set_title(task, strdup(msg_hash_to_str(MSG_NETPLAY_LAN_SCANNING)));
+   task_set_finished(task, true);
 
    return;
 }

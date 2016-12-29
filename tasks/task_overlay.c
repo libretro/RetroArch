@@ -373,7 +373,7 @@ static void task_overlay_resolve_iterate(retro_task_t *task)
             loader->resolve_pos, loader->size))
    {
       RARCH_ERR("[Overlay]: Failed to resolve next targets.\n");
-      task->cancelled = true;
+      task_set_cancelled(task, true);
       loader->state   = OVERLAY_STATUS_DEFERRED_ERROR;
       return;
    }
@@ -450,7 +450,7 @@ static void task_overlay_deferred_loading(retro_task_t *task)
                {
                   RARCH_ERR("[Overlay]: Failed to load overlay descs for overlay #%u.\n",
                         (unsigned)overlay->pos);
-                  task->cancelled = true;
+                  task_set_cancelled(task, true);
                   loader->state   = OVERLAY_STATUS_DEFERRED_ERROR;
                   break;
                }
@@ -471,7 +471,7 @@ static void task_overlay_deferred_loading(retro_task_t *task)
          loader->loading_status = OVERLAY_IMAGE_TRANSFER_NONE;
          break;
       case OVERLAY_IMAGE_TRANSFER_ERROR:
-         task->cancelled = true;
+         task_set_cancelled(task, true);
          loader->state   = OVERLAY_STATUS_DEFERRED_ERROR;
          break;
    }
@@ -638,7 +638,7 @@ static void task_overlay_deferred_load(retro_task_t *task)
    return;
 
 error:
-   task->cancelled = true;
+   task_set_cancelled(task, true);
    loader->pos     = 0;
    loader->state   = OVERLAY_STATUS_DEFERRED_ERROR;
 }
@@ -652,7 +652,7 @@ static void task_overlay_free(retro_task_t *task)
    if (loader->overlay_path)
       free(loader->overlay_path);
 
-   if (task->cancelled)
+   if (task_get_cancelled(task))
    {
       for (i = 0; i < overlay->load_images_size; i++)
       {
@@ -688,16 +688,16 @@ static void task_overlay_handler(retro_task_t *task)
          task_overlay_resolve_iterate(task);
          break;
       case OVERLAY_STATUS_DEFERRED_ERROR:
-         task->cancelled = true;
+         task_set_cancelled(task, true);
          break;
       case OVERLAY_STATUS_DEFERRED_DONE:
       default:
       case OVERLAY_STATUS_NONE:
-         task->finished = true;
+         task_set_finished(task, true);
          break;
    }
 
-   if (task->finished && !task->cancelled)
+   if (task_get_finished(task) && !task_get_cancelled(task))
    {
       overlay_task_data_t *data = (overlay_task_data_t*)
          calloc(1, sizeof(*data));
@@ -706,7 +706,7 @@ static void task_overlay_handler(retro_task_t *task)
       data->size     = loader->size;
       data->active   = loader->active;
 
-      task->task_data = data;
+      task_set_data(task, data);
    }
 }
 

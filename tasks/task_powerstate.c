@@ -58,8 +58,8 @@ static void task_powerstate_handler(retro_task_t *task)
       powerstate->state = frontend->get_powerstate(&seconds, &powerstate->percent);
    }
 
-   task->task_data = powerstate;
-   task->finished = true;
+   task_set_data(task, powerstate);
+   task_set_finished(task, true);
 }
 
 void task_push_get_powerstate(void)

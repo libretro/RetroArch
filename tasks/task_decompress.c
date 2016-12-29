@@ -128,12 +128,12 @@ error:
 static void task_decompress_handler_finished(retro_task_t *task,
       decompress_state_t *dec)
 {
-   task->finished = true;
+   task_set_finished(task, true);
 
-   if (!task->error && task->cancelled)
-      task->error = strdup("Task canceled");
+   if (!task_get_error(task) && task_get_cancelled(task))
+      task_set_error(task, strdup("Task canceled"));
 
-   if (task->error)
+   if (task_get_error(task))
       free(dec->source_file);
    else
    {
@@ -141,7 +141,7 @@ static void task_decompress_handler_finished(retro_task_t *task,
          (decompress_task_data_t*)calloc(1, sizeof(*data));
 
       data->source_file = dec->source_file;
-      task->task_data   = data;
+      task_set_data(task, data);
    }
 
    if (dec->subdir)
@@ -166,11 +166,11 @@ static void task_decompress_handler(retro_task_t *task)
          &retdec, dec->source_file,
          dec->valid_ext, file_decompressed, &userdata);
 
-   task->progress = file_archive_parse_file_progress(&dec->archive);
+   task_set_progress(task, file_archive_parse_file_progress(&dec->archive));
 
-   if (task->cancelled || ret != 0)
+   if (task_get_cancelled(task) || ret != 0)
    {
-      task->error = dec->callback_error;
+      task_set_error(task, dec->callback_error);
       file_archive_parse_file_iterate_stop(&dec->archive);
 
       task_decompress_handler_finished(task, dec);
@@ -191,11 +191,11 @@ static void task_decompress_handler_target_file(retro_task_t *task)
          &retdec, dec->source_file,
          dec->valid_ext, file_decompressed_target_file, &userdata);
 
-   task->progress = file_archive_parse_file_progress(&dec->archive);
+   task_set_progress(task, file_archive_parse_file_progress(&dec->archive));
 
-   if (task->cancelled || ret != 0)
+   if (task_get_cancelled(task) || ret != 0)
    {
-      task->error = dec->callback_error;
+      task_set_error(task, dec->callback_error);
       file_archive_parse_file_iterate_stop(&dec->archive);
 
       task_decompress_handler_finished(task, dec);
@@ -216,11 +216,11 @@ static void task_decompress_handler_subdir(retro_task_t *task)
          &retdec, dec->source_file,
          dec->valid_ext, file_decompressed_subdir, &userdata);
 
-   task->progress          = file_archive_parse_file_progress(&dec->archive);
+   task_set_progress(task, file_archive_parse_file_progress(&dec->archive));
 
-   if (task->cancelled || ret != 0)
+   if (task_get_cancelled(task) || ret != 0)
    {
-      task->error = dec->callback_error;
+      task_set_error(task, dec->callback_error);
       file_archive_parse_file_iterate_stop(&dec->archive);
 
       task_decompress_handler_finished(task, dec);

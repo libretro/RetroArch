@@ -309,12 +309,14 @@ bool task_image_load_handler(retro_task_t *task)
 
    if (     (nbio  && nbio->is_finished )
          && (image && image->is_finished )
-         && (task  && !task->cancelled))
+         && (task  && !task_get_cancelled(task)))
    {
-      task->task_data = malloc(sizeof(image->ti));
+      void *data = malloc(sizeof(image->ti));
 
-      if (task->task_data)
-         memcpy(task->task_data, &image->ti, sizeof(image->ti));
+      if (data)
+         memcpy(data, &image->ti, sizeof(image->ti));
+
+      task_set_data(task, data);
 
       return false;
    }

@@ -90,9 +90,9 @@ static void task_screenshot_handler(retro_task_t *task)
    bool is_paused                 = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
    bool ret                       = false;
 
-   if (task->progress == 100)
+   if (task_get_progress(task) == 100)
    {
-      task->finished = true;
+      task_set_finished(task, true);
 
       if (state->userbuf)
          free(state->userbuf);
@@ -173,7 +173,7 @@ static void task_screenshot_handler(retro_task_t *task)
    }
 #endif
 
-   task->progress = 100;
+   task_set_progress(task, 100);
 
    if (!ret)
    {

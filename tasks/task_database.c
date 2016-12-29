@@ -617,7 +617,7 @@ static void task_database_handler(retro_task_t *task)
    dbinfo  = db->handle;
    dbstate = &db->state;
 
-   if (!dbinfo || task->cancelled)
+   if (!dbinfo || task_get_cancelled(task))
       goto task_finished;
 
    switch (dbinfo->status)
@@ -669,7 +669,7 @@ static void task_database_handler(retro_task_t *task)
    return;
 task_finished:
    if (task)
-      task->finished = true;
+      task_set_finished(task, true);
 
    if (dbstate)
    {

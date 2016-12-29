@@ -156,7 +156,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
             string_is_empty(display_name) ? params->name : display_name);
 
       if(!remote_is_bound)
-         task->title = strdup(msg);
+         task_set_title(task, strdup(msg));
       remote_is_bound = true;
    }
    else
@@ -167,7 +167,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
             params->idx);
 
       if (!block_osd_spam)
-         task->title = strdup(msg);
+         task_set_title(task, strdup(msg));
    }
 
    if (!string_is_empty(params->name))
@@ -296,7 +296,7 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
    if (!params || string_is_empty(params->name))
    {
       free(params);
-      task->finished = true;
+      task_set_finished(task, true);
       return;
    }
 
@@ -313,19 +313,22 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
       snprintf(msg, sizeof(msg), "%s (%ld/%ld) %s.",
             params->name, (long)params->vid, (long)params->pid,
             msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED));
-      task->title = strdup(msg);
+
+      task_set_title(task, strdup(msg));
    }
 
    free(params);
-   task->finished = true;
+
+   task_set_finished(task, true);
 }
 
 static void input_autoconfigure_disconnect_handler(retro_task_t *task)
 {
    autoconfig_disconnect_t *params = (autoconfig_disconnect_t*)task->state;
 
-   task->title    = strdup(params->msg);
-   task->finished = true;
+   task_set_title(task, strdup(params->msg));
+
+   task_set_finished(task, true);
 
    RARCH_LOG("%s: %s\n", msg_hash_to_str(MSG_AUTODETECT), params->msg);
 

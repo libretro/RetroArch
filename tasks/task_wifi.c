@@ -76,10 +76,10 @@ static void wifi_scan_callback(void *task_data,
 static void task_wifi_scan_handler(retro_task_t *task)
 {
    driver_wifi_scan();
-    
-   task->progress = 100;
-   task->title    = strdup(msg_hash_to_str(MSG_WIFI_SCAN_COMPLETE));
-   task->finished = true;
+
+   task_set_progress(task, 100);
+   task_set_title(task, strdup(msg_hash_to_str(MSG_WIFI_SCAN_COMPLETE)));
+   task_set_finished(task, true);
 
    return;
 }
