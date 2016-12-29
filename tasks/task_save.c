@@ -91,6 +91,8 @@ typedef struct
    bool autosave;
    bool undo_save;
    bool mute;
+   int state_slot;
+   bool thumbnail_enable;
 } save_task_state_t;
 
 typedef save_task_state_t load_task_data_t;
@@ -594,7 +596,6 @@ static void task_save_handler(retro_task_t *task)
    if (state->written == state->size)
    {
       char       *msg      = NULL;
-      settings_t *settings = config_get_ptr();
 
       if (task->title)
          free(task->title);
@@ -603,7 +604,7 @@ static void task_save_handler(retro_task_t *task)
 
       if (state->undo_save)
          msg = strdup(msg_hash_to_str(MSG_RESTORED_OLD_SAVE_STATE));
-      else if (settings->state_slot < 0)
+      else if (state->state_slot < 0)
          msg = strdup(msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT_AUTO));
       else
       {
@@ -611,7 +612,7 @@ static void task_save_handler(retro_task_t *task)
          new_msg[0] = '\0';
 
          snprintf(new_msg, sizeof(new_msg), msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT),
-               settings->state_slot);
+               state->state_slot);
          msg = strdup(new_msg);
       }
 
@@ -636,20 +637,22 @@ static bool task_push_undo_save_state(const char *path, void *data, size_t size)
 {
    retro_task_t       *task = (retro_task_t*)calloc(1, sizeof(*task));
    save_task_state_t *state = (save_task_state_t*)calloc(1, sizeof(*state));
+   settings_t     *settings = config_get_ptr();
 
    if (!task || !state)
       goto error;
 
    strlcpy(state->path, path, sizeof(state->path));
-   state->data = data;
-   state->size = size;
-   state->undo_save = true;
+   state->data       = data;
+   state->size       = size;
+   state->undo_save  = true;
+   state->state_slot = settings->state_slot;
 
-   task->type = TASK_TYPE_BLOCKING;
-   task->state = state;
-   task->handler = task_save_handler;
-   task->callback = undo_save_state_cb;
-   task->title = strdup(msg_hash_to_str(MSG_UNDOING_SAVE_STATE));
+   task->type        = TASK_TYPE_BLOCKING;
+   task->state       = state;
+   task->handler     = task_save_handler;
+   task->callback    = undo_save_state_cb;
+   task->title       = strdup(msg_hash_to_str(MSG_UNDOING_SAVE_STATE));
 
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
 
@@ -778,7 +781,6 @@ static void task_load_handler(retro_task_t *task)
    if (state->bytes_read == state->size)
    {
       char msg[1024];
-      settings_t *settings = config_get_ptr();
 
       msg[0] = '\0';
 
@@ -796,11 +798,11 @@ static void task_load_handler(retro_task_t *task)
       }
       else
       {
-         if (settings->state_slot < 0)
+         if (state->state_slot < 0)
             strlcpy(msg, msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT_AUTO), sizeof(msg));
          else
             snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT),
-                  settings->state_slot);
+                  state->state_slot);
 
       }
 
@@ -976,11 +978,10 @@ error:
 static void save_state_cb(void *task_data,
                            void *user_data, const char *error)
 {
-   settings_t     *settings = config_get_ptr();
    save_task_state_t *state = (save_task_state_t*)task_data;
    char               *path = strdup(state->path);
 
-   if (settings->savestate_thumbnail_enable)
+   if (state->thumbnail_enable)
       take_screenshot(path, true);
 
    free(path);
@@ -998,22 +999,24 @@ static void task_push_save_state(const char *path, void *data, size_t size, bool
 {
    retro_task_t       *task = (retro_task_t*)calloc(1, sizeof(*task));
    save_task_state_t *state = (save_task_state_t*)calloc(1, sizeof(*state));
+   settings_t     *settings = config_get_ptr();
 
    if (!task || !state)
       goto error;
 
    strlcpy(state->path, path, sizeof(state->path));
-   state->data     = data;
-   state->size     = size;
-   state->autosave = autosave;
-   state->mute     = autosave; /* don't show OSD messages if we are auto-saving */
+   state->data             = data;
+   state->size             = size;
+   state->autosave         = autosave;
+   state->mute             = autosave; /* don't show OSD messages if we are auto-saving */
+   state->thumbnail_enable = settings->savestate_thumbnail_enable;
 
-   task->type      = TASK_TYPE_BLOCKING;
-   task->state     = state;
-   task->handler   = task_save_handler;
-   task->callback  = save_state_cb;
-   task->title     = strdup(msg_hash_to_str(MSG_SAVING_STATE));
-   task->mute      = state->mute;
+   task->type              = TASK_TYPE_BLOCKING;
+   task->state             = state;
+   task->handler           = task_save_handler;
+   task->callback          = save_state_cb;
+   task->title             = strdup(msg_hash_to_str(MSG_SAVING_STATE));
+   task->mute              = state->mute;
 
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
 
