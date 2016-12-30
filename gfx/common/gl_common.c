@@ -100,7 +100,7 @@ void gl_load_texture_image(GLenum target,
       glTexStorage2DEXT(target, 1, internalFormat, width, height);
    }
 #else
-   if (gl_check_capability(GL_CAPS_TEX_STORAGE))
+   if (gl_check_capability(GL_CAPS_TEX_STORAGE) && internalFormat != GL_BGRA_EXT)
    {
       gl_size_format(&internalFormat);
       glTexStorage2D(target, 1, internalFormat, width, height);
