@@ -332,8 +332,10 @@ static void task_queue_remove(task_queue_t *queue, retro_task_t *task)
 static void retro_task_threaded_push_running(retro_task_t *task)
 {
    slock_lock(running_lock);
+   slock_lock(queue_lock);
    task_queue_put(&tasks_running, task);
    scond_signal(worker_cond);
+   slock_unlock(queue_lock);
    slock_unlock(running_lock);
 }
 
