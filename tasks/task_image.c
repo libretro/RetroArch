@@ -329,7 +329,6 @@ bool task_push_image_load(const char *fullpath, retro_task_callback_t cb, void *
 {
    nbio_handle_t             *nbio   = NULL;
    struct nbio_image_handle   *image = NULL;
-   bool supports_rgba                = video_driver_supports_rgba();
    retro_task_t                   *t = (retro_task_t*)calloc(1, sizeof(*t));
 
    if (!t)
@@ -342,7 +341,7 @@ bool task_push_image_load(const char *fullpath, retro_task_callback_t cb, void *
 
    strlcpy(nbio->path, fullpath, sizeof(nbio->path));
 
-   if (supports_rgba)
+   if (video_driver_supports_rgba())
       BIT32_SET(nbio->status_flags, NBIO_FLAG_IMAGE_SUPPORTS_RGBA);
 
    image              = (struct nbio_image_handle*)calloc(1, sizeof(*image));   
