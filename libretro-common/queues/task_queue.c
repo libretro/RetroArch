@@ -293,7 +293,7 @@ static bool worker_continue     = true; /* use running_lock when touching it */
 
 static void task_queue_remove(task_queue_t *queue, retro_task_t *task)
 {
-   retro_task_t *t = NULL;
+   retro_task_t     *t = NULL;
    retro_task_t *front = NULL;
 
    slock_lock(queue_lock);
@@ -305,14 +305,15 @@ static void task_queue_remove(task_queue_t *queue, retro_task_t *task)
    {
       slock_lock(queue_lock);
       queue->front = task->next;
-      front = task->next;
       slock_unlock(queue_lock);
       task->next   = NULL;
+       
       return;
    }
 
    /* Parse queue */
    t = front;
+    
    while (t && t->next)
    {
       /* Remove task and update queue */
