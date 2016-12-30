@@ -55,7 +55,8 @@ enum content_mode_load
 
 enum nbio_status_enum
 {
-   NBIO_STATUS_POLL = 0,
+   NBIO_STATUS_INIT = 0,
+   NBIO_STATUS_POLL,
    NBIO_STATUS_TRANSFER,
    NBIO_STATUS_TRANSFER_PARSE,
    NBIO_STATUS_TRANSFER_PARSE_FREE
@@ -78,6 +79,7 @@ typedef struct nbio_handle
    msg_queue_t *msg_queue;
    unsigned status;
    uint32_t status_flags;
+   char path[4096];
 } nbio_handle_t;
 
 typedef struct autoconfig_params

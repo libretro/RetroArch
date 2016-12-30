@@ -330,7 +330,6 @@ bool task_push_image_load(const char *fullpath,
 {
    nbio_handle_t             *nbio   = NULL;
    retro_task_t             *t       = NULL;
-   struct nbio_t             *handle = NULL;
    struct nbio_image_handle   *image = NULL;
    bool supports_rgba                = video_driver_supports_rgba();
 
@@ -345,11 +344,7 @@ bool task_push_image_load(const char *fullpath,
    if (!nbio)
       goto error;
 
-   handle = nbio_open(fullpath, NBIO_READ);
-   if (!handle)
-      goto error;
-
-   nbio->handle       = handle;
+   strlcpy(nbio->path, fullpath, sizeof(nbio->path));
 
    if (supports_rgba)
       BIT32_SET(nbio->status_flags, NBIO_FLAG_IMAGE_SUPPORTS_RGBA);
@@ -363,19 +358,8 @@ bool task_push_image_load(const char *fullpath,
    nbio->data         = (struct nbio_image_handle*)image;
    nbio->is_finished  = false;
    nbio->cb           = &cb_nbio_image_menu_thumbnail;
-   nbio->status       = NBIO_STATUS_TRANSFER;
+   nbio->status       = NBIO_STATUS_INIT;
 
-   if (strstr(fullpath, file_path_str(FILE_PATH_PNG_EXTENSION)))
-      nbio->image_type = IMAGE_TYPE_PNG;
-   else if (strstr(fullpath, file_path_str(FILE_PATH_JPEG_EXTENSION)) 
-         || strstr(fullpath, file_path_str(FILE_PATH_JPG_EXTENSION)))
-      nbio->image_type = IMAGE_TYPE_JPEG;
-   else if (strstr(fullpath, file_path_str(FILE_PATH_BMP_EXTENSION)))
-      nbio->image_type = IMAGE_TYPE_BMP;
-   else if (strstr(fullpath, file_path_str(FILE_PATH_TGA_EXTENSION)))
-      nbio->image_type = IMAGE_TYPE_TGA;
-
-   nbio_begin_read(handle);
 
    t->state     = nbio;
    t->handler   = task_file_load_handler;
@@ -388,7 +372,6 @@ bool task_push_image_load(const char *fullpath,
    return true;
 
 error:
-   nbio_free(handle);
    task_image_load_free(t);
    free(t);
    if (nbio)
