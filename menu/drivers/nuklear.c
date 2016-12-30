@@ -376,7 +376,6 @@ static void nk_menu_context_reset(void *data)
    nk_menu_context_reset_textures(nk, iconpath);
 
    task_push_image_load(settings->path.menu_wallpaper,
-         MENU_ENUM_LABEL_CB_MENU_WALLPAPER,
          menu_display_handle_wallpaper_upload, NULL);
 }
 

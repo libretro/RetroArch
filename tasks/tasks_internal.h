@@ -111,7 +111,6 @@ bool task_push_netplay_lan_scan(void);
 #endif
 
 bool task_push_image_load(const char *fullpath,
-      enum msg_hash_enums enum_idx,
       retro_task_callback_t cb, void *userdata);
 
 #ifdef HAVE_LIBRETRODB

@@ -325,22 +325,18 @@ bool task_image_load_handler(retro_task_t *task)
    return true;
 }
 
-bool task_push_image_load(const char *fullpath,
-      enum msg_hash_enums enum_idx, retro_task_callback_t cb, void *user_data)
+bool task_push_image_load(const char *fullpath, retro_task_callback_t cb, void *user_data)
 {
    nbio_handle_t             *nbio   = NULL;
-   retro_task_t             *t       = NULL;
    struct nbio_image_handle   *image = NULL;
    bool supports_rgba                = video_driver_supports_rgba();
+   retro_task_t                   *t = (retro_task_t*)calloc(1, sizeof(*t));
 
-   if (enum_idx == MSG_UNKNOWN)
-      goto error_msg;
-
-   t = (retro_task_t*)calloc(1, sizeof(*t));
    if (!t)
       goto error_msg;
 
    nbio = (nbio_handle_t*)calloc(1, sizeof(*nbio));
+
    if (!nbio)
       goto error;
 
