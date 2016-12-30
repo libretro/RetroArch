@@ -608,7 +608,6 @@ bool task_queue_ctl(enum task_queue_ctl_state state, void *data)
 
                SLOCK_LOCK(queue_lock);
                running = tasks_running.front;
-               SLOCK_UNLOCK(queue_lock);
 
                for (; running; running = running->next)
                {
@@ -618,6 +617,8 @@ bool task_queue_ctl(enum task_queue_ctl_state state, void *data)
                      break;
                   }
                }
+
+               SLOCK_UNLOCK(queue_lock);
 
                /* skip this task, user must try again later */
                if (found)
