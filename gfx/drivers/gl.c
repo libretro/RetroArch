@@ -642,7 +642,7 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
    texture_fmt  = gl->texture_fmt;
 #endif
 
-#ifdef HAVE_OPENGLES2
+#if defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
    /* GLES is picky about which format we use here.
     * Without extensions, we can *only* render to 16-bit FBOs. */
 
