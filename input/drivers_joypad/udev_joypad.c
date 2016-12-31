@@ -202,7 +202,6 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
 {
    int i;
    struct stat st;
-   autoconfig_params_t params;
    int ret                              = 0;
    const char *buf                      = NULL;
    unsigned buttons                     = 0;
@@ -281,16 +280,13 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
 
    if (!string_is_empty(pad->ident))
    {
-      strlcpy(params.name, pad->ident, sizeof(params.name));
-
-      params.display_name[0] = '\0';
-      params.idx             = p;
-      params.vid             = pad->vid;
-      params.pid             = pad->pid;
-
-      strlcpy(params.driver, udev_joypad.ident,
-            sizeof(params.driver));
-      input_autoconfigure_connect(&params);
+      input_autoconfigure_connect(
+            pad->ident,
+            NULL,
+            udev_joypad.ident,
+            p,
+            pad->vid,
+            pad->pid);
 
       ret = 1;
    }

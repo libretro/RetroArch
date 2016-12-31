@@ -42,18 +42,14 @@ static const char *ps3_joypad_name(unsigned pad)
 
 static void ps3_joypad_autodetect_add(unsigned autoconf_pad)
 {
-   autoconfig_params_t params;
-
-   /* TODO - implement VID/PID? */
-   params.idx             = autoconf_pad;
-   params.display_name[0] = '\0';
-   params.vid             = 0;
-   params.pid             = 0;
-
-   strlcpy(params.name,   ps3_joypad_name(autoconf_pad), sizeof(params.name));
-   strlcpy(params.driver, ps3_joypad.ident, sizeof(params.driver));
-
-   input_autoconfigure_connect(&params);
+   input_autoconfigure_connect(
+         ps3_joypad_name(autoconf_pad),
+         NULL,
+         ps3_joypad.ident,
+         autoconf_pad,
+         0,
+         0
+         );
 }
 
 static bool ps3_joypad_init(void *data)

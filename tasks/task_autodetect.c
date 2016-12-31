@@ -38,6 +38,16 @@ typedef struct autoconfig_disconnect
    char msg[255];
 } autoconfig_disconnect_t;
 
+typedef struct autoconfig_params
+{
+   char  name[255];
+   char  driver[255];
+   char  display_name[255];
+   unsigned idx;
+   int32_t vid;
+   int32_t pid;
+} autoconfig_params_t;
+
 /* Adds an index for devices with the same name,
  * so they can be identified in the GUI. */
 static void input_autoconfigure_joypad_reindex_devices(void)
@@ -373,7 +383,13 @@ error:
    return false;
 }
 
-bool input_autoconfigure_connect(autoconfig_params_t *params)
+bool input_autoconfigure_connect(
+      const char *name,
+      const char *display_name,
+      const char *driver,
+      unsigned idx,
+      unsigned vid,
+      unsigned pid)
 {
    unsigned i;
    retro_task_t         *task = (retro_task_t*)calloc(1, sizeof(*task));
@@ -383,20 +399,28 @@ bool input_autoconfigure_connect(autoconfig_params_t *params)
    if (!task || !state || !settings->input.autodetect_enable)
       goto error;
 
-   strlcpy(state->name, params->name, sizeof(state->name));
+   if (!string_is_empty(display_name))
+      strlcpy(state->display_name, display_name,
+            sizeof(state->display_name));
+
+   if (!string_is_empty(name))
+      strlcpy(state->name, name, sizeof(state->name));
+
+   if (!string_is_empty(driver))
+      strlcpy(state->driver, driver, sizeof(state->driver));
+
+   state->idx = idx;
+   state->vid = vid;
+   state->pid = pid;
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
-      settings->input.autoconf_binds[params->idx][i].joykey           = NO_BTN;
-      settings->input.autoconf_binds[params->idx][i].joyaxis          = AXIS_NONE;
-      settings->input.autoconf_binds[params->idx][i].joykey_label[0]  = '\0';
-      settings->input.autoconf_binds[params->idx][i].joyaxis_label[0] = '\0';
+      settings->input.autoconf_binds[state->idx][i].joykey           = NO_BTN;
+      settings->input.autoconf_binds[state->idx][i].joyaxis          = AXIS_NONE;
+      settings->input.autoconf_binds[state->idx][i].joykey_label[0]  = '\0';
+      settings->input.autoconf_binds[state->idx][i].joyaxis_label[0] = '\0';
    }
-   settings->input.autoconfigured[params->idx] = false;
-
-   state->idx    = params->idx;
-   state->vid    = params->vid;
-   state->pid    = params->pid;
+   settings->input.autoconfigured[state->idx] = false;
 
    task->state   = state;
    task->handler = input_autoconfigure_connect_handler;

@@ -298,17 +298,14 @@ static void iohidmanager_hid_device_add_autodetect(unsigned idx,
       const char *device_name, const char *driver_name,
       uint16_t dev_vid, uint16_t dev_pid)
 {
-   autoconfig_params_t params;
-
-   params.idx             = idx;
-   params.vid             = dev_vid;
-   params.pid             = dev_pid;
-   params.display_name[0] = '\0';
-
-   strlcpy(params.name,   device_name, sizeof(params.name));
-   strlcpy(params.driver, driver_name, sizeof(params.driver));
-
-   input_autoconfigure_connect(&params);
+   input_autoconfigure_connect(
+         device_name,
+         NULL,
+         driver_name,
+         idx,
+         dev_vid,
+         dev_pid
+         );
 
    RARCH_LOG("Port %d: %s.\n", idx, device_name);
 }

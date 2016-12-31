@@ -143,18 +143,14 @@ static void handle_hotplug(unsigned port, uint32_t ptype)
    pad_type[port] = ptype;
 
    if (ptype != WPAD_EXP_NOCONTROLLER)
-   {
-      autoconfig_params_t params;
-
-      /* TODO - implement VID/PID? */
-      params.idx             = port;
-      params.vid             = 0;
-      params.pid             = 0;
-      params.display_name[0] = '\0';
-      strlcpy(params.name, gx_joypad_name(port), sizeof(params.name));
-      strlcpy(params.driver, gx_joypad.ident, sizeof(params.driver));
-      input_autoconfigure_connect(&params);
-   }
+      input_autoconfigure_connect(
+            gx_joypad_name(port),
+            NULL,
+            gx_joypad.ident,
+            port,
+            0,
+            0
+            );
 }
 
 static bool gx_joypad_button(unsigned port, uint16_t key)

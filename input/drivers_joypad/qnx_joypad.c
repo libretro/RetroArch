@@ -32,20 +32,14 @@ static bool qnx_joypad_init(void *data)
    (void)data;
 
    for (autoconf_pad = 0; autoconf_pad < MAX_USERS; autoconf_pad++)
-   {
-      autoconfig_params_t params;
-
-      /* TODO - implement VID/PID? */
-      params.idx             = autoconf_pad;
-      params.vid             = 0;
-      params.pid             = 0;
-      params.display_name[0] = '\0';
-
-      strlcpy(params.name,   qnx_joypad_name(autoconf_pad), sizeof(params.name));
-      strlcpy(params.driver, qnx_joypad.ident, sizeof(params.driver));
-
-      input_autoconfigure_connect(&params);
-   }
+      input_autoconfigure_connect(
+            qnx_joypad_name(autoconf_pad),
+            NULL,
+            qnx_joypad.ident,
+            autoconf_pad,
+            0,
+            0
+            );
 
    return true;
 }

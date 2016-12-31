@@ -267,19 +267,13 @@ static bool xinput_joypad_init(void *data)
    for (autoconf_pad = 0; autoconf_pad < MAX_USERS; autoconf_pad++)
    {
       if (pad_index_to_xuser_index(autoconf_pad) > -1)
-      {
-         autoconfig_params_t params;
-
-         /* TODO - implement VID/PID? */
-         params.idx             = autoconf_pad;
-         params.display_name[0] = '\0';
-         params.vid             = 0;
-         params.pid             = 0;
-
-         strlcpy(params.name, xinput_joypad_name(autoconf_pad), sizeof(params.name));
-         strlcpy(params.driver, xinput_joypad.ident, sizeof(params.driver));
-         input_autoconfigure_connect(&params);
-      }
+         input_autoconfigure_connect(
+               xinput_joypad_name(autoconf_pad),
+               NULL,
+               xinput_joypad.ident,
+               autoconf_pad,
+               0,
+               0);
    }
 
    return true;

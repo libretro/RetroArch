@@ -94,7 +94,6 @@ static int16_t sdl_pad_get_axis(sdl_joypad_t *pad, unsigned axis)
 
 static void sdl_pad_connect(unsigned id)
 {
-   autoconfig_params_t params;
    sdl_joypad_t *pad          = (sdl_joypad_t*)&sdl_pads[id];
    bool success               = false;
    int32_t product            = 0;
@@ -141,15 +140,14 @@ static void sdl_pad_connect(unsigned id)
    product    = guid_ptr[1];
 #endif
 #endif
-   strlcpy(params.name,   sdl_pad_name(id), sizeof(params.name));
-   strlcpy(params.driver, sdl_joypad.ident, sizeof(params.driver));
 
-   params.idx             = id;
-   params.vid             = vendor;
-   params.pid             = product;
-   params.display_name[0] = '\0';
-
-   input_autoconfigure_connect(&params);
+   input_autoconfigure_connect(
+         sdl_pad_name(id),
+         NULL,
+         sdl_joypad.ident,
+         id,
+         vendor,
+         product);
 
    RARCH_LOG("[SDL]: Device #%u (%04x:%04x) connected: %s.\n", id, vendor,
              product, sdl_pad_name(id));

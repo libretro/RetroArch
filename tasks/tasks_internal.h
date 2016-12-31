@@ -82,16 +82,6 @@ typedef struct nbio_handle
    char path[4096];
 } nbio_handle_t;
 
-typedef struct autoconfig_params
-{
-   char  name[255];
-   char  driver[255];
-   char  display_name[255];
-   unsigned idx;
-   int32_t vid;
-   int32_t pid;
-} autoconfig_params_t;
-
 #ifdef HAVE_NETWORKING
 typedef struct
 {
@@ -171,7 +161,13 @@ void *savefile_ptr_get(void);
 
 void path_init_savefile_new(void);
 
-bool input_autoconfigure_connect(autoconfig_params_t *params);
+bool input_autoconfigure_connect(
+      const char *name,
+      const char *display_name,
+      const char *driver,
+      unsigned idx,
+      unsigned vid,
+      unsigned pid);
 
 bool input_autoconfigure_disconnect(unsigned i, const char *ident);
 

@@ -232,7 +232,6 @@ static void parport_free_pad(struct parport_joypad *pad)
 static bool parport_joypad_init(void *data)
 {
    unsigned i, j;
-   autoconfig_params_t params;
    bool found_enabled_button             = false;
    bool found_disabled_button            = false;
    char buf[PARPORT_NUM_BUTTONS * 3 + 1] = {0};
@@ -252,11 +251,6 @@ static bool parport_joypad_init(void *data)
       pad->ident = settings->input.device_names[i];
 
       snprintf(path, sizeof(path), "/dev/parport%u", i);
-
-      params.idx             = i;
-      params.display_name[0] = '\0';
-      params.vid             = 0;
-      params.pid             = 0;
 
       if (parport_joypad_init_pad(path, pad))
       {
@@ -300,8 +294,6 @@ static bool parport_joypad_init(void *data)
                RARCH_WARN("[Joypad]: Pin(s) %son %s were low on init, assuming not connected\n", \
                      buf, path);
             }
-            strlcpy(params.name, "Generic Parallel Port device", sizeof(params.name));
-            strlcpy(params.driver, "parport", sizeof(params.driver));
          }
          else
          {
@@ -310,7 +302,14 @@ static bool parport_joypad_init(void *data)
          }
       }
 
-      input_autoconfigure_connect(&params);
+      input_autoconfigure_connect(
+            "Generic Parallel Port device",
+            NULL,
+            "parport",
+            i,
+            0,
+            0
+            );
    }
 
    return true;
