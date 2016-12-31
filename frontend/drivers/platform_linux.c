@@ -1474,8 +1474,6 @@ static void frontend_linux_get_env(int *argc,
             "RetroArch", "[ENV]: application location: [%s]\n", app_dir);
          if (args && *app_dir)
          {
-            char buf[PATH_MAX_LENGTH] = {0};
-
             fill_pathname_join(g_defaults.dir.assets, app_dir,
                   "assets", sizeof(g_defaults.dir.assets));
             fill_pathname_join(g_defaults.dir.cache, app_dir,
