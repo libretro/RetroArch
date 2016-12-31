@@ -2813,6 +2813,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
       strlcat(db_path, file_path_str(FILE_PATH_RDB_EXTENSION),
             sizeof(db_path));
 
+      if (path_file_exists(db_path))
       menu_entries_append_enum(info->list, label,
             db_path,
             MENU_ENUM_LABEL_INFORMATION, FILE_TYPE_RDB_ENTRY, 0, idx);
