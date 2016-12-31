@@ -59,6 +59,8 @@ typedef struct db_handle
    database_state_handle_t state;
    database_info_handle_t *handle;
    unsigned status;
+   char playlist_directory[4096];
+   char content_database_path[4096];
 } db_handle_t;
 
 static void database_info_set_type(database_info_handle_t *handle, enum database_type type)
@@ -270,6 +272,7 @@ static int database_info_list_iterate_new(database_state_handle_t *db_state,
 }
 
 static int database_info_list_iterate_found_match(
+      db_handle_t *_db,
       database_state_handle_t *db_state,
       database_info_handle_t *db,
       const char *archive_name
@@ -280,7 +283,6 @@ static int database_info_list_iterate_found_match(
    char  db_playlist_base_str[PATH_MAX_LENGTH];
    char entry_path_str[PATH_MAX_LENGTH];
    playlist_t   *playlist                      = NULL;
-   settings_t           *settings              = config_get_ptr();
    const char         *db_path                 =
       database_info_get_current_name(db_state);
    const char         *entry_path              =
@@ -299,7 +301,7 @@ static int database_info_list_iterate_found_match(
    strlcat(db_playlist_base_str,
          file_path_str(FILE_PATH_LPL_EXTENSION),
          sizeof(db_playlist_base_str));
-   fill_pathname_join(db_playlist_path, settings->directory.playlist,
+   fill_pathname_join(db_playlist_path, _db->playlist_directory,
          db_playlist_base_str, sizeof(db_playlist_path));
 
    playlist = playlist_init(db_playlist_path, COLLECTION_SIZE);
@@ -364,6 +366,7 @@ static int database_info_list_iterate_next(
 }
 
 static int task_database_iterate_crc_lookup(
+      db_handle_t *_db,
       database_state_handle_t *db_state,
       database_info_handle_t *db,
       const char *name,
@@ -411,9 +414,11 @@ static int task_database_iterate_crc_lookup(
 #endif
          if (db_state->archive_crc == db_info_entry->crc32)
             return database_info_list_iterate_found_match(
+                  _db,
                   db_state, db, NULL);
          if (db_state->crc == db_info_entry->crc32)
             return database_info_list_iterate_found_match(
+                  _db,
                   db_state, db, archive_entry);
       }
    }
@@ -440,13 +445,14 @@ static int task_database_iterate_crc_lookup(
 }
 
 static int task_database_iterate_playlist_archive(
+      db_handle_t *_db,
       database_state_handle_t *db_state,
       database_info_handle_t *db, const char *name)
 {
 #ifdef HAVE_COMPRESSION
    if (db_state->crc != 0)
       return task_database_iterate_crc_lookup(
-            db_state, db, name, db_state->archive_name);
+            _db, db_state, db, name, db_state->archive_name);
 
    db_state->crc = file_archive_get_file_crc32(name);
 #endif
@@ -455,18 +461,18 @@ static int task_database_iterate_playlist_archive(
 }
 
 static int task_database_iterate_playlist_lutro(
+      db_handle_t *_db,
       database_state_handle_t *db_state,
       database_info_handle_t *db,
       const char *path)
 {
    char db_playlist_path[PATH_MAX_LENGTH];
    playlist_t   *playlist                  = NULL;
-   settings_t           *settings          = config_get_ptr();
 
    db_playlist_path[0]                     = '\0';
 
    fill_pathname_join(db_playlist_path,
-         settings->directory.playlist,
+         _db->playlist_directory,
          file_path_str(FILE_PATH_LUTRO_PLAYLIST),
          sizeof(db_playlist_path));
 
@@ -497,6 +503,7 @@ static int task_database_iterate_playlist_lutro(
 
 
 static int task_database_iterate_serial_lookup(
+      db_handle_t *_db,
       database_state_handle_t *db_state,
       database_info_handle_t *db, const char *name)
 {
@@ -534,7 +541,8 @@ static int task_database_iterate_serial_lookup(
                    db_info_entry->name);
 #endif
          if (string_is_equal(db_state->serial, db_info_entry->serial))
-            return database_info_list_iterate_found_match(db_state, db, NULL);
+            return database_info_list_iterate_found_match(_db,
+                  db_state, db, NULL);
       }
    }
 
@@ -556,7 +564,9 @@ static int task_database_iterate_serial_lookup(
    return 0;
 }
 
-static int task_database_iterate(database_state_handle_t *db_state,
+static int task_database_iterate(
+      db_handle_t *_db,
+      database_state_handle_t *db_state,
       database_info_handle_t *db)
 {
    const char *name = database_info_get_current_element_name(db);
@@ -573,13 +583,13 @@ static int task_database_iterate(database_state_handle_t *db_state,
       case DATABASE_TYPE_ITERATE:
          return task_database_iterate_playlist(db_state, db, name);
       case DATABASE_TYPE_ITERATE_ARCHIVE:
-         return task_database_iterate_playlist_archive(db_state, db, name);
+         return task_database_iterate_playlist_archive(_db, db_state, db, name);
       case DATABASE_TYPE_ITERATE_LUTRO:
-         return task_database_iterate_playlist_lutro(db_state, db, name);
+         return task_database_iterate_playlist_lutro(_db, db_state, db, name);
       case DATABASE_TYPE_SERIAL_LOOKUP:
-         return task_database_iterate_serial_lookup(db_state, db, name);
+         return task_database_iterate_serial_lookup(_db, db_state, db, name);
       case DATABASE_TYPE_CRC_LOOKUP:
-         return task_database_iterate_crc_lookup(db_state, db, name, NULL);
+         return task_database_iterate_crc_lookup(_db, db_state, db, name, NULL);
       case DATABASE_TYPE_NONE:
       default:
          break;
@@ -625,9 +635,8 @@ static void task_database_handler(retro_task_t *task)
       case DATABASE_STATUS_ITERATE_BEGIN:
          if (dbstate && !dbstate->list)
          {
-            settings_t *settings = config_get_ptr();
             dbstate->list        = dir_list_new_special(
-                  settings->path.content_database,
+                  db->content_database_path,
                   DIR_LIST_DATABASES, NULL);
          }
          dbinfo->status = DATABASE_STATUS_ITERATE_START;
@@ -640,7 +649,7 @@ static void task_database_handler(retro_task_t *task)
          task_database_iterate_start(dbinfo, name);
          break;
       case DATABASE_STATUS_ITERATE:
-         if (task_database_iterate(dbstate, dbinfo) == 0)
+         if (task_database_iterate(db, dbstate, dbinfo) == 0)
          {
             dbinfo->status = DATABASE_STATUS_ITERATE_NEXT;
             dbinfo->type   = DATABASE_TYPE_ITERATE;
@@ -694,8 +703,9 @@ task_finished:
 bool task_push_dbscan(const char *fullpath,
       bool directory, retro_task_callback_t cb)
 {
-   retro_task_t *t   = (retro_task_t*)calloc(1, sizeof(*t));
-   db_handle_t *db   = (db_handle_t*)calloc(1, sizeof(db_handle_t));
+   settings_t *settings = config_get_ptr();
+   retro_task_t *t      = (retro_task_t*)calloc(1, sizeof(*t));
+   db_handle_t *db      = (db_handle_t*)calloc(1, sizeof(db_handle_t));
 
    if (!t || !db)
       goto error;
@@ -703,6 +713,13 @@ bool task_push_dbscan(const char *fullpath,
    t->handler        = task_database_handler;
    t->state          = db;
    t->callback       = cb;
+
+   strlcpy(db->playlist_directory,
+         settings->directory.playlist,
+         sizeof(db->playlist_directory));
+   strlcpy(db->content_database_path,
+         settings->path.content_database,
+         sizeof(db->content_database_path));
 
    if (directory)
       db->handle = database_info_dir_init(fullpath, DATABASE_TYPE_ITERATE);
