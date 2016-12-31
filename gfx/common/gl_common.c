@@ -71,11 +71,6 @@ static void gl_size_format(GLint* internalFormat)
          *internalFormat = GL_RGBA8;
 #endif
          break;
-#ifdef HAVE_OPENGLES2
-      case GL_BGRA_EXT:
-         *internalFormat = GL_BGRA8_EXT;
-         break;
-#endif
    }
 #endif
 }
@@ -94,7 +89,7 @@ void gl_load_texture_image(GLenum target,
 {
 #ifndef HAVE_PSGL
 #ifdef HAVE_OPENGLES2
-   if (gl_check_capability(GL_CAPS_TEX_STORAGE_EXT))
+   if (gl_check_capability(GL_CAPS_TEX_STORAGE_EXT) && internalFormat != GL_BGRA_EXT)
    {
       gl_size_format(&internalFormat);
       glTexStorage2DEXT(target, 1, internalFormat, width, height);
