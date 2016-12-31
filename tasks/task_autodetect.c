@@ -46,25 +46,27 @@ typedef struct autoconfig_params
    unsigned idx;
    int32_t vid;
    int32_t pid;
+   uint32_t max_users;
+   char autoconfig_directory[4096];
 } autoconfig_params_t;
 
 /* Adds an index for devices with the same name,
  * so they can be identified in the GUI. */
-static void input_autoconfigure_joypad_reindex_devices(void)
+static void input_autoconfigure_joypad_reindex_devices(autoconfig_params_t *params)
 {
    unsigned i;
    settings_t      *settings = config_get_ptr();
 
-   for(i = 0; i < settings->input.max_users; i++)
+   for(i = 0; i < params->max_users; i++)
       settings->input.device_name_index[i]=0;
 
-   for(i = 0; i < settings->input.max_users; i++)
+   for(i = 0; i < params->max_users; i++)
    {
       unsigned j;
       const char *tmp = settings->input.device_names[i];
       int k           = 1;
 
-      for(j = 0; j < settings->input.max_users; j++)
+      for(j = 0; j < params->max_users; j++)
       {
          if(string_is_equal(tmp, settings->input.device_names[j])
                && settings->input.device_name_index[i] == 0)
@@ -187,7 +189,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    settings->input.pid[params->idx] = params->pid;
    settings->input.vid[params->idx] = params->vid;
 
-   input_autoconfigure_joypad_reindex_devices();
+   input_autoconfigure_joypad_reindex_devices(params);
 }
 
 static int input_autoconfigure_joypad_from_conf(
@@ -224,10 +226,9 @@ static bool input_autoconfigure_joypad_from_conf_dir(
 
    if (!list || !list->size)
    {
-      settings_t *settings = config_get_ptr();
       if (list)
          string_list_free(list);
-      list = dir_list_new_special(settings->directory.autoconfig,
+      list = dir_list_new_special(params->autoconfig_directory,
             DIR_LIST_AUTOCONFIG, "cfg");
    }
 
@@ -283,7 +284,6 @@ static bool input_autoconfigure_joypad_from_conf_internal(
       autoconfig_params_t *params, retro_task_t *task)
 {
    size_t i;
-   settings_t *settings = config_get_ptr();
 
    /* Load internal autoconfig files  */
    for (i = 0; input_builtin_autoconfs[i]; i++)
@@ -294,7 +294,7 @@ static bool input_autoconfigure_joypad_from_conf_internal(
          return true;
    }
 
-   if (string_is_empty(settings->directory.autoconfig))
+   if (string_is_empty(params->autoconfig_directory))
       return true;
    return false;
 }
@@ -409,9 +409,10 @@ bool input_autoconfigure_connect(
    if (!string_is_empty(driver))
       strlcpy(state->driver, driver, sizeof(state->driver));
 
-   state->idx = idx;
-   state->vid = vid;
-   state->pid = pid;
+   state->idx       = idx;
+   state->vid       = vid;
+   state->pid       = pid;
+   state->max_users = settings->input.max_users;
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
