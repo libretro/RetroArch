@@ -329,10 +329,10 @@ static void input_overlay_poll(
             break;
          default:
             {
-               float x_val     = x_dist / desc->range_x;
-               float y_val     = y_dist / desc->range_y;
-               float x_val_sat = x_val / desc->analog_saturate_pct;
-               float y_val_sat = y_val / desc->analog_saturate_pct;
+               float x_val       = x_dist / desc->range_x;
+               float y_val       = y_dist / desc->range_y;
+               float x_val_sat   = x_val / desc->analog_saturate_pct;
+               float y_val_sat   = y_val / desc->analog_saturate_pct;
 
                unsigned int base = (desc->type == OVERLAY_TYPE_ANALOG_RIGHT) ? 2 : 0;
 
@@ -441,10 +441,10 @@ static void input_overlay_poll_clear(input_overlay_t *ol, float opacity)
 
       desc->range_x_mod = desc->range_x;
       desc->range_y_mod = desc->range_y;
-      desc->updated = false;
+      desc->updated     = false;
 
-      desc->delta_x = 0.0f;
-      desc->delta_y = 0.0f;
+      desc->delta_x     = 0.0f;
+      desc->delta_y     = 0.0f;
       input_overlay_update_desc_geom(ol, desc);
    }
 }
@@ -468,18 +468,6 @@ void input_overlay_next(input_overlay_t *ol, float opacity)
 
    ol->blocked    = true;
    ol->next_index = (ol->index + 1) % ol->size;
-}
-
-/**
- * input_overlay_full_screen:
- *
- * Checks if the overlay is fullscreen.
- *
- * Returns: true (1) if overlay is fullscreen, otherwise false (0).
- **/
-static bool input_overlay_full_screen(input_overlay_t *ol)
-{
-   return ol->active->full_screen;
 }
 
 /**
@@ -613,7 +601,7 @@ void input_poll_overlay(input_overlay_t *ol, float opacity)
          sizeof(ol_state->keys));
    memset(ol_state, 0, sizeof(*ol_state));
 
-   device = input_overlay_full_screen(ol) ?
+   device = ol->active->full_screen ?
       RARCH_DEVICE_POINTER_SCREEN : RETRO_DEVICE_POINTER;
 
    for (i = 0;
