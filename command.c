@@ -1591,29 +1591,35 @@ static bool command_event_save_core_config(void)
  * Saves current configuration file to disk, and (optionally)
  * autosave state.
  **/
-static void command_event_save_current_config(int override_type)
+static void command_event_save_current_config(enum override_type type)
 {
    char msg[128]           = {0};
 
-   if (override_type)
+   switch (type)
    {
-      if (config_save_overrides(override_type))
-      {
-         strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_SAVED_SUCCESSFULLY), sizeof(msg));
-         RARCH_LOG("[overrides] %s\n", msg);
+      case OVERRIDE_NONE:
+         if (!path_is_empty(RARCH_PATH_CONFIG))
+            command_event_save_config(path_get(RARCH_PATH_CONFIG), msg, sizeof(msg));
+         break;
+      case OVERRIDE_GAME:
+      case OVERRIDE_CORE:
+         if (config_save_overrides(type))
+         {
+            strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_SAVED_SUCCESSFULLY), sizeof(msg));
+            RARCH_LOG("[overrides] %s\n", msg);
 
-         /* set overrides to active so the original config can be
-            restored after closing content */
-         runloop_ctl(RUNLOOP_CTL_SET_OVERRIDES_ACTIVE, NULL);
-      }
-      else
-      {
-         strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ERROR_SAVING), sizeof(msg));
-         RARCH_ERR("[overrides] %s\n", msg);
-      }
+            /* set overrides to active so the original config can be
+               restored after closing content */
+            runloop_ctl(RUNLOOP_CTL_SET_OVERRIDES_ACTIVE, NULL);
+         }
+         else
+         {
+            strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ERROR_SAVING), sizeof(msg));
+            RARCH_ERR("[overrides] %s\n", msg);
+         }
+         break;
    }
-   else if (!path_is_empty(RARCH_PATH_CONFIG))
-      command_event_save_config(path_get(RARCH_PATH_CONFIG), msg, sizeof(msg));
+
 
    if (!string_is_empty(msg))
       runloop_msg_queue_push(msg, 1, 180, true);
