@@ -255,7 +255,8 @@ static bool inside_hitbox(const struct overlay_desc *desc, float x, float y)
       }
 
       case OVERLAY_HITBOX_RECT:
-         return (fabs(x - desc->x) <= desc->range_x_mod) &&
+         return 
+            (fabs(x - desc->x) <= desc->range_x_mod) &&
             (fabs(y - desc->y) <= desc->range_y_mod);
    }
 
@@ -279,20 +280,11 @@ static void input_overlay_poll(
       int16_t norm_x, int16_t norm_y)
 {
    size_t i;
-   float x, y;
-
-   memset(out, 0, sizeof(*out));
-
-   if (!ol->enable)
-   {
-      ol->blocked = false;
-      return;
-   }
 
    /* norm_x and norm_y is in [-0x7fff, 0x7fff] range,
     * like RETRO_DEVICE_POINTER. */
-   x = (float)(norm_x + 0x7fff) / 0xffff;
-   y = (float)(norm_y + 0x7fff) / 0xffff;
+   float x = (float)(norm_x + 0x7fff) / 0xffff;
+   float y = (float)(norm_y + 0x7fff) / 0xffff;
 
    x -= ol->active->mod_x;
    y -= ol->active->mod_y;
@@ -615,7 +607,12 @@ void input_poll_overlay(input_overlay_t *ol, float opacity)
       int16_t y = current_input->input_state(current_input_data, NULL,
             0, device, i, RETRO_DEVICE_ID_POINTER_Y);
 
-      input_overlay_poll(ol, &polled_data, x, y);
+      memset(&polled_data, 0, sizeof(struct input_overlay_state));
+
+      if (ol->enable)
+         input_overlay_poll(ol, &polled_data, x, y);
+      else
+         ol->blocked = false;
 
       ol_state->buttons |= polled_data.buttons;
 
