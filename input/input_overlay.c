@@ -507,7 +507,6 @@ void input_overlay_loaded(void *task_data, void *user_data, const char *err)
 {
    size_t i;
    overlay_task_data_t              *data = (overlay_task_data_t*)task_data;
-   settings_t                   *settings = config_get_ptr();
    input_overlay_t                    *ol = NULL;
    const video_overlay_interface_t *iface = NULL;
 
@@ -516,14 +515,14 @@ void input_overlay_loaded(void *task_data, void *user_data, const char *err)
 
 #ifdef HAVE_MENU
    /* We can't display when the menu is up */
-   if (settings->input.overlay_hide_in_menu && menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+   if (data->hide_in_menu && menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
    {
-      if (settings->input.overlay_enable)
+      if (data->overlay_enable)
          goto abort_load;
    }
 #endif
 
-   if (!settings->input.overlay_enable)
+   if (!data->overlay_enable)
       goto abort_load;
 
    if (!video_driver_overlay_interface(&iface) || !iface)
@@ -536,13 +535,12 @@ void input_overlay_loaded(void *task_data, void *user_data, const char *err)
    ol->overlays   = data->overlays;
    ol->size       = data->size;
    ol->active     = data->active;
-   ol->iface      = iface;
-   ol->iface_data = video_driver_get_ptr(true);
+   ol->iface      = iface; ol->iface_data = video_driver_get_ptr(true);
 
-   input_overlay_load_active(ol, settings->input.overlay_opacity);
-   input_overlay_enable(ol, settings->input.overlay_enable);
+   input_overlay_load_active(ol, data->overlay_opacity);
+   input_overlay_enable(ol, data->overlay_enable);
 
-   input_overlay_set_scale_factor(ol, settings->input.overlay_scale);
+   input_overlay_set_scale_factor(ol, data->overlay_scale);
 
    ol->next_index = (ol->index + 1) % ol->size;
    ol->state      = OVERLAY_STATUS_NONE;
@@ -705,6 +703,7 @@ void input_poll_overlay(input_overlay_t *ol, float opacity)
       {
          float analog_x, analog_y;
          unsigned analog_base = 2;
+         float axis_threshold = settings->input.axis_threshold;
 
          if (settings->input.analog_dpad_mode[0] == ANALOG_DPAD_LSTICK)
             analog_base = 0;
@@ -712,13 +711,13 @@ void input_poll_overlay(input_overlay_t *ol, float opacity)
          analog_x = (float)ol_state->analog[analog_base + 0] / 0x7fff;
          analog_y = (float)ol_state->analog[analog_base + 1] / 0x7fff;
 
-         if (analog_x <= -settings->input.axis_threshold)
+         if (analog_x <= -axis_threshold)
             BIT32_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_LEFT);
-         if (analog_x >=  settings->input.axis_threshold)
+         if (analog_x >=  axis_threshold)
             BIT32_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_RIGHT);
-         if (analog_y <= -settings->input.axis_threshold)
+         if (analog_y <= -axis_threshold)
             BIT32_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_UP);
-         if (analog_y >=  settings->input.axis_threshold)
+         if (analog_y >=  axis_threshold)
             BIT32_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_DOWN);
          break;
       }
@@ -733,7 +732,8 @@ void input_poll_overlay(input_overlay_t *ol, float opacity)
       input_overlay_poll_clear(ol, opacity);
 }
 
-void input_state_overlay(input_overlay_t *ol, int16_t *ret, unsigned port, unsigned device, unsigned idx,
+void input_state_overlay(input_overlay_t *ol, int16_t *ret,
+      unsigned port, unsigned device, unsigned idx,
       unsigned id)
 {
    input_overlay_state_t *ol_state = ol ? &ol->overlay_state : NULL;

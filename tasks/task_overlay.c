@@ -699,12 +699,17 @@ static void task_overlay_handler(retro_task_t *task)
 
    if (task_get_finished(task) && !task_get_cancelled(task))
    {
+      settings_t *settings      = config_get_ptr();
       overlay_task_data_t *data = (overlay_task_data_t*)
          calloc(1, sizeof(*data));
 
-      data->overlays = loader->overlays;
-      data->size     = loader->size;
-      data->active   = loader->active;
+      data->overlays        = loader->overlays;
+      data->size            = loader->size;
+      data->active          = loader->active;
+      data->hide_in_menu    = settings->input.overlay_hide_in_menu;
+      data->overlay_enable  = settings->input.overlay_enable;
+      data->overlay_opacity = settings->input.overlay_opacity;
+      data->overlay_scale   = settings->input.overlay_scale;
 
       task_set_data(task, data);
    }

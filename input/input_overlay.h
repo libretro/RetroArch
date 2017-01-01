@@ -184,6 +184,10 @@ typedef struct
     struct overlay *overlays;
     struct overlay *active;
     size_t size;
+    bool hide_in_menu;
+    bool overlay_enable;
+    float overlay_opacity;
+    float overlay_scale;
 } overlay_task_data_t;
 
 /**
