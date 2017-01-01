@@ -37,11 +37,6 @@
 
 static enum filebrowser_enums filebrowser_types = FILEBROWSER_NONE;
 
-void filebrowser_clear_type(void)
-{
-   filebrowser_types = FILEBROWSER_NONE;
-}
-
 void filebrowser_set_type(enum filebrowser_enums type)
 {
    filebrowser_types = type;

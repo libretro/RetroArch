@@ -34,8 +34,6 @@ enum filebrowser_enums
    FILEBROWSER_SELECT_COLLECTION
 };
 
-void filebrowser_clear_type(void);
-
 void filebrowser_set_type(enum filebrowser_enums type);
 
 void filebrowser_parse(void *data, unsigned type,

@@ -47,7 +47,7 @@ static int action_cancel_pop_default(const char *path,
             msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST)
             )
       )
-      filebrowser_clear_type();
+      filebrowser_set_type(FILEBROWSER_NONE);
 
    menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &new_selection_ptr);
    menu_entries_pop_stack(&new_selection_ptr, 0, 1);
