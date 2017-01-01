@@ -103,11 +103,8 @@ static struct drm_fb *drm_fb_get_from_bo(struct gbm_bo *bo)
 {
    int ret;
    unsigned width, height, stride, handle;
-   struct drm_fb *fb = (struct drm_fb*)gbm_bo_get_user_data(bo);
-   if (fb)
-      return fb;
+   struct drm_fb *fb = (struct drm_fb*)calloc(1, sizeof(*fb));
 
-   fb     = (struct drm_fb*)calloc(1, sizeof(*fb));
    fb->bo = bo;
 
    width  = gbm_bo_get_width(bo);
@@ -214,8 +211,12 @@ static bool gfx_ctx_drm_wait_flip(bool block)
 static bool gfx_ctx_drm_queue_flip(void)
 {
    struct drm_fb *fb = NULL;
+
    g_next_bo         = gbm_surface_lock_front_buffer(g_gbm_surface);
-   fb                = (struct drm_fb*)drm_fb_get_from_bo(g_next_bo);
+   fb                = (struct drm_fb*)gbm_bo_get_user_data(g_next_bo);
+
+   if (!fb)
+      fb             = (struct drm_fb*)drm_fb_get_from_bo(g_next_bo);
 
    if (drmModePageFlip(g_drm_fd, g_crtc_id, fb->fb_id,
          DRM_MODE_PAGE_FLIP_EVENT, &waiting_for_flip) == 0)
@@ -714,9 +715,13 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
    }
 
    g_bo = gbm_surface_lock_front_buffer(g_gbm_surface);
-   fb   = drm_fb_get_from_bo(g_bo);
 
-   ret  = drmModeSetCrtc(g_drm_fd,
+   fb = (struct drm_fb*)gbm_bo_get_user_data(g_bo);
+
+   if (!fb)
+      fb   = drm_fb_get_from_bo(g_bo);
+
+   ret     = drmModeSetCrtc(g_drm_fd,
          g_crtc_id, fb->fb_id, 0, 0, &g_connector_id, 1, g_drm_mode);
    if (ret < 0)
       goto error;
