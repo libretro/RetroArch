@@ -1139,7 +1139,7 @@ static int generic_action_ok(const char *path,
          command_event(CMD_EVENT_RESUME, NULL);
          break;
       case ACTION_OK_SET_DIRECTORY:
-         flush_type = MENU_SETTINGS;
+         flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DIRECTORY_SETTINGS_LIST);
          {
             rarch_setting_t *setting = menu_setting_find(filebrowser_label);
 
