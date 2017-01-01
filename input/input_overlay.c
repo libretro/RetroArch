@@ -628,19 +628,19 @@ void input_poll_overlay(input_overlay_t *ol, float opacity)
       polled = true;
    }
 
-   if (OVERLAY_GET_KEY(ol_state, RETROK_LSHIFT) ||
+   if (  OVERLAY_GET_KEY(ol_state, RETROK_LSHIFT) ||
          OVERLAY_GET_KEY(ol_state, RETROK_RSHIFT))
       key_mod |= RETROKMOD_SHIFT;
 
    if (OVERLAY_GET_KEY(ol_state, RETROK_LCTRL) ||
-    OVERLAY_GET_KEY(ol_state, RETROK_RCTRL))
+       OVERLAY_GET_KEY(ol_state, RETROK_RCTRL))
       key_mod |= RETROKMOD_CTRL;
 
-   if (OVERLAY_GET_KEY(ol_state, RETROK_LALT) ||
+   if (  OVERLAY_GET_KEY(ol_state, RETROK_LALT) ||
          OVERLAY_GET_KEY(ol_state, RETROK_RALT))
       key_mod |= RETROKMOD_ALT;
 
-   if (OVERLAY_GET_KEY(ol_state, RETROK_LMETA) ||
+   if (  OVERLAY_GET_KEY(ol_state, RETROK_LMETA) ||
          OVERLAY_GET_KEY(ol_state, RETROK_RMETA))
       key_mod |= RETROKMOD_META;
 
