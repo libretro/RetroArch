@@ -36,7 +36,6 @@
 #include "../menu/menu_driver.h"
 #endif
 
-#include "../configuration.h"
 #include "../verbosity.h"
 
 #include "input_overlay.h"
@@ -574,13 +573,13 @@ bool input_overlay_key_pressed(input_overlay_t *ol, int key)
  *
  * Poll pressed buttons/keys on currently active overlay.
  **/
-void input_poll_overlay(input_overlay_t *ol, float opacity)
+void input_poll_overlay(input_overlay_t *ol, float opacity, unsigned analog_dpad_mode,
+      float axis_threshold)
 {
    input_overlay_state_t old_key_state;
    unsigned i, j, device;
    uint16_t key_mod                = 0;
    bool polled                     = false;
-   settings_t *settings            = config_get_ptr();
    input_overlay_state_t *ol_state = &ol->overlay_state;
 
    if (!ol_state)
@@ -673,16 +672,15 @@ void input_poll_overlay(input_overlay_t *ol, float opacity)
 
    /* Check for analog_dpad_mode.
     * Map analogs to d-pad buttons when configured. */
-   switch (settings->input.analog_dpad_mode[0])
+   switch (analog_dpad_mode)
    {
       case ANALOG_DPAD_LSTICK:
       case ANALOG_DPAD_RSTICK:
       {
          float analog_x, analog_y;
          unsigned analog_base = 2;
-         float axis_threshold = settings->input.axis_threshold;
 
-         if (settings->input.analog_dpad_mode[0] == ANALOG_DPAD_LSTICK)
+         if (analog_dpad_mode == ANALOG_DPAD_LSTICK)
             analog_base = 0;
 
          analog_x = (float)ol_state->analog[analog_base + 0] / 0x7fff;

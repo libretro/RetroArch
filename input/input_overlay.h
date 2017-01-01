@@ -236,7 +236,8 @@ void input_overlay_next(input_overlay_t *ol, float opacity);
  *
  * Poll pressed buttons/keys on currently active overlay.
  **/
-void input_poll_overlay(input_overlay_t *ol, float opacity);
+void input_poll_overlay(input_overlay_t *ol, float opacity, unsigned analog_dpad_mode,
+      float axis_threshold);
 
 void input_state_overlay(input_overlay_t *ol,
       int16_t *ret, unsigned port, unsigned device, unsigned idx,

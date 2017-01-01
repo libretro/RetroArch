@@ -288,7 +288,8 @@ void input_poll(void)
 
 #ifdef HAVE_OVERLAY
    if (overlay_ptr && input_overlay_is_alive(overlay_ptr))
-      input_poll_overlay(overlay_ptr, settings->input.overlay_opacity);
+      input_poll_overlay(overlay_ptr, settings->input.overlay_opacity,
+            settings->input.analog_dpad_mode[0], settings->input.axis_threshold);
 #endif
 
 #ifdef HAVE_COMMAND
