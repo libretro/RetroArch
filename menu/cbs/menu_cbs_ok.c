@@ -75,6 +75,7 @@ enum
    ACTION_OK_LOAD_CORE,
    ACTION_OK_LOAD_WALLPAPER,
    ACTION_OK_SET_PATH,
+   ACTION_OK_SET_PATH_OVERLAY,
    ACTION_OK_SET_DIRECTORY
 };
 
@@ -1151,6 +1152,19 @@ static int generic_action_ok(const char *path,
             }
          }
          break;
+      case ACTION_OK_SET_PATH_OVERLAY:
+         flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST);
+         {
+            rarch_setting_t *setting = menu_setting_find(menu_label);
+
+            if (setting)
+            {
+               setting_set_with_string_representation(
+                     setting, action_path);
+               ret = menu_setting_generic(setting, false);
+            }
+         }
+         break;
       case ACTION_OK_SET_PATH:
          flush_type = MENU_SETTINGS;
          {
@@ -1175,6 +1189,13 @@ static int generic_action_ok(const char *path,
 
 error:
    return menu_cbs_exit();
+}
+
+static int action_ok_set_path_overlay(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok(path, label, type, idx, entry_idx,
+         ACTION_OK_SET_PATH_OVERLAY, MSG_UNKNOWN);
 }
 
 static int action_ok_set_path(const char *path,
@@ -4375,10 +4396,12 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             }
             break;
          case FILE_TYPE_FONT:
-         case FILE_TYPE_OVERLAY:
          case FILE_TYPE_AUDIOFILTER:
          case FILE_TYPE_VIDEOFILTER:
             BIND_ACTION_OK(cbs, action_ok_set_path);
+            break;
+         case FILE_TYPE_OVERLAY:
+            BIND_ACTION_OK(cbs, action_ok_set_path_overlay);
             break;
          case FILE_TYPE_IN_CARCHIVE:
          case FILE_TYPE_PLAIN:
