@@ -54,20 +54,25 @@ struct msg_queue
  **/
 msg_queue_t *msg_queue_new(size_t size)
 {
-   msg_queue_t *queue = (msg_queue_t*)calloc(1, sizeof(*queue));
+   struct queue_elem **elems = NULL;
+   msg_queue_t *queue        = (msg_queue_t*)calloc(1, sizeof(*queue));
+
    if (!queue)
       return NULL;
 
    queue->size = size + 1;
-   queue->elems = (struct queue_elem**)
-      calloc(queue->size,sizeof(struct queue_elem*)); 
 
-   if (!queue->elems)
+   elems = (struct queue_elem**)calloc(queue->size,
+         sizeof(struct queue_elem*)); 
+
+   if (!elems)
    {
       free(queue);
       return NULL;
    }
-   queue->ptr = 1;
+
+   queue->elems = elems;
+   queue->ptr   = 1;
 
    return queue;
 }
