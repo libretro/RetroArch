@@ -287,7 +287,7 @@ void input_poll(void)
    }
 
 #ifdef HAVE_OVERLAY
-   if (overlay_ptr)
+   if (overlay_ptr && input_overlay_is_alive(overlay_ptr))
       input_poll_overlay(overlay_ptr, settings->input.overlay_opacity);
 #endif
 

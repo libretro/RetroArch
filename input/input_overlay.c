@@ -604,12 +604,7 @@ void input_poll_overlay(input_overlay_t *ol, float opacity)
    uint16_t key_mod                = 0;
    bool polled                     = false;
    settings_t *settings            = config_get_ptr();
-   input_overlay_state_t *ol_state = NULL;
-   
-   if (!input_overlay_is_alive(ol))
-      return;
-
-   ol_state = &ol->overlay_state;
+   input_overlay_state_t *ol_state = &ol->overlay_state;
 
    if (!ol_state)
       return;
