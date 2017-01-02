@@ -116,6 +116,7 @@ default_sublabel_macro(action_bind_sublabel_history_list_enable,           MENU_
 default_sublabel_macro(action_bind_sublabel_content_history_size,          MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE)
 default_sublabel_macro(action_bind_sublabel_menu_input_unified_controls,   MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS)
 default_sublabel_macro(action_bind_sublabel_onscreen_notifications_enable, MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE)
+default_sublabel_macro(action_bind_sublabel_show_controller_autoconfig,    MENU_ENUM_SUBLABEL_VIDEO_FONT_SHOW_CONTROLLER_AUTOCONFIG)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -159,6 +160,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       {
          case MENU_ENUM_LABEL_VIDEO_FONT_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_onscreen_notifications_enable);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_FONT_SHOW_CONTROLLER_AUTOCONFIG:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_show_controller_autoconfig);
             break;
          case MENU_ENUM_LABEL_INPUT_UNIFIED_MENU_CONTROLS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_input_unified_controls);

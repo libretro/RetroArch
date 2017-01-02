@@ -762,6 +762,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("audio_mute_enable",             &settings->audio.mute_enable, true, false, false);
    SETTING_BOOL("location_allow",                &settings->location.allow, true, false, false);
    SETTING_BOOL("video_font_enable",             &settings->video.font_enable, true, font_enable, false);
+   SETTING_BOOL("video_font_show_controller_autoconfig", &settings->video.font_show_controller_autoconfig, true, font_show_controller_autoconfig, false);
    SETTING_BOOL("core_updater_auto_extract_archive", &settings->network.buildbot_auto_extract_archive, true, true, false);
    SETTING_BOOL("camera_allow",                  &settings->camera.allow, true, false, false);
 #if defined(VITA)

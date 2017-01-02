@@ -173,13 +173,16 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    }
    else
    {
-      snprintf(msg, sizeof(msg), "%s %s #%u.",
-            string_is_empty(display_name) ? params->name : display_name,
-            msg_hash_to_str(MSG_DEVICE_CONFIGURED_IN_PORT),
-            params->idx);
+      if (settings->video.font_show_controller_autoconfig)
+      {
+        snprintf(msg, sizeof(msg), "%s %s #%u.",
+              string_is_empty(display_name) ? params->name : display_name,
+              msg_hash_to_str(MSG_DEVICE_CONFIGURED_IN_PORT),
+              params->idx);
 
-      if (!block_osd_spam)
-         task_set_title(task, strdup(msg));
+        if (!block_osd_spam)
+           task_set_title(task, strdup(msg));
+      }
    }
 
 

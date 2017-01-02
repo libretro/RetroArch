@@ -567,6 +567,12 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Show and/or hide onscreen messages.");
          break;
+      case MENU_ENUM_LABEL_VIDEO_FONT_SHOW_CONTROLLER_AUTOCONFIG:
+         snprintf(s, len,
+               "Show and/or hide an onscreen message \n"
+               "when connecting controllers with \n"
+               "an autoconfig file.");
+         break;
       case MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X:
       case MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_Y:
          snprintf(s, len,
