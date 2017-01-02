@@ -840,7 +840,7 @@ static enum runloop_state runloop_check_state(
       return RUNLOOP_STATE_SLEEP;
 
    if (runloop_cmd_triggered(trigger_input, RARCH_GAME_FOCUS_TOGGLE))
-      command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, NULL);
+      command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, (void*)(intptr_t)0);
 
 #ifdef HAVE_MENU
    if (menu_event_keyboard_is_set(RETROK_F1) == 1)

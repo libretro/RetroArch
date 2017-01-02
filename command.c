@@ -1958,7 +1958,7 @@ bool command_event(enum event_command cmd, void *data)
          video_driver_reinit();
          /* Poll input to avoid possibly stale data to corrupt things. */
          input_driver_poll();
-         command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, (void *) -1);
+         command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, (void*)(intptr_t)-1);
 #ifdef HAVE_MENU
          menu_display_set_framebuffer_dirty_flag();
          if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
@@ -2607,7 +2607,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_GAME_FOCUS_TOGGLE:
          {
             static bool game_focus_state  = false;
-            long int                 mode = (long int)data;
+            intptr_t                 mode = (intptr_t)data;
             
             /* mode = -1: restores current game focus state
              * mode =  1: force set game focus, instead of toggling
