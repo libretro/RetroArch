@@ -2353,7 +2353,7 @@ static void cheevos_fill_md5(size_t size, char fill, MD5_CTX *ctx)
 
    while (size > 0)
    {
-      ssize_t len = sizeof(buffer);
+      size_t len = sizeof(buffer);
 
       if (len > size)
          len = size;

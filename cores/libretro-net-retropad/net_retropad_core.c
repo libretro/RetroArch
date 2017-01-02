@@ -111,7 +111,7 @@ static struct descriptor *descriptors[] = {
 
 void NETRETROPAD_CORE_PREFIX(retro_init)(void)
 {
-   int i;
+   unsigned i;
 
    frame_buf = (uint16_t*)calloc(320 * 240, sizeof(uint16_t));
 
@@ -150,7 +150,7 @@ void NETRETROPAD_CORE_PREFIX(retro_init)(void)
 
 void NETRETROPAD_CORE_PREFIX(retro_deinit)(void)
 {
-   int i;
+   unsigned i;
 
    if (frame_buf)
       free(frame_buf);
@@ -201,7 +201,7 @@ void NETRETROPAD_CORE_PREFIX(retro_get_system_av_info)(
 
 static void retropad_update_input(void)
 {
-   int i;
+   unsigned i;
 
    /* Poll input */
    NETRETROPAD_CORE_PREFIX(input_poll_cb)();

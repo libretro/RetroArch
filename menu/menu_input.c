@@ -50,8 +50,8 @@ enum menu_mouse_action
    MENU_MOUSE_ACTION_HORIZ_WHEEL_DOWN
 };
 
-static int mouse_old_x  = 0;
-static int mouse_old_y  = 0;
+static unsigned mouse_old_x  = 0;
+static unsigned mouse_old_y  = 0;
 
 static rarch_timer_t mouse_activity_timer = {0};
 
