@@ -182,12 +182,6 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
          task_set_title(task, strdup(msg));
    }
 
-   if (!string_is_empty(params->name))
-      strlcpy(settings->input.device_names[params->idx],
-            params->name,
-            sizeof(settings->input.device_names[params->idx]));
-   settings->input.pid[params->idx] = params->pid;
-   settings->input.vid[params->idx] = params->vid;
 
    input_autoconfigure_joypad_reindex_devices(params);
 }
@@ -418,6 +412,13 @@ bool input_autoconfigure_connect(
    state->vid       = vid;
    state->pid       = pid;
    state->max_users = settings->input.max_users;
+
+   if (!string_is_empty(state->name))
+      strlcpy(settings->input.device_names[state->idx],
+            state->name,
+            sizeof(settings->input.device_names[state->idx]));
+   settings->input.pid[state->idx]  = state->pid;
+   settings->input.vid[state->idx]  = state->vid;
 
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
