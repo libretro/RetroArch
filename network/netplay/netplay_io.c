@@ -1084,7 +1084,8 @@ static bool netplay_get_cmd(netplay_t *netplay,
             }
             frame = ntohl(frame);
 
-            if (frame != netplay->read_frame_count[connection->player])
+            if ((netplay->is_server && frame != netplay->read_frame_count[connection->player]) ||
+                (!netplay->is_server && frame != netplay->server_frame_count))
             {
                RARCH_ERR("CMD_LOAD_SAVESTATE loading a state out of order!\n");
                return netplay_cmd_nak(netplay, connection);
