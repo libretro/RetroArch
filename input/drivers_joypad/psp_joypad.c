@@ -74,7 +74,7 @@ static void psp_joypad_autodetect_add(unsigned autoconf_pad)
 {
    input_autoconfigure_connect(
          psp_joypad_name(autoconf_pad),
-         NULL<
+         NULL,
          psp_joypad.ident,
          autoconf_pad,
          0,
