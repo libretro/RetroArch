@@ -409,10 +409,16 @@ bool input_autoconfigure_connect(
    if (!string_is_empty(driver))
       strlcpy(state->driver, driver, sizeof(state->driver));
 
+   if (!string_is_empty(settings->directory.autoconfig))
+      strlcpy(state->autoconfig_directory,
+            settings->directory.autoconfig,
+            sizeof(state->autoconfig_directory));
+
    state->idx       = idx;
    state->vid       = vid;
    state->pid       = pid;
    state->max_users = settings->input.max_users;
+
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
