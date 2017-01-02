@@ -237,7 +237,7 @@ static uint8_t *rtga__tga_load(rtga__context *s,
 
    if ( !tga_indexed && !tga_is_RLE)
    {
-      unsigned i;
+      int i;
       for (i=0; i < tga_height; ++i)
       {
          int y = tga_inverted ? tga_height -i - 1 : i;
@@ -247,7 +247,7 @@ static uint8_t *rtga__tga_load(rtga__context *s,
    }
    else 
    {
-      unsigned i, j;
+      int i, j;
       int RLE_repeating          = 0;
       int RLE_count              = 0;
       int read_next_pixel        = 1;
@@ -356,7 +356,7 @@ static uint8_t *rtga__tga_load(rtga__context *s,
    /* swap RGB */
    if (tga_comp >= 3)
    {
-      unsigned i;
+      int i;
       unsigned char* tga_pixel = tga_data;
 
       for (i = 0; i < tga_width * tga_height; ++i)
