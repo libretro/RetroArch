@@ -57,7 +57,7 @@ int string_parse_html_anchor(const char *line, char *link, char *name,
    {
       if (!*link)
       {
-         char *end = (char*)strstr(line, "\"");
+         const char *end = strstr(line, "\"");
 
          if (!end)
             return 1;
@@ -70,8 +70,8 @@ int string_parse_html_anchor(const char *line, char *link, char *name,
 
       if (!*name)
       {
-         char *start = (char*)strstr(line, "\">");
-         char *end   = strstr(start, "</a>");
+         const char *start = strstr(line, "\">");
+         const char *end   = strstr(start, "</a>");
 
          if (!start || !end)
             return 1;
