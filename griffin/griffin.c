@@ -138,10 +138,6 @@ ACHIEVEMENTS
 #include "../cheevos.c"
 #endif
 
-#if defined(HAVE_NETWORKING)
-#include "../libretro-common/net/net_http_parse.c"
-#endif
-
 /*============================================================
 MD5
 ============================================================ */
@@ -1037,6 +1033,10 @@ MENU
 
 #ifdef __cplusplus
 extern "C" {
+#endif
+
+#if defined(HAVE_NETWORKING)
+#include "../libretro-common/net/net_http_parse.c"
 #endif
 
 /*============================================================
