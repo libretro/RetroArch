@@ -146,10 +146,6 @@ void runloop_msg_queue_push(const char *msg,
       bool flush)
 {
    runloop_ctx_msg_info_t msg_info;
-   settings_t *settings = config_get_ptr();
-
-   if (!settings || !settings->video.font_enable)
-      return;
 
 #ifdef HAVE_THREADS
    slock_lock(_runloop_msg_queue_lock);

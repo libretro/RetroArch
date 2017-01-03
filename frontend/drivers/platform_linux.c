@@ -807,8 +807,7 @@ static void check_proc_acpi_sysfs_battery(const char *node,
    *percent = capacity;
 
 end:
-   if (buf)
-      free(buf);
+   free(buf);
    buf = NULL;
 }
 
