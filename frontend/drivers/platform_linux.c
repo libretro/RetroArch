@@ -791,6 +791,11 @@ static void check_proc_acpi_sysfs_battery(const char *node,
 
    if (strstr((char*)buf, "Discharging"))
       *have_battery = true;
+   else if (strstr((char*)buf, "Charging"))
+   {
+      *have_battery = true;
+      *charging = true;
+   }
    else if (strstr((char*)buf, "Full"))
       *have_battery = true;
 
