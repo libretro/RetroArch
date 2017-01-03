@@ -391,8 +391,6 @@ static bool load_content_from_compressed_archive(
       snprintf(str, sizeof(str), "%s \"%s\".\n",
             msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
             path);
-      if (error_string)
-         free(error_string);
       *error_string = strdup(str);
       return false;
    }
@@ -633,8 +631,6 @@ static const struct retro_subsystem_info *content_file_init_subsystem(
             "subsystem \"%s\", but %u content files were provided.\n",
             special->num_roms, special->desc,
             (unsigned)subsystem->size);
-      if (error_string)
-         free(error_string);
       *error_string = strdup(msg);
       goto error;
    }
@@ -645,8 +641,6 @@ static const struct retro_subsystem_info *content_file_init_subsystem(
             "but %u content files were provided.\n",
             special->desc,
             (unsigned)subsystem->size);
-      if (error_string)
-         free(error_string);
       *error_string = strdup(msg);
       goto error;
    }
@@ -912,8 +906,6 @@ error:
          snprintf(msg, sizeof(msg), "%s %s.\n",
                msg_hash_to_str(MSG_FAILED_TO_LOAD),
                name);
-         if (error_string)
-            free(error_string);
          *error_string = strdup(msg);
       }
    }
