@@ -159,6 +159,9 @@ finish:
          free(data->data);
       free(data);
    }
+
+   if (user_data)
+      free(user_data);
 }
 
 /* defined in menu_cbs_deferred_push */
@@ -217,6 +220,9 @@ finish:
 
       task_push_http_transfer(parent_dir, true, "index_dirs", cb_net_generic_subdir, transf);
    }
+
+   if (state)
+      free(state);
 }
 #endif
 
@@ -2381,8 +2387,13 @@ static void cb_generic_dir_download(void *task_data,
 {
    menu_file_transfer_t     *transf      = (menu_file_transfer_t*)user_data;
 
-   generic_action_ok_network(transf->path, transf->path, 0, 0, 0,
-         MENU_ENUM_LABEL_CB_CORE_CONTENT_LIST);
+   if (transf)
+   {
+      generic_action_ok_network(transf->path, transf->path, 0, 0, 0,
+            MENU_ENUM_LABEL_CB_CORE_CONTENT_LIST);
+
+      free(transf);
+   }
 }
 
 /* expects http_transfer_t*, menu_file_transfer_t* */
