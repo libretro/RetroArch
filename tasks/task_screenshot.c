@@ -325,13 +325,14 @@ static bool take_screenshot_choice(const char *name_base, bool savestate)
 {
    size_t old_pitch;
    unsigned old_width, old_height;
-   bool ret             = false;
-   void *frame_data     = NULL;
-   const void* old_data = NULL;
-   settings_t *settings = config_get_ptr();
+   bool ret                    = false;
+   void *frame_data            = NULL;
+   const void* old_data        = NULL;
+   settings_t *settings        = config_get_ptr();
+   const char *screenshot_dir  = settings->directory.screenshot;
 
    /* No way to infer screenshot directory. */
-   if (     string_is_empty(settings->directory.screenshot)
+   if (     string_is_empty(screenshot_dir)
          && string_is_empty(name_base))
       return false;
 
