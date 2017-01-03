@@ -794,6 +794,10 @@ static void check_proc_acpi_sysfs_battery(const char *node,
    else if (strstr((char*)buf, "Full"))
       *have_battery = true;
 
+   if (buf)
+      free(buf);
+   buf = NULL;
+
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "capacity");
    if (filestream_read_file(path, (void**)&buf, &length) != 1)
       goto end;
