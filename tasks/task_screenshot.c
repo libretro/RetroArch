@@ -189,7 +189,8 @@ static bool screenshot_dump(
       const void *frame,
       unsigned width,
       unsigned height,
-      int pitch, bool bgr24, void *userbuf, bool savestate)
+      int pitch, bool bgr24, void *userbuf, bool savestate,
+      bool is_paused)
 {
    char screenshot_path[PATH_MAX_LENGTH];
 #ifdef _XBOX1
@@ -210,7 +211,7 @@ static bool screenshot_dump(
       screenshot_dir = screenshot_path;
    }
 
-   state->is_paused           = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
+   state->is_paused           = is_paused;
    state->bgr24               = bgr24;
    state->height              = height;
    state->width               = width;
@@ -261,7 +262,8 @@ static bool screenshot_dump(
 }
 
 #if !defined(VITA)
-static bool take_screenshot_viewport(const char *name_base, bool savestate)
+static bool take_screenshot_viewport(const char *name_base, bool savestate,
+      bool is_paused)
 {
    struct video_viewport vp;
    uint8_t *buffer                       = NULL;
@@ -290,7 +292,7 @@ static bool take_screenshot_viewport(const char *name_base, bool savestate)
    /* Data read from viewport is in bottom-up order, suitable for BMP. */
    if (!screenshot_dump(name_base,
             buffer, vp.width, vp.height,
-            vp.width * 3, true, buffer, savestate))
+            vp.width * 3, true, buffer, savestate, is_paused))
       goto error;
 
    return true;
@@ -303,7 +305,7 @@ error:
 #endif
 
 static bool take_screenshot_raw(const char *name_base, void *userbuf,
-      bool savestate)
+      bool savestate, bool is_paused)
 {
    size_t pitch;
    unsigned width, height;
@@ -316,13 +318,14 @@ static bool take_screenshot_raw(const char *name_base, void *userbuf,
     */
    if (!screenshot_dump(name_base, 
          (const uint8_t*)data + (height - 1) * pitch,
-         width, height, -pitch, false, userbuf, savestate))
+         width, height, -pitch, false, userbuf, savestate, is_paused))
       return false;
 
    return true;
 }
 
-static bool take_screenshot_choice(const char *name_base, bool savestate)
+static bool take_screenshot_choice(const char *name_base, bool savestate,
+      bool is_paused, bool is_idle)
 {
    size_t old_pitch;
    unsigned old_width, old_height;
@@ -341,17 +344,17 @@ static bool take_screenshot_choice(const char *name_base, bool savestate)
    {
       /* Avoid taking screenshot of GUI overlays. */
       video_driver_set_texture_enable(false, false);
-      if (!runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
+      if (!is_idle)
          video_driver_cached_frame();
 #if defined(VITA)
-      return take_screenshot_raw(name_base, NULL, savestate);
+      return take_screenshot_raw(name_base, NULL, savestate, is_paused);
 #else
-      return take_screenshot_viewport(name_base, savestate);
+      return take_screenshot_viewport(name_base, savestate, is_paused);
 #endif
    }
 
    if (!video_driver_cached_frame_has_valid_framebuffer())
-      return take_screenshot_raw(name_base, NULL, savestate);
+      return take_screenshot_raw(name_base, NULL, savestate, is_paused);
 
    if (!video_driver_supports_read_frame_raw())
       return false;
@@ -368,7 +371,7 @@ static bool take_screenshot_choice(const char *name_base, bool savestate)
    if (frame_data)
    {
       video_driver_set_cached_frame_ptr(frame_data);
-      if (take_screenshot_raw(name_base, frame_data, savestate))
+      if (take_screenshot_raw(name_base, frame_data, savestate, is_paused))
          ret = true;
    }
 
@@ -377,11 +380,11 @@ static bool take_screenshot_choice(const char *name_base, bool savestate)
 
 bool take_screenshot(const char *name_base, bool silence)
 {
-   bool ret = take_screenshot_choice(name_base, silence);
+   bool is_paused = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
+   bool is_idle   = runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL);
+   bool ret       = take_screenshot_choice(name_base, silence, is_paused, is_idle);
 
-   if (     runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL)
-         && !runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL)
-      )
+   if (is_paused && !is_idle)
          video_driver_cached_frame();
 
    return ret;
