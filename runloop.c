@@ -557,8 +557,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 #else
             bool threaded_enable = false;
 #endif
-            task_queue_ctl(TASK_QUEUE_CTL_DEINIT, NULL);
-            task_queue_ctl(TASK_QUEUE_CTL_INIT, &threaded_enable);
+            task_queue_deinit();
+            task_queue_init(threaded_enable, runloop_msg_queue_push);
          }
          break;
       case RUNLOOP_CTL_SET_CORE_SHUTDOWN:
@@ -573,7 +573,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          runloop_exec = true;
          break;
       case RUNLOOP_CTL_DATA_DEINIT:
-         task_queue_ctl(TASK_QUEUE_CTL_DEINIT, NULL);
+         task_queue_deinit();
          break;
       case RUNLOOP_CTL_IS_CORE_OPTION_UPDATED:
          if (!runloop_core_options)

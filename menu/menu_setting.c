@@ -1561,9 +1561,9 @@ void general_write_handler(void *data)
       case MENU_ENUM_LABEL_VIDEO_THREADED:
          {
             if (*setting->value.target.boolean)
-               task_queue_ctl(TASK_QUEUE_CTL_SET_THREADED, NULL);
+               task_queue_set_threaded();
             else
-               task_queue_ctl(TASK_QUEUE_CTL_UNSET_THREADED, NULL);
+               task_queue_unset_threaded();
          }
          break;
       case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:

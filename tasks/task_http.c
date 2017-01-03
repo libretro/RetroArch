@@ -119,7 +119,7 @@ static int task_http_iterate_transfer(retro_task_t *task)
    size_t pos  = 0, tot = 0;
 
    /* FIXME: This wouldn't be needed if we could wait for a timeout */
-   if (task_queue_ctl(TASK_QUEUE_CTL_IS_THREADED, NULL))
+   if (task_queue_is_threaded())
       retro_sleep(1);
 
    if (!net_http_update(http->handle, &pos, &tot))
