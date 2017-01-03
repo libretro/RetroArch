@@ -186,12 +186,12 @@ static void task_screenshot_handler(retro_task_t *task)
 /* Take frame bottom-up. */
 static bool screenshot_dump(
       const char *name_base,
-      const char *folder,
       const void *frame,
       unsigned width,
       unsigned height,
       int pitch, bool bgr24, void *userbuf, bool savestate)
 {
+   char screenshot_path[PATH_MAX_LENGTH];
 #ifdef _XBOX1
    d3d_video_t *d3d               = (d3d_video_t*)video_driver_get_ptr(true);
 #endif
@@ -199,6 +199,16 @@ static bool screenshot_dump(
    retro_task_t *task             = (retro_task_t*)calloc(1, sizeof(*task));
    screenshot_task_state_t *state = (screenshot_task_state_t*)
          calloc(1, sizeof(*state));
+   const char *screenshot_dir     = settings->directory.screenshot;
+
+   screenshot_path[0]             = '\0';
+
+   if (string_is_empty(settings->directory.screenshot))
+   {
+      fill_pathname_basedir(screenshot_path, name_base,
+            sizeof(screenshot_path));
+      screenshot_dir = screenshot_path;
+   }
 
    state->bgr24   = bgr24;
    state->height  = height;
@@ -221,7 +231,7 @@ static bool screenshot_dump(
          snprintf(state->shotname, sizeof(state->shotname),
                "%s.png", path_basename(name_base));
 
-      fill_pathname_join(state->filename, folder,
+      fill_pathname_join(state->filename, screenshot_dir,
             state->shotname, sizeof(state->filename));
    }
 
@@ -251,14 +261,9 @@ static bool screenshot_dump(
 #if !defined(VITA)
 static bool take_screenshot_viewport(const char *name_base, bool savestate)
 {
-   char screenshot_path[PATH_MAX_LENGTH];
    struct video_viewport vp;
-   const char *screenshot_dir            = NULL;
    uint8_t *buffer                       = NULL;
    bool retval                           = false;
-   settings_t *settings                  = config_get_ptr();
-
-   screenshot_path[0]                    = '\0';
 
    vp.x                                  = 0;
    vp.y                                  = 0;
@@ -280,17 +285,8 @@ static bool take_screenshot_viewport(const char *name_base, bool savestate)
    if (!video_driver_read_viewport(buffer))
       goto error;
 
-   screenshot_dir = settings->directory.screenshot;
-
-   if (string_is_empty(screenshot_dir))
-   {
-      fill_pathname_basedir(screenshot_path, name_base,
-            sizeof(screenshot_path));
-      screenshot_dir = screenshot_path;
-   }
-
    /* Data read from viewport is in bottom-up order, suitable for BMP. */
-   if (!screenshot_dump(name_base, screenshot_dir,
+   if (!screenshot_dump(name_base,
             buffer, vp.width, vp.height,
             vp.width * 3, true, buffer, savestate))
       goto error;
@@ -309,26 +305,14 @@ static bool take_screenshot_raw(const char *name_base, void *userbuf,
 {
    size_t pitch;
    unsigned width, height;
-   char screenshot_path[PATH_MAX_LENGTH];
    const void *data                      = NULL;
-   settings_t *settings                  = config_get_ptr();
-   const char *screenshot_dir            = settings->directory.screenshot;
-
-   screenshot_path[0]                    = '\0';
 
    video_driver_cached_frame_get(&data, &width, &height, &pitch);
-
-   if (string_is_empty(settings->directory.screenshot))
-   {
-      fill_pathname_basedir(screenshot_path, name_base,
-            sizeof(screenshot_path));
-      screenshot_dir = screenshot_path;
-   }
 
    /* Negative pitch is needed as screenshot takes bottom-up,
     * but we use top-down.
     */
-   if (!screenshot_dump(name_base, screenshot_dir,
+   if (!screenshot_dump(name_base, 
          (const uint8_t*)data + (height - 1) * pitch,
          width, height, -pitch, false, userbuf, savestate))
       return false;
@@ -338,6 +322,11 @@ static bool take_screenshot_raw(const char *name_base, void *userbuf,
 
 static bool take_screenshot_choice(const char *name_base, bool savestate)
 {
+   size_t old_pitch;
+   unsigned old_width, old_height;
+   bool ret             = false;
+   void *frame_data     = NULL;
+   const void* old_data = NULL;
    settings_t *settings = config_get_ptr();
 
    /* No way to infer screenshot directory. */
@@ -361,34 +350,26 @@ static bool take_screenshot_choice(const char *name_base, bool savestate)
    if (!video_driver_cached_frame_has_valid_framebuffer())
       return take_screenshot_raw(name_base, NULL, savestate);
 
-   if (video_driver_supports_read_frame_raw())
+   if (!video_driver_supports_read_frame_raw())
+      return false;
+
+   video_driver_cached_frame_get(&old_data, &old_width, &old_height,
+         &old_pitch);
+
+   frame_data = video_driver_read_frame_raw(
+         &old_width, &old_height, &old_pitch);
+
+   video_driver_cached_frame_set(old_data, old_width, old_height,
+         old_pitch);
+
+   if (frame_data)
    {
-      size_t old_pitch;
-      unsigned old_width, old_height;
-      bool ret             = false;
-      void *frame_data     = NULL;
-      const void* old_data = NULL;
-
-      video_driver_cached_frame_get(&old_data, &old_width, &old_height,
-            &old_pitch);
-
-      frame_data = video_driver_read_frame_raw(
-            &old_width, &old_height, &old_pitch);
-
-      video_driver_cached_frame_set(old_data, old_width, old_height,
-            old_pitch);
-
-      if (frame_data)
-      {
-         video_driver_set_cached_frame_ptr(frame_data);
-         if (take_screenshot_raw(name_base, frame_data, savestate))
-            ret = true;
-      }
-
-      return ret;
+      video_driver_set_cached_frame_ptr(frame_data);
+      if (take_screenshot_raw(name_base, frame_data, savestate))
+         ret = true;
    }
 
-   return false;
+   return ret;
 }
 
 bool take_screenshot(const char *name_base, bool silence)
