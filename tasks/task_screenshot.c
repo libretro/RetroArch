@@ -76,6 +76,7 @@ typedef struct
    bool bgr24;
    bool silence;
    void *userbuf;
+   bool history_list_enable;
 } screenshot_task_state_t;
 
 /**
@@ -155,9 +156,8 @@ static void task_screenshot_handler(retro_task_t *task)
 #ifdef HAVE_IMAGEVIEWER
    if (ret && !state->silence)
    {
-      settings_t *settings = config_get_ptr();
       if (
-            settings->history_list_enable 
+            state->history_list_enable 
             && g_defaults.image_history 
             && playlist_push(
                g_defaults.image_history,
@@ -203,25 +203,24 @@ static bool screenshot_dump(
 
    screenshot_path[0]             = '\0';
 
-   if (string_is_empty(settings->directory.screenshot))
+   if (string_is_empty(screenshot_dir))
    {
       fill_pathname_basedir(screenshot_path, name_base,
             sizeof(screenshot_path));
       screenshot_dir = screenshot_path;
    }
 
-   state->bgr24   = bgr24;
-   state->height  = height;
-   state->width   = width;
-   state->pitch   = pitch;
-   state->frame   = frame;
-   state->userbuf = userbuf;
-   state->silence = savestate;
+   state->bgr24               = bgr24;
+   state->height              = height;
+   state->width               = width;
+   state->pitch               = pitch;
+   state->frame               = frame;
+   state->userbuf             = userbuf;
+   state->silence             = savestate;
+   state->history_list_enable = settings->history_list_enable;
 
    if (savestate)
-   {
       snprintf(state->filename, sizeof(state->filename), "%s.png", name_base);
-   }
    else
    {
       if (settings->auto_screenshot_filename)
