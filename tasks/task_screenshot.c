@@ -76,6 +76,7 @@ typedef struct
    bool bgr24;
    bool silence;
    void *userbuf;
+   bool is_paused;
    bool history_list_enable;
 } screenshot_task_state_t;
 
@@ -88,7 +89,6 @@ typedef struct
 static void task_screenshot_handler(retro_task_t *task)
 {
    screenshot_task_state_t *state = (screenshot_task_state_t*)task->state;
-   bool is_paused                 = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
    bool ret                       = false;
 
    if (task_get_progress(task) == 100)
@@ -178,7 +178,7 @@ static void task_screenshot_handler(retro_task_t *task)
    if (!ret)
    {
       char *msg = strdup(msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT));
-      runloop_msg_queue_push(msg, 1, is_paused ? 1 : 180, true);
+      runloop_msg_queue_push(msg, 1, state->is_paused ? 1 : 180, true);
       free(msg);
    }
 }
@@ -210,6 +210,7 @@ static bool screenshot_dump(
       screenshot_dir = screenshot_path;
    }
 
+   state->is_paused           = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
    state->bgr24               = bgr24;
    state->height              = height;
    state->width               = width;
