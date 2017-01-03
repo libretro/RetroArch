@@ -584,8 +584,7 @@ static bool content_file_load(
    return true;
 
 error:
-   if (additional_path_allocs)
-      string_list_free(additional_path_allocs);
+   string_list_free(additional_path_allocs);
    
    return false;
 }
