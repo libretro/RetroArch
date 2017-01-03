@@ -298,11 +298,7 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
    autoconfig_params_t *params = (autoconfig_params_t*)task->state;
 
    if (!params || string_is_empty(params->name))
-   {
-      free(params);
-      task_set_finished(task, true);
-      return;
-   }
+      goto end;
 
    if (     !input_autoconfigure_joypad_from_conf_dir(params, task)
          && !input_autoconfigure_joypad_from_conf_internal(params, task))
@@ -321,8 +317,8 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
       task_set_title(task, strdup(msg));
    }
 
+end:
    free(params);
-
    task_set_finished(task, true);
 }
 
