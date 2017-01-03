@@ -50,7 +50,8 @@ static bool netplay_is_alive(void)
 {
    if (!netplay_data)
       return false;
-   return !!netplay_data->connected_players;
+   return (netplay_data->is_server && !!netplay_data->connected_players) ||
+          (!netplay_data->is_server && netplay_data->self_mode >= NETPLAY_CONNECTION_CONNECTED);
 }
 
 /**
