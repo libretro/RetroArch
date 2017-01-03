@@ -267,12 +267,13 @@ void input_poll(void)
 {
    size_t i;
    settings_t *settings           = config_get_ptr();
+   unsigned max_users             = settings->input.max_users;
 
    current_input->poll(current_input_data);
 
    input_driver_turbo_btns.count++;
 
-   for (i = 0; i < settings->input.max_users; i++)
+   for (i = 0; i < max_users; i++)
    {
       libretro_input_binds[i]                 = settings->input.binds[i];
       input_driver_turbo_btns.frame_enable[i] = 0;
@@ -280,7 +281,7 @@ void input_poll(void)
 
    if (!input_driver_block_libretro_input)
    {
-      for (i = 0; i < settings->input.max_users; i++)
+      for (i = 0; i < max_users; i++)
          input_driver_turbo_btns.frame_enable[i] = current_input->input_state(
                current_input_data, libretro_input_binds,
                i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
@@ -288,8 +289,11 @@ void input_poll(void)
 
 #ifdef HAVE_OVERLAY
    if (overlay_ptr && input_overlay_is_alive(overlay_ptr))
-      input_poll_overlay(overlay_ptr, settings->input.overlay_opacity,
-            settings->input.analog_dpad_mode[0], settings->input.axis_threshold);
+      input_poll_overlay(
+            overlay_ptr,
+            settings->input.overlay_opacity,
+            settings->input.analog_dpad_mode[0],
+            settings->input.axis_threshold);
 #endif
 
 #ifdef HAVE_COMMAND
@@ -448,12 +452,13 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
    unsigned i;
    const struct retro_keybind *binds[MAX_USERS];
    settings_t *settings = config_get_ptr();
+   unsigned max_users   = settings->input.max_users;
 
    /* Only bind for up to two players for now. */
-   for (i = 0; i < settings->input.max_users; i++)
+   for (i = 0; i < max_users; i++)
       binds[i] = settings->input.binds[i];
 
-   for (i = 0; i < settings->input.max_users; i++)
+   for (i = 0; i < max_users; i++)
    {
       struct retro_keybind *general_binds = settings->input.binds[i];
       struct retro_keybind *auto_binds    = settings->input.autoconf_binds[i];
@@ -477,7 +482,7 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
       }
    }
 
-   for (i = 0; i < settings->input.max_users; i++)
+   for (i = 0; i < max_users; i++)
    {
       struct retro_keybind *general_binds = settings->input.binds[i];
       struct retro_keybind *auto_binds    = settings->input.autoconf_binds[i];
@@ -490,7 +495,8 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
 #ifdef HAVE_MENU
 static INLINE bool input_menu_keys_pressed_internal(unsigned i)
 {
-   settings_t *settings           = config_get_ptr();
+   settings_t *settings = config_get_ptr();
+   unsigned max_users   = settings->input.max_users;
 
    if (
          (((!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
@@ -502,7 +508,7 @@ static INLINE bool input_menu_keys_pressed_internal(unsigned i)
       int port_max = 1;
 
       if (settings->input.all_users_control_menu)
-         port_max  = settings->input.max_users;
+         port_max  = max_users;
 
       for (port = 0; port < port_max; port++)
       {
@@ -660,10 +666,10 @@ uint64_t input_menu_keys_pressed(
    ids[12][1] = RETRO_DEVICE_ID_JOYPAD_A;
 
    if (settings->input.menu_swap_ok_cancel_buttons)
+   {
       ids[11][1] = RETRO_DEVICE_ID_JOYPAD_A;
-
-   if (settings->input.menu_swap_ok_cancel_buttons)
       ids[12][1] = RETRO_DEVICE_ID_JOYPAD_B;
+   }
 
    for (i = 0; i < 13; i++)
    {

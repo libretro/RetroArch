@@ -380,6 +380,7 @@ static void input_config_get_bind_string_joykey(char *buf, const char *prefix,
       const struct retro_keybind *bind, size_t size)
 {
    settings_t *settings = config_get_ptr();
+   bool label_show      = settings->input.input_descriptor_label_show;
 
    if (GET_HAT_DIR(bind->joykey))
    {
@@ -403,8 +404,7 @@ static void input_config_get_bind_string_joykey(char *buf, const char *prefix,
             break;
       }
 
-      if (!string_is_empty(bind->joykey_label) 
-            && settings->input.input_descriptor_label_show)
+      if (!string_is_empty(bind->joykey_label) && label_show)
          snprintf(buf, size, "%s %s ", prefix, bind->joykey_label);
       else
          snprintf(buf, size, "%sHat #%u %s (%s)", prefix,
@@ -413,8 +413,7 @@ static void input_config_get_bind_string_joykey(char *buf, const char *prefix,
    }
    else
    {
-      if (!string_is_empty(bind->joykey_label) 
-            && settings->input.input_descriptor_label_show)
+      if (!string_is_empty(bind->joykey_label) && label_show)
          snprintf(buf, size, "%s%s (btn) ", prefix, bind->joykey_label);
       else
          snprintf(buf, size, "%s%u (%s) ", prefix, (unsigned)bind->joykey,
