@@ -153,17 +153,19 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
 
    x11_colormap_destroy();
 
-   if (x->g_should_reset_mode && g_x11_dpy)
+   if (g_x11_dpy)
    {
-      x11_exit_fullscreen(g_x11_dpy, &x->g_desktop_mode);
-      x->g_should_reset_mode = false;
-   }
+      if (x->g_should_reset_mode)
+      {
+         x11_exit_fullscreen(g_x11_dpy, &x->g_desktop_mode);
+         x->g_should_reset_mode = false;
+      }
 
-   if (!video_driver_is_video_cache_context()
-         && g_x11_dpy)
-   {
-      XCloseDisplay(g_x11_dpy);
-      g_x11_dpy = NULL;
+      if (!video_driver_is_video_cache_context())
+      {
+         XCloseDisplay(g_x11_dpy);
+         g_x11_dpy = NULL;
+      }
    }
 
    g_pglSwapInterval    = NULL;
