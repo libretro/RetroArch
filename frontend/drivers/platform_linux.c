@@ -763,7 +763,6 @@ static void check_proc_acpi_sysfs_battery(const char *node,
       bool *have_battery, bool *charging,
       int *seconds, int *percent)
 {
-   unsigned capacity;
    char path[1024];
    const char *base  = proc_acpi_sysfs_battery_path;
    char        *buf  = NULL;
@@ -772,31 +771,30 @@ static void check_proc_acpi_sysfs_battery(const char *node,
    char         *val = NULL;
    bool       charge = false;
    bool       choose = false;
+   unsigned capacity = 0;
    ssize_t length    = 0;
    int       maximum = -1;
    int     remaining = -1;
    int          secs = -1;
    int           pct = -1;
 
-   if (!strstr(node, "BAT"))
-      return;
-
    path[0]           = '\0';
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "status");
+
    if (!path_file_exists(path))
       return;
    if (filestream_read_file(path, (void**)&buf, &length) != 1)
       return;
 
-   if (strstr((char*)buf, "Discharging"))
+   if (buf && strstr((char*)buf, "Discharging"))
       *have_battery = true;
-   else if (strstr((char*)buf, "Charging"))
+   else if (buf && strstr((char*)buf, "Charging"))
    {
       *have_battery = true;
       *charging = true;
    }
-   else if (strstr((char*)buf, "Full"))
+   else if (buf && strstr((char*)buf, "Full"))
       *have_battery = true;
 
    if (buf)
@@ -1043,14 +1041,10 @@ static bool frontend_linux_powerstate_check_acpi_sysfs(
       int *seconds, int *percent)
 {
    bool ret            = false;
-   struct RDIR *entry  = NULL;
    bool have_battery   = false;
    bool have_ac        = false;
    bool charging       = false;
-
-   *state = FRONTEND_POWERSTATE_NONE;
-
-   entry = retro_opendir(proc_acpi_sysfs_battery_path);
+   struct RDIR *entry  = retro_opendir(proc_acpi_sysfs_battery_path);
    if (!entry)
       goto error;
 
@@ -1058,8 +1052,13 @@ static bool frontend_linux_powerstate_check_acpi_sysfs(
       goto error;
 
    while (retro_readdir(entry))
-      check_proc_acpi_sysfs_battery(retro_dirent_get_name(entry),
-            &have_battery, &charging, seconds, percent);
+   {
+      const char *node = retro_dirent_get_name(entry);
+
+      if (node && strstr(node, "BAT"))
+         check_proc_acpi_sysfs_battery(node,
+               &have_battery, &charging, seconds, percent);
+   }
 
    retro_closedir(entry);
 
