@@ -227,6 +227,9 @@ static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_XSHM
    &video_xshm,
 #endif
+#if defined(_WIN32) && !defined(_XBOX)
+   &video_gdi,
+#endif
 #ifdef HAVE_CACA
    &video_caca,
 #endif

@@ -402,6 +402,9 @@ FONTS
 #include "../gfx/drivers_font/caca_font.c"
 #endif
 
+#if defined(_WIN32) && !defined(_XBOX)
+#include "../gfx/drivers_font/gdi_font.c"
+#endif
 
 #if defined(HAVE_VULKAN)
 #include "../gfx/drivers_font/vulkan_raster_font.c"
@@ -992,6 +995,10 @@ MENU
 
 #ifdef HAVE_CACA
 #include "../menu/drivers_display/menu_display_caca.c"
+#endif
+
+#if defined(_WIN32) && !defined(_XBOX)
+#include "../menu/drivers_display/menu_display_gdi.c"
 #endif
 
 #endif

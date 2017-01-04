@@ -51,6 +51,8 @@ enum video_driver_enum
    VIDEO_EXYNOS,
    VIDEO_SUNXI,
    VIDEO_DISPMANX,
+   VIDEO_CACA,
+   VIDEO_GDI,
    VIDEO_NULL
 };
 
@@ -209,6 +211,8 @@ enum record_driver_enum
 #define VIDEO_DEFAULT_DRIVER VIDEO_SDL
 #elif defined(HAVE_SDL2)
 #define VIDEO_DEFAULT_DRIVER VIDEO_SDL2
+#elif defined(_WIN32) && !defined(_XBOX)
+#define VIDEO_DEFAULT_DRIVER VIDEO_GDI
 #elif defined(HAVE_DYLIB) && !defined(ANDROID)
 #define VIDEO_DEFAULT_DRIVER VIDEO_EXT
 #else

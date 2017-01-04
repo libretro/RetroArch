@@ -57,6 +57,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam);
 
 extern "C" bool dinput_handle_message(void *dinput, UINT message,
       WPARAM wParam, LPARAM lParam);
+extern void *dinput_gdi;
 extern void *dinput_wgl;
 extern void *dinput;
 

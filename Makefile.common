@@ -1164,6 +1164,11 @@ ifneq ($(findstring Win32,$(OS)),)
           input/drivers_keyboard/keyboard_event_win32.o \
           gfx/common/win32_common.o \
           frontend/drivers/platform_win32.o
+
+   OBJ += gfx/drivers/gdi_gfx.o \
+          gfx/drivers_context/gdi_ctx.o \
+          gfx/drivers_font/gdi_font.o \
+          menu/drivers_display/menu_display_gdi.o
 endif
 
 ifeq ($(HAVE_AVFOUNDATION), 1)
