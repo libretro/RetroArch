@@ -47,8 +47,12 @@ static void gdi_gfx_create()
 static void *gdi_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
+   unsigned full_x, full_y;
    settings_t *settings = config_get_ptr();
    gdi_t *gdi = (gdi_t*)calloc(1, sizeof(*gdi));
+   const gfx_ctx_driver_t *ctx_driver = NULL;
+   gfx_ctx_input_t inp;
+   gfx_ctx_mode_t mode;
 
    *input = NULL;
    *input_data = NULL;
@@ -64,10 +68,91 @@ static void *gdi_gfx_init(const video_info_t *video,
 
    gdi_gfx_create();
 
+   ctx_driver = video_context_driver_init_first(gdi,
+         settings->video.context_driver,
+         GFX_CTX_GDI_API, 1, 0, false);
+   if (!ctx_driver)
+      goto error;
+
+   video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
+
+#ifdef HAVE_WINDOW
+   win32_window_init(&gdi->wndclass, true, NULL);
+#endif
+
+#ifdef HAVE_MONITOR
+   bool windowed_full;
+   RECT mon_rect;
+   MONITORINFOEX current_mon;
+   HMONITOR hm_to_use;
+
+   win32_monitor_info(&current_mon, &hm_to_use, &d3d->cur_mon_id);
+   mon_rect = current_mon.rcMonitor;
+   g_resize_width  = video->width;
+   g_resize_height = video->height;
+
+   windowed_full = settings->video.windowed_fullscreen;
+
+   full_x = (windowed_full || video->width  == 0) ?
+      (mon_rect.right  - mon_rect.left) : video->width;
+   full_y = (windowed_full || video->height == 0) ?
+      (mon_rect.bottom - mon_rect.top)  : video->height;
+   RARCH_LOG("[GDI]: Monitor size: %dx%d.\n",
+         (int)(mon_rect.right  - mon_rect.left),
+         (int)(mon_rect.bottom - mon_rect.top));
+#else
+   {
+      video_context_driver_get_video_size(&mode);
+
+      full_x   = mode.width;
+      full_y   = mode.height;
+   }
+#endif
+   {
+      unsigned new_width  = video->fullscreen ? full_x : video->width;
+      unsigned new_height = video->fullscreen ? full_y : video->height;
+      mode.width = new_width;
+      mode.height = new_height;
+      mode.fullscreen = video->fullscreen;
+
+      video_context_driver_set_video_mode(&mode);
+      video_driver_set_size(&new_width, &new_height);
+   }
+
+#ifdef HAVE_WINDOW
+   DWORD style;
+   unsigned win_width, win_height;
+   RECT rect            = {0};
+
+   video_driver_get_size(&win_width, &win_height);
+
+   win32_set_style(&current_mon, &hm_to_use, &win_width, &win_height,
+         video->fullscreen, windowed_full, &rect, &mon_rect, &style);
+
+   win32_window_create(gdi, style, &mon_rect, win_width,
+         win_height, video->fullscreen);
+
+   win32_set_window(&win_width, &win_height, video->fullscreen,
+	   windowed_full, &rect);
+#endif
+
    if (settings->video.font_enable)
       font_driver_init_osd(NULL, false, FONT_DRIVER_RENDER_GDI);
 
+   inp.input      = input;
+   inp.input_data = input_data;
+
+   video_context_driver_input_driver(&inp);
+
+   RARCH_LOG("[GDI]: Init complete.\n");
+
    return gdi;
+
+error:
+   video_context_driver_destroy();
+   if (gdi)
+      free(gdi);
+   return NULL;
 }
 
 static bool gdi_gfx_frame(void *data, const void *frame,

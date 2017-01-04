@@ -20,7 +20,7 @@
 
 typedef struct gdi
 {
-   bool test;
+   WNDCLASSEX wndclass;
 } gdi_t;
 
 #endif
