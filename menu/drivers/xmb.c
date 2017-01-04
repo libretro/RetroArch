@@ -1589,6 +1589,7 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
    info.need_push               = false;
    info.push_builtin_cores      = false;
    info.download_core           = false;
+   info.need_clear              = false;
    info.need_navigation_clear   = false;
    info.list                    = xmb->horizontal_list;
    info.menu_list               = NULL;
@@ -1701,9 +1702,10 @@ static void xmb_context_reset_horizontal_list(
             file_path_str(FILE_PATH_PNG_EXTENSION),
             sizeof(texturepath));
 
-      ti.width    = 0;
-      ti.height   = 0;
-      ti.pixels   = NULL;
+      ti.width         = 0;
+      ti.height        = 0;
+      ti.pixels        = NULL;
+      ti.supports_rgba = video_driver_supports_rgba();
 
       if (image_texture_load(&ti, texturepath))
       {
