@@ -289,6 +289,8 @@ static uint32_t gfx_ctx_gdi_get_flags(void *data)
 static void gfx_ctx_gdi_swap_buffers(void *data)
 {
    (void)data;
+
+   SwapBuffers(win32_hdc);
 }
 
 void create_gdi_context(HWND hwnd, bool *quit)
