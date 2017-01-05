@@ -235,7 +235,6 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
             scroll_acceleration = *sel;
          }
          break;
-      default:
       case MENU_NAVIGATION_CTL_NONE:
          break;
    }
