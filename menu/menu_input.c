@@ -50,8 +50,8 @@ enum menu_mouse_action
    MENU_MOUSE_ACTION_HORIZ_WHEEL_DOWN
 };
 
-static unsigned mouse_old_x  = 0;
-static unsigned mouse_old_y  = 0;
+static unsigned mouse_old_x               = 0;
+static unsigned mouse_old_y               = 0;
 
 static rarch_timer_t mouse_activity_timer = {0};
 
@@ -112,7 +112,6 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
       case MENU_INPUT_CTL_UNSET_POINTER_DRAGGED:
          pointer_dragging = false;
          break;
-      default:
       case MENU_INPUT_CTL_NONE:
          break;
    }
@@ -392,8 +391,6 @@ int16_t menu_input_mouse_state(enum menu_input_mouse_state state)
       case MENU_MOUSE_HORIZ_WHEEL_DOWN:
          type = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN;
          break;
-      default:
-         return 0;
    }
 
    return current_input->input_state(current_input_data, NULL,
@@ -411,22 +408,17 @@ static int menu_input_pointer_post_iterate(
    static int16_t pointer_old_x = 0;
    static int16_t pointer_old_y = 0;
    int ret                      = 0;
-   bool check_overlay           = false;
    menu_input_t *menu_input     = menu_input_get_ptr();
    settings_t *settings         = config_get_ptr();
    
    if (!menu_input || !settings)
       return -1;
 
-   check_overlay = !settings->menu.pointer.enable;
 #ifdef HAVE_OVERLAY
-   if (!check_overlay)
-      check_overlay = (settings->input.overlay_enable 
-            && input_overlay_is_alive(overlay_ptr));
-#endif
-
-   if (check_overlay)
+   if ((       settings->input.overlay_enable 
+            && input_overlay_is_alive(overlay_ptr)))
       return 0;
+#endif
 
    if (menu_input->pointer.pressed[0])
    {
