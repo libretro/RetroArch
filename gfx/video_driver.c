@@ -119,7 +119,9 @@ static video_pixel_scaler_t *video_driver_scaler_ptr     = NULL;
  * TODO: Refactor this better. */
 static struct retro_hw_render_callback hw_render;
 
-static const struct retro_hw_render_context_negotiation_interface *hw_render_context_negotiation = NULL;
+static const struct 
+retro_hw_render_context_negotiation_interface *
+hw_render_context_negotiation                            = NULL;
 
 static bool video_driver_use_rgba                        = false;
 static bool video_driver_data_own                        = false;

@@ -15,6 +15,7 @@
 
 #include <file/file_path.h>
 #include <compat/strl.h>
+#include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -23,6 +24,8 @@
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
 #include "../menu_setting.h"
+
+#include "../input/input_config.h"
 
 #include "../../configuration.h"
 #include "../../tasks/tasks_internal.h"
@@ -114,9 +117,43 @@ int action_switch_thumbnail(const char *path,
    return 0;
 }
 
+static int action_scan_input_desc(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   const char *menu_label         = NULL;
+   settings_t           *settings = config_get_ptr();
+   unsigned key                   = 0;
+   unsigned inp_desc_user         = 0;
+   struct retro_keybind *target   = NULL;
+
+   menu_entries_get_last_stack(NULL, &menu_label, NULL, NULL, NULL);
+
+   if (string_is_equal(menu_label, "deferred_user_binds_list"))
+   {
+      unsigned char player_no_str = atoi(&label[1]);
+
+      inp_desc_user      = (unsigned)player_no_str - 1;
+      key                = idx - 6;
+   }
+   else
+      key = input_config_label_to_key(label);
+
+   target = (struct retro_keybind*)&settings->input.binds[inp_desc_user][key];
+
+   if (target)
+   {
+      target->key     = RETROK_UNKNOWN;
+      target->joykey  = NO_BTN;
+      target->joyaxis = AXIS_NONE;
+   }
+
+   return 0;
+}
+
 static int menu_cbs_init_bind_scan_compare_type(menu_file_list_cbs_t *cbs,
       unsigned type)
 {
+
    switch (type)
    {
 #ifdef HAVE_LIBRETRODB
@@ -147,6 +184,15 @@ int menu_cbs_init_bind_scan(menu_file_list_cbs_t *cbs,
       return -1;
 
    BIND_ACTION_SCAN(cbs, NULL);
+
+   if (cbs->setting)
+   {
+      if (setting_get_type(cbs->setting) == ST_BIND)
+      {
+         BIND_ACTION_SCAN(cbs, action_scan_input_desc);
+         return 0;
+      }
+   }
 
    menu_cbs_init_bind_scan_compare_type(cbs, type);
 

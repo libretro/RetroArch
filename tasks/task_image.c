@@ -52,7 +52,7 @@ struct nbio_image_handle
    size_t size;
    unsigned processing_pos_increment;
    unsigned pos_increment;
-   int processing_final_state;
+   enum image_process_code processing_final_state;
    enum image_status_enum status;
 };
 
@@ -65,9 +65,14 @@ static int cb_image_menu_upload_generic(void *data, size_t len)
    if (!image)
       return -1;
 
-   if (image->processing_final_state == IMAGE_PROCESS_ERROR ||
-         image->processing_final_state == IMAGE_PROCESS_ERROR_END)
-      return -1;
+   switch (image->processing_final_state)
+   {
+      case IMAGE_PROCESS_ERROR:
+      case IMAGE_PROCESS_ERROR_END:
+         return -1;
+      default:
+         break;
+   }
 
    image_texture_set_color_shifts(&r_shift, &g_shift, &b_shift,
          &a_shift, &image->ti);
@@ -119,7 +124,7 @@ static int task_image_process(
 
 static int cb_image_menu_generic(nbio_handle_t *nbio)
 {
-   int retval;
+   enum image_process_code retval;
    unsigned width = 0, height = 0;
    struct nbio_image_handle *image = (struct nbio_image_handle*)nbio->data;
 
@@ -127,8 +132,15 @@ static int cb_image_menu_generic(nbio_handle_t *nbio)
       return -1;
 
    retval = task_image_process(nbio, &width, &height);
-   if ((retval == IMAGE_PROCESS_ERROR) || (retval == IMAGE_PROCESS_ERROR_END))
-      return -1;
+
+   switch (retval)
+   {
+      case IMAGE_PROCESS_ERROR:
+      case IMAGE_PROCESS_ERROR_END:
+         return -1;
+      default:
+         break;
+   }
 
    image->is_blocking_on_processing         = (retval != IMAGE_PROCESS_END);
    image->is_finished                       = (retval == IMAGE_PROCESS_END);
@@ -151,7 +163,7 @@ static int cb_image_menu_thumbnail(void *data, size_t len)
 
 static int task_image_iterate_process_transfer(nbio_handle_t *nbio)
 {
-   int retval = 0;
+   enum image_process_code retval;
    unsigned i, width = 0, height = 0;
    struct nbio_image_handle *image = (struct nbio_image_handle*)nbio->data;
 
