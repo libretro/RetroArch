@@ -55,6 +55,7 @@ struct retro_task_impl
    void (*deinit)(void);
 };
 
+static retro_task_queue_msg_t msg_push_bak;
 static task_queue_t tasks_running  = {NULL, NULL};
 static task_queue_t tasks_finished = {NULL, NULL};
 
@@ -555,6 +556,8 @@ void task_queue_init(bool threaded, retro_task_queue_msg_t msg_push)
    }
 #endif
 
+   msg_push_bak            = msg_push;
+
    impl_current->msg_push  = msg_push;
    impl_current->init();
 }
@@ -598,7 +601,7 @@ bool task_queue_ctl(enum task_queue_ctl_state state, void *data)
                task_queue_deinit();
 
             if (!impl_current)
-               task_queue_init(want_threaded, impl_current->msg_push);
+               task_queue_init(want_threaded, msg_push_bak);
 #endif
 
             impl_current->gather();
