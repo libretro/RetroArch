@@ -50,7 +50,6 @@
 #include "../widgets/menu_list.h"
 #include "../widgets/menu_input_dialog.h"
 
-#include "../menu_cbs.h"
 #include "../menu_event.h"
 
 #include "../../verbosity.h"
