@@ -291,6 +291,13 @@ static void gfx_ctx_gdi_swap_buffers(void *data)
    (void)data;
 }
 
+void create_gdi_context(HWND hwnd, bool *quit)
+{
+   (void)quit;
+   win32_hdc = GetDC(hwnd);
+   g_inited = true;
+}
+
 const gfx_ctx_driver_t gfx_ctx_gdi = {
    gfx_ctx_gdi_init,
    gfx_ctx_gdi_destroy,

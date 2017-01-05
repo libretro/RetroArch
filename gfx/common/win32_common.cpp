@@ -542,7 +542,7 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
             ui_window_win32_t win32_window;
             win32_window.hwnd = hwnd;
 
-            g_inited = true;
+            create_gdi_context(hwnd, &g_quit);
 
             ui_window_win32_set_droppable(&win32_window, true);
          }
