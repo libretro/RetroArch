@@ -435,6 +435,9 @@ static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
    struct dispmanx_video *_dispvars = data;
    float aspect = video_driver_get_aspect_ratio();
 
+   if (!frame)
+      return true;
+
    if (width != _dispvars->core_width || height != _dispvars->core_height || _dispvars->aspect_ratio != aspect)
    {
       /* Sanity check. */
