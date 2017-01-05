@@ -1064,6 +1064,14 @@ static enum runloop_state runloop_check_state(
    return RUNLOOP_STATE_ITERATE;
 }
 
+static void runloop_netplay_pause(void)
+{
+#ifdef HAVE_NETWORKING
+   /* FIXME: This is an ugly way to tell Netplay this... */
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
+#endif
+}
+
 #define runloop_menu_unified_controls_pressed() (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
 
 /**
@@ -1133,25 +1141,16 @@ int runloop_iterate(unsigned *sleep_ms)
          return -1;
       case RUNLOOP_STATE_SLEEP:
          core_poll();
-#ifdef HAVE_NETWORKING
-         /* FIXME: This is an ugly way to tell Netplay this... */
-         netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
-#endif
+         runloop_netplay_pause();
          *sleep_ms = 10;
          return 1;
       case RUNLOOP_STATE_END:
          core_poll();
-#ifdef HAVE_NETWORKING
-         /* FIXME: This is an ugly way to tell Netplay this... */
-         netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
-#endif
+         runloop_netplay_pause();
          goto end;
       case RUNLOOP_STATE_MENU_ITERATE:
          core_poll();
-#ifdef HAVE_NETWORKING
-         /* FIXME: This is an ugly way to tell Netplay this... */
-         netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
-#endif
+         runloop_netplay_pause();
          return 0;
       case RUNLOOP_STATE_ITERATE:
       case RUNLOOP_STATE_NONE:
