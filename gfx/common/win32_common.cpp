@@ -521,6 +521,12 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
 
    switch (message)
    {
+      case WM_PAINT:
+         PAINTSTRUCT ps;
+         HDC hdc = BeginPaint(hwnd, &ps);
+         TextOut(hdc, 0, 0, "Hello, Windows!", 15);
+         EndPaint(hwnd, &ps);
+         break;
       case WM_DROPFILES:
       case WM_SYSCOMMAND:
       case WM_CHAR:
