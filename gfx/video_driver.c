@@ -297,7 +297,7 @@ static bool hw_render_context_is_gl(enum retro_hw_context_type type)
    return false;
 }
 
-static bool video_driver_is_threaded(void)
+bool video_driver_is_threaded(void)
 {
 #ifdef HAVE_THREADS
    settings_t *settings = config_get_ptr();
@@ -497,7 +497,7 @@ static void video_monitor_compute_fps_statistics(void)
    unsigned samples     = 0;
    settings_t *settings = config_get_ptr();
 
-   if (settings->video.threaded)
+   if (video_driver_is_threaded())
    {
       RARCH_LOG("Monitor FPS estimation is disabled for threaded video.\n");
       return;
@@ -982,7 +982,7 @@ bool video_monitor_fps_statistics(double *refresh_rate,
    unsigned samples      = MIN(MEASURE_FRAME_TIME_SAMPLES_COUNT,
          video_driver_frame_time_count);
 
-   if (settings->video.threaded || (samples < 2))
+   if (video_driver_is_threaded() || (samples < 2))
       return false;
 
    /* Measure statistics on frame time (microsecs), *not* FPS. */

@@ -163,7 +163,7 @@ static void *gl_raster_font_init_font(void *data,
       return NULL;
    }
 
-   if (settings->video.threaded)
+   if (video_driver_is_threaded())
       video_context_driver_make_current(false);
 
    glGenTextures(1, &font->tex);
@@ -203,7 +203,7 @@ static void gl_raster_font_free_font(void *data)
    if (font->font_driver && font->font_data)
       font->font_driver->free(font->font_data);
 
-   if (settings->video.threaded)
+   if (video_driver_is_threaded())
       video_context_driver_make_current(true);
 
    glDeleteTextures(1, &font->tex);
