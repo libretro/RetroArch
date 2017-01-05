@@ -60,12 +60,13 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
             settings_t *settings   = config_get_ptr();
             unsigned *scroll_speed = (unsigned*)data;
             size_t  menu_list_size = menu_entries_get_size();
+            bool wraparound_enable = settings->menu.navigation.wraparound.enable;
 
             if (!scroll_speed)
                return false;
 
             if (selection_ptr >= menu_list_size - 1
-                  && !settings->menu.navigation.wraparound.enable)
+                  && !wraparound_enable)
                return false;
 
             if ((selection_ptr + (*scroll_speed)) < menu_list_size)
@@ -78,7 +79,7 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
             }
             else
             {
-               if (settings->menu.navigation.wraparound.enable)
+               if (wraparound_enable)
                {
                   bool pending_push = false;
                   menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
@@ -103,12 +104,12 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
             settings_t *settings   = config_get_ptr();
             unsigned *scroll_speed = (unsigned*)data;
             size_t  menu_list_size = menu_entries_get_size();
+            bool wraparound_enable = settings->menu.navigation.wraparound.enable;
 
             if (!scroll_speed)
                return false;
 
-            if (selection_ptr == 0 
-                  && !settings->menu.navigation.wraparound.enable)
+            if (selection_ptr == 0 && !wraparound_enable)
                return false;
 
             if (selection_ptr >= *scroll_speed)
@@ -116,7 +117,7 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
             else
             {
                idx  = menu_list_size - 1;
-               if (!settings->menu.navigation.wraparound.enable)
+               if (!wraparound_enable)
                   idx = 0;
             }
 
