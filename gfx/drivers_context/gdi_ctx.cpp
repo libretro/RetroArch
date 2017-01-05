@@ -49,12 +49,12 @@ static enum gfx_ctx_api win32_api         = GFX_CTX_NONE;
 
 void *dinput_gdi;
 
-/*static void setup_pixel_format(HDC hdc)
+static void setup_pixel_format(HDC hdc)
 {
    PIXELFORMATDESCRIPTOR pfd = {0};
    pfd.nSize        = sizeof(PIXELFORMATDESCRIPTOR);
    pfd.nVersion     = 1;
-   pfd.dwFlags      = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+   pfd.dwFlags      = PFD_DRAW_TO_WINDOW | PFD_DOUBLEBUFFER;
    pfd.iPixelType   = PFD_TYPE_RGBA;
    pfd.cColorBits   = 32;
    pfd.cDepthBits   = 0;
@@ -62,7 +62,7 @@ void *dinput_gdi;
    pfd.iLayerType   = PFD_MAIN_PLANE;
 
    SetPixelFormat(hdc, ChoosePixelFormat(hdc, &pfd), &pfd);
-}*/
+}
 
 static void gfx_ctx_gdi_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
@@ -295,6 +295,9 @@ void create_gdi_context(HWND hwnd, bool *quit)
 {
    (void)quit;
    win32_hdc = GetDC(hwnd);
+
+   setup_pixel_format(win32_hdc);
+
    g_inited = true;
 }
 
