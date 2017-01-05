@@ -1072,8 +1072,6 @@ static void runloop_netplay_pause(void)
 #endif
 }
 
-#define runloop_menu_unified_controls_pressed() (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
-
 /**
  * runloop_iterate:
  *
@@ -1094,7 +1092,7 @@ int runloop_iterate(unsigned *sleep_ms)
    uint64_t current_input                       =
 
 #ifdef HAVE_MENU
-      runloop_menu_unified_controls_pressed() ? 
+      menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL) ? 
       input_menu_keys_pressed(old_input,
             &last_input, &trigger_input, runloop_paused) :
 #endif
