@@ -111,6 +111,9 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
 LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
 
+LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam);
+
 #ifdef _XBOX
 BOOL IsIconic(HWND hwnd);
 #endif

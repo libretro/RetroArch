@@ -510,6 +510,50 @@ LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
    return DefWindowProc(hwnd, message, wparam, lparam);
 }
 
+LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam)
+{
+   LRESULT ret;
+   bool quit = false;
+
+   if (message == WM_NCLBUTTONDBLCLK)
+      doubleclick_on_titlebar = true;
+
+   switch (message)
+   {
+      case WM_DROPFILES:
+      case WM_SYSCOMMAND:
+      case WM_CHAR:
+      case WM_KEYDOWN:
+      case WM_KEYUP:
+      case WM_SYSKEYUP:
+      case WM_SYSKEYDOWN:
+      case WM_CLOSE:
+      case WM_DESTROY:
+      case WM_QUIT:
+      case WM_SIZE:
+      case WM_COMMAND:
+         ret = WndProcCommon(&quit, hwnd, message, wparam, lparam);
+         if (quit)
+            return ret;
+         break;
+      case WM_CREATE:
+         {
+            ui_window_win32_t win32_window;
+            win32_window.hwnd = hwnd;
+
+            g_inited = true;
+
+            ui_window_win32_set_droppable(&win32_window, true);
+         }
+         return 0;
+   }
+
+   if (dinput_gdi && dinput_handle_message(dinput_gdi, message, wparam, lparam))
+      return 0;
+   return DefWindowProc(hwnd, message, wparam, lparam);
+}
+
 bool win32_window_create(void *data, unsigned style,
       RECT *mon_rect, unsigned width,
       unsigned height, bool fullscreen)
@@ -781,6 +825,7 @@ bool win32_set_video_mode(void *data,
    RECT rect             = {0};
    HMONITOR hm_to_use    = NULL;
    settings_t *settings  = config_get_ptr();
+   int res               = 0;
 
    win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
 
@@ -798,11 +843,19 @@ bool win32_set_video_mode(void *data,
    
    win32_set_window(&width, &height, fullscreen, windowed_full, &rect);
 
-   /* Wait until context is created (or failed to do so ...) */
-   while (!g_inited && !g_quit && GetMessage(&msg, main_window.hwnd, 0, 0))
+   /* Wait until context is created (or failed to do so ...).
+    * Please don't remove the (res = ) as GetMessage can return -1. */
+   while (!g_inited && !g_quit && (res = GetMessage(&msg, main_window.hwnd, 0, 0)) != 0)
    {
-      TranslateMessage(&msg);
-      DispatchMessage(&msg);
+      if (res == -1)
+      {
+         RARCH_ERR("GetMessage error code %d\n", GetLastError());
+      }
+      else
+      {
+         TranslateMessage(&msg);
+         DispatchMessage(&msg);
+      }
    }
 
    if (g_quit)

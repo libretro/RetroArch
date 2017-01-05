@@ -140,7 +140,7 @@ static void *gfx_ctx_gdi_init(void *video_driver)
    win32_window_reset();
    win32_monitor_init();
 
-   wndclass.lpfnWndProc   = WndProcGL;
+   wndclass.lpfnWndProc   = WndProcGDI;
    if (!win32_window_init(&wndclass, true, NULL))
            return NULL;
 
