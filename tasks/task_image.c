@@ -52,7 +52,7 @@ struct nbio_image_handle
    size_t size;
    unsigned processing_pos_increment;
    unsigned pos_increment;
-   enum image_process_code processing_final_state;
+   int processing_final_state;
    enum image_status_enum status;
 };
 
@@ -124,8 +124,9 @@ static int task_image_process(
 
 static int cb_image_menu_generic(nbio_handle_t *nbio)
 {
-   enum image_process_code retval;
-   unsigned width = 0, height = 0;
+   int retval                      = 0;
+   unsigned width                  = 0;
+   unsigned height                 = 0;
    struct nbio_image_handle *image = (struct nbio_image_handle*)nbio->data;
 
    if (!image)
@@ -163,8 +164,10 @@ static int cb_image_menu_thumbnail(void *data, size_t len)
 
 static int task_image_iterate_process_transfer(nbio_handle_t *nbio)
 {
-   enum image_process_code retval;
-   unsigned i, width = 0, height = 0;
+   unsigned i;
+   int retval                      = 0;
+   unsigned width                  = 0;
+   unsigned height                 = 0;
    struct nbio_image_handle *image = (struct nbio_image_handle*)nbio->data;
 
    if (!image)
