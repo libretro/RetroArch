@@ -3670,6 +3670,7 @@ static int action_ok_netplay_enable_host(const char *path,
 #endif
 }
 
+#ifdef HAVE_NETWORKING
 static void action_ok_netplay_enable_client_hostname_cb(
    void *ignore, const char *hostname)
 {
@@ -3682,6 +3683,7 @@ static void action_ok_netplay_enable_client_hostname_cb(
    /* Force the menu to close */
    rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
 }
+#endif
 
 static int action_ok_netplay_enable_client(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
