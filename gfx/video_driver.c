@@ -495,7 +495,6 @@ static void video_monitor_compute_fps_statistics(void)
    double avg_fps       = 0.0;
    double stddev        = 0.0;
    unsigned samples     = 0;
-   settings_t *settings = config_get_ptr();
 
    if (video_driver_is_threaded())
    {

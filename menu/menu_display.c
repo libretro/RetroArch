@@ -100,8 +100,6 @@ void menu_display_toggle_set_reason(enum menu_toggle_reason reason)
 static const char *menu_video_get_ident(void)
 {
 #ifdef HAVE_THREADS
-   settings_t *settings = config_get_ptr();
-
    if (video_driver_is_threaded())
       return video_thread_get_ident();
 #endif
