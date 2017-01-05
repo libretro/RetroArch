@@ -221,7 +221,6 @@ VIDEO CONTEXT
 
 #endif
 
-
 /*============================================================
 VIDEO SHADERS
 ============================================================ */
@@ -357,6 +356,10 @@ VIDEO DRIVER
 #include "../gfx/drivers/xenon360_gfx.c"
 #endif
 #include "../gfx/drivers/nullgfx.c"
+
+#if defined(_WIN32) && !defined(_XBOX)
+#include "../gfx/drivers/gdi_gfx.c"
+#endif
 
 /*============================================================
 FONTS

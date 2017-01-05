@@ -515,6 +515,10 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
 {
    LRESULT ret;
    bool quit = false;
+   PAINTSTRUCT ps;
+   HDC hdc;
+   RECT rc;
+   POINT aptStar[6] = {50,2, 2,98, 98,33, 2,33, 98,98, 50,2};
 
    if (message == WM_NCLBUTTONDBLCLK)
       doubleclick_on_titlebar = true;
@@ -522,11 +526,15 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
    switch (message)
    {
       case WM_PAINT:
-         PAINTSTRUCT ps;
-         HDC hdc = BeginPaint(hwnd, &ps);
-         TextOut(hdc, 0, 0, "Hello, Windows!", 15);
+         hdc = BeginPaint(hwnd, &ps);
+         //TextOut(hdc, 0, 0, "Hello, Windows!", 15);
+         GetClientRect(hwnd, &rc);
+         SetMapMode(hdc, MM_ANISOTROPIC);
+         SetWindowExtEx(hdc, 100, 100, NULL);
+         SetViewportExtEx(hdc, rc.right, rc.bottom, NULL);
+         Polyline(hdc, aptStar, 6);
          EndPaint(hwnd, &ps);
-         break;
+         return 0L;
       case WM_DROPFILES:
       case WM_SYSCOMMAND:
       case WM_CHAR:
@@ -856,6 +864,7 @@ bool win32_set_video_mode(void *data,
       if (res == -1)
       {
          RARCH_ERR("GetMessage error code %d\n", GetLastError());
+         break;
       }
       else
       {

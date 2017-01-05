@@ -23,6 +23,10 @@
 #include "../../menu/menu_driver.h"
 #include "../common/gdi_common.h"
 
+#if defined(_WIN32) && !defined(_XBOX)
+#include "../common/win32_common.h"
+#endif
+
 static unsigned char *gdi_menu_frame = NULL;
 static unsigned gdi_menu_width = 0;
 static unsigned gdi_menu_height = 0;
@@ -212,8 +216,8 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    unsigned width = 0;
    unsigned height = 0;
    bool draw = true;
+   gdi_t *gdi = (gdi_t*)data;
 
-   (void)data;
    (void)frame;
    (void)frame_width;
    (void)frame_height;
@@ -253,6 +257,10 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    if (msg)
       font_driver_render_msg(NULL, msg, NULL);
 
+   video_context_driver_update_window_title();
+
+   video_context_driver_swap_buffers();
+
    if (draw)
    {
       /*gdi_dither_bitmap(gdi_cv, 0, 0,
@@ -260,6 +268,8 @@ static bool gdi_gfx_frame(void *data, const void *frame,
                          height,
                          gdi_dither, frame_to_copy);*/
    }
+
+   //UpdateWindow(win32_get_window());
 
    return true;
 }

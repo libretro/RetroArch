@@ -40,16 +40,16 @@
 
 #include "../common/win32_common.h"
 
-static HDC   win32_hdc;
+static HDC   win32_gdi_hdc;
 
-static unsigned         win32_major       = 0;
-static unsigned         win32_minor       = 0;
-static unsigned         win32_interval    = 0;
-static enum gfx_ctx_api win32_api         = GFX_CTX_NONE;
+static unsigned         win32_gdi_major       = 0;
+static unsigned         win32_gdi_minor       = 0;
+static unsigned         win32_gdi_interval    = 0;
+static enum gfx_ctx_api win32_gdi_api         = GFX_CTX_NONE;
 
 void *dinput_gdi;
 
-static void setup_pixel_format(HDC hdc)
+static void setup_gdi_pixel_format(HDC hdc)
 {
    PIXELFORMATDESCRIPTOR pfd = {0};
    pfd.nSize        = sizeof(PIXELFORMATDESCRIPTOR);
@@ -77,7 +77,7 @@ static bool gfx_ctx_gdi_set_resize(void *data,
    (void)width;
    (void)height;
 
-   switch (win32_api)
+   switch (win32_gdi_api)
    {
       case GFX_CTX_NONE:
       default:
@@ -144,7 +144,7 @@ static void *gfx_ctx_gdi_init(void *video_driver)
    if (!win32_window_init(&wndclass, true, NULL))
            return NULL;
 
-   switch (win32_api)
+   switch (win32_gdi_api)
    {
       case GFX_CTX_NONE:
       default:
@@ -160,17 +160,17 @@ static void gfx_ctx_gdi_destroy(void *data)
 
    (void)data;
 
-   switch (win32_api)
+   switch (win32_gdi_api)
    {
       case GFX_CTX_NONE:
       default:
          break;
    }
 
-   if (window && win32_hdc)
+   if (window && win32_gdi_hdc)
    {
-      ReleaseDC(window, win32_hdc);
-      win32_hdc = NULL;
+      ReleaseDC(window, win32_gdi_hdc);
+      win32_gdi_hdc = NULL;
    }
 
    if (window)
@@ -186,8 +186,8 @@ static void gfx_ctx_gdi_destroy(void *data)
    }
 
    g_inited                     = false;
-   win32_major                  = 0;
-   win32_minor                  = 0;
+   win32_gdi_major                  = 0;
+   win32_gdi_minor                  = 0;
 }
 
 static bool gfx_ctx_gdi_set_video_mode(void *data,
@@ -200,7 +200,7 @@ static bool gfx_ctx_gdi_set_video_mode(void *data,
       goto error;
    }
 
-   switch (win32_api)
+   switch (win32_gdi_api)
    {
       case GFX_CTX_NONE:
       default:
@@ -254,9 +254,9 @@ static bool gfx_ctx_gdi_bind_api(void *data,
 {
    (void)data;
 
-   win32_major = major;
-   win32_minor = minor;
-   win32_api   = api;
+   win32_gdi_major = major;
+   win32_gdi_minor = minor;
+   win32_gdi_api   = api;
 
    return true;
 }
@@ -290,15 +290,15 @@ static void gfx_ctx_gdi_swap_buffers(void *data)
 {
    (void)data;
 
-   SwapBuffers(win32_hdc);
+   SwapBuffers(win32_gdi_hdc);
 }
 
 void create_gdi_context(HWND hwnd, bool *quit)
 {
    (void)quit;
-   win32_hdc = GetDC(hwnd);
+   win32_gdi_hdc = GetDC(hwnd);
 
-   setup_pixel_format(win32_hdc);
+   setup_gdi_pixel_format(win32_gdi_hdc);
 
    g_inited = true;
 }

@@ -85,7 +85,13 @@ bool win32_get_metrics(void *data,
 
 void win32_show_cursor(bool state);
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 HWND win32_get_window(void);
+#ifdef __cplusplus
+}
+#endif
 
 bool win32_has_focus(void);
 
@@ -96,7 +102,6 @@ void win32_set_window(unsigned *width, unsigned *height,
       bool fullscreen, bool windowed_full, void *rect_data);
 
 #ifndef _XBOX
-/* FIXME: It should not be necessary to add the W after MONITORINFOEX, but linking fails without it. */
 void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
 	unsigned *width, unsigned *height, bool fullscreen, bool windowed_full,
 	RECT *rect, RECT *mon_rect, DWORD *style);
