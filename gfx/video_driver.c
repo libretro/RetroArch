@@ -297,15 +297,15 @@ static bool hw_render_context_is_gl(enum retro_hw_context_type type)
    return false;
 }
 
-bool video_driver_is_threaded(void)
+static bool video_driver_is_threaded(void)
 {
 #ifdef HAVE_THREADS
    settings_t *settings = config_get_ptr();
-   return settings->video.threaded
-      && !video_driver_is_hw_context();
-#else
-   return false;
+   if (!video_driver_is_hw_context()
+         && settings->video.threaded)
+      return true;
 #endif
+   return false;
 }
 
 /**
