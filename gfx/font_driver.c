@@ -372,7 +372,7 @@ font_data_t *font_driver_init_first(
    settings_t *settings = config_get_ptr();
 
    if (threading_hint 
-         && settings->video.threaded 
+         && video_driver_is_threaded() 
          && !video_driver_is_hw_context())
       ok = video_thread_font_init(&font_driver, &font_handle,
             video_data, font_path, font_size, api, font_init_first);
