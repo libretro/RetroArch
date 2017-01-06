@@ -17,6 +17,7 @@
 
 #include <stdlib.h>
 #include <string/stdstring.h>
+#include <encodings/utf.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -26,6 +27,10 @@
 #include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../common/gdi_common.h"
+#include "../common/win32_common.h"
+
+#include <windows.h>
+#include <wingdi.h>
 
 typedef struct
 {
@@ -82,6 +87,8 @@ static void gdi_render_msg(void *data, const char *msg,
    unsigned newX, newY;
    settings_t *settings = config_get_ptr();
    const struct font_params *params = (const struct font_params*)userdata;
+   HDC hdc;
+   HWND hwnd = win32_get_window();
 
    if (!font || string_is_empty(msg))
       return;
@@ -100,15 +107,23 @@ static void gdi_render_msg(void *data, const char *msg,
    if (!font->gdi)
       return;
 
-   newX = x * width;
-   newY = height - (y * height);
+   newX = x;//x * width;
+   newY = y;//height - (y * height);
 
-   if (strlen(msg) + newX > width)
-      newX -= strlen(msg) + newX - width;
+   //if (strlen(msg) + newX > width)
+   //   newX -= strlen(msg) + newX - width;
 
    //gdi_put_str(*font->gdi->gdi_cv, newX, newY, msg);
 
    //gdi_refresh_display(*font->gdi->gdi_display);
+
+   printf("drawing text: %s at %d x %d\n", msg, newX, newY);
+
+   hdc = GetDC(hwnd);
+   TextOut(hdc, newX, newY, msg, utf8len(msg));
+   ReleaseDC(hwnd, hdc);
+
+   UpdateWindow(hwnd);
 }
 
 static void gdi_font_flush_block(void* data)
