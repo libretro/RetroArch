@@ -2893,7 +2893,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE:
          return "stdin Commands";
       case MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES:
-         return "Supported cores";
+         return "Suggested cores";
       case MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE:
          return "Suspend Screensaver";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE:
