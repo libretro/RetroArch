@@ -277,6 +277,8 @@ void slock_free(slock_t *lock)
 **/
 void slock_lock(slock_t *lock)
 {
+   if (!lock)
+      return;
 #ifdef USE_WIN32_THREADS
    WaitForSingleObject(lock->lock, INFINITE);
 #else
@@ -292,6 +294,8 @@ void slock_lock(slock_t *lock)
  **/
 void slock_unlock(slock_t *lock)
 {
+   if (!lock)
+      return;
 #ifdef USE_WIN32_THREADS
    ReleaseMutex(lock->lock);
 #else
