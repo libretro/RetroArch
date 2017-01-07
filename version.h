@@ -18,7 +18,7 @@
 #define RARCH_VERSION_H__
 
 #ifndef PACKAGE_VERSION
-#define PACKAGE_VERSION "1.3.6"
+#define PACKAGE_VERSION "1.4.0"
 #endif
 
 #endif
