@@ -585,6 +585,10 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
             case MENU_ENUM_LABEL_SCREEN_RESOLUTION:
                BIND_ACTION_RIGHT(cbs, action_right_video_resolution);
                break;
+            case MENU_ENUM_LABEL_OPEN_ARCHIVE_DETECT_CORE:
+            case MENU_ENUM_LABEL_LOAD_ARCHIVE_DETECT_CORE:
+               BIND_ACTION_RIGHT(cbs, action_right_scroll);
+               break;
             case MENU_ENUM_LABEL_NO_ITEMS:
             case MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE:
                if (  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU))       ||
