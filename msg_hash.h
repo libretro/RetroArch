@@ -123,6 +123,7 @@ enum msg_file_type
 
    FILE_TYPE_CUE,
    FILE_TYPE_ISO,
+   FILE_TYPE_PBP,
    FILE_TYPE_LUTRO,
 
    FILE_TYPE_DIRECT_LOAD,

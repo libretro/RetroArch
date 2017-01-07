@@ -221,6 +221,8 @@ uint32_t msg_hash_calculate(const char *s)
 #define HASH_EXTENSION_ISO                                                     0x0b8880d0U
 #define HASH_EXTENSION_ISO_UPPERCASE                                           0x0b87f470U
 #define HASH_EXTENSION_LUTRO                                                   0x0fe37b7bU
+#define HASH_EXTENSION_PBP                                                     0x0b889c67U
+#define HASH_EXTENSION_PBP_UPPERCASE                                           0x0b881007U
 
 enum msg_file_type msg_hash_to_file_type(uint32_t hash)
 {
@@ -357,6 +359,9 @@ enum msg_file_type msg_hash_to_file_type(uint32_t hash)
       case HASH_EXTENSION_ISO:
       case HASH_EXTENSION_ISO_UPPERCASE:
          return FILE_TYPE_ISO;
+      case HASH_EXTENSION_PBP:
+      case HASH_EXTENSION_PBP_UPPERCASE:
+         return FILE_TYPE_PBP;
       case HASH_EXTENSION_LUTRO:
          return FILE_TYPE_LUTRO;
       default:
