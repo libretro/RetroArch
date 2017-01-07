@@ -1652,7 +1652,11 @@ static int action_ok_menu_wallpaper(const char *path,
 static int action_ok_menu_wallpaper_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   settings_t *settings            = config_get_ptr();
+
    filebrowser_clear_type();
+
+   settings->menu.xmb.shader_pipeline = XMB_SHADER_PIPELINE_WALLPAPER;
    return generic_action_ok(path, label, type, idx, entry_idx,
          ACTION_OK_LOAD_WALLPAPER, MSG_UNKNOWN);
 }
