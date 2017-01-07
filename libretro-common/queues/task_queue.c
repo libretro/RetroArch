@@ -94,7 +94,7 @@ static void task_queue_push_progress(retro_task_t *task)
       else
       {
          if (task->progress >= 0 && task->progress <= 100)
-            task_queue_msg_push(task, 1, 60, false, "%i%%: %s",
+            task_queue_msg_push(task, 1, 60, true, "%i%%: %s",
                   task->progress, task->title);
          else
             task_queue_msg_push(task, 1, 60, false, "%s...", task->title);
