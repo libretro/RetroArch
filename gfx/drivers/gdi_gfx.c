@@ -256,16 +256,13 @@ static bool gdi_gfx_frame(void *data, const void *frame,
 
    if (draw)
    {
-      /*gdi_dither_bitmap(gdi_cv, 0, 0,
-                         width,
-                         height,
-                         gdi_dither, frame_to_copy);*/
       unsigned win_width, win_height;
       HWND hwnd = win32_get_window();
       HDC dc = GetDC(hwnd);
       BITMAPINFO info;
+      gfx_ctx_mode_t mode;
 
-      video_driver_get_size(&win_width, &win_height);
+      video_context_driver_get_video_size(&mode);
 
       ZeroMemory(&info, sizeof(BITMAPINFO));
       info.bmiHeader.biBitCount = gdi_video_bits;
@@ -275,8 +272,43 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
       info.bmiHeader.biSizeImage = pitch * height;
       info.bmiHeader.biCompression = BI_RGB;
+/*
+      if (gdi_rgb32)
+      {
+         info.bmiColors[0].rgbBlue = 0xFF;
+         info.bmiColors[0].rgbGreen = 0x00;
+         info.bmiColors[0].rgbRed = 0x00;
+         info.bmiColors[0].rgbReserved = 0x00;
 
-      StretchDIBits(dc, 0, 0, win_width, win_height, 0, 0, width, height,
+         info.bmiColors[1].rgbBlue = 0x00;
+         info.bmiColors[1].rgbGreen = 0xFF;
+         info.bmiColors[1].rgbRed = 0x00;
+         info.bmiColors[1].rgbReserved = 0x00;
+
+         info.bmiColors[2].rgbBlue = 0x00;
+         info.bmiColors[2].rgbGreen = 0x00;
+         info.bmiColors[2].rgbRed = 0xFF;
+         info.bmiColors[2].rgbReserved = 0x00;
+      }
+      else
+      {
+         info.bmiColors[0].rgbBlue = 0x1F;
+         info.bmiColors[0].rgbGreen = 0x00;
+         info.bmiColors[0].rgbRed = 0x00;
+         info.bmiColors[0].rgbReserved = 0x00;
+
+         info.bmiColors[1].rgbBlue = 0x00;
+         info.bmiColors[1].rgbGreen = 0x1F;
+         info.bmiColors[1].rgbRed = 0x00;
+         info.bmiColors[1].rgbReserved = 0x00;
+
+         info.bmiColors[2].rgbBlue = 0x00;
+         info.bmiColors[2].rgbGreen = 0x00;
+         info.bmiColors[2].rgbRed = 0x1F;
+         info.bmiColors[2].rgbReserved = 0x00;
+      }
+*/
+      StretchDIBits(dc, 0, 0, mode.width, mode.height, 0, 0, width, height,
             frame_to_copy, &info, DIB_RGB_COLORS, SRCCOPY);
       ReleaseDC(hwnd, dc);
    }
