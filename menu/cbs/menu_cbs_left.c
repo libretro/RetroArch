@@ -483,8 +483,10 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
                   )
                {
                   BIND_ACTION_LEFT(cbs, action_left_mainmenu);
-                  break;
                }
+               else
+                  BIND_ACTION_LEFT(cbs, action_left_scroll);
+               break;
             case MENU_ENUM_LABEL_START_VIDEO_PROCESSOR:
             case MENU_ENUM_LABEL_TAKE_SCREENSHOT:
                if (  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB))   ||
