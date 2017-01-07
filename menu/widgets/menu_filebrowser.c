@@ -224,6 +224,8 @@ void filebrowser_parse(void *data, unsigned type_data, bool extensions_honored)
                   else
                      file_type = FILE_TYPE_IMAGE;
 #endif
+                  if (filebrowser_types == FILEBROWSER_SELECT_IMAGE)
+                     file_type = FILE_TYPE_IMAGE;
                   break;
                default:
                   break;

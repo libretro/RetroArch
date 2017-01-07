@@ -1652,7 +1652,7 @@ static int action_ok_menu_wallpaper(const char *path,
 static int action_ok_menu_wallpaper_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-
+   filebrowser_clear_type();
    return generic_action_ok(path, label, type, idx, entry_idx,
          ACTION_OK_LOAD_WALLPAPER, MSG_UNKNOWN);
 }

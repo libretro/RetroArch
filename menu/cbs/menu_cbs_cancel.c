@@ -42,12 +42,18 @@ static int action_cancel_pop_default(const char *path,
    RARCH_LOG("menu_label: %s\n", menu_label);
 #endif
 
-   if (!string_is_empty(menu_label) && 
+   if (!string_is_empty(menu_label))
+   {
+      if (
          string_is_equal(menu_label,
-            msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST)
-            )
-      )
-      filebrowser_clear_type();
+               msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST)
+               ) ||
+         string_is_equal(menu_label,
+               msg_hash_to_str(MENU_ENUM_LABEL_MENU_WALLPAPER)
+               )
+         )
+         filebrowser_clear_type();
+   }
 
    menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &new_selection_ptr);
    menu_entries_pop_stack(&new_selection_ptr, 0, 1);

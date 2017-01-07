@@ -6171,7 +6171,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          strlcpy(info->exts, "filt", sizeof(info->exts));
          break;
       case DISPLAYLIST_IMAGES:
-         filebrowser_clear_type();
+         if (filebrowser_get_type() != FILEBROWSER_SELECT_IMAGE)
+            filebrowser_clear_type();
          info->type_default = FILE_TYPE_IMAGE;
          {
             union string_list_elem_attr attr;
