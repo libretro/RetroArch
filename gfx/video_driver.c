@@ -977,7 +977,6 @@ bool video_monitor_fps_statistics(double *refresh_rate,
 {
    unsigned i;
    retro_time_t accum   = 0, avg, accum_var = 0;
-   settings_t *settings = config_get_ptr();
    unsigned samples      = MIN(MEASURE_FRAME_TIME_SAMPLES_COUNT,
          video_driver_frame_time_count);
 

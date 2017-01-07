@@ -148,7 +148,6 @@ static void *gl_raster_font_init_font(void *data,
       const char *font_path, float font_size)
 {
    gl_raster_t   *font  = (gl_raster_t*)calloc(1, sizeof(*font));
-   settings_t *settings = config_get_ptr();
 
    if (!font)
       return NULL;
@@ -196,7 +195,6 @@ error:
 static void gl_raster_font_free_font(void *data)
 {
    gl_raster_t *font = (gl_raster_t*)data;
-   settings_t *settings    = config_get_ptr();
    if (!font)
       return;
 

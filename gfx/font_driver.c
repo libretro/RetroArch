@@ -369,8 +369,6 @@ font_data_t *font_driver_init_first(
    bool ok = false;
 
 #ifdef HAVE_THREADS
-   settings_t *settings = config_get_ptr();
-
    if (threading_hint 
          && video_driver_is_threaded() 
          && !video_driver_is_hw_context())
