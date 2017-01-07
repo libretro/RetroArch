@@ -196,6 +196,8 @@ bool mkdir_norecurse(const char *dir)
    ret = mkdir(dir, 0755);
 #elif defined(VITA) || defined(PSP)
    ret = sceIoMkdir(dir, 0777);
+#elif defined(__QNX__)
+   ret = mkdir(dir, 0777);
 #else
    ret = mkdir(dir, 0750);
 #endif
