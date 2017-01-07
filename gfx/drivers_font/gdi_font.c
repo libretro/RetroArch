@@ -24,6 +24,7 @@
 #endif
 
 #include "../font_driver.h"
+#include "../video_driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../common/gdi_common.h"
@@ -93,6 +94,8 @@ static void gdi_render_msg(void *data, const char *msg,
    if (!font || string_is_empty(msg))
       return;
 
+   video_driver_get_size(&width, &height);
+
    if (params)
    {
       x = params->x;
@@ -107,23 +110,12 @@ static void gdi_render_msg(void *data, const char *msg,
    if (!font->gdi)
       return;
 
-   newX = x;//x * width;
-   newY = y;//height - (y * height);
-
-   //if (strlen(msg) + newX > width)
-   //   newX -= strlen(msg) + newX - width;
-
-   //gdi_put_str(*font->gdi->gdi_cv, newX, newY, msg);
-
-   //gdi_refresh_display(*font->gdi->gdi_display);
-
-   printf("drawing text: %s at %d x %d\n", msg, newX, newY);
+   newX = x * width;
+   newY = height - (y * height);
 
    hdc = GetDC(hwnd);
    TextOut(hdc, newX, newY, msg, utf8len(msg));
    ReleaseDC(hwnd, hdc);
-
-   UpdateWindow(hwnd);
 }
 
 static void gdi_font_flush_block(void* data)

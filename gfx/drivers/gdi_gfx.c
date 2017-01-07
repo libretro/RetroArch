@@ -34,6 +34,7 @@ static unsigned gdi_menu_pitch = 0;
 static unsigned gdi_video_width = 0;
 static unsigned gdi_video_height = 0;
 static unsigned gdi_video_pitch = 0;
+static unsigned gdi_video_bits = 0;
 static bool gdi_rgb32 = 0;
 
 static void gdi_gfx_free(void *data);
@@ -66,6 +67,8 @@ static void *gdi_gfx_init(const video_info_t *video,
    gdi_video_width = video->width;
    gdi_video_height = video->height;
    gdi_rgb32 = video->rgb32;
+
+   gdi_video_bits = video->rgb32 ? 32 : 16;
 
    if (video->rgb32)
       gdi_video_pitch = video->width * 4;
@@ -141,7 +144,7 @@ static void *gdi_gfx_init(const video_info_t *video,
          win_height, video->fullscreen);
 
    win32_set_window(&win_width, &win_height, video->fullscreen,
-	   windowed_full, &rect);
+      windowed_full, &rect);
 #endif
 */
 
@@ -218,12 +221,6 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    bool draw = true;
    gdi_t *gdi = (gdi_t*)data;
 
-   (void)frame;
-   (void)frame_width;
-   (void)frame_height;
-   (void)pitch;
-   (void)msg;
-
    if (!frame || !frame_width || !frame_height)
       return true;
 
@@ -257,17 +254,36 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    if (msg)
       font_driver_render_msg(NULL, msg, NULL);
 
-   video_context_driver_update_window_title();
-
-   video_context_driver_swap_buffers();
-
    if (draw)
    {
       /*gdi_dither_bitmap(gdi_cv, 0, 0,
                          width,
                          height,
                          gdi_dither, frame_to_copy);*/
+      unsigned win_width, win_height;
+      HWND hwnd = win32_get_window();
+      HDC dc = GetDC(hwnd);
+      BITMAPINFO info;
+
+      video_driver_get_size(&win_width, &win_height);
+
+      ZeroMemory(&info, sizeof(BITMAPINFO));
+      info.bmiHeader.biBitCount = gdi_video_bits;
+      info.bmiHeader.biWidth = width;
+      info.bmiHeader.biHeight = height;
+      info.bmiHeader.biPlanes = 1;
+      info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+      info.bmiHeader.biSizeImage = pitch * height;
+      info.bmiHeader.biCompression = BI_RGB;
+
+      StretchDIBits(dc, 0, 0, win_width, win_height, 0, 0, width, height,
+            frame_to_copy, &info, DIB_RGB_COLORS, SRCCOPY);
+      ReleaseDC(hwnd, dc);
    }
+
+   video_context_driver_update_window_title();
+
+   video_context_driver_swap_buffers();
 
    //UpdateWindow(win32_get_window());
 
