@@ -260,7 +260,7 @@ typedef struct menu_ctx_driver
    void  (*navigation_ascend_alphabet)(void *, size_t *);
    bool  (*lists_init)(void*);
    void  (*list_insert)(void *userdata,
-         file_list_t *list, const char *, const char *, size_t);
+         file_list_t *list, const char *, const char *, const char *, size_t);
    int   (*list_prepend)(void *userdata,
          file_list_t *list, const char *, const char *, size_t);
    void  (*list_free)(file_list_t *list, size_t, size_t);

@@ -39,6 +39,7 @@ typedef struct menu_ctx_list
    file_list_t *list;
    size_t list_size;
    const char *path;
+   char *fullpath;
    const char *label;
    size_t idx;
    enum menu_list_type type;

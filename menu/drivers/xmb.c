@@ -83,6 +83,7 @@ typedef struct
    float y;
    uintptr_t icon;
    uintptr_t content_icon;
+   char fullpath[4096];
 } xmb_node_t;
 
 enum
@@ -3520,7 +3521,10 @@ static void xmb_navigation_alphabet(void *data, size_t *unused)
 
 static void xmb_list_insert(void *userdata,
       file_list_t *list,
-      const char *path, const char *unused, size_t list_size)
+      const char *path,
+      const char *fullpath,
+      const char *unused,
+      size_t list_size)
 {
    size_t selection;
    int current            = 0;
@@ -3545,6 +3549,10 @@ static void xmb_list_insert(void *userdata,
    }
 
    current           = selection;
+
+   if (!string_is_empty(fullpath))
+      strlcpy(node->fullpath, fullpath, sizeof(node->fullpath));
+
    node->alpha       = xmb->items.passive.alpha;
    node->zoom        = xmb->items.passive.zoom;
    node->label_alpha = node->alpha;

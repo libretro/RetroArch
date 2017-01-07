@@ -828,7 +828,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             if (!list || !menu_driver_ctx || !menu_driver_ctx->list_insert)
                return false;
             menu_driver_ctx->list_insert(menu_userdata,
-                  list->list, list->path, list->label, list->idx);
+                  list->list, list->path, list->fullpath,
+                  list->label, list->idx);
          }
          break;
       case RARCH_MENU_CTL_LOAD_IMAGE:
