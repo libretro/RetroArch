@@ -35,10 +35,6 @@
 #include "../../configuration.h"
 #include "../../paths.h"
 
-#if 0
-#define FILEBROWSER_DEBUG
-#endif
-
 static enum filebrowser_enums filebrowser_types = FILEBROWSER_NONE;
 
 enum filebrowser_enums filebrowser_get_type(void)
@@ -48,24 +44,13 @@ enum filebrowser_enums filebrowser_get_type(void)
 
 void filebrowser_clear_type(void)
 {
-#ifdef FILEBROWSER_DEBUG
-   RARCH_LOG("filebrowser_clear_type \n");
-#endif
    filebrowser_types = FILEBROWSER_NONE;
 }
 
 void filebrowser_set_type(enum filebrowser_enums type)
 {
-#ifdef FILEBROWSER_DEBUG
-   RARCH_LOG("filebrowser_set_type: %d \n", type);
-#endif
-   if (filebrowser_types != FILEBROWSER_SELECT_IMAGE)
-   {
+   if (filebrowser_types != FILEBROWSER_SELECT_FILE)
       filebrowser_types = type;
-#ifdef FILEBROWSER_DEBUG
-      RARCH_LOG("filebrowser_set_type MODIFIED: %d \n", type);
-#endif
-   }
 }
 
 void filebrowser_parse(void *data, unsigned type_data, bool extensions_honored)
@@ -224,7 +209,7 @@ void filebrowser_parse(void *data, unsigned type_data, bool extensions_honored)
                   else
                      file_type = FILE_TYPE_IMAGE;
 #endif
-                  if (filebrowser_types == FILEBROWSER_SELECT_IMAGE)
+                  if (filebrowser_types == FILEBROWSER_SELECT_FILE)
                      file_type = FILE_TYPE_IMAGE;
                   break;
                default:
