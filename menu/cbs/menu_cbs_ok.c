@@ -1060,7 +1060,7 @@ static int generic_action_ok(const char *path,
    switch (id)
    {
       case ACTION_OK_LOAD_WALLPAPER:
-         flush_type = MENU_SETTINGS;
+         flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MENU_SETTINGS_LIST);
          if (path_file_exists(action_path))
          {
             settings_t            *settings = config_get_ptr();
