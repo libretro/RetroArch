@@ -31,6 +31,8 @@
 								<option id="com.qnx.qcc.option.compiler.security.1348091274" name="Enhanced Security (-fstack-protector-strong)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.107606349" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_RPNG"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBRETRODB"/>
+									<listOptionValue builtIn="false" value="HAVE_CHEEVOS"/>
 									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
 									<listOptionValue builtIn="false" value="HAVE_NEON"/>
 									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
@@ -93,6 +95,8 @@
 								</option>
 								<option id="com.qnx.qcc.option.assembler.defines.103275832" name="Defines (-D)" superClass="com.qnx.qcc.option.assembler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_RPNG"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBRETRODB"/>
+									<listOptionValue builtIn="false" value="HAVE_CHEEVOS"/>
 									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
 									<listOptionValue builtIn="false" value="HAVE_NEON"/>
 									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
@@ -216,6 +220,8 @@
 								<option id="com.qnx.qcc.option.compiler.security.1255305436" name="Enhanced Security (-fstack-protector-strong)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.1244683608" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_RPNG"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBRETRODB"/>
+									<listOptionValue builtIn="false" value="HAVE_CHEEVOS"/>
 									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
 									<listOptionValue builtIn="false" value="HAVE_NEON"/>
 									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
@@ -278,6 +284,8 @@
 								</option>
 								<option id="com.qnx.qcc.option.assembler.defines.334766340" name="Defines (-D)" superClass="com.qnx.qcc.option.assembler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_RPNG"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBRETRODB"/>
+									<listOptionValue builtIn="false" value="HAVE_CHEEVOS"/>
 									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
 									<listOptionValue builtIn="false" value="HAVE_NEON"/>
 									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
@@ -404,12 +412,14 @@
 								<option id="com.qnx.qcc.option.compiler.security.1322487460" name="Enhanced Security (-fstack-protector-strong)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.979624391" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_RPNG"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBRETRODB"/>
+									<listOptionValue builtIn="false" value="HAVE_CHEEVOS"/>
 									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
 									<listOptionValue builtIn="false" value="HAVE_NEON"/>
 									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
 									<listOptionValue builtIn="false" value="WANT_MINIZ"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGL"/>
-									<listOptionValue builtIn="false" value="USING_GL30"/>
+									<listOptionValue builtIn="false" value="USING_GL20"/>
 									<listOptionValue builtIn="false" value="__STDC_CONSTANT_MACROS"/>
 									<listOptionValue builtIn="false" value="HAVE_BB10"/>
 									<listOptionValue builtIn="false" value="HAVE_EGL"/>
@@ -433,7 +443,7 @@
 									<listOptionValue builtIn="false" value="HAVE_DYNAMIC"/>
 									<listOptionValue builtIn="false" value="HAVE_ZLIB"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGLES"/>
-									<listOptionValue builtIn="false" value="HAVE_OPENGLES3"/>
+									<listOptionValue builtIn="false" value="HAVE_OPENGLES2"/>
 									<listOptionValue builtIn="false" value="HAVE_AL"/>
 									<listOptionValue builtIn="false" value="HAVE_THREADS"/>
 									<listOptionValue builtIn="false" value="HAVE_OVERLAY"/>
@@ -466,12 +476,14 @@
 								</option>
 								<option id="com.qnx.qcc.option.assembler.defines.268036269" name="Defines (-D)" superClass="com.qnx.qcc.option.assembler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_RPNG"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBRETRODB"/>
+									<listOptionValue builtIn="false" value="HAVE_CHEEVOS"/>
 									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
 									<listOptionValue builtIn="false" value="HAVE_NEON"/>
 									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
 									<listOptionValue builtIn="false" value="WANT_MINIZ"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGL"/>
-									<listOptionValue builtIn="false" value="USING_GL30"/>
+									<listOptionValue builtIn="false" value="USING_GL20"/>
 									<listOptionValue builtIn="false" value="__STDC_CONSTANT_MACROS"/>
 									<listOptionValue builtIn="false" value="HAVE_BB10"/>
 									<listOptionValue builtIn="false" value="HAVE_EGL"/>
@@ -495,7 +507,7 @@
 									<listOptionValue builtIn="false" value="HAVE_DYNAMIC"/>
 									<listOptionValue builtIn="false" value="HAVE_ZLIB"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGLES"/>
-									<listOptionValue builtIn="false" value="HAVE_OPENGLES3"/>
+									<listOptionValue builtIn="false" value="HAVE_OPENGLES2"/>
 									<listOptionValue builtIn="false" value="HAVE_AL"/>
 									<listOptionValue builtIn="false" value="HAVE_THREADS"/>
 									<listOptionValue builtIn="false" value="HAVE_OVERLAY"/>
@@ -589,12 +601,14 @@
 								<option id="com.qnx.qcc.option.compiler.security.1003162703" name="Enhanced Security (-fstack-protector-strong)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.2012868141" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_RPNG"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBRETRODB"/>
+									<listOptionValue builtIn="false" value="HAVE_CHEEVOS"/>
 									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
 									<listOptionValue builtIn="false" value="HAVE_NEON"/>
 									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
 									<listOptionValue builtIn="false" value="WANT_MINIZ"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGL"/>
-									<listOptionValue builtIn="false" value="USING_GL30"/>
+									<listOptionValue builtIn="false" value="USING_GL20"/>
 									<listOptionValue builtIn="false" value="__STDC_CONSTANT_MACROS"/>
 									<listOptionValue builtIn="false" value="HAVE_BB10"/>
 									<listOptionValue builtIn="false" value="HAVE_EGL"/>
@@ -618,7 +632,7 @@
 									<listOptionValue builtIn="false" value="HAVE_DYNAMIC"/>
 									<listOptionValue builtIn="false" value="HAVE_ZLIB"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGLES"/>
-									<listOptionValue builtIn="false" value="HAVE_OPENGLES3"/>
+									<listOptionValue builtIn="false" value="HAVE_OPENGLES2"/>
 									<listOptionValue builtIn="false" value="HAVE_AL"/>
 									<listOptionValue builtIn="false" value="HAVE_THREADS"/>
 									<listOptionValue builtIn="false" value="HAVE_OVERLAY"/>
@@ -651,12 +665,14 @@
 								</option>
 								<option id="com.qnx.qcc.option.assembler.defines.1684433040" name="Defines (-D)" superClass="com.qnx.qcc.option.assembler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_RPNG"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBRETRODB"/>
+									<listOptionValue builtIn="false" value="HAVE_CHEEVOS"/>
 									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
 									<listOptionValue builtIn="false" value="HAVE_NEON"/>
 									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
 									<listOptionValue builtIn="false" value="WANT_MINIZ"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGL"/>
-									<listOptionValue builtIn="false" value="USING_GL30"/>
+									<listOptionValue builtIn="false" value="USING_GL20"/>
 									<listOptionValue builtIn="false" value="__STDC_CONSTANT_MACROS"/>
 									<listOptionValue builtIn="false" value="HAVE_BB10"/>
 									<listOptionValue builtIn="false" value="HAVE_EGL"/>
@@ -680,7 +696,7 @@
 									<listOptionValue builtIn="false" value="HAVE_DYNAMIC"/>
 									<listOptionValue builtIn="false" value="HAVE_ZLIB"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGLES"/>
-									<listOptionValue builtIn="false" value="HAVE_OPENGLES3"/>
+									<listOptionValue builtIn="false" value="HAVE_OPENGLES2"/>
 									<listOptionValue builtIn="false" value="HAVE_AL"/>
 									<listOptionValue builtIn="false" value="HAVE_THREADS"/>
 									<listOptionValue builtIn="false" value="HAVE_OVERLAY"/>

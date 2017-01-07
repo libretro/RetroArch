@@ -3,7 +3,7 @@
 
     <id>com.RetroArch</id>
     <versionNumber>1.3.6</versionNumber>
-    <buildId>2</buildId>
+    <buildId>3</buildId>
     <description>Cross-platform entertainment system</description>
     <author>Team Libretro</author>
     <initialWindow>
