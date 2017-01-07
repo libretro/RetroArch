@@ -215,7 +215,6 @@ static int task_database_iterate_playlist(
          database_info_set_type(db, DATABASE_TYPE_SERIAL_LOOKUP);
          break;
       case FILE_TYPE_ISO:
-      case FILE_TYPE_PBP:
          db_state->serial[0] = '\0';
          iso_get_serial(db_state, db, name, db_state->serial);
          database_info_set_type(db, DATABASE_TYPE_SERIAL_LOOKUP);
