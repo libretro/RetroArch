@@ -163,7 +163,7 @@ VIDEO CONTEXT
 #elif defined(ANDROID)
 #include "../gfx/drivers_context/android_ctx.c"
 #elif defined(__QNX__)
-#include "../gfx/drivers_context/bbqnx_ctx.c"
+#include "../gfx/drivers_context/qnx_ctx.c"
 #elif defined(EMSCRIPTEN)
 #include "../gfx/drivers_context/emscriptenegl_ctx.c"
 #elif defined(__APPLE__) && !defined(TARGET_IPHONE_SIMULATOR) && !defined(TARGET_OS_IPHONE)
