@@ -16,7 +16,6 @@
  */
 
 #include "../../tasks/tasks_internal.h"
-
 #include "../../configuration.h"
 
 static const char *qnx_joypad_name(unsigned pad)
@@ -46,21 +45,19 @@ static bool qnx_joypad_init(void *data)
 
 static bool qnx_joypad_button(unsigned port_num, uint16_t joykey)
 {
-   qnx_input_t *qnx    = (qnx_input_t*)input_driver_get_data();
+    qnx_input_t *qnx    = (qnx_input_t*)input_driver_get_data();
+    if (!qnx || port_num >= MAX_PADS)
+       return 0;
 
-   if (!qnx || port_num >= MAX_PADS)
-      return false;
+    qnx_input_device_t* controller = NULL;
+    controller = (qnx_input_device_t*)&qnx->devices[port_num];
 
-   return qnx->pad_state[port_num] & (UINT64_C(1) << joykey);
-}
+    if(port_num < MAX_USERS && joykey <= 19)
+    {
+        return (controller->buttons & (1 << joykey)) != 0;
+    }
 
-static uint64_t qnx_joypad_get_buttons(unsigned port_num)
-{
-   qnx_input_t *qnx    = (qnx_input_t*)input_driver_get_data();
-
-   if (!qnx || port_num >= MAX_PADS)
-      return 0;
-   return qnx->pad_state[port_num];
+    return false;
 }
 
 static int16_t qnx_joypad_axis(unsigned port_num, uint32_t joyaxis)
@@ -85,19 +82,22 @@ static int16_t qnx_joypad_axis(unsigned port_num, uint32_t joyaxis)
       is_pos = true;
    }
 
+   qnx_input_device_t* controller = NULL;
+   controller = (qnx_input_device_t*)&qnx->devices[port_num];
+
    switch (axis)
    {
       case 0:
-         val = qnx->analog_state[port_num][0][0];
+         val = controller->analog0[0];
          break;
       case 1:
-         val = qnx->analog_state[port_num][0][1];
+          val = controller->analog0[1];
          break;
       case 2:
-         val = qnx->analog_state[port_num][1][0];
+          val = controller->analog1[0];
          break;
       case 3:
-         val = qnx->analog_state[port_num][1][1];
+          val = controller->analog1[1];
          break;
    }
 
@@ -115,8 +115,7 @@ static void qnx_joypad_poll(void)
 
 static bool qnx_joypad_query_pad(unsigned pad)
 {
-   qnx_input_t *qnx    = (qnx_input_t*)input_driver_get_data();
-   return (qnx && pad < MAX_USERS && qnx->pad_state[pad]);
+   return (pad < MAX_USERS);
 }
 
 
@@ -129,7 +128,7 @@ input_device_driver_t qnx_joypad = {
    qnx_joypad_query_pad,
    qnx_joypad_destroy,
    qnx_joypad_button,
-   qnx_joypad_get_buttons,
+   NULL,
    qnx_joypad_axis,
    qnx_joypad_poll,
    NULL,
