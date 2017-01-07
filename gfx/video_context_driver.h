@@ -39,7 +39,7 @@ enum gfx_ctx_api
    GFX_CTX_OPENVG_API,
    GFX_CTX_VULKAN_API
 };
-    
+
 enum display_metric_types
 {
    DISPLAY_METRIC_NONE = 0,
@@ -107,7 +107,7 @@ typedef struct gfx_ctx_driver
    void (*check_window)(void*, bool*, bool*,
          unsigned*, unsigned*, unsigned);
 
-   /* Acknowledge a resize event. This is needed for some APIs. 
+   /* Acknowledge a resize event. This is needed for some APIs.
     * Most backends will ignore this. */
    bool (*set_resize)(void*, unsigned, unsigned);
 
@@ -116,11 +116,11 @@ typedef struct gfx_ctx_driver
 
    /* Should the screensaver be suppressed? */
    bool (*suppress_screensaver)(void *data, bool enable);
-    
+
    /* Checks if context driver has windowed support. */
    bool (*has_windowed)(void*);
 
-   /* Swaps buffers. VBlank sync depends on 
+   /* Swaps buffers. VBlank sync depends on
     * earlier calls to swap_interval. */
    void (*swap_buffers)(void*, video_frame_info_t video_info);
 
@@ -132,19 +132,19 @@ typedef struct gfx_ctx_driver
     * Does not take opaque, to avoid lots of ugly wrapper code. */
    gfx_ctx_proc_t (*get_proc_address)(const char*);
 
-   /* Returns true if this context supports EGLImage buffers for 
+   /* Returns true if this context supports EGLImage buffers for
     * screen drawing and was initalized correctly. */
    bool (*image_buffer_init)(void*, const video_info_t*);
 
-   /* Writes the frame to the EGLImage and sets image_handle to it. 
+   /* Writes the frame to the EGLImage and sets image_handle to it.
     * Returns true if a new image handle is created.
-    * Always returns true the first time it's called for a new index. 
+    * Always returns true the first time it's called for a new index.
     * The graphics core must handle a change in the handle correctly. */
    bool (*image_buffer_write)(void*, const void *frame, unsigned width,
          unsigned height, unsigned pitch, bool rgb32,
          unsigned index, void **image_handle);
 
-   /* Shows or hides mouse. Can be NULL if context doesn't 
+   /* Shows or hides mouse. Can be NULL if context doesn't
     * have a concept of mouse pointer. */
    void (*show_mouse)(void *data, bool state);
 
@@ -243,7 +243,7 @@ extern const gfx_ctx_driver_t gfx_ctx_android;
 extern const gfx_ctx_driver_t gfx_ctx_ps3;
 extern const gfx_ctx_driver_t gfx_ctx_wgl;
 extern const gfx_ctx_driver_t gfx_ctx_videocore;
-extern const gfx_ctx_driver_t gfx_ctx_bbqnx;
+extern const gfx_ctx_driver_t gfx_ctx_qnx;
 extern const gfx_ctx_driver_t gfx_ctx_cgl;
 extern const gfx_ctx_driver_t gfx_ctx_cocoagl;
 extern const gfx_ctx_driver_t gfx_ctx_emscripten;
