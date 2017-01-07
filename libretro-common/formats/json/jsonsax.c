@@ -146,7 +146,7 @@ static void jsonx_parse_array(state_t* state)
 
    while ( *state->json != ']' )
    {
-      HANDLE_1( index, ndx++ );
+      HANDLE_1( array_index, ndx++ );
       jsonx_parse_value( state );
       skip_spaces( state );
 
