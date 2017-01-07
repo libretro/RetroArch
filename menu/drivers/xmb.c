@@ -1952,6 +1952,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_ZIP];
       case FILE_TYPE_MUSIC:
          return xmb->textures.list[XMB_TEXTURE_MUSIC];
+      case FILE_TYPE_IMAGE:
       case FILE_TYPE_IMAGEVIEWER:
          return xmb->textures.list[XMB_TEXTURE_IMAGE];
       case FILE_TYPE_MOVIE:

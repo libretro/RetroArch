@@ -1137,19 +1137,6 @@ static void menu_action_setting_disp_set_label_menu_file_plain(
          path, "(FILE)", s2, len2);
 }
 
-static void menu_action_setting_disp_set_label_menu_file_image(
-      file_list_t* list,
-      unsigned *w, unsigned type, unsigned i,
-      const char *label,
-      char *s, size_t len,
-      const char *entry_label,
-      const char *path,
-      char *s2, size_t len2)
-{
-   menu_action_setting_generic_disp_set_label(w, s, len,
-         path, "(IMG)", s2, len2);
-}
-
 static void menu_action_setting_disp_set_label_menu_file_imageviewer(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -1806,9 +1793,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
                menu_action_setting_disp_set_label_music);
             break;
          case FILE_TYPE_IMAGE:
-            BIND_ACTION_GET_VALUE(cbs,
-               menu_action_setting_disp_set_label_menu_file_image);
-            break;
          case FILE_TYPE_IMAGEVIEWER:
             BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_imageviewer);
