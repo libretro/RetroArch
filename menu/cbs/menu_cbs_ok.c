@@ -330,7 +330,7 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type                 = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_AUDIO_DSP_PLUGIN:
-         filebrowser_set_type(FILEBROWSER_NONE);
+         filebrowser_clear_type();
          info.directory_ptr = idx;
          info_path          = settings->directory.audio_filter;
          info_label         = msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN);
@@ -338,7 +338,7 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          break;
       case ACTION_OK_DL_SHADER_PASS:
-         filebrowser_set_type(FILEBROWSER_NONE);
+         filebrowser_clear_type();
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = settings->directory.video_shader;
@@ -380,7 +380,7 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_SHADER_PRESET:
-         filebrowser_set_type(FILEBROWSER_NONE);
+         filebrowser_clear_type();
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = settings->directory.video_shader;
@@ -403,7 +403,7 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_FILE_BROWSER_SCAN_DIR;
          break;
       case ACTION_OK_DL_REMAP_FILE:
-         filebrowser_set_type(FILEBROWSER_NONE);
+         filebrowser_clear_type();
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = settings->directory.input_remapping;
@@ -411,7 +411,7 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          break;
       case ACTION_OK_DL_RECORD_CONFIGFILE:
-         filebrowser_set_type(FILEBROWSER_NONE);
+         filebrowser_clear_type();
          {
             global_t  *global  = global_get_ptr();
             info.type          = type;
@@ -422,7 +422,7 @@ int generic_action_ok_displaylist_push(const char *path,
          }
          break;
       case ACTION_OK_DL_DISK_IMAGE_APPEND_LIST:
-         filebrowser_set_type(FILEBROWSER_NONE);
+         filebrowser_clear_type();
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = settings->directory.menu_content;
@@ -430,7 +430,7 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          break;
       case ACTION_OK_DL_PLAYLIST_COLLECTION:
-         filebrowser_set_type(FILEBROWSER_NONE);
+         filebrowser_clear_type();
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = path;
@@ -438,7 +438,7 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_CHEAT_FILE:
-         filebrowser_set_type(FILEBROWSER_NONE);
+         filebrowser_clear_type();
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = settings->path.cheat_database;
@@ -446,7 +446,7 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          break;
       case ACTION_OK_DL_CORE_LIST:
-         filebrowser_set_type(FILEBROWSER_NONE);
+         filebrowser_clear_type();
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = settings->directory.libretro;
@@ -470,7 +470,7 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_COLLECTION;
          break;
       case ACTION_OK_DL_RDB_ENTRY:
-         filebrowser_set_type(FILEBROWSER_NONE);
+         filebrowser_clear_type();
          fill_pathname_join_delim(tmp,
                msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL),
                path, '|', sizeof(tmp));
@@ -544,7 +544,7 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_DATABASE_MANAGER_LIST:
-         filebrowser_set_type(FILEBROWSER_NONE);
+         filebrowser_clear_type();
          fill_pathname_join(tmp,
                settings->path.content_database,
                path, sizeof(tmp));
@@ -557,7 +557,7 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type                 = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_CURSOR_MANAGER_LIST:
-         filebrowser_set_type(FILEBROWSER_NONE);
+         filebrowser_clear_type();
          fill_pathname_join(tmp, settings->directory.cursor,
                path, sizeof(tmp));
 
@@ -1636,8 +1636,18 @@ static int action_ok_cheat_apply_changes(const char *path,
    return 0;
 }
 
+static int action_ok_lookup_setting(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return menu_setting_set(type, label, MENU_ACTION_OK, false);
+}
 
-
+static int action_ok_menu_wallpaper(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   filebrowser_set_type(FILEBROWSER_SELECT_IMAGE);
+   return action_ok_lookup_setting(path, label, type, idx, entry_idx);
+}
 
 static int action_ok_menu_wallpaper_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -1999,7 +2009,7 @@ static int action_ok_remap_file_save_game(const char *path,
 int action_ok_path_use_directory(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   filebrowser_set_type(FILEBROWSER_NONE);
+   filebrowser_clear_type();
    return generic_action_ok(NULL, label, type, idx, entry_idx,
          ACTION_OK_SET_DIRECTORY, MSG_UNKNOWN);
 }
@@ -2875,12 +2885,6 @@ static int action_ok_shader_apply_changes(const char *path,
    return generic_action_ok_command(CMD_EVENT_SHADERS_APPLY_CHANGES);
 }
 
-static int action_ok_lookup_setting(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return menu_setting_set(type, label, MENU_ACTION_OK, false);
-}
-
 static int action_ok_rdb_entry_submenu(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -3283,7 +3287,7 @@ static int action_ok_push_content_list(const char *path,
 static int action_ok_push_scan_file(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   filebrowser_set_type(FILEBROWSER_NONE);
+   filebrowser_clear_type();
    return action_ok_push_content_list(path, label, type, idx, entry_idx);
 }
 
@@ -3291,7 +3295,8 @@ static int action_ok_scan_directory_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    settings_t            *settings   = config_get_ptr();
-   filebrowser_set_type(FILEBROWSER_NONE);
+
+   filebrowser_clear_type();
    return generic_action_ok_displaylist_push(path,
          settings->directory.menu_content, label, type, idx,
          entry_idx, ACTION_OK_DL_SCAN_DIR_LIST);
@@ -3311,7 +3316,7 @@ static int action_ok_push_downloads_dir(const char *path,
 {
    settings_t            *settings   = config_get_ptr();
 
-   filebrowser_set_type(FILEBROWSER_NONE);
+   filebrowser_clear_type();
    return generic_action_ok_displaylist_push(path, settings->directory.core_assets,
          msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
          type, idx,
@@ -3343,7 +3348,7 @@ int action_ok_push_filebrowser_list_dir_select(const char *path,
 static int action_ok_push_default(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   filebrowser_set_type(FILEBROWSER_NONE);
+   filebrowser_clear_type();
    return generic_action_ok_displaylist_push(path, NULL, label, type, idx,
          entry_idx, ACTION_OK_DL_PUSH_DEFAULT);
 }
@@ -3814,6 +3819,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_MENU_WALLPAPER:
+            BIND_ACTION_OK(cbs, action_ok_menu_wallpaper);
+            break;
          case MENU_ENUM_LABEL_BROWSE_START:
             BIND_ACTION_OK(cbs, action_ok_browse_url_start);
             break;

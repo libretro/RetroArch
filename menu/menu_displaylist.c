@@ -3682,7 +3682,7 @@ static bool menu_displaylist_push_internal(
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MUSIC_TAB)))
    {
-      filebrowser_set_type(FILEBROWSER_NONE);
+      filebrowser_clear_type();
       info->type = 42;
       strlcpy(info->exts,
             file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT),
@@ -3697,7 +3697,7 @@ static bool menu_displaylist_push_internal(
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_TAB)))
    {
-      filebrowser_set_type(FILEBROWSER_NONE);
+      filebrowser_clear_type();
       info->type = 42;
       strlcpy(info->exts,
             file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT),
@@ -3712,8 +3712,7 @@ static bool menu_displaylist_push_internal(
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_IMAGES_TAB)))
    {
-
-      filebrowser_set_type(FILEBROWSER_NONE);
+      filebrowser_clear_type();
       info->type = 42;
       strlcpy(info->exts,
             file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT),
@@ -3748,7 +3747,7 @@ static bool menu_displaylist_push_internal(
    {
       settings_t *settings  = config_get_ptr();
 
-      filebrowser_set_type(FILEBROWSER_NONE);
+      filebrowser_clear_type();
       info->type = 42;
       strlcpy(info->exts,
             file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT),
@@ -6053,7 +6052,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push = true;
          break;
       case DISPLAYLIST_DATABASES:
-         filebrowser_set_type(FILEBROWSER_NONE);
+         filebrowser_clear_type();
          info->type_default = FILE_TYPE_RDB;
          strlcpy(info->exts,
                file_path_str(FILE_PATH_RDB_EXTENSION),
@@ -6092,7 +6091,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push = true;
          break;
       case DISPLAYLIST_DATABASE_CURSORS:
-         filebrowser_set_type(FILEBROWSER_NONE);
+         filebrowser_clear_type();
          info->type_default = FILE_TYPE_CURSOR;
          strlcpy(info->exts, "dbc", sizeof(info->exts));
          strlcpy(info->path, settings->directory.cursor, sizeof(info->path));
@@ -6103,14 +6102,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             ext_name[0] = '\0';
 
-            filebrowser_set_type(FILEBROWSER_NONE);
+            filebrowser_clear_type();
             info->type_default = FILE_TYPE_PLAIN;
             if (frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
                strlcpy(info->exts, ext_name, sizeof(info->exts));
          }
          break;
       case DISPLAYLIST_CONFIG_FILES:
-         filebrowser_set_type(FILEBROWSER_NONE);
+         filebrowser_clear_type();
          info->type_default = FILE_TYPE_CONFIG;
          strlcpy(info->exts, "cfg", sizeof(info->exts));
          break;
@@ -6123,7 +6122,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 #endif
             str_list = string_list_new();
 
-            filebrowser_set_type(FILEBROWSER_NONE);
+            filebrowser_clear_type();
             info->type_default = FILE_TYPE_SHADER_PRESET;
 
 #ifdef HAVE_CG
@@ -6149,7 +6148,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             str_list = string_list_new();
 
-            filebrowser_set_type(FILEBROWSER_NONE);
+            filebrowser_clear_type();
             info->type_default = FILE_TYPE_SHADER;
 
 
@@ -6167,12 +6166,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          }
          break;
       case DISPLAYLIST_VIDEO_FILTERS:
-         filebrowser_set_type(FILEBROWSER_NONE);
+         filebrowser_clear_type();
          info->type_default = FILE_TYPE_VIDEOFILTER;
          strlcpy(info->exts, "filt", sizeof(info->exts));
          break;
       case DISPLAYLIST_IMAGES:
-         filebrowser_set_type(FILEBROWSER_NONE);
+         filebrowser_clear_type();
          info->type_default = FILE_TYPE_IMAGE;
          {
             union string_list_elem_attr attr;
@@ -6198,37 +6197,37 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          }
          break;
       case DISPLAYLIST_AUDIO_FILTERS:
-         filebrowser_set_type(FILEBROWSER_NONE);
+         filebrowser_clear_type();
          info->type_default = FILE_TYPE_AUDIOFILTER;
          strlcpy(info->exts, "dsp", sizeof(info->exts));
          break;
       case DISPLAYLIST_CHEAT_FILES:
-         filebrowser_set_type(FILEBROWSER_NONE);
+         filebrowser_clear_type();
          info->type_default = FILE_TYPE_CHEAT;
          strlcpy(info->exts, "cht", sizeof(info->exts));
          break;
       case DISPLAYLIST_CONTENT_HISTORY:
-         filebrowser_set_type(FILEBROWSER_NONE);
+         filebrowser_clear_type();
          info->type_default = FILE_TYPE_PLAIN;
          strlcpy(info->exts, "lpl", sizeof(info->exts));
          break;
       case DISPLAYLIST_FONTS:
-         filebrowser_set_type(FILEBROWSER_NONE);
+         filebrowser_clear_type();
          info->type_default = FILE_TYPE_FONT;
          strlcpy(info->exts, "ttf", sizeof(info->exts));
          break;
       case DISPLAYLIST_OVERLAYS:
-         filebrowser_set_type(FILEBROWSER_NONE);
+         filebrowser_clear_type();
          info->type_default = FILE_TYPE_OVERLAY;
          strlcpy(info->exts, "cfg", sizeof(info->exts));
          break;
       case DISPLAYLIST_RECORD_CONFIG_FILES:
-         filebrowser_set_type(FILEBROWSER_NONE);
+         filebrowser_clear_type();
          info->type_default = FILE_TYPE_RECORD_CONFIG;
          strlcpy(info->exts, "cfg", sizeof(info->exts));
          break;
       case DISPLAYLIST_REMAP_FILES:
-         filebrowser_set_type(FILEBROWSER_NONE);
+         filebrowser_clear_type();
          info->type_default = FILE_TYPE_REMAP;
          strlcpy(info->exts, "rmp", sizeof(info->exts));
          break;

@@ -35,11 +35,37 @@
 #include "../../configuration.h"
 #include "../../paths.h"
 
+#if 0
+#define FILEBROWSER_DEBUG
+#endif
+
 static enum filebrowser_enums filebrowser_types = FILEBROWSER_NONE;
+
+enum filebrowser_enums filebrowser_get_type(void)
+{
+   return filebrowser_types;
+}
+
+void filebrowser_clear_type(void)
+{
+#ifdef FILEBROWSER_DEBUG
+   RARCH_LOG("filebrowser_clear_type \n");
+#endif
+   filebrowser_types = FILEBROWSER_NONE;
+}
 
 void filebrowser_set_type(enum filebrowser_enums type)
 {
-   filebrowser_types = type;
+#ifdef FILEBROWSER_DEBUG
+   RARCH_LOG("filebrowser_set_type: %d \n", type);
+#endif
+   if (filebrowser_types != FILEBROWSER_SELECT_IMAGE)
+   {
+      filebrowser_types = type;
+#ifdef FILEBROWSER_DEBUG
+      RARCH_LOG("filebrowser_set_type MODIFIED: %d \n", type);
+#endif
+   }
 }
 
 void filebrowser_parse(void *data, unsigned type_data, bool extensions_honored)
@@ -56,6 +82,7 @@ void filebrowser_parse(void *data, unsigned type_data, bool extensions_honored)
    bool path_is_compressed              = path_is_compressed_file(info->path);
    bool filter_ext                      =
       settings->menu.navigation.browser.filter.supported_extensions_enable;
+
 
    if (string_is_equal(info->label,
             msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE)))
