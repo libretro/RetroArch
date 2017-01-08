@@ -82,6 +82,8 @@ static void task_overlay_load_desc_image(
       fill_pathname_resolve_relative(path, loader->overlay_path,
             image_path, sizeof(path));
 
+      image_tex.supports_rgba = video_driver_supports_rgba();
+
       if (image_texture_load(&image_tex, path))
       {
          input_overlay->load_images[input_overlay->load_images_size++] = image_tex;
@@ -583,6 +585,8 @@ static void task_overlay_deferred_load(retro_task_t *task)
          fill_pathname_resolve_relative(overlay_resolved_path,
                loader->overlay_path,
                overlay->config.paths.path, sizeof(overlay_resolved_path));
+
+         image_tex.supports_rgba = video_driver_supports_rgba();
 
          if (!image_texture_load(&image_tex, overlay_resolved_path))
          {
