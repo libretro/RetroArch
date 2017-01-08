@@ -989,20 +989,18 @@ static bool frontend_linux_powerstate_check_acpi(
       enum frontend_powerstate *state,
       int *seconds, int *percent)
 {
-   bool ret            = false;
-   struct RDIR *entry  = NULL;
    bool have_battery   = false;
    bool have_ac        = false;
    bool charging       = false;
-
-   *state = FRONTEND_POWERSTATE_NONE;
-
-   entry = retro_opendir(proc_acpi_battery_path);
+   struct RDIR *entry  = retro_opendir(proc_acpi_battery_path);
    if (!entry)
-      goto end;
+      return false;
 
    if (retro_dirent_error(entry))
-      goto end;
+   {
+      retro_closedir(entry);
+      return false;
+   }
 
    while (retro_readdir(entry))
       check_proc_acpi_battery(retro_dirent_get_name(entry),
@@ -1012,11 +1010,13 @@ static bool frontend_linux_powerstate_check_acpi(
 
    entry = retro_opendir(proc_acpi_ac_adapter_path);
    if (!entry)
-      goto end;
+      return false;
 
    while (retro_readdir(entry))
       check_proc_acpi_ac_adapter(
             retro_dirent_get_name(entry), &have_ac);
+
+   retro_closedir(entry);
 
    if (!have_battery)
       *state = FRONTEND_POWERSTATE_NO_SOURCE;
@@ -1027,20 +1027,13 @@ static bool frontend_linux_powerstate_check_acpi(
    else
       *state = FRONTEND_POWERSTATE_ON_POWER_SOURCE;
 
-   ret = true;
-
-end:
-   if (entry)
-      retro_closedir(entry);
-
-   return ret;
+   return true;
 }
 
 static bool frontend_linux_powerstate_check_acpi_sysfs(
       enum frontend_powerstate *state,
       int *seconds, int *percent)
 {
-   bool ret            = false;
    bool have_battery   = false;
    bool have_ac        = false;
    bool charging       = false;
@@ -1117,6 +1110,8 @@ static enum frontend_powerstate frontend_linux_get_powerstate(
 #ifndef ANDROID
    if (frontend_linux_powerstate_check_acpi_sysfs(&ret, seconds, percent))
       return ret;
+
+   ret = FRONTEND_POWERSTATE_NONE;
 
    if (frontend_linux_powerstate_check_acpi(&ret, seconds, percent))
       return ret;
