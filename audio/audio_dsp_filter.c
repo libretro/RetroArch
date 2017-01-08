@@ -99,10 +99,12 @@ static bool create_filter_graph(rarch_dsp_filter_t *dsp, float sample_rate)
    {
       struct config_file_userdata userdata;
       struct dspfilter_info info;
-      char key[64]                         = {0};
-      char name[64]                        = {0};
+      char key[64];
+      char name[64];
 
-      info.input_rate = sample_rate;
+      key[0] = name[0] = '\0';
+
+      info.input_rate  = sample_rate;
 
       snprintf(key, sizeof(key), "filter%u", i);
 

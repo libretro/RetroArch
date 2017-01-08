@@ -136,10 +136,11 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
 {
    unsigned input_fmts, input_fmt, output_fmts, i = 0;
    struct config_file_userdata userdata;
-   char key[64]  = {0};
-   char name[64] = {0};
+   char key[64], name[64];
 
    (void)i;
+
+   key[0] = name[0] = '\0';
 
    snprintf(key, sizeof(key), "filter");
 
