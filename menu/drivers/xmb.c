@@ -3077,7 +3077,7 @@ static void xmb_layout(xmb_handle_t *xmb)
 static void xmb_ribbon_set_vertex(float *ribbon_verts, unsigned idx, unsigned row, unsigned col)
 {
    ribbon_verts[idx++] = ((float)col) / (XMB_RIBBON_COLS-1) * 2.0f - 1.0f;
-   ribbon_verts[idx++] = ((float)row) / XMB_RIBBON_ROWS * 2.0f  - 1.0f;
+   ribbon_verts[idx++] = ((float)row) / (XMB_RIBBON_ROWS-1) * 2.0f - 1.0f;
 }
 
 static void xmb_init_ribbon(xmb_handle_t * xmb)
