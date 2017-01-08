@@ -3113,7 +3113,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_AUTO:
          return "Auto Aspect Ratio";
       case MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX:
-         return "Aspect Ratio Index";
+         return "Aspect Ratio";
       case MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION:
          return "Black Frame Insertion";
       case MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN:

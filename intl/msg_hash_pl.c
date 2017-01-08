@@ -756,7 +756,7 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_AUTO:
          return "Auto współczynnik proporcji";
       case MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX:
-         return "Indeks współczynnika proporcji";
+         return "łczynnika proporcji";
       case MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION:
          return "Wstawiaj czarne klatki";
       case MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN:

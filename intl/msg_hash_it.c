@@ -1510,7 +1510,7 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN:
          return "Riduci Overscan (Riavvia)";
       case MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX:
-         return "Indice di aspect ratio";
+         return "Aspect ratio";
       case MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_AUTO:
          return "Aspect ratio automatico";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_ASPECT:
