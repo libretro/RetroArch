@@ -957,8 +957,10 @@ bool gl_renderchain_add_lut(const struct video_shader *shader,
    struct texture_image img;
    enum texture_filter_type filter_type = TEXTURE_FILTER_LINEAR;
 
-   img.width  = img.height = 0;
-   img.pixels = NULL;
+   img.width         = 0;
+   img.height        = 0;
+   img.pixels        = NULL;
+   img.supports_rgba = video_driver_supports_rgba();
 
    if (!image_texture_load(&img, shader->lut[i].path))
    {

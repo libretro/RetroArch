@@ -49,9 +49,10 @@ struct nk_image nk_common_image_load(const char *filename)
     struct texture_image ti;
     uintptr_t tex;
 
-    ti.width  = 0;
-    ti.height = 0;
-    ti.pixels = NULL;
+    ti.width         = 0;
+    ti.height        = 0;
+    ti.pixels        = NULL;
+    ti.supports_rgba = video_driver_supports_rgba();
 
     image_texture_load(&ti, filename);
 

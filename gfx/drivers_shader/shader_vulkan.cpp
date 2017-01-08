@@ -2651,6 +2651,7 @@ static unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(VkCommandBuffer cm
       const video_shader_lut *shader)
 {
    texture_image image;
+   unique_ptr<Buffer> buffer;
    VkMemoryRequirements mem_reqs;
    VkImageCreateInfo image_info    = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
    VkImageViewCreateInfo view_info = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
@@ -2660,7 +2661,11 @@ static unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(VkCommandBuffer cm
    VkImageView view                = VK_NULL_HANDLE;
    VkBufferImageCopy region        = {};
    void *ptr                       = nullptr;
-   unique_ptr<Buffer> buffer;
+
+   image.width              = 0;
+   image.height             = 0;
+   image.pixels             = NULL;
+   image.supports_rgba      = video_driver_supports_rgba();
 
    if (!image_texture_load(&image, shader->path))
       return {};
