@@ -1597,15 +1597,15 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
       "Icon Shadows Enable")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_HISTORY,
-      "Show History Tab")
+      "Geschiedenistab weergeven")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_IMAGES,
-      "Show Image Tab")
+      "Afbeeldingentab weergeven")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_MUSIC,
-      "Show Music Tab")
+      "Muziektab weergeven")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_SETTINGS,
-      "Show Settings Tab")
+      "Instellingentab weergeven")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_VIDEO,
-      "Show Video Tab")
+      "Videotab weergeven")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_THEME,
       "Menu Icon Theme")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_YES,

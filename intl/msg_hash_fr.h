@@ -1565,15 +1565,15 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
       "Ombres pour les icones")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_HISTORY,
-      "Show History Tab")
+      "Display History Tab")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_IMAGES,
-      "Show Image Tab")
+      "Display Image Tab")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_MUSIC,
-      "Show Music Tab")
+      "Display Music Tab")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_SETTINGS,
-      "Show Settings Tab")
+      "Display Settings Tab")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_VIDEO,
-      "Show Video Tab")
+      "Display Video Tab")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_THEME,
       "XMB : Theme")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_YES,

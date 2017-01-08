@@ -2809,7 +2809,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY:
          return "Config Dir";
       case MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN:
-         return "Show Start Screen";
+         return "Display Start Screen";
       case MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG:
          return "Right Analog";
       case MENU_ENUM_LABEL_VALUE_RUN:
@@ -3268,15 +3268,15 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE:
          return "Icon Shadows Enable";
       case MENU_ENUM_LABEL_VALUE_XMB_SHOW_HISTORY:
-         return "Show History Tab";
+         return "Display History Tab";
       case MENU_ENUM_LABEL_VALUE_XMB_SHOW_IMAGES:
-         return "Show Images Tab";
+         return "Display Images Tab";
       case MENU_ENUM_LABEL_VALUE_XMB_SHOW_MUSIC:
-         return "Show Music Tab";
+         return "Display Music Tab";
       case MENU_ENUM_LABEL_VALUE_XMB_SHOW_SETTINGS:
-         return "Show thiết lập Tab";
+         return "Display thiết lập Tab";
       case MENU_ENUM_LABEL_VALUE_XMB_SHOW_VIDEO:
-         return "Show Video Tab";
+         return "Display Video Tab";
       case MENU_ENUM_LABEL_VALUE_XMB_THEME:
          return "Menu Icon Theme";
       case MENU_ENUM_LABEL_VALUE_YES:
