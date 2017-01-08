@@ -1,6 +1,6 @@
 #include "shaders_common.h"
 
-static const char* stock_fragment_xmb_snow = GLSL(
+static const char* stock_fragment_xmb_bokeh = GLSL(
    uniform float time;
    uniform vec2 OutputSize;
 

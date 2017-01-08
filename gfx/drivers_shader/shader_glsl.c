@@ -129,6 +129,7 @@ static const char *glsl_prefixes[] = {
 #include "../drivers/gl_shaders/legacy_pipeline_xmb_ribbon.glsl.vert.h"
 #include "../drivers/gl_shaders/modern_pipeline_xmb_ribbon.glsl.vert.h"
 #include "../drivers/gl_shaders/pipeline_xmb_ribbon.glsl.frag.h"
+#include "../drivers/gl_shaders/pipeline_bokeh.glsl.frag.h"
 #endif
 
 typedef struct glsl_shader_data
