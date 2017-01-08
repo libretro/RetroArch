@@ -634,7 +634,9 @@ static void xui_navigation_alphabet(void *data, size_t *ptr_out)
 
 static void xui_list_insert(void *data,
       file_list_t *list,
-      const char *path, const char *, size_t list_size)
+      const char *path,
+      const char *fullpath,
+      const char *, size_t list_size)
 {
    wchar_t buf[PATH_MAX_LENGTH] = {0};
 
