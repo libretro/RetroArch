@@ -342,14 +342,13 @@ void menu_entries_append(file_list_t *list, const char *path, const char *label,
    menu_ctx_list_t list_info;
    size_t idx;
    const char *menu_path           = NULL;
-   const char *menu_label          = NULL;
    menu_file_list_cbs_t *cbs       = NULL;
    if (!list || !label)
       return;
 
    file_list_append(list, path, label, type, directory_ptr, entry_idx);
 
-   menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL, NULL);
+   menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
 
    idx                = list->size - 1;
 
@@ -390,14 +389,13 @@ void menu_entries_append_enum(file_list_t *list, const char *path, const char *l
    menu_ctx_list_t list_info;
    size_t idx;
    const char *menu_path           = NULL;
-   const char *menu_label          = NULL;
    menu_file_list_cbs_t *cbs       = NULL;
    if (!list || !label)
       return;
 
    file_list_append(list, path, label, type, directory_ptr, entry_idx);
 
-   menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL, NULL);
+   menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
 
    idx                   = list->size - 1;
 
@@ -437,14 +435,13 @@ void menu_entries_prepend(file_list_t *list, const char *path, const char *label
    menu_ctx_list_t list_info;
    size_t idx;
    const char *menu_path           = NULL;
-   const char *menu_label          = NULL;
    menu_file_list_cbs_t *cbs       = NULL;
    if (!list || !label)
       return;
 
    file_list_prepend(list, path, label, type, directory_ptr, entry_idx);
 
-   menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL, NULL);
+   menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
 
    idx              = 0;
 
