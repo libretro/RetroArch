@@ -220,6 +220,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    unsigned height = 0;
    bool draw = true;
    gdi_t *gdi = (gdi_t*)data;
+   HWND hwnd = win32_get_window();
 
    if (!frame || !frame_width || !frame_height)
       return true;
@@ -256,11 +257,13 @@ static bool gdi_gfx_frame(void *data, const void *frame,
 
    if (draw)
    {
-      unsigned win_width, win_height;
-      HWND hwnd = win32_get_window();
-      HDC dc = GetDC(hwnd);
+      HDC winDC = GetDC(hwnd);
+      HDC dc = CreateCompatibleDC(winDC);
+      HBITMAP bmp = CreateCompatibleBitmap(winDC, width, height);
       BITMAPINFO info;
       gfx_ctx_mode_t mode;
+
+      SelectObject(dc, bmp);
 
       video_context_driver_get_video_size(&mode);
 
@@ -310,14 +313,16 @@ static bool gdi_gfx_frame(void *data, const void *frame,
 */
       StretchDIBits(dc, 0, 0, mode.width, mode.height, 0, 0, width, height,
             frame_to_copy, &info, DIB_RGB_COLORS, SRCCOPY);
-      ReleaseDC(hwnd, dc);
+      DeleteObject(bmp);
+      DeleteDC(dc);
+      ReleaseDC(hwnd, winDC);
    }
+
+   InvalidateRect(hwnd, NULL, true);
 
    video_context_driver_update_window_title();
 
    video_context_driver_swap_buffers();
-
-   //UpdateWindow(win32_get_window());
 
    return true;
 }
