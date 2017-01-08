@@ -1179,3 +1179,5 @@ MSG_HASH(MENU_ENUM_LABEL_BROWSE_URL,
       "browse_url")
 MSG_HASH(MENU_ENUM_LABEL_BROWSE_START,
       "browse_start")
+MSG_HASH(MENU_ENUM_LABEL_SHADER_PIPELINE_BOKEH,
+      "shader_pipeline_bokeh")

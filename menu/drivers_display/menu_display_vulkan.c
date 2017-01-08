@@ -176,6 +176,7 @@ static void menu_display_vk_draw(void *data)
       case VIDEO_SHADER_MENU_2:
       case VIDEO_SHADER_MENU_3:
       case VIDEO_SHADER_MENU_4:
+      case VIDEO_SHADER_MENU_5:
       {
          const struct vk_draw_triangles call = {
             vk->display.pipelines[

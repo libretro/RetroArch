@@ -174,6 +174,7 @@ static void menu_display_gl_draw_pipeline(void *data)
       case VIDEO_SHADER_MENU_2:
       case VIDEO_SHADER_MENU_3:
       case VIDEO_SHADER_MENU_4:
+      case VIDEO_SHADER_MENU_5:
          shader_info.data       = NULL;
          shader_info.idx        = draw->pipeline.id;
          shader_info.set_active = true;
@@ -203,6 +204,7 @@ static void menu_display_gl_draw_pipeline(void *data)
    {
       case VIDEO_SHADER_MENU_3:
       case VIDEO_SHADER_MENU_4:
+      case VIDEO_SHADER_MENU_5:
 #ifndef HAVE_PSGL
          uniform_param.type              = UNIFORM_2F;
          uniform_param.lookup.ident      = "OutputSize";

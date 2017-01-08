@@ -39,6 +39,7 @@
 #define VIDEO_SHADER_MENU_2      (GFX_MAX_SHADERS - 3)
 #define VIDEO_SHADER_MENU_3      (GFX_MAX_SHADERS - 4)
 #define VIDEO_SHADER_MENU_4      (GFX_MAX_SHADERS - 5)
+#define VIDEO_SHADER_MENU_5      (GFX_MAX_SHADERS - 6)
 
 #endif
 
