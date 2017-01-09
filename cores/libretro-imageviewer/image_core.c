@@ -228,6 +228,9 @@ static bool imageviewer_load(const char *path, int image_index)
 #ifdef STB_IMAGE_IMPLEMENTATION
    int comp;
 #endif
+#ifdef RARCH_INTERNAL
+   extern bool video_driver_supports_rgba(void);
+#endif
 
    imageviewer_free_image();
 
@@ -240,7 +243,6 @@ static bool imageviewer_load(const char *path, int image_index)
          4);
 #else
 #ifdef RARCH_INTERNAL
-   extern bool video_driver_supports_rgba();
    image_texture.supports_rgba = video_driver_supports_rgba();
 #endif
    if (!image_texture_load(&image_texture, path))

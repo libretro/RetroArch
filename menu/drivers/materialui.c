@@ -590,6 +590,7 @@ static void mui_render_label_value(mui_handle_t *mui,
    char label_str[255];
    char sublabel_str[255];
    char value_str[255];
+   uint32_t sublabel_color;
    float label_offset              = 0;
    bool switch_is_on               = true;
    int value_len                   = utf8len(value);
@@ -598,7 +599,6 @@ static void mui_render_label_value(mui_handle_t *mui,
    bool do_draw_text               = false;
    size_t usable_width             = width - (mui->margin * 2);
    label_str[0] = value_str[0] = sublabel_str[0] = '\0';
-   uint32_t sublabel_color;
 
 #ifdef VITA
    sublabel_color = 0xff888888;
