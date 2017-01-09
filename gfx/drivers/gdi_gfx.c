@@ -252,9 +252,6 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    menu_driver_ctl(RARCH_MENU_CTL_FRAME, NULL);
 #endif
 
-   if (msg)
-      font_driver_render_msg(NULL, msg, NULL);
-
    if (draw)
    {
       HDC winDC = GetDC(hwnd);
@@ -281,7 +278,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       ZeroMemory(&info, sizeof(BITMAPINFO));
       info.bmiHeader.biBitCount = gdi_video_bits;
       info.bmiHeader.biWidth = width;
-      info.bmiHeader.biHeight = height;
+      info.bmiHeader.biHeight = -height;
       info.bmiHeader.biPlanes = 1;
       info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
       info.bmiHeader.biSizeImage = pitch * height;
@@ -336,6 +333,9 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       DeleteDC(memDC);
       ReleaseDC(hwnd, winDC);
    }
+
+   if (msg)
+      font_driver_render_msg(NULL, msg, NULL);
 
    //InvalidateRect(hwnd, NULL, true);
 
