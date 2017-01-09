@@ -73,6 +73,13 @@ unsigned menu_shader_manager_get_amount_passes(void)
 
    return shader->passes;
 }
+
+void menu_shader_manager_free(void)
+{
+   if (menu_driver_shader)
+      free(menu_driver_shader);
+   menu_driver_shader = NULL;
+}
 #else
 struct video_shader *menu_shader_get(void)
 {
@@ -90,16 +97,8 @@ struct video_shader_pass *menu_shader_manager_get_pass(unsigned i)
 }
 
 unsigned menu_shader_manager_get_amount_passes(void) { return 0; }
+void menu_shader_manager_free(void) { }
 #endif
-
-void menu_shader_manager_free(void)
-{
-#ifdef HAVE_SHADER_MANAGER
-   if (menu_driver_shader)
-      free(menu_driver_shader);
-   menu_driver_shader = NULL;
-#endif
-}
 
 /**
  * menu_shader_manager_init:
