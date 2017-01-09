@@ -484,15 +484,6 @@ void menu_display_draw(menu_display_ctx_draw_t *draw)
    menu_disp->draw(draw);
 }
 
-static bool menu_display_shader_pipeline_active(settings_t *settings)
-{
-   if (!string_is_equal(menu_driver_ident(), "xmb"))
-      return false;
-   if (settings->menu.xmb.shader_pipeline == XMB_SHADER_PIPELINE_WALLPAPER)
-      return false;
-   return true;
-}
-
 void menu_display_draw_pipeline(menu_display_ctx_draw_t *draw)
 {
    if (!menu_disp || !draw || !menu_disp->draw_pipeline)
@@ -505,7 +496,6 @@ void menu_display_draw_bg(menu_display_ctx_draw_t *draw, bool add_opacity_to_wal
    static struct video_coords coords;
    const float *new_vertex       = NULL;
    const float *new_tex_coord    = NULL;
-   settings_t *settings          = config_get_ptr();
    if (!menu_disp || !draw)
       return;
 
@@ -525,11 +515,14 @@ void menu_display_draw_bg(menu_display_ctx_draw_t *draw, bool add_opacity_to_wal
 
    draw->coords      = &coords;
 
-   if (!menu_display_libretro_running() && !menu_display_shader_pipeline_active(settings))
+   if (!menu_display_libretro_running() && !draw->pipeline.active)
       add_opacity_to_wallpaper = true;
 
    if (add_opacity_to_wallpaper)
+   {
+      settings_t *settings          = config_get_ptr();
       menu_display_set_alpha(draw->color, settings->menu.wallpaper.opacity);
+   }
 
    if (!draw->texture)
       draw->texture     = menu_display_white_texture;

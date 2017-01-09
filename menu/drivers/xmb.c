@@ -2399,6 +2399,15 @@ static void xmb_render(void *data)
    menu_animation_ctl(MENU_ANIMATION_CTL_CLEAR_ACTIVE, NULL);
 }
 
+static bool xmb_shader_pipeline_active(settings_t *settings)
+{
+   if (!string_is_equal(menu_driver_ident(), "xmb"))
+      return false;
+   if (settings->menu.xmb.shader_pipeline == XMB_SHADER_PIPELINE_WALLPAPER)
+      return false;
+   return true;
+}
+
 static void xmb_draw_bg(
       xmb_handle_t *xmb,
       unsigned width,
@@ -2428,6 +2437,7 @@ static void xmb_draw_bg(
    draw.vertex_count         = 4;
    draw.prim_type            = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline.id          = 0;
+   draw.pipeline.active      = xmb_shader_pipeline_active(settings);
 
    menu_display_blend_begin();
    menu_display_set_viewport();

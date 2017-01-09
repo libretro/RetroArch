@@ -844,9 +844,10 @@ static void mui_draw_bg(menu_display_ctx_draw_t *draw)
 {
    menu_display_blend_begin();
 
-   draw->x              = 0;
-   draw->y              = 0;
-   draw->pipeline.id    = 0;
+   draw->x               = 0;
+   draw->y               = 0;
+   draw->pipeline.id     = 0;
+   draw->pipeline.active = false;
 
    menu_display_draw_bg(draw, false);
    menu_display_draw(draw);

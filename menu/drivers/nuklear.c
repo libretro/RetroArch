@@ -275,8 +275,9 @@ static void nk_draw_bg(
    menu_display_blend_begin();
    menu_display_set_viewport();
 
-   draw.pipeline.id = VIDEO_SHADER_MENU_5;
-   draw.pipeline.id  = VIDEO_SHADER_MENU_5;
+   draw.pipeline.id          = VIDEO_SHADER_MENU_5;
+   draw.pipeline.id          = VIDEO_SHADER_MENU_5;
+   draw.pipeline.active      = false; 
 
    menu_display_draw_pipeline(&draw);
    menu_display_draw(&draw);
