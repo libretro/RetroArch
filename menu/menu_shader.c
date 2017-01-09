@@ -41,6 +41,19 @@ static char default_cgp[PATH_MAX_LENGTH];
 static char default_slangp[PATH_MAX_LENGTH];
 #endif
 
+unsigned menu_shader_manager_get_amount_passes(void)
+{
+   struct video_shader *shader = NULL;
+
+   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
+         &shader);
+
+   if (!shader)
+      return 0;
+
+   return shader->passes;
+}
+
 /**
  * menu_shader_manager_init:
  *

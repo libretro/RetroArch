@@ -52,6 +52,7 @@
 #include "menu_content.h"
 #include "menu_driver.h"
 #include "menu_navigation.h"
+#include "menu_shader.h"
 #include "widgets/menu_dialog.h"
 #include "widgets/menu_list.h"
 #include "widgets/menu_filebrowser.h"
@@ -1496,13 +1497,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 static int menu_displaylist_parse_shader_options(menu_displaylist_info_t *info)
 {
    unsigned i;
-   struct video_shader *shader = NULL;
-
-   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
-         &shader);
-
-   if (!shader)
-      return -1;
+   unsigned pass_count = menu_shader_manager_get_amount_passes();
 
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES),
@@ -1545,7 +1540,7 @@ static int menu_displaylist_parse_shader_options(menu_displaylist_info_t *info)
          MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES,
          0, 0, 0);
 
-   for (i = 0; i < shader->passes; i++)
+   for (i = 0; i < pass_count; i++)
    {
       char buf_tmp[64];
       char buf[64];

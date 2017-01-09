@@ -21,6 +21,8 @@
 
 RETRO_BEGIN_DECLS
 
+unsigned menu_shader_manager_get_amount_passes(void);
+
 /**
  * menu_shader_manager_init:
  *
