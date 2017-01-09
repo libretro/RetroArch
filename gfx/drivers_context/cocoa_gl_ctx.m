@@ -424,7 +424,7 @@ static void cocoagl_gfx_ctx_update_window_title(void *data, video_frame_info_t v
    static char buf_fps[128]   = {0};
    static char buf[128]       = {0};
     
-   video_monitor_get_fps(buf, sizeof(buf),
+   video_monitor_get_fps(video_info, buf, sizeof(buf),
                          buf_fps, sizeof(buf_fps));
     
 #if defined(HAVE_COCOA)
