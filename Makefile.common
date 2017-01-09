@@ -212,7 +212,7 @@ OBJ += frontend/frontend.o \
        gfx/font_driver.o \
        gfx/video_filter.o \
        $(LIBRETRO_COMM_DIR)/audio/resampler/audio_resampler.o \
-       audio/audio_dsp_filter.o \
+       $(LIBRETRO_COMM_DIR)/audio/dsp_filter.o \
        $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler.o \
        $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/nearest_resampler.o \
        $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/null_resampler.o \

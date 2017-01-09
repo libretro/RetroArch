@@ -39,7 +39,8 @@ struct chorus_data
 
 static void chorus_free(void *data)
 {
-   free(data);
+   if (data)
+      free(data);
 }
 
 static void chorus_process(void *data, struct dspfilter_output *output,
@@ -66,25 +67,27 @@ static void chorus_process(void *data, struct dspfilter_output *output,
          ch->lfo_ptr = 0;
 
       delay_int = (unsigned)delay;
+
       if (delay_int >= CHORUS_MAX_DELAY - 1)
          delay_int = CHORUS_MAX_DELAY - 2;
+
       delay_frac = delay - delay_int;
 
       ch->old[0][ch->old_ptr] = in[0];
       ch->old[1][ch->old_ptr] = in[1];
 
-      l_a = ch->old[0][(ch->old_ptr - delay_int - 0) & CHORUS_DELAY_MASK];
-      l_b = ch->old[0][(ch->old_ptr - delay_int - 1) & CHORUS_DELAY_MASK];
-      r_a = ch->old[1][(ch->old_ptr - delay_int - 0) & CHORUS_DELAY_MASK];
-      r_b = ch->old[1][(ch->old_ptr - delay_int - 1) & CHORUS_DELAY_MASK];
+      l_a         = ch->old[0][(ch->old_ptr - delay_int - 0) & CHORUS_DELAY_MASK];
+      l_b         = ch->old[0][(ch->old_ptr - delay_int - 1) & CHORUS_DELAY_MASK];
+      r_a         = ch->old[1][(ch->old_ptr - delay_int - 0) & CHORUS_DELAY_MASK];
+      r_b         = ch->old[1][(ch->old_ptr - delay_int - 1) & CHORUS_DELAY_MASK];
 
       /* Lerp introduces aliasing of the chorus component, 
        * but doing full polyphase here is probably overkill. */
-      chorus_l = l_a * (1.0f - delay_frac) + l_b * delay_frac;
-      chorus_r = r_a * (1.0f - delay_frac) + r_b * delay_frac;
+      chorus_l    = l_a * (1.0f - delay_frac) + l_b * delay_frac;
+      chorus_r    = r_a * (1.0f - delay_frac) + r_b * delay_frac;
 
-      out[0] = ch->mix_dry * in[0] + ch->mix_wet * chorus_l;
-      out[1] = ch->mix_dry * in[1] + ch->mix_wet * chorus_r;
+      out[0]      = ch->mix_dry * in[0] + ch->mix_wet * chorus_l;
+      out[1]      = ch->mix_dry * in[1] + ch->mix_wet * chorus_r;
 
       ch->old_ptr = (ch->old_ptr + 1) & CHORUS_DELAY_MASK;
    }
