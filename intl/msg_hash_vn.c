@@ -60,7 +60,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
          case RARCH_FRAMEADVANCE:
             snprintf(s, len,
-                  "Xem Frame kế tiếp khi đã tạm dừng.");
+                  "Xem khung kế tiếp khi đã tạm dừng.");
             break;
          case RARCH_SHADER_NEXT:
             snprintf(s, len,
@@ -1941,277 +1941,277 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case  MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY:
          return "Sorry, unimplemented: cores that don't demand content cannot participate in netplay.";
       case MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD:
-         return "Password";
+         return "Mật khẩu";
       case MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS:
-         return "Accounts Cheevos";
+         return "Tài khoản Cheevos";
       case MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME:
-         return "Username";
+         return "Tên truy nhập";
       case MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST:
-         return "Accounts";
+         return "Những tài khoản";
       case MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST_END:
-         return "Accounts List Endpoint";
+         return "Điểm cuối của danh sách tài khoản";
       case MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS:
-         return "Retro Achievements";
+         return "Thành tích Retro";
       case MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST:
-         return "Achievement List";
+         return "Danh sách thành tích";
       case MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST:
-         return "Add Content";
+         return "Thêm nội dung";
       case MENU_ENUM_LABEL_VALUE_ADD_TAB:
-         return "Import content";
+         return "Tạo nội dung";
       case MENU_ENUM_LABEL_VALUE_ARCHIVE_MODE:
          return "Archive File Association Action";
       case MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE:
-         return "Ask";
+         return "Hỏi";
       case MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY:
-         return "Assets Dir";
+         return "Danh mục assets";
       case MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES:
          return "Block Frames";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE:
-         return "Audio Device";
+         return "Thiết bị âm thanh";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER:
-         return "Audio Driver";
+         return "Trình điều khiển âm thanh";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN:
-         return "Audio DSP Plugin";
+         return "Âm thanh DSP Plugin";
       case MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE:
-         return "Audio Enable";
+         return "Kích hoạt âm thanh";
       case MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR:
-         return "Audio Filter Dir";
+         return "Âm thanh Filter Danh mục";
       case MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY:
-         return "Audio Latency (ms)";
+         return "Âm thanh Latency (ms)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW:
-         return "Audio Maximum Timing Skew";
+         return "Âm thanh Maximum Timing Skew";
       case MENU_ENUM_LABEL_VALUE_AUDIO_MUTE:
-         return "Audio Mute";
+         return "Âm thanh Mute";
       case MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE:
-         return "Audio Output Rate (KHz)";
+         return "Âm thanh Output Rate (KHz)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA:
-         return "Audio Rate Control Delta";
+         return "Âm thanh Rate Control Delta";
       case MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER:
-         return "Audio Resampler Driver";
+         return "Âm thanh Resampler Driver";
       case MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS:
-         return "Audio";
+         return "Âm thanh";
       case MENU_ENUM_LABEL_VALUE_AUDIO_SYNC:
-         return "Audio Sync";
+         return "Âm thanh Sync";
       case MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME:
-         return "Audio Volume Level (dB)";
+         return "Mức âm lượng (dB)";
       case MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL:
          return "SaveRAM Autosave Interval";
       case MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE:
-         return "Tải Override Files Automatically";
+         return "Tự động tải tập tin ghi đè";
       case MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE:
-         return "Tải Remap Files Automatically";
+         return "Tự động tải tập tin Remap";
       case MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE:
-         return "Tải Shader Presets Automatically";
+         return "Tự động tải Shader Presets";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK:
-         return "Back";
+         return "Trở lại";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM:
-         return "Confirm";
+         return "Xác nhận";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO:
-         return "Info";
+         return "Thông tin";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT:
-         return "Quit";
+         return "Thoát";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN:
-         return "Scroll Down";
+         return "Cuộn xuống";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP:
-         return "Scroll Up";
+         return "Cuộn lên";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START:
          return "Start";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD:
-         return "Toggle Keyboard";
+         return "Bật/tắt bàn phím";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU:
-         return "Toggle Menu";
+         return "Bật/tắt trình đơn";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS:
-         return "Basic menu controls";
+         return "Trình đơn điều khiển căn bản";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_CONFIRM:
          return "Confirm/OK";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_INFO:
-         return "Info";
+         return "Thông tin";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_QUIT:
-         return "Quit";
+         return "Thoát";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_SCROLL_UP:
-         return "Scroll Up";
+         return "Cuộn lên";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_START:
-         return "Defaults";
+         return "Những mặc định";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_KEYBOARD:
-         return "Toggle Keyboard";
+         return "Bật/tắt bàn phím";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_MENU:
-         return "Toggle Menu";
+         return "Bật/tắt trình đơn";
       case MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE:
-         return "Don't overwrite SaveRAM on loading savestate";
+         return "Khi tải savestate đừng ghi đè SaveRAM";
       case MENU_ENUM_LABEL_VALUE_BLUETOOTH_ENABLE:
-         return "Bluetooth Enable";
+         return "Kích hoạt Bluetooth";
       case MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL:
-         return "Buildbot Assets URL";
+         return "URL của Buildbot Assets";
       case MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY:
-         return "Cache Dir";
+         return "Danh mục cache";
       case MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW:
-         return "Allow Camera";
+         return "Cho phép Camera";
       case MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER:
-         return "Camera Driver";
+         return "Trình Camera";
       case MENU_ENUM_LABEL_VALUE_CHEAT:
          return "Cheat";
       case MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES:
-         return "Apply Cheat Changes";
+         return "Áp dụng thay đổi của Cheat";
       case MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH:
-         return "Cheat File Dir";
+         return "Danh mục tập tin Cheat";
       case MENU_ENUM_LABEL_VALUE_CHEAT_FILE:
-         return "Cheat File";
+         return "Tập tin Cheat";
       case MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD:
-         return "Cheat File Load";
+         return "Tải tập tin Cheat";
       case MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS:
-         return "Cheat File Save As";
+         return "Lưu tập tin Cheat như";
       case MENU_ENUM_LABEL_VALUE_CHEAT_NUM_PASSES:
          return "Cheat Passes";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION:
-         return "Description";
+         return "Miêu tả";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE:
-         return "Hardcore Mode";
+         return "Chế độ Hardcore";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS:
-         return "Locked Achievements:";
+         return "Thành tựu bị khóa:";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY:
-         return "Locked";
+         return "Đã khóa";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS:
-         return "Retro Achievements";
+         return "Những thành tựu Retro";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL:
-         return "Test unofficial";
+         return "Thử nghiệm không chính thức";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ACHIEVEMENTS:
-         return "Unlocked Achievements:";
+         return "Những thành tựu đã mở:";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY:
-         return "Unlocked";
+         return "Đã mở";
       case MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT:
-         return "Close";
+         return "Đóng nội dung";
       case MENU_ENUM_LABEL_VALUE_CONFIG:
          return "Config";
       case MENU_ENUM_LABEL_VALUE_CONFIGURATIONS:
-         return "Tải Configuration";
+         return "Tải cấu hình";
       case MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS:
-         return "Configuration";
+         return "Cấu hình";
       case MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
-         return "Save Configuration on Exit";
+         return "Lưu cấu hình khi thoát";
       case MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST:
-         return "Collections";
+         return "Bộ sưu tập";
       case MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY:
-         return "Content Database Dir";
+         return "Mục cơ sở dữ liệu nội dung";
       case MENU_ENUM_LABEL_VALUE_CONTENT_DIR:
-         return "Content Dir";
+         return "Mục nội dung";
       case MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE:
-         return "History List Size";
+         return "Kích thước danh sách lịch sử";
       case MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS:
-         return "Quick Menu";
+         return "Trình đơn lẹ";
       case MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR:
-         return "Core Assets Dir";
+         return "Mục Core Assets";
       case MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY:
-         return "Downloads Dir";
+         return "Mục Downloads";
       case MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS:
          return "Cheats";
       case MENU_ENUM_LABEL_VALUE_CORE_COUNTERS:
          return "Core Counters";
       case MENU_ENUM_LABEL_VALUE_CORE_ENABLE:
-         return "Display core name";
+         return "Hiển thị tên của core";
       case MENU_ENUM_LABEL_VALUE_CORE_INFORMATION:
-         return "Core Information";
+         return "Core Thông tin";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS:
-         return "Authors";
+         return "Tác giả";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES:
-         return "Categories";
+         return "Thể loại";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL:
-         return "Core label";
+         return "Nhãn hiệu Core";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME:
-         return "Core name";
+         return "Tên của Core";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE:
-         return "Firmware(s)";
+         return "Phần vững";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES:
-         return "License(s)";
+         return "Bản quyền";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS:
-         return "Permissions";
+         return "Phép";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS:
-         return "Supported extensions";
+         return "Tiện ích mở rộng được hỗ trợ";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER:
-         return "System manufacturer";
+         return "Nhà sản xuất hệ thống";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME:
-         return "System name";
+         return "Tên hệ thống";
       case MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS:
-         return "Controls";
+         return "Điều khiển";
       case MENU_ENUM_LABEL_VALUE_CORE_LIST:
          return "Tải Core";
       case MENU_ENUM_LABEL_VALUE_CORE_OPTIONS:
-         return "Options";
+         return "Tùy chọn";
       case MENU_ENUM_LABEL_VALUE_CORE_SETTINGS:
          return "Core";
       case MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE:
 /* FIXME? Translate 'Start a Core Automatically' */
-         return "Start a Core Automatically";
+         return "Tự động chạy Core";
       case MENU_ENUM_LABEL_VALUE_CORE_SPECIFIC_CONFIG:
-         return "Configuration Per-Core";
+         return "Mỗi Core mỗi cấu hình";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
-         return "Automatically extract downloaded archive";
+         return "Tự động giải nén lưu trữ tải về";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL:
-         return "Buildbot Cores URL";
+         return "URL của Buildbot Cores";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST:
-         return "Core Updater";
+         return "Cập nhật cho Core";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS:
-         return "Cập nhậtr";
+         return "Cập nhật";
       case MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE:
-         return "CPU Architecture:";
+         return "Kiến trúc CPU:";
       case MENU_ENUM_LABEL_VALUE_CPU_CORES:
          return "CPU Cores:";
       case MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY:
-         return "Cursor Dir";
+         return "Mục Cursor";
       case MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER:
          return "Cursor Manager";
       case MENU_ENUM_LABEL_VALUE_CUSTOM_RATIO:
          return "Custom Ratio";
       case MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER:
-         return "Database Manager";
+         return "Quản lý cho cơ sở dữ liệu";
       case MENU_ENUM_LABEL_VALUE_DATABASE_SELECTION:
-         return "Database Selection";
+         return "Lựa chọn cơ sở dữ liệu";
       case MENU_ENUM_LABEL_VALUE_DELETE_ENTRY:
-         return "Remove";
+         return "Xoá";
       case MENU_ENUM_LABEL_VALUE_FAVORITES:
-         return "Favorites";
+         return "Yêu thích";
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT:
-         return "<Content dir>";
+         return "<Mục nội dung>";
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT:
-         return "<Default>";
+         return "<Mặc định>";
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_NONE:
-         return "<None>";
+         return "<Không có gì>";
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND:
-         return "Directory not found.";
+         return "Không tìm thấy thư mục.";
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS:
-         return "Directory";
+         return "Thư mục";
       case MENU_ENUM_LABEL_VALUE_DISABLED:
-         return "Disabled";
+         return "Vô hiệu hoá";
       case MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS:
-         return "Disk Cycle Tray Status";
+         return "Tình trạng khay đĩa";
       case MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND:
-         return "Disk Image Append";
+         return "Thêm đĩa";
       case MENU_ENUM_LABEL_VALUE_DISK_INDEX:
-         return "Disk Index";
+         return "Chỉ số đĩa";
       case MENU_ENUM_LABEL_VALUE_DISK_OPTIONS:
-         return "Disk Control";
+         return "Điều khiển đĩa";
       case MENU_ENUM_LABEL_VALUE_DONT_CARE:
-         return "Don't care";
+         return "Không quan tâm";
       case MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST:
-         return "Downloads Dir";
+         return "Mục Downloads";
       case MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE:
-         return "Download Core...";
+         return "Tải về Core...";
       case MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT:
-         return "Download Content";
-      case MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE:
-         return "DPI Override Enable";
+         return "Tải về nội dung";
+      case MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_:
+         return "Kích hoạt DPI Override";
       case MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE:
          return "DPI Override";
       case MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS:
-         return "Driver";
+         return "Trình điều khiển";
       case MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN:
 /* FIXME? Translate 'Load Dummy on Core Shutdown' */
-         return "Load Dummy on Core Shutdown";
+         return "Tải Core giả khi tắt máy";
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER:
-         return "Dynamic Background";
+         return "Nền năng động";
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
-         return "Dynamic Background Dir";
+         return "Mục nền năng động";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE:
-         return "Enable";
+         return "Kích hoạt";
       case MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR:
          return "Menu entry hover color";
       case MENU_ENUM_LABEL_VALUE_ENTRY_NORMAL_COLOR:
@@ -2237,7 +2237,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_HELP:
          return "help";
       case MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
-         return "Audio/Video Troubleshooting";
+         return "Âm thanh/Video Troubleshooting";
       case MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD:
          return "Changing Virtual Gamepad Overlay";
       case MENU_ENUM_LABEL_VALUE_HELP_CONTROLS:
@@ -2291,7 +2291,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS:
          return "Right analog Y+ (down)";
       case MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE:
-         return "Autoconfig Enable";
+         return "Kích hoạt Autoconfig";
       case MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD:
          return "Input Axis Threshold";
       case MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL:
@@ -2315,7 +2315,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS:
          return "Input Hotkey Binds";
       case MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE:
-         return "Keyboard Gamepad Mapping Enable";
+         return "Kích hoạt Keyboard Gamepad Mapping";
       case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A:
          return "A button (right)";
       case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B:
@@ -2367,7 +2367,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV:
          return "Disk prev";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY:
-         return "Enable hotkeys";
+         return "Kích hoạt hotkeys";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_HOLD_KEY:
          return "Fast forward hold";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY:
@@ -2385,7 +2385,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_META_MOVIE_RECORD_TOGGLE:
          return "Movie record toggle";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE:
-         return "Audio mute toggle";
+         return "Âm thanh mute toggle";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FLIP:
          return "Netplay flip users";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_OSK:
@@ -2435,9 +2435,9 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH:
          return "Prefer Front Touch";
       case MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY:
-         return "Input Remapping Dir";
+         return "Input Remapping Danh mục";
       case MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE:
-         return "Remap Binds Enable";
+         return "Kích hoạt Remap Binds";
       case MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG:
          return "Lưu Autoconfig";
       case MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS:
@@ -2445,9 +2445,9 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE:
          return "Small Keyboard Enable";
       case MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE:
-         return "Touch Enable";
+         return "Kích hoạt Touch";
       case MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE:
-         return "Turbo enable";
+         return "Kích hoạt Turbo";
       case MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD:
          return "Turbo Period";
       case MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS:
@@ -2455,7 +2455,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS:
          return "Internal storage status";
       case MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR:
-         return "Input Device Autoconfig Dir";
+         return "Input Device Autoconfig Danh mục";
       case MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER:
          return "Joypad Driver";
       case MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES:
@@ -2493,9 +2493,9 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_LEFT_ANALOG:
          return "Left Analog";
       case MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH:
-         return "Core Dir";
+         return "Core Danh mục";
       case MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH:
-         return "Core Info Dir";
+         return "Core Info Danh mục";
       case MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL:
          return "Core Logging Level";
       case MENU_ENUM_LABEL_VALUE_LINEAR:
@@ -2581,7 +2581,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT:
          return "Disconnect";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE:
-         return "Netplay Enable";
+         return "Kích hoạt Netplay";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT:
          return "Connect to Netplay host";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST:
@@ -2589,13 +2589,13 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS:
          return "Server Address";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_MODE:
-         return "Netplay Client Enable";
+         return "Kích hoạt Netplay Client";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME:
          return "Username";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS:
          return "Netplay thiết lập";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE:
-         return "Netplay Spectator Enable";
+         return "Kích hoạt Netplay Spectator";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT:
          return "Netplay TCP/UDP Port";
       case MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE:
@@ -2687,7 +2687,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB:
          return "Playlists";
       case MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY:
-         return "Playlist Dir";
+         return "Playlist Danh mục";
       case MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS:
          return "Playlists";
       case MENU_ENUM_LABEL_VALUE_POINTER_ENABLE:
@@ -2759,9 +2759,9 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_REBOOT:
          return "Khởi động lại";
       case MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY:
-         return "Recording Config Dir";
+         return "Recording Config Danh mục";
       case MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY:
-         return "Recording Output Dir";
+         return "Recording Output Danh mục";
       case MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS:
          return "Recording";
       case MENU_ENUM_LABEL_VALUE_RECORD_CONFIG:
@@ -2799,25 +2799,25 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS:
          return "Retro Achievements";
       case MENU_ENUM_LABEL_VALUE_REWIND_ENABLE:
-         return "Rewind Enable";
+         return "Kích hoạt Rewind";
       case MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY:
          return "Rewind Granularity";
       case MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS:
          return "Rewind";
       case MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY:
-         return "File Browser Dir";
+         return "File Browser Danh mục";
       case MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY:
-         return "Config Dir";
+         return "Config Danh mục";
       case MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN:
-         return "Display Start Screen";
+         return "Show Start Screen";
       case MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG:
          return "Right Analog";
       case MENU_ENUM_LABEL_VALUE_RUN:
          return "Run";
       case MENU_ENUM_LABEL_VALUE_SAMBA_ENABLE:
-         return "SAMBA Enable";
+         return "Kích hoạt SAMBA";
       case MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY:
-         return "Savefile Dir";
+         return "Savefile Danh mục";
       case MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX:
          return "Save State Auto Index";
       case MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD:
@@ -2825,7 +2825,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE:
          return "Auto Save State";
       case MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY:
-         return "Savestate Dir";
+         return "Savestate Danh mục";
       case MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG:
          return "Save Current Config";
       case MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
@@ -2845,7 +2845,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY:
          return "<Scan This Directory>";
       case MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY:
-         return "Screenshot Dir";
+         return "Screenshot Danh mục";
       case MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION:
          return "Screen Resolution";
       case MENU_ENUM_LABEL_VALUE_SEARCH:
@@ -2859,7 +2859,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SHADER:
          return "Shader";
       case MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES:
-         return "Apply Shader Changes";
+         return "Áp dụng Shader Changes";
       case MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS:
          return "Shaders";
       case MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON:
@@ -2879,7 +2879,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE:
          return "Sort Savestates In Folders";
       case MENU_ENUM_LABEL_VALUE_SSH_ENABLE:
-         return "SSH Enable";
+         return "Kích hoạt SSH";
       case MENU_ENUM_LABEL_VALUE_START_CORE:
          return "Start Core";
       case MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD:
@@ -2893,13 +2893,13 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE:
          return "stdin Commands";
       case MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES:
-         return "Suggested cores";
+         return "Supported cores";
       case MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE:
          return "Suspend Screensaver";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE:
-         return "System BGM Enable";
+         return "Kích hoạt System BGM";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY:
-         return "System/BIOS Dir";
+         return "System/BIOS Danh mục";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION:
          return "System Information";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT:
@@ -3043,7 +3043,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_THUMBNAILS:
          return "Thumbnails";
       case MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY:
-         return "Thumbnails Dir";
+         return "Thumbnails Danh mục";
       case MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST:
          return "Thumbnails Updater";
       case MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS:
@@ -3059,7 +3059,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_TRUE:
          return "True";
       case MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE:
-         return "UI Companion Enable";
+         return "Kích hoạt UI Companion";
       case MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT:
          return "UI Companion Start On Boot";
       case MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE:
@@ -3113,7 +3113,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_AUTO:
          return "Auto Aspect Ratio";
       case MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX:
-         return "Aspect Ratio";
+         return "Aspect Ratio Index";
       case MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION:
          return "Black Frame Insertion";
       case MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN:
@@ -3125,7 +3125,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_FILTER:
          return "Video Filter";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR:
-         return "Video Filter Dir";
+         return "Video Filter Danh mục";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER:
          return "Flicker filter";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE:
@@ -3147,7 +3147,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD:
          return "Use GPU Recording";
       case MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT:
-         return "GPU Screenshot Enable";
+         return "Kích hoạt GPU Screenshot";
       case MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC:
          return "Hard GPU Sync";
       case MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES:
@@ -3161,7 +3161,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX:
          return "Monitor Index";
       case MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD:
-         return "Enable Post Filter Recording";
+         return "Kích hoạt Post Filter Recording";
       case MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE:
          return "Refresh Rate";
       case MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO:
@@ -3175,7 +3175,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS:
          return "Video";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR:
-         return "Video Shader Dir";
+         return "Video Shader Danh mục";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES:
          return "Shader Passes";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS:
@@ -3191,12 +3191,12 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME:
          return "Save Game Preset";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT:
-         /* FIXME? Translate 'Enable Hardware Shared Context' */
-         return "Enable Hardware Shared Context";
+/* FIXME? Translate 'Enable Hardware Shared Context' */
+         return "Kích hoạt Hardware Shared Context";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH:
-         return "Bilinear Filtering";
+         return "HW Bilinear Filtering";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER:
-         return "Soft Filter Enable";
+         return "Kích hoạt Soft Filter";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL:
          return "VSync Swap Interval";
       case MENU_ENUM_LABEL_VALUE_VIDEO_TAB:
@@ -3266,17 +3266,17 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR:
          return "Menu Scale Factor";
       case MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE:
-         return "Icon Shadows Enable";
+         return "Kích hoạt Icon Shadows";
       case MENU_ENUM_LABEL_VALUE_XMB_SHOW_HISTORY:
-         return "Display History Tab";
+         return "Show History Tab";
       case MENU_ENUM_LABEL_VALUE_XMB_SHOW_IMAGES:
-         return "Display Images Tab";
+         return "Show Images Tab";
       case MENU_ENUM_LABEL_VALUE_XMB_SHOW_MUSIC:
-         return "Display Music Tab";
+         return "Show Music Tab";
       case MENU_ENUM_LABEL_VALUE_XMB_SHOW_SETTINGS:
-         return "Display thiết lập Tab";
+         return "Show thiết lập Tab";
       case MENU_ENUM_LABEL_VALUE_XMB_SHOW_VIDEO:
-         return "Display Video Tab";
+         return "Show Video Tab";
       case MENU_ENUM_LABEL_VALUE_XMB_THEME:
          return "Menu Icon Theme";
       case MENU_ENUM_LABEL_VALUE_YES:
@@ -3308,7 +3308,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_SUBLABEL_INPUT_USER_BINDS:
          return "Đặt cấu hình điều khiển cho người dùng này.";
       case MENU_ENUM_SUBLABEL_LOG_VERBOSITY:
-         return "Enable or disable logging to the terminal.";
+         return "Kích hoạt or disable logging to the terminal.";
       case MENU_ENUM_SUBLABEL_NETPLAY:
          return "Tham gia hoặc làm máy chủ cho netplay.";
       case MENU_ENUM_SUBLABEL_ONLINE_UPDATER:
@@ -3344,15 +3344,15 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MSG_APPENDED_DISK:
          return "Appended disk";
       case MSG_APPLICATION_DIR:
-         return "Application Dir";
+         return "Application Danh mục";
       case MSG_APPLYING_CHEAT:
-         return "Applying cheat changes.";
+         return "Đang áp dụng cheat changes.";
       case MSG_APPLYING_SHADER:
-         return "Applying shader";
+         return "Đang áp dụng shader";
       case MSG_AUDIO_MUTED:
-         return "Audio muted.";
+         return "Âm thanh muted.";
       case MSG_AUDIO_UNMUTED:
-         return "Audio unmuted.";
+         return "Âm thanh unmuted.";
       case MSG_AUTOCONFIG_FILE_ERROR_SAVING:
          return "Tập tin Autoconfig bị lỗi khi lưu.";
       case MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY:
@@ -3438,7 +3438,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MSG_ERROR_SAVING_SHADER_PRESET:
          return "Error saving shader preset.";
       case MSG_EXTERNAL_APPLICATION_DIR:
-         return "External Application Dir";
+         return "External Application Danh mục";
       case MSG_EXTRACTING:
          return "Extracting";
       case MSG_EXTRACTING_FILE:
@@ -3452,7 +3452,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT:
          return "Failed to allocate memory for patched content...";
       case MSG_FAILED_TO_APPLY_SHADER:
-         return "Failed to apply shader.";
+         return "Failed to áp dụng shader.";
       case MSG_FAILED_TO_BIND_SOCKET:
          return "Failed to bind socket.";
       case MSG_FAILED_TO_CREATE_THE_DIRECTORY:
@@ -3516,7 +3516,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MSG_FAILED_TO_UNDO_SAVE_STATE:
          return "Failed to undo save state.";
       case MSG_FAILED_TO_UNMUTE_AUDIO:
-         return "Failed to unmute audio.";
+         return "Failed to unmute Âm thanh.";
       case MSG_FATAL_ERROR_RECEIVED_IN:
          return "Fatal error received in";
       case MSG_FILE_NOT_FOUND:
@@ -3644,7 +3644,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MSG_REWIND_INIT_FAILED:
          return "Failed to initialize rewind buffer. Rewinding will be disabled.";
       case MSG_REWIND_INIT_FAILED_THREADED_AUDIO:
-         return "Implementation uses threaded audio. Cannot use rewind.";
+         return "Implementation uses threaded Âm thanh. Cannot use rewind.";
       case MSG_REWIND_REACHED_END:
          return "Reached end of rewind buffer.";
       case MSG_SAVED_NEW_CONFIG_TO:
