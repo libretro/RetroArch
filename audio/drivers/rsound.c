@@ -55,14 +55,13 @@ static void err_cb(void *userdata)
    scond_signal(rsd->cond);
 }
 
-static void *rs_init(const char *device, unsigned rate, unsigned latency)
+static void *rs_init(const char *device, unsigned rate, unsigned latency, unsigned *new_rate)
 {
    int channels, format;
-   rsd_t *rsd = (rsd_t*)calloc(1, sizeof(rsd_t));
+   rsound_t *rd  = NULL;
+   rsd_t *rsd    = (rsd_t*)calloc(1, sizeof(rsd_t));
    if (!rsd)
       return NULL;
-
-   rsound_t *rd;
 
    if (rsd_init(&rd) < 0)
    {

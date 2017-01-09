@@ -78,7 +78,7 @@ static void event_loop(uint64_t data)
 }
 
 static void *ps3_audio_init(const char *device,
-      unsigned rate, unsigned latency)
+      unsigned rate, unsigned latency, unsigned *new_rate)
 {
    CellAudioPortParam params;
    ps3_audio_t *data = calloc(1, sizeof(*data));

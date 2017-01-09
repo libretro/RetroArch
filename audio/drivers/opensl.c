@@ -98,7 +98,8 @@ static void sl_free(void *data)
    free(sl);
 }
 
-static void *sl_init(const char *device, unsigned rate, unsigned latency)
+static void *sl_init(const char *device, unsigned rate, unsigned latency,
+      unsigned *new_rate)
 {
    unsigned i;
    SLDataFormat_PCM fmt_pcm                        = {0};

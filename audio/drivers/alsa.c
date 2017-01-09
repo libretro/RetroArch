@@ -53,7 +53,8 @@ static bool find_float_format(snd_pcm_t *pcm, void *data)
    return false;
 }
 
-static void *alsa_init(const char *device, unsigned rate, unsigned latency)
+static void *alsa_init(const char *device, unsigned rate, unsigned latency,
+      unsigned *new_rate)
 {
    snd_pcm_format_t format;
    snd_pcm_uframes_t buffer_size;

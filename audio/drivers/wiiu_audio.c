@@ -83,7 +83,9 @@ void wiiu_ax_callback(void)
 }
 
 extern void AXRegisterFrameCallback(void *cb);
-static void* ax_audio_init(const char* device, unsigned rate, unsigned latency)
+
+static void* ax_audio_init(const char* device, unsigned rate, unsigned latency,
+      unsigned *new_rate)
 {
    ax_audio_t* ax = (ax_audio_t*)calloc(1, sizeof(ax_audio_t));
 

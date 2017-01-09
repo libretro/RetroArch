@@ -43,11 +43,11 @@
 
 static bool oss_is_paused = false;
 
-static void *oss_init(const char *device, unsigned rate, unsigned latency)
+static void *oss_init(const char *device, unsigned rate, unsigned latency,
+      unsigned *new_out_rate)
 {
    int frags, frag, channels, format, new_rate;
    int              *fd   = (int*)calloc(1, sizeof(int));
-   settings_t *settings   = config_get_ptr();
    const char *oss_device = device ? device : DEFAULT_OSS_DEV;
    
    if (!fd)
@@ -83,7 +83,7 @@ static void *oss_init(const char *device, unsigned rate, unsigned latency)
    if (new_rate != (int)rate)
    {
       RARCH_WARN("Requested sample rate not supported. Adjusting output rate to %d Hz.\n", new_rate);
-      settings->audio.out_rate = new_rate;
+      *new_out_rate = new_rate;
    }
 
    return fd;

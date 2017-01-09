@@ -27,6 +27,7 @@
  * @out_data                  : output audio data
  * @device                    : audio device (optional)
  * @out_rate                  : output audio rate
+ * @new_rate                  : new output audio rate
  * @latency                   : audio latency
  * @driver                    : audio driver
  *
@@ -37,7 +38,7 @@
  * Returns: true (1) if successful, otherwise false (0).
  **/
 bool audio_init_thread(const audio_driver_t **out_driver, void **out_data,
-      const char *device, unsigned out_rate, unsigned latency,
+      const char *device, unsigned out_rate, unsigned *new_rate, unsigned latency,
       const audio_driver_t *driver);
 
 #endif

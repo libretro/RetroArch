@@ -303,7 +303,8 @@ static BOOL CALLBACK enumerate_cb(LPGUID guid, LPCSTR desc, LPCSTR module, LPVOI
    return TRUE;
 }
 
-static void *dsound_init(const char *device, unsigned rate, unsigned latency)
+static void *dsound_init(const char *device, unsigned rate, unsigned latency,
+      unsigned *new_rate)
 {
    WAVEFORMATEX wfx      = {0};
    DSBUFFERDESC bufdesc  = {0};

@@ -29,8 +29,9 @@
 #include <windows.h>
 #endif
 
+#include <retro_miscellaneous.h>
+
 #include "../audio_driver.h"
-#include "../../configuration.h"
 #include "../../verbosity.h"
 
 #define BUFSIZE 1024
@@ -79,7 +80,8 @@ static void al_free(void *data)
    free(al);
 }
 
-static void *al_init(const char *device, unsigned rate, unsigned latency)
+static void *al_init(const char *device, unsigned rate, unsigned latency,
+      unsigned *new_rate)
 {
    al_t *al;
 

@@ -27,7 +27,6 @@
 #include <retro_inline.h>
 
 #include "../audio_driver.h"
-#include "../../configuration.h"
 #include "../../verbosity.h"
 
 typedef struct sdl_audio
@@ -67,14 +66,13 @@ static INLINE int find_num_frames(int rate, int latency)
 }
 
 static void *sdl_audio_init(const char *device,
-      unsigned rate, unsigned latency)
+      unsigned rate, unsigned latency, unsigned *new_rate)
 {
    int frames;
    size_t bufsize;
    SDL_AudioSpec out;
    SDL_AudioSpec spec   = {0};
    void            *tmp = NULL;
-   settings_t *settings = config_get_ptr();
    sdl_audio_t *sdl     = NULL;
 
    (void)device;
@@ -111,7 +109,7 @@ static void *sdl_audio_init(const char *device,
       return 0;
    }
 
-   settings->audio.out_rate = out.freq;
+   *new_rate                = out.freq;
 
 #ifdef HAVE_THREADS
    sdl->lock                = slock_new();
@@ -119,7 +117,7 @@ static void *sdl_audio_init(const char *device,
 #endif
 
    RARCH_LOG("SDL audio: Requested %u ms latency, got %d ms\n", 
-         latency, (int)(out.samples * 4 * 1000 / settings->audio.out_rate));
+         latency, (int)(out.samples * 4 * 1000 / (*new_rate)));
 
    /* Create a buffer twice as big as needed and prefill the buffer. */
    bufsize     = out.samples * 4 * sizeof(int16_t);

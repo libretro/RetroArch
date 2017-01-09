@@ -122,13 +122,12 @@ static int parse_ports(char **dest_ports, const char **jports)
    return 2;
 }
 
-static size_t find_buffersize(jack_t *jd, int latency)
+static size_t find_buffersize(jack_t *jd, int latency, unsigned out_rate)
 {
    jack_latency_range_t range;
    int i, buffer_frames, min_buffer_frames;
    int jack_latency     = 0;
-   settings_t *settings = config_get_ptr();
-   int           frames = latency * settings->audio.out_rate / 1000;
+   int           frames = latency * out_rate / 1000;
 
    for (i = 0; i < 2; i++)
    {
@@ -150,14 +149,14 @@ static size_t find_buffersize(jack_t *jd, int latency)
    return buffer_frames * sizeof(jack_default_audio_sample_t);
 }
 
-static void *ja_init(const char *device, unsigned rate, unsigned latency)
+static void *ja_init(const char *device, unsigned rate, unsigned latency,
+      unsigned *new_rate)
 {
    int i;
    char *dest_ports[2];
    const char **jports = NULL;
    size_t       bufsize = 0;
    int           parsed = 0;
-   settings_t *settings = config_get_ptr();
    jack_t           *jd = (jack_t*)calloc(1, sizeof(jack_t));
 
    if (!jd)
@@ -172,7 +171,7 @@ static void *ja_init(const char *device, unsigned rate, unsigned latency)
    if (jd->client == NULL)
       goto error;
 
-   settings->audio.out_rate = jack_get_sample_rate(jd->client);
+   *new_rate = jack_get_sample_rate(jd->client);
 
    jack_set_process_callback(jd->client, process_cb, jd);
    jack_on_shutdown(jd->client, shutdown_cb, jd);
@@ -192,7 +191,7 @@ static void *ja_init(const char *device, unsigned rate, unsigned latency)
       goto error;
    }
 
-   bufsize = find_buffersize(jd, latency);
+   bufsize = find_buffersize(jd, latency, *new_rate);
    jd->buffer_size = bufsize;
 
    RARCH_LOG("JACK: Internal buffer size: %d frames.\n", (int)(bufsize / sizeof(jack_default_audio_sample_t)));

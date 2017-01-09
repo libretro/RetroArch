@@ -33,7 +33,6 @@
 #include <string/stdstring.h>
 
 #include "../audio_driver.h"
-#include "../../configuration.h"
 #include "../../verbosity.h"
 
 typedef struct coreaudio
@@ -181,7 +180,7 @@ done:
 #endif
 
 static void *coreaudio_init(const char *device,
-      unsigned rate, unsigned latency)
+      unsigned rate, unsigned latency, unsigned *new_rate)
 {
    size_t fifo_size;
    UInt32 i_size;
@@ -203,7 +202,6 @@ static void *coreaudio_init(const char *device,
 #else
    AudioComponentDescription desc          = {0};
 #endif
-   settings_t *settings                    = config_get_ptr();
    coreaudio_t *dev                        = (coreaudio_t*)
       calloc(1, sizeof(*dev));
    if (!dev)
@@ -290,7 +288,7 @@ static void *coreaudio_init(const char *device,
 
    RARCH_LOG("[CoreAudio]: Using output sample rate of %.1f Hz\n",
          (float)real_desc.mSampleRate);
-   settings->audio.out_rate = real_desc.mSampleRate;
+   *new_rate = real_desc.mSampleRate;
 
    /* Set channel layout (fails on iOS). */
 #ifndef TARGET_OS_IPHONE
@@ -311,7 +309,7 @@ static void *coreaudio_init(const char *device,
    if (AudioUnitInitialize(dev->dev) != noErr)
       goto error;
 
-   fifo_size = (latency * settings->audio.out_rate) / 1000;
+   fifo_size = (latency * (*new_rate)) / 1000;
    fifo_size *= 2 * sizeof(float);
    dev->buffer_size = fifo_size;
 

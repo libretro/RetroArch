@@ -22,7 +22,6 @@
 #include <retro_inline.h>
 
 #include "../audio_driver.h"
-#include "../../configuration.h"
 
 #define SOUND_FREQUENCY 48000
 #define MAX_BUFFER 2048
@@ -35,10 +34,9 @@ typedef struct
 } xenon_audio_t;
 
 static void *xenon360_audio_init(const char *device,
-      unsigned rate, unsigned latency)
+      unsigned rate, unsigned latency, unsigned *new_rate)
 {
    static bool inited = false;
-   settings_t *settings = config_get_ptr();
 
    if (!inited)
    {
@@ -46,7 +44,8 @@ static void *xenon360_audio_init(const char *device,
       inited = true;
    }
 
-   settings->audio.out_rate = SOUND_FREQUENCY;
+   *new_rate = SOUND_FREQUENCY;
+
    return calloc(1, sizeof(xenon_audio_t));
 }
 

@@ -103,10 +103,10 @@ Result csndPlaySound_custom(int chn, u32 flags, float vol, float pan,
 	return 0;
 }
 
-static void *ctr_csnd_audio_init(const char *device, unsigned rate, unsigned latency)
+static void *ctr_csnd_audio_init(const char *device, unsigned rate, unsigned latency,
+      unsigned *new_rate)
 {
    ctr_csnd_audio_t *ctr = (ctr_csnd_audio_t*)calloc(1, sizeof(ctr_csnd_audio_t));
-   settings_t *settings  = config_get_ptr();
 
    if (!ctr)
       return NULL;
@@ -115,7 +115,7 @@ static void *ctr_csnd_audio_init(const char *device, unsigned rate, unsigned lat
    (void)rate;
    (void)latency;
 
-   settings->audio.out_rate  = CTR_CSND_AUDIO_RATE;
+   *new_rate                 = CTR_CSND_AUDIO_RATE;
 
    ctr->l                    = linearAlloc(CTR_CSND_AUDIO_SIZE);
    ctr->r                    = linearAlloc(CTR_CSND_AUDIO_SIZE);

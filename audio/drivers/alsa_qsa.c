@@ -46,7 +46,7 @@ typedef struct alsa
 typedef long snd_pcm_sframes_t;
 
 static void *alsa_qsa_init(const char *device,
-      unsigned rate, unsigned latency)
+      unsigned rate, unsigned latency, unsigned *new_rate)
 {
    int err, card, dev, i;
    snd_pcm_channel_info_t pi;

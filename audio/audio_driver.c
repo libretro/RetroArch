@@ -304,6 +304,7 @@ static bool audio_driver_init_resampler(void)
 
 static bool audio_driver_init_internal(bool audio_cb_inited)
 {
+   unsigned new_rate     = 0;
    float   *aud_inp_data = NULL;
    float *samples_buf    = NULL;
    int16_t *conv_buf     = NULL;
@@ -358,7 +359,8 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
                &current_audio,
                &audio_driver_context_audio_data,
                *settings->audio.device ? settings->audio.device : NULL,
-               settings->audio.out_rate, settings->audio.latency,
+               settings->audio.out_rate, &new_rate, 
+               settings->audio.latency,
                current_audio))
       {
          RARCH_ERR("Cannot open threaded audio driver ... Exiting ...\n");
@@ -371,8 +373,12 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
       audio_driver_context_audio_data = 
          current_audio->init(*settings->audio.device ?
                settings->audio.device : NULL,
-               settings->audio.out_rate, settings->audio.latency);
+               settings->audio.out_rate, settings->audio.latency,
+               &new_rate);
    }
+
+   if (new_rate != 0)
+      settings->audio.out_rate = new_rate;
 
    if (!audio_driver_context_audio_data)
    {
