@@ -960,7 +960,7 @@ static void zarch_frame(void *data)
    menu_display_blend_begin();
    draw.x              = 0;
    draw.y              = 0;
-   menu_display_draw_bg(&draw);
+   menu_display_draw_bg(&draw, false);
    menu_display_draw(&draw);
    menu_display_blend_end();
 
