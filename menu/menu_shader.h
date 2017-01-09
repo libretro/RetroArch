@@ -19,7 +19,11 @@
 
 #include <retro_common_api.h>
 
+#include "../gfx/video_shader_driver.h"
+
 RETRO_BEGIN_DECLS
+
+struct video_shader_pass *menu_shader_manager_get_pass(unsigned i);
 
 unsigned menu_shader_manager_get_amount_passes(void);
 

@@ -32,14 +32,25 @@
 #include "../paths.h"
 #include "../verbosity.h"
 
-#include "../gfx/video_shader_driver.h"
-
 #ifdef HAVE_SHADER_MANAGER
 /* Menu shader */
 static char default_glslp[PATH_MAX_LENGTH];
 static char default_cgp[PATH_MAX_LENGTH];
 static char default_slangp[PATH_MAX_LENGTH];
 #endif
+
+struct video_shader_pass *menu_shader_manager_get_pass(unsigned i)
+{
+   struct video_shader *shader = NULL;
+
+   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
+         &shader);
+
+   if (!shader)
+      return NULL;
+
+   return &shader->pass[i];
+}
 
 unsigned menu_shader_manager_get_amount_passes(void)
 {
