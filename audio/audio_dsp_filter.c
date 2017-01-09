@@ -26,9 +26,9 @@
 #include <features/features_cpu.h>
 #include <lists/string_list.h>
 #include <string/stdstring.h>
+#include <libretro_dspfilter.h>
 
 #include "audio_dsp_filter.h"
-#include "libretro_dspfilter.h"
 
 struct rarch_dsp_plug
 {
@@ -118,7 +118,8 @@ static bool create_filter_graph(rarch_dsp_filter_t *dsp, float sample_rate)
       userdata.prefix[0] = key;
       userdata.prefix[1] = dsp->instances[i].impl->short_ident;
 
-      dsp->instances[i].impl_data = dsp->instances[i].impl->init(&info, &dspfilter_config, &userdata);
+      dsp->instances[i].impl_data = dsp->instances[i].impl->init(&info,
+            &dspfilter_config, &userdata);
       if (!dsp->instances[i].impl_data)
          return false;
    }
