@@ -30,6 +30,7 @@
 
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
+#include "../menu/widgets/menu_input_dialog.h"
 #endif
 
 #include "../configuration.h"
@@ -39,8 +40,6 @@
 #include "../list_special.h"
 #include "../verbosity.h"
 #include "../command.h"
-
-#include "../menu/widgets/menu_input_dialog.h"
 
 static const input_driver_t *input_drivers[] = {
 #ifdef __CELLOS_LV2__
