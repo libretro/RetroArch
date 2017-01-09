@@ -41,7 +41,7 @@
 #define DEFAULT_OSS_DEV "/dev/dsp"
 #endif
 
-static bool oss_is_paused;
+static bool oss_is_paused = false;
 
 static void *oss_init(const char *device, unsigned rate, unsigned latency)
 {

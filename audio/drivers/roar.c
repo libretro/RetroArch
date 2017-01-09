@@ -23,7 +23,6 @@
 #include <boolean.h>
 
 #include "../audio_driver.h"
-#include "../../configuration.h"
 #include "../../verbosity.h"
 
 typedef struct

@@ -25,7 +25,6 @@
 #include <string/stdstring.h>
 
 #include "../audio_driver.h"
-#include "../../configuration.h"
 #include "../../verbosity.h"
 
 #define TRY_ALSA(x) if (x < 0) { \

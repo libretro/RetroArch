@@ -32,7 +32,6 @@
 #include "xaudio.h"
 
 #include "../audio_driver.h"
-#include "../../configuration.h"
 #include "../../verbosity.h"
 
 typedef struct xaudio2 xaudio2_t;
