@@ -2890,7 +2890,8 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
    unsigned new_font_size, new_header_height;
    settings_t *settings          = config_get_ptr();
 
-   float scale_factor            = (settings->menu.xmb.scale_factor * width) / (1920.0 * 100);
+   float scale_factor            = 
+      (settings->menu.xmb.scale_factor * width) / (1920.0 * 100);
 
    xmb->above_subitem_offset     =   1.5;
    xmb->above_item_offset        =  -1.0;
@@ -2957,7 +2958,8 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
 {
    unsigned new_font_size, new_header_height;
    settings_t *settings          = config_get_ptr();
-   float scale_factor            = ((settings->menu.xmb.scale_factor * width) / (1920.0 * 100)) * 1.5;
+   float scale_factor            = 
+      ((settings->menu.xmb.scale_factor * width) / (1920.0 * 100)) * 1.5;
 
 #ifdef _3DS
    scale_factor = settings->menu.xmb.scale_factor / 400.0;
@@ -3091,7 +3093,8 @@ static void xmb_layout(xmb_handle_t *xmb)
    }
 }
 
-static void xmb_ribbon_set_vertex(float *ribbon_verts, unsigned idx, unsigned row, unsigned col)
+static void xmb_ribbon_set_vertex(float *ribbon_verts,
+      unsigned idx, unsigned row, unsigned col)
 {
    ribbon_verts[idx++] = ((float)col) / (XMB_RIBBON_COLS-1) * 2.0f - 1.0f;
    ribbon_verts[idx++] = ((float)row) / (XMB_RIBBON_ROWS-1) * 2.0f - 1.0f;
