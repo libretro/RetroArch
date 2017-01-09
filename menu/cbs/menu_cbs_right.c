@@ -231,27 +231,20 @@ static int action_right_shader_scale_pass(unsigned type, const char *label,
       bool wraparound)
 {
 #ifdef HAVE_SHADER_MANAGER
-   unsigned pass = type - MENU_SETTINGS_SHADER_PASS_SCALE_0;
-   struct video_shader *shader           = NULL;
-   struct video_shader_pass *shader_pass = NULL;
+   unsigned current_scale, delta;
+   unsigned pass                         = 
+      type - MENU_SETTINGS_SHADER_PASS_SCALE_0;
+   struct video_shader_pass *shader_pass = menu_shader_manager_get_pass(pass);
 
-   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
-         &shader);
-   if (!shader)
-      return menu_cbs_exit();
-   shader_pass = &shader->pass[pass];
    if (!shader_pass)
       return menu_cbs_exit();
 
-   {
-      unsigned current_scale   = shader_pass->fbo.scale_x;
-      unsigned delta           = 1;
-      current_scale            = (current_scale + delta) % 6;
+   current_scale            = shader_pass->fbo.scale_x;
+   delta                    = 1;
+   current_scale            = (current_scale + delta) % 6;
 
-      shader_pass->fbo.valid   = current_scale;
-      shader_pass->fbo.scale_x = shader_pass->fbo.scale_y = current_scale;
-
-   }
+   shader_pass->fbo.valid   = current_scale;
+   shader_pass->fbo.scale_x = shader_pass->fbo.scale_y = current_scale;
 #endif
    return 0;
 }
@@ -262,14 +255,8 @@ static int action_right_shader_filter_pass(unsigned type, const char *label,
 #ifdef HAVE_SHADER_MANAGER
    unsigned pass                         = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
    unsigned delta                        = 1;
-   struct video_shader *shader           = NULL;
-   struct video_shader_pass *shader_pass = NULL;
+   struct video_shader_pass *shader_pass = menu_shader_manager_get_pass(pass);
 
-   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
-         &shader);
-   if (!shader)
-      return menu_cbs_exit();
-   shader_pass = &shader->pass[pass];
    if (!shader_pass)
       return menu_cbs_exit();
 

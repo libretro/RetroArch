@@ -240,14 +240,8 @@ static int action_left_shader_filter_pass(unsigned type, const char *label,
 #ifdef HAVE_SHADER_MANAGER
    unsigned delta = 2;
    unsigned pass                         = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
-   struct video_shader *shader           = NULL;
-   struct video_shader_pass *shader_pass = NULL;
+   struct video_shader_pass *shader_pass = menu_shader_manager_get_pass(pass);
 
-   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
-         &shader);
-   if (!shader)
-      return menu_cbs_exit();
-   shader_pass = &shader->pass[pass];
    if (!shader_pass)
       return menu_cbs_exit();
 
