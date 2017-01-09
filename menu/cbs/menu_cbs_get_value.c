@@ -138,26 +138,20 @@ static void menu_action_setting_disp_set_label_shader_filter_pass(
       const char *path,
       char *s2, size_t len2)
 {
-   unsigned pass = 0;
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-   struct video_shader *shader = NULL;
+   struct video_shader_pass *shader_pass = menu_shader_manager_get_pass(
+         type - MENU_SETTINGS_SHADER_PASS_FILTER_0);
 #endif
-
-   (void)pass;
 
    *s = '\0';
    *w = 19;
    strlcpy(s2, path, len2);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
-         &shader);
-   if (!shader)
+   if (!shader_pass)
       return;
 
-  pass = (type - MENU_SETTINGS_SHADER_PASS_FILTER_0);
-
-  switch (shader->pass[pass].filter)
+  switch (shader_pass->filter)
   {
      case 0:
         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE),
@@ -255,18 +249,11 @@ static void menu_action_setting_disp_set_label_shader_num_passes(
       const char *path,
       char *s2, size_t len2)
 {
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-   struct video_shader *shader = NULL;
-#endif
-
    *s = '\0';
    *w = 19;
    strlcpy(s2, path, len2);
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
-         &shader);
-   if (shader)
-      snprintf(s, len, "%u", shader->passes);
+   snprintf(s, len, "%u", menu_shader_manager_get_amount_passes());
 #endif
 }
 
@@ -280,11 +267,9 @@ static void menu_action_setting_disp_set_label_shader_pass(
       char *s2, size_t len2)
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-   struct video_shader *shader = NULL;
+   struct video_shader_pass *shader_pass = menu_shader_manager_get_pass(
+         type - MENU_SETTINGS_SHADER_PASS_0);
 #endif
-   unsigned pass = (type - MENU_SETTINGS_SHADER_PASS_0);
-
-   (void)pass;
 
    *s = '\0';
    *w = 19;
@@ -292,14 +277,11 @@ static void menu_action_setting_disp_set_label_shader_pass(
    strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
-         &shader);
-   if (!shader)
+   if (!shader_pass)
       return;
 
-   if (!string_is_empty(shader->pass[pass].source.path))
-      fill_pathname_base(s,
-            shader->pass[pass].source.path, len);
+   if (!string_is_empty(shader_pass->source.path))
+      fill_pathname_base(s, shader_pass->source.path, len);
 #endif
 }
 
@@ -407,7 +389,8 @@ static void menu_action_setting_disp_set_label_shader_scale_pass(
    unsigned pass               = 0;
    unsigned scale_value        = 0;
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-   struct video_shader *shader = NULL;
+   struct video_shader_pass *shader_pass = menu_shader_manager_get_pass(
+         type - MENU_SETTINGS_SHADER_PASS_SCALE_0);
 #endif
 
    *s = '\0';
@@ -418,13 +401,10 @@ static void menu_action_setting_disp_set_label_shader_scale_pass(
    (void)scale_value;
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
-         &shader);
-   if (!shader)
+   if (!shader_pass)
       return;
 
-   pass        = (type - MENU_SETTINGS_SHADER_PASS_SCALE_0);
-   scale_value = shader->pass[pass].fbo.scale_x;
+   scale_value = shader_pass->fbo.scale_x;
 
    if (!scale_value)
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
