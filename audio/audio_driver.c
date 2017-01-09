@@ -22,6 +22,8 @@
 #include <audio/conversion/float_to_s16.h>
 #include <audio/conversion/s16_to_float.h>
 #include <audio/audio_resampler.h>
+#include <file/file_path.h>
+#include <lists/dir_list.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -31,6 +33,7 @@
 #include "audio_dsp_filter.h"
 #include "audio_thread_wrapper.h"
 #include "../record/record_driver.h"
+#include "../frontend/frontend_driver.h"
 
 #include "../command.h"
 #include "../driver.h"
@@ -716,9 +719,27 @@ void audio_driver_dsp_filter_free(void)
 
 void audio_driver_dsp_filter_init(const char *device)
 {
-   audio_driver_dsp = rarch_dsp_filter_new(
-         device, audio_driver_input);
+#if defined(HAVE_DYLIB) && !defined(HAVE_FILTERS_BUILTIN)
+   char basedir[PATH_MAX_LENGTH];
+   char ext_name[PATH_MAX_LENGTH];
+#endif
+   struct string_list *plugs     = NULL;
+#if defined(HAVE_DYLIB) && !defined(HAVE_FILTERS_BUILTIN)
+   fill_pathname_basedir(basedir, device, sizeof(basedir));
 
+   if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
+      goto error;
+
+   plugs = dir_list_new(basedir, ext_name, false, true, false, false);
+   if (!plugs)
+      goto error;
+#endif
+   audio_driver_dsp = rarch_dsp_filter_new(
+         device, plugs, audio_driver_input);
+
+   return;
+
+error:
    if (!audio_driver_dsp)
       RARCH_ERR("[DSP]: Failed to initialize DSP filter \"%s\".\n", device);
 }

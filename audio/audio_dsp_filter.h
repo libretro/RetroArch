@@ -24,7 +24,7 @@ RETRO_BEGIN_DECLS
 typedef struct rarch_dsp_filter rarch_dsp_filter_t;
 
 rarch_dsp_filter_t *rarch_dsp_filter_new(const char *filter_config,
-      float sample_rate);
+      void *string_data, float sample_rate);
 
 void rarch_dsp_filter_free(rarch_dsp_filter_t *dsp);
 

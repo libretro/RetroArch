@@ -23,15 +23,12 @@
 
 #include <file/file_path.h>
 #include <file/config_file_userdata.h>
-#include <lists/dir_list.h>
 #include <features/features_cpu.h>
+#include <lists/string_list.h>
 #include <string/stdstring.h>
 
 #include "audio_dsp_filter.h"
 #include "audio_filters/dspfilter.h"
-
-#include "../frontend/frontend_driver.h"
-#include "../performance_counters.h"
 
 struct rarch_dsp_plug
 {
@@ -151,15 +148,14 @@ static const dspfilter_get_implementation_t dsp_plugs_builtin[] = {
 static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
 {
    unsigned i;
-   dspfilter_simd_mask_t mask = cpu_features_get();
+   dspfilter_simd_mask_t mask   = cpu_features_get();
+   struct rarch_dsp_plug *plugs = (struct rarch_dsp_plug*)
+      calloc(ARRAY_SIZE(dsp_plugs_builtin), sizeof(*plugs));
 
-   (void)list;
-
-   dsp->plugs = (struct rarch_dsp_plug*)
-      calloc(ARRAY_SIZE(dsp_plugs_builtin), sizeof(*dsp->plugs));
-   if (!dsp->plugs)
+   if (!plugs)
       return false;
 
+   dsp->plugs     = plugs;
    dsp->num_plugs = ARRAY_SIZE(dsp_plugs_builtin);
 
    for (i = 0; i < ARRAY_SIZE(dsp_plugs_builtin); i++)
@@ -229,12 +225,10 @@ static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
 #endif
 
 rarch_dsp_filter_t *rarch_dsp_filter_new(
-      const char *filter_config, float sample_rate)
+      const char *filter_config, 
+      void *string_data,
+      float sample_rate)
 {
-#if !defined(HAVE_FILTERS_BUILTIN) && defined(HAVE_DYLIB)
-   char basedir[PATH_MAX_LENGTH];
-   char ext_name[PATH_MAX_LENGTH];
-#endif
    config_file_t *conf           = NULL;
    struct string_list *plugs     = NULL;
    rarch_dsp_filter_t *dsp       = (rarch_dsp_filter_t*)calloc(1, sizeof(*dsp));
@@ -248,16 +242,8 @@ rarch_dsp_filter_t *rarch_dsp_filter_new(
 
    dsp->conf = conf;
 
-#if !defined(HAVE_FILTERS_BUILTIN) && defined(HAVE_DYLIB)
-   fill_pathname_basedir(basedir, filter_config, sizeof(basedir));
-
-   if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
-         goto error;
-
-   plugs = dir_list_new(basedir, ext_name, false, true, false, false);
-   if (!plugs)
-      goto error;
-#endif
+   if (string_data)
+      plugs = (struct string_list*)string_data;
 
 #if defined(HAVE_DYLIB) || defined(HAVE_FILTERS_BUILTIN)
    if (!append_plugs(dsp, plugs))
