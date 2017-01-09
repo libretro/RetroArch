@@ -484,9 +484,8 @@ void menu_display_draw(menu_display_ctx_draw_t *draw)
    menu_disp->draw(draw);
 }
 
-bool menu_display_shader_pipeline_active(void)
+static bool menu_display_shader_pipeline_active(settings_t *settings)
 {
-   settings_t *settings          = config_get_ptr();
    if (!string_is_equal(menu_driver_ident(), "xmb"))
       return false;
    if (settings->menu.xmb.shader_pipeline == XMB_SHADER_PIPELINE_WALLPAPER)
@@ -526,7 +525,7 @@ void menu_display_draw_bg(menu_display_ctx_draw_t *draw, bool add_opacity_to_wal
 
    draw->coords      = &coords;
 
-   if (!menu_display_libretro_running() && !menu_display_shader_pipeline_active())
+   if (!menu_display_libretro_running() && !menu_display_shader_pipeline_active(settings))
       add_opacity_to_wallpaper = true;
 
    if (add_opacity_to_wallpaper)

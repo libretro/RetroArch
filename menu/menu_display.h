@@ -278,8 +278,6 @@ void menu_display_draw_text(
       uint32_t color, enum text_alignment text_align,
       float scale_factor, bool shadows_enable, float shadow_offset);
 
-bool menu_display_shader_pipeline_active(void);
-
 void menu_display_set_alpha(float *color, float alpha_value);
 
 font_data_t *menu_display_font(enum application_special_type type, float font_size);
