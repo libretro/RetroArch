@@ -720,11 +720,10 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
    return true;
 }
 
-static void gfx_ctx_wl_update_window_title(void *data)
+static void gfx_ctx_wl_update_window_title(void *data, video_frame_info_t video_info)
 {
    char buf[128];
    char buf_fps[128];
-   settings_t *settings       = config_get_ptr();
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
    buf[0] = buf_fps[0] = '\0';
@@ -733,7 +732,7 @@ static void gfx_ctx_wl_update_window_title(void *data)
             buf_fps, sizeof(buf_fps)))
       wl_shell_surface_set_title(wl->shell_surf, buf);
 
-   if (settings->fps_show)
+   if (video_info.fps_show)
       runloop_msg_queue_push(buf_fps, 1, 1, false);
 }
 

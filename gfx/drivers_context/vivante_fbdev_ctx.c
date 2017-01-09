@@ -146,17 +146,16 @@ static bool gfx_ctx_vivante_set_resize(void *data,
    return false;
 }
 
-static void gfx_ctx_vivante_update_window_title(void *data)
+static void gfx_ctx_vivante_update_window_title(void *data, video_frame_info_t video_info)
 {
-   char buf[128]        = {0};
-   char buf_fps[128]    = {0};
-   settings_t *settings = config_get_ptr();
+   char buf[128];
+   char buf_fps[128];
 
-   (void)data;
+   buf[0] = buf_fps[0] = '\0';
 
    video_monitor_get_fps(buf, sizeof(buf),
          buf_fps, sizeof(buf_fps));
-   if (settings->fps_show)
+   if (video_info.fps_show)
       runloop_msg_queue_push(buf_fps, 1, 1, false);
 }
 

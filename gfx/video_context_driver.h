@@ -100,7 +100,7 @@ typedef struct gfx_ctx_driver
    float (*translate_aspect)(void*, unsigned, unsigned);
 
    /* Asks driver to update window title (FPS, etc). */
-   void (*update_window_title)(void*);
+   void (*update_window_title)(void*, video_frame_info_t video_info);
 
    /* Queries for resize and quit events.
     * Also processes events. */
@@ -290,9 +290,9 @@ bool video_context_driver_set(const gfx_ctx_driver_t *data);
 
 void video_context_driver_destroy(void);
 
-#define video_context_driver_update_window_title() \
+#define video_context_driver_update_window_title(video_info) \
    if (current_video_context && current_video_context->update_window_title) \
-      current_video_context->update_window_title(video_context_data)
+      current_video_context->update_window_title(video_context_data, video_info)
 
 #define video_context_driver_swap_buffers() \
    if (current_video_context && current_video_context->swap_buffers) \

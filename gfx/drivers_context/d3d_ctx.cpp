@@ -85,11 +85,10 @@ static void gfx_ctx_d3d_swap_buffers(void *data)
    d3d_swap(d3d, d3dr);
 }
 
-static void gfx_ctx_d3d_update_title(void *data)
+static void gfx_ctx_d3d_update_title(void *data, video_frame_info_t video_info)
 {
    char buf[128];
    char buffer_fps[128];
-   settings_t *settings      = config_get_ptr();
    const ui_window_t *window = ui_companion_driver_get_window_ptr();
 
    buf[0] = buffer_fps[0]    = '\0';
@@ -102,7 +101,7 @@ static void gfx_ctx_d3d_update_title(void *data)
 #endif
    }
 
-   if (settings->fps_show)
+   if (video_info.fps_show)
    {
 #ifdef _XBOX
       MEMORYSTATUS stat;

@@ -1461,7 +1461,7 @@ static bool d3d_frame(void *data, const void *frame,
    }
 #endif
 
-   video_context_driver_update_window_title();
+   video_context_driver_update_window_title(video_info);
 
    performance_counter_stop(&d3d_frame);
 

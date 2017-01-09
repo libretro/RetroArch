@@ -719,17 +719,16 @@ bool x11_connect(void)
    return true;
 }
 
-void x11_update_window_title(void *data)
+void x11_update_window_title(void *data, video_frame_info_t video_info)
 {
    char buf[128];
    char buf_fps[128];
-   settings_t *settings    = config_get_ptr();
 
    buf[0] = buf_fps[0] = '\0';
 
    if (video_monitor_get_fps(buf, sizeof(buf), buf_fps, sizeof(buf_fps)))
       XStoreName(g_x11_dpy, g_x11_win, buf);
-   if (settings->fps_show)
+   if (video_info.fps_show)
       runloop_msg_queue_push(buf_fps, 1, 1, false);
 }
 

@@ -48,9 +48,10 @@ static bool gfx_ctx_null_set_resize(void *data, unsigned width, unsigned height)
    return false;
 }
 
-static void gfx_ctx_null_update_window_title(void *data)
+static void gfx_ctx_null_update_window_title(void *data, video_frame_info_t video_info)
 {
    (void)data;
+   (void)video_info;
 }
 
 static void gfx_ctx_null_get_video_size(void *data, unsigned *width, unsigned *height)

@@ -307,11 +307,10 @@ static void osmesa_ctx_get_video_size(void *data,
    *height = osmesa->height;
 }
 
-static void osmesa_ctx_update_window_title(void *data)
+static void osmesa_ctx_update_window_title(void *data, video_frame_info_t video_info)
 {
    static char buf[128]           = {0};
    static char buf_fps[128]       = {0};
-   settings_t *settings    = config_get_ptr();
    gfx_ctx_osmesa_data_t *osmesa = (gfx_ctx_osmesa_data_t*)data;
 
    if (!osmesa)
@@ -319,7 +318,7 @@ static void osmesa_ctx_update_window_title(void *data)
 
    video_monitor_get_fps(buf, sizeof(buf), buf_fps, sizeof(buf_fps));
 
-   if (settings->fps_show)
+   if (video_info.fps_show)
       runloop_msg_queue_push(buf_fps, 1, 1, false);
 }
 

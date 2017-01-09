@@ -112,18 +112,16 @@ static bool gfx_ctx_cgl_set_resize(void *data, unsigned width, unsigned height)
    return false;
 }
 
-static void gfx_ctx_cgl_update_window_title(void *data)
+static void gfx_ctx_cgl_update_window_title(void *data, video_frame_info_t video_info)
 {
    char buf[128];
    char buf_fps[128];
-   settings_t *settings = config_get_ptr();
 
    buf[0] = buf_fps[0]  = '\0';
-   (void)data;
 
    video_monitor_get_fps(buf, sizeof(buf),
       buf_fps, sizeof(buf_fps));
-   if (settings->fps_show)
+   if (video_info.fps_show)
       runloop_msg_queue_push(buf_fps, 1, 1, false);
 }
 

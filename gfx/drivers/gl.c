@@ -1280,7 +1280,7 @@ static bool gl_frame(void *data, const void *frame,
    gl_render_overlay(gl);
 #endif
 
-   video_context_driver_update_window_title();
+   video_context_driver_update_window_title(video_info);
 
    performance_counter_stop(&frame_run);
 

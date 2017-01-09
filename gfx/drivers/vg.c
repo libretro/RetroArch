@@ -125,7 +125,6 @@ static void *vg_init(const video_info_t *video,
    interval = video->vsync ? 1 : 0;
 
    video_context_driver_swap_interval(&interval);
-   video_context_driver_update_window_title();
 
    vg->mTexType    = video->rgb32 ? VG_sXRGB_8888 : VG_sRGB_565;
    vg->keep_aspect = video->force_aspect;
@@ -425,7 +424,7 @@ static bool vg_frame(void *data, const void *frame,
       vg_draw_message(vg, msg);
 #endif
 
-   video_context_driver_update_window_title();
+   video_context_driver_update_window_title(video_info);
 
    performance_counter_stop(&vg_fr);
 

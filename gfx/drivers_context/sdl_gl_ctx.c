@@ -165,8 +165,8 @@ static void sdl_ctx_swap_interval(void *data, unsigned interval)
 static bool sdl_ctx_set_video_mode(void *data, unsigned width, unsigned height,
       bool fullscreen)
 {
-   unsigned fsflag = 0;
-   settings_t *settings = config_get_ptr();
+   unsigned fsflag         = 0;
+   settings_t *settings    = config_get_ptr();
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;
 
    sdl->g_new_width  = width;
@@ -267,15 +267,10 @@ static void sdl_ctx_get_video_size(void *data,
    }
 }
 
-static void sdl_ctx_update_window_title(void *data)
+static void sdl_ctx_update_window_title(void *data, video_frame_info_t video_info)
 {
    char buf[128];
    char buf_fps[128];
-   settings_t *settings    = config_get_ptr();
-   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;
-
-   if (!sdl)
-      return;
 
    buf[0] = buf_fps[0] = '\0';
 
@@ -283,12 +278,15 @@ static void sdl_ctx_update_window_title(void *data)
             buf_fps, sizeof(buf_fps)))
    {
 #ifdef HAVE_SDL2
-      SDL_SetWindowTitle(sdl->g_win, buf);
+      gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;
+      if (sdl)
+         SDL_SetWindowTitle(sdl->g_win, buf);
 #else
       SDL_WM_SetCaption(buf, NULL);
 #endif
    }
-   if (settings->fps_show)
+
+   if (video_info.fps_show)
       runloop_msg_queue_push(buf_fps, 1, 1, false);
 }
 

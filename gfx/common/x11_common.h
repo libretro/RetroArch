@@ -82,7 +82,7 @@ bool x11_alive(void *data);
 
 bool x11_connect(void);
 
-void x11_update_window_title(void *data);
+void x11_update_window_title(void *data, video_frame_info_t video_info);
 
 bool x11_input_ctx_new(bool true_full);
 
