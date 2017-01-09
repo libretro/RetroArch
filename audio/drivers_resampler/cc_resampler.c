@@ -540,7 +540,7 @@ static void resampler_CC_free(void *re_)
    (void)re_;
 }
 
-rarch_resampler_t CC_resampler = {
+retro_resampler_t CC_resampler = {
    resampler_CC_init,
    resampler_CC_process,
    resampler_CC_free,

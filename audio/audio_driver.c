@@ -141,7 +141,7 @@ static struct retro_audio_callback audio_callback        = {0};
 
 static retro_dsp_filter_t *audio_driver_dsp              = NULL;
 static struct string_list *audio_driver_devices_list     = NULL;
-static const rarch_resampler_t *audio_driver_resampler   = NULL;
+static const retro_resampler_t *audio_driver_resampler   = NULL;
 static void *audio_driver_resampler_data                 = NULL;
 static const audio_driver_t *current_audio               = NULL;
 static void *audio_driver_context_audio_data             = NULL;
@@ -295,7 +295,7 @@ static bool uninit_audio(void)
 static bool audio_driver_init_resampler(void)
 {
    settings_t *settings = config_get_ptr();
-   return rarch_resampler_realloc(
+   return retro_resampler_realloc(
          &audio_driver_resampler_data,
          &audio_driver_resampler,
          settings->audio.resampler,

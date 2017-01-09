@@ -46,7 +46,7 @@ static void *resampler_null_init(const struct resampler_config *config,
    return (void*)0;
 }
  
-rarch_resampler_t null_resampler = {
+retro_resampler_t null_resampler = {
    resampler_null_init,
    resampler_null_process,
    resampler_null_free,

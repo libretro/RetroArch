@@ -116,7 +116,7 @@ typedef void (*resampler_free_t)(void *data);
 /* Processes input data. */
 typedef void (*resampler_process_t)(void *_data, struct resampler_data *data);
 
-typedef struct rarch_resampler
+typedef struct retro_resampler
 {
    resampler_init_t     init;
    resampler_process_t  process;
@@ -131,7 +131,7 @@ typedef struct rarch_resampler
    /* Computer-friendly short version of ident.
     * Lower case, no spaces and special characters, etc. */
    const char *short_ident; 
-} rarch_resampler_t;
+} retro_resampler_t;
 
 typedef struct audio_frame_float
 {
@@ -139,12 +139,12 @@ typedef struct audio_frame_float
    float r;
 } audio_frame_float_t;
 
-extern rarch_resampler_t sinc_resampler;
+extern retro_resampler_t sinc_resampler;
 #ifdef HAVE_CC_RESAMPLER
-extern rarch_resampler_t CC_resampler;
+extern retro_resampler_t CC_resampler;
 #endif
-extern rarch_resampler_t nearest_resampler;
-extern rarch_resampler_t null_resampler;
+extern retro_resampler_t nearest_resampler;
+extern retro_resampler_t null_resampler;
 
 /**
  * audio_resampler_driver_find_handle:
@@ -165,7 +165,7 @@ const void *audio_resampler_driver_find_handle(int index);
 const char *audio_resampler_driver_find_ident(int index);
 
 /**
- * rarch_resampler_realloc:
+ * retro_resampler_realloc:
  * @re                         : Resampler handle
  * @backend                    : Resampler backend that is about to be set.
  * @ident                      : Identifier name for resampler we want.
@@ -176,7 +176,7 @@ const char *audio_resampler_driver_find_ident(int index);
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool rarch_resampler_realloc(void **re, const rarch_resampler_t **backend,
+bool retro_resampler_realloc(void **re, const retro_resampler_t **backend,
       const char *ident, double bw_ratio);
 
 RETRO_END_DECLS

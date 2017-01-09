@@ -144,7 +144,7 @@ struct ff_audio_info
     * Could use libswresample, but it doesn't support floating point ratios.
     * Use either S16 or (planar) float for simplicity.
     */
-   const rarch_resampler_t *resampler;
+   const retro_resampler_t *resampler;
    void *resampler_data;
 
    bool use_float;
@@ -337,7 +337,7 @@ static bool ffmpeg_init_audio(ffmpeg_t *handle)
       audio->codec->sample_rate = params->sample_rate;
       audio->codec->time_base = av_d2q(1.0 / params->sample_rate, 1000000);
 
-      rarch_resampler_realloc(&audio->resampler_data,
+      retro_resampler_realloc(&audio->resampler_data,
             &audio->resampler,
             settings->audio.resampler,
             audio->ratio);

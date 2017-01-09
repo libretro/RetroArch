@@ -78,7 +78,7 @@ static void *resampler_nearest_init(const struct resampler_config *config,
    return re;
 }
  
-rarch_resampler_t nearest_resampler = {
+retro_resampler_t nearest_resampler = {
    resampler_nearest_init,
    resampler_nearest_process,
    resampler_nearest_free,

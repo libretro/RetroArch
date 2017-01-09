@@ -28,7 +28,7 @@
 
 #include <audio/audio_resampler.h>
 
-static const rarch_resampler_t *resampler_drivers[] = {
+static const retro_resampler_t *resampler_drivers[] = {
    &sinc_resampler,
 #ifdef HAVE_CC_RESAMPLER
    &CC_resampler,
@@ -90,7 +90,7 @@ const void *audio_resampler_driver_find_handle(int idx)
  **/
 const char *audio_resampler_driver_find_ident(int idx)
 {
-   const rarch_resampler_t *drv = resampler_drivers[idx];
+   const retro_resampler_t *drv = resampler_drivers[idx];
    if (!drv)
       return NULL;
    return drv->ident;
@@ -105,7 +105,7 @@ const char *audio_resampler_driver_find_ident(int idx)
  * Returns: resampler driver if resampler driver was found, otherwise
  * NULL.
  **/
-static const rarch_resampler_t *find_resampler_driver(const char *ident)
+static const retro_resampler_t *find_resampler_driver(const char *ident)
 {
    int i = find_resampler_driver_index(ident);
 
@@ -126,7 +126,7 @@ static const rarch_resampler_t *find_resampler_driver(const char *ident)
  * Returns: true (1) if successfully initialized, otherwise false (0).
  **/
 static bool resampler_append_plugs(void **re,
-      const rarch_resampler_t **backend,
+      const retro_resampler_t **backend,
       double bw_ratio)
 {
    resampler_simd_mask_t mask = cpu_features_get();
@@ -139,7 +139,7 @@ static bool resampler_append_plugs(void **re,
 }
 
 /**
- * rarch_resampler_realloc:
+ * retro_resampler_realloc:
  * @re                         : Resampler handle
  * @backend                    : Resampler backend that is about to be set.
  * @ident                      : Identifier name for resampler we want.
@@ -150,7 +150,7 @@ static bool resampler_append_plugs(void **re,
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool rarch_resampler_realloc(void **re, const rarch_resampler_t **backend,
+bool retro_resampler_realloc(void **re, const retro_resampler_t **backend,
       const char *ident, double bw_ratio)
 {
    if (*re && *backend)
