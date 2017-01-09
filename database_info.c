@@ -22,7 +22,6 @@
 #include <compat/strl.h>
 #include <retro_endianness.h>
 #include <file/file_path.h>
-#include <file/archive_file.h>
 
 #include "libretro-db/libretrodb.h"
 
@@ -109,104 +108,6 @@ static void database_info_build_query_add_glob_close(char *s, size_t len)
 {
    strlcat(s, "*')", len);
 }
-
-#if 0
-int database_info_build_query(char *s, size_t len,
-      const char *label, const char *path)
-{
-   uint32_t value  = 0;
-   bool add_quotes = true;
-   bool add_glob   = false;
-
-   database_info_build_query_add_bracket_open(s, len);
-
-   value = msg_hash_calculate(label);
-
-   switch (value)
-   {
-      case DB_QUERY_ENTRY:
-         strlcat(s, "name", len);
-         break;
-      case DB_QUERY_ENTRY_PUBLISHER:
-         strlcat(s, "publisher", len);
-         break;
-      case DB_QUERY_ENTRY_DEVELOPER:
-         strlcat(s, "developer", len);
-         add_glob = true;
-         add_quotes = false;
-         break;
-      case DB_QUERY_ENTRY_ORIGIN:
-         strlcat(s, "origin", len);
-         break;
-      case DB_QUERY_ENTRY_FRANCHISE:
-         strlcat(s, "franchise", len);
-         break;
-      case DB_QUERY_ENTRY_RATING:
-         strlcat(s, "esrb_rating", len);
-         break;
-      case DB_QUERY_ENTRY_BBFC_RATING:
-         strlcat(s, "bbfc_rating", len);
-         break;
-      case DB_QUERY_ENTRY_ELSPA_RATING:
-         strlcat(s, "elspa_rating", len);
-         break;
-      case DB_QUERY_ENTRY_PEGI_RATING:
-         strlcat(s, "pegi_rating", len);
-         break;
-      case DB_QUERY_ENTRY_CERO_RATING:
-         strlcat(s, "cero_rating", len);
-         break;
-      case DB_QUERY_ENTRY_ENHANCEMENT_HW:
-         strlcat(s, "enhancement_hw", len);
-         break;
-      case DB_QUERY_ENTRY_EDGE_MAGAZINE_RATING:
-         strlcat(s, "edge_rating", len);
-         add_quotes = false;
-         break;
-      case DB_QUERY_ENTRY_EDGE_MAGAZINE_ISSUE:
-         strlcat(s, "edge_issue", len);
-         add_quotes = false;
-         break;
-      case DB_QUERY_ENTRY_FAMITSU_MAGAZINE_RATING:
-         strlcat(s, "famitsu_rating", len);
-         add_quotes = false;
-         break;
-      case DB_QUERY_ENTRY_RELEASEDATE_MONTH:
-         strlcat(s, "releasemonth", len);
-         add_quotes = false;
-         break;
-      case DB_QUERY_ENTRY_RELEASEDATE_YEAR:
-         strlcat(s, "releaseyear", len);
-         add_quotes = false;
-         break;
-      case DB_QUERY_ENTRY_MAX_USERS:
-         strlcat(s, "users", len);
-         add_quotes = false;
-         break;
-      default:
-         RARCH_LOG("Unknown label: %s\n", label);
-         break;
-   }
-
-   database_info_build_query_add_colon(s, len);
-   if (add_glob)
-      database_info_build_query_add_glob_open(s, len);
-   if (add_quotes)
-      database_info_build_query_add_quote(s, len);
-   strlcat(s, path, len);
-   if (add_glob)
-      database_info_build_query_add_glob_close(s, len);
-   if (add_quotes)
-      database_info_build_query_add_quote(s, len);
-   database_info_build_query_add_bracket_close(s, len);
-
-#if 0
-   RARCH_LOG("query: %s\n", s);
-#endif
-
-   return 0;
-}
-#endif
 
 int database_info_build_query_enum(char *s, size_t len,
       enum database_query_type type,
