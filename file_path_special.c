@@ -250,9 +250,7 @@ void fill_pathname_application_path(char *s, size_t len)
    char *buff = malloc(len);
 
    if(_cmdname(buff))
-   {
-       strlcpy(s, buff, len);
-   }
+      strlcpy(s, buff, len);
 
    free(buff);
 #else
