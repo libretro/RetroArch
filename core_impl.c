@@ -22,7 +22,6 @@
 #include <ctype.h>
 #include <errno.h>
 
-#include <retro_inline.h>
 #include <boolean.h>
 #include <lists/string_list.h>
 #include <libretro.h>
@@ -46,15 +45,16 @@
 #include "audio/audio_driver.h"
 #include "cheevos.h"
 
-static struct retro_core_t core;
-static unsigned            core_poll_type;
-static bool                core_inited         = false;
-static bool                core_symbols_inited = false;
-static bool                core_game_loaded    = false;
-static bool                core_input_polled   = false;
-static bool   core_has_set_input_descriptors   = false;
-static struct retro_callbacks retro_ctx;
-static uint64_t            core_serialization_quirks_v = 0;
+static unsigned            core_poll_type                 = POLL_TYPE_EARLY;
+static bool                core_inited                    = false;
+static bool                core_symbols_inited            = false;
+static bool                core_game_loaded               = false;
+static bool                core_input_polled              = false;
+static bool                core_has_set_input_descriptors = false;
+static uint64_t            core_serialization_quirks_v    = 0;
+
+static struct              retro_callbacks retro_ctx;
+static struct              retro_core_t core;
 
 static void core_input_state_poll_maybe(void)
 {
