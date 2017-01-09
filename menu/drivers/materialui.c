@@ -518,7 +518,7 @@ static void mui_render(void *data)
    delta.current = delta_time;
 
    if (menu_animation_ctl(MENU_ANIMATION_CTL_IDEAL_DELTA_TIME_GET, &delta))
-      menu_animation_ctl(MENU_ANIMATION_CTL_UPDATE, &delta.ideal);
+      menu_animation_update(delta.ideal);
 
    menu_display_set_width(width);
    menu_display_set_height(height);

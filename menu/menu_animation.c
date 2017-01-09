@@ -52,6 +52,12 @@ struct menu_animation
 
 typedef struct menu_animation menu_animation_t;
 
+static menu_animation_t anim;
+static retro_time_t cur_time    = 0;
+static retro_time_t old_time    = 0;
+static float delta_time         = 0.0f;
+static bool animation_is_active = false;
+
 /* from https://github.com/kikito/tween.lua/blob/master/tween.lua */
 
 static float easing_linear(float t, float b, float c, float d)
@@ -280,40 +286,6 @@ static float easing_out_in_bounce(float t, float b, float c, float d)
    return easing_in_bounce((t * 2) - d, b + c / 2, c / 2, d);
 }
 
-static int menu_animation_iterate(menu_animation_t *anim,
-      unsigned idx, float dt, unsigned *active_tweens)
-{
-   struct tween *tween = &anim->list[idx];
-
-   if (!tween || !tween->alive)
-      return -1;
-
-   tween->running_since += dt;
-
-   *tween->subject = tween->easing(
-            tween->running_since,
-            tween->initial_value,
-            tween->target_value - tween->initial_value,
-            tween->duration);
-
-   if (tween->running_since >= tween->duration)
-   {
-      *tween->subject = tween->target_value;
-      tween->alive    = false;
-
-      if (idx < anim->first_dead)
-         anim->first_dead = idx;
-
-      if (tween->cb)
-         tween->cb();
-   }
-
-   if (tween->running_since < tween->duration)
-      *active_tweens += 1;
-
-   return 0;
-}
-
 static void menu_animation_ticker_generic(uint64_t idx,
       size_t max_width, size_t *offset, size_t *width)
 {
@@ -509,15 +481,55 @@ static bool menu_animation_push(menu_animation_t *anim, menu_animation_ctx_entry
    return true;
 }
 
+bool menu_animation_update(float delta_time)
+{
+   unsigned i;
+   unsigned active_tweens = 0;
+
+   for(i = 0; i < anim.size; i++)
+   {
+      struct tween *tween = &anim.list[i];
+      if (!tween || !tween->alive)
+         continue;
+
+      tween->running_since += delta_time;
+
+      *tween->subject = tween->easing(
+            tween->running_since,
+            tween->initial_value,
+            tween->target_value - tween->initial_value,
+            tween->duration);
+
+      if (tween->running_since >= tween->duration)
+      {
+         *tween->subject = tween->target_value;
+         tween->alive    = false;
+
+         if (i < anim.first_dead)
+            anim.first_dead = i;
+
+         if (tween->cb)
+            tween->cb();
+      }
+
+      if (tween->running_since < tween->duration)
+         active_tweens += 1;
+   }
+
+   if (!active_tweens)
+   {
+      anim.size           = 0;
+      anim.first_dead     = 0;
+      return false;
+   }
+
+   animation_is_active = true;
+
+   return true;
+}
 
 bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
 {
-   static menu_animation_t anim;
-   static retro_time_t cur_time    = 0;
-   static retro_time_t old_time    = 0;
-   static float delta_time         = 0.0f;
-   static bool animation_is_active = false;
-
    switch (state)
    {
       case MENU_ANIMATION_CTL_DEINIT:
@@ -574,28 +586,6 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
                animation_is_active   = true;
                last_clock_update     = cur_time;
             }
-         }
-         break;
-      case MENU_ANIMATION_CTL_UPDATE:
-         {
-            unsigned i;
-            unsigned active_tweens = 0;
-            float *dt = (float*)data;
-
-            if (!dt)
-               return false;
-
-            for(i = 0; i < anim.size; i++)
-               menu_animation_iterate(&anim, i, *dt, &active_tweens);
-
-            if (!active_tweens)
-            {
-               anim.size       = 0;
-               anim.first_dead = 0;
-               return false;
-            }
-
-            animation_is_active = true;
          }
          break;
       case MENU_ANIMATION_CTL_KILL_BY_TAG:
