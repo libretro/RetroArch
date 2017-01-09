@@ -25,6 +25,8 @@
 #include "config.h"
 #endif
 
+#include "input/input_driver.h"
+
 #include "config.def.keybinds.h"
 
 enum video_driver_enum
