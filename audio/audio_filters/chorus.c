@@ -13,12 +13,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "dspfilter.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <retro_miscellaneous.h>
+#include <libretro_dspfilter.h>
 
 #define CHORUS_MAX_DELAY 4096
 #define CHORUS_DELAY_MASK (CHORUS_MAX_DELAY - 1)
@@ -46,11 +46,12 @@ static void chorus_process(void *data, struct dspfilter_output *output,
       const struct dspfilter_input *input)
 {
    unsigned i;
+   float *out             = NULL;
    struct chorus_data *ch = (struct chorus_data*)data;
 
-   output->samples = input->samples;
-   output->frames  = input->frames;
-   float *out = output->samples;
+   output->samples        = input->samples;
+   output->frames         = input->frames;
+   out                    = output->samples;
 
    for (i = 0; i < input->frames; i++, out += 2)
    {
@@ -77,7 +78,8 @@ static void chorus_process(void *data, struct dspfilter_output *output,
       r_a = ch->old[1][(ch->old_ptr - delay_int - 0) & CHORUS_DELAY_MASK];
       r_b = ch->old[1][(ch->old_ptr - delay_int - 1) & CHORUS_DELAY_MASK];
 
-      /* Lerp introduces aliasing of the chorus component, but doing full polyphase here is probably overkill. */
+      /* Lerp introduces aliasing of the chorus component, 
+       * but doing full polyphase here is probably overkill. */
       chorus_l = l_a * (1.0f - delay_frac) + l_b * delay_frac;
       chorus_r = r_a * (1.0f - delay_frac) + r_b * delay_frac;
 
@@ -138,7 +140,8 @@ static const struct dspfilter_implementation chorus_plug = {
 #define dspfilter_get_implementation chorus_dspfilter_get_implementation
 #endif
 
-const struct dspfilter_implementation *dspfilter_get_implementation(dspfilter_simd_mask_t mask)
+const struct dspfilter_implementation *
+dspfilter_get_implementation(dspfilter_simd_mask_t mask)
 {
    (void)mask;
    return &chorus_plug;

@@ -14,12 +14,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "dspfilter.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <retro_miscellaneous.h>
+#include <libretro_dspfilter.h>
 
 #define WAHWAH_LFO_SKIP_SAMPLES 30
 
@@ -48,12 +48,11 @@ static void wahwah_process(void *data, struct dspfilter_output *output,
       const struct dspfilter_input *input)
 {
    unsigned i;
-   float *out;
    struct wahwah_data *wah = (struct wahwah_data*)data;
+   float *out              = output->samples;
 
    output->samples         = input->samples;
    output->frames          = input->frames;
-   out                     = output->samples;
 
    for (i = 0; i < input->frames; i++, out += 2)
    {
@@ -113,7 +112,7 @@ static void *wahwah_init(const struct dspfilter_info *info,
    config->get_float(userdata, "resonance", &wah->res, 2.5f);
 
    wah->lfoskip = wah->freq * 2.0 * M_PI / info->input_rate;
-   wah->phase = wah->startphase * M_PI / 180.0;
+   wah->phase   = wah->startphase * M_PI / 180.0;
 
    return wah;
 }
@@ -132,7 +131,8 @@ static const struct dspfilter_implementation wahwah_plug = {
 #define dspfilter_get_implementation wahwah_dspfilter_get_implementation
 #endif
 
-const struct dspfilter_implementation *dspfilter_get_implementation(dspfilter_simd_mask_t mask)
+const struct dspfilter_implementation *
+dspfilter_get_implementation(dspfilter_simd_mask_t mask)
 {
    (void)mask;
    return &wahwah_plug;

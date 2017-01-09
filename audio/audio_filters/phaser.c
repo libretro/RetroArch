@@ -14,12 +14,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "dspfilter.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <retro_miscellaneous.h>
+#include <libretro_dspfilter.h>
 
 #define phaserlfoshape 4.0
 #define phaserlfoskipsamples 20
@@ -51,12 +51,12 @@ static void phaser_process(void *data, struct dspfilter_output *output,
 {
    unsigned i, c;
    int s;
-   float m[2], tmp[2], *out;
+   float m[2], tmp[2];
    struct phaser_data *ph = (struct phaser_data*)data;
+   float *out             = output->samples;
 
-   output->samples = input->samples;
-   output->frames  = input->frames;
-   out             = output->samples;
+   output->samples        = input->samples;
+   output->frames         = input->frames;
 
    for (i = 0; i < input->frames; i++, out += 2)
    {

@@ -19,8 +19,7 @@
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
 #include <filters.h>
-
-#include "dspfilter.h"
+#include <libretro_dspfilter.h>
 
 #include "fft/fft.c"
 

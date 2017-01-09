@@ -16,8 +16,7 @@
 #include <stdlib.h>
 
 #include <retro_miscellaneous.h>
-
-#include "dspfilter.h"
+#include <libretro_dspfilter.h>
 
 struct echo_channel
 {
@@ -49,12 +48,13 @@ static void echo_process(void *data, struct dspfilter_output *output,
       const struct dspfilter_input *input)
 {
    unsigned i, c;
+   float *out             = NULL;
    struct echo_data *echo = (struct echo_data*)data;
 
-   output->samples = input->samples;
-   output->frames  = input->frames;
+   output->samples        = input->samples;
+   output->frames         = input->frames;
 
-   float *out = output->samples;
+   out                    = output->samples;
 
    for (i = 0; i < input->frames; i++, out += 2)
    {
@@ -94,25 +94,35 @@ static void *echo_init(const struct dspfilter_info *info,
       const struct dspfilter_config *config, void *userdata)
 {
    unsigned i, channels;
-   float *delay = NULL, *feedback = NULL;
-   unsigned num_delay = 0, num_feedback = 0;
+   struct echo_channel *echo_channels    = NULL;
+   float *delay                          = NULL;
+   float *feedback                       = NULL;
+   unsigned num_delay                    = 0;
+   unsigned num_feedback                 = 0;
 
-   static const float default_delay[] = { 200.0f };
+   static const float default_delay[]    = { 200.0f };
    static const float default_feedback[] = { 0.5f };
-   struct echo_data *echo = (struct echo_data*)calloc(1, sizeof(*echo));
+   struct echo_data *echo                = (struct echo_data*)
+      calloc(1, sizeof(*echo));
+
    if (!echo)
       return NULL;
 
-   config->get_float_array(userdata, "delay", &delay, &num_delay, default_delay, 1);
-   config->get_float_array(userdata, "feedback", &feedback, &num_feedback, default_feedback, 1);
+   config->get_float_array(userdata, "delay", &delay,
+         &num_delay, default_delay, 1);
+   config->get_float_array(userdata, "feedback", &feedback,
+         &num_feedback, default_feedback, 1);
    config->get_float(userdata, "amp", &echo->amp, 0.2f);
 
    channels       = num_feedback = num_delay = MIN(num_delay, num_feedback);
 
-   echo->channels = (struct echo_channel*)calloc(channels, sizeof(*echo->channels));
-   if (!echo->channels)
+   echo_channels = (struct echo_channel*)calloc(channels,
+         sizeof(*echo_channels));
+
+   if (!echo_channels)
       goto error;
 
+   echo->channels     = echo_channels;
    echo->num_channels = channels;
 
    for (i = 0; i < channels; i++)

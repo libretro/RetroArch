@@ -13,9 +13,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "fft.h"
 #include <math.h>
 #include <stdlib.h>
+
+#include "fft.h"
 
 #include <retro_miscellaneous.h>
 
@@ -128,8 +129,8 @@ void fft_free(fft_t *fft)
 static void butterfly(fft_complex_t *a, fft_complex_t *b, fft_complex_t mod)
 {
    mod = fft_complex_mul(mod, *b);
-   *b = fft_complex_sub(*a, mod);
-   *a = fft_complex_add(*a, mod);
+   *b  = fft_complex_sub(*a, mod);
+   *a  = fft_complex_add(*a, mod);
 }
 
 static void butterflies(fft_complex_t *butterfly_buf,
@@ -141,7 +142,8 @@ static void butterflies(fft_complex_t *butterfly_buf,
    {
       int phase_step = (int)samples * phase_dir / (int)step_size;
       for (j = i; j < i + step_size; j++)
-         butterfly(&butterfly_buf[j], &butterfly_buf[j + step_size], phase_lut[phase_step * (int)(j - i)]);
+         butterfly(&butterfly_buf[j], &butterfly_buf[j + step_size],
+               phase_lut[phase_step * (int)(j - i)]);
    }
 }
 
@@ -180,7 +182,9 @@ void fft_process_inverse(fft_t *fft,
 {
    unsigned step_size;
    unsigned samples = fft->size;
-   interleave_complex(fft->bitinverse_buffer, fft->interleave_buffer, in, samples, 1);
+
+   interleave_complex(fft->bitinverse_buffer, fft->interleave_buffer,
+         in, samples, 1);
 
    for (step_size = 1; step_size < samples; step_size <<= 1)
    {

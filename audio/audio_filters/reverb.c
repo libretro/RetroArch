@@ -14,11 +14,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "dspfilter.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include <retro_inline.h>
+#include <libretro_dspfilter.h>
 
 struct comb
 {
@@ -41,8 +42,8 @@ struct allpass
 
 static INLINE float comb_process(struct comb *c, float input)
 {
-   float output = c->buffer[c->bufidx];
-   c->filterstore = (output * c->damp2) + (c->filterstore * c->damp1);
+   float output         = c->buffer[c->bufidx];
+   c->filterstore       = (output * c->damp2) + (c->filterstore * c->damp1);
 
    c->buffer[c->bufidx] = input + (c->filterstore * c->feedback);
 
@@ -56,8 +57,8 @@ static INLINE float comb_process(struct comb *c, float input)
 
 static INLINE float allpass_process(struct allpass *a, float input)
 {
-   float bufout = a->buffer[a->bufidx];
-   float output = -input + bufout;
+   float bufout         = a->buffer[a->bufidx];
+   float output         = -input + bufout;
    a->buffer[a->bufidx] = input + bufout * a->feedback;
 
    a->bufidx++;
@@ -129,8 +130,9 @@ static float revmodel_process(struct revmodel *rev, float in)
 {
    int i;
    float mono_out = 0.0f;
-   float mono_in = in;
-   float input = mono_in * rev->gain;
+   float mono_in  = in;
+   float input    = mono_in * rev->gain;
+
    for (i = 0; i < numcombs; i++)
       mono_out += comb_process(&rev->combL[i], input);
 
@@ -204,19 +206,19 @@ static void revmodel_setmode(struct revmodel *rev, float value)
 
 static void revmodel_init(struct revmodel *rev)
 {
-   rev->combL[0].buffer = rev->bufcombL1; rev->combL[0].bufsize = combtuningL1;
-   rev->combL[1].buffer = rev->bufcombL2; rev->combL[1].bufsize = combtuningL2;
-   rev->combL[2].buffer = rev->bufcombL3; rev->combL[2].bufsize = combtuningL3;
-   rev->combL[3].buffer = rev->bufcombL4; rev->combL[3].bufsize = combtuningL4;
-   rev->combL[4].buffer = rev->bufcombL5; rev->combL[4].bufsize = combtuningL5;
-   rev->combL[5].buffer = rev->bufcombL6; rev->combL[5].bufsize = combtuningL6;
-   rev->combL[6].buffer = rev->bufcombL7; rev->combL[6].bufsize = combtuningL7;
-   rev->combL[7].buffer = rev->bufcombL8; rev->combL[7].bufsize = combtuningL8;
+   rev->combL[0].buffer      = rev->bufcombL1; rev->combL[0].bufsize = combtuningL1;
+   rev->combL[1].buffer      = rev->bufcombL2; rev->combL[1].bufsize = combtuningL2;
+   rev->combL[2].buffer      = rev->bufcombL3; rev->combL[2].bufsize = combtuningL3;
+   rev->combL[3].buffer      = rev->bufcombL4; rev->combL[3].bufsize = combtuningL4;
+   rev->combL[4].buffer      = rev->bufcombL5; rev->combL[4].bufsize = combtuningL5;
+   rev->combL[5].buffer      = rev->bufcombL6; rev->combL[5].bufsize = combtuningL6;
+   rev->combL[6].buffer      = rev->bufcombL7; rev->combL[6].bufsize = combtuningL7;
+   rev->combL[7].buffer      = rev->bufcombL8; rev->combL[7].bufsize = combtuningL8;
 
-   rev->allpassL[0].buffer = rev->bufallpassL1; rev->allpassL[0].bufsize = allpasstuningL1;
-   rev->allpassL[1].buffer = rev->bufallpassL2; rev->allpassL[1].bufsize = allpasstuningL2;
-   rev->allpassL[2].buffer = rev->bufallpassL3; rev->allpassL[2].bufsize = allpasstuningL3;
-   rev->allpassL[3].buffer = rev->bufallpassL4; rev->allpassL[3].bufsize = allpasstuningL4;
+   rev->allpassL[0].buffer   = rev->bufallpassL1; rev->allpassL[0].bufsize = allpasstuningL1;
+   rev->allpassL[1].buffer   = rev->bufallpassL2; rev->allpassL[1].bufsize = allpasstuningL2;
+   rev->allpassL[2].buffer   = rev->bufallpassL3; rev->allpassL[2].bufsize = allpasstuningL3;
+   rev->allpassL[3].buffer   = rev->bufallpassL4; rev->allpassL[3].bufsize = allpasstuningL4;
 
    rev->allpassL[0].feedback = 0.5f;
    rev->allpassL[1].feedback = 0.5f;

@@ -14,12 +14,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "dspfilter.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <retro_miscellaneous.h>
+#include <libretro_dspfilter.h>
 
 #define sqr(a) ((a) * (a))
 
@@ -60,34 +60,29 @@ static void iir_free(void *data)
 static void iir_process(void *data, struct dspfilter_output *output,
       const struct dspfilter_input *input)
 {
-   float b0, b1, b2, a0, a1, a2;
-   float xn1_l, xn2_l, yn1_l, yn2_l;
-   float xn1_r, xn2_r, yn1_r, yn2_r;
    unsigned i;
-   float *out;
    struct iir_data *iir = (struct iir_data*)data;
+   float *out           = output->samples;
 
-   output->samples = input->samples;
-   output->frames  = input->frames;
+   float b0             = iir->b0;
+   float b1             = iir->b1;
+   float b2             = iir->b2;
+   float a0             = iir->a0;
+   float a1             = iir->a1;
+   float a2             = iir->a2;
 
-   out = output->samples;
+   float xn1_l          = iir->l.xn1;
+   float xn2_l          = iir->l.xn2;
+   float yn1_l          = iir->l.yn1;
+   float yn2_l          = iir->l.yn2;
 
-   b0 = iir->b0;
-   b1 = iir->b1;
-   b2 = iir->b2;
-   a0 = iir->a0;
-   a1 = iir->a1;
-   a2 = iir->a2;
+   float xn1_r          = iir->r.xn1;
+   float xn2_r          = iir->r.xn2;
+   float yn1_r          = iir->r.yn1;
+   float yn2_r          = iir->r.yn2;
 
-   xn1_l = iir->l.xn1;
-   xn2_l = iir->l.xn2;
-   yn1_l = iir->l.yn1;
-   yn2_l = iir->l.yn2;
-
-   xn1_r = iir->r.xn1;
-   xn2_r = iir->r.xn2;
-   yn1_r = iir->r.yn1;
-   yn2_r = iir->r.yn2;
+   output->samples      = input->samples;
+   output->frames       = input->frames;
 
    for (i = 0; i < input->frames; i++, out += 2)
    {
@@ -97,18 +92,18 @@ static void iir_process(void *data, struct dspfilter_output *output,
       float l    = (b0 * in_l + b1 * xn1_l + b2 * xn2_l - a1 * yn1_l - a2 * yn2_l) / a0;
       float r    = (b0 * in_r + b1 * xn1_r + b2 * xn2_r - a1 * yn1_r - a2 * yn2_r) / a0;
 
-      xn2_l = xn1_l;
-      xn1_l = in_l;
-      yn2_l = yn1_l;
-      yn1_l = l;
+      xn2_l      = xn1_l;
+      xn1_l      = in_l;
+      yn2_l      = yn1_l;
+      yn1_l      = l;
 
-      xn2_r = xn1_r;
-      xn1_r = in_r;
-      yn2_r = yn1_r;
-      yn1_r = r;
+      xn2_r      = xn1_r;
+      xn1_r      = in_r;
+      yn2_r      = yn1_r;
+      yn1_r      = r;
 
-      out[0] = l;
-      out[1] = r;
+      out[0]     = l;
+      out[1]     = r;
    }
 
    iir->l.xn1 = xn1_l;
@@ -326,9 +321,9 @@ static void *iir_init(const struct dspfilter_info *info,
       const struct dspfilter_config *config, void *userdata)
 {
    float freq, qual, gain;
-   enum IIRFilter filter;
-   char *type = NULL;
-   struct iir_data *iir = (struct iir_data*)calloc(1, sizeof(*iir));
+   enum IIRFilter filter  = LPF;
+   char           *type   = NULL;
+   struct iir_data *iir   = (struct iir_data*)calloc(1, sizeof(*iir));
    if (!iir)
       return NULL;
 

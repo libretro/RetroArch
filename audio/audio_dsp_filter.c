@@ -28,7 +28,7 @@
 #include <string/stdstring.h>
 
 #include "audio_dsp_filter.h"
-#include "audio_filters/dspfilter.h"
+#include "libretro_dspfilter.h"
 
 struct rarch_dsp_plug
 {
