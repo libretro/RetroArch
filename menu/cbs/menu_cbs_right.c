@@ -43,8 +43,10 @@
 
 #ifndef BIND_ACTION_RIGHT
 #define BIND_ACTION_RIGHT(cbs, name) \
-   cbs->action_right = name; \
-   cbs->action_right_ident = #name;
+   do { \
+      cbs->action_right = name; \
+      cbs->action_right_ident = #name; \
+   } while(0)
 #endif
 
 #ifdef HAVE_SHADER_MANAGER
