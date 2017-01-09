@@ -676,10 +676,12 @@ static void xmb_draw_text(
       unsigned width, unsigned height, font_data_t* font)
 {
    uint32_t color;
-   uint8_t a8           = 255 * alpha;
+   uint8_t a8;
 
    if (alpha > xmb->alpha)
-      alpha             = xmb->alpha;
+      alpha = xmb->alpha;
+
+   a8       = 255 * alpha;
 
    /* Avoid drawing 100% transparent text */
    if (a8 == 0)
