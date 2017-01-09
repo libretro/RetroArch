@@ -87,7 +87,32 @@ struct slock
 struct scond
 {
 #ifdef USE_WIN32_THREADS
-   HANDLE event;
+
+   /* The syntax we'll use is mind-bending unless we use a struct. Plus, we might want to store more info later */
+   /* This will be used as a linked list immplementing a queue of waiting threads */
+   struct QueueEntry
+   {
+      struct QueueEntry* next;
+   };
+
+   /* With this implementation of scond, we don't have any way of waking (or even identifying) specific threads */
+   /* But we need to wake them in the order indicated by the queue. */
+   /* This potato token will get get passed around every waiter. The bearer can test whether he's next, and hold onto the potato if he is. */
+   /* When he's done he can then put it back into play to progress the queue further */
+   HANDLE hot_potato;
+
+   /* The primary signalled event. Hot potatoes are passed until this is set. */
+   HANDLE event; 
+
+   /* the head of the queue; NULL if queue is empty */
+   struct QueueEntry*  head; 
+
+   /* equivalent to the queue length */
+   int waiters; 
+
+   /* how many waiters in the queue have been conceptually wakened by signals (even if we haven't managed to actually wake them yet */
+   int wakens; 
+
 #else
    pthread_cond_t cond;
 #endif
@@ -211,6 +236,9 @@ void sthread_join(sthread_t *thread)
  */
 bool sthread_isself(sthread_t *thread)
 {
+  /* This thread can't possibly be a null thread */
+  if (!thread) return false;
+
 #ifdef USE_WIN32_THREADS
    return GetCurrentThread() == thread->thread;
 #else
@@ -228,23 +256,25 @@ bool sthread_isself(sthread_t *thread)
  **/
 slock_t *slock_new(void)
 {
+   bool mutex_created = false;
    slock_t      *lock = (slock_t*)calloc(1, sizeof(*lock));
    if (!lock)
       return NULL;
 
 #ifdef USE_WIN32_THREADS
    lock->lock         = CreateMutex(NULL, FALSE, NULL);
-   if (!lock->lock)
-      goto error;
+   mutex_created      = !!lock->lock;
 #else
-   if ((pthread_mutex_init(&lock->lock, NULL) < 0))
-      goto error;
+   mutex_created      = (pthread_mutex_init(&lock->lock, NULL) == 0);
 #endif
+
+   if (!mutex_created)
+      goto error;
 
    return lock;
 
 error:
-   slock_free(lock);
+   free(lock);
    return NULL;
 }
 
@@ -314,21 +344,33 @@ void slock_unlock(slock_t *lock)
  **/
 scond_t *scond_new(void)
 {
-   bool event_created = false;
    scond_t      *cond = (scond_t*)calloc(1, sizeof(*cond));
 
    if (!cond)
       return NULL;
 
 #ifdef USE_WIN32_THREADS
-   cond->event   = CreateEvent(NULL, FALSE, FALSE, NULL);
-   event_created = !!cond->event;
-#else
-   event_created = (pthread_cond_init(&cond->cond, NULL) == 0);
-#endif
-
-   if (!event_created)
+   /* This is very complex because recreating condition variable semantics with win32 parts is not easy */
+   /* The main problem is that a condition variable can be used to wake up a thread, but only if the thread is already waiting; */
+   /* whereas a win32 event will 'wake up' a thread in advance (the event will be set in advance, so a 'waiter' wont even have to wait on it) */
+   /* So at the very least, we need to do something clever. But there's bigger problems. */
+   /* We don't even have a straightforward way in win32 to satisfy pthread_cond_wait's atomicity requirement. The bulk of this algorithm is solving that. */
+   /* Note: We might could simplify this using vista+ condition variables, but we wanted an XP compatible solution. */
+   cond->event = CreateEvent(NULL, FALSE, FALSE, NULL);
+   if(!cond->event) goto error;
+   cond->hot_potato = CreateEvent(NULL, FALSE, FALSE, NULL);
+   if(!cond->hot_potato)
+   {
+      CloseHandle(cond->event);
       goto error;
+   }
+   cond->waiters = cond->wakens = 0;
+   cond->head = NULL;
+
+#else
+   if(pthread_cond_init(&cond->cond, NULL) != 0)
+      goto error;
+#endif
 
    return cond;
 
@@ -350,6 +392,7 @@ void scond_free(scond_t *cond)
 
 #ifdef USE_WIN32_THREADS
    CloseHandle(cond->event);
+   CloseHandle(cond->hot_potato);
 #else
    pthread_cond_destroy(&cond->cond);
 #endif
@@ -366,10 +409,56 @@ void scond_free(scond_t *cond)
 void scond_wait(scond_t *cond, slock_t *lock)
 {
 #ifdef USE_WIN32_THREADS
-   WaitForSingleObject(cond->event, 0);
+   
+   /* add ourselves to a queue of waiting threads */
+   struct QueueEntry myentry;
+   struct QueueEntry** ptr = &cond->head;
+   while(*ptr) /* walk to the end of the linked list */
+      ptr = &((*ptr)->next);
+   *ptr = &myentry;
+   myentry.next = NULL;
 
+   cond->waiters++;
+
+   /* now the conceptual lock release and condition block are supposed to be atomic. */
+   /* we can't do that in windows, but we can simulate the effects by using the queue, by the following analysis: */
+   /* What happens if they aren't atomic? */
+   /* 1. a signaller can rush in and signal, expecting a waiter to get it; but the waiter wouldn't, because he isn't blocked yet */
+   /* solution: win32 events make this easy. the event will sit there enabled */
+   /* 2. a signaller can rush in and signal, and then turn right around and wait */
+   /* solution: the signaller will get queued behind the waiter, who's enqueued before he releases the mutex */
+
+   /* It's my turn if I'm the head of the queue. Check to see if it's my turn. */
+   while (cond->head != &myentry)
+   {
+      /* As long as someone is even going to be able to wake up when they receive the potato, keep it going round */
+      if (cond->wakens > 0)
+         SetEvent(cond->hot_potato);
+
+      /* Wait to catch the hot potato before checking for my turn again */
+      SignalObjectAndWait(lock->lock, cond->hot_potato, INFINITE, FALSE);
+      slock_lock(lock);
+   }
+	
+   /* It's my turn now -- I hold the potato */
    SignalObjectAndWait(lock->lock, cond->event, INFINITE, FALSE);
    slock_lock(lock);
+
+   /* Remove ourselves from the queue */
+   cond->head = myentry.next;
+   cond->waiters--;
+
+   /* If any other wakenings are pending, go ahead and set it up  */
+   /* There may actually be no waiters. That's OK. The first waiter will come in, find it's his turn, and immediately get the signaled event */
+   cond->wakens--;
+   if(cond->wakens>0)
+   {
+      SetEvent(cond->event);
+
+      /* Progress the queue: Put the hot potato back into play. It'll be tossed around until next in line gets it */
+      SetEvent(cond->hot_potato); 
+   }
+
 #else
    pthread_cond_wait(&cond->cond, &lock->lock);
 #endif
@@ -385,9 +474,17 @@ void scond_wait(scond_t *cond, slock_t *lock)
 int scond_broadcast(scond_t *cond)
 {
 #ifdef USE_WIN32_THREADS
-   /* FIXME _- check how this function should differ
-    * from scond_signal implementation. */
-   SetEvent(cond->event);
+   
+   /* remember: we currently have mutex */
+   if(cond->waiters == 0) return 0;
+   
+   /* awaken everything which is currently queued up */
+   if(cond->wakens == 0) SetEvent(cond->event);
+   cond->wakens = cond->waiters;
+
+   /* Since there is now at least one pending waken, the potato must be in play */
+   SetEvent(cond->hot_potato); 
+
    return 0;
 #else
    return pthread_cond_broadcast(&cond->cond);
@@ -404,7 +501,17 @@ int scond_broadcast(scond_t *cond)
 void scond_signal(scond_t *cond)
 {
 #ifdef USE_WIN32_THREADS
-   SetEvent(cond->event);
+
+   /* remember: we currently have mutex */
+   if(cond->waiters == 0) return;
+ 
+   /* wake up the next thing in the queue */
+   if(cond->wakens == 0) SetEvent(cond->event);
+   cond->wakens++;
+
+   /* Since there is now at least one pending waken, the potato must be in play */
+   SetEvent(cond->hot_potato); 
+
 #else
    pthread_cond_signal(&cond->cond);
 #endif
@@ -427,6 +534,7 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
 #ifdef USE_WIN32_THREADS
    DWORD ret;
 
+   /* TODO: this is woefully inadequate. It needs to be solved with the newer approach used above */
    WaitForSingleObject(cond->event, 0);
    ret = SignalObjectAndWait(lock->lock, cond->event,
          (DWORD)(timeout_us) / 1000, FALSE);
