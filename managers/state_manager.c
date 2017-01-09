@@ -299,50 +299,70 @@ static void state_manager_free(state_manager_t *state)
    if (!state)
       return;
 
-   free(state->data);
-   free(state->thisblock);
-   free(state->nextblock);
+   if (state->data)
+      free(state->data);
+   if (state->thisblock)
+      free(state->thisblock);
+   if (state->nextblock)
+      free(state->nextblock);
 #if STRICT_BUF_SIZE
-   free(state->debugblock);
+   if (state->debugblock)
+      free(state->debugblock);
+   state->debugblock = NULL;
 #endif
-   free(state);
+   state->data       = NULL;
+   state->thisblock  = NULL;
+   state->nextblock  = NULL;
 }
 
 static state_manager_t *state_manager_new(size_t state_size, size_t buffer_size)
 {
+   size_t max_comp_size, block_size;
+   uint8_t *next_block    = NULL;
+   uint8_t *this_block    = NULL;
+   uint8_t *state_data    = NULL;
    state_manager_t *state = (state_manager_t*)calloc(1, sizeof(*state));
 
    if (!state)
       return NULL;
 
-   state->blocksize   = (state_size + sizeof(uint16_t) - 1) & -sizeof(uint16_t);
+   block_size         = (state_size + sizeof(uint16_t) - 1) & -sizeof(uint16_t);
+
    /* the compressed data is surrounded by pointers to the other side */
-   state->maxcompsize = state_manager_raw_maxsize(state_size) + sizeof(size_t) * 2;
-   state->data        = (uint8_t*)malloc(buffer_size);
+   max_comp_size      = state_manager_raw_maxsize(state_size) + sizeof(size_t) * 2;
+   state_data         = (uint8_t*)malloc(buffer_size);
 
-   if (!state->data)
+   if (!state_data)
       goto error;
 
-   state->thisblock   = (uint8_t*)state_manager_raw_alloc(state_size, 0);
-   state->nextblock   = (uint8_t*)state_manager_raw_alloc(state_size, 1);
+   this_block         = (uint8_t*)state_manager_raw_alloc(state_size, 0);
+   next_block         = (uint8_t*)state_manager_raw_alloc(state_size, 1);
 
-   if (!state->thisblock || !state->nextblock)
+   if (!this_block || !next_block)
       goto error;
 
-   state->capacity = buffer_size;
+   state->blocksize   = block_size;
+   state->maxcompsize = max_comp_size;
+   state->data        = state_data;
+   state->thisblock   = this_block;
+   state->nextblock   = next_block;
+   state->capacity    = buffer_size;
 
-   state->head = state->data + sizeof(size_t);
-   state->tail = state->data + sizeof(size_t);
+   state->head        = state->data + sizeof(size_t);
+   state->tail        = state->data + sizeof(size_t);
 
 #if STRICT_BUF_SIZE
-   state->debugsize = state_size;
-   state->debugblock = (uint8_t*)malloc(state_size);
+   state->debugsize   = state_size;
+   state->debugblock  = (uint8_t*)malloc(state_size);
 #endif
 
    return state;
 
 error:
+   if (state_data)
+      free(state_data);
    state_manager_free(state);
+   free(state);
 
    return NULL;
 }
@@ -491,7 +511,7 @@ void state_manager_event_init(void)
    void *state          = NULL;
    settings_t *settings = config_get_ptr();
 
-   if (!settings->rewind_enable || rewind_state.state)
+   if (rewind_state.state)
       return;
 
    if (audio_driver_has_callback())
@@ -545,7 +565,10 @@ static void state_manager_set_frame_is_reversed(bool value)
 void state_manager_event_deinit(void)
 {
    if (rewind_state.state)
+   {
       state_manager_free(rewind_state.state);
+      free(rewind_state.state);
+   }
    rewind_state.state = NULL;
    rewind_state.size  = 0;
 }
@@ -559,7 +582,6 @@ void state_manager_event_deinit(void)
 void state_manager_check_rewind(bool pressed)
 {
    static bool first    = true;
-   settings_t *settings = config_get_ptr();
 
    if (state_manager_frame_is_reversed())
    {
@@ -609,6 +631,7 @@ void state_manager_check_rewind(bool pressed)
    else
    {
       static unsigned cnt      = 0;
+      settings_t *settings     = config_get_ptr();
 
       cnt = (cnt + 1) % (settings->rewind_granularity ?
             settings->rewind_granularity : 1); /* Avoid possible SIGFPE. */
