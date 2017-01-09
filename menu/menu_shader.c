@@ -37,14 +37,16 @@
 static char default_glslp[PATH_MAX_LENGTH];
 static char default_cgp[PATH_MAX_LENGTH];
 static char default_slangp[PATH_MAX_LENGTH];
-#endif
+static struct video_shader *menu_driver_shader = NULL;
+
+struct video_shader *menu_shader_get(void)
+{
+   return menu_driver_shader;
+}
 
 struct video_shader_parameter *menu_shader_manager_get_parameters(unsigned i)
 {
-   struct video_shader *shader = NULL;
-
-   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
-         &shader);
+   struct video_shader *shader = menu_shader_get();
 
    if (!shader)
       return NULL;
@@ -54,10 +56,7 @@ struct video_shader_parameter *menu_shader_manager_get_parameters(unsigned i)
 
 struct video_shader_pass *menu_shader_manager_get_pass(unsigned i)
 {
-   struct video_shader *shader = NULL;
-
-   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
-         &shader);
+   struct video_shader *shader = menu_shader_get();
 
    if (!shader)
       return NULL;
@@ -67,15 +66,39 @@ struct video_shader_pass *menu_shader_manager_get_pass(unsigned i)
 
 unsigned menu_shader_manager_get_amount_passes(void)
 {
-   struct video_shader *shader = NULL;
-
-   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
-         &shader);
+   struct video_shader *shader = menu_shader_get();
 
    if (!shader)
       return 0;
 
    return shader->passes;
+}
+#else
+struct video_shader *menu_shader_get(void)
+{
+   return NULL;
+}
+
+struct video_shader_parameter *menu_shader_manager_get_parameters(unsigned i)
+{
+   return NULL;
+}
+
+struct video_shader_pass *menu_shader_manager_get_pass(unsigned i)
+{
+   return NULL;
+}
+
+unsigned menu_shader_manager_get_amount_passes(void) { return 0; }
+#endif
+
+void menu_shader_manager_free(void)
+{
+#ifdef HAVE_SHADER_MANAGER
+   if (menu_driver_shader)
+      free(menu_driver_shader);
+   menu_driver_shader = NULL;
+#endif
 }
 
 /**
@@ -83,16 +106,17 @@ unsigned menu_shader_manager_get_amount_passes(void)
  *
  * Initializes shader manager.
  **/
-void menu_shader_manager_init(void)
+bool menu_shader_manager_init(void)
 {
 #ifdef HAVE_SHADER_MANAGER
-   struct video_shader *shader = NULL;
    config_file_t *conf         = NULL;
    settings_t *settings        = config_get_ptr();
    const char *config_path     = path_get(RARCH_PATH_CONFIG);
 
-   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
-         &shader);
+   menu_driver_shader          = (struct video_shader*)
+      calloc(1, sizeof(struct video_shader));
+   if (!menu_driver_shader)
+      return false;
 
    /* In a multi-config setting, we can't have
     * conflicts on menu.cgp/menu.glslp. */
@@ -129,11 +153,11 @@ void menu_shader_manager_init(void)
          conf = config_file_new(settings->path.shader);
          if (conf)
          {
-            if (video_shader_read_conf_cgp(conf, shader))
+            if (video_shader_read_conf_cgp(conf, menu_driver_shader))
             {
-               video_shader_resolve_relative(shader,
+               video_shader_resolve_relative(menu_driver_shader,
                      settings->path.shader);
-               video_shader_resolve_parameters(conf, shader);
+               video_shader_resolve_parameters(conf, menu_driver_shader);
             }
             config_file_free(conf);
          }
@@ -141,9 +165,9 @@ void menu_shader_manager_init(void)
       case FILE_TYPE_SHADER_GLSL:
       case FILE_TYPE_SHADER_CG:
       case FILE_TYPE_SHADER_SLANG:
-         strlcpy(shader->pass[0].source.path, settings->path.shader,
-               sizeof(shader->pass[0].source.path));
-         shader->passes = 1;
+         strlcpy(menu_driver_shader->pass[0].source.path, settings->path.shader,
+               sizeof(menu_driver_shader->pass[0].source.path));
+         menu_driver_shader->passes = 1;
          break;
       default:
          {
@@ -174,10 +198,10 @@ void menu_shader_manager_init(void)
 
             if (conf)
             {
-               if (video_shader_read_conf_cgp(conf, shader))
+               if (video_shader_read_conf_cgp(conf, menu_driver_shader))
                {
-                  video_shader_resolve_relative(shader, preset_path);
-                  video_shader_resolve_parameters(conf, shader);
+                  video_shader_resolve_relative(menu_driver_shader, preset_path);
+                  video_shader_resolve_parameters(conf, menu_driver_shader);
                }
                config_file_free(conf);
             }
@@ -185,6 +209,8 @@ void menu_shader_manager_init(void)
          break;
    }
 #endif
+
+   return true;
 }
 
 /**
@@ -259,14 +285,12 @@ bool menu_shader_manager_save_preset(
    const char *dirs[3]                    = {0};
    config_file_t *conf                    = NULL;
    bool ret                               = false;
-   struct video_shader *shader            = NULL;
+   struct video_shader *shader            = menu_shader_get();
    settings_t *settings                   = config_get_ptr();
 
    buffer[0] = config_directory[0]        = '\0';
    preset_path[0]                         = '\0';
 
-   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
-         &shader);
 
    if (!shader)
       return false;
@@ -402,13 +426,8 @@ int menu_shader_manager_clear_num_passes(void)
 {
 #ifdef HAVE_SHADER_MANAGER
    bool refresh                = false;
-   struct video_shader *shader = NULL;
+   struct video_shader *shader = menu_shader_get();
 
-   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
-         &shader);
-
-   if (!shader)
-      return -1;
    if (shader->passes)
       shader->passes = 0;
 
@@ -437,15 +456,8 @@ int menu_shader_manager_clear_parameter(unsigned i)
 int menu_shader_manager_clear_pass_filter(unsigned i)
 {
 #ifdef HAVE_SHADER_MANAGER
-   struct video_shader *shader           = NULL;
-   struct video_shader_pass *shader_pass = NULL;
+   struct video_shader_pass *shader_pass = menu_shader_manager_get_pass(i);
 
-   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
-         &shader);
-
-   if (!shader)
-      return -1;
-   shader_pass = &shader->pass[i];
    if (!shader_pass)
       return -1;
 
@@ -460,35 +472,21 @@ int menu_shader_manager_clear_pass_filter(unsigned i)
 void menu_shader_manager_clear_pass_scale(unsigned i)
 {
 #ifdef HAVE_SHADER_MANAGER
-   struct video_shader *shader           = NULL;
-   struct video_shader_pass *shader_pass = NULL;
+   struct video_shader_pass *shader_pass = menu_shader_manager_get_pass(i);
 
-   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
-         &shader);
+   if (!shader_pass)
+      return;
 
-   if (shader)
-      shader_pass = &shader->pass[i];
-
-   if (shader_pass)
-   {
-      shader_pass->fbo.scale_x = 0;
-      shader_pass->fbo.scale_y = 0;
-      shader_pass->fbo.valid   = false;
-   }
+   shader_pass->fbo.scale_x = 0;
+   shader_pass->fbo.scale_y = 0;
+   shader_pass->fbo.valid   = false;
 #endif
 }
 
 void menu_shader_manager_clear_pass_path(unsigned i)
 {
 #ifdef HAVE_SHADER_MANAGER
-   struct video_shader *shader           = NULL;
-   struct video_shader_pass *shader_pass = NULL;
-
-   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
-         &shader);
-
-   if (shader)
-      shader_pass = &shader->pass[i];
+   struct video_shader_pass *shader_pass = menu_shader_manager_get_pass(i);
 
    if (shader_pass)
       *shader_pass->source.path = '\0';
@@ -548,10 +546,7 @@ void menu_shader_manager_apply_changes(void)
 {
 #ifdef HAVE_SHADER_MANAGER
    unsigned shader_type;
-   struct video_shader *shader = NULL;
-
-   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
-         &shader);
+   struct video_shader *shader = menu_shader_get();
 
    if (!shader)
       return;

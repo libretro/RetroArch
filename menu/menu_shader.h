@@ -23,18 +23,22 @@
 
 RETRO_BEGIN_DECLS
 
+struct video_shader *menu_shader_get();
+
 struct video_shader_parameter *menu_shader_manager_get_parameters(unsigned i);
 
 struct video_shader_pass *menu_shader_manager_get_pass(unsigned i);
 
 unsigned menu_shader_manager_get_amount_passes(void);
 
+void menu_shader_manager_free(void);
+
 /**
  * menu_shader_manager_init:
  *
  * Initializes shader manager.
  **/
-void menu_shader_manager_init(void);
+bool menu_shader_manager_init(void);
 
 /**
  * menu_shader_manager_set_preset:

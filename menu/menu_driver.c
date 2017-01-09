@@ -182,9 +182,6 @@ static bool menu_init(menu_handle_t *menu_data)
    if (!menu_entries_ctl(MENU_ENTRIES_CTL_INIT, NULL))
       return false;
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_SHADER_INIT, NULL))
-      return false;
-
    if (settings->menu_show_start_screen)
    {
       menu_dialog_push_pending(true, MENU_DIALOG_WELCOME);
@@ -487,29 +484,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
          menu_driver_data->state               = 0;
          break;
-      case RARCH_MENU_CTL_SHADER_DEINIT:
-#ifdef HAVE_SHADER_MANAGER
-         if (menu_driver_shader)
-            free(menu_driver_shader);
-         menu_driver_shader = NULL;
-#endif
-         break;
-      case RARCH_MENU_CTL_SHADER_INIT:
-#ifdef HAVE_SHADER_MANAGER
-         menu_driver_shader = (struct video_shader*)
-            calloc(1, sizeof(struct video_shader));
-         if (!menu_driver_shader)
-            return false;
-#endif
-         break;
-      case RARCH_MENU_CTL_SHADER_GET:
-         {
-            struct video_shader **shader = (struct video_shader**)data;
-            if (!shader)
-               return false;
-            *shader = menu_driver_shader;
-         }
-         break;
       case RARCH_MENU_CTL_FRAME:
          if (!menu_driver_alive)
             return false;
@@ -555,7 +529,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          if (menu_driver_ctl(RARCH_MENU_CTL_OWNS_DRIVER, NULL))
             return true;
          menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
-         menu_driver_ctl(RARCH_MENU_CTL_SHADER_DEINIT, NULL);
+         menu_shader_manager_free();
+
          if (menu_driver_data)
          {
             menu_input_ctl(MENU_INPUT_CTL_DEINIT, NULL);

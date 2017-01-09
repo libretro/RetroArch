@@ -291,11 +291,9 @@ static int action_right_shader_num_passes(unsigned type, const char *label,
       bool wraparound)
 {
 #ifdef HAVE_SHADER_MANAGER
-   bool refresh      = false;
-   struct video_shader *shader = NULL;
+   bool refresh                = false;
+   struct video_shader *shader = menu_shader_get();
 
-   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
-         &shader);
    if (!shader)
       return menu_cbs_exit();
 

@@ -36,6 +36,7 @@
 #include "../widgets/menu_filebrowser.h"
 #include "../widgets/menu_input_dialog.h"
 #include "../menu_content.h"
+#include "../menu_shader.h"
 
 #include "../../core.h"
 #include "../../configuration.h"
@@ -1097,8 +1098,7 @@ static int generic_action_ok(const char *path,
 #ifdef HAVE_SHADER_MANAGER
       case ACTION_OK_LOAD_PRESET:
          {
-            struct video_shader      *shader  = NULL;
-            menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET, &shader);
+            struct video_shader      *shader  = menu_shader_get();
             flush_char = msg_hash_to_str(flush_id);
             menu_shader_manager_set_preset(shader,
                   video_shader_parse_type(action_path, RARCH_SHADER_NONE),
@@ -1107,8 +1107,7 @@ static int generic_action_ok(const char *path,
          break;
       case ACTION_OK_LOAD_SHADER_PASS:
          {
-            struct video_shader      *shader  = NULL;
-            menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET, &shader);
+            struct video_shader      *shader  = menu_shader_get();
             flush_char = msg_hash_to_str(flush_id);
             strlcpy(
                   shader->pass[hack_shader_pass].source.path,
