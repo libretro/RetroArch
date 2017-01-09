@@ -139,7 +139,7 @@ static double audio_source_ratio_original                = 0.0f;
 static double audio_source_ratio_current                 = 0.0f;
 static struct retro_audio_callback audio_callback        = {0};
 
-static rarch_dsp_filter_t *audio_driver_dsp              = NULL;
+static retro_dsp_filter_t *audio_driver_dsp              = NULL;
 static struct string_list *audio_driver_devices_list     = NULL;
 static const rarch_resampler_t *audio_driver_resampler   = NULL;
 static void *audio_driver_resampler_data                 = NULL;
@@ -535,7 +535,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    if (audio_driver_dsp)
    {
       static struct retro_perf_counter audio_dsp           = {0};
-      struct rarch_dsp_data dsp_data;
+      struct retro_dsp_data dsp_data;
 
       dsp_data.input                 = NULL;
       dsp_data.input_frames          = 0;
@@ -547,7 +547,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
 
       performance_counter_init(&audio_dsp, "audio_dsp");
       performance_counter_start(&audio_dsp);
-      rarch_dsp_filter_process(audio_driver_dsp, &dsp_data);
+      retro_dsp_filter_process(audio_driver_dsp, &dsp_data);
       performance_counter_stop(&audio_dsp);
 
       if (dsp_data.output)
@@ -713,7 +713,7 @@ void audio_driver_set_volume_gain(float gain)
 void audio_driver_dsp_filter_free(void)
 {
    if (audio_driver_dsp)
-      rarch_dsp_filter_free(audio_driver_dsp);
+      retro_dsp_filter_free(audio_driver_dsp);
    audio_driver_dsp = NULL;
 }
 
@@ -734,7 +734,7 @@ void audio_driver_dsp_filter_init(const char *device)
    if (!plugs)
       goto error;
 #endif
-   audio_driver_dsp = rarch_dsp_filter_new(
+   audio_driver_dsp = retro_dsp_filter_new(
          device, plugs, audio_driver_input);
 
    return;

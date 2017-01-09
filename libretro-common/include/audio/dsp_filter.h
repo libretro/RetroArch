@@ -27,25 +27,25 @@
 
 RETRO_BEGIN_DECLS
 
-typedef struct rarch_dsp_filter rarch_dsp_filter_t;
+typedef struct retro_dsp_filter retro_dsp_filter_t;
 
-rarch_dsp_filter_t *rarch_dsp_filter_new(const char *filter_config,
+retro_dsp_filter_t *retro_dsp_filter_new(const char *filter_config,
       void *string_data, float sample_rate);
 
-void rarch_dsp_filter_free(rarch_dsp_filter_t *dsp);
+void retro_dsp_filter_free(retro_dsp_filter_t *dsp);
 
-struct rarch_dsp_data
+struct retro_dsp_data
 {
    float *input;
    unsigned input_frames;
 
-   /* Set by rarch_dsp_filter_process(). */
+   /* Set by retro_dsp_filter_process(). */
    float *output;
    unsigned output_frames;
 };
 
-void rarch_dsp_filter_process(rarch_dsp_filter_t *dsp,
-      struct rarch_dsp_data *data);
+void retro_dsp_filter_process(retro_dsp_filter_t *dsp,
+      struct retro_dsp_data *data);
 
 RETRO_END_DECLS
 

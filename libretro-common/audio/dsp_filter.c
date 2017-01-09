@@ -36,7 +36,7 @@
 
 #include <audio/dsp_filter.h>
 
-struct rarch_dsp_plug
+struct retro_dsp_plug
 {
 #ifdef HAVE_DYLIB
    dylib_t lib;
@@ -44,25 +44,25 @@ struct rarch_dsp_plug
    const struct dspfilter_implementation *impl;
 };
 
-struct rarch_dsp_instance
+struct retro_dsp_instance
 {
    const struct dspfilter_implementation *impl;
    void *impl_data;
 };
 
-struct rarch_dsp_filter
+struct retro_dsp_filter
 {
    config_file_t *conf;
 
-   struct rarch_dsp_plug *plugs;
+   struct retro_dsp_plug *plugs;
    unsigned num_plugs;
 
-   struct rarch_dsp_instance *instances;
+   struct retro_dsp_instance *instances;
    unsigned num_instances;
 };
 
 static const struct dspfilter_implementation *find_implementation(
-      rarch_dsp_filter_t *dsp, const char *ident)
+      retro_dsp_filter_t *dsp, const char *ident)
 {
    unsigned i;
    for (i = 0; i < dsp->num_plugs; i++)
@@ -83,16 +83,16 @@ static const struct dspfilter_config dspfilter_config = {
    config_userdata_free,
 };
 
-static bool create_filter_graph(rarch_dsp_filter_t *dsp, float sample_rate)
+static bool create_filter_graph(retro_dsp_filter_t *dsp, float sample_rate)
 {
    unsigned i;
-   struct rarch_dsp_instance *instances = NULL;
+   struct retro_dsp_instance *instances = NULL;
    unsigned filters                     = 0;
 
    if (!config_get_uint(dsp->conf, "filters", &filters))
       return false;
 
-   instances = (struct rarch_dsp_instance*)calloc(filters, sizeof(*instances));
+   instances = (struct retro_dsp_instance*)calloc(filters, sizeof(*instances));
    if (!instances)
       return false;
 
@@ -152,11 +152,11 @@ static const dspfilter_get_implementation_t dsp_plugs_builtin[] = {
    chorus_dspfilter_get_implementation,
 };
 
-static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
+static bool append_plugs(retro_dsp_filter_t *dsp, struct string_list *list)
 {
    unsigned i;
    dspfilter_simd_mask_t mask   = cpu_features_get();
-   struct rarch_dsp_plug *plugs = (struct rarch_dsp_plug*)
+   struct retro_dsp_plug *plugs = (struct retro_dsp_plug*)
       calloc(ARRAY_SIZE(dsp_plugs_builtin), sizeof(*plugs));
 
    if (!plugs)
@@ -175,7 +175,7 @@ static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
    return true;
 }
 #elif defined(HAVE_DYLIB)
-static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
+static bool append_plugs(retro_dsp_filter_t *dsp, struct string_list *list)
 {
    unsigned i;
    dspfilter_simd_mask_t mask = cpu_features_get();
@@ -184,7 +184,7 @@ static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
    {
       dspfilter_get_implementation_t cb;
       const struct dspfilter_implementation *impl = NULL;
-      struct rarch_dsp_plug *new_plugs            = NULL;
+      struct retro_dsp_plug *new_plugs            = NULL;
       dylib_t lib                                 = 
          dylib_load(list->elems[i].data);
 
@@ -211,7 +211,7 @@ static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
          continue;
       }
 
-      new_plugs = (struct rarch_dsp_plug*)
+      new_plugs = (struct retro_dsp_plug*)
          realloc(dsp->plugs, sizeof(*dsp->plugs) * (dsp->num_plugs + 1));
       if (!new_plugs)
       {
@@ -231,14 +231,14 @@ static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
 }
 #endif
 
-rarch_dsp_filter_t *rarch_dsp_filter_new(
+retro_dsp_filter_t *retro_dsp_filter_new(
       const char *filter_config, 
       void *string_data,
       float sample_rate)
 {
    config_file_t *conf           = NULL;
    struct string_list *plugs     = NULL;
-   rarch_dsp_filter_t *dsp       = (rarch_dsp_filter_t*)calloc(1, sizeof(*dsp));
+   retro_dsp_filter_t *dsp       = (retro_dsp_filter_t*)calloc(1, sizeof(*dsp));
 
    if (!dsp)
       return NULL;
@@ -269,11 +269,11 @@ rarch_dsp_filter_t *rarch_dsp_filter_new(
 error:
    if (plugs)
       string_list_free(plugs);
-   rarch_dsp_filter_free(dsp);
+   retro_dsp_filter_free(dsp);
    return NULL;
 }
 
-void rarch_dsp_filter_free(rarch_dsp_filter_t *dsp)
+void retro_dsp_filter_free(retro_dsp_filter_t *dsp)
 {
    unsigned i;
    if (!dsp)
@@ -301,8 +301,8 @@ void rarch_dsp_filter_free(rarch_dsp_filter_t *dsp)
    free(dsp);
 }
 
-void rarch_dsp_filter_process(rarch_dsp_filter_t *dsp,
-      struct rarch_dsp_data *data)
+void retro_dsp_filter_process(retro_dsp_filter_t *dsp,
+      struct retro_dsp_data *data)
 {
    unsigned i;
    struct dspfilter_output output = {0};
