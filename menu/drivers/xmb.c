@@ -526,6 +526,7 @@ static INLINE float xmb_item_y(xmb_handle_t *xmb, int i, size_t current)
 }
 
 static void xmb_draw_icon(
+      menu_display_frame_info_t menu_disp_info,
       int icon_size,
       math_matrix_4x4 *mymat,
       uintptr_t texture,
@@ -543,7 +544,6 @@ static void xmb_draw_icon(
    struct video_coords coords;
    float shadow[16];
    unsigned i;
-   settings_t *settings = config_get_ptr();
 
    if (
          (x < (-icon_size / 2.0f)) ||
@@ -570,7 +570,7 @@ static void xmb_draw_icon(
    draw.prim_type       = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline.id     = 0;
 
-   if (settings->menu.xmb.shadows_enable)
+   if (menu_disp_info.shadows_enable)
    {
       for (i = 0; i < 16; i++)
          shadow[i]      = 0;
@@ -605,7 +605,9 @@ static void xmb_draw_icon(
    menu_display_draw(&draw);
 }
 
-static void xmb_draw_thumbnail(xmb_handle_t *xmb, float *color,
+static void xmb_draw_thumbnail(
+      menu_display_frame_info_t menu_disp_info,
+      xmb_handle_t *xmb, float *color,
       unsigned width, unsigned height, float w, float h, uintptr_t texture)
 {
    unsigned i;
@@ -614,7 +616,6 @@ static void xmb_draw_thumbnail(xmb_handle_t *xmb, float *color,
    struct video_coords coords;
    math_matrix_4x4 mymat;
    float shadow[16];
-   settings_t *settings     = config_get_ptr();
    float y                  = 
       xmb->margins.screen.top + xmb->icon.size + h;
    float x                  = 
@@ -643,7 +644,7 @@ static void xmb_draw_thumbnail(xmb_handle_t *xmb, float *color,
    draw.prim_type           = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline.id         = 0;
 
-   if (settings->menu.xmb.shadows_enable)
+   if (menu_disp_info.shadows_enable)
    {
       for (i = 0; i < 16; i++)
          shadow[i]      = 0;
@@ -666,20 +667,19 @@ static void xmb_draw_thumbnail(xmb_handle_t *xmb, float *color,
    menu_display_draw(&draw);
 }
 
-static void xmb_draw_text(xmb_handle_t *xmb,
+static void xmb_draw_text(
+      menu_display_frame_info_t menu_disp_info,
+      xmb_handle_t *xmb,
       const char *str, float x,
       float y, float scale_factor, float alpha,
       enum text_alignment text_align,
       unsigned width, unsigned height, font_data_t* font)
 {
-   uint8_t a8;
    uint32_t color;
-   settings_t *settings = config_get_ptr();
+   uint8_t a8           = 255 * alpha;
 
    if (alpha > xmb->alpha)
       alpha             = xmb->alpha;
-
-   a8                   = 255 * alpha;
 
    /* Avoid drawing 100% transparent text */
    if (a8 == 0)
@@ -689,7 +689,7 @@ static void xmb_draw_text(xmb_handle_t *xmb,
 
    menu_display_draw_text(font, str, x, y,
          width, height, color, text_align, scale_factor,
-         settings->menu.xmb.shadows_enable,
+         menu_disp_info.shadows_enable,
          xmb->shadow_offset);
 }
 
@@ -794,6 +794,7 @@ static int xmb_osk_ptr_at_pos(void *data, int x, int y)
 }
 
 static void xmb_render_messagebox_internal(
+      menu_display_frame_info_t menu_disp_info,
       xmb_handle_t *xmb, const char *message)
 {
    int x, y, longest = 0, longest_width = 0;
@@ -838,6 +839,7 @@ static void xmb_render_messagebox_internal(
 
       if (msg)
          xmb_draw_text(
+               menu_disp_info,
                xmb, msg,
                x - longest_width/2.0,
                y + i * xmb->font->size,
@@ -2059,7 +2061,9 @@ char* word_wrap(char* buffer, char* string, int line_width) {
    return buffer;
 }
 
-static void xmb_draw_items(xmb_handle_t *xmb,
+static void xmb_draw_items(
+      menu_display_frame_info_t menu_disp_info,
+      xmb_handle_t *xmb,
       file_list_t *list, file_list_t *stack,
       size_t current, size_t cat_selection_ptr, float *color,
       unsigned width, unsigned height)
@@ -2237,7 +2241,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
 
          word_wrap(entry_sublabel, entry_sublabel, 50);
 
-         xmb_draw_text(xmb, entry_sublabel,
+         xmb_draw_text(menu_disp_info, xmb, entry_sublabel,
                node->x + xmb->margins.screen.left +
                xmb->icon.spacing.horizontal + xmb->margins.label.left,
                xmb->margins.screen.top + node->y + xmb->margins.label.top*3.5,
@@ -2245,7 +2249,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
                width, height, xmb->font2);
       }
 
-      xmb_draw_text(xmb, name,
+      xmb_draw_text(menu_disp_info, xmb, name,
             node->x + xmb->margins.screen.left +
             xmb->icon.spacing.horizontal + xmb->margins.label.left,
             xmb->margins.screen.top + node->y + label_offset,
@@ -2261,7 +2265,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
       menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
 
       if (do_draw_text)
-         xmb_draw_text(xmb, value,
+         xmb_draw_text(menu_disp_info, xmb, value,
                node->x +
                + xmb->margins.screen.left
                + xmb->icon.spacing.horizontal
@@ -2297,6 +2301,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
          menu_display_rotate_z(&rotate_draw);
 
          xmb_draw_icon(
+               menu_disp_info,
                xmb->icon.size,
                &mymat,
                texture,
@@ -2315,6 +2320,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
 
       if (texture_switch != 0 && color[3] != 0)
          xmb_draw_icon(
+               menu_disp_info,
                xmb->icon.size,
                &mymat,
                texture_switch,
@@ -2541,6 +2547,7 @@ static void xmb_frame(void *data)
    char msg[1024];
    char title_msg[255];
    char title_truncated[255];
+   menu_display_frame_info_t menu_disp_info;
    bool render_background                  = false;
    file_list_t *selection_buf              = NULL;
    file_list_t *menu_stack                 = NULL;
@@ -2549,6 +2556,8 @@ static void xmb_frame(void *data)
 
    if (!xmb)
       return;
+
+   menu_disp_info.shadows_enable           = settings->menu.xmb.shadows_enable;
 
    msg[0]             = '\0';
    title_msg[0]       = '\0';
@@ -2590,13 +2599,13 @@ static void xmb_frame(void *data)
       title_truncated[25] = '\0';
 
    /* Title text */
-   xmb_draw_text(xmb,
+   xmb_draw_text(menu_disp_info, xmb,
          title_truncated, xmb->margins.title.left,
          xmb->margins.title.top, 1, 1, TEXT_ALIGN_LEFT,
          width, height, xmb->font);
 
    if (menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
-      xmb_draw_text(xmb, title_msg, xmb->margins.title.left,
+      xmb_draw_text(menu_disp_info, xmb, title_msg, xmb->margins.title.left,
             height - xmb->margins.title.bottom, 1, 1, TEXT_ALIGN_LEFT,
             width, height, xmb->font);
 
@@ -2640,6 +2649,7 @@ static void xmb_frame(void *data)
 
          if (coord_white[3] != 0)
             xmb_draw_icon(
+                  menu_disp_info,
                   xmb->icon.size,
                   &mymat,
                   xmb->textures.list[charging 
@@ -2658,7 +2668,7 @@ static void xmb_frame(void *data)
 
          percent_width = font_driver_get_message_width(xmb->font, msg, utf8len(msg), 1);
 
-         xmb_draw_text(xmb, msg,
+         xmb_draw_text(menu_disp_info, xmb, msg,
                width - xmb->margins.title.left - x_pos,
                xmb->margins.title.top, 1, 1, TEXT_ALIGN_RIGHT,
                width, height, xmb->font);
@@ -2673,6 +2683,7 @@ static void xmb_frame(void *data)
          x_pos = percent_width + (xmb->icon.size / 2.5);
 
       xmb_draw_icon(
+            menu_disp_info,
             xmb->icon.size,
             &mymat,
             xmb->textures.list[XMB_TEXTURE_CLOCK],
@@ -2703,7 +2714,7 @@ static void xmb_frame(void *data)
       if (percent_width)
          x_pos = percent_width + (xmb->icon.size / 2.5);
 
-      xmb_draw_text(xmb, timedate,
+      xmb_draw_text(menu_disp_info, xmb, timedate,
             width - xmb->margins.title.left - xmb->icon.size / 4 - x_pos,
             xmb->margins.title.top, 1, 1, TEXT_ALIGN_RIGHT,
             width, height, xmb->font);
@@ -2714,6 +2725,7 @@ static void xmb_frame(void *data)
 
    if (coord_white[3] != 0)
       xmb_draw_icon(
+            menu_disp_info,
             xmb->icon.size,
             &mymat,
             xmb->textures.list[XMB_TEXTURE_ARROW],
@@ -2765,6 +2777,7 @@ static void xmb_frame(void *data)
          menu_display_rotate_z(&rotate_draw);
 
          xmb_draw_icon(
+               menu_disp_info,
                xmb->icon.size,
                &mymat,
                texture,
@@ -2783,7 +2796,8 @@ static void xmb_frame(void *data)
    menu_display_blend_end();
 
    /* Vertical icons */
-   xmb_draw_items(xmb,
+   xmb_draw_items(menu_disp_info,
+         xmb,
          xmb->selection_buf_old,
          xmb->menu_stack_old,
          xmb->selection_ptr_old,
@@ -2797,6 +2811,7 @@ static void xmb_frame(void *data)
    menu_stack    = menu_entries_get_menu_stack_ptr(0);
 
    xmb_draw_items(
+         menu_disp_info,
          xmb,
          selection_buf,
          menu_stack,
@@ -2810,7 +2825,8 @@ static void xmb_frame(void *data)
    menu_display_font_flush_block(xmb->font2);
 
    if (xmb->savestate_thumbnail)
-      xmb_draw_thumbnail(xmb, &coord_white[0], width, height,
+      xmb_draw_thumbnail(menu_disp_info,
+            xmb, &coord_white[0], width, height,
             xmb->savestate_thumbnail_width, xmb->savestate_thumbnail_height,
             xmb->savestate_thumbnail);
    else if (xmb->thumbnail
@@ -2822,7 +2838,8 @@ static void xmb_frame(void *data)
       RARCH_LOG("[XMB thumbnail] w: %.2f, h: %.2f\n", width, height);
 #endif
 
-      xmb_draw_thumbnail(xmb, &coord_white[0], width, height,
+      xmb_draw_thumbnail(menu_disp_info,
+            xmb, &coord_white[0], width, height,
             xmb->thumbnail_width, xmb->thumbnail_height,
             xmb->thumbnail);
    }
@@ -2848,7 +2865,7 @@ static void xmb_frame(void *data)
    {
       xmb_draw_dark_layer(xmb, width, height);
 
-      xmb_render_messagebox_internal(xmb, msg);
+      xmb_render_messagebox_internal(menu_disp_info, xmb, msg);
    }
 
    /* Cursor image */

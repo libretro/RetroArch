@@ -106,6 +106,11 @@ typedef struct menu_display_ctx_clearcolor
    float a;
 } menu_display_ctx_clearcolor_t;
 
+typedef struct menu_display_frame_info
+{
+   bool shadows_enable;
+} menu_display_frame_info_t;
+
 typedef struct menu_display_ctx_draw
 {
    float x;
