@@ -258,12 +258,23 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    if (draw)
    {
       HDC winDC = GetDC(hwnd);
-      HDC dc = CreateCompatibleDC(winDC);
+      HDC memDC = CreateCompatibleDC(winDC);
       HBITMAP bmp = CreateCompatibleBitmap(winDC, width, height);
+      HBITMAP bmp_old;
       BITMAPINFO info;
       gfx_ctx_mode_t mode;
+      RECT rect;
+      HBRUSH brush;
 
-      SelectObject(dc, bmp);
+      GetClientRect(hwnd, &rect);
+
+      bmp_old = SelectObject(memDC, bmp);
+
+      brush = CreateSolidBrush(GetSysColor(COLOR_WINDOW));
+
+      FillRect(memDC, &rect, brush);
+
+      DeleteObject(brush);
 
       video_context_driver_get_video_size(&mode);
 
@@ -311,14 +322,22 @@ static bool gdi_gfx_frame(void *data, const void *frame,
          info.bmiColors[2].rgbReserved = 0x00;
       }
 */
-      StretchDIBits(dc, 0, 0, mode.width, mode.height, 0, 0, width, height,
+      StretchDIBits(memDC, 0, 0, mode.width, mode.height, 0, 0, width, height,
             frame_to_copy, &info, DIB_RGB_COLORS, SRCCOPY);
+
+      BitBlt(winDC,
+            rect.left, rect.top,
+            rect.right - rect.left, rect.bottom - rect.top,
+            memDC, 0, 0, SRCCOPY);
+
+      SelectObject(memDC, bmp_old);
+
       DeleteObject(bmp);
-      DeleteDC(dc);
+      DeleteDC(memDC);
       ReleaseDC(hwnd, winDC);
    }
 
-   InvalidateRect(hwnd, NULL, true);
+   //InvalidateRect(hwnd, NULL, true);
 
    video_context_driver_update_window_title();
 

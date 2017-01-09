@@ -528,13 +528,12 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
 
          // All painting occurs here, between BeginPaint and EndPaint.
 
-         FillRect(hdc, &ps.rcPaint, (HBRUSH) (COLOR_WINDOW+1));
+         //FillRect(hdc, &ps.rcPaint, (HBRUSH) (COLOR_WINDOW+1));
 
          EndPaint(hwnd, &ps);
+         return 0;
          break;
       }
-      case WM_ERASEBKGND:
-         break;
       case WM_DROPFILES:
       case WM_SYSCOMMAND:
       case WM_CHAR:
