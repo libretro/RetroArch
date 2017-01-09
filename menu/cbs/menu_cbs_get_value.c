@@ -353,8 +353,8 @@ static void menu_action_setting_disp_set_label_shader_preset_parameter(
       char *s2, size_t len2)
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-   const struct video_shader_parameter *param = NULL;
-   struct video_shader *shader = NULL;
+   const struct video_shader_parameter *param = menu_shader_manager_get_parameters(
+         type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0);
 #endif
 
    *s = '\0';
@@ -362,18 +362,9 @@ static void menu_action_setting_disp_set_label_shader_preset_parameter(
    strlcpy(s2, path, len2);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
-         &shader);
-   if (!shader)
-      return;
-
-   param = &shader->parameters[type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0];
-
-   if (!param)
-      return;
-
-   snprintf(s, len, "%.2f [%.2f %.2f]",
-         param->current, param->minimum, param->maximum);
+   if (param)
+      snprintf(s, len, "%.2f [%.2f %.2f]",
+            param->current, param->minimum, param->maximum);
 #endif
 }
 

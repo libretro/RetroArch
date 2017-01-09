@@ -51,9 +51,6 @@ static int generic_shader_action_parameter_left(
       struct video_shader_parameter *param,
       unsigned type, const char *label, bool wraparound)
 {
-   if (!param)
-      return 0;
-
    param->current -= param->step;
    param->current  = MIN(MAX(param->minimum, param->current),
          param->maximum);
@@ -70,6 +67,8 @@ static int shader_action_parameter_left(unsigned type, const char *label,
 
    param = &shader_info.data->parameters[type 
       - MENU_SETTINGS_SHADER_PARAMETER_0];
+   if (!param)
+      return 0;
    return generic_shader_action_parameter_left(param,
          type, label, wraparound);
 }
@@ -78,15 +77,10 @@ static int shader_action_parameter_preset_left(unsigned type,
       const char *label,
       bool wraparound)
 {
-   struct video_shader_parameter *param = NULL;
-   struct video_shader      *shader     = NULL;
-
-   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
-         &shader);
-
-   param = shader ? 
-      &shader->parameters[type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0] : 
-      NULL;
+   struct video_shader_parameter *param = menu_shader_manager_get_parameters(
+         type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0);
+   if (!param)
+      return 0;
    return generic_shader_action_parameter_left(param,
          type, label, wraparound);
 }

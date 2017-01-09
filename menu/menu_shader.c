@@ -39,6 +39,19 @@ static char default_cgp[PATH_MAX_LENGTH];
 static char default_slangp[PATH_MAX_LENGTH];
 #endif
 
+struct video_shader_parameter *menu_shader_manager_get_parameters(unsigned i)
+{
+   struct video_shader *shader = NULL;
+
+   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
+         &shader);
+
+   if (!shader)
+      return NULL;
+
+   return &shader->parameters[i];
+}
+
 struct video_shader_pass *menu_shader_manager_get_pass(unsigned i)
 {
    struct video_shader *shader = NULL;
@@ -409,16 +422,11 @@ int menu_shader_manager_clear_num_passes(void)
 int menu_shader_manager_clear_parameter(unsigned i)
 {
 #ifdef HAVE_SHADER_MANAGER
-   struct video_shader *shader          = NULL;
-   struct video_shader_parameter *param = NULL;
+   struct video_shader_parameter *param = menu_shader_manager_get_parameters(i);
 
-   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
-         &shader);
-
-   if (!shader)
+   if (!param)
       return 0;
 
-   param          = &shader->parameters[i];
    param->current = param->initial;
    param->current = MIN(MAX(param->minimum, param->current), param->maximum);
 #endif
