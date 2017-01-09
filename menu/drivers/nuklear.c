@@ -92,6 +92,57 @@ static void nk_menu_init_device(nk_menu_handle_t *nk)
    nk_common_set_style(&nk->ctx, THEME_BLUE);
 }
 
+
+#define XMB_RIBBON_ROWS 64
+#define XMB_RIBBON_COLS 64
+#define XMB_RIBBON_VERTICES 2*XMB_RIBBON_COLS*XMB_RIBBON_ROWS-2*XMB_RIBBON_COLS
+
+static void xmb_ribbon_set_vertex(float *ribbon_verts, unsigned idx, unsigned row, unsigned col)
+{
+   ribbon_verts[idx++] = ((float)col) / (XMB_RIBBON_COLS-1) * 2.0f - 1.0f;
+   ribbon_verts[idx++] = ((float)row) / (XMB_RIBBON_ROWS-1) * 2.0f - 1.0f;
+}
+
+static void xmb_init_ribbon(nk_menu_handle_t * xmb)
+{
+   video_coords_t coords;
+   unsigned vertices_total;
+   unsigned r, c, col;
+   unsigned i                = 0;
+   float *ribbon_verts       = NULL;
+   float *dummy              = NULL;
+   video_coord_array_t *ca   = menu_display_get_coords_array();
+
+   vertices_total = XMB_RIBBON_VERTICES;
+
+   dummy          = (float*)calloc(4 * vertices_total, sizeof(float));
+   ribbon_verts   = (float*)calloc(2 * vertices_total, sizeof(float));
+
+
+   /* Set up vertices */
+   for (r = 0; r < XMB_RIBBON_ROWS - 1; r++)
+   {
+      for (c = 0; c < XMB_RIBBON_COLS; c++)
+      {
+         col = r % 2 ? XMB_RIBBON_COLS - c - 1 : c;
+         xmb_ribbon_set_vertex(ribbon_verts, i,     r,     col);
+         xmb_ribbon_set_vertex(ribbon_verts, i + 2, r + 1, col);
+         i  += 4;
+      }
+   }
+
+   coords.color         = dummy;
+   coords.vertex        = ribbon_verts;
+   coords.tex_coord     = dummy;
+   coords.lut_tex_coord = dummy;
+   coords.vertices      = vertices_total;
+
+   video_coord_array_append(ca, &coords, coords.vertices);
+
+   free(dummy);
+   free(ribbon_verts);
+}
+
 static void *nk_menu_init(void **userdata)
 {
    settings_t *settings = config_get_ptr();
@@ -125,7 +176,7 @@ static void *nk_menu_init(void **userdata)
 #else
       nk->window[NK_WND_MAIN].open = true;
 #endif
-
+   xmb_init_ribbon(nk);
    return menu;
 error:
    if (menu)
