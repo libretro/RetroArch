@@ -1107,13 +1107,13 @@ static int generic_action_ok(const char *path,
          break;
       case ACTION_OK_LOAD_SHADER_PASS:
          {
-            struct video_shader      *shader  = menu_shader_get();
+            struct video_shader_pass      *shader_pass  = menu_shader_manager_get_pass(hack_shader_pass);
             flush_char = msg_hash_to_str(flush_id);
             strlcpy(
-                  shader->pass[hack_shader_pass].source.path,
+                  shader_pass->source.path,
                   action_path,
-                  sizeof(shader->pass[hack_shader_pass].source.path));
-            video_shader_resolve_parameters(NULL, shader);
+                  sizeof(shader_pass->source.path));
+            video_shader_resolve_parameters(NULL, menu_shader_get());
          }
          break;
 #endif

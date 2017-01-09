@@ -286,8 +286,9 @@ static int action_left_shader_num_passes(unsigned type, const char *label,
    if (!shader)
       return menu_cbs_exit();
 
-   if (shader->passes)
-      shader->passes--;
+   if (menu_shader_manager_get_amount_passes())
+      menu_shader_manager_decrement_amount_passes();
+
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
    video_shader_resolve_parameters(NULL, shader);
