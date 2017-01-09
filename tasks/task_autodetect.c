@@ -58,7 +58,7 @@ static void input_autoconfigure_joypad_reindex_devices(autoconfig_params_t *para
    settings_t      *settings = config_get_ptr();
 
    for(i = 0; i < params->max_users; i++)
-      settings->input.device_name_index[i]=0;
+      settings->input.device_name_index[i] = 0;
 
    for(i = 0; i < params->max_users; i++)
    {
@@ -70,7 +70,7 @@ static void input_autoconfigure_joypad_reindex_devices(autoconfig_params_t *para
       {
          if(string_is_equal(tmp, settings->input.device_names[j])
                && settings->input.device_name_index[i] == 0)
-            settings->input.device_name_index[j]=k++;
+            settings->input.device_name_index[j] = k++;
       }
    }
 }
