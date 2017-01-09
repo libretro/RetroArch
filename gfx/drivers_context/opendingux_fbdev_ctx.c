@@ -29,7 +29,6 @@
 #endif
 
 #include "../../frontend/frontend_driver.h"
-#include "../../configuration.h"
 #include "../../runloop.h"
 
 typedef struct
@@ -232,7 +231,7 @@ static bool gfx_ctx_opendingux_has_windowed(void *data)
    return false;
 }
 
-static void gfx_ctx_opendingux_swap_buffers(void *data)
+static void gfx_ctx_opendingux_swap_buffers(void *data, video_frame_info_t video_info)
 {
    opendingux_ctx_data_t *viv = (opendingux_ctx_data_t*)data;
 

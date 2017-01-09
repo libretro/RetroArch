@@ -29,9 +29,7 @@
 #include <OpenGL/OpenGL.h>
 #include <OpenGL/gl.h>
 
-#include "../../configuration.h"
 #include "../../runloop.h"
-#include "../../configuration.h"
 #include "../video_context_driver.h"
 
 typedef int CGSConnectionID;
@@ -97,7 +95,7 @@ static void gfx_ctx_cgl_check_window(void *data, bool *quit,
    }
 }
 
-static void gfx_ctx_cgl_swap_buffers(void *data)
+static void gfx_ctx_cgl_swap_buffers(void *data, video_frame_info_t video_info)
 {
    gfx_ctx_cgl_data_t *cgl = (gfx_ctx_cgl_data_t*)data;
 

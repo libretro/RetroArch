@@ -1464,7 +1464,7 @@ static void vulkan_readback(vk_t *vk)
          VK_PIPELINE_STAGE_HOST_BIT);
 }
 
-static void vulkan_inject_black_frame(vk_t *vk)
+static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t video_info)
 {
    VkCommandBufferBeginInfo begin_info           = {
       VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
@@ -1515,7 +1515,7 @@ static void vulkan_inject_black_frame(vk_t *vk)
    slock_unlock(vk->context->queue_lock);
 #endif
 
-   video_context_driver_swap_buffers();
+   video_context_driver_swap_buffers(video_info);
 }
 
 static bool vulkan_frame(void *data, const void *frame,
@@ -1910,7 +1910,7 @@ static bool vulkan_frame(void *data, const void *frame,
    performance_counter_stop(&queue_submit);
 
    performance_counter_start(&swapbuffers);
-   video_context_driver_swap_buffers();
+   video_context_driver_swap_buffers(video_info);
    performance_counter_stop(&swapbuffers);
 
    if (!vk->context->swap_interval_emulation_lock)
@@ -1937,7 +1937,7 @@ static bool vulkan_frame(void *data, const void *frame,
          && !runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, NULL)
          && !runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
    {
-      vulkan_inject_black_frame(vk);
+      vulkan_inject_black_frame(vk, video_info);
    }
 
    /* Vulkan doesn't directly support swap_interval > 1, so we fake it by duping out more frames. */

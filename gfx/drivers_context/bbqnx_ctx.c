@@ -42,7 +42,6 @@
 #include "../common/gl_common.h"
 #endif
 
-#include "../../configuration.h"
 #include "../../runloop.h"
 
 #define WINDOW_BUFFERS 2
@@ -363,7 +362,7 @@ static void gfx_ctx_qnx_set_swap_interval(void *data, unsigned swap_interval)
 #endif
 }
 
-static void gfx_ctx_qnx_swap_buffers(void *data)
+static void gfx_ctx_qnx_swap_buffers(void *data, video_frame_info_t video_info)
 {
    qnx_ctx_data_t *qnx = (qnx_ctx_data_t*)data;
 

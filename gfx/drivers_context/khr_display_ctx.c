@@ -17,7 +17,6 @@
 #include "../../config.h"
 #endif
 
-#include "../../configuration.h"
 #include "../../runloop.h"
 #include "../../frontend/frontend_driver.h"
 #include "../common/vulkan_common.h"
@@ -201,7 +200,7 @@ static void gfx_ctx_khr_display_set_swap_interval(void *data, unsigned swap_inte
    }
 }
 
-static void gfx_ctx_khr_display_swap_buffers(void *data)
+static void gfx_ctx_khr_display_swap_buffers(void *data, video_frame_info_t video_info)
 {
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
    vulkan_present(&khr->vk, khr->vk.context.current_swapchain_index);

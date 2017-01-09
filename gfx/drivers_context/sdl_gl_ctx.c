@@ -378,7 +378,7 @@ static bool sdl_ctx_has_windowed(void *data)
    return true;
 }
 
-static void sdl_ctx_swap_buffers(void *data)
+static void sdl_ctx_swap_buffers(void *data, video_frame_info_t video_info)
 {
 #ifdef HAVE_SDL2
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;

@@ -16,6 +16,10 @@
 
 #include <stdint.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #ifndef __PSL1GHT__
 #include <sys/spu_initialize.h>
 #endif
@@ -30,10 +34,6 @@
 #include "../../defines/ps3_defines.h"
 #include "../common/gl_common.h"
 #include "../video_context_driver.h"
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 typedef struct gfx_ctx_ps3_data
 {
@@ -178,7 +178,7 @@ static bool gfx_ctx_ps3_has_windowed(void *data)
    return false;
 }
 
-static void gfx_ctx_ps3_swap_buffers(void *data)
+static void gfx_ctx_ps3_swap_buffers(void *data, video_frame_info_t video_info)
 {
    (void)data;
 #ifdef HAVE_LIBDBGFONT

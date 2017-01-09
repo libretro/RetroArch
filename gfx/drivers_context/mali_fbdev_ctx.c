@@ -37,7 +37,6 @@
 #endif
 
 #include "../../frontend/frontend_driver.h"
-#include "../../configuration.h"
 #include "../../runloop.h"
 
 typedef struct
@@ -269,7 +268,7 @@ static void gfx_ctx_mali_fbdev_set_swap_interval(void *data, unsigned swap_inter
 #endif
 }
 
-static void gfx_ctx_mali_fbdev_swap_buffers(void *data)
+static void gfx_ctx_mali_fbdev_swap_buffers(void *data, video_frame_info_t video_info)
 {
    mali_ctx_data_t *mali = (mali_ctx_data_t*)data;
 

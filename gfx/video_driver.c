@@ -2112,6 +2112,7 @@ void video_driver_frame(const void *data, unsigned width,
    video_info.hard_sync             = settings->video.hard_sync;
    video_info.hard_sync_frames      = settings->video.hard_sync_frames;
    video_info.fps_show              = settings->fps_show;
+   video_info.max_swapchain_images  = settings->video.max_swapchain_images;
 
    if (!current_video || !current_video->frame(
             video_driver_data, data, width, height,

@@ -428,7 +428,7 @@ static bool vg_frame(void *data, const void *frame,
 
    performance_counter_stop(&vg_fr);
 
-   video_context_driver_swap_buffers();
+   video_context_driver_swap_buffers(video_info);
 
    return true;
 }

@@ -607,7 +607,7 @@ error:
    return false;
 }
 
-static void gfx_ctx_vc_swap_buffers(void *data)
+static void gfx_ctx_vc_swap_buffers(void *data, video_frame_info_t video_info)
 {
    vc_ctx_data_t *vc = (vc_ctx_data_t*)data;
 

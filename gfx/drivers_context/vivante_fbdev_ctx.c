@@ -28,7 +28,6 @@
 #include "../common/gl_common.h"
 #endif
 
-#include "../../configuration.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../runloop.h"
 
@@ -246,7 +245,7 @@ static void gfx_ctx_vivante_set_swap_interval(void *data, unsigned swap_interval
 #endif
 }
 
-static void gfx_ctx_vivante_swap_buffers(void *data)
+static void gfx_ctx_vivante_swap_buffers(void *data, video_frame_info_t video_info)
 {
    vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;
 

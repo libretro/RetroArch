@@ -250,7 +250,7 @@ static void gfx_ctx_x_swap_interval(void *data, unsigned interval)
    }
 }
 
-static void gfx_ctx_x_swap_buffers(void *data)
+static void gfx_ctx_x_swap_buffers(void *data, video_frame_info_t video_info)
 {
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
 
@@ -570,6 +570,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    video_info.hard_sync             = settings->video.hard_sync;
    video_info.hard_sync_frames      = settings->video.hard_sync_frames;
    video_info.fps_show              = settings->fps_show;
+   video_info.max_swapchain_images  = settings->video.max_swapchain_images;
 
    x11_set_window_attr(g_x11_dpy, g_x11_win);
    x11_update_window_title(NULL, video_info);

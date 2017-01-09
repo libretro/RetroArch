@@ -1331,11 +1331,11 @@ static bool gl_frame(void *data, const void *frame,
          && !runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, NULL)
          && !runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
    {
-      video_context_driver_swap_buffers();
+      video_context_driver_swap_buffers(video_info);
       glClear(GL_COLOR_BUFFER_BIT);
    }
 
-   video_context_driver_swap_buffers();
+   video_context_driver_swap_buffers(video_info);
 
 #ifdef HAVE_GL_SYNC
    if (video_info.hard_sync && gl->have_sync)

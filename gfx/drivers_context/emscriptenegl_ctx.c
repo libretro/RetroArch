@@ -24,7 +24,6 @@
 #include "../../config.h"
 #endif
 
-#include "../../configuration.h"
 #include "../../runloop.h"
 #include "../video_context_driver.h"
 
@@ -34,10 +33,6 @@
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
 #include "../common/gl_common.h"
-#endif
-
-#ifdef HAVE_CONFIG_H
-#include "../../config.h"
 #endif
 
 typedef struct
@@ -80,7 +75,7 @@ static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
    *quit       = false;
 }
 
-static void gfx_ctx_emscripten_swap_buffers(void *data)
+static void gfx_ctx_emscripten_swap_buffers(void *data, video_frame_info_t video_info)
 {
    (void)data;
    /* no-op in emscripten, no way to force swap/wait for VSync in browsers */

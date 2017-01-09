@@ -122,7 +122,7 @@ typedef struct gfx_ctx_driver
 
    /* Swaps buffers. VBlank sync depends on 
     * earlier calls to swap_interval. */
-   void (*swap_buffers)(void*);
+   void (*swap_buffers)(void*, video_frame_info_t video_info);
 
    /* Most video backends will want to use a certain input driver.
     * Checks for it here. */
@@ -294,9 +294,9 @@ void video_context_driver_destroy(void);
    if (current_video_context && current_video_context->update_window_title) \
       current_video_context->update_window_title(video_context_data, video_info)
 
-#define video_context_driver_swap_buffers() \
+#define video_context_driver_swap_buffers(video_info) \
    if (current_video_context && current_video_context->swap_buffers) \
-      current_video_context->swap_buffers(video_context_data)
+      current_video_context->swap_buffers(video_context_data, video_info)
 
 #define video_context_driver_focus() ((video_context_data && current_video_context->has_focus && current_video_context->has_focus(video_context_data)) ? true : false)
 

@@ -1465,7 +1465,7 @@ static bool d3d_frame(void *data, const void *frame,
 
    performance_counter_stop(&d3d_frame);
 
-   video_context_driver_swap_buffers();
+   video_context_driver_swap_buffers(video_info);
 
    return true;
 }

@@ -226,10 +226,9 @@ static bool gfx_ctx_drm_queue_flip(void)
    return false;
 }
 
-static void gfx_ctx_drm_swap_buffers(void *data)
+static void gfx_ctx_drm_swap_buffers(void *data, video_frame_info_t video_info)
 {
    gfx_ctx_drm_data_t *drm = (gfx_ctx_drm_data_t*)data;
-   settings_t    *settings = config_get_ptr();
 
    switch (drm_api)
    {
@@ -255,7 +254,7 @@ static void gfx_ctx_drm_swap_buffers(void *data)
    waiting_for_flip = gfx_ctx_drm_queue_flip();
 
    /* Triple-buffered page flips */
-   if (settings->video.max_swapchain_images >= 3 &&
+   if (video_info.max_swapchain_images >= 3 &&
          gbm_surface_has_free_buffers(g_gbm_surface))
       return;
 

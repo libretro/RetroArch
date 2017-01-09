@@ -39,7 +39,6 @@
 #include "../../config.h"
 #endif
 
-#include "../../configuration.h"
 #include "../../dynamic.h"
 #include "../../runloop.h"
 #include "../video_context_driver.h"
@@ -331,7 +330,7 @@ static void gfx_ctx_wgl_check_window(void *data, bool *quit,
    }
 }
 
-static void gfx_ctx_wgl_swap_buffers(void *data)
+static void gfx_ctx_wgl_swap_buffers(void *data, video_frame_info_t video_info)
 {
    (void)data;
 

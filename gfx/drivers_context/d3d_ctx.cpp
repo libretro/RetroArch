@@ -29,7 +29,6 @@
 #include "../drivers/d3d.h"
 #include "../common/win32_common.h"
 
-#include "../../configuration.h"
 #include "../../runloop.h"
 #include "../../verbosity.h"
 #include "../../ui/ui_companion_driver.h"
@@ -77,7 +76,7 @@ static bool gfx_ctx_d3d_set_resize(void *data, unsigned new_width, unsigned new_
    return true;
 }
 
-static void gfx_ctx_d3d_swap_buffers(void *data)
+static void gfx_ctx_d3d_swap_buffers(void *data, video_frame_info_t video_info)
 {
    d3d_video_t      *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;

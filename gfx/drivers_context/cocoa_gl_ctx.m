@@ -536,7 +536,7 @@ static bool cocoagl_gfx_ctx_has_windowed(void *data)
 #endif
 }
 
-static void cocoagl_gfx_ctx_swap_buffers(void *data)
+static void cocoagl_gfx_ctx_swap_buffers(void *data, video_frame_info_t video_info)
 {
    if (!(--g_fast_forward_skips < 0))
       return;

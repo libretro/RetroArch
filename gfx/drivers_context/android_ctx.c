@@ -37,7 +37,6 @@
 #endif
 
 #include "../../frontend/drivers/platform_linux.h"
-#include "../../configuration.h"
 #include "../../runloop.h"
 
 static enum gfx_ctx_api android_api           = GFX_CTX_NONE;
@@ -492,7 +491,7 @@ dpi_fallback:
    return true;
 }
 
-static void android_gfx_ctx_swap_buffers(void *data)
+static void android_gfx_ctx_swap_buffers(void *data, video_frame_info_t video_info)
 {
    android_ctx_data_t *and  = (android_ctx_data_t*)data;
 

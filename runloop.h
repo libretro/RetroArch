@@ -17,6 +17,9 @@
 #ifndef __RETROARCH_RUNLOOP_H
 #define __RETROARCH_RUNLOOP_H
 
+#include <stdint.h>
+#include <stddef.h>
+#include <stdlib.h>
 #include <boolean.h>
 #include <retro_common_api.h>
 

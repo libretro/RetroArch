@@ -362,6 +362,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    video_info.hard_sync             = settings->video.hard_sync;
    video_info.hard_sync_frames      = settings->video.hard_sync_frames;
    video_info.fps_show              = settings->fps_show;
+   video_info.max_swapchain_images  = settings->video.max_swapchain_images;
 
    x11_set_window_attr(g_x11_dpy, g_x11_win);
    x11_update_window_title(NULL, video_info);
@@ -503,7 +504,7 @@ static void gfx_ctx_xegl_show_mouse(void *data, bool state)
    x11_show_mouse(g_x11_dpy, g_x11_win, state);
 }
 
-static void gfx_ctx_xegl_swap_buffers(void *data)
+static void gfx_ctx_xegl_swap_buffers(void *data, video_frame_info_t video_info)
 {
    xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
 
