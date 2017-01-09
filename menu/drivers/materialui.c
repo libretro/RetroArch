@@ -1565,8 +1565,9 @@ static void mui_context_reset(void *data)
    menu_display_allocate_white_texture();
    mui_context_reset_textures(mui);
 
-   task_push_image_load(settings->path.menu_wallpaper, 
-         menu_display_handle_wallpaper_upload, NULL);
+   if (!string_is_empty(settings->path.menu_wallpaper))
+      task_push_image_load(settings->path.menu_wallpaper, 
+            menu_display_handle_wallpaper_upload, NULL);
 }
 
 static int mui_environ(enum menu_environ_cb type, void *data, void *userdata)
