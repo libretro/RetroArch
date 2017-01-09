@@ -684,15 +684,16 @@ FILTERS
 #include "../gfx/video_filters/lq2x.c"
 #include "../gfx/video_filters/phosphor2x.c"
 
-#include "../audio/audio_filters/echo.c"
-#include "../audio/audio_filters/eq.c"
-#include "../audio/audio_filters/chorus.c"
-#include "../audio/audio_filters/iir.c"
-#include "../audio/audio_filters/panning.c"
-#include "../audio/audio_filters/phaser.c"
-#include "../audio/audio_filters/reverb.c"
-#include "../audio/audio_filters/wahwah.c"
+#include "../libretro-common/audio/dsp_filters/echo.c"
+#include "../libretro-common/audio/dsp_filters/eq.c"
+#include "../libretro-common/audio/dsp_filters/chorus.c"
+#include "../libretro-common/audio/dsp_filters/iir.c"
+#include "../libretro-common/audio/dsp_filters/panning.c"
+#include "../libretro-common/audio/dsp_filters/phaser.c"
+#include "../libretro-common/audio/dsp_filters/reverb.c"
+#include "../libretro-common/audio/dsp_filters/wahwah.c"
 #endif
+
 /*============================================================
 DYNAMIC
 ============================================================ */
