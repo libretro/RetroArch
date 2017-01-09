@@ -24,11 +24,6 @@
 #include "../../menu_display.h"
 #include "../../menu_input.h"
 
-enum
-{
-   NK_TEXTURE_POINTER = 0,
-   NK_TEXTURE_LAST
-};
 
 enum
 {
@@ -79,7 +74,7 @@ typedef struct nk_menu_handle
    struct
    {
       menu_texture_item bg;
-      menu_texture_item list[NK_TEXTURE_LAST];
+      menu_texture_item pointer;
    } textures;
 
    video_font_raster_block_t list_block;
