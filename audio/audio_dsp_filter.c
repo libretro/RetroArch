@@ -32,7 +32,6 @@
 
 #include "../frontend/frontend_driver.h"
 #include "../performance_counters.h"
-#include "../dynamic.h"
 
 struct rarch_dsp_plug
 {
@@ -83,16 +82,18 @@ static const struct dspfilter_config dspfilter_config = {
 
 static bool create_filter_graph(rarch_dsp_filter_t *dsp, float sample_rate)
 {
-   unsigned i, filters = 0;
+   unsigned i;
+   struct rarch_dsp_instance *instances = NULL;
+   unsigned filters                     = 0;
 
    if (!config_get_uint(dsp->conf, "filters", &filters))
       return false;
 
-   dsp->instances = (struct rarch_dsp_instance*)
-      calloc(filters, sizeof(*dsp->instances));
-   if (!dsp->instances)
+   instances = (struct rarch_dsp_instance*)calloc(filters, sizeof(*instances));
+   if (!instances)
       return false;
 
+   dsp->instances     = instances;
    dsp->num_instances = filters;
 
    for (i = 0; i < filters; i++)
@@ -178,10 +179,11 @@ static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
 
    for (i = 0; i < list->size; i++)
    {
-      const struct dspfilter_implementation *impl = NULL;
-      struct rarch_dsp_plug *new_plugs = NULL;
-      dylib_t lib = dylib_load(list->elems[i].data);
       dspfilter_get_implementation_t cb;
+      const struct dspfilter_implementation *impl = NULL;
+      struct rarch_dsp_plug *new_plugs            = NULL;
+      dylib_t lib                                 = 
+         dylib_load(list->elems[i].data);
 
       if (!lib)
          continue;
@@ -233,16 +235,18 @@ rarch_dsp_filter_t *rarch_dsp_filter_new(
    char basedir[PATH_MAX_LENGTH];
    char ext_name[PATH_MAX_LENGTH];
 #endif
+   config_file_t *conf           = NULL;
    struct string_list *plugs     = NULL;
-   rarch_dsp_filter_t *dsp       = NULL;
+   rarch_dsp_filter_t *dsp       = (rarch_dsp_filter_t*)calloc(1, sizeof(*dsp));
 
-   dsp = (rarch_dsp_filter_t*)calloc(1, sizeof(*dsp));
    if (!dsp)
       return NULL;
 
-   dsp->conf = config_file_new(filter_config);
-   if (!dsp->conf)   /* Did not find config. */
+   conf = config_file_new(filter_config);
+   if (!conf)   /* Did not find config. */
       goto error;
+
+   dsp->conf = conf;
 
 #if !defined(HAVE_FILTERS_BUILTIN) && defined(HAVE_DYLIB)
    fill_pathname_basedir(basedir, filter_config, sizeof(basedir));
