@@ -48,185 +48,6 @@
 #include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
 
-/* this is the main control function, it opens and closes windows, */
-static void nk_menu_main(nk_menu_handle_t *nk)
-{
-
-   struct nk_context *ctx = &nk->ctx;
-
-   if (nk->window[NK_WND_SETTINGS].open)
-      nk_wnd_settings(nk);
-
-   if (nk->window[NK_WND_SHADER_PARAMETERS].open)
-      nk_wnd_shader_parameters(nk);
-   if (nk->window[NK_WND_MAIN].open)
-      nk_wnd_main(nk, "Demo");
-
-   nk_buffer_info(&nk->status, &nk->ctx.memory);
-}
-
-static void nk_menu_input_gamepad(nk_menu_handle_t *nk)
-{
-   switch (nk->action)
-   {
-      case MENU_ACTION_LEFT:
-         nk_input_key(&nk->ctx, NK_KEY_LEFT, 1);
-         break;
-      case MENU_ACTION_RIGHT:
-         nk_input_key(&nk->ctx, NK_KEY_RIGHT, 1);
-         break;
-      case MENU_ACTION_DOWN:
-         nk_input_key(&nk->ctx, NK_KEY_DOWN, 1);
-         break;
-      case MENU_ACTION_UP:
-         nk_input_key(&nk->ctx, NK_KEY_UP, 1);
-         break;
-      default:
-         nk_input_key(&nk->ctx, NK_KEY_UP, 0);
-         nk_input_key(&nk->ctx, NK_KEY_DOWN, 0);
-         nk_input_key(&nk->ctx, NK_KEY_LEFT, 0);
-         nk_input_key(&nk->ctx, NK_KEY_RIGHT, 0);
-         break;
-   }
-
-}
-
-static void nk_menu_input_mouse_movement(struct nk_context *ctx)
-{
-   int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
-   int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
-
-   nk_input_motion(ctx, mouse_x, mouse_y);
-   nk_input_scroll(ctx, menu_input_mouse_state(MENU_MOUSE_WHEEL_UP) -
-      menu_input_mouse_state(MENU_MOUSE_WHEEL_DOWN));
-
-}
-
-static void nk_menu_input_mouse_button(struct nk_context *ctx)
-{
-   int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
-   int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
-
-   nk_input_button(ctx, NK_BUTTON_LEFT,
-         mouse_x, mouse_y, menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON));
-   nk_input_button(ctx, NK_BUTTON_RIGHT,
-         mouse_x, mouse_y, menu_input_mouse_state(MENU_MOUSE_RIGHT_BUTTON));
-}
-
-static void nk_menu_input_keyboard(struct nk_context *ctx)
-{
-   /* placeholder, it just presses 1 on right click
-      needs to be hooked up correctly
-   */
-   if(menu_input_mouse_state(MENU_MOUSE_RIGHT_BUTTON))
-      nk_input_char(ctx, '1');
-}
-
-static void nk_menu_context_reset_textures(nk_menu_handle_t *nk,
-      const char *iconpath)
-{
-   unsigned i;
-
-   for (i = 0; i < NK_TEXTURE_LAST; i++)
-   {
-      struct texture_image ti;
-      char path[PATH_MAX_LENGTH];
-
-      path[0]     = '\0';
-
-      ti.width         = 0;
-      ti.height        = 0;
-      ti.pixels        = NULL;
-      ti.supports_rgba = video_driver_supports_rgba();
-
-      switch(i)
-      {
-         case NK_TEXTURE_POINTER:
-            fill_pathname_join(path, iconpath,
-                  "pointer.png", sizeof(path));
-            break;
-      }
-
-      if (string_is_empty(path) || !path_file_exists(path))
-         continue;
-
-      image_texture_load(&ti, path);
-      video_driver_texture_load(&ti,
-            TEXTURE_FILTER_MIPMAP_LINEAR, &nk->textures.list[i]);
-
-      image_texture_load(&ti, path);
-   }
-}
-
-static void nk_menu_get_message(void *data, const char *message)
-{
-   nk_menu_handle_t *nk   = (nk_menu_handle_t*)data;
-
-   if (!nk || !message || !*message)
-      return;
-
-   strlcpy(nk->box_message, message, sizeof(nk->box_message));
-}
-
-static void nk_menu_frame(void *data)
-{
-   float white_bg[16]=  {
-      0.98, 0.98, 0.98, 1,
-      0.98, 0.98, 0.98, 1,
-      0.98, 0.98, 0.98, 1,
-      0.98, 0.98, 0.98, 1,
-   };
-
-   unsigned width, height, ticker_limit, i;
-   nk_menu_handle_t *nk = (nk_menu_handle_t*)data;
-   settings_t *settings  = config_get_ptr();
-
-   bool libretro_running = menu_display_libretro_running();
-
-   if (!nk)
-      return;
-
-   video_driver_get_size(&width, &height);
-
-   menu_display_set_viewport();
-
-   nk_input_begin(&nk->ctx);
-   nk_menu_input_gamepad(nk);
-   nk_menu_input_mouse_movement(&nk->ctx);
-   nk_menu_input_mouse_button(&nk->ctx);
-   nk_menu_input_keyboard(&nk->ctx);
-
-   if (width != nk->size.x || height != nk->size.y)
-   {
-      nk->size.x = width;
-      nk->size.y = height;
-      nk->size_changed = true;
-   }
-
-   nk_input_end(&nk->ctx);
-   nk_menu_main(nk);
-
-   nk_common_device_draw(&device, &nk->ctx, width, height, NK_ANTI_ALIASING_ON);
-
-   menu_display_draw_cursor(
-         &white_bg[0],
-         64,
-         nk->textures.list[NK_TEXTURE_POINTER],
-         menu_input_mouse_state(MENU_MOUSE_X_AXIS),
-         menu_input_mouse_state(MENU_MOUSE_Y_AXIS),
-         width,
-         height);
-
-   menu_display_restore_clear_color();
-   menu_display_unset_viewport();
-}
-
-static void nk_menu_layout(nk_menu_handle_t *nk)
-{
-   unsigned width, height;
-   video_driver_get_size(&width, &height);
-}
-
 static void nk_menu_init_device(nk_menu_handle_t *nk)
 {
    const void *image;
@@ -248,7 +69,6 @@ static void nk_menu_init_device(nk_menu_handle_t *nk)
    nk_font_atlas_end(&atlas, nk_handle_id((int)device.font_tex), &device.null);
    nk_init_default(&nk->ctx, &font->handle);
 
-   //nk_init(&nk->ctx, &nk_alloc, &usrfnt);
    nk_common_device_init(&device);
 
    fill_pathname_join(buf, nk->assets_directory, "folder.png", sizeof(buf));
@@ -299,7 +119,7 @@ static void *nk_menu_init(void **userdata)
    nk_menu_init_device(nk);
 
    /* for demo puposes only, opens all windows */ 
-#if 0
+#if 1
       for (int i=0; i < NK_WND_LAST; i++)
          nk->window[i].open = true;
 #else
@@ -311,6 +131,188 @@ error:
    if (menu)
       free(menu);
    return NULL;
+}
+
+
+static void nk_menu_input_gamepad(nk_menu_handle_t *nk)
+{
+   switch (nk->action)
+   {
+      case MENU_ACTION_LEFT:
+         nk_input_key(&nk->ctx, NK_KEY_LEFT, 1);
+         break;
+      case MENU_ACTION_RIGHT:
+         nk_input_key(&nk->ctx, NK_KEY_RIGHT, 1);
+         break;
+      case MENU_ACTION_DOWN:
+         nk_input_key(&nk->ctx, NK_KEY_DOWN, 1);
+         break;
+      case MENU_ACTION_UP:
+         nk_input_key(&nk->ctx, NK_KEY_UP, 1);
+         break;
+      default:
+         nk_input_key(&nk->ctx, NK_KEY_UP, 0);
+         nk_input_key(&nk->ctx, NK_KEY_DOWN, 0);
+         nk_input_key(&nk->ctx, NK_KEY_LEFT, 0);
+         nk_input_key(&nk->ctx, NK_KEY_RIGHT, 0);
+         break;
+   }
+}
+
+static void nk_menu_input_mouse_movement(struct nk_context *ctx)
+{
+   int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
+   int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
+
+   nk_input_motion(ctx, mouse_x, mouse_y);
+   nk_input_scroll(ctx, menu_input_mouse_state(MENU_MOUSE_WHEEL_UP) -
+      menu_input_mouse_state(MENU_MOUSE_WHEEL_DOWN));
+}
+
+static void nk_menu_input_mouse_button(struct nk_context *ctx)
+{
+   int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
+   int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
+
+   nk_input_button(ctx, NK_BUTTON_LEFT,
+         mouse_x, mouse_y, menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON));
+   nk_input_button(ctx, NK_BUTTON_RIGHT,
+         mouse_x, mouse_y, menu_input_mouse_state(MENU_MOUSE_RIGHT_BUTTON));
+}
+
+static void nk_menu_input_keyboard(struct nk_context *ctx)
+{
+   /* placeholder, it just presses 1 on right click
+      needs to be hooked up correctly
+   */
+   if(menu_input_mouse_state(MENU_MOUSE_RIGHT_BUTTON))
+      nk_input_char(ctx, '1');
+}
+
+static void nk_menu_get_message(void *data, const char *message)
+{
+   nk_menu_handle_t *nk   = (nk_menu_handle_t*)data;
+   if (!nk || !message || !*message)
+      return;
+   strlcpy(nk->box_message, message, sizeof(nk->box_message));
+}
+
+static void nk_draw_bg(
+      nk_menu_handle_t *nk,
+      unsigned width,
+      unsigned height,
+      float alpha,
+      uintptr_t texture_id,
+      float *coord_black,
+      float *coord_white)
+{
+   menu_display_ctx_draw_t draw;
+   settings_t *settings = config_get_ptr();
+
+   draw.x                    = 0;
+   draw.y                    = 0;
+   draw.texture              = texture_id;
+   draw.width                = width;
+   draw.height               = height;
+   draw.color                = &coord_black[0];
+   draw.vertex               = NULL;
+   draw.tex_coord            = NULL;
+   draw.vertex_count         = 4;
+   draw.prim_type            = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.pipeline.id          = 0;
+
+   menu_display_blend_begin();
+   menu_display_set_viewport();
+
+   draw.pipeline.id = VIDEO_SHADER_MENU_5;
+   draw.pipeline.id  = VIDEO_SHADER_MENU_5;
+
+   menu_display_draw_pipeline(&draw);
+   menu_display_draw(&draw);
+   menu_display_blend_end();
+}
+
+/* this is the main control function, it opens and closes windows and will 
+   control the logic of the whole menu driver */
+static void nk_menu_main(nk_menu_handle_t *nk)
+{
+
+   struct nk_context *ctx = &nk->ctx;
+
+   if (nk->window[NK_WND_SETTINGS].open)
+      nk_wnd_settings(nk);
+
+   if (nk->window[NK_WND_SHADER_PARAMETERS].open)
+      nk_wnd_shader_parameters(nk);
+   if (nk->window[NK_WND_MAIN].open)
+      nk_wnd_main(nk, "Demo");
+
+   nk_buffer_info(&nk->status, &nk->ctx.memory);
+}
+
+
+static void nk_menu_frame(void *data)
+{
+   float white_bg[16]=  {
+      0.98, 0.98, 0.98, 1,
+      0.98, 0.98, 0.98, 1,
+      0.98, 0.98, 0.98, 1,
+      0.98, 0.98, 0.98, 1,
+   };
+   
+   float coord_black[16], coord_white[16];
+
+   for (int i = 0; i < 16; i++)
+   {
+      coord_black[i]  = 0;
+      coord_white[i] = 1.0f;
+   }
+
+   menu_display_set_alpha(coord_black, 0.75);
+   menu_display_set_alpha(coord_white, 0.75);
+
+   unsigned width, height, ticker_limit, i;
+   nk_menu_handle_t *nk = (nk_menu_handle_t*)data;
+   settings_t *settings  = config_get_ptr();
+
+   bool libretro_running = menu_display_libretro_running();
+
+   if (!nk)
+      return;
+
+   video_driver_get_size(&width, &height);
+
+   menu_display_set_viewport();
+
+   nk_input_begin(&nk->ctx);
+   nk_menu_input_gamepad(nk);
+   nk_menu_input_mouse_movement(&nk->ctx);
+   nk_menu_input_mouse_button(&nk->ctx);
+   nk_menu_input_keyboard(&nk->ctx);
+
+   if (width != nk->size.x || height != nk->size.y)
+   {
+      nk->size.x = width;
+      nk->size.y = height;
+      nk->size_changed = true;
+   }
+
+   nk_input_end(&nk->ctx);
+   nk_menu_main(nk);
+   nk_draw_bg(nk, width, height, 0.5, nk->textures.bg, coord_black, coord_white);
+   nk_common_device_draw(&device, &nk->ctx, width, height, NK_ANTI_ALIASING_ON);
+
+   menu_display_draw_cursor(
+         &white_bg[0],
+         64,
+         nk->textures.pointer,
+         menu_input_mouse_state(MENU_MOUSE_X_AXIS),
+         menu_input_mouse_state(MENU_MOUSE_Y_AXIS),
+         width,
+         height);
+
+   menu_display_restore_clear_color();
+   menu_display_unset_viewport();
 }
 
 static void nk_menu_free(void *data)
@@ -328,28 +330,38 @@ static void nk_menu_free(void *data)
    font_driver_bind_block(NULL, NULL);
 }
 
-static void wimp_context_bg_destroy(nk_menu_handle_t *nk)
-{
-   if (!nk)
-      return;
-
-}
-
-static void nk_menu_context_destroy(void *data)
+static void nk_menu_context_load_textures(nk_menu_handle_t *nk,
+      const char *iconpath)
 {
    unsigned i;
-   nk_menu_handle_t *nk   = (nk_menu_handle_t*)data;
 
-   if (!nk)
-      return;
+   struct texture_image ti;
+   char path[PATH_MAX_LENGTH];
 
-   for (i = 0; i < NK_TEXTURE_LAST; i++)
-      video_driver_texture_unload((uintptr_t*)&nk->textures.list[i]);
+   path[0]     = '\0';
 
-#if 0
-   menu_display_font_main_deinit();
-#endif
-   wimp_context_bg_destroy(nk);
+   ti.width         = 0;
+   ti.height        = 0;
+   ti.pixels        = NULL;
+   ti.supports_rgba = video_driver_supports_rgba();
+
+   fill_pathname_join(path, iconpath,
+         "pointer.png", sizeof(path));
+   if (!string_is_empty(path) && path_file_exists(path))
+   {
+      image_texture_load(&ti, path);
+      video_driver_texture_load(&ti,
+            TEXTURE_FILTER_MIPMAP_LINEAR, &nk->textures.pointer);
+   }
+
+   fill_pathname_join(path, iconpath,
+         "bg.png", sizeof(path));
+   if (!string_is_empty(path) && path_file_exists(path))
+   {
+      image_texture_load(&ti, path);
+      video_driver_texture_load(&ti,
+            TEXTURE_FILTER_MIPMAP_LINEAR, &nk->textures.bg);
+   }
 }
 
 static void nk_menu_context_reset(void *data)
@@ -369,28 +381,27 @@ static void nk_menu_context_reset(void *data)
          "nuklear", sizeof(iconpath));
    fill_pathname_slash(iconpath, sizeof(iconpath));
 
-   nk_menu_layout(nk);
    nk_menu_init_device(nk);
-
-   wimp_context_bg_destroy(nk);
-   nk_menu_context_reset_textures(nk, iconpath);
+   nk_menu_context_load_textures(nk, iconpath);
 
    task_push_image_load(settings->path.menu_wallpaper,
          menu_display_handle_wallpaper_upload, NULL);
 }
 
-static int nk_menu_environ(enum menu_environ_cb type, void *data, void *userdata)
+static void nk_menu_context_destroy(void *data)
 {
-   switch (type)
-   {
-      case 0:
-      default:
-         break;
-   }
+   unsigned i;
+   nk_menu_handle_t *nk   = (nk_menu_handle_t*)data;
 
-   return -1;
+   if (!nk)
+      return;
+
+   video_driver_texture_unload((uintptr_t*)&nk->textures.pointer);
+   video_driver_texture_unload((uintptr_t*)&nk->textures.bg);
 }
 
+/* not sure what these two are needed for, seem to be rather important
+   in the menu driver so I didn't touch them */
 static bool nk_menu_init_list(void *data)
 {
    menu_displaylist_info_t info = {0};
@@ -418,6 +429,8 @@ static bool nk_menu_init_list(void *data)
    return false;
 }
 
+/* not sure what these two are needed for, seem to be rather important
+   in the menu driver so I didn't touch them */
 static int nk_menu_iterate(void *data, void *userdata, enum menu_action action)
 {
    int ret;
@@ -473,7 +486,7 @@ menu_ctx_driver_t menu_ctx_nuklear = {
    NULL,
    NULL,
    "nuklear",
-   nk_menu_environ,
+   NULL,
    NULL,
    NULL,
    NULL
