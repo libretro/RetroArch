@@ -82,7 +82,6 @@ static bool menu_driver_pending_quit            = false;
 static bool menu_driver_pending_shutdown        = false;
 static bool menu_driver_is_binding              = false;
 static playlist_t *menu_driver_playlist         = NULL;
-static struct video_shader *menu_driver_shader  = NULL;
 static menu_handle_t *menu_driver_data          = NULL;
 static const menu_ctx_driver_t *menu_driver_ctx = NULL;
 static void *menu_userdata                      = NULL;
