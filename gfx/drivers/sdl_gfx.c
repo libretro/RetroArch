@@ -330,7 +330,7 @@ static void sdl_gfx_check_window(sdl_video_t *vid)
 
 static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
       unsigned height, uint64_t frame_count,
-      unsigned pitch, const char *msg)
+      unsigned pitch, const char *msg, video_frame_info_t video_info)
 {
    char                       buf[128];
    static struct retro_perf_counter sdl_scale = {0};

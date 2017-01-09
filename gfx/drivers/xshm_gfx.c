@@ -94,14 +94,15 @@ static void *xshm_gfx_init(const video_info_t *video,
 
 static bool xshm_gfx_frame(void *data, const void *frame, unsigned width,
       unsigned height, uint64_t frame_count,
-      unsigned pitch, const char *msg)
+      unsigned pitch, const char *msg, video_frame_info_t video_info)
 {
    xshm_t* xshm = (xshm_t*)data;
    int y;
    
    for (y=0;y<height;y++)
    {
-      memcpy((uint8_t*)xshm->shmInfo.shmaddr + sizeof(uint32_t)*xshm->width*y, (uint8_t*)frame + pitch*y, pitch);
+      memcpy((uint8_t*)xshm->shmInfo.shmaddr + sizeof(uint32_t)*xshm->width*y,
+            (uint8_t*)frame + pitch*y, pitch);
    }
    
    XShmPutImage(xshm->display, xshm->wndw, xshm->gc, xshm->image,

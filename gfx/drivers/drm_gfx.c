@@ -744,7 +744,8 @@ static void *drm_gfx_init(const video_info_t *video,
 }
 
 static bool drm_gfx_frame(void *data, const void *frame, unsigned width,
-      unsigned height, uint64_t frame_count, unsigned pitch, const char *msg)
+      unsigned height, uint64_t frame_count, unsigned pitch, const char *msg,
+      video_frame_info_t video_info)
 {
    struct drm_video *_drmvars = data;
 

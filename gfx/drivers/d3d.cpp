@@ -1368,13 +1368,12 @@ static void d3d_get_overlay_interface(void *data,
 static bool d3d_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height,
       uint64_t frame_count, unsigned pitch,
-      const char *msg)
+      const char *msg, video_frame_info_t video_info)
 {
    unsigned width, height;
    static struct retro_perf_counter d3d_frame = {0};
    unsigned i                          = 0;
    d3d_video_t *d3d                    = (d3d_video_t*)data;
-   settings_t *settings                = config_get_ptr();
    HWND window                         = win32_get_window();
 
    (void)i;
@@ -1424,7 +1423,7 @@ static bool d3d_frame(void *data, const void *frame,
 
    /* Insert black frame first, so we
     * can screenshot, etc. */
-   if (settings->video.black_frame_insertion)
+   if (video_info.black_frame_insertion)
    {
       if (!d3d_swap(d3d, d3d->dev) || d3d->needs_restore)
          return true;

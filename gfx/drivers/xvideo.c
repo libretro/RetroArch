@@ -781,7 +781,7 @@ static void xv_render_msg(xv_t *xv, const char *msg,
 
 static bool xv_frame(void *data, const void *frame, unsigned width,
       unsigned height, uint64_t frame_count,
-      unsigned pitch, const char *msg)
+      unsigned pitch, const char *msg, video_frame_info_t video_info)
 {
    XWindowAttributes target;
    xv_t *xv                  = (xv_t*)data;

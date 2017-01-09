@@ -126,11 +126,10 @@ static void vita2d_gfx_update_viewport(vita_video_t* vita);
 
 static bool vita2d_gfx_frame(void *data, const void *frame,
       unsigned width, unsigned height, uint64_t frame_count,
-      unsigned pitch, const char *msg)
+      unsigned pitch, const char *msg, video_frame_info_t video_info)
 {
    void *tex_p;
    vita_video_t *vita = (vita_video_t *)data;
-   settings_t *settings = config_get_ptr();
    
    if (frame)
    {
@@ -203,7 +202,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
       }
    }
    
-   if (settings->fps_show)
+   if (video_info.fps_show)
    {
       char buffer[128];
       char buffer_fps[128];
@@ -211,7 +210,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
       buffer[0] = buffer_fps[0] = '\0';
 
       video_monitor_get_fps(buffer, sizeof(buffer),
-            settings->fps_show ? buffer_fps : NULL, sizeof(buffer_fps));
+            video_info.fps_show ? buffer_fps : NULL, sizeof(buffer_fps));
       runloop_msg_queue_push(buffer_fps, 1, 1, false);
    }
 

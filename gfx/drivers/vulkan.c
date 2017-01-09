@@ -1521,13 +1521,12 @@ static void vulkan_inject_black_frame(vk_t *vk)
 static bool vulkan_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height,
       uint64_t frame_count,
-      unsigned pitch, const char *msg)
+      unsigned pitch, const char *msg, video_frame_info_t video_info)
 {
    struct vk_per_frame *chain;
    unsigned width, height;
    VkClearValue clear_value;
    vk_t *vk                                      = (vk_t*)data;
-   settings_t *settings                          = config_get_ptr();
    static struct retro_perf_counter frame_run    = {0};
    static struct retro_perf_counter begin_cmd    = {0};
    static struct retro_perf_counter build_cmd    = {0};
@@ -1933,7 +1932,7 @@ static bool vulkan_frame(void *data, const void *frame,
    /* Disable BFI during fast forward, slow-motion,
     * and pause to prevent flicker. */
    if (
-         settings->video.black_frame_insertion
+         video_info.black_frame_insertion
          && !input_driver_is_nonblock_state()
          && !runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, NULL)
          && !runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
@@ -1948,7 +1947,8 @@ static bool vulkan_frame(void *data, const void *frame,
       vk->context->swap_interval_emulation_lock = true;
       for (i = 1; i < vk->context->swap_interval; i++)
       {
-         if (!vulkan_frame(vk, NULL, 0, 0, frame_count, 0, msg))
+         if (!vulkan_frame(vk, NULL, 0, 0, frame_count, 0, msg,
+                  video_info))
          {
             vk->context->swap_interval_emulation_lock = false;
             return false;

@@ -430,7 +430,8 @@ static void *dispmanx_gfx_init(const video_info_t *video,
 }
 
 static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
-      unsigned height, uint64_t frame_count, unsigned pitch, const char *msg)
+      unsigned height, uint64_t frame_count, unsigned pitch, const char *msg,
+      video_frame_info_t video_info)
 {
    struct dispmanx_video *_dispvars = data;
    float aspect = video_driver_get_aspect_ratio();

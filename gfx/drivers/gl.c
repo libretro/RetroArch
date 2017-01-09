@@ -1077,7 +1077,8 @@ static INLINE void gl_draw_texture(gl_t *gl)
 static bool gl_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height,
       uint64_t frame_count,
-      unsigned pitch, const char *msg)
+      unsigned pitch, const char *msg,
+      video_frame_info_t video_info)
 {
    video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
@@ -1087,7 +1088,6 @@ static bool gl_frame(void *data, const void *frame,
    video_shader_ctx_info_t shader_info;
    static struct retro_perf_counter frame_run = {0};
    gl_t                            *gl = (gl_t*)data;
-   settings_t                *settings = config_get_ptr();
 
    performance_counter_init(&frame_run, "frame_run");
    performance_counter_start(&frame_run);
@@ -1326,7 +1326,7 @@ static bool gl_frame(void *data, const void *frame,
    /* Disable BFI during fast forward, slow-motion,
     * and pause to prevent flicker. */
    if (
-         settings->video.black_frame_insertion
+         video_info.black_frame_insertion
          && !input_driver_is_nonblock_state()
          && !runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, NULL)
          && !runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
@@ -1338,7 +1338,7 @@ static bool gl_frame(void *data, const void *frame,
    video_context_driver_swap_buffers();
 
 #ifdef HAVE_GL_SYNC
-   if (settings->video.hard_sync && gl->have_sync)
+   if (video_info.hard_sync && gl->have_sync)
    {
       static struct retro_perf_counter gl_fence = {0};
 
@@ -1348,7 +1348,7 @@ static bool gl_frame(void *data, const void *frame,
       gl->fences[gl->fence_count++] =
          glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 
-      while (gl->fence_count > settings->video.hard_sync_frames)
+      while (gl->fence_count > video_info.hard_sync_frames)
       {
          glClientWaitSync(gl->fences[0],
                GL_SYNC_FLUSH_COMMANDS_BIT, 1000000000);

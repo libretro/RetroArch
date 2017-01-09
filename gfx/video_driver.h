@@ -81,6 +81,15 @@ typedef struct video_info
 #endif
 } video_info_t;
 
+typedef struct video_frame_info
+{
+   float refresh_rate;
+   bool black_frame_insertion;
+   bool hard_sync;
+   unsigned hard_sync_frames;
+   bool fps_show;
+} video_frame_info_t;
+
 /* Optionally implemented interface to poke more
  * deeply into video driver. */
 
@@ -141,7 +150,7 @@ typedef struct video_viewport
 typedef bool (*video_driver_frame_t)(void *data,
       const void *frame, unsigned width,
       unsigned height, uint64_t frame_count,
-      unsigned pitch, const char *msg);
+      unsigned pitch, const char *msg, video_frame_info_t video_info);
 
 typedef struct video_driver
 {

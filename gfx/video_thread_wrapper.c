@@ -612,10 +612,23 @@ static void video_thread_loop(void *data)
          thread_update_driver_state(thr);
 
          if (thr->driver && thr->driver->frame)
+         {
+            video_frame_info_t video_info;
+            settings_t *settings             = config_get_ptr();
+
+            video_info.refresh_rate          = settings->video.refresh_rate;
+            video_info.black_frame_insertion = 
+               settings->video.black_frame_insertion;
+            video_info.hard_sync             = settings->video.hard_sync;
+            video_info.hard_sync_frames      = settings->video.hard_sync_frames;
+            video_info.fps_show              = settings->fps_show;
+
             ret = thr->driver->frame(thr->driver_data,
-               thr->frame.buffer, thr->frame.width, thr->frame.height,
-               thr->frame.count,
-               thr->frame.pitch, *thr->frame.msg ? thr->frame.msg : NULL);
+                  thr->frame.buffer, thr->frame.width, thr->frame.height,
+                  thr->frame.count,
+                  thr->frame.pitch, *thr->frame.msg ? thr->frame.msg : NULL,
+                  video_info);
+         }
 
          slock_unlock(thr->frame.lock);
 
@@ -701,7 +714,7 @@ static bool video_thread_has_windowed(void *data)
 
 static bool video_thread_frame(void *data, const void *frame_,
       unsigned width, unsigned height, uint64_t frame_count,
-      unsigned pitch, const char *msg)
+      unsigned pitch, const char *msg, video_frame_info_t video_info)
 {
    unsigned copy_stride;
    static struct retro_perf_counter thr_frame = {0};
@@ -717,7 +730,7 @@ static bool video_thread_frame(void *data, const void *frame_,
 
       if (thr->driver && thr->driver->frame)
          return thr->driver->frame(thr->driver_data, frame_,
-               width, height, frame_count, pitch, msg);
+               width, height, frame_count, pitch, msg, video_info);
       return false;
    }
 
@@ -734,10 +747,9 @@ static bool video_thread_frame(void *data, const void *frame_,
 
    if (!thr->nonblock)
    {
-      settings_t *settings = config_get_ptr();
 
       retro_time_t target_frame_time = (retro_time_t)
-         roundf(1000000 / settings->video.refresh_rate);
+         roundf(1000000 / video_info.refresh_rate);
       retro_time_t target = thr->last_time + target_frame_time;
 
       /* Ideally, use absolute time, but that is only a good idea on POSIX. */

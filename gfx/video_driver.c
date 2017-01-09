@@ -2047,6 +2047,7 @@ void video_driver_frame(const void *data, unsigned width,
 {
    static char video_driver_msg[256];
    static struct retro_perf_counter video_frame_conv = {0};
+   video_frame_info_t video_info;
    unsigned output_width  = 0;
    unsigned output_height = 0;
    unsigned  output_pitch = 0;
@@ -2105,10 +2106,17 @@ void video_driver_frame(const void *data, unsigned width,
          && settings->video.font_enable && msg)
       strlcpy(video_driver_msg, msg, sizeof(video_driver_msg));
 
+   video_info.refresh_rate          = settings->video.refresh_rate;
+   video_info.black_frame_insertion = 
+      settings->video.black_frame_insertion;
+   video_info.hard_sync             = settings->video.hard_sync;
+   video_info.hard_sync_frames      = settings->video.hard_sync_frames;
+   video_info.fps_show              = settings->fps_show;
+
    if (!current_video || !current_video->frame(
             video_driver_data, data, width, height,
             video_driver_frame_count,
-            pitch, video_driver_msg))
+            pitch, video_driver_msg, video_info))
       video_driver_active = false;
 
    video_driver_frame_count++;

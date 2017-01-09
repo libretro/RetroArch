@@ -447,18 +447,17 @@ static void* ctr_init(const video_info_t* video,
 static bool ctr_frame(void* data, const void* frame,
       unsigned width, unsigned height,
       uint64_t frame_count,
-      unsigned pitch, const char* msg)
+      unsigned pitch, const char* msg, video_frame_info_t info)
 {
    uint32_t diff;
    static uint64_t currentTick,lastTick;
+   touchPosition state_tmp_touch;
+   uint32_t state_tmp      = 0;
    ctr_video_t       *ctr  = (ctr_video_t*)data;
-   settings_t   *settings  = config_get_ptr();
    static float        fps = 0.0;
    static int total_frames = 0;
    static int       frames = 0;
    static struct retro_perf_counter ctrframe_f = {0};
-   uint32_t state_tmp;
-   touchPosition state_tmp_touch;
 
    extern bool select_pressed;
 

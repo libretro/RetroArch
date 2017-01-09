@@ -193,7 +193,7 @@ static void *xenon360_gfx_init(const video_info_t *video, const input_driver_t *
 }
 
 static bool xenon360_gfx_frame(void *data, const void *frame, unsigned width, unsigned height,
-      uint64_t frame_count, unsigned pitch, const char *msg)
+      uint64_t frame_count, unsigned pitch, const char *msg, video_frame_info_t video_info)
 {
    gl_t *vid = data;
 

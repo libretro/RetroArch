@@ -378,7 +378,8 @@ static void vg_copy_frame(void *data, const void *frame,
 
 static bool vg_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height,
-      uint64_t frame_count, unsigned pitch, const char *msg)
+      uint64_t frame_count, unsigned pitch, const char *msg,
+      video_frame_info_t video_info)
 {
    unsigned width, height;
    vg_t                           *vg = (vg_t*)data;

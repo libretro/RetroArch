@@ -1272,11 +1272,11 @@ static void exynos_gfx_free(void *data)
 }
 
 static bool exynos_gfx_frame(void *data, const void *frame, unsigned width,
-      unsigned height, uint64_t frame_count, unsigned pitch, const char *msg)
+      unsigned height, uint64_t frame_count, unsigned pitch, const char *msg,
+      video_frame_info_t video_info)
 {
    struct exynos_video *vid = data;
    struct exynos_page *page = NULL;
-   settings_t *settings      = config_get_ptr();
 
    /* Check if neither menu nor core framebuffer is to be displayed. */
    if (!vid->menu_active && !frame)
@@ -1304,7 +1304,7 @@ static bool exynos_gfx_frame(void *data, const void *frame, unsigned width,
          goto fail;
    }
 
-   if (settings->fps_show)
+   if (video_info.fps_show)
    {
       char buffer[128];
       char buffer_fps[128];
@@ -1312,7 +1312,7 @@ static bool exynos_gfx_frame(void *data, const void *frame, unsigned width,
       buffer[0] = buffer_fps[0] = '\0';
 
       video_monitor_get_fps(buffer, sizeof(buffer),
-            settings->fps_show ? buffer_fps : NULL, sizeof(buffer_fps));
+            video_info.fps_show ? buffer_fps : NULL, sizeof(buffer_fps));
       runloop_msg_queue_push(buffer_fps, 1, 1, false);
    }
 

@@ -460,11 +460,13 @@ static void *psp_init(const video_info_t *video,
    return psp;
 }
 
-//#define DISPLAY_FPS
+#if 0
+#define DISPLAY_FPS
+#endif
 
 static bool psp_frame(void *data, const void *frame,
       unsigned width, unsigned height, uint64_t frame_count,
-      unsigned pitch, const char *msg)
+      unsigned pitch, const char *msg, video_frame_info_t video_info)
 {
 #ifdef DISPLAY_FPS
    uint32_t diff;
@@ -476,7 +478,6 @@ static bool psp_frame(void *data, const void *frame,
    static char fps_txt[128]                = {0};
    static char fps_text_buf[128]           = {0};
    psp1_video_t *psp                       = (psp1_video_t*)data;
-   settings_t *settings                    = config_get_ptr();
 
    if (!width || !height)
       return false;
@@ -494,10 +495,10 @@ static bool psp_frame(void *data, const void *frame,
    pspDebugScreenSetXY(0,0);
 
    video_monitor_get_fps(fps_txt, sizeof(fps_txt),
-         settings->fps_show ? fps_text_buf : NULL,
-         settings->fps_show ? sizeof(fps_text_buf) : 0);
+         video_info.fps_show ? fps_text_buf : NULL,
+         video_info.fps_show ? sizeof(fps_text_buf) : 0);
 
-   if(settings->fps_show)
+   if (video_info.fps_show)
    {
       pspDebugScreenSetXY(68 - strlen(fps_text_buf) - 1,0);
       pspDebugScreenPuts(fps_text_buf);
