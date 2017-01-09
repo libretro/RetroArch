@@ -22,6 +22,10 @@
 #include "../tasks/tasks_internal.h"
 #include "input_config.h"
 
+#ifdef __QNX__
+#include <screen/screen.h>
+#endif
+
 #define DECL_BTN(btn, bind) "input_" #btn "_btn = " #bind "\n"
 #define DECL_AXIS(axis, bind) "input_" #axis "_axis = " #bind "\n"
 #define DECL_MENU(btn) "input_menu_toggle_btn = " #btn "\n"
@@ -71,6 +75,64 @@ DECL_AXIS(l2, +6) \
 DECL_AXIS(r2, +7) \
 DECL_BTN(l3, 106) \
 DECL_BTN(r3, 107) \
+DECL_AXIS(l_x_plus,  +0) \
+DECL_AXIS(l_x_minus, -0) \
+DECL_AXIS(l_y_plus,  +1) \
+DECL_AXIS(l_y_minus, -1) \
+DECL_AXIS(r_x_plus,  +2) \
+DECL_AXIS(r_x_minus, -2) \
+DECL_AXIS(r_y_plus,  -3) \
+DECL_AXIS(r_y_minus, +3)
+#endif
+
+#ifdef __QNX__
+#define QNX_DEFAULT_BINDS \
+DECL_BTN(a, 3) \
+DECL_BTN(b, 2 ) \
+DECL_BTN(x, 4 ) \
+DECL_BTN(y, 1 ) \
+DECL_BTN(start, 10) \
+DECL_BTN(select, 9 ) \
+DECL_MENU(13) \
+DECL_BTN(up, 16 ) \
+DECL_BTN(down, 17) \
+DECL_BTN(left, 18 ) \
+DECL_BTN(right, 19 ) \
+DECL_BTN(l, 5 ) \
+DECL_BTN(r, 6 ) \
+DECL_BTN(l2, 7 ) \
+DECL_BTN(r2, 8 ) \
+DECL_BTN(l3, 11 ) \
+DECL_BTN(r3, 12 ) \
+DECL_BTN(enable_hotkey, 0) \
+DECL_AXIS(l_x_plus,  +0) \
+DECL_AXIS(l_x_minus, -0) \
+DECL_AXIS(l_y_plus,  +1) \
+DECL_AXIS(l_y_minus, -1) \
+DECL_AXIS(r_x_plus,  +2) \
+DECL_AXIS(r_x_minus, -2) \
+DECL_AXIS(r_y_plus,  -3) \
+DECL_AXIS(r_y_minus, +3)
+
+#define QNX_DUALSHOCK_BINDS \
+DECL_BTN(a, 3) \
+DECL_BTN(b, 2 ) \
+DECL_BTN(x, 4 ) \
+DECL_BTN(y, 1 ) \
+DECL_BTN(start, 10) \
+DECL_BTN(select, 9 ) \
+DECL_MENU(13) \
+DECL_BTN(up, 16 ) \
+DECL_BTN(down, 17) \
+DECL_BTN(left, 18 ) \
+DECL_BTN(right, 19 ) \
+DECL_BTN(l, 5 ) \
+DECL_BTN(r, 6 ) \
+DECL_BTN(l2, 7 ) \
+DECL_BTN(r2, 8 ) \
+DECL_BTN(l3, 11 ) \
+DECL_BTN(r3, 12 ) \
+DECL_BTN(enable_hotkey, 0) \
 DECL_AXIS(l_x_plus,  +0) \
 DECL_AXIS(l_x_minus, -0) \
 DECL_AXIS(l_y_plus,  +1) \
@@ -273,7 +335,7 @@ DECL_BTN(l, 4) \
 DECL_BTN(r, 5) \
 DECL_BTN(l3, 8) \
 DECL_BTN(r3, 9) \
-DECL_BTN(menu_toggle, 10) \
+DECL_MENU(10) \
 DECL_AXIS(l2, +4) \
 DECL_AXIS(r2, +5) \
 DECL_AXIS(l_x_plus,  +0) \
@@ -331,6 +393,10 @@ const char* const input_builtin_autoconfs[] =
 #endif
 #if defined(ANDROID)
    DECL_AUTOCONF_DEVICE("Android Gamepad", "android", ANDROID_DEFAULT_BINDS),
+#endif
+#ifdef __QNX__
+   DECL_AUTOCONF_DEVICE("QNX Controller", "qnx", QNX_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("DS4 Controller", "qnx", QNX_DUALSHOCK_BINDS),
 #endif
 #if defined(VITA) || defined(SN_TARGET_PSP2)
    DECL_AUTOCONF_DEVICE("Vita Controller", "vita", PSPINPUT_DEFAULT_BINDS),

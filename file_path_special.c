@@ -24,6 +24,10 @@
 #include <CoreFoundation/CoreFoundation.h>
 #endif
 
+#ifdef __QNX__
+#include <libgen.h>
+#endif
+
 #include <stdlib.h>
 #include <boolean.h>
 #include <string.h>
@@ -242,6 +246,15 @@ void fill_pathname_application_path(char *s, size_t len)
          return;
       }
    }
+#elif defined(__QNX__)
+   char *buff = malloc(len);
+
+   if(_cmdname(buff))
+   {
+       strlcpy(s, buff, len);
+   }
+
+   free(buff);
 #else
    {
       pid_t pid;

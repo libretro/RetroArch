@@ -32,6 +32,10 @@
 #include "drivers_keyboard/keyboard_event_android.h"
 #endif
 
+#ifdef __QNX__
+#include <sys/keycodes.h>
+#endif
+
 #if defined(HAVE_SDL) || defined(HAVE_SDL2)
 #include "SDL.h"
 #endif
@@ -1085,6 +1089,81 @@ const struct rarch_key_map rarch_key_map_android[] = {
 };
 #endif
 
+#ifdef __QNX__
+const struct rarch_key_map rarch_key_map_qnx[] = {
+   { KEYCODE_BACKSPACE, RETROK_BACKSPACE },
+   { KEYCODE_RETURN, RETROK_RETURN },
+   { KEYCODE_SPACE, RETROK_SPACE },
+   { KEYCODE_UP, RETROK_UP },
+   { KEYCODE_DOWN, RETROK_DOWN },
+   { KEYCODE_LEFT, RETROK_LEFT },
+   { KEYCODE_RIGHT, RETROK_RIGHT },
+   { KEYCODE_A, RETROK_a },
+   { KEYCODE_B, RETROK_b },
+   { KEYCODE_C, RETROK_c },
+   { KEYCODE_D, RETROK_d },
+   { KEYCODE_E, RETROK_e },
+   { KEYCODE_F, RETROK_f },
+   { KEYCODE_G, RETROK_g },
+   { KEYCODE_H, RETROK_h },
+   { KEYCODE_I, RETROK_i },
+   { KEYCODE_J, RETROK_j },
+   { KEYCODE_K, RETROK_k },
+   { KEYCODE_L, RETROK_l },
+   { KEYCODE_M, RETROK_m },
+   { KEYCODE_N, RETROK_n },
+   { KEYCODE_O, RETROK_o },
+   { KEYCODE_P, RETROK_p },
+   { KEYCODE_Q, RETROK_q },
+   { KEYCODE_R, RETROK_r },
+   { KEYCODE_S, RETROK_s },
+   { KEYCODE_T, RETROK_t },
+   { KEYCODE_U, RETROK_u },
+   { KEYCODE_V, RETROK_v },
+   { KEYCODE_W, RETROK_w },
+   { KEYCODE_X, RETROK_x },
+   { KEYCODE_Y, RETROK_y },
+   { KEYCODE_Z, RETROK_z },
+   { KEYCODE_ZERO, RETROK_0 },
+   { KEYCODE_ONE, RETROK_1 },
+   { KEYCODE_TWO, RETROK_2 },
+   { KEYCODE_THREE, RETROK_3 },
+   { KEYCODE_FOUR, RETROK_4 },
+   { KEYCODE_FIVE, RETROK_5 },
+   { KEYCODE_SIX, RETROK_6 },
+   { KEYCODE_SEVEN, RETROK_7 },
+   { KEYCODE_EIGHT, RETROK_8 },
+   { KEYCODE_NINE, RETROK_9 },
+   { KEYCODE_INSERT, RETROK_INSERT },
+   { KEYCODE_HOME, RETROK_HOME },
+   { KEYCODE_END, RETROK_END },
+   { KEYCODE_PG_UP, RETROK_PAGEUP },
+   { KEYCODE_PG_DOWN, RETROK_PAGEDOWN },
+   { KEYCODE_F1, RETROK_F1 },
+   { KEYCODE_F2, RETROK_F2 },
+   { KEYCODE_F3, RETROK_F3 },
+   { KEYCODE_F4, RETROK_F4 },
+   { KEYCODE_F5, RETROK_F5 },
+   { KEYCODE_F6, RETROK_F6 },
+   { KEYCODE_F7, RETROK_F7 },
+   { KEYCODE_F8, RETROK_F8 },
+   { KEYCODE_F9, RETROK_F9 },
+   { KEYCODE_F10, RETROK_F10 },
+   { KEYCODE_F11, RETROK_F11 },
+   { KEYCODE_F12, RETROK_F12 },
+   { KEYCODE_LEFT_SHIFT, RETROK_LSHIFT },
+   { KEYCODE_RIGHT_SHIFT, RETROK_RSHIFT },
+   { KEYCODE_LEFT_CTRL, RETROK_LCTRL },
+   { KEYCODE_RIGHT_CTRL, RETROK_RCTRL },
+   { KEYCODE_LEFT_ALT, RETROK_LALT },
+   { KEYCODE_RIGHT_ALT, RETROK_RALT },
+   // TODO/FIXME: Code for 'sym' key on BB keyboards. Figure out which sys/keycodes.h define this maps to.
+   { 61651, RETROK_RSUPER },
+   { KEYCODE_DOLLAR, RETROK_DOLLAR },
+   { KEYCODE_MENU, RETROK_MENU },
+   { 0, RETROK_UNKNOWN },
+};
+#endif
 
 #ifdef __APPLE__
 const struct rarch_key_map rarch_key_map_apple_hid[] = {

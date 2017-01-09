@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -26,8 +26,10 @@
 #include "../../config.h"
 #endif
 
-#ifdef HAVE_OPENGLES
+#ifdef HAVE_OPENGLES2
 #include <GLES2/gl2.h>
+#elif HAVE_OPENGLES3
+#include <GLES3/gl3.h>
 #endif
 
 #ifdef HAVE_EGL
@@ -47,13 +49,13 @@
 #define WINDOW_BUFFERS 2
 
 screen_context_t screen_ctx;
+screen_window_t screen_win;
 
 typedef struct
 {
 #ifdef HAVE_EGL
    egl_ctx_data_t egl;
 #endif
-   screen_window_t screen_win;
    screen_display_t screen_disp;
    bool resize;
 } qnx_ctx_data_t;
@@ -66,7 +68,6 @@ static void gfx_ctx_qnx_destroy(void *data)
    egl_destroy(&qnx->egl);
 #endif
 
-   qnx->resize      = false;
    free(data);
 }
 
@@ -75,25 +76,33 @@ static void *gfx_ctx_qnx_init(void *video_driver)
    EGLint n;
    EGLint major, minor;
    EGLint context_attributes[] = {
-      EGL_CONTEXT_CLIENT_VERSION, 2,
+#ifdef HAVE_OPENGLES2
+           EGL_CONTEXT_CLIENT_VERSION, 2,
+#elif HAVE_OPENGLES3
+           EGL_CONTEXT_CLIENT_VERSION, 3,
+#endif
       EGL_NONE
    };
+
    const EGLint attribs[] = {
+#ifdef HAVE_OPENGLES2
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+#elif HAVE_OPENGLES3
+      EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT_KHR,
+#endif
       EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
       EGL_BLUE_SIZE, 8,
       EGL_GREEN_SIZE, 8,
       EGL_RED_SIZE, 8,
       EGL_NONE
    };
-   int angle, size[2];
-   int usage, format = SCREEN_FORMAT_RGBX8888;
+
    qnx_ctx_data_t *qnx = (qnx_ctx_data_t*)calloc(1, sizeof(*qnx));
 
    if (!qnx)
        goto screen_error;
 
-   /* Create a screen context that will be used to 
+   /* Create a screen context that will be used to
     * create an EGL surface to receive libscreen events */
 
    RARCH_LOG("Initializing screen context...\n");
@@ -120,7 +129,6 @@ static void *gfx_ctx_qnx_init(void *video_driver)
       }
    }
 
-   usage = SCREEN_USAGE_OPENGL_ES2 | SCREEN_USAGE_ROTATION;
 
 #ifdef HAVE_EGL
    if (!egl_init_context(&qnx->egl, EGL_DEFAULT_DISPLAY, &major, &minor,
@@ -137,30 +145,37 @@ static void *gfx_ctx_qnx_init(void *video_driver)
    }
 #endif
 
-   if(!qnx->screen_win)
+   if(!screen_win)
    {
-      if (screen_create_window(&qnx->screen_win, screen_ctx))
+      if (screen_create_window(&screen_win, screen_ctx))
       {
              RARCH_ERR("screen_create_window failed:.\n");
 	     goto error;
       }
    }
 
-   if (screen_set_window_property_iv(qnx->screen_win,
+   int format = SCREEN_FORMAT_RGBX8888;
+   if (screen_set_window_property_iv(screen_win,
             SCREEN_PROPERTY_FORMAT, &format))
    {
       RARCH_ERR("screen_set_window_property_iv [SCREEN_PROPERTY_FORMAT] failed.\n");
       goto error;
    }
 
-   if (screen_set_window_property_iv(qnx->screen_win,
+   int usage;
+#ifdef HAVE_OPENGLES2
+   usage = SCREEN_USAGE_OPENGL_ES2 | SCREEN_USAGE_ROTATION;
+#elif HAVE_OPENGLES3
+   usage = SCREEN_USAGE_OPENGL_ES3 | SCREEN_USAGE_ROTATION;
+#endif
+   if (screen_set_window_property_iv(screen_win,
             SCREEN_PROPERTY_USAGE, &usage))
    {
       RARCH_ERR("screen_set_window_property_iv [SCREEN_PROPERTY_USAGE] failed.\n");
       goto error;
    }
 
-   if (screen_get_window_property_pv(qnx->screen_win,
+   if (screen_get_window_property_pv(screen_win,
             SCREEN_PROPERTY_DISPLAY, (void **)&qnx->screen_disp))
    {
       RARCH_ERR("screen_get_window_property_pv [SCREEN_PROPERTY_DISPLAY] failed.\n");
@@ -177,6 +192,8 @@ static void *gfx_ctx_qnx_init(void *video_driver)
    }
 
 #ifndef HAVE_BB10
+   int angle, size[2];
+
    angle = atoi(getenv("ORIENTATION"));
 
    screen_display_mode_t screen_mode;
@@ -187,7 +204,7 @@ static void *gfx_ctx_qnx_init(void *video_driver)
       goto error;
    }
 
-   if (screen_get_window_property_iv(qnx->screen_win,
+   if (screen_get_window_property_iv(screen_win,
             SCREEN_PROPERTY_BUFFER_SIZE, size))
    {
       RARCH_ERR("screen_get_window_property_iv [SCREEN_PROPERTY_BUFFER_SIZE] failed.\n");
@@ -221,14 +238,14 @@ static void *gfx_ctx_qnx_init(void *video_driver)
    }
 
 
-   if (screen_set_window_property_iv(qnx->screen_win,
+   if (screen_set_window_property_iv(screen_win,
             SCREEN_PROPERTY_BUFFER_SIZE, buffer_size))
    {
       RARCH_ERR("screen_set_window_property_iv [SCREEN_PROPERTY_BUFFER_SIZE] failed.\n");
       goto error;
    }
 
-   if (screen_set_window_property_iv(qnx->screen_win,
+   if (screen_set_window_property_iv(screen_win,
             SCREEN_PROPERTY_ROTATION, &angle))
    {
       RARCH_ERR("screen_set_window_property_iv [SCREEN_PROPERTY_ROTATION] failed.\n");
@@ -236,13 +253,13 @@ static void *gfx_ctx_qnx_init(void *video_driver)
    }
 #endif
 
-   if (screen_create_window_buffers(qnx->screen_win, WINDOW_BUFFERS))
+   if (screen_create_window_buffers(screen_win, WINDOW_BUFFERS))
    {
       RARCH_ERR("screen_create_window_buffers failed.\n");
       goto error;
    }
 
-   if (!egl_create_surface(&qnx->egl, qnx->screen_win))
+   if (!egl_create_surface(&qnx->egl, screen_win))
       goto error;
 
    return qnx;
@@ -253,6 +270,16 @@ error:
 screen_error:
    screen_stop_events(screen_ctx);
    return NULL;
+}
+
+static void gfx_ctx_qnx_get_video_size(void *data,
+      unsigned *width, unsigned *height)
+{
+   qnx_ctx_data_t *qnx = (qnx_ctx_data_t*)data;
+
+#ifdef HAVE_EGL
+   egl_get_video_size(&qnx->egl, width, height);
+#endif
 }
 
 static void gfx_ctx_qnx_check_window(void *data, bool *quit,
@@ -319,18 +346,18 @@ static bool gfx_ctx_qnx_set_video_mode(void *data,
 static void gfx_ctx_qnx_input_driver(void *data,
       const input_driver_t **input, void **input_data)
 {
+    void *qnxinput = input_qnx.init();
+
    (void)data;
-   *input = NULL;
-   *input_data = NULL;
+
+   *input = qnxinput ? &input_qnx : NULL;
+   *input_data = qnxinput;
 }
 
 static bool gfx_ctx_qnx_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    (void)data;
-   (void)major;
-   (void)minor;
-
    return api == GFX_CTX_OPENGL_ES_API;
 }
 
@@ -351,6 +378,60 @@ static bool gfx_ctx_qnx_has_windowed(void *data)
 {
    (void)data;
    return false;
+}
+
+static int dpi_get_density(qnx_ctx_data_t *qnx)
+{
+    int screen_dpi[2];
+
+    if(!qnx)
+        return -1;
+
+    if (screen_get_display_property_iv(qnx->screen_disp,
+             SCREEN_PROPERTY_DPI, screen_dpi))
+    {
+       RARCH_ERR("screen_get_display_property_iv [SCREEN_PROPERTY_DPI] failed.\n");
+       return -1;
+    }
+
+    return min(screen_dpi[0], screen_dpi[1]);
+}
+
+static bool gfx_ctx_qnx__get_metrics(void *data,
+    enum display_metric_types type, float *value)
+{
+   static int dpi = -1;
+   qnx_ctx_data_t *qnx = (qnx_ctx_data_t*)data;
+
+   switch (type)
+   {
+      case DISPLAY_METRIC_MM_WIDTH:
+         return false;
+      case DISPLAY_METRIC_MM_HEIGHT:
+         return false;
+      case DISPLAY_METRIC_DPI:
+         if (dpi == -1)
+         {
+            dpi = dpi_get_density(qnx);
+            if (dpi <= 0)
+               goto dpi_fallback;
+         }
+         *value = (float)dpi;
+         break;
+      case DISPLAY_METRIC_NONE:
+      default:
+         *value = 0;
+         return false;
+   }
+
+   return true;
+
+dpi_fallback:
+   /* Add a fallback in case the device doesn't report DPI.
+    * Calculated as an average of all BB10 device DPIs circa 2016. */
+   dpi    = 345;
+   *value = (float)dpi;
+   return true;
 }
 
 static void gfx_ctx_qnx_set_swap_interval(void *data, unsigned swap_interval)
@@ -387,16 +468,6 @@ static gfx_ctx_proc_t gfx_ctx_qnx_get_proc_address(const char *symbol)
 #endif
 }
 
-static void gfx_ctx_qnx_get_video_size(void *data,
-      unsigned *width, unsigned *height)
-{
-   qnx_ctx_data_t *qnx = (qnx_ctx_data_t*)data;
-
-#ifdef HAVE_EGL
-   egl_get_video_size(&qnx->egl, width, height);
-#endif
-}
-
 static uint32_t gfx_ctx_qnx_get_flags(void *data)
 {
    uint32_t flags = 0;
@@ -409,7 +480,7 @@ static void gfx_ctx_qnx_set_flags(void *data, uint32_t flags)
    (void)flags;
 }
 
-const gfx_ctx_driver_t gfx_ctx_bbqnx = {
+const gfx_ctx_driver_t gfx_ctx_qnx = {
    gfx_ctx_qnx_init,
    gfx_ctx_qnx_destroy,
    gfx_ctx_qnx_bind_api,
@@ -419,7 +490,7 @@ const gfx_ctx_driver_t gfx_ctx_bbqnx = {
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
-   NULL, /* get_metrics */
+   gfx_ctx_qnx__get_metrics,
    NULL,
    gfx_ctx_qnx_update_window_title,
    gfx_ctx_qnx_check_window,
@@ -433,7 +504,7 @@ const gfx_ctx_driver_t gfx_ctx_bbqnx = {
    NULL,
    NULL,
    NULL,
-   "blackberry_qnx",
+   "qnx",
    gfx_ctx_qnx_get_flags,
    gfx_ctx_qnx_set_flags,
    gfx_ctx_qnx_bind_hw_render,
