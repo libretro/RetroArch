@@ -237,7 +237,7 @@ void menu_display_clear_color(menu_display_ctx_clearcolor_t *color);
 void menu_display_draw(menu_display_ctx_draw_t *draw);
 
 void menu_display_draw_pipeline(menu_display_ctx_draw_t *draw);
-void menu_display_draw_bg(menu_display_ctx_draw_t *draw);
+void menu_display_draw_bg(menu_display_ctx_draw_t *draw, bool add_opacity);
 void menu_display_draw_gradient(menu_display_ctx_draw_t *draw);
 void menu_display_draw_quad(int x, int y, unsigned w, unsigned h,
       unsigned width, unsigned height,

@@ -501,12 +501,11 @@ void menu_display_draw_pipeline(menu_display_ctx_draw_t *draw)
    menu_disp->draw_pipeline(draw);
 }
 
-void menu_display_draw_bg(menu_display_ctx_draw_t *draw)
+void menu_display_draw_bg(menu_display_ctx_draw_t *draw, bool add_opacity_to_wallpaper)
 {
    static struct video_coords coords;
    const float *new_vertex       = NULL;
    const float *new_tex_coord    = NULL;
-   bool add_opacity_to_wallpaper = false;
    settings_t *settings          = config_get_ptr();
    if (!menu_disp || !draw)
       return;
@@ -529,9 +528,6 @@ void menu_display_draw_bg(menu_display_ctx_draw_t *draw)
 
    if (!menu_display_libretro_running() && !menu_display_shader_pipeline_active())
       add_opacity_to_wallpaper = true;
-   if (string_is_equal(menu_driver_ident(), "xmb")
-         && settings->menu.xmb.menu_color_theme == XMB_THEME_WALLPAPER)
-      add_opacity_to_wallpaper = true;
 
    if (add_opacity_to_wallpaper)
       menu_display_set_alpha(draw->color, settings->menu.wallpaper.opacity);
@@ -548,7 +544,7 @@ void menu_display_draw_gradient(menu_display_ctx_draw_t *draw)
    draw->x             = 0;
    draw->y             = 0;
 
-   menu_display_draw_bg(draw);
+   menu_display_draw_bg(draw, false);
    menu_display_draw(draw);
 }
 

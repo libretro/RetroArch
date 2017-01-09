@@ -2485,13 +2485,17 @@ static void xmb_draw_bg(
          menu_display_draw_gradient(&draw);
 
       {
+         bool add_opacity = false;
          draw.texture = texture;
          menu_display_set_alpha(draw.color, coord_white[3]);
 
          if (!running && draw.texture)
             draw.color = &coord_white[0];
 
-         menu_display_draw_bg(&draw);
+         if (settings->menu.xmb.menu_color_theme == XMB_THEME_WALLPAPER)
+            add_opacity = true;
+
+         menu_display_draw_bg(&draw, add_opacity);
       }
    }
 

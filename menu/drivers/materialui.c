@@ -848,7 +848,7 @@ static void mui_draw_bg(menu_display_ctx_draw_t *draw)
    draw->y              = 0;
    draw->pipeline.id    = 0;
 
-   menu_display_draw_bg(draw);
+   menu_display_draw_bg(draw, false);
    menu_display_draw(draw);
    menu_display_blend_end();
 }
