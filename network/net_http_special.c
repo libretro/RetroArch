@@ -20,7 +20,6 @@
 #include <net/net_http.h>
 #include <features/features_cpu.h>
 
-#include "../performance_counters.h"
 #include "net_http_special.h"
 
 int net_http_get(const char **result, size_t *size, const char *url, retro_time_t *timeout)
