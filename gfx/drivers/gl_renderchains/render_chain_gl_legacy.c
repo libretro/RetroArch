@@ -239,6 +239,7 @@ void gl_check_fbo_dimensions(gl_t *gl)
    }
 }
 void gl_renderchain_render(gl_t *gl,
+      video_frame_info_t video_info,
       uint64_t frame_count,
       const struct video_tex_info *tex_info,
       const struct video_tex_info *feedback_info)
@@ -305,7 +306,8 @@ void gl_renderchain_render(gl_t *gl,
       glClear(GL_COLOR_BUFFER_BIT);
 
       /* Render to FBO with certain size. */
-      gl_set_viewport(gl, rect->img_width, rect->img_height, true, false);
+      gl_set_viewport(gl, video_info,
+            rect->img_width, rect->img_height, true, false);
 
       params.data          = gl;
       params.width         = prev_rect->img_width;
@@ -379,7 +381,8 @@ void gl_renderchain_render(gl_t *gl,
       glGenerateMipmap(GL_TEXTURE_2D);
 
    glClear(GL_COLOR_BUFFER_BIT);
-   gl_set_viewport(gl, width, height, false, true);
+   gl_set_viewport(gl, video_info,
+         width, height, false, true);
 
    params.data          = gl;
    params.width         = prev_rect->img_width;
@@ -664,12 +667,12 @@ void gl_renderchain_recompute_pass_sizes(gl_t *gl,
    }
 }
 
-void gl_renderchain_start_render(gl_t *gl)
+void gl_renderchain_start_render(gl_t *gl, video_frame_info_t video_info)
 {
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
    glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->fbo[0]);
 
-   gl_set_viewport(gl, gl->fbo_rect[0].img_width,
+   gl_set_viewport(gl, video_info, gl->fbo_rect[0].img_width,
          gl->fbo_rect[0].img_height, true, false);
 
    /* Need to preserve the "flipped" state when in FBO 

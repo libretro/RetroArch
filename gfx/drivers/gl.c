@@ -292,8 +292,30 @@ static void gl_set_projection(gl_t *gl,
    matrix_4x4_multiply(&gl->mvp, &rot, &gl->mvp_no_rot);
 }
 
-void gl_set_viewport(void *data, unsigned viewport_width,
+static void gl_set_viewport_wrapper(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate)
+{
+   video_frame_info_t video_info;
+   settings_t *settings             = config_get_ptr();
+
+   video_info.refresh_rate          = settings->video.refresh_rate;
+   video_info.black_frame_insertion = 
+      settings->video.black_frame_insertion;
+   video_info.hard_sync             = settings->video.hard_sync;
+   video_info.hard_sync_frames      = settings->video.hard_sync_frames;
+   video_info.fps_show              = settings->fps_show;
+   video_info.scale_integer         = settings->video.scale_integer;
+   video_info.aspect_ratio_idx      = settings->video.aspect_ratio_idx;
+   video_info.max_swapchain_images  = settings->video.max_swapchain_images;
+
+   gl_set_viewport(data, video_info,
+         viewport_width, viewport_height, force_full, allow_rotate);
+}
+
+void gl_set_viewport(void *data, video_frame_info_t video_info,
+      unsigned viewport_width,
+      unsigned viewport_height,
+      bool force_full, bool allow_rotate)
 {
    gfx_ctx_aspect_t aspect_data;
    unsigned width, height;
@@ -301,7 +323,6 @@ void gl_set_viewport(void *data, unsigned viewport_width,
    int y                  = 0;
    float device_aspect    = (float)viewport_width / viewport_height;
    struct video_ortho ortho = {0, 1, 0, 1, -1, 1};
-   settings_t *settings   = config_get_ptr();
    gl_t           *gl     = (gl_t*)data;
 
    video_driver_get_size(&width, &height);
@@ -312,7 +333,7 @@ void gl_set_viewport(void *data, unsigned viewport_width,
 
    video_context_driver_translate_aspect(&aspect_data);
 
-   if (settings->video.scale_integer && !force_full)
+   if (video_info.scale_integer && !force_full)
    {
       video_viewport_get_scaled_integer(&gl->vp,
             viewport_width, viewport_height,
@@ -325,7 +346,7 @@ void gl_set_viewport(void *data, unsigned viewport_width,
       float desired_aspect = video_driver_get_aspect_ratio();
 
 #if defined(HAVE_MENU)
-      if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      if (video_info.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          const struct video_viewport *custom = video_viewport_get_custom();
 
@@ -826,7 +847,7 @@ static INLINE void gl_set_shader_viewport(gl_t *gl, unsigned idx)
    shader_info.set_active = true;
 
    video_shader_driver_use(shader_info);
-   gl_set_viewport(gl, width, height, false, true);
+   gl_set_viewport_wrapper(gl, width, height, false, true);
 }
 
 void gl_load_texture_data(
@@ -1112,7 +1133,7 @@ static bool gl_frame(void *data, const void *frame,
 
 #ifdef IOS
    /* Apparently the viewport is lost each frame, thanks Apple. */
-   gl_set_viewport(gl, width, height, false, true);
+   gl_set_viewport(gl, video_info, width, height, false, true);
 #endif
 
 #ifdef HAVE_FBO
@@ -1121,7 +1142,7 @@ static bool gl_frame(void *data, const void *frame,
    {
       gl_renderchain_recompute_pass_sizes(gl, frame_width, frame_height,
             gl->vp_out_width, gl->vp_out_height);
-      gl_renderchain_start_render(gl);
+      gl_renderchain_start_render(gl, video_info);
    }
 #endif
 
@@ -1143,11 +1164,11 @@ static bool gl_frame(void *data, const void *frame,
 
          /* Go back to what we're supposed to do,
           * render to FBO #0. */
-         gl_renderchain_start_render(gl);
+         gl_renderchain_start_render(gl, video_info);
       }
       else
 #endif
-         gl_set_viewport(gl, width, height, false, true);
+         gl_set_viewport(gl, video_info, width, height, false, true);
    }
 
    if (frame)
@@ -1181,7 +1202,7 @@ static bool gl_frame(void *data, const void *frame,
       if (!gl->fbo_inited)
       {
          gl_bind_backbuffer();
-         gl_set_viewport(gl, width, height, false, true);
+         gl_set_viewport(gl, video_info, width, height, false, true);
       }
 
 #ifndef HAVE_OPENGLES
@@ -1257,7 +1278,8 @@ static bool gl_frame(void *data, const void *frame,
 
 #ifdef HAVE_FBO
    if (gl->fbo_inited)
-      gl_renderchain_render(gl, frame_count, &gl->tex_info, &feedback_info);
+      gl_renderchain_render(gl, video_info,
+            frame_count, &gl->tex_info, &feedback_info);
 #endif
 
    /* Set prev textures. */
@@ -2855,7 +2877,7 @@ video_driver_t video_gl = {
    gl_free,
    "gl",
 
-   gl_set_viewport,
+   gl_set_viewport_wrapper,
    gl_set_rotation,
 
    gl_viewport_info,

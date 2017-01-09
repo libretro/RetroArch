@@ -88,6 +88,8 @@ typedef struct video_frame_info
    bool hard_sync;
    unsigned hard_sync_frames;
    bool fps_show;
+   bool scale_integer;
+   unsigned aspect_ratio_idx;
    unsigned max_swapchain_images;
 } video_frame_info_t;
 
