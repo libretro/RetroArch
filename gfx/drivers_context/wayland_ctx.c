@@ -511,10 +511,10 @@ static void registry_handle_global(void *data, struct wl_registry *reg,
       wl->shell = (struct wl_shell*)
          wl_registry_bind(reg, id, &wl_shell_interface, 1);
    else if (string_is_equal(interface, "wl_shm"))
-      wl->shm = (wl_shm*)wl_registry_bind(reg, id, &wl_shm_interface, 1);
+      wl->shm = (struct wl_shm*)wl_registry_bind(reg, id, &wl_shm_interface, 1);
    else if (string_is_equal(interface, "wl_seat"))
    {
-      wl->seat = (wl_seat*)wl_registry_bind(reg, id, &wl_seat_interface, 4);
+      wl->seat = (struct wl_seat*)wl_registry_bind(reg, id, &wl_seat_interface, 4);
       wl_seat_add_listener(wl->seat, &seat_listener, wl);
    }
 }
