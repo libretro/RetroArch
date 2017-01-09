@@ -48,15 +48,15 @@
 
 #ifdef HAVE_SHADER_MANAGER
 static int generic_shader_action_parameter_left(
-      struct video_shader *shader, struct video_shader_parameter *param,
+      struct video_shader_parameter *param,
       unsigned type, const char *label, bool wraparound)
 {
-   if (shader)
-   {
-      param->current -= param->step;
-      param->current  = MIN(MAX(param->minimum, param->current),
-            param->maximum);
-   }
+   if (!param)
+      return 0;
+
+   param->current -= param->step;
+   param->current  = MIN(MAX(param->minimum, param->current),
+         param->maximum);
    return 0;
 }
 
@@ -70,7 +70,7 @@ static int shader_action_parameter_left(unsigned type, const char *label,
 
    param = &shader_info.data->parameters[type 
       - MENU_SETTINGS_SHADER_PARAMETER_0];
-   return generic_shader_action_parameter_left(shader_info.data, param,
+   return generic_shader_action_parameter_left(param,
          type, label, wraparound);
 }
 
@@ -87,7 +87,7 @@ static int shader_action_parameter_preset_left(unsigned type,
    param = shader ? 
       &shader->parameters[type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0] : 
       NULL;
-   return generic_shader_action_parameter_left(shader, param,
+   return generic_shader_action_parameter_left(param,
          type, label, wraparound);
 }
 #endif

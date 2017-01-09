@@ -48,11 +48,10 @@
 #endif
 
 #ifdef HAVE_SHADER_MANAGER
-static int generic_shader_action_parameter_right(
-      struct video_shader *shader, struct video_shader_parameter *param,
+static int generic_shader_action_parameter_right(struct video_shader_parameter *param,
       unsigned type, const char *label, bool wraparound)
 {
-   if (!shader)
+   if (!param)
       return menu_cbs_exit();
 
    param->current += param->step;
@@ -71,7 +70,7 @@ int shader_action_parameter_right(unsigned type, const char *label, bool wraparo
    video_shader_driver_get_current_shader(&shader_info);
 
    param = &shader_info.data->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0];
-   return generic_shader_action_parameter_right(shader_info.data, param, type, label, wraparound);
+   return generic_shader_action_parameter_right(param, type, label, wraparound);
 }
 
 int shader_action_parameter_preset_right(unsigned type, const char *label,
@@ -86,7 +85,7 @@ int shader_action_parameter_preset_right(unsigned type, const char *label,
    param = shader ? 
       &shader->parameters[type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0] :
       NULL;
-   return generic_shader_action_parameter_right(shader, param, type, label, wraparound);
+   return generic_shader_action_parameter_right(param, type, label, wraparound);
 }
 #endif
 
