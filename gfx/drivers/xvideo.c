@@ -536,6 +536,7 @@ static void *xv_init(const video_info_t *video,
    video_info.fps_show              = settings->fps_show;
    video_info.scale_integer         = settings->video.scale_integer;
    video_info.aspect_ratio_idx      = settings->video.aspect_ratio_idx;
+   video_info.post_filter_record    = settings->video.post_filter_record;
    video_info.max_swapchain_images  = settings->video.max_swapchain_images;
 
    if (video_monitor_get_fps(video_info, buf, sizeof(buf), NULL, 0))

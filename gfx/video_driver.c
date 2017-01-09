@@ -1101,13 +1101,13 @@ void video_driver_set_aspect_ratio_value(float value)
 
 static bool video_driver_frame_filter(
       const void *data,
+      video_frame_info_t video_info,
       unsigned width, unsigned height,
       size_t pitch,
       unsigned *output_width, unsigned *output_height,
       unsigned *output_pitch)
 {
    static struct retro_perf_counter softfilter_process = {0};
-   settings_t *settings = config_get_ptr();
    
    performance_counter_init(&softfilter_process, "softfilter_process");
 
@@ -1122,7 +1122,7 @@ static bool video_driver_frame_filter(
          data, width, height, pitch);
    performance_counter_stop(&softfilter_process);
 
-   if (settings->video.post_filter_record && recording_data)
+   if (video_info.post_filter_record && recording_data)
       recording_dump_frame(video_driver_state_buffer,
             *output_width, *output_height, *output_pitch);
 
@@ -2078,6 +2078,17 @@ void video_driver_frame(const void *data, unsigned width,
 
    video_driver_cached_frame_set(data, width, height, pitch);
 
+   video_info.refresh_rate          = settings->video.refresh_rate;
+   video_info.black_frame_insertion = 
+      settings->video.black_frame_insertion;
+   video_info.hard_sync             = settings->video.hard_sync;
+   video_info.hard_sync_frames      = settings->video.hard_sync_frames;
+   video_info.fps_show              = settings->fps_show;
+   video_info.scale_integer         = settings->video.scale_integer;
+   video_info.aspect_ratio_idx      = settings->video.aspect_ratio_idx;
+   video_info.post_filter_record    = settings->video.post_filter_record;
+   video_info.max_swapchain_images  = settings->video.max_swapchain_images;
+
    /* Slightly messy code,
     * but we really need to do processing before blocking on VSync
     * for best possible scheduling.
@@ -2085,7 +2096,7 @@ void video_driver_frame(const void *data, unsigned width,
    if (
          (
              !video_driver_state_filter
-          || !settings->video.post_filter_record 
+          || !video_info.post_filter_record 
           || !data
           || video_driver_record_gpu_buffer
          ) && recording_data
@@ -2093,7 +2104,7 @@ void video_driver_frame(const void *data, unsigned width,
       recording_dump_frame(data, width, height, pitch);
 
    if (data && video_driver_state_filter &&
-         video_driver_frame_filter(data, width, height, pitch,
+         video_driver_frame_filter(data, video_info, width, height, pitch,
             &output_width, &output_height, &output_pitch))
    {
       data   = video_driver_state_buffer;
@@ -2108,15 +2119,6 @@ void video_driver_frame(const void *data, unsigned width,
          && settings->video.font_enable && msg)
       strlcpy(video_driver_msg, msg, sizeof(video_driver_msg));
 
-   video_info.refresh_rate          = settings->video.refresh_rate;
-   video_info.black_frame_insertion = 
-      settings->video.black_frame_insertion;
-   video_info.hard_sync             = settings->video.hard_sync;
-   video_info.hard_sync_frames      = settings->video.hard_sync_frames;
-   video_info.fps_show              = settings->fps_show;
-   video_info.scale_integer         = settings->video.scale_integer;
-   video_info.aspect_ratio_idx      = settings->video.aspect_ratio_idx;
-   video_info.max_swapchain_images  = settings->video.max_swapchain_images;
 
    if (!current_video || !current_video->frame(
             video_driver_data, data, width, height,

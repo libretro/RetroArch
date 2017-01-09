@@ -90,6 +90,7 @@ typedef struct video_frame_info
    bool fps_show;
    bool scale_integer;
    unsigned aspect_ratio_idx;
+   bool post_filter_record;
    unsigned max_swapchain_images;
 } video_frame_info_t;
 
