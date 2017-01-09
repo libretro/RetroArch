@@ -32,7 +32,6 @@
 #include "configuration.h"
 #include "config.def.h"
 #include "input/input_config.h"
-#include "tasks/tasks_internal.h"
 #include "setting_list.h"
 
 rarch_setting_t setting_terminator_setting(void)
