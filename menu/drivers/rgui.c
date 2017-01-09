@@ -61,6 +61,7 @@ typedef struct
    unsigned last_width;
    unsigned last_height;
    float scroll_y;
+   bool mouse_show;
 } rgui_t;
 
 static uint16_t *rgui_framebuf_data      = NULL;
@@ -369,14 +370,12 @@ end:
 
 static void rgui_blit_cursor(void)
 {
-   size_t   fb_pitch;
-   unsigned fb_width, fb_height;
-   int16_t        x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
-   int16_t        y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
+   int16_t        x   = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
+   int16_t        y   = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
 
-   fb_width  = menu_display_get_width();
-   fb_height = menu_display_get_height();
-   fb_pitch  = menu_display_get_framebuffer_pitch();
+   unsigned fb_width  = menu_display_get_width();
+   unsigned fb_height = menu_display_get_height();
+   size_t fb_pitch    = menu_display_get_framebuffer_pitch();
 
    rgui_color_rect(fb_pitch, fb_width, fb_height, x, y - 5, 1, 11, 0xFFFF);
    rgui_color_rect(fb_pitch, fb_width, fb_height, x - 5, y, 11, 1, 0xFFFF);
@@ -636,11 +635,15 @@ static void rgui_render(void *data)
       rgui->force_redraw = true;
    }
 
-   if (settings->menu.mouse.enable 
-         && (settings->video.fullscreen 
-            || !video_driver_has_windowed())
-         )
-      rgui_blit_cursor();
+   if (rgui->mouse_show)
+   {
+      settings_t *settings = config_get_ptr();
+      bool cursor_visible  = settings->video.fullscreen ||
+         !video_driver_has_windowed();
+
+      if (settings->menu.mouse.enable && cursor_visible)
+         rgui_blit_cursor();
+   }
 }
 
 static void rgui_framebuffer_free(void)
@@ -812,15 +815,28 @@ static void rgui_populate_entries(void *data,
 static int rgui_environ(enum menu_environ_cb type,
       void *data, void *userdata)
 {
+   rgui_t           *rgui = (rgui_t*)userdata;
+
    switch (type)
    {
-      case 0:
+      case MENU_ENVIRON_ENABLE_MOUSE_CURSOR:
+         if (!rgui)
+            return -1;
+         rgui->mouse_show = true;
+         menu_display_set_framebuffer_dirty_flag();
          break;
+      case MENU_ENVIRON_DISABLE_MOUSE_CURSOR:
+         if (!rgui)
+            return -1;
+         rgui->mouse_show = false;
+         menu_display_unset_framebuffer_dirty_flag();
+         break;
+      case 0:
       default:
-         return -1;
+         break;
    }
 
-   return 0;
+   return -1;
 }
 
 static int rgui_pointer_tap(void *data,
