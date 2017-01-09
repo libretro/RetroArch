@@ -2197,10 +2197,8 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Tải về Core...";
       case MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT:
          return "Tải về nội dung";
-      case MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_:
-         return "Kích hoạt DPI Override";
       case MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE:
-         return "DPI Override";
+         return "Kích hoạt DPI Override";
       case MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS:
          return "Trình điều khiển";
       case MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN:
