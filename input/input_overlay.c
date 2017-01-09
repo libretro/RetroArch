@@ -19,14 +19,7 @@
 #include <string.h>
 #include <math.h>
 
-#include <compat/posix_string.h>
-#include <file/file_path.h>
-#include <retro_assert.h>
-#include <lists/string_list.h>
-#include <file/config_file.h>
-#include <formats/image.h>
 #include <clamping.h>
-#include <rhash.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
