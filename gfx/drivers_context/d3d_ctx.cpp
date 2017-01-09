@@ -92,7 +92,7 @@ static void gfx_ctx_d3d_update_title(void *data, video_frame_info_t video_info)
 
    buf[0] = buffer_fps[0]    = '\0';
 
-   if (window && video_monitor_get_fps(buf, sizeof(buf),
+   if (window && video_monitor_get_fps(video_info, buf, sizeof(buf),
             buffer_fps, sizeof(buffer_fps)))
    {
 #ifndef _XBOX

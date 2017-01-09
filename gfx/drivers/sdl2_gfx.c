@@ -536,7 +536,7 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
 
    SDL_RenderPresent(vid->renderer);
 
-   if (video_monitor_get_fps(buf, sizeof(buf), NULL, 0))
+   if (video_monitor_get_fps(video_info, buf, sizeof(buf), NULL, 0))
       SDL_SetWindowTitle(vid->window, buf);
 
    return true;

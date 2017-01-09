@@ -494,7 +494,7 @@ static bool psp_frame(void *data, const void *frame,
 
    pspDebugScreenSetXY(0,0);
 
-   video_monitor_get_fps(fps_txt, sizeof(fps_txt),
+   video_monitor_get_fps(video_info, fps_txt, sizeof(fps_txt),
          video_info.fps_show ? fps_text_buf : NULL,
          video_info.fps_show ? sizeof(fps_text_buf) : 0);
 

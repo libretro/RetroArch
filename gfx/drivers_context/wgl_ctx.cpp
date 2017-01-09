@@ -393,7 +393,7 @@ static void gfx_ctx_wgl_update_window_title(void *data, video_frame_info_t video
 
    buf[0] = buf_fps[0] = '\0';
 
-   if (window && video_monitor_get_fps(buf, sizeof(buf),
+   if (window && video_monitor_get_fps(video_info, buf, sizeof(buf),
             buf_fps, sizeof(buf_fps)))
       window->set_title(&main_window, buf);
    if (video_info.fps_show)

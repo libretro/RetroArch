@@ -782,7 +782,9 @@ static bool drm_gfx_frame(void *data, const void *frame, unsigned width,
    if (_drmvars->menu_active)
    {
       char buf[128];
-      video_monitor_get_fps(buf, sizeof(buf), NULL, 0);
+      buf[0] = '\0';
+
+      video_monitor_get_fps(video_info, buf, sizeof(buf), NULL, 0);
    }
 
    /* Update main surface: locate free page, blit and flip. */

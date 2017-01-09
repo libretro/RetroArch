@@ -465,7 +465,9 @@ bool video_monitor_fps_statistics(double *refresh_rate,
  * otherwise false.
  *
  **/
-bool video_monitor_get_fps(char *buf, size_t size,
+bool video_monitor_get_fps(
+      video_frame_info_t video_info,
+      char *buf, size_t size,
       char *buf_fps, size_t size_fps);
 
 unsigned video_pixel_get_alignment(unsigned pitch);

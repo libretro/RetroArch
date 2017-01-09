@@ -412,6 +412,7 @@ static void *xv_init(const video_info_t *video,
 {
    unsigned i;
    XWindowAttributes target;
+   video_frame_info_t video_info;
    char buf[128]                          = {0};
    XSetWindowAttributes attributes        = {0};
    XVisualInfo visualtemplate             = {0};
@@ -527,7 +528,17 @@ static void *xv_init(const video_info_t *video,
 
    XMapWindow(g_x11_dpy, g_x11_win);
 
-   if (video_monitor_get_fps(buf, sizeof(buf), NULL, 0))
+   video_info.refresh_rate          = settings->video.refresh_rate;
+   video_info.black_frame_insertion = 
+      settings->video.black_frame_insertion;
+   video_info.hard_sync             = settings->video.hard_sync;
+   video_info.hard_sync_frames      = settings->video.hard_sync_frames;
+   video_info.fps_show              = settings->fps_show;
+   video_info.scale_integer         = settings->video.scale_integer;
+   video_info.aspect_ratio_idx      = settings->video.aspect_ratio_idx;
+   video_info.max_swapchain_images  = settings->video.max_swapchain_images;
+
+   if (video_monitor_get_fps(video_info, buf, sizeof(buf), NULL, 0))
       XStoreName(g_x11_dpy, g_x11_win, buf);
 
    x11_set_window_attr(g_x11_dpy, g_x11_win);

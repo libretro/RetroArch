@@ -1537,7 +1537,7 @@ static bool gx_frame(void *data, const void *frame,
 
    GX_DrawDone();
 
-   video_monitor_get_fps(fps_txt, sizeof(fps_txt),
+   video_monitor_get_fps(video_info, fps_txt, sizeof(fps_txt),
          fps_text_buf, sizeof(fps_text_buf));
 
    if (video_info.fps_show)

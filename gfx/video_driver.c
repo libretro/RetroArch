@@ -1023,7 +1023,9 @@ bool video_monitor_fps_statistics(double *refresh_rate,
  * otherwise false.
  *
  **/
-bool video_monitor_get_fps(char *buf, size_t size,
+bool video_monitor_get_fps(
+      video_frame_info_t video_info,
+      char *buf, size_t size,
       char *buf_fps, size_t size_fps)
 {
    static retro_time_t curr_time;
@@ -1036,7 +1038,6 @@ bool video_monitor_get_fps(char *buf, size_t size,
    {
       static float last_fps;
       bool ret             = false;
-      settings_t *settings = config_get_ptr();
       unsigned write_index = video_driver_frame_time_count++ &
          (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
 
@@ -1055,7 +1056,7 @@ bool video_monitor_get_fps(char *buf, size_t size,
                " || ",
                size);
 
-         if (settings->fps_show)
+         if (video_info.fps_show)
          {
             char fps_text[64];
             snprintf(fps_text, sizeof(fps_text), " FPS: %6.1f || ", last_fps);
@@ -1071,7 +1072,7 @@ bool video_monitor_get_fps(char *buf, size_t size,
          ret = true;
       }
 
-      if (buf_fps && settings->fps_show)
+      if (buf_fps && video_info.fps_show)
          snprintf(buf_fps, size_fps, "FPS: %6.1f || %s: " STRING_REP_UINT64,
                last_fps,
                msg_hash_to_str(MSG_FRAMES),
@@ -1098,7 +1099,8 @@ void video_driver_set_aspect_ratio_value(float value)
    video_driver_aspect_ratio = value;
 }
 
-static bool video_driver_frame_filter(const void *data,
+static bool video_driver_frame_filter(
+      const void *data,
       unsigned width, unsigned height,
       size_t pitch,
       unsigned *output_width, unsigned *output_height,

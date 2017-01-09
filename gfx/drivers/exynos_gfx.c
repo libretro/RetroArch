@@ -1311,7 +1311,7 @@ static bool exynos_gfx_frame(void *data, const void *frame, unsigned width,
 
       buffer[0] = buffer_fps[0] = '\0';
 
-      video_monitor_get_fps(buffer, sizeof(buffer),
+      video_monitor_get_fps(video_info, buffer, sizeof(buffer),
             video_info.fps_show ? buffer_fps : NULL, sizeof(buffer_fps));
       runloop_msg_queue_push(buffer_fps, 1, 1, false);
    }

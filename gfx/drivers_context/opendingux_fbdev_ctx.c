@@ -148,7 +148,7 @@ static void gfx_ctx_opendingux_update_window_title(void *data, video_frame_info_
 
    buf[0] = buf_fps[0]  = '\0';
 
-   video_monitor_get_fps(buf, sizeof(buf),
+   video_monitor_get_fps(video_info, buf, sizeof(buf),
          buf_fps, sizeof(buf_fps));
    if (video_info.fps_show)
       runloop_msg_queue_push(buf_fps, 1, 1, false);

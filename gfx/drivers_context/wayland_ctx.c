@@ -728,7 +728,7 @@ static void gfx_ctx_wl_update_window_title(void *data, video_frame_info_t video_
 
    buf[0] = buf_fps[0] = '\0';
 
-   if (video_monitor_get_fps(buf, sizeof(buf),  
+   if (video_monitor_get_fps(video_info, buf, sizeof(buf),  
             buf_fps, sizeof(buf_fps)))
       wl_shell_surface_set_title(wl->shell_surf, buf);
 

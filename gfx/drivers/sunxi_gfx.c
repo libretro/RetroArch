@@ -781,9 +781,11 @@ static bool sunxi_gfx_frame(void *data, const void *frame, unsigned width,
 
    if (_dispvars->menu_active)
    {
-      char buf[128] = {0};
+      char buf[128];
 
-      video_monitor_get_fps(buf, sizeof(buf), NULL, 0);
+      buf[0] = '\0';
+
+      video_monitor_get_fps(video_info, buf, sizeof(buf), NULL, 0);
       ioctl(_dispvars->sunxi_disp->fd_fb, FBIO_WAITFORVSYNC, 0);
       return true;
    }

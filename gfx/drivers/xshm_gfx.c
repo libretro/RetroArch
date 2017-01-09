@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define _XOPEN_SOURCE 700 // TODO: this doesn't really belong here.
+#define _XOPEN_SOURCE 700 /* TODO: this doesn't really belong here. */
 
 #include <stdlib.h>
 #include <string.h>
