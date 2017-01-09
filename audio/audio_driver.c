@@ -745,9 +745,11 @@ void audio_driver_dsp_filter_init(const char *device)
 
    return;
 
+#if defined(HAVE_DYLIB) && !defined(HAVE_FILTERS_BUILTIN)
 error:
    if (!audio_driver_dsp)
       RARCH_ERR("[DSP]: Failed to initialize DSP filter \"%s\".\n", device);
+#endif
 }
 
 void audio_driver_set_buffer_size(size_t bufsize)
