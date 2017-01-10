@@ -226,7 +226,7 @@ void file_list_clear(file_list_t *list)
 
 void file_list_copy(const file_list_t *src, file_list_t *dst)
 {
-   struct item_file *item;
+   struct item_file *item = NULL;
 
    if (!src || !dst)
       return;
@@ -235,17 +235,24 @@ void file_list_copy(const file_list_t *src, file_list_t *dst)
    {
       for (item = dst->list; item < &dst->list[dst->size]; ++item)
       {
+         if (!item)
+            continue;
+
          if (item->path)
             free(item->path);
+         item->path = NULL;
 
          if (item->label)
             free(item->label);
+         item->label = NULL;
 
          if (item->alt)
             free(item->alt);
+         item->alt = NULL;
       }
 
       free(dst->list);
+      dst->list = NULL;
    }
 
    dst->size     = 0;
@@ -255,20 +262,20 @@ void file_list_copy(const file_list_t *src, file_list_t *dst)
    if (!dst->list)
       return;
 
-   dst->size = dst->capacity = src->size;
+   dst->size     = dst->capacity = src->size;
 
    memcpy(dst->list, src->list, dst->size * sizeof(struct item_file));
 
    for (item = dst->list; item < &dst->list[dst->size]; ++item)
    {
       if (item->path)
-         item->path = strdup(item->path);
+         item->path  = strdup(item->path);
 
       if (item->label)
          item->label = strdup(item->label);
 
       if (item->alt)
-         item->alt = strdup(item->alt);
+         item->alt   = strdup(item->alt);
    }
 }
 
