@@ -44,7 +44,7 @@ static const font_renderer_driver_t *font_backends[] = {
    NULL
 };
 
-static void *g_osd_font;
+static void *video_font_driver;
 
 int font_renderer_create_default(const void **data, void **handle,
       const char *font_path, unsigned font_size)
@@ -315,14 +315,14 @@ static bool font_init_first(
 void font_driver_render_msg(void *font_data,
       const char *msg, const struct font_params *params)
 {
-   font_data_t *font = (font_data_t*)(font_data ? font_data : g_osd_font);
+   font_data_t *font = (font_data_t*)(font_data ? font_data : video_font_driver);
    if (font && font->renderer && font->renderer->render_msg)
       font->renderer->render_msg(font->renderer_data, msg, params);
 }
 
 void font_driver_bind_block(void *font_data, void *block)
 {
-   font_data_t *font = (font_data_t*)(font_data ? font_data : g_osd_font);
+   font_data_t *font = (font_data_t*)(font_data ? font_data : video_font_driver);
 
    if (font && font->renderer && font->renderer->bind_block)
       font->renderer->bind_block(font->renderer_data, block);
@@ -330,7 +330,7 @@ void font_driver_bind_block(void *font_data, void *block)
 
 void font_driver_flush(void *font_data)
 {
-   font_data_t *font = (font_data_t*)(font_data ? font_data : g_osd_font);
+   font_data_t *font = (font_data_t*)(font_data ? font_data : video_font_driver);
    if (font && font->renderer && font->renderer->flush)
       font->renderer->flush(font->renderer_data);
 }
@@ -338,7 +338,7 @@ void font_driver_flush(void *font_data)
 int font_driver_get_message_width(void *font_data,
       const char *msg, unsigned len, float scale)
 {
-   font_data_t *font = (font_data_t*)(font_data ? font_data : g_osd_font);
+   font_data_t *font = (font_data_t*)(font_data ? font_data : video_font_driver);
    if (font && font->renderer && font->renderer->get_message_width)
       return font->renderer->get_message_width(font->renderer_data, msg, len, scale);
    return -1;
@@ -394,22 +394,22 @@ font_data_t *font_driver_init_first(
 
 void font_driver_init_osd(void *video_data, bool threading_hint, enum font_driver_render_api api)
 {
-   if (!g_osd_font)
-   {
-      settings_t *settings = config_get_ptr();
-      g_osd_font = font_driver_init_first(video_data,
-            *settings->path.font ? settings->path.font : NULL,
-            settings->video.font_size, threading_hint, api);
+   settings_t *settings = config_get_ptr();
+   if (video_font_driver)
+      return;
 
-      if (!g_osd_font)
-         RARCH_ERR("[font]: Failed to initialize OSD font.\n");
-   }
+   video_font_driver = font_driver_init_first(video_data,
+         *settings->path.font ? settings->path.font : NULL,
+         settings->video.font_size, threading_hint, api);
+
+   if (!video_font_driver)
+      RARCH_ERR("[font]: Failed to initialize OSD font.\n");
 }
 
 void font_driver_free_osd(void)
 {
-   if (g_osd_font)
-      font_driver_free(g_osd_font);
+   if (video_font_driver)
+      font_driver_free(video_font_driver);
 
-   g_osd_font = NULL;
+   video_font_driver = NULL;
 }
