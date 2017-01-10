@@ -889,6 +889,30 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
 
    menu_entry_get(&entry, 0, i, NULL, true);
 
+   if (entry.type == FILE_TYPE_IMAGEVIEWER)
+   {
+      file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+      xmb_node_t *node = (xmb_node_t*)
+         menu_entries_get_userdata_at_offset(selection_buf, i);
+
+      if (node)
+      {
+         fill_pathname_join(
+               xmb->thumbnail_file_path,
+               node->fullpath,
+               entry.path,
+               sizeof(xmb->thumbnail_file_path));
+
+         return;
+      }
+   }
+   else if (xmb_list_get_selection(xmb) == 0)
+   {
+      xmb->thumbnail_file_path[0] = '\0';
+      xmb->thumbnail = 0;
+      return;
+   }
+
    menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
 
    if (playlist)
@@ -1068,7 +1092,8 @@ static void xmb_selection_pointer_changed(
 
          depth = xmb_list_get_size(xmb, MENU_LIST_PLAIN);
          if (!string_is_equal(xmb_thumbnails_ident(),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)) && depth == 1)
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))
+               && (depth == 1 || xmb->categories.selection_ptr == 0))
          {
             xmb_update_thumbnail_path(xmb, i);
             xmb_update_thumbnail_image(xmb);
@@ -1245,6 +1270,9 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
 
    xmb->old_depth = xmb->depth;
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &skip);
+
+   if (xmb_list_get_selection(xmb) == 0)
+      xmb_update_thumbnail_path(xmb, 0);
 }
 
 static xmb_node_t *xmb_node_allocate_userdata(xmb_handle_t *xmb, unsigned i)
