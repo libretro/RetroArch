@@ -576,6 +576,21 @@ static INLINE bool input_menu_keys_pressed_internal(unsigned i,
             input_driver_block_hotkey         = true; \
    }
 
+#define input_keys_pressed_end() \
+   *trigger_input = ret & ~old_input; \
+   *last_input    = ret; \
+   if (input_driver_flushing_input) \
+   { \
+      input_driver_flushing_input = false; \
+      if (ret) \
+      { \
+         ret = 0; \
+         if (runloop_paused) \
+            BIT64_SET(ret, RARCH_PAUSE_TOGGLE); \
+         input_driver_flushing_input = true; \
+      } \
+   }
+
 /**
  * input_menu_keys_pressed:
  *
@@ -676,24 +691,7 @@ uint64_t input_menu_keys_pressed(
       }
    }
 
-   *trigger_input = ret & ~old_input;
-   *last_input    = ret;
-
-   if (input_driver_flushing_input)
-   {
-      input_driver_flushing_input = false;
-
-      if (ret)
-      {
-         ret = 0;
-
-         /* If core was paused before entering menu, evoke
-          * pause toggle to wake it up. */
-         if (runloop_paused)
-            BIT64_SET(ret, RARCH_PAUSE_TOGGLE);
-         input_driver_flushing_input = true;
-      }
-   }
+   input_keys_pressed_end();
 
 #ifdef HAVE_MENU
    if (menu_driver_is_binding_state())
@@ -794,24 +792,7 @@ uint64_t input_keys_pressed(
          ret |= (UINT64_C(1) << i);
    }
 
-   *trigger_input = ret & ~old_input;
-   *last_input    = ret;
-
-   if (input_driver_flushing_input)
-   {
-      input_driver_flushing_input = false;
-
-      if (ret)
-      {
-         ret = 0;
-
-         /* If core was paused before entering menu, evoke
-          * pause toggle to wake it up. */
-         if (runloop_paused)
-            BIT64_SET(ret, RARCH_PAUSE_TOGGLE);
-         input_driver_flushing_input = true;
-      }
-   }
+   input_keys_pressed_end();
 
    return ret;
 }
