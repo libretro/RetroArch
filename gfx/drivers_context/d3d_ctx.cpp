@@ -29,6 +29,7 @@
 #include "../drivers/d3d.h"
 #include "../common/win32_common.h"
 
+#include "../../configuration.h"
 #include "../../runloop.h"
 #include "../../verbosity.h"
 #include "../../ui/ui_companion_driver.h"
@@ -183,14 +184,15 @@ static void gfx_ctx_d3d_destroy(void *data)
 static void gfx_ctx_d3d_input_driver(void *data,
       const input_driver_t **input, void **input_data)
 {
+   settings_t *settings = config_get_ptr();
 #ifdef _XBOX
-   void *xinput = input_xinput.init();
-   *input       = xinput ? (const input_driver_t*)&input_xinput : NULL;
-   *input_data  = xinput;
+   void *xinput         = input_xinput.init(settings->input.joypad_driver);
+   *input               = xinput ? (const input_driver_t*)&input_xinput : NULL;
+   *input_data          = xinput;
 #else
-   dinput       = input_dinput.init();
-   *input       = dinput ? &input_dinput : NULL;
-   *input_data  = dinput;
+   dinput               = input_dinput.init(settings->input.joypad_driver);
+   *input               = dinput ? &input_dinput : NULL;
+   *input_data          = dinput;
 #endif
    (void)data;
 }
