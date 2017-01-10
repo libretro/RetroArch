@@ -281,9 +281,13 @@ void input_poll(void)
    if (!input_driver_block_libretro_input)
    {
       for (i = 0; i < max_users; i++)
-         input_driver_turbo_btns.frame_enable[i] = current_input->input_state(
-               current_input_data, libretro_input_binds,
-               i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
+      {
+         bool bind_valid = libretro_input_binds[i][RARCH_TURBO_ENABLE].valid;
+         if (bind_valid)
+            input_driver_turbo_btns.frame_enable[i] = current_input->input_state(
+                  current_input_data, libretro_input_binds,
+                  i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
+      }
    }
 
 #ifdef HAVE_OVERLAY
@@ -360,8 +364,15 @@ int16_t input_state(unsigned port, unsigned device,
          && !input_driver_block_libretro_input)
    {
       if (((id < RARCH_FIRST_META_KEY) || (device == RETRO_DEVICE_KEYBOARD)))
-         res = current_input->input_state(
-               current_input_data, libretro_input_binds, port, device, idx, id);
+      {
+         bool bind_valid = libretro_input_binds[port][id].valid;
+         if (device == RETRO_DEVICE_KEYBOARD)
+            bind_valid   = true;
+
+         if (bind_valid)
+            res = current_input->input_state(
+                  current_input_data, libretro_input_binds, port, device, idx, id);
+      }
 
 #ifdef HAVE_OVERLAY
       if (overlay_ptr)
@@ -474,10 +485,14 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
    {
       for (i = 4; i < 16; i++)
       {
-         *input1 |= (current_input->input_state(current_input_data, binds,
-                  0, RETRO_DEVICE_JOYPAD, 0, buttons[i - 4]) ? 1 : 0) << i;
-         *input2 |= (current_input->input_state(current_input_data, binds,
-                  1, RETRO_DEVICE_JOYPAD, 0, buttons[i - 4]) ? 1 : 0) << i;
+         unsigned id     = buttons[i - 4];
+
+         if (binds[0][id].valid)
+            *input1 |= (current_input->input_state(current_input_data, binds,
+                     0, RETRO_DEVICE_JOYPAD, 0, id) ? 1 : 0) << i;
+         if (binds[1][id].valid)
+            *input2 |= (current_input->input_state(current_input_data, binds,
+                     1, RETRO_DEVICE_JOYPAD, 0, id) ? 1 : 0) << i;
       }
    }
 
@@ -508,7 +523,8 @@ static INLINE bool input_menu_keys_pressed_internal(
 
       for (port = 0; port < port_max; port++)
       {
-         if (current_input->input_state(current_input_data, binds,
+         bool bind_valid = binds[port][i].valid;
+         if (bind_valid && current_input->input_state(current_input_data, binds,
                   port, RETRO_DEVICE_JOYPAD, 0, i))
             return true;
       }
@@ -703,7 +719,8 @@ static INLINE bool input_keys_pressed_internal(unsigned i,
    if (((!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
             || !input_driver_block_hotkey))
    {
-      if (current_input->input_state(current_input_data, &binds,
+      bool bind_valid = binds[i].valid;
+      if (bind_valid && current_input->input_state(current_input_data, &binds,
             0, RETRO_DEVICE_JOYPAD, 0, i))
          return true;
    }
@@ -771,11 +788,14 @@ uint64_t input_keys_pressed(
    const struct retro_keybind *focus_binds_auto = &settings->input.autoconf_binds[0][RARCH_GAME_FOCUS_TOGGLE];
    const struct retro_keybind *focus_normal     = &binds[RARCH_GAME_FOCUS_TOGGLE];
    bool enable_hotkey_valid                     = binds_norm && binds_norm->valid;
-
+   bool game_focus_toggle_valid                 = false;
+   
    input_keys_pressed_checks(&binds, enable_hotkey_valid);
 
+   game_focus_toggle_valid                      = binds[RARCH_GAME_FOCUS_TOGGLE].valid;
+
    /* Allows rarch_focus_toggle hotkey to still work even though every hotkey is blocked */
-   if (check_input_driver_block_hotkey(focus_normal, focus_binds_auto))
+   if (check_input_driver_block_hotkey(focus_normal, focus_binds_auto) && game_focus_toggle_valid)
    {
       if (current_input->input_state(current_input_data, &binds, 0,
                RETRO_DEVICE_JOYPAD, 0, RARCH_GAME_FOCUS_TOGGLE))
