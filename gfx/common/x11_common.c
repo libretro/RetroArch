@@ -283,13 +283,10 @@ void x11_set_window_attr(Display *dpy, Window win)
 
 static void xdg_screensaver_inhibit(Window wnd)
 {
-   int ret;
-   char               cmd[64];
+   int  ret;
+   char cmd[64];
 
    cmd[0] = '\0';
-
-   if (!xdg_screensaver_available)
-      return;
 
    RARCH_LOG("Suspending screensaver (X11, xdg-screensaver).\n");
 
@@ -314,7 +311,8 @@ void x11_suspend_screensaver_xdg_screensaver(Window wnd, bool enable)
    if (!enable)
       return;
 
-   xdg_screensaver_inhibit(wnd);
+   if (xdg_screensaver_available)
+      xdg_screensaver_inhibit(wnd);
 }
 
 void x11_suspend_screensaver(Window wnd, bool enable)
@@ -419,10 +417,10 @@ static XineramaScreenInfo *x11_query_screens(Display *dpy, int *num_screens)
 bool x11_get_xinerama_coord(Display *dpy, int screen,
       int *x, int *y, unsigned *w, unsigned *h)
 {
-   int i, num_screens = 0;
-   bool ret = false;
-
+   int i, num_screens       = 0;
+   bool                 ret = false;
    XineramaScreenInfo *info = x11_query_screens(dpy, &num_screens);
+
    RARCH_LOG("[X11]: Xinerama screens: %d.\n", num_screens);
 
    for (i = 0; i < num_screens; i++)
@@ -486,8 +484,7 @@ bool x11_create_input_context(Display *dpy, Window win, XIM *xim, XIC *xic)
    x11_destroy_input_context(xim, xic);
 
    g_x11_has_focus = true;
-
-   *xim = XOpenIM(dpy, NULL, NULL, NULL);
+   *xim            = XOpenIM(dpy, NULL, NULL, NULL);
 
    if (!*xim)
    {
@@ -559,10 +556,9 @@ bool x11_get_metrics(void *data,
 
 bool x11_alive(void *data)
 {
-   XEvent event;
-
    while (XPending(g_x11_dpy))
    {
+      XEvent event;
       bool filter = false;
 
       /* Can get events from older windows. Check this. */
@@ -662,14 +658,14 @@ void x11_get_video_size(void *data, unsigned *width, unsigned *height)
    if (!g_x11_dpy || g_x11_win == None)
    {
       Display *dpy = (Display*)XOpenDisplay(NULL);
-      *width  = 0;
-      *height = 0;
+      *width       = 0;
+      *height      = 0;
 
       if (dpy)
       {
          int screen = DefaultScreen(dpy);
-         *width  = DisplayWidth(dpy, screen);
-         *height = DisplayHeight(dpy, screen);
+         *width     = DisplayWidth(dpy, screen);
+         *height    = DisplayHeight(dpy, screen);
          XCloseDisplay(dpy);
       }
    }
