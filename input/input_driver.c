@@ -550,7 +550,7 @@ static INLINE bool input_menu_keys_pressed_internal(
       )
    {
       unsigned port;
-      int port_max = all_users_control_menu ? max_users : 1;
+      unsigned port_max = all_users_control_menu ? max_users : 1;
 
       for (port = 0; port < port_max; port++)
       {
