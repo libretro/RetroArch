@@ -21,7 +21,6 @@
 #include <wiiuse/wpad.h>
 #endif
 
-#include "../../configuration.h"
 #include "../../tasks/tasks_internal.h"
 
 #ifdef GEKKO

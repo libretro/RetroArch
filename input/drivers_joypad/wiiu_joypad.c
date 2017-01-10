@@ -23,8 +23,6 @@
 #include "../input_joypad_driver.h"
 #include "../input_driver.h"
 #include "../../tasks/tasks_internal.h"
-#include "../../configuration.h"
-#include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../command.h"
 #include "string.h"

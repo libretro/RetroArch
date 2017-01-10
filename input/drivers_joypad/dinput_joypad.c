@@ -207,7 +207,6 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    bool is_xinput_pad;
 #endif
    LPDIRECTINPUTDEVICE8 *pad = NULL;
-   settings_t *settings = config_get_ptr();
 
    (void)p;
 

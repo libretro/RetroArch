@@ -38,7 +38,6 @@
 #include "../../tasks/tasks_internal.h"
 #include "../input_config.h"
 
-#include "../../configuration.h"
 #include "../../verbosity.h"
 
 /* Check if the definitions do not already exist.
@@ -174,7 +173,6 @@ static bool xinput_joypad_init(void *data)
    unsigned i, autoconf_pad;
    XINPUT_STATE dummy_state;
    const char *version = "1.4";
-   settings_t *settings = config_get_ptr();
 
    (void)data;
 

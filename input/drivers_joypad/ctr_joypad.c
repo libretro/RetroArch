@@ -23,8 +23,6 @@
 
 #include "../../tasks/tasks_internal.h"
 
-#include "../../configuration.h"
-#include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../command.h"
 #include "string.h"

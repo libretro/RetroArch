@@ -19,8 +19,6 @@
 
 #include "../../tasks/tasks_internal.h"
 
-#include "../../configuration.h"
-
 static uint64_t pad_state[MAX_PADS];
 static int16_t analog_state[MAX_PADS][2][2];
 static uint64_t pads_connected[MAX_PADS];
