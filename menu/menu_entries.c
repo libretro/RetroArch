@@ -445,6 +445,8 @@ void menu_entries_prepend(file_list_t *list, const char *path, const char *label
 
    idx              = 0;
 
+   list_info.fullpath    = NULL;
+
    if (!string_is_empty(menu_path))
       list_info.fullpath = strdup(menu_path);
    list_info.list        = list;
