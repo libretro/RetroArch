@@ -57,7 +57,6 @@ void free_xkb(void)
 int init_xkb(int fd, size_t size)
 {
    char *map_str;
-   settings_t *settings = config_get_ptr();
    mod_map_idx          = (xkb_mod_index_t *)calloc(MOD_MAP_SIZE, sizeof(xkb_mod_index_t));
 
    if (!mod_map_idx)
@@ -82,8 +81,9 @@ int init_xkb(int fd, size_t size)
       }
       else
       {
-         struct string_list *list = NULL;
+         struct string_list *list   = NULL;
          struct xkb_rule_names rule = {0};
+         settings_t *settings       = config_get_ptr();
 
          rule.rules = "evdev";
 
