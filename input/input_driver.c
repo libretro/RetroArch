@@ -563,6 +563,19 @@ static INLINE bool input_menu_keys_pressed_internal(unsigned i,
    return false;
 }
 
+#define input_keys_pressed_checks() \
+   input_driver_block_libretro_input            = false; \
+   input_driver_block_hotkey                    = false; \
+   if (current_input->keyboard_mapping_is_blocked && current_input->keyboard_mapping_is_blocked(current_input_data)) \
+      input_driver_block_hotkey = true; \
+   if (check_input_driver_block_hotkey(binds_norm, binds_auto)) \
+   { \
+      if (current_input->input_state(current_input_data, &binds[0], 0, RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY)) \
+            input_driver_block_libretro_input = true; \
+         else \
+            input_driver_block_hotkey         = true; \
+   }
+
 /**
  * input_menu_keys_pressed:
  *
@@ -588,8 +601,8 @@ uint64_t input_menu_keys_pressed(
    {
       unsigned i;
       const struct retro_keybind *binds[MAX_USERS] = {NULL};
-      const struct retro_keybind *binds_norm       = NULL;
-      const struct retro_keybind *binds_auto       = NULL;
+      const struct retro_keybind *binds_norm       = &settings->input.binds[0][RARCH_ENABLE_HOTKEY];
+      const struct retro_keybind *binds_auto       = &settings->input.autoconf_binds[0][RARCH_ENABLE_HOTKEY];
       unsigned max_users                           = settings->input.max_users;
 
       if (settings->menu.unified_controls)
@@ -603,26 +616,7 @@ uint64_t input_menu_keys_pressed(
          input_push_analog_dpad(auto_binds, ANALOG_DPAD_LSTICK);
       }
 
-      input_driver_block_libretro_input = false;
-      input_driver_block_hotkey         = false;
-
-      /* Don't block the check to RARCH_ENABLE_HOTKEY
-       * unless we're really supposed to. */
-      if (current_input->keyboard_mapping_is_blocked &&
-            current_input->keyboard_mapping_is_blocked(current_input_data))
-         input_driver_block_hotkey = true;
-
-      binds_norm = &settings->input.binds[0][RARCH_ENABLE_HOTKEY];
-      binds_auto = &settings->input.autoconf_binds[0][RARCH_ENABLE_HOTKEY];
-
-      if (check_input_driver_block_hotkey(binds_norm, binds_auto))
-      {
-         if (current_input->input_state(current_input_data, &binds[0], 0,
-                  RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY))
-            input_driver_block_libretro_input = true;
-         else
-            input_driver_block_hotkey         = true;
-      }
+      input_keys_pressed_checks();
 
       for (i = 0; i < RARCH_BIND_LIST_END; i++)
       {
@@ -756,6 +750,7 @@ static INLINE bool input_keys_pressed_internal(unsigned i,
    return false;
 }
 
+
 /**
  * input_keys_pressed:
  *
@@ -783,25 +778,9 @@ uint64_t input_keys_pressed(
    const struct retro_keybind *focus_binds_auto = &settings->input.autoconf_binds[0][RARCH_GAME_FOCUS_TOGGLE];
    const struct retro_keybind *focus_normal     = &binds[RARCH_GAME_FOCUS_TOGGLE];
 
-   input_driver_block_libretro_input            = false;
-   input_driver_block_hotkey                    = false;
+   input_keys_pressed_checks();
 
-   /* Don't block the check to RARCH_ENABLE_HOTKEY
-    * unless we're really supposed to. */
-   if (current_input->keyboard_mapping_is_blocked &&
-         current_input->keyboard_mapping_is_blocked(current_input_data))
-      input_driver_block_hotkey = true;
-
-   if (check_input_driver_block_hotkey(binds_norm, binds_auto))
-   {
-      if (current_input->input_state(current_input_data, &binds, 0,
-               RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY))
-         input_driver_block_libretro_input = true;
-      else
-         input_driver_block_hotkey         = true;
-   }
-
-   /* Allows rarch_focus_toggle hotkey to still work even tough every hotkey is blocked */
+   /* Allows rarch_focus_toggle hotkey to still work even though every hotkey is blocked */
    if (check_input_driver_block_hotkey(focus_normal, focus_binds_auto))
    {
       if (current_input->input_state(current_input_data, &binds, 0,
