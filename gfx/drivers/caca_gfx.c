@@ -19,26 +19,25 @@
 #include <caca.h>
 
 #include "../../driver.h"
-#include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../../menu/menu_driver.h"
 #include "../common/caca_common.h"
 
-static caca_canvas_t *caca_cv = NULL;
-static caca_dither_t *caca_dither = NULL;
-static caca_display_t *caca_display = NULL;
+static caca_canvas_t *caca_cv         = NULL;
+static caca_dither_t *caca_dither     = NULL;
+static caca_display_t *caca_display   = NULL;
 static unsigned char *caca_menu_frame = NULL;
-static unsigned caca_menu_width = 0;
-static unsigned caca_menu_height = 0;
-static unsigned caca_menu_pitch = 0;
-static unsigned caca_video_width = 0;
-static unsigned caca_video_height = 0;
-static unsigned caca_video_pitch = 0;
-static bool caca_rgb32 = 0;
+static unsigned caca_menu_width       = 0;
+static unsigned caca_menu_height      = 0;
+static unsigned caca_menu_pitch       = 0;
+static unsigned caca_video_width      = 0;
+static unsigned caca_video_height     = 0;
+static unsigned caca_video_pitch      = 0;
+static bool caca_rgb32                = 0;
 
 static void caca_gfx_free(void *data);
 
-static void caca_gfx_create()
+static void caca_gfx_create(void)
 {
    caca_display = caca_create_display(NULL);
    caca_cv = caca_get_canvas(caca_display);
@@ -62,19 +61,18 @@ static void caca_gfx_create()
 static void *caca_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
-   settings_t *settings = config_get_ptr();
-   caca_t *caca = (caca_t*)calloc(1, sizeof(*caca));
+   caca_t *caca        = (caca_t*)calloc(1, sizeof(*caca));
 
-   caca->caca_cv = &caca_cv;
-   caca->caca_dither = &caca_dither;
-   caca->caca_display = &caca_display;
+   caca->caca_cv       = &caca_cv;
+   caca->caca_dither   = &caca_dither;
+   caca->caca_display  = &caca_display;
 
-   *input = NULL;
-   *input_data = NULL;
+   *input              = NULL;
+   *input_data         = NULL;
 
-   caca_video_width = video->width;
-   caca_video_height = video->height;
-   caca_rgb32 = video->rgb32;
+   caca_video_width    = video->width;
+   caca_video_height   = video->height;
+   caca_rgb32          = video->rgb32;
 
    if (video->rgb32)
       caca_video_pitch = video->width * 4;
@@ -88,7 +86,7 @@ static void *caca_gfx_init(const video_info_t *video,
       /* TODO: handle errors */
    }
 
-   if (settings->video.font_enable)
+   if (video->font_enable)
       font_driver_init_osd(NULL, false, FONT_DRIVER_RENDER_CACA);
 
    return caca;
@@ -115,7 +113,9 @@ static bool caca_gfx_frame(void *data, const void *frame,
    if (!frame || !frame_width || !frame_height)
       return true;
 
-   if (caca_video_width != frame_width || caca_video_height != frame_height || caca_video_pitch != pitch)
+   if (  caca_video_width  != frame_width   || 
+         caca_video_height != frame_height  ||
+         caca_video_pitch  != pitch)
    {
       if (frame_width > 4 && frame_height > 4)
       {
@@ -136,7 +136,10 @@ static bool caca_gfx_frame(void *data, const void *frame,
    width = caca_get_canvas_width(caca_cv);
    height = caca_get_canvas_height(caca_cv);
 
-   if (frame_to_copy == frame && frame_width == 4 && frame_height == 4 && (frame_width < width && frame_height < height))
+   if (  frame_to_copy == frame && 
+         frame_width   == 4 && 
+         frame_height  == 4 && 
+         (frame_width < width && frame_height < height))
       draw = false;
 
    caca_clear_canvas(caca_cv);
@@ -151,9 +154,9 @@ static bool caca_gfx_frame(void *data, const void *frame,
    if (draw)
    {
       caca_dither_bitmap(caca_cv, 0, 0,
-                         width,
-                         height,
-                         caca_dither, frame_to_copy);
+            width,
+            height,
+            caca_dither, frame_to_copy);
 
       buffer = caca_export_canvas_to_memory(caca_cv, "caca", &len);
 
@@ -271,7 +274,10 @@ static void caca_set_texture_frame(void *data,
       caca_menu_frame = NULL;
    }
 
-   if (!caca_menu_frame || caca_menu_width != width || caca_menu_height != height || caca_menu_pitch != pitch)
+   if ( !caca_menu_frame || 
+         caca_menu_width  != width  || 
+         caca_menu_height != height || 
+         caca_menu_pitch  != pitch)
       if (pitch && height)
          caca_menu_frame = (unsigned char*)malloc(pitch * height);
 

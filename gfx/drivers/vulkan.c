@@ -1029,7 +1029,6 @@ static void *vulkan_init(const video_info_t *video,
    unsigned temp_width                = 0;
    unsigned temp_height               = 0;
    const gfx_ctx_driver_t *ctx_driver = NULL;
-   settings_t *settings               = config_get_ptr();
    vk_t *vk                           = (vk_t*)calloc(1, sizeof(*vk));
    if (!vk)
       return NULL;
@@ -1052,7 +1051,7 @@ static void *vulkan_init(const video_info_t *video,
    mode.height = 0;
 
    RARCH_LOG("Detecting screen resolution %ux%u.\n", full_x, full_y);
-   interval = video->vsync ? settings->video.swap_interval : 0;
+   interval = video->vsync ? video->swap_interval : 0;
    video_context_driver_swap_interval(&interval);
 
    win_width  = video->width;
@@ -1113,7 +1112,7 @@ static void *vulkan_init(const video_info_t *video,
    inp.input_data = input_data;
    video_context_driver_input_driver(&inp);
 
-   if (settings->video.font_enable)
+   if (video->font_enable)
       font_driver_init_osd(vk, false, FONT_DRIVER_RENDER_VULKAN_API);
 
    vulkan_init_readback(vk);

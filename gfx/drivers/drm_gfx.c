@@ -30,7 +30,6 @@
 
 #include "../font_driver.h"
 #include "../video_context_driver.h"
-#include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../runloop.h"
 

@@ -388,8 +388,8 @@ static void *sdl2_gfx_init(const video_info_t *video,
 {
    int i;
    unsigned flags;
+   sdl2_video_t *vid    = NULL;
    settings_t *settings = config_get_ptr();
-   sdl2_video_t *vid;
 
 #ifdef HAVE_X11
    XInitThreads();
@@ -446,7 +446,7 @@ static void *sdl2_gfx_init(const video_info_t *video,
    }
 
    vid->video         = *video;
-   vid->video.smooth  = settings->video.smooth;
+   vid->video.smooth  = video->smooth;
    vid->should_resize = true;
 
    sdl_tex_zero(&vid->frame);

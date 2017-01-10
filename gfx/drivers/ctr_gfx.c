@@ -291,7 +291,6 @@ static void* ctr_init(const video_info_t* video,
    float refresh_rate;
    void* ctrinput   = NULL;
    ctr_video_t* ctr = (ctr_video_t*)linearAlloc(sizeof(ctr_video_t));
-   settings_t *settings = config_get_ptr();
 
    if (!ctr)
       return NULL;

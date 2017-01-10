@@ -291,14 +291,15 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
 
    sdl_init_font(vid, settings->path.font, settings->video.font_size);
 
-   vid->scaler.scaler_type = video->smooth ? SCALER_TYPE_BILINEAR : SCALER_TYPE_POINT;
-   vid->scaler.in_fmt  = video->rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGB565;
-   vid->scaler.out_fmt = SCALER_FMT_ARGB8888;
+   vid->scaler.scaler_type      = video->smooth ? SCALER_TYPE_BILINEAR : SCALER_TYPE_POINT;
+   vid->scaler.in_fmt           = video->rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGB565;
+   vid->scaler.out_fmt          = SCALER_FMT_ARGB8888;
 
-   vid->menu.scaler = vid->scaler;
+   vid->menu.scaler             = vid->scaler;
    vid->menu.scaler.scaler_type = SCALER_TYPE_BILINEAR;
 
-   vid->menu.frame = SDL_ConvertSurface(vid->screen, vid->screen->format, vid->screen->flags | SDL_SRCALPHA);
+   vid->menu.frame              = SDL_ConvertSurface(
+         vid->screen, vid->screen->format, vid->screen->flags | SDL_SRCALPHA);
 
    if (!vid->menu.frame)
    {

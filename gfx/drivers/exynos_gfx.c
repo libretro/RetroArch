@@ -37,8 +37,8 @@
 
 #include "../common/drm_common.h"
 #include "../font_driver.h"
+#include "../../configuration.h"
 #include "../../retroarch.h"
-#include "../../runloop.h"
 #include "../../runloop.h"
 
 /* TODO: Honor these properties: vsync, menu rotation, menu alpha, aspect ratio change */
@@ -1045,7 +1045,7 @@ static int exynos_init_font(struct exynos_video *vid)
    const unsigned buf_height = defaults[EXYNOS_IMAGE_FONT].height;
    const unsigned buf_width  = align_common(pdata->aspect * (float)buf_height, 16);
    const unsigned buf_bpp    = defaults[EXYNOS_IMAGE_FONT].bpp;
-   settings_t *settings     = config_get_ptr();
+   settings_t *settings      = config_get_ptr();
 
    if (!settings->video.font_enable)
       return 0;

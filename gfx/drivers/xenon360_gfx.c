@@ -26,7 +26,6 @@
 #include "../../config.h"
 #endif
 
-#include "../../configuration.h"
 #include "../../driver.h"
 #include "../../runloop.h"
 

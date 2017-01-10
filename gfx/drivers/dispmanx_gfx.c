@@ -422,8 +422,7 @@ static void *dispmanx_gfx_init(const video_info_t *video,
       *input = NULL;
    
    /* Enable/disable dispmanx bilinear filtering. */ 
-   settings_t *settings         = config_get_ptr();
-   dispmanx_set_scaling(settings->video.smooth);
+   dispmanx_set_scaling(video->smooth);
 
    dispmanx_blank_console(_dispvars);
    return _dispvars;
