@@ -276,19 +276,14 @@ static bool dinput_keyboard_pressed(struct dinput_input *di, unsigned key)
 }
 
 static bool dinput_is_pressed(struct dinput_input *di,
+      rarch_joypad_info_t joypad_info,
       const struct retro_keybind *binds,
       unsigned port, unsigned id)
 {
-   rarch_joypad_info_t joypad_info;
    const struct retro_keybind *bind = &binds[id];
-   settings_t *settings             = config_get_ptr();
 
    if (id >= RARCH_BIND_LIST_END)
       return false;
-
-   joypad_info.joy_idx        = port;
-   joypad_info.auto_binds     = settings->input.autoconf_binds[port];
-   joypad_info.axis_threshold = settings->input.axis_threshold;
 
    if (!di->blocked && dinput_keyboard_pressed(di, bind->key))
       return true;
@@ -476,7 +471,7 @@ static int16_t dinput_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return dinput_is_pressed(di, binds[port], port, id);
+         return dinput_is_pressed(di, joypad_info, binds[port], port, id);
       case RETRO_DEVICE_KEYBOARD:
          return dinput_keyboard_pressed(di, id);
 
