@@ -692,12 +692,13 @@ static void gx_efb_screenshot(void)
 static void *gx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
-   void *gxinput  = NULL;
-   gx_video_t *gx = (gx_video_t*)calloc(1, sizeof(gx_video_t));
+   settings_t *settings = config_get_ptr();
+   void *gxinput        = NULL;
+   gx_video_t *gx       = (gx_video_t*)calloc(1, sizeof(gx_video_t));
    if (!gx)
       return NULL;
 
-   gxinput     = input_gx.init();
+   gxinput     = input_gx.init(settings->input.joypad_driver);
    *input      = gxinput ? &input_gx : NULL;
    *input_data = gxinput;
 
