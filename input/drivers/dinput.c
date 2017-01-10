@@ -42,7 +42,6 @@
 #include "../../config.h"
 #endif
 
-#include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../gfx/video_driver.h"
@@ -72,6 +71,7 @@ struct pointer_status
 
 struct dinput_input
 {
+   char *joypad_driver_name;
    bool blocked;
    LPDIRECTINPUTDEVICE8 keyboard;
    LPDIRECTINPUTDEVICE8 mouse;
@@ -139,6 +139,9 @@ static void *dinput_init(const char *joypad_driver)
    di = (struct dinput_input*)calloc(1, sizeof(*di));
    if (!di)
       return NULL;
+
+   if (!string_is_empty(joypad_driver))
+      di->joypad_driver_name = strdup(joypad_driver);
 
 #ifdef __cplusplus
    if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx, GUID_SysKeyboard, &di->keyboard, NULL)))
@@ -478,12 +481,10 @@ static int16_t dinput_input_state(void *data,
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
          {
-            settings_t *settings       = config_get_ptr();
             ret = dinput_pressed_analog(di, binds[port], idx, id);
             if (!ret)
                ret = input_joypad_analog(di->joypad, joypad_info,
-                     port,
-                     idx, id, settings->input.binds[port]);
+                     port, idx, id, binds[port]);
             return ret;
          }
          return 0;
@@ -601,7 +602,6 @@ extern "C"
 bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lParam)
 {
    struct dinput_input *di = (struct dinput_input *)dinput;
-   settings_t *settings    = config_get_ptr();
    /* WM_POINTERDOWN   : Arrives for each new touch event
     *                    with a new ID - add to list.
     * WM_POINTERUP     : Arrives once the pointer is no
@@ -649,7 +649,7 @@ bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lPa
       case WM_DEVICECHANGE:
             if (di->joypad)
                di->joypad->destroy();
-            di->joypad = input_joypad_init_driver(settings->input.joypad_driver, di);
+            di->joypad = input_joypad_init_driver(di->joypad_driver_name, di);
          break;
       case WM_MOUSEWHEEL:
             if (((short) HIWORD(wParam))/120 > 0)
@@ -691,6 +691,9 @@ static void dinput_free(void *data)
 
       if (di->mouse)
          IDirectInputDevice8_Release(di->mouse);
+
+      if (string_is_empty(di->joypad_driver_name))
+         free(di->joypad_driver_name);
 
       free(di);
    }
