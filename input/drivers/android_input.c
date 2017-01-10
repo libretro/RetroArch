@@ -1129,8 +1129,8 @@ static int16_t android_input_state(void *data,
          break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
-            return input_joypad_analog(android->joypad, port, idx, id,
-                  binds[port]);
+            return input_joypad_analog(android->joypad, joypad_info,
+                  port, idx, id, binds[port]);
          break;
       case RETRO_DEVICE_POINTER:
          switch (id)

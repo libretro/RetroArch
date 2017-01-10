@@ -136,7 +136,7 @@ static int16_t linuxraw_input_state(void *data,
          if (binds[port])
             ret = linuxraw_analog_pressed(linuxraw, binds[port], idx, id);
          if (!ret && binds[port])
-            ret = input_joypad_analog(linuxraw->joypad, port, idx, id, binds[port]);
+            ret = input_joypad_analog(linuxraw->joypad, joypad_info, port, idx, id, binds[port]);
          return ret;
    }
 

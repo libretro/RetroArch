@@ -1336,7 +1336,7 @@ static int16_t input_wl_state(void *data, const struct retro_keybind **binds,
       case RETRO_DEVICE_ANALOG:
          ret = input_wl_analog_pressed(wl, binds[port], idx, id);
          if (!ret && binds[port])
-            ret = input_joypad_analog(wl->joypad, port, idx, id, binds[port]);
+            ret = input_joypad_analog(wl->joypad, joypad_info, port, idx, id, binds[port]);
          return ret;
 
       case RETRO_DEVICE_KEYBOARD:

@@ -123,7 +123,7 @@ static int16_t ps3_input_state(void *data,
          break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
-            return input_joypad_analog(ps3->joypad, port, idx, id, binds[port]);
+            return input_joypad_analog(ps3->joypad, joypad_info, port, idx, id, binds[port]);
          break;
 #if 0
       case RETRO_DEVICE_SENSOR_ACCELEROMETER:

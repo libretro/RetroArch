@@ -469,9 +469,14 @@ static int16_t dinput_input_state(void *data,
       const struct retro_keybind **binds, unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {
+   rarch_joypad_info_t joypad_info;
    int16_t ret;
-   struct dinput_input *di = (struct dinput_input*)data;
-   settings_t *settings    = config_get_ptr();
+   struct dinput_input *di    = (struct dinput_input*)data;
+   settings_t *settings       = config_get_ptr();
+
+   joypad_info.joy_idx        = port;
+   joypad_info.auto_binds     = settings->input.autoconf_binds[port];
+   joypad_info.axis_threshold = settings->input.axis_threshold;
 
    switch (device)
    {
@@ -487,8 +492,9 @@ static int16_t dinput_input_state(void *data,
          {
             ret = dinput_pressed_analog(di, binds[port], idx, id);
             if (!ret)
-               ret = input_joypad_analog(di->joypad, port,
-                  idx, id, settings->input.binds[port]);
+               ret = input_joypad_analog(di->joypad, joypad_info,
+                     port,
+                     idx, id, settings->input.binds[port]);
             return ret;
          }
          return 0;

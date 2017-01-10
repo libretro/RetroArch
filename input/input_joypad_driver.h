@@ -154,6 +154,7 @@ bool input_joypad_pressed(const input_device_driver_t *driver,
  * Returns: analog value on success, otherwise 0.
  **/
 int16_t input_joypad_analog(const input_device_driver_t *driver,
+      rarch_joypad_info_t joypad_info,
       unsigned port, unsigned idx, unsigned ident,
       const void *binds);
 

@@ -141,9 +141,16 @@ static int16_t sdl_joypad_device_state(sdl_input_t *sdl, const struct retro_keyb
 static int16_t sdl_analog_device_state(sdl_input_t *sdl, const struct retro_keybind **binds,
       unsigned port_num, unsigned idx, unsigned id)
 {
-   int16_t ret = binds[port_num] ? sdl_analog_pressed(sdl, binds[port_num], idx, id) : 0;
+   rarch_joypad_info_t joypad_info;
+   settings_t *settings       = config_get_ptr();
+   int16_t ret                = binds[port_num] ? sdl_analog_pressed(sdl, binds[port_num], idx, id) : 0;
+
+   joypad_info.joy_idx        = port_num;
+   joypad_info.auto_binds     = settings->input.autoconf_binds[port_num];
+   joypad_info.axis_threshold = settings->input.axis_threshold;
+
    if (!ret && binds[port_num])
-      ret = input_joypad_analog(sdl->joypad, port_num, idx, id, binds[port_num]);
+      ret = input_joypad_analog(sdl->joypad, joypad_info, port_num, idx, id, binds[port_num]);
    return ret;
 }
 

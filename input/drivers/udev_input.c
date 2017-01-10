@@ -517,7 +517,7 @@ static int16_t udev_input_state(void *data, const struct retro_keybind **binds,
       case RETRO_DEVICE_ANALOG:
          ret = udev_analog_pressed(binds[port], idx, id);
          if (!ret && binds[port])
-            ret = input_joypad_analog(udev->joypad, port, idx, id, binds[port]);
+            ret = input_joypad_analog(udev->joypad, joypad_info, port, idx, id, binds[port]);
          return ret;
 
       case RETRO_DEVICE_KEYBOARD:
