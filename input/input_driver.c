@@ -610,12 +610,12 @@ uint64_t input_menu_keys_pressed(
       bool runloop_paused)
 {
    uint64_t             ret                     = 0;
-   settings_t     *settings                     = config_get_ptr();
 
    if (current_input && current_input_data)
    {
       unsigned i;
       const struct retro_keybind *binds[MAX_USERS] = {NULL};
+      settings_t     *settings                     = config_get_ptr();
       const struct retro_keybind *binds_norm       = &settings->input.binds[0][RARCH_ENABLE_HOTKEY];
       const struct retro_keybind *binds_auto       = &settings->input.autoconf_binds[0][RARCH_ENABLE_HOTKEY];
       unsigned max_users                           = settings->input.max_users;
