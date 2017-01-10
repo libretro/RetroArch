@@ -778,7 +778,7 @@ uint64_t input_keys_pressed(
    settings_t              *settings            = config_get_ptr();
    const struct retro_keybind *binds            = settings->input.binds[0];
    const struct retro_keybind *binds_auto       = &settings->input.autoconf_binds[0][RARCH_ENABLE_HOTKEY];
-   const struct retro_keybind *normal           = &binds[RARCH_ENABLE_HOTKEY];
+   const struct retro_keybind *binds_norm       = &binds[RARCH_ENABLE_HOTKEY];
 
    const struct retro_keybind *focus_binds_auto = &settings->input.autoconf_binds[0][RARCH_GAME_FOCUS_TOGGLE];
    const struct retro_keybind *focus_normal     = &binds[RARCH_GAME_FOCUS_TOGGLE];
@@ -792,7 +792,7 @@ uint64_t input_keys_pressed(
          current_input->keyboard_mapping_is_blocked(current_input_data))
       input_driver_block_hotkey = true;
 
-   if (check_input_driver_block_hotkey(normal, binds_auto))
+   if (check_input_driver_block_hotkey(binds_norm, binds_auto))
    {
       if (current_input->input_state(current_input_data, &binds, 0,
                RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY))
