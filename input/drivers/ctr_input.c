@@ -51,7 +51,6 @@ static int16_t ctr_input_state(void *data,
       unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   rarch_joypad_info_t joypad_info;
    ctr_input_t *ctr = (ctr_input_t*)data;
 
    if (port > 0)
