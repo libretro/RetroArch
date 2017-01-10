@@ -444,9 +444,10 @@ static void *psp_init(const video_info_t *video,
 
    if (input && input_data)
    {
-      pspinput = input_psp.init();
-      *input = pspinput ? &input_psp : NULL;
-      *input_data = pspinput;
+      settings_t *settings = config_get_ptr();
+      pspinput             = input_psp.init(settings->input.joypad_driver);
+      *input               = pspinput ? &input_psp : NULL;
+      *input_data          = pspinput;
    }
 
    psp->vblank_not_reached = true;

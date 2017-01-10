@@ -46,7 +46,7 @@
 
 static INLINE void ctr_check_3D_slider(ctr_video_t* ctr)
 {
-   float slider_val = *(float*)0x1FF81080;
+   float slider_val             = *(float*)0x1FF81080;
    ctr_video_mode_enum old_mode = ctr->video_mode;
 
    if (slider_val == 0.0)
@@ -62,27 +62,27 @@ static INLINE void ctr_check_3D_slider(ctr_video_t* ctr)
    {
       switch (ctr->video_mode)
       {
-      case CTR_VIDEO_MODE_800x240:
-      case CTR_VIDEO_MODE_400x240:
-         ctr_set_parallax_layer(false);
-         break;
-      case CTR_VIDEO_MODE_3D:
-      {
-         s16 offset = (slider_val - 0.6) * 10.0;
-         ctr->frame_coords[1] = ctr->frame_coords[0];
-         ctr->frame_coords[2] = ctr->frame_coords[0];
+         case CTR_VIDEO_MODE_800x240:
+         case CTR_VIDEO_MODE_400x240:
+            ctr_set_parallax_layer(false);
+            break;
+         case CTR_VIDEO_MODE_3D:
+            {
+               s16 offset = (slider_val - 0.6) * 10.0;
+               ctr->frame_coords[1] = ctr->frame_coords[0];
+               ctr->frame_coords[2] = ctr->frame_coords[0];
 
-         ctr->frame_coords[1].x0 -= offset;
-         ctr->frame_coords[1].x1 -= offset;
-         ctr->frame_coords[2].x0 += offset;
-         ctr->frame_coords[2].x1 += offset;
+               ctr->frame_coords[1].x0 -= offset;
+               ctr->frame_coords[1].x1 -= offset;
+               ctr->frame_coords[2].x0 += offset;
+               ctr->frame_coords[2].x1 += offset;
 
-         GSPGPU_FlushDataCache(ctr->frame_coords, 3 * sizeof(ctr_vertex_t));
-         ctr_set_parallax_layer(true);
-         break;
-      }
-      default:
-         break;
+               GSPGPU_FlushDataCache(ctr->frame_coords, 3 * sizeof(ctr_vertex_t));
+               ctr_set_parallax_layer(true);
+               break;
+            }
+         default:
+            break;
       }
    }
 }
@@ -297,7 +297,6 @@ static void* ctr_init(const video_info_t* video,
 
    memset(ctr, 0, sizeof(ctr_video_t));
 
-
    ctr->vp.x                = 0;
    ctr->vp.y                = 0;
    ctr->vp.width            = CTR_TOP_FRAMEBUFFER_WIDTH;
@@ -406,15 +405,16 @@ static void* ctr_init(const video_info_t* video,
                             sizeof(ctr_vertex_t));
    GPUCMD_Finalize();
    ctrGuFlushAndRun(true);
-//   gspWaitForEvent(GSPGPU_EVENT_P3D, false);
+
    ctr->p3d_event_pending = true;
    ctr->ppf_event_pending = false;
 
    if (input && input_data)
    {
-      ctrinput = input_ctr.init();
-      *input = ctrinput ? &input_ctr : NULL;
-      *input_data = ctrinput;
+      settings_t *settings = config_get_ptr();
+      ctrinput             = input_ctr.init(settings->input.joypad_driver);
+      *input               = ctrinput ? &input_ctr : NULL;
+      *input_data          = ctrinput;
    }
 
    ctr->keep_aspect   = true;

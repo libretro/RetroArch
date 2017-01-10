@@ -44,6 +44,7 @@
 #include "../common/gl_common.h"
 #endif
 
+#include "../../configuration.h"
 #include "../../runloop.h"
 
 #define WINDOW_BUFFERS 2
@@ -346,12 +347,11 @@ static bool gfx_ctx_qnx_set_video_mode(void *data,
 static void gfx_ctx_qnx_input_driver(void *data,
       const input_driver_t **input, void **input_data)
 {
-    void *qnxinput = input_qnx.init();
+   settings_t *settings = config_get_ptr();
+   void *qnxinput       = input_qnx.init(settings->input.joypad_driver);
 
-   (void)data;
-
-   *input = qnxinput ? &input_qnx : NULL;
-   *input_data = qnxinput;
+   *input               = qnxinput ? &input_qnx : NULL;
+   *input_data          = qnxinput;
 }
 
 static bool gfx_ctx_qnx_bind_api(void *data,

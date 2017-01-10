@@ -91,9 +91,10 @@ static void *vita2d_gfx_init(const video_info_t *video,
 
    if (input && input_data)
    {
-      void *pspinput = input_psp.init();
-      *input      = pspinput ? &input_psp : NULL;
-      *input_data = pspinput;
+      settings_t *settings = config_get_ptr();
+      void *pspinput       = input_psp.init(settings->input.joypad_driver);
+      *input               = pspinput ? &input_psp : NULL;
+      *input_data          = pspinput;
    }
 
    vita->keep_aspect        = true;
