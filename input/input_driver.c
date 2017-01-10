@@ -492,10 +492,10 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
 }
 
 #ifdef HAVE_MENU
-static INLINE bool input_menu_keys_pressed_internal(unsigned i)
+static INLINE bool input_menu_keys_pressed_internal(unsigned i,
+      unsigned max_users)
 {
    settings_t *settings = config_get_ptr();
-   unsigned max_users   = settings->input.max_users;
 
    if (
          (((!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
@@ -581,108 +581,107 @@ uint64_t input_menu_keys_pressed(
       uint64_t *trigger_input,
       bool runloop_paused)
 {
-   unsigned i;
-   unsigned ids[13][2];
    uint64_t             ret                     = 0;
    settings_t     *settings                     = config_get_ptr();
-   const struct retro_keybind *binds[MAX_USERS] = {NULL};
-   const struct retro_keybind *binds_norm       = NULL;
-   const struct retro_keybind *binds_auto       = NULL;
 
-   if (!current_input || !current_input_data)
-      goto end;
-
-   if (settings->menu.unified_controls)
-      return input_keys_pressed(
-            old_input,
-            last_input,
-            trigger_input,
-            runloop_paused);
-
-   for (i = 0; i < settings->input.max_users; i++)
+   if (current_input && current_input_data)
    {
-      struct retro_keybind *auto_binds    = settings->input.autoconf_binds[i];
+      unsigned i;
+      const struct retro_keybind *binds[MAX_USERS] = {NULL};
+      const struct retro_keybind *binds_norm       = NULL;
+      const struct retro_keybind *binds_auto       = NULL;
+      unsigned max_users                           = settings->input.max_users;
 
-      input_push_analog_dpad(auto_binds, ANALOG_DPAD_LSTICK);
+      if (settings->menu.unified_controls)
+         return input_keys_pressed(old_input, last_input,
+               trigger_input, runloop_paused);
+
+      for (i = 0; i < max_users; i++)
+      {
+         struct retro_keybind *auto_binds    = settings->input.autoconf_binds[i];
+
+         input_push_analog_dpad(auto_binds, ANALOG_DPAD_LSTICK);
+      }
+
+      input_driver_block_libretro_input = false;
+      input_driver_block_hotkey         = false;
+
+      /* Don't block the check to RARCH_ENABLE_HOTKEY
+       * unless we're really supposed to. */
+      if (current_input->keyboard_mapping_is_blocked &&
+            current_input->keyboard_mapping_is_blocked(current_input_data))
+         input_driver_block_hotkey = true;
+
+      binds_norm = &settings->input.binds[0][RARCH_ENABLE_HOTKEY];
+      binds_auto = &settings->input.autoconf_binds[0][RARCH_ENABLE_HOTKEY];
+
+      if (check_input_driver_block_hotkey(binds_norm, binds_auto))
+      {
+         if (current_input->input_state(current_input_data, &binds[0], 0,
+                  RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY))
+            input_driver_block_libretro_input = true;
+         else
+            input_driver_block_hotkey         = true;
+      }
+
+      for (i = 0; i < RARCH_BIND_LIST_END; i++)
+      {
+         if (input_menu_keys_pressed_internal(i, max_users))
+            ret |= (UINT64_C(1) << i);
+      }
+
+      for (i = 0; i < max_users; i++)
+      {
+         struct retro_keybind *auto_binds    = settings->input.autoconf_binds[i];
+         input_pop_analog_dpad(auto_binds);
+      }
+
+      if (!menu_input_dialog_get_display_kb())
+      {
+         unsigned ids[13][2];
+
+         ids[0][0]  = RETROK_SPACE;
+         ids[0][1]  = RETRO_DEVICE_ID_JOYPAD_START;
+         ids[1][0]  = RETROK_SLASH;
+         ids[1][1]  = RETRO_DEVICE_ID_JOYPAD_X;
+         ids[2][0]  = RETROK_RSHIFT;
+         ids[2][1]  = RETRO_DEVICE_ID_JOYPAD_SELECT;
+         ids[3][0]  = RETROK_RIGHT;
+         ids[3][1]  = RETRO_DEVICE_ID_JOYPAD_RIGHT;
+         ids[4][0]  = RETROK_LEFT;
+         ids[4][1]  = RETRO_DEVICE_ID_JOYPAD_LEFT;
+         ids[5][0]  = RETROK_DOWN;
+         ids[5][1]  = RETRO_DEVICE_ID_JOYPAD_DOWN;
+         ids[6][0]  = RETROK_UP;
+         ids[6][1]  = RETRO_DEVICE_ID_JOYPAD_UP;
+         ids[7][0]  = RETROK_PAGEUP;
+         ids[7][1]  = RETRO_DEVICE_ID_JOYPAD_L;
+         ids[8][0]  = RETROK_PAGEDOWN;
+         ids[8][1]  = RETRO_DEVICE_ID_JOYPAD_R;
+         ids[9][0]  = settings->input.binds[0][RARCH_QUIT_KEY].key;
+         ids[9][1]  = RARCH_QUIT_KEY;
+         ids[10][0] = settings->input.binds[0][RARCH_FULLSCREEN_TOGGLE_KEY].key;
+         ids[10][1] = RARCH_FULLSCREEN_TOGGLE_KEY;
+         ids[11][0] = RETROK_BACKSPACE;
+         ids[11][1] = RETRO_DEVICE_ID_JOYPAD_B;
+         ids[12][0] = RETROK_RETURN;
+         ids[12][1] = RETRO_DEVICE_ID_JOYPAD_A;
+
+         if (settings->input.menu_swap_ok_cancel_buttons)
+         {
+            ids[11][1] = RETRO_DEVICE_ID_JOYPAD_A;
+            ids[12][1] = RETRO_DEVICE_ID_JOYPAD_B;
+         }
+
+         for (i = 0; i < 13; i++)
+         {
+            if (current_input->input_state(current_input_data, binds, 0,
+                     RETRO_DEVICE_KEYBOARD, 0, ids[i][0]))
+               BIT64_SET(ret, ids[i][1]);
+         }
+      }
    }
 
-   input_driver_block_libretro_input = false;
-   input_driver_block_hotkey         = false;
-
-   /* Don't block the check to RARCH_ENABLE_HOTKEY
-    * unless we're really supposed to. */
-   if (current_input->keyboard_mapping_is_blocked &&
-         current_input->keyboard_mapping_is_blocked(current_input_data))
-      input_driver_block_hotkey = true;
-
-   binds_norm = &settings->input.binds[0][RARCH_ENABLE_HOTKEY];
-   binds_auto = &settings->input.autoconf_binds[0][RARCH_ENABLE_HOTKEY];
-
-   if (check_input_driver_block_hotkey(binds_norm, binds_auto))
-   {
-      if (current_input->input_state(current_input_data, &binds[0], 0,
-               RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY))
-         input_driver_block_libretro_input = true;
-      else
-         input_driver_block_hotkey         = true;
-   }
-
-   for (i = 0; i < RARCH_BIND_LIST_END; i++)
-   {
-      if (input_menu_keys_pressed_internal(i))
-         ret |= (UINT64_C(1) << i);
-   }
-
-   for (i = 0; i < settings->input.max_users; i++)
-   {
-      struct retro_keybind *auto_binds    = settings->input.autoconf_binds[i];
-      input_pop_analog_dpad(auto_binds);
-   }
-
-   if (menu_input_dialog_get_display_kb())
-      goto end;
-
-   ids[0][0]  = RETROK_SPACE;
-   ids[0][1]  = RETRO_DEVICE_ID_JOYPAD_START;
-   ids[1][0]  = RETROK_SLASH;
-   ids[1][1]  = RETRO_DEVICE_ID_JOYPAD_X;
-   ids[2][0]  = RETROK_RSHIFT;
-   ids[2][1]  = RETRO_DEVICE_ID_JOYPAD_SELECT;
-   ids[3][0]  = RETROK_RIGHT;
-   ids[3][1]  = RETRO_DEVICE_ID_JOYPAD_RIGHT;
-   ids[4][0]  = RETROK_LEFT;
-   ids[4][1]  = RETRO_DEVICE_ID_JOYPAD_LEFT;
-   ids[5][0]  = RETROK_DOWN;
-   ids[5][1]  = RETRO_DEVICE_ID_JOYPAD_DOWN;
-   ids[6][0]  = RETROK_UP;
-   ids[6][1]  = RETRO_DEVICE_ID_JOYPAD_UP;
-   ids[7][0]  = RETROK_PAGEUP;
-   ids[7][1]  = RETRO_DEVICE_ID_JOYPAD_L;
-   ids[8][0]  = RETROK_PAGEDOWN;
-   ids[8][1]  = RETRO_DEVICE_ID_JOYPAD_R;
-   ids[9][0]  = settings->input.binds[0][RARCH_QUIT_KEY].key;
-   ids[9][1]  = RARCH_QUIT_KEY;
-   ids[10][0] = settings->input.binds[0][RARCH_FULLSCREEN_TOGGLE_KEY].key;
-   ids[10][1] = RARCH_FULLSCREEN_TOGGLE_KEY;
-   ids[11][0] = RETROK_BACKSPACE;
-   ids[11][1] = RETRO_DEVICE_ID_JOYPAD_B;
-   ids[12][0] = RETROK_RETURN;
-   ids[12][1] = RETRO_DEVICE_ID_JOYPAD_A;
-
-   if (settings->input.menu_swap_ok_cancel_buttons)
-   {
-      ids[11][1] = RETRO_DEVICE_ID_JOYPAD_A;
-      ids[12][1] = RETRO_DEVICE_ID_JOYPAD_B;
-   }
-
-   for (i = 0; i < 13; i++)
-   {
-      if (current_input->input_state(current_input_data, binds, 0,
-               RETRO_DEVICE_KEYBOARD, 0, ids[i][0]))
-         BIT64_SET(ret, ids[i][1]);
-   }
-
-end:
    *trigger_input = ret & ~old_input;
    *last_input    = ret;
 
