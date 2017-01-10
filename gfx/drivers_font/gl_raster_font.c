@@ -362,23 +362,15 @@ static void gl_raster_font_render_message(
       const GLfloat color[4], GLfloat pos_x, GLfloat pos_y,
       unsigned text_align)
 {
-   int lines = 0;
    float line_height;
-
-   if (!font)
-      return;
-
-   if (     string_is_empty(msg)
-         || !font->gl
-         || !font->font_data
-         || !font->font_driver)
-      return;
+   int lines = 0;
 
    /* If the font height is not supported just draw as usual */
    if (!font->font_driver->get_line_height)
    {
-      gl_raster_font_render_line(font, msg, strlen(msg),
-            scale, color, pos_x, pos_y, text_align);
+      gl_raster_font_render_line(font,
+            msg, strlen(msg), scale, color, pos_x,
+            pos_y, text_align);
       return;
    }
 
@@ -388,31 +380,25 @@ static void gl_raster_font_render_message(
    for (;;)
    {
       const char *delim = strchr(msg, '\n');
+      unsigned msg_len  = delim ? (delim - msg) : strlen(msg);
 
       /* Draw the line */
-      if (delim)
-      {
-         unsigned msg_len = delim - msg;
-         gl_raster_font_render_line(font,
-               msg, msg_len, scale, color, pos_x,
-               pos_y - (float)lines*line_height, text_align);
-         msg += msg_len + 1;
-         lines++;
-      }
-      else
-      {
-         unsigned msg_len = strlen(msg);
-         gl_raster_font_render_line(font, msg, msg_len, scale, color, pos_x,
-               pos_y - (float)lines*line_height, text_align);
+      gl_raster_font_render_line(font,
+            msg, msg_len, scale, color, pos_x,
+            pos_y - (float)lines*line_height, text_align);
+
+      if (!delim)
          break;
-      }
+
+      msg += msg_len + 1;
+      lines++;
    }
 }
 
 static void gl_raster_font_setup_viewport(gl_raster_t *font, bool full_screen)
 {
-   video_shader_ctx_info_t shader_info;
    unsigned width, height;
+   video_shader_ctx_info_t shader_info;
 
    video_driver_get_size(&width, &height);
 
@@ -449,11 +435,10 @@ static void gl_raster_font_render_msg(void *data, const char *msg,
    GLfloat x, y, scale, drop_mod, drop_alpha;
    GLfloat color[4], color_dark[4];
    int drop_x, drop_y;
-   bool full_screen;
    enum text_alignment text_align;
-   gl_t *gl = NULL;
-   gl_raster_t *font = (gl_raster_t*)data;
-   settings_t *settings = config_get_ptr();
+   bool full_screen                 = false ;
+   gl_t                         *gl = NULL;
+   gl_raster_t                *font = (gl_raster_t*)data;
    const struct font_params *params = (const struct font_params*)userdata;
 
    if (!font || string_is_empty(msg))
@@ -487,21 +472,22 @@ static void gl_raster_font_render_msg(void *data, const char *msg,
    }
    else
    {
-      x           = settings->video.msg_pos_x;
-      y           = settings->video.msg_pos_y;
-      scale       = 1.0f;
-      full_screen = true;
-      text_align  = TEXT_ALIGN_LEFT;
+      settings_t *settings = config_get_ptr();
+      x                    = settings->video.msg_pos_x;
+      y                    = settings->video.msg_pos_y;
+      scale                = 1.0f;
+      full_screen          = true;
+      text_align           = TEXT_ALIGN_LEFT;
 
-      color[0]    = settings->video.msg_color_r;
-      color[1]    = settings->video.msg_color_g;
-      color[2]    = settings->video.msg_color_b;
-      color[3] = 1.0f;
+      color[0]             = settings->video.msg_color_r;
+      color[1]             = settings->video.msg_color_g;
+      color[2]             = settings->video.msg_color_b;
+      color[3]             = 1.0f;
 
-      drop_x = -2;
-      drop_y = -2;
-      drop_mod = 0.3f;
-      drop_alpha = 1.0f;
+      drop_x               = -2;
+      drop_y               = -2;
+      drop_mod             = 0.3f;
+      drop_alpha           = 1.0f;
    }
 
    if (font && font->block)
@@ -516,12 +502,14 @@ static void gl_raster_font_render_msg(void *data, const char *msg,
       color_dark[2] = color[2] * drop_mod;
       color_dark[3] = color[3] * drop_alpha;
 
-      gl_raster_font_render_message(font, msg, scale, color_dark,
-            x + scale * drop_x / gl->vp.width, y +
-            scale * drop_y / gl->vp.height, text_align);
+      if (font && !string_is_empty(msg) && font->gl && font->font_data && font->font_driver)
+         gl_raster_font_render_message(font, msg, scale, color_dark,
+               x + scale * drop_x / gl->vp.width, y +
+               scale * drop_y / gl->vp.height, text_align);
    }
 
-   gl_raster_font_render_message(font, msg, scale, color, x, y, text_align);
+   if (font && !string_is_empty(msg) && font->gl && font->font_data && font->font_driver)
+      gl_raster_font_render_message(font, msg, scale, color, x, y, text_align);
 
    if (!font->block)
       gl_raster_font_restore_viewport(gl, false);
@@ -541,7 +529,7 @@ static const struct font_glyph *gl_raster_font_get_glyph(
 
 static void gl_raster_font_flush_block(void *data)
 {
-   gl_raster_t       *font       = (gl_raster_t*)data;
+   gl_raster_t          *font       = (gl_raster_t*)data;
    video_font_raster_block_t *block = font ? font->block : NULL;
 
    if (!font || !block || !block->carr.coords.vertices)
@@ -554,7 +542,7 @@ static void gl_raster_font_flush_block(void *data)
 
 static void gl_raster_font_bind_block(void *data, void *userdata)
 {
-   gl_raster_t              *font = (gl_raster_t*)data;
+   gl_raster_t                *font = (gl_raster_t*)data;
    video_font_raster_block_t *block = (video_font_raster_block_t*)userdata;
 
    if (font)
