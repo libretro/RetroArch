@@ -30,6 +30,7 @@
 #endif
 #endif
 
+#include "../../configuration.h"
 #include "../../runloop.h"
 #include "../../defines/ps3_defines.h"
 #include "../common/gl_common.h"
@@ -339,10 +340,11 @@ static void gfx_ctx_ps3_destroy(void *data)
 static void gfx_ctx_ps3_input_driver(void *data,
       const input_driver_t **input, void **input_data)
 {
-   void *ps3input = input_ps3.init();
+   settings_t *settings = config_get_ptr();
+   void *ps3input       = input_ps3.init(settings->input.joypad_driver);
 
-   *input = ps3input ? &input_ps3 : NULL;
-   *input_data = ps3input;
+   *input               = ps3input ? &input_ps3 : NULL;
+   *input_data          = ps3input;
 }
 
 static bool gfx_ctx_ps3_bind_api(void *data,
