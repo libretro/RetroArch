@@ -492,34 +492,25 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
 }
 
 #ifdef HAVE_MENU
-static INLINE bool input_menu_keys_pressed_internal(unsigned i,
-      unsigned max_users)
+static INLINE bool input_menu_keys_pressed_internal(
+      const struct retro_keybind **binds,
+      unsigned i,
+      unsigned max_users,
+      bool bind_valid, bool all_users_control_menu)
 {
    if (
          (((!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
-           || !input_driver_block_hotkey))
+           || !input_driver_block_hotkey)) && bind_valid
       )
    {
-      settings_t *settings = config_get_ptr();
+      unsigned port;
+      int port_max = all_users_control_menu ? max_users : 1;
 
-      if (settings->input.binds[0][i].valid)
+      for (port = 0; port < port_max; port++)
       {
-         int port;
-         const struct retro_keybind *binds[MAX_USERS] = {NULL};
-         int port_max                                 = 1;
-
-         if (settings->input.all_users_control_menu)
-            port_max  = max_users;
-
-         for (port = 0; port < max_users; port++)
-            binds[port] = settings->input.binds[port];
-
-         for (port = 0; port < port_max; port++)
-         {
-            if (current_input->input_state(current_input_data, binds,
-                     port, RETRO_DEVICE_JOYPAD, 0, i))
-               return true;
-         }
+         if (current_input->input_state(current_input_data, binds,
+                  port, RETRO_DEVICE_JOYPAD, 0, i))
+            return true;
       }
    }
 
@@ -630,7 +621,15 @@ uint64_t input_menu_keys_pressed(
 
       for (i = 0; i < RARCH_BIND_LIST_END; i++)
       {
-         if (input_menu_keys_pressed_internal(i, max_users))
+         unsigned port;
+         const struct retro_keybind *binds[MAX_USERS] = {NULL};
+
+         for (port = 0; port < max_users; port++)
+            binds[port] = settings->input.binds[port];
+
+         if (input_menu_keys_pressed_internal(binds, i, max_users,
+                  settings->input.binds[0][i].valid,
+                  settings->input.all_users_control_menu))
             ret |= (UINT64_C(1) << i);
       }
 
