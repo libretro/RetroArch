@@ -549,14 +549,14 @@ static INLINE bool input_menu_keys_pressed_internal(
    return false;
 }
 
-#define input_keys_pressed_checks(binds) \
+#define input_keys_pressed_checks(binds, enable_hotkey_valid) \
    input_driver_block_libretro_input            = false; \
    input_driver_block_hotkey                    = false; \
    if (current_input->keyboard_mapping_is_blocked && current_input->keyboard_mapping_is_blocked(current_input_data)) \
       input_driver_block_hotkey = true; \
    if (check_input_driver_block_hotkey(binds_norm, binds_auto)) \
    { \
-      if (current_input->input_state(current_input_data, binds, 0, RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY)) \
+      if (enable_hotkey_valid && current_input->input_state(current_input_data, binds, 0, RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY)) \
             input_driver_block_libretro_input = true; \
          else \
             input_driver_block_hotkey         = true; \
@@ -605,6 +605,7 @@ uint64_t input_menu_keys_pressed(
       const struct retro_keybind *binds_norm       = &settings->input.binds[0][RARCH_ENABLE_HOTKEY];
       const struct retro_keybind *binds_auto       = &settings->input.autoconf_binds[0][RARCH_ENABLE_HOTKEY];
       unsigned max_users                           = settings->input.max_users;
+      bool enable_hotkey_valid                     = binds_norm && binds_norm->valid;
 
       if (settings->menu.unified_controls)
          return input_keys_pressed(old_input, last_input,
@@ -617,7 +618,7 @@ uint64_t input_menu_keys_pressed(
          input_push_analog_dpad(auto_binds, ANALOG_DPAD_LSTICK);
       }
 
-      input_keys_pressed_checks(&binds[0]);
+      input_keys_pressed_checks(&binds[0], enable_hotkey_valid);
 
       for (i = 0; i < RARCH_BIND_LIST_END; i++)
       {
@@ -769,8 +770,9 @@ uint64_t input_keys_pressed(
 
    const struct retro_keybind *focus_binds_auto = &settings->input.autoconf_binds[0][RARCH_GAME_FOCUS_TOGGLE];
    const struct retro_keybind *focus_normal     = &binds[RARCH_GAME_FOCUS_TOGGLE];
+   bool enable_hotkey_valid                     = binds_norm && binds_norm->valid;
 
-   input_keys_pressed_checks(&binds);
+   input_keys_pressed_checks(&binds, enable_hotkey_valid);
 
    /* Allows rarch_focus_toggle hotkey to still work even though every hotkey is blocked */
    if (check_input_driver_block_hotkey(focus_normal, focus_binds_auto))
