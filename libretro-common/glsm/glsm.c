@@ -1908,6 +1908,10 @@ void rglFlushMappedBufferRange(GLenum target, GLintptr offset, GLsizeiptr length
 #endif
 }
 
+#ifndef GL_WAIT_FAILED
+#define GL_WAIT_FAILED                                   0x911D
+#endif
+
 /*
  *
  * Core in:
@@ -1918,6 +1922,8 @@ GLenum rglClientWaitSync(void *sync, GLbitfield flags, uint64_t timeout)
 {
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
   return glClientWaitSync((GLsync)sync, flags, (GLuint64)timeout);
+#else
+  return GL_WAIT_FAILED;
 #endif
 }
 
