@@ -66,7 +66,6 @@ static int16_t psp_input_state(void *data,
       unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   rarch_joypad_info_t joypad_info;
    psp_input_t *psp           = (psp_input_t*)data;
 
 #if !defined(SN_TARGET_PSP2) && !defined(VITA)
