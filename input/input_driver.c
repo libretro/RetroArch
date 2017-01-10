@@ -839,7 +839,7 @@ uint64_t input_keys_pressed(
    bool enable_hotkey_valid                     = binds_norm && binds_norm->valid;
    bool game_focus_toggle_valid                 = false;
 
-   joypad_info.axis_threshold = settings->input.axis_threshold;
+   joypad_info.axis_threshold                   = settings->input.axis_threshold;
    
    input_keys_pressed_checks(settings, joypad_info, &binds, enable_hotkey_valid);
 
