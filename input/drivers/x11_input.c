@@ -223,15 +223,21 @@ static int16_t x_input_state(void *data,
       const struct retro_keybind **binds, unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {
-   int16_t ret      = 0;
-   x11_input_t *x11 = (x11_input_t*)data;
+   rarch_joypad_info_t joypad_info;
+   int16_t ret                = 0;
+   settings_t *settings       = config_get_ptr();
+   x11_input_t *x11           = (x11_input_t*)data;
+
+   joypad_info.joy_idx        = port;
+   joypad_info.auto_binds     = settings->input.autoconf_binds[port];
+   joypad_info.axis_threshold = settings->input.axis_threshold;
 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
          if (binds[port] && binds[port][id].valid)
             return x_is_pressed(x11, binds[port], id) ||
-               input_joypad_pressed(x11->joypad, port, binds[port], id);
+               input_joypad_pressed(x11->joypad, joypad_info, port, binds[port], id);
          break;
       case RETRO_DEVICE_KEYBOARD:
          return x_key_pressed(x11, id);

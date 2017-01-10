@@ -1016,6 +1016,7 @@ static void android_input_poll_memcpy(void *data)
 
 static bool android_input_key_pressed(void *data, int key)		
 {		
+   rarch_joypad_info_t joypad_info;
    android_input_t *android = (android_input_t*)data;		
    settings_t *settings     = config_get_ptr();		
 
@@ -1023,8 +1024,12 @@ static bool android_input_key_pressed(void *data, int key)
          && android_keyboard_port_input_pressed(settings->input.binds[0],key))		
       return true;		
 
+   joypad_info.joy_idx        = 0;
+   joypad_info.auto_binds     = settings->input.autoconf_binds[0];
+   joypad_info.axis_threshold = settings->input.axis_threshold;
+
    if (settings->input.binds[0][key].valid &&		
-         input_joypad_pressed(android->joypad,		
+         input_joypad_pressed(android->joypad, joypad_info,
             0, settings->input.binds[0], key))		
       return true;		
 
@@ -1105,15 +1110,21 @@ static int16_t android_input_state(void *data,
       const struct retro_keybind **binds, unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   settings_t *settings = config_get_ptr();
-   android_input_t *android = (android_input_t*)data;
+   rarch_joypad_info_t joypad_info;
+   settings_t *settings               = config_get_ptr();
+   android_input_t *android           = (android_input_t*)data;
    android_input_data_t *android_data = (android_input_data_t*)&android->copy;
+
+   joypad_info.joy_idx        = port;
+   joypad_info.auto_binds     = settings->input.autoconf_binds[port];
+   joypad_info.axis_threshold = settings->input.axis_threshold;
 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
          if (binds[port] && binds[port][id].valid)
-            return input_joypad_pressed(android->joypad, port, binds[port], id) ||
+            return input_joypad_pressed(android->joypad, joypad_info,
+                  port, binds[port], id) ||
                android_keyboard_port_input_pressed(binds[port],id);
          break;
       case RETRO_DEVICE_ANALOG:

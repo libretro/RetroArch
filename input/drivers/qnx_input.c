@@ -723,16 +723,23 @@ static bool qnx_is_pressed(qnx_input_t *qnx,
         const struct retro_keybind *binds,
         unsigned port, unsigned id)
 {
-    const struct retro_keybind *bind = &binds[id];
-    if (id >= RARCH_BIND_LIST_END)
-       return false;
+   rarch_joypad_info_t joypad_info;
+   settings_t *settings              = config_get_ptr();
+   const struct retro_keybind *bind = &binds[id];
 
-    if (!qnx->blocked && qnx_keyboard_pressed(qnx, bind->key))
-       return true;
-    if (binds && binds[id].valid && input_joypad_pressed(qnx->joypad, port, binds, id))
-       return true;
+   if (id >= RARCH_BIND_LIST_END)
+      return false;
 
-    return false;
+   joypad_info.joy_idx        = port;
+   joypad_info.auto_binds     = settings->input.autoconf_binds[port];
+   joypad_info.axis_threshold = settings->input.axis_threshold;
+
+   if (!qnx->blocked && qnx_keyboard_pressed(qnx, bind->key))
+      return true;
+   if (binds && binds[id].valid && input_joypad_pressed(qnx->joypad, joypad_info, port, binds, id))
+      return true;
+
+   return false;
 }
 
 static int16_t qnx_pointer_input_state(qnx_input_t *qnx,

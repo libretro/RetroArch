@@ -496,17 +496,23 @@ static int16_t udev_input_state(void *data, const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
    int16_t ret;
-   udev_input_t *udev = (udev_input_t*)data;
+   rarch_joypad_info_t joypad_info;
+   settings_t *settings       = config_get_ptr();
+   udev_input_t *udev         = (udev_input_t*)data;
 
    if (!udev)
       return 0;
+
+   joypad_info.joy_idx        = port;
+   joypad_info.auto_binds     = settings->input.autoconf_binds[port];
+   joypad_info.axis_threshold = settings->input.axis_threshold;
 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
          if (binds[port] && binds[port][id].valid)
             return udev_input_is_pressed(binds[port], id) ||
-               input_joypad_pressed(udev->joypad, port, binds[port], id);
+               input_joypad_pressed(udev->joypad, joypad_info, port, binds[port], id);
          break;
       case RETRO_DEVICE_ANALOG:
          ret = udev_analog_pressed(binds[port], idx, id);

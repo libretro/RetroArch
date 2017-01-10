@@ -1315,17 +1315,23 @@ static int16_t input_wl_state(void *data, const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
    int16_t ret;
+   rarch_joypad_info_t joypad_info;
+   settings_t *settings       = config_get_ptr();
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
    if (!wl)
       return 0;
+
+   joypad_info.joy_idx        = port;
+   joypad_info.auto_binds     = settings->input.autoconf_binds[port];
+   joypad_info.axis_threshold = settings->input.axis_threshold;
 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
          if (binds[port] && binds[port][id].valid)
             return input_wl_is_pressed(wl, binds[port], id) ||
-               input_joypad_pressed(wl->joypad, port, binds[port], id);
+               input_joypad_pressed(wl->joypad, joypad_info, port, binds[port], id);
          break;
       case RETRO_DEVICE_ANALOG:
          ret = input_wl_analog_pressed(wl, binds[port], idx, id);

@@ -274,11 +274,17 @@ static int16_t cocoa_input_state(void *data,
       const struct retro_keybind **binds, unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {
+   rarch_joypad_info_t joypad_info;
    int16_t ret               = 0;
    cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
+   settings_t *settings       = config_get_ptr();
 
    if (!apple || !apple->joypad)
       return 0;
+
+   joypad_info.joy_idx        = port;
+   joypad_info.auto_binds     = settings->input.autoconf_binds[port];
+   joypad_info.axis_threshold = settings->input.axis_threshold;
 
    switch (device)
    {
@@ -286,9 +292,9 @@ static int16_t cocoa_input_state(void *data,
          if (binds[port] && binds[port][id].valid)
          {
             return apple_input_is_pressed(port, binds[port], id) ||
-               input_joypad_pressed(apple->joypad, port, binds[port], id)
+               input_joypad_pressed(apple->joypad, joypad_info, port, binds[port], id)
 #ifdef HAVE_MFI
-               || input_joypad_pressed(apple->sec_joypad, port, binds[port], id)
+               || input_joypad_pressed(apple->sec_joypad, joypad_info, port, binds[port], id)
 #endif
                ;
          }

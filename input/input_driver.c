@@ -511,14 +511,19 @@ static INLINE bool input_menu_keys_pressed_internal(unsigned i)
 
       for (port = 0; port < port_max; port++)
       {
+         rarch_joypad_info_t joypad_info;
          const input_device_driver_t *first = current_input->get_joypad_driver 
             ? current_input->get_joypad_driver(current_input_data) : NULL;
          const input_device_driver_t *sec   = current_input->get_sec_joypad_driver 
             ? current_input->get_sec_joypad_driver(current_input_data) : NULL;
 
-         if (sec && input_joypad_pressed(sec, port, settings->input.binds[0], i))
+         joypad_info.joy_idx        = port;
+         joypad_info.auto_binds     = settings->input.autoconf_binds[port];
+         joypad_info.axis_threshold = settings->input.axis_threshold;
+
+         if (sec   && input_joypad_pressed(sec, joypad_info, port, settings->input.binds[0], i))
             return true;
-         if (first && input_joypad_pressed(first, port, settings->input.binds[0], i))
+         if (first && input_joypad_pressed(first, joypad_info, port, settings->input.binds[0], i))
             return true;
       }
    }

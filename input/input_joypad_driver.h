@@ -27,6 +27,13 @@ RETRO_BEGIN_DECLS
 
 typedef struct rarch_joypad_driver input_device_driver_t;
 
+typedef struct rarch_joypad_info
+{
+   unsigned joy_idx;
+   const struct retro_keybind *auto_binds;
+   float axis_threshold;
+} rarch_joypad_info_t;
+
 struct rarch_joypad_driver
 {
    bool (*init)(void *data);
@@ -124,6 +131,7 @@ void input_conv_analog_id_to_bind_id(unsigned idx, unsigned ident,
  * false (0).
  **/
 bool input_joypad_pressed(const input_device_driver_t *driver,
+      rarch_joypad_info_t joypad_info,
       unsigned port, const void *binds, unsigned key);
 
 /**
