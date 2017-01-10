@@ -53,7 +53,6 @@ static int16_t wiiu_input_state(void *data,
       unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   rarch_joypad_info_t joypad_info;
    wiiu_input_t *wiiu         = (wiiu_input_t*)data;
 
    if(!wiiu || (port > 0) || !binds || !binds[port])
