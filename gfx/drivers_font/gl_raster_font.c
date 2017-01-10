@@ -216,21 +216,17 @@ static int gl_get_message_width(void *data, const char *msg,
    const char* msg_end = msg + msg_len;
    int delta_x         = 0;
 
-   if (!font)
-      return 0;
-
-   if (
-            !font->font_driver
+   if (     !font
+         || !font->font_driver
          || !font->font_driver->get_glyph
          || !font->font_data )
       return 0;
 
    while (msg < msg_end)
    {
-      const struct font_glyph *glyph = NULL;
       unsigned code                  = utf8_walk(&msg);
-
-      glyph = font->font_driver->get_glyph(font->font_data, code);
+      const struct font_glyph *glyph = font->font_driver->get_glyph(
+            font->font_data, code);
 
       if (!glyph) /* Do something smarter here ... */
          glyph = font->font_driver->get_glyph(font->font_data, '?');
@@ -259,8 +255,8 @@ static void gl_raster_font_draw_vertices(gl_raster_t *font, const video_coords_t
 
    video_shader_driver_set_coords(coords_data);
 
-   mvp.data = font->gl;
-   mvp.matrix = &font->gl->mvp_no_rot;
+   mvp.data                = font->gl;
+   mvp.matrix              = &font->gl->mvp_no_rot;
 
    video_shader_driver_set_mvp(mvp);
 
@@ -273,14 +269,14 @@ static void gl_raster_font_render_line(
       GLfloat pos_y, unsigned text_align)
 {
    int x, y, delta_x, delta_y;
-   float inv_tex_size_x, inv_tex_size_y, inv_win_width, inv_win_height;
    unsigned i;
    struct video_coords coords;
+   float inv_tex_size_x, inv_tex_size_y, inv_win_width, inv_win_height;
    GLfloat font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_lut_tex_coord[2 * 6 * MAX_MSG_LEN_CHUNK];
-   gl_t *gl       = font ? font->gl : NULL;
+   gl_t      *gl       = font ? font->gl : NULL;
    const char* msg_end = msg + msg_len;
 
    if (!gl)
@@ -306,20 +302,19 @@ static void gl_raster_font_render_line(
    inv_win_width  = 1.0f / font->gl->vp.width;
    inv_win_height = 1.0f / font->gl->vp.height;
 
-
    while (msg < msg_end)
    {
       i = 0;
       while ((i < MAX_MSG_LEN_CHUNK) && (msg < msg_end))
       {         
          int off_x, off_y, tex_x, tex_y, width, height;
-         const struct font_glyph *glyph = NULL;
-         unsigned code = utf8_walk(&msg);
-
-         glyph = font->font_driver->get_glyph(font->font_data, code);
+         unsigned                  code = utf8_walk(&msg);
+         const struct font_glyph *glyph = font->font_driver->get_glyph(
+               font->font_data, code);
 
          if (!glyph) /* Do something smarter here ... */
             glyph = font->font_driver->get_glyph(font->font_data, '?');
+
          if (!glyph)
             continue;
 
@@ -435,7 +430,7 @@ static void gl_raster_font_render_msg(void *data, const char *msg,
    GLfloat x, y, scale, drop_mod, drop_alpha;
    GLfloat color[4], color_dark[4];
    int drop_x, drop_y;
-   enum text_alignment text_align;
+   enum text_alignment text_align   = TEXT_ALIGN_LEFT;
    bool full_screen                 = false ;
    gl_t                         *gl = NULL;
    gl_raster_t                *font = (gl_raster_t*)data;
