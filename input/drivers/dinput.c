@@ -42,13 +42,17 @@
 #include "../../config.h"
 #endif
 
-#include "../../verbosity.h"
-#include "../../tasks/tasks_internal.h"
-#include "../../gfx/video_driver.h"
+#include <string/stdstring.h>
+
 #include "../input_config.h"
 #include "../input_driver.h"
 #include "../input_joypad_driver.h"
 #include "../input_keymaps.h"
+
+#include "../../gfx/video_driver.h"
+
+#include "../../verbosity.h"
+#include "../../tasks/tasks_internal.h"
 
 /* Keep track of which pad indexes are 360 controllers.
  * Not static, will be read in xinput_joypad.c
