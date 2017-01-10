@@ -22,6 +22,7 @@
 #include <compat/strl.h>
 #include <retro_endianness.h>
 #include <file/file_path.h>
+#include <string/stdstring.h>
 
 #include "libretro-db/libretrodb.h"
 
@@ -249,62 +250,80 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
       uint32_t                 value = 0;
       struct rmsgpack_dom_value *key = &item.val.map.items[i].key;
       struct rmsgpack_dom_value *val = &item.val.map.items[i].value;
+      const char *val_string         = NULL;
 
       if (!key || !val)
          continue;
 
-      str   = key->val.string.buff;
-      value = msg_hash_calculate(str);
+      val_string = val->val.string.buff;
+      str        = key->val.string.buff;
+      value      = msg_hash_calculate(str);
 
       switch (value)
       {
          case DB_CURSOR_SERIAL:
-            db_info->serial = strdup(val->val.string.buff);
+            if (!string_is_empty(val_string))
+               db_info->serial = strdup(val_string);
             break;
          case DB_CURSOR_ROM_NAME:
-            db_info->rom_name = strdup(val->val.string.buff);
+            if (!string_is_empty(val_string))
+               db_info->rom_name = strdup(val_string);
             break;
          case DB_CURSOR_NAME:
-            db_info->name = strdup(val->val.string.buff);
+            if (!string_is_empty(val_string))
+               db_info->name = strdup(val_string);
             break;
          case DB_CURSOR_DESCRIPTION:
-            db_info->description = strdup(val->val.string.buff);
+            if (!string_is_empty(val_string))
+               db_info->description = strdup(val_string);
             break;
          case DB_CURSOR_GENRE:
-            db_info->genre = strdup(val->val.string.buff);
+            if (!string_is_empty(val_string))
+               db_info->genre = strdup(val_string);
             break;
          case DB_CURSOR_PUBLISHER:
-            db_info->publisher = strdup(val->val.string.buff);
+            if (!string_is_empty(val_string))
+               db_info->publisher = strdup(val_string);
             break;
          case DB_CURSOR_DEVELOPER:
-            db_info->developer = string_split(val->val.string.buff, "|");
+            if (!string_is_empty(val_string))
+               db_info->developer = string_split(val_string, "|");
             break;
          case DB_CURSOR_ORIGIN:
-            db_info->origin = strdup(val->val.string.buff);
+            if (!string_is_empty(val_string))
+               db_info->origin = strdup(val_string);
             break;
          case DB_CURSOR_FRANCHISE:
-            db_info->franchise = strdup(val->val.string.buff);
+            if (!string_is_empty(val_string))
+               db_info->franchise = strdup(val_string);
             break;
          case DB_CURSOR_BBFC_RATING:
-            db_info->bbfc_rating = strdup(val->val.string.buff);
+            if (!string_is_empty(val_string))
+               db_info->bbfc_rating = strdup(val_string);
             break;
          case DB_CURSOR_ESRB_RATING:
-            db_info->esrb_rating = strdup(val->val.string.buff);
+            if (!string_is_empty(val_string))
+               db_info->esrb_rating = strdup(val_string);
             break;
          case DB_CURSOR_ELSPA_RATING:
-            db_info->elspa_rating = strdup(val->val.string.buff);
+            if (!string_is_empty(val_string))
+               db_info->elspa_rating = strdup(val_string);
             break;
          case DB_CURSOR_CERO_RATING:
-            db_info->cero_rating = strdup(val->val.string.buff);
+            if (!string_is_empty(val_string))
+               db_info->cero_rating = strdup(val_string);
             break;
          case DB_CURSOR_PEGI_RATING:
-            db_info->pegi_rating = strdup(val->val.string.buff);
+            if (!string_is_empty(val_string))
+               db_info->pegi_rating = strdup(val_string);
             break;
          case DB_CURSOR_ENHANCEMENT_HW:
-            db_info->enhancement_hw = strdup(val->val.string.buff);
+            if (!string_is_empty(val_string))
+               db_info->enhancement_hw = strdup(val_string);
             break;
          case DB_CURSOR_EDGE_MAGAZINE_REVIEW:
-            db_info->edge_magazine_review = strdup(val->val.string.buff);
+            if (!string_is_empty(val_string))
+               db_info->edge_magazine_review = strdup(val_string);
             break;
          case DB_CURSOR_EDGE_MAGAZINE_RATING:
             db_info->edge_magazine_rating = val->val.uint_;
