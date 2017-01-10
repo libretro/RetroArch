@@ -495,36 +495,31 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
 static INLINE bool input_menu_keys_pressed_internal(unsigned i,
       unsigned max_users)
 {
-   settings_t *settings = config_get_ptr();
-
    if (
          (((!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
            || !input_driver_block_hotkey))
-         && settings->input.binds[0][i].valid
       )
    {
-      int port;
-      int port_max = 1;
+      settings_t *settings = config_get_ptr();
 
-      if (settings->input.all_users_control_menu)
-         port_max  = max_users;
-
-      for (port = 0; port < port_max; port++)
+      if (settings->input.binds[0][i].valid)
       {
-         rarch_joypad_info_t joypad_info;
-         const input_device_driver_t *first = current_input->get_joypad_driver 
-            ? current_input->get_joypad_driver(current_input_data) : NULL;
-         const input_device_driver_t *sec   = current_input->get_sec_joypad_driver 
-            ? current_input->get_sec_joypad_driver(current_input_data) : NULL;
+         int port;
+         const struct retro_keybind *binds[MAX_USERS] = {NULL};
+         int port_max                                 = 1;
 
-         joypad_info.joy_idx        = port;
-         joypad_info.auto_binds     = settings->input.autoconf_binds[port];
-         joypad_info.axis_threshold = settings->input.axis_threshold;
+         if (settings->input.all_users_control_menu)
+            port_max  = max_users;
 
-         if (sec   && input_joypad_pressed(sec, joypad_info, port, settings->input.binds[0], i))
-            return true;
-         if (first && input_joypad_pressed(first, joypad_info, port, settings->input.binds[0], i))
-            return true;
+         for (port = 0; port < max_users; port++)
+            binds[port] = settings->input.binds[port];
+
+         for (port = 0; port < port_max; port++)
+         {
+            if (current_input->input_state(current_input_data, binds,
+                     port, RETRO_DEVICE_JOYPAD, 0, i))
+               return true;
+         }
       }
    }
 
