@@ -110,10 +110,10 @@ static uint32_t font_renderer_stb_unicode_update_atlas(
    offset_y                 = (id / 16) * self->max_glyph_height;
 
    dst                      = self->atlas.buffer + offset_x + offset_y 
-                              * self->atlas.width;
+      * self->atlas.width;
 
    stbtt_MakeGlyphBitmap(&self->info, dst, self->max_glyph_width, self->max_glyph_height,
-                             self->atlas.width, self->scale_factor, self->scale_factor, glyph_index);
+         self->atlas.width, self->scale_factor, self->scale_factor, glyph_index);
 
    stbtt_GetGlyphHMetrics(&self->info, glyph_index, &advance_width, &left_side_bearing);
    stbtt_GetGlyphBox(&self->info, glyph_index, &x0, NULL, NULL, &y1);
@@ -162,10 +162,7 @@ static const struct font_glyph *font_renderer_stb_unicode_get_glyph(
    unsigned id;
    stb_unicode_font_renderer_t *self = (stb_unicode_font_renderer_t*)data;
 
-   if (!self)
-      return NULL;
-
-   if(code > 0xFFFF)
+   if(!self || code > 0xFFFF)
       return NULL;
 
    id = self->uc_to_id[code];
@@ -176,7 +173,6 @@ static const struct font_glyph *font_renderer_stb_unicode_get_glyph(
    self->last_used[id] = self->usage_counter++;
 
    return &self->glyphs[id];
-
 }
 
 static void *font_renderer_stb_unicode_init(const char *font_path, float font_size)
@@ -265,8 +261,8 @@ static const char *font_renderer_stb_unicode_get_default_font(void)
 
 static int font_renderer_stb_unicode_get_line_height(void* data)
 {
-    stb_unicode_font_renderer_t *handle = (stb_unicode_font_renderer_t*)data;
-    return handle->line_height;
+   stb_unicode_font_renderer_t *handle = (stb_unicode_font_renderer_t*)data;
+   return handle->line_height;
 }
 
 font_renderer_driver_t stb_unicode_font_renderer = {

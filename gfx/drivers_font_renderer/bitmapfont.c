@@ -54,7 +54,7 @@ static const struct font_glyph *font_renderer_bmp_get_glyph(
 static void char_to_texture(bm_renderer_t *handle, uint8_t letter,
       unsigned atlas_x, unsigned atlas_y)
 {
-   unsigned y, x, xo, yo;
+   unsigned y, x;
    uint8_t *target = handle->atlas.buffer + atlas_x + 
       atlas_y * handle->atlas.width;
 
@@ -62,14 +62,15 @@ static void char_to_texture(bm_renderer_t *handle, uint8_t letter,
    {
       for (x = 0; x < FONT_WIDTH; x++)
       {
+         unsigned xo, yo;
          unsigned font_pixel = x + y * FONT_WIDTH;
          uint8_t rem         = 1 << (font_pixel & 7);
          unsigned offset     = font_pixel >> 3;
          uint8_t col         = (bitmap_bin[FONT_OFFSET(letter) + offset] & rem) ? 0xff : 0;
          uint8_t *dst        = target;
 
-         dst += x * handle->scale_factor;
-         dst += y * handle->scale_factor * handle->atlas.width;
+         dst                += x * handle->scale_factor;
+         dst                += y * handle->scale_factor * handle->atlas.width;
 
          for (yo = 0; yo < handle->scale_factor; yo++)
             for (xo = 0; xo < handle->scale_factor; xo++)
@@ -89,7 +90,7 @@ static void *font_renderer_bmp_init(const char *font_path, float font_size)
 
    (void)font_path;
 
-   handle->scale_factor = (unsigned)roundf(font_size / FONT_HEIGHT);
+   handle->scale_factor    = (unsigned)roundf(font_size / FONT_HEIGHT);
    if (!handle->scale_factor)
       handle->scale_factor = 1;
 
@@ -99,19 +100,21 @@ static void *font_renderer_bmp_init(const char *font_path, float font_size)
 
    for (i = 0; i < BMP_ATLAS_SIZE; i++)
    {
-      unsigned x = (i % BMP_ATLAS_COLS) * handle->scale_factor * FONT_WIDTH;
-      unsigned y = (i / BMP_ATLAS_COLS) * handle->scale_factor * FONT_HEIGHT;
+      unsigned x                       = (i % BMP_ATLAS_COLS) * 
+         handle->scale_factor * FONT_WIDTH;
+      unsigned y                       = (i / BMP_ATLAS_COLS) * 
+         handle->scale_factor * FONT_HEIGHT;
 
       char_to_texture(handle, i, x, y);
 
-      handle->glyphs[i].width = FONT_WIDTH * handle->scale_factor;
-      handle->glyphs[i].height = FONT_HEIGHT * handle->scale_factor;
+      handle->glyphs[i].width          = FONT_WIDTH * handle->scale_factor;
+      handle->glyphs[i].height         = FONT_HEIGHT * handle->scale_factor;
       handle->glyphs[i].atlas_offset_x = x;
       handle->glyphs[i].atlas_offset_y = y;
       handle->glyphs[i].draw_offset_x  = 0;
       handle->glyphs[i].draw_offset_y  = -FONT_HEIGHT_BASELINE * (int)handle->scale_factor;
-      handle->glyphs[i].advance_x = (FONT_WIDTH + 1) * handle->scale_factor;
-      handle->glyphs[i].advance_y = 0;
+      handle->glyphs[i].advance_x      = (FONT_WIDTH + 1) * handle->scale_factor;
+      handle->glyphs[i].advance_y      = 0;
    }
 
    return handle;

@@ -66,8 +66,8 @@ static bool font_renderer_stb_create_atlas(stb_font_renderer_t *self,
       uint8_t *font_data, float font_size, unsigned width, unsigned height)
 {
    int i;
-   stbtt_pack_context pc = {NULL};
    stbtt_packedchar   chardata[256];
+   stbtt_pack_context pc = {NULL};
 
    if (width > 2048 || height > 2048)
    {
@@ -99,13 +99,13 @@ static bool font_renderer_stb_create_atlas(stb_font_renderer_t *self,
       struct font_glyph *g = &self->glyphs[i];
       stbtt_packedchar  *c = &chardata[i];
 
-      g->advance_x = c->xadvance;
-      g->atlas_offset_x = c->x0;
-      g->atlas_offset_y = c->y0;
-      g->draw_offset_x  = c->xoff;
-      g->draw_offset_y  = c->yoff;
-      g->width          = c->x1 - c->x0;
-      g->height         = c->y1 - c->y0;
+      g->advance_x         = c->xadvance;
+      g->atlas_offset_x    = c->x0;
+      g->atlas_offset_y    = c->y0;
+      g->draw_offset_x     = c->xoff;
+      g->draw_offset_y     = c->yoff;
+      g->width             = c->x1 - c->x0;
+      g->height            = c->y1 - c->y0;
 
       /* Make sure important characters fit */
       if (isalnum(i) && (!g->width || !g->height))
@@ -228,8 +228,8 @@ static const char *font_renderer_stb_get_default_font(void)
 
 static int font_renderer_stb_get_line_height(void* data)
 {
-    stb_font_renderer_t *handle = (stb_font_renderer_t*)data;
-    return handle->line_height;
+   stb_font_renderer_t *handle = (stb_font_renderer_t*)data;
+   return handle->line_height;
 }
 
 font_renderer_driver_t stb_font_renderer = {
