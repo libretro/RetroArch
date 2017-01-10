@@ -559,12 +559,11 @@ error:
 static void gfx_ctx_wgl_input_driver(void *data,
       const input_driver_t **input, void **input_data)
 {
-   (void)data;
+   settings_t *settings = config_get_ptr();
+   dinput_wgl           = input_dinput.init(settings->input.joypad_driver);
 
-   dinput_wgl   = input_dinput.init();
-
-   *input       = dinput_wgl ? &input_dinput : NULL;
-   *input_data  = dinput_wgl;
+   *input               = dinput_wgl ? &input_dinput : NULL;
+   *input_data          = dinput_wgl;
 }
 
 static bool gfx_ctx_wgl_has_focus(void *data)
