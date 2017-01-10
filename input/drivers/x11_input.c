@@ -235,10 +235,8 @@ static int16_t x_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (binds[port] && binds[port][id].valid)
-            return x_is_pressed(x11, binds[port], id) ||
-               input_joypad_pressed(x11->joypad, joypad_info, port, binds[port], id);
-         break;
+         return x_is_pressed(x11, binds[port], id) ||
+            input_joypad_pressed(x11->joypad, joypad_info, port, binds[port], id);
       case RETRO_DEVICE_KEYBOARD:
          return x_key_pressed(x11, id);
       case RETRO_DEVICE_ANALOG:

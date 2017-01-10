@@ -783,16 +783,12 @@ static int16_t qnx_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (binds[port] && binds[port][id].valid)
-            return qnx_is_pressed(qnx, binds[port], port, id);
-         break;
+         return qnx_is_pressed(qnx, binds[port], port, id);
       case RETRO_DEVICE_KEYBOARD:
-            return qnx_keyboard_pressed(qnx, id);
-         break;
+         return qnx_keyboard_pressed(qnx, id);
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
          return qnx_pointer_input_state(qnx, idx, id, device == RARCH_DEVICE_POINTER_SCREEN);
-         break;
       default:
           break;
    }

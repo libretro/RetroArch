@@ -289,16 +289,12 @@ static int16_t cocoa_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (binds[port] && binds[port][id].valid)
-         {
-            return apple_input_is_pressed(port, binds[port], id) ||
-               input_joypad_pressed(apple->joypad, joypad_info, port, binds[port], id)
+         return apple_input_is_pressed(port, binds[port], id) ||
+            input_joypad_pressed(apple->joypad, joypad_info, port, binds[port], id)
 #ifdef HAVE_MFI
-               || input_joypad_pressed(apple->sec_joypad, joypad_info, port, binds[port], id)
+            || input_joypad_pressed(apple->sec_joypad, joypad_info, port, binds[port], id)
 #endif
-               ;
-         }
-         break;
+            ;
       case RETRO_DEVICE_ANALOG:
 #ifdef HAVE_MFI
          if (binds[port])

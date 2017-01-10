@@ -119,7 +119,7 @@ static int16_t sdl_joypad_device_state(sdl_input_t *sdl, const struct retro_keyb
       settings_t *settings              = config_get_ptr();
       const struct retro_keybind *binds = binds_[port];
 
-      if (binds && binds[id].valid && sdl_is_pressed(sdl, port, binds, id))
+      if (sdl_is_pressed(sdl, port, binds, id))
       {
          *device = INPUT_DEVICE_TYPE_KEYBOARD;
          return 1;
@@ -129,7 +129,7 @@ static int16_t sdl_joypad_device_state(sdl_input_t *sdl, const struct retro_keyb
       joypad_info.auto_binds     = settings->input.autoconf_binds[port];
       joypad_info.axis_threshold = settings->input.axis_threshold;
 
-      if (binds && binds[id].valid && input_joypad_pressed(sdl->joypad, joypad_info, 0, binds, id))
+      if (input_joypad_pressed(sdl->joypad, joypad_info, 0, binds, id))
       {
          *device = INPUT_DEVICE_TYPE_JOYPAD;
          return 1;

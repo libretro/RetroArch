@@ -481,9 +481,7 @@ static int16_t dinput_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (binds[port])
-            return dinput_is_pressed(di, binds[port], port, id);
-         break;
+         return dinput_is_pressed(di, binds[port], port, id);
       case RETRO_DEVICE_KEYBOARD:
          return dinput_keyboard_pressed(di, id);
 

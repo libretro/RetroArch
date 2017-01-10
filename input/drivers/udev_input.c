@@ -510,10 +510,8 @@ static int16_t udev_input_state(void *data, const struct retro_keybind **binds,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (binds[port] && binds[port][id].valid)
-            return udev_input_is_pressed(binds[port], id) ||
-               input_joypad_pressed(udev->joypad, joypad_info, port, binds[port], id);
-         break;
+         return udev_input_is_pressed(binds[port], id) ||
+            input_joypad_pressed(udev->joypad, joypad_info, port, binds[port], id);
       case RETRO_DEVICE_ANALOG:
          ret = udev_analog_pressed(binds[port], idx, id);
          if (!ret && binds[port])

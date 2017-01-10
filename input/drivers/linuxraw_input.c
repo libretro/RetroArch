@@ -128,10 +128,8 @@ static int16_t linuxraw_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (binds[port] && binds[port][id].valid)
-            return linuxraw_is_pressed(linuxraw, binds[port], id) ||
-               input_joypad_pressed(linuxraw->joypad, joypad_info, port, binds[port], id);
-         break;
+         return linuxraw_is_pressed(linuxraw, binds[port], id) ||
+            input_joypad_pressed(linuxraw->joypad, joypad_info, port, binds[port], id);
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
             ret = linuxraw_analog_pressed(linuxraw, binds[port], idx, id);
