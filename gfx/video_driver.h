@@ -54,6 +54,10 @@ typedef struct video_info
 
    bool force_aspect;
 
+   unsigned swap_interval;
+
+   bool font_enable;
+
 #ifdef GEKKO
    /* TODO - we can't really have driver system-specific
     * variables in here. There should be some

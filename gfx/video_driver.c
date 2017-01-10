@@ -719,20 +719,22 @@ static bool init_video(void)
       goto error;
    }
 
-   video.width        = width;
-   video.height       = height;
-   video.fullscreen   = settings->video.fullscreen;
-   video.vsync        = settings->video.vsync && !runloop_ctl(RUNLOOP_CTL_IS_NONBLOCK_FORCED, NULL);
-   video.force_aspect = settings->video.force_aspect;
+   video.width         = width;
+   video.height        = height;
+   video.fullscreen    = settings->video.fullscreen;
+   video.vsync         = settings->video.vsync && !runloop_ctl(RUNLOOP_CTL_IS_NONBLOCK_FORCED, NULL);
+   video.force_aspect  = settings->video.force_aspect;
 #ifdef GEKKO
-   video.viwidth      = settings->video.viwidth;
-   video.vfilter      = settings->video.vfilter;
+   video.viwidth       = settings->video.viwidth;
+   video.vfilter       = settings->video.vfilter;
 #endif
-   video.smooth       = settings->video.smooth;
-   video.input_scale  = scale;
-   video.rgb32        = video_driver_state_filter ?
+   video.smooth        = settings->video.smooth;
+   video.input_scale   = scale;
+   video.rgb32         = video_driver_state_filter ?
       video_driver_state_out_rgb32 :
       (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
+   video.swap_interval = settings->video.swap_interval;
+   video.font_enable   = settings->video.font_enable;
 
    /* Reset video frame count */
    video_driver_frame_count = 0;

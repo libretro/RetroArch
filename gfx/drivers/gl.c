@@ -1876,7 +1876,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    const char *version                  = NULL;
    struct retro_hw_render_callback *hwr = NULL;
    char *error_string                   = NULL;
-   settings_t *settings                 = config_get_ptr();
    gl_t *gl                             = (gl_t*)calloc(1, sizeof(gl_t));
    const gfx_ctx_driver_t *ctx_driver   = gl_get_context(gl);
    if (!gl || !ctx_driver)
@@ -1897,7 +1896,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    RARCH_LOG("Detecting screen resolution %ux%u.\n", full_x, full_y);
 
-   interval = video->vsync ? settings->video.swap_interval : 0;
+   interval = video->vsync ? video->swap_interval : 0;
 
    video_context_driver_swap_interval(&interval);
 
@@ -2113,7 +2112,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    video_context_driver_input_driver(&inp);
 
-   if (settings->video.font_enable)
+   if (video->font_enable)
       font_driver_init_osd(gl, false, FONT_DRIVER_RENDER_OPENGL_API);
 
 #ifdef HAVE_GL_ASYNC_READBACK
