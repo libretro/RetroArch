@@ -25,7 +25,7 @@
 
 #include <libretro.h>
 
-#include "../../configuration.h"
+#include "../input_driver.h"
 #include "../input_joypad_driver.h"
 
 #ifndef MAX_PADS
@@ -77,14 +77,13 @@ static void gx_input_free_input(void *data)
    free(gx);
 }
 
-static void *gx_input_init(void)
+static void *gx_input_init(const char *joypad_driver)
 {
-   settings_t *settings = config_get_ptr();
    gx_input_t *gx = (gx_input_t*)calloc(1, sizeof(*gx));
    if (!gx)
       return NULL;
 
-   gx->joypad = input_joypad_init_driver(settings->input.joypad_driver, gx);
+   gx->joypad = input_joypad_init_driver(joypad_driver, gx);
 
    return gx;
 }

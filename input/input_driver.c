@@ -892,7 +892,10 @@ void input_driver_poll(void)
 bool input_driver_init(void)
 {
    if (current_input)
-      current_input_data = current_input->init();
+   {
+      settings_t *settings = config_get_ptr();
+      current_input_data   = current_input->init(settings->input.joypad_driver);
+   }
 
    if (!current_input_data)
       return false;

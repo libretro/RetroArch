@@ -33,8 +33,10 @@
 #include "../../menu/menu_display.h"
 #endif
 
-#include "../../frontend/drivers/platform_linux.h"
 #include "../input_config.h"
+#include "../input_driver.h"
+
+#include "../../frontend/drivers/platform_linux.h"
 #include "../../gfx/video_driver.h"
 #include "../input_joypad_driver.h"
 #include "../drivers_keyboard/keyboard_event_android.h"
@@ -456,10 +458,9 @@ static bool android_input_init_handle(void)
    return true;
 }
 
-static void *android_input_init(void)
+static void *android_input_init(const char *joypad_driver)
 {
    int32_t sdk;
-   settings_t *settings = config_get_ptr();
    struct android_app *android_app = (struct android_app*)g_android;
    android_input_t *android = (android_input_t*)
       calloc(1, sizeof(*android));
@@ -469,8 +470,7 @@ static void *android_input_init(void)
 
    android->thread.pads_connected = 0;
    android->copy.pads_connected = 0;
-   android->joypad         = input_joypad_init_driver(
-         settings->input.joypad_driver, android);
+   android->joypad         = input_joypad_init_driver(joypad_driver, android);
  
    input_keymaps_init_keyboard_lut(rarch_key_map_android);
  
@@ -644,7 +644,6 @@ static void handle_hotplug(android_input_data_t *android_data,
    char name_buf[256];
    int vendorId                 = 0;
    int productId                = 0;
-   settings_t         *settings = config_get_ptr();
 
    device_name[0] = device_model[0] = name_buf[0] = '\0';
 
@@ -899,6 +898,7 @@ static void handle_hotplug(android_input_data_t *android_data,
 
    if (!string_is_empty(name_buf))
    {
+      settings_t         *settings = config_get_ptr();
       strlcpy(settings->input.device_names[*port],
             name_buf, sizeof(settings->input.device_names[*port]));
    }

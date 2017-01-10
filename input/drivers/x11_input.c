@@ -29,7 +29,6 @@
 #include "../../gfx/video_driver.h"
 #include "../common/input_x11_common.h"
 
-#include "../../configuration.h"
 #include "../../verbosity.h"
 
 typedef struct x11_input
@@ -49,10 +48,9 @@ typedef struct x11_input
 } x11_input_t;
 
 
-static void *x_input_init(void)
+static void *x_input_init(const char *joypad_driver)
 {
    x11_input_t *x11;
-   settings_t *settings = config_get_ptr();
 
    if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
    {
@@ -68,7 +66,7 @@ static void *x_input_init(void)
    x11->display = (Display*)video_driver_display_get();
    x11->win     = (Window)video_driver_window_get();
 
-   x11->joypad = input_joypad_init_driver(settings->input.joypad_driver, x11);
+   x11->joypad  = input_joypad_init_driver(joypad_driver, x11);
    input_keymaps_init_keyboard_lut(rarch_key_map_x11);
 
    return x11;

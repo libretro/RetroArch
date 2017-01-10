@@ -28,7 +28,7 @@
 
 #include "../../defines/ps3_defines.h"
 
-#include "../../configuration.h"
+#include "../input_driver.h"
 #include "../input_joypad_driver.h"
 
 #ifdef HAVE_MOUSE
@@ -163,14 +163,13 @@ static void ps3_input_free_input(void *data)
 }
 
 
-static void* ps3_input_init(void)
+static void* ps3_input_init(const char *joypad_driver)
 {
-   settings_t *settings = config_get_ptr();
    ps3_input_t *ps3 = (ps3_input_t*)calloc(1, sizeof(*ps3));
    if (!ps3)
       return NULL;
 
-   ps3->joypad = input_joypad_init_driver(settings->input.joypad_driver, ps3);
+   ps3->joypad = input_joypad_init_driver(joypad_driver, ps3);
 
    if (ps3->joypad)
       ps3->joypad->init(ps3);

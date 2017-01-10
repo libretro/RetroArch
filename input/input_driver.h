@@ -71,7 +71,7 @@ struct retro_keybind
 
 typedef struct input_driver
 {
-   void *(*init)(void);
+   void *(*init)(const char *joypad_driver);
    void (*poll)(void *data);
    int16_t (*input_state)(void *data,
          rarch_joypad_info_t joypad_info,

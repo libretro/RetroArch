@@ -441,7 +441,8 @@ error:
 static void gfx_ctx_xegl_input_driver(void *data,
    const input_driver_t **input, void **input_data)
 {
-   void *xinput = input_x.init();
+   settings_t *settings = config_get_ptr();
+   void *xinput         = input_x.init(settings->input.joypad_driver);
 
    (void)data;
 

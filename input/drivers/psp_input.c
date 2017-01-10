@@ -40,9 +40,9 @@
 
 #include "../../defines/psp_defines.h"
 
-#include "../../configuration.h"
-#include "../input_joypad_driver.h"
 #include "../input_config.h"
+#include "../input_driver.h"
+#include "../input_joypad_driver.h"
 
 typedef struct psp_input
 {
@@ -97,15 +97,13 @@ static void psp_input_free_input(void *data)
    free(data);
 }
 
-static void* psp_input_initialize(void)
+static void* psp_input_initialize(const char *joypad_driver)
 {
-   settings_t *settings = config_get_ptr();
    psp_input_t *psp = (psp_input_t*)calloc(1, sizeof(*psp));
    if (!psp)
       return NULL;
 
-   psp->joypad = input_joypad_init_driver(
-         settings->input.joypad_driver, psp);
+   psp->joypad = input_joypad_init_driver(joypad_driver, psp);
 
    return psp;
 }

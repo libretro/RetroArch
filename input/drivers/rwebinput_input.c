@@ -19,10 +19,11 @@
 
 #include <boolean.h>
 
-#include "../input_joypad_driver.h"
-#include "../input_keyboard.h"
 #include "../input_config.h"
+#include "../input_keyboard.h"
 #include "../input_keymaps.h"
+#include "../input_driver.h"
+#include "../input_joypad_driver.h"
 
 #include "../../tasks/tasks_internal.h"
 #include "../../configuration.h"
@@ -47,7 +48,7 @@ typedef struct rwebinput_input
    int context;
 } rwebinput_input_t;
 
-static void *rwebinput_input_init(void)
+static void *rwebinput_input_init(const char *joypad_driver)
 {
    rwebinput_input_t *rwebinput = (rwebinput_input_t*)calloc(1, sizeof(*rwebinput));
    if (!rwebinput)

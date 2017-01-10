@@ -22,11 +22,12 @@
 #endif
 
 #include "../input_config.h"
+#include "../input_driver.h"
+
 #include "../input_joypad_driver.h"
 #include "../input_keymaps.h"
 #include "cocoa_input.h"
 #include "../../gfx/video_driver.h"
-#include "../../configuration.h"
 #include "../../driver.h"
 
 #include "../drivers_keyboard/keyboard_event_apple.h"
@@ -126,16 +127,15 @@ int32_t cocoa_input_find_any_axis(uint32_t port)
 }
 
 
-static void *cocoa_input_init(void)
+static void *cocoa_input_init(const char *joypad_driver)
 {
-   settings_t *settings = config_get_ptr();
    cocoa_input_data_t *apple = (cocoa_input_data_t*)calloc(1, sizeof(*apple));
    if (!apple)
       return NULL;
     
    input_keymaps_init_keyboard_lut(rarch_key_map_apple_hid);
 
-   apple->joypad = input_joypad_init_driver(settings->input.joypad_driver, apple);
+   apple->joypad = input_joypad_init_driver(joypad_driver, apple);
     
 #ifdef HAVE_MFI
    apple->sec_joypad = input_joypad_init_driver("mfi", apple);

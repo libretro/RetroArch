@@ -17,7 +17,7 @@
 #include "../input_driver.h"
 #include "../../verbosity.h"
 
-static void *nullinput_input_init(void)
+static void *nullinput_input_init(const char *joypad_driver)
 {
    RARCH_ERR("Using the null input driver. RetroArch will ignore you.");
    return (void*)-1;

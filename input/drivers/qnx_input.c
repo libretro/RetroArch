@@ -27,9 +27,10 @@
 #include "../../config.h"
 #endif
 
-#include "../../gfx/video_driver.h"
-#include "../../configuration.h"
+#include "../input_driver.h"
 #include "../input_joypad_driver.h"
+
+#include "../../gfx/video_driver.h"
 #include "../../tasks/tasks_internal.h"
 
 #include "../../command.h"
@@ -648,10 +649,9 @@ static void qnx_handle_navigator_event(
        return;
 }
 
-static void *qnx_input_init(void)
+static void *qnx_input_init(const char *joypad_driver)
 {
    int i;
-   settings_t *settings = config_get_ptr();
    qnx_input_t *qnx     = (qnx_input_t*)calloc(1, sizeof(*qnx));
 
    if (!qnx)
@@ -665,8 +665,7 @@ static void *qnx_input_init(void)
       qnx->touch_map[i] = -1;
    }
 
-   qnx->joypad = input_joypad_init_driver(
-         settings->input.joypad_driver, qnx);
+   qnx->joypad = input_joypad_init_driver(joypad_driver, qnx);
 
    for (i = 0; i < MAX_PADS; ++i)
    {

@@ -39,17 +39,17 @@
 #include <compat/strl.h>
 #include <string/stdstring.h>
 
+#include "../input_config.h"
+#include "../input_driver.h"
+#include "../input_joypad_driver.h"
+#include "../input_keymaps.h"
+
 #include "../drivers_keyboard/keyboard_event_udev.h"
 #include "../../gfx/video_driver.h"
 #include "../common/linux_common.h"
 #include "../common/udev_common.h"
 #include "../common/epoll_common.h"
 
-#include "../input_config.h"
-#include "../input_joypad_driver.h"
-#include "../input_keymaps.h"
-
-#include "../../configuration.h"
 #include "../../verbosity.h"
 
 typedef struct udev_input udev_input_t;
@@ -606,9 +606,8 @@ static bool open_devices(udev_input_t *udev, const char *type, device_handle_cb 
    return true;
 }
 
-static void *udev_input_init(void)
+static void *udev_input_init(const char *joypad_driver)
 {
-   settings_t *settings = config_get_ptr();
    udev_input_t *udev   = (udev_input_t*)calloc(1, sizeof(*udev));
 
    if (!udev)
@@ -662,7 +661,7 @@ static void *udev_input_init(void)
    if (!udev->num_devices)
       RARCH_WARN("[udev]: Couldn't open any keyboard, mouse or touchpad. Are permissions set correctly for /dev/input/event*?\n");
 
-   udev->joypad = input_joypad_init_driver(settings->input.joypad_driver, udev);
+   udev->joypad = input_joypad_init_driver(joypad_driver, udev);
    input_keymaps_init_keyboard_lut(rarch_key_map_linux);
 
    linux_terminal_disable_input();

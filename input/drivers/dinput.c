@@ -47,6 +47,7 @@
 #include "../../tasks/tasks_internal.h"
 #include "../../gfx/video_driver.h"
 #include "../input_config.h"
+#include "../input_driver.h"
 #include "../input_joypad_driver.h"
 #include "../input_keymaps.h"
 
@@ -125,10 +126,9 @@ error:
    return false;
 }
 
-static void *dinput_init(void)
+static void *dinput_init(const char *joypad_driver)
 {
    struct dinput_input *di = NULL;
-   settings_t *settings = config_get_ptr();
 
    if (!dinput_init_context())
    {
@@ -185,7 +185,7 @@ static void *dinput_init(void)
    }
 
    input_keymaps_init_keyboard_lut(rarch_key_map_dinput);
-   di->joypad = input_joypad_init_driver(settings->input.joypad_driver, di);
+   di->joypad = input_joypad_init_driver(joypad_driver, di);
 
    return di;
 }

@@ -23,6 +23,7 @@
 
 #include <libretro.h>
 
+#include "../input_driver.h"
 #include "../input_joypad_driver.h"
 
 #define MAX_PADS 4
@@ -85,7 +86,7 @@ static void xenon360_input_free_input(void *data)
    (void)data;
 }
 
-static void* xenon360_input_init(void)
+static void* xenon360_input_init(const char *joypad_driver)
 {
    return (void*)-1;
 }

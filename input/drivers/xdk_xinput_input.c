@@ -28,8 +28,8 @@
 #include <boolean.h>
 #include <libretro.h>
 
+#include "../input_driver.h"
 #include "../input_joypad_driver.h"
-#include "../../configuration.h"
 
 #define MAX_PADS 4
 
@@ -84,14 +84,13 @@ static void xdk_input_free_input(void *data)
    free(xdk);
 }
 
-static void *xdk_input_init(void)
+static void *xdk_input_init(const char *joypad_driver)
 {
-   settings_t *settings = config_get_ptr();
    xdk_input_t *xdk     = (xdk_input_t*)calloc(1, sizeof(*xdk));
    if (!xdk)
       return NULL;
 
-   xdk->joypad = input_joypad_init_driver(settings->input.joypad_driver, xdk);
+   xdk->joypad = input_joypad_init_driver(joypad_driver, xdk);
 
    return xdk;
 }

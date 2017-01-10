@@ -23,8 +23,8 @@
 #include "../../config.h"
 #endif
 
-#include "../../configuration.h"
 #include "../input_config.h"
+#include "../input_driver.h"
 #include "../input_joypad_driver.h"
 
 #define MAX_PADS 1
@@ -80,14 +80,13 @@ static void ctr_input_free_input(void *data)
    free(data);
 }
 
-static void* ctr_input_initialize(void)
+static void* ctr_input_init(const char *joypad_driver)
 {
-   settings_t *settings = config_get_ptr();
    ctr_input_t *ctr = (ctr_input_t*)calloc(1, sizeof(*ctr));
    if (!ctr)
       return NULL;
 
-   ctr->joypad = input_joypad_init_driver(settings->input.joypad_driver, ctr);
+   ctr->joypad = input_joypad_init_driver(joypad_driver, ctr);
 
    return ctr;
 }
@@ -149,7 +148,7 @@ static void ctr_input_keyboard_mapping_set_block(void *data, bool value)
 }
 
 input_driver_t input_ctr = {
-   ctr_input_initialize,
+   ctr_input_init,
    ctr_input_poll,
    ctr_input_state,
    ctr_input_meta_key_pressed,
