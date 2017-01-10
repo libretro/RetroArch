@@ -569,6 +569,7 @@ bool input_overlay_key_pressed(input_overlay_t *ol, int key)
 void input_poll_overlay(input_overlay_t *ol, float opacity, unsigned analog_dpad_mode,
       float axis_threshold)
 {
+   rarch_joypad_info_t joypad_info;
    input_overlay_state_t old_key_state;
    unsigned i, j, device;
    uint16_t key_mod                = 0;
@@ -578,6 +579,10 @@ void input_poll_overlay(input_overlay_t *ol, float opacity, unsigned analog_dpad
    if (!ol_state)
       return;
 
+   joypad_info.joy_idx             = 0;
+   joypad_info.auto_binds          = NULL;
+   joypad_info.axis_threshold      = 0.0f;
+
    memcpy(old_key_state.keys, ol_state->keys,
          sizeof(ol_state->keys));
    memset(ol_state, 0, sizeof(*ol_state));
@@ -586,14 +591,17 @@ void input_poll_overlay(input_overlay_t *ol, float opacity, unsigned analog_dpad
       RARCH_DEVICE_POINTER_SCREEN : RETRO_DEVICE_POINTER;
 
    for (i = 0;
-         current_input->input_state(current_input_data, NULL,
+         current_input->input_state(current_input_data, joypad_info,
+            NULL,
             0, device, i, RETRO_DEVICE_ID_POINTER_PRESSED);
          i++)
    {
       input_overlay_state_t polled_data;
-      int16_t x = current_input->input_state(current_input_data, NULL,
+      int16_t x = current_input->input_state(current_input_data, joypad_info,
+            NULL,
             0, device, i, RETRO_DEVICE_ID_POINTER_X);
-      int16_t y = current_input->input_state(current_input_data, NULL,
+      int16_t y = current_input->input_state(current_input_data, joypad_info,
+            NULL,
             0, device, i, RETRO_DEVICE_ID_POINTER_Y);
 
       memset(&polled_data, 0, sizeof(struct input_overlay_state));

@@ -55,15 +55,15 @@ static void xenon360_input_poll(void *data)
    }
 }
 
-static int16_t xenon360_input_state(void *data, const struct retro_keybind **binds,
+static int16_t xenon360_input_state(void *data,
+      rarch_joypad_info_t joypad_info,
+      const struct retro_keybind **binds,
       bool port, unsigned device,
       unsigned idx, unsigned id)
 {
-   (void)data;
-   (void)idx;
-   unsigned user = port;
+   unsigned user   = port;
    uint64_t button = binds[user][id].joykey;
-   int16_t retval = 0;
+   int16_t retval  = 0;
 
    if(user < MAX_PADS)
    {
@@ -71,6 +71,8 @@ static int16_t xenon360_input_state(void *data, const struct retro_keybind **bin
       {
          case RETRO_DEVICE_JOYPAD:
             retval = (state[user] & button) ? 1 : 0;
+            break;
+         default:
             break;
       }
    }

@@ -136,8 +136,7 @@ static void qnx_process_gamepad_event(
    int i;
    screen_device_t device;
    qnx_input_device_t* controller = NULL;
-   settings_t *settings = config_get_ptr();
-   uint64_t *state_cur  = NULL;
+   uint64_t *state_cur            = NULL;
 
    (void)type;
 
@@ -720,19 +719,14 @@ bool qnx_keyboard_pressed(qnx_input_t *qnx, unsigned id)
 }
 
 static bool qnx_is_pressed(qnx_input_t *qnx,
-        const struct retro_keybind *binds,
-        unsigned port, unsigned id)
+      rarch_joypad_info_t joypad_info,
+      const struct retro_keybind *binds,
+      unsigned port, unsigned id)
 {
-   rarch_joypad_info_t joypad_info;
-   settings_t *settings              = config_get_ptr();
    const struct retro_keybind *bind = &binds[id];
 
    if (id >= RARCH_BIND_LIST_END)
       return false;
-
-   joypad_info.joy_idx        = port;
-   joypad_info.auto_binds     = settings->input.autoconf_binds[port];
-   joypad_info.axis_threshold = settings->input.axis_threshold;
 
    if (!qnx->blocked && qnx_keyboard_pressed(qnx, bind->key))
       return true;
@@ -775,6 +769,7 @@ static int16_t qnx_pointer_input_state(qnx_input_t *qnx,
 }
 
 static int16_t qnx_input_state(void *data,
+      rarch_joypad_info_t joypad_info,
       const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
@@ -783,7 +778,7 @@ static int16_t qnx_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return qnx_is_pressed(qnx, binds[port], port, id);
+         return qnx_is_pressed(qnx, joypad_info, binds[port], port, id);
       case RETRO_DEVICE_KEYBOARD:
          return qnx_keyboard_pressed(qnx, id);
       case RETRO_DEVICE_POINTER:

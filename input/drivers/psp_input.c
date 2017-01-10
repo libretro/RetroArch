@@ -60,22 +60,19 @@ static void psp_input_poll(void *data)
       psp->joypad->poll();
 }
 
-static int16_t psp_input_state(void *data, const struct retro_keybind **binds,
+static int16_t psp_input_state(void *data,
+      rarch_joypad_info_t joypad_info,
+      const struct retro_keybind **binds,
       unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
    rarch_joypad_info_t joypad_info;
    psp_input_t *psp           = (psp_input_t*)data;
-   settings_t *settings       = config_get_ptr();
 
 #if !defined(SN_TARGET_PSP2) && !defined(VITA)
    if (port > 0)
       return 0;
 #endif
-
-   joypad_info.joy_idx        = port;
-   joypad_info.auto_binds     = settings->input.autoconf_binds[port];
-   joypad_info.axis_threshold = settings->input.axis_threshold;
 
    switch (device)
    {

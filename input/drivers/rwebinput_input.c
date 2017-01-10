@@ -142,7 +142,9 @@ static int16_t rwebinput_analog_pressed(rwebinput_input_t *rwebinput,
    return pressed_plus + pressed_minus;
 }
 
-static int16_t rwebinput_input_state(void *data, const struct retro_keybind **binds,
+static int16_t rwebinput_input_state(void *data,
+      rarch_joypad_info_t joypad_info,
+      const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
    rwebinput_input_t *rwebinput  = (rwebinput_input_t*)data;

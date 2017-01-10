@@ -100,20 +100,15 @@ static int16_t ps3_mouse_device_state(ps3_input_t *ps3,
 #endif
 
 static int16_t ps3_input_state(void *data,
+      rarch_joypad_info_t joypad_info,
       const struct retro_keybind **binds,
       unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   rarch_joypad_info_t joypad_info;
    ps3_input_t *ps3           = (ps3_input_t*)data;
-   settings_t *settings       = config_get_ptr();
 
    if (!ps3)
       return 0;
-
-   joypad_info.joy_idx        = port;
-   joypad_info.auto_binds     = settings->input.autoconf_binds[port];
-   joypad_info.axis_threshold = settings->input.axis_threshold;
 
    switch (device)
    {

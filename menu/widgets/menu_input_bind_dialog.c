@@ -209,6 +209,7 @@ static void menu_input_key_bind_poll_bind_state(
       unsigned port,
       bool timed_out)
 {
+   rarch_joypad_info_t joypad_info;
    const input_device_driver_t *joypad     =
       input_driver_get_joypad_driver();
    const input_device_driver_t *sec_joypad =
@@ -218,7 +219,13 @@ static void menu_input_key_bind_poll_bind_state(
       return;
 
    memset(state->state, 0, sizeof(state->state));
-   state->skip = timed_out || current_input->input_state(current_input_data, NULL,
+
+   joypad_info.joy_idx        = 0;
+   joypad_info.auto_binds     = NULL;
+   joypad_info.axis_threshold = 0.0f;
+
+   state->skip = timed_out || current_input->input_state(current_input_data, joypad_info,
+         NULL,
          0, RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN);
 
    menu_input_key_bind_poll_bind_state_internal(

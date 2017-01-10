@@ -142,6 +142,8 @@ const char** menu_event_get_osk_grid(void)
 
 static int menu_event_pointer(unsigned *action)
 {
+   rarch_joypad_info_t joypad_info;
+   int pointer_x, pointer_y;
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
    menu_input_t *menu_input                     = menu_input_get_ptr();
    unsigned fb_width                            = menu_display_get_width();
@@ -149,19 +151,30 @@ static int menu_event_pointer(unsigned *action)
    int pointer_device                           =
       menu_driver_ctl(RARCH_MENU_CTL_IS_SET_TEXTURE, NULL) ?
         RETRO_DEVICE_POINTER : RARCH_DEVICE_POINTER_SCREEN;
-   int pointer_x                                =
-      current_input->input_state(current_input_data, binds,
+
+   joypad_info.joy_idx                          = 0;
+   joypad_info.auto_binds                       = NULL;
+   joypad_info.axis_threshold                   = 0.0f;
+
+   pointer_x                                    =
+      current_input->input_state(current_input_data, joypad_info, binds,
             0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_X);
-   int pointer_y                                =
-      current_input->input_state(current_input_data, binds,
+   pointer_y                                    =
+      current_input->input_state(current_input_data, joypad_info, binds,
             0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_Y);
 
-   menu_input->pointer.pressed[0]  = current_input->input_state(current_input_data, binds,
+   menu_input->pointer.pressed[0]  = current_input->input_state(current_input_data, 
+         joypad_info,
+         binds,
          0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_PRESSED);
-   menu_input->pointer.pressed[1]  = current_input->input_state(current_input_data, binds,
+   menu_input->pointer.pressed[1]  = current_input->input_state(current_input_data,
+         joypad_info,
+         binds,
          0, pointer_device, 1, RETRO_DEVICE_ID_POINTER_PRESSED);
-   menu_input->pointer.back        = current_input->input_state(current_input_data, binds,
-            0, pointer_device, 0, RARCH_DEVICE_ID_POINTER_BACK);
+   menu_input->pointer.back        = current_input->input_state(current_input_data,
+         joypad_info,
+         binds,
+         0, pointer_device, 0, RARCH_DEVICE_ID_POINTER_BACK);
 
    menu_input->pointer.x = ((pointer_x + 0x7fff) * (int)fb_width) / 0xFFFF;
    menu_input->pointer.y = ((pointer_y + 0x7fff) * (int)fb_height) / 0xFFFF;

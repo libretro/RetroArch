@@ -45,20 +45,17 @@ static void ctr_input_poll(void *data)
       ctr->joypad->poll();
 }
 
-static int16_t ctr_input_state(void *data, const struct retro_keybind **binds,
+static int16_t ctr_input_state(void *data, 
+      rarch_joypad_info_t joypad_info,
+      const struct retro_keybind **binds,
       unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
    rarch_joypad_info_t joypad_info;
    ctr_input_t *ctr = (ctr_input_t*)data;
-   settings_t *settings       = config_get_ptr();
 
    if (port > 0)
       return 0;
-
-   joypad_info.joy_idx        = port;
-   joypad_info.auto_binds     = settings->input.autoconf_binds[port];
-   joypad_info.axis_threshold = settings->input.axis_threshold;
 
    switch (device)
    {

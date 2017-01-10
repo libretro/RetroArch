@@ -29,6 +29,7 @@ static void nullinput_input_poll(void *data)
 }
 
 static int16_t nullinput_input_state(void *data,
+      rarch_joypad_info_t joypad_info,
       const struct retro_keybind **retro_keybinds, unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {

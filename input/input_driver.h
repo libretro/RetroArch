@@ -74,6 +74,7 @@ typedef struct input_driver
    void *(*init)(void);
    void (*poll)(void *data);
    int16_t (*input_state)(void *data,
+         rarch_joypad_info_t joypad_info,
          const struct retro_keybind **retro_keybinds,
          unsigned port, unsigned device, unsigned index, unsigned id);
    bool (*meta_key_pressed)(void *data, int key);

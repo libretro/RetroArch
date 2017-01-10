@@ -492,20 +492,16 @@ static int16_t udev_pointer_state(udev_input_t *udev,
    return 0;
 }
 
-static int16_t udev_input_state(void *data, const struct retro_keybind **binds,
+static int16_t udev_input_state(void *data,
+      rarch_joypad_info_t joypad_info,
+      const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
    int16_t ret;
-   rarch_joypad_info_t joypad_info;
-   settings_t *settings       = config_get_ptr();
    udev_input_t *udev         = (udev_input_t*)data;
 
    if (!udev)
       return 0;
-
-   joypad_info.joy_idx        = port;
-   joypad_info.auto_binds     = settings->input.autoconf_binds[port];
-   joypad_info.axis_threshold = settings->input.axis_threshold;
 
    switch (device)
    {

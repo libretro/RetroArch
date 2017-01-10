@@ -1107,17 +1107,13 @@ bool android_run_events(void *data)
 }
 
 static int16_t android_input_state(void *data,
+      rarch_joypad_info_t joypad_info,
       const struct retro_keybind **binds, unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   rarch_joypad_info_t joypad_info;
    settings_t *settings               = config_get_ptr();
    android_input_t *android           = (android_input_t*)data;
    android_input_data_t *android_data = (android_input_data_t*)&android->copy;
-
-   joypad_info.joy_idx        = port;
-   joypad_info.auto_binds     = settings->input.autoconf_binds[port];
-   joypad_info.axis_threshold = settings->input.axis_threshold;
 
    switch (device)
    {

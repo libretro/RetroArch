@@ -113,17 +113,12 @@ static bool linuxraw_input_meta_key_pressed(void *data, int key)
 }
 
 static int16_t linuxraw_input_state(void *data,
+      rarch_joypad_info_t joypad_info,
       const struct retro_keybind **binds, unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {
-   rarch_joypad_info_t joypad_info;
    int16_t ret                = 0;
    linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
-   settings_t *settings       = config_get_ptr();
-
-   joypad_info.joy_idx        = port;
-   joypad_info.auto_binds     = settings->input.autoconf_binds[port];
-   joypad_info.axis_threshold = settings->input.axis_threshold;
 
    switch (device)
    {

@@ -271,20 +271,15 @@ static int16_t cocoa_pointer_state(cocoa_input_data_t *apple,
 }
 
 static int16_t cocoa_input_state(void *data,
+      rarch_joypad_info_t joypad_info,
       const struct retro_keybind **binds, unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {
-   rarch_joypad_info_t joypad_info;
    int16_t ret               = 0;
    cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
-   settings_t *settings       = config_get_ptr();
 
    if (!apple || !apple->joypad)
       return 0;
-
-   joypad_info.joy_idx        = port;
-   joypad_info.auto_binds     = settings->input.autoconf_binds[port];
-   joypad_info.axis_threshold = settings->input.axis_threshold;
 
    switch (device)
    {

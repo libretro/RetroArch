@@ -110,13 +110,13 @@ static bool sdl_input_meta_key_pressed(void *data, int key)
    return false;
 }
 
-static int16_t sdl_joypad_device_state(sdl_input_t *sdl, const struct retro_keybind **binds_, 
+static int16_t sdl_joypad_device_state(sdl_input_t *sdl,
+      rarch_joypad_info_t joypad_info,
+      const struct retro_keybind **binds_, 
       unsigned port, unsigned id, enum input_device_type *device)
 {
    if (id < RARCH_BIND_LIST_END)
    {
-      rarch_joypad_info_t joypad_info;
-      settings_t *settings              = config_get_ptr();
       const struct retro_keybind *binds = binds_[port];
 
       if (sdl_is_pressed(sdl, port, binds, id))
@@ -124,10 +124,6 @@ static int16_t sdl_joypad_device_state(sdl_input_t *sdl, const struct retro_keyb
          *device = INPUT_DEVICE_TYPE_KEYBOARD;
          return 1;
       }
-
-      joypad_info.joy_idx        = port;
-      joypad_info.auto_binds     = settings->input.autoconf_binds[port];
-      joypad_info.axis_threshold = settings->input.axis_threshold;
 
       if (input_joypad_pressed(sdl->joypad, joypad_info, 0, binds, id))
       {
@@ -240,7 +236,9 @@ static int16_t sdl_lightgun_device_state(sdl_input_t *sdl, unsigned id)
    return 0;
 }
 
-static int16_t sdl_input_state(void *data_, const struct retro_keybind **binds,
+static int16_t sdl_input_state(void *data_,
+      rarch_joypad_info_t joypad_info,
+      const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
    enum input_device_type type = INPUT_DEVICE_TYPE_NONE;
@@ -249,7 +247,7 @@ static int16_t sdl_input_state(void *data_, const struct retro_keybind **binds,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return sdl_joypad_device_state(data, binds, port, id, &type);
+         return sdl_joypad_device_state(data, joypad_info, binds, port, id, &type);
       case RETRO_DEVICE_ANALOG:
          return sdl_analog_device_state(data, binds, port, idx, id);
       case RETRO_DEVICE_MOUSE:

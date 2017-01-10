@@ -1311,20 +1311,16 @@ static int16_t input_wl_pointer_state(gfx_ctx_wayland_data_t *wl,
 }
 
 
-static int16_t input_wl_state(void *data, const struct retro_keybind **binds,
+static int16_t input_wl_state(void *data,
+      rarch_joypad_info_t joypad_info,
+      const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
    int16_t ret;
-   rarch_joypad_info_t joypad_info;
-   settings_t *settings       = config_get_ptr();
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
    if (!wl)
       return 0;
-
-   joypad_info.joy_idx        = port;
-   joypad_info.auto_binds     = settings->input.autoconf_binds[port];
-   joypad_info.axis_threshold = settings->input.axis_threshold;
 
    switch (device)
    {
