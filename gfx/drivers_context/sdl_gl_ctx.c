@@ -168,7 +168,6 @@ static bool sdl_ctx_set_video_mode(void *data,
       bool fullscreen)
 {
    unsigned fsflag         = 0;
-   settings_t *settings    = config_get_ptr();
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;
 
    sdl->g_new_width  = width;
@@ -178,7 +177,7 @@ static bool sdl_ctx_set_video_mode(void *data,
 
    if (fullscreen)
    {
-      if (settings->video.windowed_fullscreen)
+      if (video_info.windowed_fullscreen)
          fsflag = SDL_WINDOW_FULLSCREEN_DESKTOP;
       else
          fsflag = SDL_WINDOW_FULLSCREEN;
@@ -193,7 +192,7 @@ static bool sdl_ctx_set_video_mode(void *data,
    }
    else
    {
-      unsigned display = settings->video.monitor_index;
+      unsigned display = video_info.monitor_index;
 
       sdl->g_win = SDL_CreateWindow("", SDL_WINDOWPOS_UNDEFINED_DISPLAY(display),
                                SDL_WINDOWPOS_UNDEFINED_DISPLAY(display),

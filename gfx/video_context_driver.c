@@ -454,6 +454,8 @@ bool video_context_driver_set_video_mode(gfx_ctx_mode_t *mode_info)
    video_info.aspect_ratio_idx      = settings->video.aspect_ratio_idx;
    video_info.post_filter_record    = settings->video.post_filter_record;
    video_info.max_swapchain_images  = settings->video.max_swapchain_images;
+   video_info.windowed_fullscreen   = settings->video.windowed_fullscreen;
+   video_info.monitor_index         = settings->video.monitor_index;
 
    if (!current_video_context->set_video_mode(
             video_context_data, video_info, mode_info->width,

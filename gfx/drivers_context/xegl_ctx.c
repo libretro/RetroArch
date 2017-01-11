@@ -266,21 +266,17 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    EGLint egl_attribs[16];
    EGLint vid, num_visuals;
    EGLint *attr             = NULL;
-   bool windowed_full       = false;
    bool true_full           = false;
    int x_off                = 0;
    int y_off                = 0;
    XVisualInfo temp         = {0};
    XSetWindowAttributes swa = {0};
    XVisualInfo *vi          = NULL;
-   settings_t *settings     = config_get_ptr();
    xegl_ctx_data_t *xegl    = (xegl_ctx_data_t*)data;
 
    int (*old_handler)(Display*, XErrorEvent*) = NULL;
 
    frontend_driver_install_signal_handler();
-
-   windowed_full = settings->video.windowed_fullscreen;
 
    attr = egl_attribs;
    attr = xegl_fill_attribs(xegl, attr);
@@ -303,7 +299,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
       ButtonPressMask | ButtonReleaseMask | KeyReleaseMask;
    swa.override_redirect = fullscreen ? True : False;
 
-   if (fullscreen && !windowed_full)
+   if (fullscreen && !video_info.windowed_fullscreen)
    {
       if (x11_enter_fullscreen(g_x11_dpy, width, height, &xegl->desktop_mode))
       {
@@ -314,8 +310,8 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
          RARCH_ERR("[X/EGL]: Entering true fullscreen failed. Will attempt windowed mode.\n");
    }
 
-   if (settings->video.monitor_index)
-      g_x11_screen = settings->video.monitor_index - 1;
+   if (video_info.monitor_index)
+      g_x11_screen = video_info.monitor_index - 1;
 
 #ifdef HAVE_XINERAMA
    if (fullscreen || g_x11_screen != 0)

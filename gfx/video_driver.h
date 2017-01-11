@@ -96,6 +96,8 @@ typedef struct video_frame_info
    unsigned aspect_ratio_idx;
    bool post_filter_record;
    unsigned max_swapchain_images;
+   bool windowed_fullscreen;
+   unsigned monitor_index;
 } video_frame_info_t;
 
 /* Optionally implemented interface to poke more

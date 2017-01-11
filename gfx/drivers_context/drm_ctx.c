@@ -36,7 +36,6 @@
 #include <streams/file_stream.h>
 
 #include "../../verbosity.h"
-#include "../../configuration.h"
 #include "../../runloop.h"
 #include "../../frontend/frontend_driver.h"
 #include "../common/drm_common.h"
@@ -625,7 +624,6 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
    float refresh_mod;
    int i, ret                  = 0;
    struct drm_fb *fb           = NULL;
-   settings_t *settings        = config_get_ptr();
    gfx_ctx_drm_data_t *drm     = (gfx_ctx_drm_data_t*)data;
 
    if (!drm)
@@ -636,7 +634,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
    /* If we use black frame insertion, 
     * we fake a 60 Hz monitor for 120 Hz one, 
     * etc, so try to match that. */
-   refresh_mod = settings->video.black_frame_insertion 
+   refresh_mod = video_info.black_frame_insertion 
       ? 0.5f : 1.0f;
 
    /* Find desired video mode, and use that.
@@ -646,8 +644,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
       g_drm_mode = &g_drm_connector->modes[0];
    else
    {
-      /* Try to match settings->video.refresh_rate 
-       * as closely as possible.
+      /* Try to match refresh_rate as closely as possible.
        *
        * Lower resolutions tend to have multiple supported 
        * refresh rates as well.
@@ -663,7 +660,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
             continue;
 
          diff = fabsf(refresh_mod * g_drm_connector->modes[i].vrefresh
-               - settings->video.refresh_rate);
+               - video_info.refresh_rate);
 
          if (!g_drm_mode || diff < minimum_fps_diff)
          {

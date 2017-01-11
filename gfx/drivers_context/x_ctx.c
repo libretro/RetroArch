@@ -461,7 +461,6 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    XVisualInfo *vi           = NULL;
    XSetWindowAttributes swa  = {0};
    int (*old_handler)(Display*, XErrorEvent*) = NULL;
-   settings_t *settings      = config_get_ptr();
    gfx_ctx_x_data_t *x       = (gfx_ctx_x_data_t*)data;
 
    frontend_driver_install_signal_handler();
@@ -469,7 +468,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    if (!x)
       return false;
 
-   windowed_full = settings->video.windowed_fullscreen;
+   windowed_full = video_info.windowed_fullscreen;
    true_full = false;
 
    switch (x_api)
@@ -517,8 +516,8 @@ static bool gfx_ctx_x_set_video_mode(void *data,
          RARCH_ERR("[GLX]: Entering true fullscreen failed. Will attempt windowed mode.\n");
    }
 
-   if (settings->video.monitor_index)
-      g_x11_screen = settings->video.monitor_index - 1;
+   if (video_info.monitor_index)
+      g_x11_screen = video_info.monitor_index - 1;
 
 #ifdef HAVE_XINERAMA
    if (fullscreen || g_x11_screen != 0)
