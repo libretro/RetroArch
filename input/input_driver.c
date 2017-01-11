@@ -383,7 +383,7 @@ int16_t input_state(unsigned port, unsigned device,
    {
       if (((id < RARCH_FIRST_META_KEY) || (device == RETRO_DEVICE_KEYBOARD)))
       {
-         bool bind_valid = libretro_input_binds[port][id].valid;
+         bool bind_valid = libretro_input_binds[port] && libretro_input_binds[port][id].valid;
          if (device == RETRO_DEVICE_KEYBOARD)
             bind_valid   = true;
 
@@ -964,11 +964,12 @@ void input_driver_poll(void)
 
 bool input_driver_init(void)
 {
+   unsigned i;
+   settings_t *settings = config_get_ptr();
+   for (i = 0; i < settings->input.max_users; i++)
+      libretro_input_binds[i]                 = settings->input.binds[i];
    if (current_input)
-   {
-      settings_t *settings = config_get_ptr();
       current_input_data   = current_input->init(settings->input.joypad_driver);
-   }
 
    if (!current_input_data)
       return false;
