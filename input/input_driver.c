@@ -611,13 +611,11 @@ static INLINE bool input_menu_keys_pressed_internal(
    return false;
 }
 
-static bool runloop_cmd_get_state_menu_toggle_button_combo(
-      settings_t *settings, uint64_t *trigger_input)
+static bool input_driver_toggle_button_combo(
+      unsigned mode, uint64_t *trigger_input)
 {
-   switch (settings->input.menu_toggle_gamepad_combo)
+   switch (mode)
    {
-      case INPUT_TOGGLE_NONE:
-         return false;
       case INPUT_TOGGLE_DOWN_Y_L_R:
          if (!BIT64_GET(*trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
             return false;
@@ -650,6 +648,9 @@ static bool runloop_cmd_get_state_menu_toggle_button_combo(
          if (!BIT64_GET(*trigger_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
             return false;
          break;
+      default:
+      case INPUT_TOGGLE_NONE:
+         return false;
    }
    
    return true;
@@ -724,7 +725,8 @@ uint64_t input_menu_keys_pressed(
             input_driver_block_hotkey         = true;
       }
 
-      if (runloop_cmd_get_state_menu_toggle_button_combo(settings, &old_input)
+      if (  ((settings->input.menu_toggle_gamepad_combo != INPUT_TOGGLE_NONE) &&
+            input_driver_toggle_button_combo(settings->input.menu_toggle_gamepad_combo, &old_input))
             || input_menu_keys_pressed_internal(binds, settings, joypad_info, RARCH_MENU_TOGGLE, max_users,
                   settings->input.binds[0][RARCH_MENU_TOGGLE].valid,
                   settings->input.all_users_control_menu))
@@ -919,7 +921,9 @@ uint64_t input_keys_pressed(
          input_driver_block_hotkey = false;
    }
 
-   if (runloop_cmd_get_state_menu_toggle_button_combo(settings, &old_input)
+   if (
+         ((settings->input.menu_toggle_gamepad_combo != INPUT_TOGGLE_NONE) &&
+         input_driver_toggle_button_combo(settings->input.menu_toggle_gamepad_combo, &old_input))
          || input_keys_pressed_internal(settings, joypad_info, RARCH_MENU_TOGGLE, binds))
       ret |= (UINT64_C(1) << RARCH_MENU_TOGGLE);
 
