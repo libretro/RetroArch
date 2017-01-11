@@ -448,11 +448,11 @@ error:
 }
 
 static bool gfx_ctx_x_set_video_mode(void *data,
+      video_frame_info_t video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
    XEvent event;
-   video_frame_info_t video_info;
    bool true_full            = false;
    bool windowed_full        = false;
    int val                   = 0;
@@ -564,16 +564,6 @@ static bool gfx_ctx_x_set_video_mode(void *data,
          break;
    }
 
-   video_info.refresh_rate          = settings->video.refresh_rate;
-   video_info.black_frame_insertion = 
-      settings->video.black_frame_insertion;
-   video_info.hard_sync             = settings->video.hard_sync;
-   video_info.hard_sync_frames      = settings->video.hard_sync_frames;
-   video_info.fps_show              = settings->fps_show;
-   video_info.scale_integer         = settings->video.scale_integer;
-   video_info.aspect_ratio_idx      = settings->video.aspect_ratio_idx;
-   video_info.post_filter_record    = settings->video.post_filter_record;
-   video_info.max_swapchain_images  = settings->video.max_swapchain_images;
 
    x11_set_window_attr(g_x11_dpy, g_x11_win);
    x11_update_window_title(NULL, video_info);

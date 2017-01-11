@@ -162,7 +162,9 @@ static void sdl_ctx_swap_interval(void *data, unsigned interval)
 #endif
 }
 
-static bool sdl_ctx_set_video_mode(void *data, unsigned width, unsigned height,
+static bool sdl_ctx_set_video_mode(void *data,
+      video_frame_info_t video_info,
+      unsigned width, unsigned height,
       bool fullscreen)
 {
    unsigned fsflag         = 0;

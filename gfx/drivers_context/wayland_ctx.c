@@ -1076,6 +1076,7 @@ static void gfx_ctx_wl_set_swap_interval(void *data, unsigned swap_interval)
 }
 
 static bool gfx_ctx_wl_set_video_mode(void *data,
+      video_frame_info_t video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -1086,10 +1087,11 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 #endif
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   wl->width        = width  ? width  : DEFAULT_WINDOWED_WIDTH;
-   wl->height       = height ? height : DEFAULT_WINDOWED_HEIGHT;
+   wl->width                  = width  ? width  : DEFAULT_WINDOWED_WIDTH;
+   wl->height                 = height ? height : DEFAULT_WINDOWED_HEIGHT;
 
-   wl->surface    = wl_compositor_create_surface(wl->compositor);
+   wl->surface                = wl_compositor_create_surface(wl->compositor);
+
    wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
 
    switch (wl_api)

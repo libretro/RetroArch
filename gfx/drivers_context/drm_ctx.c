@@ -618,6 +618,7 @@ error:
 #endif
 
 static bool gfx_ctx_drm_set_video_mode(void *data,
+      video_frame_info_t video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {

@@ -258,13 +258,13 @@ static EGLint *xegl_fill_attribs(xegl_ctx_data_t *xegl, EGLint *attr)
 static void gfx_ctx_xegl_set_swap_interval(void *data, unsigned swap_interval);
 
 static bool gfx_ctx_xegl_set_video_mode(void *data,
-   unsigned width, unsigned height,
-   bool fullscreen)
+      video_frame_info_t video_info,
+      unsigned width, unsigned height,
+      bool fullscreen)
 {
    XEvent event;
    EGLint egl_attribs[16];
    EGLint vid, num_visuals;
-   video_frame_info_t video_info;
    EGLint *attr             = NULL;
    bool windowed_full       = false;
    bool true_full           = false;
@@ -355,17 +355,6 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
 
    if (!egl_create_surface(&xegl->egl, (void*)g_x11_win))
       goto error;
-
-   video_info.refresh_rate          = settings->video.refresh_rate;
-   video_info.black_frame_insertion = 
-      settings->video.black_frame_insertion;
-   video_info.hard_sync             = settings->video.hard_sync;
-   video_info.hard_sync_frames      = settings->video.hard_sync_frames;
-   video_info.fps_show              = settings->fps_show;
-   video_info.scale_integer         = settings->video.scale_integer;
-   video_info.aspect_ratio_idx      = settings->video.aspect_ratio_idx;
-   video_info.post_filter_record    = settings->video.post_filter_record;
-   video_info.max_swapchain_images  = settings->video.max_swapchain_images;
 
    x11_set_window_attr(g_x11_dpy, g_x11_win);
    x11_update_window_title(NULL, video_info);

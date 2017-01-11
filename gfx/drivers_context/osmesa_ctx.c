@@ -237,15 +237,14 @@ static void osmesa_ctx_swap_interval(void *data, unsigned interval)
    (void)interval;
 }
 
-static bool osmesa_ctx_set_video_mode(void *data, unsigned width, unsigned height,
+static bool osmesa_ctx_set_video_mode(void *data,
+      video_frame_info_t video_info,
+      unsigned width, unsigned height,
       bool fullscreen)
 {
    gfx_ctx_osmesa_data_t *osmesa = (gfx_ctx_osmesa_data_t*)data;
-   uint8_t *screen = osmesa->screen;
-
-   (void)fullscreen;
-
-   bool size_changed = (width * height) != (osmesa->width * osmesa->height);
+   uint8_t               *screen = osmesa->screen;
+   bool             size_changed = (width * height) != (osmesa->width * osmesa->height);
 
    if (!osmesa->screen || size_changed)
       screen = (uint8_t*)calloc(1, (width * height) * osmesa->pixsize);

@@ -525,6 +525,7 @@ static void gfx_ctx_wgl_destroy(void *data)
 }
 
 static bool gfx_ctx_wgl_set_video_mode(void *data,
+      video_frame_info_t video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {

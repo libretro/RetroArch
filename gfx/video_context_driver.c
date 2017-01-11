@@ -438,10 +438,25 @@ bool video_context_driver_get_ident(gfx_ctx_ident_t *ident)
 
 bool video_context_driver_set_video_mode(gfx_ctx_mode_t *mode_info)
 {
+   video_frame_info_t video_info;
+   settings_t *settings = config_get_ptr();
+
    if (!current_video_context || !current_video_context->set_video_mode)
       return false;
+
+   video_info.refresh_rate          = settings->video.refresh_rate;
+   video_info.black_frame_insertion = 
+      settings->video.black_frame_insertion;
+   video_info.hard_sync             = settings->video.hard_sync;
+   video_info.hard_sync_frames      = settings->video.hard_sync_frames;
+   video_info.fps_show              = settings->fps_show;
+   video_info.scale_integer         = settings->video.scale_integer;
+   video_info.aspect_ratio_idx      = settings->video.aspect_ratio_idx;
+   video_info.post_filter_record    = settings->video.post_filter_record;
+   video_info.max_swapchain_images  = settings->video.max_swapchain_images;
+
    if (!current_video_context->set_video_mode(
-            video_context_data, mode_info->width,
+            video_context_data, video_info, mode_info->width,
             mode_info->height, mode_info->fullscreen))
       return false;
    return true;
