@@ -611,10 +611,6 @@ static INLINE bool input_menu_keys_pressed_internal(
    return false;
 }
 
-#define input_keys_pressed_end() \
-   *trigger_input = ret & ~old_input; \
-   *last_input    = ret;
-
 /**
  * input_menu_keys_pressed:
  *
@@ -747,7 +743,8 @@ uint64_t input_menu_keys_pressed(
       }
    }
 
-   input_keys_pressed_end();
+   *trigger_input = ret & ~old_input;
+   *last_input    = ret;
 
 #ifdef HAVE_MENU
    if (menu_driver_is_binding_state())
@@ -877,7 +874,8 @@ uint64_t input_keys_pressed(
          ret |= (UINT64_C(1) << i);
    }
 
-   input_keys_pressed_end();
+   *trigger_input = ret & ~old_input;
+   *last_input    = ret;
 
    return ret;
 }
