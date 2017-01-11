@@ -605,21 +605,6 @@ static INLINE bool input_menu_keys_pressed_internal(
    return false;
 }
 
-#define input_keys_pressed_checks(settings, joypad_info, binds, enable_hotkey_valid) \
-   input_driver_block_libretro_input            = false; \
-   input_driver_block_hotkey                    = false; \
-   if (current_input->keyboard_mapping_is_blocked && current_input->keyboard_mapping_is_blocked(current_input_data)) \
-      input_driver_block_hotkey = true; \
-   if (check_input_driver_block_hotkey(binds_norm, binds_auto)) \
-   { \
-      joypad_info.joy_idx        = 0; \
-      joypad_info.auto_binds     = settings->input.autoconf_binds[0]; \
-      if (enable_hotkey_valid && current_input->input_state(current_input_data, joypad_info, binds, 0, RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY)) \
-            input_driver_block_libretro_input = true; \
-         else \
-            input_driver_block_hotkey         = true; \
-   }
-
 #define input_keys_pressed_end() \
    *trigger_input = ret & ~old_input; \
    *last_input    = ret; \
@@ -661,10 +646,9 @@ uint64_t input_menu_keys_pressed(
       rarch_joypad_info_t joypad_info;
       const struct retro_keybind *binds[MAX_USERS] = {NULL};
       settings_t     *settings                     = config_get_ptr();
-      const struct retro_keybind *binds_norm       = &settings->input.binds[0][RARCH_ENABLE_HOTKEY];
-      const struct retro_keybind *binds_auto       = &settings->input.autoconf_binds[0][RARCH_ENABLE_HOTKEY];
+      const struct retro_keybind *binds_norm       = NULL;
+      const struct retro_keybind *binds_auto       = NULL;
       unsigned max_users                           = settings->input.max_users;
-      bool enable_hotkey_valid                     = binds_norm && binds_norm->valid;
 
       if (settings->menu.unified_controls)
          return input_keys_pressed(old_input, last_input,
@@ -679,15 +663,34 @@ uint64_t input_menu_keys_pressed(
 
       joypad_info.axis_threshold = settings->input.axis_threshold;
 
-      input_keys_pressed_checks(settings, joypad_info, &binds[0], enable_hotkey_valid);
+      input_driver_block_libretro_input            = false;
+      input_driver_block_hotkey                    = false;
+
+      if (current_input->keyboard_mapping_is_blocked 
+            && current_input->keyboard_mapping_is_blocked(current_input_data))
+         input_driver_block_hotkey = true;
+
+      binds_norm = &settings->input.binds[0][RARCH_ENABLE_HOTKEY];
+      binds_auto = &settings->input.autoconf_binds[0][RARCH_ENABLE_HOTKEY];
+
+      for (i = 0; i < max_users; i++)
+         binds[i] = settings->input.binds[i];
+
+      if (check_input_driver_block_hotkey(binds_norm, binds_auto))
+      {
+         joypad_info.joy_idx        = 0;
+         joypad_info.auto_binds     = settings->input.autoconf_binds[0];
+
+         if (settings->input.binds[0][RARCH_ENABLE_HOTKEY].valid && current_input->input_state(current_input_data, joypad_info, &binds[0], 0, RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY))
+            input_driver_block_libretro_input = true;
+         else
+            input_driver_block_hotkey         = true;
+      }
 
       for (i = 0; i < RARCH_BIND_LIST_END; i++)
       {
          unsigned port;
          const struct retro_keybind *binds[MAX_USERS] = {NULL};
-
-         for (port = 0; port < max_users; port++)
-            binds[port] = settings->input.binds[port];
 
          if (input_menu_keys_pressed_internal(binds, settings, joypad_info, i, max_users,
                   settings->input.binds[0][i].valid,
@@ -840,12 +843,24 @@ uint64_t input_keys_pressed(
 
    const struct retro_keybind *focus_binds_auto = &settings->input.autoconf_binds[0][RARCH_GAME_FOCUS_TOGGLE];
    const struct retro_keybind *focus_normal     = &binds[RARCH_GAME_FOCUS_TOGGLE];
-   bool enable_hotkey_valid                     = binds_norm && binds_norm->valid;
+   bool enable_hotkey_valid                     = settings->input.binds[0][RARCH_ENABLE_HOTKEY].valid;
    bool game_focus_toggle_valid                 = false;
 
    joypad_info.axis_threshold                   = settings->input.axis_threshold;
    
-   input_keys_pressed_checks(settings, joypad_info, &binds, enable_hotkey_valid);
+   input_driver_block_libretro_input            = false;
+   input_driver_block_hotkey                    = false;
+   if (current_input->keyboard_mapping_is_blocked && current_input->keyboard_mapping_is_blocked(current_input_data))
+      input_driver_block_hotkey = true;
+   if (check_input_driver_block_hotkey(binds_norm, binds_auto))
+   {
+      joypad_info.joy_idx        = 0;
+      joypad_info.auto_binds     = settings->input.autoconf_binds[0];
+      if (enable_hotkey_valid && current_input->input_state(current_input_data, joypad_info, &binds, 0, RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY))
+            input_driver_block_libretro_input = true;
+         else
+            input_driver_block_hotkey         = true;
+   }
 
    game_focus_toggle_valid                      = binds[RARCH_GAME_FOCUS_TOGGLE].valid;
 
