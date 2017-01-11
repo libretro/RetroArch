@@ -22,6 +22,7 @@
 #include <file/file_path.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
+#include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -111,8 +112,11 @@ void cheat_manager_set_code(unsigned i, const char *str)
    cheat_manager_t *handle = cheat_manager_state;
    if (!handle)
       return;
-   handle->cheats[i].code  = strdup(str);
-   handle->cheats[i].state = true;
+
+   if (!string_is_empty(str))
+      handle->cheats[i].code  = strdup(str);
+
+   handle->cheats[i].state    = true;
 }
 
 /**
@@ -251,10 +255,10 @@ bool cheat_manager_load(const char *path)
       snprintf(code_key,   sizeof(code_key),   "cheat%u_code",   i);
       snprintf(enable_key, sizeof(enable_key), "cheat%u_enable", i);
 
-      if (config_get_string(conf, desc_key, &tmp))
+      if (config_get_string(conf, desc_key, &tmp) && !string_is_empty(tmp))
          cheat->cheats[i].desc   = strdup(tmp);
 
-      if (config_get_string(conf, code_key, &tmp))
+      if (config_get_string(conf, code_key, &tmp) && !string_is_empty(tmp))
          cheat->cheats[i].code   = strdup(tmp);
 
       if (config_get_bool(conf, enable_key, &tmp_bool))

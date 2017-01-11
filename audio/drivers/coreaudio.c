@@ -180,7 +180,9 @@ done:
 #endif
 
 static void *coreaudio_init(const char *device,
-      unsigned rate, unsigned latency, unsigned *new_rate)
+      unsigned rate, unsigned latency,
+      unsigned block_frames,
+      unsigned *new_rate)
 {
    size_t fifo_size;
    UInt32 i_size;

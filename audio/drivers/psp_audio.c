@@ -119,7 +119,9 @@ static int audioMainLoop(SceSize args, void* argp)
 }
 
 static void *psp_audio_init(const char *device,
-      unsigned rate, unsigned latency, unsigned *new_rate)
+      unsigned rate, unsigned latency,
+      unsigned block_frames,
+      unsigned *new_rate)
 {
    psp_audio_t *psp = (psp_audio_t*)calloc(1, sizeof(psp_audio_t));
 

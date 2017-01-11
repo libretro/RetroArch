@@ -361,6 +361,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
                *settings->audio.device ? settings->audio.device : NULL,
                settings->audio.out_rate, &new_rate, 
                settings->audio.latency,
+               settings->audio.block_frames,
                current_audio))
       {
          RARCH_ERR("Cannot open threaded audio driver ... Exiting ...\n");
@@ -374,6 +375,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
          current_audio->init(*settings->audio.device ?
                settings->audio.device : NULL,
                settings->audio.out_rate, settings->audio.latency,
+               settings->audio.block_frames,
                &new_rate);
    }
 

@@ -304,6 +304,7 @@ static BOOL CALLBACK enumerate_cb(LPGUID guid, LPCSTR desc, LPCSTR module, LPVOI
 }
 
 static void *dsound_init(const char *device, unsigned rate, unsigned latency,
+      unsigned block_frames,
       unsigned *new_rate)
 {
    WAVEFORMATEX wfx      = {0};

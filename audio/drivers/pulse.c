@@ -148,7 +148,9 @@ static void buffer_attr_cb(pa_stream *s, void *data)
 }
 
 static void *pulse_init(const char *device, unsigned rate,
-      unsigned latency, unsigned *new_rate)
+      unsigned latency, 
+      unsigned block_frames,
+      unsigned *new_rate)
 {
    pa_sample_spec               spec;
    pa_buffer_attr        buffer_attr = {0};

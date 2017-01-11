@@ -37,27 +37,26 @@ static bool core_option_manager_parse_variable(
    char *config_val           = NULL;
    struct core_option *option = (struct core_option*)&opt->opts[idx];
 
-   option->key = strdup(var->key);
-   value       = strdup(var->value);
+   if (!string_is_empty(var->key))
+      option->key             = strdup(var->key);
+   if (!string_is_empty(var->value))
+      value                   = strdup(var->value);
+
    desc_end    = strstr(value, "; ");
 
    if (!desc_end)
-   {
-      free(value);
-      return false;
-   }
+      goto error;
 
    *desc_end    = '\0';
-   option->desc = strdup(value);
 
-   val_start    = desc_end + 2;
-   option->vals = string_split(val_start, "|");
+   if (!string_is_empty(value))
+      option->desc    = strdup(value);
+
+   val_start          = desc_end + 2;
+   option->vals       = string_split(val_start, "|");
 
    if (!option->vals)
-   {
-      free(value);
-      return false;
-   }
+      goto error;
 
    if (config_get_string(opt->conf, option->key, &config_val))
    {
@@ -78,6 +77,10 @@ static bool core_option_manager_parse_variable(
    free(value);
 
    return true;
+
+error:
+   free(value);
+   return false;
 }
 
 /**

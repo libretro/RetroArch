@@ -40,7 +40,7 @@ typedef struct audio_driver
     * Returns: audio driver handle on success, otherwise NULL.
     **/
    void *(*init)(const char *device, unsigned rate,
-         unsigned latency, unsigned *new_rate);
+         unsigned latency, unsigned block_frames, unsigned *new_rate);
 
    /*
     * @data         : Pointer to audio data handle.

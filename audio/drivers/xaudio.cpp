@@ -235,6 +235,7 @@ static size_t xaudio2_write(xaudio2_t *handle, const void *buf, size_t bytes_)
 }
 
 static void *xa_init(const char *device, unsigned rate, unsigned latency,
+      unsigned block_frames,
       unsigned *new_rate)
 {
    size_t bufsize;

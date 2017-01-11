@@ -104,6 +104,7 @@ Result csndPlaySound_custom(int chn, u32 flags, float vol, float pan,
 }
 
 static void *ctr_csnd_audio_init(const char *device, unsigned rate, unsigned latency,
+      unsigned block_frames,
       unsigned *new_rate)
 {
    ctr_csnd_audio_t *ctr = (ctr_csnd_audio_t*)calloc(1, sizeof(ctr_csnd_audio_t));

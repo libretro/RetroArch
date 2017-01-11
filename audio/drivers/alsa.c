@@ -54,6 +54,7 @@ static bool find_float_format(snd_pcm_t *pcm, void *data)
 }
 
 static void *alsa_init(const char *device, unsigned rate, unsigned latency,
+      unsigned block_frames,
       unsigned *new_rate)
 {
    snd_pcm_format_t format;

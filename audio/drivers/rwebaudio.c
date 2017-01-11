@@ -18,7 +18,6 @@
 #include <boolean.h>
 
 #include "../audio_driver.h"
-#include "../../configuration.h"
 
 /* forward declarations */
 unsigned RWebAudioSampleRate(void);
@@ -38,6 +37,7 @@ static void rwebaudio_free(void *data)
 }
 
 static void *rwebaudio_init(const char *device, unsigned rate, unsigned latency,
+      unsigned block_frames,
       unsigned *new_rate)
 {
    void *data           = RWebAudioInit(latency);

@@ -114,13 +114,13 @@ static void core_info_list_resolve_all_firmware(
          snprintf(desc_key, sizeof(desc_key), "firmware%u_desc", c);
          snprintf(opt_key,  sizeof(opt_key),  "firmware%u_opt",  c);
 
-         if (config_get_string(config, path_key, &tmp))
+         if (config_get_string(config, path_key, &tmp) && !string_is_empty(tmp))
          {
             info->firmware[c].path = strdup(tmp);
             free(tmp);
             tmp = NULL;
          }
-         if (config_get_string(config, desc_key, &tmp))
+         if (config_get_string(config, desc_key, &tmp) && !string_is_empty(tmp))
          {
             info->firmware[c].desc = strdup(tmp);
             free(tmp);
@@ -254,27 +254,27 @@ static core_info_list_t *core_info_list_new(const char *path)
          if (!conf)
             continue;
 
-         if (config_get_string(conf, "display_name", &tmp))
+         if (config_get_string(conf, "display_name", &tmp) && !string_is_empty(tmp))
          {
             core_info[i].display_name = strdup(tmp);
             free(tmp);
             tmp = NULL;
          }
-         if (config_get_string(conf, "corename", &tmp))
+         if (config_get_string(conf, "corename", &tmp) && !string_is_empty(tmp))
          {
             core_info[i].core_name = strdup(tmp);
             free(tmp);
             tmp = NULL;
          }
 
-         if (config_get_string(conf, "systemname", &tmp))
+         if (config_get_string(conf, "systemname", &tmp) && !string_is_empty(tmp))
          {
             core_info[i].systemname = strdup(tmp);
             free(tmp);
             tmp = NULL;
          }
 
-         if (config_get_string(conf, "manufacturer", &tmp))
+         if (config_get_string(conf, "manufacturer", &tmp) && !string_is_empty(tmp))
          {
             core_info[i].system_manufacturer = strdup(tmp);
             free(tmp);
@@ -285,7 +285,7 @@ static core_info_list_t *core_info_list_new(const char *path)
 
          core_info[i].firmware_count = count;
 
-         if (config_get_string(conf, "supported_extensions", &tmp))
+         if (config_get_string(conf, "supported_extensions", &tmp) && !string_is_empty(tmp))
          {
             core_info[i].supported_extensions      = strdup(tmp);
             core_info[i].supported_extensions_list =
@@ -295,7 +295,7 @@ static core_info_list_t *core_info_list_new(const char *path)
             tmp = NULL;
          }
 
-         if (config_get_string(conf, "authors", &tmp))
+         if (config_get_string(conf, "authors", &tmp) && !string_is_empty(tmp))
          {
             core_info[i].authors      = strdup(tmp);
             core_info[i].authors_list =
@@ -305,7 +305,7 @@ static core_info_list_t *core_info_list_new(const char *path)
             tmp = NULL;
          }
 
-         if (config_get_string(conf, "permissions", &tmp))
+         if (config_get_string(conf, "permissions", &tmp) && !string_is_empty(tmp))
          {
             core_info[i].permissions      = strdup(tmp);
             core_info[i].permissions_list =
@@ -315,7 +315,7 @@ static core_info_list_t *core_info_list_new(const char *path)
             tmp = NULL;
          }
 
-         if (config_get_string(conf, "license", &tmp))
+         if (config_get_string(conf, "license", &tmp) && !string_is_empty(tmp))
          {
             core_info[i].licenses      = strdup(tmp);
             core_info[i].licenses_list =
@@ -325,7 +325,7 @@ static core_info_list_t *core_info_list_new(const char *path)
             tmp = NULL;
          }
 
-         if (config_get_string(conf, "categories", &tmp))
+         if (config_get_string(conf, "categories", &tmp) && !string_is_empty(tmp))
          {
             core_info[i].categories      = strdup(tmp);
             core_info[i].categories_list =
@@ -335,7 +335,7 @@ static core_info_list_t *core_info_list_new(const char *path)
             tmp = NULL;
          }
 
-         if (config_get_string(conf, "database", &tmp))
+         if (config_get_string(conf, "database", &tmp) && !string_is_empty(tmp))
          {
             core_info[i].databases      = strdup(tmp);
             core_info[i].databases_list =
@@ -345,7 +345,7 @@ static core_info_list_t *core_info_list_new(const char *path)
             tmp = NULL;
          }
 
-         if (config_get_string(conf, "notes", &tmp))
+         if (config_get_string(conf, "notes", &tmp) && !string_is_empty(tmp))
          {
             core_info[i].notes     = strdup(tmp);
             core_info[i].note_list = string_split(core_info[i].notes, "|");
@@ -361,7 +361,8 @@ static core_info_list_t *core_info_list_new(const char *path)
          core_info[i].config_data = conf;
       }
 
-      core_info[i].path = strdup(contents->elems[i].data);
+      if (!string_is_empty(contents->elems[i].data))
+         core_info[i].path = strdup(contents->elems[i].data);
 
       if (!core_info[i].display_name)
          core_info[i].display_name =
@@ -816,11 +817,15 @@ bool core_info_database_supports_content_path(const char *database_path, const c
    char *database           = NULL;
    const char *delim        = NULL;
    const char *archive_path = NULL;
+   const char *new_path     = NULL;
 
    if (!core_info_curr_list)
       return false;
 
-   database = strdup(path_basename(database_path));
+   new_path                 = path_basename(database_path);
+
+   if (!string_is_empty(new_path))
+      database = strdup(new_path);
 
    path_remove_extension(database);
 

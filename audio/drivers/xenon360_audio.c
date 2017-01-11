@@ -34,7 +34,9 @@ typedef struct
 } xenon_audio_t;
 
 static void *xenon360_audio_init(const char *device,
-      unsigned rate, unsigned latency, unsigned *new_rate)
+      unsigned rate, unsigned latency,
+      unsigned block_frames,
+      unsigned *new_rate)
 {
    static bool inited = false;
 

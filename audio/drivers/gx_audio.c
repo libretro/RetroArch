@@ -68,7 +68,9 @@ static void dma_callback(void)
 }
 
 static void *gx_audio_init(const char *device,
-      unsigned rate, unsigned latency, unsigned *new_rate)
+      unsigned rate, unsigned latency,
+      unsigned block_frames,
+      unsigned *new_rate)
 {
    gx_audio_t *wa       = (gx_audio_t*)memalign(32, sizeof(*wa));
    if (!wa)

@@ -17,6 +17,7 @@
 #include "../../verbosity.h"
 
 static void *null_audio_init(const char *device, unsigned rate, unsigned latency,
+      unsigned block_frames,
       unsigned *new_rate)
 {
    RARCH_ERR("Using the null audio driver. RetroArch will be silent.");

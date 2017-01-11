@@ -324,8 +324,11 @@ static bool libretro_get_system_info_static(struct retro_system_info *info,
    retro_get_system_info(&dummy_info);
    memcpy(info, &dummy_info, sizeof(*info));
 
-   info->library_name    = strdup(dummy_info.library_name);
-   info->library_version = strdup(dummy_info.library_version);
+   if (!string_is_empty(dummy_info.library_name))
+      info->library_name    = strdup(dummy_info.library_name);
+   if (!string_is_empty(dummy_info.library_version))
+      info->library_version    = strdup(dummy_info.library_version);
+
    if (dummy_info.valid_extensions)
       info->valid_extensions = strdup(dummy_info.valid_extensions);
    return true;
@@ -356,11 +359,13 @@ bool libretro_get_system_info(const char *path,
       return false;
 
    memcpy(info, &dummy_info, sizeof(*info));
-   info->library_name        = strdup(dummy_info.library_name);
-   info->library_version     = strdup(dummy_info.library_version);
+   if (!string_is_empty(dummy_info.library_name))
+      info->library_name        = strdup(dummy_info.library_name);
+   if (!string_is_empty(dummy_info.library_version))
+      info->library_version     = strdup(dummy_info.library_version);
 
    if (dummy_info.valid_extensions)
-      info->valid_extensions = strdup(dummy_info.valid_extensions);
+      info->valid_extensions    = strdup(dummy_info.valid_extensions);
 
    dylib_close(lib);
 #else

@@ -155,7 +155,9 @@ static void alsa_thread_free(void *data)
 }
 
 static void *alsa_thread_init(const char *device,
-      unsigned rate, unsigned latency, unsigned *new_rate)
+      unsigned rate, unsigned latency,
+      unsigned block_frames,
+      unsigned *new_rate)
 {
    snd_pcm_uframes_t buffer_size;
    snd_pcm_format_t format;

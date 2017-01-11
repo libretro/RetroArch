@@ -44,6 +44,7 @@ typedef struct audio_thread
    unsigned *new_rate;
    unsigned out_rate;
    unsigned latency;
+   unsigned block_frames;
 } audio_thread_t;
 
 static void audio_thread_loop(void *data)
@@ -54,7 +55,8 @@ static void audio_thread_loop(void *data)
       return;
 
    RARCH_LOG("[Audio Thread]: Initializing audio driver.\n");
-   thr->driver_data   = thr->driver->init(thr->device, thr->out_rate, thr->latency, thr->new_rate);
+   thr->driver_data   = thr->driver->init(thr->device, thr->out_rate, thr->latency, 
+         thr->block_frames, thr->new_rate);
    slock_lock(thr->lock);
    thr->inited        = thr->driver_data ? 1 : -1;
    if (thr->inited > 0 && thr->driver->use_float)
@@ -277,7 +279,8 @@ static const audio_driver_t audio_thread = {
  **/
 bool audio_init_thread(const audio_driver_t **out_driver,
       void **out_data, const char *device, unsigned audio_out_rate,
-      unsigned *new_rate, unsigned latency, const audio_driver_t *drv)
+      unsigned *new_rate, unsigned block_frames,
+      unsigned latency, const audio_driver_t *drv)
 {
    audio_thread_t *thr = (audio_thread_t*)calloc(1, sizeof(*thr));
    if (!thr)
@@ -288,6 +291,7 @@ bool audio_init_thread(const audio_driver_t **out_driver,
    thr->out_rate       = audio_out_rate;
    thr->new_rate       = new_rate;
    thr->latency        = latency;
+   thr->block_frames   = block_frames;
 
    if (!(thr->cond     = scond_new()))
       goto error;

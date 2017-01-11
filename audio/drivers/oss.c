@@ -44,6 +44,7 @@
 static bool oss_is_paused = false;
 
 static void *oss_init(const char *device, unsigned rate, unsigned latency,
+      unsigned block_frames,
       unsigned *new_out_rate)
 {
    int frags, frag, channels, format, new_rate;

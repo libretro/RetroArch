@@ -81,6 +81,7 @@ static void al_free(void *data)
 }
 
 static void *al_init(const char *device, unsigned rate, unsigned latency,
+      unsigned block_frames,
       unsigned *new_rate)
 {
    al_t *al;

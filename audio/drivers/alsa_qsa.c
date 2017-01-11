@@ -19,7 +19,6 @@
 #include <sys/asoundlib.h>
 
 #include "../audio_driver.h"
-#include "../../configuration.h"
 
 #define MAX_FRAG_SIZE 3072
 #define DEFAULT_RATE 48000
@@ -46,13 +45,13 @@ typedef struct alsa
 typedef long snd_pcm_sframes_t;
 
 static void *alsa_qsa_init(const char *device,
-      unsigned rate, unsigned latency, unsigned *new_rate)
+      unsigned rate, unsigned latency, unsigned block_frames,
+      unsigned *new_rate)
 {
    int err, card, dev, i;
    snd_pcm_channel_info_t pi;
    snd_pcm_channel_params_t params = {0};
    snd_pcm_channel_setup_t setup   = {0};
-   settings_t *settings            = config_get_ptr();
    alsa_t *alsa                    = (alsa_t*)calloc(1, sizeof(alsa_t));
    if (!alsa)
       return NULL;
@@ -122,8 +121,8 @@ static void *alsa_qsa_init(const char *device,
       goto error;
    }
 
-   if (settings->audio.block_frames)
-      alsa->buf_size = settings->audio.block_frames * 4;
+   if (block_frames)
+      alsa->buf_size = block_frames * 4;
    else
       alsa->buf_size = next_pow2(32 * latency);
 
