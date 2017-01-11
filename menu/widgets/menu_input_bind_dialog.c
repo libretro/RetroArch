@@ -382,8 +382,10 @@ bool menu_input_key_bind_set_min_max(menu_input_ctx_bind_limits_t *lim)
 bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind)
 {
    struct menu_bind_state binds;
-   bool               timed_out = false;
-   settings_t *settings         = config_get_ptr();
+   static bool single_bind_delay = false;
+   bool           trigger_found  = false;
+   bool               timed_out  = false;
+   settings_t *settings          = config_get_ptr();
 
    rarch_timer_tick(&menu_input_binds.timer);
 
@@ -392,6 +394,11 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind)
 
    if (rarch_timer_has_expired(&menu_input_binds.timer))
    {
+      if (single_bind_delay)
+      {
+         single_bind_delay = false;
+         return true;
+      }
       input_driver_keyboard_mapping_set_block(false);
 
       menu_input_binds.begin++;
@@ -400,12 +407,18 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind)
       timed_out = true;
    }
 
-   snprintf(bind->s, bind->len,
-         "[%s]\npress keyboard or joypad\n(timeout %d %s)",
-         input_config_bind_map_get_desc(
-            menu_input_binds.begin - MENU_SETTINGS_BIND_BEGIN),
-         rarch_timer_get_timeout(&menu_input_binds.timer),
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SECONDS));
+   if (single_bind_delay)
+      snprintf(bind->s, bind->len, "Confirming key %s ...",
+            input_config_bind_map_get_desc(
+               menu_input_binds.begin - MENU_SETTINGS_BIND_BEGIN)
+            );
+   else
+      snprintf(bind->s, bind->len,
+            "[%s]\npress keyboard or joypad\n(timeout %d %s)",
+            input_config_bind_map_get_desc(
+               menu_input_binds.begin - MENU_SETTINGS_BIND_BEGIN),
+            rarch_timer_get_timeout(&menu_input_binds.timer),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SECONDS));
 
    /* binds.begin is updated in keyboard_press callback. */
    if (menu_input_binds.begin > menu_input_binds.last)
@@ -417,6 +430,14 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind)
       if (timed_out)
          input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_CANCEL_WAIT_KEYS, NULL);
 
+      /* If this is a single bind, add another delay of one second */
+      if (!timed_out && (binds.begin == binds.last))
+      {
+         single_bind_delay = true;
+         rarch_timer_begin_new_time(&binds.timer, 1);
+         return false;
+      }
+
       return true;
    }
 
@@ -425,13 +446,23 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind)
    input_driver_keyboard_mapping_set_block(true);
    menu_input_key_bind_poll_bind_state(&binds, menu_bind_port, timed_out);
 
-   if ((binds.skip && !menu_input_binds.skip) ||
-         menu_input_key_bind_poll_find_trigger(&menu_input_binds, &binds))
+   if (!single_bind_delay)
+      trigger_found = menu_input_key_bind_poll_find_trigger(&menu_input_binds, &binds);
+
+   if ((binds.skip && !menu_input_binds.skip) || trigger_found)
    {
       input_driver_keyboard_mapping_set_block(false);
 
       /* Avoid new binds triggering things right away. */
       input_driver_set_flushing_input();
+
+      /* If this is a single bind, add another delay of one second */
+      if (binds.begin == binds.last)
+      {
+         single_bind_delay = true;
+         rarch_timer_begin_new_time(&binds.timer, 1);
+         return false;
+      }
 
       binds.begin++;
 
