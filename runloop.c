@@ -88,7 +88,7 @@
 #endif
 
 #ifdef HAVE_MENU
-#define runloop_cmd_menu_press(current_input, old_input, trigger_input)   (BIT64_GET(trigger_input, RARCH_MENU_TOGGLE) || runloop_cmd_get_state_menu_toggle_button_combo(settings, current_input, old_input, trigger_input))
+#define runloop_cmd_menu_press(current_input, old_input, trigger_input)   (BIT64_GET(trigger_input, RARCH_MENU_TOGGLE))
 #endif
 
 enum  runloop_state
@@ -177,55 +177,6 @@ void runloop_msg_queue_push(const char *msg,
    slock_unlock(_runloop_msg_queue_lock);
 #endif
 }
-
-#ifdef HAVE_MENU
-static bool runloop_cmd_get_state_menu_toggle_button_combo(
-      settings_t *settings,
-      uint64_t current_input, uint64_t old_input,
-      uint64_t trigger_input)
-{
-   switch (settings->input.menu_toggle_gamepad_combo)
-   {
-      case INPUT_TOGGLE_NONE:
-         return false;
-      case INPUT_TOGGLE_DOWN_Y_L_R:
-         if (!BIT64_GET(current_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
-            return false;
-         if (!BIT64_GET(current_input, RETRO_DEVICE_ID_JOYPAD_Y))
-            return false;
-         if (!BIT64_GET(current_input, RETRO_DEVICE_ID_JOYPAD_L))
-            return false;
-         if (!BIT64_GET(current_input, RETRO_DEVICE_ID_JOYPAD_R))
-            return false;
-         break;
-      case INPUT_TOGGLE_L3_R3:
-         if (!BIT64_GET(current_input, RETRO_DEVICE_ID_JOYPAD_L3))
-            return false;
-         if (!BIT64_GET(current_input, RETRO_DEVICE_ID_JOYPAD_R3))
-            return false;
-         break;
-      case INPUT_TOGGLE_L1_R1_START_SELECT:
-         if (!BIT64_GET(current_input, RETRO_DEVICE_ID_JOYPAD_START))
-            return false;
-         if (!BIT64_GET(current_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
-            return false;
-         if (!BIT64_GET(current_input, RETRO_DEVICE_ID_JOYPAD_L))
-            return false;
-         if (!BIT64_GET(current_input, RETRO_DEVICE_ID_JOYPAD_R))
-            return false;
-         break;
-      case INPUT_TOGGLE_START_SELECT:
-         if (!BIT64_GET(current_input, RETRO_DEVICE_ID_JOYPAD_START))
-            return false;
-         if (!BIT64_GET(current_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
-            return false;
-         break;
-   }
-
-   input_driver_set_flushing_input();
-   return true;
-}
-#endif
 
 /**
  * rarch_game_specific_options:
