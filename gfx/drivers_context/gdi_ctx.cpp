@@ -298,7 +298,7 @@ void create_gdi_context(HWND hwnd, bool *quit)
    (void)quit;
    win32_gdi_hdc = GetDC(hwnd);
 
-   setup_gdi_pixel_format(win32_gdi_hdc);
+   //setup_gdi_pixel_format(win32_gdi_hdc);
 
    g_inited = true;
 }

@@ -521,19 +521,20 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
 
    switch (message)
    {
-      case WM_PAINT:
-      {
-         PAINTSTRUCT ps;
+      //case WM_PAINT:
+      //{
+         /*PAINTSTRUCT ps;
          HDC hdc = BeginPaint(hwnd, &ps);
 
          // All painting occurs here, between BeginPaint and EndPaint.
 
-         //FillRect(hdc, &ps.rcPaint, (HBRUSH) (COLOR_WINDOW+1));
+         FillRect(hdc, &ps.rcPaint, (HBRUSH) (COLOR_WINDOW+1));
 
-         EndPaint(hwnd, &ps);
-         return 0;
-         break;
-      }
+         EndPaint(hwnd, &ps);*/
+         //return DefWindowProc(hwnd, message, wparam, lparam);
+         //return 0;
+         //break;
+      //}
       case WM_DROPFILES:
       case WM_SYSCOMMAND:
       case WM_CHAR:

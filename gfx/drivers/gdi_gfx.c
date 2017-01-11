@@ -354,8 +354,25 @@ static void gdi_gfx_set_nonblock_state(void *data, bool toggle)
 
 static bool gdi_gfx_alive(void *data)
 {
-   (void)data;
-   video_driver_set_size(&gdi_video_width, &gdi_video_height);
+   gfx_ctx_size_t size_data;
+   unsigned temp_width  = 0;
+   unsigned temp_height = 0;
+   bool quit = false;
+   bool resize = false;
+ 
+   /* Needed because some context drivers don't track their sizes */
+   video_driver_get_size(&temp_width, &temp_height);
+
+   size_data.quit       = &quit;
+   size_data.resize     = &resize;
+   size_data.width      = &temp_width;
+   size_data.height     = &temp_height;
+
+   video_context_driver_check_window(&size_data);
+
+   if (temp_width != 0 && temp_height != 0)
+      video_driver_set_size(&temp_width, &temp_height);
+
    return true;
 }
 
