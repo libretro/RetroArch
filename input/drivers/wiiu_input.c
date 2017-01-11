@@ -18,6 +18,7 @@
 
 #include <boolean.h>
 #include <libretro.h>
+#include <retro_miscellaneous.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
