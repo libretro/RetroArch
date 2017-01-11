@@ -87,6 +87,9 @@
 #define DEFAULT_EXT ""
 #endif
 
+#define runloop_cmd_triggered(trigger_input, id) (BIT64_GET(trigger_input, id))
+#define runloop_cmd_pressed(old_input, id)       (BIT64_GET(old_input, id))
+
 enum  runloop_state
 {
    RUNLOOP_STATE_NONE = 0,
