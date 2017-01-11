@@ -650,7 +650,7 @@ uint64_t input_menu_keys_pressed(
       const struct retro_keybind *binds_auto       = NULL;
       unsigned max_users                           = settings->input.max_users;
 
-      if (settings->menu.unified_controls)
+      if (settings->menu.unified_controls && !menu_input_dialog_get_display_kb())
          return input_keys_pressed(old_input, last_input,
                trigger_input, runloop_paused);
 
