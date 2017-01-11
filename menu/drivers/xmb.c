@@ -2265,7 +2265,8 @@ static void xmb_draw_items(
       menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
 
       label_offset = xmb->margins.label.top;
-      if (i == current && menu_entry_get_sublabel(i, entry_sublabel, sizeof(entry_sublabel)))
+      if (i == current && width > 320 && height > 240
+         && menu_entry_get_sublabel(i, entry_sublabel, sizeof(entry_sublabel)))
       {
          label_offset = - xmb->margins.label.top;
 
