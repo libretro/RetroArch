@@ -62,6 +62,7 @@
 
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
+#include "../menu/menu_shader.h"
 #endif
 
 #ifdef HAVE_CHEEVOS
@@ -279,7 +280,7 @@ static bool content_load(content_ctx_info_t *info)
    }
 
 #ifdef HAVE_MENU
-   menu_driver_ctl(RARCH_MENU_CTL_SHADER_MANAGER_INIT, NULL);
+   menu_shader_manager_init();
 #endif
    command_event(CMD_EVENT_HISTORY_INIT, NULL);
    command_event(CMD_EVENT_RESUME, NULL);

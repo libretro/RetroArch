@@ -209,7 +209,7 @@ static bool menu_init(menu_handle_t *menu_data)
 #endif
    }
 
-   menu_driver_ctl(RARCH_MENU_CTL_SHADER_MANAGER_INIT, NULL);
+   menu_shader_manager_init();
 
    if (!menu_display_init())
       return false;
@@ -770,9 +770,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          if (!menu_driver_ctx || !menu_driver_ctx->context_destroy)
             return false;
          menu_driver_ctx->context_destroy(menu_userdata);
-         break;
-      case RARCH_MENU_CTL_SHADER_MANAGER_INIT:
-         menu_shader_manager_init();
          break;
       case RARCH_MENU_CTL_LIST_SET_SELECTION:
          {

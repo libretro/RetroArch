@@ -132,6 +132,10 @@ bool menu_shader_manager_init(void)
    settings_t *settings        = config_get_ptr();
    const char *config_path     = path_get(RARCH_PATH_CONFIG);
 
+   /* menu shader already initialized */
+   if (menu_driver_shader)
+      return true;
+
    menu_driver_shader          = (struct video_shader*)
       calloc(1, sizeof(struct video_shader));
    if (!menu_driver_shader)

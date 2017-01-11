@@ -681,7 +681,9 @@ uint64_t input_menu_keys_pressed(
          joypad_info.joy_idx        = 0;
          joypad_info.auto_binds     = settings->input.autoconf_binds[0];
 
-         if (settings->input.binds[0][RARCH_ENABLE_HOTKEY].valid && current_input->input_state(current_input_data, joypad_info, &binds[0], 0, RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY))
+         if (settings->input.binds[0][RARCH_ENABLE_HOTKEY].valid 
+               && current_input->input_state(current_input_data, joypad_info,
+                  &binds[0], 0, RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY))
             input_driver_block_libretro_input = true;
          else
             input_driver_block_hotkey         = true;
