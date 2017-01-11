@@ -87,10 +87,6 @@
 #define DEFAULT_EXT ""
 #endif
 
-#ifdef HAVE_MENU
-#define runloop_cmd_menu_press(current_input, old_input, trigger_input)   (BIT64_GET(trigger_input, RARCH_MENU_TOGGLE))
-#endif
-
 enum  runloop_state
 {
    RUNLOOP_STATE_NONE = 0,
@@ -803,7 +799,7 @@ static enum runloop_state runloop_check_state(
       }
    }
    else if ((!menu_event_keyboard_is_set(RETROK_F1) && 
-            runloop_cmd_menu_press(current_input, old_input, trigger_input)) ||
+            runloop_cmd_triggered(trigger_input, RARCH_MENU_TOGGLE)) ||
          rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
    {
       if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
