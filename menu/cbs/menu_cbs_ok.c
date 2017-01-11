@@ -147,8 +147,8 @@ finish:
       fill_pathname_parent_dir(parent_dir,
             state->path, sizeof(parent_dir));
 
-      generic_action_ok_displaylist_push(parent_dir, NULL,
-            subdir_path, 0, 0, 0, ACTION_OK_DL_CORE_CONTENT_DIRS_SUBDIR_LIST);
+      /*generic_action_ok_displaylist_push(parent_dir, NULL,
+            subdir_path, 0, 0, 0, ACTION_OK_DL_CORE_CONTENT_DIRS_SUBDIR_LIST);*/
    }
 
    if (err)
