@@ -337,7 +337,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    if (msg)
       font_driver_render_msg(NULL, msg, NULL);
 
-   //InvalidateRect(hwnd, NULL, true);
+   InvalidateRect(hwnd, NULL, true);
 
    video_context_driver_update_window_title();
 
