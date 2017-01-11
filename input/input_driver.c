@@ -268,6 +268,12 @@ void input_poll(void)
    rarch_joypad_info_t joypad_info;
    settings_t *settings           = config_get_ptr();
    unsigned max_users             = settings->input.max_users;
+   
+   if (input_driver_flushing_input)
+   {
+      input_driver_flushing_input = false;
+      return;
+   }
 
    current_input->poll(current_input_data);
 
@@ -607,18 +613,7 @@ static INLINE bool input_menu_keys_pressed_internal(
 
 #define input_keys_pressed_end() \
    *trigger_input = ret & ~old_input; \
-   *last_input    = ret; \
-   if (input_driver_flushing_input) \
-   { \
-      input_driver_flushing_input = false; \
-      if (ret) \
-      { \
-         ret = 0; \
-         if (runloop_paused) \
-            BIT64_SET(ret, RARCH_PAUSE_TOGGLE); \
-         input_driver_flushing_input = true; \
-      } \
-   }
+   *last_input    = ret;
 
 /**
  * input_menu_keys_pressed:
