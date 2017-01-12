@@ -38,8 +38,6 @@ void menu_event_kb_set(bool down, enum retro_key key);
 
 unsigned char menu_event_kb_is_set(enum retro_key key);
 
-void menu_event_kb_set_internal(unsigned idx, unsigned char key);
-
 RETRO_END_DECLS
 
 #endif

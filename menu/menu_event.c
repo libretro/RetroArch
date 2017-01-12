@@ -26,6 +26,7 @@
 
 #include <string/stdstring.h>
 
+#include "widgets/menu_dialog.h"
 #include "widgets/menu_entry.h"
 #include "widgets/menu_input_dialog.h"
 #include "widgets/menu_osk.h"
@@ -36,8 +37,6 @@
 #include "menu_animation.h"
 #include "menu_display.h"
 #include "menu_navigation.h"
-
-#include "widgets/menu_dialog.h"
 
 #include "../configuration.h"
 #include "../runloop.h"
@@ -91,7 +90,7 @@ unsigned char menu_event_kb_is_set(enum retro_key key)
    return menu_keyboard_key_state[key];
 }
 
-void menu_event_kb_set_internal(unsigned idx, unsigned char key)
+static void menu_event_kb_set_internal(unsigned idx, unsigned char key)
 {
    menu_keyboard_key_state[idx] = key;
 }
