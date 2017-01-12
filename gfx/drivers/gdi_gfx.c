@@ -267,7 +267,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    GetClientRect(hwnd, &rect);
    video_context_driver_get_video_size(&mode);
 
-   //printf("left %d top %d right %d bottom %d mode %d x %d size %d x %d pitch %d\n", rect.left, rect.top, rect.right, rect.bottom, mode.width, mode.height, width, height, pitch);
+   //printf("left %d top %d right %d bottom %d mode %d x %d size %d x %d pitch %d bits %d\n", rect.left, rect.top, rect.right, rect.bottom, mode.width, mode.height, width, height, pitch, bits);
 
    if (draw)
    {
@@ -275,7 +275,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       HDC memDC = CreateCompatibleDC(winDC);
       HBITMAP bmp = CreateCompatibleBitmap(winDC, width, height);
       HBITMAP bmp_old;
-      BITMAPINFO info;
+      BITMAPINFO *info = (BITMAPINFO*)calloc(1, sizeof(*info) + (3 * sizeof(RGBQUAD)));
       //HBRUSH brush;
       int ret = 0;
 
@@ -287,52 +287,29 @@ static bool gdi_gfx_frame(void *data, const void *frame,
 
       //DeleteObject(brush);
 
-      ZeroMemory(&info, sizeof(BITMAPINFO));
-      info.bmiHeader.biBitCount = bits;
-      info.bmiHeader.biWidth = pitch;
-      info.bmiHeader.biHeight = -height;
-      info.bmiHeader.biPlanes = 1;
-      info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-      info.bmiHeader.biSizeImage = 0;
-      info.bmiHeader.biCompression = BI_RGB;
-/*
-      if (gdi_rgb32)
+      info->bmiHeader.biBitCount = bits;
+      info->bmiHeader.biWidth = pitch;
+      info->bmiHeader.biHeight = -height;
+      info->bmiHeader.biPlanes = 1;
+      info->bmiHeader.biSize = sizeof(BITMAPINFOHEADER) + (3 * sizeof(RGBQUAD));
+      info->bmiHeader.biSizeImage = 0;
+
+      if (bits == 16)
       {
-         info.bmiColors[0].rgbBlue = 0xFF;
-         info.bmiColors[0].rgbGreen = 0x00;
-         info.bmiColors[0].rgbRed = 0x00;
-         info.bmiColors[0].rgbReserved = 0x00;
+         unsigned *masks = (unsigned*)info->bmiColors;
 
-         info.bmiColors[1].rgbBlue = 0x00;
-         info.bmiColors[1].rgbGreen = 0xFF;
-         info.bmiColors[1].rgbRed = 0x00;
-         info.bmiColors[1].rgbReserved = 0x00;
+         info->bmiHeader.biCompression = BI_BITFIELDS;
 
-         info.bmiColors[2].rgbBlue = 0x00;
-         info.bmiColors[2].rgbGreen = 0x00;
-         info.bmiColors[2].rgbRed = 0xFF;
-         info.bmiColors[2].rgbReserved = 0x00;
+         /* map RGB565 color bits, default is 555 */
+         masks[0] = 0xF800;
+         masks[1] = 0x07E0;
+         masks[2] = 0x1F;
       }
       else
-      {
-         info.bmiColors[0].rgbBlue = 0x1F;
-         info.bmiColors[0].rgbGreen = 0x00;
-         info.bmiColors[0].rgbRed = 0x00;
-         info.bmiColors[0].rgbReserved = 0x00;
+         info->bmiHeader.biCompression = BI_RGB;
 
-         info.bmiColors[1].rgbBlue = 0x00;
-         info.bmiColors[1].rgbGreen = 0x1F;
-         info.bmiColors[1].rgbRed = 0x00;
-         info.bmiColors[1].rgbReserved = 0x00;
-
-         info.bmiColors[2].rgbBlue = 0x00;
-         info.bmiColors[2].rgbGreen = 0x00;
-         info.bmiColors[2].rgbRed = 0x1F;
-         info.bmiColors[2].rgbReserved = 0x00;
-      }
-*/
       ret = StretchDIBits(memDC, 0, 0, width, height, 0, 0, width, height,
-            frame_to_copy, &info, DIB_RGB_COLORS, SRCCOPY);
+            frame_to_copy, info, DIB_RGB_COLORS, SRCCOPY);
 
       //printf("StretchDIBits: %d\n", ret);
 
@@ -348,6 +325,8 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       DeleteObject(bmp);
       DeleteDC(memDC);
       ReleaseDC(hwnd, winDC);
+
+      free(info);
    }
 
    if (msg)
