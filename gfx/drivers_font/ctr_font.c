@@ -341,13 +341,12 @@ static void ctr_font_render_msg(void* data, const char* msg,
                                 const void* userdata)
 {
    float x, y, scale, drop_mod, drop_alpha;
-   unsigned color, color_dark, r, g, b, alpha, r_dark, g_dark, b_dark, alpha_dark;
    unsigned width, height;
    int drop_x, drop_y;
    unsigned max_glyphs;
    enum text_alignment text_align;
-   settings_t* settings = config_get_ptr();
-   ctr_font_t* font = (ctr_font_t*)data;
+   unsigned color, color_dark, r, g, b, alpha, r_dark, g_dark, b_dark, alpha_dark;
+   ctr_font_t                * font = (ctr_font_t*)data;
    const struct font_params* params = (const struct font_params*)userdata;
 
    if (!font || !msg || !*msg)
@@ -357,53 +356,53 @@ static void ctr_font_render_msg(void* data, const char* msg,
 
    if (params)
    {
-//      printf("%s\n", msg);
-      x           = params->x;
-      y           = params->y;
-      scale       = params->scale;
-      text_align  = params->text_align;
-      drop_x      = params->drop_x;
-      drop_y      = params->drop_y;
-      drop_mod    = params->drop_mod;
-      drop_alpha  = params->drop_alpha;
+      x              = params->x;
+      y              = params->y;
+      scale          = params->scale;
+      text_align     = params->text_align;
+      drop_x         = params->drop_x;
+      drop_y         = params->drop_y;
+      drop_mod       = params->drop_mod;
+      drop_alpha     = params->drop_alpha;
       r              = FONT_COLOR_GET_RED(params->color);
       g              = FONT_COLOR_GET_GREEN(params->color);
       b              = FONT_COLOR_GET_BLUE(params->color);
       alpha          = FONT_COLOR_GET_ALPHA(params->color);
       color          = params->color;
-//      color          = COLOR_ABGR(r, g, b, alpha);
    }
    else
    {
-      x           = settings->video.msg_pos_x;
-      y           = settings->video.msg_pos_y;
-      scale       = 1.0f;
-      text_align  = TEXT_ALIGN_LEFT;
+      settings_t* settings = config_get_ptr();
 
-      r           = (settings->video.msg_color_r * 255);
-      g           = (settings->video.msg_color_g * 255);
-      b           = (settings->video.msg_color_b * 255);
+      x              = settings->video.msg_pos_x;
+      y              = settings->video.msg_pos_y;
+      scale          = 1.0f;
+      text_align     = TEXT_ALIGN_LEFT;
+
+      r              = (settings->video.msg_color_r * 255);
+      g              = (settings->video.msg_color_g * 255);
+      b              = (settings->video.msg_color_b * 255);
       alpha          = 255;
       color          = COLOR_ABGR(r, g, b, alpha);
 
-      drop_x = -2;
-      drop_y = -2;
-      drop_mod = 0.3f;
-      drop_alpha = 1.0f;
+      drop_x         = -2;
+      drop_y         = -2;
+      drop_mod       = 0.3f;
+      drop_alpha     = 1.0f;
    }
 
-   max_glyphs = strlen(msg);
+   max_glyphs        = strlen(msg);
 
    if (drop_x || drop_y)
-      max_glyphs *= 2;
+      max_glyphs    *= 2;
 
    if (drop_x || drop_y)
    {
-      r_dark        = r * drop_mod;
-      g_dark        = g * drop_mod;
-      b_dark        = b * drop_mod;
+      r_dark         = r * drop_mod;
+      g_dark         = g * drop_mod;
+      b_dark         = b * drop_mod;
       alpha_dark     = alpha * drop_alpha;
-      color_dark = COLOR_ABGR(r_dark, g_dark, b_dark, alpha_dark);
+      color_dark     = COLOR_ABGR(r_dark, g_dark, b_dark, alpha_dark);
 
       ctr_font_render_message(font, msg, scale, color_dark,
                               x + scale * drop_x / width, y +

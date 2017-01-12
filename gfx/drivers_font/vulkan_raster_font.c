@@ -261,21 +261,20 @@ static void vulkan_raster_font_flush(vulkan_raster_t *font)
 static void vulkan_raster_font_render_msg(void *data, const char *msg,
       const void *userdata)
 {
-   float x, y, scale, drop_mod, drop_alpha;
    float color[4], color_dark[4];
    int drop_x, drop_y;
    bool full_screen;
    unsigned max_glyphs;
    enum text_alignment text_align;
+   float x, y, scale, drop_mod, drop_alpha;
    vk_t *vk                         = NULL;
    vulkan_raster_t *font            = (vulkan_raster_t*)data;
-   settings_t *settings             = config_get_ptr();
    const struct font_params *params = (const struct font_params*)userdata;
 
    if (!font || !msg || !*msg)
       return;
 
-   vk = font->vk;
+   vk             = font->vk;
 
    if (params)
    {
@@ -300,6 +299,8 @@ static void vulkan_raster_font_render_msg(void *data, const char *msg,
    }
    else
    {
+      settings_t *settings = config_get_ptr();
+
       x           = settings->video.msg_pos_x;
       y           = settings->video.msg_pos_y;
       scale       = 1.0f;
@@ -309,12 +310,12 @@ static void vulkan_raster_font_render_msg(void *data, const char *msg,
       color[0]    = settings->video.msg_color_r;
       color[1]    = settings->video.msg_color_g;
       color[2]    = settings->video.msg_color_b;
-      color[3] = 1.0f;
+      color[3]    = 1.0f;
 
-      drop_x = -2;
-      drop_y = -2;
-      drop_mod = 0.3f;
-      drop_alpha = 1.0f;
+      drop_x      = -2;
+      drop_y      = -2;
+      drop_mod    = 0.3f;
+      drop_alpha  = 1.0f;
    }
 
    vulkan_raster_font_setup_viewport(font, full_screen);
@@ -327,8 +328,8 @@ static void vulkan_raster_font_render_msg(void *data, const char *msg,
          6 * sizeof(struct vk_vertex) * max_glyphs, &font->range))
       return;
 
-   font->vertices = 0;
-   font->pv = (struct vk_vertex*)font->range.data;
+   font->vertices   = 0;
+   font->pv         = (struct vk_vertex*)font->range.data;
 
    if (drop_x || drop_y)
    {

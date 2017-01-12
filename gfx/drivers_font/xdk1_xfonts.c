@@ -68,7 +68,6 @@ static void xfonts_render_msg(void *data, const char *msg,
 {
    wchar_t str[PATH_MAX_LENGTH];
    float x, y;
-   settings_t *settings = config_get_ptr();
    const struct font_params *params = (const struct font_params*)userdata;
    xfonts_t *xfonts = (xfonts_t*)data;
 
@@ -79,6 +78,8 @@ static void xfonts_render_msg(void *data, const char *msg,
    }
    else
    {
+      settings_t *settings = config_get_ptr();
+
       x = settings->video.msg_pos_x;
       y = settings->video.msg_pos_y;
    }

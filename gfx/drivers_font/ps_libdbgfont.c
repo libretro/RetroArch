@@ -68,7 +68,6 @@ static void libdbg_font_render_msg(void *data, const char *msg,
 {
    float x, y, scale;
    unsigned color;
-   settings_t *settings = config_get_ptr();
    const struct font_params *params = (const struct font_params*)userdata;
 
    (void)data;
@@ -82,10 +81,11 @@ static void libdbg_font_render_msg(void *data, const char *msg,
    }
    else
    {
-      x     = settings->video.msg_pos_x;
-      y     = 0.90f;
-      scale = 1.04f;
-      color = SILVER;
+      settings_t *settings = config_get_ptr();
+      x                    = settings->video.msg_pos_x;
+      y                    = 0.90f;
+      scale                = 1.04f;
+      color                = SILVER;
    }
 
    DbgFontPrint(x, y, scale, color, msg);

@@ -77,11 +77,10 @@ static const struct font_glyph *caca_font_get_glyph(
 static void caca_render_msg(void *data, const char *msg,
       const void *userdata)
 {
-   caca_raster_t *font = (caca_raster_t*)data;
    float x, y;
    unsigned width, height;
    unsigned newX, newY;
-   settings_t *settings = config_get_ptr();
+   caca_raster_t              *font = (caca_raster_t*)data;
    const struct font_params *params = (const struct font_params*)userdata;
 
    if (!font || string_is_empty(msg))
@@ -94,6 +93,8 @@ static void caca_render_msg(void *data, const char *msg,
    }
    else
    {
+      settings_t *settings = config_get_ptr();
+
       x = settings->video.msg_pos_x;
       y = settings->video.msg_pos_y;
    }
@@ -102,11 +103,11 @@ static void caca_render_msg(void *data, const char *msg,
        !*font->caca->caca_cv || !*font->caca->caca_display)
       return;
 
-   width = caca_get_canvas_width(*font->caca->caca_cv);
-   height = caca_get_canvas_height(*font->caca->caca_cv);
+   width    = caca_get_canvas_width(*font->caca->caca_cv);
+   height   = caca_get_canvas_height(*font->caca->caca_cv);
 
-   newX = x * width;
-   newY = height - (y * height);
+   newX     = x * width;
+   newY     = height - (y * height);
 
    if (strlen(msg) + newX > width)
       newX -= strlen(msg) + newX - width;
