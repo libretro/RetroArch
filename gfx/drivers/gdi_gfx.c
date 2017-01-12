@@ -267,7 +267,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    GetClientRect(hwnd, &rect);
    video_context_driver_get_video_size(&mode);
 
-   //printf("left %d top %d right %d bottom %d mode %d x %d size %d x %d\n", rect.left, rect.top, rect.right, rect.bottom, mode.width, mode.height, width, height);
+   //printf("left %d top %d right %d bottom %d mode %d x %d size %d x %d pitch %d\n", rect.left, rect.top, rect.right, rect.bottom, mode.width, mode.height, width, height, pitch);
 
    if (draw)
    {
@@ -289,11 +289,11 @@ static bool gdi_gfx_frame(void *data, const void *frame,
 
       ZeroMemory(&info, sizeof(BITMAPINFO));
       info.bmiHeader.biBitCount = bits;
-      info.bmiHeader.biWidth = width;
+      info.bmiHeader.biWidth = pitch;
       info.bmiHeader.biHeight = -height;
       info.bmiHeader.biPlanes = 1;
       info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-      info.bmiHeader.biSizeImage = 0;//pitch * height;
+      info.bmiHeader.biSizeImage = 0;
       info.bmiHeader.biCompression = BI_RGB;
 /*
       if (gdi_rgb32)
