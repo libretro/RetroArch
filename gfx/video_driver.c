@@ -22,6 +22,7 @@
 #include <file/config_file.h>
 #include <features/features_cpu.h>
 #include <file/file_path.h>
+#include <string/stdstring.h>
 
 #include <retro_assert.h>
 #include <gfx/scaler/pixconv.h>
@@ -384,16 +385,11 @@ static void deinit_video_filter(void)
 static void init_video_filter(enum retro_pixel_format colfmt)
 {
    unsigned width, height, pow2_x, pow2_y, maxsize;
-   void *buf                        = NULL;
-   struct retro_game_geometry *geom = NULL;
-   settings_t *settings             = config_get_ptr();
+   void *buf                            = NULL;
+   struct retro_game_geometry *geom     = NULL;
+   settings_t *settings                 = config_get_ptr();
    struct retro_system_av_info *av_info =
       video_viewport_get_system_av_info();
-
-   deinit_video_filter();
-
-   if (!*settings->path.softfilter_plugin)
-      return;
 
    /* Deprecated format. Gets pre-converted. */
    if (colfmt == RETRO_PIXEL_FORMAT_0RGB1555)
@@ -411,8 +407,8 @@ static void init_video_filter(enum retro_pixel_format colfmt)
    if (!geom)
       return;
 
-   width   = geom->max_width;
-   height  = geom->max_height;
+   width                     = geom->max_width;
+   height                    = geom->max_height;
 
    video_driver_state_filter = rarch_softfilter_new(
          settings->path.softfilter_plugin,
@@ -432,11 +428,12 @@ static void init_video_filter(enum retro_pixel_format colfmt)
    maxsize                             = MAX(pow2_x, pow2_y);
    video_driver_state_scale            = maxsize / RARCH_SCALE_BASE;
    video_driver_state_out_rgb32        = rarch_softfilter_get_output_format(
-         video_driver_state_filter) == RETRO_PIXEL_FORMAT_XRGB8888;
+                                         video_driver_state_filter) == 
+                                         RETRO_PIXEL_FORMAT_XRGB8888;
 
-   video_driver_state_out_bpp   = 
-      video_driver_state_out_rgb32 ?
-      sizeof(uint32_t) : sizeof(uint16_t);
+   video_driver_state_out_bpp          = video_driver_state_out_rgb32 ?
+                                         sizeof(uint32_t)             : 
+                                         sizeof(uint16_t);
 
    /* TODO: Aligned output. */
 #ifdef _3DS
@@ -639,7 +636,11 @@ static bool init_video(void)
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
-   init_video_filter(video_driver_pix_fmt);
+   deinit_video_filter();
+
+   if (!string_is_empty(settings->path.softfilter_plugin))
+      init_video_filter(video_driver_pix_fmt);
+
    command_event(CMD_EVENT_SHADER_DIR_INIT, NULL);
 
    if (av_info)

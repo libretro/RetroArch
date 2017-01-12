@@ -181,11 +181,10 @@ static const gfx_ctx_driver_t *video_context_driver_init(
       enum gfx_ctx_api api, unsigned major,
       unsigned minor, bool hw_render_ctx)
 {
-   settings_t *settings = config_get_ptr();
-
    if (ctx->bind_api(data, api, major, minor))
    {
-      void *ctx_data = ctx->init(data);
+      settings_t *settings = config_get_ptr();
+      void       *ctx_data = ctx->init(data);
 
       if (!ctx_data)
          return NULL;
