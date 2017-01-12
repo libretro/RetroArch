@@ -734,8 +734,6 @@ uint64_t input_menu_keys_pressed(
 
       for (i = 0; i < RARCH_BIND_LIST_END; i++)
       {
-         unsigned port;
-
          if (i != RARCH_MENU_TOGGLE &&
                input_menu_keys_pressed_internal(binds, settings, joypad_info, i, max_users,
                   settings->input.binds[0][i].valid,
