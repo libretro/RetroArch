@@ -797,10 +797,8 @@ uint64_t input_menu_keys_pressed(
    *trigger_input = ret & ~old_input;
    *last_input    = ret;
 
-#ifdef HAVE_MENU
    if (menu_driver_is_binding_state())
       *trigger_input = 0;
-#endif
 
    return ret;
 }
