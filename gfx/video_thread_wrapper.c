@@ -239,7 +239,7 @@ static void video_thread_reply(thread_video_t *thr, const thread_packet_t *pkt)
 {
    slock_lock(thr->lock);
 
-   thr->cmd_data = *pkt;
+   thr->cmd_data  = *pkt;
 
    thr->reply_cmd = pkt->type;
    thr->send_cmd  = CMD_VIDEO_NONE;
@@ -254,7 +254,7 @@ static void video_thread_send_packet(thread_video_t *thr,
 {
    slock_lock(thr->lock);
 
-   thr->cmd_data = *pkt;
+   thr->cmd_data  = *pkt;
 
    thr->send_cmd  = pkt->type;
    thr->reply_cmd = CMD_VIDEO_NONE;
@@ -272,7 +272,7 @@ static void video_thread_wait_reply(thread_video_t *thr, thread_packet_t *pkt)
    while (pkt->type != thr->reply_cmd)
       scond_wait(thr->cond_cmd, thr->lock);
 
-   *pkt = thr->cmd_data;
+   *pkt               = thr->cmd_data;
    thr->cmd_data.type = CMD_VIDEO_NONE;
 
    slock_unlock(thr->lock);

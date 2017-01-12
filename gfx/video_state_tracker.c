@@ -81,7 +81,9 @@ state_tracker_t* state_tracker_init(const struct state_tracker_info *info)
 {
    unsigned i;
    struct state_tracker_internal *tracker_info = NULL;
-   state_tracker_t *tracker = (state_tracker_t*)calloc(1, sizeof(*tracker));
+   state_tracker_t                    *tracker = (state_tracker_t*)
+      calloc(1, sizeof(*tracker));
+
    if (!tracker)
       return NULL;
 
@@ -93,22 +95,17 @@ state_tracker_t* state_tracker_init(const struct state_tracker_info *info)
 
       if (!tracker->py)
       {
-         free(tracker);
-         RARCH_ERR("Failed to init Python script.\n");
-         return NULL;
+         RARCH_ERR("Failed to initialize Python script.\n");
+         goto error;
       }
    }
 #endif
 
-   tracker_info = (struct state_tracker_internal*)
+   tracker_info       = (struct state_tracker_internal*)
       calloc(info->info_elem, sizeof(struct state_tracker_internal));
 
    if (!tracker_info)
-   {
-      RARCH_ERR("Allocation of state tracker info failed.\n");
-      free(tracker);
-      return NULL;
-   }
+      goto error;
 
    tracker->info      = tracker_info;
    tracker->info_elem = info->info_elem;
@@ -120,6 +117,7 @@ state_tracker_t* state_tracker_init(const struct state_tracker_info *info)
 
       strlcpy(tracker->info[i].id, info->info[i].id,
             sizeof(tracker->info[i].id));
+
       tracker->info[i].addr  = info->info[i].addr;
       tracker->info[i].type  = info->info[i].type;
       tracker->info[i].mask  = (info->info[i].mask == 0) 
@@ -131,10 +129,10 @@ state_tracker_t* state_tracker_init(const struct state_tracker_info *info)
       {
          if (!tracker->py)
          {
-            free(tracker->info);
-            free(tracker);
             RARCH_ERR("Python semantic was requested, but Python tracker is not loaded.\n");
-            return NULL;
+
+            free(tracker->info);
+            goto error;
          }
          tracker->info[i].py = tracker->py;
       }
@@ -160,6 +158,11 @@ state_tracker_t* state_tracker_init(const struct state_tracker_info *info)
    }
 
    return tracker;
+
+error:
+   RARCH_ERR("Allocation of state tracker info failed.\n");
+   free(tracker);
+   return NULL;
 }
 
 /**
