@@ -35,7 +35,9 @@ static unsigned gdi_video_width = 0;
 static unsigned gdi_video_height = 0;
 static unsigned gdi_video_pitch = 0;
 static unsigned gdi_video_bits = 0;
-static bool gdi_rgb32 = 0;
+static unsigned gdi_menu_bits = 0;
+static bool gdi_rgb32 = false;
+static bool gdi_menu_rgb32 = false;
 
 static void gdi_gfx_free(void *data);
 
@@ -218,12 +220,19 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    const void *frame_to_copy = frame;
    unsigned width = 0;
    unsigned height = 0;
+   unsigned bits = gdi_video_bits;
    bool draw = true;
    gdi_t *gdi = (gdi_t*)data;
+   gfx_ctx_mode_t mode;
    HWND hwnd = win32_get_window();
+   RECT rect;
 
    if (!frame || !frame_width || !frame_height)
       return true;
+
+#ifdef HAVE_MENU
+   menu_driver_ctl(RARCH_MENU_CTL_FRAME, NULL);
+#endif
 
    if (gdi_video_width != frame_width || gdi_video_height != frame_height || gdi_video_pitch != pitch)
    {
@@ -232,25 +241,33 @@ static bool gdi_gfx_frame(void *data, const void *frame,
          gdi_video_width = frame_width;
          gdi_video_height = frame_height;
          gdi_video_pitch = pitch;
-         gdi_gfx_free(NULL);
-         gdi_gfx_create();
+         //gdi_gfx_free(NULL);
+         //gdi_gfx_create();
       }
    }
 
    if (gdi_menu_frame)
+   {
       frame_to_copy = gdi_menu_frame;
+      width = gdi_menu_width;
+      height = gdi_menu_height;
+      pitch = gdi_menu_pitch;
+      bits = gdi_menu_bits;
+   }
+   else
+   {
+      width = gdi_video_width;
+      height = gdi_video_height;
+      pitch = gdi_video_pitch;
 
-   //width = gdi_get_canvas_width(gdi_cv);
-   //height = gdi_get_canvas_height(gdi_cv);
-   width = frame_width;
-   height = frame_height;
+      if (frame_width == 4 && frame_height == 4 && (frame_width < width && frame_height < height))
+         draw = false;
+   }
 
-   if (frame_to_copy == frame && frame_width == 4 && frame_height == 4 && (frame_width < width && frame_height < height))
-      draw = false;
+   GetClientRect(hwnd, &rect);
+   video_context_driver_get_video_size(&mode);
 
-#ifdef HAVE_MENU
-   menu_driver_ctl(RARCH_MENU_CTL_FRAME, NULL);
-#endif
+   //printf("left %d top %d right %d bottom %d mode %d x %d size %d x %d\n", rect.left, rect.top, rect.right, rect.bottom, mode.width, mode.height, width, height);
 
    if (draw)
    {
@@ -259,29 +276,24 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       HBITMAP bmp = CreateCompatibleBitmap(winDC, width, height);
       HBITMAP bmp_old;
       BITMAPINFO info;
-      gfx_ctx_mode_t mode;
-      RECT rect;
-      HBRUSH brush;
-
-      GetClientRect(hwnd, &rect);
+      //HBRUSH brush;
+      int ret = 0;
 
       bmp_old = SelectObject(memDC, bmp);
 
-      brush = CreateSolidBrush(GetSysColor(COLOR_WINDOW));
+      //brush = CreateSolidBrush(GetSysColor(COLOR_WINDOW));
 
-      FillRect(memDC, &rect, brush);
+      //FillRect(memDC, &rect, brush);
 
-      DeleteObject(brush);
-
-      video_context_driver_get_video_size(&mode);
+      //DeleteObject(brush);
 
       ZeroMemory(&info, sizeof(BITMAPINFO));
-      info.bmiHeader.biBitCount = gdi_video_bits;
+      info.bmiHeader.biBitCount = bits;
       info.bmiHeader.biWidth = width;
       info.bmiHeader.biHeight = -height;
       info.bmiHeader.biPlanes = 1;
       info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-      info.bmiHeader.biSizeImage = pitch * height;
+      info.bmiHeader.biSizeImage = 0;//pitch * height;
       info.bmiHeader.biCompression = BI_RGB;
 /*
       if (gdi_rgb32)
@@ -319,13 +331,17 @@ static bool gdi_gfx_frame(void *data, const void *frame,
          info.bmiColors[2].rgbReserved = 0x00;
       }
 */
-      StretchDIBits(memDC, 0, 0, mode.width, mode.height, 0, 0, width, height,
+      ret = StretchDIBits(memDC, 0, 0, width, height, 0, 0, width, height,
             frame_to_copy, &info, DIB_RGB_COLORS, SRCCOPY);
 
-      BitBlt(winDC,
-            rect.left, rect.top,
-            rect.right - rect.left, rect.bottom - rect.top,
-            memDC, 0, 0, SRCCOPY);
+      //printf("StretchDIBits: %d\n", ret);
+
+      ret = StretchBlt(winDC,
+            0, 0,
+            mode.width, mode.height,
+            memDC, 0, 0, width, height, SRCCOPY);
+
+      //printf("BitBlt: %d\n", ret);
 
       SelectObject(memDC, bmp_old);
 
@@ -465,7 +481,13 @@ static void gdi_set_texture_frame(void *data,
          gdi_menu_frame = (unsigned char*)malloc(pitch * height);
 
    if (gdi_menu_frame && frame && pitch && height)
+   {
       memcpy(gdi_menu_frame, frame, pitch * height);
+      gdi_menu_width = width;
+      gdi_menu_height = height;
+      gdi_menu_pitch = pitch;
+      gdi_menu_bits = rgb32 ? 32 : 16;
+   }
 }
 
 static void gdi_set_osd_msg(void *data, const char *msg,
@@ -549,6 +571,11 @@ static void gdi_gfx_get_poke_interface(void *data,
 static void gdi_gfx_set_viewport(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate)
 {
+}
+
+bool gdi_has_menu_frame()
+{
+   return (gdi_menu_frame != NULL);
 }
 
 video_driver_t video_gdi = {

@@ -43,6 +43,11 @@
 #include "../../retroarch.h"
 #include "../video_thread_wrapper.h"
 #include <shellapi.h>
+
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
 #ifndef _MSC_VER
 extern "C" {
 #endif
@@ -526,9 +531,10 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
          PAINTSTRUCT ps;
          HDC hdc = BeginPaint(hwnd, &ps);
 
-         // All painting occurs here, between BeginPaint and EndPaint.
-
-         FillRect(hdc, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW + 1));
+#ifdef HAVE_MENU
+         if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))// || gdi_has_menu_frame())
+            FillRect(hdc, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW + 1));
+#endif
 
          EndPaint(hwnd, &ps);
          //return DefWindowProc(hwnd, message, wparam, lparam);
