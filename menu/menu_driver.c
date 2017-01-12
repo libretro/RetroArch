@@ -228,7 +228,7 @@ static void menu_input_key_event(bool down, unsigned keycode,
    RARCH_LOG("down: %d, keycode: %d, mod: %d, character: %d\n", down, keycode, mod, character);
 #endif
 
-   menu_event_keyboard_set(down, (enum retro_key)keycode);
+   menu_event_kb_set(down, (enum retro_key)keycode);
 }
 
 static void menu_driver_toggle(bool on)

@@ -24,11 +24,11 @@
 #include "../config.h"
 #endif
 
-#include <encodings/utf.h>
 #include <string/stdstring.h>
 
 #include "widgets/menu_entry.h"
 #include "widgets/menu_input_dialog.h"
+#include "widgets/menu_osk.h"
 
 #include "menu_event.h"
 
@@ -42,103 +42,7 @@
 #include "../configuration.h"
 #include "../runloop.h"
 
-#if defined(_MSC_VER) && !defined(_XBOX)
-/* https://support.microsoft.com/en-us/kb/980263 */
-#pragma execution_character_set("utf-8")
-#endif
-
-#define OSK_CHARS_PER_LINE 11
-
 static unsigned char menu_keyboard_key_state[RETROK_LAST];
-
-enum osk_type
-{
-   OSK_TYPE_UNKNOWN    = 0U,
-   OSK_LOWERCASE_LATIN,
-   OSK_UPPERCASE_LATIN,
-   OSK_HIRAGANA_PAGE1,
-   OSK_HIRAGANA_PAGE2,
-   OSK_KATAKANA_PAGE1,
-   OSK_KATAKANA_PAGE2,
-   OSK_TYPE_LAST
-};
-
-static int osk_ptr               = 0;
-static enum osk_type osk_idx     = OSK_LOWERCASE_LATIN;
-static const char *osk_grid[45];
-
-static const char *uppercase_grid[] = {
-                          "!","@","#","$","%","^","&","*","(",")","⇦",
-                          "Q","W","E","R","T","Y","U","I","O","P","⏎",
-                          "A","S","D","F","G","H","J","K","L",":","⇩",
-                          "Z","X","C","V","B","N","M"," ","<",">","⊕"};
-
-static const char *lowercase_grid[] = {
-                          "1","2","3","4","5","6","7","8","9","0","⇦",
-                          "q","w","e","r","t","y","u","i","o","p","⏎",
-                          "a","s","d","f","g","h","j","k","l",";","⇧",
-                          "z","x","c","v","b","n","m"," ",",",".","⊕"};
-
-static const char *hiragana_page1_grid[] = {
-                          "あ","い","う","え","お","ら","り","る","れ","ろ","⇦",
-                          "か","き","く","け","こ","が","ぎ","ぐ","げ","ご","⏎",
-                          "さ","し","す","せ","そ","ざ","じ","ず","ぜ","ぞ","⇧",
-                          "た","ち","つ","て","と","だ","ぢ","づ","で","ど","⊕"};
-
-static const char *hiragana_page2_grid[] = {
-                          "な","に","ぬ","ね","の","ば","び","ぶ","べ","ぼ","⇦",
-                          "は","ひ","ふ","へ","ほ","ぱ","ぴ","ぷ","ぺ","ぽ","⏎",
-                          "ま","み","む","め","も","ん","っ","ゃ","ゅ","ょ","⇧",
-                          "や","ゆ","よ","わ","を","ぁ","ぃ","ぅ","ぇ","ぉ","⊕"};
-
-static const char *katakana_page1_grid[] = {
-                          "ア","イ","ウ","エ","オ","ラ","リ","ル","レ","ロ","⇦",
-                          "カ","キ","ク","ケ","コ","ガ","ギ","グ","ゲ","ゴ","⏎",
-                          "サ","シ","ス","セ","ソ","ザ","ジ","ズ","ゼ","ゾ","⇧",
-                          "タ","チ","ツ","テ","ト","ダ","ヂ","ヅ","デ","ド","⊕"};
-
-static const char *katakana_page2_grid[] = {
-                          "ナ","ニ","ヌ","ネ","ノ","バ","ビ","ブ","ベ","ボ","⇦",
-                          "ハ","ヒ","フ","ヘ","ホ","パ","ピ","プ","ペ","ポ","⏎",
-                          "マ","ミ","ム","メ","モ","ン","ッ","ャ","ュ","ョ","⇧",
-                          "ヤ","ユ","ヨ","ワ","ヲ","ァ","ィ","ゥ","ェ","ォ","⊕"};
-
-int menu_event_get_osk_ptr(void)
-{
-   return osk_ptr;
-}
-
-void menu_event_set_osk_ptr(int i)
-{
-   osk_ptr = i;
-}
-
-void menu_event_osk_append(int ptr)
-{
-   if (ptr < 0)
-      return;
-
-   if (string_is_equal(osk_grid[ptr],"⇦"))
-      input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
-   else if (string_is_equal(osk_grid[ptr],"⏎"))
-      input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
-   else if (string_is_equal(osk_grid[ptr],"⇧"))
-      osk_idx = OSK_UPPERCASE_LATIN;
-   else if (string_is_equal(osk_grid[ptr],"⇩"))
-      osk_idx = OSK_LOWERCASE_LATIN;
-   else if (string_is_equal(osk_grid[ptr],"⊕"))
-      if (osk_idx < OSK_TYPE_LAST - 1)
-         osk_idx = (enum osk_type)(osk_idx + 1);
-      else
-         osk_idx = (enum osk_type)(OSK_TYPE_UNKNOWN + 1);
-   else
-      input_keyboard_line_append(osk_grid[ptr]);
-}
-
-const char** menu_event_get_osk_grid(void)
-{
-   return osk_grid;
-}
 
 static int menu_event_pointer(unsigned *action)
 {
@@ -182,22 +86,27 @@ static int menu_event_pointer(unsigned *action)
    return 0;
 }
 
-unsigned char menu_event_keyboard_is_set(enum retro_key key)
+unsigned char menu_event_kb_is_set(enum retro_key key)
 {
    return menu_keyboard_key_state[key];
 }
 
-void menu_event_keyboard_set(bool down, enum retro_key key)
+void menu_event_kb_set_internal(unsigned idx, unsigned char key)
+{
+   menu_keyboard_key_state[idx] = key;
+}
+
+void menu_event_kb_set(bool down, enum retro_key key)
 {
    if (key == RETROK_UNKNOWN)
    {
       unsigned i;
 
       for (i = 0; i < RETROK_LAST; i++)
-         menu_keyboard_key_state[i] = (menu_keyboard_key_state[i] & 1) << 1;
+         menu_event_kb_set_internal(i, (menu_event_kb_is_set(i) & 1) << 1);
    }
    else
-      menu_keyboard_key_state[key]  = ((menu_keyboard_key_state[key] & 1) << 1) | down;
+      menu_event_kb_set_internal(key, ((menu_event_kb_is_set(key) & 1) << 1) | down);
 }
 
 unsigned menu_event(uint64_t input, uint64_t trigger_input)
@@ -279,73 +188,52 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
 
    if (menu_input_dialog_get_display_kb())
    {
-      switch (osk_idx)
-      {
-         case OSK_HIRAGANA_PAGE1:
-            memcpy(osk_grid, hiragana_page1_grid, sizeof(hiragana_page1_grid));
-            break;
-         case OSK_HIRAGANA_PAGE2:
-            memcpy(osk_grid, hiragana_page2_grid, sizeof(hiragana_page2_grid));
-            break;
-         case OSK_KATAKANA_PAGE1:
-            memcpy(osk_grid, katakana_page1_grid, sizeof(katakana_page1_grid));
-            break;
-         case OSK_KATAKANA_PAGE2:
-            memcpy(osk_grid, katakana_page2_grid, sizeof(katakana_page2_grid));
-            break;
-         case OSK_UPPERCASE_LATIN:
-            memcpy(osk_grid, uppercase_grid, sizeof(uppercase_grid));
-            break;
-         case OSK_LOWERCASE_LATIN:
-         default:
-            memcpy(osk_grid, lowercase_grid, sizeof(lowercase_grid));
-            break;
-      }
+      menu_event_osk_iterate();
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN))
       {
-         if (osk_ptr < 33)
-            osk_ptr = osk_ptr + OSK_CHARS_PER_LINE;
+         if (menu_event_get_osk_ptr() < 33)
+            menu_event_set_osk_ptr(menu_event_get_osk_ptr() + OSK_CHARS_PER_LINE);
       }
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP))
       {
-         if (osk_ptr >= OSK_CHARS_PER_LINE)
-            osk_ptr = osk_ptr - OSK_CHARS_PER_LINE;
+         if (menu_event_get_osk_ptr() >= OSK_CHARS_PER_LINE)
+            menu_event_set_osk_ptr(menu_event_get_osk_ptr() - OSK_CHARS_PER_LINE);
       }
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT))
       {
-         if (osk_ptr < 43)
-            osk_ptr = osk_ptr + 1;
+         if (menu_event_get_osk_ptr() < 43)
+            menu_event_set_osk_ptr(menu_event_get_osk_ptr() + 1);
       }
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT))
       {
-         if (osk_ptr >= 1)
-            osk_ptr = osk_ptr - 1;
+         if (menu_event_get_osk_ptr() >= 1)
+            menu_event_set_osk_ptr(menu_event_get_osk_ptr() - 1);
       }
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L))
       {
-         if (osk_idx > OSK_TYPE_UNKNOWN + 1)
-            osk_idx = (enum osk_type)(osk_idx - 1);
+         if (menu_event_get_osk_idx() > OSK_TYPE_UNKNOWN + 1)
+            menu_event_set_osk_idx((enum osk_type)(menu_event_get_osk_idx() - 1));
          else
-            osk_idx = (enum osk_type)(OSK_TYPE_LAST - 1);
+            menu_event_set_osk_idx((enum osk_type)(OSK_TYPE_LAST - 1));
       }
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R))
       {
-         if (osk_idx < OSK_TYPE_LAST - 1)
-            osk_idx = (enum osk_type)(osk_idx + 1);
+         if (menu_event_get_osk_idx() < OSK_TYPE_LAST - 1)
+            menu_event_set_osk_idx((enum osk_type)(menu_event_get_osk_idx() + 1));
          else
-            osk_idx = (enum osk_type)(OSK_TYPE_UNKNOWN + 1);
+            menu_event_set_osk_idx((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
       }
 
       if (trigger_input & (UINT64_C(1) << menu_ok_btn))
       {
-         if (osk_ptr >= 0)
-            menu_event_osk_append(osk_ptr);
+         if (menu_event_get_osk_ptr() >= 0)
+            menu_event_osk_append(menu_event_get_osk_ptr());
       }
 
       if (trigger_input & (UINT64_C(1) << menu_cancel_btn))
@@ -388,10 +276,10 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
    else if (trigger_input & (UINT64_C(1) << RARCH_MENU_TOGGLE))
       ret = MENU_ACTION_TOGGLE;
 
-   if (menu_keyboard_key_state[RETROK_F11])
+   if (menu_event_kb_is_set(RETROK_F11))
    {
       command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
-      menu_keyboard_key_state[RETROK_F11] = false;
+      menu_event_kb_set_internal(RETROK_F11, 0);
    }
 
    if (runloop_cmd_press(trigger_input, RARCH_QUIT_KEY))

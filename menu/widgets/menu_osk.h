@@ -14,31 +14,45 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _MENU_EVENT_H
-#define _MENU_EVENT_H
+#ifndef _MENU_WIDGETS_OSK_H
+#define _MENU_WIDGETS_OSK_H
 
 #include <stdint.h>
-#include <compat/strl.h>
+#include <stdlib.h>
+
+#include <boolean.h>
 
 #include <retro_common_api.h>
-#include <libretro.h>
+
+#define OSK_CHARS_PER_LINE 11
 
 RETRO_BEGIN_DECLS
 
-/* Send input code to menu for one frame.
- *
- * TODO/FIXME - needs to be overhauled so we can send multiple
- * events per frame if we want to, and we shouldn't send the
- * entire button state either but do a separate event per button
- * state.
- */
-unsigned menu_event(uint64_t input, uint64_t trigger_state);
+enum osk_type
+{
+   OSK_TYPE_UNKNOWN    = 0U,
+   OSK_LOWERCASE_LATIN,
+   OSK_UPPERCASE_LATIN,
+   OSK_HIRAGANA_PAGE1,
+   OSK_HIRAGANA_PAGE2,
+   OSK_KATAKANA_PAGE1,
+   OSK_KATAKANA_PAGE2,
+   OSK_TYPE_LAST
+};
 
-void menu_event_kb_set(bool down, enum retro_key key);
+enum osk_type menu_event_get_osk_idx(void);
 
-unsigned char menu_event_kb_is_set(enum retro_key key);
+void menu_event_set_osk_idx(enum osk_type idx);
 
-void menu_event_kb_set_internal(unsigned idx, unsigned char key);
+int menu_event_get_osk_ptr(void);
+
+void menu_event_set_osk_ptr(int a);
+
+void menu_event_osk_append(int a);
+
+void menu_event_osk_iterate(void);
+
+const char** menu_event_get_osk_grid(void);
 
 RETRO_END_DECLS
 

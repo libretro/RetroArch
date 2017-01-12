@@ -25,6 +25,7 @@
 
 #include "widgets/menu_input_dialog.h"
 #include "widgets/menu_input_bind_dialog.h"
+#include "widgets/menu_osk.h"
 
 #include "menu_driver.h"
 #include "menu_input.h"

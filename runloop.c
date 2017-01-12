@@ -789,7 +789,7 @@ static enum runloop_state runloop_check_state(
       command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, (void*)(intptr_t)0);
 
 #ifdef HAVE_MENU
-   if (menu_event_keyboard_is_set(RETROK_F1) == 1)
+   if (menu_event_kb_is_set(RETROK_F1) == 1)
    {
       if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
       {
@@ -797,11 +797,11 @@ static enum runloop_state runloop_check_state(
                !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
          {
             rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
-            menu_event_keyboard_set(false, RETROK_F1);
+            menu_event_kb_set(false, RETROK_F1);
          }
       }
    }
-   else if ((!menu_event_keyboard_is_set(RETROK_F1) && 
+   else if ((!menu_event_kb_is_set(RETROK_F1) && 
             runloop_cmd_triggered(trigger_input, RARCH_MENU_TOGGLE)) ||
          rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
    {
@@ -818,7 +818,7 @@ static enum runloop_state runloop_check_state(
       }
    }
    else
-      menu_event_keyboard_set(false, RETROK_F1);
+      menu_event_kb_set(false, RETROK_F1);
 
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
    {

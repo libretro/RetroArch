@@ -49,6 +49,7 @@
 #include "../widgets/menu_entry.h"
 #include "../widgets/menu_list.h"
 #include "../widgets/menu_input_dialog.h"
+#include "../widgets/menu_osk.h"
 
 #include "../menu_event.h"
 
