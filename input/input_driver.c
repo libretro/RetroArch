@@ -346,7 +346,7 @@ int16_t input_state(unsigned port, unsigned device,
 
    device &= RETRO_DEVICE_MASK;
 
-   joypad_info.axis_threshold = settings->input.axis_threshold;
+   joypad_info.axis_threshold      = settings->input.axis_threshold;
 
    if (bsv_movie_ctl(BSV_MOVIE_CTL_PLAYBACK_ON, NULL))
    {
@@ -569,9 +569,11 @@ static INLINE bool input_menu_keys_pressed_internal(
          joypad_info.auto_binds     = settings->input.autoconf_binds[port];
          joypad_info.axis_threshold = settings->input.axis_threshold;
 
-         if (sec   && input_joypad_pressed(sec, joypad_info, port, settings->input.binds[0], i))
+         if (sec   && input_joypad_pressed(sec,
+                  joypad_info, port, settings->input.binds[0], i))
             return true;
-         if (first && input_joypad_pressed(first, joypad_info, port, settings->input.binds[0], i))
+         if (first && input_joypad_pressed(first,
+                  joypad_info, port, settings->input.binds[0], i))
             return true;
       }
    }
@@ -726,16 +728,19 @@ uint64_t input_menu_keys_pressed(
       }
 
       if (  ((settings->input.menu_toggle_gamepad_combo != INPUT_TOGGLE_NONE) &&
-            input_driver_toggle_button_combo(settings->input.menu_toggle_gamepad_combo, &old_input))
-            || input_menu_keys_pressed_internal(binds, settings, joypad_info, RARCH_MENU_TOGGLE, max_users,
-                  settings->input.binds[0][RARCH_MENU_TOGGLE].valid,
-                  settings->input.all_users_control_menu))
+            input_driver_toggle_button_combo(
+               settings->input.menu_toggle_gamepad_combo, &old_input))
+            || input_menu_keys_pressed_internal(
+               binds, settings, joypad_info, RARCH_MENU_TOGGLE, max_users,
+               settings->input.binds[0][RARCH_MENU_TOGGLE].valid,
+               settings->input.all_users_control_menu))
          ret |= (UINT64_C(1) << RARCH_MENU_TOGGLE);
 
       for (i = 0; i < RARCH_BIND_LIST_END; i++)
       {
          if (i != RARCH_MENU_TOGGLE &&
-               input_menu_keys_pressed_internal(binds, settings, joypad_info, i, max_users,
+               input_menu_keys_pressed_internal(binds,
+                  settings, joypad_info, i, max_users,
                   settings->input.binds[0][i].valid,
                   settings->input.all_users_control_menu))
             ret |= (UINT64_C(1) << i);
@@ -818,8 +823,9 @@ static INLINE bool input_keys_pressed_internal(
       joypad_info.joy_idx        = 0;
       joypad_info.auto_binds     = settings->input.autoconf_binds[0];
 
-      if (bind_valid && current_input->input_state(current_input_data, joypad_info, &binds,
-            0, RETRO_DEVICE_JOYPAD, 0, i))
+      if (bind_valid && current_input->input_state(current_input_data,
+               joypad_info, &binds,
+               0, RETRO_DEVICE_JOYPAD, 0, i))
          return true;
    }
 
@@ -893,13 +899,19 @@ uint64_t input_keys_pressed(
    
    input_driver_block_libretro_input            = false;
    input_driver_block_hotkey                    = false;
-   if (current_input->keyboard_mapping_is_blocked && current_input->keyboard_mapping_is_blocked(current_input_data))
+
+   if (     current_input->keyboard_mapping_is_blocked 
+         && current_input->keyboard_mapping_is_blocked(current_input_data))
       input_driver_block_hotkey = true;
+
    if (check_input_driver_block_hotkey(binds_norm, binds_auto))
    {
       joypad_info.joy_idx        = 0;
       joypad_info.auto_binds     = settings->input.autoconf_binds[0];
-      if (enable_hotkey_valid && current_input->input_state(current_input_data, joypad_info, &binds, 0, RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY))
+      if (     enable_hotkey_valid 
+            && current_input->input_state(
+               current_input_data, joypad_info, &binds, 0,
+               RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY))
             input_driver_block_libretro_input = true;
          else
             input_driver_block_hotkey         = true;
@@ -907,8 +919,10 @@ uint64_t input_keys_pressed(
 
    game_focus_toggle_valid                      = binds[RARCH_GAME_FOCUS_TOGGLE].valid;
 
-   /* Allows rarch_focus_toggle hotkey to still work even though every hotkey is blocked */
-   if (check_input_driver_block_hotkey(focus_normal, focus_binds_auto) && game_focus_toggle_valid)
+   /* Allows rarch_focus_toggle hotkey to still work 
+    * even though every hotkey is blocked */
+   if (check_input_driver_block_hotkey(
+            focus_normal, focus_binds_auto) && game_focus_toggle_valid)
    {
       joypad_info.joy_idx        = 0;
       joypad_info.auto_binds     = settings->input.autoconf_binds[0];
@@ -925,7 +939,8 @@ uint64_t input_keys_pressed(
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
-      if (i != RARCH_MENU_TOGGLE && input_keys_pressed_internal(settings, joypad_info, i, binds))
+      if (  (i != RARCH_MENU_TOGGLE) && 
+            input_keys_pressed_internal(settings, joypad_info, i, binds))
          ret |= (UINT64_C(1) << i);
    }
 
@@ -961,11 +976,12 @@ void input_driver_poll(void)
 bool input_driver_init(void)
 {
    unsigned i;
-   settings_t *settings = config_get_ptr();
+   settings_t *settings       = config_get_ptr();
+
    for (i = 0; i < MAX_USERS; i++)
-      libretro_input_binds[i]                 = settings->input.binds[i];
+      libretro_input_binds[i] = settings->input.binds[i];
    if (current_input)
-      current_input_data   = current_input->init(settings->input.joypad_driver);
+      current_input_data      = current_input->init(settings->input.joypad_driver);
 
    if (!current_input_data)
       return false;
@@ -1015,12 +1031,12 @@ bool input_driver_find_driver(void)
    driver_ctx_info_t drv;
    settings_t *settings = config_get_ptr();
 
-   drv.label = "input_driver";
-   drv.s     = settings->input.driver;
+   drv.label            = "input_driver";
+   drv.s                = settings->input.driver;
 
    driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
 
-   i = drv.len;
+   i                    = drv.len;
 
    if (i >= 0)
       current_input = (const input_driver_t*)
@@ -1163,7 +1179,8 @@ bool input_driver_init_remote(void)
    if (!settings->network_remote_enable)
       return false;
 
-   input_driver_remote = input_remote_new(settings->network_remote_base_port);
+   input_driver_remote = input_remote_new(
+         settings->network_remote_base_port);
 
    if (input_driver_remote)
       return true;
