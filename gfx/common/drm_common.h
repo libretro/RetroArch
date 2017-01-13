@@ -47,11 +47,11 @@ void drm_restore_crtc(void);
 
 bool drm_get_resources(int fd);
 
-bool drm_get_connector(int id);
-
 void drm_setup(int fd);
 
 void drm_free(void);
+
+bool drm_get_connector(int fd, unsigned video_monitor_index);
 
 static INLINE bool drm_wait_flip(int timeout)
 {

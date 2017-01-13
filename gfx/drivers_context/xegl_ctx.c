@@ -301,7 +301,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
 
    if (fullscreen && !video_info.windowed_fullscreen)
    {
-      if (x11_enter_fullscreen(g_x11_dpy, width, height, &xegl->desktop_mode))
+      if (x11_enter_fullscreen(video_info, g_x11_dpy, width, height, &xegl->desktop_mode))
       {
          xegl->should_reset_mode = true;
          true_full = true;

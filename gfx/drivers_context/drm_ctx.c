@@ -393,7 +393,7 @@ nextgpu:
    if (!drm_get_resources(fd))
       goto nextgpu;
 
-   if (!drm_get_connector(fd))
+   if (!drm_get_connector(video_info.monitor_index, fd))
       goto nextgpu;
 
    if (!drm_get_encoder(fd))

@@ -30,7 +30,6 @@
 #include "x11_common.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../input/common/input_x11_common.h"
-#include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../../runloop.h"
 
@@ -324,7 +323,8 @@ void x11_suspend_screensaver(Window wnd, bool enable)
     x11_suspend_screensaver_xdg_screensaver(wnd, enable);
 }
 
-static bool get_video_mode(Display *dpy, unsigned width, unsigned height,
+static bool get_video_mode(video_frame_info_t video_info,
+      Display *dpy, unsigned width, unsigned height,
       XF86VidModeModeInfo *mode, XF86VidModeModeInfo *desktop_mode)
 {
    float refresh_mod;
@@ -332,7 +332,6 @@ static bool get_video_mode(Display *dpy, unsigned width, unsigned height,
    bool ret                    = false;
    float minimum_fps_diff      = 0.0f;
    XF86VidModeModeInfo **modes = NULL;
-   settings_t *settings        = config_get_ptr();
 
    XF86VidModeGetAllModeLines(dpy, DefaultScreen(dpy), &num_modes, &modes);
 
@@ -346,7 +345,7 @@ static bool get_video_mode(Display *dpy, unsigned width, unsigned height,
 
    /* If we use black frame insertion, we fake a 60 Hz monitor 
     * for 120 Hz one, etc, so try to match that. */
-   refresh_mod = settings->video.black_frame_insertion ? 0.5f : 1.0f;
+   refresh_mod = video_info.black_frame_insertion ? 0.5f : 1.0f;
 
    for (i = 0; i < num_modes; i++)
    {
@@ -362,7 +361,7 @@ static bool get_video_mode(Display *dpy, unsigned width, unsigned height,
          continue;
 
       refresh = refresh_mod * m->dotclock * 1000.0f / (m->htotal * m->vtotal);
-      diff    = fabsf(refresh - settings->video.refresh_rate);
+      diff    = fabsf(refresh - video_info.refresh_rate);
 
       if (!ret || diff < minimum_fps_diff)
       {
@@ -376,12 +375,13 @@ static bool get_video_mode(Display *dpy, unsigned width, unsigned height,
    return ret;
 }
 
-bool x11_enter_fullscreen(Display *dpy, unsigned width,
+bool x11_enter_fullscreen(video_frame_info_t video_info,
+      Display *dpy, unsigned width,
       unsigned height, XF86VidModeModeInfo *desktop_mode)
 {
    XF86VidModeModeInfo mode;
 
-   if (!get_video_mode(dpy, width, height, &mode, desktop_mode))
+   if (!get_video_mode(video_info, dpy, width, height, &mode, desktop_mode))
       return false;
 
    if (!XF86VidModeSwitchToMode(dpy, DefaultScreen(dpy), &mode))
