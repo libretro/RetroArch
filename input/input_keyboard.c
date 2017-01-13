@@ -21,9 +21,10 @@
 
 #include "input_keyboard.h"
 
+#include "input_driver.h"
+
 #include <encodings/utf.h>
 
-#include "../configuration.h"
 #include "../runloop.h"
 
 struct input_keyboard_line
