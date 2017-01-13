@@ -18,10 +18,13 @@
 #include <gccore.h>
 #include <rthreads/rthreads.h>
 
+#include "../input_config.h"
 #include "../input_defines.h"
-#include "../connect/joypad_connection.h"
-#include "../../tasks/tasks_internal.h"
 #include "../input_hid_driver.h"
+
+#include "../connect/joypad_connection.h"
+
+#include "../../tasks/tasks_internal.h"
 #include "../../verbosity.h"
 
 #define WIIUSB_SC_NONE     0
@@ -140,13 +143,14 @@ static void wiiusb_hid_device_add_autodetect(unsigned idx,
       const char *device_name, const char *driver_name,
       uint16_t dev_vid, uint16_t dev_pid)
 {
-   input_autoconfigure_connect(
+   if (!input_autoconfigure_connect(
          device_name,
          NULL,
          driver_name,
          idx,
          dev_vid,
-         dev_pid);
+         dev_pid))
+      input_config_set_device_name(idx, device_name);
 }
 
 static void wiiusb_get_description(usb_device_entry *device,

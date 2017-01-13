@@ -31,8 +31,10 @@
 #include <compat/strl.h>
 #include <string/stdstring.h>
 
-#include "../../tasks/tasks_internal.h"
+#include "../input_config.h"
 #include "../input_driver.h"
+
+#include "../../tasks/tasks_internal.h"
 
 #include "../common/udev_common.h"
 
@@ -280,13 +282,14 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
 
    if (!string_is_empty(pad->ident))
    {
-      input_autoconfigure_connect(
-            pad->ident,
-            NULL,
-            udev_joypad.ident,
-            p,
-            pad->vid,
-            pad->pid);
+      if (!input_autoconfigure_connect(
+               pad->ident,
+               NULL,
+               udev_joypad.ident,
+               p,
+               pad->vid,
+               pad->pid))
+         input_config_set_device_name(p, pad->ident);
 
       ret = 1;
    }

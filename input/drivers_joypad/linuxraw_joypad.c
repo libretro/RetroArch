@@ -30,8 +30,10 @@
 #include <compat/strl.h>
 #include <string/stdstring.h>
 
-#include "../common/epoll_common.h"
+#include "../input_config.h"
 #include "../input_driver.h"
+
+#include "../common/epoll_common.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
@@ -167,13 +169,14 @@ static void handle_plugged_pad(void)
                linuxraw_pads[idx].fd = -1;
                *linuxraw_pads[idx].ident = '\0';
 
-               input_autoconfigure_connect(
+               if (!input_autoconfigure_connect(
                      NULL,
                      NULL,
                      linuxraw_joypad_name(idx),
                      idx,
                      0,
-                     0);
+                     0))
+                  input_config_set_device_name(idx, NULL);
             }
          }
          /* Sometimes, device will be created before access to it is established. */
@@ -188,13 +191,14 @@ static void handle_plugged_pad(void)
             if (     !string_is_empty(linuxraw_pads[idx].ident) 
                   && linuxraw_joypad_init_pad(path, &linuxraw_pads[idx]))
             {
-               input_autoconfigure_connect(
+               if (!input_autoconfigure_connect(
                      linuxraw_pads[idx].ident,
                      NULL,
                      linuxraw_joypad.ident,
                      idx,
                      0,
-                     0);
+                     0))
+                  input_config_set_device_name(idx, linuxraw_joypad_name(idx));
             }
          }
       }
@@ -245,13 +249,14 @@ static bool linuxraw_joypad_init(void *data)
       
       snprintf(path, sizeof(path), "/dev/input/js%u", i);
 
-      input_autoconfigure_connect(
+      if (!input_autoconfigure_connect(
             pad->ident,
             NULL,
             "linuxraw",
             i,
             0,
-            0);
+            0))
+         input_config_set_device_name(i, pad->ident);
 
       if (linuxraw_joypad_init_pad(path, pad))
          linuxraw_poll_pad(pad);

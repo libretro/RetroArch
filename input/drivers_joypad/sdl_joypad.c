@@ -20,7 +20,9 @@
 
 #include "SDL.h"
 
+#include "../input_config.h"
 #include "../input_driver.h"
+
 #include "../../tasks/tasks_internal.h"
 #include "../../verbosity.h"
 
@@ -51,14 +53,17 @@ static sdl_joypad_t sdl_pads[MAX_USERS];
 static bool g_has_haptic;
 #endif
 
-static const char* sdl_pad_name(unsigned id)
+static const char *sdl_joypad_name(unsigned pad)
 {
+   if (pad >= MAX_USERS)
+      return NULL;
+
 #ifdef HAVE_SDL2
-   if (sdl_pads[id].controller)
-      return SDL_GameControllerNameForIndex(id);
-   return SDL_JoystickNameForIndex(id);
+   if (sdl_pads[pad].controller)
+      return SDL_GameControllerNameForIndex(pad);
+   return SDL_JoystickNameForIndex(pad);
 #else
-   return SDL_JoystickName(id);
+   return SDL_JoystickName(pad);
 #endif
 }
 
@@ -140,16 +145,17 @@ static void sdl_pad_connect(unsigned id)
 #endif
 #endif
 
-   input_autoconfigure_connect(
-         sdl_pad_name(id),
+   if (!input_autoconfigure_connect(
+         sdl_joypad_name(id),
          NULL,
          sdl_joypad.ident,
          id,
          vendor,
-         product);
+         product))
+      input_config_set_device_name(id, sdl_joypad_name(id));
 
    RARCH_LOG("[SDL]: Device #%u (%04x:%04x) connected: %s.\n", id, vendor,
-             product, sdl_pad_name(id));
+             product, sdl_joypad_name(id));
 
 #ifdef HAVE_SDL2
 
@@ -436,14 +442,6 @@ static bool sdl_joypad_set_rumble(unsigned pad, enum retro_rumble_effect effect,
 static bool sdl_joypad_query_pad(unsigned pad)
 {
    return pad < MAX_USERS && sdl_pads[pad].joypad;
-}
-
-static const char *sdl_joypad_name(unsigned pad)
-{
-   if (pad >= MAX_USERS)
-      return NULL;
-
-   return sdl_pad_name(pad);
 }
 
 input_device_driver_t sdl_joypad = {

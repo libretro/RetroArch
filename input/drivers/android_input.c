@@ -888,13 +888,14 @@ static void handle_hotplug(android_input_data_t *android_data,
    if (*port < 0)
       *port = android_data->pads_connected;
 
-   input_autoconfigure_connect(
+   if (!input_autoconfigure_connect(
          name_buf,
          NULL,
          android_joypad.ident,
          *port,
          vendorId,
-         productId);
+         productId))
+      input_config_set_device_name(*port, name_buf);
 
    if (!string_is_empty(name_buf))
    {

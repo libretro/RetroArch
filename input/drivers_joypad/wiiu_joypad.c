@@ -45,14 +45,15 @@ static const char *wiiu_joypad_name(unsigned pad)
 
 static void wiiu_joypad_autodetect_add(unsigned autoconf_pad)
 {
-   input_autoconfigure_connect(
+   if (!input_autoconfigure_connect(
          wiiu_joypad_name(autoconf_pad),
          NULL,
          wiiu_joypad.ident,
          autoconf_pad,
          0,
          0
-         );
+         ))
+      input_config_set_device_name(autoconf_pad, wiiu_joypad_name(autoconf_pad));
 }
 
 static bool wiiu_joypad_button(unsigned port_num, uint16_t key)

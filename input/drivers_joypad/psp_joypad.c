@@ -72,14 +72,15 @@ static const char *psp_joypad_name(unsigned pad)
 
 static void psp_joypad_autodetect_add(unsigned autoconf_pad)
 {
-   input_autoconfigure_connect(
+   if (!input_autoconfigure_connect(
          psp_joypad_name(autoconf_pad),
          NULL,
          psp_joypad.ident,
          autoconf_pad,
          0,
          0
-         );
+         ))
+      input_config_set_device_name(autoconf_pad, psp_joypad_name(autoconf_pad));
 }
 
 static bool psp_joypad_init(void *data)
