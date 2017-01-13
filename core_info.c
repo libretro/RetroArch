@@ -357,6 +357,10 @@ static core_info_list_t *core_info_list_new(const char *path)
             tmp = NULL;
          }
 
+         if (tmp)
+            free(tmp);
+         tmp    = NULL;
+
          if (config_get_bool(conf, "supports_no_game",
                &tmp_bool))
             core_info[i].supports_no_game = tmp_bool;
