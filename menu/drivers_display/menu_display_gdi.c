@@ -25,6 +25,10 @@
 
 #include "../menu_display.h"
 
+#if defined(_WIN32) && !defined(_XBOX)
+#include "../common/win32_common.h"
+#endif
+
 static void *menu_display_gdi_get_default_mvp(void)
 {
    return NULL;
@@ -55,11 +59,25 @@ static void menu_display_gdi_viewport(void *data)
 
 static void menu_display_gdi_restore_clear_color(void)
 {
+   /*HBRUSH brush = CreateSolidBrush(GetSysColor(COLOR_WINDOW));
+   RECT rect;
+   HWND hwnd = win32_get_window();
+   HDC hdc = GetDC(hwnd);
+
+   GetClientRect(hwnd, &rect);
+
+   FillRect(hdc, &rect, brush);
+
+   DeleteObject(brush);
+
+   ReleaseDC(hwnd, hdc);*/
 }
 
 static void menu_display_gdi_clear_color(menu_display_ctx_clearcolor_t *clearcolor)
 {
    (void)clearcolor;
+
+   menu_display_gdi_restore_clear_color();
 }
 
 static bool menu_display_gdi_font_init_first(

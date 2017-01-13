@@ -332,11 +332,11 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    if (msg)
       font_driver_render_msg(NULL, msg, NULL);
 
-   InvalidateRect(hwnd, NULL, true);
+   InvalidateRect(hwnd, NULL, false);
 
    video_context_driver_update_window_title();
 
-   video_context_driver_swap_buffers();
+   //video_context_driver_swap_buffers();
 
    return true;
 }
