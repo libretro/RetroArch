@@ -88,6 +88,7 @@ typedef struct video_info
 typedef struct video_frame_info
 {
    float refresh_rate;
+   bool shared_context;
    bool black_frame_insertion;
    bool hard_sync;
    unsigned hard_sync_frames;

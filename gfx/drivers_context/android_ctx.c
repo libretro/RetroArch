@@ -101,7 +101,7 @@ static void android_gfx_ctx_destroy(void *data)
    free(data);
 }
 
-static void *android_gfx_ctx_init(void *video_driver)
+static void *android_gfx_ctx_init(video_frame_info_t video_info, void *video_driver)
 {
 #ifdef HAVE_OPENGLES
    EGLint n, major, minor;

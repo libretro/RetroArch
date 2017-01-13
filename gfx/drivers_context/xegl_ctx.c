@@ -101,7 +101,7 @@ static bool gfx_ctx_xegl_set_resize(void *data,
    return false;
 }
 
-static void *gfx_ctx_xegl_init(void *video_driver)
+static void *gfx_ctx_xegl_init(video_frame_info_t video_info, void *video_driver)
 {
 #ifdef HAVE_EGL
    static const EGLint egl_attribs_gl[] = {

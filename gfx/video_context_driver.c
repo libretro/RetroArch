@@ -183,15 +183,19 @@ static const gfx_ctx_driver_t *video_context_driver_init(
 {
    if (ctx->bind_api(data, api, major, minor))
    {
-      settings_t *settings = config_get_ptr();
-      void       *ctx_data = ctx->init(data);
+      video_frame_info_t video_info;
+      void       *ctx_data = NULL;
+
+      video_driver_build_info(&video_info);
+
+      ctx_data = ctx->init(video_info, data);
 
       if (!ctx_data)
          return NULL;
 
       if (ctx->bind_hw_render)
          ctx->bind_hw_render(ctx_data,
-               settings->video.shared_context && hw_render_ctx);
+               video_info.shared_context && hw_render_ctx);
 
       video_context_driver_set_data(ctx_data);
       return ctx;
