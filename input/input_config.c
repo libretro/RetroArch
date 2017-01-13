@@ -485,6 +485,18 @@ void input_config_set_device_name(unsigned port, const char *name)
             sizeof(settings->input.device_names[port]));
 }
 
+bool input_config_get_bind_idx(unsigned port, unsigned *joy_idx_real)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned joy_idx     = settings->input.joypad_map[port];
+
+   if (joy_idx >= MAX_USERS)
+      return false;
+
+   *joy_idx_real        = joy_idx;
+   return true;
+}
+
 const struct retro_keybind *input_config_get_bind_auto(unsigned port, unsigned id)
 {
    settings_t *settings = config_get_ptr();

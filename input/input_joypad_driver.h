@@ -217,6 +217,8 @@ bool input_joypad_hat_raw(const input_device_driver_t *driver,
 const char *input_joypad_name(const input_device_driver_t *driver,
       unsigned port);
 
+bool input_config_get_bind_idx(unsigned port, unsigned *joy_idx_real);
+
 extern input_device_driver_t dinput_joypad;
 extern input_device_driver_t linuxraw_joypad;
 extern input_device_driver_t parport_joypad;

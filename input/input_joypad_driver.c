@@ -211,13 +211,12 @@ const char *input_joypad_name(const input_device_driver_t *drv,
 bool input_joypad_set_rumble(const input_device_driver_t *drv,
       unsigned port, enum retro_rumble_effect effect, uint16_t strength)
 {
-   settings_t *settings = config_get_ptr();
-   unsigned joy_idx     = settings->input.joypad_map[port];
+   unsigned joy_idx     = 0;
+
+   if (!input_config_get_bind_idx(port, &joy_idx))
+      return false;
    
    if (!drv || !drv->set_rumble)
-      return false;
-
-   if (joy_idx >= MAX_USERS)
       return false;
 
    return drv->set_rumble(joy_idx, effect, strength);
