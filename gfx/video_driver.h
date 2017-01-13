@@ -461,6 +461,7 @@ bool video_monitor_fps_statistics(double *refresh_rate,
 
 /**
  * video_monitor_get_fps:
+ * @video_info    : information about the video frame
  * @buf           : string suitable for Window title
  * @size          : size of buffer.
  * @buf_fps       : string of raw FPS only (optional).
