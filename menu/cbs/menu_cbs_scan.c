@@ -136,7 +136,7 @@ static int action_scan_input_desc(const char *path,
       key                = idx - 6;
    }
    else
-      key = input_config_label_to_key(label);
+      key = input_config_translate_str_to_bind_id(label);
 
    target = (struct retro_keybind*)&settings->input.binds[inp_desc_user][key];
 

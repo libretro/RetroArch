@@ -280,7 +280,7 @@ static void parse_hat(struct retro_keybind *bind, const char *str)
       return;
    }
 
-   if (string_is_equal_noncase(dir, "up"))
+   if      (string_is_equal_noncase(dir, "up"))
       hat_dir = HAT_UP_MASK;
    else if (string_is_equal_noncase(dir, "down"))
       hat_dir = HAT_DOWN_MASK;
@@ -496,80 +496,4 @@ const struct retro_keybind *input_config_get_bind_auto(unsigned port, unsigned i
    if (joy_idx < MAX_USERS)
       return &settings->input.autoconf_binds[joy_idx][id];
    return NULL;
-}
-
-unsigned input_config_label_to_key(const char *label)
-{
-   unsigned key = 0;
-
-   if (string_is_equal(label, "toggle_fast_forward"))
-      key = RARCH_FAST_FORWARD_KEY;
-   else if (string_is_equal(label, "hold_fast_forward"))
-      key = RARCH_FAST_FORWARD_HOLD_KEY;
-   else if (string_is_equal(label, "load_state"))
-      key = RARCH_LOAD_STATE_KEY;
-   else if (string_is_equal(label, "save_state"))
-      key = RARCH_SAVE_STATE_KEY;
-   else if (string_is_equal(label, "toggle_fullscreen"))
-      key = RARCH_FULLSCREEN_TOGGLE_KEY;
-   else if (string_is_equal(label, "exit_emulator"))
-      key = RARCH_QUIT_KEY;
-   else if (string_is_equal(label, "state_slot_increase"))
-      key = RARCH_STATE_SLOT_PLUS;
-   else if (string_is_equal(label, "state_slot_decrease"))
-      key = RARCH_STATE_SLOT_MINUS;
-   else if (string_is_equal(label, "rewind"))
-      key = RARCH_REWIND;
-   else if (string_is_equal(label, "movie_record_toggle"))
-      key = RARCH_MOVIE_RECORD_TOGGLE;
-   else if (string_is_equal(label, "pause_toggle"))
-      key = RARCH_PAUSE_TOGGLE;
-   else if (string_is_equal(label, "frame_advance"))
-      key = RARCH_FRAMEADVANCE;
-   else if (string_is_equal(label, "reset"))
-      key = RARCH_RESET;
-   else if (string_is_equal(label, "shader_next"))
-      key = RARCH_SHADER_NEXT;
-   else if (string_is_equal(label, "shader_prev"))
-      key = RARCH_SHADER_PREV;
-   else if (string_is_equal(label, "cheat_index_plus"))
-      key = RARCH_CHEAT_INDEX_PLUS;
-   else if (string_is_equal(label, "cheat_index_minus"))
-      key = RARCH_CHEAT_INDEX_MINUS;
-   else if (string_is_equal(label, "cheat_toggle"))
-      key = RARCH_CHEAT_TOGGLE;
-   else if (string_is_equal(label, "screenshot"))
-      key = RARCH_SCREENSHOT;
-   else if (string_is_equal(label, "audio_mute"))
-      key = RARCH_MUTE;
-   else if (string_is_equal(label, "osk_toggle"))
-      key = RARCH_OSK;
-   else if (string_is_equal(label, "netplay_flip_players_1_2"))
-      key = RARCH_NETPLAY_FLIP;
-   else if (string_is_equal(label, "netplay_game_watch"))
-      key = RARCH_NETPLAY_GAME_WATCH;
-   else if (string_is_equal(label, "slowmotion"))
-      key = RARCH_SLOWMOTION;
-   else if (string_is_equal(label, "enable_hotkey"))
-      key = RARCH_ENABLE_HOTKEY;
-   else if (string_is_equal(label, "volume_up"))
-      key = RARCH_VOLUME_UP;
-   else if (string_is_equal(label, "volume_down"))
-      key = RARCH_VOLUME_DOWN;
-   else if (string_is_equal(label, "overlay_next"))
-      key = RARCH_OVERLAY_NEXT;
-   else if (string_is_equal(label, "disk_eject_toggle"))
-      key = RARCH_DISK_EJECT_TOGGLE;
-   else if (string_is_equal(label, "disk_next"))
-      key = RARCH_DISK_NEXT;
-   else if (string_is_equal(label, "disk_prev"))
-      key = RARCH_DISK_PREV;
-   else if (string_is_equal(label, "grab_mouse_toggle"))
-      key = RARCH_GRAB_MOUSE_TOGGLE;
-   else if (string_is_equal(label, "game_focus_toggle"))
-      key = RARCH_GAME_FOCUS_TOGGLE;
-   else if (string_is_equal(label, "menu_toggle"))
-      key = RARCH_MENU_TOGGLE;
-
-   return key;
 }
