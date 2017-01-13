@@ -2091,6 +2091,7 @@ void video_driver_frame(const void *data, unsigned width,
    video_info.aspect_ratio_idx      = settings->video.aspect_ratio_idx;
    video_info.post_filter_record    = settings->video.post_filter_record;
    video_info.max_swapchain_images  = settings->video.max_swapchain_images;
+   video_info.shared_context        = settings->video.shared_context;
 
    /* Slightly messy code,
     * but we really need to do processing before blocking on VSync
