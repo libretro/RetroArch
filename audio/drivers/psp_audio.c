@@ -30,7 +30,6 @@
 #endif
 
 #include "../audio_driver.h"
-#include "../../configuration.h"
 
 typedef struct psp_audio
 {
