@@ -120,11 +120,15 @@ void win32_window_reset(void);
 
 void win32_destroy_window(void);
 
+#ifdef HAVE_D3D9
 LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
+#endif
 
+#if defined(HAVE_OPENGL) || defined(HAVE_VULKAN)
 LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
+#endif
 
 LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);

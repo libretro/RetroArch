@@ -26,7 +26,7 @@
 #include "../menu_display.h"
 
 #if defined(_WIN32) && !defined(_XBOX)
-#include "../common/win32_common.h"
+#include "../../gfx/common/win32_common.h"
 #endif
 
 static void *menu_display_gdi_get_default_mvp(void)

@@ -455,7 +455,9 @@ if [ "$HAVE_MATERIALUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ] || [ "$HAVE_ZARCH" 
 		echo "Notice: RGUI not available, MaterialUI, XMB and ZARCH will also be disabled."
 	elif [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_OPENGLES" = 'no' ] && [ "$HAVE_VULKAN" = 'no' ]; then
     if [ "$OS" = 'Win32' ]; then
-		  echo "Notice: Hardware rendering context not available, the GDI video driver must be used."
+      HAVE_SHADERPIPELINE=no
+      HAVE_VULKAN=no
+		  echo "Notice: Hardware rendering context not available."
     else
   		HAVE_MATERIALUI=no
 	  	HAVE_XMB=no

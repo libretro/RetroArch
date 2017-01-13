@@ -60,11 +60,13 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam);
 }
 #endif
 
+#ifdef HAVE_D3D9
 extern "C" bool dinput_handle_message(void *dinput, UINT message,
       WPARAM wParam, LPARAM lParam);
 extern void *dinput_gdi;
 extern void *dinput_wgl;
 extern void *dinput;
+#endif
 
 unsigned g_resize_width             = 0;
 unsigned g_resize_height            = 0;
@@ -426,6 +428,7 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
 
 extern void ui_window_win32_set_droppable(void *data, bool droppable);
 
+#ifdef HAVE_D3D9
 LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
@@ -466,11 +469,15 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
          return 0;
    }
 
+#ifdef HAVE_D3D9
    if (dinput && dinput_handle_message(dinput, message, wparam, lparam))
       return 0;
+#endif
    return DefWindowProc(hwnd, message, wparam, lparam);
 }
+#endif
 
+#if defined(HAVE_OPENGL) || defined(HAVE_VULKAN)
 LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
@@ -510,10 +517,13 @@ LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
          return 0;
    }
 
+#ifdef HAVE_D3D9
    if (dinput_wgl && dinput_handle_message(dinput_wgl, message, wparam, lparam))
       return 0;
+#endif
    return DefWindowProc(hwnd, message, wparam, lparam);
 }
+#endif
 
 LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
@@ -569,8 +579,10 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
          return 0;
    }
 
+#ifdef HAVE_D3D9
    if (dinput_gdi && dinput_handle_message(dinput_gdi, message, wparam, lparam))
       return 0;
+#endif
    return DefWindowProc(hwnd, message, wparam, lparam);
 }
 
