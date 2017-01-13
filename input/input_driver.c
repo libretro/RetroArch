@@ -269,12 +269,6 @@ void input_poll(void)
    settings_t *settings           = config_get_ptr();
    unsigned max_users             = settings->input.max_users;
    
-   if (input_driver_flushing_input)
-   {
-      input_driver_flushing_input = false;
-      return;
-   }
-
    current_input->poll(current_input_data);
 
    input_driver_turbo_btns.count++;
@@ -802,6 +796,18 @@ uint64_t input_menu_keys_pressed(
    *trigger_input = ret & ~old_input;
    *last_input    = ret;
 
+   if (input_driver_flushing_input)
+   { 
+      input_driver_flushing_input = false; 
+      if (ret) 
+      {
+         ret = 0;
+         if (runloop_paused)
+            BIT64_SET(ret, RARCH_PAUSE_TOGGLE);
+         input_driver_flushing_input = true; 
+      }
+   }
+
    if (menu_driver_is_binding_state())
       *trigger_input = 0;
 
@@ -946,6 +952,18 @@ uint64_t input_keys_pressed(
 
    *trigger_input = ret & ~old_input;
    *last_input    = ret;
+
+   if (input_driver_flushing_input)
+   { 
+      input_driver_flushing_input = false; 
+      if (ret) 
+      {
+         ret = 0;
+         if (runloop_paused)
+            BIT64_SET(ret, RARCH_PAUSE_TOGGLE);
+         input_driver_flushing_input = true; 
+      }
+   }
 
    return ret;
 }

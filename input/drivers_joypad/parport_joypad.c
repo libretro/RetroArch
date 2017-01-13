@@ -25,10 +25,13 @@
 
 #include <compat/strl.h>
 
-#include "../../tasks/tasks_internal.h"
+#include "../input_config.h"
 #include "../input_driver.h"
+
 #include "../../configuration.h"
 #include "../../verbosity.h"
+
+#include "../../tasks/tasks_internal.h"
 
 /* Linux parport driver does not support reading the control register
    Other platforms may support up to 17 buttons */
