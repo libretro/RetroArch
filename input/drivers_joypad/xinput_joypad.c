@@ -264,7 +264,7 @@ static bool xinput_joypad_init(void *data)
 
    for (j = 0; j < MAX_USERS; j++)
    {
-      if (pad_index_to_xuser_index(ij) > -1)
+      if (pad_index_to_xuser_index(j) > -1)
       {
          if (!input_autoconfigure_connect(
                xinput_joypad_name(j),
