@@ -126,6 +126,9 @@ static void core_info_list_resolve_all_firmware(
             free(tmp);
             tmp = NULL;
          }
+         if (tmp)
+            free(tmp);
+         tmp = NULL;
          if (config_get_bool(config, opt_key , &tmp_bool))
             info->firmware[c].optional = tmp_bool;
       }
