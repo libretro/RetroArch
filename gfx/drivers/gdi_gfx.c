@@ -273,7 +273,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    {
       HDC winDC = GetDC(hwnd);
       HDC memDC = CreateCompatibleDC(winDC);
-      HBITMAP bmp = CreateCompatibleBitmap(winDC, pitch, height);
+      HBITMAP bmp = CreateCompatibleBitmap(winDC, width, height);
       HBITMAP bmp_old;
       BITMAPINFO *info = (BITMAPINFO*)calloc(1, sizeof(*info) + (3 * sizeof(RGBQUAD)));
       //HBRUSH brush;
@@ -308,7 +308,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       else
          info->bmiHeader.biCompression = BI_RGB;
 
-      ret = StretchDIBits(memDC, 0, 0, pitch, height, 0, 0, pitch, height,
+      ret = StretchDIBits(memDC, 0, 0, width, height, 0, 0, width, height,
             frame_to_copy, info, DIB_RGB_COLORS, SRCCOPY);
 
       //printf("StretchDIBits: %d\n", ret);
