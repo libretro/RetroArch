@@ -476,6 +476,14 @@ void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
 #endif
 }
 
+const char *input_config_get_device_name(unsigned port)
+{
+   settings_t *settings = config_get_ptr();
+   if (string_is_empty(settings->input.device_names[port]))
+      return NULL;
+   return settings->input.device_names[port];
+}
+
 void input_config_set_device_name(unsigned port, const char *name)
 {
    settings_t *settings = config_get_ptr();
