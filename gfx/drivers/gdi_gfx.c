@@ -288,7 +288,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       //DeleteObject(brush);
 
       info->bmiHeader.biBitCount = bits;
-      info->bmiHeader.biWidth = pitch;
+      info->bmiHeader.biWidth = pitch / 2;
       info->bmiHeader.biHeight = -height;
       info->bmiHeader.biPlanes = 1;
       info->bmiHeader.biSize = sizeof(BITMAPINFOHEADER) + (3 * sizeof(RGBQUAD));
@@ -316,7 +316,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       ret = StretchBlt(winDC,
             0, 0,
             mode.width, mode.height,
-            memDC, 0, 0, width, height / 2, SRCCOPY);
+            memDC, 0, 0, width, height, SRCCOPY);
 
       //printf("BitBlt: %d\n", ret);
 
