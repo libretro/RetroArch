@@ -279,7 +279,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       //HBRUSH brush;
       int ret = 0;
 
-      bmp_old = SelectObject(memDC, bmp);
+      bmp_old = (HBITMAP)SelectObject(memDC, bmp);
 
       //brush = CreateSolidBrush(GetSysColor(COLOR_WINDOW));
 
