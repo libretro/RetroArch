@@ -24,8 +24,11 @@
 #include "../config.h"
 #endif
 
+#include "input_joypad_driver.h"
+
+#include "input_driver.h"
 #include "input_keymaps.h"
-#include "../configuration.h"
+
 #include "../list_special.h"
 #include "../verbosity.h"
 
