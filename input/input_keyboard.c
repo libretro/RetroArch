@@ -60,7 +60,7 @@ static void osk_update_last_codepoint(const char *word)
 
    if (letter[0] == 0)
    {
-      osk_last_codepoint = 0;
+      osk_last_codepoint     = 0;
       osk_last_codepoint_len = 0;
       return;
    }
@@ -72,7 +72,7 @@ static void osk_update_last_codepoint(const char *word)
 
       if (letter[0] == 0)
       {
-         osk_last_codepoint = codepoint;
+         osk_last_codepoint     = codepoint;
          osk_last_codepoint_len = len;
          break;
       }
