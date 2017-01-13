@@ -234,7 +234,7 @@ error:
 static void sdl_ctx_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t    *settings = config_get_ptr();
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;
 
    if (!sdl)

@@ -687,7 +687,7 @@ static bool init_video(void)
    {
       if(settings->video.window_x || settings->video.window_y)
       {
-         width = settings->video.window_x;
+         width  = settings->video.window_x;
          height = settings->video.window_y;
       }
       else
@@ -2184,6 +2184,27 @@ bool video_driver_texture_unload(uintptr_t *id)
    video_driver_poke->unload_texture(video_driver_data, *id);
    *id = 0;
    return true;
+}
+
+void video_driver_build_info(video_frame_info_t *video_info)
+{
+   settings_t *settings             = config_get_ptr();
+
+   if (!video_info)
+      return;
+
+   video_info->refresh_rate          = settings->video.refresh_rate;
+   video_info->black_frame_insertion = 
+      settings->video.black_frame_insertion;
+   video_info->hard_sync             = settings->video.hard_sync;
+   video_info->hard_sync_frames      = settings->video.hard_sync_frames;
+   video_info->fps_show              = settings->fps_show;
+   video_info->scale_integer         = settings->video.scale_integer;
+   video_info->aspect_ratio_idx      = settings->video.aspect_ratio_idx;
+   video_info->post_filter_record    = settings->video.post_filter_record;
+   video_info->max_swapchain_images  = settings->video.max_swapchain_images;
+   video_info->windowed_fullscreen   = settings->video.windowed_fullscreen;
+   video_info->monitor_index         = settings->video.monitor_index;
 }
 
 /**
