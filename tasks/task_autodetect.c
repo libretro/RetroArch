@@ -409,10 +409,7 @@ bool input_autoconfigure_connect(
    state->pid       = pid;
    state->max_users = settings->input.max_users;
 
-   if (!string_is_empty(state->name))
-      strlcpy(settings->input.device_names[state->idx],
-            state->name,
-            sizeof(settings->input.device_names[state->idx]));
+   input_config_set_device_name(state->idx, state->name);
    settings->input.pid[state->idx]  = state->pid;
    settings->input.vid[state->idx]  = state->vid;
 

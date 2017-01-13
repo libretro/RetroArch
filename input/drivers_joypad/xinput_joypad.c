@@ -170,7 +170,7 @@ const char *xinput_joypad_name(unsigned pad)
 
 static bool xinput_joypad_init(void *data)
 {
-   unsigned i, autoconf_pad;
+   unsigned i, j;
    XINPUT_STATE dummy_state;
    const char *version = "1.4";
 
@@ -262,16 +262,19 @@ static bool xinput_joypad_init(void *data)
       return false;
    }
 
-   for (autoconf_pad = 0; autoconf_pad < MAX_USERS; autoconf_pad++)
+   for (j = 0; j < MAX_USERS; j++)
    {
-      if (pad_index_to_xuser_index(autoconf_pad) > -1)
-         input_autoconfigure_connect(
-               xinput_joypad_name(autoconf_pad),
+      if (pad_index_to_xuser_index(ij) > -1)
+      {
+         if (!input_autoconfigure_connect(
+               xinput_joypad_name(j),
                NULL,
                xinput_joypad.ident,
-               autoconf_pad,
+               j,
                0,
-               0);
+               0))
+            input_config_set_device_name(j, xinput_joypad_name(j));
+      }
    }
 
    return true;

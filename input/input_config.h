@@ -69,6 +69,8 @@ void input_config_parse_joy_axis(void *data, const char *prefix,
 
 unsigned input_config_label_to_key(const char *label);
 
+void input_config_set_device_name(unsigned port, const char *name);
+
 const struct retro_keybind *input_config_get_bind_auto(unsigned port, unsigned id);
 
 #endif
