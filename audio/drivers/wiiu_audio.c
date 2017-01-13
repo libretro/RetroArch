@@ -33,7 +33,6 @@
 #include "wiiu/multivoice.h"
 
 #include "audio/audio_driver.h"
-#include "configuration.h"
 #include "performance_counters.h"
 #include "runloop.h"
 
