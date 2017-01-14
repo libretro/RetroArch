@@ -6,7 +6,7 @@ static const char* stock_fragment_xmb_bokeh = GLSL(
 
    void main(void)
    {
-      float speed = time * 4;
+      float speed = time * 4.0;
       vec2 uv = -1.0 + 2.0 * gl_FragCoord.xy / OutputSize.xy;
       uv.x *=  OutputSize.x / OutputSize.y;
       vec3 color = vec3(0.0);
