@@ -224,6 +224,7 @@ static void shader_dlg_params_clear(void)
 
 void shader_dlg_params_reload(void)
 {
+#ifdef HAVE_SHADERPIPELINE
    HFONT hFont;
    RECT parent_rect;
    int i, pos_x, pos_y;
@@ -325,7 +326,7 @@ void shader_dlg_params_reload(void)
          (pos_x - SHADER_DLG_CTRL_X) + SHADER_DLG_WIDTH,
          (pos_x == SHADER_DLG_CTRL_X) ? pos_y + 30 : SHADER_DLG_MAX_HEIGHT,
          SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
-
+#endif
 }
 
 static void shader_dlg_update_on_top_state(void)

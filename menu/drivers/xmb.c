@@ -376,7 +376,7 @@ float gradient_dark[16] = {
    0.0, 0.0, 0.0, 1.00,
 };
 
-const char *xmb_theme_ident(void)
+const char* xmb_theme_ident(void)
 {
    settings_t *settings = config_get_ptr();
    switch (settings->menu.xmb.theme)

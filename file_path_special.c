@@ -285,7 +285,7 @@ void fill_pathname_application_path(char *s, size_t len)
 #endif
 
 #ifdef HAVE_XMB
-const char *xmb_theme_ident(void);
+const char* xmb_theme_ident(void);
 #endif
 
 void fill_pathname_application_special(char *s, size_t len, enum application_special_type type)

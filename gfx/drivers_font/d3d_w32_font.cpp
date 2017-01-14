@@ -46,7 +46,7 @@ static void *d3dfonts_w32_init_font(void *video_data,
       OUT_TT_PRECIS,
       CLIP_DEFAULT_PRECIS,
       DEFAULT_PITCH,
-#ifdef _MSC_VER  /* MSVC needs w_char* */
+#if defined(_MSC_VER) && _WIN32_WINNT > 0x0500  /* MSVC needs w_char* starting with XP */
       L"Verdana" /* Hardcode FTL */
 #else
 	  "Verdana"

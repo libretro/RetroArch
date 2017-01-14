@@ -114,7 +114,9 @@ typedef enum _POWER_REQUEST_TYPE
 #define POWER_REQUEST_CONTEXT_DETAILED_STRING 2
 #endif
 
+#ifdef _WIN32_WINNT_WIN7
 typedef REASON_CONTEXT POWER_REQUEST_CONTEXT, *PPOWER_REQUEST_CONTEXT, *LPPOWER_REQUEST_CONTEXT;
+#endif
 
 #ifndef MAX_MONITORS
 #define MAX_MONITORS 9
@@ -585,6 +587,7 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
 #endif
    return DefWindowProc(hwnd, message, wparam, lparam);
 }
+#endif
 
 bool win32_window_create(void *data, unsigned style,
       RECT *mon_rect, unsigned width,
@@ -724,6 +727,7 @@ bool win32_suppress_screensaver(void *data, bool enable)
 
       if (major*100+minor >= 601)
       {
+#ifdef _WIN32_WINNT_WIN7
          /* Windows 7, 8, 10 codepath */
          typedef HANDLE (WINAPI * PowerCreateRequestPtr)(REASON_CONTEXT *context);
          typedef BOOL   (WINAPI * PowerSetRequestPtr)(HANDLE PowerRequest,
@@ -748,6 +752,7 @@ bool win32_suppress_screensaver(void *data, bool enable)
             powerSetRequest( Request, PowerRequestDisplayRequired);
             return true;
          }
+#endif
       }
       else
       {
