@@ -608,8 +608,6 @@ static const struct retro_subsystem_info *content_file_init_subsystem(
       snprintf(msg, sizeof(msg),
             "Failed to find subsystem \"%s\" in libretro implementation.\n",
             path_get(RARCH_PATH_SUBSYSTEM));
-      if (error_string)
-         free(error_string);
       *error_string = strdup(msg);
       goto error;
    }
@@ -619,8 +617,6 @@ static const struct retro_subsystem_info *content_file_init_subsystem(
       snprintf(msg, sizeof(msg),
             "%s\n",
             msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT));
-      if (error_string)
-         free(error_string);
       *error_string = strdup(msg);
       goto error;
    }
