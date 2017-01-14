@@ -55,7 +55,9 @@ static void err_cb(void *userdata)
    scond_signal(rsd->cond);
 }
 
-static void *rs_init(const char *device, unsigned rate, unsigned latency, unsigned *new_rate)
+static void *rs_init(const char *device, unsigned rate, unsigned latency,
+      unsigned block_frames,
+      unsigned *new_rate)
 {
    int channels, format;
    rsound_t *rd  = NULL;
@@ -64,10 +66,7 @@ static void *rs_init(const char *device, unsigned rate, unsigned latency, unsign
       return NULL;
 
    if (rsd_init(&rd) < 0)
-   {
-      free(rsd);
-      return NULL;
-   }
+      goto error;
 
    rsd->cond_lock = slock_new();
    rsd->cond      = scond_new();
@@ -91,12 +90,15 @@ static void *rs_init(const char *device, unsigned rate, unsigned latency, unsign
    if (rsd_start(rd) < 0)
    {
       free(rsd);
-      rsd_free(rd);
-      return NULL;
+      goto error;
    }
 
    rsd->rd = rd;
    return rsd;
+
+error:
+   rsd_free(rd);
+   return NULL;
 }
 
 static ssize_t rs_write(void *data, const void *buf, size_t size)
