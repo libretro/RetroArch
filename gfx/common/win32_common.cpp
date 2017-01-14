@@ -471,10 +471,8 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
          return 0;
    }
 
-#ifdef HAVE_D3D9
    if (dinput && dinput_handle_message(dinput, message, wparam, lparam))
       return 0;
-#endif
    return DefWindowProc(hwnd, message, wparam, lparam);
 }
 #endif
@@ -587,7 +585,6 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
 #endif
    return DefWindowProc(hwnd, message, wparam, lparam);
 }
-#endif
 
 bool win32_window_create(void *data, unsigned style,
       RECT *mon_rect, unsigned width,
