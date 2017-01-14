@@ -14,6 +14,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdlib.h>
+
+#include <string/stdstring.h>
+
 #include "font_driver.h"
 #include "video_thread_wrapper.h"
 
@@ -23,8 +27,6 @@
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
-
-#include <stdlib.h>
 
 static const font_renderer_driver_t *font_backends[] = {
 #ifdef HAVE_FREETYPE
@@ -192,7 +194,8 @@ static bool vulkan_font_init_first(
 
    for (i = 0; vulkan_font_backends[i]; i++)
    {
-      void *data = vulkan_font_backends[i]->init(video_data, font_path, font_size);
+      void *data = vulkan_font_backends[i]->init(
+            video_data, font_path, font_size);
 
       if (!data)
          continue;
@@ -353,6 +356,9 @@ void font_driver_free(void *font_data)
       if (font->renderer && font->renderer->free)
          font->renderer->free(font->renderer_data);
 
+      if (font->renderer_data)
+         free(font->renderer_data);
+
       font->renderer      = NULL;
       font->renderer_data = NULL;
 
@@ -364,9 +370,9 @@ font_data_t *font_driver_init_first(
       void *video_data, const char *font_path, float font_size,
       bool threading_hint, enum font_driver_render_api api)
 {
-   const void *font_driver;
-   void *font_handle;
-   bool ok = false;
+   const void *font_driver = NULL;
+   void *font_handle       = NULL;
+   bool ok                 = false;
 
 #ifdef HAVE_THREADS
    if (threading_hint 
@@ -395,12 +401,15 @@ font_data_t *font_driver_init_first(
 void font_driver_init_osd(void *video_data, bool threading_hint, enum font_driver_render_api api)
 {
    settings_t *settings = config_get_ptr();
+   const char *path     = settings->path.font;
+
    if (video_font_driver)
       return;
 
    video_font_driver = font_driver_init_first(video_data,
-         *settings->path.font ? settings->path.font : NULL,
-         settings->video.font_size, threading_hint, api);
+         (!string_is_empty(path)) ? path : NULL,
+         settings->video.font_size,
+         threading_hint, api);
 
    if (!video_font_driver)
       RARCH_ERR("[font]: Failed to initialize OSD font.\n");

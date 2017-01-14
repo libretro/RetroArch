@@ -85,8 +85,6 @@ static void vulkan_raster_font_free_font(void *data)
    vkQueueWaitIdle(font->vk->context->queue);
    vulkan_destroy_texture( 
          font->vk->context->device, &font->texture);
-
-   free(font);
 }
 
 static int vulkan_get_message_width(void *data, const char *msg,

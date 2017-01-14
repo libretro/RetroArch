@@ -57,8 +57,6 @@ typedef struct
    video_font_raster_block_t *block;
 } gl_raster_t;
 
-static void gl_raster_font_free_font(void *data);
-
 static bool gl_raster_font_upload_atlas(gl_raster_t *font)
 {
    unsigned i, j;
@@ -144,6 +142,21 @@ static bool gl_raster_font_upload_atlas(gl_raster_t *font)
    return true;
 }
 
+static void gl_raster_font_free_font(void *data)
+{
+   gl_raster_t *font = (gl_raster_t*)data;
+   if (!font)
+      return;
+
+   if (font->font_driver && font->font_data)
+      font->font_driver->free(font->font_data);
+
+   if (video_driver_is_threaded())
+      video_context_driver_make_current(true);
+
+   glDeleteTextures(1, &font->tex);
+}
+
 static void *gl_raster_font_init_font(void *data,
       const char *font_path, float font_size)
 {
@@ -156,11 +169,7 @@ static void *gl_raster_font_init_font(void *data,
 
    if (!font_renderer_create_default((const void**)&font->font_driver,
             &font->font_data, font_path, font_size))
-   {
-      RARCH_WARN("Couldn't initialize font renderer.\n");
-      free(font);
-      return NULL;
-   }
+      goto error;
 
    if (video_driver_is_threaded())
       video_context_driver_make_current(false);
@@ -186,28 +195,13 @@ static void *gl_raster_font_init_font(void *data,
    return font;
 
 error:
+   RARCH_WARN("Couldn't initialize font renderer.\n");
    gl_raster_font_free_font(font);
-   font = NULL;
+   free(font);
 
    return NULL;
 }
 
-static void gl_raster_font_free_font(void *data)
-{
-   gl_raster_t *font = (gl_raster_t*)data;
-   if (!font)
-      return;
-
-   if (font->font_driver && font->font_data)
-      font->font_driver->free(font->font_data);
-
-   if (video_driver_is_threaded())
-      video_context_driver_make_current(true);
-
-   glDeleteTextures(1, &font->tex);
-
-   free(font);
-}
 
 static int gl_get_message_width(void *data, const char *msg,
       unsigned msg_len, float scale)

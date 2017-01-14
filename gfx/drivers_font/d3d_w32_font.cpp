@@ -88,9 +88,6 @@ static void d3dfonts_w32_free_font(void *data)
    if (d3dfonts->font)
       d3dfonts->font->Release();
    d3dfonts->font = NULL;
-
-   free(d3dfonts);
-   d3dfonts = NULL;
 }
 
 static void d3dfonts_w32_render_msg(void *data, const char *msg,

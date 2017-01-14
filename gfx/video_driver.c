@@ -1482,14 +1482,10 @@ void video_driver_set_viewport_core(void)
 
    /* Fallback to 1:1 pixel ratio if none provided */
    if (geom->aspect_ratio > 0.0f)
-   {
       aspectratio_lut[ASPECT_RATIO_CORE].value = geom->aspect_ratio;
-   }
    else
-   {
       aspectratio_lut[ASPECT_RATIO_CORE].value = 
          (float)geom->base_width / geom->base_height;
-   }
 }
 
 void video_driver_reset_custom_viewport(void)
@@ -1652,8 +1648,7 @@ bool video_driver_find_driver(void)
    else
    {
       unsigned d;
-      RARCH_ERR("Couldn't find any video driver named \"%s\"\n",
-            settings->video.driver);
+      RARCH_ERR("Couldn't find any video driver named \"%s\"\n", settings->video.driver);
       RARCH_LOG_OUTPUT("Available video drivers are:\n");
       for (d = 0; video_driver_find_handle(d); d++)
          RARCH_LOG_OUTPUT("\t%s\n", video_driver_find_ident(d));
@@ -1969,7 +1964,7 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
        * geometry for the "normal" case. */
       struct retro_system_av_info *av_info = 
          video_viewport_get_system_av_info();
-      unsigned base_height = 0;
+      unsigned base_height                 = 0;
       
       if (av_info)
          base_height = av_info->geometry.base_height;
@@ -2230,20 +2225,20 @@ bool video_driver_translate_coord_viewport(
    if (scaled_screen_y < -0x7fff || scaled_screen_y > 0x7fff)
       scaled_screen_y  = -0x8000; /* OOB */
 
-   mouse_x           -= vp->x;
-   mouse_y           -= vp->y;
+   mouse_x            -= vp->x;
+   mouse_y            -= vp->y;
 
-   scaled_x           = (2 * mouse_x * 0x7fff) / norm_full_vp_width  - 0x7fff;
-   scaled_y           = (2 * mouse_y * 0x7fff) / norm_full_vp_height - 0x7fff;
+   scaled_x            = (2 * mouse_x * 0x7fff) / norm_full_vp_width  - 0x7fff;
+   scaled_y            = (2 * mouse_y * 0x7fff) / norm_full_vp_height - 0x7fff;
    if (scaled_x < -0x7fff || scaled_x > 0x7fff)
-      scaled_x        = -0x8000; /* OOB */
+      scaled_x         = -0x8000; /* OOB */
    if (scaled_y < -0x7fff || scaled_y > 0x7fff)
-      scaled_y        = -0x8000; /* OOB */
+      scaled_y         = -0x8000; /* OOB */
 
-   *res_x             = scaled_x;
-   *res_y             = scaled_y;
-   *res_screen_x      = scaled_screen_x;
-   *res_screen_y      = scaled_screen_y;
+   *res_x              = scaled_x;
+   *res_y              = scaled_y;
+   *res_screen_x       = scaled_screen_x;
+   *res_screen_y       = scaled_screen_y;
 
    return true;
 }
