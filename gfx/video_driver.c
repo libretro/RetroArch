@@ -2051,13 +2051,12 @@ void video_driver_frame(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
    static char video_driver_msg[256];
-   static struct retro_perf_counter video_frame_conv = {0};
    video_frame_info_t video_info;
-   unsigned output_width  = 0;
-   unsigned output_height = 0;
-   unsigned  output_pitch = 0;
-   const char *msg        = NULL;
-   settings_t *settings   = config_get_ptr();
+   static struct retro_perf_counter video_frame_conv = {0};
+   unsigned output_width                             = 0;
+   unsigned output_height                            = 0;
+   unsigned  output_pitch                            = 0;
+   const char *msg                                   = NULL;
 
    if (!video_driver_active)
       return;
@@ -2081,17 +2080,7 @@ void video_driver_frame(const void *data, unsigned width,
 
    video_driver_cached_frame_set(data, width, height, pitch);
 
-   video_info.refresh_rate          = settings->video.refresh_rate;
-   video_info.black_frame_insertion = 
-      settings->video.black_frame_insertion;
-   video_info.hard_sync             = settings->video.hard_sync;
-   video_info.hard_sync_frames      = settings->video.hard_sync_frames;
-   video_info.fps_show              = settings->fps_show;
-   video_info.scale_integer         = settings->video.scale_integer;
-   video_info.aspect_ratio_idx      = settings->video.aspect_ratio_idx;
-   video_info.post_filter_record    = settings->video.post_filter_record;
-   video_info.max_swapchain_images  = settings->video.max_swapchain_images;
-   video_info.shared_context        = settings->video.shared_context;
+   video_driver_build_info(&video_info);
 
    /* Slightly messy code,
     * but we really need to do processing before blocking on VSync
@@ -2120,9 +2109,8 @@ void video_driver_frame(const void *data, unsigned width,
    video_driver_msg[0] = '\0';
 
    if (runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_PULL, &msg) 
-         && settings->video.font_enable && msg)
+         && video_info.font_enable && msg)
       strlcpy(video_driver_msg, msg, sizeof(video_driver_msg));
-
 
    if (!current_video || !current_video->frame(
             video_driver_data, data, width, height,
@@ -2207,6 +2195,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->windowed_fullscreen   = settings->video.windowed_fullscreen;
    video_info->monitor_index         = settings->video.monitor_index;
    video_info->shared_context        = settings->video.shared_context;
+   video_info->font_enable           = settings->video.font_enable;
 }
 
 /**

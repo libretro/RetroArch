@@ -99,6 +99,7 @@ typedef struct video_frame_info
    unsigned max_swapchain_images;
    bool windowed_fullscreen;
    unsigned monitor_index;
+   bool font_enable;
 } video_frame_info_t;
 
 /* Optionally implemented interface to poke more
