@@ -109,6 +109,7 @@ static void ctr_font_free_font(void* data)
 #else
    linearFree(font->texture.data);
 #endif
+   free(font);
 }
 
 static int ctr_font_get_message_width(void* data, const char* msg,

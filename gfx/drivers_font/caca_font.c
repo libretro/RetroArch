@@ -59,6 +59,7 @@ static void *caca_init_font(void *data,
 
 static void caca_render_free_font(void *data)
 {
+
 }
 
 static int caca_get_message_width(void *data, const char *msg,

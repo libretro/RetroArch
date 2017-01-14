@@ -98,6 +98,8 @@ static void vita2d_font_free_font(void *data)
    vita2d_wait_rendering_done();
 #endif
    vita2d_free_texture(font->texture);
+
+   free(font);
 }
 
 static int vita2d_font_get_message_width(void *data, const char *msg,

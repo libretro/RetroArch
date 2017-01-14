@@ -58,18 +58,18 @@ enum
 class PackedResource
 {
    protected:
-      BYTE*       m_pSysMemData;        /* Allocated memory for resource headers etc. */
+      BYTE*       m_pSysMemData;        // Alloc'ed memory for resource headers etc.
       DWORD       m_dwSysMemDataSize;
 
-      BYTE*       m_pVidMemData;        /* Allocated memory for resource data, etc. */
+      BYTE*       m_pVidMemData;        // Alloc'ed memory for resource data, etc.
       DWORD       m_dwVidMemDataSize;
 
-      XBRESOURCE* m_pResourceTags;     /* Tags to associate names with the resources */
-      DWORD       m_dwNumResourceTags; /* Number of resource tags */
-      BOOL m_bInitialized;             /* Resource is fully initialized */
+      XBRESOURCE* m_pResourceTags;     // Tags to associate names with the resources
+      DWORD       m_dwNumResourceTags; // Number of resource tags
+      BOOL m_bInitialized;       // Resource is fully initialized
 
    public:
-      /* Loads the resources out of the specified bundle */
+      // Loads the resources out of the specified bundle
 #if defined(_XBOX1)
       HRESULT Create( const char *strFilename, DWORD dwNumResourceTags = 0L, 
             XBRESOURCE* pResourceTags = NULL );
@@ -82,21 +82,20 @@ class PackedResource
       BOOL    Initialized() const;
 
 #ifdef _XBOX360
-      /* Retrieves the resource tags */
+      // Retrieves the resource tags
       void GetResourceTags( DWORD* pdwNumResourceTags, XBRESOURCE** ppResourceTags );
 #endif
 
-      /* Helper function to make sure a resource is registered */
+      // Helper function to make sure a resource is registered
       LPDIRECT3DRESOURCE RegisterResource( LPDIRECT3DRESOURCE pResource ) const
       {
 #ifdef _XBOX1
-         /* Register the resource, if it has not yet been registered. We mark
-          * a resource as registered by upping it's reference count. */
+         // Register the resource, if it has not yet been registered. We mark
+         // a resource as registered by upping it's reference count.
          if( pResource && ( pResource->Common & D3DCOMMON_REFCOUNT_MASK ) == 1 )
          {
-
-            /* Special case CPU-copy push buffers (which live in system memory) */
-            if(   ( pResource->Common & D3DCOMMON_TYPE_PUSHBUFFER ) &&
+            // Special case CPU-copy push buffers (which live in system memory)
+            if( ( pResource->Common & D3DCOMMON_TYPE_PUSHBUFFER ) &&
                   ( pResource->Common & D3DPUSHBUFFER_RUN_USING_CPU_COPY ) )
                pResource->Data += (DWORD)m_pSysMemData;
             else
@@ -108,46 +107,32 @@ class PackedResource
          return pResource;
       }
 
-      /* Functions to retrieve resources by their offset */
+      // Functions to retrieve resources by their offset
       void *GetData( DWORD dwOffset ) const
-      {
-         return &m_pSysMemData[dwOffset];
-      }
+      { return &m_pSysMemData[dwOffset]; }
 
       LPDIRECT3DRESOURCE GetResource( DWORD dwOffset ) const
-      {
-         return RegisterResource( (LPDIRECT3DRESOURCE)GetData(dwOffset) );
-      }
+      { return RegisterResource( (LPDIRECT3DRESOURCE)GetData(dwOffset) ); }
 
       LPDIRECT3DTEXTURE GetTexture( DWORD dwOffset ) const
-      {
-         return (LPDIRECT3DTEXTURE)GetResource( dwOffset );
-      }
+      { return (LPDIRECT3DTEXTURE)GetResource( dwOffset ); }
 
       LPDIRECT3DVERTEXBUFFER GetVertexBuffer( DWORD dwOffset ) const
-      {
-         return (LPDIRECT3DVERTEXBUFFER)GetResource( dwOffset );
-      }
+      { return (LPDIRECT3DVERTEXBUFFER)GetResource( dwOffset ); }
 
-      /* Functions to retrieve resources by their name */
+      // Functions to retrieve resources by their name
       void *GetData( const char* strName ) const;
 
       LPDIRECT3DRESOURCE GetResource( const char* strName ) const
-      {
-         return RegisterResource( (LPDIRECT3DRESOURCE)GetData(strName));
-      }
+      { return RegisterResource( (LPDIRECT3DRESOURCE)GetData( strName ) ); }
 
       LPDIRECT3DTEXTURE GetTexture( const char* strName ) const
-      {
-         return (LPDIRECT3DTEXTURE)GetResource( strName );
-      }
+      { return (LPDIRECT3DTEXTURE)GetResource( strName ); }
 
       LPDIRECT3DVERTEXBUFFER GetVertexBuffer( const char* strName ) const
-      {
-         return (LPDIRECT3DVERTEXBUFFER)GetResource( strName );
-      }
+      { return (LPDIRECT3DVERTEXBUFFER)GetResource( strName ); }
 
-      /* Constructor/destructor */
+      // Constructor/destructor
       PackedResource();
       ~PackedResource();
 };
@@ -158,13 +143,13 @@ class PackedResource
 
 PackedResource::PackedResource()
 {
-   m_pSysMemData       = NULL;
-   m_dwSysMemDataSize  = 0L;
-   m_pVidMemData       = NULL;
-   m_dwVidMemDataSize  = 0L;
-   m_pResourceTags     = NULL;
+   m_pSysMemData = NULL;
+   m_dwSysMemDataSize = 0L;
+   m_pVidMemData = NULL;
+   m_dwVidMemDataSize = 0L;
+   m_pResourceTags = NULL;
    m_dwNumResourceTags = 0L;
-   m_bInitialized      = FALSE;
+   m_bInitialized = FALSE;
 }
 
 
@@ -250,8 +235,8 @@ HRESULT PackedResource::Create(const char *strFilename)
    XPR_HEADER xprh;
    bool retval;
 #ifdef _XBOX1
-   char strResourcePath[512];
    BOOL bHasResourceOffsetsTable = FALSE;
+   char strResourcePath[512];
 
    if (FAILED(FindMediaFile(strResourcePath, strFilename, sizeof(strResourcePath))))
       return E_FAIL;
@@ -285,7 +270,7 @@ HRESULT PackedResource::Create(const char *strFilename)
       return E_FAIL;
    }
 
-   /* Compute memory requirements */
+   // Compute memory requirements
 #if defined(_XBOX1)
    m_dwSysMemDataSize = xprh.dwHeaderSize - sizeof(XPR_HEADER);
    m_dwVidMemDataSize = xprh.dwTotalSize - xprh.dwHeaderSize;
@@ -294,7 +279,7 @@ HRESULT PackedResource::Create(const char *strFilename)
    m_dwVidMemDataSize = xprh.dwDataSize;
 #endif
 
-   /* Allocate memory */
+   // Allocate memory
    m_pSysMemData = (BYTE*)malloc(m_dwSysMemDataSize);
    if (m_pSysMemData == NULL)
    {
@@ -319,7 +304,7 @@ HRESULT PackedResource::Create(const char *strFilename)
       return E_FAIL;
    }
 
-   /* Read in the data from the file */
+   // Read in the data from the file
    if( !ReadFile( hFile, m_pSysMemData, m_dwSysMemDataSize, &dwNumBytesRead, NULL) ||
          !ReadFile( hFile, m_pVidMemData, m_dwVidMemDataSize, &dwNumBytesRead, NULL))
    {
@@ -327,7 +312,7 @@ HRESULT PackedResource::Create(const char *strFilename)
       return E_FAIL;
    }
 
-   /* Done with the file */
+   // Done with the file
    CloseHandle( hFile);
 
 #ifdef _XBOX1
@@ -386,17 +371,16 @@ void PackedResource::GetResourceTags(DWORD* pdwNumResourceTags,
 void PackedResource::Destroy()
 {
    free(m_pSysMemData);
+   m_pSysMemData = NULL;
+   m_dwSysMemDataSize = 0L;
 
-   if (m_pVidMemData)
+   if (m_pVidMemData != NULL)
       FreeContiguousMemory(m_pVidMemData);
 
-   m_pSysMemData       = NULL;
-   m_dwSysMemDataSize  = 0L;
+   m_pVidMemData = NULL;
+   m_dwVidMemDataSize = 0L;
 
-   m_pVidMemData       = NULL;
-   m_dwVidMemDataSize  = 0L;
-
-   m_pResourceTags     = NULL;
+   m_pResourceTags = NULL;
    m_dwNumResourceTags = 0L;
 
    m_bInitialized = FALSE;
@@ -546,6 +530,8 @@ static void *xdk360_init_font(void *video_data,
    if (!font)
       return NULL;
 
+   (void)font_size;
+
    font->d3d                  = (d3d_video_t*)video_data;
 
    font->m_pFontTexture       = NULL;
@@ -613,10 +599,10 @@ static void xdk360_free_font(void *data)
       return;
 
    /* Destroy the font */
-   font->m_pFontTexture    = NULL;
-   font->m_dwNumGlyphs     = 0L;
-   font->m_Glyphs          = NULL;
-   font->m_cMaxGlyph       = 0;
+   font->m_pFontTexture = NULL;
+   font->m_dwNumGlyphs = 0L;
+   font->m_Glyphs = NULL;
+   font->m_cMaxGlyph = 0;
    font->m_TranslatorTable = NULL;
 
    if (font->s_FontLocals.m_pFontPixelShader)
@@ -626,12 +612,15 @@ static void xdk360_free_font(void *data)
    if (font->s_FontLocals.m_pFontVertexDecl)
       font->s_FontLocals.m_pFontVertexDecl->Release();
 
-   font->s_FontLocals.m_pFontPixelShader  = NULL;
+   font->s_FontLocals.m_pFontPixelShader = NULL;
    font->s_FontLocals.m_pFontVertexShader = NULL;
-   font->s_FontLocals.m_pFontVertexDecl   = NULL;
+   font->s_FontLocals.m_pFontVertexDecl = NULL;
 
    if (m_xprResource.Initialized())
       m_xprResource.Destroy();
+
+   free(font);
+   font = NULL;
 }
 
 static void xdk360_render_msg_post(xdk360_video_font_t * font)
@@ -655,7 +644,7 @@ static void xdk360_render_msg_pre(xdk360_video_font_t * font)
    d3dr->GetRenderState( D3DRS_VIEWPORTENABLE, (DWORD*)&font->m_dwSavedState );
 
    /* Set the texture scaling factor as a vertex shader constant. */
-   D3DTexture_GetLevelDesc(font->m_pFontTexture, 0, &TextureDesc); /* Get the description */
+   D3DTexture_GetLevelDesc(font->m_pFontTexture, 0, &TextureDesc); // Get the description
 
    /* Set render state. */
    d3d_set_texture(d3dr, 0, font->m_pFontTexture);
@@ -696,11 +685,11 @@ static void xdk360_draw_text(xdk360_video_font_t *font,
     * the vColor array. */
    d3dr->SetVertexShaderConstantF(1, vColor, 1);
 
-   m_fCursorX  = floorf(x);
-   m_fCursorY  = floorf(y);
+   m_fCursorX = floorf(x);
+   m_fCursorY = floorf(y);
 
    /* Adjust for padding. */
-   y          -= font->m_fFontTopPadding;
+   y -= font->m_fFontTopPadding;
 
    /* Begin drawing the vertices
     * Declared as volatile to force writing in ascending
@@ -710,7 +699,7 @@ static void xdk360_draw_text(xdk360_video_font_t *font,
     * memory.
     */
 
-   dwNumChars  = wcslen(strText);
+   dwNumChars = wcslen(strText);
    d3dr->BeginVertices(D3DPT_QUADLIST, 4 * dwNumChars,
          sizeof(XMFLOAT4), (void**)&pVertex);
 
@@ -721,8 +710,8 @@ static void xdk360_draw_text(xdk360_video_font_t *font,
 #ifdef MSB_FIRST
       uint32_t tu1, tu2, tv1, tv2;
 #endif
-      const GLYPH_ATTR *pGlyph = NULL;
-      wchar_t letter           = *strText++; /* Get the current letter in the string */
+      const GLYPH_ATTR *pGlyph;
+      wchar_t letter = *strText++; /* Get the current letter in the string */
 
       /* Handle the newline character. */
       if (letter == L'\n')
@@ -743,16 +732,16 @@ static void xdk360_draw_text(xdk360_video_font_t *font,
       fWidth   = FONT_SCALE(font->d3d) * (float)pGlyph->wWidth;
       fHeight  = FONT_SCALE(font->d3d) * font->m_fFontHeight;
 
-      m_fCursorX                        += fOffset;
+      m_fCursorX += fOffset;
 
       /* Add the vertices to draw this glyph. */
 
 #ifdef MSB_FIRST
       /* Convert shorts to 32 bit longs for in register merging */
-      tu1                                = pGlyph->tu1;        
-      tv1                                = pGlyph->tv1;
-      tu2                                = pGlyph->tu2;
-      tv2                                = pGlyph->tv2;
+      tu1 = pGlyph->tu1;        
+      tv1 = pGlyph->tv1;
+      tu2 = pGlyph->tu2;
+      tv2 = pGlyph->tv2;
 #endif
 
       /* NOTE: The vertexes are 2 floats for the screen coordinates,
@@ -771,27 +760,27 @@ static void xdk360_draw_text(xdk360_video_font_t *font,
 
       /* Setup the vertex/screen coordinates */
 
-      pVertex[0]                         = m_fCursorX;
-      pVertex[1]                         = m_fCursorY;
-      pVertex[3]                         = 0;
-      pVertex[4]                         = m_fCursorX + fWidth;
-      pVertex[5]                         = m_fCursorY;
-      pVertex[7]                         = 0;
-      pVertex[8]                         = m_fCursorX + fWidth;
-      pVertex[9]                         = m_fCursorY + fHeight;
-      pVertex[11]                        = 0;
-      pVertex[12]                        = m_fCursorX;
-      pVertex[13]                        = m_fCursorY + fHeight;
+      pVertex[0]  = m_fCursorX;
+      pVertex[1]  = m_fCursorY;
+      pVertex[3]  = 0;
+      pVertex[4]  = m_fCursorX + fWidth;
+      pVertex[5]  = m_fCursorY;
+      pVertex[7]  = 0;
+      pVertex[8]  = m_fCursorX + fWidth;
+      pVertex[9]  = m_fCursorY + fHeight;
+      pVertex[11] = 0;
+      pVertex[12] = m_fCursorX;
+      pVertex[13] = m_fCursorY + fHeight;
 #ifdef MSB_FIRST
-      ((volatile uint32_t *)pVertex)[2]  = (tu1 << 16) | tv1;        /* Merged using big endian rules */
-      ((volatile uint32_t *)pVertex)[6]  = (tu2 << 16) | tv1;        /* Merged using big endian rules */
-      ((volatile uint32_t*)pVertex)[10]  = (tu2 << 16) | tv2;        /* Merged using big endian rules */
-      ((volatile uint32_t*)pVertex)[14]  = (tu1 << 16) | tv2;        /* Merged using big endian rules */
+      ((volatile uint32_t *)pVertex)[2]  = (tu1 << 16) | tv1;         // Merged using big endian rules
+      ((volatile uint32_t *)pVertex)[6]  = (tu2 << 16) | tv1;         // Merged using big endian rules
+      ((volatile uint32_t*)pVertex)[10] = (tu2 << 16) | tv2;        // Merged using big endian rules
+      ((volatile uint32_t*)pVertex)[14] = (tu1 << 16) | tv2;        // Merged using big endian rules
 #endif
-      pVertex[15]                        = 0;
+      pVertex[15] = 0;
+      pVertex += 16;
 
-      pVertex                           += 16;
-      m_fCursorX                        += fAdvance;
+      m_fCursorX += fAdvance;
 
       dwNumChars--;
    }

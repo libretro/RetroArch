@@ -55,6 +55,12 @@ static void *xfonts_init_font(void *video_data,
 
 static void xfonts_free_font(void *data)
 {
+   xfonts_t *font = (xfonts_t*)data;
+
+   if (font)
+      free(font);
+   
+   font = NULL;
 }
 
 static void xfonts_render_msg(void *data, const char *msg,
