@@ -318,16 +318,6 @@ static void dispmanx_surface_update(void *data, const void *frame,
 
    settings_t *settings = config_get_ptr();
 
-   if (settings->video.max_swapchain_images >= 3)
-   {
-      /* Wait until last issued flip completes to get a free page. Also, 
-       * dispmanx doesn't support issuing more than one pageflip. */
-      slock_lock(_dispvars->pending_mutex);
-      if (_dispvars->pageflip_pending > 0)
-         scond_wait(_dispvars->vsync_condition, _dispvars->pending_mutex);
-      slock_unlock(_dispvars->pending_mutex);
-   }
-
    page = dispmanx_get_free_page(_dispvars, surface);
 
    /* Frame blitting */
@@ -458,6 +448,8 @@ static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
       if (width == 0 || height == 0)
          return true;
 
+      settings_t *settings = config_get_ptr();
+
       _dispvars->core_width    = width;
       _dispvars->core_height   = height;
       _dispvars->core_pitch    = pitch;
@@ -476,7 +468,7 @@ static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
             _dispvars->rgb32 ? VC_IMAGE_XRGB8888 : VC_IMAGE_RGB565,
             255,
             _dispvars->aspect_ratio, 
-            3,
+            settings->video.max_swapchain_images,
             0,
             &_dispvars->main_surface);
   
