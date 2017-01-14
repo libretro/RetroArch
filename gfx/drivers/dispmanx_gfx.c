@@ -296,6 +296,20 @@ static void dispmanx_surface_setup(void *data,  int src_width, int src_height,
    vc_dispmanx_update_submit_sync(_dispvars->update);
 }
 
+static void dispmanx_surface_update_async(void *data, const void *frame,
+      struct dispmanx_surface *surface)
+{
+   struct dispmanx_video *_dispvars = data;
+   struct dispmanx_page       *page = NULL;
+
+   /* Since it's an async update, there's no need for multiple pages */
+   page = &(surface->pages[0]);
+
+   /* Frame blitting. Nothing else is needed if we only have a page. */
+   vc_dispmanx_resource_write_data(page->resource, surface->pixformat,
+         surface->pitch, (void*)frame, &(surface->bmp_rect));
+}
+
 static void dispmanx_surface_update(void *data, const void *frame,
       struct dispmanx_surface *surface)
 {
@@ -303,16 +317,6 @@ static void dispmanx_surface_update(void *data, const void *frame,
    struct dispmanx_page       *page = NULL;
 
    settings_t *settings = config_get_ptr();
-
-   if (settings->video.max_swapchain_images >= 3)
-   {
-      /* Wait until last issued flip completes to get a free page. Also, 
-       * dispmanx doesn't support issuing more than one pageflip. */
-      slock_lock(_dispvars->pending_mutex);
-      if (_dispvars->pageflip_pending > 0)
-         scond_wait(_dispvars->vsync_condition, _dispvars->pending_mutex);
-      slock_unlock(_dispvars->pending_mutex);
-   }
 
    page = dispmanx_get_free_page(_dispvars, surface);
 
@@ -444,6 +448,8 @@ static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
       if (width == 0 || height == 0)
          return true;
 
+      settings_t *settings = config_get_ptr();
+
       _dispvars->core_width    = width;
       _dispvars->core_height   = height;
       _dispvars->core_pitch    = pitch;
@@ -462,7 +468,7 @@ static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
             _dispvars->rgb32 ? VC_IMAGE_XRGB8888 : VC_IMAGE_RGB565,
             255,
             _dispvars->aspect_ratio, 
-            3,
+            settings->video.max_swapchain_images,
             0,
             &_dispvars->main_surface);
   
@@ -473,7 +479,7 @@ static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
       }
    }
 
-   if (_dispvars->menu_active)
+   if (video_info.fps_show)
    {
       char buf[128];
       video_monitor_get_fps(video_info, buf, sizeof(buf), NULL, 0);
@@ -510,6 +516,7 @@ static void dispmanx_set_texture_frame(void *data, const void *frame, bool rgb32
       _dispvars->menu_height = height;
       _dispvars->menu_pitch  = width * (rgb32 ? 4 : 2);
 
+      /* Menu surface only needs a page as it will be updated asynchronously. */
       dispmanx_surface_setup(_dispvars, 
             width, 
             height, 
@@ -518,13 +525,15 @@ static void dispmanx_set_texture_frame(void *data, const void *frame, bool rgb32
             VC_IMAGE_RGBA16,
             210,
             _dispvars->aspect_ratio, 
-            3,
+            1,
             0,
             &_dispvars->menu_surface);
    }
 
-   /* We update the menu surface if menu is active. */
-   dispmanx_surface_update(_dispvars, frame, _dispvars->menu_surface);
+   /* We update the menu surface if menu is active.
+    * This update is asynchronous, yet menu screen update
+    * will be synced because main surface updating is synchronous */
+   dispmanx_surface_update_async(_dispvars, frame, _dispvars->menu_surface);
 }
 
 static void dispmanx_gfx_set_nonblock_state(void *data, bool state)
