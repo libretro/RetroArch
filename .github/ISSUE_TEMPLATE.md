@@ -24,6 +24,12 @@
 
 [Try to bisect and tell us when this started happening]
 
-### System information
+### Version/Commit
+You can find this information under Information/System Information
+
+- RetroArch: [version/commit]
+
+### Environment information
 
 - OS: [The operating system you're running]
+- Compiler: [In case you are running local builds]
