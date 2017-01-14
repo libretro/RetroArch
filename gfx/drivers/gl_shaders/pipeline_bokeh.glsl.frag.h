@@ -6,7 +6,7 @@ static const char* stock_fragment_xmb_bokeh = GLSL(
 
    void main(void)
    {
-      float tim = time * 2.4;
+      float speed = time * 4;
       vec2 uv = -1.0 + 2.0 * gl_FragCoord.xy / OutputSize.xy;
       uv.x *=  OutputSize.x / OutputSize.y;
       vec3 color = vec3(0.0);
@@ -17,11 +17,11 @@ static const char* stock_fragment_xmb_bokeh = GLSL(
          float siz = pow(sin(float(i) * 651.74 + 5.0) * 0.5 + 0.5, 4.0);
          float pox = sin(float(i) * 321.55 + 4.1) * OutputSize.x / OutputSize.y;
          float rad = 0.1 + 0.5 * siz + sin(pha + siz) / 4.0;
-         vec2  pos = vec2(pox + sin(time / 15. + pha + siz), - 1.0 - rad + (2.0 + 2.0 * rad) * fract(pha + 0.3 * (time / 7.) * (0.2 + 0.8 * siz)));
+         vec2  pos = vec2(pox + sin(speed / 15. + pha + siz), - 1.0 - rad + (2.0 + 2.0 * rad) * fract(pha + 0.3 * (speed / 7.) * (0.2 + 0.8 * siz)));
          float dis = length(uv - pos);
          if(dis < rad)
          {
-            vec3  col = mix(vec3(0.194 * sin(time / 6.0) + 0.3, 0.2, 0.3 * pha), vec3(1.1 * sin(time / 9.0) + 0.3, 0.2 * pha, 0.4), 0.5 + 0.5 * sin(float(i)));
+            vec3  col = mix(vec3(0.194 * sin(speed / 6.0) + 0.3, 0.2, 0.3 * pha), vec3(1.1 * sin(speed / 9.0) + 0.3, 0.2 * pha, 0.4), 0.5 + 0.5 * sin(float(i)));
             color +=  col.zyx * (1.0 - smoothstep(rad * 0.15, rad, dis));
          }
       }
