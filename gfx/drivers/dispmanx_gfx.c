@@ -479,7 +479,6 @@ static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
       }
    }
 
-   //if (_dispvars->menu_active)
    if (video_info.fps_show)
    {
       char buf[128];
