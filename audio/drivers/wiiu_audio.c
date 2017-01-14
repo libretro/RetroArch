@@ -48,7 +48,7 @@ typedef struct
    OSSpinLock spinlock;
 } ax_audio_t;
 
-//3072 samples main buffer, 64ms total
+/* 3072 samples main buffer, 64ms total */
 #define AX_AUDIO_COUNT              3072
 #define AX_AUDIO_SIZE               (AX_AUDIO_COUNT << 1u)
 
@@ -87,17 +87,18 @@ static void* ax_audio_init(const char* device, unsigned rate, unsigned latency,
       unsigned block_frames,
       unsigned *new_rate)
 {
-   ax_audio_t* ax = (ax_audio_t*)calloc(1, sizeof(ax_audio_t));
+   AXVoiceOffsets offsets[2];
+   u16 setup_buf[0x30] = {0};
+   setup_buf[0x25]     = 2; /* we request 2 channels */
+   AXInitParams init   = {AX_INIT_RENDERER_48KHZ, 0, 0};
+   AXVoiceVeData ve    = {0xF000, 0};
+   ax_audio_t* ax      = (ax_audio_t*)calloc(1, sizeof(ax_audio_t));
 
    if (!ax)
       return NULL;
 
-   AXInitParams init = {AX_INIT_RENDERER_48KHZ, 0, 0};
-
    AXInitWithParams(&init);
 
-   u16 setup_buf[0x30] = {0};
-   setup_buf[0x25] = 2; //we request 2 channels
    AXAcquireMultiVoice(31, NULL, 0, setup_buf, &ax->mvoice);
 
    if (!ax->mvoice || ax->mvoice->channels != 2)
@@ -106,31 +107,29 @@ static void* ax_audio_init(const char* device, unsigned rate, unsigned latency,
       return NULL;
    }
 
-   ax->buffer_l = MEM1_alloc(AX_AUDIO_SIZE, 0x100);
-   ax->buffer_r = MEM1_alloc(AX_AUDIO_SIZE, 0x100);
+   ax->buffer_l               = MEM1_alloc(AX_AUDIO_SIZE, 0x100);
+   ax->buffer_r              = MEM1_alloc(AX_AUDIO_SIZE, 0x100);
    memset(ax->buffer_l,0,AX_AUDIO_SIZE);
    memset(ax->buffer_r,0,AX_AUDIO_SIZE);
    DCFlushRange(ax->buffer_l,AX_AUDIO_SIZE);
    DCFlushRange(ax->buffer_r,AX_AUDIO_SIZE);
 
-   //shared by both voices
-   AXVoiceOffsets offsets[2];
-   offsets[0].currentOffset = 0;
-   offsets[0].loopOffset = 0;
-   offsets[0].endOffset = AX_AUDIO_COUNT - 1;
+   /* shared by both voices */
+   offsets[0].currentOffset  = 0;
+   offsets[0].loopOffset     = 0;
+   offsets[0].endOffset      = AX_AUDIO_COUNT - 1;
    offsets[0].loopingEnabled = AX_VOICE_LOOP_ENABLED;
-   offsets[0].dataType = AX_VOICE_FORMAT_LPCM16;
+   offsets[0].dataType       = AX_VOICE_FORMAT_LPCM16;
    memcpy(&offsets[1], &offsets[0], sizeof(AXVoiceOffsets));
 
-   //different buffers per voice
-   offsets[0].data = ax->buffer_l;
-   offsets[1].data = ax->buffer_r;
+   /* different buffers per voice */
+   offsets[0].data           = ax->buffer_l;
+   offsets[1].data           = ax->buffer_r;
    AXSetMultiVoiceOffsets(ax->mvoice, offsets);
 
    AXSetMultiVoiceSrcType(ax->mvoice, AX_VOICE_SRC_TYPE_NONE);
    AXSetMultiVoiceSrcRatio(ax->mvoice, 1.0f);
 
-   AXVoiceVeData ve = {0xF000, 0};
    AXSetMultiVoiceVe(ax->mvoice, &ve);
 
    AXSetMultiVoiceDeviceMix(ax->mvoice, AX_DEVICE_TYPE_DRC, 0, 0, 0x8000, 0);
@@ -138,14 +137,13 @@ static void* ax_audio_init(const char* device, unsigned rate, unsigned latency,
 
    AXSetMultiVoiceState(ax->mvoice, AX_VOICE_STATE_STOPPED);
 
-   ax->pos = 0;
-   ax->written = 0;
-
-   config_get_ptr()->audio.out_rate = AX_AUDIO_RATE;
+   ax->pos                   = 0;
+   ax->written               = 0;
+   *new_rate                 = AX_AUDIO_RATE;
 
    OSInitSpinLock(&ax->spinlock);
 
-   wiiu_cb_ax = ax;
+   wiiu_cb_ax                = ax;
    AXRegisterFrameCallback(wiiu_ax_callback);
 
    return ax;
@@ -154,7 +152,7 @@ static void* ax_audio_init(const char* device, unsigned rate, unsigned latency,
 static void ax_audio_free(void* data)
 {
    ax_audio_t* ax = (ax_audio_t*)data;
-   wiiu_cb_ax = NULL;
+   wiiu_cb_ax     = NULL;
 
    AXRegisterFrameCallback(NULL);
    AXFreeMultiVoice(ax->mvoice);
@@ -203,10 +201,12 @@ static bool ax_audio_start(void* data)
 
 static ssize_t ax_audio_write(void* data, const void* buf, size_t size)
 {
-   static struct retro_perf_counter ax_audio_write_perf = {0};
-   ax_audio_t* ax = (ax_audio_t*)data;
-   const uint16_t* src = buf;
    int i;
+   static struct retro_perf_counter ax_audio_write_perf = {0};
+   size_t countAvail   = 0;
+   ax_audio_t* ax      = (ax_audio_t*)data;
+   const uint16_t* src = buf;
+   int count           = size >> 2;
 
    if(!size || (size & 0x3))
       return 0;
@@ -215,12 +215,11 @@ static ssize_t ax_audio_write(void* data, const void* buf, size_t size)
    performance_counter_init(&ax_audio_write_perf, "ax_audio_write");
    performance_counter_start(&ax_audio_write_perf);
 
-   int count = size >> 2;
-
    if(count > AX_AUDIO_MAX_FREE)
       count = AX_AUDIO_MAX_FREE;
 
-   size_t countAvail = (ax->written > AX_AUDIO_MAX_FREE ? 0 : (AX_AUDIO_MAX_FREE - ax->written));
+   countAvail = ((ax->written > AX_AUDIO_MAX_FREE) ? 0 : (AX_AUDIO_MAX_FREE - ax->written));
+
    if (ax->nonblocking)
    {
       //not enough available for 3ms of data
