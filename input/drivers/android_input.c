@@ -503,7 +503,8 @@ static INLINE int android_input_poll_event_type_motion(
    size_t motion_ptr;
    bool keyup;
 
-   if (source & ~(AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE))
+   // Only handle events from a touchscreen or mouse
+   if (!(source & (AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE)))
       return 1;
 
    getaction  = AMotionEvent_getAction(event);
