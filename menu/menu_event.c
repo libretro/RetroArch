@@ -102,7 +102,7 @@ void menu_event_kb_set(bool down, enum retro_key key)
       unsigned i;
 
       for (i = 0; i < RETROK_LAST; i++)
-         menu_event_kb_set_internal(i, (menu_event_kb_is_set(i) & 1) << 1);
+         menu_event_kb_set_internal(i, (menu_event_kb_is_set((enum retro_key)i) & 1) << 1);
    }
    else
       menu_event_kb_set_internal(key, ((menu_event_kb_is_set(key) & 1) << 1) | down);
