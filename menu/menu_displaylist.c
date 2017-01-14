@@ -1436,10 +1436,8 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
       char fill_buf[PATH_MAX_LENGTH];
       char path_copy[PATH_MAX_LENGTH];
       const char *core_name           = NULL;
-      const char *db_name             = NULL;
       const char *path                = NULL;
       const char *label               = NULL;
-      const char *crc32               = NULL;
 
       fill_buf[0] = path_copy[0]      = '\0';
 
@@ -1448,7 +1446,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
       path = path_copy;
 
       playlist_get_index(playlist, i,
-            &path, &label, NULL, &core_name, &crc32, &db_name);
+            &path, &label, NULL, &core_name, NULL, NULL);
 
       if (core_name)
          strlcpy(fill_buf, core_name, sizeof(fill_buf));

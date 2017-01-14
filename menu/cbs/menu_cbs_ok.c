@@ -1371,8 +1371,6 @@ static int action_ok_playlist_entry_collection(const char *path,
       core_info_ctx_find_t core_info;
       char new_display_name[PATH_MAX_LENGTH];
       const char *entry_path                 = NULL;
-      const char *entry_crc32                = NULL;
-      const char *db_name                    = NULL;
       const char             *path_base      =
          path_basename(menu->db_playlist_file);
       bool        found_associated_core      =
@@ -1389,6 +1387,8 @@ static int action_ok_playlist_entry_collection(const char *path,
 
       if (!found_associated_core)
       {
+         /* TODO: figure out if this should refer to the inner or outer entry_path */
+         /* TODO: make sure there's only one entry_path in this function */
          int ret = action_ok_file_load_with_detect_core_collection(entry_path,
                label, type, selection_ptr, entry_idx);
          if (playlist_initialized)
@@ -1398,19 +1398,16 @@ static int action_ok_playlist_entry_collection(const char *path,
 
       menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
 
-      playlist_get_index(tmp_playlist, selection_ptr,
-            &entry_path, &entry_label, NULL, NULL, &entry_crc32, &db_name);
-
       strlcpy(new_display_name,
             core_info.inf->display_name, sizeof(new_display_name));
       playlist_update(tmp_playlist,
             selection_ptr,
-            entry_path,
-            entry_label,
+            NULL,
+            NULL,
             new_core_path,
             new_display_name,
-            entry_crc32,
-            db_name);
+            NULL,
+            NULL);
       playlist_write_file(tmp_playlist);
    }
    else
@@ -1431,7 +1428,7 @@ static int action_ok_playlist_entry_collection(const char *path,
          playlist_info.idx, &path, NULL, NULL, NULL, NULL, NULL);
 
    return generic_action_ok_file_load(new_core_path, path,
-         action_type,  content_enum_idx);
+         action_type, content_enum_idx);
 }
 
 static int action_ok_playlist_entry(const char *path,
@@ -1442,7 +1439,6 @@ static int action_ok_playlist_entry(const char *path,
    size_t selection_ptr             = 0;
    playlist_t *playlist             = g_defaults.content_history;
    const char *entry_path           = NULL;
-   const char *entry_label          = NULL;
    const char *core_path            = NULL;
    const char *core_name            = NULL;
    playlist_t *tmp_playlist         = NULL;
@@ -1456,7 +1452,7 @@ static int action_ok_playlist_entry(const char *path,
    selection_ptr = entry_idx;
 
    playlist_get_index(playlist, selection_ptr,
-         &entry_path, &entry_label, &core_path, &core_name, NULL, NULL);
+         &entry_path,  NULL, &core_path, &core_name, NULL, NULL);
 
    if (     string_is_equal(core_path, file_path_str(FILE_PATH_DETECT))
          && string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))
@@ -1465,9 +1461,7 @@ static int action_ok_playlist_entry(const char *path,
       char new_core_path[PATH_MAX_LENGTH];
       char new_display_name[PATH_MAX_LENGTH];
       const char *entry_path                 = NULL;
-      const char *entry_crc32                = NULL;
-      const char *db_name                    = NULL;
-      const char             *path_base      =
+      const char *path_base                  =
          path_basename(menu->db_playlist_file);
       bool        found_associated_core      = false;
 
@@ -1484,24 +1478,23 @@ static int action_ok_playlist_entry(const char *path,
          found_associated_core = false;
 
       if (!found_associated_core)
-         return  action_ok_file_load_with_detect_core(entry_path,
+         /* TODO: figure out if this should refer to the inner or outer entry_path */
+         /* TODO: make sure there's only one entry_path in this function */
+         return action_ok_file_load_with_detect_core(entry_path,
                label, type, selection_ptr, entry_idx);
 
       menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
-
-      playlist_get_index(tmp_playlist, selection_ptr,
-            &entry_path, &entry_label, NULL, NULL, &entry_crc32, &db_name);
 
       strlcpy(new_display_name,
             core_info.inf->display_name, sizeof(new_display_name));
       playlist_update(tmp_playlist,
             selection_ptr,
-            entry_path,
-            entry_label,
+            NULL,
+            NULL,
             new_core_path,
             new_display_name,
-            entry_crc32,
-            db_name);
+            NULL,
+            NULL);
       playlist_write_file(tmp_playlist);
    }
 
@@ -1530,7 +1523,6 @@ static int action_ok_playlist_entry_start_content(const char *path,
    bool playlist_initialized        = false;
    playlist_t *playlist             = NULL;
    const char *entry_path           = NULL;
-   const char *entry_label          = NULL;
    const char *core_path            = NULL;
    const char *core_name            = NULL;
    playlist_t *tmp_playlist         = NULL;
@@ -1557,7 +1549,7 @@ static int action_ok_playlist_entry_start_content(const char *path,
    selection_ptr = rdb_entry_start_game_selection_ptr;
 
    playlist_get_index(playlist, selection_ptr,
-         &entry_path, &entry_label, &core_path, &core_name, NULL, NULL);
+         &entry_path, NULL, &core_path, &core_name, NULL, NULL);
 
    if (     string_is_equal(core_path, file_path_str(FILE_PATH_DETECT))
          && string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))
@@ -1566,8 +1558,6 @@ static int action_ok_playlist_entry_start_content(const char *path,
       char new_core_path[PATH_MAX_LENGTH];
       char new_display_name[PATH_MAX_LENGTH];
       const char *entry_path                 = NULL;
-      const char *entry_crc32                = NULL;
-      const char *db_name                    = NULL;
       const char             *path_base      =
          path_basename(menu->db_playlist_file);
       bool        found_associated_core      = false;
@@ -1586,7 +1576,9 @@ static int action_ok_playlist_entry_start_content(const char *path,
 
       if (!found_associated_core)
       {
-         int ret =  action_ok_file_load_with_detect_core(entry_path,
+         /* TODO: figure out if this should refer to the inner or outer entry_path */
+         /* TODO: make sure there's only one entry_path in this function */
+         int ret = action_ok_file_load_with_detect_core(entry_path,
                label, type, selection_ptr, entry_idx);
          if (playlist_initialized)
             playlist_free(tmp_playlist);
@@ -1595,19 +1587,16 @@ static int action_ok_playlist_entry_start_content(const char *path,
 
       menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
 
-      playlist_get_index(tmp_playlist, selection_ptr,
-            &entry_path, &entry_label, NULL, NULL, &entry_crc32, &db_name);
-
       strlcpy(new_display_name,
             core_info.inf->display_name, sizeof(new_display_name));
       playlist_update(tmp_playlist,
             selection_ptr,
-            entry_path,
-            entry_label,
+            NULL,
+            NULL,
             new_core_path,
             new_display_name,
-            entry_crc32,
-            db_name);
+            NULL,
+            NULL);
       playlist_write_file(tmp_playlist);
    }
 
@@ -2036,10 +2025,6 @@ static int action_ok_core_deferred_set(const char *path,
 {
    size_t selection;
    char core_display_name[PATH_MAX_LENGTH];
-   const char            *entry_path       = NULL;
-   const char           *entry_label       = NULL;
-   const char           *entry_crc32       = NULL;
-   const char               *db_name       = NULL;
    playlist_t               *playlist      = NULL;
 
    core_display_name[0] = '\0';
@@ -2055,14 +2040,11 @@ static int action_ok_core_deferred_set(const char *path,
 
    idx = rdb_entry_start_game_selection_ptr;
 
-   playlist_get_index(playlist, idx,
-         &entry_path, &entry_label, NULL, NULL, &entry_crc32, &db_name);
-
    playlist_update(playlist, idx,
-         entry_path, entry_label,
-         path , core_display_name,
-         entry_crc32,
-         db_name);
+         NULL, NULL,
+         path, core_display_name,
+         NULL,
+         NULL);
 
    playlist_write_file(playlist);
 
@@ -2077,10 +2059,6 @@ static int action_ok_core_deferred_set_current_core(const char *path,
 {
    size_t selection;
    char core_display_name[PATH_MAX_LENGTH];
-   const char            *entry_path       = NULL;
-   const char           *entry_label       = NULL;
-   const char           *entry_crc32       = NULL;
-   const char               *db_name       = NULL;
    playlist_t               *playlist      = NULL;
 
    core_display_name[0] = '\0';
@@ -2096,14 +2074,11 @@ static int action_ok_core_deferred_set_current_core(const char *path,
 
    idx = rdb_entry_start_game_selection_ptr;
 
-   playlist_get_index(playlist, idx,
-         &entry_path, &entry_label, NULL, NULL, &entry_crc32, &db_name);
-
    playlist_update(playlist, idx,
-         entry_path, entry_label,
-         path , core_display_name,
-         entry_crc32,
-         db_name);
+         NULL, NULL,
+         path, core_display_name,
+         NULL,
+         NULL);
 
    playlist_write_file(playlist);
 
