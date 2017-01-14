@@ -46,14 +46,32 @@
 #include "../common/vulkan_common.h"
 #endif
 
+#ifdef HAVE_OPENGL
 static int (*g_pglSwapInterval)(int);
 static int (*g_pglSwapIntervalSGI)(int);
-#ifdef HAVE_OPENGL
 static void (*g_pglSwapIntervalEXT)(Display*, GLXDrawable, int);
+static Bool (*glXGetSyncValuesOML)(Display *dpy, GLXDrawable drawable,
+			    int64_t *ust, int64_t *msc, int64_t *sbc);
+static Bool (*glXGetMscRateOML)(Display *dpy, GLXDrawable drawable, int32_t *numerator,
+			 int32_t *denominator);
+static int64_t (*glXSwapBuffersMscOML)(Display *dpy, GLXDrawable drawable,
+				int64_t target_msc, int64_t divisor,
+				int64_t remainder);
+static Bool (*glXWaitForMscOML)(Display *dpy, GLXDrawable drawable, int64_t target_msc,
+			 int64_t divisor, int64_t remainder, int64_t *ust,
+			 int64_t *msc, int64_t *sbc);
+static Bool (*glXWaitForSbcOML)(Display *dpy, GLXDrawable drawable, int64_t target_sbc,
+			 int64_t *ust, int64_t *msc, int64_t *sbc);
 #endif
 
 typedef struct gfx_ctx_x_data
 {
+   int64_t ust;
+   int64_t msc;
+   int64_t sbc;
+
+   int divisor;
+   int remainder;
    bool g_use_hw_ctx;
    bool g_core_es;
    bool g_core_es_core;
@@ -66,6 +84,7 @@ typedef struct gfx_ctx_x_data
    GLXWindow g_glx_win;
    GLXContext g_ctx, g_hw_ctx;
    GLXFBConfig g_fbc;
+   unsigned swap_mode;
 #endif
 
    unsigned g_interval;
@@ -87,6 +106,30 @@ static PFNGLXCREATECONTEXTATTRIBSARBPROC glx_create_context_attribs;
 
 static gfx_ctx_x_data_t *current_context_data = NULL;
 
+static int GLXExtensionSupported(Display *dpy, const char *extension)
+{
+   const char *extensionsString  = glXQueryExtensionsString(dpy, DefaultScreen(dpy));
+   const char *client_extensions = glXGetClientString(dpy, GLX_EXTENSIONS);
+   const char *pos               = strstr(extensionsString, extension);
+
+   if (  (pos != NULL) && 
+         (pos == extensionsString || pos[-1] == ' ') &&
+         (pos[strlen(extension)] == ' ' || pos[strlen(extension)] == '\0')
+      )
+      return 1;
+
+   pos = strstr(client_extensions, extension);
+
+   if (
+         (pos != NULL) && 
+         (pos == extensionsString || pos[-1] == ' ') &&
+         (pos[strlen(extension)] == ' ' || pos[strlen(extension)] == '\0')
+      )
+      return 1;
+
+   return 0;
+}
+
 static int x_nul_handler(Display *dpy, XErrorEvent *event)
 {
    (void)dpy;
@@ -107,7 +150,11 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
 #ifdef HAVE_OPENGL
             if (x->g_ctx)
             {
-               glXSwapBuffers(g_x11_dpy, x->g_glx_win);
+               if (x->swap_mode)
+                  glXSwapBuffersMscOML(g_x11_dpy, x->g_glx_win, 0, x->divisor, x->remainder);
+               else
+                  glXSwapBuffers(g_x11_dpy, x->g_glx_win);
+
                glFinish();
                glXMakeContextCurrent(g_x11_dpy, None, None, NULL);
 
@@ -168,9 +215,9 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
       }
    }
 
+#ifdef HAVE_OPENGL
    g_pglSwapInterval    = NULL;
    g_pglSwapIntervalSGI = NULL;
-#ifdef HAVE_OPENGL
    g_pglSwapIntervalEXT = NULL;
 #endif
    g_major              = 0;
@@ -258,9 +305,26 @@ static void gfx_ctx_x_swap_buffers(void *data, video_frame_info_t video_info)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
-#ifdef HAVE_OPENGL
-         if (x->g_is_double)
-            glXSwapBuffers(g_x11_dpy, x->g_glx_win);
+#if defined(HAVE_OPENGL)
+         if (x->swap_mode)
+         {
+            if (x->g_interval)
+            {
+               glXWaitForMscOML(g_x11_dpy, x->g_glx_win, x->msc + x->g_interval,
+                     0, 0, &x->ust, &x->msc, &x->sbc);
+               glXSwapBuffersMscOML(g_x11_dpy, x->g_glx_win, 0, 0, 0);
+            }
+            else
+               glXSwapBuffersMscOML(g_x11_dpy, x->g_glx_win, 0, x->divisor, x->remainder);
+#if 0
+            RARCH_LOG("UST: %d, MSC: %d, SBC: %d\n", x->ust, x->msc, x->sbc);
+#endif
+         }
+         else
+         {
+            if (x->g_is_double)
+               glXSwapBuffers(g_x11_dpy, x->g_glx_win);
+         }
 #endif
          break;
 
@@ -430,6 +494,34 @@ static void *gfx_ctx_x_init(video_frame_info_t video_info, void *data)
          break;
 
       case GFX_CTX_NONE:
+      default:
+         break;
+   }
+
+   switch (x_api)
+   {
+      case GFX_CTX_OPENGL_API:
+#ifdef HAVE_OPENGL
+         if (GLXExtensionSupported(g_x11_dpy, "GLX_OML_sync_control") &&
+             GLXExtensionSupported(g_x11_dpy, "GLX_MESA_swap_control")
+            )
+         {
+            RARCH_LOG("GLX_OML_sync_control and GLX_MESA_swap_control supported, using better swap control method...\n");
+
+            x->swap_mode         = 1;
+
+            glXGetSyncValuesOML  = (void *)glXGetProcAddress((unsigned char *)"glXGetSyncValuesOML");
+            glXGetMscRateOML     = (void *)glXGetProcAddress((unsigned char *)"glXGetMscRateOML");
+            glXSwapBuffersMscOML = (void *)glXGetProcAddress((unsigned char *)"glXSwapBuffersMscOML");
+            glXWaitForMscOML     = (void *)glXGetProcAddress((unsigned char *)"glXWaitForMscOML");
+            glXWaitForSbcOML     = (void *)glXGetProcAddress((unsigned char *)"glXWaitForSbcOML");
+
+            glXGetSyncValuesOML(g_x11_dpy, g_x11_win, &x->ust, &x->msc, &x->sbc);
+
+            RARCH_LOG("UST: %d, MSC: %d, SBC: %d\n", x->ust, x->msc, x->sbc);
+         }
+#endif
+         break;
       default:
          break;
    }
