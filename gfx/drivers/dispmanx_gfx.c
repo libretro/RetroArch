@@ -319,6 +319,13 @@ static void dispmanx_surface_update(void *data, const void *frame,
 
    settings_t *settings = config_get_ptr();
 
+   /* Dispmanx doesn't support more than one pending pageflip. 
+    * It causes lockups. */
+   slock_lock(_dispvars->pending_mutex);
+   if (_dispvars->pageflip_pending > 0)
+      scond_wait(_dispvars->vsync_condition, _dispvars->pending_mutex);
+   slock_unlock(_dispvars->pending_mutex);
+
    page = dispmanx_get_free_page(_dispvars, surface);
 
    /* Frame blitting */
