@@ -76,6 +76,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
       "Konfigurationsdatei laden") /* FIXME/UPDATE */
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
       "Konfigurations-Einstellungen")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
+      "Konfigurationen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT,
       "Speichere Konfiguration beim Beenden")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
@@ -198,6 +200,20 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
       "Frontendzähler")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HELP,
       "Hilfe")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
+      "Audio/Video Fehlerbehebung")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD,
+      "Ändere das Virtual Gamepad Overlay")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_HELP_CONTROLS,
+      "Grundlegende Menüsteuerung")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_HELP_LIST,
+      "Hilfe")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_HELP_LOADING_CONTENT,
+      "Inhalte laden")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT,
+      "Nach Inhalten suchen")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE,
+      "Was ist ein Core?")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
       "Aktiviere Verlaufsliste")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
@@ -872,20 +888,30 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_VIDEO,
       "Zeige Videos")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_YES,
       "Ja")
+MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
+      "Verwalte und erstelle Konfigurationsdateien.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
+      "Limit the number of entries in recent playlist for games, images, music, and videos.")
+MSG_HASH(MENU_ENUM_SUBLABEL_HELP_LIST,
+      "Erfahre mehr derüber wie Retroarch funktioniert.")
+MSG_HASH(MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
+      "Enable or disable recent playlist for games, images, music, and videos.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
+      "Zeigt Informationen über Core, Netzwerk, und des Systems an. Anzeigen-Manager für Datenbank und Zeiger.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
+      "Use the same controls for both the menu and the game. Applies to the keyboard.")
+MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY,
+      "Hoste eine Netplay Session oder trete einer bei.")
+MSG_HASH(MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
+      "Lade Add-Ons, Komponenten und Inhalte für RetroArch herunter.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
       "Pause gameplay when window focus is lost.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
       "Enable or disable composition (Windows only).")
-MSG_HASH(MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
-      "Enable or disable recent playlist for games, images, music, and videos.")
-MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
-      "Limit the number of entries in recent playlist for games, images, music, and videos.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
-      "Unified Menu Controls")
-MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
-      "Use the same controls for both the menu and the game. Applies to the keyboard.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
       "Show onscreen messages.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
+      "Unified Menu Controls")
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BROWSE_URL_LIST,
       "Browse URL"
