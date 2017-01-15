@@ -204,10 +204,10 @@ error:
 }
 
 static void gfx_ctx_vivante_input_driver(void *data,
+      const char *name,
       const input_driver_t **input, void **input_data)
 {
-   (void)data;
-   *input = NULL;
+   *input      = NULL;
    *input_data = NULL;
 }
 

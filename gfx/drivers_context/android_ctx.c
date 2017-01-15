@@ -38,7 +38,6 @@
 
 #include "../../frontend/drivers/platform_linux.h"
 
-#include "../../configuration.h"
 #include "../../runloop.h"
 
 static enum gfx_ctx_api android_api           = GFX_CTX_NONE;
@@ -366,10 +365,10 @@ static bool android_gfx_ctx_set_video_mode(void *data,
 }
 
 static void android_gfx_ctx_input_driver(void *data,
+      const char *joypad_name,
       const input_driver_t **input, void **input_data)
 {
-   settings_t *settings = config_get_ptr();
-   void *androidinput   = input_android.init(settings->input.joypad_driver);
+   void *androidinput   = input_android.init(joypad_name);
 
    *input               = androidinput ? &input_android : NULL;
    *input_data          = androidinput;

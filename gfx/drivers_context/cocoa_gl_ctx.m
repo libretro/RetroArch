@@ -588,10 +588,11 @@ static bool cocoagl_gfx_ctx_set_resize(void *data, unsigned width, unsigned heig
    return false;
 }
 
-static void cocoagl_gfx_ctx_input_driver(void *data, const input_driver_t **input, void **input_data)
+static void cocoagl_gfx_ctx_input_driver(void *data,
+      const char *name,
+      const input_driver_t **input, void **input_data)
 {
-   (void)data;
-   *input = NULL;
+   *input      = NULL;
    *input_data = NULL;
 }
 

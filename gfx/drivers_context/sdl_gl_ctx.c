@@ -391,10 +391,11 @@ static void sdl_ctx_swap_buffers(void *data, video_frame_info_t video_info)
    (void)data;
 }
 
-static void sdl_ctx_input_driver(void *data, const input_driver_t **input, void **input_data)
+static void sdl_ctx_input_driver(void *data,
+      const char *name,
+      const input_driver_t **input, void **input_data)
 {
-   (void)data;
-   *input = NULL;
+   *input      = NULL;
    *input_data = NULL;
 }
 

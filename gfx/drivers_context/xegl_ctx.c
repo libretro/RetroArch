@@ -23,7 +23,6 @@
 #include "../../config.h"
 #endif
 
-#include "../../configuration.h"
 #include "../../frontend/frontend_driver.h"
 
 #include "../common/egl_common.h"
@@ -424,12 +423,10 @@ error:
 
 
 static void gfx_ctx_xegl_input_driver(void *data,
-   const input_driver_t **input, void **input_data)
+      const char *joypad_name,
+      const input_driver_t **input, void **input_data)
 {
-   settings_t *settings = config_get_ptr();
-   void *xinput         = input_x.init(settings->input.joypad_driver);
-
-   (void)data;
+   void *xinput = input_x.init(joypad_name);
 
    *input       = xinput ? &input_x : NULL;
    *input_data  = xinput;

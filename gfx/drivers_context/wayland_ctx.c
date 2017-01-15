@@ -42,7 +42,6 @@
 #include "../common/gl_common.h"
 #endif
 
-#include "../../configuration.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../runloop.h"
 #include "../../input/input_keyboard.h"
@@ -1365,13 +1364,18 @@ static void input_wl_free(void *data)
       wl->joypad->destroy();
 }
 
-static bool input_wl_init(void *data)
+static bool input_wl_init(void *data, const char *joypad_name)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   settings_t *settings = config_get_ptr();
-   wl->joypad = input_joypad_init_driver(settings->input.joypad_driver, wl);
+
+   if (!wl)
+      return false;
+
+   wl->joypad = input_joypad_init_driver(joypad_name, wl);
+
    if (!wl->joypad)
       return false;
+
    input_keymaps_init_keyboard_lut(rarch_key_map_linux);
    return true;
 }
@@ -1455,10 +1459,11 @@ static const input_driver_t input_wayland = {
 };
 
 static void gfx_ctx_wl_input_driver(void *data,
+      const char *joypad_name,
       const input_driver_t **input, void **input_data)
 {
    /* Input is heavily tied to the window stuff on Wayland, so just implement the input driver here. */
-   if (!input_wl_init(data))
+   if (!input_wl_init(data, joypad_name))
    {
       *input = NULL;
       *input_data = NULL;

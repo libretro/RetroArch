@@ -412,10 +412,14 @@ bool video_context_driver_get_metrics(gfx_ctx_metrics_t *metrics)
 
 bool video_context_driver_input_driver(gfx_ctx_input_t *inp)
 {
+   settings_t *settings    = config_get_ptr();
+   const char *joypad_name = settings ? settings->input.joypad_driver : NULL;
+
    if (!current_video_context || !current_video_context->input_driver)
       return false;
    current_video_context->input_driver(
-         video_context_data, inp->input, inp->input_data);
+         video_context_data, joypad_name,
+         inp->input, inp->input_data);
    return true;
 }
 

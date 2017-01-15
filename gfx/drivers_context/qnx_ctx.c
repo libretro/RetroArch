@@ -346,10 +346,10 @@ static bool gfx_ctx_qnx_set_video_mode(void *data,
 
 
 static void gfx_ctx_qnx_input_driver(void *data,
+      const char *joypad_name,
       const input_driver_t **input, void **input_data)
 {
-   settings_t *settings = config_get_ptr();
-   void *qnxinput       = input_qnx.init(settings->input.joypad_driver);
+   void *qnxinput       = input_qnx.init(joypad_name);
 
    *input               = qnxinput ? &input_qnx : NULL;
    *input_data          = qnxinput;

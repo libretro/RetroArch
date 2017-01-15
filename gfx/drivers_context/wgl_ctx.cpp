@@ -559,10 +559,10 @@ error:
 
 
 static void gfx_ctx_wgl_input_driver(void *data,
+      const char *joypad_name,
       const input_driver_t **input, void **input_data)
 {
-   settings_t *settings = config_get_ptr();
-   dinput_wgl           = input_dinput.init(settings ? settings->input.joypad_driver : NULL);
+   dinput_wgl           = input_dinput.init(joypad_name);
 
    *input               = dinput_wgl ? &input_dinput : NULL;
    *input_data          = dinput_wgl;

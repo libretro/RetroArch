@@ -154,7 +154,9 @@ static void gfx_ctx_cgl_destroy(void *data)
       free(cgl);
 }
 
-static void gfx_ctx_cgl_input_driver(void *data, const input_driver_t **input, void **input_data)
+static void gfx_ctx_cgl_input_driver(void *data,
+      const char *name,
+      const input_driver_t **input, void **input_data)
 {
    (void)data;
    (void)input;

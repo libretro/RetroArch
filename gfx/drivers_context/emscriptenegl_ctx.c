@@ -222,23 +222,22 @@ static bool gfx_ctx_emscripten_bind_api(void *data,
 
 
 static void gfx_ctx_emscripten_input_driver(void *data,
+      const char *name,
       const input_driver_t **input, void **input_data)
 {
-   (void)data;
+   void *rwebinput = NULL;
 
-   *input      = NULL;
-   *input_data = NULL;
+   *input          = NULL;
+   *input_data     = NULL;
 
 #ifndef HAVE_SDL2
-   {
-      void *rwebinput = input_rwebinput.init();
+   rwebinput = input_rwebinput.init();
 
-      if (!rwebinput)
-         return;
+   if (!rwebinput)
+      return;
 
-      *input      = &input_rwebinput;
-      *input_data = rwebinput;
-   }
+   *input      = &input_rwebinput;
+   *input_data = rwebinput;
 #endif
 }
 

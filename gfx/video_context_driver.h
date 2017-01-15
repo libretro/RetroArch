@@ -126,7 +126,7 @@ typedef struct gfx_ctx_driver
 
    /* Most video backends will want to use a certain input driver.
     * Checks for it here. */
-   void (*input_driver)(void*, const input_driver_t**, void**);
+   void (*input_driver)(void*, const char *, const input_driver_t**, void**);
 
    /* Wraps whatever gl_proc_address() there is.
     * Does not take opaque, to avoid lots of ugly wrapper code. */

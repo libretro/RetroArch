@@ -372,9 +372,10 @@ static void osmesa_ctx_swap_buffers(void *data, video_frame_info_t video_info)
 #endif
 }
 
-static void osmesa_ctx_input_driver(void *data, const input_driver_t **input, void **input_data)
+static void osmesa_ctx_input_driver(void *data,
+      const char *name,
+      const input_driver_t **input, void **input_data)
 {
-   (void)data;
    *input      = NULL;
    *input_data = NULL;
 }
