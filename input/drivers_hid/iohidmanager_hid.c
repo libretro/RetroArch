@@ -390,7 +390,7 @@ static void iohidmanager_hid_device_remove(void *data,
     
    if (adapter)
    {
-      struct apple_input_rec_t* tmp;
+      apple_input_rec_t* tmp = NULL;
       while(adapter->hats != NULL)
       {
           tmp = adapter->hats;
@@ -547,6 +547,14 @@ static void iohidmanager_hid_device_add(void *data, IOReturn result,
           case kHIDPage_GenericDesktop:
              switch (type)
              {
+                case kIOHIDElementTypeCollection:
+                case kIOHIDElementTypeInput_ScanCodes:
+                case kIOHIDElementTypeFeature:
+                case kIOHIDElementTypeInput_Button:
+                case kIOHIDElementTypeOutput:
+                case kIOHIDElementTypeInput_Axis:
+                     /* TODO/FIXME */
+                     break;
                 case kIOHIDElementTypeInput_Misc:
                    switch (use)
                    {
@@ -613,6 +621,14 @@ static void iohidmanager_hid_device_add(void *data, IOReturn result,
           case kHIDPage_Button:
              switch (type)
              {
+                case kIOHIDElementTypeCollection:
+                case kIOHIDElementTypeFeature:
+                case kIOHIDElementTypeInput_ScanCodes:
+                case kIOHIDElementTypeInput_Misc:
+                case kIOHIDElementTypeInput_Axis:
+                case kIOHIDElementTypeOutput:
+                     /* TODO/FIXME */
+                     break;
                 case kIOHIDElementTypeInput_Button:
                    {
                       apple_input_rec_t *btn = (apple_input_rec_t *)malloc(sizeof(apple_input_rec_t));
@@ -687,34 +703,34 @@ static void iohidmanager_hid_device_add(void *data, IOReturn result,
 
 error:
    {
-      struct apple_input_rec_t *tmp = NULL;
+      apple_input_rec_t *tmp = NULL;
       while(adapter->hats != NULL)
       {
-          tmp = adapter->hats;
+          tmp           = adapter->hats;
           adapter->hats = adapter->hats->next;
           free(tmp);
       }
       while(adapter->axes != NULL)
       {
-          tmp = adapter->axes;
+          tmp           = adapter->axes;
           adapter->axes = adapter->axes->next;
           free(tmp);
       }
       while(adapter->buttons != NULL)
       {
-          tmp = adapter->buttons;
+          tmp              = adapter->buttons;
           adapter->buttons = adapter->buttons->next;
           free(tmp);
       }
       while(tmpAxes != NULL)
       {
-          tmp = tmpAxes;
+          tmp     = tmpAxes;
           tmpAxes = tmpAxes->next;
           free(tmp);
       }
       while(tmpButtons != NULL)
       {
-          tmp = tmpButtons;
+          tmp        = tmpButtons;
           tmpButtons = tmpButtons->next;
           free(tmp);
       }
