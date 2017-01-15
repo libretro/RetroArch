@@ -401,6 +401,14 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE:
          snprintf(s, len, "Erfolgsliste (Hardcore)");
          break;
+      case MENU_ENUM_LABEL_VALUE_MENU_ENUM_CONTROLS_PROLOG:
+         snprintf(s, len,
+            "Du kannst folgende Steuerelemente mit\n"
+            "deinem Controller oder deiner Tastatur verwenden\n"
+            "um durch das Menü zu navigieren: \n"
+            " \n"
+         );
+         break;
       case MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY:
          snprintf(s, len, "Übergeordnetes Verzeichnis");
          break;
