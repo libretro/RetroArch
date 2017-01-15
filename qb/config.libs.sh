@@ -27,6 +27,9 @@ elif [ "$OS" = 'Win32' ]; then
    SOCKETLIB=-lws2_32
    SOCKETHEADER="#include <winsock2.h>"
    DYLIB=
+elif [ "$OS" = 'Cygwin' ]; then
+   echo "Error: Cygwin is not a supported platform. See https://bot.libretro.com/docs/compilation/windows/"
+   exit 1
 fi
 
 add_define_make DYLIB_LIB "$DYLIB"
