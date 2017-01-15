@@ -186,14 +186,14 @@ bool netplay_send_flush(struct socket_buffer *sbuf, int sockfd, bool block)
       /* Usual case: Everything's in order */
       if (block)
       {
-         if (!socket_send_all_blocking(sockfd, sbuf->data + sbuf->start, buf_used(sbuf), false))
+         if (!socket_send_all_blocking(sockfd, sbuf->data + sbuf->start, buf_used(sbuf), true))
             return false;
          sbuf->start = sbuf->end = 0;
 
       }
       else
       {
-         sent = socket_send_all_nonblocking(sockfd, sbuf->data + sbuf->start, buf_used(sbuf), false);
+         sent = socket_send_all_nonblocking(sockfd, sbuf->data + sbuf->start, buf_used(sbuf), true);
          if (sent < 0)
             return false;
          sbuf->start += sent;
@@ -209,7 +209,7 @@ bool netplay_send_flush(struct socket_buffer *sbuf, int sockfd, bool block)
       /* Unusual case: Buffer overlaps break */
       if (block)
       {
-         if (!socket_send_all_blocking(sockfd, sbuf->data + sbuf->start, sbuf->bufsz - sbuf->start, false))
+         if (!socket_send_all_blocking(sockfd, sbuf->data + sbuf->start, sbuf->bufsz - sbuf->start, true))
             return false;
          sbuf->start = 0;
          return netplay_send_flush(sbuf, sockfd, true);
@@ -217,7 +217,7 @@ bool netplay_send_flush(struct socket_buffer *sbuf, int sockfd, bool block)
       }
       else
       {
-         sent = socket_send_all_nonblocking(sockfd, sbuf->data + sbuf->start, sbuf->bufsz - sbuf->start, false);
+         sent = socket_send_all_nonblocking(sockfd, sbuf->data + sbuf->start, sbuf->bufsz - sbuf->start, true);
          if (sent < 0)
             return false;
          sbuf->start += sent;
