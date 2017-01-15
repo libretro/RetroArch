@@ -237,7 +237,7 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
    uint32_t page                            = IOHIDElementGetUsagePage(element);
    uint32_t use                             = IOHIDElementGetUsage(element);
    uint32_t cookie                          = IOHIDElementGetCookie(element);
-   apple_input_rec_t *tmp = NULL;
+   apple_input_rec_t *tmp                   = NULL;
 
    if (type != kIOHIDElementTypeInput_Misc)
       if (type != kIOHIDElementTypeInput_Button)
@@ -258,18 +258,18 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
                   case kHIDUsage_GD_Hatswitch:
                   {
                      tmp = adapter->hats;
+
                      while(tmp && tmp->cookie != cookie)
-                     {
                         tmp = tmp->next;
-                     }
+
                      if(tmp->cookie == cookie)
                      {
                         CFIndex range = IOHIDElementGetLogicalMax(element) - IOHIDElementGetLogicalMin(element);
-                        CFIndex val = IOHIDValueGetIntegerValue(value);
+                        CFIndex val   = IOHIDValueGetIntegerValue(value);
+
                         if(range == 3)
-                        {
-                            val *= 2;
-                        }
+                           val *= 2;
+
                         switch(val)
                         {
                             case 0:
@@ -324,10 +324,10 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
                   default:
                      {
                         tmp = adapter->axes;
+
                         while(tmp && tmp->cookie != cookie)
-                        {
                             tmp = tmp->next;
-                        }
+
                         if(tmp->cookie == cookie)
                         {
                            CFIndex min   = IOHIDElementGetPhysicalMin(element);
@@ -350,10 +350,10 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
             case kIOHIDElementTypeInput_Button:
                {
                   tmp = adapter->buttons;
+
                   while(tmp && tmp->cookie != cookie)
-                  {
                      tmp = tmp->next;
-                  }
+
                   if(tmp->cookie == cookie)
                   {
                      CFIndex state = IOHIDValueGetIntegerValue(value);
@@ -393,19 +393,19 @@ static void iohidmanager_hid_device_remove(void *data,
       apple_input_rec_t* tmp = NULL;
       while(adapter->hats != NULL)
       {
-          tmp = adapter->hats;
+          tmp           = adapter->hats;
           adapter->hats = adapter->hats->next;
           free(tmp);
       }
       while(adapter->axes != NULL)
       {
-          tmp = adapter->axes;
+          tmp           = adapter->axes;
           adapter->axes = adapter->axes->next;
           free(tmp);
       }
       while(adapter->buttons != NULL)
       {
-          tmp = adapter->buttons;
+          tmp              = adapter->buttons;
           adapter->buttons = adapter->buttons->next;
           free(tmp);
       }
@@ -470,8 +470,13 @@ static void iohidmanager_hid_device_add_autodetect(unsigned idx,
 static void iohidmanager_hid_device_add(void *data, IOReturn result,
       void* sender, IOHIDDeviceRef device)
 {
+   int i;
    IOReturn ret;
    uint16_t dev_vid, dev_pid;
+   bool found_axis[6] =
+   { false, false, false, false, false, false };
+   apple_input_rec_t *tmpButtons            = NULL;
+   apple_input_rec_t *tmpAxes               = NULL;
    iohidmanager_hid_t                  *hid = (iohidmanager_hid_t*)
       hid_driver_get_data();
    struct iohidmanager_hid_adapter *adapter = (struct iohidmanager_hid_adapter*)
@@ -522,146 +527,127 @@ static void iohidmanager_hid_device_add(void *data, IOReturn result,
       goto error;
 
    /* scan for buttons, axis, hats */
-   CFArrayRef elements_raw = IOHIDDeviceCopyMatchingElements(device, NULL, kIOHIDOptionsTypeNone);
-   int count = (int)CFArrayGetCount(elements_raw);
+   CFArrayRef elements_raw    = IOHIDDeviceCopyMatchingElements(device, NULL, kIOHIDOptionsTypeNone);
+   int count                  = (int)CFArrayGetCount(elements_raw);
    CFMutableArrayRef elements = CFArrayCreateMutableCopy(kCFAllocatorDefault,(CFIndex)count,elements_raw);
-   CFRange range = CFRangeMake(0,count);
+   CFRange range              = CFRangeMake(0,count);
    CFArraySortValues(elements,range,iohidmanager_sort_elements,NULL);
-   int i;
-   bool found_axis[6] =
-   { false, false, false, false, false, false };
 
-   apple_input_rec_t *tmpButtons = NULL;
-   apple_input_rec_t *tmpAxes = NULL;
+   for(i=0; i<count; i++)
+   {
+      IOHIDElementRef element = (IOHIDElementRef)CFArrayGetValueAtIndex(elements, i);
 
-   for(i=0; i<count; i++) {
-       IOHIDElementRef element = (IOHIDElementRef)CFArrayGetValueAtIndex(elements, i);
-       if (!element) continue;
-       IOHIDElementType type = IOHIDElementGetType(element);
-       uint32_t page = IOHIDElementGetUsagePage(element);
-       uint32_t use = IOHIDElementGetUsage(element);
-       uint32_t cookie = IOHIDElementGetCookie(element);
+      if (!element)
+         continue;
 
-       switch (page)
-       {
-          case kHIDPage_GenericDesktop:
-             switch (type)
-             {
-                case kIOHIDElementTypeCollection:
-                case kIOHIDElementTypeInput_ScanCodes:
-                case kIOHIDElementTypeFeature:
-                case kIOHIDElementTypeInput_Button:
-                case kIOHIDElementTypeOutput:
-                case kIOHIDElementTypeInput_Axis:
-                     /* TODO/FIXME */
-                     break;
-                case kIOHIDElementTypeInput_Misc:
-                   switch (use)
-                   {
-                      case kHIDUsage_GD_Hatswitch:
-                         {
-                            /* as far as I can tell, OSX only reports one Hat */
-                            apple_input_rec_t *hat = (apple_input_rec_t *)malloc(sizeof(apple_input_rec_t));
-                            hat->id = 0;
-                            hat->cookie = cookie;
-                            hat->next = NULL;
-                            adapter->hats = hat;
-                         }
-                         break;
-                      default:
-                         {
-                            uint32_t i = 0;
-                            static const uint32_t axis_use_ids[6] =
-                            { 48, 49, 51, 52, 50, 53 };
+      IOHIDElementType type = IOHIDElementGetType(element);
+      uint32_t page         = IOHIDElementGetUsagePage(element);
+      uint32_t use          = IOHIDElementGetUsage(element);
+      uint32_t cookie       = IOHIDElementGetCookie(element);
 
-                            while(axis_use_ids[i] != use)
-                            {
-                               i++;
-                            }
+      switch (page)
+      {
+         case kHIDPage_GenericDesktop:
+            switch (type)
+            {
+               case kIOHIDElementTypeCollection:
+               case kIOHIDElementTypeInput_ScanCodes:
+               case kIOHIDElementTypeFeature:
+               case kIOHIDElementTypeInput_Button:
+               case kIOHIDElementTypeOutput:
+               case kIOHIDElementTypeInput_Axis:
+                  /* TODO/FIXME */
+                  break;
+               case kIOHIDElementTypeInput_Misc:
+                  switch (use)
+                  {
+                     case kHIDUsage_GD_Hatswitch:
+                        {
+                           /* as far as I can tell, OSX only reports one Hat */
+                           apple_input_rec_t *hat = (apple_input_rec_t *)malloc(sizeof(apple_input_rec_t));
+                           hat->id                = 0;
+                           hat->cookie            = cookie;
+                           hat->next              = NULL;
+                           adapter->hats          = hat;
+                        }
+                        break;
+                     default:
+                        {
+                           uint32_t i = 0;
+                           static const uint32_t axis_use_ids[6] =
+                           { 48, 49, 51, 52, 50, 53 };
 
-                            if (i < 6)
-                            {
+                           while(axis_use_ids[i] != use)
+                              i++;
 
-                               apple_input_rec_t *axis = (apple_input_rec_t *)malloc(sizeof(apple_input_rec_t));
-                               axis->id = i;
-                               axis->cookie = cookie;
-                               axis->next = NULL;
+                           if (i < 6)
+                           {
 
-                               if(iohidmanager_check_for_id(adapter->axes,i))
-                               {
-                                   /* axis ID already exists, save to tmp for appending later */
-                                   if(tmpAxes == NULL)
-                                   {
-                                       tmpAxes = axis;
-                                   }
-                                   else
-                                   {
-                                       iohidmanager_append_record(tmpAxes,axis);
-                                   }
-                               }
-                               else
-                               {
-                                   found_axis[axis->id] = true;
-                                   if(adapter->axes == NULL)
-                                   {
-                                       adapter->axes = axis;
-                                   }
-                                   else
-                                   {
-                                       iohidmanager_append_record(adapter->axes,axis);
-                                   }
-                               }
-                            }
-                         }
-                         break;
-                   }
-                   break;
-             }
-             break;
-          case kHIDPage_Button:
-             switch (type)
-             {
-                case kIOHIDElementTypeCollection:
-                case kIOHIDElementTypeFeature:
-                case kIOHIDElementTypeInput_ScanCodes:
-                case kIOHIDElementTypeInput_Misc:
-                case kIOHIDElementTypeInput_Axis:
-                case kIOHIDElementTypeOutput:
-                     /* TODO/FIXME */
-                     break;
-                case kIOHIDElementTypeInput_Button:
-                   {
-                      apple_input_rec_t *btn = (apple_input_rec_t *)malloc(sizeof(apple_input_rec_t));
-                      btn->id = use - 1;
-                      btn->cookie = cookie;
-                      btn->next = NULL;
-                      if(iohidmanager_check_for_id(adapter->buttons,btn->id))
-                      {
-                          if(tmpButtons == NULL)
-                          {
-                             tmpButtons = btn;
-                          }
-                          else
-                          {
-                              iohidmanager_append_record(tmpButtons,btn);
-                          }
-                      }
-                      else
-                      {
-                          if(adapter->buttons == NULL)
-                          {
-                              adapter->buttons = btn;
-                          }
-                          else
-                          {
-                              iohidmanager_append_record(adapter->buttons,btn);
-                          }
-                      }
-                   }
-                   break;
-             }
-             break;
-       }
+                              apple_input_rec_t *axis = (apple_input_rec_t *)malloc(sizeof(apple_input_rec_t));
+                              axis->id                = i;
+                              axis->cookie            = cookie;
+                              axis->next              = NULL;
+
+                              if(iohidmanager_check_for_id(adapter->axes,i))
+                              {
+                                 /* axis ID already exists, save to tmp for appending later */
+                                 if(tmpAxes)
+                                    iohidmanager_append_record(tmpAxes,axis);
+                                 else
+                                    tmpAxes = axis;
+                              }
+                              else
+                              {
+                                 found_axis[axis->id] = true;
+                                 if(adapter->axes)
+                                    iohidmanager_append_record(adapter->axes,axis);
+                                 else
+                                    adapter->axes = axis;
+                              }
+                           }
+                        }
+                        break;
+                  }
+                  break;
+            }
+            break;
+         case kHIDPage_Button:
+            switch (type)
+            {
+               case kIOHIDElementTypeCollection:
+               case kIOHIDElementTypeFeature:
+               case kIOHIDElementTypeInput_ScanCodes:
+               case kIOHIDElementTypeInput_Misc:
+               case kIOHIDElementTypeInput_Axis:
+               case kIOHIDElementTypeOutput:
+                  /* TODO/FIXME */
+                  break;
+               case kIOHIDElementTypeInput_Button:
+                  {
+                     apple_input_rec_t *btn = (apple_input_rec_t *)malloc(sizeof(apple_input_rec_t));
+                     btn->id                = use - 1;
+                     btn->cookie            = cookie;
+                     btn->next              = NULL;
+
+                     if(iohidmanager_check_for_id(adapter->buttons,btn->id))
+                     {
+                        if(tmpButtons)
+                           iohidmanager_append_record(tmpButtons,btn);
+                        else
+                           tmpButtons = btn;
+                     }
+                     else
+                     {
+                        if(adapter->buttons)
+                           iohidmanager_append_record(adapter->buttons,btn);
+                        else
+                           adapter->buttons = btn;
+                     }
+                  }
+                  break;
+            }
+            break;
+      }
    }
 
    /* take care of buttons/axes with duplicate 'use' values */
@@ -670,8 +656,8 @@ static void iohidmanager_hid_device_add(void *data, IOReturn result,
        if(found_axis[i] == false && tmpAxes)
        {
            apple_input_rec_t *next = tmpAxes->next;
-           tmpAxes->id = i;
-           tmpAxes->next = NULL;
+           tmpAxes->id             = i;
+           tmpAxes->next           = NULL;
            iohidmanager_append_record(adapter->axes, tmpAxes);
            tmpAxes = next;
        }
@@ -687,12 +673,12 @@ static void iohidmanager_hid_device_add(void *data, IOReturn result,
    {
       apple_input_rec_t *next = tmpButtons->next;
 
-      tmpButtons->id = tmp->id + 1;
-      tmpButtons->next = NULL;
-      tmp->next = tmpButtons;
+      tmpButtons->id          = tmp->id + 1;
+      tmpButtons->next        = NULL;
+      tmp->next               = tmpButtons;
 
-      tmp = tmp->next;
-      tmpButtons = next;
+      tmp                     = tmp->next;
+      tmpButtons              = next;
    }
 
 
