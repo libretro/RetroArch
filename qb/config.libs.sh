@@ -459,10 +459,14 @@ if [ "$HAVE_MATERIALUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ] || [ "$HAVE_ZARCH" 
       HAVE_VULKAN=no
 		  echo "Notice: Hardware rendering context not available."
     else
-  		HAVE_MATERIALUI=no
-	  	HAVE_XMB=no
-      HAVE_ZARCH=no
-		  echo "Notice: Hardware rendering context not available, XMB, MaterialUI and ZARCH will also be disabled."
+      if [ "$HAVE_CACA" = 'yes' ]; then
+		    echo "Notice: Hardware rendering context not available."
+      else
+    		HAVE_MATERIALUI=no
+	    	HAVE_XMB=no
+        HAVE_ZARCH=no
+		    echo "Notice: Hardware rendering context not available, XMB, MaterialUI and ZARCH will also be disabled."
+      fi
     fi
 	fi
 fi
