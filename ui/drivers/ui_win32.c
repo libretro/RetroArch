@@ -41,6 +41,7 @@
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
+#include <string/stdstring.h>
 #include <compat/strl.h>
 
 #include "../ui_companion_driver.h"
@@ -543,7 +544,7 @@ static bool win32_browser(
       new_title[0] = '\0';
       new_file[0] = '\0';
 
-      if (title && *title)
+      if (!string_is_empty(title))
          strlcpy(new_title, title, sizeof(new_title));
 
       if (filename && *filename)
