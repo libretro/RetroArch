@@ -381,16 +381,16 @@ bool menu_input_key_bind_set_min_max(menu_input_ctx_bind_limits_t *lim)
 
 bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind)
 {
-   struct menu_bind_state binds;
+   struct menu_bind_state binds      = {0};
    /* single binds can have latching issues,
     * single_bind_delay = 0 (single bind not yet bound)
     * single_bind_delay = 1 (latching procedure)
     * single_bind_delay = 2 (second iteration, will quit iteration loop)
     */
    static unsigned single_bind_delay = 0;
-   bool           trigger_found  = false;
-   bool               timed_out  = false;
-   settings_t *settings          = config_get_ptr();
+   bool           trigger_found      = false;
+   bool               timed_out      = false;
+   settings_t *settings              = config_get_ptr();
 
    rarch_timer_tick(&menu_input_binds.timer);
 
