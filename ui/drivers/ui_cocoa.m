@@ -109,9 +109,10 @@ static void app_terminate(void)
         case NSFlagsChanged:
          {
             static uint32_t old_flags = 0;
-            uint32_t new_flags = event.modifierFlags;
-            bool down = (new_flags & old_flags) == old_flags;
-            old_flags = new_flags;
+            uint32_t new_flags        = event.modifierFlags;
+            bool down                 = (new_flags & old_flags) == old_flags;
+
+            old_flags                 = new_flags;
 
             apple_input_keyboard_event(down, event.keyCode,
                   0, event.modifierFlags, RETRO_DEVICE_KEYBOARD);
@@ -148,27 +149,27 @@ static void app_terminate(void)
         case NSLeftMouseDown:
         case NSRightMouseDown:
         case NSOtherMouseDown:
-       {
-           NSPoint pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
-         apple = (cocoa_input_data_t*)input_driver_get_data();
-         if (!apple || pos.y < 0)
-            return;
-         apple->mouse_buttons |= 1 << event.buttonNumber;
-        
-           apple->touch_count = 1;
-       }
+         {
+            NSPoint pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
+            apple = (cocoa_input_data_t*)input_driver_get_data();
+            if (!apple || pos.y < 0)
+               return;
+            apple->mouse_buttons |= 1 << event.buttonNumber;
+
+            apple->touch_count = 1;
+         }
          break;
       case NSLeftMouseUp:
       case NSRightMouseUp:
       case NSOtherMouseUp:
-       {
-         NSPoint pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
-         apple = (cocoa_input_data_t*)input_driver_get_data();
-         if (!apple || pos.y < 0)
-            return;
-         apple->mouse_buttons &= ~(1 << event.buttonNumber);
-         apple->touch_count = 0;
-       }
+         {
+            NSPoint pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
+            apple = (cocoa_input_data_t*)input_driver_get_data();
+            if (!apple || pos.y < 0)
+               return;
+            apple->mouse_buttons &= ~(1 << event.buttonNumber);
+            apple->touch_count = 0;
+         }
          break;
    }
 }
