@@ -117,6 +117,27 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                "im Hauptmenü angezeigt."
                );
          break;
+      case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
+         snprintf(s, len,
+            "Lade Inhalt. \n"
+            "Suche nach Inhalt. \n"
+            " \n"
+            "Um Inhalte zu laden brauchst du\n"
+            "einen 'Core' und den Inhalt. \n"
+            " \n"
+            "Um einzustellen wo das Menü beginnt \n"
+            "setze das   \n"
+            "'File Browser Directory'. \n" // @TODO: Where is this setting?
+            "Falls diese nicht gesetzt ist, startet \n"
+            "die Suche beim obersten Verzeichnis.\n"
+            " \n"
+            "Beim Durchsuchen werden Inhalte gefiltert. \n"
+            "Nur Inhalte mit der Dateiendung, welche \n"
+            "mit den ausgewählten Core funktionieren \n"
+            "werden angezeigt. \n"
+            "Dieser Core wird dann auch für den Inhalt verwendet."
+         );
+         break;
       case MENU_ENUM_LABEL_VIDEO_DRIVER:
          snprintf(s, len,
                "Momentaner Grafiktreiber.");
