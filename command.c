@@ -2259,7 +2259,7 @@ bool command_event(enum event_command cmd, void *data)
          {
             int flags = DRIVER_AUDIO_MASK;
             driver_ctl(RARCH_DRIVER_CTL_UNINIT, &flags);
-            driver_ctl(RARCH_DRIVER_CTL_INIT, &flags);
+            drivers_init(flags);
          }
          break;
       case CMD_EVENT_RESET_CONTEXT:
@@ -2278,7 +2278,7 @@ bool command_event(enum event_command cmd, void *data)
             memcpy(hwr, &hwr_copy, sizeof(*hwr));
             video_driver_set_context_negotiation_interface(iface);
 
-            driver_ctl(RARCH_DRIVER_CTL_INIT, &flags);
+            drivers_init(flags);
          }
          break;
       case CMD_EVENT_SHUTDOWN:

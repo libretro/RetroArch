@@ -1074,7 +1074,7 @@ bool retroarch_main_init(int argc, char *argv[])
       }
    }
 
-   driver_ctl(RARCH_DRIVER_CTL_INIT_ALL, NULL);
+   drivers_init(DRIVERS_CMD_ALL);
    command_event(CMD_EVENT_COMMAND_INIT, NULL);
    command_event(CMD_EVENT_REMOTE_INIT, NULL);
    command_event(CMD_EVENT_REWIND_INIT, NULL);
