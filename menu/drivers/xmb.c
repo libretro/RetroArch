@@ -1048,7 +1048,7 @@ static void xmb_update_savestate_thumbnail_image(void *data)
 static void xmb_selection_pointer_changed(
       xmb_handle_t *xmb, bool allow_animations)
 {
-   unsigned i, end, height, depth;
+   unsigned i, end, height;
    menu_animation_ctx_tag_t tag;
    size_t selection, num      = 0;
    int threshold              = 0;
@@ -1088,10 +1088,11 @@ static void xmb_selection_pointer_changed(
 
       if (i == selection)
       {
-         ia = xmb->items.active.alpha;
-         iz = xmb->items.active.zoom;
+         unsigned depth = xmb_list_get_size(xmb, MENU_LIST_PLAIN);
 
-         depth = xmb_list_get_size(xmb, MENU_LIST_PLAIN);
+         ia             = xmb->items.active.alpha;
+         iz             = xmb->items.active.zoom;
+
          if (!string_is_equal(xmb_thumbnails_ident(),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))
                && (depth == 1 || xmb->categories.selection_ptr == 0))
