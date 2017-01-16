@@ -185,11 +185,11 @@ static void gfx_ctx_d3d_input_driver(void *data,
       const input_driver_t **input, void **input_data)
 {
 #ifdef _XBOX
-   void *xinput         = input_xinput.init(joypad_name);
+   void *xinput         = input_xinput.init(name);
    *input               = xinput ? (const input_driver_t*)&input_xinput : NULL;
    *input_data          = xinput;
 #else
-   dinput               = input_dinput.init(joypad_name);
+   dinput               = input_dinput.init(name);
    *input               = dinput ? &input_dinput : NULL;
    *input_data          = dinput;
 #endif
