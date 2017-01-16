@@ -427,6 +427,36 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_VALUE_UPDATE_LAKKA:
          snprintf(s, len, "Lakka aktualisieren");
          break;
+      case MENU_ENUM_LABEL_VALUE_WHAT_IS_A_CORE_DESC:
+          snprintf(s, len,
+             "RetroArch alleine macht nichts. \n"
+             " \n"
+             "Damit es etwas tut, musst du \n"
+             "ein Programm darin laden. \n"
+             "\n"
+             "Wir nennen so ein Programm 'Libretro core', \n"
+             "oder 'core' als Abkürzung. \n"
+             " \n"
+             "Um einen Core zu laden, wählen Sie einen \n"
+             "unter 'Core laden' aus.\n"
+             " \n"
+#ifdef HAVE_NETWORKING
+             "Du erhälst Cores durch verschiedene Wege: \n"
+             "* Herunterladen unter\n"
+             "'%s' -> '%s'.\n"
+             "* Manuelles hinzufügen nach\n"
+             "'%s'.",
+             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER),
+             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST),
+             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH)
+#else
+             "Du erhälst Cores wenn du diese \n"
+             "manuell hinzufügst unter\n"
+             "'%s'.",
+             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH)
+#endif
+          );
+          break;
       case MSG_UNKNOWN:
       default:
          /* TODO/FIXME - translate */
