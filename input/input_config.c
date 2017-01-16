@@ -486,11 +486,13 @@ const char *input_config_get_device_name(unsigned port)
 
 void input_config_set_device_name(unsigned port, const char *name)
 {
-   settings_t *settings = config_get_ptr();
    if (!string_is_empty(name))
+   {
+      settings_t *settings = config_get_ptr();
       strlcpy(settings->input.device_names[port],
             name,
             sizeof(settings->input.device_names[port]));
+   }
 }
 
 bool input_config_get_bind_idx(unsigned port, unsigned *joy_idx_real)
