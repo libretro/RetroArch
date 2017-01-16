@@ -753,7 +753,7 @@ static bool init_video(void)
       if (!video_init_thread((const video_driver_t**)&current_video,
                &video_driver_data,
                input_get_double_ptr(), input_driver_get_data_ptr(),
-               current_video, &video))
+               current_video, video))
       {
          RARCH_ERR("Cannot open threaded video driver ... Exiting ...\n");
          goto error;

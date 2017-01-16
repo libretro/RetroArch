@@ -809,7 +809,8 @@ static void video_thread_set_nonblock_state(void *data, bool state)
       thr->nonblock = state;
 }
 
-static bool video_thread_init(thread_video_t *thr, const video_info_t *info,
+static bool video_thread_init(thread_video_t *thr,
+      const video_info_t info,
       const input_driver_t **input, void **input_data)
 {
    size_t max_size;
@@ -822,15 +823,15 @@ static bool video_thread_init(thread_video_t *thr, const video_info_t *info,
    thr->cond_thread          = scond_new();
    thr->input                = input;
    thr->input_data           = input_data;
-   thr->info                 = *info;
+   thr->info                 = info;
    thr->alive                = true;
    thr->focus                = true;
    thr->has_windowed         = true;
    thr->suppress_screensaver = true;
 
-   max_size                  = info->input_scale * RARCH_SCALE_BASE;
+   max_size                  = info.input_scale * RARCH_SCALE_BASE;
    max_size                 *= max_size;
-   max_size                 *= info->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
+   max_size                 *= info.rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
    thr->frame.buffer         = (uint8_t*)malloc(max_size);
 
    if (!thr->frame.buffer)
@@ -1355,7 +1356,7 @@ static void video_thread_set_callbacks(
  **/
 bool video_init_thread(const video_driver_t **out_driver,
       void **out_data,  const input_driver_t **input, void **input_data,
-      const video_driver_t *drv, const video_info_t *info)
+      const video_driver_t *drv, const video_info_t info)
 {
    thread_video_t *thr = (thread_video_t*)calloc(1, sizeof(*thr));
    if (!thr)
