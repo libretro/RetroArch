@@ -43,12 +43,6 @@ static void gdi_gfx_free(void *data);
 
 static void gdi_gfx_create()
 {
-   if(!gdi_video_width || !gdi_video_height)
-   {
-      printf("***** GDI: no width or height!\n");
-   }
-
-   //video_driver_set_size(&gdi_video_width, &gdi_video_height);
 }
 
 static void *gdi_gfx_init(const video_info_t *video,
@@ -88,67 +82,6 @@ static void *gdi_gfx_init(const video_info_t *video,
    video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
 
    RARCH_LOG("Found GDI context: %s\n", ctx_driver->ident);
-
-/*#ifdef HAVE_WINDOW
-   win32_window_init(&gdi->wndclass, true, NULL);
-#endif
-
-#ifdef HAVE_MONITOR
-   bool windowed_full;
-   RECT mon_rect;
-   MONITORINFOEX current_mon;
-   HMONITOR hm_to_use;
-
-   win32_monitor_info(&current_mon, &hm_to_use, &d3d->cur_mon_id);
-   mon_rect = current_mon.rcMonitor;
-   g_resize_width  = video->width;
-   g_resize_height = video->height;
-
-   windowed_full = settings->video.windowed_fullscreen;
-
-   full_x = (windowed_full || video->width  == 0) ?
-      (mon_rect.right  - mon_rect.left) : video->width;
-   full_y = (windowed_full || video->height == 0) ?
-      (mon_rect.bottom - mon_rect.top)  : video->height;
-   RARCH_LOG("[GDI]: Monitor size: %dx%d.\n",
-         (int)(mon_rect.right  - mon_rect.left),
-         (int)(mon_rect.bottom - mon_rect.top));
-#else
-   {
-      video_context_driver_get_video_size(&mode);
-
-      full_x   = mode.width;
-      full_y   = mode.height;
-   }
-#endif
-   {
-      unsigned new_width  = video->fullscreen ? full_x : video->width;
-      unsigned new_height = video->fullscreen ? full_y : video->height;
-      mode.width = new_width;
-      mode.height = new_height;
-      mode.fullscreen = video->fullscreen;
-
-      video_context_driver_set_video_mode(&mode);
-      video_driver_set_size(&new_width, &new_height);
-   }
-
-#ifdef HAVE_WINDOW
-   DWORD style;
-   unsigned win_width, win_height;
-   RECT rect            = {0};
-
-   video_driver_get_size(&win_width, &win_height);
-
-   win32_set_style(&current_mon, &hm_to_use, &win_width, &win_height,
-         video->fullscreen, windowed_full, &rect, &mon_rect, &style);
-
-   win32_window_create(gdi, style, &mon_rect, win_width,
-         win_height, video->fullscreen);
-
-   win32_set_window(&win_width, &win_height, video->fullscreen,
-      windowed_full, &rect);
-#endif
-*/
 
    video_context_driver_get_video_size(&mode);
 
@@ -215,7 +148,7 @@ error:
 
 static bool gdi_gfx_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height, uint64_t frame_count,
-      unsigned pitch, const char *msg)
+      unsigned pitch, const char *msg, video_frame_info_t video_info)
 {
    const void *frame_to_copy = frame;
    unsigned width = 0;
@@ -241,12 +174,10 @@ static bool gdi_gfx_frame(void *data, const void *frame,
          gdi_video_width = frame_width;
          gdi_video_height = frame_height;
          gdi_video_pitch = pitch;
-         //gdi_gfx_free(NULL);
-         //gdi_gfx_create();
       }
    }
 
-   if (gdi_menu_frame)
+   if (gdi_menu_frame && menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
    {
       frame_to_copy = gdi_menu_frame;
       width = gdi_menu_width;
@@ -262,12 +193,13 @@ static bool gdi_gfx_frame(void *data, const void *frame,
 
       if (frame_width == 4 && frame_height == 4 && (frame_width < width && frame_height < height))
          draw = false;
+
+      if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+         draw = false;
    }
 
    GetClientRect(hwnd, &rect);
    video_context_driver_get_video_size(&mode);
-
-   //printf("left %d top %d right %d bottom %d mode %d x %d size %d x %d pitch %d bits %d\n", rect.left, rect.top, rect.right, rect.bottom, mode.width, mode.height, width, height, pitch, bits);
 
    if (draw)
    {
@@ -276,16 +208,8 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       HBITMAP bmp = CreateCompatibleBitmap(winDC, width, height);
       HBITMAP bmp_old;
       BITMAPINFO *info = (BITMAPINFO*)calloc(1, sizeof(*info) + (3 * sizeof(RGBQUAD)));
-      //HBRUSH brush;
-      int ret = 0;
 
       bmp_old = (HBITMAP)SelectObject(memDC, bmp);
-
-      //brush = CreateSolidBrush(GetSysColor(COLOR_WINDOW));
-
-      //FillRect(memDC, &rect, brush);
-
-      //DeleteObject(brush);
 
       info->bmiHeader.biBitCount = bits;
       info->bmiHeader.biWidth = pitch / 2;
@@ -308,17 +232,13 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       else
          info->bmiHeader.biCompression = BI_RGB;
 
-      ret = StretchDIBits(memDC, 0, 0, width, height, 0, 0, width, height,
+      StretchDIBits(memDC, 0, 0, width, height, 0, 0, width, height,
             frame_to_copy, info, DIB_RGB_COLORS, SRCCOPY);
 
-      //printf("StretchDIBits: %d\n", ret);
-
-      ret = StretchBlt(winDC,
+      StretchBlt(winDC,
             0, 0,
             mode.width, mode.height,
             memDC, 0, 0, width, height, SRCCOPY);
-
-      //printf("BitBlt: %d\n", ret);
 
       SelectObject(memDC, bmp_old);
 
@@ -334,9 +254,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
 
    InvalidateRect(hwnd, NULL, false);
 
-   video_context_driver_update_window_title();
-
-   //video_context_driver_swap_buffers();
+   video_context_driver_update_window_title(video_info);
 
    return true;
 }
