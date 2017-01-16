@@ -358,10 +358,7 @@ static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
    int i, pos;
-   video_shader_ctx_t shader_info;
    const ui_window_t *window = ui_companion_driver_get_window_ptr();
-
-   video_shader_driver_get_current_shader(&shader_info);
 
    switch (message)
    {
@@ -390,14 +387,18 @@ static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
          if (g_shader_dlg.controls[i].type != SHADER_PARAM_CTRL_CHECKBOX)
             break;
 
-         if (SendMessage(g_shader_dlg.controls[i].checkbox.hwnd,
-                  BM_GETCHECK, 0, 0) == BST_CHECKED)
-            shader_info.data->parameters[i].current = 
-               shader_info.data->parameters[i].maximum;
-         else
-            shader_info.data->parameters[i].current = 
-               shader_info.data->parameters[i].minimum;
+         {
+            video_shader_ctx_t shader_info;
+            video_shader_driver_get_current_shader(&shader_info);
 
+            if (SendMessage(g_shader_dlg.controls[i].checkbox.hwnd,
+                     BM_GETCHECK, 0, 0) == BST_CHECKED)
+               shader_info.data->parameters[i].current = 
+                  shader_info.data->parameters[i].maximum;
+            else
+               shader_info.data->parameters[i].current = 
+                  shader_info.data->parameters[i].minimum;
+         }
          break;
 
       case WM_HSCROLL:
@@ -410,8 +411,14 @@ static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
             break;
 
          pos = (int)SendMessage(g_shader_dlg.controls[i].trackbar.hwnd, TBM_GETPOS, 0, 0);
-         shader_info.data->parameters[i].current = 
-            shader_info.data->parameters[i].minimum + pos * shader_info.data->parameters[i].step;
+
+         {
+            video_shader_ctx_t shader_info;
+            video_shader_driver_get_current_shader(&shader_info);
+
+            shader_info.data->parameters[i].current = 
+               shader_info.data->parameters[i].minimum + pos * shader_info.data->parameters[i].step;
+         }
 
          shader_dlg_refresh_trackbar_label(i);
          break;
