@@ -438,7 +438,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
              "oder 'core' als Abkürzung. \n"
              " \n"
              "Um einen Core zu laden, wählen Sie einen \n"
-             "unter 'Core laden' aus.\n"
+             "unter '%s' aus.\n"
              " \n"
 #ifdef HAVE_NETWORKING
              "Du erhälst Cores durch verschiedene Wege: \n"
@@ -446,6 +446,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
              "'%s' -> '%s'.\n"
              "* Manuelles hinzufügen nach\n"
              "'%s'.",
+             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_LIST),
              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER),
              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST),
              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH)
