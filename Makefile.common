@@ -441,8 +441,11 @@ ifeq ($(HAVE_NEON),1)
 endif
 
 ifneq ($(findstring Win32,$(OS)),)
-HAVE_VULKAN=1
-DEFINES += -DHAVE_VULKAN
+   # if user explicitly sets --disable-vulkan on Windows, then disable it
+   ifneq ($(HAVE_NO_VULKAN),1)
+      HAVE_VULKAN=1
+      DEFINES += -DHAVE_VULKAN
+   endif
 endif
 
 HW_CONTEXT_MENU_DRIVERS=$(HAVE_RGUI)
