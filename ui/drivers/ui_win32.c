@@ -115,12 +115,15 @@ typedef struct
 
 static shader_dlg_t g_shader_dlg = {{0}};
 
-static void shader_dlg_refresh_trackbar_label(int index)
+static bool shader_dlg_refresh_trackbar_label(int index)
 {
    video_shader_ctx_t shader_info;
    char val_buffer[32]         = {0};
 
    video_shader_driver_get_current_shader(&shader_info);
+   
+   if (!shader_info.data)
+      return false;
 
    if (floorf(shader_info.data->parameters[index].current) 
          == shader_info.data->parameters[index].current)
@@ -133,6 +136,7 @@ static void shader_dlg_refresh_trackbar_label(int index)
    SendMessage(g_shader_dlg.controls[index].trackbar.label_val,
          WM_SETTEXT, 0, (LPARAM)val_buffer);
 
+   return true;
 }
 
 static void shader_dlg_params_refresh(void)
@@ -153,14 +157,15 @@ static void shader_dlg_params_refresh(void)
       {
          case SHADER_PARAM_CTRL_CHECKBOX:
             {
-               bool checked = 
+               bool checked = shader_info.data ?
                   (shader_info.data->parameters[i].current == 
-                   shader_info.data->parameters[i].maximum);
+                   shader_info.data->parameters[i].maximum) : false;
                SendMessage(control->checkbox.hwnd, BM_SETCHECK, checked, 0);
             }
             break;
          case SHADER_PARAM_CTRL_TRACKBAR:
-            shader_dlg_refresh_trackbar_label(i);
+            if (!shader_dlg_refresh_trackbar_label(i))
+               break;
 
             SendMessage(control->trackbar.hwnd,
                   TBM_SETRANGEMIN, (WPARAM)TRUE, (LPARAM)0);
@@ -219,9 +224,10 @@ void shader_dlg_params_reload(void)
    int i, pos_x, pos_y;
    video_shader_ctx_t shader_info;
    const ui_window_t *window = ui_companion_driver_get_window_ptr();
-   video_shader_driver_get_current_shader(&shader_info);
 
    shader_dlg_params_clear();
+
+   video_shader_driver_get_current_shader(&shader_info);
 
    if (!shader_info.data)
       return;
