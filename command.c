@@ -539,6 +539,7 @@ bool command_network_send(const char *cmd_)
 }
 
 
+#ifdef HAVE_COMMAND
 static void command_network_poll(command_t *handle)
 {
    fd_set fds;
@@ -576,6 +577,7 @@ static void command_network_poll(command_t *handle)
       command_parse_msg(handle, buf, CMD_NETWORK);
    }
 }
+#endif
 #endif
 
 #ifdef HAVE_STDIN_CMD
@@ -798,7 +800,9 @@ bool command_poll(command_t *handle)
    memset(handle->state, 0, sizeof(handle->state));
 
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
+#ifdef HAVE_COMMAND
    command_network_poll(handle);
+#endif
 #endif
 
 #ifdef HAVE_STDIN_CMD
