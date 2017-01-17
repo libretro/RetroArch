@@ -566,6 +566,7 @@ static void mui_render(void *data)
    unsigned bottom, width, height, header_height;
    mui_handle_t *mui    = (mui_handle_t*)data;
    settings_t *settings = config_get_ptr();
+   file_list_t *list = menu_entries_get_selection_buf_ptr(0);
 
    if (!mui)
       return;
@@ -590,12 +591,20 @@ static void mui_render(void *data)
       int16_t        pointer_y = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
       float    old_accel_val   = 0.0f;
       float new_accel_val      = 0.0f;
-      unsigned new_pointer_val =
-         (pointer_y - mui->line_height + mui->scroll_y - 16)
-         / mui->line_height;
+
+      size_t ii = 0;
+      for (ii = 0; ii < menu_entries_get_size(); ii++)
+      {
+         mui_node_t *node = (mui_node_t*)
+               menu_entries_get_userdata_at_offset(list, ii);
+
+         if (pointer_y > (-mui->scroll_y + header_height + node->y)
+          && pointer_y < (-mui->scroll_y + header_height + node->y + node->line_height)
+         )
+         menu_input_ctl(MENU_INPUT_CTL_POINTER_PTR, &ii);
+      }
 
       menu_input_ctl(MENU_INPUT_CTL_POINTER_ACCEL_READ, &old_accel_val);
-      menu_input_ctl(MENU_INPUT_CTL_POINTER_PTR, &new_pointer_val);
 
       mui->scroll_y            -= old_accel_val / 60.0;
 
@@ -608,11 +617,17 @@ static void mui_render(void *data)
    {
       int16_t mouse_y          = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
 
-      unsigned new_pointer_val =
-         (mouse_y - mui->line_height + mui->scroll_y - 16)
-         / mui->line_height;
+      size_t ii = 0;
+      for (ii = 0; ii < menu_entries_get_size(); ii++)
+      {
+         mui_node_t *node = (mui_node_t*)
+               menu_entries_get_userdata_at_offset(list, ii);
 
-      menu_input_ctl(MENU_INPUT_CTL_MOUSE_PTR, &new_pointer_val);
+         if (mouse_y > (-mui->scroll_y + header_height + node->y)
+          && mouse_y < (-mui->scroll_y + header_height + node->y + node->line_height)
+         )
+         menu_input_ctl(MENU_INPUT_CTL_MOUSE_PTR, &ii);
+      }
    }
 
    if (mui->scroll_y < 0)
