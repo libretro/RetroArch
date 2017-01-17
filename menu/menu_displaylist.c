@@ -1715,12 +1715,9 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       char tmp[PATH_MAX_LENGTH];
       char crc_str[20];
       database_info_t *db_info_entry = &db_info->list[i];
-      bool show_advanced_settings    = false;
+      bool show_advanced_settings    = settings->menu.show_advanced_settings;
 
       crc_str[0] = tmp[0] = '\0';
-
-      if (settings)
-         show_advanced_settings      = settings->menu.show_advanced_settings;
 
       snprintf(crc_str, sizeof(crc_str), "%08X", db_info_entry->crc32);
 
