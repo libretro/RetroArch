@@ -94,6 +94,11 @@ CFLAGS += -I$(LIBRETRO_COMM_DIR)/include
 
 # Switches
 
+ifeq ($(HAVE_NETLOGGER), 1)
+	CFLAGS += -DHAVE_LOGGER
+	DEFINES += -DHAVE_LOGGER
+	OBJ += network/net_logger.o
+endif
 
 # System
 
