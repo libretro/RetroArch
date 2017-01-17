@@ -309,7 +309,6 @@ bool menu_shader_manager_save_preset(
    config_file_t *conf                    = NULL;
    bool ret                               = false;
    struct video_shader *shader            = menu_shader_get();
-   settings_t *settings                   = config_get_ptr();
 
    buffer[0] = config_directory[0]        = '\0';
    preset_path[0]                         = '\0';
@@ -385,9 +384,10 @@ bool menu_shader_manager_save_preset(
 
    if (!fullpath)
    {
-      dirs[0] = settings->directory.video_shader;
-      dirs[1] = settings->directory.menu_config;
-      dirs[2] = config_directory;
+      settings_t *settings = config_get_ptr();
+      dirs[0]              = settings->directory.video_shader;
+      dirs[1]              = settings->directory.menu_config;
+      dirs[2]              = config_directory;
    }
 
    conf = (config_file_t*)config_file_new(NULL);

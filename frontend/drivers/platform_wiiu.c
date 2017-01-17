@@ -49,6 +49,7 @@
 #include <proc_ui/procui.h>
 #include <vpad/input.h>
 #include <sysapp/launch.h>
+#include <padscore.h>
 
 #include <fat.h>
 #include <iosuhax.h>
@@ -279,6 +280,9 @@ int main(int argc, char **argv)
    devoptab_list[STD_ERR] = &dotab_stdout;
 #endif
    VPADInit();
+   WPADEnableURCC(true);
+   WPADEnableWiiRemote(true);
+   KPADInit();
 
    verbosity_enable();
    DEBUG_VAR(argc);

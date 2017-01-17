@@ -37,7 +37,8 @@ enum gfx_ctx_api
    GFX_CTX_DIRECT3D8_API,
    GFX_CTX_DIRECT3D9_API,
    GFX_CTX_OPENVG_API,
-   GFX_CTX_VULKAN_API
+   GFX_CTX_VULKAN_API,
+   GFX_CTX_GDI_API
 };
 
 enum display_metric_types
@@ -249,6 +250,7 @@ extern const gfx_ctx_driver_t gfx_ctx_cocoagl;
 extern const gfx_ctx_driver_t gfx_ctx_emscripten;
 extern const gfx_ctx_driver_t gfx_ctx_opendingux_fbdev;
 extern const gfx_ctx_driver_t gfx_ctx_khr_display;
+extern const gfx_ctx_driver_t gfx_ctx_gdi;
 extern const gfx_ctx_driver_t gfx_ctx_null;
 
 /**

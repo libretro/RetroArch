@@ -563,6 +563,7 @@ extern video_driver_t video_sunxi;
 extern video_driver_t video_drm;
 extern video_driver_t video_xshm;
 extern video_driver_t video_caca;
+extern video_driver_t video_gdi;
 extern video_driver_t video_null;
 
 extern const void *frame_cache_data;

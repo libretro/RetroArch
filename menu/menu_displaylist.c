@@ -318,7 +318,6 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
    unsigned i;
    char tmp[PATH_MAX_LENGTH];
    core_info_t *core_info    = NULL;
-   settings_t *settings      = config_get_ptr();
 
    tmp[0] = '\0';
 
@@ -440,6 +439,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
    if (core_info->firmware_count > 0)
    {
       core_info_ctx_firmware_t firmware_info;
+      settings_t *settings           = config_get_ptr();
 
       firmware_info.path             = core_info->path;
       firmware_info.directory.system = settings->directory.system;
@@ -1715,7 +1715,6 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       char tmp[PATH_MAX_LENGTH];
       char crc_str[20];
       database_info_t *db_info_entry = &db_info->list[i];
-      settings_t *settings           = config_get_ptr();
       bool show_advanced_settings    = false;
 
       crc_str[0] = tmp[0] = '\0';

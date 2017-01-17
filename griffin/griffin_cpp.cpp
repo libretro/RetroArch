@@ -115,6 +115,10 @@ UI COMMON CONTEXT
 #include "../gfx/drivers_context/wgl_ctx.cpp"
 #endif
 
+#if defined(_WIN32) && !defined(_XBOX)
+#include "../gfx/drivers_context/gdi_ctx.cpp"
+#endif
+
 #if defined(HAVE_FFMPEG)
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
 #include "../cores/libretro-ffmpeg/fft/fft.cpp"

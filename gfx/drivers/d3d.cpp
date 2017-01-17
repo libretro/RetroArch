@@ -259,18 +259,18 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
    }
 
    memset(&d3d->shader, 0, sizeof(d3d->shader));
-
+#ifdef HAVE_SHADERPIPELINE
    if (!video_shader_read_conf_cgp(conf, &d3d->shader))
    {
       config_file_free(conf);
       RARCH_ERR("Failed to parse CGP file.\n");
       return false;
    }
-
+#endif
    config_file_free(conf);
-
+#ifdef HAVE_SHADERPIPELINE
    video_shader_resolve_relative(&d3d->shader, d3d->shader_path.c_str());
-
+#endif
    RARCH_LOG("[D3D9 Meta-Cg] Found %u shaders.\n", d3d->shader.passes);
 
    for (i = 0; i < d3d->shader.passes; i++)

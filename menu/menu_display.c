@@ -83,6 +83,9 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #ifdef HAVE_CACA
    &menu_display_ctx_caca,
 #endif
+#if defined(_WIN32) && !defined(_XBOX)
+   &menu_display_ctx_gdi,
+#endif
    &menu_display_ctx_null,
    NULL,
 };
@@ -138,6 +141,10 @@ static bool menu_display_check_compatibility(
          break;
       case MENU_VIDEO_DRIVER_CACA:
          if (string_is_equal(video_driver, "caca"))
+            return true;
+         break;
+      case MENU_VIDEO_DRIVER_GDI:
+         if (string_is_equal(video_driver, "gdi"))
             return true;
          break;
    }

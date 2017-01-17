@@ -451,13 +451,23 @@ if [ "$HAVE_MATERIALUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ] || [ "$HAVE_ZARCH" 
 	if [ "$HAVE_RGUI" = 'no' ]; then
 		HAVE_MATERIALUI=no
 		HAVE_XMB=no
-      HAVE_ZARCH=no
+    HAVE_ZARCH=no
 		echo "Notice: RGUI not available, MaterialUI, XMB and ZARCH will also be disabled."
 	elif [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_OPENGLES" = 'no' ] && [ "$HAVE_VULKAN" = 'no' ]; then
-		HAVE_MATERIALUI=no
-		HAVE_XMB=no
-      HAVE_ZARCH=no
-		echo "Notice: Hardware rendering context not available, XMB, MaterialUI and ZARCH will also be disabled."
+    if [ "$OS" = 'Win32' ]; then
+      HAVE_SHADERPIPELINE=no
+      HAVE_VULKAN=no
+		  echo "Notice: Hardware rendering context not available."
+    else
+      if [ "$HAVE_CACA" = 'yes' ]; then
+		    echo "Notice: Hardware rendering context not available."
+      else
+    		HAVE_MATERIALUI=no
+	    	HAVE_XMB=no
+        HAVE_ZARCH=no
+		    echo "Notice: Hardware rendering context not available, XMB, MaterialUI and ZARCH will also be disabled."
+      fi
+    fi
 	fi
 fi
 

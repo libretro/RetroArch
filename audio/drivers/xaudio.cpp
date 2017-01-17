@@ -29,6 +29,11 @@
 #include <compat/msvc.h>
 #include <retro_miscellaneous.h>
 
+#if defined(_MSC_VER) && (_WIN32_WINNT <= _WIN32_WINNT_WIN2K)
+/* needed for CoInitializeEx */
+#define _WIN32_DCOM
+#endif
+
 #include "xaudio.h"
 
 #include "../audio_driver.h"

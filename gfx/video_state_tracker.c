@@ -28,8 +28,9 @@
 #endif
 
 #include "video_state_tracker.h"
+
 #include "../input/input_config.h"
-#include "../configuration.h"
+
 #include "../verbosity.h"
 
 struct state_tracker_internal

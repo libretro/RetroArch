@@ -441,8 +441,11 @@ ifeq ($(HAVE_NEON),1)
 endif
 
 ifneq ($(findstring Win32,$(OS)),)
-HAVE_VULKAN=1
-DEFINES += -DHAVE_VULKAN
+   # if user explicitly sets --disable-vulkan on Windows, then disable it
+   ifneq ($(HAVE_NO_VULKAN),1)
+      HAVE_VULKAN=1
+      DEFINES += -DHAVE_VULKAN
+   endif
 endif
 
 HW_CONTEXT_MENU_DRIVERS=$(HAVE_RGUI)
@@ -1161,6 +1164,13 @@ ifneq ($(findstring Win32,$(OS)),)
           input/drivers_keyboard/keyboard_event_win32.o \
           gfx/common/win32_common.o \
           frontend/drivers/platform_win32.o
+
+   OBJ += gfx/drivers/gdi_gfx.o \
+          gfx/drivers_context/gdi_ctx.o \
+          gfx/drivers_font/gdi_font.o \
+          menu/drivers_display/menu_display_gdi.o
+
+   LIBS += -lmsimg32
 endif
 
 ifeq ($(HAVE_AVFOUNDATION), 1)

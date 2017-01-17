@@ -72,13 +72,6 @@ enum driver_ctl_state
 
    RARCH_DRIVER_CTL_UNINIT_ALL,
 
-   /* Initializes drivers.
-    * @data is a bitmask which determines 
-    * which drivers get initialized. */
-   RARCH_DRIVER_CTL_INIT,
-
-   RARCH_DRIVER_CTL_INIT_ALL,
-
    /* Attempts to find a default driver for 
     * all driver types.
     *
@@ -121,6 +114,8 @@ typedef struct driver_ctx_info
 } driver_ctx_info_t;
 
 bool driver_ctl(enum driver_ctl_state state, void *data);
+
+void drivers_init(int flags);
 
 RETRO_END_DECLS
 

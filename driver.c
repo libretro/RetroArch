@@ -287,13 +287,13 @@ static bool driver_update_system_av_info(const struct retro_system_av_info *info
 }
 
 /**
- * init_drivers:
+ * drivers_init:
  * @flags              : Bitmask of drivers to initialize.
  *
  * Initializes drivers.
  * @flags determines which drivers get initialized.
  **/
-static void init_drivers(int flags)
+void drivers_init(int flags)
 {
    if (flags & DRIVER_VIDEO_MASK)
       video_driver_unset_own_driver();
@@ -452,19 +452,6 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
          {
             int flags = DRIVERS_CMD_ALL;
             return driver_ctl(RARCH_DRIVER_CTL_UNINIT, &flags);
-         }
-      case RARCH_DRIVER_CTL_INIT:
-         {
-            int *flags = (int*)data;
-            if (!flags)
-               return false;
-            init_drivers(*flags);
-         }
-         break;
-      case RARCH_DRIVER_CTL_INIT_ALL:
-         {
-            int flags = DRIVERS_CMD_ALL;
-            return driver_ctl(RARCH_DRIVER_CTL_INIT, &flags);
          }
       case RARCH_DRIVER_CTL_INIT_PRE:
          audio_driver_find_driver();
