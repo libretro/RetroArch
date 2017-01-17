@@ -1,13 +1,15 @@
-DEBUG			               = 0
-HAVE_LOGGER		            = 0
-HAVE_FILE_LOGGER	         = 0
-HAVE_CC_RESAMPLER          = 1
-WHOLE_ARCHIVE_LINK         = 0
-BIG_STACK		            = 1
+ROOT_DIR			:= .
+DEPS_DIR			:= $(ROOT_DIR)/deps
+DEBUG			 	= 0
+HAVE_LOGGER			= 0
+HAVE_FILE_LOGGER		= 0
+HAVE_CC_RESAMPLER		= 1
+WHOLE_ARCHIVE_LINK		= 0
+BIG_STACK   			= 1
 PC_DEVELOPMENT_IP_ADDRESS	= 255.255.255.255
 PC_DEVELOPMENT_UDP_PORT		= 3490
-RARCH_CONSOLE					= 0
-USBGECKO                   = 0
+RARCH_CONSOLE			= 0
+USBGECKO			= 0
 
 ifneq ($(EMSCRIPTEN),)
    platform = emscripten
@@ -219,20 +221,20 @@ else ifeq ($(platform), vita)
 			 -lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lScePgf_stub \
 			 -lSceMotion_stub -lSceAppMgr_stub -lpng -lm -lc
 
-  PLATEXTRA := $(DEPS_DIR)/libvita2d/shader/clear_v_gxp.o \
-			 $(DEPS_DIR)/libvita2d/shader/clear_f_gxp.o \
-			 $(DEPS_DIR)/libvita2d/shader/color_v_gxp.o \
-			 $(DEPS_DIR)/libvita2d/shader/color_f_gxp.o \
-			 $(DEPS_DIR)/libvita2d/shader/texture_v_gxp.o \
-			 $(DEPS_DIR)/libvita2d/shader/texture_f_gxp.o \
-			 $(DEPS_DIR)/libvita2d/shader/texture_tint_f_gxp.o
+  PLATOBJS += $(DEPS_DIR)/libvita2d/shader/clear_v_gxp.o \
+		 $(DEPS_DIR)/libvita2d/shader/clear_f_gxp.o \
+		 $(DEPS_DIR)/libvita2d/shader/color_v_gxp.o \
+		 $(DEPS_DIR)/libvita2d/shader/color_f_gxp.o \
+		 $(DEPS_DIR)/libvita2d/shader/texture_v_gxp.o \
+		 $(DEPS_DIR)/libvita2d/shader/texture_f_gxp.o \
+		 $(DEPS_DIR)/libvita2d/shader/texture_tint_f_gxp.o
 
-  PLATOBJS +=		  \
-						  libretro-common/audio/conversion/s16_to_float_neon.o \
-						  libretro-common/audio/conversion/float_to_s16_neon.o \
-						  memory/neon/memcpy-neon.o \
-						  libretro-common/audio/resampler/drivers/sinc_resampler_neon.o \
-						  audio/drivers_resampler/cc_resampler_neon.o
+  PLATOBJS += \
+		libretro-common/audio/conversion/s16_to_float_neon.o \
+		libretro-common/audio/conversion/float_to_s16_neon.o \
+		memory/neon/memcpy-neon.o \
+		libretro-common/audio/resampler/drivers/sinc_resampler_neon.o \
+		audio/drivers_resampler/cc_resampler_neon.o
 
   LIBDIRS += -L.
   LDFLAGS +=  -Wl,-q
