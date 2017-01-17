@@ -431,6 +431,39 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE:
          snprintf(s, len, "Erfolgsliste (Hardcore)");
          break;
+      case MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC:
+         {
+            /* Work around C89 limitations */
+            char u[501];
+            const char * t =
+                    "RetroArch verwendet eine einzigartige\n"
+                            "Art der Synchronisation von Audio/Video.\n"
+                            "Diese wird durch die Bildwiederholrate\n"
+                            "des Monitors kalibriert.\n"
+                            "\n"
+                            "Falls du irgenwelches Knistern oder Risse\n"
+                            "feststellst, kannst du folgende Möglichkeiten:\n"
+                            "\n";
+            snprintf(u, sizeof(u),
+                           "a) Gehe zu '%s' -> '%s' und aktiviere\n"
+                           "'%s'. Die Bildwiederholungsrate spielt\n"
+                           "in diesem Modus keine Rolle. \n"
+                           "Die Bildwiederholungsrate wird höher sein,\n"
+                           "allerdings läuft das Video weniger flüssig.\n"
+                           "b) Gehe zu '%s' -> '%s' und beachte\n"
+                           "'%s'. Lass es bis 2048 Frames laufen und\n"
+                           "bestätige mit 'OK'.\n",
+                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
+                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),
+                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_THREADED),
+                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),
+                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),
+                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO)
+            );
+            strlcpy(s, t, len);
+            strlcat(s, u, len);
+         }
+       break;
       case MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD_DESC:
           snprintf(s, len,
                 "Du kannst das virtuelle Gamepad-Overlay\n"
