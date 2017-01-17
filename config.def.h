@@ -710,6 +710,7 @@ static const bool gpu_record = false;
 
 /* OSD-messages. */
 static const bool font_enable = true;
+static const bool font_show_controller_autoconfig = true;
 
 /* The accurate refresh rate of your monitor (Hz).
  * This is used to calculate audio input rate with the formula:
