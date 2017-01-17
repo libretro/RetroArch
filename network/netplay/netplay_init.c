@@ -349,7 +349,8 @@ bool netplay_wait_and_init_serialization(netplay_t *netplay)
       return true;
 
    /* Wait a maximum of 60 frames */
-   for (frame = 0; frame < 60; frame++) {
+   for (frame = 0; frame < 60; frame++)
+   {
       if (netplay_try_init_serialization(netplay))
          return true;
 
