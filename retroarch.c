@@ -917,6 +917,8 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
    const char *game_name                  = NULL;
    rarch_system_info_t *system            = NULL;
 
+   config_directory[0] = core_path[0]     = '\0';
+
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (system)
@@ -927,9 +929,8 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
 
-   config_directory[0] = core_path[0] = '\0';
-
-   fill_pathname_application_special(config_directory, sizeof(config_directory),
+   fill_pathname_application_special(config_directory,
+         sizeof(config_directory),
          APPLICATION_SPECIAL_DIRECTORY_CONFIG);
 
    /* Concatenate strings into full paths for game_path */
