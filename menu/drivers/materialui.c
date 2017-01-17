@@ -60,6 +60,11 @@
 
 #include "../../file_path_special.h"
 
+typedef struct
+{
+   float height;
+} mui_node_t;
+
 enum
 {
    MUI_TEXTURE_POINTER = 0,
@@ -130,6 +135,21 @@ typedef struct mui_handle
    video_font_raster_block_t raster_block2;
    float scroll_y;
 } mui_handle_t;
+
+static mui_node_t *mui_node_allocate_userdata(mui_handle_t *mui, unsigned i)
+{
+   mui_node_t *node = (mui_node_t*)calloc(1, sizeof(mui_node_t));
+
+   if (!node)
+   {
+      RARCH_ERR("GLUI node could not be allocated.\n");
+      return NULL;
+   }
+
+   node->height  = 32;
+
+   return node;
+}
 
 static void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha)
 {
@@ -1862,6 +1882,66 @@ static int mui_pointer_tap(void *userdata,
    return 0;
 }
 
+static void mui_list_insert(void *userdata,
+      file_list_t *list,
+      const char *path,
+      const char *fullpath,
+      const char *unused,
+      size_t list_size)
+{
+   size_t selection;
+   int current            = 0;
+   int i                  = list_size;
+   mui_node_t *node       = NULL;
+   mui_handle_t *mui      = (mui_handle_t*)userdata;
+
+   if (!mui || !list)
+      return;
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+      return;
+
+   node = (mui_node_t*)menu_entries_get_userdata_at_offset(list, i);
+
+   if (!node)
+      node = (mui_node_t*)calloc(1, sizeof(mui_node_t));
+
+   if (!node)
+   {
+      RARCH_ERR("GLUI node could not be allocated.\n");
+      return;
+   }
+
+   node->height      = 32;
+
+   file_list_set_userdata(list, i, node);
+}
+
+static void mui_list_clear(file_list_t *list)
+{
+   size_t i;
+   size_t size = list->size;
+
+   for (i = 0; i < size; ++i)
+   {
+      menu_animation_ctx_subject_t subject;
+      float *subjects[1];
+      mui_node_t *node = (mui_node_t*)
+         menu_entries_get_userdata_at_offset(list, i);
+
+      if (!node)
+         continue;
+
+      subjects[0] = &node->height;
+
+      subject.count = 1;
+      subject.data  = subjects;
+
+      menu_animation_ctl(MENU_ANIMATION_CTL_KILL_BY_SUBJECT, &subject);
+
+      file_list_free_userdata(list, i);
+   }
+}
+
 menu_ctx_driver_t menu_ctx_mui = {
    NULL,
    mui_get_message,
@@ -1882,10 +1962,10 @@ menu_ctx_driver_t menu_ctx_mui = {
    mui_navigation_alphabet,
    mui_navigation_alphabet,
    generic_menu_init_list,
+   mui_list_insert,
    NULL,
    NULL,
-   NULL,
-   NULL,
+   mui_list_clear,
    mui_list_cache,
    mui_list_push,
    mui_list_get_selection,
