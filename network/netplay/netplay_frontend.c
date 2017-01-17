@@ -28,6 +28,11 @@
 #include "../../input/input_driver.h"
 #include "../../runloop.h"
 
+#include "tasks/tasks_internal.h"
+#include <file/file_path.h>
+#include "file_path_special.h"
+#include "paths.h"
+
 /* Only used before init_netplay */
 static bool netplay_enabled = false;
 static bool netplay_is_client = false;
@@ -827,6 +832,14 @@ void deinit_netplay(void)
    core_unset_netplay_callbacks();
 }
 
+
+
+static void netplay_announce(void *task_data, void *user_data, const char *error)
+{
+   RARCH_LOG("Announcing netplay game... \n");
+   return;
+}
+
 /**
  * init_netplay
  * @direct_host          : Host to connect to directly, if applicable (client only)
@@ -881,6 +894,22 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
       runloop_msg_queue_push(
          msg_hash_to_str(MSG_WAITING_FOR_CLIENT),
          0, 180, false);
+
+      rarch_system_info_t *system   = NULL;
+
+      runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+      char url [2048] = "http://lobby.libretro.com/?";
+      char buf [2048];
+      buf[0] = '\0';
+
+      snprintf(buf, sizeof(buf), "%susername=%s&corename=%s&coreversion=%s
+         &gamename=%s&gamecrc=%08x&port=%d", 
+         url, settings->username, system->info.library_name, 
+         system->info.library_version, 
+         path_basename(path_get(RARCH_PATH_BASENAME)),0,
+         settings->netplay.port);
+
+      task_push_http_transfer(buf, true, NULL, netplay_announce, NULL);
    }
 
    netplay_data = (netplay_t*)netplay_new(
@@ -901,6 +930,8 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
          0, 180, false);
    return false;
 }
+
+
 
 /**
  * netplay_driver_ctl
