@@ -62,7 +62,8 @@
 
 typedef struct
 {
-   float height;
+   float line_height;
+   float y;
 } mui_node_t;
 
 enum
@@ -135,21 +136,6 @@ typedef struct mui_handle
    video_font_raster_block_t raster_block2;
    float scroll_y;
 } mui_handle_t;
-
-static mui_node_t *mui_node_allocate_userdata(mui_handle_t *mui, unsigned i)
-{
-   mui_node_t *node = (mui_node_t*)calloc(1, sizeof(mui_node_t));
-
-   if (!node)
-   {
-      RARCH_ERR("GLUI node could not be allocated.\n");
-      return NULL;
-   }
-
-   node->height  = 32;
-
-   return node;
-}
 
 static void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha)
 {
@@ -408,6 +394,20 @@ static void mui_draw_tab_end(mui_handle_t *mui,
          &active_tab_marker_color[0]);
 }
 
+static float mui_content_height()
+{
+   file_list_t *list = menu_entries_get_selection_buf_ptr(0);
+   float sum = 0;
+   unsigned i = 0;
+   for (; i < menu_entries_get_end(); i++)
+   {
+      mui_node_t *node = (mui_node_t*)
+            menu_entries_get_userdata_at_offset(list, i);
+      sum += node->line_height;
+   }
+   return sum;
+}
+
 static void mui_draw_scrollbar(mui_handle_t *mui,
       unsigned width, unsigned height, float *coord_color)
 {
@@ -420,7 +420,7 @@ static void mui_draw_scrollbar(mui_handle_t *mui,
 
    header_height    = menu_display_get_header_height();
 
-   content_height   = menu_entries_get_end() * mui->line_height;
+   content_height   = mui_content_height();
    total_height     = height - header_height - mui->tabs_height;
    scrollbar_margin = mui->scrollbar_width;
    scrollbar_height = total_height / (content_height / total_height);
@@ -520,6 +520,43 @@ end:
    string_list_free(list);
 }
 
+static unsigned count_lines(const char *str)
+{
+   unsigned c = 0;
+   unsigned lines = 1;
+   for (c = 0; str[c]; c++)
+      lines += (str[c] == '\n');
+   return lines;
+}
+
+static void compute_entries_box(mui_handle_t* mui, int width)
+{
+   size_t usable_width = width - (mui->margin * 2);
+   file_list_t *list = menu_entries_get_selection_buf_ptr(0);
+   float sum = 0;
+   unsigned i = 0;
+
+   for (; i < menu_entries_get_end(); i++)
+   {
+      unsigned lines = 0;
+      char sublabel_str[255];
+      sublabel_str[0] = '\0';
+      mui_node_t *node = (mui_node_t*)
+            menu_entries_get_userdata_at_offset(list, i);
+
+      if (menu_entry_get_sublabel(i, sublabel_str, sizeof(sublabel_str)))
+      {
+         word_wrap(sublabel_str, sublabel_str, (int)((usable_width/0.75) / mui->glyph_width));
+         lines = count_lines(sublabel_str);
+      }
+
+      float scale_factor = menu_display_get_dpi();
+      node->line_height = (scale_factor / 3) + (lines * mui->font->size);
+      node->y = sum;
+      sum += node->line_height;
+   }
+}
+
 static void mui_render(void *data)
 {
    size_t i             = 0;
@@ -533,6 +570,8 @@ static void mui_render(void *data)
       return;
 
    video_driver_get_size(&width, &height);
+
+   compute_entries_box(mui, width);
 
    menu_animation_ctl(MENU_ANIMATION_CTL_DELTA_TIME, &delta_time);
 
@@ -578,23 +617,22 @@ static void mui_render(void *data)
    if (mui->scroll_y < 0)
       mui->scroll_y = 0;
 
-   bottom = menu_entries_get_end() * mui->line_height
-      - height + header_height + mui->tabs_height;
+   bottom = mui_content_height() - height + header_height + mui->tabs_height;
    if (mui->scroll_y > bottom)
       mui->scroll_y = bottom;
 
-   if (menu_entries_get_end() * mui->line_height
+   if (mui_content_height()
          < height - header_height - mui->tabs_height)
       mui->scroll_y = 0;
 
-   if (menu_entries_get_end() < height / mui->line_height) { }
+   /*if (menu_entries_get_end() < height / mui->line_height) { }
    else
-      i = mui->scroll_y / mui->line_height;
+      i = mui->scroll_y / mui->line_height;*/
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &i);
 }
 
-static void mui_render_label_value(mui_handle_t *mui,
+static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
       int i, int y, unsigned width, unsigned height,
       uint64_t index, uint32_t color, bool selected, const char *label,
       const char *value, float *label_color)
@@ -646,19 +684,19 @@ static void mui_render_label_value(mui_handle_t *mui,
 
    menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
 
-   label_offset = mui->font->size / 3;
    if (menu_entry_get_sublabel(i, sublabel_str, sizeof(sublabel_str)))
    {
-      label_offset = -mui->font->size / 3;
+      word_wrap(sublabel_str, sublabel_str, (int)((usable_width/0.75) / mui->glyph_width));
+
       menu_display_draw_text(mui->font2, sublabel_str,
             mui->margin,
-            y + mui->line_height / 2 + mui->font->size / 1,
+            y + (menu_display_get_dpi() / 4) + mui->font->size,
             width, height, sublabel_color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
    }
 
    menu_display_draw_text(mui->font, label_str,
          mui->margin,
-         y + mui->line_height / 2 + label_offset,
+         y + (menu_display_get_dpi() / 5),
          width, height, color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
 
    if (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
@@ -728,7 +766,7 @@ static void mui_render_label_value(mui_handle_t *mui,
    if (do_draw_text)
       menu_display_draw_text(mui->font, value_str,
             width - mui->margin,
-            y + mui->line_height / 2 + mui->font->size / 3,
+            y + node->line_height / 2 + mui->font->size / 3,
             width, height, color, TEXT_ALIGN_RIGHT, 1.0f, false, 0);
 
    if (texture_switch)
@@ -736,7 +774,7 @@ static void mui_render_label_value(mui_handle_t *mui,
             mui->icon_size,
             texture_switch,
             width - mui->margin - mui->icon_size,
-            y - mui->icon_size/2.0 + mui->line_height/2.0,
+            y + node->line_height/2 - mui->icon_size/2,
             width,
             height,
             0,
@@ -754,7 +792,6 @@ static void mui_render_menu_list(mui_handle_t *mui,
    unsigned header_height;
    uint64_t *frame_count;
    size_t i                = 0;
-   size_t          end     = menu_entries_get_end();
    frame_count             = video_driver_get_frame_count_ptr();
 
    if (!menu_display_get_update_pending())
@@ -766,25 +803,31 @@ static void mui_render_menu_list(mui_handle_t *mui,
    mui->raster_block2.carr.coords.vertices = 0;
 
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
+   file_list_t *list = menu_entries_get_selection_buf_ptr(0);
 
-   for (; i < end; i++)
+   float sum = 0;
+   for (; i < menu_entries_get_end(); i++)
    {
       int y;
       size_t selection;
       char rich_label[255];
       char entry_value[255];
       bool entry_selected = false;
+      char sublabel_str[255];
+      float scale_factor;
+      mui_node_t *node = (mui_node_t*)
+            menu_entries_get_userdata_at_offset(list, i);
 
-      rich_label[0] = entry_value[0] = '\0';
+      rich_label[0] = entry_value[0] = sublabel_str[0] = '\0';
 
       if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
          continue;
 
-      y = header_height - mui->scroll_y + (mui->line_height * i);
+      y = header_height - mui->scroll_y + sum;
 
-      if ((y - (int)mui->line_height) > (int)height
-            || ((y + (int)mui->line_height) < 0))
-         continue;
+      /*if ((y - (int)node->line_height) > (int)height
+            || ((y + (int)node->line_height) < 0))
+         continue;*/
 
       menu_entry_get_value(i, NULL, entry_value, sizeof(entry_value));
       menu_entry_get_rich_label(i, rich_label, sizeof(rich_label));
@@ -793,6 +836,7 @@ static void mui_render_menu_list(mui_handle_t *mui,
 
       mui_render_label_value(
          mui,
+         node,
          i,
          y,
          width,
@@ -804,6 +848,8 @@ static void mui_render_menu_list(mui_handle_t *mui,
          entry_value,
          menu_list_color
       );
+
+      sum += node->line_height;
    }
 }
 
@@ -1210,11 +1256,15 @@ static void mui_frame(void *data)
       menu_display_set_alpha(blue_50, 1.0);
 
    /* highlighted entry */
+   file_list_t *list = menu_entries_get_selection_buf_ptr(0);
+   mui_node_t *node = (mui_node_t*)menu_entries_get_userdata_at_offset(
+         list, selection);
+
    menu_display_draw_quad(
       0,
-      header_height - mui->scroll_y + mui->line_height *selection,
+      header_height - mui->scroll_y + node->y,
       width,
-      mui->line_height,
+      node->line_height,
       width,
       height,
       &highlighted_entry_color[0]
@@ -1383,7 +1433,7 @@ static void mui_layout(mui_handle_t *mui)
    mui->shadow_height   = scale_factor / 36;
    mui->scrollbar_width = scale_factor / 36;
    mui->tabs_height     = scale_factor / 3;
-   mui->line_height     = scale_factor / 2.5;
+   mui->line_height     = scale_factor / 3;
    mui->margin          = scale_factor / 9;
    mui->icon_size       = scale_factor / 3;
 
@@ -1509,7 +1559,7 @@ static float mui_get_scroll(mui_handle_t *mui)
    video_driver_get_size(&width, &height);
 
    if (mui->line_height)
-      half = (height / mui->line_height) / 2;
+      half = (height / mui->line_height) / 3;
 
    if (selection < half)
       return 0;
@@ -1911,7 +1961,11 @@ static void mui_list_insert(void *userdata,
       return;
    }
 
-   node->height      = 32;
+   float scale_factor;
+   scale_factor = menu_display_get_dpi();
+
+   node->line_height = scale_factor / 3;
+   node->y = 0;
 
    file_list_set_userdata(list, i, node);
 }
@@ -1924,16 +1978,17 @@ static void mui_list_clear(file_list_t *list)
    for (i = 0; i < size; ++i)
    {
       menu_animation_ctx_subject_t subject;
-      float *subjects[1];
+      float *subjects[2];
       mui_node_t *node = (mui_node_t*)
          menu_entries_get_userdata_at_offset(list, i);
 
       if (!node)
          continue;
 
-      subjects[0] = &node->height;
+      subjects[0] = &node->line_height;
+      subjects[1] = &node->y;
 
-      subject.count = 1;
+      subject.count = 2;
       subject.data  = subjects;
 
       menu_animation_ctl(MENU_ANIMATION_CTL_KILL_BY_SUBJECT, &subject);

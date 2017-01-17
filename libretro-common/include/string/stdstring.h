@@ -56,6 +56,8 @@ char *string_trim_whitespace_right(char *const s);
 /* Remove leading and trailing whitespaces */
 char *string_trim_whitespace(char *const s);
 
+char* word_wrap(char* buffer, char* string, int line_width);
+
 RETRO_END_DECLS
 
 #endif
