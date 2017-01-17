@@ -43,6 +43,10 @@ ifeq ($(HAVE_LIBRETRODB), 1)
    DEFINES += -DHAVE_LIBRETRODB
 endif
 
+ifeq ($(HAVE_VITA2D), 1)
+	DEFINES += -DHAVE_VITA2D
+endif
+
 ifeq ($(HAVE_FBO), 1)
    DEFINES += -DHAVE_FBO
 endif
@@ -240,6 +244,7 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/features/features_cpu.o \
        performance_counters.o \
        verbosity.o
+
 
 ifeq ($(HAVE_CC_RESAMPLER), 1)
 DEFINES += -DHAVE_CC_RESAMPLER
@@ -592,6 +597,15 @@ endif
 
 ifeq ($(HAVE_THREAD_STORAGE), 1)
    DEFINES += -DHAVE_THREAD_STORAGE
+endif
+
+ifeq ($(HAVE_VITA2D), 1)
+	OBJ += $(DEPS_DIR)/libvita2d/source/vita2d.o \
+			 $(DEPS_DIR)/libvita2d/source/vita2d_texture.o \
+			 $(DEPS_DIR)/libvita2d/source/vita2d_draw.o \
+			 $(DEPS_DIR)/libvita2d/source/utils.o
+
+	OBJ += gfx/drivers/vita2d_gfx.o
 endif
 
 ifeq ($(HAVE_WAYLAND), 1)
