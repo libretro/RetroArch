@@ -23,7 +23,6 @@
 #endif
 
 #ifdef VITA
-#include <psp2/moduleinfo.h>
 #include <psp2/power.h>
 #include <psp2/sysmodule.h>
 #include <psp2/appmgr.h>
@@ -57,9 +56,7 @@
 #endif
 #endif
 
-#ifdef VITA
-PSP2_MODULE_INFO(0, 0, "RetroArch");
-#else
+#ifndef VITA
 PSP_MODULE_INFO("RetroArch", 0, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER|THREAD_ATTR_VFPU);
 #ifdef BIG_STACK
