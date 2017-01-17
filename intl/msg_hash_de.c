@@ -123,11 +123,11 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
             "Suche nach Inhalt. \n"
             " \n"
             "Um Inhalte zu laden brauchst du\n"
-            "einen 'Core' und den Inhalt. \n"
+            "einen 'Core'. \n"
             " \n"
-            "Um einzustellen wo das Menü beginnt \n"
+            "Um einzustellen wo das Verzeichnis beginnt, \n"
             "setze das   \n"
-            "'File Browser Directory'. \n" // @TODO: Where is this setting?
+            "'%s'. \n"
             "Falls diese nicht gesetzt ist, startet \n"
             "die Suche beim obersten Verzeichnis.\n"
             " \n"
@@ -135,7 +135,8 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
             "Nur Inhalte mit der Dateiendung, welche \n"
             "mit den ausgewählten Core funktionieren \n"
             "werden angezeigt. \n"
-            "Dieser Core wird dann auch für den Inhalt verwendet."
+            "Dieser Core wird dann auch für den Inhalt verwendet.",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY)
          );
          break;
       case MENU_ENUM_LABEL_VIDEO_DRIVER:
@@ -329,6 +330,14 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Die Zurückspulfunktion muss eingeschaltet \n"
                "sein.");
          break;
+      case MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY:
+         snprintf(s, len,
+               "%s. \n"
+               " \n"
+               "Setzt das Startverzeichnis des Dateibrowsers.",
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY)
+               );
+          break;
       case MENU_ENUM_LABEL_EXIT_EMULATOR:
          snprintf(s, len,
                "Taste zum Beenden von RetroArch."
