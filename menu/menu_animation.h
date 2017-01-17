@@ -31,12 +31,10 @@ typedef void  (*tween_cb)  (void);
 enum menu_animation_ctl_state
 {
    MENU_ANIMATION_CTL_NONE = 0,
-   MENU_ANIMATION_CTL_IS_ACTIVE,
    MENU_ANIMATION_CTL_DEINIT,
    MENU_ANIMATION_CTL_CLEAR_ACTIVE,
    MENU_ANIMATION_CTL_SET_ACTIVE,
    MENU_ANIMATION_CTL_DELTA_TIME,
-   MENU_ANIMATION_CTL_UPDATE_TIME,
    MENU_ANIMATION_CTL_KILL_BY_TAG,
    MENU_ANIMATION_CTL_KILL_BY_SUBJECT,
    MENU_ANIMATION_CTL_PUSH
@@ -129,6 +127,10 @@ bool menu_animation_update(float delta_time);
 bool menu_animation_get_ideal_delta_time(menu_animation_ctx_delta_t *delta);
 
 bool menu_animation_ticker(const menu_animation_ctx_ticker_t *ticker);
+
+void menu_animation_update_time(void);
+
+bool menu_animation_is_active(void);
 
 bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data);
 

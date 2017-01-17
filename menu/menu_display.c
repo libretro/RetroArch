@@ -390,7 +390,7 @@ void menu_display_set_font_data_init(bool state)
 
 bool menu_display_get_update_pending(void)
 {
-   if (menu_animation_ctl(MENU_ANIMATION_CTL_IS_ACTIVE, NULL))
+   if (menu_animation_is_active())
       return true;
    if (menu_display_get_framebuffer_dirty_flag())
       return true;
