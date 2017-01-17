@@ -1913,16 +1913,16 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD_DESC:
          snprintf(s, len,
-               "Du kannst das virtuelle Gamepad-Overlay\n"
-               "unter '%s' -> '%s' ändern."
+               "You can change the virtual gamepad overlay\n"
+               "by going to '%s' -> '%s'."
                " \n"
-               "Darin kannst du die Grösse, die Transparenz\n"
-               "und vieles mehr anpassen.\n"
+               "From there you can change the overlay,\n"
+               "change the size and opacity of the buttons, etc.\n"
                " \n"
-               "WICHTIG: Standartmässig, ist das virtuelle\n"
-               "Gamepad-Overlay im Menü nicht ersichtlich.\n"
-               "Wenn du dies ändern möchtest,\n"
-               "kannst du '%s' auf Nein stellen.",
+               "NOTE: By default, virtual gamepad overlays are\n"
+               "hidden when in the menu.\n"
+               "If you'd like to change this behavior,\n"
+               "you can set '%s' to false.",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU)

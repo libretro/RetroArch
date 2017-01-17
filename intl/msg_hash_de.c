@@ -432,7 +432,22 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len, "Erfolgsliste (Hardcore)");
          break;
       case MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD_DESC:
-
+          snprintf(s, len,
+                "Du kannst das virtuelle Gamepad-Overlay\n"
+                "unter '%s' -> '%s' ändern."
+                " \n"
+                "Darin kannst du die Grösse, die Transparenz\n"
+                "und vieles mehr anpassen.\n"
+                " \n"
+                "WICHTIG: Standartmässig, ist das virtuelle\n"
+                "Gamepad-Overlay im Menü nicht ersichtlich.\n"
+                "Wenn du dies ändern möchtest,\n"
+                "kannst du '%s' auf Nein stellen.",
+                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
+                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS),
+                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU)
+          );
+           break;
          break;
       case MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC:
          snprintf(s, len,
