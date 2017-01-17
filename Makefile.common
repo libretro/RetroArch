@@ -436,7 +436,8 @@ endif
 
 ifeq ($(HAVE_NEON),1)
    OBJ += $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler_neon.o \
-          audio/drivers_resampler/cc_resampler_neon.o
+          audio/drivers_resampler/cc_resampler_neon.o \
+          memory/neon/memcpy-neon.o
    # When compiled without this, tries to attempt to compile sinc lerp,
    # which will error out
    #
@@ -613,8 +614,14 @@ ifeq ($(HAVE_VITA2D), 1)
 			 $(DEPS_DIR)/libvita2d/shader/compiled/texture_f_gxp.o \
 			 $(DEPS_DIR)/libvita2d/shader/compiled/texture_tint_f_gxp.o
 
-CFLAGS  += -I$(DEPS_DIR)/libvita2d/include
-	OBJ += gfx/drivers/vita2d_gfx.o
+ifeq ($(HAVE_MENU),1)
+	OBJ += menu/drivers_display/menu_display_vita2d.o
+endif
+
+	OBJ += gfx/drivers/vita2d_gfx.o \
+			 gfx/drivers_font/vita2d_font.o
+
+	CFLAGS  += -I$(DEPS_DIR)/libvita2d/include
 endif
 
 ifeq ($(HAVE_WAYLAND), 1)
@@ -962,8 +969,7 @@ ifeq ($(HAVE_OMAP), 1)
 endif
 
 ifeq ($(HAVE_EXYNOS), 1)
-   OBJ += gfx/drivers/exynos_gfx.o \
-          memory/neon/memcpy-neon.o
+   OBJ += gfx/drivers/exynos_gfx.o
    LIBS += $(DRM_LIBS) $(EXYNOS_LIBS)
    DEFINES += $(DRM_CFLAGS) $(EXYNOS_CFLAGS)
    HAVE_AND_WILL_USE_DRM = 1
