@@ -611,13 +611,13 @@ ifeq ($(HAVE_VITA2D), 1)
 			 $(DEPS_DIR)/libvita2d/source/vita2d_draw.o \
 			 $(DEPS_DIR)/libvita2d/source/utils.o
 
-	OBJ += $(DEPS_DIR)/libvita2d/shader/compiled/clear_v_gxp.o \
-			 $(DEPS_DIR)/libvita2d/shader/compiled/clear_f_gxp.o \
-			 $(DEPS_DIR)/libvita2d/shader/compiled/color_v_gxp.o \
-			 $(DEPS_DIR)/libvita2d/shader/compiled/color_f_gxp.o \
-			 $(DEPS_DIR)/libvita2d/shader/compiled/texture_v_gxp.o \
-			 $(DEPS_DIR)/libvita2d/shader/compiled/texture_f_gxp.o \
-			 $(DEPS_DIR)/libvita2d/shader/compiled/texture_tint_f_gxp.o
+	OBJ += $(DEPS_DIR)/libvita2d/shader/clear_v_gxp.o \
+			 $(DEPS_DIR)/libvita2d/shader/clear_f_gxp.o \
+			 $(DEPS_DIR)/libvita2d/shader/color_v_gxp.o \
+			 $(DEPS_DIR)/libvita2d/shader/color_f_gxp.o \
+			 $(DEPS_DIR)/libvita2d/shader/texture_v_gxp.o \
+			 $(DEPS_DIR)/libvita2d/shader/texture_f_gxp.o \
+			 $(DEPS_DIR)/libvita2d/shader/texture_tint_f_gxp.o
 
 ifeq ($(HAVE_MENU),1)
 	OBJ += menu/drivers_display/menu_display_vita2d.o

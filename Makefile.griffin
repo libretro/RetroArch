@@ -219,13 +219,14 @@ else ifeq ($(platform), vita)
 			 -lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lScePgf_stub \
 			 -lSceMotion_stub -lSceAppMgr_stub -lpng -lm -lc
 
-  PLATEXTRA := 		deps/libvita2d/shader/compiled/clear_v_gxp.o \
-	  						deps/libvita2d/shader/compiled/clear_f_gxp.o \
-							deps/libvita2d/shader/compiled/color_v_gxp.o \
-							deps/libvita2d/shader/compiled/color_f_gxp.o \
-							deps/libvita2d/shader/compiled/texture_v_gxp.o \
-							deps/libvita2d/shader/compiled/texture_f_gxp.o \
-							deps/libvita2d/shader/compiled/texture_tint_f_gxp.o
+  PLATEXTRA := $(DEPS_DIR)/libvita2d/shader/clear_v_gxp.o \
+			 $(DEPS_DIR)/libvita2d/shader/clear_f_gxp.o \
+			 $(DEPS_DIR)/libvita2d/shader/color_v_gxp.o \
+			 $(DEPS_DIR)/libvita2d/shader/color_f_gxp.o \
+			 $(DEPS_DIR)/libvita2d/shader/texture_v_gxp.o \
+			 $(DEPS_DIR)/libvita2d/shader/texture_f_gxp.o \
+			 $(DEPS_DIR)/libvita2d/shader/texture_tint_f_gxp.o
+
   PLATOBJS +=		  \
 						  libretro-common/audio/conversion/s16_to_float_neon.o \
 						  libretro-common/audio/conversion/float_to_s16_neon.o \
