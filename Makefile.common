@@ -1169,6 +1169,8 @@ ifneq ($(findstring Win32,$(OS)),)
           gfx/drivers_context/gdi_ctx.o \
           gfx/drivers_font/gdi_font.o \
           menu/drivers_display/menu_display_gdi.o
+
+   LIBS += -lmsimg32
 endif
 
 ifeq ($(HAVE_AVFOUNDATION), 1)

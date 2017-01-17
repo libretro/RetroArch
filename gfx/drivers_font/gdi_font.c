@@ -85,7 +85,7 @@ static void gdi_render_msg(void *data, const char *msg,
    gdi_raster_t *font = (gdi_raster_t*)data;
    float x, y;
    unsigned width = 0, height = 0;
-   unsigned newX, newY;
+   unsigned newX, newY, len;
    settings_t *settings = config_get_ptr();
    const struct font_params *params = (const struct font_params*)userdata;
    HDC hdc;
@@ -110,11 +110,14 @@ static void gdi_render_msg(void *data, const char *msg,
    if (!font->gdi)
       return;
 
+   len = utf8len(msg);
    newX = x * width;
    newY = height - (y * height);
 
    hdc = GetDC(hwnd);
-   TextOut(hdc, newX, newY, msg, utf8len(msg));
+   SetBkMode(hdc, TRANSPARENT);
+   SetTextColor(hdc, RGB(255,255,255));
+   TextOut(hdc, newX, newY, msg, len);
    ReleaseDC(hwnd, hdc);
 }
 

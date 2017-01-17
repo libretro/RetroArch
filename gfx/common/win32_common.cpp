@@ -128,10 +128,10 @@ static unsigned win32_monitor_count              = 0;
 
 extern "C"
 {
-	bool doubleclick_on_titlebar_pressed(void)
-	{
-		return doubleclick_on_titlebar;
-	}
+   bool doubleclick_on_titlebar_pressed(void)
+   {
+      return doubleclick_on_titlebar;
+   }
 
    void unset_doubleclick_on_titlebar(void)
    {
@@ -287,8 +287,8 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
 
       core_info_get_list(&core_info_list);
 
-	  if (!core_info_list)
-		  return 0;
+     if (!core_info_list)
+        return 0;
 
       core_info_list_get_supported_cores(core_info_list,
             (const char*)szFilename, &core_info, &list_size);
@@ -417,7 +417,7 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
          }
          *quit = true;
          break;
-	  case WM_COMMAND:
+     case WM_COMMAND:
          {
             settings_t *settings     = config_get_ptr();
             if (settings->ui.menubar_enable)
@@ -542,13 +542,35 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
          HDC hdc = BeginPaint(hwnd, &ps);
 
 #ifdef HAVE_MENU
-         if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))// || gdi_has_menu_frame())
-            FillRect(hdc, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW + 1));
+         if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+         {
+            RECT rect;
+            GetClientRect(hwnd, &rect);
+
+            TRIVERTEX vertex[2];
+            vertex[0].x     = rect.left;
+            vertex[0].y     = rect.top;
+            vertex[0].Red   = 1 << 8;
+            vertex[0].Green = 81 << 8;
+            vertex[0].Blue  = 127 << 8;
+            vertex[0].Alpha = 0;
+
+            vertex[1].x     = rect.right;
+            vertex[1].y     = rect.bottom;
+            vertex[1].Red   = 0;
+            vertex[1].Green = 1 << 8;
+            vertex[1].Blue  = 33 << 8;
+            vertex[1].Alpha = 0;
+
+            GRADIENT_RECT gRect;
+            gRect.LowerRight = 0;
+            gRect.UpperLeft  = 1;
+
+            GradientFill(hdc, vertex, 2, &gRect, 1, GRADIENT_FILL_RECT_V);
+         }
 #endif
 
          EndPaint(hwnd, &ps);
-         //return DefWindowProc(hwnd, message, wparam, lparam);
-         //return 0;
          break;
       }
       case WM_DROPFILES:
@@ -609,7 +631,7 @@ bool win32_window_create(void *data, unsigned style,
 #endif
 
 bool win32_get_metrics(void *data,
-	enum display_metric_types type, float *value)
+   enum display_metric_types type, float *value)
 {
 #ifdef _XBOX
    return false;
@@ -765,8 +787,8 @@ bool win32_suppress_screensaver(void *data, bool enable)
 
 /* FIXME: It should not be necessary to add the W after MONITORINFOEX, but linking fails without it. */
 void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
-	unsigned *width, unsigned *height, bool fullscreen, bool windowed_full,
-	RECT *rect, RECT *mon_rect, DWORD *style)
+   unsigned *width, unsigned *height, bool fullscreen, bool windowed_full,
+   RECT *rect, RECT *mon_rect, DWORD *style)
 {
 #ifndef _XBOX
    settings_t *settings = config_get_ptr();
@@ -793,7 +815,7 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
 
          if (!win32_monitor_set_fullscreen(*width, *height,
                   refresh, current_mon->szDevice))
-			 {}
+          {}
 
          /* Display settings might have changed, get new coordinates. */
          GetMonitorInfo(*hm_to_use, (MONITORINFOEX*)current_mon);
