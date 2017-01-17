@@ -39,8 +39,7 @@ enum menu_animation_ctl_state
    MENU_ANIMATION_CTL_UPDATE_TIME,
    MENU_ANIMATION_CTL_KILL_BY_TAG,
    MENU_ANIMATION_CTL_KILL_BY_SUBJECT,
-   MENU_ANIMATION_CTL_PUSH,
-   MENU_ANIMATION_CTL_IDEAL_DELTA_TIME_GET
+   MENU_ANIMATION_CTL_PUSH
 };
 
 enum menu_animation_easing_type
@@ -126,6 +125,8 @@ typedef struct menu_animation_ctx_ticker
 } menu_animation_ctx_ticker_t;
 
 bool menu_animation_update(float delta_time);
+
+bool menu_animation_get_ideal_delta_time(menu_animation_ctx_delta_t *delta);
 
 bool menu_animation_ticker(const menu_animation_ctx_ticker_t *ticker);
 

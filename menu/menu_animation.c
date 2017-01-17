@@ -558,6 +558,14 @@ bool menu_animation_ticker(const menu_animation_ctx_ticker_t *ticker)
    return true;
 }
 
+bool menu_animation_get_ideal_delta_time(menu_animation_ctx_delta_t *delta)
+{
+   if (!delta)
+      return false;
+   delta->ideal = delta->current / IDEAL_DELTA_TIME;
+   return true;
+}
+
 bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
 {
    switch (state)
@@ -666,15 +674,6 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
                   break;
                }
             }
-         }
-         break;
-      case MENU_ANIMATION_CTL_IDEAL_DELTA_TIME_GET:
-         {
-            menu_animation_ctx_delta_t *delta = 
-               (menu_animation_ctx_delta_t*)data;
-            if (!delta)
-               return false;
-            delta->ideal = delta->current / IDEAL_DELTA_TIME;
          }
          break;
       case MENU_ANIMATION_CTL_PUSH:

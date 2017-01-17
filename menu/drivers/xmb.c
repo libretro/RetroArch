@@ -2337,7 +2337,7 @@ static void xmb_render(void *data)
 
    delta.current = delta_time;
 
-   if (menu_animation_ctl(MENU_ANIMATION_CTL_IDEAL_DELTA_TIME_GET, &delta))
+   if (menu_animation_get_ideal_delta_time(&delta))
       menu_animation_update(delta.ideal);
 
    if (settings->menu.pointer.enable || settings->menu.mouse.enable)

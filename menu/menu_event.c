@@ -182,7 +182,7 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
 
    delta.current = delta_time;
 
-   if (menu_animation_ctl(MENU_ANIMATION_CTL_IDEAL_DELTA_TIME_GET, &delta))
+   if (menu_animation_get_ideal_delta_time(&delta))
       delay_count += delta.ideal;
 
    if (menu_input_dialog_get_display_kb())
