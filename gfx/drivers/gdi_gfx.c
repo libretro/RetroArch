@@ -212,7 +212,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       bmp_old = (HBITMAP)SelectObject(memDC, bmp);
 
       info->bmiHeader.biBitCount = bits;
-      info->bmiHeader.biWidth = pitch / 2;
+      info->bmiHeader.biWidth = pitch / (bits / 8);
       info->bmiHeader.biHeight = -height;
       info->bmiHeader.biPlanes = 1;
       info->bmiHeader.biSize = sizeof(BITMAPINFOHEADER) + (3 * sizeof(RGBQUAD));
