@@ -342,6 +342,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NEAREST,
       "Nächster")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY,
       "Netplay")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES, // TODO: What actually does this? The translation might be odd.
+      "Netplay Bildübetragungsrate prüfen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT, /* TODO, Original string changed */
       "Tausche Netplay-Eingabe")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES,
@@ -362,10 +364,16 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_MODE,
       "Aktiviere Netplay-Client")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
       "Benutzername")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
+      "Server Passwort")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
       "Netplay settings")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
+      "Server Passwort für Zuschauer")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE,
       "Aktiviere Netplay-Zuschauermodus")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_STATELESS_MODE, // TODO: What is this actually?
+      "Zustandsloser Netplay-Modus")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
       "TCP/UDP-Port für Netplay")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
@@ -906,6 +914,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
       "Use the same controls for both the menu and the game. Applies to the keyboard.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY,
       "Hoste eine Netplay Session oder trete einer bei.")
+MSG_HASH(MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
+      "Ändere die Netzwerkeinstellungen")
 MSG_HASH(MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
       "Lade Add-Ons, Komponenten und Inhalte für RetroArch herunter.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
