@@ -1,17 +1,13 @@
 TARGET		    := retroarch_vita
-DEBUG                = 0
+DEBUG               ?= 0
 GRIFFIN_BUILD        = 0
 WHOLE_ARCHIVE_LINK   = 0
-HAVE_NETLOGGER       = 0
-HAVE_RGUI				= 1
-HAVE_MATERIALUI		= 1
-HAVE_XMB             = 1
 
 VITA_TITLE_ID	:= RETROARCH
 VITA_TITLE_NAME	:= RetroArch
 
 PC_DEVELOPMENT_IP_ADDRESS  =
-PC_DEVELOPMENT_TCP_PORT	   =
+PC_DEVELOPMENT_UDP_PORT	   =
 
 OBJ :=
 
@@ -19,8 +15,12 @@ DEFINES :=
 
 ifeq ($(GRIFFIN_BUILD), 1)
 	OBJ += griffin/griffin.o
-	DEFINES += -DHAVE_GRIFFIN=1 -DHAVE_MENU -DHAVE_XMB -DHAVE_MATERIALUI -DHAVE_LIBRETRODB
+	DEFINES += -DHAVE_GRIFFIN=1
+	DEFINES += -DHAVE_NEON -DHAVE_MENU -DHAVE_XMB -DHAVE_MATERIALUI -DHAVE_LIBRETRODB
 	DEFINES += -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA -DWANT_ZLIB -DHAVE_CC_RESAMPLER
+	ifeq ($(DEBUG), 1)
+		DEFINES += -DHAVE_NETLOGGER
+	endif
 else
 
 	HAVE_NEON		:= 1
@@ -35,19 +35,24 @@ else
 	HAVE_VITA2D		:= 1
 	HAVE_NETWORKING		:= 1
 	HAVE_SOCKET_LEGACY	:= 1
-	HAVE_OVERLAY		:= 1
 	HAVE_MENU		:= 1
+	HAVE_MENU_COMMON	:= 1
+	HAVE_OVERLAY		:= 1
 	HAVE_MATERIALUI		:= 1
 	HAVE_XMB		:= 1
+	HAVE_RGUI		:= 1
 	HAVE_STB_FONT		:= 1
 	HAVE_THREADS		:= 1
 	HAVE_LIBRETRODB		:= 1
+	HAVE_CC_RESAMPLER	:= 1
 	RARCH_CONSOLE		:= 1
+
+	ifeq ($(DEBUG), 1)
+		HAVE_NETLOGGER = 1
+	endif
 
 	include Makefile.common
 	BLACKLIST :=
-	BLACKLIST += input/input_overlay.o
-	BLACKLIST += tasks/task_overlay.o
 	OBJ := $(filter-out $(BLACKLIST),$(OBJ))
 
 	OBJ += input/drivers/psp_input.o
@@ -79,7 +84,7 @@ ifeq ($(strip $(VITASDK)),)
 $(error "Please set VITASDK in your environment. export VITASDK=<path to>vitasdk")
 endif
 
-export PATH	  := $(PATH):$(VITASDK)/bin
+export PATH := $(PATH):$(VITASDK)/bin
 
 PREFIX := arm-vita-eabi-
 
@@ -96,16 +101,16 @@ INCDIRS := -I. -Ideps/zlib -Ideps/7zip -Ilibretro-common/include
 LIBDIRS := -L.
 
 ARCHFLAGS := -march=armv7-a -mfpu=neon -mfloat-abi=hard -DVITA
-CFLAGS    += $(ARCHFLAGS) -Wl,-q -mword-relocations -fno-optimize-sibling-calls
+CFLAGS    += $(ARCHFLAGS) -mword-relocations -fno-optimize-sibling-calls
 
 ifeq ($(DEBUG), 1)
-   CFLAGS += -O0 -g
+   CFLAGS += -O2 -g
 else
    CFLAGS += -O3
 endif
-LDFLAGS := $(CFLAGS)
 
 ASFLAGS := $(CFLAGS)
+LDFLAGS := -Wl,-q
 
 CFLAGS += -Wall -ffast-math
 CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE
@@ -115,8 +120,8 @@ ifneq ($(PC_DEVELOPMENT_IP_ADDRESS),)
    CFLAGS += -DPC_DEVELOPMENT_IP_ADDRESS='"$(PC_DEVELOPMENT_IP_ADDRESS)"'
 endif
 
-ifneq ($(PC_DEVELOPMENT_TCP_PORT),)
-   CFLAGS += -DPC_DEVELOPMENT_TCP_PORT=$(PC_DEVELOPMENT_TCP_PORT)
+ifneq ($(PC_DEVELOPMENT_UDP_PORT),)
+   CFLAGS += -DPC_DEVELOPMENT_UDP_PORT=$(PC_DEVELOPMENT_UDP_PORT)
 endif
 
 ifeq ($(WHOLE_ARCHIVE_LINK), 1)
