@@ -315,7 +315,8 @@ void input_poll(void)
 
 #ifdef HAVE_NETWORKGAMEPAD
    if (input_driver_remote)
-      input_remote_poll(input_driver_remote);
+      input_remote_poll(input_driver_remote,
+            settings->input.max_users);
 #endif
 }
 
@@ -1184,7 +1185,12 @@ void input_driver_deinit_remote(void)
 {
 #ifdef HAVE_NETWORKGAMEPAD
    if (input_driver_remote)
-      input_remote_free(input_driver_remote);
+   {
+      settings_t *settings = config_get_ptr();
+
+      input_remote_free(input_driver_remote,
+            settings->input.max_users);
+   }
    input_driver_remote = NULL;
 #endif
 }
@@ -1198,7 +1204,8 @@ bool input_driver_init_remote(void)
       return false;
 
    input_driver_remote = input_remote_new(
-         settings->network_remote_base_port);
+         settings->network_remote_base_port,
+         settings->input.max_users);
 
    if (input_driver_remote)
       return true;
