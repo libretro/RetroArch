@@ -1048,10 +1048,7 @@ bool video_monitor_get_fps(
          (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
 
       video_driver_frame_time_samples[write_index] = new_time - fps_time;
-      fps_time             = new_time;
-
-      if (video_info.fullscreen)
-         return false;
+      fps_time = new_time;
 
       if ((video_driver_frame_count % FPS_UPDATE_INTERVAL) == 0)
       {
@@ -1091,10 +1088,6 @@ bool video_monitor_get_fps(
    }
 
    curr_time = fps_time = new_time;
-
-   if (video_info.fullscreen)
-      return true;
-
    strlcpy(buf, video_driver_title_buf, size);
    if (buf_fps)
       strlcpy(buf_fps, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), size_fps);
