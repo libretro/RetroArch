@@ -32,7 +32,6 @@
 #endif
 
 #include "../frontend_driver.h"
-#include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../../defaults.h"
 #include "../../paths.h"

@@ -14,12 +14,12 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../frontend_driver.h"
-
 #include <stdint.h>
 #include <string.h>
 #include <signal.h>
 #include <stdlib.h>
+
+#include "../frontend_driver.h"
 
 static volatile sig_atomic_t bsd_sighandler_quit;
 

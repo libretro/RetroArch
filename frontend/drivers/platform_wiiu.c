@@ -25,7 +25,6 @@
 
 #include "../frontend_driver.h"
 #include "../frontend.h"
-#include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../../defaults.h"
 #include "../../paths.h"

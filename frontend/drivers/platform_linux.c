@@ -54,7 +54,6 @@
 
 #include "../frontend.h"
 #include "../frontend_driver.h"
-#include "../../configuration.h"
 #include "../../defaults.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
