@@ -668,7 +668,6 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
    char sublabel_str[255];
    char value_str[255];
    uint32_t sublabel_color;
-   float label_offset              = 0;
    bool switch_is_on               = true;
    int value_len                   = utf8len(value);
    int ticker_limit                = 0;
@@ -834,7 +833,6 @@ static void mui_render_menu_list(mui_handle_t *mui,
       char entry_value[255];
       bool entry_selected = false;
       char sublabel_str[255];
-      float scale_factor;
       mui_node_t *node = (mui_node_t*)
             menu_entries_get_userdata_at_offset(list, i);
 
@@ -1974,7 +1972,6 @@ static void mui_list_insert(void *userdata,
 {
    size_t selection;
    float scale_factor;
-   int current            = 0;
    int i                  = list_size;
    mui_node_t *node       = NULL;
    mui_handle_t *mui      = (mui_handle_t*)userdata;
