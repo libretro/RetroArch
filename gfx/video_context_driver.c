@@ -282,7 +282,7 @@ bool video_context_driver_check_window(gfx_ctx_size_t *size_data)
             size_data->quit,
             size_data->resize,
             size_data->width,
-            size_data->height, ((unsigned int)*video_driver_get_frame_count_ptr()));
+            size_data->height, (unsigned int)video_driver_get_frame_count());
       return true;
    }
 

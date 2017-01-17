@@ -317,13 +317,13 @@ static bool zarch_zui_list_item(zui_t *zui, struct zui_tabbed *tab, int x1, int 
    menu_animation_ctx_ticker_t ticker;
    unsigned ticker_size;
    char title_buf[PATH_MAX_LENGTH];
-   uint64_t *frame_count = NULL;
+   uint64_t frame_count = NULL;
    unsigned           id = zarch_zui_hash(zui, label);
    int                x2 = x1 + zui->width - 290 - 40;
    int                y2 = y1 + 50;
    bool           active = zarch_zui_check_button_up(zui, id, x1, y1, x2, y2);
    const float       *bg = zui_bg_panel;
-   frame_count           = video_driver_get_frame_count_ptr();
+   frame_count           = video_driver_get_frame_count();
 
    title_buf[0] = '\0';
 
@@ -346,7 +346,7 @@ static bool zarch_zui_list_item(zui_t *zui, struct zui_tabbed *tab, int x1, int 
 
    ticker.s        = title_buf;
    ticker.len      = ticker_size;
-   ticker.idx      = *frame_count / 50;
+   ticker.idx      = frame_count / 50;
    ticker.str      = label;
    ticker.selected = (bg == zui_bg_hilite || bg == zui_bg_pad_hilite);
 

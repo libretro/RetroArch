@@ -2073,10 +2073,10 @@ static void xmb_draw_items(
    size_t i;
    math_matrix_4x4 mymat;
    menu_display_ctx_rotate_draw_t rotate_draw;
-   uint64_t *frame_count       = NULL;
+   uint64_t frame_count       = NULL;
    xmb_node_t *core_node       = NULL;
    size_t end                  = 0;
-   frame_count                 = video_driver_get_frame_count_ptr();
+   frame_count                 = video_driver_get_frame_count();
 
    if (!list || !list->size)
       return;
@@ -2230,7 +2230,7 @@ static void xmb_draw_items(
 
       ticker.s        = name;
       ticker.len      = ticker_limit;
-      ticker.idx      = *frame_count / 20;
+      ticker.idx      = frame_count / 20;
       ticker.str      = ticker_str;
       ticker.selected = (i == current);
 
@@ -2261,7 +2261,7 @@ static void xmb_draw_items(
 
       ticker.s        = value;
       ticker.len      = 35;
-      ticker.idx      = *frame_count / 20;
+      ticker.idx      = frame_count / 20;
       ticker.str      = entry_value;
       ticker.selected = (i == current);
 

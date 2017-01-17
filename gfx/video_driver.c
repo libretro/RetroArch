@@ -65,6 +65,34 @@
 
 #define FPS_UPDATE_INTERVAL 256
 
+#ifdef HAVE_THREADS
+#define video_driver_lock() \
+   if (display_lock) \
+      slock_lock(display_lock)
+
+#define video_driver_unlock() \
+   if (display_lock) \
+      slock_unlock(display_lock)
+
+#define video_driver_lock_free() \
+   slock_free(display_lock); \
+   display_lock = NULL
+
+#define video_driver_threaded_lock() \
+   if (video_driver_is_threaded()) \
+      video_driver_lock()
+
+#define video_driver_threaded_unlock() \
+   if (video_driver_is_threaded()) \
+      video_driver_unlock()
+#else
+#define video_driver_lock()            ((void)0)
+#define video_driver_unlock()          ((void)0)
+#define video_driver_lock_free()       ((void)0)
+#define video_driver_threaded_lock()   ((void)0)
+#define video_driver_threaded_unlock() ((void)0)
+#endif
+
 typedef struct video_pixel_scaler
 {
    struct scaler_ctx *scaler;
@@ -1037,10 +1065,15 @@ bool video_monitor_get_fps(
    static retro_time_t curr_time;
    static retro_time_t fps_time;
    retro_time_t        new_time  = cpu_features_get_time_usec();
+   uint64_t frame_count;
+
+   video_driver_threaded_lock();
+   frame_count = video_driver_frame_count;
+   video_driver_threaded_unlock();
 
    *buf = '\0';
 
-   if (video_driver_frame_count)
+   if (frame_count)
    {
       static float last_fps;
       bool ret             = false;
@@ -1050,7 +1083,7 @@ bool video_monitor_get_fps(
       video_driver_frame_time_samples[write_index] = new_time - fps_time;
       fps_time = new_time;
 
-      if ((video_driver_frame_count % FPS_UPDATE_INTERVAL) == 0)
+      if ((frame_count % FPS_UPDATE_INTERVAL) == 0)
       {
          char frames_text[64];
 
@@ -1072,7 +1105,7 @@ bool video_monitor_get_fps(
          strlcat(buf, "Frames: ", size);
 
          snprintf(frames_text, sizeof(frames_text), STRING_REP_UINT64,
-               (unsigned long long)video_driver_frame_count);
+               (unsigned long long)frame_count);
 
          strlcat(buf, frames_text, size);
          ret = true;
@@ -1082,7 +1115,7 @@ bool video_monitor_get_fps(
          snprintf(buf_fps, size_fps, "FPS: %6.1f || %s: " STRING_REP_UINT64,
                last_fps,
                msg_hash_to_str(MSG_FRAMES),
-               (unsigned long long)video_driver_frame_count);
+               (unsigned long long)frame_count);
 
       return ret;
    }
@@ -1319,26 +1352,6 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
 #endif
 #endif
 }
-
-
-#ifdef HAVE_THREADS
-#define video_driver_lock() \
-   if (display_lock) \
-      slock_lock(display_lock)
-
-#define video_driver_unlock() \
-   if (display_lock) \
-      slock_unlock(display_lock)
-
-#define video_driver_lock_free() \
-   slock_free(display_lock); \
-   display_lock = NULL
-
-#else
-#define video_driver_lock()      ((void)0)
-#define video_driver_unlock()    ((void)0)
-#define video_driver_lock_free() ((void)0)
-#endif
 
 static void video_driver_lock_new(void)
 {
@@ -1687,9 +1700,13 @@ bool video_driver_read_viewport(uint8_t *buffer)
    return false;
 }
 
-uint64_t *video_driver_get_frame_count_ptr(void)
+uint64_t video_driver_get_frame_count(void)
 {
-   return &video_driver_frame_count;
+   uint64_t frame_count;
+   video_driver_threaded_lock();
+   frame_count = video_driver_frame_count;
+   video_driver_threaded_unlock();
+   return frame_count;
 }
 
 bool video_driver_frame_filter_alive(void)
@@ -2058,7 +2075,8 @@ void video_driver_frame(const void *data, unsigned width,
    static struct retro_perf_counter video_frame_conv = {0};
    unsigned output_width                             = 0;
    unsigned output_height                            = 0;
-   unsigned  output_pitch                            = 0;
+   unsigned output_pitch                             = 0;
+   uint64_t frame_count                              = 0;
    const char *msg                                   = NULL;
 
    if (!video_driver_active)
@@ -2115,13 +2133,16 @@ void video_driver_frame(const void *data, unsigned width,
          && video_info.font_enable && msg)
       strlcpy(video_driver_msg, msg, sizeof(video_driver_msg));
 
+   video_driver_threaded_lock();
+   frame_count = video_driver_frame_count;
+   video_driver_frame_count++;
+   video_driver_threaded_unlock();
+
    if (!current_video || !current_video->frame(
             video_driver_data, data, width, height,
-            video_driver_frame_count,
+            frame_count,
             pitch, video_driver_msg, video_info))
       video_driver_active = false;
-
-   video_driver_frame_count++;
 }
 
 void video_driver_display_type_set(enum rarch_display_type type)

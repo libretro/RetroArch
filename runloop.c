@@ -673,7 +673,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
  * d) Video driver no longer alive.
  * e) End of BSV movie and BSV EOF exit is true. (TODO/FIXME - explain better)
  */
-#define time_to_exit(quit_key_pressed) (runloop_shutdown_initiated || quit_key_pressed || !video_driver_is_alive() || bsv_movie_ctl(BSV_MOVIE_CTL_END_EOF, NULL) || (runloop_max_frames && (*(video_driver_get_frame_count_ptr()) >= runloop_max_frames)) || runloop_exec)
+#define time_to_exit(quit_key_pressed) (runloop_shutdown_initiated || quit_key_pressed || !video_driver_is_alive() || bsv_movie_ctl(BSV_MOVIE_CTL_END_EOF, NULL) || (runloop_max_frames && (video_driver_get_frame_count() >= runloop_max_frames)) || runloop_exec)
 
 #define runloop_check_cheevos() (settings->cheevos.enable && cheevos_loaded && (!cheats_are_enabled && !cheats_were_enabled))
 

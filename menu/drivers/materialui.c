@@ -809,9 +809,9 @@ static void mui_render_menu_list(mui_handle_t *mui,
    float sum               = 0;
    unsigned header_height  = 0;
    size_t i                = 0;
-   uint64_t *frame_count   = NULL;
+   uint64_t frame_count    = NULL;
    file_list_t *list       = NULL;
-   frame_count             = video_driver_get_frame_count_ptr();
+   frame_count             = video_driver_get_frame_count();
 
    if (!menu_display_get_update_pending())
       return;
@@ -859,7 +859,7 @@ static void mui_render_menu_list(mui_handle_t *mui,
          y,
          width,
          height,
-         *frame_count / 20,
+         frame_count / 20,
          font_hover_color,
          entry_selected,
          rich_label,
@@ -1037,7 +1037,7 @@ static void mui_frame(void *data)
    size_t selection                = 0;
    size_t title_margin             = 0;
    mui_handle_t *mui               = (mui_handle_t*)data;
-   uint64_t *frame_count           = video_driver_get_frame_count_ptr();
+   uint64_t frame_count            = video_driver_get_frame_count();
    settings_t *settings            = config_get_ptr();
    bool background_rendered        = false;
    bool libretro_running           = menu_display_libretro_running();
@@ -1360,7 +1360,7 @@ static void mui_frame(void *data)
 
    ticker.s        = title_buf;
    ticker.len      = ticker_limit;
-   ticker.idx      = *frame_count / 100;
+   ticker.idx      = frame_count / 100;
    ticker.str      = title;
    ticker.selected = true;
 
@@ -1383,7 +1383,7 @@ static void mui_frame(void *data)
 
       ticker.s        = title_buf_msg_tmp;
       ticker.len      = ticker_limit;
-      ticker.idx      = *frame_count / 20;
+      ticker.idx      = frame_count / 20;
       ticker.str      = title_buf_msg;
       ticker.selected = true;
 

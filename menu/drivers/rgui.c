@@ -394,11 +394,11 @@ static void rgui_render(void *data)
    char title_msg[64];
    char msg[255];
    bool msg_force                 = false;
-   uint64_t *frame_count          = NULL;
+   uint64_t frame_count           = NULL;
    settings_t *settings           = config_get_ptr();
    rgui_t *rgui                   = (rgui_t*)data;
 
-   frame_count = video_driver_get_frame_count_ptr();
+   frame_count = video_driver_get_frame_count();
 
    msg[0] = title[0] = title_buf[0] = title_msg[0] = '\0';
 
@@ -503,7 +503,7 @@ static void rgui_render(void *data)
 
    ticker.s        = title_buf;
    ticker.len      = RGUI_TERM_WIDTH(fb_width) - 10;
-   ticker.idx      = *frame_count / RGUI_TERM_START_X(fb_width);
+   ticker.idx      = frame_count / RGUI_TERM_START_X(fb_width);
    ticker.str      = title;
    ticker.selected = true;
 
@@ -595,7 +595,7 @@ static void rgui_render(void *data)
 
       ticker.s        = entry_title_buf;
       ticker.len      = RGUI_TERM_WIDTH(fb_width) - (entry_spacing + 1 + 2);
-      ticker.idx      = *frame_count / RGUI_TERM_START_X(fb_width);
+      ticker.idx      = frame_count / RGUI_TERM_START_X(fb_width);
       ticker.str      = entry_path;
       ticker.selected = entry_selected;
 
