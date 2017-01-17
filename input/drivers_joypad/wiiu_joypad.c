@@ -163,51 +163,28 @@ static void wiiu_joypad_poll(void)
 
    if (!vpadError)
    {
-      pad_state[0] = 0;
-      pad_state[0] |= (vpad.hold & VPAD_BUTTON_LEFT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
-      pad_state[0] |= (vpad.hold & VPAD_BUTTON_DOWN) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
-      pad_state[0] |= (vpad.hold & VPAD_BUTTON_RIGHT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
-      pad_state[0] |= (vpad.hold & VPAD_BUTTON_UP) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
-      pad_state[0] |= (vpad.hold & VPAD_BUTTON_PLUS) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_START) : 0;
-      pad_state[0] |= (vpad.hold & VPAD_BUTTON_MINUS) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
-      pad_state[0] |= (vpad.hold & VPAD_BUTTON_X) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_X) : 0;
-      pad_state[0] |= (vpad.hold & VPAD_BUTTON_Y) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_Y) : 0;
-      pad_state[0] |= (vpad.hold & VPAD_BUTTON_B) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_B) : 0;
-      pad_state[0] |= (vpad.hold & VPAD_BUTTON_A) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_A) : 0;
-      pad_state[0] |= (vpad.hold & VPAD_BUTTON_R) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R) : 0;
-      pad_state[0] |= (vpad.hold & VPAD_BUTTON_L) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L) : 0;
-      pad_state[0] |= (vpad.hold & VPAD_BUTTON_ZR) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R2) : 0;
-      pad_state[0] |= (vpad.hold & VPAD_BUTTON_ZL) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
-      pad_state[0] |= (vpad.hold & VPAD_BUTTON_STICK_R) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R3) : 0;
-      pad_state[0] |= (vpad.hold & VPAD_BUTTON_STICK_L) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L3) : 0;
-
-      analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X]  =  vpad.leftStick.x * 0x7FF0;
-      analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y]  = -vpad.leftStick.y * 0x7FF0;
-      analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_X] =  vpad.rightStick.x * 0x7FF0;
-      analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_Y] = -vpad.rightStick.y * 0x7FF0;
+      pad_state[0] = vpad.hold & ~0x7F800000; /* clear out emulated analog sticks */
+      analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT]  [RETRO_DEVICE_ID_ANALOG_X] = vpad.leftStick.x  * 0x7FF0;
+      analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT]  [RETRO_DEVICE_ID_ANALOG_Y] = vpad.leftStick.y  * 0x7FF0;
+      analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_X] = vpad.rightStick.x * 0x7FF0;
+      analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_Y] = vpad.rightStick.y * 0x7FF0;
 
       BIT64_CLEAR(lifecycle_state, RARCH_MENU_TOGGLE);
 
-      if (((vpad.tpNormal.touched) && (vpad.tpNormal.x > 200) && (vpad.tpNormal.validity) == 0) ||
-            (vpad.trigger & VPAD_BUTTON_HOME))
+      if ((vpad.tpNormal.touched) && (vpad.tpNormal.x > 200) && (vpad.tpNormal.validity) == 0)
          BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
 
       /* panic button */
-      if ((vpad.hold & VPAD_BUTTON_R) &&
-            (vpad.hold & VPAD_BUTTON_L) &&
-            (vpad.hold & VPAD_BUTTON_STICK_R) &&
-            (vpad.hold & VPAD_BUTTON_STICK_L))
+      if ((vpad.hold & (VPAD_BUTTON_R | VPAD_BUTTON_L | VPAD_BUTTON_STICK_R | VPAD_BUTTON_STICK_L))
+                    == (VPAD_BUTTON_R | VPAD_BUTTON_L | VPAD_BUTTON_STICK_R | VPAD_BUTTON_STICK_L))
          command_event(CMD_EVENT_QUIT, NULL);
    }
 
    for (c = 0; c < 4; c++)
    {
       KPADData kpad;
-      u32 result;
 
-      result = KPADRead(c, &kpad, 1);
-
-      if (!result)
+      if (!KPADRead(c, &kpad, 1))
          continue;
 
       if (pad_type[c] != kpad.device_type)
@@ -216,77 +193,38 @@ static void wiiu_joypad_poll(void)
          wiiu_joypad_autodetect_add(c + 1);
       }
 
-      pad_state[c + 1] = 0;
-
       switch (kpad.device_type)
       {
       case WIIUINPUT_TYPE_WIIMOTE:
-         pad_state[c + 1] |= (kpad.btns_h & WPAD_BUTTON_LEFT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
-         pad_state[c + 1] |= (kpad.btns_h & WPAD_BUTTON_DOWN) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
-         pad_state[c + 1] |= (kpad.btns_h & WPAD_BUTTON_RIGHT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
-         pad_state[c + 1] |= (kpad.btns_h & WPAD_BUTTON_UP) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
-         pad_state[c + 1] |= (kpad.btns_h & WPAD_BUTTON_PLUS) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_START) : 0;
-         pad_state[c + 1] |= (kpad.btns_h & WPAD_BUTTON_MINUS) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
-         pad_state[c + 1] |= (kpad.btns_h & WPAD_BUTTON_1) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_X) : 0;
-         pad_state[c + 1] |= (kpad.btns_h & WPAD_BUTTON_2) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_Y) : 0;
-         pad_state[c + 1] |= (kpad.btns_h & WPAD_BUTTON_B) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_B) : 0;
-         pad_state[c + 1] |= (kpad.btns_h & WPAD_BUTTON_A) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_A) : 0;
-
-         analog_state[c + 1][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X]  =  0;
-         analog_state[c + 1][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y]  =  0;
-         analog_state[c + 1][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_X] =  0;
-         analog_state[c + 1][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_Y] =  0;
+         pad_state[c + 1] = kpad.btns_h;
+         analog_state[c + 1][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X]  = 0;
+         analog_state[c + 1][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y]  = 0;
+         analog_state[c + 1][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_X] = 0;
+         analog_state[c + 1][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_Y] = 0;
          break;
 
       case WIIUINPUT_TYPE_NUNCHUK:
-         pad_state[c + 1] |= (kpad.btns_h & WPAD_BUTTON_LEFT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
-         pad_state[c + 1] |= (kpad.btns_h & WPAD_BUTTON_DOWN) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
-         pad_state[c + 1] |= (kpad.btns_h & WPAD_BUTTON_RIGHT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
-         pad_state[c + 1] |= (kpad.btns_h & WPAD_BUTTON_UP) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
-         pad_state[c + 1] |= (kpad.btns_h & WPAD_BUTTON_PLUS) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_START) : 0;
-         pad_state[c + 1] |= (kpad.btns_h & WPAD_BUTTON_MINUS) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
-         pad_state[c + 1] |= (kpad.btns_h & WPAD_BUTTON_1) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_X) : 0;
-         pad_state[c + 1] |= (kpad.btns_h & WPAD_BUTTON_2) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_Y) : 0;
-         pad_state[c + 1] |= (kpad.btns_h & WPAD_BUTTON_B) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_B) : 0;
-         pad_state[c + 1] |= (kpad.btns_h & WPAD_BUTTON_A) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_A) : 0;
-         pad_state[c + 1] |= (kpad.btns_h & WPAD_BUTTON_Z) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R) : 0;
-         pad_state[c + 1] |= (kpad.btns_h & WPAD_BUTTON_C) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L) : 0;
-
-         analog_state[c + 1][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X]  =  kpad.nunchuck.stick_x * 0x7FF0;
-         analog_state[c + 1][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y]  = -kpad.nunchuck.stick_y * 0x7FF0;
-         analog_state[c + 1][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_X] =  0;
-         analog_state[c + 1][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_Y] =  0;
+         pad_state[c + 1] = kpad.btns_h;
+         analog_state[c + 1][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X]  = kpad.nunchuck.stick_x * 0x7FF0;
+         analog_state[c + 1][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y]  = kpad.nunchuck.stick_y * 0x7FF0;
+         analog_state[c + 1][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_X] = 0;
+         analog_state[c + 1][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_Y] = 0;
          break;
 
       case WIIUINPUT_TYPE_PRO_CONTROLLER:
+         pad_state[c + 1] = kpad.classic.btns_h & ~0x3FC0000; /* clear out emulated analog sticks */
+         analog_state[c + 1][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X]  = kpad.classic.lstick_x * 0x7FF0;
+         analog_state[c + 1][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y]  = kpad.classic.lstick_y * 0x7FF0;
+         analog_state[c + 1][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_X] = kpad.classic.rstick_x * 0x7FF0;
+         analog_state[c + 1][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_Y] = kpad.classic.rstick_y * 0x7FF0;
+         break;
 
-         pad_state[c + 1] |= (kpad.classic.btns_h & WPAD_PRO_BUTTON_STICK_R) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R3) : 0;
-         pad_state[c + 1] |= (kpad.classic.btns_h & WPAD_PRO_BUTTON_STICK_L) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L3) : 0;
-
-      /* fallthrough */
       case WIIUINPUT_TYPE_CLASSIC_CONTROLLER:
-         pad_state[c + 1] |= (kpad.classic.btns_h & WPAD_CLASSIC_BUTTON_LEFT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
-         pad_state[c + 1] |= (kpad.classic.btns_h & WPAD_CLASSIC_BUTTON_DOWN) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
-         pad_state[c + 1] |= (kpad.classic.btns_h & WPAD_CLASSIC_BUTTON_RIGHT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT) :
-                             0;
-         pad_state[c + 1] |= (kpad.classic.btns_h & WPAD_CLASSIC_BUTTON_UP) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
-         pad_state[c + 1] |= (kpad.classic.btns_h & WPAD_CLASSIC_BUTTON_PLUS) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_START) :
-                             0;
-         pad_state[c + 1] |= (kpad.classic.btns_h & WPAD_CLASSIC_BUTTON_MINUS) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_SELECT) :
-                             0;
-         pad_state[c + 1] |= (kpad.classic.btns_h & WPAD_CLASSIC_BUTTON_X) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_X) : 0;
-         pad_state[c + 1] |= (kpad.classic.btns_h & WPAD_CLASSIC_BUTTON_Y) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_Y) : 0;
-         pad_state[c + 1] |= (kpad.classic.btns_h & WPAD_CLASSIC_BUTTON_B) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_B) : 0;
-         pad_state[c + 1] |= (kpad.classic.btns_h & WPAD_CLASSIC_BUTTON_A) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_A) : 0;
-         pad_state[c + 1] |= (kpad.classic.btns_h & WPAD_CLASSIC_BUTTON_R) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R) : 0;
-         pad_state[c + 1] |= (kpad.classic.btns_h & WPAD_CLASSIC_BUTTON_L) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L) : 0;
-         pad_state[c + 1] |= (kpad.classic.btns_h & WPAD_CLASSIC_BUTTON_ZR) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R2) : 0;
-         pad_state[c + 1] |= (kpad.classic.btns_h & WPAD_CLASSIC_BUTTON_ZL) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
-
-         analog_state[c + 1][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X]  =  kpad.classic.lstick_x * 0x7FF0;
-         analog_state[c + 1][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y]  = -kpad.classic.lstick_y * 0x7FF0;
-         analog_state[c + 1][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_X] =  kpad.classic.rstick_x * 0x7FF0;
-         analog_state[c + 1][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_Y] = -kpad.classic.rstick_y * 0x7FF0;
+         pad_state[c + 1] = kpad.classic.btns_h & ~0xFF0000; /* clear out emulated analog sticks */
+         analog_state[c + 1][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X]  = kpad.classic.lstick_x * 0x7FF0;
+         analog_state[c + 1][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y]  = kpad.classic.lstick_y * 0x7FF0;
+         analog_state[c + 1][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_X] = kpad.classic.rstick_x * 0x7FF0;
+         analog_state[c + 1][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_Y] = kpad.classic.rstick_y * 0x7FF0;
          break;
       }
    }
