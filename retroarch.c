@@ -727,10 +727,12 @@ static void retroarch_parse_input(int argc, char *argv[])
 
 #if defined(HAVE_NETWORK_CMD)
          case RA_OPT_COMMAND:
+#ifdef HAVE_COMMAND
             if (command_network_send((const char*)optarg))
                exit(0);
             else
                retroarch_fail(1, "network_cmd_send()");
+#endif
             break;
 #endif
 
