@@ -164,16 +164,3 @@ index fc6132d..6c81bcb 100644
  }
  
  static bool gfx_ctx_wgl_set_video_mode(void *data,
-diff --git a/menu/menu_event.c b/menu/menu_event.c
-index cf14f68..f1ac44e 100644
---- a/menu/menu_event.c
-+++ b/menu/menu_event.c
-@@ -102,7 +102,7 @@ void menu_event_kb_set(bool down, enum retro_key key)
-       unsigned i;
- 
-       for (i = 0; i < RETROK_LAST; i++)
--         menu_event_kb_set_internal(i, (menu_event_kb_is_set(i) & 1) << 1);
-+         menu_event_kb_set_internal(i, (menu_event_kb_is_set((enum retro_key)i) & 1) << 1);
-    }
-    else
-       menu_event_kb_set_internal(key, ((menu_event_kb_is_set(key) & 1) << 1) | down);
