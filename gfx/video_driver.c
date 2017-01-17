@@ -1065,7 +1065,7 @@ bool video_monitor_get_fps(
    static retro_time_t curr_time;
    static retro_time_t fps_time;
    retro_time_t        new_time  = cpu_features_get_time_usec();
-   uint64_t frame_count;
+   uint64_t         frame_count  = 0;
 
    video_driver_threaded_lock();
    frame_count = video_driver_frame_count;
