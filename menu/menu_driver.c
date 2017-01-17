@@ -471,7 +471,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
          if (BIT64_GET(menu_driver_data->state, MENU_STATE_BLIT))
          {
-            menu_animation_update_time();
+            settings_t *settings = config_get_ptr();
+            menu_animation_update_time(settings->menu.timedate_enable);
             menu_driver_ctl(RARCH_MENU_CTL_BLIT_RENDER, NULL);
          }
 

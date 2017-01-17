@@ -556,22 +556,22 @@ bool menu_animation_get_ideal_delta_time(menu_animation_ctx_delta_t *delta)
    return true;
 }
 
-void menu_animation_update_time(void)
+void menu_animation_update_time(bool timedate_enable)
 {
-   static retro_time_t last_clock_update = 0;
-   settings_t *settings     = config_get_ptr();
+   static retro_time_t 
+      last_clock_update     = 0;
 
    cur_time                 = cpu_features_get_time_usec();
    delta_time               = cur_time - old_time;
 
    if (delta_time >= IDEAL_DELTA_TIME* 4)
-      delta_time = IDEAL_DELTA_TIME * 4;
+      delta_time            = IDEAL_DELTA_TIME * 4;
    if (delta_time <= IDEAL_DELTA_TIME / 4)
-      delta_time = IDEAL_DELTA_TIME / 4;
-   old_time      = cur_time;
+      delta_time            = IDEAL_DELTA_TIME / 4;
+   old_time                 = cur_time;
 
    if (((cur_time - last_clock_update) > 1000000) 
-         && settings->menu.timedate_enable)
+         && timedate_enable)
    {
       animation_is_active   = true;
       last_clock_update     = cur_time;

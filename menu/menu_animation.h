@@ -127,7 +127,7 @@ bool menu_animation_get_ideal_delta_time(menu_animation_ctx_delta_t *delta);
 
 bool menu_animation_ticker(const menu_animation_ctx_ticker_t *ticker);
 
-void menu_animation_update_time(void);
+void menu_animation_update_time(bool timedate_enable);
 
 bool menu_animation_is_active(void);
 
