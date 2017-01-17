@@ -114,12 +114,13 @@ static void apple_gamecontroller_joypad_poll(void)
 
 static void apple_gamecontroller_joypad_register(GCGamepad *gamepad)
 {
-   gamepad.valueChangedHandler = ^(GCGamepad *updateGamepad, GCControllerElement *element) {
+   gamepad.valueChangedHandler = ^(GCGamepad *updateGamepad, GCControllerElement *element)
+   {
       apple_gamecontroller_joypad_poll_internal(updateGamepad.controller);
    };
 
-   gamepad.controller.controllerPausedHandler = ^(GCController *controller) {
-
+   gamepad.controller.controllerPausedHandler = ^(GCController *controller)
+   {
       uint32_t slot      = (uint32_t)controller.playerIndex;
       mfi_buttons[slot] |= (1 << RETRO_DEVICE_ID_JOYPAD_START);
 
@@ -187,13 +188,15 @@ bool apple_gamecontroller_joypad_init(void *data)
    [[NSNotificationCenter defaultCenter] addObserverForName:GCControllerDidConnectNotification
                                                      object:nil
                                                       queue:[NSOperationQueue mainQueue]
-                                                 usingBlock:^(NSNotification *note) {
+                                                 usingBlock:^(NSNotification *note)
+                                                 {
                                                     apple_gamecontroller_joypad_connect([note object]);
                                                  }];
    [[NSNotificationCenter defaultCenter] addObserverForName:GCControllerDidDisconnectNotification
                                                      object:nil
                                                       queue:[NSOperationQueue mainQueue]
-                                                 usingBlock:^(NSNotification *note) {
+                                                 usingBlock:^(NSNotification *note)
+                                                 {
                                                     apple_gamecontroller_joypad_disconnect([note object]);
                                                  } ];
 #endif

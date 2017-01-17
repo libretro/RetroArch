@@ -2902,7 +2902,8 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
          }
 
          auto itr = find_if(shader->parameters, shader->parameters + shader->num_parameters,
-               [&](const video_shader_parameter &param) {
+               [&](const video_shader_parameter &param)
+               {
                   return meta_param.id == param.id;
                });
 

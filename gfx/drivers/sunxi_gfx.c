@@ -923,9 +923,11 @@ static void sunxi_set_texture_frame(void *data, const void *frame, bool rgb32,
 static void sunxi_set_aspect_ratio (void *data, unsigned aspect_ratio_idx) 
 {
    struct sunxi_video *_dispvars = (struct sunxi_video*)data;
-   /* Here we obtain the new aspect ratio. */
-   float new_aspect = aspectratio_lut[aspect_ratio_idx].value;
-   if (new_aspect != _dispvars->aspect_ratio) {
+   float              new_aspect = aspectratio_lut[aspect_ratio_idx].value;
+
+   if (new_aspect != _dispvars->aspect_ratio)
+   {
+      /* Here we set the new aspect ratio. */
       _dispvars->aspect_ratio = new_aspect;
       sunxi_setup_scale(_dispvars, _dispvars->src_width, _dispvars->src_height, _dispvars->src_pitch);
    }

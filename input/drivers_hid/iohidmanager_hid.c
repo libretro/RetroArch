@@ -82,9 +82,11 @@ CFComparisonResult iohidmanager_sort_elements(const void *val1, const void *val2
 
 static bool iohidmanager_check_for_id(apple_input_rec_t *rec, uint32_t id)
 {
-   while(rec) {
-       if(rec->id == id) return true;
-       rec = rec->next;
+   while(rec)
+   {
+      if(rec->id == id)
+         return true;
+      rec = rec->next;
    }
    return false;
 }
@@ -133,20 +135,21 @@ static bool iohidmanager_hid_joypad_button(void *data,
    /* Check hat. */
    if (hat_dir)
    {
-      if(h >= 1) {
+      if(h >= 1)
          return false;
-      }
+
       switch(hat_dir)
       {
-          case HAT_LEFT_MASK:
+         case HAT_LEFT_MASK:
             return hid->hats[port][0] < 0;
-          case HAT_RIGHT_MASK:
+         case HAT_RIGHT_MASK:
             return hid->hats[port][0] > 0;
-          case HAT_UP_MASK:
+         case HAT_UP_MASK:
             return hid->hats[port][1] < 0;
-          case HAT_DOWN_MASK:
+         case HAT_DOWN_MASK:
             return hid->hats[port][1] > 0;
       }
+
       return 0;
    }
 
