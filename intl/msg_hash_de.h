@@ -346,7 +346,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NEAREST,
       "Nächster")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY,
       "Netplay")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES, // TODO: What actually does this? The translation might be odd.
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES, /* TODO: What actually does this? The translation might be odd. */
       "Netplay Bildübetragungsrate prüfen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT, /* TODO, Original string changed */
       "Tausche Netplay-Eingabe")
@@ -376,7 +376,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
       "Server Passwort für Zuschauer")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE,
       "Aktiviere Netplay-Zuschauermodus")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_STATELESS_MODE, // TODO: What is this actually?
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_STATELESS_MODE, /* TODO: What is this actually? */
       "Zustandsloser Netplay-Modus")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
       "TCP/UDP-Port für Netplay")

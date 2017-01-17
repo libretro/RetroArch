@@ -539,11 +539,13 @@ static void compute_entries_box(mui_handle_t* mui, int width)
 
    for (; i < menu_entries_get_end(); i++)
    {
-      unsigned lines = 0;
       char sublabel_str[255];
-      sublabel_str[0] = '\0';
+      float scale_factor;
+      unsigned lines   = 0;
       mui_node_t *node = (mui_node_t*)
             menu_entries_get_userdata_at_offset(list, i);
+
+      sublabel_str[0]  = '\0';
 
       if (menu_entry_get_sublabel(i, sublabel_str, sizeof(sublabel_str)))
       {
@@ -551,10 +553,10 @@ static void compute_entries_box(mui_handle_t* mui, int width)
          lines = count_lines(sublabel_str);
       }
 
-      float scale_factor = menu_display_get_dpi();
-      node->line_height = (scale_factor / 3) + (lines * mui->font->size);
-      node->y = sum;
-      sum += node->line_height;
+      scale_factor       = menu_display_get_dpi();
+      node->line_height  = (scale_factor / 3) + (lines * mui->font->size);
+      node->y            = sum;
+      sum               += node->line_height;
    }
 }
 
@@ -805,9 +807,11 @@ static void mui_render_menu_list(mui_handle_t *mui,
       uint32_t font_hover_color,
       float *menu_list_color)
 {
-   unsigned header_height;
-   uint64_t *frame_count;
+   float sum               = 0;
+   unsigned header_height  = 0;
    size_t i                = 0;
+   uint64_t *frame_count   = NULL;
+   file_list_t *list       = NULL;
    frame_count             = video_driver_get_frame_count_ptr();
 
    if (!menu_display_get_update_pending())
@@ -819,9 +823,9 @@ static void mui_render_menu_list(mui_handle_t *mui,
    mui->raster_block2.carr.coords.vertices = 0;
 
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
-   file_list_t *list = menu_entries_get_selection_buf_ptr(0);
 
-   float sum = 0;
+   list = menu_entries_get_selection_buf_ptr(0);
+
    for (; i < menu_entries_get_end(); i++)
    {
       int y;
@@ -1025,6 +1029,8 @@ static void mui_frame(void *data)
    float color_nv_accent[16]       = {0};
    float footer_bg_color_real[16]  = {0};
    float header_bg_color_real[16]  = {0};
+   file_list_t *list               = NULL;
+   mui_node_t *node                = NULL;
    unsigned width                  = 0;
    unsigned height                 = 0;
    unsigned ticker_limit           = 0;
@@ -1272,8 +1278,8 @@ static void mui_frame(void *data)
       menu_display_set_alpha(blue_50, 1.0);
 
    /* highlighted entry */
-   file_list_t *list = menu_entries_get_selection_buf_ptr(0);
-   mui_node_t *node = (mui_node_t*)menu_entries_get_userdata_at_offset(
+   list             = menu_entries_get_selection_buf_ptr(0);
+   node             = (mui_node_t*)menu_entries_get_userdata_at_offset(
          list, selection);
 
    menu_display_draw_quad(
@@ -1967,6 +1973,7 @@ static void mui_list_insert(void *userdata,
       size_t list_size)
 {
    size_t selection;
+   float scale_factor;
    int current            = 0;
    int i                  = list_size;
    mui_node_t *node       = NULL;
@@ -1988,7 +1995,6 @@ static void mui_list_insert(void *userdata,
       return;
    }
 
-   float scale_factor;
    scale_factor = menu_display_get_dpi();
 
    node->line_height = scale_factor / 3;
