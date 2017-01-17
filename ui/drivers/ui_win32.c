@@ -614,12 +614,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
              * This is needed for proper multi-byte string display until Unicode is fully supported.
              */
             MultiByteToWideChar(CP_UTF8, 0, title, -1, title_wide, sizeof(title_wide) / sizeof(title_wide[0]));
-#if !defined(_MSC_VER) && (_WIN32_WINNT > _WIN32_WINNT_WINXP)
-            /* MinGW does not define wcstombs_s for XP, but MSVC does */
-            wcstombs_s(&converted, title_cp, sizeof(title_cp), title_wide, sizeof(title_cp) - 1);
-#else
             wcstombs(title_cp, title_wide, sizeof(title_cp) - 1);
-#endif
 
             if (!win32_browser(owner, win32_file,
                      extensions, title_cp, initial_dir))
