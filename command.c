@@ -834,8 +834,10 @@ bool command_set(command_handle_t *handle)
 bool command_free(command_t *handle)
 {
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
+#ifdef HAVE_COMMAND
    if (handle && handle->net_fd >= 0)
       socket_close(handle->net_fd);
+#endif
 #endif
 
    free(handle);

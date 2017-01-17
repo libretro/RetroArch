@@ -97,12 +97,13 @@ unsigned rpl_entry_selection_ptr                 = 0;
 unsigned rdb_entry_start_game_selection_ptr      = 0;
 size_t                     hack_shader_pass      = 0;
 
-#ifdef HAVE_NETWORKING
 /* HACK - we have to find some way to pass state inbetween
  * function pointer callback functions that don't necessarily
  * call each other. */
-char *core_buf;
-size_t core_len;
+char *core_buf                                   = NULL;
+size_t core_len                                  = 0;
+
+#ifdef HAVE_NETWORKING
 
 #ifdef HAVE_LAKKA
 static char lakka_project[128];
