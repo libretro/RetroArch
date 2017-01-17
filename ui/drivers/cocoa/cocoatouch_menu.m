@@ -274,15 +274,14 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 
 - (void)alertView:(UIAlertView*)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
 {
-  if (buttonIndex == alertView.firstOtherButtonIndex) {
-    menu_entry_bind_key_set(self.i, RETROK_UNKNOWN);
-  } else if(buttonIndex == alertView.firstOtherButtonIndex + 1) {
-    menu_entry_bind_joykey_set(self.i, NO_BTN);
-  } else if(buttonIndex == alertView.firstOtherButtonIndex + 2) {
-    menu_entry_bind_joyaxis_set(self.i, AXIS_NONE);
-  }
-   
-  [self finishWithClickedButton:true];
+   if (buttonIndex == alertView.firstOtherButtonIndex)
+      menu_entry_bind_key_set(self.i, RETROK_UNKNOWN);
+   else if(buttonIndex == alertView.firstOtherButtonIndex + 1)
+      menu_entry_bind_joykey_set(self.i, NO_BTN);
+   else if(buttonIndex == alertView.firstOtherButtonIndex + 2)
+      menu_entry_bind_joyaxis_set(self.i, AXIS_NONE);
+
+   [self finishWithClickedButton:true];
 }
 
 - (void)checkBind:(NSTimer*)send
@@ -290,15 +289,14 @@ static void RunActionSheet(const char* title, const struct string_list* items,
    int32_t value = 0;
    int32_t idx = menu_entry_bind_index(self.i);
 
-   if ((value = cocoa_input_find_any_key())) {
-     menu_entry_bind_key_set(self.i, input_keymaps_translate_keysym_to_rk(value));
-   } else if ((value = cocoa_input_find_any_button(idx)) >= 0) {
-     menu_entry_bind_joykey_set(self.i, value);
-   } else if ((value = cocoa_input_find_any_axis(idx))) {
-     menu_entry_bind_joyaxis_set(self.i, (value > 0) ? AXIS_POS(value - 1) : AXIS_NEG(abs(value) - 1));
-   } else {
+   if ((value = cocoa_input_find_any_key()))
+      menu_entry_bind_key_set(self.i, input_keymaps_translate_keysym_to_rk(value));
+   else if ((value = cocoa_input_find_any_button(idx)) >= 0)
+      menu_entry_bind_joykey_set(self.i, value);
+   else if ((value = cocoa_input_find_any_axis(idx)))
+      menu_entry_bind_joyaxis_set(self.i, (value > 0) ? AXIS_POS(value - 1) : AXIS_NEG(abs(value) - 1));
+   else
       return;
-   }
 
    [self finishWithClickedButton:false];
 }
@@ -496,10 +494,9 @@ replacementString:(NSString *)string
   [super initialize:main idx:i];
   self.formatter = [RANumberFormatter new];
 
-  if (menu_entry_num_has_range(self.i)) {
-    [self.formatter setRangeFrom:BOXFLOAT(menu_entry_num_min(self.i))
-                              To:BOXFLOAT(menu_entry_num_max(self.i))];
-  }
+  if (menu_entry_num_has_range(self.i))
+     [self.formatter setRangeFrom:BOXFLOAT(menu_entry_num_min(self.i))
+                               To:BOXFLOAT(menu_entry_num_max(self.i))];
 }
 @end
 

@@ -190,9 +190,8 @@ enum
      * but is bad for business with events. */
     static double last_time_stamp;
     
-    if (last_time_stamp == event.timestamp) {
-        return [super handleKeyUIEvent:event];
-    }
+    if (last_time_stamp == event.timestamp)
+       return [super handleKeyUIEvent:event];
     
     last_time_stamp = event.timestamp;
     
@@ -495,21 +494,25 @@ enum
 
 - (void)mainMenuPushPop: (bool)pushp
 {
-  if ( pushp ) {
-    self.menu_count++;
-    RAMenuBase* next_menu = [RAMainMenu new];
-    next_menu.last_menu = self.mainmenu;
-    self.mainmenu = next_menu;
-    [self pushViewController:self.mainmenu animated:YES];
-  } else {
-    if ( self.menu_count == 0 ) {
-      [self.mainmenu reloadData];
-    } else {
-      self.menu_count--;
+  if ( pushp )
+  {
+     self.menu_count++;
+     RAMenuBase* next_menu = [RAMainMenu new];
+     next_menu.last_menu = self.mainmenu;
+     self.mainmenu = next_menu;
+     [self pushViewController:self.mainmenu animated:YES];
+  }
+  else
+  {
+     if ( self.menu_count == 0 )
+        [self.mainmenu reloadData];
+     else
+     {
+        self.menu_count--;
 
-      [self popViewControllerAnimated:YES];
-      self.mainmenu = self.mainmenu.last_menu;      
-    }
+        [self popViewControllerAnimated:YES];
+        self.mainmenu = self.mainmenu.last_menu;      
+     }
   }
 }
 
@@ -627,9 +630,8 @@ static void ui_companion_cocoatouch_notify_list_pushed(void *data,
    file_list_t *list, file_list_t *menu_list)
 {
    RetroArch_iOS *ap   = (RetroArch_iOS *)apple_platform;
-   bool pushp = false;
-
-   size_t new_size = file_list_get_size( menu_list );
+   bool pushp          = false;
+   size_t new_size     = file_list_get_size( menu_list );
 
    /* FIXME workaround for the double call */
    if ( old_size == 0 )
@@ -638,13 +640,13 @@ static void ui_companion_cocoatouch_notify_list_pushed(void *data,
       return;
    }
 
-   if ( old_size == new_size ) {
+   if ( old_size == new_size )
      pushp = false;
-   } else if ( old_size < new_size ) {
+   else if ( old_size < new_size )
      pushp = true;
-   } else if ( old_size > new_size ) {
+   else if ( old_size > new_size )
      printf( "notify_list_pushed: old size should not be larger\n" );
-   }
+
    old_size = new_size;
       
    if (ap)
