@@ -1609,7 +1609,8 @@ static void mui_navigation_set(void *data, bool scroll)
    entry.tag          = -1;
    entry.cb           = NULL;
 
-   menu_animation_ctl(MENU_ANIMATION_CTL_PUSH, &entry);
+   if (entry.subject)
+      menu_animation_push(&entry);
 }
 
 static void  mui_list_set_selection(void *data, file_list_t *list)

@@ -311,153 +311,129 @@ static void menu_animation_ticker_generic(uint64_t idx,
    *width = max_width;
 }
 
-static void menu_animation_push_internal(menu_animation_t *anim,
-      const struct tween *t)
-{
-   struct tween *target = NULL;
-
-   if (anim->first_dead < anim->size && !anim->list[anim->first_dead].alive)
-      target = &anim->list[anim->first_dead++];
-   else
-   {
-      if (anim->size >= anim->capacity)
-      {
-         anim->capacity++;
-         anim->list = (struct tween*)realloc(anim->list,
-               anim->capacity * sizeof(struct tween));
-      }
-
-      target = &anim->list[anim->size++];
-   }
-
-   *target = *t;
-}
-
-static bool menu_animation_push(menu_animation_t *anim, menu_animation_ctx_entry_t *entry)
+bool menu_animation_push(menu_animation_ctx_entry_t *entry)
 {
    struct tween t;
+   struct tween *target = NULL;
 
-   if (!entry || !entry->subject)
-      return false;
-
-   t.alive         = true;
-   t.duration      = entry->duration;
-   t.running_since = 0;
-   t.initial_value = *entry->subject;
-   t.target_value  = entry->target_value;
-   t.subject       = entry->subject;
-   t.tag           = entry->tag;
-   t.cb            = entry->cb;
-   t.easing        = NULL;
+   t.alive              = true;
+   t.duration           = entry->duration;
+   t.running_since      = 0;
+   t.initial_value      = *entry->subject;
+   t.target_value       = entry->target_value;
+   t.subject            = entry->subject;
+   t.tag                = entry->tag;
+   t.cb                 = entry->cb;
+   t.easing             = NULL;
 
    switch (entry->easing_enum)
    {
       case EASING_LINEAR:
-         t.easing        = &easing_linear;
+         t.easing       = &easing_linear;
          break;
          /* Quad */
       case EASING_IN_QUAD:
-         t.easing        = &easing_in_quad;
+         t.easing       = &easing_in_quad;
          break;
       case EASING_OUT_QUAD:
-         t.easing        = &easing_out_quad;
+         t.easing       = &easing_out_quad;
          break;
       case EASING_IN_OUT_QUAD:
-         t.easing        = &easing_in_out_quad;
+         t.easing       = &easing_in_out_quad;
          break;
       case EASING_OUT_IN_QUAD:
-         t.easing        = &easing_out_in_quad;
+         t.easing       = &easing_out_in_quad;
          break;
          /* Cubic */
       case EASING_IN_CUBIC:
-         t.easing        = &easing_in_cubic;
+         t.easing       = &easing_in_cubic;
          break;
       case EASING_OUT_CUBIC:
-         t.easing        = &easing_out_cubic;
+         t.easing       = &easing_out_cubic;
          break;
       case EASING_IN_OUT_CUBIC:
-         t.easing        = &easing_in_out_cubic;
+         t.easing       = &easing_in_out_cubic;
          break;
       case EASING_OUT_IN_CUBIC:
-         t.easing        = &easing_out_in_cubic;
+         t.easing       = &easing_out_in_cubic;
          break;
          /* Quart */
       case EASING_IN_QUART:
-         t.easing        = &easing_in_quart;
+         t.easing       = &easing_in_quart;
          break;
       case EASING_OUT_QUART:
-         t.easing        = &easing_out_quart;
+         t.easing       = &easing_out_quart;
          break;
       case EASING_IN_OUT_QUART:
-         t.easing        = &easing_in_out_quart;
+         t.easing       = &easing_in_out_quart;
          break;
       case EASING_OUT_IN_QUART:
-         t.easing        = &easing_out_in_quart;
+         t.easing       = &easing_out_in_quart;
          break;
          /* Quint */
       case EASING_IN_QUINT:
-         t.easing        = &easing_in_quint;
+         t.easing       = &easing_in_quint;
          break;
       case EASING_OUT_QUINT:
-         t.easing        = &easing_out_quint;
+         t.easing       = &easing_out_quint;
          break;
       case EASING_IN_OUT_QUINT:
-         t.easing        = &easing_in_out_quint;
+         t.easing       = &easing_in_out_quint;
          break;
       case EASING_OUT_IN_QUINT:
-         t.easing        = &easing_out_in_quint;
+         t.easing       = &easing_out_in_quint;
          break;
          /* Sine */
       case EASING_IN_SINE:
-         t.easing        = &easing_in_sine;
+         t.easing       = &easing_in_sine;
          break;
       case EASING_OUT_SINE:
-         t.easing        = &easing_out_sine;
+         t.easing       = &easing_out_sine;
          break;
       case EASING_IN_OUT_SINE:
-         t.easing        = &easing_in_out_sine;
+         t.easing       = &easing_in_out_sine;
          break;
       case EASING_OUT_IN_SINE:
-         t.easing        = &easing_out_in_sine;
+         t.easing       = &easing_out_in_sine;
          break;
          /* Expo */
       case EASING_IN_EXPO:
-         t.easing        = &easing_in_expo;
+         t.easing       = &easing_in_expo;
          break;
       case EASING_OUT_EXPO:
-         t.easing        = &easing_out_expo;
+         t.easing       = &easing_out_expo;
          break;
       case EASING_IN_OUT_EXPO:
-         t.easing        = &easing_in_out_expo;
+         t.easing       = &easing_in_out_expo;
          break;
       case EASING_OUT_IN_EXPO:
-         t.easing        = &easing_out_in_expo;
+         t.easing       = &easing_out_in_expo;
          break;
          /* Circ */
       case EASING_IN_CIRC:
-         t.easing        = &easing_in_circ;
+         t.easing       = &easing_in_circ;
          break;
       case EASING_OUT_CIRC:
-         t.easing        = &easing_out_circ;
+         t.easing       = &easing_out_circ;
          break;
       case EASING_IN_OUT_CIRC:
-         t.easing        = &easing_in_out_circ;
+         t.easing       = &easing_in_out_circ;
          break;
       case EASING_OUT_IN_CIRC:
-         t.easing        = &easing_out_in_circ;
+         t.easing       = &easing_out_in_circ;
          break;
          /* Bounce */
       case EASING_IN_BOUNCE:
-         t.easing        = &easing_in_bounce;
+         t.easing       = &easing_in_bounce;
          break;
       case EASING_OUT_BOUNCE:
-         t.easing        = &easing_out_bounce;
+         t.easing       = &easing_out_bounce;
          break;
       case EASING_IN_OUT_BOUNCE:
-         t.easing        = &easing_in_out_bounce;
+         t.easing       = &easing_in_out_bounce;
          break;
       case EASING_OUT_IN_BOUNCE:
-         t.easing        = &easing_out_in_bounce;
+         t.easing       = &easing_out_in_bounce;
          break;
       default:
          break;
@@ -467,7 +443,21 @@ static bool menu_animation_push(menu_animation_t *anim, menu_animation_ctx_entry
    if (!t.easing || t.duration == 0 || t.initial_value == t.target_value)
       return false;
 
-   menu_animation_push_internal(anim, &t);
+   if (anim.first_dead < anim.size && !anim.list[anim.first_dead].alive)
+      target = &anim.list[anim.first_dead++];
+   else
+   {
+      if (anim.size >= anim.capacity)
+      {
+         anim.capacity++;
+         anim.list = (struct tween*)realloc(anim.list,
+               anim.capacity * sizeof(struct tween));
+      }
+
+      target = &anim.list[anim.size++];
+   }
+
+   *target = t;
 
    return true;
 }
@@ -679,8 +669,6 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
             }
          }
          break;
-      case MENU_ANIMATION_CTL_PUSH:
-         return menu_animation_push(&anim, (menu_animation_ctx_entry_t *)data);
       case MENU_ANIMATION_CTL_NONE:
       default:
          break;

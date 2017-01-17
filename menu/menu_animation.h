@@ -36,8 +36,7 @@ enum menu_animation_ctl_state
    MENU_ANIMATION_CTL_SET_ACTIVE,
    MENU_ANIMATION_CTL_DELTA_TIME,
    MENU_ANIMATION_CTL_KILL_BY_TAG,
-   MENU_ANIMATION_CTL_KILL_BY_SUBJECT,
-   MENU_ANIMATION_CTL_PUSH
+   MENU_ANIMATION_CTL_KILL_BY_SUBJECT
 };
 
 enum menu_animation_easing_type
@@ -131,6 +130,8 @@ bool menu_animation_ticker(const menu_animation_ctx_ticker_t *ticker);
 void menu_animation_update_time(void);
 
 bool menu_animation_is_active(void);
+
+bool menu_animation_push(menu_animation_ctx_entry_t *entry);
 
 bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data);
 
