@@ -2213,7 +2213,7 @@ static void xmb_draw_items(
       ticker.str      = ticker_str;
       ticker.selected = (i == current);
 
-      menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
+      menu_animation_ticker(&ticker);
 
       label_offset = xmb->margins.label.top;
       if (i == current && width > 320 && height > 240
@@ -2244,7 +2244,7 @@ static void xmb_draw_items(
       ticker.str      = entry_value;
       ticker.selected = (i == current);
 
-      menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
+      menu_animation_ticker(&ticker);
 
       if (do_draw_text)
          xmb_draw_text(menu_disp_info, xmb, value,

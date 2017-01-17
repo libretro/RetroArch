@@ -519,6 +519,45 @@ bool menu_animation_update(float delta_time)
    return true;
 }
 
+bool menu_animation_ticker(const menu_animation_ctx_ticker_t *ticker)
+{
+   size_t str_len = utf8len(ticker->str);
+   size_t offset  = 0;
+
+   if ((size_t)str_len <= ticker->len)
+   {
+      utf8cpy(ticker->s,
+            PATH_MAX_LENGTH,
+            ticker->str,
+            ticker->len);
+      return true;
+   }
+
+   if (!ticker->selected)
+   {
+      utf8cpy(ticker->s, PATH_MAX_LENGTH, ticker->str, ticker->len - 3);
+      strlcat(ticker->s, "...", PATH_MAX_LENGTH);
+      return true;
+   }
+
+   if (str_len > ticker->len)
+      menu_animation_ticker_generic(
+            ticker->idx,
+            ticker->len,
+            &offset,
+            &str_len);
+
+   utf8cpy(
+         ticker->s,
+         PATH_MAX_LENGTH,
+         utf8skip(ticker->str, offset),
+         str_len);
+
+   animation_is_active = true;
+
+   return true;
+}
+
 bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
 {
    switch (state)
@@ -627,45 +666,6 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
                   break;
                }
             }
-         }
-         break;
-      case MENU_ANIMATION_CTL_TICKER:
-         {
-            menu_animation_ctx_ticker_t 
-               *ticker               = (menu_animation_ctx_ticker_t*)data;
-            size_t           str_len = ticker ? utf8len(ticker->str) : 0;
-            size_t           offset  = 0;
-
-            if ((size_t)str_len <= ticker->len)
-            {
-               utf8cpy(ticker->s,
-                     PATH_MAX_LENGTH,
-                     ticker->str,
-                     ticker->len);
-               return true;
-            }
-
-            if (!ticker->selected)
-            {
-               utf8cpy(ticker->s, PATH_MAX_LENGTH, ticker->str, ticker->len - 3);
-               strlcat(ticker->s, "...", PATH_MAX_LENGTH);
-               return true;
-            }
-
-            if (str_len > ticker->len)
-               menu_animation_ticker_generic(
-                     ticker->idx,
-                     ticker->len,
-                     &offset,
-                     &str_len);
-
-            utf8cpy(
-                  ticker->s,
-                  PATH_MAX_LENGTH,
-                  utf8skip(ticker->str, offset),
-                  str_len);
-
-            animation_is_active = true;
          }
          break;
       case MENU_ANIMATION_CTL_IDEAL_DELTA_TIME_GET:

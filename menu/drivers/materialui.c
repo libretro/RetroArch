@@ -692,13 +692,13 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
    ticker.str      = label;
    ticker.selected = selected;
 
-   menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
+   menu_animation_ticker(&ticker);
 
    ticker.s        = value_str;
    ticker.len      = value_len;
    ticker.str      = value;
 
-   menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
+   menu_animation_ticker(&ticker);
 
    if (menu_entry_get_sublabel(i, sublabel_str, sizeof(sublabel_str)))
    {
@@ -1360,7 +1360,7 @@ static void mui_frame(void *data)
    ticker.str      = title;
    ticker.selected = true;
 
-   menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
+   menu_animation_ticker(&ticker);
 
    /* Title */
    if (mui_get_core_title(title_msg, sizeof(title_msg)) == 0)
@@ -1383,7 +1383,7 @@ static void mui_frame(void *data)
       ticker.str      = title_buf_msg;
       ticker.selected = true;
 
-      menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
+      menu_animation_ticker(&ticker);
 
       strlcpy(title_buf, title_buf_msg_tmp, sizeof(title_buf));
    }

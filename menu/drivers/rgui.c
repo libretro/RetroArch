@@ -507,7 +507,7 @@ static void rgui_render(void *data)
    ticker.str      = title;
    ticker.selected = true;
 
-   menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
+   menu_animation_ticker(&ticker);
 
    hover_color  = HOVER_COLOR(settings);
    normal_color = NORMAL_COLOR(settings);
@@ -599,13 +599,13 @@ static void rgui_render(void *data)
       ticker.str      = entry_path;
       ticker.selected = entry_selected;
 
-      menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
+      menu_animation_ticker(&ticker);
 
       ticker.s        = type_str_buf;
       ticker.len      = entry_spacing;
       ticker.str      = entry_value;
 
-      menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
+      menu_animation_ticker(&ticker);
 
       snprintf(message, sizeof(message), "%c %-*.*s %-*s",
             entry_selected ? '>' : ' ',

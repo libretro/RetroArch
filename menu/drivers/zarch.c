@@ -350,7 +350,7 @@ static bool zarch_zui_list_item(zui_t *zui, struct zui_tabbed *tab, int x1, int 
    ticker.str      = label;
    ticker.selected = (bg == zui_bg_hilite || bg == zui_bg_pad_hilite);
 
-   menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
+   menu_animation_ticker(&ticker);
 
    menu_display_push_quad(zui->width, zui->height, bg, x1, y1, x2, y2);
    zarch_zui_draw_text(zui, ZUI_FG_NORMAL, 12, y1 + 35, title_buf);
