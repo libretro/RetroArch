@@ -3,6 +3,9 @@ DEBUG                = 0
 GRIFFIN_BUILD        = 0
 WHOLE_ARCHIVE_LINK   = 0
 HAVE_NETLOGGER       = 0
+HAVE_RGUI				= 1
+HAVE_MATERIALUI		= 1
+HAVE_XMB             = 1
 
 VITA_TITLE_ID	:= RETROARCH
 VITA_TITLE_NAME	:= RetroArch
