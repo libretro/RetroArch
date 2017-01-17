@@ -28,20 +28,18 @@
 #endif
 
 static unsigned char *gdi_menu_frame = NULL;
-static unsigned gdi_menu_width = 0;
-static unsigned gdi_menu_height = 0;
-static unsigned gdi_menu_pitch = 0;
-static unsigned gdi_video_width = 0;
-static unsigned gdi_video_height = 0;
-static unsigned gdi_video_pitch = 0;
-static unsigned gdi_video_bits = 0;
-static unsigned gdi_menu_bits = 0;
-static bool gdi_rgb32 = false;
-static bool gdi_menu_rgb32 = false;
+static unsigned gdi_menu_width       = 0;
+static unsigned gdi_menu_height      = 0;
+static unsigned gdi_menu_pitch       = 0;
+static unsigned gdi_video_width      = 0;
+static unsigned gdi_video_height     = 0;
+static unsigned gdi_video_pitch      = 0;
+static unsigned gdi_video_bits       = 0;
+static unsigned gdi_menu_bits        = 0;
+static bool gdi_rgb32                = false;
+static bool gdi_menu_rgb32           = false;
 
-static void gdi_gfx_free(void *data);
-
-static void gdi_gfx_create()
+static void gdi_gfx_create(void)
 {
 }
 
@@ -49,22 +47,22 @@ static void *gdi_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
    unsigned full_x, full_y;
-   settings_t *settings = config_get_ptr();
-   gdi_t *gdi = (gdi_t*)calloc(1, sizeof(*gdi));
-   const gfx_ctx_driver_t *ctx_driver = NULL;
    gfx_ctx_input_t inp;
    gfx_ctx_mode_t mode;
-   unsigned win_width = 0, win_height = 0;
+   const gfx_ctx_driver_t *ctx_driver   = NULL;
+   unsigned win_width = 0, win_height   = 0;
    unsigned temp_width = 0, temp_height = 0;
+   settings_t *settings                 = config_get_ptr();
+   gdi_t *gdi                           = (gdi_t*)calloc(1, sizeof(*gdi));
 
-   *input = NULL;
-   *input_data = NULL;
+   *input                               = NULL;
+   *input_data                          = NULL;
 
-   gdi_video_width = video->width;
-   gdi_video_height = video->height;
-   gdi_rgb32 = video->rgb32;
+   gdi_video_width                      = video->width;
+   gdi_video_height                     = video->height;
+   gdi_rgb32                            = video->rgb32;
 
-   gdi_video_bits = video->rgb32 ? 32 : 16;
+   gdi_video_bits                       = video->rgb32 ? 32 : 16;
 
    if (video->rgb32)
       gdi_video_pitch = video->width * 4;
@@ -85,15 +83,15 @@ static void *gdi_gfx_init(const video_info_t *video,
 
    video_context_driver_get_video_size(&mode);
 
-   full_x  = mode.width;
-   full_y  = mode.height;
+   full_x      = mode.width;
+   full_y      = mode.height;
    mode.width  = 0;
    mode.height = 0;
 
    RARCH_LOG("Detecting screen resolution %ux%u.\n", full_x, full_y);
 
-   win_width  = video->width;
-   win_height = video->height;
+   win_width   = video->width;
+   win_height  = video->height;
 
    if (video->fullscreen && (win_width == 0) && (win_height == 0))
    {
@@ -150,15 +148,15 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t video_info)
 {
-   const void *frame_to_copy = frame;
-   unsigned width = 0;
-   unsigned height = 0;
-   unsigned bits = gdi_video_bits;
-   bool draw = true;
-   gdi_t *gdi = (gdi_t*)data;
    gfx_ctx_mode_t mode;
-   HWND hwnd = win32_get_window();
    RECT rect;
+   const void *frame_to_copy = frame;
+   unsigned width            = 0;
+   unsigned height           = 0;
+   unsigned bits             = gdi_video_bits;
+   bool draw                 = true;
+   gdi_t *gdi                = (gdi_t*)data;
+   HWND hwnd                 = win32_get_window();
 
    if (!frame || !frame_width || !frame_height)
       return true;
@@ -180,16 +178,16 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    if (gdi_menu_frame && menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
    {
       frame_to_copy = gdi_menu_frame;
-      width = gdi_menu_width;
-      height = gdi_menu_height;
-      pitch = gdi_menu_pitch;
-      bits = gdi_menu_bits;
+      width         = gdi_menu_width;
+      height        = gdi_menu_height;
+      pitch         = gdi_menu_pitch;
+      bits          = gdi_menu_bits;
    }
    else
    {
-      width = gdi_video_width;
-      height = gdi_video_height;
-      pitch = gdi_video_pitch;
+      width         = gdi_video_width;
+      height        = gdi_video_height;
+      pitch         = gdi_video_pitch;
 
       if (frame_width == 4 && frame_height == 4 && (frame_width < width && frame_height < height))
          draw = false;
@@ -203,19 +201,17 @@ static bool gdi_gfx_frame(void *data, const void *frame,
 
    if (draw)
    {
-      HDC winDC = GetDC(hwnd);
-      HDC memDC = CreateCompatibleDC(winDC);
-      HBITMAP bmp = CreateCompatibleBitmap(winDC, width, height);
-      HBITMAP bmp_old;
+      HDC winDC        = GetDC(hwnd);
+      HDC memDC        = CreateCompatibleDC(winDC);
+      HBITMAP bmp      = CreateCompatibleBitmap(winDC, width, height);
       BITMAPINFO *info = (BITMAPINFO*)calloc(1, sizeof(*info) + (3 * sizeof(RGBQUAD)));
+      HBITMAP bmp_old  = (HBITMAP)SelectObject(memDC, bmp);
 
-      bmp_old = (HBITMAP)SelectObject(memDC, bmp);
-
-      info->bmiHeader.biBitCount = bits;
-      info->bmiHeader.biWidth = pitch / (bits / 8);
-      info->bmiHeader.biHeight = -height;
-      info->bmiHeader.biPlanes = 1;
-      info->bmiHeader.biSize = sizeof(BITMAPINFOHEADER) + (3 * sizeof(RGBQUAD));
+      info->bmiHeader.biBitCount  = bits;
+      info->bmiHeader.biWidth     = pitch / (bits / 8);
+      info->bmiHeader.biHeight    = -height;
+      info->bmiHeader.biPlanes    = 1;
+      info->bmiHeader.biSize      = sizeof(BITMAPINFOHEADER) + (3 * sizeof(RGBQUAD));
       info->bmiHeader.biSizeImage = 0;
 
       if (bits == 16)
@@ -270,8 +266,8 @@ static bool gdi_gfx_alive(void *data)
    gfx_ctx_size_t size_data;
    unsigned temp_width  = 0;
    unsigned temp_height = 0;
-   bool quit = false;
-   bool resize = false;
+   bool quit            = false;
+   bool resize          = false;
  
    /* Needed because some context drivers don't track their sizes */
    video_driver_get_size(&temp_width, &temp_height);
@@ -380,10 +376,10 @@ static void gdi_set_texture_frame(void *data,
    if (gdi_menu_frame && frame && pitch && height)
    {
       memcpy(gdi_menu_frame, frame, pitch * height);
-      gdi_menu_width = width;
+      gdi_menu_width  = width;
       gdi_menu_height = height;
-      gdi_menu_pitch = pitch;
-      gdi_menu_bits = rgb32 ? 32 : 16;
+      gdi_menu_pitch  = pitch;
+      gdi_menu_bits   = rgb32 ? 32 : 16;
    }
 }
 
@@ -470,7 +466,7 @@ static void gdi_gfx_set_viewport(void *data, unsigned viewport_width,
 {
 }
 
-bool gdi_has_menu_frame()
+bool gdi_has_menu_frame(void)
 {
    return (gdi_menu_frame != NULL);
 }
