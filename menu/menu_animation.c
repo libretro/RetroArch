@@ -289,24 +289,15 @@ static float easing_out_in_bounce(float t, float b, float c, float d)
 static void menu_animation_ticker_generic(uint64_t idx,
       size_t max_width, size_t *offset, size_t *width)
 {
-   int ticker_period, phase, phase_left_stop;
-   int phase_left_moving, phase_right_stop;
-   int left_offset, right_offset;
+   int ticker_period     = 2 * (*width - max_width) + 4;
+   int phase             = idx % ticker_period;
 
-   *offset = 0;
+   int phase_left_stop   = 2;
+   int phase_left_moving = phase_left_stop + (*width - max_width);
+   int phase_right_stop  = phase_left_moving + 2;
 
-   if (*width <= max_width)
-      return;
-
-   ticker_period     = 2 * (*width - max_width) + 4;
-   phase             = idx % ticker_period;
-
-   phase_left_stop   = 2;
-   phase_left_moving = phase_left_stop + (*width - max_width);
-   phase_right_stop  = phase_left_moving + 2;
-
-   left_offset       = phase - phase_left_stop;
-   right_offset      = (*width - max_width) - (phase - phase_right_stop);
+   int left_offset       = phase - phase_left_stop;
+   int right_offset      = (*width - max_width) - (phase - phase_right_stop);
 
    if (phase < phase_left_stop)
       *offset = 0;
@@ -661,11 +652,12 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
                return true;
             }
 
-            menu_animation_ticker_generic(
-                  ticker->idx,
-                  ticker->len,
-                  &offset,
-                  &str_len);
+            if (str_len > ticker->len)
+               menu_animation_ticker_generic(
+                     ticker->idx,
+                     ticker->len,
+                     &offset,
+                     &str_len);
 
             utf8cpy(
                   ticker->s,
