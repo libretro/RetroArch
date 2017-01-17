@@ -1050,35 +1050,35 @@ bool video_monitor_get_fps(
       video_driver_frame_time_samples[write_index] = new_time - fps_time;
       fps_time             = new_time;
 
-      if (video_info.fullscreen)
-         return false;
-
-      if ((video_driver_frame_count % FPS_UPDATE_INTERVAL) == 0)
+      if (!video_info.fullscreen)
       {
-         char frames_text[64];
-
-         last_fps = TIME_TO_FPS(curr_time, new_time, FPS_UPDATE_INTERVAL);
-         curr_time = new_time;
-
-         fill_pathname_noext(buf,
-               video_driver_title_buf,
-               " || ",
-               size);
-
-         if (video_info.fps_show)
+         if ((video_driver_frame_count % FPS_UPDATE_INTERVAL) == 0)
          {
-            char fps_text[64];
-            snprintf(fps_text, sizeof(fps_text), " FPS: %6.1f || ", last_fps);
-            strlcat(buf, fps_text, size);
+            char frames_text[64];
+
+            last_fps = TIME_TO_FPS(curr_time, new_time, FPS_UPDATE_INTERVAL);
+            curr_time = new_time;
+
+            fill_pathname_noext(buf,
+                  video_driver_title_buf,
+                  " || ",
+                  size);
+
+            if (video_info.fps_show)
+            {
+               char fps_text[64];
+               snprintf(fps_text, sizeof(fps_text), " FPS: %6.1f || ", last_fps);
+               strlcat(buf, fps_text, size);
+            }
+
+            strlcat(buf, "Frames: ", size);
+
+            snprintf(frames_text, sizeof(frames_text), STRING_REP_UINT64,
+                  (unsigned long long)video_driver_frame_count);
+
+            strlcat(buf, frames_text, size);
+            ret = true;
          }
-
-         strlcat(buf, "Frames: ", size);
-
-         snprintf(frames_text, sizeof(frames_text), STRING_REP_UINT64,
-               (unsigned long long)video_driver_frame_count);
-
-         strlcat(buf, frames_text, size);
-         ret = true;
       }
 
       if (buf_fps && video_info.fps_show)
