@@ -631,9 +631,9 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
          break;
       case MENU_ANIMATION_CTL_TICKER:
          {
-            menu_animation_ctx_ticker_t *ticker = (menu_animation_ctx_ticker_t*)
-               data;
-            size_t           str_len = utf8len(ticker->str);
+            menu_animation_ctx_ticker_t 
+               *ticker               = (menu_animation_ctx_ticker_t*)data;
+            size_t           str_len = ticker ? utf8len(ticker->str) : 0;
             size_t           offset  = 0;
 
             if ((size_t)str_len <= ticker->len)
