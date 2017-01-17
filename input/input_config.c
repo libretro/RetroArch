@@ -495,6 +495,14 @@ void input_config_set_device_name(unsigned port, const char *name)
    }
 }
 
+void input_config_set_device(unsigned port, unsigned id)
+{
+   settings_t *settings = config_get_ptr();
+
+   if (settings)
+      settings->input.libretro_device[port] = id;
+}
+
 bool input_config_get_bind_idx(unsigned port, unsigned *joy_idx_real)
 {
    settings_t *settings = config_get_ptr();
@@ -519,3 +527,4 @@ const struct retro_keybind *input_config_get_bind_auto(unsigned port, unsigned i
       return &settings->input.autoconf_binds[joy_idx][id];
    return NULL;
 }
+

@@ -1022,7 +1022,6 @@ static int setting_action_start_libretro_device_type(void *data)
    unsigned devices[128], types = 0, port = 0;
    const struct retro_controller_info *desc = NULL;
    rarch_system_info_t *system = NULL;
-   settings_t        *settings = config_get_ptr();
    rarch_setting_t   *setting  = (rarch_setting_t*)data;
 
    if (setting_generic_action_start_default(setting) != 0)
@@ -1062,7 +1061,7 @@ static int setting_action_start_libretro_device_type(void *data)
 
    current_device = RETRO_DEVICE_JOYPAD;
 
-   settings->input.libretro_device[port] = current_device;
+   input_config_set_device(port, current_device);
 
    pad.port   = port;
    pad.device = current_device;
@@ -1176,7 +1175,7 @@ static int setting_action_left_libretro_device_type(
    current_device = devices
       [(current_idx + types - 1) % types];
 
-   settings->input.libretro_device[port] = current_device;
+   input_config_set_device(port, current_device);
 
    pad.port   = port;
    pad.device = current_device;
@@ -1243,7 +1242,7 @@ static int setting_action_right_libretro_device_type(
    current_device = devices
       [(current_idx + 1) % types];
 
-   settings->input.libretro_device[port] = current_device;
+   input_config_set_device(port, current_device);
 
    pad.port   = port;
    pad.device = current_device;
