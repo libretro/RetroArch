@@ -5745,7 +5745,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
          {
             unsigned cores_names_len;
-            size_t cores_names_size;
+            size_t cores_names_size = 0;
             unsigned cores_paths_len;
             size_t cores_paths_size;
             struct string_list *cores_names =
