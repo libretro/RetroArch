@@ -18,15 +18,8 @@
 #include <stddef.h>
 #include <string.h>
 
-#include "retroarch.h"
-#include "paths.h"
-
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
-#endif
-
-#ifdef HAVE_MENU
-#include "../../menu/menu_driver.h"
 #endif
 
 #ifdef VITA
@@ -52,10 +45,16 @@
 #include <lists/file_list.h>
 #endif
 
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
 #include "../frontend_driver.h"
 #include "../../defaults.h"
 #include "../../file_path_special.h"
 #include "../../defines/psp_defines.h"
+#include "../../retroarch.h"
+#include "../../paths.h"
 #include "../../verbosity.h"
 
 #if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER)
