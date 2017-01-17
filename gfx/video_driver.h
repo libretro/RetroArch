@@ -98,6 +98,7 @@ typedef struct video_frame_info
    bool post_filter_record;
    unsigned max_swapchain_images;
    bool windowed_fullscreen;
+   bool fullscreen;
    unsigned monitor_index;
    bool font_enable;
 } video_frame_info_t;

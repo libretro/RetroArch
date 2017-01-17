@@ -2192,6 +2192,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->post_filter_record    = settings->video.post_filter_record;
    video_info->max_swapchain_images  = settings->video.max_swapchain_images;
    video_info->windowed_fullscreen   = settings->video.windowed_fullscreen;
+   video_info->fullscreen            = settings->video.fullscreen;
    video_info->monitor_index         = settings->video.monitor_index;
    video_info->shared_context        = settings->video.shared_context;
    video_info->font_enable           = settings->video.font_enable;
