@@ -23,7 +23,6 @@
 #include <algorithms/mismatch.h>
 
 #include "state_manager.h"
-#include "../configuration.h"
 #include "../msg_hash.h"
 #include "../movie.h"
 #include "../core.h"
@@ -504,12 +503,11 @@ static void state_manager_capacity(state_manager_t *state,
 }
 #endif
 
-void state_manager_event_init(void)
+void state_manager_event_init(unsigned rewind_buffer_size)
 {
    retro_ctx_serialize_info_t serial_info;
    retro_ctx_size_info_t info;
    void *state          = NULL;
-   settings_t *settings = config_get_ptr();
 
    if (rewind_state.state)
       return;
@@ -533,10 +531,10 @@ void state_manager_event_init(void)
 
    RARCH_LOG("%s: %u MB\n",
          msg_hash_to_str(MSG_REWIND_INIT),
-         (unsigned)(settings->rewind_buffer_size / 1000000));
+         (unsigned)(rewind_buffer_size / 1000000));
 
    rewind_state.state = state_manager_new(rewind_state.size,
-         settings->rewind_buffer_size);
+         rewind_buffer_size);
 
    if (!rewind_state.state)
       RARCH_WARN("%s.\n", msg_hash_to_str(MSG_REWIND_INIT_FAILED));
@@ -579,7 +577,8 @@ void state_manager_event_deinit(void)
  *
  * Checks if rewind toggle/hold was being pressed and/or held.
  **/
-void state_manager_check_rewind(bool pressed)
+void state_manager_check_rewind(bool pressed,
+      unsigned rewind_granularity)
 {
    static bool first    = true;
 
@@ -631,10 +630,9 @@ void state_manager_check_rewind(bool pressed)
    else
    {
       static unsigned cnt      = 0;
-      settings_t *settings     = config_get_ptr();
 
-      cnt = (cnt + 1) % (settings->rewind_granularity ?
-            settings->rewind_granularity : 1); /* Avoid possible SIGFPE. */
+      cnt = (cnt + 1) % (rewind_granularity ?
+            rewind_granularity : 1); /* Avoid possible SIGFPE. */
 
       if ((cnt == 0) || bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
       {

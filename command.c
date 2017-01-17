@@ -2011,7 +2011,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
             {
                if (settings->rewind_enable)
-                  state_manager_event_init();
+                  state_manager_event_init(settings->rewind_buffer_size);
             }
          }
          break;

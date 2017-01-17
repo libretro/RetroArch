@@ -23,6 +23,7 @@
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <string/stdstring.h>
+#include <retro_miscellaneous.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -33,7 +34,8 @@
 #endif
 
 #include "cheat_manager.h"
-#include "../configuration.h"
+
+#include "../msg_hash.h"
 #include "../runloop.h"
 #include "../dynamic.h"
 #include "../core.h"
@@ -127,20 +129,18 @@ void cheat_manager_set_code(unsigned i, const char *str)
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool cheat_manager_save(const char *path)
+bool cheat_manager_save(const char *path, const char *cheat_database)
 {
    bool ret;
    unsigned i;
    char buf[PATH_MAX_LENGTH];
    char cheats_file[PATH_MAX_LENGTH];
    config_file_t *conf               = NULL;
-   settings_t              *settings = config_get_ptr();
    cheat_manager_t *handle           = cheat_manager_state;
 
    buf[0] = cheats_file[0] = '\0';
 
-   fill_pathname_join(buf, settings->path.cheat_database,
-         path, sizeof(buf));
+   fill_pathname_join(buf, cheat_database, path, sizeof(buf));
 
    fill_pathname_noext(cheats_file, buf, ".cht", sizeof(cheats_file));
 

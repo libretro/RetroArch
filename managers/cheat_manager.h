@@ -36,7 +36,7 @@ bool cheat_manager_load(const char *path);
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool cheat_manager_save(const char *path);
+bool cheat_manager_save(const char *path, const char *cheat_database);
 
 bool cheat_manager_realloc(unsigned new_size);
 

@@ -21,7 +21,7 @@
 
 #include <boolean.h>
 #include <retro_common_api.h>
-#include "lists/string_list.h"
+#include <lists/string_list.h>
 
 RETRO_BEGIN_DECLS
 

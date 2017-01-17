@@ -32,7 +32,7 @@ bool state_manager_frame_is_reversed(void);
 
 void state_manager_event_deinit(void);
 
-void state_manager_event_init(void);
+void state_manager_event_init(unsigned rewind_buffer_size);
 
 /**
  * check_rewind:
@@ -40,7 +40,7 @@ void state_manager_event_init(void);
  *
  * Checks if rewind toggle/hold was being pressed and/or held.
  **/
-void state_manager_check_rewind(bool pressed);
+void state_manager_check_rewind(bool pressed, unsigned rewind_granularity);
 
 RETRO_END_DECLS
 

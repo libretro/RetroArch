@@ -1894,6 +1894,7 @@ static void menu_input_st_string_cb_cheat_file_save_as(
    if (str && *str)
    {
       rarch_setting_t *setting = NULL;
+      settings_t *settings     = config_get_ptr();
       const char        *label = menu_input_dialog_get_label_buffer();
 
       if (!string_is_empty(label))
@@ -1905,7 +1906,7 @@ static void menu_input_st_string_cb_cheat_file_save_as(
          menu_setting_generic(setting, false);
       }
       else if (!string_is_empty(label))
-         cheat_manager_save(str);
+         cheat_manager_save(str, settings->path.cheat_database);
    }
 
    menu_input_dialog_end();
