@@ -2073,7 +2073,7 @@ static void xmb_draw_items(
    size_t i;
    math_matrix_4x4 mymat;
    menu_display_ctx_rotate_draw_t rotate_draw;
-   uint64_t frame_count       = NULL;
+   uint64_t frame_count        = 0;
    xmb_node_t *core_node       = NULL;
    size_t end                  = 0;
    frame_count                 = video_driver_get_frame_count();

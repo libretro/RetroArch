@@ -394,7 +394,7 @@ static void rgui_render(void *data)
    char title_msg[64];
    char msg[255];
    bool msg_force                 = false;
-   uint64_t frame_count           = NULL;
+   uint64_t frame_count           = 0;
    settings_t *settings           = config_get_ptr();
    rgui_t *rgui                   = (rgui_t*)data;
 

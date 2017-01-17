@@ -809,7 +809,7 @@ static void mui_render_menu_list(mui_handle_t *mui,
    float sum               = 0;
    unsigned header_height  = 0;
    size_t i                = 0;
-   uint64_t frame_count    = NULL;
+   uint64_t frame_count    = 0;
    file_list_t *list       = NULL;
    frame_count             = video_driver_get_frame_count();
 
