@@ -605,6 +605,7 @@ ifeq ($(HAVE_VITA2D), 1)
 			 $(DEPS_DIR)/libvita2d/source/vita2d_draw.o \
 			 $(DEPS_DIR)/libvita2d/source/utils.o
 
+CFLAGS  += -I$(DEPS_DIR)/libvita2d/include
 	OBJ += gfx/drivers/vita2d_gfx.o
 endif
 
