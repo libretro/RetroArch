@@ -5743,10 +5743,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push    = true;
 
          {
-            unsigned cores_names_len;
-            size_t cores_names_size = 0;
-            unsigned cores_paths_len;
-            size_t cores_paths_size;
+            unsigned cores_names_len        = 0;
+            unsigned cores_paths_len        = 0;
+            size_t cores_paths_size         = 0;
+            size_t cores_names_size         = 0;
             struct string_list *cores_names =
                string_list_new_special(STRING_LIST_SUPPORTED_CORES_NAMES,
                      (void*)menu->deferred_path,
@@ -5878,10 +5878,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push    = true;
 
          {
-            unsigned cores_names_len;
-            size_t cores_names_size;
-            unsigned cores_paths_len;
-            size_t cores_paths_size;
+            unsigned cores_names_len        = 0;
+            unsigned cores_paths_len        = 0;
+            size_t cores_paths_size         = 0;
+            size_t cores_names_size         = 0;
             struct string_list *cores_names =
                string_list_new_special(STRING_LIST_SUPPORTED_CORES_NAMES,
                      (void*)menu->deferred_path,
