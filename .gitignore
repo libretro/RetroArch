@@ -65,6 +65,9 @@ menu/driverspzarch.c
 # Ctags
 /tags
 
+# CLion
+/cmake-build-debug/
+
 # Android
 /pkg/android/phoenix/obj/
 /pkg/android/phoenix/assets/

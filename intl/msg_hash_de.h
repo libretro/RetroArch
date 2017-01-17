@@ -141,15 +141,15 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY,
       "Cursor-Verzeichnis")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
-      "Cursormanager")
+      "Zeiger-Manager")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CUSTOM_RATIO,
       "Benutzerdefiniertes Verhältnis")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
-      "Datenbankmanager")
+      "Datenbank-Manager")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
       "Von der Playlist löschen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FAVORITES,
-"Lesezeichen")
+      "Lesezeichen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
       "<Inhaltsverzeichnis>")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
@@ -172,6 +172,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS, /* UPDATE/FIXME */
       "Datenträger-Optionen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DONT_CARE,
       "Mir egal")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
+      "Core herunterladen...")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
+      "Inhalt Downloader")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE,
       "Aktiviere DPI-Override")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE,
@@ -342,46 +346,54 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NEAREST,
       "Nächster")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY,
       "Netplay")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES, // TODO: What actually does this? The translation might be odd.
+      "Netplay Bildübetragungsrate prüfen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT, /* TODO, Original string changed */
       "Tausche Netplay-Eingabe")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES,
       "Verzögere Netplay-Frames")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
-      "Disconnect")
+      "Verbindung trennen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
       "Aktiviere Netplay")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
-      "Connect to Netplay host")
+      "Verbinde zu einem Netplay Host")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
-      "Start hosting")
+      "Starte Host")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS, /* TODO, Original string changed */
       "IP-Addresse für Netplay")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_LAN_SCAN_SETTINGS,
-      "Scan local network")
+      "Durchsuche lokales Netzwerk")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_MODE,
       "Aktiviere Netplay-Client")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
       "Benutzername")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
+      "Server Passwort")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
       "Netplay settings")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
+      "Server Passwort für Zuschauer")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE,
       "Aktiviere Netplay-Zuschauermodus")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_STATELESS_MODE, // TODO: What is this actually?
+      "Zustandsloser Netplay-Modus")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
       "TCP/UDP-Port für Netplay")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
       "Netplay NAT Traversal")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
-      "Netzwerk-Befehle")
+      "Netzwerkbefehle")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETWORK_CMD_PORT,
-      "Port für Netzwerk-Befehle")
+      "Port für Netzwerkbefehle")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
-      "Network Information")
+      "Netzwerkinformationen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_ENABLE,
       "Network Gamepad")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_PORT,
       "Network Remote Base Port")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
-      "Netzwerk-Einstellungen")
+      "Netzwerkeinstellungen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO,
       "Nein")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NONE,
@@ -407,7 +419,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_ITEMS,
       "Keine Einträge.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
-      "No netplay hosts found.")
+      "Kein Netplay Host gefunden.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND,
       "No networks found.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS,
@@ -446,6 +458,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS,
       "Overlay-Einstellungen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
       "Verwende PAL60-Modus")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
+      "Übergeordnetes Verzeichnis")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
       "Pausiere, wenn das Menü aktiv ist")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
@@ -489,7 +503,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SHA1,
       "SHA1")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_START_CONTENT,
-      "Starte Content")
+      "Starte Inhalt")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REBOOT,
       "Neustart")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY,
@@ -554,8 +568,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
       "Automatische Save States")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
       "Savestate-Verzeichnis")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
+      "Aktuelle Konfigurationen speichern")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
-      "Konfiguration speichern")
+      "Neue Konfigurationen speichern")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_STATE,
       "Savestate speichern")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
@@ -592,6 +608,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
       "Sortiere Save States per Ordner")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STATUS,
       "Status")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
+      "Starte Remote-RetroPad")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
+      "Starte Videoprozessor")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE,
       "stdin-Befehle")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
@@ -748,6 +768,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS,
       "Aktualisiere CG-Shader")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
       "Aktualisiere Cheats")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
+      "Aktualisiere Core Info Dateien")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
       "Aktualisiere Datenbanken")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
@@ -902,6 +924,10 @@ MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
       "Use the same controls for both the menu and the game. Applies to the keyboard.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY,
       "Hoste eine Netplay Session oder trete einer bei.")
+MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_LAN_SCAN_SETTINGS,
+      "Suche und verbinde mit Netplay Hosts in deinem lokalen Netzwerk.")
+MSG_HASH(MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
+      "Ändere die Netzwerkeinstellungen.")
 MSG_HASH(MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
       "Lade Add-Ons, Komponenten und Inhalte für RetroArch herunter.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
