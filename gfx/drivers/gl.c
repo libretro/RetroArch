@@ -2330,7 +2330,8 @@ static bool gl_set_shader(void *data,
    gl_set_shader_viewport(gl, 1);
    context_bind_hw_render(true);
 #if defined(_WIN32) && !defined(_XBOX)
-   shader_dlg_params_reload();
+   /* Shader dialog is disabled for now, until video_threaded issues are fixed.
+   shader_dlg_params_reload();*/
 #endif
 
 #endif

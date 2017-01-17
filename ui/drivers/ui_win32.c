@@ -467,8 +467,9 @@ bool win32_window_init(WNDCLASSEX *wndclass,
    if (class_name != NULL) 
       return true;
 
+   /* Shader dialog is disabled for now, until video_threaded issues are fixed.
    if (!win32_shader_dlg_init())
-      RARCH_ERR("[WGL]: wgl_shader_dlg_init() failed.\n");
+      RARCH_ERR("[WGL]: wgl_shader_dlg_init() failed.\n");*/
    return true;
 }
 
