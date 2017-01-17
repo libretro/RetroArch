@@ -45,21 +45,28 @@
 #endif
 
 #ifdef HAVE_OPENGL
-static int (*g_pglSwapInterval)(int);
-static int (*g_pglSwapIntervalSGI)(int);
-static void (*g_pglSwapIntervalEXT)(Display*, GLXDrawable, int);
-static Bool (*glXGetSyncValuesOML)(Display *dpy, GLXDrawable drawable,
-			    int64_t *ust, int64_t *msc, int64_t *sbc);
-static Bool (*glXGetMscRateOML)(Display *dpy, GLXDrawable drawable, int32_t *numerator,
-			 int32_t *denominator);
-static int64_t (*glXSwapBuffersMscOML)(Display *dpy, GLXDrawable drawable,
-				int64_t target_msc, int64_t divisor,
-				int64_t remainder);
-static Bool (*glXWaitForMscOML)(Display *dpy, GLXDrawable drawable, int64_t target_msc,
-			 int64_t divisor, int64_t remainder, int64_t *ust,
-			 int64_t *msc, int64_t *sbc);
-static Bool (*glXWaitForSbcOML)(Display *dpy, GLXDrawable drawable, int64_t target_sbc,
-			 int64_t *ust, int64_t *msc, int64_t *sbc);
+static int      (*g_pglSwapInterval)(int);
+static int      (*g_pglSwapIntervalSGI)(int);
+static void     (*g_pglSwapIntervalEXT)(Display*, GLXDrawable, int);
+typedef Bool    (*GLXGETSYNCVALUESOMLPROC)(Display *dpy, GLXDrawable drawable,
+      int64_t *ust, int64_t *msc, int64_t *sbc);
+typedef Bool    (*GLXGETMSCRATEOMLPROC)(Display *dpy, GLXDrawable drawable, int32_t *numerator,
+      int32_t *denominator);
+typedef int64_t (*GLXSWAPBUFFERSMSCOMLPROC)(Display *dpy, GLXDrawable drawable,
+      int64_t target_msc, int64_t divisor,
+      int64_t remainder);
+typedef Bool    (*GLXWAITFORMSCOMLPROC)(Display *dpy, GLXDrawable drawable, int64_t target_msc,
+      int64_t divisor, int64_t remainder, int64_t *ust,
+      int64_t *msc, int64_t *sbc);
+typedef Bool    (*GLXWAITFORSBCOMLPROC)(Display *dpy, GLXDrawable drawable, int64_t target_sbc,
+      int64_t *ust, int64_t *msc, int64_t *sbc);
+
+static GLXGETSYNCVALUESOMLPROC  glXGetSyncValuesOML;
+static GLXGETMSCRATEOMLPROC     glXGetMscRateOML;
+static GLXSWAPBUFFERSMSCOMLPROC glXSwapBuffersMscOML;
+static GLXWAITFORMSCOMLPROC     glXWaitForMscOML;
+static GLXWAITFORSBCOMLPROC     glXWaitForSbcOML;
+
 #endif
 
 typedef struct gfx_ctx_x_data
@@ -93,16 +100,16 @@ typedef struct gfx_ctx_x_data
 #endif
 } gfx_ctx_x_data_t;
 
-static bool x_enable_msaa     = false;
-static unsigned g_major       = 0;
-static unsigned g_minor       = 0;
-static enum gfx_ctx_api x_api = GFX_CTX_NONE;
+static bool x_enable_msaa                     = false;
+static unsigned g_major                       = 0;
+static unsigned g_minor                       = 0;
+static enum gfx_ctx_api x_api                 = GFX_CTX_NONE;
+
+static gfx_ctx_x_data_t *current_context_data = NULL;
 
 #ifdef HAVE_OPENGL
 static PFNGLXCREATECONTEXTATTRIBSARBPROC glx_create_context_attribs;
 #endif
-
-static gfx_ctx_x_data_t *current_context_data = NULL;
 
 static int GLXExtensionSupported(Display *dpy, const char *extension)
 {
@@ -508,11 +515,11 @@ static void *gfx_ctx_x_init(video_frame_info_t video_info, void *data)
 
             x->swap_mode         = 1;
 
-            glXGetSyncValuesOML  = (void *)glXGetProcAddress((unsigned char *)"glXGetSyncValuesOML");
-            glXGetMscRateOML     = (void *)glXGetProcAddress((unsigned char *)"glXGetMscRateOML");
-            glXSwapBuffersMscOML = (void *)glXGetProcAddress((unsigned char *)"glXSwapBuffersMscOML");
-            glXWaitForMscOML     = (void *)glXGetProcAddress((unsigned char *)"glXWaitForMscOML");
-            glXWaitForSbcOML     = (void *)glXGetProcAddress((unsigned char *)"glXWaitForSbcOML");
+            glXGetSyncValuesOML  = (GLXGETSYNCVALUESOMLPROC)glXGetProcAddress((unsigned char *)"glXGetSyncValuesOML");
+            glXGetMscRateOML     = (GLXGETMSCRATEOMLPROC)glXGetProcAddress((unsigned char *)"glXGetMscRateOML");
+            glXSwapBuffersMscOML = (GLXSWAPBUFFERSMSCOMLPROC)glXGetProcAddress((unsigned char *)"glXSwapBuffersMscOML");
+            glXWaitForMscOML     = (GLXWAITFORMSCOMLPROC)glXGetProcAddress((unsigned char *)"glXWaitForMscOML");
+            glXWaitForSbcOML     = (GLXWAITFORSBCOMLPROC)glXGetProcAddress((unsigned char *)"glXWaitForSbcOML");
 
             glXGetSyncValuesOML(g_x11_dpy, g_x11_win, &x->ust, &x->msc, &x->sbc);
 
