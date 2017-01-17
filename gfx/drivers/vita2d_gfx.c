@@ -16,8 +16,12 @@
 
 #include <vita2d.h>
 
+#include <verbosity.h>
+#include <configuration.h>
+
 #include <retro_inline.h>
 #include <string/stdstring.h>
+#include <formats/image.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -27,11 +31,13 @@
 #include "../../menu/menu_driver.h"
 #endif
 
-#include "../../defines/psp_defines.h"
 #include "../common/vita2d_common.h"
 #include "../../driver.h"
 #include "../../runloop.h"
 #include "../video_coord_array.h"
+#include "../video_context_driver.h"
+
+#include "../../defines/psp_defines.h"
 
 extern void *memcpy_neon(void *dst, const void *src, size_t n);
 

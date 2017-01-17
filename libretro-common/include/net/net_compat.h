@@ -101,6 +101,8 @@ struct hostent
 	char *h_addr;
 };
 
+struct SceNetInAddr inet_aton(const char *ip_addr);
+
 #else
 #include <sys/select.h>
 #include <sys/types.h>

@@ -18,8 +18,15 @@
 #include <stddef.h>
 #include <string.h>
 
+#include "retroarch.h"
+#include "paths.h"
+
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
+#endif
+
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
 #endif
 
 #ifdef VITA
@@ -38,6 +45,7 @@
 #include <pspsdk.h>
 #endif
 
+#include <string/stdstring.h>
 #include <boolean.h>
 #include <file/file_path.h>
 #ifndef IS_SALAMANDER

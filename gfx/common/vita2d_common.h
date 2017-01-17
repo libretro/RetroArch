@@ -21,9 +21,11 @@
 
 #include <retro_inline.h>
 #include <string/stdstring.h>
+#include <gfx/math/matrix_4x4.h>
 
 #include "../../defines/psp_defines.h"
 #include "../../driver.h"
+#include "../video_driver.h"
 #include "../video_coord_array.h"
 
 typedef struct vita_menu_frame

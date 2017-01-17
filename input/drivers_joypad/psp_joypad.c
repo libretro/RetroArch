@@ -15,13 +15,23 @@
  */
 
 #include <stdint.h>
+#include <string.h>
+
+#include <input/input_config.h>
 
 #include "../../tasks/tasks_internal.h"
 
 #include "../../configuration.h"
 
+#include "../../defines/psp_defines.h"
+
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
 #if defined(VITA)
 #include <psp2/kernel/sysmem.h>
+#include <psp2/ctrl.h>
 #include <psp2/touch.h>
 #define PSP_MAX_PADS 4
 static int psp2_model;

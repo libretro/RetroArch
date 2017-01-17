@@ -18,6 +18,7 @@
 #include <stdint.h>
 #include <malloc.h>
 #include <stdio.h>
+#include <string.h>
 
 #ifdef VITA
 #include <psp2/kernel/processmgr.h>
