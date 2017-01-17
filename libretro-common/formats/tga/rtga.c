@@ -66,7 +66,8 @@ static INLINE uint8_t rtga__get8(rtga__context *s)
 
 static void rtga__skip(rtga__context *s, int n)
 {
-   if (n < 0) {
+   if (n < 0)
+   {
       s->img_buffer = s->img_buffer_end;
       return;
    }
