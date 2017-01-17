@@ -98,6 +98,7 @@ typedef struct mui_handle
    unsigned icon_size;
    unsigned margin;
    unsigned glyph_width;
+   unsigned glyph_width2;
    char box_message[1024];
    bool mouse_show;
 
@@ -546,7 +547,7 @@ static void compute_entries_box(mui_handle_t* mui, int width)
 
       if (menu_entry_get_sublabel(i, sublabel_str, sizeof(sublabel_str)))
       {
-         word_wrap(sublabel_str, sublabel_str, (int)((usable_width/0.75) / mui->glyph_width));
+         word_wrap(sublabel_str, sublabel_str, (int)(usable_width / mui->glyph_width2));
          lines = count_lines(sublabel_str);
       }
 
@@ -686,7 +687,7 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
 
    if (menu_entry_get_sublabel(i, sublabel_str, sizeof(sublabel_str)))
    {
-      word_wrap(sublabel_str, sublabel_str, (int)((usable_width/0.75) / mui->glyph_width));
+      word_wrap(sublabel_str, sublabel_str, (int)(usable_width / mui->glyph_width2));
 
       menu_display_draw_text(mui->font2, sublabel_str,
             mui->margin,
@@ -1441,6 +1442,7 @@ static void mui_layout(mui_handle_t *mui)
 
    /* we assume the average glyph aspect ratio is close to 3:4 */
    mui->glyph_width = new_font_size * 3/4;
+   mui->glyph_width2 = new_font_size2 * 3/4;
 
    mui->font = menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_FONT,
          new_font_size);
@@ -1455,6 +1457,15 @@ static void mui_layout(mui_handle_t *mui)
 
       if (m_width)
          mui->glyph_width = m_width;
+   }
+
+   if (mui->font2) /* calculate a more realistic ticker_limit */
+   {
+      unsigned m_width2 =
+         font_driver_get_message_width(mui->font2, "a", 1, 1);
+
+      if (m_width2)
+         mui->glyph_width2 = m_width2;
    }
 }
 
