@@ -431,30 +431,32 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE:
          snprintf(s, len, "Erfolgsliste (Hardcore)");
          break;
-       case MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC:
-           snprintf(s, len,
-                    "Um Inhalte zu suchen, gehe zu '%s' und\n"
-                            "wähle entweder '%s' oder '%s'.\n"
-                            " \n"
-                            "Die Dateien werden mit Einträgen in der\n"
-                            "Datenbank verglichen.\n"
-                            "Wenn es einen Treffer gibt, wird der Inhalt\n"
-                            "zur Sammlung hinzugefügt.\n"
-                            " \n"
-                            "Danach kannst du einfach den Inhalt unter\n"
-                            "'%s' -> '%s' laden,\n"
-                            "anstatt jedesmal die Datei neu zu suchen.\n"
-                            " \n"
-                            "WICHTIG: Inhalte für einige Cores sind zum\n"
-                            "Teil noch nicht scannbar."
-                   ,
-                    msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST),
-                    msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
-                    msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
-                    msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST),
-                    msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST)
-           );
-           break;
+      case MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD_DESC:
+
+         break;
+      case MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC:
+         snprintf(s, len,
+            "Um Inhalte zu suchen, gehe zu '%s' und\n"
+            "wähle entweder '%s' oder '%s'.\n"
+            " \n"
+            "Die Dateien werden mit Einträgen in der\n"
+            "Datenbank verglichen.\n"
+            "Wenn es einen Treffer gibt, wird der Inhalt\n"
+            "zur Sammlung hinzugefügt.\n"
+            " \n"
+            "Danach kannst du einfach den Inhalt unter\n"
+            "'%s' -> '%s' laden,\n"
+            "anstatt jedesmal die Datei neu zu suchen.\n"
+            " \n"
+            "WICHTIG: Inhalte für einige Cores sind zum\n"
+            "Teil noch nicht scannbar.",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST)
+         );
+         break;
       case MENU_ENUM_LABEL_VALUE_MENU_ENUM_CONTROLS_PROLOG:
          snprintf(s, len,
             "Du kannst folgende Steuerelemente mit\n"
