@@ -17,13 +17,13 @@
 #include <vita2d.h>
 
 #include <encodings/utf.h>
-#include <verbosity.h>
 
 #include "../common/vita2d_common.h"
 
 #include "../font_driver.h"
 
 #include "../../configuration.h"
+#include "../../verbosity.h"
 
 typedef struct
 {

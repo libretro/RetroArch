@@ -16,8 +16,6 @@
 
 #include <vita2d.h>
 
-#include <verbosity.h>
-#include <configuration.h>
 
 #include <retro_inline.h>
 #include <string/stdstring.h>
@@ -36,6 +34,8 @@
 #include "../../runloop.h"
 #include "../video_coord_array.h"
 #include "../video_context_driver.h"
+#include "../../verbosity.h"
+#include "../../configuration.h"
 
 #include "../../defines/psp_defines.h"
 
