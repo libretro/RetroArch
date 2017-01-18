@@ -347,7 +347,7 @@ bool recording_init(void)
       FFEMU_PIX_ARGB8888 : FFEMU_PIX_RGB565;
    params.config     = NULL;
    
-   if (*global->record.config)
+   if (!string_is_empty(global->record.config))
       params.config = global->record.config;
 
    if (video_driver_supports_recording())
