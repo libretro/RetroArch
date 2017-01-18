@@ -621,7 +621,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    NULL, /* get_video_output_next */
    cocoagl_gfx_ctx_get_metrics,
    NULL,
-   cocoagl_gfx_ctx_update_window_title,
+   cocoagl_gfx_ctx_update_title,
    cocoagl_gfx_ctx_check_window,
    cocoagl_gfx_ctx_set_resize,
    cocoagl_gfx_ctx_has_focus,
