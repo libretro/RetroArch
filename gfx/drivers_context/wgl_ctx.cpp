@@ -41,7 +41,6 @@
 
 #include "../../configuration.h"
 #include "../../dynamic.h"
-#include "../../runloop.h"
 #include "../video_context_driver.h"
 
 #include "../common/win32_common.h"

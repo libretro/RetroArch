@@ -29,7 +29,6 @@
 #include "../drivers/d3d.h"
 #include "../common/win32_common.h"
 
-#include "../../runloop.h"
 #include "../../verbosity.h"
 #include "../../ui/ui_companion_driver.h"
 

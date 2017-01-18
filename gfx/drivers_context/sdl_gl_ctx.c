@@ -25,7 +25,6 @@
 #endif
 
 #include "../../configuration.h"
-#include "../../runloop.h"
 #include "../common/gl_common.h"
 
 static enum gfx_ctx_api sdl_api = GFX_CTX_OPENGL_API;

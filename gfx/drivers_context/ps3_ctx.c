@@ -31,7 +31,6 @@
 #endif
 
 #include "../../configuration.h"
-#include "../../runloop.h"
 #include "../../defines/ps3_defines.h"
 #include "../common/gl_common.h"
 #include "../video_context_driver.h"

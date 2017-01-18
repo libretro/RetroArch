@@ -29,7 +29,6 @@
 #include <OpenGL/OpenGL.h>
 #include <OpenGL/gl.h>
 
-#include "../../runloop.h"
 #include "../video_context_driver.h"
 
 typedef int CGSConnectionID;
