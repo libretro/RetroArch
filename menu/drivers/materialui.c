@@ -800,7 +800,9 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
       );
 }
 
-static void mui_render_menu_list(mui_handle_t *mui,
+static void mui_render_menu_list(
+      video_frame_info_t *video_info,
+      mui_handle_t *mui,
       unsigned width, unsigned height,
       uint32_t font_normal_color,
       uint32_t font_hover_color,
@@ -809,9 +811,8 @@ static void mui_render_menu_list(mui_handle_t *mui,
    float sum               = 0;
    unsigned header_height  = 0;
    size_t i                = 0;
-   uint64_t frame_count    = 0;
    file_list_t *list       = NULL;
-   frame_count             = video_driver_get_frame_count();
+   uint64_t frame_count    = video_info->frame_count;
 
    if (!menu_display_get_update_pending())
       return;
@@ -1036,7 +1037,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
    size_t selection                = 0;
    size_t title_margin             = 0;
    mui_handle_t *mui               = (mui_handle_t*)data;
-   uint64_t frame_count            = video_driver_get_frame_count();
+   uint64_t frame_count            = video_info->frame_count;
    settings_t *settings            = config_get_ptr();
    bool background_rendered        = false;
    bool libretro_running           = menu_display_libretro_running();
@@ -1293,6 +1294,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
    menu_display_font_bind_block(mui->font2, &mui->raster_block2);
 
    mui_render_menu_list(
+         video_info,
       mui,
       width,
       height,

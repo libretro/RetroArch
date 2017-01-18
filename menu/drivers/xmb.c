@@ -2064,6 +2064,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
 }
 
 static void xmb_draw_items(
+      video_frame_info_t *video_info,
       menu_display_frame_info_t menu_disp_info,
       xmb_handle_t *xmb,
       file_list_t *list, file_list_t *stack,
@@ -2073,10 +2074,9 @@ static void xmb_draw_items(
    size_t i;
    math_matrix_4x4 mymat;
    menu_display_ctx_rotate_draw_t rotate_draw;
-   uint64_t frame_count        = 0;
    xmb_node_t *core_node       = NULL;
    size_t end                  = 0;
-   frame_count                 = video_driver_get_frame_count();
+   uint64_t frame_count        = video_info->frame_count;
 
    if (!list || !list->size)
       return;
@@ -2813,7 +2813,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    menu_display_blend_end();
 
    /* Vertical icons */
-   xmb_draw_items(menu_disp_info,
+   xmb_draw_items(
+         video_info,
+         menu_disp_info,
          xmb,
          xmb->selection_buf_old,
          xmb->menu_stack_old,
@@ -2828,6 +2830,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    menu_stack    = menu_entries_get_menu_stack_ptr(0);
 
    xmb_draw_items(
+         video_info,
          menu_disp_info,
          xmb,
          selection_buf,
