@@ -275,7 +275,9 @@ static bool netplay_poll(void)
       netplay_update_unread_ptr(netplay_data);
 
       /* Have we not reat enough latency frames? */
-      if (netplay_data->run_frame_count + NETPLAY_INPUT_LATENCY_FRAMES > netplay_data->input_frame_count)
+      if (netplay_data->self_mode == NETPLAY_CONNECTION_PLAYING &&
+          netplay_data->connected_players &&
+          netplay_data->run_frame_count + NETPLAY_INPUT_LATENCY_FRAMES > netplay_data->input_frame_count)
       {
          netplay_data->stall = NETPLAY_STALL_INPUT_LATENCY;
          netplay_data->stall_time = 0;
