@@ -321,7 +321,7 @@ bool netplay_try_init_serialization(netplay_t *netplay)
 
    /* Check if we can actually save */
    serial_info.data_const = NULL;
-   serial_info.data = netplay->buffer[netplay->self_ptr].state;
+   serial_info.data = netplay->buffer[netplay->run_ptr].state;
    serial_info.size = netplay->state_size;
 
    if (!core_serialize(&serial_info))

@@ -42,8 +42,8 @@ void netplay_update_unread_ptr(netplay_t *netplay)
    if (netplay->is_server && !netplay->connected_players)
    {
       /* Nothing at all to read! */
-      netplay->unread_ptr = netplay->self_ptr;
-      netplay->unread_frame_count = netplay->self_frame_count;
+      netplay->unread_ptr = netplay->input_ptr;
+      netplay->unread_frame_count = netplay->input_frame_count;
 
    }
    else
@@ -186,14 +186,14 @@ bool netplay_sync_pre_frame(netplay_t *netplay)
 {
    retro_ctx_serialize_info_t serial_info;
 
-   if (netplay_delta_frame_ready(netplay, &netplay->buffer[netplay->self_ptr], netplay->self_frame_count))
+   if (netplay_delta_frame_ready(netplay, &netplay->buffer[netplay->run_ptr], netplay->run_frame_count))
    {
       serial_info.data_const = NULL;
-      serial_info.data = netplay->buffer[netplay->self_ptr].state;
+      serial_info.data = netplay->buffer[netplay->run_ptr].state;
       serial_info.size = netplay->state_size;
 
       memset(serial_info.data, 0, serial_info.size);
-      if ((netplay->quirks & NETPLAY_QUIRK_INITIALIZATION) || netplay->self_frame_count == 0)
+      if ((netplay->quirks & NETPLAY_QUIRK_INITIALIZATION) || netplay->run_frame_count == 0)
       {
          /* Don't serialize until it's safe */
       }
@@ -201,8 +201,19 @@ bool netplay_sync_pre_frame(netplay_t *netplay)
       {
          if (netplay->force_send_savestate && !netplay->stall && !netplay->remote_paused)
          {
+            /* Bring our running frame and input frames into parity so we don't
+             * send old info */
+            if (netplay->run_ptr != netplay->input_ptr)
+            {
+               memcpy(netplay->buffer[netplay->input_ptr].state,
+                  netplay->buffer[netplay->run_ptr].state,
+                  netplay->state_size);
+               netplay->run_ptr = netplay->input_ptr;
+               netplay->run_frame_count = netplay->input_frame_count;
+            }
+
             /* Send this along to the other side */
-            serial_info.data_const = netplay->buffer[netplay->self_ptr].state;
+            serial_info.data_const = netplay->buffer[netplay->run_ptr].state;
             netplay_load_savestate(netplay, &serial_info, false);
             netplay->force_send_savestate = false;
          }
@@ -216,7 +227,7 @@ bool netplay_sync_pre_frame(netplay_t *netplay)
       }
 
       /* If we can't transmit savestates, we must stall until the client is ready */
-      if (netplay->self_frame_count > 0 &&
+      if (netplay->run_frame_count > 0 &&
           (netplay->quirks & (NETPLAY_QUIRK_NO_SAVESTATES|NETPLAY_QUIRK_NO_TRANSMISSION)) &&
           (netplay->connections_size == 0 || !netplay->connections[0].active ||
            netplay->connections[0].mode < NETPLAY_CONNECTION_CONNECTED))
@@ -357,16 +368,24 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
    /* Unless we're stalling, we've just finished running a frame */
    if (!stalled)
    {
-      netplay->self_ptr = NEXT_PTR(netplay->self_ptr);
-      netplay->self_frame_count++;
+      netplay->run_ptr = NEXT_PTR(netplay->run_ptr);
+      netplay->run_frame_count++;
+   }
+
+   /* We've finished an input frame even if we're stalling, unless we're too
+    * far ahead of ourselves */
+   if (netplay->input_frame_count < netplay->run_frame_count + NETPLAY_INPUT_LATENCY_FRAMES)
+   {
+      netplay->input_ptr = NEXT_PTR(netplay->input_ptr);
+      netplay->input_frame_count++;
    }
 
    /* Only relevant if we're connected */
    if ((netplay->is_server && !netplay->connected_players) ||
        (netplay->self_mode < NETPLAY_CONNECTION_CONNECTED))
    {
-      netplay->other_frame_count = netplay->self_frame_count;
-      netplay->other_ptr = netplay->self_ptr;
+      netplay->other_frame_count = netplay->input_frame_count;
+      netplay->other_ptr = netplay->input_ptr;
       /* FIXME: Duplication */
       if (netplay->catch_up)
       {
@@ -383,7 +402,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
       /* Skip ahead if we predicted correctly.
        * Skip until our simulation failed. */
       while (netplay->other_frame_count < netplay->unread_frame_count &&
-             netplay->other_frame_count < netplay->self_frame_count)
+             netplay->other_frame_count < netplay->run_frame_count)
       {
          struct delta_frame *ptr = &netplay->buffer[netplay->other_ptr];
          size_t i;
@@ -406,7 +425,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
    /* Now replay the real input if we've gotten ahead of it */
    if (netplay->force_rewind ||
        (netplay->other_frame_count < netplay->unread_frame_count &&
-        netplay->other_frame_count < netplay->self_frame_count))
+        netplay->other_frame_count < netplay->run_frame_count))
    {
       retro_ctx_serialize_info_t serial_info;
 
@@ -428,7 +447,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
          RARCH_ERR("Netplay savestate loading failed: Prepare for desync!\n");
       }
 
-      while (netplay->replay_frame_count < netplay->self_frame_count)
+      while (netplay->replay_frame_count < netplay->run_frame_count)
       {
          retro_time_t start, tm;
 
@@ -483,15 +502,15 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
       /* Average our time */
       netplay->frame_run_time_avg = netplay->frame_run_time_sum / NETPLAY_FRAME_RUN_TIME_WINDOW;
 
-      if (netplay->unread_frame_count < netplay->self_frame_count)
+      if (netplay->unread_frame_count < netplay->run_frame_count)
       {
          netplay->other_ptr = netplay->unread_ptr;
          netplay->other_frame_count = netplay->unread_frame_count;
       }
       else
       {
-         netplay->other_ptr = netplay->self_ptr;
-         netplay->other_frame_count = netplay->self_frame_count;
+         netplay->other_ptr = netplay->run_ptr;
+         netplay->other_frame_count = netplay->run_frame_count;
       }
       netplay->is_replay = false;
       netplay->force_rewind = false;
@@ -520,7 +539,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
    if (netplay->catch_up)
    {
       /* Are we caught up? */
-      if (netplay->self_frame_count >= lo_frame_count)
+      if (netplay->input_frame_count >= lo_frame_count)
       {
          netplay->catch_up = false;
          input_driver_unset_nonblock_state();
@@ -530,7 +549,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
    }
    else if (!stalled)
    {
-      if (netplay->self_frame_count + 2 < lo_frame_count)
+      if (netplay->input_frame_count + 2 < lo_frame_count)
       {
          /* Are we falling behind? */
          netplay->catch_up = true;
@@ -538,7 +557,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
          driver_set_nonblock_state();
 
       }
-      else if (netplay->self_frame_count + 2 < hi_frame_count)
+      else if (netplay->input_frame_count + 2 < hi_frame_count)
       {
          size_t i;
 
@@ -554,16 +573,16 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
             player = connection->player;
 
             /* Are they ahead? */
-            if (netplay->self_frame_count + 2 < netplay->read_frame_count[player])
+            if (netplay->input_frame_count + 2 < netplay->read_frame_count[player])
             {
                /* Tell them to stall */
                if (connection->stall_frame + NETPLAY_MAX_REQ_STALL_FREQUENCY <
-                     netplay->self_frame_count)
+                     netplay->input_frame_count)
                {
-                  connection->stall_frame = netplay->self_frame_count;
+                  connection->stall_frame = netplay->input_frame_count;
                   netplay_cmd_stall(netplay, connection,
                      netplay->read_frame_count[player] -
-                     netplay->self_frame_count + 1);
+                     netplay->input_frame_count + 1);
                }
             }
          }

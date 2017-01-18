@@ -38,7 +38,7 @@ static void print_state(netplay_t *netplay)
 #define APPEND(out) cur += snprintf out
 #define M msg + cur, sizeof(msg) - cur
 
-   APPEND((M, "NETPLAY: S:%u U:%u O:%u", netplay->self_frame_count, netplay->unread_frame_count, netplay->other_frame_count));
+   APPEND((M, "NETPLAY: S:%u U:%u O:%u", netplay->input_frame_count, netplay->unread_frame_count, netplay->other_frame_count));
    if (!netplay->is_server)
       APPEND((M, " H:%u", netplay->server_frame_count));
    for (player = 0; player < MAX_USERS; player++)
@@ -204,7 +204,7 @@ static bool send_input_frame(netplay_t *netplay,
 bool netplay_send_cur_input(netplay_t *netplay,
    struct netplay_connection *connection)
 {
-   struct delta_frame *dframe = &netplay->buffer[netplay->self_ptr];
+   struct delta_frame *dframe = &netplay->buffer[netplay->input_ptr];
    uint32_t player;
 
    if (netplay->is_server)
@@ -220,7 +220,7 @@ bool netplay_send_cur_input(netplay_t *netplay,
             if (dframe->have_real[player])
             {
                if (!send_input_frame(netplay, connection, NULL,
-                        netplay->self_frame_count, player,
+                        netplay->input_frame_count, player,
                         dframe->real_input_state[player]))
                   return false;
             }
@@ -230,7 +230,7 @@ bool netplay_send_cur_input(netplay_t *netplay,
       /* If we're not playing, send a NOINPUT */
       if (netplay->self_mode != NETPLAY_CONNECTION_PLAYING)
       {
-         uint32_t payload = htonl(netplay->self_frame_count);
+         uint32_t payload = htonl(netplay->input_frame_count);
          if (!netplay_send_raw_cmd(netplay, connection, NETPLAY_CMD_NOINPUT,
                &payload, sizeof(payload)))
             return false;
@@ -242,7 +242,7 @@ bool netplay_send_cur_input(netplay_t *netplay,
    if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING)
    {
       if (!send_input_frame(netplay, connection, NULL,
-            netplay->self_frame_count,
+            netplay->input_frame_count,
             (netplay->is_server ?  NETPLAY_CMD_INPUT_BIT_SERVER : 0) | netplay->self_player,
             dframe->self_state))
          return false;
@@ -505,7 +505,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
             if (netplay->is_server)
             {
                /* Forward it on if it's past data*/
-               if (dframe->frame <= netplay->self_frame_count)
+               if (dframe->frame <= netplay->input_frame_count)
                   send_input_frame(netplay, NULL, connection, buffer[0],
                      player, dframe->real_input_state[player]);
             }
@@ -585,7 +585,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
          /* Force a rewind to assure the flip happens: This just prevents us
           * from skipping other past the flip because our prediction was
           * correct */
-         if (flip_frame < netplay->self_frame_count)
+         if (flip_frame < netplay->input_frame_count)
             netplay->force_rewind = true;
 
          RARCH_LOG("%s.\n", msg_hash_to_str(MSG_NETPLAY_USERS_HAS_FLIPPED));
@@ -638,7 +638,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
       {
          uint32_t payload[2];
          uint32_t player = 0;
-         payload[0] = htonl(netplay->self_frame_count + 1);
+         payload[0] = htonl(netplay->input_frame_count + 1);
 
          if (!netplay->is_server)
          {
@@ -695,8 +695,8 @@ static bool netplay_get_cmd(netplay_t *netplay,
          netplay_send_raw_cmd(netplay, connection, NETPLAY_CMD_MODE, payload, sizeof(payload));
 
          /* And expect their data */
-         netplay->read_ptr[player] = NEXT_PTR(netplay->self_ptr);
-         netplay->read_frame_count[player] = netplay->self_frame_count + 1;
+         netplay->read_ptr[player] = NEXT_PTR(netplay->input_ptr);
+         netplay->read_frame_count[player] = netplay->input_frame_count + 1;
          break;
       }
 
@@ -734,7 +734,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
          frame = ntohl(payload[0]);
 
          /* We're changing past input, so must replay it */
-         if (frame < netplay->self_frame_count)
+         if (frame < netplay->input_frame_count)
             netplay->force_rewind = true;
 
          mode = ntohl(payload[1]);
@@ -767,16 +767,16 @@ static bool netplay_get_cmd(netplay_t *netplay,
                netplay->self_player = player;
 
                /* Fix up current frame info */
-               if (frame <= netplay->self_frame_count)
+               if (frame <= netplay->input_frame_count)
                {
                   /* It wanted past frames, better send 'em! */
                   START(netplay->server_ptr);
-                  while (dframe->used && dframe->frame <= netplay->self_frame_count)
+                  while (dframe->used && dframe->frame <= netplay->input_frame_count)
                   {
                      memcpy(dframe->real_input_state[player], dframe->self_state, sizeof(dframe->self_state));
                      dframe->have_real[player] = true;
                      send_input_frame(netplay, connection, NULL, dframe->frame, player, dframe->self_state);
-                     if (dframe->frame == netplay->self_frame_count) break;
+                     if (dframe->frame == netplay->input_frame_count) break;
                      NEXT();
                   }
 
@@ -786,8 +786,8 @@ static bool netplay_get_cmd(netplay_t *netplay,
                   uint32_t frame_count;
 
                   /* It wants future frames, make sure we don't capture or send intermediate ones */
-                  START(netplay->self_ptr);
-                  frame_count = netplay->self_frame_count;
+                  START(netplay->input_ptr);
+                  frame_count = netplay->input_frame_count;
                   while (true)
                   {
                      if (!dframe->used)
@@ -954,7 +954,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
       case NETPLAY_CMD_CRC:
          {
             uint32_t buffer[2];
-            size_t tmp_ptr = netplay->self_ptr;
+            size_t tmp_ptr = netplay->input_ptr;
             bool found = false;
 
             if (cmd_size != sizeof(buffer))
@@ -985,7 +985,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                }
 
                tmp_ptr = PREV_PTR(tmp_ptr);
-            } while (tmp_ptr != netplay->self_ptr);
+            } while (tmp_ptr != netplay->input_ptr);
 
             if (!found)
             {
@@ -1035,8 +1035,8 @@ static bool netplay_get_cmd(netplay_t *netplay,
                if (!netplay->is_replay)
                {
                   netplay->is_replay = true;
-                  netplay->replay_ptr = netplay->self_ptr;
-                  netplay->replay_frame_count = netplay->self_frame_count;
+                  netplay->replay_ptr = netplay->run_ptr;
+                  netplay->replay_frame_count = netplay->run_frame_count;
                   netplay_wait_and_init_serialization(netplay);
                   netplay->is_replay = false;
                }
@@ -1134,15 +1134,20 @@ static bool netplay_get_cmd(netplay_t *netplay,
                true, &rd, &wn, NULL);
 
             /* Skip ahead if it's past where we are */
-            if (frame > netplay->self_frame_count)
+            if (frame > netplay->run_frame_count)
             {
                /* This is squirrely: We need to assure that when we advance the
                 * frame in post_frame, THEN we're referring to the frame to
                 * load into. If we refer directly to read_ptr, then we'll end
                 * up never reading the input for read_frame_count itself, which
                 * will make the other side unhappy. */
-               netplay->self_ptr         = PREV_PTR(netplay->read_ptr[connection->player]);
-               netplay->self_frame_count = frame - 1;
+               netplay->run_ptr           = PREV_PTR(netplay->read_ptr[connection->player]);
+               netplay->run_frame_count   = frame - 1;
+               if (frame > netplay->input_frame_count)
+               {
+                  netplay->input_ptr         = netplay->run_ptr;
+                  netplay->input_frame_count = netplay->run_frame_count;
+               }
             }
 
             /* Don't expect earlier data from other clients */
@@ -1308,7 +1313,7 @@ int netplay_poll_net_input(netplay_t *netplay, bool block)
          netplay_update_unread_ptr(netplay);
 
          /* If we were blocked for input, pass if we have this frame's input */
-         if (netplay->unread_frame_count > netplay->self_frame_count)
+         if (netplay->unread_frame_count > netplay->run_frame_count)
             break;
 
          /* If we're supposed to block but we didn't have enough input, wait for it */
@@ -1330,7 +1335,7 @@ int netplay_poll_net_input(netplay_t *netplay, bool block)
                return -1;
 
             RARCH_LOG("Network is stalling at frame %u, count %u of %d ...\n",
-                  netplay->self_frame_count, netplay->timeout_cnt, MAX_RETRIES);
+                  netplay->run_frame_count, netplay->timeout_cnt, MAX_RETRIES);
 
             if (netplay->timeout_cnt >= MAX_RETRIES && !netplay->remote_paused)
                return -1;
@@ -1348,7 +1353,7 @@ int netplay_poll_net_input(netplay_t *netplay, bool block)
  */
 bool netplay_flip_port(netplay_t *netplay)
 {
-   size_t frame = netplay->self_frame_count;
+   size_t frame = netplay->input_frame_count;
 
    if (netplay->flip_frame == 0)
       return false;

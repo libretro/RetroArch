@@ -50,6 +50,9 @@
 #define NETPLAY_MAX_REQ_STALL_TIME     60
 #define NETPLAY_MAX_REQ_STALL_FREQUENCY 120
 
+/* TEMPORARY */
+#define NETPLAY_INPUT_LATENCY_FRAMES   5
+
 #define PREV_PTR(x) ((x) == 0 ? netplay->buffer_size - 1 : (x) - 1)
 #define NEXT_PTR(x) ((x + 1) % netplay->buffer_size)
 
@@ -210,6 +213,7 @@ enum rarch_netplay_stall_reason
 {
    NETPLAY_STALL_NONE = 0,
    NETPLAY_STALL_RUNNING_FAST,
+   NETPLAY_STALL_INPUT_LATENCY,
    NETPLAY_STALL_SERVER_REQUESTED,
    NETPLAY_STALL_NO_CONNECTION
 };
@@ -357,9 +361,13 @@ struct netplay
    /* The size of our packet buffers */
    size_t packet_buffer_size;
 
-   /* The current frame seen by the frontend */
-   size_t self_ptr;
-   uint32_t self_frame_count;
+   /* The frame we're currently inputting */
+   size_t input_ptr;
+   uint32_t input_frame_count;
+
+   /* The frame we're currently running */
+   size_t run_ptr;
+   uint32_t run_frame_count;
 
    /* The first frame at which some data might be unreliable */
    size_t other_ptr;
