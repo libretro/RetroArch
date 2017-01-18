@@ -35,7 +35,7 @@
 #endif
 
 #ifdef HAVE_MENU
-#include ".././menu/menu_driver.h"
+#include "../../menu/menu_driver.h"
 #endif
 
 #include "../../configuration.h"
