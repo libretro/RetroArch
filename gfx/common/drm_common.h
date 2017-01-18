@@ -27,6 +27,8 @@
 #include <retro_common_api.h>
 #include <retro_inline.h>
 
+#include "../video_driver.h"
+
 RETRO_BEGIN_DECLS
 
 extern uint32_t g_connector_id;
@@ -51,7 +53,7 @@ void drm_setup(int fd);
 
 void drm_free(void);
 
-bool drm_get_connector(int fd, unsigned video_monitor_index);
+bool drm_get_connector(int fd, video_frame_info_t video_info);
 
 static INLINE bool drm_wait_flip(int timeout)
 {
