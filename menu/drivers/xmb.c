@@ -706,11 +706,15 @@ static void xmb_messagebox(void *data, const char *message)
    strlcpy(xmb->box_message, message, sizeof(xmb->box_message));
 }
 
-static void xmb_render_keyboard(xmb_handle_t *xmb, const char *grid[], unsigned id)
+static void xmb_render_keyboard(xmb_handle_t *xmb,
+      video_frame_info_t *video_info,
+      const char *grid[], unsigned id)
 {
+   unsigned i;
    int ptr_width, ptr_height;
-   unsigned i, width, height;
-   float dark[16]=  {
+   unsigned width    = video_info->height;
+   unsigned height   = video_info->height;
+   float dark[16]    =  {
       0.00, 0.00, 0.00, 0.85,
       0.00, 0.00, 0.00, 0.85,
       0.00, 0.00, 0.00, 0.85,
@@ -723,8 +727,6 @@ static void xmb_render_keyboard(xmb_handle_t *xmb, const char *grid[], unsigned 
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
    };
-
-   video_driver_get_size(&width, &height);
 
    menu_display_draw_quad(0, height/2.0, width, height/2.0,
          width, height,
@@ -798,19 +800,14 @@ static int xmb_osk_ptr_at_pos(void *data, int x, int y)
 
 static void xmb_render_messagebox_internal(
       menu_display_frame_info_t menu_disp_info,
+      video_frame_info_t *video_info,
       xmb_handle_t *xmb, const char *message)
 {
-   int x, y, longest = 0, longest_width = 0;
    unsigned i, y_position;
-   unsigned width, height;
-   struct string_list *list = NULL;
-
-   if (!xmb)
-      return;
-
-   video_driver_get_size(&width, &height);
-
-   list = string_split(message, "\n");
+   int x, y, longest = 0, longest_width = 0;
+   unsigned width           = video_info->width;
+   unsigned height          = video_info->height;
+   struct string_list *list = string_split(message, "\n");
    if (!list)
       return;
 
@@ -856,6 +853,7 @@ static void xmb_render_messagebox_internal(
 
    if (menu_input_dialog_get_display_kb())
       xmb_render_keyboard(xmb,
+            video_info,
             menu_event_get_osk_grid(),
             menu_event_get_osk_ptr());
 
@@ -2887,7 +2885,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    {
       xmb_draw_dark_layer(xmb, width, height);
 
-      xmb_render_messagebox_internal(menu_disp_info, xmb, msg);
+      xmb_render_messagebox_internal(menu_disp_info, video_info, xmb, msg);
    }
 
    /* Cursor image */

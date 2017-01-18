@@ -270,25 +270,27 @@ static void mui_draw_tab(mui_handle_t *mui,
          &tab_color[0]);
 }
 
-static void mui_render_keyboard(mui_handle_t *mui, const char *grid[], unsigned id)
+static void mui_render_keyboard(mui_handle_t *mui,
+      video_frame_info_t *video_info,
+      const char *grid[], unsigned id)
 {
    int ptr_width, ptr_height;
-   unsigned i, width, height;
-   float dark[16]=  {
+   unsigned i;
+   unsigned width    = video_info->width;
+   unsigned height   = video_info->height;
+   float dark[16]    =  {
       0.00, 0.00, 0.00, 0.85,
       0.00, 0.00, 0.00, 0.85,
       0.00, 0.00, 0.00, 0.85,
       0.00, 0.00, 0.00, 0.85,
    };
 
-   float white[16]=  {
+   float white[16]   =  {
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
    };
-
-   video_driver_get_size(&width, &height);
 
    menu_display_draw_quad(0, height/2.0, width, height/2.0,
          width, height,
@@ -457,10 +459,13 @@ static void mui_get_message(void *data, const char *message)
 }
 
 static void mui_render_messagebox(mui_handle_t *mui,
+      video_frame_info_t *video_info,
       const char *message, float *body_bg_color, uint32_t font_color)
 {
-   unsigned i, width, height, y_position;
+   unsigned i, y_position;
    int x, y, line_height, longest = 0, longest_width = 0;
+   unsigned width           = video_info->width;
+   unsigned height          = video_info->height;
    struct string_list *list = (struct string_list*)
       string_split(message, "\n");
 
@@ -468,8 +473,6 @@ static void mui_render_messagebox(mui_handle_t *mui,
       return;
    if (list->elems == 0)
       goto end;
-
-   video_driver_get_size(&width, &height);
 
    line_height = mui->font->size * 1.2;
 
@@ -515,7 +518,9 @@ static void mui_render_messagebox(mui_handle_t *mui,
    }
 
    if (menu_input_dialog_get_display_kb())
-      mui_render_keyboard(mui, menu_event_get_osk_grid(), menu_event_get_osk_ptr());
+      mui_render_keyboard(mui,
+            video_info,
+            menu_event_get_osk_grid(), menu_event_get_osk_ptr());
 
 end:
    string_list_free(list);
@@ -1405,13 +1410,13 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
 
       menu_display_draw_quad(0, 0, width, height, width, height, &black_bg[0]);
       snprintf(msg, sizeof(msg), "%s\n%s", label, str);
-      mui_render_messagebox(mui, msg, &body_bg_color[0], font_hover_color);
+      mui_render_messagebox(mui, video_info, msg, &body_bg_color[0], font_hover_color);
    }
 
    if (!string_is_empty(mui->box_message))
    {
       menu_display_draw_quad(0, 0, width, height, width, height, &black_bg[0]);
-      mui_render_messagebox(mui, mui->box_message, &body_bg_color[0], font_hover_color);
+      mui_render_messagebox(mui, video_info, mui->box_message, &body_bg_color[0], font_hover_color);
       mui->box_message[0] = '\0';
    }
 
