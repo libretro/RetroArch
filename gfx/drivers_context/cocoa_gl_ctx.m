@@ -554,10 +554,9 @@ CFStringRef)BOXSTRING(symbol_name)
 }
 
 static void cocoagl_gfx_ctx_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
+      bool *resize, unsigned *width, unsigned *height)
 {
    unsigned new_width, new_height;
-   (void)frame_count;
 
    *quit = false;
 
