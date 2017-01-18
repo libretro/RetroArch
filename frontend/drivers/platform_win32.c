@@ -311,18 +311,34 @@ static void frontend_win32_environment_get(int *argc, char *argv[],
 
 static uint64_t frontend_win32_get_mem_total(void)
 {
+   /* OSes below 2000 don't have the Ex version, and non-Ex cannot work with >4GB RAM */
+#if _WIN32_WINNT > 0x0400
 	MEMORYSTATUSEX mem_info;
 	mem_info.dwLength = sizeof(MEMORYSTATUSEX);
 	GlobalMemoryStatusEx(&mem_info);
 	return mem_info.ullTotalPhys;
+#else
+	MEMORYSTATUS mem_info;
+	mem_info.dwLength = sizeof(MEMORYSTATUS);
+	GlobalMemoryStatus(&mem_info);
+	return mem_info.dwTotalPhys;
+#endif
 }
 
 static uint64_t frontend_win32_get_mem_used(void)
 {
+   /* OSes below 2000 don't have the Ex version, and non-Ex cannot work with >4GB RAM */
+#if _WIN32_WINNT > 0x0400
 	MEMORYSTATUSEX mem_info;
 	mem_info.dwLength = sizeof(MEMORYSTATUSEX);
 	GlobalMemoryStatusEx(&mem_info);
 	return ((frontend_win32_get_mem_total() - mem_info.ullAvailPhys));
+#else
+	MEMORYSTATUS mem_info;
+	mem_info.dwLength = sizeof(MEMORYSTATUS);
+	GlobalMemoryStatus(&mem_info);
+	return ((frontend_win32_get_mem_total() - mem_info.dwAvailPhys));
+#endif
 }
 
 static void frontend_win32_attach_console(void)
