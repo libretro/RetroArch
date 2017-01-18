@@ -131,11 +131,9 @@ error:
 }
 
 static void gfx_ctx_mali_fbdev_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
+      bool *resize, unsigned *width, unsigned *height)
 {
    unsigned new_width, new_height;
-
-   (void)frame_count;
 
    gfx_ctx_mali_fbdev_get_video_size(data, &new_width, &new_height);
 

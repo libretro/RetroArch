@@ -41,7 +41,6 @@ typedef struct gfx_ctx_sdl_data
    bool g_full;
    bool g_resized;
 
-   int g_frame_count;
 #ifdef HAVE_SDL2
    SDL_Window    *g_win;
    SDL_GLContext  g_ctx;
@@ -282,7 +281,7 @@ static void sdl_ctx_update_title(void *data, video_frame_info_t *video_info)
 }
 
 static void sdl_ctx_check_window(void *data, bool *quit, bool *resize,unsigned *width,
-                            unsigned *height, unsigned frame_count)
+                            unsigned *height)
 {
    SDL_Event event;
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;
@@ -330,8 +329,6 @@ static void sdl_ctx_check_window(void *data, bool *quit, bool *resize,unsigned *
       *resize   = true;
       sdl->g_resized = false;
    }
-
-   sdl->g_frame_count = frame_count;
 }
 
 static bool sdl_ctx_set_resize(void *data, unsigned width, unsigned height)

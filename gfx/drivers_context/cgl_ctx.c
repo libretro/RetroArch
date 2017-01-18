@@ -77,11 +77,10 @@ static void gfx_ctx_cgl_get_video_size(void *data, unsigned *width, unsigned *he
 }
 
 static void gfx_ctx_cgl_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
+      bool *resize, unsigned *width, unsigned *height)
 {
-   unsigned new_width, new_height;
-
-   (void)frame_count;
+   unsigned new_width  = 0;
+   unsigned new_height = 0;
 
    *quit = false;
 

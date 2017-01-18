@@ -112,7 +112,7 @@ static void gfx_ctx_opendingux_get_video_size(void *data,
 }
 
 static void gfx_ctx_opendingux_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
+      bool *resize, unsigned *width, unsigned *height)
 {
    unsigned new_width, new_height;
    opendingux_ctx_data_t *viv = (opendingux_ctx_data_t*)data;

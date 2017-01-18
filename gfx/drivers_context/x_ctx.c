@@ -347,9 +347,9 @@ static void gfx_ctx_x_swap_buffers(void *data, video_frame_info_t *video_info)
 }
 
 static void gfx_ctx_x_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
+      bool *resize, unsigned *width, unsigned *height)
 {
-   x11_check_window(data, quit, resize, width, height, frame_count);
+   x11_check_window(data, quit, resize, width, height);
 
    switch (x_api)
    {
@@ -789,7 +789,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
          {
             bool quit, resize;
             unsigned width = 0, height = 0;
-            x11_check_window(x, &quit, &resize, &width, &height, 0);
+            x11_check_window(x, &quit, &resize, &width, &height);
 
             /* Use XCB surface since it's the most supported WSI.
              * We can obtain the XCB connection directly from X11. */

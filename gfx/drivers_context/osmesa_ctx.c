@@ -54,7 +54,6 @@ typedef struct gfx_osmesa_ctx_data
    int  height;
    int  pixsize;
 
-   int frame_count;
    OSMesaContext ctx;
    int socket;
    int client;
@@ -310,8 +309,9 @@ static void osmesa_ctx_update_title(void *data, video_frame_info_t *video_info)
 {
 }
 
-static void osmesa_ctx_check_window(void *data, bool *quit, bool *resize,unsigned *width,
-                            unsigned *height, unsigned frame_count)
+static void osmesa_ctx_check_window(void *data, bool *quit,
+      bool *resize,unsigned *width,
+      unsigned *height)
 {
    gfx_ctx_osmesa_data_t *osmesa = (gfx_ctx_osmesa_data_t*)data;
 
@@ -319,7 +319,6 @@ static void osmesa_ctx_check_window(void *data, bool *quit, bool *resize,unsigne
    *height             = osmesa->height;
    *resize             = false;
    *quit               = false;
-   osmesa->frame_count = frame_count;
 }
 
 static bool osmesa_ctx_set_resize(void *data, unsigned width, unsigned height)

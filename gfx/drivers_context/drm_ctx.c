@@ -137,10 +137,9 @@ static void gfx_ctx_drm_swap_interval(void *data, unsigned interval)
 }
 
 static void gfx_ctx_drm_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
+      bool *resize, unsigned *width, unsigned *height)
 {
    (void)data;
-   (void)frame_count;
    (void)width;
    (void)height;
 

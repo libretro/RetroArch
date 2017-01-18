@@ -52,7 +52,7 @@ static void gfx_ctx_emscripten_swap_interval(void *data, unsigned interval)
 }
 
 static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
+      bool *resize, unsigned *width, unsigned *height)
 {
    int input_width;
    int input_height;
@@ -60,7 +60,6 @@ static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
    emscripten_ctx_data_t *emscripten = (emscripten_ctx_data_t*)data;
 
    (void)data;
-   (void)frame_count;
 
    emscripten_get_canvas_size(&input_width, &input_height, &is_fullscreen);
    *width      = (unsigned)input_width;

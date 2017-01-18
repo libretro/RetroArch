@@ -116,7 +116,7 @@ static void gfx_ctx_d3d_show_mouse(void *data, bool state)
 
 static void gfx_ctx_d3d_check_window(void *data, bool *quit,
       bool *resize, unsigned *width,
-      unsigned *height, unsigned frame_count)
+      unsigned *height)
 {
    win32_check_window(quit, resize, width, height);
 }

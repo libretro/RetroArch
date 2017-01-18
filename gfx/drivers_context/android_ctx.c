@@ -230,13 +230,11 @@ static void android_gfx_ctx_get_video_size(void *data,
 }
 
 static void android_gfx_ctx_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
+      bool *resize, unsigned *width, unsigned *height)
 {
    unsigned new_width       = 0;
    unsigned new_height      = 0;
    android_ctx_data_t *and  = (android_ctx_data_t*)data;
-
-   (void)frame_count;
 
    *quit = false;
 

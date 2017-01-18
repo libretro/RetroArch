@@ -148,7 +148,7 @@ static void gfx_ctx_ps3_set_swap_interval(void *data, unsigned interval)
 }
 
 static void gfx_ctx_ps3_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
+      bool *resize, unsigned *width, unsigned *height)
 {
    gl_t *gl = data;
 
