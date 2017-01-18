@@ -214,7 +214,7 @@ void log_deinit(void)
         log_socket = -1;
     }
 }
-static int log_write(struct _reent *r, int fd, const char *ptr, size_t len)
+static ssize_t log_write(struct _reent *r, void* fd, const char *ptr, size_t len)
 {
    if(log_socket < 0)
        return len;
