@@ -1057,89 +1057,6 @@ bool video_monitor_fps_statistics(double *refresh_rate,
 }
 
 
-/**
- * video_monitor_get_fps:
- * @buf           : string suitable for Window title
- * @size          : size of buffer.
- * @buf_fps       : string of raw FPS only (optional).
- * @size_fps      : size of raw FPS buffer.
- *
- * Get the amount of frames per seconds.
- *
- * Returns: true if framerate per seconds could be obtained,
- * otherwise false.
- *
- **/
-bool video_monitor_get_fps(
-      video_frame_info_t video_info,
-      char *buf, size_t size,
-      char *buf_fps, size_t size_fps)
-{
-   static retro_time_t curr_time;
-   static retro_time_t fps_time;
-   retro_time_t        new_time  = cpu_features_get_time_usec();
-   uint64_t         frame_count  = 0;
-
-   video_driver_threaded_lock();
-   frame_count = video_driver_frame_count;
-   video_driver_threaded_unlock();
-
-   *buf = '\0';
-
-   if (frame_count)
-   {
-      static float last_fps;
-      bool ret             = false;
-      unsigned write_index = video_driver_frame_time_count++ &
-         (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
-
-      video_driver_frame_time_samples[write_index] = new_time - fps_time;
-      fps_time = new_time;
-
-      if ((frame_count % FPS_UPDATE_INTERVAL) == 0)
-      {
-         char frames_text[64];
-
-         last_fps = TIME_TO_FPS(curr_time, new_time, FPS_UPDATE_INTERVAL);
-         curr_time = new_time;
-
-         fill_pathname_noext(buf,
-               video_driver_title_buf,
-               " || ",
-               size);
-
-         if (video_info.fps_show)
-         {
-            char fps_text[64];
-            snprintf(fps_text, sizeof(fps_text), " FPS: %6.1f || ", last_fps);
-            strlcat(buf, fps_text, size);
-         }
-
-         strlcat(buf, "Frames: ", size);
-
-         snprintf(frames_text, sizeof(frames_text), STRING_REP_UINT64,
-               (unsigned long long)frame_count);
-
-         strlcat(buf, frames_text, size);
-         ret = true;
-      }
-
-      if (buf_fps && video_info.fps_show)
-         snprintf(buf_fps, size_fps, "FPS: %6.1f || %s: " STRING_REP_UINT64,
-               last_fps,
-               msg_hash_to_str(MSG_FRAMES),
-               (unsigned long long)frame_count);
-
-      return ret;
-   }
-
-   curr_time = fps_time = new_time;
-   strlcpy(buf, video_driver_title_buf, size);
-   if (buf_fps)
-      strlcpy(buf_fps, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), size_fps);
-
-   return true;
-}
 
 float video_driver_get_aspect_ratio(void)
 {
@@ -2087,6 +2004,93 @@ unsigned video_pixel_get_alignment(unsigned pitch)
 }
 
 /**
+ * video_monitor_get_fps:
+ *
+ * Get the amount of frames per seconds.
+ *
+ * Returns: true if framerate per seconds could be obtained,
+ * otherwise false.
+ *
+ **/
+static bool video_monitor_get_fps(video_frame_info_t *video_info)
+{
+   static retro_time_t curr_time;
+   static retro_time_t fps_time;
+   retro_time_t        new_time  = cpu_features_get_time_usec();
+
+   if (video_info->frame_count)
+   {
+      static float last_fps;
+      bool ret             = false;
+      unsigned write_index = video_driver_frame_time_count++ &
+         (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
+
+      video_driver_frame_time_samples[write_index] = new_time - fps_time;
+      fps_time = new_time;
+
+      if ((video_info->frame_count % FPS_UPDATE_INTERVAL) == 0)
+      {
+         char frames_text[64];
+
+         last_fps = TIME_TO_FPS(curr_time, new_time, FPS_UPDATE_INTERVAL);
+         curr_time = new_time;
+
+         fill_pathname_noext(video_info->window_text,
+               video_driver_title_buf,
+               " || ",
+               sizeof(video_info->window_text));
+
+         if (video_info->fps_show)
+         {
+            char fps_text[64];
+            snprintf(video_info->fps_text,
+                  sizeof(video_info->fps_text),
+                  " FPS: %6.1f || ", last_fps);
+            strlcat(video_info->window_text,
+                  fps_text,
+                  sizeof(video_info->window_text));
+         }
+
+         strlcat(video_info->window_text,
+               "Frames: ",
+               sizeof(video_info->window_text));
+
+         snprintf(frames_text,
+               sizeof(frames_text),
+               STRING_REP_UINT64,
+               (unsigned long long)video_info->frame_count);
+
+         strlcat(video_info->window_text,
+               frames_text,
+               sizeof(video_info->window_text));
+         ret = true;
+      }
+
+      if (video_info->fps_text && video_info->fps_show)
+         snprintf(
+               video_info->fps_text,
+               sizeof(video_info->fps_text),
+               "FPS: %6.1f || %s: " STRING_REP_UINT64,
+               last_fps,
+               msg_hash_to_str(MSG_FRAMES),
+               (unsigned long long)video_info->frame_count);
+
+      return ret;
+   }
+
+   curr_time = fps_time = new_time;
+   strlcpy(video_info->window_text,
+         video_driver_title_buf,
+         sizeof(video_info->window_text));
+   if (video_info->fps_text)
+      strlcpy(video_info->fps_text,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+            sizeof(video_info->fps_text));
+
+   return true;
+}
+
+/**
  * video_driver_frame:
  * @data                 : pointer to data of the video frame.
  * @width                : width of the video frame.
@@ -2131,6 +2135,13 @@ void video_driver_frame(const void *data, unsigned width,
 
    video_driver_build_info(&video_info);
 
+   video_driver_threaded_lock();
+   video_info.frame_count = video_driver_frame_count;
+   video_driver_frame_count++;
+   video_driver_threaded_unlock();
+   
+   video_info.monitor_fps_enable = video_monitor_get_fps(&video_info); 
+
    /* Slightly messy code,
     * but we really need to do processing before blocking on VSync
     * for best possible scheduling.
@@ -2161,16 +2172,14 @@ void video_driver_frame(const void *data, unsigned width,
          && video_info.font_enable && msg)
       strlcpy(video_driver_msg, msg, sizeof(video_driver_msg));
 
-   video_driver_threaded_lock();
-   frame_count = video_driver_frame_count;
-   video_driver_frame_count++;
-   video_driver_threaded_unlock();
-
    if (!current_video || !current_video->frame(
             video_driver_data, data, width, height,
             frame_count,
-            pitch, video_driver_msg, video_info))
+            pitch, video_driver_msg, &video_info))
       video_driver_active = false;
+
+   if (video_info.fps_show)
+      runloop_msg_queue_push(video_info.fps_text, 1, 1, false);
 }
 
 void video_driver_display_type_set(enum rarch_display_type type)
@@ -2245,6 +2254,10 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->monitor_index         = settings->video.monitor_index;
    video_info->shared_context        = settings->video.shared_context;
    video_info->font_enable           = settings->video.font_enable;
+
+   video_info->frame_count           = 0;
+   video_info->window_text[0]        = '\0';
+   video_info->fps_text[0]           = '\0';
 }
 
 /**

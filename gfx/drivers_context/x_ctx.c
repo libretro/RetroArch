@@ -302,7 +302,7 @@ static void gfx_ctx_x_swap_interval(void *data, unsigned interval)
    }
 }
 
-static void gfx_ctx_x_swap_buffers(void *data, video_frame_info_t video_info)
+static void gfx_ctx_x_swap_buffers(void *data, video_frame_info_t *video_info)
 {
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
 
@@ -545,7 +545,7 @@ error:
 }
 
 static bool gfx_ctx_x_set_video_mode(void *data,
-      video_frame_info_t video_info,
+      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -565,7 +565,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    if (!x)
       return false;
 
-   windowed_full = video_info.windowed_fullscreen;
+   windowed_full = video_info->windowed_fullscreen;
    true_full = false;
 
    switch (x_api)
@@ -613,8 +613,8 @@ static bool gfx_ctx_x_set_video_mode(void *data,
          RARCH_ERR("[GLX]: Entering true fullscreen failed. Will attempt windowed mode.\n");
    }
 
-   if (video_info.monitor_index)
-      g_x11_screen = video_info.monitor_index - 1;
+   if (video_info->monitor_index)
+      g_x11_screen = video_info->monitor_index - 1;
 
 #ifdef HAVE_XINERAMA
    if (fullscreen || g_x11_screen != 0)
@@ -662,7 +662,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
 
 
    x11_set_window_attr(g_x11_dpy, g_x11_win);
-   x11_update_window_title(NULL, video_info);
+   x11_update_title(NULL, video_info);
 
    if (fullscreen)
       x11_show_mouse(g_x11_dpy, g_x11_win, false);
@@ -1081,7 +1081,7 @@ const gfx_ctx_driver_t gfx_ctx_x = {
    NULL, /* get_video_output_next */
    x11_get_metrics,
    NULL,
-   x11_update_window_title,
+   x11_update_title,
    gfx_ctx_x_check_window,
    gfx_ctx_x_set_resize,
    x11_has_focus,

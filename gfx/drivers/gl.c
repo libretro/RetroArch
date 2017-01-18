@@ -299,11 +299,11 @@ static void gl_set_viewport_wrapper(void *data, unsigned viewport_width,
 
    video_driver_build_info(&video_info);
 
-   gl_set_viewport(data, video_info,
+   gl_set_viewport(data, &video_info,
          viewport_width, viewport_height, force_full, allow_rotate);
 }
 
-void gl_set_viewport(void *data, video_frame_info_t video_info,
+void gl_set_viewport(void *data, video_frame_info_t *video_info,
       unsigned viewport_width,
       unsigned viewport_height,
       bool force_full, bool allow_rotate)
@@ -324,7 +324,7 @@ void gl_set_viewport(void *data, video_frame_info_t video_info,
 
    video_context_driver_translate_aspect(&aspect_data);
 
-   if (video_info.scale_integer && !force_full)
+   if (video_info->scale_integer && !force_full)
    {
       video_viewport_get_scaled_integer(&gl->vp,
             viewport_width, viewport_height,
@@ -337,7 +337,7 @@ void gl_set_viewport(void *data, video_frame_info_t video_info,
       float desired_aspect = video_driver_get_aspect_ratio();
 
 #if defined(HAVE_MENU)
-      if (video_info.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      if (video_info->aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          const struct video_viewport *custom = video_viewport_get_custom();
 
@@ -1090,7 +1090,7 @@ static bool gl_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height,
       uint64_t frame_count,
       unsigned pitch, const char *msg,
-      video_frame_info_t video_info)
+      video_frame_info_t *video_info)
 {
    video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
@@ -1339,7 +1339,7 @@ static bool gl_frame(void *data, const void *frame,
    /* Disable BFI during fast forward, slow-motion,
     * and pause to prevent flicker. */
    if (
-         video_info.black_frame_insertion
+         video_info->black_frame_insertion
          && !input_driver_is_nonblock_state()
          && !runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, NULL)
          && !runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
@@ -1351,7 +1351,7 @@ static bool gl_frame(void *data, const void *frame,
    video_context_driver_swap_buffers(video_info);
 
 #ifdef HAVE_GL_SYNC
-   if (video_info.hard_sync && gl->have_sync)
+   if (video_info->hard_sync && gl->have_sync)
    {
       static struct retro_perf_counter gl_fence = {0};
 
@@ -1361,7 +1361,7 @@ static bool gl_frame(void *data, const void *frame,
       gl->fences[gl->fence_count++] =
          glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 
-      while (gl->fence_count > video_info.hard_sync_frames)
+      while (gl->fence_count > video_info->hard_sync_frames)
       {
          glClientWaitSync(gl->fences[0],
                GL_SYNC_FLUSH_COMMANDS_BIT, 1000000000);

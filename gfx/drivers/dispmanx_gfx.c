@@ -430,7 +430,7 @@ static void *dispmanx_gfx_init(const video_info_t *video,
 
 static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
       unsigned height, uint64_t frame_count, unsigned pitch, const char *msg,
-      video_frame_info_t video_info)
+      video_frame_info_t *video_info)
 {
    struct dispmanx_video *_dispvars = data;
    float aspect = video_driver_get_aspect_ratio();
@@ -438,7 +438,9 @@ static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
    if (!frame)
       return true;
 
-   if (width != _dispvars->core_width || height != _dispvars->core_height || _dispvars->aspect_ratio != aspect)
+   if (  (width != _dispvars->core_width)   || 
+         (height != _dispvars->core_height) || 
+         (_dispvars->aspect_ratio != aspect))
    {
       /* Sanity check. */
       if (width == 0 || height == 0)
@@ -467,18 +469,11 @@ static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
             settings->video.max_swapchain_images,
             0,
             &_dispvars->main_surface);
-  
+
       /* We need to recreate the menu surface too, if it exists already, so we 
        * free it and let dispmanx_set_texture_frame() recreate it as it detects it's NULL.*/ 
-      if (_dispvars->menu_active && _dispvars->menu_surface) {
+      if (_dispvars->menu_active && _dispvars->menu_surface)
          dispmanx_surface_free(_dispvars, &_dispvars->menu_surface);
-      }
-   }
-
-   if (video_info.fps_show)
-   {
-      char buf[128];
-      video_monitor_get_fps(video_info, buf, sizeof(buf), NULL, 0);
    }
 
    /* Update main surface: locate free page, blit and flip. */

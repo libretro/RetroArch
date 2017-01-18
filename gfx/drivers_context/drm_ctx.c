@@ -225,7 +225,7 @@ static bool gfx_ctx_drm_queue_flip(void)
    return false;
 }
 
-static void gfx_ctx_drm_swap_buffers(void *data, video_frame_info_t video_info)
+static void gfx_ctx_drm_swap_buffers(void *data, video_frame_info_t *video_info)
 {
    gfx_ctx_drm_data_t *drm = (gfx_ctx_drm_data_t*)data;
 
@@ -253,7 +253,7 @@ static void gfx_ctx_drm_swap_buffers(void *data, video_frame_info_t video_info)
    waiting_for_flip = gfx_ctx_drm_queue_flip();
 
    /* Triple-buffered page flips */
-   if (video_info.max_swapchain_images >= 3 &&
+   if (video_info->max_swapchain_images >= 3 &&
          gbm_surface_has_free_buffers(g_gbm_surface))
       return;
 
@@ -270,18 +270,8 @@ static bool gfx_ctx_drm_set_resize(void *data,
    return false;
 }
 
-static void gfx_ctx_drm_update_window_title(void *data, video_frame_info_t video_info)
+static void gfx_ctx_drm_update_window_title(void *data, video_frame_info_t *video_info)
 {
-   char buf[128];
-   char buf_fps[128];
-
-   buf[0] = buf_fps[0]  = '\0';
-
-   video_monitor_get_fps(video_info, buf, sizeof(buf),
-         buf_fps, sizeof(buf_fps));
-
-   if (video_info.fps_show)
-      runloop_msg_queue_push( buf_fps, 1, 1, false);
 }
 
 static void gfx_ctx_drm_get_video_size(void *data,
@@ -617,7 +607,7 @@ error:
 #endif
 
 static bool gfx_ctx_drm_set_video_mode(void *data,
-      video_frame_info_t video_info,
+      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -634,7 +624,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
    /* If we use black frame insertion, 
     * we fake a 60 Hz monitor for 120 Hz one, 
     * etc, so try to match that. */
-   refresh_mod = video_info.black_frame_insertion 
+   refresh_mod = video_info->black_frame_insertion 
       ? 0.5f : 1.0f;
 
    /* Find desired video mode, and use that.
@@ -660,7 +650,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
             continue;
 
          diff = fabsf(refresh_mod * g_drm_connector->modes[i].vrefresh
-               - video_info.refresh_rate);
+               - video_info->refresh_rate);
 
          if (!g_drm_mode || diff < minimum_fps_diff)
          {

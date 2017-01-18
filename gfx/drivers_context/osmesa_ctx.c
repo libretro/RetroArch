@@ -238,7 +238,7 @@ static void osmesa_ctx_swap_interval(void *data, unsigned interval)
 }
 
 static bool osmesa_ctx_set_video_mode(void *data,
-      video_frame_info_t video_info,
+      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -306,20 +306,8 @@ static void osmesa_ctx_get_video_size(void *data,
    *height = osmesa->height;
 }
 
-static void osmesa_ctx_update_window_title(void *data, video_frame_info_t video_info)
+static void osmesa_ctx_update_title(void *data, video_frame_info_t *video_info)
 {
-   static char buf[128]           = {0};
-   static char buf_fps[128]       = {0};
-   gfx_ctx_osmesa_data_t *osmesa = (gfx_ctx_osmesa_data_t*)data;
-
-   if (!osmesa)
-      return;
-
-   video_monitor_get_fps(video_info, buf,
-         sizeof(buf), buf_fps, sizeof(buf_fps));
-
-   if (video_info.fps_show)
-      runloop_msg_queue_push(buf_fps, 1, 1, false);
 }
 
 static void osmesa_ctx_check_window(void *data, bool *quit, bool *resize,unsigned *width,
@@ -361,7 +349,7 @@ static bool osmesa_ctx_has_windowed(void *data)
    return true;
 }
 
-static void osmesa_ctx_swap_buffers(void *data, video_frame_info_t video_info)
+static void osmesa_ctx_swap_buffers(void *data, video_frame_info_t *video_info)
 {
    gfx_ctx_osmesa_data_t *osmesa = (gfx_ctx_osmesa_data_t*)data;
    osmesa_fifo_accept(osmesa);
@@ -417,7 +405,7 @@ const gfx_ctx_driver_t gfx_ctx_osmesa =
    NULL, /* get_video_output_next */
    NULL, /* get_metrics */
    NULL, /* translate_aspect */
-   osmesa_ctx_update_window_title,
+   osmesa_ctx_update_title,
    osmesa_ctx_check_window,
    osmesa_ctx_set_resize,
    osmesa_ctx_has_focus,

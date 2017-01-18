@@ -35,7 +35,7 @@ static void gfx_ctx_null_check_window(void *data, bool *quit,
    (void)resize;
 }
 
-static void gfx_ctx_null_swap_buffers(void *data, video_frame_info_t video_info)
+static void gfx_ctx_null_swap_buffers(void *data, video_frame_info_t *video_info)
 {
    (void)data;
 }
@@ -48,10 +48,8 @@ static bool gfx_ctx_null_set_resize(void *data, unsigned width, unsigned height)
    return false;
 }
 
-static void gfx_ctx_null_update_window_title(void *data, video_frame_info_t video_info)
+static void gfx_ctx_null_update_window_title(void *data, video_frame_info_t *video_info)
 {
-   (void)data;
-   (void)video_info;
 }
 
 static void gfx_ctx_null_get_video_size(void *data, unsigned *width, unsigned *height)
@@ -62,7 +60,7 @@ static void gfx_ctx_null_get_video_size(void *data, unsigned *width, unsigned *h
 }
 
 static bool gfx_ctx_null_set_video_mode(void *data,
-      video_frame_info_t video_info,
+      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {

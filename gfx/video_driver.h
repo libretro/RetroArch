@@ -101,6 +101,10 @@ typedef struct video_frame_info
    bool fullscreen;
    unsigned monitor_index;
    bool font_enable;
+   bool monitor_fps_enable;
+   char window_text[128];
+   char fps_text[128];
+   uint64_t frame_count;
 } video_frame_info_t;
 
 /* Optionally implemented interface to poke more
@@ -163,7 +167,7 @@ typedef struct video_viewport
 typedef bool (*video_driver_frame_t)(void *data,
       const void *frame, unsigned width,
       unsigned height, uint64_t frame_count,
-      unsigned pitch, const char *msg, video_frame_info_t video_info);
+      unsigned pitch, const char *msg, video_frame_info_t *video_info);
 
 typedef struct video_driver
 {
@@ -461,25 +465,6 @@ void video_monitor_set_refresh_rate(float hz);
  **/
 bool video_monitor_fps_statistics(double *refresh_rate,
       double *deviation, unsigned *sample_points);
-
-/**
- * video_monitor_get_fps:
- * @video_info    : information about the video frame
- * @buf           : string suitable for Window title
- * @size          : size of buffer.
- * @buf_fps       : string of raw FPS only (optional).
- * @size_fps      : size of raw FPS buffer.
- *
- * Get the amount of frames per seconds.
- *
- * Returns: true if framerate per seconds could be obtained,
- * otherwise false.
- *
- **/
-bool video_monitor_get_fps(
-      video_frame_info_t video_info,
-      char *buf, size_t size,
-      char *buf_fps, size_t size_fps);
 
 unsigned video_pixel_get_alignment(unsigned pitch);
 

@@ -530,8 +530,8 @@ static void *xv_init(const video_info_t *video,
 
    video_driver_build_info(&video_info);
 
-   if (video_monitor_get_fps(video_info, buf, sizeof(buf), NULL, 0))
-      XStoreName(g_x11_dpy, g_x11_win, buf);
+   if (video_info.monitor_fps_enable)
+      XStoreName(g_x11_dpy, g_x11_win, video_info.window_text);
 
    x11_set_window_attr(g_x11_dpy, g_x11_win);
 
@@ -784,7 +784,7 @@ static void xv_render_msg(xv_t *xv, const char *msg,
 
 static bool xv_frame(void *data, const void *frame, unsigned width,
       unsigned height, uint64_t frame_count,
-      unsigned pitch, const char *msg, video_frame_info_t video_info)
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    XWindowAttributes target;
    xv_t *xv                  = (xv_t*)data;
@@ -811,7 +811,7 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
          true);
    XSync(g_x11_dpy, False);
 
-   x11_update_window_title(NULL, video_info);
+   x11_update_title(NULL, video_info);
 
    return true;
 }

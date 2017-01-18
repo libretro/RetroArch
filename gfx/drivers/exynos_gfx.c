@@ -1159,7 +1159,6 @@ static int exynos_render_msg(struct exynos_video *vid,
    return exynos_blend_font(pdata);
 }
 
-
 static void *exynos_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
@@ -1273,7 +1272,7 @@ static void exynos_gfx_free(void *data)
 
 static bool exynos_gfx_frame(void *data, const void *frame, unsigned width,
       unsigned height, uint64_t frame_count, unsigned pitch, const char *msg,
-      video_frame_info_t video_info)
+      video_frame_info_t *video_info)
 {
    struct exynos_video *vid = data;
    struct exynos_page *page = NULL;
@@ -1302,18 +1301,6 @@ static bool exynos_gfx_frame(void *data, const void *frame, unsigned width,
 
       if (exynos_blit_frame(vid->data, frame, pitch) != 0)
          goto fail;
-   }
-
-   if (video_info.fps_show)
-   {
-      char buffer[128];
-      char buffer_fps[128];
-
-      buffer[0] = buffer_fps[0] = '\0';
-
-      video_monitor_get_fps(video_info, buffer, sizeof(buffer),
-            video_info.fps_show ? buffer_fps : NULL, sizeof(buffer_fps));
-      runloop_msg_queue_push(buffer_fps, 1, 1, false);
    }
 
    /* If at this point the dimension parameters are still zero, setup some  *

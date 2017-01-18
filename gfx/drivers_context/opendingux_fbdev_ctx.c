@@ -141,21 +141,12 @@ static bool gfx_ctx_opendingux_set_resize(void *data,
    return false;
 }
 
-static void gfx_ctx_opendingux_update_window_title(void *data, video_frame_info_t video_info)
+static void gfx_ctx_opendingux_update_title(void *data, video_frame_info_t *video_info)
 {
-   char buf[128];
-   char buf_fps[128];
-
-   buf[0] = buf_fps[0]  = '\0';
-
-   video_monitor_get_fps(video_info, buf, sizeof(buf),
-         buf_fps, sizeof(buf_fps));
-   if (video_info.fps_show)
-      runloop_msg_queue_push(buf_fps, 1, 1, false);
 }
 
 static bool gfx_ctx_opendingux_set_video_mode(void *data,
-      video_frame_info_t video_info,
+      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -232,7 +223,7 @@ static bool gfx_ctx_opendingux_has_windowed(void *data)
    return false;
 }
 
-static void gfx_ctx_opendingux_swap_buffers(void *data, video_frame_info_t video_info)
+static void gfx_ctx_opendingux_swap_buffers(void *data, video_frame_info_t *video_info)
 {
    opendingux_ctx_data_t *viv = (opendingux_ctx_data_t*)data;
 

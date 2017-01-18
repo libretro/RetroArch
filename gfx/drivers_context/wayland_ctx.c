@@ -719,20 +719,12 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
    return true;
 }
 
-static void gfx_ctx_wl_update_window_title(void *data, video_frame_info_t video_info)
+static void gfx_ctx_wl_update_title(void *data, video_frame_info_t *video_info)
 {
-   char buf[128];
-   char buf_fps[128];
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   buf[0] = buf_fps[0] = '\0';
-
-   if (video_monitor_get_fps(video_info, buf, sizeof(buf),  
-            buf_fps, sizeof(buf_fps)))
-      wl_shell_surface_set_title(wl->shell_surf, buf);
-
-   if (video_info.fps_show)
-      runloop_msg_queue_push(buf_fps, 1, 1, false);
+   if (wl && video_info->monitor_fps_enable)
+      wl_shell_surface_set_title(wl->shell_surf, video_info->window_text);
 }
 
 
@@ -1075,7 +1067,7 @@ static void gfx_ctx_wl_set_swap_interval(void *data, unsigned swap_interval)
 }
 
 static bool gfx_ctx_wl_set_video_mode(void *data,
-      video_frame_info_t video_info,
+      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -1557,7 +1549,7 @@ static void *gfx_ctx_wl_get_context_data(void *data)
 }
 #endif
 
-static void gfx_ctx_wl_swap_buffers(void *data, video_frame_info_t video_info)
+static void gfx_ctx_wl_swap_buffers(void *data, video_frame_info_t *video_info)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
@@ -1676,7 +1668,7 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
    NULL, /* get_video_output_next */
    gfx_ctx_wl_get_metrics,
    NULL,
-   gfx_ctx_wl_update_window_title,
+   gfx_ctx_wl_update_title,
    gfx_ctx_wl_check_window,
    gfx_ctx_wl_set_resize,
    gfx_ctx_wl_has_focus,

@@ -744,11 +744,12 @@ static void *drm_gfx_init(const video_info_t *video,
 
 static bool drm_gfx_frame(void *data, const void *frame, unsigned width,
       unsigned height, uint64_t frame_count, unsigned pitch, const char *msg,
-      video_frame_info_t video_info)
+      video_frame_info_t *video_info)
 {
    struct drm_video *_drmvars = data;
 
-   if (width != _drmvars->core_width || height != _drmvars->core_height)
+   if (  ( width != _drmvars->core_width) || 
+         (height != _drmvars->core_height))
    {
       /* Sanity check. */
       if (width == 0 || height == 0)
@@ -776,14 +777,6 @@ static bool drm_gfx_frame(void *data, const void *frame, unsigned width,
     
       /* We need to change the plane to read from the main surface */
       drm_plane_setup(_drmvars->main_surface);
-   }
-
-   if (_drmvars->menu_active)
-   {
-      char buf[128];
-      buf[0] = '\0';
-
-      video_monitor_get_fps(video_info, buf, sizeof(buf), NULL, 0);
    }
 
    /* Update main surface: locate free page, blit and flip. */

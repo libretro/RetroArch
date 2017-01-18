@@ -78,7 +78,7 @@ typedef struct gfx_ctx_driver
    void (*swap_interval)(void *data, unsigned);
 
    /* Sets video mode. Creates a window, etc. */
-   bool (*set_video_mode)(void*, video_frame_info_t video_info, unsigned, unsigned, bool);
+   bool (*set_video_mode)(void*, video_frame_info_t *video_info, unsigned, unsigned, bool);
 
    /* Gets current window size.
     * If not initialized yet, it returns current screen size. */
@@ -101,7 +101,7 @@ typedef struct gfx_ctx_driver
    float (*translate_aspect)(void*, unsigned, unsigned);
 
    /* Asks driver to update window title (FPS, etc). */
-   void (*update_window_title)(void*, video_frame_info_t video_info);
+   void (*update_window_title)(void*, video_frame_info_t *video_info);
 
    /* Queries for resize and quit events.
     * Also processes events. */
@@ -123,7 +123,7 @@ typedef struct gfx_ctx_driver
 
    /* Swaps buffers. VBlank sync depends on
     * earlier calls to swap_interval. */
-   void (*swap_buffers)(void*, video_frame_info_t video_info);
+   void (*swap_buffers)(void*, video_frame_info_t *video_info);
 
    /* Most video backends will want to use a certain input driver.
     * Checks for it here. */

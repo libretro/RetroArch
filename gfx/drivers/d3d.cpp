@@ -1368,7 +1368,7 @@ static void d3d_get_overlay_interface(void *data,
 static bool d3d_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height,
       uint64_t frame_count, unsigned pitch,
-      const char *msg, video_frame_info_t video_info)
+      const char *msg, video_frame_info_t *video_info)
 {
    unsigned width, height;
    static struct retro_perf_counter d3d_frame = {0};
@@ -1412,18 +1412,18 @@ static bool d3d_frame(void *data, const void *frame,
    /* render_chain() only clears out viewport,
     * clear out everything. */
    D3DVIEWPORT screen_vp;
-   screen_vp.X = 0;
-   screen_vp.Y = 0;
-   screen_vp.MinZ = 0;
-   screen_vp.MaxZ = 1;
-   screen_vp.Width = width;
+   screen_vp.X      = 0;
+   screen_vp.Y      = 0;
+   screen_vp.MinZ   = 0;
+   screen_vp.MaxZ   = 1;
+   screen_vp.Width  = width;
    screen_vp.Height = height;
    d3d_set_viewports(d3d->dev, &screen_vp);
    d3d_clear(d3d->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
 
    /* Insert black frame first, so we
     * can screenshot, etc. */
-   if (video_info.black_frame_insertion)
+   if (video_info->black_frame_insertion)
    {
       if (!d3d_swap(d3d, d3d->dev) || d3d->needs_restore)
          return true;

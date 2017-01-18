@@ -1438,7 +1438,7 @@ static bool gx_frame(void *data, const void *frame,
       unsigned width, unsigned height,
       uint64_t frame_count, unsigned pitch,
       const char *msg,
-      video_frame_info_t video_info)
+      video_frame_info_t *video_info)
 {
    char fps_txt[128];
    char fps_text_buf[128];
@@ -1538,10 +1538,7 @@ static bool gx_frame(void *data, const void *frame,
 
    GX_DrawDone();
 
-   video_monitor_get_fps(video_info, fps_txt, sizeof(fps_txt),
-         fps_text_buf, sizeof(fps_text_buf));
-
-   if (video_info.fps_show)
+   if (video_info->fps_show)
    {
       char mem1_txt[128];
       char mem2_txt[128];

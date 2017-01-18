@@ -456,7 +456,7 @@ bool video_context_driver_set_video_mode(gfx_ctx_mode_t *mode_info)
    video_driver_build_info(&video_info);
 
    if (!current_video_context->set_video_mode(
-            video_context_data, video_info, mode_info->width,
+            video_context_data, &video_info, mode_info->width,
             mode_info->height, mode_info->fullscreen))
       return false;
    return true;

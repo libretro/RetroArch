@@ -323,7 +323,7 @@ void x11_suspend_screensaver(Window wnd, bool enable)
     x11_suspend_screensaver_xdg_screensaver(wnd, enable);
 }
 
-static bool get_video_mode(video_frame_info_t video_info,
+static bool get_video_mode(video_frame_info_t *video_info,
       Display *dpy, unsigned width, unsigned height,
       XF86VidModeModeInfo *mode, XF86VidModeModeInfo *desktop_mode)
 {
@@ -345,7 +345,7 @@ static bool get_video_mode(video_frame_info_t video_info,
 
    /* If we use black frame insertion, we fake a 60 Hz monitor 
     * for 120 Hz one, etc, so try to match that. */
-   refresh_mod = video_info.black_frame_insertion ? 0.5f : 1.0f;
+   refresh_mod = video_info->black_frame_insertion ? 0.5f : 1.0f;
 
    for (i = 0; i < num_modes; i++)
    {
@@ -361,7 +361,7 @@ static bool get_video_mode(video_frame_info_t video_info,
          continue;
 
       refresh = refresh_mod * m->dotclock * 1000.0f / (m->htotal * m->vtotal);
-      diff    = fabsf(refresh - video_info.refresh_rate);
+      diff    = fabsf(refresh - video_info->refresh_rate);
 
       if (!ret || diff < minimum_fps_diff)
       {
@@ -375,7 +375,7 @@ static bool get_video_mode(video_frame_info_t video_info,
    return ret;
 }
 
-bool x11_enter_fullscreen(video_frame_info_t video_info,
+bool x11_enter_fullscreen(video_frame_info_t *video_info,
       Display *dpy, unsigned width,
       unsigned height, XF86VidModeModeInfo *desktop_mode)
 {
@@ -715,18 +715,10 @@ bool x11_connect(void)
    return true;
 }
 
-void x11_update_window_title(void *data, video_frame_info_t video_info)
+void x11_update_title(void *data, video_frame_info_t *video_info)
 {
-   char buf[128];
-   char buf_fps[128];
-
-   buf[0] = buf_fps[0] = '\0';
-
-   if (video_monitor_get_fps(video_info,
-            buf, sizeof(buf), buf_fps, sizeof(buf_fps)))
-      XStoreName(g_x11_dpy, g_x11_win, buf);
-   if (video_info.fps_show)
-      runloop_msg_queue_push(buf_fps, 1, 1, false);
+   if (video_info->monitor_fps_enable)
+      XStoreName(g_x11_dpy, g_x11_win, video_info->window_text);
 }
 
 bool x11_input_ctx_new(bool true_full)

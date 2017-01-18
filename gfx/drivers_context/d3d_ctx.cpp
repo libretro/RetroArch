@@ -76,7 +76,7 @@ static bool gfx_ctx_d3d_set_resize(void *data, unsigned new_width, unsigned new_
    return true;
 }
 
-static void gfx_ctx_d3d_swap_buffers(void *data, video_frame_info_t video_info)
+static void gfx_ctx_d3d_swap_buffers(void *data, video_frame_info_t *video_info)
 {
    d3d_video_t      *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
@@ -84,25 +84,11 @@ static void gfx_ctx_d3d_swap_buffers(void *data, video_frame_info_t video_info)
    d3d_swap(d3d, d3dr);
 }
 
-static void gfx_ctx_d3d_update_title(void *data, video_frame_info_t video_info)
+static void gfx_ctx_d3d_update_title(void *data, video_frame_info_t *video_info)
 {
-   char buf[128];
-   char buffer_fps[128];
-   const ui_window_t *window = ui_companion_driver_get_window_ptr();
-
-   buf[0] = buffer_fps[0]    = '\0';
-
-   if (window && video_monitor_get_fps(video_info, buf, sizeof(buf),
-            buffer_fps, sizeof(buffer_fps)))
-   {
-#ifndef _XBOX
-      window->set_title(&main_window, buf);
-#endif
-   }
-
-   if (video_info.fps_show)
-   {
 #ifdef _XBOX
+   if (video_info->fps_show)
+   {
       MEMORYSTATUS stat;
       char mem[128];
 
@@ -111,10 +97,15 @@ static void gfx_ctx_d3d_update_title(void *data, video_frame_info_t video_info)
       GlobalMemoryStatus(&stat);
       snprintf(mem, sizeof(mem), "|| MEM: %.2f/%.2fMB",
             stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
-      strlcat(buffer_fps, mem, sizeof(buffer_fps));
-#endif
-      runloop_msg_queue_push(buffer_fps, 1, 1, false);
+      strlcat(video_info->fps_text, mem, sizeof(video_info->fps_text));
    }
+#else
+   const ui_window_t *window = ui_companion_driver_get_window_ptr();
+
+   if (window && video_info->monitor_fps_enable)
+      window->set_title(&main_window, video_info->window_text);
+#endif
+
 }
 
 static void gfx_ctx_d3d_show_mouse(void *data, bool state)
@@ -197,7 +188,7 @@ static void gfx_ctx_d3d_input_driver(void *data,
 }
 
 static bool gfx_ctx_d3d_set_video_mode(void *data,
-      video_frame_info_t video_info,
+      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {

@@ -87,19 +87,12 @@ static bool gfx_ctx_gdi_set_resize(void *data,
    return false;
 }
 
-static void gfx_ctx_gdi_update_window_title(void *data, video_frame_info_t video_info)
+static void gfx_ctx_gdi_update_title(void *data, video_frame_info_t *video_info)
 {
-   char buf[128];
-   char buf_fps[128];
    const ui_window_t *window = ui_companion_driver_get_window_ptr();
 
-   buf[0] = buf_fps[0] = '\0';
-
-   if (window && video_monitor_get_fps(video_info, buf, sizeof(buf),
-            buf_fps, sizeof(buf_fps)))
-      window->set_title(&main_window, buf);
-   if (video_info.fps_show)
-      runloop_msg_queue_push(buf_fps, 1, 1, false);
+   if (window && video_info->monitor_fps_enable)
+      window->set_title(&main_window, video_info->window_text);
 }
 
 static void gfx_ctx_gdi_get_video_size(void *data,
@@ -190,7 +183,7 @@ static void gfx_ctx_gdi_destroy(void *data)
 }
 
 static bool gfx_ctx_gdi_set_video_mode(void *data,
-      video_frame_info_t video_info,
+      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -287,7 +280,7 @@ static uint32_t gfx_ctx_gdi_get_flags(void *data)
    return flags;
 }
 
-static void gfx_ctx_gdi_swap_buffers(void *data, video_frame_info_t video_info)
+static void gfx_ctx_gdi_swap_buffers(void *data, video_frame_info_t *video_info)
 {
    (void)data;
 

@@ -1463,7 +1463,7 @@ static void vulkan_readback(vk_t *vk)
          VK_PIPELINE_STAGE_HOST_BIT);
 }
 
-static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t video_info)
+static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t *video_info)
 {
    VkCommandBufferBeginInfo begin_info           = {
       VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
@@ -1520,7 +1520,7 @@ static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t video_info)
 static bool vulkan_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height,
       uint64_t frame_count,
-      unsigned pitch, const char *msg, video_frame_info_t video_info)
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    struct vk_per_frame *chain;
    unsigned width, height;
@@ -1931,7 +1931,7 @@ static bool vulkan_frame(void *data, const void *frame,
    /* Disable BFI during fast forward, slow-motion,
     * and pause to prevent flicker. */
    if (
-         video_info.black_frame_insertion
+         video_info->black_frame_insertion
          && !input_driver_is_nonblock_state()
          && !runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, NULL)
          && !runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
