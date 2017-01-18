@@ -562,13 +562,13 @@ static void compute_entries_box(mui_handle_t* mui, int width)
 
 static void mui_render(void *data)
 {
-   size_t i             = 0;
    menu_animation_ctx_delta_t delta;
    float delta_time;
    unsigned bottom, width, height, header_height;
+   size_t i             = 0;
    mui_handle_t *mui    = (mui_handle_t*)data;
    settings_t *settings = config_get_ptr();
-   file_list_t *list = menu_entries_get_selection_buf_ptr(0);
+   file_list_t *list    = menu_entries_get_selection_buf_ptr(0);
 
    if (!mui)
       return;

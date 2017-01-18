@@ -249,7 +249,6 @@ void gl_renderchain_render(gl_t *gl,
    video_shader_ctx_coords_t coords;
    video_shader_ctx_params_t params;
    video_shader_ctx_info_t shader_info;
-   unsigned width, height;
    const struct video_fbo_rect *prev_rect;
    struct video_tex_info *fbo_info;
    struct video_tex_info fbo_tex_info[GFX_MAX_SHADERS];
@@ -257,8 +256,8 @@ void gl_renderchain_render(gl_t *gl,
    GLfloat xamt, yamt;
    unsigned fbo_tex_info_cnt = 0;
    GLfloat fbo_tex_coords[8] = {0.0f};
-
-   video_driver_get_size(&width, &height);
+   unsigned width            = video_info->width;
+   unsigned height           = video_info->height;
 
    /* Render the rest of our passes. */
    gl->coords.tex_coord = fbo_tex_coords;
