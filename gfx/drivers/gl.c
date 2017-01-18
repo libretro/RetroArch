@@ -309,17 +309,16 @@ void gl_set_viewport(void *data, video_frame_info_t *video_info,
       bool force_full, bool allow_rotate)
 {
    gfx_ctx_aspect_t aspect_data;
-   int x                  = 0;
-   int y                  = 0;
-   float device_aspect    = (float)viewport_width / viewport_height;
+   int x                    = 0;
+   int y                    = 0;
+   float device_aspect      = (float)viewport_width / viewport_height;
    struct video_ortho ortho = {0, 1, 0, 1, -1, 1};
-   gl_t           *gl     = (gl_t*)data;
-   unsigned width         = video_info->width;
-   unsigned height        = video_info->height;
+   gl_t           *gl       = (gl_t*)data;
+   unsigned height          = video_info->height;
 
-   aspect_data.aspect   = &device_aspect;
-   aspect_data.width    = viewport_width;
-   aspect_data.height   = viewport_height;
+   aspect_data.aspect       = &device_aspect;
+   aspect_data.width        = viewport_width;
+   aspect_data.height       = viewport_height;
 
    video_context_driver_translate_aspect(&aspect_data);
 
