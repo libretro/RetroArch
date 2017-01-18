@@ -397,10 +397,8 @@ bool menu_display_get_update_pending(void)
    return false;
 }
 
-void menu_display_set_viewport(void)
+void menu_display_set_viewport(unsigned width, unsigned height)
 {
-   unsigned width, height;
-   video_driver_get_size(&width, &height);
    video_driver_set_viewport(width, height, true, false);
 }
 

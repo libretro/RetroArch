@@ -878,7 +878,7 @@ static void zarch_frame(void *data, video_frame_info_t *video_info)
 
    video_driver_get_size(&zui->width, &zui->height);
 
-   menu_display_set_viewport();
+   menu_display_set_viewport(video_info->width, video_info->height);
 
    for (i = 0; i < 16; i++)
    {

@@ -417,7 +417,7 @@ static void xui_frame(void *data, video_frame_info_t *video_info)
    if (!d3dr)
       return;
 
-   menu_display_set_viewport();
+   menu_display_set_viewport(video_info->width, video_info->height);
 
    app.RunFrame();
    XuiTimersRun();

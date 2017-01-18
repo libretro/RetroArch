@@ -1211,7 +1211,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
    menu_display_set_alpha(header_bg_color_real, settings->menu.header.opacity);
    menu_display_set_alpha(footer_bg_color_real, settings->menu.footer.opacity);
 
-   menu_display_set_viewport();
+   menu_display_set_viewport(video_info->width, video_info->height);
    header_height = menu_display_get_header_height();
 
    if (libretro_running)

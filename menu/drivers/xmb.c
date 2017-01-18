@@ -2413,6 +2413,7 @@ static bool xmb_shader_pipeline_active(settings_t *settings)
 
 static void xmb_draw_bg(
       xmb_handle_t *xmb,
+      video_frame_info_t *video_info,
       unsigned width,
       unsigned height,
       float alpha,
@@ -2427,7 +2428,7 @@ static void xmb_draw_bg(
    RARCH_LOG("DRAW BG %d %d \n",width,height);
 #endif
 
-   bool running = menu_display_libretro_running();
+   bool running              = menu_display_libretro_running();
 
    draw.x                    = 0;
    draw.y                    = 0;
@@ -2443,7 +2444,7 @@ static void xmb_draw_bg(
    draw.pipeline.active      = xmb_shader_pipeline_active(settings);
 
    menu_display_blend_begin();
-   menu_display_set_viewport();
+   menu_display_set_viewport(video_info->width, video_info->height);
 
 #ifdef HAVE_SHADERPIPELINE
    if (settings->menu.xmb.shader_pipeline > XMB_SHADER_PIPELINE_WALLPAPER
@@ -2601,6 +2602,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    xmb_draw_bg(
          xmb,
+         video_info,
          width,
          height,
          xmb->alpha,

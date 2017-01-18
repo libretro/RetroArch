@@ -250,6 +250,7 @@ static void nk_menu_get_message(void *data, const char *message)
 
 static void nk_draw_bg(
       nk_menu_handle_t *nk,
+      video_frame_info_t *video_info,
       unsigned width,
       unsigned height,
       float alpha,
@@ -273,7 +274,7 @@ static void nk_draw_bg(
    draw.pipeline.id          = 0;
 
    menu_display_blend_begin();
-   menu_display_set_viewport();
+   menu_display_set_viewport(video_info->width, video_info->height);
 
    draw.pipeline.id          = VIDEO_SHADER_MENU_5;
    draw.pipeline.active      = false; 
@@ -333,7 +334,7 @@ static void nk_menu_frame(void *data, video_frame_info_t *video_info)
 
    video_driver_get_size(&width, &height);
 
-   menu_display_set_viewport();
+   menu_display_set_viewport(video_info->width, video_info->height);
 
    nk_input_begin(&nk->ctx);
    nk_menu_input_gamepad(nk);
@@ -350,7 +351,7 @@ static void nk_menu_frame(void *data, video_frame_info_t *video_info)
 
    nk_input_end(&nk->ctx);
    nk_menu_main(nk);
-   nk_draw_bg(nk, width, height, 0.5, nk->textures.bg, coord_black, coord_white);
+   nk_draw_bg(nk, video_info, width, height, 0.5, nk->textures.bg, coord_black, coord_white);
    nk_common_device_draw(&device, &nk->ctx, width, height, NK_ANTI_ALIASING_ON);
 
    menu_display_draw_cursor(
