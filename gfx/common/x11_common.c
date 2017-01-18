@@ -31,7 +31,6 @@
 #include "../../frontend/frontend_driver.h"
 #include "../../input/common/input_x11_common.h"
 #include "../../verbosity.h"
-#include "../../runloop.h"
 
 #ifdef HAVE_DBUS
 #include <dbus/dbus.h>
