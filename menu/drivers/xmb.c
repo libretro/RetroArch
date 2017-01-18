@@ -2904,7 +2904,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             height);
    }
 
-   menu_display_unset_viewport();
+   menu_display_unset_viewport(video_info->width, video_info->height);
 }
 
 static void xmb_layout_ps3(xmb_handle_t *xmb, int width)

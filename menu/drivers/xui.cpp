@@ -445,7 +445,7 @@ static void xui_frame(void *data, video_frame_info_t *video_info)
 
    XuiRenderEnd( app.GetDC() );
 
-   menu_display_unset_viewport();
+   menu_display_unset_viewport(video_info->width, video_info->height);
 }
 
 static void blit_line(int x, int y, const char *message, bool green)

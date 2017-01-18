@@ -1426,7 +1426,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
             height);
 
    menu_display_restore_clear_color();
-   menu_display_unset_viewport();
+   menu_display_unset_viewport(video_info->width, video_info->height);
 }
 
 static void mui_layout(mui_handle_t *mui)

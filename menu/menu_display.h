@@ -228,7 +228,7 @@ bool menu_display_get_font_data_init(void);
 void menu_display_set_font_data_init(bool state);
 bool menu_display_get_update_pending(void);
 void menu_display_set_viewport(unsigned width, unsigned height);
-void menu_display_unset_viewport(void);
+void menu_display_unset_viewport(unsigned width, unsigned height);
 bool menu_display_get_framebuffer_dirty_flag(void);
 void menu_display_set_framebuffer_dirty_flag(void);
 void menu_display_unset_framebuffer_dirty_flag(void);
