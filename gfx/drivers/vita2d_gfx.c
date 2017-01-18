@@ -217,7 +217,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
 
    if (vita->menu.active)
    {
-      menu_driver_ctl(RARCH_MENU_CTL_FRAME, NULL);
+      menu_driver_frame(video_info);
 
       if(vita->menu.texture){
          if (vita->fullscreen)

@@ -1449,7 +1449,7 @@ static bool d3d_frame(void *data, const void *frame,
    if (d3d->menu && d3d->menu->enabled)
    {
       d3d_overlay_render(d3d, d3d->menu);
-      menu_driver_ctl(RARCH_MENU_CTL_FRAME, NULL);
+      menu_driver_frame(video_info);
    }
 #endif
 

@@ -2553,7 +2553,7 @@ static void xmb_draw_dark_layer(
    menu_display_blend_end();
 }
 
-static void xmb_frame(void *data)
+static void xmb_frame(void *data, video_frame_info_t *video_info)
 {
    size_t selection;
    size_t percent_width = 0;

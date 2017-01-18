@@ -750,7 +750,7 @@ static bool ctr_frame(void* data, const void* frame,
       }
 
       ctr->msg_rendering_enabled = true;
-      menu_driver_ctl(RARCH_MENU_CTL_FRAME, NULL);
+      menu_driver_frame(video_info);
       ctr->msg_rendering_enabled = false;
 
    }

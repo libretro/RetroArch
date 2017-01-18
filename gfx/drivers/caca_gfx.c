@@ -145,7 +145,7 @@ static bool caca_gfx_frame(void *data, const void *frame,
    caca_clear_canvas(caca_cv);
 
 #ifdef HAVE_MENU
-   menu_driver_ctl(RARCH_MENU_CTL_FRAME, NULL);
+   menu_driver_frame(video_info);
 #endif
 
    if (msg)

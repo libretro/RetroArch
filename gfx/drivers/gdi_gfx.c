@@ -162,7 +162,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       return true;
 
 #ifdef HAVE_MENU
-   menu_driver_ctl(RARCH_MENU_CTL_FRAME, NULL);
+   menu_driver_frame(video_info);
 #endif
 
    if (gdi_video_width != frame_width || gdi_video_height != frame_height || gdi_video_pitch != pitch)

@@ -1738,7 +1738,7 @@ static bool vulkan_frame(void *data, const void *frame,
 #if defined(HAVE_MENU)
    if (vk->menu.enable)
    {
-      menu_driver_ctl(RARCH_MENU_CTL_FRAME, NULL);
+      menu_driver_frame(video_info);
 
       if (vk->menu.textures[vk->menu.last_index].image != VK_NULL_HANDLE)
       {

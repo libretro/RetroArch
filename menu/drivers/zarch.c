@@ -846,7 +846,7 @@ static int zarch_zui_render_pick_core(zui_t *zui)
    return 0;
 }
 
-static void zarch_frame(void *data)
+static void zarch_frame(void *data, video_frame_info_t *video_info)
 {
    unsigned i;
    float coord_color[16];

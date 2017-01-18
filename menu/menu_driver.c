@@ -302,6 +302,15 @@ const char *menu_driver_ident(void)
   return menu_driver_ctx->ident;
 }
 
+void menu_driver_frame(video_frame_info_t *video_info)
+{
+   if (!menu_driver_alive)
+      return;
+
+   if (menu_driver_ctx->frame)
+      menu_driver_ctx->frame(menu_userdata, video_info);
+}
+
 /**
  * menu_update_libretro_info:
  *
@@ -483,12 +492,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          menu_driver_ctl(RARCH_MENU_CTL_SET_TEXTURE, NULL);
 
          menu_driver_data->state               = 0;
-         break;
-      case RARCH_MENU_CTL_FRAME:
-         if (!menu_driver_alive)
-            return false;
-         if (menu_driver_ctx->frame)
-            menu_driver_ctx->frame(menu_userdata);
          break;
       case RARCH_MENU_CTL_SET_PREVENT_POPULATE:
          menu_driver_prevent_populate = true;

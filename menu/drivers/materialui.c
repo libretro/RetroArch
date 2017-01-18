@@ -938,7 +938,7 @@ static void mui_draw_bg(menu_display_ctx_draw_t *draw)
    menu_display_blend_end();
 }
 
-static void mui_frame(void *data)
+static void mui_frame(void *data, video_frame_info_t *video_info)
 {
    float black_bg[16] = {
       0, 0, 0, 0.75,

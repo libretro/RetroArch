@@ -1279,7 +1279,7 @@ static bool gl_frame(void *data, const void *frame,
 #if defined(HAVE_MENU)
    if (gl->menu_texture_enable)
    {
-      menu_driver_ctl(RARCH_MENU_CTL_FRAME, NULL);
+      menu_driver_frame(video_info);
 
       if (gl->menu_texture_enable)
          gl_draw_texture(gl);

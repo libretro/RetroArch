@@ -302,7 +302,7 @@ static void nk_menu_main(nk_menu_handle_t *nk)
 }
 
 
-static void nk_menu_frame(void *data)
+static void nk_menu_frame(void *data, video_frame_info_t *video_info)
 {
    float white_bg[16]=  {
       0.98, 0.98, 0.98, 1,
