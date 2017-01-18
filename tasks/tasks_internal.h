@@ -104,7 +104,10 @@ bool task_push_image_load(const char *fullpath,
       retro_task_callback_t cb, void *userdata);
 
 #ifdef HAVE_LIBRETRODB
-bool task_push_dbscan(const char *fullpath,
+bool task_push_dbscan(
+      const char *playlist_directory,
+      const char *content_database,
+      const char *fullpath,
       bool directory, retro_task_callback_t cb);
 #endif
 

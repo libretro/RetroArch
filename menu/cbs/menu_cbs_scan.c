@@ -54,6 +54,7 @@ int action_scan_file(const char *path,
    const char *menu_label         = NULL;
    const char *menu_path          = NULL;
    menu_handle_t *menu            = NULL;
+   settings_t *settings           = config_get_ptr();
 
    fullpath[0]                    = '\0';
 
@@ -64,7 +65,10 @@ int action_scan_file(const char *path,
 
    fill_pathname_join(fullpath, menu_path, path, sizeof(fullpath));
 
-   task_push_dbscan(fullpath, false, handle_dbscan_finished);
+   task_push_dbscan(
+         settings->directory.playlist,
+         settings->path.content_database,
+         fullpath, false, handle_dbscan_finished);
 
    return 0;
 }
@@ -77,6 +81,7 @@ int action_scan_directory(const char *path,
    const char *menu_label         = NULL;
    const char *menu_path          = NULL;
    menu_handle_t *menu            = NULL;
+   settings_t *settings           = config_get_ptr();
 
    fullpath[0]                    = '\0';
 
@@ -90,7 +95,10 @@ int action_scan_directory(const char *path,
    if (path)
       fill_pathname_join(fullpath, fullpath, path, sizeof(fullpath));
 
-   task_push_dbscan(fullpath, true, handle_dbscan_finished);
+   task_push_dbscan(
+         settings->directory.playlist,
+         settings->path.content_database,
+         fullpath, true, handle_dbscan_finished);
 
    return 0;
 }
