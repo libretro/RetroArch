@@ -74,9 +74,19 @@
    if (display_lock) \
       slock_unlock(display_lock)
 
+#define video_driver_context_lock() \
+   if (context_lock) \
+      slock_lock(context_lock)
+
+#define video_driver_context_unlock() \
+   if (context_lock) \
+      slock_unlock(context_lock)
+
 #define video_driver_lock_free() \
    slock_free(display_lock); \
-   display_lock = NULL
+   slock_free(context_lock); \
+   display_lock = NULL; \
+   context_lock = NULL
 
 #define video_driver_threaded_lock() \
    if (video_driver_is_threaded()) \
@@ -91,6 +101,8 @@
 #define video_driver_lock_free()       ((void)0)
 #define video_driver_threaded_lock()   ((void)0)
 #define video_driver_threaded_unlock() ((void)0)
+#define video_driver_context_lock()    ((void)0)
+#define video_driver_context_unlock()  ((void)0)
 #endif
 
 typedef struct video_pixel_scaler
@@ -169,6 +181,7 @@ static uint8_t *video_driver_record_gpu_buffer           = NULL;
 
 #ifdef HAVE_THREADS
 static slock_t *display_lock                             = NULL;
+static slock_t *context_lock                             = NULL;
 #endif
 
 struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
@@ -1360,6 +1373,10 @@ static void video_driver_lock_new(void)
    if (!display_lock)
       display_lock = slock_new();
    retro_assert(display_lock);
+
+   if (!context_lock)
+      context_lock = slock_new();
+   retro_assert(context_lock);
 #endif
 }
 
@@ -1790,7 +1807,7 @@ void video_driver_reinit(void)
       video_driver_get_hw_context();
 
    if (hwr->cache_context)
-   video_driver_cache_context    = true;
+      video_driver_cache_context    = true;
    else
       video_driver_cache_context = false;
 
@@ -1816,15 +1833,26 @@ bool video_driver_owns_driver(void)
 
 bool video_driver_is_hw_context(void)
 {
-   return hw_render.context_type != RETRO_HW_CONTEXT_NONE;
+   bool is_hw_context = false;
+
+   video_driver_context_lock();
+   is_hw_context = (hw_render.context_type != RETRO_HW_CONTEXT_NONE);
+   video_driver_context_unlock();
+
+   return is_hw_context;
 }
 
 void video_driver_deinit_hw_context(void)
 {
+   video_driver_context_lock();
+
    if (hw_render.context_destroy)
       hw_render.context_destroy();
 
    memset(&hw_render, 0, sizeof(hw_render));
+
+   video_driver_context_unlock();
+
    hw_render_context_negotiation = NULL;
 }
 
