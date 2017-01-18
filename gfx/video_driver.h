@@ -105,6 +105,9 @@ typedef struct video_frame_info
    char window_text[128];
    char fps_text[128];
    uint64_t frame_count;
+
+   unsigned width;
+   unsigned height;
 } video_frame_info_t;
 
 /* Optionally implemented interface to poke more

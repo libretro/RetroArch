@@ -2140,6 +2140,8 @@ void video_driver_frame(const void *data, unsigned width,
    video_driver_build_info(&video_info);
 
    video_driver_threaded_lock();
+   video_info.width       = video_driver_width;
+   video_info.height      = video_driver_height;
    video_info.frame_count = video_driver_frame_count;
    video_driver_frame_count++;
    video_driver_threaded_unlock();
