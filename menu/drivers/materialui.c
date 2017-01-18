@@ -783,7 +783,7 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
    if (do_draw_text)
       menu_display_draw_text(mui->font, value_str,
             width - mui->margin,
-            y + node->line_height / 2 + mui->font->size / 3,
+            y + (menu_display_get_dpi() / 5),
             width, height, color, TEXT_ALIGN_RIGHT, 1.0f, false, 0);
 
    if (texture_switch)
@@ -791,7 +791,7 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
             mui->icon_size,
             texture_switch,
             width - mui->margin - mui->icon_size,
-            y + node->line_height/2 - mui->icon_size/2,
+            y + (menu_display_get_dpi() / 6) - mui->icon_size/2,
             width,
             height,
             0,
@@ -1480,7 +1480,7 @@ static void mui_layout(mui_handle_t *mui)
    if (mui->font2) /* calculate a more realistic ticker_limit */
    {
       unsigned m_width2 =
-         font_driver_get_message_width(mui->font2, "a", 1, 1);
+         font_driver_get_message_width(mui->font2, "t", 1, 1);
 
       if (m_width2)
          mui->glyph_width2 = m_width2;
