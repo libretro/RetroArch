@@ -832,11 +832,10 @@ static void mui_render_menu_list(mui_handle_t *mui,
       char rich_label[255];
       char entry_value[255];
       bool entry_selected = false;
-      char sublabel_str[255];
-      mui_node_t *node = (mui_node_t*)
+      mui_node_t *node    = (mui_node_t*)
             menu_entries_get_userdata_at_offset(list, i);
 
-      rich_label[0] = entry_value[0] = sublabel_str[0] = '\0';
+      rich_label[0] = entry_value[0] = '\0';
 
       if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
          continue;
