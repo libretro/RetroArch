@@ -17,6 +17,7 @@
 
 #include <unistd.h>
 #include <errno.h>
+#include <stdlib.h>
 
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -29,6 +30,7 @@
 
 #include <GL/osmesa.h>
 
+#include "../../configuration.h"
 #include "../../runloop.h"
 #include "../common/gl_common.h"
 
