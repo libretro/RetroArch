@@ -223,7 +223,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
          /* map RGB565 color bits, default is 555 */
          masks[0] = 0xF800;
          masks[1] = 0x07E0;
-         masks[2] = 0x1F;
+         masks[2] = 0x001F;
       }
       else
          info->bmiHeader.biCompression = BI_RGB;

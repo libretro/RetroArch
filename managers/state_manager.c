@@ -382,6 +382,7 @@ static bool state_manager_pop(state_manager_t *state, const void **data)
       return true;
    }
 
+   *data = state->thisblock;
    if (state->head == state->tail)
       return false;
 
@@ -395,7 +396,6 @@ static bool state_manager_pop(state_manager_t *state, const void **data)
          state->maxcompsize, out, state->blocksize);
 
    state->entries--;
-   *data = state->thisblock;
    return true;
 }
 
@@ -623,9 +623,15 @@ void state_manager_check_rewind(bool pressed,
             bsv_movie_ctl(BSV_MOVIE_CTL_FRAME_REWIND, NULL);
       }
       else
+      {
+         retro_ctx_serialize_info_t serial_info;
+         serial_info.data_const = buf;
+         serial_info.size       = rewind_state.size;
+         core_unserialize(&serial_info);
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_REWIND_REACHED_END),
                0, 30, true);
+      }
    }
    else
    {
