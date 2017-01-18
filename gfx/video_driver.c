@@ -971,18 +971,22 @@ void video_driver_cached_frame_get(const void **data, unsigned *width,
 
 void video_driver_get_size(unsigned *width, unsigned *height)
 {
+   video_driver_threaded_lock();
    if (width)
       *width  = video_driver_width;
    if (height)
       *height = video_driver_height;
+   video_driver_threaded_unlock();
 }
 
 void video_driver_set_size(unsigned *width, unsigned *height)
 {
+   video_driver_threaded_lock();
    if (width)
       video_driver_width  = *width;
    if (height)
       video_driver_height = *height;
+   video_driver_threaded_unlock();
 }
 
 /**
