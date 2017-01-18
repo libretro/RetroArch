@@ -21,6 +21,10 @@
 #include "../../config.h"
 #endif
 
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
 #include "../../configuration.h"
 #include "../../driver.h"
 #include "../../retroarch.h"
@@ -475,6 +479,10 @@ static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
       if (_dispvars->menu_active && _dispvars->menu_surface)
          dispmanx_surface_free(_dispvars, &_dispvars->menu_surface);
    }
+
+#ifdef HAVE_MENU
+   menu_driver_frame(video_info);
+#endif
 
    /* Update main surface: locate free page, blit and flip. */
    dispmanx_surface_update(_dispvars, frame, _dispvars->main_surface);

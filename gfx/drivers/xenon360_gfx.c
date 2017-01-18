@@ -230,6 +230,10 @@ static bool xenon360_gfx_frame(void *data, const void *frame, unsigned width, un
    Xe_SetShader(vid->gl_device, SHADER_TYPE_PIXEL, vid->g_pPixelTexturedShader, 0);
    Xe_SetShader(vid->gl_device, SHADER_TYPE_VERTEX, vid->g_pVertexShader, 0);
 
+#ifdef HAVE_MENU
+   menu_driver_frame(video_info);
+#endif
+
    // Draw
    Xe_DrawPrimitive(vid->gl_device, XE_PRIMTYPE_TRIANGLELIST, 0, 1);
 

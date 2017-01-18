@@ -28,6 +28,10 @@
 #include "../../config.h"
 #endif
 
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
 #include "../font_driver.h"
 #include "../video_context_driver.h"
 #include "../../retroarch.h"
@@ -778,6 +782,10 @@ static bool drm_gfx_frame(void *data, const void *frame, unsigned width,
       /* We need to change the plane to read from the main surface */
       drm_plane_setup(_drmvars->main_surface);
    }
+
+#ifdef HAVE_MENU
+   menu_driver_frame(video_info);
+#endif
 
    /* Update main surface: locate free page, blit and flip. */
    drm_surface_update(_drmvars, frame, _drmvars->main_surface);

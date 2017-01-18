@@ -27,6 +27,11 @@
 #include "../../config.h"
 #endif
 
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#include "../../menu/menu_display.h"
+#endif
+
 #ifdef HW_RVL
 #include "../../memory/wii/mem2_manager.h"
 #endif
@@ -36,8 +41,6 @@
 #include "../../configuration.h"
 #include "../../driver.h"
 #include "../../runloop.h"
-#include "../../menu/menu_driver.h"
-#include "../../menu/menu_display.h"
 
 extern syssram* __SYS_LockSram(void);
 extern u32 __SYS_UnlockSram(u32 write);
@@ -1500,12 +1503,9 @@ static bool gx_frame(void *data, const void *frame,
 
    if (gx->menu_texture_enable && gx->menu_data)
    {
-      size_t fb_pitch;
-      unsigned fb_width, fb_height;
-
-      fb_width  = menu_display_get_width();
-      fb_height = menu_display_get_height();
-      fb_pitch  = menu_display_get_framebuffer_pitch();
+      unsigned fb_width  = menu_display_get_width();
+      unsigned fb_height = menu_display_get_height();
+      size_t fb_pitch    = menu_display_get_framebuffer_pitch();
 
       convert_texture16(
             gx->menu_data,
@@ -1517,6 +1517,10 @@ static bool gx_frame(void *data, const void *frame,
             menu_tex.data,
             fb_width * fb_pitch);
    }
+
+#ifdef HAVE_MENU
+   menu_driver_frame(video_info);
+#endif
 
    GX_InvalidateTexAll();
 

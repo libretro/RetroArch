@@ -15,13 +15,18 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <retro_miscellaneous.h>
 #include <caca.h>
+
+#include <retro_miscellaneous.h>
+
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
+#include "../common/caca_common.h"
 
 #include "../../driver.h"
 #include "../../verbosity.h"
-#include "../../menu/menu_driver.h"
-#include "../common/caca_common.h"
 
 static caca_canvas_t *caca_cv         = NULL;
 static caca_dither_t *caca_dither     = NULL;

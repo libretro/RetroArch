@@ -17,10 +17,17 @@
 
 #include <retro_miscellaneous.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
 #include "../../driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
-#include "../../menu/menu_driver.h"
 #include "../common/gdi_common.h"
 
 #if defined(_WIN32) && !defined(_XBOX)

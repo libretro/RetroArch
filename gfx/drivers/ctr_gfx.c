@@ -26,10 +26,12 @@
 #include "../../config.h"
 #endif
 
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
 #include "../../ctr/gpu_old.h"
 #include "ctr_gu.h"
-
-#include "../../menu/menu_driver.h"
 
 #include "../../configuration.h"
 #include "../../command.h"

@@ -31,6 +31,10 @@
 #include "../../config.h"
 #endif
 
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
 #include "../video_context_driver.h"
 #include "../../retroarch.h"
 #include "../../runloop.h"
@@ -416,6 +420,10 @@ static bool vg_frame(void *data, const void *frame,
    performance_counter_start(&vg_image);
    vg_copy_frame(vg, frame, frame_width, frame_height, pitch);
    performance_counter_stop(&vg_image);
+
+#ifdef HAVE_MENU
+   menu_driver_frame(video_info);
+#endif
 
    vgDrawImage(vg->mImage);
 

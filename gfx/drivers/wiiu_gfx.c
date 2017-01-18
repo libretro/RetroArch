@@ -13,14 +13,23 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <string.h>
+#include <coreinit/screen.h>
+#include <coreinit/cache.h>
+
 #include "../../driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
 #include "performance_counters.h"
 
-#include <string.h>
-#include <coreinit/screen.h>
-#include <coreinit/cache.h>
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
 #include "gx2.h"
 #include "system/memory.h"
 #include "system/wiiu.h"
@@ -667,6 +676,10 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
                       wiiu->shader->sampler.location);
 
    GX2DrawEx(GX2_PRIMITIVE_MODE_QUADS, 4, 0, 1);
+
+#ifdef HAVE_MENU
+   menu_driver_frame(video_info);
+#endif
 
    if (wiiu->menu.enable)
    {

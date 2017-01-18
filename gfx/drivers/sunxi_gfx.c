@@ -28,6 +28,10 @@
 #include "../../config.h"
 #endif
 
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
 #include "../../retroarch.h"
 #include "../../runloop.h"
 #include "../font_driver.h"
@@ -778,6 +782,10 @@ static bool sunxi_gfx_frame(void *data, const void *frame, unsigned width,
 
       sunxi_setup_scale(_dispvars, width, height, pitch);
    }
+
+#ifdef HAVE_MENU
+   menu_driver_frame(video_info);
+#endif
 
    if (_dispvars->menu_active)
    {

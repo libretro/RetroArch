@@ -35,6 +35,10 @@
 #include "../../config.h"
 #endif
 
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
 #include "../common/drm_common.h"
 #include "../font_driver.h"
 #include "../../configuration.h"
@@ -1315,6 +1319,9 @@ static bool exynos_gfx_frame(void *data, const void *frame, unsigned width,
    {
       if (exynos_blend_menu(vid->data, vid->menu_rotation) != 0)
          goto fail;
+#ifdef HAVE_MENU
+      menu_driver_frame(video_info);
+#endif
    }
 
    if (msg)

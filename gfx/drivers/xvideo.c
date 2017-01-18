@@ -30,6 +30,14 @@
 
 #include <retro_inline.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
+#ifdef HAVE_MENU
+#include ".././menu/menu_driver.h"
+#endif
+
 #include "../../configuration.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../verbosity.h"
@@ -801,6 +809,10 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
    xv_calc_out_rect(xv->keep_aspect, &xv->vp, target.width, target.height);
    xv->vp.full_width  = target.width;
    xv->vp.full_height = target.height;
+
+#ifdef HAVE_MENU
+   menu_driver_frame(video_info);
+#endif
 
    if (msg)
       xv_render_msg(xv, msg, width << 1, height << 1);

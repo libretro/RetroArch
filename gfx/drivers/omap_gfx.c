@@ -25,12 +25,16 @@
 #include <ctype.h>
 #include <assert.h>
 
+#include <sys/mman.h>
+#include <linux/omapfb.h>
+
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
 
-#include <sys/mman.h>
-#include <linux/omapfb.h>
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
 
 #include <retro_inline.h>
 #include <retro_assert.h>
@@ -1008,10 +1012,16 @@ static bool omap_gfx_frame(void *data, const void *frame, unsigned width,
 
    omapfb_prepare(vid->omap);
    omapfb_blit_frame(vid->omap, frame, vid->height, pitch);
+
+#ifdef HAVE_MENU
+   menu_driver_frame(video_info);
+#endif
+
    if (vid->menu.active)
       omapfb_blit_frame(vid->omap, vid->menu.frame,
             vid->menu.scaler.out_height,
             vid->menu.scaler.out_stride);
+
    if (msg)
       omap_render_msg(vid, msg);
 

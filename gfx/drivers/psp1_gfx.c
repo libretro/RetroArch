@@ -28,6 +28,10 @@
 #include "../../config.h"
 #endif
 
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
 #include "../../defines/psp_defines.h"
 #include "../../runloop.h"
 
@@ -560,6 +564,10 @@ static bool psp_frame(void *data, const void *frame,
    sceGuFinish();
 
    performance_counter_stop(&psp_frame_run);
+
+#ifdef HAVE_MENU
+   menu_driver_frame(video_info);
+#endif
 
    if(psp->menu.active)
    {

@@ -27,6 +27,10 @@
 #include "../../config.h"
 #endif
 
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
 #ifdef HAVE_X11
 #include "../common/x11_common.h"
 #endif
@@ -357,6 +361,10 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
          height,
          pitch);
    performance_counter_stop(&sdl_scale);
+
+#ifdef HAVE_MENU
+   menu_driver_frame(video_info);
+#endif
 
    if (vid->menu.active)
       SDL_BlitSurface(vid->menu.frame, NULL, vid->screen, NULL);
