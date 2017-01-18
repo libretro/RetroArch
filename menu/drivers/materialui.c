@@ -1029,8 +1029,8 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
    float header_bg_color_real[16]  = {0};
    file_list_t *list               = NULL;
    mui_node_t *node                = NULL;
-   unsigned width                  = 0;
-   unsigned height                 = 0;
+   unsigned width                  = video_info->width;
+   unsigned height                 = video_info->height;
    unsigned ticker_limit           = 0;
    unsigned i                      = 0;
    unsigned header_height          = 0;
@@ -1210,8 +1210,6 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
 
    menu_display_set_alpha(header_bg_color_real, settings->menu.header.opacity);
    menu_display_set_alpha(footer_bg_color_real, settings->menu.footer.opacity);
-
-   video_driver_get_size(&width, &height);
 
    menu_display_set_viewport();
    header_height = menu_display_get_header_height();
@@ -1662,7 +1660,6 @@ static void mui_context_reset(void *data)
 
    if (!mui || !settings)
       return;
-
 
    mui_layout(mui);
    mui_context_bg_destroy(mui);

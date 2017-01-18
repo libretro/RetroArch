@@ -285,10 +285,10 @@ static void vg_free(void *data)
    free(vg);
 }
 
-static void vg_calculate_quad(vg_t *vg)
+static void vg_calculate_quad(vg_t *vg, video_frame_info_t *video_info)
 {
-   unsigned width, height;
-   video_driver_get_size(&width, &height);
+   unsigned width = video_info->width;
+   unsigned heigh = video_info->height;
 
    /* set viewport for aspect ratio, taken from the OpenGL driver. */
    if (vg->keep_aspect)
@@ -384,15 +384,14 @@ static bool vg_frame(void *data, const void *frame,
       uint64_t frame_count, unsigned pitch, const char *msg,
       video_frame_info_t *video_info)
 {
-   unsigned width, height;
    vg_t                           *vg = (vg_t*)data;
    static struct retro_perf_counter    vg_fr = {0};
    static struct retro_perf_counter vg_image = {0};
+   unsigned width                            = video_info->width;
+   unsigned height                           = video_info->height;
 
    performance_counter_init(&vg_fr, "vg_fr");
    performance_counter_start(&vg_fr);
-
-   video_driver_get_size(&width, &height);
 
    if (     frame_width != vg->mRenderWidth
          || frame_height != vg->mRenderHeight
@@ -400,7 +399,7 @@ static bool vg_frame(void *data, const void *frame,
    {
       vg->mRenderWidth  = frame_width;
       vg->mRenderHeight = frame_height;
-      vg_calculate_quad(vg);
+      vg_calculate_quad(vg, video_info);
       matrix_3x3_quad_to_quad(
          vg->x1, vg->y1, vg->x2, vg->y1, vg->x2, vg->y2, vg->x1, vg->y2,
          /* needs to be flipped, Khronos loves their bottom-left origin */

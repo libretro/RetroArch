@@ -2558,13 +2558,15 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    size_t selection;
    size_t percent_width = 0;
    math_matrix_4x4 mymat;
-   unsigned i, width, height;
+   unsigned i;
    float item_color[16], coord_black[16], coord_white[16];
    menu_display_ctx_rotate_draw_t rotate_draw;
    char msg[1024];
    char title_msg[255];
    char title_truncated[255];
    menu_display_frame_info_t menu_disp_info;
+   unsigned width                          = video_info->width;
+   unsigned height                         = video_info->height;
    bool render_background                  = false;
    file_list_t *selection_buf              = NULL;
    file_list_t *menu_stack                 = NULL;
@@ -2579,8 +2581,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    msg[0]             = '\0';
    title_msg[0]       = '\0';
    title_truncated[0] = '\0';
-
-   video_driver_get_size(&width, &height);
 
    menu_display_font_bind_block(xmb->font, &xmb->raster_block);
    menu_display_font_bind_block(xmb->font2, &xmb->raster_block2);
