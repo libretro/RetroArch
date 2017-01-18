@@ -212,17 +212,17 @@ static void gl_overlay_tex_geom(void *data,
    tex[7]       = y + h;
 }
 
-static void gl_render_overlay(gl_t *gl)
+static void gl_render_overlay(gl_t *gl, video_frame_info_t *video_info)
 {
    video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
    video_shader_ctx_info_t shader_info;
-   unsigned i, width, height;
+   unsigned i;
+   unsigned width                      = video_info->width;
+   unsigned height                     = video_info->height;
 
    if (!gl || !gl->overlay_enable)
       return;
-
-   video_driver_get_size(&width, &height);
 
    glEnable(GL_BLEND);
 
@@ -309,14 +309,13 @@ void gl_set_viewport(void *data, video_frame_info_t *video_info,
       bool force_full, bool allow_rotate)
 {
    gfx_ctx_aspect_t aspect_data;
-   unsigned width, height;
    int x                  = 0;
    int y                  = 0;
    float device_aspect    = (float)viewport_width / viewport_height;
    struct video_ortho ortho = {0, 1, 0, 1, -1, 1};
    gl_t           *gl     = (gl_t*)data;
-
-   video_driver_get_size(&width, &height);
+   unsigned width         = video_info->width;
+   unsigned height        = video_info->height;
 
    aspect_data.aspect   = &device_aspect;
    aspect_data.width    = viewport_width;
@@ -1013,13 +1012,14 @@ static void gl_pbo_async_readback(gl_t *gl)
 }
 #endif
 
-static INLINE void gl_draw_texture(gl_t *gl)
+static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
 {
    video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
    video_shader_ctx_info_t shader_info;
-   unsigned width, height;
    GLfloat color[16];
+   unsigned width         = video_info->width;
+   unsigned height        = video_info->height;
 
    color[ 0] = 1.0f;
    color[ 1] = 1.0f;
@@ -1040,8 +1040,6 @@ static INLINE void gl_draw_texture(gl_t *gl)
 
    if (!gl->menu_texture)
       return;
-
-   video_driver_get_size(&width, &height);
 
    gl->coords.vertex    = vertexes_flipped;
    gl->coords.tex_coord = tex_coords;
@@ -1095,19 +1093,19 @@ static bool gl_frame(void *data, const void *frame,
    video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
    video_shader_ctx_params_t params;
-   unsigned width, height;
    struct video_tex_info feedback_info;
    video_shader_ctx_info_t shader_info;
-   static struct retro_perf_counter frame_run = {0};
+   static struct 
+      retro_perf_counter frame_run     = {0};
    gl_t                            *gl = (gl_t*)data;
+   unsigned width                      = video_info->width;
+   unsigned height                     = video_info->height;
 
    performance_counter_init(&frame_run, "frame_run");
    performance_counter_start(&frame_run);
 
    if (!gl)
       return false;
-
-   video_driver_get_size(&width, &height);
 
    context_bind_hw_render(false);
 
@@ -1282,7 +1280,7 @@ static bool gl_frame(void *data, const void *frame,
       menu_driver_frame(video_info);
 
       if (gl->menu_texture_enable)
-         gl_draw_texture(gl);
+         gl_draw_texture(gl, video_info);
    }
 #endif
 
@@ -1290,7 +1288,7 @@ static bool gl_frame(void *data, const void *frame,
       font_driver_render_msg(NULL, msg, NULL);
 
 #ifdef HAVE_OVERLAY
-   gl_render_overlay(gl);
+   gl_render_overlay(gl, video_info);
 #endif
 
    video_context_driver_update_window_title(video_info);
