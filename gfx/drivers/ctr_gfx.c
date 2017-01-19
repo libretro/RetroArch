@@ -30,6 +30,7 @@
 #include "../../menu/menu_driver.h"
 #endif
 
+#include "../font_driver.h"
 #include "../../ctr/gpu_old.h"
 #include "ctr_gu.h"
 
