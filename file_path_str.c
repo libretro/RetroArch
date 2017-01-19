@@ -101,6 +101,8 @@ const char *file_path_str(enum file_path_enum enum_idx)
          return ".index-dirs";
       case FILE_PATH_INDEX_EXTENDED_URL:
          return ".index-extended";
+      case FILE_PATH_NETPLAY_ROOM_LIST_URL:
+         return "registry.lpl";
       case FILE_PATH_CORE_THUMBNAILS_URL:
          return "http://thumbnailpacks.libretro.com";
       case FILE_PATH_LAKKA_URL:

@@ -3262,12 +3262,120 @@ static int action_ok_push_content_list(const char *path,
          entry_idx, ACTION_OK_DL_CONTENT_LIST);
 }
 
+struct room
+{
+   char nickname    [PATH_MAX_LENGTH];
+   char address     [PATH_MAX_LENGTH];
+   int  port;
+   char corename    [PATH_MAX_LENGTH];
+   char coreversion [PATH_MAX_LENGTH];
+   char gamename    [PATH_MAX_LENGTH];
+   int  gamecrc;
+   int  timestamp;
+};
+
 static int action_ok_push_scan_file(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    filebrowser_clear_type();
    return action_ok_push_content_list(path, label, type, idx, entry_idx);
 }
+
+static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const char *err)
+{
+   char buf[PATH_MAX_LENGTH];
+
+   http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
+   menu_file_transfer_t *state       = (menu_file_transfer_t*)user_data;
+
+   buf[0] = '\0';
+
+   if (!data || err)
+      goto finish;
+
+   memcpy(buf, data->data, data->len * sizeof(char));
+   buf[data->len] = '\0';
+
+
+finish:
+   if (!err && !strstr(buf, file_path_str(FILE_PATH_NETPLAY_ROOM_LIST_URL)))
+   {
+      if (string_is_empty(buf))
+         RARCH_LOG("Room list empty\n");
+      else
+      {
+         int rooms, i = 0;
+         char tmp[PATH_MAX_LENGTH];
+         struct string_list *room_data = NULL;
+         room_data = string_split(buf, "\n");
+
+         rooms = room_data->size / 8;
+         struct room *room_list = NULL;
+         room_list = (struct room*)malloc(sizeof(struct room) * rooms);
+
+         /*for (int i = 0; i < room_data->size; i++)
+         {
+            strlcpy(tmp,
+                  room_data->elems[i].data, sizeof(tmp));
+            RARCH_LOG("tmp %s\n", tmp);
+
+         }*/
+
+         RARCH_LOG ("Found %d rooms\n", rooms);
+         for (i = 0; i < rooms; i++)
+         {
+            strlcpy(room_list[i].nickname, room_data->elems[(i+1)*0].data,    sizeof(room_list[i].nickname));
+            strlcpy(room_list[i].address, room_data->elems[(i+1)*1].data,     sizeof(room_list[i].address));
+            room_list[i].port = atoi(room_data->elems[(i+1)*2].data);
+            strlcpy(room_list[i].corename, room_data->elems[(i+1)*3].data,    sizeof(room_list[i].corename));
+            strlcpy(room_list[i].coreversion, room_data->elems[(i+1)*4].data, sizeof(room_list[i].coreversion));
+            strlcpy(room_list[i].gamename, room_data->elems[(i+1)*5].data,    sizeof(room_list[i].coreversion));
+            room_list[i].gamecrc = atoi(room_data->elems[(i+1)*6].data);
+            room_list[i].timestamp = atoi(room_data->elems[(i+1)*7].data);
+            RARCH_LOG("Room Data: \n"
+               "Nickname:         %s\n"
+               "Address:          %s\n"
+               "Port:             %d\n"
+               "Core:             %s\n"
+               "Core Version:     %s\n"
+               "Game:             %s\n"
+               "Game CRC:         %d\n"
+               "Timestamp:        %d\n",
+               room_list[i].nickname,
+               room_list[i].address,
+               room_list[i].port,
+               room_list[i].corename,
+               room_list[i].coreversion,
+               room_list[i].gamename,
+               room_list[i].gamecrc,
+               room_list[i].timestamp);
+         }
+      }
+   }
+
+   if (err)
+      RARCH_ERR("%s: %s\n", msg_hash_to_str(MSG_DOWNLOAD_FAILED), err);
+
+   if (data)
+   {
+      if (data->data)
+         free(data->data);
+      free(data);
+   }
+
+   if (user_data)
+      free(user_data);
+
+}
+
+static int action_ok_push_netplay_refresh_rooms(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   char url [2048] = "http://lobby.libretro.com/registry.lpl";
+   task_push_http_transfer(url, true, NULL, netplay_refresh_rooms_cb, NULL);
+   return 0;
+}
+
 
 static int action_ok_scan_directory_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -3779,7 +3887,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 
          first_char = atoi(&str[0]);
 
-         if (first_char != (i+1))
+         if (first_char != ((i+1)))
             continue;
 
          BIND_ACTION_OK(cbs, action_ok_push_user_binds_list);
@@ -3991,6 +4099,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_SCAN_FILE:
             BIND_ACTION_OK(cbs, action_ok_push_scan_file);
+            break;
+         case MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS:
+            BIND_ACTION_OK(cbs, action_ok_push_netplay_refresh_rooms);
             break;
          case MENU_ENUM_LABEL_FAVORITES:
             BIND_ACTION_OK(cbs, action_ok_push_content_list);

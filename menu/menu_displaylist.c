@@ -2955,8 +2955,8 @@ static int menu_displaylist_parse_netplay_room_list(
 #ifdef HAVE_NETWORKING
    menu_entries_append_enum(info->list,
          "Refresh Room List",
-         msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY),
-         MENU_ENUM_LABEL_SCAN_DIRECTORY,
+         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS),
+         MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS,
          MENU_SETTING_ACTION, 0, 0);
 #endif
 
