@@ -834,10 +834,30 @@ void deinit_netplay(void)
 
 
 
-static void netplay_announce(void *task_data, void *user_data, const char *error)
+static void netplay_announce_cb(void *task_data, void *user_data, const char *error)
 {
    RARCH_LOG("Announcing netplay game... \n");
    return;
+}
+
+static void netplay_announce()
+{
+   rarch_system_info_t *system   = NULL;
+   settings_t *settings          = config_get_ptr();
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+   char url [2048] = "http://lobby.libretro.com/?";
+   char buf [2048];
+   buf[0] = '\0';
+
+   snprintf(buf, sizeof(buf), "%susername=%s&corename=%s&coreversion=%s&"
+   "gamename=%s&gamecrc=%08x&port=%d", 
+      url, settings->username, system->info.library_name, 
+      system->info.library_version, 
+      path_basename(path_get(RARCH_PATH_BASENAME)),0,
+      settings->netplay.port);
+
+   task_push_http_transfer(buf, true, NULL, netplay_announce_cb, NULL);
 }
 
 /**
@@ -895,21 +915,7 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
          msg_hash_to_str(MSG_WAITING_FOR_CLIENT),
          0, 180, false);
 
-      rarch_system_info_t *system   = NULL;
-
-      runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
-      char url [2048] = "http://lobby.libretro.com/?";
-      char buf [2048];
-      buf[0] = '\0';
-
-      snprintf(buf, sizeof(buf), "%susername=%s&corename=%s&coreversion=%s
-         &gamename=%s&gamecrc=%08x&port=%d", 
-         url, settings->username, system->info.library_name, 
-         system->info.library_version, 
-         path_basename(path_get(RARCH_PATH_BASENAME)),0,
-         settings->netplay.port);
-
-      task_push_http_transfer(buf, true, NULL, netplay_announce, NULL);
+      netplay_announce();
    }
 
    netplay_data = (netplay_t*)netplay_new(
