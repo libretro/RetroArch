@@ -333,8 +333,8 @@ static int mui_osk_ptr_at_pos(void *data, int x, int y, unsigned width, unsigned
 {
    int ptr_width, ptr_height;
    unsigned i;
-
    mui_handle_t *mui = (mui_handle_t*)data;
+
    if (!mui)
       return -1;
 
@@ -364,7 +364,7 @@ static void mui_draw_tab_begin(mui_handle_t *mui,
 {
    float scale_factor = menu_display_get_dpi();
 
-   mui->tabs_height = scale_factor / 3;
+   mui->tabs_height   = scale_factor / 3;
 
    /* tabs background */
    menu_display_draw_quad(0, height - mui->tabs_height, width,
@@ -395,16 +395,17 @@ static void mui_draw_tab_end(mui_handle_t *mui,
          &active_tab_marker_color[0]);
 }
 
-static float mui_content_height()
+static float mui_content_height(void)
 {
+   unsigned i;
    file_list_t *list = menu_entries_get_selection_buf_ptr(0);
-   float sum = 0;
-   unsigned i = 0;
-   for (; i < menu_entries_get_end(); i++)
+   float sum         = 0;
+
+   for (i = 0; i < menu_entries_get_end(); i++)
    {
-      mui_node_t *node = (mui_node_t*)
-            menu_entries_get_userdata_at_offset(list, i);
-      sum += node->line_height;
+      mui_node_t *node  = (mui_node_t*)
+         menu_entries_get_userdata_at_offset(list, i);
+      sum              += node->line_height;
    }
    return sum;
 }
@@ -524,21 +525,22 @@ end:
    string_list_free(list);
 }
 
-static unsigned count_lines(const char *str)
+static unsigned mui_count_lines(const char *str)
 {
-   unsigned c = 0;
+   unsigned c     = 0;
    unsigned lines = 1;
+
    for (c = 0; str[c]; c++)
       lines += (str[c] == '\n');
    return lines;
 }
 
-static void compute_entries_box(mui_handle_t* mui, int width)
+static void mui_compute_entries_box(mui_handle_t* mui, int width)
 {
    size_t usable_width = width - (mui->margin * 2);
-   file_list_t *list = menu_entries_get_selection_buf_ptr(0);
-   float sum = 0;
-   unsigned i = 0;
+   file_list_t *list   = menu_entries_get_selection_buf_ptr(0);
+   float sum           = 0;
+   unsigned i          = 0;
 
    for (; i < menu_entries_get_end(); i++)
    {
@@ -553,7 +555,7 @@ static void compute_entries_box(mui_handle_t* mui, int width)
       if (menu_entry_get_sublabel(i, sublabel_str, sizeof(sublabel_str)))
       {
          word_wrap(sublabel_str, sublabel_str, (int)(usable_width / mui->glyph_width2));
-         lines = count_lines(sublabel_str);
+         lines = mui_count_lines(sublabel_str);
       }
 
       scale_factor       = menu_display_get_dpi();
@@ -578,7 +580,7 @@ static void mui_render(void *data)
 
    video_driver_get_size(&width, &height);
 
-   compute_entries_box(mui, width);
+   mui_compute_entries_box(mui, width);
 
    menu_animation_ctl(MENU_ANIMATION_CTL_DELTA_TIME, &delta_time);
 
