@@ -2134,7 +2134,11 @@ void video_driver_frame(const void *data, unsigned width,
 
    performance_counter_stop(&video_frame_conv);
 
-   video_driver_cached_frame_set(data, width, height, pitch);
+   if (data)
+      frame_cache_data = data;
+   frame_cache_width   = width;
+   frame_cache_height  = height;
+   frame_cache_pitch   = pitch;
 
    video_driver_build_info(&video_info);
 
