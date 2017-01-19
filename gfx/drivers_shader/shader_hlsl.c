@@ -63,8 +63,8 @@ struct hlsl_shader_data
 void hlsl_set_proj_matrix(void *data, XMMATRIX rotation_value)
 {
    hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)data;
-   if (hlsl_data)
-      hlsl_data->prg[hlsl_data->active_idx].mvp_val = rotation_value;
+   if (hlsl)
+      hlsl->prg[hlsl_data->active_idx].mvp_val = rotation_value;
 }
 
 static void hlsl_set_uniform_parameter(
@@ -126,12 +126,12 @@ static void hlsl_set_params(void *data, void *shader_data,
       const void *_feedback_info,
       const void *_fbo_info, unsigned fbo_info_cnt)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3d_device_ptr = (LPDIRECT3DDEVICE)d3d->dev;
-   const struct video_tex_info *info = (const struct video_tex_info*)_info;
+   d3d_video_t *d3d                       = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3d_device_ptr        = (LPDIRECT3DDEVICE)d3d->dev;
+   const struct video_tex_info *info      = (const struct video_tex_info*)_info;
    const struct video_tex_info *prev_info = (const struct video_tex_info*)_prev_info;
-   const struct video_tex_info *fbo_info = (const struct video_tex_info*)_fbo_info;
-   hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)shader_data;
+   const struct video_tex_info *fbo_info  = (const struct video_tex_info*)_fbo_info;
+   hlsl_shader_data_t *hlsl               = (hlsl_shader_data_t*)shader_data;
 
    if (!hlsl)
       return;
@@ -165,15 +165,15 @@ static bool hlsl_compile_program(
       void *program_data,
       struct shader_program_info *program_info)
 {
-   hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)data;
-   d3d_video_t *d3d = (d3d_video_t*)hlsl->d3d;
-   struct shader_program_hlsl_data *program  = (struct shader_program_hlsl_data*)program_data;
-   LPDIRECT3DDEVICE d3d_device_ptr = (LPDIRECT3DDEVICE)d3d->dev;
    HRESULT ret, ret_fp, ret_vp;
-   ID3DXBuffer *listing_f = NULL;
-   ID3DXBuffer *listing_v = NULL;
-   ID3DXBuffer *code_f = NULL;
-   ID3DXBuffer *code_v = NULL;
+   hlsl_shader_data_t *hlsl                  = (hlsl_shader_data_t*)data;
+   d3d_video_t *d3d                          = (d3d_video_t*)hlsl->d3d;
+   struct shader_program_hlsl_data *program  = (struct shader_program_hlsl_data*)program_data;
+   LPDIRECT3DDEVICE d3d_device_ptr           = (LPDIRECT3DDEVICE)d3d->dev;
+   ID3DXBuffer *listing_f                    = NULL;
+   ID3DXBuffer *listing_v                    = NULL;
+   ID3DXBuffer *code_f                       = NULL;
+   ID3DXBuffer *code_v                       = NULL;
 
    if (!program)
       program = &hlsl->prg[idx];
