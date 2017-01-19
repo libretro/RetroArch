@@ -2839,8 +2839,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          width,
          height);
 
-   menu_display_font_flush_block(xmb->font);
-   menu_display_font_flush_block(xmb->font2);
+   menu_display_font_flush_block(video_info->width, video_info->height, xmb->font);
+   menu_display_font_flush_block(video_info->width, video_info->height, xmb->font2);
 
    if (xmb->savestate_thumbnail)
       xmb_draw_thumbnail(menu_disp_info,

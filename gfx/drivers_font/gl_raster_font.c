@@ -518,16 +518,14 @@ static const struct font_glyph *gl_raster_font_get_glyph(
    return font->font_driver->get_glyph((void*)font->font_driver, code);
 }
 
-static void gl_raster_font_flush_block(void *data)
+static void gl_raster_font_flush_block(unsigned width, unsigned height,
+      void *data)
 {
-   unsigned width, height;
    gl_raster_t          *font       = (gl_raster_t*)data;
    video_font_raster_block_t *block = font ? font->block : NULL;
 
    if (!font || !block || !block->carr.coords.vertices)
       return;
-
-   video_driver_get_size(&width, &height);
 
    gl_raster_font_setup_viewport(width, height, font, block->fullscreen);
    gl_raster_font_draw_vertices(font, (video_coords_t*)&block->carr.coords);

@@ -110,7 +110,7 @@ typedef struct font_renderer
 
    const struct font_glyph *(*get_glyph)(void *data, uint32_t code);
    void (*bind_block)(void *data, void *block);
-   void (*flush)(void *data);
+   void (*flush)(unsigned width, unsigned height, void *data);
    
    int (*get_message_width)(void *data, const char *msg, unsigned msg_len_full, float scale);
 } font_renderer_t;
@@ -151,7 +151,7 @@ void font_driver_bind_block(void *font_data, void *block);
 
 int font_driver_get_message_width(void *font_data, const char *msg, unsigned len, float scale);
 
-void font_driver_flush(void *font_data);
+void font_driver_flush(unsigned width, unsigned height, void *font_data);
 
 void font_driver_free(void *font_data);
 

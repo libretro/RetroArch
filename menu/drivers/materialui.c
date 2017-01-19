@@ -1300,8 +1300,8 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
       &active_tab_marker_color[0]
    );
 
-   menu_display_font_flush_block(mui->font);
-   menu_display_font_flush_block(mui->font2);
+   menu_display_font_flush_block(video_info->width, video_info->height, mui->font);
+   menu_display_font_flush_block(video_info->width, video_info->height, mui->font2);
    menu_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);
 
    /* header */

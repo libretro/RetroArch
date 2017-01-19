@@ -364,11 +364,11 @@ void font_driver_bind_block(void *font_data, void *block)
       font->renderer->bind_block(font->renderer_data, block);
 }
 
-void font_driver_flush(void *font_data)
+void font_driver_flush(unsigned width, unsigned height, void *font_data)
 {
    font_data_t *font = (font_data_t*)(font_data ? font_data : video_font_driver);
    if (font && font->renderer && font->renderer->flush)
-      font->renderer->flush(font->renderer_data);
+      font->renderer->flush(width, height, font->renderer_data);
 }
 
 int font_driver_get_message_width(void *font_data,

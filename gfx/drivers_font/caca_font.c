@@ -115,7 +115,8 @@ static void caca_render_msg(video_frame_info_t *video_info,
    caca_refresh_display(*font->caca->caca_display);
 }
 
-static void caca_font_flush_block(void* data)
+static void caca_font_flush_block(unsigned width, unsigned height,
+      void* data)
 {
    (void)data;
 }

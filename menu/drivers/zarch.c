@@ -982,7 +982,8 @@ static void zarch_frame(void *data, video_frame_info_t *video_info)
 
    zui->rendering = false;
 
-   menu_display_font_flush_block((font_data_t*)zui->font);
+   menu_display_font_flush_block(video_info->width, video_info->height, 
+         (font_data_t*)zui->font);
    menu_display_unset_viewport(video_info->width, video_info->height);
 }
 

@@ -359,7 +359,8 @@ static const struct font_glyph *vulkan_raster_font_get_glyph(
    return font->font_driver->get_glyph((void*)font->font_driver, code);
 }
 
-static void vulkan_raster_font_flush_block(void *data)
+static void vulkan_raster_font_flush_block(unsigned width, unsigned height,
+      void *data)
 {
    (void)data;
 }

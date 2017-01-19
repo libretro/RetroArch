@@ -240,9 +240,10 @@ void menu_display_font_bind_block(font_data_t *font, void *block)
    font_driver_bind_block(font, block);
 }
 
-bool menu_display_font_flush_block(font_data_t *font)
+bool menu_display_font_flush_block(unsigned width, unsigned height,
+      font_data_t *font)
 {
-   font_driver_flush(font);
+   font_driver_flush(width, height, font);
    font_driver_bind_block(font, NULL);
    return true;
 }

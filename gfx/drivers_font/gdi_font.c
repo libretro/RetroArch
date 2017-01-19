@@ -121,7 +121,7 @@ static void gdi_render_msg(
    ReleaseDC(hwnd, hdc);
 }
 
-static void gdi_font_flush_block(void* data)
+static void gdi_font_flush_block(unsigned width, unsigned height, void* data)
 {
    (void)data;
 }

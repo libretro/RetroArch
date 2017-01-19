@@ -200,7 +200,7 @@ void menu_display_blend_end(void);
 void menu_display_font_free(font_data_t *font);
 font_data_t *menu_display_font_main_init(menu_display_ctx_font_t *font);
 void menu_display_font_bind_block(font_data_t *font, void *block);
-bool menu_display_font_flush_block(font_data_t *font);
+bool menu_display_font_flush_block(unsigned width, unsigned height, font_data_t *font);
 
 void menu_display_framebuffer_deinit(void);
 
