@@ -21,11 +21,17 @@
 #ifdef HAVE_CHEEVOS
 #include "../../cheevos.h"
 #endif
+#include "../../verbosity.h"
 
 #ifndef BIND_ACTION_SUBLABEL
 #define BIND_ACTION_SUBLABEL(cbs, name) \
    cbs->action_sublabel = name; \
    cbs->action_sublabel_ident = #name;
+#endif
+
+#ifdef HAVE_NETWORKING
+#include "../../network/netplay/netplay.h"
+#include "../../network/netplay/netplay_discovery.h"
 #endif
 
 #define default_sublabel_macro(func_name, lbl) \
@@ -117,6 +123,8 @@ default_sublabel_macro(action_bind_sublabel_content_history_size,          MENU_
 default_sublabel_macro(action_bind_sublabel_menu_input_unified_controls,   MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS)
 default_sublabel_macro(action_bind_sublabel_onscreen_notifications_enable, MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE)
 
+/* MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM*/
+
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
       unsigned type, unsigned i,
@@ -133,6 +141,19 @@ static int action_bind_sublabel_cheevos_entry(
 
    strlcpy(s, desc_info.s, len);
 #endif
+   return 0;
+}
+
+static int action_bind_sublabel_netplay_room(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   if (i < 1)
+      return 0;
+
+   strlcpy(s, netplay_room_list[i - 1].corename, len);
    return 0;
 }
 
@@ -232,6 +253,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY:
          case MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_entry);
+            break;
+         case MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_room);
             break;
          case MENU_ENUM_LABEL_CHEEVOS_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_enable);
