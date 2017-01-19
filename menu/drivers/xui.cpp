@@ -38,6 +38,7 @@
 #include "../menu_navigation.h"
 #include "../menu_setting.h"
 #include "../menu_display.h"
+#include "../widgets/menu_input_dialog.h"
 
 #include "../../gfx/video_driver.h"
 #include "../../gfx/video_context_driver.h"
@@ -594,7 +595,7 @@ static void xui_render(void *data)
       const char *label = menu_input_dialog_get_label_buffer();
 
       snprintf(msg, sizeof(msg), "%s\n%s", label, str);
-		xui_render_messagebox(msg);			
+		xui_render_messagebox(NULL, msg);			
 	}
 }
 
