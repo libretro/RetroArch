@@ -341,9 +341,14 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
 {
    static struct retro_perf_counter sdl_scale = {0};
    sdl_video_t                    *vid = (sdl_video_t*)data;
+   char title[128];
 
    if (!frame)
       return true;
+
+   title[0] = '\0';
+
+   video_driver_get_window_title(title, sizeof(title));
 
    if (SDL_MUSTLOCK(vid->screen))
       SDL_LockSurface(vid->screen);
@@ -377,8 +382,8 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
    if (SDL_MUSTLOCK(vid->screen))
       SDL_UnlockSurface(vid->screen);
 
-   if (video_info->monitor_fps_enable)
-      SDL_WM_SetCaption(video_info->window_text, NULL);
+   if (title[0])
+      SDL_WM_SetCaption(title, NULL);
 
    SDL_Flip(vid->screen);
 
