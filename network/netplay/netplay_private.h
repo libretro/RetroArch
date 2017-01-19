@@ -50,9 +50,6 @@
 #define NETPLAY_MAX_REQ_STALL_TIME     60
 #define NETPLAY_MAX_REQ_STALL_FREQUENCY 120
 
-/* TEMPORARY */
-#define NETPLAY_INPUT_LATENCY_FRAMES   5
-
 #define PREV_PTR(x) ((x) == 0 ? netplay->buffer_size - 1 : (x) - 1)
 #define NEXT_PTR(x) ((x + 1) % netplay->buffer_size)
 
@@ -444,6 +441,9 @@ struct netplay
    retro_time_t frame_run_time[NETPLAY_FRAME_RUN_TIME_WINDOW];
    int frame_run_time_ptr;
    retro_time_t frame_run_time_sum, frame_run_time_avg;
+
+   /* Latency frames and limits */
+   unsigned input_latency_frames;
 
    /* Are we stalled? */
    enum rarch_netplay_stall_reason stall;

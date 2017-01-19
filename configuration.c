@@ -964,6 +964,8 @@ static struct config_int_setting *populate_settings_int(settings_t *settings, in
 #ifdef HAVE_NETWORKING
    SETTING_INT("netplay_ip_port",              &settings->netplay.port,         true, RARCH_DEFAULT_PORT, false);
    SETTING_INT("netplay_check_frames",         (unsigned*)&settings->netplay.check_frames, true, netplay_check_frames, false);
+   SETTING_INT("netplay_input_latency_frames_min",&settings->netplay.input_latency_frames_min, true, 0, false);
+   SETTING_INT("netplay_input_latency_frames_range",&settings->netplay.input_latency_frames_range, true, 0, false);
 #endif
 #ifdef HAVE_LANGEXTRA
    SETTING_INT("user_language",                &settings->user_language, true, RETRO_LANGUAGE_ENGLISH, false);

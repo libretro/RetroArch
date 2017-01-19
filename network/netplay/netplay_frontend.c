@@ -220,12 +220,49 @@ static bool netplay_poll(void)
    /* Simulate the input if we don't have real input */
    netplay_simulate_input(netplay_data, netplay_data->run_ptr, false);
 
+   netplay_update_unread_ptr(netplay_data);
+
+   /* Figure out how many frames of input latency we should be using to hide
+    * network latency */
+   if (netplay_data->frame_run_time_avg)
+   {
+      /* FIXME: Using fixed 60fps for this calculation */
+      unsigned frames_per_frame = 16666/netplay_data->frame_run_time_avg;
+      unsigned frames_ahead = (netplay_data->run_frame_count > netplay_data->unread_frame_count) ?
+                              (netplay_data->run_frame_count - netplay_data->unread_frame_count) :
+                              0;
+      settings_t *settings  = config_get_ptr();
+      unsigned input_latency_frames_min = settings->netplay.input_latency_frames_min;
+      unsigned input_latency_frames_max = input_latency_frames_min + settings->netplay.input_latency_frames_range;
+
+      /* Assume we need a couple frames worth of time to actually run the
+       * current frame */
+      if (frames_per_frame > 2)
+         frames_per_frame -= 2;
+      else
+         frames_per_frame = 0;
+
+      /* Shall we adjust our latency? */
+      if (frames_per_frame < frames_ahead &&
+          netplay_data->input_latency_frames < input_latency_frames_max)
+      {
+         /* We can't hide this much network latency with replay, so hide some
+          * with input latency */
+         netplay_data->input_latency_frames++;
+      }
+      else if (frames_per_frame > frames_ahead + 2 &&
+               netplay_data->input_latency_frames > input_latency_frames_min)
+      {
+         /* We don't need this much latency (any more) */
+         netplay_data->input_latency_frames--;
+      }
+   }
+
    /* If we're stalled, consider unstalling */
    switch (netplay_data->stall)
    {
       case NETPLAY_STALL_RUNNING_FAST:
       {
-         netplay_update_unread_ptr(netplay_data);
          if (netplay_data->unread_frame_count + NETPLAY_MAX_STALL_FRAMES - 2
                > netplay_data->input_frame_count)
          {
@@ -272,12 +309,10 @@ static bool netplay_poll(void)
    /* If we're not stalled, consider stalling */
    if (!netplay_data->stall)
    {
-      netplay_update_unread_ptr(netplay_data);
-
       /* Have we not reat enough latency frames? */
       if (netplay_data->self_mode == NETPLAY_CONNECTION_PLAYING &&
           netplay_data->connected_players &&
-          netplay_data->run_frame_count + NETPLAY_INPUT_LATENCY_FRAMES > netplay_data->input_frame_count)
+          netplay_data->run_frame_count + netplay_data->input_latency_frames > netplay_data->input_frame_count)
       {
          netplay_data->stall = NETPLAY_STALL_INPUT_LATENCY;
          netplay_data->stall_time = 0;

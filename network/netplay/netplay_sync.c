@@ -374,7 +374,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
 
    /* We've finished an input frame even if we're stalling, unless we're too
     * far ahead of ourselves */
-   if (netplay->input_frame_count < netplay->run_frame_count + NETPLAY_INPUT_LATENCY_FRAMES)
+   if (netplay->input_frame_count < netplay->run_frame_count + netplay->input_latency_frames)
    {
       netplay->input_ptr = NEXT_PTR(netplay->input_ptr);
       netplay->input_frame_count++;
