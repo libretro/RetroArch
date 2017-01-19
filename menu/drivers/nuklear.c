@@ -145,6 +145,9 @@ static void xmb_init_ribbon(nk_menu_handle_t * xmb)
 
 static void *nk_menu_init(void **userdata)
 {
+#if 1
+   unsigned i;
+#endif
    settings_t *settings = config_get_ptr();
    nk_menu_handle_t   *nk = NULL;
    menu_handle_t *menu = (menu_handle_t*)
@@ -169,16 +172,18 @@ static void *nk_menu_init(void **userdata)
          "nuklear", sizeof(nk->assets_directory));
    nk_menu_init_device(nk);
 
-   /* for demo puposes only, opens all windows */ 
+   /* for demo purposes only, opens all windows */ 
 #if 1
-      for (int i=0; i < NK_WND_LAST; i++)
+      for (i = 0; i < NK_WND_LAST; i++)
          nk->window[i].open = true;
 #else
       nk->window[NK_WND_MAIN].open = true;
 #endif
    xmb_init_ribbon(nk);
+
    return menu;
 error:
+
    if (menu)
       free(menu);
    return NULL;
