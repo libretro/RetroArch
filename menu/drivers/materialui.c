@@ -329,16 +329,14 @@ static void mui_render_keyboard(mui_handle_t *mui,
 }
 
 /* Returns the OSK key at a given position */
-static int mui_osk_ptr_at_pos(void *data, int x, int y)
+static int mui_osk_ptr_at_pos(void *data, int x, int y, unsigned width, unsigned height)
 {
    int ptr_width, ptr_height;
-   unsigned i, width, height;
+   unsigned i;
 
    mui_handle_t *mui = (mui_handle_t*)data;
    if (!mui)
       return -1;
-
-   video_driver_get_size(&width, &height);
 
    ptr_width  = width / 11;
    ptr_height = height / 10;

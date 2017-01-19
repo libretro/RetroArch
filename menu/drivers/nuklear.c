@@ -305,16 +305,22 @@ static void nk_menu_main(nk_menu_handle_t *nk)
 
 static void nk_menu_frame(void *data, video_frame_info_t *video_info)
 {
-   float white_bg[16]=  {
+   unsigned ticker_limit, i;
+   float coord_black[16], coord_white[16];
+   nk_menu_handle_t *nk   = (nk_menu_handle_t*)data;
+   settings_t *settings   = config_get_ptr();
+   unsigned width         = video_info->width;
+   unsigned height        = video_info->height;
+   bool libretro_running  = menu_display_libretro_running();
+   float white_bg[16]     =  {
       0.98, 0.98, 0.98, 1,
       0.98, 0.98, 0.98, 1,
       0.98, 0.98, 0.98, 1,
       0.98, 0.98, 0.98, 1,
    };
    
-   float coord_black[16], coord_white[16];
 
-   for (int i = 0; i < 16; i++)
+   for (i = 0; i < 16; i++)
    {
       coord_black[i]  = 0;
       coord_white[i] = 1.0f;
@@ -323,16 +329,8 @@ static void nk_menu_frame(void *data, video_frame_info_t *video_info)
    menu_display_set_alpha(coord_black, 0.75);
    menu_display_set_alpha(coord_white, 0.75);
 
-   unsigned width, height, ticker_limit, i;
-   nk_menu_handle_t *nk = (nk_menu_handle_t*)data;
-   settings_t *settings  = config_get_ptr();
-
-   bool libretro_running = menu_display_libretro_running();
-
    if (!nk)
       return;
-
-   video_driver_get_size(&width, &height);
 
    menu_display_set_viewport(video_info->width, video_info->height);
 

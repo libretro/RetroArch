@@ -886,14 +886,17 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_OSK_PTR_AT_POS:
          {
+            unsigned width            = 0;
+            unsigned height           = 0;
             menu_ctx_pointer_t *point = (menu_ctx_pointer_t*)data;
             if (!menu_driver_ctx || !menu_driver_ctx->osk_ptr_at_pos)
             {
                point->retcode = 0;
                return false;
             }
+            video_driver_get_size(&width, &height);
             point->retcode = menu_driver_ctx->osk_ptr_at_pos(menu_userdata,
-                  point->x, point->y);
+                  point->x, point->y, width, height);
          }
          break;
       case RARCH_MENU_CTL_BIND_INIT:

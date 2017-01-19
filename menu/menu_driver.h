@@ -276,7 +276,7 @@ typedef struct menu_ctx_driver
          menu_entry_t *entry, unsigned action);
    void (*update_thumbnail_path)(void *data, unsigned i);
    void (*update_thumbnail_image)(void *data);
-   int  (*osk_ptr_at_pos)(void *data, int x, int y);
+   int  (*osk_ptr_at_pos)(void *data, int x, int y, unsigned width, unsigned height);
    void (*update_savestate_thumbnail_path)(void *data, unsigned i);
    void (*update_savestate_thumbnail_image)(void *data);
 } menu_ctx_driver_t;

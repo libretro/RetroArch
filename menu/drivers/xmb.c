@@ -767,18 +767,16 @@ static void xmb_render_keyboard(xmb_handle_t *xmb,
 }
 
 /* Returns the OSK key at a given position */
-static int xmb_osk_ptr_at_pos(void *data, int x, int y)
+static int xmb_osk_ptr_at_pos(void *data, int x, int y, unsigned width, unsigned height)
 {
+   unsigned i;
    int ptr_width, ptr_height;
-   unsigned i, width, height;
-
    xmb_handle_t *xmb = (xmb_handle_t*)data;
+
    if (!xmb)
       return -1;
 
-   video_driver_get_size(&width, &height);
-
-   ptr_width  = width / 11;
+   ptr_width  = width  / 11;
    ptr_height = height / 10;
 
    if (ptr_width >= ptr_height)
