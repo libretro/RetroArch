@@ -2140,8 +2140,6 @@ void video_driver_frame(const void *data, unsigned width,
    video_driver_build_info(&video_info);
 
    video_driver_threaded_lock();
-   video_info.width       = video_driver_width;
-   video_info.height      = video_driver_height;
    video_info.frame_count = video_driver_frame_count;
    video_driver_frame_count++;
    video_driver_threaded_unlock();
@@ -2244,6 +2242,7 @@ bool video_driver_texture_unload(uintptr_t *id)
 
 void video_driver_build_info(video_frame_info_t *video_info)
 {
+   video_driver_threaded_lock();
    settings_t *settings             = config_get_ptr();
    video_info->refresh_rate          = settings->video.refresh_rate;
    video_info->black_frame_insertion = 
@@ -2264,6 +2263,10 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->frame_count           = 0;
    video_info->window_text[0]        = '\0';
    video_info->fps_text[0]           = '\0';
+
+   video_info->width                 = video_driver_width;
+   video_info->height                = video_driver_height;
+   video_driver_threaded_unlock();
 }
 
 /**
