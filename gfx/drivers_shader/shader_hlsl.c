@@ -64,7 +64,7 @@ void hlsl_set_proj_matrix(void *data, XMMATRIX rotation_value)
 {
    hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)data;
    if (hlsl)
-      hlsl->prg[hlsl_data->active_idx].mvp_val = rotation_value;
+      hlsl->prg[hlsl->active_idx].mvp_val = rotation_value;
 }
 
 static void hlsl_set_uniform_parameter(
@@ -454,9 +454,7 @@ static void hlsl_use(void *data, void *shader_data, unsigned idx, bool set_activ
    if (hlsl_data && hlsl_data->prg[idx].vprg && hlsl_data->prg[idx].fprg)
    {
       if (set_active)
-      {
          hlsl_data->active_idx = idx;
-      }
 
       d3d_set_vertex_shader(d3dr, idx, hlsl_data->prg[idx].vprg);
 #ifdef _XBOX
