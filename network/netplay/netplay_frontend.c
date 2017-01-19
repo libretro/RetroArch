@@ -551,7 +551,6 @@ bool netplay_pre_frame(netplay_t *netplay)
 {
    bool sync_stalled;
    reannounce ++;
-   RARCH_LOG("%d\n", reannounce);
    if (reannounce % 3600 == 0)
       netplay_announce();
    retro_assert(netplay);

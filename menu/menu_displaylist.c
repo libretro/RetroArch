@@ -245,11 +245,6 @@ static int menu_displaylist_parse_netplay(
          MENU_SETTING_ACTION, 0, 0);
 
    menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS),
-         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_SETTINGS),
-         MENU_ENUM_LABEL_NETWORK_SETTINGS, MENU_SETTING_GROUP, 0, 0);
-
-   menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_LAN_SCAN_SETTINGS),
          msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS),
          MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS, MENU_SETTING_GROUP, 0, 0);
@@ -2697,6 +2692,11 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS,
                MENU_SETTING_ACTION, 0, 0);
 
+#ifdef HAVE_NETWORKING
+      menu_displaylist_parse_settings_enum(menu, info,
+            MENU_ENUM_LABEL_NETPLAY,
+            PARSE_ACTION, false);
+#endif
 
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS),
@@ -2930,6 +2930,7 @@ static int menu_displaylist_parse_add_content_list(
 static int menu_displaylist_parse_scan_directory_list(
       menu_displaylist_info_t *info)
 {
+
 #ifdef HAVE_LIBRETRODB
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
@@ -2941,6 +2942,21 @@ static int menu_displaylist_parse_scan_directory_list(
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
          msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE),
          MENU_ENUM_LABEL_SCAN_FILE,
+         MENU_SETTING_ACTION, 0, 0);
+#endif
+
+   return 0;
+}
+
+static int menu_displaylist_parse_netplay_room_list(
+      menu_displaylist_info_t *info)
+{
+
+#ifdef HAVE_NETWORKING
+   menu_entries_append_enum(info->list,
+         "Refresh Room List",
+         msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY),
+         MENU_ENUM_LABEL_SCAN_DIRECTORY,
          MENU_SETTING_ACTION, 0, 0);
 #endif
 
@@ -3781,6 +3797,12 @@ static bool menu_displaylist_push_internal(
             return false;
          return true;
    }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB)))
+   {
+         if (!menu_displaylist_ctl(DISPLAYLIST_NETPLAY_ROOM_LIST, info))
+            return false;
+         return true;
+   }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU)))
    {
       if (!menu_displaylist_ctl(DISPLAYLIST_HORIZONTAL, info))
@@ -3909,6 +3931,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_ADD_CONTENT_LIST:
       case DISPLAYLIST_CONFIGURATIONS_LIST:
       case DISPLAYLIST_SCAN_DIRECTORY_LIST:
+      case DISPLAYLIST_NETPLAY_ROOM_LIST:
       case DISPLAYLIST_LOAD_CONTENT_LIST:
       case DISPLAYLIST_USER_BINDS_LIST:
       case DISPLAYLIST_ACCOUNTS_LIST:
@@ -5311,6 +5334,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_SCAN_DIRECTORY_LIST:
          ret = menu_displaylist_parse_scan_directory_list(info);
+
+         info->need_push    = true;
+         info->need_refresh = true;
+         break;
+      case DISPLAYLIST_NETPLAY_ROOM_LIST:
+         ret = menu_displaylist_parse_netplay_room_list(info);
 
          info->need_push    = true;
          info->need_refresh = true;
