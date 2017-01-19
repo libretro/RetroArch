@@ -39,6 +39,7 @@
 #include "SDL_syswm.h"
 
 #include "../font_driver.h"
+#include "../video_driver.h"
 
 #include "../../configuration.h"
 #include "../../runloop.h"
