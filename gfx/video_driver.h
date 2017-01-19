@@ -249,7 +249,7 @@ extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 #if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
 #define video_driver_has_windowed() (false)
 #else
-#define video_driver_has_windowed() (current_video->has_windowed(video_driver_data))
+#define video_driver_has_windowed() (current_video->has_windowed && current_video->has_windowed(video_driver_data))
 #endif
 
 #define video_driver_cached_frame_has_valid_framebuffer() (frame_cache_data ? (frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID) : false)

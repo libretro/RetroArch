@@ -179,12 +179,6 @@ static bool gfx_ctx_cgl_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool gfx_ctx_cgl_has_windowed(void *data)
-{
-   (void)data;
-   return false;
-}
-
 static bool gfx_ctx_cgl_bind_api(void *data, enum gfx_ctx_api api,
    unsigned major, unsigned minor)
 {
@@ -353,7 +347,7 @@ const gfx_ctx_driver_t gfx_ctx_cgl = {
    gfx_ctx_cgl_set_resize,
    gfx_ctx_cgl_has_focus,
    gfx_ctx_cgl_suppress_screensaver,
-   gfx_ctx_cgl_has_windowed,
+   NULL, /* has_windowed */
    gfx_ctx_cgl_swap_buffers,
    gfx_ctx_cgl_input_driver,
    gfx_ctx_cgl_get_proc_address,

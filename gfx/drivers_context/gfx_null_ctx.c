@@ -94,12 +94,6 @@ static bool gfx_ctx_null_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool gfx_ctx_null_has_windowed(void *data)
-{
-   (void)data;
-   return true;
-}
-
 static bool gfx_ctx_null_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    (void)data;
@@ -159,7 +153,7 @@ const gfx_ctx_driver_t gfx_ctx_null = {
    gfx_ctx_null_set_resize,
    gfx_ctx_null_has_focus,
    gfx_ctx_null_suppress_screensaver,
-   gfx_ctx_null_has_windowed,
+   NULL, /* has_windowed */
    gfx_ctx_null_swap_buffers,
    gfx_ctx_null_input_driver,
    NULL,

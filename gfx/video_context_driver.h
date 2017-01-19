@@ -334,7 +334,7 @@ bool video_context_driver_translate_aspect(gfx_ctx_aspect_t *aspect);
 
 bool video_context_driver_input_driver(gfx_ctx_input_t *inp);
 
-#define video_context_driver_has_windowed() ((video_context_data && current_video_context->has_windowed(video_context_data)) ? true : false)
+#define video_context_driver_has_windowed() ((video_context_data && current_video_context->has_windowed && current_video_context->has_windowed(video_context_data)) ? true : false)
 
 void video_context_driver_free(void);
 

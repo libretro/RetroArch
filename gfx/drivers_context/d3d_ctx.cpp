@@ -131,16 +131,14 @@ static bool gfx_ctx_d3d_suppress_screensaver(void *data, bool enable)
    return win32_suppress_screensaver(data, enable);
 }
 
+#ifndef _XBOX
 static bool gfx_ctx_d3d_has_windowed(void *data)
 {
    (void)data;
 
-#ifdef _XBOX
-   return false;
-#else
    return true;
-#endif
 }
+#endif
 
 static bool gfx_ctx_d3d_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
@@ -337,7 +335,11 @@ const gfx_ctx_driver_t gfx_ctx_d3d = {
    gfx_ctx_d3d_set_resize,
    gfx_ctx_d3d_has_focus,
    gfx_ctx_d3d_suppress_screensaver,
+#ifdef _XBOX
+   NULL,
+#else
    gfx_ctx_d3d_has_windowed,
+#endif
    gfx_ctx_d3d_swap_buffers,
    gfx_ctx_d3d_input_driver,
    NULL,

@@ -172,12 +172,6 @@ static bool gfx_ctx_ps3_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool gfx_ctx_ps3_has_windowed(void *data)
-{
-   (void)data;
-   return false;
-}
-
 static void gfx_ctx_ps3_swap_buffers(void *data, video_frame_info_t *video_info)
 {
    (void)data;
@@ -422,7 +416,7 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    gfx_ctx_ps3_set_resize,
    gfx_ctx_ps3_has_focus,
    gfx_ctx_ps3_suppress_screensaver,
-   gfx_ctx_ps3_has_windowed,
+   NULL, /* has_windowed */
    gfx_ctx_ps3_swap_buffers,
    gfx_ctx_ps3_input_driver,
    NULL,

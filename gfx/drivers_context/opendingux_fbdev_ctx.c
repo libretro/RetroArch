@@ -212,12 +212,6 @@ static bool gfx_ctx_opendingux_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool gfx_ctx_opendingux_has_windowed(void *data)
-{
-   (void)data;
-   return false;
-}
-
 static void gfx_ctx_opendingux_swap_buffers(void *data, video_frame_info_t *video_info)
 {
    opendingux_ctx_data_t *viv = (opendingux_ctx_data_t*)data;
@@ -283,7 +277,7 @@ const gfx_ctx_driver_t gfx_ctx_opendingux_fbdev = {
    gfx_ctx_opendingux_set_resize,
    gfx_ctx_opendingux_has_focus,
    gfx_ctx_opendingux_suppress_screensaver,
-   gfx_ctx_opendingux_has_windowed,
+   NULL, /* has_windowed */
    gfx_ctx_opendingux_swap_buffers,
    gfx_ctx_opendingux_input_driver,
    gfx_ctx_opendingux_get_proc_address,

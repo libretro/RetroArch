@@ -170,12 +170,6 @@ static bool gfx_ctx_khr_display_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool gfx_ctx_khr_display_has_windowed(void *data)
-{
-   (void)data;
-   return false;
-}
-
 static void gfx_ctx_khr_display_set_swap_interval(void *data, unsigned swap_interval)
 {
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
@@ -234,7 +228,7 @@ const gfx_ctx_driver_t gfx_ctx_khr_display = {
    gfx_ctx_khr_display_set_resize,
    gfx_ctx_khr_display_has_focus,
    gfx_ctx_khr_display_suppress_screensaver,
-   gfx_ctx_khr_display_has_windowed,
+   NULL, /* has_windowed */
    gfx_ctx_khr_display_swap_buffers,
    gfx_ctx_khr_display_input_driver,
    gfx_ctx_khr_display_get_proc_address,

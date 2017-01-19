@@ -217,12 +217,6 @@ static bool gfx_ctx_vivante_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool gfx_ctx_vivante_has_windowed(void *data)
-{
-   (void)data;
-   return false;
-}
-
 static void gfx_ctx_vivante_set_swap_interval(void *data, unsigned swap_interval)
 {
    vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;
@@ -288,7 +282,7 @@ const gfx_ctx_driver_t gfx_ctx_vivante_fbdev = {
    gfx_ctx_vivante_set_resize,
    gfx_ctx_vivante_has_focus,
    gfx_ctx_vivante_suppress_screensaver,
-   gfx_ctx_vivante_has_windowed,
+   NULL, /* has_windowed */
    gfx_ctx_vivante_swap_buffers,
    gfx_ctx_vivante_input_driver,
    gfx_ctx_vivante_get_proc_address,

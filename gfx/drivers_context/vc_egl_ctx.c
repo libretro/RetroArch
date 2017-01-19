@@ -457,12 +457,6 @@ static bool gfx_ctx_vc_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool gfx_ctx_vc_has_windowed(void *data)
-{
-   (void)data;
-   return false;
-}
-
 static float gfx_ctx_vc_translate_aspect(void *data,
       unsigned width, unsigned height)
 {
@@ -650,7 +644,7 @@ const gfx_ctx_driver_t gfx_ctx_videocore = {
    gfx_ctx_vc_set_resize,
    gfx_ctx_vc_has_focus,
    gfx_ctx_vc_suppress_screensaver,
-   gfx_ctx_vc_has_windowed,
+   NULL, /* has_windowed */
    gfx_ctx_vc_swap_buffers,
    gfx_ctx_vc_input_driver,
    gfx_ctx_vc_get_proc_address,

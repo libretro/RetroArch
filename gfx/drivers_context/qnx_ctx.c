@@ -359,12 +359,6 @@ static bool gfx_ctx_qnx_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool gfx_ctx_qnx_has_windowed(void *data)
-{
-   (void)data;
-   return false;
-}
-
 static int dpi_get_density(qnx_ctx_data_t *qnx)
 {
     int screen_dpi[2];
@@ -482,7 +476,7 @@ const gfx_ctx_driver_t gfx_ctx_qnx = {
    gfx_ctx_qnx_set_resize,
    gfx_ctx_qnx_has_focus,
    gfx_ctx_qnx_suppress_screensaver,
-   gfx_ctx_qnx_has_windowed,
+   NULL, /* has_windowed */
    gfx_ctx_qnx_swap_buffers,
    gfx_ctx_qnx_input_driver,
    gfx_ctx_qnx_get_proc_address,

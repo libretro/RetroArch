@@ -421,12 +421,6 @@ static bool android_gfx_ctx_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool android_gfx_ctx_has_windowed(void *data)
-{
-   (void)data;
-   return false;
-}
-
 static void dpi_get_density(char *s, size_t len)
 {
    system_property_get("getprop", "ro.sf.lcd_density", s);
@@ -608,7 +602,7 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    android_gfx_ctx_set_resize,
    android_gfx_ctx_has_focus,
    android_gfx_ctx_suppress_screensaver,
-   android_gfx_ctx_has_windowed,
+   NULL, /* has_windowed */
    android_gfx_ctx_swap_buffers,
    android_gfx_ctx_input_driver,
    android_gfx_ctx_get_proc_address,

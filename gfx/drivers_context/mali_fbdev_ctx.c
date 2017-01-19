@@ -239,12 +239,6 @@ static bool gfx_ctx_mali_fbdev_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool gfx_ctx_mali_fbdev_has_windowed(void *data)
-{
-   (void)data;
-   return false;
-}
-
 static void gfx_ctx_mali_fbdev_set_swap_interval(void *data, unsigned swap_interval)
 {
    mali_ctx_data_t *mali = (mali_ctx_data_t*)data;
@@ -309,7 +303,7 @@ const gfx_ctx_driver_t gfx_ctx_mali_fbdev = {
    gfx_ctx_mali_fbdev_set_resize,
    gfx_ctx_mali_fbdev_has_focus,
    gfx_ctx_mali_fbdev_suppress_screensaver,
-   gfx_ctx_mali_fbdev_has_windowed,
+   NULL, /* has_windowed */
    gfx_ctx_mali_fbdev_swap_buffers,
    gfx_ctx_mali_fbdev_input_driver,
    gfx_ctx_mali_fbdev_get_proc_address,

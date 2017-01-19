@@ -516,16 +516,12 @@ static bool cocoagl_gfx_ctx_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
+#if !defined(HAVE_COCOATOUCH)
 static bool cocoagl_gfx_ctx_has_windowed(void *data)
 {
-   (void)data;
-
-#if defined(HAVE_COCOATOUCH)
-   return false;
-#else
    return true;
-#endif
 }
+#endif
 
 static void cocoagl_gfx_ctx_swap_buffers(void *data, video_frame_info_t *video_info)
 {
@@ -629,7 +625,11 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    cocoagl_gfx_ctx_set_resize,
    cocoagl_gfx_ctx_has_focus,
    cocoagl_gfx_ctx_suppress_screensaver,
+#if defined(HAVE_COCOATOUCH)
+   NULL,
+#else
    cocoagl_gfx_ctx_has_windowed,
+#endif
    cocoagl_gfx_ctx_swap_buffers,
    cocoagl_gfx_ctx_input_driver,
    cocoagl_gfx_ctx_get_proc_address,

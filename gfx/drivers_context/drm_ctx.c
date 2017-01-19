@@ -749,12 +749,6 @@ static bool gfx_ctx_drm_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool gfx_ctx_drm_has_windowed(void *data)
-{
-   (void)data;
-   return false;
-}
-
 static bool gfx_ctx_drm_bind_api(void *video_driver,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
@@ -878,7 +872,7 @@ const gfx_ctx_driver_t gfx_ctx_drm = {
    gfx_ctx_drm_set_resize,
    gfx_ctx_drm_has_focus,
    gfx_ctx_drm_suppress_screensaver,
-   gfx_ctx_drm_has_windowed,
+   NULL, /* has_windowed */
    gfx_ctx_drm_swap_buffers,
    gfx_ctx_drm_input_driver,
    gfx_ctx_drm_get_proc_address,
