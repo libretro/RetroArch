@@ -93,7 +93,7 @@ static void d3dfonts_w32_free_font(void *data)
    d3dfonts = NULL;
 }
 
-static void d3dfonts_w32_render_msg(void *data, const char *msg,
+static void d3dfonts_w32_render_msg(video_frame_info_t *video_info, void *data, const char *msg,
       const void *userdata)
 {
    const struct font_params *params = (const struct font_params*)userdata;
