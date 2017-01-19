@@ -1075,7 +1075,7 @@ void video_driver_set_aspect_ratio_value(float value)
 
 static bool video_driver_frame_filter(
       const void *data,
-      video_frame_info_t video_info,
+      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       size_t pitch,
       unsigned *output_width, unsigned *output_height,
@@ -1096,7 +1096,7 @@ static bool video_driver_frame_filter(
          data, width, height, pitch);
    performance_counter_stop(&softfilter_process);
 
-   if (video_info.post_filter_record && recording_data)
+   if (video_info->post_filter_record && recording_data)
       recording_dump_frame(video_driver_state_buffer,
             *output_width, *output_height, *output_pitch);
 
@@ -2168,7 +2168,7 @@ void video_driver_frame(const void *data, unsigned width,
       recording_dump_frame(data, width, height, pitch);
 
    if (data && video_driver_state_filter &&
-         video_driver_frame_filter(data, video_info, width, height, pitch,
+         video_driver_frame_filter(data, &video_info, width, height, pitch,
             &output_width, &output_height, &output_pitch))
    {
       data   = video_driver_state_buffer;
