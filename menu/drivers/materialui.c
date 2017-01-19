@@ -329,10 +329,11 @@ static void mui_render_keyboard(mui_handle_t *mui,
 }
 
 /* Returns the OSK key at a given position */
-static int mui_osk_ptr_at_pos(void *data, int x, int y, unsigned width, unsigned height)
+static int mui_osk_ptr_at_pos(void *data, int x, int y,
+      unsigned width, unsigned height)
 {
-   int ptr_width, ptr_height;
    unsigned i;
+   int ptr_width, ptr_height;
    mui_handle_t *mui = (mui_handle_t*)data;
 
    if (!mui)
@@ -413,38 +414,31 @@ static float mui_content_height(void)
 static void mui_draw_scrollbar(mui_handle_t *mui,
       unsigned width, unsigned height, float *coord_color)
 {
-   unsigned header_height;
-   float content_height, total_height,
-         scrollbar_height, scrollbar_margin, y;
-
-   if (!mui)
-      return;
-
-   header_height    = menu_display_get_header_height();
-
-   content_height   = mui_content_height();
-   total_height     = height - header_height - mui->tabs_height;
-   scrollbar_margin = mui->scrollbar_width;
-   scrollbar_height = total_height / (content_height / total_height);
-   y                = total_height * mui->scroll_y / content_height;
+   unsigned header_height = menu_display_get_header_height();
+   float content_height   = mui_content_height();
+   float total_height     = height - header_height - mui->tabs_height;
+   float scrollbar_margin = mui->scrollbar_width;
+   float scrollbar_height = total_height / (content_height / total_height);
+   float y                = total_height * mui->scroll_y / content_height;
 
    /* apply a margin on the top and bottom of the scrollbar for aestetic */
-   scrollbar_height -= scrollbar_margin * 2;
-   y += scrollbar_margin;
+   scrollbar_height      -= scrollbar_margin * 2;
+   y                     += scrollbar_margin;
 
-   if (content_height >= total_height)
-   {
-      /* if the scrollbar is extremely short, display it as a square */
-      if (scrollbar_height <= mui->scrollbar_width)
-         scrollbar_height = mui->scrollbar_width;
+   if (content_height < total_height)
+      return;
 
-      menu_display_draw_quad(            width - mui->scrollbar_width - scrollbar_margin,
-            header_height + y,
-            mui->scrollbar_width,
-            scrollbar_height,
-            width, height,
-            coord_color);
-   }
+   /* if the scrollbar is extremely short, display it as a square */
+   if (scrollbar_height <= mui->scrollbar_width)
+      scrollbar_height = mui->scrollbar_width;
+
+   menu_display_draw_quad(
+         width - mui->scrollbar_width - scrollbar_margin,
+         header_height + y,
+         mui->scrollbar_width,
+         scrollbar_height,
+         width, height,
+         coord_color);
 }
 
 static void mui_get_message(void *data, const char *message)
