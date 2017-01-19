@@ -28,6 +28,8 @@
 #include "../../menu/menu_driver.h"
 #endif
 
+#include "../font_driver.h"
+
 #include "../common/vita2d_common.h"
 #include "../../driver.h"
 #include "../../runloop.h"

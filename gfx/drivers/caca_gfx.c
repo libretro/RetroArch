@@ -25,6 +25,8 @@
 
 #include "../common/caca_common.h"
 
+#include "../font_driver.h"
+
 #include "../../driver.h"
 #include "../../verbosity.h"
 

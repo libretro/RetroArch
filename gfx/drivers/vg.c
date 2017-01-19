@@ -35,12 +35,13 @@
 #include "../../menu/menu_driver.h"
 #endif
 
+#include "../font_driver.h"
 #include "../video_context_driver.h"
+
 #include "../../retroarch.h"
 #include "../../runloop.h"
 #include "../../driver.h"
 #include "../../performance_counters.h"
-#include "../font_driver.h"
 #include "../../content.h"
 #include "../../runloop.h"
 #include "../../verbosity.h"

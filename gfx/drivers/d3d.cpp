@@ -47,6 +47,8 @@
 #include "../../menu/menu_driver.h"
 #endif
 
+#include "../font_driver.h"
+
 #include "../../core.h"
 #include "../../performance_counters.h"
 

@@ -14,8 +14,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../video_driver.h"
+
 #include "../../driver.h"
-#include "../../configuration.h"
 #include "../../verbosity.h"
 
 static void *null_gfx_init(const video_info_t *video,

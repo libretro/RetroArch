@@ -42,14 +42,14 @@
 #include <gfx/video_frame.h>
 #include <string/stdstring.h>
 
+#include "../font_driver.h"
+
 #include "../../configuration.h"
 #include "../../driver.h"
 #include "../../retroarch.h"
 #include "../../runloop.h"
 
 #include "../video_context_driver.h"
-
-#include "../font_driver.h"
 
 typedef struct omapfb_page
 {

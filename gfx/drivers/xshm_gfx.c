@@ -32,6 +32,8 @@
 #include "../../menu/menu_driver.h"
 #endif
 
+#include "../font_driver.h"
+
 #include "../common/x11_common.h"
 
 typedef struct xshm

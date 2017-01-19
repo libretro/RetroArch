@@ -37,6 +37,8 @@
 
 #include "wiiu_dbg.h"
 
+#include "../font_driver.h"
+
 #define _X 0x00
 #define _Y 0x01
 #define _Z 0x02

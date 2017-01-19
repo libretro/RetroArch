@@ -34,6 +34,8 @@
 #include "../../menu/menu_driver.h"
 #endif
 
+#include "../font_driver.h"
+
 #include "../common/vulkan_common.h"
 
 #include "../../driver.h"
@@ -45,7 +47,6 @@
 #include "../../runloop.h"
 #include "../../verbosity.h"
 
-#include "../font_driver.h"
 #include "../video_context_driver.h"
 #include "../video_coord_array.h"
 

@@ -26,6 +26,8 @@
 #include "../../config.h"
 #endif
 
+#include "../font_driver.h"
+
 #include "../../driver.h"
 #include "../../runloop.h"
 

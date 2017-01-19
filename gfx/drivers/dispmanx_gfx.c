@@ -25,6 +25,8 @@
 #include "../../menu/menu_driver.h"
 #endif
 
+#include "../font_driver.h"
+
 #include "../../driver.h"
 #include "../../retroarch.h"
 #include "../../runloop.h"

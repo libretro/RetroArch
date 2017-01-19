@@ -38,12 +38,13 @@
 #include "SDL.h"
 #include "SDL_syswm.h"
 
+#include "../font_driver.h"
+
 #include "../../configuration.h"
 #include "../../runloop.h"
 #include "../../performance_counters.h"
 
 #include "../video_context_driver.h"
-#include "../font_driver.h"
 
 typedef struct sdl_menu_frame
 {

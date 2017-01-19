@@ -32,9 +32,10 @@
 #include "../../menu/menu_driver.h"
 #endif
 
+#include "../font_driver.h"
+
 #include "../../retroarch.h"
 #include "../../runloop.h"
-#include "../font_driver.h"
 
 #define NUMPAGES 2
 

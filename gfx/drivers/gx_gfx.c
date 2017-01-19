@@ -36,6 +36,8 @@
 #include "../../memory/wii/mem2_manager.h"
 #endif
 
+#include "../font_driver.h"
+
 #include "../drivers_font_renderer/bitmap.h"
 #include "../../defines/gx_defines.h"
 #include "../../configuration.h"
