@@ -150,33 +150,31 @@ static int ctr_font_get_message_width(void* data, const char* msg,
 }
 
 static void ctr_font_render_line(
-   ctr_font_t* font, const char* msg, unsigned msg_len,
-   float scale, const unsigned int color, float pos_x,
-   float pos_y, unsigned text_align)
+      video_frame_info_t *video_info,
+      ctr_font_t* font, const char* msg, unsigned msg_len,
+      float scale, const unsigned int color, float pos_x,
+      float pos_y, unsigned text_align)
 {
-   int x, y, delta_x, delta_y;
-   unsigned width, height;
    unsigned i;
 
+   ctr_vertex_t* v  = NULL;
    ctr_video_t* ctr = (ctr_video_t*)video_driver_get_ptr(false);
-   ctr_vertex_t* v;
-   video_driver_get_size(&width, &height);
-
-   x       = roundf(pos_x * width);
-   y       = roundf((1.0f - pos_y) * height);
-   delta_x = 0;
-   delta_y = 0;
-
+   unsigned width   = video_info->width;
+   unsigned height  = video_info->height;
+   int x            = roundf(pos_x * width);
+   int y            = roundf((1.0f - pos_y) * height);
+   int delta_x      = 0;
+   int delta_y      = 0;
 
    switch (text_align)
    {
-   case TEXT_ALIGN_RIGHT:
-      x -= ctr_font_get_message_width(font, msg, msg_len, scale);
-      break;
+      case TEXT_ALIGN_RIGHT:
+         x -= ctr_font_get_message_width(font, msg, msg_len, scale);
+         break;
 
-   case TEXT_ALIGN_CENTER:
-      x -= ctr_font_get_message_width(font, msg, msg_len, scale) / 2;
-      break;
+      case TEXT_ALIGN_CENTER:
+         x -= ctr_font_get_message_width(font, msg, msg_len, scale) / 2;
+         break;
    }
 
    if ((ctr->vertex_cache.size - (ctr->vertex_cache.current - ctr->vertex_cache.buffer)) < msg_len)
@@ -305,9 +303,10 @@ static void ctr_font_render_line(
 }
 
 static void ctr_font_render_message(
-   ctr_font_t* font, const char* msg, float scale,
-   const unsigned int color, float pos_x, float pos_y,
-   unsigned text_align)
+      video_frame_info_t *video_info,
+      ctr_font_t* font, const char* msg, float scale,
+      const unsigned int color, float pos_x, float pos_y,
+      unsigned text_align)
 {
    int lines = 0;
    float line_height;
@@ -318,7 +317,7 @@ static void ctr_font_render_message(
    /* If the font height is not supported just draw as usual */
    if (!font->font_driver->get_line_height)
    {
-      ctr_font_render_line(font, msg, strlen(msg),
+      ctr_font_render_line(video_info, font, msg, strlen(msg),
                            scale, color, pos_x, pos_y, text_align);
       return;
    }
@@ -333,7 +332,7 @@ static void ctr_font_render_message(
       if (delim)
       {
          unsigned msg_len = delim - msg;
-         ctr_font_render_line(font, msg, msg_len,
+         ctr_font_render_line(video_info, font, msg, msg_len,
                               scale, color, pos_x, pos_y - (float)lines * line_height,
                               text_align);
          msg += msg_len + 1;
@@ -342,7 +341,7 @@ static void ctr_font_render_message(
       else
       {
          unsigned msg_len = strlen(msg);
-         ctr_font_render_line(font, msg, msg_len,
+         ctr_font_render_line(video_info, font, msg, msg_len,
                               scale, color, pos_x, pos_y - (float)lines * line_height,
                               text_align);
          break;
@@ -416,12 +415,12 @@ static void ctr_font_render_msg(
       alpha_dark     = alpha * drop_alpha;
       color_dark     = COLOR_ABGR(r_dark, g_dark, b_dark, alpha_dark);
 
-      ctr_font_render_message(font, msg, scale, color_dark,
+      ctr_font_render_message(video_info, font, msg, scale, color_dark,
                               x + scale * drop_x / width, y +
                               scale * drop_y / height, text_align);
    }
 
-   ctr_font_render_message(font, msg, scale,
+   ctr_font_render_message(video_info, font, msg, scale,
                            color, x, y, text_align);
 }
 

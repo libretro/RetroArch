@@ -388,12 +388,10 @@ static void gl_raster_font_render_message(
    }
 }
 
-static void gl_raster_font_setup_viewport(gl_raster_t *font, bool full_screen)
+static void gl_raster_font_setup_viewport(unsigned width, unsigned height,
+      gl_raster_t *font, bool full_screen)
 {
-   unsigned width, height;
    video_shader_ctx_info_t shader_info;
-
-   video_driver_get_size(&width, &height);
 
    video_driver_set_viewport(width, height, full_screen, false);
 
@@ -410,12 +408,9 @@ static void gl_raster_font_setup_viewport(gl_raster_t *font, bool full_screen)
    video_shader_driver_use(shader_info);
 }
 
-static void gl_raster_font_restore_viewport(gl_t *gl, bool full_screen)
+static void gl_raster_font_restore_viewport(unsigned width, unsigned height,
+      gl_t *gl, bool full_screen)
 {
-   unsigned width, height;
-
-   video_driver_get_size(&width, &height);
-
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
    glDisable(GL_BLEND);
@@ -434,6 +429,8 @@ static void gl_raster_font_render_msg(
    bool full_screen                 = false ;
    gl_t                         *gl = NULL;
    gl_raster_t                *font = (gl_raster_t*)data;
+   unsigned width                   = video_info->width;
+   unsigned height                  = video_info->height;
    const struct font_params *params = (const struct font_params*)userdata;
 
    if (!font || string_is_empty(msg))
@@ -487,7 +484,7 @@ static void gl_raster_font_render_msg(
    if (font && font->block)
       font->block->fullscreen = full_screen;
    else
-      gl_raster_font_setup_viewport(font, full_screen);
+      gl_raster_font_setup_viewport(width, height, font, full_screen);
 
    if (drop_x || drop_y)
    {
@@ -506,7 +503,7 @@ static void gl_raster_font_render_msg(
       gl_raster_font_render_message(font, msg, scale, color, x, y, text_align);
 
    if (!font->block)
-      gl_raster_font_restore_viewport(gl, false);
+      gl_raster_font_restore_viewport(width, height, gl, false);
 }
 
 static const struct font_glyph *gl_raster_font_get_glyph(
@@ -523,15 +520,18 @@ static const struct font_glyph *gl_raster_font_get_glyph(
 
 static void gl_raster_font_flush_block(void *data)
 {
+   unsigned width, height;
    gl_raster_t          *font       = (gl_raster_t*)data;
    video_font_raster_block_t *block = font ? font->block : NULL;
 
    if (!font || !block || !block->carr.coords.vertices)
       return;
 
-   gl_raster_font_setup_viewport(font, block->fullscreen);
+   video_driver_get_size(&width, &height);
+
+   gl_raster_font_setup_viewport(width, height, font, block->fullscreen);
    gl_raster_font_draw_vertices(font, (video_coords_t*)&block->carr.coords);
-   gl_raster_font_restore_viewport(font->gl, block->fullscreen);
+   gl_raster_font_restore_viewport(width, height, font->gl, block->fullscreen);
 }
 
 static void gl_raster_font_bind_block(void *data, void *userdata)

@@ -234,10 +234,9 @@ static void vulkan_raster_font_render_message(
 }
 
 static void vulkan_raster_font_setup_viewport(
+      unsigned width, unsigned height,
       vulkan_raster_t *font, bool full_screen)
 {
-   unsigned width, height;
-   video_driver_get_size(&width, &height);
    video_driver_set_viewport(width, height, full_screen, false);
 }
 
@@ -269,6 +268,8 @@ static void vulkan_raster_font_render_msg(
    float x, y, scale, drop_mod, drop_alpha;
    vk_t *vk                         = NULL;
    vulkan_raster_t *font            = (vulkan_raster_t*)data;
+   unsigned width                   = video_info->width;
+   unsigned height                  = video_info->height;
    const struct font_params *params = (const struct font_params*)userdata;
 
    if (!font || !msg || !*msg)
@@ -316,7 +317,7 @@ static void vulkan_raster_font_render_msg(
       drop_alpha  = 1.0f;
    }
 
-   vulkan_raster_font_setup_viewport(font, full_screen);
+   vulkan_raster_font_setup_viewport(width, height, font, full_screen);
 
    max_glyphs = strlen(msg);
    if (drop_x || drop_y)
