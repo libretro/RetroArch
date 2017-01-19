@@ -18,7 +18,7 @@
 
 #include <string/stdstring.h>
 
-#include "../d3d/d3d.h"
+#include "../drivers/d3d.h"
 #include "../font_driver.h"
 
 #include "../drivers/d3d_shaders/font.hlsl.d3d9.h"

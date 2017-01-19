@@ -39,6 +39,7 @@
 #include "../menu_setting.h"
 #include "../menu_display.h"
 
+#include "../../gfx/video_driver.h"
 #include "../../gfx/video_context_driver.h"
 
 #include "../../configuration.h"
