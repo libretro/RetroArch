@@ -100,7 +100,6 @@ typedef struct video_frame_info
    bool fullscreen;
    unsigned monitor_index;
    bool font_enable;
-   bool monitor_fps_enable;
    char fps_text[128];
    uint64_t frame_count;
 

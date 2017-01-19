@@ -2151,7 +2151,7 @@ void video_driver_frame(const void *data, unsigned width,
    video_driver_frame_count++;
    video_driver_threaded_unlock();
    
-   video_info.monitor_fps_enable = video_monitor_get_fps(&video_info); 
+   video_monitor_get_fps(&video_info); 
 
    /* Slightly messy code,
     * but we really need to do processing before blocking on VSync
