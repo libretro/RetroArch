@@ -43,7 +43,7 @@
 
 #include "../../runloop.h"
 
-#include "../../gfx/d3d/d3d.h"
+#include "../../gfx/drivers/d3d.h"
 
 #define XUI_CONTROL_NAVIGATE_OK (XUI_CONTROL_NAVIGATE_RIGHT + 1)
 
