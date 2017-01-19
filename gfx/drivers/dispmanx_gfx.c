@@ -25,7 +25,6 @@
 #include "../../menu/menu_driver.h"
 #endif
 
-#include "../../configuration.h"
 #include "../../driver.h"
 #include "../../retroarch.h"
 #include "../../runloop.h"
@@ -321,8 +320,6 @@ static void dispmanx_surface_update(void *data, const void *frame,
    struct dispmanx_video *_dispvars = data;
    struct dispmanx_page       *page = NULL;
 
-   settings_t *settings = config_get_ptr();
-
    /* Dispmanx doesn't support more than one pending pageflip. 
     * It causes lockups. */
    slock_lock(_dispvars->pending_mutex);
@@ -450,8 +447,6 @@ static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
       if (width == 0 || height == 0)
          return true;
 
-      settings_t *settings = config_get_ptr();
-
       _dispvars->core_width    = width;
       _dispvars->core_height   = height;
       _dispvars->core_pitch    = pitch;
@@ -470,7 +465,7 @@ static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
             _dispvars->rgb32 ? VC_IMAGE_XRGB8888 : VC_IMAGE_RGB565,
             255,
             _dispvars->aspect_ratio, 
-            settings->video.max_swapchain_images,
+            video_info->max_swapchain_images,
             0,
             &_dispvars->main_surface);
 
