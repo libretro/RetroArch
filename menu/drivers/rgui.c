@@ -403,7 +403,7 @@ static void rgui_render(void *data)
    bool msg_force                 = false;
    settings_t *settings           = config_get_ptr();
    rgui_t *rgui                   = (rgui_t*)data;
-   uint64_t frame_count           = rgui->frame_count;
+   uint64_t frame_count           = rgui ? rgui->frame_count : 0;
 
    msg[0] = title[0] = title_buf[0] = title_msg[0] = '\0';
 
