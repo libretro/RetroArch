@@ -3300,6 +3300,9 @@ finish:
          int i, j = 0;
          char tmp[PATH_MAX_LENGTH];
          static struct string_list *room_data = NULL;
+         file_list_t *file_list               = NULL;
+         file_list = menu_entries_get_selection_buf_ptr(0);
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, file_list);
 
          room_data = string_split(buf, "\n");
 
@@ -3313,6 +3316,11 @@ finish:
             RARCH_LOG("tmp %s\n", tmp);
 
          }*/
+         menu_entries_append_enum(file_list,
+               "Refresh Room List",
+               msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS),
+               MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS,
+               MENU_SETTING_ACTION, 0, 0);
 
          RARCH_LOG ("Found %d rooms\n", netplay_room_count);
          for (i = 0; i < netplay_room_count; i++)
@@ -3344,6 +3352,14 @@ finish:
                netplay_room_list[i].gamecrc,
                netplay_room_list[i].timestamp);
             j+=8;
+            char s[PATH_MAX_LENGTH];
+            snprintf(s, sizeof(s), "Nickname: %s", netplay_room_list[i].nickname);
+            menu_entries_append_enum(file_list,
+                  s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_WIFI),
+                  MENU_ENUM_LABEL_CONNECT_WIFI,
+                  MENU_WIFI, 0, 0);
+
          }
       }
    }
