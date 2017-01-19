@@ -1028,7 +1028,8 @@ static HRESULT xbox_io_mount(const char* szDrive, char* szDevice)
 	STRING DeviceName, LinkName;
 	char szDestinationDrive[PATH_MAX_LENGTH];
 
-	snprintf(szDestinationDrive, sizeof(szDestinationDrive), PATH_MAX_LENGTH, "\\??\\%s", szDrive);
+	snprintf(szDestinationDrive, sizeof(szDestinationDrive),
+         "\\??\\%s", szDrive);
 	RtlInitAnsiString(&DeviceName, szDevice);
 	RtlInitAnsiString(&LinkName, (CHAR)szDestinationDrive);
 	ObDeleteSymbolicLink(&LinkName);
