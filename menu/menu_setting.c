@@ -5672,7 +5672,35 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, -600, 600, 1, true, false);
+            menu_settings_list_current_add_range(list, list_info, -600, 600, 1, false, false);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+
+            CONFIG_INT(
+                  list, list_info,
+                  (int *) &settings->netplay.input_latency_frames_min,
+                  MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
+                  MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
+                  0,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 15, 1, true, true);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+
+            CONFIG_INT(
+                  list, list_info,
+                  (int *) &settings->netplay.input_latency_frames_range,
+                  MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+                  MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+                  0,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 15, 1, true, true);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
             CONFIG_BOOL(
