@@ -910,6 +910,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_VIDEO,
       "Zeige Videos")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_YES,
       "Ja")
+MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
+      "Einstellungen zur Audioausgabe.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
       "Verwalte und erstelle Konfigurationsdateien.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
@@ -922,6 +924,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
       "Enable or disable recent playlist for games, images, music, and videos.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
       "Zeigt Informationen über Core, Netzwerk, und des Systems an. Anzeigen-Manager für Datenbank und Zeiger.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
+      "Einstellungen für Joypads, Tastaturen und Mäuse.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
       "Use the same controls for both the menu and the game. Applies to the keyboard.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY,
@@ -938,6 +942,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
       "Enable or disable composition (Windows only).")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
       "Show onscreen messages.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
+      "Einstellungen zur Videoausgabe.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
       "Zurück")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
