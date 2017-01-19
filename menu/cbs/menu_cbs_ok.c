@@ -3262,19 +3262,7 @@ static int action_ok_push_content_list(const char *path,
          entry_idx, ACTION_OK_DL_CONTENT_LIST);
 }
 
-/* data is ordered like this on the server, I left it in this ordered
-   for reference */
-struct room
-{
-   char nickname    [PATH_MAX_LENGTH];
-   char address     [PATH_MAX_LENGTH];
-   int  port;
-   char corename    [PATH_MAX_LENGTH];
-   char coreversion [PATH_MAX_LENGTH];
-   char gamename    [PATH_MAX_LENGTH];
-   int  gamecrc;
-   int  timestamp;
-};
+
 
 static int action_ok_push_scan_file(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -3303,17 +3291,20 @@ finish:
    if (!err && !strstr(buf, file_path_str(FILE_PATH_NETPLAY_ROOM_LIST_URL)))
    {
       if (string_is_empty(buf))
+      {
+         netplay_room_count = 0;
          RARCH_LOG("Room list empty\n");
+      }
       else
       {
-         int rooms, i, j = 0;
+         int i, j = 0;
          char tmp[PATH_MAX_LENGTH];
-         struct string_list *room_data = NULL;
+         static struct string_list *room_data = NULL;
+
          room_data = string_split(buf, "\n");
 
-         rooms = room_data->size / 8;
-         struct room *room_list = NULL;
-         room_list = (struct room*)malloc(sizeof(struct room) * rooms);
+         netplay_room_count = room_data->size / 8;
+         netplay_room_list = (struct netplay_room*)malloc(sizeof(struct netplay_room) * netplay_room_count);
 
          /*for (int i = 0; i < room_data->size; i++)
          {
@@ -3323,17 +3314,17 @@ finish:
 
          }*/
 
-         RARCH_LOG ("Found %d rooms\n", rooms);
-         for (i = 0; i < rooms; i++)
+         RARCH_LOG ("Found %d rooms\n", netplay_room_count);
+         for (i = 0; i < netplay_room_count; i++)
          {
-            strlcpy(room_list[i].nickname,    room_data->elems[j + 0].data,    sizeof(room_list[i].nickname));
-            strlcpy(room_list[i].address,     room_data->elems[j + 1].data,    sizeof(room_list[i].address));
-            strlcpy(room_list[i].corename,    room_data->elems[j + 3].data,    sizeof(room_list[i].corename));
-            strlcpy(room_list[i].coreversion, room_data->elems[j + 4].data,    sizeof(room_list[i].coreversion));
-            strlcpy(room_list[i].gamename,    room_data->elems[j + 5].data,    sizeof(room_list[i].coreversion));
-            room_list[i].port      = atoi(room_data->elems[j + 2].data);
-            room_list[i].gamecrc   = atoi(room_data->elems[j + 6].data);
-            room_list[i].timestamp = atoi(room_data->elems[j + 7].data);
+            strlcpy(netplay_room_list[i].nickname,    room_data->elems[j + 0].data,    sizeof(netplay_room_list[i].nickname));
+            strlcpy(netplay_room_list[i].address,     room_data->elems[j + 1].data,    sizeof(netplay_room_list[i].address));
+            strlcpy(netplay_room_list[i].corename,    room_data->elems[j + 3].data,    sizeof(netplay_room_list[i].corename));
+            strlcpy(netplay_room_list[i].coreversion, room_data->elems[j + 4].data,    sizeof(netplay_room_list[i].coreversion));
+            strlcpy(netplay_room_list[i].gamename,    room_data->elems[j + 5].data,    sizeof(netplay_room_list[i].coreversion));
+            netplay_room_list[i].port      = atoi(room_data->elems[j + 2].data);
+            netplay_room_list[i].gamecrc   = atoi(room_data->elems[j + 6].data);
+            netplay_room_list[i].timestamp = atoi(room_data->elems[j + 7].data);
 
             RARCH_LOG("Room Data: \n"
                "Nickname:         %s\n"
@@ -3344,14 +3335,14 @@ finish:
                "Game:             %s\n"
                "Game CRC:         %d\n"
                "Timestamp:        %d\n",
-               room_list[i].nickname,
-               room_list[i].address,
-               room_list[i].port,
-               room_list[i].corename,
-               room_list[i].coreversion,
-               room_list[i].gamename,
-               room_list[i].gamecrc,
-               room_list[i].timestamp);
+               netplay_room_list[i].nickname,
+               netplay_room_list[i].address,
+               netplay_room_list[i].port,
+               netplay_room_list[i].corename,
+               netplay_room_list[i].coreversion,
+               netplay_room_list[i].gamename,
+               netplay_room_list[i].gamecrc,
+               netplay_room_list[i].timestamp);
             j+=8;
          }
       }

@@ -2958,6 +2958,22 @@ static int menu_displaylist_parse_netplay_room_list(
          msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS),
          MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS,
          MENU_SETTING_ACTION, 0, 0);
+   
+   if (netplay_room_count > 0)
+   {
+      unsigned i;
+      for (i = 0; i < netplay_room_count; i++)
+      {
+         char s[PATH_MAX_LENGTH];
+         snprintf(s, sizeof(s), "Nickname: %s", netplay_room_list[i].nickname);
+         const char *label = s;
+         menu_entries_append_enum(info->list,
+               label,
+               msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_WIFI),
+               MENU_ENUM_LABEL_CONNECT_WIFI,
+               MENU_WIFI, 0, 0);
+      }
+   }
 #endif
 
    return 0;
