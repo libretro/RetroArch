@@ -17,10 +17,17 @@
 
 #include <retro_miscellaneous.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
 #include "../../driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
-#include "../../menu/menu_driver.h"
 #include "../common/gdi_common.h"
 
 #if defined(_WIN32) && !defined(_XBOX)
@@ -146,7 +153,7 @@ error:
 
 static bool gdi_gfx_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height, uint64_t frame_count,
-      unsigned pitch, const char *msg, video_frame_info_t video_info)
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    gfx_ctx_mode_t mode;
    RECT rect;
@@ -162,7 +169,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       return true;
 
 #ifdef HAVE_MENU
-   menu_driver_ctl(RARCH_MENU_CTL_FRAME, NULL);
+   menu_driver_frame(video_info);
 #endif
 
    if (gdi_video_width != frame_width || gdi_video_height != frame_height || gdi_video_pitch != pitch)

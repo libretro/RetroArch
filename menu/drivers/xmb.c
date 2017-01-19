@@ -706,11 +706,15 @@ static void xmb_messagebox(void *data, const char *message)
    strlcpy(xmb->box_message, message, sizeof(xmb->box_message));
 }
 
-static void xmb_render_keyboard(xmb_handle_t *xmb, const char *grid[], unsigned id)
+static void xmb_render_keyboard(xmb_handle_t *xmb,
+      video_frame_info_t *video_info,
+      const char *grid[], unsigned id)
 {
+   unsigned i;
    int ptr_width, ptr_height;
-   unsigned i, width, height;
-   float dark[16]=  {
+   unsigned width    = video_info->height;
+   unsigned height   = video_info->height;
+   float dark[16]    =  {
       0.00, 0.00, 0.00, 0.85,
       0.00, 0.00, 0.00, 0.85,
       0.00, 0.00, 0.00, 0.85,
@@ -723,8 +727,6 @@ static void xmb_render_keyboard(xmb_handle_t *xmb, const char *grid[], unsigned 
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
    };
-
-   video_driver_get_size(&width, &height);
 
    menu_display_draw_quad(0, height/2.0, width, height/2.0,
          width, height,
@@ -765,18 +767,16 @@ static void xmb_render_keyboard(xmb_handle_t *xmb, const char *grid[], unsigned 
 }
 
 /* Returns the OSK key at a given position */
-static int xmb_osk_ptr_at_pos(void *data, int x, int y)
+static int xmb_osk_ptr_at_pos(void *data, int x, int y, unsigned width, unsigned height)
 {
+   unsigned i;
    int ptr_width, ptr_height;
-   unsigned i, width, height;
-
    xmb_handle_t *xmb = (xmb_handle_t*)data;
+
    if (!xmb)
       return -1;
 
-   video_driver_get_size(&width, &height);
-
-   ptr_width  = width / 11;
+   ptr_width  = width  / 11;
    ptr_height = height / 10;
 
    if (ptr_width >= ptr_height)
@@ -798,19 +798,14 @@ static int xmb_osk_ptr_at_pos(void *data, int x, int y)
 
 static void xmb_render_messagebox_internal(
       menu_display_frame_info_t menu_disp_info,
+      video_frame_info_t *video_info,
       xmb_handle_t *xmb, const char *message)
 {
-   int x, y, longest = 0, longest_width = 0;
    unsigned i, y_position;
-   unsigned width, height;
-   struct string_list *list = NULL;
-
-   if (!xmb)
-      return;
-
-   video_driver_get_size(&width, &height);
-
-   list = string_split(message, "\n");
+   int x, y, longest = 0, longest_width = 0;
+   unsigned width           = video_info->width;
+   unsigned height          = video_info->height;
+   struct string_list *list = string_split(message, "\n");
    if (!list)
       return;
 
@@ -856,6 +851,7 @@ static void xmb_render_messagebox_internal(
 
    if (menu_input_dialog_get_display_kb())
       xmb_render_keyboard(xmb,
+            video_info,
             menu_event_get_osk_grid(),
             menu_event_get_osk_ptr());
 
@@ -2064,6 +2060,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
 }
 
 static void xmb_draw_items(
+      video_frame_info_t *video_info,
       menu_display_frame_info_t menu_disp_info,
       xmb_handle_t *xmb,
       file_list_t *list, file_list_t *stack,
@@ -2073,10 +2070,9 @@ static void xmb_draw_items(
    size_t i;
    math_matrix_4x4 mymat;
    menu_display_ctx_rotate_draw_t rotate_draw;
-   uint64_t frame_count        = 0;
    xmb_node_t *core_node       = NULL;
    size_t end                  = 0;
-   frame_count                 = video_driver_get_frame_count();
+   uint64_t frame_count        = video_info->frame_count;
 
    if (!list || !list->size)
       return;
@@ -2413,6 +2409,7 @@ static bool xmb_shader_pipeline_active(settings_t *settings)
 
 static void xmb_draw_bg(
       xmb_handle_t *xmb,
+      video_frame_info_t *video_info,
       unsigned width,
       unsigned height,
       float alpha,
@@ -2427,7 +2424,7 @@ static void xmb_draw_bg(
    RARCH_LOG("DRAW BG %d %d \n",width,height);
 #endif
 
-   bool running = menu_display_libretro_running();
+   bool running              = menu_display_libretro_running();
 
    draw.x                    = 0;
    draw.y                    = 0;
@@ -2443,7 +2440,7 @@ static void xmb_draw_bg(
    draw.pipeline.active      = xmb_shader_pipeline_active(settings);
 
    menu_display_blend_begin();
-   menu_display_set_viewport();
+   menu_display_set_viewport(video_info->width, video_info->height);
 
 #ifdef HAVE_SHADERPIPELINE
    if (settings->menu.xmb.shader_pipeline > XMB_SHADER_PIPELINE_WALLPAPER
@@ -2553,18 +2550,20 @@ static void xmb_draw_dark_layer(
    menu_display_blend_end();
 }
 
-static void xmb_frame(void *data)
+static void xmb_frame(void *data, video_frame_info_t *video_info)
 {
    size_t selection;
    size_t percent_width = 0;
    math_matrix_4x4 mymat;
-   unsigned i, width, height;
+   unsigned i;
    float item_color[16], coord_black[16], coord_white[16];
    menu_display_ctx_rotate_draw_t rotate_draw;
    char msg[1024];
    char title_msg[255];
    char title_truncated[255];
    menu_display_frame_info_t menu_disp_info;
+   unsigned width                          = video_info->width;
+   unsigned height                         = video_info->height;
    bool render_background                  = false;
    file_list_t *selection_buf              = NULL;
    file_list_t *menu_stack                 = NULL;
@@ -2579,8 +2578,6 @@ static void xmb_frame(void *data)
    msg[0]             = '\0';
    title_msg[0]       = '\0';
    title_truncated[0] = '\0';
-
-   video_driver_get_size(&width, &height);
 
    menu_display_font_bind_block(xmb->font, &xmb->raster_block);
    menu_display_font_bind_block(xmb->font2, &xmb->raster_block2);
@@ -2601,6 +2598,7 @@ static void xmb_frame(void *data)
 
    xmb_draw_bg(
          xmb,
+         video_info,
          width,
          height,
          xmb->alpha,
@@ -2813,7 +2811,9 @@ static void xmb_frame(void *data)
    menu_display_blend_end();
 
    /* Vertical icons */
-   xmb_draw_items(menu_disp_info,
+   xmb_draw_items(
+         video_info,
+         menu_disp_info,
          xmb,
          xmb->selection_buf_old,
          xmb->menu_stack_old,
@@ -2828,6 +2828,7 @@ static void xmb_frame(void *data)
    menu_stack    = menu_entries_get_menu_stack_ptr(0);
 
    xmb_draw_items(
+         video_info,
          menu_disp_info,
          xmb,
          selection_buf,
@@ -2882,7 +2883,7 @@ static void xmb_frame(void *data)
    {
       xmb_draw_dark_layer(xmb, width, height);
 
-      xmb_render_messagebox_internal(menu_disp_info, xmb, msg);
+      xmb_render_messagebox_internal(menu_disp_info, video_info, xmb, msg);
    }
 
    /* Cursor image */
@@ -2899,7 +2900,7 @@ static void xmb_frame(void *data)
             height);
    }
 
-   menu_display_unset_viewport();
+   menu_display_unset_viewport(video_info->width, video_info->height);
 }
 
 static void xmb_layout_ps3(xmb_handle_t *xmb, int width)

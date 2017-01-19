@@ -33,7 +33,10 @@
 /* FIXME: this is just a workaround to avoid
  * using ctrGuCopyImage, since it seems to cause
  * a freeze/blackscreen when used here. */
-//#define FONT_TEXTURE_IN_VRAM
+
+#if 0
+#define FONT_TEXTURE_IN_VRAM
+#endif
 
 typedef struct
 {
@@ -227,7 +230,8 @@ static void ctr_font_render_line(
       return;
 
    ctrGuSetVertexShaderFloatUniform(0, (float*)&font->scale_vector, 1);
-   GSPGPU_FlushDataCache(ctr->vertex_cache.current, (v - ctr->vertex_cache.current) * sizeof(ctr_vertex_t));
+   GSPGPU_FlushDataCache(ctr->vertex_cache.current,
+         (v - ctr->vertex_cache.current) * sizeof(ctr_vertex_t));
    ctrGuSetAttributeBuffers(2,
                             VIRT_TO_PHYS(ctr->vertex_cache.current),
                             CTRGU_ATTRIBFMT(GPU_SHORT, 4) << 0 |
@@ -241,18 +245,25 @@ static void ctr_font_render_line(
                  GPU_TEVOPERANDS(GPU_TEVOP_RGB_SRC_R, GPU_TEVOP_RGB_SRC_ALPHA, 0),
                  GPU_MODULATE, GPU_MODULATE,
                  color);
-//   printf("%s\n", msg);
-//   DEBUG_VAR(color);
-//   GPU_SetTexEnv(0, GPU_TEXTURE0, GPU_TEXTURE0, 0, GPU_TEVOPERANDS(GPU_TEVOP_RGB_SRC_R, 0, 0), GPU_REPLACE, GPU_REPLACE, 0);
-   ctrGuSetTexture(GPU_TEXUNIT0, VIRT_TO_PHYS(font->texture.data), font->texture.width, font->texture.height,
-                   GPU_TEXTURE_MAG_FILTER(GPU_NEAREST)  | GPU_TEXTURE_MIN_FILTER(GPU_NEAREST) |
-                   GPU_TEXTURE_WRAP_S(GPU_CLAMP_TO_EDGE) | GPU_TEXTURE_WRAP_T(GPU_CLAMP_TO_EDGE),
-                   GPU_L8);
+
+#if 0
+   printf("%s\n", msg);
+   DEBUG_VAR(color);
+   GPU_SetTexEnv(0, GPU_TEXTURE0, GPU_TEXTURE0, 0,
+         GPU_TEVOPERANDS(GPU_TEVOP_RGB_SRC_R, 0, 0), GPU_REPLACE, GPU_REPLACE, 0);
+#endif
+
+   ctrGuSetTexture(GPU_TEXUNIT0, VIRT_TO_PHYS(font->texture.data),
+         font->texture.width, font->texture.height,
+         GPU_TEXTURE_MAG_FILTER(GPU_NEAREST)  | GPU_TEXTURE_MIN_FILTER(GPU_NEAREST) |
+         GPU_TEXTURE_WRAP_S(GPU_CLAMP_TO_EDGE) | GPU_TEXTURE_WRAP_T(GPU_CLAMP_TO_EDGE),
+         GPU_L8);
 
    GPU_SetViewport(NULL,
-                   VIRT_TO_PHYS(ctr->drawbuffers.top.left),
-                   0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
-                   ctr->video_mode == CTR_VIDEO_MODE_800x240 ? CTR_TOP_FRAMEBUFFER_WIDTH * 2 : CTR_TOP_FRAMEBUFFER_WIDTH);
+         VIRT_TO_PHYS(ctr->drawbuffers.top.left),
+         0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
+         ctr->video_mode == CTR_VIDEO_MODE_800x240 
+         ? CTR_TOP_FRAMEBUFFER_WIDTH * 2 : CTR_TOP_FRAMEBUFFER_WIDTH);
 
    GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, v - ctr->vertex_cache.current);
 
@@ -265,29 +276,32 @@ static void ctr_font_render_line(
       GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, v - ctr->vertex_cache.current);
    }
 
-
-
-
-//   v = font->vertices;
-//   v->x0 = 0;
-//   v->y0 = 0;
-//   v->u0 = 0;
-//   v->v0 = 0;
-//   v->x1 = font->texture.width;
-//   v->y1 = font->texture.height;
-//   v->u1 = font->texture.width;
-//   v->v1 = font->texture.height;
-//   GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
+#if 0
+   v = font->vertices;
+   v->x0 = 0;
+   v->y0 = 0;
+   v->u0 = 0;
+   v->v0 = 0;
+   v->x1 = font->texture.width;
+   v->y1 = font->texture.height;
+   v->u1 = font->texture.width;
+   v->v1 = font->texture.height;
+   GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
+#endif
 
    GPU_SetTexEnv(0, GPU_TEXTURE0, GPU_TEXTURE0, 0, 0, GPU_REPLACE, GPU_REPLACE, 0);
-   //   DEBUG_VAR(v - font->vertices);
-   //   v = font->vertices;
-   //   printf("OSDMSG: %s\n", msg);
-   //   printf("vertex : (%i,%i,%i,%i) - (%i,%i,%i,%i)\n",
-   //          v->x0, v->y0, v->x1, v->y1,
-   //          v->u0, v->v0, v->u1, v->v1);
 
-//   printf("%s\n", msg);
+#if 0
+   DEBUG_VAR(v - font->vertices);
+   v = font->vertices;
+   printf("OSDMSG: %s\n", msg);
+   printf("vertex : (%i,%i,%i,%i) - (%i,%i,%i,%i)\n",
+         v->x0, v->y0, v->x1, v->y1,
+         v->u0, v->v0, v->u1, v->v1);
+
+   printf("%s\n", msg);
+#endif
+
    ctr->vertex_cache.current = v;
 }
 

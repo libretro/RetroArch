@@ -239,7 +239,7 @@ void gl_check_fbo_dimensions(gl_t *gl)
    }
 }
 void gl_renderchain_render(gl_t *gl,
-      video_frame_info_t video_info,
+      video_frame_info_t *video_info,
       uint64_t frame_count,
       const struct video_tex_info *tex_info,
       const struct video_tex_info *feedback_info)
@@ -249,7 +249,6 @@ void gl_renderchain_render(gl_t *gl,
    video_shader_ctx_coords_t coords;
    video_shader_ctx_params_t params;
    video_shader_ctx_info_t shader_info;
-   unsigned width, height;
    const struct video_fbo_rect *prev_rect;
    struct video_tex_info *fbo_info;
    struct video_tex_info fbo_tex_info[GFX_MAX_SHADERS];
@@ -257,8 +256,8 @@ void gl_renderchain_render(gl_t *gl,
    GLfloat xamt, yamt;
    unsigned fbo_tex_info_cnt = 0;
    GLfloat fbo_tex_coords[8] = {0.0f};
-
-   video_driver_get_size(&width, &height);
+   unsigned width            = video_info->width;
+   unsigned height           = video_info->height;
 
    /* Render the rest of our passes. */
    gl->coords.tex_coord = fbo_tex_coords;
@@ -667,7 +666,7 @@ void gl_renderchain_recompute_pass_sizes(gl_t *gl,
    }
 }
 
-void gl_renderchain_start_render(gl_t *gl, video_frame_info_t video_info)
+void gl_renderchain_start_render(gl_t *gl, video_frame_info_t *video_info)
 {
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
    glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->fbo[0]);

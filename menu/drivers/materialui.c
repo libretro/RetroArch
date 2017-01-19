@@ -270,25 +270,27 @@ static void mui_draw_tab(mui_handle_t *mui,
          &tab_color[0]);
 }
 
-static void mui_render_keyboard(mui_handle_t *mui, const char *grid[], unsigned id)
+static void mui_render_keyboard(mui_handle_t *mui,
+      video_frame_info_t *video_info,
+      const char *grid[], unsigned id)
 {
    int ptr_width, ptr_height;
-   unsigned i, width, height;
-   float dark[16]=  {
+   unsigned i;
+   unsigned width    = video_info->width;
+   unsigned height   = video_info->height;
+   float dark[16]    =  {
       0.00, 0.00, 0.00, 0.85,
       0.00, 0.00, 0.00, 0.85,
       0.00, 0.00, 0.00, 0.85,
       0.00, 0.00, 0.00, 0.85,
    };
 
-   float white[16]=  {
+   float white[16]   =  {
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
    };
-
-   video_driver_get_size(&width, &height);
 
    menu_display_draw_quad(0, height/2.0, width, height/2.0,
          width, height,
@@ -327,16 +329,15 @@ static void mui_render_keyboard(mui_handle_t *mui, const char *grid[], unsigned 
 }
 
 /* Returns the OSK key at a given position */
-static int mui_osk_ptr_at_pos(void *data, int x, int y)
+static int mui_osk_ptr_at_pos(void *data, int x, int y,
+      unsigned width, unsigned height)
 {
+   unsigned i;
    int ptr_width, ptr_height;
-   unsigned i, width, height;
-
    mui_handle_t *mui = (mui_handle_t*)data;
+
    if (!mui)
       return -1;
-
-   video_driver_get_size(&width, &height);
 
    ptr_width  = width / 11;
    ptr_height = height / 10;
@@ -364,7 +365,7 @@ static void mui_draw_tab_begin(mui_handle_t *mui,
 {
    float scale_factor = menu_display_get_dpi();
 
-   mui->tabs_height = scale_factor / 3;
+   mui->tabs_height   = scale_factor / 3;
 
    /* tabs background */
    menu_display_draw_quad(0, height - mui->tabs_height, width,
@@ -395,16 +396,17 @@ static void mui_draw_tab_end(mui_handle_t *mui,
          &active_tab_marker_color[0]);
 }
 
-static float mui_content_height()
+static float mui_content_height(void)
 {
+   unsigned i;
    file_list_t *list = menu_entries_get_selection_buf_ptr(0);
-   float sum = 0;
-   unsigned i = 0;
-   for (; i < menu_entries_get_end(); i++)
+   float sum         = 0;
+
+   for (i = 0; i < menu_entries_get_end(); i++)
    {
-      mui_node_t *node = (mui_node_t*)
-            menu_entries_get_userdata_at_offset(list, i);
-      sum += node->line_height;
+      mui_node_t *node  = (mui_node_t*)
+         menu_entries_get_userdata_at_offset(list, i);
+      sum              += node->line_height;
    }
    return sum;
 }
@@ -412,38 +414,31 @@ static float mui_content_height()
 static void mui_draw_scrollbar(mui_handle_t *mui,
       unsigned width, unsigned height, float *coord_color)
 {
-   unsigned header_height;
-   float content_height, total_height,
-         scrollbar_height, scrollbar_margin, y;
-
-   if (!mui)
-      return;
-
-   header_height    = menu_display_get_header_height();
-
-   content_height   = mui_content_height();
-   total_height     = height - header_height - mui->tabs_height;
-   scrollbar_margin = mui->scrollbar_width;
-   scrollbar_height = total_height / (content_height / total_height);
-   y                = total_height * mui->scroll_y / content_height;
+   unsigned header_height = menu_display_get_header_height();
+   float content_height   = mui_content_height();
+   float total_height     = height - header_height - mui->tabs_height;
+   float scrollbar_margin = mui->scrollbar_width;
+   float scrollbar_height = total_height / (content_height / total_height);
+   float y                = total_height * mui->scroll_y / content_height;
 
    /* apply a margin on the top and bottom of the scrollbar for aestetic */
-   scrollbar_height -= scrollbar_margin * 2;
-   y += scrollbar_margin;
+   scrollbar_height      -= scrollbar_margin * 2;
+   y                     += scrollbar_margin;
 
-   if (content_height >= total_height)
-   {
-      /* if the scrollbar is extremely short, display it as a square */
-      if (scrollbar_height <= mui->scrollbar_width)
-         scrollbar_height = mui->scrollbar_width;
+   if (content_height < total_height)
+      return;
 
-      menu_display_draw_quad(            width - mui->scrollbar_width - scrollbar_margin,
-            header_height + y,
-            mui->scrollbar_width,
-            scrollbar_height,
-            width, height,
-            coord_color);
-   }
+   /* if the scrollbar is extremely short, display it as a square */
+   if (scrollbar_height <= mui->scrollbar_width)
+      scrollbar_height = mui->scrollbar_width;
+
+   menu_display_draw_quad(
+         width - mui->scrollbar_width - scrollbar_margin,
+         header_height + y,
+         mui->scrollbar_width,
+         scrollbar_height,
+         width, height,
+         coord_color);
 }
 
 static void mui_get_message(void *data, const char *message)
@@ -457,10 +452,13 @@ static void mui_get_message(void *data, const char *message)
 }
 
 static void mui_render_messagebox(mui_handle_t *mui,
+      video_frame_info_t *video_info,
       const char *message, float *body_bg_color, uint32_t font_color)
 {
-   unsigned i, width, height, y_position;
+   unsigned i, y_position;
    int x, y, line_height, longest = 0, longest_width = 0;
+   unsigned width           = video_info->width;
+   unsigned height          = video_info->height;
    struct string_list *list = (struct string_list*)
       string_split(message, "\n");
 
@@ -468,8 +466,6 @@ static void mui_render_messagebox(mui_handle_t *mui,
       return;
    if (list->elems == 0)
       goto end;
-
-   video_driver_get_size(&width, &height);
 
    line_height = mui->font->size * 1.2;
 
@@ -515,27 +511,30 @@ static void mui_render_messagebox(mui_handle_t *mui,
    }
 
    if (menu_input_dialog_get_display_kb())
-      mui_render_keyboard(mui, menu_event_get_osk_grid(), menu_event_get_osk_ptr());
+      mui_render_keyboard(mui,
+            video_info,
+            menu_event_get_osk_grid(), menu_event_get_osk_ptr());
 
 end:
    string_list_free(list);
 }
 
-static unsigned count_lines(const char *str)
+static unsigned mui_count_lines(const char *str)
 {
-   unsigned c = 0;
+   unsigned c     = 0;
    unsigned lines = 1;
+
    for (c = 0; str[c]; c++)
       lines += (str[c] == '\n');
    return lines;
 }
 
-static void compute_entries_box(mui_handle_t* mui, int width)
+static void mui_compute_entries_box(mui_handle_t* mui, int width)
 {
    size_t usable_width = width - (mui->margin * 2);
-   file_list_t *list = menu_entries_get_selection_buf_ptr(0);
-   float sum = 0;
-   unsigned i = 0;
+   file_list_t *list   = menu_entries_get_selection_buf_ptr(0);
+   float sum           = 0;
+   unsigned i          = 0;
 
    for (; i < menu_entries_get_end(); i++)
    {
@@ -550,7 +549,7 @@ static void compute_entries_box(mui_handle_t* mui, int width)
       if (menu_entry_get_sublabel(i, sublabel_str, sizeof(sublabel_str)))
       {
          word_wrap(sublabel_str, sublabel_str, (int)(usable_width / mui->glyph_width2));
-         lines = count_lines(sublabel_str);
+         lines = mui_count_lines(sublabel_str);
       }
 
       scale_factor       = menu_display_get_dpi();
@@ -562,20 +561,20 @@ static void compute_entries_box(mui_handle_t* mui, int width)
 
 static void mui_render(void *data)
 {
-   size_t i             = 0;
    menu_animation_ctx_delta_t delta;
    float delta_time;
    unsigned bottom, width, height, header_height;
+   size_t i             = 0;
    mui_handle_t *mui    = (mui_handle_t*)data;
    settings_t *settings = config_get_ptr();
-   file_list_t *list = menu_entries_get_selection_buf_ptr(0);
+   file_list_t *list    = menu_entries_get_selection_buf_ptr(0);
 
    if (!mui)
       return;
 
    video_driver_get_size(&width, &height);
 
-   compute_entries_box(mui, width);
+   mui_compute_entries_box(mui, width);
 
    menu_animation_ctl(MENU_ANIMATION_CTL_DELTA_TIME, &delta_time);
 
@@ -800,7 +799,9 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
       );
 }
 
-static void mui_render_menu_list(mui_handle_t *mui,
+static void mui_render_menu_list(
+      video_frame_info_t *video_info,
+      mui_handle_t *mui,
       unsigned width, unsigned height,
       uint32_t font_normal_color,
       uint32_t font_hover_color,
@@ -809,9 +810,8 @@ static void mui_render_menu_list(mui_handle_t *mui,
    float sum               = 0;
    unsigned header_height  = 0;
    size_t i                = 0;
-   uint64_t frame_count    = 0;
    file_list_t *list       = NULL;
-   frame_count             = video_driver_get_frame_count();
+   uint64_t frame_count    = video_info->frame_count;
 
    if (!menu_display_get_update_pending())
       return;
@@ -938,7 +938,7 @@ static void mui_draw_bg(menu_display_ctx_draw_t *draw)
    menu_display_blend_end();
 }
 
-static void mui_frame(void *data)
+static void mui_frame(void *data, video_frame_info_t *video_info)
 {
    float black_bg[16] = {
       0, 0, 0, 0.75,
@@ -1028,15 +1028,15 @@ static void mui_frame(void *data)
    float header_bg_color_real[16]  = {0};
    file_list_t *list               = NULL;
    mui_node_t *node                = NULL;
-   unsigned width                  = 0;
-   unsigned height                 = 0;
+   unsigned width                  = video_info->width;
+   unsigned height                 = video_info->height;
    unsigned ticker_limit           = 0;
    unsigned i                      = 0;
    unsigned header_height          = 0;
    size_t selection                = 0;
    size_t title_margin             = 0;
    mui_handle_t *mui               = (mui_handle_t*)data;
-   uint64_t frame_count            = video_driver_get_frame_count();
+   uint64_t frame_count            = video_info->frame_count;
    settings_t *settings            = config_get_ptr();
    bool background_rendered        = false;
    bool libretro_running           = menu_display_libretro_running();
@@ -1210,9 +1210,7 @@ static void mui_frame(void *data)
    menu_display_set_alpha(header_bg_color_real, settings->menu.header.opacity);
    menu_display_set_alpha(footer_bg_color_real, settings->menu.footer.opacity);
 
-   video_driver_get_size(&width, &height);
-
-   menu_display_set_viewport();
+   menu_display_set_viewport(video_info->width, video_info->height);
    header_height = menu_display_get_header_height();
 
    if (libretro_running)
@@ -1293,6 +1291,7 @@ static void mui_frame(void *data)
    menu_display_font_bind_block(mui->font2, &mui->raster_block2);
 
    mui_render_menu_list(
+         video_info,
       mui,
       width,
       height,
@@ -1405,13 +1404,13 @@ static void mui_frame(void *data)
 
       menu_display_draw_quad(0, 0, width, height, width, height, &black_bg[0]);
       snprintf(msg, sizeof(msg), "%s\n%s", label, str);
-      mui_render_messagebox(mui, msg, &body_bg_color[0], font_hover_color);
+      mui_render_messagebox(mui, video_info, msg, &body_bg_color[0], font_hover_color);
    }
 
    if (!string_is_empty(mui->box_message))
    {
       menu_display_draw_quad(0, 0, width, height, width, height, &black_bg[0]);
-      mui_render_messagebox(mui, mui->box_message, &body_bg_color[0], font_hover_color);
+      mui_render_messagebox(mui, video_info, mui->box_message, &body_bg_color[0], font_hover_color);
       mui->box_message[0] = '\0';
    }
 
@@ -1426,7 +1425,7 @@ static void mui_frame(void *data)
             height);
 
    menu_display_restore_clear_color();
-   menu_display_unset_viewport();
+   menu_display_unset_viewport(video_info->width, video_info->height);
 }
 
 static void mui_layout(mui_handle_t *mui)
@@ -1660,7 +1659,6 @@ static void mui_context_reset(void *data)
 
    if (!mui || !settings)
       return;
-
 
    mui_layout(mui);
    mui_context_bg_destroy(mui);

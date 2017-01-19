@@ -99,7 +99,6 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_BLIT_RENDER,
    RARCH_MENU_CTL_RENDER,
    RARCH_MENU_CTL_RENDER_MESSAGEBOX,
-   RARCH_MENU_CTL_FRAME,
    RARCH_MENU_CTL_SET_PREVENT_POPULATE,
    RARCH_MENU_CTL_UNSET_PREVENT_POPULATE,
    RARCH_MENU_CTL_IS_PREVENT_POPULATE,
@@ -238,7 +237,7 @@ typedef struct menu_ctx_driver
    void  (*render_messagebox)(void *data, const char *msg);
    int   (*iterate)(void *data, void *userdata, enum menu_action action);
    void  (*render)(void *data);
-   void  (*frame)(void *data);
+   void  (*frame)(void *data, video_frame_info_t *video_info);
    void* (*init)(void**);
    void  (*free)(void*);
    void  (*context_reset)(void *data);
@@ -277,7 +276,7 @@ typedef struct menu_ctx_driver
          menu_entry_t *entry, unsigned action);
    void (*update_thumbnail_path)(void *data, unsigned i);
    void (*update_thumbnail_image)(void *data);
-   int  (*osk_ptr_at_pos)(void *data, int x, int y);
+   int  (*osk_ptr_at_pos)(void *data, int x, int y, unsigned width, unsigned height);
    void (*update_savestate_thumbnail_path)(void *data, unsigned i);
    void (*update_savestate_thumbnail_image)(void *data);
 } menu_ctx_driver_t;
@@ -389,6 +388,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data);
 bool menu_driver_is_binding_state(void);
 
 void menu_driver_set_binding_state(bool on);
+
+void menu_driver_frame(video_frame_info_t *video_info);
 
 extern menu_ctx_driver_t menu_ctx_xui;
 extern menu_ctx_driver_t menu_ctx_rgui;

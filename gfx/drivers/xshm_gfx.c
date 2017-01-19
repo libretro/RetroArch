@@ -94,7 +94,7 @@ static void *xshm_gfx_init(const video_info_t *video,
 
 static bool xshm_gfx_frame(void *data, const void *frame, unsigned width,
       unsigned height, uint64_t frame_count,
-      unsigned pitch, const char *msg, video_frame_info_t video_info)
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    xshm_t* xshm = (xshm_t*)data;
    int y;
@@ -104,6 +104,10 @@ static bool xshm_gfx_frame(void *data, const void *frame, unsigned width,
       memcpy((uint8_t*)xshm->shmInfo.shmaddr + sizeof(uint32_t)*xshm->width*y,
             (uint8_t*)frame + pitch*y, pitch);
    }
+
+#ifdef HAVE_MENU
+   menu_driver_frame(video_info);
+#endif
    
    XShmPutImage(xshm->display, xshm->wndw, xshm->gc, xshm->image,
                 0, 0, 0, 0, xshm->width, xshm->height, False);

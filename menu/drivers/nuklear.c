@@ -145,6 +145,9 @@ static void xmb_init_ribbon(nk_menu_handle_t * xmb)
 
 static void *nk_menu_init(void **userdata)
 {
+#if 1
+   unsigned i;
+#endif
    settings_t *settings = config_get_ptr();
    nk_menu_handle_t   *nk = NULL;
    menu_handle_t *menu = (menu_handle_t*)
@@ -169,16 +172,18 @@ static void *nk_menu_init(void **userdata)
          "nuklear", sizeof(nk->assets_directory));
    nk_menu_init_device(nk);
 
-   /* for demo puposes only, opens all windows */ 
+   /* for demo purposes only, opens all windows */ 
 #if 1
-      for (int i=0; i < NK_WND_LAST; i++)
+      for (i = 0; i < NK_WND_LAST; i++)
          nk->window[i].open = true;
 #else
       nk->window[NK_WND_MAIN].open = true;
 #endif
    xmb_init_ribbon(nk);
+
    return menu;
 error:
+
    if (menu)
       free(menu);
    return NULL;
@@ -250,6 +255,7 @@ static void nk_menu_get_message(void *data, const char *message)
 
 static void nk_draw_bg(
       nk_menu_handle_t *nk,
+      video_frame_info_t *video_info,
       unsigned width,
       unsigned height,
       float alpha,
@@ -273,7 +279,7 @@ static void nk_draw_bg(
    draw.pipeline.id          = 0;
 
    menu_display_blend_begin();
-   menu_display_set_viewport();
+   menu_display_set_viewport(video_info->width, video_info->height);
 
    draw.pipeline.id          = VIDEO_SHADER_MENU_5;
    draw.pipeline.active      = false; 
@@ -302,18 +308,24 @@ static void nk_menu_main(nk_menu_handle_t *nk)
 }
 
 
-static void nk_menu_frame(void *data)
+static void nk_menu_frame(void *data, video_frame_info_t *video_info)
 {
-   float white_bg[16]=  {
+   unsigned ticker_limit, i;
+   float coord_black[16], coord_white[16];
+   nk_menu_handle_t *nk   = (nk_menu_handle_t*)data;
+   settings_t *settings   = config_get_ptr();
+   unsigned width         = video_info->width;
+   unsigned height        = video_info->height;
+   bool libretro_running  = menu_display_libretro_running();
+   float white_bg[16]     =  {
       0.98, 0.98, 0.98, 1,
       0.98, 0.98, 0.98, 1,
       0.98, 0.98, 0.98, 1,
       0.98, 0.98, 0.98, 1,
    };
    
-   float coord_black[16], coord_white[16];
 
-   for (int i = 0; i < 16; i++)
+   for (i = 0; i < 16; i++)
    {
       coord_black[i]  = 0;
       coord_white[i] = 1.0f;
@@ -322,18 +334,10 @@ static void nk_menu_frame(void *data)
    menu_display_set_alpha(coord_black, 0.75);
    menu_display_set_alpha(coord_white, 0.75);
 
-   unsigned width, height, ticker_limit, i;
-   nk_menu_handle_t *nk = (nk_menu_handle_t*)data;
-   settings_t *settings  = config_get_ptr();
-
-   bool libretro_running = menu_display_libretro_running();
-
    if (!nk)
       return;
 
-   video_driver_get_size(&width, &height);
-
-   menu_display_set_viewport();
+   menu_display_set_viewport(video_info->width, video_info->height);
 
    nk_input_begin(&nk->ctx);
    nk_menu_input_gamepad(nk);
@@ -350,7 +354,7 @@ static void nk_menu_frame(void *data)
 
    nk_input_end(&nk->ctx);
    nk_menu_main(nk);
-   nk_draw_bg(nk, width, height, 0.5, nk->textures.bg, coord_black, coord_white);
+   nk_draw_bg(nk, video_info, width, height, 0.5, nk->textures.bg, coord_black, coord_white);
    nk_common_device_draw(&device, &nk->ctx, width, height, NK_ANTI_ALIASING_ON);
 
    menu_display_draw_cursor(
@@ -363,7 +367,7 @@ static void nk_menu_frame(void *data)
          height);
 
    menu_display_restore_clear_color();
-   menu_display_unset_viewport();
+   menu_display_unset_viewport(video_info->width, video_info->height);
 }
 
 static void nk_menu_free(void *data)

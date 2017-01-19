@@ -101,6 +101,12 @@ typedef struct video_frame_info
    bool fullscreen;
    unsigned monitor_index;
    bool font_enable;
+   bool monitor_fps_enable;
+   char fps_text[128];
+   uint64_t frame_count;
+
+   unsigned width;
+   unsigned height;
 } video_frame_info_t;
 
 /* Optionally implemented interface to poke more
@@ -163,7 +169,7 @@ typedef struct video_viewport
 typedef bool (*video_driver_frame_t)(void *data,
       const void *frame, unsigned width,
       unsigned height, uint64_t frame_count,
-      unsigned pitch, const char *msg, video_frame_info_t video_info);
+      unsigned pitch, const char *msg, video_frame_info_t *video_info);
 
 typedef struct video_driver
 {
@@ -242,7 +248,7 @@ extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 #if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
 #define video_driver_has_windowed() (false)
 #else
-#define video_driver_has_windowed() (current_video->has_windowed(video_driver_data))
+#define video_driver_has_windowed() (current_video->has_windowed && current_video->has_windowed(video_driver_data))
 #endif
 
 #define video_driver_cached_frame_has_valid_framebuffer() (frame_cache_data ? (frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID) : false)
@@ -462,25 +468,6 @@ void video_monitor_set_refresh_rate(float hz);
 bool video_monitor_fps_statistics(double *refresh_rate,
       double *deviation, unsigned *sample_points);
 
-/**
- * video_monitor_get_fps:
- * @video_info    : information about the video frame
- * @buf           : string suitable for Window title
- * @size          : size of buffer.
- * @buf_fps       : string of raw FPS only (optional).
- * @size_fps      : size of raw FPS buffer.
- *
- * Get the amount of frames per seconds.
- *
- * Returns: true if framerate per seconds could be obtained,
- * otherwise false.
- *
- **/
-bool video_monitor_get_fps(
-      video_frame_info_t video_info,
-      char *buf, size_t size,
-      char *buf_fps, size_t size_fps);
-
 unsigned video_pixel_get_alignment(unsigned pitch);
 
 const video_poke_interface_t *video_driver_get_poke(void);
@@ -542,6 +529,8 @@ bool video_driver_texture_unload(uintptr_t *id);
 void video_driver_build_info(video_frame_info_t *video_info);
 
 void video_driver_reinit(void);
+
+void video_driver_get_window_title(char *buf, unsigned len);
 
 extern video_driver_t video_gl;
 extern video_driver_t video_vulkan;

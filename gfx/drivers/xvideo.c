@@ -30,6 +30,14 @@
 
 #include <retro_inline.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
 #include "../../configuration.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../verbosity.h"
@@ -530,8 +538,17 @@ static void *xv_init(const video_info_t *video,
 
    video_driver_build_info(&video_info);
 
-   if (video_monitor_get_fps(video_info, buf, sizeof(buf), NULL, 0))
-      XStoreName(g_x11_dpy, g_x11_win, buf);
+   if (video_info.monitor_fps_enable)
+   {
+      char title[128];
+
+      title[0] = '\0';
+
+      video_driver_get_window_title(title, sizeof(title));
+
+      if (title[0])
+         XStoreName(g_x11_dpy, g_x11_win, title);
+   }
 
    x11_set_window_attr(g_x11_dpy, g_x11_win);
 
@@ -784,7 +801,7 @@ static void xv_render_msg(xv_t *xv, const char *msg,
 
 static bool xv_frame(void *data, const void *frame, unsigned width,
       unsigned height, uint64_t frame_count,
-      unsigned pitch, const char *msg, video_frame_info_t video_info)
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    XWindowAttributes target;
    xv_t *xv                  = (xv_t*)data;
@@ -802,6 +819,10 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
    xv->vp.full_width  = target.width;
    xv->vp.full_height = target.height;
 
+#ifdef HAVE_MENU
+   menu_driver_frame(video_info);
+#endif
+
    if (msg)
       xv_render_msg(xv, msg, width << 1, height << 1);
 
@@ -811,7 +832,7 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
          true);
    XSync(g_x11_dpy, False);
 
-   x11_update_window_title(NULL, video_info);
+   x11_update_title(NULL, video_info);
 
    return true;
 }

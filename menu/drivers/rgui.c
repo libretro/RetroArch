@@ -62,6 +62,7 @@ typedef struct
    unsigned last_height;
    float scroll_y;
    bool mouse_show;
+   unsigned int frame_count;
 } rgui_t;
 
 static uint16_t *rgui_framebuf_data      = NULL;
@@ -381,6 +382,12 @@ static void rgui_blit_cursor(void)
    rgui_color_rect(fb_pitch, fb_width, fb_height, x - 5, y, 11, 1, 0xFFFF);
 }
 
+static void rgui_frame(void *data, video_frame_info_t *video_info)
+{
+   rgui_t *rgui                   = (rgui_t*)data;
+   rgui->frame_count              = video_info->frame_count;
+}
+
 static void rgui_render(void *data)
 {
    menu_animation_ctx_ticker_t ticker;
@@ -394,11 +401,9 @@ static void rgui_render(void *data)
    char title_msg[64];
    char msg[255];
    bool msg_force                 = false;
-   uint64_t frame_count           = 0;
    settings_t *settings           = config_get_ptr();
    rgui_t *rgui                   = (rgui_t*)data;
-
-   frame_count = video_driver_get_frame_count();
+   uint64_t frame_count           = rgui->frame_count;
 
    msg[0] = title[0] = title_buf[0] = title_msg[0] = '\0';
 
@@ -874,7 +879,7 @@ menu_ctx_driver_t menu_ctx_rgui = {
    rgui_set_message,
    generic_menu_iterate,
    rgui_render,
-   NULL,
+   rgui_frame,
    rgui_init,
    rgui_free,
    NULL,

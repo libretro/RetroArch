@@ -54,7 +54,7 @@ static void vulkan_set_viewport(void *data, unsigned viewport_width,
 
 #ifdef HAVE_OVERLAY
 static void vulkan_overlay_free(vk_t *vk);
-static void vulkan_render_overlay(vk_t *vk);
+static void vulkan_render_overlay(vk_t *vk, video_frame_info_t *video_info);
 #endif
 static void vulkan_viewport_info(void *data, struct video_viewport *vp);
 
@@ -1463,7 +1463,7 @@ static void vulkan_readback(vk_t *vk)
          VK_PIPELINE_STAGE_HOST_BIT);
 }
 
-static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t video_info)
+static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t *video_info)
 {
    VkCommandBufferBeginInfo begin_info           = {
       VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
@@ -1520,10 +1520,10 @@ static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t video_info)
 static bool vulkan_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height,
       uint64_t frame_count,
-      unsigned pitch, const char *msg, video_frame_info_t video_info)
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    struct vk_per_frame *chain;
-   unsigned width, height;
+   VkSemaphore signal_semaphores[2];
    VkClearValue clear_value;
    vk_t *vk                                      = (vk_t*)data;
    static struct retro_perf_counter frame_run    = {0};
@@ -1534,7 +1534,8 @@ static bool vulkan_frame(void *data, const void *frame,
    static struct retro_perf_counter swapbuffers  = {0};
    static struct retro_perf_counter queue_submit = {0};
    bool waits_for_semaphores                     = false;
-   VkSemaphore signal_semaphores[2];
+   unsigned width                                = video_info->width;
+   unsigned height                               = video_info->height;
 
    VkCommandBufferBeginInfo begin_info           = { 
       VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
@@ -1553,8 +1554,6 @@ static bool vulkan_frame(void *data, const void *frame,
    performance_counter_init(&build_cmd, "build_command");
    performance_counter_init(&end_cmd, "end_command");
    performance_counter_start(&frame_run);
-
-   video_driver_get_size(&width, &height);
 
    /* Bookkeeping on start of frame. */
    chain     = &vk->swapchain[frame_index];
@@ -1738,7 +1737,7 @@ static bool vulkan_frame(void *data, const void *frame,
 #if defined(HAVE_MENU)
    if (vk->menu.enable)
    {
-      menu_driver_ctl(RARCH_MENU_CTL_FRAME, NULL);
+      menu_driver_frame(video_info);
 
       if (vk->menu.textures[vk->menu.last_index].image != VK_NULL_HANDLE)
       {
@@ -1779,7 +1778,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
 #ifdef HAVE_OVERLAY
    if (vk->overlay.enable)
-      vulkan_render_overlay(vk);
+      vulkan_render_overlay(vk, video_info);
 #endif
    performance_counter_stop(&build_cmd);
 
@@ -1922,7 +1921,7 @@ static bool vulkan_frame(void *data, const void *frame,
       gfx_ctx_mode_t mode;
       mode.width  = width;
       mode.height = height;
-      video_context_driver_set_resize(&mode);
+      video_context_driver_set_resize(mode);
 
       vk->should_resize = false;
    }
@@ -1931,7 +1930,7 @@ static bool vulkan_frame(void *data, const void *frame,
    /* Disable BFI during fast forward, slow-motion,
     * and pause to prevent flicker. */
    if (
-         video_info.black_frame_insertion
+         video_info->black_frame_insertion
          && !input_driver_is_nonblock_state()
          && !runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, NULL)
          && !runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
@@ -2394,17 +2393,17 @@ static void vulkan_overlay_set_alpha(void *data,
    }
 }
 
-static void vulkan_render_overlay(vk_t *vk)
+static void vulkan_render_overlay(vk_t *vk, video_frame_info_t *video_info)
 {
-   unsigned width, height;
    unsigned i;
    struct video_viewport vp;
+   unsigned width           = video_info->width;
+   unsigned height          = video_info->height;
 
    if (!vk)
       return;
 
-   video_driver_get_size(&width, &height);
-   vp = vk->vp;
+   vp                       = vk->vp;
    vulkan_set_viewport(vk, width, height, vk->overlay.full_screen, false);
 
    for (i = 0; i < vk->overlay.count; i++)

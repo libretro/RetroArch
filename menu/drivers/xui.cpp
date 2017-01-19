@@ -399,7 +399,7 @@ end:
    string_list_free(list);
 }
 
-static void xui_frame(void *data)
+static void xui_frame(void *data, video_frame_info_t *video_info)
 {
    XUIMessage msg;
    XUIMessageRender msgRender;
@@ -417,7 +417,7 @@ static void xui_frame(void *data)
    if (!d3dr)
       return;
 
-   menu_display_set_viewport();
+   menu_display_set_viewport(video_info->width, video_info->height);
 
    app.RunFrame();
    XuiTimersRun();
@@ -445,7 +445,7 @@ static void xui_frame(void *data)
 
    XuiRenderEnd( app.GetDC() );
 
-   menu_display_unset_viewport();
+   menu_display_unset_viewport(video_info->width, video_info->height);
 }
 
 static void blit_line(int x, int y, const char *message, bool green)

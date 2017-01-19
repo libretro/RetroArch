@@ -284,13 +284,10 @@ static void gfx_ctx_qnx_get_video_size(void *data,
 }
 
 static void gfx_ctx_qnx_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
+      bool *resize, unsigned *width, unsigned *height)
 {
    unsigned new_width, new_height;
    qnx_ctx_data_t *qnx = (qnx_ctx_data_t*)data;
-
-   (void)data;
-   (void)frame_count;
 
    *quit = false;
 
@@ -310,30 +307,8 @@ static void gfx_ctx_qnx_check_window(void *data, bool *quit,
       *quit = true;
 }
 
-static bool gfx_ctx_qnx_set_resize(void *data,
-      unsigned width, unsigned height)
-{
-   (void)data;
-   (void)width;
-   (void)height;
-   return false;
-}
-
-static void gfx_ctx_qnx_update_window_title(void *data, video_frame_info_t video_info)
-{
-   char buf[128];
-   char buf_fps[128];
-
-   buf[0] = buf_fps[0] = '\0';
-
-   video_monitor_get_fps(buf, sizeof(buf),
-         buf_fps, sizeof(buf_fps));
-   if (video_info.fps_show)
-      runloop_msg_queue_push(buf_fps, 1, 1, false);
-}
-
 static bool gfx_ctx_qnx_set_video_mode(void *data,
-      video_frame_info_t video_info,
+      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -372,12 +347,6 @@ static bool gfx_ctx_qnx_suppress_screensaver(void *data, bool enable)
 {
    (void)data;
    (void)enable;
-   return false;
-}
-
-static bool gfx_ctx_qnx_has_windowed(void *data)
-{
-   (void)data;
    return false;
 }
 
@@ -444,7 +413,7 @@ static void gfx_ctx_qnx_set_swap_interval(void *data, unsigned swap_interval)
 #endif
 }
 
-static void gfx_ctx_qnx_swap_buffers(void *data, video_frame_info_t video_info)
+static void gfx_ctx_qnx_swap_buffers(void *data, video_frame_info_t *video_info)
 {
    qnx_ctx_data_t *qnx = (qnx_ctx_data_t*)data;
 
@@ -493,12 +462,12 @@ const gfx_ctx_driver_t gfx_ctx_qnx = {
    NULL, /* get_video_output_next */
    gfx_ctx_qnx__get_metrics,
    NULL,
-   gfx_ctx_qnx_update_window_title,
+   NULL, /* update_title */
    gfx_ctx_qnx_check_window,
-   gfx_ctx_qnx_set_resize,
+   NULL, /* set_resize */
    gfx_ctx_qnx_has_focus,
    gfx_ctx_qnx_suppress_screensaver,
-   gfx_ctx_qnx_has_windowed,
+   NULL, /* has_windowed */
    gfx_ctx_qnx_swap_buffers,
    gfx_ctx_qnx_input_driver,
    gfx_ctx_qnx_get_proc_address,

@@ -282,7 +282,7 @@ bool video_context_driver_check_window(gfx_ctx_size_t *size_data)
             size_data->quit,
             size_data->resize,
             size_data->width,
-            size_data->height, (unsigned int)video_driver_get_frame_count());
+            size_data->height);
       return true;
    }
 
@@ -456,18 +456,8 @@ bool video_context_driver_set_video_mode(gfx_ctx_mode_t *mode_info)
    video_driver_build_info(&video_info);
 
    if (!current_video_context->set_video_mode(
-            video_context_data, video_info, mode_info->width,
+            video_context_data, &video_info, mode_info->width,
             mode_info->height, mode_info->fullscreen))
-      return false;
-   return true;
-}
-
-bool video_context_driver_set_resize(gfx_ctx_mode_t *mode_info)
-{
-   if (!current_video_context)
-      return false;
-   if (!current_video_context->set_resize(
-            video_context_data, mode_info->width, mode_info->height))
       return false;
    return true;
 }

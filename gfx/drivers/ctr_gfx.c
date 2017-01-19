@@ -26,10 +26,12 @@
 #include "../../config.h"
 #endif
 
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
 #include "../../ctr/gpu_old.h"
 #include "ctr_gu.h"
-
-#include "../../menu/menu_driver.h"
 
 #include "../../configuration.h"
 #include "../../command.h"
@@ -446,7 +448,7 @@ static void* ctr_init(const video_info_t* video,
 static bool ctr_frame(void* data, const void* frame,
       unsigned width, unsigned height,
       uint64_t frame_count,
-      unsigned pitch, const char* msg, video_frame_info_t info)
+      unsigned pitch, const char* msg, video_frame_info_t *video_info)
 {
    uint32_t diff;
    static uint64_t currentTick,lastTick;
@@ -750,7 +752,7 @@ static bool ctr_frame(void* data, const void* frame,
       }
 
       ctr->msg_rendering_enabled = true;
-      menu_driver_ctl(RARCH_MENU_CTL_FRAME, NULL);
+      menu_driver_frame(video_info);
       ctr->msg_rendering_enabled = false;
 
    }
