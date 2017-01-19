@@ -538,6 +538,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RESUME,
       "Fortsetzen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RESUME_CONTENT,
       "Fortsetzen")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
+      "Errungenschaften")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RETROKEYBOARD,
       "RetroKeyboard")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RETROPAD,
@@ -912,12 +914,20 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_YES,
       "Ja")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
       "Einstellungen zur Audioausgabe.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
+      "Ändere die Standardeinstellungen für Konfigurationsdateien.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
       "Verwalte und erstelle Konfigurationsdateien.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
       "Limit the number of entries in recent playlist for games, images, music, and videos.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CORE_SETTINGS,
+      "Ändere Einstellungen der Cores.")
+MSG_HASH(MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
+      "Ändere das Standardverzeichis für dieses System.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
       "Ändere Treiber für dieses System.")
+MSG_HASH(MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
+      "Ändere Einstellungen für Rückspulen, Zeitraffer, und Zeitlupe.") // This does not sound like a correct sentence. Suggestions are appreciated.
 MSG_HASH(MENU_ENUM_SUBLABEL_HELP_LIST,
       "Erfahre mehr derüber wie Retroarch funktioniert.")
 MSG_HASH(MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
@@ -928,6 +938,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
       "Einstellungen für Joypads, Tastaturen und Mäuse.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
       "Use the same controls for both the menu and the game. Applies to the keyboard.")
+MSG_HASH(MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
+      "Ändere die Logging-Einstellungen.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY,
       "Hoste eine Netplay Session oder trete einer bei.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_LAN_SCAN_SETTINGS,
@@ -936,8 +948,22 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
       "Ändere die Netzwerkeinstellungen.")
 MSG_HASH(MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
       "Lade Add-Ons, Komponenten und Inhalte für RetroArch herunter.")
+MSG_HASH(MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
+      "Ändere Einstellungen des Display-Overlays, Bildschirmtastatur und Bildschirmbenachrichtigung.") // There is no Translation for display overlay.
 MSG_HASH(MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
       "Pause gameplay when window focus is lost.")
+MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
+      "Ändere Einstellungen der Wiedergabelisten.")
+MSG_HASH(MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS,
+      "Ändere deine Privatsphäreneinstellungen.")
+MSG_HASH(MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
+      "Ändere Einstellungen der Errungenschaften.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
+      "Ändere Einstellungen der Spielstände.")
+MSG_HASH(MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
+      "Ändere Einstellungen der Benutzeroberfläche.")
+MSG_HASH(MENU_ENUM_SUBLABEL_USER_SETTINGS,
+      "Ändere das Konto, Benutzername, und die Sprache.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
       "Enable or disable composition (Windows only).")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
