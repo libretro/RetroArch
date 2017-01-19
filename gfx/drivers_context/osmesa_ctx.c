@@ -305,10 +305,6 @@ static void osmesa_ctx_get_video_size(void *data,
    *height = osmesa->height;
 }
 
-static void osmesa_ctx_update_title(void *data, video_frame_info_t *video_info)
-{
-}
-
 static void osmesa_ctx_check_window(void *data, bool *quit,
       bool *resize,unsigned *width,
       unsigned *height)
@@ -404,7 +400,7 @@ const gfx_ctx_driver_t gfx_ctx_osmesa =
    NULL, /* get_video_output_next */
    NULL, /* get_metrics */
    NULL, /* translate_aspect */
-   osmesa_ctx_update_title,
+   NULL, /* update_title */
    osmesa_ctx_check_window,
    osmesa_ctx_set_resize,
    osmesa_ctx_has_focus,

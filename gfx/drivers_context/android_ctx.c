@@ -312,10 +312,6 @@ static bool android_gfx_ctx_set_resize(void *data,
    return false;
 }
 
-static void android_gfx_ctx_update_title(void *data, video_frame_info_t *video_info)
-{
-}
-
 static bool android_gfx_ctx_set_video_mode(void *data,
       video_frame_info_t *video_info,
       unsigned width, unsigned height,
@@ -607,7 +603,7 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    NULL, /* get_video_output_next */
    android_gfx_ctx_get_metrics,
    NULL,
-   android_gfx_ctx_update_title,
+   NULL, /* update_title */
    android_gfx_ctx_check_window,
    android_gfx_ctx_set_resize,
    android_gfx_ctx_has_focus,

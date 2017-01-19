@@ -108,10 +108,6 @@ static bool gfx_ctx_cgl_set_resize(void *data, unsigned width, unsigned height)
    return false;
 }
 
-static void gfx_ctx_cgl_update_title(void *data, video_frame_info_t *video_info)
-{
-}
-
 static bool gfx_ctx_cgl_set_video_mode(void *data,
       video_frame_info_t *video_info,
       unsigned width, unsigned height,
@@ -352,7 +348,7 @@ const gfx_ctx_driver_t gfx_ctx_cgl = {
    NULL, /* get_video_output_next */
    NULL, /* get_metrics */
    NULL,
-   gfx_ctx_cgl_update_window_title,
+   NULL, /* update_title */
    gfx_ctx_cgl_check_window,
    gfx_ctx_cgl_set_resize,
    gfx_ctx_cgl_has_focus,

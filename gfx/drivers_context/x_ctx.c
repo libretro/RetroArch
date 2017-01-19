@@ -660,7 +660,6 @@ static bool gfx_ctx_x_set_video_mode(void *data,
          break;
    }
 
-
    x11_set_window_attr(g_x11_dpy, g_x11_win);
    x11_update_title(NULL, video_info);
 

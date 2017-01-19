@@ -144,10 +144,6 @@ static bool gfx_ctx_vivante_set_resize(void *data,
    return false;
 }
 
-static void gfx_ctx_vivante_update_title(void *data, video_frame_info_t *video_info)
-{
-}
-
 static bool gfx_ctx_vivante_set_video_mode(void *data,
       video_frame_info_t *video_info,
       unsigned width, unsigned height,
@@ -287,7 +283,7 @@ const gfx_ctx_driver_t gfx_ctx_vivante_fbdev = {
    NULL, /* get_video_output_next */
    NULL, /* get_metrics */
    NULL,
-   gfx_ctx_vivante_update_title,
+   NULL, /* update_title */
    gfx_ctx_vivante_check_window,
    gfx_ctx_vivante_set_resize,
    gfx_ctx_vivante_has_focus,

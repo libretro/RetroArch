@@ -47,10 +47,6 @@ static bool gfx_ctx_null_set_resize(void *data, unsigned width, unsigned height)
    return false;
 }
 
-static void gfx_ctx_null_update_window_title(void *data, video_frame_info_t *video_info)
-{
-}
-
 static void gfx_ctx_null_get_video_size(void *data, unsigned *width, unsigned *height)
 {
    (void)data;
@@ -158,7 +154,7 @@ const gfx_ctx_driver_t gfx_ctx_null = {
    NULL, /* get_video_output_next */
    NULL, /* get_metrics */
    NULL,
-   gfx_ctx_null_update_window_title,
+   NULL, /* update_title */
    gfx_ctx_null_check_window,
    gfx_ctx_null_set_resize,
    gfx_ctx_null_has_focus,

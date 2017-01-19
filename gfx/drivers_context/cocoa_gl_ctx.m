@@ -416,9 +416,9 @@ static void cocoagl_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned
    *height                         = CGRectGetHeight(size) * screenscale;
 }
 
+#if defined(HAVE_COCOA)
 static void cocoagl_gfx_ctx_update_title(void *data, video_frame_info_t *video_info)
 {
-#if defined(HAVE_COCOA)
    ui_window_cocoa_t view;
    const ui_window_t *window  = ui_companion_driver_get_window_ptr();
 
@@ -426,8 +426,8 @@ static void cocoagl_gfx_ctx_update_title(void *data, video_frame_info_t *video_i
 
    if (window && video_info->monitor_fps_enable)
        window->set_title(&view, video_info->window_text);
-#endif
 }
+#endif
 
 static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types type,
             float *value)
@@ -620,7 +620,11 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    NULL, /* get_video_output_next */
    cocoagl_gfx_ctx_get_metrics,
    NULL,
+#if defined(HAVE_COCOA)
    cocoagl_gfx_ctx_update_title,
+#else
+   NULL, /* update_title */
+#endif
    cocoagl_gfx_ctx_check_window,
    cocoagl_gfx_ctx_set_resize,
    cocoagl_gfx_ctx_has_focus,
