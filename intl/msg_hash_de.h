@@ -921,13 +921,13 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
       "Limit the number of entries in recent playlist for games, images, music, and videos.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_SETTINGS,
-      "Ändere Einstellungen der Cores.")
+      "Ändere die Einstellungen der Cores.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
       "Ändere das Standardverzeichis für dieses System.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
       "Ändere Treiber für dieses System.")
 MSG_HASH(MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
-      "Ändere Einstellungen für Rückspulen, Zeitraffer, und Zeitlupe.") // This does not sound like a correct sentence. Suggestions are appreciated.
+      "Ändere die Einstellungen für Rückspulen, Zeitraffer, und Zeitlupe.") // This does not sound like a correct sentence. Suggestions are appreciated.
 MSG_HASH(MENU_ENUM_SUBLABEL_HELP_LIST,
       "Erfahre mehr derüber wie Retroarch funktioniert.")
 MSG_HASH(MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
@@ -949,19 +949,19 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
       "Lade Add-Ons, Komponenten und Inhalte für RetroArch herunter.")
 MSG_HASH(MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
-      "Ändere Einstellungen des Display-Overlays, Bildschirmtastatur und Bildschirmbenachrichtigung.") // There is no Translation for display overlay.
+      "Ändere die Einstellungen des Display-Overlays, Bildschirmtastatur und Bildschirmbenachrichtigung.") // There is no Translation for display overlay.
 MSG_HASH(MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
       "Pause gameplay when window focus is lost.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
-      "Ändere Einstellungen der Wiedergabelisten.")
+      "Ändere die Einstellungen der Wiedergabelisten.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS,
       "Ändere deine Privatsphäreneinstellungen.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
-      "Ändere Einstellungen der Errungenschaften.")
+      "Ändere die Einstellungen der Errungenschaften.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
-      "Ändere Einstellungen der Spielstände.")
+      "Ändere die Einstellungen der Spielstände.")
 MSG_HASH(MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
-      "Ändere Einstellungen der Benutzeroberfläche.")
+      "Ändere die Einstellungen der Benutzeroberfläche.")
 MSG_HASH(MENU_ENUM_SUBLABEL_USER_SETTINGS,
       "Ändere das Konto, Benutzername, und die Sprache.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
