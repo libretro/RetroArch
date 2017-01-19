@@ -23,7 +23,7 @@
 #include "shader_hlsl.h"
 
 #include "../video_shader_parse.h"
-#include "../d3d/d3d.h"
+#include "../drivers/d3d.h"
 #include "../../managers/state_manager.h"
 
 #include "../drivers/d3d_shaders/opaque.hlsl.d3d9.h"

@@ -41,6 +41,7 @@
 
 #include "../../gfx/video_context_driver.h"
 
+#include "../../configuration.h"
 #include "../../runloop.h"
 
 #include "../../gfx/drivers/d3d.h"
