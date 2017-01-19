@@ -66,7 +66,7 @@ HXUIOBJ m_background;
 HXUIOBJ m_back;
 HXUIOBJ root_menu;
 HXUIOBJ current_menu;
-static msg_queue_t *xui_msg_queue;
+static msg_queue_t *xui_msg_queue = NULL;
 
 class CRetroArch : public CXuiModule
 {
@@ -599,7 +599,8 @@ static void xui_render(void *data)
 	}
 }
 
-static void xui_populate_entries(const char *path,
+static void xui_populate_entries(void *data,
+      const char *path,
       const char *label, unsigned i)
 {
    size_t selection;
@@ -648,7 +649,8 @@ static void xui_list_insert(void *data,
    XuiListSetText(m_menulist, list_size, buf);
 }
 
-static void xui_list_free(file_list_t *list, size_t idx,
+static void xui_list_free(
+      file_list_t *list, size_t idx,
       size_t list_size)
 {
    int x = XuiListGetItemCount( m_menulist );
