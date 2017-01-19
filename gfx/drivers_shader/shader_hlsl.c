@@ -534,6 +534,7 @@ const shader_backend_t hlsl_backend = {
    hlsl_deinit,
    hlsl_set_params,
    hlsl_set_uniform_parameter,
+   NULL,               /* compile_program */
    hlsl_use,
    hlsl_num,
    hlsl_filter_type,
