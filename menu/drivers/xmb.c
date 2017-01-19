@@ -712,7 +712,7 @@ static void xmb_render_keyboard(xmb_handle_t *xmb,
 {
    unsigned i;
    int ptr_width, ptr_height;
-   unsigned width    = video_info->height;
+   unsigned width    = video_info->width;
    unsigned height   = video_info->height;
    float dark[16]    =  {
       0.00, 0.00, 0.00, 0.85,
