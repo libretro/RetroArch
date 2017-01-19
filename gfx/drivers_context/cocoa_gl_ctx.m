@@ -425,7 +425,16 @@ static void cocoagl_gfx_ctx_update_title(void *data, video_frame_info_t *video_i
    view.data = (CocoaView*)nsview_get_ptr();
 
    if (window && video_info->monitor_fps_enable)
-       window->set_title(&view, video_info->window_text);
+   {
+      char title[128];
+
+      title[0] = '\0';
+
+      video_driver_get_window_title(title, sizeof(title));
+
+      if (title[0])
+         window->set_title(&view, title);
+   }
 }
 #endif
 

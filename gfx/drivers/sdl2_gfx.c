@@ -534,7 +534,16 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
    SDL_RenderPresent(vid->renderer);
 
    if (video_info->monitor_fps_enable)
-      SDL_SetWindowTitle(vid->window, video_info->window_text);
+   {
+      char title[128];
+
+      title[0] = '\0';
+
+      video_driver_get_window_title(title, sizeof(title));
+
+      if (title[0])
+         SDL_SetWindowTitle(vid->window, title);
+   }
 
    return true;
 }

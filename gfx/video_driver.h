@@ -102,7 +102,6 @@ typedef struct video_frame_info
    unsigned monitor_index;
    bool font_enable;
    bool monitor_fps_enable;
-   char window_text[128];
    char fps_text[128];
    uint64_t frame_count;
 
@@ -530,6 +529,8 @@ bool video_driver_texture_unload(uintptr_t *id);
 void video_driver_build_info(video_frame_info_t *video_info);
 
 void video_driver_reinit(void);
+
+void video_driver_get_window_title(char *buf, unsigned len);
 
 extern video_driver_t video_gl;
 extern video_driver_t video_vulkan;

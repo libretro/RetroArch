@@ -137,6 +137,8 @@ static unsigned video_driver_height                      = 0;
 
 static enum rarch_display_type video_driver_display_type = RARCH_DISPLAY_NONE;
 static char video_driver_title_buf[64]                   = {0};
+static char video_driver_window_title[128]               = {0};
+static bool video_driver_window_title_update             = true;
 
 static retro_time_t video_driver_frame_time_samples[MEASURE_FRAME_TIME_SAMPLES_COUNT];
 static uint64_t video_driver_frame_time_count            = 0;
@@ -2039,34 +2041,36 @@ static bool video_monitor_get_fps(video_frame_info_t *video_info)
          last_fps = TIME_TO_FPS(curr_time, new_time, FPS_UPDATE_INTERVAL);
          curr_time = new_time;
 
-         fill_pathname_noext(video_info->window_text,
+         fill_pathname_noext(video_driver_window_title,
                video_driver_title_buf,
                " || ",
-               sizeof(video_info->window_text));
+               sizeof(video_driver_window_title));
 
          if (video_info->fps_show)
          {
             snprintf(video_info->fps_text,
                   sizeof(video_info->fps_text),
                   " FPS: %6.1f || ", last_fps);
-            strlcat(video_info->window_text,
+            strlcat(video_driver_window_title,
                   video_info->fps_text,
-                  sizeof(video_info->window_text));
+                  sizeof(video_driver_window_title));
          }
 
-         strlcat(video_info->window_text,
+         strlcat(video_driver_window_title,
                "Frames: ",
-               sizeof(video_info->window_text));
+               sizeof(video_driver_window_title));
 
          snprintf(frames_text,
                sizeof(frames_text),
                STRING_REP_UINT64,
                (unsigned long long)video_info->frame_count);
 
-         strlcat(video_info->window_text,
+         strlcat(video_driver_window_title,
                frames_text,
-               sizeof(video_info->window_text));
+               sizeof(video_driver_window_title));
          ret = true;
+
+         video_driver_window_title_update = true;
       }
 
       if (video_info->fps_show)
@@ -2082,13 +2086,15 @@ static bool video_monitor_get_fps(video_frame_info_t *video_info)
    }
 
    curr_time = fps_time = new_time;
-   strlcpy(video_info->window_text,
+   strlcpy(video_driver_window_title,
          video_driver_title_buf,
-         sizeof(video_info->window_text));
+         sizeof(video_driver_window_title));
 
    strlcpy(video_info->fps_text,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
          sizeof(video_info->fps_text));
+
+   video_driver_window_title_update = true;
 
    return true;
 }
@@ -2264,11 +2270,11 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->font_enable           = settings->video.font_enable;
 
    video_info->frame_count           = 0;
-   video_info->window_text[0]        = '\0';
    video_info->fps_text[0]           = '\0';
 
    video_info->width                 = video_driver_width;
    video_info->height                = video_driver_height;
+
    video_driver_threaded_unlock();
 }
 
@@ -2324,4 +2330,13 @@ bool video_driver_translate_coord_viewport(
    *res_screen_y      = scaled_screen_y;
 
    return true;
+}
+
+void video_driver_get_window_title(char *buf, unsigned len)
+{
+   if (buf && video_driver_window_title_update)
+   {
+      strlcpy(buf, video_driver_window_title, len);
+      video_driver_window_title_update = false;
+   }
 }

@@ -719,9 +719,14 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
 static void gfx_ctx_wl_update_title(void *data, video_frame_info_t *video_info)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   char title[128];
 
-   if (wl && video_info->monitor_fps_enable)
-      wl_shell_surface_set_title(wl->shell_surf, video_info->window_text);
+   title[0] = '\0';
+
+   video_driver_get_window_title(title, sizeof(title));
+
+   if (wl && title[0] && video_info->monitor_fps_enable)
+      wl_shell_surface_set_title(wl->shell_surf, title);
 }
 
 

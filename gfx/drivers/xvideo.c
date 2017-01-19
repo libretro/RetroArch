@@ -539,7 +539,16 @@ static void *xv_init(const video_info_t *video,
    video_driver_build_info(&video_info);
 
    if (video_info.monitor_fps_enable)
-      XStoreName(g_x11_dpy, g_x11_win, video_info.window_text);
+   {
+      char title[128];
+
+      title[0] = '\0';
+
+      video_driver_get_window_title(title, sizeof(title));
+
+      if (title[0])
+         XStoreName(g_x11_dpy, g_x11_win, title);
+   }
 
    x11_set_window_attr(g_x11_dpy, g_x11_win);
 

@@ -716,8 +716,14 @@ bool x11_connect(void)
 
 void x11_update_title(void *data, video_frame_info_t *video_info)
 {
-   if (video_info->monitor_fps_enable)
-      XStoreName(g_x11_dpy, g_x11_win, video_info->window_text);
+   char title[128];
+
+   title[0] = '\0';
+
+   video_driver_get_window_title(title, sizeof(title));
+
+   if (title[0] && video_info->monitor_fps_enable)
+      XStoreName(g_x11_dpy, g_x11_win, title);
 }
 
 bool x11_input_ctx_new(bool true_full)
