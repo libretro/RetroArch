@@ -676,7 +676,7 @@ static void xui_list_set_selection(void *data, file_list_t *list)
             file_list_get_directory_ptr(list));
 }
 
-static int xui_environ(enum menu_environ_cb type, void *data)
+static int xui_environ(enum menu_environ_cb type, void *data, void *userdata)
 {
    switch (type)
    {
