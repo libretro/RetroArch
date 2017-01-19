@@ -307,15 +307,6 @@ static void gfx_ctx_qnx_check_window(void *data, bool *quit,
       *quit = true;
 }
 
-static bool gfx_ctx_qnx_set_resize(void *data,
-      unsigned width, unsigned height)
-{
-   (void)data;
-   (void)width;
-   (void)height;
-   return false;
-}
-
 static bool gfx_ctx_qnx_set_video_mode(void *data,
       video_frame_info_t *video_info,
       unsigned width, unsigned height,
@@ -473,7 +464,7 @@ const gfx_ctx_driver_t gfx_ctx_qnx = {
    NULL,
    NULL, /* update_title */
    gfx_ctx_qnx_check_window,
-   gfx_ctx_qnx_set_resize,
+   NULL, /* set_resize */
    gfx_ctx_qnx_has_focus,
    gfx_ctx_qnx_suppress_screensaver,
    NULL, /* has_windowed */

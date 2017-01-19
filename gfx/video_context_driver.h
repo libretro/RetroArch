@@ -302,6 +302,10 @@ void video_context_driver_destroy(void);
 
 #define video_context_driver_focus() ((video_context_data && current_video_context->has_focus && current_video_context->has_focus(video_context_data)) ? true : false)
 
+#define video_context_driver_set_resize(mode_info) \
+   if (current_video_context && current_video_context->set_resize) \
+      current_video_context->set_resize(video_context_data, mode_info.width, mode_info.height)
+
 bool video_context_driver_get_video_output_size(gfx_ctx_size_t *size_data);
 
 bool video_context_driver_swap_interval(unsigned *interval);
@@ -313,8 +317,6 @@ bool video_context_driver_suppress_screensaver(bool *bool_data);
 bool video_context_driver_get_ident(gfx_ctx_ident_t *ident);
 
 bool video_context_driver_set_video_mode(gfx_ctx_mode_t *mode_info);
-
-bool video_context_driver_set_resize(gfx_ctx_mode_t *mode_info);
 
 bool video_context_driver_get_video_size(gfx_ctx_mode_t *mode_info);
 

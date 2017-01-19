@@ -96,14 +96,6 @@ static void gfx_ctx_vc_check_window(void *data, bool *quit,
    *quit   = (bool)frontend_driver_get_signal_handler_state();
 }
 
-static bool gfx_ctx_vc_set_resize(void *data, unsigned width, unsigned height)
-{
-   (void)data;
-   (void)width;
-   (void)height;
-   return false;
-}
-
 static void gfx_ctx_vc_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
@@ -641,7 +633,7 @@ const gfx_ctx_driver_t gfx_ctx_videocore = {
    gfx_ctx_vc_translate_aspect,
    NULL, /* update_title */
    gfx_ctx_vc_check_window,
-   gfx_ctx_vc_set_resize,
+   NULL, /* set_resize */
    gfx_ctx_vc_has_focus,
    gfx_ctx_vc_suppress_screensaver,
    NULL, /* has_windowed */

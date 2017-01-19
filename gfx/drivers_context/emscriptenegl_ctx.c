@@ -80,15 +80,6 @@ static void gfx_ctx_emscripten_swap_buffers(void *data, video_frame_info_t *vide
    /* no-op in emscripten, no way to force swap/wait for VSync in browsers */
 }
 
-static bool gfx_ctx_emscripten_set_resize(void *data,
-      unsigned width, unsigned height)
-{
-   (void)data;
-   (void)width;
-   (void)height;
-   return false;
-}
-
 static void gfx_ctx_emscripten_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
@@ -318,7 +309,7 @@ const gfx_ctx_driver_t gfx_ctx_emscripten = {
    gfx_ctx_emscripten_translate_aspect,
    NULL, /* update_title */
    gfx_ctx_emscripten_check_window,
-   gfx_ctx_emscripten_set_resize,
+   NULL, /* set_resize */
    gfx_ctx_emscripten_has_focus,
    gfx_ctx_emscripten_suppress_screensaver,
    gfx_ctx_emscripten_has_windowed,

@@ -100,14 +100,6 @@ static void gfx_ctx_cgl_swap_buffers(void *data, video_frame_info_t *video_info)
    CGLFlushDrawable(cgl->glCtx);
 }
 
-static bool gfx_ctx_cgl_set_resize(void *data, unsigned width, unsigned height)
-{
-   (void)data;
-   (void)width;
-   (void)height;
-   return false;
-}
-
 static bool gfx_ctx_cgl_set_video_mode(void *data,
       video_frame_info_t *video_info,
       unsigned width, unsigned height,
@@ -344,7 +336,7 @@ const gfx_ctx_driver_t gfx_ctx_cgl = {
    NULL,
    NULL, /* update_title */
    gfx_ctx_cgl_check_window,
-   gfx_ctx_cgl_set_resize,
+   NULL, /* set_resize */
    gfx_ctx_cgl_has_focus,
    gfx_ctx_cgl_suppress_screensaver,
    NULL, /* has_windowed */

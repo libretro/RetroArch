@@ -881,7 +881,7 @@ static bool d3d_alive(void *data)
          mode.width  = temp_width;
          mode.height = temp_height;
 
-         video_context_driver_set_resize(&mode);
+         video_context_driver_set_resize(mode);
          d3d_restore(d3d);
       }
 

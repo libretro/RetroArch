@@ -317,14 +317,6 @@ static void osmesa_ctx_check_window(void *data, bool *quit,
    *quit               = false;
 }
 
-static bool osmesa_ctx_set_resize(void *data, unsigned width, unsigned height)
-{
-   (void)data;
-   (void)width;
-   (void)height;
-   return false;
-}
-
 static bool osmesa_ctx_has_focus(void *data)
 {
    (void)data;
@@ -402,7 +394,7 @@ const gfx_ctx_driver_t gfx_ctx_osmesa =
    NULL, /* translate_aspect */
    NULL, /* update_title */
    osmesa_ctx_check_window,
-   osmesa_ctx_set_resize,
+   NULL, /* set_resize */
    osmesa_ctx_has_focus,
    osmesa_ctx_suppress_screensaver,
    osmesa_ctx_has_windowed,

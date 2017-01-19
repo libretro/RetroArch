@@ -339,14 +339,6 @@ static void sdl_ctx_check_window(void *data, bool *quit, bool *resize,unsigned *
    }
 }
 
-static bool sdl_ctx_set_resize(void *data, unsigned width, unsigned height)
-{
-   (void)data;
-   (void)width;
-   (void)height;
-   return false;
-}
-
 static bool sdl_ctx_has_focus(void *data)
 {
    unsigned flags;
@@ -432,7 +424,7 @@ const gfx_ctx_driver_t gfx_ctx_sdl_gl =
    NULL, /* translate_aspect */
    sdl_ctx_update_title,
    sdl_ctx_check_window,
-   sdl_ctx_set_resize,
+   NULL, /* set_resize */
    sdl_ctx_has_focus,
    sdl_ctx_suppress_screensaver,
    sdl_ctx_has_windowed,

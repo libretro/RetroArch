@@ -91,15 +91,6 @@ EGL_BLUE_SIZE,       1, \
 EGL_ALPHA_SIZE,      0, \
 EGL_DEPTH_SIZE,      0
 
-static bool gfx_ctx_xegl_set_resize(void *data,
-   unsigned width, unsigned height)
-{
-   (void)data;
-   (void)width;
-   (void)height;
-   return false;
-}
-
 static void *gfx_ctx_xegl_init(video_frame_info_t video_info, void *video_driver)
 {
 #ifdef HAVE_EGL
@@ -593,7 +584,7 @@ const gfx_ctx_driver_t gfx_ctx_x_egl =
    NULL,
    x11_update_title,
    x11_check_window,
-   gfx_ctx_xegl_set_resize,
+   NULL, /* set_resize */
    x11_has_focus,
    gfx_ctx_xegl_suppress_screensaver,
    gfx_ctx_xegl_has_windowed,

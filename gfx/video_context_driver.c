@@ -462,16 +462,6 @@ bool video_context_driver_set_video_mode(gfx_ctx_mode_t *mode_info)
    return true;
 }
 
-bool video_context_driver_set_resize(gfx_ctx_mode_t *mode_info)
-{
-   if (!current_video_context)
-      return false;
-   if (!current_video_context->set_resize(
-            video_context_data, mode_info->width, mode_info->height))
-      return false;
-   return true;
-}
-
 bool video_context_driver_get_video_size(gfx_ctx_mode_t *mode_info)
 {
    if (!current_video_context || !current_video_context->get_video_size)

@@ -186,12 +186,6 @@ static void gfx_ctx_ps3_swap_buffers(void *data, video_frame_info_t *video_info)
 #endif
 }
 
-static bool gfx_ctx_ps3_set_resize(void *data,
-      unsigned width, unsigned height)
-{
-   return false;
-}
-
 static void gfx_ctx_ps3_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
@@ -413,7 +407,7 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    NULL,
    NULL, /* update_title */
    gfx_ctx_ps3_check_window,
-   gfx_ctx_ps3_set_resize,
+   NULL, /* set_resize */
    gfx_ctx_ps3_has_focus,
    gfx_ctx_ps3_suppress_screensaver,
    NULL, /* has_windowed */

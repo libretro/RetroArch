@@ -574,14 +574,6 @@ static void cocoagl_gfx_ctx_check_window(void *data, bool *quit,
    }
 }
 
-static bool cocoagl_gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
-{
-   (void)data;
-   (void)width;
-   (void)height;
-   return false;
-}
-
 static void cocoagl_gfx_ctx_input_driver(void *data,
       const char *name,
       const input_driver_t **input, void **input_data)
@@ -631,7 +623,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    NULL, /* update_title */
 #endif
    cocoagl_gfx_ctx_check_window,
-   cocoagl_gfx_ctx_set_resize,
+   NULL, /* set_resize */
    cocoagl_gfx_ctx_has_focus,
    cocoagl_gfx_ctx_suppress_screensaver,
 #if defined(HAVE_COCOATOUCH)

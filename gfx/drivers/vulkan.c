@@ -1921,7 +1921,7 @@ static bool vulkan_frame(void *data, const void *frame,
       gfx_ctx_mode_t mode;
       mode.width  = width;
       mode.height = height;
-      video_context_driver_set_resize(&mode);
+      video_context_driver_set_resize(mode);
 
       vk->should_resize = false;
    }

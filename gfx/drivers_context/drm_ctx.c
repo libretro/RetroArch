@@ -258,16 +258,6 @@ static void gfx_ctx_drm_swap_buffers(void *data, video_frame_info_t *video_info)
    gfx_ctx_drm_wait_flip(true);  
 }
 
-static bool gfx_ctx_drm_set_resize(void *data,
-      unsigned width, unsigned height)
-{
-   (void)data;
-   (void)width;
-   (void)height;
-
-   return false;
-}
-
 static void gfx_ctx_drm_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
@@ -869,7 +859,7 @@ const gfx_ctx_driver_t gfx_ctx_drm = {
    NULL,
    NULL, /* update_window_title */
    gfx_ctx_drm_check_window,
-   gfx_ctx_drm_set_resize,
+   NULL, /* set_resize */
    gfx_ctx_drm_has_focus,
    gfx_ctx_drm_suppress_screensaver,
    NULL, /* has_windowed */
