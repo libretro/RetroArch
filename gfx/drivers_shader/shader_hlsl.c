@@ -304,7 +304,7 @@ static bool hlsl_load_plain(hlsl_shader_data_t *hlsl, void *data, const char *pa
 		  path, sizeof(hlsl->cg_shader->pass[0].source.path));
 
       hlsl->d3d = (d3d_video_t*)data;
-      if (!hlsl_compile_program(hlsl, data, 1, &hlsl->prg[1], &progarm_info))
+      if (!hlsl_compile_program(hlsl, data, 1, &hlsl->prg[1], &program_info))
          return false;
    }
    else
