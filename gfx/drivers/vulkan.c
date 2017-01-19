@@ -1774,7 +1774,7 @@ static bool vulkan_frame(void *data, const void *frame,
 #endif
 
    if (msg)
-      font_driver_render_msg(NULL, msg, NULL);
+      font_driver_render_msg(video_info, NULL, msg, NULL);
 
 #ifdef HAVE_OVERLAY
    if (vk->overlay.enable)
@@ -2140,10 +2140,11 @@ static void vulkan_set_texture_enable(void *data, bool state, bool full_screen)
 }
 
 static void vulkan_set_osd_msg(void *data, const char *msg,
-      const struct font_params *params, void *font)
+      const void *params, void *font)
 {
-   (void)data;
-   font_driver_render_msg(font, msg, params);
+   video_frame_info_t video_info;
+   video_driver_build_info(&video_info);
+   font_driver_render_msg(&video_info, font, msg, params);
 }
 #endif
 

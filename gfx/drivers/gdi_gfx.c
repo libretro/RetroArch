@@ -253,7 +253,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    }
 
    if (msg)
-      font_driver_render_msg(NULL, msg, NULL);
+      font_driver_render_msg(video_info, NULL, msg, NULL);
 
    InvalidateRect(hwnd, NULL, false);
 
@@ -391,9 +391,11 @@ static void gdi_set_texture_frame(void *data,
 }
 
 static void gdi_set_osd_msg(void *data, const char *msg,
-      const struct font_params *params, void *font)
+      const void *params, void *font)
 {
-   font_driver_render_msg(font, msg, params);
+   video_frame_info_t video_info;
+   video_driver_build_info(&video_info);
+   font_driver_render_msg(&video_info, font, msg, params);
 }
 
 static void gdi_get_video_output_size(void *data,

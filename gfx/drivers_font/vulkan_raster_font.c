@@ -21,8 +21,6 @@
 
 #include "../font_driver.h"
 
-#include "../../configuration.h"
-
 typedef struct
 {
    vk_t *vk;
@@ -258,7 +256,9 @@ static void vulkan_raster_font_flush(vulkan_raster_t *font)
    vulkan_draw_triangles(font->vk, &call);
 }
 
-static void vulkan_raster_font_render_msg(void *data, const char *msg,
+static void vulkan_raster_font_render_msg(
+      video_frame_info_t *video_info,
+      void *data, const char *msg,
       const void *userdata)
 {
    float color[4], color_dark[4];
@@ -299,17 +299,15 @@ static void vulkan_raster_font_render_msg(void *data, const char *msg,
    }
    else
    {
-      settings_t *settings = config_get_ptr();
-
-      x           = settings->video.msg_pos_x;
-      y           = settings->video.msg_pos_y;
+      x           = video_info->font_msg_pos_x;
+      y           = video_info->font_msg_pos_y;
       scale       = 1.0f;
       full_screen = true;
       text_align  = TEXT_ALIGN_LEFT;
 
-      color[0]    = settings->video.msg_color_r;
-      color[1]    = settings->video.msg_color_g;
-      color[2]    = settings->video.msg_color_b;
+      color[0]    = video_info->font_msg_color_r;
+      color[1]    = video_info->font_msg_color_g;
+      color[2]    = video_info->font_msg_color_b;
       color[3]    = 1.0f;
 
       drop_x      = -2;

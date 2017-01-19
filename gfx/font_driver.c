@@ -346,12 +346,14 @@ static bool font_init_first(
    return false;
 }
 
-void font_driver_render_msg(void *font_data,
-      const char *msg, const struct font_params *params)
+void font_driver_render_msg(
+      video_frame_info_t *video_info,
+      void *font_data,
+      const char *msg, const void *params)
 {
    font_data_t *font = (font_data_t*)(font_data ? font_data : video_font_driver);
    if (font && font->renderer && font->renderer->render_msg)
-      font->renderer->render_msg(font->renderer_data, msg, params);
+      font->renderer->render_msg(video_info, font->renderer_data, msg, params);
 }
 
 void font_driver_bind_block(void *font_data, void *block)

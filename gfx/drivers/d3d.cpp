@@ -950,14 +950,17 @@ static void d3d_apply_state_changes(void *data)
 }
 
 static void d3d_set_osd_msg(void *data, const char *msg,
-      const struct font_params *params, void *font)
+      const void *params, void *font)
 {
+   video_frame_info_t video_info;
    d3d_video_t          *d3d = (d3d_video_t*)data;
+
+   video_driver_build_info(&video_info);
 
    if (d3d->renderchain_driver->set_font_rect && params)
       d3d->renderchain_driver->set_font_rect(d3d, params);
 
-   font_driver_render_msg(NULL, msg, params);
+   font_driver_render_msg(&video_info, NULL, msg, params);
 }
 
 /* Delay constructor due to lack of exceptions. */
@@ -1442,7 +1445,7 @@ static bool d3d_frame(void *data, const void *frame,
    if (msg)
    {
       struct font_params font_parms = {0};
-      font_driver_render_msg(NULL, msg, &font_parms);
+      font_driver_render_msg(video_info, NULL, msg, &font_parms);
    }
 
 #ifdef HAVE_MENU

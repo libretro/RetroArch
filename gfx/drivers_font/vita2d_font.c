@@ -22,7 +22,6 @@
 
 #include "../font_driver.h"
 
-#include "../../configuration.h"
 #include "../../verbosity.h"
 
 typedef struct
@@ -261,22 +260,23 @@ static void vita2d_font_render_message(
    }
 }
 
-static void vita2d_font_render_msg(void *data, const char *msg,
+static void vita2d_font_render_msg(
+      video_frame_info_t *video_info,
+      void *data, const char *msg,
       const void *userdata)
 {
    float x, y, scale, drop_mod, drop_alpha;
-   unsigned width, height;
    int drop_x, drop_y;
    unsigned max_glyphs;
    enum text_alignment text_align;
    unsigned color, color_dark, r, g, b, alpha, r_dark, g_dark, b_dark, alpha_dark;
    vita_font_t                *font = (vita_font_t *)data;
    const struct font_params *params = (const struct font_params*)userdata;
+   unsigned width                   = video_info->width;
+   unsigned height                  = video_info->height;
 
    if (!font || !msg || !*msg)
       return;
-
-   video_driver_get_size(&width, &height);
 
    if (params)
    {
@@ -296,16 +296,14 @@ static void vita2d_font_render_msg(void *data, const char *msg,
    }
    else
    {
-      settings_t *settings = config_get_ptr();
-
-      x              = settings->video.msg_pos_x;
-      y              = settings->video.msg_pos_y;
+      x              = video_info->font_msg_pos_x;
+      y              = video_info->font_msg_pos_y;
       scale          = 1.0f;
       text_align     = TEXT_ALIGN_LEFT;
 
-      r              = (settings->video.msg_color_r * 255);
-      g              = (settings->video.msg_color_g * 255);
-      b              = (settings->video.msg_color_b * 255);
+      r              = (video_info->font_msg_color_r * 255);
+      g              = (video_info->font_msg_color_g * 255);
+      b              = (video_info->font_msg_color_b * 255);
       alpha			   = 255;
       color 		   = RGBA8(r,g,b,alpha);
 

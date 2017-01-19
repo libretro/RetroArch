@@ -25,8 +25,6 @@
 #include "../video_shader_driver.h"
 #include "../video_context_driver.h"
 
-#include "../../configuration.h"
-
 /* TODO: Move viewport side effects to the caller: it's a source of bugs. */
 
 #define gl_raster_font_emit(c, vx, vy) do { \
@@ -424,7 +422,9 @@ static void gl_raster_font_restore_viewport(gl_t *gl, bool full_screen)
    video_driver_set_viewport(width, height, full_screen, true);
 }
 
-static void gl_raster_font_render_msg(void *data, const char *msg,
+static void gl_raster_font_render_msg(
+      video_frame_info_t *video_info,
+      void *data, const char *msg,
       const void *userdata)
 {
    GLfloat x, y, scale, drop_mod, drop_alpha;
@@ -467,16 +467,15 @@ static void gl_raster_font_render_msg(void *data, const char *msg,
    }
    else
    {
-      settings_t *settings = config_get_ptr();
-      x                    = settings->video.msg_pos_x;
-      y                    = settings->video.msg_pos_y;
+      x                    = video_info->font_msg_pos_x;
+      y                    = video_info->font_msg_pos_y;
       scale                = 1.0f;
       full_screen          = true;
       text_align           = TEXT_ALIGN_LEFT;
 
-      color[0]             = settings->video.msg_color_r;
-      color[1]             = settings->video.msg_color_g;
-      color[2]             = settings->video.msg_color_b;
+      color[0]             = video_info->font_msg_color_r;
+      color[1]             = video_info->font_msg_color_g;
+      color[2]             = video_info->font_msg_color_b;
       color[3]             = 1.0f;
 
       drop_x               = -2;

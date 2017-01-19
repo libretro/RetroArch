@@ -957,9 +957,11 @@ static void gl_set_texture_enable(void *data, bool state, bool full_screen)
 }
 
 static void gl_set_osd_msg(void *data, const char *msg,
-      const struct font_params *params, void *font)
+      const void *params, void *font)
 {
-   font_driver_render_msg(font, msg, params);
+   video_frame_info_t video_info;
+   video_driver_build_info(&video_info);
+   font_driver_render_msg(&video_info, font, msg, params);
 }
 
 static void gl_show_mouse(void *data, bool state)
@@ -1284,7 +1286,7 @@ static bool gl_frame(void *data, const void *frame,
 #endif
 
    if (msg)
-      font_driver_render_msg(NULL, msg, NULL);
+      font_driver_render_msg(video_info, NULL, msg, NULL);
 
 #ifdef HAVE_OVERLAY
    gl_render_overlay(gl, video_info);

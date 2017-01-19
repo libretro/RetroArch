@@ -32,7 +32,6 @@
 #include "../input/input_overlay.h"
 #endif
 
-#include "font_driver.h"
 #include "video_defines.h"
 #include "video_filter.h"
 #include "video_shader_parse.h"
@@ -107,6 +106,12 @@ typedef struct video_frame_info
 
    unsigned width;
    unsigned height;
+
+   float font_msg_pos_x;
+   float font_msg_pos_y;
+   float font_msg_color_r;
+   float font_msg_color_g;
+   float font_msg_color_b;
 } video_frame_info_t;
 
 /* Optionally implemented interface to poke more
@@ -142,7 +147,7 @@ typedef struct video_poke_interface
    /* Enable or disable rendering. */
    void (*set_texture_enable)(void *data, bool enable, bool full_screen);
    void (*set_osd_msg)(void *data, const char *msg,
-         const struct font_params *params, void *font);
+         const void *params, void *font);
 
    void (*show_mouse)(void *data, bool state);
    void (*grab_mouse_toggle)(void *data);
@@ -376,7 +381,7 @@ bool video_driver_get_video_output_size(
       unsigned *width, unsigned *height);
 
 void video_driver_set_osd_msg(const char *msg,
-      const struct font_params *params, void *font);
+      const void *params, void *font);
 
 void video_driver_set_texture_enable(bool enable, bool full_screen);
 

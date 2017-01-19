@@ -803,7 +803,9 @@ static void xdk360_draw_text(xdk360_video_font_t *font,
    d3dr->EndVertices();
 }
 
-static void xdk360_render_msg(void *data, const char *str_msg,
+static void xdk360_render_msg(
+      video_frame_info_t *video_info,
+      void *data, const char *str_msg,
       const void *userdata)
 {
    float x, y;

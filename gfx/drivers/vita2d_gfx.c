@@ -16,7 +16,6 @@
 
 #include <vita2d.h>
 
-
 #include <retro_inline.h>
 #include <string/stdstring.h>
 #include <formats/image.h>
@@ -250,7 +249,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
    }
 
    if(!string_is_empty(msg))
-      font_driver_render_msg(NULL, msg, NULL);
+      font_driver_render_msg(video_info, NULL, msg, NULL);
 
    vita2d_end_drawing();
    vita2d_swap_buffers();
@@ -725,10 +724,11 @@ static void vita_unload_texture(void *data, uintptr_t handle)
 }
 
 static void vita_set_osd_msg(void *data, const char *msg,
-      const struct font_params *params, void *font)
+      const void *params, void *font)
 {
-   (void)data;
-   font_driver_render_msg(font, msg, params);
+   video_frame_info_t video_info;
+   video_driver_build_info(&video_info);
+   font_driver_render_msg(&video_info, font, msg, params);
 }
 
 static bool vita_get_current_sw_framebuffer(void *data,

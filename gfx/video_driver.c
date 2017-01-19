@@ -900,11 +900,10 @@ bool video_driver_get_video_output_size(unsigned *width, unsigned *height)
    return true;
 }
 
-void video_driver_set_osd_msg(const char *msg,
-      const struct font_params *params, void *font)
+void video_driver_set_osd_msg(const char *msg, const void *data, void *font)
 {
    if (video_driver_poke && video_driver_poke->set_osd_msg)
-      video_driver_poke->set_osd_msg(video_driver_data, msg, params, font);
+      video_driver_poke->set_osd_msg(video_driver_data, msg, data, font);
 }
 
 void video_driver_set_texture_enable(bool enable, bool fullscreen)
@@ -2268,6 +2267,11 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->monitor_index         = settings->video.monitor_index;
    video_info->shared_context        = settings->video.shared_context;
    video_info->font_enable           = settings->video.font_enable;
+   video_info->font_msg_pos_x        = settings->video.msg_pos_x;
+   video_info->font_msg_pos_y        = settings->video.msg_pos_y;
+   video_info->font_msg_color_r      = settings->video.msg_color_r;
+   video_info->font_msg_color_g      = settings->video.msg_color_g;
+   video_info->font_msg_color_b      = settings->video.msg_color_b;
 
    video_info->frame_count           = 0;
    video_info->fps_text[0]           = '\0';

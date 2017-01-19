@@ -729,7 +729,7 @@ static void sdl2_poke_texture_enable(void *data, bool enable, bool full_screen)
 }
 
 static void sdl2_poke_set_osd_msg(void *data, const char *msg,
-      const struct font_params *params, void *font)
+      const void *params, void *font)
 {
    sdl2_video_t *vid = (sdl2_video_t*)data;
    sdl2_render_msg(vid, msg);

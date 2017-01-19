@@ -63,7 +63,9 @@ static void xfonts_free_font(void *data)
    font = NULL;
 }
 
-static void xfonts_render_msg(void *data, const char *msg,
+static void xfonts_render_msg(
+      video_frame_info_t *video_info,
+      void *data, const char *msg,
       const void *userdata)
 {
    wchar_t str[PATH_MAX_LENGTH];
@@ -78,10 +80,8 @@ static void xfonts_render_msg(void *data, const char *msg,
    }
    else
    {
-      settings_t *settings = config_get_ptr();
-
-      x = settings->video.msg_pos_x;
-      y = settings->video.msg_pos_y;
+      x = video_info->font_msg_pos_x;
+      y = video_info->font_msg_pos_y;
    }
 
    xfonts->d3d->dev->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &xfonts->surf);

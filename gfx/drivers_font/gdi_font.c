@@ -79,22 +79,22 @@ static const struct font_glyph *gdi_font_get_glyph(
    return NULL;
 }
 
-static void gdi_render_msg(void *data, const char *msg,
+static void gdi_render_msg(
+      video_frame_info_t *video_info,
+      void *data, const char *msg,
       const void *userdata)
 {
-   gdi_raster_t *font = (gdi_raster_t*)data;
-   float x, y;
-   unsigned width = 0, height = 0;
-   unsigned newX, newY, len;
-   settings_t *settings = config_get_ptr();
-   const struct font_params *params = (const struct font_params*)userdata;
    HDC hdc;
-   HWND hwnd = win32_get_window();
+   float x, y;
+   gdi_raster_t *font = (gdi_raster_t*)data;
+   unsigned newX, newY, len;
+   const struct font_params *params = (const struct font_params*)userdata;
+   HWND hwnd                        = win32_get_window();
+   unsigned width                   = video_info->width;
+   unsigned height                  = video_info->height;
 
    if (!font || string_is_empty(msg))
       return;
-
-   video_driver_get_size(&width, &height);
 
    if (params)
    {
@@ -103,18 +103,18 @@ static void gdi_render_msg(void *data, const char *msg,
    }
    else
    {
-      x = settings->video.msg_pos_x;
-      y = settings->video.msg_pos_y;
+      x = video_info->font_msg_pos_x;
+      y = video_info->font_msg_pos_y;
    }
 
    if (!font->gdi)
       return;
 
-   len = utf8len(msg);
+   len  = utf8len(msg);
    newX = x * width;
    newY = height - (y * height);
+   hdc  = GetDC(hwnd);
 
-   hdc = GetDC(hwnd);
    SetBkMode(hdc, TRANSPARENT);
    SetTextColor(hdc, RGB(255,255,255));
    TextOut(hdc, newX, newY, msg, len);
