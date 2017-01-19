@@ -27,7 +27,6 @@
 #include "../drivers/ctr_gu.h"
 #include "../../ctr/gpu_old.h"
 
-#include "../../configuration.h"
 #include "../../verbosity.h"
 
 /* FIXME: this is just a workaround to avoid
