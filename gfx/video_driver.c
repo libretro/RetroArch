@@ -2037,9 +2037,6 @@ static bool video_monitor_get_fps(video_frame_info_t *video_info)
       {
          char frames_text[64];
 
-         last_fps = TIME_TO_FPS(curr_time, new_time, FPS_UPDATE_INTERVAL);
-         curr_time = new_time;
-
          fill_pathname_noext(video_driver_window_title,
                video_driver_title_buf,
                " || ",
@@ -2047,6 +2044,7 @@ static bool video_monitor_get_fps(video_frame_info_t *video_info)
 
          if (video_info->fps_show)
          {
+            last_fps = TIME_TO_FPS(curr_time, new_time, FPS_UPDATE_INTERVAL);
             snprintf(video_info->fps_text,
                   sizeof(video_info->fps_text),
                   " FPS: %6.1f || ", last_fps);
@@ -2054,6 +2052,8 @@ static bool video_monitor_get_fps(video_frame_info_t *video_info)
                   video_info->fps_text,
                   sizeof(video_driver_window_title));
          }
+
+         curr_time = new_time;
 
          strlcat(video_driver_window_title,
                "Frames: ",
