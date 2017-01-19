@@ -2046,12 +2046,11 @@ static bool video_monitor_get_fps(video_frame_info_t *video_info)
 
          if (video_info->fps_show)
          {
-            char fps_text[64];
             snprintf(video_info->fps_text,
                   sizeof(video_info->fps_text),
                   " FPS: %6.1f || ", last_fps);
             strlcat(video_info->window_text,
-                  fps_text,
+                  video_info->fps_text,
                   sizeof(video_info->window_text));
          }
 
