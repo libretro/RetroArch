@@ -3262,6 +3262,8 @@ static int action_ok_push_content_list(const char *path,
          entry_idx, ACTION_OK_DL_CONTENT_LIST);
 }
 
+/* data is ordered like this on the server, I left it in this ordered
+   for reference */
 struct room
 {
    char nickname    [PATH_MAX_LENGTH];
@@ -3324,14 +3326,15 @@ finish:
          RARCH_LOG ("Found %d rooms\n", rooms);
          for (i = 0; i < rooms; i++)
          {
-            strlcpy(room_list[i].nickname, room_data->elems[j+0].data,    sizeof(room_list[i].nickname));
-            strlcpy(room_list[i].address, room_data->elems[j+1].data,     sizeof(room_list[i].address));
-            room_list[i].port = atoi(room_data->elems[j+2].data);
-            strlcpy(room_list[i].corename, room_data->elems[j+3].data,    sizeof(room_list[i].corename));
-            strlcpy(room_list[i].coreversion, room_data->elems[j+4].data, sizeof(room_list[i].coreversion));
-            strlcpy(room_list[i].gamename, room_data->elems[j+5].data,    sizeof(room_list[i].coreversion));
-            room_list[i].gamecrc = atoi(room_data->elems[j+6].data);
-            room_list[i].timestamp = atoi(room_data->elems[j+7].data);
+            strlcpy(room_list[i].nickname,    room_data->elems[j + 0].data,    sizeof(room_list[i].nickname));
+            strlcpy(room_list[i].address,     room_data->elems[j + 1].data,    sizeof(room_list[i].address));
+            strlcpy(room_list[i].corename,    room_data->elems[j + 3].data,    sizeof(room_list[i].corename));
+            strlcpy(room_list[i].coreversion, room_data->elems[j + 4].data,    sizeof(room_list[i].coreversion));
+            strlcpy(room_list[i].gamename,    room_data->elems[j + 5].data,    sizeof(room_list[i].coreversion));
+            room_list[i].port      = atoi(room_data->elems[j + 2].data);
+            room_list[i].gamecrc   = atoi(room_data->elems[j + 6].data);
+            room_list[i].timestamp = atoi(room_data->elems[j + 7].data);
+
             RARCH_LOG("Room Data: \n"
                "Nickname:         %s\n"
                "Address:          %s\n"
