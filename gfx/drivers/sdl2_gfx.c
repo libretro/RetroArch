@@ -502,6 +502,7 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    sdl2_video_t *vid = (sdl2_video_t*)data;
+   char title[128];
 
    if (vid->should_resize)
       sdl_refresh_viewport(vid);
@@ -534,17 +535,12 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
 
    SDL_RenderPresent(vid->renderer);
 
-   if (video_info->monitor_fps_enable)
-   {
-      char title[128];
+   title[0] = '\0';
 
-      title[0] = '\0';
+   video_driver_get_window_title(title, sizeof(title));
 
-      video_driver_get_window_title(title, sizeof(title));
-
-      if (title[0])
-         SDL_SetWindowTitle(vid->window, title);
-   }
+   if (title[0])
+      SDL_SetWindowTitle(vid->window, title);
 
    return true;
 }

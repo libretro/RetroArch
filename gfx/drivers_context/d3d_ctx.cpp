@@ -101,7 +101,7 @@ static void gfx_ctx_d3d_update_title(void *data, video_frame_info_t *video_info)
 #else
    const ui_window_t *window = ui_companion_driver_get_window_ptr();
 
-   if (window && video_info->monitor_fps_enable)
+   if (window)
    {
       char title[128];
 

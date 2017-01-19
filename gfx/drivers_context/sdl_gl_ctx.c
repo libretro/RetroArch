@@ -274,18 +274,15 @@ static void sdl_ctx_update_title(void *data, video_frame_info_t *video_info)
 
    video_driver_get_window_title(title, sizeof(title));
 
-   if (video_info->monitor_fps_enable)
-   {
 #ifdef HAVE_SDL2
-      gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;
+   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;
 
-      if (sdl && title[0])
-         SDL_SetWindowTitle(sdl->g_win, title);
+   if (sdl && title[0])
+      SDL_SetWindowTitle(sdl->g_win, title);
 #else
-      if (title[0])
-         SDL_WM_SetCaption(title, NULL);
+   if (title[0])
+      SDL_WM_SetCaption(title, NULL);
 #endif
-   }
 }
 
 static void sdl_ctx_check_window(void *data, bool *quit, bool *resize,unsigned *width,

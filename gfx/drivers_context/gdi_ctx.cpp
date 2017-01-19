@@ -89,18 +89,14 @@ static bool gfx_ctx_gdi_set_resize(void *data,
 static void gfx_ctx_gdi_update_window_title(void *data, video_frame_info_t *video_info)
 {
    const ui_window_t *window = ui_companion_driver_get_window_ptr();
+   char title[128];
 
-   if (window && video_info->monitor_fps_enable)
-   {
-      char title[128];
+   title[0] = '\0';
 
-      title[0] = '\0';
+   video_driver_get_window_title(title, sizeof(title));
 
-      video_driver_get_window_title(title, sizeof(title));
-
-      if (title[0])
-         window->set_title(&main_window, title);
-   }
+   if (window && title[0])
+      window->set_title(&main_window, title);
 }
 
 static void gfx_ctx_gdi_get_video_size(void *data,

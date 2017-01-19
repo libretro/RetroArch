@@ -424,7 +424,7 @@ static void cocoagl_gfx_ctx_update_title(void *data, video_frame_info_t *video_i
 
    view.data = (CocoaView*)nsview_get_ptr();
 
-   if (window && video_info->monitor_fps_enable)
+   if (window)
    {
       char title[128];
 

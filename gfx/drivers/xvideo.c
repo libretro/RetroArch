@@ -423,6 +423,7 @@ static void *xv_init(const video_info_t *video,
    XWindowAttributes target;
    video_frame_info_t video_info;
    char buf[128]                          = {0};
+   char title[128]                        = {0};
    XSetWindowAttributes attributes        = {0};
    XVisualInfo visualtemplate             = {0};
    unsigned width                         = 0;
@@ -539,17 +540,10 @@ static void *xv_init(const video_info_t *video,
 
    video_driver_build_info(&video_info);
 
-   if (video_info.monitor_fps_enable)
-   {
-      char title[128];
+   video_driver_get_window_title(title, sizeof(title));
 
-      title[0] = '\0';
-
-      video_driver_get_window_title(title, sizeof(title));
-
-      if (title[0])
-         XStoreName(g_x11_dpy, g_x11_win, title);
-   }
+   if (title[0])
+      XStoreName(g_x11_dpy, g_x11_win, title);
 
    x11_set_window_attr(g_x11_dpy, g_x11_win);
 

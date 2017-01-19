@@ -389,7 +389,7 @@ static void gfx_ctx_wgl_update_title(void *data, video_frame_info_t *video_info)
 {
    const ui_window_t *window = ui_companion_driver_get_window_ptr();
 
-   if (window && video_info->monitor_fps_enable)
+   if (window)
    {
       char title[128];
 
