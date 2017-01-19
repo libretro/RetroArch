@@ -722,7 +722,7 @@ void x11_update_title(void *data, video_frame_info_t *video_info)
 
    video_driver_get_window_title(title, sizeof(title));
 
-   if (title[0] && video_info->monitor_fps_enable)
+   if (title[0])
       XStoreName(g_x11_dpy, g_x11_win, title);
 }
 
