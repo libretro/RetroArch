@@ -163,7 +163,7 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 
    if (XuiHandleIsValid(m_menutitlebottom))
    {
-	   char str[PATH_MAX_LENGTH] = {0};
+      char str[PATH_MAX_LENGTH] = {0};
 
       if (menu_entries_get_core_title(str, sizeof(str)) == 0)
       {
@@ -295,7 +295,7 @@ static void* xui_init(void **userdata)
    video_info.rgb32        = false;
 
    d3d_make_d3dpp(d3d, &video_info, &d3dpp);
-   
+
    hr = app.InitShared(d3d->dev, &d3dpp,
          (PFN_XUITEXTURELOADER)XuiTextureLoader);
 
@@ -344,7 +344,7 @@ static void* xui_init(void **userdata)
    }
 
    video_driver_set_texture_frame(NULL,
-            true, 0, 0, 1.0f);
+         true, 0, 0, 1.0f);
 
    xui_msg_queue = msg_queue_new(16);
 
@@ -374,7 +374,7 @@ static void xui_render_message(const char *msg)
 
    if (!d3d)
       return;
-   
+
    list = string_split(msg, "\n");
 
    if (!list)
@@ -411,7 +411,7 @@ static void xui_frame(void *data, video_frame_info_t *video_info)
    const char *message   = NULL;
    D3DVIEWPORT vp_full   = {0};
    d3d_video_t *d3d      = (d3d_video_t*)video_driver_get_ptr(false);
-   
+
    if (!d3d)
       return;
 
@@ -458,9 +458,9 @@ static void blit_line(int x, int y, const char *message, bool green)
 static void xui_render_background(void)
 {
    if (menu_display_libretro_running())
-		XuiElementSetShow(m_background, FALSE);
-	else
-		XuiElementSetShow(m_background, TRUE);
+      XuiElementSetShow(m_background, FALSE);
+   else
+      XuiElementSetShow(m_background, TRUE);
 }
 
 static void xui_render_messagebox(void *data, const char *message)
@@ -528,11 +528,11 @@ static void xui_set_list_text(int index, const wchar_t* leftText,
 
 static void xui_render(void *data)
 {
-	size_t end, i, selection;
-	char title[PATH_MAX_LENGTH] = {0};
-	const char *dir             = NULL;
+   size_t end, i, selection;
+   char title[PATH_MAX_LENGTH] = {0};
+   const char *dir             = NULL;
    const char *label           = NULL;
-	unsigned menu_type          = 0;
+   unsigned menu_type          = 0;
    uint64_t *frame_count       = video_driver_get_frame_count_ptr();
    unsigned           fb_width = menu_display_get_width();
    bool              msg_force = menu_display_get_msg_force();
@@ -542,33 +542,33 @@ static void xui_render(void *data)
          && menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL)
          && !msg_force
       )
-		return;
+      return;
 
    menu_display_unset_framebuffer_dirty_flag();
    menu_animation_ctl(MENU_ANIMATION_CTL_CLEAR_ACTIVE, NULL);
 
-	xui_render_background();
+   xui_render_background();
 
-	if (XuiHandleIsValid(m_menutitle))
-	{
+   if (XuiHandleIsValid(m_menutitle))
+   {
       menu_entries_get_title(title, sizeof(title));
-		mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));
-		XuiTextElementSetText(m_menutitle, strw_buffer);
-		menu_animation_ticker_str(title, RXUI_TERM_WIDTH(fb_width) - 3,
+      mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));
+      XuiTextElementSetText(m_menutitle, strw_buffer);
+      menu_animation_ticker_str(title, RXUI_TERM_WIDTH(fb_width) - 3,
             (unsigned int)*frame_count / 15, title, true);
-	}
+   }
 
-	if (XuiHandleIsValid(m_menutitle))
-	{
+   if (XuiHandleIsValid(m_menutitle))
+   {
       if (menu_entries_get_core_title(title, sizeof(title)) == 0)
       {
          mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));
          XuiTextElementSetText(m_menutitlebottom, strw_buffer);
       }
-	}
+   }
 
-	end = menu_entries_get_end();
-	for (i = 0; i < end; i++)
+   end = menu_entries_get_end();
+   for (i = 0; i < end; i++)
    {
       char entry_path[PATH_MAX_LENGTH]     = {0};
       char entry_value[PATH_MAX_LENGTH]    = {0};
@@ -586,17 +586,17 @@ static void xui_render(void *data)
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
 
-	XuiListSetCurSelVisible(m_menulist, selection);
+   XuiListSetCurSelVisible(m_menulist, selection);
 
    if (menu_input_dialog_get_display_kb())
-	{
-		char msg[1024]    = {0};
+   {
+      char msg[1024]    = {0};
       const char *str   = menu_input_dialog_get_buffer();
       const char *label = menu_input_dialog_get_label_buffer();
 
       snprintf(msg, sizeof(msg), "%s\n%s", label, str);
-		xui_render_messagebox(NULL, msg);			
-	}
+      xui_render_messagebox(NULL, msg);			
+   }
 }
 
 static void xui_populate_entries(void *data,
