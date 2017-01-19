@@ -3304,7 +3304,7 @@ finish:
          RARCH_LOG("Room list empty\n");
       else
       {
-         int rooms, i = 0;
+         int rooms, i, j = 0;
          char tmp[PATH_MAX_LENGTH];
          struct string_list *room_data = NULL;
          room_data = string_split(buf, "\n");
@@ -3324,14 +3324,14 @@ finish:
          RARCH_LOG ("Found %d rooms\n", rooms);
          for (i = 0; i < rooms; i++)
          {
-            strlcpy(room_list[i].nickname, room_data->elems[(i+1)*0].data,    sizeof(room_list[i].nickname));
-            strlcpy(room_list[i].address, room_data->elems[(i+1)*1].data,     sizeof(room_list[i].address));
-            room_list[i].port = atoi(room_data->elems[(i+1)*2].data);
-            strlcpy(room_list[i].corename, room_data->elems[(i+1)*3].data,    sizeof(room_list[i].corename));
-            strlcpy(room_list[i].coreversion, room_data->elems[(i+1)*4].data, sizeof(room_list[i].coreversion));
-            strlcpy(room_list[i].gamename, room_data->elems[(i+1)*5].data,    sizeof(room_list[i].coreversion));
-            room_list[i].gamecrc = atoi(room_data->elems[(i+1)*6].data);
-            room_list[i].timestamp = atoi(room_data->elems[(i+1)*7].data);
+            strlcpy(room_list[i].nickname, room_data->elems[j+0].data,    sizeof(room_list[i].nickname));
+            strlcpy(room_list[i].address, room_data->elems[j+1].data,     sizeof(room_list[i].address));
+            room_list[i].port = atoi(room_data->elems[j+2].data);
+            strlcpy(room_list[i].corename, room_data->elems[j+3].data,    sizeof(room_list[i].corename));
+            strlcpy(room_list[i].coreversion, room_data->elems[j+4].data, sizeof(room_list[i].coreversion));
+            strlcpy(room_list[i].gamename, room_data->elems[j+5].data,    sizeof(room_list[i].coreversion));
+            room_list[i].gamecrc = atoi(room_data->elems[j+6].data);
+            room_list[i].timestamp = atoi(room_data->elems[j+7].data);
             RARCH_LOG("Room Data: \n"
                "Nickname:         %s\n"
                "Address:          %s\n"
@@ -3349,6 +3349,7 @@ finish:
                room_list[i].gamename,
                room_list[i].gamecrc,
                room_list[i].timestamp);
+            j+=8;
          }
       }
    }
