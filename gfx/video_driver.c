@@ -2251,8 +2251,9 @@ bool video_driver_texture_unload(uintptr_t *id)
 
 void video_driver_build_info(video_frame_info_t *video_info)
 {
+   settings_t *settings              = NULL;
    video_driver_threaded_lock();
-   settings_t *settings             = config_get_ptr();
+   settings                          = config_get_ptr();
    video_info->refresh_rate          = settings->video.refresh_rate;
    video_info->black_frame_insertion = 
       settings->video.black_frame_insertion;
