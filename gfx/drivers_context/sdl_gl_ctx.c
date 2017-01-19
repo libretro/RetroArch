@@ -282,7 +282,8 @@ static void sdl_ctx_update_title(void *data, video_frame_info_t *video_info)
       if (sdl && title[0])
          SDL_SetWindowTitle(sdl->g_win, title);
 #else
-      SDL_WM_SetCaption(title, NULL);
+      if (title[0])
+         SDL_WM_SetCaption(title, NULL);
 #endif
    }
 }
