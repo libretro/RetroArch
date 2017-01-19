@@ -2070,7 +2070,7 @@ static bool video_monitor_get_fps(video_frame_info_t *video_info)
          ret = true;
       }
 
-      if (video_info->fps_text && video_info->fps_show)
+      if (video_info->fps_show)
          snprintf(
                video_info->fps_text,
                sizeof(video_info->fps_text),
@@ -2086,10 +2086,10 @@ static bool video_monitor_get_fps(video_frame_info_t *video_info)
    strlcpy(video_info->window_text,
          video_driver_title_buf,
          sizeof(video_info->window_text));
-   if (video_info->fps_text)
-      strlcpy(video_info->fps_text,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-            sizeof(video_info->fps_text));
+
+   strlcpy(video_info->fps_text,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+         sizeof(video_info->fps_text));
 
    return true;
 }
