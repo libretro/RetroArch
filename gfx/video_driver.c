@@ -2117,7 +2117,6 @@ void video_driver_frame(const void *data, unsigned width,
    unsigned output_width                             = 0;
    unsigned output_height                            = 0;
    unsigned output_pitch                             = 0;
-   uint64_t frame_count                              = 0;
    const char *msg                                   = NULL;
 
    if (!video_driver_active)
@@ -2187,7 +2186,7 @@ void video_driver_frame(const void *data, unsigned width,
 
    if (!current_video || !current_video->frame(
             video_driver_data, data, width, height,
-            frame_count,
+            video_info.frame_count,
             pitch, video_driver_msg, &video_info))
       video_driver_active = false;
 
