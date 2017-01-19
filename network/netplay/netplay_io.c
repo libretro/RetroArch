@@ -954,7 +954,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
       case NETPLAY_CMD_CRC:
          {
             uint32_t buffer[2];
-            size_t tmp_ptr = netplay->input_ptr;
+            size_t tmp_ptr = netplay->run_ptr;
             bool found = false;
 
             if (cmd_size != sizeof(buffer))
@@ -985,7 +985,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                }
 
                tmp_ptr = PREV_PTR(tmp_ptr);
-            } while (tmp_ptr != netplay->input_ptr);
+            } while (tmp_ptr != netplay->run_ptr);
 
             if (!found)
             {
