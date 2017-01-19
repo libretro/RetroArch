@@ -696,10 +696,10 @@ menu_ctx_driver_t menu_ctx_xui = {
    xui_frame,
    xui_init,
    xui_free,
-   NULL,
-   NULL,
+   NULL,    /* context_reset */
+   NULL,    /* context_destroy */
    xui_populate_entries,
-   NULL,
+   NULL,    /* toggle */
    xui_navigation_clear,
    xui_navigation_set_visible,
    xui_navigation_set_visible,
@@ -709,19 +709,23 @@ menu_ctx_driver_t menu_ctx_xui = {
    xui_navigation_alphabet,
    generic_menu_init_list,
    xui_list_insert,
+   NULL,          /* list_prepend */
    xui_list_free,
    xui_list_clear,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
+   NULL,          /* list_cache */
+   NULL,          /* list_push */
+   NULL,          /* list_get_selection */
+   NULL,          /* list_get_size */
+   NULL,          /* list_get_entry */
    xui_list_set_selection,
-   NULL,
-   NULL,
+   NULL,          /* bind_init */
+   NULL,          /* load_image */
    "xui",
    xui_environ,
-   NULL,
-   NULL,
-   NULL
+   NULL,          /* pointer_tap */
+   NULL,          /* update_thumbnail_path */
+   NULL,          /* update_thumbnail_image */
+   NULL,          /* osk_ptr_at_pos */
+   NULL,          /* update_savestate_thumbnail_path */
+   NULL           /* update_savestate_thumbnail_image */
 };
