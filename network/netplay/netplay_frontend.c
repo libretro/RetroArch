@@ -393,6 +393,34 @@ static int16_t netplay_input_state(netplay_t *netplay,
    }
 }
 
+static int reannounce = 0;
+
+static void netplay_announce_cb(void *task_data, void *user_data, const char *error)
+{
+   RARCH_LOG("Announcing netplay game... \n");
+   return;
+}
+
+static void netplay_announce()
+{
+   rarch_system_info_t *system   = NULL;
+   settings_t *settings          = config_get_ptr();
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+   char url [2048] = "http://lobby.libretro.com/?";
+   char buf [2048];
+   buf[0] = '\0';
+
+   snprintf(buf, sizeof(buf), "%susername=%s&corename=%s&coreversion=%s&"
+   "gamename=%s&gamecrc=%08x&port=%d", 
+      url, settings->username, system->info.library_name, 
+      system->info.library_version, 
+      path_basename(path_get(RARCH_PATH_BASENAME)),0,
+      settings->netplay.port);
+
+   task_push_http_transfer(buf, true, NULL, netplay_announce_cb, NULL);
+}
+
 int16_t input_state_net(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
@@ -522,7 +550,10 @@ static void netplay_frontend_paused(netplay_t *netplay, bool paused)
 bool netplay_pre_frame(netplay_t *netplay)
 {
    bool sync_stalled;
-
+   reannounce ++;
+   RARCH_LOG("%d\n", reannounce);
+   if (reannounce % 3600 == 0)
+      netplay_announce();
    retro_assert(netplay);
 
    /* FIXME: This is an ugly way to learn we're not paused anymore */
@@ -830,34 +861,6 @@ void deinit_netplay(void)
       netplay_free(netplay_data);
    netplay_data = NULL;
    core_unset_netplay_callbacks();
-}
-
-
-
-static void netplay_announce_cb(void *task_data, void *user_data, const char *error)
-{
-   RARCH_LOG("Announcing netplay game... \n");
-   return;
-}
-
-static void netplay_announce()
-{
-   rarch_system_info_t *system   = NULL;
-   settings_t *settings          = config_get_ptr();
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
-   char url [2048] = "http://lobby.libretro.com/?";
-   char buf [2048];
-   buf[0] = '\0';
-
-   snprintf(buf, sizeof(buf), "%susername=%s&corename=%s&coreversion=%s&"
-   "gamename=%s&gamecrc=%08x&port=%d", 
-      url, settings->username, system->info.library_name, 
-      system->info.library_version, 
-      path_basename(path_get(RARCH_PATH_BASENAME)),0,
-      settings->netplay.port);
-
-   task_push_http_transfer(buf, true, NULL, netplay_announce_cb, NULL);
 }
 
 /**
