@@ -2969,8 +2969,8 @@ static int menu_displaylist_parse_netplay_room_list(
          const char *label = s;
          menu_entries_append_enum(info->list,
                label,
-               msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_WIFI),
-               MENU_ENUM_LABEL_CONNECT_WIFI,
+               msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM),
+               MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,
                MENU_WIFI, 0, 0);
       }
    }

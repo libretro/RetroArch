@@ -3356,8 +3356,8 @@ finish:
             snprintf(s, sizeof(s), "Nickname: %s", netplay_room_list[i].nickname);
             menu_entries_append_enum(file_list,
                   s,
-                  msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_WIFI),
-                  MENU_ENUM_LABEL_CONNECT_WIFI,
+                  msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM),
+                  MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,
                   MENU_WIFI, 0, 0);
 
          }
