@@ -3115,6 +3115,12 @@ static int action_ok_netplay_lan_scan_list(const char *path,
          entry_idx, ACTION_OK_DL_NETPLAY_LAN_SCAN_SETTINGS_LIST);
 }
 
+static int action_ok_netplay_connect_room(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   RARCH_LOG("Connect %s %d\n", netplay_room_list[idx - 1].address, netplay_room_list[idx - 1].port);
+   return 0;
+}
 static int action_ok_lakka_services(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -4217,6 +4223,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_netplay_lan_scan_list);
+            break;
+         case MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM:
+            BIND_ACTION_OK(cbs, action_ok_netplay_connect_room);
             break;
          case MENU_ENUM_LABEL_LAKKA_SERVICES:
             BIND_ACTION_OK(cbs, action_ok_lakka_services);
