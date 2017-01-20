@@ -3135,7 +3135,7 @@ static int action_ok_netplay_connect_room(const char *path,
    }
 
    char tmp_hostname[512];
-   strlcpy(tmp_hostname, "192.168.1.241", sizeof(tmp_hostname));
+   strlcpy(tmp_hostname, netplay_room_list[idx - 1].address, sizeof(tmp_hostname));
 
    /* Enable Netplay itself */
    if (!command_event(CMD_EVENT_NETPLAY_INIT, (void *) tmp_hostname))
