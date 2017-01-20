@@ -115,11 +115,16 @@ typedef struct video_frame_info
    bool use_rgba;
    bool libretro_running;
 
+   float menu_header_opacity;
+   float menu_footer_opacity;
+
    bool xmb_shadows_enable;
    float xmb_alpha_factor;
    unsigned xmb_theme;
    unsigned xmb_color_theme;
    unsigned menu_shader_pipeline;
+
+   unsigned materialui_color_theme;
 
    bool battery_level_enable;
    bool timedate_enable;

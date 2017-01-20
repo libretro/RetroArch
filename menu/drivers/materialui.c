@@ -1038,7 +1038,6 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
    size_t title_margin             = 0;
    mui_handle_t *mui               = (mui_handle_t*)data;
    uint64_t frame_count            = video_info->frame_count;
-   settings_t *settings            = config_get_ptr();
    bool background_rendered        = false;
    bool libretro_running           = video_info->libretro_running;
 
@@ -1059,7 +1058,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
 
    msg[0] = title[0] = title_buf[0] = title_msg[0] = '\0';
 
-   switch (settings->menu.materialui.menu_color_theme)
+   switch (video_info->materialui_color_theme)
    {
       case MATERIALUI_THEME_BLUE:
          hex32_to_rgba_normalized(0x2196F3, blue_500,       1.00);
@@ -1208,8 +1207,8 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
          break;
    }
 
-   menu_display_set_alpha(header_bg_color_real, settings->menu.header.opacity);
-   menu_display_set_alpha(footer_bg_color_real, settings->menu.footer.opacity);
+   menu_display_set_alpha(header_bg_color_real, video_info->menu_header_opacity);
+   menu_display_set_alpha(footer_bg_color_real, video_info->menu_footer_opacity);
 
    menu_display_set_viewport(video_info->width, video_info->height);
    header_height = menu_display_get_header_height();

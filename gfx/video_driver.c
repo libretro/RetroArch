@@ -2283,6 +2283,9 @@ void video_driver_build_info(video_frame_info_t *video_info)
 
    video_info->libretro_running       = false;
 #ifdef HAVE_MENU
+   video_info->menu_footer_opacity    = settings->menu.footer.opacity;
+   video_info->menu_header_opacity    = settings->menu.header.opacity;
+   video_info->materialui_color_theme = settings->menu.materialui.menu_color_theme;
    video_info->menu_shader_pipeline   = settings->menu.xmb.shader_pipeline;
    video_info->xmb_theme              = settings->menu.xmb.theme;
    video_info->xmb_color_theme        = settings->menu.xmb.menu_color_theme;
@@ -2296,6 +2299,9 @@ void video_driver_build_info(video_frame_info_t *video_info)
       video_info->libretro_running    = (rarch_ctl(RARCH_CTL_IS_INITED, NULL)
             && !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL));
 #else
+   video_info->menu_footer_opacity    = 0.0f;
+   video_info->menu_header_opacity    = 0.0f;
+   video_info->materialui_color_theme = 0;
    video_info->menu_shader_pipeline   = 0;
    video_info->xmb_color_theme        = 0;
    video_info->xmb_theme              = 0;
