@@ -26,6 +26,7 @@
 #include <gfx/math/matrix_4x4.h>
 
 #include "../file_path_special.h"
+#include "../gfx/font_driver.h"
 #include "../gfx/video_context_driver.h"
 #include "../gfx/video_coord_array.h"
 
@@ -199,7 +200,7 @@ void menu_display_blend_end(void);
 void menu_display_font_free(font_data_t *font);
 font_data_t *menu_display_font_main_init(menu_display_ctx_font_t *font);
 void menu_display_font_bind_block(font_data_t *font, void *block);
-bool menu_display_font_flush_block(font_data_t *font);
+bool menu_display_font_flush_block(unsigned width, unsigned height, font_data_t *font);
 
 void menu_display_framebuffer_deinit(void);
 
@@ -227,8 +228,8 @@ void menu_display_set_msg_force(bool state);
 bool menu_display_get_font_data_init(void);
 void menu_display_set_font_data_init(bool state);
 bool menu_display_get_update_pending(void);
-void menu_display_set_viewport(void);
-void menu_display_unset_viewport(void);
+void menu_display_set_viewport(unsigned width, unsigned height);
+void menu_display_unset_viewport(unsigned width, unsigned height);
 bool menu_display_get_framebuffer_dirty_flag(void);
 void menu_display_set_framebuffer_dirty_flag(void);
 void menu_display_unset_framebuffer_dirty_flag(void);
@@ -239,8 +240,13 @@ void menu_display_clear_color(menu_display_ctx_clearcolor_t *color);
 void menu_display_draw(menu_display_ctx_draw_t *draw);
 
 void menu_display_draw_pipeline(menu_display_ctx_draw_t *draw);
-void menu_display_draw_bg(menu_display_ctx_draw_t *draw, bool add_opacity);
-void menu_display_draw_gradient(menu_display_ctx_draw_t *draw);
+void menu_display_draw_bg(
+      menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info,
+      bool add_opacity);
+void menu_display_draw_gradient(
+      menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info);
 void menu_display_draw_quad(int x, int y, unsigned w, unsigned h,
       unsigned width, unsigned height,
       float *color);

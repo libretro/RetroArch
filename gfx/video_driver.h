@@ -32,7 +32,6 @@
 #include "../input/input_overlay.h"
 #endif
 
-#include "font_driver.h"
 #include "video_defines.h"
 #include "video_filter.h"
 #include "video_shader_parse.h"
@@ -87,6 +86,7 @@ typedef struct video_info
 
 typedef struct video_frame_info
 {
+   float menu_wallpaper_opacity;
    float refresh_rate;
    bool shared_context;
    bool black_frame_insertion;
@@ -101,6 +101,33 @@ typedef struct video_frame_info
    bool fullscreen;
    unsigned monitor_index;
    bool font_enable;
+   char fps_text[128];
+   uint64_t frame_count;
+
+   unsigned width;
+   unsigned height;
+
+   float font_msg_pos_x;
+   float font_msg_pos_y;
+   float font_msg_color_r;
+   float font_msg_color_g;
+   float font_msg_color_b;
+   bool use_rgba;
+   bool libretro_running;
+
+   float menu_header_opacity;
+   float menu_footer_opacity;
+
+   bool xmb_shadows_enable;
+   float xmb_alpha_factor;
+   unsigned xmb_theme;
+   unsigned xmb_color_theme;
+   unsigned menu_shader_pipeline;
+
+   unsigned materialui_color_theme;
+
+   bool battery_level_enable;
+   bool timedate_enable;
 } video_frame_info_t;
 
 /* Optionally implemented interface to poke more
@@ -136,7 +163,7 @@ typedef struct video_poke_interface
    /* Enable or disable rendering. */
    void (*set_texture_enable)(void *data, bool enable, bool full_screen);
    void (*set_osd_msg)(void *data, const char *msg,
-         const struct font_params *params, void *font);
+         const void *params, void *font);
 
    void (*show_mouse)(void *data, bool state);
    void (*grab_mouse_toggle)(void *data);
@@ -163,7 +190,7 @@ typedef struct video_viewport
 typedef bool (*video_driver_frame_t)(void *data,
       const void *frame, unsigned width,
       unsigned height, uint64_t frame_count,
-      unsigned pitch, const char *msg, video_frame_info_t video_info);
+      unsigned pitch, const char *msg, video_frame_info_t *video_info);
 
 typedef struct video_driver
 {
@@ -242,7 +269,7 @@ extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 #if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
 #define video_driver_has_windowed() (false)
 #else
-#define video_driver_has_windowed() (current_video->has_windowed(video_driver_data))
+#define video_driver_has_windowed() (current_video->has_windowed && current_video->has_windowed(video_driver_data))
 #endif
 
 #define video_driver_cached_frame_has_valid_framebuffer() (frame_cache_data ? (frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID) : false)
@@ -370,7 +397,7 @@ bool video_driver_get_video_output_size(
       unsigned *width, unsigned *height);
 
 void video_driver_set_osd_msg(const char *msg,
-      const struct font_params *params, void *font);
+      const void *params, void *font);
 
 void video_driver_set_texture_enable(bool enable, bool full_screen);
 
@@ -462,25 +489,6 @@ void video_monitor_set_refresh_rate(float hz);
 bool video_monitor_fps_statistics(double *refresh_rate,
       double *deviation, unsigned *sample_points);
 
-/**
- * video_monitor_get_fps:
- * @video_info    : information about the video frame
- * @buf           : string suitable for Window title
- * @size          : size of buffer.
- * @buf_fps       : string of raw FPS only (optional).
- * @size_fps      : size of raw FPS buffer.
- *
- * Get the amount of frames per seconds.
- *
- * Returns: true if framerate per seconds could be obtained,
- * otherwise false.
- *
- **/
-bool video_monitor_get_fps(
-      video_frame_info_t video_info,
-      char *buf, size_t size,
-      char *buf_fps, size_t size_fps);
-
 unsigned video_pixel_get_alignment(unsigned pitch);
 
 const video_poke_interface_t *video_driver_get_poke(void);
@@ -542,6 +550,8 @@ bool video_driver_texture_unload(uintptr_t *id);
 void video_driver_build_info(video_frame_info_t *video_info);
 
 void video_driver_reinit(void);
+
+void video_driver_get_window_title(char *buf, unsigned len);
 
 extern video_driver_t video_gl;
 extern video_driver_t video_vulkan;

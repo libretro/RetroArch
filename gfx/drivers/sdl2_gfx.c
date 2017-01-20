@@ -35,13 +35,14 @@
 #include "SDL.h"
 #include "SDL_syswm.h"
 
+#include "../font_driver.h"
+
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../runloop.h"
 #include "../../performance_counters.h"
 #include "../../verbosity.h"
 #include "../video_context_driver.h"
-#include "../font_driver.h"
 
 typedef struct sdl2_tex
 {
@@ -498,12 +499,10 @@ static void check_window(sdl2_video_t *vid)
 
 static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
       unsigned height, uint64_t frame_count,
-      unsigned pitch, const char *msg, video_frame_info_t video_info)
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
-   char buf[128];
    sdl2_video_t *vid = (sdl2_video_t*)data;
-
-   buf[0] = '\0';
+   char title[128];
 
    if (vid->should_resize)
       sdl_refresh_viewport(vid);
@@ -525,7 +524,7 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
    SDL_RenderCopyEx(vid->renderer, vid->frame.tex, NULL, NULL, vid->rotation, NULL, SDL_FLIP_NONE);
 
 #ifdef HAVE_MENU
-   menu_driver_ctl(RARCH_MENU_CTL_FRAME, NULL);
+   menu_driver_frame(video_info);
 #endif
 
    if (vid->menu.active)
@@ -536,8 +535,12 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
 
    SDL_RenderPresent(vid->renderer);
 
-   if (video_monitor_get_fps(video_info, buf, sizeof(buf), NULL, 0))
-      SDL_SetWindowTitle(vid->window, buf);
+   title[0] = '\0';
+
+   video_driver_get_window_title(title, sizeof(title));
+
+   if (title[0])
+      SDL_SetWindowTitle(vid->window, title);
 
    return true;
 }
@@ -723,7 +726,7 @@ static void sdl2_poke_texture_enable(void *data, bool enable, bool full_screen)
 }
 
 static void sdl2_poke_set_osd_msg(void *data, const char *msg,
-      const struct font_params *params, void *font)
+      const void *params, void *font)
 {
    sdl2_video_t *vid = (sdl2_video_t*)data;
    sdl2_render_msg(vid, msg);

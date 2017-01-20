@@ -25,9 +25,8 @@ static void gfx_ctx_null_swap_interval(void *data, unsigned interval)
 }
 
 static void gfx_ctx_null_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
+      bool *resize, unsigned *width, unsigned *height)
 {
-   (void)frame_count;
    (void)data;
    (void)quit;
    (void)width;
@@ -35,23 +34,9 @@ static void gfx_ctx_null_check_window(void *data, bool *quit,
    (void)resize;
 }
 
-static void gfx_ctx_null_swap_buffers(void *data, video_frame_info_t video_info)
+static void gfx_ctx_null_swap_buffers(void *data, video_frame_info_t *video_info)
 {
    (void)data;
-}
-
-static bool gfx_ctx_null_set_resize(void *data, unsigned width, unsigned height)
-{
-   (void)data;
-   (void)width;
-   (void)height;
-   return false;
-}
-
-static void gfx_ctx_null_update_window_title(void *data, video_frame_info_t video_info)
-{
-   (void)data;
-   (void)video_info;
 }
 
 static void gfx_ctx_null_get_video_size(void *data, unsigned *width, unsigned *height)
@@ -62,7 +47,7 @@ static void gfx_ctx_null_get_video_size(void *data, unsigned *width, unsigned *h
 }
 
 static bool gfx_ctx_null_set_video_mode(void *data,
-      video_frame_info_t video_info,
+      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -99,12 +84,6 @@ static bool gfx_ctx_null_suppress_screensaver(void *data, bool enable)
    (void)data;
    (void)enable;
    return false;
-}
-
-static bool gfx_ctx_null_has_windowed(void *data)
-{
-   (void)data;
-   return true;
 }
 
 static bool gfx_ctx_null_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
@@ -161,12 +140,12 @@ const gfx_ctx_driver_t gfx_ctx_null = {
    NULL, /* get_video_output_next */
    NULL, /* get_metrics */
    NULL,
-   gfx_ctx_null_update_window_title,
+   NULL, /* update_title */
    gfx_ctx_null_check_window,
-   gfx_ctx_null_set_resize,
+   NULL, /* set_resize */
    gfx_ctx_null_has_focus,
    gfx_ctx_null_suppress_screensaver,
-   gfx_ctx_null_has_windowed,
+   NULL, /* has_windowed */
    gfx_ctx_null_swap_buffers,
    gfx_ctx_null_input_driver,
    NULL,

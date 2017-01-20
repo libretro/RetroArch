@@ -619,7 +619,7 @@ static void video_thread_loop(void *data)
                   thr->frame.buffer, thr->frame.width, thr->frame.height,
                   thr->frame.count,
                   thr->frame.pitch, *thr->frame.msg ? thr->frame.msg : NULL,
-                  video_info);
+                  &video_info);
          }
 
          slock_unlock(thr->frame.lock);
@@ -706,7 +706,7 @@ static bool video_thread_has_windowed(void *data)
 
 static bool video_thread_frame(void *data, const void *frame_,
       unsigned width, unsigned height, uint64_t frame_count,
-      unsigned pitch, const char *msg, video_frame_info_t video_info)
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    unsigned copy_stride;
    static struct retro_perf_counter thr_frame = {0};
@@ -741,7 +741,7 @@ static bool video_thread_frame(void *data, const void *frame_,
    {
 
       retro_time_t target_frame_time = (retro_time_t)
-         roundf(1000000 / video_info.refresh_rate);
+         roundf(1000000 / video_info->refresh_rate);
       retro_time_t target = thr->last_time + target_frame_time;
 
       /* Ideally, use absolute time, but that is only a good idea on POSIX. */
@@ -1193,7 +1193,7 @@ static void thread_set_texture_enable(void *data, bool state, bool full_screen)
 }
 
 static void thread_set_osd_msg(void *data, const char *msg,
-      const struct font_params *params, void *font)
+      const void *params, void *font)
 {
    thread_video_t *thr = (thread_video_t*)data;
 

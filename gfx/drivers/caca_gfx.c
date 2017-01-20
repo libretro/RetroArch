@@ -15,13 +15,20 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <retro_miscellaneous.h>
 #include <caca.h>
+
+#include <retro_miscellaneous.h>
+
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
+#include "../common/caca_common.h"
+
+#include "../font_driver.h"
 
 #include "../../driver.h"
 #include "../../verbosity.h"
-#include "../../menu/menu_driver.h"
-#include "../common/caca_common.h"
 
 static caca_canvas_t *caca_cv         = NULL;
 static caca_dither_t *caca_dither     = NULL;
@@ -94,7 +101,7 @@ static void *caca_gfx_init(const video_info_t *video,
 
 static bool caca_gfx_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height, uint64_t frame_count,
-      unsigned pitch, const char *msg, video_frame_info_t video_info)
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    size_t len = 0;
    void *buffer = NULL;
@@ -145,11 +152,11 @@ static bool caca_gfx_frame(void *data, const void *frame,
    caca_clear_canvas(caca_cv);
 
 #ifdef HAVE_MENU
-   menu_driver_ctl(RARCH_MENU_CTL_FRAME, NULL);
+   menu_driver_frame(video_info);
 #endif
 
    if (msg)
-      font_driver_render_msg(NULL, msg, NULL);
+      font_driver_render_msg(video_info, NULL, msg, NULL);
 
    if (draw)
    {
@@ -286,9 +293,11 @@ static void caca_set_texture_frame(void *data,
 }
 
 static void caca_set_osd_msg(void *data, const char *msg,
-      const struct font_params *params, void *font)
+      const void *params, void *font)
 {
-   font_driver_render_msg(font, msg, params);
+   video_frame_info_t video_info;
+   video_driver_build_info(&video_info);
+   font_driver_render_msg(&video_info, font, msg, params);
 }
 
 static const video_poke_interface_t caca_poke_interface = {

@@ -41,7 +41,6 @@
 
 #include "../../configuration.h"
 #include "../../dynamic.h"
-#include "../../runloop.h"
 #include "../video_context_driver.h"
 
 #include "../common/win32_common.h"
@@ -312,7 +311,7 @@ static void gfx_ctx_wgl_swap_interval(void *data, unsigned interval)
 }
 
 static void gfx_ctx_wgl_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
+      bool *resize, unsigned *width, unsigned *height)
 {
    win32_check_window(quit, resize, width, height);
 
@@ -331,7 +330,7 @@ static void gfx_ctx_wgl_check_window(void *data, bool *quit,
    }
 }
 
-static void gfx_ctx_wgl_swap_buffers(void *data, video_frame_info_t video_info)
+static void gfx_ctx_wgl_swap_buffers(void *data, video_frame_info_t *video_info)
 {
    (void)data;
 
@@ -386,19 +385,21 @@ static bool gfx_ctx_wgl_set_resize(void *data,
    return false;
 }
 
-static void gfx_ctx_wgl_update_window_title(void *data, video_frame_info_t video_info)
+static void gfx_ctx_wgl_update_title(void *data, video_frame_info_t *video_info)
 {
-   char buf[128];
-   char buf_fps[128];
    const ui_window_t *window = ui_companion_driver_get_window_ptr();
 
-   buf[0] = buf_fps[0] = '\0';
+   if (window)
+   {
+      char title[128];
 
-   if (window && video_monitor_get_fps(video_info, buf, sizeof(buf),
-            buf_fps, sizeof(buf_fps)))
-      window->set_title(&main_window, buf);
-   if (video_info.fps_show)
-      runloop_msg_queue_push(buf_fps, 1, 1, false);
+      title[0] = '\0';
+
+      video_driver_get_window_title(title, sizeof(title));
+
+      if (title[0])
+         window->set_title(&main_window, title);
+   }
 }
 
 static void gfx_ctx_wgl_get_video_size(void *data,
@@ -525,7 +526,7 @@ static void gfx_ctx_wgl_destroy(void *data)
 }
 
 static bool gfx_ctx_wgl_set_video_mode(void *data,
-      video_frame_info_t video_info,
+      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -687,7 +688,7 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    NULL, /* get_video_output_next */
    gfx_ctx_wgl_get_metrics,
    NULL,
-   gfx_ctx_wgl_update_window_title,
+   gfx_ctx_wgl_update_title,
    gfx_ctx_wgl_check_window,
    gfx_ctx_wgl_set_resize,
    gfx_ctx_wgl_has_focus,

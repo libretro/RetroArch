@@ -27,6 +27,10 @@
 #include "../../config.h"
 #endif
 
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
 #ifdef HAVE_X11
 #include "../common/x11_common.h"
 #endif
@@ -34,12 +38,14 @@
 #include "SDL.h"
 #include "SDL_syswm.h"
 
+#include "../font_driver.h"
+#include "../video_driver.h"
+
 #include "../../configuration.h"
 #include "../../runloop.h"
 #include "../../performance_counters.h"
 
 #include "../video_context_driver.h"
-#include "../font_driver.h"
 
 typedef struct sdl_menu_frame
 {
@@ -331,16 +337,18 @@ static void sdl_gfx_check_window(sdl_video_t *vid)
 
 static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
       unsigned height, uint64_t frame_count,
-      unsigned pitch, const char *msg, video_frame_info_t video_info)
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
-   char                       buf[128];
    static struct retro_perf_counter sdl_scale = {0};
    sdl_video_t                    *vid = (sdl_video_t*)data;
+   char title[128];
 
    if (!frame)
       return true;
 
-   buf[0] = '\0';
+   title[0] = '\0';
+
+   video_driver_get_window_title(title, sizeof(title));
 
    if (SDL_MUSTLOCK(vid->screen))
       SDL_LockSurface(vid->screen);
@@ -361,6 +369,10 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
          pitch);
    performance_counter_stop(&sdl_scale);
 
+#ifdef HAVE_MENU
+   menu_driver_frame(video_info);
+#endif
+
    if (vid->menu.active)
       SDL_BlitSurface(vid->menu.frame, NULL, vid->screen, NULL);
 
@@ -370,8 +382,8 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
    if (SDL_MUSTLOCK(vid->screen))
       SDL_UnlockSurface(vid->screen);
 
-   if (video_monitor_get_fps(video_info, buf, sizeof(buf), NULL, 0))
-      SDL_WM_SetCaption(buf, NULL);
+   if (title[0])
+      SDL_WM_SetCaption(title, NULL);
 
    SDL_Flip(vid->screen);
 

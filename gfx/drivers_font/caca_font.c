@@ -24,7 +24,6 @@
 #endif
 
 #include "../font_driver.h"
-#include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../common/caca_common.h"
 
@@ -74,7 +73,8 @@ static const struct font_glyph *caca_font_get_glyph(
    return NULL;
 }
 
-static void caca_render_msg(void *data, const char *msg,
+static void caca_render_msg(video_frame_info_t *video_info,
+      void *data, const char *msg,
       const void *userdata)
 {
    float x, y;
@@ -93,10 +93,8 @@ static void caca_render_msg(void *data, const char *msg,
    }
    else
    {
-      settings_t *settings = config_get_ptr();
-
-      x = settings->video.msg_pos_x;
-      y = settings->video.msg_pos_y;
+      x = video_info->font_msg_pos_x;
+      y = video_info->font_msg_pos_y;
    }
 
    if (!font->caca || !font->caca->caca_cv || !font->caca->caca_display ||
@@ -117,7 +115,8 @@ static void caca_render_msg(void *data, const char *msg,
    caca_refresh_display(*font->caca->caca_display);
 }
 
-static void caca_font_flush_block(void* data)
+static void caca_font_flush_block(unsigned width, unsigned height,
+      void* data)
 {
    (void)data;
 }

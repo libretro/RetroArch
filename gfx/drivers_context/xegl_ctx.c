@@ -91,15 +91,6 @@ EGL_BLUE_SIZE,       1, \
 EGL_ALPHA_SIZE,      0, \
 EGL_DEPTH_SIZE,      0
 
-static bool gfx_ctx_xegl_set_resize(void *data,
-   unsigned width, unsigned height)
-{
-   (void)data;
-   (void)width;
-   (void)height;
-   return false;
-}
-
 static void *gfx_ctx_xegl_init(video_frame_info_t video_info, void *video_driver)
 {
 #ifdef HAVE_EGL
@@ -257,7 +248,7 @@ static EGLint *xegl_fill_attribs(xegl_ctx_data_t *xegl, EGLint *attr)
 static void gfx_ctx_xegl_set_swap_interval(void *data, unsigned swap_interval);
 
 static bool gfx_ctx_xegl_set_video_mode(void *data,
-      video_frame_info_t video_info,
+      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -298,7 +289,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
       ButtonPressMask | ButtonReleaseMask | KeyReleaseMask;
    swa.override_redirect = fullscreen ? True : False;
 
-   if (fullscreen && !video_info.windowed_fullscreen)
+   if (fullscreen && !video_info->windowed_fullscreen)
    {
       if (x11_enter_fullscreen(video_info, g_x11_dpy, width, height, &xegl->desktop_mode))
       {
@@ -309,8 +300,8 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
          RARCH_ERR("[X/EGL]: Entering true fullscreen failed. Will attempt windowed mode.\n");
    }
 
-   if (video_info.monitor_index)
-      g_x11_screen = video_info.monitor_index - 1;
+   if (video_info->monitor_index)
+      g_x11_screen = video_info->monitor_index - 1;
 
 #ifdef HAVE_XINERAMA
    if (fullscreen || g_x11_screen != 0)
@@ -352,7 +343,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
       goto error;
 
    x11_set_window_attr(g_x11_dpy, g_x11_win);
-   x11_update_window_title(NULL, video_info);
+   x11_update_title(NULL, video_info);
 
    if (fullscreen)
       x11_show_mouse(g_x11_dpy, g_x11_win, false);
@@ -490,7 +481,7 @@ static void gfx_ctx_xegl_show_mouse(void *data, bool state)
    x11_show_mouse(g_x11_dpy, g_x11_win, state);
 }
 
-static void gfx_ctx_xegl_swap_buffers(void *data, video_frame_info_t video_info)
+static void gfx_ctx_xegl_swap_buffers(void *data, video_frame_info_t *video_info)
 {
    xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
 
@@ -591,9 +582,9 @@ const gfx_ctx_driver_t gfx_ctx_x_egl =
    NULL, /* get_video_output_next */
    x11_get_metrics,
    NULL,
-   x11_update_window_title,
+   x11_update_title,
    x11_check_window,
-   gfx_ctx_xegl_set_resize,
+   NULL, /* set_resize */
    x11_has_focus,
    gfx_ctx_xegl_suppress_screensaver,
    gfx_ctx_xegl_has_windowed,

@@ -86,36 +86,14 @@ static INLINE bool gfx_ctx_vc_egl_query_extension(vc_ctx_data_t *vc, const char 
 }
 
 static void gfx_ctx_vc_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
+      bool *resize, unsigned *width, unsigned *height)
 {
    (void)data;
-   (void)frame_count;
    (void)width;
    (void)height;
 
    *resize = false;
    *quit   = (bool)frontend_driver_get_signal_handler_state();
-}
-
-static bool gfx_ctx_vc_set_resize(void *data, unsigned width, unsigned height)
-{
-   (void)data;
-   (void)width;
-   (void)height;
-   return false;
-}
-
-static void gfx_ctx_vc_update_window_title(void *data, video_frame_info_t video_info)
-{
-   char buf[128];
-   char buf_fps[128];
-
-   buf[0] = buf_fps[0]  = '\0';
-
-   video_monitor_get_fps(video_info, buf, sizeof(buf),
-         buf_fps, sizeof(buf_fps));
-   if (video_info.fps_show)
-      runloop_msg_queue_push(buf_fps, 1, 1, false);
 }
 
 static void gfx_ctx_vc_get_video_size(void *data,
@@ -319,7 +297,7 @@ static void gfx_ctx_vc_set_swap_interval(void *data, unsigned swap_interval)
 }
 
 static bool gfx_ctx_vc_set_video_mode(void *data,
-      video_frame_info_t video_info,
+      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -471,12 +449,6 @@ static bool gfx_ctx_vc_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool gfx_ctx_vc_has_windowed(void *data)
-{
-   (void)data;
-   return false;
-}
-
 static float gfx_ctx_vc_translate_aspect(void *data,
       unsigned width, unsigned height)
 {
@@ -608,7 +580,7 @@ error:
    return false;
 }
 
-static void gfx_ctx_vc_swap_buffers(void *data, video_frame_info_t video_info)
+static void gfx_ctx_vc_swap_buffers(void *data, video_frame_info_t *video_info)
 {
    vc_ctx_data_t *vc = (vc_ctx_data_t*)data;
 
@@ -659,12 +631,12 @@ const gfx_ctx_driver_t gfx_ctx_videocore = {
    NULL, /* get_video_output_next */
    NULL, /* get_metrics */
    gfx_ctx_vc_translate_aspect,
-   gfx_ctx_vc_update_window_title,
+   NULL, /* update_title */
    gfx_ctx_vc_check_window,
-   gfx_ctx_vc_set_resize,
+   NULL, /* set_resize */
    gfx_ctx_vc_has_focus,
    gfx_ctx_vc_suppress_screensaver,
-   gfx_ctx_vc_has_windowed,
+   NULL, /* has_windowed */
    gfx_ctx_vc_swap_buffers,
    gfx_ctx_vc_input_driver,
    gfx_ctx_vc_get_proc_address,

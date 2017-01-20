@@ -26,10 +26,13 @@
 #include "../../config.h"
 #endif
 
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
+#include "../font_driver.h"
 #include "../../ctr/gpu_old.h"
 #include "ctr_gu.h"
-
-#include "../../menu/menu_driver.h"
 
 #include "../../configuration.h"
 #include "../../command.h"
@@ -443,10 +446,14 @@ static void* ctr_init(const video_info_t* video,
    return ctr;
 }
 
+#if 0
+#define CTR_INSPECT_MEMORY_USAGE
+#endif
+
 static bool ctr_frame(void* data, const void* frame,
       unsigned width, unsigned height,
       uint64_t frame_count,
-      unsigned pitch, const char* msg, video_frame_info_t info)
+      unsigned pitch, const char* msg, video_frame_info_t *video_info)
 {
    uint32_t diff;
    static uint64_t currentTick,lastTick;
@@ -517,12 +524,16 @@ static bool ctr_frame(void* data, const void* frame,
 #ifndef HAVE_THREADS
    if(task_queue_ctl(TASK_QUEUE_CTL_FIND, &ctr_tasks_finder_data))
    {
-//      ctr->vsync_event_pending = true;
+#if 0
+      ctr->vsync_event_pending = true;
+#endif
       while(ctr->vsync_event_pending)
       {
          task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
          svcSleepThread(0);
-//         aptMainLoop();
+#if 0
+         aptMainLoop();
+#endif
       }
    }
 #endif
@@ -540,7 +551,6 @@ static bool ctr_frame(void* data, const void* frame,
       frames = 0;
    }
 
-//#define CTR_INSPECT_MEMORY_USAGE
 
 #ifdef CTR_INSPECT_MEMORY_USAGE
    uint32_t ctr_get_stack_usage(void);
@@ -560,12 +570,14 @@ static bool ctr_frame(void* data, const void* frame,
       if(query_addr == 0x1F000000)
          query_addr = 0x30000000;
    }
-//   static u32* dummy_pointer;
-//   if(total_frames == 500)
-//      dummy_pointer = malloc(0x2000000);
-//   if(total_frames == 1000)
-//      free(dummy_pointer);
 
+#if 0
+   static u32* dummy_pointer;
+   if(total_frames == 500)
+      dummy_pointer = malloc(0x2000000);
+   if(total_frames == 1000)
+      free(dummy_pointer);
+#endif
 
    printf("========================================");
    printf("0x%08X 0x%08X 0x%08X\n", __heap_size, gpuCmdBufOffset, (__linear_heap_size - linearSpaceFree()));
@@ -618,10 +630,12 @@ static bool ctr_frame(void* data, const void* frame,
          && (pitch > 0x40))
       {
          /* can copy the buffer directly with the GPU */
-//         GSPGPU_FlushDataCache(frame, pitch * height);
+#if 0
+         GSPGPU_FlushDataCache(frame, pitch * height);
+#endif
          ctrGuSetCommandList_First(true,(void*)frame, pitch * height,0,0,0,0);
          ctrGuCopyImage(true, frame, pitch / (ctr->rgb32? 4: 2), height, ctr->rgb32 ? CTRGU_RGBA8: CTRGU_RGB565, false,
-                        ctr->texture_swizzled, ctr->texture_width, ctr->rgb32 ? CTRGU_RGBA8: CTRGU_RGB565,  true);
+               ctr->texture_swizzled, ctr->texture_width, ctr->rgb32 ? CTRGU_RGBA8: CTRGU_RGB565,  true);
       }
       else
       {
@@ -659,7 +673,7 @@ static bool ctr_frame(void* data, const void* frame,
 
    ctr_check_3D_slider(ctr);
 
-//   /* ARGB --> RGBA */
+   /* ARGB --> RGBA  */
    if (ctr->rgb32)
    {
       GPU_SetTexEnv(0,
@@ -750,17 +764,17 @@ static bool ctr_frame(void* data, const void* frame,
       }
 
       ctr->msg_rendering_enabled = true;
-      menu_driver_ctl(RARCH_MENU_CTL_FRAME, NULL);
+      menu_driver_frame(video_info);
       ctr->msg_rendering_enabled = false;
 
    }
 
    if (msg)
-      font_driver_render_msg(NULL, msg, NULL);
+      font_driver_render_msg(video_info, NULL, msg, NULL);
 
-//   font_driver_render_msg(NULL, "TEST: 123 ABC àüî", NULL);
-
-
+#if 0
+   font_driver_render_msg(video_info, NULL, "TEST: 123 ABC àüî", NULL);
+#endif
 
    GPU_FinishDrawing();
    GPUCMD_Finalize();
@@ -781,7 +795,7 @@ static bool ctr_frame(void* data, const void* frame,
                            gfxTopRightFramebuffers[ctr->current_buffer_top], 240,CTRGU_RGB8, CTRGU_MULTISAMPLE_NONE);
 
 
-   // Swap buffers :
+   /* Swap buffers : */
    extern GSPGPU_FramebufferInfo topFramebufferInfo;
    extern u8* gfxSharedMemory;
    extern u8 gfxThreadID;
@@ -1092,14 +1106,16 @@ static void ctr_unload_texture(void *data, uintptr_t handle)
 }
 
 static void ctr_set_osd_msg(void *data, const char *msg,
-      const struct font_params *params, void *font)
+      const void *params, void *font)
 {
+   video_frame_info_t video_info;
    ctr_video_t* ctr = (ctr_video_t*)data;
 
-   if (ctr && ctr->msg_rendering_enabled)
-      font_driver_render_msg(font, msg, params);
-}
+   video_driver_build_info(&video_info);
 
+   if (ctr && ctr->msg_rendering_enabled)
+      font_driver_render_msg(&video_info, font, msg, params);
+}
 
 static const video_poke_interface_t ctr_poke_interface = {
    ctr_load_texture,

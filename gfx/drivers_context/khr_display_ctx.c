@@ -74,10 +74,9 @@ error:
 }
 
 static void gfx_ctx_khr_display_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
+      bool *resize, unsigned *width, unsigned *height)
 {
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
-   (void)frame_count;
 
    *resize = khr->vk.need_new_swapchain;
 
@@ -110,21 +109,8 @@ static bool gfx_ctx_khr_display_set_resize(void *data,
    return false;
 }
 
-static void gfx_ctx_khr_display_update_window_title(void *data, video_frame_info_t video_info)
-{
-   char buf[128];
-   char buf_fps[128];
-
-   buf[0] = buf_fps[0]  = '\0';
-
-   video_monitor_get_fps(video_info, buf, sizeof(buf),
-         buf_fps, sizeof(buf_fps));
-   if (video_info.fps_show)
-      runloop_msg_queue_push(buf_fps, 1, 1, false);
-}
-
 static bool gfx_ctx_khr_display_set_video_mode(void *data,
-      video_frame_info_t video_info,
+      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -184,12 +170,6 @@ static bool gfx_ctx_khr_display_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool gfx_ctx_khr_display_has_windowed(void *data)
-{
-   (void)data;
-   return false;
-}
-
 static void gfx_ctx_khr_display_set_swap_interval(void *data, unsigned swap_interval)
 {
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
@@ -201,7 +181,7 @@ static void gfx_ctx_khr_display_set_swap_interval(void *data, unsigned swap_inte
    }
 }
 
-static void gfx_ctx_khr_display_swap_buffers(void *data, video_frame_info_t video_info)
+static void gfx_ctx_khr_display_swap_buffers(void *data, video_frame_info_t *video_info)
 {
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
    vulkan_present(&khr->vk, khr->vk.context.current_swapchain_index);
@@ -243,12 +223,12 @@ const gfx_ctx_driver_t gfx_ctx_khr_display = {
    NULL, /* get_video_output_next */
    NULL, /* get_metrics */
    NULL,
-   gfx_ctx_khr_display_update_window_title,
+   NULL, /* update_title */
    gfx_ctx_khr_display_check_window,
    gfx_ctx_khr_display_set_resize,
    gfx_ctx_khr_display_has_focus,
    gfx_ctx_khr_display_suppress_screensaver,
-   gfx_ctx_khr_display_has_windowed,
+   NULL, /* has_windowed */
    gfx_ctx_khr_display_swap_buffers,
    gfx_ctx_khr_display_input_driver,
    gfx_ctx_khr_display_get_proc_address,

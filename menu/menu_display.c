@@ -240,9 +240,10 @@ void menu_display_font_bind_block(font_data_t *font, void *block)
    font_driver_bind_block(font, block);
 }
 
-bool menu_display_font_flush_block(font_data_t *font)
+bool menu_display_font_flush_block(unsigned width, unsigned height,
+      font_data_t *font)
 {
-   font_driver_flush(font);
+   font_driver_flush(width, height, font);
    font_driver_bind_block(font, NULL);
    return true;
 }
@@ -397,17 +398,13 @@ bool menu_display_get_update_pending(void)
    return false;
 }
 
-void menu_display_set_viewport(void)
+void menu_display_set_viewport(unsigned width, unsigned height)
 {
-   unsigned width, height;
-   video_driver_get_size(&width, &height);
    video_driver_set_viewport(width, height, true, false);
 }
 
-void menu_display_unset_viewport(void)
+void menu_display_unset_viewport(unsigned width, unsigned height)
 {
-   unsigned width, height;
-   video_driver_get_size(&width, &height);
    video_driver_set_viewport(width, height, false, true);
 }
 
@@ -498,7 +495,8 @@ void menu_display_draw_pipeline(menu_display_ctx_draw_t *draw)
    menu_disp->draw_pipeline(draw);
 }
 
-void menu_display_draw_bg(menu_display_ctx_draw_t *draw, bool add_opacity_to_wallpaper)
+void menu_display_draw_bg(menu_display_ctx_draw_t *draw, 
+      video_frame_info_t *video_info, bool add_opacity_to_wallpaper)
 {
    static struct video_coords coords;
    const float *new_vertex       = NULL;
@@ -522,14 +520,11 @@ void menu_display_draw_bg(menu_display_ctx_draw_t *draw, bool add_opacity_to_wal
 
    draw->coords      = &coords;
 
-   if (!menu_display_libretro_running() && !draw->pipeline.active)
+   if (!video_info->libretro_running && !draw->pipeline.active)
       add_opacity_to_wallpaper = true;
 
    if (add_opacity_to_wallpaper)
-   {
-      settings_t *settings          = config_get_ptr();
-      menu_display_set_alpha(draw->color, settings->menu.wallpaper.opacity);
-   }
+      menu_display_set_alpha(draw->color, video_info->menu_wallpaper_opacity);
 
    if (!draw->texture)
       draw->texture     = menu_display_white_texture;
@@ -537,13 +532,14 @@ void menu_display_draw_bg(menu_display_ctx_draw_t *draw, bool add_opacity_to_wal
    draw->matrix_data = (math_matrix_4x4*)menu_disp->get_default_mvp();
 }
 
-void menu_display_draw_gradient(menu_display_ctx_draw_t *draw)
+void menu_display_draw_gradient(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info)
 {
    draw->texture       = 0;
    draw->x             = 0;
    draw->y             = 0;
 
-   menu_display_draw_bg(draw, false);
+   menu_display_draw_bg(draw, video_info, false);
    menu_display_draw(draw);
 }
 

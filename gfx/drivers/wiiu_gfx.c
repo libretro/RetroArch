@@ -13,20 +13,31 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <string.h>
+#include <coreinit/screen.h>
+#include <coreinit/cache.h>
+
 #include "../../driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
 #include "performance_counters.h"
 
-#include <string.h>
-#include <coreinit/screen.h>
-#include <coreinit/cache.h>
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
 #include "gx2.h"
 #include "system/memory.h"
 #include "system/wiiu.h"
 #include "tex_shader.h"
 
 #include "wiiu_dbg.h"
+
+#include "../font_driver.h"
 
 #define _X 0x00
 #define _Y 0x01
@@ -127,16 +138,16 @@ static wiiu_set_position(position_t* position, GX2ColorBuffer* draw_buffer, floa
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, position, 4 * sizeof(*position));
 }
 
-static void wiiu_set_tex_coords(tex_coord_t* tex_coord, GX2Texture* texture, float u0, float v0, float u1, float v1)
+static void wiiu_set_tex_coords(tex_coord_t* tex_coord, GX2Texture* texture, float u0, float v0, float u1, float v1, unsigned rotation)
 {
-   tex_coord[0].u = u0 / texture->surface.width;
-   tex_coord[0].v = (v1 / texture->surface.height);
-   tex_coord[1].u = u1 / texture->surface.width;
-   tex_coord[1].v = (v1 / texture->surface.height);
-   tex_coord[2].u = u1 / texture->surface.width;
-   tex_coord[2].v = (v0 / texture->surface.height);
-   tex_coord[3].u = u0 / texture->surface.width;
-   tex_coord[3].v = (v0 / texture->surface.height);
+   tex_coord[((0 + rotation) % 4)].u = u0 / texture->surface.width;
+   tex_coord[((0 + rotation) % 4)].v = (v1 / texture->surface.height);
+   tex_coord[((1 + rotation) % 4)].u = u1 / texture->surface.width;
+   tex_coord[((1 + rotation) % 4)].v = (v1 / texture->surface.height);
+   tex_coord[((2 + rotation) % 4)].u = u1 / texture->surface.width;
+   tex_coord[((2 + rotation) % 4)].v = (v0 / texture->surface.height);
+   tex_coord[((3 + rotation) % 4)].u = u0 / texture->surface.width;
+   tex_coord[((3 + rotation) % 4)].v = (v0 / texture->surface.height);
 
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, tex_coord, 4 * sizeof(*tex_coord));
 }
@@ -396,7 +407,7 @@ static void* wiiu_gfx_init(const video_info_t* video,
 
    wiiu->tex_coord = MEM2_alloc(4 * sizeof(*wiiu->tex_coord), GX2_VERTEX_BUFFER_ALIGNMENT);
    wiiu_set_tex_coords(wiiu->tex_coord, &wiiu->texture, 0, 0,
-         wiiu->texture.surface.width, wiiu->texture.surface.height);
+         wiiu->texture.surface.width, wiiu->texture.surface.height, wiiu->rotation);
 
    GX2SetAttribBuffer(0, 4 * sizeof(*wiiu->position), sizeof(*wiiu->position), wiiu->position);
    GX2SetAttribBuffer(1, 4 * sizeof(*wiiu->tex_coord), sizeof(*wiiu->tex_coord), wiiu->tex_coord);
@@ -407,7 +418,7 @@ static void* wiiu_gfx_init(const video_info_t* video,
 
    wiiu->menu.tex_coord = MEM2_alloc(4 * sizeof(*wiiu->menu.tex_coord), GX2_VERTEX_BUFFER_ALIGNMENT);
    wiiu_set_tex_coords(wiiu->menu.tex_coord, &wiiu->menu.texture, 0, 0,
-         wiiu->menu.texture.surface.width, wiiu->menu.texture.surface.height);
+         wiiu->menu.texture.surface.width, wiiu->menu.texture.surface.height, 0);
 
    /* init frame texture */
    memset(&wiiu->texture, 0, sizeof(GX2Texture));
@@ -550,7 +561,7 @@ static void wiiu_gfx_free(void* data)
 
 static bool wiiu_gfx_frame(void* data, const void* frame,
       unsigned width, unsigned height, uint64_t frame_count,
-      unsigned pitch, const char* msg, video_frame_info_t video_info)
+      unsigned pitch, const char* msg, video_frame_info_t *video_info)
 {
    (void)msg;
    int i;
@@ -656,7 +667,7 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
 
       GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, wiiu->texture.surface.image,
                     wiiu->texture.surface.imageSize);
-      wiiu_set_tex_coords(wiiu->tex_coord, &wiiu->texture, 0, 0, width, height);
+      wiiu_set_tex_coords(wiiu->tex_coord, &wiiu->texture, 0, 0, width, height, wiiu->rotation);
    }
 
    GX2SetAttribBuffer(0, 4 * sizeof(*wiiu->position), sizeof(*wiiu->position), wiiu->position);
@@ -667,6 +678,10 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
                       wiiu->shader->sampler.location);
 
    GX2DrawEx(GX2_PRIMITIVE_MODE_QUADS, 4, 0, 1);
+
+#ifdef HAVE_MENU
+   menu_driver_frame(video_info);
+#endif
 
    if (wiiu->menu.enable)
    {
@@ -821,8 +836,8 @@ static void wiiu_gfx_set_texture_frame(void* data, const void* frame, bool rgb32
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, wiiu->menu.texture.surface.image,
                  wiiu->menu.texture.surface.imageSize);
 
-   wiiu_set_tex_coords(wiiu->menu.tex_coord, &wiiu->menu.texture, 0, 0, width, height);
-//   wiiu_set_tex_coords(wiiu->menu.tex_coord, &wiiu->menu.texture, 0, 0, wiiu->menu.texture.surface.width, wiiu->menu.texture.surface.height);
+   wiiu_set_tex_coords(wiiu->menu.tex_coord, &wiiu->menu.texture, 0, 0, width, height, 0);
+//   wiiu_set_tex_coords(wiiu->menu.tex_coord, &wiiu->menu.texture, 0, 0, wiiu->menu.texture.surface.width, wiiu->menu.texture.surface.height, 0);
 }
 
 static void wiiu_gfx_set_texture_enable(void* data, bool state, bool full_screen)

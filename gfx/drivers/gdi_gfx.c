@@ -17,10 +17,19 @@
 
 #include <retro_miscellaneous.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
+#include "../font_driver.h"
+
 #include "../../driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
-#include "../../menu/menu_driver.h"
 #include "../common/gdi_common.h"
 
 #if defined(_WIN32) && !defined(_XBOX)
@@ -146,7 +155,7 @@ error:
 
 static bool gdi_gfx_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height, uint64_t frame_count,
-      unsigned pitch, const char *msg, video_frame_info_t video_info)
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    gfx_ctx_mode_t mode;
    RECT rect;
@@ -162,7 +171,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       return true;
 
 #ifdef HAVE_MENU
-   menu_driver_ctl(RARCH_MENU_CTL_FRAME, NULL);
+   menu_driver_frame(video_info);
 #endif
 
    if (gdi_video_width != frame_width || gdi_video_height != frame_height || gdi_video_pitch != pitch)
@@ -246,7 +255,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    }
 
    if (msg)
-      font_driver_render_msg(NULL, msg, NULL);
+      font_driver_render_msg(video_info, NULL, msg, NULL);
 
    InvalidateRect(hwnd, NULL, false);
 
@@ -384,9 +393,11 @@ static void gdi_set_texture_frame(void *data,
 }
 
 static void gdi_set_osd_msg(void *data, const char *msg,
-      const struct font_params *params, void *font)
+      const void *params, void *font)
 {
-   font_driver_render_msg(font, msg, params);
+   video_frame_info_t video_info;
+   video_driver_build_info(&video_info);
+   font_driver_render_msg(&video_info, font, msg, params);
 }
 
 static void gdi_get_video_output_size(void *data,
