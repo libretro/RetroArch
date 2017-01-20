@@ -28,9 +28,9 @@
 #include "../../input/input_driver.h"
 #include "../../runloop.h"
 
-#include "tasks/tasks_internal.h"
+#include "../../tasks/tasks_internal.h"
 #include <file/file_path.h>
-#include "file_path_special.h"
+#include "../../file_path_special.h"
 #include "paths.h"
 
 /* Only used before init_netplay */
@@ -553,7 +553,7 @@ bool netplay_pre_frame(netplay_t *netplay)
 {
    bool sync_stalled;
    reannounce ++;
-   if (reannounce % 3600 == 0)
+   if (netplay->is_server && (reannounce % 3600 == 0))
       netplay_announce();
    retro_assert(netplay);
 
