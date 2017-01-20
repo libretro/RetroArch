@@ -421,11 +421,9 @@ static const char *xmb_thumbnails_ident(void)
    return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
 }
 
-static float *xmb_gradient_ident(void)
+static float *xmb_gradient_ident(video_frame_info_t *video_info)
 {
-   settings_t *settings = config_get_ptr();
-
-   switch (settings->menu.xmb.menu_color_theme)
+   switch (video_info->xmb_color_theme)
    {
       case XMB_THEME_DARK_PURPLE:
          return &gradient_dark_purple[0];
@@ -2398,11 +2396,11 @@ static void xmb_render(void *data)
    menu_animation_ctl(MENU_ANIMATION_CTL_CLEAR_ACTIVE, NULL);
 }
 
-static bool xmb_shader_pipeline_active(settings_t *settings)
+static bool xmb_shader_pipeline_active(video_frame_info_t *video_info)
 {
    if (!string_is_equal(menu_driver_ident(), "xmb"))
       return false;
-   if (settings->menu.xmb.shader_pipeline == XMB_SHADER_PIPELINE_WALLPAPER)
+   if (video_info->menu_shader_pipeline == XMB_SHADER_PIPELINE_WALLPAPER)
       return false;
    return true;
 }
@@ -2418,7 +2416,6 @@ static void xmb_draw_bg(
       float *coord_white)
 {
    menu_display_ctx_draw_t draw;
-   settings_t *settings = config_get_ptr();
 
 #if 0
    RARCH_LOG("DRAW BG %d %d \n",width,height);
@@ -2437,17 +2434,17 @@ static void xmb_draw_bg(
    draw.vertex_count         = 4;
    draw.prim_type            = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline.id          = 0;
-   draw.pipeline.active      = xmb_shader_pipeline_active(settings);
+   draw.pipeline.active      = xmb_shader_pipeline_active(video_info);
 
    menu_display_blend_begin();
    menu_display_set_viewport(video_info->width, video_info->height);
 
 #ifdef HAVE_SHADERPIPELINE
-   if (settings->menu.xmb.shader_pipeline > XMB_SHADER_PIPELINE_WALLPAPER
+   if (video_info->menu_shader_pipeline > XMB_SHADER_PIPELINE_WALLPAPER
          &&
-         (settings->menu.xmb.menu_color_theme != XMB_THEME_WALLPAPER))
+         (video_info->xmb_color_theme != XMB_THEME_WALLPAPER))
    {
-      draw.color = xmb_gradient_ident();
+      draw.color = xmb_gradient_ident(video_info);
 
       if (running)
          menu_display_set_alpha(draw.color, coord_black[3]);
@@ -2458,7 +2455,7 @@ static void xmb_draw_bg(
 
       draw.pipeline.id = VIDEO_SHADER_MENU_2;
 
-      switch (settings->menu.xmb.shader_pipeline)
+      switch (video_info->menu_shader_pipeline)
       {
          case XMB_SHADER_PIPELINE_RIBBON:
             draw.pipeline.id  = VIDEO_SHADER_MENU;
@@ -2483,15 +2480,15 @@ static void xmb_draw_bg(
    {
       uintptr_t texture           = draw.texture;
 
-      if (settings->menu.xmb.menu_color_theme != XMB_THEME_WALLPAPER)
-         draw.color = xmb_gradient_ident();
+      if (video_info->xmb_color_theme != XMB_THEME_WALLPAPER)
+         draw.color = xmb_gradient_ident(video_info);
 
       if (running)
          menu_display_set_alpha(draw.color, coord_black[3]);
       else
          menu_display_set_alpha(draw.color, coord_white[3]);
 
-      if (settings->menu.xmb.menu_color_theme != XMB_THEME_WALLPAPER)
+      if (video_info->xmb_color_theme != XMB_THEME_WALLPAPER)
          menu_display_draw_gradient(&draw, video_info);
 
       {
@@ -2502,7 +2499,7 @@ static void xmb_draw_bg(
          if (!running && draw.texture)
             draw.color = &coord_white[0];
 
-         if (settings->menu.xmb.menu_color_theme == XMB_THEME_WALLPAPER)
+         if (video_info->xmb_color_theme == XMB_THEME_WALLPAPER)
             add_opacity = true;
 
          menu_display_draw_bg(&draw, video_info, add_opacity);
@@ -2567,13 +2564,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    bool render_background                  = false;
    file_list_t *selection_buf              = NULL;
    file_list_t *menu_stack                 = NULL;
-   settings_t   *settings                  = config_get_ptr();
    xmb_handle_t *xmb                       = (xmb_handle_t*)data;
 
    if (!xmb)
       return;
 
-   menu_disp_info.shadows_enable           = settings->menu.xmb.shadows_enable;
+   menu_disp_info.shadows_enable           = video_info->xmb_shadows_enable;
 
    msg[0]             = '\0';
    title_msg[0]       = '\0';
@@ -2593,7 +2589,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    }
 
    menu_display_set_alpha(coord_black, MIN(
-         (float)settings->menu.xmb.alpha_factor/100, xmb->alpha));
+         (float)video_info->xmb_alpha_factor/100, xmb->alpha));
    menu_display_set_alpha(coord_white, xmb->alpha);
 
    xmb_draw_bg(
@@ -2637,7 +2633,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    /* Clock image */
    menu_display_set_alpha(coord_white, MIN(xmb->alpha, 1.00f));
 
-   if (settings->menu.battery_level_enable)
+   if (video_info->battery_level_enable)
    {
       char msg[12];
       static retro_time_t last_time  = 0;
@@ -2690,33 +2686,33 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       }
    }
 
-   if (settings->menu.timedate_enable && coord_white[3] != 0)
-   {
-      int x_pos = 0;
-
-      if (percent_width)
-         x_pos = percent_width + (xmb->icon.size / 2.5);
-
-      xmb_draw_icon(
-            menu_disp_info,
-            xmb->icon.size,
-            &mymat,
-            xmb->textures.list[XMB_TEXTURE_CLOCK],
-            width - xmb->icon.size - x_pos,
-            xmb->icon.size,width,
-            height,
-            1,
-            0,
-            1,
-            &coord_white[0],
-            xmb->shadow_offset);
-   }
-
-   if (settings->menu.timedate_enable)
+   if (video_info->timedate_enable)
    {
       menu_display_ctx_datetime_t datetime;
       char timedate[255];
       int x_pos = 0;
+
+      if (coord_white[3] != 0)
+      {
+         int x_pos = 0;
+
+         if (percent_width)
+            x_pos = percent_width + (xmb->icon.size / 2.5);
+
+         xmb_draw_icon(
+               menu_disp_info,
+               xmb->icon.size,
+               &mymat,
+               xmb->textures.list[XMB_TEXTURE_CLOCK],
+               width - xmb->icon.size - x_pos,
+               xmb->icon.size,width,
+               height,
+               1,
+               0,
+               1,
+               &coord_white[0],
+               xmb->shadow_offset);
+      }
 
       timedate[0]        = '\0';
 

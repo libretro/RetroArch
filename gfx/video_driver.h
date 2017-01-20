@@ -114,6 +114,15 @@ typedef struct video_frame_info
    float font_msg_color_b;
    bool use_rgba;
    bool libretro_running;
+
+   bool xmb_shadows_enable;
+   float xmb_alpha_factor;
+   unsigned xmb_theme;
+   unsigned xmb_color_theme;
+   unsigned menu_shader_pipeline;
+
+   bool battery_level_enable;
+   bool timedate_enable;
 } video_frame_info_t;
 
 /* Optionally implemented interface to poke more

@@ -2283,11 +2283,27 @@ void video_driver_build_info(video_frame_info_t *video_info)
 
    video_info->libretro_running       = false;
 #ifdef HAVE_MENU
+   video_info->menu_shader_pipeline   = settings->menu.xmb.shader_pipeline;
+   video_info->xmb_theme              = settings->menu.xmb.theme;
+   video_info->xmb_color_theme        = settings->menu.xmb.menu_color_theme;
+   video_info->timedate_enable        = settings->menu.timedate_enable;
+   video_info->battery_level_enable   = settings->menu.battery_level_enable;
+   video_info->xmb_shadows_enable     = settings->menu.xmb.shadows_enable;
+   video_info->xmb_alpha_factor       = settings->menu.xmb.alpha_factor;
    video_info->menu_wallpaper_opacity = settings->menu.wallpaper.opacity;
 
    if (!settings->menu.pause_libretro)
       video_info->libretro_running    = (rarch_ctl(RARCH_CTL_IS_INITED, NULL)
             && !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL));
+#else
+   video_info->menu_shader_pipeline   = 0;
+   video_info->xmb_color_theme        = 0;
+   video_info->xmb_theme              = 0;
+   video_info->timedate_enable        = false;
+   video_info->battery_level_enable   = false;
+   video_info->xmb_shadows_enable     = false;
+   video_info->xmb_alpha_factor       = 0.0f;
+   video_info->menu_wallpaper_opacity = 0.0f;
 #endif
    video_driver_threaded_unlock();
 }
