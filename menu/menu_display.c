@@ -524,10 +524,7 @@ void menu_display_draw_bg(menu_display_ctx_draw_t *draw,
       add_opacity_to_wallpaper = true;
 
    if (add_opacity_to_wallpaper)
-   {
-      settings_t *settings          = config_get_ptr();
-      menu_display_set_alpha(draw->color, settings->menu.wallpaper.opacity);
-   }
+      menu_display_set_alpha(draw->color, video_info->menu_wallpaper_opacity);
 
    if (!draw->texture)
       draw->texture     = menu_display_white_texture;
