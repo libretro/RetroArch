@@ -2279,7 +2279,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->width                 = video_driver_width;
    video_info->height                = video_driver_height;
 
-   video_info->use_rgba              = video_driver_supports_rgba();
+   video_info->use_rgba              = video_driver_use_rgba;
 
    video_info->libretro_running       = false;
 #ifdef HAVE_MENU
