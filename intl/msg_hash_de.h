@@ -197,7 +197,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_FALSE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
       "Maximale Ausführungsgeschwindigkeit")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FPS_SHOW,
-      "Zeige Bildwiederholungsrate")
+      "Zeige Bildwiederholrate")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_ENABLE,
       "Begrenze maximale Ausführungsgeschwindigkeit")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
@@ -617,7 +617,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE,
       "stdin-Befehle")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
-      "Bildschirmschoner aussetzen")
+      "Bildschirmschoner ausschalten")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE,
       "Aktiviere System-BGM")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY,
@@ -795,9 +795,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_AUTO,
       "Automatisches Bildseitenverhältnis")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
-      "Bildseitenverhältnis")
+      "Video-Seitenverhältnis")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
-      "Setze schwarze Frames ein")
+      "Setze schwarzes Bild zwischen Frames ein")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
       "Bildränder (Overscan) zuschneiden (Neustart erforderlich)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
@@ -823,7 +823,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
       "Bildverzögerung")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
-      "Verwende Vollbildmodus")
+      "Vollbildmodus")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA,
       "Gamma")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
@@ -834,12 +834,14 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
       "Synchronisiere GPU und CPU")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
       "Synchronisiere Frames fest mit GPU")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
+      "Maximale Anzahl der Wechselkettenbilder")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
       "X-Position der OSD-Nachrichten")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
       "Y-Position der OSD-Nachrichten")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
-      "Monitor-Index")
+      "Monitorindex")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD,
       "Aktiviere Aufnahme von Post-Filtern")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
@@ -892,6 +894,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
       "Kalibriere VI-Bildbreite")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
       "Vertikale Synchronisation (VSync)")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+      "Fensterhöhe")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+      "Fensterbreite")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
       "Unechter Vollbild-Modus (Windowed Fullscreen)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
@@ -912,8 +918,25 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_VIDEO,
       "Zeige Videos")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_YES,
       "Ja")
+MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
+      "Aktiviert den Audioausgang.")
+MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
+      "Gewünschte Audiolatenz in Millisekunden. Je nach Audiotreiber kann die gewünschte Latenz nicht erzielt werden.")
+MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
+      "Die maximale Änderung der Audioeingangsleistung. "
+      "Wenn du PAL Cores auf NTSC Monitoren spielen willst, kannst du diesen Wert erhöhen um bessere Timings zu erreichen, "
+      "als Nebeneffekt kann es zu unechten Tonhöhen kommen.")
+MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_MUTE,
+      "Audio Stummschalten.")
+MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
+      "Hilft Fehler bei der Audio- und Videosynchronisierung auszubügeln. "
+      "Wenn deaktiviert, ist eine brauchbare Synchronisation nahezu unmöglich.")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
       "Einstellungen zur Audioausgabe.")
+MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_SYNC,
+      "Synchronisiert Audio. Empfohlen.")
+MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
+      "Lautstärkeverstärkung in dB.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
       "Ändere die Standardeinstellungen für Konfigurationsdateien.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
@@ -928,6 +951,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
       "Ändere Treiber für dieses System.")
 MSG_HASH(MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
       "Ändere die Einstellungen für Rückspulen, Zeitraffer, und Zeitlupe.") /* This does not sound like a correct sentence. Suggestions are appreciated. */
+MSG_HASH(MENU_ENUM_SUBLABEL_FPS_SHOW,
+      "Zeigt die aktuelle Bildwiederholrate auf dem Bildschirm an.")
 MSG_HASH(MENU_ENUM_SUBLABEL_HELP_LIST,
       "Erfahre mehr derüber wie Retroarch funktioniert.")
 MSG_HASH(MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
@@ -960,16 +985,44 @@ MSG_HASH(MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
       "Ändere die Einstellungen der Errungenschaften.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
       "Ändere die Einstellungen der Spielstände.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
+      "Haltet dein System davon ab den Bildschirmschoner zu aktivieren.")
 MSG_HASH(MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
       "Ändere die Einstellungen der Benutzeroberfläche.")
 MSG_HASH(MENU_ENUM_SUBLABEL_USER_SETTINGS,
       "Ändere das Konto, Benutzername, und die Sprache.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
+      "Zeigt ein schwarzes Bild zwischen Frames an. Nützlich für 120 Hz Monitore welche 60 Hz mit weniger 'ghosting' möchten.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
       "Enable or disable composition (Windows only).")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
       "Show onscreen messages.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
+      "Reduziert Latenz, kann aber zu Anzeigefehlern führen. Fügt einen Unterbruch bei V-Sync hinzu (in ms).")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+      "Hartsynchronisierung des CPU und der GPU. Reduziert Latenz, braucht aber mehr Leistung.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
+      "Anzahl Bilder welche die CPU der GPU voraus sein darf wenn die 'Hartsynchronisierung' verwendet wird.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+      "Zwingt den Videotreiber explizit einen bestimmten Puffer zu verwenden.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
+      "Wählt den Monitor aus welcher RetroArch anzeigen soll.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
+      "Vertikale Bildwiederholrate des Monitors. "
+      "Wird verwendet um die passende Audioinputrate zu berechnen. "
+      "WICHTIG: Diese Option wird ignoriert wenn du 'Threaded Video' aktiviert hast.") /* TODO: Any way to inject the reference in the .h file? */
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
+      "Die genau geschätzte Bildwiederholrate des Monitors in Hz.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
       "Einstellungen zur Videoausgabe.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_THREADED,
+      "Verbessert die Leistung, führt aber zu grösserer Latenz und Videoproblemen. "
+      "Verwende dies nur wenn du sonst die gewünschte Leistung erbringst.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+      "Synchronisiert den Video-Output der Grafikkarte zu der Bildwiederholrate des Monitors. Empfohlen.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
+      "Setzt die Fenstergrösse relativ zu der Core-Fenstergrösse. "
+      "Alternativ kannst du die Fenstergrösse weiter unten setzten für eine konstante Grösse.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
       "Zurück")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
