@@ -3347,7 +3347,7 @@ finish:
                "Core:             %s\n"
                "Core Version:     %s\n"
                "Game:             %s\n"
-               "Game CRC:         %d\n"
+               "Game CRC:         %08x\n"
                "Timestamp:        %d\n", room_data->elems[j + 6].data,
                netplay_room_list[i].nickname,
                netplay_room_list[i].address,
