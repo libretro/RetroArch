@@ -918,8 +918,18 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_VIDEO,
       "Zeige Videos")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_YES,
       "Ja")
+MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
+      "Aktiviert den Audioausgang.")
+MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
+      "Gewünschte Audiolatenz in Millisekunden. Je nach Audiotreiber kann die gewünschte Latenz nicht erzielt werden.")
+MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_MUTE,
+      "Audio Stummschalten.")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
       "Einstellungen zur Audioausgabe.")
+MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_SYNC,
+      "Synchronisiert Audio. Empfohlen.")
+MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
+      "Lautstärkeverstärkung in dB.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
       "Ändere die Standardeinstellungen für Konfigurationsdateien.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
