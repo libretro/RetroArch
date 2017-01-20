@@ -63,10 +63,10 @@ joypad_connection_t *pad_connection_init(unsigned pads);
 void pad_connection_destroy(joypad_connection_t *joyconn);
 
 void pad_connection_pad_deinit(joypad_connection_t *joyconn,
-   unsigned idx);
+   uint32_t idx);
 
 void pad_connection_packet(joypad_connection_t *joyconn,
-   unsigned idx, uint8_t* data, uint32_t length);
+   uint32_t idx, uint8_t* data, uint32_t length);
 
 uint64_t pad_connection_get_buttons(joypad_connection_t *joyconn,
    unsigned idx);
