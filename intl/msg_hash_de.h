@@ -797,7 +797,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_AUTO,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
       "Video-Seitenverhältnis")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
-      "Setze schwarze Frames ein")
+      "Setze schwarzes Bild zwischen Frames ein")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
       "Bildränder (Overscan) zuschneiden (Neustart erforderlich)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
@@ -974,12 +974,18 @@ MSG_HASH(MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
       "Ändere die Einstellungen der Benutzeroberfläche.")
 MSG_HASH(MENU_ENUM_SUBLABEL_USER_SETTINGS,
       "Ändere das Konto, Benutzername, und die Sprache.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
+      "Zeigt ein schwarzes Bild zwischen Frames an. Nützlich für 120 Hz Monitore welche 60 Hz mit weniger 'ghosting' möchten.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
       "Enable or disable composition (Windows only).")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
       "Show onscreen messages.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
+      "Reduziert Latenz, kann aber zu Anzeigefehlern führen. Fügt einen Unterbruch bei V-Sync hinzu (in ms).")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
       "Hartsynchronisierung des CPU und der GPU. Reduziert Latenz, braucht aber mehr Leistung.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
+      "Anzahl Bilder welche die CPU der GPU voraus sein darf wenn die 'Hartsynchronisierung' verwendet wird.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
       "Zwingt den Videotreiber explizit einen bestimmten Puffer zu verwenden.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
@@ -987,7 +993,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
       "Vertikale Bildwiederholrate des Monitors. "
       "Wird verwendet um die passende Audioinputrate zu berechnen. "
-      "WICHTIG: Diese Option wird ignoriert wenn du 'Threaded Video' aktiviert hast.") // TODO: Any way to inject the reference in the .h file?
+      "WICHTIG: Diese Option wird ignoriert wenn du 'Threaded Video' aktiviert hast.") /* TODO: Any way to inject the reference in the .h file? */
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
       "Die genau geschätzte Bildwiederholrate des Monitors in Hz.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
