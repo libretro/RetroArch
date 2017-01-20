@@ -737,13 +737,11 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
    else
 #endif
    {
-      bool use_rgba = video_driver_supports_rgba();
-
       glPixelStorei(GL_UNPACK_ALIGNMENT,
             video_pixel_get_alignment(width * gl->base_size));
 
       /* Fallback for GLES devices without GL_BGRA_EXT. */
-      if (gl->base_size == 4 && use_rgba)
+      if (gl->base_size == 4 && video_info->use_rgba)
       {
          video_frame_convert_argb8888_to_abgr8888(
                &gl->scaler,

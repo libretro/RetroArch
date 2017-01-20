@@ -111,6 +111,7 @@ typedef struct video_frame_info
    float font_msg_color_r;
    float font_msg_color_g;
    float font_msg_color_b;
+   bool use_rgba;
 } video_frame_info_t;
 
 /* Optionally implemented interface to poke more
