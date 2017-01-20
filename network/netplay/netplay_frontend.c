@@ -409,7 +409,7 @@ static void netplay_announce()
    content_get_crc(&content_crc_ptr);
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
-   char url [2048] = "http://lobby.libretro.com/?";
+   char url [2048] = "http://lobby.libretro.com/raw/?";
    char buf [2048];
    buf[0] = '\0';
 
