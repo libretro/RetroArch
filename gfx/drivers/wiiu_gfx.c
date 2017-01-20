@@ -418,7 +418,7 @@ static void* wiiu_gfx_init(const video_info_t* video,
 
    wiiu->menu.tex_coord = MEM2_alloc(4 * sizeof(*wiiu->menu.tex_coord), GX2_VERTEX_BUFFER_ALIGNMENT);
    wiiu_set_tex_coords(wiiu->menu.tex_coord, &wiiu->menu.texture, 0, 0,
-         wiiu->menu.texture.surface.width, wiiu->menu.texture.surface.height, wiiu->rotation);
+         wiiu->menu.texture.surface.width, wiiu->menu.texture.surface.height, 0);
 
    /* init frame texture */
    memset(&wiiu->texture, 0, sizeof(GX2Texture));
@@ -836,8 +836,8 @@ static void wiiu_gfx_set_texture_frame(void* data, const void* frame, bool rgb32
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, wiiu->menu.texture.surface.image,
                  wiiu->menu.texture.surface.imageSize);
 
-   wiiu_set_tex_coords(wiiu->menu.tex_coord, &wiiu->menu.texture, 0, 0, width, height, wiiu->rotation);
-//   wiiu_set_tex_coords(wiiu->menu.tex_coord, &wiiu->menu.texture, 0, 0, wiiu->menu.texture.surface.width, wiiu->menu.texture.surface.height, wiiu->rotation);
+   wiiu_set_tex_coords(wiiu->menu.tex_coord, &wiiu->menu.texture, 0, 0, width, height, 0);
+//   wiiu_set_tex_coords(wiiu->menu.tex_coord, &wiiu->menu.texture, 0, 0, wiiu->menu.texture.surface.width, wiiu->menu.texture.surface.height, 0);
 }
 
 static void wiiu_gfx_set_texture_enable(void* data, bool state, bool full_screen)
