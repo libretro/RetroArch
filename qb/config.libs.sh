@@ -152,6 +152,11 @@ else
    add_define_make MAN_DIR "${PREFIX}/share/man"
 fi
 
+if [ "$OS" = 'DOS' ]; then
+   HAVE_SHADERPIPELINE=no
+   HAVE_LANGEXTRA=no
+fi
+
 if [ "$OS" = 'Win32' ]; then
    HAVE_THREADS=yes
    HAVE_THREAD_STORAGE=yes
