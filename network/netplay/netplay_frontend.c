@@ -21,6 +21,7 @@
 #include <boolean.h>
 #include <compat/strl.h>
 #include <retro_assert.h>
+#include <string/stdstring.h>
 
 #include "netplay_private.h"
 
@@ -42,6 +43,11 @@ static netplay_t *netplay_data = NULL;
 
 /* Used to avoid recursive netplay calls */
 static bool in_netplay = false;
+
+/* Used for deferred netplay initialization */
+static bool      netplay_client_deferred = false;
+static char      server_address_deferred[512] = "";
+static unsigned  server_port_deferred = 0;
 
 /**
  * netplay_is_alive:
@@ -155,6 +161,22 @@ static bool get_self_input_state(netplay_t *netplay)
 
    return true;
 }
+
+bool init_netplay_deferred(const char* server, unsigned port)
+{
+   
+   RARCH_LOG("deferred! %s\n", server);
+   if (!string_is_empty(server) && port != 0)
+   {
+      strlcpy(server_address_deferred, server, sizeof(server_address_deferred));
+      server_port_deferred = port;
+      netplay_client_deferred = true;
+   }
+   else
+      netplay_client_deferred = false;
+   return netplay_client_deferred;
+}
+
 
 /**
  * netplay_poll:
@@ -924,7 +946,7 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
 
    netplay_data = (netplay_t*)netplay_new(
          netplay_is_client ? direct_host : NULL,
-         netplay_is_client ? server : NULL,
+         netplay_is_client ? (!netplay_client_deferred ? server : server_address_deferred) : NULL,
          port ? port : RARCH_DEFAULT_PORT,
          settings->netplay.stateless_mode, settings->netplay.check_frames, &cbs,
          settings->netplay.nat_traversal, settings->username,
