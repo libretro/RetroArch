@@ -3334,7 +3334,7 @@ finish:
             netplay_room_list[i].gamecrc   = atoi(room_data->elems[j + 6].data);
             netplay_room_list[i].timestamp = atoi(room_data->elems[j + 7].data);
 
-            RARCH_LOG("Room Data: \n"
+            RARCH_LOG("Room Data: %d\n"
                "Nickname:         %s\n"
                "Address:          %s\n"
                "Port:             %d\n"
@@ -3342,7 +3342,7 @@ finish:
                "Core Version:     %s\n"
                "Game:             %s\n"
                "Game CRC:         %d\n"
-               "Timestamp:        %d\n",
+               "Timestamp:        %d\n", room_data->elems[j + 6].data,
                netplay_room_list[i].nickname,
                netplay_room_list[i].address,
                netplay_room_list[i].port,

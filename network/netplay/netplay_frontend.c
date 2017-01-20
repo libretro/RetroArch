@@ -405,6 +405,8 @@ static void netplay_announce()
 {
    rarch_system_info_t *system   = NULL;
    settings_t *settings          = config_get_ptr();
+   uint32_t *content_crc_ptr = NULL;
+   content_get_crc(&content_crc_ptr);
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
    char url [2048] = "http://lobby.libretro.com/?";
@@ -412,10 +414,10 @@ static void netplay_announce()
    buf[0] = '\0';
 
    snprintf(buf, sizeof(buf), "%susername=%s&corename=%s&coreversion=%s&"
-   "gamename=%s&gamecrc=%08x&port=%d", 
+   "gamename=%s&gamecrc=%d&port=%d", 
       url, settings->username, system->info.library_name, 
       system->info.library_version, 
-      path_basename(path_get(RARCH_PATH_BASENAME)),0,
+      path_basename(path_get(RARCH_PATH_BASENAME)),*content_crc_ptr,
       settings->netplay.port);
 
    task_push_http_transfer(buf, true, NULL, netplay_announce_cb, NULL);
