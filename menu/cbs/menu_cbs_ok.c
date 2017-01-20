@@ -3118,9 +3118,36 @@ static int action_ok_netplay_lan_scan_list(const char *path,
 static int action_ok_netplay_connect_room(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   RARCH_LOG("Connect %s %d\n", netplay_room_list[idx - 1].address, netplay_room_list[idx - 1].port);
+#ifdef HAVE_NETWORKING
+   settings_t *settings = config_get_ptr();
+
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
+      command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
+
+   /* If we haven't yet started, this will load on its own */
+   if (!content_is_inited())
+   {
+      runloop_msg_queue_push(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
+            1, 480, true);
+      return 0;
+   }
+
+   char tmp_hostname[512];
+   strlcpy(tmp_hostname, "192.168.1.241", sizeof(tmp_hostname));
+
+   /* Enable Netplay itself */
+   if (!command_event(CMD_EVENT_NETPLAY_INIT, (void *) tmp_hostname))
+      return -1;
+
+#else
+   return -1;
+
+#endif
    return 0;
 }
+
 static int action_ok_lakka_services(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
