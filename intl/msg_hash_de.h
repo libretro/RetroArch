@@ -922,8 +922,15 @@ MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
       "Aktiviert den Audioausgang.")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
       "Gewünschte Audiolatenz in Millisekunden. Je nach Audiotreiber kann die gewünschte Latenz nicht erzielt werden.")
+MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
+      "Die maximale Änderung der Audioeingangsleistung. "
+      "Wenn du PAL Cores auf NTSC Monitoren spielen willst, kannst du diesen Wert erhöhen um bessere Timings zu erreichen, "
+      "als Nebeneffekt kann es zu unechten Tonhöhen kommen.")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_MUTE,
       "Audio Stummschalten.")
+MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
+      "Hilft Fehler bei der Audio- und Videosynchronisierung auszubügeln. "
+      "Wenn deaktiviert, ist eine brauchbare Synchronisation nahezu unmöglich.")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
       "Einstellungen zur Audioausgabe.")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_SYNC,
