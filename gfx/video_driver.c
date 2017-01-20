@@ -2280,6 +2280,15 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->height                = video_driver_height;
 
    video_info->use_rgba              = video_driver_supports_rgba();
+
+   video_info->libretro_running       = false;
+#ifdef HAVE_MENU
+   video_info->menu_wallpaper_opacity = settings->menu.wallpaper.opacity;
+
+   if (!settings->menu.pause_libretro)
+      video_info->libretro_running    = (rarch_ctl(RARCH_CTL_IS_INITED, NULL)
+            && !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL));
+#endif
    video_driver_threaded_unlock();
 }
 

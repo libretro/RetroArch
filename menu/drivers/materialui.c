@@ -924,7 +924,8 @@ static int mui_get_core_title(char *s, size_t len)
    return 0;
 }
 
-static void mui_draw_bg(menu_display_ctx_draw_t *draw)
+static void mui_draw_bg(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info)
 {
    menu_display_blend_begin();
 
@@ -933,7 +934,7 @@ static void mui_draw_bg(menu_display_ctx_draw_t *draw)
    draw->pipeline.id     = 0;
    draw->pipeline.active = false;
 
-   menu_display_draw_bg(draw, false);
+   menu_display_draw_bg(draw, video_info, false);
    menu_display_draw(draw);
    menu_display_blend_end();
 }
@@ -1039,7 +1040,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
    uint64_t frame_count            = video_info->frame_count;
    settings_t *settings            = config_get_ptr();
    bool background_rendered        = false;
-   bool libretro_running           = menu_display_libretro_running();
+   bool libretro_running           = video_info->libretro_running;
 
    /* Default is blue theme */
    float *header_bg_color          = NULL;
@@ -1226,10 +1227,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
       draw.vertex_count       = 4;
       draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
-      if (!menu_display_libretro_running() && draw.texture)
-         draw.color             = &white_bg[0];
-
-      mui_draw_bg(&draw);
+      mui_draw_bg(&draw, video_info);
    }
    else
    {
@@ -1252,10 +1250,10 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
          draw.vertex_count       = 4;
          draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
-         if (!menu_display_libretro_running() && draw.texture)
-            draw.color             = &white_bg[0];
+         if (draw.texture)
+            draw.color           = &white_bg[0];
 
-         mui_draw_bg(&draw);
+         mui_draw_bg(&draw, video_info);
 
          /* Restore opacity of transposed white background */
          menu_display_set_alpha(white_transp_bg, 0.90);

@@ -2424,7 +2424,7 @@ static void xmb_draw_bg(
    RARCH_LOG("DRAW BG %d %d \n",width,height);
 #endif
 
-   bool running              = menu_display_libretro_running();
+   bool running              = video_info->libretro_running;
 
    draw.x                    = 0;
    draw.y                    = 0;
@@ -2454,7 +2454,7 @@ static void xmb_draw_bg(
       else
          menu_display_set_alpha(draw.color, coord_white[3]);
 
-      menu_display_draw_gradient(&draw);
+      menu_display_draw_gradient(&draw, video_info);
 
       draw.pipeline.id = VIDEO_SHADER_MENU_2;
 
@@ -2492,7 +2492,7 @@ static void xmb_draw_bg(
          menu_display_set_alpha(draw.color, coord_white[3]);
 
       if (settings->menu.xmb.menu_color_theme != XMB_THEME_WALLPAPER)
-         menu_display_draw_gradient(&draw);
+         menu_display_draw_gradient(&draw, video_info);
 
       {
          bool add_opacity = false;
@@ -2505,7 +2505,7 @@ static void xmb_draw_bg(
          if (settings->menu.xmb.menu_color_theme == XMB_THEME_WALLPAPER)
             add_opacity = true;
 
-         menu_display_draw_bg(&draw, add_opacity);
+         menu_display_draw_bg(&draw, video_info, add_opacity);
       }
    }
 

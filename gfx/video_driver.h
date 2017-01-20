@@ -86,6 +86,7 @@ typedef struct video_info
 
 typedef struct video_frame_info
 {
+   float menu_wallpaper_opacity;
    float refresh_rate;
    bool shared_context;
    bool black_frame_insertion;
@@ -112,6 +113,7 @@ typedef struct video_frame_info
    float font_msg_color_g;
    float font_msg_color_b;
    bool use_rgba;
+   bool libretro_running;
 } video_frame_info_t;
 
 /* Optionally implemented interface to poke more

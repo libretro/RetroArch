@@ -970,13 +970,13 @@ static void zarch_frame(void *data, video_frame_info_t *video_info)
    draw.vertex_count       = 4;
    draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
-   if (!menu_display_libretro_running() && draw.texture)
-      draw.color             = &coord_color2[0];
+   if (!video_info->libretro_running && draw.texture)
+      draw.color           = &coord_color2[0];
 
    menu_display_blend_begin();
    draw.x              = 0;
    draw.y              = 0;
-   menu_display_draw_bg(&draw, false);
+   menu_display_draw_bg(&draw, video_info, false);
    menu_display_draw(&draw);
    menu_display_blend_end();
 

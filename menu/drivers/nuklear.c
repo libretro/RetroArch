@@ -316,7 +316,7 @@ static void nk_menu_frame(void *data, video_frame_info_t *video_info)
    settings_t *settings   = config_get_ptr();
    unsigned width         = video_info->width;
    unsigned height        = video_info->height;
-   bool libretro_running  = menu_display_libretro_running();
+   bool libretro_running  = video_info->libretro_running;
    float white_bg[16]     =  {
       0.98, 0.98, 0.98, 1,
       0.98, 0.98, 0.98, 1,

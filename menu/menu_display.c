@@ -495,7 +495,8 @@ void menu_display_draw_pipeline(menu_display_ctx_draw_t *draw)
    menu_disp->draw_pipeline(draw);
 }
 
-void menu_display_draw_bg(menu_display_ctx_draw_t *draw, bool add_opacity_to_wallpaper)
+void menu_display_draw_bg(menu_display_ctx_draw_t *draw, 
+      video_frame_info_t *video_info, bool add_opacity_to_wallpaper)
 {
    static struct video_coords coords;
    const float *new_vertex       = NULL;
@@ -519,7 +520,7 @@ void menu_display_draw_bg(menu_display_ctx_draw_t *draw, bool add_opacity_to_wal
 
    draw->coords      = &coords;
 
-   if (!menu_display_libretro_running() && !draw->pipeline.active)
+   if (!video_info->libretro_running && !draw->pipeline.active)
       add_opacity_to_wallpaper = true;
 
    if (add_opacity_to_wallpaper)
@@ -534,13 +535,14 @@ void menu_display_draw_bg(menu_display_ctx_draw_t *draw, bool add_opacity_to_wal
    draw->matrix_data = (math_matrix_4x4*)menu_disp->get_default_mvp();
 }
 
-void menu_display_draw_gradient(menu_display_ctx_draw_t *draw)
+void menu_display_draw_gradient(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info)
 {
    draw->texture       = 0;
    draw->x             = 0;
    draw->y             = 0;
 
-   menu_display_draw_bg(draw, false);
+   menu_display_draw_bg(draw, video_info, false);
    menu_display_draw(draw);
 }
 
