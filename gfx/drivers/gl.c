@@ -683,7 +683,9 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 }
 
-static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
+static INLINE void gl_copy_frame(gl_t *gl, 
+      video_frame_info_t *video_info,
+      const void *frame,
       unsigned width, unsigned height, unsigned pitch)
 {
    static struct retro_perf_counter copy_frame = {0};
@@ -1172,7 +1174,7 @@ static bool gl_frame(void *data, const void *frame,
 #endif
       {
          gl_update_input_size(gl, frame_width, frame_height, pitch, true);
-         gl_copy_frame(gl, frame, frame_width, frame_height, pitch);
+         gl_copy_frame(gl, video_info, frame, frame_width, frame_height, pitch);
       }
 
       /* No point regenerating mipmaps
