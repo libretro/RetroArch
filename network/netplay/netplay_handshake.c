@@ -518,7 +518,7 @@ bool netplay_handshake_sync(netplay_t *netplay, struct netplay_connection *conne
    cmd[0] = htonl(NETPLAY_CMD_SYNC);
    cmd[1] = htonl(3*sizeof(uint32_t) + MAX_USERS*sizeof(uint32_t) +
       NETPLAY_NICK_LEN + mem_info.size);
-   cmd[2] = htonl(netplay->input_frame_count);
+   cmd[2] = htonl(netplay->self_frame_count);
    connected_players = netplay->connected_players;
    if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING)
       connected_players |= 1<<netplay->self_player;
@@ -904,7 +904,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
    netplay->flip_frame = flip_frame;
 
    /* Set our frame counters as requested */
-   netplay->input_frame_count = netplay->run_frame_count =
+   netplay->self_frame_count = netplay->run_frame_count =
       netplay->other_frame_count = netplay->unread_frame_count =
       netplay->server_frame_count = new_frame_count;
    for (i = 0; i < netplay->buffer_size; i++)
@@ -912,7 +912,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
       struct delta_frame *ptr = &netplay->buffer[i];
       ptr->used = false;
 
-      if (i == netplay->input_ptr)
+      if (i == netplay->self_ptr)
       {
          /* Clear out any current data but still use this frame */
          if (!netplay_delta_frame_ready(netplay, ptr, 0))
@@ -928,8 +928,8 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
    {
       if (connected_players & (1<<i))
       {
-         netplay->read_ptr[i] = netplay->input_ptr;
-         netplay->read_frame_count[i] = netplay->input_frame_count;
+         netplay->read_ptr[i] = netplay->self_ptr;
+         netplay->read_frame_count[i] = netplay->self_frame_count;
       }
    }
 

@@ -359,10 +359,11 @@ struct netplay
    size_t packet_buffer_size;
 
    /* The frame we're currently inputting */
-   size_t input_ptr;
-   uint32_t input_frame_count;
+   size_t self_ptr;
+   uint32_t self_frame_count;
 
-   /* The frame we're currently running */
+   /* The frame we're currently running, which may be behind the frame we're
+    * currently inputting if we're using input latency */
    size_t run_ptr;
    uint32_t run_frame_count;
 

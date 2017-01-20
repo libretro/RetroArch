@@ -42,8 +42,8 @@ void netplay_update_unread_ptr(netplay_t *netplay)
    if (netplay->is_server && !netplay->connected_players)
    {
       /* Nothing at all to read! */
-      netplay->unread_ptr = netplay->input_ptr;
-      netplay->unread_frame_count = netplay->input_frame_count;
+      netplay->unread_ptr = netplay->self_ptr;
+      netplay->unread_frame_count = netplay->self_frame_count;
 
    }
    else
@@ -203,13 +203,13 @@ bool netplay_sync_pre_frame(netplay_t *netplay)
          {
             /* Bring our running frame and input frames into parity so we don't
              * send old info */
-            if (netplay->run_ptr != netplay->input_ptr)
+            if (netplay->run_ptr != netplay->self_ptr)
             {
-               memcpy(netplay->buffer[netplay->input_ptr].state,
+               memcpy(netplay->buffer[netplay->self_ptr].state,
                   netplay->buffer[netplay->run_ptr].state,
                   netplay->state_size);
-               netplay->run_ptr = netplay->input_ptr;
-               netplay->run_frame_count = netplay->input_frame_count;
+               netplay->run_ptr = netplay->self_ptr;
+               netplay->run_frame_count = netplay->self_frame_count;
             }
 
             /* Send this along to the other side */
@@ -372,20 +372,20 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
       netplay->run_frame_count++;
    }
 
-   /* We've finished an input frame even if we're stalling, unless we're too
-    * far ahead of ourselves */
-   if (netplay->input_frame_count < netplay->run_frame_count + netplay->input_latency_frames)
+   /* We've finished an input frame even if we're stalling */
+   if ((!stalled || netplay->stall == NETPLAY_STALL_INPUT_LATENCY) &&
+       netplay->self_frame_count < netplay->run_frame_count + netplay->input_latency_frames)
    {
-      netplay->input_ptr = NEXT_PTR(netplay->input_ptr);
-      netplay->input_frame_count++;
+      netplay->self_ptr = NEXT_PTR(netplay->self_ptr);
+      netplay->self_frame_count++;
    }
 
    /* Only relevant if we're connected */
    if ((netplay->is_server && !netplay->connected_players) ||
        (netplay->self_mode < NETPLAY_CONNECTION_CONNECTED))
    {
-      netplay->other_frame_count = netplay->input_frame_count;
-      netplay->other_ptr = netplay->input_ptr;
+      netplay->other_frame_count = netplay->self_frame_count;
+      netplay->other_ptr = netplay->self_ptr;
       /* FIXME: Duplication */
       if (netplay->catch_up)
       {
@@ -539,7 +539,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
    if (netplay->catch_up)
    {
       /* Are we caught up? */
-      if (netplay->input_frame_count >= lo_frame_count)
+      if (netplay->self_frame_count >= lo_frame_count)
       {
          netplay->catch_up = false;
          input_driver_unset_nonblock_state();
@@ -549,7 +549,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
    }
    else if (!stalled)
    {
-      if (netplay->input_frame_count + 2 < lo_frame_count)
+      if (netplay->self_frame_count + 2 < lo_frame_count)
       {
          /* Are we falling behind? */
          netplay->catch_up = true;
@@ -557,7 +557,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
          driver_set_nonblock_state();
 
       }
-      else if (netplay->input_frame_count + 2 < hi_frame_count)
+      else if (netplay->self_frame_count + 2 < hi_frame_count)
       {
          size_t i;
 
@@ -573,16 +573,16 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
             player = connection->player;
 
             /* Are they ahead? */
-            if (netplay->input_frame_count + 2 < netplay->read_frame_count[player])
+            if (netplay->self_frame_count + 2 < netplay->read_frame_count[player])
             {
                /* Tell them to stall */
                if (connection->stall_frame + NETPLAY_MAX_REQ_STALL_FREQUENCY <
-                     netplay->input_frame_count)
+                     netplay->self_frame_count)
                {
-                  connection->stall_frame = netplay->input_frame_count;
+                  connection->stall_frame = netplay->self_frame_count;
                   netplay_cmd_stall(netplay, connection,
                      netplay->read_frame_count[player] -
-                     netplay->input_frame_count + 1);
+                     netplay->self_frame_count + 1);
                }
             }
          }

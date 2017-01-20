@@ -106,10 +106,10 @@ static bool netplay_can_poll(netplay_t *netplay)
 static bool get_self_input_state(netplay_t *netplay)
 {
    uint32_t state[WORDS_PER_INPUT] = {0, 0, 0};
-   struct delta_frame *ptr = &netplay->buffer[netplay->input_ptr];
+   struct delta_frame *ptr = &netplay->buffer[netplay->self_ptr];
    size_t i;
 
-   if (!netplay_delta_frame_ready(netplay, ptr, netplay->input_frame_count))
+   if (!netplay_delta_frame_ready(netplay, ptr, netplay->self_frame_count))
       return false;
 
    if (ptr->have_local)
@@ -118,7 +118,7 @@ static bool get_self_input_state(netplay_t *netplay)
       return true;
    }
 
-   if (!input_driver_is_libretro_input_blocked() && netplay->input_frame_count > 0)
+   if (!input_driver_is_libretro_input_blocked() && netplay->self_frame_count > 0)
    {
       /* First frame we always give zero input since relying on 
        * input from first frame screws up when we use -F 0. */
@@ -264,7 +264,7 @@ static bool netplay_poll(void)
       case NETPLAY_STALL_RUNNING_FAST:
       {
          if (netplay_data->unread_frame_count + NETPLAY_MAX_STALL_FRAMES - 2
-               > netplay_data->input_frame_count)
+               > netplay_data->self_frame_count)
          {
             netplay_data->stall = NETPLAY_STALL_NONE;
             for (i = 0; i < netplay_data->connections_size; i++)
@@ -312,7 +312,7 @@ static bool netplay_poll(void)
       /* Have we not reat enough latency frames? */
       if (netplay_data->self_mode == NETPLAY_CONNECTION_PLAYING &&
           netplay_data->connected_players &&
-          netplay_data->run_frame_count + netplay_data->input_latency_frames > netplay_data->input_frame_count)
+          netplay_data->run_frame_count + netplay_data->input_latency_frames > netplay_data->self_frame_count)
       {
          netplay_data->stall = NETPLAY_STALL_INPUT_LATENCY;
          netplay_data->stall_time = 0;
@@ -320,7 +320,7 @@ static bool netplay_poll(void)
 
       /* Are we too far ahead? */
       if (netplay_data->unread_frame_count + NETPLAY_MAX_STALL_FRAMES
-            <= netplay_data->input_frame_count)
+            <= netplay_data->self_frame_count)
       {
          netplay_data->stall      = NETPLAY_STALL_RUNNING_FAST;
          netplay_data->stall_time = cpu_features_get_time_usec();
@@ -546,7 +546,7 @@ static void netplay_flip_users(netplay_t *netplay)
 {
    /* Must be in the future because we may have 
     * already sent this frame's data */
-   uint32_t     flip_frame = netplay->input_frame_count + 1;
+   uint32_t     flip_frame = netplay->self_frame_count + 1;
    uint32_t flip_frame_net = htonl(flip_frame);
    size_t i;
 
@@ -777,8 +777,8 @@ void netplay_load_savestate(netplay_t *netplay,
 
    /* Wherever we're inputting, that's where we consider our state to be loaded
     * (FIXME: Need to be more careful about saving it?) */
-   netplay->run_ptr = netplay->input_ptr;
-   netplay->run_frame_count = netplay->input_frame_count;
+   netplay->run_ptr = netplay->self_ptr;
+   netplay->run_frame_count = netplay->self_frame_count;
 
    /* Record it in our own buffer */
    if (save || !serial_info)
@@ -866,7 +866,7 @@ static void netplay_toggle_play_spectate(netplay_t *netplay)
       uint32_t payload[2];
       char msg[512];
       const char *dmsg = NULL;
-      payload[0] = htonl(netplay->input_frame_count);
+      payload[0] = htonl(netplay->self_frame_count);
       if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING)
       {
          /* Mark us as no longer playing */

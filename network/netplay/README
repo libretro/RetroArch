@@ -42,6 +42,10 @@ In general, other ≤ unread and other ≤ self. In all likelihood, unread ≤ s
 but it is both possible and supported for the remote host to get ahead of the
 local host.
 
+There is an additional location, run, used when input latency is desired. In
+that case, self points to where input is being read, and run points to the
+frame actually being executed. Run is purely local.
+
 The server has a slightly more complicated job as it can handle multiple
 clients, however it is not vastly more complicated: For each connection which
 is playing (i.e., has a controller), it maintains a per-player unread frame,
