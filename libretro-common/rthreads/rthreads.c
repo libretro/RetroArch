@@ -92,7 +92,7 @@ struct scond
    /* This will be used as a linked list immplementing a queue of waiting threads */
    struct QueueEntry
    {
-      struct QueueEntry* next;
+      struct QueueEntry *next;
    };
 
    /* With this implementation of scond, we don't have any way of waking (or even identifying) specific threads */
@@ -102,16 +102,16 @@ struct scond
    HANDLE hot_potato;
 
    /* The primary signalled event. Hot potatoes are passed until this is set. */
-   HANDLE event; 
+   HANDLE event;
 
    /* the head of the queue; NULL if queue is empty */
-   struct QueueEntry*  head; 
+   struct QueueEntry *head;
 
    /* equivalent to the queue length */
-   int waiters; 
+   int waiters;
 
    /* how many waiters in the queue have been conceptually wakened by signals (even if we haven't managed to actually wake them yet */
-   int wakens; 
+   int wakens;
 
 #else
    pthread_cond_t cond;
@@ -189,7 +189,7 @@ error:
  * @thread                  : pointer to thread object
  *
  * Detach a thread. When a detached thread terminates, its
- * resource sare automatically released back to the system
+ * resources are automatically released back to the system
  * without the need for another thread to join with the
  * terminated thread.
  *
@@ -351,15 +351,17 @@ scond_t *scond_new(void)
 
 #ifdef USE_WIN32_THREADS
    /* This is very complex because recreating condition variable semantics with win32 parts is not easy */
-   /* The main problem is that a condition variable can be used to wake up a thread, but only if the thread is already waiting; */
-   /* whereas a win32 event will 'wake up' a thread in advance (the event will be set in advance, so a 'waiter' wont even have to wait on it) */
+   /* The main problem is that a condition variable can't be used to "pre-wake" a thread (it will get wakened only after it's waited) */
+   /* whereas a win32 event can pre-wake a thread (the event will be set in advance, so a 'waiter' won't even have to wait on it) */
+   /* Keep in mind a condition variable can apparently pre-wake a thread, insofar as spurious wakeups are always possible, */
+   /* but nobody will be expecting this and it does not need to be simulated. */
    /* So at the very least, we need to do something clever. But there's bigger problems. */
    /* We don't even have a straightforward way in win32 to satisfy pthread_cond_wait's atomicity requirement. The bulk of this algorithm is solving that. */
    /* Note: We might could simplify this using vista+ condition variables, but we wanted an XP compatible solution. */
    cond->event = CreateEvent(NULL, FALSE, FALSE, NULL);
-   if(!cond->event) goto error;
+   if (!cond->event) goto error;
    cond->hot_potato = CreateEvent(NULL, FALSE, FALSE, NULL);
-   if(!cond->hot_potato)
+   if (!cond->hot_potato)
    {
       CloseHandle(cond->event);
       goto error;
@@ -410,9 +412,11 @@ void scond_wait(scond_t *cond, slock_t *lock)
 {
 #ifdef USE_WIN32_THREADS
    
+   /* Reminder: `lock` is held before this is called */
+
    /* add ourselves to a queue of waiting threads */
    struct QueueEntry myentry;
-   struct QueueEntry** ptr = &cond->head;
+   struct QueueEntry **ptr = &cond->head;
    while(*ptr) /* walk to the end of the linked list */
       ptr = &((*ptr)->next);
    *ptr = &myentry;
@@ -431,18 +435,36 @@ void scond_wait(scond_t *cond, slock_t *lock)
    /* It's my turn if I'm the head of the queue. Check to see if it's my turn. */
    while (cond->head != &myentry)
    {
+      /* It isn't my turn: */
+
       /* As long as someone is even going to be able to wake up when they receive the potato, keep it going round */
       if (cond->wakens > 0)
          SetEvent(cond->hot_potato);
 
-      /* Wait to catch the hot potato before checking for my turn again */
-      SignalObjectAndWait(lock->lock, cond->hot_potato, INFINITE, FALSE);
-      slock_lock(lock);
+      /* Let someone else go */
+      ReleaseMutex(lock->lock);
+
+      /* Wait a while to catch the hot potato.. someone else should get a chance to go */
+      /* After all, it isn't my turn (and it must be someone else's */
+      Sleep(0);
+      WaitForSingleObject(cond->hot_potato, INFINITE);
+
+      /* I should come out of here with the main lock taken */
+      WaitForSingleObject(lock->lock, INFINITE);
    }
-	
+   
    /* It's my turn now -- I hold the potato */
-   SignalObjectAndWait(lock->lock, cond->event, INFINITE, FALSE);
-   slock_lock(lock);
+
+   /* I still have the main lock, in any case */
+   /* I need to release it so that someone can set the event */
+   ReleaseMutex(lock->lock);
+
+   /* Wait for someone to actually signal this condition */
+   /* We're the only waiter waiting on the event right now -- everyone else is waiting on something different */
+   WaitForSingleObject(cond->event, INFINITE);
+
+   /* Take the main lock so we can do work. Nobody else waits on this lock for very long, so even though it's GO TIME we won't have to wait long */
+   WaitForSingleObject(lock->lock, INFINITE);
 
    /* Remove ourselves from the queue */
    cond->head = myentry.next;
@@ -451,7 +473,7 @@ void scond_wait(scond_t *cond, slock_t *lock)
    /* If any other wakenings are pending, go ahead and set it up  */
    /* There may actually be no waiters. That's OK. The first waiter will come in, find it's his turn, and immediately get the signaled event */
    cond->wakens--;
-   if(cond->wakens>0)
+   if (cond->wakens > 0)
    {
       SetEvent(cond->event);
 
