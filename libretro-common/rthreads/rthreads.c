@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2016 The RetroArch team
+/* Copyright  (C) 2010-2017 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (rthreads.c).
@@ -78,7 +78,7 @@ struct sthread
 struct slock
 {
 #ifdef USE_WIN32_THREADS
-   HANDLE lock;
+   CRITICAL_SECTION lock;
 #else
    pthread_mutex_t lock;
 #endif
@@ -262,10 +262,10 @@ slock_t *slock_new(void)
       return NULL;
 
 #ifdef USE_WIN32_THREADS
-   lock->lock         = CreateMutex(NULL, FALSE, NULL);
-   mutex_created      = !!lock->lock;
+   InitializeCriticalSection(&lock->lock);
+   mutex_created = true;
 #else
-   mutex_created      = (pthread_mutex_init(&lock->lock, NULL) == 0);
+   mutex_created = (pthread_mutex_init(&lock->lock, NULL) == 0);
 #endif
 
    if (!mutex_created)
@@ -290,7 +290,7 @@ void slock_free(slock_t *lock)
       return;
 
 #ifdef USE_WIN32_THREADS
-   CloseHandle(lock->lock);
+   DeleteCriticalSection(&lock->lock);
 #else
    pthread_mutex_destroy(&lock->lock);
 #endif
@@ -310,7 +310,7 @@ void slock_lock(slock_t *lock)
    if (!lock)
       return;
 #ifdef USE_WIN32_THREADS
-   WaitForSingleObject(lock->lock, INFINITE);
+   EnterCriticalSection(&lock->lock);
 #else
    pthread_mutex_lock(&lock->lock);
 #endif
@@ -327,7 +327,7 @@ void slock_unlock(slock_t *lock)
    if (!lock)
       return;
 #ifdef USE_WIN32_THREADS
-   ReleaseMutex(lock->lock);
+   LeaveCriticalSection(&lock->lock);
 #else
    pthread_mutex_unlock(&lock->lock);
 #endif
@@ -442,7 +442,7 @@ void scond_wait(scond_t *cond, slock_t *lock)
          SetEvent(cond->hot_potato);
 
       /* Let someone else go */
-      ReleaseMutex(lock->lock);
+      LeaveCriticalSection(&lock->lock);
 
       /* Wait a while to catch the hot potato.. someone else should get a chance to go */
       /* After all, it isn't my turn (and it must be someone else's */
@@ -450,21 +450,21 @@ void scond_wait(scond_t *cond, slock_t *lock)
       WaitForSingleObject(cond->hot_potato, INFINITE);
 
       /* I should come out of here with the main lock taken */
-      WaitForSingleObject(lock->lock, INFINITE);
+      EnterCriticalSection(&lock->lock);
    }
    
    /* It's my turn now -- I hold the potato */
 
    /* I still have the main lock, in any case */
    /* I need to release it so that someone can set the event */
-   ReleaseMutex(lock->lock);
+   LeaveCriticalSection(&lock->lock);
 
    /* Wait for someone to actually signal this condition */
    /* We're the only waiter waiting on the event right now -- everyone else is waiting on something different */
    WaitForSingleObject(cond->event, INFINITE);
 
    /* Take the main lock so we can do work. Nobody else waits on this lock for very long, so even though it's GO TIME we won't have to wait long */
-   WaitForSingleObject(lock->lock, INFINITE);
+   EnterCriticalSection(&lock->lock);
 
    /* Remove ourselves from the queue */
    cond->head = myentry.next;
@@ -558,10 +558,10 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
 
    /* TODO: this is woefully inadequate. It needs to be solved with the newer approach used above */
    WaitForSingleObject(cond->event, 0);
-   ret = SignalObjectAndWait(lock->lock, cond->event,
-         (DWORD)(timeout_us) / 1000, FALSE);
+   LeaveCriticalSection(&lock->lock);
+   ret = WaitForSingleObject(cond->event,(DWORD)(timeout_us) / 1000);
 
-   slock_lock(lock);
+   EnterCriticalSection(&lock->lock);
    return ret == WAIT_OBJECT_0;
 #else
    int ret;
