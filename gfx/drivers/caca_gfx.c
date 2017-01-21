@@ -40,7 +40,7 @@ static unsigned caca_menu_pitch       = 0;
 static unsigned caca_video_width      = 0;
 static unsigned caca_video_height     = 0;
 static unsigned caca_video_pitch      = 0;
-static bool caca_rgb32                = 0;
+static bool caca_rgb32                = false;
 
 static void caca_gfx_free(void *data);
 
@@ -120,7 +120,7 @@ static bool caca_gfx_frame(void *data, const void *frame,
    if (!frame || !frame_width || !frame_height)
       return true;
 
-   if (  caca_video_width  != frame_width   || 
+   if (  caca_video_width  != frame_width   ||
          caca_video_height != frame_height  ||
          caca_video_pitch  != pitch)
    {
@@ -143,9 +143,9 @@ static bool caca_gfx_frame(void *data, const void *frame,
    width = caca_get_canvas_width(caca_cv);
    height = caca_get_canvas_height(caca_cv);
 
-   if (  frame_to_copy == frame && 
-         frame_width   == 4 && 
-         frame_height  == 4 && 
+   if (  frame_to_copy == frame &&
+         frame_width   == 4 &&
+         frame_height  == 4 &&
          (frame_width < width && frame_height < height))
       draw = false;
 
@@ -284,9 +284,9 @@ static void caca_set_texture_frame(void *data,
       caca_menu_frame = NULL;
    }
 
-   if ( !caca_menu_frame || 
-         caca_menu_width  != width  || 
-         caca_menu_height != height || 
+   if ( !caca_menu_frame ||
+         caca_menu_width  != width  ||
+         caca_menu_height != height ||
          caca_menu_pitch  != pitch)
       if (pitch && height)
          caca_menu_frame = (unsigned char*)malloc(pitch * height);

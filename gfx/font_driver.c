@@ -178,6 +178,35 @@ static bool caca_font_init_first(
 }
 #endif
 
+#ifdef DJGPP
+static const font_renderer_t *vga_font_backends[] = {
+   &vga_font,
+   NULL,
+};
+
+static bool vga_font_init_first(
+      const void **font_driver, void **font_handle,
+      void *video_data, const char *font_path, float font_size)
+{
+   unsigned i;
+
+   for (i = 0; vga_font_backends[i]; i++)
+   {
+      void *data = vga_font_backends[i]->init(
+            video_data, font_path, font_size);
+
+      if (!data)
+         continue;
+
+      *font_driver = vga_font_backends[i];
+      *font_handle = data;
+      return true;
+   }
+
+   return false;
+}
+#endif
+
 #if defined(_WIN32) && !defined(_XBOX)
 static const font_renderer_t *gdi_font_backends[] = {
    &gdi_font,
@@ -334,6 +363,11 @@ static bool font_init_first(
 #if defined(_WIN32) && !defined(_XBOX)
       case FONT_DRIVER_RENDER_GDI:
          return gdi_font_init_first(font_driver, font_handle,
+               video_data, font_path, font_size);
+#endif
+#ifdef DJGPP
+      case FONT_DRIVER_RENDER_VGA:
+         return vga_font_init_first(font_driver, font_handle,
                video_data, font_path, font_size);
 #endif
       case FONT_DRIVER_RENDER_DONT_CARE:

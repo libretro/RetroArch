@@ -405,6 +405,10 @@ FONTS
 #include "../gfx/drivers_font/caca_font.c"
 #endif
 
+#if defined(DJGPP)
+#include "../gfx/drivers_font/vga_font.c"
+#endif
+
 #if defined(_WIN32) && !defined(_XBOX)
 #include "../gfx/drivers_font/gdi_font.c"
 #endif
@@ -998,6 +1002,10 @@ MENU
 
 #ifdef HAVE_CACA
 #include "../menu/drivers_display/menu_display_caca.c"
+#endif
+
+#ifdef DJGPP
+#include "../menu/drivers_display/menu_display_vga.c"
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX)

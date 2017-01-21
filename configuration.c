@@ -314,6 +314,8 @@ const char *config_get_default_video(void)
          return "caca";
       case VIDEO_GDI:
          return "gdi";
+      case VIDEO_VGA:
+         return "vga";
       case VIDEO_NULL:
          break;
    }

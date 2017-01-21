@@ -97,7 +97,8 @@ enum menu_display_driver_type
    MENU_VIDEO_DRIVER_VITA2D,
    MENU_VIDEO_DRIVER_CTR,
    MENU_VIDEO_DRIVER_CACA,
-   MENU_VIDEO_DRIVER_GDI
+   MENU_VIDEO_DRIVER_GDI,
+   MENU_VIDEO_DRIVER_VGA
 };
 
 typedef struct menu_display_ctx_clearcolor
@@ -302,6 +303,7 @@ extern menu_display_ctx_driver_t menu_display_ctx_vita2d;
 extern menu_display_ctx_driver_t menu_display_ctx_ctr;
 extern menu_display_ctx_driver_t menu_display_ctx_caca;
 extern menu_display_ctx_driver_t menu_display_ctx_gdi;
+extern menu_display_ctx_driver_t menu_display_ctx_vga;
 extern menu_display_ctx_driver_t menu_display_ctx_null;
 
 RETRO_END_DECLS

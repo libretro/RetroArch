@@ -276,6 +276,9 @@ static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_CACA
    &video_caca,
 #endif
+#ifdef DJGPP
+   &video_vga,
+#endif
    &video_null,
    NULL,
 };
