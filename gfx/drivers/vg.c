@@ -288,8 +288,8 @@ static void vg_free(void *data)
 
 static void vg_calculate_quad(vg_t *vg, video_frame_info_t *video_info)
 {
-   unsigned width = video_info->width;
-   unsigned heigh = video_info->height;
+   unsigned width  = video_info->width;
+   unsigned height = video_info->height;
 
    /* set viewport for aspect ratio, taken from the OpenGL driver. */
    if (vg->keep_aspect)
