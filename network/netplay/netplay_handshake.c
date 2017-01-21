@@ -832,6 +832,15 @@ error:
       RARCH_ERR("%s\n", dmsg);
       runloop_msg_queue_push(dmsg, 1, 180, false);
    }
+
+   if (!netplay->is_server)
+   {
+      /* Counter-intuitively, we still want to send our info. This is simply so
+       * that the server knows why we disconnected. */
+      if (!netplay_handshake_info(netplay, connection))
+         return false;
+   }
+
    return false;
 }
 /**
