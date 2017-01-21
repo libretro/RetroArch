@@ -41,6 +41,11 @@ static unsigned vga_video_pitch      = 0;
 static unsigned vga_video_bits       = 0;
 static bool vga_rgb32                = false;
 
+static float lerp(float x, float y, float a, float b, float d)
+{
+   return a + (b - a) * ((d - x) / (y - x));
+}
+
 static void set_mode_13h()
 {
    __dpmi_regs r;
@@ -270,11 +275,28 @@ static void vga_set_texture_frame(void *data,
          vga_menu_height != height ||
          vga_menu_pitch  != pitch)
       if (pitch && height)
-         vga_menu_frame = (unsigned char*)malloc(pitch * height);
+         vga_menu_frame = (unsigned char*)malloc(VGA_WIDTH * VGA_HEIGHT);
 
    if (vga_menu_frame && frame && pitch && height)
    {
-      memcpy(vga_menu_frame, frame, pitch * height);
+      unsigned x, y;
+
+      if (rgb32)
+      {
+      }
+      else
+      {
+         unsigned short *video_frame = (unsigned short*)frame;
+
+         for(y = 0; y < VGA_HEIGHT; y++)
+         {
+            for(x = 0; x < VGA_WIDTH; x++)
+            {
+                vga_menu_frame[VGA_WIDTH * y + x] = lerp(0, 65535, 0, 254, video_frame[width * y + x]);
+            }
+         }
+      }
+
       vga_menu_width  = width;
       vga_menu_height = height;
       vga_menu_pitch  = pitch;
