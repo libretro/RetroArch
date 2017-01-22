@@ -354,6 +354,17 @@ static void bsv_movie_init_state(void)
    }
 }
 
+bool bsv_movie_get_input(int16_t *bsv_data)
+{
+   bsv_movie_t *handle = bsv_movie_state.movie;
+   if (fread(bsv_data, sizeof(int16_t), 1, handle->file) != 1)
+      return false;
+
+   *bsv_data = swap_if_big16(*bsv_data);
+
+   return true;
+}
+
 bool bsv_movie_ctl(enum bsv_ctl_state state, void *data)
 {
    switch (state)
@@ -404,16 +415,6 @@ bool bsv_movie_ctl(enum bsv_ctl_state state, void *data)
          break;
       case BSV_MOVIE_CTL_FRAME_REWIND:
          bsv_movie_frame_rewind(bsv_movie_state.movie);
-         break;
-      case BSV_MOVIE_CTL_GET_INPUT:
-         {
-            int16_t *bsv_data = (int16_t*)data;
-            bsv_movie_t *handle = bsv_movie_state.movie;
-            if (fread(bsv_data, sizeof(int16_t), 1, handle->file) != 1)
-               return false;
-
-            *bsv_data = swap_if_big16(*bsv_data);
-         }
          break;
       case BSV_MOVIE_CTL_SET_INPUT:
          {
