@@ -50,13 +50,13 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
    size_t i, j;
 
    task_set_progress(task, 0);
-   task_set_title(task, "Checking for ROM presence.");
+   task_set_title(task, strdup("Checking for ROM presence."));
    task_set_finished(task, false);
 
    if (!state->lpl_list)
    {
       task_set_progress(task, 100);
-      task_set_title(task, "Playlist directory not found.");
+      task_set_title(task, strdup("Playlist directory not found."));
       task_set_finished(task, true);
       return;
    }
@@ -81,7 +81,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
          if (string_is_equal(playlist->entries[j].crc32, "6BE4CA95|crc"))
          {
             task_set_progress(task, 100);
-            task_set_title(task, "Game found.");
+            task_set_title(task, strdup("Game found."));
             task_set_finished(task, true);
             string_list_free(state->lpl_list);
             return;
@@ -94,7 +94,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
 no_playlists:
    string_list_free(state->lpl_list);
    task_set_progress(task, 100);
-   task_set_title(task, "No game found.");
+   task_set_title(task, strdup("No game found."));
    task_set_finished(task, true);
    return;
 }
