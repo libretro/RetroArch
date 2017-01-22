@@ -70,6 +70,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
       "Speichere Cheat-Datei unter...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_NUM_PASSES,
       "Cheat-Durchgänge")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE,
+      "Überprüfe Firmware vor dem Laden.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
       "Schließen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
@@ -1079,6 +1081,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_SYNC,
       "Synchronisiert Audio. Empfohlen.")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
       "Lautstärkeverstärkung in dB.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
+      "Überprüfe benötigte Firmware bevor versucht wird einen Core zu laden.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
       "Ändere die Standardeinstellungen für Konfigurationsdateien.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
@@ -1091,6 +1095,10 @@ MSG_HASH(MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
       "Ändere das Standardverzeichis für dieses System.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
       "Ändere Treiber für dieses System.")
+MSG_HASH(MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN,
+      "Einige Cores haben ein Herunterfahren-Feature. "
+      "Wenn aktive, wird der Core davon abgehalten RetroArch herunterzufahren. "
+      "Stattdessen lädt es einen Dummy-Core.")
 MSG_HASH(MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
       "Ändere die Einstellungen für Rückspulen, Zeitraffer, und Zeitlupe.") /* This does not sound like a correct sentence. Suggestions are appreciated. */
 MSG_HASH(MENU_ENUM_SUBLABEL_FPS_SHOW,
@@ -1154,6 +1162,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
       "Ändere die Einstellungen der Benutzeroberfläche.")
 MSG_HASH(MENU_ENUM_SUBLABEL_USER_SETTINGS,
       "Ändere das Konto, Benutzername, und die Sprache.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_ALLOW_ROTATE,
+      "Erlaubt Cores die Rotation zu setzen. Wenn deaktiviert, Rotationsanfragen werden ignoriert. Nützlich für Geräte bei denen man die Rotation manuell wählt.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
       "Zeigt ein schwarzes Bild zwischen Frames an. Nützlich für 120 Hz Monitore welche 60 Hz mit weniger 'ghosting' möchten.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
@@ -1178,6 +1188,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
       "Die genau geschätzte Bildwiederholrate des Monitors in Hz.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
       "Einstellungen zur Videoausgabe.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
+      "Gibt hardware-gerendered Cores einen eigenen privaten Kontext. Vermeided den Hardware-State anzunehmen zwischen den Frames.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_THREADED,
       "Verbessert die Leistung, führt aber zu grösserer Latenz und Videoproblemen. "
       "Verwende dies nur wenn du sonst die gewünschte Leistung erbringst.")
