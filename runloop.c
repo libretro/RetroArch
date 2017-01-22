@@ -204,6 +204,13 @@ static bool rarch_game_specific_options(char **output)
    return true;
 }
 
+void runloop_get_status(bool *is_paused, bool *is_idle, 
+      bool *is_slowmotion)
+{
+   *is_paused     = runloop_paused;
+   *is_idle       = runloop_idle;
+   *is_slowmotion = runloop_slowmotion;
+}
 
 bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {

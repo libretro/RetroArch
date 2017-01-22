@@ -2249,6 +2249,9 @@ bool video_driver_texture_unload(uintptr_t *id)
 
 void video_driver_build_info(video_frame_info_t *video_info)
 {
+   bool is_paused                    = false;
+   bool is_idle                      = false;
+   bool is_slowmotion                = false;
    settings_t *settings              = NULL;
    video_driver_threaded_lock();
    settings                          = config_get_ptr();
@@ -2311,9 +2314,12 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->xmb_alpha_factor       = 0.0f;
    video_info->menu_wallpaper_opacity = 0.0f;
 #endif
-   video_info->runloop_is_paused      = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
-   video_info->runloop_is_idle        = runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL);
-   video_info->runloop_is_slowmotion  = runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, NULL);
+
+   runloop_get_status(&is_paused, &is_idle, &is_slowmotion);
+
+   video_info->runloop_is_paused      = is_paused;
+   video_info->runloop_is_idle        = is_idle;
+   video_info->runloop_is_slowmotion  = is_slowmotion;
    video_driver_threaded_unlock();
 }
 

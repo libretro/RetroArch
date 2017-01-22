@@ -204,6 +204,8 @@ int runloop_iterate(unsigned *sleep_ms);
 void runloop_msg_queue_push(const char *msg, unsigned prio,
       unsigned duration, bool flush);
 
+void runloop_get_status(bool *is_paused, bool *is_idle, bool *is_slowmotion);
+
 bool runloop_ctl(enum runloop_ctl_state state, void *data);
 
 RETRO_END_DECLS
