@@ -41,7 +41,7 @@ struct memstream
 
 static void memstream_update_pos(memstream_t *stream)
 {
-   if (stream->ptr > stream->max_ptr)
+   if (stream && stream->ptr > stream->max_ptr)
       stream->max_ptr = stream->ptr;
 }
 
