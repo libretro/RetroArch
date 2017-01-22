@@ -139,9 +139,10 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
          {
             for (j = 0; j < playlist->size; j++)
             {
-               printf("paths: %s %s\n", playlist->entries[j].path, state->path);
+               /*printf("State: %s Entry: %s\n", state->path, playlist->entries[j].path);*/
                if (strstr(playlist->entries[j].path, state->path))
                {
+                  printf("Match! %s %s\n", playlist->entries[j].path, state->path);
                   strlcpy(state->path, playlist->entries[j].path, sizeof(state->path));
                   state->found = true;
                   task_set_data(task, state);
@@ -175,7 +176,7 @@ no_playlists:
    return;
 }
 
-bool task_push_netplay_crc_scan(uint32_t crc,
+bool task_push_netplay_crc_scan(uint32_t crc, char* name,
       const char *hostname, const char *corename)
 {
    settings_t        *settings = config_get_ptr();
@@ -187,6 +188,8 @@ bool task_push_netplay_crc_scan(uint32_t crc,
 
    state->crc[0] = '\0';
    snprintf(state->crc, sizeof(state->crc), "%08X|crc", crc);
+   state->path[0] = '\0';
+   snprintf(state->path, sizeof(state->path), "%s", name);
 
    state->hostname[0] = '\0';
    snprintf(state->hostname, sizeof(state->hostname), "%s", hostname);
