@@ -239,15 +239,16 @@ error:
 }
 
 /* Used for rewinding while playback/record. */
-static void bsv_movie_set_frame_start(bsv_movie_t *handle)
+void bsv_movie_set_frame_start(void)
 {
-   if (!handle)
-      return;
-   handle->frame_pos[handle->frame_ptr] = ftell(handle->file);
+   bsv_movie_t *handle = bsv_movie_state.movie;
+   if (handle)
+      handle->frame_pos[handle->frame_ptr] = ftell(handle->file);
 }
 
-static void bsv_movie_set_frame_end(bsv_movie_t *handle)
+void bsv_movie_set_frame_end(void)
 {
+   bsv_movie_t *handle = bsv_movie_state.movie;
    if (!handle)
       return;
 
@@ -400,12 +401,6 @@ bool bsv_movie_ctl(enum bsv_ctl_state state, void *data)
          break;
       case BSV_MOVIE_CTL_INIT:
          bsv_movie_init_state();
-         break;
-      case BSV_MOVIE_CTL_SET_FRAME_START:
-         bsv_movie_set_frame_start(bsv_movie_state.movie);
-         break;
-      case BSV_MOVIE_CTL_SET_FRAME_END:
-         bsv_movie_set_frame_end(bsv_movie_state.movie);
          break;
       case BSV_MOVIE_CTL_FRAME_REWIND:
          bsv_movie_frame_rewind(bsv_movie_state.movie);

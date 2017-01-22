@@ -1114,8 +1114,7 @@ int runloop_iterate(unsigned *sleep_ms)
 
    autosave_lock();
 
-   if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
-      bsv_movie_ctl(BSV_MOVIE_CTL_SET_FRAME_START, NULL);
+   bsv_movie_set_frame_start();
 
    camera_driver_ctl(RARCH_CAMERA_CTL_POLL, NULL);
 
@@ -1157,8 +1156,7 @@ int runloop_iterate(unsigned *sleep_ms)
       input_pop_analog_dpad(auto_binds);
    }
 
-   if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
-      bsv_movie_ctl(BSV_MOVIE_CTL_SET_FRAME_END, NULL);
+   bsv_movie_set_frame_end();
 
    autosave_unlock();
 

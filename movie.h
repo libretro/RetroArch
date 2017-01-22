@@ -57,8 +57,6 @@ enum bsv_ctl_state
    BSV_MOVIE_CTL_UNSET_START_PLAYBACK,
    BSV_MOVIE_CTL_START_PLAYBACK,
    BSV_MOVIE_CTL_UNSET_PLAYBACK,
-   BSV_MOVIE_CTL_SET_FRAME_START,
-   BSV_MOVIE_CTL_SET_FRAME_END,
    BSV_MOVIE_CTL_FRAME_REWIND,
    BSV_MOVIE_CTL_DEINIT,
    BSV_MOVIE_CTL_INIT,
@@ -73,6 +71,10 @@ const char *bsv_movie_get_path(void);
 void bsv_movie_set_path(const char *path);
 
 void bsv_movie_set_start_path(const char *path);
+
+void bsv_movie_set_frame_start(void);
+
+void bsv_movie_set_frame_end(void);
 
 bool bsv_movie_ctl(enum bsv_ctl_state state, void *data);
 
