@@ -3,16 +3,6 @@
 #include "thread.h"
 #include "threadqueue.h"
 
-/**
- * \defgroup coreinit_event Event Object
- * \ingroup coreinit
- *
- * Standard event object implementation. There are two supported event object modes, check OSEventMode.
- *
- * Similar to Windows <a href="https://msdn.microsoft.com/en-us/library/windows/desktop/ms682655(v=vs.85).aspx">Event Objects</a>.
- * @{
- */
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -35,12 +25,8 @@ struct OSEvent
    //! Should always be set to the value OS_EVENT_TAG.
    uint32_t tag;
 
-   //! Name set by OSInitEventEx.
    const char *name;
-
-   UNKNOWN(4);
-
-   //! The current value of the event object.
+   uint32_t __unknown;
    BOOL value;
 
    //! The threads currently waiting on this event object with OSWaitEvent.
@@ -49,32 +35,18 @@ struct OSEvent
    //! The mode of the event object, set by OSInitEvent.
    OSEventMode mode;
 };
-CHECK_OFFSET(OSEvent, 0x0, tag);
-CHECK_OFFSET(OSEvent, 0x4, name);
-CHECK_OFFSET(OSEvent, 0xc, value);
-CHECK_OFFSET(OSEvent, 0x10, queue);
-CHECK_OFFSET(OSEvent, 0x20, mode);
-CHECK_SIZE(OSEvent, 0x24);
 
 
 /**
  * Initialise an event object with value and mode.
  */
-void
-OSInitEvent(OSEvent *event,
-            BOOL value,
-            OSEventMode mode);
+void OSInitEvent(OSEvent *event, BOOL value, OSEventMode mode);
 
 
 /**
  * Initialise an event object with value, mode and name.
  */
-void
-OSInitEventEx(OSEvent *event,
-              BOOL value,
-              OSEventMode mode,
-              char *name);
-
+void OSInitEventEx(OSEvent *event, BOOL value, OSEventMode mode, char *name);
 
 /**
  * Signals the event.
@@ -89,8 +61,7 @@ OSInitEventEx(OSEvent *event,
  *
  * Similar to <a href="https://msdn.microsoft.com/en-us/library/windows/desktop/ms686211(v=vs.85).aspx">SetEvent</a>.
  */
-void
-OSSignalEvent(OSEvent *event);
+void OSSignalEvent(OSEvent *event);
 
 /**
  * Signals all threads waiting on an event.
@@ -117,8 +88,7 @@ OSSignalEventAll(OSEvent *event);
  *
  * Similar to <a href="https://msdn.microsoft.com/en-us/library/windows/desktop/ms687032(v=vs.85).aspx">WaitForSingleObject</a>.
  */
-void
-OSWaitEvent(OSEvent *event);
+void OSWaitEvent(OSEvent *event);
 
 
 /**
@@ -126,8 +96,7 @@ OSWaitEvent(OSEvent *event);
  *
  * Similar to <a href="https://msdn.microsoft.com/en-us/library/windows/desktop/ms685081(v=vs.85).aspx">ResetEvent</a>.
  */
-void
-OSResetEvent(OSEvent *event);
+void OSResetEvent(OSEvent *event);
 
 
 /**
@@ -142,5 +111,3 @@ OSWaitEventWithTimeout(OSEvent *event,
 #ifdef __cplusplus
 }
 #endif
-
-/** @} */

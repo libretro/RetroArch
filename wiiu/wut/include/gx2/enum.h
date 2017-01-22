@@ -1,12 +1,6 @@
 #pragma once
 #include <wut.h>
 
-/**
- * \defgroup gx2_enum Enums
- * \ingroup gx2
- * @{
- */
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -502,5 +496,3 @@ typedef enum GX2TVScanMode
 #ifdef __cplusplus
 }
 #endif
-
-/** @} */

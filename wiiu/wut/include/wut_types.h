@@ -32,11 +32,6 @@ typedef volatile s16 vs16;
 typedef volatile s32 vs32;
 typedef volatile s64 vs64;
 
-typedef s16 sfp16;
-typedef s32 sfp32;
-typedef u16 ufp16;
-typedef u32 ufp32;
-
 typedef float f32;
 typedef double f64;
 

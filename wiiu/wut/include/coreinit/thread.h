@@ -3,45 +3,9 @@
 #include "time.h"
 #include "threadqueue.h"
 
-/**
- * \defgroup coreinit_thread Thread
- * \ingroup coreinit
- *
- * The thread scheduler in the Wii U uses co-operative scheduling, this is different
- * to the usual pre-emptive scheduling that most operating systems use (such as
- * Windows, Linux, etc). In co-operative scheduling threads must voluntarily yield
- * execution to other threads. In pre-emptive threads are switched by the operating
- * system after an amount of time.
- *
- * With the Wii U's scheduling model the thread with the highest priority which
- * is in a non-waiting state will always be running (where 0 is the highest
- * priority and 31 is the lowest). Execution will only switch to other threads
- * once this thread has been forced to wait, such as when waiting to acquire a
- * mutex, or when the thread voluntarily yields execution to other threads which
- * have the same priority using OSYieldThread. OSYieldThread will never yield to
- * a thread with lower priority than the current thread.
- * @{
- */
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-typedef struct OSContext OSContext;
-typedef struct OSFastMutex OSFastMutex;
-typedef struct OSFastMutexQueue OSFastMutexQueue;
-typedef struct OSMutex OSMutex;
-typedef struct OSMutexQueue OSMutexQueue;
-typedef struct OSThread OSThread;
-
-//! A value from enum OS_THREAD_STATE.
-typedef uint8_t OSThreadState;
-
-//! A value from enum OS_THREAD_REQUEST.
-typedef uint32_t OSThreadRequest;
-
-//! A bitfield of enum OS_THREAD_ATTRIB.
-typedef uint8_t OSThreadAttributes;
 
 typedef int (*OSThreadEntryPointFn)(int argc, const char **argv);
 typedef void (*OSThreadCleanupCallbackFn)(OSThread *thread, void *stack);
@@ -63,6 +27,7 @@ enum OS_THREAD_STATE
    //! Thread is about to terminate
    OS_THREAD_STATE_MORIBUND         = 1 << 3,
 };
+typedef uint8_t OSThreadState;
 
 enum OS_THREAD_REQUEST
 {
@@ -70,6 +35,7 @@ enum OS_THREAD_REQUEST
    OS_THREAD_REQUEST_SUSPEND        = 1,
    OS_THREAD_REQUEST_CANCEL         = 2,
 };
+typedef uint32_t OSThreadRequest;
 
 enum OS_THREAD_ATTRIB
 {
@@ -91,10 +57,11 @@ enum OS_THREAD_ATTRIB
    //! Enables tracking of stack usage.
    OS_THREAD_ATTRIB_STACK_USAGE     = 1 << 5
 };
+typedef uint8_t OSThreadAttributes;
 
 #define OS_CONTEXT_TAG 0x4F53436F6E747874ull
 
-struct OSContext
+typedef struct OSContext
 {
    //! Should always be set to the value OS_CONTEXT_TAG.
    uint64_t tag;
@@ -112,68 +79,40 @@ struct OSContext
    uint16_t spinLockCount;
    uint16_t state;
    uint32_t gqr[8];
-   UNKNOWN(4);
+   uint32_t __unknown0;
    double psf[32];
    uint64_t coretime[3];
    uint64_t starttime;
    uint32_t error;
-   UNKNOWN(4);
+   uint32_t __unknown1;
    uint32_t pmc1;
    uint32_t pmc2;
    uint32_t pmc3;
    uint32_t pmc4;
    uint32_t mmcr0;
    uint32_t mmcr1;
-};
-CHECK_OFFSET(OSContext, 0x00, tag);
-CHECK_OFFSET(OSContext, 0x08, gpr);
-CHECK_OFFSET(OSContext, 0x88, cr);
-CHECK_OFFSET(OSContext, 0x8c, lr);
-CHECK_OFFSET(OSContext, 0x90, ctr);
-CHECK_OFFSET(OSContext, 0x94, xer);
-CHECK_OFFSET(OSContext, 0x98, srr0);
-CHECK_OFFSET(OSContext, 0x9c, srr1);
-CHECK_OFFSET(OSContext, 0xb4, fpscr);
-CHECK_OFFSET(OSContext, 0xb8, fpr);
-CHECK_OFFSET(OSContext, 0x1b8, spinLockCount);
-CHECK_OFFSET(OSContext, 0x1ba, state);
-CHECK_OFFSET(OSContext, 0x1bc, gqr);
-CHECK_OFFSET(OSContext, 0x1e0, psf);
-CHECK_OFFSET(OSContext, 0x2e0, coretime);
-CHECK_OFFSET(OSContext, 0x2f8, starttime);
-CHECK_OFFSET(OSContext, 0x300, error);
-CHECK_OFFSET(OSContext, 0x308, pmc1);
-CHECK_OFFSET(OSContext, 0x30c, pmc2);
-CHECK_OFFSET(OSContext, 0x310, pmc3);
-CHECK_OFFSET(OSContext, 0x314, pmc4);
-CHECK_OFFSET(OSContext, 0x318, mmcr0);
-CHECK_OFFSET(OSContext, 0x31c, mmcr1);
-CHECK_SIZE(OSContext, 0x320);
+}OSContext;
 
-struct OSMutexQueue
+typedef struct OSMutex OSMutex;
+typedef struct OSFastMutex OSFastMutex;
+
+typedef struct OSMutexQueue
 {
    OSMutex *head;
    OSMutex *tail;
    void *parent;
-   UNKNOWN(4);
-};
-CHECK_OFFSET(OSMutexQueue, 0x0, head);
-CHECK_OFFSET(OSMutexQueue, 0x4, tail);
-CHECK_OFFSET(OSMutexQueue, 0x8, parent);
-CHECK_SIZE(OSMutexQueue, 0x10);
+   uint32_t __unknown;
+}OSMutexQueue;
 
-struct OSFastMutexQueue
+typedef struct OSFastMutexQueue
 {
    OSFastMutex *head;
    OSFastMutex *tail;
-};
-CHECK_OFFSET(OSFastMutexQueue, 0x00, head);
-CHECK_OFFSET(OSFastMutexQueue, 0x04, tail);
-CHECK_SIZE(OSFastMutexQueue, 0x08);
+}OSFastMutexQueue;
 
 #define OS_THREAD_TAG 0x74487244u
 #pragma pack(push, 1)
-struct OSThread
+typedef struct OSThread
 {
    OSContext context;
 
@@ -201,7 +140,7 @@ struct OSThread
    //! Exit value
    int32_t exitValue;
 
-   UNKNOWN(0x35C - 0x338);
+   uint32_t unknown0[0x9];
 
    //! Queue the thread is currently waiting on
    OSThreadQueue *queue;
@@ -230,17 +169,17 @@ struct OSThread
    //! Thread entry point
    OSThreadEntryPointFn entryPoint;
 
-   UNKNOWN(0x57c - 0x3a0);
+   uint32_t unknown1[0x77];
 
    //! Thread specific values, accessed with OSSetThreadSpecific and OSGetThreadSpecific.
    uint32_t specific[0x10];
 
-   UNKNOWN(0x5c0 - 0x5bc);
+   uint32_t unknown2;
 
    //! Thread name, accessed with OSSetThreadName and OSGetThreadName.
    const char *name;
 
-   UNKNOWN(0x4);
+   uint32_t unknown3;
 
    //! The stack pointer passed in OSCreateThread.
    void *userStackPointer;
@@ -266,9 +205,10 @@ struct OSThread
    //! Queue of threads waiting for a thread to be suspended.
    OSThreadQueue suspendQueue;
 
-   UNKNOWN(0x69c - 0x5f4);
-};
+   uint32_t unknown4[0x2A];
+}OSThread;
 #pragma pack(pop)
+
 CHECK_OFFSET(OSThread, 0x320, tag);
 CHECK_OFFSET(OSThread, 0x324, state);
 CHECK_OFFSET(OSThread, 0x325, attr);
@@ -298,7 +238,6 @@ CHECK_OFFSET(OSThread, 0x5e0, suspendResult);
 CHECK_OFFSET(OSThread, 0x5e4, suspendQueue);
 CHECK_SIZE(OSThread, 0x69c);
 
-
 /**
  * Cancels a thread.
  *
@@ -312,29 +251,25 @@ OSCancelThread(OSThread *thread);
 /**
  * Returns the count of active threads.
  */
-int32_t
-OSCheckActiveThreads();
+int32_t OSCheckActiveThreads();
 
 
 /**
  * Get the maximum amount of stack the thread has used.
  */
-int32_t
-OSCheckThreadStackUsage(OSThread *thread);
+int32_t OSCheckThreadStackUsage(OSThread *thread);
 
 
 /**
  * Disable tracking of thread stack usage
  */
-void
-OSClearThreadStackUsage(OSThread *thread);
+void OSClearThreadStackUsage(OSThread *thread);
 
 
 /**
  * Clears a thread's suspend counter and resumes it.
  */
-void
-OSContinueThread(OSThread *thread);
+void OSContinueThread(OSThread *thread);
 
 
 /**
@@ -349,22 +284,20 @@ OSContinueThread(OSThread *thread);
  * \param priority Thread priority, 0 is highest priorty, 31 is lowest.
  * \param attributes Thread attributes, see OSThreadAttributes.
  */
-BOOL
-OSCreateThread(OSThread *thread,
-               OSThreadEntryPointFn entry,
-               int32_t argc,
-               char *argv,
-               void *stack,
-               uint32_t stackSize,
-               int32_t priority,
-               OSThreadAttributes attributes);
+BOOL OSCreateThread(OSThread *thread,
+                    OSThreadEntryPointFn entry,
+                    int32_t argc,
+                    char *argv,
+                    void *stack,
+                    uint32_t stackSize,
+                    int32_t priority,
+                    OSThreadAttributes attributes);
 
 
 /**
  * Detach thread.
  */
-void
-OSDetachThread(OSThread *thread);
+void OSDetachThread(OSThread *thread);
 
 
 /**
@@ -372,23 +305,20 @@ OSDetachThread(OSThread *thread);
  *
  * This function is implicitly called when the thread entry point returns.
  */
-void
-OSExitThread(int32_t result);
+void OSExitThread(int32_t result);
 
 
 /**
  * Get the next and previous thread in the thread's active queue.
  */
-void
-OSGetActiveThreadLink(OSThread *thread,
-                      OSThreadLink *link);
+void OSGetActiveThreadLink(OSThread *thread,
+                           OSThreadLink *link);
 
 
 /**
  * Return pointer to OSThread object for the current thread.
  */
-OSThread *
-OSGetCurrentThread();
+OSThread *OSGetCurrentThread();
 
 
 /**
@@ -398,29 +328,25 @@ OSGetCurrentThread();
  * thread for core 1 calls the RPX entry point, the default threads for core 0
  * and 2 are suspended and can be used with OSRunThread.
  */
-OSThread *
-OSGetDefaultThread(uint32_t coreID);
+OSThread *OSGetDefaultThread(uint32_t coreID);
 
 
 /**
  * Return current stack pointer, value of r1 register.
  */
-uint32_t
-OSGetStackPointer();
+uint32_t OSGetStackPointer();
 
 
 /**
  * Get a thread's affinity.
  */
-uint32_t
-OSGetThreadAffinity(OSThread *thread);
+uint32_t OSGetThreadAffinity(OSThread *thread);
 
 
 /**
  * Get a thread's name.
  */
-const char *
-OSGetThreadName(OSThread *thread);
+const char *OSGetThreadName(OSThread *thread);
 
 
 /**
@@ -433,22 +359,19 @@ OSGetThreadPriority(OSThread *thread);
 /**
  * Get a thread's specific value set by OSSetThreadSpecific.
  */
-uint32_t
-OSGetThreadSpecific(uint32_t id);
+uint32_t OSGetThreadSpecific(uint32_t id);
 
 
 /**
  * Returns TRUE if a thread is suspended.
  */
-BOOL
-OSIsThreadSuspended(OSThread *thread);
+BOOL OSIsThreadSuspended(OSThread *thread);
 
 
 /**
  * Returns TRUE if a thread is terminated.
  */
-BOOL
-OSIsThreadTerminated(OSThread *thread);
+BOOL OSIsThreadTerminated(OSThread *thread);
 
 
 /**
@@ -460,9 +383,8 @@ OSIsThreadTerminated(OSThread *thread);
  * \param threadResult Pointer to store thread exit value in.
  * \returns Returns TRUE if thread has terminated, FALSE if thread is detached.
  */
-BOOL
-OSJoinThread(OSThread *thread,
-             int *threadResult);
+BOOL OSJoinThread(OSThread *thread,
+                  int *threadResult);
 
 
 /**
@@ -473,8 +395,7 @@ OSJoinThread(OSThread *thread,
  *
  * \returns Returns the previous value of the suspend counter.
  */
-int32_t
-OSResumeThread(OSThread *thread);
+int32_t OSResumeThread(OSThread *thread);
 
 
 /**
@@ -482,11 +403,10 @@ OSResumeThread(OSThread *thread);
  *
  * Can only be used on idle threads.
  */
-BOOL
-OSRunThread(OSThread *thread,
-            OSThreadEntryPointFn entry,
-            int argc,
-            const char **argv);
+BOOL OSRunThread(OSThread *thread,
+                 OSThreadEntryPointFn entry,
+                 int argc,
+                 const char **argv);
 
 
 /**
@@ -633,5 +553,3 @@ OSYieldThread();
 #ifdef __cplusplus
 }
 #endif
-
-/** @} */

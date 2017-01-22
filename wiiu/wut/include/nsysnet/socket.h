@@ -3,11 +3,9 @@
 #include <stdint.h>
 #include <sys/time.h>
 
-/**
- * \defgroup nsysnet_socket Socket
- * \ingroup nsysnet
- * @{
- */
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define SOL_SOCKET      0xFFFF
 
@@ -74,121 +72,39 @@ struct linger
    int l_linger;
 };
 
-struct in_addr {
-    unsigned int s_addr;
-};
-struct sockaddr_in {
-    short sin_family;
-    unsigned short sin_port;
-    struct in_addr sin_addr;
-    char sin_zero[8];
+struct in_addr
+{
+   unsigned int s_addr;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+struct sockaddr_in
+{
+   short sin_family;
+   unsigned short sin_port;
+   struct in_addr sin_addr;
+   char sin_zero[8];
+};
 
-void
-socket_lib_init();
-
-int
-accept(int sockfd,
-       struct sockaddr *addr,
-       socklen_t *addrlen);
-
-int
-bind(int sockfd,
-     const struct sockaddr *addr,
-     socklen_t addrlen);
-
-int
-socketclose(int sockfd);
-
-int
-connect(int sockfd,
-        const struct sockaddr *addr,
-        socklen_t addrlen);
-
-int
-getpeername(int sockfd,
-            struct sockaddr *addr,
-            socklen_t *addrlen);
-
-int
-getsockname(int sockfd,
-            struct sockaddr *addr,
-            socklen_t *addrlen);
-
-int
-getsockopt(int sockfd,
-           int level,
-           int optname,
-           void *optval,
-           socklen_t *optlen);
-
-int
-listen(int sockfd,
-       int backlog);
-
-ssize_t
-recv(int sockfd,
-     void *buf,
-     size_t len,
-     int flags);
-
-ssize_t
-recvfrom(int sockfd,
-         void *buf,
-         size_t len,
-         int flags,
-         struct sockaddr *src_addr,
-         socklen_t *addrlen);
-
-ssize_t
-send(int sockfd,
-     const void *buf,
-     size_t len,
-     int flags);
-
-ssize_t
-sendto(int sockfd,
-       const void *buf,
-       size_t len,
-       int flags,
-       const struct sockaddr *dest_addr,
-       socklen_t addrlen);
-
-int
-setsockopt(int sockfd,
-           int level,
-           int optname,
-           const void *optval,
-           socklen_t optlen);
-
-int
-shutdown(int sockfd,
-         int how);
-
-int
-socket(int domain,
-       int type,
-       int protocol);
-
-int
-select(int nfds,
-       fd_set *readfds,
-       fd_set *writefds,
-       fd_set *exceptfds,
-       struct timeval *timeout);
-
-char *
-inet_ntoa(struct in_addr in);
-
-int
-inet_aton(const char *cp, struct in_addr *inp);
+void socket_lib_init();
+int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+int socketclose(int sockfd);
+int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+int getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+int getsockname(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+int getsockopt(int sockfd, int level, int optname, void *optval, socklen_t *optlen);
+int listen(int sockfd, int backlog);
+ssize_t recv(int sockfd, void *buf, size_t len, int flags);
+ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen);
+ssize_t send(int sockfd, const void *buf, size_t len, int flags);
+ssize_t sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen);
+int setsockopt(int sockfd, int level, int optname, const void *optval, socklen_t optlen);
+int shutdown(int sockfd, int how);
+int socket(int domain, int type, int protocol);
+int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
+char *inet_ntoa(struct in_addr in);
+int inet_aton(const char *cp, struct in_addr *inp);
 
 #ifdef __cplusplus
 }
 #endif
-
-/** @} */
