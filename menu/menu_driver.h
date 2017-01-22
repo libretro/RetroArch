@@ -97,7 +97,6 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_DEINIT,
    RARCH_MENU_CTL_INIT,
    RARCH_MENU_CTL_BLIT_RENDER,
-   RARCH_MENU_CTL_RENDER,
    RARCH_MENU_CTL_RENDER_MESSAGEBOX,
    RARCH_MENU_CTL_SET_PREVENT_POPULATE,
    RARCH_MENU_CTL_UNSET_PREVENT_POPULATE,
@@ -382,6 +381,8 @@ const char* config_get_menu_driver_options(void);
 extern unsigned int rdb_entry_start_game_selection_ptr;
 
 const char *menu_driver_ident(void);
+
+bool menu_driver_render(bool is_idle);
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data);
 

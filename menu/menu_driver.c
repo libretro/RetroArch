@@ -252,7 +252,7 @@ static void menu_driver_toggle(bool on)
    runloop_ctl(RUNLOOP_CTL_FRONTEND_KEY_EVENT_GET, &frontend_key_event);
    runloop_ctl(RUNLOOP_CTL_KEY_EVENT_GET,          &key_event);
 
-   if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+   if (menu_driver_alive)
    {
       bool refresh = false;
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
@@ -328,6 +328,48 @@ static void menu_update_libretro_info(void)
 
    command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
    command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+}
+
+bool menu_driver_render(bool is_idle)
+{
+   if (!menu_driver_data)
+      return false;
+
+   if (BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_FRAMEBUFFER)
+         != BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_MESSAGEBOX))
+      BIT64_SET(menu_driver_data->state, MENU_STATE_RENDER_FRAMEBUFFER);
+
+   if (BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_FRAMEBUFFER))
+      menu_display_set_framebuffer_dirty_flag();
+
+   if (BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_MESSAGEBOX)
+         && !string_is_empty(menu_driver_data->menu_state.msg))
+   {
+      menu_driver_ctl(RARCH_MENU_CTL_RENDER_MESSAGEBOX, NULL);
+
+      if (ui_companion_is_on_foreground())
+      {
+         const ui_companion_driver_t *ui = ui_companion_get_ptr();
+         if (ui->render_messagebox)
+            ui->render_messagebox(menu_driver_data->menu_state.msg);
+      }
+   }
+
+   if (BIT64_GET(menu_driver_data->state, MENU_STATE_BLIT))
+   {
+      settings_t *settings = config_get_ptr();
+      menu_animation_update_time(settings->menu.timedate_enable);
+      menu_driver_ctl(RARCH_MENU_CTL_BLIT_RENDER, NULL);
+   }
+
+   if (menu_driver_alive && !is_idle)
+      menu_display_libretro();
+
+   menu_driver_ctl(RARCH_MENU_CTL_SET_TEXTURE, NULL);
+
+   menu_driver_data->state               = 0;
+
+   return true;
 }
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
@@ -453,45 +495,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
       case RARCH_MENU_CTL_BLIT_RENDER:
          if (menu_driver_ctx->render)
             menu_driver_ctx->render(menu_userdata);
-         break;
-      case RARCH_MENU_CTL_RENDER:
-         if (!menu_driver_data)
-            return false;
-
-         if (BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_FRAMEBUFFER)
-               != BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_MESSAGEBOX))
-            BIT64_SET(menu_driver_data->state, MENU_STATE_RENDER_FRAMEBUFFER);
-
-         if (BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_FRAMEBUFFER))
-            menu_display_set_framebuffer_dirty_flag();
-
-         if (BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_MESSAGEBOX)
-               && !string_is_empty(menu_driver_data->menu_state.msg))
-         {
-            menu_driver_ctl(RARCH_MENU_CTL_RENDER_MESSAGEBOX, NULL);
-
-            if (ui_companion_is_on_foreground())
-            {
-               const ui_companion_driver_t *ui = ui_companion_get_ptr();
-               if (ui->render_messagebox)
-                  ui->render_messagebox(menu_driver_data->menu_state.msg);
-            }
-         }
-
-         if (BIT64_GET(menu_driver_data->state, MENU_STATE_BLIT))
-         {
-            settings_t *settings = config_get_ptr();
-            menu_animation_update_time(settings->menu.timedate_enable);
-            menu_driver_ctl(RARCH_MENU_CTL_BLIT_RENDER, NULL);
-         }
-
-         if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL)
-               && !runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
-            menu_display_libretro();
-
-         menu_driver_ctl(RARCH_MENU_CTL_SET_TEXTURE, NULL);
-
-         menu_driver_data->state               = 0;
          break;
       case RARCH_MENU_CTL_SET_PREVENT_POPULATE:
          menu_driver_prevent_populate = true;
