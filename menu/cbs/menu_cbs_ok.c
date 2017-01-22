@@ -3130,6 +3130,8 @@ static int action_ok_netplay_connect_room(const char *path,
    /* For testing purposes
    strlcpy(tmp_hostname, "192.168.1.241", sizeof(tmp_hostname));*/
    strlcpy(tmp_hostname, netplay_room_list[idx - 1].address, sizeof(tmp_hostname));
+   snprintf(tmp_hostname, sizeof(tmp_hostname), "%s:%d", 
+      netplay_room_list[idx - 1].address, netplay_room_list[idx - 1].port);
 
    /* If we haven't yet started, this will load on its own */
    if (!content_is_inited())

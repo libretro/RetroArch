@@ -2443,12 +2443,16 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED:
          {
-            char *hostname = (char *) data;
+            /* buf is expected to be address:port, there must be a better way
+               to do this but for now I'll just use a string list */
+            char *buf = (char *) data;
+            static struct string_list *hostname = NULL;
+            hostname = string_split(buf, ":");
 
             settings_t *settings = config_get_ptr();
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
             if (!init_netplay_deferred(
-                     hostname, settings->netplay.port))
+                     hostname->elems[0].data, atoi(hostname->elems[1].data)))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                return false;
