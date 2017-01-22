@@ -125,7 +125,7 @@ ifeq ($(HAVE_LOGGER), 1)
 endif
 endif
 
-  CFLAGS += -DGEKKO
+  CFLAGS += -DGEKKO -U__INT32_TYPE__ -U __UINT32_TYPE__ -D__INT32_TYPE__=int
 
   HAVE_FILTERS_BUILTIN     := 1
   HAVE_THREADS             := 1
