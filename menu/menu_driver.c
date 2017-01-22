@@ -345,7 +345,9 @@ bool menu_driver_render(bool is_idle)
    if (BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_MESSAGEBOX)
          && !string_is_empty(menu_driver_data->menu_state.msg))
    {
-      menu_driver_ctl(RARCH_MENU_CTL_RENDER_MESSAGEBOX, NULL);
+      if (menu_driver_ctx->render_messagebox)
+         menu_driver_ctx->render_messagebox(menu_userdata,
+               menu_driver_data->menu_state.msg);
 
       if (ui_companion_is_on_foreground())
       {
@@ -359,7 +361,9 @@ bool menu_driver_render(bool is_idle)
    {
       settings_t *settings = config_get_ptr();
       menu_animation_update_time(settings->menu.timedate_enable);
-      menu_driver_ctl(RARCH_MENU_CTL_BLIT_RENDER, NULL);
+
+      if (menu_driver_ctx->render)
+         menu_driver_ctx->render(menu_userdata);
    }
 
    if (menu_driver_alive && !is_idle)
@@ -486,15 +490,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             libretro_free_system_info(&menu_driver_system);
             memset(&menu_driver_system, 0, sizeof(struct retro_system_info));
          }
-         break;
-      case RARCH_MENU_CTL_RENDER_MESSAGEBOX:
-         if (menu_driver_ctx->render_messagebox)
-            menu_driver_ctx->render_messagebox(menu_userdata,
-                  menu_driver_data->menu_state.msg);
-         break;
-      case RARCH_MENU_CTL_BLIT_RENDER:
-         if (menu_driver_ctx->render)
-            menu_driver_ctx->render(menu_userdata);
          break;
       case RARCH_MENU_CTL_SET_PREVENT_POPULATE:
          menu_driver_prevent_populate = true;
