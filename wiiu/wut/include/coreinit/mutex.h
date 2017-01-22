@@ -2,16 +2,6 @@
 #include <wut.h>
 #include "threadqueue.h"
 
-/**
- * \defgroup coreinit_mutex Mutex
- * \ingroup coreinit
- *
- * Standard mutex object, supports recursive locking.
- *
- * Similar to <a href="http://en.cppreference.com/w/cpp/thread/recursive_mutex">std::recursive_mutex</a>.
- * @{
- */
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -19,20 +9,15 @@ extern "C" {
 typedef struct OSThread OSThread;
 
 typedef struct OSMutex OSMutex;
-typedef struct OSMutexLink OSMutexLink;
-
-struct OSMutexLink
+typedef struct OSMutexLink
 {
    OSMutex *next;
    OSMutex *prev;
-};
-CHECK_OFFSET(OSMutexLink, 0x00, next);
-CHECK_OFFSET(OSMutexLink, 0x04, prev);
-CHECK_SIZE(OSMutexLink, 0x8);
+}OSMutexLink;
 
 #define OS_MUTEX_TAG 0x6D557458u
 
-struct OSMutex
+typedef struct OSMutex
 {
    //! Should always be set to the value OS_MUTEX_TAG.
    uint32_t tag;
@@ -40,7 +25,7 @@ struct OSMutex
    //! Name set by OSInitMutexEx.
    const char *name;
 
-   UNKNOWN(4);
+   uint32_t __unknown;
 
    //! Queue of threads waiting for this mutex to unlock.
    OSThreadQueue queue;
@@ -53,14 +38,7 @@ struct OSMutex
 
    //! Link used inside OSThread's mutex queue.
    OSMutexLink link;
-};
-CHECK_OFFSET(OSMutex, 0x00, tag);
-CHECK_OFFSET(OSMutex, 0x04, name);
-CHECK_OFFSET(OSMutex, 0x0c, queue);
-CHECK_OFFSET(OSMutex, 0x1c, owner);
-CHECK_OFFSET(OSMutex, 0x20, count);
-CHECK_OFFSET(OSMutex, 0x24, link);
-CHECK_SIZE(OSMutex, 0x2c);
+}OSMutex;
 
 
 /**

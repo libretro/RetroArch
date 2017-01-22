@@ -1,22 +1,6 @@
 #pragma once
 #include <wut.h>
 
-/**
- * \defgroup coreinit_fs Filesystem
- * \ingroup coreinit
- *
- *  First call FSInit to initialise the file system library, then call
- *  FSAddClient to initialise your FSClient structure, then you need to use
- *  FSInitCmdBlock to initialise an FSCmdBlock structure for each command you
- *  want to run in parallel. You must ensure the previous filesystem command
- *  has been completed before reusing the same FSCmdBlock, you do not need to
- *  reinitialise an FSCmdBlock before reusing it.
- *
- *  Calling fsDevInit initializes the stdlib devoptab, allowing for standard
- *  file IO.
- * @{
- */
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -24,14 +8,6 @@ extern "C" {
 typedef uint32_t FSDirectoryHandle;
 typedef uint32_t FSFileHandle;
 typedef uint32_t FSPriority;
-
-typedef struct FSAsyncData FSAsyncData;
-typedef struct FSCmdBlock FSCmdBlock;
-typedef struct FSClient FSClient;
-typedef struct FSDirectoryEntry FSDirectoryEntry;
-typedef struct FSStat FSStat;
-typedef struct FSStateChangeInfo FSStateChangeInfo;
-typedef struct FSMountSource FSMountSource;
 
 typedef enum FSStatus
 {
@@ -139,483 +115,359 @@ typedef enum FSMountSourceType
    FS_MOUNT_SOURCE_UNK = 1,
 } FSMountSourceType;
 
-typedef void(*FSAsyncCallback)(FSClient *, FSCmdBlock *, FSStatus, uint32_t);
-
-struct FSClient
+typedef struct FSClient
 {
-   UNKNOWN(0x1700);
-};
-CHECK_SIZE(FSClient, 0x1700);
+   uint32_t __unknown[0x5C0];
+} FSClient;
 
-struct FSCmdBlock
+typedef struct FSCmdBlock
 {
-   UNKNOWN(0xA80);
-};
-CHECK_SIZE(FSCmdBlock, 0xA80);
+   uint32_t __unknown[0x2A0];
+} FSCmdBlock;
 
-struct FSStat
+typedef struct FSStat
 {
    FSStatFlags flags;
    FSMode mode;
    uint32_t owner;
    uint32_t group;
    uint32_t size;
-   UNKNOWN(0x50);
-};
-CHECK_OFFSET(FSStat, 0x00, flags);
-CHECK_OFFSET(FSStat, 0x10, size);
-CHECK_SIZE(FSStat, 0x64);
+   uint32_t __unknown[0x14];
+} FSStat;
 
-struct FSStateChangeInfo
+typedef struct FSStateChangeInfo
 {
-   UNKNOWN(0xC);
-};
-CHECK_SIZE(FSStateChangeInfo, 0xC);
+   uint32_t __unknown[0x3];
+} FSStateChangeInfo;
 
-struct FSAsyncData
+typedef void(*FSAsyncCallback)(FSClient *, FSCmdBlock *, FSStatus, uint32_t);
+
+typedef struct FSAsyncData
 {
    uint32_t callback;
    uint32_t param;
-   UNKNOWN(4);
-};
-CHECK_OFFSET(FSAsyncData, 0x0, callback);
-CHECK_OFFSET(FSAsyncData, 0x4, param);
-CHECK_SIZE(FSAsyncData, 0xC);
+   uint32_t __unknown;
+} FSAsyncData;
 
-struct FSDirectoryEntry
+typedef struct FSDirectoryEntry
 {
    FSStat info;
    char name[256];
-};
-CHECK_OFFSET(FSDirectoryEntry, 0x64, name);
-CHECK_SIZE(FSDirectoryEntry, 0x164);
+} FSDirectoryEntry;
 
-struct FSMountSource
+typedef struct FSMountSource
 {
-   UNKNOWN(0x300);
-};
-CHECK_SIZE(FSMountSource, 0x300);
+   uint32_t __unknown[0xC0];
+} FSMountSource;
 
-FSStatus
-fsDevInit();
+FSStatus fsDevInit();
+FSStatus fsDevExit();
 
-FSStatus
-fsDevExit();
+void FSInit();
+void FSShutdown();
 
-void
-FSInit();
+FSStatus FSAddClient(FSClient *client,
+                     uint32_t flags);
 
-void
-FSShutdown();
+FSStatus FSDelClient(FSClient *client,
+                     uint32_t flags);
 
-FSStatus
-FSAddClient(FSClient *client,
-            uint32_t flags);
+uint32_t FSGetClientNum();
 
-FSStatus
-FSDelClient(FSClient *client,
-            uint32_t flags);
+void FSInitCmdBlock(FSCmdBlock *block);
 
-uint32_t
-FSGetClientNum();
+FSStatus FSSetCmdPriority(FSCmdBlock *block,
+                          FSPriority priority);
 
-void
-FSInitCmdBlock(FSCmdBlock *block);
+void FSSetStateChangeNotification(FSClient *client,
+                                  FSStateChangeInfo *info);
 
-FSStatus
-FSSetCmdPriority(FSCmdBlock *block,
-                 FSPriority priority);
+FSStatus FSGetCwd(FSClient *client, FSCmdBlock *block, char *buffer, uint32_t bufferSize, uint32_t flags);
+FSStatus FSChangeDir(FSClient *client, FSCmdBlock *block, const char *path, uint32_t flags);
+FSStatus FSChangeDirAsync(FSClient *client, FSCmdBlock *block, const char *path, uint32_t flags, FSAsyncData *asyncData);
+FSStatus FSGetStat(FSClient *client, FSCmdBlock *block, const char *path, FSStat *stat, uint32_t flags);
+FSStatus FSGetStatAsync(FSClient *client, FSCmdBlock *block, const char *path, FSStat *stat, uint32_t flags, FSAsyncData *asyncData);
+FSStatus FSRemove(FSClient *client, FSCmdBlock *block, const char *path, uint32_t flags);
+FSStatus FSRemoveAsync(FSClient *client, FSCmdBlock *block, const char *path, uint32_t flags, FSAsyncData *asyncData);
+FSStatus FSOpenFile(FSClient *client, FSCmdBlock *block, const char *path, const char *mode, FSFileHandle *handle, uint32_t flags);
+FSStatus FSOpenFileAsync(FSClient *client, FSCmdBlock *block, const char *path, const char *mode, FSFileHandle *outHandle, uint32_t flags, FSAsyncData *asyncData);
 
-void
-FSSetStateChangeNotification(FSClient *client,
-                             FSStateChangeInfo *info);
+FSStatus FSCloseFile(FSClient *client,
+                     FSCmdBlock *block,
+                     FSFileHandle handle,
+                     uint32_t flags);
 
-FSStatus
-FSGetCwd(FSClient *client,
-         FSCmdBlock *block,
-         char *buffer,
-         uint32_t bufferSize,
-         uint32_t flags);
+FSStatus FSCloseFileAsync(FSClient *client,
+                          FSCmdBlock *block,
+                          FSFileHandle handle,
+                          uint32_t flags,
+                          FSAsyncData *asyncData);
 
-FSStatus
-FSChangeDir(FSClient *client,
-            FSCmdBlock *block,
-            const char *path,
-            uint32_t flags);
-
-FSStatus
-FSChangeDirAsync(FSClient *client,
-                 FSCmdBlock *block,
-                 const char *path,
-                 uint32_t flags,
-                 FSAsyncData *asyncData);
-
-FSStatus
-FSGetStat(FSClient *client,
-          FSCmdBlock *block,
-          const char *path,
-          FSStat *stat,
-          uint32_t flags);
-
-FSStatus
-FSGetStatAsync(FSClient *client,
-               FSCmdBlock *block,
-               const char *path,
-               FSStat *stat,
-               uint32_t flags,
-               FSAsyncData *asyncData);
-
-FSStatus
-FSRemove(FSClient *client,
-          FSCmdBlock *block,
-          const char *path,
-          uint32_t flags);
-
-FSStatus
-FSRemoveAsync(FSClient *client,
-          FSCmdBlock *block,
-          const char *path,
-          uint32_t flags,
-          FSAsyncData *asyncData);
-
-
-FSStatus
-FSOpenFile(FSClient *client,
-           FSCmdBlock *block,
-           const char *path,
-           const char *mode,
-           FSFileHandle *handle,
-           uint32_t flags);
-
-FSStatus
-FSOpenFileAsync(FSClient *client,
-                FSCmdBlock *block,
-                const char *path,
-                const char *mode,
-                FSFileHandle *outHandle,
-                uint32_t flags,
-                FSAsyncData *asyncData);
-
-FSStatus
-FSCloseFile(FSClient *client,
-            FSCmdBlock *block,
-            FSFileHandle handle,
-            uint32_t flags);
-
-FSStatus
-FSCloseFileAsync(FSClient *client,
-                 FSCmdBlock *block,
-                 FSFileHandle handle,
-                 uint32_t flags,
-                 FSAsyncData *asyncData);
-
-FSStatus
-FSOpenDir(FSClient *client,
-          FSCmdBlock *block,
-          const char *path,
-          FSDirectoryHandle *handle,
-          uint32_t flags);
-
-FSStatus
-FSOpenDirAsync(FSClient *client,
-               FSCmdBlock *block,
-               const char *path,
-               FSDirectoryHandle *handle,
-               uint32_t flags,
-               FSAsyncData *asyncData);
-
-FSStatus
-FSMakeDir(FSClient *client,
-          FSCmdBlock *block,
-          const char *path,
-          uint32_t flags);
-
-FSStatus
-FSMakeDirAsync(FSClient *client,
-          FSCmdBlock *block,
-          const char *path,
-          uint32_t flags,
-          FSAsyncData *asyncData);
-
-FSStatus
-FSReadDir(FSClient *client,
-          FSCmdBlock *block,
-          FSDirectoryHandle handle,
-          FSDirectoryEntry *entry,
-          uint32_t flags);
-
-FSStatus
-FSReadDirAsync(FSClient *client,
-               FSCmdBlock *block,
-               FSDirectoryHandle handle,
-               FSDirectoryEntry *entry,
-               uint32_t flags,
-               FSAsyncData *asyncData);
-
-FSStatus
-FSRewindDir(FSClient *client,
-           FSCmdBlock *block,
-           FSDirectoryHandle handle,
-           uint32_t flags);
-
-FSStatus
-FSCloseDir(FSClient *client,
-           FSCmdBlock *block,
-           FSDirectoryHandle handle,
-           uint32_t flags);
-
-FSStatus
-FSCloseDirAsync(FSClient *client,
-                FSCmdBlock *block,
-                FSDirectoryHandle handle,
-                uint32_t flags,
-                FSAsyncData *asyncData);
-FSStatus
-FSChangeMode(FSClient *client,
-             FSCmdBlock *block,
-             char *path,
-             FSMode mode,
-             uint32_t flags);
-
-FSStatus
-FSChangeModeAsync(FSClient *client,
-                  FSCmdBlock *block,
-                  char *path,
-                  FSMode mode,
-                  uint32_t flags,
-                  FSAsyncData *asyncData);
-
-FSStatus
-FSGetFreeSpaceSize(FSClient *client,
+FSStatus FSOpenDir(FSClient *client,
                    FSCmdBlock *block,
-                   char *path,
-                   u64 *outSize,
+                   const char *path,
+                   FSDirectoryHandle *handle,
                    uint32_t flags);
 
-FSStatus
-FSGetFreeSpaceSizeAsync(FSClient *client,
+FSStatus FSOpenDirAsync(FSClient *client,
                         FSCmdBlock *block,
-                        char *path,
-                        u64 *outSize,
+                        const char *path,
+                        FSDirectoryHandle *handle,
                         uint32_t flags,
                         FSAsyncData *asyncData);
 
-FSStatus
-FSGetStatFile(FSClient *client,
-              FSCmdBlock *block,
-              FSFileHandle handle,
-              FSStat *stat,
-              uint32_t flags);
-
-FSStatus
-FSGetStatFileAsync(FSClient *client,
+FSStatus FSMakeDir(FSClient *client,
                    FSCmdBlock *block,
-                   FSFileHandle handle,
-                   FSStat *stat,
-                   uint32_t flags,
-                   FSAsyncData *asyncData);
+                   const char *path,
+                   uint32_t flags);
 
-FSStatus
-FSReadFile(FSClient *client,
-           FSCmdBlock *block,
-           uint8_t *buffer,
-           uint32_t size,
-           uint32_t count,
-           FSFileHandle handle,
-           uint32_t unk1,
-           uint32_t flags);
+FSStatus FSMakeDirAsync(FSClient *client,
+                        FSCmdBlock *block,
+                        const char *path,
+                        uint32_t flags,
+                        FSAsyncData *asyncData);
 
-FSStatus
-FSReadFileAsync(FSClient *client,
-                FSCmdBlock *block,
-                uint8_t *buffer,
-                uint32_t size,
-                uint32_t count,
-                FSFileHandle handle,
-                uint32_t unk1,
-                uint32_t flags,
-                FSAsyncData *asyncData);
+FSStatus FSReadDir(FSClient *client,
+                   FSCmdBlock *block,
+                   FSDirectoryHandle handle,
+                   FSDirectoryEntry *entry,
+                   uint32_t flags);
 
-FSStatus
-FSReadFileWithPos(FSClient *client,
+FSStatus FSReadDirAsync(FSClient *client,
+                        FSCmdBlock *block,
+                        FSDirectoryHandle handle,
+                        FSDirectoryEntry *entry,
+                        uint32_t flags,
+                        FSAsyncData *asyncData);
+
+FSStatus FSRewindDir(FSClient *client,
+                     FSCmdBlock *block,
+                     FSDirectoryHandle handle,
+                     uint32_t flags);
+
+FSStatus FSCloseDir(FSClient *client,
+                    FSCmdBlock *block,
+                    FSDirectoryHandle handle,
+                    uint32_t flags);
+
+FSStatus FSCloseDirAsync(FSClient *client,
+                         FSCmdBlock *block,
+                         FSDirectoryHandle handle,
+                         uint32_t flags,
+                         FSAsyncData *asyncData);
+FSStatus FSChangeMode(FSClient *client,
+                      FSCmdBlock *block,
+                      char *path,
+                      FSMode mode,
+                      uint32_t flags);
+
+FSStatus FSChangeModeAsync(FSClient *client,
+                           FSCmdBlock *block,
+                           char *path,
+                           FSMode mode,
+                           uint32_t flags,
+                           FSAsyncData *asyncData);
+
+FSStatus FSGetFreeSpaceSize(FSClient *client,
+                            FSCmdBlock *block,
+                            char *path,
+                            u64 *outSize,
+                            uint32_t flags);
+
+FSStatus FSGetFreeSpaceSizeAsync(FSClient *client,
+                                 FSCmdBlock *block,
+                                 char *path,
+                                 u64 *outSize,
+                                 uint32_t flags,
+                                 FSAsyncData *asyncData);
+
+FSStatus FSGetStatFile(FSClient *client,
+                       FSCmdBlock *block,
+                       FSFileHandle handle,
+                       FSStat *stat,
+                       uint32_t flags);
+
+FSStatus FSGetStatFileAsync(FSClient *client,
+                            FSCmdBlock *block,
+                            FSFileHandle handle,
+                            FSStat *stat,
+                            uint32_t flags,
+                            FSAsyncData *asyncData);
+
+FSStatus FSReadFile(FSClient *client,
+                    FSCmdBlock *block,
+                    uint8_t *buffer,
+                    uint32_t size,
+                    uint32_t count,
+                    FSFileHandle handle,
+                    uint32_t unk1,
+                    uint32_t flags);
+
+FSStatus FSReadFileAsync(FSClient *client,
+                         FSCmdBlock *block,
+                         uint8_t *buffer,
+                         uint32_t size,
+                         uint32_t count,
+                         FSFileHandle handle,
+                         uint32_t unk1,
+                         uint32_t flags,
+                         FSAsyncData *asyncData);
+
+FSStatus FSReadFileWithPos(FSClient *client,
+                           FSCmdBlock *block,
+                           uint8_t *buffer,
+                           uint32_t size,
+                           uint32_t count,
+                           uint32_t pos,
+                           FSFileHandle handle,
+                           uint32_t unk1,
+                           uint32_t flags);
+
+FSStatus FSReadFileWithPosAsync(FSClient *client,
+                                FSCmdBlock *block,
+                                uint8_t *buffer,
+                                uint32_t size,
+                                uint32_t count,
+                                uint32_t pos,
+                                FSFileHandle handle,
+                                uint32_t unk1,
+                                uint32_t flags,
+                                FSAsyncData *asyncData);
+
+FSStatus FSWriteFile(FSClient *client,
+                     FSCmdBlock *block,
+                     uint8_t *buffer,
+                     uint32_t size,
+                     uint32_t count,
+                     FSFileHandle handle,
+                     uint32_t unk1,
+                     uint32_t flags);
+
+FSStatus FSWriteFileAsync(FSClient *client,
+                          FSCmdBlock *block,
+                          uint8_t *buffer,
+                          uint32_t size,
+                          uint32_t count,
+                          FSFileHandle handle,
+                          uint32_t unk1,
+                          uint32_t flags,
+                          FSAsyncData *asyncData);
+
+FSStatus FSWriteFileWithPos(FSClient *client,
+                            FSCmdBlock *block,
+                            uint8_t *buffer,
+                            uint32_t size,
+                            uint32_t count,
+                            uint32_t pos,
+                            FSFileHandle handle,
+                            uint32_t unk1,
+                            uint32_t flags);
+
+FSStatus FSWriteFileWithPosAsync(FSClient *client,
+                                 FSCmdBlock *block,
+                                 uint8_t *buffer,
+                                 uint32_t size,
+                                 uint32_t count,
+                                 uint32_t pos,
+                                 FSFileHandle handle,
+                                 uint32_t unk1,
+                                 uint32_t flags,
+                                 FSAsyncData *asyncData);
+
+FSStatus FSGetPosFile(FSClient *client,
+                      FSCmdBlock *block,
+                      FSFileHandle fileHandle,
+                      uint32_t *pos,
+                      uint32_t flags);
+
+FSStatus FSGetPosFileAsync(FSClient *client,
+                           FSCmdBlock *block,
+                           FSFileHandle fileHandle,
+                           uint32_t *pos,
+                           uint32_t flags,
+                           FSAsyncData *asyncData);
+
+FSStatus FSSetPosFile(FSClient *client,
+                      FSCmdBlock *block,
+                      FSFileHandle handle,
+                      uint32_t pos,
+                      uint32_t flags);
+
+FSStatus FSSetPosFileAsync(FSClient *client,
+                           FSCmdBlock *block,
+                           FSFileHandle handle,
+                           uint32_t pos,
+                           uint32_t flags,
+                           FSAsyncData *asyncData);
+
+FSStatus FSFlushFile(FSClient *client,
+                     FSCmdBlock *block,
+                     FSFileHandle handle,
+                     uint32_t flags);
+
+FSStatus FSFlushFileAsync(FSClient *client,
+                          FSCmdBlock *block,
+                          FSFileHandle handle,
+                          uint32_t flags,
+                          FSAsyncData *asyncData);
+
+FSStatus FSTruncateFile(FSClient *client,
+                        FSCmdBlock *block,
+                        FSFileHandle handle,
+                        uint32_t flags);
+
+FSStatus FSTruncateFileAsync(FSClient *client,
+                             FSCmdBlock *block,
+                             FSFileHandle handle,
+                             uint32_t flags,
+                             FSAsyncData *asyncData);
+
+FSStatus FSRename(FSClient *client,
                   FSCmdBlock *block,
-                  uint8_t *buffer,
-                  uint32_t size,
-                  uint32_t count,
-                  uint32_t pos,
-                  FSFileHandle handle,
-                  uint32_t unk1,
+                  const char *oldPath,
+                  const char *newPath,
                   uint32_t flags);
 
-FSStatus
-FSReadFileWithPosAsync(FSClient *client,
+FSStatus FSRenameAsync(FSClient *client,
                        FSCmdBlock *block,
-                       uint8_t *buffer,
-                       uint32_t size,
-                       uint32_t count,
-                       uint32_t pos,
-                       FSFileHandle handle,
-                       uint32_t unk1,
+                       const char *oldPath,
+                       const char *newPath,
                        uint32_t flags,
                        FSAsyncData *asyncData);
 
-FSStatus
-FSWriteFile(FSClient *client,
-           FSCmdBlock *block,
-           uint8_t *buffer,
-           uint32_t size,
-           uint32_t count,
-           FSFileHandle handle,
-           uint32_t unk1,
-           uint32_t flags);
+FSVolumeState FSGetVolumeState(FSClient *client);
 
-FSStatus
-FSWriteFileAsync(FSClient *client,
-                FSCmdBlock *block,
-                uint8_t *buffer,
-                uint32_t size,
-                uint32_t count,
-                FSFileHandle handle,
-                uint32_t unk1,
-                uint32_t flags,
-                FSAsyncData *asyncData);
+FSError FSGetLastErrorCodeForViewer(FSClient *client);
 
-FSStatus
-FSWriteFileWithPos(FSClient *client,
-                  FSCmdBlock *block,
-                  uint8_t *buffer,
-                  uint32_t size,
-                  uint32_t count,
-                  uint32_t pos,
-                  FSFileHandle handle,
-                  uint32_t unk1,
-                  uint32_t flags);
+FSStatus FSGetMountSource(FSClient *client,
+                          FSCmdBlock *cmd,
+                          FSMountSourceType type,
+                          FSMountSource *out,
+                          uint32_t flags);
 
-FSStatus
-FSWriteFileWithPosAsync(FSClient *client,
-                       FSCmdBlock *block,
-                       uint8_t *buffer,
-                       uint32_t size,
-                       uint32_t count,
-                       uint32_t pos,
-                       FSFileHandle handle,
-                       uint32_t unk1,
-                       uint32_t flags,
-                       FSAsyncData *asyncData);
-
-FSStatus
-FSGetPosFile(FSClient *client,
-             FSCmdBlock *block,
-             FSFileHandle fileHandle,
-             uint32_t *pos,
-             uint32_t flags);
-
-FSStatus
-FSGetPosFileAsync(FSClient *client,
-                  FSCmdBlock *block,
-                  FSFileHandle fileHandle,
-                  uint32_t *pos,
-                  uint32_t flags,
-                  FSAsyncData *asyncData);
-
-FSStatus
-FSSetPosFile(FSClient *client,
-             FSCmdBlock *block,
-             FSFileHandle handle,
-             uint32_t pos,
-             uint32_t flags);
-
-FSStatus
-FSSetPosFileAsync(FSClient *client,
-                  FSCmdBlock *block,
-                  FSFileHandle handle,
-                  uint32_t pos,
-                  uint32_t flags,
-                  FSAsyncData *asyncData);
-
-FSStatus
-FSFlushFile(FSClient *client,
-             FSCmdBlock *block,
-             FSFileHandle handle,
-             uint32_t flags);
-
-FSStatus
-FSFlushFileAsync(FSClient *client,
-                  FSCmdBlock *block,
-                  FSFileHandle handle,
-                  uint32_t flags,
-                  FSAsyncData *asyncData);
-
-FSStatus
-FSTruncateFile(FSClient *client,
-             FSCmdBlock *block,
-             FSFileHandle handle,
-             uint32_t flags);
-
-FSStatus
-FSTruncateFileAsync(FSClient *client,
-                  FSCmdBlock *block,
-                  FSFileHandle handle,
-                  uint32_t flags,
-                  FSAsyncData *asyncData);
-
-FSStatus
-FSRename(FSClient *client,
-          FSCmdBlock *block,
-          const char *oldPath,
-          const char *newPath,
-          uint32_t flags);
-
-FSStatus
-FSRenameAsync(FSClient *client,
-          FSCmdBlock *block,
-          const char *oldPath,
-          const char *newPath,
-          uint32_t flags,
-          FSAsyncData *asyncData);
-
-FSVolumeState
-FSGetVolumeState(FSClient *client);
-
-FSError
-FSGetLastErrorCodeForViewer(FSClient *client);
-
-FSStatus
-FSGetMountSource(FSClient *client,
+FSStatus FSMount(FSClient *client,
                  FSCmdBlock *cmd,
-                 FSMountSourceType type,
-                 FSMountSource *out,
+                 FSMountSource *source,
+                 const char *target,
+                 uint32_t bytes,
                  uint32_t flags);
 
-FSStatus
-FSMount(FSClient *client,
-        FSCmdBlock *cmd,
-        FSMountSource *source,
-        const char *target,
-        uint32_t bytes,
-        uint32_t flags);
+FSStatus FSUnmount(FSClient *client,
+                   FSCmdBlock *cmd,
+                   const char *target,
+                   uint32_t flags);
 
-FSStatus
-FSUnmount(FSClient *client,
-          FSCmdBlock *cmd,
-          const char *target,
-          uint32_t flags);
+FSStatus FSBindMount(FSClient *client,
+                     FSCmdBlock *cmd,
+                     const char *source,
+                     const char *target,
+                     uint32_t flags);
 
-FSStatus
-FSBindMount(FSClient *client,
-            FSCmdBlock *cmd,
-            const char *source,
-            const char *target,
-            uint32_t flags);
-
-FSStatus
-FSbindUnmount(FSClient *client,
-              FSCmdBlock *cmd,
-              const char *target,
-              uint32_t flags);
+FSStatus FSbindUnmount(FSClient *client,
+                       FSCmdBlock *cmd,
+                       const char *target,
+                       uint32_t flags);
 
 #ifdef __cplusplus
 }
 #endif
-
-/** @} */

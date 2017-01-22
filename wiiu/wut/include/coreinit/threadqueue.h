@@ -1,61 +1,35 @@
 #pragma once
 #include <wut.h>
 
-/**
- * \defgroup coreinit_threadq Thread Queue
- * \ingroup coreinit
- * @{
- */
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 typedef struct OSThread OSThread;
 
-typedef struct OSThreadLink OSThreadLink;
-typedef struct OSThreadQueue OSThreadQueue;
-typedef struct OSThreadSimpleQueue OSThreadSimpleQueue;
-
-struct OSThreadLink
+typedef struct
 {
    OSThread *prev;
    OSThread *next;
-};
-CHECK_OFFSET(OSThreadLink, 0x00, prev);
-CHECK_OFFSET(OSThreadLink, 0x04, next);
-CHECK_SIZE(OSThreadLink, 0x8);
+}OSThreadLink;
 
-struct OSThreadQueue
+typedef struct
 {
    OSThread *head;
    OSThread *tail;
    void *parent;
-   UNKNOWN(4);
-};
-CHECK_OFFSET(OSThreadQueue, 0x00, head);
-CHECK_OFFSET(OSThreadQueue, 0x04, tail);
-CHECK_OFFSET(OSThreadQueue, 0x08, parent);
-CHECK_SIZE(OSThreadQueue, 0x10);
+   uint32_t __unknown;
+}OSThreadQueue;
 
-struct OSThreadSimpleQueue
+typedef struct
 {
    OSThread *head;
    OSThread *tail;
-};
-CHECK_OFFSET(OSThreadSimpleQueue, 0x00, head);
-CHECK_OFFSET(OSThreadSimpleQueue, 0x04, tail);
-CHECK_SIZE(OSThreadSimpleQueue, 0x08);
+}OSThreadSimpleQueue;
 
-void
-OSInitThreadQueue(OSThreadQueue *queue);
-
-void
-OSInitThreadQueueEx(OSThreadQueue *queue,
-                    void *parent);
+void OSInitThreadQueue(OSThreadQueue *queue);
+void OSInitThreadQueueEx(OSThreadQueue *queue, void *parent);
 
 #ifdef __cplusplus
 }
 #endif
-
-/** @} */

@@ -1,12 +1,6 @@
 #pragma once
 #include <wut.h>
 
-/**
- * \defgroup coreinit_exception Exception Handling
- * \ingroup coreinit
- * @{
- */
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -32,17 +26,10 @@ typedef enum OSExceptionType
    OS_EXCEPTION_TYPE_ICI                  = 14,
 } OSExceptionType;
 
-OSExceptionCallbackFn
-OSSetExceptionCallback(OSExceptionType exceptionType,
-                       OSExceptionCallbackFn callback);
-
-OSExceptionCallbackFn
-OSSetExceptionCallbackEx(UNKNOWN_ARG,
-                         OSExceptionType exceptionType,
-                         OSExceptionCallbackFn callback);
+OSExceptionCallbackFn OSSetExceptionCallback(OSExceptionType exceptionType, OSExceptionCallbackFn callback);
+OSExceptionCallbackFn OSSetExceptionCallbackEx(int unknown, OSExceptionType exceptionType, OSExceptionCallbackFn callback);
 
 #ifdef __cplusplus
 }
 #endif
 
-/** @} */

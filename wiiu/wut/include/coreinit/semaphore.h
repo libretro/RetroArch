@@ -26,7 +26,7 @@ struct OSSemaphore
    //! Name set by OSInitMutexEx.
    const char *name;
 
-   UNKNOWN(4);
+   uint32_t __unknown;
 
    //! Current count of semaphore
    int32_t count;

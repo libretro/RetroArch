@@ -21,7 +21,3 @@
 #define UNKNOWN(Size) char PP_CAT(__unk, __COUNTER__) [Size]
 #define PADDING(Size) UNKNOWN(Size)
 
-// Just some placeholder defines
-#define UNKNOWN_ARG uint32_t
-#define UNKNOWN_ARGS void
-#define UNKNOWN_SIZE(x)

@@ -11,12 +11,6 @@
 extern "C" {
 #endif
 
-typedef struct MCPInstallProgress MCPInstallProgress;
-typedef struct MCPInstallInfo MCPInstallInfo;
-typedef struct MCPInstallTitleInfo MCPInstallTitleInfo;
-typedef struct MCPDevice MCPDevice;
-typedef struct MCPDeviceList MCPDeviceList;
-
 typedef enum MCPInstallTarget
 {
    MCP_INSTALL_TARGET_MLC  = 0,
@@ -32,18 +26,12 @@ struct __attribute__((__packed__)) MCPInstallProgress
    uint32_t contentsTotal;
    uint32_t contentsProgress;
 };
-CHECK_OFFSET(MCPInstallProgress, 0x00, inProgress);
-CHECK_OFFSET(MCPInstallProgress, 0x04, tid);
-CHECK_OFFSET(MCPInstallProgress, 0x0C, sizeTotal);
-CHECK_OFFSET(MCPInstallProgress, 0x14, sizeProgress);
-CHECK_OFFSET(MCPInstallProgress, 0x1C, contentsTotal);
-CHECK_OFFSET(MCPInstallProgress, 0x20, contentsProgress);
-CHECK_SIZE(MCPInstallProgress, 0x24);
 
-struct MCPInstallInfo
+typedef struct MCPInstallInfo
 {
    UNKNOWN(0x27F);
-};
+}MCPInstallInfo;
+
 CHECK_SIZE(MCPInstallInfo, 0x27F);
 
 struct MCPInstallTitleInfo
