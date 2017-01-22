@@ -35,8 +35,10 @@
 #endif
 
 #ifdef HAVE_COMMAND
-#include <net/net_compat.h>
-#include <net/net_socket.h>
+   #ifdef HAVE_NETWORKING
+   #include <net/net_compat.h>
+   #include <net/net_socket.h>
+   #endif
 #include <string/stdstring.h>
 #endif
 

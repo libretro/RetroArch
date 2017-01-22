@@ -808,15 +808,10 @@ static void mui_render_menu_list(
       float *menu_list_color)
 {
    float sum               = 0;
-   unsigned header_height  = 0;
    size_t i                = 0;
    file_list_t *list       = NULL;
    uint64_t frame_count    = video_info->frame_count;
-
-   if (!menu_display_get_update_pending())
-      return;
-
-   header_height = menu_display_get_header_height();
+   unsigned header_height  = menu_display_get_header_height();
 
    mui->raster_block.carr.coords.vertices = 0;
    mui->raster_block2.carr.coords.vertices = 0;
@@ -1287,15 +1282,16 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
    menu_display_font_bind_block(mui->font, &mui->raster_block);
    menu_display_font_bind_block(mui->font2, &mui->raster_block2);
 
-   mui_render_menu_list(
-         video_info,
-      mui,
-      width,
-      height,
-      font_normal_color,
-      font_hover_color,
-      &active_tab_marker_color[0]
-   );
+   if (menu_display_get_update_pending())
+      mui_render_menu_list(
+            video_info,
+            mui,
+            width,
+            height,
+            font_normal_color,
+            font_hover_color,
+            &active_tab_marker_color[0]
+            );
 
    menu_display_font_flush_block(video_info->width, video_info->height, mui->font);
    menu_display_font_flush_block(video_info->width, video_info->height, mui->font2);

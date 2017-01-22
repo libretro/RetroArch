@@ -1445,13 +1445,12 @@ static bool gx_frame(void *data, const void *frame,
       const char *msg,
       video_frame_info_t *video_info)
 {
-   char fps_txt[128];
    char fps_text_buf[128];
    static struct retro_perf_counter gx_frame = {0};
    gx_video_t *gx                     = (gx_video_t*)data;
    u8                       clear_efb = GX_FALSE;
 
-   fps_txt[0] = fps_text_buf[0]       = '\0';
+   fps_text_buf[0]                    = '\0';
 
    performance_counter_init(&gx_frame, "gx_frame");
    performance_counter_start(&gx_frame);

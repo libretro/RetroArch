@@ -77,9 +77,10 @@ static void caca_render_msg(video_frame_info_t *video_info,
       void *data, const char *msg,
       const void *userdata)
 {
-   float x, y;
+   float x, y, scale;
    unsigned width, height;
    unsigned newX, newY;
+   unsigned align;
    caca_raster_t              *font = (caca_raster_t*)data;
    const struct font_params *params = (const struct font_params*)userdata;
 
@@ -90,11 +91,15 @@ static void caca_render_msg(video_frame_info_t *video_info,
    {
       x = params->x;
       y = params->y;
+      scale = params->scale;
+      align = params->text_align;
    }
    else
    {
       x = video_info->font_msg_pos_x;
       y = video_info->font_msg_pos_y;
+      scale = 1.0f;
+      align = TEXT_ALIGN_LEFT;
    }
 
    if (!font->caca || !font->caca->caca_cv || !font->caca->caca_display ||
@@ -103,12 +108,22 @@ static void caca_render_msg(video_frame_info_t *video_info,
 
    width    = caca_get_canvas_width(*font->caca->caca_cv);
    height   = caca_get_canvas_height(*font->caca->caca_cv);
+   newY     = height - (y * height * scale);
 
-   newX     = x * width;
-   newY     = height - (y * height);
-
-   if (strlen(msg) + newX > width)
-      newX -= strlen(msg) + newX - width;
+   switch (align)
+   {
+      case TEXT_ALIGN_LEFT:
+         newX = x * width * scale;
+         break;
+      case TEXT_ALIGN_RIGHT:
+         newX = (x * width * scale) - strlen(msg);
+         break;
+      case TEXT_ALIGN_CENTER:
+         newX = (x * width * scale) - (strlen(msg) / 2);
+         break;
+      default:
+         break;
+   }
 
    caca_put_str(*font->caca->caca_cv, newX, newY, msg);
 
