@@ -2425,9 +2425,11 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_NETPLAY_INIT:
          {
-            char *hostname = (char *) data;
+            char       *hostname = (char *) data;
             settings_t *settings = config_get_ptr();
+
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+
             if (!init_netplay(
                      NULL, hostname ? hostname : settings->netplay.server,
                      settings->netplay.port))
@@ -2440,7 +2442,9 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_NETPLAY_INIT_DIRECT:
          {
             settings_t *settings = config_get_ptr();
+
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+
             if (!init_netplay(
                      data, NULL, settings->netplay.port))
             {
