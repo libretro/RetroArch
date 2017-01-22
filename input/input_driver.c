@@ -335,13 +335,10 @@ void input_poll(void)
 int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   rarch_joypad_info_t joypad_info;
    int16_t res                     = 0;
    settings_t *settings            = config_get_ptr();
 
    device &= RETRO_DEVICE_MASK;
-
-   joypad_info.axis_threshold      = settings->input.axis_threshold;
 
    if (bsv_movie_ctl(BSV_MOVIE_CTL_PLAYBACK_ON, NULL))
    {
@@ -384,8 +381,12 @@ int16_t input_state(unsigned port, unsigned device,
 
          if (bind_valid)
          {
+            rarch_joypad_info_t joypad_info;
+
+            joypad_info.axis_threshold = settings->input.axis_threshold;
             joypad_info.joy_idx        = settings->input.joypad_map[port];
             joypad_info.auto_binds     = settings->input.autoconf_binds[joypad_info.joy_idx];
+
             res = current_input->input_state(
                   current_input_data, joypad_info, libretro_input_binds, port, device, idx, id);
          }
