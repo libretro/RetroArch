@@ -244,10 +244,20 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
       "Auslastungsgrad")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
       "Maximale Benutzeranzahl")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
+      "Gamepad-Menükombination")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_ENABLE,
       "Zeige Tastatur-Overlay")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
       "Aktiviere Overlay")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
+      "Eingabeabfrageverhalten")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_EARLY,
+      "Früh")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_LATE,
+      "Spät")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_NORMAL,
+      "Normal")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY, /* UPDATE/FIXME */
       "Eingabebelegungs-Verzeichnis")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
@@ -256,6 +266,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
       "Eingabeeinstellungen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
       "Turbo-Dauer")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
+      "Einheitliche Menüsteuerung")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
       "Spieler %u Tastenbelegung")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
@@ -322,6 +334,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
       "Menütreiber")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
       "Menü-Dateibrowser-Einstellungen")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
+      "Wechsle Ok & Zurück Tasten im Menü")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
       "Menüeinstellungen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
@@ -959,10 +973,17 @@ MSG_HASH(MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
       "Enable or disable recent playlist for games, images, music, and videos.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
       "Zeigt Informationen über Core, Netzwerk, und des Systems an. Anzeigen-Manager für Datenbank und Zeiger.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
+      "Maximale Anzahl Benutzer welche von RetroArch unterstützt werden.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
+      "Gamepad-Tastenkombination um ins Menü zu gelangen.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
+      "Hat Einwirkungen auf die Art wie Eingabeabfragen in RetroArch abgehandelt werden. "
+      "Werte 'Früh' und 'Spät' kann die Latenz verringern, je nach Konfiguration.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
       "Einstellungen für Joypads, Tastaturen und Mäuse.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
-      "Use the same controls for both the menu and the game. Applies to the keyboard.")
+      "Verwende die selbe Steuerung für Menü und Spiele. Betrifft nur Tastatur.")
 MSG_HASH(MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
       "Ändere die Logging-Einstellungen.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY,
@@ -1041,8 +1062,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
       "Menü ein/aus")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
       "Beenden")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
-      "Unified Menu Controls")
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BROWSE_URL_LIST,
       "Browse URL"
