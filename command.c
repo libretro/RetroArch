@@ -2449,6 +2449,24 @@ bool command_event(enum event_command cmd, void *data)
             }
          }
          break;
+      case CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED:
+         {
+            /* buf is expected to be address:port, there must be a better way
+               to do this but for now I'll just use a string list */
+            char *buf = (char *) data;
+            static struct string_list *hostname = NULL;
+            hostname = string_split(buf, ":");
+
+            settings_t *settings = config_get_ptr();
+            command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+            if (!init_netplay_deferred(
+                     hostname->elems[0].data, atoi(hostname->elems[1].data)))
+            {
+               command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+               return false;
+            }
+         }
+         break;
       case CMD_EVENT_NETPLAY_FLIP_PLAYERS:
          netplay_driver_ctl(RARCH_NETPLAY_CTL_FLIP_PLAYERS, NULL);
          break;
@@ -2461,6 +2479,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_NETWORK_INIT:
       case CMD_EVENT_NETPLAY_INIT:
       case CMD_EVENT_NETPLAY_INIT_DIRECT:
+      case CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED:
       case CMD_EVENT_NETPLAY_FLIP_PLAYERS:
       case CMD_EVENT_NETPLAY_GAME_WATCH:
          return false;

@@ -98,6 +98,9 @@ bool task_push_wifi_scan(void);
 
 bool task_push_netplay_lan_scan(void);
 
+bool task_push_netplay_crc_scan(uint32_t crc,
+      const char *hostname, const char *corename);
+
 #endif
 
 bool task_push_image_load(const char *fullpath,
