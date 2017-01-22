@@ -3121,20 +3121,30 @@ static int action_ok_netplay_connect_room(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
 #ifdef HAVE_NETWORKING
+   char tmp_hostname[512];
    settings_t *settings = config_get_ptr();
+
+   tmp_hostname[0] = '\0';
 
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
       command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
-   char tmp_hostname[512];
-
    /* For testing purposes
    strlcpy(tmp_hostname, "192.168.1.241", sizeof(tmp_hostname));*/
-   strlcpy(tmp_hostname, netplay_room_list[idx - 1].address, sizeof(tmp_hostname));
-   snprintf(tmp_hostname, sizeof(tmp_hostname), "%s:%d", 
-      netplay_room_list[idx - 1].address, netplay_room_list[idx - 1].port);
-   RARCH_LOG("%s %s %08x", netplay_room_list[idx - 1].address, netplay_room_list[idx - 1].gamename, netplay_room_list[idx - 1].gamecrc);
+   strlcpy(tmp_hostname,
+         netplay_room_list[idx - 1].address,
+         sizeof(tmp_hostname));
+   snprintf(tmp_hostname,
+         sizeof(tmp_hostname),
+         "%s:%d", 
+      netplay_room_list[idx - 1].address,
+      netplay_room_list[idx - 1].port);
+
+   RARCH_LOG("%s %s %08x", netplay_room_list[idx - 1].address,
+         netplay_room_list[idx - 1].gamename,
+         netplay_room_list[idx - 1].gamecrc);
+
    /* If we haven't yet started, this will load on its own */
    if (!content_is_inited())
    {
@@ -3211,8 +3221,8 @@ static int action_ok_netplay_lan_scan(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
 #ifdef HAVE_NETWORKING
-   struct netplay_host_list *hosts;
-   struct netplay_host *host;
+   struct netplay_host_list *hosts = NULL;
+   struct netplay_host *host       = NULL;
 
    /* Figure out what host we're connecting to */
    if (!netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, &hosts))
@@ -3311,6 +3321,7 @@ static int action_ok_push_scan_file(const char *path,
    return action_ok_push_content_list(path, label, type, idx, entry_idx);
 }
 
+#ifdef HAVE_NETWORKING
 static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const char *err)
 {
    char buf[PATH_MAX_LENGTH];
@@ -3340,8 +3351,8 @@ finish:
          int i, j = 0;
          char tmp[PATH_MAX_LENGTH];
          static struct string_list *room_data = NULL;
-         file_list_t *file_list               = NULL;
-         file_list = menu_entries_get_selection_buf_ptr(0);
+         file_list_t *file_list               = menu_entries_get_selection_buf_ptr(0);
+
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, file_list);
 
          room_data = string_split(buf, "\n");
@@ -3350,15 +3361,18 @@ finish:
             free(netplay_room_list);
 
          netplay_room_count = room_data->size / 8;
-         netplay_room_list = (struct netplay_room*)malloc(sizeof(struct netplay_room) * netplay_room_count);
+         netplay_room_list = (struct netplay_room*)
+            malloc(sizeof(struct netplay_room) * netplay_room_count);
 
-         /*for (int i = 0; i < room_data->size; i++)
+#if 0
+         for (int i = 0; i < room_data->size; i++)
          {
             strlcpy(tmp,
                   room_data->elems[i].data, sizeof(tmp));
             RARCH_LOG("tmp %s\n", tmp);
 
-         }*/
+         }
+#endif
          menu_entries_append_enum(file_list,
                "Refresh Room List",
                msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS),
@@ -3368,11 +3382,22 @@ finish:
          RARCH_LOG ("Found %d rooms\n", netplay_room_count);
          for (i = 0; i < netplay_room_count; i++)
          {
-            strlcpy(netplay_room_list[i].nickname,    room_data->elems[j + 0].data,    sizeof(netplay_room_list[i].nickname));
-            strlcpy(netplay_room_list[i].address,     room_data->elems[j + 1].data,    sizeof(netplay_room_list[i].address));
-            strlcpy(netplay_room_list[i].corename,    room_data->elems[j + 3].data,    sizeof(netplay_room_list[i].corename));
-            strlcpy(netplay_room_list[i].coreversion, room_data->elems[j + 4].data,    sizeof(netplay_room_list[i].coreversion));
-            strlcpy(netplay_room_list[i].gamename,    room_data->elems[j + 5].data,    sizeof(netplay_room_list[i].coreversion));
+            strlcpy(netplay_room_list[i].nickname,
+                  room_data->elems[j + 0].data,
+                  sizeof(netplay_room_list[i].nickname));
+            strlcpy(netplay_room_list[i].address,
+                  room_data->elems[j + 1].data,
+                  sizeof(netplay_room_list[i].address));
+            strlcpy(netplay_room_list[i].corename,
+                  room_data->elems[j + 3].data,
+                  sizeof(netplay_room_list[i].corename));
+            strlcpy(netplay_room_list[i].coreversion,
+                  room_data->elems[j + 4].data,
+                  sizeof(netplay_room_list[i].coreversion));
+            strlcpy(netplay_room_list[i].gamename,
+                  room_data->elems[j + 5].data,
+                  sizeof(netplay_room_list[i].coreversion));
+
             netplay_room_list[i].port      = atoi(room_data->elems[j + 2].data);
             netplay_room_list[i].gamecrc   = atoi(room_data->elems[j + 6].data);
             netplay_room_list[i].timestamp = atoi(room_data->elems[j + 7].data);
@@ -3396,7 +3421,8 @@ finish:
                netplay_room_list[i].timestamp);
             j+=8;
             char s[PATH_MAX_LENGTH];
-            snprintf(s, sizeof(s), "Nickname: %s", netplay_room_list[i].nickname);
+            snprintf(s, sizeof(s), "Nickname: %s",
+                  netplay_room_list[i].nickname);
             menu_entries_append_enum(file_list,
                   s,
                   msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM),
@@ -3429,6 +3455,7 @@ static int action_ok_push_netplay_refresh_rooms(const char *path,
    task_push_http_transfer(url, true, NULL, netplay_refresh_rooms_cb, NULL);
    return 0;
 }
+#endif
 
 
 static int action_ok_scan_directory_list(const char *path,

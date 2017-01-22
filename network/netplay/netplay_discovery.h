@@ -30,19 +30,21 @@ enum rarch_netplay_discovery_ctl_state
     RARCH_NETPLAY_DISCOVERY_CTL_LAN_CLEAR_RESPONSES
 };
 
-struct netplay_host {
-    struct sockaddr addr;
-    socklen_t addrlen;
+struct netplay_host
+{
+   struct sockaddr addr;
+   socklen_t addrlen;
 
-    char nick[NETPLAY_HOST_STR_LEN];
-    char core[NETPLAY_HOST_STR_LEN];
-    char core_version[NETPLAY_HOST_STR_LEN];
-    char content[NETPLAY_HOST_STR_LEN];
+   char nick[NETPLAY_HOST_STR_LEN];
+   char core[NETPLAY_HOST_STR_LEN];
+   char core_version[NETPLAY_HOST_STR_LEN];
+   char content[NETPLAY_HOST_STR_LEN];
 };
 
-struct netplay_host_list {
-    struct netplay_host *hosts;
-    size_t size;
+struct netplay_host_list
+{
+   struct netplay_host *hosts;
+   size_t size;
 };
 
 /* data is ordered like this on the server, I left it in this ordered
@@ -59,9 +61,9 @@ struct netplay_room
    int  timestamp;
 };
 
-struct netplay_room *netplay_room_list;
+extern struct netplay_room *netplay_room_list;
 
-int netplay_room_count;
+extern int netplay_room_count;
 
 /** Initialize Netplay discovery */
 bool init_netplay_discovery(void);
