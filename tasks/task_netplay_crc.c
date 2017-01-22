@@ -49,6 +49,8 @@ static void netplay_crc_scan_callback(void *task_data,
 {
    netplay_crc_handle_t *state = (netplay_crc_handle_t*)task_data;
    core_info_list_t *info      = NULL;
+   content_ctx_info_t content_info = {0};
+
    int i;
    core_info_get_list(&info);
 
@@ -67,6 +69,12 @@ static void netplay_crc_scan_callback(void *task_data,
    printf("Corepath: %s\n", info->list[i].path);
 
    command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
+   task_push_content_load_default(
+         info->list[i].path, state->path,
+         &content_info,
+         CORE_TYPE_PLAIN,
+         CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU,
+         NULL, NULL);
 
    free(state);
 }
