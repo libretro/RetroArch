@@ -2459,7 +2459,6 @@ bool command_event(enum event_command cmd, void *data)
                to do this but for now I'll just use a string list */
             char                           *buf = (char *)data;
             static struct string_list *hostname = NULL;
-            settings_t *settings                = config_get_ptr();
 
             hostname = string_split(buf, ":");
 

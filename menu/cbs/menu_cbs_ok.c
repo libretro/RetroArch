@@ -3122,7 +3122,6 @@ static int action_ok_netplay_connect_room(const char *path,
 {
 #ifdef HAVE_NETWORKING
    char tmp_hostname[512];
-   settings_t *settings = config_get_ptr();
 
    tmp_hostname[0] = '\0';
 
@@ -3327,7 +3326,6 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
    char buf[PATH_MAX_LENGTH];
 
    http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
-   menu_file_transfer_t *state       = (menu_file_transfer_t*)user_data;
 
    buf[0] = '\0';
 
@@ -3349,7 +3347,6 @@ finish:
       else
       {
          int i, j = 0;
-         char tmp[PATH_MAX_LENGTH];
          char s[PATH_MAX_LENGTH];
          static struct string_list *room_data = NULL;
          file_list_t *file_list               = menu_entries_get_selection_buf_ptr(0);
