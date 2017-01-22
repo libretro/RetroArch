@@ -3136,7 +3136,8 @@ static int action_ok_netplay_connect_room(const char *path,
       netplay_room_list[idx - 1].address,
       netplay_room_list[idx - 1].port);
 
-   RARCH_LOG("%s %s %08x", netplay_room_list[idx - 1].address,
+   RARCH_LOG("Connecting to: %s with game: %s/%08x", 
+         netplay_room_list[idx - 1].address,
          netplay_room_list[idx - 1].gamename,
          netplay_room_list[idx - 1].gamecrc);
 
@@ -3388,6 +3389,8 @@ finish:
             netplay_room_list[i].gamecrc   = atoi(room_data->elems[j + 6].data);
             netplay_room_list[i].timestamp = atoi(room_data->elems[j + 7].data);
 
+/* Uncomment this to debug mismatched room parameters*/
+#if 0
             RARCH_LOG("Room Data: %d\n"
                "Nickname:         %s\n"
                "Address:          %s\n"
@@ -3405,7 +3408,7 @@ finish:
                netplay_room_list[i].gamename,
                netplay_room_list[i].gamecrc,
                netplay_room_list[i].timestamp);
-
+#endif
             j+=8;
 
             snprintf(s, sizeof(s), "Nickname: %s",

@@ -80,13 +80,13 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
    netplay_crc_handle_t *state = (netplay_crc_handle_t*)task->state;
 
    task_set_progress(task, 0);
-   task_set_title(task, strdup("Checking for ROM presence."));
+   task_set_title(task, strdup("Looking for compatible content..."));
    task_set_finished(task, false);
 
    if (!state->lpl_list)
    {
       task_set_progress(task, 100);
-      task_set_title(task, strdup("Playlist directory not found."));
+      task_set_title(task, strdup("Playlist directory not found"));
       task_set_finished(task, true);
       free(state);
       return;
@@ -113,7 +113,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
             state->found = true;
             task_set_data(task, state);
             task_set_progress(task, 100);
-            task_set_title(task, strdup("Game found."));
+            task_set_title(task, strdup("Compatible content found"));
             task_set_finished(task, true);
             string_list_free(state->lpl_list);
             return;
@@ -126,7 +126,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
 no_playlists:
    string_list_free(state->lpl_list);
    task_set_progress(task, 100);
-   task_set_title(task, strdup("No game found."));
+   task_set_title(task, strdup("Couldn't find compatible content"));
    task_set_finished(task, true);
    return;
 }
@@ -161,7 +161,7 @@ bool task_push_netplay_crc_scan(uint32_t crc,
    task->state          = state;
    task->handler        = task_netplay_crc_scan_handler;
    task->callback       = netplay_crc_scan_callback;
-   task->title          = strdup("Checking for ROM presence.");
+   task->title          = strdup("Looking for matching content...");
 
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
 
