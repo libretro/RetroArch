@@ -83,6 +83,9 @@ static void vga_render_msg(video_frame_info_t *video_info,
    vga_raster_t              *font = (vga_raster_t*)data;
    const struct font_params *params = (const struct font_params*)userdata;
 
+   (void)newX;
+   (void)newY;
+
    if (!font || string_is_empty(msg))
       return;
 

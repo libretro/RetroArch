@@ -41,11 +41,6 @@ static unsigned vga_video_pitch      = 0;
 static unsigned vga_video_bits       = 0;
 static bool vga_rgb32                = false;
 
-static float lerp(float x, float y, float a, float b, float d)
-{
-   return a + (b - a) * ((d - x) / (y - x));
-}
-
 static void vga_set_mode_13h()
 {
    __dpmi_regs r;
@@ -74,23 +69,23 @@ static void vga_upload_palette()
    /* RGB332 */
    for (i = 0; i < 256; i++)
    {
-      outp(0x03c9, i * r * (63.0f / 255.0f));
-      outp(0x03c9, i * g * (63.0f / 255.0f));
-      outp(0x03c9, i * b * (63.0f / 255.0f));
-
-      r++;
-
-      if (i % 64 == 0)
+      if (i > 0 && i % 64 == 0)
       {
          r = 0;
          g = 0;
          b++;
       }
-      else if (i % 8 == 0)
+      else if (i > 0 && i % 8 == 0)
       {
          r = 0;
          g++;
       }
+
+      outp(0x03c9, r * (63.0f / 7.0f));
+      outp(0x03c9, g * (63.0f / 7.0f));
+      outp(0x03c9, b * (63.0f / 3.0f));
+
+      r++;
    }
 }
 
@@ -156,6 +151,7 @@ static bool vga_gfx_frame(void *data, const void *frame,
    (void)frame_height;
    (void)pitch;
    (void)msg;
+   (void)bits;
 
    if (!frame || !frame_width || !frame_height)
       return true;
@@ -326,9 +322,9 @@ static void vga_set_texture_frame(void *data,
             for(x = 0; x < VGA_WIDTH; x++)
             {
                unsigned short pixel = video_frame[width * y + x];
-               unsigned r = (7.0f / 15.0f) * ((pixel & 0xF) >> 0);
-               unsigned g = (7.0f / 15.0f) * ((pixel & 0xF0) >> 4);
-               unsigned b = (3.0f / 15.0f) * ((pixel & 0xF00) >> 8);
+               unsigned r = (7.0f / 15.0f) * ((pixel & 0xF0) >> 4);
+               unsigned g = (7.0f / 15.0f) * ((pixel & 0xF00) >> 8);
+               unsigned b = (3.0f / 15.0f) * ((pixel & 0xF000) >> 12);
                vga_menu_frame[VGA_WIDTH * y + x] = (b << 6) | (g << 3) | r;
             }
          }
