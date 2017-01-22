@@ -72,6 +72,12 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_NUM_PASSES,
       "Cheat-Durchgänge")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE,
       "Überprüfe Firmware vor dem Laden.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
+      "Aktiviere Errungenschaften")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
+      "Hardcore-Modus")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
+      "Teste unoffizielle Errungenschaften")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
       "Schließen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
@@ -1119,6 +1125,13 @@ MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
       "Lautstärkeverstärkung in dB.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
       "Überprüfe benötigte Firmware bevor versucht wird einen Core zu laden.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
+      "Aktiviert Errungenschaften. "
+      "Für weitere Informationen, besuche http://retroachievements.org")
+MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
+      "Deaktiviert Savestates, Cheats, Zurückspulen, Zeitraffer, Pause, und Zeitlupe für alle Spiele.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
+      "Aktiviere unoffizielle Errungenschaften und/oder Beta-Features zu Testzwecken.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
       "Speichert Änderungen in die Konfigurationsdatei beim Beenden.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
