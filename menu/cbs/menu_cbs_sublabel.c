@@ -144,6 +144,7 @@ static int action_bind_sublabel_cheevos_entry(
    return 0;
 }
 
+#ifdef HAVE_NETWORKING
 static int action_bind_sublabel_netplay_room(
       file_list_t *list,
       unsigned type, unsigned i,
@@ -161,6 +162,7 @@ static int action_bind_sublabel_netplay_room(
 #endif
    return 0;
 }
+#endif
 
 static int action_bind_sublabel_generic(
       file_list_t *list,
@@ -259,9 +261,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_entry);
             break;
+#ifdef HAVE_NETWORKING
          case MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_room);
             break;
+#endif
          case MENU_ENUM_LABEL_CHEEVOS_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_enable);
             break;

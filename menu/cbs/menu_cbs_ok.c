@@ -4184,9 +4184,11 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_SCAN_FILE:
             BIND_ACTION_OK(cbs, action_ok_push_scan_file);
             break;
+#ifdef HAVE_NETWORKING
          case MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS:
             BIND_ACTION_OK(cbs, action_ok_push_netplay_refresh_rooms);
             break;
+#endif
          case MENU_ENUM_LABEL_FAVORITES:
             BIND_ACTION_OK(cbs, action_ok_push_content_list);
             break;
