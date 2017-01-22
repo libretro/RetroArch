@@ -207,7 +207,7 @@ static void frontend_gx_get_environment_settings(
 #ifdef HW_DOL
    chdir("carda:/retroarch");
 #endif
-   getcwd(g_defaults.dir.core, MAXPATHLEN);
+   getcwd(g_defaults.dir.core, PATH_MAX_LENGTH);
 
    last_slash = strrchr(g_defaults.dir.core, '/');
    if (last_slash)
