@@ -507,7 +507,7 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
    if (vid->should_resize)
       sdl_refresh_viewport(vid);
 
-   if (frame)
+   if (frame && video_info->libretro_running)
    {
       static struct retro_perf_counter sdl_copy_frame = {0};
 

@@ -1523,10 +1523,10 @@ static bool vulkan_frame(void *data, const void *frame,
       uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
-   struct vk_per_frame *chain;
    VkSemaphore signal_semaphores[2];
    VkClearValue clear_value;
    vk_t *vk                                      = (vk_t*)data;
+   struct vk_per_frame *chain                    = NULL;
    static struct retro_perf_counter frame_run    = {0};
    static struct retro_perf_counter begin_cmd    = {0};
    static struct retro_perf_counter build_cmd    = {0};
@@ -1597,7 +1597,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
    /* Upload texture */
    performance_counter_start(&copy_frame);
-   if (frame && !vk->hw.enable)
+   if (frame && !vk->hw.enable && video_info->libretro_running)
    {
       unsigned y;
       uint8_t *dst        = NULL;
