@@ -1166,7 +1166,7 @@ static bool gl_frame(void *data, const void *frame,
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
    /* Can be NULL for frame dupe / NULL render. */
-   if (frame && video_info->libretro_running) 
+   if (frame) 
    {
 #ifdef HAVE_FBO
       if (!gl->hw_render_fbo_init)

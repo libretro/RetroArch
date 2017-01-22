@@ -1597,7 +1597,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
    /* Upload texture */
    performance_counter_start(&copy_frame);
-   if (frame && !vk->hw.enable && video_info->libretro_running)
+   if (frame && !vk->hw.enable)
    {
       unsigned y;
       uint8_t *dst        = NULL;

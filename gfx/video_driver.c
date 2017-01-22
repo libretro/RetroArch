@@ -2307,8 +2307,6 @@ void video_driver_build_info(video_frame_info_t *video_info)
    if (!settings->menu.pause_libretro)
       video_info->libretro_running    = (rarch_ctl(RARCH_CTL_IS_INITED, NULL)
             && !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL));
-   else if (!video_info->menu_is_alive)
-      video_info->libretro_running    = true;
 #else
    video_info->menu_is_alive          = false;
    video_info->menu_footer_opacity    = 0.0f;

@@ -689,7 +689,6 @@ static enum runloop_state runloop_check_state(
       uint64_t current_input,
       uint64_t old_input,
       uint64_t trigger_input,
-      bool menu_is_alive,
       unsigned *sleep_ms)
 {
    static bool old_focus            = true;
@@ -707,7 +706,7 @@ static enum runloop_state runloop_check_state(
 
    if (runloop_cmd_triggered(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
    {
-      bool fullscreen_toggled = !runloop_paused || menu_is_alive;
+      bool fullscreen_toggled = !runloop_paused || menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL);
 
       if (fullscreen_toggled)
          command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
@@ -758,7 +757,7 @@ static enum runloop_state runloop_check_state(
    }
 
 #ifdef HAVE_MENU
-   if (menu_is_alive)
+   if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
    {
       menu_ctx_iterate_t iter;
       core_poll();
@@ -795,7 +794,7 @@ static enum runloop_state runloop_check_state(
 #ifdef HAVE_MENU
    if (menu_event_kb_is_set(RETROK_F1) == 1)
    {
-      if (menu_is_alive)
+      if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
       {
          if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) &&
                !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
@@ -809,7 +808,7 @@ static enum runloop_state runloop_check_state(
             runloop_cmd_triggered(trigger_input, RARCH_MENU_TOGGLE)) ||
          rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
    {
-      if (menu_is_alive)
+      if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
       {
          if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) &&
                !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
@@ -824,7 +823,7 @@ static enum runloop_state runloop_check_state(
    else
       menu_event_kb_set(false, RETROK_F1);
 
-   if (menu_is_alive)
+   if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
    {
       if (!settings->menu.throttle_framerate && !settings->fastforward_ratio)
          return RUNLOOP_STATE_MENU_ITERATE;
@@ -1090,7 +1089,6 @@ int runloop_iterate(unsigned *sleep_ms)
             current_input,
             old_input,
             trigger_input,
-            menu_is_alive,
             sleep_ms))
    {
       case RUNLOOP_STATE_QUIT:
