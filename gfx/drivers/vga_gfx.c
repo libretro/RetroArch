@@ -46,7 +46,7 @@ static float lerp(float x, float y, float a, float b, float d)
    return a + (b - a) * ((d - x) / (y - x));
 }
 
-static void set_mode_13h()
+static void vga_set_mode_13h()
 {
    __dpmi_regs r;
 
@@ -54,12 +54,44 @@ static void set_mode_13h()
    __dpmi_int(0x10, &r);
 }
 
-static void return_to_text_mode()
+static void vga_return_to_text_mode()
 {
    __dpmi_regs r;
 
    r.x.ax = 3;
    __dpmi_int(0x10, &r);
+}
+
+static void vga_upload_palette()
+{
+   unsigned i;
+   unsigned char r = 0;
+   unsigned char g = 0;
+   unsigned char b = 0;
+
+   outp(0x03c8, 0);
+
+   /* RGB332 */
+   for (i = 0; i < 256; i++)
+   {
+      outp(0x03c9, i * r * (63.0f / 255.0f));
+      outp(0x03c9, i * g * (63.0f / 255.0f));
+      outp(0x03c9, i * b * (63.0f / 255.0f));
+
+      r++;
+
+      if (i % 64 == 0)
+      {
+         r = 0;
+         g = 0;
+         b++;
+      }
+      else if (i % 8 == 0)
+      {
+         r = 0;
+         g++;
+      }
+   }
 }
 
 static void vga_vsync()
@@ -68,18 +100,19 @@ static void vga_vsync()
    do
    {
    }
-   while (inportb(0x3DA) & 8);
+   while (inportb(0x3da) & 8);
 
    /* wait until a new retrace has just begun */
    do
    {
    }
-   while (!(inportb(0x3DA) & 8));
+   while (!(inportb(0x3da) & 8));
 }
 
 static void vga_gfx_create(void)
 {
-   set_mode_13h();
+   vga_set_mode_13h();
+   vga_upload_palette();
 }
 
 static void *vga_gfx_init(const video_info_t *video,
@@ -220,7 +253,7 @@ static void vga_gfx_free(void *data)
       vga_menu_frame = NULL;
    }
 
-   return_to_text_mode();
+   vga_return_to_text_mode();
 }
 
 static bool vga_gfx_set_shader(void *data,
@@ -292,7 +325,11 @@ static void vga_set_texture_frame(void *data,
          {
             for(x = 0; x < VGA_WIDTH; x++)
             {
-                vga_menu_frame[VGA_WIDTH * y + x] = lerp(0, 65535, 0, 254, video_frame[width * y + x]);
+               unsigned short pixel = video_frame[width * y + x];
+               unsigned r = (7.0f / 15.0f) * ((pixel & 0xF) >> 0);
+               unsigned g = (7.0f / 15.0f) * ((pixel & 0xF0) >> 4);
+               unsigned b = (3.0f / 15.0f) * ((pixel & 0xF00) >> 8);
+               vga_menu_frame[VGA_WIDTH * y + x] = (b << 6) | (g << 3) | r;
             }
          }
       }
