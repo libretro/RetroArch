@@ -32,6 +32,7 @@
 #include "../configuration.h"
 #include "../playlist.h"
 #include "../command.h"
+#include "../core_info.h"
 
 typedef struct
 {
@@ -47,13 +48,24 @@ static void netplay_crc_scan_callback(void *task_data,
                                void *user_data, const char *error)
 {
    netplay_crc_handle_t *state = (netplay_crc_handle_t*)task_data;
+   core_info_list_t *info      = NULL;
+   int i;
+   core_info_get_list(&info);
 
    if (!state)
       return;
 
-   printf("%s\n", state->hostname);
-   printf("%s\n", state->path);
-   printf("%s\n", state->corename);
+   for (i=0; i < info->count; i++)
+   {
+      if(string_is_equal(info->list[i].core_name, state->corename))
+         break;
+   }
+
+   printf("Hostname: %s\n", state->hostname);
+   printf("Content:  %s\n", state->path);
+   printf("Corename: %s\n", state->corename);
+   printf("Corepath: %s\n", info->list[i].path);
+
    command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
 
    free(state);
