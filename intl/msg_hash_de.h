@@ -1083,6 +1083,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
       "Lautstärkeverstärkung in dB.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
       "Überprüfe benötigte Firmware bevor versucht wird einen Core zu laden.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
+      "Speichert Änderungen in die Konfigurationsdatei beim Beenden.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
       "Ändere die Standardeinstellungen für Konfigurationsdateien.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
@@ -1156,6 +1158,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
       "Ändere die Einstellungen der Errungenschaften.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
       "Ändere die Einstellungen der Spielstände.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
+      "Zeigt versteckte Dateien und Ordner im Dateimanager an.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
       "Haltet dein System davon ab den Bildschirmschoner zu aktivieren.")
 MSG_HASH(MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
@@ -1216,6 +1220,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
       "Menü ein/aus")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
       "Beenden")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
+      "Lade inhaltsspezifische Core-Optionen automatisch")
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BROWSE_URL_LIST,
       "Browse URL"
