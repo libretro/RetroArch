@@ -1221,6 +1221,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
       "Haltet dein System davon ab den Bildschirmschoner zu aktivieren.")
 MSG_HASH(MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
       "Ändere die Einstellungen der Benutzeroberfläche.")
+MSG_HASH(MENU_ENUM_SUBLABEL_USER_LANGUAGE,
+      "Ändere die Sprache der Oberfläche.")
 MSG_HASH(MENU_ENUM_SUBLABEL_USER_SETTINGS,
       "Ändere das Konto, Benutzername, und die Sprache.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_ALLOW_ROTATE,
