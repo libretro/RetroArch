@@ -234,6 +234,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
       "Automatische Konfiguration aktivieren")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD,
       "Schwellwert der Eingabe-Achsen")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
+      "Bind Unterbrechung")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND,
       "Verstecke nicht zugewiesene Core-Eingabe-Beschriftungen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW, /* TODO/FIXME */
@@ -973,6 +975,16 @@ MSG_HASH(MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
       "Enable or disable recent playlist for games, images, music, and videos.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
       "Zeigt Informationen über Core, Netzwerk, und des Systems an. Anzeigen-Manager für Datenbank und Zeiger.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
+      "Ermöglicht jedem Spieler das Menü zu benutzen. Wenn deaktiviert, kann nur Spieler 1 das Menü benutzen.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_AXIS_THRESHOLD,
+      "Wie weit ein Analog-Stick bewegt werden muss bis er reagiert.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
+      "Anzahl Sekunden bis der nächste Bind abgehandelt wird.") /* @TODO: What is a Bind? */
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
+      "Anzahl Bilder wie lange ein Durchlauf während dem Turbomodus dauert.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
+      "Einstellungen der Hotkeys.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
       "Maximale Anzahl Benutzer welche von RetroArch unterstützt werden.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
@@ -982,8 +994,12 @@ MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
       "Werte 'Früh' und 'Spät' kann die Latenz verringern, je nach Konfiguration.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
       "Einstellungen für Joypads, Tastaturen und Mäuse.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
+      "Anzahl Bilder wie lange der Turbomodus anhält.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
       "Verwende die selbe Steuerung für Menü und Spiele. Betrifft nur Tastatur.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
+      "Bedienungseinstellungen dieses Spielers.")
 MSG_HASH(MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
       "Ändere die Logging-Einstellungen.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY,
