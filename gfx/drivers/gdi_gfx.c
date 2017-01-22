@@ -184,7 +184,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       }
    }
 
-   if (gdi_menu_frame && menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+   if (gdi_menu_frame && video_info->menu_is_alive)
    {
       frame_to_copy = gdi_menu_frame;
       width         = gdi_menu_width;
@@ -201,7 +201,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       if (frame_width == 4 && frame_height == 4 && (frame_width < width && frame_height < height))
          draw = false;
 
-      if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+      if (video_info->menu_is_alive)
          draw = false;
    }
 

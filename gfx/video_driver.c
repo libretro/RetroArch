@@ -39,6 +39,7 @@
 #endif
 
 #ifdef HAVE_MENU
+#include "../menu/menu_driver.h"
 #include "../menu/menu_setting.h"
 #endif
 
@@ -2289,6 +2290,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
 
    video_info->libretro_running       = false;
 #ifdef HAVE_MENU
+   video_info->menu_is_alive          = menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL);
    video_info->menu_footer_opacity    = settings->menu.footer.opacity;
    video_info->menu_header_opacity    = settings->menu.header.opacity;
    video_info->materialui_color_theme = settings->menu.materialui.menu_color_theme;
@@ -2305,6 +2307,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
       video_info->libretro_running    = (rarch_ctl(RARCH_CTL_IS_INITED, NULL)
             && !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL));
 #else
+   video_info->menu_is_alive          = false;
    video_info->menu_footer_opacity    = 0.0f;
    video_info->menu_header_opacity    = 0.0f;
    video_info->materialui_color_theme = 0;

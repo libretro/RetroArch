@@ -172,7 +172,7 @@ static bool vga_gfx_frame(void *data, const void *frame,
       }
    }
 
-   if (vga_menu_frame && menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+   if (vga_menu_frame && video_info->menu_is_alive)
    {
       frame_to_copy = vga_menu_frame;
       width         = vga_menu_width;
@@ -189,7 +189,7 @@ static bool vga_gfx_frame(void *data, const void *frame,
       if (frame_width == 4 && frame_height == 4 && (frame_width < width && frame_height < height))
          draw = false;
 
-      if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+      if (video_info->menu_is_alive)
          draw = false;
    }
 
