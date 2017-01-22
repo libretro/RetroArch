@@ -31,17 +31,35 @@
 #include "../verbosity.h"
 #include "../configuration.h"
 #include "../playlist.h"
+#include "../command.h"
 
 typedef struct
 {
    struct string_list *lpl_list;
    char crc[PATH_MAX_LENGTH];
+   char path[PATH_MAX_LENGTH];
+   char hostname[512];
+   char corename[PATH_MAX_LENGTH];
+   bool found;
 } netplay_crc_handle_t;
 
 static void netplay_crc_scan_callback(void *task_data,
                                void *user_data, const char *error)
 {
    printf("CALLBACK\n");
+
+   netplay_crc_handle_t *state = (netplay_crc_handle_t*)task_data;
+
+   if (!state)
+      return;
+
+   printf("%s\n", state->hostname);
+   printf("%s\n", state->path);
+   printf("%s\n", state->corename);
+
+   command_event(CMD_EVENT_NETPLAY_INIT, state->hostname);
+
+   free(state);
 }
 
 static void task_netplay_crc_scan_handler(retro_task_t *task)
@@ -81,11 +99,13 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
          printf("%s\n", playlist->entries[j].crc32);
          if (string_is_equal(playlist->entries[j].crc32, "6BE4CA95|crc"))
          {
+            strlcpy(state->path, playlist->entries[j].path, sizeof(state->path));
+            state->found = true;
+            task_set_data(task, state);
             task_set_progress(task, 100);
             task_set_title(task, strdup("Game found."));
             task_set_finished(task, true);
             string_list_free(state->lpl_list);
-            free(state);
             return;
          }
 
@@ -98,11 +118,11 @@ no_playlists:
    task_set_progress(task, 100);
    task_set_title(task, strdup("No game found."));
    task_set_finished(task, true);
-   free(state);
    return;
 }
 
-bool task_push_netplay_crc_scan(uint32_t crc)
+bool task_push_netplay_crc_scan(uint32_t crc,
+      const char *hostname, const char *corename)
 {
    settings_t *settings = config_get_ptr();
    retro_task_t   *task = (retro_task_t *)calloc(1, sizeof(*task));
@@ -114,8 +134,16 @@ bool task_push_netplay_crc_scan(uint32_t crc)
    state->crc[0] = '\0';
    snprintf(state->crc, sizeof(state->crc), "%08X|crc", crc);
 
+   state->hostname[0] = '\0';
+   snprintf(state->hostname, sizeof(state->hostname), "%s", hostname);
+
+   state->corename[0] = '\0';
+   snprintf(state->corename, sizeof(state->corename), "%s", corename);
+
    state->lpl_list = dir_list_new(settings->directory.playlist,
          NULL, true, true, true, false);
+
+   state->found = false;
 
    /* blocking means no other task can run while this one is running, 
     * which is the default */
