@@ -3130,11 +3130,6 @@ static int action_ok_netplay_connect_room(const char *path,
       command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
-   /* For testing purposes
-   strlcpy(tmp_hostname, "192.168.1.241", sizeof(tmp_hostname));*/
-   strlcpy(tmp_hostname,
-         netplay_room_list[idx - 1].address,
-         sizeof(tmp_hostname));
    snprintf(tmp_hostname,
          sizeof(tmp_hostname),
          "%s:%d", 
