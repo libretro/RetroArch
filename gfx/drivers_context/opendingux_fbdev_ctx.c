@@ -55,7 +55,7 @@ static void gfx_ctx_opendingux_destroy(void *data)
    }
 }
 
-static void *gfx_ctx_opendingux_init(video_frame_info_t video_info, void *video_driver)
+static void *gfx_ctx_opendingux_init(video_frame_info_t *video_info, void *video_driver)
 {
 #ifdef HAVE_EGL
    EGLint n;

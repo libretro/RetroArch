@@ -141,7 +141,7 @@ static void osmesa_fifo_write(gfx_ctx_osmesa_data_t *osmesa)
    }
 }
 
-static void *osmesa_ctx_init(video_frame_info_t video_info, void *video_driver)
+static void *osmesa_ctx_init(video_frame_info_t *video_info, void *video_driver)
 {
 #ifdef HAVE_OSMESA_CREATE_CONTEXT_ATTRIBS
    const int attribs[] = {

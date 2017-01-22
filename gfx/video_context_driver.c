@@ -191,7 +191,7 @@ static const gfx_ctx_driver_t *video_context_driver_init(
 
       video_driver_build_info(&video_info);
 
-      ctx_data = ctx->init(video_info, data);
+      ctx_data = ctx->init(&video_info, data);
 
       if (!ctx_data)
          return NULL;

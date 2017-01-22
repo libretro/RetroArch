@@ -99,7 +99,7 @@ static void gfx_ctx_emscripten_destroy(void *data)
    free(data);
 }
 
-static void *gfx_ctx_emscripten_init(video_frame_info_t video_info, void *video_driver)
+static void *gfx_ctx_emscripten_init(video_frame_info_t *video_info, void *video_driver)
 {
 #ifdef HAVE_EGL
    unsigned width, height;

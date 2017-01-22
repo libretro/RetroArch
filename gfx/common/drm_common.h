@@ -53,7 +53,7 @@ void drm_setup(int fd);
 
 void drm_free(void);
 
-bool drm_get_connector(int fd, video_frame_info_t video_info);
+bool drm_get_connector(int fd, video_frame_info_t *video_info);
 
 static INLINE bool drm_wait_flip(int timeout)
 {

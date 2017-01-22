@@ -330,7 +330,7 @@ static void gfx_ctx_drm_destroy_resources(gfx_ctx_drm_data_t *drm)
    g_next_bo           = NULL;
 }
 
-static void *gfx_ctx_drm_init(video_frame_info_t video_info, void *video_driver)
+static void *gfx_ctx_drm_init(video_frame_info_t *video_info, void *video_driver)
 {
    int fd, i;
    unsigned monitor_index;

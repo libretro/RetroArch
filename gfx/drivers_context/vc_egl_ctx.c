@@ -136,7 +136,7 @@ static void gfx_ctx_vc_get_video_size(void *data,
 
 static void gfx_ctx_vc_destroy(void *data);
 
-static void *gfx_ctx_vc_init(video_frame_info_t video_info, void *video_driver)
+static void *gfx_ctx_vc_init(video_frame_info_t *video_info, void *video_driver)
 {
    VC_DISPMANX_ALPHA_T alpha;
    EGLint n, major, minor;

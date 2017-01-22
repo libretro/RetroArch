@@ -71,7 +71,7 @@ static void sdl_ctx_destroy_resources(gfx_ctx_sdl_data_t *sdl)
    SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 
-static void *sdl_ctx_init(video_frame_info_t video_info, void *video_driver)
+static void *sdl_ctx_init(video_frame_info_t *video_info, void *video_driver)
 {
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)
       calloc(1, sizeof(gfx_ctx_sdl_data_t));

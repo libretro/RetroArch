@@ -64,11 +64,11 @@ bool drm_get_resources(int fd)
    return true;
 }
 
-bool drm_get_connector(int fd, video_frame_info_t video_info)
+bool drm_get_connector(int fd, video_frame_info_t *video_info)
 {
    unsigned i;
    unsigned monitor_index = 0;
-   unsigned monitor       = MAX(video_info.monitor_index, 1);
+   unsigned monitor       = MAX(video_info->monitor_index, 1);
 
    /* Enumerate all connectors. */
 

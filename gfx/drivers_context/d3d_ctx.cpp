@@ -165,7 +165,7 @@ static bool gfx_ctx_d3d_bind_api(void *data,
 #endif
 }
 
-static void *gfx_ctx_d3d_init(video_frame_info_t video_info, void *video_driver)
+static void *gfx_ctx_d3d_init(video_frame_info_t *video_info, void *video_driver)
 {
    win32_monitor_init();
 

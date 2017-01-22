@@ -197,7 +197,7 @@ static void gfx_ctx_ps3_get_video_size(void *data,
 #endif
 }
 
-static void *gfx_ctx_ps3_init(video_frame_info_t video_info, void *video_driver)
+static void *gfx_ctx_ps3_init(video_frame_info_t *video_info, void *video_driver)
 {
 #ifdef HAVE_PSGL
    PSGLdeviceParameters params;

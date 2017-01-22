@@ -72,7 +72,7 @@ static void gfx_ctx_qnx_destroy(void *data)
    free(data);
 }
 
-static void *gfx_ctx_qnx_init(video_frame_info_t video_info, void *video_driver)
+static void *gfx_ctx_qnx_init(video_frame_info_t *video_info, void *video_driver)
 {
    EGLint n;
    EGLint major, minor;

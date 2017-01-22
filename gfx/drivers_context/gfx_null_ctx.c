@@ -108,7 +108,7 @@ static void gfx_ctx_null_bind_hw_render(void *data, bool enable)
    (void)enable;
 }
 
-static void *gfx_ctx_null_init(video_frame_info_t video_info, void *video_driver)
+static void *gfx_ctx_null_init(video_frame_info_t *video_info, void *video_driver)
 {
    (void)video_driver;
 
