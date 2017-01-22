@@ -58,6 +58,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
       task_set_progress(task, 100);
       task_set_title(task, strdup("Playlist directory not found."));
       task_set_finished(task, true);
+      free(state);
       return;
    }
 
@@ -84,6 +85,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
             task_set_title(task, strdup("Game found."));
             task_set_finished(task, true);
             string_list_free(state->lpl_list);
+            free(state);
             return;
          }
 
@@ -96,6 +98,7 @@ no_playlists:
    task_set_progress(task, 100);
    task_set_title(task, strdup("No game found."));
    task_set_finished(task, true);
+   free(state);
    return;
 }
 
