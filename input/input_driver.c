@@ -370,7 +370,7 @@ int16_t input_state(unsigned port, unsigned device,
       }
    }
 
-   if (!input_driver_flushing_input 
+   if (     !input_driver_flushing_input 
          && !input_driver_block_libretro_input)
    {
       if (((id < RARCH_FIRST_META_KEY) || (device == RETRO_DEVICE_KEYBOARD)))

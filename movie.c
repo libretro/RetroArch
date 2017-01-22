@@ -379,8 +379,6 @@ bool bsv_movie_ctl(enum bsv_ctl_state state, void *data)
       case BSV_MOVIE_CTL_UNSET_START_PLAYBACK:
          bsv_movie_state.movie_start_playback = false;
          break;
-      case BSV_MOVIE_CTL_END:
-         return bsv_movie_state.movie_end;
       case BSV_MOVIE_CTL_SET_END_EOF:
          bsv_movie_state.eof_exit = true;
          break;
@@ -468,7 +466,7 @@ bool bsv_movie_init_handle(const char *path,
 /* Checks if movie is being played back. */
 static bool runloop_check_movie_playback(void)
 {
-   if (!bsv_movie_ctl(BSV_MOVIE_CTL_END, NULL))
+   if (!bsv_movie_state.movie_end)
       return false;
 
    runloop_msg_queue_push(
