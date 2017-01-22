@@ -45,7 +45,6 @@
 #include "../../performance_counters.h"
 
 #include "../../retroarch.h"
-#include "../../runloop.h"
 #include "../../verbosity.h"
 
 #include "../video_context_driver.h"
@@ -2262,7 +2261,7 @@ static void vulkan_viewport_info(void *data, struct video_viewport *vp)
    vp->full_height = height;
 }
 
-static bool vulkan_read_viewport(void *data, uint8_t *buffer)
+static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    struct vk_texture *staging       = NULL;
    vk_t *vk                         = (vk_t*)data;
@@ -2305,7 +2304,8 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer)
        * with conversion. */
 
       vk->readback.pending = true;
-      if (!runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
+
+      if (!is_idle)
          video_driver_cached_frame();
 
       vkQueueWaitIdle(vk->context->queue);

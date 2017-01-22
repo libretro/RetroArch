@@ -40,11 +40,9 @@
 #include "../video_context_driver.h"
 
 #include "../../retroarch.h"
-#include "../../runloop.h"
 #include "../../driver.h"
 #include "../../performance_counters.h"
 #include "../../content.h"
-#include "../../runloop.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
 
@@ -502,7 +500,7 @@ static void vg_viewport_info(void *data,
    (void)vp;
 }
 
-static bool vg_read_viewport(void *data, uint8_t *buffer)
+static bool vg_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    (void)data;
    (void)buffer;

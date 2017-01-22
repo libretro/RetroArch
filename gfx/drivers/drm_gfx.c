@@ -39,7 +39,6 @@
 #include "../font_driver.h"
 #include "../video_context_driver.h"
 #include "../../retroarch.h"
-#include "../../runloop.h"
 
 #include "drm_pixformats.h"
 
@@ -940,7 +939,7 @@ static void drm_gfx_set_rotation(void *data, unsigned rotation)
    (void)rotation;
 }
 
-static bool drm_gfx_read_viewport(void *data, uint8_t *buffer)
+static bool drm_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    (void)data;
    (void)buffer;

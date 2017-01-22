@@ -892,7 +892,7 @@ static void xv_set_rotation(void *data, unsigned rotation)
    (void)rotation;
 }
 
-static bool xv_read_viewport(void *data, uint8_t *buffer)
+static bool xv_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    (void)data;
    (void)buffer;

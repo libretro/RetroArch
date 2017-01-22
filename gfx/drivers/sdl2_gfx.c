@@ -40,7 +40,6 @@
 
 #include "../../configuration.h"
 #include "../../retroarch.h"
-#include "../../runloop.h"
 #include "../../performance_counters.h"
 #include "../../verbosity.h"
 #include "../video_context_driver.h"
@@ -627,7 +626,7 @@ static void sdl2_gfx_viewport_info(void *data, struct video_viewport *vp)
    *vp = vid->vp;
 }
 
-static bool sdl2_gfx_read_viewport(void *data, uint8_t *buffer)
+static bool sdl2_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    SDL_Surface *surf = NULL, *bgr24 = NULL;
    sdl2_video_t *vid = (sdl2_video_t*)data;
@@ -636,7 +635,7 @@ static bool sdl2_gfx_read_viewport(void *data, uint8_t *buffer)
    performance_counter_init(&sdl2_gfx_read_viewport, "sdl2_gfx_read_viewport");
    performance_counter_start(&sdl2_gfx_read_viewport);
 
-   if (!runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
+   if (!is_idle)
       video_driver_cached_frame();
 
    surf  = SDL_GetWindowSurface(vid->window);

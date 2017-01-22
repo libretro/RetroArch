@@ -276,7 +276,7 @@ static void vga_gfx_viewport_info(void *data,
    (void)vp;
 }
 
-static bool vga_gfx_read_viewport(void *data, uint8_t *buffer)
+static bool vga_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    (void)data;
    (void)buffer;

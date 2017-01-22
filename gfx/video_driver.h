@@ -242,7 +242,7 @@ typedef struct video_driver
    void (*viewport_info)(void *data, struct video_viewport *vp);
 
    /* Reads out in BGR byte order (24bpp). */
-   bool (*read_viewport)(void *data, uint8_t *buffer);
+   bool (*read_viewport)(void *data, uint8_t *buffer, bool is_idle);
 
    /* Returns a pointer to a newly allocated buffer that can
     * (and must) be passed to free() by the caller, containing a
@@ -305,7 +305,7 @@ void video_driver_hide_mouse(void);
 void video_driver_set_nonblock_state(bool toggle);
 bool video_driver_find_driver(void);
 void video_driver_apply_state_changes(void);
-bool video_driver_read_viewport(uint8_t *buffer);
+bool video_driver_read_viewport(uint8_t *buffer, bool is_idle);
 bool video_driver_cached_frame(void);
 uint64_t video_driver_get_frame_count(void);
 bool video_driver_frame_filter_alive(void);

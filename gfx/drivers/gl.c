@@ -47,7 +47,6 @@
 #include "../../performance_counters.h"
 
 #include "../../retroarch.h"
-#include "../../runloop.h"
 #include "../../verbosity.h"
 #include "../common/gl_common.h"
 
@@ -2360,7 +2359,7 @@ static void gl_viewport_info(void *data, struct video_viewport *vp)
    vp->y           = top_dist;
 }
 
-static bool gl_read_viewport(void *data, uint8_t *buffer)
+static bool gl_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
 #ifndef NO_GL_READ_PIXELS
    static struct retro_perf_counter read_viewport = {0};
@@ -2443,7 +2442,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
          goto error;
       }
 
-      if (!runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
+      if (!is_idle)
          video_driver_cached_frame();
 
       video_frame_convert_rgba_to_bgr(

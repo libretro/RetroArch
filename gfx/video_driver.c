@@ -1102,7 +1102,8 @@ static bool video_driver_frame_filter(
 
    if (video_info->post_filter_record && recording_data)
       recording_dump_frame(video_driver_state_buffer,
-            *output_width, *output_height, *output_pitch);
+            *output_width, *output_height, *output_pitch,
+            video_info->runloop_is_idle);
 
    return true;
 }
@@ -1634,10 +1635,10 @@ void video_driver_apply_state_changes(void)
       video_driver_poke->apply_state_changes(video_driver_data);
 }
 
-bool video_driver_read_viewport(uint8_t *buffer)
+bool video_driver_read_viewport(uint8_t *buffer, bool is_idle)
 {
    if (     current_video->read_viewport
-         && current_video->read_viewport(video_driver_data, buffer))
+         && current_video->read_viewport(video_driver_data, buffer, is_idle))
       return true;
 
    return false;
@@ -2169,7 +2170,7 @@ void video_driver_frame(const void *data, unsigned width,
           || video_driver_record_gpu_buffer
          ) && recording_data
       )
-      recording_dump_frame(data, width, height, pitch);
+      recording_dump_frame(data, width, height, pitch, video_info.runloop_is_idle);
 
    if (data && video_driver_state_filter &&
          video_driver_frame_filter(data, &video_info, width, height, pitch,

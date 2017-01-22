@@ -43,7 +43,6 @@
 #include "../video_driver.h"
 
 #include "../../configuration.h"
-#include "../../runloop.h"
 #include "../../performance_counters.h"
 
 #include "../video_context_driver.h"
@@ -576,7 +575,7 @@ static void sdl_gfx_set_rotation(void *data, unsigned rotation)
    (void)rotation;
 }
 
-static bool sdl_gfx_read_viewport(void *data, uint8_t *buffer)
+static bool sdl_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    (void)data;
    (void)buffer;

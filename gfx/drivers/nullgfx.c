@@ -105,7 +105,7 @@ static void null_gfx_viewport_info(void *data,
    (void)vp;
 }
 
-static bool null_gfx_read_viewport(void *data, uint8_t *buffer)
+static bool null_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    (void)data;
    (void)buffer;

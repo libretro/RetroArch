@@ -158,7 +158,7 @@ static void xshm_gfx_viewport_info(void *data, struct video_viewport *vp)
    
 }
 
-static bool xshm_gfx_read_viewport(void *data, uint8_t *buffer)
+static bool xshm_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    return false;
 }

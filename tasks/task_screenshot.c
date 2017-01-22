@@ -76,6 +76,7 @@ typedef struct
    bool bgr24;
    bool silence;
    void *userbuf;
+   bool is_idle;
    bool is_paused;
    bool history_list_enable;
 } screenshot_task_state_t;
@@ -189,7 +190,9 @@ static bool screenshot_dump(
       const void *frame,
       unsigned width,
       unsigned height,
-      int pitch, bool bgr24, void *userbuf, bool savestate,
+      int pitch, bool bgr24,
+      void *userbuf, bool savestate,
+      bool is_idle,
       bool is_paused)
 {
    char screenshot_path[PATH_MAX_LENGTH];
@@ -211,6 +214,7 @@ static bool screenshot_dump(
       screenshot_dir = screenshot_path;
    }
 
+   state->is_idle             = is_idle;
    state->is_paused           = is_paused;
    state->bgr24               = bgr24;
    state->height              = height;
@@ -263,7 +267,7 @@ static bool screenshot_dump(
 
 #if !defined(VITA)
 static bool take_screenshot_viewport(const char *name_base, bool savestate,
-      bool is_paused)
+      bool is_idle, bool is_paused)
 {
    struct video_viewport vp;
    uint8_t *buffer                       = NULL;
@@ -286,13 +290,13 @@ static bool take_screenshot_viewport(const char *name_base, bool savestate,
    if (!buffer)
       return false;
 
-   if (!video_driver_read_viewport(buffer))
+   if (!video_driver_read_viewport(buffer, is_idle))
       goto error;
 
    /* Data read from viewport is in bottom-up order, suitable for BMP. */
    if (!screenshot_dump(name_base,
             buffer, vp.width, vp.height,
-            vp.width * 3, true, buffer, savestate, is_paused))
+            vp.width * 3, true, buffer, savestate, is_idle, is_paused))
       goto error;
 
    return true;
@@ -305,7 +309,7 @@ error:
 #endif
 
 static bool take_screenshot_raw(const char *name_base, void *userbuf,
-      bool savestate, bool is_paused)
+      bool savestate, bool is_idle, bool is_paused)
 {
    size_t pitch;
    unsigned width, height;
@@ -318,7 +322,7 @@ static bool take_screenshot_raw(const char *name_base, void *userbuf,
     */
    if (!screenshot_dump(name_base, 
          (const uint8_t*)data + (height - 1) * pitch,
-         width, height, -pitch, false, userbuf, savestate, is_paused))
+         width, height, -pitch, false, userbuf, savestate, is_idle, is_paused))
       return false;
 
    return true;
@@ -347,14 +351,14 @@ static bool take_screenshot_choice(const char *name_base, bool savestate,
       if (!is_idle)
          video_driver_cached_frame();
 #if defined(VITA)
-      return take_screenshot_raw(name_base, NULL, savestate, is_paused);
+      return take_screenshot_raw(name_base, NULL, savestate, is_idle, is_paused);
 #else
-      return take_screenshot_viewport(name_base, savestate, is_paused);
+      return take_screenshot_viewport(name_base, savestate, is_idle, is_paused);
 #endif
    }
 
    if (!video_driver_cached_frame_has_valid_framebuffer())
-      return take_screenshot_raw(name_base, NULL, savestate, is_paused);
+      return take_screenshot_raw(name_base, NULL, savestate, is_idle, is_paused);
 
    if (!video_driver_supports_read_frame_raw())
       return false;
@@ -371,7 +375,7 @@ static bool take_screenshot_choice(const char *name_base, bool savestate,
    if (frame_data)
    {
       video_driver_set_cached_frame_ptr(frame_data);
-      if (take_screenshot_raw(name_base, frame_data, savestate, is_paused))
+      if (take_screenshot_raw(name_base, frame_data, savestate, is_idle, is_paused))
          ret = true;
    }
 

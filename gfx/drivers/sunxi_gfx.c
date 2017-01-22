@@ -36,7 +36,6 @@
 #include "../font_driver.h"
 
 #include "../../retroarch.h"
-#include "../../runloop.h"
 
 #define NUMPAGES 2
 

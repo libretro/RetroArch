@@ -29,7 +29,6 @@
 #include "../font_driver.h"
 
 #include "../../driver.h"
-#include "../../runloop.h"
 
 #define XE_W 512
 #define XE_H 512
@@ -299,7 +298,7 @@ static void xenon360_gfx_viewport_info(void *data, struct video_viewport *vp)
    (void)vp;
 }
 
-static bool xenon360_gfx_read_viewport(void *data, uint8_t *buffer)
+static bool xenon360_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    (void)data;
    (void)buffer;

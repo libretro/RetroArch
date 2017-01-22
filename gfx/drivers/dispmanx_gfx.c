@@ -30,7 +30,6 @@
 
 #include "../../driver.h"
 #include "../../retroarch.h"
-#include "../../runloop.h"
 #include "../video_context_driver.h"
 #include "../font_driver.h"
 
@@ -599,7 +598,7 @@ static void dispmanx_gfx_set_rotation(void *data, unsigned rotation)
    (void)rotation;
 }
 
-static bool dispmanx_gfx_read_viewport(void *data, uint8_t *buffer)
+static bool dispmanx_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    (void)data;
    (void)buffer;

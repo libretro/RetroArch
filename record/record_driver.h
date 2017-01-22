@@ -145,7 +145,7 @@ bool record_driver_init_first(const record_driver_t **backend, void **data,
       const struct ffemu_params *params);
 
 void recording_dump_frame(const void *data, unsigned width,
-      unsigned height, size_t pitch);
+      unsigned height, size_t pitch, bool is_idle);
 
 bool recording_deinit(void);
 

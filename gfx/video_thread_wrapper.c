@@ -187,6 +187,7 @@ struct thread_video
    bool suppress_screensaver;
    bool has_windowed;
    bool nonblock;
+   bool is_idle;
 
    retro_time_t last_time;
    unsigned hit_count;
@@ -393,7 +394,7 @@ static bool video_thread_handle_packet(
 
             if (thr->driver->read_viewport)
                ret = thr->driver->read_viewport(thr->driver_data,
-                     (uint8_t*)pkt.data.v);
+                     (uint8_t*)pkt.data.v, thr->is_idle);
 
             pkt.data.b = ret;
             thr->frame.within_thread = false;
@@ -916,7 +917,7 @@ static void video_thread_viewport_info(void *data, struct video_viewport *vp)
    slock_unlock(thr->lock);
 }
 
-static bool video_thread_read_viewport(void *data, uint8_t *buffer)
+static bool video_thread_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    thread_video_t *thr = (thread_video_t*)data;
    thread_packet_t pkt = { CMD_READ_VIEWPORT };
@@ -924,7 +925,8 @@ static bool video_thread_read_viewport(void *data, uint8_t *buffer)
    if (!thr)
       return false;
 
-   pkt.data.v = buffer;
+   pkt.data.v   = buffer;
+   thr->is_idle = is_idle;
 
    video_thread_send_and_wait_user_to_thread(thr, &pkt);
 

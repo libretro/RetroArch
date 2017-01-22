@@ -35,7 +35,6 @@
 #include "../font_driver.h"
 
 #include "../../defines/psp_defines.h"
-#include "../../runloop.h"
 
 #ifndef SCEGU_SCR_WIDTH
 #define SCEGU_SCR_WIDTH 480
@@ -871,7 +870,7 @@ static void psp_get_poke_interface(void *data,
    *iface = &psp_poke_interface;
 }
 
-static bool psp_read_viewport(void *data, uint8_t *buffer)
+static bool psp_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    void* src_buffer;
    int i, j, src_bufferwidth, src_pixelformat, src_x, src_y, src_x_max, src_y_max;

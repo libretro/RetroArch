@@ -1146,7 +1146,7 @@ static void ctr_get_poke_interface(void* data,
    *iface = &ctr_poke_interface;
 }
 
-static bool ctr_read_viewport(void* data, uint8_t* buffer)
+static bool ctr_read_viewport(void* data, uint8_t* buffer, bool is_idle)
 {
    (void)data;
    (void)buffer;

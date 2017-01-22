@@ -42,7 +42,6 @@
 #include "../../defines/gx_defines.h"
 #include "../../configuration.h"
 #include "../../driver.h"
-#include "../../runloop.h"
 
 extern syssram* __SYS_LockSram(void);
 extern u32 __SYS_UnlockSram(u32 write);
@@ -1180,7 +1179,7 @@ static void gx_viewport_info(void *data, struct video_viewport *vp)
    *vp = gx->vp;
 }
 
-static bool gx_read_viewport(void *data, uint8_t *buffer)
+static bool gx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    (void)data;
    (void)buffer;

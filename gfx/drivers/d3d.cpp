@@ -53,7 +53,6 @@
 #include "../../performance_counters.h"
 
 #include "../../defines/d3d_defines.h"
-#include "../../runloop.h"
 #include "../../verbosity.h"
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
@@ -1475,7 +1474,7 @@ static bool d3d_frame(void *data, const void *frame,
    return true;
 }
 
-static bool d3d_read_viewport(void *data, uint8_t *buffer)
+static bool d3d_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    d3d_video_t *d3d   = (d3d_video_t*)data;
 

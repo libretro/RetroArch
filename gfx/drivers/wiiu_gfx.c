@@ -768,7 +768,7 @@ static void wiiu_gfx_viewport_info(void* data,
       *vp = wiiu->vp;
 }
 
-static bool wiiu_gfx_read_viewport(void* data, uint8_t* buffer)
+static bool wiiu_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
 {
    (void)data;
    (void)buffer;
@@ -777,7 +777,7 @@ static bool wiiu_gfx_read_viewport(void* data, uint8_t* buffer)
 }
 
 static uintptr_t wiiu_gfx_load_texture(void* video_data, void* data,
-                                   bool threaded, enum texture_filter_type filter_type)
+      bool threaded, enum texture_filter_type filter_type)
 {
    return 0;
 }

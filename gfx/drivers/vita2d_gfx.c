@@ -32,7 +32,6 @@
 
 #include "../common/vita2d_common.h"
 #include "../../driver.h"
-#include "../../runloop.h"
 #include "../video_coord_array.h"
 #include "../video_context_driver.h"
 #include "../../verbosity.h"
@@ -561,7 +560,7 @@ static void vita2d_gfx_viewport_info(void *data,
        *vp = vita->vp;
 }
 
-static bool vita2d_gfx_read_viewport(void *data, uint8_t *buffer)
+static bool vita2d_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    (void)data;
    (void)buffer;
