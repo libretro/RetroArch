@@ -1933,8 +1933,8 @@ static bool vulkan_frame(void *data, const void *frame,
    if (
          video_info->black_frame_insertion
          && !input_driver_is_nonblock_state()
-         && !runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, NULL)
-         && !runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
+         && !video_info->runloop_is_slowmotion
+         && !video_info->runloop_is_paused)
    {
       vulkan_inject_black_frame(vk, video_info);
    }
