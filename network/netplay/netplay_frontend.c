@@ -425,14 +425,16 @@ static void netplay_announce_cb(void *task_data, void *user_data, const char *er
 
 static void netplay_announce()
 {
+   char buf [2048];
+   char url [2048]               = "http://lobby.libretro.com/raw/?";
    rarch_system_info_t *system   = NULL;
    settings_t *settings          = config_get_ptr();
-   uint32_t *content_crc_ptr = NULL;
+   uint32_t *content_crc_ptr     = NULL;
+
    content_get_crc(&content_crc_ptr);
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
-   char url [2048] = "http://lobby.libretro.com/raw/?";
-   char buf [2048];
+
    buf[0] = '\0';
 
    snprintf(buf, sizeof(buf), "%susername=%s&corename=%s&coreversion=%s&"

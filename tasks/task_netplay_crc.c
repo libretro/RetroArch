@@ -47,11 +47,11 @@ typedef struct
 static void netplay_crc_scan_callback(void *task_data,
                                void *user_data, const char *error)
 {
-   netplay_crc_handle_t *state = (netplay_crc_handle_t*)task_data;
-   core_info_list_t *info      = NULL;
+   int i;
+   netplay_crc_handle_t *state     = (netplay_crc_handle_t*)task_data;
+   core_info_list_t *info          = NULL;
    content_ctx_info_t content_info = {0};
 
-   int i;
    core_info_get_list(&info);
 
    if (!state)
@@ -62,11 +62,6 @@ static void netplay_crc_scan_callback(void *task_data,
       if(string_is_equal(info->list[i].core_name, state->corename))
          break;
    }
-
-   printf("Hostname: %s\n", state->hostname);
-   printf("Content:  %s\n", state->path);
-   printf("Corename: %s\n", state->corename);
-   printf("Corepath: %s\n", info->list[i].path);
 
    command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
    task_push_content_load_default(
@@ -81,8 +76,8 @@ static void netplay_crc_scan_callback(void *task_data,
 
 static void task_netplay_crc_scan_handler(retro_task_t *task)
 {
-   netplay_crc_handle_t *state = (netplay_crc_handle_t*)task->state;
    size_t i, j;
+   netplay_crc_handle_t *state = (netplay_crc_handle_t*)task->state;
 
    task_set_progress(task, 0);
    task_set_title(task, strdup("Checking for ROM presence."));
@@ -102,18 +97,16 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
 
    for (i = 0; i < state->lpl_list->size; i++)
    {
+      playlist_t *playlist = NULL;
       const char *lpl_path = state->lpl_list->elems[i].data;
 
       if (!strstr(lpl_path, file_path_str(FILE_PATH_LPL_EXTENSION)))
          continue;
 
-      printf("%s\n", lpl_path);
-
-      playlist_t *playlist = playlist_init(lpl_path, 99999);
+      playlist = playlist_init(lpl_path, 99999);
 
       for (j = 0; j < playlist->size; j++)
       {
-         printf("%s\n", playlist->entries[j].crc32);
          if (string_is_equal(playlist->entries[j].crc32, state->crc))
          {
             strlcpy(state->path, playlist->entries[j].path, sizeof(state->path));
@@ -141,8 +134,8 @@ no_playlists:
 bool task_push_netplay_crc_scan(uint32_t crc,
       const char *hostname, const char *corename)
 {
-   settings_t *settings = config_get_ptr();
-   retro_task_t   *task = (retro_task_t *)calloc(1, sizeof(*task));
+   settings_t        *settings = config_get_ptr();
+   retro_task_t          *task = (retro_task_t *)calloc(1, sizeof(*task));
    netplay_crc_handle_t *state = (netplay_crc_handle_t*)calloc(1, sizeof(*state));
 
    if (!task || !state)

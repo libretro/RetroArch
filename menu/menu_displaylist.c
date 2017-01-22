@@ -2961,10 +2961,13 @@ static int menu_displaylist_parse_netplay_room_list(
       for (i = 0; i < netplay_room_count; i++)
       {
          char s[PATH_MAX_LENGTH];
-         snprintf(s, sizeof(s), "Nickname: %s", netplay_room_list[i].nickname);
-         const char *label = s;
+
+         s[0] = '\0';
+
+         snprintf(s, sizeof(s),
+               "Nickname: %s", netplay_room_list[i].nickname);
          menu_entries_append_enum(info->list,
-               label,
+               s,
                msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM),
                MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,
                MENU_WIFI, 0, 0);

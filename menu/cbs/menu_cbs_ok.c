@@ -3350,6 +3350,7 @@ finish:
       {
          int i, j = 0;
          char tmp[PATH_MAX_LENGTH];
+         char s[PATH_MAX_LENGTH];
          static struct string_list *room_data = NULL;
          file_list_t *file_list               = menu_entries_get_selection_buf_ptr(0);
 
@@ -3419,10 +3420,12 @@ finish:
                netplay_room_list[i].gamename,
                netplay_room_list[i].gamecrc,
                netplay_room_list[i].timestamp);
+
             j+=8;
-            char s[PATH_MAX_LENGTH];
+
             snprintf(s, sizeof(s), "Nickname: %s",
                   netplay_room_list[i].nickname);
+
             menu_entries_append_enum(file_list,
                   s,
                   msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM),
