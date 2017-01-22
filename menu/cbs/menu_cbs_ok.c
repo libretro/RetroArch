@@ -3349,6 +3349,9 @@ finish:
 
          room_data = string_split(buf, "\n");
 
+         if (netplay_room_list)
+            free(netplay_room_list);
+
          netplay_room_count = room_data->size / 8;
          netplay_room_list = (struct netplay_room*)malloc(sizeof(struct netplay_room) * netplay_room_count);
 
