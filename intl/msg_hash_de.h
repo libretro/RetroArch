@@ -1138,6 +1138,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
       "Verwende die selbe Steuerung für Menü und Spiele. Betrifft nur Tastatur.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
       "Bedienungseinstellungen dieses Spielers.")
+MSG_HASH(MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
+      "Aktiviere Logging im Terminal.")
 MSG_HASH(MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
       "Ändere die Logging-Einstellungen.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY,
