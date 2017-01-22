@@ -32,7 +32,6 @@
 #include <retro_inline.h>
 
 #include "../../configuration.h"
-#include "../../runloop.h"
 #include "../video_context_driver.h"
 
 #include "../../frontend/frontend_driver.h"

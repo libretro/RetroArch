@@ -37,7 +37,6 @@
 #endif
 
 #include "../../frontend/frontend_driver.h"
-#include "../../runloop.h"
 
 typedef struct
 {

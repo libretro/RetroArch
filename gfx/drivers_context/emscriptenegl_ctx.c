@@ -25,7 +25,6 @@
 #include "../../config.h"
 #endif
 
-#include "../../runloop.h"
 #include "../video_context_driver.h"
 
 #ifdef HAVE_EGL

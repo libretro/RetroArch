@@ -43,7 +43,6 @@
 #endif
 
 #include "../../frontend/frontend_driver.h"
-#include "../../runloop.h"
 #include "../../input/input_keyboard.h"
 #include "../../input/input_keymaps.h"
 #include "../../input/input_joypad_driver.h"
