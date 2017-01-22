@@ -110,13 +110,15 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
 
    if (state_size)
    {
-      retro_ctx_serialize_info_t serial_info;
       retro_ctx_size_info_t info;
+      retro_ctx_serialize_info_t serial_info;
+      uint8_t *buf       = (uint8_t*)malloc(state_size);
 
-      handle->state      = (uint8_t*)malloc(state_size);
-      handle->state_size = state_size;
-      if (!handle->state)
+      if (!buf)
          return false;
+
+      handle->state      = buf;
+      handle->state_size = state_size;
 
       if (fread(handle->state, 1, state_size, handle->file) != state_size)
       {
