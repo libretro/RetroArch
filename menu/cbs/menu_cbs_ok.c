@@ -3332,9 +3332,12 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
    if (!data || err)
       goto finish;
 
-   memcpy(buf, data->data, data->len * sizeof(char));
-   buf[data->len] = '\0';
-
+   if (data)
+   {
+      if (data->data)
+         memcpy(buf, data->data, data->len * sizeof(char));
+      buf[data->len] = '\0';
+   }
 
 finish:
    if (!err && !strstr(buf, file_path_str(FILE_PATH_NETPLAY_ROOM_LIST_URL)))
