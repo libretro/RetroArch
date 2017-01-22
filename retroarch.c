@@ -1080,7 +1080,7 @@ bool retroarch_main_init(int argc, char *argv[])
    {
 #ifdef HAVE_MENU
       /* Check if menu was active prior to core initialization */
-      if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+      if (menu_driver_is_alive())
       {
          /* Attempt initializing dummy core */
          current_core_type = CORE_TYPE_DUMMY;

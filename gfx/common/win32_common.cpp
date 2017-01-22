@@ -542,7 +542,7 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
          HDC hdc = BeginPaint(hwnd, &ps);
 
 #ifdef HAVE_MENU
-         if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL) && !gdi_has_menu_frame())
+         if (menu_driver_is_alive() && !gdi_has_menu_frame())
          {
             RECT rect;
             GetClientRect(hwnd, &rect);

@@ -415,7 +415,7 @@ static void rgui_render(void *data)
       msg_force = menu_display_get_msg_force();
 
       if (menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL)
-            && menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL) && !msg_force)
+            && menu_driver_is_alive() && !msg_force)
          return;
 
       if (runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))

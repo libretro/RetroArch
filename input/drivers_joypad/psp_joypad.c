@@ -250,7 +250,7 @@ static void psp_joypad_poll(void)
 #endif
 #if defined(VITA)
       if (psp2_model == SCE_KERNEL_MODEL_VITA 
-         && !menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL)
+         && !menu_driver_is_alive()
          && settings->input.backtouch_enable)
       {
          unsigned i;

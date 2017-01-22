@@ -2291,7 +2291,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
 
    video_info->libretro_running       = false;
 #ifdef HAVE_MENU
-   video_info->menu_is_alive          = menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL);
+   video_info->menu_is_alive          = menu_driver_is_alive();
    video_info->menu_footer_opacity    = settings->menu.footer.opacity;
    video_info->menu_header_opacity    = settings->menu.header.opacity;
    video_info->materialui_color_theme = settings->menu.materialui.menu_color_theme;

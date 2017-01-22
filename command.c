@@ -1878,7 +1878,7 @@ bool command_event(enum event_command cmd, void *data)
          return command_event_resize_windowed_scale();
       case CMD_EVENT_MENU_TOGGLE:
 #ifdef HAVE_MENU
-         if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+         if (menu_driver_is_alive())
             rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
          else
             rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
@@ -1969,7 +1969,7 @@ bool command_event(enum event_command cmd, void *data)
          command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, (void*)(intptr_t)-1);
 #ifdef HAVE_MENU
          menu_display_set_framebuffer_dirty_flag();
-         if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+         if (menu_driver_is_alive())
             command_event(CMD_EVENT_VIDEO_SET_BLOCKING_STATE, NULL);
 #endif
          break;
@@ -2382,7 +2382,7 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_MENU
             settings_t *settings      = config_get_ptr();
 
-            if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+            if (menu_driver_is_alive())
             {
                if (settings->menu.pause_libretro)
                   command_event(CMD_EVENT_AUDIO_STOP, NULL);

@@ -304,10 +304,7 @@ const char *menu_driver_ident(void)
 
 void menu_driver_frame(video_frame_info_t *video_info)
 {
-   if (!menu_driver_alive)
-      return;
-
-   if (menu_driver_ctx->frame)
+   if (menu_driver_alive && menu_driver_ctx->frame)
       menu_driver_ctx->frame(menu_userdata, video_info);
 }
 
@@ -374,6 +371,11 @@ bool menu_driver_render(bool is_idle)
    menu_driver_data->state               = 0;
 
    return true;
+}
+
+bool menu_driver_is_alive(void)
+{
+   return menu_driver_alive;
 }
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
@@ -507,8 +509,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
       case RARCH_MENU_CTL_UNSET_TOGGLE:
          menu_driver_toggle(false);
          break;
-      case RARCH_MENU_CTL_IS_ALIVE:
-         return menu_driver_alive;
       case RARCH_MENU_CTL_SET_OWN_DRIVER:
          menu_driver_data_own = true;
          break;

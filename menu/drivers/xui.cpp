@@ -539,7 +539,7 @@ static void xui_render(void *data)
 
    if (
          menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL) 
-         && menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL)
+         && menu_driver_is_alive()
          && !msg_force
       )
       return;

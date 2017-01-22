@@ -487,7 +487,7 @@ void input_overlay_loaded(void *task_data, void *user_data, const char *err)
 
 #ifdef HAVE_MENU
    /* We can't display when the menu is up */
-   if (data->hide_in_menu && menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+   if (data->hide_in_menu && menu_driver_is_alive())
    {
       if (data->overlay_enable)
          goto abort_load;

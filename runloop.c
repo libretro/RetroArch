@@ -706,7 +706,7 @@ static enum runloop_state runloop_check_state(
 
    if (runloop_cmd_triggered(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
    {
-      bool fullscreen_toggled = !runloop_paused || menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL);
+      bool fullscreen_toggled = !runloop_paused || menu_driver_is_alive();
 
       if (fullscreen_toggled)
          command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
@@ -757,7 +757,7 @@ static enum runloop_state runloop_check_state(
    }
 
 #ifdef HAVE_MENU
-   if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+   if (menu_driver_is_alive())
    {
       menu_ctx_iterate_t iter;
       core_poll();
@@ -794,7 +794,7 @@ static enum runloop_state runloop_check_state(
 #ifdef HAVE_MENU
    if (menu_event_kb_is_set(RETROK_F1) == 1)
    {
-      if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+      if (menu_driver_is_alive())
       {
          if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) &&
                !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
@@ -808,7 +808,7 @@ static enum runloop_state runloop_check_state(
             runloop_cmd_triggered(trigger_input, RARCH_MENU_TOGGLE)) ||
          rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
    {
-      if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+      if (menu_driver_is_alive())
       {
          if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) &&
                !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
@@ -823,7 +823,7 @@ static enum runloop_state runloop_check_state(
    else
       menu_event_kb_set(false, RETROK_F1);
 
-   if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+   if (menu_driver_is_alive())
    {
       if (!settings->menu.throttle_framerate && !settings->fastforward_ratio)
          return RUNLOOP_STATE_MENU_ITERATE;
@@ -1043,7 +1043,7 @@ int runloop_iterate(unsigned *sleep_ms)
    settings_t *settings                         = config_get_ptr();
    uint64_t old_input                           = last_input;
 #ifdef HAVE_MENU
-   bool menu_is_alive                           = menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL);
+   bool menu_is_alive                           = menu_driver_is_alive();
 #else
    bool menu_is_alive                           = false;
 #endif
