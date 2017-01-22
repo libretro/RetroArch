@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2014-2016 - Ali Bouhlel
- *  Copyright (C)      2016 - FIX94
+ *  Copyright (C) 2014-2017 - Ali Bouhlel
+ *  Copyright (C) 2016-2017 - FIX94
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
