@@ -109,7 +109,7 @@ static void ra_set_nonblock_state(void *data, bool state)
    roar->nonblocking = state;
 }
 
-static bool ra_start(void *data)
+static bool ra_start(void *data, bool is_shutdown)
 {
    roar_t *roar = (roar_t*)data;
    if (roar)

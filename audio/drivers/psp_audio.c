@@ -285,7 +285,7 @@ static bool psp_audio_stop(void *data)
    return true;
 }
 
-static bool psp_audio_start(void *data)
+static bool psp_audio_start(void *data, bool is_shutdown)
 {
    SceKernelThreadInfo info;
    psp_audio_t* psp = (psp_audio_t*)data;

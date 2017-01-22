@@ -203,7 +203,7 @@ static bool sdl_audio_alive(void *data)
    return !sdl->is_paused;
 }
 
-static bool sdl_audio_start(void *data)
+static bool sdl_audio_start(void *data, bool is_shutdown)
 {
    sdl_audio_t *sdl = (sdl_audio_t*)data;
    sdl->is_paused = false;

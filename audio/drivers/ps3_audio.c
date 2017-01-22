@@ -177,7 +177,7 @@ static bool ps3_audio_stop(void *data)
    return true;
 }
 
-static bool ps3_audio_start(void *data)
+static bool ps3_audio_start(void *data, bool is_shutdown)
 {
    ps3_audio_t *aud = data;
    if (!aud->started)

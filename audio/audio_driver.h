@@ -55,7 +55,7 @@ typedef struct audio_driver
    bool (*stop)(void *data);
 
    /* Starts driver. */
-   bool (*start)(void *data);
+   bool (*start)(void *data, bool is_shutdown);
 
    /* Is the audio driver currently running? */
    bool (*alive)(void *data);
@@ -171,7 +171,7 @@ bool audio_driver_find_driver(void);
 
 bool audio_driver_toggle_mute(void);
 
-bool audio_driver_start(void);
+bool audio_driver_start(bool is_shutdown);
 
 bool audio_driver_stop(void);
 

@@ -235,7 +235,7 @@ static void al_set_nonblock_state(void *data, bool state)
       al->nonblock = state;
 }
 
-static bool al_start(void *data)
+static bool al_start(void *data, bool is_shutdown)
 {
    al_t *al = (al_t*)data;
    if (al)

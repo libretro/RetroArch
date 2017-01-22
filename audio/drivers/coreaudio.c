@@ -397,7 +397,7 @@ static bool coreaudio_stop(void *data)
    return dev->is_paused ? true : false;
 }
 
-static bool coreaudio_start(void *data)
+static bool coreaudio_start(void *data, bool is_shutdown)
 {
    coreaudio_t *dev = (coreaudio_t*)data;
    if (!dev)

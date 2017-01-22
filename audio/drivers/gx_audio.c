@@ -173,7 +173,7 @@ static void gx_audio_set_nonblock_state(void *data, bool state)
       wa->nonblock = state;
 }
 
-static bool gx_audio_start(void *data)
+static bool gx_audio_start(void *data, bool is_shutdown)
 {
    gx_audio_t *wa = (gx_audio_t*)data;
 

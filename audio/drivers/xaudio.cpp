@@ -316,7 +316,7 @@ static void xa_set_nonblock_state(void *data, bool state)
       xa->nonblock = state;
 }
 
-static bool xa_start(void *data)
+static bool xa_start(void *data, bool is_shutdown)
 {
    xa_t *xa = (xa_t*)data;
    xa->is_paused = false;

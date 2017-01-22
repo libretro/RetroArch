@@ -76,7 +76,7 @@ static bool rwebaudio_alive(void *data)
    return !rwebaudio_is_paused;
 }
 
-static bool rwebaudio_start(void *data)
+static bool rwebaudio_start(void *data, bool is_shutdown)
 {
    (void)data;
    rwebaudio_is_paused = false;

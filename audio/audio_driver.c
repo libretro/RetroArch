@@ -470,7 +470,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
          && !settings->audio.mute_enable
          && audio_cb_inited
          )
-      audio_driver_start();
+      audio_driver_start(false);
 
    return true;
 
@@ -968,12 +968,12 @@ bool audio_driver_toggle_mute(void)
    return true;
 }
 
-bool audio_driver_start(void)
+bool audio_driver_start(bool is_shutdown)
 {
    if (!current_audio || !current_audio->start 
          || !audio_driver_context_audio_data)
       return false;
-   return current_audio->start(audio_driver_context_audio_data);
+   return current_audio->start(audio_driver_context_audio_data, is_shutdown);
 }
 
 bool audio_driver_stop(void)

@@ -20,7 +20,6 @@
 #include "../audio_driver.h"
 
 #include "../../performance_counters.h"
-#include "../../runloop.h"
 
 typedef struct
 {
@@ -242,14 +241,13 @@ static bool ctr_csnd_audio_alive(void *data)
    return ctr->playing;
 }
 
-static bool ctr_csnd_audio_start(void *data)
+static bool ctr_csnd_audio_start(void *data, bool is_shutdown)
 {
    ctr_csnd_audio_t* ctr = (ctr_csnd_audio_t*)data;
 
    /* Prevents restarting audio when the menu
     * is toggled off on shutdown */
-
-   if (runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL))
+   if (is_shutdown)
       return true;
 
 #if 0

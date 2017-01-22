@@ -290,7 +290,7 @@ static bool alsa_qsa_alive(void *data)
    return false;
 }
 
-static bool alsa_qsa_start(void *data)
+static bool alsa_qsa_start(void *data, bool is_shutdown)
 {
    alsa_t *alsa = (alsa_t*)data;
 

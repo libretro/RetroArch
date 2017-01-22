@@ -112,7 +112,7 @@ static void xenon360_audio_set_nonblock_state(void *data, bool state)
       xa->nonblock = state;
 }
 
-static bool xenon360_audio_start(void *data)
+static bool xenon360_audio_start(void *data, bool is_shutdown)
 {
    xenon_audio_t *xa = data;
    xa->is_paused = false;

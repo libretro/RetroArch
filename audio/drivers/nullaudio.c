@@ -55,7 +55,7 @@ static bool null_audio_alive(void *data)
    return true;
 }
 
-static bool null_audio_start(void *data)
+static bool null_audio_start(void *data, bool is_shutdown)
 {
    (void)data;
    return true;

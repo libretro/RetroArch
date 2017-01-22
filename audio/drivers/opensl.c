@@ -221,7 +221,7 @@ static void sl_set_nonblock_state(void *data, bool state)
       sl->nonblock = state;
 }
 
-static bool sl_start(void *data)
+static bool sl_start(void *data, bool is_shutdown)
 {
    sl_t      *sl = (sl_t*)data;
    sl->is_paused = (SLPlayItf_SetPlayState(sl->player, SL_PLAYSTATE_PLAYING)

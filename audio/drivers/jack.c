@@ -322,7 +322,7 @@ static void ja_set_nonblock_state(void *data, bool state)
       jd->nonblock = state;
 }
 
-static bool ja_start(void *data)
+static bool ja_start(void *data, bool is_shutdown)
 {
    jack_t *jd = (jack_t*)data;
    if (jd)

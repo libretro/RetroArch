@@ -177,7 +177,7 @@ static bool rs_alive(void *data)
    return false;
 }
 
-static bool rs_start(void *data)
+static bool rs_start(void *data, bool is_shutdown)
 {
    rsd_t *rsd = (rsd_t*)data;
    if (rsd_start(rsd->rd) < 0)

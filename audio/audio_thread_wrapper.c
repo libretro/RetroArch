@@ -35,6 +35,7 @@ typedef struct audio_thread
    bool stopped;
    bool stopped_ack;
    bool is_paused;
+   bool is_shutdown;
    bool use_float;
 
    int inited;
@@ -100,7 +101,7 @@ static void audio_thread_loop(void *data)
 
             scond_wait(thr->cond, thr->lock);
          }
-         thr->driver->start(thr->driver_data);
+         thr->driver->start(thr->driver_data, thr->is_shutdown);
       }
 
       slock_unlock(thr->lock);
@@ -197,7 +198,7 @@ static bool audio_thread_stop(void *data)
    return true;
 }
 
-static bool audio_thread_start(void *data)
+static bool audio_thread_start(void *data, bool is_shutdown)
 {
    audio_thread_t *thr = (audio_thread_t*)data;
 
@@ -206,7 +207,8 @@ static bool audio_thread_start(void *data)
 
    audio_driver_enable_callback();
 
-   thr->is_paused = false;
+   thr->is_paused   = false;
+   thr->is_shutdown = is_shutdown;
    audio_thread_unblock(thr);
 
    return true;

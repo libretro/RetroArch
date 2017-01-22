@@ -34,7 +34,6 @@
 
 #include "audio/audio_driver.h"
 #include "performance_counters.h"
-#include "runloop.h"
 
 typedef struct
 {
@@ -180,14 +179,13 @@ static int ax_audio_limit(int in)
 	return in;
 }
 
-static bool ax_audio_start(void* data)
+static bool ax_audio_start(void* data, bool is_shutdown)
 {
    ax_audio_t* ax = (ax_audio_t*)data;
 
    /* Prevents restarting audio when the menu
     * is toggled off on shutdown */
-
-   if (runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL))
+   if (is_shutdown)
       return true;
 
    //set back to playing on enough buffered data

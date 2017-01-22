@@ -2055,7 +2055,7 @@ bool command_event(enum event_command cmd, void *data)
             if (audio_driver_alive())
                return false;
 
-            if (settings && !settings->audio.mute_enable && !audio_driver_start())
+            if (settings && !settings->audio.mute_enable && !audio_driver_start(runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL)))
             {
                RARCH_ERR("%s\n",
                      msg_hash_to_str(MSG_FAILED_TO_START_AUDIO_DRIVER));

@@ -291,7 +291,7 @@ static bool pulse_alive(void *data)
    return !pa->is_paused;
 }
 
-static bool pulse_start(void *data)
+static bool pulse_start(void *data, bool is_shutdown)
 {
    bool ret;
    pa_t *pa = (pa_t*)data;

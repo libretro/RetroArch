@@ -125,7 +125,7 @@ static bool oss_stop(void *data)
    return true;
 }
 
-static bool oss_start(void *data)
+static bool oss_start(void *data, bool is_shutdown)
 {
    (void)data;
    oss_is_paused = false;

@@ -396,7 +396,7 @@ static bool dsound_stop(void *data)
    return (ds->is_paused) ? true : false;
 }
 
-static bool dsound_start(void *data)
+static bool dsound_start(void *data, bool is_shutdown)
 {
    dsound_t *ds = (dsound_t*)data;
 
