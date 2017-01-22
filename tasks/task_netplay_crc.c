@@ -63,9 +63,12 @@ static void netplay_crc_scan_callback(void *task_data,
          break;
    }
 
+   static char content_path[PATH_MAX_LENGTH];
+   snprintf(content_path, sizeof(content_path), "%s", state->path);
+
    command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
    task_push_content_load_default(
-         info->list[i].path, state->path,
+         info->list[i].path, content_path,
          &content_info,
          CORE_TYPE_PLAIN,
          CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU,
