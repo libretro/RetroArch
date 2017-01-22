@@ -910,7 +910,7 @@ static enum runloop_state runloop_check_state(
          input_driver_unset_nonblock_state();
       else
          input_driver_set_nonblock_state();
-      driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
+      driver_set_nonblock_state();
    }
    else if ((runloop_cmd_pressed(old_input, RARCH_FAST_FORWARD_HOLD_KEY) 
          != runloop_cmd_press(current_input, RARCH_FAST_FORWARD_HOLD_KEY)))
@@ -919,7 +919,7 @@ static enum runloop_state runloop_check_state(
          input_driver_set_nonblock_state();
       else
          input_driver_unset_nonblock_state();
-      driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
+      driver_set_nonblock_state();
    }
 
    /* Checks if the state increase/decrease keys have been pressed 

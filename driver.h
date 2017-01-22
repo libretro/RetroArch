@@ -84,12 +84,6 @@ enum driver_ctl_state
     * calls audio_monitor_set_refresh_rate(). */
    RARCH_DRIVER_CTL_SET_REFRESH_RATE,
 
-   /* Sets audio and video drivers to nonblock state.
-    *
-    * If nonblock state is false, sets blocking state for both
-    * audio and video drivers instead. */
-   RARCH_DRIVER_CTL_SET_NONBLOCK_STATE,
-
    /* Update the system Audio/Video information. 
     * Will reinitialize audio/video drivers.
     * Used by RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO. */
@@ -114,6 +108,12 @@ typedef struct driver_ctx_info
 } driver_ctx_info_t;
 
 bool driver_ctl(enum driver_ctl_state state, void *data);
+
+/* Sets audio and video drivers to nonblock state.
+ *
+ * If nonblock state is false, sets blocking state for both
+ * audio and video drivers instead. */
+void driver_set_nonblock_state(void);
 
 void drivers_init(int flags);
 
