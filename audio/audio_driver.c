@@ -507,6 +507,9 @@ void audio_driver_set_nonblocking_state(bool enable)
 static bool audio_driver_flush(const int16_t *data, size_t samples)
 {
    struct resampler_data src_data;
+   bool is_paused                                       = false;
+   bool is_idle                                         = false;
+   bool is_slowmotion                                   = false;
    static struct retro_perf_counter resampler_proc      = {0};
    static struct retro_perf_counter audio_convert_s16   = {0};
    const void *output_data                              = NULL;
@@ -523,7 +526,9 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    if (recording_data)
       recording_push_audio(data, samples);
 
-   if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) || settings->audio.mute_enable)
+   runloop_get_status(&is_paused, &is_idle, &is_slowmotion);
+
+   if (is_paused || settings->audio.mute_enable)
       return true;
    if (!audio_driver_active || !audio_driver_input_data)
       return false;
@@ -595,7 +600,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
 
    src_data.ratio = audio_source_ratio_current;
 
-   if (runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, NULL))
+   if (is_slowmotion)
       src_data.ratio *= settings->slowmotion_ratio;
 
    performance_counter_init(&resampler_proc, "resampler_proc");
