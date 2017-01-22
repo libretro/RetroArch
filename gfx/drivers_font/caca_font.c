@@ -112,16 +112,15 @@ static void caca_render_msg(video_frame_info_t *video_info,
 
    switch (align)
    {
-      case TEXT_ALIGN_LEFT:
-         newX = x * width * scale;
-         break;
       case TEXT_ALIGN_RIGHT:
          newX = (x * width * scale) - strlen(msg);
          break;
       case TEXT_ALIGN_CENTER:
          newX = (x * width * scale) - (strlen(msg) / 2);
          break;
+      case TEXT_ALIGN_LEFT:
       default:
+         newX = x * width * scale;
          break;
    }
 
