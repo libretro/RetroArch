@@ -137,9 +137,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
       "Buildbot-Cores-URL")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
-      "Core-Updater")
+      "Aktualisiere Core")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
-      "Core-Updater-Einstellungen") /* UPDATE/FIXME */
+      "Core-Aktualisierungseinstellungen") /* UPDATE/FIXME */
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY,
       "Cursor-Verzeichnis")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
@@ -462,6 +462,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MAIN_MENU,
       "Hauptmenü")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MANAGEMENT,
       "Datenbankeinstellungen")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
+      "Menüfarbschema")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
       "Menütreiber")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
@@ -470,18 +472,20 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
       "Menü-Dateibrowser-Einstellungen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
       "Wechsle Ok & Zurück Tasten im Menü")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
+      "Linearer Filter")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
       "Menüeinstellungen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
       "Menühintergrund")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
-      "Background opacity")
+      "Hintergrundtransparenz")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MISSING,
       "Fehlt")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MORE,
       "...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
-      "Maus-Unterstützung")
+      "Mausunterstützung")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MULTIMEDIA_SETTINGS,
       "Multimediaeinstellungen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
@@ -613,7 +617,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
       "Übergeordnetes Verzeichnis")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
-      "Pausiere, wenn das Menü aktiv ist")
+      "Pausiere wenn das Menü aktiv ist")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
       "Nicht im Hintergrund laufen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
@@ -901,7 +905,17 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZLIB_SUPPORT,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
       "Bildschirmfoto")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
-      "Threaded Data Runloop")
+      "Threaded Datenschlaufe")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS,
+      "Boxart")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS,
+      "Bildschirmfoto")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS,
+      "Titelbildschrim")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAILS,
+      "Miniaturansichten")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
+      "Aktualisiere Miniaturansichten")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
       "Zeige Uhrzeit / Datum")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_TITLE_COLOR,
@@ -1058,18 +1072,30 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
       "WLAN-Treiber")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
       "WLAN")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
+      "Menüalphafaktor")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_FONT,
+      "Menüschriftart")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
+      "Menü-Shaderpipeline")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR,
+      "Menüskalierungsfaktor")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
-      "Icon Schatten")
+      "Bild Schatten")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_ADD,
+      "Zeige Inhalte importieren Tab")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_HISTORY,
-      "Zeige Verlauf")
+      "Zeige Verlauf Tab")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_IMAGES,
-      "Zeige Bilder")
+      "Zeige Bilder Tab")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_MUSIC,
-      "Zeige Musik")
+      "Zeige Musik Tab")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_SETTINGS,
-      "Zeige Einstellungen")
+      "Zeige Einstellungen Tab")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_VIDEO,
-      "Zeige Videos")
+      "Zeige Videos Tab")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_THEME,
+      "Menüdesign")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_YES,
       "Ja")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
@@ -1150,6 +1176,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
       "Aktiviere Logging im Terminal.")
 MSG_HASH(MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
       "Ändere die Logging-Einstellungen.")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SETTINGS,
+      "Stellt die Einstellungen für das Aussehen des Menübildschirms ein.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY,
       "Hoste eine Netplay Session oder trete einer bei.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_LAN_SCAN_SETTINGS,
@@ -1161,7 +1189,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
 MSG_HASH(MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
       "Ändere die Einstellungen des Display-Overlays, Bildschirmtastatur und Bildschirmbenachrichtigung.") /* There is no Translation for display overlay. */
 MSG_HASH(MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
-      "Pause gameplay when window focus is lost.")
+      "Spiel pausieren wenn das Fenster den Fokus verliert.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
       "Ändere die Einstellungen der Wiedergabelisten.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS,
@@ -1183,7 +1211,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_ALLOW_ROTATE,
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
       "Zeigt ein schwarzes Bild zwischen Frames an. Nützlich für 120 Hz Monitore welche 60 Hz mit weniger 'ghosting' möchten.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
-      "Enable or disable composition (Windows only).")
+      "Deaktiviere Desktop-Komposition. (Nur bei Windows)")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
       "Zeige Bildschirmbenachrichtigungen an.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
@@ -1232,6 +1260,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
       "Menü ein/aus")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
       "Beenden")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_BATTERY_LEVEL_ENABLE,
+      "Batteriestand anzeigen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
       "Lade inhaltsspezifische Core-Optionen automatisch")
 MSG_HASH(
