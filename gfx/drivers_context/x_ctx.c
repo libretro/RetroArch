@@ -109,7 +109,6 @@ static gfx_ctx_x_data_t *current_context_data = NULL;
 
 #ifdef HAVE_OPENGL
 static PFNGLXCREATECONTEXTATTRIBSARBPROC glx_create_context_attribs;
-#endif
 
 static int GLXExtensionSupported(Display *dpy, const char *extension)
 {
@@ -134,6 +133,7 @@ static int GLXExtensionSupported(Display *dpy, const char *extension)
 
    return 0;
 }
+#endif
 
 static int x_nul_handler(Display *dpy, XErrorEvent *event)
 {

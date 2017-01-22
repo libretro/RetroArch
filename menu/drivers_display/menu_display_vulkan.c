@@ -66,6 +66,7 @@ static unsigned to_display_pipeline(
    return ((type == MENU_DISPLAY_PRIM_TRIANGLESTRIP) << 1) | (blend << 0);
 }
 
+#ifdef HAVE_SHADERPIPELINE
 static unsigned to_menu_pipeline(
       enum menu_display_prim_type type, unsigned pipeline)
 {
@@ -79,6 +80,7 @@ static unsigned to_menu_pipeline(
          return 0;
    }
 }
+#endif
 
 static void menu_display_vk_viewport(void *data)
 {
