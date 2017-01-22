@@ -164,8 +164,6 @@ static bool get_self_input_state(netplay_t *netplay)
 
 bool init_netplay_deferred(const char* server, unsigned port)
 {
-   
-   RARCH_LOG("deferred! %s\n", server);
    if (!string_is_empty(server) && port != 0)
    {
       strlcpy(server_address_deferred, server, sizeof(server_address_deferred));

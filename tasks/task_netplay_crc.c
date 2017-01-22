@@ -46,8 +46,6 @@ typedef struct
 static void netplay_crc_scan_callback(void *task_data,
                                void *user_data, const char *error)
 {
-   printf("CALLBACK\n");
-
    netplay_crc_handle_t *state = (netplay_crc_handle_t*)task_data;
 
    if (!state)
@@ -56,8 +54,7 @@ static void netplay_crc_scan_callback(void *task_data,
    printf("%s\n", state->hostname);
    printf("%s\n", state->path);
    printf("%s\n", state->corename);
-
-   command_event(CMD_EVENT_NETPLAY_INIT, state->hostname);
+   command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
 
    free(state);
 }

@@ -3132,7 +3132,7 @@ static int action_ok_netplay_connect_room(const char *path,
    strlcpy(tmp_hostname, netplay_room_list[idx - 1].address, sizeof(tmp_hostname));
    snprintf(tmp_hostname, sizeof(tmp_hostname), "%s:%d", 
       netplay_room_list[idx - 1].address, netplay_room_list[idx - 1].port);
-
+   RARCH_LOG("%s %s %08x", netplay_room_list[idx - 1].address, netplay_room_list[idx - 1].gamename, netplay_room_list[idx - 1].gamecrc);
    /* If we haven't yet started, this will load on its own */
    if (!content_is_inited())
    {
