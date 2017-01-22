@@ -630,6 +630,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
       "Leistungsindikatoren")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
       "Wiedergabelisten-Verzeichnis")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE,
+      "Löschen von Einträgen erlauben")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
       "Wiedergabelisteneinstellungen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
@@ -1141,7 +1143,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
       "Verwalte und erstelle Konfigurationsdateien.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
-      "Limit the number of entries in recent playlist for games, images, music, and videos.")
+      "Limitiert die Anzahl der Einträge in der Verlaufsliste.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_SETTINGS,
       "Ändere die Einstellungen der Cores.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
@@ -1159,7 +1161,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_FPS_SHOW,
 MSG_HASH(MENU_ENUM_SUBLABEL_HELP_LIST,
       "Erfahre mehr derüber wie Retroarch funktioniert.")
 MSG_HASH(MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
-      "Enable or disable recent playlist for games, images, music, and videos.")
+      "Aktiviere Wiedergabeliste für kürzlich geöffnete Medien.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
       "Zeigt Informationen über Core, Netzwerk, und des Systems an. Anzeigen-Manager für Datenbank und Zeiger.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
