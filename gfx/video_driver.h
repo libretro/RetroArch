@@ -128,6 +128,9 @@ typedef struct video_frame_info
 
    bool battery_level_enable;
    bool timedate_enable;
+   bool runloop_is_slowmotion;
+   bool runloop_is_idle;
+   bool runloop_is_paused;
 } video_frame_info_t;
 
 /* Optionally implemented interface to poke more

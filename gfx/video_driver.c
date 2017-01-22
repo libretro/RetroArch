@@ -2311,6 +2311,9 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->xmb_alpha_factor       = 0.0f;
    video_info->menu_wallpaper_opacity = 0.0f;
 #endif
+   video_info->runloop_is_paused      = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
+   video_info->runloop_is_idle        = runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL);
+   video_info->runloop_is_slowmotion  = runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, NULL);
    video_driver_threaded_unlock();
 }
 
