@@ -1015,13 +1015,12 @@ static enum runloop_state runloop_check_state(
    return RUNLOOP_STATE_ITERATE;
 }
 
-static void runloop_netplay_pause(void)
-{
 #ifdef HAVE_NETWORKING
-   /* FIXME: This is an ugly way to tell Netplay this... */
-   netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
+/* FIXME: This is an ugly way to tell Netplay this... */
+#define runloop_netplay_pause() netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL)
+#else
+#define runloop_netplay_pause() ((void)0)
 #endif
-}
 
 /**
  * runloop_iterate:
