@@ -30,6 +30,7 @@
 #ifdef _MSC_VER
 #define setmode _setmode
 #endif
+#include <sys/stat.h>
 #ifdef _XBOX
 #include <xtl.h>
 #define INVALID_FILE_ATTRIBUTES -1
@@ -101,12 +102,12 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
     if (cellFsStat(path, &buf) < 0)
        return false;
 #elif defined(_WIN32)
-   WIN32_FILE_ATTRIBUTE_DATA file_info;
-   GET_FILEEX_INFO_LEVELS fInfoLevelId = GetFileExInfoStandard;
+   DWORD file_info = GetFileAttributes(path);
+   struct _stat buf;
 
-   DWORD ret = GetFileAttributesEx(path, fInfoLevelId, &file_info);
+   _stat(path, &buf);
 
-   if (ret == 0)
+   if (file_info == INVALID_FILE_ATTRIBUTES)
       return false;
 #else
    struct stat buf;
@@ -114,13 +115,8 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
       return false;
 #endif
 
-#if defined(_WIN32)
-   if (size)
-      *size = file_info.nFileSizeLow;
-#else
    if (size)
       *size = buf.st_size;
-#endif
 
    switch (mode)
    {
@@ -130,7 +126,7 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
 #elif defined(__CELLOS_LV2__)
          return ((buf.st_mode & S_IFMT) == S_IFDIR);
 #elif defined(_WIN32)
-         return (file_info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
+         return (file_info & FILE_ATTRIBUTE_DIRECTORY);
 #else
          return S_ISDIR(buf.st_mode);
 #endif
