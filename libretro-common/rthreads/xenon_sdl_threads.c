@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2016 The RetroArch team
+/* Copyright  (C) 2010-2017 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (xenon_sdl_threads.c).
@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-// libSDLxenon doesn't implement this yet :[. Implement it very stupidly for now. ;)
+/* libSDLxenon doesn't implement this yet :[. Implement it very stupidly for now. ;) */
 
 #include "SDL_thread.h"
 #include "SDL_mutex.h"
