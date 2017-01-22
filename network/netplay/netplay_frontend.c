@@ -177,7 +177,9 @@ static bool netplay_poll(void)
 
    /* Read Netplay input, block if we're configured to stall for input every
     * frame */
+   netplay_update_unread_ptr(netplay_data);
    if (netplay_data->stateless_mode &&
+       netplay_data->connected_players &&
        netplay_data->unread_frame_count <= netplay_data->self_frame_count)
       res = netplay_poll_net_input(netplay_data, true);
    else
