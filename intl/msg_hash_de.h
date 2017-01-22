@@ -707,11 +707,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
       "Spielstand-Verzeichnis")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
-      "Automatische Indexierung von Save States")
+      "Automatische Indexierung von Savestates")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-      "Automatisches Laden von Save States")
+      "Automatisches Laden von Savestates")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
-      "Automatische Save States")
+      "Automatische Savestates")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
       "Savestate-Verzeichnis")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
@@ -749,9 +749,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
       "Zeitlupen-Verhältnis")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
-      "Sortiere Speicherdaten per Ordner")
+      "Sortiere Speicherdateien per Ordner")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
-      "Sortiere Save States per Ordner")
+      "Sortiere Savestates per Ordner")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STATUS,
       "Status")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
