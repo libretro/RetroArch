@@ -376,10 +376,8 @@ int16_t input_state(unsigned port, unsigned device,
       if (((id < RARCH_FIRST_META_KEY) || (device == RETRO_DEVICE_KEYBOARD)))
       {
          bool bind_valid = libretro_input_binds[port] && libretro_input_binds[port][id].valid;
-         if (device == RETRO_DEVICE_KEYBOARD)
-            bind_valid   = true;
 
-         if (bind_valid)
+         if (bind_valid || device == RETRO_DEVICE_KEYBOARD)
          {
             rarch_joypad_info_t joypad_info;
 
