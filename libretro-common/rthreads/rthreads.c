@@ -113,6 +113,9 @@ struct scond
    /* how many waiters in the queue have been conceptually wakened by signals (even if we haven't managed to actually wake them yet */
    int wakens;
 
+   /* used to control access to this scond, in case the user fails */
+   CRITICAL_SECTION cs;
+
 #else
    pthread_cond_t cond;
 #endif
@@ -350,11 +353,14 @@ scond_t *scond_new(void)
       return NULL;
 
 #ifdef USE_WIN32_THREADS
+
    /* This is very complex because recreating condition variable semantics with win32 parts is not easy */
    /* The main problem is that a condition variable can't be used to "pre-wake" a thread (it will get wakened only after it's waited) */
    /* whereas a win32 event can pre-wake a thread (the event will be set in advance, so a 'waiter' won't even have to wait on it) */
    /* Keep in mind a condition variable can apparently pre-wake a thread, insofar as spurious wakeups are always possible, */
    /* but nobody will be expecting this and it does not need to be simulated. */
+   /* Moreover, we won't be doing this, because it counts as a spurious wakeup -- someone else with a genuine claim must get wakened, in any case.
+   /* Therefore we choose to wake only one of the correct waiting threads. */
    /* So at the very least, we need to do something clever. But there's bigger problems. */
    /* We don't even have a straightforward way in win32 to satisfy pthread_cond_wait's atomicity requirement. The bulk of this algorithm is solving that. */
    /* Note: We might could simplify this using vista+ condition variables, but we wanted an XP compatible solution. */
@@ -366,6 +372,8 @@ scond_t *scond_new(void)
       CloseHandle(cond->event);
       goto error;
    }
+   
+   InitializeCriticalSection(&cond->cs);
    cond->waiters = cond->wakens = 0;
    cond->head = NULL;
 
@@ -395,6 +403,7 @@ void scond_free(scond_t *cond)
 #ifdef USE_WIN32_THREADS
    CloseHandle(cond->event);
    CloseHandle(cond->hot_potato);
+   DeleteCriticalSection(&cond->cs);
 #else
    pthread_cond_destroy(&cond->cond);
 #endif
@@ -412,11 +421,15 @@ void scond_wait(scond_t *cond, slock_t *lock)
 {
 #ifdef USE_WIN32_THREADS
    
-   /* Reminder: `lock` is held before this is called */
+   struct QueueEntry myentry;
+   struct QueueEntry **ptr;
+
+   /* Reminder: `lock` is held before this is called. */
+   /* however, someone else may have called scond_signal without the lock. soo... */
+   EnterCriticalSection(&cond->cs);
 
    /* add ourselves to a queue of waiting threads */
-   struct QueueEntry myentry;
-   struct QueueEntry **ptr = &cond->head;
+   ptr = &cond->head;
    while(*ptr) /* walk to the end of the linked list */
       ptr = &((*ptr)->next);
    *ptr = &myentry;
@@ -443,14 +456,16 @@ void scond_wait(scond_t *cond, slock_t *lock)
 
       /* Let someone else go */
       LeaveCriticalSection(&lock->lock);
+      LeaveCriticalSection(&cond->cs);
 
       /* Wait a while to catch the hot potato.. someone else should get a chance to go */
-      /* After all, it isn't my turn (and it must be someone else's */
+      /* After all, it isn't my turn (and it must be someone else's) */
       Sleep(0);
       WaitForSingleObject(cond->hot_potato, INFINITE);
 
       /* I should come out of here with the main lock taken */
       EnterCriticalSection(&lock->lock);
+      EnterCriticalSection(&cond->cs);
    }
    
    /* It's my turn now -- I hold the potato */
@@ -458,6 +473,7 @@ void scond_wait(scond_t *cond, slock_t *lock)
    /* I still have the main lock, in any case */
    /* I need to release it so that someone can set the event */
    LeaveCriticalSection(&lock->lock);
+   LeaveCriticalSection(&cond->cs);
 
    /* Wait for someone to actually signal this condition */
    /* We're the only waiter waiting on the event right now -- everyone else is waiting on something different */
@@ -465,6 +481,7 @@ void scond_wait(scond_t *cond, slock_t *lock)
 
    /* Take the main lock so we can do work. Nobody else waits on this lock for very long, so even though it's GO TIME we won't have to wait long */
    EnterCriticalSection(&lock->lock);
+   EnterCriticalSection(&cond->cs);
 
    /* Remove ourselves from the queue */
    cond->head = myentry.next;
@@ -480,6 +497,8 @@ void scond_wait(scond_t *cond, slock_t *lock)
       /* Progress the queue: Put the hot potato back into play. It'll be tossed around until next in line gets it */
       SetEvent(cond->hot_potato); 
    }
+
+   LeaveCriticalSection(&cond->cs);
 
 #else
    pthread_cond_wait(&cond->cond, &lock->lock);
@@ -524,12 +543,28 @@ void scond_signal(scond_t *cond)
 {
 #ifdef USE_WIN32_THREADS
 
+   /* Unfortunately, pthread_cond_signal does not require that the lock be held in advance */
+   /* To avoid stomping on the condvar from other threads, we need to control access to it with this */
+   EnterCriticalSection(&cond->cs);
+
    /* remember: we currently have mutex */
-   if(cond->waiters == 0) return;
+   if(cond->waiters == 0)
+   {
+      LeaveCriticalSection(&cond->cs);
+      return;
+   }
  
    /* wake up the next thing in the queue */
    if(cond->wakens == 0) SetEvent(cond->event);
    cond->wakens++;
+
+   /* The data structure is done being modified.. I think we can leave the CS now. */
+   /* This would prevent some other thread from receiving the hot potato and then 
+   /* immediately stalling for the critical section. */
+   /* But remember, we were trying to replicate a semantic where this entire scond_signal call
+   /* was controlled (by the user) by a lock. */
+   /* So in case there's trouble with this, we can move it after SetEvent() */
+   LeaveCriticalSection(&cond->cs);
 
    /* Since there is now at least one pending waken, the potato must be in play */
    SetEvent(cond->hot_potato); 
@@ -556,7 +591,7 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
 #ifdef USE_WIN32_THREADS
    DWORD ret;
 
-   /* TODO: this is woefully inadequate. It needs to be solved with the newer approach used above */
+   /* TODO: this is woefully inadequate. It needs to be solved with the newer approach used above. */
    WaitForSingleObject(cond->event, 0);
    LeaveCriticalSection(&lock->lock);
    ret = WaitForSingleObject(cond->event,(DWORD)(timeout_us) / 1000);
