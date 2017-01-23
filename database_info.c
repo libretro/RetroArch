@@ -31,24 +31,6 @@
 #include "msg_hash.h"
 #include "verbosity.h"
 
-#define DB_QUERY_ENTRY                          0x1c310956U
-#define DB_QUERY_ENTRY_PUBLISHER                0x125e594dU
-#define DB_QUERY_ENTRY_DEVELOPER                0xcbd89be5U
-#define DB_QUERY_ENTRY_ORIGIN                   0x4ebaa767U
-#define DB_QUERY_ENTRY_FRANCHISE                0x77f9eff2U
-#define DB_QUERY_ENTRY_RATING                   0x68eba20fU
-#define DB_QUERY_ENTRY_BBFC_RATING              0x0a8e67f0U
-#define DB_QUERY_ENTRY_ELSPA_RATING             0x8bf6ab18U
-#define DB_QUERY_ENTRY_PEGI_RATING              0x5fc77328U
-#define DB_QUERY_ENTRY_CERO_RATING              0x24f6172cU
-#define DB_QUERY_ENTRY_ENHANCEMENT_HW           0x9866bda3U
-#define DB_QUERY_ENTRY_EDGE_MAGAZINE_RATING     0x1c7f8a43U
-#define DB_QUERY_ENTRY_EDGE_MAGAZINE_ISSUE      0xaaeebde7U
-#define DB_QUERY_ENTRY_FAMITSU_MAGAZINE_RATING  0xbf7ff5e7U
-#define DB_QUERY_ENTRY_RELEASEDATE_MONTH        0x2b36ce66U
-#define DB_QUERY_ENTRY_RELEASEDATE_YEAR         0x9c7c6e91U
-#define DB_QUERY_ENTRY_MAX_USERS                0xbfcba816U
-
 #define DB_CURSOR_ROM_NAME                      0x16bbcf13U
 #define DB_CURSOR_NAME                          0x7c9b0c46U
 #define DB_CURSOR_DESCRIPTION                   0x91b0c789U
