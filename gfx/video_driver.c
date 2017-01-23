@@ -2184,8 +2184,9 @@ void video_driver_frame(const void *data, unsigned width,
 
    video_driver_msg[0] = '\0';
 
-   if (runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_PULL, &msg) 
-         && video_info.font_enable && msg)
+   if (     video_info.font_enable
+         && runloop_msg_queue_pull((const char**)&msg) 
+         && msg)
       strlcpy(video_driver_msg, msg, sizeof(video_driver_msg));
 
    if (!current_video || !current_video->frame(

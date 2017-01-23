@@ -93,7 +93,6 @@ enum runloop_ctl_state
    /* Message queue */
    RUNLOOP_CTL_MSG_QUEUE_INIT,
    RUNLOOP_CTL_MSG_QUEUE_DEINIT,
-   RUNLOOP_CTL_MSG_QUEUE_PULL,
 
    /* Core options */
    RUNLOOP_CTL_HAS_CORE_OPTIONS,
@@ -202,6 +201,8 @@ int runloop_iterate(unsigned *sleep_ms);
 
 void runloop_msg_queue_push(const char *msg, unsigned prio,
       unsigned duration, bool flush);
+
+bool runloop_msg_queue_pull(const char **ret);
 
 void runloop_get_status(bool *is_paused, bool *is_idle, bool *is_slowmotion);
 
