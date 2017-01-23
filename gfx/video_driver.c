@@ -2033,9 +2033,10 @@ static void video_monitor_get_fps(video_frame_info_t *video_info)
             video_driver_title_buf,
             sizeof(video_driver_window_title));
 
-      strlcpy(video_info->fps_text,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-            sizeof(video_info->fps_text));
+      if (video_info->fps_show)
+         strlcpy(video_info->fps_text,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+               sizeof(video_info->fps_text));
 
       video_driver_window_title_update = true;
       return;
