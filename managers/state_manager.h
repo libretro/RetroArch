@@ -40,7 +40,7 @@ void state_manager_event_init(unsigned rewind_buffer_size);
  *
  * Checks if rewind toggle/hold was being pressed and/or held.
  **/
-void state_manager_check_rewind(bool pressed, unsigned rewind_granularity);
+void state_manager_check_rewind(bool pressed, unsigned rewind_granularity, bool is_paused);
 
 RETRO_END_DECLS
 

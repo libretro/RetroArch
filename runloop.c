@@ -968,7 +968,7 @@ static enum runloop_state runloop_check_state(
    if (!settings->cheevos.hardcore_mode_enable)
 #endif
       state_manager_check_rewind(runloop_cmd_press(current_input, RARCH_REWIND),
-            settings->rewind_granularity);
+            settings->rewind_granularity, runloop_paused);
 
    runloop_slowmotion = runloop_cmd_press(current_input, RARCH_SLOWMOTION);
 

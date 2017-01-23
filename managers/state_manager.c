@@ -578,7 +578,7 @@ void state_manager_event_deinit(void)
  * Checks if rewind toggle/hold was being pressed and/or held.
  **/
 void state_manager_check_rewind(bool pressed,
-      unsigned rewind_granularity)
+      unsigned rewind_granularity, bool is_paused)
 {
    static bool first    = true;
 
@@ -611,8 +611,7 @@ void state_manager_check_rewind(bool pressed,
 
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_REWINDING), 0,
-               runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) 
-               ? 1 : 30, true);
+               is_paused ? 1 : 30, true);
 
          serial_info.data_const = buf;
          serial_info.size       = rewind_state.size;
