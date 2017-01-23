@@ -439,8 +439,9 @@ static void nk_menu_context_reset(void *data)
    nk_menu_init_device(nk);
    nk_menu_context_load_textures(nk, iconpath);
 
-   task_push_image_load(settings->path.menu_wallpaper,
-         menu_display_handle_wallpaper_upload, NULL);
+   if (path_file_exists(settings->path.menu_wallpaper))
+      task_push_image_load(settings->path.menu_wallpaper,
+            menu_display_handle_wallpaper_upload, NULL);
 }
 
 static void nk_menu_context_destroy(void *data)

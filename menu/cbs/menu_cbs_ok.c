@@ -1069,8 +1069,10 @@ static int generic_action_ok(const char *path,
 
             strlcpy(settings->path.menu_wallpaper,
                   action_path, sizeof(settings->path.menu_wallpaper));
-            task_push_image_load(action_path,
-                  menu_display_handle_wallpaper_upload, NULL);
+
+            if (path_file_exists(action_path))
+               task_push_image_load(action_path,
+                     menu_display_handle_wallpaper_upload, NULL);
          }
          break;
       case ACTION_OK_LOAD_CORE:
