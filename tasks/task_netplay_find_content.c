@@ -63,12 +63,9 @@ static void netplay_crc_scan_callback(void *task_data,
          break;
    }
 
-   static char content_path[PATH_MAX_LENGTH];
-   snprintf(content_path, sizeof(content_path), "%s", state->path);
-
    command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
    task_push_content_load_default(
-         info->list[i].path, content_path,
+         info->list[i].path, state->path,
          &content_info,
          CORE_TYPE_PLAIN,
          CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU,
@@ -98,34 +95,79 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
    if (state->lpl_list->size == 0)
       goto no_playlists;
 
-   for (i = 0; i < state->lpl_list->size; i++)
+   if (atoi(state->crc) != 0)
    {
-      playlist_t *playlist = NULL;
-      const char *lpl_path = state->lpl_list->elems[i].data;
-
-      if (!strstr(lpl_path, file_path_str(FILE_PATH_LPL_EXTENSION)))
-         continue;
-
-      playlist = playlist_init(lpl_path, 99999);
-
-      for (j = 0; j < playlist->size; j++)
+      for (i = 0; i < state->lpl_list->size; i++)
       {
-         if (string_is_equal(playlist->entries[j].crc32, state->crc))
-         {
-            strlcpy(state->path, playlist->entries[j].path, sizeof(state->path));
-            state->found = true;
-            task_set_data(task, state);
-            task_set_progress(task, 100);
-            task_set_title(task, strdup("Compatible content found"));
-            task_set_finished(task, true);
-            string_list_free(state->lpl_list);
-            return;
-         }
+         playlist_t *playlist = NULL;
+         const char *lpl_path = state->lpl_list->elems[i].data;
 
-         task_set_progress(task, (int)(j/playlist->size*100.0));
+         if (!strstr(lpl_path, file_path_str(FILE_PATH_LPL_EXTENSION)))
+            continue;
+
+         playlist = playlist_init(lpl_path, 99999);
+         {
+            for (j = 0; j < playlist->size; j++)
+            {
+               if (string_is_equal(playlist->entries[j].crc32, state->crc))
+               {
+                  strlcpy(state->path, playlist->entries[j].path, sizeof(state->path));
+                  state->found = true;
+                  task_set_data(task, state);
+                  task_set_progress(task, 100);
+                  task_set_title(task, strdup("Compatible content found"));
+                  task_set_finished(task, true);
+                  string_list_free(state->lpl_list);
+                  return;
+               }
+               task_set_progress(task, (int)(j/playlist->size*100.0));
+            }
+         }
+      }
+   }
+   else
+   {
+      for (i = 0; i < state->lpl_list->size; i++)
+      {
+         playlist_t *playlist = NULL;
+         const char *lpl_path = state->lpl_list->elems[i].data;
+
+         if (!strstr(lpl_path, file_path_str(FILE_PATH_LPL_EXTENSION)))
+            continue;
+
+         playlist = playlist_init(lpl_path, 99999);
+         {
+            for (j = 0; j < playlist->size; j++)
+            {
+               /*printf("State: %s Entry: %s\n", state->path, playlist->entries[j].path);*/
+               if (strstr(playlist->entries[j].path, state->path))
+               {
+                  printf("Match! %s %s\n", playlist->entries[j].path, state->path);
+                  strlcpy(state->path, playlist->entries[j].path, sizeof(state->path));
+                  state->found = true;
+                  task_set_data(task, state);
+                  task_set_progress(task, 100);
+                  task_set_title(task, strdup("Compatible content found"));
+                  task_set_finished(task, true);
+                  string_list_free(state->lpl_list);
+                  return;
+               }
+
+               task_set_progress(task, (int)(j/playlist->size*100.0));
+            }
+         }
       }
    }
 
+
+
+/*
+else
+{
+
+}
+
+*/
 no_playlists:
    string_list_free(state->lpl_list);
    task_set_progress(task, 100);
@@ -134,7 +176,7 @@ no_playlists:
    return;
 }
 
-bool task_push_netplay_crc_scan(uint32_t crc,
+bool task_push_netplay_crc_scan(uint32_t crc, char* name,
       const char *hostname, const char *corename)
 {
    settings_t        *settings = config_get_ptr();
@@ -146,6 +188,8 @@ bool task_push_netplay_crc_scan(uint32_t crc,
 
    state->crc[0] = '\0';
    snprintf(state->crc, sizeof(state->crc), "%08X|crc", crc);
+   state->path[0] = '\0';
+   snprintf(state->path, sizeof(state->path), "%s", name);
 
    state->hostname[0] = '\0';
    snprintf(state->hostname, sizeof(state->hostname), "%s", hostname);

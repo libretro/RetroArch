@@ -910,7 +910,7 @@ NETPLAY
 #include "../tasks/task_http.c"
 #include "../tasks/task_netplay_lan_scan.c"
 #include "../tasks/task_wifi.c"
-#include "../tasks/task_netplay_crc.c"
+#include "../tasks/task_netplay_find_content.c"
 #endif
 
 /*============================================================

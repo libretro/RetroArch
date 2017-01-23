@@ -3135,12 +3135,13 @@ static int action_ok_netplay_connect_room(const char *path,
       netplay_room_list[idx - 1].address,
       netplay_room_list[idx - 1].port);
 
-   RARCH_LOG("Connecting to: %s with game: %s/%08x", 
+   RARCH_LOG("Connecting to: %s with game: %s/%08x\n", 
          netplay_room_list[idx - 1].address,
          netplay_room_list[idx - 1].gamename,
          netplay_room_list[idx - 1].gamecrc);
 
    task_push_netplay_crc_scan(netplay_room_list[idx - 1].gamecrc,
+      netplay_room_list[idx - 1].gamename,
       tmp_hostname, netplay_room_list[idx - 1].corename);
 
 #else

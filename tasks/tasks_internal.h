@@ -98,7 +98,7 @@ bool task_push_wifi_scan(void);
 
 bool task_push_netplay_lan_scan(void);
 
-bool task_push_netplay_crc_scan(uint32_t crc,
+bool task_push_netplay_crc_scan(uint32_t crc, char* name,
       const char *hostname, const char *corename);
 
 #endif
