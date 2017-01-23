@@ -110,7 +110,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
       goto no_playlists;
    
    /* content with no CRC uses 00000000*/
-   if (!string_is_equal(state->crc, "00000000"))
+   if (!string_is_equal(state->crc, "00000000|crc"))
    {
       printf("Using CRC matching\n");
       for (i = 0; i < state->lpl_list->size; i++)
