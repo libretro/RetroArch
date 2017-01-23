@@ -74,8 +74,7 @@
 #endif
 
 #ifdef WIIU
-#include <coreinit/time.h>
-#include "wiiu/system/wiiu.h"
+#include <wiiu/os/time.h>
 #endif
 
 #if defined(_3DS)

@@ -1,8 +1,5 @@
 #include <stdio.h>
-#include <coreinit/thread.h>
-#include <coreinit/exception.h>
-#include <coreinit/debug.h>
-#include <coreinit/internal.h>
+#include <wiiu/os.h>
 #include "exception_handler.h"
 #include "wiiu_dbg.h"
 

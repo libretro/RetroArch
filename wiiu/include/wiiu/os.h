@@ -1,0 +1,26 @@
+#pragma once
+
+#include <wiiu/os/alarm.h>
+#include <wiiu/os/atomic64.h>
+#include <wiiu/os/cache.h>
+#include <wiiu/os/condition.h>
+#include <wiiu/os/core.h>
+#include <wiiu/os/coroutine.h>
+#include <wiiu/os/debug.h>
+#include <wiiu/os/dynload.h>
+#include <wiiu/os/event.h>
+#include <wiiu/os/exception.h>
+#include <wiiu/os/fastcondition.h>
+#include <wiiu/os/fastmutex.h>
+#include <wiiu/os/foreground.h>
+#include <wiiu/os/messagequeue.h>
+#include <wiiu/os/mutex.h>
+#include <wiiu/os/memory.h>
+#include <wiiu/os/rendezvous.h>
+#include <wiiu/os/screen.h>
+#include <wiiu/os/semaphore.h>
+#include <wiiu/os/spinlock.h>
+#include <wiiu/os/systeminfo.h>
+#include <wiiu/os/thread.h>
+#include <wiiu/os/time.h>
+#include <wiiu/os/title.h>

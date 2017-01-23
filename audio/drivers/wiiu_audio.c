@@ -18,19 +18,11 @@
 #include <malloc.h>
 #include <stdint.h>
 
-#include <sndcore2/core.h>
-#include <sndcore2/device.h>
-#include <sndcore2/drcvs.h>
-#include <sndcore2/result.h>
-#include <sndcore2/voice.h>
-#include <coreinit/time.h>
-#include <coreinit/cache.h>
-#include <coreinit/thread.h>
-#include <coreinit/spinlock.h>
+#include <wiiu/os.h>
+#include <wiiu/ax.h>
 
 #include "wiiu/wiiu_dbg.h"
 #include "wiiu/system/memory.h"
-#include "wiiu/multivoice.h"
 
 #include "audio/audio_driver.h"
 #include "performance_counters.h"

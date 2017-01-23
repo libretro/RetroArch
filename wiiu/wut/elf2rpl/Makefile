@@ -9,6 +9,12 @@ INCLUDES := -I.
 CFLAGS   := -O2 -Wall --std=c++14
 LDFLAGS  := -lz
 
+ifneq ($(findstring Linux,$(shell uname -a)),)
+else ifneq ($(findstring Darwin,$(shell uname -a)),)
+else
+   TARGET   := $(TARGET).exe
+endif
+
 all: $(TARGET)
 
 clean:

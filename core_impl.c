@@ -34,6 +34,7 @@
 #include "network/netplay/netplay.h"
 #endif
 
+#include "core.h"
 #include "dynamic.h"
 #include "msg_hash.h"
 #include "managers/state_manager.h"

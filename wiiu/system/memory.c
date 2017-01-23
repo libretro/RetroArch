@@ -17,10 +17,7 @@
 #include <malloc.h>
 #include <string.h>
 #include "memory.h"
-#include <coreinit/memory.h>
-#include <coreinit/baseheap.h>
-#include <coreinit/frameheap.h>
-#include <coreinit/expandedheap.h>
+#include <wiiu/mem.h>
 
 static MEMExpandedHeap* mem1_heap;
 static MEMExpandedHeap* bucket_heap;

@@ -22,7 +22,6 @@
  * distribution.
  ***************************************************************************/
 #include <errno.h>
-//#include <ogc/disc_io.h>
 #include <sys/statvfs.h>
 #include <sys/dirent.h>
 #include <string.h>
@@ -30,8 +29,8 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include "fs_utils.h"
-#include <coreinit/mutex.h>
-#include <coreinit/filesystem.h>
+#include <wiiu/os/mutex.h>
+#include <wiiu/fs.h>
 
 #define FS_ALIGNMENT            0x40
 #define FS_ALIGN(x)             (((x) + FS_ALIGNMENT - 1) & ~(FS_ALIGNMENT - 1))

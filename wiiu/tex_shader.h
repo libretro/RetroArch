@@ -15,8 +15,7 @@
 
 #ifndef TEX_SHADER_H
 #define TEX_SHADER_H
-#include <gx2.h>
-#include "system/memory.h"
+#include <wiiu/gx2.h>
 
 #ifdef __cplusplus
 extern "C" {
