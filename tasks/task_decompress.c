@@ -330,7 +330,7 @@ bool task_push_decompress(
    snprintf(tmp, sizeof(tmp), "%s '%s'",
          msg_hash_to_str(MSG_EXTRACTING), path_basename(source_file));
 
-   t->title       = strdup(tmp);
+   task_set_title(t, strdup(tmp));
 
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, t);
 

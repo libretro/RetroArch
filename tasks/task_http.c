@@ -293,7 +293,7 @@ void *task_push_http_transfer(const char *url, bool mute, const char *type,
    snprintf(tmp, sizeof(tmp), "%s '%s'",
          msg_hash_to_str(MSG_DOWNLOADING), path_basename(url));
 
-   t->title                = strdup(tmp);
+   task_set_title(t, tmp);
 
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, t);
 
