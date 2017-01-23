@@ -331,7 +331,15 @@ static bool load_content_into_memory(unsigned i, const char *path, void **buf,
 
       /* Attempt to apply a patch. */
       if (!rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL))
-         patch_content(&ret_buf, length);
+      {
+         global_t *global = global_get_ptr();
+         if (global)
+            patch_content(
+                  global->name.ips,
+                  global->name.bps,
+                  global->name.ups,
+                  &ret_buf, length);
+      }
 
       content_get_crc(&content_crc_ptr);
 
