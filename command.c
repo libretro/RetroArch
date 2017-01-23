@@ -2341,27 +2341,32 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_PAUSE_CHECKS:
-         if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
          {
-            bool is_paused = false;
-            settings_t *settings      = config_get_ptr();
+            bool is_paused            = false;
+            bool is_idle              = false;
+            bool is_slowmotion        = false;
 
-            RARCH_LOG("%s\n", msg_hash_to_str(MSG_PAUSED));
-            command_event(CMD_EVENT_AUDIO_STOP, NULL);
+            runloop_get_status(&is_paused, &is_idle, &is_slowmotion);
 
-            is_paused  = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
-            runloop_msg_queue_push(msg_hash_to_str(MSG_PAUSED), 1, is_paused ? 1: 30, true);
-
-            if (settings->video.black_frame_insertion || is_paused)
+            if (is_paused)
             {
-               if (!runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
-                  video_driver_cached_frame();
+               settings_t *settings      = config_get_ptr();
+
+               RARCH_LOG("%s\n", msg_hash_to_str(MSG_PAUSED));
+               command_event(CMD_EVENT_AUDIO_STOP, NULL);
+
+               runloop_msg_queue_push(msg_hash_to_str(MSG_PAUSED), 1, 
+                     is_paused ? 1: 30, true);
+
+               if (settings->video.black_frame_insertion || is_paused)
+                  if (!is_idle)
+                     video_driver_cached_frame();
             }
-         }
-         else
-         {
-            RARCH_LOG("%s\n", msg_hash_to_str(MSG_UNPAUSED));
-            command_event(CMD_EVENT_AUDIO_START, NULL);
+            else
+            {
+               RARCH_LOG("%s\n", msg_hash_to_str(MSG_UNPAUSED));
+               command_event(CMD_EVENT_AUDIO_START, NULL);
+            }
          }
          break;
       case CMD_EVENT_PAUSE_TOGGLE:
@@ -2383,24 +2388,22 @@ bool command_event(enum event_command cmd, void *data)
          command_event(CMD_EVENT_PAUSE_CHECKS, NULL);
          break;
       case CMD_EVENT_MENU_PAUSE_LIBRETRO:
-         {
 #ifdef HAVE_MENU
+         if (menu_driver_is_alive())
+         {
             settings_t *settings      = config_get_ptr();
-
-            if (menu_driver_is_alive())
-            {
-               if (settings->menu.pause_libretro)
-                  command_event(CMD_EVENT_AUDIO_STOP, NULL);
-               else
-                  command_event(CMD_EVENT_AUDIO_START, NULL);
-            }
+            if (settings->menu.pause_libretro)
+               command_event(CMD_EVENT_AUDIO_STOP, NULL);
             else
-            {
-               if (settings->menu.pause_libretro)
-                  command_event(CMD_EVENT_AUDIO_START, NULL);
-            }
-#endif
+               command_event(CMD_EVENT_AUDIO_START, NULL);
          }
+         else
+         {
+            settings_t *settings      = config_get_ptr();
+            if (settings->menu.pause_libretro)
+               command_event(CMD_EVENT_AUDIO_START, NULL);
+         }
+#endif
          break;
       case CMD_EVENT_SHADER_DIR_DEINIT:
          dir_free_shader();
