@@ -122,24 +122,27 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
             continue;
 
          playlist = playlist_init(lpl_path, 99999);
+
+         for (j = 0; j < playlist->size; j++)
          {
-            for (j = 0; j < playlist->size; j++)
+            if (string_is_equal(playlist->entries[j].crc32, state->crc))
             {
-               if (string_is_equal(playlist->entries[j].crc32, state->crc))
-               {
-                  printf("CRC Match %s\n", state->crc);
-                  strlcpy(state->path, playlist->entries[j].path, sizeof(state->path));
-                  state->found = true;
-                  task_set_data(task, state);
-                  task_set_progress(task, 100);
-                  task_set_title(task, strdup("Compatible content found"));
-                  task_set_finished(task, true);
-                  string_list_free(state->lpl_list);
-                  return;
-               }
-               task_set_progress(task, (int)(j/playlist->size*100.0));
+               printf("CRC Match %s\n", state->crc);
+               strlcpy(state->path, playlist->entries[j].path, sizeof(state->path));
+               state->found = true;
+               task_set_data(task, state);
+               task_set_progress(task, 100);
+               task_set_title(task, strdup("Compatible content found"));
+               task_set_finished(task, true);
+               string_list_free(state->lpl_list);
+               free(playlist);
+               return;
             }
+
+            task_set_progress(task, (int)(j/playlist->size*100.0));
          }
+
+         free(playlist);
       }
    }
    else
@@ -154,26 +157,28 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
             continue;
 
          playlist = playlist_init(lpl_path, 99999);
-         {
-            for (j = 0; j < playlist->size; j++)
-            {
-               /*printf("State: %s Entry: %s\n", state->path, playlist->entries[j].path);*/
-               if (strstr(playlist->entries[j].path, state->path))
-               {
-                  printf("Filename Match %s\n", state->path);
-                  strlcpy(state->path, playlist->entries[j].path, sizeof(state->path));
-                  state->found = true;
-                  task_set_data(task, state);
-                  task_set_progress(task, 100);
-                  task_set_title(task, strdup("Compatible content found"));
-                  task_set_finished(task, true);
-                  string_list_free(state->lpl_list);
-                  return;
-               }
 
-               task_set_progress(task, (int)(j/playlist->size*100.0));
+         for (j = 0; j < playlist->size; j++)
+         {
+            /*printf("State: %s Entry: %s\n", state->path, playlist->entries[j].path);*/
+            if (strstr(playlist->entries[j].path, state->path))
+            {
+               printf("Filename Match %s\n", state->path);
+               strlcpy(state->path, playlist->entries[j].path, sizeof(state->path));
+               state->found = true;
+               task_set_data(task, state);
+               task_set_progress(task, 100);
+               task_set_title(task, strdup("Compatible content found"));
+               task_set_finished(task, true);
+               string_list_free(state->lpl_list);
+               free(playlist);
+               return;
             }
+
+            task_set_progress(task, (int)(j/playlist->size*100.0));
          }
+
+         free(playlist);
       }
    }
 
