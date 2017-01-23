@@ -2017,90 +2017,82 @@ unsigned video_pixel_get_alignment(unsigned pitch)
  * video_monitor_get_fps:
  *
  * Get the amount of frames per seconds.
- *
- * Returns: true if framerate per seconds could be obtained,
- * otherwise false.
- *
  **/
-static bool video_monitor_get_fps(video_frame_info_t *video_info)
+static void video_monitor_get_fps(video_frame_info_t *video_info)
 {
    static retro_time_t curr_time;
    static retro_time_t fps_time;
+   static float last_fps;
+   unsigned write_index          = 0;
    retro_time_t        new_time  = cpu_features_get_time_usec();
 
-   if (video_info->frame_count)
+   if (!video_info->frame_count)
    {
-      static float last_fps;
-      bool ret             = false;
-      unsigned write_index = video_driver_frame_time_count++ &
-         (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
+      curr_time = fps_time = new_time;
+      strlcpy(video_driver_window_title,
+            video_driver_title_buf,
+            sizeof(video_driver_window_title));
 
-      video_driver_frame_time_samples[write_index] = new_time - fps_time;
-      fps_time = new_time;
+      strlcpy(video_info->fps_text,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+            sizeof(video_info->fps_text));
 
-      if ((video_info->frame_count % FPS_UPDATE_INTERVAL) == 0)
-      {
-         char frames_text[64];
-
-         fill_pathname_noext(video_driver_window_title,
-               video_driver_title_buf,
-               " || ",
-               sizeof(video_driver_window_title));
-
-         if (video_info->fps_show)
-         {
-            last_fps = TIME_TO_FPS(curr_time, new_time, FPS_UPDATE_INTERVAL);
-            snprintf(video_info->fps_text,
-                  sizeof(video_info->fps_text),
-                  " FPS: %6.1f || ", last_fps);
-            strlcat(video_driver_window_title,
-                  video_info->fps_text,
-                  sizeof(video_driver_window_title));
-         }
-
-         curr_time = new_time;
-
-         strlcat(video_driver_window_title,
-               "Frames: ",
-               sizeof(video_driver_window_title));
-
-         snprintf(frames_text,
-               sizeof(frames_text),
-               STRING_REP_UINT64,
-               (unsigned long long)video_info->frame_count);
-
-         strlcat(video_driver_window_title,
-               frames_text,
-               sizeof(video_driver_window_title));
-         ret = true;
-
-         video_driver_window_title_update = true;
-      }
-
-      if (video_info->fps_show)
-         snprintf(
-               video_info->fps_text,
-               sizeof(video_info->fps_text),
-               "FPS: %6.1f || %s: " STRING_REP_UINT64,
-               last_fps,
-               msg_hash_to_str(MSG_FRAMES),
-               (unsigned long long)video_info->frame_count);
-
-      return ret;
+      video_driver_window_title_update = true;
+      return;
    }
 
-   curr_time = fps_time = new_time;
-   strlcpy(video_driver_window_title,
-         video_driver_title_buf,
-         sizeof(video_driver_window_title));
+   write_index                                  = 
+      video_driver_frame_time_count++ & 
+      (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
+   video_driver_frame_time_samples[write_index] = new_time - fps_time;
+   fps_time                                     = new_time;
 
-   strlcpy(video_info->fps_text,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-         sizeof(video_info->fps_text));
+   if ((video_info->frame_count % FPS_UPDATE_INTERVAL) == 0)
+   {
+      char frames_text[64];
 
-   video_driver_window_title_update = true;
+      fill_pathname_noext(video_driver_window_title,
+            video_driver_title_buf,
+            " || ",
+            sizeof(video_driver_window_title));
 
-   return true;
+      if (video_info->fps_show)
+      {
+         last_fps = TIME_TO_FPS(curr_time, new_time, FPS_UPDATE_INTERVAL);
+         snprintf(video_info->fps_text,
+               sizeof(video_info->fps_text),
+               " FPS: %6.1f || ", last_fps);
+         strlcat(video_driver_window_title,
+               video_info->fps_text,
+               sizeof(video_driver_window_title));
+      }
+
+      curr_time = new_time;
+
+      strlcat(video_driver_window_title,
+            "Frames: ",
+            sizeof(video_driver_window_title));
+
+      snprintf(frames_text,
+            sizeof(frames_text),
+            STRING_REP_UINT64,
+            (unsigned long long)video_info->frame_count);
+
+      strlcat(video_driver_window_title,
+            frames_text,
+            sizeof(video_driver_window_title));
+
+      video_driver_window_title_update = true;
+   }
+
+   if (video_info->fps_show)
+      snprintf(
+            video_info->fps_text,
+            sizeof(video_info->fps_text),
+            "FPS: %6.1f || %s: " STRING_REP_UINT64,
+            last_fps,
+            msg_hash_to_str(MSG_FRAMES),
+            (unsigned long long)video_info->frame_count);
 }
 
 /**
