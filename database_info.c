@@ -402,9 +402,9 @@ static int database_cursor_close(libretrodb_t *db, libretrodb_cursor_t *cur)
 database_info_handle_t *database_info_dir_init(const char *dir,
       enum database_type type)
 {
+   unsigned i;
    database_info_handle_t     *db  = (database_info_handle_t*)
       calloc(1, sizeof(*db));
-   unsigned i = 0;
 
    if (!db)
       return NULL;
