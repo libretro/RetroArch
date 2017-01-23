@@ -476,22 +476,16 @@ static const unsigned buttons[] = {
 void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
 {
    unsigned i;
-   rarch_joypad_info_t joypad_info;
    const struct retro_keybind *binds[MAX_USERS];
    settings_t *settings = config_get_ptr();
    unsigned max_users   = settings->input.max_users;
-
-   /* Only bind for up to two players for now. */
-   for (i = 0; i < max_users; i++)
-      binds[i] = settings->input.binds[i];
-
-   joypad_info.axis_threshold = settings->input.axis_threshold;
 
    for (i = 0; i < max_users; i++)
    {
       struct retro_keybind *general_binds = settings->input.binds[i];
       struct retro_keybind *auto_binds    = settings->input.autoconf_binds[i];
       enum analog_dpad_mode dpad_mode     = (enum analog_dpad_mode)settings->input.analog_dpad_mode[i];
+      binds[i]                            = settings->input.binds[i];
 
       if (dpad_mode == ANALOG_DPAD_NONE)
          continue;
@@ -502,6 +496,9 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
 
    if (!input_driver_block_libretro_input)
    {
+      rarch_joypad_info_t joypad_info;
+      joypad_info.axis_threshold = settings->input.axis_threshold;
+
       for (i = 4; i < 16; i++)
       {
          unsigned id     = buttons[i - 4];
