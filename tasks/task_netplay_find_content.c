@@ -33,6 +33,7 @@
 #include "../playlist.h"
 #include "../command.h"
 #include "../core_info.h"
+#include "../../runloop.h"
 
 typedef struct
 {
@@ -62,14 +63,26 @@ static void netplay_crc_scan_callback(void *task_data,
       if(string_is_equal(info->list[i].core_name, state->corename))
          break;
    }
-
-   command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
-   task_push_content_load_default(
-         info->list[i].path, state->path,
-         &content_info,
-         CORE_TYPE_PLAIN,
-         CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU,
-         NULL, NULL);
+   
+   if (!string_is_empty(info->list[i].path) && !string_is_empty(state->path))
+   {
+      command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
+      task_push_content_load_default(
+            info->list[i].path, state->path,
+            &content_info,
+            CORE_TYPE_PLAIN,
+            CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU,
+            NULL, NULL);
+   }
+   else
+   {
+      /* TO-DO: Inform the user no compatible core or content was found */
+      RARCH_LOG("Couldn't find a suitable %s\n", 
+         string_is_empty(state->path) ? "content file" : "core");
+      runloop_msg_queue_push(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY),
+            1, 480, true);
+   }
 
    free(state);
 }
@@ -95,7 +108,8 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
    if (state->lpl_list->size == 0)
       goto no_playlists;
 
-   if (atoi(state->crc) != 0)
+   /* content with no CRC uses 00000000*/
+   if (string_is_equal(state->path, "00000000"))
    {
       for (i = 0; i < state->lpl_list->size; i++)
       {
@@ -109,6 +123,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
          {
             for (j = 0; j < playlist->size; j++)
             {
+               printf("CRC Match %s\n", state->crc);
                if (string_is_equal(playlist->entries[j].crc32, state->crc))
                {
                   strlcpy(state->path, playlist->entries[j].path, sizeof(state->path));
@@ -142,7 +157,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
                /*printf("State: %s Entry: %s\n", state->path, playlist->entries[j].path);*/
                if (strstr(playlist->entries[j].path, state->path))
                {
-                  printf("Match! %s %s\n", playlist->entries[j].path, state->path);
+                  printf("Filename Match %s\n", state->path);
                   strlcpy(state->path, playlist->entries[j].path, sizeof(state->path));
                   state->found = true;
                   task_set_data(task, state);
