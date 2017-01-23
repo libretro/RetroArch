@@ -122,7 +122,7 @@ static void epx_generic_rgb565 (unsigned width, unsigned height,
       dP1 = (uint32_t *) dst;
       dP2 = (uint32_t *) (dst + dst_stride);
 
-      // left edge
+      /* left edge */
 
       colorX = *sP;
       colorC = *++sP;
@@ -144,8 +144,6 @@ static void epx_generic_rgb565 (unsigned width, unsigned height,
 
       dP1++;
       dP2++;
-
-      //
 
       for (w = width - 2; w; w--)
       {
@@ -172,7 +170,7 @@ static void epx_generic_rgb565 (unsigned width, unsigned height,
          dP2++;
       }
 
-      // right edge
+      /* right edge */
 
       colorA = colorX;
       colorX = colorC;

@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Compile: gcc -o supereagle.so -shared supereagle.c -std=c99 -O3 -Wall -pedantic -fPIC
+/* Compile: gcc -o supereagle.so -shared supereagle.c -std=c99 -O3 -Wall -pedantic -fPIC */
 
 #include "softfilter.h"
 #include <stdlib.h>
@@ -308,7 +308,7 @@ static void supereagle_generic_packets(void *data,
       thr->width = width;
       thr->height = y_end - y_start;
 
-      // Workers need to know if they can access pixels outside their given buffer.
+      /* Workers need to know if they can access pixels outside their given buffer. */
       thr->first = y_start;
       thr->last = y_end == height;
 
