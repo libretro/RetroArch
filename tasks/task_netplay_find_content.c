@@ -64,7 +64,6 @@ static void netplay_crc_scan_callback(void *task_data,
          break;
    }
 
-   
    if (!string_is_empty(info->list[i].path) && !string_is_empty(state->path))
    {
       command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
