@@ -32,8 +32,6 @@
 #endif
 
 #include "../video_shader_driver.h"
-#include "../video_state_tracker.h"
-#include "../../dynamic.h"
 
 typedef struct null_shader_data
 {

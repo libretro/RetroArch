@@ -48,9 +48,7 @@
 
 #include "../video_shader_driver.h"
 #include "../video_shader_parse.h"
-#include "../video_state_tracker.h"
 #include "../../core.h"
-#include "../../dynamic.h"
 #include "../../managers/state_manager.h"
 
 #define SEMANTIC_TEXCOORD     0x92ee91cdU
