@@ -64,6 +64,7 @@ static void netplay_crc_scan_callback(void *task_data,
    }
 
    command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
+
    task_push_content_load_default(
          info->list[i].path, state->path,
          &content_info,
@@ -159,20 +160,12 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
       }
    }
 
-
-
-/*
-else
-{
-
-}
-
-*/
 no_playlists:
    string_list_free(state->lpl_list);
    task_set_progress(task, 100);
    task_set_title(task, strdup("Couldn't find compatible content"));
    task_set_finished(task, true);
+   free(state);
    return;
 }
 
