@@ -336,7 +336,6 @@ int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
    int16_t res                     = 0;
-   settings_t *settings            = config_get_ptr();
 
    device &= RETRO_DEVICE_MASK;
 
@@ -349,30 +348,32 @@ int16_t input_state(unsigned port, unsigned device,
       bsv_movie_ctl(BSV_MOVIE_CTL_SET_END, NULL);
    }
 
-   if (settings->input.remap_binds_enable)
-   {
-      switch (device)
-      {
-         case RETRO_DEVICE_JOYPAD:
-            if (id < RARCH_FIRST_CUSTOM_BIND)
-               id = settings->input.remap_ids[port][id];
-            break;
-         case RETRO_DEVICE_ANALOG:
-            if (idx < 2 && id < 2)
-            {
-               unsigned new_id = RARCH_FIRST_CUSTOM_BIND + (idx * 2 + id);
-
-               new_id = settings->input.remap_ids[port][new_id];
-               idx   = (new_id & 2) >> 1;
-               id    = new_id & 1;
-            }
-            break;
-      }
-   }
-
    if (     !input_driver_flushing_input 
          && !input_driver_block_libretro_input)
    {
+      settings_t *settings = config_get_ptr();
+
+      if (settings->input.remap_binds_enable)
+      {
+         switch (device)
+         {
+            case RETRO_DEVICE_JOYPAD:
+               if (id < RARCH_FIRST_CUSTOM_BIND)
+                  id = settings->input.remap_ids[port][id];
+               break;
+            case RETRO_DEVICE_ANALOG:
+               if (idx < 2 && id < 2)
+               {
+                  unsigned new_id = RARCH_FIRST_CUSTOM_BIND + (idx * 2 + id);
+
+                  new_id = settings->input.remap_ids[port][new_id];
+                  idx   = (new_id & 2) >> 1;
+                  id    = new_id & 1;
+               }
+               break;
+         }
+      }
+
       if (((id < RARCH_FIRST_META_KEY) || (device == RETRO_DEVICE_KEYBOARD)))
       {
          bool bind_valid = libretro_input_binds[port] && libretro_input_binds[port][id].valid;
@@ -398,31 +399,31 @@ int16_t input_state(unsigned port, unsigned device,
 #ifdef HAVE_NETWORKGAMEPAD
       input_remote_state(&res, port, device, idx, id);
 #endif
-   }
 
-   /* Don't allow turbo for D-pad. */
-   if (device == RETRO_DEVICE_JOYPAD && (id < RETRO_DEVICE_ID_JOYPAD_UP ||
-            id > RETRO_DEVICE_ID_JOYPAD_RIGHT))
-   {
-      /*
-       * Apply turbo button if activated.
-       *
-       * If turbo button is held, all buttons pressed except
-       * for D-pad will go into a turbo mode. Until the button is
-       * released again, the input state will be modulated by a 
-       * periodic pulse defined by the configured duty cycle. 
-       */
-      if (res && input_driver_turbo_btns.frame_enable[port])
-         input_driver_turbo_btns.enable[port] |= (1 << id);
-      else if (!res)
-         input_driver_turbo_btns.enable[port] &= ~(1 << id);
-
-      if (input_driver_turbo_btns.enable[port] & (1 << id))
+      /* Don't allow turbo for D-pad. */
+      if (device == RETRO_DEVICE_JOYPAD && (id < RETRO_DEVICE_ID_JOYPAD_UP ||
+               id > RETRO_DEVICE_ID_JOYPAD_RIGHT))
       {
-         /* if turbo button is enabled for this key ID */
-         res = res && ((input_driver_turbo_btns.count 
-                  % settings->input.turbo_period)
-               < settings->input.turbo_duty_cycle);
+         /*
+          * Apply turbo button if activated.
+          *
+          * If turbo button is held, all buttons pressed except
+          * for D-pad will go into a turbo mode. Until the button is
+          * released again, the input state will be modulated by a 
+          * periodic pulse defined by the configured duty cycle. 
+          */
+         if (res && input_driver_turbo_btns.frame_enable[port])
+            input_driver_turbo_btns.enable[port] |= (1 << id);
+         else if (!res)
+            input_driver_turbo_btns.enable[port] &= ~(1 << id);
+
+         if (input_driver_turbo_btns.enable[port] & (1 << id))
+         {
+            /* if turbo button is enabled for this key ID */
+            res = res && ((input_driver_turbo_btns.count 
+                     % settings->input.turbo_period)
+                  < settings->input.turbo_duty_cycle);
+         }
       }
    }
 
