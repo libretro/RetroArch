@@ -1403,8 +1403,10 @@ static bool command_event_init_core(enum rarch_core_type *data)
    if (!event_init_content())
       return false;
 
-   if (!core_load())
+   if (!core_load(settings->input.poll_type_behavior))
       return false;
+
+   runloop_ctl(RUNLOOP_CTL_SET_FRAME_LIMIT, NULL);
 
    return true;
 }
@@ -1895,6 +1897,9 @@ bool command_event(enum event_command cmd, void *data)
          cheevos_set_cheats();
 #endif
          core_reset();
+#ifdef HAVE_CHEEVOS
+         cheevos_reset_game();
+#endif
          break;
       case CMD_EVENT_SAVE_STATE:
          {

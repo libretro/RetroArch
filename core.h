@@ -158,7 +158,7 @@ typedef struct retro_callbacks
    retro_input_poll_t poll_cb;
 } retro_callbacks_t;
 
-bool core_load(void);
+bool core_load(unsigned poll_type_behavior);
 
 bool core_unload(void);
 
