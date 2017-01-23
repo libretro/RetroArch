@@ -138,6 +138,14 @@ struct SceNetInAddr inet_aton(const char *ip_addr);
 #ifdef GEKKO
 #define sendto(s, msg, len, flags, addr, tolen) net_sendto(s, msg, len, 0, addr, 8)
 #define socket(domain, type, protocol) net_socket(domain, type, protocol)
+#define bind(s, name, namelen) net_bind(s, name, namelen)
+#define listen(s, backlog) net_listen(s, backlog)
+#define accept(s, addr, addrlen) net_accept(s, addr, addrlen)
+#define connect(s, addr, addrlen) net_connect(s, addr, addrlen)
+#define send(s, data, size, flags) net_send(s, data, size, flags)
+#define recv(s, mem, len, flags) net_recv(s, mem, len, flags)
+#define recvfrom(s, mem, len, flags, from, fromlen) net_recvfrom(s, mem, len, flags, from, fromlen)
+#define select(maxfdp1, readset, writeset, exceptset, timeout) net_select(maxfdp1, readset, writeset, exceptset, timeout)
 #endif
 
 static INLINE bool isagain(int bytes)
