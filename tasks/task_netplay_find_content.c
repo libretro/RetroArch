@@ -110,7 +110,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
       goto no_playlists;
    
    /* content with no CRC uses 00000000*/
-   if (!string_is_equal(state->crc, "00000000"))
+   if (!string_is_equal(state->crc, "00000000|crc"))
    {
       printf("Using CRC matching\n");
       for (i = 0; i < state->lpl_list->size; i++)
@@ -125,9 +125,9 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
          {
             for (j = 0; j < playlist->size; j++)
             {
-               printf("CRC Match %s\n", state->crc);
                if (string_is_equal(playlist->entries[j].crc32, state->crc))
                {
+                  printf("CRC Match %s\n", state->crc);
                   strlcpy(state->path, playlist->entries[j].path, sizeof(state->path));
                   state->found = true;
                   task_set_data(task, state);
