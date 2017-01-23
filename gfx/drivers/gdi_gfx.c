@@ -229,10 +229,21 @@ static bool gdi_gfx_frame(void *data, const void *frame,
 
          info->bmiHeader.biCompression = BI_BITFIELDS;
 
-         /* map RGB565 color bits, default is 555 */
-         masks[0] = 0xF800;
-         masks[1] = 0x07E0;
-         masks[2] = 0x001F;
+         /* default 16-bit format on Windows is XRGB1555 */
+         if (frame_to_copy == gdi_menu_frame)
+         {
+            /* map RGB444 color bits for RGUI */
+            masks[0] = 0xF000;
+            masks[1] = 0x0F00;
+            masks[2] = 0x00F0;
+         }
+         else
+         {
+            /* map RGB565 color bits for core */
+            masks[0] = 0xF800;
+            masks[1] = 0x07E0;
+            masks[2] = 0x001F;
+         }
       }
       else
          info->bmiHeader.biCompression = BI_RGB;
