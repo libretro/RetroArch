@@ -3449,8 +3449,10 @@ static const char *xmb_texture_path(unsigned id)
          return "off.png";
       case XMB_TEXTURE_ADD:
          return "add.png";
+#ifdef HAVE_NETWORKING
       case XMB_TEXTURE_NETPLAY:
          return "wifi.png";
+#endif
       case XMB_TEXTURE_KEY:
          return "key.png";
       case XMB_TEXTURE_KEY_HOVER:
