@@ -347,9 +347,11 @@ static void gfx_ctx_x_swap_buffers(void *data, video_frame_info_t *video_info)
 }
 
 static void gfx_ctx_x_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *width, unsigned *height,
+      bool is_shutdown)
 {
-   x11_check_window(data, quit, resize, width, height);
+   x11_check_window(data, quit, resize, width, height,
+         is_shutdown);
 
    switch (x_api)
    {
@@ -787,8 +789,10 @@ static bool gfx_ctx_x_set_video_mode(void *data,
 #ifdef HAVE_VULKAN
          {
             bool quit, resize;
+            bool shutdown = false;
             unsigned width = 0, height = 0;
-            x11_check_window(x, &quit, &resize, &width, &height);
+            x11_check_window(x, &quit, &resize, &width, &height,
+                  shutdown);
 
             /* Use XCB surface since it's the most supported WSI.
              * We can obtain the XCB connection directly from X11. */

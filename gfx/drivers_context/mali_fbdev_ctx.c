@@ -130,7 +130,7 @@ error:
 }
 
 static void gfx_ctx_mali_fbdev_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
 {
    unsigned new_width, new_height;
 

@@ -45,7 +45,6 @@
 #endif
 
 #include "../../configuration.h"
-#include "../../runloop.h"
 
 #define WINDOW_BUFFERS 2
 
@@ -284,7 +283,8 @@ static void gfx_ctx_qnx_get_video_size(void *data,
 }
 
 static void gfx_ctx_qnx_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *width, unsigned *height,
+      bool is_shutdown)
 {
    unsigned new_width, new_height;
    qnx_ctx_data_t *qnx = (qnx_ctx_data_t*)data;
@@ -303,7 +303,7 @@ static void gfx_ctx_qnx_check_window(void *data, bool *quit,
    }
 
    /* Check if we are exiting. */
-   if (runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL))
+   if (is_shutdown)
       *quit = true;
 }
 

@@ -633,7 +633,8 @@ bool x11_alive(void *data)
 }
 
 void x11_check_window(void *data, bool *quit,
-   bool *resize, unsigned *width, unsigned *height)
+   bool *resize, unsigned *width, unsigned *height,
+   bool is_shutdown)
 {
    unsigned new_width  = *width;
    unsigned new_height = *height;

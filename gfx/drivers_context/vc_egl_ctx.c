@@ -86,7 +86,8 @@ static INLINE bool gfx_ctx_vc_egl_query_extension(vc_ctx_data_t *vc, const char 
 }
 
 static void gfx_ctx_vc_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *width, unsigned *height,
+      bool is_shutdown)
 {
    (void)data;
    (void)width;

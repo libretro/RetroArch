@@ -64,7 +64,7 @@ static void setup_gdi_pixel_format(HDC hdc)
 }
 
 static void gfx_ctx_gdi_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
 {
    win32_check_window(quit, resize, width, height);
 }

@@ -106,7 +106,7 @@ typedef struct gfx_ctx_driver
    /* Queries for resize and quit events.
     * Also processes events. */
    void (*check_window)(void*, bool*, bool*,
-         unsigned*, unsigned*);
+         unsigned*, unsigned*, bool);
 
    /* Acknowledge a resize event. This is needed for some APIs.
     * Most backends will ignore this. */

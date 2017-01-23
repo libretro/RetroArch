@@ -27,6 +27,7 @@
 #endif
 
 #include "../configuration.h"
+#include "../runloop.h"
 #include "../verbosity.h"
 
 static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
@@ -278,11 +279,13 @@ bool video_context_driver_check_window(gfx_ctx_size_t *size_data)
          && current_video_context
          && current_video_context->check_window)
    {
+      bool is_shutdown = runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL);
       current_video_context->check_window(video_context_data,
             size_data->quit,
             size_data->resize,
             size_data->width,
-            size_data->height);
+            size_data->height,
+            is_shutdown);
       return true;
    }
 

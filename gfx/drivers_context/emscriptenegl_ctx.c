@@ -52,7 +52,7 @@ static void gfx_ctx_emscripten_swap_interval(void *data, unsigned interval)
 }
 
 static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
 {
    int input_width;
    int input_height;

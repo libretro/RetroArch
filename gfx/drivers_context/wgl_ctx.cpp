@@ -311,7 +311,8 @@ static void gfx_ctx_wgl_swap_interval(void *data, unsigned interval)
 }
 
 static void gfx_ctx_wgl_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *width, unsigned *height,
+      bool is_shutdown)
 {
    win32_check_window(quit, resize, width, height);
 

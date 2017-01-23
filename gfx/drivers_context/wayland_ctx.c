@@ -642,7 +642,8 @@ static void flush_wayland_fd(gfx_ctx_wayland_data_t *wl)
 }
 
 static void gfx_ctx_wl_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *width, unsigned *height,
+      bool is_shutdown)
 {
    unsigned new_width, new_height;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;

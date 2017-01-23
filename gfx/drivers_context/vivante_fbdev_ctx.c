@@ -117,7 +117,8 @@ static void gfx_ctx_vivante_get_video_size(void *data,
 }
 
 static void gfx_ctx_vivante_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *width, unsigned *height,
+      bool is_shutdown)
 {
    unsigned new_width, new_height;
    vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;

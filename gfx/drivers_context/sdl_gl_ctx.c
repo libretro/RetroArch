@@ -285,8 +285,10 @@ static void sdl_ctx_update_title(void *data, video_frame_info_t *video_info)
 #endif
 }
 
-static void sdl_ctx_check_window(void *data, bool *quit, bool *resize,unsigned *width,
-                            unsigned *height)
+static void sdl_ctx_check_window(void *data, bool *quit,
+      bool *resize,unsigned *width,
+      unsigned *height,
+      bool is_shutdown)
 {
    SDL_Event event;
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;
