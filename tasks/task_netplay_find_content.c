@@ -218,7 +218,8 @@ bool task_push_netplay_crc_scan(uint32_t crc, char* name,
    task->state          = state;
    task->handler        = task_netplay_crc_scan_handler;
    task->callback       = netplay_crc_scan_callback;
-   task->title          = strdup("Looking for matching content...");
+
+   task_set_title(task, strdup("Looking for matching content..."));
 
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
 

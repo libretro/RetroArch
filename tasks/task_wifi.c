@@ -100,8 +100,8 @@ bool task_push_wifi_scan(void)
    task->state          = state;
    task->handler        = task_wifi_scan_handler;
    task->callback       = wifi_scan_callback;
-   task->title          = strdup(msg_hash_to_str(
-                           MSG_SCANNING_WIRELESS_NETWORKS));
+
+   task_set_title(task, strdup(msg_hash_to_str(MSG_SCANNING_WIRELESS_NETWORKS)));
 
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
 

@@ -89,7 +89,8 @@ bool task_push_netplay_lan_scan(void)
    task->type     = TASK_TYPE_BLOCKING;
    task->handler  = task_netplay_lan_scan_handler;
    task->callback = netplay_lan_scan_callback;
-   task->title    = strdup(msg_hash_to_str(MSG_NETPLAY_LAN_SCANNING));
+
+   task_set_title(task, strdup(msg_hash_to_str(MSG_NETPLAY_LAN_SCANNING)));
 
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
 
