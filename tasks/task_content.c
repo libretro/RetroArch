@@ -120,6 +120,8 @@ typedef struct content_information_ctx
    bool block_extract;
    bool need_fullpath;
    bool set_supports_no_game_enable;
+   bool patch_is_blocked;
+   bool bios_is_missing;
 
    struct string_list *temporary_content;
 } content_information_ctx_t;
@@ -310,7 +312,9 @@ error:
  *
  * Returns: true if successful, false on error.
  **/
-static bool load_content_into_memory(unsigned i, const char *path, void **buf,
+static bool load_content_into_memory(
+      content_information_ctx_t *content_ctx,
+      unsigned i, const char *path, void **buf,
       ssize_t *length)
 {
    uint32_t *content_crc_ptr = NULL;
@@ -330,7 +334,7 @@ static bool load_content_into_memory(unsigned i, const char *path, void **buf,
        * CRC checking, etc. */
 
       /* Attempt to apply a patch. */
-      if (!rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL))
+      if (!content_ctx->patch_is_blocked)
       {
          global_t *global = global_get_ptr();
          if (global)
@@ -530,7 +534,9 @@ static bool content_file_load(
 
          ssize_t len = 0;
 
-         if (!load_content_into_memory(i, path, (void**)&info[i].data, &len))
+         if (!load_content_into_memory(
+                  content_ctx,
+                  i, path, (void**)&info[i].data, &len))
          {
             snprintf(msg, sizeof(msg),
                   "%s \"%s\".\n",
@@ -998,7 +1004,8 @@ bool task_push_content_load_default(
 
    if (!content_info)
       return false;
-
+   content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
+   content_ctx.bios_is_missing                = runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.history_list_enable            = false;
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
@@ -1224,7 +1231,8 @@ bool task_push_content_load_default(
       case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
          task_push_content_update_firmware_status(&content_ctx);
 
-         if(runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL) && 
+         if(
+               content_ctx.bios_is_missing && 
                settings->check_firmware_before_loading)
                goto skip;
 
