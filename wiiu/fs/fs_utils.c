@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <coreinit/filesystem.h>
+#include <wiiu/fs.h>
 
 /* FS defines and types */
 #define FS_MAX_LOCALPATH_SIZE           511

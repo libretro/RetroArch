@@ -19,11 +19,9 @@
 #include "performance_counters.h"
 
 #include <string.h>
-#include <coreinit/screen.h>
-#include <coreinit/cache.h>
-#include "gx2.h"
+#include <wiiu/os.h>
+#include <wiiu/gx2.h>
 #include "system/memory.h"
-#include "system/wiiu.h"
 #include "tex_shader.h"
 
 #include "wiiu_dbg.h"

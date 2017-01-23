@@ -18,8 +18,8 @@
 #include "../../config.h"
 #endif
 
-#include <vpad/input.h>
-#include <padscore.h>
+#include <wiiu/vpad.h>
+#include <wiiu/kpad.h>
 
 #include "../input_config.h"
 #include "../input_driver.h"

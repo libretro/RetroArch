@@ -93,10 +93,17 @@ LD      := $(CXX)
 
 ELF2RPL   := wiiu/wut/elf2rpl/elf2rpl
 
-INCDIRS := -I. -Ideps/zlib -Ideps/7zip -Ilibretro-common/include -Iwiiu -Iwiiu/wut/include -I$(DEVKITPRO)/portlibs/ppc/include
+ifneq ($(findstring Linux,$(shell uname -a)),)
+else ifneq ($(findstring Darwin,$(shell uname -a)),)
+else
+   ELF2RPL   := $(ELF2RPL).exe
+endif
+
+
+INCDIRS := -I. -Ideps/zlib -Ideps/7zip -Ilibretro-common/include -Iwiiu -Iwiiu/include -I$(DEVKITPRO)/portlibs/ppc/include
 LIBDIRS := -L. -L$(DEVKITPRO)/portlibs/ppc/lib
 
-CFLAGS  := -mrvl -mcpu=750 -meabi -mhard-float
+CFLAGS  := -mwup -mcpu=750 -meabi -mhard-float
 LDFLAGS :=
 
 ifeq ($(DEBUG), 1)
@@ -111,8 +118,9 @@ ASFLAGS := $(CFLAGS) -mregnames
 CFLAGS +=  -ffast-math -Werror=implicit-function-declaration
 #CFLAGS += -fomit-frame-pointer -mword-relocations
 #CFLAGS	+= -Wall
-CFLAGS += -Dstatic_assert=_Static_assert
-CFLAGS += -DWIIU -D__wiiu__ -DMSB_FIRST
+
+#todo: remove -DWIIU and use the built-in macros instead (HW_WUP or __wiiu__).
+CFLAGS += -DWIIU -DMSB_FIRST
 CFLAGS += -DHAVE_MAIN
 CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE
 CFLAGS += -DHAVE_FILTERS_BUILTIN $(DEFINES)
