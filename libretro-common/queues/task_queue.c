@@ -25,7 +25,6 @@
 #include <stdarg.h>
 
 #include <queues/task_queue.h>
-#include <string/stdstring.h>
 
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
