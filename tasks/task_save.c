@@ -646,8 +646,7 @@ static bool task_push_undo_save_state(const char *path, void *data, size_t size)
    task->state       = state;
    task->handler     = task_save_handler;
    task->callback    = undo_save_state_cb;
-
-   task_set_title(task, strdup(msg_hash_to_str(MSG_UNDOING_SAVE_STATE)));
+   task->title       = strdup(msg_hash_to_str(MSG_UNDOING_SAVE_STATE));
 
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
 
@@ -1004,9 +1003,8 @@ static void task_push_save_state(const char *path, void *data, size_t size, bool
    task->state             = state;
    task->handler           = task_save_handler;
    task->callback          = save_state_cb;
+   task->title             = strdup(msg_hash_to_str(MSG_SAVING_STATE));
    task->mute              = state->mute;
-
-   task_set_title(task, strdup(msg_hash_to_str(MSG_SAVING_STATE)));
 
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
 
@@ -1073,9 +1071,8 @@ static void task_push_load_and_save_state(const char *path, void *data,
    task->type       = TASK_TYPE_BLOCKING;
    task->handler    = task_load_handler;
    task->callback   = content_load_and_save_state_cb;
+   task->title      = strdup(msg_hash_to_str(MSG_LOADING_STATE));
    task->mute       = state->mute;
-
-   task_set_title(task, strdup(msg_hash_to_str(MSG_LOADING_STATE)));
 
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
 
@@ -1208,8 +1205,7 @@ bool content_load_state(const char *path,
    task->state    = state;
    task->handler  = task_load_handler;
    task->callback = content_load_state_cb;
-
-   task_set_title(task, strdup(msg_hash_to_str(MSG_LOADING_STATE)));
+   task->title    = strdup(msg_hash_to_str(MSG_LOADING_STATE));
 
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
 
