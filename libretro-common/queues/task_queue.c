@@ -143,7 +143,7 @@ static void retro_task_internal_gather(void)
       if (task->error)
          free(task->error);
 
-      if (!string_is_empty(task->title))
+      if (task->title)
          free(task->title);
 
       free(task);
