@@ -365,7 +365,9 @@ static void* ctr_init(const video_info_t* video,
                         ctr->menu.texture_width, ctr->menu.texture_height);
 
    memset(ctr->texture_linear, 0x00, ctr->texture_width * ctr->texture_height * (ctr->rgb32? 4:2));
-//   memset(ctr->menu.texture_swizzled , 0x00, ctr->menu.texture_width * ctr->menu.texture_height * 2);
+#if 0
+   memset(ctr->menu.texture_swizzled , 0x00, ctr->menu.texture_width * ctr->menu.texture_height * 2);
+#endif
 
    ctr->dvlb = DVLB_ParseFile((u32*)ctr_sprite_shbin, ctr_sprite_shbin_size);
    ctrGuSetVshGsh(&ctr->shader, ctr->dvlb, 2, 2);
@@ -380,9 +382,13 @@ static void* ctr_init(const video_info_t* video,
    GPU_SetStencilTest(false, GPU_ALWAYS, 0x00, 0xFF, 0x00);
    GPU_SetStencilOp(GPU_STENCIL_KEEP, GPU_STENCIL_KEEP, GPU_STENCIL_KEEP);
    GPU_SetBlendingColor(0, 0, 0, 0);
-//      GPU_SetDepthTestAndWriteMask(true, GPU_GREATER, GPU_WRITE_ALL);
+#if 0
+   GPU_SetDepthTestAndWriteMask(true, GPU_GREATER, GPU_WRITE_ALL);
+#endif
    GPU_SetDepthTestAndWriteMask(false, GPU_ALWAYS, GPU_WRITE_COLOR);
-   //   GPU_SetDepthTestAndWriteMask(true, GPU_ALWAYS, GPU_WRITE_ALL);
+#if 0
+   GPU_SetDepthTestAndWriteMask(true, GPU_ALWAYS, GPU_WRITE_ALL);
+#endif
 
    GPUCMD_AddMaskedWrite(GPUREG_EARLYDEPTH_TEST1, 0x1, 0);
    GPUCMD_AddWrite(GPUREG_EARLYDEPTH_TEST2, 0);
@@ -887,7 +893,9 @@ static void ctr_free(void* data)
    linearFree(ctr->empty_framebuffer);
    linearFree(ctr->vertex_cache.buffer);
    linearFree(ctr);
-   //   gfxExit();
+#if 0
+   gfxExit();
+#endif
 }
 static void ctr_set_texture_frame(void* data, const void* frame, bool rgb32,
                                   unsigned width, unsigned height, float alpha)
