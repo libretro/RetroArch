@@ -437,8 +437,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             runloop_idle = *ptr;
          }
          break;
-      case RUNLOOP_CTL_IS_SLOWMOTION:
-         return runloop_slowmotion;
       case RUNLOOP_CTL_SET_SLOWMOTION:
          {
             bool *ptr = (bool*)data;
