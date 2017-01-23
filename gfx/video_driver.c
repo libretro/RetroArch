@@ -155,18 +155,18 @@ static const video_poke_interface_t *video_driver_poke   = NULL;
  * being passed to video driver. */
 static video_pixel_scaler_t *video_driver_scaler_ptr     = NULL;
 
-/* Graphics driver requires RGBA byte order data (ABGR on little-endian)
- * for 32-bit.
- * This takes effect for overlay and shader cores that wants to load
- * data into graphics driver. Kinda hackish to place it here, it is only
- * used for GLES.
- * TODO: Refactor this better. */
 static struct retro_hw_render_callback hw_render;
 
 static const struct 
 retro_hw_render_context_negotiation_interface *
 hw_render_context_negotiation                            = NULL;
 
+/* Graphics driver requires RGBA byte order data (ABGR on little-endian)
+ * for 32-bit.
+ * This takes effect for overlay and shader cores that wants to load
+ * data into graphics driver. Kinda hackish to place it here, it is only
+ * used for GLES.
+ * TODO: Refactor this better. */
 static bool video_driver_use_rgba                        = false;
 static bool video_driver_data_own                        = false;
 static bool video_driver_active                          = false;
