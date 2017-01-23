@@ -384,9 +384,14 @@ static bool take_screenshot_choice(const char *name_base, bool savestate,
 
 bool take_screenshot(const char *name_base, bool silence)
 {
-   bool is_paused = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
-   bool is_idle   = runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL);
-   bool ret       = take_screenshot_choice(name_base, silence, is_paused, is_idle);
+   bool is_paused     = false;
+   bool is_idle       = false;
+   bool is_slowmotion = false;
+   bool ret           = false;
+
+   runloop_get_status(&is_paused, &is_idle, &is_slowmotion);
+
+   ret       = take_screenshot_choice(name_base, silence, is_paused, is_idle);
 
    if (is_paused && !is_idle)
          video_driver_cached_frame();
