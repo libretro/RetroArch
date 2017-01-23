@@ -59,7 +59,7 @@ static void *ctr_dsp_audio_init(const char *device, unsigned rate, unsigned late
    ctr->channel = 0;
 
    ndspSetOutputMode(NDSP_OUTPUT_STEREO);
-   ndspSetClippingMode(NDSP_CLIP_SOFT); //??
+   ndspSetClippingMode(NDSP_CLIP_SOFT); /* ?? */
    ndspSetOutputCount(1);
    ndspChnReset(ctr->channel);
    ndspChnSetFormat(ctr->channel, NDSP_FORMAT_STEREO_PCM16);

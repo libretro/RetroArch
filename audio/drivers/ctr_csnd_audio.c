@@ -94,7 +94,8 @@ Result csndPlaySound_custom(int chn, u32 flags, float vol, float pan,
 
 	if (loopMode == CSND_LOOPMODE_NORMAL && paddr1 > paddr0)
 	{
-		// Now that the first block is playing, configure the size of the subsequent blocks
+		/* Now that the first block is playing, 
+       * configure the size of the subsequent blocks */
 		size -= paddr1 - paddr0;
 		CSND_SetBlock(chn, 1, paddr1, size);
 	}
@@ -148,7 +149,9 @@ static void ctr_csnd_audio_free(void *data)
 {
    ctr_csnd_audio_t* ctr = (ctr_csnd_audio_t*)data;
 
-//   csndExit();
+#if 0
+   csndExit();
+#endif
    CSND_SetPlayState(0x8, 0);
    CSND_SetPlayState(0x9, 0);
    csndExecCmds(false);
