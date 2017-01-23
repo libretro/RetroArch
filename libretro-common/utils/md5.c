@@ -217,24 +217,27 @@ void MD5_Update(MD5_CTX *ctx, const void *data, unsigned long size)
 
 	used = saved_lo & 0x3f;
 
-	if (used) {
-		available = 64 - used;
+	if (used)
+   {
+      available = 64 - used;
 
-		if (size < available) {
-			memcpy(&ctx->buffer[used], data, size);
-			return;
-		}
+      if (size < available)
+      {
+         memcpy(&ctx->buffer[used], data, size);
+         return;
+      }
 
-		memcpy(&ctx->buffer[used], data, available);
-		data = (const unsigned char *)data + available;
-		size -= available;
-		MD5_body(ctx, ctx->buffer, 64);
-	}
+      memcpy(&ctx->buffer[used], data, available);
+      data = (const unsigned char *)data + available;
+      size -= available;
+      MD5_body(ctx, ctx->buffer, 64);
+   }
 
-	if (size >= 64) {
-		data = MD5_body(ctx, data, size & ~(unsigned long)0x3f);
-		size &= 0x3f;
-	}
+	if (size >= 64)
+   {
+      data = MD5_body(ctx, data, size & ~(unsigned long)0x3f);
+      size &= 0x3f;
+   }
 
 	memcpy(ctx->buffer, data, size);
 }
@@ -249,12 +252,13 @@ void MD5_Final(unsigned char *result, MD5_CTX *ctx)
 
 	available = 64 - used;
 
-	if (available < 8) {
-		memset(&ctx->buffer[used], 0, available);
-		MD5_body(ctx, ctx->buffer, 64);
-		used = 0;
-		available = 64;
-	}
+	if (available < 8)
+   {
+      memset(&ctx->buffer[used], 0, available);
+      MD5_body(ctx, ctx->buffer, 64);
+      used = 0;
+      available = 64;
+   }
 
 	memset(&ctx->buffer[used], 0, available - 8);
 

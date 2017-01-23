@@ -139,7 +139,7 @@ static void choose_output_device(coreaudio_t *dev, const char* device)
    AudioObjectPropertyAddress propaddr =
    { 
       kAudioHardwarePropertyDevices, 
-      kAudioObjectPropertyScopeGlobal, 
+      kAudioObjectPropertyScopeOutput,
       kAudioObjectPropertyElementMaster 
    };
    UInt32 size = 0;
@@ -155,14 +155,13 @@ static void choose_output_device(coreaudio_t *dev, const char* device)
             &propaddr, 0, 0, &size, devices) != noErr)
       goto done;
 
-   propaddr.mScope    = kAudioDevicePropertyScopeOutput;
    propaddr.mSelector = kAudioDevicePropertyDeviceName;
-   size               = 1024;
 
    for (i = 0; i < deviceCount; i ++)
    {
       char device_name[1024];
       device_name[0] = 0;
+      size           = 1024;
 
       if (AudioObjectGetPropertyData(devices[i],
                &propaddr, 0, 0, &size, device_name) == noErr 
@@ -398,7 +397,7 @@ static bool coreaudio_stop(void *data)
    return dev->is_paused ? true : false;
 }
 
-static bool coreaudio_start(void *data)
+static bool coreaudio_start(void *data, bool is_shutdown)
 {
    coreaudio_t *dev = (coreaudio_t*)data;
    if (!dev)

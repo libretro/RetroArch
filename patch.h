@@ -36,7 +36,11 @@ RETRO_BEGIN_DECLS
  * Apply patch to the content file in-memory.
  *
  **/
-void patch_content(uint8_t **buf, ssize_t *size);
+void patch_content(
+      const char *name_ips,
+      const char *name_bps,
+      const char *name_ups,
+      uint8_t **buf, ssize_t *size);
 
 RETRO_END_DECLS
 

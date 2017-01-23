@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -50,6 +50,7 @@ RETRO_BEGIN_DECLS
 #define MENU_SETTINGS_CORE_OPTION_START          0x10000
 #define MENU_SETTINGS_PLAYLIST_ASSOCIATION_START 0x20000
 #define MENU_SETTINGS_CHEEVOS_START              0x40000
+#define MENU_SETTINGS_NETPLAY_ROOMS_START        0x80000
 
 enum menu_image_type
 {
@@ -96,10 +97,6 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_SET_PENDING_SHUTDOWN,
    RARCH_MENU_CTL_DEINIT,
    RARCH_MENU_CTL_INIT,
-   RARCH_MENU_CTL_BLIT_RENDER,
-   RARCH_MENU_CTL_RENDER,
-   RARCH_MENU_CTL_RENDER_MESSAGEBOX,
-   RARCH_MENU_CTL_FRAME,
    RARCH_MENU_CTL_SET_PREVENT_POPULATE,
    RARCH_MENU_CTL_UNSET_PREVENT_POPULATE,
    RARCH_MENU_CTL_IS_PREVENT_POPULATE,
@@ -107,7 +104,6 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_IS_TOGGLE,
    RARCH_MENU_CTL_SET_TOGGLE,
    RARCH_MENU_CTL_UNSET_TOGGLE,
-   RARCH_MENU_CTL_IS_ALIVE,
    RARCH_MENU_CTL_DESTROY,
    RARCH_MENU_CTL_IS_SET_TEXTURE,
    RARCH_MENU_CTL_SET_OWN_DRIVER,
@@ -158,6 +154,7 @@ enum menu_settings_type
    MENU_MUSIC_TAB,
    MENU_VIDEO_TAB,
    MENU_IMAGES_TAB,
+   MENU_NETPLAY_TAB,
    MENU_ADD_TAB,
    MENU_PLAYLISTS_TAB,
    MENU_SETTING_NO_ITEM,
@@ -238,7 +235,7 @@ typedef struct menu_ctx_driver
    void  (*render_messagebox)(void *data, const char *msg);
    int   (*iterate)(void *data, void *userdata, enum menu_action action);
    void  (*render)(void *data);
-   void  (*frame)(void *data);
+   void  (*frame)(void *data, video_frame_info_t *video_info);
    void* (*init)(void**);
    void  (*free)(void*);
    void  (*context_reset)(void *data);
@@ -277,7 +274,7 @@ typedef struct menu_ctx_driver
          menu_entry_t *entry, unsigned action);
    void (*update_thumbnail_path)(void *data, unsigned i);
    void (*update_thumbnail_image)(void *data);
-   int  (*osk_ptr_at_pos)(void *data, int x, int y);
+   int  (*osk_ptr_at_pos)(void *data, int x, int y, unsigned width, unsigned height);
    void (*update_savestate_thumbnail_path)(void *data, unsigned i);
    void (*update_savestate_thumbnail_image)(void *data);
 } menu_ctx_driver_t;
@@ -384,11 +381,17 @@ extern unsigned int rdb_entry_start_game_selection_ptr;
 
 const char *menu_driver_ident(void);
 
+bool menu_driver_render(bool is_idle);
+
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data);
 
 bool menu_driver_is_binding_state(void);
 
 void menu_driver_set_binding_state(bool on);
+
+void menu_driver_frame(video_frame_info_t *video_info);
+
+bool menu_driver_is_alive(void);
 
 extern menu_ctx_driver_t menu_ctx_xui;
 extern menu_ctx_driver_t menu_ctx_rgui;

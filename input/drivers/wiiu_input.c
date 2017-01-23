@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2014-2015 - Ali Bouhlel
+ *  Copyright (C) 2014-2017 - Ali Bouhlel
+ *  Copyright (C) 2014-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -30,7 +31,7 @@
 
 #include "wiiu_dbg.h"
 
-#define MAX_PADS 1
+#define MAX_PADS 5
 
 typedef struct wiiu_input
 {
@@ -56,7 +57,7 @@ static int16_t wiiu_input_state(void *data,
 {
    wiiu_input_t *wiiu         = (wiiu_input_t*)data;
 
-   if(!wiiu || (port > 0) || !binds || !binds[port])
+   if(!wiiu || !(port < MAX_PADS) || !binds || !binds[port])
       return 0;
 
    switch (device)

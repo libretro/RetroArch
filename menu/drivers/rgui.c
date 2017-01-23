@@ -1,8 +1,8 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -62,6 +62,7 @@ typedef struct
    unsigned last_height;
    float scroll_y;
    bool mouse_show;
+   unsigned int frame_count;
 } rgui_t;
 
 static uint16_t *rgui_framebuf_data      = NULL;
@@ -381,6 +382,12 @@ static void rgui_blit_cursor(void)
    rgui_color_rect(fb_pitch, fb_width, fb_height, x - 5, y, 11, 1, 0xFFFF);
 }
 
+static void rgui_frame(void *data, video_frame_info_t *video_info)
+{
+   rgui_t *rgui                   = (rgui_t*)data;
+   rgui->frame_count              = video_info->frame_count;
+}
+
 static void rgui_render(void *data)
 {
    menu_animation_ctx_ticker_t ticker;
@@ -394,11 +401,9 @@ static void rgui_render(void *data)
    char title_msg[64];
    char msg[255];
    bool msg_force                 = false;
-   uint64_t *frame_count          = NULL;
    settings_t *settings           = config_get_ptr();
    rgui_t *rgui                   = (rgui_t*)data;
-
-   frame_count = video_driver_get_frame_count_ptr();
+   uint64_t frame_count           = rgui ? rgui->frame_count : 0;
 
    msg[0] = title[0] = title_buf[0] = title_msg[0] = '\0';
 
@@ -410,7 +415,7 @@ static void rgui_render(void *data)
       msg_force = menu_display_get_msg_force();
 
       if (menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL)
-            && menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL) && !msg_force)
+            && menu_driver_is_alive() && !msg_force)
          return;
 
       if (runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
@@ -503,11 +508,11 @@ static void rgui_render(void *data)
 
    ticker.s        = title_buf;
    ticker.len      = RGUI_TERM_WIDTH(fb_width) - 10;
-   ticker.idx      = *frame_count / RGUI_TERM_START_X(fb_width);
+   ticker.idx      = frame_count / RGUI_TERM_START_X(fb_width);
    ticker.str      = title;
    ticker.selected = true;
 
-   menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
+   menu_animation_ticker(&ticker);
 
    hover_color  = HOVER_COLOR(settings);
    normal_color = NORMAL_COLOR(settings);
@@ -595,17 +600,17 @@ static void rgui_render(void *data)
 
       ticker.s        = entry_title_buf;
       ticker.len      = RGUI_TERM_WIDTH(fb_width) - (entry_spacing + 1 + 2);
-      ticker.idx      = *frame_count / RGUI_TERM_START_X(fb_width);
+      ticker.idx      = frame_count / RGUI_TERM_START_X(fb_width);
       ticker.str      = entry_path;
       ticker.selected = entry_selected;
 
-      menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
+      menu_animation_ticker(&ticker);
 
       ticker.s        = type_str_buf;
       ticker.len      = entry_spacing;
       ticker.str      = entry_value;
 
-      menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
+      menu_animation_ticker(&ticker);
 
       snprintf(message, sizeof(message), "%c %-*.*s %-*s",
             entry_selected ? '>' : ' ',
@@ -874,7 +879,7 @@ menu_ctx_driver_t menu_ctx_rgui = {
    rgui_set_message,
    generic_menu_iterate,
    rgui_render,
-   NULL,
+   rgui_frame,
    rgui_init,
    rgui_free,
    NULL,

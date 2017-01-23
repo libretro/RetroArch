@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -151,6 +151,7 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_ADD_CONTENT_LIST,
    DISPLAYLIST_CONFIGURATIONS_LIST,
    DISPLAYLIST_SCAN_DIRECTORY_LIST,
+   DISPLAYLIST_NETPLAY_ROOM_LIST,
    DISPLAYLIST_ARCHIVE_ACTION,
    DISPLAYLIST_ARCHIVE_ACTION_DETECT_CORE,
    DISPLAYLIST_CORE_CONTENT,

@@ -310,6 +310,12 @@ const char *config_get_default_video(void)
          return "dispmanx";
       case VIDEO_SUNXI:
          return "sunxi";
+      case VIDEO_CACA:
+         return "caca";
+      case VIDEO_GDI:
+         return "gdi";
+      case VIDEO_VGA:
+         return "vga";
       case VIDEO_NULL:
          break;
    }

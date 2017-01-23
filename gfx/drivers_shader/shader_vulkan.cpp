@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2016 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -2902,7 +2903,8 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
          }
 
          auto itr = find_if(shader->parameters, shader->parameters + shader->num_parameters,
-               [&](const video_shader_parameter &param) {
+               [&](const video_shader_parameter &param)
+               {
                   return meta_param.id == param.id;
                });
 

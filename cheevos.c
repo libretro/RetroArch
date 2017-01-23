@@ -955,7 +955,7 @@ static size_t cheevos_highest_bit(size_t n)
 
 void cheevos_parse_guest_addr(cheevos_var_t *var, unsigned value)
 {
-   rarch_system_info_t *system;
+   rarch_system_info_t *system = NULL;
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    var->bank_id = -1;
@@ -1510,7 +1510,7 @@ uint8_t *cheevos_get_memory(const cheevos_var_t *var)
    
    if (var->bank_id >= 0)
    {
-      rarch_system_info_t *system;
+      rarch_system_info_t *system = NULL;
       runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
       if (system->mmaps.num_descriptors != 0)

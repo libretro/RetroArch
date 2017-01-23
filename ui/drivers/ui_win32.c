@@ -1,6 +1,6 @@
 /* RetroArch - A frontend for libretro.
- *  Copyright (C) 2015-2016 - Ali Bouhlel
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2015-2017 - Ali Bouhlel
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  * RetroArch is free software: you can redistribute it and/or modify it under the terms
  * of the GNU General Public License as published by the Free Software Found-
@@ -41,6 +41,7 @@
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
+#include <string/stdstring.h>
 #include <compat/strl.h>
 
 #include "../ui_companion_driver.h"
@@ -115,32 +116,28 @@ typedef struct
 
 static shader_dlg_t g_shader_dlg = {{0}};
 
-static void shader_dlg_refresh_trackbar_label(int index)
+static bool shader_dlg_refresh_trackbar_label(int index, 
+      video_shader_ctx_t *shader_info)
 {
-   video_shader_ctx_t shader_info;
    char val_buffer[32]         = {0};
 
-   video_shader_driver_get_current_shader(&shader_info);
-
-   if (floorf(shader_info.data->parameters[index].current) 
-         == shader_info.data->parameters[index].current)
+   if (floorf(shader_info->data->parameters[index].current) 
+         == shader_info->data->parameters[index].current)
       snprintf(val_buffer, sizeof(val_buffer), "%.0f",
-            shader_info.data->parameters[index].current);
+            shader_info->data->parameters[index].current);
    else
       snprintf(val_buffer, sizeof(val_buffer), "%.2f",
-            shader_info.data->parameters[index].current);
+            shader_info->data->parameters[index].current);
 
    SendMessage(g_shader_dlg.controls[index].trackbar.label_val,
          WM_SETTEXT, 0, (LPARAM)val_buffer);
 
+   return true;
 }
 
 static void shader_dlg_params_refresh(void)
 {
    int i;
-   video_shader_ctx_t shader_info;
-
-   video_shader_driver_get_current_shader(&shader_info);
 
    for (i = 0; i < GFX_MAX_PARAMETERS; i++)
    {
@@ -153,26 +150,37 @@ static void shader_dlg_params_refresh(void)
       {
          case SHADER_PARAM_CTRL_CHECKBOX:
             {
-               bool checked = 
+               video_shader_ctx_t shader_info;
+               video_shader_driver_get_current_shader(&shader_info);
+
+               bool checked = shader_info.data ?
                   (shader_info.data->parameters[i].current == 
-                   shader_info.data->parameters[i].maximum);
+                   shader_info.data->parameters[i].maximum) : false;
                SendMessage(control->checkbox.hwnd, BM_SETCHECK, checked, 0);
             }
             break;
          case SHADER_PARAM_CTRL_TRACKBAR:
-            shader_dlg_refresh_trackbar_label(i);
+            {
+               video_shader_ctx_t shader_info;
+               video_shader_driver_get_current_shader(&shader_info);
+               if (shader_info.data && !shader_dlg_refresh_trackbar_label(i, &shader_info))
+                  break;
 
-            SendMessage(control->trackbar.hwnd,
-                  TBM_SETRANGEMIN, (WPARAM)TRUE, (LPARAM)0);
-            SendMessage(control->trackbar.hwnd,
-                  TBM_SETRANGEMAX, (WPARAM)TRUE,
-                  (LPARAM)((shader_info.data->parameters[i].maximum - 
-                        shader_info.data->parameters[i].minimum) 
-                     / shader_info.data->parameters[i].step));
-            SendMessage(control->trackbar.hwnd, TBM_SETPOS, (WPARAM)TRUE,
-                  (LPARAM)((shader_info.data->parameters[i].current - 
-                        shader_info.data->parameters[i].minimum) / 
-                     shader_info.data->parameters[i].step));
+               if (shader_info.data)
+               {
+                  SendMessage(control->trackbar.hwnd,
+                        TBM_SETRANGEMIN, (WPARAM)TRUE, (LPARAM)0);
+                  SendMessage(control->trackbar.hwnd,
+                        TBM_SETRANGEMAX, (WPARAM)TRUE,
+                        (LPARAM)((shader_info.data->parameters[i].maximum - 
+                              shader_info.data->parameters[i].minimum) 
+                           / shader_info.data->parameters[i].step));
+                  SendMessage(control->trackbar.hwnd, TBM_SETPOS, (WPARAM)TRUE,
+                        (LPARAM)((shader_info.data->parameters[i].current - 
+                              shader_info.data->parameters[i].minimum) / 
+                           shader_info.data->parameters[i].step));
+               }
+            }
             break;
          case SHADER_PARAM_CTRL_NONE:
          default:
@@ -187,10 +195,9 @@ static void shader_dlg_params_clear(void)
 
    for (i = 0; i < GFX_MAX_PARAMETERS; i++)
    {
-      const ui_window_t *window = ui_companion_driver_get_window_ptr();
       shader_param_ctrl_t*control = &g_shader_dlg.controls[i];
 
-      if (control->type == SHADER_PARAM_CTRL_NONE)
+      if (!control || control->type == SHADER_PARAM_CTRL_NONE)
          break;
 
       switch (control->type)
@@ -198,8 +205,11 @@ static void shader_dlg_params_clear(void)
          case SHADER_PARAM_CTRL_NONE:
             break;
          case SHADER_PARAM_CTRL_CHECKBOX:
-            if (window)
-               window->destroy(&control->checkbox);
+            {
+               const ui_window_t *window = ui_companion_driver_get_window_ptr();
+               if (window)
+                  window->destroy(&control->checkbox);
+            }
             break;
          case SHADER_PARAM_CTRL_TRACKBAR:
             DestroyWindow(control->trackbar.label_title);
@@ -214,23 +224,24 @@ static void shader_dlg_params_clear(void)
 
 void shader_dlg_params_reload(void)
 {
+#ifdef HAVE_SHADERPIPELINE
    HFONT hFont;
    RECT parent_rect;
    int i, pos_x, pos_y;
    video_shader_ctx_t shader_info;
-   const ui_window_t *window = ui_companion_driver_get_window_ptr();
-   video_shader_driver_get_current_shader(&shader_info);
-
+   const ui_window_t *window = NULL;
+   
    shader_dlg_params_clear();
 
-   if (!shader_info.data)
-      return;
-   if (shader_info.data->num_parameters > GFX_MAX_PARAMETERS)
+   video_shader_driver_get_current_shader(&shader_info);
+
+   if (!shader_info.data || shader_info.data->num_parameters > GFX_MAX_PARAMETERS)
       return;
 
-   hFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
-   pos_y = g_shader_dlg.parameters_start_y;
-   pos_x = SHADER_DLG_CTRL_X;
+   window = ui_companion_driver_get_window_ptr();
+   hFont  = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+   pos_y  = g_shader_dlg.parameters_start_y;
+   pos_x  = SHADER_DLG_CTRL_X;
 
    for (i = 0; i < (int)shader_info.data->num_parameters; i++)
    {
@@ -315,7 +326,7 @@ void shader_dlg_params_reload(void)
          (pos_x - SHADER_DLG_CTRL_X) + SHADER_DLG_WIDTH,
          (pos_x == SHADER_DLG_CTRL_X) ? pos_y + 30 : SHADER_DLG_MAX_HEIGHT,
          SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
-
+#endif
 }
 
 static void shader_dlg_update_on_top_state(void)
@@ -354,14 +365,12 @@ void shader_dlg_show(HWND parent_hwnd)
    window->set_focused(&g_shader_dlg.window);
 }
 
+#if defined(HAVE_OPENGL) || defined(HAVE_VULKAN)
 static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
    int i, pos;
-   video_shader_ctx_t shader_info;
    const ui_window_t *window = ui_companion_driver_get_window_ptr();
-
-   video_shader_driver_get_current_shader(&shader_info);
 
    switch (message)
    {
@@ -390,36 +399,50 @@ static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
          if (g_shader_dlg.controls[i].type != SHADER_PARAM_CTRL_CHECKBOX)
             break;
 
-         if (SendMessage(g_shader_dlg.controls[i].checkbox.hwnd,
-                  BM_GETCHECK, 0, 0) == BST_CHECKED)
-            shader_info.data->parameters[i].current = 
-               shader_info.data->parameters[i].maximum;
-         else
-            shader_info.data->parameters[i].current = 
-               shader_info.data->parameters[i].minimum;
+         {
+            video_shader_ctx_t shader_info;
+            video_shader_driver_get_current_shader(&shader_info);
 
+            if (SendMessage(g_shader_dlg.controls[i].checkbox.hwnd,
+                     BM_GETCHECK, 0, 0) == BST_CHECKED)
+               shader_info.data->parameters[i].current = 
+                  shader_info.data->parameters[i].maximum;
+            else
+               shader_info.data->parameters[i].current = 
+                  shader_info.data->parameters[i].minimum;
+         }
          break;
 
       case WM_HSCROLL:
-         i = GetWindowLong((HWND)lparam, GWL_ID);
+         {
+            video_shader_ctx_t shader_info;
+            video_shader_driver_get_current_shader(&shader_info);
+            i = GetWindowLong((HWND)lparam, GWL_ID);
 
-         if (i >= GFX_MAX_PARAMETERS)
-            break;
+            if (i >= GFX_MAX_PARAMETERS)
+               break;
 
-         if (g_shader_dlg.controls[i].type != SHADER_PARAM_CTRL_TRACKBAR)
-            break;
+            if (g_shader_dlg.controls[i].type != SHADER_PARAM_CTRL_TRACKBAR)
+               break;
 
-         pos = (int)SendMessage(g_shader_dlg.controls[i].trackbar.hwnd, TBM_GETPOS, 0, 0);
-         shader_info.data->parameters[i].current = 
-            shader_info.data->parameters[i].minimum + pos * shader_info.data->parameters[i].step;
+            pos = (int)SendMessage(g_shader_dlg.controls[i].trackbar.hwnd, TBM_GETPOS, 0, 0);
 
-         shader_dlg_refresh_trackbar_label(i);
+            {
+
+               shader_info.data->parameters[i].current = 
+                  shader_info.data->parameters[i].minimum + pos * shader_info.data->parameters[i].step;
+            }
+
+            if (shader_info.data)
+               shader_dlg_refresh_trackbar_label(i, &shader_info);
+         }
          break;
 
    }
 
    return DefWindowProc(hwnd, message, wparam, lparam);
 }
+#endif
 
 bool win32_window_init(WNDCLASSEX *wndclass,
       bool fullscreen, const char *class_name)
@@ -447,13 +470,15 @@ bool win32_window_init(WNDCLASSEX *wndclass,
    if (class_name != NULL) 
       return true;
 
+   /* Shader dialog is disabled for now, until video_threaded issues are fixed.
    if (!win32_shader_dlg_init())
-      RARCH_ERR("[WGL]: wgl_shader_dlg_init() failed.\n");
+      RARCH_ERR("[WGL]: wgl_shader_dlg_init() failed.\n");*/
    return true;
 }
 
 bool win32_shader_dlg_init(void)
 {
+#if defined(HAVE_OPENGL) || defined(HAVE_VULKAN)
    static bool inited = false;
    int pos_y;
    HFONT hFont;
@@ -501,7 +526,7 @@ bool win32_shader_dlg_init(void)
    pos_y +=  SHADER_DLG_SEPARATOR_HEIGHT + SHADER_DLG_CTRL_MARGIN;
 
    g_shader_dlg.parameters_start_y = pos_y;
-
+#endif
    return true;
 }
 
@@ -530,7 +555,7 @@ static bool win32_browser(
       new_title[0] = '\0';
       new_file[0] = '\0';
 
-      if (title && *title)
+      if (!string_is_empty(title))
          strlcpy(new_title, title, sizeof(new_title));
 
       if (filename && *filename)
@@ -589,7 +614,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
              * This is needed for proper multi-byte string display until Unicode is fully supported.
              */
             MultiByteToWideChar(CP_UTF8, 0, title, -1, title_wide, sizeof(title_wide) / sizeof(title_wide[0]));
-            wcstombs_s(&converted, title_cp, sizeof(title_cp), title_wide, sizeof(title_cp) - 1);
+            wcstombs(title_cp, title_wide, sizeof(title_cp) - 1);
 
             if (!win32_browser(owner, win32_file,
                      extensions, title_cp, initial_dir))

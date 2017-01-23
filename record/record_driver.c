@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -183,7 +183,7 @@ bool record_driver_init_first(const record_driver_t **backend, void **data,
 }
 
 void recording_dump_frame(const void *data, unsigned width,
-      unsigned height, size_t pitch)
+      unsigned height, size_t pitch, bool is_idle)
 {
    struct ffemu_video_data ffemu_data = {0};
 
@@ -205,7 +205,7 @@ void recording_dump_frame(const void *data, unsigned width,
                msg_hash_to_str(MSG_VIEWPORT_SIZE_CALCULATION_FAILED));
          command_event(CMD_EVENT_GPU_RECORD_DEINIT, NULL);
 
-         recording_dump_frame(data, width, height, pitch);
+         recording_dump_frame(data, width, height, pitch, is_idle);
          return;
       }
 
@@ -229,7 +229,7 @@ void recording_dump_frame(const void *data, unsigned width,
       /* Big bottleneck.
        * Since we might need to do read-backs asynchronously,
        * it might take 3-4 times before this returns true. */
-      if (!video_driver_read_viewport(gpu_buf))
+      if (!video_driver_read_viewport(gpu_buf, is_idle))
          return;
 
       ffemu_data.pitch  = recording_gpu_width * 3;
@@ -347,7 +347,7 @@ bool recording_init(void)
       FFEMU_PIX_ARGB8888 : FFEMU_PIX_RGB565;
    params.config     = NULL;
    
-   if (*global->record.config)
+   if (!string_is_empty(global->record.config))
       params.config = global->record.config;
 
    if (video_driver_supports_recording())

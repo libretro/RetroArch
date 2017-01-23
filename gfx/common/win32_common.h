@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -52,6 +52,16 @@ void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id);
 
 void create_graphics_context(HWND hwnd, bool *quit);
 
+void create_gdi_context(HWND hwnd, bool *quit);
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+bool gdi_has_menu_frame(void);
+#ifdef __cplusplus
+}
+#endif
+
 bool win32_shader_dlg_init(void);
 void shader_dlg_show(HWND parent_hwnd);
 void shader_dlg_params_reload(void);
@@ -84,7 +94,13 @@ bool win32_get_metrics(void *data,
 
 void win32_show_cursor(bool state);
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 HWND win32_get_window(void);
+#ifdef __cplusplus
+}
+#endif
 
 bool win32_has_focus(void);
 
@@ -95,7 +111,6 @@ void win32_set_window(unsigned *width, unsigned *height,
       bool fullscreen, bool windowed_full, void *rect_data);
 
 #ifndef _XBOX
-/* FIXME: It should not be necessary to add the W after MONITORINFOEX, but linking fails without it. */
 void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
 	unsigned *width, unsigned *height, bool fullscreen, bool windowed_full,
 	RECT *rect, RECT *mon_rect, DWORD *style);
@@ -105,10 +120,17 @@ void win32_window_reset(void);
 
 void win32_destroy_window(void);
 
+#ifdef HAVE_D3D9
 LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
+#endif
 
+#if defined(HAVE_OPENGL) || defined(HAVE_VULKAN)
 LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam);
+#endif
+
+LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
 
 #ifdef _XBOX

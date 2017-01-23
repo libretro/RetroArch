@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Brad Parker
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -24,7 +24,6 @@
 #endif
 
 #include "../font_driver.h"
-#include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../common/caca_common.h"
 
@@ -59,6 +58,7 @@ static void *caca_init_font(void *data,
 
 static void caca_render_free_font(void *data)
 {
+
 }
 
 static int caca_get_message_width(void *data, const char *msg,
@@ -73,12 +73,14 @@ static const struct font_glyph *caca_font_get_glyph(
    return NULL;
 }
 
-static void caca_render_msg(void *data, const char *msg,
+static void caca_render_msg(video_frame_info_t *video_info,
+      void *data, const char *msg,
       const void *userdata)
 {
-   float x, y;
+   float x, y, scale;
    unsigned width, height;
    unsigned newX, newY;
+   unsigned align;
    caca_raster_t              *font = (caca_raster_t*)data;
    const struct font_params *params = (const struct font_params*)userdata;
 
@@ -89,13 +91,15 @@ static void caca_render_msg(void *data, const char *msg,
    {
       x = params->x;
       y = params->y;
+      scale = params->scale;
+      align = params->text_align;
    }
    else
    {
-      settings_t *settings = config_get_ptr();
-
-      x = settings->video.msg_pos_x;
-      y = settings->video.msg_pos_y;
+      x = video_info->font_msg_pos_x;
+      y = video_info->font_msg_pos_y;
+      scale = 1.0f;
+      align = TEXT_ALIGN_LEFT;
    }
 
    if (!font->caca || !font->caca->caca_cv || !font->caca->caca_display ||
@@ -104,19 +108,29 @@ static void caca_render_msg(void *data, const char *msg,
 
    width    = caca_get_canvas_width(*font->caca->caca_cv);
    height   = caca_get_canvas_height(*font->caca->caca_cv);
+   newY     = height - (y * height * scale);
 
-   newX     = x * width;
-   newY     = height - (y * height);
-
-   if (strlen(msg) + newX > width)
-      newX -= strlen(msg) + newX - width;
+   switch (align)
+   {
+      case TEXT_ALIGN_RIGHT:
+         newX = (x * width * scale) - strlen(msg);
+         break;
+      case TEXT_ALIGN_CENTER:
+         newX = (x * width * scale) - (strlen(msg) / 2);
+         break;
+      case TEXT_ALIGN_LEFT:
+      default:
+         newX = x * width * scale;
+         break;
+   }
 
    caca_put_str(*font->caca->caca_cv, newX, newY, msg);
 
    caca_refresh_display(*font->caca->caca_display);
 }
 
-static void caca_font_flush_block(void* data)
+static void caca_font_flush_block(unsigned width, unsigned height,
+      void* data)
 {
    (void)data;
 }

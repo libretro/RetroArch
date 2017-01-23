@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -24,7 +25,6 @@
 #include "../../config.h"
 #endif
 
-#include "../../runloop.h"
 #include "../video_context_driver.h"
 
 #ifdef HAVE_EGL
@@ -52,7 +52,7 @@ static void gfx_ctx_emscripten_swap_interval(void *data, unsigned interval)
 }
 
 static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
+      bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
 {
    int input_width;
    int input_height;
@@ -60,7 +60,6 @@ static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
    emscripten_ctx_data_t *emscripten = (emscripten_ctx_data_t*)data;
 
    (void)data;
-   (void)frame_count;
 
    emscripten_get_canvas_size(&input_width, &input_height, &is_fullscreen);
    *width      = (unsigned)input_width;
@@ -75,32 +74,10 @@ static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
    *quit       = false;
 }
 
-static void gfx_ctx_emscripten_swap_buffers(void *data, video_frame_info_t video_info)
+static void gfx_ctx_emscripten_swap_buffers(void *data, video_frame_info_t *video_info)
 {
    (void)data;
    /* no-op in emscripten, no way to force swap/wait for VSync in browsers */
-}
-
-static bool gfx_ctx_emscripten_set_resize(void *data,
-      unsigned width, unsigned height)
-{
-   (void)data;
-   (void)width;
-   (void)height;
-   return false;
-}
-
-static void gfx_ctx_emscripten_update_window_title(void *data, video_frame_info_t video_info)
-{
-   char buf[128];
-   char buf_fps[128];
-
-   buf[0] = buf_fps[0]  = '\0';
-
-   video_monitor_get_fps(video_info, buf, sizeof(buf),
-         buf_fps, sizeof(buf_fps));
-   if (video_info.fps_show)
-      runloop_msg_queue_push(buf_fps, 1, 1, false);
 }
 
 static void gfx_ctx_emscripten_get_video_size(void *data,
@@ -121,7 +98,7 @@ static void gfx_ctx_emscripten_destroy(void *data)
    free(data);
 }
 
-static void *gfx_ctx_emscripten_init(video_frame_info_t video_info, void *video_driver)
+static void *gfx_ctx_emscripten_init(video_frame_info_t *video_info, void *video_driver)
 {
 #ifdef HAVE_EGL
    unsigned width, height;
@@ -189,7 +166,7 @@ error:
 }
 
 static bool gfx_ctx_emscripten_set_video_mode(void *data,
-      video_frame_info_t video_info,
+      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -222,23 +199,22 @@ static bool gfx_ctx_emscripten_bind_api(void *data,
 
 
 static void gfx_ctx_emscripten_input_driver(void *data,
+      const char *name,
       const input_driver_t **input, void **input_data)
 {
-   (void)data;
+   void *rwebinput = NULL;
 
-   *input      = NULL;
-   *input_data = NULL;
+   *input          = NULL;
+   *input_data     = NULL;
 
 #ifndef HAVE_SDL2
-   {
-      void *rwebinput = input_rwebinput.init();
+   rwebinput = input_rwebinput.init();
 
-      if (!rwebinput)
-         return;
+   if (!rwebinput)
+      return;
 
-      *input      = &input_rwebinput;
-      *input_data = rwebinput;
-   }
+   *input      = &input_rwebinput;
+   *input_data = rwebinput;
 #endif
 }
 
@@ -331,9 +307,9 @@ const gfx_ctx_driver_t gfx_ctx_emscripten = {
    NULL, /* get_video_output_next */
    NULL, /* get_metrics */
    gfx_ctx_emscripten_translate_aspect,
-   gfx_ctx_emscripten_update_window_title,
+   NULL, /* update_title */
    gfx_ctx_emscripten_check_window,
-   gfx_ctx_emscripten_set_resize,
+   NULL, /* set_resize */
    gfx_ctx_emscripten_has_focus,
    gfx_ctx_emscripten_suppress_screensaver,
    gfx_ctx_emscripten_has_windowed,

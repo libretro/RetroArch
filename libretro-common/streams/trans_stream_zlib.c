@@ -1,4 +1,4 @@
-/* Copyright  (C) 2016 The RetroArch team
+/* Copyright  (C) 2010-2017 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (trans_stream_zlib.c).
@@ -60,6 +60,8 @@ static void zlib_deflate_stream_free(void *data)
 static void zlib_inflate_stream_free(void *data)
 {
    struct zlib_trans_stream *z = (struct zlib_trans_stream *) data;
+   if (!z)
+      return;
    if (z->inited)
       inflateEnd(&z->z);
    free(z);
@@ -90,8 +92,13 @@ static bool zlib_inflate_define(void *data, const char *prop, uint32_t val)
 static void zlib_deflate_set_in(void *data, const uint8_t *in, uint32_t in_size)
 {
    struct zlib_trans_stream *z = (struct zlib_trans_stream *) data;
-   z->z.next_in = (uint8_t *) in;
-   z->z.avail_in = in_size;
+
+   if (!z)
+      return;
+
+   z->z.next_in                = (uint8_t *) in;
+   z->z.avail_in               = in_size;
+
    if (!z->inited)
    {
       deflateInit(&z->z, z->ex);
@@ -102,8 +109,12 @@ static void zlib_deflate_set_in(void *data, const uint8_t *in, uint32_t in_size)
 static void zlib_inflate_set_in(void *data, const uint8_t *in, uint32_t in_size)
 {
    struct zlib_trans_stream *z = (struct zlib_trans_stream *) data;
-   z->z.next_in = (uint8_t *) in;
-   z->z.avail_in = in_size;
+
+   if (!z)
+      return;
+
+   z->z.next_in                = (uint8_t *) in;
+   z->z.avail_in               = in_size;
    if (!z->inited)
    {
       inflateInit2(&z->z, z->ex);
@@ -114,8 +125,12 @@ static void zlib_inflate_set_in(void *data, const uint8_t *in, uint32_t in_size)
 static void zlib_set_out(void *data, uint8_t *out, uint32_t out_size)
 {
    struct zlib_trans_stream *z = (struct zlib_trans_stream *) data;
-   z->z.next_out = out;
-   z->z.avail_out = out_size;
+
+   if (!z)
+      return;
+
+   z->z.next_out               = out;
+   z->z.avail_out              = out_size;
 }
 
 static bool zlib_deflate_trans(

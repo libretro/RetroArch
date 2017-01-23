@@ -46,9 +46,6 @@ enum bsv_ctl_state
    BSV_MOVIE_CTL_IS_INITED,
    BSV_MOVIE_CTL_PLAYBACK_ON,
    BSV_MOVIE_CTL_PLAYBACK_OFF,
-   /* Playback. */
-   BSV_MOVIE_CTL_GET_INPUT,
-   /* Recording. */
    BSV_MOVIE_CTL_SET_INPUT,
    BSV_MOVIE_CTL_SET_START_RECORDING,
    BSV_MOVIE_CTL_UNSET_START_RECORDING,
@@ -57,14 +54,11 @@ enum bsv_ctl_state
    BSV_MOVIE_CTL_UNSET_START_PLAYBACK,
    BSV_MOVIE_CTL_START_PLAYBACK,
    BSV_MOVIE_CTL_UNSET_PLAYBACK,
-   BSV_MOVIE_CTL_SET_FRAME_START,
-   BSV_MOVIE_CTL_SET_FRAME_END,
    BSV_MOVIE_CTL_FRAME_REWIND,
    BSV_MOVIE_CTL_DEINIT,
    BSV_MOVIE_CTL_INIT,
    BSV_MOVIE_CTL_END_EOF,
    BSV_MOVIE_CTL_SET_END_EOF,
-   BSV_MOVIE_CTL_END,
    BSV_MOVIE_CTL_SET_END,
    BSV_MOVIE_CTL_UNSET_END
 };
@@ -74,6 +68,12 @@ const char *bsv_movie_get_path(void);
 void bsv_movie_set_path(const char *path);
 
 void bsv_movie_set_start_path(const char *path);
+
+void bsv_movie_set_frame_start(void);
+
+void bsv_movie_set_frame_end(void);
+
+bool bsv_movie_get_input(int16_t *bsv_data);
 
 bool bsv_movie_ctl(enum bsv_ctl_state state, void *data);
 

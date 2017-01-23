@@ -1,5 +1,6 @@
 /* RetroArch - A frontend for libretro.
  *  Copyright (C) 2014-2016 - Ali Bouhlel
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  * RetroArch is free software: you can redistribute it and/or modify it under the terms
  * of the GNU General Public License as published by the Free Software Found-
@@ -25,7 +26,6 @@
 
 #include "../frontend_driver.h"
 #include "../frontend.h"
-#include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../../defaults.h"
 #include "../../paths.h"
@@ -49,6 +49,7 @@
 #include <proc_ui/procui.h>
 #include <vpad/input.h>
 #include <sysapp/launch.h>
+#include <padscore.h>
 
 #include <fat.h>
 #include <iosuhax.h>
@@ -279,6 +280,9 @@ int main(int argc, char **argv)
    devoptab_list[STD_ERR] = &dotab_stdout;
 #endif
    VPADInit();
+   WPADEnableURCC(true);
+   WPADEnableWiiRemote(true);
+   KPADInit();
 
    verbosity_enable();
    DEBUG_VAR(argc);

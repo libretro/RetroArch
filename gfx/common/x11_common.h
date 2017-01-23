@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -45,7 +45,7 @@ void x11_save_last_used_monitor(Window win);
 void x11_show_mouse(Display *dpy, Window win, bool state);
 void x11_windowed_fullscreen(Display *dpy, Window win);
 void x11_suspend_screensaver(Window win, bool enable);
-bool x11_enter_fullscreen(video_frame_info_t video_info,
+bool x11_enter_fullscreen(video_frame_info_t *video_info,
       Display *dpy, unsigned width,
       unsigned height, XF86VidModeModeInfo *desktop_mode);
 
@@ -72,7 +72,7 @@ bool x11_get_metrics(void *data,
       enum display_metric_types type, float *value);
 
 void x11_check_window(void *data, bool *quit,
-   bool *resize, unsigned *width, unsigned *height, unsigned frame_count);
+   bool *resize, unsigned *width, unsigned *height, bool is_shutdown);
 
 void x11_get_video_size(void *data, unsigned *width, unsigned *height);
 
@@ -84,7 +84,7 @@ bool x11_alive(void *data);
 
 bool x11_connect(void);
 
-void x11_update_window_title(void *data, video_frame_info_t video_info);
+void x11_update_title(void *data, video_frame_info_t *video_info);
 
 bool x11_input_ctx_new(bool true_full);
 

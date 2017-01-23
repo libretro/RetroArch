@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Brad Parker
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -36,8 +36,6 @@
 
 #endif
 
-#include "../../configuration.h"
-
 #include "../../frontend/frontend_driver.h"
 #include "../common/gl_common.h"
 #include "../common/x11_common.h"
@@ -47,21 +45,28 @@
 #endif
 
 #ifdef HAVE_OPENGL
-static int (*g_pglSwapInterval)(int);
-static int (*g_pglSwapIntervalSGI)(int);
-static void (*g_pglSwapIntervalEXT)(Display*, GLXDrawable, int);
-static Bool (*glXGetSyncValuesOML)(Display *dpy, GLXDrawable drawable,
-			    int64_t *ust, int64_t *msc, int64_t *sbc);
-static Bool (*glXGetMscRateOML)(Display *dpy, GLXDrawable drawable, int32_t *numerator,
-			 int32_t *denominator);
-static int64_t (*glXSwapBuffersMscOML)(Display *dpy, GLXDrawable drawable,
-				int64_t target_msc, int64_t divisor,
-				int64_t remainder);
-static Bool (*glXWaitForMscOML)(Display *dpy, GLXDrawable drawable, int64_t target_msc,
-			 int64_t divisor, int64_t remainder, int64_t *ust,
-			 int64_t *msc, int64_t *sbc);
-static Bool (*glXWaitForSbcOML)(Display *dpy, GLXDrawable drawable, int64_t target_sbc,
-			 int64_t *ust, int64_t *msc, int64_t *sbc);
+static int      (*g_pglSwapInterval)(int);
+static int      (*g_pglSwapIntervalSGI)(int);
+static void     (*g_pglSwapIntervalEXT)(Display*, GLXDrawable, int);
+typedef Bool    (*GLXGETSYNCVALUESOMLPROC)(Display *dpy, GLXDrawable drawable,
+      int64_t *ust, int64_t *msc, int64_t *sbc);
+typedef Bool    (*GLXGETMSCRATEOMLPROC)(Display *dpy, GLXDrawable drawable, int32_t *numerator,
+      int32_t *denominator);
+typedef int64_t (*GLXSWAPBUFFERSMSCOMLPROC)(Display *dpy, GLXDrawable drawable,
+      int64_t target_msc, int64_t divisor,
+      int64_t remainder);
+typedef Bool    (*GLXWAITFORMSCOMLPROC)(Display *dpy, GLXDrawable drawable, int64_t target_msc,
+      int64_t divisor, int64_t remainder, int64_t *ust,
+      int64_t *msc, int64_t *sbc);
+typedef Bool    (*GLXWAITFORSBCOMLPROC)(Display *dpy, GLXDrawable drawable, int64_t target_sbc,
+      int64_t *ust, int64_t *msc, int64_t *sbc);
+
+static GLXGETSYNCVALUESOMLPROC  glXGetSyncValuesOML;
+static GLXGETMSCRATEOMLPROC     glXGetMscRateOML;
+static GLXSWAPBUFFERSMSCOMLPROC glXSwapBuffersMscOML;
+static GLXWAITFORMSCOMLPROC     glXWaitForMscOML;
+static GLXWAITFORSBCOMLPROC     glXWaitForSbcOML;
+
 #endif
 
 typedef struct gfx_ctx_x_data
@@ -95,16 +100,15 @@ typedef struct gfx_ctx_x_data
 #endif
 } gfx_ctx_x_data_t;
 
-static bool x_enable_msaa     = false;
-static unsigned g_major       = 0;
-static unsigned g_minor       = 0;
-static enum gfx_ctx_api x_api = GFX_CTX_NONE;
+static bool x_enable_msaa                     = false;
+static unsigned g_major                       = 0;
+static unsigned g_minor                       = 0;
+static enum gfx_ctx_api x_api                 = GFX_CTX_NONE;
+
+static gfx_ctx_x_data_t *current_context_data = NULL;
 
 #ifdef HAVE_OPENGL
 static PFNGLXCREATECONTEXTATTRIBSARBPROC glx_create_context_attribs;
-#endif
-
-static gfx_ctx_x_data_t *current_context_data = NULL;
 
 static int GLXExtensionSupported(Display *dpy, const char *extension)
 {
@@ -129,6 +133,7 @@ static int GLXExtensionSupported(Display *dpy, const char *extension)
 
    return 0;
 }
+#endif
 
 static int x_nul_handler(Display *dpy, XErrorEvent *event)
 {
@@ -297,7 +302,7 @@ static void gfx_ctx_x_swap_interval(void *data, unsigned interval)
    }
 }
 
-static void gfx_ctx_x_swap_buffers(void *data, video_frame_info_t video_info)
+static void gfx_ctx_x_swap_buffers(void *data, video_frame_info_t *video_info)
 {
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
 
@@ -342,9 +347,11 @@ static void gfx_ctx_x_swap_buffers(void *data, video_frame_info_t video_info)
 }
 
 static void gfx_ctx_x_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
+      bool *resize, unsigned *width, unsigned *height,
+      bool is_shutdown)
 {
-   x11_check_window(data, quit, resize, width, height, frame_count);
+   x11_check_window(data, quit, resize, width, height,
+         is_shutdown);
 
    switch (x_api)
    {
@@ -396,7 +403,7 @@ static bool gfx_ctx_x_set_resize(void *data,
    return false;
 }
 
-static void *gfx_ctx_x_init(video_frame_info_t video_info, void *data)
+static void *gfx_ctx_x_init(video_frame_info_t *video_info, void *data)
 {
    int nelements           = 0;
    int major               = 0;
@@ -510,11 +517,11 @@ static void *gfx_ctx_x_init(video_frame_info_t video_info, void *data)
 
             x->swap_mode         = 1;
 
-            glXGetSyncValuesOML  = (void *)glXGetProcAddress((unsigned char *)"glXGetSyncValuesOML");
-            glXGetMscRateOML     = (void *)glXGetProcAddress((unsigned char *)"glXGetMscRateOML");
-            glXSwapBuffersMscOML = (void *)glXGetProcAddress((unsigned char *)"glXSwapBuffersMscOML");
-            glXWaitForMscOML     = (void *)glXGetProcAddress((unsigned char *)"glXWaitForMscOML");
-            glXWaitForSbcOML     = (void *)glXGetProcAddress((unsigned char *)"glXWaitForSbcOML");
+            glXGetSyncValuesOML  = (GLXGETSYNCVALUESOMLPROC)glXGetProcAddress((unsigned char *)"glXGetSyncValuesOML");
+            glXGetMscRateOML     = (GLXGETMSCRATEOMLPROC)glXGetProcAddress((unsigned char *)"glXGetMscRateOML");
+            glXSwapBuffersMscOML = (GLXSWAPBUFFERSMSCOMLPROC)glXGetProcAddress((unsigned char *)"glXSwapBuffersMscOML");
+            glXWaitForMscOML     = (GLXWAITFORMSCOMLPROC)glXGetProcAddress((unsigned char *)"glXWaitForMscOML");
+            glXWaitForSbcOML     = (GLXWAITFORSBCOMLPROC)glXGetProcAddress((unsigned char *)"glXWaitForSbcOML");
 
             glXGetSyncValuesOML(g_x11_dpy, g_x11_win, &x->ust, &x->msc, &x->sbc);
 
@@ -540,7 +547,7 @@ error:
 }
 
 static bool gfx_ctx_x_set_video_mode(void *data,
-      video_frame_info_t video_info,
+      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -560,7 +567,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    if (!x)
       return false;
 
-   windowed_full = video_info.windowed_fullscreen;
+   windowed_full = video_info->windowed_fullscreen;
    true_full = false;
 
    switch (x_api)
@@ -608,8 +615,8 @@ static bool gfx_ctx_x_set_video_mode(void *data,
          RARCH_ERR("[GLX]: Entering true fullscreen failed. Will attempt windowed mode.\n");
    }
 
-   if (video_info.monitor_index)
-      g_x11_screen = video_info.monitor_index - 1;
+   if (video_info->monitor_index)
+      g_x11_screen = video_info->monitor_index - 1;
 
 #ifdef HAVE_XINERAMA
    if (fullscreen || g_x11_screen != 0)
@@ -655,9 +662,8 @@ static bool gfx_ctx_x_set_video_mode(void *data,
          break;
    }
 
-
    x11_set_window_attr(g_x11_dpy, g_x11_win);
-   x11_update_window_title(NULL, video_info);
+   x11_update_title(NULL, video_info);
 
    if (fullscreen)
       x11_show_mouse(g_x11_dpy, g_x11_win, false);
@@ -783,8 +789,10 @@ static bool gfx_ctx_x_set_video_mode(void *data,
 #ifdef HAVE_VULKAN
          {
             bool quit, resize;
+            bool shutdown = false;
             unsigned width = 0, height = 0;
-            x11_check_window(x, &quit, &resize, &width, &height, 0);
+            x11_check_window(x, &quit, &resize, &width, &height,
+                  shutdown);
 
             /* Use XCB surface since it's the most supported WSI.
              * We can obtain the XCB connection directly from X11. */
@@ -877,12 +885,10 @@ error:
 }
 
 static void gfx_ctx_x_input_driver(void *data,
+      const char *joypad_name,
       const input_driver_t **input, void **input_data)
 {
-   settings_t *settings = config_get_ptr();
-   void *xinput         = input_x.init(settings->input.joypad_driver);
-
-   (void)data;
+   void *xinput = input_x.init(joypad_name);
 
    *input       = xinput ? &input_x : NULL;
    *input_data  = xinput;
@@ -1078,7 +1084,7 @@ const gfx_ctx_driver_t gfx_ctx_x = {
    NULL, /* get_video_output_next */
    x11_get_metrics,
    NULL,
-   x11_update_window_title,
+   x11_update_title,
    gfx_ctx_x_check_window,
    gfx_ctx_x_set_resize,
    x11_has_focus,

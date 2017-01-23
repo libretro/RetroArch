@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -14,10 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdlib.h>
-
-#include <string/stdstring.h>
-
 #include "font_driver.h"
 #include "video_thread_wrapper.h"
 
@@ -27,6 +23,8 @@
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
+
+#include <stdlib.h>
 
 static const font_renderer_driver_t *font_backends[] = {
 #ifdef HAVE_FREETYPE
@@ -180,6 +178,64 @@ static bool caca_font_init_first(
 }
 #endif
 
+#ifdef DJGPP
+static const font_renderer_t *vga_font_backends[] = {
+   &vga_font,
+   NULL,
+};
+
+static bool vga_font_init_first(
+      const void **font_driver, void **font_handle,
+      void *video_data, const char *font_path, float font_size)
+{
+   unsigned i;
+
+   for (i = 0; vga_font_backends[i]; i++)
+   {
+      void *data = vga_font_backends[i]->init(
+            video_data, font_path, font_size);
+
+      if (!data)
+         continue;
+
+      *font_driver = vga_font_backends[i];
+      *font_handle = data;
+      return true;
+   }
+
+   return false;
+}
+#endif
+
+#if defined(_WIN32) && !defined(_XBOX)
+static const font_renderer_t *gdi_font_backends[] = {
+   &gdi_font,
+   NULL,
+};
+
+static bool gdi_font_init_first(
+      const void **font_driver, void **font_handle,
+      void *video_data, const char *font_path, float font_size)
+{
+   unsigned i;
+
+   for (i = 0; gdi_font_backends[i]; i++)
+   {
+      void *data = gdi_font_backends[i]->init(
+            video_data, font_path, font_size);
+
+      if (!data)
+         continue;
+
+      *font_driver = gdi_font_backends[i];
+      *font_handle = data;
+      return true;
+   }
+
+   return false;
+}
+#endif
+
 #ifdef HAVE_VULKAN
 static const font_renderer_t *vulkan_font_backends[] = {
    &vulkan_raster_font,
@@ -194,8 +250,7 @@ static bool vulkan_font_init_first(
 
    for (i = 0; vulkan_font_backends[i]; i++)
    {
-      void *data = vulkan_font_backends[i]->init(
-            video_data, font_path, font_size);
+      void *data = vulkan_font_backends[i]->init(video_data, font_path, font_size);
 
       if (!data)
          continue;
@@ -305,6 +360,16 @@ static bool font_init_first(
          return caca_font_init_first(font_driver, font_handle,
                video_data, font_path, font_size);
 #endif
+#if defined(_WIN32) && !defined(_XBOX)
+      case FONT_DRIVER_RENDER_GDI:
+         return gdi_font_init_first(font_driver, font_handle,
+               video_data, font_path, font_size);
+#endif
+#ifdef DJGPP
+      case FONT_DRIVER_RENDER_VGA:
+         return vga_font_init_first(font_driver, font_handle,
+               video_data, font_path, font_size);
+#endif
       case FONT_DRIVER_RENDER_DONT_CARE:
          /* TODO/FIXME - lookup graphics driver's 'API' */
          break;
@@ -315,12 +380,14 @@ static bool font_init_first(
    return false;
 }
 
-void font_driver_render_msg(void *font_data,
-      const char *msg, const struct font_params *params)
+void font_driver_render_msg(
+      video_frame_info_t *video_info,
+      void *font_data,
+      const char *msg, const void *params)
 {
    font_data_t *font = (font_data_t*)(font_data ? font_data : video_font_driver);
    if (font && font->renderer && font->renderer->render_msg)
-      font->renderer->render_msg(font->renderer_data, msg, params);
+      font->renderer->render_msg(video_info, font->renderer_data, msg, params);
 }
 
 void font_driver_bind_block(void *font_data, void *block)
@@ -331,11 +398,11 @@ void font_driver_bind_block(void *font_data, void *block)
       font->renderer->bind_block(font->renderer_data, block);
 }
 
-void font_driver_flush(void *font_data)
+void font_driver_flush(unsigned width, unsigned height, void *font_data)
 {
    font_data_t *font = (font_data_t*)(font_data ? font_data : video_font_driver);
    if (font && font->renderer && font->renderer->flush)
-      font->renderer->flush(font->renderer_data);
+      font->renderer->flush(width, height, font->renderer_data);
 }
 
 int font_driver_get_message_width(void *font_data,
@@ -356,9 +423,6 @@ void font_driver_free(void *font_data)
       if (font->renderer && font->renderer->free)
          font->renderer->free(font->renderer_data);
 
-      if (font->renderer_data)
-         free(font->renderer_data);
-
       font->renderer      = NULL;
       font->renderer_data = NULL;
 
@@ -370,9 +434,9 @@ font_data_t *font_driver_init_first(
       void *video_data, const char *font_path, float font_size,
       bool threading_hint, enum font_driver_render_api api)
 {
-   const void *font_driver = NULL;
-   void *font_handle       = NULL;
-   bool ok                 = false;
+   const void *font_driver;
+   void *font_handle;
+   bool ok = false;
 
 #ifdef HAVE_THREADS
    if (threading_hint 
@@ -401,15 +465,12 @@ font_data_t *font_driver_init_first(
 void font_driver_init_osd(void *video_data, bool threading_hint, enum font_driver_render_api api)
 {
    settings_t *settings = config_get_ptr();
-   const char *path     = settings->path.font;
-
    if (video_font_driver)
       return;
 
    video_font_driver = font_driver_init_first(video_data,
-         (!string_is_empty(path)) ? path : NULL,
-         settings->video.font_size,
-         threading_hint, api);
+         *settings->path.font ? settings->path.font : NULL,
+         settings->video.font_size, threading_hint, api);
 
    if (!video_font_driver)
       RARCH_ERR("[font]: Failed to initialize OSD font.\n");

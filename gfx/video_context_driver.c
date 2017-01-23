@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -27,6 +27,7 @@
 #endif
 
 #include "../configuration.h"
+#include "../runloop.h"
 #include "../verbosity.h"
 
 static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
@@ -88,6 +89,9 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #endif
 #if defined(HAVE_VULKAN) && defined(HAVE_VULKAN_DISPLAY)
    &gfx_ctx_khr_display,
+#endif
+#if defined(_WIN32) && !defined(_XBOX)
+   &gfx_ctx_gdi,
 #endif
    &gfx_ctx_null,
    NULL
@@ -188,7 +192,7 @@ static const gfx_ctx_driver_t *video_context_driver_init(
 
       video_driver_build_info(&video_info);
 
-      ctx_data = ctx->init(video_info, data);
+      ctx_data = ctx->init(&video_info, data);
 
       if (!ctx_data)
          return NULL;
@@ -275,11 +279,13 @@ bool video_context_driver_check_window(gfx_ctx_size_t *size_data)
          && current_video_context
          && current_video_context->check_window)
    {
+      bool is_shutdown = runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL);
       current_video_context->check_window(video_context_data,
             size_data->quit,
             size_data->resize,
             size_data->width,
-            size_data->height, ((unsigned int)*video_driver_get_frame_count_ptr()));
+            size_data->height,
+            is_shutdown);
       return true;
    }
 
@@ -412,10 +418,14 @@ bool video_context_driver_get_metrics(gfx_ctx_metrics_t *metrics)
 
 bool video_context_driver_input_driver(gfx_ctx_input_t *inp)
 {
+   settings_t *settings    = config_get_ptr();
+   const char *joypad_name = settings ? settings->input.joypad_driver : NULL;
+
    if (!current_video_context || !current_video_context->input_driver)
       return false;
    current_video_context->input_driver(
-         video_context_data, inp->input, inp->input_data);
+         video_context_data, joypad_name,
+         inp->input, inp->input_data);
    return true;
 }
 
@@ -449,18 +459,8 @@ bool video_context_driver_set_video_mode(gfx_ctx_mode_t *mode_info)
    video_driver_build_info(&video_info);
 
    if (!current_video_context->set_video_mode(
-            video_context_data, video_info, mode_info->width,
+            video_context_data, &video_info, mode_info->width,
             mode_info->height, mode_info->fullscreen))
-      return false;
-   return true;
-}
-
-bool video_context_driver_set_resize(gfx_ctx_mode_t *mode_info)
-{
-   if (!current_video_context)
-      return false;
-   if (!current_video_context->set_resize(
-            video_context_data, mode_info->width, mode_info->height))
       return false;
    return true;
 }

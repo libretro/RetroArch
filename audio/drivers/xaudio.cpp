@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -28,6 +28,11 @@
 
 #include <compat/msvc.h>
 #include <retro_miscellaneous.h>
+
+#if defined(_MSC_VER) && (_WIN32_WINNT <= _WIN32_WINNT_WIN2K)
+/* needed for CoInitializeEx */
+#define _WIN32_DCOM
+#endif
 
 #include "xaudio.h"
 
@@ -311,7 +316,7 @@ static void xa_set_nonblock_state(void *data, bool state)
       xa->nonblock = state;
 }
 
-static bool xa_start(void *data)
+static bool xa_start(void *data, bool is_shutdown)
 {
    xa_t *xa = (xa_t*)data;
    xa->is_paused = false;

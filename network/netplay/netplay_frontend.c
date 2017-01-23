@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C)      2016 - Gregor Richards
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Gregor Richards
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -21,12 +21,18 @@
 #include <boolean.h>
 #include <compat/strl.h>
 #include <retro_assert.h>
+#include <string/stdstring.h>
 
 #include "netplay_private.h"
 
 #include "../../configuration.h"
 #include "../../input/input_driver.h"
 #include "../../runloop.h"
+
+#include "../../tasks/tasks_internal.h"
+#include <file/file_path.h>
+#include "../../file_path_special.h"
+#include "paths.h"
 
 /* Only used before init_netplay */
 static bool netplay_enabled = false;
@@ -37,6 +43,11 @@ static netplay_t *netplay_data = NULL;
 
 /* Used to avoid recursive netplay calls */
 static bool in_netplay = false;
+
+/* Used for deferred netplay initialization */
+static bool      netplay_client_deferred = false;
+static char      server_address_deferred[512] = "";
+static unsigned  server_port_deferred = 0;
 
 /**
  * netplay_is_alive:
@@ -151,6 +162,20 @@ static bool get_self_input_state(netplay_t *netplay)
    return true;
 }
 
+bool init_netplay_deferred(const char* server, unsigned port)
+{
+   if (!string_is_empty(server) && port != 0)
+   {
+      strlcpy(server_address_deferred, server, sizeof(server_address_deferred));
+      server_port_deferred = port;
+      netplay_client_deferred = true;
+   }
+   else
+      netplay_client_deferred = false;
+   return netplay_client_deferred;
+}
+
+
 /**
  * netplay_poll:
  * @netplay              : pointer to netplay object
@@ -177,7 +202,9 @@ static bool netplay_poll(void)
 
    /* Read Netplay input, block if we're configured to stall for input every
     * frame */
+   netplay_update_unread_ptr(netplay_data);
    if (netplay_data->stateless_mode &&
+       netplay_data->connected_players &&
        netplay_data->unread_frame_count <= netplay_data->self_frame_count)
       res = netplay_poll_net_input(netplay_data, true);
    else
@@ -388,6 +415,38 @@ static int16_t netplay_input_state(netplay_t *netplay,
    }
 }
 
+static int reannounce = 0;
+
+static void netplay_announce_cb(void *task_data, void *user_data, const char *error)
+{
+   RARCH_LOG("Announcing netplay game... \n");
+   return;
+}
+
+static void netplay_announce()
+{
+   char buf [2048];
+   char url [2048]               = "http://lobby.libretro.com/raw/?";
+   rarch_system_info_t *system   = NULL;
+   settings_t *settings          = config_get_ptr();
+   uint32_t *content_crc_ptr     = NULL;
+
+   content_get_crc(&content_crc_ptr);
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+
+   buf[0] = '\0';
+
+   snprintf(buf, sizeof(buf), "%susername=%s&corename=%s&coreversion=%s&"
+   "gamename=%s&gamecrc=%d&port=%d", 
+      url, settings->username, system->info.library_name, 
+      system->info.library_version, 
+      path_basename(path_get(RARCH_PATH_BASENAME)),*content_crc_ptr,
+      settings->netplay.port);
+
+   task_push_http_transfer(buf, true, NULL, netplay_announce_cb, NULL);
+}
+
 int16_t input_state_net(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
@@ -517,7 +576,9 @@ static void netplay_frontend_paused(netplay_t *netplay, bool paused)
 bool netplay_pre_frame(netplay_t *netplay)
 {
    bool sync_stalled;
-
+   reannounce ++;
+   if (netplay->is_server && (reannounce % 3600 == 0))
+      netplay_announce();
    retro_assert(netplay);
 
    /* FIXME: This is an ugly way to learn we're not paused anymore */
@@ -881,12 +942,14 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
       runloop_msg_queue_push(
          msg_hash_to_str(MSG_WAITING_FOR_CLIENT),
          0, 180, false);
+
+      netplay_announce();
    }
 
    netplay_data = (netplay_t*)netplay_new(
          netplay_is_client ? direct_host : NULL,
-         netplay_is_client ? server : NULL,
-         port ? port : RARCH_DEFAULT_PORT,
+         netplay_is_client ? (!netplay_client_deferred ? server : server_address_deferred) : NULL,
+         port ? ( !netplay_client_deferred ? port : server_port_deferred) : RARCH_DEFAULT_PORT,
          settings->netplay.stateless_mode, settings->netplay.check_frames, &cbs,
          settings->netplay.nat_traversal, settings->username,
          quirks);
@@ -901,6 +964,8 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
          0, 180, false);
    return false;
 }
+
+
 
 /**
  * netplay_driver_ctl

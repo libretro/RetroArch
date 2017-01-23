@@ -1,7 +1,7 @@
 ﻿/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2014-2016 - Jean-André Santoni
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2014-2017 - Jean-André Santoni
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -102,7 +102,7 @@ void menu_event_kb_set(bool down, enum retro_key key)
       unsigned i;
 
       for (i = 0; i < RETROK_LAST; i++)
-         menu_event_kb_set_internal(i, (menu_event_kb_is_set(i) & 1) << 1);
+         menu_event_kb_set_internal(i, (menu_event_kb_is_set((enum retro_key)i) & 1) << 1);
    }
    else
       menu_event_kb_set_internal(key, ((menu_event_kb_is_set(key) & 1) << 1) | down);
@@ -182,7 +182,7 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
 
    delta.current = delta_time;
 
-   if (menu_animation_ctl(MENU_ANIMATION_CTL_IDEAL_DELTA_TIME_GET, &delta))
+   if (menu_animation_get_ideal_delta_time(&delta))
       delay_count += delta.ideal;
 
    if (menu_input_dialog_get_display_kb())

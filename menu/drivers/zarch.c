@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2011-2016 - Higor Euripedes
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2014-2015 - Jean-André Santoni
+ *  Copyright (C) 2011-2017 - Higor Euripedes
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2014-2017 - Jean-André Santoni
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -311,19 +311,19 @@ static bool zarch_zui_button(zui_t *zui, int x1, int y1, const char *label)
          + zarch_zui_strwidth(zui->font, label, 1.0) + 24, y1 + 64, label);
 }
 
-static bool zarch_zui_list_item(zui_t *zui, struct zui_tabbed *tab, int x1, int y1,
+static bool zarch_zui_list_item(video_frame_info_t *video_info,
+      zui_t *zui, struct zui_tabbed *tab, int x1, int y1,
       const char *label, unsigned item_id, const char *entry, bool selected)
 {
    menu_animation_ctx_ticker_t ticker;
    unsigned ticker_size;
    char title_buf[PATH_MAX_LENGTH];
-   uint64_t *frame_count = NULL;
    unsigned           id = zarch_zui_hash(zui, label);
    int                x2 = x1 + zui->width - 290 - 40;
    int                y2 = y1 + 50;
    bool           active = zarch_zui_check_button_up(zui, id, x1, y1, x2, y2);
    const float       *bg = zui_bg_panel;
-   frame_count           = video_driver_get_frame_count_ptr();
+   uint64_t frame_count  = video_info->frame_count;
 
    title_buf[0] = '\0';
 
@@ -346,11 +346,11 @@ static bool zarch_zui_list_item(zui_t *zui, struct zui_tabbed *tab, int x1, int 
 
    ticker.s        = title_buf;
    ticker.len      = ticker_size;
-   ticker.idx      = *frame_count / 50;
+   ticker.idx      = frame_count / 50;
    ticker.str      = label;
    ticker.selected = (bg == zui_bg_hilite || bg == zui_bg_pad_hilite);
 
-   menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
+   menu_animation_ticker(&ticker);
 
    menu_display_push_quad(zui->width, zui->height, bg, x1, y1, x2, y2);
    zarch_zui_draw_text(zui, ZUI_FG_NORMAL, 12, y1 + 35, title_buf);
@@ -500,7 +500,9 @@ static bool zarch_zui_gamepad_input(zui_t *zui,
    return false;
 }
 
-static int zarch_zui_render_lay_root_recent(zui_t *zui, struct zui_tabbed *tabbed)
+static int zarch_zui_render_lay_root_recent(
+      video_frame_info_t *video_info,
+      zui_t *zui, struct zui_tabbed *tabbed)
 {
    if (zarch_zui_tab(zui, tabbed, "Recent", 0))
    {
@@ -524,7 +526,9 @@ static int zarch_zui_render_lay_root_recent(zui_t *zui, struct zui_tabbed *tabbe
          menu_entry_get_rich_label(i, rich_label, sizeof(rich_label));
          menu_entry_get_value(i, NULL, entry_value,sizeof(entry_value));
 
-         if (zarch_zui_list_item(zui, tabbed, 0, 
+         if (zarch_zui_list_item(
+                  video_info,
+                  zui, tabbed, 0, 
                   tabbed->tabline_size + j * ZUI_ITEM_SIZE_PX,
                   rich_label, i, entry_value, gamepad_index == (signed)i))
          {
@@ -563,7 +567,9 @@ static void zarch_zui_render_lay_root_load_set_new_path(zui_t *zui,
    zui->load_dlist = NULL;
 }
 
-static int zarch_zui_render_lay_root_load(zui_t *zui,
+static int zarch_zui_render_lay_root_load(
+      video_frame_info_t *video_info,
+      zui_t *zui,
       struct zui_tabbed *tabbed)
 {
    char parent_dir[PATH_MAX_LENGTH];
@@ -605,7 +611,9 @@ static int zarch_zui_render_lay_root_load(zui_t *zui,
          fill_pathname_parent_dir(parent_dir,
                zui->load_cwd, sizeof(parent_dir));
          if (!string_is_empty(parent_dir) &&
-               zarch_zui_list_item(zui, tabbed, 0,
+               zarch_zui_list_item(
+                  video_info,
+                  zui, tabbed, 0,
                   tabbed->tabline_size + 73, " ..", 0, NULL, false /* TODO/FIXME */))
          {
             zarch_zui_render_lay_root_load_set_new_path(zui, parent_dir);
@@ -651,7 +659,9 @@ static int zarch_zui_render_lay_root_load(zui_t *zui,
                if (path_is_directory(path))
                   strncat(label, "/", sizeof(label)-1);
 
-               if (zarch_zui_list_item(zui, tabbed, 0,
+               if (zarch_zui_list_item(
+                        video_info,
+                        zui, tabbed, 0,
                         tabbed->tabline_size + 73 + j * ZUI_ITEM_SIZE_PX,
                         label, i, NULL, gamepad_index == (signed)(i-skip)))
                {
@@ -709,7 +719,8 @@ static int zarch_zui_render_lay_root_downloads(
    return 0;
 }
 
-static int zarch_zui_render_lay_root(zui_t *zui)
+static int zarch_zui_render_lay_root(video_frame_info_t *video_info,
+      zui_t *zui)
 {
    char item[PATH_MAX_LENGTH];
    static struct zui_tabbed tabbed = {~0U};
@@ -719,9 +730,9 @@ static int zarch_zui_render_lay_root(zui_t *zui)
    tabbed.width            = zui->width - 290 - 40;
    zui->next_selection_set = false;
 
-   if (zarch_zui_render_lay_root_recent(zui, &tabbed))
+   if (zarch_zui_render_lay_root_recent(video_info, zui, &tabbed))
       return 0;
-   if (zarch_zui_render_lay_root_load  (zui, &tabbed))
+   if (zarch_zui_render_lay_root_load(video_info, zui, &tabbed))
       return 0;
    if (zarch_zui_render_lay_root_collections(zui, &tabbed))
       return 0;
@@ -792,7 +803,8 @@ static void zarch_zui_draw_cursor(float x, float y)
 {
 }
 
-static int zarch_zui_render_pick_core(zui_t *zui)
+static int zarch_zui_render_pick_core(video_frame_info_t *video_info,
+      zui_t *zui)
 {
    static struct zui_tabbed tabbed = {~0U};
    unsigned i, j = 0;
@@ -814,7 +826,9 @@ static int zarch_zui_render_pick_core(zui_t *zui)
 
    if (!zui->pick_supported)
    {
-      zarch_zui_list_item(zui, &tabbed, 0, ZUI_ITEM_SIZE_PX,
+      zarch_zui_list_item(
+            video_info,
+            zui, &tabbed, 0, ZUI_ITEM_SIZE_PX,
             "Content unsupported", 0, NULL, false /* TODO/FIXME */);
       return 1;
    }
@@ -828,7 +842,9 @@ static int zarch_zui_render_pick_core(zui_t *zui)
       if (j > 10)
          break;
 
-      if (zarch_zui_list_item(zui, &tabbed, 0, ZUI_ITEM_SIZE_PX + j * ZUI_ITEM_SIZE_PX,
+      if (zarch_zui_list_item(
+               video_info,
+               zui, &tabbed, 0, ZUI_ITEM_SIZE_PX + j * ZUI_ITEM_SIZE_PX,
                zui->pick_cores[i].display_name, i, NULL, false))
       {
          int ret = zarch_zui_load_content(zui, i);
@@ -846,7 +862,7 @@ static int zarch_zui_render_pick_core(zui_t *zui)
    return 0;
 }
 
-static void zarch_frame(void *data)
+static void zarch_frame(void *data, video_frame_info_t *video_info)
 {
    unsigned i;
    float coord_color[16];
@@ -862,7 +878,7 @@ static void zarch_frame(void *data)
 
    video_driver_get_size(&zui->width, &zui->height);
 
-   menu_display_set_viewport();
+   menu_display_set_viewport(video_info->width, video_info->height);
 
    for (i = 0; i < 16; i++)
    {
@@ -899,7 +915,7 @@ static void zarch_frame(void *data)
       case LAY_HOME:
          if (zarch_zui_render_sidebar(zui))
             return;
-         if (zarch_zui_render_lay_root(zui))
+         if (zarch_zui_render_lay_root(video_info, zui))
             return;
          break;
       case LAY_SETTINGS:
@@ -908,7 +924,7 @@ static void zarch_frame(void *data)
       case LAY_PICK_CORE:
          if (zarch_zui_render_sidebar(zui))
             return;
-         if (zarch_zui_render_pick_core(zui))
+         if (zarch_zui_render_pick_core(video_info, zui))
             return;
          break;
    }
@@ -954,20 +970,21 @@ static void zarch_frame(void *data)
    draw.vertex_count       = 4;
    draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
-   if (!menu_display_libretro_running() && draw.texture)
-      draw.color             = &coord_color2[0];
+   if (!video_info->libretro_running && draw.texture)
+      draw.color           = &coord_color2[0];
 
    menu_display_blend_begin();
    draw.x              = 0;
    draw.y              = 0;
-   menu_display_draw_bg(&draw, false);
+   menu_display_draw_bg(&draw, video_info, false);
    menu_display_draw(&draw);
    menu_display_blend_end();
 
    zui->rendering = false;
 
-   menu_display_font_flush_block((font_data_t*)zui->font);
-   menu_display_unset_viewport();
+   menu_display_font_flush_block(video_info->width, video_info->height, 
+         (font_data_t*)zui->font);
+   menu_display_unset_viewport(video_info->width, video_info->height);
 }
 
 static void *zarch_init(void **userdata)

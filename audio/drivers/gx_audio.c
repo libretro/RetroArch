@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -173,7 +173,7 @@ static void gx_audio_set_nonblock_state(void *data, bool state)
       wa->nonblock = state;
 }
 
-static bool gx_audio_start(void *data)
+static bool gx_audio_start(void *data, bool is_shutdown)
 {
    gx_audio_t *wa = (gx_audio_t*)data;
 

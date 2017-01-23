@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2016 The RetroArch team
+/* Copyright  (C) 2010-2017 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (net_compat.h).
@@ -100,6 +100,8 @@ struct hostent
 	char **h_addr_list;
 	char *h_addr;
 };
+
+struct SceNetInAddr inet_aton(const char *ip_addr);
 
 #else
 #include <sys/select.h>

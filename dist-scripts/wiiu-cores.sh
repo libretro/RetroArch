@@ -117,7 +117,6 @@ for f in `ls -v *_${platform}.${EXT}`; do
       fi
    fi
    rm -rf ${name}_meta.xml
-   rm -rf $name.png
 
 done
 

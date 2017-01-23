@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2014 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Compile: gcc -o supereagle.so -shared supereagle.c -std=c99 -O3 -Wall -pedantic -fPIC
+/* Compile: gcc -o supereagle.so -shared supereagle.c -std=c99 -O3 -Wall -pedantic -fPIC */
 
 #include "softfilter.h"
 #include <stdlib.h>
@@ -308,7 +308,7 @@ static void supereagle_generic_packets(void *data,
       thr->width = width;
       thr->height = y_end - y_start;
 
-      // Workers need to know if they can access pixels outside their given buffer.
+      /* Workers need to know if they can access pixels outside their given buffer. */
       thr->first = y_start;
       thr->last = y_end == height;
 

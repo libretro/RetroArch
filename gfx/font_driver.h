@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -22,6 +22,8 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#include "video_driver.h"
+
 RETRO_BEGIN_DECLS
 
 enum font_driver_render_api
@@ -32,7 +34,9 @@ enum font_driver_render_api
    FONT_DRIVER_RENDER_VITA2D,
    FONT_DRIVER_RENDER_CTR,
    FONT_DRIVER_RENDER_VULKAN_API,
-   FONT_DRIVER_RENDER_CACA
+   FONT_DRIVER_RENDER_CACA,
+   FONT_DRIVER_RENDER_GDI,
+   FONT_DRIVER_RENDER_VGA
 };
 
 enum text_alignment
@@ -99,13 +103,15 @@ typedef struct font_renderer
 {
    void *(*init)(void *data, const char *font_path, float font_size);
    void (*free)(void *data);
-   void (*render_msg)(void *data, const char *msg,
+   void (*render_msg)(
+         video_frame_info_t *video_info,
+         void *data, const char *msg,
          const void *params);
    const char *ident;
 
    const struct font_glyph *(*get_glyph)(void *data, uint32_t code);
    void (*bind_block)(void *data, void *block);
-   void (*flush)(void *data);
+   void (*flush)(unsigned width, unsigned height, void *data);
    
    int (*get_message_width)(void *data, const char *msg, unsigned msg_len_full, float scale);
 } font_renderer_t;
@@ -139,13 +145,14 @@ typedef struct
 int font_renderer_create_default(const void **driver,
       void **handle, const char *font_path, unsigned font_size);
       
-void font_driver_render_msg(void *font_data, const char *msg, const struct font_params *params);
+void font_driver_render_msg(video_frame_info_t *video_info,
+      void *font_data, const char *msg, const void *params);
 
 void font_driver_bind_block(void *font_data, void *block);
 
 int font_driver_get_message_width(void *font_data, const char *msg, unsigned len, float scale);
 
-void font_driver_flush(void *font_data);
+void font_driver_flush(unsigned width, unsigned height, void *font_data);
 
 void font_driver_free(void *font_data);
 
@@ -164,6 +171,8 @@ extern font_renderer_t vita2d_vita_font;
 extern font_renderer_t ctr_font;
 extern font_renderer_t vulkan_raster_font;
 extern font_renderer_t caca_font;
+extern font_renderer_t gdi_font;
+extern font_renderer_t vga_font;
 
 extern font_renderer_driver_t stb_font_renderer;
 extern font_renderer_driver_t stb_unicode_font_renderer;

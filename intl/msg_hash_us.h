@@ -200,6 +200,10 @@ MSG_HASH(
       "Import content"
       )
 MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
+      "Netplay Rooms"
+      )
+MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ARCHIVE_MODE,
       "Archive File Association Action"
       )
@@ -967,13 +971,13 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES,
       "Netplay Delay Frames")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
-      "Disconnect")
+      "Disconnect from netplay host")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
       "Netplay Enable")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
-      "Connect to Netplay host")
+      "Connect to netplay host")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
-      "Start hosting")
+      "Start netplay host")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
       "Server Address")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_LAN_SCAN_SETTINGS,
@@ -2365,6 +2369,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SCALE,
       "Scale")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
       "Netplay will start when content is loaded.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
+      "Couldn't find a suitable core or content file, load manually.")
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BROWSE_URL_LIST,
       "Browse URL"

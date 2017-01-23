@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -97,12 +97,13 @@ unsigned rpl_entry_selection_ptr                 = 0;
 unsigned rdb_entry_start_game_selection_ptr      = 0;
 size_t                     hack_shader_pass      = 0;
 
-#ifdef HAVE_NETWORKING
 /* HACK - we have to find some way to pass state inbetween
  * function pointer callback functions that don't necessarily
  * call each other. */
-char *core_buf;
-size_t core_len;
+char *core_buf                                   = NULL;
+size_t core_len                                  = 0;
+
+#ifdef HAVE_NETWORKING
 
 #ifdef HAVE_LAKKA
 static char lakka_project[128];
@@ -1371,8 +1372,6 @@ static int action_ok_playlist_entry_collection(const char *path,
       core_info_ctx_find_t core_info;
       char new_display_name[PATH_MAX_LENGTH];
       const char *entry_path                 = NULL;
-      const char *entry_crc32                = NULL;
-      const char *db_name                    = NULL;
       const char             *path_base      =
          path_basename(menu->db_playlist_file);
       bool        found_associated_core      =
@@ -1389,6 +1388,8 @@ static int action_ok_playlist_entry_collection(const char *path,
 
       if (!found_associated_core)
       {
+         /* TODO: figure out if this should refer to the inner or outer entry_path */
+         /* TODO: make sure there's only one entry_path in this function */
          int ret = action_ok_file_load_with_detect_core_collection(entry_path,
                label, type, selection_ptr, entry_idx);
          if (playlist_initialized)
@@ -1398,19 +1399,16 @@ static int action_ok_playlist_entry_collection(const char *path,
 
       menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
 
-      playlist_get_index(tmp_playlist, selection_ptr,
-            &entry_path, &entry_label, NULL, NULL, &entry_crc32, &db_name);
-
       strlcpy(new_display_name,
             core_info.inf->display_name, sizeof(new_display_name));
       playlist_update(tmp_playlist,
             selection_ptr,
-            entry_path,
-            entry_label,
+            NULL,
+            NULL,
             new_core_path,
             new_display_name,
-            entry_crc32,
-            db_name);
+            NULL,
+            NULL);
       playlist_write_file(tmp_playlist);
    }
    else
@@ -1431,7 +1429,7 @@ static int action_ok_playlist_entry_collection(const char *path,
          playlist_info.idx, &path, NULL, NULL, NULL, NULL, NULL);
 
    return generic_action_ok_file_load(new_core_path, path,
-         action_type,  content_enum_idx);
+         action_type, content_enum_idx);
 }
 
 static int action_ok_playlist_entry(const char *path,
@@ -1442,7 +1440,6 @@ static int action_ok_playlist_entry(const char *path,
    size_t selection_ptr             = 0;
    playlist_t *playlist             = g_defaults.content_history;
    const char *entry_path           = NULL;
-   const char *entry_label          = NULL;
    const char *core_path            = NULL;
    const char *core_name            = NULL;
    playlist_t *tmp_playlist         = NULL;
@@ -1456,7 +1453,7 @@ static int action_ok_playlist_entry(const char *path,
    selection_ptr = entry_idx;
 
    playlist_get_index(playlist, selection_ptr,
-         &entry_path, &entry_label, &core_path, &core_name, NULL, NULL);
+         &entry_path,  NULL, &core_path, &core_name, NULL, NULL);
 
    if (     string_is_equal(core_path, file_path_str(FILE_PATH_DETECT))
          && string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))
@@ -1465,9 +1462,7 @@ static int action_ok_playlist_entry(const char *path,
       char new_core_path[PATH_MAX_LENGTH];
       char new_display_name[PATH_MAX_LENGTH];
       const char *entry_path                 = NULL;
-      const char *entry_crc32                = NULL;
-      const char *db_name                    = NULL;
-      const char             *path_base      =
+      const char *path_base                  =
          path_basename(menu->db_playlist_file);
       bool        found_associated_core      = false;
 
@@ -1484,24 +1479,23 @@ static int action_ok_playlist_entry(const char *path,
          found_associated_core = false;
 
       if (!found_associated_core)
-         return  action_ok_file_load_with_detect_core(entry_path,
+         /* TODO: figure out if this should refer to the inner or outer entry_path */
+         /* TODO: make sure there's only one entry_path in this function */
+         return action_ok_file_load_with_detect_core(entry_path,
                label, type, selection_ptr, entry_idx);
 
       menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
-
-      playlist_get_index(tmp_playlist, selection_ptr,
-            &entry_path, &entry_label, NULL, NULL, &entry_crc32, &db_name);
 
       strlcpy(new_display_name,
             core_info.inf->display_name, sizeof(new_display_name));
       playlist_update(tmp_playlist,
             selection_ptr,
-            entry_path,
-            entry_label,
+            NULL,
+            NULL,
             new_core_path,
             new_display_name,
-            entry_crc32,
-            db_name);
+            NULL,
+            NULL);
       playlist_write_file(tmp_playlist);
    }
 
@@ -1530,7 +1524,6 @@ static int action_ok_playlist_entry_start_content(const char *path,
    bool playlist_initialized        = false;
    playlist_t *playlist             = NULL;
    const char *entry_path           = NULL;
-   const char *entry_label          = NULL;
    const char *core_path            = NULL;
    const char *core_name            = NULL;
    playlist_t *tmp_playlist         = NULL;
@@ -1557,7 +1550,7 @@ static int action_ok_playlist_entry_start_content(const char *path,
    selection_ptr = rdb_entry_start_game_selection_ptr;
 
    playlist_get_index(playlist, selection_ptr,
-         &entry_path, &entry_label, &core_path, &core_name, NULL, NULL);
+         &entry_path, NULL, &core_path, &core_name, NULL, NULL);
 
    if (     string_is_equal(core_path, file_path_str(FILE_PATH_DETECT))
          && string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))
@@ -1566,8 +1559,6 @@ static int action_ok_playlist_entry_start_content(const char *path,
       char new_core_path[PATH_MAX_LENGTH];
       char new_display_name[PATH_MAX_LENGTH];
       const char *entry_path                 = NULL;
-      const char *entry_crc32                = NULL;
-      const char *db_name                    = NULL;
       const char             *path_base      =
          path_basename(menu->db_playlist_file);
       bool        found_associated_core      = false;
@@ -1586,7 +1577,9 @@ static int action_ok_playlist_entry_start_content(const char *path,
 
       if (!found_associated_core)
       {
-         int ret =  action_ok_file_load_with_detect_core(entry_path,
+         /* TODO: figure out if this should refer to the inner or outer entry_path */
+         /* TODO: make sure there's only one entry_path in this function */
+         int ret = action_ok_file_load_with_detect_core(entry_path,
                label, type, selection_ptr, entry_idx);
          if (playlist_initialized)
             playlist_free(tmp_playlist);
@@ -1595,19 +1588,16 @@ static int action_ok_playlist_entry_start_content(const char *path,
 
       menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
 
-      playlist_get_index(tmp_playlist, selection_ptr,
-            &entry_path, &entry_label, NULL, NULL, &entry_crc32, &db_name);
-
       strlcpy(new_display_name,
             core_info.inf->display_name, sizeof(new_display_name));
       playlist_update(tmp_playlist,
             selection_ptr,
-            entry_path,
-            entry_label,
+            NULL,
+            NULL,
             new_core_path,
             new_display_name,
-            entry_crc32,
-            db_name);
+            NULL,
+            NULL);
       playlist_write_file(tmp_playlist);
    }
 
@@ -1904,6 +1894,7 @@ static void menu_input_st_string_cb_cheat_file_save_as(
    if (str && *str)
    {
       rarch_setting_t *setting = NULL;
+      settings_t *settings     = config_get_ptr();
       const char        *label = menu_input_dialog_get_label_buffer();
 
       if (!string_is_empty(label))
@@ -1915,7 +1906,7 @@ static void menu_input_st_string_cb_cheat_file_save_as(
          menu_setting_generic(setting, false);
       }
       else if (!string_is_empty(label))
-         cheat_manager_save(str);
+         cheat_manager_save(str, settings->path.cheat_database);
    }
 
    menu_input_dialog_end();
@@ -2036,10 +2027,6 @@ static int action_ok_core_deferred_set(const char *path,
 {
    size_t selection;
    char core_display_name[PATH_MAX_LENGTH];
-   const char            *entry_path       = NULL;
-   const char           *entry_label       = NULL;
-   const char           *entry_crc32       = NULL;
-   const char               *db_name       = NULL;
    playlist_t               *playlist      = NULL;
 
    core_display_name[0] = '\0';
@@ -2055,14 +2042,11 @@ static int action_ok_core_deferred_set(const char *path,
 
    idx = rdb_entry_start_game_selection_ptr;
 
-   playlist_get_index(playlist, idx,
-         &entry_path, &entry_label, NULL, NULL, &entry_crc32, &db_name);
-
    playlist_update(playlist, idx,
-         entry_path, entry_label,
-         path , core_display_name,
-         entry_crc32,
-         db_name);
+         NULL, NULL,
+         path, core_display_name,
+         NULL,
+         NULL);
 
    playlist_write_file(playlist);
 
@@ -2077,10 +2061,6 @@ static int action_ok_core_deferred_set_current_core(const char *path,
 {
    size_t selection;
    char core_display_name[PATH_MAX_LENGTH];
-   const char            *entry_path       = NULL;
-   const char           *entry_label       = NULL;
-   const char           *entry_crc32       = NULL;
-   const char               *db_name       = NULL;
    playlist_t               *playlist      = NULL;
 
    core_display_name[0] = '\0';
@@ -2096,14 +2076,11 @@ static int action_ok_core_deferred_set_current_core(const char *path,
 
    idx = rdb_entry_start_game_selection_ptr;
 
-   playlist_get_index(playlist, idx,
-         &entry_path, &entry_label, NULL, NULL, &entry_crc32, &db_name);
-
    playlist_update(playlist, idx,
-         entry_path, entry_label,
-         path , core_display_name,
-         entry_crc32,
-         db_name);
+         NULL, NULL,
+         path, core_display_name,
+         NULL,
+         NULL);
 
    playlist_write_file(playlist);
 
@@ -3140,6 +3117,40 @@ static int action_ok_netplay_lan_scan_list(const char *path,
          entry_idx, ACTION_OK_DL_NETPLAY_LAN_SCAN_SETTINGS_LIST);
 }
 
+static int action_ok_netplay_connect_room(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+#ifdef HAVE_NETWORKING
+   char tmp_hostname[512];
+
+   tmp_hostname[0] = '\0';
+
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
+      command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
+
+   snprintf(tmp_hostname,
+         sizeof(tmp_hostname),
+         "%s:%d", 
+      netplay_room_list[idx - 1].address,
+      netplay_room_list[idx - 1].port);
+
+   RARCH_LOG("Connecting to: %s with game: %s/%08x\n", 
+         netplay_room_list[idx - 1].address,
+         netplay_room_list[idx - 1].gamename,
+         netplay_room_list[idx - 1].gamecrc);
+
+   task_push_netplay_crc_scan(netplay_room_list[idx - 1].gamecrc,
+      netplay_room_list[idx - 1].gamename,
+      tmp_hostname, netplay_room_list[idx - 1].corename);
+
+#else
+   return -1;
+
+#endif
+   return 0;
+}
+
 static int action_ok_lakka_services(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -3196,8 +3207,8 @@ static int action_ok_netplay_lan_scan(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
 #ifdef HAVE_NETWORKING
-   struct netplay_host_list *hosts;
-   struct netplay_host *host;
+   struct netplay_host_list *hosts = NULL;
+   struct netplay_host *host       = NULL;
 
    /* Figure out what host we're connecting to */
    if (!netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, &hosts))
@@ -3287,12 +3298,157 @@ static int action_ok_push_content_list(const char *path,
          entry_idx, ACTION_OK_DL_CONTENT_LIST);
 }
 
+
+
 static int action_ok_push_scan_file(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    filebrowser_clear_type();
    return action_ok_push_content_list(path, label, type, idx, entry_idx);
 }
+
+#ifdef HAVE_NETWORKING
+static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const char *err)
+{
+   char buf[PATH_MAX_LENGTH];
+
+   http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
+
+   buf[0] = '\0';
+
+   if (!data || err)
+      goto finish;
+
+   if (data)
+   {
+      if (data->data)
+         memcpy(buf, data->data, data->len * sizeof(char));
+      buf[data->len] = '\0';
+   }
+
+finish:
+   if (!err && !strstr(buf, file_path_str(FILE_PATH_NETPLAY_ROOM_LIST_URL)))
+   {
+      if (string_is_empty(buf))
+      {
+         netplay_room_count = 0;
+         RARCH_LOG("Room list empty\n");
+      }
+      else
+      {
+         int i, j = 0;
+         char s[PATH_MAX_LENGTH];
+         static struct string_list *room_data = NULL;
+         file_list_t *file_list               = menu_entries_get_selection_buf_ptr(0);
+
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, file_list);
+
+         room_data = string_split(buf, "\n");
+
+         if (netplay_room_list)
+            free(netplay_room_list);
+
+         netplay_room_count = room_data->size / 8;
+         netplay_room_list = (struct netplay_room*)
+            malloc(sizeof(struct netplay_room) * netplay_room_count);
+
+#if 0
+         for (int i = 0; i < room_data->size; i++)
+         {
+            strlcpy(tmp,
+                  room_data->elems[i].data, sizeof(tmp));
+            RARCH_LOG("tmp %s\n", tmp);
+
+         }
+#endif
+         menu_entries_append_enum(file_list,
+               "Refresh Room List",
+               msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS),
+               MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS,
+               MENU_SETTING_ACTION, 0, 0);
+
+         RARCH_LOG ("Found %d rooms\n", netplay_room_count);
+         for (i = 0; i < netplay_room_count; i++)
+         {
+            strlcpy(netplay_room_list[i].nickname,
+                  room_data->elems[j + 0].data,
+                  sizeof(netplay_room_list[i].nickname));
+            strlcpy(netplay_room_list[i].address,
+                  room_data->elems[j + 1].data,
+                  sizeof(netplay_room_list[i].address));
+            strlcpy(netplay_room_list[i].corename,
+                  room_data->elems[j + 3].data,
+                  sizeof(netplay_room_list[i].corename));
+            strlcpy(netplay_room_list[i].coreversion,
+                  room_data->elems[j + 4].data,
+                  sizeof(netplay_room_list[i].coreversion));
+            strlcpy(netplay_room_list[i].gamename,
+                  room_data->elems[j + 5].data,
+                  sizeof(netplay_room_list[i].coreversion));
+
+            netplay_room_list[i].port      = atoi(room_data->elems[j + 2].data);
+            netplay_room_list[i].gamecrc   = atoi(room_data->elems[j + 6].data);
+            netplay_room_list[i].timestamp = atoi(room_data->elems[j + 7].data);
+
+/* Uncomment this to debug mismatched room parameters*/
+#if 0
+            RARCH_LOG("Room Data: %d\n"
+               "Nickname:         %s\n"
+               "Address:          %s\n"
+               "Port:             %d\n"
+               "Core:             %s\n"
+               "Core Version:     %s\n"
+               "Game:             %s\n"
+               "Game CRC:         %08x\n"
+               "Timestamp:        %d\n", room_data->elems[j + 6].data,
+               netplay_room_list[i].nickname,
+               netplay_room_list[i].address,
+               netplay_room_list[i].port,
+               netplay_room_list[i].corename,
+               netplay_room_list[i].coreversion,
+               netplay_room_list[i].gamename,
+               netplay_room_list[i].gamecrc,
+               netplay_room_list[i].timestamp);
+#endif
+            j+=8;
+
+            snprintf(s, sizeof(s), "Nickname: %s",
+                  netplay_room_list[i].nickname);
+
+            menu_entries_append_enum(file_list,
+                  s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM),
+                  MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,
+                  MENU_WIFI, 0, 0);
+
+         }
+      }
+   }
+
+   if (err)
+      RARCH_ERR("%s: %s\n", msg_hash_to_str(MSG_DOWNLOAD_FAILED), err);
+
+   if (data)
+   {
+      if (data->data)
+         free(data->data);
+      free(data);
+   }
+
+   if (user_data)
+      free(user_data);
+
+}
+
+static int action_ok_push_netplay_refresh_rooms(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   char url [2048] = "http://lobby.libretro.com/raw/";
+   task_push_http_transfer(url, true, NULL, netplay_refresh_rooms_cb, NULL);
+   return 0;
+}
+#endif
+
 
 static int action_ok_scan_directory_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -3804,7 +3960,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 
          first_char = atoi(&str[0]);
 
-         if (first_char != (i+1))
+         if (first_char != ((i+1)))
             continue;
 
          BIND_ACTION_OK(cbs, action_ok_push_user_binds_list);
@@ -4017,6 +4173,11 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_SCAN_FILE:
             BIND_ACTION_OK(cbs, action_ok_push_scan_file);
             break;
+#ifdef HAVE_NETWORKING
+         case MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS:
+            BIND_ACTION_OK(cbs, action_ok_push_netplay_refresh_rooms);
+            break;
+#endif
          case MENU_ENUM_LABEL_FAVORITES:
             BIND_ACTION_OK(cbs, action_ok_push_content_list);
             break;
@@ -4120,6 +4281,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_netplay_lan_scan_list);
+            break;
+         case MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM:
+            BIND_ACTION_OK(cbs, action_ok_netplay_connect_room);
             break;
          case MENU_ENUM_LABEL_LAKKA_SERVICES:
             BIND_ACTION_OK(cbs, action_ok_lakka_services);

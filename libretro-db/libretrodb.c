@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2016 The RetroArch team
+/* Copyright  (C) 2010-2017 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (libretrodb.c).
@@ -464,8 +464,8 @@ int libretrodb_create_index(libretrodb_t *db,
    struct node_iter_ctx nictx;
    struct rmsgpack_dom_value key;
    libretrodb_index_t idx;
-   uint64_t idx_header_offset;
    struct rmsgpack_dom_value item;
+   uint64_t idx_header_offset       = 0;
    libretrodb_cursor_t cur          = {0};
    struct rmsgpack_dom_value *field = NULL;
    void *buff                       = NULL;
@@ -474,15 +474,14 @@ int libretrodb_create_index(libretrodb_t *db,
    uint64_t item_loc                = libretrodb_tell(db);
    bintree_t *tree                  = bintree_new(node_compare, &field_size);
 
+   item.type                        = RDT_NULL;
+
    if (!tree || (libretrodb_cursor_open(db, &cur, NULL) != 0))
       goto clean;
 
-   key.type = RDT_STRING;
-   key.val.string.len = strlen(field_name);
-
-   /* We know we aren't going to change it */
-   key.val.string.buff = (char *) field_name;
-   item.type           = RDT_NULL;
+   key.type            = RDT_STRING;
+   key.val.string.len  = strlen(field_name);
+   key.val.string.buff = (char *) field_name;   /* We know we aren't going to change it */
 
    while (libretrodb_cursor_read_item(&cur, &item) == 0)
    {
@@ -522,9 +521,7 @@ int libretrodb_create_index(libretrodb_t *db,
 
       buff = malloc(field_size + sizeof(uint64_t));
       if (!buff)
-      {
          goto clean;
-      }
 
       memcpy(buff, field->val.binary.buff, field_size);
 
@@ -539,7 +536,7 @@ int libretrodb_create_index(libretrodb_t *db,
          printf("\n");
          goto clean;
       }
-      buff = NULL;
+      buff     = NULL;
       rmsgpack_dom_value_free(&item);
       item_loc = libretrodb_tell(db);
    }
@@ -552,10 +549,10 @@ int libretrodb_create_index(libretrodb_t *db,
 
    idx.name[49] = '\0';
    idx.key_size = field_size;
-   idx.next = db->count * (field_size + sizeof(uint64_t));
+   idx.next     = db->count * (field_size + sizeof(uint64_t));
    libretrodb_write_index_header(db->fd, &idx);
 
-   nictx.db = db;
+   nictx.db  = db;
    nictx.idx = &idx;
    bintree_iterate(tree, node_iter, &nictx);
 

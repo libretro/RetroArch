@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2016 The RetroArch team
+/* Copyright  (C) 2010-2017 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (net_ifinfo.c).
@@ -71,10 +71,10 @@ bool net_ifinfo_new(net_ifinfo_t *list)
 {
    unsigned k              = 0;
 #if defined(_WIN32) && !defined(_XBOX)
+   PIP_ADAPTER_ADDRESSES adapter_addresses = NULL, aa = NULL;
+   PIP_ADAPTER_UNICAST_ADDRESS ua = NULL;
+#ifdef _WIN32_WINNT_WINXP
    DWORD size;
-   PIP_ADAPTER_ADDRESSES adapter_addresses, aa;
-   PIP_ADAPTER_UNICAST_ADDRESS ua;
-
    DWORD rv = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, NULL, NULL, &size);
 
    adapter_addresses = (PIP_ADAPTER_ADDRESSES)malloc(size);
@@ -85,7 +85,7 @@ bool net_ifinfo_new(net_ifinfo_t *list)
 
    if (rv != ERROR_SUCCESS)
       goto error;
-
+#endif
    for (aa = adapter_addresses; aa != NULL; aa = aa->Next)
    {
       char name[PATH_MAX_LENGTH];

@@ -1,6 +1,6 @@
 /* RetroArch - A frontend for libretro.
  * Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- * Copyright (C) 2011-2016 - Daniel De Matteis
+ * Copyright (C) 2011-2017 - Daniel De Matteis
  * Copyright (C) 2012-2015 - Jason Fetters
  * Copyright (C) 2012-2015 - Michael Lelli
  *
@@ -54,7 +54,6 @@
 
 #include "../frontend.h"
 #include "../frontend_driver.h"
-#include "../../configuration.h"
 #include "../../defaults.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"

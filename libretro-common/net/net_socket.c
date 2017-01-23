@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2016 The RetroArch team
+/* Copyright  (C) 2010-2017 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (net_socket.c).
@@ -142,6 +142,7 @@ int socket_select(int nfds, fd_set *readfs, fd_set *writefds,
 #if defined(__CELLOS_LV2__)
    return socketselect(nfds, readfs, writefds, errorfds, timeout);
 #elif defined(VITA)
+   extern int retro_epoll_fd;
    SceNetEpollEvent ev = {0};
 
    ev.events = SCE_NET_EPOLLIN | SCE_NET_EPOLLHUP;

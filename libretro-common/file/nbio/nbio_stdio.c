@@ -23,7 +23,9 @@ static const char * modes[]={ "rb", "wb", "r+b", "rb", "wb", "r+b" };
 
 struct nbio_t* nbio_open(const char * filename, unsigned mode)
 {
+   void *buf             = NULL;
    struct nbio_t* handle = NULL;
+   size_t len            = 0;
    FILE* f               = fopen(filename, modes[mode]);
    if (!f)
       return NULL;
@@ -34,7 +36,6 @@ struct nbio_t* nbio_open(const char * filename, unsigned mode)
       goto error;
 
    handle->f             = f;
-   handle->len           = 0;
 
    switch (mode)
    {
@@ -43,16 +44,20 @@ struct nbio_t* nbio_open(const char * filename, unsigned mode)
          break;
       default:
          fseek(handle->f, 0, SEEK_END);
-         handle->len = ftell(handle->f);
+         len = ftell(handle->f);
          break;
    }
 
    handle->mode          = mode;
-   handle->data          = malloc(handle->len);
 
-   if (handle->len && !handle->data)
+   if (len)
+      buf                = malloc(len);
+
+   if (!buf)
       goto error;
 
+   handle->data          = buf;
+   handle->len           = len;
    handle->progress      = handle->len;
    handle->op            = -2;
 
@@ -60,13 +65,7 @@ struct nbio_t* nbio_open(const char * filename, unsigned mode)
 
 error:
    if (handle)
-   {
-      if (handle->data)
-         free(handle->data);
-      handle->data = NULL;
       free(handle);
-   }
-   handle = NULL;
    fclose(f);
    return NULL;
 }

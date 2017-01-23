@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -20,6 +20,7 @@
 
 #include <stdint.h>
 #include <errno.h>
+#include <string.h>
 #include <unistd.h>
 #include <math.h>
 
@@ -36,7 +37,6 @@
 #include <streams/file_stream.h>
 
 #include "../../verbosity.h"
-#include "../../runloop.h"
 #include "../../frontend/frontend_driver.h"
 #include "../common/drm_common.h"
 
@@ -138,10 +138,9 @@ static void gfx_ctx_drm_swap_interval(void *data, unsigned interval)
 }
 
 static void gfx_ctx_drm_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
+      bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
 {
    (void)data;
-   (void)frame_count;
    (void)width;
    (void)height;
 
@@ -225,7 +224,7 @@ static bool gfx_ctx_drm_queue_flip(void)
    return false;
 }
 
-static void gfx_ctx_drm_swap_buffers(void *data, video_frame_info_t video_info)
+static void gfx_ctx_drm_swap_buffers(void *data, video_frame_info_t *video_info)
 {
    gfx_ctx_drm_data_t *drm = (gfx_ctx_drm_data_t*)data;
 
@@ -253,35 +252,11 @@ static void gfx_ctx_drm_swap_buffers(void *data, video_frame_info_t video_info)
    waiting_for_flip = gfx_ctx_drm_queue_flip();
 
    /* Triple-buffered page flips */
-   if (video_info.max_swapchain_images >= 3 &&
+   if (video_info->max_swapchain_images >= 3 &&
          gbm_surface_has_free_buffers(g_gbm_surface))
       return;
 
    gfx_ctx_drm_wait_flip(true);  
-}
-
-static bool gfx_ctx_drm_set_resize(void *data,
-      unsigned width, unsigned height)
-{
-   (void)data;
-   (void)width;
-   (void)height;
-
-   return false;
-}
-
-static void gfx_ctx_drm_update_window_title(void *data, video_frame_info_t video_info)
-{
-   char buf[128];
-   char buf_fps[128];
-
-   buf[0] = buf_fps[0]  = '\0';
-
-   video_monitor_get_fps(video_info, buf, sizeof(buf),
-         buf_fps, sizeof(buf_fps));
-
-   if (video_info.fps_show)
-      runloop_msg_queue_push( buf_fps, 1, 1, false);
 }
 
 static void gfx_ctx_drm_get_video_size(void *data,
@@ -356,7 +331,7 @@ static void gfx_ctx_drm_destroy_resources(gfx_ctx_drm_data_t *drm)
    g_next_bo           = NULL;
 }
 
-static void *gfx_ctx_drm_init(video_frame_info_t video_info, void *video_driver)
+static void *gfx_ctx_drm_init(video_frame_info_t *video_info, void *video_driver)
 {
    int fd, i;
    unsigned monitor_index;
@@ -393,7 +368,7 @@ nextgpu:
    if (!drm_get_resources(fd))
       goto nextgpu;
 
-   if (!drm_get_connector(video_info.monitor_index, fd))
+   if (!drm_get_connector(fd, video_info))
       goto nextgpu;
 
    if (!drm_get_encoder(fd))
@@ -617,7 +592,7 @@ error:
 #endif
 
 static bool gfx_ctx_drm_set_video_mode(void *data,
-      video_frame_info_t video_info,
+      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -634,7 +609,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
    /* If we use black frame insertion, 
     * we fake a 60 Hz monitor for 120 Hz one, 
     * etc, so try to match that. */
-   refresh_mod = video_info.black_frame_insertion 
+   refresh_mod = video_info->black_frame_insertion 
       ? 0.5f : 1.0f;
 
    /* Find desired video mode, and use that.
@@ -660,7 +635,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
             continue;
 
          diff = fabsf(refresh_mod * g_drm_connector->modes[i].vrefresh
-               - video_info.refresh_rate);
+               - video_info->refresh_rate);
 
          if (!g_drm_mode || diff < minimum_fps_diff)
          {
@@ -746,10 +721,10 @@ static void gfx_ctx_drm_destroy(void *data)
 }
 
 static void gfx_ctx_drm_input_driver(void *data,
+      const char *name,
       const input_driver_t **input, void **input_data)
 {
-   (void)data;
-   *input = NULL;
+   *input      = NULL;
    *input_data = NULL;
 }
 
@@ -762,12 +737,6 @@ static bool gfx_ctx_drm_suppress_screensaver(void *data, bool enable)
 {
    (void)data;
    (void)enable;
-   return false;
-}
-
-static bool gfx_ctx_drm_has_windowed(void *data)
-{
-   (void)data;
    return false;
 }
 
@@ -889,12 +858,12 @@ const gfx_ctx_driver_t gfx_ctx_drm = {
    NULL, /* get_video_output_next */
    NULL, /* get_metrics */
    NULL,
-   gfx_ctx_drm_update_window_title,
+   NULL, /* update_window_title */
    gfx_ctx_drm_check_window,
-   gfx_ctx_drm_set_resize,
+   NULL, /* set_resize */
    gfx_ctx_drm_has_focus,
    gfx_ctx_drm_suppress_screensaver,
-   gfx_ctx_drm_has_windowed,
+   NULL, /* has_windowed */
    gfx_ctx_drm_swap_buffers,
    gfx_ctx_drm_input_driver,
    gfx_ctx_drm_get_proc_address,

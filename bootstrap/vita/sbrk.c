@@ -1,6 +1,9 @@
 #include <errno.h>
 #include <reent.h>
 #include "../../defines/psp_defines.h"
+#include <psp2/kernel/sysmem.h>
+#include <psp2/kernel/threadmgr.h>
+
 static int _newlib_heap_memblock;
 static unsigned _newlib_heap_size;
 static char *_newlib_heap_base, *_newlib_heap_end, *_newlib_heap_cur;

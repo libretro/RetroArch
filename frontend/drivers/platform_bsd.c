@@ -1,6 +1,6 @@
 /* RetroArch - A frontend for libretro.
  * Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- * Copyright (C) 2011-2016 - Daniel De Matteis
+ * Copyright (C) 2011-2017 - Daniel De Matteis
  * Copyright (C) 2012-2015 - Jason Fetters
  *
  * RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -14,12 +14,12 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../frontend_driver.h"
-
 #include <stdint.h>
 #include <string.h>
 #include <signal.h>
 #include <stdlib.h>
+
+#include "../frontend_driver.h"
 
 static volatile sig_atomic_t bsd_sighandler_quit;
 

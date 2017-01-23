@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2016 The RetroArch team
+/* Copyright  (C) 2010-2017 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (memory_stream.c).
@@ -41,7 +41,7 @@ struct memstream
 
 static void memstream_update_pos(memstream_t *stream)
 {
-   if (stream->ptr > stream->max_ptr)
+   if (stream && stream->ptr > stream->max_ptr)
       stream->max_ptr = stream->ptr;
 }
 

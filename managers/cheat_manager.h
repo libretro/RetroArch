@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -36,7 +36,7 @@ bool cheat_manager_load(const char *path);
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool cheat_manager_save(const char *path);
+bool cheat_manager_save(const char *path, const char *cheat_database);
 
 bool cheat_manager_realloc(unsigned new_size);
 

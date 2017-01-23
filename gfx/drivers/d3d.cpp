@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2014 - OV2
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -47,11 +47,12 @@
 #include "../../menu/menu_driver.h"
 #endif
 
+#include "../font_driver.h"
+
 #include "../../core.h"
 #include "../../performance_counters.h"
 
 #include "../../defines/d3d_defines.h"
-#include "../../runloop.h"
 #include "../../verbosity.h"
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
@@ -259,18 +260,18 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
    }
 
    memset(&d3d->shader, 0, sizeof(d3d->shader));
-
+#ifdef HAVE_SHADERPIPELINE
    if (!video_shader_read_conf_cgp(conf, &d3d->shader))
    {
       config_file_free(conf);
       RARCH_ERR("Failed to parse CGP file.\n");
       return false;
    }
-
+#endif
    config_file_free(conf);
-
+#ifdef HAVE_SHADERPIPELINE
    video_shader_resolve_relative(&d3d->shader, d3d->shader_path.c_str());
-
+#endif
    RARCH_LOG("[D3D9 Meta-Cg] Found %u shaders.\n", d3d->shader.passes);
 
    for (i = 0; i < d3d->shader.passes; i++)
@@ -332,14 +333,16 @@ static void d3d_viewport_info(void *data, struct video_viewport *vp)
    d3d->renderchain_driver->viewport_info(d3d, vp);
 }
 
-static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
+static void d3d_overlay_render(d3d_video_t *d3d, video_frame_info_t *video_info,
+      overlay_t *overlay)
 {
    struct video_viewport vp;
-   unsigned width, height;
    void *verts;
    unsigned i;
    float vert[4][9];
    float overlay_width, overlay_height;
+   unsigned width      = video_info->width;
+   unsigned height     = video_info->height;
 
    if (!d3d || !overlay || !overlay->tex)
       return;
@@ -428,8 +431,6 @@ static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
    if (overlay->fullscreen)
    {
       D3DVIEWPORT vp_full;
-
-      video_driver_get_size(&width, &height);
 
       vp_full.X      = 0;
       vp_full.Y      = 0;
@@ -881,7 +882,7 @@ static bool d3d_alive(void *data)
          mode.width  = temp_width;
          mode.height = temp_height;
 
-         video_context_driver_set_resize(&mode);
+         video_context_driver_set_resize(mode);
          d3d_restore(d3d);
       }
 
@@ -950,14 +951,17 @@ static void d3d_apply_state_changes(void *data)
 }
 
 static void d3d_set_osd_msg(void *data, const char *msg,
-      const struct font_params *params, void *font)
+      const void *params, void *font)
 {
+   video_frame_info_t video_info;
    d3d_video_t          *d3d = (d3d_video_t*)data;
+
+   video_driver_build_info(&video_info);
 
    if (d3d->renderchain_driver->set_font_rect && params)
       d3d->renderchain_driver->set_font_rect(d3d, params);
 
-   font_driver_render_msg(NULL, msg, params);
+   font_driver_render_msg(&video_info, NULL, msg, params);
 }
 
 /* Delay constructor due to lack of exceptions. */
@@ -1368,20 +1372,20 @@ static void d3d_get_overlay_interface(void *data,
 static bool d3d_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height,
       uint64_t frame_count, unsigned pitch,
-      const char *msg, video_frame_info_t video_info)
+      const char *msg, video_frame_info_t *video_info)
 {
-   unsigned width, height;
-   static struct retro_perf_counter d3d_frame = {0};
+   static struct 
+      retro_perf_counter d3d_frame     = {0};
    unsigned i                          = 0;
    d3d_video_t *d3d                    = (d3d_video_t*)data;
    HWND window                         = win32_get_window();
+   unsigned width                      = video_info->width;
+   unsigned height                     = video_info->height;
 
    (void)i;
 
    if (!frame)
       return true;
-
-   video_driver_get_size(&width, &height);
 
    performance_counter_init(&d3d_frame, "d3d_frame");
    performance_counter_start(&d3d_frame);
@@ -1412,18 +1416,18 @@ static bool d3d_frame(void *data, const void *frame,
    /* render_chain() only clears out viewport,
     * clear out everything. */
    D3DVIEWPORT screen_vp;
-   screen_vp.X = 0;
-   screen_vp.Y = 0;
-   screen_vp.MinZ = 0;
-   screen_vp.MaxZ = 1;
-   screen_vp.Width = width;
+   screen_vp.X      = 0;
+   screen_vp.Y      = 0;
+   screen_vp.MinZ   = 0;
+   screen_vp.MaxZ   = 1;
+   screen_vp.Width  = width;
    screen_vp.Height = height;
    d3d_set_viewports(d3d->dev, &screen_vp);
    d3d_clear(d3d->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
 
    /* Insert black frame first, so we
     * can screenshot, etc. */
-   if (video_info.black_frame_insertion)
+   if (video_info->black_frame_insertion)
    {
       if (!d3d_swap(d3d, d3d->dev) || d3d->needs_restore)
          return true;
@@ -1442,14 +1446,14 @@ static bool d3d_frame(void *data, const void *frame,
    if (msg)
    {
       struct font_params font_parms = {0};
-      font_driver_render_msg(NULL, msg, &font_parms);
+      font_driver_render_msg(video_info, NULL, msg, &font_parms);
    }
 
 #ifdef HAVE_MENU
    if (d3d->menu && d3d->menu->enabled)
    {
-      d3d_overlay_render(d3d, d3d->menu);
-      menu_driver_ctl(RARCH_MENU_CTL_FRAME, NULL);
+      d3d_overlay_render(d3d, video_info, d3d->menu);
+      menu_driver_frame(video_info);
    }
 #endif
 
@@ -1457,7 +1461,7 @@ static bool d3d_frame(void *data, const void *frame,
    if (d3d->overlays_enabled)
    {
       for (i = 0; i < d3d->overlays.size(); i++)
-         d3d_overlay_render(d3d, &d3d->overlays[i]);
+         d3d_overlay_render(d3d, video_info, &d3d->overlays[i]);
    }
 #endif
 
@@ -1470,7 +1474,7 @@ static bool d3d_frame(void *data, const void *frame,
    return true;
 }
 
-static bool d3d_read_viewport(void *data, uint8_t *buffer)
+static bool d3d_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    d3d_video_t *d3d   = (d3d_video_t*)data;
 

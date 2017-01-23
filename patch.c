@@ -31,9 +31,7 @@
 #include <encodings/crc32.h>
 
 #include "msg_hash.h"
-#include "patch.h"
 #include "retroarch.h"
-#include "runloop.h"
 #include "verbosity.h"
 
 enum bps_mode
@@ -553,40 +551,30 @@ error:
    return false;
 }
 
-static bool try_bps_patch(uint8_t **buf, ssize_t *size)
+static bool try_bps_patch(bool allow_bps, const char *name_bps,
+      uint8_t **buf, ssize_t *size)
 {
-   global_t *global = global_get_ptr();
-   bool allow_bps   = !rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL) && !rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
-
-   if (!allow_bps || string_is_empty(global->name.bps))
-      return false;
-
-   return apply_patch_content(buf, size, "BPS", global->name.bps,
-         bps_apply_patch);
+   if (allow_bps && !string_is_empty(name_bps))
+      return apply_patch_content(buf, size, "BPS", name_bps,
+            bps_apply_patch);
+   return false;
 }
 
-static bool try_ups_patch(uint8_t **buf, ssize_t *size)
+static bool try_ups_patch(bool allow_ups, const char *name_ups,
+      uint8_t **buf, ssize_t *size)
 {
-   global_t *global = global_get_ptr();
-   bool allow_ups   = !rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL) && !rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
-
-   if (!allow_ups || string_is_empty(global->name.ups))
-      return false;
-
-   return apply_patch_content(buf, size, "UPS", global->name.ups,
-         ups_apply_patch);
+   if (allow_ups && !string_is_empty(name_ups))
+      return apply_patch_content(buf, size, "UPS", name_ups,
+            ups_apply_patch);
+   return false;
 }
 
-static bool try_ips_patch(uint8_t **buf, ssize_t *size)
+static bool try_ips_patch(bool allow_ips,
+      const char *name_ips, uint8_t **buf, ssize_t *size)
 {
-   global_t *global = global_get_ptr();
-   bool allow_ips   = !rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL) && !rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
-
-   if (!allow_ips || string_is_empty(global->name.ips))
-      return false;
-
-   return apply_patch_content(buf, size, "IPS", global->name.ips,
-         ips_apply_patch);
+   if (allow_ips && !string_is_empty(name_ips))
+      return apply_patch_content(buf, size, "IPS", name_ips, ips_apply_patch);
+   return false;
 }
 
 /**
@@ -597,8 +585,17 @@ static bool try_ips_patch(uint8_t **buf, ssize_t *size)
  * Apply patch to the content file in-memory.
  *
  **/
-void patch_content(uint8_t **buf, ssize_t *size)
+void patch_content(
+      const char *name_ips,
+      const char *name_bps,
+      const char *name_ups,
+      uint8_t **buf,
+      ssize_t *size)
 {
+   bool allow_ups   = !rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL) && !rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
+   bool allow_ips   = !rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL) && !rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
+   bool allow_bps   = !rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL) && !rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
+
    if (    (unsigned)rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL) 
          + (unsigned)rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL) 
          + (unsigned)rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL) > 1)
@@ -608,9 +605,9 @@ void patch_content(uint8_t **buf, ssize_t *size)
       return;
    }
 
-   if (     !try_ips_patch(buf, size) 
-         && !try_bps_patch(buf, size) 
-         && !try_ups_patch(buf, size))
+   if (     !try_ips_patch(allow_ips, name_ips, buf, size) 
+         && !try_bps_patch(allow_bps, name_bps, buf, size) 
+         && !try_ups_patch(allow_ups, name_ups, buf, size))
    {
       RARCH_LOG("%s\n",
             msg_hash_to_str(MSG_DID_NOT_FIND_A_VALID_CONTENT_PATCH));

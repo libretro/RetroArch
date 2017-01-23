@@ -1,0 +1,166 @@
+diff --git a/gfx/drivers_context/wgl_ctx.cpp b/gfx/drivers_context/wgl_ctx.cpp
+index fc6132d..6c81bcb 100644
+--- a/gfx/drivers_context/wgl_ctx.cpp
++++ b/gfx/drivers_context/wgl_ctx.cpp
+@@ -81,6 +81,20 @@
+ #endif
+ 
+ #if defined(HAVE_OPENGL)
++typedef BOOL  (WINAPI * PFNWGLGETSYNCVALUESOMLPROC)(HDC hdc, INT64 *ust, INT64 *msc, INT64 *sbc);
++typedef BOOL  (WINAPI * PFNWGLGETMSCRATEOMLPROC)(HDC hdc, INT32 *numerator, INT32 *denominator);
++typedef INT64 (WINAPI * PFNWGLSWAPBUFFERSMSCOMLPROC)(HDC hdc, INT64 target_msc, INT64 divisor, INT64 remainder);
++typedef BOOL  (WINAPI * PFNWGLWAITFORMSCOMLPROC)(HDC hdc, INT64 target_msc, INT64 divisor, INT64 remainder, INT64 *ust, INT64 *msc, INT64 *sbc);
++typedef BOOL  (WINAPI * PFNWGLWAITFORSBCOMLPROC)(HDC hdc, INT64 traget_sbc, INT64 *ust, INT64 *msc, INT64 *sbc);
++typedef const char * (WINAPI * PFNWGLGETEXTENSIONSSTRINGARBPROC)(HDC hdc);
++
++static PFNWGLGETEXTENSIONSSTRINGARBPROC wglGetExtensionsStringARB;
++static PFNWGLGETSYNCVALUESOMLPROC  wglGetSyncValuesOML;
++static PFNWGLGETMSCRATEOMLPROC     wglGetMscRateOML;
++static PFNWGLSWAPBUFFERSMSCOMLPROC wglSwapBuffersMscOML;
++static PFNWGLWAITFORMSCOMLPROC     wglWaitForMscOML;
++static PFNWGLWAITFORSBCOMLPROC     wglWaitForSbcOML;
++
+ typedef HGLRC (APIENTRY *wglCreateContextAttribsProc)(HDC, HGLRC, const int*);
+ static wglCreateContextAttribsProc pcreate_context;
+ #endif
+@@ -91,6 +105,13 @@ static HGLRC win32_hw_hrc;
+ static HDC   win32_hdc;
+ static bool  win32_use_hw_ctx             = false;
+ static bool  win32_core_hw_context_enable = false;
++static unsigned g_wgl_swap_mode           = 0;
++
++static int     g_wgl_divisor              = 0;
++static int     g_wgl_remainder            = 0;
++static int64_t g_wgl_ust                  = 0;
++static int64_t g_wgl_msc                  = 0;
++static int64_t g_wgl_sbc                  = 0;
+ 
+ #ifdef HAVE_VULKAN
+ static gfx_ctx_vulkan_data_t win32_vk;
+@@ -103,6 +124,44 @@ static enum gfx_ctx_api win32_api         = GFX_CTX_NONE;
+ 
+ static dylib_t          dll_handle        = NULL; /* Handle to OpenGL32.dll */
+ 
++static unsigned strclen(const unsigned char *s, unsigned char c)
++{
++	unsigned i = 0;
++	while (s + i != NULL && s[i] != '\0' && s[i] != c)
++		i++;
++	return i;
++}
++
++static bool strsame(const unsigned char *a, const unsigned char *b, unsigned n)
++{
++	unsigned i = 0;
++	while (i < n && a + i != NULL && b + i != NULL && a[i] == b[i])
++		i++;
++	return i == n;
++}
++
++static bool  wgl_has_extension(HDC hdc, const char *ext)
++{
++	char *end;
++	int len = strlen(ext);
++	char *p = (char*)wglGetExtensionsStringARB(hdc);
++
++	if (p == 0)
++		return false;
++
++	end = p + strlen(p);
++
++	while (p < end)
++	{
++		int n = strclen((const unsigned char*)p, ' ');
++		if (len == n && strsame((const unsigned char*)ext, (const unsigned char*)p, n))
++			return true;
++		p += n+1;
++	}
++
++	return false;
++}
++
+ static void setup_pixel_format(HDC hdc)
+ {
+    PIXELFORMATDESCRIPTOR pfd = {0};
+@@ -282,9 +341,7 @@ static void gfx_ctx_wgl_swap_interval(void *data, unsigned interval)
+       case GFX_CTX_OPENGL_API:
+ #ifdef HAVE_OPENGL
+          win32_interval = interval;
+-         if (!win32_hrc)
+-            return;
+-         if (!p_swap_interval)
++         if (!win32_hrc || !p_swap_interval)
+             return;
+ 
+          RARCH_LOG("[WGL]: wglSwapInterval(%u)\n", win32_interval);
+@@ -339,7 +396,19 @@ static void gfx_ctx_wgl_swap_buffers(void *data, video_frame_info_t video_info)
+    {
+       case GFX_CTX_OPENGL_API:
+ #ifdef HAVE_OPENGL
+-         SwapBuffers(win32_hdc);
++		  if (g_wgl_swap_mode)
++		  {
++			  if (win32_interval)
++			  {
++				  wglWaitForMscOML(win32_hdc, g_wgl_msc + win32_interval,
++					  0, 0, &g_wgl_ust, &g_wgl_msc, &g_wgl_sbc);
++				  wglSwapBuffersMscOML(win32_hdc, 0, 0, 0);
++			  }
++			  else
++				  wglSwapBuffersMscOML(win32_hdc, 0, g_wgl_divisor, g_wgl_remainder);
++		  }
++		  else
++		     SwapBuffers(win32_hdc);
+ #endif
+          break;
+ 
+@@ -439,11 +508,35 @@ static void *gfx_ctx_wgl_init(video_frame_info_t video_info, void *video_driver)
+    win32_monitor_init();
+ 
+    wndclass.lpfnWndProc   = WndProcGL;
++   g_wgl_swap_mode        = 0;
+    if (!win32_window_init(&wndclass, true, NULL))
+            return NULL;
+ 
+    switch (win32_api)
+    {
++      case GFX_CTX_OPENGL_API:
++		  RARCH_LOG("Testing if extension WGL_OML_sync_control is available...\n");
++		  wglGetExtensionsStringARB = (PFNWGLGETEXTENSIONSSTRINGARBPROC)wglGetProcAddress("wglGetExtensionsStringARB");
++
++		  if (wgl_has_extension(win32_hdc, "WGL_OML_sync_control"))
++		  {
++            RARCH_LOG("WGL_OML_sync_control supported, using better swap control method...\n");
++
++			g_wgl_swap_mode      = 1;
++			wglGetSyncValuesOML  = (PFNWGLGETSYNCVALUESOMLPROC)
++			  wglGetProcAddress("wglGetSyncValuesOML");
++			wglGetMscRateOML     = (PFNWGLGETMSCRATEOMLPROC)
++			  wglGetProcAddress("wglGetMscRateOML");
++			wglSwapBuffersMscOML = (PFNWGLSWAPBUFFERSMSCOMLPROC)
++			  wglGetProcAddress("wglSwapBuffersMscOML");
++			wglWaitForMscOML = (PFNWGLWAITFORMSCOMLPROC)
++			  wglGetProcAddress("wglWaitForMscOML");
++			wglWaitForSbcOML = (PFNWGLWAITFORSBCOMLPROC)
++			  wglGetProcAddress("wglWaitForSbcOML");
++
++			wglGetSyncValuesOML(win32_hdc, &g_wgl_ust, &g_wgl_msc, &g_wgl_sbc);
++		  }
++	     break;
+       case GFX_CTX_VULKAN_API:
+ #ifdef HAVE_VULKAN
+          if (!vulkan_context_init(&win32_vk, VULKAN_WSI_WIN32))
+@@ -522,6 +615,13 @@ static void gfx_ctx_wgl_destroy(void *data)
+    win32_major                  = 0;
+    win32_minor                  = 0;
+    p_swap_interval              = NULL;
++
++   g_wgl_swap_mode              = 0;
++   g_wgl_divisor                = 0;
++   g_wgl_remainder              = 0;
++   g_wgl_ust                    = 0;
++   g_wgl_msc                    = 0;
++   g_wgl_sbc                    = 0;
+ }
+ 
+ static bool gfx_ctx_wgl_set_video_mode(void *data,

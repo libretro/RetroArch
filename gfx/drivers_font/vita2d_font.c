@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -18,9 +18,11 @@
 
 #include <encodings/utf.h>
 
+#include "../common/vita2d_common.h"
+
 #include "../font_driver.h"
 
-#include "../../configuration.h"
+#include "../../verbosity.h"
 
 typedef struct
 {
@@ -98,6 +100,8 @@ static void vita2d_font_free_font(void *data)
    vita2d_wait_rendering_done();
 #endif
    vita2d_free_texture(font->texture);
+
+   free(font);
 }
 
 static int vita2d_font_get_message_width(void *data, const char *msg,
@@ -135,20 +139,18 @@ static int vita2d_font_get_message_width(void *data, const char *msg,
 }
 
 static void vita2d_font_render_line(
+      video_frame_info_t *video_info,
       vita_font_t *font, const char *msg, unsigned msg_len,
       float scale, const unsigned int color, float pos_x,
       float pos_y, unsigned text_align)
 {
-   int x, y, delta_x, delta_y;
-   unsigned width, height;
    unsigned i;
-
-   video_driver_get_size(&width, &height);
-
-   x       = roundf(pos_x * width);
-   y       = roundf((1.0f - pos_y) * height);
-   delta_x = 0;
-   delta_y = 0;
+   unsigned width  = video_info->width;
+   unsigned height = video_info->height;
+   int x           = roundf(pos_x * width);
+   int y           = roundf((1.0f - pos_y) * height);
+   int delta_x     = 0;
+   int delta_y     = 0;
 
    switch (text_align)
    {
@@ -217,6 +219,7 @@ static void vita2d_font_render_line(
 }
 
 static void vita2d_font_render_message(
+      video_frame_info_t *video_info,
       vita_font_t *font, const char *msg, float scale,
       const unsigned int color, float pos_x, float pos_y,
       unsigned text_align)
@@ -230,7 +233,7 @@ static void vita2d_font_render_message(
    /* If the font height is not supported just draw as usual */
    if (!font->font_driver->get_line_height)
    {
-      vita2d_font_render_line(font, msg, strlen(msg),
+      vita2d_font_render_line(video_info, font, msg, strlen(msg),
             scale, color, pos_x, pos_y, text_align);
       return;
    }
@@ -243,7 +246,7 @@ static void vita2d_font_render_message(
       const char *delim = strchr(msg, '\n');
       unsigned msg_len  = (delim) ? (delim - msg) : strlen(msg);
 
-      vita2d_font_render_line(font, msg, msg_len,
+      vita2d_font_render_line(video_info, font, msg, msg_len,
             scale, color, pos_x, pos_y - (float)lines * line_height,
             text_align);
 
@@ -256,22 +259,23 @@ static void vita2d_font_render_message(
    }
 }
 
-static void vita2d_font_render_msg(void *data, const char *msg,
+static void vita2d_font_render_msg(
+      video_frame_info_t *video_info,
+      void *data, const char *msg,
       const void *userdata)
 {
    float x, y, scale, drop_mod, drop_alpha;
-   unsigned width, height;
    int drop_x, drop_y;
    unsigned max_glyphs;
    enum text_alignment text_align;
    unsigned color, color_dark, r, g, b, alpha, r_dark, g_dark, b_dark, alpha_dark;
    vita_font_t                *font = (vita_font_t *)data;
    const struct font_params *params = (const struct font_params*)userdata;
+   unsigned width                   = video_info->width;
+   unsigned height                  = video_info->height;
 
    if (!font || !msg || !*msg)
       return;
-
-   video_driver_get_size(&width, &height);
 
    if (params)
    {
@@ -291,16 +295,14 @@ static void vita2d_font_render_msg(void *data, const char *msg,
    }
    else
    {
-      settings_t *settings = config_get_ptr();
-
-      x              = settings->video.msg_pos_x;
-      y              = settings->video.msg_pos_y;
+      x              = video_info->font_msg_pos_x;
+      y              = video_info->font_msg_pos_y;
       scale          = 1.0f;
       text_align     = TEXT_ALIGN_LEFT;
 
-      r              = (settings->video.msg_color_r * 255);
-      g              = (settings->video.msg_color_g * 255);
-      b              = (settings->video.msg_color_b * 255);
+      r              = (video_info->font_msg_color_r * 255);
+      g              = (video_info->font_msg_color_g * 255);
+      b              = (video_info->font_msg_color_b * 255);
       alpha			   = 255;
       color 		   = RGBA8(r,g,b,alpha);
 
@@ -323,12 +325,12 @@ static void vita2d_font_render_msg(void *data, const char *msg,
       alpha_dark		= alpha * drop_alpha;
       color_dark     = RGBA8(r_dark,g_dark,b_dark,alpha_dark);
 
-      vita2d_font_render_message(font, msg, scale, color_dark,
+      vita2d_font_render_message(video_info, font, msg, scale, color_dark,
             x + scale * drop_x / width, y +
             scale * drop_y / height, text_align);
    }
 
-   vita2d_font_render_message(font, msg, scale,
+   vita2d_font_render_message(video_info, font, msg, scale,
          color, x, y, text_align);
 }
 
@@ -342,7 +344,8 @@ static const struct font_glyph *vita2d_font_get_glyph(
    return font->font_driver->get_glyph((void*)font->font_driver, code);
 }
 
-static void vita2d_font_flush_block(void *data)
+static void vita2d_font_flush_block(unsigned width, unsigned height,
+      void *data)
 {
    (void)data;
 }

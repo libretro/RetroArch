@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -14,8 +14,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../video_driver.h"
+
 #include "../../driver.h"
-#include "../../configuration.h"
 #include "../../verbosity.h"
 
 static void *null_gfx_init(const video_info_t *video,
@@ -32,7 +33,7 @@ static void *null_gfx_init(const video_info_t *video,
 
 static bool null_gfx_frame(void *data, const void *frame,
       unsigned width, unsigned height, uint64_t frame_count,
-      unsigned pitch, const char *msg, video_frame_info_t video_info)
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    (void)data;
    (void)frame;
@@ -104,7 +105,7 @@ static void null_gfx_viewport_info(void *data,
    (void)vp;
 }
 
-static bool null_gfx_read_viewport(void *data, uint8_t *buffer)
+static bool null_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    (void)data;
    (void)buffer;

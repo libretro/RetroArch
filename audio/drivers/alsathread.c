@@ -318,7 +318,7 @@ static void alsa_thread_set_nonblock_state(void *data, bool state)
    alsa->nonblock = state;
 }
 
-static bool alsa_thread_start(void *data)
+static bool alsa_thread_start(void *data, bool is_shutdown)
 {
    alsa_thread_t *alsa = (alsa_thread_t*)data;
 

@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -37,9 +37,6 @@
 #endif
 
 #include "../../frontend/drivers/platform_linux.h"
-
-#include "../../configuration.h"
-#include "../../runloop.h"
 
 static enum gfx_ctx_api android_api           = GFX_CTX_NONE;
 
@@ -101,7 +98,7 @@ static void android_gfx_ctx_destroy(void *data)
    free(data);
 }
 
-static void *android_gfx_ctx_init(video_frame_info_t video_info, void *video_driver)
+static void *android_gfx_ctx_init(video_frame_info_t *video_info, void *video_driver)
 {
 #ifdef HAVE_OPENGLES
    EGLint n, major, minor;
@@ -231,12 +228,12 @@ static void android_gfx_ctx_get_video_size(void *data,
 }
 
 static void android_gfx_ctx_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
+      bool *resize, unsigned *width, unsigned *height,
+      bool is_shutdown)
 {
-   unsigned new_width, new_height;
+   unsigned new_width       = 0;
+   unsigned new_height      = 0;
    android_ctx_data_t *and  = (android_ctx_data_t*)data;
-
-   (void)frame_count;
 
    *quit = false;
 
@@ -273,7 +270,7 @@ static void android_gfx_ctx_check_window(void *data, bool *quit,
    }
 
    /* Check if we are exiting. */
-   if (runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL))
+   if (is_shutdown)
       *quit = true;
 }
 
@@ -314,21 +311,8 @@ static bool android_gfx_ctx_set_resize(void *data,
    return false;
 }
 
-static void android_gfx_ctx_update_window_title(void *data, video_frame_info_t video_info)
-{
-   char buf[128];
-   char buf_fps[128];
-
-   buf[0] = buf_fps[0] = '\0';
-
-   video_monitor_get_fps(video_info, buf, sizeof(buf),
-         buf_fps, sizeof(buf_fps));
-   if (video_info.fps_show)
-      runloop_msg_queue_push(buf_fps, 1, 1, false);
-}
-
 static bool android_gfx_ctx_set_video_mode(void *data,
-      video_frame_info_t video_info,
+      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -366,10 +350,10 @@ static bool android_gfx_ctx_set_video_mode(void *data,
 }
 
 static void android_gfx_ctx_input_driver(void *data,
+      const char *joypad_name,
       const input_driver_t **input, void **input_data)
 {
-   settings_t *settings = config_get_ptr();
-   void *androidinput   = input_android.init(settings->input.joypad_driver);
+   void *androidinput   = input_android.init(joypad_name);
 
    *input               = androidinput ? &input_android : NULL;
    *input_data          = androidinput;
@@ -436,12 +420,6 @@ static bool android_gfx_ctx_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool android_gfx_ctx_has_windowed(void *data)
-{
-   (void)data;
-   return false;
-}
-
 static void dpi_get_density(char *s, size_t len)
 {
    system_property_get("getprop", "ro.sf.lcd_density", s);
@@ -493,7 +471,7 @@ dpi_fallback:
    return true;
 }
 
-static void android_gfx_ctx_swap_buffers(void *data, video_frame_info_t video_info)
+static void android_gfx_ctx_swap_buffers(void *data, video_frame_info_t *video_info)
 {
    android_ctx_data_t *and  = (android_ctx_data_t*)data;
 
@@ -618,12 +596,12 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    NULL, /* get_video_output_next */
    android_gfx_ctx_get_metrics,
    NULL,
-   android_gfx_ctx_update_window_title,
+   NULL, /* update_title */
    android_gfx_ctx_check_window,
    android_gfx_ctx_set_resize,
    android_gfx_ctx_has_focus,
    android_gfx_ctx_suppress_screensaver,
-   android_gfx_ctx_has_windowed,
+   NULL, /* has_windowed */
    android_gfx_ctx_swap_buffers,
    android_gfx_ctx_input_driver,
    android_gfx_ctx_get_proc_address,

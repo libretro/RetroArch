@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -59,7 +59,7 @@ static void renderchain_set_mvp(void *data, unsigned vp_width,
    mvp.data   = d3d;
    mvp.matrix = NULL;
 
-   video_shadser_driver_set_mvp(mvp);
+   video_shader_driver_set_mvp(mvp);
 #elif defined(HAVE_D3D8)
    D3DXMATRIX p_out, p_rotate, mat;
    D3DXMatrixOrthoOffCenterLH(&mat, 0, vp_width,  vp_height, 0, 0.0f, 1.0f);

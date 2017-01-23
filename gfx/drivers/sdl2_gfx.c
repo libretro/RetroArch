@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2015 - Higor Euripedes
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Higor Euripedes
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -35,13 +36,13 @@
 #include "SDL.h"
 #include "SDL_syswm.h"
 
+#include "../font_driver.h"
+
 #include "../../configuration.h"
 #include "../../retroarch.h"
-#include "../../runloop.h"
 #include "../../performance_counters.h"
 #include "../../verbosity.h"
 #include "../video_context_driver.h"
-#include "../font_driver.h"
 
 typedef struct sdl2_tex
 {
@@ -498,17 +499,15 @@ static void check_window(sdl2_video_t *vid)
 
 static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
       unsigned height, uint64_t frame_count,
-      unsigned pitch, const char *msg, video_frame_info_t video_info)
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
-   char buf[128];
    sdl2_video_t *vid = (sdl2_video_t*)data;
-
-   buf[0] = '\0';
+   char title[128];
 
    if (vid->should_resize)
       sdl_refresh_viewport(vid);
 
-   if (frame)
+   if (frame && video_info->libretro_running)
    {
       static struct retro_perf_counter sdl_copy_frame = {0};
 
@@ -525,7 +524,7 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
    SDL_RenderCopyEx(vid->renderer, vid->frame.tex, NULL, NULL, vid->rotation, NULL, SDL_FLIP_NONE);
 
 #ifdef HAVE_MENU
-   menu_driver_ctl(RARCH_MENU_CTL_FRAME, NULL);
+   menu_driver_frame(video_info);
 #endif
 
    if (vid->menu.active)
@@ -536,8 +535,12 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
 
    SDL_RenderPresent(vid->renderer);
 
-   if (video_monitor_get_fps(video_info, buf, sizeof(buf), NULL, 0))
-      SDL_SetWindowTitle(vid->window, buf);
+   title[0] = '\0';
+
+   video_driver_get_window_title(title, sizeof(title));
+
+   if (title[0])
+      SDL_SetWindowTitle(vid->window, title);
 
    return true;
 }
@@ -623,7 +626,7 @@ static void sdl2_gfx_viewport_info(void *data, struct video_viewport *vp)
    *vp = vid->vp;
 }
 
-static bool sdl2_gfx_read_viewport(void *data, uint8_t *buffer)
+static bool sdl2_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    SDL_Surface *surf = NULL, *bgr24 = NULL;
    sdl2_video_t *vid = (sdl2_video_t*)data;
@@ -632,7 +635,7 @@ static bool sdl2_gfx_read_viewport(void *data, uint8_t *buffer)
    performance_counter_init(&sdl2_gfx_read_viewport, "sdl2_gfx_read_viewport");
    performance_counter_start(&sdl2_gfx_read_viewport);
 
-   if (!runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
+   if (!is_idle)
       video_driver_cached_frame();
 
    surf  = SDL_GetWindowSurface(vid->window);
@@ -723,7 +726,7 @@ static void sdl2_poke_texture_enable(void *data, bool enable, bool full_screen)
 }
 
 static void sdl2_poke_set_osd_msg(void *data, const char *msg,
-      const struct font_params *params, void *font)
+      const void *params, void *font)
 {
    sdl2_video_t *vid = (sdl2_video_t*)data;
    sdl2_render_msg(vid, msg);

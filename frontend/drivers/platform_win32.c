@@ -1,5 +1,5 @@
 /* RetroArch - A frontend for libretro.
- * Copyright (C) 2011-2016 - Daniel De Matteis
+ * Copyright (C) 2011-2017 - Daniel De Matteis
  *
  * RetroArch is free software: you can redistribute it and/or modify it under the terms
  * of the GNU General Public License as published by the Free Software Found-
@@ -311,24 +311,40 @@ static void frontend_win32_environment_get(int *argc, char *argv[],
 
 static uint64_t frontend_win32_get_mem_total(void)
 {
+   /* OSes below 2000 don't have the Ex version, and non-Ex cannot work with >4GB RAM */
+#if _WIN32_WINNT > 0x0400
 	MEMORYSTATUSEX mem_info;
 	mem_info.dwLength = sizeof(MEMORYSTATUSEX);
 	GlobalMemoryStatusEx(&mem_info);
 	return mem_info.ullTotalPhys;
+#else
+	MEMORYSTATUS mem_info;
+	mem_info.dwLength = sizeof(MEMORYSTATUS);
+	GlobalMemoryStatus(&mem_info);
+	return mem_info.dwTotalPhys;
+#endif
 }
 
 static uint64_t frontend_win32_get_mem_used(void)
 {
+   /* OSes below 2000 don't have the Ex version, and non-Ex cannot work with >4GB RAM */
+#if _WIN32_WINNT > 0x0400
 	MEMORYSTATUSEX mem_info;
 	mem_info.dwLength = sizeof(MEMORYSTATUSEX);
 	GlobalMemoryStatusEx(&mem_info);
 	return ((frontend_win32_get_mem_total() - mem_info.ullAvailPhys));
+#else
+	MEMORYSTATUS mem_info;
+	mem_info.dwLength = sizeof(MEMORYSTATUS);
+	GlobalMemoryStatus(&mem_info);
+	return ((frontend_win32_get_mem_total() - mem_info.dwAvailPhys));
+#endif
 }
 
 static void frontend_win32_attach_console(void)
 {
 #ifdef _WIN32
-#if(_WIN32_WINNT >= 0x0500)
+#ifdef _WIN32_WINNT_WINXP
    if (!AttachConsole(ATTACH_PARENT_PROCESS))
    {
       AllocConsole();
@@ -343,7 +359,7 @@ static void frontend_win32_attach_console(void)
 static void frontend_win32_detach_console(void)
 {
 #if defined(_WIN32) && !defined(_XBOX)
-#if(_WIN32_WINNT >= 0x0500)
+#ifdef _WIN32_WINNT_WINXP
    if (!AttachConsole(ATTACH_PARENT_PROCESS))
    {
       HWND wnd = GetConsoleWindow();

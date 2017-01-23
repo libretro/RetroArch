@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -28,8 +28,9 @@
 #endif
 
 #include "video_state_tracker.h"
+
 #include "../input/input_config.h"
-#include "../configuration.h"
+
 #include "../verbosity.h"
 
 struct state_tracker_internal

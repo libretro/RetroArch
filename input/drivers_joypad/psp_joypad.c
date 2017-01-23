@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -15,13 +15,23 @@
  */
 
 #include <stdint.h>
+#include <string.h>
+
+#include "../input_config.h"
 
 #include "../../tasks/tasks_internal.h"
 
 #include "../../configuration.h"
 
+#include "../../defines/psp_defines.h"
+
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
 #if defined(VITA)
 #include <psp2/kernel/sysmem.h>
+#include <psp2/ctrl.h>
 #include <psp2/touch.h>
 #define PSP_MAX_PADS 4
 static int psp2_model;
@@ -57,7 +67,8 @@ static const char *psp_joypad_name(unsigned pad)
    if (psp2_model != SCE_KERNEL_MODEL_VITATV)
       return "Vita Controller";
 
-   switch (curr_ctrl_info.port[pad + 1]) {
+   switch (curr_ctrl_info.port[pad + 1])
+   {
       case SCE_CTRL_TYPE_DS3:
          return "DS3 Controller";
       case SCE_CTRL_TYPE_DS4:
@@ -92,7 +103,8 @@ static bool psp_joypad_init(void *data)
 
 #if defined(VITA)
    psp2_model = sceKernelGetModelForCDialog();
-   if (psp2_model != SCE_KERNEL_MODEL_VITATV) {
+   if (psp2_model != SCE_KERNEL_MODEL_VITATV)
+   {
       sceTouchSetSamplingState(SCE_TOUCH_PORT_BACK, SCE_TOUCH_SAMPLING_STATE_START);
       sceTouchSetSamplingState(SCE_TOUCH_PORT_FRONT, SCE_TOUCH_SAMPLING_STATE_START);
       players_count = 1;
@@ -178,16 +190,19 @@ static void psp_joypad_poll(void)
 #endif
 
 #ifdef VITA
-   if (psp2_model != SCE_KERNEL_MODEL_VITATV) {
+   if (psp2_model != SCE_KERNEL_MODEL_VITATV)
       players_count = 1;
-   } else {
+   else
+   {
       sceCtrlGetControllerPortInfo(&curr_ctrl_info);
-      for (player = 0; player < players_count; player++) {
+      for (player = 0; player < players_count; player++)
+      {
          if (old_ctrl_info.port[player + 1] == curr_ctrl_info.port[player + 1])
             continue;
 
          if (old_ctrl_info.port[player + 1] != SCE_CTRL_TYPE_UNPAIRED &&
-               curr_ctrl_info.port[player + 1] == SCE_CTRL_TYPE_UNPAIRED) {
+               curr_ctrl_info.port[player + 1] == SCE_CTRL_TYPE_UNPAIRED)
+         {
             memset(&actuators[player], 0, sizeof(SceCtrlActuator));
             input_autoconfigure_disconnect(player, psp_joypad.ident);
          }
@@ -235,7 +250,7 @@ static void psp_joypad_poll(void)
 #endif
 #if defined(VITA)
       if (psp2_model == SCE_KERNEL_MODEL_VITA 
-         && !menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL)
+         && !menu_driver_is_alive()
          && settings->input.backtouch_enable)
       {
          unsigned i;
@@ -311,7 +326,8 @@ static bool psp_joypad_rumble(unsigned pad,
    switch (effect)
    {
       case RETRO_RUMBLE_WEAK:
-         switch (curr_ctrl_info.port[pad + 1]) {
+         switch (curr_ctrl_info.port[pad + 1])
+         {
             case SCE_CTRL_TYPE_DS3:
                actuators[pad].small = strength > 1 ? 1 : 0;
                break;
@@ -323,7 +339,8 @@ static bool psp_joypad_rumble(unsigned pad,
          }
          break;
       case RETRO_RUMBLE_STRONG:
-         switch (curr_ctrl_info.port[pad + 1]) {
+         switch (curr_ctrl_info.port[pad + 1])
+         {
             case SCE_CTRL_TYPE_DS3:
                actuators[pad].large = strength > 1 ? LERP(strength, 0xffff, 0xbf) + 0x40 : 0;
                break;

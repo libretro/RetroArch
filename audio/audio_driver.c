@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -456,11 +456,9 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
          RARCH_WARN("Audio rate control was desired, but driver does not support needed features.\n");
    }
 
+   /* If we start muted, stop the audio driver, so subsequent unmute works. */
    if (!audio_cb_inited && audio_driver_active && settings->audio.mute_enable)
-   {
-      /* If we start muted, stop the audio driver, so subsequent unmute works. */
       audio_driver_stop();
-   }
 
    command_event(CMD_EVENT_DSP_FILTER_INIT, NULL);
 
@@ -472,7 +470,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
          && !settings->audio.mute_enable
          && audio_cb_inited
          )
-      audio_driver_start();
+      audio_driver_start(false);
 
    return true;
 
@@ -509,6 +507,9 @@ void audio_driver_set_nonblocking_state(bool enable)
 static bool audio_driver_flush(const int16_t *data, size_t samples)
 {
    struct resampler_data src_data;
+   bool is_paused                                       = false;
+   bool is_idle                                         = false;
+   bool is_slowmotion                                   = false;
    static struct retro_perf_counter resampler_proc      = {0};
    static struct retro_perf_counter audio_convert_s16   = {0};
    const void *output_data                              = NULL;
@@ -525,7 +526,9 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    if (recording_data)
       recording_push_audio(data, samples);
 
-   if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) || settings->audio.mute_enable)
+   runloop_get_status(&is_paused, &is_idle, &is_slowmotion);
+
+   if (is_paused || settings->audio.mute_enable)
       return true;
    if (!audio_driver_active || !audio_driver_input_data)
       return false;
@@ -597,7 +600,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
 
    src_data.ratio = audio_source_ratio_current;
 
-   if (runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, NULL))
+   if (is_slowmotion)
       src_data.ratio *= settings->slowmotion_ratio;
 
    performance_counter_init(&resampler_proc, "resampler_proc");
@@ -965,12 +968,12 @@ bool audio_driver_toggle_mute(void)
    return true;
 }
 
-bool audio_driver_start(void)
+bool audio_driver_start(bool is_shutdown)
 {
    if (!current_audio || !current_audio->start 
          || !audio_driver_context_audio_data)
       return false;
-   return current_audio->start(audio_driver_context_audio_data);
+   return current_audio->start(audio_driver_context_audio_data, is_shutdown);
 }
 
 bool audio_driver_stop(void)

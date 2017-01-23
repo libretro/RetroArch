@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -23,6 +23,7 @@
 #include <retro_common_api.h>
 
 #include "video_driver.h"
+#include "font_driver.h"
 
 RETRO_BEGIN_DECLS
 
@@ -53,7 +54,7 @@ typedef struct thread_video thread_video_t;
 bool video_init_thread(
       const video_driver_t **out_driver, void **out_data,
       const input_driver_t **input, void **input_data,
-      const video_driver_t *driver, const video_info_t *info);
+      const video_driver_t *driver, const video_info_t info);
 
 /**
  * video_thread_get_ptr:

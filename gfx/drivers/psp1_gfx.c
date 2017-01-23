@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2014-2015 - Ali Bouhlel
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2014-2017 - Ali Bouhlel
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -28,8 +28,13 @@
 #include "../../config.h"
 #endif
 
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
+#include "../font_driver.h"
+
 #include "../../defines/psp_defines.h"
-#include "../../runloop.h"
 
 #ifndef SCEGU_SCR_WIDTH
 #define SCEGU_SCR_WIDTH 480
@@ -467,7 +472,7 @@ static void *psp_init(const video_info_t *video,
 
 static bool psp_frame(void *data, const void *frame,
       unsigned width, unsigned height, uint64_t frame_count,
-      unsigned pitch, const char *msg, video_frame_info_t video_info)
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
 #ifdef DISPLAY_FPS
    uint32_t diff;
@@ -476,8 +481,6 @@ static bool psp_frame(void *data, const void *frame,
    static float fps                        = 0.0;
 #endif
    static struct retro_perf_counter psp_frame_run = {0};
-   static char fps_txt[128]                = {0};
-   static char fps_text_buf[128]           = {0};
    psp1_video_t *psp                       = (psp1_video_t*)data;
 
    if (!width || !height)
@@ -495,14 +498,10 @@ static bool psp_frame(void *data, const void *frame,
 
    pspDebugScreenSetXY(0,0);
 
-   video_monitor_get_fps(video_info, fps_txt, sizeof(fps_txt),
-         video_info.fps_show ? fps_text_buf : NULL,
-         video_info.fps_show ? sizeof(fps_text_buf) : 0);
-
-   if (video_info.fps_show)
+   if (video_info->fps_show)
    {
-      pspDebugScreenSetXY(68 - strlen(fps_text_buf) - 1,0);
-      pspDebugScreenPuts(fps_text_buf);
+      pspDebugScreenSetXY(68 - strlen(video_info->fps_text) - 1,0);
+      pspDebugScreenPuts(video_info->fps_text);
       pspDebugScreenSetXY(0,1);
    }
 
@@ -566,6 +565,10 @@ static bool psp_frame(void *data, const void *frame,
    sceGuFinish();
 
    performance_counter_stop(&psp_frame_run);
+
+#ifdef HAVE_MENU
+   menu_driver_frame(video_info);
+#endif
 
    if(psp->menu.active)
    {
@@ -867,7 +870,7 @@ static void psp_get_poke_interface(void *data,
    *iface = &psp_poke_interface;
 }
 
-static bool psp_read_viewport(void *data, uint8_t *buffer)
+static bool psp_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    void* src_buffer;
    int i, j, src_bufferwidth, src_pixelformat, src_x, src_y, src_x_max, src_y_max;

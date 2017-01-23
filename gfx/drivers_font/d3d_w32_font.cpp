@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -46,7 +46,7 @@ static void *d3dfonts_w32_init_font(void *video_data,
       OUT_TT_PRECIS,
       CLIP_DEFAULT_PRECIS,
       DEFAULT_PITCH,
-#ifdef _MSC_VER  /* MSVC needs w_char* */
+#if defined(_MSC_VER) /* MSVC needs w_char* */
       L"Verdana" /* Hardcode FTL */
 #else
 	  "Verdana"
@@ -88,9 +88,12 @@ static void d3dfonts_w32_free_font(void *data)
    if (d3dfonts->font)
       d3dfonts->font->Release();
    d3dfonts->font = NULL;
+
+   free(d3dfonts);
+   d3dfonts = NULL;
 }
 
-static void d3dfonts_w32_render_msg(void *data, const char *msg,
+static void d3dfonts_w32_render_msg(video_frame_info_t *video_info, void *data, const char *msg,
       const void *userdata)
 {
    const struct font_params *params = (const struct font_params*)userdata;

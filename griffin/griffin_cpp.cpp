@@ -1,5 +1,5 @@
 /* RetroArch - A frontend for libretro.
-* Copyright (C) 2011-2016 - Daniel De Matteis
+* Copyright (C) 2011-2017 - Daniel De Matteis
 *
 * RetroArch is free software: you can redistribute it and/or modify it under the terms
 * of the GNU General Public License as published by the Free Software Found-
@@ -113,6 +113,10 @@ UI COMMON CONTEXT
 
 #if defined(HAVE_OPENGL) || defined(HAVE_VULKAN)
 #include "../gfx/drivers_context/wgl_ctx.cpp"
+#endif
+
+#if defined(_WIN32) && !defined(_XBOX)
+#include "../gfx/drivers_context/gdi_ctx.cpp"
 #endif
 
 #if defined(HAVE_FFMPEG)

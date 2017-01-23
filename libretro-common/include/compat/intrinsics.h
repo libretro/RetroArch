@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2016 The RetroArch team
+/* Copyright  (C) 2010-2017 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (intrinsics.h).
@@ -30,7 +30,7 @@
 #include <retro_common_api.h>
 #include <retro_inline.h>
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && !defined(_XBOX)
 #if (_MSC_VER > 1310)
 #include <intrin.h>
 #endif

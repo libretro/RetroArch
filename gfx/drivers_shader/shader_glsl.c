@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -33,8 +34,6 @@
 #endif
 
 #include "shader_glsl.h"
-#include "../video_state_tracker.h"
-#include "../../dynamic.h"
 #include "../../managers/state_manager.h"
 #include "../../core.h"
 
@@ -1367,12 +1366,16 @@ static bool gl_glsl_set_mvp(void *data, void *shader_data, const math_matrix_4x4
       goto fallback;
 
    loc = glsl->uniforms[glsl->active_idx].mvp;
-   if (loc >= 0) {
-      if (current_idx != glsl->active_idx || mat->data != current_mat_data_pointer[glsl->active_idx] || *mat->data != current_mat_data[glsl->active_idx]) {
+   if (loc >= 0)
+   {
+      if (  (current_idx != glsl->active_idx) || 
+            (mat->data != current_mat_data_pointer[glsl->active_idx]) || 
+            (*mat->data != current_mat_data[glsl->active_idx]))
+      {
          glUniformMatrix4fv(loc, 1, GL_FALSE, mat->data);
-         current_idx = glsl->active_idx;
+         current_idx                                = glsl->active_idx;
          current_mat_data_pointer[glsl->active_idx] = (float*)mat->data;
-         current_mat_data[glsl->active_idx] = *mat->data;
+         current_mat_data[glsl->active_idx]         = *mat->data;
       }
    }
    return true;

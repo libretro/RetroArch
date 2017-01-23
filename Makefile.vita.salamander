@@ -21,7 +21,7 @@ RARCH_DEFINES = -DVITA -DIS_SALAMANDER -DRARCH_CONSOLE
 
 LIBDIR =
 LDFLAGS =
-LIBS = -lSceKernel_stub -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub\
+LIBS = -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub\
      -lSceSysmodule_stub -lSceCtrl_stub -lSceAudio_stub -lSceFiber_stub\
      -lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lScePgf_stub \
      -lSceMotion_stub -lSceAppMgr_stub -lfreetype -lpng -lm -lc
@@ -48,7 +48,7 @@ OBJS = frontend/frontend_salamander.o \
 		 libretro-common/file/retro_stat.o \
 		 libretro-common/hash/rhash.o \
 		 file_path_str.o \
-		 verbosity.o 
+		 verbosity.o
 
 all: $(TARGET).vpk
 
@@ -67,7 +67,7 @@ $(TARGET).elf: $(OBJS)
 
 %.o: %.png
 	$(PREFIX)-ld -r -b binary -o $@ $^
-	
+
 clean:
 	@rm -rf $(TARGET).vpk $(TARGET).velf $(TARGET).elf $(OBJS) \
 		eboot.bin param.sfo

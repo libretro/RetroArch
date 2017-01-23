@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -23,7 +23,7 @@
 #include "shader_hlsl.h"
 
 #include "../video_shader_parse.h"
-#include "../d3d/d3d.h"
+#include "../drivers/d3d.h"
 #include "../../managers/state_manager.h"
 
 #include "../drivers/d3d_shaders/opaque.hlsl.d3d9.h"
@@ -63,8 +63,8 @@ struct hlsl_shader_data
 void hlsl_set_proj_matrix(void *data, XMMATRIX rotation_value)
 {
    hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)data;
-   if (hlsl_data)
-      hlsl_data->prg[hlsl_data->active_idx].mvp_val = rotation_value;
+   if (hlsl)
+      hlsl->prg[hlsl->active_idx].mvp_val = rotation_value;
 }
 
 static void hlsl_set_uniform_parameter(
@@ -126,12 +126,12 @@ static void hlsl_set_params(void *data, void *shader_data,
       const void *_feedback_info,
       const void *_fbo_info, unsigned fbo_info_cnt)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3d_device_ptr = (LPDIRECT3DDEVICE)d3d->dev;
-   const struct video_tex_info *info = (const struct video_tex_info*)_info;
+   d3d_video_t *d3d                       = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3d_device_ptr        = (LPDIRECT3DDEVICE)d3d->dev;
+   const struct video_tex_info *info      = (const struct video_tex_info*)_info;
    const struct video_tex_info *prev_info = (const struct video_tex_info*)_prev_info;
-   const struct video_tex_info *fbo_info = (const struct video_tex_info*)_fbo_info;
-   hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)shader_data;
+   const struct video_tex_info *fbo_info  = (const struct video_tex_info*)_fbo_info;
+   hlsl_shader_data_t *hlsl               = (hlsl_shader_data_t*)shader_data;
 
    if (!hlsl)
       return;
@@ -165,15 +165,15 @@ static bool hlsl_compile_program(
       void *program_data,
       struct shader_program_info *program_info)
 {
-   hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)data;
-   d3d_video_t *d3d = (d3d_video_t*)hlsl->d3d;
-   struct shader_program_hlsl_data *program  = (struct shader_program_hlsl_data*)program_data;
-   LPDIRECT3DDEVICE d3d_device_ptr = (LPDIRECT3DDEVICE)d3d->dev;
    HRESULT ret, ret_fp, ret_vp;
-   ID3DXBuffer *listing_f = NULL;
-   ID3DXBuffer *listing_v = NULL;
-   ID3DXBuffer *code_f = NULL;
-   ID3DXBuffer *code_v = NULL;
+   hlsl_shader_data_t *hlsl                  = (hlsl_shader_data_t*)data;
+   d3d_video_t *d3d                          = (d3d_video_t*)hlsl->d3d;
+   struct shader_program_hlsl_data *program  = (struct shader_program_hlsl_data*)program_data;
+   LPDIRECT3DDEVICE d3d_device_ptr           = (LPDIRECT3DDEVICE)d3d->dev;
+   ID3DXBuffer *listing_f                    = NULL;
+   ID3DXBuffer *listing_v                    = NULL;
+   ID3DXBuffer *code_f                       = NULL;
+   ID3DXBuffer *code_v                       = NULL;
 
    if (!program)
       program = &hlsl->prg[idx];
@@ -274,7 +274,7 @@ static bool hlsl_load_shader(hlsl_shader_data_t *hlsl,
 
    hlsl->d3d = (d3d_video_t*)data;
 
-   if (!hlsl_compile_program(hlsl, data, i + 1, &hlsl->prg[i + 1], &program_info))
+   if (!hlsl_compile_program(hlsl, i + 1, &hlsl->prg[i + 1], &program_info))
       return false;
 
    return true;
@@ -304,7 +304,7 @@ static bool hlsl_load_plain(hlsl_shader_data_t *hlsl, void *data, const char *pa
 		  path, sizeof(hlsl->cg_shader->pass[0].source.path));
 
       hlsl->d3d = (d3d_video_t*)data;
-      if (!hlsl_compile_program(hlsl, data, 1, &hlsl->prg[1], &progarm_info))
+      if (!hlsl_compile_program(hlsl, 1, &hlsl->prg[1], &program_info))
          return false;
    }
    else
@@ -454,9 +454,7 @@ static void hlsl_use(void *data, void *shader_data, unsigned idx, bool set_activ
    if (hlsl_data && hlsl_data->prg[idx].vprg && hlsl_data->prg[idx].fprg)
    {
       if (set_active)
-      {
          hlsl_data->active_idx = idx;
-      }
 
       d3d_set_vertex_shader(d3dr, idx, hlsl_data->prg[idx].vprg);
 #ifdef _XBOX
@@ -534,6 +532,7 @@ const shader_backend_t hlsl_backend = {
    hlsl_deinit,
    hlsl_set_params,
    hlsl_set_uniform_parameter,
+   NULL,               /* compile_program */
    hlsl_use,
    hlsl_num,
    hlsl_filter_type,

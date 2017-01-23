@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2014-2016 - Jean-André Santoni
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2014-2017 - Jean-André Santoni
+ *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -28,7 +28,6 @@
 
 #include "../database_info.h"
 
-#include "../configuration.h"
 #include "../file_path_special.h"
 #include "../list_special.h"
 #include "../msg_hash.h"
@@ -700,10 +699,12 @@ task_finished:
       free(dbinfo);
 }
 
-bool task_push_dbscan(const char *fullpath,
+bool task_push_dbscan(
+      const char *playlist_directory,
+      const char *content_database,
+      const char *fullpath,
       bool directory, retro_task_callback_t cb)
 {
-   settings_t *settings = config_get_ptr();
    retro_task_t *t      = (retro_task_t*)calloc(1, sizeof(*t));
    db_handle_t *db      = (db_handle_t*)calloc(1, sizeof(db_handle_t));
 
@@ -714,11 +715,9 @@ bool task_push_dbscan(const char *fullpath,
    t->state          = db;
    t->callback       = cb;
 
-   strlcpy(db->playlist_directory,
-         settings->directory.playlist,
+   strlcpy(db->playlist_directory, playlist_directory,
          sizeof(db->playlist_directory));
-   strlcpy(db->content_database_path,
-         settings->path.content_database,
+   strlcpy(db->content_database_path, content_database,
          sizeof(db->content_database_path));
 
    if (directory)

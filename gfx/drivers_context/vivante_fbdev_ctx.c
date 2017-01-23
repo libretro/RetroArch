@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011 2017 - Daniel De Matteis
  *  Copyright (C) 2014 2015 - Jean-Andre Santoni
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -29,7 +30,6 @@
 #endif
 
 #include "../../frontend/frontend_driver.h"
-#include "../../runloop.h"
 
 typedef struct
 {
@@ -58,7 +58,7 @@ static void gfx_ctx_vivante_destroy(void *data)
 
 }
 
-static void *gfx_ctx_vivante_init(video_frame_info_t video_info, void *video_driver)
+static void *gfx_ctx_vivante_init(video_frame_info_t *video_info, void *video_driver)
 {
 #ifdef HAVE_EGL
    EGLint n;
@@ -117,7 +117,8 @@ static void gfx_ctx_vivante_get_video_size(void *data,
 }
 
 static void gfx_ctx_vivante_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
+      bool *resize, unsigned *width, unsigned *height,
+      bool is_shutdown)
 {
    unsigned new_width, new_height;
    vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;
@@ -136,30 +137,8 @@ static void gfx_ctx_vivante_check_window(void *data, bool *quit,
    *quit = (bool)frontend_driver_get_signal_handler_state();
 }
 
-static bool gfx_ctx_vivante_set_resize(void *data,
-      unsigned width, unsigned height)
-{
-   (void)data;
-   (void)width;
-   (void)height;
-   return false;
-}
-
-static void gfx_ctx_vivante_update_window_title(void *data, video_frame_info_t video_info)
-{
-   char buf[128];
-   char buf_fps[128];
-
-   buf[0] = buf_fps[0] = '\0';
-
-   video_monitor_get_fps(video_info, buf, sizeof(buf),
-         buf_fps, sizeof(buf_fps));
-   if (video_info.fps_show)
-      runloop_msg_queue_push(buf_fps, 1, 1, false);
-}
-
 static bool gfx_ctx_vivante_set_video_mode(void *data,
-      video_frame_info_t video_info,
+      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -204,10 +183,10 @@ error:
 }
 
 static void gfx_ctx_vivante_input_driver(void *data,
+      const char *name,
       const input_driver_t **input, void **input_data)
 {
-   (void)data;
-   *input = NULL;
+   *input      = NULL;
    *input_data = NULL;
 }
 
@@ -231,12 +210,6 @@ static bool gfx_ctx_vivante_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool gfx_ctx_vivante_has_windowed(void *data)
-{
-   (void)data;
-   return false;
-}
-
 static void gfx_ctx_vivante_set_swap_interval(void *data, unsigned swap_interval)
 {
    vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;
@@ -246,7 +219,7 @@ static void gfx_ctx_vivante_set_swap_interval(void *data, unsigned swap_interval
 #endif
 }
 
-static void gfx_ctx_vivante_swap_buffers(void *data, video_frame_info_t video_info)
+static void gfx_ctx_vivante_swap_buffers(void *data, video_frame_info_t *video_info)
 {
    vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;
 
@@ -297,12 +270,12 @@ const gfx_ctx_driver_t gfx_ctx_vivante_fbdev = {
    NULL, /* get_video_output_next */
    NULL, /* get_metrics */
    NULL,
-   gfx_ctx_vivante_update_window_title,
+   NULL, /* update_title */
    gfx_ctx_vivante_check_window,
-   gfx_ctx_vivante_set_resize,
+   NULL, /* set_resize */
    gfx_ctx_vivante_has_focus,
    gfx_ctx_vivante_suppress_screensaver,
-   gfx_ctx_vivante_has_windowed,
+   NULL, /* has_windowed */
    gfx_ctx_vivante_swap_buffers,
    gfx_ctx_vivante_input_driver,
    gfx_ctx_vivante_get_proc_address,

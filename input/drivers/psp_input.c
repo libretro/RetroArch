@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -33,6 +33,7 @@
 
 #include <boolean.h>
 #include <libretro.h>
+#include <retro_miscellaneous.h>
 
 #ifdef HAVE_KERNEL_PRX
 #include "../../bootstrap/psp1/kernel_functions.h"

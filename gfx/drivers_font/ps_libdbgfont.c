@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -63,7 +63,9 @@ static void libdbg_font_free_font(void *data)
    DbgFontExit();
 }
 
-static void libdbg_font_render_msg(void *data, const char *msg,
+static void libdbg_font_render_msg(
+      video_frame_info_t *video_info,
+      void *data, const char *msg,
       const void *userdata)
 {
    float x, y, scale;
@@ -81,8 +83,7 @@ static void libdbg_font_render_msg(void *data, const char *msg,
    }
    else
    {
-      settings_t *settings = config_get_ptr();
-      x                    = settings->video.msg_pos_x;
+      x                    = video_info->font_msg_pos_x;
       y                    = 0.90f;
       scale                = 1.04f;
       color                = SILVER;

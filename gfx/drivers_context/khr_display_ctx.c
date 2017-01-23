@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2016 - Hans-Kristian Arntzen
+ *  Copyright (C) 2016-2017 - Hans-Kristian Arntzen
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -17,7 +17,6 @@
 #include "../../config.h"
 #endif
 
-#include "../../runloop.h"
 #include "../../frontend/frontend_driver.h"
 #include "../common/vulkan_common.h"
 
@@ -52,7 +51,7 @@ static void gfx_ctx_khr_display_get_video_size(void *data,
    *height = khr->height;
 }
 
-static void *gfx_ctx_khr_display_init(video_frame_info_t video_info, void *video_driver)
+static void *gfx_ctx_khr_display_init(video_frame_info_t *video_info, void *video_driver)
 {
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)calloc(1, sizeof(*khr));
    if (!khr)
@@ -74,10 +73,9 @@ error:
 }
 
 static void gfx_ctx_khr_display_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
+      bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
 {
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
-   (void)frame_count;
 
    *resize = khr->vk.need_new_swapchain;
 
@@ -88,7 +86,7 @@ static void gfx_ctx_khr_display_check_window(void *data, bool *quit,
       *resize = true;
    }
 
-   if (runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL) || (bool)frontend_driver_get_signal_handler_state())
+   if (is_shutdown || (bool)frontend_driver_get_signal_handler_state())
       *quit = true;
 }
 
@@ -110,21 +108,8 @@ static bool gfx_ctx_khr_display_set_resize(void *data,
    return false;
 }
 
-static void gfx_ctx_khr_display_update_window_title(void *data, video_frame_info_t video_info)
-{
-   char buf[128];
-   char buf_fps[128];
-
-   buf[0] = buf_fps[0]  = '\0';
-
-   video_monitor_get_fps(video_info, buf, sizeof(buf),
-         buf_fps, sizeof(buf_fps));
-   if (video_info.fps_show)
-      runloop_msg_queue_push(buf_fps, 1, 1, false);
-}
-
 static bool gfx_ctx_khr_display_set_video_mode(void *data,
-      video_frame_info_t video_info,
+      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -155,10 +140,10 @@ error:
 }
 
 static void gfx_ctx_khr_display_input_driver(void *data,
+      const char *name,
       const input_driver_t **input, void **input_data)
 {
-   (void)data;
-   *input = NULL;
+   *input      = NULL;
    *input_data = NULL;
 }
 
@@ -184,12 +169,6 @@ static bool gfx_ctx_khr_display_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool gfx_ctx_khr_display_has_windowed(void *data)
-{
-   (void)data;
-   return false;
-}
-
 static void gfx_ctx_khr_display_set_swap_interval(void *data, unsigned swap_interval)
 {
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
@@ -201,7 +180,7 @@ static void gfx_ctx_khr_display_set_swap_interval(void *data, unsigned swap_inte
    }
 }
 
-static void gfx_ctx_khr_display_swap_buffers(void *data, video_frame_info_t video_info)
+static void gfx_ctx_khr_display_swap_buffers(void *data, video_frame_info_t *video_info)
 {
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
    vulkan_present(&khr->vk, khr->vk.context.current_swapchain_index);
@@ -243,12 +222,12 @@ const gfx_ctx_driver_t gfx_ctx_khr_display = {
    NULL, /* get_video_output_next */
    NULL, /* get_metrics */
    NULL,
-   gfx_ctx_khr_display_update_window_title,
+   NULL, /* update_title */
    gfx_ctx_khr_display_check_window,
    gfx_ctx_khr_display_set_resize,
    gfx_ctx_khr_display_has_focus,
    gfx_ctx_khr_display_suppress_screensaver,
-   gfx_ctx_khr_display_has_windowed,
+   NULL, /* has_windowed */
    gfx_ctx_khr_display_swap_buffers,
    gfx_ctx_khr_display_input_driver,
    gfx_ctx_khr_display_get_proc_address,

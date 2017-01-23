@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C)      2016 - Gregor Richards
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Gregor Richards
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -25,6 +25,7 @@
 
 #include "netplay_private.h"
 
+#include "../../autosave.h"
 #include "../../configuration.h"
 #include "../../content.h"
 #include "../../retroarch.h"
@@ -508,8 +509,10 @@ bool netplay_handshake_sync(netplay_t *netplay, struct netplay_connection *conne
    int matchct;
    bool nick_matched;
 
+   autosave_lock();
    mem_info.id = RETRO_MEMORY_SAVE_RAM;
    core_get_memory(&mem_info);
+   autosave_unlock();
 
    /* Send basic sync info */
    cmd[0] = htonl(NETPLAY_CMD_SYNC);
@@ -578,11 +581,16 @@ bool netplay_handshake_sync(netplay_t *netplay, struct netplay_connection *conne
       return false;
 
    /* And finally, the SRAM */
+   autosave_lock();
    if (!netplay_send(&connection->send_packet_buffer, connection->fd,
             mem_info.data, mem_info.size) ||
          !netplay_send_flush(&connection->send_packet_buffer, connection->fd,
             false))
+   {
+      autosave_unlock();
       return false;
+   }
+   autosave_unlock();
 
    /* Now we're ready! */
    connection->mode = NETPLAY_CONNECTION_SPECTATING;
@@ -824,6 +832,15 @@ error:
       RARCH_ERR("%s\n", dmsg);
       runloop_msg_queue_push(dmsg, 1, 180, false);
    }
+
+   if (!netplay->is_server)
+   {
+      /* Counter-intuitively, we still want to send our info. This is simply so
+       * that the server knows why we disconnected. */
+      if (!netplay_handshake_info(netplay, connection))
+         return false;
+   }
+
    return false;
 }
 /**
@@ -938,6 +955,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
    }
 
    /* Now check the SRAM */
+   autosave_lock();
    mem_info.id = RETRO_MEMORY_SAVE_RAM;
    core_get_memory(&mem_info);
 
@@ -951,6 +969,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
       {
          RARCH_ERR("%s\n",
                msg_hash_to_str(MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST));
+         autosave_unlock();
          return false;
       }
 
@@ -965,6 +984,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
          {
             RARCH_ERR("%s\n",
                   msg_hash_to_str(MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST));
+            autosave_unlock();
             return false;
          }
          if (remote_sram_size > sizeof(uint32_t))
@@ -974,6 +994,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
       }
 
    }
+   autosave_unlock();
 
    /* We're ready! */
    *had_input = true;

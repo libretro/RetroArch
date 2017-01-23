@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -31,7 +31,6 @@
 #endif
 
 #include "../../configuration.h"
-#include "../../runloop.h"
 #include "../../defines/ps3_defines.h"
 #include "../common/gl_common.h"
 #include "../video_context_driver.h"
@@ -149,12 +148,13 @@ static void gfx_ctx_ps3_set_swap_interval(void *data, unsigned interval)
 }
 
 static void gfx_ctx_ps3_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
+      bool *resize, unsigned *width, unsigned *height,
+      bool is_shutdown)
 {
    gl_t *gl = data;
 
-   *quit = false;
-   *resize = false;
+   *quit    = false;
+   *resize  = false;
 
    if (gl->should_resize)
       *resize = true;
@@ -173,13 +173,7 @@ static bool gfx_ctx_ps3_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool gfx_ctx_ps3_has_windowed(void *data)
-{
-   (void)data;
-   return false;
-}
-
-static void gfx_ctx_ps3_swap_buffers(void *data, video_frame_info_t video_info)
+static void gfx_ctx_ps3_swap_buffers(void *data, video_frame_info_t *video_info)
 {
    (void)data;
 #ifdef HAVE_LIBDBGFONT
@@ -193,27 +187,6 @@ static void gfx_ctx_ps3_swap_buffers(void *data, video_frame_info_t video_info)
 #endif
 }
 
-static bool gfx_ctx_ps3_set_resize(void *data,
-      unsigned width, unsigned height)
-{
-   return false;
-}
-
-static void gfx_ctx_ps3_update_window_title(void *data, video_frame_info_t video_info)
-{
-   char buf[128];
-   char buf_fps[128];
-
-   buf[0] = buf_fps[0]  = '\0';
-
-   (void)data;
-
-   video_monitor_get_fps(video_info, buf, sizeof(buf),
-         buf_fps, sizeof(buf_fps));
-   if (video_info.fps_show)
-      runloop_msg_queue_push(buf_fps, 1, 1, false);
-}
-
 static void gfx_ctx_ps3_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
@@ -225,7 +198,7 @@ static void gfx_ctx_ps3_get_video_size(void *data,
 #endif
 }
 
-static void *gfx_ctx_ps3_init(video_frame_info_t video_info, void *video_driver)
+static void *gfx_ctx_ps3_init(video_frame_info_t *video_info, void *video_driver)
 {
 #ifdef HAVE_PSGL
    PSGLdeviceParameters params;
@@ -302,15 +275,10 @@ static void *gfx_ctx_ps3_init(video_frame_info_t video_info, void *video_driver)
 }
 
 static bool gfx_ctx_ps3_set_video_mode(void *data,
-      video_frame_info_t video_info,
+      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
-   global_t *global = global_get_ptr();
-
-   if (!global)
-      return false;
-
    return true;
 }
 
@@ -339,10 +307,10 @@ static void gfx_ctx_ps3_destroy(void *data)
 }
 
 static void gfx_ctx_ps3_input_driver(void *data,
+      const char *joypad_name,
       const input_driver_t **input, void **input_data)
 {
-   settings_t *settings = config_get_ptr();
-   void *ps3input       = input_ps3.init(settings->input.joypad_driver);
+   void *ps3input       = input_ps3.init(joypad_name);
 
    *input               = ps3input ? &input_ps3 : NULL;
    *input_data          = ps3input;
@@ -438,12 +406,12 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    gfx_ctx_ps3_get_video_output_next,
    NULL, /* get_metrics */
    NULL,
-   gfx_ctx_ps3_update_window_title,
+   NULL, /* update_title */
    gfx_ctx_ps3_check_window,
-   gfx_ctx_ps3_set_resize,
+   NULL, /* set_resize */
    gfx_ctx_ps3_has_focus,
    gfx_ctx_ps3_suppress_screensaver,
-   gfx_ctx_ps3_has_windowed,
+   NULL, /* has_windowed */
    gfx_ctx_ps3_swap_buffers,
    gfx_ctx_ps3_input_driver,
    NULL,

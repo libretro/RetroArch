@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -120,7 +120,7 @@ error:
 }
 #endif
 
-input_remote_t *input_remote_new(uint16_t port)
+input_remote_t *input_remote_new(uint16_t port, unsigned max_users)
 {
    unsigned user;
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
@@ -135,7 +135,7 @@ input_remote_t *input_remote_new(uint16_t port)
    (void)port;
 
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-   for(user = 0; user < settings->input.max_users; user ++)
+   for(user = 0; user < max_users; user ++)
    {
       handle->net_fd[user] = -1;
       if(settings->network_remote_enable_user[user])
@@ -148,18 +148,17 @@ input_remote_t *input_remote_new(uint16_t port)
 
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
 error:
-   input_remote_free(handle);
+   input_remote_free(handle, max_users);
    return NULL;
 #endif
 }
 
-void input_remote_free(input_remote_t *handle)
+void input_remote_free(input_remote_t *handle, unsigned max_users)
 {
    unsigned user;
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-   settings_t *settings = config_get_ptr();
 
-   for(user = 0; user < settings->input.max_users; user ++)
+   for(user = 0; user < max_users; user ++)
       socket_close(handle->net_fd[user]);
 #endif
 
@@ -229,13 +228,13 @@ bool input_remote_key_pressed(int key, unsigned port)
    return (ol_state->buttons[port] & (UINT64_C(1) << key));
 }
 
-void input_remote_poll(input_remote_t *handle)
+void input_remote_poll(input_remote_t *handle, unsigned max_users)
 {
    unsigned user;
    settings_t *settings            = config_get_ptr();
    input_remote_state_t *ol_state  = input_remote_get_state_ptr();
    
-   for(user = 0; user < settings->input.max_users; user++)
+   for(user = 0; user < max_users; user++)
    {
       if (settings->network_remote_enable_user[user])
       {

@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -38,7 +38,6 @@
 #include "../../video_driver.h"
 #include "../../../performance_counters.h"
 #include "../../../configuration.h"
-#include "../../../runloop.h"
 #include "../../../verbosity.h"
 
 #define cg_d3d9_set_param_1f(param, x) if (param) cgD3D9SetUniform(param, x)

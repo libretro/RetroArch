@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -37,7 +37,8 @@ enum gfx_ctx_api
    GFX_CTX_DIRECT3D8_API,
    GFX_CTX_DIRECT3D9_API,
    GFX_CTX_OPENVG_API,
-   GFX_CTX_VULKAN_API
+   GFX_CTX_VULKAN_API,
+   GFX_CTX_GDI_API
 };
 
 enum display_metric_types
@@ -66,7 +67,7 @@ typedef struct gfx_ctx_driver
     * to hold a pointer to it as the context never outlives the video driver.
     *
     * The context driver is responsible for it's own data.*/
-   void* (*init)(video_frame_info_t video_info, void *video_driver);
+   void* (*init)(video_frame_info_t *video_info, void *video_driver);
    void (*destroy)(void *data);
 
    /* Which API to bind to. */
@@ -77,7 +78,7 @@ typedef struct gfx_ctx_driver
    void (*swap_interval)(void *data, unsigned);
 
    /* Sets video mode. Creates a window, etc. */
-   bool (*set_video_mode)(void*, video_frame_info_t video_info, unsigned, unsigned, bool);
+   bool (*set_video_mode)(void*, video_frame_info_t *video_info, unsigned, unsigned, bool);
 
    /* Gets current window size.
     * If not initialized yet, it returns current screen size. */
@@ -100,12 +101,12 @@ typedef struct gfx_ctx_driver
    float (*translate_aspect)(void*, unsigned, unsigned);
 
    /* Asks driver to update window title (FPS, etc). */
-   void (*update_window_title)(void*, video_frame_info_t video_info);
+   void (*update_window_title)(void*, video_frame_info_t *video_info);
 
    /* Queries for resize and quit events.
     * Also processes events. */
    void (*check_window)(void*, bool*, bool*,
-         unsigned*, unsigned*, unsigned);
+         unsigned*, unsigned*, bool);
 
    /* Acknowledge a resize event. This is needed for some APIs.
     * Most backends will ignore this. */
@@ -122,11 +123,11 @@ typedef struct gfx_ctx_driver
 
    /* Swaps buffers. VBlank sync depends on
     * earlier calls to swap_interval. */
-   void (*swap_buffers)(void*, video_frame_info_t video_info);
+   void (*swap_buffers)(void*, video_frame_info_t *video_info);
 
    /* Most video backends will want to use a certain input driver.
     * Checks for it here. */
-   void (*input_driver)(void*, const input_driver_t**, void**);
+   void (*input_driver)(void*, const char *, const input_driver_t**, void**);
 
    /* Wraps whatever gl_proc_address() there is.
     * Does not take opaque, to avoid lots of ugly wrapper code. */
@@ -249,6 +250,7 @@ extern const gfx_ctx_driver_t gfx_ctx_cocoagl;
 extern const gfx_ctx_driver_t gfx_ctx_emscripten;
 extern const gfx_ctx_driver_t gfx_ctx_opendingux_fbdev;
 extern const gfx_ctx_driver_t gfx_ctx_khr_display;
+extern const gfx_ctx_driver_t gfx_ctx_gdi;
 extern const gfx_ctx_driver_t gfx_ctx_null;
 
 /**
@@ -300,6 +302,10 @@ void video_context_driver_destroy(void);
 
 #define video_context_driver_focus() ((video_context_data && current_video_context->has_focus && current_video_context->has_focus(video_context_data)) ? true : false)
 
+#define video_context_driver_set_resize(mode_info) \
+   if (current_video_context && current_video_context->set_resize) \
+      current_video_context->set_resize(video_context_data, mode_info.width, mode_info.height)
+
 bool video_context_driver_get_video_output_size(gfx_ctx_size_t *size_data);
 
 bool video_context_driver_swap_interval(unsigned *interval);
@@ -311,8 +317,6 @@ bool video_context_driver_suppress_screensaver(bool *bool_data);
 bool video_context_driver_get_ident(gfx_ctx_ident_t *ident);
 
 bool video_context_driver_set_video_mode(gfx_ctx_mode_t *mode_info);
-
-bool video_context_driver_set_resize(gfx_ctx_mode_t *mode_info);
 
 bool video_context_driver_get_video_size(gfx_ctx_mode_t *mode_info);
 
@@ -332,7 +336,7 @@ bool video_context_driver_translate_aspect(gfx_ctx_aspect_t *aspect);
 
 bool video_context_driver_input_driver(gfx_ctx_input_t *inp);
 
-#define video_context_driver_has_windowed() ((video_context_data && current_video_context->has_windowed(video_context_data)) ? true : false)
+#define video_context_driver_has_windowed() ((video_context_data && current_video_context->has_windowed && current_video_context->has_windowed(video_context_data)) ? true : false)
 
 void video_context_driver_free(void);
 

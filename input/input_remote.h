@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -30,11 +30,11 @@ RETRO_BEGIN_DECLS
 
 typedef struct input_remote input_remote_t;
 
-input_remote_t *input_remote_new(uint16_t port);
+input_remote_t *input_remote_new(uint16_t port, unsigned max_users);
 
-void input_remote_free(input_remote_t *handle);
+void input_remote_free(input_remote_t *handle, unsigned max_users);
 
-void input_remote_poll(input_remote_t *handle);
+void input_remote_poll(input_remote_t *handle, unsigned max_users);
 
 bool input_remote_key_pressed(int key, unsigned port);
 

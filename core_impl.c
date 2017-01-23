@@ -34,16 +34,12 @@
 #include "network/netplay/netplay.h"
 #endif
 
-#include "configuration.h"
 #include "dynamic.h"
-#include "core.h"
 #include "msg_hash.h"
 #include "managers/state_manager.h"
-#include "runloop.h"
 #include "verbosity.h"
 #include "gfx/video_driver.h"
 #include "audio/audio_driver.h"
-#include "cheevos.h"
 
 static unsigned            core_poll_type                 = POLL_TYPE_EARLY;
 static bool                core_inited                    = false;
@@ -376,9 +372,6 @@ bool core_get_system_av_info(struct retro_system_av_info *av_info)
 bool core_reset(void)
 {
    core.retro_reset();
-#ifdef HAVE_CHEEVOS
-   cheevos_reset_game();
-#endif
    return true;
 }
 
@@ -442,11 +435,9 @@ bool core_run(void)
    return true;
 }
 
-bool core_load(void)
+bool core_load(unsigned poll_type_behavior)
 {
-   settings_t *settings = config_get_ptr();
-
-   core_poll_type = settings->input.poll_type_behavior;
+   core_poll_type = poll_type_behavior;
 
    if (!core_verify_api_version())
       return false;
@@ -454,7 +445,6 @@ bool core_load(void)
       return false;
 
    core_get_system_av_info(video_viewport_get_system_av_info());
-   runloop_ctl(RUNLOOP_CTL_SET_FRAME_LIMIT, NULL);
 
    return true;
 }

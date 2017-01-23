@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2014-2016 - Jean-André Santoni
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2014-2017 - Jean-André Santoni
+ *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -26,6 +26,7 @@
 #include <gfx/math/matrix_4x4.h>
 
 #include "../file_path_special.h"
+#include "../gfx/font_driver.h"
 #include "../gfx/video_context_driver.h"
 #include "../gfx/video_coord_array.h"
 
@@ -95,7 +96,9 @@ enum menu_display_driver_type
    MENU_VIDEO_DRIVER_DIRECT3D,
    MENU_VIDEO_DRIVER_VITA2D,
    MENU_VIDEO_DRIVER_CTR,
-   MENU_VIDEO_DRIVER_CACA
+   MENU_VIDEO_DRIVER_CACA,
+   MENU_VIDEO_DRIVER_GDI,
+   MENU_VIDEO_DRIVER_VGA
 };
 
 typedef struct menu_display_ctx_clearcolor
@@ -198,7 +201,7 @@ void menu_display_blend_end(void);
 void menu_display_font_free(font_data_t *font);
 font_data_t *menu_display_font_main_init(menu_display_ctx_font_t *font);
 void menu_display_font_bind_block(font_data_t *font, void *block);
-bool menu_display_font_flush_block(font_data_t *font);
+bool menu_display_font_flush_block(unsigned width, unsigned height, font_data_t *font);
 
 void menu_display_framebuffer_deinit(void);
 
@@ -226,8 +229,8 @@ void menu_display_set_msg_force(bool state);
 bool menu_display_get_font_data_init(void);
 void menu_display_set_font_data_init(bool state);
 bool menu_display_get_update_pending(void);
-void menu_display_set_viewport(void);
-void menu_display_unset_viewport(void);
+void menu_display_set_viewport(unsigned width, unsigned height);
+void menu_display_unset_viewport(unsigned width, unsigned height);
 bool menu_display_get_framebuffer_dirty_flag(void);
 void menu_display_set_framebuffer_dirty_flag(void);
 void menu_display_unset_framebuffer_dirty_flag(void);
@@ -238,8 +241,13 @@ void menu_display_clear_color(menu_display_ctx_clearcolor_t *color);
 void menu_display_draw(menu_display_ctx_draw_t *draw);
 
 void menu_display_draw_pipeline(menu_display_ctx_draw_t *draw);
-void menu_display_draw_bg(menu_display_ctx_draw_t *draw, bool add_opacity);
-void menu_display_draw_gradient(menu_display_ctx_draw_t *draw);
+void menu_display_draw_bg(
+      menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info,
+      bool add_opacity);
+void menu_display_draw_gradient(
+      menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info);
 void menu_display_draw_quad(int x, int y, unsigned w, unsigned h,
       unsigned width, unsigned height,
       float *color);
@@ -294,6 +302,8 @@ extern menu_display_ctx_driver_t menu_display_ctx_d3d;
 extern menu_display_ctx_driver_t menu_display_ctx_vita2d;
 extern menu_display_ctx_driver_t menu_display_ctx_ctr;
 extern menu_display_ctx_driver_t menu_display_ctx_caca;
+extern menu_display_ctx_driver_t menu_display_ctx_gdi;
+extern menu_display_ctx_driver_t menu_display_ctx_vga;
 extern menu_display_ctx_driver_t menu_display_ctx_null;
 
 RETRO_END_DECLS

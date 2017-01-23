@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2013-2014 - Tobias Jakobi
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -25,12 +26,16 @@
 #include <ctype.h>
 #include <assert.h>
 
+#include <sys/mman.h>
+#include <linux/omapfb.h>
+
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
 
-#include <sys/mman.h>
-#include <linux/omapfb.h>
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
 
 #include <retro_inline.h>
 #include <retro_assert.h>
@@ -38,14 +43,13 @@
 #include <gfx/video_frame.h>
 #include <string/stdstring.h>
 
+#include "../font_driver.h"
+
 #include "../../configuration.h"
 #include "../../driver.h"
 #include "../../retroarch.h"
-#include "../../runloop.h"
 
 #include "../video_context_driver.h"
-
-#include "../font_driver.h"
 
 typedef struct omapfb_page
 {
@@ -985,7 +989,7 @@ fail:
 
 static bool omap_gfx_frame(void *data, const void *frame, unsigned width,
       unsigned height, uint64_t frame_count, unsigned pitch, const char *msg,
-      video_frame_info_t video_info)
+      video_frame_info_t *video_info)
 {
    omap_video_t *vid = (omap_video_t*)data;
 
@@ -1008,10 +1012,16 @@ static bool omap_gfx_frame(void *data, const void *frame, unsigned width,
 
    omapfb_prepare(vid->omap);
    omapfb_blit_frame(vid->omap, frame, vid->height, pitch);
+
+#ifdef HAVE_MENU
+   menu_driver_frame(video_info);
+#endif
+
    if (vid->menu.active)
       omapfb_blit_frame(vid->omap, vid->menu.frame,
             vid->menu.scaler.out_height,
             vid->menu.scaler.out_stride);
+
    if (msg)
       omap_render_msg(vid, msg);
 
@@ -1086,7 +1096,7 @@ static void omap_gfx_set_rotation(void *data, unsigned rotation)
    (void)rotation;
 }
 
-static bool omap_gfx_read_viewport(void *data, uint8_t *buffer)
+static bool omap_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    (void)data;
    (void)buffer;

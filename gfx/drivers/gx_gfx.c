@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -27,17 +27,21 @@
 #include "../../config.h"
 #endif
 
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#include "../../menu/menu_display.h"
+#endif
+
 #ifdef HW_RVL
 #include "../../memory/wii/mem2_manager.h"
 #endif
+
+#include "../font_driver.h"
 
 #include "../drivers_font_renderer/bitmap.h"
 #include "../../defines/gx_defines.h"
 #include "../../configuration.h"
 #include "../../driver.h"
-#include "../../runloop.h"
-#include "../../menu/menu_driver.h"
-#include "../../menu/menu_display.h"
 
 extern syssram* __SYS_LockSram(void);
 extern u32 __SYS_UnlockSram(u32 write);
@@ -1175,7 +1179,7 @@ static void gx_viewport_info(void *data, struct video_viewport *vp)
    *vp = gx->vp;
 }
 
-static bool gx_read_viewport(void *data, uint8_t *buffer)
+static bool gx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    (void)data;
    (void)buffer;
@@ -1438,15 +1442,14 @@ static bool gx_frame(void *data, const void *frame,
       unsigned width, unsigned height,
       uint64_t frame_count, unsigned pitch,
       const char *msg,
-      video_frame_info_t video_info)
+      video_frame_info_t *video_info)
 {
-   char fps_txt[128];
    char fps_text_buf[128];
    static struct retro_perf_counter gx_frame = {0};
    gx_video_t *gx                     = (gx_video_t*)data;
    u8                       clear_efb = GX_FALSE;
 
-   fps_txt[0] = fps_text_buf[0]       = '\0';
+   fps_text_buf[0]                    = '\0';
 
    performance_counter_init(&gx_frame, "gx_frame");
    performance_counter_start(&gx_frame);
@@ -1500,12 +1503,9 @@ static bool gx_frame(void *data, const void *frame,
 
    if (gx->menu_texture_enable && gx->menu_data)
    {
-      size_t fb_pitch;
-      unsigned fb_width, fb_height;
-
-      fb_width  = menu_display_get_width();
-      fb_height = menu_display_get_height();
-      fb_pitch  = menu_display_get_framebuffer_pitch();
+      unsigned fb_width  = menu_display_get_width();
+      unsigned fb_height = menu_display_get_height();
+      size_t fb_pitch    = menu_display_get_framebuffer_pitch();
 
       convert_texture16(
             gx->menu_data,
@@ -1517,6 +1517,10 @@ static bool gx_frame(void *data, const void *frame,
             menu_tex.data,
             fb_width * fb_pitch);
    }
+
+#ifdef HAVE_MENU
+   menu_driver_frame(video_info);
+#endif
 
    GX_InvalidateTexAll();
 
@@ -1538,10 +1542,7 @@ static bool gx_frame(void *data, const void *frame,
 
    GX_DrawDone();
 
-   video_monitor_get_fps(video_info, fps_txt, sizeof(fps_txt),
-         fps_text_buf, sizeof(fps_text_buf));
-
-   if (video_info.fps_show)
+   if (video_info->fps_show)
    {
       char mem1_txt[128];
       char mem2_txt[128];

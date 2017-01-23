@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C)      2016 - Gregor Richards
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Gregor Richards
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -372,7 +372,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
       {
          netplay->catch_up = false;
          input_driver_unset_nonblock_state();
-         driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
+         driver_set_nonblock_state();
       }
       return;
    }
@@ -524,7 +524,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
       {
          netplay->catch_up = false;
          input_driver_unset_nonblock_state();
-         driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
+         driver_set_nonblock_state();
       }
 
    }
@@ -535,7 +535,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
          /* Are we falling behind? */
          netplay->catch_up = true;
          input_driver_set_nonblock_state();
-         driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
+         driver_set_nonblock_state();
 
       }
       else if (netplay->self_frame_count + 2 < hi_frame_count)

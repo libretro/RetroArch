@@ -35,8 +35,10 @@
 #endif
 
 #ifdef HAVE_COMMAND
-#include <net/net_compat.h>
-#include <net/net_socket.h>
+   #ifdef HAVE_NETWORKING
+   #include <net/net_compat.h>
+   #include <net/net_socket.h>
+   #endif
 #include <string/stdstring.h>
 #endif
 
@@ -539,6 +541,7 @@ bool command_network_send(const char *cmd_)
 }
 
 
+#ifdef HAVE_COMMAND
 static void command_network_poll(command_t *handle)
 {
    fd_set fds;
@@ -576,6 +579,7 @@ static void command_network_poll(command_t *handle)
       command_parse_msg(handle, buf, CMD_NETWORK);
    }
 }
+#endif
 #endif
 
 #ifdef HAVE_STDIN_CMD
@@ -798,7 +802,9 @@ bool command_poll(command_t *handle)
    memset(handle->state, 0, sizeof(handle->state));
 
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
+#ifdef HAVE_COMMAND
    command_network_poll(handle);
+#endif
 #endif
 
 #ifdef HAVE_STDIN_CMD
@@ -830,8 +836,10 @@ bool command_set(command_handle_t *handle)
 bool command_free(command_t *handle)
 {
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
+#ifdef HAVE_COMMAND
    if (handle && handle->net_fd >= 0)
       socket_close(handle->net_fd);
+#endif
 #endif
 
    free(handle);
@@ -1395,8 +1403,10 @@ static bool command_event_init_core(enum rarch_core_type *data)
    if (!event_init_content())
       return false;
 
-   if (!core_load())
+   if (!core_load(settings->input.poll_type_behavior))
       return false;
+
+   runloop_ctl(RUNLOOP_CTL_SET_FRAME_LIMIT, NULL);
 
    return true;
 }
@@ -1870,7 +1880,7 @@ bool command_event(enum event_command cmd, void *data)
          return command_event_resize_windowed_scale();
       case CMD_EVENT_MENU_TOGGLE:
 #ifdef HAVE_MENU
-         if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+         if (menu_driver_is_alive())
             rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
          else
             rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
@@ -1887,6 +1897,9 @@ bool command_event(enum event_command cmd, void *data)
          cheevos_set_cheats();
 #endif
          core_reset();
+#ifdef HAVE_CHEEVOS
+         cheevos_reset_game();
+#endif
          break;
       case CMD_EVENT_SAVE_STATE:
          {
@@ -1961,7 +1974,7 @@ bool command_event(enum event_command cmd, void *data)
          command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, (void*)(intptr_t)-1);
 #ifdef HAVE_MENU
          menu_display_set_framebuffer_dirty_flag();
-         if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+         if (menu_driver_is_alive())
             command_event(CMD_EVENT_VIDEO_SET_BLOCKING_STATE, NULL);
 #endif
          break;
@@ -2005,7 +2018,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
             {
                if (settings->rewind_enable)
-                  state_manager_event_init();
+                  state_manager_event_init(settings->rewind_buffer_size);
             }
          }
          break;
@@ -2047,7 +2060,7 @@ bool command_event(enum event_command cmd, void *data)
             if (audio_driver_alive())
                return false;
 
-            if (settings && !settings->audio.mute_enable && !audio_driver_start())
+            if (settings && !settings->audio.mute_enable && !audio_driver_start(runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL)))
             {
                RARCH_ERR("%s\n",
                      msg_hash_to_str(MSG_FAILED_TO_START_AUDIO_DRIVER));
@@ -2259,7 +2272,7 @@ bool command_event(enum event_command cmd, void *data)
          {
             int flags = DRIVER_AUDIO_MASK;
             driver_ctl(RARCH_DRIVER_CTL_UNINIT, &flags);
-            driver_ctl(RARCH_DRIVER_CTL_INIT, &flags);
+            drivers_init(flags);
          }
          break;
       case CMD_EVENT_RESET_CONTEXT:
@@ -2278,7 +2291,7 @@ bool command_event(enum event_command cmd, void *data)
             memcpy(hwr, &hwr_copy, sizeof(*hwr));
             video_driver_set_context_negotiation_interface(iface);
 
-            driver_ctl(RARCH_DRIVER_CTL_INIT, &flags);
+            drivers_init(flags);
          }
          break;
       case CMD_EVENT_SHUTDOWN:
@@ -2374,7 +2387,7 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_MENU
             settings_t *settings      = config_get_ptr();
 
-            if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+            if (menu_driver_is_alive())
             {
                if (settings->menu.pause_libretro)
                   command_event(CMD_EVENT_AUDIO_STOP, NULL);
@@ -2417,9 +2430,11 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_NETPLAY_INIT:
          {
-            char *hostname = (char *) data;
+            char       *hostname = (char *) data;
             settings_t *settings = config_get_ptr();
+
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+
             if (!init_netplay(
                      NULL, hostname ? hostname : settings->netplay.server,
                      settings->netplay.port))
@@ -2432,9 +2447,30 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_NETPLAY_INIT_DIRECT:
          {
             settings_t *settings = config_get_ptr();
+
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+
             if (!init_netplay(
                      data, NULL, settings->netplay.port))
+            {
+               command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+               return false;
+            }
+         }
+         break;
+      case CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED:
+         {
+            /* buf is expected to be address:port, there must be a better way
+               to do this but for now I'll just use a string list */
+            char                           *buf = (char *)data;
+            static struct string_list *hostname = NULL;
+
+            hostname = string_split(buf, ":");
+
+            command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+
+            if (!init_netplay_deferred(
+                     hostname->elems[0].data, atoi(hostname->elems[1].data)))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                return false;
@@ -2453,6 +2489,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_NETWORK_INIT:
       case CMD_EVENT_NETPLAY_INIT:
       case CMD_EVENT_NETPLAY_INIT_DIRECT:
+      case CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED:
       case CMD_EVENT_NETPLAY_FLIP_PLAYERS:
       case CMD_EVENT_NETPLAY_GAME_WATCH:
          return false;

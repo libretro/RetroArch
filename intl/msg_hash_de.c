@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -116,6 +116,28 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                "wird keine Verlauf geladen oder gespeichert und nicht \n"
                "im Hauptmenü angezeigt."
                );
+         break;
+      case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
+         snprintf(s, len,
+            "Lade Inhalt. \n"
+            "Suche nach Inhalt. \n"
+            " \n"
+            "Um Inhalte zu laden brauchst du\n"
+            "einen 'Core'. \n"
+            " \n"
+            "Um einzustellen wo das Verzeichnis beginnt, \n"
+            "setze das   \n"
+            "'%s'. \n"
+            "Falls diese nicht gesetzt ist, startet \n"
+            "die Suche beim obersten Verzeichnis.\n"
+            " \n"
+            "Beim Durchsuchen werden Inhalte gefiltert. \n"
+            "Nur Inhalte mit der Dateiendung, welche \n"
+            "mit den ausgewählten Core funktionieren \n"
+            "werden angezeigt. \n"
+            "Dieser Core wird dann auch für den Inhalt verwendet.",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY)
+         );
          break;
       case MENU_ENUM_LABEL_VIDEO_DRIVER:
          snprintf(s, len,
@@ -308,6 +330,14 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Die Zurückspulfunktion muss eingeschaltet \n"
                "sein.");
          break;
+      case MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY:
+         snprintf(s, len,
+               "%s. \n"
+               " \n"
+               "Setzt das Startverzeichnis des Dateibrowsers.",
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY)
+               );
+          break;
       case MENU_ENUM_LABEL_EXIT_EMULATOR:
          snprintf(s, len,
                "Taste zum Beenden von RetroArch."
@@ -401,6 +431,87 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE:
          snprintf(s, len, "Erfolgsliste (Hardcore)");
          break;
+      case MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC:
+         {
+            /* Work around C89 limitations */
+            char u[501];
+            const char * t =
+                    "RetroArch verwendet eine einzigartige\n"
+                            "Art der Synchronisation von Audio/Video.\n"
+                            "Diese wird durch die Bildwiederholrate\n"
+                            "des Monitors kalibriert.\n"
+                            "\n"
+                            "Falls du irgenwelches Knistern oder Risse\n"
+                            "feststellst, kannst du folgende Möglichkeiten:\n"
+                            "\n";
+            snprintf(u, sizeof(u),
+                           "a) Gehe zu '%s' -> '%s' und aktiviere\n"
+                           "'%s'. Die Bildwiederholungsrate spielt\n"
+                           "in diesem Modus keine Rolle. \n"
+                           "Die Bildwiederholungsrate wird höher sein,\n"
+                           "allerdings läuft das Video weniger flüssig.\n"
+                           "b) Gehe zu '%s' -> '%s' und beachte\n"
+                           "'%s'. Lass es bis 2048 Frames laufen und\n"
+                           "bestätige mit 'OK'.\n",
+                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
+                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),
+                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_THREADED),
+                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),
+                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),
+                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO)
+            );
+            strlcpy(s, t, len);
+            strlcat(s, u, len);
+         }
+       break;
+      case MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD_DESC:
+          snprintf(s, len,
+                "Du kannst das virtuelle Gamepad-Overlay\n"
+                "unter '%s' -> '%s' ändern."
+                " \n"
+                "Darin kannst du die Grösse, die Transparenz\n"
+                "und vieles mehr anpassen.\n"
+                " \n"
+                "WICHTIG: Standartmässig, ist das virtuelle\n"
+                "Gamepad-Overlay im Menü nicht ersichtlich.\n"
+                "Wenn du dies ändern möchtest,\n"
+                "kannst du '%s' auf Nein stellen.",
+                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
+                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS),
+                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU)
+          );
+          break;
+      case MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC:
+         snprintf(s, len,
+            "Um Inhalte zu suchen, gehe zu '%s' und\n"
+            "wähle entweder '%s' oder '%s'.\n"
+            " \n"
+            "Die Dateien werden mit Einträgen in der\n"
+            "Datenbank verglichen.\n"
+            "Wenn es einen Treffer gibt, wird der Inhalt\n"
+            "zur Sammlung hinzugefügt.\n"
+            " \n"
+            "Danach kannst du einfach den Inhalt unter\n"
+            "'%s' -> '%s' laden,\n"
+            "anstatt jedesmal die Datei neu zu suchen.\n"
+            " \n"
+            "WICHTIG: Inhalte für einige Cores sind zum\n"
+            "Teil noch nicht scannbar.",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST)
+         );
+         break;
+      case MENU_ENUM_LABEL_VALUE_MENU_ENUM_CONTROLS_PROLOG:
+         snprintf(s, len,
+            "Du kannst folgende Steuerelemente mit\n"
+            "deinem Controller oder deiner Tastatur verwenden\n"
+            "um durch das Menü zu navigieren: \n"
+            " \n"
+         );
+         break;
       case MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY:
          snprintf(s, len, "Übergeordnetes Verzeichnis");
          break;
@@ -419,6 +530,37 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_VALUE_UPDATE_LAKKA:
          snprintf(s, len, "Lakka aktualisieren");
          break;
+      case MENU_ENUM_LABEL_VALUE_WHAT_IS_A_CORE_DESC:
+          snprintf(s, len,
+             "RetroArch alleine macht nichts. \n"
+             " \n"
+             "Damit es etwas tut, musst du \n"
+             "ein Programm darin laden. \n"
+             "\n"
+             "Wir nennen so ein Programm 'Libretro core', \n"
+             "oder 'core' als Abkürzung. \n"
+             " \n"
+             "Um einen Core zu laden, wählen Sie einen \n"
+             "unter '%s' aus.\n"
+             " \n"
+#ifdef HAVE_NETWORKING
+             "Du erhälst Cores durch verschiedene Wege: \n"
+             "* Herunterladen unter\n"
+             "'%s' -> '%s'.\n"
+             "* Manuelles hinzufügen nach\n"
+             "'%s'.",
+             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_LIST),
+             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER),
+             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST),
+             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH)
+#else
+             "Du erhälst Cores wenn du diese \n"
+             "manuell hinzufügst unter\n"
+             "'%s'.",
+             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH)
+#endif
+          );
+          break;
       case MSG_UNKNOWN:
       default:
          /* TODO/FIXME - translate */

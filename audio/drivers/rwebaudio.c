@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2015 - Michael Lelli
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -75,7 +76,7 @@ static bool rwebaudio_alive(void *data)
    return !rwebaudio_is_paused;
 }
 
-static bool rwebaudio_start(void *data)
+static bool rwebaudio_start(void *data, bool is_shutdown)
 {
    (void)data;
    rwebaudio_is_paused = false;

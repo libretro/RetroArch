@@ -26,12 +26,25 @@ ifeq ($(HAVE_VIDEO_PROCESSOR), 1)
 	DEFINES += -DHAVE_VIDEO_PROCESSOR
 endif
 
+ifeq ($(HAVE_MENU), 1)
+	DEFINES += -DHAVE_MENU
+	HAVE_MENU_COMMON = 1
+endif
+
+ifeq ($(HAVE_SOCKET_LEGACY), 1)
+	DEFINES += -DHAVE_SOCKET_LEGACY
+endif
+
 ifeq ($(HAVE_HID), 1)
    DEFINES += -DHAVE_HID
 endif
 
 ifeq ($(HAVE_LIBRETRODB), 1)
    DEFINES += -DHAVE_LIBRETRODB
+endif
+
+ifeq ($(HAVE_VITA2D), 1)
+	DEFINES += -DHAVE_VITA2D
 endif
 
 ifeq ($(HAVE_FBO), 1)
@@ -81,6 +94,11 @@ CFLAGS += -I$(LIBRETRO_COMM_DIR)/include
 
 # Switches
 
+ifeq ($(HAVE_NETLOGGER), 1)
+	CFLAGS += -DHAVE_LOGGER
+	DEFINES += -DHAVE_LOGGER
+	OBJ += network/net_logger.o
+endif
 
 # System
 
@@ -231,6 +249,7 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/features/features_cpu.o \
        performance_counters.o \
        verbosity.o
+
 
 ifeq ($(HAVE_CC_RESAMPLER), 1)
 DEFINES += -DHAVE_CC_RESAMPLER
@@ -422,7 +441,8 @@ endif
 
 ifeq ($(HAVE_NEON),1)
    OBJ += $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler_neon.o \
-          audio/drivers_resampler/cc_resampler_neon.o
+          audio/drivers_resampler/cc_resampler_neon.o \
+          memory/neon/memcpy-neon.o
    # When compiled without this, tries to attempt to compile sinc lerp,
    # which will error out
    #
@@ -441,8 +461,11 @@ ifeq ($(HAVE_NEON),1)
 endif
 
 ifneq ($(findstring Win32,$(OS)),)
-HAVE_VULKAN=1
-DEFINES += -DHAVE_VULKAN
+   # if user explicitly sets --disable-vulkan on Windows, then disable it
+   ifneq ($(HAVE_NO_VULKAN),1)
+      HAVE_VULKAN=1
+      DEFINES += -DHAVE_VULKAN
+   endif
 endif
 
 HW_CONTEXT_MENU_DRIVERS=$(HAVE_RGUI)
@@ -474,10 +497,10 @@ ifeq ($(HW_CONTEXT_MENU_DRIVERS), 1)
       HAVE_XMB = 1
    endif
 else
-   HAVE_ZARCH = 0
-   HAVE_MATERIALUI  = 0
-   #HAVE_NUKLEAR = 0
-   HAVE_XMB   = 0
+   HAVE_ZARCH ?= 0
+   HAVE_MATERIALUI  ?= 0
+   #HAVE_NUKLEAR ?= 0
+   HAVE_XMB   ?= 0
 endif
 
 ifeq ($(HAVE_RGUI), 1)
@@ -487,6 +510,7 @@ ifeq ($(HAVE_RGUI), 1)
 ifeq ($(HAVE_MATERIALUI), 1)
    OBJ += menu/drivers/materialui.o
    DEFINES += -DHAVE_MATERIALUI
+   HAVE_MENU_COMMON = 1
 endif
 ifeq ($(HAVE_NUKLEAR), 1)
    OBJ += menu/drivers/nuklear/nk_common.o
@@ -502,10 +526,13 @@ ifeq ($(HAVE_ZARCH), 1)
    OBJ += menu/drivers/zarch.o
    DEFINES += -DHAVE_ZARCH
 endif
+
+endif
+
 ifeq ($(HAVE_XMB), 1)
    OBJ += menu/drivers/xmb.o
    DEFINES += -DHAVE_XMB
-endif
+   HAVE_MENU_COMMON = 1
 endif
 
 ifeq ($(HAVE_LAKKA), 1)
@@ -554,9 +581,14 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/drivers/null.o
 endif
 
+ifeq ($(HAVE_OVERLAY), 1)
+   DEFINES += -DHAVE_OVERLAY
+endif
+
 ifeq ($(HAVE_STB_FONT), 1)
    OBJ += gfx/drivers_font_renderer/stb.o
    OBJ += gfx/drivers_font_renderer/stb_unicode.o
+   DEFINES += -DHAVE_STB_FONT
 endif
 
 ifeq ($(HAVE_FREETYPE), 1)
@@ -578,6 +610,30 @@ endif
 
 ifeq ($(HAVE_THREAD_STORAGE), 1)
    DEFINES += -DHAVE_THREAD_STORAGE
+endif
+
+ifeq ($(HAVE_VITA2D), 1)
+	OBJ += $(DEPS_DIR)/libvita2d/source/vita2d.o \
+			 $(DEPS_DIR)/libvita2d/source/vita2d_texture.o \
+			 $(DEPS_DIR)/libvita2d/source/vita2d_draw.o \
+			 $(DEPS_DIR)/libvita2d/source/utils.o
+
+	OBJ += $(DEPS_DIR)/libvita2d/shader/clear_v_gxp.o \
+			 $(DEPS_DIR)/libvita2d/shader/clear_f_gxp.o \
+			 $(DEPS_DIR)/libvita2d/shader/color_v_gxp.o \
+			 $(DEPS_DIR)/libvita2d/shader/color_f_gxp.o \
+			 $(DEPS_DIR)/libvita2d/shader/texture_v_gxp.o \
+			 $(DEPS_DIR)/libvita2d/shader/texture_f_gxp.o \
+			 $(DEPS_DIR)/libvita2d/shader/texture_tint_f_gxp.o
+
+ifeq ($(HAVE_MENU),1)
+	OBJ += menu/drivers_display/menu_display_vita2d.o
+endif
+
+	OBJ += gfx/drivers/vita2d_gfx.o \
+			 gfx/drivers_font/vita2d_font.o
+
+	CFLAGS  += -I$(DEPS_DIR)/libvita2d/include
 endif
 
 ifeq ($(HAVE_WAYLAND), 1)
@@ -925,8 +981,7 @@ ifeq ($(HAVE_OMAP), 1)
 endif
 
 ifeq ($(HAVE_EXYNOS), 1)
-   OBJ += gfx/drivers/exynos_gfx.o \
-          memory/neon/memcpy-neon.o
+   OBJ += gfx/drivers/exynos_gfx.o
    LIBS += $(DRM_LIBS) $(EXYNOS_LIBS)
    DEFINES += $(DRM_CFLAGS) $(EXYNOS_CFLAGS)
    HAVE_AND_WILL_USE_DRM = 1
@@ -1110,7 +1165,8 @@ ifeq ($(HAVE_NETWORKING), 1)
 			 network/net_http_special.o \
 			 tasks/task_http.o \
 			 tasks/task_netplay_lan_scan.o \
-			 tasks/task_wifi.o
+			 tasks/task_wifi.o \
+			 tasks/task_netplay_find_content.o
 
    ifneq ($(HAVE_SOCKET_LEGACY),1)
    OBJ += $(LIBRETRO_COMM_DIR)/net/net_ifinfo.o
@@ -1161,6 +1217,13 @@ ifneq ($(findstring Win32,$(OS)),)
           input/drivers_keyboard/keyboard_event_win32.o \
           gfx/common/win32_common.o \
           frontend/drivers/platform_win32.o
+
+   OBJ += gfx/drivers/gdi_gfx.o \
+          gfx/drivers_context/gdi_ctx.o \
+          gfx/drivers_font/gdi_font.o \
+          menu/drivers_display/menu_display_gdi.o
+
+   LIBS += -lmsimg32
 endif
 
 ifeq ($(HAVE_AVFOUNDATION), 1)
@@ -1205,4 +1268,12 @@ ifeq ($(HAVE_COCOA),1)
 			 ui/drivers/cocoa/ui_cocoa_application.o \
 			 ui/drivers/cocoa/cocoa_common.o \
 			 gfx/drivers_context/cocoa_gl_ctx.o
+endif
+
+ifneq ($(findstring DOS,$(OS)),)
+   OBJ += gfx/drivers/vga_gfx.o gfx/drivers_font/vga_font.o
+
+   ifeq ($(HAVE_MENU_COMMON), 1)
+      OBJ += menu/drivers_display/menu_display_vga.o
+   endif
 endif

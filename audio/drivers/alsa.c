@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -270,7 +271,7 @@ static void alsa_set_nonblock_state(void *data, bool state)
    alsa->nonblock = state;
 }
 
-static bool alsa_start(void *data)
+static bool alsa_start(void *data, bool is_shutdown)
 {
    alsa_t *alsa = (alsa_t*)data;
 

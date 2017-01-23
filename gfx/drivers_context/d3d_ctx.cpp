@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2014 - OV2
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -29,8 +29,6 @@
 #include "../drivers/d3d.h"
 #include "../common/win32_common.h"
 
-#include "../../configuration.h"
-#include "../../runloop.h"
 #include "../../verbosity.h"
 #include "../../ui/ui_companion_driver.h"
 
@@ -77,7 +75,7 @@ static bool gfx_ctx_d3d_set_resize(void *data, unsigned new_width, unsigned new_
    return true;
 }
 
-static void gfx_ctx_d3d_swap_buffers(void *data, video_frame_info_t video_info)
+static void gfx_ctx_d3d_swap_buffers(void *data, video_frame_info_t *video_info)
 {
    d3d_video_t      *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
@@ -85,25 +83,11 @@ static void gfx_ctx_d3d_swap_buffers(void *data, video_frame_info_t video_info)
    d3d_swap(d3d, d3dr);
 }
 
-static void gfx_ctx_d3d_update_title(void *data, video_frame_info_t video_info)
+static void gfx_ctx_d3d_update_title(void *data, video_frame_info_t *video_info)
 {
-   char buf[128];
-   char buffer_fps[128];
-   const ui_window_t *window = ui_companion_driver_get_window_ptr();
-
-   buf[0] = buffer_fps[0]    = '\0';
-
-   if (window && video_monitor_get_fps(video_info, buf, sizeof(buf),
-            buffer_fps, sizeof(buffer_fps)))
-   {
-#ifndef _XBOX
-      window->set_title(&main_window, buf);
-#endif
-   }
-
-   if (video_info.fps_show)
-   {
 #ifdef _XBOX
+   if (video_info->fps_show)
+   {
       MEMORYSTATUS stat;
       char mem[128];
 
@@ -112,10 +96,24 @@ static void gfx_ctx_d3d_update_title(void *data, video_frame_info_t video_info)
       GlobalMemoryStatus(&stat);
       snprintf(mem, sizeof(mem), "|| MEM: %.2f/%.2fMB",
             stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
-      strlcat(buffer_fps, mem, sizeof(buffer_fps));
-#endif
-      runloop_msg_queue_push(buffer_fps, 1, 1, false);
+      strlcat(video_info->fps_text, mem, sizeof(video_info->fps_text));
    }
+#else
+   const ui_window_t *window = ui_companion_driver_get_window_ptr();
+
+   if (window)
+   {
+      char title[128];
+
+      title[0] = '\0';
+
+      video_driver_get_window_title(title, sizeof(title));
+
+      if (title[0])
+         window->set_title(&main_window, title);
+   }
+#endif
+
 }
 
 static void gfx_ctx_d3d_show_mouse(void *data, bool state)
@@ -127,7 +125,7 @@ static void gfx_ctx_d3d_show_mouse(void *data, bool state)
 
 static void gfx_ctx_d3d_check_window(void *data, bool *quit,
       bool *resize, unsigned *width,
-      unsigned *height, unsigned frame_count)
+      unsigned *height, bool is_shutdown)
 {
    win32_check_window(quit, resize, width, height);
 }
@@ -142,16 +140,14 @@ static bool gfx_ctx_d3d_suppress_screensaver(void *data, bool enable)
    return win32_suppress_screensaver(data, enable);
 }
 
+#ifndef _XBOX
 static bool gfx_ctx_d3d_has_windowed(void *data)
 {
    (void)data;
 
-#ifdef _XBOX
-   return false;
-#else
    return true;
-#endif
 }
+#endif
 
 static bool gfx_ctx_d3d_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
@@ -169,7 +165,7 @@ static bool gfx_ctx_d3d_bind_api(void *data,
 #endif
 }
 
-static void *gfx_ctx_d3d_init(video_frame_info_t video_info, void *video_driver)
+static void *gfx_ctx_d3d_init(video_frame_info_t *video_info, void *video_driver)
 {
    win32_monitor_init();
 
@@ -182,15 +178,15 @@ static void gfx_ctx_d3d_destroy(void *data)
 }
 
 static void gfx_ctx_d3d_input_driver(void *data,
+      const char *name,
       const input_driver_t **input, void **input_data)
 {
-   settings_t *settings = config_get_ptr();
 #ifdef _XBOX
-   void *xinput         = input_xinput.init(settings->input.joypad_driver);
+   void *xinput         = input_xinput.init(name);
    *input               = xinput ? (const input_driver_t*)&input_xinput : NULL;
    *input_data          = xinput;
 #else
-   dinput               = input_dinput.init(settings->input.joypad_driver);
+   dinput               = input_dinput.init(name);
    *input               = dinput ? &input_dinput : NULL;
    *input_data          = dinput;
 #endif
@@ -198,7 +194,7 @@ static void gfx_ctx_d3d_input_driver(void *data,
 }
 
 static bool gfx_ctx_d3d_set_video_mode(void *data,
-      video_frame_info_t video_info,
+      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -348,7 +344,11 @@ const gfx_ctx_driver_t gfx_ctx_d3d = {
    gfx_ctx_d3d_set_resize,
    gfx_ctx_d3d_has_focus,
    gfx_ctx_d3d_suppress_screensaver,
+#ifdef _XBOX
+   NULL,
+#else
    gfx_ctx_d3d_has_windowed,
+#endif
    gfx_ctx_d3d_swap_buffers,
    gfx_ctx_d3d_input_driver,
    NULL,

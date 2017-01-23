@@ -72,13 +72,6 @@ enum driver_ctl_state
 
    RARCH_DRIVER_CTL_UNINIT_ALL,
 
-   /* Initializes drivers.
-    * @data is a bitmask which determines 
-    * which drivers get initialized. */
-   RARCH_DRIVER_CTL_INIT,
-
-   RARCH_DRIVER_CTL_INIT_ALL,
-
    /* Attempts to find a default driver for 
     * all driver types.
     *
@@ -90,12 +83,6 @@ enum driver_ctl_state
     * video_monitor_set_refresh_rate(). Subsequently
     * calls audio_monitor_set_refresh_rate(). */
    RARCH_DRIVER_CTL_SET_REFRESH_RATE,
-
-   /* Sets audio and video drivers to nonblock state.
-    *
-    * If nonblock state is false, sets blocking state for both
-    * audio and video drivers instead. */
-   RARCH_DRIVER_CTL_SET_NONBLOCK_STATE,
 
    /* Update the system Audio/Video information. 
     * Will reinitialize audio/video drivers.
@@ -121,6 +108,14 @@ typedef struct driver_ctx_info
 } driver_ctx_info_t;
 
 bool driver_ctl(enum driver_ctl_state state, void *data);
+
+/* Sets audio and video drivers to nonblock state.
+ *
+ * If nonblock state is false, sets blocking state for both
+ * audio and video drivers instead. */
+void driver_set_nonblock_state(void);
+
+void drivers_init(int flags);
 
 RETRO_END_DECLS
 

@@ -1,6 +1,6 @@
 /* RetroArch - A frontend for libretro.
  * Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- * Copyright (C) 2011-2016 - Daniel De Matteis
+ * Copyright (C) 2011-2017 - Daniel De Matteis
  *
  * RetroArch is free software: you can redistribute it and/or modify it under the terms
  * of the GNU General Public License as published by the Free Software Found-
@@ -23,7 +23,6 @@
 #endif
 
 #ifdef VITA
-#include <psp2/moduleinfo.h>
 #include <psp2/power.h>
 #include <psp2/sysmodule.h>
 #include <psp2/appmgr.h>
@@ -39,16 +38,23 @@
 #include <pspsdk.h>
 #endif
 
+#include <string/stdstring.h>
 #include <boolean.h>
 #include <file/file_path.h>
 #ifndef IS_SALAMANDER
 #include <lists/file_list.h>
 #endif
 
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
 #include "../frontend_driver.h"
 #include "../../defaults.h"
 #include "../../file_path_special.h"
 #include "../../defines/psp_defines.h"
+#include "../../retroarch.h"
+#include "../../paths.h"
 #include "../../verbosity.h"
 
 #if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER)
@@ -57,9 +63,7 @@
 #endif
 #endif
 
-#ifdef VITA
-PSP2_MODULE_INFO(0, 0, "RetroArch");
-#else
+#ifndef VITA
 PSP_MODULE_INFO("RetroArch", 0, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER|THREAD_ATTR_VFPU);
 #ifdef BIG_STACK

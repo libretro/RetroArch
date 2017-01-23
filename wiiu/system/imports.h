@@ -178,3 +178,17 @@ IMPORT(VPADRead);
 IMPORT(VPADInit);
 
 IMPORT_END();
+
+/* padscore */
+IMPORT_BEGIN(padscore);
+
+IMPORT(KPADInit);
+IMPORT(WPADProbe);
+IMPORT(WPADSetDataFormat);
+IMPORT(WPADEnableURCC);
+IMPORT(WPADEnableWiiRemote);
+IMPORT(WPADRead);
+IMPORT(KPADRead);
+
+IMPORT_END();
+

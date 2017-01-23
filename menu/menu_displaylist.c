@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2014-2016 - Jean-André Santoni
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2014-2017 - Jean-André Santoni
+ *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -245,11 +245,6 @@ static int menu_displaylist_parse_netplay(
          MENU_SETTING_ACTION, 0, 0);
 
    menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS),
-         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_SETTINGS),
-         MENU_ENUM_LABEL_NETWORK_SETTINGS, MENU_SETTING_GROUP, 0, 0);
-
-   menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_LAN_SCAN_SETTINGS),
          msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS),
          MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS, MENU_SETTING_GROUP, 0, 0);
@@ -318,7 +313,6 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
    unsigned i;
    char tmp[PATH_MAX_LENGTH];
    core_info_t *core_info    = NULL;
-   settings_t *settings      = config_get_ptr();
 
    tmp[0] = '\0';
 
@@ -440,6 +434,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
    if (core_info->firmware_count > 0)
    {
       core_info_ctx_firmware_t firmware_info;
+      settings_t *settings           = config_get_ptr();
 
       firmware_info.path             = core_info->path;
       firmware_info.directory.system = settings->directory.system;
@@ -1436,10 +1431,8 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
       char fill_buf[PATH_MAX_LENGTH];
       char path_copy[PATH_MAX_LENGTH];
       const char *core_name           = NULL;
-      const char *db_name             = NULL;
       const char *path                = NULL;
       const char *label               = NULL;
-      const char *crc32               = NULL;
 
       fill_buf[0] = path_copy[0]      = '\0';
 
@@ -1448,7 +1441,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
       path = path_copy;
 
       playlist_get_index(playlist, i,
-            &path, &label, NULL, &core_name, &crc32, &db_name);
+            &path, &label, NULL, &core_name, NULL, NULL);
 
       if (core_name)
          strlcpy(fill_buf, core_name, sizeof(fill_buf));
@@ -1717,13 +1710,9 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       char tmp[PATH_MAX_LENGTH];
       char crc_str[20];
       database_info_t *db_info_entry = &db_info->list[i];
-      settings_t *settings           = config_get_ptr();
-      bool show_advanced_settings    = false;
+      bool show_advanced_settings    = settings->menu.show_advanced_settings;
 
       crc_str[0] = tmp[0] = '\0';
-
-      if (settings)
-         show_advanced_settings      = settings->menu.show_advanced_settings;
 
       snprintf(crc_str, sizeof(crc_str), "%08X", db_info_entry->crc32);
 
@@ -2699,6 +2688,11 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS,
                MENU_SETTING_ACTION, 0, 0);
 
+#ifdef HAVE_NETWORKING
+      menu_displaylist_parse_settings_enum(menu, info,
+            MENU_ENUM_LABEL_NETPLAY,
+            PARSE_ACTION, false);
+#endif
 
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS),
@@ -2932,6 +2926,7 @@ static int menu_displaylist_parse_add_content_list(
 static int menu_displaylist_parse_scan_directory_list(
       menu_displaylist_info_t *info)
 {
+
 #ifdef HAVE_LIBRETRODB
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
@@ -2944,6 +2939,40 @@ static int menu_displaylist_parse_scan_directory_list(
          msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE),
          MENU_ENUM_LABEL_SCAN_FILE,
          MENU_SETTING_ACTION, 0, 0);
+#endif
+
+   return 0;
+}
+
+static int menu_displaylist_parse_netplay_room_list(
+      menu_displaylist_info_t *info)
+{
+
+#ifdef HAVE_NETWORKING
+   menu_entries_append_enum(info->list,
+         "Refresh Room List",
+         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS),
+         MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS,
+         MENU_SETTING_ACTION, 0, 0);
+   
+   if (netplay_room_count > 0)
+   {
+      unsigned i;
+      for (i = 0; i < netplay_room_count; i++)
+      {
+         char s[PATH_MAX_LENGTH];
+
+         s[0] = '\0';
+
+         snprintf(s, sizeof(s),
+               "Nickname: %s", netplay_room_list[i].nickname);
+         menu_entries_append_enum(info->list,
+               s,
+               msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM),
+               MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,
+               MENU_WIFI, 0, 0);
+      }
+   }
 #endif
 
    return 0;
@@ -3783,6 +3812,12 @@ static bool menu_displaylist_push_internal(
             return false;
          return true;
    }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB)))
+   {
+         if (!menu_displaylist_ctl(DISPLAYLIST_NETPLAY_ROOM_LIST, info))
+            return false;
+         return true;
+   }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU)))
    {
       if (!menu_displaylist_ctl(DISPLAYLIST_HORIZONTAL, info))
@@ -3911,6 +3946,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_ADD_CONTENT_LIST:
       case DISPLAYLIST_CONFIGURATIONS_LIST:
       case DISPLAYLIST_SCAN_DIRECTORY_LIST:
+      case DISPLAYLIST_NETPLAY_ROOM_LIST:
       case DISPLAYLIST_LOAD_CONTENT_LIST:
       case DISPLAYLIST_USER_BINDS_LIST:
       case DISPLAYLIST_ACCOUNTS_LIST:
@@ -5317,6 +5353,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push    = true;
          info->need_refresh = true;
          break;
+      case DISPLAYLIST_NETPLAY_ROOM_LIST:
+         ret = menu_displaylist_parse_netplay_room_list(info);
+
+         info->need_push    = true;
+         info->need_refresh = true;
+         break;
       case DISPLAYLIST_LOAD_CONTENT_LIST:
          if (frontend_driver_parse_drive_list(info->list) != 0)
             menu_entries_append_enum(info->list, "/",
@@ -5746,10 +5788,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push    = true;
 
          {
-            unsigned cores_names_len;
-            size_t cores_names_size;
-            unsigned cores_paths_len;
-            size_t cores_paths_size;
+            unsigned cores_names_len        = 0;
+            unsigned cores_paths_len        = 0;
+            size_t cores_paths_size         = 0;
+            size_t cores_names_size         = 0;
             struct string_list *cores_names =
                string_list_new_special(STRING_LIST_SUPPORTED_CORES_NAMES,
                      (void*)menu->deferred_path,
@@ -5881,10 +5923,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push    = true;
 
          {
-            unsigned cores_names_len;
-            size_t cores_names_size;
-            unsigned cores_paths_len;
-            size_t cores_paths_size;
+            unsigned cores_names_len        = 0;
+            unsigned cores_paths_len        = 0;
+            size_t cores_paths_size         = 0;
+            size_t cores_names_size         = 0;
             struct string_list *cores_names =
                string_list_new_special(STRING_LIST_SUPPORTED_CORES_NAMES,
                      (void*)menu->deferred_path,

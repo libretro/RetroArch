@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2013-2014 - Jason Fetters
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -41,7 +41,6 @@
 #import "../../ui/drivers/cocoa/cocoa_common.h"
 #include "../video_context_driver.h"
 #include "../../configuration.h"
-#include "../../runloop.h"
 #include "../../verbosity.h"
 
 #if defined(HAVE_COCOATOUCH)
@@ -213,7 +212,7 @@ void cocoagl_gfx_ctx_update(void)
 #endif
 }
 
-static void *cocoagl_gfx_ctx_init(video_frame_info_t video_info, void *video_driver)
+static void *cocoagl_gfx_ctx_init(video_frame_info_t *video_info, void *video_driver)
 {
    (void)video_driver;
     
@@ -330,7 +329,7 @@ static void cocoagl_gfx_ctx_show_mouse(void *data, bool state)
 }
 
 static bool cocoagl_gfx_ctx_set_video_mode(void *data,
-      video_frame_info_t video_info,
+      video_frame_info_t *video_info,
       unsigned width, unsigned height, bool fullscreen)
 {
 #if defined(HAVE_COCOA)
@@ -416,28 +415,27 @@ static void cocoagl_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned
    *height                         = CGRectGetHeight(size) * screenscale;
 }
 
-static void cocoagl_gfx_ctx_update_window_title(void *data, video_frame_info_t video_info)
+#if defined(HAVE_COCOA)
+static void cocoagl_gfx_ctx_update_title(void *data, video_frame_info_t *video_info)
 {
-#if defined(HAVE_COCOA)
    ui_window_cocoa_t view;
-   const ui_window_t *window  = NULL;
-#endif
-   static char buf_fps[128]   = {0};
-   static char buf[128]       = {0};
-    
-   video_monitor_get_fps(video_info, buf, sizeof(buf),
-                         buf_fps, sizeof(buf_fps));
-    
-#if defined(HAVE_COCOA)
-   window    = ui_companion_driver_get_window_ptr();
+   const ui_window_t *window  = ui_companion_driver_get_window_ptr();
+
    view.data = (CocoaView*)nsview_get_ptr();
 
-   if (window && *buf)
-       window->set_title(&view, buf);
-#endif
-    if (video_info.fps_show)
-        runloop_msg_queue_push(buf_fps, 1, 1, false);
+   if (window)
+   {
+      char title[128];
+
+      title[0] = '\0';
+
+      video_driver_get_window_title(title, sizeof(title));
+
+      if (title[0])
+         window->set_title(&view, title);
+   }
 }
+#endif
 
 static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types type,
             float *value)
@@ -526,18 +524,14 @@ static bool cocoagl_gfx_ctx_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
+#if !defined(HAVE_COCOATOUCH)
 static bool cocoagl_gfx_ctx_has_windowed(void *data)
 {
-   (void)data;
-
-#if defined(HAVE_COCOATOUCH)
-   return false;
-#else
    return true;
-#endif
 }
+#endif
 
-static void cocoagl_gfx_ctx_swap_buffers(void *data, video_frame_info_t video_info)
+static void cocoagl_gfx_ctx_swap_buffers(void *data, video_frame_info_t *video_info)
 {
    if (!(--g_fast_forward_skips < 0))
       return;
@@ -564,10 +558,9 @@ CFStringRef)BOXSTRING(symbol_name)
 }
 
 static void cocoagl_gfx_ctx_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
+      bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
 {
    unsigned new_width, new_height;
-   (void)frame_count;
 
    *quit = false;
 
@@ -580,18 +573,11 @@ static void cocoagl_gfx_ctx_check_window(void *data, bool *quit,
    }
 }
 
-static bool cocoagl_gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
+static void cocoagl_gfx_ctx_input_driver(void *data,
+      const char *name,
+      const input_driver_t **input, void **input_data)
 {
-   (void)data;
-   (void)width;
-   (void)height;
-   return false;
-}
-
-static void cocoagl_gfx_ctx_input_driver(void *data, const input_driver_t **input, void **input_data)
-{
-   (void)data;
-   *input = NULL;
+   *input      = NULL;
    *input_data = NULL;
 }
 
@@ -630,12 +616,20 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    NULL, /* get_video_output_next */
    cocoagl_gfx_ctx_get_metrics,
    NULL,
-   cocoagl_gfx_ctx_update_window_title,
+#if defined(HAVE_COCOA)
+   cocoagl_gfx_ctx_update_title,
+#else
+   NULL, /* update_title */
+#endif
    cocoagl_gfx_ctx_check_window,
-   cocoagl_gfx_ctx_set_resize,
+   NULL, /* set_resize */
    cocoagl_gfx_ctx_has_focus,
    cocoagl_gfx_ctx_suppress_screensaver,
+#if defined(HAVE_COCOATOUCH)
+   NULL,
+#else
    cocoagl_gfx_ctx_has_windowed,
+#endif
    cocoagl_gfx_ctx_swap_buffers,
    cocoagl_gfx_ctx_input_driver,
    cocoagl_gfx_ctx_get_proc_address,

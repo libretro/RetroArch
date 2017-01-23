@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -47,7 +47,6 @@
 #include "../../performance_counters.h"
 
 #include "../../retroarch.h"
-#include "../../runloop.h"
 #include "../../verbosity.h"
 #include "../common/gl_common.h"
 
@@ -212,17 +211,17 @@ static void gl_overlay_tex_geom(void *data,
    tex[7]       = y + h;
 }
 
-static void gl_render_overlay(gl_t *gl)
+static void gl_render_overlay(gl_t *gl, video_frame_info_t *video_info)
 {
    video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
    video_shader_ctx_info_t shader_info;
-   unsigned i, width, height;
+   unsigned i;
+   unsigned width                      = video_info->width;
+   unsigned height                     = video_info->height;
 
    if (!gl || !gl->overlay_enable)
       return;
-
-   video_driver_get_size(&width, &height);
 
    glEnable(GL_BLEND);
 
@@ -299,32 +298,30 @@ static void gl_set_viewport_wrapper(void *data, unsigned viewport_width,
 
    video_driver_build_info(&video_info);
 
-   gl_set_viewport(data, video_info,
+   gl_set_viewport(data, &video_info,
          viewport_width, viewport_height, force_full, allow_rotate);
 }
 
-void gl_set_viewport(void *data, video_frame_info_t video_info,
+void gl_set_viewport(void *data, video_frame_info_t *video_info,
       unsigned viewport_width,
       unsigned viewport_height,
       bool force_full, bool allow_rotate)
 {
    gfx_ctx_aspect_t aspect_data;
-   unsigned width, height;
-   int x                  = 0;
-   int y                  = 0;
-   float device_aspect    = (float)viewport_width / viewport_height;
+   int x                    = 0;
+   int y                    = 0;
+   float device_aspect      = (float)viewport_width / viewport_height;
    struct video_ortho ortho = {0, 1, 0, 1, -1, 1};
-   gl_t           *gl     = (gl_t*)data;
+   gl_t           *gl       = (gl_t*)data;
+   unsigned height          = video_info->height;
 
-   video_driver_get_size(&width, &height);
-
-   aspect_data.aspect   = &device_aspect;
-   aspect_data.width    = viewport_width;
-   aspect_data.height   = viewport_height;
+   aspect_data.aspect       = &device_aspect;
+   aspect_data.width        = viewport_width;
+   aspect_data.height       = viewport_height;
 
    video_context_driver_translate_aspect(&aspect_data);
 
-   if (video_info.scale_integer && !force_full)
+   if (video_info->scale_integer && !force_full)
    {
       video_viewport_get_scaled_integer(&gl->vp,
             viewport_width, viewport_height,
@@ -337,7 +334,7 @@ void gl_set_viewport(void *data, video_frame_info_t video_info,
       float desired_aspect = video_driver_get_aspect_ratio();
 
 #if defined(HAVE_MENU)
-      if (video_info.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      if (video_info->aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          const struct video_viewport *custom = video_viewport_get_custom();
 
@@ -685,7 +682,9 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 }
 
-static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
+static INLINE void gl_copy_frame(gl_t *gl, 
+      video_frame_info_t *video_info,
+      const void *frame,
       unsigned width, unsigned height, unsigned pitch)
 {
    static struct retro_perf_counter copy_frame = {0};
@@ -739,13 +738,11 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
    else
 #endif
    {
-      bool use_rgba = video_driver_supports_rgba();
-
       glPixelStorei(GL_UNPACK_ALIGNMENT,
             video_pixel_get_alignment(width * gl->base_size));
 
       /* Fallback for GLES devices without GL_BGRA_EXT. */
-      if (gl->base_size == 4 && use_rgba)
+      if (gl->base_size == 4 && video_info->use_rgba)
       {
          video_frame_convert_argb8888_to_abgr8888(
                &gl->scaler,
@@ -959,9 +956,11 @@ static void gl_set_texture_enable(void *data, bool state, bool full_screen)
 }
 
 static void gl_set_osd_msg(void *data, const char *msg,
-      const struct font_params *params, void *font)
+      const void *params, void *font)
 {
-   font_driver_render_msg(font, msg, params);
+   video_frame_info_t video_info;
+   video_driver_build_info(&video_info);
+   font_driver_render_msg(&video_info, font, msg, params);
 }
 
 static void gl_show_mouse(void *data, bool state)
@@ -1013,13 +1012,14 @@ static void gl_pbo_async_readback(gl_t *gl)
 }
 #endif
 
-static INLINE void gl_draw_texture(gl_t *gl)
+static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
 {
    video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
    video_shader_ctx_info_t shader_info;
-   unsigned width, height;
    GLfloat color[16];
+   unsigned width         = video_info->width;
+   unsigned height        = video_info->height;
 
    color[ 0] = 1.0f;
    color[ 1] = 1.0f;
@@ -1040,8 +1040,6 @@ static INLINE void gl_draw_texture(gl_t *gl)
 
    if (!gl->menu_texture)
       return;
-
-   video_driver_get_size(&width, &height);
 
    gl->coords.vertex    = vertexes_flipped;
    gl->coords.tex_coord = tex_coords;
@@ -1090,24 +1088,24 @@ static bool gl_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height,
       uint64_t frame_count,
       unsigned pitch, const char *msg,
-      video_frame_info_t video_info)
+      video_frame_info_t *video_info)
 {
    video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
    video_shader_ctx_params_t params;
-   unsigned width, height;
    struct video_tex_info feedback_info;
    video_shader_ctx_info_t shader_info;
-   static struct retro_perf_counter frame_run = {0};
+   static struct 
+      retro_perf_counter frame_run     = {0};
    gl_t                            *gl = (gl_t*)data;
+   unsigned width                      = video_info->width;
+   unsigned height                     = video_info->height;
 
    performance_counter_init(&frame_run, "frame_run");
    performance_counter_start(&frame_run);
 
    if (!gl)
       return false;
-
-   video_driver_get_size(&width, &height);
 
    context_bind_hw_render(false);
 
@@ -1146,7 +1144,7 @@ static bool gl_frame(void *data, const void *frame,
       mode.width        = width;
       mode.height       = height;
 
-      video_context_driver_set_resize(&mode);
+      video_context_driver_set_resize(mode);
 
 #ifdef HAVE_FBO
       if (gl->fbo_inited)
@@ -1168,14 +1166,14 @@ static bool gl_frame(void *data, const void *frame,
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
    /* Can be NULL for frame dupe / NULL render. */
-   if (frame)
+   if (frame) 
    {
 #ifdef HAVE_FBO
       if (!gl->hw_render_fbo_init)
 #endif
       {
          gl_update_input_size(gl, frame_width, frame_height, pitch, true);
-         gl_copy_frame(gl, frame, frame_width, frame_height, pitch);
+         gl_copy_frame(gl, video_info, frame, frame_width, frame_height, pitch);
       }
 
       /* No point regenerating mipmaps
@@ -1279,18 +1277,18 @@ static bool gl_frame(void *data, const void *frame,
 #if defined(HAVE_MENU)
    if (gl->menu_texture_enable)
    {
-      menu_driver_ctl(RARCH_MENU_CTL_FRAME, NULL);
+      menu_driver_frame(video_info);
 
       if (gl->menu_texture_enable)
-         gl_draw_texture(gl);
+         gl_draw_texture(gl, video_info);
    }
 #endif
 
    if (msg)
-      font_driver_render_msg(NULL, msg, NULL);
+      font_driver_render_msg(video_info, NULL, msg, NULL);
 
 #ifdef HAVE_OVERLAY
-   gl_render_overlay(gl);
+   gl_render_overlay(gl, video_info);
 #endif
 
    video_context_driver_update_window_title(video_info);
@@ -1339,10 +1337,10 @@ static bool gl_frame(void *data, const void *frame,
    /* Disable BFI during fast forward, slow-motion,
     * and pause to prevent flicker. */
    if (
-         video_info.black_frame_insertion
+         video_info->black_frame_insertion
          && !input_driver_is_nonblock_state()
-         && !runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, NULL)
-         && !runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
+         && !video_info->runloop_is_slowmotion
+         && !video_info->runloop_is_paused)
    {
       video_context_driver_swap_buffers(video_info);
       glClear(GL_COLOR_BUFFER_BIT);
@@ -1351,7 +1349,7 @@ static bool gl_frame(void *data, const void *frame,
    video_context_driver_swap_buffers(video_info);
 
 #ifdef HAVE_GL_SYNC
-   if (video_info.hard_sync && gl->have_sync)
+   if (video_info->hard_sync && gl->have_sync)
    {
       static struct retro_perf_counter gl_fence = {0};
 
@@ -1361,7 +1359,7 @@ static bool gl_frame(void *data, const void *frame,
       gl->fences[gl->fence_count++] =
          glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 
-      while (gl->fence_count > video_info.hard_sync_frames)
+      while (gl->fence_count > video_info->hard_sync_frames)
       {
          glClientWaitSync(gl->fences[0],
                GL_SYNC_FLUSH_COMMANDS_BIT, 1000000000);
@@ -2330,7 +2328,8 @@ static bool gl_set_shader(void *data,
    gl_set_shader_viewport(gl, 1);
    context_bind_hw_render(true);
 #if defined(_WIN32) && !defined(_XBOX)
-   shader_dlg_params_reload();
+   /* Shader dialog is disabled for now, until video_threaded issues are fixed.
+   shader_dlg_params_reload();*/
 #endif
 
 #endif
@@ -2360,7 +2359,7 @@ static void gl_viewport_info(void *data, struct video_viewport *vp)
    vp->y           = top_dist;
 }
 
-static bool gl_read_viewport(void *data, uint8_t *buffer)
+static bool gl_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
 #ifndef NO_GL_READ_PIXELS
    static struct retro_perf_counter read_viewport = {0};
@@ -2443,7 +2442,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
          goto error;
       }
 
-      if (!runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
+      if (!is_idle)
          video_driver_cached_frame();
 
       video_frame_convert_rgba_to_bgr(

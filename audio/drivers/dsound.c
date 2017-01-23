@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -396,7 +396,7 @@ static bool dsound_stop(void *data)
    return (ds->is_paused) ? true : false;
 }
 
-static bool dsound_start(void *data)
+static bool dsound_start(void *data, bool is_shutdown)
 {
    dsound_t *ds = (dsound_t*)data;
 

@@ -1,6 +1,6 @@
 /* RetroArch - A frontend for libretro.
 * Copyright (C) 2010-2014 - Hans-Kristian Arntzen
-* Copyright (C) 2011-2016 - Daniel De Matteis
+* Copyright (C) 2011-2017 - Daniel De Matteis
 *
 * RetroArch is free software: you can redistribute it and/or modify it under the terms
 * of the GNU General Public License as published by the Free Software Found-
@@ -221,7 +221,6 @@ VIDEO CONTEXT
 
 #endif
 
-
 /*============================================================
 VIDEO SHADERS
 ============================================================ */
@@ -358,6 +357,10 @@ VIDEO DRIVER
 #endif
 #include "../gfx/drivers/nullgfx.c"
 
+#if defined(_WIN32) && !defined(_XBOX)
+#include "../gfx/drivers/gdi_gfx.c"
+#endif
+
 /*============================================================
 FONTS
 ============================================================ */
@@ -402,6 +405,13 @@ FONTS
 #include "../gfx/drivers_font/caca_font.c"
 #endif
 
+#if defined(DJGPP)
+#include "../gfx/drivers_font/vga_font.c"
+#endif
+
+#if defined(_WIN32) && !defined(_XBOX)
+#include "../gfx/drivers_font/gdi_font.c"
+#endif
 
 #if defined(HAVE_VULKAN)
 #include "../gfx/drivers_font/vulkan_raster_font.c"
@@ -900,6 +910,7 @@ NETPLAY
 #include "../tasks/task_http.c"
 #include "../tasks/task_netplay_lan_scan.c"
 #include "../tasks/task_wifi.c"
+#include "../tasks/task_netplay_find_content.c"
 #endif
 
 /*============================================================
@@ -994,6 +1005,14 @@ MENU
 #include "../menu/drivers_display/menu_display_caca.c"
 #endif
 
+#ifdef DJGPP
+#include "../menu/drivers_display/menu_display_vga.c"
+#endif
+
+#if defined(_WIN32) && !defined(_XBOX)
+#include "../menu/drivers_display/menu_display_gdi.c"
+#endif
+
 #endif
 
 
@@ -1001,7 +1020,7 @@ MENU
 #include "../menu/drivers/rgui.c"
 #endif
 
-#if defined(HAVE_OPENGL) || defined(HAVE_VITA2D) || defined(_3DS)
+#if defined(HAVE_OPENGL) || defined(HAVE_VITA2D) || defined(_3DS) || defined(_MSC_VER)
 #ifdef HAVE_XMB
 #include "../menu/drivers/xmb.c"
 #endif

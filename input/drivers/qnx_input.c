@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2013-2014 - CatalystG
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -590,16 +590,17 @@ static void qnx_handle_navigator_event(
    switch (bps_event_get_code(event))
    {
       case NAVIGATOR_SYSKEY_PRESS:
-         switch(navigator_event_get_syskey_key(event)) {
-             case NAVIGATOR_SYSKEY_BACK:
-                 input_keyboard_event(true, RETROK_BACKSPACE, 0, 0, RETRO_DEVICE_KEYBOARD);
-                 input_keyboard_event(false, RETROK_BACKSPACE, 0, 0, RETRO_DEVICE_KEYBOARD);
-                 break;
-             case NAVIGATOR_SYSKEY_SEND:
-             case NAVIGATOR_SYSKEY_END:
-                 break;
-             default:
-                 break;
+         switch(navigator_event_get_syskey_key(event))
+         {
+            case NAVIGATOR_SYSKEY_BACK:
+               input_keyboard_event(true, RETROK_BACKSPACE, 0, 0, RETRO_DEVICE_KEYBOARD);
+               input_keyboard_event(false, RETROK_BACKSPACE, 0, 0, RETRO_DEVICE_KEYBOARD);
+               break;
+            case NAVIGATOR_SYSKEY_SEND:
+            case NAVIGATOR_SYSKEY_END:
+               break;
+            default:
+               break;
          }
          break;
       case NAVIGATOR_SWIPE_DOWN:
@@ -612,21 +613,19 @@ static void qnx_handle_navigator_event(
             case NAVIGATOR_WINDOW_INVISIBLE:
                while(true)
                {
+                  unsigned event_code;
+
                   /* Block until we get a resume or exit event. */
                   bps_get_event(&event_pause, -1);
-                  unsigned event_code = bps_event_get_code(event_pause);
+                  event_code = bps_event_get_code(event_pause);
 
                   if(event_code == NAVIGATOR_WINDOW_STATE)
                   {
                      if(navigator_event_get_window_state(event_pause) == NAVIGATOR_WINDOW_FULLSCREEN)
-                     {
                         break;
-                     }
                   }
                   else if(event_code == NAVIGATOR_EXIT)
-                  {
                      goto shutdown;
-                  }
                }
                break;
             case NAVIGATOR_WINDOW_FULLSCREEN:

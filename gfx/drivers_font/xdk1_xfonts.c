@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -55,9 +55,17 @@ static void *xfonts_init_font(void *video_data,
 
 static void xfonts_free_font(void *data)
 {
+   xfonts_t *font = (xfonts_t*)data;
+
+   if (font)
+      free(font);
+   
+   font = NULL;
 }
 
-static void xfonts_render_msg(void *data, const char *msg,
+static void xfonts_render_msg(
+      video_frame_info_t *video_info,
+      void *data, const char *msg,
       const void *userdata)
 {
    wchar_t str[PATH_MAX_LENGTH];
@@ -72,10 +80,8 @@ static void xfonts_render_msg(void *data, const char *msg,
    }
    else
    {
-      settings_t *settings = config_get_ptr();
-
-      x = settings->video.msg_pos_x;
-      y = settings->video.msg_pos_y;
+      x = video_info->font_msg_pos_x;
+      y = video_info->font_msg_pos_y;
    }
 
    xfonts->d3d->dev->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &xfonts->surf);
