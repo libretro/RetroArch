@@ -31,7 +31,6 @@
 #include <encodings/crc32.h>
 
 #include "msg_hash.h"
-#include "patch.h"
 #include "retroarch.h"
 #include "verbosity.h"
 
