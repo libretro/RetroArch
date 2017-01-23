@@ -1112,6 +1112,7 @@ XML
 ============================================================ */
 #include "../libretro-common/audio/conversion/s16_to_float.c"
 #include "../libretro-common/audio/conversion/float_to_s16.c"
+#include "../libretro-common/audio/audio_mix.c"
 
 /*============================================================
  LIBRETRODB

@@ -453,7 +453,8 @@ ifeq ($(HAVE_NEON),1)
 endif
 
 OBJ += $(LIBRETRO_COMM_DIR)/audio/conversion/s16_to_float.o \
-       $(LIBRETRO_COMM_DIR)/audio/conversion/float_to_s16.o
+       $(LIBRETRO_COMM_DIR)/audio/conversion/float_to_s16.o \
+		 $(LIBRETRO_COMM_DIR)/audio/audio_mix.o
 
 ifeq ($(HAVE_NEON),1)
    OBJ += $(LIBRETRO_COMM_DIR)/audio/conversion/s16_to_float_neon.o \
