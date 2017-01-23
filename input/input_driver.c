@@ -265,7 +265,6 @@ static const struct retro_keybind *libretro_input_binds[MAX_USERS];
 void input_poll(void)
 {
    size_t i;
-   rarch_joypad_info_t joypad_info;
    settings_t *settings           = config_get_ptr();
    unsigned max_users             = settings->input.max_users;
    
@@ -279,15 +278,14 @@ void input_poll(void)
       input_driver_turbo_btns.frame_enable[i] = 0;
    }
 
-   joypad_info.axis_threshold = settings->input.axis_threshold;
-
    if (!input_driver_block_libretro_input)
    {
+      rarch_joypad_info_t joypad_info;
+      joypad_info.axis_threshold = settings->input.axis_threshold;
+
       for (i = 0; i < max_users; i++)
       {
-         bool bind_valid = libretro_input_binds[i][RARCH_TURBO_ENABLE].valid;
-
-         if (bind_valid)
+         if (libretro_input_binds[i][RARCH_TURBO_ENABLE].valid)
          {
             joypad_info.joy_idx        = settings->input.joypad_map[i];
             joypad_info.auto_binds     = settings->input.autoconf_binds[joypad_info.joy_idx];
@@ -297,27 +295,27 @@ void input_poll(void)
                   i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
          }
       }
-   }
 
 #ifdef HAVE_OVERLAY
-   if (overlay_ptr && input_overlay_is_alive(overlay_ptr))
-      input_poll_overlay(
-            overlay_ptr,
-            settings->input.overlay_opacity,
-            settings->input.analog_dpad_mode[0],
-            settings->input.axis_threshold);
+      if (overlay_ptr && input_overlay_is_alive(overlay_ptr))
+         input_poll_overlay(
+               overlay_ptr,
+               settings->input.overlay_opacity,
+               settings->input.analog_dpad_mode[0],
+               settings->input.axis_threshold);
 #endif
 
 #ifdef HAVE_COMMAND
-   if (input_driver_command)
-      command_poll(input_driver_command);
+      if (input_driver_command)
+         command_poll(input_driver_command);
 #endif
 
 #ifdef HAVE_NETWORKGAMEPAD
-   if (input_driver_remote)
-      input_remote_poll(input_driver_remote,
-            settings->input.max_users);
+      if (input_driver_remote)
+         input_remote_poll(input_driver_remote,
+               settings->input.max_users);
 #endif
+   }
 }
 
 /**
