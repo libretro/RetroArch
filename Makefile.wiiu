@@ -78,11 +78,6 @@ ifeq ($(strip $(DEVKITPRO)),)
 $(error "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to>devkitPRO")
 endif
 
-ifeq ($(strip $(WUT_ROOT)),)
-$(error "Please set WUT_ROOT in your environment. export WUT_ROOT=<path to>WUT")
-endif
-
-
 export PATH	  := $(PATH):$(DEVKITPPC)/bin
 
 PREFIX := powerpc-eabi-
@@ -96,12 +91,19 @@ STRIP   := $(PREFIX)strip
 NM      := $(PREFIX)nm
 LD      := $(CXX)
 
-ELF2RPL   := $(WUT_ROOT)/tools/bin/elf2rpl
+ELF2RPL   := wiiu/wut/elf2rpl/elf2rpl
 
-INCDIRS := -I. -Ideps/zlib -Ideps/7zip -Ilibretro-common/include -Iwiiu -I$(WUT_ROOT)/include -I$(DEVKITPRO)/portlibs/ppc/include
+ifneq ($(findstring Linux,$(shell uname -a)),)
+else ifneq ($(findstring Darwin,$(shell uname -a)),)
+else
+   ELF2RPL   := $(ELF2RPL).exe
+endif
+
+
+INCDIRS := -I. -Ideps/zlib -Ideps/7zip -Ilibretro-common/include -Iwiiu -Iwiiu/include -I$(DEVKITPRO)/portlibs/ppc/include
 LIBDIRS := -L. -L$(DEVKITPRO)/portlibs/ppc/lib
 
-CFLAGS  := -mrvl -mcpu=750 -meabi -mhard-float
+CFLAGS  := -mwup -mcpu=750 -meabi -mhard-float
 LDFLAGS :=
 
 ifeq ($(DEBUG), 1)
@@ -116,8 +118,9 @@ ASFLAGS := $(CFLAGS) -mregnames
 CFLAGS +=  -ffast-math -Werror=implicit-function-declaration
 #CFLAGS += -fomit-frame-pointer -mword-relocations
 #CFLAGS	+= -Wall
-CFLAGS += -Dstatic_assert=_Static_assert
-CFLAGS += -DWIIU -D__wiiu__ -DMSB_FIRST
+
+#todo: remove -DWIIU and use the built-in macros instead (HW_WUP or __wiiu__).
+CFLAGS += -DWIIU -DMSB_FIRST
 CFLAGS += -DHAVE_MAIN
 CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE
 CFLAGS += -DHAVE_FILTERS_BUILTIN $(DEFINES)
@@ -144,8 +147,7 @@ LIBS	:= $(WHOLE_START) -lretro_wiiu $(WHOLE_END) -lm -lfat -liosuhax
 RPX_OBJ           = wiiu/system/stubs_rpl.o
 HBL_ELF_OBJ       = wiiu/system/dynamic.o wiiu/system/stubs_elf.o
 
-RPX_LDFLAGS      := -L$(WUT_ROOT)/lib -L$(DEVKITPPC)/lib
-RPX_LDFLAGS      += -pie -fPIE
+RPX_LDFLAGS      := -pie -fPIE
 RPX_LDFLAGS      += -z common-page-size=64 -z max-page-size=64
 RPX_LDFLAGS      += -T wiiu/link_rpl.ld
 RPX_LDFLAGS      += -nostartfiles
@@ -193,14 +195,17 @@ all: $(TARGETS)
 %.depend: ;
 
 
+$(ELF2RPL):
+	$(MAKE) -C wiiu/wut/elf2rpl/
+
 $(TARGET).elf: $(OBJ) $(HBL_ELF_OBJ) libretro_wiiu.a wiiu/link_elf.ld
 	$(LD) $(OBJ) $(HBL_ELF_OBJ) $(LDFLAGS) $(HBL_ELF_LDFLAGS) $(LIBDIRS) $(LIBS) -o $@
 
 $(TARGET).rpx.elf: $(OBJ) $(RPX_OBJ) libretro_wiiu.a wiiu/link_elf.ld
 	$(LD) $(OBJ) $(RPX_OBJ) $(LDFLAGS) $(RPX_LDFLAGS) $(LIBDIRS)  $(LIBS) -o $@
 
-$(TARGET).rpx: $(TARGET).rpx.elf
-	-$(ELF2RPL) $(notdir $<) $@
+$(TARGET).rpx: $(TARGET).rpx.elf $(ELF2RPL)
+	-$(ELF2RPL) $(TARGET).rpx.elf $@
 
 clean:
 	rm -f $(OBJ) $(RPX_OBJ) $(HBL_ELF_OBJ) $(TARGET).elf $(TARGET).rpx.elf $(TARGET).rpx

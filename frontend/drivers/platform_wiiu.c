@@ -36,7 +36,7 @@
 
 #include "tasks/tasks_internal.h"
 #include "runloop.h"
-#include <nsysnet/socket.h>
+#include <sys/socket.h>
 #include "fs/fs_utils.h"
 #include "fs/sd_fat_devoptab.h"
 #include "system/dynamic.h"
@@ -45,15 +45,15 @@
 #include "system/exception.h"
 #include <sys/iosupport.h>
 
-#include <coreinit/foreground.h>
-#include <proc_ui/procui.h>
-#include <vpad/input.h>
-#include <sysapp/launch.h>
-#include <padscore.h>
+#include <wiiu/os/foreground.h>
+#include <wiiu/procui.h>
+#include <wiiu/sysapp.h>
+#include <wiiu/ios.h>
+#include <wiiu/vpad.h>
+#include <wiiu/kpad.h>
 
 #include <fat.h>
 #include <iosuhax.h>
-#include "ios.h"
 
 #include "wiiu_dbg.h"
 
@@ -214,7 +214,7 @@ void log_deinit(void)
         log_socket = -1;
     }
 }
-static int log_write(struct _reent *r, int fd, const char *ptr, size_t len)
+static ssize_t log_write(struct _reent *r, void* fd, const char *ptr, size_t len)
 {
    if(log_socket < 0)
        return len;
