@@ -125,9 +125,9 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
          {
             for (j = 0; j < playlist->size; j++)
             {
-               printf("CRC Match %s\n", state->crc);
                if (string_is_equal(playlist->entries[j].crc32, state->crc))
                {
+                  printf("CRC Match %s\n", state->crc);
                   strlcpy(state->path, playlist->entries[j].path, sizeof(state->path));
                   state->found = true;
                   task_set_data(task, state);
