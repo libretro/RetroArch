@@ -278,7 +278,8 @@ void input_poll(void)
       input_driver_turbo_btns.frame_enable[i] = 0;
    }
 
-   if (!input_driver_block_libretro_input)
+   if (     !input_driver_flushing_input 
+         && !input_driver_block_libretro_input)
    {
       rarch_joypad_info_t joypad_info;
       joypad_info.axis_threshold = settings->input.axis_threshold;
