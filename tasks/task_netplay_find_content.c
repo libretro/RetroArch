@@ -118,7 +118,8 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
 
          for (j = 0; j < playlist->size; j++)
          {
-            if (string_is_equal(playlist->entries[j].crc32, state->content_crc))
+            if (string_is_equal(playlist->entries[j].crc32, state->content_crc) && 
+               strstr(state->core_extensions, path_get_extension(playlist->entries[j].path)))
             {
                RARCH_LOG("CRC Match %s\n", playlist->entries[j].crc32);
                strlcpy(state->content_path, playlist->entries[j].path, sizeof(state->content_path));
@@ -163,7 +164,8 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
             path_remove_extension(entry);
 
             if ( !string_is_empty(entry) && 
-                  string_is_equal(entry, state->content_path))
+                  string_is_equal(entry, state->content_path) &&
+                  strstr(state->core_extensions, path_get_extension(playlist->entries[j].path)))
             {
                RARCH_LOG("Filename match %s\n", playlist->entries[j].path);
 
