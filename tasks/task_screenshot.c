@@ -105,6 +105,10 @@ static void task_screenshot_handler(retro_task_t *task)
       free(state);
       return;
    }
+    
+#ifdef HAVE_RBMP
+    (void)bmp_type;
+#endif
 
 #if defined(_XBOX1)
    if (XGWriteSurfaceToFile(state->surf, state->filename) == S_OK)
