@@ -88,23 +88,6 @@ static void netplay_crc_scan_callback(void *task_data,
    free(state);
 }
 
-char *filename_remove_ext(const char* str)
-{
-   char *ret;
-   char *lastdot;
-
-   if (str == NULL)
-      return NULL;
-   if ((ret = malloc (strlen (str) + 1)) == NULL)
-      return NULL;
-   strcpy (ret, str);
-   lastdot = strrchr (ret, '.');
-   if (lastdot != NULL)
-      *lastdot = '\0';
-
-   return ret;
-}
-
 static void task_netplay_crc_scan_handler(retro_task_t *task)
 {
    size_t i, j;
@@ -129,7 +112,8 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
    /* content with no CRC uses 00000000*/
    if (!string_is_equal(state->crc, "00000000|crc"))
    {
-      printf("Using CRC matching\n");
+      RARCH_LOG("Using CRC matching\n");
+
       for (i = 0; i < state->lpl_list->size; i++)
       {
          playlist_t *playlist = NULL;
@@ -144,7 +128,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
          {
             if (string_is_equal(playlist->entries[j].crc32, state->crc))
             {
-               printf("CRC Match %s\n", playlist->entries[j].crc32);
+               RARCH_LOG("CRC Match %s\n", playlist->entries[j].crc32);
                strlcpy(state->path, playlist->entries[j].path, sizeof(state->path));
                state->found = true;
                task_set_data(task, state);
@@ -164,7 +148,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
    }
    else
    {
-      printf("Using filename matching\n");
+      RARCH_LOG("Using filename matching\n");
       for (i = 0; i < state->lpl_list->size; i++)
       {
          playlist_t *playlist = NULL;
@@ -177,14 +161,18 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
 
          for (j = 0; j < playlist->size; j++)
          {
+            char entry[PATH_MAX_LENGTH];
             const char* buf = path_basename(playlist->entries[j].path);
-            char* entry = filename_remove_ext(buf);
-#if 1
-            printf("%s %s\n", entry, state->path);
-#endif
-            if (string_is_equal(entry, state->path))
+
+            entry[0]    = '\0';
+
+            path_remove_extension(entry);
+
+            if ( !string_is_empty(entry) && 
+                  string_is_equal(entry, state->path))
             {
-               printf("Filename Match %s\n", playlist->entries[j].path);
+               RARCH_LOG("Filename match %s\n", playlist->entries[j].path);
+
                strlcpy(state->path, playlist->entries[j].path, sizeof(state->path));
                state->found = true;
                task_set_data(task, state);
@@ -193,10 +181,8 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
                task_set_finished(task, true);
                string_list_free(state->lpl_list);
                free(playlist);
-               free(entry);
                return;
             }
-            free(entry);
 
             task_set_progress(task, (int)(j/playlist->size*100.0));
          }
