@@ -998,7 +998,7 @@ static void gx_resize(void *data)
    }
    guMtxIdentity(m2);
    guMtxRotDeg(m2, 'Z', degrees);
-   guMtxConcat(m1, m2, m1);
+   c_guMtxConcat(m1, m2, m1);
    GX_LoadPosMtxImm(m1, GX_PNMTX0);
 
    init_texture(data, 4, 4);
