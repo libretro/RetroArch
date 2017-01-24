@@ -2210,10 +2210,11 @@ static bool config_load_file(const char *path, bool set_defaults,
       {
          for(i = FILE_PATH_CGP_EXTENSION; i <= FILE_PATH_SLANGP_EXTENSION; i++)
          {
-            if(!strstr(file_path_str((enum file_path_enum)(i)), shader_ext))
+            enum file_path_enum ext = (enum file_path_enum)(i);
+            if(!strstr(file_path_str(ext), shader_ext))
                continue;
 
-            if (check_shader_compatibility((enum file_path_enum)i))
+            if (check_shader_compatibility(ext))
                continue;
 
             RARCH_LOG("Incompatible shader for backend %s, clearing...\n",
