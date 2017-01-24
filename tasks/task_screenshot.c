@@ -65,10 +65,8 @@ typedef struct
 #endif
    char filename[PATH_MAX_LENGTH];
    char shotname[256];
-#ifdef HAVE_RPNG
    uint8_t *out_buffer;
    struct scaler_ctx scaler;
-#endif
    const void *frame;
    unsigned width;
    unsigned height;
@@ -79,6 +77,7 @@ typedef struct
    bool is_idle;
    bool is_paused;
    bool history_list_enable;
+   unsigned pixel_format_type;
 } screenshot_task_state_t;
 
 /**
@@ -89,7 +88,11 @@ typedef struct
  **/
 static void task_screenshot_handler(retro_task_t *task)
 {
+#ifdef HAVE_RBMP
+   enum rbmp_source_type bmp_type = RBMP_SOURCE_TYPE_DONT_CARE;
+#endif
    screenshot_task_state_t *state = (screenshot_task_state_t*)task->state;
+   struct scaler_ctx *scaler      = (struct scaler_ctx*)&state->scaler;
    bool ret                       = false;
 
    if (task_get_progress(task) == 100)
@@ -108,24 +111,20 @@ static void task_screenshot_handler(retro_task_t *task)
       ret = true;
    state->surf->Release();
 #elif defined(HAVE_RPNG)
-   {
-      struct scaler_ctx *scaler = (struct scaler_ctx*)&state->scaler;
+   if (state->bgr24)
+      scaler->in_fmt   = SCALER_FMT_BGR24;
+   else if (state->pixel_format_type == RETRO_PIXEL_FORMAT_XRGB8888)
+      scaler->in_fmt   = SCALER_FMT_ARGB8888;
+   else
+      scaler->in_fmt   = SCALER_FMT_RGB565;
 
-      if (state->bgr24)
-         scaler->in_fmt   = SCALER_FMT_BGR24;
-      else if (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_XRGB8888)
-         scaler->in_fmt   = SCALER_FMT_ARGB8888;
-      else
-         scaler->in_fmt   = SCALER_FMT_RGB565;
-
-      video_frame_convert_to_bgr24(
-            scaler,
-            state->out_buffer,
-            (const uint8_t*)state->frame + ((int)state->height - 1) 
-            * state->pitch,
-            state->width, state->height,
-            -state->pitch);
-   }
+   video_frame_convert_to_bgr24(
+         scaler,
+         state->out_buffer,
+         (const uint8_t*)state->frame + ((int)state->height - 1) 
+         * state->pitch,
+         state->width, state->height,
+         -state->pitch);
 
    scaler_ctx_gen_reset(&state->scaler);
 
@@ -139,11 +138,9 @@ static void task_screenshot_handler(retro_task_t *task)
 
    free(state->out_buffer);
 #elif defined(HAVE_RBMP)
-   enum rbmp_source_type bmp_type = RBMP_SOURCE_TYPE_DONT_CARE;
-
    if (state->bgr24)
       bmp_type = RBMP_SOURCE_TYPE_BGR24;
-   else if (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_XRGB8888)
+   else if (state->pixel_format_type == RETRO_PIXEL_FORMAT_XRGB8888)
       bmp_type = RBMP_SOURCE_TYPE_XRGB888;
 
    ret = rbmp_save_image(state->filename,
@@ -196,6 +193,7 @@ static bool screenshot_dump(
       bool is_paused)
 {
    char screenshot_path[PATH_MAX_LENGTH];
+   uint8_t *buf                   = NULL;
 #ifdef _XBOX1
    d3d_video_t *d3d               = (d3d_video_t*)video_driver_get_ptr(true);
 #endif
@@ -224,9 +222,11 @@ static bool screenshot_dump(
    state->userbuf             = userbuf;
    state->silence             = savestate;
    state->history_list_enable = settings->history_list_enable;
+   state->pixel_format_type   = video_driver_get_pixel_format();
 
    if (savestate)
-      snprintf(state->filename, sizeof(state->filename), "%s.png", name_base);
+      snprintf(state->filename,
+            sizeof(state->filename), "%s.png", name_base);
    else
    {
       if (settings->auto_screenshot_filename)
@@ -243,22 +243,23 @@ static bool screenshot_dump(
 #ifdef _XBOX1
    d3d->dev->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &state->surf);
 #elif defined(HAVE_RPNG)
-   state->out_buffer = (uint8_t*)malloc(width * height * 3);
-   if (!state->out_buffer)
+   buf = (uint8_t*)malloc(width * height * 3);
+   if (!buf)
    {
       if (task)
          free(task);
       free(state);
       return false;
    }
+   state->out_buffer = buf;
 #endif
 
-   task->type       = TASK_TYPE_BLOCKING;
-   task->state      = state;
-   task->handler    = task_screenshot_handler;
+   task->type        = TASK_TYPE_BLOCKING;
+   task->state       = state;
+   task->handler     = task_screenshot_handler;
 
    if (!savestate)
-      task->title   = strdup(msg_hash_to_str(MSG_TAKING_SCREENSHOT));
+      task->title    = strdup(msg_hash_to_str(MSG_TAKING_SCREENSHOT));
 
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
 
