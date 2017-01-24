@@ -1088,14 +1088,18 @@ static int generic_action_ok(const char *path,
          }
          break;
       case ACTION_OK_LOAD_CONFIG_FILE:
-         flush_type      = MENU_SETTINGS;
-         menu_display_set_msg_force(true);
-
-         if (config_replace(action_path))
          {
-            bool pending_push = false;
-            menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
-            ret = -1;
+            settings_t            *settings = config_get_ptr();
+            flush_type                      = MENU_SETTINGS;
+
+            menu_display_set_msg_force(true);
+
+            if (config_replace(settings->config_save_on_exit, action_path))
+            {
+               bool pending_push = false;
+               menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
+               ret = -1;
+            }
          }
          break;
 #ifdef HAVE_SHADER_MANAGER

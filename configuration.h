@@ -642,7 +642,7 @@ bool config_save_overrides(int override_type);
 /* Replaces currently loaded configuration file with
  * another one. Will load a dummy core to flush state
  * properly. */
-bool config_replace(char *path);
+bool config_replace(bool config_save_on_exit, char *path);
 
 bool config_init(void);
 
