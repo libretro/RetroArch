@@ -2202,18 +2202,22 @@ static bool config_load_file(const char *path, bool set_defaults,
    config_read_keybinds_conf(conf);
 
    ret = true;
-   
-   for(i = FILE_PATH_CGP_EXTENSION; i <= FILE_PATH_SLANGP_EXTENSION; i++)
+
    {
       const char *shader_ext = path_get_extension(settings->path.shader);
 
-      if(!string_is_empty(shader_ext) 
-            && strstr(file_path_str((enum file_path_enum)(i)), shader_ext))
+      if (!string_is_empty(shader_ext))
       {
-         if (!check_shader_compatibility((enum file_path_enum)i))
+         for(i = FILE_PATH_CGP_EXTENSION; i <= FILE_PATH_SLANGP_EXTENSION; i++)
          {
-            /* TODO/FIXME - this check is always triggered even with an empty shader path */
-            RARCH_LOG("Incompatible shader for backend %s, clearing...\n", settings->video.driver);
+            if(!strstr(file_path_str((enum file_path_enum)(i)), shader_ext))
+               continue;
+
+            if (check_shader_compatibility((enum file_path_enum)i))
+               continue;
+
+            RARCH_LOG("Incompatible shader for backend %s, clearing...\n",
+                  settings->video.driver);
             settings->path.shader[0] = '\0';
             break;
          }
