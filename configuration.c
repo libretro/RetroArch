@@ -2205,7 +2205,10 @@ static bool config_load_file(const char *path, bool set_defaults,
    
    for(i = FILE_PATH_CGP_EXTENSION; i <= FILE_PATH_SLANGP_EXTENSION; i++)
    {
-      if(strstr(file_path_str((enum file_path_enum)(i)), path_get_extension(settings->path.shader)))
+      const char *shader_ext = path_get_extension(settings->path.shader);
+
+      if(!string_is_empty(shader_ext) 
+            && strstr(file_path_str((enum file_path_enum)(i)), shader_ext))
       {
          if (!check_shader_compatibility((enum file_path_enum)i))
          {
