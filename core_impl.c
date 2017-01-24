@@ -24,6 +24,7 @@
 
 #include <boolean.h>
 #include <lists/string_list.h>
+#include <string/stdstring.h>
 #include <libretro.h>
 
 #ifdef HAVE_CONFIG_H
@@ -282,7 +283,7 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
    if (load_info && load_info->special)
       core_game_loaded = core.retro_load_game_special(
             load_info->special->id, load_info->info, load_info->content->size);
-   else if (load_info && *load_info->content->elems[0].data)
+   else if (load_info && !string_is_empty(load_info->content->elems[0].data))
       core_game_loaded = core.retro_load_game(load_info->info);
    else
       core_game_loaded = core.retro_load_game(NULL);
