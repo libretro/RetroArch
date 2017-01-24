@@ -121,12 +121,6 @@ static void keyb_int(void)
 }
 END_FUNC(keyb_int)
 
-/*static void free_keyb_buf()
-{
-   *(char*)(0x0040001A) = 0x20;
-   *(char*)(0x0040001C) = 0x20;
-}*/
-
 static void hook_keyb_int(void)
 {
    _go32_dpmi_get_protected_mode_interrupt_vector(9, &old_kbd_int);
@@ -221,22 +215,7 @@ static void dos_joypad_poll(void)
       *cur_state |= normal_keys[45] ? UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_A : 0; /* X */
       *cur_state |= normal_keys[30] ? UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_Y : 0; /* A */
       *cur_state |= normal_keys[31] ? UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_X : 0; /* S */
-      *cur_state |= normal_keys[1]  ? UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_X : 0; /* S */
-
-      /**cur_state |= pad.b ? RETRO_DEVICE_ID_JOYPAD_A : 0;
-      *cur_state |= pad.a ? RETRO_DEVICE_ID_JOYPAD_B : 0;
-      *cur_state |= pad.y ? RETRO_DEVICE_ID_JOYPAD_X : 0;
-      *cur_state |= pad.x ? RETRO_DEVICE_ID_JOYPAD_Y : 0;
-      *cur_state |= pad.left ? RETRO_DEVICE_ID_JOYPAD_LEFT : 0;
-      *cur_state |= pad.right ? RETRO_DEVICE_ID_JOYPAD_RIGHT : 0;
-      *cur_state |= pad.up ? RETRO_DEVICE_ID_JOYPAD_UP : 0;
-      *cur_state |= pad.start ? RETRO_DEVICE_ID_JOYPAD_START : 0;
-      *cur_state |= pad.back ? RETRO_DEVICE_ID_JOYPAD_SELECT : 0;
-      *cur_state |= pad.lt ? RETRO_DEVICE_ID_JOYPAD_L : 0;
-      *cur_state |= pad.rt ? RETRO_DEVICE_ID_JOYPAD_R : 0;*/
    }
-
-   /*free_keyb_buf();*/
 }
 
 static bool dos_joypad_query_pad(unsigned pad)
