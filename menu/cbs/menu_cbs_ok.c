@@ -3138,7 +3138,7 @@ static int action_ok_netplay_connect_room(const char *path,
       netplay_room_list[idx - 1].port);
 
    RARCH_LOG("Connecting to: %s with game: %s/%08x\n", 
-         netplay_room_list[idx - 1].address,
+         tmp_hostname,
          netplay_room_list[idx - 1].gamename,
          netplay_room_list[idx - 1].gamecrc);
 
