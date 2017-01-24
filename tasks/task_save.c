@@ -1242,8 +1242,6 @@ bool content_rename_state(const char *origin, const char *dest)
 */
 bool content_reset_savestate_backups(void)
 {
-   RARCH_LOG("Resetting undo buffers.\n");
-
    if (undo_save_buf.data)
    {
       free(undo_save_buf.data);
