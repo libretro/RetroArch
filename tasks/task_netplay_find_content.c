@@ -42,33 +42,25 @@ typedef struct
    char path[PATH_MAX_LENGTH];
    char hostname[512];
    char corename[PATH_MAX_LENGTH];
+   char corepath[PATH_MAX_LENGTH];
+   char coreext[PATH_MAX_LENGTH];
    bool found;
 } netplay_crc_handle_t;
 
 static void netplay_crc_scan_callback(void *task_data,
                                void *user_data, const char *error)
 {
-   int i;
    netplay_crc_handle_t *state     = (netplay_crc_handle_t*)task_data;
-   core_info_list_t *info          = NULL;
    content_ctx_info_t content_info = {0};
-
-   core_info_get_list(&info);
 
    if (!state)
       return;
 
-   for (i=0; i < info->count; i++)
-   {
-      if(string_is_equal(info->list[i].core_name, state->corename))
-         break;
-   }
-
-   if (!string_is_empty(info->list[i].path) && !string_is_empty(state->path))
+   if (!string_is_empty(state->corepath) && !string_is_empty(state->path))
    {
       command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
       task_push_content_load_default(
-            info->list[i].path, state->path,
+            state->corepath, state->path,
             &content_info,
             CORE_TYPE_PLAIN,
             CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU,
@@ -205,10 +197,14 @@ no_playlists:
 bool task_push_netplay_crc_scan(uint32_t crc, char* name,
       const char *hostname, const char *corename)
 {
+   int i;
    settings_t        *settings = config_get_ptr();
    retro_task_t          *task = (retro_task_t *)calloc(1, sizeof(*task));
    netplay_crc_handle_t *state = (netplay_crc_handle_t*)calloc(1, sizeof(*state));
+   core_info_list_t *info          = NULL;
+   core_info_get_list(&info);
 
+   
    if (!task || !state)
       goto error;
 
@@ -222,11 +218,26 @@ bool task_push_netplay_crc_scan(uint32_t crc, char* name,
 
    state->corename[0] = '\0';
    snprintf(state->corename, sizeof(state->corename), "%s", corename);
+   
 
    state->lpl_list = dir_list_new(settings->directory.playlist,
          NULL, true, true, true, false);
 
    state->found = false;
+
+   for (i=0; i < info->count; i++)
+   {
+      /* check if the core name matches.
+         TO-DO :we could try to load the core too to check 
+         if the version string matches too */
+      if(string_is_equal(info->list[i].core_name, state->corename))
+      {
+         snprintf(state->corepath, sizeof(state->corepath), "%s", info->list[i].path);
+         snprintf(state->coreext,  sizeof(state->coreext),  "%s", info->list[i].supported_extensions);
+         break;
+      }
+   }
+
 
    /* blocking means no other task can run while this one is running, 
     * which is the default */
