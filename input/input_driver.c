@@ -90,6 +90,9 @@ static const input_driver_t *input_drivers[] = {
 #ifdef EMSCRIPTEN
    &input_rwebinput,
 #endif
+#ifdef DJGPP
+   &input_dos,
+#endif
    &input_null,
    NULL,
 };

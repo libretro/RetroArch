@@ -354,6 +354,8 @@ VIDEO DRIVER
 #include "../gfx/drivers/ctr_gfx.c"
 #elif defined(XENON)
 #include "../gfx/drivers/xenon360_gfx.c"
+#elif defined(DJGPP)
+#include "../gfx/drivers/vga_gfx.c"
 #endif
 #include "../gfx/drivers/nullgfx.c"
 
@@ -466,6 +468,9 @@ INPUT
 #include "../input/drivers_joypad/qnx_joypad.c"
 #elif defined(EMSCRIPTEN)
 #include "../input/drivers/rwebinput_input.c"
+#elif defined(DJGPP)
+#include "../input/drivers/dos_input.c"
+#include "../input/drivers_joypad/dos_joypad.c"
 #endif
 
 #ifdef HAVE_DINPUT
@@ -788,6 +793,8 @@ FRONTEND
 #include "../frontend/drivers/platform_linux.c"
 #elif defined(BSD) && !defined(__MACH__)
 #include "../frontend/drivers/platform_bsd.c"
+#elif defined(DJGPP)
+#include "../frontend/drivers/platform_dos.c"
 #endif
 #include "../frontend/drivers/platform_null.c"
 

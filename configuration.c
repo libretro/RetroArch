@@ -376,6 +376,8 @@ const char *config_get_default_input(void)
       	 return "qnx_input";
       case INPUT_RWEBINPUT:
       	 return "rwebinput";
+      case INPUT_DOS:
+         return "dos";
       case INPUT_NULL:
           break;
    }
@@ -432,6 +434,8 @@ const char *config_get_default_joypad(void)
          return "hid";
       case JOYPAD_QNX:
          return "qnx";
+      case JOYPAD_DOS:
+         return "dos";
       case JOYPAD_NULL:
          break;
    }

@@ -184,6 +184,7 @@ static bool ctr_joypad_query_pad(unsigned pad)
 
 static void ctr_joypad_destroy(void)
 {
+   unhook_keyb_int();
 }
 
 input_device_driver_t ctr_joypad = {

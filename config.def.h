@@ -112,6 +112,7 @@ enum input_driver_enum
    INPUT_COCOA,
    INPUT_QNX,
    INPUT_RWEBINPUT,
+   INPUT_DOS,
    INPUT_NULL
 };
 
@@ -129,6 +130,7 @@ enum joypad_driver_enum
    JOYPAD_LINUXRAW,
    JOYPAD_ANDROID,
    JOYPAD_SDL,
+   JOYPAD_DOS,
    JOYPAD_HID,
    JOYPAD_QNX,
    JOYPAD_NULL
@@ -320,6 +322,8 @@ enum record_driver_enum
 #define INPUT_DEFAULT_DRIVER INPUT_SDL
 #elif defined(HAVE_SDL2)
 #define INPUT_DEFAULT_DRIVER INPUT_SDL2
+#elif defined(DJGPP)
+#define INPUT_DEFAULT_DRIVER INPUT_DOS
 #else
 #define INPUT_DEFAULT_DRIVER INPUT_NULL
 #endif
@@ -348,6 +352,8 @@ enum record_driver_enum
 #define JOYPAD_DEFAULT_DRIVER JOYPAD_ANDROID
 #elif defined(HAVE_SDL) || defined(HAVE_SDL2)
 #define JOYPAD_DEFAULT_DRIVER JOYPAD_SDL
+#elif defined(DJGPP)
+#define JOYPAD_DEFAULT_DRIVER JOYPAD_DOS
 #elif defined(HAVE_HID)
 #define JOYPAD_DEFAULT_DRIVER JOYPAD_HID
 #elif defined(__QNX__)

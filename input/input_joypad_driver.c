@@ -78,6 +78,9 @@ static input_device_driver_t *joypad_drivers[] = {
 #ifdef HAVE_MFI
    &mfi_joypad,
 #endif
+#ifdef DJGPP
+   &dos_joypad,
+#endif
 #ifdef HAVE_HID
    &hid_joypad,
 #endif

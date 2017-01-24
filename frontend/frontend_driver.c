@@ -64,6 +64,9 @@ static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #ifdef XENON
    &frontend_ctx_xenon,
 #endif
+#ifdef DJGPP
+   &frontend_ctx_dos,
+#endif
    &frontend_ctx_null,
    NULL
 };

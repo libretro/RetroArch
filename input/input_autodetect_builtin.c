@@ -195,6 +195,30 @@ DECL_AXIS(r_x_minus, -2) \
 DECL_AXIS(r_y_plus,  -3) \
 DECL_AXIS(r_y_minus, +3)
 
+#define DOSINPUT_DEFAULT_BINDS \
+DECL_BTN(a, 8) \
+DECL_BTN(b, 0) \
+DECL_BTN(x, 9) \
+DECL_BTN(y, 1) \
+DECL_BTN(start, 3) \
+DECL_BTN(select, 2) \
+DECL_BTN(up, 4) \
+DECL_BTN(down, 5) \
+DECL_BTN(left, 6) \
+DECL_BTN(right, 7) \
+DECL_BTN(l, 10) \
+DECL_BTN(r, 11) \
+DECL_BTN(l2, 12) \
+DECL_BTN(r2, 13) \
+DECL_AXIS(l_x_plus,  +0) \
+DECL_AXIS(l_x_minus, -0) \
+DECL_AXIS(l_y_plus,  +1) \
+DECL_AXIS(l_y_minus, -1) \
+DECL_AXIS(r_x_plus,  +2) \
+DECL_AXIS(r_x_minus, -2) \
+DECL_AXIS(r_y_plus,  -3) \
+DECL_AXIS(r_y_minus, +3)
+
 #ifdef WIIU
 
 #define WIIUINPUT_GAMEPAD_DEFAULT_BINDS \
@@ -502,6 +526,9 @@ const char* const input_builtin_autoconfs[] =
 #endif
 #ifdef _3DS
    DECL_AUTOCONF_DEVICE("3DS Controller", "ctr", CTRINPUT_DEFAULT_BINDS),
+#endif
+#ifdef DJGPP
+   DECL_AUTOCONF_DEVICE("DOS Controller", "dos", DOSINPUT_DEFAULT_BINDS),
 #endif
 #ifdef GEKKO
    DECL_AUTOCONF_DEVICE("GameCube Controller", "gx", GXINPUT_GAMECUBE_DEFAULT_BINDS),
