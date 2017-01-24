@@ -248,7 +248,8 @@ static INLINE void psp_set_tex_coords (psp1_sprite_t* framecoords,
    }
 }
 
-static void psp_update_viewport(psp1_video_t* psp);
+static void psp_update_viewport(psp1_video_t* psp,
+      video_frame_info_t *video_info);
 
 static void psp_on_vblank(u32 sub, psp1_video_t *psp)
 {
@@ -261,10 +262,13 @@ static void *psp_init(const video_info_t *video,
 {
    /* TODO : add ASSERT() checks or use main RAM if 
     * VRAM is too low for desired video->input_scale. */
-   void *pspinput = NULL;
+
    int pixel_format, lut_pixel_format, lut_block_count;
    unsigned int red_shift, color_mask;
-   void *displayBuffer, *LUT_r, *LUT_b;
+   void *pspinput           = NULL;
+   void *displayBuffer      = NULL;
+   void *LUT_r              = NULL;
+   void *LUT_b              = NULL;
    psp1_video_t *psp        = (psp1_video_t*)calloc(1, sizeof(psp1_video_t));
 
    if (!psp)
@@ -534,7 +538,7 @@ static bool psp_frame(void *data, const void *frame,
    performance_counter_start(&psp_frame_run);
 
    if (psp->should_resize)
-      psp_update_viewport(psp);
+      psp_update_viewport(psp, video_info);
 
    psp_set_tex_coords(psp->frame_coords, width, height);
 
@@ -696,7 +700,8 @@ static void psp_set_texture_enable(void *data, bool state, bool full_screen)
       psp->menu.active = state;
 }
 
-static void psp_update_viewport(psp1_video_t* psp)
+static void psp_update_viewport(psp1_video_t* psp,
+      video_frame_info_t *video_info)
 {
    int x                = 0;
    int y                = 0;
