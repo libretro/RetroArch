@@ -26,10 +26,9 @@
 #include "../../menu/menu_driver.h"
 #endif
 
-#include "../font_driver.h"
-
 #include "../../driver.h"
 #include "../../retroarch.h"
+#include "../../configuration.h"
 #include "../video_context_driver.h"
 #include "../font_driver.h"
 
