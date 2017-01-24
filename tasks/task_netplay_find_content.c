@@ -166,6 +166,8 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
 
             entry[0]    = '\0';
 
+            strlcpy(entry, buf, sizeof(entry));
+
             path_remove_extension(entry);
 
             if ( !string_is_empty(entry) && 
