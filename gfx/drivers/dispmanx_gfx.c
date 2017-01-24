@@ -28,7 +28,6 @@
 
 #include "../../driver.h"
 #include "../../retroarch.h"
-#include "../../configuration.h"
 #include "../video_context_driver.h"
 #include "../font_driver.h"
 
@@ -333,8 +332,6 @@ static void dispmanx_surface_update(void *data, const void *frame,
   
    struct dispmanx_video *_dispvars = data;
    
-   settings_t *settings = config_get_ptr();
-
    /* Frame blitting */
    vc_dispmanx_resource_write_data(surface->next_page->resource, surface->pixformat,
          surface->pitch, (void*)frame, &(surface->bmp_rect));
