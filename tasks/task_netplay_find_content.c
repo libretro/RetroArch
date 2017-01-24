@@ -38,12 +38,12 @@
 typedef struct
 {
    struct string_list *lpl_list;
-   char crc[PATH_MAX_LENGTH];
-   char path[PATH_MAX_LENGTH];
+   char content_crc[PATH_MAX_LENGTH];
+   char content_path[PATH_MAX_LENGTH];
    char hostname[512];
-   char corename[PATH_MAX_LENGTH];
-   char corepath[PATH_MAX_LENGTH];
-   char coreext[PATH_MAX_LENGTH];
+   char core_name[PATH_MAX_LENGTH];
+   char core_path[PATH_MAX_LENGTH];
+   char core_extensions[PATH_MAX_LENGTH];
    bool found;
 } netplay_crc_handle_t;
 
@@ -56,11 +56,11 @@ static void netplay_crc_scan_callback(void *task_data,
    if (!state)
       return;
 
-   if (!string_is_empty(state->corepath) && !string_is_empty(state->path))
+   if (!string_is_empty(state->core_path) && !string_is_empty(state->content_path))
    {
       command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
       task_push_content_load_default(
-            state->corepath, state->path,
+            state->core_path, state->content_path,
             &content_info,
             CORE_TYPE_PLAIN,
             CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU,
@@ -70,7 +70,7 @@ static void netplay_crc_scan_callback(void *task_data,
    {
       /* TO-DO: Inform the user no compatible core or content was found */
       RARCH_LOG("Couldn't find a suitable %s\n", 
-         string_is_empty(state->path) ? "content file" : "core");
+         string_is_empty(state->content_path) ? "content file" : "core");
       runloop_msg_queue_push(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY),
             1, 480, true);
@@ -102,7 +102,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
       goto no_playlists;
    
    /* content with no CRC uses 00000000*/
-   if (!string_is_equal(state->crc, "00000000|crc"))
+   if (!string_is_equal(state->content_crc, "00000000|crc"))
    {
       RARCH_LOG("Using CRC matching\n");
 
@@ -118,10 +118,10 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
 
          for (j = 0; j < playlist->size; j++)
          {
-            if (string_is_equal(playlist->entries[j].crc32, state->crc))
+            if (string_is_equal(playlist->entries[j].crc32, state->content_crc))
             {
                RARCH_LOG("CRC Match %s\n", playlist->entries[j].crc32);
-               strlcpy(state->path, playlist->entries[j].path, sizeof(state->path));
+               strlcpy(state->content_path, playlist->entries[j].path, sizeof(state->content_path));
                state->found = true;
                task_set_data(task, state);
                task_set_progress(task, 100);
@@ -163,11 +163,11 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
             path_remove_extension(entry);
 
             if ( !string_is_empty(entry) && 
-                  string_is_equal(entry, state->path))
+                  string_is_equal(entry, state->content_path))
             {
                RARCH_LOG("Filename match %s\n", playlist->entries[j].path);
 
-               strlcpy(state->path, playlist->entries[j].path, sizeof(state->path));
+               strlcpy(state->content_path, playlist->entries[j].path, sizeof(state->content_path));
                state->found = true;
                task_set_data(task, state);
                task_set_progress(task, 100);
@@ -195,7 +195,7 @@ no_playlists:
 }
 
 bool task_push_netplay_crc_scan(uint32_t crc, char* name,
-      const char *hostname, const char *corename)
+      const char *hostname, const char *core_name)
 {
    int i;
    settings_t        *settings = config_get_ptr();
@@ -208,16 +208,16 @@ bool task_push_netplay_crc_scan(uint32_t crc, char* name,
    if (!task || !state)
       goto error;
 
-   state->crc[0] = '\0';
-   snprintf(state->crc, sizeof(state->crc), "%08X|crc", crc);
-   state->path[0] = '\0';
-   snprintf(state->path, sizeof(state->path), "%s", name);
+   state->content_crc[0] = '\0';
+   snprintf(state->content_crc, sizeof(state->content_crc), "%08X|crc", crc);
+   state->content_path[0] = '\0';
+   snprintf(state->content_path, sizeof(state->content_path), "%s", name);
 
    state->hostname[0] = '\0';
    snprintf(state->hostname, sizeof(state->hostname), "%s", hostname);
 
-   state->corename[0] = '\0';
-   snprintf(state->corename, sizeof(state->corename), "%s", corename);
+   state->core_name[0] = '\0';
+   snprintf(state->core_name, sizeof(state->core_name), "%s", core_name);
    
 
    state->lpl_list = dir_list_new(settings->directory.playlist,
@@ -230,10 +230,10 @@ bool task_push_netplay_crc_scan(uint32_t crc, char* name,
       /* check if the core name matches.
          TO-DO :we could try to load the core too to check 
          if the version string matches too */
-      if(string_is_equal(info->list[i].core_name, state->corename))
+      if(string_is_equal(info->list[i].core_name, state->core_name))
       {
-         snprintf(state->corepath, sizeof(state->corepath), "%s", info->list[i].path);
-         snprintf(state->coreext,  sizeof(state->coreext),  "%s", info->list[i].supported_extensions);
+         snprintf(state->core_path, sizeof(state->core_path), "%s", info->list[i].path);
+         snprintf(state->core_extensions,  sizeof(state->core_extensions),  "%s", info->list[i].supported_extensions);
          break;
       }
    }
