@@ -919,6 +919,7 @@ error:
          *error_string = strdup(msg);
       }
    }
+   if (string_is_empty(name)) *error_string = strdup("This core requires a content file.\n");
    return false;
 }
 
@@ -1276,6 +1277,7 @@ error:
    if (error_string)
    {
       runloop_msg_queue_push(error_string, 2, 90, true);
+      RARCH_ERR(error_string);
       free(error_string);
    }
 

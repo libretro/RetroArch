@@ -36,6 +36,7 @@
 #endif
 
 #include "core.h"
+#include "content.h"
 #include "dynamic.h"
 #include "msg_hash.h"
 #include "managers/state_manager.h"
@@ -285,8 +286,10 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
             load_info->special->id, load_info->info, load_info->content->size);
    else if (load_info && !string_is_empty(load_info->content->elems[0].data))
       core_game_loaded = core.retro_load_game(load_info->info);
-   else
+   else if (content_does_not_need_content())
       core_game_loaded = core.retro_load_game(NULL);
+   else
+      core_game_loaded = false;
 
    return core_game_loaded;
 }

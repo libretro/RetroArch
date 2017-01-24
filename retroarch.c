@@ -886,8 +886,6 @@ static void retroarch_parse_input(int argc, char *argv[])
       retroarch_set_current_core_type(CORE_TYPE_PLAIN, false);
       path_set_special(argv + optind, argc - optind);
    }
-   else
-      content_set_does_not_need_content();
 
    /* Copy SRM/state dirs used, so they can be reused on reentrancy. */
    if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL) &&
