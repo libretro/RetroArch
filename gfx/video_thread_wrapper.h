@@ -31,7 +31,8 @@ typedef int (*custom_command_method_t)(void*);
 
 typedef bool (*custom_font_command_method_t)(const void **font_driver,
       void **font_handle, void *video_data, const char *font_path,
-      float font_size, enum font_driver_render_api api);
+      float font_size, enum font_driver_render_api api,
+      bool is_threaded);
 
 typedef struct thread_packet thread_packet_t;
 
@@ -79,7 +80,8 @@ bool video_thread_font_init(
       const char *font_path,
       float font_size,
       enum font_driver_render_api api,
-      custom_font_command_method_t func);
+      custom_font_command_method_t func,
+      bool is_threaded);
 
 unsigned video_thread_texture_load(void *data,
       custom_command_method_t func);

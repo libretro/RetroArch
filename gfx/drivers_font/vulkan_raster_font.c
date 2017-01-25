@@ -33,13 +33,15 @@ typedef struct
    unsigned vertices;
 } vulkan_raster_t;
 
-static void vulkan_raster_font_free_font(void *data);
+static void vulkan_raster_font_free_font(void *data, bool is_threaded);
 
 static void *vulkan_raster_font_init_font(void *data,
-      const char *font_path, float font_size)
+      const char *font_path, float font_size,
+      bool is_threaded)
 {
    const struct font_atlas *atlas = NULL;
-   vulkan_raster_t *font = (vulkan_raster_t*)calloc(1, sizeof(*font));
+   vulkan_raster_t *font          = 
+      (vulkan_raster_t*)calloc(1, sizeof(*font));
 
 #if 0
    VkComponentMapping swizzle = {
@@ -71,7 +73,7 @@ static void *vulkan_raster_font_init_font(void *data,
    return font;
 }
 
-static void vulkan_raster_font_free_font(void *data)
+static void vulkan_raster_font_free_font(void *data, bool is_threaded)
 {
    vulkan_raster_t *font = (vulkan_raster_t*)data;
    if (!font)

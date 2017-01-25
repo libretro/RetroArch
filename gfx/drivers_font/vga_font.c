@@ -34,7 +34,8 @@ typedef struct
 } vga_raster_t;
 
 static void *vga_init_font(void *data,
-      const char *font_path, float font_size)
+      const char *font_path, float font_size,
+      bool is_threaded)
 {
    vga_raster_t *font  = (vga_raster_t*)calloc(1, sizeof(*font));
 
@@ -55,9 +56,10 @@ static void *vga_init_font(void *data,
    return font;
 }
 
-static void vga_render_free_font(void *data)
+static void vga_render_free_font(void *data, bool is_threaded)
 {
-
+   (void)data;
+   (void)is_threaded;
 }
 
 static int vga_get_message_width(void *data, const char *msg,

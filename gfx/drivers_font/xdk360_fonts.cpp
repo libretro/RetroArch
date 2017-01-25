@@ -519,7 +519,8 @@ static HRESULT xdk360_video_font_create_shaders(xdk360_video_font_t * font)
 }
 
 static void *xdk360_init_font(void *video_data,
-      const char *font_path, float font_size)
+      const char *font_path, float font_size,
+       bool is_threaded)
 {
    uint32_t dwFileVersion;
    const void *pFontData      = NULL;
@@ -591,7 +592,7 @@ error:
    return NULL;
 }
 
-static void xdk360_free_font(void *data)
+static void xdk360_free_font(void *data, bool is_threaded)
 {
    xdk360_video_font_t *font = (xdk360_video_font_t*)data;
 
@@ -599,10 +600,10 @@ static void xdk360_free_font(void *data)
       return;
 
    /* Destroy the font */
-   font->m_pFontTexture = NULL;
-   font->m_dwNumGlyphs = 0L;
-   font->m_Glyphs = NULL;
-   font->m_cMaxGlyph = 0;
+   font->m_pFontTexture    = NULL;
+   font->m_dwNumGlyphs     = 0L;
+   font->m_Glyphs          = NULL;
+   font->m_cMaxGlyph       = 0;
    font->m_TranslatorTable = NULL;
 
    if (font->s_FontLocals.m_pFontPixelShader)
@@ -612,9 +613,9 @@ static void xdk360_free_font(void *data)
    if (font->s_FontLocals.m_pFontVertexDecl)
       font->s_FontLocals.m_pFontVertexDecl->Release();
 
-   font->s_FontLocals.m_pFontPixelShader = NULL;
+   font->s_FontLocals.m_pFontPixelShader  = NULL;
    font->s_FontLocals.m_pFontVertexShader = NULL;
-   font->s_FontLocals.m_pFontVertexDecl = NULL;
+   font->s_FontLocals.m_pFontVertexDecl   = NULL;
 
    if (m_xprResource.Initialized())
       m_xprResource.Destroy();

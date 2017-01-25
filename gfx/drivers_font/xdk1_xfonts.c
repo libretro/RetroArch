@@ -32,7 +32,8 @@ typedef struct
 } xfonts_t;
 
 static void *xfonts_init_font(void *video_data,
-      const char *font_path, float font_size)
+      const char *font_path, float font_size,
+      bool is_threaded)
 {
    xfonts_t *xfont = (xfonts_t*)calloc(1, sizeof(*xfont));
 
@@ -53,7 +54,7 @@ static void *xfonts_init_font(void *video_data,
    return xfont;
 }
 
-static void xfonts_free_font(void *data)
+static void xfonts_free_font(void *data, bool is_threaded)
 {
    xfonts_t *font = (xfonts_t*)data;
 

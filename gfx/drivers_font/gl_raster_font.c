@@ -55,7 +55,7 @@ typedef struct
    video_font_raster_block_t *block;
 } gl_raster_t;
 
-static void gl_raster_font_free_font(void *data);
+static void gl_raster_font_free_font(void *data, bool is_threaded);
 
 static bool gl_raster_font_upload_atlas(gl_raster_t *font)
 {
@@ -143,7 +143,8 @@ static bool gl_raster_font_upload_atlas(gl_raster_t *font)
 }
 
 static void *gl_raster_font_init_font(void *data,
-      const char *font_path, float font_size)
+      const char *font_path, float font_size,
+      bool is_threaded)
 {
    gl_raster_t   *font  = (gl_raster_t*)calloc(1, sizeof(*font));
 
@@ -160,7 +161,7 @@ static void *gl_raster_font_init_font(void *data,
       return NULL;
    }
 
-   if (video_driver_is_threaded())
+   if (is_threaded)
       video_context_driver_make_current(false);
 
    glGenTextures(1, &font->tex);
@@ -184,13 +185,14 @@ static void *gl_raster_font_init_font(void *data,
    return font;
 
 error:
-   gl_raster_font_free_font(font);
+   gl_raster_font_free_font(font, is_threaded);
    font = NULL;
 
    return NULL;
 }
 
-static void gl_raster_font_free_font(void *data)
+static void gl_raster_font_free_font(void *data,
+      bool is_threaded)
 {
    gl_raster_t *font = (gl_raster_t*)data;
    if (!font)
@@ -199,7 +201,7 @@ static void gl_raster_font_free_font(void *data)
    if (font->font_driver && font->font_data)
       font->font_driver->free(font->font_data);
 
-   if (video_driver_is_threaded())
+   if (is_threaded)
       video_context_driver_make_current(true);
 
    glDeleteTextures(1, &font->tex);

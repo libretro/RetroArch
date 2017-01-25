@@ -45,7 +45,8 @@ typedef struct
    void* font_data;
 } ctr_font_t;
 
-static void* ctr_font_init_font(void* data, const char* font_path, float font_size)
+static void* ctr_font_init_font(void* data, const char* font_path,
+      float font_size, bool is_threaded)
 {
    const struct font_atlas* atlas = NULL;
    ctr_font_t* font = (ctr_font_t*)calloc(1, sizeof(*font));
@@ -96,7 +97,7 @@ static void* ctr_font_init_font(void* data, const char* font_path, float font_si
    return font;
 }
 
-static void ctr_font_free_font(void* data)
+static void ctr_font_free_font(void* data, bool is_threaded)
 {
    ctr_font_t* font = (ctr_font_t*)data;
 

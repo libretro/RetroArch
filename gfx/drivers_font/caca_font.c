@@ -35,7 +35,8 @@ typedef struct
 } caca_raster_t;
 
 static void *caca_init_font(void *data,
-      const char *font_path, float font_size)
+      const char *font_path, float font_size,
+      bool is_threaded)
 {
    caca_raster_t *font  = (caca_raster_t*)calloc(1, sizeof(*font));
 
@@ -56,9 +57,10 @@ static void *caca_init_font(void *data,
    return font;
 }
 
-static void caca_render_free_font(void *data)
+static void caca_render_free_font(void *data, bool is_threaded)
 {
-
+   (void)data;
+   (void)is_threaded;
 }
 
 static int caca_get_message_width(void *data, const char *msg,

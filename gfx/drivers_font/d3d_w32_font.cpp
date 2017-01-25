@@ -35,7 +35,8 @@ typedef struct
 } d3dfonts_t;
 
 static void *d3dfonts_w32_init_font(void *video_data,
-      const char *font_path, float font_size)
+      const char *font_path, float font_size,
+      bool is_threaded)
 {
    uint32_t r, g, b;
    d3dfonts_t *d3dfonts = NULL;
@@ -78,7 +79,7 @@ static void *d3dfonts_w32_init_font(void *video_data,
    return NULL;
 }
 
-static void d3dfonts_w32_free_font(void *data)
+static void d3dfonts_w32_free_font(void *data, bool is_threaded)
 {
    d3dfonts_t *d3dfonts = (d3dfonts_t*)data;
 
