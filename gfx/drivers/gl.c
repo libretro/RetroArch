@@ -690,7 +690,7 @@ static INLINE void gl_copy_frame(gl_t *gl,
    static struct retro_perf_counter copy_frame = {0};
 
    performance_counter_init(copy_frame, "copy_frame");
-   performance_counter_start(copy_frame);
+   performance_counter_start_plus(video_info->is_perfcnt_enable, copy_frame);
 
 #if defined(HAVE_PSGL)
    {
@@ -820,7 +820,7 @@ static INLINE void gl_copy_frame(gl_t *gl,
       glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
    }
 #endif
-   performance_counter_stop(copy_frame);
+   performance_counter_stop_plus(video_info->is_perfcnt_enable, copy_frame);
 }
 
 static INLINE void gl_set_shader_viewport(gl_t *gl, unsigned idx)
@@ -1102,7 +1102,7 @@ static bool gl_frame(void *data, const void *frame,
    unsigned height                     = video_info->height;
 
    performance_counter_init(frame_run, "frame_run");
-   performance_counter_start(frame_run);
+   performance_counter_start_plus(video_info->is_perfcnt_enable, frame_run);
 
    if (!gl)
       return false;
@@ -1293,7 +1293,7 @@ static bool gl_frame(void *data, const void *frame,
 
    video_context_driver_update_window_title(video_info);
 
-   performance_counter_stop(frame_run);
+   performance_counter_stop_plus(video_info->is_perfcnt_enable, frame_run);
 
 #ifdef HAVE_FBO
    /* Reset state which could easily mess up libretro core. */
@@ -1354,7 +1354,8 @@ static bool gl_frame(void *data, const void *frame,
       static struct retro_perf_counter gl_fence = {0};
 
       performance_counter_init(gl_fence, "gl_fence");
-      performance_counter_start(gl_fence);
+      performance_counter_start_plus(video_info->is_perfcnt_enable,
+            gl_fence);
       glClear(GL_COLOR_BUFFER_BIT);
       gl->fences[gl->fence_count++] =
          glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
@@ -1370,7 +1371,8 @@ static bool gl_frame(void *data, const void *frame,
                gl->fence_count * sizeof(GLsync));
       }
 
-      performance_counter_stop(gl_fence);
+      performance_counter_stop_plus(video_info->is_perfcnt_enable,
+            gl_fence);
    }
 #endif
 

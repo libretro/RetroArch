@@ -514,11 +514,11 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
       sdl_refresh_input_size(vid, false, vid->video.rgb32, width, height, pitch);
 
       performance_counter_init(sdl_copy_frame, "sdl_copy_frame");
-      performance_counter_start(sdl_copy_frame);
+      performance_counter_start_plus(video_info->is_perfcnt_enable, sdl_copy_frame);
 
       SDL_UpdateTexture(vid->frame.tex, NULL, frame, pitch);
 
-      performance_counter_stop(sdl_copy_frame);
+      performance_counter_stop_plus(video_info->is_perfcnt_enable, sdl_copy_frame);
    }
 
    SDL_RenderCopyEx(vid->renderer, vid->frame.tex, NULL, NULL, vid->rotation, NULL, SDL_FLIP_NONE);

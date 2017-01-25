@@ -1452,7 +1452,7 @@ static bool gx_frame(void *data, const void *frame,
    fps_text_buf[0]                    = '\0';
 
    performance_counter_init(gx_frame, "gx_frame");
-   performance_counter_start(gx_frame);
+   performance_counter_start_plus(video_info->is_perfcnt_enable, gx_frame);
 
    if(!gx || (!frame && !gx->menu_texture_enable))
       return true;
@@ -1488,7 +1488,7 @@ static bool gx_frame(void *data, const void *frame,
       static struct retro_perf_counter gx_frame_convert = {0};
 
       performance_counter_init(gx_frame_convert, "gx_frame_convert");
-      performance_counter_start(gx_frame_convert);
+      performance_counter_start_plus(video_info->is_perfcnt_enable, gx_frame_convert);
 
       if (gx->rgb32)
          convert_texture32(frame, g_tex.data, width, height, pitch);
@@ -1498,7 +1498,7 @@ static bool gx_frame(void *data, const void *frame,
          convert_texture16(frame, g_tex.data, width, height, pitch);
       DCFlushRange(g_tex.data, height * (width << (gx->rgb32 ? 2 : 1)));
 
-      performance_counter_stop(gx_frame_convert);
+      performance_counter_stop_plus(video_info->is_perfcnt_enable, gx_frame_convert);
    }
 
    if (gx->menu_texture_enable && gx->menu_data)
@@ -1580,7 +1580,7 @@ static bool gx_frame(void *data, const void *frame,
    VIDEO_SetNextFramebuffer(gx->framebuf[g_current_framebuf]);
    VIDEO_Flush();
 
-   performance_counter_stop(gx_frame);
+   performance_counter_stop_plus(video_info->is_perfcnt_enable, gx_frame);
 
    return true;
 }

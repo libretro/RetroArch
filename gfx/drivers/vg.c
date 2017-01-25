@@ -391,7 +391,7 @@ static bool vg_frame(void *data, const void *frame,
    unsigned height                           = video_info->height;
 
    performance_counter_init(vg_fr, "vg_fr");
-   performance_counter_start(vg_fr);
+   performance_counter_start_plus(video_info->is_perfcnt_enable, vg_fr);
 
    if (     frame_width != vg->mRenderWidth
          || frame_height != vg->mRenderHeight
@@ -416,9 +416,9 @@ static bool vg_frame(void *data, const void *frame,
    vgSeti(VG_SCISSORING, VG_TRUE);
 
    performance_counter_init(vg_image, "vg_image");
-   performance_counter_start(vg_image);
+   performance_counter_start_plus(video_info->is_perfcnt_enable, vg_image);
    vg_copy_frame(vg, frame, frame_width, frame_height, pitch);
-   performance_counter_stop(vg_image);
+   performance_counter_stop_plus(video_info->is_perfcnt_enable, vg_image);
 
 #ifdef HAVE_MENU
    menu_driver_frame(video_info);
@@ -433,7 +433,7 @@ static bool vg_frame(void *data, const void *frame,
 
    video_context_driver_update_window_title(video_info);
 
-   performance_counter_stop(vg_fr);
+   performance_counter_stop_plus(video_info->is_perfcnt_enable, vg_fr);
 
    video_context_driver_swap_buffers(video_info);
 

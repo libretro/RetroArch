@@ -613,7 +613,7 @@ static bool ctr_frame(void* data, const void* frame,
    fflush(stdout);
 
    performance_counter_init(ctrframe_f, "ctrframe_f");
-   performance_counter_start(ctrframe_f);
+   performance_counter_start_plus(video_info->is_perfcnt_enable, ctrframe_f);
 
    if (ctr->should_resize)
       ctr_update_viewport(ctr);
@@ -842,7 +842,7 @@ static bool ctr_frame(void* data, const void* frame,
    ctr->current_buffer_top     ^= 1;
    ctr->p3d_event_pending       = true;
    ctr->ppf_event_pending       = true;
-   performance_counter_stop(ctrframe_f);
+   performance_counter_stop_plus(video_info->is_perfcnt_enable, ctrframe_f);
 
    return true;
 }
