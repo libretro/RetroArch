@@ -20,13 +20,13 @@
 #include <string.h>
 
 #include <retro_inline.h>
+#include <compat/strl.h>
 #include <algorithms/mismatch.h>
 
 #include "state_manager.h"
 #include "../msg_hash.h"
 #include "../movie.h"
 #include "../core.h"
-#include "../runloop.h"
 #include "../performance_counters.h"
 #include "../verbosity.h"
 #include "../audio/audio_driver.h"
@@ -577,9 +577,11 @@ void state_manager_event_deinit(void)
  *
  * Checks if rewind toggle/hold was being pressed and/or held.
  **/
-void state_manager_check_rewind(bool pressed,
-      unsigned rewind_granularity, bool is_paused)
+bool state_manager_check_rewind(bool pressed,
+      unsigned rewind_granularity, bool is_paused,
+      char *s, size_t len, unsigned *time)
 {
+   bool ret             = false;
    static bool first    = true;
 
    if (state_manager_frame_is_reversed())
@@ -591,11 +593,11 @@ void state_manager_check_rewind(bool pressed,
    if (first)
    {
       first = false;
-      return;
+      return false;
    }
 
    if (!rewind_state.state)
-      return;
+      return false;
 
    if (pressed)
    {
@@ -609,9 +611,10 @@ void state_manager_check_rewind(bool pressed,
 
          audio_driver_setup_rewind();
 
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_REWINDING), 0,
-               is_paused ? 1 : 30, true);
+         strlcpy(s, msg_hash_to_str(MSG_REWINDING), len);
+
+         *time                  = is_paused ? 1 : 30;
+         ret                    = true;
 
          serial_info.data_const = buf;
          serial_info.size       = rewind_state.size;
@@ -627,9 +630,13 @@ void state_manager_check_rewind(bool pressed,
          serial_info.data_const = buf;
          serial_info.size       = rewind_state.size;
          core_unserialize(&serial_info);
-         runloop_msg_queue_push(
+
+         strlcpy(s, 
                msg_hash_to_str(MSG_REWIND_REACHED_END),
-               0, 30, true);
+               len);
+         
+         *time = 30;
+         ret   = true;
       }
    }
    else
@@ -662,4 +669,6 @@ void state_manager_check_rewind(bool pressed,
    }
 
    core_set_rewind_callbacks();
+
+   return ret;
 }

@@ -967,8 +967,16 @@ static enum runloop_state runloop_check_state(
 #ifdef HAVE_CHEEVOS
    if (!settings->cheevos.hardcore_mode_enable)
 #endif
-      state_manager_check_rewind(runloop_cmd_press(current_input, RARCH_REWIND),
-            settings->rewind_granularity, runloop_paused);
+   {
+      char s[128];
+      unsigned t = 0;
+
+      s[0] = '\0';
+
+      if (state_manager_check_rewind(runloop_cmd_press(current_input, RARCH_REWIND),
+            settings->rewind_granularity, runloop_paused, s, sizeof(s), &t))
+         runloop_msg_queue_push(s, 0, t, true);
+   }
 
    runloop_slowmotion = runloop_cmd_press(current_input, RARCH_SLOWMOTION);
 
