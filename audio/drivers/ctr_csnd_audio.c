@@ -162,7 +162,8 @@ static void ctr_csnd_audio_free(void *data)
    free(ctr);
 }
 
-static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t size)
+static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t size,
+      bool is_perfcnt_enable)
 {
    int i;
    uint32_t samples_played                     = 0;
@@ -177,7 +178,7 @@ static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t size)
    (void)current_tick;
 
    performance_counter_init(ctraudio_f, "ctraudio_f");
-   performance_counter_start(ctraudio_f);
+   performance_counter_start_plus(is_perfcnt_enable, ctraudio_f);
 
    ctr_csnd_audio_update_playpos(ctr);
 
@@ -209,7 +210,7 @@ static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t size)
    GSPGPU_FlushDataCache(ctr->l, CTR_CSND_AUDIO_SIZE);
    GSPGPU_FlushDataCache(ctr->r, CTR_CSND_AUDIO_SIZE);
 
-   performance_counter_stop(ctraudio_f);
+   performance_counter_stop_plus(is_perfcnt_enable, ctraudio_f);
 
    return size;
 }

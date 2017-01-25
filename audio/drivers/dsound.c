@@ -426,7 +426,8 @@ static void dsound_set_nonblock_state(void *data, bool state)
       ds->nonblock = state;
 }
 
-static ssize_t dsound_write(void *data, const void *buf_, size_t size)
+static ssize_t dsound_write(void *data, const void *buf_, size_t size,
+      bool is_perfcnt_enable)
 {
    size_t     written = 0;
    dsound_t       *ds = (dsound_t*)data;

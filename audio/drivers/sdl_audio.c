@@ -137,7 +137,8 @@ static void *sdl_audio_init(const char *device,
    return sdl;
 }
 
-static ssize_t sdl_audio_write(void *data, const void *buf, size_t size)
+static ssize_t sdl_audio_write(void *data, const void *buf, size_t size,
+      bool is_perfcnt_enable)
 {
    ssize_t ret = 0;
    sdl_audio_t *sdl = (sdl_audio_t*)data;

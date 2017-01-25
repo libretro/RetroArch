@@ -228,7 +228,8 @@ static bool audio_thread_use_float(void *data)
    return thr->use_float;
 }
 
-static ssize_t audio_thread_write(void *data, const void *buf, size_t size)
+static ssize_t audio_thread_write(void *data, const void *buf, size_t size,
+      bool is_perfcnt_enable)
 {
    ssize_t ret;
    audio_thread_t *thr = (audio_thread_t*)data;
@@ -236,7 +237,8 @@ static ssize_t audio_thread_write(void *data, const void *buf, size_t size)
    if (!thr)
       return 0;
 
-   ret = thr->driver->write(thr->driver_data, buf, size);
+   ret = thr->driver->write(thr->driver_data, buf, size,
+         is_perfcnt_enable);
 
    if (ret < 0)
    {

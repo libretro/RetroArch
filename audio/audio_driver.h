@@ -49,7 +49,8 @@ typedef struct audio_driver
     *
     * Write samples to audio driver.
     **/
-   ssize_t (*write)(void *data, const void *buf, size_t size);
+   ssize_t (*write)(void *data, const void *buf, size_t size,
+         bool is_perfcnt_enable);
 
    /* Stops driver. */
    bool (*stop)(void *data);

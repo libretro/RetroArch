@@ -97,7 +97,8 @@ error:
    return NULL;
 }
 
-static ssize_t oss_write(void *data, const void *buf, size_t size)
+static ssize_t oss_write(void *data, const void *buf, size_t size,
+      bool is_perfcnt_enable)
 {
    ssize_t ret;
    int *fd = (int*)data;

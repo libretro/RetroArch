@@ -201,7 +201,8 @@ static size_t xaudio2_write_avail(xaudio2_t *handle)
    return handle->bufsize * (MAX_BUFFERS - handle->buffers - 1);
 }
 
-static size_t xaudio2_write(xaudio2_t *handle, const void *buf, size_t bytes_)
+static size_t xaudio2_write(xaudio2_t *handle, const void *buf, size_t bytes_,
+      bool is_perfcnt_enable)
 {
    unsigned bytes = bytes_;
    const uint8_t *buffer = (const uint8_t*)buf;

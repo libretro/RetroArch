@@ -633,7 +633,8 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    }
 
    if (current_audio->write(audio_driver_context_audio_data,
-            output_data, output_frames * output_size * 2) < 0)
+            output_data, output_frames * output_size * 2,
+            is_perfcnt_enable) < 0)
    {
       audio_driver_active = false;
       return false;
