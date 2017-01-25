@@ -44,8 +44,8 @@ typedef struct
    bool is_paused;
 } gx_audio_t;
 
-static volatile gx_audio_t *gx_audio_data;
-static volatile bool stop_audio;
+static volatile gx_audio_t *gx_audio_data = NULL;
+static volatile bool stop_audio           = false;
 
 static void dma_callback(void)
 {
