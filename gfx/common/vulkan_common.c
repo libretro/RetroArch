@@ -29,7 +29,6 @@
 
 #include "vulkan_common.h"
 #include "../../configuration.h"
-#include "../../performance_counters.h"
 
 static dylib_t vulkan_library;
 static VkInstance cached_instance;
@@ -2239,12 +2238,7 @@ void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
 
    if (*next_fence != VK_NULL_HANDLE)
    {
-      static struct retro_perf_counter fence_wait = {0};
-
-      performance_counter_init(fence_wait, "fence_wait");
-      performance_counter_start(fence_wait);
       vkWaitForFences(vk->context.device, 1, next_fence, true, UINT64_MAX);
-      performance_counter_stop(fence_wait);
 
       vkResetFences(vk->context.device, 1, next_fence);
    }

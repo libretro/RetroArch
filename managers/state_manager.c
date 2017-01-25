@@ -28,7 +28,6 @@
 #include "../msg_hash.h"
 #include "../movie.h"
 #include "../core.h"
-#include "../performance_counters.h"
 #include "../verbosity.h"
 #include "../audio/audio_driver.h"
 
@@ -534,12 +533,11 @@ static void state_manager_push_where(state_manager_t *state, void **data)
 
 static void state_manager_push_do(state_manager_t *state)
 {
+   uint8_t *swap = NULL;
+
 #if STRICT_BUF_SIZE
    memcpy(state->nextblock, state->debugblock, state->debugsize);
 #endif
-
-   static struct retro_perf_counter gen_deltas = {0};
-   uint8_t *swap = NULL;
 
    if (state->thisblock_valid)
    {
@@ -563,9 +561,6 @@ recheckcapacity:;
          goto recheckcapacity;
       }
 
-      performance_counter_init(gen_deltas, "gen_deltas");
-      performance_counter_start(gen_deltas);
-
       oldb        = state->thisblock;
       newb        = state->nextblock;
       compressed  = state->head + sizeof(size_t);
@@ -583,8 +578,6 @@ recheckcapacity:;
       compressed += sizeof(size_t);
       write_size_t(state->head, compressed-state->data);
       state->head = compressed;
-
-      performance_counter_stop(gen_deltas);
    }
    else
       state->thisblock_valid = true;
@@ -760,20 +753,14 @@ bool state_manager_check_rewind(bool pressed,
       if ((cnt == 0) || bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
       {
          retro_ctx_serialize_info_t serial_info;
-         static struct retro_perf_counter rewind_serialize = {0};
          void *state = NULL;
 
          state_manager_push_where(rewind_state.state, &state);
-
-         performance_counter_init(rewind_serialize, "rewind_serialize");
-         performance_counter_start(rewind_serialize);
 
          serial_info.data = state;
          serial_info.size = rewind_state.size;
 
          core_serialize(&serial_info);
-
-         performance_counter_stop(rewind_serialize);
 
          state_manager_push_do(rewind_state.state);
       }

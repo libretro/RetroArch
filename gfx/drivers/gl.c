@@ -980,8 +980,6 @@ static struct video_shader *gl_get_current_shader(void *data)
 #if defined(HAVE_GL_ASYNC_READBACK)
 static void gl_pbo_async_readback(gl_t *gl)
 {
-   static struct retro_perf_counter async_readback = {0};
-
    glBindBuffer(GL_PIXEL_PACK_BUFFER,
          gl->pbo_readback[gl->pbo_readback_index++]);
    gl->pbo_readback_index &= 3;
@@ -994,8 +992,6 @@ static void gl_pbo_async_readback(gl_t *gl)
          video_pixel_get_alignment(gl->vp.width * sizeof(uint32_t)));
 
    /* Read asynchronously into PBO buffer. */
-   performance_counter_init(async_readback, "async_readback");
-   performance_counter_start(async_readback);
    glReadBuffer(GL_BACK);
 #ifdef HAVE_OPENGLES3
    glReadPixels(gl->vp.x, gl->vp.y,
@@ -1006,7 +1002,6 @@ static void gl_pbo_async_readback(gl_t *gl)
          gl->vp.width, gl->vp.height,
          GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 #endif
-   performance_counter_stop(async_readback);
 
    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 }
@@ -2364,7 +2359,6 @@ static void gl_viewport_info(void *data, struct video_viewport *vp)
 static bool gl_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
 #ifndef NO_GL_READ_PIXELS
-   static struct retro_perf_counter read_viewport = {0};
    unsigned                     num_pixels = 0;
    gl_t                                *gl = (gl_t*)data;
 
@@ -2372,9 +2366,6 @@ static bool gl_read_viewport(void *data, uint8_t *buffer, bool is_idle)
       return false;
 
    context_bind_hw_render(false);
-
-   performance_counter_init(read_viewport, "read_viewport");
-   performance_counter_start(read_viewport);
 
    num_pixels = gl->vp.width * gl->vp.height;
 
@@ -2439,10 +2430,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer, bool is_idle)
       gl->readback_buffer_screenshot = malloc(num_pixels * sizeof(uint32_t));
 
       if (!gl->readback_buffer_screenshot)
-      {
-         performance_counter_stop(read_viewport);
          goto error;
-      }
 
       if (!is_idle)
          video_driver_cached_frame();
@@ -2456,7 +2444,6 @@ static bool gl_read_viewport(void *data, uint8_t *buffer, bool is_idle)
       gl->readback_buffer_screenshot = NULL;
    }
 
-   performance_counter_stop(read_viewport);
    context_bind_hw_render(true);
    return true;
 

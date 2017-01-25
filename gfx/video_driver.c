@@ -2050,11 +2050,6 @@ void video_driver_frame(const void *data, unsigned width,
          (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555) &&
          (data != RETRO_HW_FRAME_BUFFER_VALID))
    {
-      static struct retro_perf_counter video_frame_conv = {0};
-
-      performance_counter_init(video_frame_conv, "video_frame_conv");
-      performance_counter_start(video_frame_conv);
-
       if (video_pixel_frame_scale(
                video_driver_scaler_ptr->scaler,
                video_driver_scaler_ptr->scaler_out,
@@ -2063,7 +2058,6 @@ void video_driver_frame(const void *data, unsigned width,
          data                = video_driver_scaler_ptr->scaler_out;
          pitch               = video_driver_scaler_ptr->scaler->out_stride;
       }
-      performance_counter_stop(video_frame_conv);
    }
 
 
