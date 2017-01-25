@@ -112,8 +112,7 @@ static void setting_get_string_representation_cheevos_password(void *data,
       return;
 
    if (!string_is_empty(setting->value.target.string))
-      snprintf(s, len, "%s",
-            "********");
+      strlcpy(s, "********", len);
    else
       *setting->value.target.string = '\0';
 }
