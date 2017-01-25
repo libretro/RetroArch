@@ -1263,7 +1263,8 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_SET_PATHS_REDIRECT:
          {
             bool contentless = false;
-            content_get_status(&contentless);
+            bool is_inited   = false;
+            content_get_status(&contentless, &is_inited);
 
             if (contentless)
                return false;
@@ -1291,7 +1292,8 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_SET_SRAM_ENABLE:
          {
             bool contentless = false;
-            content_get_status(&contentless);
+            bool is_inited   = false;
+            content_get_status(&contentless, &is_inited);
             rarch_use_sram = rarch_ctl(RARCH_CTL_IS_PLAIN_CORE, NULL)
                && !contentless;
          }

@@ -692,8 +692,9 @@ static bool content_file_init_set_attribs(
    else
    {
       bool contentless     = false;
+      bool is_inited       = false;
 
-      content_get_status(&contentless);
+      content_get_status(&contentless, &is_inited);
 
       attr.i               = content_ctx->block_extract;
       attr.i              |= content_ctx->need_fullpath << 1;
@@ -822,16 +823,19 @@ static bool task_load_content(content_ctx_info_t *content_info,
    char name[255];
    char msg[255];
    bool contentless = false;
+   bool is_inited   = false;
 
    name[0] = msg[0] = '\0';
 
-   content_get_status(&contentless);
+   content_get_status(&contentless, &is_inited);
 
    if (!content_load(content_info))
       goto error;
 
+   content_get_status(&contentless, &is_inited);
+
    /* Push entry to top of history playlist */
-   if (_content_is_inited || contentless)
+   if (is_inited || contentless)
    {
       char tmp[PATH_MAX_LENGTH];
       struct retro_system_info *info = NULL;
@@ -1328,9 +1332,12 @@ cleanup:
 #endif
 }
 
-void content_get_status(bool *contentless)
+void content_get_status(
+      bool *contentless,
+      bool *is_inited)
 {
    *contentless = core_does_not_need_content;
+   *is_inited   = _content_is_inited;
 }
 
 void content_set_does_not_need_content(void)

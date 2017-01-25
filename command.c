@@ -1232,8 +1232,8 @@ static void command_event_load_auto_state(void)
    bool ret;
    char msg[128]                             = {0};
    char savestate_name_auto[PATH_MAX_LENGTH] = {0};
-   settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
+   settings_t *settings                      = config_get_ptr();
+   global_t   *global                        = global_get_ptr();
 
 #ifdef HAVE_NETWORKING
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
@@ -1248,9 +1248,10 @@ static void command_event_load_auto_state(void)
    if (!settings->savestate_auto_load)
       return;
 
-   fill_pathname_noext(savestate_name_auto, global->name.savestate,
-         file_path_str(FILE_PATH_AUTO_EXTENSION),
-         sizeof(savestate_name_auto));
+   if (global)
+      fill_pathname_noext(savestate_name_auto, global->name.savestate,
+            file_path_str(FILE_PATH_AUTO_EXTENSION),
+            sizeof(savestate_name_auto));
 
    if (!path_file_exists(savestate_name_auto))
       return;
@@ -1279,19 +1280,23 @@ static void command_event_set_savestate_auto_index(void)
    if (!settings->savestate_auto_index)
       return;
 
-   /* Find the file in the same directory as global->savestate_name
-    * with the largest numeral suffix.
-    *
-    * E.g. /foo/path/content.state, will try to find
-    * /foo/path/content.state%d, where %d is the largest number available.
-    */
+   if (global)
+   {
+      /* Find the file in the same directory as global->savestate_name
+       * with the largest numeral suffix.
+       *
+       * E.g. /foo/path/content.state, will try to find
+       * /foo/path/content.state%d, where %d is the largest number available.
+       */
+      fill_pathname_basedir(state_dir, global->name.savestate,
+            sizeof(state_dir));
+      fill_pathname_base(state_base, global->name.savestate,
+            sizeof(state_base));
+   }
 
-   fill_pathname_basedir(state_dir, global->name.savestate,
-         sizeof(state_dir));
-   fill_pathname_base(state_base, global->name.savestate,
-         sizeof(state_base));
+   dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN, NULL);
 
-   if (!(dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN, NULL)))
+   if (!dir_list)
       return;
 
    for (i = 0; i < dir_list->size; i++)
@@ -1326,8 +1331,9 @@ static void command_event_set_savestate_auto_index(void)
 static bool event_init_content(void)
 {
    bool contentless = false;
+   bool is_inited   = false;
 
-   content_get_status(&contentless);
+   content_get_status(&contentless, &is_inited);
 
    rarch_ctl(RARCH_CTL_SET_SRAM_ENABLE, NULL);
 
@@ -1342,7 +1348,7 @@ static bool event_init_content(void)
    if (!content_init())
       return false;
 
-   content_get_status(&contentless);
+   content_get_status(&contentless, &is_inited);
 
    if (contentless)
    {
@@ -1451,9 +1457,9 @@ static bool command_event_save_auto_state(void)
    char savestate_name_auto[PATH_MAX_LENGTH] = {0};
    bool ret             = false;;
    bool contentless     = false;
+   bool is_inited       = false;
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
-
 
    if (!settings || !settings->savestate_auto_save)
       return false;
@@ -1462,7 +1468,7 @@ static bool command_event_save_auto_state(void)
    if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
       return false;
 
-   content_get_status(&contentless);
+   content_get_status(&contentless, &is_inited);
 
    if (contentless)
       return false;
@@ -1957,12 +1963,17 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_UNLOAD_CORE:
          {
+            bool contentless                = false;
+            bool is_inited                  = false;
             content_ctx_info_t content_info = {0};
+
+            content_get_status(&contentless, &is_inited);
+
             command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
             command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
             command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
 
-            if (content_is_inited())
+            if (is_inited)
                if (!task_push_content_load_default(
                         NULL, NULL,
                         &content_info,

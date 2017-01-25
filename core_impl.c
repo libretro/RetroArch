@@ -282,8 +282,9 @@ bool core_get_memory(retro_ctx_memory_info_t *info)
 bool core_load_game(retro_ctx_load_content_info_t *load_info)
 {
    bool contentless = false;
+   bool is_inited   = false;
 
-   content_get_status(&contentless);
+   content_get_status(&contentless, &is_inited);
 
    if (load_info && load_info->special)
       core_game_loaded = core.retro_load_game_special(

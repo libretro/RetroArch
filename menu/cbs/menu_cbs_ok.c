@@ -3815,12 +3815,17 @@ static int action_ok_netplay_enable_host(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
 #ifdef HAVE_NETWORKING
+   bool contentless = false;
+   bool is_inited   = false;
+
+   content_get_status(&contentless, &is_inited);
+
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
       command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
 
    /* If we haven't yet started, this will load on its own */
-   if (!content_is_inited())
+   if (!is_inited)
    {
       runloop_msg_queue_push(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
@@ -3860,13 +3865,17 @@ static int action_ok_netplay_enable_client(const char *path,
 {
 #ifdef HAVE_NETWORKING
    settings_t *settings = config_get_ptr();
+   bool contentless     = false;
+   bool is_inited       = false;
+
+   content_get_status(&contentless, &is_inited);
 
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
       command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
    /* If we haven't yet started, this will load on its own */
-   if (!content_is_inited())
+   if (!is_inited)
    {
       runloop_msg_queue_push(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
