@@ -64,18 +64,24 @@ void rarch_perf_register(struct retro_perf_counter *perf);
    if (!perf.registered) \
       rarch_perf_register(&perf)
 
+#define performance_counter_start_internal(is_perfcnt_enable, perf) \
+   if ((is_perfcnt_enable)) \
+   { \
+      perf.call_cnt++; \
+      perf.start = cpu_features_get_perf_counter(); \
+   }
+
+#define performance_counter_stop_internal(is_perfcnt_enable, perf) \
+   if ((is_perfcnt_enable)) \
+      perf.total += cpu_features_get_perf_counter() - perf.start
+
 /**
  * performance_counter_start:
  * @perf               : pointer to performance counter
  *
  * Start performance counter. 
  **/
-#define performance_counter_start(perf) \
-   if (runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL)) \
-   { \
-      perf.call_cnt++; \
-      perf.start = cpu_features_get_perf_counter(); \
-   }
+#define performance_counter_start(perf) performance_counter_start_internal(runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL), perf)
 
 /**
  * performance_counter_stop:
@@ -83,9 +89,7 @@ void rarch_perf_register(struct retro_perf_counter *perf);
  *
  * Stop performance counter. 
  **/
-#define performance_counter_stop(perf) \
-   if (runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL)) \
-      perf.total += cpu_features_get_perf_counter() - perf.start
+#define performance_counter_stop(perf) performance_counter_stop_internal(runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL), perf)
 
 void rarch_timer_tick(rarch_timer_t *timer);
 
