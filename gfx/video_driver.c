@@ -2387,8 +2387,10 @@ void video_driver_get_window_title(char *buf, unsigned len)
    }
 }
 
-void video_driver_get_status(uint64_t *frame_count, bool * is_alive)
+void video_driver_get_status(uint64_t *frame_count, bool * is_alive,
+      bool *is_focused)
 {
    *frame_count = video_driver_get_frame_count();
    *is_alive    = video_driver_is_alive();
+   *is_focused  = video_driver_is_focused();
 }

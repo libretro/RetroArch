@@ -558,7 +558,8 @@ void video_driver_reinit(void);
 
 void video_driver_get_window_title(char *buf, unsigned len);
 
-void video_driver_get_status(uint64_t *frame_count, bool * is_alive);
+void video_driver_get_status(uint64_t *frame_count, bool * is_alive,
+      bool *is_focused);
 
 extern video_driver_t video_gl;
 extern video_driver_t video_vulkan;

@@ -697,12 +697,13 @@ static enum runloop_state runloop_check_state(
 #ifdef HAVE_NETWORKING
    bool tmp                         = false;
 #endif
+   bool is_focused                  = false;
    bool is_alive                    = false;
    uint64_t frame_count             = 0;
    bool focused                     = true;
    bool pause_pressed               = runloop_cmd_triggered(trigger_input, RARCH_PAUSE_TOGGLE);
 
-   video_driver_get_status(&frame_count, &is_alive);
+   video_driver_get_status(&frame_count, &is_alive, &is_focused);
 
    if (runloop_cmd_triggered(trigger_input, RARCH_OVERLAY_NEXT))
       command_event(CMD_EVENT_OVERLAY_NEXT, NULL);
@@ -767,7 +768,7 @@ static enum runloop_state runloop_check_state(
 
       {
          enum menu_action action = (enum menu_action)menu_event(current_input, trigger_input);
-         bool focused            = settings->pause_nonactive ? video_driver_is_focused() : true;
+         bool focused            = settings->pause_nonactive ? is_focused : true;
 
          focused                 = focused && !ui_companion_is_on_foreground();
 
@@ -836,7 +837,7 @@ static enum runloop_state runloop_check_state(
 #endif
 
    if (settings->pause_nonactive)
-      focused                = video_driver_is_focused();
+      focused                = is_focused;
 
    if (runloop_cmd_triggered(trigger_input, RARCH_SCREENSHOT))
       command_event(CMD_EVENT_TAKE_SCREENSHOT, NULL);
