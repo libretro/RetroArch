@@ -27,9 +27,8 @@
 #include "../audio_driver.h"
 #include "../../verbosity.h"
 
-#define TRY_ALSA(x) if (x < 0) { \
-                  goto error; \
-               }
+#define TRY_ALSA(x) if (x < 0) \
+                  goto error;
 
 typedef struct alsa_thread
 {
