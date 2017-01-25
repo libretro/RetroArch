@@ -29,7 +29,8 @@
 #endif
 
 #include <stdio.h>
-
+#include <string.h>
+#include <memalign.h>
 #include <retro_miscellaneous.h>
 #include <audio/audio_mix.h>
 #include <streams/file_stream.h>
@@ -89,16 +90,16 @@ void audio_mix_free_chunk(audio_chunk_t *chunk)
       free(chunk->buf);
 
    if (chunk->upsample_buf)
-      free(chunk->upsample_buf);
+      memalign_free(chunk->upsample_buf);
 
    if (chunk->float_buf)
-      free(chunk->float_buf);
+      memalign_free(chunk->float_buf);
 
    if (chunk->float_resample_buf)
-      free(chunk->float_resample_buf);
+      memalign_free(chunk->float_resample_buf);
 
    if (chunk->resample_buf)
-      free(chunk->resample_buf);
+      memalign_free(chunk->resample_buf);
 
    if (chunk->resampler && chunk->resampler_data)
       chunk->resampler->free(chunk->resampler_data);
@@ -109,6 +110,7 @@ void audio_mix_free_chunk(audio_chunk_t *chunk)
 audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
 {
    audio_chunk_t *chunk = (audio_chunk_t*)calloc(1, sizeof(*chunk));
+   int sample_size;
 
    chunk->sample_rate = sample_rate;
 
@@ -127,35 +129,38 @@ audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
       return NULL;
    }
 
+   chunk->upsample_buf = (int16_t*)memalign_alloc_aligned(chunk->rwav->numsamples * chunk->rwav->numchannels * sizeof(int16_t));
+
+   sample_size = chunk->rwav->bitspersample / 8;
+
+   if (sample_size == 1)
+   {
+      unsigned i;
+
+     for (i = 0; i < chunk->rwav->numsamples; i++)
+     {
+        unsigned channel;
+        uint8_t *sample = ((uint8_t*)chunk->rwav->samples) +
+              (sample_size * i * chunk->rwav->numchannels);
+
+        for (channel = 0; channel < chunk->rwav->numchannels; channel++)
+        {
+           chunk->upsample_buf[i] = (int16_t)((sample[channel] - 128) << 8);
+        }
+     }
+   }
+   else if (sample_size == 2)
+      memcpy(chunk->upsample_buf, chunk->rwav->samples, chunk->rwav->subchunk2size);
+   else if (sample_size != 2)
+   {
+      /* we don't support any other sample size besides 8 and 16-bit yet */
+      printf("error: we don't support a sample size of %d\n", sample_size);
+      audio_mix_free_chunk(chunk);
+      return NULL;
+   }
+
    if (sample_rate != chunk->rwav->samplerate)
    {
-      int sample_size = chunk->rwav->bitspersample / 8;
-
-      if (sample_size == 1)
-      {
-         unsigned i;
-         chunk->upsample_buf = (int16_t*)malloc(chunk->rwav->numsamples * chunk->rwav->numchannels * sizeof(int16_t));
-
-        for (i = 0; i < chunk->rwav->numsamples; i++)
-        {
-           unsigned channel;
-           uint8_t *sample = ((uint8_t*)chunk->rwav->samples) +
-                 (sample_size * i * chunk->rwav->numchannels);
-
-           for (channel = 0; channel < chunk->rwav->numchannels; channel++)
-           {
-              chunk->upsample_buf[i] = (int16_t)((sample[channel] - 128) << 8);
-           }
-        }
-      }
-      else if (sample_size != 2)
-      {
-         /* we don't support any other sample size besides 8 and 16-bit yet */
-         printf("error: we don't support a sample size of %d\n", sample_size);
-         audio_mix_free_chunk(chunk);
-         return NULL;
-      }
-
       chunk->resample = true;
       chunk->ratio = (double)sample_rate / chunk->rwav->samplerate;
 
@@ -168,13 +173,10 @@ audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
       {
          struct resampler_data info = {0};
 
-         chunk->float_buf = (float*)malloc(chunk->rwav->numsamples * chunk->rwav->numchannels * sizeof(float));
-         chunk->float_resample_buf = (float*)malloc((chunk->rwav->numsamples * chunk->ratio + 16) * chunk->rwav->numsamples * chunk->rwav->numchannels * sizeof(float));
+         chunk->float_buf = (float*)memalign_alloc_aligned(chunk->rwav->numsamples * chunk->rwav->numchannels * sizeof(float));
+         chunk->float_resample_buf = (float*)memalign_alloc_aligned(chunk->rwav->numsamples * 2 * chunk->ratio * chunk->rwav->numchannels * sizeof(float));
 
-         if (sample_size == 1)
-            convert_s16_to_float(chunk->float_buf, chunk->upsample_buf, chunk->rwav->numsamples * chunk->rwav->numchannels, 1.0);
-         else
-            convert_s16_to_float(chunk->float_buf, chunk->buf, chunk->rwav->numsamples * chunk->rwav->numchannels, 1.0);
+         convert_s16_to_float(chunk->float_buf, chunk->upsample_buf, chunk->rwav->numsamples * chunk->rwav->numchannels, 1.0);
 
          info.data_in = (const float*)chunk->float_buf;
          info.data_out = chunk->float_resample_buf;
@@ -183,7 +185,7 @@ audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
 
          chunk->resampler->process(chunk->resampler_data, &info);
 
-         chunk->resample_buf = (int16_t*)malloc(info.output_frames * chunk->rwav->numchannels * sizeof(int16_t));
+         chunk->resample_buf = (int16_t*)memalign_alloc_aligned(info.output_frames * chunk->rwav->numchannels * sizeof(int16_t));
          chunk->resample_len = info.output_frames;
 
          convert_float_to_s16(chunk->resample_buf, chunk->float_resample_buf, info.output_frames * chunk->rwav->numchannels);
@@ -233,33 +235,16 @@ int16_t audio_mix_get_chunk_sample(audio_chunk_t *chunk, unsigned channel, size_
       int16_t sample_out = 0;
 
       /* 0 is the first/left channel */
-      uint8_t *sample = ((uint8_t*)chunk->rwav->samples) +
+      uint8_t *sample;
+
+      if (chunk->resample)
+         sample = (uint8_t*)chunk->resample_buf +
+            (sample_size * index * chunk->rwav->numchannels) + (channel * sample_size);
+      else
+         sample = (uint8_t*)chunk->upsample_buf +
             (sample_size * index * chunk->rwav->numchannels) + (channel * sample_size);
 
-      if (sample_size == 1)
-      {
-         if (chunk->resample)
-            sample_out = chunk->resample_buf[index];
-         else
-         {
-            /* convert unsigned 8-bit to signed 16-bit */
-            sample_out = (*sample - 128) << 8;
-         }
-      }
-      else if (sample_size == 2)
-      {
-         if (chunk->resample)
-            return chunk->resample_buf[index];
-         else
-         {
-            /* signed 16-bit is native, pass it through */
-            sample_out = (uint16_t)*sample;
-         }
-      }
-      else
-      {
-         return 0;
-      }
+      sample_out = *sample;
 
       return sample_out;
    }
