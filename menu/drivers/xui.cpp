@@ -528,14 +528,17 @@ static void xui_set_list_text(int index, const wchar_t* leftText,
 
 static void xui_render(void *data)
 {
-   size_t end, i, selection;
+   size_t end, i, selection, fb_pitch;
+   unsigned fb_width, fb_height;
    char title[PATH_MAX_LENGTH] = {0};
    const char *dir             = NULL;
    const char *label           = NULL;
    unsigned menu_type          = 0;
    uint64_t *frame_count       = video_driver_get_frame_count_ptr();
-   unsigned           fb_width = menu_display_get_width();
    bool              msg_force = menu_display_get_msg_force();
+
+   menu_display_get_fb_size(&fb_width, &fb_height,
+         &fb_pitch);
 
    if (
          menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL) 

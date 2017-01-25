@@ -47,13 +47,16 @@ static int menu_event_pointer(unsigned *action)
 {
    rarch_joypad_info_t joypad_info;
    int pointer_x, pointer_y;
+   size_t fb_pitch;
+   unsigned fb_width, fb_height;
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
    menu_input_t *menu_input                     = menu_input_get_ptr();
-   unsigned fb_width                            = menu_display_get_width();
-   unsigned fb_height                           = menu_display_get_height();
    int pointer_device                           =
       menu_driver_ctl(RARCH_MENU_CTL_IS_SET_TEXTURE, NULL) ?
         RETRO_DEVICE_POINTER : RARCH_DEVICE_POINTER_SCREEN;
+
+   menu_display_get_fb_size(&fb_width, &fb_height,
+         &fb_pitch);
 
    joypad_info.joy_idx                          = 0;
    joypad_info.auto_binds                       = NULL;

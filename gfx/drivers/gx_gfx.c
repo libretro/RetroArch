@@ -546,27 +546,27 @@ static void setup_video_mode(gx_video_t *gx)
 
 static void init_texture(void *data, unsigned width, unsigned height)
 {
-   unsigned g_filter, menu_w, menu_h;
+   unsigned g_filter;
+   size_t fb_pitch;
+   unsigned fb_width, fb_height;
    gx_video_t *gx       = (gx_video_t*)data;
    GXTexObj *fb_ptr   	= (GXTexObj*)&g_tex.obj;
    GXTexObj *menu_ptr 	= (GXTexObj*)&menu_tex.obj;
    settings_t *settings = config_get_ptr();
 
-   width &= ~3;
-   height &= ~3;
-   g_filter = settings->video.smooth ? GX_LINEAR : GX_NEAR;
-   menu_w = 320;
-   menu_h = 240;
+   width               &= ~3;
+   height              &= ~3;
+   g_filter             = settings->video.smooth ? GX_LINEAR : GX_NEAR;
 
-   menu_w = menu_display_get_width();
-   menu_h = menu_display_get_height();
+   menu_display_get_fb_size(&fb_width, &fb_height,
+         &fb_pitch);
 
    GX_InitTexObj(fb_ptr, g_tex.data, width, height,
          (gx->rgb32) ? GX_TF_RGBA8 : gx->menu_texture_enable ?
          GX_TF_RGB5A3 : GX_TF_RGB565,
          GX_CLAMP, GX_CLAMP, GX_FALSE);
    GX_InitTexObjFilterMode(fb_ptr, g_filter, g_filter);
-   GX_InitTexObj(menu_ptr, menu_tex.data, menu_w, menu_h,
+   GX_InitTexObj(menu_ptr, menu_tex.data, fb_width, fb_height,
          GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
    GX_InitTexObjFilterMode(menu_ptr, g_filter, g_filter);
    GX_InvalidateTexAll();
@@ -1503,9 +1503,11 @@ static bool gx_frame(void *data, const void *frame,
 
    if (gx->menu_texture_enable && gx->menu_data)
    {
-      unsigned fb_width  = menu_display_get_width();
-      unsigned fb_height = menu_display_get_height();
-      size_t fb_pitch    = menu_display_get_framebuffer_pitch();
+      size_t fb_pitch;
+      unsigned fb_width, fb_height;
+
+      menu_display_get_fb_size(&fb_width, &fb_height,
+            &fb_pitch);
 
       convert_texture16(
             gx->menu_data,
