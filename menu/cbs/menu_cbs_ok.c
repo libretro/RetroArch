@@ -3368,7 +3368,7 @@ finish:
          }
 #endif
          menu_entries_append_enum(file_list,
-               "Refresh Room List",
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS),
                msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS),
                MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS,
                MENU_SETTING_ACTION, 0, 0);
@@ -3418,7 +3418,7 @@ finish:
 #endif
             j+=8;
 
-            snprintf(s, sizeof(s), "Nickname: %s",
+            snprintf(s, sizeof(s), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME),
                   netplay_room_list[i].nickname);
 
             menu_entries_append_enum(file_list,
