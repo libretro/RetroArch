@@ -590,13 +590,13 @@ int __entry_menu(int argc, char **argv)
 {
    InitFunctionPointers();
    memoryInitialize();
-   fsdev_init();
    __init();
+   fsdev_init();
 
    int ret = main(argc, argv);
 
-   __fini();
    fsdev_exit();
+//   __fini();
    memoryRelease();
    return ret;
 }
@@ -605,13 +605,13 @@ __attribute__((noreturn))
 void _start(int argc, char **argv)
 {
    memoryInitialize();
-   fsdev_init();
    __init();
+   fsdev_init();
 
    int ret = main(argc, argv);
 
-   __fini();
    fsdev_exit();
+//   __fini();
    memoryRelease();
    SYSRelaunchTitle(0, 0);
    exit(0);
