@@ -170,6 +170,9 @@ SECTIONS {
    } : hdr_data
    __bss_end__ = .;
 
+   _end = .;
+   PROVIDE(end = .);
+
    /* System stuff is for our elf2rpl converter to go through */
    . = ORIGIN(system);
 

@@ -152,6 +152,9 @@ bool frontend_driver_get_core_extension(char *s, size_t len)
 #elif defined(GEKKO)
    strlcpy(s, "dol", len);
    return true;
+#elif defined(HW_WUP)
+   strlcpy(s, "rpx|elf", len);
+   return true;
 #elif defined(__linux__)
    strlcpy(s, "elf", len);
    return true;

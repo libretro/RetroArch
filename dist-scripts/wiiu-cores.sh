@@ -10,7 +10,24 @@ RARCH_VERSION=1.3.6
 platform=wiiu
 EXT=a
 
-mkdir -p ../pkg/wiiu/wiiu/apps/
+mkdir -p ../pkg/wiiu/retroarch/cores/info
+cp *.info ../pkg/wiiu/retroarch/cores/info/
+mkdir -p ../pkg/wiiu/rpx/retroarch/cores/info
+cp *.info ../pkg/wiiu/rpx/retroarch/cores/info/
+
+make -C ../ -f Makefile.${platform}.salamander clean || exit 1
+make -C ../ -f Makefile.${platform}.salamander BUILD_HBL_ELF=1 BUILD_RPX=1 -j3 || exit 1
+
+mkdir -p ../pkg/wiiu/wiiu/apps/retroarch
+mv -f ../retroarch_wiiu_salamander.elf ../pkg/wiiu/wiiu/apps/retroarch/retroarch.elf
+cp -f ../pkg/wiiu/meta.xml ../pkg/wiiu/wiiu/apps/retroarch/meta.xml
+cp -f ../pkg/wiiu/icon.png ../pkg/wiiu/wiiu/apps/retroarch/icon.png
+mkdir -p ../pkg/wiiu/rpx/wiiu/apps/retroarch
+mv -f ../retroarch_wiiu_salamander.rpx ../pkg/wiiu/rpx/wiiu/apps/retroarch/retroarch.rpx
+rm -f ../retroarch_wiiu_salamander.rpx.elf
+cp -f ../pkg/wiiu/meta.xml ../pkg/wiiu/rpx/wiiu/apps/retroarch/meta.xml
+cp -f ../pkg/wiiu/icon.png ../pkg/wiiu/rpx/wiiu/apps/retroarch/icon.png
+
 
 make -C ../ -f Makefile.${platform} clean || exit 1
 
@@ -88,6 +105,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
    gen_meta_xml $name
 
    if [  -e ../retroarch_wiiu.elf ] ; then
+      cp ../retroarch_wiiu.elf ../pkg/wiiu/retroarch/cores/${name}_libretro.elf
       mkdir -p ../pkg/wiiu/wiiu/apps/${name}_libretro
       mv -f ../retroarch_wiiu.elf ../pkg/wiiu/wiiu/apps/${name}_libretro/${name}_libretro.elf
       if [  -e ${name}_meta.xml ] ; then
@@ -102,6 +120,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
       fi
    fi
    if [  -e ../retroarch_wiiu.rpx ] ; then
+      cp ../retroarch_wiiu.rpx ../pkg/wiiu/rpx/retroarch/cores/${name}_libretro.rpx
       mkdir -p ../pkg/wiiu/rpx/wiiu/apps/${name}_libretro
       mv -f ../retroarch_wiiu.rpx ../pkg/wiiu/rpx/wiiu/apps/${name}_libretro/${name}_libretro.rpx
       rm -f ../retroarch_wiiu.rpx.elf
