@@ -505,7 +505,7 @@ error:
    video_driver_filter_free();
 }
 
-static void init_video_input(const input_driver_t *tmp)
+static void video_driver_init_input(const input_driver_t *tmp)
 {
    const input_driver_t **input = input_get_double_ptr();
    if (*input)
@@ -531,15 +531,15 @@ static void init_video_input(const input_driver_t *tmp)
 
 error:
    RARCH_ERR("Cannot initialize input driver. Exiting ...\n");
-   retroarch_fail(1, "init_video_input()");
+   retroarch_fail(1, "video_driver_init_input()");
 }
 
 /**
- * video_monitor_compute_fps_statistics:
+ * video_driver_monitor_compute_fps_statistics:
  *
  * Computes monitor FPS statistics.
  **/
-static void video_monitor_compute_fps_statistics(void)
+static void video_driver_monitor_compute_fps_statistics(void)
 {
    double avg_fps       = 0.0;
    double stddev        = 0.0;
@@ -611,7 +611,7 @@ static void video_driver_free_internal(void)
    if (is_threaded)
       return;
 
-   video_monitor_compute_fps_statistics();
+   video_driver_monitor_compute_fps_statistics();
 }
 
 static bool video_driver_pixel_converter_init(unsigned size)
@@ -683,8 +683,6 @@ static bool video_driver_init_internal(void)
    settings_t *settings                   = config_get_ptr();
    struct retro_system_av_info *av_info   =
       video_viewport_get_system_av_info();
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    video_driver_filter_free();
 
@@ -841,13 +839,15 @@ static bool video_driver_init_internal(void)
       video_driver_get_viewport_info(custom_vp);
    }
 
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+
    video_driver_set_rotation(
             (settings->video.rotation + system->rotation) % 4);
 
    current_video->suppress_screensaver(video_driver_data,
          settings->ui.suspend_screensaver_enable);
 
-   init_video_input(tmp);
+   video_driver_init_input(tmp);
 
    command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
    command_event(CMD_EVENT_OVERLAY_INIT, NULL);
