@@ -563,8 +563,8 @@ recheckcapacity:;
          goto recheckcapacity;
       }
 
-      performance_counter_init(&gen_deltas, "gen_deltas");
-      performance_counter_start(&gen_deltas);
+      performance_counter_init(gen_deltas, "gen_deltas");
+      performance_counter_start(gen_deltas);
 
       oldb        = state->thisblock;
       newb        = state->nextblock;
@@ -584,7 +584,7 @@ recheckcapacity:;
       write_size_t(state->head, compressed-state->data);
       state->head = compressed;
 
-      performance_counter_stop(&gen_deltas);
+      performance_counter_stop(gen_deltas);
    }
    else
       state->thisblock_valid = true;
@@ -765,15 +765,15 @@ bool state_manager_check_rewind(bool pressed,
 
          state_manager_push_where(rewind_state.state, &state);
 
-         performance_counter_init(&rewind_serialize, "rewind_serialize");
-         performance_counter_start(&rewind_serialize);
+         performance_counter_init(rewind_serialize, "rewind_serialize");
+         performance_counter_start(rewind_serialize);
 
          serial_info.data = state;
          serial_info.size = rewind_state.size;
 
          core_serialize(&serial_info);
 
-         performance_counter_stop(&rewind_serialize);
+         performance_counter_stop(rewind_serialize);
 
          state_manager_push_do(rewind_state.state);
       }

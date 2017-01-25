@@ -1387,8 +1387,8 @@ static bool d3d_frame(void *data, const void *frame,
    if (!frame)
       return true;
 
-   performance_counter_init(&d3d_frame, "d3d_frame");
-   performance_counter_start(&d3d_frame);
+   performance_counter_init(d3d_frame, "d3d_frame");
+   performance_counter_start_plus(video_info->is_perfcnt_enable, d3d_frame);
 
    /* We cannot recover in fullscreen. */
    if (d3d->needs_restore)
@@ -1467,7 +1467,7 @@ static bool d3d_frame(void *data, const void *frame,
 
    video_context_driver_update_window_title(video_info);
 
-   performance_counter_stop(&d3d_frame);
+   performance_counter_stop_plus(video_info->is_perfcnt_enable, d3d_frame);
 
    video_context_driver_swap_buffers(video_info);
 

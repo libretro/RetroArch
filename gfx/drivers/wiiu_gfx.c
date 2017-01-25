@@ -617,8 +617,8 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
    fflush(stdout);
 
    static struct retro_perf_counter gfx_frame_perf = {0};
-   performance_counter_init(&gfx_frame_perf, "gfx_frame");
-   performance_counter_start(&gfx_frame_perf);
+   performance_counter_init(gfx_frame_perf, "gfx_frame");
+   performance_counter_start_plus(video_info->is_perfcnt_enable, gfx_frame_perf);
 
    if (wiiu->should_resize)
       wiiu_gfx_update_viewport(wiiu);
@@ -702,7 +702,7 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
 
    GX2SwapScanBuffers();
    GX2Flush();
-   performance_counter_stop(&gfx_frame_perf);
+   performance_counter_stop_plus(video_info->is_perfcnt_enable, gfx_frame_perf);
 
    return true;
 }

@@ -534,8 +534,8 @@ static bool psp_frame(void *data, const void *frame,
 
    psp->draw_buffer = FROM_GU_POINTER(sceGuSwapBuffers());
 
-   performance_counter_init(&psp_frame_run, "psp_frame_run");
-   performance_counter_start(&psp_frame_run);
+   performance_counter_init(psp_frame_run, "psp_frame_run");
+   performance_counter_start_plus(video_info->is_perfcnt_enable, psp_frame_run);
 
    if (psp->should_resize)
       psp_update_viewport(psp, video_info);
@@ -568,7 +568,7 @@ static bool psp_frame(void *data, const void *frame,
 
    sceGuFinish();
 
-   performance_counter_stop(&psp_frame_run);
+   performance_counter_stop_plus(video_info->is_perfcnt_enable, psp_frame_run);
 
 #ifdef HAVE_MENU
    menu_driver_frame(video_info);

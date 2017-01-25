@@ -511,6 +511,7 @@ void audio_driver_set_nonblocking_state(bool enable)
 static bool audio_driver_flush(const int16_t *data, size_t samples)
 {
    struct resampler_data src_data;
+   bool is_perfcnt_enable                               = false;
    bool is_paused                                       = false;
    bool is_idle                                         = false;
    bool is_slowmotion                                   = false;
@@ -530,18 +531,19 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    if (recording_data)
       recording_push_audio(data, samples);
 
-   runloop_get_status(&is_paused, &is_idle, &is_slowmotion);
+   runloop_get_status(&is_paused, &is_idle, &is_slowmotion,
+         &is_perfcnt_enable);
 
    if (is_paused || settings->audio.mute_enable)
       return true;
    if (!audio_driver_active || !audio_driver_input_data)
       return false;
 
-   performance_counter_init(&audio_convert_s16, "audio_convert_s16");
-   performance_counter_start(&audio_convert_s16);
+   performance_counter_init(audio_convert_s16, "audio_convert_s16");
+   performance_counter_start_plus(is_perfcnt_enable, audio_convert_s16);
    convert_s16_to_float(audio_driver_input_data, data, samples,
          audio_driver_volume_gain);
-   performance_counter_stop(&audio_convert_s16);
+   performance_counter_stop_plus(is_perfcnt_enable, audio_convert_s16);
 
    src_data.data_in               = audio_driver_input_data;
    src_data.input_frames          = samples >> 1;
@@ -560,10 +562,10 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
       dsp_data.input                 = audio_driver_input_data;
       dsp_data.input_frames          = samples >> 1;
 
-      performance_counter_init(&audio_dsp, "audio_dsp");
-      performance_counter_start(&audio_dsp);
+      performance_counter_init(audio_dsp, "audio_dsp");
+      performance_counter_start_plus(is_perfcnt_enable, audio_dsp);
       retro_dsp_filter_process(audio_driver_dsp, &dsp_data);
-      performance_counter_stop(&audio_dsp);
+      performance_counter_stop_plus(is_perfcnt_enable, audio_dsp);
 
       if (dsp_data.output)
       {
@@ -607,11 +609,11 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    if (is_slowmotion)
       src_data.ratio *= settings->slowmotion_ratio;
 
-   performance_counter_init(&resampler_proc, "resampler_proc");
-   performance_counter_start(&resampler_proc);
+   performance_counter_init(resampler_proc, "resampler_proc");
+   performance_counter_start_plus(is_perfcnt_enable, resampler_proc);
 
    audio_driver_resampler->process(audio_driver_resampler_data, &src_data);
-   performance_counter_stop(&resampler_proc);
+   performance_counter_stop_plus(is_perfcnt_enable, resampler_proc);
 
    output_data   = audio_driver_output_samples_buf;
    output_frames = src_data.output_frames;
@@ -620,11 +622,11 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    {
       static struct retro_perf_counter audio_convert_float = {0};
 
-      performance_counter_init(&audio_convert_float, "audio_convert_float");
-      performance_counter_start(&audio_convert_float);
+      performance_counter_init(audio_convert_float, "audio_convert_float");
+      performance_counter_start_plus(is_perfcnt_enable, audio_convert_float);
       convert_float_to_s16(audio_driver_output_samples_conv_buf,
             (const float*)output_data, output_frames * 2);
-      performance_counter_stop(&audio_convert_float);
+      performance_counter_stop_plus(is_perfcnt_enable, audio_convert_float);
 
       output_data = audio_driver_output_samples_conv_buf;
       output_size = sizeof(int16_t);
