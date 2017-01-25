@@ -3131,18 +3131,12 @@ static void xmb_ribbon_set_vertex(float *ribbon_verts,
 static void xmb_init_ribbon(xmb_handle_t * xmb)
 {
    video_coords_t coords;
-   unsigned vertices_total;
    unsigned r, c, col;
    unsigned i                = 0;
-   float *ribbon_verts       = NULL;
-   float *dummy              = NULL;
    video_coord_array_t *ca   = menu_display_get_coords_array();
-
-   vertices_total = XMB_RIBBON_VERTICES;
-
-   dummy          = (float*)calloc(4 * vertices_total, sizeof(float));
-   ribbon_verts   = (float*)calloc(2 * vertices_total, sizeof(float));
-
+   unsigned   vertices_total = XMB_RIBBON_VERTICES;
+   float *dummy              = (float*)calloc(4 * vertices_total, sizeof(float));
+   float *ribbon_verts       = (float*)calloc(2 * vertices_total, sizeof(float));
 
    /* Set up vertices */
    for (r = 0; r < XMB_RIBBON_ROWS - 1; r++)
