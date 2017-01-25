@@ -971,7 +971,6 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 {
    menu_entry_t entry;
    settings_t     *settings = config_get_ptr();
-   global_t         *global = global_get_ptr();
    xmb_handle_t     *xmb    = (xmb_handle_t*)data;
    playlist_t     *playlist = NULL;
 
@@ -1001,17 +1000,21 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
          || (string_is_equal(entry.label, "savestate"))))
    {
       char path[PATH_MAX_LENGTH];
+      global_t         *global = global_get_ptr();
 
       path[0] = '\0';
 
-      if (settings->state_slot > 0)
-         snprintf(path, sizeof(path), "%s%d",
-               global->name.savestate, settings->state_slot);
-      else if (settings->state_slot < 0)
-         fill_pathname_join_delim(path,
-               global->name.savestate, "auto", '.', sizeof(path));
-      else
-         strlcpy(path, global->name.savestate, sizeof(path));
+      if (global)
+      {
+         if (settings->state_slot > 0)
+            snprintf(path, sizeof(path), "%s%d",
+                  global->name.savestate, settings->state_slot);
+         else if (settings->state_slot < 0)
+            fill_pathname_join_delim(path,
+                  global->name.savestate, "auto", '.', sizeof(path));
+         else
+            strlcpy(path, global->name.savestate, sizeof(path));
+      }
 
       strlcat(path, file_path_str(FILE_PATH_PNG_EXTENSION), sizeof(path));
 
