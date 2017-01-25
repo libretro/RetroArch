@@ -204,7 +204,8 @@ void runloop_msg_queue_push(const char *msg, unsigned prio,
 
 bool runloop_msg_queue_pull(const char **ret);
 
-void runloop_get_status(bool *is_paused, bool *is_idle, bool *is_slowmotion);
+void runloop_get_status(bool *is_paused, bool *is_idle, bool *is_slowmotion,
+      bool *is_perfcnt_enable);
 
 bool runloop_ctl(enum runloop_ctl_state state, void *data);
 

@@ -205,11 +205,12 @@ static bool rarch_game_specific_options(char **output)
 }
 
 void runloop_get_status(bool *is_paused, bool *is_idle, 
-      bool *is_slowmotion)
+      bool *is_slowmotion, bool *is_perfcnt_enable)
 {
-   *is_paused     = runloop_paused;
-   *is_idle       = runloop_idle;
-   *is_slowmotion = runloop_slowmotion;
+   *is_paused         = runloop_paused;
+   *is_idle           = runloop_idle;
+   *is_slowmotion     = runloop_slowmotion;
+   *is_perfcnt_enable = runloop_perfcnt_enable;
 }
 
 bool runloop_msg_queue_pull(const char **ret)

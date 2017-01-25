@@ -2378,8 +2378,10 @@ bool command_event(enum event_command cmd, void *data)
             bool is_paused            = false;
             bool is_idle              = false;
             bool is_slowmotion        = false;
+            bool is_perfcnt_enable    = false;
 
-            runloop_get_status(&is_paused, &is_idle, &is_slowmotion);
+            runloop_get_status(&is_paused, &is_idle, &is_slowmotion,
+                  &is_perfcnt_enable);
 
             if (is_paused)
             {

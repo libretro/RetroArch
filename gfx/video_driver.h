@@ -131,6 +131,7 @@ typedef struct video_frame_info
    bool runloop_is_slowmotion;
    bool runloop_is_idle;
    bool runloop_is_paused;
+   bool is_perfcnt_enable;
 
    bool menu_is_alive;
 } video_frame_info_t;
