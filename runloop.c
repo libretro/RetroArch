@@ -1047,6 +1047,7 @@ int runloop_iterate(unsigned *sleep_ms)
    retro_time_t current, target, to_sleep_ms;
    uint64_t trigger_input                       = 0;
    static uint64_t last_input                   = 0;
+   bool input_driver_is_nonblock                = false;
    settings_t *settings                         = config_get_ptr();
    uint64_t old_input                           = last_input;
 #ifdef HAVE_MENU
@@ -1054,16 +1055,17 @@ int runloop_iterate(unsigned *sleep_ms)
 #else
    bool menu_is_alive                           = false;
 #endif
-   bool input_driver_is_nonblock                = input_driver_is_nonblock_state();
    uint64_t current_input                       =
 
 #ifdef HAVE_MENU
       menu_is_alive ? 
       input_menu_keys_pressed(old_input,
-            &last_input, &trigger_input, runloop_paused) :
+            &last_input, &trigger_input, runloop_paused,
+            &input_driver_is_nonblock) :
 #endif
       input_keys_pressed(old_input, &last_input,
-            &trigger_input, runloop_paused);
+            &trigger_input, runloop_paused,
+            &input_driver_is_nonblock);
 
    if (runloop_frame_time.callback)
    {

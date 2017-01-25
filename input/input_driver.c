@@ -667,7 +667,8 @@ uint64_t input_menu_keys_pressed(
       uint64_t old_input,
       uint64_t *last_input,
       uint64_t *trigger_input,
-      bool runloop_paused)
+      bool runloop_paused,
+      bool *nonblock_state)
 {
    uint64_t             ret                     = 0;
 
@@ -683,7 +684,7 @@ uint64_t input_menu_keys_pressed(
 
       if (settings->menu.unified_controls && !menu_input_dialog_get_display_kb())
          return input_keys_pressed(old_input, last_input,
-               trigger_input, runloop_paused);
+               trigger_input, runloop_paused, nonblock_state);
 
       for (i = 0; i < max_users; i++)
       {
@@ -810,6 +811,8 @@ uint64_t input_menu_keys_pressed(
    if (menu_driver_is_binding_state())
       *trigger_input = 0;
 
+   *nonblock_state = input_driver_nonblock_state;
+
    return ret;
 }
 #endif
@@ -885,7 +888,8 @@ uint64_t input_keys_pressed(
       uint64_t old_input,
       uint64_t *last_input,
       uint64_t *trigger_input,
-      bool runloop_paused)
+      bool runloop_paused,
+      bool *nonblock_state)
 {
    unsigned i;
    rarch_joypad_info_t joypad_info;
@@ -963,6 +967,8 @@ uint64_t input_keys_pressed(
          input_driver_flushing_input = true; 
       }
    }
+
+   *nonblock_state = input_driver_nonblock_state;
 
    return ret;
 }
