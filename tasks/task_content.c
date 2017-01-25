@@ -691,12 +691,16 @@ static bool content_file_init_set_attribs(
    }
    else
    {
+      bool contentless     = false;
+
+      content_get_status(&contentless);
+
       attr.i               = content_ctx->block_extract;
       attr.i              |= content_ctx->need_fullpath << 1;
-      attr.i              |= (!content_does_not_need_content())  << 2;
+      attr.i              |= (!contentless)  << 2;
 
       if (path_is_empty(RARCH_PATH_CONTENT)
-            && content_does_not_need_content()
+            && contentless 
             && content_ctx->set_supports_no_game_enable)
          string_list_append(content, "", attr);
       else
@@ -817,14 +821,17 @@ static bool task_load_content(content_ctx_info_t *content_info,
 {
    char name[255];
    char msg[255];
+   bool contentless = false;
 
    name[0] = msg[0] = '\0';
+
+   content_get_status(&contentless);
 
    if (!content_load(content_info))
       goto error;
 
    /* Push entry to top of history playlist */
-   if (_content_is_inited || content_does_not_need_content())
+   if (_content_is_inited || contentless)
    {
       char tmp[PATH_MAX_LENGTH];
       struct retro_system_info *info = NULL;
@@ -1321,9 +1328,9 @@ cleanup:
 #endif
 }
 
-bool content_does_not_need_content(void)
+void content_get_status(bool *contentless)
 {
-   return core_does_not_need_content;
+   *contentless = core_does_not_need_content;
 }
 
 void content_set_does_not_need_content(void)

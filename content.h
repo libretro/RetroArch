@@ -59,7 +59,7 @@ bool content_undo_load_state(void);
 /* Restores the last savestate file which was overwritten */
 bool content_undo_save_state(void);
 
-bool content_does_not_need_content(void);
+void content_get_status(bool *contentless);
 
 void content_set_does_not_need_content(void);
 

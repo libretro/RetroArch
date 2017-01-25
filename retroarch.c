@@ -1261,9 +1261,14 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_INIT, NULL);
          break;
       case RARCH_CTL_SET_PATHS_REDIRECT:
-         if (content_does_not_need_content())
-            return false;
-         path_set_redirect();
+         {
+            bool contentless = false;
+            content_get_status(&contentless);
+
+            if (contentless)
+               return false;
+            path_set_redirect();
+         }
          break;
       case RARCH_CTL_IS_SRAM_LOAD_DISABLED:
          return rarch_is_sram_load_disabled;
@@ -1284,8 +1289,12 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_IS_SRAM_USED:
          return rarch_use_sram;
       case RARCH_CTL_SET_SRAM_ENABLE:
-         rarch_use_sram = rarch_ctl(RARCH_CTL_IS_PLAIN_CORE, NULL)
-            && !content_does_not_need_content();
+         {
+            bool contentless = false;
+            content_get_status(&contentless);
+            rarch_use_sram = rarch_ctl(RARCH_CTL_IS_PLAIN_CORE, NULL)
+               && !contentless;
+         }
          break;
       case RARCH_CTL_SET_SRAM_ENABLE_FORCE:
          rarch_use_sram = true;

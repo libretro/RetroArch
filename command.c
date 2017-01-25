@@ -1325,6 +1325,10 @@ static void command_event_set_savestate_auto_index(void)
 
 static bool event_init_content(void)
 {
+   bool contentless = false;
+
+   content_get_status(&contentless);
+
    rarch_ctl(RARCH_CTL_SET_SRAM_ENABLE, NULL);
 
    /* No content to be loaded for dummy core,
@@ -1332,13 +1336,15 @@ static bool event_init_content(void)
    if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
       return true;
 
-   if (!content_does_not_need_content())
+   if (!contentless)
       path_fill_names();
 
    if (!content_init())
       return false;
 
-   if (content_does_not_need_content())
+   content_get_status(&contentless);
+
+   if (contentless)
    {
 #ifdef HAVE_NETWORKING
       if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
@@ -1442,10 +1448,12 @@ static void command_event_restore_default_shader_preset(void)
 
 static bool command_event_save_auto_state(void)
 {
-   bool ret;
    char savestate_name_auto[PATH_MAX_LENGTH] = {0};
+   bool ret             = false;;
+   bool contentless     = false;
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
+
 
    if (!settings || !settings->savestate_auto_save)
       return false;
@@ -1453,7 +1461,10 @@ static bool command_event_save_auto_state(void)
       return false;
    if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
       return false;
-   if (content_does_not_need_content())
+
+   content_get_status(&contentless);
+
+   if (contentless)
       return false;
 
 #ifdef HAVE_CHEEVOS
@@ -1504,14 +1515,17 @@ static bool command_event_save_config(const char *config_path,
  **/
 static bool command_event_save_core_config(void)
 {
-   char config_dir[PATH_MAX_LENGTH]  = {0};
-   char config_name[PATH_MAX_LENGTH] = {0};
-   char config_path[PATH_MAX_LENGTH] = {0};
-   char msg[128]                     = {0};
+   char config_dir[PATH_MAX_LENGTH];
+   char config_name[PATH_MAX_LENGTH];
+   char config_path[PATH_MAX_LENGTH];
+   char msg[128];
    bool ret                          = false;
    bool found_path                   = false;
    bool overrides_active             = false;
    settings_t *settings              = config_get_ptr();
+
+   config_dir[0]  = config_name[0]   =
+   config_path[0] = msg[0]           = '\0';
 
    if (!string_is_empty(settings->directory.menu_config))
       strlcpy(config_dir, settings->directory.menu_config,
@@ -1603,7 +1617,9 @@ static bool command_event_save_core_config(void)
  **/
 static void command_event_save_current_config(enum override_type type)
 {
-   char msg[128]           = {0};
+   char msg[128];
+
+   msg[0] = '\0';
 
    switch (type)
    {
@@ -1678,20 +1694,26 @@ static void command_event_undo_load_state(char *s, size_t len)
 static void command_event_main_state(unsigned cmd)
 {
    retro_ctx_size_info_t info;
-   char path[PATH_MAX_LENGTH] = {0};
-   char msg[128]              = {0};
+   char path[PATH_MAX_LENGTH];
+   char msg[128];
    global_t *global           = global_get_ptr();
-   settings_t *settings       = config_get_ptr();
    bool push_msg              = true;
 
-   if (settings->state_slot > 0)
-      snprintf(path, sizeof(path), "%s%d",
-            global->name.savestate, settings->state_slot);
-   else if (settings->state_slot < 0)
-      fill_pathname_join_delim(path,
-            global->name.savestate, "auto", '.', sizeof(path));
-   else
-      strlcpy(path, global->name.savestate, sizeof(path));
+   path[0] = msg[0]           = '\0';
+
+   if (global)
+   {
+      settings_t *settings    = config_get_ptr();
+
+      if (settings->state_slot > 0)
+         snprintf(path, sizeof(path), "%s%d",
+               global->name.savestate, settings->state_slot);
+      else if (settings->state_slot < 0)
+         fill_pathname_join_delim(path,
+               global->name.savestate, "auto", '.', sizeof(path));
+      else
+         strlcpy(path, global->name.savestate, sizeof(path));
+   }
 
    core_serialize_size(&info);
 
