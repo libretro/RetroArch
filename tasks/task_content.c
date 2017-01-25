@@ -516,9 +516,10 @@ static bool content_file_load(
 
       if (require_content && string_is_empty(path))
       {
-         snprintf(msg, sizeof(msg),
-               "%s\n",
-               msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT));
+         strlcpy(msg,
+               msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT),
+               sizeof(msg)
+               );
          *error_string = strdup(msg);
          goto error;
       }
@@ -575,7 +576,7 @@ static bool content_file_load(
    if (!core_load_game(&load_info))
    {
       snprintf(msg, sizeof(msg),
-            "%s.\n", msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
+            "%s.", msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
       *error_string = strdup(msg);
       goto error;
    }
@@ -628,9 +629,10 @@ static const struct retro_subsystem_info *content_file_init_subsystem(
 
    if (special->num_roms && !subsystem)
    {
-      snprintf(msg, sizeof(msg),
-            "%s\n",
-            msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT));
+      strlcpy(msg,
+            msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT),
+            sizeof(msg)
+            );
       *error_string = strdup(msg);
       goto error;
    }
