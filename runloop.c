@@ -687,6 +687,7 @@ static enum runloop_state runloop_check_state(
       uint64_t current_input,
       uint64_t old_input,
       uint64_t trigger_input,
+      bool input_driver_is_nonblock,
       unsigned *sleep_ms)
 {
    static bool old_focus            = true;
@@ -907,7 +908,7 @@ static enum runloop_state runloop_check_state(
     */
    if (runloop_cmd_triggered(trigger_input, RARCH_FAST_FORWARD_KEY))
    {
-      if (input_driver_is_nonblock_state())
+      if (input_driver_is_nonblock)
          input_driver_unset_nonblock_state();
       else
          input_driver_set_nonblock_state();
@@ -1053,6 +1054,7 @@ int runloop_iterate(unsigned *sleep_ms)
 #else
    bool menu_is_alive                           = false;
 #endif
+   bool input_driver_is_nonblock                = input_driver_is_nonblock_state();
    uint64_t current_input                       =
 
 #ifdef HAVE_MENU
@@ -1071,7 +1073,7 @@ int runloop_iterate(unsigned *sleep_ms)
       retro_time_t current     = cpu_features_get_time_usec();
       retro_time_t delta       = current - runloop_frame_time_last;
       bool is_locked_fps       = (runloop_paused ||
-                                  input_driver_is_nonblock_state()) |
+                                  input_driver_is_nonblock) |
                                   !!recording_data;
 
 
@@ -1095,6 +1097,7 @@ int runloop_iterate(unsigned *sleep_ms)
             current_input,
             old_input,
             trigger_input,
+            input_driver_is_nonblock,
             sleep_ms))
    {
       case RUNLOOP_STATE_QUIT:
@@ -1139,8 +1142,7 @@ int runloop_iterate(unsigned *sleep_ms)
       input_push_analog_dpad(auto_binds,    dpad_mode);
    }
 
-   if ((settings->video.frame_delay > 0) &&
-         !input_driver_is_nonblock_state())
+   if ((settings->video.frame_delay > 0) && !input_driver_is_nonblock)
       retro_sleep(settings->video.frame_delay);
 
    core_run();
