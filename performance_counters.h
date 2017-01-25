@@ -82,6 +82,7 @@ void rarch_perf_register(struct retro_perf_counter *perf);
  * Start performance counter. 
  **/
 #define performance_counter_start(perf) performance_counter_start_internal(runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL), perf)
+#define performance_counter_start_plus(is_perfcnt_enable, perf) performance_counter_start_internal(is_perfcnt_enable, perf)
 
 /**
  * performance_counter_stop:
@@ -90,6 +91,7 @@ void rarch_perf_register(struct retro_perf_counter *perf);
  * Stop performance counter. 
  **/
 #define performance_counter_stop(perf) performance_counter_stop_internal(runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL), perf)
+#define performance_counter_stop_plus(is_perfcnt_enable, perf) performance_counter_stop_internal(is_perfcnt_enable, perf)
 
 void rarch_timer_tick(rarch_timer_t *timer);
 
