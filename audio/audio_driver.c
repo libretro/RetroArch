@@ -246,7 +246,7 @@ const char *config_get_audio_driver_options(void)
    return char_list_new_special(STRING_LIST_AUDIO_DRIVERS, NULL);
 }
 
-static bool uninit_audio(void)
+static bool audio_driver_deinit_internal(void)
 {
    settings_t *settings = config_get_ptr();
 
@@ -269,7 +269,7 @@ static bool uninit_audio(void)
 
    audio_driver_rewind_size  = 0;
 
-   if (!settings->audio.enable)
+   if (settings && !settings->audio.enable)
    {
       audio_driver_active = false;
       return false;
@@ -290,16 +290,6 @@ static bool uninit_audio(void)
    compute_audio_buffer_statistics();
 
    return true;
-}
-
-static bool audio_driver_init_resampler(void)
-{
-   settings_t *settings = config_get_ptr();
-   return retro_resampler_realloc(
-         &audio_driver_resampler_data,
-         &audio_driver_resampler,
-         settings->audio.resampler,
-         audio_source_ratio_original);
 }
 
 static bool audio_driver_init_internal(bool audio_cb_inited)
@@ -410,7 +400,11 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    audio_source_ratio_original   = audio_source_ratio_current =
       (double)settings->audio.out_rate / audio_driver_input;
 
-   if (!audio_driver_init_resampler())
+   if (!retro_resampler_realloc(
+            &audio_driver_resampler_data,
+            &audio_driver_resampler,
+            settings->audio.resampler,
+            audio_source_ratio_original))
    {
       RARCH_ERR("Failed to initialize resampler \"%s\".\n",
             settings->audio.resampler);
@@ -894,7 +888,7 @@ bool audio_driver_get_devices_list(void **data)
 bool audio_driver_deinit(void)
 {
    audio_driver_free_devices_list();
-   if (!uninit_audio())
+   if (!audio_driver_deinit_internal())
       return false;
    return true;
 }
