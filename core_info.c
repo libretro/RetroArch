@@ -918,7 +918,7 @@ bool core_info_get_display_name(const char *path, char *s, size_t len)
 
    if (config_get_string(conf, "display_name", &tmp))
    {
-      snprintf(s, len, "%s", tmp);
+      strlcpy(s, tmp, len);
       free(tmp);
    }
 
