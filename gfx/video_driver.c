@@ -1837,14 +1837,12 @@ bool video_driver_is_active(void)
    return video_driver_active;
 }
 
-bool video_driver_has_gpu_record(void)
+void video_driver_get_record_status(
+      bool *has_gpu_record, 
+      uint8_t **gpu_buf)
 {
-   return video_driver_record_gpu_buffer != NULL;
-}
-
-uint8_t *video_driver_get_gpu_record(void)
-{
-   return video_driver_record_gpu_buffer;
+   *gpu_buf        = video_driver_record_gpu_buffer;
+   *has_gpu_record = video_driver_record_gpu_buffer != NULL;
 }
 
 bool video_driver_gpu_record_init(unsigned size)

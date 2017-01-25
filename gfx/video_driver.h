@@ -328,8 +328,6 @@ void video_driver_set_video_cache_context_ack(void);
 bool video_driver_is_video_cache_context_ack(void);
 void video_driver_set_active(void);
 bool video_driver_is_active(void);
-bool video_driver_has_gpu_record(void);
-uint8_t *video_driver_get_gpu_record(void);
 bool video_driver_gpu_record_init(unsigned size);
 void video_driver_gpu_record_deinit(void);
 bool video_driver_get_current_software_framebuffer(struct 
@@ -557,6 +555,10 @@ void video_driver_build_info(video_frame_info_t *video_info);
 void video_driver_reinit(void);
 
 void video_driver_get_window_title(char *buf, unsigned len);
+
+void video_driver_get_record_status(
+      bool *has_gpu_record, 
+      uint8_t **gpu_buf);
 
 void video_driver_get_status(uint64_t *frame_count, bool * is_alive,
       bool *is_focused);
