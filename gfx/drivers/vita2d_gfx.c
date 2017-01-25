@@ -364,7 +364,7 @@ static void vita2d_gfx_update_viewport(vita_video_t* vita)
    else if (vita->keep_aspect)
    {
       float desired_aspect = video_driver_get_aspect_ratio();
-      if ( (vita->rotation == ORIENTATION_VERTICAL ||)
+      if ( (vita->rotation == ORIENTATION_VERTICAL) ||
            (vita->rotation == ORIENTATION_FLIPPED_ROTATED))
       {
          device_aspect = 1.0 / device_aspect;
