@@ -464,6 +464,9 @@ static bool ctr_frame(void* data, const void* frame,
    uint32_t diff;
    static uint64_t currentTick,lastTick;
    touchPosition state_tmp_touch;
+   extern GSPGPU_FramebufferInfo topFramebufferInfo;
+   extern u8* gfxSharedMemory;
+   extern u8 gfxThreadID;
    uint32_t state_tmp      = 0;
    ctr_video_t       *ctr  = (ctr_video_t*)data;
    static float        fps = 0.0;
@@ -609,8 +612,8 @@ static bool ctr_frame(void* data, const void* frame,
 #endif
    fflush(stdout);
 
-   performance_counter_init(&ctrframe_f, "ctrframe_f");
-   performance_counter_start(&ctrframe_f);
+   performance_counter_init(ctrframe_f, "ctrframe_f");
+   performance_counter_start(ctrframe_f);
 
    if (ctr->should_resize)
       ctr_update_viewport(ctr);
@@ -802,38 +805,44 @@ static bool ctr_frame(void* data, const void* frame,
 
 
    /* Swap buffers : */
-   extern GSPGPU_FramebufferInfo topFramebufferInfo;
-   extern u8* gfxSharedMemory;
-   extern u8 gfxThreadID;
 
-   topFramebufferInfo.active_framebuf=ctr->current_buffer_top;
-   topFramebufferInfo.framebuf0_vaddr=(u32*)gfxTopLeftFramebuffers[ctr->current_buffer_top];
+   topFramebufferInfo.
+      active_framebuf           = ctr->current_buffer_top;
+   topFramebufferInfo.
+      framebuf0_vaddr           = (u32*)gfxTopLeftFramebuffers[ctr->current_buffer_top];
+
    if(ctr->video_mode == CTR_VIDEO_MODE_800x240)
    {
-      topFramebufferInfo.framebuf1_vaddr=(u32*)(gfxTopLeftFramebuffers[ctr->current_buffer_top] + 240 * 3);
-      topFramebufferInfo.framebuf_widthbytesize = 240 * 3 * 2;
+      topFramebufferInfo.
+         framebuf1_vaddr        = (u32*)(gfxTopLeftFramebuffers[ctr->current_buffer_top] + 240 * 3);
+      topFramebufferInfo.
+         framebuf_widthbytesize = 240 * 3 * 2;
    }
    else
    {
-      topFramebufferInfo.framebuf1_vaddr=(u32*)gfxTopRightFramebuffers[ctr->current_buffer_top];
-      topFramebufferInfo.framebuf_widthbytesize = 240 * 3;
+      topFramebufferInfo.
+         framebuf1_vaddr        = (u32*)gfxTopRightFramebuffers[ctr->current_buffer_top];
+      topFramebufferInfo.
+         framebuf_widthbytesize = 240 * 3;
    }
 
 
-   topFramebufferInfo.format=(1<<8)|(1<<5)|GSP_BGR8_OES;
-   topFramebufferInfo.framebuf_dispselect=ctr->current_buffer_top;
-   topFramebufferInfo.unk=0x00000000;
+   topFramebufferInfo.format    = (1<<8)|(1<<5)|GSP_BGR8_OES;
+   topFramebufferInfo.
+      framebuf_dispselect       = ctr->current_buffer_top;
+   topFramebufferInfo.unk       = 0x00000000;
 
-   u8* framebufferInfoHeader=gfxSharedMemory+0x200+gfxThreadID*0x80;
-	GSPGPU_FramebufferInfo* framebufferInfo=(GSPGPU_FramebufferInfo*)&framebufferInfoHeader[0x4];
-	framebufferInfoHeader[0x0] ^= 1;
+   u8* framebufferInfoHeader    = gfxSharedMemory+0x200+gfxThreadID*0x80;
+	GSPGPU_FramebufferInfo* 
+      framebufferInfo           = (GSPGPU_FramebufferInfo*)&framebufferInfoHeader[0x4];
+	framebufferInfoHeader[0x0]  ^= 1;
 	framebufferInfo[framebufferInfoHeader[0x0]] = topFramebufferInfo;
-	framebufferInfoHeader[0x1]=1;
+	framebufferInfoHeader[0x1]   = 1;
 
-   ctr->current_buffer_top ^= 1;
-   ctr->p3d_event_pending = true;
-   ctr->ppf_event_pending = true;
-   performance_counter_stop(&ctrframe_f);
+   ctr->current_buffer_top     ^= 1;
+   ctr->p3d_event_pending       = true;
+   ctr->ppf_event_pending       = true;
+   performance_counter_stop(ctrframe_f);
 
    return true;
 }

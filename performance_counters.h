@@ -22,6 +22,9 @@
 
 #include <retro_common_api.h>
 #include <libretro.h>
+#include <features/features_cpu.h>
+
+#include "runloop.h"
 
 RETRO_BEGIN_DECLS
 
@@ -54,7 +57,12 @@ void retro_perf_log(void);
 
 void rarch_perf_log(void);
 
-int performance_counter_init(struct retro_perf_counter *perf, const char *name);
+void rarch_perf_register(struct retro_perf_counter *perf);
+
+#define performance_counter_init(perf, name) \
+   perf.ident = name; \
+   if (!perf.registered) \
+      rarch_perf_register(&perf)
 
 /**
  * performance_counter_start:
@@ -62,7 +70,12 @@ int performance_counter_init(struct retro_perf_counter *perf, const char *name);
  *
  * Start performance counter. 
  **/
-void performance_counter_start(struct retro_perf_counter *perf);
+#define performance_counter_start(perf) \
+   if (runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL)) \
+   { \
+      perf.call_cnt++; \
+      perf.start = cpu_features_get_perf_counter(); \
+   }
 
 /**
  * performance_counter_stop:
@@ -70,7 +83,9 @@ void performance_counter_start(struct retro_perf_counter *perf);
  *
  * Stop performance counter. 
  **/
-void performance_counter_stop(struct retro_perf_counter *perf);
+#define performance_counter_stop(perf) \
+   if (runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL)) \
+      perf.total += cpu_features_get_perf_counter() - perf.start
 
 void rarch_timer_tick(rarch_timer_t *timer);
 

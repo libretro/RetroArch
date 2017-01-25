@@ -1530,8 +1530,8 @@ static bool cg_d3d9_renderchain_read_viewport(void *data, uint8_t *buffer)
 
    video_driver_get_size(&width, &height);
 
-   performance_counter_init(&d3d_read_viewport, "d3d_read_viewport");
-   performance_counter_start(&d3d_read_viewport);
+   performance_counter_init(d3d_read_viewport, "d3d_read_viewport");
+   performance_counter_start(d3d_read_viewport);
 
    (void)data;
    (void)buffer;
@@ -1583,7 +1583,7 @@ static bool cg_d3d9_renderchain_read_viewport(void *data, uint8_t *buffer)
       ret = false;
 
 end:
-   performance_counter_stop(&d3d_read_viewport);
+   performance_counter_stop(d3d_read_viewport);
    if (target)
       target->Release();
    if (dest)

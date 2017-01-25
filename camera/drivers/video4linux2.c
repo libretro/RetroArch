@@ -70,10 +70,10 @@ static void process_image(video4linux_t *v4l, const uint8_t *buffer_yuv)
 {
    static struct retro_perf_counter yuv_convert_direct = {0};
 
-   performance_counter_init(&yuv_convert_direct, "yuv_convert_direct");
-   performance_counter_start(&yuv_convert_direct);
+   performance_counter_init(yuv_convert_direct, "yuv_convert_direct");
+   performance_counter_start(yuv_convert_direct);
    scaler_ctx_scale(&v4l->scaler, v4l->buffer_output, buffer_yuv);
-   performance_counter_stop(&yuv_convert_direct);
+   performance_counter_stop(yuv_convert_direct);
 }
 
 static int xioctl(int fd, int request, void *args)

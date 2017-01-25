@@ -205,8 +205,8 @@ static ssize_t ax_audio_write(void* data, const void* buf, size_t size)
       return 0;
 
    /* Measure copy performance from here */
-   performance_counter_init(&ax_audio_write_perf, "ax_audio_write");
-   performance_counter_start(&ax_audio_write_perf);
+   performance_counter_init(ax_audio_write_perf, "ax_audio_write");
+   performance_counter_start(ax_audio_write_perf);
 
    if(count > AX_AUDIO_MAX_FREE)
       count = AX_AUDIO_MAX_FREE;
@@ -286,7 +286,7 @@ static ssize_t ax_audio_write(void* data, const void* buf, size_t size)
       ax_audio_start(ax, false);
 
    /* Done copying new data */
-   performance_counter_stop(&ax_audio_write_perf);
+   performance_counter_stop(ax_audio_write_perf);
 
    /* return what was actually copied */
    return (count << 2);

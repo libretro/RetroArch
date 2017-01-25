@@ -176,8 +176,8 @@ static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t size)
    (void)samples_played;
    (void)current_tick;
 
-   performance_counter_init(&ctraudio_f, "ctraudio_f");
-   performance_counter_start(&ctraudio_f);
+   performance_counter_init(ctraudio_f, "ctraudio_f");
+   performance_counter_start(ctraudio_f);
 
    ctr_csnd_audio_update_playpos(ctr);
 
@@ -209,7 +209,7 @@ static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t size)
    GSPGPU_FlushDataCache(ctr->l, CTR_CSND_AUDIO_SIZE);
    GSPGPU_FlushDataCache(ctr->r, CTR_CSND_AUDIO_SIZE);
 
-   performance_counter_stop(&ctraudio_f);
+   performance_counter_stop(ctraudio_f);
 
    return size;
 }

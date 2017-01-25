@@ -2241,10 +2241,10 @@ void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
    {
       static struct retro_perf_counter fence_wait = {0};
 
-      performance_counter_init(&fence_wait, "fence_wait");
-      performance_counter_start(&fence_wait);
+      performance_counter_init(fence_wait, "fence_wait");
+      performance_counter_start(fence_wait);
       vkWaitForFences(vk->context.device, 1, next_fence, true, UINT64_MAX);
-      performance_counter_stop(&fence_wait);
+      performance_counter_stop(fence_wait);
 
       vkResetFences(vk->context.device, 1, next_fence);
    }

@@ -1095,18 +1095,18 @@ static bool video_driver_frame_filter(
 {
    static struct retro_perf_counter softfilter_process = {0};
    
-   performance_counter_init(&softfilter_process, "softfilter_process");
+   performance_counter_init(softfilter_process, "softfilter_process");
 
    rarch_softfilter_get_output_size(video_driver_state_filter,
          output_width, output_height, width, height);
 
    *output_pitch = (*output_width) * video_driver_state_out_bpp;
 
-   performance_counter_start(&softfilter_process);
+   performance_counter_start(softfilter_process);
    rarch_softfilter_process(video_driver_state_filter,
          video_driver_state_buffer, *output_pitch,
          data, width, height, pitch);
-   performance_counter_stop(&softfilter_process);
+   performance_counter_stop(softfilter_process);
 
    if (video_info->post_filter_record && recording_data)
       recording_dump_frame(video_driver_state_buffer,
@@ -2036,7 +2036,6 @@ void video_driver_frame(const void *data, unsigned width,
    static retro_time_t curr_time;
    static retro_time_t fps_time;
    static float last_fps;
-   static struct retro_perf_counter video_frame_conv = {0};
    unsigned output_width                             = 0;
    unsigned output_height                            = 0;
    unsigned output_pitch                             = 0;
@@ -2047,22 +2046,26 @@ void video_driver_frame(const void *data, unsigned width,
    if (!video_driver_active)
       return;
 
-   performance_counter_init(&video_frame_conv, "video_frame_conv");
-   performance_counter_start(&video_frame_conv);
-
    if (video_driver_scaler_ptr && data &&
          (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555) &&
-         (data != RETRO_HW_FRAME_BUFFER_VALID) &&
-         video_pixel_frame_scale(
-            video_driver_scaler_ptr->scaler,
-            video_driver_scaler_ptr->scaler_out,
-            data, width, height, pitch))
+         (data != RETRO_HW_FRAME_BUFFER_VALID))
    {
-      data                = video_driver_scaler_ptr->scaler_out;
-      pitch               = video_driver_scaler_ptr->scaler->out_stride;
+      static struct retro_perf_counter video_frame_conv = {0};
+
+      performance_counter_init(video_frame_conv, "video_frame_conv");
+      performance_counter_start(video_frame_conv);
+
+      if (video_pixel_frame_scale(
+               video_driver_scaler_ptr->scaler,
+               video_driver_scaler_ptr->scaler_out,
+               data, width, height, pitch))
+      {
+         data                = video_driver_scaler_ptr->scaler_out;
+         pitch               = video_driver_scaler_ptr->scaler->out_stride;
+      }
+      performance_counter_stop(video_frame_conv);
    }
 
-   performance_counter_stop(&video_frame_conv);
 
    if (data)
       frame_cache_data = data;

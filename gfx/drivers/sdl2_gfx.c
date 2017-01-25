@@ -349,8 +349,8 @@ static void sdl_refresh_input_size(sdl2_video_t *vid, bool menu, bool rgb32,
 
       sdl_tex_zero(target);
 
-      performance_counter_init(&sdl_create_texture, "sdl_create_texture");
-      performance_counter_start(&sdl_create_texture);
+      performance_counter_init(sdl_create_texture, "sdl_create_texture");
+      performance_counter_start(sdl_create_texture);
 
       if (menu)
          format = rgb32 ? SDL_PIXELFORMAT_ARGB8888 : SDL_PIXELFORMAT_RGBA4444;
@@ -364,7 +364,7 @@ static void sdl_refresh_input_size(sdl2_video_t *vid, bool menu, bool rgb32,
       target->tex = SDL_CreateTexture(vid->renderer, format,
                                       SDL_TEXTUREACCESS_STREAMING, width, height);
 
-      performance_counter_stop(&sdl_create_texture);
+      performance_counter_stop(sdl_create_texture);
 
       if (!target->tex)
       {
@@ -513,12 +513,12 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
 
       sdl_refresh_input_size(vid, false, vid->video.rgb32, width, height, pitch);
 
-      performance_counter_init(&sdl_copy_frame, "sdl_copy_frame");
-      performance_counter_start(&sdl_copy_frame);
+      performance_counter_init(sdl_copy_frame, "sdl_copy_frame");
+      performance_counter_start(sdl_copy_frame);
 
       SDL_UpdateTexture(vid->frame.tex, NULL, frame, pitch);
 
-      performance_counter_stop(&sdl_copy_frame);
+      performance_counter_stop(sdl_copy_frame);
    }
 
    SDL_RenderCopyEx(vid->renderer, vid->frame.tex, NULL, NULL, vid->rotation, NULL, SDL_FLIP_NONE);
@@ -632,8 +632,8 @@ static bool sdl2_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    sdl2_video_t *vid = (sdl2_video_t*)data;
    static struct retro_perf_counter sdl2_gfx_read_viewport = {0};
 
-   performance_counter_init(&sdl2_gfx_read_viewport, "sdl2_gfx_read_viewport");
-   performance_counter_start(&sdl2_gfx_read_viewport);
+   performance_counter_init(sdl2_gfx_read_viewport, "sdl2_gfx_read_viewport");
+   performance_counter_start(sdl2_gfx_read_viewport);
 
    if (!is_idle)
       video_driver_cached_frame();
@@ -649,7 +649,7 @@ static bool sdl2_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 
    memcpy(buffer, bgr24->pixels, bgr24->h * bgr24->pitch);
 
-   performance_counter_stop(&sdl2_gfx_read_viewport);
+   performance_counter_stop(sdl2_gfx_read_viewport);
 
    return true;
 }
@@ -709,12 +709,12 @@ static void sdl2_poke_set_texture_frame(void *data, const void *frame, bool rgb3
       sdl_refresh_input_size(vid, true, rgb32, width, height,
                              width * (rgb32 ? 4 : 2));
 
-      performance_counter_init(&copy_texture_frame, "copy_texture_frame");
-      performance_counter_start(&copy_texture_frame);
+      performance_counter_init(copy_texture_frame, "copy_texture_frame");
+      performance_counter_start(copy_texture_frame);
 
       SDL_UpdateTexture(vid->menu.tex, NULL, frame, vid->menu.pitch);
 
-      performance_counter_stop(&copy_texture_frame);
+      performance_counter_stop(copy_texture_frame);
    }
 }
 
