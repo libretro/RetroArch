@@ -730,7 +730,7 @@ static bool video_thread_frame(void *data, const void *frame_,
    }
 
    performance_counter_init(thr_frame, "thr_frame");
-   performance_counter_start(thr_frame);
+   performance_counter_start_plus(video_info->is_perfcnt_enable, thr_frame);
 
    copy_stride = width * (thr->info.rgb32 
          ? sizeof(uint32_t) : sizeof(uint16_t));
@@ -799,7 +799,7 @@ static bool video_thread_frame(void *data, const void *frame_,
 
    slock_unlock(thr->lock);
 
-   performance_counter_stop(thr_frame);
+   performance_counter_stop_plus(video_info->is_perfcnt_enable, thr_frame);
 
    thr->last_time = cpu_features_get_time_usec();
    return true;
