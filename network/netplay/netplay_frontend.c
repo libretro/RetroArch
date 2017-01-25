@@ -947,9 +947,9 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
    }
 
    netplay_data = (netplay_t*)netplay_new(
-         netplay_is_client ? direct_host : NULL,
+         netplay_is_client ? direct_host : NULL,         
          netplay_is_client ? (!netplay_client_deferred ? server : server_address_deferred) : NULL,
-         port ? ( !netplay_client_deferred ? port : server_port_deferred) : RARCH_DEFAULT_PORT,
+         netplay_is_client ? (!netplay_client_deferred ? port   : server_port_deferred   ) : RARCH_DEFAULT_PORT,
          settings->netplay.stateless_mode, settings->netplay.check_frames, &cbs,
          settings->netplay.nat_traversal, settings->username,
          quirks);
