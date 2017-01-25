@@ -2385,17 +2385,14 @@ bool command_event(enum event_command cmd, void *data)
 
             if (is_paused)
             {
-               settings_t *settings      = config_get_ptr();
-
                RARCH_LOG("%s\n", msg_hash_to_str(MSG_PAUSED));
                command_event(CMD_EVENT_AUDIO_STOP, NULL);
 
                runloop_msg_queue_push(msg_hash_to_str(MSG_PAUSED), 1, 
-                     is_paused ? 1: 30, true);
+                     1, true);
 
-               if (settings->video.black_frame_insertion || is_paused)
-                  if (!is_idle)
-                     video_driver_cached_frame();
+               if (is_paused && !is_idle)
+                  video_driver_cached_frame();
             }
             else
             {
