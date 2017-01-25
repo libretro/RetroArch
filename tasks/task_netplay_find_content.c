@@ -200,27 +200,26 @@ bool task_push_netplay_crc_scan(uint32_t crc, char* name,
       const char *hostname, const char *core_name)
 {
    int i;
+   core_info_list_t *info      = NULL;
    settings_t        *settings = config_get_ptr();
    retro_task_t          *task = (retro_task_t *)calloc(1, sizeof(*task));
    netplay_crc_handle_t *state = (netplay_crc_handle_t*)calloc(1, sizeof(*state));
-   core_info_list_t *info          = NULL;
-   core_info_get_list(&info);
 
+   core_info_get_list(&info);
    
    if (!task || !state)
       goto error;
 
-   state->content_crc[0] = '\0';
-   snprintf(state->content_crc, sizeof(state->content_crc), "%08X|crc", crc);
+   state->content_crc[0]  = '\0';
    state->content_path[0] = '\0';
-   snprintf(state->content_path, sizeof(state->content_path), "%s", name);
+   state->hostname[0]     = '\0';
+   state->core_name[0]    = '\0';
 
-   state->hostname[0] = '\0';
-   snprintf(state->hostname, sizeof(state->hostname), "%s", hostname);
+   snprintf(state->content_crc, sizeof(state->content_crc), "%08X|crc", crc);
 
-   state->core_name[0] = '\0';
-   snprintf(state->core_name, sizeof(state->core_name), "%s", core_name);
-   
+   strlcpy(state->content_path,  name,       sizeof(state->content_path));
+   strlcpy(state->hostname,      hostname,   sizeof(state->hostname));
+   strlcpy(state->core_name,     core_name,  sizeof(state->core_name));
 
    state->lpl_list = dir_list_new(settings->directory.playlist,
          NULL, true, true, true, false);
@@ -234,12 +233,12 @@ bool task_push_netplay_crc_scan(uint32_t crc, char* name,
          if the version string matches too */
       if(string_is_equal(info->list[i].core_name, state->core_name))
       {
-         snprintf(state->core_path, sizeof(state->core_path), "%s", info->list[i].path);
-         snprintf(state->core_extensions,  sizeof(state->core_extensions),  "%s", info->list[i].supported_extensions);
+         strlcpy(state->core_path, info->list[i].path, sizeof(state->core_path));
+         strlcpy(state->core_extensions,
+               info->list[i].supported_extensions, sizeof(state->core_extensions));
          break;
       }
    }
-
 
    /* blocking means no other task can run while this one is running, 
     * which is the default */
