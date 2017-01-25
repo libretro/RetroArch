@@ -1,9 +1,7 @@
-TARGET		    := retroarch_wiiu
+TARGET		    := retroarch_wiiu_salamander
 BUILD_HBL_ELF	     = 1
 BUILD_RPX	     = 1
 DEBUG                = 0
-GRIFFIN_BUILD        = 0
-WHOLE_ARCHIVE_LINK   = 0
 
 PC_DEVELOPMENT_IP_ADDRESS  =
 PC_DEVELOPMENT_TCP_PORT	   =
@@ -13,64 +11,24 @@ OBJ += wiiu/system/memory.o
 OBJ += wiiu/system/exception_handler.o
 OBJ += wiiu/fs/sd_fat_devoptab.o
 OBJ += wiiu/fs/fs_utils.o
-OBJ += wiiu/tex_shader.o
 OBJ += wiiu/hbl.o
-
-DEFINES :=
-
-ifeq ($(GRIFFIN_BUILD), 1)
-	OBJ += griffin/griffin.o
-	DEFINES += -DHAVE_GRIFFIN=1 -DHAVE_MENU -DHAVE_RGUI -DHAVE_LIBRETRODB
-	DEFINES += -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA -DWANT_ZLIB -DHAVE_CC_RESAMPLER
-#	DEFINES += -DHAVE_XMB -DHAVE_MATERIALUI
-else
-	HAVE_MENU_COMMON = 1
-	HAVE_RTGA = 1
-	HAVE_RPNG = 1
-	HAVE_RJPEG = 1
-	HAVE_RBMP = 1
-	HAVE_RGUI = 1
-	HAVE_ZLIB = 1
-	HAVE_7ZIP = 1
-	HAVE_BUILTINZLIB = 1
-	HAVE_LIBRETRODB = 1
-	HAVE_ZARCH = 0
-	HAVE_MATERIALUI = 0
-	HAVE_XMB = 0
-
-	include Makefile.common
-	BLACKLIST :=
-	BLACKLIST += input/input_overlay.o
-	BLACKLIST += tasks/task_overlay.o
-	OBJ := $(filter-out $(BLACKLIST),$(OBJ))
-
-	OBJ += gfx/drivers/wiiu_gfx.o
-#	OBJ += gfx/drivers_font/wiiu_font.o
-#	OBJ += menu/drivers_display/menu_display_wiiu.o
-	OBJ += input/drivers/wiiu_input.o
-	OBJ += input/drivers_joypad/wiiu_joypad.o
-	OBJ += audio/drivers/wiiu_audio.o
-	OBJ += frontend/drivers/platform_wiiu.o
-	OBJ += gfx/video_filters/2xsai.o
-	OBJ += gfx/video_filters/super2xsai.o
-	OBJ += gfx/video_filters/supereagle.o
-	OBJ += gfx/video_filters/2xbr.o
-	OBJ += gfx/video_filters/darken.o
-	OBJ += gfx/video_filters/epx.o
-	OBJ += gfx/video_filters/scale2x.o
-	OBJ += gfx/video_filters/blargg_ntsc_snes.o
-	OBJ += gfx/video_filters/lq2x.o
-	OBJ += gfx/video_filters/phosphor2x.o
-	OBJ += libretro-common/audio/dsp_filters/echo.o
-	OBJ += libretro-common/audio/dsp_filters/eq.o
-	OBJ += libretro-common/audio/dsp_filters/chorus.o
-	OBJ += libretro-common/audio/dsp_filters/iir.o
-	OBJ += libretro-common/audio/dsp_filters/panning.o
-	OBJ += libretro-common/audio/dsp_filters/phaser.o
-	OBJ += libretro-common/audio/dsp_filters/reverb.o
-	OBJ += libretro-common/audio/dsp_filters/wahwah.o
-endif
-
+OBJ += frontend/frontend_salamander.o
+OBJ += frontend/frontend_driver.o
+OBJ += frontend/drivers/platform_wiiu.o
+OBJ += frontend/drivers/platform_null.o
+OBJ += libretro-common/compat/compat_strcasestr.o
+OBJ += libretro-common/file/file_path.o
+OBJ += libretro-common/string/stdstring.o
+OBJ += libretro-common/lists/string_list.o
+OBJ += libretro-common/lists/dir_list.o
+OBJ += libretro-common/file/retro_dirent.o
+OBJ += libretro-common/compat/compat_strl.o
+OBJ += libretro-common/file/config_file.o
+OBJ += libretro-common/streams/file_stream.o
+OBJ += libretro-common/file/retro_stat.o
+OBJ += libretro-common/hash/rhash.o
+OBJ += file_path_str.o
+OBJ += verbosity.o
 
 ifeq ($(strip $(DEVKITPPC)),)
 $(error "Please set DEVKITPPC in your environment. export DEVKITPPC=<path to>devkitPPC")
@@ -123,8 +81,7 @@ CFLAGS +=  -ffast-math -Werror=implicit-function-declaration
 #todo: remove -DWIIU and use the built-in macros instead (HW_WUP or __wiiu__).
 CFLAGS += -DWIIU -DMSB_FIRST
 CFLAGS += -DHAVE_MAIN
-CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE
-CFLAGS += -DHAVE_FILTERS_BUILTIN $(DEFINES)
+CFLAGS += -DRARCH_CONSOLE -DIS_SALAMANDER
 
 ifneq ($(PC_DEVELOPMENT_IP_ADDRESS),)
    CFLAGS += -DPC_DEVELOPMENT_IP_ADDRESS='"$(PC_DEVELOPMENT_IP_ADDRESS)"'
@@ -216,3 +173,4 @@ clean:
 .PRECIOUS: %.depend
 
 -include $(OBJ:.o=.depend) $(RPX_OBJ:.o=.depend) $(HBL_ELF_OBJ:.o=.depend)
+

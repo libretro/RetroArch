@@ -160,9 +160,6 @@ typedef struct FSMountSource
    uint32_t __unknown[0xC0];
 } FSMountSource;
 
-FSStatus fsDevInit();
-FSStatus fsDevExit();
-
 void FSInit();
 void FSShutdown();
 
