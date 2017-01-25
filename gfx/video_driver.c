@@ -2386,3 +2386,9 @@ void video_driver_get_window_title(char *buf, unsigned len)
       video_driver_window_title_update = false;
    }
 }
+
+void video_driver_get_status(uint64_t *frame_count, bool * is_alive)
+{
+   *frame_count = video_driver_get_frame_count();
+   *is_alive    = video_driver_is_alive();
+}

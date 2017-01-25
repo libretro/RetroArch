@@ -558,6 +558,8 @@ void video_driver_reinit(void);
 
 void video_driver_get_window_title(char *buf, unsigned len);
 
+void video_driver_get_status(uint64_t *frame_count, bool * is_alive);
+
 extern video_driver_t video_gl;
 extern video_driver_t video_vulkan;
 extern video_driver_t video_psp1;
