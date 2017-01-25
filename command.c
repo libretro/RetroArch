@@ -1455,7 +1455,7 @@ static void command_event_restore_default_shader_preset(void)
 static bool command_event_save_auto_state(void)
 {
    char savestate_name_auto[PATH_MAX_LENGTH] = {0};
-   bool ret             = false;;
+   bool ret             = false;
    bool contentless     = false;
    bool is_inited       = false;
    settings_t *settings = config_get_ptr();
