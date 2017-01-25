@@ -2391,7 +2391,7 @@ bool command_event(enum event_command cmd, void *data)
                runloop_msg_queue_push(msg_hash_to_str(MSG_PAUSED), 1, 
                      1, true);
 
-               if (is_paused && !is_idle)
+               if (!is_idle)
                   video_driver_cached_frame();
             }
             else
