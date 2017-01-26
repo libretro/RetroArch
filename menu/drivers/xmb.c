@@ -2121,8 +2121,6 @@ static void xmb_draw_items(
       char ticker_str[PATH_MAX_LENGTH];
       char name[255];
       char value[255];
-      char entry_value[255];
-      char entry_sublabel[255];
       menu_entry_t entry;
       const float half_size             = xmb->icon.size / 2.0f;
       uintptr_t texture_switch          = 0;
@@ -2145,7 +2143,7 @@ static void xmb_draw_items(
       entry.type          = 0;
       entry.spacing       = 0;
 
-      ticker_str[0] = name[0] = value[0] = entry_sublabel[0] = entry_value[0] = '\0';
+      ticker_str[0] = name[0] = value[0] = '\0';
 
       icon_y = xmb->margins.screen.top + node->y + half_size;
 
@@ -2163,23 +2161,20 @@ static void xmb_draw_items(
 
       menu_entry_get(&entry, 0, i, list, true);
 
-
       if (entry.type == FILE_TYPE_CONTENTLIST_ENTRY)
          fill_short_pathname_representation(entry.path, entry.path,
                sizeof(entry.path));
 
-      menu_entry_get_value(i, list, entry_value, sizeof(entry_value));
-
-      if (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
-         (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))))
+      if (string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
+         (string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))))
       {
          if (xmb->textures.list[XMB_TEXTURE_SWITCH_OFF])
             texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_OFF];
          else
             do_draw_text = true;
       }
-      else if (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) ||
-            (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))))
+      else if (string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) ||
+            (string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))))
       {
          if (xmb->textures.list[XMB_TEXTURE_SWITCH_ON])
             texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_ON];
@@ -2188,7 +2183,7 @@ static void xmb_draw_items(
       }
       else
       {
-         enum msg_file_type type = msg_hash_to_file_type(msg_hash_calculate(entry_value));
+         enum msg_file_type type = msg_hash_to_file_type(msg_hash_calculate(entry.value));
 
          switch (type)
          {
@@ -2223,7 +2218,7 @@ static void xmb_draw_items(
          }
       }
 
-      if (string_is_empty(entry_value))
+      if (string_is_empty(entry.value))
       {
          if (xmb->savestate_thumbnail ||
                (!string_is_equal
@@ -2249,11 +2244,15 @@ static void xmb_draw_items(
 
       label_offset = xmb->margins.label.top;
       if (i == current && width > 320 && height > 240
-         && menu_entry_get_sublabel(i, entry_sublabel, sizeof(entry_sublabel)))
+         && !string_is_empty(entry.sublabel))
       {
-         label_offset = - xmb->margins.label.top;
+         char entry_sublabel[255];
 
-         word_wrap(entry_sublabel, entry_sublabel, 50);
+         entry_sublabel[0] = '\0';
+
+         label_offset      = - xmb->margins.label.top;
+
+         word_wrap(entry_sublabel, entry.sublabel, 50);
 
          xmb_draw_text(menu_disp_info, xmb, entry_sublabel,
                node->x + xmb->margins.screen.left +
@@ -2273,7 +2272,7 @@ static void xmb_draw_items(
       ticker.s        = value;
       ticker.len      = 35;
       ticker.idx      = frame_count / 20;
-      ticker.str      = entry_value;
+      ticker.str      = entry.value;
       ticker.selected = (i == current);
 
       menu_animation_ticker(&ticker);
