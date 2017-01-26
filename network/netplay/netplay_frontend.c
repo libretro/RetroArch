@@ -885,6 +885,7 @@ void deinit_netplay(void)
    if (netplay_data)
       netplay_free(netplay_data);
    netplay_data = NULL;
+   netplay_enabled = false;
    core_unset_netplay_callbacks();
 }
 
