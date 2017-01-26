@@ -666,25 +666,25 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
    char label_str[255];
    char sublabel_str[255];
    char value_str[255];
-   uint32_t sublabel_color;
    bool switch_is_on               = true;
    int value_len                   = utf8len(value);
    int ticker_limit                = 0;
    uintptr_t texture_switch        = 0;
    bool do_draw_text               = false;
    size_t usable_width             = width - (mui->margin * 2);
-   label_str[0] = value_str[0] = sublabel_str[0] = '\0';
-
 #ifdef VITA
-   sublabel_color = 0xff888888;
+   uint32_t sublabel_color         = 0xff888888;
 #else
-   sublabel_color = 0x888888ff;
+   uint32_t sublabel_color         = 0x888888ff;
 #endif
 
-   if (value_len * mui->glyph_width > usable_width / 2)
-      value_len = (usable_width/2) / mui->glyph_width;
+   label_str[0] = value_str[0]     = 
+      sublabel_str[0]              = '\0';
 
-   ticker_limit = (usable_width / mui->glyph_width) - (value_len + 2);
+   if (value_len * mui->glyph_width > usable_width / 2)
+      value_len    = (usable_width/2) / mui->glyph_width;
+
+   ticker_limit    = (usable_width / mui->glyph_width) - (value_len + 2);
 
    ticker.s        = label_str;
    ticker.len      = ticker_limit;
@@ -807,18 +807,21 @@ static void mui_render_menu_list(
       uint32_t font_hover_color,
       float *menu_list_color)
 {
-   float sum               = 0;
-   size_t i                = 0;
-   file_list_t *list       = NULL;
-   uint64_t frame_count    = video_info->frame_count;
-   unsigned header_height  = menu_display_get_header_height();
+   float sum                               = 0;
+   size_t i                                = 0;
+   file_list_t *list                       = NULL;
+   uint64_t frame_count                    = 
+      video_info->frame_count;
+   unsigned header_height                  = 
+      menu_display_get_header_height();
 
-   mui->raster_block.carr.coords.vertices = 0;
+   mui->raster_block.carr.coords.vertices  = 0;
    mui->raster_block2.carr.coords.vertices = 0;
 
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
 
-   list = menu_entries_get_selection_buf_ptr(0);
+   list                                    = 
+      menu_entries_get_selection_buf_ptr(0);
 
    for (; i < menu_entries_get_end(); i++)
    {
@@ -830,7 +833,8 @@ static void mui_render_menu_list(
       mui_node_t *node    = (mui_node_t*)
             menu_entries_get_userdata_at_offset(list, i);
 
-      rich_label[0] = entry_value[0] = '\0';
+      rich_label[0]       = 
+         entry_value[0]   = '\0';
 
       if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
          continue;
@@ -892,8 +896,8 @@ static int mui_get_core_title(char *s, size_t len)
    menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
          &system);
 
-   core_name    = system->library_name;
-   core_version = system->library_version;
+   core_name                      = system->library_name;
+   core_version                   = system->library_version;
 
    if (!settings->menu.core_enable)
       return -1;
@@ -1229,7 +1233,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
 
       if (mui->textures.bg)
       {
-         background_rendered = true;
+         background_rendered     = true;
 
          menu_display_set_alpha(white_transp_bg, 0.30);
 
