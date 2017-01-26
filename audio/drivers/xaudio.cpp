@@ -274,7 +274,8 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency,
    return xa;
 }
 
-static ssize_t xa_write(void *data, const void *buf, size_t size)
+static ssize_t xa_write(void *data, const void *buf, size_t size,
+      bool is_perfcnt_enable)
 {
    size_t ret;
    xa_t *xa = (xa_t*)data;
@@ -289,7 +290,7 @@ static ssize_t xa_write(void *data, const void *buf, size_t size)
          size = avail;
    }
 
-   ret = xaudio2_write(xa->xa, buf, size);
+   ret = xaudio2_write(xa->xa, buf, size, is_perfcnt_enable);
    if (ret == 0 && size > 0)
       return -1;
    return ret;
