@@ -333,13 +333,8 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "运行列表目录. \n"
                " \n"
-<<<<<<< HEAD
-               "保存所有播放列表到此 \n"
-               "目录。");
-=======
                "保存所有播放列表到 \n"
                "此目录。");
->>>>>>> 01b01c5debd70b8b1cf6972ee399a5144c013325
          break;
       case MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN:
          snprintf(s, len,
