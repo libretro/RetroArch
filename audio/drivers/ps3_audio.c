@@ -210,7 +210,7 @@ static void ps3_audio_free(void *data)
    ps3_audio_t *aud = data;
 
    aud->quit_thread = true;
-   ps3_audio_start(aud);
+   ps3_audio_start(aud, false);
    sys_ppu_thread_join(aud->thread, &val);
 
    ps3_audio_stop(aud);
