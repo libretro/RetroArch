@@ -42,7 +42,16 @@ RETRO_BEGIN_DECLS
 
 typedef struct video_info
 {
+   /* Width of window. 
+    * If fullscreen mode is requested, 
+    * a width of 0 means the resolution of the 
+    * desktop should be used. */
    unsigned width;
+
+   /* Height of window. 
+    * If fullscreen mode is requested, 
+    * a height of 0 means the resolutiof the desktop should be used.
+    */
    unsigned height;
 
    /* Launch in fullscreen mode instead of windowed mode. */
@@ -51,6 +60,8 @@ typedef struct video_info
    /* Start with V-Sync enabled. */
    bool vsync;
 
+   /* If true, the output image should have the aspect ratio 
+    * as set in aspect_ratio. */
    bool force_aspect;
 
    unsigned swap_interval;
@@ -73,10 +84,25 @@ typedef struct video_info
     * otherwise nearest filtering. */
    bool smooth;
 
-   /* Maximum input size: RARCH_SCALE_BASE * input_scale */
+   /* 
+    * input_scale defines the maximum size of the picture that will
+    * ever be used with the frame callback.
+    *
+    * The maximum resolution is a multiple of 256x256 size (RARCH_SCALE_BASE),
+    * so an input scale of 2 means you should allocate a texture or of 512x512.
+    *
+    * Maximum input size: RARCH_SCALE_BASE * input_scale 
+    */
    unsigned input_scale;
 
-   /* Use 32bit RGBA rather than native RGB565/XBGR1555. */
+   /* Use 32bit RGBA rather than native RGB565/XBGR1555. 
+    *
+    * XRGB1555 format is 16-bit and has byte ordering: 0RRRRRGGGGGBBBBB,
+    * in native endian.
+    *
+    * ARGB8888 is AAAAAAAARRRRRRRRGGGGGGGGBBBBBBBB, native endian.
+    * Alpha channel should be disregarded.
+    * */
    bool rgb32;
    
 #ifndef RARCH_INTERNAL
@@ -208,9 +234,22 @@ typedef struct video_driver
          const input_driver_t **input,
          void **input_data);
 
+   /* Updates frame on the screen. 
+    * Frame can be either XRGB1555, RGB565 or ARGB32 format
+    * depending on rgb32 setting in video_info_t. 
+    * Pitch is the distance in bytes between two scanlines in memory. 
+    * 
+    * When msg is non-NULL, 
+    * it's a message that should be displayed to the user. */
    video_driver_frame_t frame;
 
-   /* Should we care about syncing to vblank? Fast forwarding. */
+   /* Should we care about syncing to vblank? Fast forwarding. 
+    *
+    * Requests nonblocking operation. 
+    *
+    * True = VSync is turned off. 
+    * False = VSync is turned on.
+    * */
    void (*set_nonblock_state)(void *data, bool toggle);
 
    /* Is the window still active? */
