@@ -192,6 +192,9 @@ bool frontend_driver_get_salamander_basename(char *s, size_t len)
 #elif defined(HW_RVL)
    strlcpy(s, "boot.dol", len);
    return true;
+#elif defined(HW_WUP)
+   strlcpy(s, "retroarch.rpx", len);
+   return true;
 #elif defined(_3DS)
    strlcpy(s, "retroarch.core", len);
    return true;
