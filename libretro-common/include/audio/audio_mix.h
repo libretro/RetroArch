@@ -80,6 +80,8 @@ size_t audio_mix_get_chunk_num_samples(audio_chunk_t *chunk);
  **/
 int16_t audio_mix_get_chunk_sample(audio_chunk_t *chunk, unsigned channel, size_t sample);
 
+int16_t* audio_mix_get_chunk_samples(audio_chunk_t *chunk);
+
 int audio_mix_get_chunk_num_channels(audio_chunk_t *chunk);
 
 RETRO_END_DECLS

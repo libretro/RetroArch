@@ -129,7 +129,7 @@ audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
       return NULL;
    }
 
-   chunk->upsample_buf = (int16_t*)memalign_alloc_aligned(chunk->rwav->numsamples * chunk->rwav->numchannels * sizeof(int16_t));
+   chunk->upsample_buf = (int16_t*)memalign_alloc_aligned(chunk->rwav->numsamples * 2 * sizeof(int16_t));
 
    sample_size = chunk->rwav->bitspersample / 8;
 
@@ -139,18 +139,34 @@ audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
 
      for (i = 0; i < chunk->rwav->numsamples; i++)
      {
-        unsigned channel;
         uint8_t *sample = ((uint8_t*)chunk->rwav->samples) +
-              (sample_size * i * chunk->rwav->numchannels);
+              (i * chunk->rwav->numchannels);
 
-        for (channel = 0; channel < chunk->rwav->numchannels; channel++)
-        {
-           chunk->upsample_buf[i] = (int16_t)((sample[channel] - 128) << 8);
-        }
+        chunk->upsample_buf[i * 2] = (int16_t)((sample[0] - 128) << 8);
+
+        if (chunk->rwav->numchannels == 1)
+           chunk->upsample_buf[(i * 2) + 1] = (int16_t)((sample[0] - 128) << 8);
+        else if (chunk->rwav->numchannels == 2)
+           chunk->upsample_buf[(i * 2) + 1] = (int16_t)((sample[1] - 128) << 8);
      }
    }
    else if (sample_size == 2)
-      memcpy(chunk->upsample_buf, chunk->rwav->samples, chunk->rwav->subchunk2size);
+   {
+      if (chunk->rwav->numchannels == 1)
+      {
+         unsigned i;
+
+         for (i = 0; i < chunk->rwav->numsamples; i++)
+         {
+            uint16_t *sample = ((uint16_t*)chunk->rwav->samples) + i;
+
+            chunk->upsample_buf[i * 2] = (int16_t)((sample[0] - 128) << 8);
+            chunk->upsample_buf[(i * 2) + 1] = (int16_t)((sample[0] - 128) << 8);
+         }
+      }
+      else if (chunk->rwav->numchannels == 2)
+         memcpy(chunk->upsample_buf, chunk->rwav->samples, chunk->rwav->subchunk2size);
+   }
    else if (sample_size != 2)
    {
       /* we don't support any other sample size besides 8 and 16-bit yet */
@@ -173,8 +189,8 @@ audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
       {
          struct resampler_data info = {0};
 
-         chunk->float_buf = (float*)memalign_alloc_aligned(chunk->rwav->numsamples * chunk->rwav->numchannels * sizeof(float));
-         chunk->float_resample_buf = (float*)memalign_alloc_aligned(chunk->rwav->numsamples * 2 * chunk->ratio * chunk->rwav->numchannels * sizeof(float));
+         chunk->float_buf = (float*)memalign_alloc_aligned(chunk->rwav->numsamples * 2 * chunk->ratio * chunk->rwav->numchannels * sizeof(float));
+         chunk->float_resample_buf = (float*)memalign_alloc_aligned(chunk->rwav->numsamples * 3 * chunk->ratio * chunk->rwav->numchannels * sizeof(float));
 
          convert_s16_to_float(chunk->float_buf, chunk->upsample_buf, chunk->rwav->numsamples * chunk->rwav->numchannels, 1.0);
 
@@ -253,6 +269,26 @@ int16_t audio_mix_get_chunk_sample(audio_chunk_t *chunk, unsigned channel, size_
       /* no other filetypes supported yet */
       return 0;
    }
+}
+
+int16_t* audio_mix_get_chunk_samples(audio_chunk_t *chunk)
+{
+   if (!chunk)
+      return 0;
+
+   if (chunk->rwav)
+   {
+      int16_t *sample;
+
+      if (chunk->resample)
+         sample = chunk->resample_buf;
+      else
+         sample = chunk->upsample_buf;
+
+      return sample;
+   }
+
+   return NULL;
 }
 
 int audio_mix_get_chunk_num_channels(audio_chunk_t *chunk)
