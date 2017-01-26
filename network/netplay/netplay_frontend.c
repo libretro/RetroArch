@@ -883,9 +883,11 @@ bool netplay_disconnect(netplay_t *netplay)
 void deinit_netplay(void)
 {
    if (netplay_data)
+   {
       netplay_free(netplay_data);
+      netplay_enabled = false;
+   }
    netplay_data = NULL;
-   netplay_enabled = false;
    core_unset_netplay_callbacks();
 }
 
