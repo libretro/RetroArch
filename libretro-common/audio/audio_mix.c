@@ -129,7 +129,7 @@ audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
       return NULL;
    }
 
-   chunk->upsample_buf = (int16_t*)memalign_alloc_aligned(chunk->rwav->numsamples * 2 * sizeof(int16_t));
+   chunk->upsample_buf = (int16_t*)memalign_alloc(128, chunk->rwav->numsamples * 2 * sizeof(int16_t));
 
    sample_size = chunk->rwav->bitspersample / 8;
 
@@ -189,10 +189,10 @@ audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
       {
          struct resampler_data info = {0};
 
-         chunk->float_buf = (float*)memalign_alloc_aligned(chunk->rwav->numsamples * 2 * chunk->ratio * chunk->rwav->numchannels * sizeof(float));
-         chunk->float_resample_buf = (float*)memalign_alloc_aligned(chunk->rwav->numsamples * 3 * chunk->ratio * chunk->rwav->numchannels * sizeof(float));
+         chunk->float_buf = (float*)memalign_alloc(128, chunk->rwav->numsamples * 2 * chunk->ratio * sizeof(float));
+         chunk->float_resample_buf = (float*)memalign_alloc(128, chunk->rwav->numsamples * 3 * chunk->ratio * sizeof(float));
 
-         convert_s16_to_float(chunk->float_buf, chunk->upsample_buf, chunk->rwav->numsamples * chunk->rwav->numchannels, 1.0);
+         convert_s16_to_float(chunk->float_buf, chunk->upsample_buf, chunk->rwav->numsamples * 2, 1.0);
 
          info.data_in = (const float*)chunk->float_buf;
          info.data_out = chunk->float_resample_buf;
@@ -201,10 +201,10 @@ audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
 
          chunk->resampler->process(chunk->resampler_data, &info);
 
-         chunk->resample_buf = (int16_t*)memalign_alloc_aligned(info.output_frames * chunk->rwav->numchannels * sizeof(int16_t));
+         chunk->resample_buf = (int16_t*)memalign_alloc(128, info.output_frames * sizeof(int16_t));
          chunk->resample_len = info.output_frames;
 
-         convert_float_to_s16(chunk->resample_buf, chunk->float_resample_buf, info.output_frames * chunk->rwav->numchannels);
+         convert_float_to_s16(chunk->resample_buf, chunk->float_resample_buf, info.output_frames);
       }
    }
 
