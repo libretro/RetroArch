@@ -129,6 +129,7 @@ audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
       return NULL;
    }
 
+   /* numsamples does not know or care about multiple channels, but we need space for 2 */
    chunk->upsample_buf = (int16_t*)memalign_alloc(128, chunk->rwav->numsamples * 2 * sizeof(int16_t));
 
    sample_size = chunk->rwav->bitspersample / 8;
@@ -190,21 +191,24 @@ audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
          struct resampler_data info = {0};
 
          chunk->float_buf = (float*)memalign_alloc(128, chunk->rwav->numsamples * 2 * chunk->ratio * sizeof(float));
+
+         /* why is *3 needed instead of just *2? does the sinc driver require more space than we know about? */
          chunk->float_resample_buf = (float*)memalign_alloc(128, chunk->rwav->numsamples * 3 * chunk->ratio * sizeof(float));
 
          convert_s16_to_float(chunk->float_buf, chunk->upsample_buf, chunk->rwav->numsamples * 2, 1.0);
 
          info.data_in = (const float*)chunk->float_buf;
          info.data_out = chunk->float_resample_buf;
+         /* a 'frame' consists of two channels, so we set this to the number of samples irrespective of channel count */
          info.input_frames = chunk->rwav->numsamples;
          info.ratio = chunk->ratio;
 
          chunk->resampler->process(chunk->resampler_data, &info);
 
-         chunk->resample_buf = (int16_t*)memalign_alloc(128, info.output_frames * sizeof(int16_t));
+         /* number of output_frames does not increase with multiple channels, but assume we need space for 2 */
+         chunk->resample_buf = (int16_t*)memalign_alloc(128, info.output_frames * 2 * sizeof(int16_t));
          chunk->resample_len = info.output_frames;
-
-         convert_float_to_s16(chunk->resample_buf, chunk->float_resample_buf, info.output_frames);
+         convert_float_to_s16(chunk->resample_buf, chunk->float_resample_buf, info.output_frames * 2);
       }
    }
 
@@ -238,7 +242,7 @@ size_t audio_mix_get_chunk_num_samples(audio_chunk_t *chunk)
  *
  * Get a sample from an audio chunk.
  *
- * Returns: A signed 16-bit audio sample, (if necessary) resampled into the desired output rate.
+ * Returns: A signed 16-bit audio sample.
  **/
 int16_t audio_mix_get_chunk_sample(audio_chunk_t *chunk, unsigned channel, size_t index)
 {
@@ -260,7 +264,7 @@ int16_t audio_mix_get_chunk_sample(audio_chunk_t *chunk, unsigned channel, size_
          sample = (uint8_t*)chunk->upsample_buf +
             (sample_size * index * chunk->rwav->numchannels) + (channel * sample_size);
 
-      sample_out = *sample;
+      sample_out = (int16_t)*sample;
 
       return sample_out;
    }
