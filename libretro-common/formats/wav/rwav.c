@@ -115,7 +115,7 @@ int rwav_iterate(rwav_iterator_t *iter)
          if (s > RWAV_ITERATE_BUF_SIZE)
             s = RWAV_ITERATE_BUF_SIZE;
          
-         memcpy((void*)rwav->samples, (void *)(iter->data + 44 + iter->i), s);
+         memcpy((void*)((uint8_t*)rwav->samples + iter->i), (void *)(iter->data + 44 + iter->i), s);
          printf("copied %lu\n", s);
          iter->i += s;
          
