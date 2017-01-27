@@ -159,10 +159,10 @@ audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
 
          for (i = 0; i < chunk->rwav->numsamples; i++)
          {
-            uint16_t *sample = ((uint16_t*)chunk->rwav->samples) + i;
+            int16_t sample = ((int16_t*)chunk->rwav->samples)[i];
 
-            chunk->upsample_buf[i * 2] = (int16_t)((sample[0] - 128) << 8);
-            chunk->upsample_buf[(i * 2) + 1] = (int16_t)((sample[0] - 128) << 8);
+            chunk->upsample_buf[i * 2] = sample;
+            chunk->upsample_buf[(i * 2) + 1] = sample;
          }
       }
       else if (chunk->rwav->numchannels == 2)
