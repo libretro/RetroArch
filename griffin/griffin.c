@@ -272,6 +272,8 @@ VIDEO IMAGE
 #include "../libretro-common/formats/bmp/rbmp_encode.c"
 #endif
 
+#include "../libretro-common/formats/wav/rwav.c"
+
 /*============================================================
 VIDEO DRIVER
 ============================================================ */
