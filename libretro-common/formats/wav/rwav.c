@@ -152,7 +152,7 @@ int rwav_iterate(rwav_iterator_t *iter)
 int rwav_load(rwav_t* out, const void* buf, size_t size)
 {
    int res;
-   rwav_iterator_t iter;
+   rwav_iterator_t iter = {};
    
    rwav_init(&iter, out, buf, size);
 
