@@ -3138,16 +3138,16 @@ static int action_ok_netplay_connect_room(const char *path,
    snprintf(tmp_hostname,
          sizeof(tmp_hostname),
          "%s:%d", 
-      netplay_room_list[idx - 1].address,
-      netplay_room_list[idx - 1].port);
+      netplay_room_list[idx - 2].address,
+      netplay_room_list[idx - 2].port);
 
    RARCH_LOG("Connecting to: %s with game: %s/%08x\n", 
          tmp_hostname,
-         netplay_room_list[idx - 1].gamename,
-         netplay_room_list[idx - 1].gamecrc);
+         netplay_room_list[idx - 2].gamename,
+         netplay_room_list[idx - 2].gamecrc);
 
-   task_push_netplay_crc_scan(netplay_room_list[idx - 1].gamecrc,
-      netplay_room_list[idx - 1].gamename,
+   task_push_netplay_crc_scan(netplay_room_list[idx - 2].gamecrc,
+      netplay_room_list[idx - 2].gamename,
       tmp_hostname, netplay_room_list[idx - 1].corename);
 
 #else
@@ -3368,6 +3368,11 @@ finish:
          }
 #endif
          menu_entries_append_enum(file_list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST),
+               msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST),
+               MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST,
+               MENU_SETTING_ACTION, 0, 0);
+         menu_entries_append_enum(file_list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS),
                msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS),
                MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS,
@@ -3426,7 +3431,6 @@ finish:
                   msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM),
                   MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,
                   MENU_WIFI, 0, 0);
-
          }
       }
    }

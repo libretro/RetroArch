@@ -226,6 +226,7 @@ static void print_buf_lines(file_list_t *list, char *buf,
 static int menu_displaylist_parse_netplay(
       menu_displaylist_info_t *info)
 {
+   settings_t *settings = config_get_ptr();
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST),
          msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST),
@@ -249,10 +250,11 @@ static int menu_displaylist_parse_netplay(
          msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS),
          MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS, MENU_SETTING_GROUP, 0, 0);
 
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_TAB),
-         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB),
-         MENU_ENUM_LABEL_NETPLAY_TAB, MENU_SETTING_GROUP, 0, 0);
+   if (!string_is_equal(settings->menu.driver, "xmb"))
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_TAB),
+            msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB),
+            MENU_ENUM_LABEL_NETPLAY_TAB, MENU_SETTING_GROUP, 0, 0);
 
    return 0;
 }
@@ -2955,6 +2957,11 @@ static int menu_displaylist_parse_netplay_room_list(
 
 #ifdef HAVE_NETWORKING
    menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST),
+         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST),
+         MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST,
+         MENU_SETTING_ACTION, 0, 0);
+   menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS),
          msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS),
          MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS,
@@ -2976,6 +2983,7 @@ static int menu_displaylist_parse_netplay_room_list(
                msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM),
                MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,
                MENU_WIFI, 0, 0);
+
       }
    }
 #endif

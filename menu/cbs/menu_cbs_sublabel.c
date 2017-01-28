@@ -155,8 +155,8 @@ static int action_bind_sublabel_netplay_room(
       return 0;
 
    snprintf(s,len, "%s (%s)\n%s (%08x)", 
-      netplay_room_list[i - 1].corename, netplay_room_list[i - 1].coreversion, 
-      netplay_room_list[i - 1].gamename, netplay_room_list[i - 1].gamecrc);
+      netplay_room_list[i - 2].corename, netplay_room_list[i - 2].coreversion, 
+      netplay_room_list[i - 2].gamename, netplay_room_list[i - 2].gamecrc);
 #if 0
    strlcpy(s, netplay_room_list[i - 1].corename, len);
 #endif
