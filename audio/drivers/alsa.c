@@ -65,6 +65,7 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency,
    unsigned latency_usec          = latency * 1000;
    unsigned channels              = 2;
    unsigned periods               = 4;
+   unsigned orig_rate             = rate;
    const char *alsa_dev           = "default";
    alsa_t *alsa                   = (alsa_t*)calloc(1, sizeof(alsa_t));
 
@@ -94,13 +95,16 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency,
    if (snd_pcm_hw_params_set_format(alsa->pcm, params, format) < 0)
       goto error;
 
-   if (snd_pcm_hw_params_set_channels(alsa->pcm, params, channels) < 0)
+   if (snd_pcm_hw_params_set_channels_near(alsa->pcm, params, &channels) < 0)
       goto error;
 
    /* Don't allow rate resampling when probing for the default rate (but ignore if this call fails) */
    snd_pcm_hw_params_set_rate_resample(alsa->pcm, params, 0 );
-   if (snd_pcm_hw_params_set_rate(alsa->pcm, params, rate, 0) < 0)
+   if (snd_pcm_hw_params_set_rate_near(alsa->pcm, params, &rate, 0) < 0)
       goto error;
+
+   if (rate != orig_rate)
+      *new_rate = rate;
 
    if (snd_pcm_hw_params_set_buffer_time_near(
             alsa->pcm, params, &latency_usec, NULL) < 0)
