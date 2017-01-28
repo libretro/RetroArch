@@ -95,7 +95,7 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency,
    if (snd_pcm_hw_params_set_format(alsa->pcm, params, format) < 0)
       goto error;
 
-   if (snd_pcm_hw_params_set_channels_near(alsa->pcm, params, &channels) < 0)
+   if (snd_pcm_hw_params_set_channels(alsa->pcm, params, channels) < 0)
       goto error;
 
    /* Don't allow rate resampling when probing for the default rate (but ignore if this call fails) */
