@@ -853,6 +853,8 @@ static void retroarch_parse_input(int argc, char *argv[])
             retroarch_fail(1, "retroarch_parse_input()");
       }
    }
+   
+   RARCH_LOG("This is RetroArch version %s (Git %s)\n", PACKAGE_VERSION, retroarch_git_version);
 
    if (explicit_menu)
    {
