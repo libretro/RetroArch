@@ -31,6 +31,7 @@
 #include "../../verbosity.h"
 
 static unsigned char *vga_menu_frame = NULL;
+static unsigned char *vga_frame      = NULL;
 static unsigned vga_menu_width       = 0;
 static unsigned vga_menu_height      = 0;
 static unsigned vga_menu_pitch       = 0;
@@ -123,9 +124,17 @@ static void *vga_gfx_init(const video_info_t *video,
    vga_rgb32          = video->rgb32;
 
    if (video->rgb32)
+   {
       vga_video_pitch = video->width * 4;
+      vga_video_bits = 32;
+   }
    else
+   {
       vga_video_pitch = video->width * 2;
+      vga_video_bits = 16;
+   }
+
+   vga_frame = (unsigned char*)malloc(VGA_WIDTH * VGA_HEIGHT);
 
    vga_gfx_create();
 
@@ -185,6 +194,7 @@ static bool vga_gfx_frame(void *data, const void *frame,
       width         = vga_video_width;
       height        = vga_video_height;
       pitch         = vga_video_pitch;
+      bits          = vga_video_bits;
 
       if (frame_width == 4 && frame_height == 4 && (frame_width < width && frame_height < height))
          draw = false;
@@ -196,7 +206,38 @@ static bool vga_gfx_frame(void *data, const void *frame,
    if (draw)
    {
       vga_vsync();
-      dosmemput(frame_to_copy, MIN(320,width)*MIN(200,height), 0xA0000);
+
+      if (frame_to_copy == vga_menu_frame)
+         dosmemput(frame_to_copy, MIN(VGA_WIDTH,width)*MIN(VGA_HEIGHT,height), 0xA0000);
+      else
+      {
+         if (bits == 32)
+            (void)bits;
+         else if (bits == 16)
+         {
+            unsigned x, y;
+
+            for (y = 0; y < VGA_HEIGHT; y++)
+            {
+               for (x = 0; x < VGA_WIDTH; x++)
+               {
+                  /* scale incoming frame to fit the screen */
+                  unsigned scaled_x = (width / VGA_WIDTH) * x;
+                  unsigned scaled_y = (height / VGA_HEIGHT) * y;
+                  unsigned short pixel = ((unsigned short*)frame_to_copy)[width * scaled_y + scaled_x];
+
+                  /* convert RGB565 to RGB332 */
+                  unsigned r = (7.0f / 31.0f) * ((pixel & 0xF800) >> 11);
+                  unsigned g = (7.0f / 63.0f) * ((pixel & 0x07E0) >> 5);
+                  unsigned b = (3.0f / 31.0f) * ((pixel & 0x001F) >> 0);
+
+                  vga_frame[VGA_WIDTH * y + x] = (b << 6) | (g << 3) | r;
+               }
+            }
+
+            dosmemput(vga_frame, VGA_WIDTH*VGA_HEIGHT, 0xA0000);
+         }
+      }
    }
 
    if (msg)
@@ -242,6 +283,12 @@ static bool vga_gfx_has_windowed(void *data)
 static void vga_gfx_free(void *data)
 {
    (void)data;
+
+   if (vga_frame)
+   {
+      free(vga_frame);
+      vga_frame = NULL;
+   }
 
    if (vga_menu_frame)
    {
