@@ -236,10 +236,10 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
    struct iohidmanager_hid_adapter *adapter = 
       (struct iohidmanager_hid_adapter*)data;
    IOHIDElementRef element                  = IOHIDValueGetElement(value);
-   uint32_t type                            = IOHIDElementGetType(element);
-   uint32_t page                            = IOHIDElementGetUsagePage(element);
-   uint32_t use                             = IOHIDElementGetUsage(element);
-   uint32_t cookie                          = IOHIDElementGetCookie(element);
+   uint32_t type                            = (uint32_t)IOHIDElementGetType(element);
+   uint32_t page                            = (uint32_t)IOHIDElementGetUsagePage(element);
+   uint32_t use                             = (uint32_t)IOHIDElementGetUsage(element);
+   uint32_t cookie                          = (uint32_t)IOHIDElementGetCookie(element);
    apple_input_rec_t *tmp                   = NULL;
 
    if (type != kIOHIDElementTypeInput_Misc)
