@@ -854,7 +854,9 @@ static void retroarch_parse_input(int argc, char *argv[])
       }
    }
    
+#ifdef HAVE_GIT_VERSION
    RARCH_LOG("This is RetroArch version %s (Git %s)\n", PACKAGE_VERSION, retroarch_git_version);
+#endif
 
    if (explicit_menu)
    {
