@@ -1266,8 +1266,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             bool is_inited   = false;
             content_get_status(&contentless, &is_inited);
 
-            if (contentless)
-               return false;
             path_set_redirect();
          }
          break;
