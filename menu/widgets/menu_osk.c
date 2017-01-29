@@ -53,6 +53,7 @@ static const char *lowercase_grid[] = {
                           "a","s","d","f","g","h","j","k","l",";","⇧",
                           "z","x","c","v","b","n","m"," ",",",".","⊕"};
 
+#ifdef HAVE_LANGEXTRA
 static const char *hiragana_page1_grid[] = {
                           "あ","い","う","え","お","ら","り","る","れ","ろ","⇦",
                           "か","き","く","け","こ","が","ぎ","ぐ","げ","ご","⏎",
@@ -76,6 +77,7 @@ static const char *katakana_page2_grid[] = {
                           "ハ","ヒ","フ","ヘ","ホ","パ","ピ","プ","ペ","ポ","⏎",
                           "マ","ミ","ム","メ","モ","ン","ッ","ャ","ュ","ョ","⇧",
                           "ヤ","ユ","ヨ","ワ","ヲ","ァ","ィ","ゥ","ェ","ォ","⊕"};
+#endif
 
 void menu_event_set_osk_idx(enum osk_type idx)
 {
@@ -102,11 +104,14 @@ void menu_event_osk_append(int ptr)
    if (ptr < 0)
       return;
 
+#ifdef HAVE_LANGEXTRA
    if (string_is_equal(osk_grid[ptr],"⇦"))
       input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
    else if (string_is_equal(osk_grid[ptr],"⏎"))
       input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
-   else if (string_is_equal(osk_grid[ptr],"⇧"))
+   else
+#endif
+   if (string_is_equal(osk_grid[ptr],"⇧"))
       menu_event_set_osk_idx(OSK_UPPERCASE_LATIN);
    else if (string_is_equal(osk_grid[ptr],"⇩"))
       menu_event_set_osk_idx(OSK_LOWERCASE_LATIN);
@@ -123,6 +128,7 @@ void menu_event_osk_iterate(void)
 {
    switch (menu_event_get_osk_idx())
    {
+#ifdef HAVE_LANGEXTRA
       case OSK_HIRAGANA_PAGE1:
          memcpy(osk_grid, hiragana_page1_grid, sizeof(hiragana_page1_grid));
          break;
@@ -135,6 +141,7 @@ void menu_event_osk_iterate(void)
       case OSK_KATAKANA_PAGE2:
          memcpy(osk_grid, katakana_page2_grid, sizeof(katakana_page2_grid));
          break;
+#endif
       case OSK_UPPERCASE_LATIN:
          memcpy(osk_grid, uppercase_grid, sizeof(uppercase_grid));
          break;

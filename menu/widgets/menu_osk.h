@@ -24,6 +24,10 @@
 
 #include <retro_common_api.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #define OSK_CHARS_PER_LINE 11
 
 RETRO_BEGIN_DECLS
@@ -33,10 +37,12 @@ enum osk_type
    OSK_TYPE_UNKNOWN    = 0U,
    OSK_LOWERCASE_LATIN,
    OSK_UPPERCASE_LATIN,
+#ifdef HAVE_LANGEXTRA
    OSK_HIRAGANA_PAGE1,
    OSK_HIRAGANA_PAGE2,
    OSK_KATAKANA_PAGE1,
    OSK_KATAKANA_PAGE2,
+#endif
    OSK_TYPE_LAST
 };
 
