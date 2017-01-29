@@ -56,6 +56,7 @@ static void netplay_crc_scan_callback(void *task_data,
    if (!state)
       return;
 
+   fflush(stdout);
    if (!string_is_empty(state->core_path) && !string_is_empty(state->content_path))
    {
       command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
@@ -64,6 +65,16 @@ static void netplay_crc_scan_callback(void *task_data,
             &content_info,
             CORE_TYPE_PLAIN,
             CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU,
+            NULL, NULL);
+   }
+   else if(string_is_equal(state->content_path, "N/A"))
+   {
+      printf("Content: %s Core: %s\n", state->content_path, state->core_path);
+      task_push_content_load_default(
+            state->core_path, NULL,
+            NULL,
+            CORE_TYPE_PLAIN,
+            CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU,
             NULL, NULL);
    }
    else
@@ -100,7 +111,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
 
    if (state->lpl_list->size == 0)
       goto no_playlists;
-   
+
    /* content with no CRC uses 00000000*/
    if (!string_is_equal(state->content_crc, "00000000|crc"))
    {
@@ -138,6 +149,15 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
 
          free(playlist);
       }
+   }
+   else if(string_is_equal(state->content_path, "N/A"))
+   {
+      state->found = true;
+      task_set_data(task, state);
+      task_set_progress(task, 100);
+      task_set_title(task, strdup("Compatible content found"));
+      task_set_finished(task, true);
+      return;
    }
    else
    {
@@ -231,6 +251,9 @@ bool task_push_netplay_crc_scan(uint32_t crc, char* name,
       /* check if the core name matches.
          TO-DO :we could try to load the core too to check 
          if the version string matches too */
+#if 0
+      printf("Info: %s State: %s", info->list[i].core_name, state->core_name);
+#endif
       if(string_is_equal(info->list[i].core_name, state->core_name))
       {
          strlcpy(state->core_path, info->list[i].path, sizeof(state->core_path));

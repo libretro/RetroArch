@@ -441,7 +441,7 @@ static void netplay_announce()
    "gamename=%s&gamecrc=%d&port=%d", 
       url, settings->username, system->info.library_name, 
       system->info.library_version, 
-      path_basename(path_get(RARCH_PATH_BASENAME)),*content_crc_ptr,
+      !string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))) ? path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A",*content_crc_ptr,
       settings->netplay.port);
 
    task_push_http_transfer(buf, true, NULL, netplay_announce_cb, NULL);
