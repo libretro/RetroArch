@@ -238,10 +238,12 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
             menu_event_osk_append(menu_event_get_osk_ptr());
       }
 
+#ifdef HAVE_LANGEXTRA
       if (trigger_input & (UINT64_C(1) << menu_cancel_btn))
       {
          input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
       }
+#endif
 
       /* send return key to close keyboard input window */
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_START))
