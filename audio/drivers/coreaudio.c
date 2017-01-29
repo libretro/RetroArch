@@ -135,14 +135,17 @@ static void choose_output_device(coreaudio_t *dev, const char* device)
 {
    unsigned i;
    UInt32 deviceCount;
-   AudioDeviceID *devices = NULL;
-   AudioObjectPropertyAddress propaddr =
-   { 
-      kAudioHardwarePropertyDevices, 
-      kAudioObjectPropertyScopeOutput,
-      kAudioObjectPropertyElementMaster 
-   };
-   UInt32 size = 0;
+   AudioObjectPropertyAddress propaddr;
+   AudioDeviceID *devices              = NULL;
+   UInt32 size                         = 0;
+
+   propaddr.mSelector = kAudioHardwarePropertyDevices;
+#if MAC_OS_X_VERSION_10_12
+   propaddr.mScope    = kAudioObjectPropertyScopeOutput;
+#else
+   propaddr.mScope    = kAudioObjectPropertyScopeGlobal;
+#endif
+   propaddr.mElement  = kAudioObjectPropertyElementMaster;
 
    if (AudioObjectGetPropertyDataSize(kAudioObjectSystemObject,
             &propaddr, 0, 0, &size) != noErr)
@@ -155,6 +158,10 @@ static void choose_output_device(coreaudio_t *dev, const char* device)
             &propaddr, 0, 0, &size, devices) != noErr)
       goto done;
 
+#if MAC_OS_X_VERSION_10_12
+#else
+   propaddr.mScope    = kAudioDevicePropertyScopeOutput;
+#endif
    propaddr.mSelector = kAudioDevicePropertyDeviceName;
 
    for (i = 0; i < deviceCount; i ++)
