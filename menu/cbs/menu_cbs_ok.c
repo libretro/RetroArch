@@ -3148,7 +3148,7 @@ static int action_ok_netplay_connect_room(const char *path,
 
    task_push_netplay_crc_scan(netplay_room_list[idx - 2].gamecrc,
       netplay_room_list[idx - 2].gamename,
-      tmp_hostname, netplay_room_list[idx - 1].corename);
+      tmp_hostname, netplay_room_list[idx - 2].corename);
 
 #else
    return -1;
