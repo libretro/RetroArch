@@ -748,23 +748,24 @@ static void xmb_render_keyboard(xmb_handle_t *xmb,
 
    for (i = 0; i < 44; i++)
    {
-      int line_y        = (i / 11) * height / 10.0;
-      uintptr_t texture = xmb->textures.list[XMB_TEXTURE_KEY];
+      int line_y = (i / 11) * height / 10.0;
 
       if (i == id)
-         texture = xmb->textures.list[XMB_TEXTURE_KEY_HOVER];
+      {
+         uintptr_t texture = xmb->textures.list[XMB_TEXTURE_KEY_HOVER];
 
-      menu_display_blend_begin();
+         menu_display_blend_begin();
 
-      menu_display_draw_texture(
-            width/2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width,
-            height/2.0 + ptr_height*1.5 + line_y,
-            ptr_width, ptr_height,
-            width, height,
-            &white[0],
-            texture);
+         menu_display_draw_texture(
+               width/2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width,
+               height/2.0 + ptr_height*1.5 + line_y,
+               ptr_width, ptr_height,
+               width, height,
+               &white[0],
+               texture);
 
-      menu_display_blend_end();
+         menu_display_blend_end();
+      }
 
       menu_display_draw_text(xmb->font, grid[i],
             width/2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width + ptr_width/2.0,
