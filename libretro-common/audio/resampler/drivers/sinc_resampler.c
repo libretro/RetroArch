@@ -270,7 +270,7 @@ static void resampler_sinc_process(void *re_, struct resampler_data *data)
 
          /* movehl { X, R, X, L } == { X, R, X, R } */
          _mm_store_ss(output + 1, _mm_movehl_ps(sum, sum));
-#elif defined(__ARM_NEON__)
+#elif defined(__ARM_NEON__) && !defined(SINC_COEFF_LERP)
          if (resamp->neon_enabled)
          {
             process_sinc_neon_asm(output, buffer_l, buffer_r, phase_table, taps);
