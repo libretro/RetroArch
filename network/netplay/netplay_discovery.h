@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2016-2017 - Gregor Richards
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -58,6 +58,8 @@ struct netplay_room
    char coreversion [PATH_MAX_LENGTH];
    char gamename    [PATH_MAX_LENGTH];
    int  gamecrc;
+   int  haspassword;
+   int  connectable;
    int  timestamp;
 };
 

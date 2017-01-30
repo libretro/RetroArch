@@ -1359,11 +1359,11 @@ static int action_ok_playlist_entry_collection(const char *path,
 
    menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET, &info);
 
-   /* If the currently loaded core's name is equal 
+   /* If the currently loaded core's name is equal
     * to the core name from the playlist entry,
     * then we directly load this game with the current core.
     */
-   if (info && 
+   if (info &&
          string_is_equal(info->info.library_name, core_name))
    {
       if (playlist_initialized)
@@ -1571,7 +1571,7 @@ static int action_ok_playlist_entry_start_content(const char *path,
 
       new_core_path[0] = new_display_name[0] = '\0';
 
-      found_associated_core                  = 
+      found_associated_core                  =
          menu_content_playlist_find_associated_core(
             path_base, new_core_path, sizeof(new_core_path));
 
@@ -2329,7 +2329,7 @@ static int generic_action_ok_network(const char *path,
       default:
          break;
    }
-   
+
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 
    command_event(CMD_EVENT_NETWORK_INIT, NULL);
@@ -3137,11 +3137,11 @@ static int action_ok_netplay_connect_room(const char *path,
 
    snprintf(tmp_hostname,
          sizeof(tmp_hostname),
-         "%s:%d", 
+         "%s:%d",
       netplay_room_list[idx - 2].address,
       netplay_room_list[idx - 2].port);
 
-   RARCH_LOG("Connecting to: %s with game: %s/%08x\n", 
+   RARCH_LOG("Connecting to: %s with game: %s/%08x\n",
          tmp_hostname,
          netplay_room_list[idx - 2].gamename,
          netplay_room_list[idx - 2].gamecrc);
@@ -3397,9 +3397,11 @@ finish:
                   room_data->elems[j + 5].data,
                   sizeof(netplay_room_list[i].coreversion));
 
-            netplay_room_list[i].port      = atoi(room_data->elems[j + 2].data);
-            netplay_room_list[i].gamecrc   = atoi(room_data->elems[j + 6].data);
-            netplay_room_list[i].timestamp = atoi(room_data->elems[j + 7].data);
+            netplay_room_list[i].port        = atoi(room_data->elems[j + 2].data);
+            netplay_room_list[i].gamecrc     = atoi(room_data->elems[j + 6].data);
+            netplay_room_list[i].haspassword = atoi(room_data->elems[j + 7].data);
+            netplay_room_list[i].connectable = atoi(room_data->elems[j + 8].data);
+            netplay_room_list[i].timestamp   = atoi(room_data->elems[j + 9].data);
 
 /* Uncomment this to debug mismatched room parameters*/
 #if 0
@@ -3411,6 +3413,8 @@ finish:
                "Core Version:     %s\n"
                "Game:             %s\n"
                "Game CRC:         %08x\n"
+               "Has Password:     %d\n"
+               "Connectable:      %d\n"
                "Timestamp:        %d\n", room_data->elems[j + 6].data,
                netplay_room_list[i].nickname,
                netplay_room_list[i].address,
@@ -3419,6 +3423,8 @@ finish:
                netplay_room_list[i].coreversion,
                netplay_room_list[i].gamename,
                netplay_room_list[i].gamecrc,
+               netplay_room_list[i].haspassword,
+               netplay_room_list[i].connectable,
                netplay_room_list[i].timestamp);
 #endif
             j+=8;
@@ -3453,7 +3459,8 @@ finish:
 static int action_ok_push_netplay_refresh_rooms(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char url [2048] = "http://lobby.libretro.com/raw/";
+   //char url [2048] = "http://lobby.libretro.com/raw/";
+   char url [2048] = "http://localhost:9999/raw/";
    task_push_http_transfer(url, true, NULL, netplay_refresh_rooms_cb, NULL);
    return 0;
 }
