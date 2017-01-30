@@ -22,6 +22,8 @@
 
 #include <sys/utsname.h>
 
+#include <mach/mach_host.h>
+
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreFoundation/CFArray.h>
 
