@@ -116,7 +116,6 @@ int rwav_iterate(rwav_iterator_t *iter)
             s = RWAV_ITERATE_BUF_SIZE;
          
          memcpy((void*)((uint8_t*)rwav->samples + iter->i), (void *)(iter->data + 44 + iter->i), s);
-         printf("copied %lu\n", s);
          iter->i += s;
          
          return iter->i < rwav->subchunk2size ? RWAV_ITERATE_MORE : RWAV_ITERATE_DONE;
@@ -132,7 +131,6 @@ int rwav_iterate(rwav_iterator_t *iter)
          if (s > RWAV_ITERATE_BUF_SIZE)
             s = RWAV_ITERATE_BUF_SIZE;
          
-         printf("copied %lu\n", s);
          u16 = (uint16_t *)rwav->samples;
          
          while (s != 0)
