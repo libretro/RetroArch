@@ -573,6 +573,7 @@ AUDIO RESAMPLER
 ============================================================ */
 #include "../libretro-common/audio/resampler/audio_resampler.c"
 #include "../libretro-common/audio/resampler/drivers/sinc_resampler.c"
+#include "../libretro-common/audio/resampler/drivers/sinc_resampler_common.c"
 #include "../libretro-common/audio/resampler/drivers/nearest_resampler.c"
 #include "../libretro-common/audio/resampler/drivers/null_resampler.c"
 #ifdef HAVE_CC_RESAMPLER
