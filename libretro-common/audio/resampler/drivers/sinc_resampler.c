@@ -172,16 +172,15 @@ static void resampler_sinc_process(void *re_, struct resampler_data *data)
 
       while (resamp->time < PHASES)
       {
-#if defined(__AVX__) && ENABLE_AVX
          unsigned i;
-         __m256 sum_l             = _mm256_setzero_ps();
-         __m256 sum_r             = _mm256_setzero_ps();
-
          const float *buffer_l    = resamp->buffer_l + resamp->ptr;
          const float *buffer_r    = resamp->buffer_r + resamp->ptr;
-
          unsigned taps            = resamp->taps;
          unsigned phase           = resamp->time >> SUBPHASE_BITS;
+
+#if defined(__AVX__) && ENABLE_AVX
+         __m256 sum_l             = _mm256_setzero_ps();
+         __m256 sum_r             = _mm256_setzero_ps();
 #if SINC_COEFF_LERP
          const float *phase_table = resamp->phase_table + phase * taps * 2;
          const float *delta_table = phase_table + taps;
@@ -221,16 +220,9 @@ static void resampler_sinc_process(void *re_, struct resampler_data *data)
          _mm_store_ss(output + 0, _mm256_extractf128_ps(res_l, 0));
          _mm_store_ss(output + 1, _mm256_extractf128_ps(res_r, 0));
 #elif defined(__SSE__)
-         unsigned i;
          __m128 sum;
          __m128 sum_l             = _mm_setzero_ps();
          __m128 sum_r             = _mm_setzero_ps();
-
-         const float *buffer_l    = resamp->buffer_l + resamp->ptr;
-         const float *buffer_r    = resamp->buffer_r + resamp->ptr;
-
-         unsigned taps            = resamp->taps;
-         unsigned phase           = resamp->time >> SUBPHASE_BITS;
 #if SINC_COEFF_LERP
          const float *phase_table = resamp->phase_table + phase * taps * 2;
          const float *delta_table = phase_table + taps;
@@ -283,11 +275,6 @@ static void resampler_sinc_process(void *re_, struct resampler_data *data)
 #elif defined(__ARM_NEON__)
          if (resamp->neon_enabled)
          {
-            const float *buffer_l    = resamp->buffer_l + resamp->ptr;
-            const float *buffer_r    = resamp->buffer_r + resamp->ptr;
-
-            unsigned phase           = resamp->time >> SUBPHASE_BITS;
-            unsigned taps            = resamp->taps;
             const float *phase_table = resamp->phase_table + phase * taps;
 
             process_sinc_neon_asm(output, buffer_l, buffer_r, phase_table, taps);
@@ -300,13 +287,8 @@ static void resampler_sinc_process(void *re_, struct resampler_data *data)
 #else
          {
             /* Plain ol' C */
-            unsigned i;
             float sum_l              = 0.0f;
             float sum_r              = 0.0f;
-            const float *buffer_l    = resamp->buffer_l + resamp->ptr;
-            const float *buffer_r    = resamp->buffer_r + resamp->ptr;
-            unsigned taps            = resamp->taps;
-            unsigned phase           = resamp->time >> SUBPHASE_BITS;
 #if SINC_COEFF_LERP
             const float *phase_table = resamp->phase_table + phase * taps * 2;
             const float *delta_table = phase_table + taps;
