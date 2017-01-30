@@ -131,31 +131,14 @@ typedef struct rarch_sinc_resampler
     * are created in a single calloc().
     * Ensure that we get as good cache locality as we can hope for. */
    float *main_buffer;
+
+   bool neon_enabled;
 } rarch_sinc_resampler_t;
 
 #if defined(__ARM_NEON__) && !defined(SINC_COEFF_LERP)
-/* Need to make this function pointer as Android doesn't 
- * have built-in targets for NEON and plain ARMv7a.
- */
-static void (*process_sinc_func)(rarch_sinc_resampler_t *resamp,
-      float *out_buffer);
-
 /* Assumes that taps >= 8, and that taps is a multiple of 8. */
 void process_sinc_neon_asm(float *out, const float *left, 
       const float *right, const float *coeff, unsigned taps);
-
-static void process_sinc_neon(rarch_sinc_resampler_t *resamp,
-      float *out_buffer)
-{
-   const float *buffer_l    = resamp->buffer_l + resamp->ptr;
-   const float *buffer_r    = resamp->buffer_r + resamp->ptr;
-
-   unsigned phase           = resamp->time >> SUBPHASE_BITS;
-   unsigned taps            = resamp->taps;
-   const float *phase_table = resamp->phase_table + phase * taps;
-
-   process_sinc_neon_asm(out_buffer, buffer_l, buffer_r, phase_table, taps);
-}
 #endif
 
 static void resampler_sinc_process(void *re_, struct resampler_data *data)
@@ -298,9 +281,16 @@ static void resampler_sinc_process(void *re_, struct resampler_data *data)
          /* movehl { X, R, X, L } == { X, R, X, R } */
          _mm_store_ss(output + 1, _mm_movehl_ps(sum, sum));
 #elif defined(__ARM_NEON__)
-         if (process_sinc_func)
+         if (resamp->neon_enabled)
          {
-            process_sinc_func(resamp, output);
+            const float *buffer_l    = resamp->buffer_l + resamp->ptr;
+            const float *buffer_r    = resamp->buffer_r + resamp->ptr;
+
+            unsigned phase           = resamp->time >> SUBPHASE_BITS;
+            unsigned taps            = resamp->taps;
+            const float *phase_table = resamp->phase_table + phase * taps;
+
+            process_sinc_neon_asm(output, buffer_l, buffer_r, phase_table, taps);
 
             output += 2;
             out_frames++;
@@ -466,7 +456,7 @@ static void *resampler_sinc_new(const struct resampler_config *config,
 
 #if defined(__ARM_NEON__) 
    if (mask & RESAMPLER_SIMD_NEON)
-      process_sinc_func = process_sinc_neon; 
+      re->neon_enabled = true;
 #endif
 
    return re;
