@@ -3459,8 +3459,7 @@ finish:
 static int action_ok_push_netplay_refresh_rooms(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   //char url [2048] = "http://lobby.libretro.com/raw/";
-   char url [2048] = "http://localhost:9999/raw/";
+   char url [2048] = "http://lobby.libretro.com/raw/";
    task_push_http_transfer(url, true, NULL, netplay_refresh_rooms_cb, NULL);
    return 0;
 }
