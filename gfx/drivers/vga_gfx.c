@@ -222,11 +222,11 @@ static bool vga_gfx_frame(void *data, const void *frame,
                for (x = 0; x < VGA_WIDTH; x++)
                {
                   /* scale incoming frame to fit the screen */
-                  unsigned scaled_x = (width / VGA_WIDTH) * x;
-                  unsigned scaled_y = (height / VGA_HEIGHT) * y;
+                  unsigned scaled_x = (width / (float)VGA_WIDTH) * x;
+                  unsigned scaled_y = (height / (float)VGA_HEIGHT) * y;
                   unsigned short pixel = ((unsigned short*)frame_to_copy)[width * scaled_y + scaled_x];
 
-                  /* convert RGB565 to RGB332 */
+                  /* convert RGB565 to BGR332 */
                   unsigned r = (7.0f / 31.0f) * ((pixel & 0xF800) >> 11);
                   unsigned g = (7.0f / 63.0f) * ((pixel & 0x07E0) >> 5);
                   unsigned b = (3.0f / 31.0f) * ((pixel & 0x001F) >> 0);
