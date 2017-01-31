@@ -32,9 +32,9 @@
 
 #include <encodings/crc32.h>
 
-#include "msg_hash.h"
-#include "retroarch.h"
-#include "verbosity.h"
+#include "../msg_hash.h"
+#include "../retroarch.h"
+#include "../verbosity.h"
 
 enum bps_mode
 {
