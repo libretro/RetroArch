@@ -1,4 +1,7 @@
-﻿/*  RetroArch - A frontend for libretro.
+#if defined(_WIN32) && defined(_MSC_VER) && !defined(_XBOX)
+﻿
+#endif
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2014-2017 - Jean-André Santoni
