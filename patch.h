@@ -40,7 +40,8 @@ void patch_content(
       const char *name_ips,
       const char *name_bps,
       const char *name_ups,
-      uint8_t **buf, ssize_t *size);
+      uint8_t **buf,
+      void *data);
 
 RETRO_END_DECLS
 

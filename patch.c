@@ -590,8 +590,9 @@ void patch_content(
       const char *name_bps,
       const char *name_ups,
       uint8_t **buf,
-      ssize_t *size)
+      void *data)
 {
+   ssize_t *size    = (ssize_t*)data;
    bool allow_ups   = !rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL) && !rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
    bool allow_ips   = !rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL) && !rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
    bool allow_bps   = !rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL) && !rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
