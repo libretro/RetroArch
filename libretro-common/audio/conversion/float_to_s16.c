@@ -50,7 +50,7 @@ void convert_float_s16_asm(int16_t *out, const float *in, size_t samples);
 void convert_float_to_s16(int16_t *out,
       const float *in, size_t samples)
 {
-   size_t i;
+   size_t i      = 0;
 #if defined(__SSE2__)
    __m128 factor = _mm_set1_ps((float)0x8000);
 
