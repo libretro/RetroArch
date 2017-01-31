@@ -30,6 +30,8 @@
 #include <audio/conversion/s16_to_float.h>
 
 #if defined(__ARM_NEON__)
+static bool s16_to_float_neon_enabled = false;
+
 /* Avoid potential hard-float/soft-float ABI issues. */
 void convert_s16_float_asm(float *out, const int16_t *in,
       size_t samples, const float *gain);
@@ -98,15 +100,18 @@ void convert_s16_to_float(float *out,
    i       = 0;
 
 #elif defined(__ARM_NEON__)
-   size_t aligned_samples = samples & ~7;
-   if (aligned_samples)
-      convert_s16_float_asm(out, in, aligned_samples, &gain);
+   if (s16_to_float_neon_enabled)
+   {
+      size_t aligned_samples = samples & ~7;
+      if (aligned_samples)
+         convert_s16_float_asm(out, in, aligned_samples, &gain);
 
-   /* Could do all conversion in ASM, but keep it simple for now. */
-   out     = out + aligned_samples;
-   in      = in  + aligned_samples;
-   samples = samples - aligned_samples;
-   i       = 0;
+      /* Could do all conversion in ASM, but keep it simple for now. */
+      out     = out + aligned_samples;
+      in      = in  + aligned_samples;
+      samples = samples - aligned_samples;
+      i       = 0;
+   }
 
 #elif defined(_MIPS_ARCH_ALLEGREX)
 #ifdef DEBUG
@@ -175,11 +180,10 @@ void convert_s16_to_float(float *out,
  **/
 void convert_s16_to_float_init_simd(void)
 {
+#if defined(__ARM_NEON__)
    unsigned cpu = cpu_features_get();
 
-   (void)cpu;
-#if defined(__ARM_NEON__)
-   convert_s16_to_float_arm = (cpu & RETRO_SIMD_NEON) ?
-      convert_s16_to_float_neon : convert_s16_to_float_C;
+   if (cpu & RETRO_SIMD_NEON)
+      s16_to_float_neon_enabled = true;
 #endif
 }
