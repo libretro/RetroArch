@@ -1,3 +1,5 @@
+MSG_HASH(MSG_STATE_SLOT,
+      "Spielstand Feld")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
       "Passwort")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
@@ -455,7 +457,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
       "Inhalt laden")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_STATE,
-      "Savestate laden")
+      "Spielstand laden")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
       "Erlaube Standort-Lokalisierung")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
@@ -731,21 +733,21 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
       "Spielstandverzeichnis")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
-      "Automatische Indexierung von Savestates")
+      "Automatische Indexierung von Spielständen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-      "Automatisches Laden von Savestates")
+      "Automatisches Laden von Spielständen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
-      "Automatische Savestates")
+      "Automatisch Spielstände speichern")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
-      "Savestate-Verzeichnis")
+      "Spielstandverzeichnis")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
-      "Savestate Miniaturansichten")
+      "Spielstandminiaturansichten")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
       "Aktuelle Konfigurationen speichern")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
       "Neue Konfigurationen speichern")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_STATE,
-      "Savestate speichern")
+      "Spielstand speichern")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
       "Spielstandeinstellungen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY,
@@ -777,7 +779,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
       "Sortiere Speicherdateien per Ordner")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
-      "Sortiere Savestates per Ordner")
+      "Sortiere Spielstände per Ordner")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STATUS,
       "Status")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
@@ -942,8 +944,12 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
       "Menüleiste")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE,
       "Komprimiertes Archiv kann nicht gelesen werden.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE,
+      "Spielstand laden rückgängig machen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UNKNOWN,
       "Unbekannt")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE,
+      "Spielstand speichern rückgängig machen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
       "Aktualisiere Assets")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
@@ -1139,7 +1145,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
       "Aktiviert Errungenschaften. "
       "Für weitere Informationen, besuche http://retroachievements.org")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-      "Deaktiviert Savestates, Cheats, Zurückspulen, Zeitraffer, Pause, und Zeitlupe für alle Spiele.")
+      "Deaktiviert Spielstände, Cheats, Zurückspulen, Zeitraffer, Pause, und Zeitlupe für alle Spiele.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
       "Aktiviere unoffizielle Errungenschaften und/oder Beta-Features zu Testzwecken.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
