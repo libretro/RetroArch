@@ -1,6 +1,8 @@
 #ifndef _S_CRC32_H
 #define _S_CRC32_H
 
+#include <compat/zlib.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -80,9 +82,9 @@ extern "C" {
       return crc ^ 0xffffffffL;
    }
 
-   const unsigned long * get_crc_table()
+   const z_crc_t FAR * ZEXPORT get_crc_table()
    {
-      return crc_table;
+      return (const z_crc_t FAR *)crc_table;
    }
 
 #ifdef __cplusplus

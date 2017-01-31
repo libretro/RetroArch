@@ -16,6 +16,7 @@
 #include <3ds.h>
 #include <string.h>
 #include <malloc.h>
+#include <retro_miscellaneous.h>
 
 #include "../audio_driver.h"
 
