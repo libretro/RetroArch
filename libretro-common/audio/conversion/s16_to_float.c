@@ -29,8 +29,14 @@
 #include <features/features_cpu.h>
 #include <audio/conversion/s16_to_float.h>
 
+#if defined(__ARM_NEON__)
+/* Avoid potential hard-float/soft-float ABI issues. */
+void convert_s16_float_asm(float *out, const int16_t *in,
+      size_t samples, const float *gain);
+#endif
+
 /**
- * convert_s16_to_float_C:
+ * convert_s16_to_float:
  * @out               : output buffer
  * @in                : input buffer
  * @samples           : size of samples to be converted
@@ -38,35 +44,13 @@
  *
  * Converts from signed integer 16-bit
  * to floating point.
- *
- * C implementation callback function.
  **/
-void convert_s16_to_float_C(float *out,
+void convert_s16_to_float(float *out,
       const int16_t *in, size_t samples, float gain)
 {
-   size_t i;
-   gain = gain / 0x8000;
-   for (i = 0; i < samples; i++)
-      out[i] = (float)in[i] * gain; 
-}
+   size_t i      = 0;
 
 #if defined(__SSE2__)
-/**
- * convert_s16_to_float_SSE2:
- * @out               : output buffer
- * @in                : input buffer
- * @samples           : size of samples to be converted
- * @gain              : gain applied (e.g. audio volume)
- *
- * Converts from signed integer 16-bit
- * to floating point.
- *
- * SSE2 implementation callback function.
- **/
-void convert_s16_to_float_SSE2(float *out,
-      const int16_t *in, size_t samples, float gain)
-{
-   size_t i;
    float fgain   = gain / UINT32_C(0x80000000);
    __m128 factor = _mm_set1_ps(fgain);
 
@@ -82,25 +66,9 @@ void convert_s16_to_float_SSE2(float *out,
       _mm_storeu_ps(out + 4, output_r);
    }
 
-   convert_s16_to_float_C(out, in, samples - i, gain);
-}
-
+   samples = samples - i;
+   i       = 0;
 #elif defined(__ALTIVEC__)
-/**
- * convert_s16_to_float_altivec:
- * @out               : output buffer
- * @in                : input buffer
- * @samples           : size of samples to be converted
- * @gain              : gain applied (e.g. audio volume)
- *
- * Converts from signed integer 16-bit
- * to floating point.
- *
- * AltiVec implementation callback function.
- **/
-void convert_s16_to_float_altivec(float *out,
-      const int16_t *in, size_t samples, float gain)
-{
    size_t samples_in = samples;
 
    /* Unaligned loads/store is a bit expensive, so we 
@@ -125,54 +93,22 @@ void convert_s16_to_float_altivec(float *out,
 
       samples_in -= i;
    }
-   convert_s16_to_float_C(out, in, samples_in, gain);
-}
+
+   samples = samples_in;
+   i       = 0;
 
 #elif defined(__ARM_NEON__)
-/* Avoid potential hard-float/soft-float ABI issues. */
-void convert_s16_float_asm(float *out, const int16_t *in,
-      size_t samples, const float *gain);
-
-/**
- * convert_s16_to_float_neon:
- * @out               : output buffer
- * @in                : input buffer
- * @samples           : size of samples to be converted
- * @gain              : gain applied (.e.g audio volume)
- *
- * Converts from signed integer 16-bit
- * to floating point.
- *
- * ARM NEON implementation callback function.
- **/
-static void convert_s16_to_float_neon(float *out,
-      const int16_t *in, size_t samples, float gain)
-{
    size_t aligned_samples = samples & ~7;
    if (aligned_samples)
       convert_s16_float_asm(out, in, aligned_samples, &gain);
 
    /* Could do all conversion in ASM, but keep it simple for now. */
-   convert_s16_to_float_C(out + aligned_samples, in + aligned_samples,
-         samples - aligned_samples, gain);
-}
-#elif defined(_MIPS_ARCH_ALLEGREX)
+   out     = out + aligned_samples;
+   in      = in  + aligned_samples;
+   samples = samples - aligned_samples;
+   i       = 0;
 
-/**
- * convert_s16_to_float_ALLEGREX:
- * @out               : output buffer
- * @in                : input buffer
- * @samples           : size of samples to be converted
- * @gain              : gain applied (.e.g audio volume)
- *
- * Converts from signed integer 16-bit
- * to floating point.
- *
- * MIPS ALLEGREX implementation callback function.
- **/
-void convert_s16_to_float_ALLEGREX(float *out,
-      const int16_t *in, size_t samples, float gain)
-{
+#elif defined(_MIPS_ARCH_ALLEGREX)
 #ifdef DEBUG
    /* Make sure the buffer is 16 byte aligned, this should be the 
     * default behaviour of malloc in the PSPSDK.
@@ -180,7 +116,6 @@ void convert_s16_to_float_ALLEGREX(float *out,
    retro_assert(((uintptr_t)out & 0xf) == 0);
 #endif
 
-   size_t i;
    gain = gain / 0x8000;
    __asm__ (
          ".set    push                    \n"
@@ -225,10 +160,12 @@ void convert_s16_to_float_ALLEGREX(float *out,
             :: "r"(in + i), "r"(out + i));
    }
 
-   for (; i < samples; i++)
-      out[i] = (float)in[i] * gain;
-}
 #endif
+   gain    = gain / 0x8000;
+
+   for (; i < samples; i++)
+      out[i] = (float)in[i] * gain; 
+}
 
 /**
  * convert_s16_to_float_init_simd:

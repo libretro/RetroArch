@@ -31,8 +31,12 @@
 #include <features/features_cpu.h>
 #include <audio/conversion/float_to_s16.h>
 
+#if defined(__ARM_NEON__)
+void convert_float_s16_asm(int16_t *out, const float *in, size_t samples);
+#endif
+
 /**
- * convert_float_to_s16_C:
+ * convert_float_to_s16:
  * @out               : output buffer
  * @in                : input buffer
  * @samples           : size of samples to be converted
@@ -42,34 +46,11 @@
  *
  * C implementation callback function.
  **/
-void convert_float_to_s16_C(int16_t *out,
+void convert_float_to_s16(int16_t *out,
       const float *in, size_t samples)
 {
    size_t i;
-   for (i = 0; i < samples; i++)
-   {
-      int32_t val = (int32_t)(in[i] * 0x8000);
-      out[i]      = (val > 0x7FFF) ? 0x7FFF :
-         (val < -0x8000 ? -0x8000 : (int16_t)val);
-   }
-}
-
 #if defined(__SSE2__)
-/**
- * convert_float_to_s16_SSE2:
- * @out               : output buffer
- * @in                : input buffer
- * @samples           : size of samples to be converted
- *
- * Converts floating point 
- * to signed integer 16-bit.
- *
- * SSE2 implementation callback function.
- **/
-void convert_float_to_s16_SSE2(int16_t *out,
-      const float *in, size_t samples)
-{
-   size_t i;
    __m128 factor = _mm_set1_ps((float)0x8000);
 
    for (i = 0; i + 8 <= samples; i += 8, in += 8, out += 8)
@@ -85,23 +66,9 @@ void convert_float_to_s16_SSE2(int16_t *out,
       _mm_storeu_si128((__m128i *)out, packed);
    }
 
-   convert_float_to_s16_C(out, in, samples - i);
-}
+   samples = samples - i;
+   i       = 0;
 #elif defined(__ALTIVEC__)
-/**
- * convert_float_to_s16_altivec:
- * @out               : output buffer
- * @in                : input buffer
- * @samples           : size of samples to be converted
- *
- * Converts floating point 
- * to signed integer 16-bit.
- *
- * AltiVec implementation callback function.
- **/
-void convert_float_to_s16_altivec(int16_t *out,
-      const float *in, size_t samples)
-{
    int samples_in = samples;
 
    /* Unaligned loads/store is a bit expensive, 
@@ -120,47 +87,19 @@ void convert_float_to_s16_altivec(int16_t *out,
 
       samples_in -= i;
    }
-   convert_float_to_s16_C(out, in, samples_in);
-}
+
+   samples = samples_in;
+   i       = 0;
 #elif defined(__ARM_NEON__)
-void convert_float_s16_asm(int16_t *out, const float *in, size_t samples);
-/**
- * convert_float_to_s16_neon:
- * @out               : output buffer
- * @in                : input buffer
- * @samples           : size of samples to be converted
- *
- * Converts floating point 
- * to signed integer 16-bit.
- *
- * ARM NEON implementation callback function.
- **/
-static void convert_float_to_s16_neon(int16_t *out,
-      const float *in, size_t samples)
-{
    size_t aligned_samples = samples & ~7;
    if (aligned_samples)
       convert_float_s16_asm(out, in, aligned_samples);
 
-   convert_float_to_s16_C(out + aligned_samples, in + aligned_samples,
-         samples - aligned_samples);
-}
+   out     = out     + aligned_samples;
+   in      = in      + aligned_samples;
+   samples = samples - aligned_samples;
+   i       = 0;
 #elif defined(_MIPS_ARCH_ALLEGREX)
-/**
- * convert_float_to_s16_ALLEGREX:
- * @out               : output buffer
- * @in                : input buffer
- * @samples           : size of samples to be converted
- *
- * Converts floating point 
- * to signed integer 16-bit.
- *
- * MIPS ALLEGREX implementation callback function.
- **/
-void convert_float_to_s16_ALLEGREX(int16_t *out,
-      const float *in, size_t samples)
-{
-   size_t i;
 
 #ifdef DEBUG
    /* Make sure the buffers are 16 byte aligned, this should be 
@@ -190,6 +129,8 @@ void convert_float_to_s16_ALLEGREX(int16_t *out,
             :: "r"(in + i), "r"(out + i));
    }
 
+#endif
+
    for (; i < samples; i++)
    {
       int32_t val = (int32_t)(in[i] * 0x8000);
@@ -197,7 +138,6 @@ void convert_float_to_s16_ALLEGREX(int16_t *out,
          (val < -0x8000 ? -0x8000 : (int16_t)val);
    }
 }
-#endif
 
 /**
  * convert_float_to_s16_init_simd:
