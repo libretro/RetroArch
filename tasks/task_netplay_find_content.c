@@ -137,7 +137,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
                state->found = true;
                task_set_data(task, state);
                task_set_progress(task, 100);
-               task_set_title(task, strdup("Compatible content found"));
+               task_set_title(task, strdup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND)));
                task_set_finished(task, true);
                string_list_free(state->lpl_list);
                free(playlist);
@@ -155,7 +155,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
       state->found = true;
       task_set_data(task, state);
       task_set_progress(task, 100);
-      task_set_title(task, strdup("Compatible content found"));
+      task_set_title(task, strdup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND)));
       task_set_finished(task, true);
       return;
    }
@@ -193,7 +193,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
                state->found = true;
                task_set_data(task, state);
                task_set_progress(task, 100);
-               task_set_title(task, strdup("Compatible content found"));
+               task_set_title(task, strdup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND)));
                task_set_finished(task, true);
                string_list_free(state->lpl_list);
                free(playlist);
