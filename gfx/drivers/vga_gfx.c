@@ -369,9 +369,9 @@ static void vga_set_texture_frame(void *data,
             for(x = 0; x < VGA_WIDTH; x++)
             {
                unsigned short pixel = video_frame[width * y + x];
-               unsigned r = (7.0f / 15.0f) * ((pixel & 0xF0) >> 4);
+               unsigned r = (7.0f / 15.0f) * ((pixel & 0xF000) >> 12);
                unsigned g = (7.0f / 15.0f) * ((pixel & 0xF00) >> 8);
-               unsigned b = (3.0f / 15.0f) * ((pixel & 0xF000) >> 12);
+               unsigned b = (3.0f / 15.0f) * ((pixel & 0xF0) >> 4);
                vga_menu_frame[VGA_WIDTH * y + x] = (b << 6) | (g << 3) | r;
             }
          }
