@@ -1,4 +1,4 @@
-﻿#if defined(_WIN32) && defined(_MSC_VER) && !defined(_XBOX)
+#if defined(_WIN32) && defined(_MSC_VER) && !defined(_XBOX)
 ﻿
 #endif
 /*  RetroArch - A frontend for libretro.
