@@ -1,4 +1,4 @@
-﻿/*  RetroArch - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2016-2017 - Brad Parker
  *
@@ -3237,6 +3237,8 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Pixel";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROACTIVE:
          return "RetroActive";
+      case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_DOTART:
+         return "Dot-Art";
       case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME:
          return "Menu Color Theme";
       case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_APPLE_GREEN:

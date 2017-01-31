@@ -144,6 +144,7 @@ if [ $SALAMANDER = "yes" ]; then
          rm -rf ../pkg/${platform}/retroarch.vpk/vpk/assets/xmb/monochrome/src
          rm -rf ../pkg/${platform}/retroarch.vpk/vpk/assets/xmb/retroactive/src
          rm -rf ../pkg/${platform}/retroarch.vpk/vpk/assets/xmb/retroactive_marked/src
+         rm -rf ../pkg/${platform}/retroarch.vpk/vpk/assets/xmb/dot-art/src
       fi
       if [ -d ../media/libretrodb/rdb ]; then
          mkdir -p ../pkg/${platform}/retroarch.vpk/vpk/database/rdb
