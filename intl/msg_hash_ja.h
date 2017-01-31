@@ -205,6 +205,10 @@ MSG_HASH(
       "コンテンツをインポート"
       )
 MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
+      "ネットプレイのルーム表"
+      )
+MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ARCHIVE_MODE,
       "Archive File Association Action"
       )
@@ -2372,6 +2376,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SCALE,
       "スケール")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
       "コンテンツをロードする後にネットプレイは開始します。")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
+      "該当するコアやコンテンツファイルが見つかりませんでした。手動でロードしてください。")
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BROWSE_URL_LIST,
       "URLを参照"
