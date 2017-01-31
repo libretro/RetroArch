@@ -1,6 +1,3 @@
-#if defined(_WIN32) && defined(_MSC_VER) && !defined(_XBOX)
-﻿
-#endif
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
@@ -237,12 +234,10 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
             menu_event_osk_append(menu_event_get_osk_ptr());
       }
 
-#ifdef HAVE_LANGEXTRA
       if (trigger_input & (UINT64_C(1) << menu_cancel_btn))
       {
          input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
       }
-#endif
 
       /* send return key to close keyboard input window */
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_START))
