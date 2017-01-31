@@ -1294,6 +1294,8 @@ int netplay_poll_net_input(netplay_t *netplay, bool block)
    if (max_fd == 0)
       return 0;
 
+   netplay->timeout_cnt = 0;
+
    do
    { 
       had_input = false;

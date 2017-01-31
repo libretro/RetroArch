@@ -224,10 +224,12 @@ static bool netplay_poll(void)
 
    /* Figure out how many frames of input latency we should be using to hide
     * network latency */
-   if (netplay_data->frame_run_time_avg)
+   if (netplay_data->frame_run_time_avg || netplay_data->stateless_mode)
    {
       /* FIXME: Using fixed 60fps for this calculation */
-      unsigned frames_per_frame = 16666/netplay_data->frame_run_time_avg;
+      unsigned frames_per_frame = netplay_data->frame_run_time_avg ?
+                                  (16666/netplay_data->frame_run_time_avg) :
+                                   0;
       unsigned frames_ahead = (netplay_data->run_frame_count > netplay_data->unread_frame_count) ?
                               (netplay_data->run_frame_count - netplay_data->unread_frame_count) :
                               0;
@@ -243,15 +245,35 @@ static bool netplay_poll(void)
          frames_per_frame = 0;
 
       /* Shall we adjust our latency? */
-      if (frames_per_frame < frames_ahead &&
-          netplay_data->input_latency_frames < input_latency_frames_max)
+      if (netplay_data->stateless_mode)
+      {
+         /* In stateless mode, we adjust up if we're "close" and down if we
+          * have a lot of slack */
+         if (netplay_data->input_latency_frames < input_latency_frames_min ||
+             (netplay_data->unread_frame_count == netplay_data->run_frame_count + 1 &&
+              netplay_data->input_latency_frames < input_latency_frames_max))
+         {
+            netplay_data->input_latency_frames++;
+         }
+         else if (netplay_data->input_latency_frames > input_latency_frames_max ||
+                  (netplay_data->unread_frame_count > netplay_data->run_frame_count + 2 &&
+                   netplay_data->input_latency_frames > input_latency_frames_min))
+         {
+            netplay_data->input_latency_frames--;
+         }
+
+      }
+      else if (netplay_data->input_latency_frames < input_latency_frames_min ||
+               (frames_per_frame < frames_ahead &&
+                netplay_data->input_latency_frames < input_latency_frames_max))
       {
          /* We can't hide this much network latency with replay, so hide some
           * with input latency */
          netplay_data->input_latency_frames++;
       }
-      else if (frames_per_frame > frames_ahead + 2 &&
-               netplay_data->input_latency_frames > input_latency_frames_min)
+      else if (netplay_data->input_latency_frames > input_latency_frames_max ||
+               (frames_per_frame > frames_ahead + 2 &&
+                netplay_data->input_latency_frames > input_latency_frames_min))
       {
          /* We don't need this much latency (any more) */
          netplay_data->input_latency_frames--;
