@@ -93,7 +93,7 @@
 #include "../paths.h"
 #include "../verbosity.h"
 
-#include "../patch.c"
+#include "task_patch.c"
 
 #define MAX_ARGS 32
 

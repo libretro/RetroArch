@@ -17,6 +17,8 @@
 /* BPS/UPS/IPS implementation from bSNES (nall::).
  * Modified for RetroArch. */
 
+/* TODO/FIXME - turn this into actual task */
+
 #include <stdint.h>
 #include <string.h>
 
