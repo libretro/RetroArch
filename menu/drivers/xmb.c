@@ -401,6 +401,8 @@ const char* xmb_theme_ident(void)
          return "neoactive";
       case XMB_ICON_THEME_SYSTEMATIC:
          return "systematic";
+      case XMB_ICON_THEME_DOTART:
+         return "dot-art";
       case XMB_ICON_THEME_CUSTOM:
          return "custom";
       case XMB_ICON_THEME_MONOCHROME:
@@ -625,9 +627,9 @@ static void xmb_draw_thumbnail(
    struct video_coords coords;
    math_matrix_4x4 mymat;
    float shadow[16];
-   float y                  = 
+   float y                  =
       xmb->margins.screen.top + xmb->icon.size + h;
-   float x                  = 
+   float x                  =
       xmb->margins.screen.left + xmb->icon.spacing.horizontal +
       xmb->icon.spacing.horizontal*4 - xmb->icon.size / 4;
 
@@ -943,7 +945,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
    fill_pathname_join(xmb->thumbnail_file_path, xmb->thumbnail_file_path,
          xmb_thumbnails_ident(), sizeof(xmb->thumbnail_file_path));
 
-   /* Scrub characters that are not cross-platform and/or violate the 
+   /* Scrub characters that are not cross-platform and/or violate the
     * No-Intro filename standard:
     * http://datomatic.no-intro.org/stuff/The%20Official%20No-Intro%20Convention%20(20071030).zip
     * Replace these characters in the entry name with underscores.
@@ -2225,7 +2227,7 @@ static void xmb_draw_items(
                (!string_is_equal
                 (
                  xmb_thumbnails_ident(),
-                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)) 
+                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))
                 && xmb->thumbnail)
             )
             ticker_limit = 40;
@@ -2680,7 +2682,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   menu_disp_info,
                   xmb->icon.size,
                   &mymat,
-                  xmb->textures.list[charging 
+                  xmb->textures.list[charging
                   ? XMB_TEXTURE_BATTERY_CHARGING : XMB_TEXTURE_BATTERY_FULL],
                   width - (xmb->icon.size / 2) - x_pos_icon,
                   xmb->icon.size,
@@ -2921,7 +2923,7 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
    unsigned new_font_size, new_header_height;
    settings_t *settings          = config_get_ptr();
 
-   float scale_factor            = 
+   float scale_factor            =
       (settings->menu.xmb.scale_factor * width) / (1920.0 * 100);
 
    xmb->above_subitem_offset     =   1.5;
@@ -2989,7 +2991,7 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
 {
    unsigned new_font_size, new_header_height;
    settings_t *settings          = config_get_ptr();
-   float scale_factor            = 
+   float scale_factor            =
       ((settings->menu.xmb.scale_factor * width) / (1920.0 * 100)) * 1.5;
 
 #ifdef _3DS
