@@ -81,7 +81,7 @@ void menu_event_osk_append(int ptr)
       return;
 
 #ifdef HAVE_LANGEXTRA
-   if (string_is_equal(osk_grid[ptr],"\xe2\xa7\xa6")) /* backspace character */
+   if (string_is_equal(osk_grid[ptr],"\xe2\x87\xa6")) /* backspace character */
       input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
    else if (string_is_equal(osk_grid[ptr],"\xe2\x8f\x8e")) /* return character */
       input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
