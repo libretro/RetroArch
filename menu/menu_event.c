@@ -30,7 +30,6 @@
 #include <string/stdstring.h>
 
 #include "widgets/menu_dialog.h"
-#include "widgets/menu_entry.h"
 #include "widgets/menu_input_dialog.h"
 #include "widgets/menu_osk.h"
 
