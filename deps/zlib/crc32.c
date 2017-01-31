@@ -80,6 +80,11 @@ extern "C" {
       return crc ^ 0xffffffffL;
    }
 
+   const unsigned long * get_crc_table()
+   {
+      return crc_table;
+   }
+
 #ifdef __cplusplus
 }
 #endif
