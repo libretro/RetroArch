@@ -1411,6 +1411,7 @@ bool content_init(void)
    content_ctx.block_extract                  = false;
    content_ctx.need_fullpath                  = false;
    content_ctx.set_supports_no_game_enable    = false;
+   content_ctx.patch_is_blocked               = false;
 
    content_ctx.subsystem.data                 = NULL;
    content_ctx.subsystem.size                 = 0;
