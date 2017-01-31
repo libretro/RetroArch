@@ -1,4 +1,4 @@
-#if defined(_WIN32) && defined(_MSC_VER) && !defined(_XBOX)
+﻿#if defined(_WIN32) && defined(_MSC_VER) && !defined(_XBOX)
 ﻿
 #endif
 /*  RetroArch - A frontend for libretro.
@@ -44,7 +44,7 @@
 #include "../configuration.h"
 #include "../runloop.h"
 
-static unsigned char menu_keyboard_key_state[RETROK_LAST];
+static unsigned char menu_keyboard_key_state[RETROK_LAST] = {0};
 
 static int menu_event_pointer(unsigned *action)
 {

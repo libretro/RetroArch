@@ -27,7 +27,11 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#ifdef _WIN32
+#include <direct.h>
+#else
 #include <unistd.h>
+#endif
 
 #include <formats/rwav.h>
 #include <audio/audio_resampler.h>
