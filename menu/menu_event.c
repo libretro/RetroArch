@@ -29,7 +29,6 @@
 
 #include <string/stdstring.h>
 
-#include "widgets/menu_dialog.h"
 #include "widgets/menu_input_dialog.h"
 #include "widgets/menu_osk.h"
 
@@ -39,7 +38,7 @@
 #include "menu_navigation.h"
 
 #include "../configuration.h"
-#include "../runloop.h"
+#include "../runloop_defines.h"
 
 static unsigned char menu_keyboard_key_state[RETROK_LAST] = {0};
 

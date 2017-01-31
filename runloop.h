@@ -23,7 +23,7 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
-#define runloop_cmd_press(current_input, id)     (BIT64_GET(current_input, id))
+#include "runloop_defines.h"
 
 RETRO_BEGIN_DECLS
 
