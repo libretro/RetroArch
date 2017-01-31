@@ -585,7 +585,7 @@ static bool try_ips_patch(bool allow_ips,
  * Apply patch to the content file in-memory.
  *
  **/
-void patch_content(
+static void patch_content(
       const char *name_ips,
       const char *name_bps,
       const char *name_ups,

@@ -85,7 +85,6 @@
 #include "../msg_hash.h"
 #include "../content.h"
 #include "../dynamic.h"
-#include "../patch.h"
 #include "../runloop.h"
 #include "../retroarch.h"
 #include "../file_path_special.h"
@@ -93,6 +92,8 @@
 #include "../dirs.h"
 #include "../paths.h"
 #include "../verbosity.h"
+
+#include "../patch.c"
 
 #define MAX_ARGS 32
 
@@ -342,7 +343,8 @@ static bool load_content_into_memory(
                   global->name.ips,
                   global->name.bps,
                   global->name.ups,
-                  &ret_buf, length);
+                  (uint8_t**)&ret_buf,
+                  (void*)length);
       }
 
       content_get_crc(&content_crc_ptr);
