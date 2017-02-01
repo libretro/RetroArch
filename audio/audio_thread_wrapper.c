@@ -283,8 +283,8 @@ static const audio_driver_t audio_thread = {
  **/
 bool audio_init_thread(const audio_driver_t **out_driver,
       void **out_data, const char *device, unsigned audio_out_rate,
-      unsigned *new_rate, unsigned block_frames,
-      unsigned latency, const audio_driver_t *drv)
+      unsigned *new_rate, unsigned latency,
+      unsigned block_frames, const audio_driver_t *drv)
 {
    audio_thread_t *thr = (audio_thread_t*)calloc(1, sizeof(*thr));
    if (!thr)
