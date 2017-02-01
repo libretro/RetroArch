@@ -2393,3 +2393,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME,
       "Nickname: %s")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND,
       "Compatible content found")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
+      "Cuts off a few pixels around the edges of the image that were customarily left blank by developers and sometimes contain garbage pixels.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+      "Add a slight blur to the image to take the edge off of the hard pixel edges. This option has very little impact on performance.")
