@@ -643,7 +643,7 @@ static unsigned menu_shader_pipeline = 2;
 #endif
 #endif
 
-static bool show_advanced_settings    = true;
+static bool show_advanced_settings            = false;
 static const uint32_t menu_entry_normal_color = 0xffffffff;
 static const uint32_t menu_entry_hover_color  = 0xff64ff64;
 static const uint32_t menu_title_color        = 0xff64ff64;
