@@ -5373,12 +5373,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_refresh = true;
          break;
       case DISPLAYLIST_LOAD_CONTENT_LIST:
-         if (frontend_driver_parse_drive_list(info->list) != 0)
-            menu_entries_append_enum(info->list, "/",
-                  msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-                  MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
-                  MENU_SETTING_ACTION, 0, 0);
-
          if (!string_is_empty(settings->directory.menu_content))
             menu_entries_append_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES),
@@ -5404,6 +5398,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST,
                MENU_SETTING_ACTION, 0, 0);
 #endif
+
+         if (frontend_driver_parse_drive_list(info->list) != 0)
+            menu_entries_append_enum(info->list, "/",
+                  msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+                  MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+                  MENU_SETTING_ACTION, 0, 0);
 
 #if 0
          menu_entries_append_enum(info->list,
