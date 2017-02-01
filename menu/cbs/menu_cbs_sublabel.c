@@ -124,6 +124,7 @@ default_sublabel_macro(action_bind_sublabel_content_history_size,          MENU_
 default_sublabel_macro(action_bind_sublabel_menu_input_unified_controls,   MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS)
 default_sublabel_macro(action_bind_sublabel_onscreen_notifications_enable, MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE)
 default_sublabel_macro(action_bind_sublabel_video_crop_overscan,           MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN)
+default_sublabel_macro(action_bind_sublabel_video_filter,                  MENU_ENUM_SUBLABEL_VIDEO_FILTER)
 
 /* MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM*/
 
@@ -187,6 +188,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_VIDEO_FILTER:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_filter);
+            break;
          case MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_crop_overscan);
             break;
