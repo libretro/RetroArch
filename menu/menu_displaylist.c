@@ -2627,7 +2627,8 @@ static int menu_displaylist_parse_load_content_settings(
 
    if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
    {
-      rarch_system_info_t *system = NULL;
+      bool show_advanced_settings    = settings->menu.show_advanced_settings;
+      rarch_system_info_t *system    = NULL;
 
       runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
@@ -2670,17 +2671,20 @@ static int menu_displaylist_parse_load_content_settings(
             MENU_ENUM_LABEL_LOAD_STATE,
             MENU_SETTING_ACTION_LOADSTATE, 0, 0);
 
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE),
-            msg_hash_to_str(MENU_ENUM_LABEL_UNDO_LOAD_STATE),
-            MENU_ENUM_LABEL_UNDO_LOAD_STATE,
-            MENU_SETTING_ACTION_LOADSTATE, 0, 0);
+      if (show_advanced_settings)
+      {
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE),
+               msg_hash_to_str(MENU_ENUM_LABEL_UNDO_LOAD_STATE),
+               MENU_ENUM_LABEL_UNDO_LOAD_STATE,
+               MENU_SETTING_ACTION_LOADSTATE, 0, 0);
 
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE),
-            msg_hash_to_str(MENU_ENUM_LABEL_UNDO_SAVE_STATE),
-            MENU_ENUM_LABEL_UNDO_SAVE_STATE,
-            MENU_SETTING_ACTION_LOADSTATE, 0, 0);
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE),
+               msg_hash_to_str(MENU_ENUM_LABEL_UNDO_SAVE_STATE),
+               MENU_ENUM_LABEL_UNDO_SAVE_STATE,
+               MENU_SETTING_ACTION_LOADSTATE, 0, 0);
+      }
 
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS),
