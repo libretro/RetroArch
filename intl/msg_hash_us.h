@@ -2759,3 +2759,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
       "Change the controls for the currently running content.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_OPTIONS,
       "Change the options for the currently running application.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
+      "Show advanced settings for powerusers (hidden by default).")
+MSG_HASH(MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
+      "Perform tasks on a seperate thread.")

@@ -239,6 +239,8 @@ default_sublabel_macro(action_bind_sublabel_core_cheat_options,                 
 default_sublabel_macro(action_bind_sublabel_shader_options,                        MENU_ENUM_SUBLABEL_SHADER_OPTIONS)
 default_sublabel_macro(action_bind_sublabel_core_input_remapping_options,          MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS)
 default_sublabel_macro(action_bind_sublabel_core_options,                          MENU_ENUM_SUBLABEL_CORE_OPTIONS)
+default_sublabel_macro(action_bind_sublabel_show_advanced_settings,                MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS)
+default_sublabel_macro(action_bind_sublabel_threaded_data_runloop_enable,          MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -300,6 +302,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_THREADED_DATA_RUNLOOP_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_threaded_data_runloop_enable); 
+            break;
+         case MENU_ENUM_LABEL_SHOW_ADVANCED_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_show_advanced_settings); 
+            break;
          case MENU_ENUM_LABEL_CORE_OPTIONS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_options); 
             break;
