@@ -2507,3 +2507,15 @@ MSG_HASH(
       MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
       "Autosaves the non-volatile Save RAM at a regular interval. This is disabled by default unless set otherwise. The interval is measured in seconds. A value of 0 disables autosave."
       )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
+      "If enabled, overrides the input binds with the remapped binds set for the current core."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
+      "Enable input auto-detection. Will attempt to autoconfigure joypads, Plug-and-Play style."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
+      "Swap buttons for OK/Cancel. Disabled is the Japanese button orientation, enabled is the western orientation."
+      )

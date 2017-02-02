@@ -160,6 +160,9 @@ default_sublabel_macro(action_bind_sublabel_savestate_auto_save,           MENU_
 default_sublabel_macro(action_bind_sublabel_savestate_auto_load,           MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD)
 default_sublabel_macro(action_bind_sublabel_savestate_thumbnail_enable,    MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE)
 default_sublabel_macro(action_bind_sublabel_autosave_interval,             MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL)
+default_sublabel_macro(action_bind_sublabel_input_remap_binds_enable,      MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE)
+default_sublabel_macro(action_bind_sublabel_input_autodetect_enable,       MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE)
+default_sublabel_macro(action_bind_sublabel_input_swap_ok_cancel,          MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -221,6 +224,15 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_MENU_INPUT_SWAP_OK_CANCEL:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_swap_ok_cancel); 
+            break;
+         case MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_autodetect_enable); 
+            break;
+         case MENU_ENUM_LABEL_INPUT_REMAP_BINDS_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_remap_binds_enable); 
+            break;
          case MENU_ENUM_LABEL_AUTOSAVE_INTERVAL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_autosave_interval); 
             break;
