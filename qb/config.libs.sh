@@ -496,7 +496,7 @@ if [ "$HAVE_THREADS" = 'no' ] && [ "HAVE_LIBUSB" != 'no' ]; then
    echo "Notice: Threads are not available, libusb will also be disabled."
 fi
 
-if [ "$HAVE_V4L2" != 'no' ]; then
+if [ "$HAVE_V4L2" != 'no' ] && [ "HAVE_VIDEOPROCESSOR" != 'no' ]; then
    HAVE_VIDEO_PROCESSOR=yes
 fi
 
