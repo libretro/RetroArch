@@ -112,9 +112,11 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
    if (state->lpl_list->size == 0)
       goto no_playlists;
 
-   /* content with no CRC uses 00000000*/
+   /* Lobby reports content CRC, try to use CRC matching
+      content with no CRC uses 00000000 */
    if (!string_is_equal(state->content_crc, "00000000|crc"))
    {
+
       RARCH_LOG("Using CRC matching\n");
 
       for (i = 0; i < state->lpl_list->size; i++)
@@ -150,6 +152,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
          free(playlist);
       }
    }
+   /* Lobby reports core doesn't need content */
    else if(string_is_equal(state->content_path, "N/A"))
    {
       state->found = true;
@@ -159,6 +162,8 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
       task_set_finished(task, true);
       return;
    }
+   /* Lobby reports that the core needs content but
+      the CRC wasn't reported */
    else
    {
       RARCH_LOG("Using filename matching\n");
