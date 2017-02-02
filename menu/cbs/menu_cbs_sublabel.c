@@ -192,6 +192,11 @@ default_sublabel_macro(action_bind_sublabel_netplay_stateless_mode,        MENU_
 default_sublabel_macro(action_bind_sublabel_netplay_check_frames,          MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES)
 default_sublabel_macro(action_bind_sublabel_netplay_nat_traversal,         MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL)
 default_sublabel_macro(action_bind_sublabel_stdin_cmd_enable,              MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE)
+default_sublabel_macro(action_bind_sublabel_mouse_enable,                  MENU_ENUM_SUBLABEL_MOUSE_ENABLE)
+default_sublabel_macro(action_bind_sublabel_pointer_enable,                MENU_ENUM_SUBLABEL_POINTER_ENABLE)
+default_sublabel_macro(action_bind_sublabel_thumbnails,                    MENU_ENUM_SUBLABEL_THUMBNAILS)
+default_sublabel_macro(action_bind_sublabel_timedate_enable,               MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE)
+default_sublabel_macro(action_bind_sublabel_battery_level_enable,          MENU_ENUM_SUBLABEL_BATTERY_LEVEL_ENABLE)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -253,6 +258,21 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_BATTERY_LEVEL_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_battery_level_enable); 
+            break;
+         case MENU_ENUM_LABEL_TIMEDATE_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_timedate_enable); 
+            break;
+         case MENU_ENUM_LABEL_THUMBNAILS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_thumbnails); 
+            break;
+         case MENU_ENUM_LABEL_MOUSE_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_mouse_enable); 
+            break;
+         case MENU_ENUM_LABEL_POINTER_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_pointer_enable); 
+            break;
          case MENU_ENUM_LABEL_STDIN_CMD_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_stdin_cmd_enable); 
             break;

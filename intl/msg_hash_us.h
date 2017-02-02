@@ -2635,3 +2635,23 @@ MSG_HASH(
       MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
       "Enable stdin command interface."
       )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
+      "Enable mouse controls inside the menu."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_POINTER_ENABLE,
+      "Enable touch controls inside the menu."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_THUMBNAILS,
+      "Type of thumbnail to display."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE,
+      "Shows current date and/or time inside the menu."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_BATTERY_LEVEL_ENABLE,
+      "Shows current battery level inside the menu."
+      )
