@@ -125,6 +125,9 @@ default_sublabel_macro(action_bind_sublabel_menu_input_unified_controls,   MENU_
 default_sublabel_macro(action_bind_sublabel_onscreen_notifications_enable, MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE)
 default_sublabel_macro(action_bind_sublabel_video_crop_overscan,           MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN)
 default_sublabel_macro(action_bind_sublabel_video_filter,                  MENU_ENUM_SUBLABEL_VIDEO_FILTER)
+default_sublabel_macro(action_bind_sublabel_netplay_nickname,              MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME)
+default_sublabel_macro(action_bind_sublabel_cheevos_username,              MENU_ENUM_SUBLABEL_CHEEVOS_USERNAME)
+default_sublabel_macro(action_bind_sublabel_cheevos_password,              MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD)
 
 /* MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM*/
 
@@ -188,6 +191,15 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_NETPLAY_NICKNAME:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_nickname);
+            break;
+         case MENU_ENUM_LABEL_CHEEVOS_USERNAME:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_username);
+            break;
+         case MENU_ENUM_LABEL_CHEEVOS_PASSWORD:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_password);
+            break;
          case MENU_ENUM_LABEL_VIDEO_FILTER:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_filter);
             break;
