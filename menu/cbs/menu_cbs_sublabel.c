@@ -211,6 +211,10 @@ default_sublabel_macro(action_bind_sublabel_core_updater_buildbot_url,     MENU_
 default_sublabel_macro(action_bind_sublabel_core_updater_buildbot_assets_url,      MENU_ENUM_SUBLABEL_BUILDBOT_ASSETS_URL)
 default_sublabel_macro(action_bind_sublabel_core_updater_auto_extract_archive,     MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE)
 default_sublabel_macro(action_bind_sublabel_netplay_refresh_rooms,                 MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS)
+default_sublabel_macro(action_bind_sublabel_delete_entry,                          MENU_ENUM_SUBLABEL_DELETE_ENTRY)
+default_sublabel_macro(action_bind_sublabel_information,                           MENU_ENUM_SUBLABEL_INFORMATION)
+default_sublabel_macro(action_bind_sublabel_run,                                   MENU_ENUM_SUBLABEL_RUN)
+default_sublabel_macro(action_bind_sublabel_menu_filebrowser_settings,             MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -272,6 +276,18 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_filebrowser_settings); 
+            break;
+         case MENU_ENUM_LABEL_RUN:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_run); 
+            break;
+         case MENU_ENUM_LABEL_INFORMATION:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_information); 
+            break;
+         case MENU_ENUM_LABEL_DELETE_ENTRY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_delete_entry); 
+            break;
          case MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_refresh_rooms); 
             break;

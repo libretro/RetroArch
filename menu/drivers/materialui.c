@@ -1816,6 +1816,12 @@ static int mui_list_push(void *data, void *userdata,
                   MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
                   MENU_SETTING_ACTION, 0, 0);
 
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS),
+               msg_hash_to_str(MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS),
+               MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS,
+               MENU_SETTING_ACTION, 0, 0);
+
          info->need_push    = true;
          info->need_refresh = true;
          ret = 0;

@@ -2691,3 +2691,11 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
       "Scan for new rooms.")
+MSG_HASH(MENU_ENUM_SUBLABEL_DELETE_ENTRY,
+      "Remove this entry from the collection.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION,
+      "View more information about the content.")
+MSG_HASH(MENU_ENUM_SUBLABEL_RUN,
+      "Start the content.")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
+      "Adjusts filebrowser settings.")
