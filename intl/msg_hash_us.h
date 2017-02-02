@@ -2411,4 +2411,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CORE_LIST,
       "Select which core program we wish to use.")
 MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
       "Select the content we want to start.")
-
+MSG_HASH(MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
+      "Show network interface(s) and associated IP addresses.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
+      "Show information specific to the device.")
+MSG_HASH(MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+      "Quit the program.")

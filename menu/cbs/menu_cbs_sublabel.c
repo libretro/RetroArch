@@ -131,6 +131,9 @@ default_sublabel_macro(action_bind_sublabel_cheevos_password,              MENU_
 default_sublabel_macro(action_bind_sublabel_video_post_filter_record,      MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD)
 default_sublabel_macro(action_bind_sublabel_core_list,                     MENU_ENUM_SUBLABEL_CORE_LIST)
 default_sublabel_macro(action_bind_sublabel_content_list,                  MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST)
+default_sublabel_macro(action_bind_sublabel_network_information,           MENU_ENUM_SUBLABEL_NETWORK_INFORMATION)
+default_sublabel_macro(action_bind_sublabel_system_information,            MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION)
+default_sublabel_macro(action_bind_sublabel_quit_retroarch,                MENU_ENUM_SUBLABEL_QUIT_RETROARCH)
 
 /* MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM*/
 
@@ -194,6 +197,15 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_QUIT_RETROARCH:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quit_retroarch);
+            break;
+         case MENU_ENUM_LABEL_NETWORK_INFORMATION:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_network_information);
+            break;
+         case MENU_ENUM_LABEL_SYSTEM_INFORMATION:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_system_information);
+            break;
          case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_list);
             break;
