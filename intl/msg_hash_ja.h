@@ -2789,3 +2789,53 @@ MSG_HASH(MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
       "Sets start directory for menu configuration browser.")
+MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
+      "The number of frames of input latency for netplay to use to hide network latency. This reduces jitter and makes netplay less CPU-intensive, at the expense of noticeable input lag.")
+MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+      "The range of frames of input latency that may be used to hide network latency. Reduces jitter and makes netplay less CPU-intensive, at the expense of unpredictable input lag.")
+MSG_HASH(MENU_ENUM_SUBLABEL_DISK_CYCLE_TRAY_STATUS,
+      "Cycle the current disk. If the disk is inserted, it will eject the disk. If the disk has not been inserted, it will be inserted. ")
+MSG_HASH(MENU_ENUM_SUBLABEL_DISK_INDEX,
+      "ディスクのインデックスを変更する。")
+MSG_HASH(MENU_ENUM_SUBLABEL_DISK_OPTIONS,
+      "ディスクのイメージ管理")
+MSG_HASH(MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
+      "挿入するディスクイメージを選択する。")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
+      "Makes sure the framerate is capped while inside the menu.")
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_THEME,
+      "Select a different theme for the icon. Changes will take effect after you restart the program.")
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
+      "Enable drop shadows for all icons. This will have a minor performance hit.")
+MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
+      "Select a different background color gradient theme.")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
+      "Modify the opacity of the background wallpaper.")
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
+      "Select a different background color gradient theme.")
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
+      "Select an animated background effect. Can be GPU-intensive depending on the effect. If performance is unsatisfactory, either turn this off or revert to a simpler effect.")
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_FONT,
+      "メニューの使用するフォントを選択する。")
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_IMAGES,
+      "メニューにイメージタブを表示する。")
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_MUSIC,
+      "メニューに音楽タブを表示する。")
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_VIDEO,
+      "メニューにビデオタブを表示する。")
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_SETTINGS,
+      "メニューに設定タブを表示する。")
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_HISTORY,
+      "メニューに履歴タブを表示する。")
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_ADD,
+      "メニューにコンテンツをインポートするタブを表示する。")
+MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
+      "メニューにスタートスクリーンを表示する。")
+MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_MENU_HEADER_OPACITY,
+      "Modify the opacity of the header graphic.")
+MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
+      "Modify the opacity of the footer graphic.")
+MSG_HASH(MENU_ENUM_SUBLABEL_DPI_OVERRIDE_ENABLE,
+      "The menu normally scales itself dynamically. If you want to set a specific scaling size instead, enable this.")
+MSG_HASH(MENU_ENUM_SUBLABEL_DPI_OVERRIDE_VALUE,
+      "Set the custom scaling size here. NOTE: You have to enable 'DPI Override' for this scaling size to take effect.")
