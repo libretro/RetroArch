@@ -142,6 +142,9 @@ default_sublabel_macro(action_bind_sublabel_video_font_size,               MENU_
 default_sublabel_macro(action_bind_sublabel_input_overlay_hide_in_menu,    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU)
 default_sublabel_macro(action_bind_sublabel_content_collection_list,       MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST)
 default_sublabel_macro(action_bind_sublabel_video_scale_integer,           MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER)
+default_sublabel_macro(action_bind_sublabel_video_gpu_screenshot,          MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT)
+default_sublabel_macro(action_bind_sublabel_video_rotation,                MENU_ENUM_SUBLABEL_VIDEO_ROTATION)
+default_sublabel_macro(action_bind_sublabel_video_force_srgb_enable,       MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -203,6 +206,15 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_VIDEO_FORCE_SRGB_DISABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_force_srgb_enable);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_ROTATION:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_rotation);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_gpu_screenshot);
+            break;
          case MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_scale_integer);
             break;
