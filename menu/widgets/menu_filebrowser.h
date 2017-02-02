@@ -20,8 +20,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include <boolean.h>
-
 #include <retro_common_api.h>
 
 RETRO_BEGIN_DECLS
@@ -41,8 +39,7 @@ void filebrowser_clear_type(void);
 
 void filebrowser_set_type(enum filebrowser_enums type);
 
-void filebrowser_parse(void *data, unsigned type,
-      bool extensions_honored);
+void filebrowser_parse(void *data, unsigned type);
 
 RETRO_END_DECLS
 

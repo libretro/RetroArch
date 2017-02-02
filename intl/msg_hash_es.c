@@ -1808,7 +1808,7 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
          return "Ajustes de bases de datos";
       case MENU_ENUM_LABEL_VALUE_MENU_DRIVER:
          return "Controlador de menú";
-      case MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS:
+      case MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS: /* TODO/FIXME - update */
          return "Navegador de archivos del menú";
       case MENU_ENUM_LABEL_VALUE_MENU_SETTINGS:
          return "Menú";

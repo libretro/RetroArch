@@ -53,7 +53,7 @@ void filebrowser_set_type(enum filebrowser_enums type)
       filebrowser_types = type;
 }
 
-void filebrowser_parse(void *data, unsigned type_data, bool extensions_honored)
+void filebrowser_parse(void *data, unsigned type_data)
 {
    size_t i, list_size;
    struct string_list *str_list         = NULL;
@@ -72,9 +72,6 @@ void filebrowser_parse(void *data, unsigned type_data, bool extensions_honored)
    if (string_is_equal(info->label,
             msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE)))
       filter_ext = false;
-
-   if (extensions_honored)
-      filter_ext = true;
 
    if (path_is_compressed)
       str_list = file_archive_get_file_list(info->path, info->exts);
@@ -273,13 +270,6 @@ void filebrowser_parse(void *data, unsigned type_data, bool extensions_honored)
       goto end;
    if (filebrowser_types == FILEBROWSER_SCAN_DIR)
       goto end;
-
-   if (!extensions_honored && files_count > 0)
-      menu_entries_prepend(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE),
-            msg_hash_to_str(MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE),
-            MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
-            0, 0 ,0);
 
 end:
    menu_entries_prepend(info->list,

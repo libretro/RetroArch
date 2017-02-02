@@ -3912,7 +3912,6 @@ static void menu_displaylist_parse_playlist_history(
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 {
    size_t i;
-   bool extensions_honored       = false;
    menu_ctx_displaylist_t disp_list;
 #ifdef HAVE_SHADER_MANAGER
    video_shader_ctx_t shader_info;
@@ -4015,6 +4014,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST:
       case DISPLAYLIST_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST:
       case DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST:
+      case DISPLAYLIST_MENU_FILE_BROWSER_SETTINGS_LIST:
       case DISPLAYLIST_MENU_SETTINGS_LIST:
       case DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST:
       case DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST:
@@ -4409,9 +4409,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE,
                PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_SHOW_HIDDEN_FILES,
-               PARSE_ONLY_BOOL, false);
 
          info->need_refresh = true;
          info->need_push    = true;
@@ -4538,6 +4535,17 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_OVERLAY_SCALE,
                PARSE_ONLY_FLOAT, false);
+
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
+      case DISPLAYLIST_MENU_FILE_BROWSER_SETTINGS_LIST:
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_SHOW_HIDDEN_FILES,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
+               PARSE_ONLY_BOOL, false);
 
          info->need_refresh = true;
          info->need_push    = true;
@@ -5417,6 +5425,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_BROWSE_URL_LIST,
                MENU_SETTING_ACTION, 0, 0);
 #endif
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS),
+               msg_hash_to_str(MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS),
+               MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS,
+               MENU_SETTING_ACTION, 0, 0);
 
          info->need_push    = true;
          info->need_refresh = true;
@@ -6328,8 +6341,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_REMAP_FILES:
       case DISPLAYLIST_RECORD_CONFIG_FILES:
       case DISPLAYLIST_CONFIG_FILES:
-         extensions_honored = true;
-         /* fall-through */
       case DISPLAYLIST_DEFAULT:
       case DISPLAYLIST_CORES_DETECTED:
       case DISPLAYLIST_CONTENT_HISTORY:
@@ -6343,7 +6354,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          }
          else
          {
-            filebrowser_parse(info, type, extensions_honored);
+            filebrowser_parse(info, type);
             info->need_refresh = true;
             info->need_push    = true;
          }
