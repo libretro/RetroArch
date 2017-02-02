@@ -2655,3 +2655,7 @@ MSG_HASH(
       MENU_ENUM_SUBLABEL_BATTERY_LEVEL_ENABLE,
       "Shows current battery level inside the menu."
       )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
+      "Wrap-around to beginning and/or end if boundary of list is reached horizontally or vertically."
+      )

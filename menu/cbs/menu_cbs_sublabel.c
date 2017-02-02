@@ -197,6 +197,7 @@ default_sublabel_macro(action_bind_sublabel_pointer_enable,                MENU_
 default_sublabel_macro(action_bind_sublabel_thumbnails,                    MENU_ENUM_SUBLABEL_THUMBNAILS)
 default_sublabel_macro(action_bind_sublabel_timedate_enable,               MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE)
 default_sublabel_macro(action_bind_sublabel_battery_level_enable,          MENU_ENUM_SUBLABEL_BATTERY_LEVEL_ENABLE)
+default_sublabel_macro(action_bind_sublabel_navigation_wraparound,         MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -258,6 +259,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_NAVIGATION_WRAPAROUND:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_navigation_wraparound); 
+            break;
          case MENU_ENUM_LABEL_BATTERY_LEVEL_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_battery_level_enable); 
             break;
