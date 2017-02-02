@@ -2410,7 +2410,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME,
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
       "Capture the image after filters (but not shaders) are applied. Your video will look as fancy as what you see on your screen.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_LIST,
-      "Select which core program we wish to use.")
+      "Select which application we wish to use.")
 MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
       "Select the content we want to start.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
