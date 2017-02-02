@@ -205,7 +205,7 @@ static bool netplay_poll(void)
    netplay_update_unread_ptr(netplay_data);
    if (netplay_data->stateless_mode &&
        netplay_data->connected_players &&
-       netplay_data->unread_frame_count <= netplay_data->self_frame_count)
+       netplay_data->unread_frame_count <= netplay_data->run_frame_count)
       res = netplay_poll_net_input(netplay_data, true);
    else
       res = netplay_poll_net_input(netplay_data, false);
@@ -218,14 +218,73 @@ static bool netplay_poll(void)
    }
 
    /* Simulate the input if we don't have real input */
-   netplay_simulate_input(netplay_data, netplay_data->self_ptr, false);
+   netplay_simulate_input(netplay_data, netplay_data->run_ptr, false);
 
-   /* Consider stalling */
+   netplay_update_unread_ptr(netplay_data);
+
+   /* Figure out how many frames of input latency we should be using to hide
+    * network latency */
+   if (netplay_data->frame_run_time_avg || netplay_data->stateless_mode)
+   {
+      /* FIXME: Using fixed 60fps for this calculation */
+      unsigned frames_per_frame = netplay_data->frame_run_time_avg ?
+                                  (16666/netplay_data->frame_run_time_avg) :
+                                   0;
+      unsigned frames_ahead = (netplay_data->run_frame_count > netplay_data->unread_frame_count) ?
+                              (netplay_data->run_frame_count - netplay_data->unread_frame_count) :
+                              0;
+      settings_t *settings  = config_get_ptr();
+      unsigned input_latency_frames_min = settings->netplay.input_latency_frames_min;
+      unsigned input_latency_frames_max = input_latency_frames_min + settings->netplay.input_latency_frames_range;
+
+      /* Assume we need a couple frames worth of time to actually run the
+       * current frame */
+      if (frames_per_frame > 2)
+         frames_per_frame -= 2;
+      else
+         frames_per_frame = 0;
+
+      /* Shall we adjust our latency? */
+      if (netplay_data->stateless_mode)
+      {
+         /* In stateless mode, we adjust up if we're "close" and down if we
+          * have a lot of slack */
+         if (netplay_data->input_latency_frames < input_latency_frames_min ||
+             (netplay_data->unread_frame_count == netplay_data->run_frame_count + 1 &&
+              netplay_data->input_latency_frames < input_latency_frames_max))
+         {
+            netplay_data->input_latency_frames++;
+         }
+         else if (netplay_data->input_latency_frames > input_latency_frames_max ||
+                  (netplay_data->unread_frame_count > netplay_data->run_frame_count + 2 &&
+                   netplay_data->input_latency_frames > input_latency_frames_min))
+         {
+            netplay_data->input_latency_frames--;
+         }
+
+      }
+      else if (netplay_data->input_latency_frames < input_latency_frames_min ||
+               (frames_per_frame < frames_ahead &&
+                netplay_data->input_latency_frames < input_latency_frames_max))
+      {
+         /* We can't hide this much network latency with replay, so hide some
+          * with input latency */
+         netplay_data->input_latency_frames++;
+      }
+      else if (netplay_data->input_latency_frames > input_latency_frames_max ||
+               (frames_per_frame > frames_ahead + 2 &&
+                netplay_data->input_latency_frames > input_latency_frames_min))
+      {
+         /* We don't need this much latency (any more) */
+         netplay_data->input_latency_frames--;
+      }
+   }
+
+   /* If we're stalled, consider unstalling */
    switch (netplay_data->stall)
    {
       case NETPLAY_STALL_RUNNING_FAST:
       {
-         netplay_update_unread_ptr(netplay_data);
          if (netplay_data->unread_frame_count + NETPLAY_MAX_STALL_FRAMES - 2
                > netplay_data->self_frame_count)
          {
@@ -239,6 +298,11 @@ static bool netplay_poll(void)
          }
          break;
       }
+
+      case NETPLAY_STALL_INPUT_LATENCY:
+         /* Just let it recalculate momentarily */
+         netplay_data->stall = NETPLAY_STALL_NONE;
+         break;
 
       case NETPLAY_STALL_SERVER_REQUESTED:
       {
@@ -261,38 +325,50 @@ static bool netplay_poll(void)
          break;
 
       default: /* not stalling */
-      {
-         /* Are we too far ahead? */
-         netplay_update_unread_ptr(netplay_data);
-         if (netplay_data->unread_frame_count + NETPLAY_MAX_STALL_FRAMES
-               <= netplay_data->self_frame_count)
-         {
-            netplay_data->stall      = NETPLAY_STALL_RUNNING_FAST;
-            netplay_data->stall_time = cpu_features_get_time_usec();
+         break;
+   }
 
-            /* Figure out who to blame */
-            if (netplay_data->is_server)
+   /* If we're not stalled, consider stalling */
+   if (!netplay_data->stall)
+   {
+      /* Have we not reat enough latency frames? */
+      if (netplay_data->self_mode == NETPLAY_CONNECTION_PLAYING &&
+          netplay_data->connected_players &&
+          netplay_data->run_frame_count + netplay_data->input_latency_frames > netplay_data->self_frame_count)
+      {
+         netplay_data->stall = NETPLAY_STALL_INPUT_LATENCY;
+         netplay_data->stall_time = 0;
+      }
+
+      /* Are we too far ahead? */
+      if (netplay_data->unread_frame_count + NETPLAY_MAX_STALL_FRAMES
+            <= netplay_data->self_frame_count)
+      {
+         netplay_data->stall      = NETPLAY_STALL_RUNNING_FAST;
+         netplay_data->stall_time = cpu_features_get_time_usec();
+
+         /* Figure out who to blame */
+         if (netplay_data->is_server)
+         {
+            for (player = 0; player < MAX_USERS; player++)
             {
-               for (player = 0; player < MAX_USERS; player++)
+               if (!(netplay_data->connected_players & (1<<player))) continue;
+               if (netplay_data->read_frame_count[player] > netplay_data->unread_frame_count) continue;
+               for (i = 0; i < netplay_data->connections_size; i++)
                {
-                  if (!(netplay_data->connected_players & (1<<player))) continue;
-                  if (netplay_data->read_frame_count[player] > netplay_data->unread_frame_count) continue;
-                  for (i = 0; i < netplay_data->connections_size; i++)
+                  struct netplay_connection *connection = &netplay_data->connections[i];
+                  if (connection->active &&
+                      connection->mode == NETPLAY_CONNECTION_PLAYING &&
+                      connection->player == player)
                   {
-                     struct netplay_connection *connection = &netplay_data->connections[i];
-                     if (connection->active &&
-                         connection->mode == NETPLAY_CONNECTION_PLAYING &&
-                         connection->player == player)
-                     {
-                        connection->stall = NETPLAY_STALL_RUNNING_FAST;
-                        connection->stall_time = netplay_data->stall_time;
-                        break;
-                     }
+                     connection->stall = NETPLAY_STALL_RUNNING_FAST;
+                     connection->stall_time = netplay_data->stall_time;
+                     break;
                   }
                }
             }
-
          }
+
       }
    }
 
@@ -371,7 +447,7 @@ static int16_t netplay_input_state(netplay_t *netplay,
       unsigned idx, unsigned id)
 {
    size_t ptr = netplay->is_replay ? 
-      netplay->replay_ptr : netplay->self_ptr;
+      netplay->replay_ptr : netplay->run_ptr;
 
    const uint32_t *curr_input_state = NULL;
 
@@ -688,7 +764,7 @@ void netplay_send_savestate(netplay_t *netplay,
    /* Send it to relevant peers */
    header[0] = htonl(NETPLAY_CMD_LOAD_SAVESTATE);
    header[1] = htonl(wn + 2*sizeof(uint32_t));
-   header[2] = htonl(netplay->self_frame_count);
+   header[2] = htonl(netplay->run_frame_count);
    header[3] = htonl(serial_info->size);
 
    for (i = 0; i < netplay->connections_size; i++)
@@ -721,16 +797,21 @@ void netplay_load_savestate(netplay_t *netplay,
 {
    retro_ctx_serialize_info_t tmp_serial_info;
 
+   /* Wherever we're inputting, that's where we consider our state to be loaded
+    * (FIXME: Need to be more careful about saving it?) */
+   netplay->run_ptr = netplay->self_ptr;
+   netplay->run_frame_count = netplay->self_frame_count;
+
    /* Record it in our own buffer */
    if (save || !serial_info)
    {
       if (netplay_delta_frame_ready(netplay,
-               &netplay->buffer[netplay->self_ptr], netplay->self_frame_count))
+               &netplay->buffer[netplay->run_ptr], netplay->run_frame_count))
       {
          if (!serial_info)
          {
             tmp_serial_info.size = netplay->state_size;
-            tmp_serial_info.data = netplay->buffer[netplay->self_ptr].state;
+            tmp_serial_info.data = netplay->buffer[netplay->run_ptr].state;
             if (!core_serialize(&tmp_serial_info))
                return;
             tmp_serial_info.data_const = tmp_serial_info.data;
@@ -740,7 +821,7 @@ void netplay_load_savestate(netplay_t *netplay,
          {
             if (serial_info->size <= netplay->state_size)
             {
-               memcpy(netplay->buffer[netplay->self_ptr].state,
+               memcpy(netplay->buffer[netplay->run_ptr].state,
                      serial_info->data_const, serial_info->size);
             }
          }
@@ -755,29 +836,29 @@ void netplay_load_savestate(netplay_t *netplay,
    /* We need to ignore any intervening data from the other side, 
     * and never rewind past this */
    netplay_update_unread_ptr(netplay);
-   if (netplay->unread_frame_count < netplay->self_frame_count)
+   if (netplay->unread_frame_count < netplay->run_frame_count)
    {
       uint32_t player;
       for (player = 0; player < MAX_USERS; player++)
       {
          if (!(netplay->connected_players & (1<<player))) continue;
-         if (netplay->read_frame_count[player] < netplay->self_frame_count)
+         if (netplay->read_frame_count[player] < netplay->run_frame_count)
          {
-            netplay->read_ptr[player] = netplay->self_ptr;
-            netplay->read_frame_count[player] = netplay->self_frame_count;
+            netplay->read_ptr[player] = netplay->run_ptr;
+            netplay->read_frame_count[player] = netplay->run_frame_count;
          }
       }
-      if (netplay->server_frame_count < netplay->self_frame_count)
+      if (netplay->server_frame_count < netplay->run_frame_count)
       {
-         netplay->server_ptr = netplay->self_ptr;
-         netplay->server_frame_count = netplay->self_frame_count;
+         netplay->server_ptr = netplay->run_ptr;
+         netplay->server_frame_count = netplay->run_frame_count;
       }
       netplay_update_unread_ptr(netplay);
    }
-   if (netplay->other_frame_count < netplay->self_frame_count)
+   if (netplay->other_frame_count < netplay->run_frame_count)
    {
-      netplay->other_ptr = netplay->self_ptr;
-      netplay->other_frame_count = netplay->self_frame_count;
+      netplay->other_ptr = netplay->run_ptr;
+      netplay->other_frame_count = netplay->run_frame_count;
    }
 
    /* If we can't send it to the peer, loading a state was a bad idea */

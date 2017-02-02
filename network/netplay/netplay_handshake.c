@@ -904,9 +904,9 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
    netplay->flip_frame = flip_frame;
 
    /* Set our frame counters as requested */
-   netplay->self_frame_count = netplay->other_frame_count =
-      netplay->unread_frame_count = netplay->server_frame_count =
-      new_frame_count;
+   netplay->self_frame_count = netplay->run_frame_count =
+      netplay->other_frame_count = netplay->unread_frame_count =
+      netplay->server_frame_count = new_frame_count;
    for (i = 0; i < netplay->buffer_size; i++)
    {
       struct delta_frame *ptr = &netplay->buffer[i];
@@ -919,7 +919,8 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
             return false;
          ptr->frame = new_frame_count;
          ptr->have_local = true;
-         netplay->other_ptr = netplay->unread_ptr = netplay->server_ptr = i;
+         netplay->run_ptr = netplay->other_ptr = netplay->unread_ptr =
+            netplay->server_ptr = i;
 
       }
    }

@@ -587,6 +587,10 @@ MSG_HASH(MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES,
       "netplay_check_frames")
 MSG_HASH(MENU_ENUM_LABEL_NETPLAY_CLIENT_SWAP_INPUT,
       "netplay_client_swap_input")
+MSG_HASH(MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
+      "netplay_input_latency_frames_min")
+MSG_HASH(MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+      "netplay_input_latency_frames_range")
 MSG_HASH(MENU_ENUM_LABEL_NETPLAY_DISCONNECT,
       "menu_netplay_disconnect")
 MSG_HASH(MENU_ENUM_LABEL_NETPLAY_ENABLE,
