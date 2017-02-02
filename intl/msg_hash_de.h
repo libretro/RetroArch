@@ -4,6 +4,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
       "Benutzername")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST,
       "Konten")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
+      "Errungenschaften")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE,
+      "Errungenschaften (Hardcore)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TAB,
       "Hinzufügen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ARCHIVE_MODE,
@@ -144,6 +148,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
       "Aktualisiere Core")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
       "Core-Aktualisierungseinstellungen") /* UPDATE/FIXME */
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CPU_CORES,
+      "Prozessorkerne:")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY,
       "Cursor-Verzeichnis")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
@@ -153,7 +159,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_CUSTOM_RATIO,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
       "Datenbank-Manager")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
-      "Von der Playlist löschen")
+      "Von der Wiedergabeliste löschen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FAVORITES,
       "Lesezeichen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
@@ -453,7 +459,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
       "Inhalt laden")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_STATE,
-      "Savestate laden")
+      "Spielstand laden")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
       "Erlaube Standort-Lokalisierung")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
@@ -534,6 +540,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
       "Server Passwort für Zuschauer")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE,
       "Aktiviere Netplay-Zuschauermodus")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
+      "Netplay wird gestartet sobald ein Inhalt geladen wurde.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_STATELESS_MODE, /* TODO: What is this actually? */
       "Zustandsloser Netplay-Modus")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
@@ -561,7 +569,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NONE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE,
       "Nicht verfügbar")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
-      "No achievements to display.")
+      "Keine Errungenschaften vorhanden.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_CORE,
       "Kein Core")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_CORES_AVAILABLE,
@@ -585,7 +593,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS,
       "Keine Leistungszähler.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_PLAYLISTS,
-      "No playlists.")
+      "Keine Wiedergabelisten.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE,
       "Keine Einträge verfügbar.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND,
@@ -729,21 +737,25 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
       "Spielstandverzeichnis")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
-      "Automatische Indexierung von Savestates")
+      "Automatische Indexierung von Spielständen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-      "Automatisches Laden von Savestates")
+      "Automatisches Laden von Spielständen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
-      "Automatische Savestates")
+      "Automatisch Spielstände speichern")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
-      "Savestate-Verzeichnis")
+      "Spielstandverzeichnis")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
-      "Savestate Miniaturansichten")
+      "Spielstandminiaturansichten")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
       "Aktuelle Konfigurationen speichern")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
+      "Speichere Core-Überschreibungen")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
+      "Speichere Spieleüberschreibungen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
       "Neue Konfigurationen speichern")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_STATE,
-      "Savestate speichern")
+      "Spielstand speichern")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
       "Spielstandeinstellungen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY,
@@ -775,7 +787,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
       "Sortiere Speicherdateien per Ordner")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
-      "Sortiere Savestates per Ordner")
+      "Sortiere Spielstände per Ordner")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_STATE_SLOT,
+      "Spielstand Feld")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STATUS,
       "Status")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
@@ -940,8 +954,12 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
       "Menüleiste")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE,
       "Komprimiertes Archiv kann nicht gelesen werden.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE,
+      "Spielstand laden rückgängig machen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UNKNOWN,
       "Unbekannt")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE,
+      "Spielstand speichern rückgängig machen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
       "Aktualisiere Assets")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
@@ -956,6 +974,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
       "Aktualisiere Datenbanken")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
       "Aktualisiere GLSL-Shader")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_UPDATE_LAKKA,
+      "Aktualisiere Lakka")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
       "Aktualisiere Overlays")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
@@ -1137,7 +1157,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
       "Aktiviert Errungenschaften. "
       "Für weitere Informationen, besuche http://retroachievements.org")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-      "Deaktiviert Savestates, Cheats, Zurückspulen, Zeitraffer, Pause, und Zeitlupe für alle Spiele.")
+      "Deaktiviert Spielstände, Cheats, Zurückspulen, Zeitraffer, Pause, und Zeitlupe für alle Spiele.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
       "Aktiviere unoffizielle Errungenschaften und/oder Beta-Features zu Testzwecken.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
@@ -1301,3 +1321,21 @@ MSG_HASH(
       )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_BOKEH,
       "Bokeh")
+MSG_HASH(MSG_DOWNLOADING,
+      "Herunterladen")
+MSG_HASH(MSG_DOWNLOAD_FAILED,
+      "Herunterladen fehlgeschlagen")
+MSG_HASH(MSG_ERROR,
+      "Fehler")
+MSG_HASH(MSG_EXTRACTING,
+      "Extrahiere")
+MSG_HASH(MSG_EXTRACTING_FILE,
+      "Extrahiere Datei")
+MSG_HASH(MSG_OVERRIDES_ERROR_SAVING,
+      "Fehler beim Speichern der Überschreibungen.")
+MSG_HASH(MSG_OVERRIDES_SAVED_SUCCESSFULLY,
+      "Überschreibungen wurden erfolgreich gespeichert.")
+MSG_HASH(MSG_SCANNING,
+      "Durchsuche") /* Used for displaying progress */
+MSG_HASH(MSG_SCANNING_OF_DIRECTORY_FINISHED,
+      "Durchsuchen des Verzeichnisses wurde beendet.")
