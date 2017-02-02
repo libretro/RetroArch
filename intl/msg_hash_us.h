@@ -2928,3 +2928,11 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
       "Quickly access all relevant in-game settings.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_INFORMATION,
       "View information pertaining to the application/core.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+      "Custom viewport height that is used if the Aspect Ratio is set to 'Custom'.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+      "Custom viewport width that is used if the Aspect Ratio is set to 'Custom'.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
+      "Custom viewport offset used for defining the X-axis position of the viewport. These are ignored if 'Scaled Integer' is enabled, it will be automatically centered then.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
+      "Custom viewport offset used for defining the Y-axis position of the viewport. These are ignored if 'Scaled Integer' is enabled, it will be automatically centered then.")
