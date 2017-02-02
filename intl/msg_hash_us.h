@@ -2449,3 +2449,11 @@ MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
       "Forcibly disable sRGB FBO support. Some Intel OpenGL drivers on Windows have video problems with sRGB FBO support if this is enabled. Enabling this can work around it."
       )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+      "Start in fullscreen. Can be changed at runtime."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+      "If fullscreen, prefer using a windowed fullscreen mode."
+      )
