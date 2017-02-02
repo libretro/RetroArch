@@ -2890,3 +2890,5 @@ MSG_HASH(MENU_ENUM_SUBLABEL_RECORDING_OUTPUT_DIRECTORY,
       "Recordings will be dumped to this directory.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RECORDING_CONFIG_DIRECTORY,
       "Recording configurations will be kept here.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_PATH,
+      "Select a different font for onscreen notifications.")
