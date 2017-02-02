@@ -2906,3 +2906,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CORE,
       "Save the current shader settings as the default settings for this application/core.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
       "Save the current shader settings as the default settings for the content.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SHADER_PARAMETERS,
+      "Modifies current shader directly. Will not be saved to preset file.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PARAMETERS,
+      "Modifies shader preset currently in menu.")

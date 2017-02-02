@@ -299,6 +299,8 @@ default_sublabel_macro(action_bind_sublabel_shader_preset,                      
 default_sublabel_macro(action_bind_sublabel_shader_preset_save_as,                 MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS)
 default_sublabel_macro(action_bind_sublabel_shader_preset_save_core,               MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CORE)
 default_sublabel_macro(action_bind_sublabel_shader_preset_save_game,               MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME)
+default_sublabel_macro(action_bind_sublabel_shader_parameters,                     MENU_ENUM_SUBLABEL_VIDEO_SHADER_PARAMETERS)
+default_sublabel_macro(action_bind_sublabel_shader_preset_parameters,              MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PARAMETERS)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -360,6 +362,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_parameters);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_preset_parameters);
+            break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_preset_save_core);
             break;
