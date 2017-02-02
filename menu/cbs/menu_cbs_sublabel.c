@@ -134,8 +134,12 @@ default_sublabel_macro(action_bind_sublabel_content_list,                  MENU_
 default_sublabel_macro(action_bind_sublabel_network_information,           MENU_ENUM_SUBLABEL_NETWORK_INFORMATION)
 default_sublabel_macro(action_bind_sublabel_system_information,            MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION)
 default_sublabel_macro(action_bind_sublabel_quit_retroarch,                MENU_ENUM_SUBLABEL_QUIT_RETROARCH)
-
-/* MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM*/
+default_sublabel_macro(action_bind_sublabel_video_window_width,            MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH)
+default_sublabel_macro(action_bind_sublabel_video_window_height,           MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT)
+default_sublabel_macro(action_bind_sublabel_video_message_pos_x,           MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X)
+default_sublabel_macro(action_bind_sublabel_video_message_pos_y,           MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y)
+default_sublabel_macro(action_bind_sublabel_video_font_size,               MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE)
+default_sublabel_macro(action_bind_sublabel_input_overlay_hide_in_menu,    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -197,6 +201,24 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_hide_in_menu);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_FONT_SIZE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_font_size);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_message_pos_x);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_Y:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_message_pos_y);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_WINDOW_WIDTH:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_window_width);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_WINDOW_HEIGHT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_window_height);
+            break;
          case MENU_ENUM_LABEL_QUIT_RETROARCH:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quit_retroarch);
             break;
