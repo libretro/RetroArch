@@ -272,7 +272,16 @@ default_sublabel_macro(action_bind_sublabel_menu_header_opacity,                
 default_sublabel_macro(action_bind_sublabel_menu_footer_opacity,                   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY)
 default_sublabel_macro(action_bind_sublabel_dpi_override_enable,                   MENU_ENUM_SUBLABEL_DPI_OVERRIDE_ENABLE)
 default_sublabel_macro(action_bind_sublabel_dpi_override_value,                    MENU_ENUM_SUBLABEL_DPI_OVERRIDE_VALUE)
-
+default_sublabel_macro(action_bind_sublabel_core_assets_directory,                 MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY)
+default_sublabel_macro(action_bind_sublabel_input_remapping_directory,             MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY)
+default_sublabel_macro(action_bind_sublabel_core_directory,                        MENU_ENUM_SUBLABEL_LIBRETRO_DIR_PATH)
+default_sublabel_macro(action_bind_sublabel_core_info_directory,                   MENU_ENUM_SUBLABEL_LIBRETRO_INFO_PATH)
+default_sublabel_macro(action_bind_sublabel_joypad_autoconfig_directory,           MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR)
+default_sublabel_macro(action_bind_sublabel_playlists_directory,                   MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY)
+default_sublabel_macro(action_bind_sublabel_cache_directory,                       MENU_ENUM_SUBLABEL_CACHE_DIRECTORY)
+default_sublabel_macro(action_bind_sublabel_database_directory,                    MENU_ENUM_SUBLABEL_CONTENT_DATABASE_DIRECTORY)
+default_sublabel_macro(action_bind_sublabel_cursor_directory,                      MENU_ENUM_SUBLABEL_CURSOR_DIRECTORY)
+default_sublabel_macro(action_bind_sublabel_assets_directory,                      MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -334,6 +343,36 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_ASSETS_DIRECTORY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_assets_directory);
+            break;
+         case MENU_ENUM_LABEL_CONTENT_DATABASE_DIRECTORY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_database_directory);
+            break;
+         case MENU_ENUM_LABEL_CURSOR_DIRECTORY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cursor_directory);
+            break;
+         case MENU_ENUM_LABEL_CACHE_DIRECTORY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cache_directory);
+            break;
+         case MENU_ENUM_LABEL_PLAYLIST_DIRECTORY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlists_directory);
+            break;
+         case MENU_ENUM_LABEL_JOYPAD_AUTOCONFIG_DIR:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_joypad_autoconfig_directory);
+            break;
+         case MENU_ENUM_LABEL_LIBRETRO_INFO_PATH:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_info_directory);
+            break;
+         case MENU_ENUM_LABEL_LIBRETRO_DIR_PATH:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_directory);
+            break;
+         case MENU_ENUM_LABEL_CORE_ASSETS_DIRECTORY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_assets_directory);
+            break;
+         case MENU_ENUM_LABEL_INPUT_REMAPPING_DIRECTORY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_remapping_directory);
+            break;
          case MENU_ENUM_LABEL_DPI_OVERRIDE_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_dpi_override_enable);
             break;

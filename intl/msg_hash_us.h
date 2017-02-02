@@ -473,7 +473,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
-      "Content Database"
+      "Database"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONTENT_DIR,
@@ -2784,7 +2784,7 @@ MSG_HASH(
 MSG_HASH(MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPERS_DIRECTORY,
       "The place to store the wallpapers dynamically loaded by the menu depending on context.")
 MSG_HASH(MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
-      "To store thumbnail files."
+      "Supplementary thumbnails (boxarts/misc. images, etc.) are stored here."
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
       "Sets start directory for menu configuration browser.")
@@ -2838,3 +2838,29 @@ MSG_HASH(MENU_ENUM_SUBLABEL_DPI_OVERRIDE_ENABLE,
       "The menu normally scales itself dynamically. If you want to set a specific scaling size instead, enable this.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DPI_OVERRIDE_VALUE,
       "Set the custom scaling size here. NOTE: You have to enable 'DPI Override' for this scaling size to take effect.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,
+      "Save all downloaded files to this directory.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
+      "Save all remapped controls to this directory.")
+MSG_HASH(MENU_ENUM_SUBLABEL_LIBRETRO_DIR_PATH,
+      "A directory for where to search for applications/cores.")
+MSG_HASH(MENU_ENUM_SUBLABEL_LIBRETRO_INFO_PATH,
+      "Application/core information files are stored here.")
+MSG_HASH(MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
+      "If a joypad is plugged in, that joypad will be autoconfigured if a config file corresponding to it is present inside this directory.")
+MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
+      "Save all collections to this directory.")
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
+      "If set to a directory, content which is temporarily extracted (e.g. from archives) will be extracted to this directory."
+      )
+MSG_HASH(MENU_ENUM_SUBLABEL_CURSOR_DIRECTORY,
+      "Saved queries are stored to this directory.")
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CONTENT_DATABASE_DIRECTORY,
+      "Databases are stored to this directory."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
+      "This location is queried by default when menu interfaces try to look for loadable assets, etc."
+      )
