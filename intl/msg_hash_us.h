@@ -449,7 +449,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
-      "Quit/Close Application"
+      "Close Application"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONFIG,
@@ -2723,7 +2723,11 @@ MSG_HASH(MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
       "Captures an image of the screen.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
+#ifdef HAVE_DYNAMIC
+      "Closes the current game and application. Any unsaved changes might be lost."
+#else
       "Closes the current game. Any unsaved changes might be lost."
+#endif
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_STATE,
       "Load a saved state from the currently selected slot.")
@@ -2756,9 +2760,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
       "Saves an override configuration file which will apply for the current content only. Will take precedence over the main configuration.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS,
-      "Set up cheat codes for the currently running content.")
+      "Set up cheat codes.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SHADER_OPTIONS,
-      "Set up shaders for the currently running content.")
+      "Set up shaders to visually augment the image.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
       "Change the controls for the currently running content.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_OPTIONS,
