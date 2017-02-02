@@ -2674,3 +2674,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_FILE,
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
       "Uses a custom swap interval for Vsync. Set this to effectively halve monitor refresh rate."
       )
+MSG_HASH(MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
+      "Sort save files in folders named after the core used."
+      )
+MSG_HASH(MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
+      "Sort save states in folders named after the core used."
+      )

@@ -204,6 +204,8 @@ default_sublabel_macro(action_bind_sublabel_netplay_disconnect,            MENU_
 default_sublabel_macro(action_bind_sublabel_scan_file,                     MENU_ENUM_SUBLABEL_SCAN_FILE)
 default_sublabel_macro(action_bind_sublabel_scan_directory,                MENU_ENUM_SUBLABEL_SCAN_DIRECTORY)
 default_sublabel_macro(action_bind_sublabel_video_swap_interval,           MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL)
+default_sublabel_macro(action_bind_sublabel_sort_savefiles_enable,         MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE)
+default_sublabel_macro(action_bind_sublabel_sort_savestates_enable,        MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -265,6 +267,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_SORT_SAVEFILES_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_sort_savefiles_enable); 
+            break;
+         case MENU_ENUM_LABEL_SORT_SAVESTATES_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_sort_savestates_enable); 
+            break;
          case MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_swap_interval); 
             break;
