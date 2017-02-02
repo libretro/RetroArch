@@ -232,6 +232,13 @@ default_sublabel_macro(action_bind_sublabel_undo_save_state,                    
 default_sublabel_macro(action_bind_sublabel_accounts_retro_achievements,           MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS)
 default_sublabel_macro(action_bind_sublabel_accounts_list,                         MENU_ENUM_SUBLABEL_ACCOUNTS_LIST)
 default_sublabel_macro(action_bind_sublabel_input_meta_rewind,                     MENU_ENUM_SUBLABEL_INPUT_META_REWIND)
+default_sublabel_macro(action_bind_sublabel_restart_content,                       MENU_ENUM_SUBLABEL_RESTART_CONTENT)
+default_sublabel_macro(action_bind_sublabel_save_current_config_override_core,     MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE)
+default_sublabel_macro(action_bind_sublabel_save_current_config_override_game,     MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME)
+default_sublabel_macro(action_bind_sublabel_core_cheat_options,                    MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS)
+default_sublabel_macro(action_bind_sublabel_shader_options,                        MENU_ENUM_SUBLABEL_SHADER_OPTIONS)
+default_sublabel_macro(action_bind_sublabel_core_input_remapping_options,          MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS)
+default_sublabel_macro(action_bind_sublabel_core_options,                          MENU_ENUM_SUBLABEL_CORE_OPTIONS)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -293,6 +300,27 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_CORE_OPTIONS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_options); 
+            break;
+         case MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_input_remapping_options); 
+            break;
+         case MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_cheat_options); 
+            break;
+         case MENU_ENUM_LABEL_SHADER_OPTIONS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_options); 
+            break;
+         case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_save_current_config_override_game); 
+            break;
+         case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_save_current_config_override_core); 
+            break;
+         case MENU_ENUM_LABEL_RESTART_CONTENT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_restart_content); 
+            break;
          case MENU_ENUM_LABEL_REWIND_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_rewind); 
             break;

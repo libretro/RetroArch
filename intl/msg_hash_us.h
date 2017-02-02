@@ -2745,3 +2745,17 @@ MSG_HASH(
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
       "Manages rewind settings.")
+MSG_HASH(MENU_ENUM_SUBLABEL_RESTART_CONTENT,
+      "Restarts the content from the beginning.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
+      "Saves an override configuration file which will apply for all content loaded with this core. Will take precedence over the main configuration.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
+      "Saves an override configuration file which will apply for the current content only. Will take precedence over the main configuration.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS,
+      "Set up cheat codes for the currently running content.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SHADER_OPTIONS,
+      "Set up shaders for the currently running content.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
+      "Change the controls for the currently running content.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CORE_OPTIONS,
+      "Change the options for the currently running application.")
