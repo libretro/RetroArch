@@ -180,6 +180,10 @@ default_sublabel_macro(action_bind_sublabel_dynamic_wallpaper,             MENU_
 default_sublabel_macro(action_bind_sublabel_audio_device,                  MENU_ENUM_SUBLABEL_AUDIO_DEVICE)
 default_sublabel_macro(action_bind_sublabel_audio_output_rate,             MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE)
 default_sublabel_macro(action_bind_sublabel_audio_dsp_plugin,              MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN)
+default_sublabel_macro(action_bind_sublabel_overlay_opacity,               MENU_ENUM_SUBLABEL_OVERLAY_OPACITY)
+default_sublabel_macro(action_bind_sublabel_overlay_scale,                 MENU_ENUM_SUBLABEL_OVERLAY_SCALE)
+default_sublabel_macro(action_bind_sublabel_overlay_enable,                MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE)
+default_sublabel_macro(action_bind_sublabel_overlay_preset,                MENU_ENUM_SUBLABEL_OVERLAY_PRESET)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -241,6 +245,18 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_OVERLAY_PRESET:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_preset); 
+            break;
+         case MENU_ENUM_LABEL_INPUT_OVERLAY_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_enable); 
+            break;
+         case MENU_ENUM_LABEL_OVERLAY_OPACITY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_opacity); 
+            break;
+         case MENU_ENUM_LABEL_OVERLAY_SCALE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_scale); 
+            break;
          case MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_dsp_plugin); 
             break;
