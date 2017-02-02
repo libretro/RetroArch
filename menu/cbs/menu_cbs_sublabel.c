@@ -293,6 +293,8 @@ default_sublabel_macro(action_bind_sublabel_video_shader_directory,             
 default_sublabel_macro(action_bind_sublabel_recording_output_directory,            MENU_ENUM_SUBLABEL_RECORDING_OUTPUT_DIRECTORY)
 default_sublabel_macro(action_bind_sublabel_recording_config_directory,            MENU_ENUM_SUBLABEL_RECORDING_CONFIG_DIRECTORY)
 default_sublabel_macro(action_bind_sublabel_video_font_path,                       MENU_ENUM_SUBLABEL_VIDEO_FONT_PATH)
+default_sublabel_macro(action_bind_sublabel_shader_apply_changes,                  MENU_ENUM_SUBLABEL_SHADER_APPLY_CHANGES)
+default_sublabel_macro(action_bind_sublabel_shader_num_passes,                     MENU_ENUM_SUBLABEL_VIDEO_SHADER_NUM_PASSES)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -354,6 +356,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_num_passes);
+            break;
+         case MENU_ENUM_LABEL_SHADER_APPLY_CHANGES:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_apply_changes);
+            break;
          case MENU_ENUM_LABEL_VIDEO_FONT_PATH:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_font_path);
             break;
