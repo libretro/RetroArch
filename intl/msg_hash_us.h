@@ -2659,3 +2659,18 @@ MSG_HASH(
       MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
       "Wrap-around to beginning and/or end if boundary of list is reached horizontally or vertically."
       )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST,
+      "Enables netplay in host (server) mode."
+      )
+MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
+      "Enables netplay in client mode.")
+MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
+      "Disconnects an active Netplay connection.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
+      "Scans a directory for compatible files and add them to the collection.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_FILE,
+      "Scans a compatible file and add it to the collection.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+      "Uses a custom swap interval for Vsync. Set this to effectively halve monitor refresh rate."
+      )

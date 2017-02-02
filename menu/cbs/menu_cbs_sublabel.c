@@ -198,6 +198,12 @@ default_sublabel_macro(action_bind_sublabel_thumbnails,                    MENU_
 default_sublabel_macro(action_bind_sublabel_timedate_enable,               MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE)
 default_sublabel_macro(action_bind_sublabel_battery_level_enable,          MENU_ENUM_SUBLABEL_BATTERY_LEVEL_ENABLE)
 default_sublabel_macro(action_bind_sublabel_navigation_wraparound,         MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND)
+default_sublabel_macro(action_bind_sublabel_netplay_enable_host,           MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST)
+default_sublabel_macro(action_bind_sublabel_netplay_enable_client,         MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT)
+default_sublabel_macro(action_bind_sublabel_netplay_disconnect,            MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT)
+default_sublabel_macro(action_bind_sublabel_scan_file,                     MENU_ENUM_SUBLABEL_SCAN_FILE)
+default_sublabel_macro(action_bind_sublabel_scan_directory,                MENU_ENUM_SUBLABEL_SCAN_DIRECTORY)
+default_sublabel_macro(action_bind_sublabel_video_swap_interval,           MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -259,6 +265,24 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_swap_interval); 
+            break;
+         case MENU_ENUM_LABEL_SCAN_FILE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_scan_file); 
+            break;
+         case MENU_ENUM_LABEL_SCAN_DIRECTORY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_scan_directory); 
+            break;
+         case MENU_ENUM_LABEL_NETPLAY_DISCONNECT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_disconnect); 
+            break;
+         case MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_enable_client); 
+            break;
+         case MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_enable_host); 
+            break;
          case MENU_ENUM_LABEL_NAVIGATION_WRAPAROUND:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_navigation_wraparound); 
             break;
