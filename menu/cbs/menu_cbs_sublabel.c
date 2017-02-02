@@ -128,6 +128,7 @@ default_sublabel_macro(action_bind_sublabel_video_filter,                  MENU_
 default_sublabel_macro(action_bind_sublabel_netplay_nickname,              MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME)
 default_sublabel_macro(action_bind_sublabel_cheevos_username,              MENU_ENUM_SUBLABEL_CHEEVOS_USERNAME)
 default_sublabel_macro(action_bind_sublabel_cheevos_password,              MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD)
+default_sublabel_macro(action_bind_sublabel_video_post_filter_record,      MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD)
 
 /* MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM*/
 
@@ -191,6 +192,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_VIDEO_POST_FILTER_RECORD:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_post_filter_record);
+            break;
          case MENU_ENUM_LABEL_NETPLAY_NICKNAME:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_nickname);
             break;
