@@ -3027,42 +3027,16 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Zlib support";
       case MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT:
          return "Chụp ảnh màn hình";
-      case MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE:
-         return "Threaded data runloop";
-      case MENU_ENUM_LABEL_VALUE_THUMBNAILS:
-         return "Thumbnails";
       case MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY:
          return "Thumbnails Danh mục";
       case MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST:
          return "Thumbnails Updater";
-      case MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS:
-         return "Boxarts";
-      case MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS:
-         return "Screenshots";
-      case MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS:
-         return "Title Screens";
-      case MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE:
-         return "Display time / date";
-      case MENU_ENUM_LABEL_VALUE_TITLE_COLOR:
-         return "Menu title color";
-      case MENU_ENUM_LABEL_VALUE_TRUE:
-         return "True";
       case MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE:
          return "Kích hoạt UI Companion";
       case MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT:
          return "UI Companion Start On Boot";
-      case MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE:
-         return "Menubar";
-      case MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE:
-         return "Unable to read compressed file.";
       case MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE:
          return "Undo Tải State";
-      case MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE:
-         return "Undo Save State";
-      case MENU_ENUM_LABEL_VALUE_UNKNOWN:
-         return "Unknown";
-      case MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS:
-         return "Updater";
       case MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS:
          return "Cập nhật Assets";
       case MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES:
@@ -3180,7 +3154,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME:
          return "Save Game Preset";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT:
-/* FIXME? Translate 'Enable Hardware Shared Context' */
+         /* FIXME? Translate 'Enable Hardware Shared Context' */
          return "Kích hoạt Hardware Shared Context";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH:
          return "HW Bilinear Filtering";

@@ -1611,7 +1611,7 @@ const char *msg_hash_to_str_pt(enum msg_hash_enums msg)
          return "Suporte a Zlib";
       case MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT:
          return "Capturar Tela";
-      case MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE:
+      case MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE: /* TODO/FIXME - update */
          return "Ativar Runloop de Threads de Dados";
       case MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE:
          return "Mostrar Hora / Data";
