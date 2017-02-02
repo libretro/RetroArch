@@ -219,6 +219,8 @@ default_sublabel_macro(action_bind_sublabel_auto_remaps_enable,                 
 default_sublabel_macro(action_bind_sublabel_auto_overrides_enable,                 MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE)
 default_sublabel_macro(action_bind_sublabel_game_specific_options,                 MENU_ENUM_SUBLABEL_GAME_SPECIFIC_OPTIONS)
 default_sublabel_macro(action_bind_sublabel_core_enable,                           MENU_ENUM_SUBLABEL_CORE_ENABLE)
+default_sublabel_macro(action_bind_sublabel_database_manager,                      MENU_ENUM_SUBLABEL_DATABASE_MANAGER)
+default_sublabel_macro(action_bind_sublabel_cursor_manager,                        MENU_ENUM_SUBLABEL_CURSOR_MANAGER)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -280,6 +282,14 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_CURSOR_MANAGER:
+         case MENU_ENUM_LABEL_CURSOR_MANAGER_LIST:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cursor_manager); 
+            break;
+         case MENU_ENUM_LABEL_DATABASE_MANAGER:
+         case MENU_ENUM_LABEL_DATABASE_MANAGER_LIST:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_database_manager); 
+            break;
          case MENU_ENUM_LABEL_CORE_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_enable); 
             break;

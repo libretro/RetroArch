@@ -2711,3 +2711,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_GAME_SPECIFIC_OPTIONS,
       "Enable customized core options by default at startup.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_ENABLE,
       "Shows current core name inside menu.")
+MSG_HASH(MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
+      "View databases.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
+      "View previous searches.")
