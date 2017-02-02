@@ -250,6 +250,10 @@ default_sublabel_macro(action_bind_thumbnails_directory,                        
 default_sublabel_macro(action_bind_rgui_config_directory,                          MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY)
 default_sublabel_macro(action_bind_sublabel_input_latency_frames,                  MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN)
 default_sublabel_macro(action_bind_sublabel_input_latency_frames_range,            MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE)
+default_sublabel_macro(action_bind_sublabel_disk_cycle_tray_status,                MENU_ENUM_SUBLABEL_DISK_CYCLE_TRAY_STATUS)
+default_sublabel_macro(action_bind_sublabel_disk_image_append,                     MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND)
+default_sublabel_macro(action_bind_sublabel_disk_index,                            MENU_ENUM_SUBLABEL_DISK_INDEX)
+default_sublabel_macro(action_bind_sublabel_disk_options,                          MENU_ENUM_SUBLABEL_DISK_OPTIONS)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -311,6 +315,18 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_DISK_IMAGE_APPEND:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_disk_image_append);
+            break;
+         case MENU_ENUM_LABEL_DISK_CYCLE_TRAY_STATUS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_disk_cycle_tray_status);
+            break;
+         case MENU_ENUM_LABEL_DISK_INDEX:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_disk_index);
+            break;
+         case MENU_ENUM_LABEL_DISK_OPTIONS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_disk_options);
+            break;
          case MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_latency_frames_range);
             break;

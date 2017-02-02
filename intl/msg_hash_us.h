@@ -2792,3 +2792,11 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
       "The number of frames of input latency for netplay to use to hide network latency. This reduces jitter and makes netplay less CPU-intensive, at the expense of noticeable input lag.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
       "The range of frames of input latency that may be used to hide network latency. Reduces jitter and makes netplay less CPU-intensive, at the expense of unpredictable input lag.")
+MSG_HASH(MENU_ENUM_SUBLABEL_DISK_CYCLE_TRAY_STATUS,
+      "Cycle the current disk. If the disk is inserted, it will eject the disk. If the disk has not been inserted, it will be inserted. ")
+MSG_HASH(MENU_ENUM_SUBLABEL_DISK_INDEX,
+      "Change the disk index.")
+MSG_HASH(MENU_ENUM_SUBLABEL_DISK_OPTIONS,
+      "Disk image management.")
+MSG_HASH(MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
+      "Select a disk image to insert.")
