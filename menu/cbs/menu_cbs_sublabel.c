@@ -177,6 +177,9 @@ default_sublabel_macro(action_bind_sublabel_wifi_driver,                   MENU_
 default_sublabel_macro(action_bind_sublabel_filter_supported_extensions,   MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE)
 default_sublabel_macro(action_bind_sublabel_wallpaper,                     MENU_ENUM_SUBLABEL_MENU_WALLPAPER)
 default_sublabel_macro(action_bind_sublabel_dynamic_wallpaper,             MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPER)
+default_sublabel_macro(action_bind_sublabel_audio_device,                  MENU_ENUM_SUBLABEL_AUDIO_DEVICE)
+default_sublabel_macro(action_bind_sublabel_audio_output_rate,             MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE)
+default_sublabel_macro(action_bind_sublabel_audio_dsp_plugin,              MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -238,6 +241,15 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_dsp_plugin); 
+            break;
+         case MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_output_rate); 
+            break;
+         case MENU_ENUM_LABEL_AUDIO_DEVICE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_device); 
+            break;
          case MENU_ENUM_LABEL_MENU_WALLPAPER:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_wallpaper); 
             break;

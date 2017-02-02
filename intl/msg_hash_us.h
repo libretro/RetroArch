@@ -2575,3 +2575,15 @@ MSG_HASH(
       MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPER,
       "Dynamically load a new wallpaper depending on context."
       )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
+      "Override the default audio device the audio driver uses. This is driver dependant."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
+      "Audio DSP plugin that processes audio before it's sent to the driver."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
+      "Audio output samplerate."
+      )
