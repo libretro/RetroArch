@@ -254,6 +254,11 @@ default_sublabel_macro(action_bind_sublabel_disk_cycle_tray_status,             
 default_sublabel_macro(action_bind_sublabel_disk_image_append,                     MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND)
 default_sublabel_macro(action_bind_sublabel_disk_index,                            MENU_ENUM_SUBLABEL_DISK_INDEX)
 default_sublabel_macro(action_bind_sublabel_disk_options,                          MENU_ENUM_SUBLABEL_DISK_OPTIONS)
+default_sublabel_macro(action_bind_sublabel_menu_throttle_framerate,               MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE)
+default_sublabel_macro(action_bind_sublabel_xmb_icon_theme,                        MENU_ENUM_SUBLABEL_XMB_THEME)
+default_sublabel_macro(action_bind_sublabel_xmb_shadows_enable,                    MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE)
+default_sublabel_macro(action_bind_sublabel_menu_color_theme,                      MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME)
+default_sublabel_macro(action_bind_sublabel_menu_wallpaper_opacity,                MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -315,6 +320,22 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_MENU_WALLPAPER_OPACITY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_wallpaper_opacity);
+            break;
+         case MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME:
+         case MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_color_theme);
+            break;
+         case MENU_ENUM_LABEL_XMB_SHADOWS_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_xmb_shadows_enable);
+            break;
+         case MENU_ENUM_LABEL_XMB_THEME:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_xmb_icon_theme);
+            break;
+         case MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_throttle_framerate);
+            break;
          case MENU_ENUM_LABEL_DISK_IMAGE_APPEND:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_disk_image_append);
             break;
