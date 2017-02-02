@@ -2461,7 +2461,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
-      "Rercords output of GPU shaded material if available."
+      "Records output of GPU shaded material if available."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
@@ -2581,7 +2581,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
-      "Override the default audio device the audio driver uses. This is driver dependant."
+      "Override the default audio device the audio driver uses. This is driver dependent."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
@@ -2766,7 +2766,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CORE_OPTIONS,
 MSG_HASH(MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
       "Show advanced settings for powerusers (hidden by default).")
 MSG_HASH(MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
-      "Perform tasks on a seperate thread.")
+      "Perform tasks on a separate thread.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
       "Allow the user to remove entries from collections.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
