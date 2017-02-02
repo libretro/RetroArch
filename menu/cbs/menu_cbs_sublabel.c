@@ -229,6 +229,9 @@ default_sublabel_macro(action_bind_sublabel_resume_content,                     
 default_sublabel_macro(action_bind_sublabel_state_slot,                            MENU_ENUM_SUBLABEL_STATE_SLOT)
 default_sublabel_macro(action_bind_sublabel_undo_load_state,                       MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE)
 default_sublabel_macro(action_bind_sublabel_undo_save_state,                       MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE)
+default_sublabel_macro(action_bind_sublabel_accounts_retro_achievements,           MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS)
+default_sublabel_macro(action_bind_sublabel_accounts_list,                         MENU_ENUM_SUBLABEL_ACCOUNTS_LIST)
+default_sublabel_macro(action_bind_sublabel_input_meta_rewind,                     MENU_ENUM_SUBLABEL_INPUT_META_REWIND)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -290,6 +293,15 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_REWIND_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_rewind); 
+            break;
+         case MENU_ENUM_LABEL_ACCOUNTS_LIST:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_accounts_list); 
+            break;
+         case MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_accounts_retro_achievements); 
+            break;
          case MENU_ENUM_LABEL_UNDO_SAVE_STATE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_undo_save_state); 
             break;

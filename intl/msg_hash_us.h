@@ -2735,3 +2735,13 @@ MSG_HASH(MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
       "If a state was loaded, content will go back to the state prior to loading.")
 MSG_HASH(MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
       "If a state was overwritten, it will roll back to the previous save state.")
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
+      "Retro Achievements service. For more information, visit http://retroachievements.org"
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_ACCOUNTS_LIST,
+      "Manage currently configured accounts."
+      )
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
+      "Manages rewind settings.")
