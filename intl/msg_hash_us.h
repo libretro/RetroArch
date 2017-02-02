@@ -2519,3 +2519,7 @@ MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
       "Swap buttons for OK/Cancel. Disabled is the Japanese button orientation, enabled is the western orientation."
       )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
+      "If disabled, the content will keep running in the background when we are in the menu."
+      )
