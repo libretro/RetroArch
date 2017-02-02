@@ -215,8 +215,9 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
 no_playlists:
    string_list_free(state->lpl_list);
    task_set_progress(task, 100);
-   task_set_title(task, strdup("Couldn't find compatible content"));
+   task_set_title(task, strdup("Content not found, try manual load or disconnect from host"));
    task_set_finished(task, true);
+   command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
    free(state);
    return;
 }
