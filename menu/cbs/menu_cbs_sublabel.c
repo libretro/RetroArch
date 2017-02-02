@@ -221,6 +221,14 @@ default_sublabel_macro(action_bind_sublabel_game_specific_options,              
 default_sublabel_macro(action_bind_sublabel_core_enable,                           MENU_ENUM_SUBLABEL_CORE_ENABLE)
 default_sublabel_macro(action_bind_sublabel_database_manager,                      MENU_ENUM_SUBLABEL_DATABASE_MANAGER)
 default_sublabel_macro(action_bind_sublabel_cursor_manager,                        MENU_ENUM_SUBLABEL_CURSOR_MANAGER)
+default_sublabel_macro(action_bind_sublabel_take_screenshot,                       MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT)
+default_sublabel_macro(action_bind_sublabel_close_content,                         MENU_ENUM_SUBLABEL_CLOSE_CONTENT)
+default_sublabel_macro(action_bind_sublabel_load_state,                            MENU_ENUM_SUBLABEL_LOAD_STATE)
+default_sublabel_macro(action_bind_sublabel_save_state,                            MENU_ENUM_SUBLABEL_SAVE_STATE)
+default_sublabel_macro(action_bind_sublabel_resume_content,                        MENU_ENUM_SUBLABEL_RESUME_CONTENT)
+default_sublabel_macro(action_bind_sublabel_state_slot,                            MENU_ENUM_SUBLABEL_STATE_SLOT)
+default_sublabel_macro(action_bind_sublabel_undo_load_state,                       MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE)
+default_sublabel_macro(action_bind_sublabel_undo_save_state,                       MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -282,6 +290,31 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_UNDO_SAVE_STATE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_undo_save_state); 
+            break;
+         case MENU_ENUM_LABEL_UNDO_LOAD_STATE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_undo_load_state); 
+            break;
+         case MENU_ENUM_LABEL_STATE_SLOT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_state_slot); 
+            break;
+         case MENU_ENUM_LABEL_RESUME:
+         case MENU_ENUM_LABEL_RESUME_CONTENT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_resume_content); 
+            break;
+         case MENU_ENUM_LABEL_SAVE_STATE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_save_state); 
+            break;
+         case MENU_ENUM_LABEL_LOAD_STATE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_load_state); 
+            break;
+         case MENU_ENUM_LABEL_CLOSE_CONTENT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_close_content); 
+            break;
+         case MENU_ENUM_LABEL_TAKE_SCREENSHOT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_take_screenshot); 
+            break;
          case MENU_ENUM_LABEL_CURSOR_MANAGER:
          case MENU_ENUM_LABEL_CURSOR_MANAGER_LIST:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cursor_manager); 
