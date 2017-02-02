@@ -282,6 +282,16 @@ default_sublabel_macro(action_bind_sublabel_cache_directory,                    
 default_sublabel_macro(action_bind_sublabel_database_directory,                    MENU_ENUM_SUBLABEL_CONTENT_DATABASE_DIRECTORY)
 default_sublabel_macro(action_bind_sublabel_cursor_directory,                      MENU_ENUM_SUBLABEL_CURSOR_DIRECTORY)
 default_sublabel_macro(action_bind_sublabel_assets_directory,                      MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY)
+default_sublabel_macro(action_bind_sublabel_savefile_directory,                    MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY)
+default_sublabel_macro(action_bind_sublabel_savestate_directory,                   MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY)
+default_sublabel_macro(action_bind_sublabel_screenshot_directory,                  MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY)
+default_sublabel_macro(action_bind_sublabel_overlay_directory,                     MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY)
+default_sublabel_macro(action_bind_sublabel_cheatfile_directory,                   MENU_ENUM_SUBLABEL_CHEAT_DATABASE_PATH)
+default_sublabel_macro(action_bind_sublabel_audio_filter_directory,                MENU_ENUM_SUBLABEL_AUDIO_FILTER_DIR)
+default_sublabel_macro(action_bind_sublabel_video_filter_directory,                MENU_ENUM_SUBLABEL_VIDEO_FILTER_DIR)
+default_sublabel_macro(action_bind_sublabel_video_shader_directory,                MENU_ENUM_SUBLABEL_VIDEO_SHADER_DIR)
+default_sublabel_macro(action_bind_sublabel_recording_output_directory,            MENU_ENUM_SUBLABEL_RECORDING_OUTPUT_DIRECTORY)
+default_sublabel_macro(action_bind_sublabel_recording_config_directory,            MENU_ENUM_SUBLABEL_RECORDING_CONFIG_DIRECTORY)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -343,6 +353,36 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_RECORDING_CONFIG_DIRECTORY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_recording_config_directory);
+            break;
+         case MENU_ENUM_LABEL_RECORDING_OUTPUT_DIRECTORY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_recording_output_directory);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_DIR:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_shader_directory);
+            break;
+         case MENU_ENUM_LABEL_AUDIO_FILTER_DIR:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_filter_directory);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_FILTER_DIR:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_filter_directory);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_DATABASE_PATH:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheatfile_directory);
+            break;
+         case MENU_ENUM_LABEL_OVERLAY_DIRECTORY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_directory);
+            break;
+         case MENU_ENUM_LABEL_SCREENSHOT_DIRECTORY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_screenshot_directory);
+            break;
+         case MENU_ENUM_LABEL_SAVEFILE_DIRECTORY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_savefile_directory);
+            break;
+         case MENU_ENUM_LABEL_SAVESTATE_DIRECTORY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_savestate_directory);
+            break;
          case MENU_ENUM_LABEL_ASSETS_DIRECTORY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_assets_directory);
             break;

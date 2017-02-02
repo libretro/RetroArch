@@ -2864,3 +2864,29 @@ MSG_HASH(
       MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
       "This location is queried by default when menu interfaces try to look for loadable assets, etc."
       )
+MSG_HASH(MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
+      "Save all save files to this directory. If not set, will try to save inside the content file's working directory.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
+      "Save all save states to this directory. If not set, will try to save inside the content file's working directory.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SCREENSHOT_DIRECTORY,
+      "Directory to dump screenshots to.")
+MSG_HASH(MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
+      "Defines a directory where overlays are kept for easy access.")
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CHEAT_DATABASE_PATH,
+      "Cheat files are kept here."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_AUDIO_FILTER_DIR,
+      "Directory where audio DSP filter files are kept."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_VIDEO_FILTER_DIR,
+      "Directory where CPU-based video filter files are kept."
+      )
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SHADER_DIR,
+      "Defines a directory where GPU-based video shader files are kept for easy access.")
+MSG_HASH(MENU_ENUM_SUBLABEL_RECORDING_OUTPUT_DIRECTORY,
+      "Recordings will be dumped to this directory.")
+MSG_HASH(MENU_ENUM_SUBLABEL_RECORDING_CONFIG_DIRECTORY,
+      "Recording configurations will be kept here.")
