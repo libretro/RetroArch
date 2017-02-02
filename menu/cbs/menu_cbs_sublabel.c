@@ -215,6 +215,9 @@ default_sublabel_macro(action_bind_sublabel_delete_entry,                       
 default_sublabel_macro(action_bind_sublabel_information,                           MENU_ENUM_SUBLABEL_INFORMATION)
 default_sublabel_macro(action_bind_sublabel_run,                                   MENU_ENUM_SUBLABEL_RUN)
 default_sublabel_macro(action_bind_sublabel_menu_filebrowser_settings,             MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS)
+default_sublabel_macro(action_bind_sublabel_auto_remaps_enable,                    MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE)
+default_sublabel_macro(action_bind_sublabel_auto_overrides_enable,                 MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE)
+default_sublabel_macro(action_bind_sublabel_game_specific_options,                 MENU_ENUM_SUBLABEL_GAME_SPECIFIC_OPTIONS)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -276,6 +279,15 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_game_specific_options); 
+            break;
+         case MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_auto_overrides_enable); 
+            break;
+         case MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_auto_remaps_enable); 
+            break;
          case MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_filebrowser_settings); 
             break;
