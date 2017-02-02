@@ -2457,3 +2457,7 @@ MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
       "If fullscreen, prefer using a windowed fullscreen mode."
       )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
+      "Rercords output of GPU shaded material if available."
+      )

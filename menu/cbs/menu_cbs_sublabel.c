@@ -147,6 +147,7 @@ default_sublabel_macro(action_bind_sublabel_video_rotation,                MENU_
 default_sublabel_macro(action_bind_sublabel_video_force_srgb_enable,       MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE)
 default_sublabel_macro(action_bind_sublabel_video_fullscreen,              MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN)
 default_sublabel_macro(action_bind_sublabel_video_windowed_fullscreen,     MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN)
+default_sublabel_macro(action_bind_sublabel_video_gpu_record,              MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -208,6 +209,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_VIDEO_GPU_RECORD:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_gpu_record);
+            break;
          case MENU_ENUM_LABEL_VIDEO_FULLSCREEN:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_fullscreen);
             break;
