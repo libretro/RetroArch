@@ -305,6 +305,7 @@ default_sublabel_macro(action_bind_sublabel_cheat_apply_changes,                
 default_sublabel_macro(action_bind_sublabel_cheat_num_passes,                      MENU_ENUM_SUBLABEL_CHEAT_NUM_PASSES)
 default_sublabel_macro(action_bind_sublabel_cheat_file_load,                       MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD)
 default_sublabel_macro(action_bind_sublabel_cheat_file_save_as,                    MENU_ENUM_SUBLABEL_CHEAT_FILE_SAVE_AS)
+default_sublabel_macro(action_bind_sublabel_quick_menu,                            MENU_ENUM_SUBLABEL_CONTENT_SETTINGS)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -366,6 +367,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_CONTENT_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu);
+            break;
          case MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_file_save_as);
             break;

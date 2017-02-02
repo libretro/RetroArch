@@ -2924,3 +2924,5 @@ MSG_HASH(
       MENU_ENUM_SUBLABEL_CHEAT_FILE_SAVE_AS,
       "Save current cheats as a save file."
       )
+MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
+      "Quickly access all relevant in-game settings.")
