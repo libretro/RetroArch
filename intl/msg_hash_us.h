@@ -2433,3 +2433,7 @@ MSG_HASH(
       MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
       "Content which has been scanned will appear here."
       )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
+      "Only scales video in integer steps. The base size depends on system-reported geometry and aspect ratio. If 'Force Aspect' is not set, X/Y will be integer scaled independently."
+      )
