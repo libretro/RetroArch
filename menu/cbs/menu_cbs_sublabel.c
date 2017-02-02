@@ -174,6 +174,9 @@ default_sublabel_macro(action_bind_sublabel_location_driver,               MENU_
 default_sublabel_macro(action_bind_sublabel_menu_driver,                   MENU_ENUM_SUBLABEL_MENU_DRIVER)
 default_sublabel_macro(action_bind_sublabel_record_driver,                 MENU_ENUM_SUBLABEL_RECORD_DRIVER)
 default_sublabel_macro(action_bind_sublabel_wifi_driver,                   MENU_ENUM_SUBLABEL_WIFI_DRIVER)
+default_sublabel_macro(action_bind_sublabel_filter_supported_extensions,   MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE)
+default_sublabel_macro(action_bind_sublabel_wallpaper,                     MENU_ENUM_SUBLABEL_MENU_WALLPAPER)
+default_sublabel_macro(action_bind_sublabel_dynamic_wallpaper,             MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPER)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -235,6 +238,15 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_MENU_WALLPAPER:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_wallpaper); 
+            break;
+         case MENU_ENUM_LABEL_DYNAMIC_WALLPAPER:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_dynamic_wallpaper); 
+            break;
+         case MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_filter_supported_extensions); 
+            break;
          case MENU_ENUM_LABEL_WIFI_DRIVER:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_wifi_driver); 
             break;

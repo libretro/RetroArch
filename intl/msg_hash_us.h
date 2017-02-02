@@ -2563,3 +2563,15 @@ MSG_HASH(
       MENU_ENUM_SUBLABEL_WIFI_DRIVER,
       "WiFi driver to use."
       )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
+      "Filter files being shown in filebrowser by supported extensions."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
+      "Select an image to set as menu wallpaper."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPER,
+      "Dynamically load a new wallpaper depending on context."
+      )
