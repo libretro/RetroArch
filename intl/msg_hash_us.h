@@ -2812,3 +2812,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
       "Modify the opacity of the background wallpaper.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
       "Select a different background color gradient theme.")
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
+      "Select an animated background effect. Can be GPU-intensive depending on the effect. If performance is unsatisfactory, either turn this off or revert to a simpler effect.")
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_FONT,
+      "Select a different main font to be used by the menu.")

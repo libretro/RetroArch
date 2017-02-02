@@ -259,6 +259,9 @@ default_sublabel_macro(action_bind_sublabel_xmb_icon_theme,                     
 default_sublabel_macro(action_bind_sublabel_xmb_shadows_enable,                    MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE)
 default_sublabel_macro(action_bind_sublabel_menu_color_theme,                      MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME)
 default_sublabel_macro(action_bind_sublabel_menu_wallpaper_opacity,                MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY)
+default_sublabel_macro(action_bind_sublabel_menu_ribbon_enable,                    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE)
+default_sublabel_macro(action_bind_sublabel_menu_font,                             MENU_ENUM_SUBLABEL_XMB_FONT)
+
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -320,6 +323,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_XMB_FONT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_font);
+            break;
+         case MENU_ENUM_LABEL_XMB_RIBBON_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_ribbon_enable);
+            break;
          case MENU_ENUM_LABEL_MENU_WALLPAPER_OPACITY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_wallpaper_opacity);
             break;
