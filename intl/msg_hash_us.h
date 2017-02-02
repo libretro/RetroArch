@@ -2407,3 +2407,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME,
       "Input your user name here. This will be used for netplay sessions among other things.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
       "Capture the image after filters (but not shaders) are applied. Your video will look as fancy as what you see on your screen.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CORE_LIST,
+      "Select which core program we wish to use.")
+MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
+      "Select the content we want to start.")
+
