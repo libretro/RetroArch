@@ -1384,11 +1384,6 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len) {
                              "This is only updated in config if\n"
                              "'Save Configuration on Exit' is enabled.\n");
             break;
-        case MENU_ENUM_LABEL_CORE_SPECIFIC_CONFIG:
-            snprintf(s, len,
-                     "Load up a specific config file \n"
-                             "based on the core being used.\n");
-            break;
         case MENU_ENUM_LABEL_VIDEO_FULLSCREEN:
             snprintf(s, len, "Toggles fullscreen.");
             break;

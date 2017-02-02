@@ -712,11 +712,6 @@ int menu_hash_get_help_pt_enum(enum msg_hash_enums msg, char *s, size_t len)
                "É atualizada na configuração apenas quando a\n"
                "opção 'Salvar Configuração ao Sair' está ativada.\n");
          break;
-      case MENU_ENUM_LABEL_CORE_SPECIFIC_CONFIG:
-         snprintf(s, len,
-               "Carrega uma configuração específica baseada \n"
-               "no core que está sendo usado.\n");
-         break;
       case MENU_ENUM_LABEL_VIDEO_FULLSCREEN:
          snprintf(s, len, "Alterna tela cheia.");
          break;
@@ -1076,8 +1071,6 @@ const char *msg_hash_to_str_pt(enum msg_hash_enums msg)
          return "Core";
       case MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE: /* TODO/FIXME */
          return "Não Iniciar Cores Automaticamente";
-      case MENU_ENUM_LABEL_VALUE_CORE_SPECIFIC_CONFIG:
-         return "Configuração por Core";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
          return "Autoextrair Arquivos Baixados";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL:

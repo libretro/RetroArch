@@ -1408,11 +1408,6 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
                "This is only updated in config if\n"
                "'Save Configuration on Exit' is enabled.\n");
          break;
-      case MENU_ENUM_LABEL_CORE_SPECIFIC_CONFIG:
-         snprintf(s, len,
-               "Tải up a specific config file \n"
-               "based on the core being used.\n");
-         break;
       case MENU_ENUM_LABEL_VIDEO_FULLSCREEN:
          snprintf(s, len, "Bật/tắt chế độ toàn màn hình.");
          break;
@@ -2141,8 +2136,6 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE:
 /* FIXME? Translate 'Start a Core Automatically' */
          return "Tự động chạy Core";
-      case MENU_ENUM_LABEL_VALUE_CORE_SPECIFIC_CONFIG:
-         return "Mỗi Core mỗi cấu hình";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
          return "Tự động giải nén lưu trữ tải về";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL:

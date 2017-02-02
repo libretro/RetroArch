@@ -911,12 +911,6 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                "de la configuración si 'Guardar \n"
                "configuración al salir' está activado.\n");
          break;
-      case MENU_ENUM_LABEL_CORE_SPECIFIC_CONFIG:
-         snprintf(s, len,
-               "Carga un archivo de configuración \n"
-               "concreto en función del núcleo \n"
-               "que se vaya a utilizar.\n");
-         break;
       case MENU_ENUM_LABEL_VIDEO_FULLSCREEN:
          snprintf(s, len,
                 "Activa o desactiva el modo \n"
@@ -1633,8 +1627,6 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
          return "Núcleo";
       case MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE: /* TODO/FIXME */
          return "No ejecutar automáticamente";
-      case MENU_ENUM_LABEL_VALUE_CORE_SPECIFIC_CONFIG:
-         return "Configuración por núcleo";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
          return "Extraer automáticamente el archivo descargado";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL:
