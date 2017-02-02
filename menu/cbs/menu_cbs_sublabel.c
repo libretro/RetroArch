@@ -148,6 +148,18 @@ default_sublabel_macro(action_bind_sublabel_video_force_srgb_enable,       MENU_
 default_sublabel_macro(action_bind_sublabel_video_fullscreen,              MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN)
 default_sublabel_macro(action_bind_sublabel_video_windowed_fullscreen,     MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN)
 default_sublabel_macro(action_bind_sublabel_video_gpu_record,              MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD)
+default_sublabel_macro(action_bind_sublabel_savestate_auto_index,          MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX)
+default_sublabel_macro(action_bind_sublabel_block_sram_overwrite,          MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE)
+default_sublabel_macro(action_bind_sublabel_fastforward_ratio,             MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO)
+default_sublabel_macro(action_bind_sublabel_slowmotion_ratio,              MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO)
+default_sublabel_macro(action_bind_sublabel_rewind,                        MENU_ENUM_SUBLABEL_REWIND_ENABLE)
+default_sublabel_macro(action_bind_sublabel_rewind_granularity,            MENU_ENUM_SUBLABEL_REWIND_GRANULARITY)
+default_sublabel_macro(action_bind_sublabel_libretro_log_level,            MENU_ENUM_SUBLABEL_LIBRETRO_LOG_LEVEL)
+default_sublabel_macro(action_bind_sublabel_perfcnt_enable,                MENU_ENUM_SUBLABEL_PERFCNT_ENABLE)
+default_sublabel_macro(action_bind_sublabel_savestate_auto_save,           MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE)
+default_sublabel_macro(action_bind_sublabel_savestate_auto_load,           MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD)
+default_sublabel_macro(action_bind_sublabel_savestate_thumbnail_enable,    MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE)
+default_sublabel_macro(action_bind_sublabel_autosave_interval,             MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -209,6 +221,42 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_AUTOSAVE_INTERVAL:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_autosave_interval); 
+            break;
+         case MENU_ENUM_LABEL_SAVESTATE_THUMBNAIL_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_savestate_thumbnail_enable); 
+            break;
+         case MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_savestate_auto_save);
+            break;
+         case MENU_ENUM_LABEL_SAVESTATE_AUTO_LOAD:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_savestate_auto_load);
+            break;
+         case MENU_ENUM_LABEL_PERFCNT_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_perfcnt_enable);
+            break;
+         case MENU_ENUM_LABEL_LIBRETRO_LOG_LEVEL:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_libretro_log_level);
+            break;
+         case MENU_ENUM_LABEL_REWIND_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_rewind);
+            break;
+         case MENU_ENUM_LABEL_REWIND_GRANULARITY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_rewind_granularity);
+            break;
+         case MENU_ENUM_LABEL_SLOWMOTION_RATIO:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_slowmotion_ratio);
+            break;
+         case MENU_ENUM_LABEL_FASTFORWARD_RATIO:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_fastforward_ratio);
+            break;
+         case MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_block_sram_overwrite);
+            break;
+         case MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_savestate_auto_index);
+            break;
          case MENU_ENUM_LABEL_VIDEO_GPU_RECORD:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_gpu_record);
             break;
