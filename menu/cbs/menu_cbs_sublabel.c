@@ -184,6 +184,14 @@ default_sublabel_macro(action_bind_sublabel_overlay_opacity,               MENU_
 default_sublabel_macro(action_bind_sublabel_overlay_scale,                 MENU_ENUM_SUBLABEL_OVERLAY_SCALE)
 default_sublabel_macro(action_bind_sublabel_overlay_enable,                MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE)
 default_sublabel_macro(action_bind_sublabel_overlay_preset,                MENU_ENUM_SUBLABEL_OVERLAY_PRESET)
+default_sublabel_macro(action_bind_sublabel_netplay_ip_address,            MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS)
+default_sublabel_macro(action_bind_sublabel_netplay_tcp_udp_port,          MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT)
+default_sublabel_macro(action_bind_sublabel_netplay_password,              MENU_ENUM_SUBLABEL_NETPLAY_PASSWORD)
+default_sublabel_macro(action_bind_sublabel_netplay_spectate_password,     MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD)
+default_sublabel_macro(action_bind_sublabel_netplay_stateless_mode,        MENU_ENUM_SUBLABEL_NETPLAY_STATELESS_MODE)
+default_sublabel_macro(action_bind_sublabel_netplay_check_frames,          MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES)
+default_sublabel_macro(action_bind_sublabel_netplay_nat_traversal,         MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL)
+default_sublabel_macro(action_bind_sublabel_stdin_cmd_enable,              MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -245,6 +253,30 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_STDIN_CMD_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_stdin_cmd_enable); 
+            break;
+         case MENU_ENUM_LABEL_NETPLAY_NAT_TRAVERSAL:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_nat_traversal); 
+            break;
+         case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_check_frames); 
+            break;
+         case MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_stateless_mode); 
+            break;
+         case MENU_ENUM_LABEL_NETPLAY_PASSWORD:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_password); 
+            break;
+         case MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_spectate_password); 
+            break;
+         case MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_tcp_udp_port); 
+            break;
+         case MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_ip_address); 
+            break;
          case MENU_ENUM_LABEL_OVERLAY_PRESET:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_preset); 
             break;

@@ -2603,3 +2603,35 @@ MSG_HASH(
       MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
       "Select an overlay from the file browser."
       )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
+      "The address of the host to connect to."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
+      "The port of the host IP address. Can be either a TCP or UDP port."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_NETPLAY_PASSWORD,
+      "The password for connecting to the netplay host. Used only in host mode."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
+      "The password for connecting to the netplay host with only spectator privileges. Used only in host mode."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_NETPLAY_STATELESS_MODE,
+      "Whether to run netplay in a mode not requiring save states. If set to true, a very fast network is required, but no rewinding is performed, so there will be no netplay jitter."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
+      "The frequency in frames with which netplay will verify that the host and client are in sync."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL,
+      "When hosting, attempt to listen for connections from the public Internet, using UPnP or similar technologies to escape LANs."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
+      "Enable stdin command interface."
+      )
