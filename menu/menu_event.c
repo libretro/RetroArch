@@ -1,4 +1,4 @@
-﻿/*  RetroArch - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2014-2017 - Jean-André Santoni
@@ -26,12 +26,8 @@
 
 #include <string/stdstring.h>
 
-#include "widgets/menu_dialog.h"
-#include "widgets/menu_entry.h"
 #include "widgets/menu_input_dialog.h"
 #include "widgets/menu_osk.h"
-
-#include "menu_event.h"
 
 #include "menu_driver.h"
 #include "menu_animation.h"
@@ -39,21 +35,24 @@
 #include "menu_navigation.h"
 
 #include "../configuration.h"
-#include "../runloop.h"
+#include "../runloop_defines.h"
 
-static unsigned char menu_keyboard_key_state[RETROK_LAST];
+static unsigned char menu_keyboard_key_state[RETROK_LAST] = {0};
 
 static int menu_event_pointer(unsigned *action)
 {
    rarch_joypad_info_t joypad_info;
    int pointer_x, pointer_y;
+   size_t fb_pitch;
+   unsigned fb_width, fb_height;
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
    menu_input_t *menu_input                     = menu_input_get_ptr();
-   unsigned fb_width                            = menu_display_get_width();
-   unsigned fb_height                           = menu_display_get_height();
    int pointer_device                           =
       menu_driver_ctl(RARCH_MENU_CTL_IS_SET_TEXTURE, NULL) ?
         RETRO_DEVICE_POINTER : RARCH_DEVICE_POINTER_SCREEN;
+
+   menu_display_get_fb_size(&fb_width, &fb_height,
+         &fb_pitch);
 
    joypad_info.joy_idx                          = 0;
    joypad_info.auto_binds                       = NULL;

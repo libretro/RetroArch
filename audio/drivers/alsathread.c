@@ -243,7 +243,8 @@ error:
    return NULL;
 }
 
-static ssize_t alsa_thread_write(void *data, const void *buf, size_t size)
+static ssize_t alsa_thread_write(void *data, const void *buf, size_t size,
+      bool is_perfcnt_enable)
 {
    alsa_thread_t *alsa = (alsa_thread_t*)data;
 

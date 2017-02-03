@@ -24,6 +24,7 @@ IMPORT(OSYieldThread);
 IMPORT(OSGetSystemTime);
 IMPORT(OSGetSystemTick);
 IMPORT(OSGetSymbolName);
+IMPORT(OSEffectiveToPhysical);
 
 IMPORT(exit);
 IMPORT(_Exit);
@@ -168,6 +169,7 @@ IMPORT_END();
 IMPORT_BEGIN(sysapp);
 
 IMPORT(SYSRelaunchTitle);
+IMPORT(SYSLaunchMenu);
 
 IMPORT_END();
 

@@ -185,16 +185,21 @@ bool record_driver_init_first(const record_driver_t **backend, void **data,
 void recording_dump_frame(const void *data, unsigned width,
       unsigned height, size_t pitch, bool is_idle)
 {
-   struct ffemu_video_data ffemu_data = {0};
+   bool has_gpu_record = false;
+   uint8_t *gpu_buf    = NULL;
+   struct ffemu_video_data 
+      ffemu_data       = {0};
 
-   ffemu_data.pitch   = pitch;
-   ffemu_data.width   = width;
-   ffemu_data.height  = height;
-   ffemu_data.data    = data;
+   video_driver_get_record_status(&has_gpu_record,
+         &gpu_buf);
 
-   if (video_driver_has_gpu_record())
+   ffemu_data.pitch    = pitch;
+   ffemu_data.width    = width;
+   ffemu_data.height   = height;
+   ffemu_data.data     = data;
+
+   if (has_gpu_record)
    {
-      uint8_t *gpu_buf         = NULL;
       struct video_viewport vp = {0};
 
       video_driver_get_viewport_info(&vp);
@@ -222,7 +227,6 @@ void recording_dump_frame(const void *data, unsigned width,
          return;
       }
 
-      gpu_buf = video_driver_get_gpu_record();
       if (!gpu_buf)
          return;
 
@@ -240,7 +244,7 @@ void recording_dump_frame(const void *data, unsigned width,
       ffemu_data.pitch  = -ffemu_data.pitch;
    }
 
-   if (!video_driver_has_gpu_record())
+   if (!has_gpu_record)
       ffemu_data.is_dupe = !data;
 
    if (recording_driver && recording_driver->push_video)

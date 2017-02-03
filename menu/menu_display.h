@@ -67,7 +67,9 @@ enum xmb_icon_theme
    XMB_ICON_THEME_PIXEL,
    XMB_ICON_THEME_NEOACTIVE,
    XMB_ICON_THEME_SYSTEMATIC,
-   XMB_ICON_THEME_CUSTOM
+   XMB_ICON_THEME_DOTART,
+   XMB_ICON_THEME_CUSTOM,
+   XMB_ICON_THEME_LAST
 };
 
 enum xmb_shader_pipeline
@@ -216,9 +218,9 @@ bool menu_display_libretro_running(void);
 bool menu_display_libretro(void);
 
 void menu_display_set_width(unsigned width);
-unsigned menu_display_get_width(void);
+void menu_display_get_fb_size(unsigned *fb_width, unsigned *fb_height,
+      size_t *fb_pitch);
 void menu_display_set_height(unsigned height);
-unsigned menu_display_get_height(void);
 void menu_display_set_header_height(unsigned height);
 unsigned menu_display_get_header_height(void);
 size_t menu_display_get_framebuffer_pitch(void);

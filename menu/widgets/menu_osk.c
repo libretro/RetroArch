@@ -1,5 +1,6 @@
-﻿/*  RetroArch - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -31,51 +32,28 @@
 
 #include "../../input/input_keyboard.h"
 
-#if defined(_MSC_VER) && !defined(_XBOX)
-/* https://support.microsoft.com/en-us/kb/980263 */
-#pragma execution_character_set("utf-8")
-#endif
-
 static const char *osk_grid[45]  = {NULL};
 
 static int osk_ptr               = 0;
 static enum osk_type osk_idx     = OSK_LOWERCASE_LATIN;
 
+#ifdef HAVE_LANGEXTRA
+/* This file has a UTF8 BOM, we assume HAVE_LANGEXTRA is only enabled for compilers that can support this. */
+#include "menu_osk_utf8_pages.h"
+#else
+/* Otherwise define some ascii-friendly pages. */
 static const char *uppercase_grid[] = {
-                          "!","@","#","$","%","^","&","*","(",")","⇦",
-                          "Q","W","E","R","T","Y","U","I","O","P","⏎",
-                          "A","S","D","F","G","H","J","K","L",":","⇩",
-                          "Z","X","C","V","B","N","M"," ","<",">","⊕"};
+                          "!","@","#","$","%","^","&","*","(",")","Bksp",
+                          "Q","W","E","R","T","Y","U","I","O","P","Enter",
+                          "A","S","D","F","G","H","J","K","L",":","Lower",
+                          "Z","X","C","V","B","N","M"," ","<",">","Next"};
 
 static const char *lowercase_grid[] = {
-                          "1","2","3","4","5","6","7","8","9","0","⇦",
-                          "q","w","e","r","t","y","u","i","o","p","⏎",
-                          "a","s","d","f","g","h","j","k","l",";","⇧",
-                          "z","x","c","v","b","n","m"," ",",",".","⊕"};
-
-static const char *hiragana_page1_grid[] = {
-                          "あ","い","う","え","お","ら","り","る","れ","ろ","⇦",
-                          "か","き","く","け","こ","が","ぎ","ぐ","げ","ご","⏎",
-                          "さ","し","す","せ","そ","ざ","じ","ず","ぜ","ぞ","⇧",
-                          "た","ち","つ","て","と","だ","ぢ","づ","で","ど","⊕"};
-
-static const char *hiragana_page2_grid[] = {
-                          "な","に","ぬ","ね","の","ば","び","ぶ","べ","ぼ","⇦",
-                          "は","ひ","ふ","へ","ほ","ぱ","ぴ","ぷ","ぺ","ぽ","⏎",
-                          "ま","み","む","め","も","ん","っ","ゃ","ゅ","ょ","⇧",
-                          "や","ゆ","よ","わ","を","ぁ","ぃ","ぅ","ぇ","ぉ","⊕"};
-
-static const char *katakana_page1_grid[] = {
-                          "ア","イ","ウ","エ","オ","ラ","リ","ル","レ","ロ","⇦",
-                          "カ","キ","ク","ケ","コ","ガ","ギ","グ","ゲ","ゴ","⏎",
-                          "サ","シ","ス","セ","ソ","ザ","ジ","ズ","ゼ","ゾ","⇧",
-                          "タ","チ","ツ","テ","ト","ダ","ヂ","ヅ","デ","ド","⊕"};
-
-static const char *katakana_page2_grid[] = {
-                          "ナ","ニ","ヌ","ネ","ノ","バ","ビ","ブ","ベ","ボ","⇦",
-                          "ハ","ヒ","フ","ヘ","ホ","パ","ピ","プ","ペ","ポ","⏎",
-                          "マ","ミ","ム","メ","モ","ン","ッ","ャ","ュ","ョ","⇧",
-                          "ヤ","ユ","ヨ","ワ","ヲ","ァ","ィ","ゥ","ェ","ォ","⊕"};
+                          "1","2","3","4","5","6","7","8","9","0","Bksp",
+                          "q","w","e","r","t","y","u","i","o","p","Enter",
+                          "a","s","d","f","g","h","j","k","l",";","Upper",
+                          "z","x","c","v","b","n","m"," ",",",".","Next"};
+#endif
 
 void menu_event_set_osk_idx(enum osk_type idx)
 {
@@ -102,15 +80,29 @@ void menu_event_osk_append(int ptr)
    if (ptr < 0)
       return;
 
-   if (string_is_equal(osk_grid[ptr],"⇦"))
+#ifdef HAVE_LANGEXTRA
+   if (string_is_equal(osk_grid[ptr],"\xe2\x87\xa6")) /* backspace character */
       input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
-   else if (string_is_equal(osk_grid[ptr],"⏎"))
+   else if (string_is_equal(osk_grid[ptr],"\xe2\x8f\x8e")) /* return character */
       input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
-   else if (string_is_equal(osk_grid[ptr],"⇧"))
+   else
+   if (string_is_equal(osk_grid[ptr],"\xe2\x87\xa7")) /* up arrow */
       menu_event_set_osk_idx(OSK_UPPERCASE_LATIN);
-   else if (string_is_equal(osk_grid[ptr],"⇩"))
+   else if (string_is_equal(osk_grid[ptr],"\xe2\x87\xa9")) /* down arrow */
       menu_event_set_osk_idx(OSK_LOWERCASE_LATIN);
-   else if (string_is_equal(osk_grid[ptr],"⊕"))
+   else if (string_is_equal(osk_grid[ptr],"\xe2\x8a\x95")) /* plus sign (next button) */
+#else
+   if (string_is_equal(osk_grid[ptr],"Bksp"))
+      input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
+   else if (string_is_equal(osk_grid[ptr],"Enter"))
+      input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
+   else
+   if (string_is_equal(osk_grid[ptr],"Upper"))
+      menu_event_set_osk_idx(OSK_UPPERCASE_LATIN);
+   else if (string_is_equal(osk_grid[ptr],"Lower"))
+      menu_event_set_osk_idx(OSK_LOWERCASE_LATIN);
+   else if (string_is_equal(osk_grid[ptr],"Next"))
+#endif
       if (menu_event_get_osk_idx() < OSK_TYPE_LAST - 1)
          menu_event_set_osk_idx((enum osk_type)(menu_event_get_osk_idx() + 1));
       else
@@ -123,6 +115,7 @@ void menu_event_osk_iterate(void)
 {
    switch (menu_event_get_osk_idx())
    {
+#ifdef HAVE_LANGEXTRA
       case OSK_HIRAGANA_PAGE1:
          memcpy(osk_grid, hiragana_page1_grid, sizeof(hiragana_page1_grid));
          break;
@@ -135,6 +128,7 @@ void menu_event_osk_iterate(void)
       case OSK_KATAKANA_PAGE2:
          memcpy(osk_grid, katakana_page2_grid, sizeof(katakana_page2_grid));
          break;
+#endif
       case OSK_UPPERCASE_LATIN:
          memcpy(osk_grid, uppercase_grid, sizeof(uppercase_grid));
          break;

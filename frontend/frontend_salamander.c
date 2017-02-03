@@ -167,8 +167,11 @@ static void salamander_init(char *s, size_t len)
       }
    }
 }
-
+#ifdef HAVE_MAIN
+int salamander_main(int argc, char *argv[])
+#else
 int main(int argc, char *argv[])
+#endif
 {
    char libretro_path[PATH_MAX_LENGTH] = {0};
    void *args                          = NULL;

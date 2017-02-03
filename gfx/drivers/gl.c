@@ -689,8 +689,8 @@ static INLINE void gl_copy_frame(gl_t *gl,
 {
    static struct retro_perf_counter copy_frame = {0};
 
-   performance_counter_init(&copy_frame, "copy_frame");
-   performance_counter_start(&copy_frame);
+   performance_counter_init(copy_frame, "copy_frame");
+   performance_counter_start_plus(video_info->is_perfcnt_enable, copy_frame);
 
 #if defined(HAVE_PSGL)
    {
@@ -820,7 +820,7 @@ static INLINE void gl_copy_frame(gl_t *gl,
       glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
    }
 #endif
-   performance_counter_stop(&copy_frame);
+   performance_counter_stop_plus(video_info->is_perfcnt_enable, copy_frame);
 }
 
 static INLINE void gl_set_shader_viewport(gl_t *gl, unsigned idx)
@@ -980,8 +980,6 @@ static struct video_shader *gl_get_current_shader(void *data)
 #if defined(HAVE_GL_ASYNC_READBACK)
 static void gl_pbo_async_readback(gl_t *gl)
 {
-   static struct retro_perf_counter async_readback = {0};
-
    glBindBuffer(GL_PIXEL_PACK_BUFFER,
          gl->pbo_readback[gl->pbo_readback_index++]);
    gl->pbo_readback_index &= 3;
@@ -994,8 +992,6 @@ static void gl_pbo_async_readback(gl_t *gl)
          video_pixel_get_alignment(gl->vp.width * sizeof(uint32_t)));
 
    /* Read asynchronously into PBO buffer. */
-   performance_counter_init(&async_readback, "async_readback");
-   performance_counter_start(&async_readback);
    glReadBuffer(GL_BACK);
 #ifdef HAVE_OPENGLES3
    glReadPixels(gl->vp.x, gl->vp.y,
@@ -1006,7 +1002,6 @@ static void gl_pbo_async_readback(gl_t *gl)
          gl->vp.width, gl->vp.height,
          GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 #endif
-   performance_counter_stop(&async_readback);
 
    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 }
@@ -1101,8 +1096,8 @@ static bool gl_frame(void *data, const void *frame,
    unsigned width                      = video_info->width;
    unsigned height                     = video_info->height;
 
-   performance_counter_init(&frame_run, "frame_run");
-   performance_counter_start(&frame_run);
+   performance_counter_init(frame_run, "frame_run");
+   performance_counter_start_plus(video_info->is_perfcnt_enable, frame_run);
 
    if (!gl)
       return false;
@@ -1293,7 +1288,7 @@ static bool gl_frame(void *data, const void *frame,
 
    video_context_driver_update_window_title(video_info);
 
-   performance_counter_stop(&frame_run);
+   performance_counter_stop_plus(video_info->is_perfcnt_enable, frame_run);
 
 #ifdef HAVE_FBO
    /* Reset state which could easily mess up libretro core. */
@@ -1353,8 +1348,9 @@ static bool gl_frame(void *data, const void *frame,
    {
       static struct retro_perf_counter gl_fence = {0};
 
-      performance_counter_init(&gl_fence, "gl_fence");
-      performance_counter_start(&gl_fence);
+      performance_counter_init(gl_fence, "gl_fence");
+      performance_counter_start_plus(video_info->is_perfcnt_enable,
+            gl_fence);
       glClear(GL_COLOR_BUFFER_BIT);
       gl->fences[gl->fence_count++] =
          glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
@@ -1370,7 +1366,8 @@ static bool gl_frame(void *data, const void *frame,
                gl->fence_count * sizeof(GLsync));
       }
 
-      performance_counter_stop(&gl_fence);
+      performance_counter_stop_plus(video_info->is_perfcnt_enable,
+            gl_fence);
    }
 #endif
 
@@ -2362,7 +2359,6 @@ static void gl_viewport_info(void *data, struct video_viewport *vp)
 static bool gl_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
 #ifndef NO_GL_READ_PIXELS
-   static struct retro_perf_counter read_viewport = {0};
    unsigned                     num_pixels = 0;
    gl_t                                *gl = (gl_t*)data;
 
@@ -2370,9 +2366,6 @@ static bool gl_read_viewport(void *data, uint8_t *buffer, bool is_idle)
       return false;
 
    context_bind_hw_render(false);
-
-   performance_counter_init(&read_viewport, "read_viewport");
-   performance_counter_start(&read_viewport);
 
    num_pixels = gl->vp.width * gl->vp.height;
 
@@ -2437,10 +2430,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer, bool is_idle)
       gl->readback_buffer_screenshot = malloc(num_pixels * sizeof(uint32_t));
 
       if (!gl->readback_buffer_screenshot)
-      {
-         performance_counter_stop(&read_viewport);
          goto error;
-      }
 
       if (!is_idle)
          video_driver_cached_frame();
@@ -2454,7 +2444,6 @@ static bool gl_read_viewport(void *data, uint8_t *buffer, bool is_idle)
       gl->readback_buffer_screenshot = NULL;
    }
 
-   performance_counter_stop(&read_viewport);
    context_bind_hw_render(true);
    return true;
 

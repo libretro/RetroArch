@@ -952,6 +952,21 @@ static bool dynamic_verify_hw_context(enum retro_hw_context_type type,
    return true;
 }
 
+static void core_performance_counter_start(struct retro_perf_counter *perf)
+{
+   if (runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL))
+   {
+      perf->call_cnt++;
+      perf->start      = cpu_features_get_perf_counter();
+   }
+}
+
+static void core_performance_counter_stop(struct retro_perf_counter *perf)
+{
+   if (runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL))
+      perf->total += cpu_features_get_perf_counter() - perf->start;
+}
+
 /**
  * rarch_environment_cb:
  * @cmd                          : Identifier of command.
@@ -1410,8 +1425,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          cb->get_perf_counter = cpu_features_get_perf_counter;
 
          cb->perf_register    = performance_counter_register; 
-         cb->perf_start       = performance_counter_start;
-         cb->perf_stop        = performance_counter_stop;
+         cb->perf_start       = core_performance_counter_start;
+         cb->perf_stop        = core_performance_counter_stop;
          cb->perf_log         = retro_perf_log;
          break;
       }

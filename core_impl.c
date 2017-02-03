@@ -281,12 +281,17 @@ bool core_get_memory(retro_ctx_memory_info_t *info)
 
 bool core_load_game(retro_ctx_load_content_info_t *load_info)
 {
+   bool contentless = false;
+   bool is_inited   = false;
+
+   content_get_status(&contentless, &is_inited);
+
    if (load_info && load_info->special)
       core_game_loaded = core.retro_load_game_special(
             load_info->special->id, load_info->info, load_info->content->size);
    else if (load_info && !string_is_empty(load_info->content->elems[0].data))
       core_game_loaded = core.retro_load_game(load_info->info);
-   else if (content_does_not_need_content())
+   else if (contentless)
       core_game_loaded = core.retro_load_game(NULL);
    else
       core_game_loaded = false;
@@ -396,7 +401,7 @@ bool core_unload(void)
 
 bool core_unload_game(void)
 {
-   video_driver_deinit_hw_context();
+   video_driver_free_hw_context();
    audio_driver_stop();
    core.retro_unload_game();
    core_game_loaded = false;

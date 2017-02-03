@@ -412,7 +412,7 @@ static void uninit_drivers(int flags)
       wifi_driver_ctl(RARCH_WIFI_CTL_DEINIT, NULL);
 
    if (flags & DRIVERS_VIDEO_INPUT)
-      video_driver_deinit();
+      video_driver_free();
 
    if ((flags & DRIVER_VIDEO_MASK) && !video_driver_owns_driver())
       video_driver_destroy_data();

@@ -116,7 +116,8 @@ static INLINE void copy_swapped(uint32_t * restrict dst,
    }while(--size);
 }
 
-static ssize_t gx_audio_write(void *data, const void *buf_, size_t size)
+static ssize_t gx_audio_write(void *data, const void *buf_, size_t size,
+      bool is_perfcnt_enable)
 {
    size_t       frames = size >> 2;
    const uint32_t *buf = buf_;

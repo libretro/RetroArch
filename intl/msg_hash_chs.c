@@ -137,9 +137,9 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          case RARCH_DISK_NEXT:
          case RARCH_DISK_PREV:
             snprintf(s, len,
-                  "Cycles through disk images. Use after ejecting. \n"
+                  "磁盘镜像周期。弹出后使用。 \n"
                   " \n"
-                  "Complete by toggling eject again.");
+                  "再次开关弹出完成。");
             break;
          case RARCH_GRAB_MOUSE_TOGGLE:
             snprintf(s, len,
@@ -220,10 +220,10 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                "账号以及密码.");
          break;
       case MENU_ENUM_LABEL_CHEEVOS_USERNAME:
-         snprintf(s, len, "Username for your Retro Achievements account.");
+         snprintf(s, len, "你的Retro Achievements账号的用户名。");
          break;
       case MENU_ENUM_LABEL_CHEEVOS_PASSWORD:
-         snprintf(s, len, "Password for your Retro Achievements account.");
+         snprintf(s, len, "你的Retro Achievements账号的密码。");
          break;
       case MENU_ENUM_LABEL_USER_LANGUAGE:
          snprintf(s, len, "依据选择的语言来本地化菜单和其他屏显消息。 \n"
@@ -241,7 +241,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len, "自动加载游戏内容指定的核心选项.");
          break;
       case MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE:
-         snprintf(s, len, "Automatically load override configurations.");
+         snprintf(s, len, "自动加载覆盖配置。");
          break;
       case MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE:
          snprintf(s, len, "自动加载输入重映射文件.");
@@ -269,8 +269,8 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                "go back to the state prior to loading.");
          break;
       case MENU_ENUM_LABEL_UNDO_SAVE_STATE:
-         snprintf(s, len, "If a state was overwritten, it will \n"
-               "roll back to the previous save state.");
+         snprintf(s, len, "如果状态被覆盖，它将 \n"
+               "它将回滚到上一保存的状态。");
          break;
       case MENU_ENUM_LABEL_TAKE_SCREENSHOT:
          snprintf(s, len, "创建一份截图. \n"
@@ -295,7 +295,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len, "记录配置文件.");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_CURSOR:
-         snprintf(s, len, "Database cursor file.");
+         snprintf(s, len, "数据库指针文件。");
          break;
       case MENU_ENUM_LABEL_FILE_CONFIG:
          snprintf(s, len, "配置文件.");
@@ -1376,11 +1376,6 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "This is only updated in config if\n"
                "'Save Configuration on Exit' is enabled.\n");
-         break;
-      case MENU_ENUM_LABEL_CORE_SPECIFIC_CONFIG:
-         snprintf(s, len,
-               "Load up a specific config file \n"
-               "based on the core being used.\n");
          break;
       case MENU_ENUM_LABEL_VIDEO_FULLSCREEN:
          snprintf(s, len, "Toggles fullscreen.");

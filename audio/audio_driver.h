@@ -48,26 +48,57 @@ typedef struct audio_driver
     * @size         : Size of audio buffer.
     *
     * Write samples to audio driver.
-    **/
-   ssize_t (*write)(void *data, const void *buf, size_t size);
+    *
+    * Write data in buffer to audio driver.
+    * A frame here is defined as one combined sample of left and right
+    * channels. (I.e. 44.1kHz, 16-bit stereo has 88.2k samples/s, and
+    * 44.1k frames/s.)
+    *
+    * Samples are interleaved in format LRLRLRLRLR ...
+    * If the driver returns true in use_float(), a floating point
+    * format will be used, with range [-1.0, 1.0].
+    * If not, signed 16-bit samples in native byte ordering will be used.
+    *
+    * This function returns the number of frames successfully written.
+    * If an error occurs, -1 should be returned.
+    * Note that non-blocking behavior that cannot write at this time
+    * should return 0 as returning -1 will terminate the driver.
+    *
+    * Unless said otherwise with set_nonblock_state(), all writes
+    * are blocking, and it should block till it has written all frames.
+    */
+   ssize_t (*write)(void *data, const void *buf, size_t size,
+         bool is_perfcnt_enable);
 
-   /* Stops driver. */
+   /* Temporarily pauses the audio driver. */
    bool (*stop)(void *data);
 
-   /* Starts driver. */
+   /* Resumes audio driver from the paused state. */
    bool (*start)(void *data, bool is_shutdown);
 
    /* Is the audio driver currently running? */
    bool (*alive)(void *data);
 
-   /* Should we care about blocking in audio thread? Fast forwarding. */
+   /* Should we care about blocking in audio thread? Fast forwarding. 
+    *
+    * If state is true, nonblocking operation is assumed.
+    * This is typically used for fast-forwarding. If driver cannot
+    * implement nonblocking writes, this can be disregarded, but should
+    * log a message to stderr.
+    * */
    void (*set_nonblock_state)(void *data, bool toggle);
 
-   /* Frees driver data. */
+   /* Stops and frees driver data. */
    void (*free)(void *data);
 
    /* Defines if driver will take standard floating point samples,
-    * or int16_t samples. */
+    * or int16_t samples. 
+    *
+    * If true is returned, the audio driver is capable of using
+    * floating point data. This will likely increase performance as the
+    * resampler unit uses floating point. The sample range is
+    * [-1.0, 1.0].
+    * */
    bool (*use_float)(void *data);
 
    /* Human-readable identifier. */

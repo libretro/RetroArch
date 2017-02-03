@@ -407,6 +407,8 @@ typedef struct settings
       unsigned port;
       bool stateless_mode;
       int check_frames;
+      unsigned input_latency_frames_min;
+      unsigned input_latency_frames_range;
       bool swap_input;
       bool nat_traversal;
       char password[128];

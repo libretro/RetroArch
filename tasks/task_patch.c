@@ -17,6 +17,8 @@
 /* BPS/UPS/IPS implementation from bSNES (nall::).
  * Modified for RetroArch. */
 
+/* TODO/FIXME - turn this into actual task */
+
 #include <stdint.h>
 #include <string.h>
 
@@ -30,9 +32,9 @@
 
 #include <encodings/crc32.h>
 
-#include "msg_hash.h"
-#include "retroarch.h"
-#include "verbosity.h"
+#include "../msg_hash.h"
+#include "../retroarch.h"
+#include "../verbosity.h"
 
 enum bps_mode
 {
@@ -585,13 +587,14 @@ static bool try_ips_patch(bool allow_ips,
  * Apply patch to the content file in-memory.
  *
  **/
-void patch_content(
+static void patch_content(
       const char *name_ips,
       const char *name_bps,
       const char *name_ups,
       uint8_t **buf,
-      ssize_t *size)
+      void *data)
 {
+   ssize_t *size    = (ssize_t*)data;
    bool allow_ups   = !rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL) && !rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
    bool allow_ips   = !rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL) && !rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
    bool allow_bps   = !rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL) && !rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);

@@ -3138,17 +3138,17 @@ static int action_ok_netplay_connect_room(const char *path,
    snprintf(tmp_hostname,
          sizeof(tmp_hostname),
          "%s:%d", 
-      netplay_room_list[idx - 1].address,
-      netplay_room_list[idx - 1].port);
+      netplay_room_list[idx - 2].address,
+      netplay_room_list[idx - 2].port);
 
    RARCH_LOG("Connecting to: %s with game: %s/%08x\n", 
          tmp_hostname,
-         netplay_room_list[idx - 1].gamename,
-         netplay_room_list[idx - 1].gamecrc);
+         netplay_room_list[idx - 2].gamename,
+         netplay_room_list[idx - 2].gamecrc);
 
-   task_push_netplay_crc_scan(netplay_room_list[idx - 1].gamecrc,
-      netplay_room_list[idx - 1].gamename,
-      tmp_hostname, netplay_room_list[idx - 1].corename);
+   task_push_netplay_crc_scan(netplay_room_list[idx - 2].gamecrc,
+      netplay_room_list[idx - 2].gamename,
+      tmp_hostname, netplay_room_list[idx - 2].corename);
 
 #else
    return -1;
@@ -3368,7 +3368,12 @@ finish:
          }
 #endif
          menu_entries_append_enum(file_list,
-               "Refresh Room List",
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST),
+               msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST),
+               MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST,
+               MENU_SETTING_ACTION, 0, 0);
+         menu_entries_append_enum(file_list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS),
                msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS),
                MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS,
                MENU_SETTING_ACTION, 0, 0);
@@ -3418,7 +3423,7 @@ finish:
 #endif
             j+=8;
 
-            snprintf(s, sizeof(s), "Nickname: %s",
+            snprintf(s, sizeof(s), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME),
                   netplay_room_list[i].nickname);
 
             menu_entries_append_enum(file_list,
@@ -3426,7 +3431,6 @@ finish:
                   msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM),
                   MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,
                   MENU_WIFI, 0, 0);
-
          }
       }
    }
@@ -3815,12 +3819,17 @@ static int action_ok_netplay_enable_host(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
 #ifdef HAVE_NETWORKING
+   bool contentless = false;
+   bool is_inited   = false;
+
+   content_get_status(&contentless, &is_inited);
+
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
       command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
 
    /* If we haven't yet started, this will load on its own */
-   if (!content_is_inited())
+   if (!is_inited)
    {
       runloop_msg_queue_push(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
@@ -3860,13 +3869,17 @@ static int action_ok_netplay_enable_client(const char *path,
 {
 #ifdef HAVE_NETWORKING
    settings_t *settings = config_get_ptr();
+   bool contentless     = false;
+   bool is_inited       = false;
+
+   content_get_status(&contentless, &is_inited);
 
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
       command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
    /* If we haven't yet started, this will load on its own */
-   if (!content_is_inited())
+   if (!is_inited)
    {
       runloop_msg_queue_push(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),

@@ -51,7 +51,8 @@ static void *rwebaudio_init(const char *device, unsigned rate, unsigned latency,
    return data;
 }
 
-static ssize_t rwebaudio_write(void *data, const void *buf, size_t size)
+static ssize_t rwebaudio_write(void *data, const void *buf, size_t size,
+      bool is_perfcnt_enable)
 {
    (void)data;
    return RWebAudioWrite(buf, size);

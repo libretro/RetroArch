@@ -336,24 +336,22 @@ bool menu_display_libretro(void)
    return video_driver_cached_frame();
 }
 
+void menu_display_get_fb_size(unsigned *fb_width,
+      unsigned *fb_height, size_t *fb_pitch)
+{
+   *fb_width  = menu_display_framebuf_width;
+   *fb_height = menu_display_framebuf_height;
+   *fb_pitch  = menu_display_framebuf_pitch;
+}
+
 void menu_display_set_width(unsigned width)
 {
    menu_display_framebuf_width = width;
 }
 
-unsigned menu_display_get_width(void)
-{
-   return menu_display_framebuf_width;
-}
-
 void menu_display_set_height(unsigned height)
 {
    menu_display_framebuf_height = height;
-}
-
-unsigned menu_display_get_height(void)
-{
-   return menu_display_framebuf_height;
 }
 
 void menu_display_set_header_height(unsigned height)

@@ -146,7 +146,8 @@ static void *ps3_audio_init(const char *device,
    return data;
 }
 
-static ssize_t ps3_audio_write(void *data, const void *buf, size_t size)
+static ssize_t ps3_audio_write(void *data, const void *buf, size_t size,
+      bool is_perfcnt_enable)
 {
    ps3_audio_t *aud = data;
 
@@ -209,7 +210,7 @@ static void ps3_audio_free(void *data)
    ps3_audio_t *aud = data;
 
    aud->quit_thread = true;
-   ps3_audio_start(aud);
+   ps3_audio_start(aud, false);
    sys_ppu_thread_join(aud->thread, &val);
 
    ps3_audio_stop(aud);

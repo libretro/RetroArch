@@ -93,7 +93,8 @@ static void ctr_dsp_audio_free(void *data)
    ndspExit();
 }
 
-static ssize_t ctr_dsp_audio_write(void *data, const void *buf, size_t size)
+static ssize_t ctr_dsp_audio_write(void *data, const void *buf, size_t size,
+      bool is_perfcnt_enable)
 {
    u32 pos;
    static struct retro_perf_counter ctraudio_dsp_f = {0};
@@ -116,8 +117,8 @@ static ssize_t ctr_dsp_audio_write(void *data, const void *buf, size_t size)
       }
    }
 
-   performance_counter_init(&ctraudio_dsp_f, "ctraudio_dsp_f");
-   performance_counter_start(&ctraudio_dsp_f);
+   performance_counter_init(ctraudio_dsp_f, "ctraudio_dsp_f");
+   performance_counter_start_plus(is_perfcnt_enable, ctraudio_dsp_f);
 
    pos = ctr->pos << 2;
 
@@ -140,7 +141,7 @@ static ssize_t ctr_dsp_audio_write(void *data, const void *buf, size_t size)
    ctr->pos += size >> 2;
    ctr->pos &= CTR_DSP_AUDIO_COUNT_MASK;
 
-   performance_counter_stop(&ctraudio_dsp_f);
+   performance_counter_stop_plus(is_perfcnt_enable, ctraudio_dsp_f);
 
    return size;
 }

@@ -58,7 +58,8 @@ static void *ra_init(const char *device, unsigned rate, unsigned latency,
    return roar;
 }
 
-static ssize_t ra_write(void *data, const void *buf, size_t size)
+static ssize_t ra_write(void *data, const void *buf, size_t size,
+      bool is_perfcnt_enable)
 {
    int err;
    size_t written = 0;
@@ -72,7 +73,8 @@ static ssize_t ra_write(void *data, const void *buf, size_t size)
       ssize_t rc;
       size_t write_amt = size - written;
 
-      if ((rc = roar_vs_write(roar->vss, (const char*)buf + written, write_amt, &err)) < (ssize_t)write_amt)
+      if ((rc = roar_vs_write(roar->vss,
+                  (const char*)buf + written, write_amt, &err)) < (ssize_t)write_amt)
       {
          if (roar->nonblocking)
             return rc;

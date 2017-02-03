@@ -164,8 +164,6 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
          return "Ustawienia rdzenia";
       case MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE: /* TODO/FIXME */
          return "Nie uruchamiaj rdzenia automatycznie";
-      case MENU_ENUM_LABEL_VALUE_CORE_SPECIFIC_CONFIG:
-         return "Osobna konfiguracja dla każdego rdzenia";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
          return "Automatycznie wypakowuj pobierane archiwa";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL:
@@ -706,7 +704,7 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
          return "Wsparcie Zlib";
       case MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT:
          return "Zapisz zrzut";
-      case MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE:
+      case MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE: /* TODO/FIXME - update */
          return "Osobny wątek odbierania danych";
       case MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE:
          return "Wyświetl czas/datę";

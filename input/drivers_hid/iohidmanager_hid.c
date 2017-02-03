@@ -60,22 +60,18 @@ struct iohidmanager_hid_adapter
 
 CFComparisonResult iohidmanager_sort_elements(const void *val1, const void *val2, void *context)
 {
-   uint32_t page1 = IOHIDElementGetUsagePage((IOHIDElementRef)val1);
-   uint32_t page2 = IOHIDElementGetUsagePage((IOHIDElementRef)val2);
-   uint32_t use1 = IOHIDElementGetUsage((IOHIDElementRef)val1);
-   uint32_t use2 = IOHIDElementGetUsage((IOHIDElementRef)val2);
-   uint32_t cookie1 = IOHIDElementGetCookie((IOHIDElementRef)val1);
-   uint32_t cookie2 = IOHIDElementGetCookie((IOHIDElementRef)val2);
+   uint32_t page1   = (uint32_t)IOHIDElementGetUsagePage((IOHIDElementRef)val1);
+   uint32_t page2   = (uint32_t)IOHIDElementGetUsagePage((IOHIDElementRef)val2);
+   uint32_t use1    = (uint32_t)IOHIDElementGetUsage((IOHIDElementRef)val1);
+   uint32_t use2    = (uint32_t)IOHIDElementGetUsage((IOHIDElementRef)val2);
+   uint32_t cookie1 = (uint32_t)IOHIDElementGetCookie((IOHIDElementRef)val1);
+   uint32_t cookie2 = (uint32_t)IOHIDElementGetCookie((IOHIDElementRef)val2);
 
-   if(page1 != page2)
-   {
+   if (page1 != page2)
       return page1 > page2;
-   }
 
    if(use1 != use2)
-   {
        return use1 > use2;
-   }
 
    return cookie1 > cookie2;
 }
@@ -236,10 +232,10 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
    struct iohidmanager_hid_adapter *adapter = 
       (struct iohidmanager_hid_adapter*)data;
    IOHIDElementRef element                  = IOHIDValueGetElement(value);
-   uint32_t type                            = IOHIDElementGetType(element);
-   uint32_t page                            = IOHIDElementGetUsagePage(element);
-   uint32_t use                             = IOHIDElementGetUsage(element);
-   uint32_t cookie                          = IOHIDElementGetCookie(element);
+   uint32_t type                            = (uint32_t)IOHIDElementGetType(element);
+   uint32_t page                            = (uint32_t)IOHIDElementGetUsagePage(element);
+   uint32_t use                             = (uint32_t)IOHIDElementGetUsage(element);
+   uint32_t cookie                          = (uint32_t)IOHIDElementGetCookie(element);
    apple_input_rec_t *tmp                   = NULL;
 
    if (type != kIOHIDElementTypeInput_Misc)
@@ -262,10 +258,10 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
                   {
                      tmp = adapter->hats;
 
-                     while(tmp && tmp->cookie != cookie)
+                     while(tmp && tmp->cookie != (IOHIDElementCookie)cookie)
                         tmp = tmp->next;
 
-                     if(tmp->cookie == cookie)
+                     if(tmp->cookie == (IOHIDElementCookie)cookie)
                      {
                         CFIndex range = IOHIDElementGetLogicalMax(element) - IOHIDElementGetLogicalMin(element);
                         CFIndex val   = IOHIDValueGetIntegerValue(value);
@@ -328,10 +324,10 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
                      {
                         tmp = adapter->axes;
 
-                        while(tmp && tmp->cookie != cookie)
+                        while(tmp && tmp->cookie != (IOHIDElementCookie)cookie)
                             tmp = tmp->next;
 
-                        if(tmp->cookie == cookie)
+                        if(tmp->cookie == (IOHIDElementCookie)cookie)
                         {
                            CFIndex min   = IOHIDElementGetPhysicalMin(element);
                            CFIndex state = IOHIDValueGetIntegerValue(value) - min;
@@ -354,10 +350,10 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
                {
                   tmp = adapter->buttons;
 
-                  while(tmp && tmp->cookie != cookie)
+                  while(tmp && tmp->cookie != (IOHIDElementCookie)cookie)
                      tmp = tmp->next;
 
-                  if(tmp->cookie == cookie)
+                  if(tmp->cookie == (IOHIDElementCookie)cookie)
                   {
                      CFIndex state = IOHIDValueGetIntegerValue(value);
 
@@ -544,9 +540,9 @@ static void iohidmanager_hid_device_add(void *data, IOReturn result,
          continue;
 
       IOHIDElementType type = IOHIDElementGetType(element);
-      uint32_t page         = IOHIDElementGetUsagePage(element);
-      uint32_t use          = IOHIDElementGetUsage(element);
-      uint32_t cookie       = IOHIDElementGetCookie(element);
+      uint32_t page         = (uint32_t)IOHIDElementGetUsagePage(element);
+      uint32_t use          = (uint32_t)IOHIDElementGetUsage(element);
+      uint32_t cookie       = (uint32_t)IOHIDElementGetCookie(element);
 
       switch (page)
       {
@@ -569,7 +565,7 @@ static void iohidmanager_hid_device_add(void *data, IOReturn result,
                            /* as far as I can tell, OSX only reports one Hat */
                            apple_input_rec_t *hat = (apple_input_rec_t *)malloc(sizeof(apple_input_rec_t));
                            hat->id                = 0;
-                           hat->cookie            = cookie;
+                           hat->cookie            = (IOHIDElementCookie)cookie;
                            hat->next              = NULL;
                            adapter->hats          = hat;
                         }
@@ -588,7 +584,7 @@ static void iohidmanager_hid_device_add(void *data, IOReturn result,
 
                               apple_input_rec_t *axis = (apple_input_rec_t *)malloc(sizeof(apple_input_rec_t));
                               axis->id                = i;
-                              axis->cookie            = cookie;
+                              axis->cookie            = (IOHIDElementCookie)cookie;
                               axis->next              = NULL;
 
                               if(iohidmanager_check_for_id(adapter->axes,i))
@@ -628,8 +624,8 @@ static void iohidmanager_hid_device_add(void *data, IOReturn result,
                case kIOHIDElementTypeInput_Button:
                   {
                      apple_input_rec_t *btn = (apple_input_rec_t *)malloc(sizeof(apple_input_rec_t));
-                     btn->id                = use - 1;
-                     btn->cookie            = cookie;
+                     btn->id                = (uint32_t)(use - 1);
+                     btn->cookie            = (IOHIDElementCookie)cookie;
                      btn->next              = NULL;
 
                      if(iohidmanager_check_for_id(adapter->buttons,btn->id))

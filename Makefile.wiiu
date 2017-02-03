@@ -14,6 +14,7 @@ OBJ += wiiu/system/exception_handler.o
 OBJ += wiiu/fs/sd_fat_devoptab.o
 OBJ += wiiu/fs/fs_utils.o
 OBJ += wiiu/tex_shader.o
+OBJ += wiiu/hbl.o
 
 DEFINES :=
 

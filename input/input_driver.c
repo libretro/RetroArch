@@ -693,7 +693,9 @@ uint64_t input_menu_keys_pressed(
          input_push_analog_dpad(auto_binds, ANALOG_DPAD_LSTICK);
       }
 
-      joypad_info.axis_threshold = settings->input.axis_threshold;
+      joypad_info.joy_idx                          = 0;
+      joypad_info.auto_binds                       = NULL;
+      joypad_info.axis_threshold                   = settings->input.axis_threshold;
 
       input_driver_block_libretro_input            = false;
       input_driver_block_hotkey                    = false;
@@ -904,6 +906,8 @@ uint64_t input_keys_pressed(
    bool enable_hotkey_valid                     = settings->input.binds[0][RARCH_ENABLE_HOTKEY].valid;
    bool game_focus_toggle_valid                 = false;
 
+   joypad_info.joy_idx                          = 0;
+   joypad_info.auto_binds                       = NULL;
    joypad_info.axis_threshold                   = settings->input.axis_threshold;
    
    input_driver_block_libretro_input            = false;

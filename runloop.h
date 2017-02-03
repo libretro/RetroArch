@@ -23,7 +23,7 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
-#define runloop_cmd_press(current_input, id)     (BIT64_GET(current_input, id))
+#include "runloop_defines.h"
 
 RETRO_BEGIN_DECLS
 
@@ -204,7 +204,8 @@ void runloop_msg_queue_push(const char *msg, unsigned prio,
 
 bool runloop_msg_queue_pull(const char **ret);
 
-void runloop_get_status(bool *is_paused, bool *is_idle, bool *is_slowmotion);
+void runloop_get_status(bool *is_paused, bool *is_idle, bool *is_slowmotion,
+      bool *is_perfcnt_enable);
 
 bool runloop_ctl(enum runloop_ctl_state state, void *data);
 

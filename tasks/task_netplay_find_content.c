@@ -56,6 +56,7 @@ static void netplay_crc_scan_callback(void *task_data,
    if (!state)
       return;
 
+   fflush(stdout);
    if (!string_is_empty(state->core_path) && !string_is_empty(state->content_path))
    {
       command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
@@ -64,6 +65,16 @@ static void netplay_crc_scan_callback(void *task_data,
             &content_info,
             CORE_TYPE_PLAIN,
             CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU,
+            NULL, NULL);
+   }
+   else if(string_is_equal(state->content_path, "N/A"))
+   {
+      printf("Content: %s Core: %s\n", state->content_path, state->core_path);
+      task_push_content_load_default(
+            state->core_path, NULL,
+            NULL,
+            CORE_TYPE_PLAIN,
+            CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU,
             NULL, NULL);
    }
    else
@@ -100,10 +111,12 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
 
    if (state->lpl_list->size == 0)
       goto no_playlists;
-   
-   /* content with no CRC uses 00000000*/
+
+   /* Lobby reports content CRC, try to use CRC matching
+      content with no CRC uses 00000000 */
    if (!string_is_equal(state->content_crc, "00000000|crc"))
    {
+
       RARCH_LOG("Using CRC matching\n");
 
       for (i = 0; i < state->lpl_list->size; i++)
@@ -126,7 +139,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
                state->found = true;
                task_set_data(task, state);
                task_set_progress(task, 100);
-               task_set_title(task, strdup("Compatible content found"));
+               task_set_title(task, strdup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND)));
                task_set_finished(task, true);
                string_list_free(state->lpl_list);
                free(playlist);
@@ -139,6 +152,18 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
          free(playlist);
       }
    }
+   /* Lobby reports core doesn't need content */
+   else if(string_is_equal(state->content_path, "N/A"))
+   {
+      state->found = true;
+      task_set_data(task, state);
+      task_set_progress(task, 100);
+      task_set_title(task, strdup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND)));
+      task_set_finished(task, true);
+      return;
+   }
+   /* Lobby reports that the core needs content but
+      the CRC wasn't reported */
    else
    {
       RARCH_LOG("Using filename matching\n");
@@ -173,7 +198,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
                state->found = true;
                task_set_data(task, state);
                task_set_progress(task, 100);
-               task_set_title(task, strdup("Compatible content found"));
+               task_set_title(task, strdup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND)));
                task_set_finished(task, true);
                string_list_free(state->lpl_list);
                free(playlist);
@@ -190,8 +215,9 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
 no_playlists:
    string_list_free(state->lpl_list);
    task_set_progress(task, 100);
-   task_set_title(task, strdup("Couldn't find compatible content"));
+   task_set_title(task, strdup("Content not found, try manual load or disconnect from host"));
    task_set_finished(task, true);
+   command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
    free(state);
    return;
 }
@@ -231,6 +257,9 @@ bool task_push_netplay_crc_scan(uint32_t crc, char* name,
       /* check if the core name matches.
          TO-DO :we could try to load the core too to check 
          if the version string matches too */
+#if 0
+      printf("Info: %s State: %s", info->list[i].core_name, state->core_name);
+#endif
       if(string_is_equal(info->list[i].core_name, state->core_name))
       {
          strlcpy(state->core_path, info->list[i].path, sizeof(state->core_path));

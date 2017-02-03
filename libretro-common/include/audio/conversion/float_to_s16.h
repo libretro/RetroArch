@@ -31,74 +31,16 @@ RETRO_BEGIN_DECLS
 #include <stddef.h>
 
 /**
- * convert_float_to_s16_C:
+ * convert_float_to_s16:
  * @out               : output buffer
  * @in                : input buffer
  * @samples           : size of samples to be converted
  *
  * Converts floating point 
  * to signed integer 16-bit.
- *
- * C implementation callback function.
  **/
-void convert_float_to_s16_C(int16_t *out,
+void convert_float_to_s16(int16_t *out,
       const float *in, size_t samples);
-
-#if defined(__SSE2__)
-#define convert_float_to_s16 convert_float_to_s16_SSE2
-/**
- * convert_float_to_s16_SSE2:
- * @out               : output buffer
- * @in                : input buffer
- * @samples           : size of samples to be converted
- *
- * Converts floating point 
- * to signed integer 16-bit.
- *
- * SSE2 implementation callback function.
- **/
-void convert_float_to_s16_SSE2(int16_t *out,
-      const float *in, size_t samples);
-#elif defined(__ALTIVEC__)
-#define convert_float_to_s16 convert_float_to_s16_altivec
-/**
- * convert_float_to_s16_altivec:
- * @out               : output buffer
- * @in                : input buffer
- * @samples           : size of samples to be converted
- *
- * Converts floating point 
- * to signed integer 16-bit.
- *
- * AltiVec implementation callback function.
- **/
-void convert_float_to_s16_altivec(int16_t *out,
-      const float *in, size_t samples);
-#elif defined(__ARM_NEON__)
-#define convert_float_to_s16 convert_float_to_s16_arm
-
-void (*convert_float_to_s16_arm)(int16_t *out,
-      const float *in, size_t samples);
-
-void convert_float_s16_asm(int16_t *out, const float *in, size_t samples);
-#elif defined(_MIPS_ARCH_ALLEGREX)
-#define convert_float_to_s16 convert_float_to_s16_ALLEGREX
-/**
- * convert_float_to_s16_ALLEGREX:
- * @out               : output buffer
- * @in                : input buffer
- * @samples           : size of samples to be converted
- *
- * Converts floating point 
- * to signed integer 16-bit.
- *
- * MIPS ALLEGREX implementation callback function.
- **/
-void convert_float_to_s16_ALLEGREX(int16_t *out,
-      const float *in, size_t samples);
-#else
-#define convert_float_to_s16 convert_float_to_s16_C
-#endif
 
 /**
  * convert_float_to_s16_init_simd:

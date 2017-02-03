@@ -55,11 +55,20 @@ struct retro_keybind
    enum msg_hash_enums enum_idx;
    enum retro_key key;
 
+   /* Joypad key. Joypad POV (hats) 
+    * are embedded into this key as well. */
    uint64_t joykey;
-   /* Default key binding value - for resetting bind to default */
+
+   /* Default key binding value - 
+    * for resetting bind to default */
    uint64_t def_joykey;
 
+   /* Joypad axis. Negative and positive axes 
+    * are embedded into this variable. */
    uint32_t joyaxis;
+
+   /* Default joy axis binding value - 
+    * for resetting bind to default */
    uint32_t def_joyaxis;
 
    /* Used by input_{push,pop}_analog_dpad(). */
@@ -71,14 +80,28 @@ struct retro_keybind
 
 typedef struct input_driver
 {
+   /* Inits input driver. 
+    */
    void *(*init)(const char *joypad_driver);
+
+   /* Polls input. Called once every frame. */
    void (*poll)(void *data);
+
+   /* Queries input state for a certain key on a certain player.
+    * Players are 1 - MAX_USERS.
+    * For digital inputs, pressed key is 1, not pressed key is 0.
+    * Analog values have same range as a signed 16-bit integer.
+    */
    int16_t (*input_state)(void *data,
          rarch_joypad_info_t joypad_info,
          const struct retro_keybind **retro_keybinds,
          unsigned port, unsigned device, unsigned index, unsigned id);
+
    bool (*meta_key_pressed)(void *data, int key);
+
+   /* Frees the input struct. */
    void (*free)(void *data);
+
    bool (*set_sensor_state)(void *data, unsigned port,
          enum retro_sensor_action action, unsigned rate);
    float (*get_sensor_input)(void *data, unsigned port, unsigned id);
