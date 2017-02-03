@@ -133,7 +133,7 @@ ACHIEVEMENTS
 
 #include "../libretro-common/formats/json/jsonsax.c"
 #include "../network/net_http_special.c"
-#include "../cheevos.c"
+#include "../cheevos/cheevos.c"
 #endif
 
 /*============================================================
