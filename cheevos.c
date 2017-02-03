@@ -1860,7 +1860,19 @@ static int cheevos_login(retro_time_t *timeout)
       free((void*)json);
 
       if (!res)
+      {
+         if(settings->video.msg_verbosity)
+         {
+            char msg[256];
+            snprintf(msg, sizeof(msg), "RetroAchievements: logged in as \"%s\".",
+               username);
+            msg[sizeof(msg) - 1] = 0;
+            runloop_msg_queue_push(msg, 0, 3 * 60, false);
+            RARCH_LOG("CHEEVOS %s\n", msg);
+         }
+
          return 0;
+      }
    }
 
    runloop_msg_queue_push("Retro Achievements login error.",
@@ -2677,7 +2689,31 @@ found:
          cheevos_deactivate_unlocks(game_id, &timeout);
          free((void*)json);
          cheevos_loaded = true;
+         
+         if(settings->video.msg_verbosity)
+         {
+            int number_of_cheevos        = cheevos_locals.core.count;
+            const cheevo_t* cheevo       = cheevos_locals.core.cheevos;
+            const cheevo_t* end          = cheevo + number_of_cheevos;
+            int number_of_unlocked       = 0;
+            int mode;
+            char msg[256];
 
+            if(settings->cheevos.hardcore_mode_enable)
+               mode = CHEEVOS_ACTIVE_HARDCORE;
+            else
+               mode = CHEEVOS_ACTIVE_SOFTCORE;
+
+            for(; cheevo < end; cheevo++)
+               if(cheevo->active & mode)
+                  number_of_unlocked++;
+
+            snprintf(msg, sizeof(msg), "You have %d of %d achievements unlocked.",
+               number_of_unlocked, number_of_cheevos);
+            msg[sizeof(msg) - 1] = 0;
+            runloop_msg_queue_push(msg, 0, 5 * 60, false);
+         }
+         
          cheevos_make_playing_url(game_id, url, sizeof(url));
          task_push_http_transfer(url, true, NULL,
                cheevos_playing, (void*)(uintptr_t)game_id);

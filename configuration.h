@@ -89,6 +89,7 @@ typedef struct settings
 
       float font_size;
       bool font_enable;
+      bool msg_verbosity;
       float msg_pos_x;
       float msg_pos_y;
       float msg_color_r;
