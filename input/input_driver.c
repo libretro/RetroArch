@@ -606,6 +606,7 @@ static INLINE bool input_menu_keys_pressed_internal(
    return false;
 }
 
+#ifdef HAVE_MENU
 static bool input_driver_toggle_button_combo(
       unsigned mode, uint64_t *trigger_input)
 {
@@ -650,6 +651,7 @@ static bool input_driver_toggle_button_combo(
    
    return true;
 }
+#endif
 
 /**
  * input_menu_keys_pressed:
@@ -723,6 +725,7 @@ uint64_t input_menu_keys_pressed(
             input_driver_block_hotkey         = true;
       }
 
+#ifdef HAVE_MENU
       if (  ((settings->input.menu_toggle_gamepad_combo != INPUT_TOGGLE_NONE) &&
             input_driver_toggle_button_combo(
                settings->input.menu_toggle_gamepad_combo, &old_input))
@@ -731,6 +734,7 @@ uint64_t input_menu_keys_pressed(
                settings->input.binds[0][RARCH_MENU_TOGGLE].valid,
                settings->input.all_users_control_menu))
          ret |= (UINT64_C(1) << RARCH_MENU_TOGGLE);
+#endif
 
       for (i = 0; i < RARCH_BIND_LIST_END; i++)
       {
@@ -944,11 +948,13 @@ uint64_t input_keys_pressed(
          input_driver_block_hotkey = false;
    }
 
+#ifdef HAVE_MENU
    if (
          ((settings->input.menu_toggle_gamepad_combo != INPUT_TOGGLE_NONE) &&
          input_driver_toggle_button_combo(settings->input.menu_toggle_gamepad_combo, &old_input))
          || input_keys_pressed_internal(settings, joypad_info, RARCH_MENU_TOGGLE, binds))
       ret |= (UINT64_C(1) << RARCH_MENU_TOGGLE);
+#endif
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {

@@ -30,6 +30,7 @@
 #endif
 
 #include "../verbosity.h"
+#include "../gfx/video_driver.h"
 
 #include "input_overlay.h"
 #include "input_keyboard.h"

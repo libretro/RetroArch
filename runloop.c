@@ -711,7 +711,11 @@ static enum runloop_state runloop_check_state(
 
    if (runloop_cmd_triggered(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
    {
-      bool fullscreen_toggled = !runloop_paused || menu_driver_is_alive();
+      bool fullscreen_toggled = !runloop_paused
+#ifdef HAVE_MENU
+       || menu_driver_is_alive();
+#endif
+      ;
 
       if (fullscreen_toggled)
          command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
