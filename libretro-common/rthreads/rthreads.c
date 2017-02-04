@@ -547,7 +547,6 @@ static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds
 
    /* If any other wakenings are pending, go ahead and set it up  */
    /* There may actually be no waiters. That's OK. The first waiter will come in, find it's his turn, and immediately get the signaled event */
-   printf("%d\n",cond->wakens);
    cond->wakens--;
    if (cond->wakens > 0)
    {
@@ -663,11 +662,18 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
 {
 #ifdef USE_WIN32_THREADS
    /* How to convert a us timeout to ms? */
-   /* Someone asking for a 0 timeout clearly wants no timeout. */
+   /* Someone asking for a 0 timeout clearly wants immediate timeout. */
    /* Someone asking for a 1 timeout clearly wants an actual timeout of the minimum length */
    /* Someone asking for 1000 or 1001 timeout shouldn't accidentally get 2ms. */
    DWORD dwMilliseconds = timeout_us/1000;
-   if(timeout_us < 1000) dwMilliseconds = 1;
+   if(timeout_us == 0) {
+      /* The implementation of a 0 timeout here with pthreads is sketchy. */
+      /* It isn't clear what happens if pthread_cond_timedwait is called with NOW. */
+      /* Moreover, it is possible that this thread gets pre-empted after the clock_gettime but before the pthread_cond_timedwait. */
+      /* In order to help smoke out problems caused by this strange usage, let's treat a 0 timeout as always timing out. */
+      return false;
+   }
+   else if(timeout_us < 1000) dwMilliseconds = 1;
    return _scond_wait_win32(cond,lock,dwMilliseconds);
 #else
    int ret;
