@@ -38,6 +38,7 @@
 #else
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <mmsystem.h>
 #endif
 #elif defined(GEKKO)
 #include "gx_pthread.h"
@@ -84,17 +85,18 @@ struct slock
 #endif
 };
 
+#ifdef USE_WIN32_THREADS
+/* The syntax we'll use is mind-bending unless we use a struct. Plus, we might want to store more info later */
+/* This will be used as a linked list immplementing a queue of waiting threads */
+struct QueueEntry
+{
+   struct QueueEntry *next;
+};
+#endif
+
 struct scond
 {
 #ifdef USE_WIN32_THREADS
-
-   /* The syntax we'll use is mind-bending unless we use a struct. Plus, we might want to store more info later */
-   /* This will be used as a linked list immplementing a queue of waiting threads */
-   struct QueueEntry
-   {
-      struct QueueEntry *next;
-   };
-
    /* With this implementation of scond, we don't have any way of waking (or even identifying) specific threads */
    /* But we need to wake them in the order indicated by the queue. */
    /* This potato token will get get passed around every waiter. The bearer can test whether he's next, and hold onto the potato if he is. */
@@ -110,7 +112,7 @@ struct scond
    /* equivalent to the queue length */
    int waiters;
 
-   /* how many waiters in the queue have been conceptually wakened by signals (even if we haven't managed to actually wake them yet */
+   /* how many waiters in the queue have been conceptually wakened by signals (even if we haven't managed to actually wake them yet) */
    int wakens;
 
    /* used to control access to this scond, in case the user fails */
@@ -359,7 +361,7 @@ scond_t *scond_new(void)
    /* whereas a win32 event can pre-wake a thread (the event will be set in advance, so a 'waiter' won't even have to wait on it) */
    /* Keep in mind a condition variable can apparently pre-wake a thread, insofar as spurious wakeups are always possible, */
    /* but nobody will be expecting this and it does not need to be simulated. */
-   /* Moreover, we won't be doing this, because it counts as a spurious wakeup -- someone else with a genuine claim must get wakened, in any case.
+   /* Moreover, we won't be doing this, because it counts as a spurious wakeup -- someone else with a genuine claim must get wakened, in any case. */
    /* Therefore we choose to wake only one of the correct waiting threads. */
    /* So at the very least, we need to do something clever. But there's bigger problems. */
    /* We don't even have a straightforward way in win32 to satisfy pthread_cond_wait's atomicity requirement. The bulk of this algorithm is solving that. */
@@ -410,23 +412,32 @@ void scond_free(scond_t *cond)
    free(cond);
 }
 
-/**
- * scond_wait:
- * @cond                    : pointer to condition variable object
- * @lock                    : pointer to mutex object
- *
- * Block on a condition variable (i.e. wait on a condition).
- **/
-void scond_wait(scond_t *cond, slock_t *lock)
-{
 #ifdef USE_WIN32_THREADS
-   
+static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds)
+{
+   static bool beginPeriod = false;
+
    struct QueueEntry myentry;
    struct QueueEntry **ptr;
+   DWORD tsBegin;
+   DWORD dwFinalTimeout = dwMilliseconds; /* Careful! in case we begin in the head, we don't do the hot potato stuff, so this timeout needs presetting */
+   DWORD waitResult;
 
    /* Reminder: `lock` is held before this is called. */
    /* however, someone else may have called scond_signal without the lock. soo... */
    EnterCriticalSection(&cond->cs);
+
+   /* since this library is meant for realtime game software I have no problem setting this to 1 and forgetting about it. */
+   if(!beginPeriod)
+   {
+      beginPeriod = true;
+      timeBeginPeriod(1);
+   }
+
+   /* Now we can take a good timestamp for use in faking the timeout ourselves. */
+   /* But don't bother unless we need to (to save a little time) */
+   if(dwMilliseconds != INFINITE)
+      tsBegin = timeGetTime();
 
    /* add ourselves to a queue of waiting threads */
    ptr = &cond->head;
@@ -450,9 +461,24 @@ void scond_wait(scond_t *cond, slock_t *lock)
    {
       /* It isn't my turn: */
 
+      DWORD timeout = INFINITE;
+
       /* As long as someone is even going to be able to wake up when they receive the potato, keep it going round */
       if (cond->wakens > 0)
          SetEvent(cond->hot_potato);
+
+      /* Assess the remaining timeout time */
+      if(dwMilliseconds != INFINITE)
+      {
+         DWORD now = timeGetTime();
+         DWORD elapsed = now - tsBegin;
+         if(elapsed > dwMilliseconds)
+         {
+            /* Try one last time with a zero timeout (keeps the code simpler) */
+            elapsed = dwMilliseconds;
+         }
+         timeout = dwMilliseconds - elapsed;
+      }
 
       /* Let someone else go */
       LeaveCriticalSection(&lock->lock);
@@ -461,14 +487,39 @@ void scond_wait(scond_t *cond, slock_t *lock)
       /* Wait a while to catch the hot potato.. someone else should get a chance to go */
       /* After all, it isn't my turn (and it must be someone else's) */
       Sleep(0);
-      WaitForSingleObject(cond->hot_potato, INFINITE);
+      waitResult = WaitForSingleObject(cond->hot_potato, timeout);
 
       /* I should come out of here with the main lock taken */
       EnterCriticalSection(&lock->lock);
       EnterCriticalSection(&cond->cs);
+
+      if(waitResult == WAIT_TIMEOUT)
+      {
+         /* Out of time! Now, let's think about this. I do have the potato now--maybe it's my turn, and I have the event? */
+         /* If that's the case, I could proceed right now without aborting due to timeout. */
+         /* However.. I DID wait a real long time. The caller was willing to wait that long. */
+         /* I choose to give him one last chance with a zero timeout in the next step */
+         if(cond->head == &myentry)
+         {
+            dwFinalTimeout = 0;
+            break;
+         }
+         else
+         {
+            /* It's not our turn and we're out of time. Give up. */
+            /* Remove ourself from the queue and bail. */
+            struct QueueEntry* curr = cond->head;
+            while(curr->next != &myentry) curr = curr->next;
+            curr->next = myentry.next;
+            cond->waiters--;
+            LeaveCriticalSection(&cond->cs);
+            return false;
+         }
+      }
+
    }
    
-   /* It's my turn now -- I hold the potato */
+   /* It's my turn now -- and I hold the potato */
 
    /* I still have the main lock, in any case */
    /* I need to release it so that someone can set the event */
@@ -477,7 +528,7 @@ void scond_wait(scond_t *cond, slock_t *lock)
 
    /* Wait for someone to actually signal this condition */
    /* We're the only waiter waiting on the event right now -- everyone else is waiting on something different */
-   WaitForSingleObject(cond->event, INFINITE);
+   waitResult = WaitForSingleObject(cond->event, dwFinalTimeout);
 
    /* Take the main lock so we can do work. Nobody else waits on this lock for very long, so even though it's GO TIME we won't have to wait long */
    EnterCriticalSection(&lock->lock);
@@ -487,8 +538,16 @@ void scond_wait(scond_t *cond, slock_t *lock)
    cond->head = myentry.next;
    cond->waiters--;
 
+   if(waitResult == WAIT_TIMEOUT)
+   {
+      /* Oops! ran out of time in the final wait. Just bail. */
+      LeaveCriticalSection(&cond->cs);
+      return false;
+   }
+
    /* If any other wakenings are pending, go ahead and set it up  */
    /* There may actually be no waiters. That's OK. The first waiter will come in, find it's his turn, and immediately get the signaled event */
+   printf("%d\n",cond->wakens);
    cond->wakens--;
    if (cond->wakens > 0)
    {
@@ -499,7 +558,21 @@ void scond_wait(scond_t *cond, slock_t *lock)
    }
 
    LeaveCriticalSection(&cond->cs);
+   return true;
+}
+#endif
 
+/**
+ * scond_wait:
+ * @cond                    : pointer to condition variable object
+ * @lock                    : pointer to mutex object
+ *
+ * Block on a condition variable (i.e. wait on a condition).
+ **/
+void scond_wait(scond_t *cond, slock_t *lock)
+{
+#ifdef USE_WIN32_THREADS
+   _scond_wait_win32(cond, lock, INFINITE);
 #else
    pthread_cond_wait(&cond->cond, &lock->lock);
 #endif
@@ -589,15 +662,13 @@ void scond_signal(scond_t *cond)
 bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
 {
 #ifdef USE_WIN32_THREADS
-   DWORD ret;
-
-   /* TODO: this is woefully inadequate. It needs to be solved with the newer approach used above. */
-   WaitForSingleObject(cond->event, 0);
-   LeaveCriticalSection(&lock->lock);
-   ret = WaitForSingleObject(cond->event,(DWORD)(timeout_us) / 1000);
-
-   EnterCriticalSection(&lock->lock);
-   return ret == WAIT_OBJECT_0;
+   /* How to convert a us timeout to ms? */
+   /* Someone asking for a 0 timeout clearly wants no timeout. */
+   /* Someone asking for a 1 timeout clearly wants an actual timeout of the minimum length */
+   /* Someone asking for 1000 or 1001 timeout shouldn't accidentally get 2ms. */
+   DWORD dwMilliseconds = timeout_us/1000;
+   if(timeout_us < 1000) dwMilliseconds = 1;
+   return _scond_wait_win32(cond,lock,dwMilliseconds);
 #else
    int ret;
    int64_t seconds, remainder;
