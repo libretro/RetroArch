@@ -2721,14 +2721,17 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
       "View previous searches.")
 MSG_HASH(MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
       "Captures an image of the screen.")
+#ifdef HAVE_DYNAMIC
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
-#ifdef HAVE_DYNAMIC
       "Closes the current game and application. Any unsaved changes might be lost."
-#else
-      "Closes the current game. Any unsaved changes might be lost."
-#endif
       )
+#else
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
+      "Closes the current game. Any unsaved changes might be lost."
+      )
+#endif
 MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_STATE,
       "Load a saved state from the currently selected slot.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_STATE,
