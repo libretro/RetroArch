@@ -1775,7 +1775,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_LAN_SCAN_SETTINGS,
       "Search for and connect to netplay hosts on the local network.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
-      "Display information for core, network, and system. Display manager for database and cursor.")
+      "Display core, network and system information.")
 MSG_HASH(MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
       "Download add-ons, components and contents for RetroArch.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAMBA_ENABLE,

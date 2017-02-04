@@ -66,7 +66,7 @@
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "../cheevos.h"
+#include "../cheevos/cheevos.h"
 #endif
 
 #include "tasks_internal.h"
