@@ -281,7 +281,7 @@ typedef struct
 typedef struct
 {
    cheevos_var_t var;
-   unsigned      multiplier;
+   int           multiplier;
 } cheevos_term_t;
 
 typedef struct
@@ -296,7 +296,7 @@ typedef struct
    const char *title;
    const char *description;
    int         active;
-   unsigned    last_value;
+   int         last_value;
 
    cheevos_condition_t start;
    cheevos_condition_t cancel;
@@ -442,6 +442,16 @@ static void cheevos_add_uint(char** aux, size_t* left, unsigned v)
    char buffer[32];
 
    snprintf(buffer, sizeof(buffer), "%u", v);
+   buffer[sizeof(buffer) - 1] = 0;
+
+   cheevos_add_string(aux, left, buffer);
+}
+
+static void cheevos_add_uint(char** aux, size_t* left, int v)
+{
+   char buffer[32];
+
+   snprintf(buffer, sizeof(buffer), "%d", v);
    buffer[sizeof(buffer) - 1] = 0;
 
    cheevos_add_string(aux, left, buffer);
@@ -682,7 +692,7 @@ static void cheevos_log_lboard(const cheevos_leaderboard_t* lb)
 
       cheevos_add_var(&lb->value.terms[i].var, &aux, &left);
       cheevos_add_char(&aux, &left, '*');
-      cheevos_add_uint(&aux, &left, lb->value.terms[i].multiplier);
+      cheevos_add_int(&aux, &left, lb->value.terms[i].multiplier);
    }
 
    RARCH_LOG("CHEEVOS   value:  %s\n", mem);
@@ -1389,7 +1399,7 @@ static int cheevos_parse_expression(cheevos_expr_t *expr, const char* mem)
          return -1;
       }
 
-      expr->terms[i].multiplier = strtol(aux + 1, &end, 10);
+      expr->terms[i].multiplier = (int)strtol(aux + 1, &end, 10);
       aux = end + 1;
    }
 
@@ -2222,10 +2232,11 @@ static int cheevos_test_lboard_condition(const cheevos_condition_t* condition)
    return ret_val && ret_val_sub_cond;
 }
 
-static unsigned cheevos_expr_value(cheevos_expr_t* expr)
+static int cheevos_expr_value(cheevos_expr_t* expr)
 {
    cheevos_term_t* term = expr->terms;
-   unsigned i, value = 0;
+   unsigned i;
+   int value = 0;
 
    for (i = expr->count; i != 0; i--, term++)
    {
@@ -2254,7 +2265,7 @@ static void cheevos_make_lboard_url(const cheevos_leaderboard_t *lboard,
 
    snprintf(
       url, url_size,
-      "http://retroachievements.org/dorequest.php?r=submitlbentry&u=%s&t=%s&i=%u&s=%u"
+      "http://retroachievements.org/dorequest.php?r=submitlbentry&u=%s&t=%s&i=%u&s=%d"
       "&v=%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
       settings->cheevos.username, cheevos_locals.token, lboard->id,
       lboard->last_value,
@@ -2303,12 +2314,12 @@ static void cheevos_test_leaderboards(void)
    {
       if (lboard->active)
       {
-         unsigned value = cheevos_expr_value(&lboard->value);
+         int value = cheevos_expr_value(&lboard->value);
 
          if (value != lboard->last_value)
          {
 #ifdef CHEEVOS_VERBOSE
-            RARCH_LOG("CHEEVOS value  %s %u\n", lboard->title, value);
+            RARCH_LOG("CHEEVOS value lboard  %s %u\n", lboard->title, value);
 #endif
             lboard->last_value = value;
          }
@@ -2320,12 +2331,12 @@ static void cheevos_test_leaderboards(void)
             cheevos_make_lboard_url(lboard, url, sizeof(url));
             task_push_http_transfer(url, true, NULL, cheevos_lboard_submit, lboard);
 
-            RARCH_LOG("CHEEVOS submit %s\n", lboard->title);
+            RARCH_LOG("CHEEVOS submit lboard %s\n", lboard->title);
          }
 
          if (cheevos_test_lboard_condition(&lboard->cancel))
          {
-            RARCH_LOG("CHEEVOS cancel %s\n", lboard->title);
+            RARCH_LOG("CHEEVOS cancel lboard %s\n", lboard->title);
             lboard->active = 0;
          }
       }
@@ -2333,9 +2344,9 @@ static void cheevos_test_leaderboards(void)
       {
          if (cheevos_test_lboard_condition(&lboard->start))
          {
-            RARCH_LOG("CHEEVOS start  %s\n", lboard->title);
+            RARCH_LOG("CHEEVOS start lboard  %s\n", lboard->title);
             lboard->active = 1;
-            lboard->last_value = (unsigned)-1;
+            lboard->last_value = -1;
          }
       }
    }
