@@ -100,10 +100,13 @@ struct QueueEntry
 struct scond
 {
 #ifdef USE_WIN32_THREADS
-   /* With this implementation of scond, we don't have any way of waking (or even identifying) specific threads */
-   /* But we need to wake them in the order indicated by the queue. */
-   /* This potato token will get get passed around every waiter. The bearer can test whether he's next, and hold onto the potato if he is. */
-   /* When he's done he can then put it back into play to progress the queue further */
+   /* With this implementation of scond, we don't have any way of waking 
+    * (or even identifying) specific threads
+    * But we need to wake them in the order indicated by the queue.
+    * This potato token will get get passed around every waiter. 
+    * The bearer can test whether he's next, and hold onto the potato if he is.
+    * When he's done he can then put it back into play to progress 
+    * the queue further */
    HANDLE hot_potato;
 
    /* The primary signalled event. Hot potatoes are passed until this is set. */
@@ -115,7 +118,8 @@ struct scond
    /* equivalent to the queue length */
    int waiters;
 
-   /* how many waiters in the queue have been conceptually wakened by signals (even if we haven't managed to actually wake them yet) */
+   /* how many waiters in the queue have been conceptually wakened by signals 
+    * (even if we haven't managed to actually wake them yet) */
    int wakens;
 
    /* used to control access to this scond, in case the user fails */
@@ -359,16 +363,31 @@ scond_t *scond_new(void)
 
 #ifdef USE_WIN32_THREADS
 
-   /* This is very complex because recreating condition variable semantics with win32 parts is not easy */
-   /* The main problem is that a condition variable can't be used to "pre-wake" a thread (it will get wakened only after it's waited) */
-   /* whereas a win32 event can pre-wake a thread (the event will be set in advance, so a 'waiter' won't even have to wait on it) */
-   /* Keep in mind a condition variable can apparently pre-wake a thread, insofar as spurious wakeups are always possible, */
-   /* but nobody will be expecting this and it does not need to be simulated. */
-   /* Moreover, we won't be doing this, because it counts as a spurious wakeup -- someone else with a genuine claim must get wakened, in any case. */
-   /* Therefore we choose to wake only one of the correct waiting threads. */
-   /* So at the very least, we need to do something clever. But there's bigger problems. */
-   /* We don't even have a straightforward way in win32 to satisfy pthread_cond_wait's atomicity requirement. The bulk of this algorithm is solving that. */
-   /* Note: We might could simplify this using vista+ condition variables, but we wanted an XP compatible solution. */
+   /* This is very complex because recreating condition variable semantics 
+    * with Win32 parts is not easy.
+    *
+    * The main problem is that a condition variable can't be used to 
+    * "pre-wake" a thread (it will get wakened only after it's waited).
+    *
+    * Whereas a win32 event can pre-wake a thread (the event will be set 
+    * in advance, so a 'waiter' won't even have to wait on it). 
+    *
+    * Keep in mind a condition variable can apparently pre-wake a thread, 
+    * insofar as spurious wakeups are always possible,
+    * but nobody will be expecting this and it does not need to be simulated.
+    *
+    * Moreover, we won't be doing this, because it counts as a spurious wakeup 
+    * -- someone else with a genuine claim must get wakened, in any case.
+    *
+    * Therefore we choose to wake only one of the correct waiting threads.
+    * So at the very least, we need to do something clever. But there's 
+    * bigger problems.
+    * We don't even have a straightforward way in win32 to satisfy 
+    * pthread_cond_wait's atomicity requirement. The bulk of this 
+    * algorithm is solving that.
+    *
+    * Note: We might could simplify this using vista+ condition variables, 
+    * but we wanted an XP compatible solution. */
    cond->event = CreateEvent(NULL, FALSE, FALSE, NULL);
    if (!cond->event) goto error;
    cond->hot_potato = CreateEvent(NULL, FALSE, FALSE, NULL);
@@ -423,14 +442,17 @@ static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds
    struct QueueEntry myentry;
    struct QueueEntry **ptr;
    DWORD tsBegin;
-   DWORD dwFinalTimeout = dwMilliseconds; /* Careful! in case we begin in the head, we don't do the hot potato stuff, so this timeout needs presetting */
    DWORD waitResult;
+   DWORD dwFinalTimeout = dwMilliseconds; /* Careful! in case we begin in the head, 
+                                             we don't do the hot potato stuff, 
+                                             so this timeout needs presetting. */
 
    /* Reminder: `lock` is held before this is called. */
    /* however, someone else may have called scond_signal without the lock. soo... */
    EnterCriticalSection(&cond->cs);
 
-   /* since this library is meant for realtime game software I have no problem setting this to 1 and forgetting about it. */
+   /* since this library is meant for realtime game software 
+    * I have no problem setting this to 1 and forgetting about it. */
    if (!beginPeriod)
    {
       beginPeriod = true;
@@ -510,9 +532,14 @@ static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds
       {
          /* Out of time! Now, let's think about this. I do have the potato now--
           * maybe it's my turn, and I have the event?
-          * If that's the case, I could proceed right now without aborting due to timeout.
-          * However.. I DID wait a real long time. The caller was willing to wait that long.
-          * I choose to give him one last chance with a zero timeout in the next step
+          * If that's the case, I could proceed right now without aborting 
+          * due to timeout.
+          *
+          * However.. I DID wait a real long time. The caller was willing 
+          * to wait that long.
+          *
+          * I choose to give him one last chance with a zero timeout 
+          * in the next step
           */
          if (cond->head == &myentry)
          {
