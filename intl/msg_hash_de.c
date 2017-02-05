@@ -23,12 +23,6 @@
 #include "../configuration.h"
 #include "../verbosity.h"
 
-// Is this still needed in current RetroArch versions or is
-// this an old left-over?
-// #ifdef __clang__
-// #pragma clang diagnostic ignored "-Winvalid-source-encoding"
-// #endif
-
 int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
    uint32_t      driver_hash = 0;
