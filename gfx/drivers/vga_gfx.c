@@ -368,7 +368,10 @@ static void vga_set_texture_frame(void *data,
          {
             for(x = 0; x < VGA_WIDTH; x++)
             {
-               unsigned short pixel = video_frame[width * y + x];
+               /* scale incoming frame to fit the screen */
+               unsigned scaled_x = (width / (float)VGA_WIDTH) * x;
+               unsigned scaled_y = (height / (float)VGA_HEIGHT) * y;
+               unsigned short pixel = video_frame[width * scaled_y + scaled_x];
                unsigned r = (7.0f / 15.0f) * ((pixel & 0xF000) >> 12);
                unsigned g = (7.0f / 15.0f) * ((pixel & 0xF00) >> 8);
                unsigned b = (3.0f / 15.0f) * ((pixel & 0xF0) >> 4);
