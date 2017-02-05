@@ -544,10 +544,12 @@ static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds
    LeaveCriticalSection(&cond->cs);
 
    /* Wait for someone to actually signal this condition */
-   /* We're the only waiter waiting on the event right now -- everyone else is waiting on something different */
+   /* We're the only waiter waiting on the event right now -- everyone else 
+    * is waiting on something different */
    waitResult = WaitForSingleObject(cond->event, dwFinalTimeout);
 
-   /* Take the main lock so we can do work. Nobody else waits on this lock for very long, so even though it's GO TIME we won't have to wait long */
+   /* Take the main lock so we can do work. Nobody else waits on this lock 
+    * for very long, so even though it's GO TIME we won't have to wait long */
    EnterCriticalSection(&lock->lock);
    EnterCriticalSection(&cond->cs);
 
@@ -563,13 +565,15 @@ static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds
    }
 
    /* If any other wakenings are pending, go ahead and set it up  */
-   /* There may actually be no waiters. That's OK. The first waiter will come in, find it's his turn, and immediately get the signaled event */
+   /* There may actually be no waiters. That's OK. The first waiter will come in, 
+    * find it's his turn, and immediately get the signaled event */
    cond->wakens--;
    if (cond->wakens > 0)
    {
       SetEvent(cond->event);
 
-      /* Progress the queue: Put the hot potato back into play. It'll be tossed around until next in line gets it */
+      /* Progress the queue: Put the hot potato back into play. It'll be 
+       * tossed around until next in line gets it */
       SetEvent(cond->hot_potato); 
    }
 
@@ -633,8 +637,10 @@ void scond_signal(scond_t *cond)
 {
 #ifdef USE_WIN32_THREADS
 
-   /* Unfortunately, pthread_cond_signal does not require that the lock be held in advance */
-   /* To avoid stomping on the condvar from other threads, we need to control access to it with this */
+   /* Unfortunately, pthread_cond_signal does not require that the 
+    * lock be held in advance */
+   /* To avoid stomping on the condvar from other threads, we need 
+    * to control access to it with this */
    EnterCriticalSection(&cond->cs);
 
    /* remember: we currently have mutex */
@@ -653,8 +659,8 @@ void scond_signal(scond_t *cond)
    /* The data structure is done being modified.. I think we can leave the CS now.
     * This would prevent some other thread from receiving the hot potato and then 
     * immediately stalling for the critical section.
-    * But remember, we were trying to replicate a semantic where this entire scond_signal call
-    * was controlled (by the user) by a lock.
+    * But remember, we were trying to replicate a semantic where this entire 
+    * scond_signal call was controlled (by the user) by a lock.
     * So in case there's trouble with this, we can move it after SetEvent() */
    LeaveCriticalSection(&cond->cs);
 
@@ -681,16 +687,23 @@ void scond_signal(scond_t *cond)
 bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
 {
 #ifdef USE_WIN32_THREADS
-   /* How to convert a us timeout to ms? */
-   /* Someone asking for a 0 timeout clearly wants immediate timeout. */
-   /* Someone asking for a 1 timeout clearly wants an actual timeout of the minimum length */
-   /* Someone asking for 1000 or 1001 timeout shouldn't accidentally get 2ms. */
+   /* How to convert a microsecond (us) timeout to millisecond (ms)?
+    *
+    * Someone asking for a 0 timeout clearly wants immediate timeout.
+    * Someone asking for a 1 timeout clearly wants an actual timeout 
+    * of the minimum length */
+
+   /* Someone asking for 1000 or 1001 timeout shouldn't 
+    * accidentally get 2ms. */
    DWORD dwMilliseconds = timeout_us/1000;
 
-   /* The implementation of a 0 timeout here with pthreads is sketchy. */
-   /* It isn't clear what happens if pthread_cond_timedwait is called with NOW. */
-   /* Moreover, it is possible that this thread gets pre-empted after the clock_gettime but before the pthread_cond_timedwait. */
-   /* In order to help smoke out problems caused by this strange usage, let's treat a 0 timeout as always timing out. */
+   /* The implementation of a 0 timeout here with pthreads is sketchy.
+    * It isn't clear what happens if pthread_cond_timedwait is called with NOW.
+    * Moreover, it is possible that this thread gets pre-empted after the 
+    * clock_gettime but before the pthread_cond_timedwait.
+    * In order to help smoke out problems caused by this strange usage, 
+    * let's treat a 0 timeout as always timing out.
+    */
    if (timeout_us == 0)
       return false;
    else if (timeout_us < 1000)
