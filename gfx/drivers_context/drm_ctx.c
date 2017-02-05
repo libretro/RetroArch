@@ -289,10 +289,7 @@ static void free_drm_resources(gfx_ctx_drm_data_t *drm)
 
    if (drm->drm)
       if (g_drm_fd >= 0)
-      {
-         drmDropMaster(g_drm_fd);
          filestream_close(drm->drm);
-      }
 
    g_gbm_surface      = NULL;
    g_gbm_dev          = NULL;
@@ -383,8 +380,6 @@ nextgpu:
     * one for get_video_size() purposes. */
    drm->fb_width    = g_drm_connector->modes[0].hdisplay;
    drm->fb_height   = g_drm_connector->modes[0].vdisplay;
-
-   drmSetMaster(g_drm_fd);
 
    g_gbm_dev        = gbm_create_device(fd);
 
