@@ -14,16 +14,17 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "../input_driver.h"
+#include "../input_keymaps.h"
 #include "../input_joypad_driver.h"
+#include "../drivers_keyboard/keyboard_event_dos.h"
 
 typedef struct dos_input
 {
    const input_device_driver_t *joypad;
-   unsigned char normal_keys[256];
-   unsigned char extended_keys[256];
 } dos_input_t;
 
 static void dos_input_poll(void *data)
@@ -48,7 +49,10 @@ static int16_t dos_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return input_joypad_pressed(dos->joypad, joypad_info, port, binds[port], id);
+         return input_joypad_pressed(dos->joypad, joypad_info, port, binds[port], id) ||
+               dos_keyboard_port_input_pressed(binds[port], id);
+      case RETRO_DEVICE_KEYBOARD:
+         return dos_keyboard_port_input_pressed(binds[port], id);
    }
 
    return 0;
@@ -61,6 +65,8 @@ static void dos_input_free_input(void *data)
    if (dos && dos->joypad)
       dos->joypad->destroy();
 
+   dos_keyboard_free();
+
    if (data)
       free(data);
 }
@@ -72,7 +78,11 @@ static void* dos_input_init(const char *joypad_driver)
    if (!dos)
       return NULL;
 
+   dos_keyboard_free();
+
    dos->joypad = input_joypad_init_driver(joypad_driver, dos);
+
+   input_keymaps_init_keyboard_lut(rarch_key_map_dos);
 
    return dos;
 }
@@ -87,7 +97,6 @@ static uint64_t dos_input_get_capabilities(void *data)
    uint64_t caps = 0;
 
    caps |= UINT64_C(1) << RETRO_DEVICE_JOYPAD;
-   caps |= UINT64_C(1) << RETRO_DEVICE_KEYBOARD;
 
    return caps;
 }
