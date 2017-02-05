@@ -383,7 +383,7 @@ scond_t *scond_new(void)
    cond->head = NULL;
 
 #else
-   if(pthread_cond_init(&cond->cond, NULL) != 0)
+   if (pthread_cond_init(&cond->cond, NULL) != 0)
       goto error;
 #endif
 
@@ -431,7 +431,7 @@ static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds
    EnterCriticalSection(&cond->cs);
 
    /* since this library is meant for realtime game software I have no problem setting this to 1 and forgetting about it. */
-   if(!beginPeriod)
+   if (!beginPeriod)
    {
       beginPeriod = true;
       timeBeginPeriod(1);
@@ -439,47 +439,56 @@ static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds
 
    /* Now we can take a good timestamp for use in faking the timeout ourselves. */
    /* But don't bother unless we need to (to save a little time) */
-   if(dwMilliseconds != INFINITE)
+   if (dwMilliseconds != INFINITE)
       tsBegin = timeGetTime();
 
    /* add ourselves to a queue of waiting threads */
    ptr = &cond->head;
-   while(*ptr) /* walk to the end of the linked list */
+
+   /* walk to the end of the linked list */
+   while (*ptr) 
       ptr = &((*ptr)->next);
+
    *ptr = &myentry;
    myentry.next = NULL;
 
    cond->waiters++;
 
-   /* now the conceptual lock release and condition block are supposed to be atomic. */
-   /* we can't do that in windows, but we can simulate the effects by using the queue, by the following analysis: */
-   /* What happens if they aren't atomic? */
-   /* 1. a signaller can rush in and signal, expecting a waiter to get it; but the waiter wouldn't, because he isn't blocked yet */
-   /* solution: win32 events make this easy. the event will sit there enabled */
-   /* 2. a signaller can rush in and signal, and then turn right around and wait */
-   /* solution: the signaller will get queued behind the waiter, who's enqueued before he releases the mutex */
+   /* now the conceptual lock release and condition block are supposed to be atomic.
+    * we can't do that in Windows, but we can simulate the effects by using 
+    * the queue, by the following analysis:
+    * What happens if they aren't atomic?
+    *
+    * 1. a signaller can rush in and signal, expecting a waiter to get it; 
+    * but the waiter wouldn't, because he isn't blocked yet.
+    * Solution: Win32 events make this easy. The event will sit there enabled
+    *
+    * 2. a signaller can rush in and signal, and then turn right around and wait.
+    * Solution: the signaller will get queued behind the waiter, who's 
+    * enqueued before he releases the mutex. */
 
-   /* It's my turn if I'm the head of the queue. Check to see if it's my turn. */
+   /* It's my turn if I'm the head of the queue. 
+    * Check to see if it's my turn. */
    while (cond->head != &myentry)
    {
       /* It isn't my turn: */
-
       DWORD timeout = INFINITE;
 
-      /* As long as someone is even going to be able to wake up when they receive the potato, keep it going round */
+      /* As long as someone is even going to be able to wake up 
+       * when they receive the potato, keep it going round. */
       if (cond->wakens > 0)
          SetEvent(cond->hot_potato);
 
       /* Assess the remaining timeout time */
-      if(dwMilliseconds != INFINITE)
+      if (dwMilliseconds != INFINITE)
       {
-         DWORD now = timeGetTime();
+         DWORD now     = timeGetTime();
          DWORD elapsed = now - tsBegin;
-         if(elapsed > dwMilliseconds)
-         {
-            /* Try one last time with a zero timeout (keeps the code simpler) */
+
+         /* Try one last time with a zero timeout (keeps the code simpler) */
+         if (elapsed > dwMilliseconds)
             elapsed = dwMilliseconds;
-         }
+
          timeout = dwMilliseconds - elapsed;
       }
 
@@ -487,7 +496,8 @@ static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds
       LeaveCriticalSection(&lock->lock);
       LeaveCriticalSection(&cond->cs);
 
-      /* Wait a while to catch the hot potato.. someone else should get a chance to go */
+      /* Wait a while to catch the hot potato.. 
+       * someone else should get a chance to go */
       /* After all, it isn't my turn (and it must be someone else's) */
       Sleep(0);
       waitResult = WaitForSingleObject(cond->hot_potato, timeout);
@@ -496,23 +506,27 @@ static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds
       EnterCriticalSection(&lock->lock);
       EnterCriticalSection(&cond->cs);
 
-      if(waitResult == WAIT_TIMEOUT)
+      if (waitResult == WAIT_TIMEOUT)
       {
-         /* Out of time! Now, let's think about this. I do have the potato now--maybe it's my turn, and I have the event? */
-         /* If that's the case, I could proceed right now without aborting due to timeout. */
-         /* However.. I DID wait a real long time. The caller was willing to wait that long. */
-         /* I choose to give him one last chance with a zero timeout in the next step */
-         if(cond->head == &myentry)
+         /* Out of time! Now, let's think about this. I do have the potato now--
+          * maybe it's my turn, and I have the event?
+          * If that's the case, I could proceed right now without aborting due to timeout.
+          * However.. I DID wait a real long time. The caller was willing to wait that long.
+          * I choose to give him one last chance with a zero timeout in the next step
+          */
+         if (cond->head == &myentry)
          {
             dwFinalTimeout = 0;
             break;
          }
          else
          {
-            /* It's not our turn and we're out of time. Give up. */
-            /* Remove ourself from the queue and bail. */
+            /* It's not our turn and we're out of time. Give up.
+             * Remove ourself from the queue and bail. */
             struct QueueEntry* curr = cond->head;
-            while(curr->next != &myentry) curr = curr->next;
+
+            while (curr->next != &myentry)
+               curr = curr->next;
             curr->next = myentry.next;
             cond->waiters--;
             LeaveCriticalSection(&cond->cs);
@@ -541,7 +555,7 @@ static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds
    cond->head = myentry.next;
    cond->waiters--;
 
-   if(waitResult == WAIT_TIMEOUT)
+   if (waitResult == WAIT_TIMEOUT)
    {
       /* Oops! ran out of time in the final wait. Just bail. */
       LeaveCriticalSection(&cond->cs);
@@ -590,12 +604,13 @@ void scond_wait(scond_t *cond, slock_t *lock)
 int scond_broadcast(scond_t *cond)
 {
 #ifdef USE_WIN32_THREADS
-   
    /* remember: we currently have mutex */
-   if(cond->waiters == 0) return 0;
+   if (cond->waiters == 0)
+      return 0;
    
    /* awaken everything which is currently queued up */
-   if(cond->wakens == 0) SetEvent(cond->event);
+   if (cond->wakens == 0)
+      SetEvent(cond->event);
    cond->wakens = cond->waiters;
 
    /* Since there is now at least one pending waken, the potato must be in play */
@@ -623,22 +638,24 @@ void scond_signal(scond_t *cond)
    EnterCriticalSection(&cond->cs);
 
    /* remember: we currently have mutex */
-   if(cond->waiters == 0)
+   if (cond->waiters == 0)
    {
       LeaveCriticalSection(&cond->cs);
       return;
    }
  
    /* wake up the next thing in the queue */
-   if(cond->wakens == 0) SetEvent(cond->event);
+   if (cond->wakens == 0)
+      SetEvent(cond->event);
+
    cond->wakens++;
 
-   /* The data structure is done being modified.. I think we can leave the CS now. */
-   /* This would prevent some other thread from receiving the hot potato and then 
-   /* immediately stalling for the critical section. */
-   /* But remember, we were trying to replicate a semantic where this entire scond_signal call
-   /* was controlled (by the user) by a lock. */
-   /* So in case there's trouble with this, we can move it after SetEvent() */
+   /* The data structure is done being modified.. I think we can leave the CS now.
+    * This would prevent some other thread from receiving the hot potato and then 
+    * immediately stalling for the critical section.
+    * But remember, we were trying to replicate a semantic where this entire scond_signal call
+    * was controlled (by the user) by a lock.
+    * So in case there's trouble with this, we can move it after SetEvent() */
    LeaveCriticalSection(&cond->cs);
 
    /* Since there is now at least one pending waken, the potato must be in play */
@@ -669,14 +686,16 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    /* Someone asking for a 1 timeout clearly wants an actual timeout of the minimum length */
    /* Someone asking for 1000 or 1001 timeout shouldn't accidentally get 2ms. */
    DWORD dwMilliseconds = timeout_us/1000;
-   if(timeout_us == 0) {
-      /* The implementation of a 0 timeout here with pthreads is sketchy. */
-      /* It isn't clear what happens if pthread_cond_timedwait is called with NOW. */
-      /* Moreover, it is possible that this thread gets pre-empted after the clock_gettime but before the pthread_cond_timedwait. */
-      /* In order to help smoke out problems caused by this strange usage, let's treat a 0 timeout as always timing out. */
+
+   /* The implementation of a 0 timeout here with pthreads is sketchy. */
+   /* It isn't clear what happens if pthread_cond_timedwait is called with NOW. */
+   /* Moreover, it is possible that this thread gets pre-empted after the clock_gettime but before the pthread_cond_timedwait. */
+   /* In order to help smoke out problems caused by this strange usage, let's treat a 0 timeout as always timing out. */
+   if (timeout_us == 0)
       return false;
-   }
-   else if(timeout_us < 1000) dwMilliseconds = 1;
+   else if (timeout_us < 1000)
+      dwMilliseconds = 1;
+
    return _scond_wait_win32(cond,lock,dwMilliseconds);
 #else
    int ret;
