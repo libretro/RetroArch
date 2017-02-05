@@ -28,7 +28,7 @@ ifneq ($(findstring DOS,$(OS)),)
 endif
 
 ifneq ($(findstring Win32,$(OS)),)
-   LDFLAGS += -static-libgcc
+   LDFLAGS += -static-libgcc -lwinmm
 endif
 
 include Makefile.common
