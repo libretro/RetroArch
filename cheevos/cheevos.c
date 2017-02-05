@@ -447,7 +447,7 @@ static void cheevos_add_uint(char** aux, size_t* left, unsigned v)
    cheevos_add_string(aux, left, buffer);
 }
 
-static void cheevos_add_uint(char** aux, size_t* left, int v)
+static void cheevos_add_int(char** aux, size_t* left, int v)
 {
    char buffer[32];
 
@@ -1158,7 +1158,12 @@ static void cheevos_parse_var(cheevos_var_t *var, const char **memaddr)
       if (toupper(*str) == 'H')
          str++;
       else
+      {
+         if (toupper(*str) == 'V')
+            str++;
+         
          base = 10;
+      }
    }
 
    if (var->type != CHEEVOS_VAR_TYPE_VALUE_COMP)
