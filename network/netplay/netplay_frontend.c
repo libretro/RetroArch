@@ -652,10 +652,21 @@ static void netplay_frontend_paused(netplay_t *netplay, bool paused)
 bool netplay_pre_frame(netplay_t *netplay)
 {
    bool sync_stalled;
-   reannounce ++;
-   if (netplay->is_server && (reannounce % 3600 == 0))
-      netplay_announce();
+   settings_t *settings  = config_get_ptr();
+
    retro_assert(netplay);
+
+   if (settings->netplay.public_announce)
+   {
+      reannounce ++;
+      if (netplay->is_server && (reannounce % 3600 == 0))
+         netplay_announce();
+   }
+   else
+   {
+      /* Make sure that if announcement is turned on mid-game, it gets announced */
+      reannounce = -1;
+   }
 
    /* FIXME: This is an ugly way to learn we're not paused anymore */
    if (netplay->local_paused)
@@ -1027,7 +1038,8 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
          msg_hash_to_str(MSG_WAITING_FOR_CLIENT),
          0, 180, false);
 
-      netplay_announce();
+      if (settings->netplay.public_announce)
+         netplay_announce();
    }
 
    netplay_data = (netplay_t*)netplay_new(

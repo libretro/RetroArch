@@ -990,6 +990,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
       "Username")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
       "Server Password")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
+      "Publicly Announce Netplay")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
       "Netplay settings")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_STATELESS_MODE,
@@ -2618,6 +2620,10 @@ MSG_HASH(
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_PASSWORD,
       "The password for connecting to the netplay host. Used only in host mode."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
+      "Whether to announce netplay games publicly. If unset, clients must manually connect rather than using the public lobby."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
