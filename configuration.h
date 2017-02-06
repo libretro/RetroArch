@@ -403,6 +403,7 @@ typedef struct settings
 #ifdef HAVE_NETWORKING
    struct
    {
+      bool public_announce;
       char server[255];
       unsigned port;
       bool stateless_mode;

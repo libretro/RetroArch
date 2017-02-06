@@ -1535,6 +1535,13 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len) {
                              "Increasing this value will increase \n"
                              "performance, but introduce more latency.");
             break;
+        case MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE:
+            snprintf(s, len,
+                     "Whether to announce netplay games publicly. \n"
+                             " \n"
+                             "If set to false, clients must manually connect \n"
+                             "rather than using the public lobby.");
+            break;
         case MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE:
             snprintf(s, len,
                      "Whether to run netplay in a mode not requiring\n"
