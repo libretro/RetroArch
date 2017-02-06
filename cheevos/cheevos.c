@@ -27,22 +27,24 @@
 #endif
 
 #ifdef HAVE_MENU
-#include "menu/menu_driver.h"
-#include "menu/menu_entries.h"
+#include "../menu/menu_driver.h"
+#include "../menu/menu_entries.h"
 #endif
 
 #include "cheevos.h"
-#include "command.h"
-#include "dynamic.h"
-#include "network/net_http_special.h"
-#include "tasks/tasks_internal.h"
-#include "configuration.h"
-#include "performance_counters.h"
-#include "msg_hash.h"
-#include "runloop.h"
-#include "core.h"
 
-#include "verbosity.h"
+#include "../command.h"
+#include "../dynamic.h"
+#include "../configuration.h"
+#include "../performance_counters.h"
+#include "../msg_hash.h"
+#include "../runloop.h"
+#include "../core.h"
+
+#include "../network/net_http_special.h"
+#include "../tasks/tasks_internal.h"
+
+#include "../verbosity.h"
 
 /* Define this macro to prevent cheevos from being deactivated. */
 #undef CHEEVOS_DONT_DEACTIVATE
