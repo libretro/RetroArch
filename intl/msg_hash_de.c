@@ -25,16 +25,14 @@
 
 int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
-   uint32_t      driver_hash = 0;
-   settings_t      *settings = config_get_ptr();
+   uint32_t driver_hash = 0;
+   settings_t *settings = config_get_ptr();
 
    if (msg <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END &&
-         msg >= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN)
-   {
-      unsigned idx = msg - MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN;
+       msg >= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN) {
+       unsigned idx = msg - MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN;
 
-      switch (idx)
-      {
+      switch (idx) {
          case RARCH_FAST_FORWARD_KEY:
             snprintf(s, len,
                   "Schaltet zwischen schnellem Vorlauf und \n"
@@ -43,7 +41,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
          case RARCH_FAST_FORWARD_HOLD_KEY:
             snprintf(s, len,
-                  "Halte den Taste gedrückt, um vorzuspulen.\n"
+                  "Halte die Taste gedrückt, um vorzuspulen.\n"
                   " \n"
                   "Beim Loslassen wird der schnelle Vorlauf beendet."
                   );
@@ -54,15 +52,15 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
          case RARCH_FRAMEADVANCE:
             snprintf(s, len,
-                  "Einzelbildwiedergabe, wenn der Inhalt pausiert ist.");
+                  "Einzelbildvorlauf, wenn der Inhalt pausiert ist.");
             break;
          case RARCH_SHADER_NEXT:
             snprintf(s, len,
-                  "Wendet nächsten Shader im Verzeichnis an.");
+                  "Wendet den nächsten Shader im Verzeichnis an.");
             break;
          case RARCH_SHADER_PREV:
             snprintf(s, len,
-                  "Wendet vorherigen Shader im Verzeichnis an.");
+                  "Wendet den vorherigen Shader im Verzeichnis an.");
             break;
          case RARCH_CHEAT_INDEX_PLUS:
          case RARCH_CHEAT_INDEX_MINUS:
@@ -90,9 +88,13 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                   "Netplay-Spieler tauschen.");
             break;
+         case RARCH_NETPLAY_GAME_WATCH:
+                snprintf(s, len,
+                  "Im Netplay zwischen Spiel- und Beobachter-Modus wechseln.");
+            break;
          case RARCH_SLOWMOTION:
             snprintf(s, len,
-                  "Halte den Taste gedrückt, um die Zeitlupe einzuschalten.");
+                  "Halte die Taste gedrückt, um die Zeitlupe einzuschalten.");
             break;
          case RARCH_ENABLE_HOTKEY:
             snprintf(s, len,
@@ -128,7 +130,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                   "Datenträger einbinden/auswerfen. \n"
                   " \n"
-                  "Verwendet für Inhalt, der auf mehreren Datenträgern ausgeliefert wird. ");
+                  "Wird für Inhalt verwendet, der auf mehreren Datenträgern ausgeliefert wird. ");
             break;
          case RARCH_DISK_NEXT:
          case RARCH_DISK_PREV:
@@ -180,11 +182,11 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                   "Speicherplätze. \n"
                   " \n"
-                  "Wenn der Speicherplatz auf 0 gesetzt wird, ist der Name des Spielstands \n"
+                  "Wenn der Speicherplatz 0 ausgewählt wird, ist der Name des Spielstands \n"
                   "*.state (oder was entsprechend auf der Kommandozeile definiert wurde). \n"
                   " \n"
-                  "Wenn der Speicherplatz nicht auf 0 gesetzt wird, wird das Verzeichnis <path><d> \n"
-                  "gewählt, wobei <d> die Nummer des Speicherplatzes ist.");
+                  "Wenn ein anderer Speicherplatz als 0 gewählt wird, wird das Verzeichnis <path><d> \n"
+                  "verwendet, wobei <d> die Nummer des Speicherplatzes ist.");
             break;
          case RARCH_SAVE_STATE_KEY:
             snprintf(s, len,
@@ -192,7 +194,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
          case RARCH_REWIND:
             snprintf(s, len,
-                  "Haltee die Taste zum Zurückspulen gedrückt. \n"
+                  "Halte die Taste zum Zurückspulen gedrückt. \n"
                   " \n"
                   "Die Zurückspulfunktion muss eingeschaltet sein.");
             break;
@@ -212,7 +214,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
    switch (msg)
    {
       case MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS:
-         snprintf(s, len, "Anmelde-Daten für Ihr \n"
+         snprintf(s, len, "Anmelde-Daten für dein \n"
                "Retro Achievements-Konto. \n"
                " \n"
                "Besuche retroachievements.org und eröffne \n"
@@ -255,7 +257,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len, "Eingabebelegungsdateien automatisch laden.");
          break;
       case MENU_ENUM_LABEL_SORT_SAVESTATES_ENABLE:
-         snprintf(s, len, "Speichert Savestate-Dateien in Ordnern, \n"
+         snprintf(s, len, "Speichert Spielstand-Dateien in Ordnern, \n"
                "die nach dem verwendeten libretro-Core benannt sind.");
          break;
       case MENU_ENUM_LABEL_SORT_SAVEFILES_ENABLE:
@@ -274,12 +276,12 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Speicher.");
          break;
       case MENU_ENUM_LABEL_UNDO_LOAD_STATE:
-         snprintf(s, len, "Wenn ein Savestate geladen war, wird der Inhalt \n"
-               "zum Status vor dem Laden des Savestates zurückkehren.");
+         snprintf(s, len, "Wenn ein Spielstand geladen war, wird der Inhalt \n"
+               "zum Status vor dem Laden des Spielstands zurückkehren.");
          break;
       case MENU_ENUM_LABEL_UNDO_SAVE_STATE:
-         snprintf(s, len, "Wenn ein Savestate überschrieben wurde, wird \n"
-               "der Inhalt zum vorherigen Savestates zurückkehren.");
+         snprintf(s, len, "Wenn ein Spielstand überschrieben wurde, wird \n"
+               "der Inhalt zum vorherigen Spielstand zurückkehren.");
          break;
       case MENU_ENUM_LABEL_TAKE_SCREENSHOT:
          snprintf(s, len, "Fertigt ein Bildschirmfoto an. \n"
@@ -295,7 +297,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                "über den Inhalt an.");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_CONFIG:
-         snprintf(s, len, "Konfigurations-Datei.");
+         snprintf(s, len, "Konfigurationsdatei.");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_COMPRESSED_ARCHIVE:
          snprintf(s, len, "Komprimierte Archivdatei.");
@@ -304,7 +306,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len, "Aufzeichnungs-Konfigurationsdatei.");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_CURSOR:
-         snprintf(s, len, "Datenbank-Zeiger-Datei.");
+         snprintf(s, len, "Vorherige Datenbank-Suchanfragen."); /*Maybe a FIXME*/
          break;
       case MENU_ENUM_LABEL_FILE_CONFIG:
          snprintf(s, len, "Konfigurationsdatei.");
@@ -316,24 +318,25 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_USE_THIS_DIRECTORY:
          snprintf(s, len,
-               "Auswählen, um dies als Verzeichnis festzulegen.");
+               "Dieses Verzeichnis auswählen.");
          break;
       case MENU_ENUM_LABEL_CONTENT_DATABASE_DIRECTORY:
          snprintf(s, len,
-               "Verzeichnis für Inhalte-Datenbank. \n"
+               "Verzeichnis für Inhaltsdatenbanken. \n"
                " \n"
-               "Pfad zum Verzeichnis für die \n"
-               "Inhalte-Datenbank.");
+               "Verzeichnis, in welchem die Inhaltsdatenbanken \n"
+               "gespeichert werden.");
          break;
       case MENU_ENUM_LABEL_THUMBNAILS_DIRECTORY:
          snprintf(s, len,
-               "Vorschaubild-Verzeichnis. \n"
+               "Verzeichnis für Vorschaubilder. \n"
                " \n"
-               "Zum Speichern von Vorschaubildern.");
+               "Verzeichnis, in welchem die Vorschaubilder \n"
+			   "gespeichert werden.");
          break;
       case MENU_ENUM_LABEL_LIBRETRO_INFO_PATH:
          snprintf(s, len,
-               "Core-Info-Verzeichnis. \n"
+               "Verzeichnis für Core-Informationsdateien. \n"
                " \n"
                "Ein Verzeichnis, in dem nach \n"
                "libretro-Core-Informationen gesucht wird.");
@@ -352,7 +355,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "Wenn diese Option deaktiviert bleibt, \n"
                "wird RetroArch beendet, wenn die Abschalt-Funktion \n"
-               "ausgewählt wird. \n"
+               "ausgelöst wird. \n"
                " \n"
                "Wenn diese Option aktiviert ist, wird stattdessen \n"
                "ein 'leerer' Core geladen, sodass wir im Menü bleiben \n"
@@ -430,13 +433,13 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION:
          snprintf(s, len,
-               "Libretro-Core. \n"
+               "libretro-Core. \n"
                " \n"
                "Auswählen, um diesen Core dem Spiel zuzuordnen.");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_CORE:
          snprintf(s, len,
-               "Libretro-Core. \n"
+               "libretro-Core. \n"
                " \n"
                "Auswählen, um diesen Core in RetroArch zu laden.");
          break;
@@ -474,7 +477,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                "das aktuelle Frame verarbeitet wird. \n"
                "Normal - Eingabe wird abgefragt, wenn \n"
                "eine Abfrage angefordert wird. \n"
-               "Late   - Eingabe wird abgefragt, wenn \n"
+               "Spät   - Eingabe wird abgefragt, wenn \n"
                "die erste Eingabe-Abfrage im Frame angefordert wird.\n"
                " \n"
                "Diese Option auf 'Früh' oder 'Spät' zu setzen kann \n"
@@ -543,9 +546,9 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX:
          snprintf(s, len,
                "Erhöht den Speicherplatz-Index bei jedem Speichervorgang, \n"
-               "sodass mehrere Savestate-Dateien erzeugt werden. \n"
+               "sodass mehrere Spielstand-Dateien erzeugt werden. \n"
                "Wenn der Inhalt geladen ist, wird der Speicherplatz-Index \n"
-               "auf den höchsten existierenden Wert gesetzt (neuester Savestate).");
+               "auf den höchsten existierenden Wert gesetzt (neuester Spielstand).");
          break;
       case MENU_ENUM_LABEL_FPS_SHOW:
          snprintf(s, len,
@@ -661,7 +664,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC:
          snprintf(s, len,
-               "Um nach Inhalten zu suchen, gehee zu '%s' und\n"
+               "Um nach Inhalten zu suchen, gehe zu '%s' und\n"
                "wähle '%s' oder %s'.\n"
                " \n"
                "Die Dateien werden werden mit einer Datenbank abgeglichen.\n"
@@ -747,7 +750,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Suche nach Inhalten. \n"
                " \n"
                "Um Inhalte zu laden benötigst Du den passenden \n"
-               "Libretro-Core und die Inhalts-Datei. \n"
+               "libretro-Core und die Inhalts-Datei. \n"
                " \n"
                "Um einzustellen, welcher Ordner standardmäßig \n"
                "geöffnet wird, um nach Inhalten zu suchen, solltest \n"
@@ -783,11 +786,11 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "OpenGL-Grafiktreiber. \n"
                   " \n"
                   "Dieser Treiber erlaubt es, neben software- \n"
-                  "gerenderten Cores auch Libretro-GL-Cores zu \n"
+                  "gerenderten Cores auch libretro-GL-Cores zu \n"
                   "verwenden. \n"
                   " \n"
                   "Die Leistung, sowohl bei software-gerenderten, \n"
-                  "als auch bei Libretro-GL-Cores, hängt von dem \n"
+                  "als auch bei libretro-GL-Cores, hängt von dem \n"
                   "GL-Treiber deiner Grafikkarte ab.");
          }
          else if (string_is_equal(settings->video.driver, "sdl2"))
@@ -936,7 +939,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
          snprintf(s, len,
-               "Shader-Voreinstellung-Parameter. \n"
+               "Parameter der Shader-Voreinstellung. \n"
                " \n"
                "Verändert die Shader-Voreinstellung, die aktuell \n"
                "im Menü aktiv ist."
@@ -1310,11 +1313,11 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE:
       case MENU_ENUM_LABEL_SAVESTATE_AUTO_LOAD:
          snprintf(s, len,
-               "Erstellt einen Savestate automatisch, \n"
+               "Erstellt einen Spielstand automatisch, \n"
                "wenn RetroArch beendet wird .\n"
                " \n"
-               "RetroArch wird Savestates in diesem Pfad automatisch \n"
-               "nach dem Starten laden, wenn 'Savestate automatisch laden' \n"
+               "RetroArch wird Spielstände in diesem Pfad automatisch \n"
+               "nach dem Starten laden, wenn 'Spielstand automatisch laden' \n"
                "aktiviert ist.");
          break;
       case MENU_ENUM_LABEL_VIDEO_THREADED:
@@ -1400,7 +1403,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE:
          snprintf(s, len,
                "Verhindert, dass SRAM überschrieben wird, \n"
-               "wenn Savestates geladen werden.\n"
+               "wenn Spielstände geladen werden.\n"
                " \n"
                "Kann zu fehlerhaften Spielen führen.");
          break;
@@ -1441,9 +1444,9 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_SAVESTATE_DIRECTORY:
          snprintf(s, len,
-               "Verzeichnis für Savestates. \n"
+               "Verzeichnis für Spielstände. \n"
                " \n"
-               "Speichert alle Savestates (*.state) in diesem \n"
+               "Speichert alle Spielstände (*.state) in diesem \n"
                "Verzeichnis.\n"
                " \n"
                "Explizite Optionen über die Kommandozeile überschreiben \n"
@@ -1544,7 +1547,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "Wird dieser Wert erhöht, verbessert sich \n"
                "die Leistung, die Latenz erhöht sich jedoch.");
-        case MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE:
+        case MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE: /* Maybe FIXME*/
             snprintf(s, len,
                      "Legt fest, ob Netplay in einem Modus laufen soll, der keine\n"
                              "Savestates benötigt. \n"
@@ -1660,12 +1663,12 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL:
          snprintf(s, len,
                "URL zum Core-Verzeichnis auf dem \n"
-               "Libretro-Server.");
+               "libretro-Server.");
          break;
       case MENU_ENUM_LABEL_BUILDBOT_ASSETS_URL:
          snprintf(s, len,
                "URL zum Assets-Verzeichnis auf dem \n"
-               "Libretro-Server.");
+               "libretro-Server.");
          break;
       case MENU_ENUM_LABEL_INPUT_REMAP_BINDS_ENABLE:
          snprintf(s, len,
@@ -1895,7 +1898,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Damit RetroArch etwas tut, musst \n"
                "Du ein Programm hineinladen. \n"
                "\n"
-               "Wir nennen diese Programme 'Libretro-Core', \n"
+               "Wir nennen diese Programme 'libretro-Core', \n"
                "oder einfach nur 'Core'. \n"
                " \n"
                "Um einen Core zu laden, verwende \n"
