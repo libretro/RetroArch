@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -71,7 +71,7 @@ static void sdl_ctx_destroy_resources(gfx_ctx_sdl_data_t *sdl)
    SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 
-static void *sdl_ctx_init(video_frame_info_t video_info, void *video_driver)
+static void *sdl_ctx_init(video_frame_info_t *video_info, void *video_driver)
 {
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)
       calloc(1, sizeof(gfx_ctx_sdl_data_t));
@@ -285,8 +285,10 @@ static void sdl_ctx_update_title(void *data, video_frame_info_t *video_info)
 #endif
 }
 
-static void sdl_ctx_check_window(void *data, bool *quit, bool *resize,unsigned *width,
-                            unsigned *height)
+static void sdl_ctx_check_window(void *data, bool *quit,
+      bool *resize,unsigned *width,
+      unsigned *height,
+      bool is_shutdown)
 {
    SDL_Event event;
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;

@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -102,7 +102,7 @@ bool video_shader_driver_get_ident(video_shader_ctx_ident_t *ident)
 
 bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader)
 {
-   void *video_driver                       = video_driver_get_ptr(false);
+   void *video_driver                       = video_driver_get_ptr(true);
    const video_poke_interface_t *video_poke = video_driver_get_poke();
 
    shader->data = NULL;

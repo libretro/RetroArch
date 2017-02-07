@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2016 The RetroArch team
+/* Copyright  (C) 2010-2017 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (retro_miscellaneous.h).
@@ -33,8 +33,7 @@
 #elif defined(GEKKO) || defined(__PSL1GHT__) || defined(__QNX__)
 #include <unistd.h>
 #elif defined(WIIU)
-#include <coreinit/thread.h>
-#include "system/wiiu.h"
+#include <wiiu/os/thread.h>
 #elif defined(PSP)
 #include <pspthreadman.h>
 #elif defined(VITA)
@@ -82,6 +81,26 @@
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 #define RARCH_SCALE_BASE 256
+
+#ifdef DJGPP
+#define timespec timeval
+#define tv_nsec tv_usec
+#include <unistd.h>
+
+extern int nanosleep(const struct timespec *rqtp, struct timespec *rmtp);
+
+static int nanosleepDOS(const struct timespec *rqtp, struct timespec *rmtp)
+{
+   usleep(1000000 * rqtp->tv_sec + rqtp->tv_nsec / 1000);
+
+   if (rmtp)
+      rmtp->tv_sec = rmtp->tv_nsec=0;
+
+   return 0;
+}
+
+#define nanosleep nanosleepDOS
+#endif
 
 /**
  * retro_sleep:

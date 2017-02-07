@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2013-2014 - Jason Fetters
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -63,10 +63,10 @@ joypad_connection_t *pad_connection_init(unsigned pads);
 void pad_connection_destroy(joypad_connection_t *joyconn);
 
 void pad_connection_pad_deinit(joypad_connection_t *joyconn,
-   unsigned idx);
+   uint32_t idx);
 
 void pad_connection_packet(joypad_connection_t *joyconn,
-   unsigned idx, uint8_t* data, uint32_t length);
+   uint32_t idx, uint8_t* data, uint32_t length);
 
 uint64_t pad_connection_get_buttons(joypad_connection_t *joyconn,
    unsigned idx);

@@ -1,8 +1,8 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2014-2016 - Jean-André Santoni
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2014-2017 - Jean-André Santoni
+ *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -112,8 +112,7 @@ static void setting_get_string_representation_cheevos_password(void *data,
       return;
 
    if (!string_is_empty(setting->value.target.string))
-      snprintf(s, len, "%s",
-            "********");
+      strlcpy(s, "********", len);
    else
       *setting->value.target.string = '\0';
 }
@@ -2176,7 +2175,7 @@ static bool setting_append_list(
                parent_group);
 #endif
 
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD) && defined(HAVE_NETWORKGAMEPAD_CORE)
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_START_NET_RETROPAD,
@@ -4961,7 +4960,7 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0, 6, 1, true, true);
+            menu_settings_list_current_add_range(list, list_info, 0, XMB_ICON_THEME_LAST - 1, 1, true, true);
 
             CONFIG_BOOL(
                   list, list_info,
@@ -5591,6 +5590,21 @@ static bool setting_append_list(
 #if defined(HAVE_NETWORK_CMD)
             unsigned user;
 #endif
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->netplay.public_announce,
+                  MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE,
+                  MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
+                  true,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+
             CONFIG_STRING(
                   list, list_info,
                   settings->netplay.server,
@@ -5673,7 +5687,35 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, -600, 600, 1, true, false);
+            menu_settings_list_current_add_range(list, list_info, -600, 600, 1, false, false);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+
+            CONFIG_INT(
+                  list, list_info,
+                  (int *) &settings->netplay.input_latency_frames_min,
+                  MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
+                  MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
+                  0,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 15, 1, true, true);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+
+            CONFIG_INT(
+                  list, list_info,
+                  (int *) &settings->netplay.input_latency_frames_range,
+                  MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+                  MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+                  0,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 15, 1, true, true);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
             CONFIG_BOOL(

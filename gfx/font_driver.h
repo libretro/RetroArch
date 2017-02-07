@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -35,7 +35,8 @@ enum font_driver_render_api
    FONT_DRIVER_RENDER_CTR,
    FONT_DRIVER_RENDER_VULKAN_API,
    FONT_DRIVER_RENDER_CACA,
-   FONT_DRIVER_RENDER_GDI
+   FONT_DRIVER_RENDER_GDI,
+   FONT_DRIVER_RENDER_VGA
 };
 
 enum text_alignment
@@ -100,8 +101,9 @@ struct font_params
 
 typedef struct font_renderer
 {
-   void *(*init)(void *data, const char *font_path, float font_size);
-   void (*free)(void *data);
+   void *(*init)(void *data, const char *font_path,
+         float font_size, bool is_threaded);
+   void (*free)(void *data, bool is_threaded);
    void (*render_msg)(
          video_frame_info_t *video_info,
          void *data, const char *msg,
@@ -171,6 +173,7 @@ extern font_renderer_t ctr_font;
 extern font_renderer_t vulkan_raster_font;
 extern font_renderer_t caca_font;
 extern font_renderer_t gdi_font;
+extern font_renderer_t vga_font;
 
 extern font_renderer_driver_t stb_font_renderer;
 extern font_renderer_driver_t stb_unicode_font_renderer;

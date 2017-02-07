@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2015 - Higor Euripedes
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Higor Euripedes
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -42,7 +43,6 @@
 #include "../video_driver.h"
 
 #include "../../configuration.h"
-#include "../../runloop.h"
 #include "../../performance_counters.h"
 
 #include "../video_context_driver.h"
@@ -353,8 +353,8 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
    if (SDL_MUSTLOCK(vid->screen))
       SDL_LockSurface(vid->screen);
 
-   performance_counter_init(&sdl_scale, "sdl_scale");
-   performance_counter_start(&sdl_scale);
+   performance_counter_init(sdl_scale, "sdl_scale");
+   performance_counter_start_plus(video_info->is_perfcnt_enable, sdl_scale);
 
    video_frame_scale(
          &vid->scaler,
@@ -367,7 +367,7 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
          width,
          height,
          pitch);
-   performance_counter_stop(&sdl_scale);
+   performance_counter_stop_plus(video_info->is_perfcnt_enable, sdl_scale);
 
 #ifdef HAVE_MENU
    menu_driver_frame(video_info);
@@ -575,7 +575,7 @@ static void sdl_gfx_set_rotation(void *data, unsigned rotation)
    (void)rotation;
 }
 
-static bool sdl_gfx_read_viewport(void *data, uint8_t *buffer)
+static bool sdl_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    (void)data;
    (void)buffer;

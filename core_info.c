@@ -198,7 +198,7 @@ static bool core_info_list_iterate(
    fill_pathname_base_noext(info_path_base, contents->elems[i].data,
          sizeof(info_path_base));
 
-#if defined(RARCH_MOBILE) || (defined(RARCH_CONSOLE) && !defined(PSP) && !defined(_3DS) && !defined(VITA))
+#if defined(RARCH_MOBILE) || (defined(RARCH_CONSOLE) && !defined(PSP) && !defined(_3DS) && !defined(VITA) && !defined(HW_WUP))
    substr = strrchr(info_path_base, '_');
    if (substr)
       *substr = '\0';
@@ -918,7 +918,7 @@ bool core_info_get_display_name(const char *path, char *s, size_t len)
 
    if (config_get_string(conf, "display_name", &tmp))
    {
-      snprintf(s, len, "%s", tmp);
+      strlcpy(s, tmp, len);
       free(tmp);
    }
 

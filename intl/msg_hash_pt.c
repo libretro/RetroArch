@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -712,11 +712,6 @@ int menu_hash_get_help_pt_enum(enum msg_hash_enums msg, char *s, size_t len)
                "É atualizada na configuração apenas quando a\n"
                "opção 'Salvar Configuração ao Sair' está ativada.\n");
          break;
-      case MENU_ENUM_LABEL_CORE_SPECIFIC_CONFIG:
-         snprintf(s, len,
-               "Carrega uma configuração específica baseada \n"
-               "no core que está sendo usado.\n");
-         break;
       case MENU_ENUM_LABEL_VIDEO_FULLSCREEN:
          snprintf(s, len, "Alterna tela cheia.");
          break;
@@ -1076,8 +1071,6 @@ const char *msg_hash_to_str_pt(enum msg_hash_enums msg)
          return "Core";
       case MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE: /* TODO/FIXME */
          return "Não Iniciar Cores Automaticamente";
-      case MENU_ENUM_LABEL_VALUE_CORE_SPECIFIC_CONFIG:
-         return "Configuração por Core";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
          return "Autoextrair Arquivos Baixados";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL:
@@ -1246,7 +1239,7 @@ const char *msg_hash_to_str_pt(enum msg_hash_enums msg)
          return "Databases";
       case MENU_ENUM_LABEL_VALUE_MENU_DRIVER:
          return "Driver de Menu";
-      case MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS:
+      case MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS: /* TODO/FIXME - Update */
          return "Menu de Navegação";
       case MENU_ENUM_LABEL_VALUE_MENU_SETTINGS:
          return "Menu";
@@ -1618,7 +1611,7 @@ const char *msg_hash_to_str_pt(enum msg_hash_enums msg)
          return "Suporte a Zlib";
       case MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT:
          return "Capturar Tela";
-      case MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE:
+      case MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE: /* TODO/FIXME - update */
          return "Ativar Runloop de Threads de Dados";
       case MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE:
          return "Mostrar Hora / Data";

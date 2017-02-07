@@ -53,6 +53,7 @@ enum video_driver_enum
    VIDEO_DISPMANX,
    VIDEO_CACA,
    VIDEO_GDI,
+   VIDEO_VGA,
    VIDEO_NULL
 };
 
@@ -111,6 +112,7 @@ enum input_driver_enum
    INPUT_COCOA,
    INPUT_QNX,
    INPUT_RWEBINPUT,
+   INPUT_DOS,
    INPUT_NULL
 };
 
@@ -128,6 +130,7 @@ enum joypad_driver_enum
    JOYPAD_LINUXRAW,
    JOYPAD_ANDROID,
    JOYPAD_SDL,
+   JOYPAD_DOS,
    JOYPAD_HID,
    JOYPAD_QNX,
    JOYPAD_NULL
@@ -213,6 +216,8 @@ enum record_driver_enum
 #define VIDEO_DEFAULT_DRIVER VIDEO_SDL2
 #elif defined(_WIN32) && !defined(_XBOX)
 #define VIDEO_DEFAULT_DRIVER VIDEO_GDI
+#elif defined(DJGPP)
+#define VIDEO_DEFAULT_DRIVER VIDEO_VGA
 #elif defined(HAVE_DYLIB) && !defined(ANDROID)
 #define VIDEO_DEFAULT_DRIVER VIDEO_EXT
 #else
@@ -317,6 +322,8 @@ enum record_driver_enum
 #define INPUT_DEFAULT_DRIVER INPUT_SDL
 #elif defined(HAVE_SDL2)
 #define INPUT_DEFAULT_DRIVER INPUT_SDL2
+#elif defined(DJGPP)
+#define INPUT_DEFAULT_DRIVER INPUT_DOS
 #else
 #define INPUT_DEFAULT_DRIVER INPUT_NULL
 #endif
@@ -345,6 +352,8 @@ enum record_driver_enum
 #define JOYPAD_DEFAULT_DRIVER JOYPAD_ANDROID
 #elif defined(HAVE_SDL) || defined(HAVE_SDL2)
 #define JOYPAD_DEFAULT_DRIVER JOYPAD_SDL
+#elif defined(DJGPP)
+#define JOYPAD_DEFAULT_DRIVER JOYPAD_DOS
 #elif defined(HAVE_HID)
 #define JOYPAD_DEFAULT_DRIVER JOYPAD_HID
 #elif defined(__QNX__)
@@ -634,7 +643,7 @@ static unsigned menu_shader_pipeline = 2;
 #endif
 #endif
 
-static bool show_advanced_settings    = true;
+static bool show_advanced_settings            = false;
 static const uint32_t menu_entry_normal_color = 0xffffffff;
 static const uint32_t menu_entry_hover_color  = 0xff64ff64;
 static const uint32_t menu_title_color        = 0xff64ff64;
@@ -805,6 +814,9 @@ static const bool pause_nonactive = true;
 /* Saves non-volatile SRAM at a regular interval.
  * It is measured in seconds. A value of 0 disables autosave. */
 static const unsigned autosave_interval = 0;
+
+/* Publicly announce netplay */
+static const bool netplay_public_announce = true;
 
 /* Netplay without savestates/rewind */
 static const bool netplay_stateless_mode = false;

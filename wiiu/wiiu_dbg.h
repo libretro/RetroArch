@@ -2,7 +2,7 @@
 #define WIIU_DBG_H
 
 #include <stdio.h>
-#include <wut_types.h>
+#include <wiiu/types.h>
 #ifdef __cplusplus
 extern "C" {
 #endif

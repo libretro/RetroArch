@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -24,7 +25,6 @@
 #include "../../config.h"
 #endif
 
-#include "../../runloop.h"
 #include "../video_context_driver.h"
 
 #ifdef HAVE_EGL
@@ -52,7 +52,7 @@ static void gfx_ctx_emscripten_swap_interval(void *data, unsigned interval)
 }
 
 static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
 {
    int input_width;
    int input_height;
@@ -98,7 +98,7 @@ static void gfx_ctx_emscripten_destroy(void *data)
    free(data);
 }
 
-static void *gfx_ctx_emscripten_init(video_frame_info_t video_info, void *video_driver)
+static void *gfx_ctx_emscripten_init(video_frame_info_t *video_info, void *video_driver)
 {
 #ifdef HAVE_EGL
    unsigned width, height;

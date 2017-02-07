@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -33,7 +33,9 @@ typedef struct
    struct font_atlas *atlas;
 } vita_font_t;
 
-static void *vita2d_font_init_font(void *data, const char *font_path, float font_size)
+static void *vita2d_font_init_font(void *data,
+      const char *font_path, float font_size,
+      bool is_threaded)
 {
    unsigned int stride, pitch, j, k;
    const uint8_t         *frame32 = NULL;    
@@ -44,7 +46,7 @@ static void *vita2d_font_init_font(void *data, const char *font_path, float font
    if (!font)
       return NULL;
       
-   font->vita = (vita_video_t*)data;
+   font->vita                     = (vita_video_t*)data;
 
    if (!font_renderer_create_default((const void**)&font->font_driver,
             &font->font_data, font_path, font_size))
@@ -87,7 +89,7 @@ error:
    return NULL;
 }
 
-static void vita2d_font_free_font(void *data)
+static void vita2d_font_free_font(void *data, bool is_threaded)
 {
    vita_font_t *font = (vita_font_t*)data;
    if (!font)

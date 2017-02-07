@@ -1,6 +1,6 @@
 /* RetroArch - A frontend for libretro.
 * Copyright (C) 2010-2014 - Hans-Kristian Arntzen
-* Copyright (C) 2011-2016 - Daniel De Matteis
+* Copyright (C) 2011-2017 - Daniel De Matteis
 *
 * RetroArch is free software: you can redistribute it and/or modify it under the terms
 * of the GNU General Public License as published by the Free Software Found-
@@ -48,8 +48,6 @@ CONSOLE EXTENSIONS
 /*============================================================
 ALGORITHMS
 ============================================================ */
-
-#include "../libretro-common/algorithms/mismatch.c"
 
 /*============================================================
 ARCHIVE FILE
@@ -135,7 +133,7 @@ ACHIEVEMENTS
 
 #include "../libretro-common/formats/json/jsonsax.c"
 #include "../network/net_http_special.c"
-#include "../cheevos.c"
+#include "../cheevos/cheevos.c"
 #endif
 
 /*============================================================
@@ -274,6 +272,8 @@ VIDEO IMAGE
 #include "../libretro-common/formats/bmp/rbmp_encode.c"
 #endif
 
+#include "../libretro-common/formats/wav/rwav.c"
+
 /*============================================================
 VIDEO DRIVER
 ============================================================ */
@@ -354,6 +354,8 @@ VIDEO DRIVER
 #include "../gfx/drivers/ctr_gfx.c"
 #elif defined(XENON)
 #include "../gfx/drivers/xenon360_gfx.c"
+#elif defined(DJGPP)
+#include "../gfx/drivers/vga_gfx.c"
 #endif
 #include "../gfx/drivers/nullgfx.c"
 
@@ -403,6 +405,10 @@ FONTS
 
 #if defined(HAVE_CACA)
 #include "../gfx/drivers_font/caca_font.c"
+#endif
+
+#if defined(DJGPP)
+#include "../gfx/drivers_font/vga_font.c"
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX)
@@ -462,6 +468,9 @@ INPUT
 #include "../input/drivers_joypad/qnx_joypad.c"
 #elif defined(EMSCRIPTEN)
 #include "../input/drivers/rwebinput_input.c"
+#elif defined(DJGPP)
+#include "../input/drivers/dos_input.c"
+#include "../input/drivers_joypad/dos_joypad.c"
 #endif
 
 #ifdef HAVE_DINPUT
@@ -742,11 +751,6 @@ MESSAGE
 #include "../libretro-common/queues/message_queue.c"
 
 /*============================================================
-PATCH
-============================================================ */
-#include "../patch.c"
-
-/*============================================================
 CONFIGURATION
 ============================================================ */
 #include "../configuration.c"
@@ -784,6 +788,8 @@ FRONTEND
 #include "../frontend/drivers/platform_linux.c"
 #elif defined(BSD) && !defined(__MACH__)
 #include "../frontend/drivers/platform_bsd.c"
+#elif defined(DJGPP)
+#include "../frontend/drivers/platform_dos.c"
 #endif
 #include "../frontend/drivers/platform_null.c"
 
@@ -906,6 +912,7 @@ NETPLAY
 #include "../tasks/task_http.c"
 #include "../tasks/task_netplay_lan_scan.c"
 #include "../tasks/task_wifi.c"
+#include "../tasks/task_netplay_find_content.c"
 #endif
 
 /*============================================================
@@ -998,6 +1005,10 @@ MENU
 
 #ifdef HAVE_CACA
 #include "../menu/drivers_display/menu_display_caca.c"
+#endif
+
+#ifdef DJGPP
+#include "../menu/drivers_display/menu_display_vga.c"
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX)
@@ -1103,6 +1114,7 @@ XML
 ============================================================ */
 #include "../libretro-common/audio/conversion/s16_to_float.c"
 #include "../libretro-common/audio/conversion/float_to_s16.c"
+#include "../libretro-common/audio/audio_mix.c"
 
 /*============================================================
  LIBRETRODB

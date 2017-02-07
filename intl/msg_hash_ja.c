@@ -1,6 +1,6 @@
 ﻿/*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -1405,11 +1405,6 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "This is only updated in config if\n"
                "'Save Configuration on Exit' is enabled.\n");
-         break;
-      case MENU_ENUM_LABEL_CORE_SPECIFIC_CONFIG:
-         snprintf(s, len,
-               "Load up a specific config file \n"
-               "based on the core being used.\n");
          break;
       case MENU_ENUM_LABEL_VIDEO_FULLSCREEN:
          snprintf(s, len, "Toggles fullscreen.");

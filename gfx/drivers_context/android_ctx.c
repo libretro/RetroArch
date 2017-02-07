@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -37,8 +37,6 @@
 #endif
 
 #include "../../frontend/drivers/platform_linux.h"
-
-#include "../../runloop.h"
 
 static enum gfx_ctx_api android_api           = GFX_CTX_NONE;
 
@@ -100,7 +98,7 @@ static void android_gfx_ctx_destroy(void *data)
    free(data);
 }
 
-static void *android_gfx_ctx_init(video_frame_info_t video_info, void *video_driver)
+static void *android_gfx_ctx_init(video_frame_info_t *video_info, void *video_driver)
 {
 #ifdef HAVE_OPENGLES
    EGLint n, major, minor;
@@ -230,7 +228,8 @@ static void android_gfx_ctx_get_video_size(void *data,
 }
 
 static void android_gfx_ctx_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *width, unsigned *height,
+      bool is_shutdown)
 {
    unsigned new_width       = 0;
    unsigned new_height      = 0;
@@ -271,7 +270,7 @@ static void android_gfx_ctx_check_window(void *data, bool *quit,
    }
 
    /* Check if we are exiting. */
-   if (runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL))
+   if (is_shutdown)
       *quit = true;
 }
 

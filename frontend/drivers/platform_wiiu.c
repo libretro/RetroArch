@@ -1,5 +1,6 @@
 /* RetroArch - A frontend for libretro.
  *  Copyright (C) 2014-2016 - Ali Bouhlel
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  * RetroArch is free software: you can redistribute it and/or modify it under the terms
  * of the GNU General Public License as published by the Free Software Found-
@@ -21,7 +22,9 @@
 
 #include <file/file_path.h>
 
+#ifndef IS_SALAMANDER
 #include <lists/file_list.h>
+#endif
 
 #include "../frontend_driver.h"
 #include "../frontend.h"
@@ -35,7 +38,7 @@
 
 #include "tasks/tasks_internal.h"
 #include "runloop.h"
-#include <nsysnet/socket.h>
+#include <sys/socket.h>
 #include "fs/fs_utils.h"
 #include "fs/sd_fat_devoptab.h"
 #include "system/dynamic.h"
@@ -44,20 +47,23 @@
 #include "system/exception.h"
 #include <sys/iosupport.h>
 
-#include <coreinit/foreground.h>
-#include <proc_ui/procui.h>
-#include <vpad/input.h>
-#include <sysapp/launch.h>
-#include <padscore.h>
+#include <wiiu/os/foreground.h>
+#include <wiiu/procui.h>
+#include <wiiu/sysapp.h>
+#include <wiiu/ios.h>
+#include <wiiu/vpad.h>
+#include <wiiu/kpad.h>
 
 #include <fat.h>
 #include <iosuhax.h>
-#include "ios.h"
 
 #include "wiiu_dbg.h"
+#include "hbl.h"
 
+#ifndef IS_SALAMANDER
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
+#endif
 #endif
 
 //#define WIIU_SD_PATH "/vol/external01/"
@@ -65,7 +71,7 @@
 #define WIIU_USB_PATH "usb:/"
 
 static enum frontend_fork wiiu_fork_mode = FRONTEND_FORK_NONE;
-static const char* elf_path_cst = WIIU_SD_PATH "retroarch/retroarch.elf";
+static const char *elf_path_cst = WIIU_SD_PATH "retroarch/retroarch.elf";
 
 static void frontend_wiiu_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
@@ -138,7 +144,8 @@ enum frontend_architecture frontend_wiiu_get_architecture(void)
 
 static int frontend_wiiu_parse_drive_list(void *data)
 {
-   file_list_t *list = (file_list_t*)data;
+#ifndef IS_SALAMANDER
+   file_list_t *list = (file_list_t *)data;
 
    if (!list)
       return -1;
@@ -152,18 +159,125 @@ static int frontend_wiiu_parse_drive_list(void *data)
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
          MENU_SETTING_ACTION, 0, 0);
-
+#endif
    return 0;
 }
 
-frontend_ctx_driver_t frontend_ctx_wiiu = {
+
+static void frontend_wiiu_exec(const char *path, bool should_load_game)
+{
+
+   struct
+   {
+      u32 magic;
+      u32 argc;
+      char * argv[3];
+      char args[];
+   }*param = getApplicationEndAddr();
+   int len = 0;
+   param->argc = 0;
+
+   if(!path || !*path)
+   {
+      RARCH_LOG("No executable path provided, cannot Restart\n");
+   }
+
+   DEBUG_STR(path);
+
+   strcpy(param->args + len, elf_path_cst);
+   param->argv[param->argc] = param->args + len;
+   len += strlen(param->args + len) + 1;
+   param->argc++;
+
+   RARCH_LOG("Attempt to load core: [%s].\n", path);
+#ifndef IS_SALAMANDER
+   if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
+   {
+      strcpy(param->args + len, path_get(RARCH_PATH_CONTENT));
+      param->argv[param->argc] = param->args + len;
+      len += strlen(param->args + len) + 1;
+      param->argc++;
+
+      RARCH_LOG("content path: [%s].\n", path_get(RARCH_PATH_CONTENT));
+   }
+#endif
+   param->argv[param->argc] = NULL;
+
+   {
+      if (HBL_loadToMemory(path, (u32)param->args - (u32)param + len) < 0)
+         RARCH_LOG("Failed to load core\n");
+      else
+      {
+         param->magic = ARGV_MAGIC;
+         ARGV_PTR = param;
+         DEBUG_VAR(param->argc);
+         DEBUG_VAR(param->argv);
+
+      }
+   }
+}
+
+#ifndef IS_SALAMANDER
+static bool frontend_wiiu_set_fork(enum frontend_fork fork_mode)
+{
+   switch (fork_mode)
+   {
+      case FRONTEND_FORK_CORE:
+         RARCH_LOG("FRONTEND_FORK_CORE\n");
+         wiiu_fork_mode  = fork_mode;
+         break;
+      case FRONTEND_FORK_CORE_WITH_ARGS:
+         RARCH_LOG("FRONTEND_FORK_CORE_WITH_ARGS\n");
+         wiiu_fork_mode  = fork_mode;
+         break;
+      case FRONTEND_FORK_RESTART:
+         RARCH_LOG("FRONTEND_FORK_RESTART\n");
+         /* NOTE: We don't implement Salamander, so just turn
+          * this into FRONTEND_FORK_CORE. */
+         wiiu_fork_mode  = FRONTEND_FORK_CORE;
+         break;
+      case FRONTEND_FORK_NONE:
+      default:
+         return false;
+   }
+
+   return true;
+}
+#endif
+
+static void frontend_wiiu_exitspawn(char *s, size_t len)
+{
+   bool should_load_game = false;
+#ifndef IS_SALAMANDER
+   if (wiiu_fork_mode == FRONTEND_FORK_NONE)
+      return;
+
+   switch (wiiu_fork_mode)
+   {
+      case FRONTEND_FORK_CORE_WITH_ARGS:
+         should_load_game = true;
+         break;
+      default:
+         break;
+   }
+#endif
+   frontend_wiiu_exec(s, should_load_game);
+}
+
+
+frontend_ctx_driver_t frontend_ctx_wiiu =
+{
    frontend_wiiu_get_environment_settings,
    frontend_wiiu_init,
    frontend_wiiu_deinit,
-   NULL,                         /* exitspawn */
+   frontend_wiiu_exitspawn,
    NULL,                         /* process_args */
-   NULL,                         /* exec */
+   frontend_wiiu_exec,
+#ifdef IS_SALAMANDER
    NULL,                         /* set_fork */
+#else
+   frontend_wiiu_set_fork,
+#endif
    frontend_wiiu_shutdown,
    NULL,                         /* get_name */
    NULL,                         /* get_os */
@@ -186,68 +300,74 @@ frontend_ctx_driver_t frontend_ctx_wiiu = {
 static int log_socket = -1;
 static volatile int log_lock = 0;
 
-void log_init(const char * ipString, int port)
+void log_init(const char *ipString, int port)
 {
-	log_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	if (log_socket < 0)
-		return;
+   log_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-	struct sockaddr_in connect_addr;
-	memset(&connect_addr, 0, sizeof(connect_addr));
-	connect_addr.sin_family = AF_INET;
-	connect_addr.sin_port = port;
-	inet_aton(ipString, &connect_addr.sin_addr);
+   if (log_socket < 0)
+      return;
 
-	if(connect(log_socket, (struct sockaddr*)&connect_addr, sizeof(connect_addr)) < 0)
-	{
-	    socketclose(log_socket);
-	    log_socket = -1;
-	}
+   struct sockaddr_in connect_addr;
+   memset(&connect_addr, 0, sizeof(connect_addr));
+   connect_addr.sin_family = AF_INET;
+   connect_addr.sin_port = port;
+   inet_aton(ipString, &connect_addr.sin_addr);
+
+   if (connect(log_socket, (struct sockaddr *)&connect_addr, sizeof(connect_addr)) < 0)
+   {
+      socketclose(log_socket);
+      log_socket = -1;
+   }
 }
 
 void log_deinit(void)
 {
-    if(log_socket >= 0)
-    {
-        socketclose(log_socket);
-        log_socket = -1;
-    }
+   if (log_socket >= 0)
+   {
+      socketclose(log_socket);
+      log_socket = -1;
+   }
 }
-static int log_write(struct _reent *r, int fd, const char *ptr, size_t len)
+static ssize_t log_write(struct _reent *r, void *fd, const char *ptr, size_t len)
 {
-   if(log_socket < 0)
-       return len;
+   if (log_socket < 0)
+      return len;
 
-   while(log_lock)
-      OSSleepTicks(((248625000/4)) / 1000);
+   while (log_lock)
+      OSSleepTicks(((248625000 / 4)) / 1000);
+
    log_lock = 1;
 
    int ret;
-   while (len > 0) {
-       int block = len < 1400 ? len : 1400; // take max 1400 bytes per UDP packet
-       ret = send(log_socket, ptr, block, 0);
-       if(ret < 0)
-           break;
 
-       len -= ret;
-       ptr += ret;
+   while (len > 0)
+   {
+      int block = len < 1400 ? len : 1400; // take max 1400 bytes per UDP packet
+      ret = send(log_socket, ptr, block, 0);
+
+      if (ret < 0)
+         break;
+
+      len -= ret;
+      ptr += ret;
    }
 
    log_lock = 0;
 
    return len;
 }
-void net_print(const char* str)
+void net_print(const char *str)
 {
    log_write(NULL, 0, str, strlen(str));
 }
 
-void net_print_exp(const char* str)
+void net_print_exp(const char *str)
 {
    send(log_socket, str, strlen(str), 0);
 }
 
-static devoptab_t dotab_stdout = {
+static devoptab_t dotab_stdout =
+{
    "stdout_net", // device name
    0,            // size of file structure
    NULL,         // device open
@@ -263,13 +383,12 @@ void SaveCallback()
 }
 
 int main(int argc, char **argv)
-{   
+{
 #if 1
    setup_os_exceptions();
 #else
    InstallExceptionHandler();
 #endif
-
    ProcUIInit(&SaveCallback);
 
    socket_lib_init();
@@ -278,22 +397,46 @@ int main(int argc, char **argv)
    devoptab_list[STD_OUT] = &dotab_stdout;
    devoptab_list[STD_ERR] = &dotab_stdout;
 #endif
+#ifndef IS_SALAMANDER
    VPADInit();
    WPADEnableURCC(true);
    WPADEnableWiiRemote(true);
    KPADInit();
-
+#endif
    verbosity_enable();
+
+   printf("starting\n");
+   fflush(stdout);
+   DEBUG_VAR(ARGV_PTR);
+   if(ARGV_PTR && ((u32)ARGV_PTR < 0x01000000))
+   {
+      struct
+      {
+         u32 magic;
+         u32 argc;
+         char * argv[3];
+      }*param = ARGV_PTR;
+      if(param->magic == ARGV_MAGIC)
+      {
+         argc = param->argc;
+         argv = param->argv;
+      }
+      ARGV_PTR = NULL;
+   }
+
    DEBUG_VAR(argc);
    DEBUG_STR(argv[0]);
    DEBUG_STR(argv[1]);
    fflush(stdout);
-
+#ifdef IS_SALAMANDER
+   int salamander_main(int, char **);
+   salamander_main(argc, argv);
+#else
 #if 1
 #if 0
    int argc_ = 2;
 //   char* argv_[] = {WIIU_SD_PATH "retroarch/retroarch.elf", WIIU_SD_PATH "rom.nes", NULL};
-   char* argv_[] = {WIIU_SD_PATH "retroarch/retroarch.elf", WIIU_SD_PATH "rom.sfc", NULL};
+   char *argv_[] = {WIIU_SD_PATH "retroarch/retroarch.elf", WIIU_SD_PATH "rom.sfc", NULL};
 
    rarch_main(argc_, argv_, NULL);
 #else
@@ -305,14 +448,18 @@ int main(int argc, char **argv)
       int ret = runloop_iterate(&sleep_ms);
 
       if (ret == 1 && sleep_ms > 0)
-       retro_sleep(sleep_ms);
-      task_queue_ctl(TASK_QUEUE_CTL_WAIT, NULL);
-      if (ret == -1)
-       break;
+         retro_sleep(sleep_ms);
 
-   }while(1);
+      task_queue_ctl(TASK_QUEUE_CTL_WAIT, NULL);
+
+      if (ret == -1)
+         break;
+
+   }
+   while (1);
 
    main_exit(NULL);
+#endif
 #endif
    fflush(stdout);
    fflush(stderr);
@@ -321,6 +468,8 @@ int main(int argc, char **argv)
 #if defined(PC_DEVELOPMENT_IP_ADDRESS) && defined(PC_DEVELOPMENT_TCP_PORT)
    log_deinit();
 #endif
+
+   /* returning non 0 here can prevent loading a different rpx/elf in the HBL environment */
    return 0;
 }
 
@@ -339,7 +488,8 @@ void __init(void)
 {
    extern void(*__CTOR_LIST__[])(void);
    void(**ctor)(void) = __CTOR_LIST__;
-   while(*ctor)
+
+   while (*ctor)
       (*ctor++)();
 }
 
@@ -349,7 +499,8 @@ void __fini(void)
 {
    extern void(*__DTOR_LIST__[])(void);
    void(**ctor)(void) = __DTOR_LIST__;
-   while(*ctor)
+
+   while (*ctor)
       (*ctor++)();
 }
 
@@ -358,38 +509,80 @@ void __fini(void)
 //just to be able to call async
 void someFunc(void *arg)
 {
-    (void)arg;
+   (void)arg;
 }
 
 static int mcp_hook_fd = -1;
+
 int MCPHookOpen()
 {
-    //take over mcp thread
-    mcp_hook_fd = IOS_Open("/dev/mcp", 0);
-    if(mcp_hook_fd < 0)
-        return -1;
-    IOS_IoctlAsync(mcp_hook_fd, 0x62, (void*)0, 0, (void*)0, 0, someFunc, (void*)0);
-    //let wupserver start up
-    retro_sleep(1000);
-    if(IOSUHAX_Open("/dev/mcp") < 0)
-    {
-        IOS_Close(mcp_hook_fd);
-        mcp_hook_fd = -1;
-        return -1;
-    }
-    return 0;
+   //take over mcp thread
+   mcp_hook_fd = IOS_Open("/dev/mcp", 0);
+
+   if (mcp_hook_fd < 0)
+      return -1;
+
+   IOS_IoctlAsync(mcp_hook_fd, 0x62, (void *)0, 0, (void *)0, 0, someFunc, (void *)0);
+   //let wupserver start up
+   retro_sleep(1000);
+
+   if (IOSUHAX_Open("/dev/mcp") < 0)
+   {
+      IOS_Close(mcp_hook_fd);
+      mcp_hook_fd = -1;
+      return -1;
+   }
+
+   return 0;
 }
 
 void MCPHookClose()
 {
-    if(mcp_hook_fd < 0)
-        return;
-    //close down wupserver, return control to mcp
-    IOSUHAX_Close();
-    //wait for mcp to return
-    retro_sleep(1000);
-    IOS_Close(mcp_hook_fd);
-    mcp_hook_fd = -1;
+   if (mcp_hook_fd < 0)
+      return;
+
+   //close down wupserver, return control to mcp
+   IOSUHAX_Close();
+   //wait for mcp to return
+   retro_sleep(1000);
+   IOS_Close(mcp_hook_fd);
+   mcp_hook_fd = -1;
+}
+
+
+static int iosuhaxMount = 0;
+
+static void fsdev_init(void)
+{
+   iosuhaxMount = 0;
+   int res = IOSUHAX_Open(NULL);
+
+   if (res < 0)
+      res = MCPHookOpen();
+
+   if (res < 0)
+      mount_sd_fat("sd");
+   else
+   {
+      iosuhaxMount = 1;
+      fatInitDefault();
+   }
+}
+static void fsdev_exit(void)
+{
+   if (iosuhaxMount)
+   {
+      fatUnmount("sd:");
+      fatUnmount("usb:");
+
+      if (mcp_hook_fd >= 0)
+         MCPHookClose();
+      else
+         IOSUHAX_Close();
+   }
+   else
+      unmount_sd_fat("sd");
+
 }
 
 /* HBL elf entry point */
@@ -397,76 +590,29 @@ int __entry_menu(int argc, char **argv)
 {
    InitFunctionPointers();
    memoryInitialize();
-
-   int iosuhaxMount = 0;
-   int res = IOSUHAX_Open(NULL);
-   if(res < 0)
-      res = MCPHookOpen();
-
-   if(res < 0)
-      mount_sd_fat("sd");
-   else
-   {
-      iosuhaxMount = 1;
-      fatInitDefault();
-   }
-
    __init();
+   fsdev_init();
+
    int ret = main(argc, argv);
-   __fini();
 
-   if(iosuhaxMount)
-   {
-      fatUnmount("sd:");
-      fatUnmount("usb:");
-      if(mcp_hook_fd >= 0)
-         MCPHookClose();
-      else
-         IOSUHAX_Close();
-   }
-   else
-      unmount_sd_fat("sd");
-
+   fsdev_exit();
+//   __fini();
    memoryRelease();
    return ret;
 }
-
 /* RPX entry point */
 __attribute__((noreturn))
 void _start(int argc, char **argv)
 {
    memoryInitialize();
-
-   int iosuhaxMount = 0;
-   int res = IOSUHAX_Open(NULL);
-   if(res < 0)
-      res = MCPHookOpen();
-
-   if(res < 0)
-      mount_sd_fat("sd");
-   else
-   {
-      iosuhaxMount = 1;
-      fatInitDefault();
-   }
-
    __init();
+   fsdev_init();
+
    int ret = main(argc, argv);
-   __fini();
 
-   if(iosuhaxMount)
-   {
-      fatUnmount("sd:");
-      fatUnmount("usb:");
-      if(mcp_hook_fd >= 0)
-         MCPHookClose();
-      else
-         IOSUHAX_Close();
-   }
-   else
-      unmount_sd_fat("sd");
-
+   fsdev_exit();
+//   __fini();
    memoryRelease();
-   SYSRelaunchTitle(argc, argv);
-   exit(ret);
+   SYSRelaunchTitle(0, 0);
+   exit(0);
 }

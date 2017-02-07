@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
- *  Plain DRM diver: Copyright (C) 2016 - Manuel Alfayate
+ *  Copyright (C) 2015-2017 - Manuel Alfayate
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -11,7 +12,10 @@
  *
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
+ *
  */
+
+ /*  Plain DRM diver */
 
 #include <xf86drm.h>
 #include <xf86drmMode.h>
@@ -35,7 +39,6 @@
 #include "../font_driver.h"
 #include "../video_context_driver.h"
 #include "../../retroarch.h"
-#include "../../runloop.h"
 
 #include "drm_pixformats.h"
 
@@ -936,7 +939,7 @@ static void drm_gfx_set_rotation(void *data, unsigned rotation)
    (void)rotation;
 }
 
-static bool drm_gfx_read_viewport(void *data, uint8_t *buffer)
+static bool drm_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    (void)data;
    (void)buffer;

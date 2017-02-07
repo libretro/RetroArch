@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2016 - Jean-André Santoni
+ *  Copyright (C) 2016-2017 - Jean-André Santoni
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -13,24 +13,35 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <lists/file_list.h>
 #include <string/stdstring.h>
 
 #include "tasks_internal.h"
+
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include "../verbosity.h"
 #include "../network/netplay/netplay_discovery.h"
+
+#ifdef HAVE_MENU
 #include "../menu/menu_entries.h"
 #include "../menu/menu_driver.h"
+#endif
 
 static void netplay_lan_scan_callback(void *task_data,
                                void *user_data, const char *error)
 {
    unsigned i;
-   unsigned menu_type                      = 0;
-   const char *path                        = NULL;
-   const char *label                       = NULL;
-   enum msg_hash_enums enum_idx            = MSG_UNKNOWN;
    file_list_t *file_list                  = NULL;
    struct netplay_host_list *netplay_hosts = NULL;
+
+#ifdef HAVE_MENU
+   enum msg_hash_enums enum_idx            = MSG_UNKNOWN;
+   unsigned menu_type                      = 0;
+   const char *label                       = NULL;
+   const char *path                        = NULL;
 
    menu_entries_get_last_stack(&path, &label, &menu_type, &enum_idx, NULL);
 
@@ -60,6 +71,7 @@ static void netplay_lan_scan_callback(void *task_data,
                MENU_NETPLAY_LAN_SCAN, 0, 0);
       }
    }
+#endif
 }
 
 static void task_netplay_lan_scan_handler(retro_task_t *task)

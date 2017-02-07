@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -30,7 +30,7 @@
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "../cheevos.h"
+#include "../cheevos/cheevos.h"
 #endif
 
 #include "cheat_manager.h"

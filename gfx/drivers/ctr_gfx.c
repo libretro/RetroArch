@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2014-2016 - Ali Bouhlel
+ *  Copyright (C) 2014-2017 - Ali Bouhlel
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -365,7 +365,9 @@ static void* ctr_init(const video_info_t* video,
                         ctr->menu.texture_width, ctr->menu.texture_height);
 
    memset(ctr->texture_linear, 0x00, ctr->texture_width * ctr->texture_height * (ctr->rgb32? 4:2));
-//   memset(ctr->menu.texture_swizzled , 0x00, ctr->menu.texture_width * ctr->menu.texture_height * 2);
+#if 0
+   memset(ctr->menu.texture_swizzled , 0x00, ctr->menu.texture_width * ctr->menu.texture_height * 2);
+#endif
 
    ctr->dvlb = DVLB_ParseFile((u32*)ctr_sprite_shbin, ctr_sprite_shbin_size);
    ctrGuSetVshGsh(&ctr->shader, ctr->dvlb, 2, 2);
@@ -380,9 +382,13 @@ static void* ctr_init(const video_info_t* video,
    GPU_SetStencilTest(false, GPU_ALWAYS, 0x00, 0xFF, 0x00);
    GPU_SetStencilOp(GPU_STENCIL_KEEP, GPU_STENCIL_KEEP, GPU_STENCIL_KEEP);
    GPU_SetBlendingColor(0, 0, 0, 0);
-//      GPU_SetDepthTestAndWriteMask(true, GPU_GREATER, GPU_WRITE_ALL);
+#if 0
+   GPU_SetDepthTestAndWriteMask(true, GPU_GREATER, GPU_WRITE_ALL);
+#endif
    GPU_SetDepthTestAndWriteMask(false, GPU_ALWAYS, GPU_WRITE_COLOR);
-   //   GPU_SetDepthTestAndWriteMask(true, GPU_ALWAYS, GPU_WRITE_ALL);
+#if 0
+   GPU_SetDepthTestAndWriteMask(true, GPU_ALWAYS, GPU_WRITE_ALL);
+#endif
 
    GPUCMD_AddMaskedWrite(GPUREG_EARLYDEPTH_TEST1, 0x1, 0);
    GPUCMD_AddWrite(GPUREG_EARLYDEPTH_TEST2, 0);
@@ -458,6 +464,9 @@ static bool ctr_frame(void* data, const void* frame,
    uint32_t diff;
    static uint64_t currentTick,lastTick;
    touchPosition state_tmp_touch;
+   extern GSPGPU_FramebufferInfo topFramebufferInfo;
+   extern u8* gfxSharedMemory;
+   extern u8 gfxThreadID;
    uint32_t state_tmp      = 0;
    ctr_video_t       *ctr  = (ctr_video_t*)data;
    static float        fps = 0.0;
@@ -603,8 +612,8 @@ static bool ctr_frame(void* data, const void* frame,
 #endif
    fflush(stdout);
 
-   performance_counter_init(&ctrframe_f, "ctrframe_f");
-   performance_counter_start(&ctrframe_f);
+   performance_counter_init(ctrframe_f, "ctrframe_f");
+   performance_counter_start_plus(video_info->is_perfcnt_enable, ctrframe_f);
 
    if (ctr->should_resize)
       ctr_update_viewport(ctr);
@@ -796,38 +805,44 @@ static bool ctr_frame(void* data, const void* frame,
 
 
    /* Swap buffers : */
-   extern GSPGPU_FramebufferInfo topFramebufferInfo;
-   extern u8* gfxSharedMemory;
-   extern u8 gfxThreadID;
 
-   topFramebufferInfo.active_framebuf=ctr->current_buffer_top;
-   topFramebufferInfo.framebuf0_vaddr=(u32*)gfxTopLeftFramebuffers[ctr->current_buffer_top];
+   topFramebufferInfo.
+      active_framebuf           = ctr->current_buffer_top;
+   topFramebufferInfo.
+      framebuf0_vaddr           = (u32*)gfxTopLeftFramebuffers[ctr->current_buffer_top];
+
    if(ctr->video_mode == CTR_VIDEO_MODE_800x240)
    {
-      topFramebufferInfo.framebuf1_vaddr=(u32*)(gfxTopLeftFramebuffers[ctr->current_buffer_top] + 240 * 3);
-      topFramebufferInfo.framebuf_widthbytesize = 240 * 3 * 2;
+      topFramebufferInfo.
+         framebuf1_vaddr        = (u32*)(gfxTopLeftFramebuffers[ctr->current_buffer_top] + 240 * 3);
+      topFramebufferInfo.
+         framebuf_widthbytesize = 240 * 3 * 2;
    }
    else
    {
-      topFramebufferInfo.framebuf1_vaddr=(u32*)gfxTopRightFramebuffers[ctr->current_buffer_top];
-      topFramebufferInfo.framebuf_widthbytesize = 240 * 3;
+      topFramebufferInfo.
+         framebuf1_vaddr        = (u32*)gfxTopRightFramebuffers[ctr->current_buffer_top];
+      topFramebufferInfo.
+         framebuf_widthbytesize = 240 * 3;
    }
 
 
-   topFramebufferInfo.format=(1<<8)|(1<<5)|GSP_BGR8_OES;
-   topFramebufferInfo.framebuf_dispselect=ctr->current_buffer_top;
-   topFramebufferInfo.unk=0x00000000;
+   topFramebufferInfo.format    = (1<<8)|(1<<5)|GSP_BGR8_OES;
+   topFramebufferInfo.
+      framebuf_dispselect       = ctr->current_buffer_top;
+   topFramebufferInfo.unk       = 0x00000000;
 
-   u8* framebufferInfoHeader=gfxSharedMemory+0x200+gfxThreadID*0x80;
-	GSPGPU_FramebufferInfo* framebufferInfo=(GSPGPU_FramebufferInfo*)&framebufferInfoHeader[0x4];
-	framebufferInfoHeader[0x0] ^= 1;
+   u8* framebufferInfoHeader    = gfxSharedMemory+0x200+gfxThreadID*0x80;
+	GSPGPU_FramebufferInfo* 
+      framebufferInfo           = (GSPGPU_FramebufferInfo*)&framebufferInfoHeader[0x4];
+	framebufferInfoHeader[0x0]  ^= 1;
 	framebufferInfo[framebufferInfoHeader[0x0]] = topFramebufferInfo;
-	framebufferInfoHeader[0x1]=1;
+	framebufferInfoHeader[0x1]   = 1;
 
-   ctr->current_buffer_top ^= 1;
-   ctr->p3d_event_pending = true;
-   ctr->ppf_event_pending = true;
-   performance_counter_stop(&ctrframe_f);
+   ctr->current_buffer_top     ^= 1;
+   ctr->p3d_event_pending       = true;
+   ctr->ppf_event_pending       = true;
+   performance_counter_stop_plus(video_info->is_perfcnt_enable, ctrframe_f);
 
    return true;
 }
@@ -887,7 +902,9 @@ static void ctr_free(void* data)
    linearFree(ctr->empty_framebuffer);
    linearFree(ctr->vertex_cache.buffer);
    linearFree(ctr);
-   //   gfxExit();
+#if 0
+   gfxExit();
+#endif
 }
 static void ctr_set_texture_frame(void* data, const void* frame, bool rgb32,
                                   unsigned width, unsigned height, float alpha)
@@ -1146,7 +1163,7 @@ static void ctr_get_poke_interface(void* data,
    *iface = &ctr_poke_interface;
 }
 
-static bool ctr_read_viewport(void* data, uint8_t* buffer)
+static bool ctr_read_viewport(void* data, uint8_t* buffer, bool is_idle)
 {
    (void)data;
    (void)buffer;

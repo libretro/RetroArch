@@ -27,9 +27,8 @@
 #include "../audio_driver.h"
 #include "../../verbosity.h"
 
-#define TRY_ALSA(x) if (x < 0) { \
-                  goto error; \
-               }
+#define TRY_ALSA(x) if (x < 0) \
+                  goto error;
 
 typedef struct alsa_thread
 {
@@ -244,7 +243,8 @@ error:
    return NULL;
 }
 
-static ssize_t alsa_thread_write(void *data, const void *buf, size_t size)
+static ssize_t alsa_thread_write(void *data, const void *buf, size_t size,
+      bool is_perfcnt_enable)
 {
    alsa_thread_t *alsa = (alsa_thread_t*)data;
 
@@ -318,7 +318,7 @@ static void alsa_thread_set_nonblock_state(void *data, bool state)
    alsa->nonblock = state;
 }
 
-static bool alsa_thread_start(void *data)
+static bool alsa_thread_start(void *data, bool is_shutdown)
 {
    alsa_thread_t *alsa = (alsa_thread_t*)data;
 

@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -31,7 +31,8 @@
 
 #include "../font_driver.h"
 
-static void *libdbg_font_init_font(void *gl_data, const char *font_path, float font_size)
+static void *libdbg_font_init_font(void *gl_data, const char *font_path,
+      float font_size, bool is_threaded)
 {
    unsigned width, height;
 
@@ -57,7 +58,7 @@ static void *libdbg_font_init_font(void *gl_data, const char *font_path, float f
    return (void*)-1;
 }
 
-static void libdbg_font_free_font(void *data)
+static void libdbg_font_free_font(void *data, bool is_threaded)
 {
    (void)data;
    DbgFontExit();

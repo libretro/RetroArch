@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -57,6 +57,7 @@ extern const struct rarch_key_map rarch_key_map_linux[];
 extern const struct rarch_key_map rarch_key_map_apple_hid[];
 extern const struct rarch_key_map rarch_key_map_android[];
 extern const struct rarch_key_map rarch_key_map_qnx[];
+extern const struct rarch_key_map rarch_key_map_dos[];
 
 /**
  * input_keymaps_init_keyboard_lut:

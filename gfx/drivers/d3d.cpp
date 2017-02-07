@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2014 - OV2
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -53,7 +53,6 @@
 #include "../../performance_counters.h"
 
 #include "../../defines/d3d_defines.h"
-#include "../../runloop.h"
 #include "../../verbosity.h"
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
@@ -1388,8 +1387,8 @@ static bool d3d_frame(void *data, const void *frame,
    if (!frame)
       return true;
 
-   performance_counter_init(&d3d_frame, "d3d_frame");
-   performance_counter_start(&d3d_frame);
+   performance_counter_init(d3d_frame, "d3d_frame");
+   performance_counter_start_plus(video_info->is_perfcnt_enable, d3d_frame);
 
    /* We cannot recover in fullscreen. */
    if (d3d->needs_restore)
@@ -1468,14 +1467,14 @@ static bool d3d_frame(void *data, const void *frame,
 
    video_context_driver_update_window_title(video_info);
 
-   performance_counter_stop(&d3d_frame);
+   performance_counter_stop_plus(video_info->is_perfcnt_enable, d3d_frame);
 
    video_context_driver_swap_buffers(video_info);
 
    return true;
 }
 
-static bool d3d_read_viewport(void *data, uint8_t *buffer)
+static bool d3d_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    d3d_video_t *d3d   = (d3d_video_t*)data;
 

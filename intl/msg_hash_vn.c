@@ -1,6 +1,6 @@
 ﻿/*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -1408,11 +1408,6 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
                "This is only updated in config if\n"
                "'Save Configuration on Exit' is enabled.\n");
          break;
-      case MENU_ENUM_LABEL_CORE_SPECIFIC_CONFIG:
-         snprintf(s, len,
-               "Tải up a specific config file \n"
-               "based on the core being used.\n");
-         break;
       case MENU_ENUM_LABEL_VIDEO_FULLSCREEN:
          snprintf(s, len, "Bật/tắt chế độ toàn màn hình.");
          break;
@@ -2141,8 +2136,6 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE:
 /* FIXME? Translate 'Start a Core Automatically' */
          return "Tự động chạy Core";
-      case MENU_ENUM_LABEL_VALUE_CORE_SPECIFIC_CONFIG:
-         return "Mỗi Core mỗi cấu hình";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
          return "Tự động giải nén lưu trữ tải về";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL:
@@ -2542,8 +2535,6 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Menu Driver";
       case MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE:
          return "Throttle Menu Framerate";
-      case MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS:
-         return "Menu File Browser";
       case MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER:
          return "Menu Linear Filter";
       case MENU_ENUM_LABEL_VALUE_MENU_SETTINGS:
@@ -3036,42 +3027,16 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Zlib support";
       case MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT:
          return "Chụp ảnh màn hình";
-      case MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE:
-         return "Threaded data runloop";
-      case MENU_ENUM_LABEL_VALUE_THUMBNAILS:
-         return "Thumbnails";
       case MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY:
          return "Thumbnails Danh mục";
       case MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST:
          return "Thumbnails Updater";
-      case MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS:
-         return "Boxarts";
-      case MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS:
-         return "Screenshots";
-      case MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS:
-         return "Title Screens";
-      case MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE:
-         return "Display time / date";
-      case MENU_ENUM_LABEL_VALUE_TITLE_COLOR:
-         return "Menu title color";
-      case MENU_ENUM_LABEL_VALUE_TRUE:
-         return "True";
       case MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE:
          return "Kích hoạt UI Companion";
       case MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT:
          return "UI Companion Start On Boot";
-      case MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE:
-         return "Menubar";
-      case MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE:
-         return "Unable to read compressed file.";
       case MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE:
          return "Undo Tải State";
-      case MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE:
-         return "Undo Save State";
-      case MENU_ENUM_LABEL_VALUE_UNKNOWN:
-         return "Unknown";
-      case MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS:
-         return "Updater";
       case MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS:
          return "Cập nhật Assets";
       case MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES:
@@ -3189,7 +3154,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME:
          return "Save Game Preset";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT:
-/* FIXME? Translate 'Enable Hardware Shared Context' */
+         /* FIXME? Translate 'Enable Hardware Shared Context' */
          return "Kích hoạt Hardware Shared Context";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH:
          return "HW Bilinear Filtering";
@@ -3237,6 +3202,8 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Pixel";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROACTIVE:
          return "RetroActive";
+      case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_DOTART:
+         return "Dot-Art";
       case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME:
          return "Menu Color Theme";
       case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_APPLE_GREEN:

@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -19,8 +19,6 @@
 
 #include <stdint.h>
 #include <stdlib.h>
-
-#include <boolean.h>
 
 #include <retro_common_api.h>
 
@@ -41,8 +39,7 @@ void filebrowser_clear_type(void);
 
 void filebrowser_set_type(enum filebrowser_enums type);
 
-void filebrowser_parse(void *data, unsigned type,
-      bool extensions_honored);
+void filebrowser_parse(void *data, unsigned type);
 
 RETRO_END_DECLS
 

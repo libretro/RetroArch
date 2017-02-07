@@ -124,13 +124,17 @@ static int setting_bind_action_ok(void *data, bool wraparound)
 static int setting_int_action_right_default(void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
+#ifdef HAVE_MENU
    double               min = 0.0f;
+#endif
    double               max = 0.0f;
    
    if (!setting)
       return -1;
 
+#ifdef HAVE_MENU
    min = setting->min;
+#endif
    max = setting->max;
 
    (void)wraparound; /* TODO/FIXME - handle this */
@@ -231,13 +235,17 @@ static int setting_uint_action_left_default(void *data, bool wraparound)
 static int setting_uint_action_right_default(void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
+#ifdef HAVE_MENU
    double               min = 0.0f;
+#endif
    double               max = 0.0f;
    
    if (!setting)
       return -1;
 
+#ifdef HAVE_MENU
    min = setting->min;
+#endif
    max = setting->max;
 
    (void)wraparound; /* TODO/FIXME - handle this */
@@ -419,13 +427,17 @@ static int setting_fraction_action_right_default(
       void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
+#ifdef HAVE_MENU
    double               min = 0.0f;
+#endif
    double               max = 0.0f;
 
    if (!setting)
       return -1;
 
+#ifdef HAVE_MENU
    min = setting->min;
+#endif
    max = setting->max;
 
    (void)wraparound; /* TODO/FIXME - handle this */
@@ -1526,8 +1538,12 @@ bool CONFIG_BOOL(
    (*list)[list_info->index++] = value;
    if (flags != SD_FLAG_NONE)
       settings_data_list_current_add_flags(list, list_info, flags);
+
+#ifdef HAVE_MENU
    menu_settings_list_current_add_enum_idx(list, list_info, name_enum_idx);
    menu_settings_list_current_add_enum_value_idx(list, list_info, SHORT_enum_idx);
+#endif
+
    return true;
 }
 
@@ -1555,8 +1571,12 @@ bool CONFIG_INT(
    if (value.name)
       value.name_hash = msg_hash_calculate(value.name);
    (*list)[list_info->index++] = value;
+
+#ifdef HAVE_MENU
    menu_settings_list_current_add_enum_idx(list, list_info, name_enum_idx);
    menu_settings_list_current_add_enum_value_idx(list, list_info, SHORT_enum_idx);
+#endif
+
    return true;
 }
 
@@ -1608,8 +1628,12 @@ bool CONFIG_UINT(
    if (value.name)
       value.name_hash = msg_hash_calculate(value.name);
    (*list)[list_info->index++] = value;
+
+#ifdef HAVE_MENU
    menu_settings_list_current_add_enum_idx(list, list_info, name_enum_idx);
    menu_settings_list_current_add_enum_value_idx(list, list_info, SHORT_enum_idx);
+#endif
+
    return true;
 }
 
@@ -1634,8 +1658,12 @@ bool CONFIG_FLOAT(
    if (value.name)
       value.name_hash = msg_hash_calculate(value.name);
    (*list)[list_info->index++] = value;
+
+#ifdef HAVE_MENU
    menu_settings_list_current_add_enum_idx(list, list_info, name_enum_idx);
    menu_settings_list_current_add_enum_value_idx(list, list_info, SHORT_enum_idx);
+#endif
+
    return true;
 }
 
@@ -1664,8 +1692,10 @@ bool CONFIG_PATH(
       value.name_hash = msg_hash_calculate(value.name);
    (*list)[list_info->index++] = value;
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
+#ifdef HAVE_MENU
    menu_settings_list_current_add_enum_idx(list, list_info, name_enum_idx);
    menu_settings_list_current_add_enum_value_idx(list, list_info, SHORT_enum_idx);
+#endif
    return true;
 }
 
@@ -1700,8 +1730,10 @@ bool CONFIG_DIR(
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
+#ifdef HAVE_MENU
    menu_settings_list_current_add_enum_idx(list, list_info, name_enum_idx);
    menu_settings_list_current_add_enum_value_idx(list, list_info, SHORT_enum_idx);
+#endif
    return true;
 }
 
@@ -1728,8 +1760,10 @@ bool CONFIG_STRING(
    if (value.name)
       value.name_hash = msg_hash_calculate(value.name);
    (*list)[list_info->index++] = value;
+#ifdef HAVE_MENU
    menu_settings_list_current_add_enum_idx(list, list_info, name_enum_idx);
    menu_settings_list_current_add_enum_value_idx(list, list_info, SHORT_enum_idx);
+#endif
    return true;
 }
 
@@ -1757,8 +1791,11 @@ bool CONFIG_STRING_OPTIONS(
    if (value.name)
       value.name_hash = msg_hash_calculate(value.name);
    (*list)[list_info->index++] = value;
+
+#ifdef HAVE_MENU
    menu_settings_list_current_add_enum_idx(list, list_info, name_enum_idx);
    menu_settings_list_current_add_enum_value_idx(list, list_info, SHORT_enum_idx);
+#endif
    /* Request values to be freed later */
    settings_data_list_current_add_free_flags(list, list_info, SD_FREE_FLAG_VALUES);
 
@@ -1788,8 +1825,12 @@ bool CONFIG_HEX(
    if (value.name)
       value.name_hash = msg_hash_calculate(value.name);
    (*list)[list_info->index++] = value;
+
+#ifdef HAVE_MENU
    menu_settings_list_current_add_enum_idx(list, list_info, name_enum_idx);
    menu_settings_list_current_add_enum_value_idx(list, list_info, SHORT_enum_idx);
+#endif
+
    return true;
 }
 
@@ -1889,8 +1930,12 @@ bool CONFIG_ACTION(
    if (value.name)
       value.name_hash = msg_hash_calculate(value.name);
    (*list)[list_info->index++] = value;
+
+#ifdef HAVE_MENU
    menu_settings_list_current_add_enum_idx(list, list_info, name_enum_idx);
    menu_settings_list_current_add_enum_value_idx(list, list_info, SHORT_enum_idx);
+#endif
+
    return true;
 }
 

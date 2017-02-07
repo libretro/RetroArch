@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Brad Parker
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -64,7 +64,7 @@ static void setup_gdi_pixel_format(HDC hdc)
 }
 
 static void gfx_ctx_gdi_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
 {
    win32_check_window(quit, resize, width, height);
 }
@@ -124,7 +124,7 @@ static void gfx_ctx_gdi_get_video_size(void *data,
    }
 }
 
-static void *gfx_ctx_gdi_init(video_frame_info_t video_info, void *video_driver)
+static void *gfx_ctx_gdi_init(video_frame_info_t *video_info, void *video_driver)
 {
    WNDCLASSEX wndclass = {0};
 

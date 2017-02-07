@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2013-2015 - Tobias Jakobi
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -43,7 +44,6 @@
 #include "../font_driver.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
-#include "../../runloop.h"
 
 /* TODO: Honor these properties: vsync, menu rotation, menu alpha, aspect ratio change */
 
@@ -1520,7 +1520,7 @@ static bool exynos_gfx_set_shader(void *data,
    return false; 
 }
 
-static bool exynos_gfx_read_viewport(void *data, uint8_t *buffer)
+static bool exynos_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    (void)data;
    (void)buffer;

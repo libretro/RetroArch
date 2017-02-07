@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -31,7 +32,6 @@
 #include <retro_inline.h>
 
 #include "../../configuration.h"
-#include "../../runloop.h"
 #include "../video_context_driver.h"
 
 #include "../../frontend/frontend_driver.h"
@@ -86,7 +86,8 @@ static INLINE bool gfx_ctx_vc_egl_query_extension(vc_ctx_data_t *vc, const char 
 }
 
 static void gfx_ctx_vc_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *width, unsigned *height,
+      bool is_shutdown)
 {
    (void)data;
    (void)width;
@@ -135,7 +136,7 @@ static void gfx_ctx_vc_get_video_size(void *data,
 
 static void gfx_ctx_vc_destroy(void *data);
 
-static void *gfx_ctx_vc_init(video_frame_info_t video_info, void *video_driver)
+static void *gfx_ctx_vc_init(video_frame_info_t *video_info, void *video_driver)
 {
    VC_DISPMANX_ALPHA_T alpha;
    EGLint n, major, minor;

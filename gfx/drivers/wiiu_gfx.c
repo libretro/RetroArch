@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2014-2016 - Ali Bouhlel
+ *  Copyright (C) 2014-2017 - Ali Bouhlel
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -14,8 +15,8 @@
  */
 
 #include <string.h>
-#include <coreinit/screen.h>
-#include <coreinit/cache.h>
+#include <wiiu/os.h>
+#include <wiiu/gx2.h>
 
 #include "../../driver.h"
 #include "../../configuration.h"
@@ -30,14 +31,15 @@
 #include "../../menu/menu_driver.h"
 #endif
 
-#include "gx2.h"
 #include "system/memory.h"
-#include "system/wiiu.h"
 #include "tex_shader.h"
 
 #include "wiiu_dbg.h"
 
 #include "../font_driver.h"
+
+#undef _X
+#undef _B
 
 #define _X 0x00
 #define _Y 0x01
@@ -125,7 +127,7 @@ static const wiiu_render_mode_t wiiu_render_mode_map[] =
    {1920, 1080, GX2_TV_RENDER_MODE_WIDE_1080P}  /* GX2_TV_SCAN_MODE_1080P */
 };
 
-static wiiu_set_position(position_t* position, GX2ColorBuffer* draw_buffer, float x0, float y0, float x1, float y1)
+static int wiiu_set_position(position_t* position, GX2ColorBuffer* draw_buffer, float x0, float y0, float x1, float y1)
 {
    position[0].x = (2.0f * x0 / draw_buffer->surface.width) - 1.0f;
    position[0].y = (2.0f * y0 / draw_buffer->surface.height) - 1.0f;
@@ -615,8 +617,8 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
    fflush(stdout);
 
    static struct retro_perf_counter gfx_frame_perf = {0};
-   performance_counter_init(&gfx_frame_perf, "gfx_frame");
-   performance_counter_start(&gfx_frame_perf);
+   performance_counter_init(gfx_frame_perf, "gfx_frame");
+   performance_counter_start_plus(video_info->is_perfcnt_enable, gfx_frame_perf);
 
    if (wiiu->should_resize)
       wiiu_gfx_update_viewport(wiiu);
@@ -700,7 +702,7 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
 
    GX2SwapScanBuffers();
    GX2Flush();
-   performance_counter_stop(&gfx_frame_perf);
+   performance_counter_stop_plus(video_info->is_perfcnt_enable, gfx_frame_perf);
 
    return true;
 }
@@ -767,7 +769,7 @@ static void wiiu_gfx_viewport_info(void* data,
       *vp = wiiu->vp;
 }
 
-static bool wiiu_gfx_read_viewport(void* data, uint8_t* buffer)
+static bool wiiu_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
 {
    (void)data;
    (void)buffer;
@@ -776,7 +778,7 @@ static bool wiiu_gfx_read_viewport(void* data, uint8_t* buffer)
 }
 
 static uintptr_t wiiu_gfx_load_texture(void* video_data, void* data,
-                                   bool threaded, enum texture_filter_type filter_type)
+      bool threaded, enum texture_filter_type filter_type)
 {
    return 0;
 }
@@ -850,7 +852,7 @@ static void wiiu_gfx_set_texture_enable(void* data, bool state, bool full_screen
 }
 
 static void wiiu_gfx_set_osd_msg(void* data, const char* msg,
-                             const struct font_params* params, void* font)
+                             const void* params, void* font)
 {
 }
 
@@ -871,9 +873,9 @@ static const video_poke_interface_t wiiu_poke_interface =
    wiiu_gfx_apply_state_changes,
 #ifdef HAVE_MENU
    wiiu_gfx_set_texture_frame,
+#endif
    wiiu_gfx_set_texture_enable,
    wiiu_gfx_set_osd_msg,
-#endif
    NULL,
    NULL,
    NULL

@@ -24,6 +24,7 @@
 
 #include <boolean.h>
 #include <lists/string_list.h>
+#include <string/stdstring.h>
 #include <libretro.h>
 
 #ifdef HAVE_CONFIG_H
@@ -34,16 +35,14 @@
 #include "network/netplay/netplay.h"
 #endif
 
-#include "configuration.h"
-#include "dynamic.h"
 #include "core.h"
+#include "content.h"
+#include "dynamic.h"
 #include "msg_hash.h"
 #include "managers/state_manager.h"
-#include "runloop.h"
 #include "verbosity.h"
 #include "gfx/video_driver.h"
 #include "audio/audio_driver.h"
-#include "cheevos.h"
 
 static unsigned            core_poll_type                 = POLL_TYPE_EARLY;
 static bool                core_inited                    = false;
@@ -282,13 +281,20 @@ bool core_get_memory(retro_ctx_memory_info_t *info)
 
 bool core_load_game(retro_ctx_load_content_info_t *load_info)
 {
+   bool contentless = false;
+   bool is_inited   = false;
+
+   content_get_status(&contentless, &is_inited);
+
    if (load_info && load_info->special)
       core_game_loaded = core.retro_load_game_special(
             load_info->special->id, load_info->info, load_info->content->size);
-   else if (load_info && *load_info->content->elems[0].data)
+   else if (load_info && !string_is_empty(load_info->content->elems[0].data))
       core_game_loaded = core.retro_load_game(load_info->info);
-   else
+   else if (contentless)
       core_game_loaded = core.retro_load_game(NULL);
+   else
+      core_game_loaded = false;
 
    return core_game_loaded;
 }
@@ -376,9 +382,6 @@ bool core_get_system_av_info(struct retro_system_av_info *av_info)
 bool core_reset(void)
 {
    core.retro_reset();
-#ifdef HAVE_CHEEVOS
-   cheevos_reset_game();
-#endif
    return true;
 }
 
@@ -398,7 +401,7 @@ bool core_unload(void)
 
 bool core_unload_game(void)
 {
-   video_driver_deinit_hw_context();
+   video_driver_free_hw_context();
    audio_driver_stop();
    core.retro_unload_game();
    core_game_loaded = false;
@@ -442,11 +445,9 @@ bool core_run(void)
    return true;
 }
 
-bool core_load(void)
+bool core_load(unsigned poll_type_behavior)
 {
-   settings_t *settings = config_get_ptr();
-
-   core_poll_type = settings->input.poll_type_behavior;
+   core_poll_type = poll_type_behavior;
 
    if (!core_verify_api_version())
       return false;
@@ -454,7 +455,6 @@ bool core_load(void)
       return false;
 
    core_get_system_av_info(video_viewport_get_system_av_info());
-   runloop_ctl(RUNLOOP_CTL_SET_FRAME_LIMIT, NULL);
 
    return true;
 }

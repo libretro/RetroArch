@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -39,11 +40,9 @@
 #include "../video_context_driver.h"
 
 #include "../../retroarch.h"
-#include "../../runloop.h"
 #include "../../driver.h"
 #include "../../performance_counters.h"
 #include "../../content.h"
-#include "../../runloop.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
 
@@ -288,8 +287,8 @@ static void vg_free(void *data)
 
 static void vg_calculate_quad(vg_t *vg, video_frame_info_t *video_info)
 {
-   unsigned width = video_info->width;
-   unsigned heigh = video_info->height;
+   unsigned width  = video_info->width;
+   unsigned height = video_info->height;
 
    /* set viewport for aspect ratio, taken from the OpenGL driver. */
    if (vg->keep_aspect)
@@ -391,8 +390,8 @@ static bool vg_frame(void *data, const void *frame,
    unsigned width                            = video_info->width;
    unsigned height                           = video_info->height;
 
-   performance_counter_init(&vg_fr, "vg_fr");
-   performance_counter_start(&vg_fr);
+   performance_counter_init(vg_fr, "vg_fr");
+   performance_counter_start_plus(video_info->is_perfcnt_enable, vg_fr);
 
    if (     frame_width != vg->mRenderWidth
          || frame_height != vg->mRenderHeight
@@ -416,10 +415,10 @@ static bool vg_frame(void *data, const void *frame,
    vgClear(0, 0, width, height);
    vgSeti(VG_SCISSORING, VG_TRUE);
 
-   performance_counter_init(&vg_image, "vg_image");
-   performance_counter_start(&vg_image);
+   performance_counter_init(vg_image, "vg_image");
+   performance_counter_start_plus(video_info->is_perfcnt_enable, vg_image);
    vg_copy_frame(vg, frame, frame_width, frame_height, pitch);
-   performance_counter_stop(&vg_image);
+   performance_counter_stop_plus(video_info->is_perfcnt_enable, vg_image);
 
 #ifdef HAVE_MENU
    menu_driver_frame(video_info);
@@ -434,7 +433,7 @@ static bool vg_frame(void *data, const void *frame,
 
    video_context_driver_update_window_title(video_info);
 
-   performance_counter_stop(&vg_fr);
+   performance_counter_stop_plus(video_info->is_perfcnt_enable, vg_fr);
 
    video_context_driver_swap_buffers(video_info);
 
@@ -501,7 +500,7 @@ static void vg_viewport_info(void *data,
    (void)vp;
 }
 
-static bool vg_read_viewport(void *data, uint8_t *buffer)
+static bool vg_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    (void)data;
    (void)buffer;

@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -221,7 +221,7 @@ static void sl_set_nonblock_state(void *data, bool state)
       sl->nonblock = state;
 }
 
-static bool sl_start(void *data)
+static bool sl_start(void *data, bool is_shutdown)
 {
    sl_t      *sl = (sl_t*)data;
    sl->is_paused = (SLPlayItf_SetPlayState(sl->player, SL_PLAYSTATE_PLAYING)
@@ -230,7 +230,8 @@ static bool sl_start(void *data)
 }
 
 
-static ssize_t sl_write(void *data, const void *buf_, size_t size)
+static ssize_t sl_write(void *data, const void *buf_, size_t size,
+      bool is_perfcnt_enable)
 {
    sl_t           *sl = (sl_t*)data;
    size_t     written = 0;

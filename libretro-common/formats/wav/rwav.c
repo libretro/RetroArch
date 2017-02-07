@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2016 The RetroArch team
+/* Copyright  (C) 2010-2017 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (rwav.c).
@@ -115,8 +115,7 @@ int rwav_iterate(rwav_iterator_t *iter)
          if (s > RWAV_ITERATE_BUF_SIZE)
             s = RWAV_ITERATE_BUF_SIZE;
          
-         memcpy((void*)rwav->samples, (void *)(iter->data + 44 + iter->i), s);
-         printf("copied %lu\n", s);
+         memcpy((void*)((uint8_t*)rwav->samples + iter->i), (void *)(iter->data + 44 + iter->i), s);
          iter->i += s;
          
          return iter->i < rwav->subchunk2size ? RWAV_ITERATE_MORE : RWAV_ITERATE_DONE;
@@ -132,7 +131,6 @@ int rwav_iterate(rwav_iterator_t *iter)
          if (s > RWAV_ITERATE_BUF_SIZE)
             s = RWAV_ITERATE_BUF_SIZE;
          
-         printf("copied %lu\n", s);
          u16 = (uint16_t *)rwav->samples;
          
          while (s != 0)
@@ -152,15 +150,14 @@ int rwav_iterate(rwav_iterator_t *iter)
 int rwav_load(rwav_t* out, const void* buf, size_t size)
 {
    int res;
-   rwav_iterator_t iter;
+   rwav_iterator_t iter = {0};
    
    rwav_init(&iter, out, buf, size);
 
    do
    {
       res = rwav_iterate(&iter);
-   }
-   while (res == RWAV_ITERATE_MORE);
+   }while (res == RWAV_ITERATE_MORE);
    
    return res;
 }

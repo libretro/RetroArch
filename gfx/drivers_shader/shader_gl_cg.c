@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -48,9 +48,7 @@
 
 #include "../video_shader_driver.h"
 #include "../video_shader_parse.h"
-#include "../video_state_tracker.h"
 #include "../../core.h"
-#include "../../dynamic.h"
 #include "../../managers/state_manager.h"
 
 #define SEMANTIC_TEXCOORD     0x92ee91cdU

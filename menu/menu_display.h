@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2014-2016 - Jean-André Santoni
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2014-2017 - Jean-André Santoni
+ *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -67,7 +67,9 @@ enum xmb_icon_theme
    XMB_ICON_THEME_PIXEL,
    XMB_ICON_THEME_NEOACTIVE,
    XMB_ICON_THEME_SYSTEMATIC,
-   XMB_ICON_THEME_CUSTOM
+   XMB_ICON_THEME_DOTART,
+   XMB_ICON_THEME_CUSTOM,
+   XMB_ICON_THEME_LAST
 };
 
 enum xmb_shader_pipeline
@@ -97,7 +99,8 @@ enum menu_display_driver_type
    MENU_VIDEO_DRIVER_VITA2D,
    MENU_VIDEO_DRIVER_CTR,
    MENU_VIDEO_DRIVER_CACA,
-   MENU_VIDEO_DRIVER_GDI
+   MENU_VIDEO_DRIVER_GDI,
+   MENU_VIDEO_DRIVER_VGA
 };
 
 typedef struct menu_display_ctx_clearcolor
@@ -215,9 +218,9 @@ bool menu_display_libretro_running(void);
 bool menu_display_libretro(void);
 
 void menu_display_set_width(unsigned width);
-unsigned menu_display_get_width(void);
+void menu_display_get_fb_size(unsigned *fb_width, unsigned *fb_height,
+      size_t *fb_pitch);
 void menu_display_set_height(unsigned height);
-unsigned menu_display_get_height(void);
 void menu_display_set_header_height(unsigned height);
 unsigned menu_display_get_header_height(void);
 size_t menu_display_get_framebuffer_pitch(void);
@@ -302,6 +305,7 @@ extern menu_display_ctx_driver_t menu_display_ctx_vita2d;
 extern menu_display_ctx_driver_t menu_display_ctx_ctr;
 extern menu_display_ctx_driver_t menu_display_ctx_caca;
 extern menu_display_ctx_driver_t menu_display_ctx_gdi;
+extern menu_display_ctx_driver_t menu_display_ctx_vga;
 extern menu_display_ctx_driver_t menu_display_ctx_null;
 
 RETRO_END_DECLS

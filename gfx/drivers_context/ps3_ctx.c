@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -148,12 +148,13 @@ static void gfx_ctx_ps3_set_swap_interval(void *data, unsigned interval)
 }
 
 static void gfx_ctx_ps3_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *width, unsigned *height,
+      bool is_shutdown)
 {
    gl_t *gl = data;
 
-   *quit = false;
-   *resize = false;
+   *quit    = false;
+   *resize  = false;
 
    if (gl->should_resize)
       *resize = true;
@@ -197,7 +198,7 @@ static void gfx_ctx_ps3_get_video_size(void *data,
 #endif
 }
 
-static void *gfx_ctx_ps3_init(video_frame_info_t video_info, void *video_driver)
+static void *gfx_ctx_ps3_init(video_frame_info_t *video_info, void *video_driver)
 {
 #ifdef HAVE_PSGL
    PSGLdeviceParameters params;

@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2016 - Hans-Kristian Arntzen
+ *  Copyright (C) 2016-2017 - Hans-Kristian Arntzen
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -17,7 +17,6 @@
 #include "../../config.h"
 #endif
 
-#include "../../runloop.h"
 #include "../../frontend/frontend_driver.h"
 #include "../common/vulkan_common.h"
 
@@ -52,7 +51,7 @@ static void gfx_ctx_khr_display_get_video_size(void *data,
    *height = khr->height;
 }
 
-static void *gfx_ctx_khr_display_init(video_frame_info_t video_info, void *video_driver)
+static void *gfx_ctx_khr_display_init(video_frame_info_t *video_info, void *video_driver)
 {
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)calloc(1, sizeof(*khr));
    if (!khr)
@@ -74,7 +73,7 @@ error:
 }
 
 static void gfx_ctx_khr_display_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
 {
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
 
@@ -87,7 +86,7 @@ static void gfx_ctx_khr_display_check_window(void *data, bool *quit,
       *resize = true;
    }
 
-   if (runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL) || (bool)frontend_driver_get_signal_handler_state())
+   if (is_shutdown || (bool)frontend_driver_get_signal_handler_state())
       *quit = true;
 }
 

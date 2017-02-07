@@ -1,6 +1,6 @@
 /* RetroArch - A frontend for libretro.
  * Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- * Copyright (C) 2011-2016 - Daniel De Matteis
+ * Copyright (C) 2011-2017 - Daniel De Matteis
  *
  * RetroArch is free software: you can redistribute it and/or modify it under the terms
  * of the GNU General Public License as published by the Free Software Found-
@@ -167,8 +167,11 @@ static void salamander_init(char *s, size_t len)
       }
    }
 }
-
+#ifdef HAVE_MAIN
+int salamander_main(int argc, char *argv[])
+#else
 int main(int argc, char *argv[])
+#endif
 {
    char libretro_path[PATH_MAX_LENGTH] = {0};
    void *args                          = NULL;

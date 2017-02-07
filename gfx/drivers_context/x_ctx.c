@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Brad Parker
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -109,7 +109,6 @@ static gfx_ctx_x_data_t *current_context_data = NULL;
 
 #ifdef HAVE_OPENGL
 static PFNGLXCREATECONTEXTATTRIBSARBPROC glx_create_context_attribs;
-#endif
 
 static int GLXExtensionSupported(Display *dpy, const char *extension)
 {
@@ -134,6 +133,7 @@ static int GLXExtensionSupported(Display *dpy, const char *extension)
 
    return 0;
 }
+#endif
 
 static int x_nul_handler(Display *dpy, XErrorEvent *event)
 {
@@ -347,9 +347,11 @@ static void gfx_ctx_x_swap_buffers(void *data, video_frame_info_t *video_info)
 }
 
 static void gfx_ctx_x_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *width, unsigned *height,
+      bool is_shutdown)
 {
-   x11_check_window(data, quit, resize, width, height);
+   x11_check_window(data, quit, resize, width, height,
+         is_shutdown);
 
    switch (x_api)
    {
@@ -401,7 +403,7 @@ static bool gfx_ctx_x_set_resize(void *data,
    return false;
 }
 
-static void *gfx_ctx_x_init(video_frame_info_t video_info, void *data)
+static void *gfx_ctx_x_init(video_frame_info_t *video_info, void *data)
 {
    int nelements           = 0;
    int major               = 0;
@@ -787,8 +789,10 @@ static bool gfx_ctx_x_set_video_mode(void *data,
 #ifdef HAVE_VULKAN
          {
             bool quit, resize;
+            bool shutdown = false;
             unsigned width = 0, height = 0;
-            x11_check_window(x, &quit, &resize, &width, &height);
+            x11_check_window(x, &quit, &resize, &width, &height,
+                  shutdown);
 
             /* Use XCB surface since it's the most supported WSI.
              * We can obtain the XCB connection directly from X11. */

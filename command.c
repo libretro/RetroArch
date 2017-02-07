@@ -35,13 +35,15 @@
 #endif
 
 #ifdef HAVE_COMMAND
-#include <net/net_compat.h>
-#include <net/net_socket.h>
+   #ifdef HAVE_NETWORKING
+   #include <net/net_compat.h>
+   #include <net/net_socket.h>
+   #endif
 #include <string/stdstring.h>
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "cheevos.h"
+#include "cheevos/cheevos.h"
 #endif
 
 #ifdef HAVE_MENU
@@ -1230,8 +1232,8 @@ static void command_event_load_auto_state(void)
    bool ret;
    char msg[128]                             = {0};
    char savestate_name_auto[PATH_MAX_LENGTH] = {0};
-   settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
+   settings_t *settings                      = config_get_ptr();
+   global_t   *global                        = global_get_ptr();
 
 #ifdef HAVE_NETWORKING
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
@@ -1246,9 +1248,10 @@ static void command_event_load_auto_state(void)
    if (!settings->savestate_auto_load)
       return;
 
-   fill_pathname_noext(savestate_name_auto, global->name.savestate,
-         file_path_str(FILE_PATH_AUTO_EXTENSION),
-         sizeof(savestate_name_auto));
+   if (global)
+      fill_pathname_noext(savestate_name_auto, global->name.savestate,
+            file_path_str(FILE_PATH_AUTO_EXTENSION),
+            sizeof(savestate_name_auto));
 
    if (!path_file_exists(savestate_name_auto))
       return;
@@ -1277,19 +1280,23 @@ static void command_event_set_savestate_auto_index(void)
    if (!settings->savestate_auto_index)
       return;
 
-   /* Find the file in the same directory as global->savestate_name
-    * with the largest numeral suffix.
-    *
-    * E.g. /foo/path/content.state, will try to find
-    * /foo/path/content.state%d, where %d is the largest number available.
-    */
+   if (global)
+   {
+      /* Find the file in the same directory as global->savestate_name
+       * with the largest numeral suffix.
+       *
+       * E.g. /foo/path/content.state, will try to find
+       * /foo/path/content.state%d, where %d is the largest number available.
+       */
+      fill_pathname_basedir(state_dir, global->name.savestate,
+            sizeof(state_dir));
+      fill_pathname_base(state_base, global->name.savestate,
+            sizeof(state_base));
+   }
 
-   fill_pathname_basedir(state_dir, global->name.savestate,
-         sizeof(state_dir));
-   fill_pathname_base(state_base, global->name.savestate,
-         sizeof(state_base));
+   dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN, NULL);
 
-   if (!(dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN, NULL)))
+   if (!dir_list)
       return;
 
    for (i = 0; i < dir_list->size; i++)
@@ -1323,6 +1330,11 @@ static void command_event_set_savestate_auto_index(void)
 
 static bool event_init_content(void)
 {
+   bool contentless = false;
+   bool is_inited   = false;
+
+   content_get_status(&contentless, &is_inited);
+
    rarch_ctl(RARCH_CTL_SET_SRAM_ENABLE, NULL);
 
    /* No content to be loaded for dummy core,
@@ -1330,13 +1342,15 @@ static bool event_init_content(void)
    if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
       return true;
 
-   if (!content_does_not_need_content())
+   if (!contentless)
       path_fill_names();
 
    if (!content_init())
       return false;
 
-   if (content_does_not_need_content())
+   content_get_status(&contentless, &is_inited);
+
+   if (contentless)
    {
 #ifdef HAVE_NETWORKING
       if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
@@ -1401,8 +1415,10 @@ static bool command_event_init_core(enum rarch_core_type *data)
    if (!event_init_content())
       return false;
 
-   if (!core_load())
+   if (!core_load(settings->input.poll_type_behavior))
       return false;
+
+   runloop_ctl(RUNLOOP_CTL_SET_FRAME_LIMIT, NULL);
 
    return true;
 }
@@ -1438,8 +1454,10 @@ static void command_event_restore_default_shader_preset(void)
 
 static bool command_event_save_auto_state(void)
 {
-   bool ret;
    char savestate_name_auto[PATH_MAX_LENGTH] = {0};
+   bool ret             = false;
+   bool contentless     = false;
+   bool is_inited       = false;
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
@@ -1449,7 +1467,10 @@ static bool command_event_save_auto_state(void)
       return false;
    if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
       return false;
-   if (content_does_not_need_content())
+
+   content_get_status(&contentless, &is_inited);
+
+   if (contentless)
       return false;
 
 #ifdef HAVE_CHEEVOS
@@ -1500,14 +1521,17 @@ static bool command_event_save_config(const char *config_path,
  **/
 static bool command_event_save_core_config(void)
 {
-   char config_dir[PATH_MAX_LENGTH]  = {0};
-   char config_name[PATH_MAX_LENGTH] = {0};
-   char config_path[PATH_MAX_LENGTH] = {0};
-   char msg[128]                     = {0};
+   char config_dir[PATH_MAX_LENGTH];
+   char config_name[PATH_MAX_LENGTH];
+   char config_path[PATH_MAX_LENGTH];
+   char msg[128];
    bool ret                          = false;
    bool found_path                   = false;
    bool overrides_active             = false;
    settings_t *settings              = config_get_ptr();
+
+   config_dir[0]  = config_name[0]   =
+   config_path[0] = msg[0]           = '\0';
 
    if (!string_is_empty(settings->directory.menu_config))
       strlcpy(config_dir, settings->directory.menu_config,
@@ -1599,7 +1623,9 @@ static bool command_event_save_core_config(void)
  **/
 static void command_event_save_current_config(enum override_type type)
 {
-   char msg[128]           = {0};
+   char msg[128];
+
+   msg[0] = '\0';
 
    switch (type)
    {
@@ -1674,20 +1700,26 @@ static void command_event_undo_load_state(char *s, size_t len)
 static void command_event_main_state(unsigned cmd)
 {
    retro_ctx_size_info_t info;
-   char path[PATH_MAX_LENGTH] = {0};
-   char msg[128]              = {0};
+   char path[PATH_MAX_LENGTH];
+   char msg[128];
    global_t *global           = global_get_ptr();
-   settings_t *settings       = config_get_ptr();
    bool push_msg              = true;
 
-   if (settings->state_slot > 0)
-      snprintf(path, sizeof(path), "%s%d",
-            global->name.savestate, settings->state_slot);
-   else if (settings->state_slot < 0)
-      fill_pathname_join_delim(path,
-            global->name.savestate, "auto", '.', sizeof(path));
-   else
-      strlcpy(path, global->name.savestate, sizeof(path));
+   path[0] = msg[0]           = '\0';
+
+   if (global)
+   {
+      settings_t *settings    = config_get_ptr();
+
+      if (settings->state_slot > 0)
+         snprintf(path, sizeof(path), "%s%d",
+               global->name.savestate, settings->state_slot);
+      else if (settings->state_slot < 0)
+         fill_pathname_join_delim(path,
+               global->name.savestate, "auto", '.', sizeof(path));
+      else
+         strlcpy(path, global->name.savestate, sizeof(path));
+   }
 
    core_serialize_size(&info);
 
@@ -1876,7 +1908,7 @@ bool command_event(enum event_command cmd, void *data)
          return command_event_resize_windowed_scale();
       case CMD_EVENT_MENU_TOGGLE:
 #ifdef HAVE_MENU
-         if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+         if (menu_driver_is_alive())
             rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
          else
             rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
@@ -1893,6 +1925,9 @@ bool command_event(enum event_command cmd, void *data)
          cheevos_set_cheats();
 #endif
          core_reset();
+#ifdef HAVE_CHEEVOS
+         cheevos_reset_game();
+#endif
          break;
       case CMD_EVENT_SAVE_STATE:
          {
@@ -1928,12 +1963,17 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_UNLOAD_CORE:
          {
+            bool contentless                = false;
+            bool is_inited                  = false;
             content_ctx_info_t content_info = {0};
+
+            content_get_status(&contentless, &is_inited);
+
             command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
             command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
             command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
 
-            if (content_is_inited())
+            if (is_inited)
                if (!task_push_content_load_default(
                         NULL, NULL,
                         &content_info,
@@ -1967,7 +2007,7 @@ bool command_event(enum event_command cmd, void *data)
          command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, (void*)(intptr_t)-1);
 #ifdef HAVE_MENU
          menu_display_set_framebuffer_dirty_flag();
-         if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+         if (menu_driver_is_alive())
             command_event(CMD_EVENT_VIDEO_SET_BLOCKING_STATE, NULL);
 #endif
          break;
@@ -2053,7 +2093,7 @@ bool command_event(enum event_command cmd, void *data)
             if (audio_driver_alive())
                return false;
 
-            if (settings && !settings->audio.mute_enable && !audio_driver_start())
+            if (settings && !settings->audio.mute_enable && !audio_driver_start(runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL)))
             {
                RARCH_ERR("%s\n",
                      msg_hash_to_str(MSG_FAILED_TO_START_AUDIO_DRIVER));
@@ -2334,27 +2374,31 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_PAUSE_CHECKS:
-         if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
          {
-            bool is_paused = false;
-            settings_t *settings      = config_get_ptr();
+            bool is_paused            = false;
+            bool is_idle              = false;
+            bool is_slowmotion        = false;
+            bool is_perfcnt_enable    = false;
 
-            RARCH_LOG("%s\n", msg_hash_to_str(MSG_PAUSED));
-            command_event(CMD_EVENT_AUDIO_STOP, NULL);
+            runloop_get_status(&is_paused, &is_idle, &is_slowmotion,
+                  &is_perfcnt_enable);
 
-            is_paused  = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
-            runloop_msg_queue_push(msg_hash_to_str(MSG_PAUSED), 1, is_paused ? 1: 30, true);
-
-            if (settings->video.black_frame_insertion || is_paused)
+            if (is_paused)
             {
-               if (!runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
+               RARCH_LOG("%s\n", msg_hash_to_str(MSG_PAUSED));
+               command_event(CMD_EVENT_AUDIO_STOP, NULL);
+
+               runloop_msg_queue_push(msg_hash_to_str(MSG_PAUSED), 1, 
+                     1, true);
+
+               if (!is_idle)
                   video_driver_cached_frame();
             }
-         }
-         else
-         {
-            RARCH_LOG("%s\n", msg_hash_to_str(MSG_UNPAUSED));
-            command_event(CMD_EVENT_AUDIO_START, NULL);
+            else
+            {
+               RARCH_LOG("%s\n", msg_hash_to_str(MSG_UNPAUSED));
+               command_event(CMD_EVENT_AUDIO_START, NULL);
+            }
          }
          break;
       case CMD_EVENT_PAUSE_TOGGLE:
@@ -2376,24 +2420,22 @@ bool command_event(enum event_command cmd, void *data)
          command_event(CMD_EVENT_PAUSE_CHECKS, NULL);
          break;
       case CMD_EVENT_MENU_PAUSE_LIBRETRO:
-         {
 #ifdef HAVE_MENU
+         if (menu_driver_is_alive())
+         {
             settings_t *settings      = config_get_ptr();
-
-            if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
-            {
-               if (settings->menu.pause_libretro)
-                  command_event(CMD_EVENT_AUDIO_STOP, NULL);
-               else
-                  command_event(CMD_EVENT_AUDIO_START, NULL);
-            }
+            if (settings->menu.pause_libretro)
+               command_event(CMD_EVENT_AUDIO_STOP, NULL);
             else
-            {
-               if (settings->menu.pause_libretro)
-                  command_event(CMD_EVENT_AUDIO_START, NULL);
-            }
-#endif
+               command_event(CMD_EVENT_AUDIO_START, NULL);
          }
+         else
+         {
+            settings_t *settings      = config_get_ptr();
+            if (settings->menu.pause_libretro)
+               command_event(CMD_EVENT_AUDIO_START, NULL);
+         }
+#endif
          break;
       case CMD_EVENT_SHADER_DIR_DEINIT:
          dir_free_shader();
@@ -2423,9 +2465,11 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_NETPLAY_INIT:
          {
-            char *hostname = (char *) data;
+            char       *hostname = (char *) data;
             settings_t *settings = config_get_ptr();
+
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+
             if (!init_netplay(
                      NULL, hostname ? hostname : settings->netplay.server,
                      settings->netplay.port))
@@ -2438,9 +2482,30 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_NETPLAY_INIT_DIRECT:
          {
             settings_t *settings = config_get_ptr();
+
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+
             if (!init_netplay(
                      data, NULL, settings->netplay.port))
+            {
+               command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+               return false;
+            }
+         }
+         break;
+      case CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED:
+         {
+            /* buf is expected to be address:port, there must be a better way
+               to do this but for now I'll just use a string list */
+            char                           *buf = (char *)data;
+            static struct string_list *hostname = NULL;
+
+            hostname = string_split(buf, ":");
+
+            command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+
+            if (!init_netplay_deferred(
+                     hostname->elems[0].data, atoi(hostname->elems[1].data)))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                return false;
@@ -2459,6 +2524,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_NETWORK_INIT:
       case CMD_EVENT_NETPLAY_INIT:
       case CMD_EVENT_NETPLAY_INIT_DIRECT:
+      case CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED:
       case CMD_EVENT_NETPLAY_FLIP_PLAYERS:
       case CMD_EVENT_NETPLAY_GAME_WATCH:
          return false;

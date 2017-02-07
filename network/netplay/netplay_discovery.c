@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C)      2016 - Gregor Richards
+ *  Copyright (C) 2016-2017 - Gregor Richards
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -63,8 +63,12 @@ struct ad_packet
 bool netplay_lan_ad_client(void);
 
 /* LAN discovery sockets */
-static int lan_ad_server_fd = -1;
-static int lan_ad_client_fd = -1;
+static int lan_ad_server_fd            = -1;
+static int lan_ad_client_fd            = -1;
+
+int netplay_room_count                 = 0;
+
+struct netplay_room *netplay_room_list = NULL;
 
 /* Packet buffer for advertisement and responses */
 static struct ad_packet ad_packet_buffer;

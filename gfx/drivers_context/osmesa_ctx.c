@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Higor Euripedes
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -31,7 +31,6 @@
 #include <GL/osmesa.h>
 
 #include "../../configuration.h"
-#include "../../runloop.h"
 #include "../common/gl_common.h"
 
 #if (OSMESA_MAJOR_VERSION * 1000 + OSMESA_MINOR_VERSION) >= 11002
@@ -141,7 +140,7 @@ static void osmesa_fifo_write(gfx_ctx_osmesa_data_t *osmesa)
    }
 }
 
-static void *osmesa_ctx_init(video_frame_info_t video_info, void *video_driver)
+static void *osmesa_ctx_init(video_frame_info_t *video_info, void *video_driver)
 {
 #ifdef HAVE_OSMESA_CREATE_CONTEXT_ATTRIBS
    const int attribs[] = {
@@ -309,7 +308,7 @@ static void osmesa_ctx_get_video_size(void *data,
 
 static void osmesa_ctx_check_window(void *data, bool *quit,
       bool *resize,unsigned *width,
-      unsigned *height)
+      unsigned *height, bool is_shutdown)
 {
    gfx_ctx_osmesa_data_t *osmesa = (gfx_ctx_osmesa_data_t*)data;
 

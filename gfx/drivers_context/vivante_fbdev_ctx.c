@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011 2017 - Daniel De Matteis
  *  Copyright (C) 2014 2015 - Jean-Andre Santoni
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -57,7 +58,7 @@ static void gfx_ctx_vivante_destroy(void *data)
 
 }
 
-static void *gfx_ctx_vivante_init(video_frame_info_t video_info, void *video_driver)
+static void *gfx_ctx_vivante_init(video_frame_info_t *video_info, void *video_driver)
 {
 #ifdef HAVE_EGL
    EGLint n;
@@ -116,7 +117,8 @@ static void gfx_ctx_vivante_get_video_size(void *data,
 }
 
 static void gfx_ctx_vivante_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *width, unsigned *height,
+      bool is_shutdown)
 {
    unsigned new_width, new_height;
    vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;

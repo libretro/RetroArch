@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C)      2016 - Gregor Richards
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Gregor Richards
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -954,7 +954,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
       case NETPLAY_CMD_CRC:
          {
             uint32_t buffer[2];
-            size_t tmp_ptr = netplay->self_ptr;
+            size_t tmp_ptr = netplay->run_ptr;
             bool found = false;
 
             if (cmd_size != sizeof(buffer))
@@ -985,7 +985,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                }
 
                tmp_ptr = PREV_PTR(tmp_ptr);
-            } while (tmp_ptr != netplay->self_ptr);
+            } while (tmp_ptr != netplay->run_ptr);
 
             if (!found)
             {
@@ -1035,8 +1035,8 @@ static bool netplay_get_cmd(netplay_t *netplay,
                if (!netplay->is_replay)
                {
                   netplay->is_replay = true;
-                  netplay->replay_ptr = netplay->self_ptr;
-                  netplay->replay_frame_count = netplay->self_frame_count;
+                  netplay->replay_ptr = netplay->run_ptr;
+                  netplay->replay_frame_count = netplay->run_frame_count;
                   netplay_wait_and_init_serialization(netplay);
                   netplay->is_replay = false;
                }
@@ -1134,15 +1134,20 @@ static bool netplay_get_cmd(netplay_t *netplay,
                true, &rd, &wn, NULL);
 
             /* Skip ahead if it's past where we are */
-            if (frame > netplay->self_frame_count)
+            if (frame > netplay->run_frame_count)
             {
                /* This is squirrely: We need to assure that when we advance the
                 * frame in post_frame, THEN we're referring to the frame to
                 * load into. If we refer directly to read_ptr, then we'll end
                 * up never reading the input for read_frame_count itself, which
                 * will make the other side unhappy. */
-               netplay->self_ptr         = PREV_PTR(netplay->read_ptr[connection->player]);
-               netplay->self_frame_count = frame - 1;
+               netplay->run_ptr           = PREV_PTR(netplay->read_ptr[connection->player]);
+               netplay->run_frame_count   = frame - 1;
+               if (frame > netplay->self_frame_count)
+               {
+                  netplay->self_ptr         = netplay->run_ptr;
+                  netplay->self_frame_count = netplay->run_frame_count;
+               }
             }
 
             /* Don't expect earlier data from other clients */
@@ -1289,6 +1294,8 @@ int netplay_poll_net_input(netplay_t *netplay, bool block)
    if (max_fd == 0)
       return 0;
 
+   netplay->timeout_cnt = 0;
+
    do
    { 
       had_input = false;
@@ -1308,7 +1315,7 @@ int netplay_poll_net_input(netplay_t *netplay, bool block)
          netplay_update_unread_ptr(netplay);
 
          /* If we were blocked for input, pass if we have this frame's input */
-         if (netplay->unread_frame_count > netplay->self_frame_count)
+         if (netplay->unread_frame_count > netplay->run_frame_count)
             break;
 
          /* If we're supposed to block but we didn't have enough input, wait for it */
@@ -1330,7 +1337,7 @@ int netplay_poll_net_input(netplay_t *netplay, bool block)
                return -1;
 
             RARCH_LOG("Network is stalling at frame %u, count %u of %d ...\n",
-                  netplay->self_frame_count, netplay->timeout_cnt, MAX_RETRIES);
+                  netplay->run_frame_count, netplay->timeout_cnt, MAX_RETRIES);
 
             if (netplay->timeout_cnt >= MAX_RETRIES && !netplay->remote_paused)
                return -1;

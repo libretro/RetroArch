@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -306,14 +306,25 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
       char msg[255];
 
       msg[0] = '\0';
-
+#ifndef ANDROID
       RARCH_LOG("Autodetect: no profiles found for %s (%d/%d).\n",
             params->name, params->vid, params->pid);
 
       snprintf(msg, sizeof(msg), "%s (%ld/%ld) %s.",
             params->name, (long)params->vid, (long)params->pid,
             msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED));
+#else
+      strlcpy(params->name, "Android Gamepad", sizeof(params->name));
+      if(input_autoconfigure_joypad_from_conf_internal(params, task))
+      {
+         RARCH_LOG("Autodetect: no profiles found for %s (%d/%d). Using fallback\n",
+               params->name, params->vid, params->pid);
 
+         snprintf(msg, sizeof(msg), "%s (%ld/%ld) %s.",
+               params->name, (long)params->vid, (long)params->pid,
+               msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED_FALLBACK));
+      }
+#endif
       task_set_title(task, strdup(msg));
    }
 

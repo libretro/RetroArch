@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -101,7 +102,8 @@ error:
    return NULL;
 }
 
-static ssize_t rs_write(void *data, const void *buf, size_t size)
+static ssize_t rs_write(void *data, const void *buf, size_t size,
+      bool is_perfcnt_enable)
 {
    rsd_t *rsd = (rsd_t*)data;
 
@@ -176,7 +178,7 @@ static bool rs_alive(void *data)
    return false;
 }
 
-static bool rs_start(void *data)
+static bool rs_start(void *data, bool is_shutdown)
 {
    rsd_t *rsd = (rsd_t*)data;
    if (rsd_start(rsd->rd) < 0)

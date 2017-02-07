@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2014-2016 - Jean-André Santoni
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2014-2017 - Jean-André Santoni
+ *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -86,6 +86,9 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #if defined(_WIN32) && !defined(_XBOX)
    &menu_display_ctx_gdi,
 #endif
+#ifdef DJGPP
+   &menu_display_ctx_vga,
+#endif
    &menu_display_ctx_null,
    NULL,
 };
@@ -145,6 +148,10 @@ static bool menu_display_check_compatibility(
          break;
       case MENU_VIDEO_DRIVER_GDI:
          if (string_is_equal(video_driver, "gdi"))
+            return true;
+         break;
+      case MENU_VIDEO_DRIVER_VGA:
+         if (string_is_equal(video_driver, "vga"))
             return true;
          break;
    }
@@ -329,24 +336,22 @@ bool menu_display_libretro(void)
    return video_driver_cached_frame();
 }
 
+void menu_display_get_fb_size(unsigned *fb_width,
+      unsigned *fb_height, size_t *fb_pitch)
+{
+   *fb_width  = menu_display_framebuf_width;
+   *fb_height = menu_display_framebuf_height;
+   *fb_pitch  = menu_display_framebuf_pitch;
+}
+
 void menu_display_set_width(unsigned width)
 {
    menu_display_framebuf_width = width;
 }
 
-unsigned menu_display_get_width(void)
-{
-   return menu_display_framebuf_width;
-}
-
 void menu_display_set_height(unsigned height)
 {
    menu_display_framebuf_height = height;
-}
-
-unsigned menu_display_get_height(void)
-{
-   return menu_display_framebuf_height;
 }
 
 void menu_display_set_header_height(unsigned height)

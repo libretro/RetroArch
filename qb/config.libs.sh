@@ -152,6 +152,11 @@ else
    add_define_make MAN_DIR "${PREFIX}/share/man"
 fi
 
+if [ "$OS" = 'DOS' ]; then
+   HAVE_SHADERPIPELINE=no
+   HAVE_LANGEXTRA=no
+fi
+
 if [ "$OS" = 'Win32' ]; then
    HAVE_THREADS=yes
    HAVE_THREAD_STORAGE=yes
@@ -491,7 +496,7 @@ if [ "$HAVE_THREADS" = 'no' ] && [ "HAVE_LIBUSB" != 'no' ]; then
    echo "Notice: Threads are not available, libusb will also be disabled."
 fi
 
-if [ "$HAVE_V4L2" != 'no' ]; then
+if [ "$HAVE_V4L2" != 'no' ] && [ "HAVE_VIDEOPROCESSOR" != 'no' ]; then
    HAVE_VIDEO_PROCESSOR=yes
 fi
 

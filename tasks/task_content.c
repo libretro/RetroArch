@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -66,7 +66,7 @@
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "../cheevos.h"
+#include "../cheevos/cheevos.h"
 #endif
 
 #include "tasks_internal.h"
@@ -85,7 +85,6 @@
 #include "../msg_hash.h"
 #include "../content.h"
 #include "../dynamic.h"
-#include "../patch.h"
 #include "../runloop.h"
 #include "../retroarch.h"
 #include "../file_path_special.h"
@@ -93,6 +92,8 @@
 #include "../dirs.h"
 #include "../paths.h"
 #include "../verbosity.h"
+
+#include "task_patch.c"
 
 #define MAX_ARGS 32
 
@@ -120,6 +121,8 @@ typedef struct content_information_ctx
    bool block_extract;
    bool need_fullpath;
    bool set_supports_no_game_enable;
+   bool patch_is_blocked;
+   bool bios_is_missing;
 
    struct string_list *temporary_content;
 } content_information_ctx_t;
@@ -310,7 +313,9 @@ error:
  *
  * Returns: true if successful, false on error.
  **/
-static bool load_content_into_memory(unsigned i, const char *path, void **buf,
+static bool load_content_into_memory(
+      content_information_ctx_t *content_ctx,
+      unsigned i, const char *path, void **buf,
       ssize_t *length)
 {
    uint32_t *content_crc_ptr = NULL;
@@ -330,8 +335,17 @@ static bool load_content_into_memory(unsigned i, const char *path, void **buf,
        * CRC checking, etc. */
 
       /* Attempt to apply a patch. */
-      if (!rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL))
-         patch_content(&ret_buf, length);
+      if (!content_ctx->patch_is_blocked)
+      {
+         global_t *global = global_get_ptr();
+         if (global)
+            patch_content(
+                  global->name.ips,
+                  global->name.bps,
+                  global->name.ups,
+                  (uint8_t**)&ret_buf,
+                  (void*)length);
+      }
 
       content_get_crc(&content_crc_ptr);
 
@@ -504,9 +518,10 @@ static bool content_file_load(
 
       if (require_content && string_is_empty(path))
       {
-         snprintf(msg, sizeof(msg),
-               "%s\n",
-               msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT));
+         strlcpy(msg,
+               msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT),
+               sizeof(msg)
+               );
          *error_string = strdup(msg);
          goto error;
       }
@@ -522,7 +537,9 @@ static bool content_file_load(
 
          ssize_t len = 0;
 
-         if (!load_content_into_memory(i, path, (void**)&info[i].data, &len))
+         if (!load_content_into_memory(
+                  content_ctx,
+                  i, path, (void**)&info[i].data, &len))
          {
             snprintf(msg, sizeof(msg),
                   "%s \"%s\".\n",
@@ -561,7 +578,7 @@ static bool content_file_load(
    if (!core_load_game(&load_info))
    {
       snprintf(msg, sizeof(msg),
-            "%s.\n", msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
+            "%s.", msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
       *error_string = strdup(msg);
       goto error;
    }
@@ -614,9 +631,10 @@ static const struct retro_subsystem_info *content_file_init_subsystem(
 
    if (special->num_roms && !subsystem)
    {
-      snprintf(msg, sizeof(msg),
-            "%s\n",
-            msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT));
+      strlcpy(msg,
+            msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT),
+            sizeof(msg)
+            );
       *error_string = strdup(msg);
       goto error;
    }
@@ -675,12 +693,17 @@ static bool content_file_init_set_attribs(
    }
    else
    {
+      bool contentless     = false;
+      bool is_inited       = false;
+
+      content_get_status(&contentless, &is_inited);
+
       attr.i               = content_ctx->block_extract;
       attr.i              |= content_ctx->need_fullpath << 1;
-      attr.i              |= (!content_does_not_need_content())  << 2;
+      attr.i              |= (!contentless)  << 2;
 
       if (path_is_empty(RARCH_PATH_CONTENT)
-            && content_does_not_need_content()
+            && contentless 
             && content_ctx->set_supports_no_game_enable)
          string_list_append(content, "", attr);
       else
@@ -801,14 +824,20 @@ static bool task_load_content(content_ctx_info_t *content_info,
 {
    char name[255];
    char msg[255];
+   bool contentless = false;
+   bool is_inited   = false;
 
    name[0] = msg[0] = '\0';
+
+   content_get_status(&contentless, &is_inited);
 
    if (!content_load(content_info))
       goto error;
 
+   content_get_status(&contentless, &is_inited);
+
    /* Push entry to top of history playlist */
-   if (_content_is_inited || content_does_not_need_content())
+   if (is_inited || contentless)
    {
       char tmp[PATH_MAX_LENGTH];
       struct retro_system_info *info = NULL;
@@ -905,6 +934,7 @@ error:
          *error_string = strdup(msg);
       }
    }
+   if (string_is_empty(name)) *error_string = strdup("This core requires a content file.\n");
    return false;
 }
 
@@ -990,7 +1020,8 @@ bool task_push_content_load_default(
 
    if (!content_info)
       return false;
-
+   content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
+   content_ctx.bios_is_missing                = runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.history_list_enable            = false;
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
@@ -1216,7 +1247,8 @@ bool task_push_content_load_default(
       case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
          task_push_content_update_firmware_status(&content_ctx);
 
-         if(runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL) && 
+         if(
+               content_ctx.bios_is_missing && 
                settings->check_firmware_before_loading)
                goto skip;
 
@@ -1260,6 +1292,7 @@ error:
    if (error_string)
    {
       runloop_msg_queue_push(error_string, 2, 90, true);
+      RARCH_ERR(error_string);
       free(error_string);
    }
 
@@ -1301,9 +1334,12 @@ cleanup:
 #endif
 }
 
-bool content_does_not_need_content(void)
+void content_get_status(
+      bool *contentless,
+      bool *is_inited)
 {
-   return core_does_not_need_content;
+   *contentless = core_does_not_need_content;
+   *is_inited   = _content_is_inited;
 }
 
 void content_set_does_not_need_content(void)
@@ -1377,6 +1413,7 @@ bool content_init(void)
    content_ctx.block_extract                  = false;
    content_ctx.need_fullpath                  = false;
    content_ctx.set_supports_no_game_enable    = false;
+   content_ctx.patch_is_blocked               = false;
 
    content_ctx.subsystem.data                 = NULL;
    content_ctx.subsystem.size                 = 0;

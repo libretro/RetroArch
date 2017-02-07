@@ -37,7 +37,7 @@
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "cheevos.h"
+#include "cheevos/cheevos.h"
 #endif
 
 #ifdef HAVE_MENU
@@ -204,6 +204,28 @@ static bool rarch_game_specific_options(char **output)
    return true;
 }
 
+void runloop_get_status(bool *is_paused, bool *is_idle, 
+      bool *is_slowmotion, bool *is_perfcnt_enable)
+{
+   *is_paused         = runloop_paused;
+   *is_idle           = runloop_idle;
+   *is_slowmotion     = runloop_slowmotion;
+   *is_perfcnt_enable = runloop_perfcnt_enable;
+}
+
+bool runloop_msg_queue_pull(const char **ret)
+{
+   if (!ret)
+      return false;
+#ifdef HAVE_THREADS
+   slock_lock(_runloop_msg_queue_lock);
+#endif
+   *ret = msg_queue_pull(runloop_msg_queue);
+#ifdef HAVE_THREADS
+   slock_unlock(_runloop_msg_queue_lock);
+#endif
+   return true;
+}
 
 bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {
@@ -430,8 +452,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             runloop_idle = *ptr;
          }
          break;
-      case RUNLOOP_CTL_IS_SLOWMOTION:
-         return runloop_slowmotion;
       case RUNLOOP_CTL_SET_SLOWMOTION:
          {
             bool *ptr = (bool*)data;
@@ -450,20 +470,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_IS_PAUSED:
          return runloop_paused;
-      case RUNLOOP_CTL_MSG_QUEUE_PULL:
-         {
-            const char **ret = (const char**)data;
-            if (!ret)
-               return false;
-#ifdef HAVE_THREADS
-            slock_lock(_runloop_msg_queue_lock);
-#endif
-            *ret = msg_queue_pull(runloop_msg_queue);
-#ifdef HAVE_THREADS
-            slock_unlock(_runloop_msg_queue_lock);
-#endif
-         }
-         break;
       case RUNLOOP_CTL_MSG_QUEUE_DEINIT:
          if (!runloop_msg_queue)
             return true;
@@ -673,7 +679,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
  * d) Video driver no longer alive.
  * e) End of BSV movie and BSV EOF exit is true. (TODO/FIXME - explain better)
  */
-#define time_to_exit(quit_key_pressed) (runloop_shutdown_initiated || quit_key_pressed || !video_driver_is_alive() || bsv_movie_ctl(BSV_MOVIE_CTL_END_EOF, NULL) || (runloop_max_frames && (video_driver_get_frame_count() >= runloop_max_frames)) || runloop_exec)
+#define time_to_exit(quit_key_pressed) (runloop_shutdown_initiated || quit_key_pressed || !is_alive || bsv_movie_ctl(BSV_MOVIE_CTL_END_EOF, NULL) || (runloop_max_frames && (frame_count >= runloop_max_frames)) || runloop_exec)
 
 #define runloop_check_cheevos() (settings->cheevos.enable && cheevos_loaded && (!cheats_are_enabled && !cheats_were_enabled))
 
@@ -682,6 +688,7 @@ static enum runloop_state runloop_check_state(
       uint64_t current_input,
       uint64_t old_input,
       uint64_t trigger_input,
+      bool input_driver_is_nonblock,
       unsigned *sleep_ms)
 {
    static bool old_focus            = true;
@@ -691,19 +698,24 @@ static enum runloop_state runloop_check_state(
 #ifdef HAVE_NETWORKING
    bool tmp                         = false;
 #endif
+   bool is_focused                  = false;
+   bool is_alive                    = false;
+   uint64_t frame_count             = 0;
    bool focused                     = true;
    bool pause_pressed               = runloop_cmd_triggered(trigger_input, RARCH_PAUSE_TOGGLE);
+
+   video_driver_get_status(&frame_count, &is_alive, &is_focused);
 
    if (runloop_cmd_triggered(trigger_input, RARCH_OVERLAY_NEXT))
       command_event(CMD_EVENT_OVERLAY_NEXT, NULL);
 
    if (runloop_cmd_triggered(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
    {
-      bool fullscreen_toggled = !runloop_paused;
+      bool fullscreen_toggled = !runloop_paused
 #ifdef HAVE_MENU
-      fullscreen_toggled = fullscreen_toggled ||
-         menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL);
+       || menu_driver_is_alive();
 #endif
+      ;
 
       if (fullscreen_toggled)
          command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
@@ -754,14 +766,14 @@ static enum runloop_state runloop_check_state(
    }
 
 #ifdef HAVE_MENU
-   if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+   if (menu_driver_is_alive())
    {
       menu_ctx_iterate_t iter;
       core_poll();
 
       {
          enum menu_action action = (enum menu_action)menu_event(current_input, trigger_input);
-         bool focused            = settings->pause_nonactive ? video_driver_is_focused() : true;
+         bool focused            = settings->pause_nonactive ? is_focused : true;
 
          focused                 = focused && !ui_companion_is_on_foreground();
 
@@ -771,7 +783,7 @@ static enum runloop_state runloop_check_state(
             rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
 
          if (focused || !runloop_idle)
-            menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
+            menu_driver_render(runloop_idle);
 
          if (!focused)
             return RUNLOOP_STATE_SLEEP;
@@ -791,7 +803,7 @@ static enum runloop_state runloop_check_state(
 #ifdef HAVE_MENU
    if (menu_event_kb_is_set(RETROK_F1) == 1)
    {
-      if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+      if (menu_driver_is_alive())
       {
          if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) &&
                !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
@@ -805,7 +817,7 @@ static enum runloop_state runloop_check_state(
             runloop_cmd_triggered(trigger_input, RARCH_MENU_TOGGLE)) ||
          rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
    {
-      if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+      if (menu_driver_is_alive())
       {
          if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) &&
                !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
@@ -820,7 +832,7 @@ static enum runloop_state runloop_check_state(
    else
       menu_event_kb_set(false, RETROK_F1);
 
-   if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+   if (menu_driver_is_alive())
    {
       if (!settings->menu.throttle_framerate && !settings->fastforward_ratio)
          return RUNLOOP_STATE_MENU_ITERATE;
@@ -830,7 +842,7 @@ static enum runloop_state runloop_check_state(
 #endif
 
    if (settings->pause_nonactive)
-      focused                = video_driver_is_focused();
+      focused                = is_focused;
 
    if (runloop_cmd_triggered(trigger_input, RARCH_SCREENSHOT))
       command_event(CMD_EVENT_TAKE_SCREENSHOT, NULL);
@@ -892,7 +904,7 @@ static enum runloop_state runloop_check_state(
       if (runloop_cmd_triggered(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
       {
          command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
-         if (!runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
+         if (!runloop_idle)
             video_driver_cached_frame();
       }
 
@@ -906,11 +918,11 @@ static enum runloop_state runloop_check_state(
     */
    if (runloop_cmd_triggered(trigger_input, RARCH_FAST_FORWARD_KEY))
    {
-      if (input_driver_is_nonblock_state())
+      if (input_driver_is_nonblock)
          input_driver_unset_nonblock_state();
       else
          input_driver_set_nonblock_state();
-      driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
+      driver_set_nonblock_state();
    }
    else if ((runloop_cmd_pressed(old_input, RARCH_FAST_FORWARD_HOLD_KEY) 
          != runloop_cmd_press(current_input, RARCH_FAST_FORWARD_HOLD_KEY)))
@@ -919,7 +931,7 @@ static enum runloop_state runloop_check_state(
          input_driver_set_nonblock_state();
       else
          input_driver_unset_nonblock_state();
-      driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
+      driver_set_nonblock_state();
    }
 
    /* Checks if the state increase/decrease keys have been pressed 
@@ -966,8 +978,16 @@ static enum runloop_state runloop_check_state(
 #ifdef HAVE_CHEEVOS
    if (!settings->cheevos.hardcore_mode_enable)
 #endif
-      state_manager_check_rewind(runloop_cmd_press(current_input, RARCH_REWIND),
-            settings->rewind_granularity);
+   {
+      char s[128];
+      unsigned t = 0;
+
+      s[0] = '\0';
+
+      if (state_manager_check_rewind(runloop_cmd_press(current_input, RARCH_REWIND),
+            settings->rewind_granularity, runloop_paused, s, sizeof(s), &t))
+         runloop_msg_queue_push(s, 0, t, true);
+   }
 
    runloop_slowmotion = runloop_cmd_press(current_input, RARCH_SLOWMOTION);
 
@@ -976,7 +996,7 @@ static enum runloop_state runloop_check_state(
       /* Checks if slowmotion toggle/hold was being pressed and/or held. */
       if (settings->video.black_frame_insertion)
       {
-         if (!runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
+         if (!runloop_idle)
             video_driver_cached_frame();
       }
 
@@ -1015,13 +1035,12 @@ static enum runloop_state runloop_check_state(
    return RUNLOOP_STATE_ITERATE;
 }
 
-static void runloop_netplay_pause(void)
-{
 #ifdef HAVE_NETWORKING
-   /* FIXME: This is an ugly way to tell Netplay this... */
-   netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
+/* FIXME: This is an ugly way to tell Netplay this... */
+#define runloop_netplay_pause() netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL)
+#else
+#define runloop_netplay_pause() ((void)0)
 #endif
-}
 
 /**
  * runloop_iterate:
@@ -1038,17 +1057,25 @@ int runloop_iterate(unsigned *sleep_ms)
    retro_time_t current, target, to_sleep_ms;
    uint64_t trigger_input                       = 0;
    static uint64_t last_input                   = 0;
+   bool input_driver_is_nonblock                = false;
    settings_t *settings                         = config_get_ptr();
    uint64_t old_input                           = last_input;
+#ifdef HAVE_MENU
+   bool menu_is_alive                           = menu_driver_is_alive();
+#else
+   bool menu_is_alive                           = false;
+#endif
    uint64_t current_input                       =
 
 #ifdef HAVE_MENU
-      menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL) ? 
+      menu_is_alive ? 
       input_menu_keys_pressed(old_input,
-            &last_input, &trigger_input, runloop_paused) :
+            &last_input, &trigger_input, runloop_paused,
+            &input_driver_is_nonblock) :
 #endif
       input_keys_pressed(old_input, &last_input,
-            &trigger_input, runloop_paused);
+            &trigger_input, runloop_paused,
+            &input_driver_is_nonblock);
 
    if (runloop_frame_time.callback)
    {
@@ -1058,7 +1085,7 @@ int runloop_iterate(unsigned *sleep_ms)
       retro_time_t current     = cpu_features_get_time_usec();
       retro_time_t delta       = current - runloop_frame_time_last;
       bool is_locked_fps       = (runloop_paused ||
-                                  input_driver_is_nonblock_state()) |
+                                  input_driver_is_nonblock) |
                                   !!recording_data;
 
 
@@ -1082,6 +1109,7 @@ int runloop_iterate(unsigned *sleep_ms)
             current_input,
             old_input,
             trigger_input,
+            input_driver_is_nonblock,
             sleep_ms))
    {
       case RUNLOOP_STATE_QUIT:
@@ -1108,8 +1136,7 @@ int runloop_iterate(unsigned *sleep_ms)
 
    autosave_lock();
 
-   if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
-      bsv_movie_ctl(BSV_MOVIE_CTL_SET_FRAME_START, NULL);
+   bsv_movie_set_frame_start();
 
    camera_driver_ctl(RARCH_CAMERA_CTL_POLL, NULL);
 
@@ -1127,8 +1154,7 @@ int runloop_iterate(unsigned *sleep_ms)
       input_push_analog_dpad(auto_binds,    dpad_mode);
    }
 
-   if ((settings->video.frame_delay > 0) &&
-         !input_driver_is_nonblock_state())
+   if ((settings->video.frame_delay > 0) && !input_driver_is_nonblock)
       retro_sleep(settings->video.frame_delay);
 
    core_run();
@@ -1151,8 +1177,7 @@ int runloop_iterate(unsigned *sleep_ms)
       input_pop_analog_dpad(auto_binds);
    }
 
-   if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
-      bsv_movie_ctl(BSV_MOVIE_CTL_SET_FRAME_END, NULL);
+   bsv_movie_set_frame_end();
 
    autosave_unlock();
 

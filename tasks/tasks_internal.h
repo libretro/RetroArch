@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2011-2016 - Higor Euripedes
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Higor Euripedes
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -97,6 +97,9 @@ task_retriever_info_t *http_task_get_transfer_list(void);
 bool task_push_wifi_scan(void);
 
 bool task_push_netplay_lan_scan(void);
+
+bool task_push_netplay_crc_scan(uint32_t crc, char* name,
+      const char *hostname, const char *corename);
 
 #endif
 

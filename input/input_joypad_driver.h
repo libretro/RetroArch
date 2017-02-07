@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -236,6 +236,7 @@ extern input_device_driver_t android_joypad;
 extern input_device_driver_t qnx_joypad;
 extern input_device_driver_t null_joypad;
 extern input_device_driver_t mfi_joypad;
+extern input_device_driver_t dos_joypad;
 
 RETRO_END_DECLS
 

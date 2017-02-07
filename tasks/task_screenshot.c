@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -65,10 +65,8 @@ typedef struct
 #endif
    char filename[PATH_MAX_LENGTH];
    char shotname[256];
-#ifdef HAVE_RPNG
    uint8_t *out_buffer;
    struct scaler_ctx scaler;
-#endif
    const void *frame;
    unsigned width;
    unsigned height;
@@ -76,8 +74,10 @@ typedef struct
    bool bgr24;
    bool silence;
    void *userbuf;
+   bool is_idle;
    bool is_paused;
    bool history_list_enable;
+   unsigned pixel_format_type;
 } screenshot_task_state_t;
 
 /**
@@ -88,7 +88,11 @@ typedef struct
  **/
 static void task_screenshot_handler(retro_task_t *task)
 {
+#ifdef HAVE_RBMP
+   enum rbmp_source_type bmp_type = RBMP_SOURCE_TYPE_DONT_CARE;
+#endif
    screenshot_task_state_t *state = (screenshot_task_state_t*)task->state;
+   struct scaler_ctx *scaler      = (struct scaler_ctx*)&state->scaler;
    bool ret                       = false;
 
    if (task_get_progress(task) == 100)
@@ -101,30 +105,30 @@ static void task_screenshot_handler(retro_task_t *task)
       free(state);
       return;
    }
+    
+#ifdef HAVE_RBMP
+    (void)bmp_type;
+#endif
 
 #if defined(_XBOX1)
    if (XGWriteSurfaceToFile(state->surf, state->filename) == S_OK)
       ret = true;
    state->surf->Release();
 #elif defined(HAVE_RPNG)
-   {
-      struct scaler_ctx *scaler = (struct scaler_ctx*)&state->scaler;
+   if (state->bgr24)
+      scaler->in_fmt   = SCALER_FMT_BGR24;
+   else if (state->pixel_format_type == RETRO_PIXEL_FORMAT_XRGB8888)
+      scaler->in_fmt   = SCALER_FMT_ARGB8888;
+   else
+      scaler->in_fmt   = SCALER_FMT_RGB565;
 
-      if (state->bgr24)
-         scaler->in_fmt   = SCALER_FMT_BGR24;
-      else if (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_XRGB8888)
-         scaler->in_fmt   = SCALER_FMT_ARGB8888;
-      else
-         scaler->in_fmt   = SCALER_FMT_RGB565;
-
-      video_frame_convert_to_bgr24(
-            scaler,
-            state->out_buffer,
-            (const uint8_t*)state->frame + ((int)state->height - 1) 
-            * state->pitch,
-            state->width, state->height,
-            -state->pitch);
-   }
+   video_frame_convert_to_bgr24(
+         scaler,
+         state->out_buffer,
+         (const uint8_t*)state->frame + ((int)state->height - 1) 
+         * state->pitch,
+         state->width, state->height,
+         -state->pitch);
 
    scaler_ctx_gen_reset(&state->scaler);
 
@@ -138,11 +142,9 @@ static void task_screenshot_handler(retro_task_t *task)
 
    free(state->out_buffer);
 #elif defined(HAVE_RBMP)
-   enum rbmp_source_type bmp_type = RBMP_SOURCE_TYPE_DONT_CARE;
-
    if (state->bgr24)
       bmp_type = RBMP_SOURCE_TYPE_BGR24;
-   else if (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_XRGB8888)
+   else if (state->pixel_format_type == RETRO_PIXEL_FORMAT_XRGB8888)
       bmp_type = RBMP_SOURCE_TYPE_XRGB888;
 
    ret = rbmp_save_image(state->filename,
@@ -189,10 +191,13 @@ static bool screenshot_dump(
       const void *frame,
       unsigned width,
       unsigned height,
-      int pitch, bool bgr24, void *userbuf, bool savestate,
+      int pitch, bool bgr24,
+      void *userbuf, bool savestate,
+      bool is_idle,
       bool is_paused)
 {
    char screenshot_path[PATH_MAX_LENGTH];
+   uint8_t *buf                   = NULL;
 #ifdef _XBOX1
    d3d_video_t *d3d               = (d3d_video_t*)video_driver_get_ptr(true);
 #endif
@@ -211,6 +216,7 @@ static bool screenshot_dump(
       screenshot_dir = screenshot_path;
    }
 
+   state->is_idle             = is_idle;
    state->is_paused           = is_paused;
    state->bgr24               = bgr24;
    state->height              = height;
@@ -220,9 +226,11 @@ static bool screenshot_dump(
    state->userbuf             = userbuf;
    state->silence             = savestate;
    state->history_list_enable = settings->history_list_enable;
+   state->pixel_format_type   = video_driver_get_pixel_format();
 
    if (savestate)
-      snprintf(state->filename, sizeof(state->filename), "%s.png", name_base);
+      snprintf(state->filename,
+            sizeof(state->filename), "%s.png", name_base);
    else
    {
       if (settings->auto_screenshot_filename)
@@ -239,22 +247,23 @@ static bool screenshot_dump(
 #ifdef _XBOX1
    d3d->dev->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &state->surf);
 #elif defined(HAVE_RPNG)
-   state->out_buffer = (uint8_t*)malloc(width * height * 3);
-   if (!state->out_buffer)
+   buf = (uint8_t*)malloc(width * height * 3);
+   if (!buf)
    {
       if (task)
          free(task);
       free(state);
       return false;
    }
+   state->out_buffer = buf;
 #endif
 
-   task->type       = TASK_TYPE_BLOCKING;
-   task->state      = state;
-   task->handler    = task_screenshot_handler;
+   task->type        = TASK_TYPE_BLOCKING;
+   task->state       = state;
+   task->handler     = task_screenshot_handler;
 
    if (!savestate)
-      task->title   = strdup(msg_hash_to_str(MSG_TAKING_SCREENSHOT));
+      task->title    = strdup(msg_hash_to_str(MSG_TAKING_SCREENSHOT));
 
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
 
@@ -263,7 +272,7 @@ static bool screenshot_dump(
 
 #if !defined(VITA)
 static bool take_screenshot_viewport(const char *name_base, bool savestate,
-      bool is_paused)
+      bool is_idle, bool is_paused)
 {
    struct video_viewport vp;
    uint8_t *buffer                       = NULL;
@@ -286,13 +295,13 @@ static bool take_screenshot_viewport(const char *name_base, bool savestate,
    if (!buffer)
       return false;
 
-   if (!video_driver_read_viewport(buffer))
+   if (!video_driver_read_viewport(buffer, is_idle))
       goto error;
 
    /* Data read from viewport is in bottom-up order, suitable for BMP. */
    if (!screenshot_dump(name_base,
             buffer, vp.width, vp.height,
-            vp.width * 3, true, buffer, savestate, is_paused))
+            vp.width * 3, true, buffer, savestate, is_idle, is_paused))
       goto error;
 
    return true;
@@ -305,7 +314,7 @@ error:
 #endif
 
 static bool take_screenshot_raw(const char *name_base, void *userbuf,
-      bool savestate, bool is_paused)
+      bool savestate, bool is_idle, bool is_paused)
 {
    size_t pitch;
    unsigned width, height;
@@ -318,7 +327,7 @@ static bool take_screenshot_raw(const char *name_base, void *userbuf,
     */
    if (!screenshot_dump(name_base, 
          (const uint8_t*)data + (height - 1) * pitch,
-         width, height, -pitch, false, userbuf, savestate, is_paused))
+         width, height, -pitch, false, userbuf, savestate, is_idle, is_paused))
       return false;
 
    return true;
@@ -347,14 +356,14 @@ static bool take_screenshot_choice(const char *name_base, bool savestate,
       if (!is_idle)
          video_driver_cached_frame();
 #if defined(VITA)
-      return take_screenshot_raw(name_base, NULL, savestate, is_paused);
+      return take_screenshot_raw(name_base, NULL, savestate, is_idle, is_paused);
 #else
-      return take_screenshot_viewport(name_base, savestate, is_paused);
+      return take_screenshot_viewport(name_base, savestate, is_idle, is_paused);
 #endif
    }
 
    if (!video_driver_cached_frame_has_valid_framebuffer())
-      return take_screenshot_raw(name_base, NULL, savestate, is_paused);
+      return take_screenshot_raw(name_base, NULL, savestate, is_idle, is_paused);
 
    if (!video_driver_supports_read_frame_raw())
       return false;
@@ -371,7 +380,7 @@ static bool take_screenshot_choice(const char *name_base, bool savestate,
    if (frame_data)
    {
       video_driver_set_cached_frame_ptr(frame_data);
-      if (take_screenshot_raw(name_base, frame_data, savestate, is_paused))
+      if (take_screenshot_raw(name_base, frame_data, savestate, is_idle, is_paused))
          ret = true;
    }
 
@@ -380,9 +389,15 @@ static bool take_screenshot_choice(const char *name_base, bool savestate,
 
 bool take_screenshot(const char *name_base, bool silence)
 {
-   bool is_paused = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
-   bool is_idle   = runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL);
-   bool ret       = take_screenshot_choice(name_base, silence, is_paused, is_idle);
+   bool is_paused         = false;
+   bool is_idle           = false;
+   bool is_slowmotion     = false;
+   bool is_perfcnt_enable = false;
+   bool ret               = false;
+
+   runloop_get_status(&is_paused, &is_idle, &is_slowmotion, &is_perfcnt_enable);
+
+   ret       = take_screenshot_choice(name_base, silence, is_paused, is_idle);
 
    if (is_paused && !is_idle)
          video_driver_cached_frame();

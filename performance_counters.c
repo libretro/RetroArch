@@ -24,7 +24,6 @@
 #endif
 
 #include <compat/strl.h>
-#include <features/features_cpu.h>
 
 #include "performance_counters.h"
 
@@ -119,33 +118,6 @@ void retro_perf_log(void)
 {
    RARCH_LOG("[PERF]: Performance counters (libretro):\n");
    log_counters(perf_counters_libretro, perf_ptr_libretro);
-}
-
-int performance_counter_init(struct retro_perf_counter *perf, const char *name)
-{
-   perf->ident = name;
-
-   if (!perf->registered)
-      rarch_perf_register(perf);
-
-   return 0;
-}
-
-void performance_counter_start(struct retro_perf_counter *perf)
-{
-   if (!runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL) || !perf)
-      return;
-
-   perf->call_cnt++;
-   perf->start = cpu_features_get_perf_counter();
-}
-
-void performance_counter_stop(struct retro_perf_counter *perf)
-{
-   if (!runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL) || !perf)
-      return;
-
-   perf->total += cpu_features_get_perf_counter() - perf->start;
 }
 
 void rarch_timer_tick(rarch_timer_t *timer)

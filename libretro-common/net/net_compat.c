@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2016 The RetroArch team
+/* Copyright  (C) 2010-2017 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (net_compat.c).
@@ -297,7 +297,7 @@ bool network_init(void)
    retro_epoll_fd = sceNetEpollCreate("epoll", 0);
 #elif defined(GEKKO)
    char t[16];
-   if (if_config(t, NULL, NULL, TRUE) < 0)
+   if (if_config(t, NULL, NULL, TRUE, 10) < 0)
       return false;
 #else
    signal(SIGPIPE, SIG_IGN); /* Do not like SIGPIPE killing our app. */

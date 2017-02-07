@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -172,7 +173,8 @@ static size_t al_fill_internal_buf(al_t *al, const void *buf, size_t size)
    return read_size;
 }
 
-static ssize_t al_write(void *data, const void *buf_, size_t size)
+static ssize_t al_write(void *data, const void *buf_, size_t size,
+      bool is_perfcnt_enable)
 {
    al_t           *al = (al_t*)data;
    const uint8_t *buf = (const uint8_t*)buf_;
@@ -234,7 +236,7 @@ static void al_set_nonblock_state(void *data, bool state)
       al->nonblock = state;
 }
 
-static bool al_start(void *data)
+static bool al_start(void *data, bool is_shutdown)
 {
    al_t *al = (al_t*)data;
    if (al)

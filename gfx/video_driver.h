@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -42,7 +42,16 @@ RETRO_BEGIN_DECLS
 
 typedef struct video_info
 {
+   /* Width of window. 
+    * If fullscreen mode is requested, 
+    * a width of 0 means the resolution of the 
+    * desktop should be used. */
    unsigned width;
+
+   /* Height of window. 
+    * If fullscreen mode is requested, 
+    * a height of 0 means the resolutiof the desktop should be used.
+    */
    unsigned height;
 
    /* Launch in fullscreen mode instead of windowed mode. */
@@ -51,6 +60,8 @@ typedef struct video_info
    /* Start with V-Sync enabled. */
    bool vsync;
 
+   /* If true, the output image should have the aspect ratio 
+    * as set in aspect_ratio. */
    bool force_aspect;
 
    unsigned swap_interval;
@@ -73,10 +84,25 @@ typedef struct video_info
     * otherwise nearest filtering. */
    bool smooth;
 
-   /* Maximum input size: RARCH_SCALE_BASE * input_scale */
+   /* 
+    * input_scale defines the maximum size of the picture that will
+    * ever be used with the frame callback.
+    *
+    * The maximum resolution is a multiple of 256x256 size (RARCH_SCALE_BASE),
+    * so an input scale of 2 means you should allocate a texture or of 512x512.
+    *
+    * Maximum input size: RARCH_SCALE_BASE * input_scale 
+    */
    unsigned input_scale;
 
-   /* Use 32bit RGBA rather than native RGB565/XBGR1555. */
+   /* Use 32bit RGBA rather than native RGB565/XBGR1555. 
+    *
+    * XRGB1555 format is 16-bit and has byte ordering: 0RRRRRGGGGGBBBBB,
+    * in native endian.
+    *
+    * ARGB8888 is AAAAAAAARRRRRRRRGGGGGGGGBBBBBBBB, native endian.
+    * Alpha channel should be disregarded.
+    * */
    bool rgb32;
    
 #ifndef RARCH_INTERNAL
@@ -128,6 +154,12 @@ typedef struct video_frame_info
 
    bool battery_level_enable;
    bool timedate_enable;
+   bool runloop_is_slowmotion;
+   bool runloop_is_idle;
+   bool runloop_is_paused;
+   bool is_perfcnt_enable;
+
+   bool menu_is_alive;
 } video_frame_info_t;
 
 /* Optionally implemented interface to poke more
@@ -202,9 +234,22 @@ typedef struct video_driver
          const input_driver_t **input,
          void **input_data);
 
+   /* Updates frame on the screen. 
+    * Frame can be either XRGB1555, RGB565 or ARGB32 format
+    * depending on rgb32 setting in video_info_t. 
+    * Pitch is the distance in bytes between two scanlines in memory. 
+    * 
+    * When msg is non-NULL, 
+    * it's a message that should be displayed to the user. */
    video_driver_frame_t frame;
 
-   /* Should we care about syncing to vblank? Fast forwarding. */
+   /* Should we care about syncing to vblank? Fast forwarding. 
+    *
+    * Requests nonblocking operation. 
+    *
+    * True = VSync is turned off. 
+    * False = VSync is turned on.
+    * */
    void (*set_nonblock_state)(void *data, bool toggle);
 
    /* Is the window still active? */
@@ -237,7 +282,7 @@ typedef struct video_driver
    void (*viewport_info)(void *data, struct video_viewport *vp);
 
    /* Reads out in BGR byte order (24bpp). */
-   bool (*read_viewport)(void *data, uint8_t *buffer);
+   bool (*read_viewport)(void *data, uint8_t *buffer, bool is_idle);
 
    /* Returns a pointer to a newly allocated buffer that can
     * (and must) be passed to free() by the caller, containing a
@@ -292,7 +337,8 @@ bool video_driver_get_next_video_out(void);
 bool video_driver_get_prev_video_out(void);
 bool video_driver_init(void);
 void video_driver_destroy_data(void);
-void video_driver_deinit(void);
+void video_driver_free(void);
+void video_driver_free_hw_context(void);
 void video_driver_monitor_reset(void);
 void video_driver_set_aspect_ratio(void);
 void video_driver_show_mouse(void);
@@ -300,7 +346,7 @@ void video_driver_hide_mouse(void);
 void video_driver_set_nonblock_state(bool toggle);
 bool video_driver_find_driver(void);
 void video_driver_apply_state_changes(void);
-bool video_driver_read_viewport(uint8_t *buffer);
+bool video_driver_read_viewport(uint8_t *buffer, bool is_idle);
 bool video_driver_cached_frame(void);
 uint64_t video_driver_get_frame_count(void);
 bool video_driver_frame_filter_alive(void);
@@ -312,7 +358,6 @@ void video_driver_set_own_driver(void);
 void video_driver_unset_own_driver(void);
 bool video_driver_owns_driver(void);
 bool video_driver_is_hw_context(void);
-void video_driver_deinit_hw_context(void);
 struct retro_hw_render_callback *video_driver_get_hw_context(void);
 const struct retro_hw_render_context_negotiation_interface 
 *video_driver_get_context_negotiation_interface(void);
@@ -323,8 +368,6 @@ void video_driver_set_video_cache_context_ack(void);
 bool video_driver_is_video_cache_context_ack(void);
 void video_driver_set_active(void);
 bool video_driver_is_active(void);
-bool video_driver_has_gpu_record(void);
-uint8_t *video_driver_get_gpu_record(void);
 bool video_driver_gpu_record_init(unsigned size);
 void video_driver_gpu_record_deinit(void);
 bool video_driver_get_current_software_framebuffer(struct 
@@ -553,6 +596,13 @@ void video_driver_reinit(void);
 
 void video_driver_get_window_title(char *buf, unsigned len);
 
+void video_driver_get_record_status(
+      bool *has_gpu_record, 
+      uint8_t **gpu_buf);
+
+void video_driver_get_status(uint64_t *frame_count, bool * is_alive,
+      bool *is_focused);
+
 extern video_driver_t video_gl;
 extern video_driver_t video_vulkan;
 extern video_driver_t video_psp1;
@@ -575,6 +625,7 @@ extern video_driver_t video_drm;
 extern video_driver_t video_xshm;
 extern video_driver_t video_caca;
 extern video_driver_t video_gdi;
+extern video_driver_t video_vga;
 extern video_driver_t video_null;
 
 extern const void *frame_cache_data;

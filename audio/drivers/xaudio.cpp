@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -201,7 +201,8 @@ static size_t xaudio2_write_avail(xaudio2_t *handle)
    return handle->bufsize * (MAX_BUFFERS - handle->buffers - 1);
 }
 
-static size_t xaudio2_write(xaudio2_t *handle, const void *buf, size_t bytes_)
+static size_t xaudio2_write(xaudio2_t *handle, const void *buf, size_t bytes_,
+      bool is_perfcnt_enable)
 {
    unsigned bytes = bytes_;
    const uint8_t *buffer = (const uint8_t*)buf;
@@ -273,7 +274,8 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency,
    return xa;
 }
 
-static ssize_t xa_write(void *data, const void *buf, size_t size)
+static ssize_t xa_write(void *data, const void *buf, size_t size,
+      bool is_perfcnt_enable)
 {
    size_t ret;
    xa_t *xa = (xa_t*)data;
@@ -288,7 +290,7 @@ static ssize_t xa_write(void *data, const void *buf, size_t size)
          size = avail;
    }
 
-   ret = xaudio2_write(xa->xa, buf, size);
+   ret = xaudio2_write(xa->xa, buf, size, is_perfcnt_enable);
    if (ret == 0 && size > 0)
       return -1;
    return ret;
@@ -316,7 +318,7 @@ static void xa_set_nonblock_state(void *data, bool state)
       xa->nonblock = state;
 }
 
-static bool xa_start(void *data)
+static bool xa_start(void *data, bool is_shutdown)
 {
    xa_t *xa = (xa_t*)data;
    xa->is_paused = false;

@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -246,7 +246,7 @@ const char *config_get_audio_driver_options(void)
    return char_list_new_special(STRING_LIST_AUDIO_DRIVERS, NULL);
 }
 
-static bool uninit_audio(void)
+static bool audio_driver_deinit_internal(void)
 {
    settings_t *settings = config_get_ptr();
 
@@ -269,7 +269,7 @@ static bool uninit_audio(void)
 
    audio_driver_rewind_size  = 0;
 
-   if (!settings->audio.enable)
+   if (settings && !settings->audio.enable)
    {
       audio_driver_active = false;
       return false;
@@ -290,16 +290,6 @@ static bool uninit_audio(void)
    compute_audio_buffer_statistics();
 
    return true;
-}
-
-static bool audio_driver_init_resampler(void)
-{
-   settings_t *settings = config_get_ptr();
-   return retro_resampler_realloc(
-         &audio_driver_resampler_data,
-         &audio_driver_resampler,
-         settings->audio.resampler,
-         audio_source_ratio_original);
 }
 
 static bool audio_driver_init_internal(bool audio_cb_inited)
@@ -410,7 +400,11 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    audio_source_ratio_original   = audio_source_ratio_current =
       (double)settings->audio.out_rate / audio_driver_input;
 
-   if (!audio_driver_init_resampler())
+   if (!retro_resampler_realloc(
+            &audio_driver_resampler_data,
+            &audio_driver_resampler,
+            settings->audio.resampler,
+            audio_source_ratio_original))
    {
       RARCH_ERR("Failed to initialize resampler \"%s\".\n",
             settings->audio.resampler);
@@ -430,6 +424,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
          audio_driver_input * AUDIO_MAX_RATIO);
 
    samples_buf = (float*)malloc(outsamples_max * sizeof(float));
+
    retro_assert(samples_buf != NULL);
 
    if (!samples_buf)
@@ -456,8 +451,11 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
          RARCH_WARN("Audio rate control was desired, but driver does not support needed features.\n");
    }
 
-   /* If we start muted, stop the audio driver, so subsequent unmute works. */
-   if (!audio_cb_inited && audio_driver_active && settings->audio.mute_enable)
+   /* If we start muted, stop the audio driver, 
+    * so subsequent unmute works. */
+   if (     !audio_cb_inited 
+         &&  audio_driver_active 
+         &&  settings->audio.mute_enable)
       audio_driver_stop();
 
    command_event(CMD_EVENT_DSP_FILTER_INIT, NULL);
@@ -470,7 +468,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
          && !settings->audio.mute_enable
          && audio_cb_inited
          )
-      audio_driver_start();
+      audio_driver_start(false);
 
    return true;
 
@@ -507,6 +505,10 @@ void audio_driver_set_nonblocking_state(bool enable)
 static bool audio_driver_flush(const int16_t *data, size_t samples)
 {
    struct resampler_data src_data;
+   bool is_perfcnt_enable                               = false;
+   bool is_paused                                       = false;
+   bool is_idle                                         = false;
+   bool is_slowmotion                                   = false;
    static struct retro_perf_counter resampler_proc      = {0};
    static struct retro_perf_counter audio_convert_s16   = {0};
    const void *output_data                              = NULL;
@@ -523,16 +525,19 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    if (recording_data)
       recording_push_audio(data, samples);
 
-   if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) || settings->audio.mute_enable)
+   runloop_get_status(&is_paused, &is_idle, &is_slowmotion,
+         &is_perfcnt_enable);
+
+   if (is_paused || settings->audio.mute_enable)
       return true;
    if (!audio_driver_active || !audio_driver_input_data)
       return false;
 
-   performance_counter_init(&audio_convert_s16, "audio_convert_s16");
-   performance_counter_start(&audio_convert_s16);
+   performance_counter_init(audio_convert_s16, "audio_convert_s16");
+   performance_counter_start_plus(is_perfcnt_enable, audio_convert_s16);
    convert_s16_to_float(audio_driver_input_data, data, samples,
          audio_driver_volume_gain);
-   performance_counter_stop(&audio_convert_s16);
+   performance_counter_stop_plus(is_perfcnt_enable, audio_convert_s16);
 
    src_data.data_in               = audio_driver_input_data;
    src_data.input_frames          = samples >> 1;
@@ -551,10 +556,10 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
       dsp_data.input                 = audio_driver_input_data;
       dsp_data.input_frames          = samples >> 1;
 
-      performance_counter_init(&audio_dsp, "audio_dsp");
-      performance_counter_start(&audio_dsp);
+      performance_counter_init(audio_dsp, "audio_dsp");
+      performance_counter_start_plus(is_perfcnt_enable, audio_dsp);
       retro_dsp_filter_process(audio_driver_dsp, &dsp_data);
-      performance_counter_stop(&audio_dsp);
+      performance_counter_stop_plus(is_perfcnt_enable, audio_dsp);
 
       if (dsp_data.output)
       {
@@ -595,14 +600,14 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
 
    src_data.ratio = audio_source_ratio_current;
 
-   if (runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, NULL))
+   if (is_slowmotion)
       src_data.ratio *= settings->slowmotion_ratio;
 
-   performance_counter_init(&resampler_proc, "resampler_proc");
-   performance_counter_start(&resampler_proc);
+   performance_counter_init(resampler_proc, "resampler_proc");
+   performance_counter_start_plus(is_perfcnt_enable, resampler_proc);
 
    audio_driver_resampler->process(audio_driver_resampler_data, &src_data);
-   performance_counter_stop(&resampler_proc);
+   performance_counter_stop_plus(is_perfcnt_enable, resampler_proc);
 
    output_data   = audio_driver_output_samples_buf;
    output_frames = src_data.output_frames;
@@ -611,18 +616,19 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    {
       static struct retro_perf_counter audio_convert_float = {0};
 
-      performance_counter_init(&audio_convert_float, "audio_convert_float");
-      performance_counter_start(&audio_convert_float);
+      performance_counter_init(audio_convert_float, "audio_convert_float");
+      performance_counter_start_plus(is_perfcnt_enable, audio_convert_float);
       convert_float_to_s16(audio_driver_output_samples_conv_buf,
             (const float*)output_data, output_frames * 2);
-      performance_counter_stop(&audio_convert_float);
+      performance_counter_stop_plus(is_perfcnt_enable, audio_convert_float);
 
       output_data = audio_driver_output_samples_conv_buf;
       output_size = sizeof(int16_t);
    }
 
    if (current_audio->write(audio_driver_context_audio_data,
-            output_data, output_frames * output_size * 2) < 0)
+            output_data, output_frames * output_size * 2,
+            is_perfcnt_enable) < 0)
    {
       audio_driver_active = false;
       return false;
@@ -882,7 +888,7 @@ bool audio_driver_get_devices_list(void **data)
 bool audio_driver_deinit(void)
 {
    audio_driver_free_devices_list();
-   if (!uninit_audio())
+   if (!audio_driver_deinit_internal())
       return false;
    return true;
 }
@@ -963,12 +969,12 @@ bool audio_driver_toggle_mute(void)
    return true;
 }
 
-bool audio_driver_start(void)
+bool audio_driver_start(bool is_shutdown)
 {
    if (!current_audio || !current_audio->start 
          || !audio_driver_context_audio_data)
       return false;
-   return current_audio->start(audio_driver_context_audio_data);
+   return current_audio->start(audio_driver_context_audio_data, is_shutdown);
 }
 
 bool audio_driver_stop(void)

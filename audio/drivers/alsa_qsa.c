@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -219,7 +219,8 @@ static int check_pcm_status(void *data, int channel_type)
 }
 
 
-static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size)
+static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size,
+      bool is_perfcnt_enable)
 {
    alsa_t              *alsa = (alsa_t*)data;
    snd_pcm_sframes_t written = 0;
@@ -290,7 +291,7 @@ static bool alsa_qsa_alive(void *data)
    return false;
 }
 
-static bool alsa_qsa_start(void *data)
+static bool alsa_qsa_start(void *data, bool is_shutdown)
 {
    alsa_t *alsa = (alsa_t*)data;
 

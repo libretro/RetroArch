@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -44,8 +44,8 @@ typedef struct
    bool is_paused;
 } gx_audio_t;
 
-static volatile gx_audio_t *gx_audio_data;
-static volatile bool stop_audio;
+static volatile gx_audio_t *gx_audio_data = NULL;
+static volatile bool stop_audio           = false;
 
 static void dma_callback(void)
 {
@@ -116,7 +116,8 @@ static INLINE void copy_swapped(uint32_t * restrict dst,
    }while(--size);
 }
 
-static ssize_t gx_audio_write(void *data, const void *buf_, size_t size)
+static ssize_t gx_audio_write(void *data, const void *buf_, size_t size,
+      bool is_perfcnt_enable)
 {
    size_t       frames = size >> 2;
    const uint32_t *buf = buf_;
@@ -173,7 +174,7 @@ static void gx_audio_set_nonblock_state(void *data, bool state)
       wa->nonblock = state;
 }
 
-static bool gx_audio_start(void *data)
+static bool gx_audio_start(void *data, bool is_shutdown)
 {
    gx_audio_t *wa = (gx_audio_t*)data;
 

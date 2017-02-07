@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -1384,11 +1384,6 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len) {
                              "This is only updated in config if\n"
                              "'Save Configuration on Exit' is enabled.\n");
             break;
-        case MENU_ENUM_LABEL_CORE_SPECIFIC_CONFIG:
-            snprintf(s, len,
-                     "Load up a specific config file \n"
-                             "based on the core being used.\n");
-            break;
         case MENU_ENUM_LABEL_VIDEO_FULLSCREEN:
             snprintf(s, len, "Toggles fullscreen.");
             break;
@@ -1540,6 +1535,13 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len) {
                              "Increasing this value will increase \n"
                              "performance, but introduce more latency.");
             break;
+        case MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE:
+            snprintf(s, len,
+                     "Whether to announce netplay games publicly. \n"
+                             " \n"
+                             "If set to false, clients must manually connect \n"
+                             "rather than using the public lobby.");
+            break;
         case MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE:
             snprintf(s, len,
                      "Whether to run netplay in a mode not requiring\n"
@@ -1564,6 +1566,31 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len) {
                              "performance issues. Set to zero to perform \n"
                              "no checks. This value is only used on the \n"
                              "netplay host. \n");
+            break;
+        case MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN:
+            snprintf(s, len,
+                     "The number of frames of input latency for \n"
+                     "netplay to use to hide network latency. \n"
+                     " \n"
+                     "When in netplay, this option delays local \n"
+                     "input, so that the frame being run is \n"
+                     "closer to the frames being received from \n"
+                     "the network. This reduces jitter and makes \n"
+                     "netplay less CPU-intensive, but at the \n"
+                     "price of noticeable input lag. \n");
+            break;
+        case MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE:
+            snprintf(s, len,
+                     "The range of frames of input latency that \n"
+                     "may be used by netplay to hide network \n"
+                     "latency. \n"
+                     "\n"
+                     "If set, netplay will adjust the number of \n"
+                     "frames of input latency dynamically to \n"
+                     "balance CPU time, input latency and \n"
+                     "network latency. This reduces jitter and \n"
+                     "makes netplay less CPU-intensive, but at \n"
+                     "the price of unpredictable input lag. \n");
             break;
         case MENU_ENUM_LABEL_NETPLAY_NAT_TRAVERSAL:
             snprintf(s, len,

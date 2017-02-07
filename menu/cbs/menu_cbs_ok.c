@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -1069,8 +1069,10 @@ static int generic_action_ok(const char *path,
 
             strlcpy(settings->path.menu_wallpaper,
                   action_path, sizeof(settings->path.menu_wallpaper));
-            task_push_image_load(action_path,
-                  menu_display_handle_wallpaper_upload, NULL);
+
+            if (path_file_exists(action_path))
+               task_push_image_load(action_path,
+                     menu_display_handle_wallpaper_upload, NULL);
          }
          break;
       case ACTION_OK_LOAD_CORE:
@@ -1086,14 +1088,18 @@ static int generic_action_ok(const char *path,
          }
          break;
       case ACTION_OK_LOAD_CONFIG_FILE:
-         flush_type      = MENU_SETTINGS;
-         menu_display_set_msg_force(true);
-
-         if (config_replace(action_path))
          {
-            bool pending_push = false;
-            menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
-            ret = -1;
+            settings_t            *settings = config_get_ptr();
+            flush_type                      = MENU_SETTINGS;
+
+            menu_display_set_msg_force(true);
+
+            if (config_replace(settings->config_save_on_exit, action_path))
+            {
+               bool pending_push = false;
+               menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
+               ret = -1;
+            }
          }
          break;
 #ifdef HAVE_SHADER_MANAGER
@@ -3117,6 +3123,40 @@ static int action_ok_netplay_lan_scan_list(const char *path,
          entry_idx, ACTION_OK_DL_NETPLAY_LAN_SCAN_SETTINGS_LIST);
 }
 
+static int action_ok_netplay_connect_room(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+#ifdef HAVE_NETWORKING
+   char tmp_hostname[512];
+
+   tmp_hostname[0] = '\0';
+
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
+      command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
+
+   snprintf(tmp_hostname,
+         sizeof(tmp_hostname),
+         "%s:%d", 
+      netplay_room_list[idx - 2].address,
+      netplay_room_list[idx - 2].port);
+
+   RARCH_LOG("Connecting to: %s with game: %s/%08x\n", 
+         tmp_hostname,
+         netplay_room_list[idx - 2].gamename,
+         netplay_room_list[idx - 2].gamecrc);
+
+   task_push_netplay_crc_scan(netplay_room_list[idx - 2].gamecrc,
+      netplay_room_list[idx - 2].gamename,
+      tmp_hostname, netplay_room_list[idx - 2].corename);
+
+#else
+   return -1;
+
+#endif
+   return 0;
+}
+
 static int action_ok_lakka_services(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -3173,8 +3213,8 @@ static int action_ok_netplay_lan_scan(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
 #ifdef HAVE_NETWORKING
-   struct netplay_host_list *hosts;
-   struct netplay_host *host;
+   struct netplay_host_list *hosts = NULL;
+   struct netplay_host *host       = NULL;
 
    /* Figure out what host we're connecting to */
    if (!netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, &hosts))
@@ -3264,12 +3304,161 @@ static int action_ok_push_content_list(const char *path,
          entry_idx, ACTION_OK_DL_CONTENT_LIST);
 }
 
+
+
 static int action_ok_push_scan_file(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    filebrowser_clear_type();
    return action_ok_push_content_list(path, label, type, idx, entry_idx);
 }
+
+#ifdef HAVE_NETWORKING
+static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const char *err)
+{
+   char buf[PATH_MAX_LENGTH];
+
+   http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
+
+   buf[0] = '\0';
+
+   if (!data || err)
+      goto finish;
+
+   if (data)
+   {
+      if (data->data)
+         memcpy(buf, data->data, data->len * sizeof(char));
+      buf[data->len] = '\0';
+   }
+
+finish:
+   if (!err && !strstr(buf, file_path_str(FILE_PATH_NETPLAY_ROOM_LIST_URL)))
+   {
+      if (string_is_empty(buf))
+      {
+         netplay_room_count = 0;
+         RARCH_LOG("Room list empty\n");
+      }
+      else
+      {
+         int i, j = 0;
+         char s[PATH_MAX_LENGTH];
+         static struct string_list *room_data = NULL;
+         file_list_t *file_list               = menu_entries_get_selection_buf_ptr(0);
+
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, file_list);
+
+         room_data = string_split(buf, "\n");
+
+         if (netplay_room_list)
+            free(netplay_room_list);
+
+         netplay_room_count = room_data->size / 8;
+         netplay_room_list = (struct netplay_room*)
+            malloc(sizeof(struct netplay_room) * netplay_room_count);
+
+#if 0
+         for (int i = 0; i < room_data->size; i++)
+         {
+            strlcpy(tmp,
+                  room_data->elems[i].data, sizeof(tmp));
+            RARCH_LOG("tmp %s\n", tmp);
+
+         }
+#endif
+         menu_entries_append_enum(file_list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST),
+               msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST),
+               MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST,
+               MENU_SETTING_ACTION, 0, 0);
+         menu_entries_append_enum(file_list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS),
+               msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS),
+               MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS,
+               MENU_SETTING_ACTION, 0, 0);
+
+         RARCH_LOG ("Found %d rooms\n", netplay_room_count);
+         for (i = 0; i < netplay_room_count; i++)
+         {
+            strlcpy(netplay_room_list[i].nickname,
+                  room_data->elems[j + 0].data,
+                  sizeof(netplay_room_list[i].nickname));
+            strlcpy(netplay_room_list[i].address,
+                  room_data->elems[j + 1].data,
+                  sizeof(netplay_room_list[i].address));
+            strlcpy(netplay_room_list[i].corename,
+                  room_data->elems[j + 3].data,
+                  sizeof(netplay_room_list[i].corename));
+            strlcpy(netplay_room_list[i].coreversion,
+                  room_data->elems[j + 4].data,
+                  sizeof(netplay_room_list[i].coreversion));
+            strlcpy(netplay_room_list[i].gamename,
+                  room_data->elems[j + 5].data,
+                  sizeof(netplay_room_list[i].coreversion));
+
+            netplay_room_list[i].port      = atoi(room_data->elems[j + 2].data);
+            netplay_room_list[i].gamecrc   = atoi(room_data->elems[j + 6].data);
+            netplay_room_list[i].timestamp = atoi(room_data->elems[j + 7].data);
+
+/* Uncomment this to debug mismatched room parameters*/
+#if 0
+            RARCH_LOG("Room Data: %d\n"
+               "Nickname:         %s\n"
+               "Address:          %s\n"
+               "Port:             %d\n"
+               "Core:             %s\n"
+               "Core Version:     %s\n"
+               "Game:             %s\n"
+               "Game CRC:         %08x\n"
+               "Timestamp:        %d\n", room_data->elems[j + 6].data,
+               netplay_room_list[i].nickname,
+               netplay_room_list[i].address,
+               netplay_room_list[i].port,
+               netplay_room_list[i].corename,
+               netplay_room_list[i].coreversion,
+               netplay_room_list[i].gamename,
+               netplay_room_list[i].gamecrc,
+               netplay_room_list[i].timestamp);
+#endif
+            j+=8;
+
+            snprintf(s, sizeof(s), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME),
+                  netplay_room_list[i].nickname);
+
+            menu_entries_append_enum(file_list,
+                  s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM),
+                  MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,
+                  MENU_WIFI, 0, 0);
+         }
+      }
+   }
+
+   if (err)
+      RARCH_ERR("%s: %s\n", msg_hash_to_str(MSG_DOWNLOAD_FAILED), err);
+
+   if (data)
+   {
+      if (data->data)
+         free(data->data);
+      free(data);
+   }
+
+   if (user_data)
+      free(user_data);
+
+}
+
+static int action_ok_push_netplay_refresh_rooms(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   char url [2048] = "http://lobby.libretro.com/raw/";
+   task_push_http_transfer(url, true, NULL, netplay_refresh_rooms_cb, NULL);
+   return 0;
+}
+#endif
+
 
 static int action_ok_scan_directory_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -3630,12 +3819,17 @@ static int action_ok_netplay_enable_host(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
 #ifdef HAVE_NETWORKING
+   bool contentless = false;
+   bool is_inited   = false;
+
+   content_get_status(&contentless, &is_inited);
+
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
       command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
 
    /* If we haven't yet started, this will load on its own */
-   if (!content_is_inited())
+   if (!is_inited)
    {
       runloop_msg_queue_push(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
@@ -3675,13 +3869,17 @@ static int action_ok_netplay_enable_client(const char *path,
 {
 #ifdef HAVE_NETWORKING
    settings_t *settings = config_get_ptr();
+   bool contentless     = false;
+   bool is_inited       = false;
+
+   content_get_status(&contentless, &is_inited);
 
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
       command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
    /* If we haven't yet started, this will load on its own */
-   if (!content_is_inited())
+   if (!is_inited)
    {
       runloop_msg_queue_push(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
@@ -3781,7 +3979,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 
          first_char = atoi(&str[0]);
 
-         if (first_char != (i+1))
+         if (first_char != ((i+1)))
             continue;
 
          BIND_ACTION_OK(cbs, action_ok_push_user_binds_list);
@@ -3994,6 +4192,11 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_SCAN_FILE:
             BIND_ACTION_OK(cbs, action_ok_push_scan_file);
             break;
+#ifdef HAVE_NETWORKING
+         case MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS:
+            BIND_ACTION_OK(cbs, action_ok_push_netplay_refresh_rooms);
+            break;
+#endif
          case MENU_ENUM_LABEL_FAVORITES:
             BIND_ACTION_OK(cbs, action_ok_push_content_list);
             break;
@@ -4097,6 +4300,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_netplay_lan_scan_list);
+            break;
+         case MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM:
+            BIND_ACTION_OK(cbs, action_ok_netplay_connect_room);
             break;
          case MENU_ENUM_LABEL_LAKKA_SERVICES:
             BIND_ACTION_OK(cbs, action_ok_lakka_services);

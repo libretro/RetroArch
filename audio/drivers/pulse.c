@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -235,7 +236,8 @@ error:
    return NULL;
 }
 
-static ssize_t pulse_write(void *data, const void *buf_, size_t size)
+static ssize_t pulse_write(void *data, const void *buf_, size_t size,
+      bool is_perfcnt_enable)
 {
    pa_t           *pa = (pa_t*)data;
    const uint8_t *buf = (const uint8_t*)buf_;
@@ -290,7 +292,7 @@ static bool pulse_alive(void *data)
    return !pa->is_paused;
 }
 
-static bool pulse_start(void *data)
+static bool pulse_start(void *data, bool is_shutdown)
 {
    bool ret;
    pa_t *pa = (pa_t*)data;

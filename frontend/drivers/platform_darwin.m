@@ -1,6 +1,6 @@
 /* RetroArch - A frontend for libretro.
  * Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- * Copyright (C) 2011-2016 - Daniel De Matteis
+ * Copyright (C) 2011-2017 - Daniel De Matteis
  * Copyright (C) 2012-2014 - Jason Fetters
  * Copyright (C) 2014-2015 - Jay McCarthy
  *
@@ -21,6 +21,8 @@
 #include <unistd.h>
 
 #include <sys/utsname.h>
+
+#include <mach/mach_host.h>
 
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreFoundation/CFArray.h>

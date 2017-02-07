@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -63,6 +63,9 @@ static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #endif
 #ifdef XENON
    &frontend_ctx_xenon,
+#endif
+#ifdef DJGPP
+   &frontend_ctx_dos,
 #endif
    &frontend_ctx_null,
    NULL
@@ -149,6 +152,9 @@ bool frontend_driver_get_core_extension(char *s, size_t len)
 #elif defined(GEKKO)
    strlcpy(s, "dol", len);
    return true;
+#elif defined(HW_WUP)
+   strlcpy(s, "rpx|elf", len);
+   return true;
 #elif defined(__linux__)
    strlcpy(s, "elf", len);
    return true;
@@ -185,6 +191,9 @@ bool frontend_driver_get_salamander_basename(char *s, size_t len)
    return true;
 #elif defined(HW_RVL)
    strlcpy(s, "boot.dol", len);
+   return true;
+#elif defined(HW_WUP)
+   strlcpy(s, "retroarch.rpx", len);
    return true;
 #elif defined(_3DS)
    strlcpy(s, "retroarch.core", len);

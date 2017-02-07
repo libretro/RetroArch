@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Compile: gcc -o supertwoxsai.so -shared supertwoxsai.c -std=c99 -O3 -Wall -pedantic -fPIC
+/* Compile: gcc -o supertwoxsai.so -shared supertwoxsai.c -std=c99 -O3 -Wall -pedantic -fPIC */
 
 #include "softfilter.h"
 #include <stdlib.h>

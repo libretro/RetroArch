@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -41,7 +41,6 @@
 #include <compat/strl.h>
 
 #include "../camera_driver.h"
-#include "../../performance_counters.h"
 #include "../../verbosity.h"
 
 struct buffer
@@ -65,16 +64,6 @@ typedef struct video4linux
 
    char dev_name[255];
 } video4linux_t;
-
-static void process_image(video4linux_t *v4l, const uint8_t *buffer_yuv)
-{
-   static struct retro_perf_counter yuv_convert_direct = {0};
-
-   performance_counter_init(&yuv_convert_direct, "yuv_convert_direct");
-   performance_counter_start(&yuv_convert_direct);
-   scaler_ctx_scale(&v4l->scaler, v4l->buffer_output, buffer_yuv);
-   performance_counter_stop(&yuv_convert_direct);
-}
 
 static int xioctl(int fd, int request, void *args)
 {
@@ -385,7 +374,7 @@ static bool preprocess_image(void *data)
 
    retro_assert(buf.index < v4l->n_buffers);
 
-   process_image(v4l, (const uint8_t*)v4l->buffers[buf.index].start);
+   scaler_ctx_scale(&v4l->scaler, v4l->buffer_output, (const uint8_t*)v4l->buffers[buf.index].start);
 
    if (xioctl(v4l->fd, (uint8_t)VIDIOC_QBUF, &buf) == -1)
       RARCH_ERR("VIDIOC_QBUF\n");

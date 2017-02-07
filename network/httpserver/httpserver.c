@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2015-2016 - Andre Leiradella
+ *  Copyright (C) 2015-2017 - Andre Leiradella
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -29,7 +29,7 @@
 #include "../../core.h"
 #include "../../gfx/video_driver.h"
 #include "../../managers/core_option_manager.h"
-#include "../../cheevos.h"
+#include "../../cheevos/cheevos.h"
 #include "../../content.h"
 
 #define BASIC_INFO "info"

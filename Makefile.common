@@ -161,7 +161,6 @@ OBJ += frontend/frontend.o \
        msg_hash.o \
        intl/msg_hash_us.o \
        runloop.o \
-       $(LIBRETRO_COMM_DIR)/algorithms/mismatch.o \
        $(LIBRETRO_COMM_DIR)/queues/task_queue.o \
        tasks/task_content.o \
        tasks/task_save.o \
@@ -209,7 +208,6 @@ OBJ += frontend/frontend.o \
        input/input_remapping.o \
        tasks/task_overlay.o \
        input/input_overlay.o \
-       patch.o \
        $(LIBRETRO_COMM_DIR)/queues/fifo_queue.o \
        managers/core_option_manager.o \
        $(LIBRETRO_COMM_DIR)/compat/compat_fnmatch.o \
@@ -453,7 +451,9 @@ ifeq ($(HAVE_NEON),1)
 endif
 
 OBJ += $(LIBRETRO_COMM_DIR)/audio/conversion/s16_to_float.o \
-       $(LIBRETRO_COMM_DIR)/audio/conversion/float_to_s16.o
+       $(LIBRETRO_COMM_DIR)/audio/conversion/float_to_s16.o \
+		   $(LIBRETRO_COMM_DIR)/audio/audio_mix.o \
+		   $(LIBRETRO_COMM_DIR)/formats/wav/rwav.o
 
 ifeq ($(HAVE_NEON),1)
    OBJ += $(LIBRETRO_COMM_DIR)/audio/conversion/s16_to_float_neon.o \
@@ -1165,7 +1165,8 @@ ifeq ($(HAVE_NETWORKING), 1)
 			 network/net_http_special.o \
 			 tasks/task_http.o \
 			 tasks/task_netplay_lan_scan.o \
-			 tasks/task_wifi.o
+			 tasks/task_wifi.o \
+			 tasks/task_netplay_find_content.o
 
    ifneq ($(HAVE_SOCKET_LEGACY),1)
    OBJ += $(LIBRETRO_COMM_DIR)/net/net_ifinfo.o
@@ -1196,7 +1197,7 @@ ifeq ($(HAVE_NETWORKING), 1)
    ifeq ($(HAVE_CHEEVOS), 1)
       ifeq ($(HAVE_THREADS), 1)
          DEFINES += -DHAVE_CHEEVOS
-         OBJ += cheevos.o \
+         OBJ += cheevos/cheevos.o \
 					 $(LIBRETRO_COMM_DIR)/utils/md5.o
       endif
    endif
@@ -1267,4 +1268,14 @@ ifeq ($(HAVE_COCOA),1)
 			 ui/drivers/cocoa/ui_cocoa_application.o \
 			 ui/drivers/cocoa/cocoa_common.o \
 			 gfx/drivers_context/cocoa_gl_ctx.o
+endif
+
+ifneq ($(findstring DOS,$(OS)),)
+   OBJ += gfx/drivers/vga_gfx.o gfx/drivers_font/vga_font.o \
+          input/drivers/dos_input.o input/drivers_joypad/dos_joypad.o \
+ 				  frontend/drivers/platform_dos.o input/drivers_keyboard/keyboard_event_dos.o
+
+   ifeq ($(HAVE_MENU_COMMON), 1)
+      OBJ += menu/drivers_display/menu_display_vga.o
+   endif
 endif

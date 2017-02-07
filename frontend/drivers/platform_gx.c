@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2015 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -207,7 +207,7 @@ static void frontend_gx_get_environment_settings(
 #ifdef HW_DOL
    chdir("carda:/retroarch");
 #endif
-   getcwd(g_defaults.dir.core, MAXPATHLEN);
+   getcwd(g_defaults.dir.core, PATH_MAX_LENGTH);
 
    last_slash = strrchr(g_defaults.dir.core, '/');
    if (last_slash)

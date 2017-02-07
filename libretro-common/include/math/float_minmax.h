@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2016 The RetroArch team
+/* Copyright  (C) 2010-2017 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (float_minmax.h).
@@ -39,7 +39,7 @@ static INLINE float float_min(float a, float b)
 #ifdef __SSE2__
    _mm_store_ss( &a, _mm_min_ss(_mm_set_ss(a),_mm_set_ss(b)) );
    return a;
-#elif defined(__STDC_C99__) || defined(__STDC_C11__)
+#elif !defined(DJGPP) && (defined(__STDC_C99__) || defined(__STDC_C11__))
    return fminf(a, b);
 #else
    return MIN(a, b);
@@ -51,7 +51,7 @@ static INLINE float float_max(float a, float b)
 #ifdef __SSE2__
    _mm_store_ss( &a, _mm_max_ss(_mm_set_ss(a),_mm_set_ss(b)) );
    return a;
-#elif defined(__STDC_C99__) || defined(__STDC_C11__)
+#elif !defined(DJGPP) && (defined(__STDC_C99__) || defined(__STDC_C11__))
    return fmaxf(a, b);
 #else
    return MAX(a, b);

@@ -55,7 +55,7 @@ static void gfx_ctx_opendingux_destroy(void *data)
    }
 }
 
-static void *gfx_ctx_opendingux_init(video_frame_info_t video_info, void *video_driver)
+static void *gfx_ctx_opendingux_init(video_frame_info_t *video_info, void *video_driver)
 {
 #ifdef HAVE_EGL
    EGLint n;
@@ -112,7 +112,7 @@ static void gfx_ctx_opendingux_get_video_size(void *data,
 }
 
 static void gfx_ctx_opendingux_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
 {
    unsigned new_width, new_height;
    opendingux_ctx_data_t *viv = (opendingux_ctx_data_t*)data;

@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Brad Parker
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -41,7 +41,8 @@ typedef struct
 } gdi_raster_t;
 
 static void *gdi_init_font(void *data,
-      const char *font_path, float font_size)
+      const char *font_path, float font_size,
+      bool is_threaded)
 {
    gdi_raster_t *font  = (gdi_raster_t*)calloc(1, sizeof(*font));
 
@@ -62,9 +63,10 @@ static void *gdi_init_font(void *data,
    return font;
 }
 
-static void gdi_render_free_font(void *data)
+static void gdi_render_free_font(void *data, bool is_threaded)
 {
-
+   (void)data;
+   (void)is_threaded;
 }
 
 static int gdi_get_message_width(void *data, const char *msg,
@@ -85,9 +87,10 @@ static void gdi_render_msg(
       const void *userdata)
 {
    HDC hdc;
-   float x, y;
+   float x, y, scale;
    gdi_raster_t *font = (gdi_raster_t*)data;
    unsigned newX, newY, len;
+   unsigned align;
    const struct font_params *params = (const struct font_params*)userdata;
    HWND hwnd                        = win32_get_window();
    unsigned width                   = video_info->width;
@@ -100,19 +103,38 @@ static void gdi_render_msg(
    {
       x = params->x;
       y = params->y;
+      scale = params->scale;
+      align = params->text_align;
    }
    else
    {
       x = video_info->font_msg_pos_x;
       y = video_info->font_msg_pos_y;
+      scale = 1.0f;
+      align = TEXT_ALIGN_LEFT;
    }
 
    if (!font->gdi)
       return;
 
    len  = utf8len(msg);
-   newX = x * width;
-   newY = height - (y * height);
+
+   switch (align)
+   {
+      case TEXT_ALIGN_LEFT:
+         newX = x * width * scale;
+         break;
+      case TEXT_ALIGN_RIGHT:
+         newX = (x * width * scale) - len;
+         break;
+      case TEXT_ALIGN_CENTER:
+         newX = (x * width * scale) - (len / 2);
+         break;
+      default:
+         break;
+   }
+
+   newY = height - (y * height * scale);
    hdc  = GetDC(hwnd);
 
    SetBkMode(hdc, TRANSPARENT);

@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
 *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
-*  Copyright (C) 2011-2016 - Daniel De Matteis
+*  Copyright (C) 2011-2017 - Daniel De Matteis
 * 
 *  RetroArch is free software: you can redistribute it and/or modify it under the terms
 *  of the GNU General Public License as published by the Free Software Found-
@@ -91,7 +91,7 @@ EGL_BLUE_SIZE,       1, \
 EGL_ALPHA_SIZE,      0, \
 EGL_DEPTH_SIZE,      0
 
-static void *gfx_ctx_xegl_init(video_frame_info_t video_info, void *video_driver)
+static void *gfx_ctx_xegl_init(video_frame_info_t *video_info, void *video_driver)
 {
 #ifdef HAVE_EGL
    static const EGLint egl_attribs_gl[] = {

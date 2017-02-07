@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -136,7 +137,8 @@ static void *sdl_audio_init(const char *device,
    return sdl;
 }
 
-static ssize_t sdl_audio_write(void *data, const void *buf, size_t size)
+static ssize_t sdl_audio_write(void *data, const void *buf, size_t size,
+      bool is_perfcnt_enable)
 {
    ssize_t ret = 0;
    sdl_audio_t *sdl = (sdl_audio_t*)data;
@@ -202,7 +204,7 @@ static bool sdl_audio_alive(void *data)
    return !sdl->is_paused;
 }
 
-static bool sdl_audio_start(void *data)
+static bool sdl_audio_start(void *data, bool is_shutdown)
 {
    sdl_audio_t *sdl = (sdl_audio_t*)data;
    sdl->is_paused = false;

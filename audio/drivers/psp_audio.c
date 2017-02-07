@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2014-2016 - Ali Bouhlel
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2014-2017 - Ali Bouhlel
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -184,7 +184,8 @@ static void psp_audio_free(void *data)
    free(psp);
 }
 
-static ssize_t psp_audio_write(void *data, const void *buf, size_t size)
+static ssize_t psp_audio_write(void *data, const void *buf, size_t size,
+       bool is_perfcnt_enable)
 {
    psp_audio_t* psp     = (psp_audio_t*)data;
    uint16_t write_pos   = psp->write_pos;
@@ -285,7 +286,7 @@ static bool psp_audio_stop(void *data)
    return true;
 }
 
-static bool psp_audio_start(void *data)
+static bool psp_audio_start(void *data, bool is_shutdown)
 {
    SceKernelThreadInfo info;
    psp_audio_t* psp = (psp_audio_t*)data;

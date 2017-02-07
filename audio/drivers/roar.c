@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -57,7 +58,8 @@ static void *ra_init(const char *device, unsigned rate, unsigned latency,
    return roar;
 }
 
-static ssize_t ra_write(void *data, const void *buf, size_t size)
+static ssize_t ra_write(void *data, const void *buf, size_t size,
+      bool is_perfcnt_enable)
 {
    int err;
    size_t written = 0;
@@ -71,7 +73,8 @@ static ssize_t ra_write(void *data, const void *buf, size_t size)
       ssize_t rc;
       size_t write_amt = size - written;
 
-      if ((rc = roar_vs_write(roar->vss, (const char*)buf + written, write_amt, &err)) < (ssize_t)write_amt)
+      if ((rc = roar_vs_write(roar->vss,
+                  (const char*)buf + written, write_amt, &err)) < (ssize_t)write_amt)
       {
          if (roar->nonblocking)
             return rc;
@@ -108,7 +111,7 @@ static void ra_set_nonblock_state(void *data, bool state)
    roar->nonblocking = state;
 }
 
-static bool ra_start(void *data)
+static bool ra_start(void *data, bool is_shutdown)
 {
    roar_t *roar = (roar_t*)data;
    if (roar)

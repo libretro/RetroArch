@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C)      2016 - Gregor Richards
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Gregor Richards
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -56,6 +56,8 @@ void video_frame_net(const void *data, unsigned width,
 void audio_sample_net(int16_t left, int16_t right);
 
 size_t audio_sample_batch_net(const int16_t *data, size_t frames);
+
+bool init_netplay_deferred(const char* server, unsigned port);
 
 /**
  * init_netplay

@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -146,7 +146,8 @@ static void *ps3_audio_init(const char *device,
    return data;
 }
 
-static ssize_t ps3_audio_write(void *data, const void *buf, size_t size)
+static ssize_t ps3_audio_write(void *data, const void *buf, size_t size,
+      bool is_perfcnt_enable)
 {
    ps3_audio_t *aud = data;
 
@@ -177,7 +178,7 @@ static bool ps3_audio_stop(void *data)
    return true;
 }
 
-static bool ps3_audio_start(void *data)
+static bool ps3_audio_start(void *data, bool is_shutdown)
 {
    ps3_audio_t *aud = data;
    if (!aud->started)
@@ -209,7 +210,7 @@ static void ps3_audio_free(void *data)
    ps3_audio_t *aud = data;
 
    aud->quit_thread = true;
-   ps3_audio_start(aud);
+   ps3_audio_start(aud, false);
    sys_ppu_thread_join(aud->thread, &val);
 
    ps3_audio_stop(aud);

@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -184,7 +184,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       }
    }
 
-   if (gdi_menu_frame && menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+   if (gdi_menu_frame && video_info->menu_is_alive)
    {
       frame_to_copy = gdi_menu_frame;
       width         = gdi_menu_width;
@@ -201,7 +201,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       if (frame_width == 4 && frame_height == 4 && (frame_width < width && frame_height < height))
          draw = false;
 
-      if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+      if (video_info->menu_is_alive)
          draw = false;
    }
 
@@ -229,10 +229,21 @@ static bool gdi_gfx_frame(void *data, const void *frame,
 
          info->bmiHeader.biCompression = BI_BITFIELDS;
 
-         /* map RGB565 color bits, default is 555 */
-         masks[0] = 0xF800;
-         masks[1] = 0x07E0;
-         masks[2] = 0x001F;
+         /* default 16-bit format on Windows is XRGB1555 */
+         if (frame_to_copy == gdi_menu_frame)
+         {
+            /* map RGB444 color bits for RGUI */
+            masks[0] = 0xF000;
+            masks[1] = 0x0F00;
+            masks[2] = 0x00F0;
+         }
+         else
+         {
+            /* map RGB565 color bits for core */
+            masks[0] = 0xF800;
+            masks[1] = 0x07E0;
+            masks[2] = 0x001F;
+         }
       }
       else
          info->bmiHeader.biCompression = BI_RGB;
@@ -355,7 +366,7 @@ static void gdi_gfx_viewport_info(void *data,
    (void)vp;
 }
 
-static bool gdi_gfx_read_viewport(void *data, uint8_t *buffer)
+static bool gdi_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    (void)data;
    (void)buffer;

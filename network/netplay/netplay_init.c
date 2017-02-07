@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C)      2016 - Gregor Richards
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Gregor Richards
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -321,7 +321,7 @@ bool netplay_try_init_serialization(netplay_t *netplay)
 
    /* Check if we can actually save */
    serial_info.data_const = NULL;
-   serial_info.data = netplay->buffer[netplay->self_ptr].state;
+   serial_info.data = netplay->buffer[netplay->run_ptr].state;
    serial_info.size = netplay->state_size;
 
    if (!core_serialize(&serial_info))
@@ -422,7 +422,7 @@ netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
    netplay->cbs               = *cb;
    netplay->connected_players = 0;
    netplay->player_max        = 1;
-   netplay->is_server         = server == NULL;
+   netplay->is_server         = (direct_host == NULL && server == NULL);
    netplay->nat_traversal     = netplay->is_server ? nat_traversal : false;
    netplay->stateless_mode    = stateless_mode;
    netplay->check_frames      = check_frames;

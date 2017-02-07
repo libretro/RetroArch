@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -142,6 +142,7 @@ struct thread_packet
          const char *font_path;
          float font_size;
          bool return_value;
+         bool is_threaded;
          enum font_driver_render_api api;
       } font_init;
    } data;
@@ -187,6 +188,7 @@ struct thread_video
    bool suppress_screensaver;
    bool has_windowed;
    bool nonblock;
+   bool is_idle;
 
    retro_time_t last_time;
    unsigned hit_count;
@@ -393,7 +395,7 @@ static bool video_thread_handle_packet(
 
             if (thr->driver->read_viewport)
                ret = thr->driver->read_viewport(thr->driver_data,
-                     (uint8_t*)pkt.data.v);
+                     (uint8_t*)pkt.data.v, thr->is_idle);
 
             pkt.data.b = ret;
             thr->frame.within_thread = false;
@@ -543,7 +545,8 @@ static bool video_thread_handle_packet(
                      pkt.data.font_init.video_data,
                      pkt.data.font_init.font_path,
                      pkt.data.font_init.font_size,
-                     pkt.data.font_init.api);
+                     pkt.data.font_init.api,
+                     pkt.data.font_init.is_threaded);
          video_thread_reply(thr, &pkt);
          break;
 
@@ -726,8 +729,8 @@ static bool video_thread_frame(void *data, const void *frame_,
       return false;
    }
 
-   performance_counter_init(&thr_frame, "thr_frame");
-   performance_counter_start(&thr_frame);
+   performance_counter_init(thr_frame, "thr_frame");
+   performance_counter_start_plus(video_info->is_perfcnt_enable, thr_frame);
 
    copy_stride = width * (thr->info.rgb32 
          ? sizeof(uint32_t) : sizeof(uint16_t));
@@ -796,7 +799,7 @@ static bool video_thread_frame(void *data, const void *frame_,
 
    slock_unlock(thr->lock);
 
-   performance_counter_stop(&thr_frame);
+   performance_counter_stop_plus(video_info->is_perfcnt_enable, thr_frame);
 
    thr->last_time = cpu_features_get_time_usec();
    return true;
@@ -916,7 +919,7 @@ static void video_thread_viewport_info(void *data, struct video_viewport *vp)
    slock_unlock(thr->lock);
 }
 
-static bool video_thread_read_viewport(void *data, uint8_t *buffer)
+static bool video_thread_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    thread_video_t *thr = (thread_video_t*)data;
    thread_packet_t pkt = { CMD_READ_VIEWPORT };
@@ -924,7 +927,8 @@ static bool video_thread_read_viewport(void *data, uint8_t *buffer)
    if (!thr)
       return false;
 
-   pkt.data.v = buffer;
+   pkt.data.v   = buffer;
+   thr->is_idle = is_idle;
 
    video_thread_send_and_wait_user_to_thread(thr, &pkt);
 
@@ -1415,7 +1419,8 @@ static void video_thread_send_and_wait(thread_video_t *thr,
 
 bool video_thread_font_init(const void **font_driver, void **font_handle,
       void *data, const char *font_path, float font_size,
-      enum font_driver_render_api api, custom_font_command_method_t func)
+      enum font_driver_render_api api, custom_font_command_method_t func,
+      bool is_threaded)
 {
    thread_packet_t pkt;
    thread_video_t *thr = (thread_video_t*)video_driver_get_ptr(true);
@@ -1430,6 +1435,7 @@ bool video_thread_font_init(const void **font_driver, void **font_handle,
    pkt.data.font_init.video_data  = data;
    pkt.data.font_init.font_path   = font_path;
    pkt.data.font_init.font_size   = font_size;
+   pkt.data.font_init.is_threaded = is_threaded;
    pkt.data.font_init.api         = api;
 
    video_thread_send_and_wait(thr, &pkt);

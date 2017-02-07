@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2016 - Jean-André Santoni
+ *  Copyright (C) 2016-2017 - Jean-André Santoni
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -39,12 +39,14 @@ static void wifi_scan_callback(void *task_data,
                                void *user_data, const char *error)
 {
    unsigned i;
-   unsigned menu_type            = 0;
-   const char *path              = NULL;
-   const char *label             = NULL;
-   enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
    file_list_t *file_list        = NULL;
    struct string_list *ssid_list = NULL;
+
+#ifdef HAVE_MENU
+   const char *path              = NULL;
+   const char *label             = NULL;
+   unsigned menu_type            = 0;
+   enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
 
    menu_entries_get_last_stack(&path, &label, &menu_type, &enum_idx, NULL);
 
@@ -54,12 +56,14 @@ static void wifi_scan_callback(void *task_data,
       return;
 
    file_list = menu_entries_get_selection_buf_ptr(0);
-   ssid_list = string_list_new();
-
    menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, file_list);
+#endif
+
+   ssid_list = string_list_new();
 
    driver_wifi_get_ssids(ssid_list);
 
+#ifdef HAVE_MENU
    for (i = 0; i < ssid_list->size; i++)
    {
       const char *ssid = ssid_list->elems[i].data;
@@ -69,6 +73,7 @@ static void wifi_scan_callback(void *task_data,
             MENU_ENUM_LABEL_CONNECT_WIFI,
             MENU_WIFI, 0, 0);
    }
+#endif
 
    string_list_free(ssid_list);
 }

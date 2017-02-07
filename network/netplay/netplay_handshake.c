@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C)      2016 - Gregor Richards
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Gregor Richards
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -25,13 +25,20 @@
 
 #include "netplay_private.h"
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "../../autosave.h"
 #include "../../configuration.h"
 #include "../../content.h"
 #include "../../retroarch.h"
 #include "../../runloop.h"
 #include "../../version.h"
+
+#ifdef HAVE_MENU
 #include "../../menu/widgets/menu_input_dialog.h"
+#endif
 
 #ifndef HAVE_SOCKET_LEGACY
 /* Custom inet_ntop. Win32 doesn't seem to support this ... */
@@ -265,8 +272,9 @@ struct info_buf_s
    } \
    else if (recvd < 0)
 
-static netplay_t *handshake_password_netplay;
+static netplay_t *handshake_password_netplay = NULL;
 
+#ifdef HAVE_MENU
 static void handshake_password(void *ignore, const char *line)
 {
    struct password_buf_s password_buf;
@@ -285,9 +293,12 @@ static void handshake_password(void *ignore, const char *line)
    if (netplay_send(&connection->send_packet_buffer, connection->fd, &password_buf, sizeof(password_buf)))
       netplay_send_flush(&connection->send_packet_buffer, connection->fd, false);
 
+#ifdef HAVE_MENU
    menu_input_dialog_end();
    rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+#endif
 }
+#endif
 
 /**
  * netplay_handshake_init
@@ -381,15 +392,21 @@ bool netplay_handshake_init(netplay_t *netplay,
    /* If a password is demanded, ask for it */
    if (!netplay->is_server && (connection->salt = ntohl(header[3])))
    {
+#ifdef HAVE_MENU
       menu_input_ctx_line_t line;
       rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
-      memset(&line, 0, sizeof(line));
+#endif
+
       handshake_password_netplay = netplay;
-      line.label = msg_hash_to_str(MSG_NETPLAY_ENTER_PASSWORD);
+
+#ifdef HAVE_MENU
+      memset(&line, 0, sizeof(line));
+      line.label         = msg_hash_to_str(MSG_NETPLAY_ENTER_PASSWORD);
       line.label_setting = "no_setting";
-      line.cb = handshake_password;
+      line.cb            = handshake_password;
       if (!menu_input_dialog_start(&line))
          return false;
+#endif
    }
 
    /* Send our nick */
@@ -832,6 +849,15 @@ error:
       RARCH_ERR("%s\n", dmsg);
       runloop_msg_queue_push(dmsg, 1, 180, false);
    }
+
+   if (!netplay->is_server)
+   {
+      /* Counter-intuitively, we still want to send our info. This is simply so
+       * that the server knows why we disconnected. */
+      if (!netplay_handshake_info(netplay, connection))
+         return false;
+   }
+
    return false;
 }
 /**
@@ -895,9 +921,9 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
    netplay->flip_frame = flip_frame;
 
    /* Set our frame counters as requested */
-   netplay->self_frame_count = netplay->other_frame_count =
-      netplay->unread_frame_count = netplay->server_frame_count =
-      new_frame_count;
+   netplay->self_frame_count = netplay->run_frame_count =
+      netplay->other_frame_count = netplay->unread_frame_count =
+      netplay->server_frame_count = new_frame_count;
    for (i = 0; i < netplay->buffer_size; i++)
    {
       struct delta_frame *ptr = &netplay->buffer[i];
@@ -910,7 +936,8 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
             return false;
          ptr->frame = new_frame_count;
          ptr->have_local = true;
-         netplay->other_ptr = netplay->unread_ptr = netplay->server_ptr = i;
+         netplay->run_ptr = netplay->other_ptr = netplay->unread_ptr =
+            netplay->server_ptr = i;
 
       }
    }

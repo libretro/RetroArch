@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C)      2016 - Gregor Richards
+ *  Copyright (C) 2016-2017 - Gregor Richards
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -18,6 +18,7 @@
 #define __RARCH_NETPLAY_DISCOVERY_H
 
 #include <net/net_compat.h>
+#include <retro_miscellaneous.h>
 
 #define NETPLAY_HOST_STR_LEN 32
 
@@ -29,20 +30,40 @@ enum rarch_netplay_discovery_ctl_state
     RARCH_NETPLAY_DISCOVERY_CTL_LAN_CLEAR_RESPONSES
 };
 
-struct netplay_host {
-    struct sockaddr addr;
-    socklen_t addrlen;
+struct netplay_host
+{
+   struct sockaddr addr;
+   socklen_t addrlen;
 
-    char nick[NETPLAY_HOST_STR_LEN];
-    char core[NETPLAY_HOST_STR_LEN];
-    char core_version[NETPLAY_HOST_STR_LEN];
-    char content[NETPLAY_HOST_STR_LEN];
+   char nick[NETPLAY_HOST_STR_LEN];
+   char core[NETPLAY_HOST_STR_LEN];
+   char core_version[NETPLAY_HOST_STR_LEN];
+   char content[NETPLAY_HOST_STR_LEN];
 };
 
-struct netplay_host_list {
-    struct netplay_host *hosts;
-    size_t size;
+struct netplay_host_list
+{
+   struct netplay_host *hosts;
+   size_t size;
 };
+
+/* data is ordered like this on the server, I left it in this ordered
+   for reference */
+struct netplay_room
+{
+   char nickname    [PATH_MAX_LENGTH];
+   char address     [PATH_MAX_LENGTH];
+   int  port;
+   char corename    [PATH_MAX_LENGTH];
+   char coreversion [PATH_MAX_LENGTH];
+   char gamename    [PATH_MAX_LENGTH];
+   int  gamecrc;
+   int  timestamp;
+};
+
+extern struct netplay_room *netplay_room_list;
+
+extern int netplay_room_count;
 
 /** Initialize Netplay discovery */
 bool init_netplay_discovery(void);

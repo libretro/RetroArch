@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -183,18 +183,23 @@ bool record_driver_init_first(const record_driver_t **backend, void **data,
 }
 
 void recording_dump_frame(const void *data, unsigned width,
-      unsigned height, size_t pitch)
+      unsigned height, size_t pitch, bool is_idle)
 {
-   struct ffemu_video_data ffemu_data = {0};
+   bool has_gpu_record = false;
+   uint8_t *gpu_buf    = NULL;
+   struct ffemu_video_data 
+      ffemu_data       = {0};
 
-   ffemu_data.pitch   = pitch;
-   ffemu_data.width   = width;
-   ffemu_data.height  = height;
-   ffemu_data.data    = data;
+   video_driver_get_record_status(&has_gpu_record,
+         &gpu_buf);
 
-   if (video_driver_has_gpu_record())
+   ffemu_data.pitch    = pitch;
+   ffemu_data.width    = width;
+   ffemu_data.height   = height;
+   ffemu_data.data     = data;
+
+   if (has_gpu_record)
    {
-      uint8_t *gpu_buf         = NULL;
       struct video_viewport vp = {0};
 
       video_driver_get_viewport_info(&vp);
@@ -205,7 +210,7 @@ void recording_dump_frame(const void *data, unsigned width,
                msg_hash_to_str(MSG_VIEWPORT_SIZE_CALCULATION_FAILED));
          command_event(CMD_EVENT_GPU_RECORD_DEINIT, NULL);
 
-         recording_dump_frame(data, width, height, pitch);
+         recording_dump_frame(data, width, height, pitch, is_idle);
          return;
       }
 
@@ -222,14 +227,13 @@ void recording_dump_frame(const void *data, unsigned width,
          return;
       }
 
-      gpu_buf = video_driver_get_gpu_record();
       if (!gpu_buf)
          return;
 
       /* Big bottleneck.
        * Since we might need to do read-backs asynchronously,
        * it might take 3-4 times before this returns true. */
-      if (!video_driver_read_viewport(gpu_buf))
+      if (!video_driver_read_viewport(gpu_buf, is_idle))
          return;
 
       ffemu_data.pitch  = recording_gpu_width * 3;
@@ -240,7 +244,7 @@ void recording_dump_frame(const void *data, unsigned width,
       ffemu_data.pitch  = -ffemu_data.pitch;
    }
 
-   if (!video_driver_has_gpu_record())
+   if (!has_gpu_record)
       ffemu_data.is_dupe = !data;
 
    if (recording_driver && recording_driver->push_video)

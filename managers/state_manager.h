@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2014-2015 - Alfred Agrell
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2014-2017 - Alfred Agrell
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -40,7 +40,9 @@ void state_manager_event_init(unsigned rewind_buffer_size);
  *
  * Checks if rewind toggle/hold was being pressed and/or held.
  **/
-void state_manager_check_rewind(bool pressed, unsigned rewind_granularity);
+bool state_manager_check_rewind(bool pressed,
+      unsigned rewind_granularity, bool is_paused,
+      char *s, size_t len, unsigned *time);
 
 RETRO_END_DECLS
 

@@ -314,6 +314,8 @@ const char *config_get_default_video(void)
          return "caca";
       case VIDEO_GDI:
          return "gdi";
+      case VIDEO_VGA:
+         return "vga";
       case VIDEO_NULL:
          break;
    }
@@ -374,6 +376,8 @@ const char *config_get_default_input(void)
       	 return "qnx_input";
       case INPUT_RWEBINPUT:
       	 return "rwebinput";
+      case INPUT_DOS:
+         return "dos";
       case INPUT_NULL:
           break;
    }
@@ -430,6 +434,8 @@ const char *config_get_default_joypad(void)
          return "hid";
       case JOYPAD_QNX:
          return "qnx";
+      case JOYPAD_DOS:
+         return "dos";
       case JOYPAD_NULL:
          break;
    }
@@ -722,6 +728,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("all_users_control_menu",        &settings->input.all_users_control_menu, true, all_users_control_menu, false);
    SETTING_BOOL("menu_swap_ok_cancel_buttons",                 &settings->input.menu_swap_ok_cancel_buttons, true, menu_swap_ok_cancel_buttons, false);
 #ifdef HAVE_NETWORKING
+   SETTING_BOOL("netplay_public_announce",       &settings->netplay.public_announce, true, netplay_public_announce, false);
    SETTING_BOOL("netplay_stateless_mode",        &settings->netplay.stateless_mode, false, netplay_stateless_mode, false);
    SETTING_BOOL("netplay_client_swap_input",     &settings->netplay.swap_input, true, netplay_client_swap_input, false);
 #endif
@@ -958,6 +965,8 @@ static struct config_int_setting *populate_settings_int(settings_t *settings, in
 #ifdef HAVE_NETWORKING
    SETTING_INT("netplay_ip_port",              &settings->netplay.port,         true, RARCH_DEFAULT_PORT, false);
    SETTING_INT("netplay_check_frames",         (unsigned*)&settings->netplay.check_frames, true, netplay_check_frames, false);
+   SETTING_INT("netplay_input_latency_frames_min",&settings->netplay.input_latency_frames_min, true, 0, false);
+   SETTING_INT("netplay_input_latency_frames_range",&settings->netplay.input_latency_frames_range, true, 0, false);
 #endif
 #ifdef HAVE_LANGEXTRA
    SETTING_INT("user_language",                &settings->user_language, true, RETRO_LANGUAGE_ENGLISH, false);
@@ -2196,15 +2205,23 @@ static bool config_load_file(const char *path, bool set_defaults,
    config_read_keybinds_conf(conf);
 
    ret = true;
-   
-   for(i = FILE_PATH_CGP_EXTENSION; i <= FILE_PATH_SLANGP_EXTENSION; i++)
+
    {
-      if(strstr(file_path_str((enum file_path_enum)(i)), path_get_extension(settings->path.shader)))
+      const char *shader_ext = path_get_extension(settings->path.shader);
+
+      if (!string_is_empty(shader_ext))
       {
-         if (!check_shader_compatibility((enum file_path_enum)i))
+         for(i = FILE_PATH_CGP_EXTENSION; i <= FILE_PATH_SLANGP_EXTENSION; i++)
          {
-            /* TODO/FIXME - this check is always triggered even with an empty shader path */
-            RARCH_LOG("Incompatible shader for backend %s, clearing...\n", settings->video.driver);
+            enum file_path_enum ext = (enum file_path_enum)(i);
+            if(!strstr(file_path_str(ext), shader_ext))
+               continue;
+
+            if (check_shader_compatibility(ext))
+               continue;
+
+            RARCH_LOG("Incompatible shader for backend %s, clearing...\n",
+                  settings->video.driver);
             settings->path.shader[0] = '\0';
             break;
          }
@@ -3339,10 +3356,9 @@ bool config_save_overrides(int override_type)
 /* Replaces currently loaded configuration file with
  * another one. Will load a dummy core to flush state
  * properly. */
-bool config_replace(char *path)
+bool config_replace(bool config_save_on_exit, char *path)
 {
    content_ctx_info_t content_info = {0};
-   settings_t *settings            = config_get_ptr();
 
    if (!path)
       return false;
@@ -3352,7 +3368,7 @@ bool config_replace(char *path)
    if (string_is_equal(path, path_get(RARCH_PATH_CONFIG)))
       return false;
 
-   if (settings->config_save_on_exit && !path_is_empty(RARCH_PATH_CONFIG))
+   if (config_save_on_exit && !path_is_empty(RARCH_PATH_CONFIG))
       config_save_file(path_get(RARCH_PATH_CONFIG));
 
    path_set(RARCH_PATH_CONFIG, path);

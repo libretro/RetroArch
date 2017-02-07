@@ -853,6 +853,10 @@ static void retroarch_parse_input(int argc, char *argv[])
             retroarch_fail(1, "retroarch_parse_input()");
       }
    }
+   
+#ifdef HAVE_GIT_VERSION
+   RARCH_LOG("This is RetroArch version %s (Git %s)\n", PACKAGE_VERSION, retroarch_git_version);
+#endif
 
    if (explicit_menu)
    {
@@ -886,8 +890,6 @@ static void retroarch_parse_input(int argc, char *argv[])
       retroarch_set_current_core_type(CORE_TYPE_PLAIN, false);
       path_set_special(argv + optind, argc - optind);
    }
-   else
-      content_set_does_not_need_content();
 
    /* Copy SRM/state dirs used, so they can be reused on reentrancy. */
    if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL) &&
@@ -1080,7 +1082,7 @@ bool retroarch_main_init(int argc, char *argv[])
    {
 #ifdef HAVE_MENU
       /* Check if menu was active prior to core initialization */
-      if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+      if (menu_driver_is_alive())
       {
          /* Attempt initializing dummy core */
          current_core_type = CORE_TYPE_DUMMY;
@@ -1263,9 +1265,13 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_INIT, NULL);
          break;
       case RARCH_CTL_SET_PATHS_REDIRECT:
-         if (content_does_not_need_content())
-            return false;
-         path_set_redirect();
+         {
+            bool contentless = false;
+            bool is_inited   = false;
+            content_get_status(&contentless, &is_inited);
+
+            path_set_redirect();
+         }
          break;
       case RARCH_CTL_IS_SRAM_LOAD_DISABLED:
          return rarch_is_sram_load_disabled;
@@ -1286,8 +1292,13 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_IS_SRAM_USED:
          return rarch_use_sram;
       case RARCH_CTL_SET_SRAM_ENABLE:
-         rarch_use_sram = rarch_ctl(RARCH_CTL_IS_PLAIN_CORE, NULL)
-            && !content_does_not_need_content();
+         {
+            bool contentless = false;
+            bool is_inited   = false;
+            content_get_status(&contentless, &is_inited);
+            rarch_use_sram = rarch_ctl(RARCH_CTL_IS_PLAIN_CORE, NULL)
+               && !contentless;
+         }
          break;
       case RARCH_CTL_SET_SRAM_ENABLE_FORCE:
          rarch_use_sram = true;

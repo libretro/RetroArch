@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -30,6 +30,10 @@
 #ifdef ANDROID
 #include <android/keycodes.h>
 #include "drivers_keyboard/keyboard_event_android.h"
+#endif
+
+#ifdef DJGPP
+#include "drivers_keyboard/keyboard_event_dos.h"
 #endif
 
 #ifdef __QNX__
@@ -1307,6 +1311,100 @@ const struct rarch_key_map rarch_key_map_apple_hid[] = {
    /* { ?, RETROK_POWER }, */
    /* { ?, RETROK_EURO }, */
    /* { ?, RETROK_UNDO }, */
+   { 0, RETROK_UNKNOWN }
+};
+#endif
+
+#ifdef DJGPP
+const struct rarch_key_map rarch_key_map_dos[] = {
+   { DOSKEY_ESCAPE, RETROK_ESCAPE },
+   { DOSKEY_F1, RETROK_F1 },
+   { DOSKEY_F2, RETROK_F2 },
+   { DOSKEY_F3, RETROK_F3 },
+   { DOSKEY_F4, RETROK_F4 },
+   { DOSKEY_F5, RETROK_F5 },
+   { DOSKEY_F6, RETROK_F6 },
+   { DOSKEY_F7, RETROK_F7 },
+   { DOSKEY_F8, RETROK_F8 },
+   { DOSKEY_F9, RETROK_F9 },
+   { DOSKEY_F10, RETROK_F10 },
+
+   { DOSKEY_BACKQUOTE, RETROK_BACKQUOTE },
+   { DOSKEY_1, RETROK_1 },
+   { DOSKEY_2, RETROK_2 },
+   { DOSKEY_3, RETROK_3 },
+   { DOSKEY_4, RETROK_4 },
+   { DOSKEY_5, RETROK_5 },
+   { DOSKEY_6, RETROK_6 },
+   { DOSKEY_7, RETROK_7 },
+   { DOSKEY_8, RETROK_8 },
+   { DOSKEY_9, RETROK_9 },
+   { DOSKEY_0, RETROK_0 },
+   { DOSKEY_MINUS, RETROK_MINUS },
+   { DOSKEY_EQUAL, RETROK_EQUALS },
+   { DOSKEY_BACKSPACE, RETROK_BACKSPACE },
+
+   { DOSKEY_TAB, RETROK_TAB },
+   { DOSKEY_q, RETROK_q },
+   { DOSKEY_w, RETROK_w },
+   { DOSKEY_e, RETROK_e },
+   { DOSKEY_r, RETROK_r },
+   { DOSKEY_t, RETROK_t },
+   { DOSKEY_y, RETROK_y },
+   { DOSKEY_u, RETROK_u },
+   { DOSKEY_i, RETROK_i },
+   { DOSKEY_o, RETROK_o },
+   { DOSKEY_p, RETROK_p },
+   { DOSKEY_LBRACKET, RETROK_LEFTBRACKET },
+   { DOSKEY_RBRACKET, RETROK_RIGHTBRACKET },
+   { DOSKEY_BACKSLASH, RETROK_BACKSLASH },
+
+   { DOSKEY_CAPSLOCK, RETROK_CAPSLOCK },
+   { DOSKEY_a, RETROK_a },
+   { DOSKEY_s, RETROK_s },
+   { DOSKEY_d, RETROK_d },
+   { DOSKEY_f, RETROK_f },
+   { DOSKEY_g, RETROK_g },
+   { DOSKEY_h, RETROK_h },
+   { DOSKEY_j, RETROK_j },
+   { DOSKEY_k, RETROK_k },
+   { DOSKEY_l, RETROK_l },
+   { DOSKEY_SEMICOLON, RETROK_SEMICOLON },
+   { DOSKEY_QUOTE, RETROK_QUOTE },
+   { DOSKEY_RETURN, RETROK_RETURN },
+
+   { DOSKEY_LSHIFT, RETROK_LSHIFT },
+   { DOSKEY_z, RETROK_z },
+   { DOSKEY_x, RETROK_x },
+   { DOSKEY_c, RETROK_c },
+   { DOSKEY_v, RETROK_v },
+   { DOSKEY_b, RETROK_b },
+   { DOSKEY_n, RETROK_n },
+   { DOSKEY_m, RETROK_m },
+   { DOSKEY_COMMA, RETROK_COMMA },
+   { DOSKEY_PERIOD, RETROK_PERIOD },
+   { DOSKEY_SLASH, RETROK_SLASH },
+   { DOSKEY_RSHIFT, RETROK_RSHIFT },
+
+   { DOSKEY_LCTRL, RETROK_LCTRL },
+   { DOSKEY_LSUPER, RETROK_LSUPER },
+   { DOSKEY_LALT, RETROK_LALT },
+   { DOSKEY_SPACE, RETROK_SPACE },
+   { DOSKEY_RALT, RETROK_RALT },
+   { DOSKEY_RSUPER, RETROK_RSUPER },
+   { DOSKEY_MENU, RETROK_MENU },
+   { DOSKEY_RCTRL, RETROK_RCTRL },
+
+   { DOSKEY_UP, RETROK_UP },
+   { DOSKEY_DOWN, RETROK_DOWN },
+   { DOSKEY_LEFT, RETROK_LEFT },
+   { DOSKEY_RIGHT, RETROK_RIGHT },
+
+   { DOSKEY_HOME, RETROK_HOME },
+   { DOSKEY_END, RETROK_END },
+   { DOSKEY_PGUP, RETROK_PAGEUP },
+   { DOSKEY_PGDN, RETROK_PAGEDOWN },
+
    { 0, RETROK_UNKNOWN }
 };
 #endif

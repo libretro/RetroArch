@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2014-2015 - Jean-André Santoni
- *  Copyright (C) 2016      - Andrés Suárez
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2014-2017 - Jean-André Santoni
+ *  Copyright (C) 2016-2017 - Andrés Suárez
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -439,8 +439,9 @@ static void nk_menu_context_reset(void *data)
    nk_menu_init_device(nk);
    nk_menu_context_load_textures(nk, iconpath);
 
-   task_push_image_load(settings->path.menu_wallpaper,
-         menu_display_handle_wallpaper_upload, NULL);
+   if (path_file_exists(settings->path.menu_wallpaper))
+      task_push_image_load(settings->path.menu_wallpaper,
+            menu_display_handle_wallpaper_upload, NULL);
 }
 
 static void nk_menu_context_destroy(void *data)

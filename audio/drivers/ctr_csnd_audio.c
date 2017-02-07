@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2014-2016 - Ali Bouhlel
+ *  Copyright (C) 2014-2017 - Ali Bouhlel
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -16,11 +16,11 @@
 #include <3ds.h>
 #include <string.h>
 #include <malloc.h>
+#include <retro_miscellaneous.h>
 
 #include "../audio_driver.h"
 
 #include "../../performance_counters.h"
-#include "../../runloop.h"
 
 typedef struct
 {
@@ -95,7 +95,8 @@ Result csndPlaySound_custom(int chn, u32 flags, float vol, float pan,
 
 	if (loopMode == CSND_LOOPMODE_NORMAL && paddr1 > paddr0)
 	{
-		// Now that the first block is playing, configure the size of the subsequent blocks
+		/* Now that the first block is playing, 
+       * configure the size of the subsequent blocks */
 		size -= paddr1 - paddr0;
 		CSND_SetBlock(chn, 1, paddr1, size);
 	}
@@ -149,7 +150,9 @@ static void ctr_csnd_audio_free(void *data)
 {
    ctr_csnd_audio_t* ctr = (ctr_csnd_audio_t*)data;
 
-//   csndExit();
+#if 0
+   csndExit();
+#endif
    CSND_SetPlayState(0x8, 0);
    CSND_SetPlayState(0x9, 0);
    csndExecCmds(false);
@@ -160,7 +163,8 @@ static void ctr_csnd_audio_free(void *data)
    free(ctr);
 }
 
-static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t size)
+static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t size,
+      bool is_perfcnt_enable)
 {
    int i;
    uint32_t samples_played                     = 0;
@@ -174,8 +178,8 @@ static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t size)
    (void)samples_played;
    (void)current_tick;
 
-   performance_counter_init(&ctraudio_f, "ctraudio_f");
-   performance_counter_start(&ctraudio_f);
+   performance_counter_init(ctraudio_f, "ctraudio_f");
+   performance_counter_start_plus(is_perfcnt_enable, ctraudio_f);
 
    ctr_csnd_audio_update_playpos(ctr);
 
@@ -207,7 +211,7 @@ static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t size)
    GSPGPU_FlushDataCache(ctr->l, CTR_CSND_AUDIO_SIZE);
    GSPGPU_FlushDataCache(ctr->r, CTR_CSND_AUDIO_SIZE);
 
-   performance_counter_stop(&ctraudio_f);
+   performance_counter_stop_plus(is_perfcnt_enable, ctraudio_f);
 
    return size;
 }
@@ -242,14 +246,13 @@ static bool ctr_csnd_audio_alive(void *data)
    return ctr->playing;
 }
 
-static bool ctr_csnd_audio_start(void *data)
+static bool ctr_csnd_audio_start(void *data, bool is_shutdown)
 {
    ctr_csnd_audio_t* ctr = (ctr_csnd_audio_t*)data;
 
    /* Prevents restarting audio when the menu
     * is toggled off on shutdown */
-
-   if (runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL))
+   if (is_shutdown)
       return true;
 
 #if 0

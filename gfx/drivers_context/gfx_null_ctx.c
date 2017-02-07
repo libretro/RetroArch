@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -25,7 +25,7 @@ static void gfx_ctx_null_swap_interval(void *data, unsigned interval)
 }
 
 static void gfx_ctx_null_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
 {
    (void)data;
    (void)quit;
@@ -108,7 +108,7 @@ static void gfx_ctx_null_bind_hw_render(void *data, bool enable)
    (void)enable;
 }
 
-static void *gfx_ctx_null_init(video_frame_info_t video_info, void *video_driver)
+static void *gfx_ctx_null_init(video_frame_info_t *video_info, void *video_driver)
 {
    (void)video_driver;
 

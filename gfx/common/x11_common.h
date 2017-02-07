@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -72,7 +72,7 @@ bool x11_get_metrics(void *data,
       enum display_metric_types type, float *value);
 
 void x11_check_window(void *data, bool *quit,
-   bool *resize, unsigned *width, unsigned *height);
+   bool *resize, unsigned *width, unsigned *height, bool is_shutdown);
 
 void x11_get_video_size(void *data, unsigned *width, unsigned *height);
 

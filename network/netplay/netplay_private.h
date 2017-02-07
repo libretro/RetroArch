@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C)      2016 - Gregor Richards
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Gregor Richards
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -210,6 +210,7 @@ enum rarch_netplay_stall_reason
 {
    NETPLAY_STALL_NONE = 0,
    NETPLAY_STALL_RUNNING_FAST,
+   NETPLAY_STALL_INPUT_LATENCY,
    NETPLAY_STALL_SERVER_REQUESTED,
    NETPLAY_STALL_NO_CONNECTION
 };
@@ -357,9 +358,14 @@ struct netplay
    /* The size of our packet buffers */
    size_t packet_buffer_size;
 
-   /* The current frame seen by the frontend */
+   /* The frame we're currently inputting */
    size_t self_ptr;
    uint32_t self_frame_count;
+
+   /* The frame we're currently running, which may be behind the frame we're
+    * currently inputting if we're using input latency */
+   size_t run_ptr;
+   uint32_t run_frame_count;
 
    /* The first frame at which some data might be unreliable */
    size_t other_ptr;
@@ -436,6 +442,9 @@ struct netplay
    retro_time_t frame_run_time[NETPLAY_FRAME_RUN_TIME_WINDOW];
    int frame_run_time_ptr;
    retro_time_t frame_run_time_sum, frame_run_time_avg;
+
+   /* Latency frames and limits */
+   unsigned input_latency_frames;
 
    /* Are we stalled? */
    enum rarch_netplay_stall_reason stall;

@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2014-2015 - Ali Bouhlel
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2014-2017 - Ali Bouhlel
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -35,7 +35,6 @@
 #include "../font_driver.h"
 
 #include "../../defines/psp_defines.h"
-#include "../../runloop.h"
 
 #ifndef SCEGU_SCR_WIDTH
 #define SCEGU_SCR_WIDTH 480
@@ -249,7 +248,8 @@ static INLINE void psp_set_tex_coords (psp1_sprite_t* framecoords,
    }
 }
 
-static void psp_update_viewport(psp1_video_t* psp);
+static void psp_update_viewport(psp1_video_t* psp,
+      video_frame_info_t *video_info);
 
 static void psp_on_vblank(u32 sub, psp1_video_t *psp)
 {
@@ -262,10 +262,13 @@ static void *psp_init(const video_info_t *video,
 {
    /* TODO : add ASSERT() checks or use main RAM if 
     * VRAM is too low for desired video->input_scale. */
-   void *pspinput = NULL;
+
    int pixel_format, lut_pixel_format, lut_block_count;
    unsigned int red_shift, color_mask;
-   void *displayBuffer, *LUT_r, *LUT_b;
+   void *pspinput           = NULL;
+   void *displayBuffer      = NULL;
+   void *LUT_r              = NULL;
+   void *LUT_b              = NULL;
    psp1_video_t *psp        = (psp1_video_t*)calloc(1, sizeof(psp1_video_t));
 
    if (!psp)
@@ -531,11 +534,11 @@ static bool psp_frame(void *data, const void *frame,
 
    psp->draw_buffer = FROM_GU_POINTER(sceGuSwapBuffers());
 
-   performance_counter_init(&psp_frame_run, "psp_frame_run");
-   performance_counter_start(&psp_frame_run);
+   performance_counter_init(psp_frame_run, "psp_frame_run");
+   performance_counter_start_plus(video_info->is_perfcnt_enable, psp_frame_run);
 
    if (psp->should_resize)
-      psp_update_viewport(psp);
+      psp_update_viewport(psp, video_info);
 
    psp_set_tex_coords(psp->frame_coords, width, height);
 
@@ -565,7 +568,7 @@ static bool psp_frame(void *data, const void *frame,
 
    sceGuFinish();
 
-   performance_counter_stop(&psp_frame_run);
+   performance_counter_stop_plus(video_info->is_perfcnt_enable, psp_frame_run);
 
 #ifdef HAVE_MENU
    menu_driver_frame(video_info);
@@ -697,7 +700,8 @@ static void psp_set_texture_enable(void *data, bool state, bool full_screen)
       psp->menu.active = state;
 }
 
-static void psp_update_viewport(psp1_video_t* psp)
+static void psp_update_viewport(psp1_video_t* psp,
+      video_frame_info_t *video_info)
 {
    int x                = 0;
    int y                = 0;
@@ -871,7 +875,7 @@ static void psp_get_poke_interface(void *data,
    *iface = &psp_poke_interface;
 }
 
-static bool psp_read_viewport(void *data, uint8_t *buffer)
+static bool psp_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    void* src_buffer;
    int i, j, src_bufferwidth, src_pixelformat, src_x, src_y, src_x_max, src_y_max;

@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -44,7 +44,7 @@ static const font_renderer_driver_t *font_backends[] = {
    NULL
 };
 
-static void *video_font_driver;
+static void *video_font_driver = NULL;
 
 int font_renderer_create_default(const void **data, void **handle,
       const char *font_path, unsigned font_size)
@@ -95,14 +95,16 @@ static const font_renderer_t *d3d_font_backends[] = {
 
 static bool d3d_font_init_first(
       const void **font_driver, void **font_handle,
-      void *video_data, const char *font_path, float font_size)
+      void *video_data, const char *font_path,
+      float font_size, bool is_threaded)
 {
    unsigned i;
 
    for (i = 0; i < ARRAY_SIZE(d3d_font_backends); i++)
    {
       void *data = d3d_font_backends[i]->init(
-            video_data, font_path, font_size);
+            video_data, font_path, font_size,
+            is_threaded);
 
       if (!data)
          continue;
@@ -128,14 +130,16 @@ static const font_renderer_t *gl_font_backends[] = {
 
 static bool gl_font_init_first(
       const void **font_driver, void **font_handle,
-      void *video_data, const char *font_path, float font_size)
+      void *video_data, const char *font_path,
+      float font_size, bool is_threaded)
 {
    unsigned i;
 
    for (i = 0; gl_font_backends[i]; i++)
    {
       void *data = gl_font_backends[i]->init(
-            video_data, font_path, font_size);
+            video_data, font_path, font_size,
+            is_threaded);
 
       if (!data)
          continue;
@@ -157,19 +161,52 @@ static const font_renderer_t *caca_font_backends[] = {
 
 static bool caca_font_init_first(
       const void **font_driver, void **font_handle,
-      void *video_data, const char *font_path, float font_size)
+      void *video_data, const char *font_path,
+      float font_size, bool is_threaded)
 {
    unsigned i;
 
    for (i = 0; caca_font_backends[i]; i++)
    {
       void *data = caca_font_backends[i]->init(
-            video_data, font_path, font_size);
+            video_data, font_path, font_size,
+            is_threaded);
 
       if (!data)
          continue;
 
       *font_driver = caca_font_backends[i];
+      *font_handle = data;
+      return true;
+   }
+
+   return false;
+}
+#endif
+
+#ifdef DJGPP
+static const font_renderer_t *vga_font_backends[] = {
+   &vga_font,
+   NULL,
+};
+
+static bool vga_font_init_first(
+      const void **font_driver, void **font_handle,
+      void *video_data, const char *font_path,
+      float font_size, bool is_threaded)
+{
+   unsigned i;
+
+   for (i = 0; vga_font_backends[i]; i++)
+   {
+      void *data = vga_font_backends[i]->init(
+            video_data, font_path, font_size,
+            is_threaded);
+
+      if (!data)
+         continue;
+
+      *font_driver = vga_font_backends[i];
       *font_handle = data;
       return true;
    }
@@ -186,14 +223,16 @@ static const font_renderer_t *gdi_font_backends[] = {
 
 static bool gdi_font_init_first(
       const void **font_driver, void **font_handle,
-      void *video_data, const char *font_path, float font_size)
+      void *video_data, const char *font_path,
+      float font_size, bool is_threaded)
 {
    unsigned i;
 
    for (i = 0; gdi_font_backends[i]; i++)
    {
       void *data = gdi_font_backends[i]->init(
-            video_data, font_path, font_size);
+            video_data, font_path, font_size,
+            is_threaded);
 
       if (!data)
          continue;
@@ -215,13 +254,16 @@ static const font_renderer_t *vulkan_font_backends[] = {
 
 static bool vulkan_font_init_first(
       const void **font_driver, void **font_handle,
-      void *video_data, const char *font_path, float font_size)
+      void *video_data, const char *font_path,
+      float font_size, bool is_threaded)
 {
    unsigned i;
 
    for (i = 0; vulkan_font_backends[i]; i++)
    {
-      void *data = vulkan_font_backends[i]->init(video_data, font_path, font_size);
+      void *data = vulkan_font_backends[i]->init(video_data,
+            font_path, font_size,
+            is_threaded);
 
       if (!data)
          continue;
@@ -242,14 +284,16 @@ static const font_renderer_t *vita2d_font_backends[] = {
 
 static bool vita2d_font_init_first(
       const void **font_driver, void **font_handle,
-      void *video_data, const char *font_path, float font_size)
+      void *video_data, const char *font_path,
+      float font_size, bool is_threaded)
 {
    unsigned i;
 
    for (i = 0; vita2d_font_backends[i]; i++)
    {
       void *data = vita2d_font_backends[i]->init(
-            video_data, font_path, font_size);
+            video_data, font_path, font_size,
+            is_threaded);
 
       if (!data)
          continue;
@@ -270,14 +314,16 @@ static const font_renderer_t *ctr_font_backends[] = {
 
 static bool ctr_font_init_first(
       const void **font_driver, void **font_handle,
-      void *video_data, const char *font_path, float font_size)
+      void *video_data, const char *font_path,
+      float font_size, bool is_threaded)
 {
    unsigned i;
 
    for (i = 0; ctr_font_backends[i]; i++)
    {
       void *data = ctr_font_backends[i]->init(
-            video_data, font_path, font_size);
+            video_data, font_path, font_size,
+            is_threaded);
 
       if (!data)
          continue;
@@ -294,7 +340,7 @@ static bool ctr_font_init_first(
 static bool font_init_first(
       const void **font_driver, void **font_handle,
       void *video_data, const char *font_path, float font_size,
-      enum font_driver_render_api api)
+      enum font_driver_render_api api, bool is_threaded)
 {
    if (font_path && !font_path[0])
       font_path = NULL;
@@ -304,37 +350,42 @@ static bool font_init_first(
 #ifdef HAVE_D3D
       case FONT_DRIVER_RENDER_DIRECT3D_API:
          return d3d_font_init_first(font_driver, font_handle,
-               video_data, font_path, font_size);
+               video_data, font_path, font_size, is_threaded);
 #endif
 #ifdef HAVE_OPENGL
       case FONT_DRIVER_RENDER_OPENGL_API:
          return gl_font_init_first(font_driver, font_handle,
-               video_data, font_path, font_size);
+               video_data, font_path, font_size, is_threaded);
 #endif
 #ifdef HAVE_VULKAN
       case FONT_DRIVER_RENDER_VULKAN_API:
          return vulkan_font_init_first(font_driver, font_handle,
-               video_data, font_path, font_size);
+               video_data, font_path, font_size, is_threaded);
 #endif
 #ifdef HAVE_VITA2D
       case FONT_DRIVER_RENDER_VITA2D:
          return vita2d_font_init_first(font_driver, font_handle,
-               video_data, font_path, font_size);
+               video_data, font_path, font_size, is_threaded);
 #endif
 #ifdef _3DS
       case FONT_DRIVER_RENDER_CTR:
          return ctr_font_init_first(font_driver, font_handle,
-               video_data, font_path, font_size);
+               video_data, font_path, font_size, is_threaded);
 #endif
 #ifdef HAVE_CACA
       case FONT_DRIVER_RENDER_CACA:
          return caca_font_init_first(font_driver, font_handle,
-               video_data, font_path, font_size);
+               video_data, font_path, font_size, is_threaded);
 #endif
 #if defined(_WIN32) && !defined(_XBOX)
       case FONT_DRIVER_RENDER_GDI:
          return gdi_font_init_first(font_driver, font_handle,
-               video_data, font_path, font_size);
+               video_data, font_path, font_size, is_threaded);
+#endif
+#ifdef DJGPP
+      case FONT_DRIVER_RENDER_VGA:
+         return vga_font_init_first(font_driver, font_handle,
+               video_data, font_path, font_size, is_threaded);
 #endif
       case FONT_DRIVER_RENDER_DONT_CARE:
          /* TODO/FIXME - lookup graphics driver's 'API' */
@@ -386,8 +437,13 @@ void font_driver_free(void *font_data)
 
    if (font)
    {
+      bool is_threaded        = false;
+#ifdef HAVE_THREADS
+      is_threaded             = video_driver_is_threaded();
+#endif
+
       if (font->renderer && font->renderer->free)
-         font->renderer->free(font->renderer_data);
+         font->renderer->free(font->renderer_data, is_threaded);
 
       font->renderer      = NULL;
       font->renderer_data = NULL;
@@ -400,20 +456,23 @@ font_data_t *font_driver_init_first(
       void *video_data, const char *font_path, float font_size,
       bool threading_hint, enum font_driver_render_api api)
 {
-   const void *font_driver;
-   void *font_handle;
-   bool ok = false;
-
+   const void *font_driver = NULL;
+   void *font_handle       = NULL;
+   bool ok                 = false;
+   bool is_threaded        = false;
 #ifdef HAVE_THREADS
-   if (threading_hint 
-         && video_driver_is_threaded() 
+   is_threaded             = video_driver_is_threaded();
+
+   if (     threading_hint 
+         && is_threaded 
          && !video_driver_is_hw_context())
       ok = video_thread_font_init(&font_driver, &font_handle,
-            video_data, font_path, font_size, api, font_init_first);
+            video_data, font_path, font_size, api, font_init_first,
+            is_threaded);
    else
 #endif
    ok = font_init_first(&font_driver, &font_handle,
-         video_data, font_path, font_size, api);
+         video_data, font_path, font_size, api, is_threaded);
 
    if (ok)
    {

@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2014 - OV2
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -125,7 +125,7 @@ static void gfx_ctx_d3d_show_mouse(void *data, bool state)
 
 static void gfx_ctx_d3d_check_window(void *data, bool *quit,
       bool *resize, unsigned *width,
-      unsigned *height)
+      unsigned *height, bool is_shutdown)
 {
    win32_check_window(quit, resize, width, height);
 }
@@ -165,7 +165,7 @@ static bool gfx_ctx_d3d_bind_api(void *data,
 #endif
 }
 
-static void *gfx_ctx_d3d_init(video_frame_info_t video_info, void *video_driver)
+static void *gfx_ctx_d3d_init(video_frame_info_t *video_info, void *video_driver)
 {
    win32_monitor_init();
 

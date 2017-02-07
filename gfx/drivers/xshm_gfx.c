@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2016-2016 - Alfred Agrell
+ *  Copyright (C) 2016-2017 - Alfred Agrell
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -158,7 +158,7 @@ static void xshm_gfx_viewport_info(void *data, struct video_viewport *vp)
    
 }
 
-static bool xshm_gfx_read_viewport(void *data, uint8_t *buffer)
+static bool xshm_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    return false;
 }

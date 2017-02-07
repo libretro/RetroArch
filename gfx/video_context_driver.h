@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -67,7 +67,7 @@ typedef struct gfx_ctx_driver
     * to hold a pointer to it as the context never outlives the video driver.
     *
     * The context driver is responsible for it's own data.*/
-   void* (*init)(video_frame_info_t video_info, void *video_driver);
+   void* (*init)(video_frame_info_t *video_info, void *video_driver);
    void (*destroy)(void *data);
 
    /* Which API to bind to. */
@@ -106,7 +106,7 @@ typedef struct gfx_ctx_driver
    /* Queries for resize and quit events.
     * Also processes events. */
    void (*check_window)(void*, bool*, bool*,
-         unsigned*, unsigned*);
+         unsigned*, unsigned*, bool);
 
    /* Acknowledge a resize event. This is needed for some APIs.
     * Most backends will ignore this. */

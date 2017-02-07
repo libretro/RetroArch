@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2014-2016 - Jean-André Santoni
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2014-2017 - Jean-André Santoni
+ *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -96,6 +96,9 @@ enum
    XMB_TEXTURE_MUSICS,
    XMB_TEXTURE_MOVIES,
 #endif
+#ifdef HAVE_NETWORKING
+   XMB_TEXTURE_NETPLAY,
+#endif
 #ifdef HAVE_IMAGEVIEWER
    XMB_TEXTURE_IMAGES,
 #endif
@@ -151,10 +154,15 @@ enum
 #ifdef HAVE_IMAGEVIEWER
    XMB_SYSTEM_TAB_IMAGES,
 #endif
-   XMB_SYSTEM_TAB_ADD
+   XMB_SYSTEM_TAB_ADD,
+#ifdef HAVE_NETWORKING
+   XMB_SYSTEM_TAB_NETPLAY
+#endif
 };
 
-#ifdef HAVE_LIBRETRODB
+#ifdef HAVE_NETWORKING
+#define XMB_SYSTEM_TAB_END XMB_SYSTEM_TAB_NETPLAY
+#elif defined(HAVE_LIBRETRODB)
 #define XMB_SYSTEM_TAB_END XMB_SYSTEM_TAB_ADD
 #elif defined(HAVE_IMAGEVIEWER)
 #define XMB_SYSTEM_TAB_END XMB_SYSTEM_TAB_IMAGES
@@ -163,6 +171,7 @@ enum
 #else
 #define XMB_SYSTEM_TAB_END XMB_SYSTEM_TAB_HISTORY
 #endif
+
 
 typedef struct xmb_handle
 {
@@ -300,6 +309,7 @@ typedef struct xmb_handle
    xmb_node_t settings_tab_node;
    xmb_node_t history_tab_node;
    xmb_node_t add_tab_node;
+   xmb_node_t netplay_tab_node;
 
    font_data_t *font;
    font_data_t *font2;
@@ -391,6 +401,8 @@ const char* xmb_theme_ident(void)
          return "neoactive";
       case XMB_ICON_THEME_SYSTEMATIC:
          return "systematic";
+      case XMB_ICON_THEME_DOTART:
+         return "dot-art";
       case XMB_ICON_THEME_CUSTOM:
          return "custom";
       case XMB_ICON_THEME_MONOCHROME:
@@ -615,9 +627,9 @@ static void xmb_draw_thumbnail(
    struct video_coords coords;
    math_matrix_4x4 mymat;
    float shadow[16];
-   float y                  = 
+   float y                  =
       xmb->margins.screen.top + xmb->icon.size + h;
-   float x                  = 
+   float x                  =
       xmb->margins.screen.left + xmb->icon.spacing.horizontal +
       xmb->icon.spacing.horizontal*4 - xmb->icon.size / 4;
 
@@ -738,23 +750,24 @@ static void xmb_render_keyboard(xmb_handle_t *xmb,
 
    for (i = 0; i < 44; i++)
    {
-      int line_y        = (i / 11) * height / 10.0;
-      uintptr_t texture = xmb->textures.list[XMB_TEXTURE_KEY];
+      int line_y = (i / 11) * height / 10.0;
 
       if (i == id)
-         texture = xmb->textures.list[XMB_TEXTURE_KEY_HOVER];
+      {
+         uintptr_t texture = xmb->textures.list[XMB_TEXTURE_KEY_HOVER];
 
-      menu_display_blend_begin();
+         menu_display_blend_begin();
 
-      menu_display_draw_texture(
-            width/2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width,
-            height/2.0 + ptr_height*1.5 + line_y,
-            ptr_width, ptr_height,
-            width, height,
-            &white[0],
-            texture);
+         menu_display_draw_texture(
+               width/2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width,
+               height/2.0 + ptr_height*1.5 + line_y,
+               ptr_width, ptr_height,
+               width, height,
+               &white[0],
+               texture);
 
-      menu_display_blend_end();
+         menu_display_blend_end();
+      }
 
       menu_display_draw_text(xmb->font, grid[i],
             width/2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width + ptr_width/2.0,
@@ -932,7 +945,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
    fill_pathname_join(xmb->thumbnail_file_path, xmb->thumbnail_file_path,
          xmb_thumbnails_ident(), sizeof(xmb->thumbnail_file_path));
 
-   /* Scrub characters that are not cross-platform and/or violate the 
+   /* Scrub characters that are not cross-platform and/or violate the
     * No-Intro filename standard:
     * http://datomatic.no-intro.org/stuff/The%20Official%20No-Intro%20Convention%20(20071030).zip
     * Replace these characters in the entry name with underscores.
@@ -961,7 +974,6 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 {
    menu_entry_t entry;
    settings_t     *settings = config_get_ptr();
-   global_t         *global = global_get_ptr();
    xmb_handle_t     *xmb    = (xmb_handle_t*)data;
    playlist_t     *playlist = NULL;
 
@@ -991,17 +1003,21 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
          || (string_is_equal(entry.label, "savestate"))))
    {
       char path[PATH_MAX_LENGTH];
+      global_t         *global = global_get_ptr();
 
       path[0] = '\0';
 
-      if (settings->state_slot > 0)
-         snprintf(path, sizeof(path), "%s%d",
-               global->name.savestate, settings->state_slot);
-      else if (settings->state_slot < 0)
-         fill_pathname_join_delim(path,
-               global->name.savestate, "auto", '.', sizeof(path));
-      else
-         strlcpy(path, global->name.savestate, sizeof(path));
+      if (global)
+      {
+         if (settings->state_slot > 0)
+            snprintf(path, sizeof(path), "%s%d",
+                  global->name.savestate, settings->state_slot);
+         else if (settings->state_slot < 0)
+            fill_pathname_join_delim(path,
+                  global->name.savestate, "auto", '.', sizeof(path));
+         else
+            strlcpy(path, global->name.savestate, sizeof(path));
+      }
 
       strlcat(path, file_path_str(FILE_PATH_PNG_EXTENSION), sizeof(path));
 
@@ -1474,6 +1490,10 @@ static xmb_node_t* xmb_get_node(xmb_handle_t *xmb, unsigned i)
          return &xmb->history_tab_node;
       case XMB_SYSTEM_TAB_ADD:
          return &xmb->add_tab_node;
+#ifdef HAVE_NETWORKING
+      case XMB_SYSTEM_TAB_NETPLAY:
+         return &xmb->netplay_tab_node;
+#endif
       default:
          if (i > xmb->system_tab_end)
             return xmb_get_userdata_from_horizontal_list(
@@ -2104,8 +2124,6 @@ static void xmb_draw_items(
       char ticker_str[PATH_MAX_LENGTH];
       char name[255];
       char value[255];
-      char entry_value[255];
-      char entry_sublabel[255];
       menu_entry_t entry;
       const float half_size             = xmb->icon.size / 2.0f;
       uintptr_t texture_switch          = 0;
@@ -2128,7 +2146,7 @@ static void xmb_draw_items(
       entry.type          = 0;
       entry.spacing       = 0;
 
-      ticker_str[0] = name[0] = value[0] = entry_sublabel[0] = entry_value[0] = '\0';
+      ticker_str[0] = name[0] = value[0] = '\0';
 
       icon_y = xmb->margins.screen.top + node->y + half_size;
 
@@ -2146,23 +2164,20 @@ static void xmb_draw_items(
 
       menu_entry_get(&entry, 0, i, list, true);
 
-
       if (entry.type == FILE_TYPE_CONTENTLIST_ENTRY)
          fill_short_pathname_representation(entry.path, entry.path,
                sizeof(entry.path));
 
-      menu_entry_get_value(i, list, entry_value, sizeof(entry_value));
-
-      if (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
-         (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))))
+      if (string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
+         (string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))))
       {
          if (xmb->textures.list[XMB_TEXTURE_SWITCH_OFF])
             texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_OFF];
          else
             do_draw_text = true;
       }
-      else if (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) ||
-            (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))))
+      else if (string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) ||
+            (string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))))
       {
          if (xmb->textures.list[XMB_TEXTURE_SWITCH_ON])
             texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_ON];
@@ -2171,7 +2186,7 @@ static void xmb_draw_items(
       }
       else
       {
-         enum msg_file_type type = msg_hash_to_file_type(msg_hash_calculate(entry_value));
+         enum msg_file_type type = msg_hash_to_file_type(msg_hash_calculate(entry.value));
 
          switch (type)
          {
@@ -2206,13 +2221,13 @@ static void xmb_draw_items(
          }
       }
 
-      if (string_is_empty(entry_value))
+      if (string_is_empty(entry.value))
       {
          if (xmb->savestate_thumbnail ||
                (!string_is_equal
                 (
                  xmb_thumbnails_ident(),
-                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)) 
+                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))
                 && xmb->thumbnail)
             )
             ticker_limit = 40;
@@ -2232,11 +2247,15 @@ static void xmb_draw_items(
 
       label_offset = xmb->margins.label.top;
       if (i == current && width > 320 && height > 240
-         && menu_entry_get_sublabel(i, entry_sublabel, sizeof(entry_sublabel)))
+         && !string_is_empty(entry.sublabel))
       {
-         label_offset = - xmb->margins.label.top;
+         char entry_sublabel[255];
 
-         word_wrap(entry_sublabel, entry_sublabel, 50);
+         entry_sublabel[0] = '\0';
+
+         label_offset      = - xmb->margins.label.top;
+
+         word_wrap(entry_sublabel, entry.sublabel, 50);
 
          xmb_draw_text(menu_disp_info, xmb, entry_sublabel,
                node->x + xmb->margins.screen.left +
@@ -2256,7 +2275,7 @@ static void xmb_draw_items(
       ticker.s        = value;
       ticker.len      = 35;
       ticker.idx      = frame_count / 20;
-      ticker.str      = entry_value;
+      ticker.str      = entry.value;
       ticker.selected = (i == current);
 
       menu_animation_ticker(&ticker);
@@ -2663,7 +2682,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   menu_disp_info,
                   xmb->icon.size,
                   &mymat,
-                  xmb->textures.list[charging 
+                  xmb->textures.list[charging
                   ? XMB_TEXTURE_BATTERY_CHARGING : XMB_TEXTURE_BATTERY_FULL],
                   width - (xmb->icon.size / 2) - x_pos_icon,
                   xmb->icon.size,
@@ -2904,7 +2923,7 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
    unsigned new_font_size, new_header_height;
    settings_t *settings          = config_get_ptr();
 
-   float scale_factor            = 
+   float scale_factor            =
       (settings->menu.xmb.scale_factor * width) / (1920.0 * 100);
 
    xmb->above_subitem_offset     =   1.5;
@@ -2972,7 +2991,7 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
 {
    unsigned new_font_size, new_header_height;
    settings_t *settings          = config_get_ptr();
-   float scale_factor            = 
+   float scale_factor            =
       ((settings->menu.xmb.scale_factor * width) / (1920.0 * 100)) * 1.5;
 
 #ifdef _3DS
@@ -3117,18 +3136,12 @@ static void xmb_ribbon_set_vertex(float *ribbon_verts,
 static void xmb_init_ribbon(xmb_handle_t * xmb)
 {
    video_coords_t coords;
-   unsigned vertices_total;
    unsigned r, c, col;
    unsigned i                = 0;
-   float *ribbon_verts       = NULL;
-   float *dummy              = NULL;
    video_coord_array_t *ca   = menu_display_get_coords_array();
-
-   vertices_total = XMB_RIBBON_VERTICES;
-
-   dummy          = (float*)calloc(4 * vertices_total, sizeof(float));
-   ribbon_verts   = (float*)calloc(2 * vertices_total, sizeof(float));
-
+   unsigned   vertices_total = XMB_RIBBON_VERTICES;
+   float *dummy              = (float*)calloc(4 * vertices_total, sizeof(float));
+   float *ribbon_verts       = (float*)calloc(2 * vertices_total, sizeof(float));
 
    /* Set up vertices */
    for (r = 0; r < XMB_RIBBON_ROWS - 1; r++)
@@ -3216,6 +3229,9 @@ static void *xmb_init(void **userdata)
 #ifdef HAVE_LIBRETRODB
 	if (settings->menu.xmb.show_add)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_ADD;
+#endif
+#ifdef HAVE_NETWORKING
+   xmb->tabs[++xmb->system_tab_end]    = XMB_SYSTEM_TAB_NETPLAY;
 #endif
 
    menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
@@ -3432,6 +3448,10 @@ static const char *xmb_texture_path(unsigned id)
          return "off.png";
       case XMB_TEXTURE_ADD:
          return "add.png";
+#ifdef HAVE_NETWORKING
+      case XMB_TEXTURE_NETPLAY:
+         return "wifi.png";
+#endif
       case XMB_TEXTURE_KEY:
          return "key.png";
       case XMB_TEXTURE_KEY_HOVER:
@@ -3482,6 +3502,12 @@ static void xmb_context_reset_textures(
    xmb->add_tab_node.icon       = xmb->textures.list[XMB_TEXTURE_ADD];
    xmb->add_tab_node.alpha      = xmb->categories.active.alpha;
    xmb->add_tab_node.zoom       = xmb->categories.active.zoom;
+
+#ifdef HAVE_NETWORKING
+   xmb->netplay_tab_node.icon       = xmb->textures.list[XMB_TEXTURE_NETPLAY];
+   xmb->netplay_tab_node.alpha      = xmb->categories.active.alpha;
+   xmb->netplay_tab_node.zoom       = xmb->categories.active.zoom;
+#endif
 }
 
 static void xmb_context_reset_background(const char *iconpath)
@@ -3794,6 +3820,14 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
                menu_stack->list[stack_size - 1].type =
                   MENU_ADD_TAB;
                break;
+#ifdef HAVE_NETWORKING
+            case XMB_SYSTEM_TAB_NETPLAY:
+               menu_stack->list[stack_size - 1].label =
+                  strdup(msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB));
+               menu_stack->list[stack_size - 1].type =
+                  MENU_NETPLAY_TAB;
+               break;
+#endif
             default:
                menu_stack->list[stack_size - 1].label =
                   strdup(msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU));

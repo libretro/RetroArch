@@ -37,7 +37,6 @@
 #endif
 
 #include "../../frontend/frontend_driver.h"
-#include "../../runloop.h"
 
 typedef struct
 {
@@ -87,7 +86,7 @@ static void gfx_ctx_mali_fbdev_get_video_size(void *data,
    *height = mali->height;
 }
 
-static void *gfx_ctx_mali_fbdev_init(video_frame_info_t video_info, void *video_driver)
+static void *gfx_ctx_mali_fbdev_init(video_frame_info_t *video_info, void *video_driver)
 {
 #ifdef HAVE_EGL
    EGLint n;
@@ -131,7 +130,7 @@ error:
 }
 
 static void gfx_ctx_mali_fbdev_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
 {
    unsigned new_width, new_height;
 

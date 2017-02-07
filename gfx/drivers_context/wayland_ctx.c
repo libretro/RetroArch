@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -43,7 +43,6 @@
 #endif
 
 #include "../../frontend/frontend_driver.h"
-#include "../../runloop.h"
 #include "../../input/input_keyboard.h"
 #include "../../input/input_keymaps.h"
 #include "../../input/input_joypad_driver.h"
@@ -643,7 +642,8 @@ static void flush_wayland_fd(gfx_ctx_wayland_data_t *wl)
 }
 
 static void gfx_ctx_wl_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *width, unsigned *height,
+      bool is_shutdown)
 {
    unsigned new_width, new_height;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
@@ -773,7 +773,7 @@ static bool gfx_ctx_wl_get_metrics(void *data,
    EGL_DEPTH_SIZE,      0
 #endif
 
-static void *gfx_ctx_wl_init(video_frame_info_t video_info, void *video_driver)
+static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
 {
 #ifdef HAVE_OPENGL
    static const EGLint egl_attribs_gl[] = {

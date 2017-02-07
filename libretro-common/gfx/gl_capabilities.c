@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2016 The RetroArch team
+/* Copyright  (C) 2010-2017 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (gl_capabilities.c).
@@ -311,6 +311,8 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
          if (major >= 3)
             return true;
 #else
+         if (strstr(vendor, "ATI Technologies"))
+            return false;
          if (gl_query_extension("ARB_texture_storage"))
             return true;
 #endif

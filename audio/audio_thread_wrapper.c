@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -35,6 +35,7 @@ typedef struct audio_thread
    bool stopped;
    bool stopped_ack;
    bool is_paused;
+   bool is_shutdown;
    bool use_float;
 
    int inited;
@@ -100,7 +101,7 @@ static void audio_thread_loop(void *data)
 
             scond_wait(thr->cond, thr->lock);
          }
-         thr->driver->start(thr->driver_data);
+         thr->driver->start(thr->driver_data, thr->is_shutdown);
       }
 
       slock_unlock(thr->lock);
@@ -197,7 +198,7 @@ static bool audio_thread_stop(void *data)
    return true;
 }
 
-static bool audio_thread_start(void *data)
+static bool audio_thread_start(void *data, bool is_shutdown)
 {
    audio_thread_t *thr = (audio_thread_t*)data;
 
@@ -206,7 +207,8 @@ static bool audio_thread_start(void *data)
 
    audio_driver_enable_callback();
 
-   thr->is_paused = false;
+   thr->is_paused   = false;
+   thr->is_shutdown = is_shutdown;
    audio_thread_unblock(thr);
 
    return true;
@@ -226,7 +228,8 @@ static bool audio_thread_use_float(void *data)
    return thr->use_float;
 }
 
-static ssize_t audio_thread_write(void *data, const void *buf, size_t size)
+static ssize_t audio_thread_write(void *data, const void *buf, size_t size,
+      bool is_perfcnt_enable)
 {
    ssize_t ret;
    audio_thread_t *thr = (audio_thread_t*)data;
@@ -234,7 +237,8 @@ static ssize_t audio_thread_write(void *data, const void *buf, size_t size)
    if (!thr)
       return 0;
 
-   ret = thr->driver->write(thr->driver_data, buf, size);
+   ret = thr->driver->write(thr->driver_data, buf, size,
+         is_perfcnt_enable);
 
    if (ret < 0)
    {
@@ -279,8 +283,8 @@ static const audio_driver_t audio_thread = {
  **/
 bool audio_init_thread(const audio_driver_t **out_driver,
       void **out_data, const char *device, unsigned audio_out_rate,
-      unsigned *new_rate, unsigned block_frames,
-      unsigned latency, const audio_driver_t *drv)
+      unsigned *new_rate, unsigned latency,
+      unsigned block_frames, const audio_driver_t *drv)
 {
    audio_thread_t *thr = (audio_thread_t*)calloc(1, sizeof(*thr));
    if (!thr)

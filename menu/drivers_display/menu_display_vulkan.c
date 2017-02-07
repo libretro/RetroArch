@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2016 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2015 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -66,6 +66,7 @@ static unsigned to_display_pipeline(
    return ((type == MENU_DISPLAY_PRIM_TRIANGLESTRIP) << 1) | (blend << 0);
 }
 
+#ifdef HAVE_SHADERPIPELINE
 static unsigned to_menu_pipeline(
       enum menu_display_prim_type type, unsigned pipeline)
 {
@@ -79,6 +80,7 @@ static unsigned to_menu_pipeline(
          return 0;
    }
 }
+#endif
 
 static void menu_display_vk_viewport(void *data)
 {

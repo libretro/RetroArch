@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -64,6 +65,7 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency,
    unsigned latency_usec          = latency * 1000;
    unsigned channels              = 2;
    unsigned periods               = 4;
+   unsigned orig_rate             = rate;
    const char *alsa_dev           = "default";
    alsa_t *alsa                   = (alsa_t*)calloc(1, sizeof(alsa_t));
 
@@ -96,8 +98,13 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency,
    if (snd_pcm_hw_params_set_channels(alsa->pcm, params, channels) < 0)
       goto error;
 
-   if (snd_pcm_hw_params_set_rate(alsa->pcm, params, rate, 0) < 0)
+   /* Don't allow rate resampling when probing for the default rate (but ignore if this call fails) */
+   snd_pcm_hw_params_set_rate_resample(alsa->pcm, params, 0 );
+   if (snd_pcm_hw_params_set_rate_near(alsa->pcm, params, &rate, 0) < 0)
       goto error;
+
+   if (rate != orig_rate)
+      *new_rate = rate;
 
    if (snd_pcm_hw_params_set_buffer_time_near(
             alsa->pcm, params, &latency_usec, NULL) < 0)
@@ -166,7 +173,8 @@ error:
    return NULL;
 }
 
-static ssize_t alsa_write(void *data, const void *buf_, size_t size_)
+static ssize_t alsa_write(void *data, const void *buf_, size_t size_,
+      bool is_perfcnt_enable)
 {
    alsa_t *alsa              = (alsa_t*)data;
    const uint8_t *buf        = (const uint8_t*)buf_;
@@ -270,7 +278,7 @@ static void alsa_set_nonblock_state(void *data, bool state)
    alsa->nonblock = state;
 }
 
-static bool alsa_start(void *data)
+static bool alsa_start(void *data, bool is_shutdown)
 {
    alsa_t *alsa = (alsa_t*)data;
 

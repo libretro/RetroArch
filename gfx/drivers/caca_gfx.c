@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -40,7 +40,7 @@ static unsigned caca_menu_pitch       = 0;
 static unsigned caca_video_width      = 0;
 static unsigned caca_video_height     = 0;
 static unsigned caca_video_pitch      = 0;
-static bool caca_rgb32                = 0;
+static bool caca_rgb32                = false;
 
 static void caca_gfx_free(void *data);
 
@@ -120,7 +120,7 @@ static bool caca_gfx_frame(void *data, const void *frame,
    if (!frame || !frame_width || !frame_height)
       return true;
 
-   if (  caca_video_width  != frame_width   || 
+   if (  caca_video_width  != frame_width   ||
          caca_video_height != frame_height  ||
          caca_video_pitch  != pitch)
    {
@@ -137,16 +137,19 @@ static bool caca_gfx_frame(void *data, const void *frame,
    if (!caca_cv)
       return true;
 
-   if (caca_menu_frame)
+   if (caca_menu_frame && video_info->menu_is_alive)
       frame_to_copy = caca_menu_frame;
 
    width = caca_get_canvas_width(caca_cv);
    height = caca_get_canvas_height(caca_cv);
 
-   if (  frame_to_copy == frame && 
-         frame_width   == 4 && 
-         frame_height  == 4 && 
+   if (  frame_to_copy == frame &&
+         frame_width   == 4 &&
+         frame_height  == 4 &&
          (frame_width < width && frame_height < height))
+      draw = false;
+
+   if (video_info->menu_is_alive)
       draw = false;
 
    caca_clear_canvas(caca_cv);
@@ -258,7 +261,7 @@ static void caca_gfx_viewport_info(void *data,
    (void)vp;
 }
 
-static bool caca_gfx_read_viewport(void *data, uint8_t *buffer)
+static bool caca_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    (void)data;
    (void)buffer;
@@ -281,9 +284,9 @@ static void caca_set_texture_frame(void *data,
       caca_menu_frame = NULL;
    }
 
-   if ( !caca_menu_frame || 
-         caca_menu_width  != width  || 
-         caca_menu_height != height || 
+   if ( !caca_menu_frame ||
+         caca_menu_width  != width  ||
+         caca_menu_height != height ||
          caca_menu_pitch  != pitch)
       if (pitch && height)
          caca_menu_frame = (unsigned char*)malloc(pitch * height);

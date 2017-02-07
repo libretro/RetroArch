@@ -17,13 +17,18 @@ ifeq ($(GLOBAL_CONFIG_DIR),)
    GLOBAL_CONFIG_DIR = /etc
 endif
 
-OBJ := 
+OBJ :=
 LIBS :=
 DEFINES := -DHAVE_CONFIG_H -DRARCH_INTERNAL -DHAVE_OVERLAY
 DEFINES += -DGLOBAL_CONFIG_DIR='"$(GLOBAL_CONFIG_DIR)"'
 
+ifneq ($(findstring DOS,$(OS)),)
+   CFLAGS += -march=i386
+   LDFLAGS += -lemu
+endif
+
 ifneq ($(findstring Win32,$(OS)),)
-   LDFLAGS += -static-libgcc
+   LDFLAGS += -static-libgcc -lwinmm
 endif
 
 include Makefile.common
@@ -180,7 +185,7 @@ install: $(TARGET)
 	mkdir -p $(DESTDIR)$(PREFIX)/share/applications 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(MAN_DIR)/man6 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(PREFIX)/share/pixmaps 2>/dev/null || /bin/true
-	install -m755 $(TARGET) $(DESTDIR)$(BIN_DIR) 
+	install -m755 $(TARGET) $(DESTDIR)$(BIN_DIR)
 	install -m755 tools/cg2glsl.py $(DESTDIR)$(BIN_DIR)/retroarch-cg2glsl
 	install -m644 retroarch.cfg $(DESTDIR)$(GLOBAL_CONFIG_DIR)/retroarch.cfg
 	install -m644 retroarch.desktop $(DESTDIR)$(PREFIX)/share/applications
@@ -199,6 +204,7 @@ install: $(TARGET)
 		rm -rf $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/xmb/retroactive/src; \
 		rm -rf $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/xmb/neoactive/src; \
 		rm -rf $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/xmb/retroactive_marked/src; \
+		rm -rf $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/xmb/dot-art/src; \
 		echo "Asset copying done."; \
 	fi
 

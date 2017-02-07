@@ -1,10 +1,6 @@
 /* source: https://github.com/QuarkTheAwesome/URetro */
 
-#include <coreinit/thread.h>
-#include <coreinit/exception.h>
-#include <coreinit/debug.h>
-#include <coreinit/dynload.h>
-#include <coreinit/internal.h>
+#include <wiiu/os.h>
 
 #ifndef __EXCEPTION_H__
 #define __EXCEPTION_H__

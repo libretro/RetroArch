@@ -1,8 +1,8 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -253,14 +253,14 @@ static bool rguidisp_init_font(menu_handle_t *menu)
 
 static void rgui_render_background(void)
 {
-   size_t pitch_in_pixels, size, fb_pitch;
+   size_t pitch_in_pixels, size;
+   size_t fb_pitch;
    unsigned fb_width, fb_height;
    uint16_t             *src  = NULL;
    uint16_t             *dst  = NULL;
 
-   fb_width = menu_display_get_width();
-   fb_height = menu_display_get_height();
-   fb_pitch = menu_display_get_framebuffer_pitch();
+   menu_display_get_fb_size(&fb_width, &fb_height,
+         &fb_pitch);
 
    pitch_in_pixels = fb_pitch >> 1;
    size            = fb_pitch * 4;
@@ -316,9 +316,8 @@ static void rgui_render_messagebox(const char *message)
    width        = 0;
    glyphs_width = 0;
 
-   fb_width  = menu_display_get_width();
-   fb_height = menu_display_get_height();
-   fb_pitch  = menu_display_get_framebuffer_pitch();
+   menu_display_get_fb_size(&fb_width, &fb_height,
+         &fb_pitch);
 
    for (i = 0; i < list->size; i++)
    {
@@ -371,12 +370,13 @@ end:
 
 static void rgui_blit_cursor(void)
 {
+   size_t fb_pitch;
+   unsigned fb_width, fb_height;
    int16_t        x   = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
    int16_t        y   = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
 
-   unsigned fb_width  = menu_display_get_width();
-   unsigned fb_height = menu_display_get_height();
-   size_t fb_pitch    = menu_display_get_framebuffer_pitch();
+   menu_display_get_fb_size(&fb_width, &fb_height,
+         &fb_pitch);
 
    rgui_color_rect(fb_pitch, fb_width, fb_height, x, y - 5, 1, 11, 0xFFFF);
    rgui_color_rect(fb_pitch, fb_width, fb_height, x - 5, y, 11, 1, 0xFFFF);
@@ -415,7 +415,7 @@ static void rgui_render(void *data)
       msg_force = menu_display_get_msg_force();
 
       if (menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL)
-            && menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL) && !msg_force)
+            && menu_driver_is_alive() && !msg_force)
          return;
 
       if (runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
@@ -425,9 +425,8 @@ static void rgui_render(void *data)
          return;
    }
 
-   fb_width  = menu_display_get_width();
-   fb_height = menu_display_get_height();
-   fb_pitch  = menu_display_get_framebuffer_pitch();
+   menu_display_get_fb_size(&fb_width, &fb_height,
+         &fb_pitch);
 
    /* if the framebuffer changed size, recache the background */
    if (rgui->last_width != fb_width || rgui->last_height != fb_height)
@@ -734,13 +733,14 @@ static void rgui_free(void *data)
 
 static void rgui_set_texture(void)
 {
+   size_t fb_pitch;
    unsigned fb_width, fb_height;
 
    if (!menu_display_get_framebuffer_dirty_flag())
       return;
 
-   fb_width  = menu_display_get_width();
-   fb_height = menu_display_get_height();
+   menu_display_get_fb_size(&fb_width, &fb_height,
+         &fb_pitch);
 
    menu_display_unset_framebuffer_dirty_flag();
 
@@ -762,7 +762,7 @@ static void rgui_navigation_clear(void *data, bool pending_push)
 
 static void rgui_navigation_set(void *data, bool scroll)
 {
-   size_t selection, start;
+   size_t selection, start, fb_pitch;
    unsigned fb_width, fb_height;
    bool do_set_start              = false;
    size_t end                     = menu_entries_get_end();
@@ -771,8 +771,8 @@ static void rgui_navigation_set(void *data, bool scroll)
    if (!scroll)
       return;
 
-   fb_width  = menu_display_get_width();
-   fb_height = menu_display_get_height();
+   menu_display_get_fb_size(&fb_width, &fb_height,
+         &fb_pitch);
 
    if (selection < RGUI_TERM_HEIGHT(fb_width, fb_height) /2)
    {
