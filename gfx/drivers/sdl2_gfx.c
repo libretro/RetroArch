@@ -505,6 +505,7 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
    {
       static struct retro_perf_counter sdl_copy_frame = {0};
 
+      SDL_RenderClear(vid->renderer);
       sdl_refresh_input_size(vid, false, vid->video.rgb32, width, height, pitch);
 
       performance_counter_init(sdl_copy_frame, "sdl_copy_frame");
