@@ -222,14 +222,14 @@ static bool vga_gfx_frame(void *data, const void *frame,
                for (x = 0; x < VGA_WIDTH; x++)
                {
                   /* scale incoming frame to fit the screen */
-                  unsigned scaled_x = (width / (float)VGA_WIDTH) * x;
-                  unsigned scaled_y = (height / (float)VGA_HEIGHT) * y;
+                  unsigned scaled_x = (width * x) / VGA_WIDTH;
+                  unsigned scaled_y = (height * y) / VGA_HEIGHT;
                   unsigned short pixel = ((unsigned short*)frame_to_copy)[width * scaled_y + scaled_x];
 
                   /* convert RGB565 to BGR332 */
-                  unsigned r = (7.0f / 31.0f) * ((pixel & 0xF800) >> 11);
-                  unsigned g = (7.0f / 63.0f) * ((pixel & 0x07E0) >> 5);
-                  unsigned b = (3.0f / 31.0f) * ((pixel & 0x001F) >> 0);
+                  unsigned r = ((pixel & 0xF800) >> 13);
+                  unsigned g = ((pixel & 0x07E0) >> 8);
+                  unsigned b = ((pixel & 0x001F) >> 3);
 
                   vga_frame[VGA_WIDTH * y + x] = (b << 6) | (g << 3) | r;
                }
@@ -369,12 +369,12 @@ static void vga_set_texture_frame(void *data,
             for(x = 0; x < VGA_WIDTH; x++)
             {
                /* scale incoming frame to fit the screen */
-               unsigned scaled_x = (width / (float)VGA_WIDTH) * x;
-               unsigned scaled_y = (height / (float)VGA_HEIGHT) * y;
+               unsigned scaled_x = (width * x) / VGA_WIDTH;
+               unsigned scaled_y = (height * y) / VGA_HEIGHT;
                unsigned short pixel = video_frame[width * scaled_y + scaled_x];
-               unsigned r = (7.0f / 15.0f) * ((pixel & 0xF000) >> 12);
-               unsigned g = (7.0f / 15.0f) * ((pixel & 0xF00) >> 8);
-               unsigned b = (3.0f / 15.0f) * ((pixel & 0xF0) >> 4);
+               unsigned r = ((pixel & 0xF000) >> 13);
+               unsigned g = ((pixel & 0xF00) >> 9);
+               unsigned b = ((pixel & 0xF0) >> 6);
                vga_menu_frame[VGA_WIDTH * y + x] = (b << 6) | (g << 3) | r;
             }
          }
