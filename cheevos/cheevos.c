@@ -3225,15 +3225,23 @@ void cheevos_populate_menu(void *data, bool hardcore)
 
 bool cheevos_get_description(cheevos_ctx_desc_t *desc)
 {
-   cheevo_t *cheevos        = cheevos_locals.core.cheevos;
-
-   if (desc->idx >= cheevos_locals.core.count)
+   if (cheevos_loaded)
    {
-      cheevos       = cheevos_locals.unofficial.cheevos;
-      desc->idx    -= cheevos_locals.unofficial.count;
-   }
+      cheevo_t *cheevos = cheevos_locals.core.cheevos;
 
-   strlcpy(desc->s, cheevos[desc->idx].description, desc->len);
+      if (desc->idx >= cheevos_locals.core.count)
+      {
+         cheevos    = cheevos_locals.unofficial.cheevos;
+         desc->idx -= cheevos_locals.unofficial.count;
+      }
+
+      strlcpy(desc->s, cheevos[desc->idx].description, desc->len);
+   }
+   else
+   {
+      *desc->s = 0;
+   }
+   
    return true;
 }
 
