@@ -2658,6 +2658,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    /* Clock image */
    menu_display_set_alpha(coord_white, MIN(xmb->alpha, 1.00f));
 
+   /* The Clock/Battery icon size */
+   float status_icon_scale = 0.3f;
+
    if (video_info->battery_level_enable)
    {
       char msg[12];
@@ -2687,8 +2690,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   &mymat,
                   xmb->textures.list[charging
                   ? XMB_TEXTURE_BATTERY_CHARGING : XMB_TEXTURE_BATTERY_FULL],
-                  width - xmb->margins.title.left - (xmb->icon.size / 2),
-                  xmb->icon.size - (xmb->icon.size / 3),
+                  width - xmb->margins.title.left - (xmb->icon.size * status_icon_scale),
+                  xmb->margins.title.top + (xmb->icon.size * status_icon_scale) / 5,
                   width,
                   height,
                   1,
@@ -2696,14 +2699,14 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   1,
                   &coord_white[0],
                   xmb->shadow_offset,
-                  0.5);
+                  status_icon_scale);
 
          snprintf(msg, sizeof(msg), "%d%%", percent);
 
          percent_width = font_driver_get_message_width(xmb->font, msg, utf8len(msg), 1);
 
          xmb_draw_text(menu_disp_info, xmb, msg,
-               width - xmb->margins.title.left - (xmb->icon.size / 2),
+               width - xmb->margins.title.left - (xmb->icon.size * status_icon_scale),
                xmb->margins.title.top, 1, 1, TEXT_ALIGN_RIGHT,
                width, height, xmb->font);
       }
@@ -2726,8 +2729,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                xmb->icon.size,
                &mymat,
                xmb->textures.list[XMB_TEXTURE_CLOCK],
-               width - xmb->margins.title.left - (xmb->icon.size / 2.5) - x_pos,
-               xmb->icon.size - (xmb->icon.size / 3),
+               width - xmb->margins.title.left - (xmb->icon.size * status_icon_scale) - x_pos,
+                  xmb->margins.title.top + (xmb->icon.size * status_icon_scale) / 5,
                width,
                height,
                1,
@@ -2735,7 +2738,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                1,
                &coord_white[0],
                xmb->shadow_offset,
-               0.5);
+               status_icon_scale);
       }
 
       timedate[0]        = '\0';
@@ -2747,7 +2750,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       menu_display_timedate(&datetime);
 
       xmb_draw_text(menu_disp_info, xmb, timedate,
-            width - xmb->margins.title.left - (xmb->icon.size / 2) - x_pos,
+            width - xmb->margins.title.left - (xmb->icon.size * status_icon_scale) - x_pos,
             xmb->margins.title.top, 1, 1, TEXT_ALIGN_RIGHT,
             width, height, xmb->font);
    }
