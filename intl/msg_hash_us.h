@@ -2482,7 +2482,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
-      "When in slowmotion, content will slow down by the factor specified/set."
+      "When in slow motion, content will slow down by the factor specified/set."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_REWIND_ENABLE,
@@ -2730,17 +2730,10 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
       "View previous searches.")
 MSG_HASH(MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
       "Captures an image of the screen.")
-#ifdef HAVE_DYNAMIC
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
       "Closes the current content. Any unsaved changes might be lost."
       )
-#else
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
-      "Closes the current content. Any unsaved changes might be lost."
-      )
-#endif
 MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_STATE,
       "Load a saved state from the currently selected slot.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_STATE,
