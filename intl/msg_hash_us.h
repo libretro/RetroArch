@@ -1790,7 +1790,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SSH_ENABLE,
 MSG_HASH(MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
       "Prevents your system's screensaver from becoming active.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
-      "Sets the window size relative to the core viewport size. Alternatively you can set a window width and height below for a fixed window size.")
+      "Sets the window size relative to the core viewport size. Alternatively, you can set a window width and height below for a fixed window size.")
 MSG_HASH(MENU_ENUM_SUBLABEL_USER_LANGUAGE,
       "Sets the language of the interface.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
@@ -2225,7 +2225,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
-      "Audio volume (in dB). 0 dB is normal volume, no gain applied."
+      "Audio volume (in dB). 0 dB is normal volume, and no gain is applied."
       )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SYNC,
@@ -2478,11 +2478,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
-      "The maximum rate at which content will be run when using fast forward (E.g. 5x for 60 fps content => 300 fps cap). If set at 0x, fastforward ratio is unlimited (no FPS cap)."
+      "The maximum rate at which content will be run when using fast forward (e.g., 5.0x for 60 fps content = 300 fps cap). If set to 0.0x, fastforward ratio is unlimited (no FPS cap)."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
-      "When in slowmotion, content will slow down by a factor."
+      "When in slow motion, content will slow down by the factor specified/set."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_REWIND_ENABLE,
@@ -2502,7 +2502,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-      "Automatically saves a savestate at the end of RetroArch's lifetime. RetroArch will automatically load this savestate if 'Savestate Auto Load' is set."
+      "Automatically makes a savestate at the end of RetroArch's runtime. RetroArch will automatically load this savestate if 'Auto Load State' is enabled."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
@@ -2594,7 +2594,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
-      "Audio output samplerate."
+      "Audio output sample rate."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
@@ -2730,25 +2730,18 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
       "View previous searches.")
 MSG_HASH(MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
       "Captures an image of the screen.")
-#ifdef HAVE_DYNAMIC
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
-      "Closes the current game and application. Any unsaved changes might be lost."
+      "Closes the current content. Any unsaved changes might be lost."
       )
-#else
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
-      "Closes the current game. Any unsaved changes might be lost."
-      )
-#endif
 MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_STATE,
       "Load a saved state from the currently selected slot.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_STATE,
       "Save a state to the currently selected slot.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RESUME,
-      "Resume the currently running application and leave the Quick Menu.")
+      "Resume the currently running content and leave the Quick Menu.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RESUME_CONTENT,
-      "Resume the currently running application and leave the Quick Menu.")
+      "Resume the currently running content and leave the Quick Menu.")
 MSG_HASH(MENU_ENUM_SUBLABEL_STATE_SLOT,
       "Changes the currently selected state slot.")
 MSG_HASH(MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
@@ -2778,7 +2771,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SHADER_OPTIONS,
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
       "Change the controls for the currently running content.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_OPTIONS,
-      "Change the options for the currently running application.")
+      "Change the options for the currently running content.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
       "Show advanced settings for power users (hidden by default).")
 MSG_HASH(MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
@@ -2919,9 +2912,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CORE,
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
       "Save the current shader settings as the default settings for the content.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SHADER_PARAMETERS,
-      "Modifies current shader directly. Will not be saved to preset file.")
+      "Modifies the current shader directly. Changes will not be saved to the preset file.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PARAMETERS,
-      "Modifies shader preset currently in menu.")
+      "Modifies the shader preset itself currently used in the menu.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CHEAT_NUM_PASSES,
       "Increase or decrease the amount of cheats."
@@ -2945,6 +2938,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
       "Custom viewport width that is used if the Aspect Ratio is set to 'Custom'.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-      "Custom viewport offset used for defining the X-axis position of the viewport. These are ignored if 'Scaled Integer' is enabled, it will be automatically centered then.")
+      "Custom viewport offset used for defining the X-axis position of the viewport. These are ignored if 'Integer Scale' is enabled. It will be automatically centered then.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-      "Custom viewport offset used for defining the Y-axis position of the viewport. These are ignored if 'Scaled Integer' is enabled, it will be automatically centered then.")
+      "Custom viewport offset used for defining the Y-axis position of the viewport. These are ignored if 'Integer Scale' is enabled. It will be automatically centered then.")
