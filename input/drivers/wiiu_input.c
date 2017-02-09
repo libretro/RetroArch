@@ -28,10 +28,62 @@
 #include "../input_config.h"
 #include "../input_driver.h"
 #include "../input_joypad_driver.h"
+#include "../input_keyboard.h"
+#include "../input_keymaps.h"
+#include <wiiu/nsyskbd.h>
 
 #include "wiiu_dbg.h"
 
 #define MAX_PADS 5
+
+static unsigned char keyboardChannel = 0x00;
+static KBDModifier keyboardModifier = 0x00;
+static unsigned char keyboardCode = 0x00;
+static KEYState keyboardState = KBD_WIIU_NULL;
+
+void kb_connection_callback(KBDKeyEvent *key) {
+	keyboardChannel = keyboardChannel + (key->channel + 0x01);
+}
+
+void kb_disconnection_callback(KBDKeyEvent *key) {
+	keyboardChannel = keyboardChannel - (key->channel + 0x01);
+}
+
+void kb_key_callback(KBDKeyEvent *key) {
+   keyboardModifier = key->modifier;
+   keyboardCode = key->scancode;
+   keyboardState = key->state;
+
+   bool pressed = false;
+      
+   if (key->state > 0)
+   {
+      pressed = true;
+   }
+   uint16_t mod = 0;
+   unsigned code = input_keymaps_translate_keysym_to_rk(key->scancode);
+   
+   if (key->modifier & KBD_WIIU_SHIFT)
+      mod |= RETROKMOD_SHIFT;
+      
+   if (key->modifier & KBD_WIIU_CTRL)
+      mod |= RETROKMOD_CTRL;
+
+   if (key->modifier & KBD_WIIU_ALT)
+      mod |= RETROKMOD_ALT;
+
+   if (key->modifier & KBD_WIIU_NUM_LOCK)
+      mod |= RETROKMOD_NUMLOCK;
+
+   if (key->modifier & KBD_WIIU_CAPS_LOCK)
+      mod |= RETROKMOD_CAPSLOCK;
+
+   if (key->modifier & KBD_WIIU_SCROLL_LOCK)
+      mod |= RETROKMOD_SCROLLOCK;
+
+   input_keyboard_event(pressed, code, (char)key->UTF16, mod,
+         RETRO_DEVICE_KEYBOARD);
+}
 
 typedef struct wiiu_input
 {
@@ -46,7 +98,21 @@ static void wiiu_input_poll(void *data)
    wiiu_input_t *wiiu = (wiiu_input_t*)data;
 
    if (wiiu->joypad)
-      wiiu->joypad->poll();
+      wiiu->joypad->poll();      
+}
+
+static bool wiiu_key_pressed(int key)
+{
+   unsigned sym;
+   bool ret = false;
+   
+   if (key >= RETROK_LAST)
+      return false;
+
+   if ((keyboardState > 0) && (keyboardChannel > 0))
+      ret = keyboardCode;
+
+   return ret;
 }
 
 static int16_t wiiu_input_state(void *data,
@@ -59,11 +125,13 @@ static int16_t wiiu_input_state(void *data,
 
    if(!wiiu || !(port < MAX_PADS) || !binds || !binds[port])
       return 0;
-
+   
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
          return input_joypad_pressed(wiiu->joypad, joypad_info, port, binds[port], id);
+      case RETRO_DEVICE_KEYBOARD:
+         return wiiu_key_pressed(id);
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
             return input_joypad_analog(wiiu->joypad, joypad_info, port, idx, id, binds[port]);
@@ -79,6 +147,8 @@ static void wiiu_input_free_input(void *data)
 
    if (wiiu && wiiu->joypad)
       wiiu->joypad->destroy();
+      
+   KBDTeardown();
 
    free(data);
 }
@@ -91,6 +161,10 @@ static void* wiiu_input_init(const char *joypad_driver)
 
    DEBUG_STR(joypad_driver);
    wiiu->joypad = input_joypad_init_driver(joypad_driver, wiiu);
+   
+   KBDSetup(&kb_connection_callback,&kb_disconnection_callback,&kb_key_callback);
+   
+   input_keymaps_init_keyboard_lut(rarch_key_map_wiiu);
 
    return wiiu;
 }
@@ -107,7 +181,7 @@ static uint64_t wiiu_input_get_capabilities(void *data)
 {
    (void)data;
 
-   return (1 << RETRO_DEVICE_JOYPAD) |  (1 << RETRO_DEVICE_ANALOG);
+   return (1 << RETRO_DEVICE_JOYPAD) |  (1 << RETRO_DEVICE_ANALOG) |  (1 << RETRO_DEVICE_KEYBOARD);
 }
 
 static const input_device_driver_t *wiiu_input_get_joypad_driver(void *data)
