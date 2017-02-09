@@ -39,7 +39,7 @@
 static unsigned char keyboardChannel = 0x00;
 static KBDModifier keyboardModifier = 0x00;
 static unsigned char keyboardCode = 0x00;
-static KEYState keyboardState = KBD_WIIU_NULL;
+static KEYState keyboardState[256] = { KBD_WIIU_NULL };
 
 void kb_connection_callback(KBDKeyEvent *key) {
 	keyboardChannel = keyboardChannel + (key->channel + 0x01);
@@ -52,7 +52,6 @@ void kb_disconnection_callback(KBDKeyEvent *key) {
 void kb_key_callback(KBDKeyEvent *key) {
    keyboardModifier = key->modifier;
    keyboardCode = key->scancode;
-   keyboardState = key->state;
 
    bool pressed = false;
       
@@ -62,6 +61,7 @@ void kb_key_callback(KBDKeyEvent *key) {
    }
    uint16_t mod = 0;
    unsigned code = input_keymaps_translate_keysym_to_rk(key->scancode);
+   keyboardState[code] = key->state;
    
    if (key->modifier & KBD_WIIU_SHIFT)
       mod |= RETROKMOD_SHIFT;
@@ -103,14 +103,13 @@ static void wiiu_input_poll(void *data)
 
 static bool wiiu_key_pressed(int key)
 {
-   unsigned sym;
    bool ret = false;
    
    if (key >= RETROK_LAST)
       return false;
 
-   if ((keyboardState > 0) && (keyboardChannel > 0))
-      ret = keyboardCode;
+   if ((keyboardState[key] > 0) && (keyboardChannel > 0))
+      ret = true;
 
    return ret;
 }
