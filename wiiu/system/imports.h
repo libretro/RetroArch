@@ -194,3 +194,10 @@ IMPORT(KPADRead);
 
 IMPORT_END();
 
+/* nsyskbd */
+IMPORT_BEGIN(nsyskbd);
+
+IMPORT(KBDSetup);
+IMPORT(KBDTeardown);
+
+IMPORT_END();
