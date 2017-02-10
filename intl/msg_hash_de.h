@@ -384,7 +384,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
-      "Kamera-Treiber"
+      "Kameratreiber"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEAT,
@@ -678,7 +678,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD,
       "Schwellenwert der Analogsticks")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-      "Vertausche OK- und Zurück-Tasten im  Menü")
+      "Vertausche OK- und Zurück-Tasten im Menü")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
       "Alle zuordnen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL,
@@ -1178,7 +1178,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RECORD_CONFIG,
       "Lade Aufnahme-Konfiguration...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
-      "Aufnahme-Treiber")
+      "Aufnahmetreiber")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RECORD_ENABLE,
       "Aktiviere Aufnahmefunktion")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RECORD_PATH,
@@ -1540,7 +1540,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
       "Deaktiviere Desktop-Gestaltung")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
-      "Grafiktreiber")
+      "Videotreiber")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
       "Grafikfilter")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,
@@ -2519,4 +2519,128 @@ MSG_HASH(
 MSG_HASH(
       MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
       "Wenn aktiviert, wird die Eingabebelegung mit den wiederzugewiesenen Belegungen, die für diesen Core gewählt wurden, überschrieben."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
+      "Aktiviere automatische Erkennung von Eingabegeräten. Wird versuchen, Gamepads automatisch zu erkennen (Plug-and-Play)."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
+      "Vertausche die Tasten für 'OK' und 'Abbrechen'. Wenn deaktiviert, wird die japanische Tastenbelegung verwendet; wenn aktiviert, wird die westliche Tastenbelegung verwendet."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
+      "Wenn deaktiviert, wird der Inhalt im Hintergrund weiterlaufen, wenn das RetroArch-Menü aufgerufen wird."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
+      "Zu verwendender Videotreiber."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
+      "Zu verwendender Audiotreiber."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_INPUT_DRIVER,
+      "Zu verwendender Eingabetreiber. Abhängig vom Videotreiber kann dieser einen anderen Eingabetreiber erzwingen."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
+      "Zu verwendender Joypad-Treiber."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
+      "Zu verwendender Audio-Resampling-Treiber."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
+      "Zu verwendender Kameratreiber."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
+      "Zu verwendender Treiber für Ortsdienste."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_MENU_DRIVER,
+      "Zu verwendender Menütreiber."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_RECORD_DRIVER,
+      "Zu verwendender Aufnahmetreiber."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_WIFI_DRIVER,
+      "Zu verwendender WLAN-Treiber."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
+      "Zeige nur Dateien mit unterstützten Dateierweiterungen im Dateibrowser an."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
+      "Wähle ein Bild aus, das als Menü-Hintergrundbild verwendet werden soll."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPER,
+      "Lade ein neues Hintergrundbild dynamisch, abhängig vom Inhalt."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
+      "Überschreibe das standardmäßig ausgewählte Audiogerät, welches vom Audiotreiber verwendet wird. Dies ist treiberabhängig."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
+      "Audio-DSP-Plugin, welches die Audiodaten verarbeitet, bevor sie zum Treiber gesendet werden."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
+      "Sampling-Rate der Audio-Ausgabe."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
+      "Transparenz aller Bedienelemente des Overlays."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_OVERLAY_SCALE,
+      "Skalierung aller Bedienelemente des Overlays."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
+      "Aktiviere das Overlay."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
+      "Wähle ein Overlay mit dem Dateibrowser aus."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
+      "Die Adresse des Hosts, mit dem eine Verbindung hergestellt werden soll."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
+      "Der Port der Host-IP-Adresse. Kann entweder ein TCP- oder ein UDP-Port sein."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_NETPLAY_PASSWORD,
+      "Das Passwort, das für die Verbindung zum Netplay-Host verwendet werden soll. Wird nur im Host-Modus verwendet."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
+      "Lege fest, ob Netplay-Spiele öffentlich angekündigt werden sollen. Wenn deaktiviert, müssen sich Clients manuell verbinden und können die öffentliche Lobby nicht verwenden."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
+      "Das Passwort, das für die Verbindung zum Netplay-Host mit Beobachter-Privilegien verwendet wird. Wird nur im Host-Modus verwendet."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_NETPLAY_STATELESS_MODE,
+      "Lege fest, ob Netplay in einem Modus ohne Savestates läuft. Wenn aktiviert, ist ein sehr schnelles Netwerk nötig. Da kein Rücklauf erfolgt, läuft das Spiel flüssiger."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
+      "Die Häufigkeit in Einzelbildern, mit der Netplay überprüfen wird wird, ob der Host und der Client miteinander synchronisiert sind."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL,
+      "Versuche, auf eingehende Verbindungen aus dem öffentlichen Internet zu hören. Dabei wird UPnP oder eine ähnliche Technologie benötigt, um das eigene LAN zu verlassen."
       )
