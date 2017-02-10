@@ -57,7 +57,8 @@ static void netplay_crc_scan_callback(void *task_data,
       return;
 
    fflush(stdout);
-   if (!string_is_empty(state->core_path) && !string_is_empty(state->content_path))
+   if (!string_is_empty(state->core_path) && !string_is_empty(state->content_path) &&
+       !string_is_equal(state->content_path, "N/A"))
    {
       command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
       task_push_content_load_default(
@@ -67,14 +68,21 @@ static void netplay_crc_scan_callback(void *task_data,
             CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU,
             NULL, NULL);
    }
-   else if(string_is_equal(state->content_path, "N/A"))
+   else if (!string_is_empty(state->core_path) && !string_is_empty(state->content_path) &&
+      string_is_equal(state->content_path, "N/A"))
    {
-      printf("Content: %s Core: %s\n", state->content_path, state->core_path);
+      command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
       task_push_content_load_default(
             state->core_path, NULL,
-            NULL,
+            &content_info,
             CORE_TYPE_PLAIN,
             CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU,
+            NULL, NULL);
+      task_push_content_load_default(
+            state->core_path, NULL,
+            &content_info,
+            CORE_TYPE_PLAIN,
+            CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU,
             NULL, NULL);
    }
    else
@@ -263,8 +271,12 @@ bool task_push_netplay_crc_scan(uint32_t crc, char* name,
       if(string_is_equal(info->list[i].core_name, state->core_name))
       {
          strlcpy(state->core_path, info->list[i].path, sizeof(state->core_path));
-         strlcpy(state->core_extensions,
-               info->list[i].supported_extensions, sizeof(state->core_extensions));
+
+         if (!string_is_equal(state->content_path, "N/A"))
+         {
+            strlcpy(state->core_extensions,
+                  info->list[i].supported_extensions, sizeof(state->core_extensions));
+         }
          break;
       }
    }
