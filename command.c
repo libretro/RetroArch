@@ -1350,15 +1350,6 @@ static bool event_init_content(void)
 
    content_get_status(&contentless, &is_inited);
 
-   if (contentless)
-   {
-#ifdef HAVE_NETWORKING
-      if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
-         RARCH_ERR("%s\n", msg_hash_to_str(MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY));
-#endif
-      return true;
-   }
-
    command_event_set_savestate_auto_index();
 
    if (event_load_save_files())

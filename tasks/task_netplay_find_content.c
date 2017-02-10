@@ -71,7 +71,7 @@ static void netplay_crc_scan_callback(void *task_data,
    else if (!string_is_empty(state->core_path) && !string_is_empty(state->content_path) &&
       string_is_equal(state->content_path, "N/A"))
    {
-      printf("Content: %s Core: %s\n", state->content_path, state->core_path);
+      command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
       task_push_content_load_default(
             state->core_path, NULL,
             &content_info,
