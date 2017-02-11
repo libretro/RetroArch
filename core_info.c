@@ -76,6 +76,12 @@ static void core_info_list_resolve_all_extensions(
             core_info_list->list[i].supported_extensions, all_ext_len);
       strlcat(core_info_list->all_ext, "|", all_ext_len);
    }
+#ifdef HAVE_7ZIP
+   strlcat(core_info_list->all_ext, "7z|", all_ext_len + 3);
+#endif
+#ifdef HAVE_ZLIB
+   strlcat(core_info_list->all_ext, "zip|", all_ext_len + 4);
+#endif
 }
 
 static void core_info_list_resolve_all_firmware(
