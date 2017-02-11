@@ -2706,7 +2706,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          percent_width = font_driver_get_message_width(xmb->font, msg, utf8len(msg), 1);
 
          xmb_draw_text(menu_disp_info, xmb, msg,
-               width - xmb->margins.title.left - (xmb->icon.size * status_icon_scale),
+               width - xmb->margins.title.left - (xmb->icon.size * status_icon_scale * 1.2),
                xmb->margins.title.top, 1, 1, TEXT_ALIGN_RIGHT,
                width, height, xmb->font);
       }
@@ -2750,7 +2750,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       menu_display_timedate(&datetime);
 
       xmb_draw_text(menu_disp_info, xmb, timedate,
-            width - xmb->margins.title.left - (xmb->icon.size * status_icon_scale) - x_pos,
+            width - xmb->margins.title.left - (xmb->icon.size * status_icon_scale * 1.2) - x_pos,
             xmb->margins.title.top, 1, 1, TEXT_ALIGN_RIGHT,
             width, height, xmb->font);
    }
