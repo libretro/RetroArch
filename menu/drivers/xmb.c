@@ -2720,7 +2720,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
       // Move the timedate widget over if the battery percent is active.
       if (percent_width)
-         x_pos = percent_width + xmb->icon.size;
+         x_pos = percent_width + (xmb->icon.size / 2);
 
       if (coord_white[3] != 0)
       {
