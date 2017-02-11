@@ -1,16 +1,16 @@
 # 1.4.2 (future)
-- COMMON: Threading fixes 
-- NET: Allow manual netplay content loading 
-- CHEEVOS: WIP leaderboards support 
-- LOCALIZATION: Rewrite german translation 
-- NET: Announcing network games to the public lobby is optional now 
-- LOCALIZATION: Update several english sublabels 
-- DOS: Improve color accuracy and scalines
+- ANDROID: Autoconf fallback
 - CHEEVOS: Fix crashes in the cheevos description menu
+- CHEEVOS: WIP leaderboards support 
+- COMMON: Threading fixes 
 - DOS: Add keyboard driver
-- Android: Autoconf fallback
-- WiiU: Keyboard support 
+- DOS: Improve color accuracy and scalines
+- LOCALIZATION: Rewrite german translation 
+- LOCALIZATION: Update several english sublabels 
+- NET: Allow manual netplay content loading 
+- NET: Announcing network games to the public lobby is optional now 
 - NET: fix netplay join for contentless cores 
 - SCANNER: always add 7z & zip to supported extensions
+- WIIU: Keyboard support 
 
 # 1.4.1
