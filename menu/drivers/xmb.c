@@ -2659,7 +2659,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    menu_display_set_alpha(coord_white, MIN(xmb->alpha, 1.00f));
 
    /* The Clock/Battery icon size */
-   float status_icon_scale = 0.3f;
+   float status_icon_scale = 0.25f;
 
    if (video_info->battery_level_enable)
    {
