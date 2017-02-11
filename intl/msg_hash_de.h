@@ -1798,7 +1798,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
       "Reduziert Latenz, kann aber zu Anzeigefehlern führen. Fügt eine Verzögerung bei V-Sync hinzu (in ms).")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
-      "Anzahl der Bilder, die die CPU der GPU voraus sein darf, wenn die CPU/GPU-Synchronisation aktiviert ist.")
+      "Anzahl der Bilder, der die CPU der GPU voraus sein darf, wenn die CPU/GPU-Synchronisation aktiviert ist.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
       "Zwingt den Videotreiber dazu, einen bestimmten Framebuffer zu verwenden.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
