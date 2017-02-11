@@ -896,7 +896,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
       "Inhalt laden")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_STATE,
-      "Savestate laden")
+      "Spielstand laden")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
       "Standortbestimmung erlauben")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
@@ -1240,7 +1240,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
       "Spielstände")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
-      "Spielstand-Vorschaubilder")
+      "Spielstand-Miniaturansichten")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
       "Speichere aktuelle Konfiguration")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
@@ -2644,3 +2644,148 @@ MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL,
       "Versuche, auf eingehende Verbindungen aus dem öffentlichen Internet zu hören. Dabei wird UPnP oder eine ähnliche Technologie benötigt, um das eigene LAN zu verlassen."
       )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
+      "Aktiviere stdin-Befehlsschnittstelle."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
+      "Aktiviere Maussteuerung im Menü."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_POINTER_ENABLE,
+      "Aktiviere Touch-Steuerung im Menü."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_THUMBNAILS,
+      "Art der Miniaturansichten, die verwendet werden soll."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE,
+      "Zeige das aktuelle Datum und/oder die Zeit im Menü an."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_BATTERY_LEVEL_ENABLE,
+      "Zeige den aktuellen Akkustand im Menü an."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
+      "Springe zum Anfang und/oder Ende, wenn die Grenzen einer Liste horizontal oder vertikal erreicht werden."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST,
+      "Aktiviere Netplay im Host-Modus (Server)."
+      )
+MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
+      "Aktiviere Netplay im Client-Modus.")
+MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
+      "Beendet eine aktive Netplay-Verbindung.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
+      "Durchsuche ein Verzeichnis nach kompatiblen Dateien und füge diese zur Sammlung hinzu.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_FILE,
+      "Untersuche eine kompatible Datei und fügt diese zur Sammlung hinzu.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+      "Verwende ein eigenes Intervall für Vsync. Aktivieren, um die Bildschirm-Wiederholrate zu halbieren."
+      )
+MSG_HASH(MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
+      "Speichere Speicherdaten in Ordnern ab, die nach dem verwendeten Core benannt sind."
+      )
+MSG_HASH(MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
+      "Speichere Spielstände in Ordnern ab, die nach dem verwendeten Core benannt sind."
+      )
+MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_CLIENT_SWAP_INPUT,
+      "Verwende die Tastenbelegung für Spieler 1, wenn Du ein Client im Netplay bist.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
+      "URL zum Core-Verzeichnis auf dem libretro-Buildbot.")
+MSG_HASH(MENU_ENUM_SUBLABEL_BUILDBOT_ASSETS_URL,
+      "URL zum Assets-Verzeichnis auf dem libretro-Buildbot.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
+      "Entpacke Dateien, die sich in heruntergeladenen Archiven befinden, nach dem Download automatisch."
+      )
+MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
+      "Suche nach neuen Räumen.")
+MSG_HASH(MENU_ENUM_SUBLABEL_DELETE_ENTRY,
+      "Entferne diesen Eintrag aus der Sammlung.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION,
+      "Zeige weiterführende Informationen über diesen Inhalt an.")
+MSG_HASH(MENU_ENUM_SUBLABEL_RUN,
+      "Starte den Inhalt.")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
+      "Passe die Dateibrowser-Einstellungen an.")
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
+      "Aktiviere benutzerdefinierte Tastenbelegungen beim Start automatisch."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE,
+      "Aktiviere benutzerdefininerte Einstellungen beim Start automatisch."
+      )
+MSG_HASH(MENU_ENUM_SUBLABEL_GAME_SPECIFIC_OPTIONS,
+      "Aktiviere benutzerdefinierte Core-Einstellungen beim Start automatisch.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CORE_ENABLE,
+      "Zeige den Namen des aktuellen Cores im Menü an.")
+MSG_HASH(MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
+      "Betrachte Datenbanken.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
+      "Betrachte vorherige Suchanfragen.") /* Maybe sloppy */
+MSG_HASH(MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
+      "Fertigt ein Foto des Bildschirms an.")
+#ifdef HAVE_DYNAMIC
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
+      "Schließt das aktuelle Spiel und die aktuelle Anwendung. Alle nicht gespeicherten Änderungen können verloren gehen."
+      )
+#else
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
+      "Schließt das aktuelle Spiel. Alle nicht gespeicherten Änderungen können verloren gehen."
+      )
+#endif
+MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_STATE,
+      "Lade einen gespeicherten Spielstand aus dem aktuellen Speicherplatz.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_STATE,
+      "Speichere einen Spielstand in dem aktuellen Speicherplatz.")
+MSG_HASH(MENU_ENUM_SUBLABEL_RESUME,
+      "Setze die aktuelle Anwendung wieder fort und verlasse das Spielmenü.")
+MSG_HASH(MENU_ENUM_SUBLABEL_RESUME_CONTENT,
+      "Setze den aktuellen Inhalt wieder fort und verlasse das Spielmenü")
+MSG_HASH(MENU_ENUM_SUBLABEL_STATE_SLOT,
+      "Ändert den aktuell gewählten Spielstand-Speicherplatz.")
+MSG_HASH(MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
+      "Wenn ein Spielstand geladen wurde, wird der Inhalt zum Zustand vor dem Laden des Spielstandes zurückkehren.")
+MSG_HASH(MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
+      "Wenn ein Spielstand überschrieben wurde, wird der Inhalt des zuvor gespeicherten Spielstands wiederhergestellt.")
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
+      "Retro Achievements (Errungenschaften-Dienst). Besuche http://retroachievements.org für weitere Informationen."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_ACCOUNTS_LIST,
+      "Verwalte die aktuell konfigurierten Benutzerkonten."
+      )
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
+      "Verwalte die Einstellungen für die Rückspul-Funktion.")
+MSG_HASH(MENU_ENUM_SUBLABEL_RESTART_CONTENT,
+      "Starte den Inhalt vom Beginn an neu.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
+      "Speichere eine überschreibende Konfiguration, die für jeden Inhalt, der mit diesem Core geladen wird, verwendet wird. Wird gegenüber der normalen Konfiguration bevorzugt.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
+      "Speichere eine überschreibende Konfiguration, die nur für den aktuellen Inhalt verwendet wird. Wird gegenüber der normalen Konfiguration bevorzugt.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS,
+      "Verwende Cheat-Codes.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SHADER_OPTIONS,
+      "Verwende Shader, um die Videodarstellung zu verbessern.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
+      "Ändere die Steuerung für den aktuell laufenden Inhalt.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CORE_OPTIONS,
+      "Ändere die Optionen für die aktuell laufende Anwendung")
+MSG_HASH(MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
+      "Zeige erweiterte Einstellungen für erfahrene Benutzer (standardmäßig ausgeblendet).")
+MSG_HASH(MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
+      "Führe Aufgaben im Hintergrund aus.")
+MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
+      "Erlaube dem Benutzer, Einträge aus der Sammlung zu entfernen.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
+      "Lege das Systemverzeichnis fest. Cores können dieses Verzeichnis verwenden, um ein BIOS, system-spezifische Konfigurationen usw. zu laden.")
+MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
+      "Lege das Startverzeichnis für den Dateibrowser fest.")
