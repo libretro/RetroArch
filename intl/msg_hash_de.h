@@ -2789,3 +2789,90 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
       "Lege das Systemverzeichnis fest. Cores können dieses Verzeichnis verwenden, um ein BIOS, system-spezifische Konfigurationen usw. zu laden.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
       "Lege das Startverzeichnis für den Dateibrowser fest.")
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CONTENT_DIR,
+      "Wird normalerweise von Entwickler verwendet, die libretro/RetroArch-Apps paketieren."
+      )
+MSG_HASH(MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPERS_DIRECTORY,
+      "Verzeichnis, in dem Hintergrundbilder gespeichert werden, die vom Menü je nach verwendetem Inhalt geladen.")
+MSG_HASH(MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
+      "Ergänzende Miniaturansichte (Boxarts, Bildschirmfotos...) werden hier gespeichert."
+      )
+MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
+      "Legt das Verzeichnis fest, in dem das Menü mit der Suche nach Konfigurationen beginnt.")
+MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
+      "Eingabeverzögerung in Einzelbildern, die im Netplay verwendet wird, um die Netzwerklatenz zu verbergen. Reduziert Bildruckeln und CPU-Last, verursacht jedoch erkennbare Eingabeverzögerung.")
+MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+      "Der Bereich der Eingabeverzögerung in Einzelbildern, die im Netplay verwendet werden kann, um die Netzwerklatenz zu verbergen. Reduziert Bildruckeln und CPU-Last, verursacht jedoch unvorhersehbare Eingabeverzögerungen.")
+MSG_HASH(MENU_ENUM_SUBLABEL_DISK_CYCLE_TRAY_STATUS,
+      "Datenträger auswerfen/einlegen. Wenn der Datenträger eingelegt ist, wird er ausgeworfen. Wenn er noch nicht eingelegt wurde, wird er jetzt eingelegt. ")
+MSG_HASH(MENU_ENUM_SUBLABEL_DISK_INDEX,
+      "Ändere den Datenträger-Index.")
+MSG_HASH(MENU_ENUM_SUBLABEL_DISK_OPTIONS,
+      "Verwaltung von Datenträger-Abbildern.")
+MSG_HASH(MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
+      "Wähle ein Datenträger-Abbild, das eingelegt werden soll.")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
+      "Stelle sicher, dass die Bildwiederholrate im Menü begrenzt wird.")
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_THEME,
+      "Wähle ein anderes Thema für das Menü aus. Änderungen werden übernommen, nachdem Du das Programm neu gestartet hast.")
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
+      "Aktiviere Schatten für alle Icons. Dies hat einen geringen Einfluss auf die Leistung.")
+MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
+      "Wähle einen anderen Farbverlauf für das Hintergrundbild.")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
+      "Ändere die Transparenz des Hintergrundbildes.")
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
+      "Wähle einen anderen Farbverlauf für das Hintergrundbild.")
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
+      "Wähle einen animierten Effekt für das Hintergrundbild. Kann je nach Effekt GPU-lastig sein. Wenn die Leistung nicht ausreicht, wähle einen einfacheren Effekt oder deaktiviere diese Option.")
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_FONT,
+      "Wähle eine andere Schriftart, die im Menü verwendet werden soll.")
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_IMAGES,
+      "Zeige den Tab 'Bilder' im Hauptmenü an.")
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_MUSIC,
+      "Zeige den Tab 'Musik' im Hauptmenü an.")
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_VIDEO,
+      "Zeige den Tab 'Video' im Hauptmenü an.")
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_SETTINGS,
+      "Zeige den Tab 'Einstellungen' im Hauptmenü an")
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_HISTORY,
+      "Zeige den Tab 'Verlauf' im Hauptmenü an.")
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_ADD,
+      "Zeige den Tab 'Inhalt importieren' im Hauptmenü an")
+MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
+      "Zeige einen Startbildschirm im Menü an. Wird automatisch deaktiviert, nachdem das Programm zum ersten Mal gestartet wurde.")
+MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_MENU_HEADER_OPACITY,
+      "Ändere die Transparenz der Header-Grafik.")
+MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
+      "Ändere die Transparenz der Footer-Grafik.")
+MSG_HASH(MENU_ENUM_SUBLABEL_DPI_OVERRIDE_ENABLE,
+      "Das Menü wird normalerweise automatisch skaliert. Wenn Du stattdessen eine bestimmte Skalierung wünschst, aktiviere diese Option.")
+MSG_HASH(MENU_ENUM_SUBLABEL_DPI_OVERRIDE_VALUE,
+      "Lege hier die gewünschte Skalierung fest. HINWEIS: Du musst 'DPI-Überschreibung' aktivieren, damit diese Skalierung verwendet wird.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,
+      "Speichere alle heruntergeladenen Dateien in diesem Verzeichnis.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
+      "Speichere alle wiederzugewiesenen Tastenbelegungen in diesem Verzeichnis.")
+MSG_HASH(MENU_ENUM_SUBLABEL_LIBRETRO_DIR_PATH,
+      "Verzeichnis, in dem das Programm nach Inhalten/Cores sucht.")
+MSG_HASH(MENU_ENUM_SUBLABEL_LIBRETRO_INFO_PATH,
+      "Awendungs- und Core-Informationsdateien werden hier gespeichert.")
+MSG_HASH(MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
+      "Wenn ein Gamepad eingesteckt wird, wird es automatisch konfiguriert, sofern eine passende Konfigurationsdatei in diesem Verzeichnis vorhanden ist.")
+MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
+      "Speichere alle Sammlungen in diesem Verzeichnis.")
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
+      "Wenn ein Verzeichnis gewählt wird, wird Inhalt, der temporär entpackt wird (z.B. aus Archiven) in dieses Verzeichnis entpackt."
+      )
+MSG_HASH(MENU_ENUM_SUBLABEL_CURSOR_DIRECTORY,
+      "Gespeicherte Suchanfragen werden in diesem Verzeichnis gespeichert.")
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CONTENT_DATABASE_DIRECTORY,
+      "Datenbanken werden in diesem Verzeichnis gespeichert."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
+      "Dieser Ort wird standardmäßig durchsucht, wenn das Menü nach ladbaren Inhalten wie Assets sucht."
+      )
