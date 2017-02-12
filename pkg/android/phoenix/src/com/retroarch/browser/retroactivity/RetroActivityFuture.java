@@ -3,8 +3,15 @@ package com.retroarch.browser.retroactivity;
 import android.view.View;
 import android.view.WindowManager;
 import android.content.Intent;
+import android.content.Context;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import android.hardware.input.InputManager;
 
 public final class RetroActivityFuture extends RetroActivityCamera {
+
+  // If set to true then Retroarch will completely exit when it loses focus
+  private boolean quitfocus = false;
 
 	@Override
 	public void onResume() {
@@ -28,7 +35,7 @@ public final class RetroActivityFuture extends RetroActivityCamera {
 					| API_SYSTEM_UI_FLAG_FULLSCREEN
 					| API_SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
 
-			// Check for REFRESH parameter
+			// Check for Android UI specific parameters
 			Intent retro = getIntent();
 			String refresh = retro.getStringExtra("REFRESH");
 
@@ -38,7 +45,40 @@ public final class RetroActivityFuture extends RetroActivityCamera {
 				params.preferredRefreshRate = Integer.parseInt(refresh);
 				getWindow().setAttributes(params);
 			}
+
+			// If QUITFOCUS parameter is provided then enable that Retroarch quits when focus is lost
+			quitfocus = retro.hasExtra("QUITFOCUS");
+
+			// If HIDEMOUSE parameters is provided then hide the mourse cursor
+			// This requires NVIDIA Android extensions (available on NVIDIA Shield), if they are not
+			// available then nothing will be done
+			if (retro.hasExtra("HIDEMOUSE")) hideMouseCursor();
 		}
 	}
 
+	public void hideMouseCursor() {
+
+		// Check for NVIDIA extensions and minimum SDK version
+		Method mInputManager_setCursorVisibility;
+		try { mInputManager_setCursorVisibility =
+			InputManager.class.getMethod("setCursorVisibility", boolean.class);
+		}
+		catch (NoSuchMethodException ex) {
+			return; // Extensions were not available so do nothing
+		}
+
+		// Hide the mouse cursor
+		InputManager inputManager = (InputManager) getSystemService(Context.INPUT_SERVICE);
+		try { mInputManager_setCursorVisibility.invoke(inputManager, false); }
+		catch (InvocationTargetException ite) { }
+		catch (IllegalAccessException iae)    { }
+	}
+
+	@Override
+	public void onStop() {
+		super.onStop();
+
+		// If QUITFOCUS parameter was set then completely exit Retroarch when focus is lost
+		if (quitfocus) System.exit(0);
+	}
 }
