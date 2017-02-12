@@ -1666,8 +1666,10 @@ static int cheevos_read__json_end_object(void *userdata)
 
    if (ud->in_cheevos)
       return cheevos_new_cheevo(ud);
+#ifdef CHEEVOS_ENABLE_LBOARDS
    else if (ud->in_lboards)
       return cheevos_new_lboard(ud);
+#endif
 
    return 0;
 }
@@ -3302,7 +3304,9 @@ void cheevos_test(void)
    if (settings->cheevos.test_unofficial)
       cheevos_test_cheevo_set(&cheevos_locals.unofficial);
 
+#ifdef CHEEVOS_ENABLE_LBOARDS
    cheevos_test_leaderboards();
+#endif
 }
 
 bool cheevos_set_cheats(void)
