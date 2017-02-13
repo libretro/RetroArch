@@ -1360,6 +1360,7 @@ static int cheevos_parse_condition(cheevos_condition_t *condition, const char* m
    return 0;
 }
 
+#ifdef CHEEVOS_ENABLE_LBOARDS
 static void cheevos_free_condition(cheevos_condition_t* condition)
 {
    unsigned i;
@@ -1374,11 +1375,13 @@ static void cheevos_free_condition(cheevos_condition_t* condition)
       free((void*)condition->condsets);
    }
 }
+#endif
 
 /*****************************************************************************
 Parse the Mem field of leaderboards.
 *****************************************************************************/
 
+#ifdef CHEEVOS_ENABLE_LBOARDS
 static int cheevos_parse_expression(cheevos_expr_t *expr, const char* mem)
 {
    const char* aux;
@@ -1412,7 +1415,9 @@ static int cheevos_parse_expression(cheevos_expr_t *expr, const char* mem)
 
    return 0;
 }
+#endif
 
+#ifdef CHEEVOS_ENABLE_LBOARDS
 static int cheevos_parse_mem(cheevos_leaderboard_t *lb, const char* mem)
 {
    lb->start.condsets = NULL;
@@ -1464,6 +1469,7 @@ error:
    free((void*)lb->value.terms);
    return -1;
 }
+#endif
 
 /*****************************************************************************
 Load achievements from a JSON string.
@@ -1526,6 +1532,7 @@ error:
    return -1;
 }
 
+#ifdef CHEEVOS_ENABLE_LBOARDS
 static int cheevos_new_lboard(cheevos_readud_t *ud)
 {
    cheevos_leaderboard_t *lboard = cheevos_locals.leaderboards + ud->lboard_count++;
@@ -1551,6 +1558,7 @@ error:
    free((void*)lboard->description);
    return -1;
 }
+#endif
 
 static int cheevos_read__json_key( void *userdata,
       const char *name, size_t length)
@@ -2211,6 +2219,7 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
    }
 }
 
+#ifdef CHEEVOS_ENABLE_LBOARDS
 static int cheevos_test_lboard_condition(const cheevos_condition_t* condition)
 {
    int dirty_conds              = 0;
@@ -2290,7 +2299,9 @@ static void cheevos_make_lboard_url(const cheevos_leaderboard_t *lboard,
    cheevos_log_url("CHEEVOS url to submit the leaderboard: %s\n", url);
 #endif
 }
+#endif
 
+#ifdef CHEEVOS_ENABLE_LBOARDS
 static void cheevos_lboard_submit(void *task_data, void *user_data, const char *error)
 {
    cheevos_leaderboard_t *lboard = (cheevos_leaderboard_t *)user_data;
@@ -2313,7 +2324,9 @@ static void cheevos_lboard_submit(void *task_data, void *user_data, const char *
    }
 #endif
 }
+#endif
 
+#ifdef CHEEVOS_ENABLE_LBOARDS
 static void cheevos_test_leaderboards(void)
 {
    cheevos_leaderboard_t* lboard = cheevos_locals.leaderboards;
@@ -2360,6 +2373,7 @@ static void cheevos_test_leaderboards(void)
       }
    }
 }
+#endif
 
 /*****************************************************************************
 Free the loaded achievements.
