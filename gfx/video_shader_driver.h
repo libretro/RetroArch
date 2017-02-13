@@ -27,7 +27,7 @@
 #include "../config.h"
 #endif
 
-#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL) || defined(HAVE_SLANG)
 #ifndef HAVE_SHADER_MANAGER
 #define HAVE_SHADER_MANAGER
 #endif
