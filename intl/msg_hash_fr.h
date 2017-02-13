@@ -8,7 +8,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_DEVICE_DISCONNECTED_FROM_PORT,
-      "Périphérique déconnecté (du port si "port X")"
+      "Périphérique déconnecté (du port si 'port X')"
       )
 MSG_HASH(
       MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
@@ -52,7 +52,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
-      "Synchronisation "hard" du CPU et du GPU. Réduit la latence au prix de la performance."
+      "Synchronisation 'hard' du CPU et du GPU. Réduit la latence au prix de la performance."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_THREADED,
