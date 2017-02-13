@@ -120,7 +120,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_THREADED,
-      "Verbessert die Leistung, führt aber zu größerer Latenz und Videoproblemen. Verwende dies nur, wenn Du sonst die gewünschte Leistung nicht erreichst."
+      "Verbessert die Leistung, führt aber zu größerer Latenz und kann Videoprobleme verursachen. Verwende dies nur, wenn Du sonst die gewünschte Leistung nicht erreichst."
 	  )
 MSG_HASH(
       MSG_AUDIO_VOLUME,
@@ -292,7 +292,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
-      "Shader-Vorlagen automatisch laden"
+      "Shader-Voreinstellungen automatisch laden"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
@@ -1602,7 +1602,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
       "Shader-Voreinstellung laden")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PARAMETERS,
-      "Shader-Parameter für Menü")
+      "Shader-Parameter anpassen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
       "Shader-Voreinstellung speichern unter...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE,
@@ -2442,7 +2442,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
-      "Skaliere das Bild in ganzzahligen Schritten. Die Basisgröße hängt von der Geometrie und dem Seitenverhältnis ab, die vom System gemeldet werden. Wenn 'Seitenverhältnis erzwingen' nicht gewählt ist, werden Höhe u. Breite unabhängig skaliert."
+      "Skaliere das Bild in ganzzahligen Schritten. Die Basisgröße hängt von der vom System gemeldeten Geometrie und dem Seitenverhältnis ab. Wenn 'Seitenverhältnis erzwingen' nicht gewählt ist, werden Höhe u. Breite unabhängig skaliert."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
@@ -2478,7 +2478,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
-      "Die maximale Geschwindigkeit, mit der Inhalt im Vorlauf-Modus dargestellt wird (z.B. 5x für 60 Inhalt mit 60 Bildern/sek => Begrenzung auf 300 Bilder/sek). Wenn 0x gewählt ist, ist die Vorlauf-Geschwindigkeit unbegrenzt (keine Begrenzung der Bilder/sek)."
+      "Die maximale Geschwindigkeit, mit der Inhalt im Vorlauf-Modus dargestellt wird (z.B. 5x für 60 Inhalt mit 60 Bildern/sek => Begrenzung auf 300 Bilder/sek). Wenn 0x gewählt ist, ist die Vorlauf-Geschwindigkeit unbegrenzt."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
@@ -2876,3 +2876,75 @@ MSG_HASH(
       MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
       "Dieser Ort wird standardmäßig durchsucht, wenn das Menü nach ladbaren Inhalten wie Assets sucht."
       )
+MSG_HASH(MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
+      "Speichere alle Speicherdaten in diesem Verzeichnis. Wenn kein Verzeichnis festgelegt ist, wird versucht, die Datei im Arbeitsverzeichnis des Inhalts zu speichern.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
+      "Speichere alle Spielstände in diesem Verzeichnis. Wenn kein Verzeichnis festgelegt ist, wird versucht, die Datei im Arbeitsverzeichnis des Inhalts zu speichern.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SCREENSHOT_DIRECTORY,
+      "Verzeichnis, in dem alle Bildschirmfotos abgelegt werden.")
+MSG_HASH(MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
+      "Verzeichnis, in dem alle Overlays abgelegt werden.")
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CHEAT_DATABASE_PATH,
+      "Verzeichnis, in dem alle Cheat-Dateien gespeichert werden."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_AUDIO_FILTER_DIR,
+      "Verzeichnis, in dem alle Audio-DSP-Filter gespeichert werden."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_VIDEO_FILTER_DIR,
+      "Verzeichnis, in dem alle CPU-basierten Videofilter gespeichert werden."
+      )
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SHADER_DIR,
+      "Verzeichnis, in dem alle GPU-basierten Videoshader gespeichert werden.")
+MSG_HASH(MENU_ENUM_SUBLABEL_RECORDING_OUTPUT_DIRECTORY,
+      "Aufnahmen werden in diesem Verzeichnis abgelegt.")
+MSG_HASH(MENU_ENUM_SUBLABEL_RECORDING_CONFIG_DIRECTORY,
+      "Aufnahme-Konfigurationen werden in diesem Verzeichnis abgelegt.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_PATH,
+      "Wähle eine andere Schriftart für Bildschirm-Benachrichtigungen.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SHADER_APPLY_CHANGES,
+      "Änderungen an der Shader-Konfiguration werden sofort übernommen. Verwende diese Option, wenn Du die Anzahl der Shader-Durchläufe, die Filter, die FBO-Skalierung usw. geändert hast.")
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_VIDEO_SHADER_NUM_PASSES,
+      "Erhöhe oder verringere die Anzahl der Shader-Durchläufe. Du kannst für jeden Shader-Durchlauf einen eigenen Shader festlegen und dessen Skalierung und Filterung ändern."
+      )
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
+      "Lade eine Shader-Voreinstellung. Die Shader-Pipeline wird automatisch konfiguriert.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
+      "Speichere die aktuellen Shader-Einstellungen als neue Shader-Voreinstellung ab.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CORE,
+      "Speichere die aktuellen Shader-Einstellungen als Standard-Einstellung für diesen Core.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
+      "Speichere die aktuellen Shader-Einstellungen als Standard-Einstellung für diesen Inhalt.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SHADER_PARAMETERS,
+      "Modifiziert den aktuellen Shader direkt. Änderungen werden nicht in den Shader-Voreinstellungen gespeichert.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PARAMETERS,
+      "Modizifiert die Shader-Voreinstellung, die momentan im Menü geladen ist.")
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CHEAT_NUM_PASSES,
+      "Erhöhe oder verringere die Anzahl der Cheats."
+      )
+MSG_HASH(MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
+      "Änderungen an den Cheats werden sofort übernommen.")
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
+      "Lade eine Cheat-Datei."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CHEAT_FILE_SAVE_AS,
+      "Speichere die aktuellen Cheats." /*TODO: More context*/
+      )
+MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
+      "Greife schnell auf alle relevanten Spieleinstellungen zu.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CORE_INFORMATION,
+      "Zeige Informationen über diese Anwendung/diesen Core an.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+      "Benutzerdefinierte Bildhöhe, die verwendet wird, wenn das Seitenverhältnis auf 'Benutzerdefiniert' eingestellt ist.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+      "Benutzerdefinierte Bildhöhe, die verwendet wird, wenn das Seitenverhältnis auf 'Benutzerdefiniert' eingestellt ist.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
+      "Benutzerdefinierter Versatz, der für die Position der X-Achse des Bildes verwendet wird. Wird ignoriert, wenn 'Ganzzahlige Bildskalierung' aktiviert ist, das Bild wird dann zentriert.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
+      "Benutzerdefinierter Versatz, der für die Position der Y-Achse des Bildes verwendet wird. Wird ignoriert, wenn 'Ganzzahlige Bildskalierung' aktiviert ist, das Bild wird dann zentriert.")
