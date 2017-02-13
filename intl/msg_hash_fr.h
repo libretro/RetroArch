@@ -1085,9 +1085,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
       "Charger un fichier de remap")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE,
-      "Charger un fichier remaps de coeur")
+      ""Sauvegarder un fichier remaps de coeur")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
-      "Charger un fichier remap de contenu")
+      ""Sauvegarder un fichier remap de contenu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REQUIRED,
       "Requis")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
