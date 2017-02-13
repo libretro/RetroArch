@@ -1672,7 +1672,7 @@ static bool check_shader_compatibility(enum file_path_enum enum_idx)
    }
 
    if (string_is_equal("gl", settings->video.driver) || 
-       string_is_equal("d3d9", settings->video.driver))
+       string_is_equal("d3d", settings->video.driver))
    {
       if (enum_idx == FILE_PATH_SLANGP_EXTENSION)
          return false;
