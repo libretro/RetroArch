@@ -3467,7 +3467,7 @@ static void xmb_context_reset_textures(
    unsigned i;
 
    for (i = 0; i < XMB_TEXTURE_LAST; i++)
-      menu_display_reset_textures_list(xmb_texture_path(i), iconpath, &xmb->textures.list[i]);
+      menu_display_reset_textures_list(xmb_texture_path(i), iconpath, &xmb->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR);
 
    menu_display_allocate_white_texture();
 

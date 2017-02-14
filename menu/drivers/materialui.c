@@ -184,7 +184,7 @@ static void mui_context_reset_textures(mui_handle_t *mui)
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_ICONS);
 
    for (i = 0; i < MUI_TEXTURE_LAST; i++)
-      menu_display_reset_textures_list(mui_texture_path(i), iconpath, &mui->textures.list[i]);
+      menu_display_reset_textures_list(mui_texture_path(i), iconpath, &mui->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR);
 }
 
 static void mui_draw_icon(
