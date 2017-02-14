@@ -256,6 +256,9 @@ void menu_display_draw_quad(int x, int y, unsigned w, unsigned h,
 void menu_display_draw_texture(int x, int y, unsigned w, unsigned h,
       unsigned width, unsigned height,
       float *color, uintptr_t texture);
+void menu_display_draw_texture_slice(int x, int y, unsigned w, unsigned h,
+      unsigned new_w, unsigned new_h, unsigned width, unsigned height,
+      float *color, unsigned offset, float scale_factor, uintptr_t texture);
 void menu_display_rotate_z(menu_display_ctx_rotate_draw_t *draw);
 bool menu_display_get_tex_coords(menu_display_ctx_coord_draw_t *draw);
 
@@ -294,7 +297,7 @@ void menu_display_set_alpha(float *color, float alpha_value);
 font_data_t *menu_display_font(enum application_special_type type, float font_size);
 
 void menu_display_reset_textures_list(const char *texture_path, const char *iconpath,
-      uintptr_t *item);
+      uintptr_t *item, enum texture_filter_type filter_type);
 
 extern uintptr_t menu_display_white_texture;
 
