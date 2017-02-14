@@ -32,7 +32,7 @@
 #include "../../tasks/tasks_internal.h"
 #include <file/file_path.h>
 #include "../../file_path_special.h"
-#include "paths.h"
+#include "../../paths.h"
 
 /* Only used before init_netplay */
 static bool netplay_enabled = false;
