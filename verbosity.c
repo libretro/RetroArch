@@ -50,12 +50,14 @@
  * will write to this file. */
 static FILE *log_file      = NULL;
 static bool main_verbosity = false;
+static bool inited = false;
 
 void verbosity_enable(void)
 {
    main_verbosity = true;
 #ifdef RARCH_INTERNAL
-   frontend_driver_attach_console();
+   if (!log_file)
+      frontend_driver_attach_console();
 #endif
 }
 
@@ -63,7 +65,8 @@ void verbosity_disable(void)
 {
    main_verbosity = false;
 #ifdef RARCH_INTERNAL
-   frontend_driver_detach_console();
+   if (!log_file)
+      frontend_driver_detach_console();
 #endif
 }
 
@@ -84,11 +87,14 @@ void *retro_main_log_file(void)
 
 void retro_main_log_file_init(const char *path)
 {
+   if (inited)
+      return;
    log_file     = stderr;
    if (path == NULL)
       return;
 
    log_file = fopen(path, "wb");
+   inited = true;
 }
 
 void retro_main_log_file_deinit(void)
