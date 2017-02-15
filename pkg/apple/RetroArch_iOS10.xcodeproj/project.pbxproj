@@ -623,6 +623,7 @@
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
+                                        "../../deps",
 				);
 				INFOPLIST_FILE = "RetroArch_iOS9-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
@@ -636,6 +637,8 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_MINIUPNPC",
+					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
@@ -701,6 +704,7 @@
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
+                                        "../../deps",
 				);
 				INFOPLIST_FILE = "RetroArch_iOS9-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
@@ -715,6 +719,8 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_MINIUPNPC",
+					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
@@ -765,6 +771,8 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_MINIUPNPC",
+					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
@@ -831,6 +839,7 @@
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
+                                        "../../deps",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
@@ -844,6 +853,8 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_MINIUPNPC",
+					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
@@ -905,6 +916,7 @@
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
+                                        "../../deps",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
@@ -919,6 +931,8 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_MINIUPNPC",
+					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
@@ -966,6 +980,8 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_MINIUPNPC",
+					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
@@ -1027,6 +1043,7 @@
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
+                                        "../../deps",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
@@ -1040,6 +1057,8 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_MINIUPNPC",
+					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
@@ -1104,6 +1123,7 @@
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
+                                        "../../deps",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
@@ -1118,6 +1138,8 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_MINIUPNPC",
+					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
@@ -1168,6 +1190,8 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_MINIUPNPC",
+					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
@@ -1251,6 +1275,8 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_MINIUPNPC",
+					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
@@ -1320,6 +1346,8 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_MINIUPNPC",
+					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
@@ -1377,6 +1405,7 @@
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
+                                        "../../deps",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
@@ -1390,6 +1419,8 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_MINIUPNPC",
+					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
@@ -1454,6 +1485,7 @@
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
+                                        "../../deps",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
@@ -1468,6 +1500,8 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_MINIUPNPC",
+					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
@@ -1518,6 +1552,8 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_MINIUPNPC",
+					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
