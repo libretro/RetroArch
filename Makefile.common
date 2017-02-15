@@ -1208,7 +1208,26 @@ ifeq ($(HAVE_NETWORKING), 1)
    endif
 
    ifeq ($(HAVE_MINIUPNPC), 1)
-      LIBS += -lminiupnpc
+      ifeq ($(HAVE_BUILTINMINIUPNPC), 1)
+         DEFINES += -DHAVE_BUILTINMINIUPNPC -DMINIUPNPC_SET_SOCKET_TIMEOUT -DMINIUPNPC_GET_SRC_ADDR
+			DEFINES += -I$(DEPS_DIR)/miniupnpc
+         OBJ += \
+					 $(DEPS_DIR)/miniupnpc/igd_desc_parse.o \
+					 $(DEPS_DIR)/miniupnpc/upnpreplyparse.o \
+					 $(DEPS_DIR)/miniupnpc/upnpcommands.o \
+					 $(DEPS_DIR)/miniupnpc/upnperrors.o \
+					 $(DEPS_DIR)/miniupnpc/connecthostport.o \
+					 $(DEPS_DIR)/miniupnpc/portlistingparse.o \
+					 $(DEPS_DIR)/miniupnpc/receivedata.o \
+					 $(DEPS_DIR)/miniupnpc/upnpdev.o \
+					 $(DEPS_DIR)/miniupnpc/minissdpc.o \
+					 $(DEPS_DIR)/miniupnpc/miniwget.o \
+					 $(DEPS_DIR)/miniupnpc/miniupnpc.o \
+					 $(DEPS_DIR)/miniupnpc/minixml.o \
+					 $(DEPS_DIR)/miniupnpc/minisoap.o
+		else
+		   LIBS += -lminiupnpc
+      endif
    endif
 endif
 
