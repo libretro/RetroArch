@@ -1,16 +1,22 @@
 # 1.4.2 (future)
 - ANDROID: Autoconf fallback
+- ANDROID: Mouse support / Emulated mouse support
+- AUTOCONF: Fix partial matches for pad name
 - CHEEVOS: Fix crashes in the cheevos description menu
 - CHEEVOS: WIP leaderboards support 
 - COMMON: Threading fixes 
 - DOS: Add keyboard driver
 - DOS: Improve color accuracy and scalines
+- GUI: Various settings are now only visible when advanced settings is enabled
 - LOCALIZATION: Rewrite german translation 
 - LOCALIZATION: Update several english sublabels 
 - NET: Allow manual netplay content loading 
 - NET: Announcing network games to the public lobby is optional now 
-- NET: fix netplay join for contentless cores 
-- SCANNER: always add 7z & zip to supported extensions
+- NET: Bake in miniupnpc
+- NET: Fix netplay join for contentless cores 
+- SCANNER: Always add 7z & zip to supported extensions
+- VULKAN: Find supported composite alpha in swapchain
 - WIIU: Keyboard support 
+- WINDOWS: Logging to file no longer spawns an empty window
 
 # 1.4.1
