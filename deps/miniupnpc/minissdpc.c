@@ -451,8 +451,8 @@ parseMSEARCHReply(const char * reply, int size,
 
 /* port upnp discover : SSDP protocol */
 #define SSDP_PORT 1900
-#define XSTR(s) STR(s)
-#define STR(s) #s
+#define XSTR(s) MINISSDPC_STR(s)
+#define MINISSDPC_STR(s) #s
 #define UPNP_MCAST_ADDR "239.255.255.250"
 /* for IPv6 */
 #define UPNP_MCAST_LL_ADDR "FF02::C" /* link-local */
