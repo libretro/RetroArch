@@ -741,6 +741,48 @@ void netplay_post_frame(netplay_t *netplay)
 }
 
 /**
+ * netplay_force_future
+ * @netplay              : pointer to netplay object
+ *
+ * Force netplay to ignore all past input, typically because we've just loaded
+ * a state or reset.
+ */
+static void netplay_force_future(netplay_t *netplay)
+{
+   /* Wherever we're inputting, that's where we consider our state to be loaded */
+   netplay->run_ptr = netplay->self_ptr;
+   netplay->run_frame_count = netplay->self_frame_count;
+
+   /* We need to ignore any intervening data from the other side,
+    * and never rewind past this */
+   netplay_update_unread_ptr(netplay);
+   if (netplay->unread_frame_count < netplay->run_frame_count)
+   {
+      uint32_t player;
+      for (player = 0; player < MAX_USERS; player++)
+      {
+         if (!(netplay->connected_players & (1<<player))) continue;
+         if (netplay->read_frame_count[player] < netplay->run_frame_count)
+         {
+            netplay->read_ptr[player] = netplay->run_ptr;
+            netplay->read_frame_count[player] = netplay->run_frame_count;
+         }
+      }
+      if (netplay->server_frame_count < netplay->run_frame_count)
+      {
+         netplay->server_ptr = netplay->run_ptr;
+         netplay->server_frame_count = netplay->run_frame_count;
+      }
+      netplay_update_unread_ptr(netplay);
+   }
+   if (netplay->other_frame_count < netplay->run_frame_count)
+   {
+      netplay->other_ptr = netplay->run_ptr;
+      netplay->other_frame_count = netplay->run_frame_count;
+   }
+}
+
+/**
  * netplay_send_savestate
  * @netplay              : pointer to netplay object
  * @serial_info          : the savestate being loaded
@@ -808,10 +850,7 @@ void netplay_load_savestate(netplay_t *netplay,
 {
    retro_ctx_serialize_info_t tmp_serial_info;
 
-   /* Wherever we're inputting, that's where we consider our state to be loaded
-    * (FIXME: Need to be more careful about saving it?) */
-   netplay->run_ptr = netplay->self_ptr;
-   netplay->run_frame_count = netplay->self_frame_count;
+   netplay_force_future(netplay);
 
    /* Record it in our own buffer */
    if (save || !serial_info)
@@ -844,34 +883,6 @@ void netplay_load_savestate(netplay_t *netplay,
       }
    }
 
-   /* We need to ignore any intervening data from the other side, 
-    * and never rewind past this */
-   netplay_update_unread_ptr(netplay);
-   if (netplay->unread_frame_count < netplay->run_frame_count)
-   {
-      uint32_t player;
-      for (player = 0; player < MAX_USERS; player++)
-      {
-         if (!(netplay->connected_players & (1<<player))) continue;
-         if (netplay->read_frame_count[player] < netplay->run_frame_count)
-         {
-            netplay->read_ptr[player] = netplay->run_ptr;
-            netplay->read_frame_count[player] = netplay->run_frame_count;
-         }
-      }
-      if (netplay->server_frame_count < netplay->run_frame_count)
-      {
-         netplay->server_ptr = netplay->run_ptr;
-         netplay->server_frame_count = netplay->run_frame_count;
-      }
-      netplay_update_unread_ptr(netplay);
-   }
-   if (netplay->other_frame_count < netplay->run_frame_count)
-   {
-      netplay->other_ptr = netplay->run_ptr;
-      netplay->other_frame_count = netplay->run_frame_count;
-   }
-
    /* If we can't send it to the peer, loading a state was a bad idea */
    if (netplay->quirks & (
               NETPLAY_QUIRK_NO_SAVESTATES
@@ -884,6 +895,37 @@ void netplay_load_savestate(netplay_t *netplay,
    if (netplay->compress_zlib.compression_backend)
       netplay_send_savestate(netplay, serial_info, NETPLAY_COMPRESSION_ZLIB,
          &netplay->compress_zlib);
+}
+
+/**
+ * netplay_core_reset
+ * @netplay              : pointer to netplay object
+ *
+ * Indicate that the core has been reset to netplay peers
+ **/
+static void netplay_core_reset(netplay_t *netplay)
+{
+   uint32_t cmd[3];
+   size_t i;
+
+   /* Ignore past input */
+   netplay_force_future(netplay);
+
+   /* Request that our peers reset */
+   cmd[0] = htonl(NETPLAY_CMD_RESET);
+   cmd[1] = htonl(sizeof(uint32_t));
+   cmd[2] = htonl(netplay->self_frame_count);
+
+   for (i = 0; i < netplay->connections_size; i++)
+   {
+      struct netplay_connection *connection = &netplay->connections[i];
+      if (!connection->active ||
+            connection->mode < NETPLAY_CONNECTION_CONNECTED) continue;
+
+      if (!netplay_send(&connection->send_packet_buffer, connection->fd, cmd,
+               sizeof(cmd)))
+         netplay_hangup(netplay, connection);
+   }
 }
 
 /**
@@ -1144,6 +1186,9 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          break;
       case RARCH_NETPLAY_CTL_LOAD_SAVESTATE:
          netplay_load_savestate(netplay_data, (retro_ctx_serialize_info_t*)data, true);
+         break;
+      case RARCH_NETPLAY_CTL_RESET:
+         netplay_core_reset(netplay_data);
          break;
       case RARCH_NETPLAY_CTL_DISCONNECT:
          ret = netplay_disconnect(netplay_data);

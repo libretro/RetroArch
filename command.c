@@ -1919,6 +1919,9 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_CHEEVOS
          cheevos_reset_game();
 #endif
+#if HAVE_NETWORKING
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_RESET, NULL);
+#endif
          break;
       case CMD_EVENT_SAVE_STATE:
          {

@@ -153,8 +153,11 @@ enum netplay_cmd
    /* Request that a client stall because it's running fast */
    NETPLAY_CMD_STALL          = 0x0045,
 
+   /* Request a core reset */
+   NETPLAY_CMD_RESET          = 0x0046,
+
    /* Sends over cheats enabled on client (unsupported) */
-   NETPLAY_CMD_CHEATS         = 0x0046,
+   NETPLAY_CMD_CHEATS         = 0x0047,
 
    /* Misc. commands */
 
@@ -403,6 +406,9 @@ struct netplay
    /* Force a rewind to other_frame_count/other_ptr. This is for synchronized
     * events, such as player flipping or savestate loading. */
    bool force_rewind;
+
+   /* Force a reset */
+   bool force_reset;
 
    /* Quirks in the savestate implementation */
    uint64_t quirks;
