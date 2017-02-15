@@ -47,6 +47,26 @@
 #define MAX_TOUCH 16
 #define MAX_NUM_KEYBOARDS 3
 
+// If using an SDK lower than 14 then add missing mouse button codes
+#if __ANDROID_API__ < 14
+enum {
+    AMOTION_EVENT_BUTTON_PRIMARY = 1 << 0,
+    AMOTION_EVENT_BUTTON_SECONDARY = 1 << 1,
+    AMOTION_EVENT_BUTTON_TERTIARY = 1 << 2,
+    AMOTION_EVENT_BUTTON_BACK = 1 << 3,
+    AMOTION_EVENT_BUTTON_FORWARD = 1 << 4,
+};
+#endif
+
+// If using an SDK lower than 24 then add missing relative axis codes
+#if __ANDROID_API__ < 24
+#define AMOTION_EVENT_AXIS_RELATIVE_X 27
+#define AMOTION_EVENT_AXIS_RELATIVE_Y 28
+#endif
+
+// Use this to enable/disable using the touch screen as mouse
+#define ENABLE_TOUCH_SCREEN_MOUSE 1
+
 typedef struct
 {
    float x;
@@ -96,6 +116,10 @@ typedef struct android_input_data
    sensor_t accelerometer_state;
    struct input_pointer pointer[MAX_TOUCH];
    unsigned pointer_count;
+   int mouse_x_delta, mouse_y_delta;
+   int mouse_x_prev, mouse_y_prev;
+   int mouse_l, mouse_r;
+   int64_t quick_tap_time;
 } android_input_data_t;
 
 typedef struct android_input
@@ -122,6 +146,12 @@ extern float AMotionEvent_getAxisValue(const AInputEvent* motion_event,
 static typeof(AMotionEvent_getAxisValue) *p_AMotionEvent_getAxisValue;
 
 #define AMotionEvent_getAxisValue (*p_AMotionEvent_getAxisValue)
+
+extern int32_t AMotionEvent_getButtonState(const AInputEvent* motion_event);
+
+static typeof(AMotionEvent_getButtonState) *p_AMotionEvent_getButtonState;
+
+#define AMotionEvent_getButtonState (*p_AMotionEvent_getButtonState)
 
 static void *libandroid_handle;
 
@@ -452,6 +482,9 @@ static bool android_input_init_handle(void)
       RARCH_LOG("Set engine_handle_dpad to 'Get Axis Value' (for reading extra analog sticks)");
       engine_handle_dpad = engine_handle_dpad_getaxisvalue;
    }
+
+   p_AMotionEvent_getButtonState = dlsym(RTLD_DEFAULT,"AMotionEvent_getButtonState");
+
    pad_id1 = -1;
    pad_id2 = -1;
 
@@ -470,6 +503,8 @@ static void *android_input_init(const char *joypad_driver)
 
    android->thread.pads_connected = 0;
    android->copy.pads_connected = 0;
+   android->thread.quick_tap_time = 0;
+   android->copy.quick_tap_time = 0;
    android->joypad         = input_joypad_init_driver(joypad_driver, android);
  
    input_keymaps_init_keyboard_lut(rarch_key_map_android);
@@ -495,6 +530,59 @@ static void *android_input_init(const char *joypad_driver)
    return android;
 }
 
+static int16_t android_mouse_state(android_input_data_t *android_data, unsigned id)
+{
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_MOUSE_LEFT:
+         return android_data->mouse_l;
+      case RETRO_DEVICE_ID_MOUSE_RIGHT:
+         return android_data->mouse_r;
+      case RETRO_DEVICE_ID_MOUSE_X:
+         return android_data->mouse_x_delta;
+      case RETRO_DEVICE_ID_MOUSE_Y:
+         return android_data->mouse_y_delta;
+   }
+
+   return 0;
+}
+
+static INLINE void android_mouse_calculate_deltas(android_input_data_t *android_data, AInputEvent *event,size_t motion_ptr)
+{
+   // Adjust mouse speed based on ratio between core resolution and system resolution
+   float x_scale = 1;
+   float y_scale = 1;
+   video_viewport_t *custom_vp = video_viewport_get_custom();
+   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+   if(custom_vp && av_info)
+   {
+      const struct retro_game_geometry *geom = (const struct retro_game_geometry*)&av_info->geometry;
+      x_scale = 2 * (float)geom->base_width / (float)custom_vp->width;
+      y_scale = 2 * (float)geom->base_height / (float)custom_vp->height;
+   }
+
+   // This axis is only available on Android Nougat and on Android devices with NVIDIA extensions
+   float x = AMotionEvent_getAxisValue(event,AMOTION_EVENT_AXIS_RELATIVE_X, motion_ptr);
+   float y = AMotionEvent_getAxisValue(event,AMOTION_EVENT_AXIS_RELATIVE_Y, motion_ptr);
+
+   // Use AXIS_RELATIVE values if they were available
+   if (x != 0 || y != 0)
+   {
+      android_data->mouse_x_delta = ceil(x * x_scale);
+      android_data->mouse_y_delta = ceil(y * y_scale);
+   }
+   // If not then calculate deltas based on AXIS_X and AXIS_Y. This has limitations compared to AXIS_RELATIVE
+   // because once the Android mouse cursor hits the edge of the screen it is not possible to move the in-game
+   // mouse any further in that direction.
+   else
+   {
+      android_data->mouse_x_delta = ceil((AMotionEvent_getX(event, motion_ptr) - android_data->mouse_x_prev) * x_scale);
+      android_data->mouse_y_delta = ceil((AMotionEvent_getY(event, motion_ptr) - android_data->mouse_y_prev) * y_scale);
+      android_data->mouse_x_prev = AMotionEvent_getX(event, motion_ptr);
+      android_data->mouse_y_prev = AMotionEvent_getY(event, motion_ptr);
+   }
+}
+
 static INLINE int android_input_poll_event_type_motion(
       android_input_data_t *android_data, AInputEvent *event,
       int port, int source)
@@ -502,6 +590,7 @@ static INLINE int android_input_poll_event_type_motion(
    int getaction, action;
    size_t motion_ptr;
    bool keyup;
+   int btn;
 
    // Only handle events from a touchscreen or mouse
    if (!(source & (AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE)))
@@ -517,8 +606,38 @@ static INLINE int android_input_poll_event_type_motion(
       (source == AINPUT_SOURCE_MOUSE &&
        action != AMOTION_EVENT_ACTION_DOWN);
 
+   // If source is mouse then calculate button state and mouse deltas and don't process as touchscreen event
+   if (source == AINPUT_SOURCE_MOUSE)
+   {
+      // getButtonState requires API level 14
+      if (p_AMotionEvent_getButtonState)
+      {
+         btn = (int)AMotionEvent_getButtonState(event);
+         android_data->mouse_l = (btn & AMOTION_EVENT_BUTTON_PRIMARY);
+         android_data->mouse_r = (btn & AMOTION_EVENT_BUTTON_SECONDARY);
+      }
+      else
+      {
+         // If getButtonState is not available then treat all MotionEvent.ACTION_DOWN as left button presses
+         if (action == AMOTION_EVENT_ACTION_DOWN)
+            android_data->mouse_l = 1;
+         if (action == AMOTION_EVENT_ACTION_UP)
+            android_data->mouse_l = 0;
+      }
+      android_mouse_calculate_deltas(android_data,event,motion_ptr);
+      return 0;
+   }
+
    if (keyup && motion_ptr < MAX_TOUCH)
    {
+      if(action == AMOTION_EVENT_ACTION_UP && ENABLE_TOUCH_SCREEN_MOUSE)
+      {
+         // If touchscreen was pressed for less than 200ms then register time stamp of a quick tap
+         if((AMotionEvent_getEventTime(event)-AMotionEvent_getDownTime(event))/1000000 < 200)
+            android_data->quick_tap_time = AMotionEvent_getEventTime(event);
+         android_data->mouse_l = 0;
+      }
+
       memmove(android_data->pointer + motion_ptr,
             android_data->pointer + motion_ptr + 1,
             (MAX_TOUCH - motion_ptr - 1) * sizeof(struct input_pointer));
@@ -528,6 +647,25 @@ static INLINE int android_input_poll_event_type_motion(
    else
    {
       int pointer_max = MIN(AMotionEvent_getPointerCount(event), MAX_TOUCH);
+
+      if(action == AMOTION_EVENT_ACTION_DOWN && ENABLE_TOUCH_SCREEN_MOUSE)
+      {
+         // When touch screen is pressed, set mouse previous position to current position
+         // before starting to calculate mouse movement deltas.
+         android_data->mouse_x_prev = AMotionEvent_getX(event, motion_ptr);
+         android_data->mouse_y_prev = AMotionEvent_getY(event, motion_ptr);
+
+         // If another touch happened within 200ms after a quick tap then cancel the quick tap
+         // and register left mouse button as being held down
+         if((AMotionEvent_getEventTime(event) - android_data->quick_tap_time)/1000000 < 200)
+         {
+            android_data->quick_tap_time = 0;
+            android_data->mouse_l = 1;
+         }
+      }
+
+      if(action == AMOTION_EVENT_ACTION_MOVE && ENABLE_TOUCH_SCREEN_MOUSE)
+         android_mouse_calculate_deltas(android_data,event,motion_ptr);
 
       for (motion_ptr = 0; motion_ptr < pointer_max; motion_ptr++)
       {
@@ -548,6 +686,10 @@ static INLINE int android_input_poll_event_type_motion(
                motion_ptr + 1);
       }
    }
+
+   // If more than one pointer detected then count it as a mouse right click
+   if (ENABLE_TOUCH_SCREEN_MOUSE)
+      android_data->mouse_r = (android_data->pointer_count == 2);
 
    return 0;
 }
@@ -1007,6 +1149,20 @@ static void android_input_poll_memcpy(void *data)
    
    memcpy(&android->copy, &android->thread, sizeof(android->copy));
    
+   // If a quick tap timer is active then check if more than 200ms have passed without it being
+   // reset by a new motionevent. If so then queue a single left mouse click. This really should
+   // by done in one of the polling functions, but since android_input_state() uses a copy of
+   // the inputstate being created here, it has to be done here. Same goes for the deltas resets.
+   retro_time_t now = cpu_features_get_time_usec();
+   if(android->thread.quick_tap_time && (now/1000 - android->thread.quick_tap_time/1000000) >= 200)
+   {
+      android->thread.quick_tap_time = 0;
+      android->copy.mouse_l = 1;
+   }
+
+   android->thread.mouse_x_delta = 0;
+   android->thread.mouse_y_delta = 0;
+
    for (i = 0; i < MAX_PADS; i++)
    {
       for (j = 0; j < 2; j++)
@@ -1128,6 +1284,8 @@ static int16_t android_input_state(void *data,
             return input_joypad_analog(android->joypad, joypad_info,
                   port, idx, id, binds[port]);
          break;
+      case RETRO_DEVICE_MOUSE:
+         return android_mouse_state(android_data, id);
       case RETRO_DEVICE_POINTER:
          switch (id)
          {
