@@ -48,9 +48,9 @@
 
 /* If this is non-NULL. RARCH_LOG and friends 
  * will write to this file. */
-static FILE *log_file      = NULL;
-static bool main_verbosity = false;
-static bool initialized = false;
+static FILE *log_file            = NULL;
+static bool main_verbosity       = false;
+static bool log_file_initialized = false;
 
 void verbosity_enable(void)
 {
@@ -87,14 +87,15 @@ void *retro_main_log_file(void)
 
 void retro_main_log_file_init(const char *path)
 {
-   if (initialized)
+   if (log_file_initialized)
       return;
-   log_file     = stderr;
+
+   log_file             = stderr;
    if (path == NULL)
       return;
 
-   log_file = fopen(path, "wb");
-   initialized = true;
+   log_file             = fopen(path, "wb");
+   log_file_initialized = true;
 }
 
 void retro_main_log_file_deinit(void)
