@@ -1,5 +1,6 @@
 # 1.4.2 (future)
 - ANDROID: Autoconf fallback
+- ANDROID: Mouse support / Emulated mouse support
 - AUTOCONF: Fix partial matches for pad name
 - CHEEVOS: Fix crashes in the cheevos description menu
 - CHEEVOS: WIP leaderboards support 
