@@ -724,11 +724,19 @@ static int cheevos_http_get(const char **result, size_t *size,
    int ret         = net_http_get(result, size, url, timeout);
 #endif
 
+   if (ret == NET_HTTP_GET_OK)
+   {
+      if (*result != NULL)
+      {
+         return ret;
+      }
+      
+      RARCH_ERR("CHEEVOS error during HTTP GET: ok.\n");
+      return NET_HTTP_GET_CONNECT_ERROR;
+   }
+
    switch (ret)
    {
-      case NET_HTTP_GET_OK:
-         return ret;
-
       case NET_HTTP_GET_MALFORMED_URL:
          msg = "malformed url";
          break;
@@ -742,7 +750,7 @@ static int cheevos_http_get(const char **result, size_t *size,
          break;
 
       default:
-         msg = "?";
+         msg = "unknown error";
          break;
    }
 
