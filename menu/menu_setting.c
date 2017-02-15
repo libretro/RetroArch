@@ -2817,13 +2817,13 @@ static bool setting_append_list(
             bool_entries[3].name_enum_idx  = MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE;
             bool_entries[3].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE;
             bool_entries[3].default_value  = default_auto_overrides_enable;
-            bool_entries[3].flags          = SD_FLAG_NONE;
+            bool_entries[3].flags          = SD_FLAG_ADVANCED;
 
             bool_entries[4].target         = &settings->auto_remaps_enable;
             bool_entries[4].name_enum_idx  = MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE;
             bool_entries[4].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE;
             bool_entries[4].default_value  = default_auto_remaps_enable;
-            bool_entries[4].flags          = SD_FLAG_NONE;
+            bool_entries[4].flags          = SD_FLAG_ADVANCED;
 
             bool_entries[5].target         = &settings->auto_shaders_enable;
             bool_entries[5].name_enum_idx  = MENU_ENUM_LABEL_AUTO_SHADERS_ENABLE;
@@ -5590,6 +5590,21 @@ static bool setting_append_list(
 #if defined(HAVE_NETWORK_CMD)
             unsigned user;
 #endif
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->netplay.public_announce,
+                  MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE,
+                  MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
+                  true,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+
             CONFIG_STRING(
                   list, list_info,
                   settings->netplay.server,

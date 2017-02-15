@@ -43,7 +43,7 @@
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "cheevos.h"
+#include "cheevos/cheevos.h"
 #endif
 
 #ifdef HAVE_MENU
@@ -1350,15 +1350,6 @@ static bool event_init_content(void)
 
    content_get_status(&contentless, &is_inited);
 
-   if (contentless)
-   {
-#ifdef HAVE_NETWORKING
-      if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
-         RARCH_ERR("%s\n", msg_hash_to_str(MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY));
-#endif
-      return true;
-   }
-
    command_event_set_savestate_auto_index();
 
    if (event_load_save_files())
@@ -1927,6 +1918,9 @@ bool command_event(enum event_command cmd, void *data)
          core_reset();
 #ifdef HAVE_CHEEVOS
          cheevos_reset_game();
+#endif
+#if HAVE_NETWORKING
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_RESET, NULL);
 #endif
          break;
       case CMD_EVENT_SAVE_STATE:

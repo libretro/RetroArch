@@ -1,4 +1,4 @@
-#if defined(_MSC_VER) && !defined(_XBOX)
+﻿#if defined(_MSC_VER) && !defined(_XBOX)
 /* https://support.microsoft.com/en-us/kb/980263 */
 #pragma execution_character_set("utf-8")
 #endif
@@ -1676,7 +1676,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY,
       "Join or host a netplay session.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
-      "Display information for core, network, and system. Display manager for database and cursor.")
+      "Display core, network and system information.")
 MSG_HASH(MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
       "Download add-ons, components and contents for RetroArch.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAMBA_ENABLE,
@@ -2180,6 +2180,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
    "not configured"
+   )
+MSG_HASH(
+   MSG_DEVICE_NOT_CONFIGURED_FALLBACK,
+   "not configured, using fallback"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST,

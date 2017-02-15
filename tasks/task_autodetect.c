@@ -124,8 +124,7 @@ static int input_autoconfigure_joypad_try_from_conf(config_file_t *conf,
       score += 2;
    else
    {
-      if (     !string_is_empty(ident) 
-            &&  string_is_equal(params->name, ident))
+      if (strstr(params->name, ident))
          score += 1;
    }
 
@@ -306,14 +305,25 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
       char msg[255];
 
       msg[0] = '\0';
-
+#ifndef ANDROID
       RARCH_LOG("Autodetect: no profiles found for %s (%d/%d).\n",
             params->name, params->vid, params->pid);
 
       snprintf(msg, sizeof(msg), "%s (%ld/%ld) %s.",
             params->name, (long)params->vid, (long)params->pid,
             msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED));
+#else
+      strlcpy(params->name, "Android Gamepad", sizeof(params->name));
+      if(input_autoconfigure_joypad_from_conf_internal(params, task))
+      {
+         RARCH_LOG("Autodetect: no profiles found for %s (%d/%d). Using fallback\n",
+               params->name, params->vid, params->pid);
 
+         snprintf(msg, sizeof(msg), "%s (%ld/%ld) %s.",
+               params->name, (long)params->vid, (long)params->pid,
+               msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED_FALLBACK));
+      }
+#endif
       task_set_title(task, strdup(msg));
    }
 

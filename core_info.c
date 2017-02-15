@@ -59,6 +59,8 @@ static void core_info_list_resolve_all_extensions(
             (strlen(core_info_list->list[i].supported_extensions) + 2);
    }
 
+   all_ext_len += strlen("7z|") + strlen("zip|");
+
    if (all_ext_len)
       all_ext = (char*)calloc(1, all_ext_len);
 
@@ -76,6 +78,12 @@ static void core_info_list_resolve_all_extensions(
             core_info_list->list[i].supported_extensions, all_ext_len);
       strlcat(core_info_list->all_ext, "|", all_ext_len);
    }
+#ifdef HAVE_7ZIP
+   strlcat(core_info_list->all_ext, "7z|", all_ext_len);
+#endif
+#ifdef HAVE_ZLIB
+   strlcat(core_info_list->all_ext, "zip|", all_ext_len);
+#endif
 }
 
 static void core_info_list_resolve_all_firmware(

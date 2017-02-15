@@ -2292,6 +2292,10 @@ MSG_HASH(
    "設定されていない"
    )
 MSG_HASH(
+   MSG_DEVICE_NOT_CONFIGURED_FALLBACK,
+   "not configured, using fallback"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST,
    "データベースのカーソル表"
    )

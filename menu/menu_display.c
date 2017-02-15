@@ -500,7 +500,7 @@ void menu_display_draw_pipeline(menu_display_ctx_draw_t *draw)
    menu_disp->draw_pipeline(draw);
 }
 
-void menu_display_draw_bg(menu_display_ctx_draw_t *draw, 
+void menu_display_draw_bg(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info, bool add_opacity_to_wallpaper)
 {
    static struct video_coords coords;
@@ -609,6 +609,281 @@ void menu_display_draw_texture(
    draw.x                   = x;
    draw.y                   = height - y;
    menu_display_draw(&draw);
+}
+
+/* Draw the texture split into 9 sections, without scaling the corners.
+ * The middle sections will only scale in the X axis, and the side
+ * sections will only scale in the Y axis. */
+void menu_display_draw_texture_slice(
+      int x, int y, unsigned w, unsigned h,
+      unsigned new_w, unsigned new_h,
+      unsigned width, unsigned height,
+      float *color, unsigned offset, float scale_factor, uintptr_t texture)
+{
+   menu_display_ctx_draw_t draw;
+   menu_display_ctx_rotate_draw_t rotate_draw;
+   struct video_coords coords;
+   math_matrix_4x4 mymat;
+   unsigned i;
+
+   /* need space for the coordinates of two triangles in a strip, so 8 vertices */
+   float *tex_coord = (float*)malloc(8 * sizeof(float));
+   float *vert_coord = (float*)malloc(8 * sizeof(float));
+   float *colors = (float*)malloc(16 * sizeof(float));
+
+   /* normalized width/height of the amount to offset from the corners,
+    * for both the vertex and texture coordinates */
+   float vert_woff = (offset * scale_factor) / (float)width;
+   float vert_hoff = (offset * scale_factor) / (float)height;
+   float tex_woff = offset / (float)w;
+   float tex_hoff = offset / (float)h;
+
+   /* the width/height of the middle sections of both the scaled and original image */
+   float vert_scaled_mid_width = (new_w - (offset * scale_factor * 2)) / (float)width;
+   float vert_scaled_mid_height = (new_h - (offset * scale_factor * 2)) / (float)height;
+   float tex_mid_width = (w - (offset * 2)) / (float)w;
+   float tex_mid_height = (h - (offset * 2)) / (float)h;
+
+   /* normalized coordinates for the start position of the image */
+   float norm_x = x / (float)width;
+   float norm_y = (height - y) / (float)height;
+
+   /* the four vertices of the top-left corner of the image,
+    * used as a starting point for all the other sections */
+   float V_BL[2] = {norm_x, norm_y};
+   float V_BR[2] = {norm_x + vert_woff, norm_y};
+   float V_TL[2] = {norm_x, norm_y + vert_hoff};
+   float V_TR[2] = {norm_x + vert_woff, norm_y + vert_hoff};
+   float T_BL[2] = {0.0f, tex_hoff};
+   float T_BR[2] = {tex_woff, tex_hoff};
+   float T_TL[2] = {0.0f, 0.0f};
+   float T_TR[2] = {tex_woff, 0.0f};
+
+   for (i = 0; i < (16 * sizeof(float)) / sizeof(colors[0]); i++)
+      colors[i] = 1.0f;
+
+   rotate_draw.matrix       = &mymat;
+   rotate_draw.rotation     = 0.0;
+   rotate_draw.scale_x      = 1.0;
+   rotate_draw.scale_y      = 1.0;
+   rotate_draw.scale_z      = 1;
+   rotate_draw.scale_enable = true;
+   coords.vertices          = 4;
+   coords.vertex            = vert_coord;
+   coords.tex_coord         = tex_coord;
+   coords.lut_tex_coord     = NULL;
+   draw.width               = width;
+   draw.height              = height;
+   draw.coords              = &coords;
+   draw.matrix_data         = &mymat;
+   draw.prim_type           = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.pipeline.id         = 0;
+   coords.color             = (const float*)colors;
+
+   menu_display_rotate_z(&rotate_draw);
+
+   draw.texture             = texture;
+   draw.x                   = 0;
+   draw.y                   = 0;
+
+   /* vertex coords are specfied bottom-up in this order: BL BR TL TR */
+   /* texture coords are specfied top-down in this order: BL BR TL TR */
+
+   /* If someone wants to change this to not draw several times, the
+    * coordinates will need to be modified because of the triangle strip usage. */
+
+   /* top-left corner */
+   vert_coord[0] = V_BL[0];
+   vert_coord[1] = V_BL[1];
+   vert_coord[2] = V_BR[0];
+   vert_coord[3] = V_BR[1];
+   vert_coord[4] = V_TL[0];
+   vert_coord[5] = V_TL[1];
+   vert_coord[6] = V_TR[0];
+   vert_coord[7] = V_TR[1];
+
+   tex_coord[0] = T_BL[0];
+   tex_coord[1] = T_BL[1];
+   tex_coord[2] = T_BR[0];
+   tex_coord[3] = T_BR[1];
+   tex_coord[4] = T_TL[0];
+   tex_coord[5] = T_TL[1];
+   tex_coord[6] = T_TR[0];
+   tex_coord[7] = T_TR[1];
+
+   menu_display_draw(&draw);
+
+   /* top-middle section */
+   vert_coord[0] = V_BL[0] + vert_woff;
+   vert_coord[1] = V_BL[1];
+   vert_coord[2] = V_BR[0] + vert_scaled_mid_width;
+   vert_coord[3] = V_BR[1];
+   vert_coord[4] = V_TL[0] + vert_woff;
+   vert_coord[5] = V_TL[1];
+   vert_coord[6] = V_TR[0] + vert_scaled_mid_width;
+   vert_coord[7] = V_TR[1];
+
+   tex_coord[0] = T_BL[0] + tex_woff;
+   tex_coord[1] = T_BL[1];
+   tex_coord[2] = T_BR[0] + tex_mid_width;
+   tex_coord[3] = T_BR[1];
+   tex_coord[4] = T_TL[0] + tex_woff;
+   tex_coord[5] = T_TL[1];
+   tex_coord[6] = T_TR[0] + tex_mid_width;
+   tex_coord[7] = T_TR[1];
+
+   menu_display_draw(&draw);
+
+   /* top-right corner */
+   vert_coord[0] = V_BL[0] + vert_woff + vert_scaled_mid_width;
+   vert_coord[1] = V_BL[1];
+   vert_coord[2] = V_BR[0] + vert_scaled_mid_width + vert_woff;
+   vert_coord[3] = V_BR[1];
+   vert_coord[4] = V_TL[0] + vert_woff + vert_scaled_mid_width;
+   vert_coord[5] = V_TL[1];
+   vert_coord[6] = V_TR[0] + vert_scaled_mid_width + vert_woff;
+   vert_coord[7] = V_TR[1];
+
+   tex_coord[0] = T_BL[0] + tex_woff + tex_mid_width;
+   tex_coord[1] = T_BL[1];
+   tex_coord[2] = T_BR[0] + tex_mid_width + tex_woff;
+   tex_coord[3] = T_BR[1];
+   tex_coord[4] = T_TL[0] + tex_woff + tex_mid_width;
+   tex_coord[5] = T_TL[1];
+   tex_coord[6] = T_TR[0] + tex_mid_width + tex_woff;
+   tex_coord[7] = T_TR[1];
+
+   menu_display_draw(&draw);
+
+   /* middle-left section */
+   vert_coord[0] = V_BL[0];
+   vert_coord[1] = V_BL[1] - vert_scaled_mid_height;
+   vert_coord[2] = V_BR[0];
+   vert_coord[3] = V_BR[1] - vert_scaled_mid_height;
+   vert_coord[4] = V_TL[0];
+   vert_coord[5] = V_TL[1] - vert_hoff;
+   vert_coord[6] = V_TR[0];
+   vert_coord[7] = V_TR[1] - vert_hoff;
+
+   tex_coord[0] = T_BL[0];
+   tex_coord[1] = T_BL[1] + tex_mid_height;
+   tex_coord[2] = T_BR[0];
+   tex_coord[3] = T_BR[1] + tex_mid_height;
+   tex_coord[4] = T_TL[0];
+   tex_coord[5] = T_TL[1] + tex_hoff;
+   tex_coord[6] = T_TR[0];
+   tex_coord[7] = T_TR[1] + tex_hoff;
+
+   menu_display_draw(&draw);
+
+   /* center section */
+   vert_coord[0] = V_BL[0] + vert_woff;
+   vert_coord[1] = V_BL[1] - vert_scaled_mid_height;
+   vert_coord[2] = V_BR[0] + vert_scaled_mid_width;
+   vert_coord[3] = V_BR[1] - vert_scaled_mid_height;
+   vert_coord[4] = V_TL[0] + vert_woff;
+   vert_coord[5] = V_TL[1] - vert_hoff;
+   vert_coord[6] = V_TR[0] + vert_scaled_mid_width;
+   vert_coord[7] = V_TR[1] - vert_hoff;
+
+   tex_coord[0] = T_BL[0] + tex_woff;
+   tex_coord[1] = T_BL[1] + tex_mid_height;
+   tex_coord[2] = T_BR[0] + tex_mid_width;
+   tex_coord[3] = T_BR[1] + tex_mid_height;
+   tex_coord[4] = T_TL[0] + tex_woff;
+   tex_coord[5] = T_TL[1] + tex_hoff;
+   tex_coord[6] = T_TR[0] + tex_mid_width;
+   tex_coord[7] = T_TR[1] + tex_hoff;
+
+   menu_display_draw(&draw);
+
+   /* middle-right section */
+   vert_coord[0] = V_BL[0] + vert_woff + vert_scaled_mid_width;
+   vert_coord[1] = V_BL[1] - vert_scaled_mid_height;
+   vert_coord[2] = V_BR[0] + vert_woff + vert_scaled_mid_width;
+   vert_coord[3] = V_BR[1] - vert_scaled_mid_height;
+   vert_coord[4] = V_TL[0] + vert_woff + vert_scaled_mid_width;
+   vert_coord[5] = V_TL[1] - vert_hoff;
+   vert_coord[6] = V_TR[0] + vert_woff + vert_scaled_mid_width;
+   vert_coord[7] = V_TR[1] - vert_hoff;
+
+   tex_coord[0] = T_BL[0] + tex_woff + tex_mid_width;
+   tex_coord[1] = T_BL[1] + tex_mid_height;
+   tex_coord[2] = T_BR[0] + tex_woff + tex_mid_width;
+   tex_coord[3] = T_BR[1] + tex_mid_height;
+   tex_coord[4] = T_TL[0] + tex_woff + tex_mid_width;
+   tex_coord[5] = T_TL[1] + tex_hoff;
+   tex_coord[6] = T_TR[0] + tex_woff + tex_mid_width;
+   tex_coord[7] = T_TR[1] + tex_hoff;
+
+   menu_display_draw(&draw);
+
+   /* bottom-left corner */
+   vert_coord[0] = V_BL[0];
+   vert_coord[1] = V_BL[1] - vert_hoff - vert_scaled_mid_height;
+   vert_coord[2] = V_BR[0];
+   vert_coord[3] = V_BR[1] - vert_hoff - vert_scaled_mid_height;
+   vert_coord[4] = V_TL[0];
+   vert_coord[5] = V_TL[1] - vert_hoff - vert_scaled_mid_height;
+   vert_coord[6] = V_TR[0];
+   vert_coord[7] = V_TR[1] - vert_hoff - vert_scaled_mid_height;
+
+   tex_coord[0] = T_BL[0];
+   tex_coord[1] = T_BL[1] + tex_hoff + tex_mid_height;
+   tex_coord[2] = T_BR[0];
+   tex_coord[3] = T_BR[1] + tex_hoff + tex_mid_height;
+   tex_coord[4] = T_TL[0];
+   tex_coord[5] = T_TL[1] + tex_hoff + tex_mid_height;
+   tex_coord[6] = T_TR[0];
+   tex_coord[7] = T_TR[1] + tex_hoff + tex_mid_height;
+
+   menu_display_draw(&draw);
+
+   /* bottom-middle section */
+   vert_coord[0] = V_BL[0] + vert_woff;
+   vert_coord[1] = V_BL[1] - vert_hoff - vert_scaled_mid_height;
+   vert_coord[2] = V_BR[0] + vert_scaled_mid_width;
+   vert_coord[3] = V_BR[1] - vert_hoff - vert_scaled_mid_height;
+   vert_coord[4] = V_TL[0] + vert_woff;
+   vert_coord[5] = V_TL[1] - vert_scaled_mid_height;
+   vert_coord[6] = V_TR[0] + vert_scaled_mid_width;
+   vert_coord[7] = V_TR[1] - vert_scaled_mid_height;
+
+   tex_coord[0] = T_BL[0] + tex_woff;
+   tex_coord[1] = T_BL[1] + tex_hoff + tex_mid_height;
+   tex_coord[2] = T_BR[0] + tex_mid_width;
+   tex_coord[3] = T_BR[1] + tex_hoff + tex_mid_height;
+   tex_coord[4] = T_TL[0] + tex_woff;
+   tex_coord[5] = T_TL[1] + tex_mid_height;
+   tex_coord[6] = T_TR[0] + tex_mid_width;
+   tex_coord[7] = T_TR[1] + tex_mid_height;
+
+   menu_display_draw(&draw);
+
+   /* bottom-right corner */
+   vert_coord[0] = V_BL[0] + vert_woff + vert_scaled_mid_width;
+   vert_coord[1] = V_BL[1] - vert_hoff - vert_scaled_mid_height;
+   vert_coord[2] = V_BR[0] + vert_scaled_mid_width + vert_woff;
+   vert_coord[3] = V_BR[1] - vert_hoff - vert_scaled_mid_height;
+   vert_coord[4] = V_TL[0] + vert_woff + vert_scaled_mid_width;
+   vert_coord[5] = V_TL[1] - vert_hoff - vert_scaled_mid_height;
+   vert_coord[6] = V_TR[0] + vert_scaled_mid_width + vert_woff;
+   vert_coord[7] = V_TR[1] - vert_hoff - vert_scaled_mid_height;
+
+   tex_coord[0] = T_BL[0] + tex_woff + tex_mid_width;
+   tex_coord[1] = T_BL[1] + tex_hoff + tex_mid_height;
+   tex_coord[2] = T_BR[0] + tex_woff + tex_mid_width;
+   tex_coord[3] = T_BR[1] + tex_hoff + tex_mid_height;
+   tex_coord[4] = T_TL[0] + tex_woff + tex_mid_width;
+   tex_coord[5] = T_TL[1] + tex_hoff + tex_mid_height;
+   tex_coord[6] = T_TR[0] + tex_woff + tex_mid_width;
+   tex_coord[7] = T_TR[1] + tex_hoff + tex_mid_height;
+
+   menu_display_draw(&draw);
+
+   free(colors);
+   free(vert_coord);
+   free(tex_coord);
 }
 
 void menu_display_rotate_z(menu_display_ctx_rotate_draw_t *draw)
@@ -907,7 +1182,7 @@ void menu_display_set_alpha(float *color, float alpha_value)
 }
 
 void menu_display_reset_textures_list(const char *texture_path, const char *iconpath,
-      uintptr_t *item)
+      uintptr_t *item, enum texture_filter_type filter_type)
 {
    struct texture_image ti;
    char path[PATH_MAX_LENGTH];
@@ -929,6 +1204,6 @@ void menu_display_reset_textures_list(const char *texture_path, const char *icon
       return;
 
    video_driver_texture_load(&ti,
-         TEXTURE_FILTER_MIPMAP_LINEAR, item);
+         filter_type, item);
    image_texture_free(&ti);
 }

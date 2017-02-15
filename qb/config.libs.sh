@@ -195,6 +195,10 @@ if [ "$HAVE_NETWORKING" = 'yes' ]; then
    if [ "$HAVE_MINIUPNPC" != "no" ]; then
       check_lib MINIUPNPC "-lminiupnpc"
    fi
+
+   if [ "$HAVE_BUILTINMINIUPNPC" = "yes" ]; then
+      HAVE_MINIUPNPC='yes'
+   fi
 else
    echo "Warning: All networking features have been disabled."
    HAVE_NETWORK_CMD='no'

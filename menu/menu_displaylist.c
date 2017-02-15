@@ -37,7 +37,7 @@
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "../cheevos.h"
+#include "../cheevos/cheevos.h"
 #endif
 
 #ifdef HAVE_NETWORKING
@@ -4793,6 +4793,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             unsigned user;
             unsigned count = 0;
 
+            if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE,
+                  PARSE_ONLY_BOOL, false) != -1)
+               count++;
             if (menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS,
                   PARSE_ONLY_STRING, false) != -1)

@@ -1800,7 +1800,7 @@ static bool vulkan_create_display_surface(gfx_ctx_vulkan_data_t *vk,
    VkDisplayModePropertiesKHR *modes = NULL;
    unsigned dpy, i, j;
    uint32_t best_plane = UINT32_MAX;
-   VkDisplayPlaneAlphaFlagsKHR alpha_mode = VK_DISPLAY_PLANE_ALPHA_OPAQUE_BIT_KHR;
+   VkDisplayPlaneAlphaFlagBitsKHR alpha_mode = VK_DISPLAY_PLANE_ALPHA_OPAQUE_BIT_KHR;
    VkDisplaySurfaceCreateInfoKHR create_info = { VK_STRUCTURE_TYPE_DISPLAY_SURFACE_CREATE_INFO_KHR };
    VkDisplayModeKHR best_mode = VK_NULL_HANDLE;
 
@@ -1937,9 +1937,7 @@ out:
    create_info.planeStackIndex = planes[best_plane].currentStackIndex;
    create_info.transform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
    create_info.globalAlpha = 1.0f;
-   /* TODO/FIXME - why is this cast needed for CXX_BUILD? Why is
-    * alpha_mode not just VkDisplayPlaneAlphaFlagBitsKHR to begin with? */
-   create_info.alphaMode = (VkDisplayPlaneAlphaFlagBitsKHR)alpha_mode;
+   create_info.alphaMode = alpha_mode;
    create_info.imageExtent.width = *width;
    create_info.imageExtent.height = *height;
 
@@ -2271,6 +2269,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR };
    VkPresentModeKHR swapchain_present_mode = VK_PRESENT_MODE_FIFO_KHR;
    settings_t                    *settings = config_get_ptr();
+   VkCompositeAlphaFlagBitsKHR composite   = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 
    vkDeviceWaitIdle(vk->context.device);
 
@@ -2371,6 +2370,15 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    else
       pre_transform            = surface_properties.currentTransform;
 
+   if (surface_properties.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR)
+      composite = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+   else if (surface_properties.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR)
+      composite = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;
+   else if (surface_properties.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR)
+      composite = VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR;
+   else if (surface_properties.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR)
+      composite = VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR;
+
    old_swapchain               = vk->swapchain;
 
    info.surface                = vk->vk_surface;
@@ -2382,7 +2390,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    info.imageArrayLayers       = 1;
    info.imageSharingMode       = VK_SHARING_MODE_EXCLUSIVE;
    info.preTransform           = pre_transform;
-   info.compositeAlpha         = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+   info.compositeAlpha         = composite;
    info.presentMode            = swapchain_present_mode;
    info.clipped                = true;
    info.oldSwapchain           = old_swapchain;

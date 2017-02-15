@@ -728,6 +728,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("all_users_control_menu",        &settings->input.all_users_control_menu, true, all_users_control_menu, false);
    SETTING_BOOL("menu_swap_ok_cancel_buttons",                 &settings->input.menu_swap_ok_cancel_buttons, true, menu_swap_ok_cancel_buttons, false);
 #ifdef HAVE_NETWORKING
+   SETTING_BOOL("netplay_public_announce",       &settings->netplay.public_announce, true, netplay_public_announce, false);
    SETTING_BOOL("netplay_stateless_mode",        &settings->netplay.stateless_mode, false, netplay_stateless_mode, false);
    SETTING_BOOL("netplay_client_swap_input",     &settings->netplay.swap_input, true, netplay_client_swap_input, false);
 #endif
@@ -1671,7 +1672,7 @@ static bool check_shader_compatibility(enum file_path_enum enum_idx)
    }
 
    if (string_is_equal("gl", settings->video.driver) || 
-       string_is_equal("d3d9", settings->video.driver))
+       string_is_equal("d3d", settings->video.driver))
    {
       if (enum_idx == FILE_PATH_SLANGP_EXTENSION)
          return false;

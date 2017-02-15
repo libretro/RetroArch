@@ -27,6 +27,8 @@
 #include <libretro.h>
 
 #include "video_state_python.h"
+
+#include "../../configuration.h"
 #include "../../dynamic.h"
 #include "../../core.h"
 #include "../../verbosity.h"
@@ -106,9 +108,10 @@ static PyObject* py_read_vram(PyObject *self, PyObject *args)
 static PyObject *py_read_input(PyObject *self, PyObject *args)
 {
    unsigned user, key, i;
+   rarch_joypad_info_t joypad_info;
    const struct retro_keybind *py_binds[MAX_USERS];
-   int16_t res = 0;
-   settings_t *settings = config_get_ptr();
+   int16_t res                                     = 0;
+   settings_t *settings                            = config_get_ptr();
    
    for (i = 0; i < MAX_USERS; i++)
       py_binds[i] = settings->input.binds[i];
@@ -121,8 +124,12 @@ static PyObject *py_read_input(PyObject *self, PyObject *args)
    if (user > MAX_USERS || user < 1 || key >= RARCH_FIRST_META_KEY)
       return NULL;
 
+   joypad_info.joy_idx    = settings->input.joypad_map[user - 1];
+   joypad_info.auto_binds = settings->input.autoconf_binds[joypad_info.joy_idx];
+
    if (!input_driver_is_libretro_input_blocked())
-      res = current_input->input_state(current_input_data, py_binds,
+      res = current_input->input_state(current_input_data, joypad_info,
+            py_binds,
             user - 1, RETRO_DEVICE_JOYPAD, 0, key);
    return PyBool_FromLong(res);
 }
@@ -130,9 +137,10 @@ static PyObject *py_read_input(PyObject *self, PyObject *args)
 static PyObject *py_read_analog(PyObject *self, PyObject *args)
 {
    unsigned user, index, id, i;
-   int16_t res = 0;
-   settings_t *settings = config_get_ptr();
+   rarch_joypad_info_t joypad_info;
    const struct retro_keybind *py_binds[MAX_USERS];
+   int16_t res                            = 0;
+   settings_t *settings                   = config_get_ptr();
 
    for (i = 0; i < MAX_USERS; i++)
       py_binds[i] = settings->input.binds[i];
@@ -145,8 +153,12 @@ static PyObject *py_read_analog(PyObject *self, PyObject *args)
    if (user > MAX_USERS || user < 1 || index > 1 || id > 1)
       return NULL;
 
-   res = current_input->input_state(current_input_data, py_binds,
-         user - 1, RETRO_DEVICE_ANALOG, index, id)
+   joypad_info.joy_idx    = settings->input.joypad_map[user - 1];
+   joypad_info.auto_binds = settings->input.autoconf_binds[joypad_info.joy_idx];
+
+   res = current_input->input_state(current_input_data, 
+         joypad_info, py_binds,
+         user - 1, RETRO_DEVICE_ANALOG, index, id);
    return PyFloat_FromDouble((double)res / 0x7fff);
 }
 

@@ -19,7 +19,7 @@
 #include "../menu_cbs.h"
 
 #ifdef HAVE_CHEEVOS
-#include "../../cheevos.h"
+#include "../../cheevos/cheevos.h"
 #endif
 #include "../../verbosity.h"
 
@@ -184,6 +184,7 @@ default_sublabel_macro(action_bind_sublabel_overlay_opacity,               MENU_
 default_sublabel_macro(action_bind_sublabel_overlay_scale,                 MENU_ENUM_SUBLABEL_OVERLAY_SCALE)
 default_sublabel_macro(action_bind_sublabel_overlay_enable,                MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE)
 default_sublabel_macro(action_bind_sublabel_overlay_preset,                MENU_ENUM_SUBLABEL_OVERLAY_PRESET)
+default_sublabel_macro(action_bind_sublabel_netplay_public_announce,       MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE)
 default_sublabel_macro(action_bind_sublabel_netplay_ip_address,            MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS)
 default_sublabel_macro(action_bind_sublabel_netplay_tcp_udp_port,          MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT)
 default_sublabel_macro(action_bind_sublabel_netplay_password,              MENU_ENUM_SUBLABEL_NETPLAY_PASSWORD)
@@ -735,6 +736,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_STDIN_CMD_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_stdin_cmd_enable); 
+            break;
+         case MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_public_announce);
             break;
          case MENU_ENUM_LABEL_NETPLAY_NAT_TRAVERSAL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_nat_traversal); 

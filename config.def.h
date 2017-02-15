@@ -815,6 +815,9 @@ static const bool pause_nonactive = true;
  * It is measured in seconds. A value of 0 disables autosave. */
 static const unsigned autosave_interval = 0;
 
+/* Publicly announce netplay */
+static const bool netplay_public_announce = true;
+
 /* Netplay without savestates/rewind */
 static const bool netplay_stateless_mode = false;
 

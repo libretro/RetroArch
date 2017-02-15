@@ -139,7 +139,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="msimg32.lib"
+				AdditionalDependencies="msimg32.lib winmm.lib"
 				OutputFile="$(OutDir)/RetroArch-msvc2005.exe"
 				LinkIncremental="1"
 				GenerateDebugInformation="true"

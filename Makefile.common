@@ -1197,7 +1197,7 @@ ifeq ($(HAVE_NETWORKING), 1)
    ifeq ($(HAVE_CHEEVOS), 1)
       ifeq ($(HAVE_THREADS), 1)
          DEFINES += -DHAVE_CHEEVOS
-         OBJ += cheevos.o \
+         OBJ += cheevos/cheevos.o \
 					 $(LIBRETRO_COMM_DIR)/utils/md5.o
       endif
    endif
@@ -1208,7 +1208,26 @@ ifeq ($(HAVE_NETWORKING), 1)
    endif
 
    ifeq ($(HAVE_MINIUPNPC), 1)
-      LIBS += -lminiupnpc
+      ifeq ($(HAVE_BUILTINMINIUPNPC), 1)
+         DEFINES += -DHAVE_BUILTINMINIUPNPC -DMINIUPNPC_SET_SOCKET_TIMEOUT -DMINIUPNPC_GET_SRC_ADDR
+			DEFINES += -I$(DEPS_DIR)/miniupnpc
+         OBJ += \
+					 $(DEPS_DIR)/miniupnpc/igd_desc_parse.o \
+					 $(DEPS_DIR)/miniupnpc/upnpreplyparse.o \
+					 $(DEPS_DIR)/miniupnpc/upnpcommands.o \
+					 $(DEPS_DIR)/miniupnpc/upnperrors.o \
+					 $(DEPS_DIR)/miniupnpc/connecthostport.o \
+					 $(DEPS_DIR)/miniupnpc/portlistingparse.o \
+					 $(DEPS_DIR)/miniupnpc/receivedata.o \
+					 $(DEPS_DIR)/miniupnpc/upnpdev.o \
+					 $(DEPS_DIR)/miniupnpc/minissdpc.o \
+					 $(DEPS_DIR)/miniupnpc/miniwget.o \
+					 $(DEPS_DIR)/miniupnpc/miniupnpc.o \
+					 $(DEPS_DIR)/miniupnpc/minixml.o \
+					 $(DEPS_DIR)/miniupnpc/minisoap.o
+		else
+		   LIBS += -lminiupnpc
+      endif
    endif
 endif
 
@@ -1273,7 +1292,7 @@ endif
 ifneq ($(findstring DOS,$(OS)),)
    OBJ += gfx/drivers/vga_gfx.o gfx/drivers_font/vga_font.o \
           input/drivers/dos_input.o input/drivers_joypad/dos_joypad.o \
- 				  frontend/drivers/platform_dos.o
+ 				  frontend/drivers/platform_dos.o input/drivers_keyboard/keyboard_event_dos.o
 
    ifeq ($(HAVE_MENU_COMMON), 1)
       OBJ += menu/drivers_display/menu_display_vga.o
