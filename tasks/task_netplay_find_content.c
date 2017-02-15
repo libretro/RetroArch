@@ -272,7 +272,8 @@ bool task_push_netplay_crc_scan(uint32_t crc, char* name,
       {
          strlcpy(state->core_path, info->list[i].path, sizeof(state->core_path));
 
-         if (!string_is_equal(state->content_path, "N/A"))
+         if (!string_is_equal(state->content_path, "N/A") && 
+            !string_is_empty(info->list[i].supported_extensions))
          {
             strlcpy(state->core_extensions,
                   info->list[i].supported_extensions, sizeof(state->core_extensions));
