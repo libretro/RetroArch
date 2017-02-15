@@ -316,6 +316,14 @@ Payload:
 Description:
     Request that a client stall for the given number of frames.
 
+Command: RESET
+Payload:
+    {
+       frame: uint32
+    }
+Description:
+    Indicate that the core was reset at the beginning of the given frame.
+
 Command: CHEATS
 Unused
 

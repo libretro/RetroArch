@@ -396,6 +396,13 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
       return;
    }
 
+   /* Reset if it was requested */
+   if (netplay->force_reset)
+   {
+      core_reset();
+      netplay->force_reset = false;
+   }
+
 #ifndef DEBUG_NONDETERMINISTIC_CORES
    if (!netplay->force_rewind)
    {

@@ -1022,6 +1022,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
          break;
 
       case NETPLAY_CMD_LOAD_SAVESTATE:
+      case NETPLAY_CMD_RESET:
          {
             uint32_t frame;
             uint32_t isize;
@@ -1071,7 +1072,11 @@ static bool netplay_get_cmd(netplay_t *netplay,
              * (strangely) force a rewind to the frame we're already on, so it
              * gets loaded. This is just to avoid having reloading implemented in
              * too many places. */
-            if (cmd_size > netplay->zbuffer_size + 2*sizeof(uint32_t))
+
+            /* Check the payload size */
+            if ((cmd == NETPLAY_CMD_LOAD_SAVESTATE &&
+                 (cmd_size < 2*sizeof(uint32_t) || cmd_size > netplay->zbuffer_size + 2*sizeof(uint32_t))) ||
+                (cmd == NETPLAY_CMD_RESET && cmd_size != sizeof(uint32_t)))
             {
                RARCH_ERR("CMD_LOAD_SAVESTATE received an unexpected payload size.\n");
                return netplay_cmd_nak(netplay, connection);
@@ -1097,44 +1102,58 @@ static bool netplay_get_cmd(netplay_t *netplay,
                goto shrt;
             }
 
-            RECV(&isize, sizeof(isize))
+            /* Now we switch based on whether we're loading a state or resetting */
+            if (cmd == NETPLAY_CMD_LOAD_SAVESTATE)
             {
-               RARCH_ERR("CMD_LOAD_SAVESTATE failed to receive inflated size.\n");
-               return netplay_cmd_nak(netplay, connection);
-            }
-            isize = ntohl(isize);
+               RECV(&isize, sizeof(isize))
+               {
+                  RARCH_ERR("CMD_LOAD_SAVESTATE failed to receive inflated size.\n");
+                  return netplay_cmd_nak(netplay, connection);
+               }
+               isize = ntohl(isize);
 
-            if (isize != netplay->state_size)
-            {
-               RARCH_ERR("CMD_LOAD_SAVESTATE received an unexpected save state size.\n");
-               return netplay_cmd_nak(netplay, connection);
-            }
+               if (isize != netplay->state_size)
+               {
+                  RARCH_ERR("CMD_LOAD_SAVESTATE received an unexpected save state size.\n");
+                  return netplay_cmd_nak(netplay, connection);
+               }
 
-            RECV(netplay->zbuffer, cmd_size - 2*sizeof(uint32_t))
-            {
-               RARCH_ERR("CMD_LOAD_SAVESTATE failed to receive savestate.\n");
-               return netplay_cmd_nak(netplay, connection);
-            }
+               RECV(netplay->zbuffer, cmd_size - 2*sizeof(uint32_t))
+               {
+                  RARCH_ERR("CMD_LOAD_SAVESTATE failed to receive savestate.\n");
+                  return netplay_cmd_nak(netplay, connection);
+               }
 
-            /* And decompress it */
-            switch (connection->compression_supported)
-            {
-               case NETPLAY_COMPRESSION_ZLIB:
-                  ctrans = &netplay->compress_zlib;
-                  break;
-               default:
-                  ctrans = &netplay->compress_nil;
+               /* And decompress it */
+               switch (connection->compression_supported)
+               {
+                  case NETPLAY_COMPRESSION_ZLIB:
+                     ctrans = &netplay->compress_zlib;
+                     break;
+                  default:
+                     ctrans = &netplay->compress_nil;
+               }
+               ctrans->decompression_backend->set_in(ctrans->decompression_stream,
+                  netplay->zbuffer, cmd_size - 2*sizeof(uint32_t));
+               ctrans->decompression_backend->set_out(ctrans->decompression_stream,
+                  (uint8_t*)netplay->buffer[netplay->read_ptr[connection->player]].state,
+                  netplay->state_size);
+               ctrans->decompression_backend->trans(ctrans->decompression_stream,
+                  true, &rd, &wn, NULL);
+
+               /* Force a rewind to the relevant frame */
+               netplay->force_rewind = true;
             }
-            ctrans->decompression_backend->set_in(ctrans->decompression_stream,
-               netplay->zbuffer, cmd_size - 2*sizeof(uint32_t));
-            ctrans->decompression_backend->set_out(ctrans->decompression_stream,
-               (uint8_t*)netplay->buffer[netplay->read_ptr[connection->player]].state,
-               netplay->state_size);
-            ctrans->decompression_backend->trans(ctrans->decompression_stream,
-               true, &rd, &wn, NULL);
+            else
+            {
+               /* Resetting */
+               netplay->force_reset = true;
+
+            }
 
             /* Skip ahead if it's past where we are */
-            if (frame > netplay->run_frame_count)
+            if (frame > netplay->run_frame_count ||
+                cmd == NETPLAY_CMD_RESET)
             {
                /* This is squirrely: We need to assure that when we advance the
                 * frame in post_frame, THEN we're referring to the frame to
@@ -1161,8 +1180,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                }
             }
 
-            /* And force rewind to it */
-            netplay->force_rewind                  = true;
+            /* Make sure our states are correct */
             netplay->savestate_request_outstanding = false;
             netplay->other_ptr                     = netplay->read_ptr[connection->player];
             netplay->other_frame_count             = frame;
