@@ -90,8 +90,7 @@ endelt(void * d, const char * name, int l)
 }
 
 /* Data handler */
-static void
-data(void * d, const char * data, int l)
+static void portlisting_data(void * d, const char * data, int l)
 {
 	struct PortMapping * pm;
 	struct PortMappingParserData * pdata = (struct PortMappingParserData *)d;
@@ -148,13 +147,13 @@ ParsePortListing(const char * buffer, int bufsize,
 
 	memset(pdata, 0, sizeof(struct PortMappingParserData));
 	/* init xmlparser */
-	parser.xmlstart = buffer;
-	parser.xmlsize = bufsize;
-	parser.data = pdata;
+	parser.xmlstart     = buffer;
+	parser.xmlsize      = bufsize;
+	parser.data         = pdata;
 	parser.starteltfunc = startelt;
-	parser.endeltfunc = endelt;
-	parser.datafunc = data;
-	parser.attfunc = 0;
+	parser.endeltfunc   = endelt;
+	parser.datafunc     = portlisting_data;
+	parser.attfunc      = 0;
 	parsexml(&parser);
 }
 

@@ -377,6 +377,7 @@
 					"$(SRCROOT)/../..",
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
+                                        "$(SRCROOT)/../../deps",
 				);
 				INFOPLIST_FILE = OSX/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
@@ -406,6 +407,7 @@
 					"$(SRCROOT)/../..",
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
+                                        "$(SRCROOT)/../../deps",
 				);
 				INFOPLIST_FILE = OSX/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
@@ -437,6 +439,7 @@
 					"$(SRCROOT)/../..",
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
+                                        "$(SRCROOT)/../../deps",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/OSX/Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
@@ -462,6 +465,7 @@
 					"$(SRCROOT)/../..",
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
+                                        "$(SRCROOT)/../../deps",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/OSX/Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
@@ -482,6 +486,8 @@
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_MINIUPNPC",
+					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
@@ -537,6 +543,8 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				OTHER_CFLAGS = (
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_MINIUPNPC",
+					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
