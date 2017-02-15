@@ -50,7 +50,7 @@
  * will write to this file. */
 static FILE *log_file      = NULL;
 static bool main_verbosity = false;
-static bool inited = false;
+static bool initialized = false;
 
 void verbosity_enable(void)
 {
@@ -87,14 +87,14 @@ void *retro_main_log_file(void)
 
 void retro_main_log_file_init(const char *path)
 {
-   if (inited)
+   if (initialized)
       return;
    log_file     = stderr;
    if (path == NULL)
       return;
 
    log_file = fopen(path, "wb");
-   inited = true;
+   initialized = true;
 }
 
 void retro_main_log_file_deinit(void)
@@ -108,7 +108,7 @@ void retro_main_log_file_deinit(void)
 void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
 #if TARGET_OS_IPHONE
-   static int asl_inited = 0;
+   static int asl_initialized = 0;
 #if !TARGET_IPHONE_SIMULATOR
 static aslclient asl_client;
 #endif
@@ -123,10 +123,10 @@ static aslclient asl_client;
 #if TARGET_IPHONE_SIMULATOR
    vprintf(fmt, ap);
 #else
-   if (!asl_inited)
+   if (!asl_initialized)
    {
       asl_client = asl_open(file_path_str(FILE_PATH_PROGRAM_NAME), "com.apple.console", ASL_OPT_STDERR | ASL_OPT_NO_DELAY);
-      asl_inited = 1;
+      asl_initialized = 1;
    }
    aslmsg msg = asl_new(ASL_TYPE_MSG);
    asl_set(msg, ASL_KEY_READ_UID, "-1");
