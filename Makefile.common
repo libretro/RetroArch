@@ -1225,7 +1225,6 @@ ifeq ($(HAVE_NETWORKING), 1)
 					 $(DEPS_DIR)/miniupnpc/miniupnpc.o \
 					 $(DEPS_DIR)/miniupnpc/minixml.o \
 					 $(DEPS_DIR)/miniupnpc/minisoap.o
-		endif
 		else
 		   LIBS += -lminiupnpc
       endif
