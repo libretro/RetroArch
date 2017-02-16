@@ -132,7 +132,7 @@ static unsigned frame_cache_width                        = 0;
 static unsigned frame_cache_height                       = 0;
 static size_t frame_cache_pitch                          = 0;
 
-static float video_driver_aspect_ratio;
+static float video_driver_aspect_ratio                   = 0.0f;
 static unsigned video_driver_width                       = 0;
 static unsigned video_driver_height                      = 0;
 
