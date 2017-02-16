@@ -56,7 +56,7 @@ void verbosity_enable(void)
 {
    main_verbosity = true;
 #ifdef RARCH_INTERNAL
-   if (!log_file)
+   if (!log_file_initialized)
       frontend_driver_attach_console();
 #endif
 }
@@ -65,7 +65,7 @@ void verbosity_disable(void)
 {
    main_verbosity = false;
 #ifdef RARCH_INTERNAL
-   if (!log_file)
+   if (!log_file_initialized)
       frontend_driver_detach_console();
 #endif
 }
