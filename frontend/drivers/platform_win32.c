@@ -345,13 +345,12 @@ static void frontend_win32_attach_console(void)
 {
 #ifdef _WIN32
 #ifdef _WIN32_WINNT_WINXP
-   if (!AttachConsole(ATTACH_PARENT_PROCESS))
-   {
-      AllocConsole();
-      AttachConsole( GetCurrentProcessId()) ;
-      freopen( "CON", "w", stdout );
-      freopen( "CON", "w", stderr );
-   }
+   AttachConsole(ATTACH_PARENT_PROCESS);
+   AllocConsole();
+   AttachConsole( GetCurrentProcessId()) ;
+   freopen( "CON", "w", stdout );
+   freopen( "CON", "w", stderr );
+
 #endif
 #endif
 }
