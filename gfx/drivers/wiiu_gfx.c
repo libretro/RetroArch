@@ -228,8 +228,8 @@ static void wiiu_gfx_update_viewport(wiiu_video_t* wiiu)
    }
 
 
-   float scale_w = wiiu->color_buffer.surface.width / 854.0;
-   float scale_h = wiiu->color_buffer.surface.height / 480.0;
+   float scale_w = wiiu->color_buffer.surface.width / wiiu->render_mode.width;
+   float scale_h = wiiu->color_buffer.surface.height / wiiu->render_mode.height;
    wiiu_set_position(wiiu->position, &wiiu->color_buffer,
                      wiiu->vp.x * scale_w,
                      wiiu->vp.y * scale_h,
@@ -499,10 +499,10 @@ static void* wiiu_gfx_init(const video_info_t* video,
 
    wiiu->vp.x           = 0;
    wiiu->vp.y           = 0;
-   wiiu->vp.width       = 854;
-   wiiu->vp.height      = 480;
-   wiiu->vp.full_width  = 854;
-   wiiu->vp.full_height = 480;
+   wiiu->vp.width       = wiiu->render_mode.width;
+   wiiu->vp.height      = wiiu->render_mode.height;
+   wiiu->vp.full_width  = wiiu->render_mode.width;
+   wiiu->vp.full_height = wiiu->render_mode.height;
    video_driver_set_size(&wiiu->vp.width, &wiiu->vp.height);
 
    driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &refresh_rate);
