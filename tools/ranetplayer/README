@@ -1,0 +1,3 @@
+ranetplayer is a small tool for recording and playing back netplay sessions. It
+is primarily intended as a regression testing tool, but can be used as a
+general-purpose input movie recorder and player.
