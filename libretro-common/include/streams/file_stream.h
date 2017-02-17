@@ -77,6 +77,8 @@ int filestream_putc(RFILE *stream, int c);
 
 int filestream_get_fd(RFILE *stream);
 
+int filestream_flush(RFILE *stream);
+
 RETRO_END_DECLS
 
 #endif

@@ -449,6 +449,15 @@ error:
    return -1;
 }
 
+int filestream_flush(RFILE *stream)
+{
+#if defined(HAVE_BUFFERED_IO)
+   return fflush(stream->fp);
+#else
+   return 0;
+#endif
+}
+
 ssize_t filestream_write(RFILE *stream, const void *s, size_t len)
 {
    if (!stream)

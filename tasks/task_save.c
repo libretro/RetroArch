@@ -13,7 +13,6 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -158,7 +157,7 @@ static void autosave_thread(void *data)
       if (differ)
       {
          /* Should probably deal with this more elegantly. */
-         FILE *file = fopen(save->path, "wb");
+         RFILE *file = filestream_open(save->path, RFILE_MODE_WRITE, -1);
 
          if (file)
          {
@@ -174,10 +173,10 @@ static void autosave_thread(void *data)
             else
                RARCH_LOG("SRAM changed ... autosaving ...\n");
 
-            failed |= fwrite(save->buffer, 1, save->bufsize, file)
+            failed |= filestream_write(file, save->buffer, save->bufsize)
                != save->bufsize;
-            failed |= fflush(file) != 0;
-            failed |= fclose(file) != 0;
+            failed |= filestream_flush(file) != 0;
+            failed |= filestream_close(file) != 0;
             if (failed)
                RARCH_WARN("Failed to autosave SRAM. Disk might be full.\n");
          }
