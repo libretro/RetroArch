@@ -818,6 +818,9 @@ static const unsigned autosave_interval = 0;
 /* Publicly announce netplay */
 static const bool netplay_public_announce = true;
 
+/* Start netplay in spectator mode */
+static const bool netplay_start_as_spectator = false;
+
 /* Netplay without savestates/rewind */
 static const bool netplay_stateless_mode = false;
 

@@ -1095,7 +1095,11 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
          quirks);
 
    if (netplay_data)
+   {
+      if (netplay_data->is_server && !settings->netplay.start_as_spectator)
+         netplay_data->self_mode = NETPLAY_CONNECTION_PLAYING;
       return true;
+   }
 
    RARCH_WARN("%s\n", msg_hash_to_str(MSG_NETPLAY_FAILED));
 
