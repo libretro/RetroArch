@@ -878,6 +878,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
    retro_ctx_controller_info_t pad;
    char new_nick[NETPLAY_NICK_LEN];
    retro_ctx_memory_info_t mem_info;
+   settings_t *settings = config_get_ptr();
 
    RECV(cmd, sizeof(cmd))
    {
@@ -1021,8 +1022,11 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
    netplay_handshake_ready(netplay, connection);
    netplay_recv_flush(&connection->recv_packet_buffer);
 
-   /* Ask to go to player mode */
-   return netplay_cmd_mode(netplay, connection, NETPLAY_CONNECTION_PLAYING);
+   /* Ask to switch to playing mode if we should */
+   if (!settings->netplay.start_as_spectator)
+      return netplay_cmd_mode(netplay, connection, NETPLAY_CONNECTION_PLAYING);
+   else
+      return true;
 }
 
 /**

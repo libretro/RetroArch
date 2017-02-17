@@ -430,7 +430,7 @@ netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
    netplay->crcs_valid        = true;
    netplay->quirks            = quirks;
    netplay->self_mode         = netplay->is_server ?
-                                NETPLAY_CONNECTION_PLAYING :
+                                NETPLAY_CONNECTION_SPECTATING :
                                 NETPLAY_CONNECTION_NONE;
 
    if (netplay->is_server)

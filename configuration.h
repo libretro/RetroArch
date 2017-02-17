@@ -406,6 +406,7 @@ typedef struct settings
       bool public_announce;
       char server[255];
       unsigned port;
+      bool start_as_spectator;
       bool stateless_mode;
       int check_frames;
       unsigned input_latency_frames_min;

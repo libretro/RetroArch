@@ -1542,6 +1542,14 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len) {
                              "If set to false, clients must manually connect \n"
                              "rather than using the public lobby.");
             break;
+        case MENU_ENUM_LABEL_NETPLAY_START_AS_SPECTATOR:
+            snprintf(s, len,
+                     "Whether to start netplay in spectator mode. \n"
+                             " \n"
+                             "If set to true, netplay will be in spectator mode \n"
+                             "on start. It's always possible to change mode \n"
+                             "later.");
+            break;
         case MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE:
             snprintf(s, len,
                      "Whether to run netplay in a mode not requiring\n"

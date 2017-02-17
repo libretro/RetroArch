@@ -319,7 +319,7 @@ Description:
 Command: RESET
 Payload:
     {
-       frame: uint32
+       frame number: uint32
     }
 Description:
     Indicate that the core was reset at the beginning of the given frame.
