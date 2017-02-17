@@ -118,7 +118,7 @@ typedef struct android_input_data
    unsigned pointer_count;
    int mouse_x_delta, mouse_y_delta;
    int mouse_x_prev, mouse_y_prev;
-   int mouse_l, mouse_r;
+   int mouse_l, mouse_r, mouse_m;
    int64_t quick_tap_time;
 } android_input_data_t;
 
@@ -538,6 +538,8 @@ static int16_t android_mouse_state(android_input_data_t *android_data, unsigned 
          return android_data->mouse_l;
       case RETRO_DEVICE_ID_MOUSE_RIGHT:
          return android_data->mouse_r;
+      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+         return android_data->mouse_m;
       case RETRO_DEVICE_ID_MOUSE_X:
          return android_data->mouse_x_delta;
       case RETRO_DEVICE_ID_MOUSE_Y:
@@ -546,6 +548,30 @@ static int16_t android_mouse_state(android_input_data_t *android_data, unsigned 
 
    return 0;
 }
+
+static int16_t android_lightgun_device_state(android_input_data_t *android_data, unsigned id)
+{
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_LIGHTGUN_X:
+         return android_data->mouse_x_delta;
+      case RETRO_DEVICE_ID_LIGHTGUN_Y:
+         return android_data->mouse_y_delta;
+      case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
+         return android_data->mouse_l;
+      case RETRO_DEVICE_ID_LIGHTGUN_CURSOR:
+         return android_data->mouse_m;
+      case RETRO_DEVICE_ID_LIGHTGUN_TURBO:
+         return android_data->mouse_r;
+      case RETRO_DEVICE_ID_LIGHTGUN_START:
+         return android_data->mouse_m && android_data->mouse_r;
+      case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
+         return android_data->mouse_m && android_data->mouse_l;
+   }
+
+   return 0;
+}
+
 
 static INLINE void android_mouse_calculate_deltas(android_input_data_t *android_data, AInputEvent *event,size_t motion_ptr)
 {
@@ -615,6 +641,7 @@ static INLINE int android_input_poll_event_type_motion(
          btn = (int)AMotionEvent_getButtonState(event);
          android_data->mouse_l = (btn & AMOTION_EVENT_BUTTON_PRIMARY);
          android_data->mouse_r = (btn & AMOTION_EVENT_BUTTON_SECONDARY);
+         android_data->mouse_m = (btn & AMOTION_EVENT_BUTTON_TERTIARY);
       }
       else
       {
@@ -1286,6 +1313,8 @@ static int16_t android_input_state(void *data,
          break;
       case RETRO_DEVICE_MOUSE:
          return android_mouse_state(android_data, id);
+      case RETRO_DEVICE_LIGHTGUN:
+         return android_lightgun_device_state(android_data, id);
       case RETRO_DEVICE_POINTER:
          switch (id)
          {
