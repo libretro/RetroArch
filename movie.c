@@ -14,13 +14,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <rhash.h>
 #include <compat/strl.h>
 #include <retro_endianness.h>
+#include <streams/file_stream.h>
 
 #include "configuration.h"
 #include "movie.h"
@@ -36,7 +36,7 @@
 
 struct bsv_movie
 {
-   FILE *file;
+   RFILE *file;
 
    /* A ring buffer keeping track of positions
     * in the file for each frame. */
@@ -68,25 +68,26 @@ struct bsv_state
    bool movie_end;
 };
 
-static bsv_movie_t     *bsv_movie_state_handle;
+static bsv_movie_t     *bsv_movie_state_handle = NULL;
 static struct bsv_state bsv_movie_state;
 
-static bool init_playback(bsv_movie_t *handle, const char *path)
+static bool bsv_movie_init_playback(bsv_movie_t *handle, const char *path)
 {
    uint32_t state_size;
    uint32_t *content_crc_ptr = NULL;
    uint32_t header[4]        = {0};
+   RFILE *file               = filestream_open(path, RFILE_MODE_READ, -1);
 
-   handle->playback          = true;
-   handle->file              = fopen(path, "rb");
-
-   if (!handle->file)
+   if (!file)
    {
       RARCH_ERR("Could not open BSV file for playback, path : \"%s\".\n", path);
       return false;
    }
 
-   if (fread(header, sizeof(uint32_t), 4, handle->file) != 4)
+   handle->file              = file;
+   handle->playback          = true;
+
+   if (filestream_read(handle->file, header, 4) != 4)
    {
       RARCH_ERR("%s\n", msg_hash_to_str(MSG_COULD_NOT_READ_MOVIE_HEADER));
       return false;
@@ -120,7 +121,7 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
       handle->state      = buf;
       handle->state_size = state_size;
 
-      if (fread(handle->state, 1, state_size, handle->file) != state_size)
+      if (filestream_read(handle->file, handle->state, state_size) != state_size)
       {
          RARCH_ERR("%s\n", msg_hash_to_str(MSG_COULD_NOT_READ_STATE_FROM_MOVIE));
          return false;
@@ -144,19 +145,21 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
    return true;
 }
 
-static bool init_record(bsv_movie_t *handle, const char *path)
+static bool bsv_movie_init_record(bsv_movie_t *handle, const char *path)
 {
    retro_ctx_size_info_t info;
    uint32_t state_size;
    uint32_t header[4]        = {0};
    uint32_t *content_crc_ptr = NULL;
+   RFILE *file               = filestream_open(path, RFILE_MODE_WRITE, -1);
 
-   handle->file              = fopen(path, "wb");
-   if (!handle->file)
+   if (!file)
    {
       RARCH_ERR("Could not open BSV file for recording, path : \"%s\".\n", path);
       return false;
    }
+
+   handle->file              = file;
 
    content_get_crc(&content_crc_ptr);
 
@@ -171,7 +174,7 @@ static bool init_record(bsv_movie_t *handle, const char *path)
 
    header[STATE_SIZE_INDEX] = swap_if_big32(state_size);
 
-   fwrite(header, 4, sizeof(uint32_t), handle->file);
+   filestream_write(handle->file, header, sizeof(uint32_t));
 
    handle->min_file_pos     = sizeof(header) + state_size;
    handle->state_size       = state_size;
@@ -189,7 +192,7 @@ static bool init_record(bsv_movie_t *handle, const char *path)
 
       core_serialize(&serial_info);
 
-      fwrite(handle->state, 1, state_size, handle->file);
+      filestream_write(handle->file, handle->state, state_size);
    }
 
    return true;
@@ -200,8 +203,8 @@ static void bsv_movie_free(bsv_movie_t *handle)
    if (!handle)
       return;
 
-   if (handle->file)
-      fclose(handle->file);
+   filestream_close(handle->file);
+
    free(handle->state);
    free(handle->frame_pos);
    free(handle);
@@ -212,15 +215,16 @@ static bsv_movie_t *bsv_movie_init(const char *path,
 {
    size_t *frame_pos   = NULL;
    bsv_movie_t *handle = (bsv_movie_t*)calloc(1, sizeof(*handle));
+
    if (!handle)
       return NULL;
 
    if (type == RARCH_MOVIE_PLAYBACK)
    {
-      if (!init_playback(handle, path))
+      if (!bsv_movie_init_playback(handle, path))
          goto error;
    }
-   else if (!init_record(handle, path))
+   else if (!bsv_movie_init_record(handle, path))
       goto error;
 
    /* Just pick something really large 
@@ -245,7 +249,7 @@ void bsv_movie_set_frame_start(void)
 {
    if (bsv_movie_state_handle)
       bsv_movie_state_handle->frame_pos[bsv_movie_state_handle->frame_ptr] 
-         = ftell(bsv_movie_state_handle->file);
+         = filestream_tell(bsv_movie_state_handle->file);
 }
 
 void bsv_movie_set_frame_end(void)
@@ -270,7 +274,7 @@ static void bsv_movie_frame_rewind(bsv_movie_t *handle)
    {
       /* If we're at the beginning... */
       handle->frame_ptr = 0;
-      fseek(handle->file, handle->min_file_pos, SEEK_SET);
+      filestream_seek(handle->file, handle->min_file_pos, SEEK_SET);
    }
    else
    {
@@ -282,10 +286,10 @@ static void bsv_movie_frame_rewind(bsv_movie_t *handle)
        * plus another. */
       handle->frame_ptr = (handle->frame_ptr -
             (handle->first_rewind ? 1 : 2)) & handle->frame_mask;
-      fseek(handle->file, handle->frame_pos[handle->frame_ptr], SEEK_SET);
+      filestream_seek(handle->file, handle->frame_pos[handle->frame_ptr], SEEK_SET);
    }
 
-   if (ftell(handle->file) <= (long)handle->min_file_pos)
+   if (filestream_tell(handle->file) <= (long)handle->min_file_pos)
    {
       /* We rewound past the beginning. */
 
@@ -296,17 +300,17 @@ static void bsv_movie_frame_rewind(bsv_movie_t *handle)
          /* If recording, we simply reset
           * the starting point. Nice and easy. */
 
-         fseek(handle->file, 4 * sizeof(uint32_t), SEEK_SET);
+         filestream_seek(handle->file, 4 * sizeof(uint32_t), SEEK_SET);
 
          serial_info.data = handle->state;
          serial_info.size = handle->state_size;
 
          core_serialize(&serial_info);
 
-         fwrite(handle->state, 1, handle->state_size, handle->file);
+         filestream_write(handle->file, handle->state, handle->state_size);
       }
       else
-         fseek(handle->file, handle->min_file_pos, SEEK_SET);
+         filestream_seek(handle->file, handle->min_file_pos, SEEK_SET);
    }
 }
 
@@ -331,7 +335,7 @@ static void bsv_movie_init_state(void)
       RARCH_LOG("%s.\n", msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK));
       settings->rewind_granularity = 1;
    }
-   else if (bsv_movie_ctl(BSV_MOVIE_CTL_START_RECORDING, NULL))
+   else if (bsv_movie_state.movie_start_recording)
    {
       char msg[256];
       snprintf(msg, sizeof(msg),
@@ -359,7 +363,7 @@ static void bsv_movie_init_state(void)
 
 bool bsv_movie_get_input(int16_t *bsv_data)
 {
-   if (fread(bsv_data, sizeof(int16_t), 1, bsv_movie_state_handle->file) != 1)
+   if (filestream_read(bsv_movie_state_handle->file, bsv_data, 1) != 1)
       return false;
 
    *bsv_data = swap_if_big16(*bsv_data);
@@ -423,7 +427,7 @@ bool bsv_movie_ctl(enum bsv_ctl_state state, void *data)
             int16_t *bsv_data = (int16_t*)data;
 
             *bsv_data = swap_if_big16(*bsv_data);
-            fwrite(bsv_data, sizeof(int16_t), 1, bsv_movie_state_handle->file);
+            filestream_write(bsv_movie_state_handle->file, bsv_data, 1);
          }
          break;
       case BSV_MOVIE_CTL_NONE:
@@ -432,11 +436,6 @@ bool bsv_movie_ctl(enum bsv_ctl_state state, void *data)
    }
 
    return true;
-}
-
-const char *bsv_movie_get_path(void)
-{
-   return bsv_movie_state.movie_path;
 }
 
 void bsv_movie_set_path(const char *path)
@@ -461,19 +460,16 @@ bool bsv_movie_init_handle(const char *path,
 }
 
 /* Checks if movie is being played back. */
-static bool runloop_check_movie_playback(void)
+static bool bsv_movie_check_movie_playback(void)
 {
-   if (!bsv_movie_state.movie_end)
-      return false;
-
    runloop_msg_queue_push(
          msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED), 2, 180, false);
    RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED));
 
    command_event(CMD_EVENT_BSV_MOVIE_DEINIT, NULL);
 
-   bsv_movie_ctl(BSV_MOVIE_CTL_UNSET_END, NULL);
-   bsv_movie_ctl(BSV_MOVIE_CTL_UNSET_PLAYBACK, NULL);
+   bsv_movie_state.movie_end      = false;
+   bsv_movie_state.movie_playback = false;
 
    return true;
 }
@@ -499,16 +495,13 @@ static bool runloop_check_movie_init(void)
    char path[PATH_MAX_LENGTH] = {0};
    settings_t *settings       = config_get_ptr();
 
-   if (bsv_movie_state_handle)
-      return false;
-
    settings->rewind_granularity = 1;
 
    if (settings->state_slot > 0)
       snprintf(path, sizeof(path), "%s%d",
-            bsv_movie_get_path(), settings->state_slot);
+            bsv_movie_state.movie_path, settings->state_slot);
    else
-      strlcpy(path, bsv_movie_get_path(), sizeof(path));
+      strlcpy(path, bsv_movie_state.movie_path, sizeof(path));
 
    strlcat(path,
          file_path_str(FILE_PATH_BSV_EXTENSION),
@@ -544,9 +537,19 @@ static bool runloop_check_movie_init(void)
 
 bool bsv_movie_check(void)
 {
-   if (bsv_movie_ctl(BSV_MOVIE_CTL_PLAYBACK_ON, NULL))
-      return runloop_check_movie_playback();
+   if (bsv_movie_state_handle && bsv_movie_state.movie_playback)
+   {
+      if (!bsv_movie_state.movie_end)
+         return false;
+      return bsv_movie_check_movie_playback();
+   }
+
    if (!bsv_movie_state_handle)
+   {
+      if (bsv_movie_state_handle)
+         return false;
       return runloop_check_movie_init();
+   }
+
    return runloop_check_movie_record();
 }

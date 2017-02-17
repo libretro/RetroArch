@@ -63,8 +63,6 @@ enum bsv_ctl_state
    BSV_MOVIE_CTL_UNSET_END
 };
 
-const char *bsv_movie_get_path(void);
-
 void bsv_movie_set_path(const char *path);
 
 void bsv_movie_set_start_path(const char *path);
