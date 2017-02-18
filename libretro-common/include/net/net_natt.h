@@ -66,12 +66,6 @@ bool natt_new(struct natt_status *status);
 void natt_free(struct natt_status *status);
 
 /**
- * Make a port forwarding request. This may finish immediately or just send a
- * request to the network. */
-bool natt_open_port(struct natt_status *status, struct sockaddr *addr,
-   socklen_t addrlen, enum socket_protocol proto);
-
-/**
  * Make a port forwarding request when only the port is known. Forwards any
  * address it can find. */
 bool natt_open_port_any(struct natt_status *status, uint16_t port,

@@ -94,7 +94,8 @@ void natt_free(struct natt_status *status)
    /* Nothing */
 }
 
-bool natt_open_port(struct natt_status *status, struct sockaddr *addr, socklen_t addrlen, enum socket_protocol proto)
+static bool natt_open_port(struct natt_status *status,
+      struct sockaddr *addr, socklen_t addrlen, enum socket_protocol proto)
 {
 #ifndef HAVE_SOCKET_LEGACY
 #if HAVE_MINIUPNPC
