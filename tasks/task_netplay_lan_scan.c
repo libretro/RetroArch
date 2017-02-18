@@ -33,8 +33,6 @@
 static void netplay_lan_scan_callback(void *task_data,
                                void *user_data, const char *error)
 {
-   unsigned i;
-   file_list_t *file_list                  = NULL;
    struct netplay_host_list *netplay_hosts = NULL;
 
 #ifdef HAVE_MENU
@@ -51,15 +49,17 @@ static void netplay_lan_scan_callback(void *task_data,
             MENU_ENUM_LABEL_DEFERRED_NETPLAY_LAN_SCAN_SETTINGS_LIST)))
       return;
 
-   if (netplay_discovery_driver_ctl(
+   if (!netplay_discovery_driver_ctl(
             RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES,
             (void *) &netplay_hosts))
+      return;
+
+   if (netplay_hosts->size > 0)
    {
-      if (netplay_hosts->size > 0)
-      {
-         file_list = menu_entries_get_selection_buf_ptr(0);
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, file_list);
-      }
+      unsigned i;
+      file_list_t *file_list = menu_entries_get_selection_buf_ptr(0);
+
+      menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, file_list);
 
       for (i = 0; i < netplay_hosts->size; i++)
       {
