@@ -68,6 +68,7 @@
 struct RFILE
 {
    unsigned hints;
+   char *ext;
 #if defined(PSP)
    SceUID fd;
 #else
@@ -100,6 +101,13 @@ int filestream_get_fd(RFILE *stream)
       return fileno(stream->fp);
 #endif
    return stream->fd;
+}
+
+const char *filestream_get_ext(RFILE *stream)
+{
+   if (!stream)
+      return NULL;
+   return stream->ext;
 }
 
 RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
@@ -235,6 +243,11 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
    if (stream->fd == -1)
       goto error;
 #endif
+
+   {
+      const char *ld = (const char*)strrchr(path, '.');
+      stream->ext    = strdup(ld ? ld + 1 : "");
+   }
 
    return stream;
 

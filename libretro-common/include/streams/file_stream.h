@@ -47,6 +47,8 @@ enum
    RFILE_HINT_MMAP       = 1<<9  /* requires RFILE_MODE_READ */
 };
 
+const char *filestream_get_ext(RFILE *stream);
+
 RFILE *filestream_open(const char *path, unsigned mode, ssize_t len);
 
 ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence);
