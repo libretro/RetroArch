@@ -111,9 +111,8 @@ static struct rmsgpack_dom_value query_func_is_true(
       unsigned argc, const struct argument *argv)
 {
    struct rmsgpack_dom_value res;
-   memset(&res, 0, sizeof(res));
 
-   res.type  = RDT_BOOL;
+   res.type      = RDT_BOOL;
    res.val.bool_ = 0;
 
    if (argc > 0 || input.type != RDT_BOOL)
@@ -130,13 +129,11 @@ static struct rmsgpack_dom_value func_equals(
 {
    struct argument arg;
    struct rmsgpack_dom_value res;
-   memset(&res, 0, sizeof(res));
 
-   res.type = RDT_BOOL;
+   res.type      = RDT_BOOL;
+   res.val.bool_ = 0;
 
-   if (argc != 1)
-      res.val.bool_ = 0;
-   else
+   if (argc == 1)
    {
       arg = argv[0];
 
@@ -152,6 +149,7 @@ static struct rmsgpack_dom_value func_equals(
          res.val.bool_ = (rmsgpack_dom_value_cmp(&input, &arg.a.value) == 0);
       }
    }
+
    return res;
 }
 
@@ -161,9 +159,8 @@ static struct rmsgpack_dom_value query_func_operator_or(
 {
    unsigned i;
    struct rmsgpack_dom_value res;
-   memset(&res, 0, sizeof(res));
 
-   res.type = RDT_BOOL;
+   res.type      = RDT_BOOL;
    res.val.bool_ = 0;
 
    for (i = 0; i < argc; i++)
@@ -192,9 +189,8 @@ static struct rmsgpack_dom_value query_func_operator_and(
 {
    unsigned i;
    struct rmsgpack_dom_value res;
-   memset(&res, 0, sizeof(res));
 
-   res.type = RDT_BOOL;
+   res.type      = RDT_BOOL;
    res.val.bool_ = 0;
 
    for (i = 0; i < argc; i++)
@@ -224,9 +220,7 @@ static struct rmsgpack_dom_value query_func_between(
    struct rmsgpack_dom_value res;
    unsigned i                     = 0;
 
-   memset(&res, 0, sizeof(res));
-
-   res.type = RDT_BOOL;
+   res.type      = RDT_BOOL;
    res.val.bool_ = 0;
 
    (void)i;
@@ -263,9 +257,8 @@ static struct rmsgpack_dom_value query_func_glob(
 {
    struct rmsgpack_dom_value res;
    unsigned i = 0;
-   memset(&res, 0, sizeof(res));
 
-   res.type = RDT_BOOL;
+   res.type      = RDT_BOOL;
    res.val.bool_ = 0;
 
    (void)i;
@@ -797,11 +790,11 @@ static struct rmsgpack_dom_value query_func_all_map(
    struct rmsgpack_dom_value res;
    struct rmsgpack_dom_value nil_value;
    struct rmsgpack_dom_value *value = NULL;
-   memset(&res, 0, sizeof(res));
+
+   res.type       = RDT_BOOL;
+   res.val.bool_  = 1;
 
    nil_value.type = RDT_NULL;
-   res.type       = RDT_BOOL;
-   res.val.bool_      = 1;
 
    if (argc % 2 != 0)
    {
