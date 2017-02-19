@@ -105,18 +105,21 @@ static stb_unicode_atlas_slot_t* font_renderer_stb_unicode_get_slot(stb_unicode_
 static const struct font_glyph *font_renderer_stb_unicode_get_glyph(
       void *data, uint32_t charcode)
 {
-   int glyph_index, x0, y1;
-   int advance_width, left_side_bearing;
-   unsigned map_id;
-   uint8_t *dst;
-   stb_unicode_atlas_slot_t* atlas_slot;
-   stb_unicode_font_renderer_t *self = (stb_unicode_font_renderer_t*)data;
+   int glyph_index                      = 0;
+   int x0                               = 0;
+   int y1                               = 0;
+   int advance_width                    = 0;
+   int left_side_bearing                = 0;
+   unsigned map_id                      = 0;
+   uint8_t *dst                         = NULL;
+   stb_unicode_atlas_slot_t* atlas_slot = NULL;
+   stb_unicode_font_renderer_t *self    = (stb_unicode_font_renderer_t*)data;
 
    if(!self)
       return NULL;
 
-   map_id     = charcode & 0xFF;
-   atlas_slot = self->uc_map[map_id];
+   map_id                               = charcode & 0xFF;
+   atlas_slot                           = self->uc_map[map_id];
 
    while(atlas_slot)
    {
@@ -148,9 +151,9 @@ static const struct font_glyph *font_renderer_stb_unicode_get_glyph(
    atlas_slot->glyph.width          = self->max_glyph_width;
    atlas_slot->glyph.height         = self->max_glyph_height;
    atlas_slot->glyph.advance_x      = advance_width * self->scale_factor;
-   /* atlas_slot->glyph.advance_y      = 0 ; */
+   /* atlas_slot->glyph.advance_y   = 0 ; */
    atlas_slot->glyph.draw_offset_x  = x0 * self->scale_factor;
-   atlas_slot->glyph.draw_offset_y  = - y1 * self->scale_factor;
+   atlas_slot->glyph.draw_offset_y  = -y1 * self->scale_factor;
 
 
    self->atlas.dirty = true;
@@ -193,8 +196,10 @@ static bool font_renderer_stb_unicode_create_atlas(
       font_renderer_stb_unicode_get_glyph(self, i);
 
    for (i = 0; i < 256; i++)
+   {
       if(isalnum(i))
          font_renderer_stb_unicode_get_glyph(self, i);
+   }
 
    return true;
 }
