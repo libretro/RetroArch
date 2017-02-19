@@ -118,7 +118,8 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
       return;
    }
 
-   if (state->lpl_list->size == 0)
+   if (state->lpl_list->size == 0 && 
+      !string_is_equal(state->content_path, "N/A"))
       goto no_playlists;
 
    /* Lobby reports content CRC, try to use CRC matching
