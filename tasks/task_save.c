@@ -997,6 +997,7 @@ static void task_push_save_state(const char *path, void *data, size_t size, bool
    state->autosave         = autosave;
    state->mute             = autosave; /* don't show OSD messages if we are auto-saving */
    state->thumbnail_enable = settings->savestate_thumbnail_enable;
+   state->state_slot       = settings->state_slot;
 
    task->type              = TASK_TYPE_BLOCKING;
    task->state             = state;
@@ -1053,25 +1054,27 @@ static void content_load_and_save_state_cb(void *task_data,
 static void task_push_load_and_save_state(const char *path, void *data,
       size_t size, bool load_to_backup_buffer, bool autosave)
 {
-   retro_task_t       *task = (retro_task_t*)calloc(1, sizeof(*task));
+   retro_task_t      *task = (retro_task_t*)calloc(1, sizeof(*task));
    save_task_state_t *state = (save_task_state_t*)calloc(1, sizeof(*state));
+   settings_t        *settings = config_get_ptr();
 
    if (!task || !state)
       goto error;
 
    strlcpy(state->path, path, sizeof(state->path));
    state->load_to_backup_buffer = load_to_backup_buffer;
-   state->undo_size = size;
-   state->undo_data = data;
-   state->autosave  = autosave;
-   state->mute      = autosave; /* don't show OSD messages if we are auto-saving */
+   state->undo_size  = size;
+   state->undo_data  = data;
+   state->autosave   = autosave;
+   state->mute       = autosave; /* don't show OSD messages if we are auto-saving */
+   state->state_slot = settings->state_slot;
 
-   task->state      = state;
-   task->type       = TASK_TYPE_BLOCKING;
-   task->handler    = task_load_handler;
-   task->callback   = content_load_and_save_state_cb;
-   task->title      = strdup(msg_hash_to_str(MSG_LOADING_STATE));
-   task->mute       = state->mute;
+   task->state       = state;
+   task->type        = TASK_TYPE_BLOCKING;
+   task->handler     = task_load_handler;
+   task->callback    = content_load_and_save_state_cb;
+   task->title       = strdup(msg_hash_to_str(MSG_LOADING_STATE));
+   task->mute        = state->mute;
 
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
 
@@ -1192,6 +1195,7 @@ bool content_load_state(const char *path,
 {
    retro_task_t       *task = (retro_task_t*)calloc(1, sizeof(*task));
    save_task_state_t *state = (save_task_state_t*)calloc(1, sizeof(*state));
+   settings_t *settings = config_get_ptr();
 
    if (!task || !state)
       goto error;
@@ -1199,6 +1203,7 @@ bool content_load_state(const char *path,
    strlcpy(state->path, path, sizeof(state->path));
    state->load_to_backup_buffer = load_to_backup_buffer;
    state->autoload              = autoload;
+   state->state_slot            = settings->state_slot;
 
    task->type     = TASK_TYPE_BLOCKING;
    task->state    = state;
