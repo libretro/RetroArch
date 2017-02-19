@@ -2811,7 +2811,7 @@ static bool setting_append_list(
             bool_entries[2].name_enum_idx  = MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS;
             bool_entries[2].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS;
             bool_entries[2].default_value  = default_game_specific_options;
-            bool_entries[2].flags          = SD_FLAG_NONE;
+            bool_entries[2].flags          = SD_FLAG_ADVANCED;
 
             bool_entries[3].target         = &settings->auto_overrides_enable;
             bool_entries[3].name_enum_idx  = MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE;
