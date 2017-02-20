@@ -993,10 +993,12 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
       "Netplay öffentlich ankündigen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
       "Netplay-Einstellungen")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
+      "Im Beobachtermodus starten")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_STATELESS_MODE,
       "Netplay ohne Savestates")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
-      "Server-Passwort für Beobachter-Modus")
+      "Server-Passwort für Beobachtermodus")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE,
       "Beobachtermodus aktivieren")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
@@ -2631,6 +2633,10 @@ MSG_HASH(
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
       "Das Passwort, das für die Verbindung zum Netplay-Host mit Beobachter-Privilegien verwendet wird. Wird nur im Host-Modus verwendet."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
+      "Lege fest, ob Netplay im Beobachtermodus starten soll."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_STATELESS_MODE,

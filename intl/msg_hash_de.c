@@ -1548,6 +1548,21 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "Wird dieser Wert erhöht, verbessert sich \n"
                "die Leistung, die Latenz erhöht sich jedoch.");
+        case MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE:
+            snprintf(s, len,
+                     "Legt fest, ob Netplay-Spiele öffentlich angekündigt werden. \n"
+                             " \n"
+                             "Wenn diese Option deaktiviert ist, müssen sich Clients manuell \n"
+                             "verbinden und können die öffentliche Lobby nicht verwenden.");
+            break;
+        case MENU_ENUM_LABEL_NETPLAY_START_AS_SPECTATOR:
+            snprintf(s, len,
+                     "Legt fest, ob Netplay im Beobachtermodus gestartet wird. \n"
+                             " \n"
+                             "Wenn diese Option aktiviert ist, wird Netplay im \n"
+                             "Beobachtermodus starten. Es ist jederzeit möglich, \n"
+                             "den Modus zu ändern.");
+            break;
         case MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE: /* Maybe FIXME*/
             snprintf(s, len,
                      "Legt fest, ob Netplay in einem Modus laufen soll, der keine\n"
@@ -1717,7 +1732,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE:
          snprintf(s, len,
-               "Aktiviere oder deaktiviere Beobachter-Modus\n"
+               "Aktiviere oder deaktiviere Beobachtermodus\n"
                "für den Benutzer im Netplay-Spiel.");
          break;
       case MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS:
