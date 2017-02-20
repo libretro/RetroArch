@@ -331,7 +331,7 @@ typedef struct vk
    struct
    {
       bool blend;
-      VkPipeline pipelines[8];
+      VkPipeline pipelines[5 * 2];
       struct vk_texture blank_texture;
    } display;
 

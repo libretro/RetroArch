@@ -2067,17 +2067,12 @@ void Pass::build_commands(
 
       VkRenderPassBeginInfo rp_info = { 
          VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
-      VkClearValue clear_value;
-      clear_value.color.float32[0]     = 0.0f;
-      clear_value.color.float32[1]     = 0.0f;
-      clear_value.color.float32[2]     = 0.0f;
-      clear_value.color.float32[3]     = 1.0f;
       rp_info.renderPass               = framebuffer->get_render_pass();
       rp_info.framebuffer              = framebuffer->get_framebuffer();
       rp_info.renderArea.extent.width  = current_framebuffer_size.width;
       rp_info.renderArea.extent.height = current_framebuffer_size.height;
-      rp_info.clearValueCount          = 1;
-      rp_info.pClearValues             = &clear_value;
+      rp_info.clearValueCount          = 0;
+      rp_info.pClearValues             = nullptr;
 
       vkCmdBeginRenderPass(cmd, &rp_info, VK_SUBPASS_CONTENTS_INLINE);
    }
