@@ -232,7 +232,8 @@ struct string_list *string_split(const char *str, const char *delim)
    while (tmp)
    {
       union string_list_elem_attr attr;
-      memset(&attr, 0, sizeof(attr));
+
+      attr.i = 0;
 
       if (!string_list_append(list, tmp, attr))
          goto error;
