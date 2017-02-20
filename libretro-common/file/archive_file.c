@@ -188,7 +188,7 @@ static int file_archive_get_file_list_cb(
    (void)size;
    (void)checksum;
 
-   memset(&attr, 0, sizeof(attr));
+   attr.i = 0;
 
    if (!path_len)
       return 0;
@@ -703,7 +703,7 @@ static struct string_list *file_archive_filename_split(const char *path)
    struct string_list *list = string_list_new();
    const char *delim        = path_get_archive_delim(path);
 
-   memset(&attr, 0, sizeof(attr));
+   attr.i = 0;
 
    if (delim)
    {
