@@ -307,11 +307,26 @@ void scaler_ctx_gen_reset(struct scaler_ctx *ctx)
    scaler_free(ctx->input.frame);
    scaler_free(ctx->output.frame);
 
-   memset(&ctx->horiz, 0, sizeof(ctx->horiz));
-   memset(&ctx->vert, 0, sizeof(ctx->vert));
-   memset(&ctx->scaled, 0, sizeof(ctx->scaled));
-   memset(&ctx->input, 0, sizeof(ctx->input));
-   memset(&ctx->output, 0, sizeof(ctx->output));
+   ctx->horiz.filter        = NULL;
+   ctx->horiz.filter_len    = 0;
+   ctx->horiz.filter_stride = 0;
+   ctx->horiz.filter_pos    = NULL;
+
+   ctx->vert.filter         = NULL;
+   ctx->vert.filter_len     = 0;
+   ctx->vert.filter_stride  = 0;
+   ctx->vert.filter_pos     = NULL;
+
+   ctx->scaled.frame        = NULL;
+   ctx->scaled.width        = 0;
+   ctx->scaled.height       = 0;
+   ctx->scaled.stride       = 0;
+
+   ctx->input.frame         = NULL;
+   ctx->input.stride        = 0;
+
+   ctx->output.frame        = NULL;
+   ctx->output.stride       = 0;
 }
 
 /**
