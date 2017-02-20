@@ -549,21 +549,21 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD,
       "Modifier l'overlay de la manette virtuelle")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HELP_CONTROLS,
-      "Basic Menu Controls")
+      "Contrôles du menu basiques")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HELP_LIST,
       "Aide")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HELP_LOADING_CONTENT,
-      "Loading Content")
+      "Chargement du contenu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT,
-      "Scanning For Content")
+      "Recherche de Contenu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE,
-      "What Is A Core?")
+      "Qu'est-ce qu'un Core ?")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
       "Afficher l'historique")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
       "Historique")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU,
-      "Horizontal Menu")
+      "Menu Horizontal")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
       "Image")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INFORMATION,
@@ -571,53 +571,53 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INFORMATION,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
       "Informations")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
-      "Analog To Digital Type")
+      "Type Analogique vers Numérique")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
-      "All Users Control Menu")
+      "Tous les utilisateurs contrôlent le menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X,
-      "Left Analog X")
+      "Analogique Gauche X")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS,
-      "Left analog X- (left)")
+      "Analogique Gauche X- (gauche)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS,
-      "Left analog X+ (right)")
+      "Analogique Gauche X+ (droite)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y,
-      "Left Analog Y")
+      "Analogique Gauche Y")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_MINUS,
-      "Left analog Y- (up)")
+      "Analogique Gauche Y- (haut)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS,
-      "Left analog Y+ (down)")
+      "Analogique Gauche Y+ (bas)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X,
-      "Right Analog X")
+      "Analogique Droit X")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_MINUS,
-      "Right analog X- (left)")
+      "Analogique Droit X- (gauche)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_PLUS,
-      "Right analog X+ (right)")
+      "Analogique Droit X+ (droite)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y,
-      "Right Analog Y")
+      "Analogique Droit Y")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
-      "Right analog Y- (up)")
+      "Analogique Droit Y- (haut)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
-      "Right analog Y+ (down)")
+      "Analogique Droit Y+ (bas)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
       "Activer l'autoconfiguration")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD,
       "Seuil des axes")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-      "Menu Swap OK & Cancel Buttons")
+      "Inverser les boutons OK et Annuler dans le Menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
-      "Bind All")
+      "Tout Assigner")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL,
-      "Bind Default All")
+      "Tout Assigner par Défaut")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
-      "Bind Timeout")
+      "Expiration de l'assignation")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND,
       "Cacher les remaps non mappés des coeurs")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW,
       "Afficher les remaps du coeur")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
-      "Device Index")
+      "Index du Périphérique")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE,
-      "Device Type")
+      "Type de Périphérique")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
       "Pilote des entrées")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
@@ -625,107 +625,107 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
       "Racourcis d'entrées")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
-      "Keyboard Gamepad Mapping Enable")
+      "Activer le mapping de la manette sur le clavier")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A,
-      "A button (right)")
+      "Bouton A (droite)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
-      "B button (down)")
+      "Bouton B (bas)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_DOWN,
-      "Down D-pad")
+      "Croix Bas")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L2,
-      "L2 button (trigger)")
+      "Bouton L2 (gachette)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L3,
-      "L3 button (thumb)")
+      "Bouton L3 (pouce)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L,
-      "L button (shoulder)")
+      "Bouton L (épaule)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_LEFT,
-      "Left D-pad")
+      "Croix Gauche")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R2,
-      "R2 button (trigger)")
+      "Bouton R2 (gachette)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R3,
-      "R3 button (thumb)")
+      "Bouton R3 (pouce)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R,
-      "R button (shoulder)")
+      "Bouton R (épaule)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_RIGHT,
-      "Right D-pad")
+      "Croix Droite")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_SELECT,
-      "Select button")
+      "Bouton Select")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_START,
-      "Start button")
+      "Bouton Start")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_UP,
-      "Up D-pad")
+      "Croix Haut")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_X,
-      "X button (top)")
+      "Bouton X (haut)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
-      "Y button (left)")
+      "Bouton Y (gauche)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_KEY,
-      "(Key: %s)")
+      "(Touche: %s)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
-      "Keyboard Gamepad Mapping Type")
+      "Type de Mapping Manette sur Clavier")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
       "Nombre d'utilisateurs")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
-      "Menu Toggle Gamepad Combo")
+      "Combinaison pour afficher le menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_MINUS,
-      "Cheat index -")
+      "Index de triche -")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_PLUS,
-      "Cheat index +")
+      "Index de triche +")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_TOGGLE,
-      "Cheat toggle")
+      "Activer / désactiver la triche")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_EJECT_TOGGLE,
-      "Disk eject toggle")
+      "Insérer / retirer un disque")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_NEXT,
-      "Disk next")
+      "Disque suivant")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
-      "Disk prev")
+      "Disque précédent")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
-      "Enable hotkeys")
+      "Activer les raccourcis clavier")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_HOLD_KEY,
-      "Fast forward hold")
+      "Touche d'avance rapide")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY,
-      "Fast forward toggle")
+      "Bascule d'avance rapide")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE,
-      "Frameadvance")
+      "Saut d'image")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
-      "Fullscreen toggle")
+      "Plein écran")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
-      "Grab mouse toggle")
+      "Touche de capture de la souris")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
-      "Load state")
+      "Charger un état")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
-      "Menu toggle")
+      "Afficher le menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_MOVIE_RECORD_TOGGLE,
-      "Movie record toggle")
+      "Activer l'enregistrement")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,
-      "Audio mute toggle")
+      "Sourdine")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FLIP,
-      "Netplay flip users")
+      "Inverser les joueurs en réseau")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
-      "On-screen keyboard toggle")
+      "Afficher le clavier virtuel")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
-      "Overlay next")
+      "Overlay suivante")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
-      "Pause toggle")
+      "Pause")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
-      "Quit RetroArch")
+      "Quitter RetroArch")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
-      "Reset game")
+      "Redémarrer le jeu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
-      "Rewind")
+      "Rembobinage")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
-      "Save state")
+      "Sauvegarder un état")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
-      "Take screenshot")
+      "Prendre une capture d'écran")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
-      "Next shader")
+      "Shader suivant")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV,
-      "Previous shader")
+      "Shader précédent")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION,
-      "Slow motion")
+      "Ralenti")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
-      "Savestate slot -")
+      "Emplacement de savestate -")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
-      "Savestate slot +")
+      "Emplacement de savestate +")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN,
       "Volume -")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,
@@ -735,11 +735,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
       "Cacher l'overlay dans le menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
-      "Poll Type Behavior")
+      "Comportement du type de Poll")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_EARLY,
-      "Early")
+      "Tôt")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_LATE,
-      "Late")
+      "Tard")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_NORMAL,
       "Normal")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
@@ -749,21 +749,21 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
       "Autoriser le remapping des entrées")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
-      "Save Autoconfig")
+      "Sauvegarder l'autoconfiguration")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
       "Entrées")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
-      "Small Keyboard Enable")
+      "Petit Clavier Activer")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
-      "Touch Enable")
+      "Touch Activer")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
-      "Turbo enable")
+      "Activer le turbo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
       "Délai du turbo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
       "Entrées utilisateur %u")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
-      "Internal storage status")
+      "État du stockage interne")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
       "Dossier des autoconfigs d'entrées")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
@@ -797,7 +797,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_RUSSIAN,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_SPANISH,
       "Espagnol")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE,
-      "Vietnamese")
+      "Vietnamien")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
       "Stick analogique gauche")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
@@ -831,27 +831,27 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MANAGEMENT,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
       "Dégradé de font d'écran")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE,
-      "Blue")
+      "Bleu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE_GREY,
-      "Blue Grey")
+      "Gris bleu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_DARK_BLUE,
-      "Dark Blue")
+      "Bleu foncé")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GREEN,
-      "Green")
+      "Vert")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_NVIDIA_SHIELD,
       "Shield")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_RED,
-      "Red")
+      "Rouge")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_YELLOW,
-      "Yellow")
+      "Jaune")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY,
-      "Footer Opacity")
+      "Opacité du pied de page")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_HEADER_OPACITY,
-      "Header Opacity")
+      "Opacité de l'en-tête")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
       "Pilote de menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
-      "Throttle Menu Framerate")
+      "Contrôler le framerate du menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS, /* TODO/FIXME - update */
       "Navigateur de fichiers")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
@@ -861,7 +861,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
       "Fond d'écran")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
-      "Background opacity")
+      "Opacité de l'arrière-plan")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MISSING,
       "Manquant")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MORE,
@@ -871,7 +871,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MULTIMEDIA_SETTINGS,
       "Multimédia")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
-      "Music")
+      "Musique")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
       "Filtrer par extentions supportées")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
@@ -879,7 +879,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NEAREST,
       "Au plus proche")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY,
-      "Netplay")
+      "Jeu en réseau")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
       "Netplay Check Frames")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT,
@@ -887,13 +887,13 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES,
       "Netplay Delay Frames")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
-      "Disconnect")
+      "Déconnexion")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
       "Autoriser le jeu en réseau")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
-      "Connect to Netplay host")
+      "Connexion à l'hôte distant")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
-      "Start hosting")
+      "Commencer l'hébergement")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
       "Adresse IP")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_MODE,
@@ -901,7 +901,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_MODE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
       "Nom d'utilisateur")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
-      "Netplay settings")
+      "Réglages du jeu en réseau")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE,
       "Activer le mode spectateur")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
@@ -911,7 +911,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETWORK_CMD_PORT,
       "Port des commandes réseau")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
-      "Network Information")
+      "Informations du réseau")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_ENABLE,
       "Manette réseau")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_PORT,
@@ -925,7 +925,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NONE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE,
       "Indisponible")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
-      "No achievements to display.")
+      "Aucun Succès à afficher.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_CORE,
       "Aucun coeur")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_CORES_AVAILABLE,
@@ -935,9 +935,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE,
       "Pas d'options disponibles.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY,
-      "No entries to display.")
+      "Aucune entrée à afficher.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE,
-      "No history available.")
+      "Aucun historique disponible.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE,
       "Pas d'informations disponibles.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_ITEMS,
@@ -949,21 +949,21 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND,
       "Pas de réglages trouvés.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS,
-      "Aucun paramètres.")
+      "Aucun paramètre.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OFF,
       "OFF")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ON,
       "ON")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ONLINE,
-      "Online")
+      "En ligne")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
       "Mises à jour")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
       "Messages d'info")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS,
-      "Onscreen Overlay")
+      "Overlay à l'écran")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
-      "Onscreen Notifications")
+      "Notifications à l'écran")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
       "Ouvrir l'archive") /* TODO/FIXME */
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OPTIONAL,
@@ -983,7 +983,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
       "Utiliser le mode PAL60")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
-      "Parent directory")
+      "Dossier parent")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
       "Pauser le contenu quand le menu est activé")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
@@ -1007,13 +1007,13 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
       "Quitter RetroArch")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
-      "Analog supported")
+      "Support de l'analogique")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
       "BBFC Rating")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
       "CERO Rating")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
-      "Co-op supported")
+      "Support du co-op")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CRC32,
       "CRC32")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION,
