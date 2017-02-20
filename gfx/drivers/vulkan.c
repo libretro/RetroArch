@@ -229,6 +229,10 @@ static void vulkan_init_pipelines(
 #include "vulkan_shaders/pipeline_snow_simple.frag.inc"
       ;
 
+   static const uint32_t pipeline_snow_frag[] =
+#include "vulkan_shaders/pipeline_snow.frag.inc"
+      ;
+
    unsigned i;
    VkPipelineInputAssemblyStateCreateInfo input_assembly = { 
       VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
@@ -413,6 +417,11 @@ static void vulkan_init_pipelines(
             module_info.pCode      = alpha_blend_vert;
             break;
 
+         case 3:
+            module_info.codeSize   = sizeof(alpha_blend_vert);
+            module_info.pCode      = alpha_blend_vert;
+            break;
+
          default:
             retro_assert(0 && "No shader for menu pipeline.");
             break;
@@ -438,6 +447,11 @@ static void vulkan_init_pipelines(
          case 2:
             module_info.codeSize   = sizeof(pipeline_snow_simple_frag);
             module_info.pCode      = pipeline_snow_simple_frag;
+            break;
+
+         case 3:
+            module_info.codeSize   = sizeof(pipeline_snow_frag);
+            module_info.pCode      = pipeline_snow_frag;
             break;
 
          default:
