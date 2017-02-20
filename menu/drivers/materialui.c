@@ -1214,16 +1214,22 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
 
    if (libretro_running)
    {
-      memset(&draw, 0, sizeof(menu_display_ctx_draw_t));
-
+      draw.x                  = 0;
+      draw.y                  = 0;
       draw.width              = width;
       draw.height             = height;
+      draw.coords             = NULL;
+      draw.matrix_data        = NULL;
       draw.texture            = menu_display_white_texture;
+      draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
       draw.color              = &body_bg_color[0];
       draw.vertex             = NULL;
       draw.tex_coord          = NULL;
       draw.vertex_count       = 4;
-      draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+
+      draw.pipeline.id        = 0;
+      draw.pipeline.active    = false;
+      draw.pipeline.backend_data = NULL;
 
       mui_draw_bg(&draw, video_info);
    }
@@ -1237,16 +1243,22 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
 
          menu_display_set_alpha(white_transp_bg, 0.30);
 
-         memset(&draw, 0, sizeof(menu_display_ctx_draw_t));
-
+         draw.x                  = 0;
+         draw.y                  = 0;
          draw.width              = width;
          draw.height             = height;
+         draw.coords             = NULL;
+         draw.matrix_data        = NULL;
          draw.texture            = mui->textures.bg;
+         draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
          draw.color              = &white_transp_bg[0];
          draw.vertex             = NULL;
          draw.tex_coord          = NULL;
          draw.vertex_count       = 4;
-         draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+
+         draw.pipeline.id        = 0;
+         draw.pipeline.active    = false;
+         draw.pipeline.backend_data = NULL;
 
          if (draw.texture)
             draw.color           = &white_bg[0];
