@@ -61,11 +61,14 @@ static void file_list_add(file_list_t *list, unsigned idx,
       unsigned type, size_t directory_ptr,
       size_t entry_idx)
 {
-   memset(&list->list[idx], 0, sizeof(*list->list));
-
+   list->list[idx].path          = NULL;
+   list->list[idx].label         = NULL;
+   list->list[idx].alt           = NULL;
    list->list[idx].type          = type;
    list->list[idx].directory_ptr = directory_ptr;
    list->list[idx].entry_idx     = entry_idx;
+   list->list[idx].userdata      = NULL;
+   list->list[idx].actiondata    = NULL;
 
    if (label)
       list->list[idx].label      = strdup(label);
