@@ -1159,9 +1159,9 @@ static void config_set_defaults(void)
          settings->input.autoconf_binds[i][j].joykey  = NO_BTN;
          settings->input.autoconf_binds[i][j].joyaxis = AXIS_NONE;
       }
+
+      settings->input.autoconfigured[i] = 0;
    }
-   memset(settings->input.autoconfigured, 0,
-         sizeof(settings->input.autoconfigured));
 
    /* Verify that binds are in proper order. */
    for (i = 0; i < MAX_USERS; i++)
