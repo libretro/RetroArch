@@ -2324,6 +2324,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    vkGetPhysicalDeviceSurfaceFormatsKHR(vk->context.gpu,
          vk->vk_surface, &format_count, formats);
 
+   format.format = VK_FORMAT_UNDEFINED;
    if (format_count == 1 && formats[0].format == VK_FORMAT_UNDEFINED)
    {
       format        = formats[0];
@@ -2337,7 +2338,19 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          return false;
       }
 
-      format = formats[0];
+      for (i = 0; i < format_count; i++)
+      {
+         if (
+               formats[i].format == VK_FORMAT_R8G8B8A8_UNORM ||
+               formats[i].format == VK_FORMAT_B8G8R8A8_UNORM ||
+               formats[i].format == VK_FORMAT_A8B8G8R8_UNORM_PACK32)
+         {
+            format = formats[i];
+         }
+      }
+
+      if (format.format == VK_FORMAT_UNDEFINED)
+         format = formats[0];
    }
 
    if (surface_properties.currentExtent.width == -1)

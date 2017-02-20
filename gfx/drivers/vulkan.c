@@ -225,6 +225,10 @@ static void vulkan_init_pipelines(
 #include "vulkan_shaders/pipeline_ribbon_simple.frag.inc"
       ;
 
+   static const uint32_t pipeline_snow_simple_frag[] =
+#include "vulkan_shaders/pipeline_snow_simple.frag.inc"
+      ;
+
    unsigned i;
    VkPipelineInputAssemblyStateCreateInfo input_assembly = { 
       VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
@@ -390,17 +394,28 @@ static void vulkan_init_pipelines(
    vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
 
    /* Other menu pipelines. */
-   for (i = 0; i < 4; i++)
+   for (i = 0; i < ARRAY_SIZE(vk->display.pipelines) - 4; i++)
    {
-      if (i & 2)
+      switch (i >> 1)
       {
-         module_info.codeSize   = sizeof(pipeline_ribbon_simple_vert);
-         module_info.pCode      = pipeline_ribbon_simple_vert;
-      }
-      else
-      {
-         module_info.codeSize   = sizeof(pipeline_ribbon_vert);
-         module_info.pCode      = pipeline_ribbon_vert;
+         case 0:
+            module_info.codeSize   = sizeof(pipeline_ribbon_vert);
+            module_info.pCode      = pipeline_ribbon_vert;
+            break;
+
+         case 1:
+            module_info.codeSize   = sizeof(pipeline_ribbon_simple_vert);
+            module_info.pCode      = pipeline_ribbon_simple_vert;
+            break;
+
+         case 2:
+            module_info.codeSize   = sizeof(alpha_blend_vert);
+            module_info.pCode      = alpha_blend_vert;
+            break;
+
+         default:
+            retro_assert(0 && "No shader for menu pipeline.");
+            break;
       }
 
       shader_stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -408,15 +423,26 @@ static void vulkan_init_pipelines(
       vkCreateShaderModule(vk->context->device,
             &module_info, NULL, &shader_stages[0].module);
 
-      if (i & 2)
+      switch (i >> 1)
       {
-         module_info.codeSize   = sizeof(pipeline_ribbon_simple_frag);
-         module_info.pCode      = pipeline_ribbon_simple_frag;
-      }
-      else
-      {
-         module_info.codeSize   = sizeof(pipeline_ribbon_frag);
-         module_info.pCode      = pipeline_ribbon_frag;
+         case 0:
+            module_info.codeSize   = sizeof(pipeline_ribbon_frag);
+            module_info.pCode      = pipeline_ribbon_frag;
+            break;
+
+         case 1:
+            module_info.codeSize   = sizeof(pipeline_ribbon_simple_frag);
+            module_info.pCode      = pipeline_ribbon_simple_frag;
+            break;
+
+         case 2:
+            module_info.codeSize   = sizeof(pipeline_snow_simple_frag);
+            module_info.pCode      = pipeline_snow_simple_frag;
+            break;
+
+         default:
+            retro_assert(0 && "No shader for menu pipeline.");
+            break;
       }
 
       shader_stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -639,7 +665,7 @@ static void vulkan_deinit_pipelines(vk_t *vk)
    vkDestroyPipeline(vk->context->device,
          vk->pipelines.font, NULL);
 
-   for (i = 0; i < 8; i++)
+   for (i = 0; i < ARRAY_SIZE(vk->display.pipelines); i++)
       vkDestroyPipeline(vk->context->device,
             vk->display.pipelines[i], NULL);
 }
@@ -1524,7 +1550,6 @@ static bool vulkan_frame(void *data, const void *frame,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    VkSemaphore signal_semaphores[2];
-   VkClearValue clear_value;
    vk_t *vk                                      = (vk_t*)data;
    struct vk_per_frame *chain                    = NULL;
    static struct retro_perf_counter frame_run    = {0};
@@ -1537,6 +1562,7 @@ static bool vulkan_frame(void *data, const void *frame,
    bool waits_for_semaphores                     = false;
    unsigned width                                = video_info->width;
    unsigned height                               = video_info->height;
+   VkClearValue clear_color;
 
    VkCommandBufferBeginInfo begin_info           = { 
       VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
@@ -1711,16 +1737,17 @@ static bool vulkan_frame(void *data, const void *frame,
          (vulkan_filter_chain_t*)vk->filter_chain,
          vk->cmd, &vk->vk_vp);
    /* Render to backbuffer. */
-   clear_value.color.float32[0]     = 0.0f;
-   clear_value.color.float32[1]     = 0.0f;
-   clear_value.color.float32[2]     = 0.0f;
-   clear_value.color.float32[3]     = 1.0f;
    rp_info.renderPass               = vk->render_pass;
    rp_info.framebuffer              = chain->backbuffer.framebuffer;
    rp_info.renderArea.extent.width  = vk->context->swapchain_width;
    rp_info.renderArea.extent.height = vk->context->swapchain_height;
    rp_info.clearValueCount          = 1;
-   rp_info.pClearValues             = &clear_value;
+   rp_info.pClearValues             = &clear_color;
+
+   clear_color.color.float32[0] = 0.0f;
+   clear_color.color.float32[1] = 0.0f;
+   clear_color.color.float32[2] = 0.0f;
+   clear_color.color.float32[3] = 0.0f;
 
    /* Prepare backbuffer for rendering. We don't use WSI semaphores here. */
    vulkan_image_layout_transition(vk, vk->cmd, chain->backbuffer.image,

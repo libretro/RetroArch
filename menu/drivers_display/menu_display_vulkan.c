@@ -42,6 +42,13 @@ static const float vk_tex_coords[] = {
    1, 0
 };
 
+static const float vk_colors[] = {
+   1.0f, 1.0f, 1.0f, 1.0f,
+   1.0f, 1.0f, 1.0f, 1.0f,
+   1.0f, 1.0f, 1.0f, 1.0f,
+   1.0f, 1.0f, 1.0f, 1.0f,
+};
+
 static void *menu_display_vk_get_default_mvp(void)
 {
    vk_t *vk = (vk_t*)video_driver_get_ptr(false);
@@ -53,6 +60,11 @@ static void *menu_display_vk_get_default_mvp(void)
 static const float *menu_display_vk_get_default_vertices(void)
 {
    return &vk_vertexes[0];
+}
+
+static const float *menu_display_vk_get_default_color(void)
+{
+   return &vk_colors[0];
 }
 
 static const float *menu_display_vk_get_default_tex_coords(void)
@@ -76,6 +88,8 @@ static unsigned to_menu_pipeline(
          return 4 + (type == MENU_DISPLAY_PRIM_TRIANGLESTRIP);
       case VIDEO_SHADER_MENU_2:
          return 6 + (type == MENU_DISPLAY_PRIM_TRIANGLESTRIP);
+      case VIDEO_SHADER_MENU_3:
+         return 8 + (type == MENU_DISPLAY_PRIM_TRIANGLESTRIP);
       default:
          return 0;
    }
@@ -103,18 +117,50 @@ static void menu_display_vk_draw_pipeline(void *data)
 #ifdef HAVE_SHADERPIPELINE
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
    vk_t *vk                      = (vk_t*)video_driver_get_ptr(false);
-   video_coord_array_t *ca         = NULL;
+   video_coord_array_t *ca       = NULL;
+
+   static uint8_t ubo_scratch_data[256];
    static float t                = 0.0f;
+   static struct video_coords blank_coords;
 
    if (!vk || !draw)
       return;
 
-   ca = menu_display_get_coords_array();
-   draw->x                     = 0;
-   draw->y                     = 0;
-   draw->coords                = (struct video_coords*)&ca->coords;
-   draw->matrix_data           = NULL;
-   draw->pipeline.backend_data = &t;
+   draw->x                          = 0;
+   draw->y                          = 0;
+   draw->matrix_data                = NULL;
+
+   float output_size[2] = { vk->context->swapchain_width, vk->context->swapchain_height };
+
+   switch (draw->pipeline.id)
+   {
+      /* Ribbon */
+      default:
+      case VIDEO_SHADER_MENU:
+      case VIDEO_SHADER_MENU_2:
+         ca = menu_display_get_coords_array();
+         draw->coords                     = (struct video_coords*)&ca->coords;
+         draw->pipeline.backend_data      = ubo_scratch_data;
+         draw->pipeline.backend_data_size = sizeof(float);
+
+         /* Match UBO layout in shader. */
+         memcpy(ubo_scratch_data, &t, sizeof(t));
+         break;
+
+      /* Snow simple */
+      case VIDEO_SHADER_MENU_3:
+         draw->pipeline.backend_data      = ubo_scratch_data;
+         draw->pipeline.backend_data_size = sizeof(math_matrix_4x4) + 3 * sizeof(float);
+
+         /* Match UBO layout in shader. */
+         memcpy(ubo_scratch_data, menu_display_vk_get_default_mvp(), sizeof(math_matrix_4x4));
+         memcpy(ubo_scratch_data + sizeof(math_matrix_4x4), output_size, sizeof(output_size));
+         memcpy(ubo_scratch_data + sizeof(math_matrix_4x4) + 2 * sizeof(float), &t, sizeof(t));
+         draw->coords = &blank_coords;
+         blank_coords.vertices = 4;
+         draw->prim_type = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+         break;
+   }
 
    t += 0.01;
 #endif
@@ -148,6 +194,8 @@ static void menu_display_vk_draw(void *data)
       draw->coords->lut_tex_coord = menu_display_vk_get_default_tex_coords();
    if (!texture)
       texture         = &vk->display.blank_texture;
+   if (!color)
+      color           = menu_display_vk_get_default_color();
 
    menu_display_vk_viewport(draw);
    vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
@@ -177,8 +225,6 @@ static void menu_display_vk_draw(void *data)
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
       case VIDEO_SHADER_MENU_3:
-      case VIDEO_SHADER_MENU_4:
-      case VIDEO_SHADER_MENU_5:
       {
          const struct vk_draw_triangles call = {
             vk->display.pipelines[
@@ -186,13 +232,18 @@ static void menu_display_vk_draw(void *data)
                NULL,
                VK_NULL_HANDLE,
                draw->pipeline.backend_data,
-               sizeof(float),
+               draw->pipeline.backend_data_size,
                &range,
                draw->coords->vertices,
          };
          vulkan_draw_triangles(vk, &call);
          break;
       }
+
+      /* Not implemented yet. */
+      case VIDEO_SHADER_MENU_4:
+      case VIDEO_SHADER_MENU_5:
+         break;
 #endif
 
       default:
