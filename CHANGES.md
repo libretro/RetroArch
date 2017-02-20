@@ -5,6 +5,8 @@
 - CHEEVOS: Fix crashes in the cheevos description menu
 - CHEEVOS: WIP leaderboards support 
 - COMMON: Threading fixes 
+- CORETEXT/APPLE : Ability to load menu display font drivers and loading
+- of custom font.
 - DOS: Add keyboard driver
 - DOS: Improve color accuracy and scalines
 - GUI: Various settings are now only visible when advanced settings is enabled
