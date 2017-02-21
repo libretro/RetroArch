@@ -1391,28 +1391,6 @@ bool task_push_content_load_default(
       retro_task_callback_t cb,
       void *user_data)
 {
-   bool loading_from_menu                     = false;
-
-   /* First we determine if we are loading from a menu */
-   switch (mode)
-   {
-#if defined(HAVE_VIDEO_PROCESSOR)
-      case CONTENT_MODE_LOAD_NOTHING_WITH_VIDEO_PROCESSOR_CORE_FROM_MENU:
-#endif
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-      case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
-#endif
-      case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU:
-      case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI:
-      case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_COMPANION_UI:
-      case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
-      case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
-         loading_from_menu = true;
-         break;
-      default:
-         break;
-   }
-
    /* Clear content path */
    switch (mode)
    {
@@ -1486,10 +1464,11 @@ bool task_push_content_load_default(
       case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
          {
             content_information_ctx_t content_ctx;
-  
-            bool ret             = false;
-            char *error_string   = NULL;
-            settings_t *settings = config_get_ptr();
+
+            bool loading_from_menu                     = false;
+            bool ret                                   = false;
+            char *error_string                         = NULL;
+            settings_t *settings                       = config_get_ptr();
 
             content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
             content_ctx.bios_is_missing                = runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL);
@@ -1503,6 +1482,26 @@ bool task_push_content_load_default(
 
             content_ctx.subsystem.data                 = NULL;
             content_ctx.subsystem.size                 = 0;
+
+            /* First we determine if we are loading from a menu */
+            switch (mode)
+            {
+#if defined(HAVE_VIDEO_PROCESSOR)
+               case CONTENT_MODE_LOAD_NOTHING_WITH_VIDEO_PROCESSOR_CORE_FROM_MENU:
+#endif
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
+               case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
+#endif
+               case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU:
+               case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI:
+               case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_COMPANION_UI:
+               case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
+               case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
+                  loading_from_menu = true;
+                  break;
+               default:
+                  break;
+            }
 
             if (settings)
             {
