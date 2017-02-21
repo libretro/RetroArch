@@ -25,6 +25,7 @@
 #include "netplay_private.h"
 
 #include "../../runloop.h"
+#include "../../tasks/tasks_internal.h"
 
 #if 0
 #define DEBUG_NETPLAY_STEPS 1
@@ -1430,18 +1431,6 @@ void netplay_announce_nat_traversal(netplay_t *netplay)
  */
 void netplay_init_nat_traversal(netplay_t *netplay)
 {
-   natt_init();
-
-   if (!natt_new(&netplay->nat_traversal_state))
-   {
-      netplay->nat_traversal = false;
-      return;
-   }
-
-   natt_open_port_any(&netplay->nat_traversal_state, netplay->tcp_port, SOCKET_PROTOCOL_TCP);
-
-#ifndef HAVE_SOCKET_LEGACY
-   if (!netplay->nat_traversal_state.request_outstanding)
-      netplay_announce_nat_traversal(netplay);
-#endif
+   memset(&netplay->nat_traversal_state, 0, sizeof(netplay->nat_traversal_state));
+   task_push_netplay_nat_traversal(&netplay->nat_traversal_state, netplay->tcp_port);
 }

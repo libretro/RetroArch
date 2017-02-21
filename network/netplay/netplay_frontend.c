@@ -1197,6 +1197,9 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
       case RARCH_NETPLAY_CTL_DISCONNECT:
          ret = netplay_disconnect(netplay_data);
          goto done;
+      case RARCH_NETPLAY_CTL_FINISHED_NAT_TRAVERSAL:
+         netplay_announce_nat_traversal(netplay_data);
+         goto done;
       default:
       case RARCH_NETPLAY_CTL_NONE:
          ret = false;
