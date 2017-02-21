@@ -148,14 +148,8 @@ bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info,
 
    if (!string_is_empty(default_info_dir))
    {
-      const char *default_info_path = NULL;
-      size_t default_info_length    = 0;
-
-      if (def_info)
-      {
-         default_info_path = def_info->path;
-         default_info_length    = def_info->len;
-      }
+      const char *default_info_path = def_info->path;
+      size_t default_info_length    = def_info->len;
 
       if (!string_is_empty(default_info_path))
          fill_pathname_join(def_info->s, 
