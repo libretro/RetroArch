@@ -316,7 +316,7 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
             {
                /* Our previous core supports the current rom */
                content_ctx_info_t content_info = {0};
-               task_push_content_load_content_with_current_core_from_companion_ui(
+               task_push_load_content_with_current_core_from_companion_ui(
                      NULL,
                      &content_info,
                      CORE_TYPE_PLAIN,
@@ -344,7 +344,7 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
          if(DialogBoxParam(GetModuleHandle(NULL),MAKEINTRESOURCE(IDD_PICKCORE),
                   hwnd,PickCoreProc,(LPARAM)NULL)==IDOK) 
          {
-            task_push_content_load_content_with_current_core_from_companion_ui(
+            task_push_load_content_with_current_core_from_companion_ui(
                   NULL,
                   &content_info,
                   CORE_TYPE_PLAIN,
