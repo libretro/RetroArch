@@ -2203,18 +2203,6 @@ static void xmb_draw_items(
             case FILE_TYPE_IMAGE:
             case FILE_TYPE_MOVIE:
                break;
-            case FILE_TYPE_BOOL_ON:
-               if (xmb->textures.list[XMB_TEXTURE_SWITCH_ON])
-                  texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_ON];
-               else
-                  do_draw_text = true;
-               break;
-            case FILE_TYPE_BOOL_OFF:
-               if (xmb->textures.list[XMB_TEXTURE_SWITCH_OFF])
-                  texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_OFF];
-               else
-                  do_draw_text = true;
-               break;
             default:
                do_draw_text = true;
                break;
