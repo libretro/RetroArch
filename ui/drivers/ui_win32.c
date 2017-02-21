@@ -633,11 +633,10 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
                      path_set(RARCH_PATH_CONTENT, win32_file);
 
                      do_wm_close = true;
-                     task_push_content_load_default(
-                           NULL, NULL,
+                     task_push_content_load_content_with_current_core_from_companion_ui(
+                           NULL,
                            &content_info,
                            CORE_TYPE_PLAIN,
-                           CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
                            NULL, NULL);
                   }
                   break;

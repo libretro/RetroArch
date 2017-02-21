@@ -291,12 +291,10 @@ static char** waiting_argv;
       if (core_name)
       {
          content_ctx_info_t content_info = {0};
-         task_push_content_load_default(
-               NULL,
+         task_push_load_content_with_current_core_from_companion_ui(
                __core.UTF8String,
                &content_info,
                CORE_TYPE_PLAIN,
-               CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
                NULL, NULL);
       }
       else
@@ -340,11 +338,10 @@ static void open_core_handler(ui_browser_window_state_t *state, bool result)
     {
         content_ctx_info_t content_info = {0};
         path_clear(RARCH_PATH_CONTENT);
-        task_push_content_load_default(
-                NULL, NULL,
+        task_push_load_content_with_current_core_from_companion_ui(
+                NULL,
                 &content_info,
                 CORE_TYPE_PLAIN,
-                CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
                 NULL, NULL);
     }
 }
@@ -371,11 +368,10 @@ static void open_document_handler(ui_browser_window_state_t *state, bool result)
     if (core_name)
     {
         content_ctx_info_t content_info = {0};
-        task_push_content_load_default(
-                NULL, NULL,
+        task_push_content_load_content_with_current_core_from_companion_ui(
+                NULL,
                 &content_info,
                 CORE_TYPE_PLAIN,
-                CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
                 NULL, NULL);
     }
 }

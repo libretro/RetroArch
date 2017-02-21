@@ -40,8 +40,7 @@ enum content_mode_load
    CONTENT_MODE_LOAD_NONE = 0,
    CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU,
    CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU,
-   CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU,
-   CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI
+   CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU
 };
 
 enum nbio_status_enum
@@ -132,6 +131,13 @@ bool task_push_decompress(
       const char *target_file,
       const char *subdir,
       const char *valid_ext,
+      retro_task_callback_t cb,
+      void *user_data);
+
+bool task_push_load_content_with_current_core_from_companion_ui(
+      const char *fullpath,
+      content_ctx_info_t *content_info,
+      enum rarch_core_type type,
       retro_task_callback_t cb,
       void *user_data);
 
