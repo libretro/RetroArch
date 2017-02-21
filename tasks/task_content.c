@@ -1310,27 +1310,24 @@ bool task_push_content_load_content_with_new_core_from_menu(
          content_ctx.directory_system         = strdup(settings->directory.system);
    }
 
-
    /* Set content path */
    path_set(RARCH_PATH_CONTENT, fullpath);
 
    /* Set libretro core path */
    runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
 
-   /* Load core */
 #ifdef HAVE_DYNAMIC
+   /* Load core */
    command_event(CMD_EVENT_LOAD_CORE, NULL);
-#endif
 
    /* Load content */
-#ifdef HAVE_DYNAMIC
-
 #ifdef HAVE_MENU
    loading_from_menu = true;
 
    if (!content_info->environ_get)
       content_info->environ_get = menu_content_environment_get;
 #endif
+
    task_push_content_update_firmware_status(&content_ctx);
 
    if(
