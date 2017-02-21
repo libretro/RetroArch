@@ -595,13 +595,16 @@ static void patch_content(
       void *data)
 {
    ssize_t *size    = (ssize_t*)data;
-   bool allow_ups   = !rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL) && !rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
-   bool allow_ips   = !rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL) && !rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
-   bool allow_bps   = !rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL) && !rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
+   bool is_ips_pref = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
+   bool is_bps_pref = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
+   bool is_ups_pref = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
+   bool allow_ups   = !is_bps_pref && !is_ips_pref;
+   bool allow_ips   = !is_ups_pref && !is_bps_pref;
+   bool allow_bps   = !is_ups_pref && !is_ips_pref;
 
-   if (    (unsigned)rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL) 
-         + (unsigned)rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL) 
-         + (unsigned)rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL) > 1)
+   if (    (unsigned)is_ips_pref 
+         + (unsigned)is_bps_pref 
+         + (unsigned)is_ups_pref > 1)
    {
       RARCH_WARN("%s\n",
             msg_hash_to_str(MSG_SEVERAL_PATCHES_ARE_EXPLICITLY_DEFINED));
