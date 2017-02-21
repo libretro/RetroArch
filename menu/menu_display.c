@@ -625,6 +625,7 @@ void menu_display_draw_texture_slice(
    struct video_coords coords;
    math_matrix_4x4 mymat;
    unsigned i;
+   float V_BL[2], V_BR[2], V_TL[2], V_TR[2], T_BL[2], T_BR[2], T_TL[2], T_TR[2];
 
    /* need space for the coordinates of two triangles in a strip, so 8 vertices */
    float *tex_coord = (float*)malloc(8 * sizeof(float));
@@ -650,14 +651,22 @@ void menu_display_draw_texture_slice(
 
    /* the four vertices of the top-left corner of the image,
     * used as a starting point for all the other sections */
-   float V_BL[2] = {norm_x, norm_y};
-   float V_BR[2] = {norm_x + vert_woff, norm_y};
-   float V_TL[2] = {norm_x, norm_y + vert_hoff};
-   float V_TR[2] = {norm_x + vert_woff, norm_y + vert_hoff};
-   float T_BL[2] = {0.0f, tex_hoff};
-   float T_BR[2] = {tex_woff, tex_hoff};
-   float T_TL[2] = {0.0f, 0.0f};
-   float T_TR[2] = {tex_woff, 0.0f};
+   V_BL[0] = norm_x;
+   V_BL[1] = norm_y;
+   V_BR[0] = norm_x + vert_woff;
+   V_BR[1] = norm_y;
+   V_TL[0] = norm_x;
+   V_TL[1] = norm_y + vert_hoff;
+   V_TR[0] = norm_x + vert_woff;
+   V_TR[1] = norm_y + vert_hoff;
+   T_BL[0] = 0.0f;
+   T_BL[1] = tex_hoff;
+   T_BR[0] = tex_woff;
+   T_BR[1] = tex_hoff;
+   T_TL[0] = 0.0f;
+   T_TL[1] = 0.0f;
+   T_TR[0] = tex_woff;
+   T_TR[1] = 0.0f;
 
    for (i = 0; i < (16 * sizeof(float)) / sizeof(colors[0]); i++)
       colors[i] = 1.0f;

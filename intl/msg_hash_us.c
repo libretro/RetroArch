@@ -105,11 +105,6 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len) {
                                  "all other hotkeys will be enabled only \n"
                                  "if this one is held at the same time. \n"
                                  " \n"
-                                 "This is useful for RETRO_KEYBOARD centric \n"
-                                 "implementations which query a large area of \n"
-                                 "the keyboard, where it is not desirable that \n"
-                                 "hotkeys get in the way. \n"
-                                 " \n"
                                  "Alternatively, all hotkeys for keyboard \n"
                                  "could be disabled by the user.");
                 break;
@@ -486,9 +481,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len) {
                              "Setting it to 'Early' or 'Late' can result \n"
                              "in less latency, \n"
                              "depending on your configuration.\n\n"
-                             "When netplay is enabled, the default polling \n"
-                             "behavior (Normal) will be used, \n"
-                             "regardless of the value set here."
+                             "Will be ignored when using netplay."
             );
             break;
         case MENU_ENUM_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND:
@@ -706,12 +699,9 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len) {
                     snprintf(s, len,
                              "udev Input driver. \n"
                                      " \n"
-                                     "This driver can run without X. \n"
-                                     " \n"
                                      "It uses the recent evdev joypad API \n"
                                      "for joystick support. It supports \n"
-                                     "hotplugging and force feedback (if \n"
-                                     "supported by device). \n"
+                                     "hotplugging and force feedback. \n"
                                      " \n"
                                      "The driver reads evdev events for keyboard \n"
                                      "support. It also supports keyboard callback, \n"

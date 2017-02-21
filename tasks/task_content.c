@@ -1623,8 +1623,9 @@ bool content_init(void)
    bool ret                                   = true;
    char *error_string                         = NULL;
    rarch_system_info_t *sys_info              = NULL;
-   temporary_content                          = string_list_new();
    settings_t *settings                       = config_get_ptr();
+
+   temporary_content                          = string_list_new();
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &sys_info);
 

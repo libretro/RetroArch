@@ -107,11 +107,6 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "anderen Hotkeys nur aktiviert, wenn dieser \n"
                   "Hotkey zur gleichen Zeit gehalten wird. \n"
                   " \n"
-                  "Dies ist hilfreich für Implementierungen, die auf \n"
-                  "RETRO_KEYBOARD ausgelegt sind und eine große \n"
-                  "Fläche auf der Tastatur benötigen, wo es nicht \n"
-                  "gewünscht ist, dass es zu Kollisionen mit Hotkeys kommt. \n"
-                  " \n"
                   "Alternativ können auch alle Tastatur-Hotkeys durch \n"
                   "den Benutzer deaktiviert werden.");
             break;
@@ -483,9 +478,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "Diese Option auf 'Früh' oder 'Spät' zu setzen kann \n"
                "eine verringerte Latenz bewirken, \n"
-               "abhängig von deiner Konfiguration.\n\n"
-               "Wenn Netplay aktiviert ist, wird das Standard-Abfrageverhalten \n"
-               "(Normal) verwendet. Dieser Wert wird dann nicht berücksichtigt."
+               "abhängig von deiner Konfiguration."
                );
          break;
       case MENU_ENUM_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND:
@@ -706,19 +699,16 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                snprintf(s, len,
                      "udev-Eingabetreiber. \n"
                      " \n"
-                     "Dieser Treiber kann ohne X ausgeführt werden. \n"
-                     " \n"
                      "Er verwende die neue evdev-Joypad-API \n"
                      "für die Joystick-Unterstützung und unterstützt \n"
-                     "auch Hotplugging und Force-Feedback (wenn das \n"
-                     "Gerät dies unterstützt). \n"
+                     "auch Hotplugging und Force-Feedback. \n"
                      " \n"
                      "Der Treiber liest evdev-Ereignisse für die Tastatur- \n"
                      "Unterstützung und kann auch mit Tastatur-Callbacks, \n"
                      "Mäusen und Touchpads umgehen. \n"
                      " \n"
                      "Standardmäßig sind die /dev/input-Dateien in den \n"
-                     "meisten Linux-Distribution nur vom Root- \n"
+                     "meisten Distribution nur vom Root- \n"
                      "Benutzer lesbar (mode 600). Sie können eine udev- \n"
                      "Regel erstellen, die auch den Zugriff für andere \n"
                      "Benutzer erlaubt."
@@ -897,24 +887,32 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                );
          break;
       case MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS:
-         snprintf(s, len,
-               "Für diesen Durchgang skalieren. \n"
-               " \n"
-               "Der Skalierungsfaktor wird multipliziert, \n"
-               "d.h. 2x im ersten Durchgang und 2x im \n"
-               "zweiten Durchgang bedeute eine 4x Gesamt- \n"
-               "Skalierung."
-               " \n"
-               "Wenn es im letzten Durchgang einen \n"
-               "Skalierungsfaktor gibt, wird das Ergebnis \n"
-               "mit dem als 'Standardfilter' eingestellten \n"
-               "Filter auf die Bildschirmgröße gestreckt. \n"
-               " \n"
-               "Wenn 'Ignorieren' eingestellt ist, wird \n"
-               "entweder einfache Skalierung oder Vollbild- \n"
-               "Streckung verwendet - abhängig davon, ob \n"
-               "es der letzte Durchgang ist oder nicht."
-               );
+         {
+            /* Work around C89 limitations */
+            char u[501];
+            const char * t =
+                  "Für diesen Durchgang skalieren. \n"
+                  " \n"
+                  "Der Skalierungsfaktor wird multipliziert, \n"
+                  "d.h. 2x im ersten Durchgang und 2x im \n"
+                  "zweiten Durchgang bedeute eine 4x Gesamt- \n"
+                  "Skalierung."
+                  " \n";
+
+            snprintf(u, sizeof(u),
+                  "Wenn es im letzten Durchgang einen \n"
+                  "Skalierungsfaktor gibt, wird das Ergebnis \n"
+                  "mit dem als 'Standardfilter' eingestellten \n"
+                  "Filter auf die Bildschirmgröße gestreckt. \n"
+                  " \n"
+                  "Wenn 'Ignorieren' eingestellt ist, wird \n"
+                  "entweder einfache Skalierung oder Vollbild- \n"
+                  "Streckung verwendet - abhängig davon, ob \n"
+                  "es der letzte Durchgang ist oder nicht."
+                  );
+            strlcpy(s, t, len);
+            strlcat(s, u, len);
+         }
          break;
       case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:
          snprintf(s, len,
@@ -1127,7 +1125,10 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "Verwendet für Inhalt, der auf mehreren Datenträgern ausgeliefert wird. ");
          break;
       case MENU_ENUM_LABEL_ENABLE_HOTKEY:
-         snprintf(s, len,
+         {
+            /* Work around C89 limitations */
+            char u[501];
+            const char * t =
                   "Andere Hotkeys aktivieren. \n"
                   " \n"
                   "Wenn dieser Hotkey entweder einer\n"
@@ -1135,7 +1136,8 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "Joypad-Achse zugeordnet ist, werden alle \n"
                   "anderen Hotkeys nur aktiviert, wenn dieser \n"
                   "Hotkey zur gleichen Zeit gehalten wird. \n"
-                  " \n"
+                  " \n";
+            snprintf(u, sizeof(u),
                   "Dies ist hilfreich für Implementierungen, die auf \n"
                   "RETRO_KEYBOARD ausgelegt sind und eine große \n"
                   "Fläche auf der Tastatur benötigen, wo es nicht \n"
@@ -1143,6 +1145,9 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                   " \n"
                   "Alternativ können auch alle Tastatur-Hotkeys durch \n"
                   "den Benutzer deaktiviert werden.");
+            strlcpy(s, t, len);
+            strlcat(s, u, len);
+         }
          break;
       case MENU_ENUM_LABEL_REWIND_ENABLE:
          snprintf(s, len,
@@ -1159,23 +1164,30 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                "libretro-Core-Implementierungen gesucht wird.");
          break;
       case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
-         snprintf(s, len,
-               "Bildwiederholrate.\n"
-               " \n"
-               "Die genaue Bildwiederholrate Deines Bildschirms (Hz).\n"
-               "Diese wird verwendet, um die Audio-Eingaberate mithilfe \n"
-               "der folgenden Formel zu berechnen: \n"
-               " \n"
-               "audio_input_rate = Spiel-Eingaberate * Bildschirm- \n"
-               "Wiederholrate / Spiel-Wiederholrate\n"
-               " \n"
-               "Wenn die Implementierung keinen Wert liefert, \n"
-               "werden aus Kompatiblitätsgründen die Werte für NTSC \n"
-               "angenommen.\n"
-               " \n"
-               "Dieser Wert sollte nahe 60Hz liegen, um Tonsprünge zu vermeiden. \n"
-               "Wenn Dein Bildschirm nicht auf 60Hz oder einem ähnlichen Wert läuft, \n"
-               "deaktiviere VSync und lasse diese Einstellung unverändert. \n");
+         {
+            /* Work around C89 limitations */
+            char u[501];
+            const char * t =
+                  "Bildwiederholrate.\n"
+                  " \n"
+                  "Die genaue Bildwiederholrate Deines Bildschirms (Hz).\n"
+                  "Diese wird verwendet, um die Audio-Eingaberate mithilfe \n"
+                  "der folgenden Formel zu berechnen: \n"
+                  " \n";
+            snprintf(u, sizeof(u),
+                  "audio_input_rate = Spiel-Eingaberate * Bildschirm- \n"
+                  "Wiederholrate / Spiel-Wiederholrate\n"
+                  " \n"
+                  "Wenn die Implementierung keinen Wert liefert, \n"
+                  "werden aus Kompatiblitätsgründen die Werte für NTSC \n"
+                  "angenommen.\n"
+                  " \n"
+                  "Dieser Wert sollte nahe 60Hz liegen, um Tonsprünge zu vermeiden. \n"
+                  "Wenn Dein Bildschirm nicht auf 60Hz oder einem ähnlichen Wert läuft, \n"
+                  "deaktiviere VSync und lasse diese Einstellung unverändert. \n");
+            strlcpy(s, t, len);
+            strlcat(s, u, len);
+         }
          break;
       case MENU_ENUM_LABEL_VIDEO_ROTATION:
          snprintf(s, len,
@@ -1275,8 +1287,8 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Wechselt zum nächsten Overlay.\n"
                " \n"
-               // Translation unclear, disabled for now. Some context would be really helpful.
-               // "Wraps around."
+               /* Translation unclear, disabled for now. Some context would be really helpful.
+                * "Wraps around." */
                );
          break;
       case MENU_ENUM_LABEL_LOG_VERBOSITY:
@@ -1574,20 +1586,27 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
          break;
       case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
-         snprintf(s, len,
-               "Die Frequenz in Einzelbildern, mit der Netplay \n"
-               "sicherstellen wird, dass Host und Clients \n"
-               "synchronisiert sind. \n"
-               " \n"
-               "Bei den meisten Cores wird diese Einstellungen \n"
-               "keine sichtbaren Auswirkungen haben und kann ignoriert werden. \n"
-               "Bei nichtdeterministischen Cores legt dieser Wert fest, \n"
-               "wie oft die Netplay-Mitglieder miteinander synchronisiert \n"
-               "werden. Bei fehlerhaften Cores wird ein \n"
-               "anderer Wert als 0 für diese Einstellung erhebliche \n"
-               "Leistungsprobleme verursachen. Auf 0 setzen, um keine \n"
-               "Überprüfungen durchzuführen. Diese Einstellung wird nur \n"
-               "auf dem Netplay-Host verwendet. \n");
+         {
+            /* Work around C89 limitations */
+            char u[501];
+            const char *t =
+                  "Die Frequenz in Einzelbildern, mit der Netplay \n"
+                  "sicherstellen wird, dass Host und Clients \n"
+                  "synchronisiert sind. \n"
+                  " \n";
+            snprintf(u, sizeof(u),
+                  "Bei den meisten Cores wird diese Einstellungen \n"
+                  "keine sichtbaren Auswirkungen haben und kann ignoriert werden. \n"
+                  "Bei nichtdeterministischen Cores legt dieser Wert fest, \n"
+                  "wie oft die Netplay-Mitglieder miteinander synchronisiert \n"
+                  "werden. Bei fehlerhaften Cores wird ein \n"
+                  "anderer Wert als 0 für diese Einstellung erhebliche \n"
+                  "Leistungsprobleme verursachen. Auf 0 setzen, um keine \n"
+                  "Überprüfungen durchzuführen. Diese Einstellung wird nur \n"
+                  "auf dem Netplay-Host verwendet. \n");
+            strlcpy(s, t, len);
+            strlcat(s, u, len);
+         }
          break;
         case MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN:
             snprintf(s, len,

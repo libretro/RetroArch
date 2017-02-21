@@ -31,6 +31,7 @@ HAVE_NETWORKGAMEPAD=auto   # Networked game pad (plus baked-in core)
 C89_NETWORKGAMEPAD=no
 HAVE_MINIUPNPC=auto        # Mini UPnP client library (for NAT traversal)
 HAVE_BUILTINMINIUPNPC=yes  # Bake in Mini UPnP client library (for NAT traversal)
+C89_BUILTINMINIUPNPC=no
 HAVE_D3D9=yes              # Direct3D 9 support
 HAVE_OPENGL=auto           # OpenGL support
 HAVE_MALI_FBDEV=no         # Mali fbdev context support
