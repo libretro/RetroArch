@@ -118,6 +118,7 @@ audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
    if (!filestream_read_file(path, &chunk->buf, &chunk->len))
    {
       printf("Could not open WAV file for reading.\n");
+      free(chunk);
       return NULL;
    }
 
