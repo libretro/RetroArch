@@ -973,18 +973,19 @@ static bool command_event_cmd_exec(const char *data,
    return true;
 }
 
-static void task_push_content_update_firmware_status(
+static bool task_push_content_update_firmware_status(
       content_information_ctx_t *content_ctx)
 {
    char s[PATH_MAX_LENGTH];
    core_info_ctx_firmware_t firmware_info;
+   settings_t *settings       = config_get_ptr();
 
    core_info_t *core_info     = NULL;
 
    core_info_get_current_core(&core_info);
 
    if (!core_info)
-      return;
+      return false;
 
    firmware_info.path         = core_info->path;
 
@@ -1000,6 +1001,18 @@ static void task_push_content_update_firmware_status(
    RARCH_LOG("Updating firmware status for: %s on %s\n", core_info->path, 
          firmware_info.directory.system);
    core_info_list_update_missing_firmware(&firmware_info);
+
+   if(
+         content_ctx->bios_is_missing && 
+         settings->check_firmware_before_loading)
+   {
+      runloop_msg_queue_push(msg_hash_to_str(MSG_FIRMWARE), 100, 500, true);
+      RARCH_LOG("Load content blocked. Reason:  %s\n", msg_hash_to_str(MSG_FIRMWARE));
+
+      return true;
+   }
+
+   return false;
 }
 
 bool task_push_start_dummy_core(content_ctx_info_t *content_info)
@@ -1202,17 +1215,8 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
    retroarch_set_current_core_type(CORE_TYPE_PLAIN, true);
 
    /* Load content */
-   task_push_content_update_firmware_status(&content_ctx);
-
-   if(
-         content_ctx.bios_is_missing && 
-         settings->check_firmware_before_loading)
-   {
-      runloop_msg_queue_push(msg_hash_to_str(MSG_FIRMWARE), 100, 500, true);
-      RARCH_LOG("Load content blocked. Reason:  %s\n", msg_hash_to_str(MSG_FIRMWARE));
-
+   if (task_push_content_update_firmware_status(&content_ctx))
       return true;
-   }
 
    if (!task_load_content(content_info, &content_ctx,
             true, false, &error_string))
@@ -1327,17 +1331,8 @@ bool task_push_load_content_with_new_core_from_menu(
       content_info->environ_get = menu_content_environment_get;
 #endif
 
-   task_push_content_update_firmware_status(&content_ctx);
-
-   if(
-         content_ctx.bios_is_missing && 
-         settings->check_firmware_before_loading)
-   {
-      runloop_msg_queue_push(msg_hash_to_str(MSG_FIRMWARE), 100, 500, true);
-      RARCH_LOG("Load content blocked. Reason:  %s\n", msg_hash_to_str(MSG_FIRMWARE));
-
+   if (task_push_content_update_firmware_status(&content_ctx))
       return true;
-   }
 
    if (!task_load_content(content_info, &content_ctx,
             loading_from_menu, false, &error_string))
@@ -1411,18 +1406,9 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
    if (!content_info->environ_get)
       content_info->environ_get = menu_content_environment_get;
 #endif
-   task_push_content_update_firmware_status(&content_ctx);
 
-   if(
-         content_ctx.bios_is_missing && 
-         settings->check_firmware_before_loading)
-   {
-      runloop_msg_queue_push(msg_hash_to_str(MSG_FIRMWARE), 100, 500, true);
-      RARCH_LOG("Load content blocked. Reason:  %s\n",
-            msg_hash_to_str(MSG_FIRMWARE));
-
+   if (task_push_content_update_firmware_status(&content_ctx))
       return true;
-   }
 
    ret = task_load_content(content_info, &content_ctx, true, loading_from_cli, &error_string);
 
