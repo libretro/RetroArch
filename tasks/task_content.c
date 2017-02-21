@@ -1291,8 +1291,6 @@ bool task_push_content_load_default(
    char *error_string                         = NULL;
    settings_t *settings                       = config_get_ptr();
 
-   if (!content_info)
-      return false;
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
    content_ctx.bios_is_missing                = runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.history_list_enable            = false;
@@ -1332,25 +1330,6 @@ bool task_push_content_load_default(
       case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
          loading_from_menu = true;
-         break;
-      default:
-         break;
-   }
-
-   switch (mode)
-   {
-      case CONTENT_MODE_LOAD_NOTHING_WITH_VIDEO_PROCESSOR_CORE_FROM_MENU:
-      case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
-      case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
-      case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
-      case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU:
-      case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
-      case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI:
-      case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_COMPANION_UI:
-#ifdef HAVE_MENU
-         if (!content_info->environ_get)
-            content_info->environ_get = menu_content_environment_get;
-#endif
          break;
       default:
          break;
@@ -1442,6 +1421,10 @@ bool task_push_content_load_default(
 #endif
       case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
+#ifdef HAVE_MENU
+         if (!content_info->environ_get)
+            content_info->environ_get = menu_content_environment_get;
+#endif
          task_push_content_update_firmware_status(&content_ctx);
 
          if(
