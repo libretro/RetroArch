@@ -2282,9 +2282,15 @@ static int menu_displaylist_parse_settings_internal(void *data,
             goto loop;
       }
 
+#ifdef HAVE_LAKKA
+      if ((flags & SD_FLAG_ADVANCED || flags & SD_FLAG_LAKKA_ADVANCED) &&
+            !settings->menu.show_advanced_settings)
+         goto loop;
+#else
       if (flags & SD_FLAG_ADVANCED &&
             !settings->menu.show_advanced_settings)
          goto loop;
+#endif
 
 
       menu_entries_append(info->list, short_description,
@@ -2469,9 +2475,15 @@ static int menu_displaylist_parse_settings_internal_enum(void *data,
             goto loop;
       }
 
+#ifdef HAVE_LAKKA
+      if ((flags & SD_FLAG_ADVANCED || flags & SD_FLAG_LAKKA_ADVANCED) &&
+            !settings->menu.show_advanced_settings)
+         goto loop;
+#else
       if (flags & SD_FLAG_ADVANCED &&
             !settings->menu.show_advanced_settings)
          goto loop;
+#endif
 
 
       menu_entries_append_enum(info->list, short_description,

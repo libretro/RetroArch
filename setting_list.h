@@ -57,7 +57,8 @@ enum setting_flags
    SD_FLAG_EXIT           = (1 << 6),
    SD_FLAG_CMD_APPLY_AUTO = (1 << 7),
    SD_FLAG_BROWSER_ACTION = (1 << 8),
-   SD_FLAG_ADVANCED       = (1 << 9)
+   SD_FLAG_ADVANCED       = (1 << 9),
+   SD_FLAG_LAKKA_ADVANCED = (1 << 10)
 };
 
 enum settings_free_flags

@@ -2300,6 +2300,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2308,6 +2309,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2317,6 +2319,7 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2326,6 +2329,7 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_MENU_SAVE_CONFIG);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2335,6 +2339,7 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CORE);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2344,6 +2349,7 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_GAME);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2352,6 +2358,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
 #if !defined(IOS)
          /* Apple rejects iOS apps that lets you forcibly quit an application. */
@@ -2392,6 +2399,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2433,6 +2441,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2441,6 +2450,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2458,6 +2468,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2466,6 +2477,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2474,6 +2486,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2482,6 +2495,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2490,6 +2504,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2498,6 +2513,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2514,6 +2530,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2522,6 +2539,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2558,6 +2576,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
 #ifdef HAVE_LAKKA
          CONFIG_ACTION(
@@ -2576,6 +2595,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2592,6 +2612,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_ACTION(
                list, list_info,
@@ -3090,6 +3111,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 #endif
 
          CONFIG_BOOL(
@@ -3132,7 +3154,6 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(list, list_info, 0, 1, 1, true, false);
          (*list)[list_info->index - 1].get_string_representation = 
             &setting_get_string_representation_uint_video_monitor_index;
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
          if (video_driver_has_windowed())
          {
@@ -3151,6 +3172,7 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_CMD_APPLY_AUTO);
             menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
          }
          if (video_driver_has_windowed())
          {
@@ -3168,6 +3190,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
          }
          CONFIG_FLOAT(
                list, list_info,
@@ -3182,6 +3205,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          menu_settings_list_current_add_range(list, list_info, 0, 0, 0.001, true, false);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_FLOAT(
                list, list_info,
@@ -3200,6 +3224,7 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_select = &setting_action_ok_video_refresh_rate_auto;
          (*list)[list_info->index - 1].get_string_representation = 
             &setting_get_string_representation_st_float_video_refresh_rate_auto;
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          if (string_is_equal(settings->video.driver, "gl"))
          {
@@ -3266,6 +3291,7 @@ static bool setting_append_list(
                list,
                list_info,
                CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_INT(
                list, list_info,
@@ -3283,6 +3309,7 @@ static bool setting_append_list(
                list,
                list_info,
                CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_UINT(
                list, list_info,
@@ -3305,6 +3332,7 @@ static bool setting_append_list(
                list,
                list_info,
                CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_UINT(
                list, list_info,
@@ -3327,6 +3355,7 @@ static bool setting_append_list(
                list,
                list_info,
                CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          END_SUB_GROUP(list, list_info, parent_group);
          START_SUB_GROUP(list, list_info, "Scaling", &group_info, &subgroup_info, parent_group);
@@ -3346,6 +3375,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 1.0, 10.0, 1.0, true, true);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
             CONFIG_UINT(
                   list, list_info,
                   &settings->video.window_x,
@@ -3358,6 +3388,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 0, 7680, 8, true, true);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
             CONFIG_UINT(
                   list, list_info,
                   &settings->video.window_y,
@@ -3370,6 +3401,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 0, 4320, 8, true, true);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
          }
 
          CONFIG_BOOL(
@@ -3512,6 +3544,7 @@ static bool setting_append_list(
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_VIDEO_SET_BLOCKING_STATE);
          menu_settings_list_current_add_range(list, list_info, 1, 4, 1, true, true);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_UINT(
                list, list_info,
@@ -3526,6 +3559,7 @@ static bool setting_append_list(
                general_read_handler);
          menu_settings_list_current_add_range(list, list_info, 1, 4, 1, true, true);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          if (string_is_equal(settings->video.driver, "gl"))
          {
@@ -3544,6 +3578,7 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE
                   );
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
             CONFIG_UINT(
                   list, list_info,
@@ -3557,6 +3592,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
          }
 
          CONFIG_UINT(
@@ -3571,6 +3607,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          menu_settings_list_current_add_range(list, list_info, 0, 15, 1, true, true);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
 #if !defined(RARCH_MOBILE)
          CONFIG_BOOL(
@@ -3588,6 +3625,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 #endif
          END_SUB_GROUP(list, list_info, parent_group);
          START_SUB_GROUP(
@@ -3630,6 +3668,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_PATH(
                list, list_info,
@@ -3645,6 +3684,7 @@ static bool setting_append_list(
                general_read_handler);
          menu_settings_list_current_add_values(list, list_info, "filt");
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -3749,6 +3789,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_UINT(
                list, list_info,
@@ -3763,6 +3804,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          menu_settings_list_current_add_range(list, list_info, 8, 512, 16.0, true, true);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_FLOAT(
                list, list_info,
@@ -3848,7 +3890,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT | SD_FLAG_ADVANCED);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
          (*list)[list_info->index - 1].action_left   = &setting_string_action_left_audio_device;
          (*list)[list_info->index - 1].action_right  = &setting_string_action_right_audio_device;
 #endif
@@ -3880,6 +3922,7 @@ static bool setting_append_list(
                general_read_handler);
          menu_settings_list_current_add_values(list, list_info, "dsp");
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_DSP_FILTER_INIT);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -3907,6 +3950,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 1, MAX_USERS, 1, true, true);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
             CONFIG_BOOL(
                   list, list_info,
@@ -3923,6 +3967,7 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE
                   );
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
             CONFIG_UINT(
                   list, list_info,
@@ -3936,7 +3981,8 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
-          
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
 #ifdef VITA
             CONFIG_BOOL(
                   list, list_info,
@@ -4062,6 +4108,7 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE
                   );
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
             CONFIG_BOOL(
                   list, list_info,
@@ -4153,7 +4200,8 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 0, 1.00, 0.001, true, true);
-            
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
             CONFIG_UINT(
                   list, list_info,
                   &settings->input.bind_timeout,
@@ -4674,6 +4722,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.010, true, true);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
          }
 
 
@@ -4694,6 +4743,7 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE
                   );
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
          }
 
 
@@ -4713,6 +4763,7 @@ static bool setting_append_list(
                SD_FLAG_CMD_APPLY_AUTO
                );
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_MENU_PAUSE_LIBRETRO);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_BOOL(
                list, list_info,
@@ -4922,6 +4973,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 0, 100, 1, true, true);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
             CONFIG_UINT(
                   list, list_info,
@@ -4935,6 +4987,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 0, 100, 1, true, true);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
             CONFIG_PATH(
                   list, list_info,
@@ -4948,6 +5001,7 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
             CONFIG_UINT(
                   list, list_info,
@@ -5019,6 +5073,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
 #ifdef HAVE_IMAGEVIEWER
             CONFIG_BOOL(
@@ -5099,6 +5154,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 #endif				  
          }
 
@@ -5963,6 +6019,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_STRING(
                list, list_info,
