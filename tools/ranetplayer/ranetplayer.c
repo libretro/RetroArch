@@ -65,6 +65,21 @@
       ERROR(); \
 } while(0)
 
+#define WRITE() do { \
+   uint32_t adj_cmd[2]; \
+   adj_cmd[0] = htonl(cmd); \
+   adj_cmd[1] = htonl(cmd_size); \
+   if (write(ranp_out, adj_cmd, sizeof(adj_cmd)) != sizeof(adj_cmd) || \
+       write(ranp_out, payload, cmd_size) != cmd_size) \
+   { \
+      perror(ranp_out_file_name); \
+      close(ranp_out); \
+      recording_started = recording = false; \
+      if (!playing) \
+         socket_close(sock); \
+   } \
+} while(0)
+
 /* Our fds */
 static int sock, ranp_in, ranp_out;
 
@@ -135,6 +150,10 @@ bool send_input(uint32_t cur_frame)
 
       if (read(ranp_in, payload, cmd_size) != cmd_size)
          return false;
+
+      /* INFO is just saved for verification */
+      if (cmd == NETPLAY_CMD_INFO)
+         continue;
 
       /* Adjust the frame for commands we know */
       rd_frame = frame_offset_cmd(false);
@@ -299,6 +318,10 @@ int main(int argc, char **argv)
       return 1;
    }
 
+   /* Save the INFO */
+   if (recording)
+      WRITE();
+
    /* Echo the INFO */
    SEND();
 
@@ -330,22 +353,7 @@ int main(int argc, char **argv)
 
       /* Record this command */
       if (recording && recording_started)
-      {
-         uint32_t tmp_cmd[2];
-         tmp_cmd[0] = htonl(cmd);
-         tmp_cmd[1] = htonl(cmd_size);
-
-         /* Write out this command */
-         if (write(ranp_out, tmp_cmd, sizeof(tmp_cmd)) != sizeof(tmp_cmd) ||
-             write(ranp_out, payload, cmd_size) != cmd_size)
-         {
-            perror(ranp_out_file_name);
-            close(ranp_out);
-            recording_started = recording = false;
-            if (!playing)
-               socket_close(sock);
-         }
-      }
+         WRITE();
 
       /* Now handle it for sync and playback */
       switch (cmd)
