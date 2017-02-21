@@ -13,19 +13,22 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <lists/file_list.h>
-#include <string/stdstring.h>
+#include <stdlib.h>
 
 #include "tasks_internal.h"
-#include "net/net_natt.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
 
+#ifdef HAVE_NETWORKING
+#include <net/net_natt.h>
+#endif
+
 #include "../network/netplay/netplay.h"
 #include "../verbosity.h"
 
+#ifdef HAVE_NETWORKING
 struct nat_traversal_state_data
 {
    struct natt_status *nat_traversal_state;
@@ -56,9 +59,11 @@ static void task_netplay_nat_traversal_handler(retro_task_t *task)
    task_set_progress(task, 100);
    task_set_finished(task, true);
 }
+#endif
 
-bool task_push_netplay_nat_traversal(struct natt_status *nat_traversal_state, uint16_t port)
+bool task_push_netplay_nat_traversal(void *nat_traversal_state, uint16_t port)
 {
+#ifdef HAVE_NETWORKING
    struct nat_traversal_state_data *ntsd;
    retro_task_t *task = (retro_task_t*)calloc(1, sizeof(*task));
 
@@ -73,7 +78,8 @@ bool task_push_netplay_nat_traversal(struct natt_status *nat_traversal_state, ui
       return false;
    }
 
-   ntsd->nat_traversal_state = nat_traversal_state;
+   ntsd->nat_traversal_state =
+      (struct natt_status *) nat_traversal_state;
    ntsd->port = port;
 
    task->type     = TASK_TYPE_BLOCKING;
@@ -84,4 +90,7 @@ bool task_push_netplay_nat_traversal(struct natt_status *nat_traversal_state, ui
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
 
    return true;
+#else
+   return false;
+#endif
 }
