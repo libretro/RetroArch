@@ -842,7 +842,8 @@ bool core_info_database_supports_content_path(const char *database_path, const c
    if (!string_is_empty(new_path))
       database = strdup(new_path);
 
-   path_remove_extension(database);
+   if (!string_is_empty(database))
+      path_remove_extension(database);
 
    delim = path_get_archive_delim(path);
 
