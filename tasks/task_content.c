@@ -379,8 +379,9 @@ static bool load_content_from_compressed_archive(
    RARCH_LOG("Compressed file in case of need_fullpath."
          " Now extracting to temporary directory.\n");
 
-   strlcpy(new_basedir, content_ctx->directory_cache,
-         sizeof(new_basedir));
+   if (!string_is_empty(content_ctx->directory_cache))
+      strlcpy(new_basedir, content_ctx->directory_cache,
+            sizeof(new_basedir));
 
    if (string_is_empty(new_basedir) || !path_is_directory(new_basedir))
    {
