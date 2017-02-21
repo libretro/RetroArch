@@ -254,12 +254,9 @@ static int cb_nbio_generic(nbio_handle_t *nbio, size_t *len)
 
 error:
    task_image_load_free_internal(nbio);
-   if (nbio)
-   {
-      if (nbio->data)
-         free(nbio->data);
-      nbio->data = NULL;
-   }
+   if (nbio->data)
+      free(nbio->data);
+   nbio->data = NULL;
    return -1;
 }
 
