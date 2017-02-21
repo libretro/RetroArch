@@ -38,8 +38,6 @@ typedef int (*transfer_cb_t)(void *data, size_t len);
 enum content_mode_load
 {
    CONTENT_MODE_LOAD_NONE = 0,
-   CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU,
-   CONTENT_MODE_LOAD_NOTHING_WITH_VIDEO_PROCESSOR_CORE_FROM_MENU,
    CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU,
    CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU,
    CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU,
@@ -149,6 +147,11 @@ bool task_push_load_new_core(
       const char *core_path,
       const char *fullpath,
       content_ctx_info_t *content_info,
+      enum rarch_core_type type,
+      retro_task_callback_t cb,
+      void *user_data);
+
+bool task_push_start_builtin_core(content_ctx_info_t *content_info,
       enum rarch_core_type type,
       retro_task_callback_t cb,
       void *user_data);

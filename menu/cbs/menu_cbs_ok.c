@@ -2156,17 +2156,29 @@ static int action_ok_load_core_deferred(const char *path,
 static int action_ok_start_net_retropad_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_file_load(NULL, NULL,
-         CORE_TYPE_FFMPEG,
-         CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU);
+   content_ctx_info_t content_info = {0};
+
+   if (!task_push_start_builtin_core(
+         &content_info,
+         CORE_TYPE_NETRETROPAD,
+         NULL, NULL))
+      return -1;
+
+   return 0;
 }
 
 static int action_ok_start_video_processor_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_file_load(NULL, NULL,
+   content_ctx_info_t content_info = {0};
+
+   if (!task_push_start_builtin_core(
+         &content_info,
          CORE_TYPE_VIDEO_PROCESSOR,
-         CONTENT_MODE_LOAD_NOTHING_WITH_VIDEO_PROCESSOR_CORE_FROM_MENU);
+         NULL, NULL))
+      return -1;
+
+   return 0;
 }
 
 #ifdef HAVE_FFMPEG
