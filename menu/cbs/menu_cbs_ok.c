@@ -981,8 +981,18 @@ static int file_load_with_detect_core_wrapper(
    switch (ret)
    {
       case -1:
-         return generic_action_ok_file_load(new_core_path, def_info.s,
-               CORE_TYPE_PLAIN, CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU);
+         {
+            content_ctx_info_t content_info = {0};
+
+            if (!task_push_content_load_content_with_new_core_from_menu(
+                     new_core_path, def_info.s,
+                     &content_info,
+                     CORE_TYPE_PLAIN,
+                     NULL, NULL))
+               return -1;
+
+            return 0;
+         }
       case 0:
          return generic_action_ok_displaylist_push(path, NULL, label, type,
                idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);
@@ -2128,12 +2138,19 @@ static int action_ok_deferred_list_stub(const char *path,
 static int action_ok_load_core_deferred(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   content_ctx_info_t content_info     = {0};
    menu_handle_t *menu                 = NULL;
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
-   return generic_action_ok_file_load(path, menu->deferred_path,
-         CORE_TYPE_PLAIN, CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU);
+   if (!task_push_content_load_content_with_new_core_from_menu(
+            path, menu->deferred_path,
+            &content_info,
+            CORE_TYPE_PLAIN,
+            NULL, NULL))
+      return -1;
+
+   return 0;
 }
 
 static int action_ok_start_net_retropad_core(const char *path,
@@ -2198,8 +2215,16 @@ static int action_ok_file_load_current_core(const char *path,
 static int action_ok_file_load_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_file_load(path, detect_content_path,
-         CORE_TYPE_FFMPEG, CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU);
+   content_ctx_info_t content_info     = {0};
+
+   if (!task_push_content_load_content_with_new_core_from_menu(
+            path, detect_content_path,
+            &content_info,
+            CORE_TYPE_FFMPEG,
+            NULL, NULL))
+      return -1;
+
+   return 0;
 }
 
 
@@ -3745,9 +3770,17 @@ static int action_ok_load_archive_detect_core(const char *path,
    switch (ret)
    {
       case -1:
-         return generic_action_ok_file_load(new_core_path, def_info.s,
-               CORE_TYPE_PLAIN,
-               CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU);
+         {
+            content_ctx_info_t content_info     = {0};
+
+            if (!task_push_content_load_content_with_new_core_from_menu(
+                     new_core_path, def_info.s,
+                     &content_info,
+                     CORE_TYPE_PLAIN,
+                     NULL, NULL))
+               return -1;
+         }
+         return 0;
       case 0:
          return generic_action_ok_displaylist_push(path, NULL,
                label, type,

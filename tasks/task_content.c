@@ -1276,6 +1276,112 @@ bool task_push_content_load_nothing_with_new_core_from_menu(
    return true;
 }
 
+bool task_push_content_load_content_with_new_core_from_menu(
+      const char *core_path,
+      const char *fullpath,
+      content_ctx_info_t *content_info,
+      enum rarch_core_type type,
+      retro_task_callback_t cb,
+      void *user_data)
+{
+   content_information_ctx_t content_ctx;
+  
+   bool loading_from_menu                     = false;
+   char *error_string                         = NULL;
+   settings_t *settings                       = config_get_ptr();
+
+   content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
+   content_ctx.bios_is_missing                = runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL);
+   content_ctx.history_list_enable            = false;
+   content_ctx.directory_system               = NULL;
+   content_ctx.directory_cache                = NULL;
+   content_ctx.valid_extensions               = NULL;
+   content_ctx.block_extract                  = false;
+   content_ctx.need_fullpath                  = false;
+   content_ctx.set_supports_no_game_enable    = false;
+
+   content_ctx.subsystem.data                 = NULL;
+   content_ctx.subsystem.size                 = 0;
+
+   if (settings)
+   {
+      content_ctx.history_list_enable         = settings->history_list_enable;
+
+      if (!string_is_empty(settings->directory.system))
+         content_ctx.directory_system         = strdup(settings->directory.system);
+   }
+
+
+   /* Set content path */
+   path_set(RARCH_PATH_CONTENT, fullpath);
+
+   /* Set libretro core path */
+   runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
+
+   /* Load core */
+#ifdef HAVE_DYNAMIC
+   command_event(CMD_EVENT_LOAD_CORE, NULL);
+#endif
+
+   /* Load content */
+#ifdef HAVE_DYNAMIC
+
+#ifdef HAVE_MENU
+   loading_from_menu = true;
+
+   if (!content_info->environ_get)
+      content_info->environ_get = menu_content_environment_get;
+#endif
+   task_push_content_update_firmware_status(&content_ctx);
+
+   if(
+         content_ctx.bios_is_missing && 
+         settings->check_firmware_before_loading)
+   {
+      runloop_msg_queue_push(msg_hash_to_str(MSG_FIRMWARE), 100, 500, true);
+      RARCH_LOG("Load content blocked. Reason:  %s\n", msg_hash_to_str(MSG_FIRMWARE));
+
+      return true;
+   }
+
+   if (!task_load_content(content_info, &content_ctx,
+            loading_from_menu, CONTENT_MODE_LOAD_NONE, &error_string))
+   {
+      if (error_string)
+      {
+         runloop_msg_queue_push(error_string, 2, 90, true);
+         RARCH_ERR(error_string);
+         free(error_string);
+      }
+
+#ifdef HAVE_MENU
+      rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
+#endif
+
+      if (content_ctx.directory_system)
+         free(content_ctx.directory_system);
+
+      return false;
+   }
+
+#else
+   command_event_cmd_exec(path_get(RARCH_PATH_CONTENT), &content_ctx, 
+         mode, &error_string);
+   command_event(CMD_EVENT_QUIT, NULL);
+#endif
+
+   /* Push quick menu onto menu stack */
+#ifdef HAVE_MENU
+   if (type != CORE_TYPE_DUMMY)
+      menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
+#endif
+
+   if (content_ctx.directory_system)
+      free(content_ctx.directory_system);
+
+   return true;
+}
+
 bool task_push_content_load_default(
       const char *core_path,
       const char *fullpath,
@@ -1324,9 +1430,6 @@ bool task_push_content_load_default(
       case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI:
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_COMPANION_UI:
-#ifdef HAVE_DYNAMIC
-      case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
-#endif
       case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
          loading_from_menu = true;
@@ -1354,7 +1457,6 @@ bool task_push_content_load_default(
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_COMPANION_UI:
       case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
-      case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
          path_set(RARCH_PATH_CONTENT, fullpath);
          break;
       default:
@@ -1364,7 +1466,6 @@ bool task_push_content_load_default(
    /* Set libretro core path */
    switch (mode)
    {
-      case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_COMPANION_UI:
          runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
          break;
@@ -1376,7 +1477,6 @@ bool task_push_content_load_default(
    switch (mode)
    {
 #ifdef HAVE_DYNAMIC
-      case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_COMPANION_UI:
 #endif
          command_event(CMD_EVENT_LOAD_CORE, NULL);
@@ -1416,9 +1516,6 @@ bool task_push_content_load_default(
       case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI:
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_COMPANION_UI:
-#ifdef HAVE_DYNAMIC
-      case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
-#endif
       case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
 #ifdef HAVE_MENU
@@ -1436,13 +1533,6 @@ bool task_push_content_load_default(
                   loading_from_menu, mode, &error_string))
             goto error;
          break;
-#ifndef HAVE_DYNAMIC
-      case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
-         command_event_cmd_exec(path_get(RARCH_PATH_CONTENT), &content_ctx, 
-               mode, &error_string);
-         command_event(CMD_EVENT_QUIT, NULL);
-         break;
-#endif
       case CONTENT_MODE_LOAD_NONE:
       default:
          break;
@@ -1476,7 +1566,6 @@ error:
       case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
-      case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
          rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
          break;
       default:
