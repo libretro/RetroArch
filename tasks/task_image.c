@@ -320,7 +320,7 @@ bool task_image_load_handler(retro_task_t *task)
       }
    }
 
-   if (     (nbio  && nbio->is_finished )
+   if (     nbio->is_finished
          && (image && image->is_finished )
          && (task  && !task_get_cancelled(task)))
    {
