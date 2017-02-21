@@ -1076,6 +1076,99 @@ error:
    return false;
 }
 
+bool task_push_content_load_content_from_playlist_from_menu(
+      const char *core_path,
+      const char *fullpath,
+      content_ctx_info_t *content_info,
+      retro_task_callback_t cb,
+      void *user_data)
+{
+   content_information_ctx_t content_ctx;
+  
+   bool loading_from_menu                     = false;
+   char *error_string                         = NULL;
+   settings_t *settings                       = config_get_ptr();
+
+   if (!content_info)
+      return false;
+   content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
+   content_ctx.bios_is_missing                = runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL);
+   content_ctx.history_list_enable            = false;
+   content_ctx.directory_system               = NULL;
+   content_ctx.directory_cache                = NULL;
+   content_ctx.valid_extensions               = NULL;
+   content_ctx.block_extract                  = false;
+   content_ctx.need_fullpath                  = false;
+   content_ctx.set_supports_no_game_enable    = false;
+
+   content_ctx.subsystem.data                 = NULL;
+   content_ctx.subsystem.size                 = 0;
+
+   if (settings)
+   {
+      content_ctx.history_list_enable         = settings->history_list_enable;
+
+      if (!string_is_empty(settings->directory.system))
+         content_ctx.directory_system         = strdup(settings->directory.system);
+   }
+
+#ifdef HAVE_MENU
+   if (!content_info->environ_get)
+      content_info->environ_get = menu_content_environment_get;
+#endif
+
+   /* Set libretro core path */
+   runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
+
+   /* Is content required by this core? */
+#ifdef HAVE_MENU
+   if (fullpath)
+      menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
+   else
+      menu_driver_ctl(RARCH_MENU_CTL_SET_LOAD_NO_CONTENT, NULL);
+#endif
+
+   /* On targets that have no dynamic core loading support, we'd
+    * execute the new core from this point. If this returns false,
+    * we assume we can dynamically load the core. */
+   if (!command_event_cmd_exec(fullpath, &content_ctx, CONTENT_MODE_LOAD_NONE, &error_string))
+      goto error;
+#ifndef HAVE_DYNAMIC
+   runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
+#ifdef HAVE_MENU
+   rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+#endif
+#endif
+
+   /* Load core */
+#ifdef HAVE_DYNAMIC
+   command_event(CMD_EVENT_LOAD_CORE, NULL);
+#endif
+
+   if (content_ctx.directory_system)
+      free(content_ctx.directory_system);
+
+   return true;
+
+error:
+
+   if (error_string)
+   {
+      runloop_msg_queue_push(error_string, 2, 90, true);
+      RARCH_ERR(error_string);
+      free(error_string);
+   }
+
+#ifdef HAVE_MENU
+   rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
+#endif
+
+   if (content_ctx.directory_system)
+      free(content_ctx.directory_system);
+
+   return false;
+}
+
 bool task_push_content_load_default(
       const char *core_path,
       const char *fullpath,
@@ -1144,7 +1237,6 @@ bool task_push_content_load_default(
       case CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_NOTHING_WITH_VIDEO_PROCESSOR_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
-      case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU:
@@ -1193,42 +1285,7 @@ bool task_push_content_load_default(
       case CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_COMPANION_UI:
-      case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
          runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
-         break;
-      default:
-         break;
-   }
-
-   /* Is content required by this core? */
-   switch (mode)
-   {
-      case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
-#ifdef HAVE_MENU
-         if (fullpath)
-            menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
-         else
-            menu_driver_ctl(RARCH_MENU_CTL_SET_LOAD_NO_CONTENT, NULL);
-#endif
-         break;
-      default:
-         break;
-   }
-
-   /* On targets that have no dynamic core loading support, we'd
-    * execute the new core from this point. If this returns false,
-    * we assume we can dynamically load the core. */
-   switch (mode)
-   {
-      case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
-         if (!command_event_cmd_exec(fullpath, &content_ctx, mode, &error_string))
-            goto error;
-#ifndef HAVE_DYNAMIC
-         runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
-#ifdef HAVE_MENU
-         rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
-#endif
-#endif
          break;
       default:
          break;
@@ -1241,7 +1298,6 @@ bool task_push_content_load_default(
 #ifdef HAVE_DYNAMIC
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_COMPANION_UI:
-      case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
 #endif
          command_event(CMD_EVENT_LOAD_CORE, NULL);
          break;
@@ -1329,7 +1385,6 @@ bool task_push_content_load_default(
    /* Push quick menu onto menu stack */
    switch (mode)
    {
-      case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
       case CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU:
          break;
       default:
@@ -1357,7 +1412,6 @@ error:
 #ifdef HAVE_MENU
    switch (mode)
    {
-      case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
       case CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_NOTHING_WITH_VIDEO_PROCESSOR_CORE_FROM_MENU:

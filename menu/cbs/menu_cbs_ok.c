@@ -1318,10 +1318,9 @@ static int action_ok_playlist_entry_collection(const char *path,
 {
    menu_content_ctx_playlist_info_t playlist_info;
    char new_core_path[PATH_MAX_LENGTH];
+   content_ctx_info_t content_info         = {0};
    size_t selection                        = 0;
    size_t selection_ptr                    = 0;
-   enum rarch_core_type action_type        = CORE_TYPE_PLAIN;
-   enum content_mode_load content_enum_idx = CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU;
    bool playlist_initialized               = false;
    playlist_t *playlist                    = NULL;
    const char *entry_path                  = NULL;
@@ -1434,8 +1433,14 @@ static int action_ok_playlist_entry_collection(const char *path,
    playlist_get_index(playlist,
          playlist_info.idx, &path, NULL, NULL, NULL, NULL, NULL);
 
-   return generic_action_ok_file_load(new_core_path, path,
-         action_type, content_enum_idx);
+
+   if (!task_push_content_load_content_from_playlist_from_menu(
+            new_core_path, path,
+            &content_info,
+            NULL, NULL))
+      return -1;
+
+   return 0;
 }
 
 static int action_ok_playlist_entry(const char *path,
@@ -1443,6 +1448,7 @@ static int action_ok_playlist_entry(const char *path,
 {
    size_t selection;
    menu_content_ctx_playlist_info_t playlist_info;
+   content_ctx_info_t content_info = {0};
    size_t selection_ptr             = 0;
    playlist_t *playlist             = g_defaults.content_history;
    const char *entry_path           = NULL;
@@ -1517,14 +1523,20 @@ static int action_ok_playlist_entry(const char *path,
    playlist_get_index(playlist,
          playlist_info.idx, &path, NULL, NULL, NULL, NULL, NULL);
 
-   return generic_action_ok_file_load(core_path, path,
-         CORE_TYPE_PLAIN, CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU);
+   if (!task_push_content_load_content_from_playlist_from_menu(
+            core_path, path,
+            &content_info,
+            NULL, NULL))
+      return -1;
+
+   return 0;
 }
 
 static int action_ok_playlist_entry_start_content(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_content_ctx_playlist_info_t playlist_info;
+   content_ctx_info_t content_info  = {0};
    size_t selection                 = 0;
    size_t selection_ptr             = 0;
    bool playlist_initialized        = false;
@@ -1619,8 +1631,13 @@ static int action_ok_playlist_entry_start_content(const char *path,
    playlist_get_index(playlist,
          playlist_info.idx, &path, NULL, NULL, NULL, NULL, NULL);
 
-   return generic_action_ok_file_load(core_path, path,
-         CORE_TYPE_PLAIN, CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU);
+   if (!task_push_content_load_content_from_playlist_from_menu(
+            core_path, path,
+            &content_info,
+            NULL, NULL))
+      return -1;
+
+   return 0;
 }
 
 static int action_ok_cheat_apply_changes(const char *path,
