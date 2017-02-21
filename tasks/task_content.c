@@ -1087,8 +1087,6 @@ bool task_push_content_load_content_from_playlist_from_menu(
    char *error_string                         = NULL;
    settings_t *settings                       = config_get_ptr();
 
-   if (!content_info)
-      return false;
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
    content_ctx.bios_is_missing                = runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.history_list_enable            = false;
@@ -1109,11 +1107,6 @@ bool task_push_content_load_content_from_playlist_from_menu(
       if (!string_is_empty(settings->directory.system))
          content_ctx.directory_system         = strdup(settings->directory.system);
    }
-
-#ifdef HAVE_MENU
-   if (!content_info->environ_get)
-      content_info->environ_get = menu_content_environment_get;
-#endif
 
    /* Set libretro core path */
    runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
@@ -1264,9 +1257,6 @@ bool task_push_content_load_nothing_with_new_core_from_menu(
       retro_task_callback_t cb,
       void *user_data)
 {
-   if (!content_info)
-      return false;
-
    /* Set libretro core path */
    runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
 
