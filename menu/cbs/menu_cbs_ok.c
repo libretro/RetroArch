@@ -3556,11 +3556,13 @@ static int action_ok_rpl_entry(const char *path,
 static int action_ok_start_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_file_load(NULL, NULL,
-         CORE_TYPE_PLAIN,
-         CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU);
-}
+   content_ctx_info_t content_info = {0};
 
+   if (!task_push_content_load_nothing_with_current_core_from_menu(&content_info))
+      return -1;
+
+   return 0;
+}
 
 static int action_ok_open_archive_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
