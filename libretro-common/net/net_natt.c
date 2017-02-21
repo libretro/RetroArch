@@ -149,12 +149,12 @@ static bool natt_open_port(struct natt_status *status,
       status->have_inet6 = true;
       status->ext_inet6_addr = *((struct sockaddr_in6 *) ext_addrinfo->ai_addr);
    }
+#endif
    else
    {
       freeaddrinfo_retro(ext_addrinfo);
       return false;
    }
-#endif
 
    return true;
 
