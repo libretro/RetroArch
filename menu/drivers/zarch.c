@@ -787,7 +787,7 @@ static int zarch_zui_load_content(zui_t *zui, unsigned i)
 {
    content_ctx_info_t content_info = {0};
 
-   task_push_content_load_content_with_new_core_from_menu(
+   task_push_load_content_with_new_core_from_menu(
          zui->pick_cores[i].path,
          zui->pick_content,
          &content_info,

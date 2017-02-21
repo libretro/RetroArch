@@ -973,7 +973,7 @@ static bool command_event_cmd_exec(const char *data,
    return true;
 }
 
-static bool task_push_content_update_firmware_status(
+static bool firmware_update_status(
       content_information_ctx_t *content_ctx)
 {
    char s[PATH_MAX_LENGTH];
@@ -1211,7 +1211,7 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
    retroarch_set_current_core_type(CORE_TYPE_PLAIN, true);
 
    /* Load content */
-   if (task_push_content_update_firmware_status(&content_ctx))
+   if (firmware_update_status(&content_ctx))
       return true;
 
    if (!task_load_content(content_info, &content_ctx,
@@ -1323,7 +1323,7 @@ bool task_push_load_content_with_new_core_from_menu(
    if (!content_info->environ_get)
       content_info->environ_get = menu_content_environment_get;
 
-   if (task_push_content_update_firmware_status(&content_ctx))
+   if (firmware_update_status(&content_ctx))
       return true;
 
    if (!task_load_content(content_info, &content_ctx,
@@ -1396,7 +1396,7 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
       content_info->environ_get = menu_content_environment_get;
 #endif
 
-   if (task_push_content_update_firmware_status(&content_ctx))
+   if (firmware_update_status(&content_ctx))
       return true;
 
    ret = task_load_content(content_info, &content_ctx, true, loading_from_cli, &error_string);
@@ -1419,7 +1419,7 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
    return true;
 }
 
-bool task_push_content_load_content_with_new_core_from_companion_ui(
+bool task_push_load_content_with_new_core_from_companion_ui(
       const char *core_path,
       const char *fullpath,
       content_ctx_info_t *content_info,
