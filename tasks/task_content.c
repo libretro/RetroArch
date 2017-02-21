@@ -819,7 +819,7 @@ static void menu_content_environment_get(int *argc, char *argv[],
 static bool task_load_content(content_ctx_info_t *content_info,
       content_information_ctx_t *content_ctx,
       bool launched_from_menu,
-      enum content_mode_load mode,
+      bool launched_from_cli,
       char **error_string)
 {
    char name[255];
@@ -899,7 +899,7 @@ static bool task_load_content(content_ctx_info_t *content_info,
                break;
          }
 
-         if (mode == CONTENT_MODE_LOAD_FROM_CLI)
+         if (launched_from_cli)
          {
             settings_t *settings                       = config_get_ptr();
             content_ctx->history_list_enable = settings->history_list_enable;
@@ -940,7 +940,7 @@ error:
 
 static bool command_event_cmd_exec(const char *data,
       content_information_ctx_t *content_ctx,
-      enum content_mode_load mode,
+      bool launched_from_cli,
       char **error_string)
 {
 #if defined(HAVE_DYNAMIC)
@@ -964,7 +964,7 @@ static bool command_event_cmd_exec(const char *data,
 
 #if defined(HAVE_DYNAMIC)
    if (!task_load_content(&content_info, content_ctx,
-            false, mode, error_string))
+            false, launched_from_cli, error_string))
       return false;
 #else
    frontend_driver_set_fork(FRONTEND_FORK_CORE_WITH_ARGS);
@@ -1051,7 +1051,7 @@ bool task_push_content_load_nothing_with_dummy_core(content_ctx_info_t *content_
 
    /* Load content */
    if (!task_load_content(content_info, &content_ctx,
-            false, CONTENT_MODE_LOAD_NONE, &error_string))
+            false, false, &error_string))
       goto error;
 
    if (content_ctx.directory_system)
@@ -1216,7 +1216,7 @@ bool task_push_content_load_nothing_with_current_core_from_menu(
    }
 
    if (!task_load_content(content_info, &content_ctx,
-            true, CONTENT_MODE_LOAD_NONE, &error_string))
+            true, false, &error_string))
       goto error;
 
 #ifdef HAVE_MENU
@@ -1341,7 +1341,7 @@ bool task_push_content_load_content_with_new_core_from_menu(
    }
 
    if (!task_load_content(content_info, &content_ctx,
-            loading_from_menu, CONTENT_MODE_LOAD_NONE, &error_string))
+            loading_from_menu, false, &error_string))
    {
       if (error_string)
       {
@@ -1362,7 +1362,7 @@ bool task_push_content_load_content_with_new_core_from_menu(
 
 #else
    command_event_cmd_exec(path_get(RARCH_PATH_CONTENT), &content_ctx, 
-         mode, &error_string);
+         false, &error_string);
    command_event(CMD_EVENT_QUIT, NULL);
 #endif
 
@@ -1378,13 +1378,11 @@ bool task_push_content_load_content_with_new_core_from_menu(
    return true;
 }
 
-static bool task_load_content_callback(
-      content_ctx_info_t *content_info,
-      enum content_mode_load mode)
+static bool task_load_content_callback(content_ctx_info_t *content_info,
+      bool loading_from_menu, bool loading_from_cli)
 {
    content_information_ctx_t content_ctx;
 
-   bool loading_from_menu                     = false;
    bool ret                                   = false;
    char *error_string                         = NULL;
    settings_t *settings                       = config_get_ptr();
@@ -1401,26 +1399,6 @@ static bool task_load_content_callback(
 
    content_ctx.subsystem.data                 = NULL;
    content_ctx.subsystem.size                 = 0;
-
-   /* First we determine if we are loading from a menu */
-   switch (mode)
-   {
-#if defined(HAVE_VIDEO_PROCESSOR)
-      case CONTENT_MODE_LOAD_NOTHING_WITH_VIDEO_PROCESSOR_CORE_FROM_MENU:
-#endif
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-      case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
-#endif
-      case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU:
-      case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI:
-      case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_COMPANION_UI:
-      case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
-      case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
-         loading_from_menu = true;
-         break;
-      default:
-         break;
-   }
 
    if (settings)
    {
@@ -1447,8 +1425,7 @@ static bool task_load_content_callback(
       return true;
    }
 
-   ret = task_load_content(content_info, &content_ctx,
-         loading_from_menu, mode, &error_string);
+   ret = task_load_content(content_info, &content_ctx, true, loading_from_cli, &error_string);
 
    if (content_ctx.directory_system)
       free(content_ctx.directory_system);
@@ -1461,21 +1438,6 @@ static bool task_load_content_callback(
          RARCH_ERR(error_string);
          free(error_string);
       }
-
-#ifdef HAVE_MENU
-      switch (mode)
-      {
-         case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
-         case CONTENT_MODE_LOAD_NOTHING_WITH_VIDEO_PROCESSOR_CORE_FROM_MENU:
-         case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU:
-         case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
-         case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
-            rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
-            break;
-         default:
-            break;
-      }
-#endif
 
       return false;
    }
@@ -1492,6 +1454,8 @@ bool task_push_content_load_default(
       retro_task_callback_t cb,
       void *user_data)
 {
+   bool loading_from_cli = false;
+
    /* Clear content path */
    switch (mode)
    {
@@ -1552,6 +1516,8 @@ bool task_push_content_load_default(
    switch (mode)
    {
       case CONTENT_MODE_LOAD_FROM_CLI:
+         loading_from_cli = true;
+         /* fall-through */
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
       case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
 #endif
@@ -1563,8 +1529,24 @@ bool task_push_content_load_default(
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_COMPANION_UI:
       case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
-         if (!task_load_content_callback(content_info, mode))
+         if (!task_load_content_callback(content_info, true, loading_from_cli))
+         {
+#ifdef HAVE_MENU
+            switch (mode)
+            {
+               case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
+               case CONTENT_MODE_LOAD_NOTHING_WITH_VIDEO_PROCESSOR_CORE_FROM_MENU:
+               case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU:
+               case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
+               case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
+                  rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
+                  break;
+               default:
+                  break;
+            }
+#endif
             return false;
+         }
          break;
       case CONTENT_MODE_LOAD_NONE:
       default:
