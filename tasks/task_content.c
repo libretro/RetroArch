@@ -1628,7 +1628,6 @@ bool content_init(void)
    bool ret                                   = true;
    char *error_string                         = NULL;
    rarch_system_info_t *sys_info              = NULL;
-   settings_t *settings                       = config_get_ptr();
    temporary_content                          = string_list_new();
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &sys_info);
@@ -1648,6 +1647,8 @@ bool content_init(void)
    
    if (sys_info)
    {
+      settings_t *settings                    = config_get_ptr();
+
       content_ctx.history_list_enable         = settings->history_list_enable;
       content_ctx.set_supports_no_game_enable = settings->set_supports_no_game_enable;
 
