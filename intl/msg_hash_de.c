@@ -1585,7 +1585,6 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                "schnelles Netzwerk benötigt. Da kein Rücklauf benötigt wird, \n"
                "tritt keine Netplay-Verzögerung auf.\n");
          break;
-         break;
       case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
          {
             /* Work around C89 limitations */
