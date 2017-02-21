@@ -1076,15 +1076,21 @@ static int generic_action_ok(const char *path,
          }
          break;
       case ACTION_OK_LOAD_CORE:
-         flush_type = MENU_SETTINGS;
-
-         if (generic_action_ok_file_load(action_path,
-                  NULL, CORE_TYPE_PLAIN,
-                  CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU) == 0)
          {
+            content_ctx_info_t content_info = {0};
+
+            flush_type = MENU_SETTINGS;
+
+            if (!task_push_content_load_nothing_with_new_core_from_menu(
+                     action_path, NULL,
+                     &content_info,
+                     CORE_TYPE_PLAIN,
+                     NULL, NULL))
+            {
 #ifndef HAVE_DYNAMIC
-            ret = -1;
+               ret = -1;
 #endif
+            }
          }
          break;
       case ACTION_OK_LOAD_CONFIG_FILE:

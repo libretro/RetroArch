@@ -1256,6 +1256,36 @@ error:
    return false;
 }
 
+bool task_push_content_load_nothing_with_new_core_from_menu(
+      const char *core_path,
+      const char *fullpath,
+      content_ctx_info_t *content_info,
+      enum rarch_core_type type,
+      retro_task_callback_t cb,
+      void *user_data)
+{
+   if (!content_info)
+      return false;
+
+   /* Set libretro core path */
+   runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
+
+   /* Load core */
+   command_event(CMD_EVENT_LOAD_CORE, NULL);
+
+#ifndef HAVE_DYNAMIC
+   /* Fork core? */
+   if (!frontend_driver_set_fork(FRONTEND_FORK_CORE))
+      return false;
+#endif
+
+   /* Preliminary stuff that has to be done before we
+    * load the actual content. Can differ per mode. */
+   retroarch_set_current_core_type(type, true);
+
+   return true;
+}
+
 bool task_push_content_load_default(
       const char *core_path,
       const char *fullpath,
@@ -1297,7 +1327,6 @@ bool task_push_content_load_default(
    /* First we determine if we are loading from a menu */
    switch (mode)
    {
-      case CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU:
 #if defined(HAVE_VIDEO_PROCESSOR)
       case CONTENT_MODE_LOAD_NOTHING_WITH_VIDEO_PROCESSOR_CORE_FROM_MENU:
 #endif
@@ -1366,7 +1395,6 @@ bool task_push_content_load_default(
    /* Set libretro core path */
    switch (mode)
    {
-      case CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_COMPANION_UI:
          runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
@@ -1378,7 +1406,6 @@ bool task_push_content_load_default(
    /* Load core */
    switch (mode)
    {
-      case CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU:
 #ifdef HAVE_DYNAMIC
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_COMPANION_UI:
@@ -1389,26 +1416,10 @@ bool task_push_content_load_default(
          break;
    }
 
-#ifndef HAVE_DYNAMIC
-   /* Fork core? */
-   switch (mode)
-   {
-     case CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU:
-         if (!frontend_driver_set_fork(FRONTEND_FORK_CORE))
-            goto cleanup;
-         break;
-      default:
-         break;
-   }
-#endif
-
    /* Preliminary stuff that has to be done before we
     * load the actual content. Can differ per mode. */
    switch (mode)
    {
-      case CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU:
-         retroarch_set_current_core_type(type, true);
-         break;
       case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
          retroarch_set_current_core_type(CORE_TYPE_NETRETROPAD, true);
@@ -1465,17 +1476,10 @@ bool task_push_content_load_default(
    }
 
    /* Push quick menu onto menu stack */
-   switch (mode)
-   {
-      case CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU:
-         break;
-      default:
 #ifdef HAVE_MENU
-         if (type != CORE_TYPE_DUMMY && mode != CONTENT_MODE_LOAD_FROM_CLI)
-            menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
+   if (type != CORE_TYPE_DUMMY && mode != CONTENT_MODE_LOAD_FROM_CLI)
+      menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
 #endif
-         break;
-   }
 
    if (content_ctx.directory_system)
       free(content_ctx.directory_system);
@@ -1517,14 +1521,6 @@ skip:
    RARCH_LOG("Load content blocked. Reason:  %s\n", msg_hash_to_str(MSG_FIRMWARE));
 
    return true;
-
-#ifndef HAVE_DYNAMIC
-cleanup:
-   if (content_ctx.directory_system)
-      free(content_ctx.directory_system);
-
-   return false;
-#endif
 }
 
 void content_get_status(

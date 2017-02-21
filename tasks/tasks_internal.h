@@ -40,7 +40,6 @@ enum content_mode_load
 {
    CONTENT_MODE_LOAD_NONE = 0,
    CONTENT_MODE_LOAD_FROM_CLI,
-   CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU,
    CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU,
    CONTENT_MODE_LOAD_NOTHING_WITH_VIDEO_PROCESSOR_CORE_FROM_MENU,
    CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU,
@@ -140,6 +139,14 @@ bool task_push_decompress(
       const char *target_file,
       const char *subdir,
       const char *valid_ext,
+      retro_task_callback_t cb,
+      void *user_data);
+
+bool task_push_content_load_nothing_with_new_core_from_menu(
+      const char *core_path,
+      const char *fullpath,
+      content_ctx_info_t *content_info,
+      enum rarch_core_type type,
       retro_task_callback_t cb,
       void *user_data);
 
