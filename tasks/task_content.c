@@ -1489,6 +1489,27 @@ bool task_push_content_load_content_with_new_core_from_companion_ui(
    return true;
 }
 
+bool task_push_load_content_from_cli(
+      const char *core_path,
+      const char *fullpath,
+      content_ctx_info_t *content_info,
+      enum rarch_core_type type,
+      retro_task_callback_t cb,
+      void *user_data)
+{
+   /* Load content */
+   if (!task_load_content_callback(content_info, true, true))
+      return false;
+
+   /* Push quick menu onto menu stack */
+#ifdef HAVE_MENU
+   if (type != CORE_TYPE_DUMMY)
+      menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
+#endif
+
+   return true;
+}
+
 bool task_push_content_load_default(
       const char *core_path,
       const char *fullpath,
@@ -1498,9 +1519,6 @@ bool task_push_content_load_default(
       retro_task_callback_t cb,
       void *user_data)
 {
-   bool loading_from_cli  = false;
-   bool loading_from_menu = task_loading_from_menu(mode);
-
    /* Clear content path */
    switch (mode)
    {
@@ -1546,9 +1564,6 @@ bool task_push_content_load_default(
    /* Load content */
    switch (mode)
    {
-      case CONTENT_MODE_LOAD_FROM_CLI:
-         loading_from_cli = true;
-         /* fall-through */
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
       case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
 #endif
@@ -1559,10 +1574,10 @@ bool task_push_content_load_default(
       case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI:
       case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
-         if (!task_load_content_callback(content_info, true, loading_from_cli))
+         if (!task_load_content_callback(content_info, true, false))
          {
 #ifdef HAVE_MENU
-            if (loading_from_menu)
+            if (task_loading_from_menu(mode))
                rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
 #endif
             return false;
@@ -1575,7 +1590,7 @@ bool task_push_content_load_default(
 
    /* Push quick menu onto menu stack */
 #ifdef HAVE_MENU
-   if (type != CORE_TYPE_DUMMY && !loading_from_cli)
+   if (type != CORE_TYPE_DUMMY)
       menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
 #endif
 

@@ -110,12 +110,11 @@ int rarch_main(int argc, char *argv[], void *data)
       info.args            = args;
       info.environ_get     = frontend_driver_environment_get_ptr();
 
-      if (!task_push_content_load_default(
+      if (!task_push_load_content_from_cli(
                NULL,
                NULL,
                &info,
                CORE_TYPE_PLAIN,
-               CONTENT_MODE_LOAD_FROM_CLI,
                NULL,
                NULL))
          return 1;
