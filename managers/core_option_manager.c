@@ -42,7 +42,8 @@ static bool core_option_manager_parse_variable(
    if (!string_is_empty(var->value))
       value                   = strdup(var->value);
 
-   desc_end    = strstr(value, "; ");
+   if (value)
+      desc_end                = strstr(value, "; ");
 
    if (!desc_end)
       goto error;
