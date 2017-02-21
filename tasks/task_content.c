@@ -1462,6 +1462,34 @@ static bool task_loading_from_menu(enum content_mode_load mode)
    return false;
 }
 
+bool task_push_content_load_content_with_new_core_from_companion_ui(
+      const char *core_path,
+      const char *fullpath,
+      content_ctx_info_t *content_info,
+      retro_task_callback_t cb,
+      void *user_data)
+{
+   /* Set content path */
+   path_set(RARCH_PATH_CONTENT, fullpath);
+
+   /* Set libretro core path */
+   runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
+#ifdef HAVE_DYNAMIC
+   command_event(CMD_EVENT_LOAD_CORE, NULL);
+#endif
+
+   /* Load content */
+   if (!task_load_content_callback(content_info, true, false))
+      return false;
+
+   /* Push quick menu onto menu stack */
+#ifdef HAVE_MENU
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
+#endif
+
+   return true;
+}
+
 bool task_push_content_load_default(
       const char *core_path,
       const char *fullpath,
@@ -1490,23 +1518,9 @@ bool task_push_content_load_default(
    {
       case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI:
-      case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_COMPANION_UI:
       case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
          path_set(RARCH_PATH_CONTENT, fullpath);
-         break;
-      default:
-         break;
-   }
-
-   /* Set libretro core path */
-   switch (mode)
-   {
-      case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_COMPANION_UI:
-         runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
-#ifdef HAVE_DYNAMIC
-         command_event(CMD_EVENT_LOAD_CORE, NULL);
-#endif
          break;
       default:
          break;
@@ -1544,7 +1558,6 @@ bool task_push_content_load_default(
 #endif
       case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI:
-      case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_COMPANION_UI:
       case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
          if (!task_load_content_callback(content_info, true, loading_from_cli))

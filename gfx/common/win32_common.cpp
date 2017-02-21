@@ -334,11 +334,9 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
          const core_info_t *info = (const core_info_t*)&core_info[0];
 
          if (info)
-            task_push_content_load_default(
+            task_push_content_load_content_with_new_core_from_companion_ui(
                   info->path, NULL,
                   &content_info,
-                  CORE_TYPE_PLAIN,
-                  CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_COMPANION_UI,
                   NULL, NULL);
       }
       else
