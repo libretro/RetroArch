@@ -295,7 +295,7 @@ receiveDevicesFromMiniSSDPD(int s, int * error)
 #ifdef DEBUG
 		printf("  urlsize=%u", urlsize);
 #endif /* DEBUG */
-		url = malloc(urlsize);
+		url = (unsigned char*)malloc(urlsize);
 		if(url == NULL) {
 			if (error)
 				*error = MINISSDPC_MEMORY_ERROR;
@@ -316,7 +316,7 @@ receiveDevicesFromMiniSSDPD(int s, int * error)
 #ifdef DEBUG
 		printf("   stsize=%u", stsize);
 #endif /* DEBUG */
-		st = malloc(stsize);
+		st = (unsigned char*)malloc(stsize);
 		if (st == NULL) {
 			if (error)
 				*error = MINISSDPC_MEMORY_ERROR;

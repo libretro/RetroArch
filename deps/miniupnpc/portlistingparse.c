@@ -64,7 +64,7 @@ startelt(void * d, const char * name, int l)
 	if(pdata->curelt == PortMappingEntry)
 	{
 		struct PortMapping * pm;
-		pm = calloc(1, sizeof(struct PortMapping));
+		pm = (struct PortMapping*)calloc(1, sizeof(struct PortMapping));
 		if(pm == NULL)
 		{
 			/* malloc error */

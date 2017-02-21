@@ -89,7 +89,7 @@ getHTTPResponse(int s, int * size, int * status_code)
 #endif
 
 	if(status_code) *status_code = -1;
-	header_buf = malloc(header_buf_len);
+	header_buf = (char*)malloc(header_buf_len);
 	if(header_buf == NULL)
 	{
 #ifdef DEBUG
@@ -98,7 +98,7 @@ getHTTPResponse(int s, int * size, int * status_code)
 		*size = -1;
 		return NULL;
 	}
-	content_buf = malloc(content_buf_len);
+	content_buf = (char*)malloc(content_buf_len);
 	if(content_buf == NULL)
 	{
 		free(header_buf);
@@ -120,7 +120,7 @@ getHTTPResponse(int s, int * size, int * status_code)
 			int colon=0;
 			int valuestart=0;
 			if(header_buf_used + n > header_buf_len) {
-				char * tmp = realloc(header_buf, header_buf_used + n);
+				char * tmp = (char*)realloc(header_buf, header_buf_used + n);
 				if(tmp == NULL) {
 					/* memory allocation error */
 					free(header_buf);
@@ -293,7 +293,7 @@ getHTTPResponse(int s, int * size, int * status_code)
 						} else {
 							content_buf_len = content_buf_used + bytestocopy;
 						}
-						tmp = realloc(content_buf, content_buf_len);
+						tmp = (char*)realloc(content_buf, content_buf_len);
 						if(tmp == NULL) {
 							/* memory allocation error */
 							free(content_buf);
@@ -325,7 +325,7 @@ getHTTPResponse(int s, int * size, int * status_code)
 					} else {
 						content_buf_len = content_buf_used + n;
 					}
-					tmp = realloc(content_buf, content_buf_len);
+					tmp = (char*)realloc(content_buf, content_buf_len);
 					if(tmp == NULL) {
 						/* memory allocation error */
 						free(content_buf);
@@ -481,11 +481,11 @@ miniwget2(const char * host,
 	char * respbuffer;
 
 #if 1
-	respbuffer = miniwget3(host, port, path, size,
+	respbuffer = (char*)miniwget3(host, port, path, size,
 	                       addr_str, addr_str_len, "1.1",
 	                       scope_id, status_code);
 #else
-	respbuffer = miniwget3(host, port, path, size,
+	respbuffer = (char*)miniwget3(host, port, path, size,
 	                       addr_str, addr_str_len, "1.0",
 	                       scope_id, status_code);
 	if (*size == 0)
@@ -523,7 +523,7 @@ parseURL(const char * url,
 	char * p1, *p2, *p3;
 	if(!url)
 		return 0;
-	p1 = strstr(url, "://");
+	p1 = (char*)strstr(url, "://");
 	if(!p1)
 		return 0;
 	p1 += 3;

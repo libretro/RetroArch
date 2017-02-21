@@ -230,7 +230,7 @@ char * simpleUPnPcommand2(int s, const char * url, const char * service,
 		return NULL;
 	}
 
-	buf = getHTTPResponse(s, bufsize, &status_code);
+	buf = (char*)getHTTPResponse(s, bufsize, &status_code);
 #ifdef DEBUG
 	if(*bufsize > 0 && buf)
 	{
@@ -432,7 +432,7 @@ build_absolute_url(const char * baseurl, const char * descURL,
 	base = (baseurl[0] == '\0') ? descURL : baseurl;
 	n = strlen(base);
 	if(n > 7) {
-		p = strchr(base + 7, '/');
+		p = (char*)strchr(base + 7, '/');
 		if(p)
 			n = p - base;
 	}
@@ -449,7 +449,7 @@ build_absolute_url(const char * baseurl, const char * descURL,
 		l += 3 + snprintf(scope_str, sizeof(scope_str), "%u", scope_id);
 #endif /* defined(IF_NAMESIZE) && !defined(_WIN32) */
 	}
-	s = malloc(l);
+	s = (char*)malloc(l);
 	if(s == NULL) return NULL;
 	memcpy(s, base, n);
 	if(scope_id != 0) {
@@ -585,7 +585,7 @@ UPNP_GetValidIGD(struct UPNPDev * devlist,
 		ndev++;
 	if(ndev > 0)
 	{
-		desc = calloc(ndev, sizeof(struct xml_desc));
+		desc = (struct xml_desc*)calloc(ndev, sizeof(struct xml_desc));
 		if(!desc)
 			return -1; /* memory allocation error */
 	}
@@ -594,7 +594,7 @@ UPNP_GetValidIGD(struct UPNPDev * devlist,
 	{
 		/* we should choose an internet gateway device.
 		 * with st == urn:schemas-upnp-org:device:InternetGatewayDevice:1 */
-		desc[i].xml = miniwget_getaddr(dev->descURL, &(desc[i].size),
+		desc[i].xml = (char*)miniwget_getaddr(dev->descURL, &(desc[i].size),
 		                               myLanAddr, sizeof(myLanAddr),
 		                               dev->scope_id, &status_code);
 #ifdef DEBUG
@@ -705,7 +705,7 @@ UPNP_GetIGDFromUrl(const char * rootdescurl,
 	char * descXML;
 	int descXMLsize = 0;
 
-	descXML = miniwget_getaddr(rootdescurl, &descXMLsize,
+	descXML = (char*)miniwget_getaddr(rootdescurl, &descXMLsize,
 	                           lanaddr, lanaddrlen, 0, NULL);
 	if(descXML) {
 		memset(data, 0, sizeof(struct IGDdatas));

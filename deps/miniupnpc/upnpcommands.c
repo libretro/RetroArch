@@ -354,7 +354,7 @@ UPNP_AddPortMapping(const char * controlURL, const char * servicetype,
 	if(!inPort || !inClient || !proto || !extPort)
 		return UPNPCOMMAND_INVALID_ARGS;
 
-	AddPortMappingArgs = calloc(9, sizeof(struct UPNParg));
+	AddPortMappingArgs = (struct UPNParg*)calloc(9, sizeof(struct UPNParg));
 	if(AddPortMappingArgs == NULL)
 		return UPNPCOMMAND_MEM_ALLOC_ERROR;
 	AddPortMappingArgs[0].elt = "NewRemoteHost";
@@ -418,7 +418,7 @@ UPNP_AddAnyPortMapping(const char * controlURL, const char * servicetype,
 	if(!inPort || !inClient || !proto || !extPort)
 		return UPNPCOMMAND_INVALID_ARGS;
 
-	AddPortMappingArgs = calloc(9, sizeof(struct UPNParg));
+	AddPortMappingArgs = (struct UPNParg*)calloc(9, sizeof(struct UPNParg));
 	if(AddPortMappingArgs == NULL)
 		return UPNPCOMMAND_MEM_ALLOC_ERROR;
 	AddPortMappingArgs[0].elt = "NewRemoteHost";
@@ -482,7 +482,7 @@ UPNP_DeletePortMapping(const char * controlURL, const char * servicetype,
 	if(!extPort || !proto)
 		return UPNPCOMMAND_INVALID_ARGS;
 
-	DeletePortMappingArgs = calloc(4, sizeof(struct UPNParg));
+	DeletePortMappingArgs = (struct UPNParg*)calloc(4, sizeof(struct UPNParg));
 	if(DeletePortMappingArgs == NULL)
 		return UPNPCOMMAND_MEM_ALLOC_ERROR;
 	DeletePortMappingArgs[0].elt = "NewRemoteHost";
@@ -528,7 +528,7 @@ UPNP_DeletePortMappingRange(const char * controlURL, const char * servicetype,
 	if(!extPortStart || !extPortEnd || !proto || !manage)
 		return UPNPCOMMAND_INVALID_ARGS;
 
-	DeletePortMappingArgs = calloc(5, sizeof(struct UPNParg));
+	DeletePortMappingArgs = (struct UPNParg*)calloc(5, sizeof(struct UPNParg));
 	if(DeletePortMappingArgs == NULL)
 		return UPNPCOMMAND_MEM_ALLOC_ERROR;
 	DeletePortMappingArgs[0].elt = "NewStartPort";
@@ -583,7 +583,7 @@ UPNP_GetGenericPortMappingEntry(const char * controlURL,
 		return UPNPCOMMAND_INVALID_ARGS;
 	intClient[0] = '\0';
 	intPort[0] = '\0';
-	GetPortMappingArgs = calloc(2, sizeof(struct UPNParg));
+	GetPortMappingArgs = (struct UPNParg*)calloc(2, sizeof(struct UPNParg));
 	if(GetPortMappingArgs == NULL)
 		return UPNPCOMMAND_MEM_ALLOC_ERROR;
 	GetPortMappingArgs[0].elt = "NewPortMappingIndex";
@@ -720,7 +720,7 @@ UPNP_GetSpecificPortMappingEntry(const char * controlURL,
 	if(!intPort || !intClient || !extPort || !proto)
 		return UPNPCOMMAND_INVALID_ARGS;
 
-	GetPortMappingArgs = calloc(4, sizeof(struct UPNParg));
+	GetPortMappingArgs = (struct UPNParg*)calloc(4, sizeof(struct UPNParg));
 	if(GetPortMappingArgs == NULL)
 		return UPNPCOMMAND_MEM_ALLOC_ERROR;
 	GetPortMappingArgs[0].elt = "NewRemoteHost";
@@ -811,7 +811,7 @@ UPNP_GetListOfPortMappings(const char * controlURL,
 	if(!startPort || !endPort || !protocol)
 		return UPNPCOMMAND_INVALID_ARGS;
 
-	GetListOfPortMappingsArgs = calloc(6, sizeof(struct UPNParg));
+	GetListOfPortMappingsArgs = (struct UPNParg*)calloc(6, sizeof(struct UPNParg));
 	if(GetListOfPortMappingsArgs == NULL)
 		return UPNPCOMMAND_MEM_ALLOC_ERROR;
 	GetListOfPortMappingsArgs[0].elt = "NewStartPort";
@@ -940,7 +940,7 @@ UPNP_GetOutboundPinholeTimeout(const char * controlURL, const char * servicetype
 	if(!intPort || !intClient || !proto || !remotePort || !remoteHost)
 		return UPNPCOMMAND_INVALID_ARGS;
 
-	GetOutboundPinholeTimeoutArgs = calloc(6, sizeof(struct UPNParg));
+	GetOutboundPinholeTimeoutArgs = (struct UPNParg*)calloc(6, sizeof(struct UPNParg));
 	if(GetOutboundPinholeTimeoutArgs == NULL)
 		return UPNPCOMMAND_MEM_ALLOC_ERROR;
 	GetOutboundPinholeTimeoutArgs[0].elt = "RemoteHost";
@@ -998,7 +998,7 @@ UPNP_AddPinhole(const char * controlURL, const char * servicetype,
 	if(!intPort || !intClient || !proto || !remoteHost || !remotePort || !leaseTime)
 		return UPNPCOMMAND_INVALID_ARGS;
 
-	AddPinholeArgs = calloc(7, sizeof(struct UPNParg));
+	AddPinholeArgs = (struct UPNParg*)calloc(7, sizeof(struct UPNParg));
 	if(AddPinholeArgs == NULL)
 		return UPNPCOMMAND_MEM_ALLOC_ERROR;
 	/* RemoteHost can be wilcarded */
@@ -1073,7 +1073,7 @@ UPNP_UpdatePinhole(const char * controlURL, const char * servicetype,
 	if(!uniqueID || !leaseTime)
 		return UPNPCOMMAND_INVALID_ARGS;
 
-	UpdatePinholeArgs = calloc(3, sizeof(struct UPNParg));
+	UpdatePinholeArgs = (struct UPNParg*)calloc(3, sizeof(struct UPNParg));
 	if(UpdatePinholeArgs == NULL)
 		return UPNPCOMMAND_MEM_ALLOC_ERROR;
 	UpdatePinholeArgs[0].elt = "UniqueID";
@@ -1116,7 +1116,7 @@ UPNP_DeletePinhole(const char * controlURL, const char * servicetype, const char
 	if(!uniqueID)
 		return UPNPCOMMAND_INVALID_ARGS;
 
-	DeletePinholeArgs = calloc(2, sizeof(struct UPNParg));
+	DeletePinholeArgs = (struct UPNParg*)calloc(2, sizeof(struct UPNParg));
 	if(DeletePinholeArgs == NULL)
 		return UPNPCOMMAND_MEM_ALLOC_ERROR;
 	DeletePinholeArgs[0].elt = "UniqueID";
@@ -1157,7 +1157,7 @@ UPNP_CheckPinholeWorking(const char * controlURL, const char * servicetype,
 	if(!uniqueID)
 		return UPNPCOMMAND_INVALID_ARGS;
 
-	CheckPinholeWorkingArgs = calloc(4, sizeof(struct UPNParg));
+	CheckPinholeWorkingArgs = (struct UPNParg*)calloc(4, sizeof(struct UPNParg));
 	if(CheckPinholeWorkingArgs == NULL)
 		return UPNPCOMMAND_MEM_ALLOC_ERROR;
 	CheckPinholeWorkingArgs[0].elt = "UniqueID";
@@ -1206,7 +1206,7 @@ UPNP_GetPinholePackets(const char * controlURL, const char * servicetype,
 	if(!uniqueID)
 		return UPNPCOMMAND_INVALID_ARGS;
 
-	GetPinholePacketsArgs = calloc(4, sizeof(struct UPNParg));
+	GetPinholePacketsArgs = (struct UPNParg*)calloc(4, sizeof(struct UPNParg));
 	if(GetPinholePacketsArgs == NULL)
 		return UPNPCOMMAND_MEM_ALLOC_ERROR;
 	GetPinholePacketsArgs[0].elt = "UniqueID";

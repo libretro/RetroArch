@@ -44,7 +44,7 @@ httpWrite(int fd, const char * body, int bodysize,
 	 * soap request that are sent into only one packet */
 	char * p;
 	/* TODO: AVOID MALLOC, we could use writev() for that */
-	p = malloc(headerssize+bodysize);
+	p = (char*)malloc(headerssize+bodysize);
 	if(!p)
 	  return -1;
 	memcpy(p, headers, headerssize);

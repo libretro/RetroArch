@@ -39,7 +39,7 @@ NameValueParserEndElt(void * d, const char * name, int l)
 		int l;
 		/* standard case. Limited to n chars strings */
 		l = data->cdatalen;
-	    nv = malloc(sizeof(struct NameValue));
+	    nv = (struct NameValue*)malloc(sizeof(struct NameValue));
 		if(nv == NULL)
 		{
 			/* malloc error */
@@ -77,7 +77,7 @@ NameValueParserGetData(void * d, const char * datas, int l)
 	if(strcmp(data->curelt, "NewPortListing") == 0)
 	{
 		/* specific case for NewPortListing which is a XML Document */
-		data->portListing = malloc(l + 1);
+		data->portListing = (char*)malloc(l + 1);
 		if(!data->portListing)
 		{
 			/* malloc error */
