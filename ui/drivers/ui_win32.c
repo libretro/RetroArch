@@ -533,6 +533,7 @@ bool win32_shader_dlg_init(void)
 static bool win32_browser(
       HWND owner,
       char *filename,
+      size_t filename_size,
       const char *extensions,
       const char *title,
       const char *initial_dir)
@@ -544,8 +545,6 @@ static bool win32_browser(
    if (browser)
    {
       ui_browser_window_state_t browser_state;
-      /* OPENFILENAME.lpstrFilter requires a null separated list of name/ext pairs terminated by a second null at the end. */
-      char *all_files[] = {"All Files (*.*)", "*.*", ""};
 
       /* These need to be big enough to hold the path/name of any file the user may select.
        * FIXME: We should really handle the error case when this isn't big enough. */
@@ -561,13 +560,17 @@ static bool win32_browser(
       if (filename && *filename)
          strlcpy(new_file, filename, sizeof(new_file));
 
-      browser_state.filters  = all_files[0];
+      /* OPENFILENAME.lpstrFilters is actually const, so this cast should be safe */
+      browser_state.filters  = (char*)extensions;
       browser_state.title    = new_title;
       browser_state.startdir = strdup("");
       browser_state.path     = new_file;
       browser_state.window   = owner;
 
       result = browser->open(&browser_state);
+
+      if (filename && browser_state.path)
+         strlcpy(filename, browser_state.path, filename_size);
 
       free(browser_state.startdir);
    }
@@ -597,13 +600,14 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
 
             switch (mode)
             {
+               /* OPENFILENAME.lpstrFilter requires a null separated list of name/ext pairs terminated by a second null at the end. */
                case ID_M_LOAD_CORE:
-                  extensions  = "Libretro core (.dll)\0*.dll\0All Files\0*.*\0";
+                  extensions  = "Libretro core (.dll)\0*.dll\0All Files\0*.*\0\0";
                   title       = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_LIST);
                   initial_dir = settings->directory.libretro;
                   break;
                case ID_M_LOAD_CONTENT:
-                  extensions  = "All Files (*.*)\0*.*\0";
+                  extensions  = "All Files (*.*)\0*.*\0\0";
                   title       = msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST);
                   initial_dir = settings->directory.menu_content;
@@ -616,7 +620,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
             MultiByteToWideChar(CP_UTF8, 0, title, -1, title_wide, sizeof(title_wide) / sizeof(title_wide[0]));
             wcstombs(title_cp, title_wide, sizeof(title_cp) - 1);
 
-            if (!win32_browser(owner, win32_file,
+            if (!win32_browser(owner, win32_file, sizeof(win32_file),
                      extensions, title_cp, initial_dir))
                break;
 

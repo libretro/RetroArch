@@ -29,7 +29,7 @@ static bool ui_browser_window_win32_core(ui_browser_window_state_t *state, bool 
 
    ofn.lStructSize     = sizeof(OPENFILENAME);
    ofn.hwndOwner       = (HWND)state->window;
-   ofn.lpstrFilter     = state->filters;
+   ofn.lpstrFilter     = state->filters; /* actually const */
    ofn.lpstrFile       = state->path;
    ofn.lpstrTitle      = state->title;
    ofn.lpstrInitialDir = state->startdir;
