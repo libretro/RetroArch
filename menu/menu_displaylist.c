@@ -2698,12 +2698,15 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS,
                MENU_SETTING_ACTION, 0, 0);
 
-#ifdef HAVE_NETWORKING
+#if defined(HAVE_NETWORKING) && !defined(HAVE_LAKKA)
       menu_displaylist_parse_settings_enum(menu, info,
             MENU_ENUM_LABEL_NETPLAY,
             PARSE_ACTION, false);
 #endif
 
+#ifdef HAVE_LAKKA
+      if (show_advanced_settings)
+#endif
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS),
             msg_hash_to_str(MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS),
@@ -2724,12 +2727,18 @@ static int menu_displaylist_parse_load_content_settings(
             MENU_SETTING_ACTION, 0, 0);
 #endif
 
+#ifdef HAVE_LAKKA
+      if (show_advanced_settings)
+#endif
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE),
             msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE),
             MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
             MENU_SETTING_ACTION, 0, 0);
 
+#ifdef HAVE_LAKKA
+      if (show_advanced_settings)
+#endif
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME),
             msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME),
