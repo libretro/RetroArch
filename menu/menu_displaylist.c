@@ -2994,7 +2994,7 @@ static int menu_displaylist_parse_netplay_room_list(
    if (netplay_room_count > 0)
    {
       unsigned i;
-      for (i = 0; i < netplay_room_count; i++)
+      for (i = 0; i < (unsigned)netplay_room_count; i++)
       {
          char s[PATH_MAX_LENGTH];
 
