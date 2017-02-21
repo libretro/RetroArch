@@ -685,6 +685,7 @@ bool netplay_pre_frame(netplay_t *netplay)
 
       /* NAT traversal if applicable */
       if (netplay->nat_traversal &&
+          !netplay->nat_traversal_task_oustanding &&
           netplay->nat_traversal_state.request_outstanding &&
           !netplay->nat_traversal_state.have_inet4)
       {
@@ -1198,7 +1199,10 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          ret = netplay_disconnect(netplay_data);
          goto done;
       case RARCH_NETPLAY_CTL_FINISHED_NAT_TRAVERSAL:
+         netplay_data->nat_traversal_task_oustanding = false;
+#ifndef HAVE_SOCKET_LEGACY
          netplay_announce_nat_traversal(netplay_data);
+#endif
          goto done;
       default:
       case RARCH_NETPLAY_CTL_NONE:

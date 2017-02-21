@@ -344,7 +344,7 @@ struct netplay
    uint16_t tcp_port;
 
    /* NAT traversal info (if NAT traversal is used and serving) */
-   bool nat_traversal;
+   bool nat_traversal, nat_traversal_task_oustanding;
    struct natt_status nat_traversal_state;
 
    struct delta_frame *buffer;
