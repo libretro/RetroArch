@@ -368,7 +368,7 @@ static void open_document_handler(ui_browser_window_state_t *state, bool result)
     if (core_name)
     {
         content_ctx_info_t content_info = {0};
-        task_push_content_load_content_with_current_core_from_companion_ui(
+        task_push_load_content_with_current_core_from_companion_ui(
                 NULL,
                 &content_info,
                 CORE_TYPE_PLAIN,
