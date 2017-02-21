@@ -25,7 +25,6 @@
 #include <queues/message_queue.h>
 #include <queues/task_queue.h>
 #include <formats/image.h>
-#include <net/net_natt.h>
 
 #include "../content.h"
 #include "../core_type.h"
@@ -97,8 +96,7 @@ bool task_push_netplay_lan_scan(void);
 bool task_push_netplay_crc_scan(uint32_t crc, char* name,
       const char *hostname, const char *corename);
 
-bool task_push_netplay_nat_traversal(struct natt_status *nat_traversal_state,
-      uint16_t port);
+bool task_push_netplay_nat_traversal(void *nat_traversal_state, uint16_t port);
 
 #endif
 
