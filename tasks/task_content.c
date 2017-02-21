@@ -1003,6 +1003,79 @@ static void task_push_content_update_firmware_status(
    core_info_list_update_missing_firmware(&firmware_info);
 }
 
+bool task_push_content_load_nothing_with_dummy_core(content_ctx_info_t *content_info)
+{
+   content_information_ctx_t content_ctx;
+  
+   bool loading_from_menu                     = false;
+   char *error_string                         = NULL;
+   settings_t *settings                       = config_get_ptr();
+
+   if (!content_info)
+      return false;
+   content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
+   content_ctx.bios_is_missing                = runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL);
+   content_ctx.history_list_enable            = false;
+   content_ctx.directory_system               = NULL;
+   content_ctx.directory_cache                = NULL;
+   content_ctx.valid_extensions               = NULL;
+   content_ctx.block_extract                  = false;
+   content_ctx.need_fullpath                  = false;
+   content_ctx.set_supports_no_game_enable    = false;
+
+   content_ctx.subsystem.data                 = NULL;
+   content_ctx.subsystem.size                 = 0;
+
+   if (settings)
+   {
+      content_ctx.history_list_enable         = settings->history_list_enable;
+
+      if (!string_is_empty(settings->directory.system))
+         content_ctx.directory_system         = strdup(settings->directory.system);
+   }
+
+#ifdef HAVE_MENU
+   if (!content_info->environ_get)
+      content_info->environ_get = menu_content_environment_get;
+#endif
+
+   /* Clear content path */
+   path_clear(RARCH_PATH_CONTENT);
+
+   /* Preliminary stuff that has to be done before we
+    * load the actual content. Can differ per mode. */
+   runloop_ctl(RUNLOOP_CTL_STATE_FREE, NULL);
+#ifdef HAVE_MENU
+   menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
+#endif
+   runloop_ctl(RUNLOOP_CTL_DATA_DEINIT, NULL);
+   runloop_ctl(RUNLOOP_CTL_TASK_INIT, NULL);
+
+   /* Load content */
+   if (!task_load_content(content_info, &content_ctx,
+            loading_from_menu, CONTENT_MODE_LOAD_NONE, &error_string))
+      goto error;
+
+   if (content_ctx.directory_system)
+      free(content_ctx.directory_system);
+
+   return true;
+
+error:
+
+   if (error_string)
+   {
+      runloop_msg_queue_push(error_string, 2, 90, true);
+      RARCH_ERR(error_string);
+      free(error_string);
+   }
+
+   if (content_ctx.directory_system)
+      free(content_ctx.directory_system);
+
+   return false;
+}
+
 bool task_push_content_load_default(
       const char *core_path,
       const char *fullpath,
@@ -1078,7 +1151,6 @@ bool task_push_content_load_default(
       case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI:
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_COMPANION_UI:
-      case CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE:
 #ifdef HAVE_MENU
          if (!content_info->environ_get)
             content_info->environ_get = menu_content_environment_get;
@@ -1091,7 +1163,6 @@ bool task_push_content_load_default(
    /* Clear content path */
    switch (mode)
    {
-      case CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE:
       case CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_NOTHING_WITH_VIDEO_PROCESSOR_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
@@ -1195,14 +1266,6 @@ bool task_push_content_load_default(
     * load the actual content. Can differ per mode. */
    switch (mode)
    {
-      case CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE:
-         runloop_ctl(RUNLOOP_CTL_STATE_FREE, NULL);
-#ifdef HAVE_MENU
-         menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
-#endif
-         runloop_ctl(RUNLOOP_CTL_DATA_DEINIT, NULL);
-         runloop_ctl(RUNLOOP_CTL_TASK_INIT, NULL);
-         break;
       case CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU:
          retroarch_set_current_core_type(type, true);
@@ -1224,11 +1287,6 @@ bool task_push_content_load_default(
    /* Load content */
    switch (mode)
    {
-      case CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE:
-         if (!task_load_content(content_info, &content_ctx,
-                  loading_from_menu, mode, &error_string))
-            goto error;
-         break;
       case CONTENT_MODE_LOAD_FROM_CLI:
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
       case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
