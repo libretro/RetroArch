@@ -92,6 +92,8 @@ static unsigned to_menu_pipeline(
          return 8 + (type == MENU_DISPLAY_PRIM_TRIANGLESTRIP);
       case VIDEO_SHADER_MENU_4:
          return 10 + (type == MENU_DISPLAY_PRIM_TRIANGLESTRIP);
+      case VIDEO_SHADER_MENU_5:
+         return 12 + (type == MENU_DISPLAY_PRIM_TRIANGLESTRIP);
       default:
          return 0;
    }
@@ -121,7 +123,7 @@ static void menu_display_vk_draw_pipeline(void *data)
    vk_t *vk                      = (vk_t*)video_driver_get_ptr(false);
    video_coord_array_t *ca       = NULL;
 
-   static uint8_t ubo_scratch_data[512];
+   static uint8_t ubo_scratch_data[768];
    static float t                = 0.0f;
    static struct video_coords blank_coords;
 
@@ -152,6 +154,7 @@ static void menu_display_vk_draw_pipeline(void *data)
       /* Snow simple */
       case VIDEO_SHADER_MENU_3:
       case VIDEO_SHADER_MENU_4:
+      case VIDEO_SHADER_MENU_5:
          draw->pipeline.backend_data      = ubo_scratch_data;
          draw->pipeline.backend_data_size = sizeof(math_matrix_4x4) + 3 * sizeof(float);
 
@@ -229,6 +232,7 @@ static void menu_display_vk_draw(void *data)
       case VIDEO_SHADER_MENU_2:
       case VIDEO_SHADER_MENU_3:
       case VIDEO_SHADER_MENU_4:
+      case VIDEO_SHADER_MENU_5:
       {
          const struct vk_draw_triangles call = {
             vk->display.pipelines[
@@ -244,8 +248,6 @@ static void menu_display_vk_draw(void *data)
          break;
       }
 
-      /* Not implemented yet. */
-      case VIDEO_SHADER_MENU_5:
          break;
 #endif
 
