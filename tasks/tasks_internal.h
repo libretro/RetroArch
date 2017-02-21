@@ -154,8 +154,6 @@ bool task_push_content_load_content_with_new_core_from_companion_ui(
       const char *core_path,
       const char *fullpath,
       content_ctx_info_t *content_info,
-      enum rarch_core_type type,
-      enum content_mode_load mode,
       retro_task_callback_t cb,
       void *user_data);
    
