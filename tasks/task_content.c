@@ -1074,7 +1074,7 @@ error:
    return false;
 }
 
-bool task_push_content_load_content_from_playlist_from_menu(
+bool task_push_load_content_from_playlist_from_menu(
       const char *core_path,
       const char *fullpath,
       content_ctx_info_t *content_info,
@@ -1274,7 +1274,7 @@ bool task_push_load_new_core(
    return true;
 }
 
-bool task_push_content_load_content_with_new_core_from_menu(
+bool task_push_load_content_with_new_core_from_menu(
       const char *core_path,
       const char *fullpath,
       content_ctx_info_t *content_info,
@@ -1444,21 +1444,6 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
    return true;
 }
 
-static bool task_loading_from_menu(enum content_mode_load mode)
-{
-   switch (mode)
-   {
-      case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU:
-      case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
-      case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
-         return true;
-      default:
-         break;
-   }
-
-   return false;
-}
-
 bool task_push_content_load_content_with_new_core_from_companion_ui(
       const char *core_path,
       const char *fullpath,
@@ -1565,45 +1550,23 @@ bool task_push_load_content_with_current_core_from_companion_ui(
    return true;
 }
 
-bool task_push_content_load_default(
-      const char *core_path,
+bool task_push_load_content_with_core_from_menu(
       const char *fullpath,
       content_ctx_info_t *content_info,
       enum rarch_core_type type,
-      enum content_mode_load mode,
       retro_task_callback_t cb,
       void *user_data)
 {
    /* Set content path */
-   switch (mode)
-   {
-      case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU:
-      case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
-      case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
-         path_set(RARCH_PATH_CONTENT, fullpath);
-         break;
-      default:
-         break;
-   }
+   path_set(RARCH_PATH_CONTENT, fullpath);
 
    /* Load content */
-   switch (mode)
+   if (!task_load_content_callback(content_info, true, false))
    {
-      case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU:
-      case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
-      case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
-         if (!task_load_content_callback(content_info, true, false))
-         {
 #ifdef HAVE_MENU
-            if (task_loading_from_menu(mode))
-               rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
+      rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
 #endif
-            return false;
-         }
-         break;
-      case CONTENT_MODE_LOAD_NONE:
-      default:
-         break;
+      return false;
    }
 
    /* Push quick menu onto menu stack */

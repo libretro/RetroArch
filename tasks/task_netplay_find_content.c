@@ -62,7 +62,7 @@ static void netplay_crc_scan_callback(void *task_data,
        !string_is_equal(state->content_path, "N/A"))
    {
       command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
-      task_push_content_load_content_with_new_core_from_menu(
+      task_push_load_content_with_new_core_from_menu(
             state->core_path, state->content_path,
             &content_info,
             CORE_TYPE_PLAIN,
