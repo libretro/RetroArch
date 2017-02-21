@@ -252,7 +252,6 @@ static bool load_dynamic_core(void)
    RARCH_ERR("Error(s): %s\n", dylib_error());
 
    runloop_msg_queue_push(msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE), 1, 180, true);
-   retroarch_fail(1, "load_dynamic_core()");
 
    return false;
 }
