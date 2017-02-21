@@ -1560,40 +1560,41 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "Wird dieser Wert erhöht, verbessert sich \n"
                "die Leistung, die Latenz erhöht sich jedoch.");
-        case MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE:
-            snprintf(s, len,
-                     "Legt fest, ob Netplay-Spiele öffentlich angekündigt werden. \n"
-                             " \n"
-                             "Wenn diese Option deaktiviert ist, müssen sich Clients manuell \n"
-                             "verbinden und können die öffentliche Lobby nicht verwenden.");
-            break;
-        case MENU_ENUM_LABEL_NETPLAY_START_AS_SPECTATOR:
-            snprintf(s, len,
-                     "Legt fest, ob Netplay im Beobachtermodus gestartet wird. \n"
-                             " \n"
-                             "Wenn diese Option aktiviert ist, wird Netplay im \n"
-                             "Beobachtermodus starten. Es ist jederzeit möglich, \n"
-                             "den Modus zu ändern.");
-            break;
-        case MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE: /* Maybe FIXME*/
-            snprintf(s, len,
-                     "Legt fest, ob Netplay in einem Modus laufen soll, der keine\n"
-                             "Savestates benötigt. \n"
-                             " \n"
-                             "Wenn diese Option eingeschaltet wird, wird ein sehr \n"
-                             "schnelles Netzwerk benötigt. Da kein Rücklauf benötigt wird, \n"
-                             "tritt keine Netplay-Verzögerung auf.\n");
-            break;
+         break;
+      case MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE:
+         snprintf(s, len,
+               "Legt fest, ob Netplay-Spiele öffentlich angekündigt werden. \n"
+               " \n"
+               "Wenn diese Option deaktiviert ist, müssen sich Clients manuell \n"
+               "verbinden und können die öffentliche Lobby nicht verwenden.");
+         break;
+      case MENU_ENUM_LABEL_NETPLAY_START_AS_SPECTATOR:
+         snprintf(s, len,
+               "Legt fest, ob Netplay im Beobachtermodus gestartet wird. \n"
+               " \n"
+               "Wenn diese Option aktiviert ist, wird Netplay im \n"
+               "Beobachtermodus starten. Es ist jederzeit möglich, \n"
+               "den Modus zu ändern.");
+         break;
+      case MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE: /* Maybe FIXME*/
+         snprintf(s, len,
+               "Legt fest, ob Netplay in einem Modus laufen soll, der keine\n"
+               "Savestates benötigt. \n"
+               " \n"
+               "Wenn diese Option eingeschaltet wird, wird ein sehr \n"
+               "schnelles Netzwerk benötigt. Da kein Rücklauf benötigt wird, \n"
+               "tritt keine Netplay-Verzögerung auf.\n");
+         break;
          break;
       case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
          {
             /* Work around C89 limitations */
             char u[501];
             const char *t =
-                  "Die Frequenz in Einzelbildern, mit der Netplay \n"
-                  "sicherstellen wird, dass Host und Clients \n"
-                  "synchronisiert sind. \n"
-                  " \n";
+               "Die Frequenz in Einzelbildern, mit der Netplay \n"
+               "sicherstellen wird, dass Host und Clients \n"
+               "synchronisiert sind. \n"
+               " \n";
             snprintf(u, sizeof(u),
                   "Bei den meisten Cores wird diese Einstellungen \n"
                   "keine sichtbaren Auswirkungen haben und kann ignoriert werden. \n"
@@ -1608,31 +1609,31 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
             strlcat(s, u, len);
          }
          break;
-        case MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN:
-            snprintf(s, len,
-                     "Legt die Eingabeverzögerung in Einzelbildern fest, \n"
-                     "die Netplay verwendet, um die Netzwerklatenz zu verstecken. \n"
-                     " \n"
-                     "In einem Multiplayer-Spiel verzögert diese Option die lokale \n"
-                     "Eingabe, sodass das aktuelle Einzelbild \n"
-                     "näher an dem Einzelbild liegt, welches vom Netzwerk \n"
-                     "empfangen wird. Dies verbessert die Netplay-Performance \n"
-                     "und  benötigt weniger CPU-Leistung, verursacht \n"
-                     "jedoch eine spürbare Eingabe-Verzögerung. \n");
-            break;
-        case MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE:
-            snprintf(s, len,
-                     "Legt den Bereich in Einzelbildern fest, die von \n"
-                     "Netplay für die Eingabeverzögerung verwendet werden, \n"
-                     "um die Netzwerklatenz zu verstecken. \n"
-                     "\n"
-                     "Wenn aktiviert, wird Netplay die Eingabeverzögerung \n"
-                     "in Einzelbildern dynamisch anpassen, um \n"
-                     "die CPU-Zeit, Eingabeverzögerung und \n"
-                     "Netzwerklatenz auszubalancieren. Dies verbessert \n"
-                     "die Netplay-Performance und benötigt weniger CPU-Leistung, \n"
-                     "verursacht jedoch eine Eingabe-Verzögerung, die nicht vorhergesagt werden kann. \n");
-            break;
+      case MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN:
+         snprintf(s, len,
+               "Legt die Eingabeverzögerung in Einzelbildern fest, \n"
+               "die Netplay verwendet, um die Netzwerklatenz zu verstecken. \n"
+               " \n"
+               "In einem Multiplayer-Spiel verzögert diese Option die lokale \n"
+               "Eingabe, sodass das aktuelle Einzelbild \n"
+               "näher an dem Einzelbild liegt, welches vom Netzwerk \n"
+               "empfangen wird. Dies verbessert die Netplay-Performance \n"
+               "und  benötigt weniger CPU-Leistung, verursacht \n"
+               "jedoch eine spürbare Eingabe-Verzögerung. \n");
+         break;
+      case MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE:
+         snprintf(s, len,
+               "Legt den Bereich in Einzelbildern fest, die von \n"
+               "Netplay für die Eingabeverzögerung verwendet werden, \n"
+               "um die Netzwerklatenz zu verstecken. \n"
+               "\n"
+               "Wenn aktiviert, wird Netplay die Eingabeverzögerung \n"
+               "in Einzelbildern dynamisch anpassen, um \n"
+               "die CPU-Zeit, Eingabeverzögerung und \n"
+               "Netzwerklatenz auszubalancieren. Dies verbessert \n"
+               "die Netplay-Performance und benötigt weniger CPU-Leistung, \n"
+               "verursacht jedoch eine Eingabe-Verzögerung, die nicht vorhergesagt werden kann. \n");
+         break;
       case MENU_ENUM_LABEL_NETPLAY_NAT_TRAVERSAL:
          snprintf(s, len,
                "Versuche, beim Hosten eines Spiels auf eingehende \n"
@@ -1662,10 +1663,10 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Zeigt das aktuelle Datum/die aktuelle Zeit im Menü an.");
          break;
-        case MENU_ENUM_LABEL_BATTERY_LEVEL_ENABLE:
-            snprintf(s, len,
-                "Zeigt den aktuellen Ladezustand des Akkus im Menü an.");
-            break;
+      case MENU_ENUM_LABEL_BATTERY_LEVEL_ENABLE:
+         snprintf(s, len,
+               "Zeigt den aktuellen Ladezustand des Akkus im Menü an.");
+         break;
       case MENU_ENUM_LABEL_CORE_ENABLE:
          snprintf(s, len,
                "Zeigt den aktuellen Core im Menü an.");
@@ -1682,10 +1683,10 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Bestehende Netplay-Verbindung beenden.");
          break;
-        case MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS:
-            snprintf(s, len,
+      case MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS:
+         snprintf(s, len,
                "Suche nach einem Netplay-Host im lokalen Netzwerk und stelle eine Verbindung zu diesem her.");
-            break;
+         break;
       case MENU_ENUM_LABEL_NETPLAY_SETTINGS:
          snprintf(s, len,
                "Netplay-bezogene Einstellungen.");
@@ -1758,17 +1759,17 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Die Addresse des Hosts, zu dem verbunden werden soll.");
          break;
-        case MENU_ENUM_LABEL_NETPLAY_PASSWORD:
-            snprintf(s, len,
-                     "Das Passwort, welches für die Verbindung mit dem Netplay-Host \n"
-                             "verwendet wird. Wird nur im Host-Modus verwendet.");
-            break;
-        case MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD:
-            snprintf(s, len,
-                     "Das Passwort, welches für die Verbindung mit dem Netplay-Host \n"
-                             "und ausschließlich mit Beobachter-Privilegien verwendet wird. \n"
-                             "Wird nur im Host-Modus verwendet.");
-            break;
+      case MENU_ENUM_LABEL_NETPLAY_PASSWORD:
+         snprintf(s, len,
+               "Das Passwort, welches für die Verbindung mit dem Netplay-Host \n"
+               "verwendet wird. Wird nur im Host-Modus verwendet.");
+         break;
+      case MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD:
+         snprintf(s, len,
+               "Das Passwort, welches für die Verbindung mit dem Netplay-Host \n"
+               "und ausschließlich mit Beobachter-Privilegien verwendet wird. \n"
+               "Wird nur im Host-Modus verwendet.");
+         break;
       case MENU_ENUM_LABEL_STDIN_CMD_ENABLE:
          snprintf(s, len,
                "Aktiviere stdin-Kommandozeile.");
