@@ -830,8 +830,6 @@ static bool task_load_content(content_ctx_info_t *content_info,
 
    name[0] = msg[0] = '\0';
 
-   content_get_status(&contentless, &is_inited);
-
    if (!content_load(content_info))
       goto error;
 
@@ -935,7 +933,8 @@ error:
          *error_string = strdup(msg);
       }
    }
-   if (string_is_empty(name)) *error_string = strdup("This core requires a content file.\n");
+   if (string_is_empty(name))
+      *error_string = strdup("This core requires a content file.\n");
    return false;
 }
 
