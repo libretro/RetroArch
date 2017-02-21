@@ -1501,10 +1501,14 @@ bool task_push_load_content_from_cli(
    if (!task_load_content_callback(content_info, true, true))
       return false;
 
+#if 0
+   /* If we launch content from CLI, we might want to push the
+    * Quick Menu here */
    /* Push quick menu onto menu stack */
 #ifdef HAVE_MENU
    if (type != CORE_TYPE_DUMMY)
       menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
+#endif
 #endif
 
    return true;
