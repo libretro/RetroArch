@@ -26,6 +26,10 @@
 #include <queues/task_queue.h>
 #include <formats/image.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include "../content.h"
 #include "../core_type.h"
 #include "../msg_hash.h"
@@ -173,6 +177,7 @@ bool task_push_load_content_with_new_core_from_companion_ui(
       retro_task_callback_t cb,
       void *user_data);
    
+#ifdef HAVE_MENU
 bool task_push_load_content_with_new_core_from_menu(
       const char *core_path,
       const char *fullpath,
@@ -194,6 +199,7 @@ bool task_push_load_content_with_core_from_menu(
       enum rarch_core_type type,
       retro_task_callback_t cb,
       void *user_data);
+#endif
 
 void task_image_load_free(retro_task_t *task);
 

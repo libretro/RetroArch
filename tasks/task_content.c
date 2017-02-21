@@ -1087,6 +1087,7 @@ error:
    return false;
 }
 
+#ifdef HAVE_MENU
 bool task_push_load_content_from_playlist_from_menu(
       const char *core_path,
       const char *fullpath,
@@ -1124,12 +1125,10 @@ bool task_push_load_content_from_playlist_from_menu(
    runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
 
    /* Is content required by this core? */
-#ifdef HAVE_MENU
    if (fullpath)
       menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
    else
       menu_driver_ctl(RARCH_MENU_CTL_SET_LOAD_NO_CONTENT, NULL);
-#endif
 
    /* On targets that have no dynamic core loading support, we'd
     * execute the new core from this point. If this returns false,
@@ -1138,9 +1137,7 @@ bool task_push_load_content_from_playlist_from_menu(
       goto error;
 #ifndef HAVE_DYNAMIC
    runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
-#ifdef HAVE_MENU
    rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
-#endif
 #endif
 
    /* Load core */
@@ -1162,15 +1159,14 @@ error:
       free(error_string);
    }
 
-#ifdef HAVE_MENU
    rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
-#endif
 
    if (content_ctx.directory_system)
       free(content_ctx.directory_system);
 
    return false;
 }
+#endif
 
 bool task_push_start_current_core(content_ctx_info_t *content_info)
 {
@@ -1278,6 +1274,7 @@ bool task_push_load_new_core(
    return true;
 }
 
+#ifdef HAVE_MENU
 bool task_push_load_content_with_new_core_from_menu(
       const char *core_path,
       const char *fullpath,
@@ -1288,7 +1285,6 @@ bool task_push_load_content_with_new_core_from_menu(
 {
    content_information_ctx_t content_ctx;
   
-   bool loading_from_menu                     = false;
    char *error_string                         = NULL;
    settings_t *settings                       = config_get_ptr();
 
@@ -1324,18 +1320,14 @@ bool task_push_load_content_with_new_core_from_menu(
    command_event(CMD_EVENT_LOAD_CORE, NULL);
 
    /* Load content */
-#ifdef HAVE_MENU
-   loading_from_menu = true;
-
    if (!content_info->environ_get)
       content_info->environ_get = menu_content_environment_get;
-#endif
 
    if (task_push_content_update_firmware_status(&content_ctx))
       return true;
 
    if (!task_load_content(content_info, &content_ctx,
-            loading_from_menu, false, &error_string))
+            true, false, &error_string))
    {
       if (error_string)
       {
@@ -1344,9 +1336,7 @@ bool task_push_load_content_with_new_core_from_menu(
          free(error_string);
       }
 
-#ifdef HAVE_MENU
       rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
-#endif
 
       if (content_ctx.directory_system)
          free(content_ctx.directory_system);
@@ -1361,16 +1351,15 @@ bool task_push_load_content_with_new_core_from_menu(
 #endif
 
    /* Push quick menu onto menu stack */
-#ifdef HAVE_MENU
    if (type != CORE_TYPE_DUMMY)
       menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
-#endif
 
    if (content_ctx.directory_system)
       free(content_ctx.directory_system);
 
    return true;
 }
+#endif
 
 static bool task_load_content_callback(content_ctx_info_t *content_info,
       bool loading_from_menu, bool loading_from_cli)
@@ -1536,6 +1525,7 @@ bool task_push_load_content_with_current_core_from_companion_ui(
    return true;
 }
 
+#ifdef HAVE_MENU
 bool task_push_load_content_with_core_from_menu(
       const char *fullpath,
       content_ctx_info_t *content_info,
@@ -1549,20 +1539,17 @@ bool task_push_load_content_with_core_from_menu(
    /* Load content */
    if (!task_load_content_callback(content_info, true, false))
    {
-#ifdef HAVE_MENU
       rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
-#endif
       return false;
    }
 
    /* Push quick menu onto menu stack */
-#ifdef HAVE_MENU
    if (type != CORE_TYPE_DUMMY)
       menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
-#endif
 
    return true;
 }
+#endif
 
 void content_get_status(
       bool *contentless,
