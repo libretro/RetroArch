@@ -1091,7 +1091,7 @@ static int generic_action_ok(const char *path,
 
             flush_type = MENU_SETTINGS;
 
-            if (!task_push_content_load_nothing_with_new_core_from_menu(
+            if (!task_push_load_new_core(
                      action_path, NULL,
                      &content_info,
                      CORE_TYPE_PLAIN,

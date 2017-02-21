@@ -1247,7 +1247,7 @@ error:
    return false;
 }
 
-bool task_push_content_load_nothing_with_new_core_from_menu(
+bool task_push_load_new_core(
       const char *core_path,
       const char *fullpath,
       content_ctx_info_t *content_info,
