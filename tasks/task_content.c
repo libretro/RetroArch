@@ -1391,22 +1391,7 @@ bool task_push_content_load_default(
       retro_task_callback_t cb,
       void *user_data)
 {
-   content_information_ctx_t content_ctx;
-  
    bool loading_from_menu                     = false;
-
-   content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
-   content_ctx.bios_is_missing                = runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL);
-   content_ctx.history_list_enable            = false;
-   content_ctx.directory_system               = NULL;
-   content_ctx.directory_cache                = NULL;
-   content_ctx.valid_extensions               = NULL;
-   content_ctx.block_extract                  = false;
-   content_ctx.need_fullpath                  = false;
-   content_ctx.set_supports_no_game_enable    = false;
-
-   content_ctx.subsystem.data                 = NULL;
-   content_ctx.subsystem.size                 = 0;
 
    /* First we determine if we are loading from a menu */
    switch (mode)
@@ -1500,9 +1485,24 @@ bool task_push_content_load_default(
       case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
          {
+            content_information_ctx_t content_ctx;
+  
             bool ret             = false;
             char *error_string   = NULL;
             settings_t *settings = config_get_ptr();
+
+            content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
+            content_ctx.bios_is_missing                = runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL);
+            content_ctx.history_list_enable            = false;
+            content_ctx.directory_system               = NULL;
+            content_ctx.directory_cache                = NULL;
+            content_ctx.valid_extensions               = NULL;
+            content_ctx.block_extract                  = false;
+            content_ctx.need_fullpath                  = false;
+            content_ctx.set_supports_no_game_enable    = false;
+
+            content_ctx.subsystem.data                 = NULL;
+            content_ctx.subsystem.size                 = 0;
 
             if (settings)
             {
