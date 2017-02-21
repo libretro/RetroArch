@@ -3645,7 +3645,7 @@ static bool menu_displaylist_push_list_process(menu_displaylist_info_t *info)
    if (info->need_sort)
       file_list_sort_on_alt(info->list);
 
-#ifdef HAVE_NETWORKING
+#if defined(HAVE_NETWORKING) && !defined(HAVE_LAKKA)
    if (info->download_core)
    {
       menu_entries_append_enum(info->list,
