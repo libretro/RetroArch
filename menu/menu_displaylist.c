@@ -3011,6 +3011,12 @@ static int menu_displaylist_parse_options(
          msg_hash_to_str(MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST),
          MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST,
          MENU_SETTING_ACTION, 0, 0);
+
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT),
+         msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS),
+         MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS,
+         MENU_SETTING_ACTION, 0, 0);
 #else
 #if !defined(VITA)
    menu_entries_append_enum(info->list,
