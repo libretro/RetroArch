@@ -1432,5 +1432,6 @@ void netplay_announce_nat_traversal(netplay_t *netplay)
 void netplay_init_nat_traversal(netplay_t *netplay)
 {
    memset(&netplay->nat_traversal_state, 0, sizeof(netplay->nat_traversal_state));
+   netplay->nat_traversal_task_oustanding = true;
    task_push_netplay_nat_traversal(&netplay->nat_traversal_state, netplay->tcp_port);
 }
