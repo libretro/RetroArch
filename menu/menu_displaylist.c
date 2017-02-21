@@ -4558,6 +4558,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push    = true;
          break;
       case DISPLAYLIST_MENU_SETTINGS_LIST:
+#ifdef HAVE_LAKKA
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_SHOW_ADVANCED_SETTINGS,
+               PARSE_ONLY_BOOL, false);
+#endif
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_MENU_WALLPAPER,
                PARSE_ONLY_PATH, false);
@@ -4671,11 +4676,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push    = true;
          break;
       case DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST:
+#ifndef HAVE_LAKKA
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_MENU_SETTINGS,   PARSE_ACTION, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_SHOW_ADVANCED_SETTINGS,
                PARSE_ONLY_BOOL, false);
+#endif
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_THREADED_DATA_RUNLOOP_ENABLE,
                PARSE_ONLY_BOOL, false);
@@ -5336,6 +5343,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   MENU_ENUM_LABEL_RECORDING_SETTINGS,   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS,   PARSE_ACTION, false);
+#ifdef HAVE_LAKKA
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MENU_SETTINGS,   PARSE_ACTION, false);
+#endif
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS,   PARSE_ACTION, false);
 #ifdef HAVE_CHEEVOS
