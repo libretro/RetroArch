@@ -227,7 +227,7 @@ no_playlists:
 bool task_push_netplay_crc_scan(uint32_t crc, char* name,
       const char *hostname, const char *core_name)
 {
-   int i;
+   unsigned i;
    core_info_list_t *info      = NULL;
    settings_t        *settings = config_get_ptr();
    retro_task_t          *task = (retro_task_t *)calloc(1, sizeof(*task));
