@@ -18,7 +18,7 @@
 - NET: Fix netplay join for contentless cores 
 - SCANNER: Always add 7z & zip to supported extensions
 - VULKAN: Find supported composite alpha in swapchain
-- VULKAN: Add snow shader pipeline effects
+- VULKAN: Add snow/bokeh shader pipeline effects - at parity with GL now
 - WIIU: Keyboard support 
 - WINDOWS: Logging to file no longer spawns an empty window
 
