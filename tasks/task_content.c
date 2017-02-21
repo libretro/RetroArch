@@ -1002,7 +1002,7 @@ static void task_push_content_update_firmware_status(
    core_info_list_update_missing_firmware(&firmware_info);
 }
 
-bool task_push_content_load_nothing_with_dummy_core(content_ctx_info_t *content_info)
+bool task_push_start_dummy_core(content_ctx_info_t *content_info)
 {
    content_information_ctx_t content_ctx;
   
@@ -1159,8 +1159,7 @@ error:
    return false;
 }
 
-bool task_push_content_load_nothing_with_current_core_from_menu(
-      content_ctx_info_t *content_info)
+bool task_push_start_current_core(content_ctx_info_t *content_info)
 {
    content_information_ctx_t content_ctx;
   

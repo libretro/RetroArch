@@ -1968,7 +1968,7 @@ bool command_event(enum event_command cmd, void *data)
             command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
 
             if (is_inited)
-               if (!task_push_content_load_nothing_with_dummy_core(&content_info))
+               if (!task_push_start_dummy_core(&content_info))
                   return false;
 #ifdef HAVE_DYNAMIC
 #ifdef HAVE_MENU

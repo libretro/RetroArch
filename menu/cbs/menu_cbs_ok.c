@@ -3589,7 +3589,7 @@ static int action_ok_start_core(const char *path,
 {
    content_ctx_info_t content_info = {0};
 
-   if (!task_push_content_load_nothing_with_current_core_from_menu(&content_info))
+   if (!task_push_start_current_core(&content_info))
       return -1;
 
    return 0;

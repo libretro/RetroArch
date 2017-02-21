@@ -146,9 +146,9 @@ bool task_push_content_load_nothing_with_new_core_from_menu(
       retro_task_callback_t cb,
       void *user_data);
 
-bool task_push_content_load_nothing_with_current_core_from_menu(content_ctx_info_t *content_info);
+bool task_push_start_current_core(content_ctx_info_t *content_info);
 
-bool task_push_content_load_nothing_with_dummy_core(content_ctx_info_t *content_info);
+bool task_push_start_dummy_core(content_ctx_info_t *content_info);
 
 bool task_push_content_load_content_with_new_core_from_companion_ui(
       const char *core_path,

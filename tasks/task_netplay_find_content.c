@@ -80,7 +80,7 @@ static void netplay_crc_scan_callback(void *task_data,
             CORE_TYPE_PLAIN,
             NULL, NULL);
 
-      task_push_content_load_nothing_with_current_core_from_menu(&content_info);
+      task_push_start_current_core(&content_info);
    }
    else
    {

@@ -748,7 +748,7 @@ static enum runloop_state runloop_check_state(
       if (runloop_core_shutdown_initiated && settings->load_dummy_on_core_shutdown)
       {
          content_ctx_info_t content_info = {0};
-         if (!task_push_content_load_nothing_with_dummy_core(&content_info))
+         if (!task_push_start_dummy_core(&content_info))
             return RUNLOOP_STATE_QUIT;
 
          /* Loads dummy core instead of exiting RetroArch completely.

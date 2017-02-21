@@ -3379,7 +3379,7 @@ bool config_replace(bool config_save_on_exit, char *path)
    /* Load core in new config. */
    path_clear(RARCH_PATH_CORE);
 
-   if (!task_push_content_load_nothing_with_dummy_core(&content_info))
+   if (!task_push_start_dummy_core(&content_info))
       return false;
 
    return true;
