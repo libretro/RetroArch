@@ -123,6 +123,7 @@ typedef struct content_information_ctx
    bool set_supports_no_game_enable;
    bool patch_is_blocked;
    bool bios_is_missing;
+   bool check_firmware_before_loading;
 
    struct string_list *temporary_content;
 } content_information_ctx_t;
@@ -978,7 +979,6 @@ static bool firmware_update_status(
 {
    char s[PATH_MAX_LENGTH];
    core_info_ctx_firmware_t firmware_info;
-   settings_t *settings       = config_get_ptr();
 
    core_info_t *core_info     = NULL;
 
@@ -1004,7 +1004,7 @@ static bool firmware_update_status(
 
    if(
          content_ctx->bios_is_missing && 
-         settings->check_firmware_before_loading)
+         content_ctx->check_firmware_before_loading)
    {
       runloop_msg_queue_push(msg_hash_to_str(MSG_FIRMWARE), 100, 500, true);
       RARCH_LOG("Load content blocked. Reason:  %s\n", msg_hash_to_str(MSG_FIRMWARE));
@@ -1024,6 +1024,8 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
 
    if (!content_info)
       return false;
+
+   content_ctx.check_firmware_before_loading  = settings->check_firmware_before_loading;
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
    content_ctx.bios_is_missing                = runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.history_list_enable            = false;
@@ -1100,6 +1102,7 @@ bool task_push_load_content_from_playlist_from_menu(
    char *error_string                         = NULL;
    settings_t *settings                       = config_get_ptr();
 
+   content_ctx.check_firmware_before_loading  = settings->check_firmware_before_loading;
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
    content_ctx.bios_is_missing                = runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.history_list_enable            = false;
@@ -1177,6 +1180,8 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
 
    if (!content_info)
       return false;
+
+   content_ctx.check_firmware_before_loading  = settings->check_firmware_before_loading;
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
    content_ctx.bios_is_missing                = runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.history_list_enable            = false;
@@ -1288,6 +1293,7 @@ bool task_push_load_content_with_new_core_from_menu(
    char *error_string                         = NULL;
    settings_t *settings                       = config_get_ptr();
 
+   content_ctx.check_firmware_before_loading  = settings->check_firmware_before_loading;
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
    content_ctx.bios_is_missing                = runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.history_list_enable            = false;
@@ -1370,6 +1376,7 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
    char *error_string                         = NULL;
    settings_t *settings                       = config_get_ptr();
 
+   content_ctx.check_firmware_before_loading  = settings->check_firmware_before_loading;
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
    content_ctx.bios_is_missing                = runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.history_list_enable            = false;
@@ -1618,9 +1625,11 @@ bool content_init(void)
    char *error_string                         = NULL;
    rarch_system_info_t *sys_info              = NULL;
    temporary_content                          = string_list_new();
+   settings_t *settings                       = config_get_ptr();
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &sys_info);
 
+   content_ctx.check_firmware_before_loading  = settings->check_firmware_before_loading;
    content_ctx.temporary_content              = temporary_content;
    content_ctx.history_list_enable            = false;
    content_ctx.directory_system               = NULL;
@@ -1636,8 +1645,6 @@ bool content_init(void)
    
    if (sys_info)
    {
-      settings_t *settings                    = config_get_ptr();
-
       content_ctx.history_list_enable         = settings->history_list_enable;
       content_ctx.set_supports_no_game_enable = settings->set_supports_no_game_enable;
 
