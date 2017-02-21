@@ -1007,7 +1007,6 @@ bool task_push_content_load_nothing_with_dummy_core(content_ctx_info_t *content_
 {
    content_information_ctx_t content_ctx;
   
-   bool loading_from_menu                     = false;
    char *error_string                         = NULL;
    settings_t *settings                       = config_get_ptr();
 
@@ -1053,7 +1052,7 @@ bool task_push_content_load_nothing_with_dummy_core(content_ctx_info_t *content_
 
    /* Load content */
    if (!task_load_content(content_info, &content_ctx,
-            loading_from_menu, CONTENT_MODE_LOAD_NONE, &error_string))
+            false, CONTENT_MODE_LOAD_NONE, &error_string))
       goto error;
 
    if (content_ctx.directory_system)
@@ -1085,7 +1084,6 @@ bool task_push_content_load_content_from_playlist_from_menu(
 {
    content_information_ctx_t content_ctx;
   
-   bool loading_from_menu                     = false;
    char *error_string                         = NULL;
    settings_t *settings                       = config_get_ptr();
 
