@@ -143,36 +143,12 @@ static int action_left_scroll(unsigned type, const char *label,
    return 0;
 }
 
-static int action_left_goto_tab(void)
-{
-   menu_ctx_list_t list_info;
-   size_t selection          = 0;
-   file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-   menu_file_list_cbs_t *cbs  = NULL;
-
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
-
-   cbs                        = 
-      menu_entries_get_actiondata_at_offset(selection_buf,
-            selection);
-
-   list_info.type             = MENU_LIST_HORIZONTAL;
-   list_info.action           = MENU_ACTION_LEFT;
-
-   menu_driver_ctl(RARCH_MENU_CTL_LIST_CACHE, &list_info);
-
-   if (cbs && cbs->action_content_list_switch)
-      return cbs->action_content_list_switch(
-            selection_buf, menu_stack, "", "", 0);
-
-   return 0;
-}
-
 static int action_left_mainmenu(unsigned type, const char *label,
       bool wraparound)
 {
    menu_ctx_list_t list_info;
+   size_t selection          = 0;
+   unsigned        push_list = 0;
    menu_handle_t       *menu  = NULL;
    
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
@@ -188,13 +164,45 @@ static int action_left_mainmenu(unsigned type, const char *label,
    {
       settings_t       *settings = config_get_ptr();
 
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
       if ((list_info.selection != 0)
          || settings->menu.navigation.wraparound.enable)
-         return action_left_goto_tab();
+         push_list = 1;
    }
    else
-      action_left_scroll(0, "", false);
+      push_list = 2;
 
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
+
+
+   switch (push_list)
+   {
+      case 1:
+         {
+            menu_ctx_list_t list_info;
+            file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
+            file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+            menu_file_list_cbs_t *cbs  = 
+               menu_entries_get_actiondata_at_offset(selection_buf,
+                     selection);
+
+            list_info.type   = MENU_LIST_HORIZONTAL;
+            list_info.action = MENU_ACTION_LEFT;
+
+            menu_driver_ctl(RARCH_MENU_CTL_LIST_CACHE, &list_info);
+
+            if (cbs && cbs->action_content_list_switch)
+               return cbs->action_content_list_switch(
+                     selection_buf, menu_stack, "", "", 0);
+         }
+         break;
+      case 2:
+         action_left_scroll(0, "", false);
+         break;
+      case 0:
+      default:
+         break;
+   }
 
    return 0;
 }
