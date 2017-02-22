@@ -106,7 +106,7 @@ static bool natt_open_port(struct natt_status *status,
    int r;
 
    /* if NAT traversal is uninitialized or unavailable, oh well */
-   if (!urls.controlURL[0])
+   if (!urls.controlURL || !urls.controlURL[0])
       return false;
 
    /* figure out the internal info */
