@@ -118,7 +118,7 @@ static bool natt_open_port(struct natt_status *status,
    /* add the port mapping */
    r = UPNP_AddAnyPortMapping(urls.controlURL, data.first.servicetype, port_str,
       port_str, host, "retroarch", proto_str, NULL, "3600", ext_port_str);
-   if (r == 501 /* Action Failed */)
+   if (r != 0)
    {
       /* try the older AddPortMapping */
       memcpy(ext_port_str, port_str, 6);
