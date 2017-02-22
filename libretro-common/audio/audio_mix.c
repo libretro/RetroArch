@@ -110,16 +110,18 @@ void audio_mix_free_chunk(audio_chunk_t *chunk)
 
 audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
 {
-   audio_chunk_t *chunk = (audio_chunk_t*)calloc(1, sizeof(*chunk));
    int sample_size;
+   audio_chunk_t *chunk = (audio_chunk_t*)calloc(1, sizeof(*chunk));
+
+   if (!chunk)
+      return NULL;
 
    chunk->sample_rate = sample_rate;
 
    if (!filestream_read_file(path, &chunk->buf, &chunk->len))
    {
       printf("Could not open WAV file for reading.\n");
-      free(chunk);
-      return NULL;
+      goto error;
    }
 
    chunk->rwav = (rwav_t*)malloc(sizeof(rwav_t));
@@ -127,12 +129,13 @@ audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
    if (rwav_load(chunk->rwav, chunk->buf, chunk->len) == RWAV_ITERATE_ERROR)
    {
       printf("error: could not load WAV file\n");
-      audio_mix_free_chunk(chunk);
-      return NULL;
+      goto error;
    }
 
-   /* numsamples does not know or care about multiple channels, but we need space for 2 */
-   chunk->upsample_buf = (int16_t*)memalign_alloc(128, chunk->rwav->numsamples * 2 * sizeof(int16_t));
+   /* numsamples does not know or care about 
+    * multiple channels, but we need space for 2 */
+   chunk->upsample_buf = (int16_t*)memalign_alloc(128,
+         chunk->rwav->numsamples * 2 * sizeof(int16_t));
 
    sample_size = chunk->rwav->bitspersample / 8;
 
@@ -142,10 +145,11 @@ audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
 
      for (i = 0; i < chunk->rwav->numsamples; i++)
      {
-        uint8_t *sample = ((uint8_t*)chunk->rwav->samples) +
-              (i * chunk->rwav->numchannels);
+        uint8_t *sample                     = (
+              (uint8_t*)chunk->rwav->samples) +
+           (i * chunk->rwav->numchannels);
 
-        chunk->upsample_buf[i * 2] = (int16_t)((sample[0] - 128) << 8);
+        chunk->upsample_buf[i * 2]          = (int16_t)((sample[0] - 128) << 8);
 
         if (chunk->rwav->numchannels == 1)
            chunk->upsample_buf[(i * 2) + 1] = (int16_t)((sample[0] - 128) << 8);
@@ -161,9 +165,9 @@ audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
 
          for (i = 0; i < chunk->rwav->numsamples; i++)
          {
-            int16_t sample = ((int16_t*)chunk->rwav->samples)[i];
+            int16_t sample                   = ((int16_t*)chunk->rwav->samples)[i];
 
-            chunk->upsample_buf[i * 2] = sample;
+            chunk->upsample_buf[i * 2]       = sample;
             chunk->upsample_buf[(i * 2) + 1] = sample;
          }
       }
@@ -174,8 +178,7 @@ audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
    {
       /* we don't support any other sample size besides 8 and 16-bit yet */
       printf("error: we don't support a sample size of %d\n", sample_size);
-      audio_mix_free_chunk(chunk);
-      return NULL;
+      goto error;
    }
 
    if (sample_rate != chunk->rwav->samplerate)
@@ -215,6 +218,10 @@ audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
    }
 
    return chunk;
+
+error:
+   audio_mix_free_chunk(chunk);
+   return NULL;
 }
 
 size_t audio_mix_get_chunk_num_samples(audio_chunk_t *chunk)
