@@ -158,12 +158,7 @@ static int action_right_mainmenu(unsigned type, const char *label,
 {
    menu_ctx_list_t list_info;
    size_t selection          = 0;
-   menu_file_list_cbs_t *cbs = NULL;
    unsigned        push_list = 0;
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-   file_list_t *menu_stack   = menu_entries_get_menu_stack_ptr(0);
-   settings_t      *settings = config_get_ptr();
-   unsigned           action = MENU_ACTION_RIGHT;
 
    menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SELECTION, &list_info);
 
@@ -175,9 +170,10 @@ static int action_right_mainmenu(unsigned type, const char *label,
    {
       menu_ctx_list_t list_horiz_info;
       menu_ctx_list_t list_tabs_info;
+      settings_t      *settings = config_get_ptr();
 
-      list_horiz_info.type = MENU_LIST_HORIZONTAL;
-      list_tabs_info.type  = MENU_LIST_TABS;
+      list_horiz_info.type      = MENU_LIST_HORIZONTAL;
+      list_tabs_info.type       = MENU_LIST_TABS;
 
       menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SIZE, &list_horiz_info);
       menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SIZE, &list_tabs_info);
@@ -193,16 +189,19 @@ static int action_right_mainmenu(unsigned type, const char *label,
 
    menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
 
-   cbs = menu_entries_get_actiondata_at_offset(selection_buf, selection);
 
    switch (push_list)
    {
       case 1:
          {
             menu_ctx_list_t list_info;
+            file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+            file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
+            menu_file_list_cbs_t *cbs  = menu_entries_get_actiondata_at_offset(
+                  selection_buf, selection);
 
             list_info.type   = MENU_LIST_HORIZONTAL;
-            list_info.action = action;
+            list_info.action = MENU_ACTION_RIGHT;
 
             menu_driver_ctl(RARCH_MENU_CTL_LIST_CACHE, &list_info);
 

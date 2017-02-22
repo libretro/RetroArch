@@ -148,13 +148,8 @@ static int action_left_mainmenu(unsigned type, const char *label,
 {
    menu_ctx_list_t list_info;
    size_t selection          = 0;
-   menu_file_list_cbs_t *cbs = NULL;
    unsigned        push_list = 0;
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-   file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
-   settings_t       *settings = config_get_ptr();
    menu_handle_t       *menu  = NULL;
-   unsigned           action  = MENU_ACTION_LEFT;
    
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
@@ -167,6 +162,8 @@ static int action_left_mainmenu(unsigned type, const char *label,
 
    if (list_info.size == 1)
    {
+      settings_t       *settings = config_get_ptr();
+
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
       if ((list_info.selection != 0)
          || settings->menu.navigation.wraparound.enable)
@@ -177,17 +174,20 @@ static int action_left_mainmenu(unsigned type, const char *label,
 
    menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
 
-   cbs = menu_entries_get_actiondata_at_offset(selection_buf,
-         selection);
 
    switch (push_list)
    {
       case 1:
          {
             menu_ctx_list_t list_info;
+            file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
+            file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+            menu_file_list_cbs_t *cbs  = 
+               menu_entries_get_actiondata_at_offset(selection_buf,
+                     selection);
 
             list_info.type   = MENU_LIST_HORIZONTAL;
-            list_info.action = action;
+            list_info.action = MENU_ACTION_LEFT;
 
             menu_driver_ctl(RARCH_MENU_CTL_LIST_CACHE, &list_info);
 
