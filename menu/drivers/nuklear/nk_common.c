@@ -43,6 +43,12 @@ struct nk_user_font usrfnt;
 struct nk_allocator nk_alloc;
 struct nk_device device;
 
+struct nk_vertex {
+   float position[2];
+   float uv[2];
+   nk_byte col[4];
+};
+
 struct nk_image nk_common_image_load(const char *filename)
 {
     int x,y,n;
@@ -79,9 +85,16 @@ void nk_common_device_init(struct nk_device *dev)
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    GLint status;
 
+   /* buffer setup */
+   GLsizei vs = sizeof(struct nk_vertex);
+   size_t vp = offsetof(struct nk_vertex, position);
+   size_t vt = offsetof(struct nk_vertex, uv);
+   size_t vc = offsetof(struct nk_vertex, col);
+
    dev->prog      = glCreateProgram();
    dev->vert_shdr = glCreateShader(GL_VERTEX_SHADER);
    dev->frag_shdr = glCreateShader(GL_FRAGMENT_SHADER);
+
    glShaderSource(dev->vert_shdr, 1, &nuklear_vertex_shader, 0);
    glShaderSource(dev->frag_shdr, 1, &nuklear_fragment_shader, 0);
    glCompileShader(dev->vert_shdr);
@@ -98,29 +111,21 @@ void nk_common_device_init(struct nk_device *dev)
    dev->attrib_uv    = glGetAttribLocation(dev->prog, "TexCoord");
    dev->attrib_col   = glGetAttribLocation(dev->prog, "Color");
 
-   {
-      /* buffer setup */
-      GLsizei vs = sizeof(struct nk_draw_vertex);
-      size_t vp = offsetof(struct nk_draw_vertex, position);
-      size_t vt = offsetof(struct nk_draw_vertex, uv);
-      size_t vc = offsetof(struct nk_draw_vertex, col);
+   glGenBuffers(1, &dev->vbo);
+   glGenBuffers(1, &dev->ebo);
+   glGenVertexArrays(1, &dev->vao);
 
-      glGenBuffers(1, &dev->vbo);
-      glGenBuffers(1, &dev->ebo);
-      glGenVertexArrays(1, &dev->vao);
+   glBindVertexArray(dev->vao);
+   glBindBuffer(GL_ARRAY_BUFFER, dev->vbo);
+   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, dev->ebo);
 
-      glBindVertexArray(dev->vao);
-      glBindBuffer(GL_ARRAY_BUFFER, dev->vbo);
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, dev->ebo);
+   glEnableVertexAttribArray((GLuint)dev->attrib_pos);
+   glEnableVertexAttribArray((GLuint)dev->attrib_uv);
+   glEnableVertexAttribArray((GLuint)dev->attrib_col);
 
-      glEnableVertexAttribArray((GLuint)dev->attrib_pos);
-      glEnableVertexAttribArray((GLuint)dev->attrib_uv);
-      glEnableVertexAttribArray((GLuint)dev->attrib_col);
-
-      glVertexAttribPointer((GLuint)dev->attrib_pos, 2, GL_FLOAT, GL_FALSE, vs, (void*)vp);
-      glVertexAttribPointer((GLuint)dev->attrib_uv, 2, GL_FLOAT, GL_FALSE, vs, (void*)vt);
-      glVertexAttribPointer((GLuint)dev->attrib_col, 4, GL_UNSIGNED_BYTE, GL_TRUE, vs, (void*)vc);
-   }
+   glVertexAttribPointer((GLuint)dev->attrib_pos, 2, GL_FLOAT, GL_FALSE, vs, (void*)vp);
+   glVertexAttribPointer((GLuint)dev->attrib_uv, 2, GL_FLOAT, GL_FALSE, vs, (void*)vt);
+   glVertexAttribPointer((GLuint)dev->attrib_col, 4, GL_UNSIGNED_BYTE, GL_TRUE, vs, (void*)vc);
 
    glBindTexture(GL_TEXTURE_2D, 0);
    glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -165,6 +170,14 @@ void nk_common_device_draw(struct nk_device *dev,
    void                    *vertices = NULL;
    void                    *elements = NULL;
    const nk_draw_index       *offset = NULL;
+   const struct nk_draw_vertex_layout_element vertex_layout[] =
+   {
+      {NK_VERTEX_POSITION, NK_FORMAT_FLOAT, NK_OFFSETOF(struct nk_vertex, position)},
+      {NK_VERTEX_TEXCOORD, NK_FORMAT_FLOAT, NK_OFFSETOF(struct nk_vertex, uv)},
+      {NK_VERTEX_COLOR, NK_FORMAT_R8G8B8A8, NK_OFFSETOF(struct nk_vertex, col)},
+      {NK_VERTEX_LAYOUT_END}
+   };
+
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    GLint last_tex;
    GLint last_ebo, last_vbo, last_vao;
@@ -222,6 +235,8 @@ void nk_common_device_draw(struct nk_device *dev,
    config.shape_AA             = AA;
    config.line_AA              = AA;
    config.circle_segment_count = 22;
+   config.vertex_layout        = vertex_layout;
+   config.vertex_size          = sizeof(struct nk_vertex);
 #if 0
    config.line_thickness       = 1.0f;
 #endif

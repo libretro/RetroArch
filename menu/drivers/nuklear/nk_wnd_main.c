@@ -71,7 +71,7 @@ void nk_wnd_main(nk_menu_handle_t *nk, const char* title)
    }
 
 
-   if (nk_begin(ctx, &layout, title, nk_rect(240, 10, 600, 400),
+   if (nk_begin(ctx, title, nk_rect(240, 10, 600, 400),
          NK_WINDOW_CLOSABLE|NK_WINDOW_MINIMIZABLE|NK_WINDOW_MOVABLE|
          NK_WINDOW_SCALABLE|NK_WINDOW_BORDER))
    {
@@ -79,7 +79,7 @@ void nk_wnd_main(nk_menu_handle_t *nk, const char* title)
       nk_label(ctx,"Core:", NK_TEXT_LEFT);
       nk_layout_row(ctx, NK_DYNAMIC, 30, 3, ratio);
       nk_edit_string(ctx, NK_EDIT_SIMPLE, core_basename, &len_core, 64, nk_filter_default);
-      if (nk_button_text(ctx, "...", 3, NK_BUTTON_DEFAULT))
+      if (nk_button_text(ctx, "...", 3))
       {
          out = core;
          strlcpy(picker_title, "Select core", sizeof(picker_title));
@@ -91,7 +91,7 @@ void nk_wnd_main(nk_menu_handle_t *nk, const char* title)
       nk_label(ctx,"Content:", NK_TEXT_LEFT);
       nk_layout_row(ctx, NK_DYNAMIC, 30, 3, ratio);
       nk_edit_string(ctx, NK_EDIT_SIMPLE, content, &len_content, 64, nk_filter_default);
-      if (nk_button_text(ctx, "...", 3, NK_BUTTON_DEFAULT))
+      if (nk_button_text(ctx, "...", 3))
       {
          out = content;
          strlcpy(picker_title, "Select content", sizeof(picker_title));

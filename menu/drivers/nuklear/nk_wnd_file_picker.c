@@ -88,7 +88,7 @@ bool nk_wnd_file_picker(nk_menu_handle_t *nk, char* title, char* in, char* out, 
    if (!assets_loaded)
       load_icons(nk);
 
-   if (nk_begin(ctx, &layout, title, nk_rect(10, 10, 500, 400),
+   if (nk_begin(ctx, title, nk_rect(10, 10, 500, 400),
          NK_WINDOW_CLOSABLE|NK_WINDOW_MINIMIZABLE|NK_WINDOW_MOVABLE|
          NK_WINDOW_BORDER))
    {
@@ -97,7 +97,7 @@ bool nk_wnd_file_picker(nk_menu_handle_t *nk, char* title, char* in, char* out, 
       if (drives->size == 0)
       {
          if(nk_button_image_label(ctx, icons.disk, "/", 
-            NK_TEXT_CENTERED, NK_BUTTON_DEFAULT))
+            NK_TEXT_CENTERED))
          {
             fill_pathname_join(path, "/",
                   "", sizeof(path));
@@ -109,7 +109,7 @@ bool nk_wnd_file_picker(nk_menu_handle_t *nk, char* title, char* in, char* out, 
          for (i = 0; i < drives->size; i++)
          {
             if(nk_button_image_label(ctx, icons.disk, drives->list[i].path, 
-               NK_TEXT_CENTERED, NK_BUTTON_DEFAULT))
+               NK_TEXT_CENTERED))
             {
                fill_pathname_join(path, drives->list[i].path,
                      "", sizeof(path));
@@ -125,7 +125,7 @@ bool nk_wnd_file_picker(nk_menu_handle_t *nk, char* title, char* in, char* out, 
          {
             if (nk_button_image_label(ctx, path_is_directory(files->elems[i].data) ? 
                icons.folder : icons.file, path_basename(files->elems[i].data), 
-               NK_TEXT_RIGHT, NK_BUTTON_DEFAULT))
+               NK_TEXT_RIGHT))
             {
                strlcpy (path, files->elems[i].data, sizeof(path));
                if (path_is_directory (path))
@@ -135,7 +135,7 @@ bool nk_wnd_file_picker(nk_menu_handle_t *nk, char* title, char* in, char* out, 
       }
       nk_layout_row_dynamic(ctx, 30, 1);
       {
-         if (nk_button_text(ctx, "OK", 2, NK_BUTTON_DEFAULT))
+         if (nk_button_text(ctx, "OK", 2))
          {
             ret = true;
             strlcpy(out, path, sizeof(path));
