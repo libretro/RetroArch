@@ -25,15 +25,17 @@
 #include <string.h>
 #include <math.h>
 
-/*---------------------------------------------------------------------------*/
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
+#ifdef HAVE_STB_VORBIS
 #define STB_VORBIS_NO_PUSHDATA_API
 #define STB_VORBIS_NO_STDIO
 #define STB_VORBIS_NO_CRT
 
-#undef NULL
-
 #include "../deps/stb/stb_vorbis.h"
-/*---------------------------------------------------------------------------*/
+#endif
 
 #define AUDIO_MIXER_MAX_VOICES      8
 #define AUDIO_MIXER_TEMP_OGG_BUFFER 8192
@@ -55,12 +57,14 @@ struct audio_mixer_sound_t
          const float* pcm;
       } wav;
       
+#ifdef HAVE_STB_VORBIS
       struct
       {
          /* ogg */
          unsigned size;
          const void* data;
       } ogg;
+#endif
    } types;
 };
 
@@ -80,6 +84,7 @@ struct audio_mixer_voice_t
          unsigned position;
       } wav;
       
+#ifdef HAVE_STB_VORBIS
       struct
       {
          /* ogg */
@@ -92,6 +97,7 @@ struct audio_mixer_voice_t
          float       ratio;
          const retro_resampler_t* resampler;
       } ogg;
+#endif
    } types;
 };
 
@@ -281,6 +287,7 @@ audio_mixer_sound_t* audio_mixer_load_wav(const char* path)
 
 audio_mixer_sound_t* audio_mixer_load_ogg(const char* path)
 {
+#ifdef HAVE_STB_VORBIS
    ssize_t size;
    void* buffer               = NULL;
    audio_mixer_sound_t* sound = NULL;
@@ -301,14 +308,24 @@ audio_mixer_sound_t* audio_mixer_load_ogg(const char* path)
    sound->types.ogg.data = buffer;
    
    return sound;
+#else
+   return NULL;
+#endif
 }
 
 void audio_mixer_destroy(audio_mixer_sound_t* sound)
 {
-   if (sound->type == AUDIO_MIXER_TYPE_WAV)
-      memalign_free((void*)sound->types.wav.pcm);
-   else if (sound->type == AUDIO_MIXER_TYPE_OGG)
-      memalign_free((void*)sound->types.ogg.data);
+   switch (sound->type)
+   {
+      case AUDIO_MIXER_TYPE_WAV:
+         memalign_free((void*)sound->types.wav.pcm);
+         break;
+      case AUDIO_MIXER_TYPE_OGG:
+#ifdef HAVE_STB_VORBIS
+         memalign_free((void*)sound->types.ogg.data);
+#endif
+         break;
+   }
    
    free(sound);
 }
@@ -327,6 +344,7 @@ static bool audio_mixer_play_wav(audio_mixer_sound_t* sound,
    return true;
 }
 
+#ifdef HAVE_STB_VORBIS
 static bool audio_mixer_play_ogg(
       audio_mixer_sound_t* sound,
       audio_mixer_voice_t* voice,
@@ -387,6 +405,7 @@ static bool audio_mixer_play_ogg(
    voice->types.ogg.position = voice->types.ogg.samples = 0;
    return true;
 }
+#endif
 
 audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound, bool repeat,
       float volume, audio_mixer_stop_cb_t stop_cb)
@@ -399,10 +418,17 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound, bool repeat,
    {
       if (voice->type == AUDIO_MIXER_TYPE_NONE)
       {
-         if (sound->type == AUDIO_MIXER_TYPE_WAV)
-            res = audio_mixer_play_wav(sound, voice, repeat, volume, stop_cb);
-         else if (sound->type == AUDIO_MIXER_TYPE_OGG)
-            res = audio_mixer_play_ogg(sound, voice, repeat, volume, stop_cb);
+         switch (sound->type)
+         {
+            case AUDIO_MIXER_TYPE_WAV:
+               res = audio_mixer_play_wav(sound, voice, repeat, volume, stop_cb);
+               break;
+            case AUDIO_MIXER_TYPE_OGG:
+#ifdef HAVE_STB_VORBIS
+               res = audio_mixer_play_ogg(sound, voice, repeat, volume, stop_cb);
+#endif
+               break;
+         }
          
          break;
       }
@@ -439,10 +465,10 @@ again:
          if (voice->stop_cb)
             voice->stop_cb(voice, AUDIO_MIXER_SOUND_REPEATED);
 
-         buf_free -= pcm_available;
-         pcm_available = sound->types.wav.frames * 2;
-         pcm = sound->types.wav.pcm;
-         voice->types.wav.position = 0;
+         buf_free                  -= pcm_available;
+         pcm_available              = sound->types.wav.frames * 2;
+         pcm                        = sound->types.wav.pcm;
+         voice->types.wav.position  = 0;
          goto again;
       }
 
@@ -460,6 +486,7 @@ again:
    }
 }
 
+#ifdef HAVE_STB_VORBIS
 static void mix_ogg(float* buffer, size_t num_frames, audio_mixer_voice_t* voice)
 {
    int i;
@@ -530,6 +557,7 @@ again:
       voice->types.ogg.samples  -= buf_free;
    }
 }
+#endif
 
 void audio_mixer_mix(float* buffer, size_t num_frames)
 {
@@ -542,8 +570,10 @@ void audio_mixer_mix(float* buffer, size_t num_frames)
    {
       if (voice->type == AUDIO_MIXER_TYPE_WAV)
          mix_wav(buffer, num_frames, voice);
+#ifdef HAVE_STB_VORBIS
       else if (voice->type == AUDIO_MIXER_TYPE_OGG)
          mix_ogg(buffer, num_frames, voice);
+#endif
    }
    
    for (j = 0, sample = buffer; j < num_frames; j++, sample++)
