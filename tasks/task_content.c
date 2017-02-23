@@ -376,6 +376,10 @@ static bool load_content_from_compressed_archive(
    ssize_t new_path_len              = 0;
    bool ret                          = false;
 
+   new_path[0]                       = '\0';
+   new_basedir[0]                    = '\0';
+   attributes.i                      = 0;
+
    RARCH_LOG("Compressed file in case of need_fullpath."
          " Now extracting to temporary directory.\n");
 
@@ -395,7 +399,6 @@ static bool load_content_from_compressed_archive(
 
    new_path[0]    = '\0';
    new_basedir[0] = '\0';
-   attributes.i   = 0;
 
    fill_pathname_join(new_path, new_basedir,
          path_basename(path), sizeof(new_path));
