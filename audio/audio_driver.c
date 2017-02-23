@@ -31,6 +31,7 @@
 #endif
 
 #include "audio_driver.h"
+#include "audio_mixer.h"
 #include "audio_thread_wrapper.h"
 #include "../record/record_driver.h"
 #include "../frontend/frontend_driver.h"
