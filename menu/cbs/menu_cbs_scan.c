@@ -53,13 +53,9 @@ int action_scan_file(const char *path,
    enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
    const char *menu_label         = NULL;
    const char *menu_path          = NULL;
-   menu_handle_t *menu            = NULL;
    settings_t *settings           = config_get_ptr();
 
    fullpath[0]                    = '\0';
-
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return menu_cbs_exit();
 
    menu_entries_get_last_stack(&menu_path, &menu_label, NULL, &enum_idx, NULL);
 
@@ -80,13 +76,9 @@ int action_scan_directory(const char *path,
    enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
    const char *menu_label         = NULL;
    const char *menu_path          = NULL;
-   menu_handle_t *menu            = NULL;
    settings_t *settings           = config_get_ptr();
 
    fullpath[0]                    = '\0';
-
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return menu_cbs_exit();
 
    menu_entries_get_last_stack(&menu_path, &menu_label, NULL, &enum_idx, NULL);
 
