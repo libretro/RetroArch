@@ -32,11 +32,6 @@
 
 #undef NULL
 
-#ifdef __MINGW32__
-#undef __forceinline
-#define __forceinline __inline__ __attribute__((__always_inline__,__gnu_inline__))
-#endif
-
 #include "../deps/stb/stb_vorbis.h"
 /*---------------------------------------------------------------------------*/
 
@@ -527,7 +522,8 @@ again:
    }
    else
    {
-      for ( int i = buf_free; i != 0; --i )
+      int i;
+      for (i = buf_free; i != 0; --i )
          *buffer++ += *pcm++ * volume;
 
       voice->types.ogg.position += buf_free;
