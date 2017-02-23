@@ -3893,8 +3893,12 @@ static bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry)
    info.menu_list = entry->stack;
    info.type      = type;
    info.enum_idx  = enum_idx;
-   strlcpy(info.path,  path,  sizeof(info.path));
-   strlcpy(info.label, label, sizeof(info.label));
+
+   if (!string_is_empty(path))
+      strlcpy(info.path,  path,  sizeof(info.path));
+
+   if (!string_is_empty(label))
+      strlcpy(info.label, label, sizeof(info.label));
 
    if (!info.list)
       return false;
