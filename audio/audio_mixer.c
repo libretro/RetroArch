@@ -117,7 +117,7 @@ static bool wav2float(const rwav_t* wav, float** pcm, size_t* samples_out)
    f                  = (float*)memalign_alloc(16,
          ((*samples_out + 15) & ~15) * sizeof(float));
    
-   if (f == NULL)
+   if (!f)
       return false;
    
    *pcm = f;
@@ -271,15 +271,15 @@ audio_mixer_sound_t* audio_mixer_load_wav(const char* path)
    
    sound = (audio_mixer_sound_t*)malloc(sizeof(audio_mixer_sound_t));
    
-   if (sound == NULL)
+   if (!sound)
    {
       memalign_free((void*)pcm);
       return NULL;
    }
    
-   sound->type = AUDIO_MIXER_TYPE_WAV;
+   sound->type             = AUDIO_MIXER_TYPE_WAV;
    sound->types.wav.frames = samples / 2;
-   sound->types.wav.pcm = pcm;
+   sound->types.wav.pcm    = pcm;
    
    rwav_free(&wav);
    return sound;
@@ -296,7 +296,7 @@ audio_mixer_sound_t* audio_mixer_load_ogg(const char* path)
    
    sound = (audio_mixer_sound_t*)malloc(sizeof(audio_mixer_sound_t));
    
-   if (sound == NULL)
+   if (!sound)
    {
       free(buffer);
       return NULL;
@@ -353,7 +353,7 @@ static bool audio_mixer_play_ogg(
          (const unsigned char*)sound->types.ogg.data,
          sound->types.ogg.size, &res, NULL);
 
-   if (voice->types.ogg.stream == NULL)
+   if (!voice->types.ogg.stream)
       return false;
 
    info = stb_vorbis_get_info(voice->types.ogg.stream);
@@ -382,7 +382,7 @@ static bool audio_mixer_play_ogg(
    voice->types.ogg.buffer         = (float*)memalign_alloc(16,
          ((samples + 15) & ~15) * sizeof(float));
 
-   if (voice->types.ogg.buffer == NULL)
+   if (!voice->types.ogg.buffer)
    {
       voice->types.ogg.resampler->free(voice->types.ogg.resampler_data);
       stb_vorbis_close(voice->types.ogg.stream);
