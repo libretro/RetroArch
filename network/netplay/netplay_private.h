@@ -215,9 +215,21 @@ enum rarch_netplay_connection_mode
 enum rarch_netplay_stall_reason
 {
    NETPLAY_STALL_NONE = 0,
+
+   /* We're so far ahead that we can't read more data without overflowing the
+    * buffer */
    NETPLAY_STALL_RUNNING_FAST,
+
+   /* We're in spectator or slave mode and are running ahead at all */
+   NETPLAY_STALL_SPECTATOR_WAIT,
+
+   /* Our actual execution is catching up with latency-adjusted input frames */
    NETPLAY_STALL_INPUT_LATENCY,
+
+   /* The server asked us to stall */
    NETPLAY_STALL_SERVER_REQUESTED,
+
+   /* We have no connection and must have one to proceed */
    NETPLAY_STALL_NO_CONNECTION
 };
 

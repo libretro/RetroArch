@@ -303,6 +303,11 @@ static bool netplay_poll(void)
          break;
       }
 
+      case NETPLAY_STALL_SPECTATOR_WAIT:
+         if (netplay_data->unread_frame_count > netplay_data->self_frame_count)
+            netplay_data->stall = NETPLAY_STALL_NONE;
+         break;
+
       case NETPLAY_STALL_INPUT_LATENCY:
          /* Just let it recalculate momentarily */
          netplay_data->stall = NETPLAY_STALL_NONE;
@@ -373,6 +378,16 @@ static bool netplay_poll(void)
             }
          }
 
+      }
+
+      /* If we're a spectator, are we ahead at all? */
+      if (!netplay_data->is_server &&
+          (netplay_data->self_mode == NETPLAY_CONNECTION_SPECTATING ||
+           netplay_data->self_mode == NETPLAY_CONNECTION_SLAVE) &&
+          netplay_data->unread_frame_count <= netplay_data->self_frame_count)
+      {
+         netplay_data->stall = NETPLAY_STALL_SPECTATOR_WAIT;
+         netplay_data->stall_time = cpu_features_get_time_usec();
       }
    }
 
