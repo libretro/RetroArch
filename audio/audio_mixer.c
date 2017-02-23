@@ -404,11 +404,8 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound, bool repeat, f
 
 void audio_mixer_stop(audio_mixer_voice_t* voice)
 {
-   if (voice->type == AUDIO_MIXER_TYPE_WAV)
-   {
-      voice->stop_cb(voice, AUDIO_MIXER_SOUND_STOPPED);
-      voice->type = AUDIO_MIXER_TYPE_NONE;
-   }
+   voice->stop_cb(voice, AUDIO_MIXER_SOUND_STOPPED);
+   audio_mixer_destroy(voice->sound);
 }
 
 static void mix_wav(float* buffer, size_t num_frames, audio_mixer_voice_t* voice)
