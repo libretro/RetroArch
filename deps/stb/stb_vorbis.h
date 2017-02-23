@@ -588,8 +588,6 @@ enum STBVorbisError
 #if !(defined(__APPLE__) || defined(MACOSX) || defined(macintosh) || defined(Macintosh))
 #include <malloc.h>
 #endif
-#else
-#define NULL 0
 #endif
 
 #include <retro_inline.h>
