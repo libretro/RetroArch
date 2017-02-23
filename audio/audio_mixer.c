@@ -405,7 +405,6 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound, bool repeat, f
 void audio_mixer_stop(audio_mixer_voice_t* voice)
 {
    voice->stop_cb(voice, AUDIO_MIXER_SOUND_STOPPED);
-   audio_mixer_destroy(voice->sound);
 }
 
 static void mix_wav(float* buffer, size_t num_frames, audio_mixer_voice_t* voice)
@@ -480,8 +479,6 @@ static void mix_ogg(float* buffer, size_t num_frames, audio_mixer_voice_t* voice
             if (voice->stop_cb)
                voice->stop_cb(voice, AUDIO_MIXER_SOUND_FINISHED);
 
-            voice->types.ogg.resampler->free(voice->types.ogg.resampler_data);
-            stb_vorbis_close(voice->types.ogg.stream);
             voice->type = AUDIO_MIXER_TYPE_NONE;
             return;
          }
