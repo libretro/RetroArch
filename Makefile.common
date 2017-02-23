@@ -186,6 +186,7 @@ OBJ += frontend/frontend.o \
        file_path_str.o \
        $(LIBRETRO_COMM_DIR)/hash/rhash.o \
        audio/audio_driver.o \
+       audio/audio_mixer.o \
        input/input_driver.o \
        gfx/video_coord_array.o \
        gfx/video_driver.o \
