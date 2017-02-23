@@ -176,6 +176,8 @@ enum netplay_cmd
 
 #define NETPLAY_CMD_INPUT_BIT_SERVER   (1U<<31)
 #define NETPLAY_CMD_SYNC_BIT_PAUSED    (1U<<31)
+#define NETPLAY_CMD_PLAY_BIT_SLAVE         (1U)
+#define NETPLAY_CMD_MODE_BIT_SLAVE     (1U<<18)
 #define NETPLAY_CMD_MODE_BIT_PLAYING   (1U<<17)
 #define NETPLAY_CMD_MODE_BIT_YOU       (1U<<16)
 
@@ -206,6 +208,7 @@ enum rarch_netplay_connection_mode
    /* Ready: */
    NETPLAY_CONNECTION_CONNECTED, /* Modes above this are connected */
    NETPLAY_CONNECTION_SPECTATING, /* Spectator mode */
+   NETPLAY_CONNECTION_SLAVE, /* Playing in slave mode */
    NETPLAY_CONNECTION_PLAYING /* Normal ready state */
 };
 
@@ -331,9 +334,12 @@ struct netplay
    size_t connections_size;
    struct netplay_connection one_connection; /* Client only */
 
-   /* Bitmap of players with controllers (whether local or remote) (low bit is
-    * player 1) */
+   /* Bitmap of players with controllers (low bit is player 1) */
    uint32_t connected_players;
+
+   /* Bitmap of players playing in slave mode (should be a subset of
+    * connected_players) */
+   uint32_t connected_slaves;
 
    /* Maximum player number */
    uint32_t player_max;
@@ -757,6 +763,13 @@ bool netplay_cmd_stall(netplay_t *netplay,
  * Poll input from the network
  */
 int netplay_poll_net_input(netplay_t *netplay, bool block);
+
+/**
+ * netplay_handle_slaves
+ *
+ * Handle any slave connections
+ */
+void netplay_handle_slaves(netplay_t *netplay);
 
 /**
  * netplay_flip_port

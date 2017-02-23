@@ -55,6 +55,7 @@ void netplay_update_unread_ptr(netplay_t *netplay)
       for (player = 0; player < MAX_USERS; player++)
       {
          if (!(netplay->connected_players & (1<<player))) continue;
+         if ((netplay->connected_slaves & (1<<player))) continue;
          if (netplay->read_frame_count[player] < new_unread_frame_count)
          {
             new_unread_ptr = netplay->read_ptr[player];
