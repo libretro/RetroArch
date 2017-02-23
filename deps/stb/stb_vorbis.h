@@ -3935,8 +3935,10 @@ static int start_decoder(vorb *f)
          for (j=0; j < g->values; ++j)
             g->sorted_order[j] = (uint8) p[j].y;
          // precompute the neighbors
-         for (j=2; j < g->values; ++j) {
-            int low,hi;
+         for (j=2; j < g->values; ++j)
+         {
+            int low = 0;
+            int hi  = 0;
             neighbors(g->Xlist, j, &low,&hi);
             g->neighbors[j][0] = low;
             g->neighbors[j][1] = hi;
@@ -4536,11 +4538,12 @@ static uint32 vorbis_find_page(stb_vorbis *f, uint32 *end, uint32 *last)
 // doing needless I/O would be crazy!
 static int vorbis_analyze_page(stb_vorbis *f, ProbedPage *z)
 {
-   uint8 header[27], lacing[255];
+   uint8 lacing[255];
    uint8 packet_type[255];
    int num_packet, packet_start;
    int i,len;
    uint32 samples;
+   uint8 header[27] = {0};
 
    // record where the page starts
    z->page_start = stb_vorbis_get_file_offset(f);
@@ -5175,8 +5178,8 @@ static void convert_samples_short(int buf_c, short **buffer, int b_offset, int d
 
 int stb_vorbis_get_frame_short(stb_vorbis *f, int num_c, short **buffer, int num_samples)
 {
-   float **output;
-   int len = stb_vorbis_get_frame_float(f, NULL, &output);
+   float **output = {NULL};
+   int len        = stb_vorbis_get_frame_float(f, NULL, &output);
    if (len > num_samples) len = num_samples;
    if (len)
       convert_samples_short(num_c, buffer, 0, f->channels, output, 0, len);

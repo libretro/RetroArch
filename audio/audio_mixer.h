@@ -16,9 +16,11 @@
 #ifndef __AUDIO_MIXER__H
 #define __AUDIO_MIXER__H
 
+#include <stdint.h>
+#include <stddef.h>
+
 #include <boolean.h>
 #include <retro_common_api.h>
-#include <stdint.h>
 
 RETRO_BEGIN_DECLS
 
