@@ -69,8 +69,16 @@ void netplay_update_unread_ptr(netplay_t *netplay)
          new_unread_frame_count = netplay->server_frame_count;
       }
 
-      netplay->unread_ptr = new_unread_ptr;
-      netplay->unread_frame_count = new_unread_frame_count;
+      if (new_unread_frame_count != (uint32_t) -1)
+      {
+         netplay->unread_ptr = new_unread_ptr;
+         netplay->unread_frame_count = new_unread_frame_count;
+      }
+      else
+      {
+         netplay->unread_ptr = netplay->self_ptr;
+         netplay->unread_frame_count = netplay->self_frame_count;
+      }
    }
 }
 
