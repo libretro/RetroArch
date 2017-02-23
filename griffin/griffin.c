@@ -671,6 +671,7 @@ DRIVERS
 #include "../gfx/video_coord_array.c"
 #include "../input/input_driver.c"
 #include "../audio/audio_driver.c"
+#include "../audio/audio_mixer.c"
 #include "../camera/camera_driver.c"
 #include "../location/location_driver.c"
 #include "../driver.c"

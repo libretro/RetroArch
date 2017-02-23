@@ -588,9 +588,9 @@ typedef   signed int    int32;
 #endif
 
 #ifdef STB_VORBIS_CODEBOOK_FLOATS
-typedef float codetype;
+typedef float stb_vorbis_codetype;
 #else
-typedef uint16 codetype;
+typedef uint16 stb_vorbis_codetype;
 #endif
 
 // @NOTE
@@ -620,7 +620,7 @@ typedef struct
    uint8  sequence_p;
    uint8  sparse;
    uint32 lookup_values;
-   codetype *multiplicands;
+   stb_vorbis_codetype *multiplicands;
    uint32 *codewords;
    #ifdef STB_VORBIS_FAST_HUFFMAN_SHORT
     int16  fast_huffman[FAST_HUFFMAN_TABLE_SIZE];
@@ -926,7 +926,7 @@ static void setup_temp_free(vorb *f, void *p, int sz)
 
 #define CRC32_POLY    0x04c11db7   // from spec
 
-static uint32 crc_table[256];
+static uint32 stb_vorbis_crc_table[256];
 static void crc32_init(void)
 {
    int i,j;
@@ -934,13 +934,13 @@ static void crc32_init(void)
    for(i=0; i < 256; i++) {
       for (s=i<<24, j=0; j < 8; ++j)
          s = (s << 1) ^ (s >= (1U<<31) ? CRC32_POLY : 0);
-      crc_table[i] = s;
+      stb_vorbis_crc_table[i] = s;
    }
 }
 
 static __forceinline uint32 crc32_update(uint32 crc, uint8 byte)
 {
-   return (crc << 8) ^ crc_table[byte ^ (crc >> 24)];
+   return (crc << 8) ^ stb_vorbis_crc_table[byte ^ (crc >> 24)];
 }
 
 
@@ -3815,9 +3815,9 @@ static int start_decoder(vorb *f)
             // pre-expand the lookup1-style multiplicands, to avoid a divide in the inner loop
             if (sparse) {
                if (c->sorted_entries == 0) goto skip;
-               c->multiplicands = (codetype *) setup_malloc(f, sizeof(c->multiplicands[0]) * c->sorted_entries * c->dimensions);
+               c->multiplicands = (stb_vorbis_codetype *) setup_malloc(f, sizeof(c->multiplicands[0]) * c->sorted_entries * c->dimensions);
             } else
-               c->multiplicands = (codetype *) setup_malloc(f, sizeof(c->multiplicands[0]) * c->entries        * c->dimensions);
+               c->multiplicands = (stb_vorbis_codetype *) setup_malloc(f, sizeof(c->multiplicands[0]) * c->entries        * c->dimensions);
             if (c->multiplicands == NULL) { setup_temp_free(f,mults,sizeof(mults[0])*c->lookup_values); return error(f, VORBIS_outofmem); }
             len = sparse ? c->sorted_entries : c->entries;
             for (j=0; j < len; ++j) {
@@ -3844,7 +3844,7 @@ static int start_decoder(vorb *f)
          else
 #endif
          {
-            c->multiplicands = (codetype *) setup_malloc(f, sizeof(c->multiplicands[0]) * c->lookup_values);
+            c->multiplicands = (stb_vorbis_codetype *) setup_malloc(f, sizeof(c->multiplicands[0]) * c->lookup_values);
             #ifndef STB_VORBIS_CODEBOOK_FLOATS
             memcpy(c->multiplicands, mults, sizeof(c->multiplicands[0]) * c->lookup_values);
             #else
@@ -5045,23 +5045,31 @@ stb_vorbis * stb_vorbis_open_memory(const unsigned char *data, int len, int *err
 }
 
 #ifndef STB_VORBIS_NO_INTEGER_CONVERSION
+#ifndef PLAYBACK_MONO
 #define PLAYBACK_MONO     1
-#define PLAYBACK_LEFT     2
-#define PLAYBACK_RIGHT    4
+#endif
 
-#define L  (PLAYBACK_LEFT  | PLAYBACK_MONO)
-#define C  (PLAYBACK_LEFT  | PLAYBACK_RIGHT | PLAYBACK_MONO)
-#define R  (PLAYBACK_RIGHT | PLAYBACK_MONO)
+#ifndef PLAYBACK_LEFT
+#define PLAYBACK_LEFT     2
+#endif
+
+#ifndef PLAYBACK_RIGHT
+#define PLAYBACK_RIGHT    4
+#endif
+
+#define STB_VORBIS_L  (PLAYBACK_LEFT  | PLAYBACK_MONO)
+#define STB_VORBIS_C  (PLAYBACK_LEFT  | PLAYBACK_RIGHT | PLAYBACK_MONO)
+#define STB_VORBIS_R  (PLAYBACK_RIGHT | PLAYBACK_MONO)
 
 static int8 channel_position[7][6] =
 {
    { 0 },
-   { C },
-   { L, R },
-   { L, C, R },
-   { L, R, L, R },
-   { L, C, R, L, R },
-   { L, C, R, L, R, C },
+   { STB_VORBIS_C },
+   { STB_VORBIS_L, STB_VORBIS_R },
+   { STB_VORBIS_L, STB_VORBIS_C, STB_VORBIS_R },
+   { STB_VORBIS_L, STB_VORBIS_R, STB_VORBIS_L, STB_VORBIS_R },
+   { STB_VORBIS_L, STB_VORBIS_C, STB_VORBIS_R, STB_VORBIS_L, STB_VORBIS_R },
+   { STB_VORBIS_L, STB_VORBIS_C, STB_VORBIS_R, STB_VORBIS_L, STB_VORBIS_R, STB_VORBIS_C },
 };
 
 

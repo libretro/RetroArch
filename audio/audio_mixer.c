@@ -30,7 +30,6 @@
 #define STB_VORBIS_NO_STDIO
 #define STB_VORBIS_NO_CRT
 
-#define assert( x )
 #undef NULL
 
 #ifdef __MINGW32__
@@ -475,7 +474,9 @@ static void mix_ogg(float* buffer, size_t num_frames, audio_mixer_voice_t* voice
    float volume                     = voice->volume;
    struct resampler_data info       = {0};
    float* pcm                       = NULL;
+#if 0
    const audio_mixer_sound_t* sound = voice->sound;
+#endif
    
    if (voice->types.ogg.position == voice->types.ogg.samples)
    {
