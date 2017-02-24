@@ -22,7 +22,8 @@
 
 RETRO_BEGIN_DECLS
 
-
+bool find_libretro_core(char *fullpath,
+   size_t sizeof_fullpath, char *needle, const char * ext);
 
 RETRO_END_DECLS
 
