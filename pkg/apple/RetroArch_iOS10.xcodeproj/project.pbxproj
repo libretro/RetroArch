@@ -1034,7 +1034,7 @@
 		9204BE291D319EF300BD49DB /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = armv7;
+				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
 				CLANG_CXX_LIBRARY = "libstdc++";
@@ -1107,7 +1107,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS10;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
-				VALID_ARCHS = armv7;
+				VALID_ARCHS = "armv7 arm64";
 				WARNING_CFLAGS = "-Wno-invalid-source-encoding";
 				WRAPPER_EXTENSION = app;
 			};
@@ -1116,7 +1116,7 @@
 		9204BE2A1D319EF300BD49DB /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = armv7;
+				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
 				CLANG_CXX_LIBRARY = "libstdc++";
@@ -1243,7 +1243,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS10;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
-				VALID_ARCHS = armv7;
+				VALID_ARCHS = "armv7 arm64";
 				WARNING_CFLAGS = "-Wno-invalid-source-encoding";
 				WRAPPER_EXTENSION = app;
 			};
