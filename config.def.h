@@ -821,6 +821,12 @@ static const bool netplay_public_announce = true;
 /* Start netplay in spectator mode */
 static const bool netplay_start_as_spectator = false;
 
+/* Allow connections in slave mode */
+static const bool netplay_allow_slaves = true;
+
+/* Require connections only in slave mode */
+static const bool netplay_require_slaves = false;
+
 /* Netplay without savestates/rewind */
 static const bool netplay_stateless_mode = false;
 

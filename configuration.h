@@ -407,6 +407,8 @@ typedef struct settings
       char server[255];
       unsigned port;
       bool start_as_spectator;
+      bool allow_slaves;
+      bool require_slaves;
       bool stateless_mode;
       int check_frames;
       unsigned input_latency_frames_min;
