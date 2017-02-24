@@ -86,7 +86,9 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
       return 0;
 
    menu->menu_state.msg[0]   = '\0';
-   hash                      = msg_hash_calculate(label);
+
+   if (!string_is_empty(label))
+      hash                   = msg_hash_calculate(label);
    iterate_type              = action_iterate_type(hash);
 
    menu_driver_set_binding_state(iterate_type == ITERATE_TYPE_BIND);
