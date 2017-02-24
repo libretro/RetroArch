@@ -250,6 +250,8 @@ int generic_action_ok_displaylist_push(const char *path,
    settings_t            *settings         = config_get_ptr();
    file_list_t           *menu_stack       = menu_entries_get_menu_stack_ptr(0);
 
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return menu_cbs_exit();
 
    new_path_tmp[0] = tmp[0] = parent_dir[0] = action_path[0] = '\0';
 
@@ -281,9 +283,6 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type                 = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE:
-         if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-            return menu_cbs_exit();
-
          if (menu)
          {
             menu_path    = menu->scratch2_buf;
