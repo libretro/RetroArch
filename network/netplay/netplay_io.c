@@ -24,6 +24,7 @@
 
 #include "netplay_private.h"
 
+#include "../../configuration.h"
 #include "../../runloop.h"
 #include "../../tasks/tasks_internal.h"
 
@@ -664,6 +665,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
          uint32_t payload[2];
          uint32_t player = 0;
          bool slave = false;
+         settings_t *settings = config_get_ptr();
 
          /* Check if they requested slave mode */
          if (cmd_size == sizeof(uint32_t))
@@ -683,6 +685,12 @@ static bool netplay_get_cmd(netplay_t *netplay,
             RARCH_ERR("Invalid payload size for NETPLAY_CMD_PLAY.\n");
             return netplay_cmd_nak(netplay, connection);
          }
+
+         /* Check if their slave mode request corresponds with what we allow */
+         if (settings->netplay.require_slaves)
+            slave = true;
+         else if (!settings->netplay.allow_slaves)
+            slave = false;
 
          payload[0] = htonl(netplay->self_frame_count + 1);
 
