@@ -247,7 +247,7 @@ bool netplay_send_cur_input(netplay_t *netplay,
    {
       if (!send_input_frame(netplay, connection, NULL,
             netplay->self_frame_count,
-            (netplay->is_server ?  NETPLAY_CMD_INPUT_BIT_SERVER : 0) | netplay->self_player,
+            (netplay->is_server ? NETPLAY_CMD_INPUT_BIT_SERVER : 0) | netplay->self_player,
             dframe->self_state))
          return false;
    }

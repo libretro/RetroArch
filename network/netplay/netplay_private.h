@@ -42,6 +42,7 @@
 
 #define MAX_SERVER_STALL_TIME_USEC  (5*1000*1000)
 #define MAX_CLIENT_STALL_TIME_USEC  (10*1000*1000)
+#define CATCH_UP_CHECK_TIME_USEC    (500*1000)
 #define MAX_RETRIES                 16
 #define RETRY_MS                    500
 
@@ -478,6 +479,12 @@ struct netplay
 
    /* Opposite of stalling, should we be catching up? */
    bool catch_up;
+
+   /* When did we start falling behind? */
+   retro_time_t catch_up_time;
+
+   /* How far behind did we fall? */
+   uint32_t catch_up_behind;
 
    /* Frequency with which to check CRCs */
    int check_frames;
