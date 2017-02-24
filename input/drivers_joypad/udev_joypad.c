@@ -118,7 +118,7 @@ static void udev_poll_pad(struct udev_joypad *pad, unsigned p)
          switch (events[i].type)
          {
             case EV_KEY:
-               if (code >= BTN_MISC || (code >= KEY_UP && code <= KEY_DOWN))
+               if (code >= 0 && code < KEY_MAX)
                {
                   if (events[i].value)
                      BIT64_SET(pad->buttons, pad->button_bind[code]);
@@ -251,6 +251,15 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
       if (test_bit(i, keybit))
          pad->button_bind[i] = buttons++;
    for (i = BTN_MISC; i < KEY_MAX && buttons < UDEV_NUM_BUTTONS; i++)
+      if (test_bit(i, keybit))
+         pad->button_bind[i] = buttons++;
+   /* The following two ranges are scanned and added after the above
+    * ranges to maintain compatibility with existing key maps.
+    */
+   for (i = 0; i < KEY_UP && buttons < UDEV_NUM_BUTTONS; i++)
+      if (test_bit(i, keybit))
+         pad->button_bind[i] = buttons++;
+   for (i = KEY_DOWN + 1; i < BTN_MISC && buttons < UDEV_NUM_BUTTONS; i++)
       if (test_bit(i, keybit))
          pad->button_bind[i] = buttons++;
    for (i = 0; i < ABS_MISC && axes < NUM_AXES; i++)
