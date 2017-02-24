@@ -245,7 +245,7 @@
 				ORGANIZATIONNAME = RetroArch;
 				TargetAttributes = {
 					96AFAE2416C1D4EA009DE44C = {
-						DevelopmentTeam = R72X3BF4KE;
+						DevelopmentTeam = NAY8P7HNSD;
 						DevelopmentTeamName = "Yoshinobu Sugawara";
 					};
 				};
@@ -466,6 +466,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
+				DEVELOPMENT_TEAM = NAY8P7HNSD;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
@@ -527,6 +528,7 @@
 					"-DHAVE_BTSTACK",
 					"-DHAVE_AVFOUNDATION",
 				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = "armv7 arm64";
@@ -545,6 +547,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
+				DEVELOPMENT_TEAM = NAY8P7HNSD;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
@@ -659,6 +662,7 @@
 					"-DHAVE_BTSTACK",
 					"-DHAVE_AVFOUNDATION",
 				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = "armv7 arm64";
