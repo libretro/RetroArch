@@ -3386,8 +3386,7 @@ no_playlists:
 
 static int menu_displaylist_parse_cores(
       menu_handle_t       *menu,
-      menu_displaylist_info_t *info,
-      enum menu_displaylist_ctl_state type)
+      menu_displaylist_info_t *info)
 {
    size_t i, list_size;
    struct string_list *str_list = NULL;
@@ -6380,7 +6379,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          }
          break;
       case DISPLAYLIST_CORES:
-         if (menu_displaylist_parse_cores(menu, info, type) == 0)
+         if (menu_displaylist_parse_cores(menu, info) == 0)
          {
             info->need_refresh = true;
             info->need_push    = true;

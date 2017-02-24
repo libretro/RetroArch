@@ -949,9 +949,15 @@ static int file_load_with_detect_core_wrapper(
    def_info.s          = menu->deferred_path;
    def_info.len        = sizeof(menu->deferred_path);
 
+   RARCH_LOG("menu_path_new: %s\n", menu_path_new);
+   RARCH_LOG("menu_label: %s\n", menu_label);
+   RARCH_LOG("path: %s\n",       path);
+
    if (menu_content_find_first_core(&def_info, false, new_core_path,
             sizeof(new_core_path)))
       ret = -1;
+
+   RARCH_LOG("new core path: %s\n",       new_core_path);
 
    if (     !is_carchive && !string_is_empty(path)
          && !string_is_empty(menu_path_new))
