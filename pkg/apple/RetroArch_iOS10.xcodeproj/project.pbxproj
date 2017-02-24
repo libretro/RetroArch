@@ -116,7 +116,7 @@
 		0FDA2A911BE1AFA800F2B5DA /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0FDA2A921BE1AFA800F2B5DA /* RetroArch_iOS9-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "RetroArch_iOS9-Info.plist"; path = "/Users/buildbot/buildbot/ios/retroarch/pkg/apple/RetroArch_iOS9-Info.plist"; sourceTree = "<absolute>"; };
 		501232C9192E5FC40063A359 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
-		501232CB192E5FDC0063A359 /* sinc_resampler_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = sinc_resampler_neon.S; path = ../../libretro-common/audio/resampler/drivers/sinc_resampler_neon.S; sourceTree = SOURCE_ROOT; };
+		501232CB192E5FDC0063A359 /* sinc_resampler_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = sinc_resampler_neon.S; path = "../../libretro-common/audio/resampler/drivers/sinc_resampler_neon.S"; sourceTree = SOURCE_ROOT; };
 		501232CD192E5FE30063A359 /* s16_to_float_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = s16_to_float_neon.S; path = "../../libretro-common/audio/conversion/s16_to_float_neon.S"; sourceTree = SOURCE_ROOT; };
 		501881EB184BAD6D006F665D /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		501881ED184BB54C006F665D /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
@@ -441,14 +441,14 @@
 				ORGANIZATIONNAME = RetroArch;
 				TargetAttributes = {
 					503700861ACA18E400A51A37 = {
-						DevelopmentTeam = YLQUB5DVUQ;
+						DevelopmentTeam = UK699V5ZS8;
 					};
 					9204BE091D319EF300BD49DB = {
-						DevelopmentTeam = R72X3BF4KE;
+						DevelopmentTeam = UK699V5ZS8;
 						DevelopmentTeamName = "Yoshinobu Sugawara";
 					};
 					96AFAE2416C1D4EA009DE44C = {
-						DevelopmentTeam = R72X3BF4KE;
+						DevelopmentTeam = UK699V5ZS8;
 						DevelopmentTeamName = "Yoshinobu Sugawara";
 					};
 				};
@@ -623,7 +623,7 @@
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
-                                        "../../deps",
+					../../deps,
 				);
 				INFOPLIST_FILE = "RetroArch_iOS9-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
@@ -652,7 +652,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
-               "-DHAVE_CC_RESAMPLER",
+					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-D__LIBRETRO__",
@@ -679,7 +679,7 @@
 					"-DHAVE_BTSTACK",
 					"-DHAVE_AVFOUNDATION",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch9;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS9;
 				PRODUCT_NAME = RetroArch;
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = armv7;
@@ -704,7 +704,7 @@
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
-                                        "../../deps",
+					../../deps,
 				);
 				INFOPLIST_FILE = "RetroArch_iOS9-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
@@ -734,7 +734,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
-               "-DHAVE_CC_RESAMPLER",
+					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-D__LIBRETRO__",
@@ -786,7 +786,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
-               "-DHAVE_CC_RESAMPLER",
+					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-D__LIBRETRO__",
@@ -814,7 +814,7 @@
 					"-DHAVE_BTSTACK",
 					"-DHAVE_AVFOUNDATION",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch9;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS9;
 				PRODUCT_NAME = RetroArch;
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = armv7;
@@ -833,13 +833,14 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
+				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
-                                        "../../deps",
+					../../deps,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
@@ -869,7 +870,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
-               "-DHAVE_CC_RESAMPLER",
+					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-D__LIBRETRO__",
@@ -893,6 +894,7 @@
 					"-DHAVE_SHADERPIPELINE",
 					"-D_LZMA_UINT32_IS_ULONG",
 				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS6;
 				PRODUCT_NAME = "RetroArch copy";
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = armv7;
@@ -910,13 +912,14 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
+				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
-                                        "../../deps",
+					../../deps,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
@@ -946,7 +949,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
-               "-DHAVE_CC_RESAMPLER",
+					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-D__LIBRETRO__",
@@ -995,7 +998,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
-               "-DHAVE_CC_RESAMPLER",
+					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-D__LIBRETRO__",
@@ -1020,6 +1023,7 @@
 					"-DHAVE_SHADERPIPELINE",
 					"-D_LZMA_UINT32_IS_ULONG",
 				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS6;
 				PRODUCT_NAME = "RetroArch copy";
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = armv7;
@@ -1037,13 +1041,14 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
+				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
-                                        "../../deps",
+					../../deps,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
@@ -1072,7 +1077,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
-               "-DHAVE_CC_RESAMPLER",
+					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-D__LIBRETRO__",
@@ -1099,6 +1104,7 @@
 					"-DHAVE_BTSTACK",
 					"-DHAVE_AVFOUNDATION",
 				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS10;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = armv7;
@@ -1117,13 +1123,14 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
+				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
-                                        "../../deps",
+					../../deps,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
@@ -1153,7 +1160,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
-               "-DHAVE_CC_RESAMPLER",
+					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-D__LIBRETRO__",
@@ -1205,7 +1212,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
-               "-DHAVE_CC_RESAMPLER",
+					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-D__LIBRETRO__",
@@ -1233,6 +1240,7 @@
 					"-DHAVE_BTSTACK",
 					"-DHAVE_AVFOUNDATION",
 				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS10;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = armv7;
@@ -1291,7 +1299,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
-               "-DHAVE_CC_RESAMPLER",
+					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-DHAVE_THREADS",
@@ -1362,7 +1370,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
-               "-DHAVE_CC_RESAMPLER",
+					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-DHAVE_THREADS",
@@ -1399,13 +1407,14 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
+				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
-                                        "../../deps",
+					../../deps,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
@@ -1434,7 +1443,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
-               "-DHAVE_CC_RESAMPLER",
+					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-D__LIBRETRO__",
@@ -1461,6 +1470,7 @@
 					"-DHAVE_BTSTACK",
 					"-DHAVE_AVFOUNDATION",
 				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = armv7;
@@ -1479,13 +1489,14 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
+				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
-                                        "../../deps",
+					../../deps,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
@@ -1515,7 +1526,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
-               "-DHAVE_CC_RESAMPLER",
+					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-D__LIBRETRO__",
@@ -1567,7 +1578,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
-               "-DHAVE_CC_RESAMPLER",
+					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-D__LIBRETRO__",
@@ -1595,6 +1606,7 @@
 					"-DHAVE_BTSTACK",
 					"-DHAVE_AVFOUNDATION",
 				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = armv7;
