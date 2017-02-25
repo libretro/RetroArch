@@ -49,6 +49,8 @@ static dylib_t dwmlib;
 
 static bool dwm_composition_disabled;
 
+static bool console_needs_free;
+
 static void gfx_dwm_shutdown(void)
 {
    if (dwmlib)
@@ -345,11 +347,33 @@ static void frontend_win32_attach_console(void)
 {
 #ifdef _WIN32
 #ifdef _WIN32_WINNT_WINXP
-   AttachConsole(ATTACH_PARENT_PROCESS);
-   AllocConsole();
-   AttachConsole( GetCurrentProcessId()) ;
-   freopen( "CON", "w", stdout );
-   freopen( "CON", "w", stderr );
+
+   /* msys will start the process with FILE_TYPE_PIPE connected.
+    *   cmd will start the process with FILE_TYPE_UNKNOWN connected (since this is subsystem windows application
+    * ... UNLESS stdout/stderr were redirected (then FILE_TYPE_DISK will be connected most likely)
+    * explorer will start the process with NOTHING connected.
+    *
+    * Now, let's not reconnect anything that's already connected.
+    * If any are disconnected, open a console, and connect to them.
+    * In case we're launched from msys or cmd, try attaching to the parent process console first.
+    * Take care to leave a record of what we did, so we can undo it precisely
+    */
+
+   bool need_stdout = (GetFileType(GetStdHandle(STD_OUTPUT_HANDLE)) == FILE_TYPE_UNKNOWN);
+   bool need_stderr = (GetFileType(GetStdHandle(STD_ERROR_HANDLE)) == FILE_TYPE_UNKNOWN);
+
+   if(need_stdout || need_stderr)
+   {
+      if(!AttachConsole( ATTACH_PARENT_PROCESS))
+      {
+         AllocConsole();
+      }
+
+      if(need_stdout) freopen( "CONOUT$", "w", stdout );
+      if(need_stderr) freopen( "CONOUT$", "w", stderr );
+
+      console_needs_free = true;
+   }
 
 #endif
 #endif
@@ -359,12 +383,15 @@ static void frontend_win32_detach_console(void)
 {
 #if defined(_WIN32) && !defined(_XBOX)
 #ifdef _WIN32_WINNT_WINXP
-   if (!AttachConsole(ATTACH_PARENT_PROCESS))
+
+   if(console_needs_free)
    {
-      HWND wnd = GetConsoleWindow();
+      /* we don't reconnect stdout/stderr to anything here, because by definition, they weren't connected to anything in the first place. */
+
       FreeConsole();
-      PostMessage(wnd, WM_CLOSE, 0, 0);
+      console_needs_free = false;
    }
+
 #endif
 #endif
 }
