@@ -1115,7 +1115,7 @@ static int generic_action_ok(const char *path,
       case ACTION_OK_LOAD_SHADER_PASS:
          {
             struct video_shader_pass      *shader_pass  = menu_shader_manager_get_pass(hack_shader_pass);
-            flush_char = msg_hash_to_str((unsigned)flush_id);
+            flush_char = msg_hash_to_str((enum msg_hash_enums)flush_id);
             strlcpy(
                   shader_pass->source.path,
                   action_path,
