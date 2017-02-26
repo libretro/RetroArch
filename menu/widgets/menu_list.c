@@ -146,7 +146,7 @@ void menu_list_flush_stack(menu_list_t *list,
    const char *label      = NULL;
    unsigned type          = 0;
    size_t entry_idx       = 0;
-   file_list_t *menu_list = menu_list_get(list, idx);
+   file_list_t *menu_list = menu_list_get(list, (unsigned)idx);
    if (!list)
       return;
 
@@ -168,7 +168,7 @@ void menu_list_flush_stack(menu_list_t *list,
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION,
             &new_selection_ptr);
 
-      menu_list = menu_list_get(list, idx);
+      menu_list = menu_list_get(list, (unsigned)idx);
 
       menu_entries_get_last(menu_list,
             &path, &label, &type, &entry_idx);
@@ -185,7 +185,7 @@ bool menu_list_pop_stack(menu_list_t *list,
 {
    menu_ctx_list_t list_info;
    bool refresh           = false;
-   file_list_t *menu_list = menu_list_get(list, idx);
+   file_list_t *menu_list = menu_list_get(list, (unsigned)idx);
    if (!list)
       return false;
 

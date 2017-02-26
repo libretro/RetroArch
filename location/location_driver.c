@@ -101,7 +101,7 @@ void find_location_driver(void)
 
    driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
 
-   i = drv.len;
+   i         = (int)drv.len;
 
    if (i >= 0)
       location_driver = (const location_driver_t*)location_driver_find_handle(i);

@@ -155,7 +155,7 @@ static const dspfilter_get_implementation_t dsp_plugs_builtin[] = {
 static bool append_plugs(retro_dsp_filter_t *dsp, struct string_list *list)
 {
    unsigned i;
-   dspfilter_simd_mask_t mask   = cpu_features_get();
+   dspfilter_simd_mask_t mask   = (dspfilter_simd_mask_t)cpu_features_get();
    struct retro_dsp_plug *plugs = (struct retro_dsp_plug*)
       calloc(ARRAY_SIZE(dsp_plugs_builtin), sizeof(*plugs));
 

@@ -1315,7 +1315,7 @@ static void command_event_set_savestate_auto_index(void)
       while ((end > dir_elem) && isdigit((int)end[-1]))
          end--;
 
-      idx = strtoul(end, NULL, 0);
+      idx = (unsigned)strtoul(end, NULL, 0);
       if (idx > max_idx)
          max_idx = idx;
    }
@@ -2046,7 +2046,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
             {
                if (settings->rewind_enable)
-                  state_manager_event_init(settings->rewind_buffer_size);
+                  state_manager_event_init((unsigned)settings->rewind_buffer_size);
             }
          }
          break;

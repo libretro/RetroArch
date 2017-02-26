@@ -269,7 +269,7 @@ static int zip_file_read(
    if (!userdata.decomp_state.found)
       return -1;
 
-   return userdata.decomp_state.size;
+   return (int)userdata.decomp_state.size;
 }
 
 static int zip_parse_file_init(file_archive_transfer_t *state,

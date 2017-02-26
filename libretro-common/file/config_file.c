@@ -621,7 +621,7 @@ bool config_get_int(config_file_t *conf, const char *key, int *in)
 
    if (entry)
    {
-      int val = strtol(entry->value, NULL, 0);
+      int val = (int)strtol(entry->value, NULL, 0);
 
       if (errno == 0)
          *in = val;
@@ -655,7 +655,7 @@ bool config_get_uint(config_file_t *conf, const char *key, unsigned *in)
 
    if (entry)
    {
-      unsigned val = strtoul(entry->value, NULL, 0);
+      unsigned val = (unsigned)strtoul(entry->value, NULL, 0);
 
       if (errno == 0)
          *in = val;
@@ -671,7 +671,7 @@ bool config_get_hex(config_file_t *conf, const char *key, unsigned *in)
 
    if (entry)
    {
-      unsigned val = strtoul(entry->value, NULL, 16);
+      unsigned val = (unsigned)strtoul(entry->value, NULL, 16);
 
       if (errno == 0)
          *in = val;

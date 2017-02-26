@@ -227,9 +227,8 @@ requestDevicesFromMiniSSDPD(int s, const char * devtype)
 {
 	unsigned char buffer[256];
 	unsigned char * p;
-	unsigned int stsize, l;
-
-	stsize = strlen(devtype);
+	unsigned int l;
+	unsigned stsize = (unsigned)strlen(devtype);
 	if(stsize == 8 && 0 == memcmp(devtype, "ssdp:all", 8))
 	{
 		buffer[0] = 3;	/* request type 3 : everything */

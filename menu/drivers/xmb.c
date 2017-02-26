@@ -834,7 +834,8 @@ static void xmb_render_messagebox_internal(
    for (i = 0; i < list->size; i++)
    {
       const char *msg = list->elems[i].data;
-      int len = utf8len(msg);
+      int len         = (int)utf8len(msg);
+       
       if (len > longest)
       {
          longest = len;
@@ -1072,12 +1073,12 @@ static void xmb_selection_pointer_changed(
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
 
-   end       = menu_entries_get_end();
+   end       = (unsigned)menu_entries_get_end();
    threshold = xmb->icon.size*10;
 
    video_driver_get_size(NULL, &height);
 
-   tag.id    = (uintptr_t)menu_list;
+   tag.id    = (int)(uintptr_t)menu_list;
 
    menu_animation_ctl(MENU_ANIMATION_CTL_KILL_BY_TAG, &tag);
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &num);
@@ -1098,7 +1099,7 @@ static void xmb_selection_pointer_changed(
 
       if (i == selection)
       {
-         unsigned depth = xmb_list_get_size(xmb, MENU_LIST_PLAIN);
+         unsigned depth = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
 
          ia             = xmb->items.active.alpha;
          iz             = xmb->items.active.zoom;
@@ -1577,7 +1578,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    xmb_list_switch_old(xmb, xmb->selection_buf_old,
          dir, xmb->selection_ptr_old);
    xmb_list_switch_new(xmb, selection_buf, dir, selection);
-   xmb->categories.active.idx_old = xmb->categories.selection_ptr;
+   xmb->categories.active.idx_old = (unsigned)xmb->categories.selection_ptr;
 
    if (!string_is_equal(xmb_thumbnails_ident(),
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
@@ -1678,7 +1679,7 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
    {
       size_t i;
       for (i=0; i < xmb->horizontal_list->size; i++)
-         xmb_node_allocate_userdata(xmb, i);
+         xmb_node_allocate_userdata(xmb, (unsigned)i);
       menu_displaylist_ctl(DISPLAYLIST_PROCESS, &info);
    }
 }
@@ -1862,7 +1863,7 @@ static void xmb_list_open(xmb_handle_t *xmb)
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
 
-   xmb->depth = xmb_list_get_size(xmb, MENU_LIST_PLAIN);
+   xmb->depth = (int)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
 
    if (xmb->depth > xmb->old_depth)
       dir = 1;
@@ -2001,7 +2002,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
             return core_node->content_icon;
 
 #if defined(HAVE_IMAGEVIEWER) || defined(HAVE_FFMPEG)
-         switch (xmb_get_system_tab(xmb, xmb->categories.selection_ptr))
+         switch (xmb_get_system_tab(xmb, (unsigned)xmb->categories.selection_ptr))
          {
 #ifdef HAVE_IMAGEVIEWER
             case XMB_SYSTEM_TAB_IMAGES:
@@ -2223,7 +2224,7 @@ static void xmb_draw_items(
             ticker_limit = 70;
       }
 
-      menu_entry_get_rich_label(i, ticker_str, sizeof(ticker_str));
+      menu_entry_get_rich_label((unsigned)i, ticker_str, sizeof(ticker_str));
 
       ticker.s        = name;
       ticker.len      = ticker_limit;
@@ -2350,7 +2351,7 @@ static void xmb_render(void *data)
    menu_animation_ctx_delta_t delta;
    settings_t   *settings   = config_get_ptr();
    xmb_handle_t *xmb        = (xmb_handle_t*)data;
-   unsigned      end        = menu_entries_get_size();
+   unsigned      end        = (unsigned)menu_entries_get_size();
 
    if (!xmb)
       return;
@@ -2372,7 +2373,7 @@ static void xmb_render(void *data)
       for (i = 0; i < end; i++)
       {
          float item_y1     = xmb->margins.screen.top
-            + xmb_item_y(xmb, i, selection);
+            + xmb_item_y(xmb, (int)i, selection);
          float item_y2     = item_y1 + xmb->icon.size;
          int16_t pointer_y = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
          int16_t mouse_y   = menu_input_mouse_state(MENU_MOUSE_Y_AXIS)
@@ -3059,8 +3060,8 @@ static void xmb_layout(xmb_handle_t *xmb)
    else
       xmb_layout_psp(xmb, width);
 
-   current = selection;
-   end     = menu_entries_get_end();
+   current = (unsigned)selection;
+   end     = (unsigned)menu_entries_get_end();
 
    for (i = 0; i < end; i++)
    {
@@ -3087,8 +3088,8 @@ static void xmb_layout(xmb_handle_t *xmb)
    if (xmb->depth <= 1)
       return;
 
-   current = xmb->selection_ptr_old;
-   end = file_list_get_size(xmb->selection_buf_old);
+   current = (unsigned)xmb->selection_ptr_old;
+   end     = (unsigned)file_list_get_size(xmb->selection_buf_old);
 
    for (i = 0; i < end; i++)
    {
@@ -3579,7 +3580,7 @@ static void xmb_list_insert(void *userdata,
 {
    size_t selection;
    int current            = 0;
-   int i                  = list_size;
+   int i                  = (int)list_size;
    xmb_node_t *node       = NULL;
    xmb_handle_t *xmb      = (xmb_handle_t*)userdata;
 
@@ -3599,7 +3600,7 @@ static void xmb_list_insert(void *userdata,
       return;
    }
 
-   current           = selection;
+   current           = (int)selection;
 
    if (!string_is_empty(fullpath))
       strlcpy(node->fullpath, fullpath, sizeof(node->fullpath));
@@ -3738,7 +3739,7 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
                if (xmb->categories.selection_ptr == 0)
                {
                   xmb->categories.selection_ptr = list_size;
-                  xmb->categories.active.idx = list_size - 1;
+                  xmb->categories.active.idx    = (unsigned)(list_size - 1);
                }
                else
                   xmb->categories.selection_ptr--;
@@ -3760,7 +3761,7 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
             free(menu_stack->list[stack_size - 1].label);
          menu_stack->list[stack_size - 1].label = NULL;
 
-         switch (xmb_get_system_tab(xmb, xmb->categories.selection_ptr))
+         switch (xmb_get_system_tab(xmb, (unsigned)xmb->categories.selection_ptr))
          {
             case XMB_SYSTEM_TAB_MAIN:
                menu_stack->list[stack_size - 1].label =
@@ -3860,7 +3861,7 @@ static void xmb_toggle(void *userdata, bool menu_on)
    if (!xmb)
       return;
 
-   xmb->depth = xmb_list_get_size(xmb, MENU_LIST_PLAIN);
+   xmb->depth         = (int)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
 
    if (!menu_on)
    {

@@ -2748,7 +2748,7 @@ static int video_texture_load_wrap_gl_mipmap(void *data)
       return 0;
    video_texture_load_gl((struct texture_image*)data,
          TEXTURE_FILTER_MIPMAP_LINEAR, &id);
-   return id;
+   return (int)id;
 }
 
 static int video_texture_load_wrap_gl(void *data)
@@ -2759,7 +2759,7 @@ static int video_texture_load_wrap_gl(void *data)
       return 0;
    video_texture_load_gl((struct texture_image*)data,
          TEXTURE_FILTER_LINEAR, &id);
-   return id;
+   return (int)id;
 }
 #endif
 

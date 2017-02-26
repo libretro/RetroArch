@@ -5608,7 +5608,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_CORE_CONTENT:
 #ifdef HAVE_NETWORKING
          print_buf_lines(info->list, core_buf, "",
-               core_len, FILE_TYPE_DOWNLOAD_CORE_CONTENT, true, false);
+               (int)core_len, FILE_TYPE_DOWNLOAD_CORE_CONTENT, true, false);
          info->need_push    = true;
          info->need_refresh = true;
 #endif
@@ -5626,7 +5626,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             if (str_list->elems[1].data)
                strlcpy(core_buf, str_list->elems[1].data, core_len);
             print_buf_lines(info->list, core_buf, new_label,
-                  core_len, FILE_TYPE_DOWNLOAD_URL, false, false);
+                  (int)core_len, FILE_TYPE_DOWNLOAD_URL, false, false);
             info->need_push    = true;
             info->need_refresh = true;
             info->need_clear   = true;
@@ -5646,7 +5646,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   settings->network.buildbot_assets_url,
                   "cores", sizeof(new_label));
             print_buf_lines(info->list, core_buf, new_label,
-                  core_len, FILE_TYPE_DOWNLOAD_URL, true, false);
+                  (int)core_len, FILE_TYPE_DOWNLOAD_URL, true, false);
             info->need_push    = true;
             info->need_refresh = true;
 #endif
@@ -5655,7 +5655,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_CORES_UPDATER:
 #ifdef HAVE_NETWORKING
          print_buf_lines(info->list, core_buf, "",
-               core_len, FILE_TYPE_DOWNLOAD_CORE, true, true);
+               (int)core_len, FILE_TYPE_DOWNLOAD_CORE, true, true);
          info->need_push    = true;
          info->need_refresh = true;
          info->need_clear   = true;
@@ -5664,7 +5664,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_THUMBNAILS_UPDATER:
 #ifdef HAVE_NETWORKING
          print_buf_lines(info->list, core_buf, "",
-               core_len, FILE_TYPE_DOWNLOAD_THUMBNAIL_CONTENT,
+               (int)core_len, FILE_TYPE_DOWNLOAD_THUMBNAIL_CONTENT,
                true, false);
          info->need_push    = true;
          info->need_refresh = true;
@@ -5674,7 +5674,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_LAKKA:
 #ifdef HAVE_NETWORKING
          print_buf_lines(info->list, core_buf, "",
-               core_len, FILE_TYPE_DOWNLOAD_LAKKA,
+               (int)core_len, FILE_TYPE_DOWNLOAD_LAKKA,
                true, false);
          info->need_push    = true;
          info->need_refresh = true;
@@ -6166,7 +6166,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   menu_entries_append_enum(info->list,
                         core_option_manager_get_desc(coreopts, i), "",
                         MENU_ENUM_LABEL_CORE_OPTION_ENTRY,
-                        MENU_SETTINGS_CORE_OPTION_START + i, 0, 0);
+                        (unsigned)(MENU_SETTINGS_CORE_OPTION_START + i), 0, 0);
             }
          }
          else

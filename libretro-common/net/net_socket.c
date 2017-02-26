@@ -84,7 +84,7 @@ ssize_t socket_receive_all_nonblocking(int fd, bool *error,
       return -1;
    }
 
-   if (isagain(ret))
+   if (isagain((int)ret))
       return 0;
 
    *error = true;
@@ -171,7 +171,7 @@ int socket_send_all_blocking(int fd, const void *data_, size_t size,
             no_signal ? MSG_NOSIGNAL : 0);
       if (ret <= 0)
       {
-         if (isagain(ret))
+         if (isagain((int)ret))
             continue;
 
          return false;
@@ -196,15 +196,13 @@ ssize_t socket_send_all_nonblocking(int fd, const void *data_, size_t size,
             no_signal ? MSG_NOSIGNAL : 0);
       if (ret < 0)
       {
-         if (isagain(ret))
+         if (isagain((int)ret))
             break;
 
          return -1;
       }
       else if (ret == 0)
-      {
          break;
-      }
 
       data += ret;
       size -= ret;

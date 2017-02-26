@@ -181,7 +181,7 @@ static enum patch_error bps_apply_patch(
          case SOURCE_COPY:
          case TARGET_COPY:
          {
-            int    offset = bps_decode(&bps);
+            int    offset = (int)bps_decode(&bps);
             bool negative = offset & 1;
 
             offset >>= 1;
@@ -305,9 +305,9 @@ static enum patch_error ups_apply_patch(
    data.patch_data      = patchdata;
    data.source_data     = sourcedata;
    data.target_data     = targetdata;
-   data.patch_length    = patchlength;
-   data.source_length   = sourcelength;
-   data.target_length   = *targetlength;
+   data.patch_length    = (unsigned)patchlength;
+   data.source_length   = (unsigned)sourcelength;
+   data.target_length   = (unsigned)*targetlength;
    data.patch_checksum  = ~0;
    data.source_checksum = ~0;
    data.target_checksum = ~0;
@@ -323,8 +323,8 @@ static enum patch_error ups_apply_patch(
    if (ups_patch_read(&data) != '1') 
       return PATCH_PATCH_INVALID;
 
-   source_read_length = ups_decode(&data);
-   target_read_length = ups_decode(&data);
+   source_read_length = (unsigned)ups_decode(&data);
+   target_read_length = (unsigned)ups_decode(&data);
 
    if (data.source_length != source_read_length
          && data.source_length != target_read_length) 
@@ -333,11 +333,11 @@ static enum patch_error ups_apply_patch(
          target_read_length : source_read_length);
    if (data.target_length < *targetlength) 
       return PATCH_TARGET_TOO_SMALL;
-   data.target_length = *targetlength;
+   data.target_length = (unsigned)*targetlength;
 
    while (data.patch_offset < data.patch_length - 12) 
    {
-      unsigned length = ups_decode(&data);
+      unsigned length = (unsigned)ups_decode(&data);
       while (length--) 
          ups_target_write(&data, ups_source_read(&data));
       while (true) 

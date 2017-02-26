@@ -116,7 +116,7 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
 #endif
 
    if (size)
-      *size = buf.st_size;
+      *size = (int32_t)buf.st_size;
 
    switch (mode)
    {

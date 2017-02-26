@@ -149,7 +149,7 @@ static int action_start_shader_pass(unsigned type, const char *label)
 {
    hack_shader_pass                      = type - MENU_SETTINGS_SHADER_PASS_0;
 
-   menu_shader_manager_clear_pass_path(hack_shader_pass);
+   menu_shader_manager_clear_pass_path((unsigned)hack_shader_pass);
 
    return 0;
 }

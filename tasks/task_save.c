@@ -276,7 +276,7 @@ void autosave_init(void)
       return;
 
    autosave_state.list = list;
-   autosave_state.num  = task_save_files->size;
+   autosave_state.num  = (unsigned)task_save_files->size;
 
    for (i = 0; i < task_save_files->size; i++)
    {
@@ -401,7 +401,7 @@ bool content_undo_load_state(void)
 
       if (blocks)
       {
-         num_blocks = task_save_files->size;
+         num_blocks = (unsigned)task_save_files->size;
          for (i = 0; i < num_blocks; i++)
             blocks[i].type = task_save_files->elems[i].attr.i;
       }
@@ -558,7 +558,7 @@ static void task_save_handler(retro_task_t *task)
    }
 
    remaining       = MIN(state->size - state->written, SAVE_STATE_CHUNK);
-   written         = filestream_write(state->file,
+   written         = (int)filestream_write(state->file,
          (uint8_t*)state->data + state->written, remaining);
 
    state->written += written;
@@ -872,7 +872,7 @@ static void content_load_state_cb(void *task_data,
 
       if (blocks)
       {
-         num_blocks = task_save_files->size;
+         num_blocks = (unsigned)task_save_files->size;
          for (i = 0; i < num_blocks; i++)
             blocks[i].type = task_save_files->elems[i].attr.i;
       }

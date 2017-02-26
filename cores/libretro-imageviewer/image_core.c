@@ -410,8 +410,8 @@ void IMAGE_CORE_PREFIX(retro_run)(void)
    }
    else if (last_image)
    {
-      image_index = file_list->size - 1;
-      load_image = true;
+      image_index = (int)(file_list->size - 1);
+      load_image  = true;
    }
 
    if (load_image)

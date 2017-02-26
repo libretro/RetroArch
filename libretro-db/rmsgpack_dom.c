@@ -463,8 +463,8 @@ int rmsgpack_dom_read_into(RFILE *fd, ...)
       if (!key_name)
          goto clean;
 
-      key.type        = RDT_STRING;
-      key.val.string.len  = strlen(key_name);
+      key.type            = RDT_STRING;
+      key.val.string.len  = (uint32_t)strlen(key_name);
       key.val.string.buff = (char *) key_name;
 
       value = rmsgpack_dom_value_map_value(&map, &key);

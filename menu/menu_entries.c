@@ -153,8 +153,8 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
 
    for (i = 1; i < list->size; i++)
    {
-      int first   = menu_entries_elem_get_first_char(list, i);
-      bool is_dir = menu_entries_elem_is_dir(list, i);
+      int first   = menu_entries_elem_get_first_char(list, (unsigned)i);
+      bool is_dir = menu_entries_elem_is_dir(list, (unsigned)i);
 
       if ((current_is_dir && !is_dir) || (first > current))
          menu_navigation_ctl(MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX, &i);
@@ -233,12 +233,12 @@ void menu_entries_get(size_t i, void *entry_data)
 
    if (cbs && cbs->action_get_value)
       cbs->action_get_value(selection_buf,
-            &entry->spacing, entry->type, i, label,
+            &entry->spacing, entry->type, (unsigned)i, label,
             entry->value,  sizeof(entry->value),
             entry_label, path,
             entry->path, sizeof(entry->path));
 
-   entry->idx = i;
+   entry->idx = (unsigned)i;
 
    if (entry_label)
       strlcpy(entry->label, entry_label, sizeof(entry->label));
@@ -316,7 +316,7 @@ file_list_t *menu_entries_get_selection_buf_ptr(size_t idx)
    menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
    if (!menu_list)
       return NULL;
-   return menu_list_get_selection(menu_list, idx);
+   return menu_list_get_selection(menu_list, (unsigned)idx);
 }
 
 static bool menu_entries_init(void)

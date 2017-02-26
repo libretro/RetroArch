@@ -358,7 +358,7 @@ void input_config_parse_joy_axis(void *data, const char *prefix,
          bind->joyaxis = AXIS_NONE;
       else if (strlen(tmp) >= 2 && (*tmp == '+' || *tmp == '-'))
       {
-         int i_axis = strtol(tmp + 1, NULL, 0);
+         int i_axis = (int)strtol(tmp + 1, NULL, 0);
          if (*tmp == '+')
             bind->joyaxis = AXIS_POS(i_axis);
          else

@@ -278,7 +278,7 @@ audio_mixer_sound_t* audio_mixer_load_wav(const char* path)
    }
    
    sound->type             = AUDIO_MIXER_TYPE_WAV;
-   sound->types.wav.frames = samples / 2;
+   sound->types.wav.frames = (unsigned)(samples / 2);
    sound->types.wav.pcm    = pcm;
    
    rwav_free(&wav);
@@ -447,7 +447,7 @@ void audio_mixer_stop(audio_mixer_voice_t* voice)
 static void mix_wav(float* buffer, size_t num_frames, audio_mixer_voice_t* voice)
 {
    int i;
-   unsigned buf_free                = num_frames * 2;
+   unsigned buf_free                = (unsigned)(num_frames * 2);
    const audio_mixer_sound_t* sound = voice->sound;
    unsigned pcm_available           = sound->types.wav.frames 
       * 2 - voice->types.wav.position;

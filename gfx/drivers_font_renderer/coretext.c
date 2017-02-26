@@ -231,7 +231,7 @@ static bool coretext_font_renderer_create_atlas(CTFontRef face, ct_font_renderer
       {
          for (c = 0; c < max_width; c++)
          {
-            unsigned src_idx = r * bytesPerRow + c;
+            unsigned src_idx = (unsigned)(r * bytesPerRow + c);
             unsigned dest_idx = 
                (r + offset_y) * (CT_ATLAS_COLS * max_width) + (c + offset_x);
             uint8_t v = src[src_idx];

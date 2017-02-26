@@ -327,7 +327,7 @@ static bool take_screenshot_raw(const char *name_base, void *userbuf,
     */
    if (!screenshot_dump(name_base, 
          (const uint8_t*)data + (height - 1) * pitch,
-         width, height, -pitch, false, userbuf, savestate, is_idle, is_paused))
+         width, height, (int)(-pitch), false, userbuf, savestate, is_idle, is_paused))
       return false;
 
    return true;

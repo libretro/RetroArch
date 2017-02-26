@@ -69,7 +69,7 @@ static void osk_update_last_codepoint(const char *word)
    for (;;)
    {
       unsigned codepoint = utf8_walk(&letter);
-      unsigned       len = letter - pos;
+      unsigned       len = (unsigned)(letter - pos);
 
       if (letter[0] == 0)
       {
@@ -208,7 +208,7 @@ static bool input_keyboard_line_event(
 bool input_keyboard_line_append(const char *word)
 {
    unsigned i   = 0;
-   unsigned len = strlen(word);
+   unsigned len = (unsigned)strlen(word);
    char *newbuf = (char*)
          realloc(g_keyboard_line->buffer,
                g_keyboard_line->size + len*2);

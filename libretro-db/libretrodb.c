@@ -194,8 +194,8 @@ static void libretrodb_write_index_header(RFILE *fd, libretrodb_index_t *idx)
 {
    rmsgpack_write_map_header(fd, 3);
    rmsgpack_write_string(fd, "name", strlen("name"));
-   rmsgpack_write_string(fd, idx->name, strlen(idx->name));
-   rmsgpack_write_string(fd, "key_size", strlen("key_size"));
+   rmsgpack_write_string(fd, idx->name, (uint32_t)strlen(idx->name));
+   rmsgpack_write_string(fd, "key_size", (uint32_t)strlen("key_size"));
    rmsgpack_write_uint(fd, idx->key_size);
    rmsgpack_write_string(fd, "next", strlen("next"));
    rmsgpack_write_uint(fd, idx->next);
@@ -221,7 +221,7 @@ int libretrodb_open(const char *path, libretrodb_t *db)
    strlcpy(db->path, path, sizeof(db->path));
    db->root = filestream_seek(fd, 0, SEEK_CUR);
 
-   if ((rv = filestream_read(fd, &header, sizeof(header))) == -1)
+   if ((rv = (int)filestream_read(fd, &header, sizeof(header))) == -1)
    {
       rv = -errno;
       goto error;
@@ -281,7 +281,7 @@ static int node_compare(const void *a, const void *b, void *ctx)
 static int binsearch(const void *buff, const void *item,
       uint64_t count, uint8_t field_size, uint64_t *offset)
 {
-   int mid            = count / 2;
+   int mid            = (int)(count / 2);
    int item_size      = field_size + sizeof(uint64_t);
    uint64_t *current  = (uint64_t *)buff + (mid * item_size);
    int rv             = node_compare(current, item, &field_size);
@@ -323,7 +323,7 @@ int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
    while (nread < bufflen)
    {
       void *buff_ = (uint64_t *)buff + nread;
-      rv = filestream_read(db->fd, buff_, bufflen - nread);
+      rv = (int)filestream_read(db->fd, buff_, bufflen - nread);
 
       if (rv <= 0)
       {
@@ -353,7 +353,7 @@ int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
 int libretrodb_cursor_reset(libretrodb_cursor_t *cursor)
 {
    cursor->eof = 0;
-   return filestream_seek(cursor->fd,
+   return (int)filestream_seek(cursor->fd,
          (ssize_t)(cursor->db->root + sizeof(libretrodb_header_t)),
          SEEK_SET);
 }

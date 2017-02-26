@@ -80,7 +80,7 @@ int config_userdata_get_float_array(void *userdata, const char *key_str,
       *values = (float*)calloc(list->size, sizeof(float));
       for (i = 0; i < list->size; i++)
          (*values)[i] = (float)strtod(list->elems[i].data, NULL);
-      *out_num_values = list->size;
+      *out_num_values = (unsigned)list->size;
       string_list_free(list);
       free(str);
       return true;
@@ -110,7 +110,7 @@ int config_userdata_get_int_array(void *userdata, const char *key_str,
       *values = (int*)calloc(list->size, sizeof(int));
       for (i = 0; i < list->size; i++)
          (*values)[i] = (int)strtod(list->elems[i].data, NULL);
-      *out_num_values = list->size;
+      *out_num_values = (unsigned)list->size;
       string_list_free(list);
       free(str);
       return true;

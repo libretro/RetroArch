@@ -85,9 +85,10 @@ receivedata(int socket,
 	n = recvfrom(socket, data, length, 0,
 	             (struct sockaddr *)&src_addr, &src_addr_len);
 #else	/* MINIUPNPC_GET_SRC_ADDR */
-	n = recv(socket, data, length, 0);
+	n = (int)recv(socket, data, length, 0);
 #endif	/* MINIUPNPC_GET_SRC_ADDR */
-	if(n<0) {
+	if(n<0)
+    {
 		PRINT_SOCKET_ERROR("recv");
 	}
 #ifdef MINIUPNPC_GET_SRC_ADDR

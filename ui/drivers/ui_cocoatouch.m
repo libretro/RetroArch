@@ -110,9 +110,9 @@ void get_ios_version(int *major, int *minor)
     NSArray *decomposed_os_version = [[UIDevice currentDevice].systemVersion componentsSeparatedByString:@"."];
     
     if (major && decomposed_os_version.count > 0)
-        *major = [decomposed_os_version[0] integerValue];
+        *major = (int)[decomposed_os_version[0] integerValue];
     if (minor && decomposed_os_version.count > 1)
-        *minor = [decomposed_os_version[1] integerValue];
+        *minor = (int)[decomposed_os_version[1] integerValue];
 }
 
 extern float cocoagl_gfx_ctx_get_native_scale(void);

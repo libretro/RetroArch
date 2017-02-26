@@ -170,7 +170,7 @@ static bool bsv_movie_init_record(bsv_movie_t *handle, const char *path)
 
    core_serialize_size(&info);
 
-   state_size               = info.size;
+   state_size               = (unsigned)info.size;
 
    header[STATE_SIZE_INDEX] = swap_if_big32(state_size);
 

@@ -107,7 +107,7 @@ void find_record_driver(void)
 
    driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
 
-   i = drv.len;
+   i = (int)drv.len;
 
    if (i >= 0)
       recording_driver = (const record_driver_t*)record_driver_find_handle(i);
@@ -193,7 +193,7 @@ void recording_dump_frame(const void *data, unsigned width,
    video_driver_get_record_status(&has_gpu_record,
          &gpu_buf);
 
-   ffemu_data.pitch    = pitch;
+   ffemu_data.pitch    = (int)pitch;
    ffemu_data.width    = width;
    ffemu_data.height   = height;
    ffemu_data.data     = data;
@@ -236,9 +236,9 @@ void recording_dump_frame(const void *data, unsigned width,
       if (!video_driver_read_viewport(gpu_buf, is_idle))
          return;
 
-      ffemu_data.pitch  = recording_gpu_width * 3;
-      ffemu_data.width  = recording_gpu_width;
-      ffemu_data.height = recording_gpu_height;
+      ffemu_data.pitch  = (int)(recording_gpu_width * 3);
+      ffemu_data.width  = (unsigned)recording_gpu_width;
+      ffemu_data.height = (unsigned)recording_gpu_height;
       ffemu_data.data   = gpu_buf + (ffemu_data.height - 1) * ffemu_data.pitch;
 
       ffemu_data.pitch  = -ffemu_data.pitch;

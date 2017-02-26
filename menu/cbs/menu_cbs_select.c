@@ -94,7 +94,7 @@ static int action_select_default(const char *path, const char *label, unsigned t
    }
     
    if (action != MENU_ACTION_NOOP)
-       ret = menu_entry_action(&entry, idx, action);
+       ret = menu_entry_action(&entry, (unsigned)idx, action);
 
    task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
     

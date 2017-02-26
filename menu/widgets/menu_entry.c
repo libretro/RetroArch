@@ -417,27 +417,27 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
 
       if (cbs->action_get_value && use_representation)
          cbs->action_get_value(list,
-               &entry->spacing, entry->type, i, label,
+               &entry->spacing, entry->type, (unsigned)i, label,
                entry->value,  sizeof(entry->value), 
                entry_label, path,
                entry->path, sizeof(entry->path));
 
       if (cbs->action_label)
          cbs->action_label(list,
-               entry->type, i,
+               entry->type, (unsigned)i,
                label, path, 
                entry->rich_label,
                sizeof(entry->rich_label));
 
       if (cbs->action_sublabel)
          cbs->action_sublabel(list,
-               entry->type, i,
+               entry->type, (unsigned)i,
                label, path, 
                entry->sublabel,
                sizeof(entry->sublabel));
    }
 
-   entry->idx         = i;
+   entry->idx         = (unsigned)i;
 
    if (path && !use_representation)
       strlcpy(entry->path,  path,        sizeof(entry->path));

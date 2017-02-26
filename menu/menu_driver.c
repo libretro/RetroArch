@@ -433,7 +433,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
             driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
 
-            i = drv.len;
+            i = (int)drv.len;
 
             if (i >= 0)
                menu_driver_ctx = (const menu_ctx_driver_t*)
@@ -681,7 +681,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                return false;
             }
             list->entry = menu_driver_ctx->list_get_entry(menu_userdata,
-                  list->type, list->idx);
+                  list->type, (unsigned int)list->idx);
          }
          break;
       case RARCH_MENU_CTL_LIST_GET_SIZE:
@@ -923,7 +923,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
             if (!menu_driver_ctx || !menu_driver_ctx->update_thumbnail_path)
                return false;
-            menu_driver_ctx->update_thumbnail_path(menu_userdata, selection);
+            menu_driver_ctx->update_thumbnail_path(menu_userdata, (unsigned)selection);
          }
          break;
       case RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE:
@@ -941,7 +941,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
             if (!menu_driver_ctx || !menu_driver_ctx->update_savestate_thumbnail_path)
                return false;
-            menu_driver_ctx->update_savestate_thumbnail_path(menu_userdata, selection);
+            menu_driver_ctx->update_savestate_thumbnail_path(menu_userdata, (unsigned)selection);
          }
          break;
       case RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE:

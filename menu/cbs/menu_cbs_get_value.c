@@ -419,7 +419,7 @@ static void menu_action_setting_disp_set_label_menu_file_core(
    menu_entries_get_at_offset(list, i, NULL,
          NULL, NULL, NULL, &alt);
 
-   *w = strlen(s);
+   *w = (unsigned)strlen(s);
    if (alt)
       strlcpy(s2, alt, len2);
 }
@@ -1099,7 +1099,7 @@ static void menu_action_setting_generic_disp_set_label(
 
    if (label)
       strlcpy(s, label, len);
-   *w = strlen(s);
+   *w = (unsigned)strlen(s);
 
    strlcpy(s2, path, len2);
 }
@@ -1314,7 +1314,7 @@ static void menu_action_setting_disp_set_label_menu_file_url_core(
    menu_entries_get_at_offset(list, i, NULL,
          NULL, NULL, NULL, &alt);
 
-   *w = strlen(s);
+   *w = (unsigned)strlen(s);
    if (alt)
       strlcpy(s2, alt, len2);
 }

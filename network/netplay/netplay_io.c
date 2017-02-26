@@ -1138,7 +1138,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                   netplay->zbuffer, cmd_size - 2*sizeof(uint32_t));
                ctrans->decompression_backend->set_out(ctrans->decompression_stream,
                   (uint8_t*)netplay->buffer[netplay->read_ptr[connection->player]].state,
-                  netplay->state_size);
+                  (unsigned)netplay->state_size);
                ctrans->decompression_backend->trans(ctrans->decompression_stream,
                   true, &rd, &wn, NULL);
 

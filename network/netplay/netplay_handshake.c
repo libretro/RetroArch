@@ -440,7 +440,7 @@ static void netplay_handshake_ready(netplay_t *netplay, struct netplay_connectio
 
    if (netplay->is_server)
    {
-      netplay_log_connection(&connection->addr, connection - netplay->connections, connection->nick);
+      netplay_log_connection(&connection->addr, (unsigned)(connection - netplay->connections), connection->nick);
 
       /* Send them the savestate */
       if (!(netplay->quirks & (NETPLAY_QUIRK_NO_SAVESTATES|NETPLAY_QUIRK_NO_TRANSMISSION)))
@@ -956,7 +956,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
    {
       RECV(&device, sizeof(device))
          return false;
-      pad.port = i;
+      pad.port   = (unsigned)i;
       pad.device = ntohl(device);
       core_set_controller_port_device(&pad);
    }
@@ -978,7 +978,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
    mem_info.id = RETRO_MEMORY_SAVE_RAM;
    core_get_memory(&mem_info);
 
-   local_sram_size = mem_info.size;
+   local_sram_size  = (unsigned)mem_info.size;
    remote_sram_size = ntohl(cmd[1]) - 3*sizeof(uint32_t) -
       MAX_USERS*sizeof(uint32_t) - NETPLAY_NICK_LEN;
 

@@ -62,7 +62,7 @@ UPNP_GetTotalBytesReceived(const char * controlURL,
 	/*DisplayNameValueList(buffer, bufsize);*/
 	free(buffer); buffer = NULL;
 	p = GetValueFromNameValueList(&pdata, "NewTotalBytesReceived");
-	r = my_atoui(p);
+	r = (unsigned)my_atoui(p);
 	ClearNameValueList(&pdata);
 	return r;
 }
@@ -86,7 +86,7 @@ UPNP_GetTotalPacketsSent(const char * controlURL,
 	/*DisplayNameValueList(buffer, bufsize);*/
 	free(buffer); buffer = NULL;
 	p = GetValueFromNameValueList(&pdata, "NewTotalPacketsSent");
-	r = my_atoui(p);
+	r = (unsigned)my_atoui(p);
 	ClearNameValueList(&pdata);
 	return r;
 }
@@ -110,7 +110,7 @@ UPNP_GetTotalPacketsReceived(const char * controlURL,
 	/*DisplayNameValueList(buffer, bufsize);*/
 	free(buffer); buffer = NULL;
 	p = GetValueFromNameValueList(&pdata, "NewTotalPacketsReceived");
-	r = my_atoui(p);
+	r = (unsigned)my_atoui(p);
 	ClearNameValueList(&pdata);
 	return r;
 }
@@ -903,11 +903,11 @@ UPNP_GetFirewallStatus(const char * controlURL,
 	if(ipa && fe)
 		ret = UPNPCOMMAND_SUCCESS;
 	if(fe)
-		*firewallEnabled = my_atoui(fe);
+		*firewallEnabled = (int)my_atoui(fe);
 	/*else
 		*firewallEnabled = 0;*/
 	if(ipa)
-		*inboundPinholeAllowed = my_atoui(ipa);
+		*inboundPinholeAllowed = (int)my_atoui(ipa);
 	/*else
 		*inboundPinholeAllowed = 0;*/
 	p = GetValueFromNameValueList(&pdata, "errorCode");
@@ -971,7 +971,7 @@ UPNP_GetOutboundPinholeTimeout(const char * controlURL, const char * servicetype
 		ret = UPNPCOMMAND_SUCCESS;
 		p = GetValueFromNameValueList(&pdata, "OutboundPinholeTimeout");
 		if(p)
-			*opTimeout = my_atoui(p);
+			*opTimeout = (int)my_atoui(p);
 	}
 	ClearNameValueList(&pdata);
 	return ret;
@@ -1175,8 +1175,8 @@ UPNP_CheckPinholeWorking(const char * controlURL, const char * servicetype,
 	p = GetValueFromNameValueList(&pdata, "IsWorking");
 	if(p)
 	{
-		*isWorking=my_atoui(p);
-		ret = UPNPCOMMAND_SUCCESS;
+		*isWorking = (int)my_atoui(p);
+		ret        = UPNPCOMMAND_SUCCESS;
 	}
 	else
 		*isWorking = 0;
@@ -1222,8 +1222,8 @@ UPNP_GetPinholePackets(const char * controlURL, const char * servicetype,
 	p = GetValueFromNameValueList(&pdata, "PinholePackets");
 	if(p)
 	{
-		*packets=my_atoui(p);
-		ret = UPNPCOMMAND_SUCCESS;
+		*packets = (int)my_atoui(p);
+		ret      = UPNPCOMMAND_SUCCESS;
 	}
 
 	p = GetValueFromNameValueList(&pdata, "errorCode");

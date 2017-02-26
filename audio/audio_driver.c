@@ -166,7 +166,7 @@ static void compute_audio_buffer_statistics(void)
    unsigned low_water_count      = 0;
    unsigned high_water_count     = 0;
    unsigned samples              = MIN(
-         audio_driver_free_samples_count,
+         (unsigned)audio_driver_free_samples_count,
          AUDIO_BUFFER_FREE_SAMPLES_COUNT);
 
    if (samples < 3)
@@ -175,7 +175,7 @@ static void compute_audio_buffer_statistics(void)
    for (i = 1; i < samples; i++)
       accum += audio_driver_free_samples_buf[i];
 
-   avg = accum / (samples - 1);
+   avg = (unsigned)accum / (samples - 1);
 
    for (i = 1; i < samples; i++)
    {
@@ -576,9 +576,9 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
       /* Readjust the audio input rate. */
       unsigned write_idx   = audio_driver_free_samples_count++ &
          (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
-      int      half_size   = audio_driver_buffer_size / 2;
+      int      half_size   = (int)(audio_driver_buffer_size / 2);
       int      avail       = 
-         current_audio->write_avail(audio_driver_context_audio_data);
+         (int)current_audio->write_avail(audio_driver_context_audio_data);
       int      delta_mid   = avail - half_size;
       double   direction   = (double)delta_mid / half_size;
       double   adjust      = 1.0 + settings->audio.rate_control_delta * direction;
@@ -611,7 +611,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    performance_counter_stop_plus(is_perfcnt_enable, resampler_proc);
 
    output_data   = audio_driver_output_samples_buf;
-   output_frames = src_data.output_frames;
+   output_frames = (unsigned)src_data.output_frames;
 
    if (!audio_driver_use_float)
    {
@@ -817,7 +817,7 @@ bool audio_driver_find_driver(void)
 
    driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
 
-   i = drv.len;
+   i = (int)drv.len;
 
    if (i >= 0)
       current_audio = (const audio_driver_t*)audio_driver_find_handle(i);

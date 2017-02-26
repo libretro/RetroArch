@@ -533,8 +533,8 @@ static void retroarch_parse_input(int argc, char *argv[])
 
             if (list && list->size == 2)
             {
-               port = strtol(list->elems[0].data, NULL, 0);
-               id = strtoul(list->elems[1].data, NULL, 0);
+               port = (int)strtol(list->elems[0].data, NULL, 0);
+               id   = (unsigned)strtoul(list->elems[1].data, NULL, 0);
             }
             string_list_free(list);
 
@@ -556,7 +556,7 @@ static void retroarch_parse_input(int argc, char *argv[])
          case 'A':
          {
             unsigned new_port;
-            port = strtol(optarg, NULL, 0);
+            port = (int)strtol(optarg, NULL, 0);
             if (port < 1 || port > MAX_USERS)
             {
                RARCH_ERR("Connect dualanalog to a valid port.\n");
@@ -598,7 +598,7 @@ static void retroarch_parse_input(int argc, char *argv[])
          case 'N':
             {
                unsigned new_port;
-               port = strtol(optarg, NULL, 0);
+               port = (int)strtol(optarg, NULL, 0);
                if (port < 1 || port > MAX_USERS)
                {
                   RARCH_ERR("%s\n",
@@ -728,7 +728,7 @@ static void retroarch_parse_input(int argc, char *argv[])
                settings_t *settings  = config_get_ptr();
                retroarch_override_setting_set(
                      RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES, NULL);
-               settings->netplay.check_frames = strtoul(optarg, NULL, 0);
+               settings->netplay.check_frames = (int)strtoul(optarg, NULL, 0);
             }
             break;
 
@@ -737,7 +737,7 @@ static void retroarch_parse_input(int argc, char *argv[])
                settings_t *settings  = config_get_ptr();
                retroarch_override_setting_set(
                      RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT, NULL);
-               settings->netplay.port = strtoul(optarg, NULL, 0);
+               settings->netplay.port = (unsigned)strtoul(optarg, NULL, 0);
             }
             break;
 
@@ -818,7 +818,7 @@ static void retroarch_parse_input(int argc, char *argv[])
 
          case RA_OPT_MAX_FRAMES:
             {
-               unsigned max_frames = strtoul(optarg, NULL, 10);
+               unsigned max_frames = (unsigned)strtoul(optarg, NULL, 10);
                runloop_ctl(RUNLOOP_CTL_SET_MAX_FRAMES, &max_frames);
             }
             break;

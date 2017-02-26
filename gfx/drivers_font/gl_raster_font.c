@@ -364,7 +364,7 @@ static void gl_raster_font_render_message(
    if (!font->font_driver->get_line_height)
    {
       gl_raster_font_render_line(font,
-            msg, strlen(msg), scale, color, pos_x,
+            msg, (unsigned)strlen(msg), scale, color, pos_x,
             pos_y, text_align);
       return;
    }
@@ -375,7 +375,7 @@ static void gl_raster_font_render_message(
    for (;;)
    {
       const char *delim = strchr(msg, '\n');
-      unsigned msg_len  = delim ? (delim - msg) : strlen(msg);
+      unsigned msg_len  = delim ? (unsigned)(delim - msg) : (unsigned)strlen(msg);
 
       /* Draw the line */
       gl_raster_font_render_line(font,

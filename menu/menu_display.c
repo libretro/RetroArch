@@ -517,7 +517,7 @@ void menu_display_draw_bg(menu_display_ctx_draw_t *draw,
    if (!new_tex_coord)
       new_tex_coord     = menu_disp->get_default_tex_coords();
 
-   coords.vertices      = draw->vertex_count;
+   coords.vertices      = (unsigned)draw->vertex_count;
    coords.vertex        = new_vertex;
    coords.tex_coord     = new_tex_coord;
    coords.lut_tex_coord = new_tex_coord;

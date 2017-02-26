@@ -88,7 +88,7 @@ int shader_action_parameter_preset_right(unsigned type, const char *label,
 int generic_action_cheat_toggle(size_t idx, unsigned type, const char *label,
       bool wraparound)
 {
-   cheat_manager_toggle_index(idx);
+   cheat_manager_toggle_index((unsigned)idx);
 
    return 0;
 }
@@ -354,7 +354,7 @@ static int playlist_association_right(unsigned type, const char *label,
 
    found = string_list_find_elem(stnames, path);
    if (found && info)
-      string_list_set(stcores, found-1, info->path);
+      string_list_set(stcores, (unsigned)(found-1), info->path);
 
    string_list_join_concat(new_playlist_cores, sizeof(new_playlist_cores), stcores, ";");
 

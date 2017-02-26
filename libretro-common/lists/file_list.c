@@ -104,7 +104,7 @@ bool file_list_prepend(file_list_t *list,
    if (!file_list_expand_if_needed(list))
       return false;
 
-   for (i = list->size; i > 0; i--)
+   for (i = (unsigned)list->size; i > 0; i--)
    {
       struct item_file *copy = (struct item_file*)
          calloc(1, sizeof(struct item_file));
@@ -131,7 +131,7 @@ bool file_list_append(file_list_t *list,
    if (!file_list_expand_if_needed(list))
       return false;
 
-   file_list_add(list, list->size, path, label, type,
+   file_list_add(list, (unsigned)list->size, path, label, type,
          directory_ptr, entry_idx);
 
    return true;

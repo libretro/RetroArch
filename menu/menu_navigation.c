@@ -232,7 +232,7 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
             size_t *sel = (size_t*)data;
             if (!sel)
                return false;
-            scroll_acceleration = *sel;
+            scroll_acceleration = (unsigned)(*sel);
          }
          break;
       case MENU_NAVIGATION_CTL_NONE:

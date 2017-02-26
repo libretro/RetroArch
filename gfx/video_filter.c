@@ -388,7 +388,7 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
       enum retro_pixel_format in_pixel_format,
       unsigned max_width, unsigned max_height)
 {
-   softfilter_simd_mask_t cpu_features = cpu_features_get();
+   softfilter_simd_mask_t cpu_features = (softfilter_simd_mask_t)cpu_features_get();
    char basedir[PATH_MAX_LENGTH];
 #ifdef HAVE_DYLIB
    char ext_name[PATH_MAX_LENGTH];

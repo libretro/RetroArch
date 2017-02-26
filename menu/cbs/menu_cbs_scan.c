@@ -133,7 +133,7 @@ static int action_scan_input_desc(const char *path,
       unsigned char player_no_str = atoi(&label[1]);
 
       inp_desc_user      = (unsigned)(player_no_str - 1);
-      key                = idx - 6;
+      key                = (unsigned)(idx - 6);
    }
    else
       key = input_config_translate_str_to_bind_id(label);

@@ -1042,7 +1042,7 @@ bool video_monitor_fps_statistics(double *refresh_rate,
    unsigned i;
    retro_time_t accum   = 0, avg, accum_var = 0;
    unsigned samples      = MIN(MEASURE_FRAME_TIME_SAMPLES_COUNT,
-         video_driver_frame_time_count);
+         (unsigned)video_driver_frame_time_count);
 
    if (video_driver_is_threaded() || (samples < 2))
       return false;
@@ -2181,7 +2181,7 @@ void video_driver_frame(const void *data, unsigned width,
    if (!current_video || !current_video->frame(
             video_driver_data, data, width, height,
             video_info.frame_count,
-            pitch, video_driver_msg, &video_info))
+            (unsigned)pitch, video_driver_msg, &video_info))
       video_driver_active = false;
 
    if (video_info.fps_show)

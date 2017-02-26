@@ -202,7 +202,7 @@ bool net_http_connection_done(struct http_connection_t *conn)
       if (!isdigit((int)conn->scan[1]))
          return false;
 
-      conn->port = strtoul(conn->scan + 1, &conn->scan, 10);
+      conn->port = (int)strtoul(conn->scan + 1, &conn->scan, 10);
 
       if (*conn->scan != '/')
          return false;
@@ -341,7 +341,7 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
          {
             if (strncmp(state->data, "HTTP/1.", strlen("HTTP/1."))!=0)
                goto fail;
-            state->status = strtoul(state->data + strlen("HTTP/1.1 "), NULL, 10);
+            state->status = (int)strtoul(state->data + strlen("HTTP/1.1 "), NULL, 10);
             state->part   = P_HEADER;
          }
          else

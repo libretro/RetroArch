@@ -708,7 +708,7 @@ static struct string_list *file_archive_filename_split(const char *path)
    if (delim)
    {
       /* add archive path to list first */
-      if (!string_list_append_n(list, path, delim - path, attr))
+      if (!string_list_append_n(list, path, (unsigned)(delim - path), attr))
          goto error;
 
       /* now add the path within the archive */

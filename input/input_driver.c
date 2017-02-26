@@ -295,7 +295,7 @@ void input_poll(void)
 
             input_driver_turbo_btns.frame_enable[i] = current_input->input_state(
                   current_input_data, joypad_info, libretro_input_binds,
-                  i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
+                  (unsigned)i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
          }
       }
 
@@ -1069,7 +1069,7 @@ bool input_driver_find_driver(void)
 
    driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
 
-   i                    = drv.len;
+   i                    = (int)drv.len;
 
    if (i >= 0)
       current_input = (const input_driver_t*)

@@ -354,7 +354,7 @@ static bool task_overlay_resolve_targets(struct overlay *ol,
       else
          next_idx = (idx + 1) & size;
 
-      current->descs[i].next_index = next_idx;
+      current->descs[i].next_index = (unsigned)next_idx;
    }
 
    return true;
@@ -427,7 +427,7 @@ static void task_overlay_deferred_loading(retro_task_t *task)
             {
                task_overlay_load_desc_image(loader,
                      &overlay->descs[overlay->pos], overlay,
-                     loader->pos, overlay->pos);
+                     loader->pos, (unsigned)overlay->pos);
             }
             else
             {
@@ -445,7 +445,7 @@ static void task_overlay_deferred_loading(retro_task_t *task)
             {
                if (!task_overlay_load_desc(loader,
                         &overlay->descs[overlay->pos], overlay,
-                        loader->pos, overlay->pos,
+                        loader->pos, (unsigned)overlay->pos,
                         overlay->image.width, overlay->image.height,
                         overlay->config.normalized,
                         overlay->config.alpha_mod, overlay->config.range_mod))

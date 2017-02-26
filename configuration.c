@@ -2668,7 +2668,7 @@ static void save_keybind_hat(config_file_t *conf, const char *key,
       const struct retro_keybind *bind)
 {
    char config[16];
-   unsigned hat     = GET_HAT(bind->joykey);
+   unsigned hat     = (unsigned)GET_HAT(bind->joykey);
    const char *dir  = NULL;
 
    config[0]        = '\0';

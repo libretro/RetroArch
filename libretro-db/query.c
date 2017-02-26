@@ -866,8 +866,8 @@ static struct buffer query_parse_table(struct buffer buff,
 
          if (!*error)
          {
-            args[argi].a.value.type = RDT_STRING;
-            args[argi].a.value.val.string.len = ident_len;
+            args[argi].a.value.type            = RDT_STRING;
+            args[argi].a.value.val.string.len  = ident_len;
             args[argi].a.value.val.string.buff = (char*)calloc(
                   ident_len + 1,
                   sizeof(char)

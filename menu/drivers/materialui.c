@@ -388,7 +388,8 @@ static void mui_draw_tab_end(mui_handle_t *mui,
    /* active tab marker */
    unsigned tab_width = width / (MUI_SYSTEM_TAB_END+1);
 
-   menu_display_draw_quad(mui->categories.selection_ptr * tab_width,
+   menu_display_draw_quad(
+        (int)(mui->categories.selection_ptr * tab_width),
          height - (header_height/16),
          tab_width,
          header_height/16,
@@ -474,13 +475,13 @@ static void mui_render_messagebox(mui_handle_t *mui,
       y_position = height / 4;
 
    x = width  / 2;
-   y = y_position - (list->size-1) * line_height / 2;
+   y = (int)(y_position - (list->size-1) * line_height / 2);
 
    /* find the longest line width */
    for (i = 0; i < list->size; i++)
    {
       const char *msg = list->elems[i].data;
-      int len = utf8len(msg);
+      int len         = (int)utf8len(msg);
       if (len > longest)
       {
          longest = len;
@@ -667,7 +668,7 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
    char sublabel_str[255];
    char value_str[255];
    bool switch_is_on               = true;
-   int value_len                   = utf8len(value);
+   int value_len                   = (int)utf8len(value);
    int ticker_limit                = 0;
    uintptr_t texture_switch        = 0;
    bool do_draw_text               = false;
@@ -682,9 +683,9 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
       sublabel_str[0]              = '\0';
 
    if (value_len * mui->glyph_width > usable_width / 2)
-      value_len    = (usable_width/2) / mui->glyph_width;
+      value_len    = (int)((usable_width/2) / mui->glyph_width);
 
-   ticker_limit    = (usable_width / mui->glyph_width) - (value_len + 2);
+   ticker_limit    = (int)((usable_width / mui->glyph_width) - (value_len + 2));
 
    ticker.s        = label_str;
    ticker.len      = ticker_limit;
@@ -827,15 +828,15 @@ static void mui_render_menu_list(
             || ((y + (int)node->line_height) < 0))
          continue;*/
 
-      menu_entry_get_value(i, NULL, entry_value, sizeof(entry_value));
-      menu_entry_get_rich_label(i, rich_label, sizeof(rich_label));
+      menu_entry_get_value((unsigned)i, NULL, entry_value, sizeof(entry_value));
+      menu_entry_get_rich_label((unsigned)i, rich_label, sizeof(rich_label));
 
       entry_selected = selection == i;
 
       mui_render_label_value(
          mui,
          node,
-         i,
+         (int)i,
          y,
          width,
          height,
@@ -1367,8 +1368,8 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
 
       snprintf(title_buf_msg, sizeof(title_buf), "%s (%s)",
             title_buf, title_msg);
-      value_len = utf8len(title_buf);
-      ticker_limit = (usable_width / mui->glyph_width) - (value_len + 2);
+      value_len       = (int)utf8len(title_buf);
+      ticker_limit    = (int)((usable_width / mui->glyph_width) - (value_len + 2));
 
       ticker.s        = title_buf_msg_tmp;
       ticker.len      = ticker_limit;
@@ -1750,7 +1751,7 @@ static void mui_list_cache(void *data,
                if (mui->categories.selection_ptr == 0)
                {
                   mui->categories.selection_ptr = list_size;
-                  mui->categories.active.idx = list_size - 1;
+                  mui->categories.active.idx    = (unsigned)(list_size - 1);
                }
                else
                   mui->categories.selection_ptr--;
@@ -1916,7 +1917,7 @@ static int mui_pointer_tap(void *userdata,
    if (y < header_height)
    {
       menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
-      return menu_entry_action(entry, selection, MENU_ACTION_CANCEL);
+      return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
    }
    else if (y > height - mui->tabs_height)
    {
@@ -1946,7 +1947,7 @@ static int mui_pointer_tap(void *userdata,
       bool scroll                = false;
       menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
       if (ptr == selection && cbs && cbs->action_select)
-         return menu_entry_action(entry, selection, MENU_ACTION_SELECT);
+         return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
 
       idx  = ptr;
 
@@ -1966,7 +1967,7 @@ static void mui_list_insert(void *userdata,
 {
    size_t selection;
    float scale_factor;
-   int i                  = list_size;
+   int i                  = (int)list_size;
    mui_node_t *node       = NULL;
    mui_handle_t *mui      = (mui_handle_t*)userdata;
 

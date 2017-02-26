@@ -239,7 +239,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
 
       if(ret >= current_best)
       {
-         index = i;
+         index        = (int)i;
          current_best = ret;
       }
       config_file_free(conf);

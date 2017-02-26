@@ -126,16 +126,16 @@ static bool get_self_input_state(netplay_t *netplay)
       for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
       {
          int16_t tmp = cb(0,
-               RETRO_DEVICE_JOYPAD, 0, i);
+               RETRO_DEVICE_JOYPAD, 0, (unsigned)i);
          state[0] |= tmp ? 1 << i : 0;
       }
 
       for (i = 0; i < 2; i++)
       {
          int16_t tmp_x = cb(0,
-               RETRO_DEVICE_ANALOG, i, 0);
+               RETRO_DEVICE_ANALOG, (unsigned)i, 0);
          int16_t tmp_y = cb(0,
-               RETRO_DEVICE_ANALOG, i, 1);
+               RETRO_DEVICE_ANALOG, (unsigned)i, 1);
          state[1 + i] = (uint16_t)tmp_x | (((uint16_t)tmp_y) << 16);
       }
    }
@@ -803,9 +803,9 @@ void netplay_send_savestate(netplay_t *netplay,
 
    /* Compress it */
    z->compression_backend->set_in(z->compression_stream,
-      (const uint8_t*)serial_info->data_const, serial_info->size);
+      (const uint8_t*)serial_info->data_const, (uint32_t)serial_info->size);
    z->compression_backend->set_out(z->compression_stream,
-      netplay->zbuffer, netplay->zbuffer_size);
+      netplay->zbuffer, (uint32_t)netplay->zbuffer_size);
    if (!z->compression_backend->trans(z->compression_stream, true, &rd,
          &wn, NULL))
    {

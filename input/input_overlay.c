@@ -452,7 +452,7 @@ void input_overlay_next(input_overlay_t *ol, float opacity)
    input_overlay_load_active(ol, opacity);
 
    ol->blocked    = true;
-   ol->next_index = (ol->index + 1) % ol->size;
+   ol->next_index = (unsigned)((ol->index + 1) % ol->size);
 }
 
 /**
@@ -512,7 +512,7 @@ void input_overlay_loaded(void *task_data, void *user_data, const char *err)
 
    input_overlay_set_scale_factor(ol, data->overlay_scale);
 
-   ol->next_index = (ol->index + 1) % ol->size;
+   ol->next_index = (unsigned)((ol->index + 1) % ol->size);
    ol->state      = OVERLAY_STATUS_NONE;
    ol->alive      = true;
    overlay_ptr    = ol;

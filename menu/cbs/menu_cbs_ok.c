@@ -328,7 +328,7 @@ int generic_action_ok_displaylist_push(const char *path,
          info_label = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS);
          info.enum_idx           = MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS;
          info.directory_ptr      = idx;
-         rpl_entry_selection_ptr = idx;
+         rpl_entry_selection_ptr = (unsigned)idx;
          dl_type                 = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_AUDIO_DSP_PLUGIN:
@@ -634,7 +634,7 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_DEFERRED_CORE_LIST_SET:
          info.directory_ptr                 = idx;
-         rdb_entry_start_game_selection_ptr = idx;
+         rdb_entry_start_game_selection_ptr = (unsigned)idx;
          info_path                          = settings->directory.libretro;
          info_label                         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_CORE_LIST_SET);
@@ -1115,7 +1115,7 @@ static int generic_action_ok(const char *path,
       case ACTION_OK_LOAD_SHADER_PASS:
          {
             struct video_shader_pass      *shader_pass  = menu_shader_manager_get_pass(hack_shader_pass);
-            flush_char = msg_hash_to_str(flush_id);
+            flush_char = msg_hash_to_str((unsigned)flush_id);
             strlcpy(
                   shader_pass->source.path,
                   action_path,
@@ -1428,7 +1428,7 @@ static int action_ok_playlist_entry_collection(const char *path,
    }
 
    playlist_info.data = playlist;
-   playlist_info.idx  = selection_ptr;
+   playlist_info.idx  = (unsigned)selection_ptr;
 
    if (!menu_content_playlist_load(&playlist_info))
    {
@@ -1518,7 +1518,7 @@ static int action_ok_playlist_entry(const char *path,
    }
 
    playlist_info.data = playlist;
-   playlist_info.idx  = selection_ptr;
+   playlist_info.idx  = (unsigned)selection_ptr;
 
    if (!menu_content_playlist_load(&playlist_info))
    {
@@ -1626,7 +1626,7 @@ static int action_ok_playlist_entry_start_content(const char *path,
    }
 
    playlist_info.data = playlist;
-   playlist_info.idx  = selection_ptr;
+   playlist_info.idx  = (unsigned)selection_ptr;
 
    if (!menu_content_playlist_load(&playlist_info))
    {
@@ -1780,7 +1780,7 @@ static int action_ok_cheat(const char *path,
    line.label         = msg_hash_to_str(MSG_INPUT_CHEAT);
    line.label_setting = label;
    line.type          = type;
-   line.idx           = idx;
+   line.idx           = (unsigned)idx;
    line.cb            = menu_input_st_cheat_cb;
 
    if (!menu_input_dialog_start(&line))
@@ -1829,7 +1829,7 @@ static int action_ok_shader_preset_save_as(const char *path,
    line.label         = msg_hash_to_str(MSG_INPUT_PRESET_FILENAME);
    line.label_setting = label;
    line.type          = type;
-   line.idx           = idx;
+   line.idx           = (unsigned)idx;
    line.cb            = menu_input_st_string_cb_save_preset;
 
    if (!menu_input_dialog_start(&line))
@@ -1949,7 +1949,7 @@ static int action_ok_cheat_file_save_as(const char *path,
    line.label         = msg_hash_to_str(MSG_INPUT_CHEAT_FILENAME);
    line.label_setting = label;
    line.type          = type;
-   line.idx           = idx;
+   line.idx           = (unsigned)idx;
    line.cb            = menu_input_st_string_cb_cheat_file_save_as;
 
    if (!menu_input_dialog_start(&line))
@@ -2301,7 +2301,7 @@ static void cb_decompressed(void *task_data, void *user_data, const char *err)
 
    if (dec && !err)
    {
-      unsigned type_hash = (uintptr_t)user_data;
+      unsigned type_hash = (unsigned)(uintptr_t)user_data;
 
       switch (type_hash)
       {
@@ -3273,7 +3273,7 @@ static int action_ok_wifi(const char *path,
    line.label         = "Passphrase";
    line.label_setting = label;
    line.type          = type;
-   line.idx           = idx;
+   line.idx           = (unsigned)idx;
    line.cb            = menu_input_wifi_cb;
 
    if (!menu_input_dialog_start(&line))
@@ -3426,7 +3426,7 @@ finish:
          if (netplay_room_list)
             free(netplay_room_list);
 
-         netplay_room_count = room_data->size / 8;
+         netplay_room_count = (int)(room_data->size / 8);
          netplay_room_list = (struct netplay_room*)
             malloc(sizeof(struct netplay_room) * netplay_room_count);
 

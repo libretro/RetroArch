@@ -1086,7 +1086,7 @@ static void gl_glsl_set_uniform_parameter(
          glUniform4fv(location, 1, param->result.floatv);
          break;
       case UNIFORM_1I:
-         glUniform1i(location, param->result.integer.v0);
+         glUniform1i(location, (GLint)param->result.integer.v0);
          break;
    }
 }
@@ -1189,7 +1189,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
       {
          attr->loc    = uni->orig.tex_coord;
          attr->size   = 2;
-         attr->offset = size * sizeof(GLfloat);
+         attr->offset = (GLsizei)(size * sizeof(GLfloat));
          attribs_size++;
          attr++;
 
@@ -1225,7 +1225,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
       {
          attr->loc    = uni->feedback.tex_coord;
          attr->size   = 2;
-         attr->offset = size * sizeof(GLfloat);
+         attr->offset = (GLsizei)(size * sizeof(GLfloat));
          attribs_size++;
          attr++;
 
@@ -1261,7 +1261,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
          {
             attr->loc    = uni->pass[i].tex_coord;
             attr->size   = 2;
-            attr->offset = size * sizeof(GLfloat);
+            attr->offset = (GLsizei)(size * sizeof(GLfloat));
             attribs_size++;
             attr++;
 
@@ -1301,7 +1301,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
       {
          attr->loc    = uni->prev[i].tex_coord;
          attr->size   = 2;
-         attr->offset = size * sizeof(GLfloat);
+         attr->offset = (GLsizei)(size * sizeof(GLfloat));
          attribs_size++;
          attr++;
 

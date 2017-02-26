@@ -132,7 +132,7 @@ int rarch_timer_get_timeout(rarch_timer_t *timer)
 {
    if (!timer)
       return 0;
-   return timer->timeout;
+   return (int)timer->timeout;
 }
 
 bool rarch_timer_is_running(rarch_timer_t *timer)

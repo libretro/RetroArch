@@ -402,7 +402,7 @@ int rtga_process_image(rtga_t *rtga, void **buf_data,
       return IMAGE_PROCESS_ERROR;
 
    rtga->output_image   = (uint32_t*)rtga_load_from_memory(rtga->buff_data,
-                           size, width, height, &comp, 4);
+                           (int)size, width, height, &comp, 4);
    *buf_data             = rtga->output_image;
    size_tex              = (*width) * (*height);
 

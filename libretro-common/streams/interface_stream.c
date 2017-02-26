@@ -148,9 +148,9 @@ int intfstream_seek(intfstream_internal_t *intf, int offset, int whence)
    switch (intf->type)
    {
       case INTFSTREAM_FILE:
-         return filestream_seek(intf->file.fp, offset, whence);
+         return (int)filestream_seek(intf->file.fp, (int)offset, whence);
       case INTFSTREAM_MEMORY:
-         return memstream_seek(intf->memory.fp, offset, whence);
+         return (int)memstream_seek(intf->memory.fp, offset, whence);
    }
 
    return -1;
@@ -230,9 +230,9 @@ int intfstream_tell(intfstream_internal_t *intf)
    switch (intf->type)
    {
       case INTFSTREAM_FILE:
-         return filestream_tell(intf->file.fp);
+         return (int)filestream_tell(intf->file.fp);
       case INTFSTREAM_MEMORY:
-         return memstream_pos(intf->memory.fp);
+         return (int)memstream_pos(intf->memory.fp);
    }
 
    return -1;

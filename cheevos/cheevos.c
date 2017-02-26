@@ -979,8 +979,8 @@ static unsigned cheevos_read_hits(const char **memaddr)
 
    if (*str == '(' || *str == '.')
    {
-      num_hits = strtol(str + 1, &end, 10);
-      str = end + 1;
+      num_hits = (unsigned)strtol(str + 1, &end, 10);
+      str      = end + 1;
    }
 
    *memaddr = str;
@@ -1109,8 +1109,8 @@ void cheevos_parse_guest_addr(cheevos_var_t *var, unsigned value)
       {
          if (((desc->core.start ^ var->value) & desc->core.select) == 0)
          {
-            var->bank_id = desc - system->mmaps.descriptors;
-            var->value = cheevos_reduce(
+            var->bank_id = (int)(desc - system->mmaps.descriptors);
+            var->value   = (unsigned)cheevos_reduce(
                (var->value - desc->core.start) & desc->disconnect_mask,
                desc->core.disconnect);
 
@@ -1505,12 +1505,12 @@ static int cheevos_new_cheevo(cheevos_readud_t *ud)
    else
       cheevo = cheevos_locals.unofficial.cheevos + ud->unofficial_count++;
 
-   cheevo->id          = strtol(ud->id.string, NULL, 10);
+   cheevo->id          = (unsigned)strtol(ud->id.string, NULL, 10);
    cheevo->title       = cheevos_dupstr(&ud->title);
    cheevo->description = cheevos_dupstr(&ud->desc);
    cheevo->author      = cheevos_dupstr(&ud->author);
    cheevo->badge       = cheevos_dupstr(&ud->badge);
-   cheevo->points      = strtol(ud->points.string, NULL, 10);
+   cheevo->points      = (unsigned)strtol(ud->points.string, NULL, 10);
    cheevo->dirty       = 0;
    cheevo->active      = CHEEVOS_ACTIVE_SOFTCORE | CHEEVOS_ACTIVE_HARDCORE;
    cheevo->last        = 1;
@@ -1669,7 +1669,7 @@ static int cheevos_read__json_number(void *userdata,
    }
    else if (ud->is_console_id)
    {
-      cheevos_locals.console_id = strtol(number, NULL, 10);
+      cheevos_locals.console_id = (int)strtol(number, NULL, 10);
       ud->is_console_id = 0;
    }
 
@@ -2498,7 +2498,7 @@ static unsigned cheevos_get_game_id(unsigned char *hash, retro_time_t *timeout)
       if (!res)
       {
          RARCH_LOG("CHEEVOS got game id %s.\n", game_id);
-         return strtoul(game_id, NULL, 10);
+         return (unsigned)strtoul(game_id, NULL, 10);
       }
    }
 

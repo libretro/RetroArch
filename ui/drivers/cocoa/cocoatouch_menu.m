@@ -675,7 +675,7 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
 
    for (; i < end; i++)
-     [everything addObject:[self make_menu_item_for_entry: i]];
+     [everything addObject:[self make_menu_item_for_entry: (uint32_t)i]];
 
    self.sections = [NSMutableArray array];
    [self.sections addObject:everything];
@@ -771,7 +771,7 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
    menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, & selection);
     
    menu_entry_get(&entry, 0, selection, NULL, false);
-   menu_entry_action(&entry, selection, MENU_ACTION_CANCEL);
+   menu_entry_action(&entry, (unsigned int)selection, MENU_ACTION_CANCEL);
 #endif
 }
 

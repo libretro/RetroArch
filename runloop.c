@@ -252,7 +252,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             unsigned *idx = (unsigned*)data;
             if (!idx)
                return false;
-            *idx = core_option_manager_size(runloop_core_options);
+            *idx = (unsigned)core_option_manager_size(runloop_core_options);
          }
          break;
       case RUNLOOP_CTL_HAS_CORE_OPTIONS:

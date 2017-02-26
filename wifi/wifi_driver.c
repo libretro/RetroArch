@@ -149,7 +149,7 @@ bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
 
             driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
 
-            i = drv.len;
+            i = (int)drv.len;
 
             if (i >= 0)
                wifi_driver = (const wifi_driver_t*)wifi_driver_find_handle(i);

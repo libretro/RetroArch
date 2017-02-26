@@ -127,7 +127,7 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
       RETRO_DEVICE_ID_JOYPAD_B : RETRO_DEVICE_ID_JOYPAD_A;
    unsigned menu_cancel_btn                = settings->input.menu_swap_ok_cancel_buttons ?
       RETRO_DEVICE_ID_JOYPAD_A : RETRO_DEVICE_ID_JOYPAD_B;
-   unsigned ok_current                     = input & UINT64_C(1) << menu_ok_btn;
+   unsigned ok_current                     = (unsigned)(input & UINT64_C(1) << menu_ok_btn);
    unsigned ok_trigger                     = ok_current & ~ok_old;
 
    ok_old                                  = ok_current;

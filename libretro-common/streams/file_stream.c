@@ -319,7 +319,7 @@ char *filestream_gets(RFILE *stream, char *s, size_t len)
    if (!stream)
       return NULL;
 #if defined(HAVE_BUFFERED_IO)
-   return fgets(s, len, stream->fp);
+   return fgets(s, (int)len, stream->fp);
 #elif  defined(PSP)
    if(filestream_read(stream,s,len)==len)
       return s;

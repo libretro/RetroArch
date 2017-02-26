@@ -191,7 +191,7 @@ void sha256_hash(char *s, const uint8_t *in, size_t size)
    } shahash;
 
    sha256_init(&sha);
-   sha256_chunk(&sha, in, size);
+   sha256_chunk(&sha, in, (unsigned)size);
    sha256_final(&sha);
    sha256_subhash(&sha, shahash.u32);
 
@@ -522,7 +522,7 @@ int sha1_calculate(const char *path, char *result)
 
    do
    {
-      rv = filestream_read(fd, buff, 4096);
+      rv = (int)filestream_read(fd, buff, 4096);
       if (rv < 0)
          goto error;
 

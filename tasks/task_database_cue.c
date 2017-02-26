@@ -69,7 +69,7 @@ static ssize_t get_token(RFILE *fd, char *token, size_t max_len)
 
    while (1)
    {
-      int rv = filestream_read(fd, c, 1);
+      int rv = (int)filestream_read(fd, c, 1);
       if (rv == 0)
          return 0;
 
@@ -123,7 +123,7 @@ static ssize_t get_token(RFILE *fd, char *token, size_t max_len)
 
 static int find_token(RFILE *fd, const char *token)
 {
-   int     tmp_len = strlen(token);
+   int     tmp_len = (int)strlen(token);
    char *tmp_token = (char*)calloc(tmp_len+1, 1);
 
    if (!tmp_token)

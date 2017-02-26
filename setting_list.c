@@ -1682,7 +1682,7 @@ bool CONFIG_PATH(
    rarch_setting_t value = setting_string_setting(ST_PATH,
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
-         target, len, default_value, "",
+         target, (unsigned)len, default_value, "",
          group_info->name, subgroup_info->name, parent_group,
          change_handler, read_handler,
          false);
@@ -1715,7 +1715,7 @@ bool CONFIG_DIR(
    rarch_setting_t value = setting_string_setting(ST_DIR, 
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
-         target, len, default_value,
+         target, (unsigned)len, default_value,
          msg_hash_to_str(empty_enum_idx),
          group_info->name, subgroup_info->name, parent_group,
          change_handler, read_handler,
@@ -1752,7 +1752,7 @@ bool CONFIG_STRING(
    rarch_setting_t value = setting_string_setting(ST_STRING,
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
-         target, len, default_value, "",
+         target, (unsigned)len, default_value, "",
          group_info->name, subgroup_info->name, parent_group,
          change_handler, read_handler, false);
    if (!(settings_list_append(list, list_info)))
@@ -1782,7 +1782,7 @@ bool CONFIG_STRING_OPTIONS(
    rarch_setting_t value = setting_string_setting_options(ST_STRING_OPTIONS,
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
-         target, len, default_value, "", values,
+         target, (unsigned)len, default_value, "", values,
          group_info->name, subgroup_info->name, parent_group,
          change_handler, read_handler, false);
    if (!(settings_list_append(list, list_info)))
@@ -2046,7 +2046,7 @@ static void menu_input_st_hex_cb(void *userdata, const char *str)
          if (str[0] == '#')
             str++;
          if (ptr)
-            *ptr = strtoul(str, NULL, 16);
+            *ptr = (unsigned)strtoul(str, NULL, 16);
       }
    }
 

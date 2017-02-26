@@ -293,52 +293,52 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
             break;
          case DB_CURSOR_CERO_RATING:
             if (!string_is_empty(val_string))
-               db_info->cero_rating = strdup(val_string);
+               db_info->cero_rating          = strdup(val_string);
             break;
          case DB_CURSOR_PEGI_RATING:
             if (!string_is_empty(val_string))
-               db_info->pegi_rating = strdup(val_string);
+               db_info->pegi_rating          = strdup(val_string);
             break;
          case DB_CURSOR_ENHANCEMENT_HW:
             if (!string_is_empty(val_string))
-               db_info->enhancement_hw = strdup(val_string);
+               db_info->enhancement_hw       = strdup(val_string);
             break;
          case DB_CURSOR_EDGE_MAGAZINE_REVIEW:
             if (!string_is_empty(val_string))
                db_info->edge_magazine_review = strdup(val_string);
             break;
          case DB_CURSOR_EDGE_MAGAZINE_RATING:
-            db_info->edge_magazine_rating = val->val.uint_;
+            db_info->edge_magazine_rating    = (unsigned)val->val.uint_;
             break;
          case DB_CURSOR_EDGE_MAGAZINE_ISSUE:
-            db_info->edge_magazine_issue = val->val.uint_;
+            db_info->edge_magazine_issue     = (unsigned)val->val.uint_;
             break;
          case DB_CURSOR_FAMITSU_MAGAZINE_RATING:
-            db_info->famitsu_magazine_rating = val->val.uint_;
+            db_info->famitsu_magazine_rating = (unsigned)val->val.uint_;
             break;
          case DB_CURSOR_TGDB_RATING:
-            db_info->tgdb_rating = val->val.uint_;
+            db_info->tgdb_rating             = (unsigned)val->val.uint_;
             break;
          case DB_CURSOR_MAX_USERS:
-            db_info->max_users = val->val.uint_;
+            db_info->max_users               = (unsigned)val->val.uint_;
             break;
          case DB_CURSOR_RELEASEDATE_MONTH:
-            db_info->releasemonth = val->val.uint_;
+            db_info->releasemonth            = val->val.uint_;
             break;
          case DB_CURSOR_RELEASEDATE_YEAR:
-            db_info->releaseyear = val->val.uint_;
+            db_info->releaseyear             = (unsigned)val->val.uint_;
             break;
          case DB_CURSOR_RUMBLE_SUPPORTED:
-            db_info->rumble_supported = val->val.uint_;
+            db_info->rumble_supported        = (int)val->val.uint_;
             break;
          case DB_CURSOR_COOP_SUPPORTED:
-            db_info->coop_supported = val->val.uint_;
+            db_info->coop_supported          = (int)val->val.uint_;
             break;
          case DB_CURSOR_ANALOG_SUPPORTED:
-            db_info->analog_supported = val->val.uint_;
+            db_info->analog_supported        = (int)val->val.uint_;
             break;
          case DB_CURSOR_SIZE:
-            db_info->size = val->val.uint_;
+            db_info->size                    = (unsigned)val->val.uint_;
             break;
          case DB_CURSOR_CHECKSUM_CRC32:
             db_info->crc32 = swap_if_little32(*(uint32_t*)val->val.binary.buff);

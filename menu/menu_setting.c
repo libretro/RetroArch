@@ -303,7 +303,7 @@ static int setting_string_action_left_audio_device(void *data, bool wraparound)
 
    /* Reset index if needed */
    if (audio_device_index < 0)
-      audio_device_index = ptr->size - 1;
+      audio_device_index = (int)(ptr->size - 1);
 
    strlcpy(setting->value.target.string, ptr->elems[audio_device_index].data, setting->size);
 
@@ -2210,7 +2210,7 @@ static bool setting_append_list(
                      &group_info,
                      &subgroup_info,
                      parent_group);
-               (*list)[list_info->index - 1].size                = path_get_realsize(RARCH_PATH_CORE);
+               (*list)[list_info->index - 1].size                = (uint32_t)path_get_realsize(RARCH_PATH_CORE);
                (*list)[list_info->index - 1].value.target.string = path_get_ptr(RARCH_PATH_CORE);
                (*list)[list_info->index - 1].values       = ext_name;
                menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_LOAD_CORE);
@@ -6584,7 +6584,7 @@ bool menu_setting_free(void *data)
 
    /* Free data which was previously tagged */
    for (; setting_get_type(setting) != ST_NONE; (*list = *list + 1))
-      for (values = setting->free_flags, n = 0; values != 0; values >>= 1, n++)
+      for (values = (unsigned)setting->free_flags, n = 0; values != 0; values >>= 1, n++)
          if (values & 1)
             switch (1 << n)
             {

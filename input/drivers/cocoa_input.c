@@ -76,7 +76,7 @@ int32_t cocoa_input_find_any_button(uint32_t port)
        apple->joypad->poll();
 
        if (apple->joypad->get_buttons)
-          ret = cocoa_input_find_any_button_ret(apple, apple->joypad->get_buttons(port), port);
+          ret = cocoa_input_find_any_button_ret(apple, (unsigned)apple->joypad->get_buttons(port), port);
    }
 
    if (ret != -1)
@@ -89,7 +89,7 @@ int32_t cocoa_input_find_any_button(uint32_t port)
        if (apple->sec_joypad->get_buttons)
        {
           apple->sec_joypad->poll();
-          ret = cocoa_input_find_any_button_ret(apple, apple->sec_joypad->get_buttons(port), port);
+          ret = cocoa_input_find_any_button_ret(apple, (unsigned)apple->sec_joypad->get_buttons(port), port);
        }
    }
 

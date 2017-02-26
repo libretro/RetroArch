@@ -184,7 +184,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
    snprintf(frame_count_mod_buf, sizeof(frame_count_mod_buf), "frame_count_mod%u", i);
    if (config_get_array(conf, frame_count_mod_buf,
             frame_count_mod, sizeof(frame_count_mod)))
-      pass->frame_count_mod = strtoul(frame_count_mod, NULL, 0);
+      pass->frame_count_mod = (unsigned)strtoul(frame_count_mod, NULL, 0);
 
    /* FBO types and mipmapping */
    snprintf(srgb_output_buf, sizeof(srgb_output_buf), "srgb_framebuffer%u", i);

@@ -144,7 +144,7 @@ static void apple_gamecontroller_joypad_connect(GCController *controller)
         if (!mfi_controllers[desired_index])
         {
             controller.playerIndex = desired_index;
-            mfi_controllers[desired_index] = controller.hash;
+            mfi_controllers[desired_index] = (uint32_t)controller.hash;
         }
         else
         {
@@ -156,7 +156,7 @@ static void apple_gamecontroller_joypad_connect(GCController *controller)
               if (mfi_controllers[i])
                  continue;
 
-              mfi_controllers[i] = controller.hash;
+              mfi_controllers[i] = (uint32_t)controller.hash;
               controller.playerIndex = i;
               break;
            }

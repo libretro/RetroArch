@@ -282,7 +282,7 @@ static int menu_input_mouse_frame(
    {
       size_t selection;
       menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
-      menu_entry_action(entry, selection, MENU_ACTION_CANCEL);
+      menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
    }
 
    if (BIT64_GET(mouse_state, MENU_MOUSE_ACTION_WHEEL_DOWN))
@@ -519,7 +519,7 @@ static int menu_input_pointer_post_iterate(
          size_t selection;
          pointer_oldback = true;
          menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
-         menu_entry_action(entry, selection, MENU_ACTION_CANCEL);
+         menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
       }
    }
 

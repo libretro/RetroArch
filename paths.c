@@ -320,7 +320,7 @@ static bool path_init_subsystem(void)
    {
       unsigned num_content = MIN(info->num_roms,
             path_is_empty(RARCH_PATH_SUBSYSTEM) ?
-            0 : subsystem_fullpaths->size);
+            0 : (unsigned)subsystem_fullpaths->size);
 
       for (i = 0; i < num_content; i++)
       {
