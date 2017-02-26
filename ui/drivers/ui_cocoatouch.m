@@ -147,6 +147,7 @@ static void handle_touch_event(NSArray* touches)
    }
 }
 
+#ifndef HAVE_APPLE_STORE
 // iO7 Keyboard support
 @interface UIEvent(iOS7Keyboard)
 @property(readonly, nonatomic) long long _keyCode;
@@ -160,12 +161,14 @@ static void handle_touch_event(NSArray* touches)
 - (void)handleKeyUIEvent:(UIEvent*)event;
 - (id)_keyCommandForEvent:(UIEvent*)event;
 @end
+#endif
 
 @interface RApplication : UIApplication
 @end
 
 @implementation RApplication
 
+#ifndef HAVE_APPLE_STORE
 /* Keyboard handler for iOS 7. */
 
 /* This is copied here as it isn't
@@ -282,6 +285,7 @@ enum
 
    return [super _keyCommandForEvent:event];
 }
+#endif
 
 #define GSEVENT_TYPE_KEYDOWN 10
 #define GSEVENT_TYPE_KEYUP 11
