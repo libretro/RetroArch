@@ -1402,10 +1402,10 @@ static bool gl_glsl_set_coords(void *handle_data, void *shader_data, const struc
 {
    /* Avoid hitting malloc on every single regular quad draw. */
    GLfloat short_buffer[4 * (2 + 2 + 4 + 2)];
-   GLfloat *buffer;
    struct glsl_attrib attribs[4];
    size_t               attribs_size = 0;
    size_t                       size = 0;
+   GLfloat *buffer                   = NULL;
    struct glsl_attrib          *attr = NULL;
    const struct shader_uniforms *uni = NULL;
    glsl_shader_data_t          *glsl = (glsl_shader_data_t*)shader_data;
@@ -1413,21 +1413,21 @@ static bool gl_glsl_set_coords(void *handle_data, void *shader_data, const struc
    if (!glsl || !glsl->shader->modern || !coords)
       goto fallback;
 
-   attr = attribs;
-   uni  = &glsl->uniforms[glsl->active_idx];
-
+   attr   = attribs;
+   uni    = &glsl->uniforms[glsl->active_idx];
    buffer = short_buffer;
+    
    if (coords->vertices > 4)
    {
-      size_t elems = 0;
-      elems += (uni->color >= 0) * 4;
-      elems += (uni->tex_coord >= 0) * 2;
-      elems += (uni->vertex_coord >= 0) * 2;
-      elems += (uni->lut_tex_coord >= 0) * 2;
+      size_t elems  = 0;
+      elems        += (uni->color >= 0) * 4;
+      elems        += (uni->tex_coord >= 0) * 2;
+      elems        += (uni->vertex_coord >= 0) * 2;
+      elems        += (uni->lut_tex_coord >= 0) * 2;
 
-      elems *= coords->vertices * sizeof(GLfloat);
+      elems        *= coords->vertices * sizeof(GLfloat);
 
-      buffer = (GLfloat*)malloc(elems);
+      buffer        = (GLfloat*)malloc(elems);
    }
 
    if (!buffer)
