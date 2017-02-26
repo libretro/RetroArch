@@ -614,6 +614,7 @@ static void retroarch_parse_input(int argc, char *argv[])
             break;
 
          case 'c':
+            RARCH_LOG("Set config file to : %s\n", optarg);
             path_set(RARCH_PATH_CONFIG, optarg);
             break;
 
