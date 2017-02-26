@@ -1621,8 +1621,12 @@ static void command_event_save_current_config(enum override_type type)
    switch (type)
    {
       case OVERRIDE_NONE:
-         if (!path_is_empty(RARCH_PATH_CONFIG))
+         if (path_is_empty(RARCH_PATH_CONFIG))
+            strlcpy(msg, "Config directory not set, cannot save configuration.",
+                  sizeof(msg));
+         else
             command_event_save_config(path_get(RARCH_PATH_CONFIG), msg, sizeof(msg));
+         else
          break;
       case OVERRIDE_GAME:
       case OVERRIDE_CORE:
