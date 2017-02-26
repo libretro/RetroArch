@@ -1626,7 +1626,6 @@ static void command_event_save_current_config(enum override_type type)
                   sizeof(msg));
          else
             command_event_save_config(path_get(RARCH_PATH_CONFIG), msg, sizeof(msg));
-         else
          break;
       case OVERRIDE_GAME:
       case OVERRIDE_CORE:
