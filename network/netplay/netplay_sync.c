@@ -55,6 +55,7 @@ void netplay_update_unread_ptr(netplay_t *netplay)
       for (player = 0; player < MAX_USERS; player++)
       {
          if (!(netplay->connected_players & (1<<player))) continue;
+         if ((netplay->connected_slaves & (1<<player))) continue;
          if (netplay->read_frame_count[player] < new_unread_frame_count)
          {
             new_unread_ptr = netplay->read_ptr[player];
@@ -68,8 +69,16 @@ void netplay_update_unread_ptr(netplay_t *netplay)
          new_unread_frame_count = netplay->server_frame_count;
       }
 
-      netplay->unread_ptr = new_unread_ptr;
-      netplay->unread_frame_count = new_unread_frame_count;
+      if (new_unread_frame_count != (uint32_t) -1)
+      {
+         netplay->unread_ptr = new_unread_ptr;
+         netplay->unread_frame_count = new_unread_frame_count;
+      }
+      else
+      {
+         netplay->unread_ptr = netplay->self_ptr;
+         netplay->unread_frame_count = netplay->self_frame_count;
+      }
    }
 }
 
@@ -546,7 +555,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
    if (netplay->catch_up)
    {
       /* Are we caught up? */
-      if (netplay->self_frame_count >= lo_frame_count)
+      if (netplay->self_frame_count + 1 >= lo_frame_count)
       {
          netplay->catch_up = false;
          input_driver_unset_nonblock_state();
@@ -556,17 +565,44 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
    }
    else if (!stalled)
    {
-      if (netplay->self_frame_count + 2 < lo_frame_count)
+      if (netplay->self_frame_count + 3 < lo_frame_count)
       {
-         /* Are we falling behind? */
-         netplay->catch_up = true;
-         input_driver_set_nonblock_state();
-         driver_set_nonblock_state();
+         retro_time_t cur_time = cpu_features_get_time_usec();
+         uint32_t cur_behind = lo_frame_count - netplay->self_frame_count;
+
+         /* We're behind, but we'll only try to catch up if we're actually
+          * falling behind, i.e. if we're more behind after some time */
+         if (netplay->catch_up_time == 0)
+         {
+            /* Record our current time to check for catch-up later */
+            netplay->catch_up_time = cur_time;
+            netplay->catch_up_behind = cur_behind;
+
+         }
+         else if (cur_time - netplay->catch_up_time > CATCH_UP_CHECK_TIME_USEC)
+         {
+            /* Time to check how far behind we are */
+            if (netplay->catch_up_behind <= cur_behind)
+            {
+               /* We're definitely falling behind! */
+               netplay->catch_up = true;
+               netplay->catch_up_time = 0;
+               input_driver_set_nonblock_state();
+               driver_set_nonblock_state();
+            }
+            else
+            {
+               /* Check again in another period */
+               netplay->catch_up_time = cur_time;
+               netplay->catch_up_behind = cur_behind;
+            }
+         }
 
       }
-      else if (netplay->self_frame_count + 2 < hi_frame_count)
+      else if (netplay->self_frame_count + 3 < hi_frame_count)
       {
          size_t i;
+         netplay->catch_up_time = 0;
 
          /* We're falling behind some clients but not others, so request that
           * clients ahead of us stall */
@@ -580,7 +616,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
             player = connection->player;
 
             /* Are they ahead? */
-            if (netplay->self_frame_count + 2 < netplay->read_frame_count[player])
+            if (netplay->self_frame_count + 3 < netplay->read_frame_count[player])
             {
                /* Tell them to stall */
                if (connection->stall_frame + NETPLAY_MAX_REQ_STALL_FREQUENCY <
@@ -594,5 +630,9 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
             }
          }
       }
+      else
+         netplay->catch_up_time = 0;
    }
+   else
+      netplay->catch_up_time =  0;
 }

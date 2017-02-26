@@ -162,8 +162,7 @@ bool netplay_send(struct socket_buffer *sbuf, int sockfd, const void *buf,
 
    }
 
-   /* Flush what we can immediately */
-   return netplay_send_flush(sbuf, sockfd, false);
+   return true;
 }
 
 /**

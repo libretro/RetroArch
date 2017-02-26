@@ -220,6 +220,10 @@ static bool netplay_poll(void)
    /* Simulate the input if we don't have real input */
    netplay_simulate_input(netplay_data, netplay_data->run_ptr, false);
 
+   /* Handle any slaves */
+   if (netplay_data->is_server && netplay_data->connected_slaves)
+      netplay_handle_slaves(netplay_data);
+
    netplay_update_unread_ptr(netplay_data);
 
    /* Figure out how many frames of input latency we should be using to hide
@@ -299,6 +303,11 @@ static bool netplay_poll(void)
          break;
       }
 
+      case NETPLAY_STALL_SPECTATOR_WAIT:
+         if (netplay_data->unread_frame_count > netplay_data->self_frame_count)
+            netplay_data->stall = NETPLAY_STALL_NONE;
+         break;
+
       case NETPLAY_STALL_INPUT_LATENCY:
          /* Just let it recalculate momentarily */
          netplay_data->stall = NETPLAY_STALL_NONE;
@@ -331,7 +340,7 @@ static bool netplay_poll(void)
    /* If we're not stalled, consider stalling */
    if (!netplay_data->stall)
    {
-      /* Have we not reat enough latency frames? */
+      /* Have we not read enough latency frames? */
       if (netplay_data->self_mode == NETPLAY_CONNECTION_PLAYING &&
           netplay_data->connected_players &&
           netplay_data->run_frame_count + netplay_data->input_latency_frames > netplay_data->self_frame_count)
@@ -369,6 +378,16 @@ static bool netplay_poll(void)
             }
          }
 
+      }
+
+      /* If we're a spectator, are we ahead at all? */
+      if (!netplay_data->is_server &&
+          (netplay_data->self_mode == NETPLAY_CONNECTION_SPECTATING ||
+           netplay_data->self_mode == NETPLAY_CONNECTION_SLAVE) &&
+          netplay_data->unread_frame_count <= netplay_data->self_frame_count)
+      {
+         netplay_data->stall = NETPLAY_STALL_SPECTATOR_WAIT;
+         netplay_data->stall_time = cpu_features_get_time_usec();
       }
    }
 
@@ -943,7 +962,8 @@ static void netplay_toggle_play_spectate(netplay_t *netplay)
       char msg[512];
       const char *dmsg = NULL;
       payload[0] = htonl(netplay->self_frame_count);
-      if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING)
+      if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING ||
+          netplay->self_mode == NETPLAY_CONNECTION_SLAVE)
       {
          /* Mark us as no longer playing */
          payload[1] = htonl(netplay->self_player);
@@ -980,7 +1000,8 @@ static void netplay_toggle_play_spectate(netplay_t *netplay)
    {
       uint32_t cmd;
 
-      if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING)
+      if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING ||
+          netplay->self_mode == NETPLAY_CONNECTION_SLAVE)
       {
          /* Switch to spectator mode immediately */
          netplay->self_mode = NETPLAY_CONNECTION_SPECTATING;

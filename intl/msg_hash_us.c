@@ -1540,6 +1540,21 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len) {
                              "on start. It's always possible to change mode \n"
                              "later.");
             break;
+        case MENU_ENUM_LABEL_NETPLAY_ALLOW_SLAVES:
+            snprintf(s, len,
+                     "Whether to allow connections in slave mode. \n"
+                             " \n"
+                             "Slave-mode clients require very little processing \n"
+                             "power on either side, but will suffer \n"
+                             "significantly from network latency.");
+            break;
+        case MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES:
+            snprintf(s, len,
+                     "Whether to disallow connections not in slave mode. \n"
+                             " \n"
+                             "Not recommended except for very fast networks \n"
+                             "with very weak machines. \n");
+            break;
         case MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE:
             snprintf(s, len,
                      "Whether to run netplay in a mode not requiring\n"

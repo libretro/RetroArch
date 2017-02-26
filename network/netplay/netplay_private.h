@@ -42,6 +42,7 @@
 
 #define MAX_SERVER_STALL_TIME_USEC  (5*1000*1000)
 #define MAX_CLIENT_STALL_TIME_USEC  (10*1000*1000)
+#define CATCH_UP_CHECK_TIME_USEC    (500*1000)
 #define MAX_RETRIES                 16
 #define RETRY_MS                    500
 
@@ -176,6 +177,8 @@ enum netplay_cmd
 
 #define NETPLAY_CMD_INPUT_BIT_SERVER   (1U<<31)
 #define NETPLAY_CMD_SYNC_BIT_PAUSED    (1U<<31)
+#define NETPLAY_CMD_PLAY_BIT_SLAVE         (1U)
+#define NETPLAY_CMD_MODE_BIT_SLAVE     (1U<<18)
 #define NETPLAY_CMD_MODE_BIT_PLAYING   (1U<<17)
 #define NETPLAY_CMD_MODE_BIT_YOU       (1U<<16)
 
@@ -206,15 +209,28 @@ enum rarch_netplay_connection_mode
    /* Ready: */
    NETPLAY_CONNECTION_CONNECTED, /* Modes above this are connected */
    NETPLAY_CONNECTION_SPECTATING, /* Spectator mode */
+   NETPLAY_CONNECTION_SLAVE, /* Playing in slave mode */
    NETPLAY_CONNECTION_PLAYING /* Normal ready state */
 };
 
 enum rarch_netplay_stall_reason
 {
    NETPLAY_STALL_NONE = 0,
+
+   /* We're so far ahead that we can't read more data without overflowing the
+    * buffer */
    NETPLAY_STALL_RUNNING_FAST,
+
+   /* We're in spectator or slave mode and are running ahead at all */
+   NETPLAY_STALL_SPECTATOR_WAIT,
+
+   /* Our actual execution is catching up with latency-adjusted input frames */
    NETPLAY_STALL_INPUT_LATENCY,
+
+   /* The server asked us to stall */
    NETPLAY_STALL_SERVER_REQUESTED,
+
+   /* We have no connection and must have one to proceed */
    NETPLAY_STALL_NO_CONNECTION
 };
 
@@ -331,9 +347,12 @@ struct netplay
    size_t connections_size;
    struct netplay_connection one_connection; /* Client only */
 
-   /* Bitmap of players with controllers (whether local or remote) (low bit is
-    * player 1) */
+   /* Bitmap of players with controllers (low bit is player 1) */
    uint32_t connected_players;
+
+   /* Bitmap of players playing in slave mode (should be a subset of
+    * connected_players) */
+   uint32_t connected_slaves;
 
    /* Maximum player number */
    uint32_t player_max;
@@ -460,6 +479,12 @@ struct netplay
 
    /* Opposite of stalling, should we be catching up? */
    bool catch_up;
+
+   /* When did we start falling behind? */
+   retro_time_t catch_up_time;
+
+   /* How far behind did we fall? */
+   uint32_t catch_up_behind;
 
    /* Frequency with which to check CRCs */
    int check_frames;
@@ -757,6 +782,13 @@ bool netplay_cmd_stall(netplay_t *netplay,
  * Poll input from the network
  */
 int netplay_poll_net_input(netplay_t *netplay, bool block);
+
+/**
+ * netplay_handle_slaves
+ *
+ * Handle any slave connections
+ */
+void netplay_handle_slaves(netplay_t *netplay);
 
 /**
  * netplay_flip_port

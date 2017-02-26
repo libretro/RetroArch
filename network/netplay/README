@@ -234,16 +234,22 @@ Description:
     itself to be in spectator mode and send no further input.
 
 Command: PLAY
-Payload: None
+Payload:
+    {
+       reserved: 31 bits
+       as slave?: 1 bit
+    }
 Description:
     Request to enter player mode. The client must wait for a MODE command
-    before sending input.
+    before sending input. Server may refuse or force slave connections, so the
+    request is not necessarily honored. Payload may be elided if zero.
 
 Command: MODE
 Payload:
     {
        frame number: uint32
-       reserved: 14 bits
+       reserved: 13 bits
+       slave: 1 bit
        playing: 1 bit
        you: 1 bit
        player number: uint16
