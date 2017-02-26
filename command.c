@@ -1691,11 +1691,12 @@ static void command_event_undo_load_state(char *s, size_t len)
          msg_hash_to_str(MSG_UNDID_LOAD_STATE), len);
 }
 
-static void command_event_main_state(unsigned cmd)
+static bool command_event_main_state(unsigned cmd)
 {
    retro_ctx_size_info_t info;
    char path[PATH_MAX_LENGTH];
    char msg[128];
+   bool ret                   = false;
    global_t *global           = global_get_ptr();
    bool push_msg              = true;
 
@@ -1723,11 +1724,13 @@ static void command_event_main_state(unsigned cmd)
       {
          case CMD_EVENT_SAVE_STATE:
             content_save_state(path, true, false);
+            ret      = true;
             push_msg = false;
             break;
          case CMD_EVENT_LOAD_STATE:
             if (content_load_state(path, false, false))
             {
+               ret = true;
 #ifdef HAVE_NETWORKING
                netplay_driver_ctl(RARCH_NETPLAY_CTL_LOAD_SAVESTATE, NULL);
 #endif
@@ -1736,9 +1739,11 @@ static void command_event_main_state(unsigned cmd)
             break;
          case CMD_EVENT_UNDO_LOAD_STATE:
             command_event_undo_load_state(msg, sizeof(msg));
+            ret = true;
             break;
          case CMD_EVENT_UNDO_SAVE_STATE:
             command_event_undo_save_state(msg, sizeof(msg));
+            ret = true;
             break;
       }
    }
@@ -1749,6 +1754,8 @@ static void command_event_main_state(unsigned cmd)
    if (push_msg)
       runloop_msg_queue_push(msg, 2, 180, true);
    RARCH_LOG("%s\n", msg);
+
+   return ret;
 }
 
 void handle_quit_event(void)
@@ -1889,15 +1896,13 @@ bool command_event(enum event_command cmd, void *data)
                return false;
 #endif
 
-            command_event_main_state(cmd);
+            return command_event_main_state(cmd);
          }
          break;
       case CMD_EVENT_UNDO_LOAD_STATE:
-         command_event_main_state(cmd);
-         break;
+         return command_event_main_state(cmd);
       case CMD_EVENT_UNDO_SAVE_STATE:
-         command_event_main_state(cmd);
-         break;
+         return command_event_main_state(cmd);
       case CMD_EVENT_RESIZE_WINDOWED_SCALE:
          return command_event_resize_windowed_scale();
       case CMD_EVENT_MENU_TOGGLE:
@@ -1936,10 +1941,8 @@ bool command_event(enum event_command cmd, void *data)
 
             if (settings->savestate_auto_index)
                settings->state_slot++;
-
-            command_event_main_state(cmd);
          }
-         break;
+         return command_event_main_state(cmd);
       case CMD_EVENT_SAVE_STATE_DECREMENT:
          {
             settings_t *settings      = config_get_ptr();
