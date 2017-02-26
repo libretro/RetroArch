@@ -921,11 +921,7 @@ static const unsigned input_bind_timeout = 5;
 static const unsigned menu_thumbnails_default = 3;
 
 #ifdef IOS
-#ifdef HAVE_DYNAMIC
 static const bool ui_companion_start_on_boot = false;
-#else
-static const bool ui_companion_start_on_boot = true;
-#endif
 #else
 static const bool ui_companion_start_on_boot = true;
 #endif
