@@ -89,7 +89,9 @@ struct string_list *dir_list_new_special(const char *input_dir,
             core_info_get_list(&list);
 
             dir  = input_dir;
-            exts = list->all_ext;
+
+            if (exts && list)
+               exts = list->all_ext;
          }
          break;
       case DIR_LIST_RECURSIVE:
@@ -98,7 +100,9 @@ struct string_list *dir_list_new_special(const char *input_dir,
           core_info_get_list(&list);
 
           dir  = input_dir;
-          exts = list->all_ext;
+
+          if (exts && list)
+             exts = list->all_ext;
           recursive = true;
        }
        break;
