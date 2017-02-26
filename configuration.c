@@ -1336,9 +1336,12 @@ static void config_set_defaults(void)
       strlcpy(settings->directory.menu_config,
             g_defaults.dir.menu_config,
             sizeof(settings->directory.menu_config));
+#if TARGET_OS_IPHONE
       path_set(RARCH_PATH_CONFIG,
             settings->directory.menu_config);
+#endif
    }
+
    if (!string_is_empty(g_defaults.dir.menu_content))
       strlcpy(settings->directory.menu_content,
             g_defaults.dir.menu_content,
