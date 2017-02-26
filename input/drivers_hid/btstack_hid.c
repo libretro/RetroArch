@@ -1253,7 +1253,9 @@ static void btpad_packet_handler(uint8_t packet_type,
 
 static bool btstack_try_load(void)
 {
+#ifdef HAVE_DYNAMIC
    unsigned i;
+#endif
    void *handle   = NULL;
 
    if (btstack_tested)
