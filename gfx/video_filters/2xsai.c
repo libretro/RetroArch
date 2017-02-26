@@ -299,9 +299,9 @@ static void twoxsai_work_cb_rgb565(void *data, void *thread_data)
 
    twoxsai_generic_rgb565(width, height,
          thr->first, thr->last, input,
-         thr->in_pitch / SOFTFILTER_BPP_RGB565,
+         (unsigned)(thr->in_pitch / SOFTFILTER_BPP_RGB565),
          output,
-         thr->out_pitch / SOFTFILTER_BPP_RGB565);
+         (unsigned)(thr->out_pitch / SOFTFILTER_BPP_RGB565));
 }
 
 static void twoxsai_work_cb_xrgb8888(void *data, void *thread_data)
@@ -315,9 +315,9 @@ static void twoxsai_work_cb_xrgb8888(void *data, void *thread_data)
 
    twoxsai_generic_xrgb8888(width, height,
          thr->first, thr->last, input,
-         thr->in_pitch / SOFTFILTER_BPP_XRGB8888,
+         (unsigned)(thr->in_pitch / SOFTFILTER_BPP_XRGB8888),
          output,
-         thr->out_pitch / SOFTFILTER_BPP_XRGB8888);
+         (unsigned)(thr->out_pitch / SOFTFILTER_BPP_XRGB8888));
 }
 
 static void twoxsai_generic_packets(void *data,

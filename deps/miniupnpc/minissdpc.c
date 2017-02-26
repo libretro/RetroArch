@@ -295,19 +295,22 @@ receiveDevicesFromMiniSSDPD(int s, int * error)
 		printf("  urlsize=%u", urlsize);
 #endif /* DEBUG */
 		url = (unsigned char*)malloc(urlsize);
-		if(url == NULL) {
+		if(url == NULL)
+        {
 			if (error)
 				*error = MINISSDPC_MEMORY_ERROR;
 			return devlist;
 		}
 		READ_COPY_BUFFER(url, urlsize);
-		if(n<=0) {
+		if(n<=0)
+        {
 			if (error)
 				*error = MINISSDPC_INVALID_SERVER_REPLY;
 			goto free_url_and_return;
 		}
 		DECODELENGTH_READ(stsize, READ_BYTE_BUFFER);
-		if(n<=0) {
+		if(n<=0)
+        {
 			if (error)
 				*error = MINISSDPC_INVALID_SERVER_REPLY;
 			goto free_url_and_return;
@@ -768,7 +771,7 @@ ssdpDiscoverDevices(const char * const deviceTypes[],
 			break;
 		}
 		for(p = servinfo; p; p = p->ai_next) {
-			n = sendto(sudp, bufr, n, 0, p->ai_addr, p->ai_addrlen);
+			n = (int)sendto(sudp, bufr, n, 0, p->ai_addr, p->ai_addrlen);
 			if (n < 0) {
 #ifdef DEBUG
 				char hbuf[NI_MAXHOST], sbuf[NI_MAXSERV];

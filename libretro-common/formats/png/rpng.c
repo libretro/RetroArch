@@ -898,11 +898,11 @@ static struct rpng_process *rpng_process_init(rpng_t *rpng, unsigned *width, uns
    process->stream_backend->set_in(
          process->stream,
          rpng->idat_buf.data,
-         rpng->idat_buf.size);
+         (uint32_t)rpng->idat_buf.size);
    process->stream_backend->set_out(
          process->stream,
          process->inflate_buf,
-         process->inflate_buf_size);
+         (uint32_t)process->inflate_buf_size);
 
    return process;
 

@@ -52,7 +52,7 @@ static void task_overlay_image_done(struct overlay *overlay)
    overlay->pos           = 0;
    /* Divide iteration steps by half of total descs if size is even,
     * otherwise default to 8 (arbitrary value for now to speed things up). */
-   overlay->pos_increment = (overlay->size / 2) ? (overlay->size / 2) : 8;
+   overlay->pos_increment = (overlay->size / 2) ? ((unsigned)(overlay->size / 2)) : 8;
 }
 
 static void task_overlay_load_desc_image(

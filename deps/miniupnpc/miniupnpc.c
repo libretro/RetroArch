@@ -430,13 +430,13 @@ build_absolute_url(const char * baseurl, const char * descURL,
 	   &&(url[6] == '/'))
 		return strdup(url);
 	base = (baseurl[0] == '\0') ? descURL : baseurl;
-	n = strlen(base);
+	n    = (int)strlen(base);
 	if(n > 7) {
 		p = (char*)strchr(base + 7, '/');
 		if(p)
-			n = p - base;
+			n = (int)(p - base);
 	}
-	l = n + strlen(url) + 1;
+	l = (int)(n + strlen(url) + 1);
 	if(url[0] != '/')
 		l++;
 	if(scope_id != 0) {

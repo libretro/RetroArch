@@ -1184,7 +1184,7 @@ static void cheevos_parse_var(cheevos_var_t *var, const char **memaddr)
          str++;
    }
 
-   var->value = strtol(str, &end, base);
+   var->value = (unsigned)strtol(str, &end, base);
    *memaddr   = end;
 
    switch (var->type)

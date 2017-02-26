@@ -351,7 +351,7 @@ static bool append_softfilter_plugs(rarch_softfilter_t *filt,
       struct string_list *list)
 {
    unsigned i;
-   softfilter_simd_mask_t mask = cpu_features_get();
+   softfilter_simd_mask_t mask = (softfilter_simd_mask_t)cpu_features_get();
 
    (void)list;
 

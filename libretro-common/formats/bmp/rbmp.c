@@ -588,7 +588,7 @@ int rbmp_process_image(rbmp_t *rbmp, void **buf_data,
       return IMAGE_PROCESS_ERROR;
 
    rbmp->output_image   = (uint32_t*)rbmp_load_from_memory(rbmp->buff_data,
-                           size, width, height, &comp, 4);
+                           (int)size, width, height, &comp, 4);
    *buf_data             = rbmp->output_image;
 
    rbmp_convert_frame(rbmp->output_image, *width, *height);

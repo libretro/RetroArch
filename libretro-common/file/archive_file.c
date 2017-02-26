@@ -301,7 +301,7 @@ static int file_archive_parse_file_init(file_archive_transfer_t *state,
    if (!state->handle)
       return -1;
 
-   state->archive_size = file_archive_size(state->handle);
+   state->archive_size = (int32_t)file_archive_size(state->handle);
    state->data         = file_archive_data(state->handle);
    state->footer       = 0;
    state->directory    = 0;
@@ -509,7 +509,7 @@ int file_archive_parse_file_progress(file_archive_transfer_t *state)
 
    delta = state->directory - state->data;
 
-   return delta * 100 / state->archive_size;
+   return (int)(delta * 100 / state->archive_size);
 }
 
 /**

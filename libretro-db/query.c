@@ -525,8 +525,8 @@ static struct buffer query_parse_string(struct buffer buff,
    if (!*error)
    {
       size_t count;
-      value->type = is_binstr ? RDT_BINARY : RDT_STRING;
-      value->val.string.len = (buff.data + buff.offset) - str_start - 1;
+      value->type            = is_binstr ? RDT_BINARY : RDT_STRING;
+      value->val.string.len  = (uint32_t)((buff.data + buff.offset) - str_start - 1);
 
       count                  = is_binstr ? (value->val.string.len + 1) / 2 
          : (value->val.string.len + 1);
@@ -867,7 +867,7 @@ static struct buffer query_parse_table(struct buffer buff,
          if (!*error)
          {
             args[argi].a.value.type            = RDT_STRING;
-            args[argi].a.value.val.string.len  = ident_len;
+            args[argi].a.value.val.string.len  = (uint32_t)ident_len;
             args[argi].a.value.val.string.buff = (char*)calloc(
                   ident_len + 1,
                   sizeof(char)

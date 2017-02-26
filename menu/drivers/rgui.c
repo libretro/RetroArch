@@ -323,7 +323,7 @@ static void rgui_render_messagebox(const char *message)
    {
       unsigned line_width;
       char     *msg   = list->elems[i].data;
-      unsigned msglen = utf8len(msg);
+      unsigned msglen = (unsigned)utf8len(msg);
 
       if (msglen > RGUI_TERM_WIDTH(fb_width))
       {
@@ -339,7 +339,7 @@ static void rgui_render_messagebox(const char *message)
       glyphs_width = MAX(glyphs_width, msglen);
    }
 
-   height = FONT_HEIGHT_STRIDE * list->size + 6 + 10;
+   height = (unsigned)(FONT_HEIGHT_STRIDE * list->size + 6 + 10);
    x      = (fb_width  - width) / 2;
    y      = (fb_height - height) / 2;
 
@@ -358,8 +358,8 @@ static void rgui_render_messagebox(const char *message)
    for (i = 0; i < list->size; i++)
    {
       const char *msg = list->elems[i].data;
-      int offset_x    = FONT_WIDTH_STRIDE * (glyphs_width - utf8len(msg)) / 2;
-      int offset_y    = FONT_HEIGHT_STRIDE * i;
+      int offset_x    = (int)(FONT_WIDTH_STRIDE * (glyphs_width - utf8len(msg)) / 2);
+      int offset_y    = (int)(FONT_HEIGHT_STRIDE * i);
 
       blit_line(x + 8 + offset_x, y + 8 + offset_y, msg, color);
    }
@@ -385,7 +385,7 @@ static void rgui_blit_cursor(void)
 static void rgui_frame(void *data, video_frame_info_t *video_info)
 {
    rgui_t *rgui                   = (rgui_t*)data;
-   rgui->frame_count              = video_info->frame_count;
+   rgui->frame_count              = (unsigned)video_info->frame_count;
 }
 
 static void rgui_render(void *data)
@@ -447,8 +447,8 @@ static void rgui_render(void *data)
 
       menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &old_start);
       
-      new_val = menu_input_pointer_state(MENU_POINTER_Y_AXIS)
-         / 11 - 2 + old_start;
+      new_val = (unsigned)(menu_input_pointer_state(MENU_POINTER_Y_AXIS)
+         / (11 - 2 + old_start));
 
       menu_input_ctl(MENU_INPUT_CTL_POINTER_PTR, &new_val);
 
@@ -474,7 +474,7 @@ static void rgui_render(void *data)
 
       menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &old_start);
 
-      new_mouse_ptr = mouse_y / 11 - 2 + old_start;
+      new_mouse_ptr = (unsigned)(mouse_y / 11 - 2 + old_start);
 
       menu_input_ctl(MENU_INPUT_CTL_MOUSE_PTR, &new_mouse_ptr);
    }
@@ -486,7 +486,7 @@ static void rgui_render(void *data)
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &start);
    }
 
-   bottom    = menu_entries_get_end() - RGUI_TERM_HEIGHT(fb_width, fb_height);
+   bottom    = (int)(menu_entries_get_end() - RGUI_TERM_HEIGHT(fb_width, fb_height));
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &old_start);
 
    if (old_start > (unsigned)bottom)
@@ -535,8 +535,8 @@ static void rgui_render(void *data)
    strlcpy(title_buf, string_to_upper(title_buf), sizeof(title_buf));
 
    blit_line(
-         RGUI_TERM_START_X(fb_width) + (RGUI_TERM_WIDTH(fb_width)
-            - utf8len(title_buf)) * FONT_WIDTH_STRIDE / 2,
+         (int)(RGUI_TERM_START_X(fb_width) + (RGUI_TERM_WIDTH(fb_width)
+            - utf8len(title_buf)) * FONT_WIDTH_STRIDE / 2),
          RGUI_TERM_START_X(fb_width),
          title_buf, TITLE_COLOR(settings));
 

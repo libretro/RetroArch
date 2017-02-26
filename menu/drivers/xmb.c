@@ -2098,7 +2098,7 @@ static void xmb_draw_items(
 
    if (cat_selection_ptr > xmb->system_tab_end)
       core_node = xmb_get_userdata_from_horizontal_list(
-            xmb, cat_selection_ptr - (xmb->system_tab_end + 1));
+            xmb, (unsigned)(cat_selection_ptr - (xmb->system_tab_end + 1)));
 
    end = file_list_get_size(list);
 
@@ -2685,7 +2685,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
          snprintf(msg, sizeof(msg), "%d%%", percent);
 
-         percent_width = font_driver_get_message_width(xmb->font, msg, utf8len(msg), 1);
+         percent_width = (unsigned)font_driver_get_message_width(xmb->font, msg, (unsigned)utf8len(msg), 1);
 
          xmb_draw_text(menu_disp_info, xmb, msg,
                width - xmb->margins.title.left - x_pos,
@@ -4039,7 +4039,7 @@ static int xmb_pointer_tap(void *userdata,
    if (y < header_height)
    {
       menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
-      return menu_entry_action(entry, selection, MENU_ACTION_CANCEL);
+      return (unsigned)menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
    }
    else if (ptr <= (menu_entries_get_size() - 1))
    {
@@ -4048,7 +4048,7 @@ static int xmb_pointer_tap(void *userdata,
 
       menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
       if (ptr == selection && cbs && cbs->action_select)
-         return menu_entry_action(entry, selection, MENU_ACTION_SELECT);
+         return (unsigned)menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
 
       idx  = ptr;
 

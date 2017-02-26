@@ -307,7 +307,7 @@ file_list_t *menu_entries_get_menu_stack_ptr(size_t idx)
    menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
    if (!menu_list)
       return NULL;
-   return menu_list_get(menu_list, idx);
+   return menu_list_get(menu_list, (unsigned)idx);
 }
 
 file_list_t *menu_entries_get_selection_buf_ptr(size_t idx)

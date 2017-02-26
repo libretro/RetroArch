@@ -323,7 +323,7 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
             db_info->max_users               = (unsigned)val->val.uint_;
             break;
          case DB_CURSOR_RELEASEDATE_MONTH:
-            db_info->releasemonth            = val->val.uint_;
+            db_info->releasemonth            = (unsigned)val->val.uint_;
             break;
          case DB_CURSOR_RELEASEDATE_YEAR:
             db_info->releaseyear             = (unsigned)val->val.uint_;

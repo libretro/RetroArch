@@ -195,7 +195,7 @@ static INLINE bool video_pixel_frame_scale(
    scaler->in_height     = height;
    scaler->out_width     = width;
    scaler->out_height    = height;
-   scaler->in_stride     = pitch;
+   scaler->in_stride     = (int)pitch;
    scaler->out_stride    = width * sizeof(uint16_t);
 
    scaler_ctx_scale(scaler, output, data);

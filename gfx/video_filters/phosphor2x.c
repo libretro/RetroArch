@@ -324,12 +324,12 @@ static void phosphor2x_generic_xrgb8888(void *data,
 
    for (y = 0; y < height; y++)
    {
-      uint32_t *scan_out;
       unsigned x;
+      uint32_t *scan_out      = NULL;
       const uint32_t *in_line = (const uint32_t*)(src + y * (src_stride));
 
       /* output in a scanlines fashion. */
-      uint32_t *out_line = (uint32_t*)(dst + y * (dst_stride) * 2);
+      uint32_t *out_line      = (uint32_t*)(dst + y * (dst_stride) * 2);
 
       /* Bilinear stretch horizontally. */
       blit_linear_line_xrgb8888(out_line, in_line, width);
@@ -372,9 +372,9 @@ static void phosphor2x_generic_rgb565(void *data,
 
    for (y = 0; y < height; y++)
    {
-      uint16_t *scan_out;
       unsigned x;
       /* Output in a scanlines fashion. */
+      uint16_t *scan_out      = NULL;
       uint16_t      *out_line = (uint16_t*)(dst + y * (dst_stride) * 2);
       const uint16_t *in_line = (const uint16_t*)(src + y * (src_stride));
 
@@ -407,16 +407,16 @@ static void phosphor2x_work_cb_xrgb8888(void *data, void *thread_data)
 {
    struct softfilter_thread_data *thr = 
       (struct softfilter_thread_data*)thread_data;
-   uint32_t *input = (uint32_t*)thr->in_data;
-   uint32_t *output = (uint32_t*)thr->out_data;
-   unsigned width = thr->width;
-   unsigned height = thr->height;
+   uint32_t *input                    = (uint32_t*)thr->in_data;
+   uint32_t *output                   = (uint32_t*)thr->out_data;
+   unsigned width                     = thr->width;
+   unsigned height                    = thr->height;
 
    phosphor2x_generic_xrgb8888(data, width, height,
          thr->first, thr->last, input,
-         thr->in_pitch / SOFTFILTER_BPP_XRGB8888,
+         (unsigned)(thr->in_pitch / SOFTFILTER_BPP_XRGB8888),
          output,
-         thr->out_pitch / SOFTFILTER_BPP_XRGB8888);
+         (unsigned)(thr->out_pitch / SOFTFILTER_BPP_XRGB8888));
 }
 
 static void phosphor2x_work_cb_rgb565(void *data, void *thread_data)
@@ -430,9 +430,9 @@ static void phosphor2x_work_cb_rgb565(void *data, void *thread_data)
 
    phosphor2x_generic_rgb565(data, width, height,
          thr->first, thr->last, input,
-         thr->in_pitch / SOFTFILTER_BPP_RGB565,
+         (unsigned)(thr->in_pitch / SOFTFILTER_BPP_RGB565),
          output,
-         thr->out_pitch / SOFTFILTER_BPP_RGB565);
+         (unsigned)(thr->out_pitch / SOFTFILTER_BPP_RGB565));
 }
 
 static void phosphor2x_generic_packets(void *data,

@@ -206,9 +206,9 @@ static void epx_work_cb_rgb565(void *data, void *thread_data)
 
    epx_generic_rgb565(width, height,
          thr->first, thr->last, input,
-         thr->in_pitch / SOFTFILTER_BPP_RGB565,
+         (unsigned)(thr->in_pitch / SOFTFILTER_BPP_RGB565),
          output,
-         thr->out_pitch / SOFTFILTER_BPP_RGB565);
+         (unsigned)(thr->out_pitch / SOFTFILTER_BPP_RGB565));
 }
 
 

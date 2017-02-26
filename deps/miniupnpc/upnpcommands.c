@@ -38,7 +38,7 @@ UPNP_GetTotalBytesSent(const char * controlURL,
 	/*DisplayNameValueList(buffer, bufsize);*/
 	free(buffer); buffer = NULL;
 	p = GetValueFromNameValueList(&pdata, "NewTotalBytesSent");
-	r = my_atoui(p);
+	r = (unsigned)my_atoui(p);
 	ClearNameValueList(&pdata);
 	return r;
 }

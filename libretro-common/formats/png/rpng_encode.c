@@ -333,11 +333,11 @@ static bool rpng_save_image(const char *path,
    stream_backend->set_in(
          stream,
          encode_buf,
-         encode_buf_size);
+         (unsigned)encode_buf_size);
    stream_backend->set_out(
          stream,
          deflate_buf + 8,
-         encode_buf_size * 2);
+         (unsigned)(encode_buf_size * 2));
 
    if (!stream_backend->trans(stream, true, &total_in, &total_out, NULL))
    {

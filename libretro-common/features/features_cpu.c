@@ -474,7 +474,7 @@ unsigned cpu_features_get_core_amount(void)
    long ret = sysconf(_SC_NPROCESSORS_ONLN);
    if (ret <= 0)
       return (unsigned)1;
-   return ret;
+   return (unsigned)ret;
 #elif defined(BSD) || defined(__APPLE__)
    /* BSD */
    /* Copypasta from stackoverflow, dunno if it works. */

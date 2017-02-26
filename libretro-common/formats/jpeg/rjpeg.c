@@ -2570,7 +2570,7 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
    if (!rjpeg)
       return IMAGE_PROCESS_ERROR;
 
-   img   = (uint32_t*)rjpeg_load_from_memory(rjpeg->buff_data, size, width, height, &comp, 4);
+   img   = (uint32_t*)rjpeg_load_from_memory(rjpeg->buff_data, (int)size, width, height, &comp, 4);
 
    if (!img)
       return IMAGE_PROCESS_ERROR;

@@ -160,7 +160,7 @@ static void dump_content(RFILE *file, const void *frame,
          {
             /* BGR24 byte order input matches output. Can directly copy, but... need to make sure we pad it. */
             uint32_t zeros = 0;
-            int pad = line_size-pitch;
+            int pad        = (int)(line_size-pitch);
             for (j = 0; j < height; j++, u.u8 += pitch)
             {
                filestream_write(file, u.u8, pitch);

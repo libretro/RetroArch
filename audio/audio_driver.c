@@ -187,8 +187,8 @@ static void compute_audio_buffer_statistics(void)
    avg_filled      = 1.0f - (float)avg / audio_driver_buffer_size;
    deviation       = (float)stddev / audio_driver_buffer_size;
 
-   low_water_size  = audio_driver_buffer_size * 3 / 4;
-   high_water_size = audio_driver_buffer_size / 4;
+   low_water_size  = (unsigned)(audio_driver_buffer_size * 3 / 4);
+   high_water_size = (unsigned)(audio_driver_buffer_size     / 4);
 
    for (i = 1; i < samples; i++)
    {
@@ -555,7 +555,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
       dsp_data.output_frames         = 0;
 
       dsp_data.input                 = audio_driver_input_data;
-      dsp_data.input_frames          = samples >> 1;
+      dsp_data.input_frames          = (unsigned)(samples >> 1);
 
       performance_counter_init(audio_dsp, "audio_dsp");
       performance_counter_start_plus(is_perfcnt_enable, audio_dsp);

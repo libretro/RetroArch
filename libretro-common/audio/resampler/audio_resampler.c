@@ -129,7 +129,7 @@ static bool resampler_append_plugs(void **re,
       const retro_resampler_t **backend,
       double bw_ratio)
 {
-   resampler_simd_mask_t mask = cpu_features_get();
+   resampler_simd_mask_t mask = (resampler_simd_mask_t)cpu_features_get();
 
    *re = (*backend)->init(&resampler_config, bw_ratio, mask);
 
