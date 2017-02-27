@@ -3232,7 +3232,8 @@ static void *xmb_init(void **userdata)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_VIDEO;
 #endif
 #ifdef HAVE_NETWORKING
-   xmb->tabs[++xmb->system_tab_end]    = XMB_SYSTEM_TAB_NETPLAY;
+   if (settings->menu.xmb.show_netplay)
+      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_NETPLAY;
 #endif
 #ifdef HAVE_LIBRETRODB
 	if (settings->menu.xmb.show_add)

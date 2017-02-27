@@ -4663,6 +4663,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_XMB_SHOW_VIDEO,
                PARSE_ONLY_BOOL, false);
 #endif
+#ifdef HAVE_NETWORKING
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_XMB_SHOW_NETPLAY,
+               PARSE_ONLY_BOOL, false);
+#endif
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_XMB_SHOW_HISTORY,
                PARSE_ONLY_BOOL, false);

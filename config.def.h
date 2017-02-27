@@ -623,6 +623,9 @@ static bool xmb_show_images      = true;
 static bool xmb_show_music       = true;
 static bool xmb_show_video       = true;
 #endif
+#ifdef HAVE_NETWORKING
+static bool xmb_show_netplay     = true;
+#endif
 static bool xmb_show_history     = true;
 #ifdef HAVE_LIBRETRODB
 static bool xmb_show_add     	 = true;
