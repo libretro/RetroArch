@@ -282,7 +282,7 @@ int menu_entries_get_core_title(char *s, size_t len)
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
-   if (!settings->menu.core_enable)
+   if (!settings || !settings->menu.core_enable)
       return -1; 
 
    if (string_is_empty(core_name) && info)

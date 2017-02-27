@@ -1338,7 +1338,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 #ifdef HAVE_OVERLAY
          {
             settings_t *settings                    = config_get_ptr();
-            if (settings->input.overlay_hide_in_menu)
+            if (settings && settings->input.overlay_hide_in_menu)
                command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
          }
 #endif

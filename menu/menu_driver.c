@@ -263,7 +263,7 @@ static void menu_driver_toggle(bool on)
       /* Stop all rumbling before entering the menu. */
       command_event(CMD_EVENT_RUMBLE_STOP, NULL);
 
-      if (settings->menu.pause_libretro)
+      if (settings && settings->menu.pause_libretro)
          command_event(CMD_EVENT_AUDIO_STOP, NULL);
 
       /* Override keyboard callback to redirect to menu instead.

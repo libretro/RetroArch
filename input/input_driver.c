@@ -907,7 +907,7 @@ uint64_t input_keys_pressed(
 
    const struct retro_keybind *focus_binds_auto = &settings->input.autoconf_binds[0][RARCH_GAME_FOCUS_TOGGLE];
    const struct retro_keybind *focus_normal     = &binds[RARCH_GAME_FOCUS_TOGGLE];
-   bool enable_hotkey_valid                     = settings->input.binds[0][RARCH_ENABLE_HOTKEY].valid;
+   bool enable_hotkey_valid                     = settings && settings->input.binds[0][RARCH_ENABLE_HOTKEY].valid;
    bool game_focus_toggle_valid                 = false;
 
    joypad_info.joy_idx                          = 0;
