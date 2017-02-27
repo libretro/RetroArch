@@ -237,7 +237,7 @@ static int sevenzip_file_read(
    SzArEx_Free(&db, &allocImp);
    File_Close(&archiveStream.file);
 
-   return outsize;
+   return (int)outsize;
 }
 
 static bool sevenzip_stream_decompress_data_to_file_init(
@@ -364,10 +364,10 @@ static int sevenzip_parse_file_iterate_step_internal(
 
          strlcpy(filename, infile, PATH_MAX_LENGTH);
 
-         *cmode = ARCHIVE_MODE_COMPRESSED;
+         *cmode    = ARCHIVE_MODE_COMPRESSED;
          *checksum = file->Crc;
-         *size = file->Size;
-         *csize = compressed_size;
+         *size     = (uint32_t)file->Size;
+         *csize    = (uint32_t)compressed_size;
       }
    }
 
