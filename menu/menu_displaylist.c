@@ -3006,7 +3006,7 @@ static int menu_displaylist_parse_netplay_room_list(
                s,
                msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM),
                MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,
-               MENU_WIFI, 0, 0);
+               MENU_ROOM, 0, 0);
 
       }
    }

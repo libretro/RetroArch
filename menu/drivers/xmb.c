@@ -98,6 +98,7 @@ enum
 #endif
 #ifdef HAVE_NETWORKING
    XMB_TEXTURE_NETPLAY,
+   XMB_TEXTURE_ROOM,
 #endif
 #ifdef HAVE_IMAGEVIEWER
    XMB_TEXTURE_IMAGES,
@@ -2084,6 +2085,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_CORE_INFO];
       case MENU_WIFI:
          return xmb->textures.list[XMB_TEXTURE_WIFI];
+      case MENU_ROOM:
+         return xmb->textures.list[XMB_TEXTURE_ROOM];
    }
 
    return xmb->textures.list[XMB_TEXTURE_SUBSETTING];
@@ -3452,7 +3455,9 @@ static const char *xmb_texture_path(unsigned id)
          return "add.png";
 #ifdef HAVE_NETWORKING
       case XMB_TEXTURE_NETPLAY:
-         return "wifi.png";
+         return "netplay.png";
+      case XMB_TEXTURE_ROOM:
+         return "room.png";
 #endif
       case XMB_TEXTURE_KEY:
          return "key.png";
@@ -3460,6 +3465,7 @@ static const char *xmb_texture_path(unsigned id)
          return "key-hover.png";
       case XMB_TEXTURE_DIALOG_SLICE:
          return "dialog-slice.png";
+
    }
 
    return NULL;
