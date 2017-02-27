@@ -425,17 +425,17 @@
 				ORGANIZATIONNAME = RetroArch;
 				TargetAttributes = {
 					0FDA2A701BE1AFA800F2B5DA = {
-						DevelopmentTeam = UK699V5ZS8;
+						DevelopmentTeam = ZE9XE938Z2;
 					};
 					503700861ACA18E400A51A37 = {
 						DevelopmentTeam = UK699V5ZS8;
 					};
 					9204BE091D319EF300BD49DB = {
-						DevelopmentTeam = UK699V5ZS8;
+						DevelopmentTeam = ZE9XE938Z2;
 						DevelopmentTeamName = "Yoshinobu Sugawara";
 					};
 					96AFAE2416C1D4EA009DE44C = {
-						DevelopmentTeam = UK699V5ZS8;
+						DevelopmentTeam = ZE9XE938Z2;
 						DevelopmentTeamName = "Yoshinobu Sugawara";
 					};
 				};
@@ -591,7 +591,6 @@
 				CLANG_CXX_LIBRARY = "libstdc++";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
-				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
 				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
@@ -674,7 +673,6 @@
 				CLANG_CXX_LIBRARY = "libstdc++";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
-				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
 				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
