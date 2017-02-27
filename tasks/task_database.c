@@ -49,7 +49,7 @@ typedef struct database_state_handle
    uint32_t crc;
    uint32_t archive_crc;
    uint8_t *buf;
-   char archive_name[255];
+   char archive_name[511];
    char serial[4096];
 } database_state_handle_t;
 
@@ -93,9 +93,9 @@ static const char *database_info_get_current_element_name(database_info_handle_t
 static int task_database_iterate_start(database_info_handle_t *db,
       const char *name)
 {
-   char msg[128];
+   char msg[511];
 
-   msg[0] = msg[127] = '\0';
+   msg[0] = msg[510] = '\0';
 
    snprintf(msg, sizeof(msg),
          STRING_REP_ULONG "/" STRING_REP_ULONG ": %s %s...\n",
