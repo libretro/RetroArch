@@ -139,6 +139,7 @@ enum
    XMB_TEXTURE_ADD,
    XMB_TEXTURE_KEY,
    XMB_TEXTURE_KEY_HOVER,
+   XMB_TEXTURE_DIALOG_SLICE,
    XMB_TEXTURE_LAST
 };
 
@@ -224,6 +225,8 @@ typedef struct xmb_handle
          float left;
          float top;
       } label;
+
+      float dialog;
    } margins;
 
    float above_subitem_offset;
@@ -810,10 +813,11 @@ static int xmb_osk_ptr_at_pos(void *data, int x, int y, unsigned width, unsigned
 static void xmb_render_messagebox_internal(
       menu_display_frame_info_t menu_disp_info,
       video_frame_info_t *video_info,
-      xmb_handle_t *xmb, const char *message)
+      xmb_handle_t *xmb, const char *message, float* coord_white)
 {
    unsigned i, y_position;
    int x, y, longest = 0, longest_width = 0;
+   float line_height = 0;
    unsigned width           = video_info->width;
    unsigned height          = video_info->height;
    struct string_list *list = string_split(message, "\n");
@@ -823,12 +827,14 @@ static void xmb_render_messagebox_internal(
    if (list->elems == 0)
       goto end;
 
+   line_height = xmb->font->size * 1.2;
+
    y_position = height / 2;
    if (menu_input_dialog_get_display_kb())
       y_position = height / 4;
 
    x = width  / 2;
-   y = y_position - (list->size-1) * xmb->font->size / 2;
+   y = y_position - (list->size-1) * line_height / 2;
 
    /* find the longest line width */
    for (i = 0; i < list->size; i++)
@@ -843,22 +849,26 @@ static void xmb_render_messagebox_internal(
       }
    }
 
+   menu_display_blend_begin();
+
+   menu_display_draw_texture_slice(
+         x - longest_width/2 - xmb->margins.dialog,
+         y + 32 - xmb->margins.dialog,
+         256, 256,
+         longest_width + xmb->margins.dialog*2,
+         line_height * list->size + xmb->margins.dialog*2,
+         width, height,
+         &coord_white[0], 32, 1.0, xmb->textures.list[XMB_TEXTURE_DIALOG_SLICE]);
+
    for (i = 0; i < list->size; i++)
    {
       const char *msg = list->elems[i].data;
 
       if (msg)
-         xmb_draw_text(
-               menu_disp_info,
-               xmb, msg,
+         menu_display_draw_text(xmb->font, msg,
                x - longest_width/2.0,
-               y + i * xmb->font->size,
-               1,
-               1,
-               TEXT_ALIGN_LEFT,
-               width,
-               height,
-               xmb->font);
+               y + (i+0.75) * line_height,
+               width, height, 0x444444ff, TEXT_ALIGN_LEFT, 1.0f, false, 0);
    }
 
    if (menu_input_dialog_get_display_kb())
@@ -2887,7 +2897,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    {
       xmb_draw_dark_layer(xmb, width, height);
 
-      xmb_render_messagebox_internal(menu_disp_info, video_info, xmb, msg);
+      xmb_render_messagebox_internal(menu_disp_info, video_info, xmb, msg, &coord_white[0]);
    }
 
    /* Cursor image */
@@ -2955,6 +2965,7 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
    xmb->margins.label.top        = new_font_size / 3.0;
 
    xmb->margins.setting.left     = 600.0 * scale_factor;
+   xmb->margins.dialog           = 48 * scale_factor;
 
    xmb->icon.size                = 128.0 * scale_factor;
    xmb->font_size                = new_font_size;
@@ -3023,6 +3034,7 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
    xmb->margins.label.left       = 85.0 * scale_factor;
    xmb->margins.label.top        = new_font_size / 3.0;
    xmb->margins.setting.left     = 600.0 * scale_factor;
+   xmb->margins.dialog           = 48 * scale_factor;
    xmb->icon.size                = 128.0 * scale_factor;
    xmb->font_size                = new_font_size;
 
@@ -3445,6 +3457,8 @@ static const char *xmb_texture_path(unsigned id)
          return "key.png";
       case XMB_TEXTURE_KEY_HOVER:
          return "key-hover.png";
+      case XMB_TEXTURE_DIALOG_SLICE:
+         return "dialog-slice.png";
    }
 
    return NULL;
