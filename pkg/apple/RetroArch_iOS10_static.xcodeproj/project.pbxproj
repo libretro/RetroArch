@@ -425,17 +425,17 @@
 				ORGANIZATIONNAME = RetroArch;
 				TargetAttributes = {
 					0FDA2A701BE1AFA800F2B5DA = {
-						DevelopmentTeam = ZE9XE938Z2;
+						DevelopmentTeam = UK699V5ZS8;
 					};
 					503700861ACA18E400A51A37 = {
 						DevelopmentTeam = UK699V5ZS8;
 					};
 					9204BE091D319EF300BD49DB = {
-						DevelopmentTeam = ZE9XE938Z2;
+						DevelopmentTeam = UK699V5ZS8;
 						DevelopmentTeamName = "Yoshinobu Sugawara";
 					};
 					96AFAE2416C1D4EA009DE44C = {
-						DevelopmentTeam = ZE9XE938Z2;
+						DevelopmentTeam = UK699V5ZS8;
 						DevelopmentTeamName = "Yoshinobu Sugawara";
 					};
 				};
@@ -655,7 +655,7 @@
 					"-DHAVE_BTSTACK",
 					"-DHAVE_AVFOUNDATION",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS9;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS9S;
 				PRODUCT_NAME = RetroArch;
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = "armv7 arm64";
@@ -792,7 +792,7 @@
 					"-DHAVE_BTSTACK",
 					"-DHAVE_AVFOUNDATION",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS9;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS9S;
 				PRODUCT_NAME = RetroArch;
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = "armv7 arm64";
@@ -873,7 +873,7 @@
 					"-DHAVE_SHADERPIPELINE",
 					"-D_LZMA_UINT32_IS_ULONG",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS6;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS6S;
 				PRODUCT_NAME = "RetroArch copy";
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = armv7;
@@ -1004,7 +1004,7 @@
 					"-DHAVE_SHADERPIPELINE",
 					"-D_LZMA_UINT32_IS_ULONG",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS6;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS6S;
 				PRODUCT_NAME = "RetroArch copy";
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = armv7;
@@ -1086,7 +1086,7 @@
 					"-DHAVE_BTSTACK",
 					"-DHAVE_AVFOUNDATION",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS10;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS10S;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = "armv7 arm64";
@@ -1224,7 +1224,7 @@
 					"-DHAVE_BTSTACK",
 					"-DHAVE_AVFOUNDATION",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS10;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS10S;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = "armv7 arm64";
@@ -1457,7 +1457,7 @@
 					"-DHAVE_BTSTACK",
 					"-DHAVE_AVFOUNDATION",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS10S;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOSS;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = "armv7 arm64";
@@ -1595,7 +1595,7 @@
 					"-DHAVE_BTSTACK",
 					"-DHAVE_AVFOUNDATION",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS10S;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOSS;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = "armv7 arm64";

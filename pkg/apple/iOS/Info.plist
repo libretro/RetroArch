@@ -40,6 +40,8 @@
 	<string>1.4.1</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>YES</string>
 	<key>UIApplicationExitsOnSuspend</key>
 	<false/>
 	<key>UIFileSharingEnabled</key>
@@ -68,7 +70,5 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
-	<key>NSCameraUsageDescription</key>
-	<string>YES</string>
 </dict>
 </plist>
