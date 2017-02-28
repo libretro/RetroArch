@@ -123,6 +123,25 @@ static int sevenzip_file_read(
    lookStream.realStream = &archiveStream.s;
    LookToRead_Init(&lookStream);
    CrcGenerateTable();
+
+   db.db.PackSizes               = NULL;
+   db.db.PackCRCsDefined         = NULL;
+   db.db.PackCRCs                = NULL;
+   db.db.Folders                 = NULL;
+   db.db.Files                   = NULL;
+   db.db.NumPackStreams          = 0;
+   db.db.NumFolders              = 0;
+   db.db.NumFiles                = 0;
+   db.startPosAfterHeader        = 0;
+   db.dataPos                    = 0;
+   db.FolderStartPackStreamIndex = NULL;
+   db.PackStreamStartPositions   = NULL;
+   db.FolderStartFileIndex       = NULL;
+   db.FileIndexToFolderIndexMap  = NULL;
+   db.FileNameOffsets            = NULL;
+   db.FileNames.data             = NULL;
+   db.FileNames.size             = 0;
+
    SzArEx_Init(&db);
 
    if (SzArEx_Open(&db, &lookStream.s, &allocImp, &allocTempImp) == SZ_OK)

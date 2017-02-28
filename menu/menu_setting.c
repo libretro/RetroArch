@@ -2832,7 +2832,7 @@ static bool setting_append_list(
             bool_entries[2].name_enum_idx  = MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS;
             bool_entries[2].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS;
             bool_entries[2].default_value  = default_game_specific_options;
-            bool_entries[2].flags          = SD_FLAG_NONE;
+            bool_entries[2].flags          = SD_FLAG_ADVANCED;
 
             bool_entries[3].target         = &settings->auto_overrides_enable;
             bool_entries[3].name_enum_idx  = MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE;
@@ -5138,7 +5138,24 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
-				  
+
+#ifdef HAVE_NETWORKING
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->menu.xmb.show_netplay,
+                  MENU_ENUM_LABEL_XMB_SHOW_NETPLAY,
+                  MENU_ENUM_LABEL_VALUE_XMB_SHOW_NETPLAY,
+                  xmb_show_netplay,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+#endif
+
 #ifdef HAVE_LIBRETRODB
             CONFIG_BOOL(
                   list, list_info,
@@ -6104,7 +6121,6 @@ static bool setting_append_list(
                1,
                true,
                true);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_MENU_REFRESH);
          (*list)[list_info->index - 1].get_string_representation = 
             &setting_get_string_representation_uint_user_language;

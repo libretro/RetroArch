@@ -15,6 +15,7 @@
 
 #include <lists/file_list.h>
 #include <string/stdstring.h>
+#include "../paths.h"
 
 #include "tasks_internal.h"
 
@@ -92,6 +93,23 @@ static void task_netplay_lan_scan_handler(retro_task_t *task)
 }
 
 bool task_push_netplay_lan_scan(void)
+{
+   retro_task_t *task = (retro_task_t*)calloc(1, sizeof(*task));
+
+   if (!task)
+      return false;
+
+   task->type     = TASK_TYPE_BLOCKING;
+   task->handler  = task_netplay_lan_scan_handler;
+   task->callback = netplay_lan_scan_callback;
+   task->title    = strdup(msg_hash_to_str(MSG_NETPLAY_LAN_SCANNING));
+
+   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+
+   return true;
+}
+
+bool task_push_netplay_lan_scan_rooms(void)
 {
    retro_task_t *task = (retro_task_t*)calloc(1, sizeof(*task));
 

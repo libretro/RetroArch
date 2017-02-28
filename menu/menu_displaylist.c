@@ -3006,7 +3006,7 @@ static int menu_displaylist_parse_netplay_room_list(
                s,
                msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM),
                MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,
-               MENU_WIFI, 0, 0);
+               MENU_ROOM, 0, 0);
 
       }
    }
@@ -4663,6 +4663,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_XMB_SHOW_VIDEO,
                PARSE_ONLY_BOOL, false);
 #endif
+#ifdef HAVE_NETWORKING
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_XMB_SHOW_NETPLAY,
+               PARSE_ONLY_BOOL, false);
+#endif
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_XMB_SHOW_HISTORY,
                PARSE_ONLY_BOOL, false);
@@ -4941,8 +4946,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             if (!hosts || hosts->size == 0)
             {
-               if (!hosts)
-                  task_push_netplay_lan_scan();
+               task_push_netplay_lan_scan();
 
                menu_entries_append_enum(info->list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND),

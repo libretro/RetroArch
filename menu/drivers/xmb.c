@@ -98,6 +98,7 @@ enum
 #endif
 #ifdef HAVE_NETWORKING
    XMB_TEXTURE_NETPLAY,
+   XMB_TEXTURE_ROOM,
 #endif
 #ifdef HAVE_IMAGEVIEWER
    XMB_TEXTURE_IMAGES,
@@ -155,16 +156,17 @@ enum
 #ifdef HAVE_IMAGEVIEWER
    XMB_SYSTEM_TAB_IMAGES,
 #endif
-   XMB_SYSTEM_TAB_ADD,
 #ifdef HAVE_NETWORKING
-   XMB_SYSTEM_TAB_NETPLAY
+   XMB_SYSTEM_TAB_NETPLAY,
 #endif
+   XMB_SYSTEM_TAB_ADD
 };
 
-#ifdef HAVE_NETWORKING
-#define XMB_SYSTEM_TAB_END XMB_SYSTEM_TAB_NETPLAY
-#elif defined(HAVE_LIBRETRODB)
+
+#if defined(HAVE_LIBRETRODB)
 #define XMB_SYSTEM_TAB_END XMB_SYSTEM_TAB_ADD
+#elif defined(HAVE_NETWORKING)
+#define XMB_SYSTEM_TAB_END XMB_SYSTEM_TAB_NETPLAY
 #elif defined(HAVE_IMAGEVIEWER)
 #define XMB_SYSTEM_TAB_END XMB_SYSTEM_TAB_IMAGES
 #elif defined(HAVE_FFMPEG)
@@ -1499,12 +1501,12 @@ static xmb_node_t* xmb_get_node(xmb_handle_t *xmb, unsigned i)
 #endif
       case XMB_SYSTEM_TAB_HISTORY:
          return &xmb->history_tab_node;
-      case XMB_SYSTEM_TAB_ADD:
-         return &xmb->add_tab_node;
 #ifdef HAVE_NETWORKING
       case XMB_SYSTEM_TAB_NETPLAY:
          return &xmb->netplay_tab_node;
 #endif
+      case XMB_SYSTEM_TAB_ADD:
+         return &xmb->add_tab_node;
       default:
          if (i > xmb->system_tab_end)
             return xmb_get_userdata_from_horizontal_list(
@@ -2083,6 +2085,10 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_CORE_INFO];
       case MENU_WIFI:
          return xmb->textures.list[XMB_TEXTURE_WIFI];
+#ifdef HAVE_NETWORKING
+      case MENU_ROOM:
+         return xmb->textures.list[XMB_TEXTURE_ROOM];
+#endif
    }
 
    return xmb->textures.list[XMB_TEXTURE_SUBSETTING];
@@ -3227,12 +3233,13 @@ static void *xmb_init(void **userdata)
    if (settings->menu.xmb.show_video)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_VIDEO;
 #endif
+#ifdef HAVE_NETWORKING
+   if (settings->menu.xmb.show_netplay)
+      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_NETPLAY;
+#endif
 #ifdef HAVE_LIBRETRODB
 	if (settings->menu.xmb.show_add)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_ADD;
-#endif
-#ifdef HAVE_NETWORKING
-   xmb->tabs[++xmb->system_tab_end]    = XMB_SYSTEM_TAB_NETPLAY;
 #endif
 
    menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
@@ -3451,7 +3458,9 @@ static const char *xmb_texture_path(unsigned id)
          return "add.png";
 #ifdef HAVE_NETWORKING
       case XMB_TEXTURE_NETPLAY:
-         return "wifi.png";
+         return "netplay.png";
+      case XMB_TEXTURE_ROOM:
+         return "room.png";
 #endif
       case XMB_TEXTURE_KEY:
          return "key.png";
@@ -3459,6 +3468,7 @@ static const char *xmb_texture_path(unsigned id)
          return "key-hover.png";
       case XMB_TEXTURE_DIALOG_SLICE:
          return "dialog-slice.png";
+
    }
 
    return NULL;
@@ -3817,12 +3827,6 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
                menu_stack->list[stack_size - 1].type =
                   MENU_HISTORY_TAB;
                break;
-            case XMB_SYSTEM_TAB_ADD:
-               menu_stack->list[stack_size - 1].label =
-                  strdup(msg_hash_to_str(MENU_ENUM_LABEL_ADD_TAB));
-               menu_stack->list[stack_size - 1].type =
-                  MENU_ADD_TAB;
-               break;
 #ifdef HAVE_NETWORKING
             case XMB_SYSTEM_TAB_NETPLAY:
                menu_stack->list[stack_size - 1].label =
@@ -3831,6 +3835,12 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
                   MENU_NETPLAY_TAB;
                break;
 #endif
+            case XMB_SYSTEM_TAB_ADD:
+               menu_stack->list[stack_size - 1].label =
+                  strdup(msg_hash_to_str(MENU_ENUM_LABEL_ADD_TAB));
+               menu_stack->list[stack_size - 1].type =
+                  MENU_ADD_TAB;
+               break;
             default:
                menu_stack->list[stack_size - 1].label =
                   strdup(msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU));
