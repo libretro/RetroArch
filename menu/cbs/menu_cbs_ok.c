@@ -3429,8 +3429,6 @@ finish:
          if (lan_hosts)
             lan_room_count                    = lan_hosts->size;
 
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, file_list);
-
          room_data                            = string_split(buf, "\n");
 
          if (netplay_room_list)
@@ -3450,6 +3448,7 @@ finish:
 
          }
 #endif
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, file_list);
          menu_entries_append_enum(file_list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST),
                msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST),
@@ -3461,60 +3460,64 @@ finish:
                MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS,
                MENU_SETTING_ACTION, 0, 0);
 
-         RARCH_LOG ("Found %d rooms...\n", netplay_room_count);
-
-         for (i = 0; i < netplay_room_count; i++)
+         if (netplay_room_count != 0)
          {
-            strlcpy(netplay_room_list[i].nickname,
-                  room_data->elems[j + 0].data,
-                  sizeof(netplay_room_list[i].nickname));
-            strlcpy(netplay_room_list[i].address,
-                  room_data->elems[j + 1].data,
-                  sizeof(netplay_room_list[i].address));
-            strlcpy(netplay_room_list[i].corename,
-                  room_data->elems[j + 3].data,
-                  sizeof(netplay_room_list[i].corename));
-            strlcpy(netplay_room_list[i].coreversion,
-                  room_data->elems[j + 4].data,
-                  sizeof(netplay_room_list[i].coreversion));
-            strlcpy(netplay_room_list[i].gamename,
-                  room_data->elems[j + 5].data,
-                  sizeof(netplay_room_list[i].coreversion));
+            RARCH_LOG ("Found %d rooms...\n", netplay_room_count);
 
-            netplay_room_list[i].port      = atoi(room_data->elems[j + 2].data);
-            netplay_room_list[i].gamecrc   = atoi(room_data->elems[j + 6].data);
-            netplay_room_list[i].timestamp = atoi(room_data->elems[j + 7].data);
+            for (i = 0; i < netplay_room_count; i++)
+            {
+               strlcpy(netplay_room_list[i].nickname,
+                     room_data->elems[j + 0].data,
+                     sizeof(netplay_room_list[i].nickname));
+               strlcpy(netplay_room_list[i].address,
+                     room_data->elems[j + 1].data,
+                     sizeof(netplay_room_list[i].address));
+               strlcpy(netplay_room_list[i].corename,
+                     room_data->elems[j + 3].data,
+                     sizeof(netplay_room_list[i].corename));
+               strlcpy(netplay_room_list[i].coreversion,
+                     room_data->elems[j + 4].data,
+                     sizeof(netplay_room_list[i].coreversion));
+               strlcpy(netplay_room_list[i].gamename,
+                     room_data->elems[j + 5].data,
+                     sizeof(netplay_room_list[i].coreversion));
 
-/* Uncomment this to debug mismatched room parameters*/
+               netplay_room_list[i].port      = atoi(room_data->elems[j + 2].data);
+               netplay_room_list[i].gamecrc   = atoi(room_data->elems[j + 6].data);
+               netplay_room_list[i].timestamp = atoi(room_data->elems[j + 7].data);
+
+               /* Uncomment this to debug mismatched room parameters*/
 #if 0
-            RARCH_LOG("Room Data: %d\n"
-               "Nickname:         %s\n"
-               "Address:          %s\n"
-               "Port:             %d\n"
-               "Core:             %s\n"
-               "Core Version:     %s\n"
-               "Game:             %s\n"
-               "Game CRC:         %08x\n"
-               "Timestamp:        %d\n", room_data->elems[j + 6].data,
-               netplay_room_list[i].nickname,
-               netplay_room_list[i].address,
-               netplay_room_list[i].port,
-               netplay_room_list[i].corename,
-               netplay_room_list[i].coreversion,
-               netplay_room_list[i].gamename,
-               netplay_room_list[i].gamecrc,
-               netplay_room_list[i].timestamp);
+               RARCH_LOG("Room Data: %d\n"
+                     "Nickname:         %s\n"
+                     "Address:          %s\n"
+                     "Port:             %d\n"
+                     "Core:             %s\n"
+                     "Core Version:     %s\n"
+                     "Game:             %s\n"
+                     "Game CRC:         %08x\n"
+                     "Timestamp:        %d\n", room_data->elems[j + 6].data,
+                     netplay_room_list[i].nickname,
+                     netplay_room_list[i].address,
+                     netplay_room_list[i].port,
+                     netplay_room_list[i].corename,
+                     netplay_room_list[i].coreversion,
+                     netplay_room_list[i].gamename,
+                     netplay_room_list[i].gamecrc,
+                     netplay_room_list[i].timestamp);
 #endif
-            j+=8;
+               j+=8;
 
-            snprintf(s, sizeof(s), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME),
-                  netplay_room_list[i].nickname);
+               snprintf(s, sizeof(s),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME),
+                     netplay_room_list[i].nickname);
 
-            menu_entries_append_enum(file_list,
-                  s,
-                  msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM),
-                  MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,
-                  MENU_ROOM, 0, 0);
+               menu_entries_append_enum(file_list,
+                     s,
+                     msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM),
+                     MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,
+                     MENU_ROOM, 0, 0);
+            }
          }
 
          if (lan_room_count != 0)
