@@ -3427,19 +3427,19 @@ finish:
          netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, &lan_hosts);
 #endif
          if (lan_hosts)
-            lan_room_count = lan_hosts->size;
+            lan_room_count                    = lan_hosts->size;
 
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, file_list);
 
-         room_data = string_split(buf, "\n");
+         room_data                            = string_split(buf, "\n");
 
          if (netplay_room_list)
             free(netplay_room_list);
 
-         netplay_room_count = (int)(room_data->size / 8);
-         netplay_room_list  = (struct netplay_room*)
+         netplay_room_count                   = (int)(room_data->size / 8);
+         netplay_room_list                    = (struct netplay_room*)
             malloc(sizeof(struct netplay_room) * netplay_room_count + 
-            lan_room_count);
+                  lan_room_count);
 
 #if 0
          for (int i = 0; i < room_data->size; i++)
