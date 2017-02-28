@@ -34,6 +34,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string/stdstring.h>
+#include <file/file_path.h>
+#include "../../file_path_special.h"
+#include "../paths.h"
+#include "../content.h"
 
 #include <compat/strl.h>
 #include <net/net_compat.h>
@@ -58,6 +63,7 @@ struct ad_packet
    char core[NETPLAY_HOST_STR_LEN];
    char core_version[NETPLAY_HOST_STR_LEN];
    char content[NETPLAY_HOST_STR_LEN];
+   char content_crc[NETPLAY_HOST_STR_LEN];
 };
 
 bool netplay_lan_ad_client(void);
@@ -240,12 +246,16 @@ bool netplay_lan_ad_server(netplay_t *netplay)
          runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
          /* Now build our response */
+         uint32_t *content_crc_ptr     = NULL;
+         content_get_crc(&content_crc_ptr);
          memset(&ad_packet_buffer, 0, sizeof(struct ad_packet));
          memcpy(&ad_packet_buffer, "RANS", 4);
          ad_packet_buffer.protocol_version =
             htonl(NETPLAY_PROTOCOL_VERSION);
          ad_packet_buffer.port = htonl(netplay->tcp_port);
          strlcpy(ad_packet_buffer.retroarch_version, PACKAGE_VERSION,
+            NETPLAY_HOST_STR_LEN);
+         strlcpy(ad_packet_buffer.content, !string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))) ? path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A",
             NETPLAY_HOST_STR_LEN);
          strlcpy(ad_packet_buffer.nick, netplay->nick, NETPLAY_HOST_STR_LEN);
          if (info)
@@ -255,6 +265,10 @@ bool netplay_lan_ad_server(netplay_t *netplay)
             strlcpy(ad_packet_buffer.core_version, info->info.library_version,
                NETPLAY_HOST_STR_LEN);
          }
+         char s[NETPLAY_HOST_STR_LEN];
+         snprintf(s, sizeof(s), "%d", *content_crc_ptr);
+         strlcpy(ad_packet_buffer.content_crc, s,
+            NETPLAY_HOST_STR_LEN);
 
          /* And send it */
          sendto(lan_ad_server_fd, (const char*)&ad_packet_buffer,
@@ -372,6 +386,7 @@ bool netplay_lan_ad_client(void)
             NETPLAY_HOST_STR_LEN);
          strlcpy(host->content, ad_packet_buffer.content,
             NETPLAY_HOST_STR_LEN);
+         host->content_crc = atoi(ad_packet_buffer.content_crc);
          host->nick[NETPLAY_HOST_STR_LEN-1] =
             host->core[NETPLAY_HOST_STR_LEN-1] =
             host->core_version[NETPLAY_HOST_STR_LEN-1] =
