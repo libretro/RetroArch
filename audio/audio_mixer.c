@@ -195,8 +195,15 @@ static bool one_shot_resample(const float* in, size_t samples_in,
    if (!retro_resampler_realloc(&data, &resampler, NULL, ratio))
       return false;
    
-   /* Allocate on a 16-byte boundary, and pad to a multiple of 16 bytes */
-   *samples_out                       = samples_in * ratio;
+   /*
+    * Allocate on a 16-byte boundary, and pad to a multiple of 16 bytes. We
+    * add four more samples in the formula below just as safeguard, because
+    * resampler->process sometimes reports more output samples than the
+    * formula below calculates. Ideally, audio resamplers should have a
+    * function to return the number of samples they will output given a
+    * count of input samples.
+    */
+   *samples_out                       = samples_in * ratio + 4;
    *out                               = (float*)memalign_alloc(16,
          ((*samples_out + 15) & ~15) * sizeof(float));
    
