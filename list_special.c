@@ -90,7 +90,7 @@ struct string_list *dir_list_new_special(const char *input_dir,
 
             dir  = input_dir;
 
-            if (exts && list)
+            if (list)
                exts = list->all_ext;
          }
          break;
