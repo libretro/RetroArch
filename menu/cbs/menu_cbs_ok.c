@@ -3423,10 +3423,12 @@ finish:
          file_list_t *file_list               = menu_entries_get_selection_buf_ptr(0);
          struct netplay_host_list *lan_hosts;
 
-         if (!netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, &lan_hosts))
-            lan_hosts = NULL;
+         netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, &lan_hosts);
+
          if (lan_hosts)
             lan_room_count = lan_hosts->size;
+         else
+            lan_room_count = 0;
 
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, file_list);
 
@@ -3515,7 +3517,7 @@ finish:
                   MENU_ROOM, 0, 0);
          }
 
-         if (lan_hosts && lan_room_count > 0)
+         if (lan_room_count != 0)
          {
             struct netplay_host *host = &lan_hosts->hosts[k];
             for (; i < netplay_room_count + lan_room_count; i++)
