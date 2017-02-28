@@ -3414,10 +3414,16 @@ finish:
       }
       else
       {
-         int i, j = 0;
+         int i = 0;
+         int j = 0;
+         int k = 0;
          char s[PATH_MAX_LENGTH];
          static struct string_list *room_data = NULL;
          file_list_t *file_list               = menu_entries_get_selection_buf_ptr(0);
+         struct netplay_host_list *lan_hosts;
+
+         if (!netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, &lan_hosts))
+            lan_hosts = NULL;
 
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, file_list);
 
@@ -3428,7 +3434,8 @@ finish:
 
          netplay_room_count = (int)(room_data->size / 8);
          netplay_room_list = (struct netplay_room*)
-            malloc(sizeof(struct netplay_room) * netplay_room_count);
+            malloc(sizeof(struct netplay_room) * netplay_room_count + 
+            lan_hosts->size);
 
 #if 0
          for (int i = 0; i < room_data->size; i++)
@@ -3504,6 +3511,46 @@ finish:
                   MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,
                   MENU_ROOM, 0, 0);
          }
+
+         struct netplay_host *host = &lan_hosts->hosts[k];
+         for (; i < netplay_room_count + lan_hosts->size; i++)
+         {
+            strlcpy(netplay_room_list[i].nickname,
+                  host->nick,
+                  sizeof(netplay_room_list[i].nickname));
+            /* to-do: get address fron host-> addr */
+            strlcpy(netplay_room_list[i].address,
+                  "",
+                  sizeof(netplay_room_list[i].address));
+            strlcpy(netplay_room_list[i].corename,
+                  host->core,
+                  sizeof(netplay_room_list[i].corename));
+            strlcpy(netplay_room_list[i].coreversion,
+                  host->core_version,
+                  sizeof(netplay_room_list[i].coreversion));
+            strlcpy(netplay_room_list[i].gamename,
+                  host->content,
+                  sizeof(netplay_room_list[i].coreversion));
+
+            /* to-do: this will only work with default port os
+               we should have a start LAN game entry that always
+               uses that port
+            */
+            netplay_room_list[i].port      = 55435;
+            /* to-do: lan announce doesn't announce CRC */
+            netplay_room_list[i].gamecrc   = 0;
+            netplay_room_list[i].timestamp = 0;
+
+            snprintf(s, sizeof(s), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME),
+                  netplay_room_list[i].nickname);
+
+            menu_entries_append_enum(file_list,
+                  s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM),
+                  MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,
+                  MENU_ROOM, 0, 0);
+            k++;
+         }
       }
    }
 
@@ -3526,6 +3573,7 @@ static int action_ok_push_netplay_refresh_rooms(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char url [2048] = "http://lobby.libretro.com/raw/";
+   task_push_netplay_lan_scan();
    task_push_http_transfer(url, true, NULL, netplay_refresh_rooms_cb, NULL);
    return 0;
 }
