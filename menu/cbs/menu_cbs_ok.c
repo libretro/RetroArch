@@ -3423,7 +3423,7 @@ finish:
          struct netplay_host_list *lan_hosts  = NULL;
          file_list_t *file_list               = menu_entries_get_selection_buf_ptr(0);
 
-#if 0
+#if 1
          netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, &lan_hosts);
 #endif
          if (lan_hosts)
@@ -3436,8 +3436,8 @@ finish:
 
          netplay_room_count                   = (int)(room_data->size / 8);
          netplay_room_list                    = (struct netplay_room*)
-            malloc(sizeof(struct netplay_room) * netplay_room_count + 
-                  lan_room_count);
+            calloc(netplay_room_count + lan_room_count,
+                  sizeof(struct netplay_room));
 
 #if 0
          for (int i = 0; i < room_data->size; i++)
