@@ -39,6 +39,7 @@ struct netplay_host
    char core[NETPLAY_HOST_STR_LEN];
    char core_version[NETPLAY_HOST_STR_LEN];
    char content[NETPLAY_HOST_STR_LEN];
+   int  content_crc;
 };
 
 struct netplay_host_list

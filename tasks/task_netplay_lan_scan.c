@@ -15,6 +15,7 @@
 
 #include <lists/file_list.h>
 #include <string/stdstring.h>
+#include "../paths.h"
 
 #include "tasks_internal.h"
 
