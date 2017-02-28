@@ -683,7 +683,7 @@ static void twoxbr_work_cb_rgb565(void *data, void *thread_data)
    twoxbr_generic_rgb565(data, width, height,
          thr->first, thr->last, input,
          (unsigned)(thr->in_pitch / SOFTFILTER_BPP_RGB565),
-         (unsigned)(output),
+         output,
          (unsigned)(thr->out_pitch / SOFTFILTER_BPP_RGB565));
 }
  

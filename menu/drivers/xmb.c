@@ -2085,8 +2085,10 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_CORE_INFO];
       case MENU_WIFI:
          return xmb->textures.list[XMB_TEXTURE_WIFI];
+#ifdef HAVE_NETWORKING
       case MENU_ROOM:
          return xmb->textures.list[XMB_TEXTURE_ROOM];
+#endif
    }
 
    return xmb->textures.list[XMB_TEXTURE_SUBSETTING];
