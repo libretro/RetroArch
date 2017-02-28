@@ -304,7 +304,7 @@ static bool netplay_poll(void)
       }
 
       case NETPLAY_STALL_SPECTATOR_WAIT:
-         if (netplay_data->unread_frame_count > netplay_data->self_frame_count)
+         if (netplay_data->self_mode == NETPLAY_CONNECTION_PLAYING || netplay_data->unread_frame_count > netplay_data->self_frame_count)
             netplay_data->stall = NETPLAY_STALL_NONE;
          break;
 
