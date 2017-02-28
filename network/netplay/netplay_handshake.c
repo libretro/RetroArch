@@ -771,7 +771,7 @@ bool netplay_handshake_pre_info(netplay_t *netplay,
    uint32_t *content_crc_ptr;
    const char *dmsg = NULL;
 
-   RECV(&info_buf, sizeof(info_buf)) {}
+   RECV(&info_buf, sizeof(info_buf.cmd)) {}
 
    if (recvd < 0 ||
        ntohl(info_buf.cmd[0]) != NETPLAY_CMD_INFO)
@@ -798,6 +798,12 @@ bool netplay_handshake_pre_info(netplay_t *netplay,
       *had_input = true;
       netplay_recv_flush(&connection->recv_packet_buffer);
       return true;
+   }
+
+   RECV(&info_buf.core_name, cmd_size)
+   {
+      RARCH_ERR("Failed to receive netplay info payload.\n");
+      return false;
    }
 
    /* Check the core info */
