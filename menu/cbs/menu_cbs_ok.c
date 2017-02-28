@@ -3389,6 +3389,7 @@ static int action_ok_push_scan_file(const char *path,
 static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const char *err)
 {
    char buf[PATH_MAX_LENGTH];
+   RARCH_LOG("Refreshing rooms...\n");
 
    http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
 
@@ -3565,6 +3566,7 @@ finish:
                      MENU_ROOM, 0, 0);
                k++;
             }
+            netplay_room_count += lan_room_count;
          }
       }
    }
