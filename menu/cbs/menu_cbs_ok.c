@@ -3434,6 +3434,10 @@ finish:
          if (netplay_room_list)
             free(netplay_room_list);
 
+         /* TODO/FIXME - right now, a LAN and non-LAN netplay session might appear
+          * in the same list. If both entries are available, we want to show only
+          * the LAN one. */
+
          netplay_room_count                   = (int)(room_data->size / 8);
          netplay_room_list                    = (struct netplay_room*)
             calloc(netplay_room_count + lan_room_count,
