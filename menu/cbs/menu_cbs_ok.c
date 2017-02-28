@@ -3389,7 +3389,6 @@ static int action_ok_push_scan_file(const char *path,
 static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const char *err)
 {
    char buf[PATH_MAX_LENGTH];
-   int lan_room_count = 0;
 
    http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
 
@@ -3419,6 +3418,7 @@ finish:
          int i                                = 0;
          int j                                = 0;
          int k                                = 0;
+         int lan_room_count                   = 0;
          static struct string_list *room_data = NULL;
          struct netplay_host_list *lan_hosts  = NULL;
          file_list_t *file_list               = menu_entries_get_selection_buf_ptr(0);
@@ -3426,11 +3426,8 @@ finish:
 #if 0
          netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, &lan_hosts);
 #endif
-
          if (lan_hosts)
             lan_room_count = lan_hosts->size;
-         else
-            lan_room_count = 0;
 
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, file_list);
 
@@ -3440,7 +3437,7 @@ finish:
             free(netplay_room_list);
 
          netplay_room_count = (int)(room_data->size / 8);
-         netplay_room_list = (struct netplay_room*)
+         netplay_room_list  = (struct netplay_room*)
             malloc(sizeof(struct netplay_room) * netplay_room_count + 
             lan_room_count);
 
@@ -3464,7 +3461,8 @@ finish:
                MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS,
                MENU_SETTING_ACTION, 0, 0);
 
-         RARCH_LOG ("Found %d rooms\n", netplay_room_count);
+         RARCH_LOG ("Found %d rooms...\n", netplay_room_count);
+
          for (i = 0; i < netplay_room_count; i++)
          {
             strlcpy(netplay_room_list[i].nickname,
@@ -3521,8 +3519,8 @@ finish:
 
          if (lan_room_count != 0)
          {
-            struct netplay_host *host = &lan_hosts->hosts[k];
-            for (; i < netplay_room_count + lan_room_count; i++)
+            struct netplay_host *host = NULL;
+            for (host = &lan_hosts->hosts[k]; i < netplay_room_count + lan_room_count; i++)
             {
                struct sockaddr *address = NULL;
 
