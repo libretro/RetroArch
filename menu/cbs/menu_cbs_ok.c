@@ -3543,7 +3543,7 @@ finish:
                netplay_room_list[i].gamecrc = host->content_crc;
                netplay_room_list[i].timestamp = 0;
 
-               snprintf(s, sizeof(s), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME),
+               snprintf(s, sizeof(s), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME_LAN),
                      netplay_room_list[i].nickname);
 
                menu_entries_append_enum(file_list,
