@@ -524,6 +524,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_XMB_SHOW_MUSIC:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_music_tab);
             break;
+         case MENU_ENUM_LABEL_XMB_SHOW_NETPLAY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_netplay_tab);
+            break;
          case MENU_ENUM_LABEL_XMB_SHOW_VIDEO:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_video_tab);
             break;

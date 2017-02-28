@@ -3415,15 +3415,17 @@ finish:
       }
       else
       {
-         int i = 0;
-         int j = 0;
-         int k = 0;
          char s[PATH_MAX_LENGTH];
+         int i                                = 0;
+         int j                                = 0;
+         int k                                = 0;
          static struct string_list *room_data = NULL;
+         struct netplay_host_list *lan_hosts  = NULL;
          file_list_t *file_list               = menu_entries_get_selection_buf_ptr(0);
-         struct netplay_host_list *lan_hosts;
 
-         //netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, &lan_hosts);
+#if 0
+         netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, &lan_hosts);
+#endif
 
          if (lan_hosts)
             lan_room_count = lan_hosts->size;
@@ -3522,10 +3524,14 @@ finish:
             struct netplay_host *host = &lan_hosts->hosts[k];
             for (; i < netplay_room_count + lan_room_count; i++)
             {
+               struct sockaddr *address = NULL;
+
                strlcpy(netplay_room_list[i].nickname,
                      host->nick,
                      sizeof(netplay_room_list[i].nickname));
-               struct sockaddr* address = &host->addr;
+
+               address = &host->addr;
+
                strlcpy(netplay_room_list[i].address,
                      inet_ntoa(((struct sockaddr_in*)(address))->sin_addr),
                      sizeof(netplay_room_list[i].address));
@@ -3540,10 +3546,11 @@ finish:
                      sizeof(netplay_room_list[i].coreversion));
 
                netplay_room_list[i].port      = 55435;
-               netplay_room_list[i].gamecrc = host->content_crc;
+               netplay_room_list[i].gamecrc   = host->content_crc;
                netplay_room_list[i].timestamp = 0;
 
-               snprintf(s, sizeof(s), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME_LAN),
+               snprintf(s, sizeof(s),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME_LAN),
                      netplay_room_list[i].nickname);
 
                menu_entries_append_enum(file_list,

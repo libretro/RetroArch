@@ -235,6 +235,9 @@ bool netplay_lan_ad_server(netplay_t *netplay)
             sizeof(struct ad_packet), 0, &their_addr, &addr_size) >=
             (ssize_t) (2*sizeof(uint32_t)))
       {
+         char s[NETPLAY_HOST_STR_LEN];
+         uint32_t *content_crc_ptr     = NULL;
+
          /* Make sure it's a valid query */
          if (memcmp((void *) &ad_packet_buffer, "RANQ", 4))
             continue;
@@ -247,10 +250,11 @@ bool netplay_lan_ad_server(netplay_t *netplay)
          runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
          /* Now build our response */
-         uint32_t *content_crc_ptr     = NULL;
          content_get_crc(&content_crc_ptr);
+
          memset(&ad_packet_buffer, 0, sizeof(struct ad_packet));
          memcpy(&ad_packet_buffer, "RANS", 4);
+
          ad_packet_buffer.protocol_version =
             htonl(NETPLAY_PROTOCOL_VERSION);
          ad_packet_buffer.port = htonl(netplay->tcp_port);
@@ -268,7 +272,6 @@ bool netplay_lan_ad_server(netplay_t *netplay)
             strlcpy(ad_packet_buffer.core_version, info->info.library_version,
                NETPLAY_HOST_STR_LEN);
          }
-         char s[NETPLAY_HOST_STR_LEN];
          snprintf(s, sizeof(s), "%d", *content_crc_ptr);
          strlcpy(ad_packet_buffer.content_crc, s,
             NETPLAY_HOST_STR_LEN);
@@ -301,9 +304,9 @@ static int16_t htons_for_morons(int16_t value)
 static bool netplay_lan_ad_client(void)
 {
    fd_set fds;
-   struct timeval tmp_tv = {0};
-   struct sockaddr their_addr;
    socklen_t addr_size;
+   struct sockaddr their_addr;
+   struct timeval tmp_tv = {0};
 
    if (lan_ad_client_fd < 0)
        return false;
@@ -366,7 +369,7 @@ static bool netplay_lan_ad_client(void)
                allocated *= 2;
 
             if (discovered_hosts.hosts)
-               new_hosts = (struct netplay_host *)
+               new_hosts  = (struct netplay_host *)
                   realloc(discovered_hosts.hosts, allocated * sizeof(struct
                   netplay_host));
             else
