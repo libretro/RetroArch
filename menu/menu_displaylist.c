@@ -4946,8 +4946,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             if (!hosts || hosts->size == 0)
             {
-               if (!hosts)
-                  task_push_netplay_lan_scan();
+               task_push_netplay_lan_scan();
 
                menu_entries_append_enum(info->list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND),
