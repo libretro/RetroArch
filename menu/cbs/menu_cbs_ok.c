@@ -3519,8 +3519,9 @@ finish:
                   host->nick,
                   sizeof(netplay_room_list[i].nickname));
             /* to-do: get address fron host-> addr */
+            struct sockaddr* address = &host->addr;
             strlcpy(netplay_room_list[i].address,
-                  "",
+                  inet_ntoa(((struct sockaddr_in*)(address))->sin_addr),
                   sizeof(netplay_room_list[i].address));
             strlcpy(netplay_room_list[i].corename,
                   host->core,
@@ -3531,7 +3532,6 @@ finish:
             strlcpy(netplay_room_list[i].gamename,
                   host->content,
                   sizeof(netplay_room_list[i].coreversion));
-
             /* to-do: this will only work with default port os
                we should have a start LAN game entry that always
                uses that port
@@ -3540,7 +3540,26 @@ finish:
             /* to-do: lan announce doesn't announce CRC */
             netplay_room_list[i].gamecrc   = 0;
             netplay_room_list[i].timestamp = 0;
-
+/* Uncomment this to debug mismatched room parameters*/
+#if 1
+            RARCH_LOG("Room Data: %d\n"
+               "Nickname:         %s\n"
+               "Address:          %s\n"
+               "Port:             %d\n"
+               "Core:             %s\n"
+               "Core Version:     %s\n"
+               "Game:             %s\n"
+               "Game CRC:         %08x\n"
+               "Timestamp:        %d\n", room_data->elems[j + 6].data,
+               netplay_room_list[i].nickname,
+               netplay_room_list[i].address,
+               netplay_room_list[i].port,
+               netplay_room_list[i].corename,
+               netplay_room_list[i].coreversion,
+               netplay_room_list[i].gamename,
+               netplay_room_list[i].gamecrc,
+               netplay_room_list[i].timestamp);
+#endif
             snprintf(s, sizeof(s), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME),
                   netplay_room_list[i].nickname);
 
