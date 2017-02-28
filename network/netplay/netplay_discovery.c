@@ -66,7 +66,7 @@ struct ad_packet
    char content_crc[NETPLAY_HOST_STR_LEN];
 };
 
-bool netplay_lan_ad_client(void);
+static bool netplay_lan_ad_client(void);
 
 /* LAN discovery sockets */
 static int lan_ad_server_fd            = -1;
@@ -141,7 +141,8 @@ bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state, 
 
          /* Make it broadcastable */
 #if defined(SOL_SOCKET) && defined(SO_BROADCAST)
-         if (setsockopt(lan_ad_client_fd, SOL_SOCKET, SO_BROADCAST, (const char *) &canBroadcast, sizeof(canBroadcast)) < 0)
+         if (setsockopt(lan_ad_client_fd, SOL_SOCKET, SO_BROADCAST,
+                  (const char *)&canBroadcast, sizeof(canBroadcast)) < 0)
              RARCH_WARN("Failed to set netplay discovery port to broadcast.\n");
 #endif
 
@@ -255,8 +256,10 @@ bool netplay_lan_ad_server(netplay_t *netplay)
          ad_packet_buffer.port = htonl(netplay->tcp_port);
          strlcpy(ad_packet_buffer.retroarch_version, PACKAGE_VERSION,
             NETPLAY_HOST_STR_LEN);
-         strlcpy(ad_packet_buffer.content, !string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))) ? path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A",
-            NETPLAY_HOST_STR_LEN);
+         strlcpy(ad_packet_buffer.content, !string_is_empty(
+                  path_basename(path_get(RARCH_PATH_BASENAME))) 
+               ? path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A",
+               NETPLAY_HOST_STR_LEN);
          strlcpy(ad_packet_buffer.nick, netplay->nick, NETPLAY_HOST_STR_LEN);
          if (info)
          {
@@ -295,7 +298,7 @@ static int16_t htons_for_morons(int16_t value)
 #endif
 #endif
 
-bool netplay_lan_ad_client(void)
+static bool netplay_lan_ad_client(void)
 {
    fd_set fds;
    struct timeval tmp_tv = {0};
@@ -310,18 +313,21 @@ bool netplay_lan_ad_client(void)
    {
       FD_ZERO(&fds);
       FD_SET(lan_ad_client_fd, &fds);
-      if (socket_select(lan_ad_client_fd + 1, &fds, NULL, NULL, &tmp_tv) <= 0)
+      if (socket_select(lan_ad_client_fd + 1,
+               &fds, NULL, NULL, &tmp_tv) <= 0)
          break;
+
       if (!FD_ISSET(lan_ad_client_fd, &fds))
          break;
 
       /* Somebody queried, so check that it's valid */
       addr_size = sizeof(their_addr);
+
       if (recvfrom(lan_ad_client_fd, (char*)&ad_packet_buffer,
             sizeof(struct ad_packet), 0, &their_addr, &addr_size) >=
             (ssize_t) sizeof(struct ad_packet))
       {
-         struct netplay_host *host;
+         struct netplay_host *host = NULL;
 
          /* Make sure it's a valid response */
          if (memcmp((void *) &ad_packet_buffer, "RANS", 4))
@@ -351,11 +357,13 @@ bool netplay_lan_ad_client(void)
          /* Allocate space for it */
          if (discovered_hosts.size >= discovered_hosts_allocated)
          {
-            size_t allocated = discovered_hosts_allocated;
-            struct netplay_host *new_hosts;
+            size_t allocated               = discovered_hosts_allocated;
+            struct netplay_host *new_hosts = NULL;
 
-            if (allocated == 0) allocated = 2;
-            else allocated *= 2;
+            if (allocated == 0)
+               allocated  = 2;
+            else
+               allocated *= 2;
 
             if (discovered_hosts.hosts)
                new_hosts = (struct netplay_host *)
@@ -369,7 +377,7 @@ bool netplay_lan_ad_client(void)
             if (!new_hosts)
                return false;
 
-            discovered_hosts.hosts = new_hosts;
+            discovered_hosts.hosts     = new_hosts;
             discovered_hosts_allocated = allocated;
          }
 
@@ -378,15 +386,18 @@ bool netplay_lan_ad_client(void)
 
          /* Copy in the response */
          memset(host, 0, sizeof(struct netplay_host));
-         host->addr = their_addr;
+         host->addr    = their_addr;
          host->addrlen = addr_size;
+
          strlcpy(host->nick, ad_packet_buffer.nick, NETPLAY_HOST_STR_LEN);
          strlcpy(host->core, ad_packet_buffer.core, NETPLAY_HOST_STR_LEN);
          strlcpy(host->core_version, ad_packet_buffer.core_version,
             NETPLAY_HOST_STR_LEN);
          strlcpy(host->content, ad_packet_buffer.content,
             NETPLAY_HOST_STR_LEN);
-         host->content_crc = atoi(ad_packet_buffer.content_crc);
+
+         host->content_crc                  = 
+            atoi(ad_packet_buffer.content_crc);
          host->nick[NETPLAY_HOST_STR_LEN-1] =
             host->core[NETPLAY_HOST_STR_LEN-1] =
             host->core_version[NETPLAY_HOST_STR_LEN-1] =
