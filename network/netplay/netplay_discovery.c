@@ -37,8 +37,8 @@
 #include <string/stdstring.h>
 #include <file/file_path.h>
 #include "../../file_path_special.h"
-#include "../paths.h"
-#include "../content.h"
+#include "../../paths.h"
+#include "../../content.h"
 
 #include <compat/strl.h>
 #include <net/net_compat.h>

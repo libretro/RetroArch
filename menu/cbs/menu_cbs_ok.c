@@ -3423,7 +3423,7 @@ finish:
          file_list_t *file_list               = menu_entries_get_selection_buf_ptr(0);
          struct netplay_host_list *lan_hosts;
 
-         netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, &lan_hosts);
+         //netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, &lan_hosts);
 
          if (lan_hosts)
             lan_room_count = lan_hosts->size;
