@@ -563,7 +563,14 @@ static bool netplay_get_cmd(netplay_t *netplay,
                RARCH_ERR("Failed to receive NETPLAY_CMD_NOINPUT payload.\n");
                return netplay_cmd_nak(netplay, connection);
             }
+
             frame = ntohl(frame);
+
+            if (frame < netplay->server_frame_count)
+            {
+               /* We already had this, so ignore the new transmission */
+               break;
+            }
 
             if (frame != netplay->server_frame_count)
             {
