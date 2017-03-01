@@ -117,6 +117,8 @@ const struct rglgen_sym_map rglgen_symbol_map[] = {
     SYM(MultiDrawElementsBaseVertexEXT),
     SYM(DrawArraysInstancedEXT),
     SYM(DrawElementsInstancedEXT),
+    SYM(DrawTransformFeedbackEXT),
+    SYM(DrawTransformFeedbackInstancedEXT),
     SYM(FramebufferTextureEXT),
     SYM(VertexAttribDivisorEXT),
     SYM(MapBufferRangeEXT),
@@ -323,6 +325,8 @@ RGLSYMGLDRAWELEMENTSINSTANCEDBASEVERTEXEXTPROC __rglgen_glDrawElementsInstancedB
 RGLSYMGLMULTIDRAWELEMENTSBASEVERTEXEXTPROC __rglgen_glMultiDrawElementsBaseVertexEXT;
 RGLSYMGLDRAWARRAYSINSTANCEDEXTPROC __rglgen_glDrawArraysInstancedEXT;
 RGLSYMGLDRAWELEMENTSINSTANCEDEXTPROC __rglgen_glDrawElementsInstancedEXT;
+RGLSYMGLDRAWTRANSFORMFEEDBACKEXTPROC __rglgen_glDrawTransformFeedbackEXT;
+RGLSYMGLDRAWTRANSFORMFEEDBACKINSTANCEDEXTPROC __rglgen_glDrawTransformFeedbackInstancedEXT;
 RGLSYMGLFRAMEBUFFERTEXTUREEXTPROC __rglgen_glFramebufferTextureEXT;
 RGLSYMGLVERTEXATTRIBDIVISOREXTPROC __rglgen_glVertexAttribDivisorEXT;
 RGLSYMGLMAPBUFFERRANGEEXTPROC __rglgen_glMapBufferRangeEXT;
