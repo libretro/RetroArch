@@ -271,7 +271,7 @@ void rglGetProgramiv(GLuint shader, GLenum pname, GLint *params);
 void rglGetShaderiv(GLuint shader, GLenum pname, GLint *params);
 void rglAttachShader(GLuint program, GLuint shader);
 void rglShaderSource(GLuint shader, GLsizei count,
-      const GLchar *const*string, const GLint *length);
+      const GLchar **string, const GLint *length);
 void rglCompileShader(GLuint shader);
 GLuint rglCreateProgram(void);
 void rglGetShaderInfoLog(GLuint shader, GLsizei maxLength,

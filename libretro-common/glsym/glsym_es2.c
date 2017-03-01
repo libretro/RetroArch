@@ -100,8 +100,6 @@ const struct rglgen_sym_map rglgen_symbol_map[] = {
     SYM(GetQueryivEXT),
     SYM(GetQueryObjectivEXT),
     SYM(GetQueryObjectuivEXT),
-    SYM(GetQueryObjecti64vEXT),
-    SYM(GetQueryObjectui64vEXT),
     SYM(DrawBuffersEXT),
     SYM(EnableiEXT),
     SYM(DisableiEXT),
@@ -117,8 +115,6 @@ const struct rglgen_sym_map rglgen_symbol_map[] = {
     SYM(MultiDrawElementsBaseVertexEXT),
     SYM(DrawArraysInstancedEXT),
     SYM(DrawElementsInstancedEXT),
-    SYM(DrawTransformFeedbackEXT),
-    SYM(DrawTransformFeedbackInstancedEXT),
     SYM(FramebufferTextureEXT),
     SYM(VertexAttribDivisorEXT),
     SYM(MapBufferRangeEXT),
@@ -308,8 +304,6 @@ RGLSYMGLQUERYCOUNTEREXTPROC __rglgen_glQueryCounterEXT;
 RGLSYMGLGETQUERYIVEXTPROC __rglgen_glGetQueryivEXT;
 RGLSYMGLGETQUERYOBJECTIVEXTPROC __rglgen_glGetQueryObjectivEXT;
 RGLSYMGLGETQUERYOBJECTUIVEXTPROC __rglgen_glGetQueryObjectuivEXT;
-RGLSYMGLGETQUERYOBJECTI64VEXTPROC __rglgen_glGetQueryObjecti64vEXT;
-RGLSYMGLGETQUERYOBJECTUI64VEXTPROC __rglgen_glGetQueryObjectui64vEXT;
 RGLSYMGLDRAWBUFFERSEXTPROC __rglgen_glDrawBuffersEXT;
 RGLSYMGLENABLEIEXTPROC __rglgen_glEnableiEXT;
 RGLSYMGLDISABLEIEXTPROC __rglgen_glDisableiEXT;
@@ -325,8 +319,6 @@ RGLSYMGLDRAWELEMENTSINSTANCEDBASEVERTEXEXTPROC __rglgen_glDrawElementsInstancedB
 RGLSYMGLMULTIDRAWELEMENTSBASEVERTEXEXTPROC __rglgen_glMultiDrawElementsBaseVertexEXT;
 RGLSYMGLDRAWARRAYSINSTANCEDEXTPROC __rglgen_glDrawArraysInstancedEXT;
 RGLSYMGLDRAWELEMENTSINSTANCEDEXTPROC __rglgen_glDrawElementsInstancedEXT;
-RGLSYMGLDRAWTRANSFORMFEEDBACKEXTPROC __rglgen_glDrawTransformFeedbackEXT;
-RGLSYMGLDRAWTRANSFORMFEEDBACKINSTANCEDEXTPROC __rglgen_glDrawTransformFeedbackInstancedEXT;
 RGLSYMGLFRAMEBUFFERTEXTUREEXTPROC __rglgen_glFramebufferTextureEXT;
 RGLSYMGLVERTEXATTRIBDIVISOREXTPROC __rglgen_glVertexAttribDivisorEXT;
 RGLSYMGLMAPBUFFERRANGEEXTPROC __rglgen_glMapBufferRangeEXT;

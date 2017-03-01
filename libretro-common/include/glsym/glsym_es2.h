@@ -22,6 +22,7 @@ typedef void *GLeglImageOES;
 #if !defined(GL_OES_fixed_point) && !defined(HAVE_OPENGLES2)
 typedef GLint GLfixed;
 #endif
+
 typedef void (GL_APIENTRYP RGLSYMGLBLENDBARRIERKHRPROC) (void);
 typedef void (GL_APIENTRYP RGLSYMGLDEBUGMESSAGECONTROLKHRPROC) (GLenum source, GLenum type, GLenum severity, GLsizei count, const GLuint *ids, GLboolean enabled);
 typedef void (GL_APIENTRYP RGLSYMGLDEBUGMESSAGEINSERTKHRPROC) (GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *buf);
@@ -120,8 +121,6 @@ typedef void (GL_APIENTRYP RGLSYMGLQUERYCOUNTEREXTPROC) (GLuint id, GLenum targe
 typedef void (GL_APIENTRYP RGLSYMGLGETQUERYIVEXTPROC) (GLenum target, GLenum pname, GLint *params);
 typedef void (GL_APIENTRYP RGLSYMGLGETQUERYOBJECTIVEXTPROC) (GLuint id, GLenum pname, GLint *params);
 typedef void (GL_APIENTRYP RGLSYMGLGETQUERYOBJECTUIVEXTPROC) (GLuint id, GLenum pname, GLuint *params);
-typedef void (GL_APIENTRYP RGLSYMGLGETQUERYOBJECTI64VEXTPROC) (GLuint id, GLenum pname, GLint64 *params);
-typedef void (GL_APIENTRYP RGLSYMGLGETQUERYOBJECTUI64VEXTPROC) (GLuint id, GLenum pname, GLuint64 *params);
 typedef void (GL_APIENTRYP RGLSYMGLDRAWBUFFERSEXTPROC) (GLsizei n, const GLenum *bufs);
 typedef void (GL_APIENTRYP RGLSYMGLENABLEIEXTPROC) (GLenum target, GLuint index);
 typedef void (GL_APIENTRYP RGLSYMGLDISABLEIEXTPROC) (GLenum target, GLuint index);
@@ -137,8 +136,6 @@ typedef void (GL_APIENTRYP RGLSYMGLDRAWELEMENTSINSTANCEDBASEVERTEXEXTPROC) (GLen
 typedef void (GL_APIENTRYP RGLSYMGLMULTIDRAWELEMENTSBASEVERTEXEXTPROC) (GLenum mode, const GLsizei *count, GLenum type, const void *const*indices, GLsizei primcount, const GLint *basevertex);
 typedef void (GL_APIENTRYP RGLSYMGLDRAWARRAYSINSTANCEDEXTPROC) (GLenum mode, GLint start, GLsizei count, GLsizei primcount);
 typedef void (GL_APIENTRYP RGLSYMGLDRAWELEMENTSINSTANCEDEXTPROC) (GLenum mode, GLsizei count, GLenum type, const void *indices, GLsizei primcount);
-typedef void (GL_APIENTRYP RGLSYMGLDRAWTRANSFORMFEEDBACKEXTPROC) (GLenum mode, GLuint id);
-typedef void (GL_APIENTRYP RGLSYMGLDRAWTRANSFORMFEEDBACKINSTANCEDEXTPROC) (GLenum mode, GLuint id, GLsizei instancecount);
 typedef void (GL_APIENTRYP RGLSYMGLFRAMEBUFFERTEXTUREEXTPROC) (GLenum target, GLenum attachment, GLuint texture, GLint level);
 typedef void (GL_APIENTRYP RGLSYMGLVERTEXATTRIBDIVISOREXTPROC) (GLuint index, GLuint divisor);
 typedef void *(GL_APIENTRYP RGLSYMGLMAPBUFFERRANGEEXTPROC) (GLenum target, GLintptr offset, GLsizeiptr length, GLbitfield access);
@@ -327,8 +324,6 @@ typedef void (GL_APIENTRYP RGLSYMGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVRPROC
 #define glGetQueryivEXT __rglgen_glGetQueryivEXT
 #define glGetQueryObjectivEXT __rglgen_glGetQueryObjectivEXT
 #define glGetQueryObjectuivEXT __rglgen_glGetQueryObjectuivEXT
-#define glGetQueryObjecti64vEXT __rglgen_glGetQueryObjecti64vEXT
-#define glGetQueryObjectui64vEXT __rglgen_glGetQueryObjectui64vEXT
 #define glDrawBuffersEXT __rglgen_glDrawBuffersEXT
 #define glEnableiEXT __rglgen_glEnableiEXT
 #define glDisableiEXT __rglgen_glDisableiEXT
@@ -344,8 +339,6 @@ typedef void (GL_APIENTRYP RGLSYMGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVRPROC
 #define glMultiDrawElementsBaseVertexEXT __rglgen_glMultiDrawElementsBaseVertexEXT
 #define glDrawArraysInstancedEXT __rglgen_glDrawArraysInstancedEXT
 #define glDrawElementsInstancedEXT __rglgen_glDrawElementsInstancedEXT
-#define glDrawTransformFeedbackEXT __rglgen_glDrawTransformFeedbackEXT
-#define glDrawTransformFeedbackInstancedEXT __rglgen_glDrawTransformFeedbackInstancedEXT
 #define glFramebufferTextureEXT __rglgen_glFramebufferTextureEXT
 #define glVertexAttribDivisorEXT __rglgen_glVertexAttribDivisorEXT
 #define glMapBufferRangeEXT __rglgen_glMapBufferRangeEXT
@@ -432,6 +425,7 @@ typedef void (GL_APIENTRYP RGLSYMGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVRPROC
 #define glTextureStorage2DEXT __rglgen_glTextureStorage2DEXT
 #define glTextureStorage3DEXT __rglgen_glTextureStorage3DEXT
 #define glTextureViewEXT __rglgen_glTextureViewEXT
+#define glesEXT __rglgen_glesEXT
 #define glFramebufferTextureMultiviewOVR __rglgen_glFramebufferTextureMultiviewOVR
 #define glFramebufferTextureMultisampleMultiviewOVR __rglgen_glFramebufferTextureMultisampleMultiviewOVR
 
@@ -533,8 +527,6 @@ extern RGLSYMGLQUERYCOUNTEREXTPROC __rglgen_glQueryCounterEXT;
 extern RGLSYMGLGETQUERYIVEXTPROC __rglgen_glGetQueryivEXT;
 extern RGLSYMGLGETQUERYOBJECTIVEXTPROC __rglgen_glGetQueryObjectivEXT;
 extern RGLSYMGLGETQUERYOBJECTUIVEXTPROC __rglgen_glGetQueryObjectuivEXT;
-extern RGLSYMGLGETQUERYOBJECTI64VEXTPROC __rglgen_glGetQueryObjecti64vEXT;
-extern RGLSYMGLGETQUERYOBJECTUI64VEXTPROC __rglgen_glGetQueryObjectui64vEXT;
 extern RGLSYMGLDRAWBUFFERSEXTPROC __rglgen_glDrawBuffersEXT;
 extern RGLSYMGLENABLEIEXTPROC __rglgen_glEnableiEXT;
 extern RGLSYMGLDISABLEIEXTPROC __rglgen_glDisableiEXT;
@@ -550,8 +542,6 @@ extern RGLSYMGLDRAWELEMENTSINSTANCEDBASEVERTEXEXTPROC __rglgen_glDrawElementsIns
 extern RGLSYMGLMULTIDRAWELEMENTSBASEVERTEXEXTPROC __rglgen_glMultiDrawElementsBaseVertexEXT;
 extern RGLSYMGLDRAWARRAYSINSTANCEDEXTPROC __rglgen_glDrawArraysInstancedEXT;
 extern RGLSYMGLDRAWELEMENTSINSTANCEDEXTPROC __rglgen_glDrawElementsInstancedEXT;
-extern RGLSYMGLDRAWTRANSFORMFEEDBACKEXTPROC __rglgen_glDrawTransformFeedbackEXT;
-extern RGLSYMGLDRAWTRANSFORMFEEDBACKINSTANCEDEXTPROC __rglgen_glDrawTransformFeedbackInstancedEXT;
 extern RGLSYMGLFRAMEBUFFERTEXTUREEXTPROC __rglgen_glFramebufferTextureEXT;
 extern RGLSYMGLVERTEXATTRIBDIVISOREXTPROC __rglgen_glVertexAttribDivisorEXT;
 extern RGLSYMGLMAPBUFFERRANGEEXTPROC __rglgen_glMapBufferRangeEXT;

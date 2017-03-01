@@ -1085,7 +1085,7 @@ GLint rglGetAttribLocation(GLuint program, const GLchar *name)
 void rglShaderSource(GLuint shader, GLsizei count,
       const GLchar **string, const GLint *length)
 {
-   glShaderSource(shader, count, string, length);
+   return glShaderSource(shader, count, string, length);
 }
 
 /*
