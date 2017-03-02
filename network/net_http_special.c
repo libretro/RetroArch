@@ -30,7 +30,7 @@ int net_http_get(const char **result, size_t *size, const char *url, retro_time_
    int ret                        = NET_HTTP_GET_OK;
    struct http_t* http            = NULL;
    retro_time_t t0                = cpu_features_get_time_usec();
-   struct http_connection_t *conn = net_http_connection_new(url);
+   struct http_connection_t *conn = net_http_connection_new(url, "GET", NULL);
 
    *result = NULL;
 

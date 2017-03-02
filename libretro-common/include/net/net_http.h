@@ -34,7 +34,7 @@ RETRO_BEGIN_DECLS
 struct http_t;
 struct http_connection_t;
 
-struct http_connection_t *net_http_connection_new(const char *url);
+struct http_connection_t *net_http_connection_new(const char *url, const char *method, const char *data);
 
 bool net_http_connection_iterate(struct http_connection_t *conn);
 

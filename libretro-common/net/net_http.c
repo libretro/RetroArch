@@ -68,9 +68,11 @@ struct http_connection_t
    char *location;
    char *urlcopy;
    char *scan;
+   char *methodcopy;
+   char *contenttypecopy;
+   char *postdatacopy;
    int port;
 };
-
 
 static int net_http_new_socket(const char *domain, int port)
 {
@@ -140,7 +142,7 @@ static char* urlencode(const char* url)
    return ret;
 }
 
-struct http_connection_t *net_http_connection_new(const char *url)
+struct http_connection_t *net_http_connection_new(const char *url, const char *method, const char *data)
 {
    char **domain = NULL;
    struct http_connection_t *conn = (struct http_connection_t*)calloc(1, 
@@ -150,6 +152,12 @@ struct http_connection_t *net_http_connection_new(const char *url)
       return NULL;
 
    conn->urlcopy = urlencode(url);
+
+   if (method)
+      conn->methodcopy = strdup(method);
+
+   if (data)
+      conn->postdatacopy = strdup(data);
 
    if (!conn->urlcopy)
       goto error;
@@ -166,7 +174,13 @@ struct http_connection_t *net_http_connection_new(const char *url)
 error:
    if (conn->urlcopy)
       free(conn->urlcopy);
+   if (conn->methodcopy)
+      free(conn->methodcopy);
+   if (conn->postdatacopy)
+      free(conn->postdatacopy);
    conn->urlcopy = NULL;
+   conn->methodcopy = NULL;
+   conn->postdatacopy = NULL;
    free(conn);
    return NULL;
 }
@@ -221,6 +235,20 @@ void net_http_connection_free(struct http_connection_t *conn)
    if (conn->urlcopy)
       free(conn->urlcopy);
 
+   if (conn->methodcopy)
+      free(conn->methodcopy);
+
+   if (conn->contenttypecopy)
+      free(conn->contenttypecopy);
+
+   if (conn->postdatacopy)
+      free(conn->postdatacopy);
+
+   conn->urlcopy = NULL;
+   conn->methodcopy = NULL;
+   conn->contenttypecopy = NULL;
+   conn->postdatacopy = NULL;
+
    free(conn);
 }
 
@@ -245,7 +273,16 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    error = false;
 
    /* This is a bit lazy, but it works. */
-   net_http_send_str(fd, &error, "GET /");
+   if (conn->methodcopy)
+   {
+      net_http_send_str(fd, &error, conn->methodcopy);
+      net_http_send_str(fd, &error, " /");
+   }
+   else
+   {
+      net_http_send_str(fd, &error, "GET /");
+   }
+
    net_http_send_str(fd, &error, conn->location);
    net_http_send_str(fd, &error, " HTTP/1.1\r\n");
 
@@ -263,8 +300,44 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    }
 
    net_http_send_str(fd, &error, "\r\n");
+
+   /* this is not being set anywhere yet */
+   if (conn->contenttypecopy)
+   {
+      net_http_send_str(fd, &error, "Content-Type: ");
+      net_http_send_str(fd, &error, conn->contenttypecopy);
+      net_http_send_str(fd, &error, "\r\n");
+   }
+
+   if (conn->methodcopy && string_is_equal(conn->methodcopy, "POST"))
+   {
+      size_t post_len, len;
+      char *len_str;
+
+      if (!conn->postdatacopy)
+         goto error;
+
+      if (!conn->contenttypecopy)
+         net_http_send_str(fd, &error, "Content-Type: application/x-www-form-urlencoded\r\n");
+
+      net_http_send_str(fd, &error, "Content-Length: ");
+
+      post_len = strlen(conn->postdatacopy);
+      len = snprintf(NULL, 0, "%lu", post_len);
+      len_str = (char*)malloc(len);
+
+      snprintf(len_str, len, "%lu", post_len);
+
+      len_str[len - 1] = '\0';
+
+      net_http_send_str(fd, &error, len_str);
+   }
+
    net_http_send_str(fd, &error, "Connection: close\r\n");
    net_http_send_str(fd, &error, "\r\n");
+
+   if (conn->methodcopy && string_is_equal(conn->methodcopy, "POST"))
+      net_http_send_str(fd, &error, conn->postdatacopy);
 
    if (error)
       goto error;
@@ -287,6 +360,13 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    return state;
 
 error:
+   if (conn->methodcopy)
+      free(conn->methodcopy);
+   if (conn->contenttypecopy)
+      free(conn->contenttypecopy);
+   conn->methodcopy = NULL;
+   conn->contenttypecopy = NULL;
+   conn->postdatacopy = NULL;
    if (fd >= 0)
       socket_close(fd);
    if (state)
