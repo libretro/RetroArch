@@ -16,6 +16,7 @@
 - NET: Announcing network games to the public lobby is optional now 
 - NET: Bake in miniupnpc
 - NET: Fix netplay join for contentless cores 
+- NET: Lan games show next to lobbies with (lan) and connect via the private IP address 
 - SCANNER: Always add 7z & zip to supported extensions
 - VULKAN: Find supported composite alpha in swapchain
 - VULKAN: Add snow/bokeh shader pipeline effects - at parity with GL now
