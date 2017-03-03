@@ -339,6 +339,7 @@ struct http_t *net_http_new(struct http_connection_t *conn)
       net_http_send_str(fd, &error, "\r\n");
    }
 
+   net_http_send_str(fd, &error, "User-Agent: libretro\r\n");
    net_http_send_str(fd, &error, "Connection: close\r\n");
    net_http_send_str(fd, &error, "\r\n");
 
