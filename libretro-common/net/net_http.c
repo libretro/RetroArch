@@ -323,14 +323,20 @@ struct http_t *net_http_new(struct http_connection_t *conn)
       net_http_send_str(fd, &error, "Content-Length: ");
 
       post_len = strlen(conn->postdatacopy);
-      len = snprintf(NULL, 0, "%lu", post_len);
-      len_str = (char*)malloc(len);
+#ifdef _WIN32
+      len = snprintf(NULL, 0, "%I64u", (long long unsigned)post_len);
+      len_str = (char*)malloc(len + 1);
+      snprintf(len_str, len + 1, "%I64u", (long long unsigned)post_len);
+#else
+      len = snprintf(NULL, 0, "%llu", post_len);
+      len_str = (char*)malloc(len + 1);
+      snprintf(len_str, len + 1, "%llu", post_len);
+#endif
 
-      snprintf(len_str, len, "%lu", post_len);
-
-      len_str[len - 1] = '\0';
+      len_str[len] = '\0';
 
       net_http_send_str(fd, &error, len_str);
+      net_http_send_str(fd, &error, "\r\n");
    }
 
    net_http_send_str(fd, &error, "Connection: close\r\n");
