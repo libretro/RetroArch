@@ -22,6 +22,7 @@
 #include <compat/strl.h>
 #include <retro_assert.h>
 #include <string/stdstring.h>
+#include <net/net_http.h>
 
 #include "netplay_private.h"
 
@@ -525,6 +526,15 @@ static void netplay_announce(void)
    rarch_system_info_t *system   = NULL;
    settings_t *settings          = config_get_ptr();
    uint32_t *content_crc_ptr     = NULL;
+   char *username;
+   char *corename;
+   char *gamename;
+   char *coreversion;
+
+   net_http_urlencode_full(&username, settings->username);
+   net_http_urlencode_full(&corename, system->info.library_name);
+   net_http_urlencode_full(&gamename, !string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))) ? path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A");
+   net_http_urlencode_full(&coreversion, system->info.library_version);
 
    content_get_crc(&content_crc_ptr);
 
@@ -534,11 +544,15 @@ static void netplay_announce(void)
 
    snprintf(buf, sizeof(buf), "username=%s&core_name=%s&core_version=%s&"
    "game_name=%s&game_crc=%d&port=%d&has_password=%d&has_spectate_password=%d",
-      settings->username, system->info.library_name, system->info.library_version,
-      !string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))) ? path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A", *content_crc_ptr,
+      username, corename, coreversion, gamename, *content_crc_ptr,
       settings->netplay.port, settings->netplay.password ? 1 : 0, settings->netplay.spectate_password ? 1 : 0);
 
    task_push_http_post_transfer(url, buf, true, NULL, netplay_announce_cb, NULL);
+
+   free(username);
+   free(corename);
+   free(gamename);
+   free(coreversion);
 }
 
 int16_t input_state_net(unsigned port, unsigned device,

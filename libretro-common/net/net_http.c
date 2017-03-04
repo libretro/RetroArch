@@ -74,6 +74,45 @@ struct http_connection_t
    int port;
 };
 
+static char urlencode_lut[256];
+static bool urlencode_lut_inited = false;
+
+void urlencode_lut_init()
+{
+   unsigned i;
+
+   urlencode_lut_inited = true;
+
+   for (i = 0; i < 256; i++)
+   {
+
+      urlencode_lut[i] = isalnum(i) || i == '*' || i == '-' || i == '.' || i == '_' ? i : (i == ' ') ? '+' : 0;
+   }
+}
+
+/* caller is responsible for deleting the destination buffer */
+void net_http_urlencode_full(char **dest, const char *source) {
+   /* Assume every character will be encoded, so we need 3 times the space. */
+   size_t len = strlen(source) * 3 + 1;
+   char *enc;
+
+   if (!urlencode_lut_inited)
+      urlencode_lut_init();
+
+   enc = (char*)calloc(1, len);
+
+   *dest = enc;
+
+   for (; *source; source++)
+   {
+      if (urlencode_lut[(int)*source]) sprintf(enc, "%c", urlencode_lut[(int)*source]);
+      else sprintf(enc, "%%%02X", *source);
+      while (*++(enc));
+   }
+
+   (*dest)[len - 1] = '\0';
+}
+
 static int net_http_new_socket(const char *domain, int port)
 {
    int ret;
@@ -108,50 +147,16 @@ static void net_http_send_str(int fd, bool *error, const char *text)
       *error = true;
 }
 
-static char* urlencode(const char* url)
-{
-   unsigned i;
-   unsigned outpos = 0;
-   unsigned outlen = 0;
-   char *ret       = NULL;
-
-   for (i = 0; url[i] != '\0'; i++)
-   {
-      outlen++;
-      if (url[i] == ' ')
-         outlen += 2;
-   }
-   
-   ret = (char*)malloc(outlen + 1);
-   if (!ret)
-      return NULL;
-   
-   for (i = 0; url[i]; i++)
-   {
-      if (url[i] == ' ')
-      {
-         ret[outpos++] = '%';
-         ret[outpos++] = '2';
-         ret[outpos++] = '0';
-      }
-      else
-         ret[outpos++] = url[i];
-   }
-   ret[outpos] = '\0';
-   
-   return ret;
-}
-
 struct http_connection_t *net_http_connection_new(const char *url, const char *method, const char *data)
 {
    char **domain = NULL;
-   struct http_connection_t *conn = (struct http_connection_t*)calloc(1, 
+   struct http_connection_t *conn = (struct http_connection_t*)calloc(1,
          sizeof(struct http_connection_t));
 
-   if (!conn)
+   if (!conn || !url)
       return NULL;
 
-   conn->urlcopy = urlencode(url);
+   conn->urlcopy = strdup(url);
 
    if (method)
       conn->methodcopy = strdup(method);
