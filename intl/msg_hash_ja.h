@@ -2906,4 +2906,4 @@ MSG_HASH(
       "Increase or decrease the amount of shader pipeline passes. You can bind a separate shader to each pipeline pass and configure its scale and filtering."
       )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
-      "MITMサーバを使用")
+      "MITMサーバーを使用")
