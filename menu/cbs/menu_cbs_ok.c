@@ -3418,7 +3418,6 @@ finish:
          int j                                = 0;
          int k                                = 0;
          int lan_room_count                   = 0;
-         static struct string_list *room_data = NULL;
          struct netplay_host_list *lan_hosts  = NULL;
          file_list_t *file_list               = menu_entries_get_selection_buf_ptr(0);
 
@@ -3428,7 +3427,7 @@ finish:
          if (lan_hosts)
             lan_room_count                    = lan_hosts->size;
 
-         room_data                            = string_split(buf, "\n");
+         netplay_rooms_parse(buf);
 
          if (netplay_room_list)
             free(netplay_room_list);
@@ -3437,20 +3436,11 @@ finish:
           * in the same list. If both entries are available, we want to show only
           * the LAN one. */
 
-         netplay_room_count                   = (int)(room_data->size / 8);
+         netplay_room_count                   = netplay_rooms_get_count();
          netplay_room_list                    = (struct netplay_room*)
             calloc(netplay_room_count + lan_room_count,
                   sizeof(struct netplay_room));
 
-#if 0
-         for (int i = 0; i < room_data->size; i++)
-         {
-            strlcpy(tmp,
-                  room_data->elems[i].data, sizeof(tmp));
-            RARCH_LOG("tmp %s\n", tmp);
-
-         }
-#endif
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, file_list);
          menu_entries_append_enum(file_list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST),
@@ -3469,7 +3459,9 @@ finish:
 
             for (i = 0; i < netplay_room_count; i++)
             {
-               strlcpy(netplay_room_list[i].nickname,
+               memcpy(&netplay_room_list[i], netplay_room_get(i), sizeof(netplay_room_list[i]));
+
+               /*strlcpy(netplay_room_list[i].nickname,
                      room_data->elems[j + 0].data,
                      sizeof(netplay_room_list[i].nickname));
                strlcpy(netplay_room_list[i].address,
@@ -3487,7 +3479,7 @@ finish:
 
                netplay_room_list[i].port      = atoi(room_data->elems[j + 2].data);
                netplay_room_list[i].gamecrc   = atoi(room_data->elems[j + 6].data);
-               netplay_room_list[i].timestamp = atoi(room_data->elems[j + 7].data);
+               netplay_room_list[i].timestamp = atoi(room_data->elems[j + 7].data);*/
 
                /* Uncomment this to debug mismatched room parameters*/
 #if 0
@@ -3521,6 +3513,8 @@ finish:
                      MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,
                      MENU_ROOM, 0, 0);
             }
+
+            netplay_rooms_free();
          }
 
          if (lan_room_count != 0)
@@ -3587,7 +3581,7 @@ finish:
 static int action_ok_push_netplay_refresh_rooms(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char url [2048] = "http://lobby.libretro.com/raw/";
+   char url [2048] = "http://newlobby.libretro.com/list/";
    task_push_netplay_lan_scan();
    task_push_http_transfer(url, true, NULL, netplay_refresh_rooms_cb, NULL);
    return 0;

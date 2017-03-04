@@ -60,6 +60,10 @@ struct netplay_room
    char gamename    [PATH_MAX_LENGTH];
    int  gamecrc;
    int  timestamp;
+   bool has_password;
+   bool has_spectate_password;
+   bool fixed;
+   struct netplay_room *next;
 };
 
 extern struct netplay_room *netplay_room_list;

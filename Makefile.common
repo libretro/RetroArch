@@ -1195,7 +1195,8 @@ ifeq ($(HAVE_NETWORKING), 1)
 			network/netplay/netplay_io.o \
 			network/netplay/netplay_sync.o \
 			network/netplay/netplay_discovery.o \
-			network/netplay/netplay_buf.o
+			network/netplay/netplay_buf.o \
+			network/netplay/netplay_room_parse.o
 
    # Retro Achievements (also depends on threads)
 

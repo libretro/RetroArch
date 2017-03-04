@@ -521,7 +521,7 @@ static void netplay_announce_cb(void *task_data, void *user_data, const char *er
 static void netplay_announce(void)
 {
    char buf [2048];
-   char url [2048]               = "http://lobby.libretro.com/raw/?";
+   char url [2048]               = "http://newlobby.libretro.com/add/";
    rarch_system_info_t *system   = NULL;
    settings_t *settings          = config_get_ptr();
    uint32_t *content_crc_ptr     = NULL;
@@ -532,14 +532,13 @@ static void netplay_announce(void)
 
    buf[0] = '\0';
 
-   snprintf(buf, sizeof(buf), "%susername=%s&corename=%s&coreversion=%s&"
-   "gamename=%s&gamecrc=%d&port=%d", 
-      url, settings->username, system->info.library_name, 
-      system->info.library_version, 
-      !string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))) ? path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A",*content_crc_ptr,
-      settings->netplay.port);
+   snprintf(buf, sizeof(buf), "username=%s&core_name=%s&core_version=%s&"
+   "game_name=%s&game_crc=%d&port=%d&has_password=%d&has_spectate_password=%d",
+      settings->username, system->info.library_name, system->info.library_version,
+      !string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))) ? path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A", *content_crc_ptr,
+      settings->netplay.port, settings->netplay.password ? 1 : 0, settings->netplay.spectate_password ? 1 : 0);
 
-   task_push_http_transfer(buf, true, NULL, netplay_announce_cb, NULL);
+   task_push_http_post_transfer(url, buf, true, NULL, netplay_announce_cb, NULL);
 }
 
 int16_t input_state_net(unsigned port, unsigned device,
