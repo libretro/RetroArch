@@ -85,7 +85,6 @@ void urlencode_lut_init()
 
    for (i = 0; i < 256; i++)
    {
-
       urlencode_lut[i] = isalnum(i) || i == '*' || i == '-' || i == '.' || i == '_' ? i : (i == ' ') ? '+' : 0;
    }
 }
@@ -107,11 +106,11 @@ void net_http_urlencode_full(char **dest, const char *source) {
    {
       /* any non-ascii character will just be encoded without question */
       if ((int)*source < sizeof(urlencode_lut) && urlencode_lut[(int)*source])
-         sprintf(enc, "%c", urlencode_lut[(int)*source]);
+         snprintf(enc, len, "%c", urlencode_lut[(int)*source]);
       else
-         sprintf(enc, "%%%02X", *source);
+         snprintf(enc, len, "%%%02X", *source & 0xFF);
 
-      while (*++(enc));
+      while (*++enc);
    }
 
    (*dest)[len - 1] = '\0';
