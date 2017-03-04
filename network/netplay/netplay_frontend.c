@@ -543,7 +543,7 @@ static void netplay_announce(void)
    buf[0] = '\0';
 
    snprintf(buf, sizeof(buf), "username=%s&core_name=%s&core_version=%s&"
-   "game_name=%s&game_crc=%d&port=%d&has_password=%d&has_spectate_password=%d",
+   "game_name=%s&game_crc=%08X&port=%d&has_password=%d&has_spectate_password=%d",
       username, corename, coreversion, gamename, *content_crc_ptr,
       settings->netplay.port, settings->netplay.password ? 1 : 0, settings->netplay.spectate_password ? 1 : 0);
 
