@@ -476,8 +476,7 @@ static int menu_input_pointer_post_iterate(
 
          menu_animation_ctl(MENU_ANIMATION_CTL_DELTA_TIME, &delta_time);
 
-         s                         =  (menu_input->pointer.dy * 550000000.0 ) /
-            ( dpi * delta_time );
+         s = menu_input->pointer.dy;
          menu_input->pointer.accel = (accel0 + accel1 + s) / 3;
          accel0                    = accel1;
          accel1                    = menu_input->pointer.accel;

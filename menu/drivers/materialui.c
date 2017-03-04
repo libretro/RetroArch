@@ -608,7 +608,7 @@ static void mui_render(void *data)
 
       menu_input_ctl(MENU_INPUT_CTL_POINTER_ACCEL_READ, &old_accel_val);
 
-      mui->scroll_y            -= old_accel_val / 60.0;
+      mui->scroll_y            -= old_accel_val;
 
       new_accel_val = old_accel_val * 0.96;
 
