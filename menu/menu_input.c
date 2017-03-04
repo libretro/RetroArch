@@ -273,6 +273,7 @@ static int menu_input_mouse_frame(
       }
       else
       {
+         menu_driver_ctl(RARCH_MENU_CTL_POINTER_UP, &point);
          menu_driver_ctl(RARCH_MENU_CTL_POINTER_TAP, &point);
          ret = point.retcode;
       }
@@ -448,6 +449,17 @@ static int menu_input_pointer_post_iterate(
          pointer_old_x                     = pointer_x;
          pointer_old_y                     = pointer_y;
          pointer_oldpressed[0]             = true;
+
+         menu_ctx_pointer_t point;
+
+         point.x      = start_x;
+         point.y      = start_y;
+         point.ptr    = menu_input->pointer.ptr;
+         point.cbs    = cbs;
+         point.entry  = entry;
+         point.action = action;
+
+         menu_driver_ctl(RARCH_MENU_CTL_POINTER_DOWN, &point);
       }
       else if (abs(pointer_x - start_x) > (dpi / 10)
             || abs(pointer_y - start_y) > (dpi / 10))
@@ -495,6 +507,7 @@ static int menu_input_pointer_post_iterate(
             }
             else
             {
+               menu_driver_ctl(RARCH_MENU_CTL_POINTER_UP, &point);
                menu_driver_ctl(RARCH_MENU_CTL_POINTER_TAP, &point);
                ret = point.retcode;
             }

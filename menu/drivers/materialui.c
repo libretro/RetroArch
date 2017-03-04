@@ -1898,7 +1898,43 @@ static size_t mui_list_get_selection(void *data)
    return mui->categories.selection_ptr;
 }
 
-static int mui_pointer_tap(void *userdata,
+static int mui_pointer_down(void *userdata,
+      unsigned x, unsigned y,
+      unsigned ptr, menu_file_list_cbs_t *cbs,
+      menu_entry_t *entry, unsigned action)
+{
+   size_t selection;
+   unsigned width, height;
+   unsigned header_height, i;
+   mui_handle_t *mui          = (mui_handle_t*)userdata;
+
+   if (!mui)
+      return 0;
+
+   header_height = menu_display_get_header_height();
+   video_driver_get_size(&width, &height);
+
+   if (y < header_height)
+   {
+      // do nothing
+   }
+   else if (y > height - mui->tabs_height)
+   {
+      // do nothing
+   }
+   else if (ptr <= (menu_entries_get_size() - 1))
+   {
+      size_t idx;
+      bool scroll                = false;
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
+      idx  = ptr;
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
+   }
+
+   return 0;
+}
+
+static int mui_pointer_up(void *userdata,
       unsigned x, unsigned y,
       unsigned ptr, menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
@@ -2056,10 +2092,12 @@ menu_ctx_driver_t menu_ctx_mui = {
    mui_load_image,
    "glui",
    mui_environ,
-   mui_pointer_tap,
+   NULL,
    NULL,
    NULL,
    mui_osk_ptr_at_pos,
    NULL,
-   NULL
+   NULL,
+   mui_pointer_down,
+   mui_pointer_up,
 };
