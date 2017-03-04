@@ -1903,7 +1903,6 @@ static int mui_pointer_down(void *userdata,
       unsigned ptr, menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
-   size_t selection;
    unsigned width, height;
    unsigned header_height, i;
    mui_handle_t *mui          = (mui_handle_t*)userdata;
@@ -1924,11 +1923,18 @@ static int mui_pointer_down(void *userdata,
    }
    else if (ptr <= (menu_entries_get_size() - 1))
    {
-      size_t idx;
-      bool scroll                = false;
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
-      idx  = ptr;
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
+      size_t ii = 0;
+      file_list_t *list = menu_entries_get_selection_buf_ptr(0);
+      for (ii = 0; ii < menu_entries_get_size(); ii++)
+      {
+         mui_node_t *node = (mui_node_t*)
+               menu_entries_get_userdata_at_offset(list, ii);
+
+         if (y > (-mui->scroll_y + header_height + node->y)
+          && y < (-mui->scroll_y + header_height + node->y + node->line_height)
+         )
+            menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &ii);
+      }
    }
 
    return 0;
@@ -1984,11 +1990,6 @@ static int mui_pointer_up(void *userdata,
       menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
       if (ptr == selection && cbs && cbs->action_select)
          return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
-
-      idx  = ptr;
-
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
    }
 
    return 0;
