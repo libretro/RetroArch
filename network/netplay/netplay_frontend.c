@@ -531,14 +531,14 @@ static void netplay_announce(void)
    char *gamename;
    char *coreversion;
 
+   content_get_crc(&content_crc_ptr);
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+
    net_http_urlencode_full(&username, settings->username);
    net_http_urlencode_full(&corename, system->info.library_name);
    net_http_urlencode_full(&gamename, !string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))) ? path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A");
    net_http_urlencode_full(&coreversion, system->info.library_version);
-
-   content_get_crc(&content_crc_ptr);
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    buf[0] = '\0';
 
