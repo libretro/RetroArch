@@ -843,6 +843,8 @@ static const unsigned netplay_delay_frames = 16;
 
 static const int netplay_check_frames = 30;
 
+static const bool netplay_use_mitm_server = false;
+
 /* On save state load, block SRAM from being overwritten.
  * This could potentially lead to buggy games. */
 static const bool block_sram_overwrite = false;

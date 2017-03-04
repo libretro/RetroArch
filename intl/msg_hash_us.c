@@ -1611,6 +1611,12 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len) {
                              "connections from the public internet, using\n"
                              "UPnP or similar technologies to escape LANs. \n");
             break;
+        case MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER:
+            snprintf(s, len,
+                     "When hosting, relay connection through a\n"
+                             "man-in-the-middle server\n"
+                             "to get around firewalls or NAT/UPnP issues.\n");
+            break;
         case MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
             snprintf(s, len,
                      "Maximum amount of swapchain images. This \n"
