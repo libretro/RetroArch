@@ -44,7 +44,6 @@ struct netplay_rooms
 typedef struct tag_Context
 {
    JSON_Parser parser;
-   int inEmptyContainer;
    enum parse_state state;
    char *cur_field;
    void *cur_member;
@@ -56,7 +55,6 @@ static struct netplay_rooms *rooms;
 static void parse_context_init(Context* pCtx)
 {
    pCtx->parser = NULL;
-   pCtx->inEmptyContainer = 0;
 }
 
 static void parse_context_free(Context* pCtx)
@@ -79,7 +77,6 @@ static JSON_Parser_HandlerResult JSON_CALL NullHandler(JSON_Parser parser)
 {
    Context* pCtx = (Context*)JSON_Parser_GetUserData(parser);
    (void)parser;
-   pCtx->inEmptyContainer = 0;
    return JSON_Parser_Continue;
 }
 
@@ -87,15 +84,10 @@ static JSON_Parser_HandlerResult JSON_CALL BooleanHandler(JSON_Parser parser, JS
 {
    Context* pCtx = (Context*)JSON_Parser_GetUserData(parser);
    (void)parser;
-   pCtx->inEmptyContainer = 0;
 
    if (pCtx->state == STATE_FIELDS_OBJECT_START)
-   {
-      RARCH_LOG("found boolean: %d\n", value);
-
       if (pCtx->cur_field)
          *((bool*)pCtx->cur_member) = value;
-   }
 
    return JSON_Parser_Continue;
 }
@@ -105,17 +97,14 @@ static JSON_Parser_HandlerResult JSON_CALL StringHandler(JSON_Parser parser, cha
    Context* pCtx = (Context*)JSON_Parser_GetUserData(parser);
    (void)parser;
    (void)attributes;
-   pCtx->inEmptyContainer = 0;
 
    if (pCtx->state == STATE_FIELDS_OBJECT_START)
    {
-      RARCH_LOG("found string: %s\n", pValue);
-
       if (pValue && length)
       {
          if (pCtx->cur_field && string_is_equal(pCtx->cur_field, "game_crc"))
          {
-            /* CRC comes in as a string but it is stored as an int */
+            /* CRC comes in as a string but it is stored as an unsigned casted to int */
             *((int*)pCtx->cur_member) = strtoul(pValue, NULL, 16);
          }
          else if (pCtx->cur_field)
@@ -131,12 +120,9 @@ static JSON_Parser_HandlerResult JSON_CALL NumberHandler(JSON_Parser parser, cha
    Context* pCtx = (Context*)JSON_Parser_GetUserData(parser);
    (void)parser;
    (void)attributes;
-   pCtx->inEmptyContainer = 0;
 
    if (pCtx->state == STATE_FIELDS_OBJECT_START)
    {
-      RARCH_LOG("found number string: %s\n", pValue);
-
       if (pValue && length)
          if (pCtx->cur_field)
             *((int*)pCtx->cur_member) = strtol(pValue, NULL, 10);
@@ -149,7 +135,6 @@ static JSON_Parser_HandlerResult JSON_CALL SpecialNumberHandler(JSON_Parser pars
 {
    Context* pCtx = (Context*)JSON_Parser_GetUserData(parser);
    (void)parser;
-   pCtx->inEmptyContainer = 0;
    return JSON_Parser_Continue;
 }
 
@@ -157,8 +142,6 @@ static JSON_Parser_HandlerResult JSON_CALL StartObjectHandler(JSON_Parser parser
 {
    Context* pCtx = (Context*)JSON_Parser_GetUserData(parser);
    (void)parser;
-   pCtx->inEmptyContainer = 1;
-   RARCH_LOG("object start\n");
 
    if (pCtx->state == STATE_FIELDS_START)
    {
@@ -184,12 +167,6 @@ static JSON_Parser_HandlerResult JSON_CALL StartObjectHandler(JSON_Parser parser
 static JSON_Parser_HandlerResult JSON_CALL EndObjectHandler(JSON_Parser parser)
 {
    Context* pCtx = (Context*)JSON_Parser_GetUserData(parser);
-   if (!pCtx->inEmptyContainer)
-   {
-      /* indent */
-   }
-   pCtx->inEmptyContainer = 0;
-   RARCH_LOG("object end\n");
 
    if (pCtx->state == STATE_FIELDS_OBJECT_START)
       pCtx->state = STATE_ARRAY_START;
@@ -202,9 +179,6 @@ static JSON_Parser_HandlerResult JSON_CALL ObjectMemberHandler(JSON_Parser parse
    Context* pCtx = (Context*)JSON_Parser_GetUserData(parser);
    (void)parser;
    (void)attributes;
-   if (!pCtx->inEmptyContainer)
-      RARCH_LOG("object member comma\n");
-   RARCH_LOG("object member %I64u: %s\n", length, pValue);
 
    if (!pValue || !length)
       return JSON_Parser_Continue;
@@ -214,8 +188,6 @@ static JSON_Parser_HandlerResult JSON_CALL ObjectMemberHandler(JSON_Parser parse
 
    if (pCtx->state == STATE_FIELDS_OBJECT_START)
    {
-      RARCH_LOG("got field %s\n", pValue);
-
       if (pCtx->cur_field)
          free(pCtx->cur_field);
 
@@ -264,8 +236,6 @@ static JSON_Parser_HandlerResult JSON_CALL ObjectMemberHandler(JSON_Parser parse
       }
    }
 
-   pCtx->inEmptyContainer = 0;
-   /* indent, string, space, colon, space */
    return JSON_Parser_Continue;
 }
 
@@ -273,8 +243,6 @@ static JSON_Parser_HandlerResult JSON_CALL StartArrayHandler(JSON_Parser parser)
 {
    Context* pCtx = (Context*)JSON_Parser_GetUserData(parser);
    (void)parser;
-   pCtx->inEmptyContainer = 1;
-   RARCH_LOG("array start\n");
 
    if (pCtx->state == STATE_START)
       pCtx->state = STATE_ARRAY_START;
@@ -286,12 +254,7 @@ static JSON_Parser_HandlerResult JSON_CALL EndArrayHandler(JSON_Parser parser)
 {
    Context* pCtx = (Context*)JSON_Parser_GetUserData(parser);
    (void)parser;
-   if (!pCtx->inEmptyContainer)
-   {
-        /* indent */
-   }
-   pCtx->inEmptyContainer = 0;
-   RARCH_LOG("array end\n");
+
    return JSON_Parser_Continue;
 }
 
@@ -299,26 +262,12 @@ static JSON_Parser_HandlerResult JSON_CALL ArrayItemHandler(JSON_Parser parser)
 {
    Context* pCtx = (Context*)JSON_Parser_GetUserData(parser);
    (void)parser;
-   if (!pCtx->inEmptyContainer)
-   {
-      RARCH_LOG("array comma\n");
-   }
-   pCtx->inEmptyContainer = 0;
-   /* indent */
+
    return JSON_Parser_Continue;
 }
 
 static int parse_context_setup(Context* pCtx)
 {
-   /*JSON_Parser_SetTrackObjectMembers(pCtx->parser, JSON_True);
-   JSON_Parser_SetAllowBOM(pCtx->parser, JSON_True);
-   JSON_Parser_SetAllowComments(pCtx->parser, JSON_True);
-   JSON_Parser_SetAllowSpecialNumbers(pCtx->parser, JSON_True);
-   JSON_Parser_SetAllowHexNumbers(pCtx->parser, JSON_True);
-   JSON_Parser_SetAllowUnescapedControlCharacters(pCtx->parser, JSON_True);
-   JSON_Parser_SetReplaceInvalidEncodingSequences(pCtx->parser, JSON_True);
-   JSON_Parser_SetTrackObjectMembers(pCtx->parser, JSON_False);*/
-
    if (JSON_Parser_GetInputEncoding(pCtx->parser) == JSON_UnknownEncoding)
    {
       JSON_Parser_SetEncodingDetectedHandler(pCtx->parser, &EncodingDetectedHandler);
