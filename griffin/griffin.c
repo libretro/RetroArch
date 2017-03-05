@@ -897,6 +897,7 @@ THREAD
 NETPLAY
 ============================================================ */
 #ifdef HAVE_NETWORKING
+#define JSON_STATIC /* must come before netplay_room_parse and jsonsax_full */
 #include "../network/netplay/netplay_delta.c"
 #include "../network/netplay/netplay_frontend.c"
 #include "../network/netplay/netplay_handshake.c"
