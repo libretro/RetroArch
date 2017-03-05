@@ -79,4 +79,12 @@ void deinit_netplay(void);
 
 bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data);
 
+int netplay_rooms_parse(const char *buf);
+
+struct netplay_room* netplay_room_get(int index);
+
+int netplay_rooms_get_count();
+
+void netplay_rooms_free();
+
 #endif

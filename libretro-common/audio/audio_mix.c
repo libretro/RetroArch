@@ -193,7 +193,7 @@ audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
 
       if (chunk->resampler && chunk->resampler_data)
       {
-         struct resampler_data info = {0};
+         struct resampler_data info;
 
          chunk->float_buf = (float*)memalign_alloc(128, chunk->rwav->numsamples * 2 * chunk->ratio * sizeof(float));
 
@@ -202,11 +202,13 @@ audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
 
          convert_s16_to_float(chunk->float_buf, chunk->upsample_buf, chunk->rwav->numsamples * 2, 1.0);
 
-         info.data_in = (const float*)chunk->float_buf;
-         info.data_out = chunk->float_resample_buf;
-         /* a 'frame' consists of two channels, so we set this to the number of samples irrespective of channel count */
-         info.input_frames = chunk->rwav->numsamples;
-         info.ratio = chunk->ratio;
+         info.data_in       = (const float*)chunk->float_buf;
+         info.data_out      = chunk->float_resample_buf;
+         /* a 'frame' consists of two channels, so we set this 
+          * to the number of samples irrespective of channel count */
+         info.input_frames  = chunk->rwav->numsamples;
+         info.output_frames = 0;
+         info.ratio         = chunk->ratio;
 
          chunk->resampler->process(chunk->resampler_data, &info);
 

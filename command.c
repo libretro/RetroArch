@@ -2502,9 +2502,12 @@ bool command_event(enum event_command cmd, void *data)
             if (!init_netplay_deferred(
                      hostname->elems[0].data, atoi(hostname->elems[1].data)))
             {
+               string_list_free(hostname);
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                return false;
             }
+
+            string_list_free(hostname);
          }
          break;
       case CMD_EVENT_NETPLAY_FLIP_PLAYERS:

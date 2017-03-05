@@ -828,66 +828,65 @@ bool core_info_unsupported_content_path(const char *path)
 
 bool core_info_database_supports_content_path(const char *database_path, const char *path)
 {
-   size_t i;
    char *database           = NULL;
-   const char *delim        = NULL;
-   const char *archive_path = NULL;
-   const char *new_path     = NULL;
+   const char *new_path     = path_basename(database_path);
 
-   if (!core_info_curr_list)
+   if (string_is_empty(new_path))
       return false;
 
-   new_path                 = path_basename(database_path);
-
-   if (!string_is_empty(new_path))
-      database       = strdup(new_path);
-
-   if (!string_is_empty(database))
-      path_remove_extension(database);
-
-   delim = path_get_archive_delim(path);
-
-   if (delim)
-      archive_path = delim - 1;
+   database                 = strdup(new_path);
 
    if (string_is_empty(database))
       return false;
 
-   /* if the path contains a compressed file and the core supports archives,
-    * we don't want to look at this file */
-   if (archive_path)
+   path_remove_extension(database);
+
+   if (core_info_curr_list)
    {
+      size_t i;
+      const char *delim           = path_get_archive_delim(path);
+
+      if (delim)
+      {
+         const char *archive_path = delim - 1;
+
+         /* if the path contains a compressed file and the core supports archives,
+          * we don't want to look at this file */
+         if (archive_path)
+         {
+            for (i = 0; i < core_info_curr_list->count; i++)
+            {
+               const core_info_t *info = &core_info_curr_list->list[i];
+
+               if (!string_list_find_elem(info->databases_list, database))
+                  continue;
+
+               if (     !string_list_find_elem(info->supported_extensions_list, "zip")
+                     && !string_list_find_elem(info->supported_extensions_list, "7z"))
+                  continue;
+
+               free(database);
+               return false;
+            }
+         }
+      }
+
       for (i = 0; i < core_info_curr_list->count; i++)
       {
          const core_info_t *info = &core_info_curr_list->list[i];
 
+         if (!string_list_find_elem(info->supported_extensions_list,
+                  path_get_extension(path)))
+            continue;
+
          if (!string_list_find_elem(info->databases_list, database))
             continue;
 
-         if (     !string_list_find_elem(info->supported_extensions_list, "zip")
-               && !string_list_find_elem(info->supported_extensions_list, "7z"))
-            continue;
-
-         goto error;
+         free(database);
+         return true;
       }
    }
 
-   for (i = 0; i < core_info_curr_list->count; i++)
-   {
-      const core_info_t *info = &core_info_curr_list->list[i];
-
-      if (!info || !string_list_find_elem(info->supported_extensions_list, path_get_extension(path)))
-         continue;
-
-      if (!string_list_find_elem(info->databases_list, database))
-         continue;
-
-      free(database);
-      return true;
-   }
-
-
-error:
    free(database);
    return false;
 }

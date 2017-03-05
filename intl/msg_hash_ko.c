@@ -1,4 +1,4 @@
-/*  RetroArch - A frontend for libretro.
+﻿/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2016-2017 - Brad Parker
  *
@@ -24,7 +24,7 @@
 #include "../configuration.h"
 #include "../verbosity.h"
 
-int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len) {
+int menu_hash_get_help_ko_enum(enum msg_hash_enums msg, char *s, size_t len) {
     uint32_t driver_hash = 0;
     settings_t *settings = config_get_ptr();
 
@@ -32,99 +32,99 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len) {
         msg >= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN) {
         unsigned idx = msg - MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN;
 
-        switch (idx) {
+         switch (idx) {
             case RARCH_FAST_FORWARD_KEY:
                 snprintf(s, len,
-                         "Toggles between fast-forwarding and \n"
-                                 "normal speed."
+                         "빨리감기와 보통속도 전환."
+
                 );
                 break;
             case RARCH_FAST_FORWARD_HOLD_KEY:
                 snprintf(s, len,
-                         "Hold for fast-forward. \n"
+                         "빨리감기 일시정지. \n"
                                  " \n"
-                                 "Releasing button disables fast-forward."
+                                 "버튼을 놓으면 빨기감기 중지."
                 );
                 break;
             case RARCH_PAUSE_TOGGLE:
                 snprintf(s, len,
-                         "Toggle between paused and non-paused state.");
+                         "일시정지 상태와 해제 상태의 전환.");
                 break;
             case RARCH_FRAMEADVANCE:
                 snprintf(s, len,
-                         "Frame advance when content is paused.");
+                         "컨텐츠가 일시정지시 프레임 진행.");
                 break;
             case RARCH_SHADER_NEXT:
                 snprintf(s, len,
-                         "Applies next shader in directory.");
+                         "디렉토리 안의 다음 쉐이더 적용.");
                 break;
             case RARCH_SHADER_PREV:
                 snprintf(s, len,
-                         "Applies previous shader in directory.");
+                         "디렉토리 안의 이전 쉐이더 적용.");
                 break;
             case RARCH_CHEAT_INDEX_PLUS:
             case RARCH_CHEAT_INDEX_MINUS:
             case RARCH_CHEAT_TOGGLE:
                 snprintf(s, len,
-                         "Cheats.");
+                         "치트.");
                 break;
             case RARCH_RESET:
                 snprintf(s, len,
-                         "Reset the content.");
+                         "컨텐츠 초기화.");
                 break;
             case RARCH_SCREENSHOT:
                 snprintf(s, len,
-                         "Take screenshot.");
+                         "스크린샷 촬영.");
                 break;
             case RARCH_MUTE:
                 snprintf(s, len,
-                         "Mute/unmute audio.");
+                         "음소거/음소거 해제.");
                 break;
             case RARCH_OSK:
                 snprintf(s, len,
-                         "Toggles onscreen keyboard.");
+                         "온스크린 키보드 전환.");
                 break;
             case RARCH_NETPLAY_FLIP:
                 snprintf(s, len,
-                         "Netplay flip users.");
+                         "넷플레이 사용자 넘김.");
                 break;
             case RARCH_NETPLAY_GAME_WATCH:
                 snprintf(s, len,
-                         "Netplay toggle play/spectate mode.");
+                         "넷플레이 플레이/관전 모드 전환.");
                 break;
             case RARCH_SLOWMOTION:
                 snprintf(s, len,
-                         "Hold for slowmotion.");
+                         "슬로우모션 대기.");
                 break;
             case RARCH_ENABLE_HOTKEY:
                 snprintf(s, len,
-                         "Enable other hotkeys. \n"
+                         "추가 핫키 사용. \n"
                                  " \n"
-                                 "If this hotkey is bound to either\n"
-                                 "a keyboard, joybutton or joyaxis, \n"
-                                 "all other hotkeys will be enabled only \n"
-                                 "if this one is held at the same time. \n"
+                                 "이 핫키가 설정되면 키보드, 조이스틱 버튼,\n"
+                                 "조이스틱 축등 모든 핫키가 설정된 키와 \n"
+                                 "함께 눌렸을 때에만 사용가능하게 됩니다. \n"
                                  " \n"
-                                 "Alternatively, all hotkeys for keyboard \n"
-                                 "could be disabled by the user.");
+                                 " \n"
+                                 "다시 말하면 키보드상의 모듯 핫키를 \n"
+                                 "사용자가 차단할 수 있게됩니다.");
                 break;
             case RARCH_VOLUME_UP:
                 snprintf(s, len,
-                         "Increases audio volume.");
+                         "오디오 볼륨 증가.");
                 break;
             case RARCH_VOLUME_DOWN:
                 snprintf(s, len,
-                         "Decreases audio volume.");
+                         "오디오 볼륨 감소.");
                 break;
             case RARCH_OVERLAY_NEXT:
                 snprintf(s, len,
-                         "Switches to next overlay. Wraps around.");
+                         "다음 오버레이로 전환. 화면 적용.");
                 break;
             case RARCH_DISK_EJECT_TOGGLE:
                 snprintf(s, len,
-                         "Toggles eject for disks. \n"
+                         "디스크 꺼네기 전환. \n"
                                  " \n"
-                                 "Used for multiple-disk content. ");
+                                 "다중-디스크 컨텐츠에 사용. ");
                 break;
             case RARCH_DISK_NEXT:
             case RARCH_DISK_PREV:
@@ -617,15 +617,15 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len) {
             break;
         case MENU_ENUM_LABEL_VALUE_MENU_ENUM_CONTROLS_PROLOG:
             snprintf(s, len,
-                     "You can use the following controls below \n"
-                             "on either your gamepad or keyboard in order\n"
-                             "to control the menu: \n"
-                             " \n"
+                     "메뉴를 조작하려면 게임패드 또는 \n"
+                     "키보드를 통해 다음의 조작 방법을\n"
+                     "사용 할 수 있습니다: \n"
+                     " \n"
             );
             break;
         case MENU_ENUM_LABEL_WELCOME_TO_RETROARCH:
             snprintf(s, len,
-                     "Welcome to RetroArch\n"
+                     "RetroArch에 오신걸 환영합니다\n"
             );
             break;
         case MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC: {
@@ -1611,12 +1611,6 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len) {
                              "connections from the public internet, using\n"
                              "UPnP or similar technologies to escape LANs. \n");
             break;
-        case MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER:
-            snprintf(s, len,
-                     "When hosting, relay connection through a\n"
-                             "man-in-the-middle server\n"
-                             "to get around firewalls or NAT/UPnP issues.\n");
-            break;
         case MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
             snprintf(s, len,
                      "Maximum amount of swapchain images. This \n"
@@ -1963,7 +1957,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len) {
 }
 
 #ifdef HAVE_MENU
-static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
+static const char *menu_hash_to_str_ko_label_enum(enum msg_hash_enums msg)
 {
    if (msg <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END &&
          msg >= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN)
@@ -1988,16 +1982,16 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
 }
 #endif
 
-const char *msg_hash_to_str_us(enum msg_hash_enums msg) {
+const char *msg_hash_to_str_ko(enum msg_hash_enums msg) {
 #ifdef HAVE_MENU
-    const char *ret = menu_hash_to_str_us_label_enum(msg);
+    const char *ret = menu_hash_to_str_ko_label_enum(msg);
 
     if (ret && !string_is_equal(ret, "null"))
        return ret;
 #endif
 
     switch (msg) {
-#include "msg_hash_us.h"
+#include "msg_hash_ko.h"
         default:
 #if 0
             RARCH_LOG("Unimplemented: [%d]\n", msg);

@@ -847,6 +847,7 @@ RETROARCH
 #include "../intl/msg_hash_fr.c"
 #include "../intl/msg_hash_it.c"
 #include "../intl/msg_hash_ja.c"
+#include "../intl/msg_hash_ko.c"
 #include "../intl/msg_hash_nl.c"
 #include "../intl/msg_hash_pt.c"
 #include "../intl/msg_hash_pl.c"
@@ -896,6 +897,7 @@ THREAD
 NETPLAY
 ============================================================ */
 #ifdef HAVE_NETWORKING
+#define JSON_STATIC /* must come before netplay_room_parse and jsonsax_full */
 #include "../network/netplay/netplay_delta.c"
 #include "../network/netplay/netplay_frontend.c"
 #include "../network/netplay/netplay_handshake.c"
@@ -904,10 +906,12 @@ NETPLAY
 #include "../network/netplay/netplay_sync.c"
 #include "../network/netplay/netplay_discovery.c"
 #include "../network/netplay/netplay_buf.c"
+#include "../network/netplay/netplay_room_parse.c"
 #include "../libretro-common/net/net_compat.c"
 #include "../libretro-common/net/net_socket.c"
 #include "../libretro-common/net/net_http.c"
 #include "../libretro-common/net/net_natt.c"
+#include "../libretro-common/formats/json/jsonsax_full.c"
 #ifndef HAVE_SOCKET_LEGACY
 #include "../libretro-common/net/net_ifinfo.c"
 #endif

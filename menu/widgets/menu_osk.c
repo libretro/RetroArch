@@ -42,17 +42,23 @@ static enum osk_type osk_idx     = OSK_LOWERCASE_LATIN;
 #include "menu_osk_utf8_pages.h"
 #else
 /* Otherwise define some ascii-friendly pages. */
+static const char *symbols_page1_grid[] = {
+                          "1","2","3","4","5","6","7","8","9","0","Bksp",
+                          "!","\"","#","$","%","&","'","*","(",")","Enter",
+                          "+",",","-","~","/",":",";","=","<",">","Lower",
+                          "?","@","[","\\","]","^","_","|","{","}","Next"};
+
 static const char *uppercase_grid[] = {
-                          "!","@","#","$","%","^","&","*","(",")","Bksp",
+                          "1","2","3","4","5","6","7","8","9","0","Bksp",
                           "Q","W","E","R","T","Y","U","I","O","P","Enter",
-                          "A","S","D","F","G","H","J","K","L",":","Lower",
-                          "Z","X","C","V","B","N","M"," ","<",">","Next"};
+                          "A","S","D","F","G","H","J","K","L","+","Lower",
+                          "Z","X","C","V","B","N","M"," ","_","/","Next"};
 
 static const char *lowercase_grid[] = {
                           "1","2","3","4","5","6","7","8","9","0","Bksp",
                           "q","w","e","r","t","y","u","i","o","p","Enter",
-                          "a","s","d","f","g","h","j","k","l",";","Upper",
-                          "z","x","c","v","b","n","m"," ",",",".","Next"};
+                          "a","s","d","f","g","h","j","k","l","@","Upper",
+                          "z","x","c","v","b","n","m"," ","-",".","Next"};
 #endif
 
 void menu_event_set_osk_idx(enum osk_type idx)
@@ -129,6 +135,9 @@ void menu_event_osk_iterate(void)
          memcpy(osk_grid, katakana_page2_grid, sizeof(katakana_page2_grid));
          break;
 #endif
+      case OSK_SYMBOLS_PAGE1:
+         memcpy(osk_grid, symbols_page1_grid, sizeof(uppercase_grid));
+         break;
       case OSK_UPPERCASE_LATIN:
          memcpy(osk_grid, uppercase_grid, sizeof(uppercase_grid));
          break;

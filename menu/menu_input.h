@@ -98,6 +98,7 @@ typedef struct menu_input
       bool pressed[2];
       bool back;
       unsigned ptr;
+      unsigned counter;
    } pointer;
 } menu_input_t;
 

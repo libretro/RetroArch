@@ -266,6 +266,7 @@ OBJ += intl/msg_hash_de.o \
        intl/msg_hash_fr.o \
        intl/msg_hash_it.o \
        intl/msg_hash_ja.o \
+       intl/msg_hash_ko.o \
        intl/msg_hash_nl.o \
        intl/msg_hash_pl.o \
        intl/msg_hash_pt.o \
@@ -1116,6 +1117,7 @@ endif
 
 OBJ += $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp_encode.o \
        $(LIBRETRO_COMM_DIR)/formats/json/jsonsax.o \
+       $(LIBRETRO_COMM_DIR)/formats/json/jsonsax_full.o \
        $(LIBRETRO_COMM_DIR)/formats/image_transfer.o
 
 ifdef HAVE_COMPRESSION
@@ -1193,7 +1195,8 @@ ifeq ($(HAVE_NETWORKING), 1)
 			network/netplay/netplay_io.o \
 			network/netplay/netplay_sync.o \
 			network/netplay/netplay_discovery.o \
-			network/netplay/netplay_buf.o
+			network/netplay/netplay_buf.o \
+			network/netplay/netplay_room_parse.o
 
    # Retro Achievements (also depends on threads)
 

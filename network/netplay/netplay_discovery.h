@@ -48,18 +48,33 @@ struct netplay_host_list
    size_t size;
 };
 
+enum netplay_host_method
+{
+   NETPLAY_HOST_METHOD_UNKNOWN = 0,
+   NETPLAY_HOST_METHOD_MANUAL,
+   NETPLAY_HOST_METHOD_UPNP,
+   NETPLAY_HOST_METHOD_MITM
+};
+
 /* data is ordered like this on the server, I left it in this ordered
    for reference */
 struct netplay_room
 {
    char nickname    [PATH_MAX_LENGTH];
    char address     [PATH_MAX_LENGTH];
+   char mitm_address[PATH_MAX_LENGTH];
    int  port;
+   int  mitm_port;
    char corename    [PATH_MAX_LENGTH];
    char coreversion [PATH_MAX_LENGTH];
    char gamename    [PATH_MAX_LENGTH];
    int  gamecrc;
    int  timestamp;
+   int  host_method;
+   bool has_password;
+   bool has_spectate_password;
+   bool fixed;
+   struct netplay_room *next;
 };
 
 extern struct netplay_room *netplay_room_list;

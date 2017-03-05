@@ -34,7 +34,7 @@ RETRO_BEGIN_DECLS
 struct http_t;
 struct http_connection_t;
 
-struct http_connection_t *net_http_connection_new(const char *url);
+struct http_connection_t *net_http_connection_new(const char *url, const char *method, const char *data);
 
 bool net_http_connection_iterate(struct http_connection_t *conn);
 
@@ -67,6 +67,8 @@ uint8_t* net_http_data(struct http_t *state, size_t* len, bool accept_error);
 
 /* Cleans up all memory. */
 void net_http_delete(struct http_t *state);
+
+void net_http_urlencode_full(char **dest, const char *source);
 
 RETRO_END_DECLS
 

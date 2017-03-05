@@ -273,6 +273,7 @@ static int menu_input_mouse_frame(
       }
       else
       {
+         menu_driver_ctl(RARCH_MENU_CTL_POINTER_UP, &point);
          menu_driver_ctl(RARCH_MENU_CTL_POINTER_TAP, &point);
          ret = point.retcode;
       }
@@ -438,8 +439,12 @@ static int menu_input_pointer_post_iterate(
 
       video_context_driver_get_metrics(&metrics);
 
+      menu_input->pointer.counter++;
+
       if (!pointer_oldpressed[0])
       {
+         menu_ctx_pointer_t point;
+
          menu_input->pointer.accel         = 0;
          accel0                            = 0;
          accel1                            = 0;
@@ -448,6 +453,15 @@ static int menu_input_pointer_post_iterate(
          pointer_old_x                     = pointer_x;
          pointer_old_y                     = pointer_y;
          pointer_oldpressed[0]             = true;
+
+         point.x                           = start_x;
+         point.y                           = start_y;
+         point.ptr                         = menu_input->pointer.ptr;
+         point.cbs                         = cbs;
+         point.entry                       = entry;
+         point.action                      = action;
+
+         menu_driver_ctl(RARCH_MENU_CTL_POINTER_DOWN, &point);
       }
       else if (abs(pointer_x - start_x) > (dpi / 10)
             || abs(pointer_y - start_y) > (dpi / 10))
@@ -462,8 +476,7 @@ static int menu_input_pointer_post_iterate(
 
          menu_animation_ctl(MENU_ANIMATION_CTL_DELTA_TIME, &delta_time);
 
-         s                         =  (menu_input->pointer.dy * 550000000.0 ) /
-            ( dpi * delta_time );
+         s = menu_input->pointer.dy;
          menu_input->pointer.accel = (accel0 + accel1 + s) / 3;
          accel0                    = accel1;
          accel1                    = menu_input->pointer.accel;
@@ -495,8 +508,20 @@ static int menu_input_pointer_post_iterate(
             }
             else
             {
-               menu_driver_ctl(RARCH_MENU_CTL_POINTER_TAP, &point);
-               ret = point.retcode;
+               if (menu_input->pointer.counter > 32)
+               {
+                  size_t selection;
+                  menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
+                  if (cbs && cbs->action_start)
+                     return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_START);
+
+               }
+               else
+               {
+                  menu_driver_ctl(RARCH_MENU_CTL_POINTER_UP, &point);
+                  menu_driver_ctl(RARCH_MENU_CTL_POINTER_TAP, &point);
+                  ret = point.retcode;
+               }
             }
          }
 
@@ -507,6 +532,7 @@ static int menu_input_pointer_post_iterate(
          pointer_old_y                     = 0;
          menu_input->pointer.dx            = 0;
          menu_input->pointer.dy            = 0;
+         menu_input->pointer.counter       = 0;
 
          menu_input_ctl(MENU_INPUT_CTL_UNSET_POINTER_DRAGGED, NULL);
       }

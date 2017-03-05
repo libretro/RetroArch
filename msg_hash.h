@@ -1558,6 +1558,8 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
    MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND,
 
+   MENU_LABEL(NETPLAY_USE_MITM_SERVER),
+
    MSG_LAST
 };
 
@@ -1835,6 +1837,9 @@ int menu_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 const char *msg_hash_to_str_jp(enum msg_hash_enums msg);
 int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len);
+
+const char *msg_hash_to_str_ko(enum msg_hash_enums msg);
+int menu_hash_get_help_ko_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 const char *msg_hash_to_str_pt(enum msg_hash_enums msg);
 int menu_hash_get_help_pt_enum(enum msg_hash_enums msg, char *s, size_t len);

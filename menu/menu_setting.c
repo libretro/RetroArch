@@ -5015,6 +5015,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 0, XMB_ICON_THEME_LAST - 1, 1, true, true);
+            menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
 
             CONFIG_BOOL(
                   list, list_info,
@@ -5668,6 +5669,21 @@ static bool setting_append_list(
                   &settings->netplay.public_announce,
                   MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE,
                   MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
+                  true,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->netplay.use_mitm_server,
+                  MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER,
+                  MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
                   true,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,

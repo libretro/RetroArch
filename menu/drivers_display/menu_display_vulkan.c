@@ -119,6 +119,7 @@ static void menu_display_vk_viewport(void *data)
 static void menu_display_vk_draw_pipeline(void *data)
 {
 #ifdef HAVE_SHADERPIPELINE
+   float output_size[2];
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
    vk_t *vk                      = (vk_t*)video_driver_get_ptr(false);
    video_coord_array_t *ca       = NULL;
@@ -134,7 +135,8 @@ static void menu_display_vk_draw_pipeline(void *data)
    draw->y                          = 0;
    draw->matrix_data                = NULL;
 
-   float output_size[2] = { vk->context->swapchain_width, vk->context->swapchain_height };
+   output_size[0]                   = (float)vk->context->swapchain_width;
+   output_size[1]                   = (float)vk->context->swapchain_height;
 
    switch (draw->pipeline.id)
    {

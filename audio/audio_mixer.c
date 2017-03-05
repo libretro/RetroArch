@@ -187,9 +187,9 @@ static bool wav2float(const rwav_t* wav, float** pcm, size_t* samples_out)
 static bool one_shot_resample(const float* in, size_t samples_in,
       unsigned rate, float** out, size_t* samples_out)
 {
+   struct resampler_data info;
    void* data                         = NULL;
    const retro_resampler_t* resampler = NULL;
-   struct resampler_data info         = {0};
    float ratio                        = (double)s_rate / (double)rate;
 
    if (!retro_resampler_realloc(&data, &resampler, NULL, ratio))
@@ -213,6 +213,7 @@ static bool one_shot_resample(const float* in, size_t samples_in,
    info.data_in                       = in;
    info.data_out                      = *out;
    info.input_frames                  = samples_in / 2;
+   info.output_frames                 = 0;
    info.ratio                         = ratio;
 
    resampler->process(data, &info);
@@ -498,10 +499,10 @@ static void mix_ogg(float* buffer, size_t num_frames, audio_mixer_voice_t* voice
 {
    int i;
    float temp_buffer[AUDIO_MIXER_TEMP_OGG_BUFFER];
+   struct resampler_data info;
    unsigned buf_free                = num_frames * 2;
    unsigned temp_samples            = 0;
    float volume                     = voice->volume;
-   struct resampler_data info       = {0};
    float* pcm                       = NULL;
 #if 0
    const audio_mixer_sound_t* sound = voice->sound;
@@ -534,10 +535,11 @@ again:
          }
       }
 
-      info.data_in      = temp_buffer;
-      info.data_out     = voice->types.ogg.buffer;
-      info.input_frames = temp_samples / 2;
-      info.ratio        = voice->types.ogg.ratio;
+      info.data_in              = temp_buffer;
+      info.data_out             = voice->types.ogg.buffer;
+      info.input_frames         = temp_samples / 2;
+      info.output_frames        = 0;
+      info.ratio                = voice->types.ogg.ratio;
 
       voice->types.ogg.resampler->process(voice->types.ogg.resampler_data, &info);
       voice->types.ogg.position = 0;

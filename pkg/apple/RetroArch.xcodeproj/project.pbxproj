@@ -377,7 +377,7 @@
 					"$(SRCROOT)/../..",
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
-                                        "$(SRCROOT)/../../deps",
+					"$(SRCROOT)/../../deps",
 				);
 				INFOPLIST_FILE = OSX/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
@@ -407,7 +407,7 @@
 					"$(SRCROOT)/../..",
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
-                                        "$(SRCROOT)/../../deps",
+					"$(SRCROOT)/../../deps",
 				);
 				INFOPLIST_FILE = OSX/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
@@ -439,7 +439,7 @@
 					"$(SRCROOT)/../..",
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
-                                        "$(SRCROOT)/../../deps",
+					"$(SRCROOT)/../../deps",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/OSX/Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
@@ -465,7 +465,7 @@
 					"$(SRCROOT)/../..",
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
-                                        "$(SRCROOT)/../../deps",
+					"$(SRCROOT)/../../deps",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/OSX/Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";

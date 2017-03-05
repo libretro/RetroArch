@@ -418,6 +418,7 @@ typedef struct settings
       bool nat_traversal;
       char password[128];
       char spectate_password[128];
+      bool use_mitm_server;
    } netplay;
 #endif
 

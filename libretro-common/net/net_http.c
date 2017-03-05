@@ -68,9 +68,53 @@ struct http_connection_t
    char *location;
    char *urlcopy;
    char *scan;
+   char *methodcopy;
+   char *contenttypecopy;
+   char *postdatacopy;
    int port;
 };
 
+static char urlencode_lut[256];
+static bool urlencode_lut_inited = false;
+
+void urlencode_lut_init()
+{
+   unsigned i;
+
+   urlencode_lut_inited = true;
+
+   for (i = 0; i < 256; i++)
+   {
+      urlencode_lut[i] = isalnum(i) || i == '*' || i == '-' || i == '.' || i == '_' ? i : (i == ' ') ? '+' : 0;
+   }
+}
+
+/* caller is responsible for deleting the destination buffer */
+void net_http_urlencode_full(char **dest, const char *source) {
+   /* Assume every character will be encoded, so we need 3 times the space. */
+   size_t len = strlen(source) * 3 + 1;
+   char *enc;
+
+   if (!urlencode_lut_inited)
+      urlencode_lut_init();
+
+   enc = (char*)calloc(1, len);
+
+   *dest = enc;
+
+   for (; *source; source++)
+   {
+      /* any non-ascii character will just be encoded without question */
+      if ((int)*source < sizeof(urlencode_lut) && urlencode_lut[(int)*source])
+         snprintf(enc, len, "%c", urlencode_lut[(int)*source]);
+      else
+         snprintf(enc, len, "%%%02X", *source & 0xFF);
+
+      while (*++enc);
+   }
+
+   (*dest)[len - 1] = '\0';
+}
 
 static int net_http_new_socket(const char *domain, int port)
 {
@@ -106,50 +150,22 @@ static void net_http_send_str(int fd, bool *error, const char *text)
       *error = true;
 }
 
-static char* urlencode(const char* url)
-{
-   unsigned i;
-   unsigned outpos = 0;
-   unsigned outlen = 0;
-   char *ret       = NULL;
-
-   for (i = 0; url[i] != '\0'; i++)
-   {
-      outlen++;
-      if (url[i] == ' ')
-         outlen += 2;
-   }
-   
-   ret = (char*)malloc(outlen + 1);
-   if (!ret)
-      return NULL;
-   
-   for (i = 0; url[i]; i++)
-   {
-      if (url[i] == ' ')
-      {
-         ret[outpos++] = '%';
-         ret[outpos++] = '2';
-         ret[outpos++] = '0';
-      }
-      else
-         ret[outpos++] = url[i];
-   }
-   ret[outpos] = '\0';
-   
-   return ret;
-}
-
-struct http_connection_t *net_http_connection_new(const char *url)
+struct http_connection_t *net_http_connection_new(const char *url, const char *method, const char *data)
 {
    char **domain = NULL;
-   struct http_connection_t *conn = (struct http_connection_t*)calloc(1, 
+   struct http_connection_t *conn = (struct http_connection_t*)calloc(1,
          sizeof(struct http_connection_t));
 
-   if (!conn)
+   if (!conn || !url)
       return NULL;
 
-   conn->urlcopy = urlencode(url);
+   conn->urlcopy = strdup(url);
+
+   if (method)
+      conn->methodcopy = strdup(method);
+
+   if (data)
+      conn->postdatacopy = strdup(data);
 
    if (!conn->urlcopy)
       goto error;
@@ -166,7 +182,13 @@ struct http_connection_t *net_http_connection_new(const char *url)
 error:
    if (conn->urlcopy)
       free(conn->urlcopy);
+   if (conn->methodcopy)
+      free(conn->methodcopy);
+   if (conn->postdatacopy)
+      free(conn->postdatacopy);
    conn->urlcopy = NULL;
+   conn->methodcopy = NULL;
+   conn->postdatacopy = NULL;
    free(conn);
    return NULL;
 }
@@ -221,6 +243,20 @@ void net_http_connection_free(struct http_connection_t *conn)
    if (conn->urlcopy)
       free(conn->urlcopy);
 
+   if (conn->methodcopy)
+      free(conn->methodcopy);
+
+   if (conn->contenttypecopy)
+      free(conn->contenttypecopy);
+
+   if (conn->postdatacopy)
+      free(conn->postdatacopy);
+
+   conn->urlcopy = NULL;
+   conn->methodcopy = NULL;
+   conn->contenttypecopy = NULL;
+   conn->postdatacopy = NULL;
+
    free(conn);
 }
 
@@ -245,7 +281,16 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    error = false;
 
    /* This is a bit lazy, but it works. */
-   net_http_send_str(fd, &error, "GET /");
+   if (conn->methodcopy)
+   {
+      net_http_send_str(fd, &error, conn->methodcopy);
+      net_http_send_str(fd, &error, " /");
+   }
+   else
+   {
+      net_http_send_str(fd, &error, "GET /");
+   }
+
    net_http_send_str(fd, &error, conn->location);
    net_http_send_str(fd, &error, " HTTP/1.1\r\n");
 
@@ -263,8 +308,51 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    }
 
    net_http_send_str(fd, &error, "\r\n");
+
+   /* this is not being set anywhere yet */
+   if (conn->contenttypecopy)
+   {
+      net_http_send_str(fd, &error, "Content-Type: ");
+      net_http_send_str(fd, &error, conn->contenttypecopy);
+      net_http_send_str(fd, &error, "\r\n");
+   }
+
+   if (conn->methodcopy && string_is_equal(conn->methodcopy, "POST"))
+   {
+      size_t post_len, len;
+      char *len_str;
+
+      if (!conn->postdatacopy)
+         goto error;
+
+      if (!conn->contenttypecopy)
+         net_http_send_str(fd, &error, "Content-Type: application/x-www-form-urlencoded\r\n");
+
+      net_http_send_str(fd, &error, "Content-Length: ");
+
+      post_len = strlen(conn->postdatacopy);
+#ifdef _WIN32
+      len = snprintf(NULL, 0, "%I64u", post_len);
+      len_str = (char*)malloc(len + 1);
+      snprintf(len_str, len + 1, "%I64u", post_len);
+#else
+      len = snprintf(NULL, 0, "%llu", (long long unsigned)post_len);
+      len_str = (char*)malloc(len + 1);
+      snprintf(len_str, len + 1, "%llu", (long long unsigned)post_len);
+#endif
+
+      len_str[len] = '\0';
+
+      net_http_send_str(fd, &error, len_str);
+      net_http_send_str(fd, &error, "\r\n");
+   }
+
+   net_http_send_str(fd, &error, "User-Agent: libretro\r\n");
    net_http_send_str(fd, &error, "Connection: close\r\n");
    net_http_send_str(fd, &error, "\r\n");
+
+   if (conn->methodcopy && string_is_equal(conn->methodcopy, "POST"))
+      net_http_send_str(fd, &error, conn->postdatacopy);
 
    if (error)
       goto error;
@@ -287,6 +375,13 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    return state;
 
 error:
+   if (conn->methodcopy)
+      free(conn->methodcopy);
+   if (conn->contenttypecopy)
+      free(conn->contenttypecopy);
+   conn->methodcopy = NULL;
+   conn->contenttypecopy = NULL;
+   conn->postdatacopy = NULL;
    if (fd >= 0)
       socket_close(fd);
    if (state)

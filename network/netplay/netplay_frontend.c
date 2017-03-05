@@ -20,8 +20,10 @@
 
 #include <boolean.h>
 #include <compat/strl.h>
+#include <command.h>
 #include <retro_assert.h>
 #include <string/stdstring.h>
+#include <net/net_http.h>
 
 #include "netplay_private.h"
 
@@ -48,6 +50,10 @@ static bool in_netplay = false;
 static bool      netplay_client_deferred = false;
 static char      server_address_deferred[512] = "";
 static unsigned  server_port_deferred = 0;
+
+/* Used */
+static int reannounce = 0;
+static bool is_mitm = false;
 
 /**
  * netplay_is_alive:
@@ -510,36 +516,124 @@ static int16_t netplay_input_state(netplay_t *netplay,
    }
 }
 
-static int reannounce = 0;
-
 static void netplay_announce_cb(void *task_data, void *user_data, const char *error)
 {
    RARCH_LOG("Announcing netplay game... \n");
+
+   if (task_data)
+   {
+      http_transfer_data_t *data = (http_transfer_data_t*)task_data;
+      struct string_list *lines;
+      unsigned i, ip_len, port_len;
+      const char *mitm_ip = NULL;
+      const char *mitm_port = NULL;
+      char *buf;
+      char *host_string;
+
+      if (data->len == 0)
+      {
+         free(task_data);
+         return;
+      }
+
+      buf = (char*)calloc(1, data->len + 1);
+
+      memcpy(buf, data->data, data->len);
+
+      lines = string_split(buf, "\n");
+
+      if (lines->size == 0)
+      {
+         string_list_free(lines);
+         free(buf);
+         free(task_data);
+         return;
+      }
+
+      for (i = 0; i < lines->size; i++)
+      {
+         const char *line = lines->elems[i].data;
+
+         if (!strncmp(line, "mitm_ip=", 8))
+            mitm_ip = line + 8;
+
+         if (!strncmp(line, "mitm_port=", 10))
+            mitm_port = line + 10;
+      }
+
+      if (mitm_ip && mitm_port)
+      {
+         RARCH_LOG("Joining MITM server: %s:%s\n", mitm_ip, mitm_port);
+
+         ip_len = strlen(mitm_ip);
+         port_len = strlen(mitm_port);
+
+         /* Enable Netplay client mode */
+         if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
+         {
+            command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+            is_mitm = true;
+         }
+
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
+
+         host_string = (char*)calloc(1, ip_len + port_len + 1);
+
+         memcpy(host_string, mitm_ip, ip_len);
+         memcpy(host_string + ip_len, ":", 1);
+         memcpy(host_string + ip_len + 1, mitm_port, port_len);
+
+         /* Enable Netplay */
+         command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, (void*)host_string);
+         command_event(CMD_EVENT_NETPLAY_INIT, (void*)host_string);
+
+         free(host_string);
+      }
+
+      string_list_free(lines);
+      free(buf);
+      free(task_data);
+   }
+
    return;
 }
 
-static void netplay_announce()
+static void netplay_announce(void)
 {
    char buf [2048];
-   char url [2048]               = "http://lobby.libretro.com/raw/?";
+   char url [2048]               = "http://newlobby.libretro.com/add/";
    rarch_system_info_t *system   = NULL;
    settings_t *settings          = config_get_ptr();
    uint32_t *content_crc_ptr     = NULL;
+   char *username;
+   char *corename;
+   char *gamename;
+   char *coreversion;
 
    content_get_crc(&content_crc_ptr);
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
+   net_http_urlencode_full(&username, settings->username);
+   net_http_urlencode_full(&corename, system->info.library_name);
+   net_http_urlencode_full(&gamename, !string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))) ? path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A");
+   net_http_urlencode_full(&coreversion, system->info.library_version);
+
    buf[0] = '\0';
 
-   snprintf(buf, sizeof(buf), "%susername=%s&corename=%s&coreversion=%s&"
-   "gamename=%s&gamecrc=%d&port=%d", 
-      url, settings->username, system->info.library_name, 
-      system->info.library_version, 
-      !string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))) ? path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A",*content_crc_ptr,
-      settings->netplay.port);
+   snprintf(buf, sizeof(buf), "username=%s&core_name=%s&core_version=%s&"
+      "game_name=%s&game_crc=%08X&port=%d"
+      "&has_password=%d&has_spectate_password=%d&force_mitm=%d",
+      username, corename, coreversion, gamename, *content_crc_ptr,
+      settings->netplay.port, settings->netplay.password ? 1 : 0, settings->netplay.spectate_password ? 1 : 0,
+      settings->netplay.use_mitm_server);
 
-   task_push_http_transfer(buf, true, NULL, netplay_announce_cb, NULL);
+   task_push_http_post_transfer(url, buf, true, NULL, netplay_announce_cb, NULL);
+
+   free(username);
+   free(corename);
+   free(gamename);
+   free(coreversion);
 }
 
 int16_t input_state_net(unsigned port, unsigned device,
@@ -677,8 +771,8 @@ bool netplay_pre_frame(netplay_t *netplay)
 
    if (settings->netplay.public_announce)
    {
-      reannounce ++;
-      if (netplay->is_server && (reannounce % 3600 == 0))
+      reannounce++;
+      if ((netplay->is_server || is_mitm) && (reannounce % 3600 == 0))
          netplay_announce();
    }
    else
@@ -1042,6 +1136,7 @@ void deinit_netplay(void)
    {
       netplay_free(netplay_data);
       netplay_enabled = false;
+      is_mitm = false;
    }
    netplay_data = NULL;
    core_unset_netplay_callbacks();
@@ -1108,9 +1203,9 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
 
    netplay_data = (netplay_t*)netplay_new(
          netplay_is_client ? direct_host : NULL,
-         netplay_is_client ? (!netplay_client_deferred ? server 
+         netplay_is_client ? (!netplay_client_deferred ? server
             : server_address_deferred) : NULL,
-         netplay_is_client ? (!netplay_client_deferred ? port   
+         netplay_is_client ? (!netplay_client_deferred ? port
             : server_port_deferred   ) : (port != 0 ? port : RARCH_DEFAULT_PORT),
          settings->netplay.stateless_mode, settings->netplay.check_frames, &cbs,
          settings->netplay.nat_traversal, settings->username,
