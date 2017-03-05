@@ -518,7 +518,7 @@ static void netplay_announce_cb(void *task_data, void *user_data, const char *er
    return;
 }
 
-static void netplay_announce()
+static void netplay_announce(void)
 {
    char buf [2048];
    char url [2048]               = "http://lobby.libretro.com/raw/?";
