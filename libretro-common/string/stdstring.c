@@ -165,7 +165,7 @@ char *string_trim_whitespace(char *const s)
    return s;
 }
 
-char* word_wrap(char* buffer, char* string, int line_width)
+char *word_wrap(char* buffer, const char *string, int line_width)
 {
    unsigned i   = 0;
    unsigned len = strlen(string);
@@ -211,7 +211,7 @@ char* word_wrap(char* buffer, char* string, int line_width)
 
             buffer[k] = '\n';
             /* set string index back to character after this one */
-            i = k + 1;
+            i         = k + 1;
             break;
          }
       }
