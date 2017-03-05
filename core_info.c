@@ -875,9 +875,6 @@ bool core_info_database_supports_content_path(const char *database_path, const c
       {
          const core_info_t *info = &core_info_curr_list->list[i];
 
-         if (!info)
-            continue;
-
          if (!string_list_find_elem(info->supported_extensions_list,
                   path_get_extension(path)))
             continue;
