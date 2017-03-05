@@ -77,6 +77,7 @@ static JSON_Parser_HandlerResult JSON_CALL NullHandler(JSON_Parser parser)
 {
    Context* pCtx = (Context*)JSON_Parser_GetUserData(parser);
    (void)parser;
+   (void)pCtx;
    return JSON_Parser_Continue;
 }
 
@@ -135,6 +136,7 @@ static JSON_Parser_HandlerResult JSON_CALL SpecialNumberHandler(JSON_Parser pars
 {
    Context* pCtx = (Context*)JSON_Parser_GetUserData(parser);
    (void)parser;
+   (void)pCtx;
    return JSON_Parser_Continue;
 }
 
@@ -260,7 +262,7 @@ static JSON_Parser_HandlerResult JSON_CALL EndArrayHandler(JSON_Parser parser)
 {
    Context* pCtx = (Context*)JSON_Parser_GetUserData(parser);
    (void)parser;
-
+   (void)pCtx;
    return JSON_Parser_Continue;
 }
 
@@ -268,7 +270,7 @@ static JSON_Parser_HandlerResult JSON_CALL ArrayItemHandler(JSON_Parser parser)
 {
    Context* pCtx = (Context*)JSON_Parser_GetUserData(parser);
    (void)parser;
-
+   (void)pCtx;
    return JSON_Parser_Continue;
 }
 
