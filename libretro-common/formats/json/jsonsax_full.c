@@ -1490,7 +1490,7 @@ static JSON_Status JSON_Parser_HandleInvalidEncodingSequence(JSON_Parser parser,
            instead of an invalid sequence. If the content is valid,
            this will fail with JSON_Error_StoppedAfterEmbeddedDocument;
            otherwise, it will fail with an appropriate error. */
-        return JSON_Parser_FlushLexer(parser) && JSON_Parser_FlushParser(parser);
+        return (JSON_Status)(JSON_Parser_FlushLexer(parser) && JSON_Parser_FlushParser(parser));
     }
     JSON_Parser_SetErrorAtCodepoint(parser, JSON_Error_InvalidEncodingSequence);
     return JSON_Failure;

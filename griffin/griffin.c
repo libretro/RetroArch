@@ -905,10 +905,12 @@ NETPLAY
 #include "../network/netplay/netplay_sync.c"
 #include "../network/netplay/netplay_discovery.c"
 #include "../network/netplay/netplay_buf.c"
+#include "../network/netplay/netplay_room_parse.c"
 #include "../libretro-common/net/net_compat.c"
 #include "../libretro-common/net/net_socket.c"
 #include "../libretro-common/net/net_http.c"
 #include "../libretro-common/net/net_natt.c"
+#include "../libretro-common/formats/json/jsonsax_full.c"
 #ifndef HAVE_SOCKET_LEGACY
 #include "../libretro-common/net/net_ifinfo.c"
 #endif
