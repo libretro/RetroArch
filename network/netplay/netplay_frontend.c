@@ -51,6 +51,10 @@ static bool      netplay_client_deferred = false;
 static char      server_address_deferred[512] = "";
 static unsigned  server_port_deferred = 0;
 
+/* Used */
+static int reannounce = 0;
+static bool is_mitm = false;
+
 /**
  * netplay_is_alive:
  * @netplay              : pointer to netplay object
@@ -512,8 +516,6 @@ static int16_t netplay_input_state(netplay_t *netplay,
    }
 }
 
-static int reannounce = 0;
-
 static void netplay_announce_cb(void *task_data, void *user_data, const char *error)
 {
    RARCH_LOG("Announcing netplay game... \n");
@@ -568,7 +570,11 @@ static void netplay_announce_cb(void *task_data, void *user_data, const char *er
 
          /* Enable Netplay client mode */
          if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
+         {
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+            is_mitm = true;
+         }
+
          netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
          host_string = (char*)calloc(1, ip_len + port_len + 1);
@@ -765,8 +771,8 @@ bool netplay_pre_frame(netplay_t *netplay)
 
    if (settings->netplay.public_announce)
    {
-      reannounce ++;
-      if (netplay->is_server && (reannounce % 3600 == 0))
+      reannounce++;
+      if ((netplay->is_server || is_mitm) && (reannounce % 3600 == 0))
          netplay_announce();
    }
    else
@@ -1130,6 +1136,7 @@ void deinit_netplay(void)
    {
       netplay_free(netplay_data);
       netplay_enabled = false;
+      is_mitm = false;
    }
    netplay_data = NULL;
    core_unset_netplay_callbacks();
@@ -1196,9 +1203,9 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
 
    netplay_data = (netplay_t*)netplay_new(
          netplay_is_client ? direct_host : NULL,
-         netplay_is_client ? (!netplay_client_deferred ? server 
+         netplay_is_client ? (!netplay_client_deferred ? server
             : server_address_deferred) : NULL,
-         netplay_is_client ? (!netplay_client_deferred ? port   
+         netplay_is_client ? (!netplay_client_deferred ? port
             : server_port_deferred   ) : (port != 0 ? port : RARCH_DEFAULT_PORT),
          settings->netplay.stateless_mode, settings->netplay.check_frames, &cbs,
          settings->netplay.nat_traversal, settings->username,
