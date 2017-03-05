@@ -167,9 +167,10 @@ char *string_trim_whitespace(char *const s)
 
 char* word_wrap(char* buffer, char* string, int line_width)
 {
-   unsigned i = 0;
+   unsigned i   = 0;
+   unsigned len = strlen(string);
 
-   while(i < strlen(string))
+   while (i < len)
    {
       unsigned counter;
 
