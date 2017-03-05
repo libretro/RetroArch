@@ -168,10 +168,11 @@ char *string_trim_whitespace(char *const s)
 char* word_wrap(char* buffer, char* string, int line_width)
 {
    unsigned i = 0;
-   int k, counter;
 
    while(i < strlen(string))
    {
+      int counter;
+
       /* copy string until the end of the line is reached */
       for (counter = 1; counter <= line_width; counter++)
       {
@@ -190,6 +191,7 @@ char* word_wrap(char* buffer, char* string, int line_width)
             counter = 1;
          i++;
       }
+
       /* check for whitespace */
       if (string[i] == ' ')
       {
@@ -198,16 +200,18 @@ char* word_wrap(char* buffer, char* string, int line_width)
       }
       else
       {
+         int k;
+
          /* check for nearest whitespace back in string */
          for (k = i; k > 0; k--)
          {
-            if (string[k] == ' ')
-            {
-               buffer[k] = '\n';
-               /* set string index back to character after this one */
-               i = k + 1;
-               break;
-            }
+            if (string[k] != ' ')
+               continue;
+
+            buffer[k] = '\n';
+            /* set string index back to character after this one */
+            i = k + 1;
+            break;
          }
       }
    }
