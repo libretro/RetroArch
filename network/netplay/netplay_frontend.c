@@ -598,7 +598,7 @@ static void netplay_announce_cb(void *task_data, void *user_data, const char *er
    return;
 }
 
-static void netplay_announce(void)
+static void netplay_announce(bool alive)
 {
    char buf [2048];
    char url [2048]               = "http://newlobby.libretro.com/add/";
@@ -610,30 +610,41 @@ static void netplay_announce(void)
    char *gamename;
    char *coreversion;
 
-   content_get_crc(&content_crc_ptr);
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
-
-   net_http_urlencode_full(&username, settings->username);
-   net_http_urlencode_full(&corename, system->info.library_name);
-   net_http_urlencode_full(&gamename, !string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))) ? path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A");
-   net_http_urlencode_full(&coreversion, system->info.library_version);
-
    buf[0] = '\0';
 
-   snprintf(buf, sizeof(buf), "username=%s&core_name=%s&core_version=%s&"
-      "game_name=%s&game_crc=%08X&port=%d"
-      "&has_password=%d&has_spectate_password=%d&force_mitm=%d",
-      username, corename, coreversion, gamename, *content_crc_ptr,
-      settings->netplay.port, settings->netplay.password ? 1 : 0, settings->netplay.spectate_password ? 1 : 0,
-      settings->netplay.use_mitm_server);
+   if (alive)
+   {
+      content_get_crc(&content_crc_ptr);
 
-   task_push_http_post_transfer(url, buf, true, NULL, netplay_announce_cb, NULL);
+      runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
-   free(username);
-   free(corename);
-   free(gamename);
-   free(coreversion);
+      net_http_urlencode_full(&username, settings->username);
+      net_http_urlencode_full(&corename, system->info.library_name);
+      net_http_urlencode_full(&gamename, !string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))) ? path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A");
+      net_http_urlencode_full(&coreversion, system->info.library_version);
+
+      snprintf(buf, sizeof(buf), "username=%s&core_name=%s&core_version=%s&"
+         "game_name=%s&game_crc=%08X&port=%d"
+         "&has_password=%d&has_spectate_password=%d&force_mitm=%d",
+         username, corename, coreversion, gamename, *content_crc_ptr,
+         settings->netplay.port, settings->netplay.password ? 1 : 0, settings->netplay.spectate_password ? 1 : 0,
+         settings->netplay.use_mitm_server);
+
+      task_push_http_post_transfer(url, buf, true, NULL, netplay_announce_cb, NULL);
+
+      free(username);
+      free(corename);
+      free(gamename);
+      free(coreversion);
+   }
+   else
+   {
+      net_http_urlencode_full(&username, settings->username);
+      snprintf(buf, sizeof(buf), "username=%s,disconnect", username);
+      task_push_http_post_transfer(url, buf, true, NULL, NULL, NULL);
+
+      free(username);
+   }
 }
 
 int16_t input_state_net(unsigned port, unsigned device,
@@ -773,7 +784,7 @@ bool netplay_pre_frame(netplay_t *netplay)
    {
       reannounce++;
       if ((netplay->is_server || is_mitm) && (reannounce % 3600 == 0))
-         netplay_announce();
+         netplay_announce(true);
    }
    else
    {
@@ -1134,6 +1145,7 @@ void deinit_netplay(void)
 {
    if (netplay_data)
    {
+      netplay_announce(false);
       netplay_free(netplay_data);
       netplay_enabled = false;
       is_mitm = false;
@@ -1198,7 +1210,7 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
          0, 180, false);
 
       if (settings->netplay.public_announce)
-         netplay_announce();
+         netplay_announce(true);
    }
 
    netplay_data = (netplay_t*)netplay_new(
