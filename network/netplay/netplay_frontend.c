@@ -20,6 +20,7 @@
 
 #include <boolean.h>
 #include <compat/strl.h>
+#include <command.h>
 #include <retro_assert.h>
 #include <string/stdstring.h>
 #include <net/net_http.h>
@@ -516,6 +517,78 @@ static int reannounce = 0;
 static void netplay_announce_cb(void *task_data, void *user_data, const char *error)
 {
    RARCH_LOG("Announcing netplay game... \n");
+
+   if (task_data)
+   {
+      http_transfer_data_t *data = (http_transfer_data_t*)task_data;
+      struct string_list *lines;
+      unsigned i, ip_len, port_len;
+      const char *mitm_ip = NULL;
+      const char *mitm_port = NULL;
+      char *buf;
+      char *host_string;
+
+      if (data->len == 0)
+      {
+         free(task_data);
+         return;
+      }
+
+      buf = (char*)calloc(1, data->len + 1);
+
+      memcpy(buf, data->data, data->len);
+
+      lines = string_split(buf, "\n");
+
+      if (lines->size == 0)
+      {
+         string_list_free(lines);
+         free(buf);
+         free(task_data);
+         return;
+      }
+
+      for (i = 0; i < lines->size; i++)
+      {
+         const char *line = lines->elems[i].data;
+
+         if (!strncmp(line, "mitm_ip=", 8))
+            mitm_ip = line + 8;
+
+         if (!strncmp(line, "mitm_port=", 10))
+            mitm_port = line + 10;
+      }
+
+      if (mitm_ip && mitm_port)
+      {
+         RARCH_LOG("Joining MITM server: %s:%s\n", mitm_ip, mitm_port);
+
+         ip_len = strlen(mitm_ip);
+         port_len = strlen(mitm_port);
+
+         /* Enable Netplay client mode */
+         if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
+            command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
+
+         host_string = (char*)calloc(1, ip_len + port_len + 1);
+
+         memcpy(host_string, mitm_ip, ip_len);
+         memcpy(host_string + ip_len, ":", 1);
+         memcpy(host_string + ip_len + 1, mitm_port, port_len);
+
+         /* Enable Netplay */
+         command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, (void*)host_string);
+         command_event(CMD_EVENT_NETPLAY_INIT, (void*)host_string);
+
+         free(host_string);
+      }
+
+      string_list_free(lines);
+      free(buf);
+      free(task_data);
+   }
+
    return;
 }
 
