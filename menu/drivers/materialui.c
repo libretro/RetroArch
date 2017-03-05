@@ -608,7 +608,7 @@ static void mui_render(void *data)
 
       menu_input_ctl(MENU_INPUT_CTL_POINTER_ACCEL_READ, &old_accel_val);
 
-      mui->scroll_y            -= old_accel_val / 60.0;
+      mui->scroll_y            -= old_accel_val;
 
       new_accel_val = old_accel_val * 0.96;
 
@@ -1898,7 +1898,7 @@ static size_t mui_list_get_selection(void *data)
    return mui->categories.selection_ptr;
 }
 
-static int mui_pointer_tap(void *userdata,
+static int mui_pointer_up(void *userdata,
       unsigned x, unsigned y,
       unsigned ptr, menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
@@ -1943,16 +1943,24 @@ static int mui_pointer_tap(void *userdata,
    }
    else if (ptr <= (menu_entries_get_size() - 1))
    {
-      size_t idx;
-      bool scroll                = false;
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
-      if (ptr == selection && cbs && cbs->action_select)
-         return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
+      size_t ii = 0;
+      file_list_t *list = menu_entries_get_selection_buf_ptr(0);
+      for (ii = 0; ii < menu_entries_get_size(); ii++)
+      {
+         mui_node_t *node = (mui_node_t*)
+               menu_entries_get_userdata_at_offset(list, ii);
 
-      idx  = ptr;
+         if (y > (-mui->scroll_y + header_height + node->y)
+          && y < (-mui->scroll_y + header_height + node->y + node->line_height)
+         )
+         {
+            menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &ii);
+            if (ptr == ii && cbs && cbs->action_select)
+               return menu_entry_action(entry, (unsigned)ii, MENU_ACTION_SELECT);
+         }
+      }
 
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
+
    }
 
    return 0;
@@ -2056,10 +2064,12 @@ menu_ctx_driver_t menu_ctx_mui = {
    mui_load_image,
    "glui",
    mui_environ,
-   mui_pointer_tap,
+   NULL,
    NULL,
    NULL,
    mui_osk_ptr_at_pos,
    NULL,
-   NULL
+   NULL,
+   NULL,
+   mui_pointer_up,
 };

@@ -137,6 +137,8 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_ENVIRONMENT,
    RARCH_MENU_CTL_DRIVER_DATA_GET,
    RARCH_MENU_CTL_POINTER_TAP,
+   RARCH_MENU_CTL_POINTER_DOWN,
+   RARCH_MENU_CTL_POINTER_UP,
    RARCH_MENU_CTL_OSK_PTR_AT_POS,
    RARCH_MENU_CTL_BIND_INIT,
    RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH,
@@ -278,6 +280,12 @@ typedef struct menu_ctx_driver
    int  (*osk_ptr_at_pos)(void *data, int x, int y, unsigned width, unsigned height);
    void (*update_savestate_thumbnail_path)(void *data, unsigned i);
    void (*update_savestate_thumbnail_image)(void *data);
+   int (*pointer_down)(void *data, unsigned x, unsigned y, unsigned ptr,
+         menu_file_list_cbs_t *cbs,
+         menu_entry_t *entry, unsigned action);
+   int (*pointer_up)(void *data, unsigned x, unsigned y, unsigned ptr,
+         menu_file_list_cbs_t *cbs,
+         menu_entry_t *entry, unsigned action);
 } menu_ctx_driver_t;
 
 typedef struct menu_ctx_load_image
