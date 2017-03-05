@@ -3400,9 +3400,21 @@ static int action_ok_push_scan_file(const char *path,
 static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const char *err)
 {
    char buf[PATH_MAX_LENGTH];
+   const char *path              = NULL;
+   const char *label             = NULL;
+   unsigned menu_type            = 0;
+   enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
+
    http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
 
    buf[0] = '\0';
+
+   menu_entries_get_last_stack(&path, &label, &menu_type, &enum_idx, NULL);
+
+   /* Don't push the results if we left the netplay menu */
+   if (!string_is_equal(label,
+         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB)))
+      return;
 
    if (!data || err)
       goto finish;
