@@ -2638,7 +2638,9 @@ static int menu_displaylist_parse_load_content_settings(
 
    if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
    {
+#ifdef HAVE_LAKKA
       bool show_advanced_settings    = settings->menu.show_advanced_settings;
+#endif
       rarch_system_info_t *system    = NULL;
 
       runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
