@@ -1,4 +1,6 @@
 # 1.4.2 (future)
+- MOBILE: Single-tap for menu entry selection
+- MOBILE: Long-tap a setting to reset to default
 - ANDROID: Autoconf fallback
 - ANDROID: Mouse support / Emulated mouse support
 - AUTOCONF: Fix partial matches for pad name
