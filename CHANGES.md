@@ -12,6 +12,7 @@
 - DOS: Add keyboard driver
 - DOS: Improve color accuracy and scalines
 - GUI: Various settings are now only visible when advanced settings is enabled
+- LOCALIZATION: Add/update Korean translation
 - LOCALIZATION: Rewrite german translation 
 - LOCALIZATION: Update several english sublabels 
 - NET: Allow manual netplay content loading 
