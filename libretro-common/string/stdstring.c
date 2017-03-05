@@ -171,10 +171,10 @@ char* word_wrap(char* buffer, char* string, int line_width)
 
    while(i < strlen(string))
    {
-      int counter;
+      unsigned counter;
 
       /* copy string until the end of the line is reached */
-      for (counter = 1; counter <= line_width; counter++)
+      for (counter = 1; counter <= (unsigned)line_width; counter++)
       {
          /* check if end of string reached */
          if (i == strlen(string))
