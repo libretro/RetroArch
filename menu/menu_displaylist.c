@@ -2682,20 +2682,23 @@ static int menu_displaylist_parse_load_content_settings(
             MENU_ENUM_LABEL_LOAD_STATE,
             MENU_SETTING_ACTION_LOADSTATE, 0, 0);
 
+#ifdef HAVE_LAKKA
       if (show_advanced_settings)
-      {
+#endif
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE),
                msg_hash_to_str(MENU_ENUM_LABEL_UNDO_LOAD_STATE),
                MENU_ENUM_LABEL_UNDO_LOAD_STATE,
                MENU_SETTING_ACTION_LOADSTATE, 0, 0);
 
+#ifdef HAVE_LAKKA
+      if (show_advanced_settings)
+#endif
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE),
                msg_hash_to_str(MENU_ENUM_LABEL_UNDO_SAVE_STATE),
                MENU_ENUM_LABEL_UNDO_SAVE_STATE,
                MENU_SETTING_ACTION_LOADSTATE, 0, 0);
-      }
 
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS),
