@@ -3207,11 +3207,22 @@ static int action_ok_netplay_connect_room(const char *path,
       command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
-   snprintf(tmp_hostname,
-         sizeof(tmp_hostname),
-         "%s:%d", 
-      netplay_room_list[idx - 2].address,
-      netplay_room_list[idx - 2].port);
+   if (netplay_room_list[idx - 2].host_method == NETPLAY_HOST_METHOD_MITM)
+   {
+      snprintf(tmp_hostname,
+            sizeof(tmp_hostname),
+            "%s:%d",
+         netplay_room_list[idx - 2].mitm_address,
+         netplay_room_list[idx - 2].mitm_port);
+   }
+   else
+   {
+      snprintf(tmp_hostname,
+            sizeof(tmp_hostname),
+            "%s:%d",
+         netplay_room_list[idx - 2].address,
+         netplay_room_list[idx - 2].port);
+   }
 
    RARCH_LOG("Connecting to: %s with game: %s/%08x\n", 
          tmp_hostname,

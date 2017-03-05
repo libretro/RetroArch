@@ -228,6 +228,12 @@ static JSON_Parser_HandlerResult JSON_CALL ObjectMemberHandler(JSON_Parser parse
          pCtx->cur_member = &rooms->cur->has_spectate_password;
       else if (string_is_equal(pValue, "fixed"))
          pCtx->cur_member = &rooms->cur->fixed;
+      else if (string_is_equal(pValue, "mitm_ip"))
+         pCtx->cur_member = &rooms->cur->mitm_address;
+      else if (string_is_equal(pValue, "mitm_port"))
+         pCtx->cur_member = &rooms->cur->mitm_port;
+      else if (string_is_equal(pValue, "host_method"))
+         pCtx->cur_member = &rooms->cur->host_method;
       else
       {
          /* unknown field, ignore it */
