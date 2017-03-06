@@ -12,6 +12,9 @@
 - DOS: Add keyboard driver
 - DOS: Improve color accuracy and scaling
 - GUI: Various settings are now only visible when advanced settings is enabled
+- GUI: Allow changing icon theme on the fly
+- GUI: Add a symbol page in the OSK
+- GUI: Better dialogs for XMB
 - LOCALIZATION: Add/update Korean translation
 - LOCALIZATION: Rewrite German translation
 - LOCALIZATION: Update several English sublabels
@@ -22,6 +25,7 @@
 - NET: Fix netplay join for contentless cores
 - NET: Lan games show next to lobbies with (lan) and connect via the private IP address
 - NET: Use new lobby system with MITM support
+- NET: Fix netplay rooms being pushed on the wrong tab
 - NUKLEAR: Update to current version
 - SCANNER: Always add 7z & zip to supported extensions
 - VULKAN: Find supported composite alpha in swapchain
