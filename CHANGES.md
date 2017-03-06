@@ -8,14 +8,14 @@
 - CHEEVOS: WIP leaderboards support
 - COMMON: Threading fixes
 - COMMON: 9-slice texture drawing support
-- CORETEXT/APPLE : Ability to load menu display font drivers and loading
-- of custom font.
+- CORETEXT/APPLE: Ability to load menu display font drivers and loading of custom font.
 - DOS: Add keyboard driver
 - DOS: Improve color accuracy and scaling
 - GUI: Various settings are now only visible when advanced settings is enabled
 - LOCALIZATION: Add/update Korean translation
-- LOCALIZATION: Rewrite german translation
-- LOCALIZATION: Update several english sublabels
+- LOCALIZATION: Rewrite German translation
+- LOCALIZATION: Update several English sublabels
+- LOCALIZATION: Update several Japanese labels
 - NET: Allow manual netplay content loading
 - NET: Announcing network games to the public lobby is optional now
 - NET: Bake in miniupnpc
