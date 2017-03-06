@@ -106,7 +106,7 @@ static JSON_Parser_HandlerResult JSON_CALL StringHandler(JSON_Parser parser, cha
          if (pCtx->cur_field && string_is_equal(pCtx->cur_field, "game_crc"))
          {
             /* CRC comes in as a string but it is stored as an unsigned casted to int */
-            *((int*)pCtx->cur_member) = strtoul(pValue, NULL, 16);
+            *((int*)pCtx->cur_member) = (int)strtoul(pValue, NULL, 16);
          }
          else if (pCtx->cur_field)
             strlcpy((char*)pCtx->cur_member, pValue, PATH_MAX_LENGTH);
@@ -126,7 +126,7 @@ static JSON_Parser_HandlerResult JSON_CALL NumberHandler(JSON_Parser parser, cha
    {
       if (pValue && length)
          if (pCtx->cur_field)
-            *((int*)pCtx->cur_member) = strtol(pValue, NULL, 10);
+            *((int*)pCtx->cur_member) = (int)strtol(pValue, NULL, 10);
    }
 
    return JSON_Parser_Continue;

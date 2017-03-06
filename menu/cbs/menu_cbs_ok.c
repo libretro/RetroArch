@@ -3448,7 +3448,7 @@ finish:
          netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, &lan_hosts);
 #endif
          if (lan_hosts)
-            lan_room_count                    = lan_hosts->size;
+            lan_room_count                    = (int)lan_hosts->size;
 
          netplay_rooms_parse(buf);
 

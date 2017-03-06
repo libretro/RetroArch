@@ -565,8 +565,8 @@ static void netplay_announce_cb(void *task_data, void *user_data, const char *er
       {
          RARCH_LOG("Joining MITM server: %s:%s\n", mitm_ip, mitm_port);
 
-         ip_len = strlen(mitm_ip);
-         port_len = strlen(mitm_port);
+         ip_len   = (unsigned)strlen(mitm_ip);
+         port_len = (unsigned)strlen(mitm_port);
 
          /* Enable Netplay client mode */
          if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
