@@ -20,7 +20,6 @@
 
 #include <boolean.h>
 #include <compat/strl.h>
-#include <command.h>
 #include <retro_assert.h>
 #include <string/stdstring.h>
 #include <net/net_http.h>
@@ -35,6 +34,7 @@
 #include <file/file_path.h>
 #include "../../file_path_special.h"
 #include "../../paths.h"
+#include "../../command.h"
 
 /* Only used before init_netplay */
 static bool netplay_enabled = false;
