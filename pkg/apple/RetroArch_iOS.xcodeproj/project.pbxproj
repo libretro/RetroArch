@@ -90,7 +90,7 @@
 		0FDA2A911BE1AFA800F2B5DA /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0FDA2A921BE1AFA800F2B5DA /* RetroArch_iOS9-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "RetroArch_iOS9-Info.plist"; path = "/Users/buildbot/buildbot/ios/retroarch/pkg/apple/RetroArch_iOS9-Info.plist"; sourceTree = "<absolute>"; };
 		501232C9192E5FC40063A359 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
-		501232CB192E5FDC0063A359 /* sinc_resampler_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = sinc_resampler_neon.S; path = ../../libretro-common/audio/resampler/drivers/sinc_resampler_neon.S; sourceTree = SOURCE_ROOT; };
+		501232CB192E5FDC0063A359 /* sinc_resampler_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = sinc_resampler_neon.S; path = "../../libretro-common/audio/resampler/drivers/sinc_resampler_neon.S"; sourceTree = SOURCE_ROOT; };
 		501232CD192E5FE30063A359 /* s16_to_float_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = s16_to_float_neon.S; path = "../../libretro-common/audio/conversion/s16_to_float_neon.S"; sourceTree = SOURCE_ROOT; };
 		501881EB184BAD6D006F665D /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		501881ED184BB54C006F665D /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
@@ -508,7 +508,7 @@
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
-                                        "../../deps",
+					../../deps,
 				);
 				INFOPLIST_FILE = "RetroArch_iOS9-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
@@ -516,16 +516,16 @@
 				LIBRARY_SEARCH_PATHS = "";
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
-               "-DHAVE_NETWORKGAMEPAD",
+					"-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-                                        "-DHAVE_MINIUPNPC",
-                                        "-DHAVE_BUILTINMINIUPNPC",
-               "-DHAVE_UPDATE_ASSETS",
-               "-DHAVE_LANGEXTRA",
+					"-DHAVE_MINIUPNPC",
+					"-DHAVE_BUILTINMINIUPNPC",
+					"-DHAVE_UPDATE_ASSETS",
+					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
 					"-DHAVE_IMAGEVIEWER",
 					"-DHAVE_CORELOCATION",
@@ -537,7 +537,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
-               "-DHAVE_CC_RESAMPLER",
+					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-D__LIBRETRO__",
@@ -589,7 +589,7 @@
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
-                                        "../../deps",
+					../../deps,
 				);
 				INFOPLIST_FILE = "RetroArch_iOS9-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
@@ -598,16 +598,16 @@
 				OTHER_CFLAGS = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
-               "-DHAVE_NETWORKGAMEPAD",
+					"-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-                                        "-DHAVE_MINIUPNPC",
-                                        "-DHAVE_BUILTINMINIUPNPC",
-               "-DHAVE_UPDATE_ASSETS",
-               "-DHAVE_LANGEXTRA",
+					"-DHAVE_MINIUPNPC",
+					"-DHAVE_BUILTINMINIUPNPC",
+					"-DHAVE_UPDATE_ASSETS",
+					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
 					"-DHAVE_IMAGEVIEWER",
 					"-DHAVE_CORELOCATION",
@@ -619,7 +619,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
-               "-DHAVE_CC_RESAMPLER",
+					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-D__LIBRETRO__",
@@ -650,16 +650,16 @@
 				"OTHER_CFLAGS[arch=*]" = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
-               "-DHAVE_NETWORKGAMEPAD",
+					"-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-                                        "-DHAVE_MINIUPNPC",
-                                        "-DHAVE_BUILTINMINIUPNPC",
-               "-DHAVE_UPDATE_ASSETS",
-               "-DHAVE_LANGEXTRA",
+					"-DHAVE_MINIUPNPC",
+					"-DHAVE_BUILTINMINIUPNPC",
+					"-DHAVE_UPDATE_ASSETS",
+					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
 					"-DHAVE_IMAGEVIEWER",
 					"-DHAVE_CORELOCATION",
@@ -671,7 +671,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
-               "-DHAVE_CC_RESAMPLER",
+					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-D__LIBRETRO__",
@@ -724,7 +724,7 @@
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
-                                        "../../deps",
+					../../deps,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
@@ -732,16 +732,16 @@
 				LIBRARY_SEARCH_PATHS = "";
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
-               "-DHAVE_NETWORKGAMEPAD",
+					"-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-                                        "-DHAVE_MINIUPNPC",
-                                        "-DHAVE_BUILTINMINIUPNPC",
-               "-DHAVE_UPDATE_ASSETS",
-               "-DHAVE_LANGEXTRA",
+					"-DHAVE_MINIUPNPC",
+					"-DHAVE_BUILTINMINIUPNPC",
+					"-DHAVE_UPDATE_ASSETS",
+					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
 					"-DHAVE_IMAGEVIEWER",
 					"-DHAVE_CORETEXT",
@@ -754,7 +754,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
-               "-DHAVE_CC_RESAMPLER",
+					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-D__LIBRETRO__",
@@ -801,7 +801,7 @@
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
-                                        "../../deps",
+					../../deps,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
@@ -810,16 +810,16 @@
 				OTHER_CFLAGS = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
-               "-DHAVE_NETWORKGAMEPAD",
+					"-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-                                        "-DHAVE_MINIUPNPC",
-                                        "-DHAVE_BUILTINMINIUPNPC",
-               "-DHAVE_UPDATE_ASSETS",
-               "-DHAVE_LANGEXTRA",
+					"-DHAVE_MINIUPNPC",
+					"-DHAVE_BUILTINMINIUPNPC",
+					"-DHAVE_UPDATE_ASSETS",
+					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
 					"-DHAVE_IMAGEVIEWER",
 					"-DHAVE_CORELOCATION",
@@ -831,7 +831,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
-               "-DHAVE_CC_RESAMPLER",
+					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-D__LIBRETRO__",
@@ -859,16 +859,16 @@
 				"OTHER_CFLAGS[arch=*]" = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
-               "-DHAVE_NETWORKGAMEPAD",
+					"-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-                                        "-DHAVE_MINIUPNPC",
-                                        "-DHAVE_BUILTINMINIUPNPC",
-               "-DHAVE_UPDATE_ASSETS",
-               "-DHAVE_LANGEXTRA",
+					"-DHAVE_MINIUPNPC",
+					"-DHAVE_BUILTINMINIUPNPC",
+					"-DHAVE_UPDATE_ASSETS",
+					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
 					"-DHAVE_IMAGEVIEWER",
 					"-DHAVE_CORELOCATION",
@@ -880,7 +880,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
-               "-DHAVE_CC_RESAMPLER",
+					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-D__LIBRETRO__",
@@ -940,16 +940,16 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
-               "-DHAVE_NETWORKGAMEPAD",
+					"-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-                                        "-DHAVE_MINIUPNPC",
-                                        "-DHAVE_BUILTINMINIUPNPC",
-               "-DHAVE_UPDATE_ASSETS",
-               "-DHAVE_LANGEXTRA",
+					"-DHAVE_MINIUPNPC",
+					"-DHAVE_BUILTINMINIUPNPC",
+					"-DHAVE_UPDATE_ASSETS",
+					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
 					"-DHAVE_IMAGEVIEWER",
 					"-DHAVE_CORELOCATION",
@@ -962,7 +962,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
-               "-DHAVE_CC_RESAMPLER",
+					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-DHAVE_THREADS",
@@ -1011,16 +1011,16 @@
 				OTHER_CFLAGS = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
-               "-DHAVE_NETWORKGAMEPAD",
+					"-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-                                        "-DHAVE_MINIUPNPC",
-                                        "-DHAVE_BUILTINMINIUPNPC",
-               "-DHAVE_UPDATE_ASSETS",
-               "-DHAVE_LANGEXTRA",
+					"-DHAVE_MINIUPNPC",
+					"-DHAVE_BUILTINMINIUPNPC",
+					"-DHAVE_UPDATE_ASSETS",
+					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
 					"-DHAVE_IMAGEVIEWER",
 					"-DHAVE_CORELOCATION",
@@ -1033,7 +1033,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
-               "-DHAVE_CC_RESAMPLER",
+					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-DHAVE_THREADS",
@@ -1076,7 +1076,7 @@
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
-                                        "../../deps",
+					../../deps,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
@@ -1084,16 +1084,16 @@
 				LIBRARY_SEARCH_PATHS = "";
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
-               "-DHAVE_NETWORKGAMEPAD",
+					"-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-                                        "-DHAVE_MINIUPNPC",
-                                        "-DHAVE_BUILTINMINIUPNPC",
-               "-DHAVE_UPDATE_ASSETS",
-               "-DHAVE_LANGEXTRA",
+					"-DHAVE_MINIUPNPC",
+					"-DHAVE_BUILTINMINIUPNPC",
+					"-DHAVE_UPDATE_ASSETS",
+					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
 					"-DHAVE_IMAGEVIEWER",
 					"-DHAVE_CORELOCATION",
@@ -1105,7 +1105,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
-               "-DHAVE_CC_RESAMPLER",
+					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-D__LIBRETRO__",
@@ -1156,7 +1156,7 @@
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
-                                        "../../deps",
+					../../deps,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
@@ -1165,16 +1165,16 @@
 				OTHER_CFLAGS = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
-               "-DHAVE_NETWORKGAMEPAD",
+					"-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-                                        "-DHAVE_MINIUPNPC",
-                                        "-DHAVE_BUILTINMINIUPNPC",
-               "-DHAVE_UPDATE_ASSETS",
-               "-DHAVE_LANGEXTRA",
+					"-DHAVE_MINIUPNPC",
+					"-DHAVE_BUILTINMINIUPNPC",
+					"-DHAVE_UPDATE_ASSETS",
+					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
 					"-DHAVE_IMAGEVIEWER",
 					"-DHAVE_CORELOCATION",
@@ -1186,7 +1186,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
-               "-DHAVE_CC_RESAMPLER",
+					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-D__LIBRETRO__",
@@ -1217,16 +1217,16 @@
 				"OTHER_CFLAGS[arch=*]" = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
-               "-DHAVE_NETWORKGAMEPAD",
+					"-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-                                        "-DHAVE_MINIUPNPC",
-                                        "-DHAVE_BUILTINMINIUPNPC",
-               "-DHAVE_UPDATE_ASSETS",
-               "-DHAVE_LANGEXTRA",
+					"-DHAVE_MINIUPNPC",
+					"-DHAVE_BUILTINMINIUPNPC",
+					"-DHAVE_UPDATE_ASSETS",
+					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
 					"-DHAVE_IMAGEVIEWER",
 					"-DHAVE_CORELOCATION",
@@ -1238,7 +1238,7 @@
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
-               "-DHAVE_CC_RESAMPLER",
+					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-D__LIBRETRO__",
