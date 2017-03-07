@@ -1385,37 +1385,34 @@ fallback:
    return false;
 }
 
-#define gl_glsl_set_coord_array(attr, coord1, coord2, coords, size, multiplier) \
+#define gl_glsl_set_coord_array(attribs, coord1, coord2, coords, size, multiplier) \
    unsigned y; \
-   attr->loc            = coord1; \
-   attr->size           = multiplier; \
-   attr->offset         = size * sizeof(GLfloat); \
-   attr++; \
+   attribs[attribs_size].loc            = coord1; \
+   attribs[attribs_size].size           = multiplier; \
+   attribs[attribs_size].offset         = size * sizeof(GLfloat); \
    for (y = 0; y < (multiplier * coords->vertices); y++) \
       buffer[y + size]  = coord2[y]; \
    size                += multiplier * coords->vertices; \
 
-static bool gl_glsl_set_coords(void *handle_data, void *shader_data, const struct video_coords *coords)
+static bool gl_glsl_set_coords(void *handle_data, void *shader_data,
+      const struct video_coords *coords)
 {
-   /* Avoid hitting malloc on every single regular quad draw. */
    GLfloat short_buffer[4 * (2 + 2 + 4 + 2)];
    struct glsl_attrib attribs[4];
    size_t               attribs_size = 0;
    size_t                       size = 0;
-   GLfloat *buffer                   = NULL;
-   struct glsl_attrib          *attr = NULL;
-   const struct shader_uniforms *uni = NULL;
+   GLfloat *buffer                   = short_buffer;
    glsl_shader_data_t          *glsl = (glsl_shader_data_t*)shader_data;
+   const struct shader_uniforms *uni = glsl 
+      ? &glsl->uniforms[glsl->active_idx] : NULL;
 
    if (!glsl || !glsl->shader->modern || !coords)
       goto fallback;
 
-   attr                              = attribs;
-   uni                               = &glsl->uniforms[glsl->active_idx];
-   buffer                            = short_buffer;
-    
    if (coords->vertices > 4)
    {
+      /* Avoid hitting malloc on every single regular quad draw. */
+
       size_t elems  = 0;
       elems        += (uni->color >= 0)         * 4;
       elems        += (uni->tex_coord >= 0)     * 2;
@@ -1432,28 +1429,28 @@ static bool gl_glsl_set_coords(void *handle_data, void *shader_data, const struc
 
    if (uni->tex_coord >= 0)
    {
-      gl_glsl_set_coord_array(attr, uni->tex_coord,
+      gl_glsl_set_coord_array(attribs, uni->tex_coord,
             coords->tex_coord, coords, size, 2);
       attribs_size++;
    }
 
    if (uni->vertex_coord >= 0)
    {
-      gl_glsl_set_coord_array(attr, uni->vertex_coord,
+      gl_glsl_set_coord_array(attribs, uni->vertex_coord,
             coords->vertex, coords, size, 2);
       attribs_size++;
    }
 
    if (uni->color >= 0)
    {
-      gl_glsl_set_coord_array(attr, uni->color,
+      gl_glsl_set_coord_array(attribs, uni->color,
             coords->color, coords, size, 4);
       attribs_size++;
    }
 
    if (uni->lut_tex_coord >= 0)
    {
-      gl_glsl_set_coord_array(attr, uni->lut_tex_coord,
+      gl_glsl_set_coord_array(attribs, uni->lut_tex_coord,
             coords->lut_tex_coord, coords, size, 2);
       attribs_size++;
    }
