@@ -771,7 +771,7 @@ bool netplay_pre_frame(netplay_t *netplay)
    if (settings->netplay.public_announce)
    {
       reannounce++;
-      if ((netplay->is_server || is_mitm) && (reannounce % 3600 == 0))
+      if ((netplay->is_server || is_mitm) && (reannounce % 600 == 0))
          netplay_announce();
    }
    else
