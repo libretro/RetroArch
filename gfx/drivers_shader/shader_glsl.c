@@ -1391,7 +1391,6 @@ fallback:
       attr->loc    = coord1; \
       attr->size   = multiplier; \
       attr->offset = size * sizeof(GLfloat); \
-      attribs_size++; \
       attr++; \
       for (y = 0; y < (multiplier * coords->vertices); y++) \
          buffer[y + size] = coord2[y]; \
@@ -1413,9 +1412,9 @@ static bool gl_glsl_set_coords(void *handle_data, void *shader_data, const struc
    if (!glsl || !glsl->shader->modern || !coords)
       goto fallback;
 
-   attr   = attribs;
-   uni    = &glsl->uniforms[glsl->active_idx];
-   buffer = short_buffer;
+   attr                              = attribs;
+   uni                               = &glsl->uniforms[glsl->active_idx];
+   buffer                            = short_buffer;
     
    if (coords->vertices > 4)
    {
@@ -1434,16 +1433,28 @@ static bool gl_glsl_set_coords(void *handle_data, void *shader_data, const struc
       goto fallback;
 
    if (uni->tex_coord >= 0)
+   {
       gl_glsl_set_coord_array(attr, uni->tex_coord, coords->tex_coord, coords, size, 2);
+      attribs_size++;
+   }
 
    if (uni->vertex_coord >= 0)
+   {
       gl_glsl_set_coord_array(attr, uni->vertex_coord, coords->vertex, coords, size, 2);
+      attribs_size++;
+   }
 
    if (uni->color >= 0)
+   {
       gl_glsl_set_coord_array(attr, uni->color, coords->color, coords, size, 4);
+      attribs_size++;
+   }
 
    if (uni->lut_tex_coord >= 0)
+   {
       gl_glsl_set_coord_array(attr, uni->lut_tex_coord, coords->lut_tex_coord, coords, size, 2);
+      attribs_size++;
+   }
 
    if (size)
       gl_glsl_set_attribs(glsl,
