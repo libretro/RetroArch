@@ -489,25 +489,21 @@ static void gl_glsl_reset_attrib(glsl_shader_data_t *glsl)
 static void gl_glsl_set_vbo(GLfloat **buffer, size_t *buffer_elems,
       const GLfloat *data, size_t elems)
 {
-   if (elems != *buffer_elems ||
-         memcmp(data, *buffer, elems * sizeof(GLfloat)))
+   if (elems > *buffer_elems)
    {
-      if (elems > *buffer_elems)
-      {
-         GLfloat *new_buffer = (GLfloat*)
-            realloc(*buffer, elems * sizeof(GLfloat));
-         retro_assert(new_buffer);
-         *buffer = new_buffer;
-      }
-
-      memcpy(*buffer, data, elems * sizeof(GLfloat));
-      glBufferData(GL_ARRAY_BUFFER, elems * sizeof(GLfloat),
-            data, GL_STATIC_DRAW);
-      *buffer_elems = elems;
+      GLfloat *new_buffer = (GLfloat*)
+         realloc(*buffer, elems * sizeof(GLfloat));
+      retro_assert(new_buffer);
+      *buffer = new_buffer;
    }
+
+   memcpy(*buffer, data, elems * sizeof(GLfloat));
+   glBufferData(GL_ARRAY_BUFFER, elems * sizeof(GLfloat),
+         data, GL_STATIC_DRAW);
+   *buffer_elems = elems;
 }
 
-static void gl_glsl_set_attribs(glsl_shader_data_t *glsl,
+static INLINE void gl_glsl_set_attribs(glsl_shader_data_t *glsl,
       GLuint vbo,
       GLfloat **buffer, size_t *buffer_elems,
       const GLfloat *data, size_t elems,
@@ -517,14 +513,16 @@ static void gl_glsl_set_attribs(glsl_shader_data_t *glsl,
 
    glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
-   gl_glsl_set_vbo(buffer, buffer_elems, data, elems);
+   if (elems != *buffer_elems ||
+         memcmp(data, *buffer, elems * sizeof(GLfloat)))
+      gl_glsl_set_vbo(buffer, buffer_elems, data, elems);
 
    for (i = 0; i < num_attrs; i++)
    {
-      GLint loc = attrs[i].loc;
-
       if (glsl->attribs.index < ARRAY_SIZE(glsl->attribs.elems))
       {
+         GLint loc = attrs[i].loc;
+
          glEnableVertexAttribArray(loc);
          glVertexAttribPointer(loc, attrs[i].size, GL_FLOAT, GL_FALSE, 0,
                (const GLvoid*)(uintptr_t)attrs[i].offset);
