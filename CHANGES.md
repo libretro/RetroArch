@@ -1,4 +1,4 @@
-# 1.4.2 (future)
+# 1.5.0 (future)
 - MOBILE: Single-tap for menu entry selection
 - MOBILE: Long-tap a setting to reset to default
 - ANDROID: Autoconf fallback
