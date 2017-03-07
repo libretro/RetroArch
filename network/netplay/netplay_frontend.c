@@ -200,7 +200,8 @@ static bool netplay_poll(void)
 
    netplay_data->can_poll = false;
 
-   get_self_input_state(netplay_data);
+   if (!get_self_input_state(netplay_data))
+      goto catastrophe;
 
    /* If we're not connected, we're done */
    if (netplay_data->self_mode == NETPLAY_CONNECTION_NONE)
@@ -216,12 +217,7 @@ static bool netplay_poll(void)
    else
       res = netplay_poll_net_input(netplay_data, false);
    if (res == -1)
-   {
-      /* Catastrophe! */
-      for (i = 0; i < netplay_data->connections_size; i++)
-         netplay_hangup(netplay_data, &netplay_data->connections[i]);
-      return false;
-   }
+      goto catastrophe;
 
    /* Simulate the input if we don't have real input */
    netplay_simulate_input(netplay_data, netplay_data->run_ptr, false);
@@ -425,14 +421,17 @@ static bool netplay_poll(void)
             }
          }
          else
-         {
-            netplay_hangup(netplay_data, &netplay_data->connections[0]);
-         }
+            goto catastrophe;
          return false;
       }
    }
 
    return true;
+
+catastrophe:
+   for (i = 0; i < netplay_data->connections_size; i++)
+      netplay_hangup(netplay_data, &netplay_data->connections[i]);
+   return false;
 }
 
 /**
@@ -818,7 +817,7 @@ bool netplay_pre_frame(netplay_t *netplay)
    sync_stalled = !netplay_sync_pre_frame(netplay);
 
    if (sync_stalled ||
-       (netplay->connected_players &&
+       ((!netplay->is_server || netplay->connected_players) &&
         (netplay->stall || netplay->remote_paused)))
    {
       /* We may have received data even if we're stalled, so run post-frame
