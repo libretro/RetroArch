@@ -121,8 +121,7 @@ bool task_push_overlay_load_default(
 int find_first_data_track(const char* cue_path,
       int32_t* offset, char* track_path, size_t max_len);
 
-int detect_system(const char* track_path, int32_t offset,
-        const char** system_name);
+int detect_system(const char* track_path, const char** system_name);
 
 int detect_ps1_game(const char *track_path, char *game_id);
 

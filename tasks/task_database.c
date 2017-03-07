@@ -125,9 +125,8 @@ static int task_database_iterate_start(database_info_handle_t *db,
 static int iso_get_serial(database_state_handle_t *db_state,
       database_info_handle_t *db, const char *name, char* serial)
 {
-   int32_t offset          = 0;
    const char* system_name = NULL;
-   int                 rv  = detect_system(name, offset, &system_name);
+   int                 rv  = detect_system(name, &system_name);
 
    if (rv < 0)
       return rv;

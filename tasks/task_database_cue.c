@@ -50,15 +50,16 @@
 
 struct magic_entry
 {
-    const char *system_name;
-    const char *magic;
+   int32_t offset;
+   const char *system_name;
+   const char *magic;
 };
 
 static struct magic_entry MAGIC_NUMBERS[] = {
-    {"ps1",    "\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x00\x02\x00\x02\x00"},
-    {"pcecd",  "\x82\xb1\x82\xcc\x83\x76\x83\x8d\x83\x4f\x83\x89\x83\x80\x82\xcc\x92"},
-    {"scd",    "\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x00\x02\x00\x01\x53"},
-    {NULL,     NULL}
+   { 0,        "ps1",    "\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x00\x02\x00\x02\x00"},
+   { 0x838840, "pcecd",  "\x82\xb1\x82\xcc\x83\x76\x83\x8d\x83\x4f\x83\x89\x83\x80\x82\xcc\x92"},
+   { 0,        "scd",    "\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x00\x02\x00\x01\x53"},
+   { 0,        NULL,     NULL}
 };
 
 static ssize_t get_token(RFILE *fd, char *token, size_t max_len)
@@ -324,8 +325,7 @@ int detect_psp_game(const char *track_path, char *game_id)
    return rv;
 }
 
-int detect_system(const char *track_path, int32_t offset,
-        const char **system_name)
+int detect_system(const char *track_path, const char **system_name)
 {
    int rv;
    char magic[MAGIC_LEN];
@@ -340,18 +340,18 @@ int detect_system(const char *track_path, int32_t offset,
       goto clean;
    }
 
-   filestream_seek(fd, offset, SEEK_SET);
-   if (filestream_read(fd, magic, MAGIC_LEN) < MAGIC_LEN)
-   {
-      RARCH_LOG("Could not read data from file '%s' at offset %d: %s\n",
-            track_path, offset, strerror(errno));
-      rv = -errno;
-      goto clean;
-   }
-
    RARCH_LOG("%s\n", msg_hash_to_str(MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS));
    for (i = 0; MAGIC_NUMBERS[i].system_name != NULL; i++)
    {
+      filestream_seek(fd, MAGIC_NUMBERS[i].offset, SEEK_SET);
+      if (filestream_read(fd, magic, MAGIC_LEN) < MAGIC_LEN)
+      {
+         RARCH_LOG("Could not read data from file '%s' at offset %d: %s\n",
+               track_path, MAGIC_NUMBERS[i].offset, strerror(errno));
+         rv = -errno;
+         goto clean;
+      }
+
       if (memcmp(MAGIC_NUMBERS[i].magic, magic, MAGIC_LEN) == 0)
       {
          *system_name = MAGIC_NUMBERS[i].system_name;
