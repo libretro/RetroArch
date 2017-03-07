@@ -577,7 +577,7 @@ static void netplay_announce_cb(void *task_data, void *user_data, const char *er
 
          netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
-         host_string = (char*)calloc(1, ip_len + port_len + 1);
+         host_string = (char*)calloc(1, ip_len + port_len + 2);
 
          memcpy(host_string, mitm_ip, ip_len);
          memcpy(host_string + ip_len, ":", 1);
