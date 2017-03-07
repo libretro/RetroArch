@@ -5684,7 +5684,7 @@ static bool setting_append_list(
                   &settings->netplay.use_mitm_server,
                   MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER,
                   MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
-                  true,
+                  netplay_use_mitm_server,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,

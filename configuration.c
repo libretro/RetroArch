@@ -732,9 +732,9 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("netplay_start_as_spectator",    &settings->netplay.start_as_spectator, false, netplay_start_as_spectator, false);
    SETTING_BOOL("netplay_allow_slaves",          &settings->netplay.allow_slaves, true, netplay_allow_slaves, false);
    SETTING_BOOL("netplay_require_slaves",        &settings->netplay.require_slaves, true, netplay_require_slaves, false);
-   SETTING_BOOL("netplay_stateless_mode",        &settings->netplay.stateless_mode, false, netplay_stateless_mode, false);
+   SETTING_BOOL("netplay_stateless_mode",        &settings->netplay.stateless_mode, true, netplay_stateless_mode, false);
    SETTING_BOOL("netplay_client_swap_input",     &settings->netplay.swap_input, true, netplay_client_swap_input, false);
-   SETTING_BOOL("netplay_use_mitm_server",       &settings->netplay.use_mitm_server, false, netplay_use_mitm_server, false);
+   SETTING_BOOL("netplay_use_mitm_server",       &settings->netplay.use_mitm_server, true, netplay_use_mitm_server, false);
 #endif
    SETTING_BOOL("input_descriptor_label_show",   &settings->input.input_descriptor_label_show, true, input_descriptor_label_show, false);
    SETTING_BOOL("input_descriptor_hide_unbound", &settings->input.input_descriptor_hide_unbound, true, input_descriptor_hide_unbound, false);
