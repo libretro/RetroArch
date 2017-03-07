@@ -1386,16 +1386,14 @@ fallback:
 }
 
 #define gl_glsl_set_coord_array(attr, coord1, coord2, coords, size, multiplier) \
-{ \
-      unsigned y; \
-      attr->loc    = coord1; \
-      attr->size   = multiplier; \
-      attr->offset = size * sizeof(GLfloat); \
-      attr++; \
-      for (y = 0; y < (multiplier * coords->vertices); y++) \
-         buffer[y + size] = coord2[y]; \
-      size += multiplier * coords->vertices; \
-}
+   unsigned y; \
+   attr->loc            = coord1; \
+   attr->size           = multiplier; \
+   attr->offset         = size * sizeof(GLfloat); \
+   attr++; \
+   for (y = 0; y < (multiplier * coords->vertices); y++) \
+      buffer[y + size]  = coord2[y]; \
+   size                += multiplier * coords->vertices; \
 
 static bool gl_glsl_set_coords(void *handle_data, void *shader_data, const struct video_coords *coords)
 {
@@ -1419,9 +1417,9 @@ static bool gl_glsl_set_coords(void *handle_data, void *shader_data, const struc
    if (coords->vertices > 4)
    {
       size_t elems  = 0;
-      elems        += (uni->color >= 0) * 4;
-      elems        += (uni->tex_coord >= 0) * 2;
-      elems        += (uni->vertex_coord >= 0) * 2;
+      elems        += (uni->color >= 0)         * 4;
+      elems        += (uni->tex_coord >= 0)     * 2;
+      elems        += (uni->vertex_coord >= 0)  * 2;
       elems        += (uni->lut_tex_coord >= 0) * 2;
 
       elems        *= coords->vertices * sizeof(GLfloat);
@@ -1434,25 +1432,29 @@ static bool gl_glsl_set_coords(void *handle_data, void *shader_data, const struc
 
    if (uni->tex_coord >= 0)
    {
-      gl_glsl_set_coord_array(attr, uni->tex_coord, coords->tex_coord, coords, size, 2);
+      gl_glsl_set_coord_array(attr, uni->tex_coord,
+            coords->tex_coord, coords, size, 2);
       attribs_size++;
    }
 
    if (uni->vertex_coord >= 0)
    {
-      gl_glsl_set_coord_array(attr, uni->vertex_coord, coords->vertex, coords, size, 2);
+      gl_glsl_set_coord_array(attr, uni->vertex_coord,
+            coords->vertex, coords, size, 2);
       attribs_size++;
    }
 
    if (uni->color >= 0)
    {
-      gl_glsl_set_coord_array(attr, uni->color, coords->color, coords, size, 4);
+      gl_glsl_set_coord_array(attr, uni->color,
+            coords->color, coords, size, 4);
       attribs_size++;
    }
 
    if (uni->lut_tex_coord >= 0)
    {
-      gl_glsl_set_coord_array(attr, uni->lut_tex_coord, coords->lut_tex_coord, coords, size, 2);
+      gl_glsl_set_coord_array(attr, uni->lut_tex_coord,
+            coords->lut_tex_coord, coords, size, 2);
       attribs_size++;
    }
 
