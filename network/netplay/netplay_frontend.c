@@ -790,7 +790,7 @@ bool netplay_pre_frame(netplay_t *netplay)
       netplay_try_init_serialization(netplay);
    }
 
-   if (netplay->is_server)
+   if (netplay->is_server && !settings->netplay.use_mitm_server)
    {
       /* Advertise our server */
       netplay_lan_ad_server(netplay);
