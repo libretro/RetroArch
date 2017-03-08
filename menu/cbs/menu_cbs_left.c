@@ -345,7 +345,7 @@ static int playlist_association_left(unsigned type, const char *label,
    if (next < 0)
    {
       if (wraparound)
-         next = (int)(list->count);
+         next = (int)(list->count-1);
       else
          next = 0;
    }

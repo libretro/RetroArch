@@ -345,9 +345,9 @@ static int playlist_association_right(unsigned type, const char *label,
    if (next >= list->count)
    {
       if (wraparound)
-         next = list->count-1;
-      else
          next = 0;
+      else
+         next = list->count-1;
    }
 
    info = core_info_get(list, next);
