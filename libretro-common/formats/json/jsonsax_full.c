@@ -21,7 +21,7 @@
 */
 
 #include <stdlib.h>
-#include <memory.h>
+#include <string.h>
 
 /* Ensure uint32_t type (compiler-dependent). */
 #if defined(_MSC_VER)
