@@ -1,6 +1,9 @@
 package com.retroarch.browser.retroactivity;
 
 import com.retroarch.browser.preferences.util.UserPreferences;
+import android.content.res.Configuration;
+import android.app.UiModeManager;
+import android.util.Log;
 
 /**
  * Class which provides common methods for RetroActivity related classes.
@@ -14,4 +17,21 @@ public class RetroActivityCommon extends RetroActivityLocation
 	{
       finish();
 	}
+
+  public boolean isAndroidTV()
+  {
+    Configuration config = getResources().getConfiguration();
+    UiModeManager uiModeManager = (UiModeManager)getSystemService(UI_MODE_SERVICE);
+
+    if (uiModeManager.getCurrentModeType() == Configuration.UI_MODE_TYPE_TELEVISION)
+    {
+      Log.i("RetroActivity", "isAndroidTV == true");
+      return true;
+    }
+    else
+    {
+      Log.i("RetroActivity", "isAndroidTV == false");
+      return false;
+    }
+  }
 }

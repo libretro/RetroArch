@@ -86,6 +86,7 @@ static char screenshot_dir[PATH_MAX_LENGTH];
 static char downloads_dir[PATH_MAX_LENGTH];
 static char apk_dir[PATH_MAX_LENGTH];
 static char app_dir[PATH_MAX_LENGTH];
+static bool is_android_tv_device = false;
 
 #else
 static const char *proc_apm_path                   = "/proc/apm";
@@ -551,6 +552,11 @@ static bool device_is_game_console(const char *name)
       return true;
 
    return false;
+}
+
+static bool device_is_android_tv()
+{
+   return is_android_tv_device;
 }
 
 bool test_permissions(const char *path)
@@ -1210,6 +1216,7 @@ static void frontend_linux_get_env(int *argc,
    JNIEnv                       *env = NULL;
    jobject                       obj = NULL;
    jstring                      jstr = NULL;
+   jboolean                     jbool = JNI_FALSE;
    struct android_app   *android_app = (struct android_app*)data;
 
    if (!android_app)
@@ -1633,6 +1640,15 @@ static void frontend_linux_get_env(int *argc,
       }
    }
 
+   /* Check if we are an Android TV device */
+   if (env && android_app->isAndroidTV)
+   {
+      CALL_BOOLEAN_METHOD(env, jbool, android_app->activity->clazz, android_app->isAndroidTV);
+
+      if (jbool != JNI_FALSE)
+         is_android_tv_device = true;
+   }
+
    frontend_android_get_name(device_model, sizeof(device_model));
    system_property_get("getprop", "ro.product.id", device_id);
 
@@ -1676,7 +1692,7 @@ static void frontend_linux_get_env(int *argc,
     *
     * */
 
-   if (device_is_game_console(device_model))
+   if (device_is_game_console(device_model) || device_is_android_tv())
    {
       g_defaults.overlay.set    = true;
       g_defaults.overlay.enable = false;
@@ -1849,6 +1865,8 @@ static void frontend_linux_init(void *data)
          "getIntent", "()Landroid/content/Intent;");
    GET_METHOD_ID(env, android_app->onRetroArchExit, class,
          "onRetroArchExit", "()V");
+   GET_METHOD_ID(env, android_app->isAndroidTV, class,
+         "isAndroidTV", "()Z");
    CALL_OBJ_METHOD(env, obj, android_app->activity->clazz,
          android_app->getIntent);
 

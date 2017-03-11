@@ -160,6 +160,7 @@ struct android_app
    jmethodID getPendingIntentStorageLocation;
    jmethodID getPendingIntentDownloadsLocation;
    jmethodID getPendingIntentScreenshotsLocation;
+   jmethodID isAndroidTV;
 };
 
 
