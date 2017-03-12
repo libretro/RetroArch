@@ -1,4 +1,4 @@
-﻿/*  RetroArch - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2016-2017 - Brad Parker
  *
@@ -3188,6 +3188,12 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Wi-Fi";
       case MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR:
          return "Menu Alpha Factor";
+      case MENU_ENUM_LABEL_VALUE_XMB_FONT_COLOR_RED:
+         return "Menu Font Red Color";
+      case MENU_ENUM_LABEL_VALUE_XMB_FONT_COLOR_GREEN:
+         return "Menu Font Green Color";
+      case MENU_ENUM_LABEL_VALUE_XMB_FONT_COLOR_BLUE:
+         return "Menu Font Blue Color";
       case MENU_ENUM_LABEL_VALUE_XMB_FONT:
          return "Menu Font";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM:

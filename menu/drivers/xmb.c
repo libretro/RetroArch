@@ -843,7 +843,7 @@ static void xmb_render_messagebox_internal(
    {
       const char *msg = list->elems[i].data;
       int len         = (int)utf8len(msg);
-       
+
       if (len > longest)
       {
          longest = len;

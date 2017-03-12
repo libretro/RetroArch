@@ -608,6 +608,9 @@ static bool default_block_config_read = true;
 #ifdef HAVE_XMB
 static unsigned xmb_scale_factor = 100;
 static unsigned xmb_alpha_factor = 75;
+static unsigned xmb_font_color_red = 0;
+static unsigned xmb_font_color_green = 0;
+static unsigned xmb_font_color_blue = 0;
 static unsigned xmb_icon_theme   = XMB_ICON_THEME_MONOCHROME;
 static unsigned xmb_theme        = XMB_THEME_ELECTRIC_BLUE;
 #ifdef HAVE_LAKKA
