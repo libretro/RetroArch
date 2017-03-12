@@ -442,10 +442,23 @@ static int menu_input_pointer_post_iterate(
 
       menu_input->pointer.counter++;
 
-      if (!pointer_oldpressed[0])
+      if (menu_input->pointer.counter == 1 &&
+            !menu_input_ctl(MENU_INPUT_CTL_IS_POINTER_DRAGGED, NULL))
       {
          menu_ctx_pointer_t point;
 
+         point.x                           = pointer_x;
+         point.y                           = pointer_y;
+         point.ptr                         = menu_input->pointer.ptr;
+         point.cbs                         = cbs;
+         point.entry                       = entry;
+         point.action                      = action;
+
+         menu_driver_ctl(RARCH_MENU_CTL_POINTER_DOWN, &point);
+      }
+
+      if (!pointer_oldpressed[0])
+      {
          menu_input->pointer.accel         = 0;
          accel0                            = 0;
          accel1                            = 0;
@@ -454,15 +467,6 @@ static int menu_input_pointer_post_iterate(
          pointer_old_x                     = pointer_x;
          pointer_old_y                     = pointer_y;
          pointer_oldpressed[0]             = true;
-
-         point.x                           = start_x;
-         point.y                           = start_y;
-         point.ptr                         = menu_input->pointer.ptr;
-         point.cbs                         = cbs;
-         point.entry                       = entry;
-         point.action                      = action;
-
-         menu_driver_ctl(RARCH_MENU_CTL_POINTER_DOWN, &point);
       }
       else if (abs(pointer_x - start_x) > (dpi / 10)
             || abs(pointer_y - start_y) > (dpi / 10))
