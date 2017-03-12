@@ -164,13 +164,13 @@ int handle_xkb(int code, int value)
    if (value)
       num_syms = xkb_state_key_get_syms(xkb_state, xk_code, &syms);
 
-   if (!syms)
-      return -1;
-
    if (value > 0)
       xkb_state_update_key(xkb_state, xk_code, XKB_KEY_DOWN);
    else
       xkb_state_update_key(xkb_state, xk_code, XKB_KEY_UP);
+
+   if (!syms)
+      return -1;
 
    /* Build mod state. */
    for (i = 0; i < MOD_MAP_SIZE; i++)
