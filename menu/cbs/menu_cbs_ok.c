@@ -4022,9 +4022,18 @@ static void action_ok_netplay_enable_client_hostname_cb(
    void *ignore, const char *hostname)
 {
    char tmp_hostname[512];
-   strlcpy(tmp_hostname, hostname, sizeof(tmp_hostname));
-   if (hostname[0])
+
+   if (hostname && hostname[0])
+   {
+      strlcpy(tmp_hostname, hostname, sizeof(tmp_hostname));
       command_event(CMD_EVENT_NETPLAY_INIT, (void *) tmp_hostname);
+   }
+   else
+   {
+      menu_input_dialog_end();
+      return;
+   }
+
    menu_input_dialog_end();
 
    /* Force the menu to close */
