@@ -189,9 +189,9 @@ typedef struct settings
       {
          unsigned shader_pipeline;
          char     font[PATH_MAX_LENGTH];
-         int      font_color_red;
-         int      font_color_green;
-         int      font_color_blue;
+         unsigned font_color_red;
+         unsigned font_color_green;
+         unsigned font_color_blue;
          unsigned scale_factor;
          unsigned alpha_factor;
          unsigned theme;
