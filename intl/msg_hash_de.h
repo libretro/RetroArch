@@ -160,7 +160,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
-      "Cheevos-Benutzerkonten"
+      "Errungenschaften-Kontos"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
@@ -440,11 +440,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ACHIEVEMENTS,
-      "Entsperrte Errungenschaften:"
+      "Freigeschaltete Errungenschaften:"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY,
-      "Entsperrt"
+      "Freigeschaltet"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -961,6 +961,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NEAREST,
       "Nächster")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY,
       "Netplay")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
+      "Erlaube Slave-Modus für Clients")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
       "Netplay-Synchronisation prüfen") /* TODO: What does this setting do? Need more context. */
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
@@ -991,6 +993,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
       "Server-Passwort")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
       "Netplay öffentlich ankündigen")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
+      "Verbiete Clients, die nicht im Slave-Modus laufen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
       "Netplay-Einstellungen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
@@ -1707,6 +1711,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_SETTINGS,
       "Zeige Tab 'Einstellungen'")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_VIDEO,
       "Zeige Tab 'Video'")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_NETPLAY,
+      "Zeige Tab 'Netplay'")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_THEME,
       "Menü-Design")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_YES,
@@ -2641,6 +2647,14 @@ MSG_HASH(
       "Lege fest, ob Netplay im Beobachtermodus starten soll."
       )
 MSG_HASH(
+      MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES,
+      "Lege fest, ob Verbindungen im Slave-Modus erlaubt werden. Clients im Slave-Modus benötigen zwar sehr wenig Rechenleistung, werden jedoch durch Netzwerk-Latenz erheblich beeinträchtigt."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
+      "Lege fest, ob Verbindungen verboten werden, die nicht den Slave-Modus nutzen. Nicht empfohlen, außer für sehr schnelle Netzwerke mit sehr schwachen Geräten."
+      )
+MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_STATELESS_MODE,
       "Lege fest, ob Netplay in einem Modus ohne Savestates läuft. Wenn aktiviert, ist ein sehr schnelles Netwerk nötig. Da kein Rücklauf erfolgt, läuft das Spiel flüssiger."
       )
@@ -2738,17 +2752,10 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
       "Betrachte vorherige Suchanfragen.") /* Maybe sloppy */
 MSG_HASH(MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
       "Fertigt ein Foto des Bildschirms an.")
-#ifdef HAVE_DYNAMIC
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
-      "Schließt das aktuelle Spiel und die aktuelle Anwendung. Alle nicht gespeicherten Änderungen können verloren gehen."
-      )
-#else
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
       "Schließt das aktuelle Spiel. Alle nicht gespeicherten Änderungen können verloren gehen."
       )
-#endif
 MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_STATE,
       "Lade einen gespeicherten Spielstand aus dem aktuellen Speicherplatz.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_STATE,
@@ -2842,6 +2849,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_MUSIC,
       "Zeige den Tab 'Musik' im Hauptmenü an.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_VIDEO,
       "Zeige den Tab 'Video' im Hauptmenü an.")
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_NETPLAY,
+      "Zeigen den Tab 'Netplay' im Hauptmenü an.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_SETTINGS,
       "Zeige den Tab 'Einstellungen' im Hauptmenü an")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_HISTORY,
@@ -2956,3 +2965,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
       "Benutzerdefinierter Versatz, der für die Position der X-Achse des Bildes verwendet wird. Wird ignoriert, wenn 'Ganzzahlige Bildskalierung' aktiviert ist, das Bild wird dann zentriert.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
       "Benutzerdefinierter Versatz, der für die Position der Y-Achse des Bildes verwendet wird. Wird ignoriert, wenn 'Ganzzahlige Bildskalierung' aktiviert ist, das Bild wird dann zentriert.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
+      "Verwende MITM-Server")
+MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
+      "Leite alle Netplay-Verbindungen durch einen Man-in-the-middle-Server. Hilfreich, wenn sich der Host hinter einer Firewall befindet oder Probleme mit NAT/UPnP hat.")
