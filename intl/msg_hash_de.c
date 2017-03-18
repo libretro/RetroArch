@@ -1576,6 +1576,20 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Beobachtermodus starten. Es ist jederzeit möglich, \n"
                "den Modus zu ändern.");
          break;
+        case MENU_ENUM_LABEL_NETPLAY_ALLOW_SLAVES:
+            snprintf(s, len,
+                     "Legt fest, ob Verbindungen im Slave-Modus erlaubt werden. \n"
+                             " \n"
+                             "Clients im Slave-Modus benötigen zwar sehr wenig Rechenleistung, \n"
+                             "werden jedoch durch Netzwerk-Latenz erheblich beeinträchtigt.");
+            break;
+        case MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES:
+            snprintf(s, len,
+                     "Legt fest, ob Verbindungen verboten werden, die nicht den Slave-Modus nutzen. \n"
+                             " \n"
+                             "Nicht empfohlen, außer für sehr schnelle \n"
+                             "Netzwerke mit sehr schwachen Geräten. \n");
+            break;
       case MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE: /* Maybe FIXME*/
          snprintf(s, len,
                "Legt fest, ob Netplay in einem Modus laufen soll, der keine\n"
@@ -1639,6 +1653,11 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Verbindungen aus dem öffentlichen Internet zu hören. \n"
                "Dabei werden UPnP oder ähnliche Techniken verwendet, \n"
                "um das eigene LAN zu verlassen. \n");
+         break;
+        case MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER:
+            snprintf(s, len,
+                     "Leite im Host-Modus alle Netplay-Verbindungen durch einen\n"
+                             "Man-in-the-middle-Server, um Probleme mit Firewalls oder NAT/UPnP zu umgehen.\n");
          break;
       case MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
          snprintf(s, len,
