@@ -523,8 +523,9 @@ static bool video_thread_handle_packet(
          break;
 
       case CMD_POKE_SET_ASPECT_RATIO:
-         thr->poke->set_aspect_ratio(thr->driver_data,
-               pkt.data.i);
+         if (thr->poke && thr->poke->set_aspect_ratio)
+            thr->poke->set_aspect_ratio(thr->driver_data,
+                  pkt.data.i);
          video_thread_reply(thr, &pkt);
          break;
 
