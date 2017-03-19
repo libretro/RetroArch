@@ -90,10 +90,11 @@ void urlencode_lut_init()
 }
 
 /* caller is responsible for deleting the destination buffer */
-void net_http_urlencode_full(char **dest, const char *source) {
+void net_http_urlencode_full(char **dest, const char *source)
+{
+   char *enc  = NULL;
    /* Assume every character will be encoded, so we need 3 times the space. */
    size_t len = strlen(source) * 3 + 1;
-   char *enc;
 
    if (!urlencode_lut_inited)
       urlencode_lut_init();
@@ -120,7 +121,9 @@ static int net_http_new_socket(const char *domain, int port)
 {
    int ret;
    struct addrinfo *addr = NULL;
-   int fd = socket_init((void**)&addr, port, domain, SOCKET_TYPE_STREAM);
+   int fd                = socket_init(
+         (void**)&addr, port, domain, SOCKET_TYPE_STREAM);
+
    if (fd < 0)
       return -1;
 
@@ -150,19 +153,23 @@ static void net_http_send_str(int fd, bool *error, const char *text)
       *error = true;
 }
 
-struct http_connection_t *net_http_connection_new(const char *url, const char *method, const char *data)
+struct http_connection_t *net_http_connection_new(const char *url,
+      const char *method, const char *data)
 {
    char **domain = NULL;
    struct http_connection_t *conn = (struct http_connection_t*)calloc(1,
          sizeof(struct http_connection_t));
 
-   if (!conn || !url)
+   if (!conn)
       return NULL;
 
-   conn->urlcopy = strdup(url);
+   if (!url)
+      goto error;
+
+   conn->urlcopy         = strdup(url);
 
    if (method)
-      conn->methodcopy = strdup(method);
+      conn->methodcopy   = strdup(method);
 
    if (data)
       conn->postdatacopy = strdup(data);
@@ -186,8 +193,8 @@ error:
       free(conn->methodcopy);
    if (conn->postdatacopy)
       free(conn->postdatacopy);
-   conn->urlcopy = NULL;
-   conn->methodcopy = NULL;
+   conn->urlcopy      = NULL;
+   conn->methodcopy   = NULL;
    conn->postdatacopy = NULL;
    free(conn);
    return NULL;
@@ -320,13 +327,14 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    if (conn->methodcopy && string_is_equal(conn->methodcopy, "POST"))
    {
       size_t post_len, len;
-      char *len_str;
+      char *len_str        = NULL;
 
       if (!conn->postdatacopy)
          goto error;
 
       if (!conn->contenttypecopy)
-         net_http_send_str(fd, &error, "Content-Type: application/x-www-form-urlencoded\r\n");
+         net_http_send_str(fd, &error,
+               "Content-Type: application/x-www-form-urlencoded\r\n");
 
       net_http_send_str(fd, &error, "Content-Length: ");
 
@@ -345,6 +353,8 @@ struct http_t *net_http_new(struct http_connection_t *conn)
 
       net_http_send_str(fd, &error, len_str);
       net_http_send_str(fd, &error, "\r\n");
+
+      free(len_str);
    }
 
    net_http_send_str(fd, &error, "User-Agent: libretro\r\n");
@@ -409,7 +419,8 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
          newlen = -1;
       else
          newlen = socket_receive_all_nonblocking(state->fd, &state->error,
-               (uint8_t*)state->data + state->pos, state->buflen - state->pos);
+               (uint8_t*)state->data + state->pos,
+               state->buflen - state->pos);
 
       if (newlen < 0)
          goto fail;
@@ -417,7 +428,7 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
       if (state->pos + newlen >= state->buflen - 64)
       {
          state->buflen *= 2;
-         state->data = (char*)realloc(state->data, state->buflen);
+         state->data    = (char*)realloc(state->data, state->buflen);
       }
       state->pos += newlen;
 
@@ -428,7 +439,9 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
 
          if (!lineend)
             break;
+
          *lineend='\0';
+
          if (lineend != state->data && lineend[-1]=='\r')
             lineend[-1]='\0';
 
