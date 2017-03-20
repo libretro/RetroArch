@@ -108,19 +108,26 @@ public class RetroActivityCommon extends RetroActivityLocation
 	@Override
 	public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults)
 	{
-		super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+		switch (requestCode)
+		{
+			case REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS:
+				for (int i = 0; i < permissions.length; i++)
+				{
+					if(grantResults[i] == PackageManager.PERMISSION_GRANTED)
+					{
+						Log.i("RetroActivity", "Permission: " + permissions[i] + " was granted.");
+					}
+					else
+					{
+						Log.i("RetroActivity", "Permission: " + permissions[i] + " was not granted.");
+					}
+				}
 
-		for (int i = 0; i < permissions.length; i++)
-    {
-      if(grantResults[i] == PackageManager.PERMISSION_GRANTED)
-      {
-        Log.i("RetroActivity", "Permission: " + permissions[i] + " was granted.");
-      }
-      else
-      {
-        Log.i("RetroActivity", "Permission: " + permissions[i] + " was not granted.");
-      }
-    }
+				break;
+			default:
+				super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+				break;
+		}
 	}
 
   public boolean isAndroidTV()
