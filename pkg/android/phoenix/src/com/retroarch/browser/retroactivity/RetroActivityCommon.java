@@ -35,12 +35,15 @@ public class RetroActivityCommon extends RetroActivityLocation
 
 	private boolean addPermission(List<String> permissionsList, String permission)
 	{
-		if (checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) {
+		if (checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED)
+		{
 			permissionsList.add(permission);
+
 			// Check for Rationale Option
 			if (!shouldShowRequestPermissionRationale(permission))
 				return false;
-			}
+		}
+
 		return true;
 	}
 
@@ -79,7 +82,8 @@ public class RetroActivityCommon extends RetroActivityLocation
 						message = message + ", " + permissionsNeeded.get(i);
 
 					showMessageOKCancel(message,
-						new DialogInterface.OnClickListener() {
+						new DialogInterface.OnClickListener()
+						{
 							@Override
 							public void onClick(DialogInterface dialog, int which)
 							{
@@ -99,6 +103,24 @@ public class RetroActivityCommon extends RetroActivityLocation
 				}
 			}
 		}
+	}
+
+	@Override
+	public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults)
+	{
+		super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+		for (int i = 0; i < permissions.length; i++)
+    {
+      if(grantResults[i] == PackageManager.PERMISSION_GRANTED)
+      {
+        Log.i("RetroActivity", "Permission: " + permissions[i] + " was granted.");
+      }
+      else
+      {
+        Log.i("RetroActivity", "Permission: " + permissions[i] + " was not granted.");
+      }
+    }
 	}
 
   public boolean isAndroidTV()
