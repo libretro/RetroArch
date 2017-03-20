@@ -1463,6 +1463,10 @@ static void frontend_linux_get_env(int *argc,
          strlcpy(app_dir, argv, sizeof(app_dir));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
+      /* Check for runtime permissions on Android 6.0+ */
+      if (env && android_app->checkRuntimePermissions)
+         CALL_VOID_METHOD(env, android_app->activity->clazz, android_app->checkRuntimePermissions);
+
       //set paths depending on the ability to write to internal_storage_path
 
       if(!string_is_empty(internal_storage_path))
@@ -1867,6 +1871,8 @@ static void frontend_linux_init(void *data)
          "onRetroArchExit", "()V");
    GET_METHOD_ID(env, android_app->isAndroidTV, class,
          "isAndroidTV", "()Z");
+   GET_METHOD_ID(env, android_app->checkRuntimePermissions, class,
+         "checkRuntimePermissions", "()V");
    CALL_OBJ_METHOD(env, obj, android_app->activity->clazz,
          android_app->getIntent);
 
