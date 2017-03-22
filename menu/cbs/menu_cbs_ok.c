@@ -2493,7 +2493,7 @@ static void cb_generic_download(void *task_data,
          break;
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
          dir_path = settings->directory.core_assets;
-         extract = settings->network.buildbot_auto_extract_archive && true;
+         extract = settings->network.buildbot_auto_extract_archive;
          break;
       case MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES:
          dir_path = settings->path.libretro_info;
