@@ -15,7 +15,6 @@
 
 #include "audio_mixer.h"
 
-#include "audio_driver.h"
 #include <audio/audio_resampler.h>
 #include <streams/file_stream.h>
 #include <formats/rwav.h>
