@@ -2469,6 +2469,7 @@ static void cb_generic_download(void *task_data,
       void *user_data, const char *err)
 {
    char output_path[PATH_MAX_LENGTH];
+   bool extract = true;
    const char             *dir_path      = NULL;
    menu_file_transfer_t     *transf      = (menu_file_transfer_t*)user_data;
    settings_t              *settings     = config_get_ptr();
@@ -2492,6 +2493,7 @@ static void cb_generic_download(void *task_data,
          break;
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
          dir_path = settings->directory.core_assets;
+         extract = settings->network.buildbot_auto_extract_archive && true;
          break;
       case MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES:
          dir_path = settings->path.libretro_info;
@@ -2544,6 +2546,7 @@ static void cb_generic_download(void *task_data,
                msg_hash_to_str(transf->enum_idx));
          break;
    }
+   RARCH_LOG("Extract %s\n", extract ? "true" : false);
 
    if (!string_is_empty(dir_path))
       fill_pathname_join(output_path, dir_path,
@@ -2580,7 +2583,7 @@ static void cb_generic_download(void *task_data,
    }
 
 #if defined(HAVE_COMPRESSION) && defined(HAVE_ZLIB)
-   if (!settings->network.buildbot_auto_extract_archive)
+   if (!extract)
       goto finish;
 
    if (path_is_compressed_file(output_path))
