@@ -23,6 +23,7 @@
 #include <audio/conversion/s16_to_float.h>
 #include <audio/audio_resampler.h>
 #include <audio/dsp_filter.h>
+#include <audio/audio_mixer.h>
 #include <file/file_path.h>
 #include <lists/dir_list.h>
 
@@ -31,7 +32,6 @@
 #endif
 
 #include "audio_driver.h"
-#include "audio_mixer.h"
 #include "audio_thread_wrapper.h"
 #include "../record/record_driver.h"
 #include "../frontend/frontend_driver.h"
