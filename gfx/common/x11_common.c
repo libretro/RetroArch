@@ -28,6 +28,9 @@
 #endif
 
 #include "x11_common.h"
+
+#include <X11/extensions/xf86vmode.h>
+
 #include "../../frontend/frontend_driver.h"
 #include "../../input/common/input_x11_common.h"
 #include "../../verbosity.h"
@@ -43,6 +46,7 @@ static DBusConnection* dbus_connection      = NULL;
 static unsigned int dbus_screensaver_cookie = 0;
 #endif
 
+static XF86VidModeModeInfo desktop_mode;
 static bool xdg_screensaver_available       = true;
 bool g_x11_entered                          = false;
 static bool g_x11_has_focus                 = false;
@@ -375,11 +379,11 @@ static bool get_video_mode(video_frame_info_t *video_info,
 
 bool x11_enter_fullscreen(video_frame_info_t *video_info,
       Display *dpy, unsigned width,
-      unsigned height, XF86VidModeModeInfo *desktop_mode)
+      unsigned height)
 {
    XF86VidModeModeInfo mode;
 
-   if (!get_video_mode(video_info, dpy, width, height, &mode, desktop_mode))
+   if (!get_video_mode(video_info, dpy, width, height, &mode, &desktop_mode))
       return false;
 
    if (!XF86VidModeSwitchToMode(dpy, DefaultScreen(dpy), &mode))
@@ -389,9 +393,9 @@ bool x11_enter_fullscreen(video_frame_info_t *video_info,
    return true;
 }
 
-void x11_exit_fullscreen(Display *dpy, XF86VidModeModeInfo *desktop_mode)
+void x11_exit_fullscreen(Display *dpy)
 {
-   XF86VidModeSwitchToMode(dpy, DefaultScreen(dpy), desktop_mode);
+   XF86VidModeSwitchToMode(dpy, DefaultScreen(dpy), &desktop_mode);
    XF86VidModeSetViewPort(dpy, DefaultScreen(dpy), 0, 0);
 }
 

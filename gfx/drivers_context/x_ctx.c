@@ -94,7 +94,6 @@ typedef struct gfx_ctx_x_data
 #endif
 
    unsigned g_interval;
-   XF86VidModeModeInfo g_desktop_mode;
 
 #ifdef HAVE_VULKAN
    gfx_ctx_vulkan_data_t vk;
@@ -212,7 +211,7 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
    {
       if (x->g_should_reset_mode)
       {
-         x11_exit_fullscreen(g_x11_dpy, &x->g_desktop_mode);
+         x11_exit_fullscreen(g_x11_dpy);
          x->g_should_reset_mode = false;
       }
 
@@ -609,7 +608,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
 
    if (fullscreen && !windowed_full)
    {
-      if (x11_enter_fullscreen(video_info, g_x11_dpy, width, height, &x->g_desktop_mode))
+      if (x11_enter_fullscreen(video_info, g_x11_dpy, width, height))
       {
          x->g_should_reset_mode = true;
          true_full = true;

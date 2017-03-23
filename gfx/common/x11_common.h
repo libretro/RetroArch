@@ -25,7 +25,6 @@
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
-#include <X11/extensions/xf86vmode.h>
 
 #include <boolean.h>
 
@@ -42,9 +41,9 @@ void x11_windowed_fullscreen(Display *dpy, Window win);
 void x11_suspend_screensaver(Window win, bool enable);
 bool x11_enter_fullscreen(video_frame_info_t *video_info,
       Display *dpy, unsigned width,
-      unsigned height, XF86VidModeModeInfo *desktop_mode);
+      unsigned height);
 
-void x11_exit_fullscreen(Display *dpy, XF86VidModeModeInfo *desktop_mode);
+void x11_exit_fullscreen(Display *dpy);
 void x11_move_window(Display *dpy, Window win,
       int x, int y, unsigned width, unsigned height);
 

@@ -39,7 +39,6 @@ typedef struct
 #ifdef HAVE_EGL
    egl_ctx_data_t egl;
 #endif
-   XF86VidModeModeInfo desktop_mode;
    bool should_reset_mode;
 } xegl_ctx_data_t;
 
@@ -75,7 +74,7 @@ static void gfx_ctx_xegl_destroy(void *data)
 
    if (xegl->should_reset_mode)
    {
-      x11_exit_fullscreen(g_x11_dpy, &xegl->desktop_mode);
+      x11_exit_fullscreen(g_x11_dpy);
       xegl->should_reset_mode = false;
    }
 
@@ -294,7 +293,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
 
    if (fullscreen && !video_info->windowed_fullscreen)
    {
-      if (x11_enter_fullscreen(video_info, g_x11_dpy, width, height, &xegl->desktop_mode))
+      if (x11_enter_fullscreen(video_info, g_x11_dpy, width, height))
       {
          xegl->should_reset_mode = true;
          true_full = true;
