@@ -40,11 +40,6 @@
 #define MOVERESIZE_X_SHIFT                   8
 #define MOVERESIZE_Y_SHIFT                   9
 
-#ifdef HAVE_DBUS
-#include <dbus/dbus.h>
-static DBusConnection* dbus_connection      = NULL;
-static unsigned int dbus_screensaver_cookie = 0;
-#endif
 
 static XF86VidModeModeInfo desktop_mode;
 static bool xdg_screensaver_available       = true;
@@ -65,133 +60,6 @@ static Atom XA_NET_MOVERESIZE_WINDOW;
 static Atom g_x11_quit_atom;
 static XIM g_x11_xim;
 static XIC g_x11_xic;
-
-#ifdef HAVE_DBUS
-static void dbus_ensure_connection(void)
-{
-    DBusError err;
-    int ret;
-    
-    dbus_error_init(&err);
-
-    dbus_connection = dbus_bus_get_private(DBUS_BUS_SESSION, &err);
-
-    if (dbus_error_is_set(&err))
-    {
-        RARCH_LOG("[DBus]: Failed to get DBus connection. Screensaver will not be suspended via DBus.\n");
-        dbus_error_free(&err);
-    }
-
-    if (dbus_connection)
-        dbus_connection_set_exit_on_disconnect(dbus_connection, true);
-}
-
-static void dbus_close_connection(void)
-{
-   if (!dbus_connection)
-      return;
-
-   dbus_connection_close(dbus_connection);
-   dbus_connection_unref(dbus_connection);
-   dbus_connection = NULL;
-}
-
-static bool dbus_screensaver_inhibit(void)
-{
-   const char *app    = "RetroArch";
-   const char *reason = "Playing a game";
-   DBusMessage   *msg = NULL;
-   DBusMessage *reply = NULL;
-   bool ret           = false;
-
-   if (!dbus_connection)
-      return false; /* DBus connection was not obtained */
-
-   if (dbus_screensaver_cookie > 0)
-      return true; /* Already inhibited */
-
-   msg = dbus_message_new_method_call("org.freedesktop.ScreenSaver",
-         "/org/freedesktop/ScreenSaver",
-         "org.freedesktop.ScreenSaver",
-         "Inhibit");
-
-   if (!msg)
-      return false;
-
-   if (!dbus_message_append_args(msg,
-            DBUS_TYPE_STRING, &app,
-            DBUS_TYPE_STRING, &reason,
-            DBUS_TYPE_INVALID))
-   {
-      dbus_message_unref(msg);
-      return false;
-   }
-
-   reply = dbus_connection_send_with_reply_and_block(dbus_connection,
-         msg, 300, NULL);
-
-   if (reply != NULL)
-   {
-      if (!dbus_message_get_args(reply, NULL,
-               DBUS_TYPE_UINT32, &dbus_screensaver_cookie,
-               DBUS_TYPE_INVALID))
-         dbus_screensaver_cookie = 0;
-      else
-         ret = true;
-
-      dbus_message_unref(reply);
-   }
-
-   dbus_message_unref(msg);
-
-   if (dbus_screensaver_cookie == 0)
-   {
-      RARCH_ERR("[DBus]: Failed to suspend screensaver via DBus.\n");
-   }
-   else
-   {
-      RARCH_LOG("[DBus]: Suspended screensaver via DBus.\n");
-   }
-
-   return ret;
-}
-
-static void dbus_screensaver_uninhibit(void)
-{
-   DBusMessage *msg = NULL;
-
-   if (!dbus_connection)
-      return;
-
-   if (dbus_screensaver_cookie == 0)
-      return;
-
-   msg = dbus_message_new_method_call("org.freedesktop.ScreenSaver",
-         "/org/freedesktop/ScreenSaver",
-         "org.freedesktop.ScreenSaver",
-         "UnInhibit");
-   if (!msg)
-       return;
-
-   dbus_message_append_args(msg,
-         DBUS_TYPE_UINT32, &dbus_screensaver_cookie,
-         DBUS_TYPE_INVALID);
-
-   if (dbus_connection_send(dbus_connection, msg, NULL))
-      dbus_connection_flush(dbus_connection);
-   dbus_message_unref(msg);
-
-   dbus_screensaver_cookie = 0;
-}
-
-/* Returns false when fallback should be attempted */
-bool x11_suspend_screensaver_dbus(bool enable)
-{
-   if (enable) return dbus_screensaver_inhibit();
-   dbus_screensaver_uninhibit();
-   return false;
-}
-#endif
 
 static void x11_hide_mouse(Display *dpy, Window win)
 {
@@ -319,7 +187,7 @@ void x11_suspend_screensaver_xdg_screensaver(Window wnd, bool enable)
 void x11_suspend_screensaver(Window wnd, bool enable)
 {
 #ifdef HAVE_DBUS
-    if (x11_suspend_screensaver_dbus(enable))
+    if (dbus_suspend_screensaver(enable))
        return;
 #endif
     x11_suspend_screensaver_xdg_screensaver(wnd, enable);
@@ -628,10 +496,7 @@ bool x11_connect(void)
          return false;
    }
 
-#ifdef HAVE_DBUS
    dbus_ensure_connection();
-#endif
-
 
    return true;
 }

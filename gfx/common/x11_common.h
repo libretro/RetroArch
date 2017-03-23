@@ -17,10 +17,6 @@
 #ifndef X11_COMMON_H__
 #define X11_COMMON_H__
 
-#ifdef HAVE_CONFIG_H
-#include "../../config.h"
-#endif
-
 #include <X11/Xutil.h>
 
 #include <boolean.h>

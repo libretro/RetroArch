@@ -209,6 +209,7 @@ VIDEO CONTEXT
 
 #if defined(HAVE_X11)
 #include "../gfx/common/x11_common.c"
+#include "../gfx/common/dbus_common.c"
 #include "../gfx/common/xinerama_common.c"
 
 #ifndef HAVE_OPENGLES
