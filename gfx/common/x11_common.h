@@ -27,10 +27,6 @@
 #include <X11/Xutil.h>
 #include <X11/extensions/xf86vmode.h>
 
-#ifdef HAVE_XINERAMA
-#include <X11/extensions/Xinerama.h>
-#endif
-
 #include <boolean.h>
 
 #include "../video_driver.h"
@@ -54,16 +50,6 @@ void x11_move_window(Display *dpy, Window win,
 
 /* Set icon, class, default stuff. */
 void x11_set_window_attr(Display *dpy, Window win);
-
-#ifdef HAVE_XINERAMA
-void xinerama_save_last_used_monitor(Window win);
-
-bool xinerama_get_coord(Display *dpy, int screen,
-      int *x, int *y, unsigned *w, unsigned *h);
-
-unsigned xinerama_get_monitor(Display *dpy,
-      int x, int y, int w, int h);
-#endif
 
 bool x11_create_input_context(Display *dpy, Window win, XIM *xim, XIC *xic);
 void x11_destroy_input_context(XIM *xim, XIC *xic);

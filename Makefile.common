@@ -670,6 +670,7 @@ ifeq ($(HAVE_X11), 1)
    OBJ += input/common/input_x11_common.o \
           input/drivers/x11_input.o \
           gfx/common/x11_common.o \
+			 gfx/common/xinerama_common.o \
           input/drivers_keyboard/keyboard_event_x11.o
 
    LIBS += $(X11_LIBS) $(XEXT_LIBS) $(XF86VM_LIBS) $(XINERAMA_LIBS)
