@@ -17,10 +17,6 @@
 #ifndef XINERAMA_COMMON_H__
 #define XINERAMA_COMMON_H__
 
-#ifdef HAVE_CONFIG_H
-#include "../../config.h"
-#endif
-
 #include <boolean.h>
 
 #include "x11_common.h"

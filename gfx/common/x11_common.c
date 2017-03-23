@@ -31,6 +31,8 @@
 
 #include <X11/extensions/xf86vmode.h>
 
+#include "dbus_common.h"
+
 #include "../../frontend/frontend_driver.h"
 #include "../../input/common/input_x11_common.h"
 #include "../../verbosity.h"
