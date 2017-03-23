@@ -174,6 +174,7 @@ const shader_backend_t shader_null_backend = {
    shader_null_wrap_type,
    shader_null_shader_scale,
    shader_null_set_coords,
+   NULL,
    shader_null_set_mvp,
    shader_null_get_prev_textures,
    shader_null_get_feedback_pass,

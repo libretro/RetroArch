@@ -1405,7 +1405,11 @@ static bool gl_glsl_set_coords(void *handle_data, void *shader_data,
       ? &glsl->uniforms[glsl->active_idx] : NULL;
 
    if (!glsl || !glsl->shader->modern || !coords)
-      goto fallback;
+   {
+      if (coords)
+         return false;
+      return true;
+   }
 
    if (coords->vertices > 4)
    {
@@ -1423,7 +1427,7 @@ static bool gl_glsl_set_coords(void *handle_data, void *shader_data,
    }
 
    if (!buffer)
-      goto fallback;
+      return false;
 
    if (uni->tex_coord >= 0)
    {
@@ -1465,11 +1469,13 @@ static bool gl_glsl_set_coords(void *handle_data, void *shader_data,
       free(buffer);
 
    return true;
+}
 
-fallback:
-   if (coords)
-      gl_ff_vertex(coords);
-   return false;
+static bool gl_glsl_set_coords_fallback(void *handle_data, void *shader_data,
+      const struct video_coords *coords)
+{
+   gl_ff_vertex(coords);
+   return true;
 }
 
 static void gl_glsl_use(void *data, void *shader_data, unsigned idx, bool set_active)
@@ -1598,6 +1604,7 @@ const shader_backend_t gl_glsl_backend = {
    gl_glsl_wrap_type,
    gl_glsl_shader_scale,
    gl_glsl_set_coords,
+   gl_glsl_set_coords_fallback,
    gl_glsl_set_mvp,
    gl_glsl_get_prev_textures,
    gl_glsl_get_feedback_pass,

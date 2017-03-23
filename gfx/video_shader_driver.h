@@ -173,6 +173,8 @@ typedef struct shader_backend
          unsigned index, struct gfx_fbo_scale *scale);
    bool (*set_coords)(void *handle_data,
          void *shader_data, const struct video_coords *coords);
+   bool (*set_coords_fallback)(void *handle_data,
+         void *shader_data, const struct video_coords *coords);
    bool (*set_mvp)(void *data, void *shader_data,
          const math_matrix_4x4 *mat);
    unsigned (*get_prev_textures)(void *data);
@@ -297,7 +299,8 @@ bool video_shader_driver_mipmap_input(unsigned *index);
 
 #define video_shader_driver_set_coords(coords) \
    if (current_shader && current_shader->set_coords) \
-      current_shader->set_coords(coords.handle_data, shader_data, (const struct video_coords*)coords.data)
+     if (!current_shader->set_coords(coords.handle_data, shader_data, (const struct video_coords*)coords.data) && current_shader->set_coords_fallback) \
+      current_shader->set_coords_fallback(coords.handle_data, shader_data, (const struct video_coords*)coords.data)
 
 bool video_shader_driver_scale(video_shader_ctx_scale_t *scaler);
 
