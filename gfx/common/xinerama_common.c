@@ -40,7 +40,7 @@ static XineramaScreenInfo *xinerama_query_screens(Display *dpy, int *num_screens
       return NULL;
 
    XineramaQueryVersion(dpy, &major, &minor);
-   RARCH_LOG("[X11]: Xinerama version: %d.%d.\n", major, minor);
+   RARCH_LOG("[XINERAMA]: Xinerama version: %d.%d.\n", major, minor);
 
    if (XineramaIsActive(dpy))
       return XineramaQueryScreens(dpy, num_screens);
@@ -56,7 +56,7 @@ bool xinerama_get_coord(Display *dpy, int screen,
    int i, num_screens       = 0;
    XineramaScreenInfo *info = xinerama_query_screens(dpy, &num_screens);
 
-   RARCH_LOG("[X11]: Xinerama screens: %d.\n", num_screens);
+   RARCH_LOG("[XINERAMA]: Xinerama screens: %d.\n", num_screens);
 
    for (i = 0; i < num_screens; i++)
    {
@@ -86,7 +86,7 @@ unsigned xinerama_get_monitor(Display *dpy, int x, int y,
    int       largest_area   = 0;
    XineramaScreenInfo *info = xinerama_query_screens(dpy, &num_screens);
 
-   RARCH_LOG("[X11]: Xinerama screens: %d.\n", num_screens);
+   RARCH_LOG("[XINERAMA]: Xinerama screens: %d.\n", num_screens);
 
    for (i = 0; i < num_screens; i++)
    {
@@ -136,6 +136,6 @@ void xinerama_save_last_used_monitor(Window win)
    g_x11_screen = xinerama_get_monitor(g_x11_dpy, x, y,
          target.width, target.height);
 
-   RARCH_LOG("[X11]: Saved monitor #%u.\n", g_x11_screen);
+   RARCH_LOG("[XINERAMA]: Saved monitor #%u.\n", g_x11_screen);
 #endif
 }
