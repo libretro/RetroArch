@@ -128,16 +128,15 @@ void menu_shader_manager_free(void) { }
 bool menu_shader_manager_init(void)
 {
 #ifdef HAVE_SHADER_MANAGER
-   config_file_t *conf         = NULL;
    settings_t *settings        = config_get_ptr();
    const char *config_path     = path_get(RARCH_PATH_CONFIG);
+   const char *path_shader     = settings->path.shader;
 
-   /* menu shader already initialized */
-   if (menu_driver_shader)
-      return true;
+   menu_shader_manager_free();
 
    menu_driver_shader          = (struct video_shader*)
       calloc(1, sizeof(struct video_shader));
+
    if (!menu_driver_shader)
       return false;
 
@@ -168,36 +167,41 @@ bool menu_shader_manager_init(void)
    }
 
    switch (msg_hash_to_file_type(msg_hash_calculate(
-               path_get_extension(settings->path.shader))))
+               path_get_extension(path_shader))))
    {
       case FILE_TYPE_SHADER_PRESET_GLSLP:
       case FILE_TYPE_SHADER_PRESET_CGP:
       case FILE_TYPE_SHADER_PRESET_SLANGP:
-         conf = config_file_new(settings->path.shader);
-         if (conf)
          {
-            if (video_shader_read_conf_cgp(conf, menu_driver_shader))
+            config_file_t *conf = config_file_new(path_shader);
+
+            if (conf)
             {
-               video_shader_resolve_relative(menu_driver_shader,
-                     settings->path.shader);
-               video_shader_resolve_parameters(conf, menu_driver_shader);
+               if (video_shader_read_conf_cgp(conf, menu_driver_shader))
+               {
+                  video_shader_resolve_relative(menu_driver_shader,
+                        path_shader);
+                  video_shader_resolve_parameters(conf, menu_driver_shader);
+               }
+               config_file_free(conf);
             }
-            config_file_free(conf);
          }
          break;
       case FILE_TYPE_SHADER_GLSL:
       case FILE_TYPE_SHADER_CG:
       case FILE_TYPE_SHADER_SLANG:
-         strlcpy(menu_driver_shader->pass[0].source.path, settings->path.shader,
+         strlcpy(menu_driver_shader->pass[0].source.path, path_shader,
                sizeof(menu_driver_shader->pass[0].source.path));
          menu_driver_shader->passes = 1;
          break;
       default:
          {
             char preset_path[PATH_MAX_LENGTH];
+            config_file_t *conf               = NULL;
             const char *shader_dir            = 
                *settings->directory.video_shader ?
-               settings->directory.video_shader : settings->directory.system;
+               settings->directory.video_shader : 
+               settings->directory.system;
 
             preset_path[0] = '\0';
 
