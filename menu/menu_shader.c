@@ -257,10 +257,11 @@ void menu_shader_manager_set_preset(void *data,
    bool refresh                  = false;
    settings_t *settings          = config_get_ptr();
 
-   settings->video.shader_enable = false;
-
    if (!video_driver_set_shader((enum rarch_shader_type)type, preset_path))
+   {
+      settings->video.shader_enable = false;
       return;
+   }
 
    /* Makes sure that we use Menu Preset shader on driver reinit.
     * Only do this when the cgp actually works to avoid potential errors. */
