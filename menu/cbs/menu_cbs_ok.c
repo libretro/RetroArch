@@ -2546,7 +2546,6 @@ static void cb_generic_download(void *task_data,
                msg_hash_to_str(transf->enum_idx));
          break;
    }
-   RARCH_LOG("Extract %s\n", extract ? "true" : false);
 
    if (!string_is_empty(dir_path))
       fill_pathname_join(output_path, dir_path,
