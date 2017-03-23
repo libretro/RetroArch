@@ -442,7 +442,7 @@ static void gl_cg_deinit_progs(void *data)
    if (!cg)
       return;
 
-   RARCH_LOG("CG: Destroying programs.\n");
+   RARCH_LOG("[CG]: Destroying programs.\n");
    cgGLUnbindProgram(cg->cgFProf);
    cgGLUnbindProgram(cg->cgVProf);
 
@@ -495,7 +495,7 @@ static void gl_cg_deinit_context_state(void *data)
    cg_shader_data_t *cg = (cg_shader_data_t*)data;
    if (cg->cgCtx)
    {
-      RARCH_LOG("CG: Destroying context.\n");
+      RARCH_LOG("[CG]: Destroying context.\n");
       cgDestroyContext(cg->cgCtx);
    }
    cg->cgCtx = NULL;
@@ -609,7 +609,7 @@ static void gl_cg_set_program_base_attrib(void *data, unsigned i)
       if (!semantic)
          continue;
 
-      RARCH_LOG("CG: Found semantic \"%s\" in prog #%u.\n", semantic, i);
+      RARCH_LOG("[CG]: Found semantic \"%s\" in prog #%u.\n", semantic, i);
 
       semantic_hash = djb2_calculate(semantic);
 
@@ -678,7 +678,7 @@ static bool gl_cg_load_plain(void *data, const char *path)
 
    if (string_is_empty(path))
    {
-      RARCH_LOG("Loading stock Cg file.\n");
+      RARCH_LOG("[CG]: Loading stock Cg file.\n");
       cg->prg[1] = cg->prg[0];
    }
    else
@@ -688,7 +688,7 @@ static bool gl_cg_load_plain(void *data, const char *path)
       program_info.combined = path;
       program_info.is_file  = true;
 
-      RARCH_LOG("Loading Cg file: %s\n", path);
+      RARCH_LOG("[CG]: Loading Cg file: %s\n", path);
       strlcpy(cg->shader->pass[0].source.path, path,
             sizeof(cg->shader->pass[0].source.path));
       if (!gl_cg_compile_program(data, 1, &cg->prg[1], &program_info))
@@ -773,7 +773,7 @@ static bool gl_cg_load_shader(void *data, unsigned i)
    program_info.combined = cg->shader->pass[i].source.path;
    program_info.is_file  = true;
 
-   RARCH_LOG("Loading Cg shader: \"%s\".\n",
+   RARCH_LOG("[CG]: Loading Cg shader: \"%s\".\n",
          cg->shader->pass[i].source.path);
 
    if (!gl_cg_compile_program(data, i + 1, &cg->prg[i + 1],&program_info))
@@ -791,7 +791,7 @@ static bool gl_cg_load_preset(void *data, const char *path)
    if (!gl_cg_load_stock(cg))
       return false;
 
-   RARCH_LOG("Loading Cg meta-shader: %s\n", path);
+   RARCH_LOG("[CG]: Loading Cg meta-shader: %s\n", path);
    conf = config_file_new(path);
    if (!conf)
    {
@@ -1044,8 +1044,8 @@ static void *gl_cg_init(void *data, const char *path)
       goto error;
    }
 
-   RARCH_LOG("[Cg]: Vertex profile: %s\n",   cgGetProfileString(cg->cgVProf));
-   RARCH_LOG("[Cg]: Fragment profile: %s\n", cgGetProfileString(cg->cgFProf));
+   RARCH_LOG("[CG]: Vertex profile: %s\n",   cgGetProfileString(cg->cgVProf));
+   RARCH_LOG("[CG]: Fragment profile: %s\n", cgGetProfileString(cg->cgFProf));
    cgGLSetOptimalOptions(cg->cgFProf);
    cgGLSetOptimalOptions(cg->cgVProf);
    cgGLEnableProfile(cg->cgFProf);

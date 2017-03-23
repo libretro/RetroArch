@@ -282,7 +282,7 @@ static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
       }
 
       snprintf(version, sizeof(version), "#version %u\n", version_no);
-      RARCH_LOG("[GL]: Using GLSL version %u.\n", version_no);
+      RARCH_LOG("[GLSL]: Using GLSL version %u.\n", version_no);
    }
 
    source[0] = version;
@@ -334,7 +334,7 @@ static bool gl_glsl_compile_program(
 
    if (program_info->vertex)
    {
-      RARCH_LOG("Found GLSL vertex shader.\n");
+      RARCH_LOG("[GLSL]: Found GLSL vertex shader.\n");
       program->vprg = glCreateShader(GL_VERTEX_SHADER);
 
       if (!gl_glsl_compile_shader(
@@ -351,7 +351,7 @@ static bool gl_glsl_compile_program(
 
    if (program_info->fragment)
    {
-      RARCH_LOG("Found GLSL fragment shader.\n");
+      RARCH_LOG("[GLSL]: Found GLSL fragment shader.\n");
       program->fprg = glCreateShader(GL_FRAGMENT_SHADER);
       if (!gl_glsl_compile_shader(glsl, program->fprg,
                "#define FRAGMENT\n#define PARAMETER_UNIFORM\n", program_info->fragment))
@@ -365,7 +365,7 @@ static bool gl_glsl_compile_program(
 
    if (program_info->vertex || program_info->fragment)
    {
-      RARCH_LOG("Linking GLSL program.\n");
+      RARCH_LOG("[GLSL]: Linking GLSL program.\n");
       if (!gl_glsl_link_program(prog))
          goto error;
 
@@ -728,7 +728,7 @@ static void *gl_glsl_init(void *data, const char *path)
    (void)shader_support;
 
 #ifndef HAVE_OPENGLES
-   RARCH_LOG("Checking GLSL shader support ...\n");
+   RARCH_LOG("[GLSL]: Checking GLSL shader support ...\n");
    shader_support = glCreateProgram && glUseProgram && glCreateShader
       && glDeleteShader && glShaderSource && glCompileShader && glAttachShader
       && glDetachShader && glLinkProgram && glGetUniformLocation
