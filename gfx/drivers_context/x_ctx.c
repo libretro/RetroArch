@@ -515,7 +515,7 @@ static void *gfx_ctx_x_init(video_frame_info_t *video_info, void *data)
              GLXExtensionSupported(g_x11_dpy, "GLX_MESA_swap_control")
             )
          {
-            RARCH_LOG("GLX_OML_sync_control and GLX_MESA_swap_control supported, using better swap control method...\n");
+            RARCH_LOG("[GLX]: GLX_OML_sync_control and GLX_MESA_swap_control supported, using better swap control method...\n");
 
             x->swap_mode         = 1;
 
@@ -527,7 +527,9 @@ static void *gfx_ctx_x_init(video_frame_info_t *video_info, void *data)
 
             glXGetSyncValuesOML(g_x11_dpy, g_x11_win, &x->ust, &x->msc, &x->sbc);
 
-            RARCH_LOG("UST: %d, MSC: %d, SBC: %d\n", x->ust, x->msc, x->sbc);
+#if 0
+            RARCH_LOG("[GLX]: UST: %d, MSC: %d, SBC: %d\n", x->ust, x->msc, x->sbc);
+#endif
          }
 #endif
          break;

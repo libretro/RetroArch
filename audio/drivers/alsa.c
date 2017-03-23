@@ -46,11 +46,11 @@ static bool find_float_format(snd_pcm_t *pcm, void *data)
 
    if (snd_pcm_hw_params_test_format(pcm, params, SND_PCM_FORMAT_FLOAT) == 0)
    {
-      RARCH_LOG("ALSA: Using floating point format.\n");
+      RARCH_LOG("[ALSA]: Using floating point format.\n");
       return true;
    }
 
-   RARCH_LOG("ALSA: Using signed 16-bit format.\n");
+   RARCH_LOG("[ALSA]: Using signed 16-bit format.\n");
    return false;
 }
 
@@ -122,17 +122,17 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency,
    if (snd_pcm_hw_params_get_period_size(params, &buffer_size, NULL))
       snd_pcm_hw_params_get_period_size_min(params, &buffer_size, NULL);
 
-   RARCH_LOG("ALSA: Period size: %d frames\n", (int)buffer_size);
+   RARCH_LOG("[ALSA]: Period size: %d frames\n", (int)buffer_size);
 
    if (snd_pcm_hw_params_get_buffer_size(params, &buffer_size))
       snd_pcm_hw_params_get_buffer_size_max(params, &buffer_size);
 
-   RARCH_LOG("ALSA: Buffer size: %d frames\n", (int)buffer_size);
+   RARCH_LOG("[ALSA]: Buffer size: %d frames\n", (int)buffer_size);
 
    alsa->buffer_size = snd_pcm_frames_to_bytes(alsa->pcm, buffer_size);
    alsa->can_pause = snd_pcm_hw_params_can_pause(params);
 
-   RARCH_LOG("ALSA: Can pause: %s.\n", alsa->can_pause ? "yes" : "no");
+   RARCH_LOG("[ALSA]: Can pause: %s.\n", alsa->can_pause ? "yes" : "no");
 
    if (snd_pcm_sw_params_malloc(&sw_params) < 0)
       goto error;
@@ -153,7 +153,7 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency,
    return alsa;
 
 error:
-   RARCH_ERR("ALSA: Failed to initialize...\n");
+   RARCH_ERR("[ALSA]: Failed to initialize...\n");
    if (params)
       snd_pcm_hw_params_free(params);
 

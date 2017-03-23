@@ -87,7 +87,7 @@ static INLINE bool vg_query_extension(const char *ext)
 {
    const char *str = (const char*)vgGetString(VG_EXTENSIONS);
    bool ret = str && strstr(str, ext);
-   RARCH_LOG("Querying VG extension: %s => %s\n",
+   RARCH_LOG("[VG]: Querying VG extension: %s => %s\n",
          ext, ret ? "exists" : "doesn't exist");
 
    return ret;
@@ -121,7 +121,7 @@ static void *vg_init(const video_info_t *video,
    mode.width  = 0;
    mode.height = 0;
 
-   RARCH_LOG("Detecting screen resolution %ux%u.\n", temp_width, temp_height);
+   RARCH_LOG("[VG]: Detecting screen resolution %ux%u.\n", temp_width, temp_height);
 
    if (temp_width != 0 && temp_height != 0)
       video_driver_set_size(&temp_width, &temp_height);
@@ -169,7 +169,7 @@ static void *vg_init(const video_info_t *video,
 
    if (temp_width != 0 && temp_height != 0)
    {
-      RARCH_LOG("Verified window resolution %ux%u.\n", temp_width, temp_height);
+      RARCH_LOG("[VG]: Verified window resolution %ux%u.\n", temp_width, temp_height);
       video_driver_set_size(&temp_width, &temp_height);
    }
 

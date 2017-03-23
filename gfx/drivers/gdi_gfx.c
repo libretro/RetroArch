@@ -88,7 +88,7 @@ static void *gdi_gfx_init(const video_info_t *video,
 
    video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
 
-   RARCH_LOG("Found GDI context: %s\n", ctx_driver->ident);
+   RARCH_LOG("[GDI]: Found GDI context: %s\n", ctx_driver->ident);
 
    video_context_driver_get_video_size(&mode);
 
@@ -97,7 +97,7 @@ static void *gdi_gfx_init(const video_info_t *video,
    mode.width  = 0;
    mode.height = 0;
 
-   RARCH_LOG("Detecting screen resolution %ux%u.\n", full_x, full_y);
+   RARCH_LOG("[GDI]: Detecting screen resolution %ux%u.\n", full_x, full_y);
 
    win_width   = video->width;
    win_height  = video->height;
@@ -132,7 +132,7 @@ static void *gdi_gfx_init(const video_info_t *video,
 
    video_driver_get_size(&temp_width, &temp_height);
 
-   RARCH_LOG("GDI: Using resolution %ux%u\n", temp_width, temp_height);
+   RARCH_LOG("[GDI]: Using resolution %ux%u\n", temp_width, temp_height);
 
    inp.input      = input;
    inp.input_data = input_data;

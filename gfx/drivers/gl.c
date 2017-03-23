@@ -1870,7 +1870,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    gl->video_info        = *video;
 
-   RARCH_LOG("Found GL context: %s\n", ctx_driver->ident);
+   RARCH_LOG("[GL]: Found GL context: %s\n", ctx_driver->ident);
 
    video_context_driver_get_video_size(&mode);
 
@@ -1879,7 +1879,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    mode.width  = 0;
    mode.height = 0;
 
-   RARCH_LOG("Detecting screen resolution %ux%u.\n", full_x, full_y);
+   RARCH_LOG("[GL]: Detecting screen resolution %ux%u.\n", full_x, full_y);
 
    interval = video->vsync ? video->swap_interval : 0;
 
@@ -1948,7 +1948,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    video_driver_get_size(&temp_width, &temp_height);
 
-   RARCH_LOG("GL: Using resolution %ux%u\n", temp_width, temp_height);
+   RARCH_LOG("[GL]: Using resolution %ux%u\n", temp_width, temp_height);
 
    hwr = video_driver_get_hw_context();
 

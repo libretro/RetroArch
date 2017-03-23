@@ -1105,7 +1105,7 @@ static void *vulkan_init(const video_info_t *video,
    mode.width  = 0;
    mode.height = 0;
 
-   RARCH_LOG("Detecting screen resolution %ux%u.\n", full_x, full_y);
+   RARCH_LOG("[Vulkan]: Detecting screen resolution %ux%u.\n", full_x, full_y);
    interval = video->vsync ? video->swap_interval : 0;
    video_context_driver_swap_interval(&interval);
 
@@ -1136,7 +1136,7 @@ static void *vulkan_init(const video_info_t *video,
       video_driver_set_size(&temp_width, &temp_height);
    video_driver_get_size(&temp_width, &temp_height);
 
-   RARCH_LOG("Vulkan: Using resolution %ux%u\n", temp_width, temp_height);
+   RARCH_LOG("[Vulkan]: Using resolution %ux%u\n", temp_width, temp_height);
 
    video_context_driver_get_context_data(&vk->context);
 
