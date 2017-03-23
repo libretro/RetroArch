@@ -396,7 +396,7 @@ void x11_exit_fullscreen(Display *dpy, XF86VidModeModeInfo *desktop_mode)
 }
 
 #ifdef HAVE_XINERAMA
-static XineramaScreenInfo *x11_query_screens(Display *dpy, int *num_screens)
+static XineramaScreenInfo *xinerama_query_screens(Display *dpy, int *num_screens)
 {
    int major, minor;
 
@@ -412,12 +412,12 @@ static XineramaScreenInfo *x11_query_screens(Display *dpy, int *num_screens)
    return XineramaQueryScreens(dpy, num_screens);
 }
 
-bool x11_get_xinerama_coord(Display *dpy, int screen,
+bool xinerama_get_coord(Display *dpy, int screen,
       int *x, int *y, unsigned *w, unsigned *h)
 {
    int i, num_screens       = 0;
    bool                 ret = false;
-   XineramaScreenInfo *info = x11_query_screens(dpy, &num_screens);
+   XineramaScreenInfo *info = xinerama_query_screens(dpy, &num_screens);
 
    RARCH_LOG("[X11]: Xinerama screens: %d.\n", num_screens);
 
@@ -438,13 +438,13 @@ bool x11_get_xinerama_coord(Display *dpy, int screen,
    return ret;
 }
 
-unsigned x11_get_xinerama_monitor(Display *dpy, int x, int y,
+unsigned xinerama_get_monitor(Display *dpy, int x, int y,
       int w, int h)
 {
    int       i, num_screens = 0;
    unsigned       monitor   = 0;
    int       largest_area   = 0;
-   XineramaScreenInfo *info = x11_query_screens(dpy, &num_screens);
+   XineramaScreenInfo *info = xinerama_query_screens(dpy, &num_screens);
 
    RARCH_LOG("[X11]: Xinerama screens: %d.\n", num_screens);
 
@@ -474,6 +474,23 @@ unsigned x11_get_xinerama_monitor(Display *dpy, int x, int y,
 
    XFree(info);
    return monitor;
+}
+
+void xinerama_save_last_used_monitor(Window win)
+{
+   XWindowAttributes target;
+   Window child;
+   int x = 0, y = 0;
+
+   XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
+   XTranslateCoordinates(g_x11_dpy, g_x11_win,
+         DefaultRootWindow(g_x11_dpy),
+         target.x, target.y, &x, &y, &child);
+
+   g_x11_screen = xinerama_get_monitor(g_x11_dpy, x, y,
+         target.width, target.height);
+
+   RARCH_LOG("[X11]: Saved monitor #%u.\n", g_x11_screen);
 }
 #endif
 
@@ -785,21 +802,3 @@ void x11_event_queue_check(XEvent *event)
    XIfEvent(g_x11_dpy, event, x11_wait_notify, NULL);
 }
 
-void x11_save_last_used_monitor(Window win)
-{
-#ifdef HAVE_XINERAMA
-   XWindowAttributes target;
-   Window child;
-   int x = 0, y = 0;
-
-   XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
-   XTranslateCoordinates(g_x11_dpy, g_x11_win,
-         DefaultRootWindow(g_x11_dpy),
-         target.x, target.y, &x, &y, &child);
-
-   g_x11_screen = x11_get_xinerama_monitor(g_x11_dpy, x, y,
-         target.width, target.height);
-
-   RARCH_LOG("[X11]: Saved monitor #%u.\n", g_x11_screen);
-#endif
-}

@@ -198,8 +198,10 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
 
    if (g_x11_win && g_x11_dpy)
    {
+#ifdef HAVE_XINERAMA
       /* Save last used monitor for later. */
-      x11_save_last_used_monitor(DefaultRootWindow(g_x11_dpy));
+      xinerama_save_last_used_monitor(DefaultRootWindow(g_x11_dpy));
+#endif
       x11_window_destroy(false);
    }
 
@@ -624,7 +626,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
       unsigned new_width  = width;
       unsigned new_height = height;
 
-      if (x11_get_xinerama_coord(g_x11_dpy, g_x11_screen,
+      if (xinerama_get_coord(g_x11_dpy, g_x11_screen,
                &x_off, &y_off, &new_width, &new_height))
          RARCH_LOG("[GLX]: Using Xinerama on screen #%u.\n", g_x11_screen);
       else

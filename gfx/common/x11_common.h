@@ -41,7 +41,6 @@ extern Display *g_x11_dpy;
 extern Colormap g_x11_cmap;
 extern unsigned g_x11_screen;
 
-void x11_save_last_used_monitor(Window win);
 void x11_show_mouse(Display *dpy, Window win, bool state);
 void x11_windowed_fullscreen(Display *dpy, Window win);
 void x11_suspend_screensaver(Window win, bool enable);
@@ -57,10 +56,12 @@ void x11_move_window(Display *dpy, Window win,
 void x11_set_window_attr(Display *dpy, Window win);
 
 #ifdef HAVE_XINERAMA
-bool x11_get_xinerama_coord(Display *dpy, int screen,
+void xinerama_save_last_used_monitor(Window win);
+
+bool xinerama_get_coord(Display *dpy, int screen,
       int *x, int *y, unsigned *w, unsigned *h);
 
-unsigned x11_get_xinerama_monitor(Display *dpy,
+unsigned xinerama_get_monitor(Display *dpy,
       int x, int y, int w, int h);
 #endif
 

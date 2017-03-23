@@ -62,9 +62,11 @@ static void gfx_ctx_xegl_destroy(void *data)
 
    if (g_x11_win)
    {
+#ifdef HAVE_XINERAMA
       /* Save last used monitor for later. */
-      x11_save_last_used_monitor(RootWindow(
+      xinerama_save_last_used_monitor(RootWindow(
                g_x11_dpy, DefaultScreen(g_x11_dpy)));
+#endif
       x11_window_destroy(false);
    }
 
@@ -309,7 +311,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
       unsigned new_width  = width;
       unsigned new_height = height;
 
-      if (x11_get_xinerama_coord(g_x11_dpy, g_x11_screen,
+      if (xinerama_get_coord(g_x11_dpy, g_x11_screen,
                &x_off, &y_off, &new_width, &new_height))
          RARCH_LOG("[X/EGL]: Using Xinerama on screen #%u.\n", g_x11_screen);
       else
