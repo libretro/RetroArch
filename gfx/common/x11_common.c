@@ -32,6 +32,11 @@
 #include "../../input/common/input_x11_common.h"
 #include "../../verbosity.h"
 
+#define _NET_WM_STATE_ADD                    1
+#define MOVERESIZE_GRAVITY_CENTER            5
+#define MOVERESIZE_X_SHIFT                   8
+#define MOVERESIZE_Y_SHIFT                   9
+
 #ifdef HAVE_DBUS
 #include <dbus/dbus.h>
 static DBusConnection* dbus_connection      = NULL;
@@ -56,12 +61,6 @@ static Atom XA_NET_MOVERESIZE_WINDOW;
 static Atom g_x11_quit_atom;
 static XIM g_x11_xim;
 static XIC g_x11_xic;
-
-#define XA_INIT(x) XA##x = XInternAtom(dpy, #x, False)
-#define _NET_WM_STATE_ADD 1
-#define MOVERESIZE_GRAVITY_CENTER 5
-#define MOVERESIZE_X_SHIFT 8
-#define MOVERESIZE_Y_SHIFT 9
 
 #ifdef HAVE_DBUS
 static void dbus_ensure_connection(void)
@@ -225,16 +224,16 @@ void x11_windowed_fullscreen(Display *dpy, Window win)
 {
    XEvent xev = {0};
 
-   XA_INIT(_NET_WM_STATE);
-   XA_INIT(_NET_WM_STATE_FULLSCREEN);
+   XA_NET_WM_STATE            = XInternAtom(dpy, "_NET_WM_STATE", False);
+   XA_NET_WM_STATE_FULLSCREEN = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
 
-   xev.xclient.type         = ClientMessage;
-   xev.xclient.send_event   = True;
-   xev.xclient.message_type = XA_NET_WM_STATE;
-   xev.xclient.window       = win;
-   xev.xclient.format       = 32;
-   xev.xclient.data.l[0]    = _NET_WM_STATE_ADD;
-   xev.xclient.data.l[1]    = XA_NET_WM_STATE_FULLSCREEN;
+   xev.xclient.type           = ClientMessage;
+   xev.xclient.send_event     = True;
+   xev.xclient.message_type   = XA_NET_WM_STATE;
+   xev.xclient.window         = win;
+   xev.xclient.format         = 32;
+   xev.xclient.data.l[0]      = _NET_WM_STATE_ADD;
+   xev.xclient.data.l[1]      = XA_NET_WM_STATE_FULLSCREEN;
 
    XSendEvent(dpy, DefaultRootWindow(dpy), False,
          SubstructureRedirectMask | SubstructureNotifyMask,
@@ -248,7 +247,7 @@ void x11_move_window(Display *dpy, Window win, int x, int y,
 {
    XEvent xev = {0};
 
-   XA_INIT(_NET_MOVERESIZE_WINDOW);
+   XA_NET_MOVERESIZE_WINDOW = XInternAtom(dpy, "_NET_MOVERESIZE_WINDOW", False);
 
    xev.xclient.type         = ClientMessage;
    xev.xclient.send_event   = True;
