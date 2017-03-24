@@ -836,7 +836,11 @@ bool core_info_database_supports_content_path(const char *database_path, const c
    database                 = strdup(new_path);
 
    if (string_is_empty(database))
+   {
+      if (database)
+         free(database);
       return false;
+   }
 
    path_remove_extension(database);
 
