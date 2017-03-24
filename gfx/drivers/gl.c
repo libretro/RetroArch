@@ -168,7 +168,7 @@ static void gl_overlay_vertex_geom(void *data,
 
    if (image > gl->overlays)
    {
-      RARCH_ERR("Invalid overlay id: %u\n", image);
+      RARCH_ERR("[GL]: Invalid overlay id: %u\n", image);
       return;
    }
 
@@ -416,7 +416,7 @@ static bool gl_shader_init(gl_t *gl)
 
    if (!gl)
    {
-      RARCH_ERR("Invalid GL instance passed.\n");
+      RARCH_ERR("[GL]: Invalid GL instance passed.\n");
       return false;
    }
 
@@ -1668,7 +1668,7 @@ static void gl_init_pbo_readback(gl_t *gl)
    if (!scaler_ctx_gen_filter(scaler))
    {
       gl->pbo_readback_enable = false;
-      RARCH_ERR("Failed to initialize pixel conversion for PBO.\n");
+      RARCH_ERR("[GL]: Failed to initialize pixel conversion for PBO.\n");
       glDeleteBuffers(4, gl->pbo_readback);
    }
 #endif
@@ -1836,7 +1836,7 @@ static void gl_begin_debug(gl_t *gl)
 #endif
    }
    else
-      RARCH_ERR("Neither GL_KHR_debug nor GL_ARB_debug_output are implemented. Cannot start GL debugging.\n");
+      RARCH_ERR("[GL]: Neither GL_KHR_debug nor GL_ARB_debug_output are implemented. Cannot start GL debugging.\n");
 }
 #endif
 

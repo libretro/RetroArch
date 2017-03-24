@@ -469,7 +469,7 @@ error:
    glDeleteFramebuffers(gl->fbo_pass, gl->fbo);
    if (gl->fbo_feedback)
       glDeleteFramebuffers(1, &gl->fbo_feedback);
-   RARCH_ERR("Failed to set up frame buffer objects. Multi-pass shading will not work.\n");
+   RARCH_ERR("[GL]: Failed to set up frame buffer objects. Multi-pass shading will not work.\n");
    return false;
 }
 
@@ -742,7 +742,7 @@ void gl_renderchain_init(gl_t *gl, unsigned fbo_width, unsigned fbo_height)
 
    if (!gl_check_capability(GL_CAPS_FBO))
    {
-      RARCH_ERR("Failed to locate FBO functions. Won't be able to use render-to-texture.\n");
+      RARCH_ERR("[GL]: Failed to locate FBO functions. Won't be able to use render-to-texture.\n");
       return;
    }
 
@@ -808,7 +808,7 @@ void gl_renderchain_init(gl_t *gl, unsigned fbo_width, unsigned fbo_height)
    if (!gl_create_fbo_targets(gl))
    {
       glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
-      RARCH_ERR("Failed to create FBO targets. Will continue without FBO.\n");
+      RARCH_ERR("[GL]: Failed to create FBO targets. Will continue without FBO.\n");
       return;
    }
 
@@ -966,12 +966,12 @@ bool gl_renderchain_add_lut(const struct video_shader *shader,
 
    if (!image_texture_load(&img, shader->lut[i].path))
    {
-      RARCH_ERR("Failed to load texture image from: \"%s\"\n",
+      RARCH_ERR("[GL]: Failed to load texture image from: \"%s\"\n",
             shader->lut[i].path);
       return false;
    }
 
-   RARCH_LOG("Loaded texture image from: \"%s\" ...\n",
+   RARCH_LOG("[GL]: Loaded texture image from: \"%s\" ...\n",
          shader->lut[i].path);
 
    if (shader->lut[i].filter == RARCH_FILTER_NEAREST)
