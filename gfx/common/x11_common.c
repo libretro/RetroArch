@@ -159,7 +159,7 @@ static void xdg_screensaver_inhibit(Window wnd)
 
    cmd[0] = '\0';
 
-   RARCH_LOG("Suspending screensaver (X11, xdg-screensaver).\n");
+   RARCH_LOG("[X11]: Suspending screensaver (X11, xdg-screensaver).\n");
 
    snprintf(cmd, sizeof(cmd), "xdg-screensaver suspend 0x%x", (int)wnd);
 
