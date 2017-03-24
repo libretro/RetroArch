@@ -96,7 +96,7 @@ static void *sdl_audio_init(const char *device,
     * carry approximately half of the latency.
     *
     * SDL double buffers audio and we do as well. */
-   frames = find_num_frames(rate, latency / 4);
+   frames        = find_num_frames(rate, latency / 4);
 
    spec.freq     = rate;
    spec.format   = AUDIO_S16SYS;
@@ -107,9 +107,8 @@ static void *sdl_audio_init(const char *device,
 
    if (SDL_OpenAudio(&spec, &out) < 0)
    {
-      RARCH_ERR("Failed to open SDL audio: %s\n", SDL_GetError());
-      free(sdl);
-      return 0;
+      RARCH_ERR("[SDL audio]: Failed to open SDL audio: %s\n", SDL_GetError());
+      goto error;
    }
 
    *new_rate                = out.freq;
@@ -119,7 +118,7 @@ static void *sdl_audio_init(const char *device,
    sdl->cond                = scond_new();
 #endif
 
-   RARCH_LOG("SDL audio: Requested %u ms latency, got %d ms\n", 
+   RARCH_LOG("[SDL audio]: Requested %u ms latency, got %d ms\n", 
          latency, (int)(out.samples * 4 * 1000 / (*new_rate)));
 
    /* Create a buffer twice as big as needed and prefill the buffer. */
@@ -135,6 +134,10 @@ static void *sdl_audio_init(const char *device,
 
    SDL_PauseAudio(0);
    return sdl;
+
+error:
+   free(sdl);
+   return NULL;
 }
 
 static ssize_t sdl_audio_write(void *data, const void *buf, size_t size,
