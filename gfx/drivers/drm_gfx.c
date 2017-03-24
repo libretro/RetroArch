@@ -508,7 +508,7 @@ static void drm_plane_setup(struct drm_surface *surface)
    drm.plane_fb_prop_id = get_plane_prop_id(drm.plane_id, "FB_ID");
    if (!drm.plane_fb_prop_id)
    {
-      RARCH_LOG("DRM: Can't get the FB property ID for plane(%u)\n", drm.plane_id);
+      RARCH_LOG("[DRM]: Can't get the FB property ID for plane(%u)\n", drm.plane_id);
    }
 
    /* Note src coords (last 4 args) are in Q16 format
@@ -538,15 +538,15 @@ static void drm_plane_setup(struct drm_surface *surface)
             plane_flags, plane_x, plane_y, plane_w, plane_h,
             src_x<<16, src_y<<16, src_w<<16, src_h<<16))
    {
-      RARCH_ERR("DRM: failed to enable plane: %s\n", strerror(errno));	
+      RARCH_ERR("[DRM]: failed to enable plane: %s\n", strerror(errno));	
    }
 
-   RARCH_LOG("DRM: src_w %d, src_h %d, plane_w %d, plane_h %d\n",
+   RARCH_LOG("[DRM]: src_w %d, src_h %d, plane_w %d, plane_h %d\n",
          src_w, src_h, plane_w, plane_h);
 
    /* Report what plane (of overlay type) we're using. */
    drm_format_name(surface->pixformat, fmt_name);
-   RARCH_LOG("DRM: Using plane with ID %d on CRTC ID %d format %s\n",
+   RARCH_LOG("[DRM]: Using plane with ID %d on CRTC ID %d format %s\n",
          drm.plane_id, drm.crtc_id, fmt_name);
 }
 

@@ -248,7 +248,7 @@ static void sdl2_init_renderer(sdl2_video_t *vid)
 
    if (!vid->renderer)
    {
-      RARCH_ERR("[SDL]: Failed to initialize renderer: %s", SDL_GetError());
+      RARCH_ERR("[SDL2]: Failed to initialize renderer: %s", SDL_GetError());
       return;
    }
 
@@ -362,7 +362,7 @@ static void sdl_refresh_input_size(sdl2_video_t *vid, bool menu, bool rgb32,
 
       if (!target->tex)
       {
-         RARCH_ERR("Failed to create %s texture: %s\n", menu ? "menu" : "main",
+         RARCH_ERR("[SDL2]: Failed to create %s texture: %s\n", menu ? "menu" : "main",
                    SDL_GetError());
          return;
       }
@@ -402,7 +402,7 @@ static void *sdl2_gfx_init(const video_info_t *video,
    if (!vid)
       return NULL;
 
-   RARCH_LOG("[SDL]: Available renderers (change with $SDL_RENDER_DRIVER):\n");
+   RARCH_LOG("[SDL2]: Available renderers (change with $SDL_RENDER_DRIVER):\n");
    for (i = 0; i < SDL_GetNumRenderDrivers(); ++i)
    {
       SDL_RendererInfo renderer;
@@ -410,7 +410,7 @@ static void *sdl2_gfx_init(const video_info_t *video,
          RARCH_LOG("\t%s\n", renderer.name);
    }
 
-   RARCH_LOG("[SDL]: Available displays:\n");
+   RARCH_LOG("[SDL2]: Available displays:\n");
    for(i = 0; i < SDL_GetNumVideoDisplays(); ++i)
    {
       SDL_DisplayMode mode;
@@ -436,7 +436,7 @@ static void *sdl2_gfx_init(const video_info_t *video,
 
    if (!vid->window)
    {
-      RARCH_ERR("[SDL]: Failed to init SDL window: %s\n", SDL_GetError());
+      RARCH_ERR("[SDL2]: Failed to init SDL window: %s\n", SDL_GetError());
       goto error;
    }
 
@@ -712,7 +712,7 @@ static void sdl2_poke_set_osd_msg(void *data, const char *msg,
 {
    sdl2_video_t *vid = (sdl2_video_t*)data;
    sdl2_render_msg(vid, msg);
-   RARCH_LOG("[SDL]: OSD MSG: %s\n", msg);
+   RARCH_LOG("[SDL2]: OSD MSG: %s\n", msg);
 }
 
 static void sdl2_show_mouse(void *data, bool state)

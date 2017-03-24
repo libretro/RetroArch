@@ -123,7 +123,7 @@ static bool d3d_init_imports(d3d_video_t *d3d)
    state_tracker = state_tracker_init(&tracker_info);
    if (!state_tracker)
    {
-      RARCH_ERR("Failed to initialize state tracker.\n");
+      RARCH_ERR("[D3D]: Failed to initialize state tracker.\n");
       return false;
    }
 
@@ -155,7 +155,7 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
    if (!renderchain_init_first(&d3d->renderchain_driver,
 	   &d3d->renderchain_data))
    {
-	   RARCH_ERR("Renderchain could not be initialized.\n");
+	   RARCH_ERR("[D3D]: Renderchain could not be initialized.\n");
 	   return false;
    }
 
@@ -174,7 +174,7 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
       return false;
    }
 
-   RARCH_LOG("Renderchain driver: %s\n", d3d->renderchain_driver->ident);
+   RARCH_LOG("[D3D]: Renderchain driver: %s\n", d3d->renderchain_driver->ident);
 
 #ifndef _XBOX
    current_width  = link_info.tex_w;
@@ -199,7 +199,7 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
       if (!d3d->renderchain_driver->add_pass(
                d3d->renderchain_data, &link_info))
       {
-         RARCH_ERR("[D3D9]: Failed to add pass.\n");
+         RARCH_ERR("[D3D]: Failed to add pass.\n");
          return false;
       }
    }
@@ -207,12 +207,12 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 
    if (!d3d_init_luts(d3d))
    {
-      RARCH_ERR("[D3D9]: Failed to init LUTs.\n");
+      RARCH_ERR("[D3D]: Failed to init LUTs.\n");
       return false;
    }
    if (!d3d_init_imports(d3d))
    {
-      RARCH_ERR("[D3D9]: Failed to init imports.\n");
+      RARCH_ERR("[D3D]: Failed to init imports.\n");
       return false;
    }
 
@@ -249,13 +249,13 @@ static bool d3d_init_singlepass(d3d_video_t *d3d)
 static bool d3d_init_multipass(d3d_video_t *d3d)
 {
    unsigned i;
-   bool use_extra_pass;
+   bool use_extra_pass     = false;
    video_shader_pass *pass = NULL;
    config_file_t *conf     = config_file_new(d3d->shader_path.c_str());
 
    if (!conf)
    {
-      RARCH_ERR("Failed to load preset.\n");
+      RARCH_ERR("[D3D]: Failed to load preset.\n");
       return false;
    }
 
@@ -264,7 +264,7 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
    if (!video_shader_read_conf_cgp(conf, &d3d->shader))
    {
       config_file_free(conf);
-      RARCH_ERR("Failed to parse CGP file.\n");
+      RARCH_ERR("[D3D]: Failed to parse CGP file.\n");
       return false;
    }
 #endif
@@ -272,7 +272,7 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
 #ifdef HAVE_SHADERPIPELINE
    video_shader_resolve_relative(&d3d->shader, d3d->shader_path.c_str());
 #endif
-   RARCH_LOG("[D3D9 Meta-Cg] Found %u shaders.\n", d3d->shader.passes);
+   RARCH_LOG("[D3D]: Found %u shaders.\n", d3d->shader.passes);
 
    for (i = 0; i < d3d->shader.passes; i++)
    {
@@ -618,7 +618,7 @@ static bool d3d_init_base(void *data, const video_info_t *info)
    g_pD3D = D3DCREATE_CTX(D3D_SDK_VERSION);
    if (!g_pD3D)
    {
-      RARCH_ERR("Failed to create D3D interface.\n");
+      RARCH_ERR("[D3D]: Failed to create D3D interface.\n");
       return false;
    }
 
@@ -645,7 +645,7 @@ static bool d3d_init_base(void *data, const video_info_t *info)
                   &d3dpp,
                   &d3d->dev)))
       {
-         RARCH_ERR("Failed to initialize device.\n");
+         RARCH_ERR("[D3D]: Failed to initialize device.\n");
          return false;
       }
    }
@@ -798,7 +798,7 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
 
    if (!d3d_init_chain(d3d, info))
    {
-      RARCH_ERR("Failed to initialize render chain.\n");
+      RARCH_ERR("[D3D]: Failed to initialize render chain.\n");
       return false;
    }
 

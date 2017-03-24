@@ -270,7 +270,7 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
 
    if (!vid->screen)
    {
-      RARCH_ERR("[SDL]: Failed to init SDL surface: %s\n", SDL_GetError());
+      RARCH_ERR("[SDL1]: Failed to init SDL surface: %s\n", SDL_GetError());
       goto error;
    }
 
@@ -309,7 +309,7 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
 
    if (!vid->menu.frame)
    {
-      RARCH_ERR("[SDL]: Failed to init menu surface: %s\n", SDL_GetError());
+      RARCH_ERR("[SDL1]: Failed to init menu surface: %s\n", SDL_GetError());
       goto error;
    }
 
