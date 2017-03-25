@@ -897,7 +897,7 @@ static const unsigned menu_dpi_override_value = 200;
 #endif
 
 /* Log level for libretro cores (GET_LOG_INTERFACE). */
-static const unsigned libretro_log_level = 0;
+static const unsigned libretro_log_level = 1;
 
 #ifndef RARCH_DEFAULT_PORT
 #define RARCH_DEFAULT_PORT 55435
