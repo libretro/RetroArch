@@ -2180,30 +2180,26 @@ static void gl_update_tex_filter_frame(gl_t *gl)
    bool smooth                       = false;
    settings_t *settings              = config_get_ptr();
 
-   if (!gl)
-      return;
-
-   wrap_info.idx  = 0;
-   wrap_info.type = RARCH_WRAP_BORDER;
+   wrap_info.idx                     = 0;
+   wrap_info.type                    = RARCH_WRAP_BORDER;
 
    context_bind_hw_render(false);
 
-   shader_filter.index  = 1;
-   shader_filter.smooth = &smooth;
+   shader_filter.index               = 1;
+   shader_filter.smooth              = &smooth;
 
    if (!video_shader_driver_filter_type(&shader_filter))
       smooth = settings->video.smooth;
 
-   mip_level             = 1;
-   wrap_info.idx         = 1;
+   mip_level                         = 1;
+   wrap_info.idx                     = 1;
 
    video_shader_driver_wrap_type(&wrap_info);
 
    wrap_mode             = gl_wrap_type_to_enum(wrap_info.type);
    gl->tex_mipmap        = video_shader_driver_mipmap_input(&mip_level);
-
    gl->video_info.smooth = smooth;
-   new_filt = gl->tex_mipmap ? (smooth ?
+   new_filt              = gl->tex_mipmap ? (smooth ?
          GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST)
       : (smooth ? GL_LINEAR : GL_NEAREST);
 
@@ -2287,7 +2283,8 @@ static bool gl_set_shader(void *data,
       goto error;
    }
 
-   gl_update_tex_filter_frame(gl);
+   if (gl)
+      gl_update_tex_filter_frame(gl);
 
    video_shader_driver_get_prev_textures(&texture_info);
 
