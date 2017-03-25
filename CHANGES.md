@@ -1,4 +1,13 @@
-# 1.5.0 (future)
+# 1.5.1 (future)
+- NET: Fix bug #4703 (https://github.com/libretro/RetroArch/issues/4703)
+- ANDROID: Runtime permission checking
+- LOCALIZATION: Update/finish French translation
+- LOCALIZATION: Update German translation
+- LOCALIZATION: Update Japanese translation
+- LOCALIZATION/GUI: Korean font should display properly now with XMB/MaterialUI's
+default font
+
+# 1.5.0
 - MOBILE: Single-tap for menu entry selection
 - MOBILE: Long-tap a setting to reset to default
 - ANDROID: Autoconf fallback
