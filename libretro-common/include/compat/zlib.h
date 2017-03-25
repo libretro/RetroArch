@@ -1356,7 +1356,7 @@ typedef struct gzFile_s *gzFile;    /* semi-opaque gzip file descriptor */
    error.
 */
 
- int VA gzprintf Z_ARG((gzFile file, const char *format, ...));
+ int gzprintf Z_ARG((gzFile file, const char *format, ...));
 /*
      Converts, formats, and writes the arguments to the compressed file under
    control of the format string, as in fprintf.  gzprintf returns the number of
@@ -1761,7 +1761,7 @@ const uint32_t * get_crc_table(void);
 #endif
 #if defined(STDC) || defined(Z_HAVE_STDARG_H)
 #  ifndef Z_SOLO
- int            VA gzvprintf Z_ARG((gzFile file,
+ int            gzvprintf Z_ARG((gzFile file,
                                                   const char *format,
                                                   va_list va));
 #  endif
