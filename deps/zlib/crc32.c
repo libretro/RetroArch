@@ -1,7 +1,7 @@
 #ifndef _S_CRC32_H
 #define _S_CRC32_H
 
-#include <compat/zlib.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
