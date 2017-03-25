@@ -72,7 +72,7 @@ OBJ += libretro-common/audio/dsp_filters/phaser.o
 OBJ += libretro-common/audio/dsp_filters/reverb.o
 OBJ += libretro-common/audio/dsp_filters/wahwah.o
 
-CFLAGS += -Ideps/zlib/
+CFLAGS += -Ideps/libz/
 libretro = libretro_emscripten.bc
 
 ifneq ($(V), 1)
@@ -111,7 +111,7 @@ $(TARGET): $(OBJ)
 
 clean:
 	rm -f *.o
-	rm -f deps/zlib/*.o
+	rm -f deps/libz/*.o
 	rm -f frontend/*.o
 	rm -f menu/*.o
 	rm -f menu/disp/*.o

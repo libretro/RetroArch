@@ -1075,20 +1075,20 @@ extern "C" {
 DEPENDENCIES
 ============================================================ */
 #ifdef WANT_ZLIB
-#include "../deps/zlib/adler32.c"
-#include "../deps/zlib/compress.c"
-#include "../deps/zlib/crc32.c"
-#include "../deps/zlib/deflate.c"
-#include "../deps/zlib/gzclose.c"
-#include "../deps/zlib/gzlib.c"
-#include "../deps/zlib/gzread.c"
-#include "../deps/zlib/gzwrite.c"
-#include "../deps/zlib/inffast.c"
-#include "../deps/zlib/inflate.c"
-#include "../deps/zlib/inftrees.c"
-#include "../deps/zlib/trees.c"
-#include "../deps/zlib/uncompr.c"
-#include "../deps/zlib/zutil.c"
+#include "../deps/libz/adler32.c"
+#include "../deps/libz/compress.c"
+#include "../deps/libz/crc32.c"
+#include "../deps/libz/deflate.c"
+#include "../deps/libz/gzclose.c"
+#include "../deps/libz/gzlib.c"
+#include "../deps/libz/gzread.c"
+#include "../deps/libz/gzwrite.c"
+#include "../deps/libz/inffast.c"
+#include "../deps/libz/inflate.c"
+#include "../deps/libz/inftrees.c"
+#include "../deps/libz/trees.c"
+#include "../deps/libz/uncompr.c"
+#include "../deps/libz/zutil.c"
 #endif
 
 #ifdef HAVE_7ZIP

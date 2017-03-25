@@ -1127,20 +1127,20 @@ ifdef HAVE_COMPRESSION
 endif
 
 ifeq ($(HAVE_BUILTINZLIB),1)
-   OBJ += $(DEPS_DIR)/zlib/adler32.o \
-          $(DEPS_DIR)/zlib/compress.o \
-          $(DEPS_DIR)/zlib/crc32.o \
-          $(DEPS_DIR)/zlib/deflate.o \
-          $(DEPS_DIR)/zlib/gzclose.o \
-          $(DEPS_DIR)/zlib/gzlib.o \
-          $(DEPS_DIR)/zlib/gzread.o \
-          $(DEPS_DIR)/zlib/gzwrite.o \
-          $(DEPS_DIR)/zlib/inffast.o \
-          $(DEPS_DIR)/zlib/inflate.o \
-          $(DEPS_DIR)/zlib/inftrees.o \
-          $(DEPS_DIR)/zlib/trees.o \
-          $(DEPS_DIR)/zlib/uncompr.o \
-          $(DEPS_DIR)/zlib/zutil.o
+   OBJ += $(DEPS_DIR)/libz/adler32.o \
+          $(DEPS_DIR)/libz/compress.o \
+          $(DEPS_DIR)/libz/crc32.o \
+          $(DEPS_DIR)/libz/deflate.o \
+          $(DEPS_DIR)/libz/gzclose.o \
+          $(DEPS_DIR)/libz/gzlib.o \
+          $(DEPS_DIR)/libz/gzread.o \
+          $(DEPS_DIR)/libz/gzwrite.o \
+          $(DEPS_DIR)/libz/inffast.o \
+          $(DEPS_DIR)/libz/inflate.o \
+          $(DEPS_DIR)/libz/inftrees.o \
+          $(DEPS_DIR)/libz/trees.o \
+          $(DEPS_DIR)/libz/uncompr.o \
+          $(DEPS_DIR)/libz/zutil.o
 else
 ifeq ($(HAVE_ZLIB),1)
 OBJ += $(ZLIB_OBJS)
