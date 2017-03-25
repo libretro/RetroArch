@@ -87,6 +87,14 @@
 #define GL_SYNC_FLUSH_COMMANDS_BIT        0x00000001
 #endif
 
+#define set_texture_coords(coords, xamt, yamt) \
+   coords[2] = xamt; \
+   coords[6] = xamt; \
+   coords[5] = yamt; \
+   coords[7] = yamt
+
+static struct video_ortho default_ortho = {0, 1, 0, 1, -1, 1};
+
 #ifdef IOS
 /* There is no default frame buffer on iOS. */
 void cocoagl_bind_game_view_fbo(void);
@@ -266,11 +274,6 @@ static void gl_render_overlay(gl_t *gl, video_frame_info_t *video_info)
 }
 #endif
 
-#define set_texture_coords(coords, xamt, yamt) \
-   coords[2] = xamt; \
-   coords[6] = xamt; \
-   coords[5] = yamt; \
-   coords[7] = yamt
 
 static void gl_set_projection(gl_t *gl,
       struct video_ortho *ortho, bool allow_rotate)
@@ -311,7 +314,6 @@ void gl_set_viewport(void *data, video_frame_info_t *video_info,
    int x                    = 0;
    int y                    = 0;
    float device_aspect      = (float)viewport_width / viewport_height;
-   struct video_ortho ortho = {0, 1, 0, 1, -1, 1};
    gl_t           *gl       = (gl_t*)data;
    unsigned height          = video_info->height;
 
@@ -389,7 +391,7 @@ void gl_set_viewport(void *data, video_frame_info_t *video_info,
 #endif
 
    glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
-   gl_set_projection(gl, &ortho, allow_rotate);
+   gl_set_projection(gl, &default_ortho, allow_rotate);
 
    /* Set last backbuffer viewport. */
    if (!force_full)
@@ -502,13 +504,12 @@ static uintptr_t gl_get_current_framebuffer(void *data)
 static void gl_set_rotation(void *data, unsigned rotation)
 {
    gl_t               *gl = (gl_t*)data;
-   struct video_ortho ortho = {0, 1, 0, 1, -1, 1};
 
    if (!gl)
       return;
 
    gl->rotation = 90 * rotation;
-   gl_set_projection(gl, &ortho, true);
+   gl_set_projection(gl, &default_ortho, true);
 }
 
 static void gl_set_video_mode(void *data, unsigned width, unsigned height,
