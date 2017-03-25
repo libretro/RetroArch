@@ -40,6 +40,7 @@
 #ifndef ZLIB_H
 #define ZLIB_H
 
+#include <stdint.h>
 #include "zconf.h"
 
 #ifdef __cplusplus
@@ -1575,7 +1576,7 @@ ZEXTERN void ZEXPORT gzclearerr OF((gzFile file));
    library.
 */
 
-ZEXTERN uLong ZEXPORT adler32 OF((uLong adler, const Bytef *buf, uInt len));
+uint32_t adler32 (uint32_t adler, const uint8_t *buf, size_t len);
 /*
      Update a running Adler-32 checksum with the bytes buf[0..len-1] and
    return the updated checksum.  If buf is Z_NULL, this function returns the
