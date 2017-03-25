@@ -84,7 +84,7 @@ extern "C" {
 
    const uint32_t *get_crc_table(void)
    {
-      return (const z_crc_t FAR *)crc_table;
+      return (const uint32_t*)crc_table;
    }
 
 #ifdef __cplusplus
