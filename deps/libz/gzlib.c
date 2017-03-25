@@ -16,12 +16,12 @@
 #endif
 
 /* Forward declarations */
-z_off_t ZEXPORT gzoffset(gzFile file);
-int ZEXPORT gzbuffer(gzFile file, unsigned size);
+z_off_t gzoffset(gzFile file);
+int gzbuffer(gzFile file, unsigned size);
 
 /* Local functions */
-local void gz_reset OF((gz_statep));
-local gzFile gz_open OF((const void *, int, const char *));
+static void gz_reset OF((gz_statep));
+static gzFile gz_open OF((const void *, int, const char *));
 
 #if defined UNDER_CE
 
@@ -76,7 +76,7 @@ char ZLIB_INTERNAL *gz_strwinerror (error)
 #endif /* UNDER_CE */
 
 /* Reset gzip file state */
-local void gz_reset(gz_statep state)
+static void gz_reset(gz_statep state)
 {
    state->x.have = 0;              /* no output data available */
    if (state->mode == GZ_READ) {   /* for reading ... */
@@ -91,7 +91,7 @@ local void gz_reset(gz_statep state)
 }
 
 /* Open a gzip file either by name or file descriptor. */
-local gzFile gz_open(const void *path, int fd, const char *mode)
+static gzFile gz_open(const void *path, int fd, const char *mode)
 {
    gz_statep state;
    size_t len;
@@ -264,17 +264,17 @@ local gzFile gz_open(const void *path, int fd, const char *mode)
    return (gzFile)state;
 }
 
-gzFile ZEXPORT gzopen(const char *path, const char *mode)
+gzFile gzopen(const char *path, const char *mode)
 {
    return gz_open(path, -1, mode);
 }
 
-gzFile ZEXPORT gzopen64(const char *path, const char *mode)
+gzFile gzopen64(const char *path, const char *mode)
 {
    return gz_open(path, -1, mode);
 }
 
-gzFile ZEXPORT gzdopen(int fd, const char *mode)
+gzFile gzdopen(int fd, const char *mode)
 {
    char *path;         /* identifier for error messages */
    gzFile gz;
@@ -292,13 +292,13 @@ gzFile ZEXPORT gzdopen(int fd, const char *mode)
 }
 
 #ifdef _WIN32
-gzFile ZEXPORT gzopen_w(const wchar_t *path, const char *mode)
+gzFile gzopen_w(const wchar_t *path, const char *mode)
 {
    return gz_open(path, -2, mode);
 }
 #endif
 
-int ZEXPORT gzbuffer(gzFile file, unsigned size)
+int gzbuffer(gzFile file, unsigned size)
 {
    gz_statep state;
 
@@ -320,7 +320,7 @@ int ZEXPORT gzbuffer(gzFile file, unsigned size)
    return 0;
 }
 
-int ZEXPORT gzrewind(gzFile file)
+int gzrewind(gzFile file)
 {
    gz_statep state;
 
@@ -341,7 +341,7 @@ int ZEXPORT gzrewind(gzFile file)
    return 0;
 }
 
-z_off64_t ZEXPORT gzseek64(gzFile file, z_off64_t offset, int whence)
+z_off64_t gzseek64(gzFile file, z_off64_t offset, int whence)
 {
    unsigned n;
    z_off64_t ret;
@@ -414,7 +414,7 @@ z_off64_t ZEXPORT gzseek64(gzFile file, z_off64_t offset, int whence)
    return state->x.pos + offset;
 }
 
-z_off_t ZEXPORT gzseek(gzFile file, z_off_t offset, int whence)
+z_off_t gzseek(gzFile file, z_off_t offset, int whence)
 {
    z_off64_t ret;
 
@@ -422,7 +422,7 @@ z_off_t ZEXPORT gzseek(gzFile file, z_off_t offset, int whence)
    return ret == (z_off_t)ret ? (z_off_t)ret : -1;
 }
 
-z_off64_t ZEXPORT gztell64(gzFile file)
+z_off64_t gztell64(gzFile file)
 {
    gz_statep state;
 
@@ -437,7 +437,7 @@ z_off64_t ZEXPORT gztell64(gzFile file)
    return state->x.pos + (state->seek ? state->skip : 0);
 }
 
-z_off_t ZEXPORT gztell(gzFile file)
+z_off_t gztell(gzFile file)
 {
    z_off64_t ret;
 
@@ -445,7 +445,7 @@ z_off_t ZEXPORT gztell(gzFile file)
    return ret == (z_off_t)ret ? (z_off_t)ret : -1;
 }
 
-z_off64_t ZEXPORT gzoffset64(gzFile file)
+z_off64_t gzoffset64(gzFile file)
 {
    z_off64_t offset;
    gz_statep state;
@@ -466,13 +466,13 @@ z_off64_t ZEXPORT gzoffset64(gzFile file)
    return offset;
 }
 
-z_off_t ZEXPORT gzoffset(gzFile file)
+z_off_t gzoffset(gzFile file)
 {
    z_off64_t ret = gzoffset64(file);
    return ret == (z_off_t)ret ? (z_off_t)ret : -1;
 }
 
-int ZEXPORT gzeof(gzFile file)
+int gzeof(gzFile file)
 {
    gz_statep state;
 
@@ -487,7 +487,7 @@ int ZEXPORT gzeof(gzFile file)
    return state->mode == GZ_READ ? state->past : 0;
 }
 
-const char * ZEXPORT gzerror(gzFile file, int *errnum)
+const char * gzerror(gzFile file, int *errnum)
 {
    gz_statep state;
 
@@ -505,7 +505,7 @@ const char * ZEXPORT gzerror(gzFile file, int *errnum)
       (state->msg == NULL ? "" : state->msg);
 }
 
-void ZEXPORT gzclearerr(gzFile file)
+void gzclearerr(gzFile file)
 {
    gz_statep state;
 
