@@ -82,7 +82,7 @@ extern "C" {
       return crc ^ 0xffffffffL;
    }
 
-   const z_crc_t FAR * ZEXPORT get_crc_table()
+   const uint32_t *get_crc_table(void)
    {
       return (const z_crc_t FAR *)crc_table;
    }
