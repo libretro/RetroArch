@@ -238,29 +238,31 @@ void gl_check_fbo_dimensions(gl_t *gl)
       }
    }
 }
+
+static GLfloat fbo_tex_coords[8] = {0.0f};
+
 void gl_renderchain_render(gl_t *gl,
       video_frame_info_t *video_info,
       uint64_t frame_count,
       const struct video_tex_info *tex_info,
       const struct video_tex_info *feedback_info)
 {
+   int i;
+   GLfloat xamt, yamt;
    unsigned mip_level;
    video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
    video_shader_ctx_params_t params;
    video_shader_ctx_info_t shader_info;
-   const struct video_fbo_rect *prev_rect;
    struct video_tex_info *fbo_info;
    struct video_tex_info fbo_tex_info[GFX_MAX_SHADERS];
-   int i;
-   GLfloat xamt, yamt;
+   const struct video_fbo_rect *prev_rect = NULL;
    unsigned fbo_tex_info_cnt = 0;
-   GLfloat fbo_tex_coords[8] = {0.0f};
    unsigned width            = video_info->width;
    unsigned height           = video_info->height;
 
    /* Render the rest of our passes. */
-   gl->coords.tex_coord = fbo_tex_coords;
+   gl->coords.tex_coord      = fbo_tex_coords;
 
    /* Calculate viewports, texture coordinates etc,
     * and render all passes from FBOs, to another FBO. */
@@ -426,16 +428,14 @@ void gl_renderchain_free(gl_t *gl)
 static bool gl_create_fbo_targets(gl_t *gl)
 {
    int i;
-   GLenum status;
-
-   if (!gl)
-      return false;
 
    glBindTexture(GL_TEXTURE_2D, 0);
    glGenFramebuffers(gl->fbo_pass, gl->fbo);
 
    for (i = 0; i < gl->fbo_pass; i++)
    {
+      GLenum status;
+
       glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->fbo[i]);
       glFramebufferTexture2D(RARCH_GL_FRAMEBUFFER,
             RARCH_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->fbo_texture[i], 0);
@@ -447,6 +447,8 @@ static bool gl_create_fbo_targets(gl_t *gl)
 
    if (gl->fbo_feedback_texture)
    {
+      GLenum status;
+
       glGenFramebuffers(1, &gl->fbo_feedback);
       glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->fbo_feedback);
       glFramebufferTexture2D(RARCH_GL_FRAMEBUFFER,
@@ -631,7 +633,6 @@ void gl_renderchain_recompute_pass_sizes(gl_t *gl,
             vp_width, vp_height
             );
 
-
       if (fbo_rect->img_width > (unsigned)max_size)
       {
          size_modified            = true;
@@ -805,7 +806,7 @@ void gl_renderchain_init(gl_t *gl, unsigned fbo_width, unsigned fbo_height)
    }
 
    gl_create_fbo_textures(gl);
-   if (!gl_create_fbo_targets(gl))
+   if (!gl || !gl_create_fbo_targets(gl))
    {
       glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
       RARCH_ERR("[GL]: Failed to create FBO targets. Will continue without FBO.\n");
