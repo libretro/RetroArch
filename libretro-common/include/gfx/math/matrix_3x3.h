@@ -25,6 +25,10 @@
 
 #include <boolean.h>
 
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
+
 typedef struct math_matrix_3x3
 {
    float data[9];
@@ -63,5 +67,7 @@ bool matrix_3x3_quad_to_quad(const float dx0, const float dy0,
                              const float sx2, const float sy2,
                              const float sx3, const float sy3,
                              math_matrix_3x3 *mat);
+
+RETRO_END_DECLS
 
 #endif

@@ -25,6 +25,10 @@
 
 #include <stdint.h>
 
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
+
 typedef float vec2_t[2];
 
 float vec2_dot(const float *a, const float *b);
@@ -36,6 +40,8 @@ void vec2_add(float *dst, const float *src);
 void vec2_subtract(float *dst, const float *src);
 
 void vec2_copy(float *dst, const float *src);
+
+RETRO_END_DECLS
 
 #endif
 

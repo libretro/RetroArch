@@ -28,6 +28,10 @@
 
 #include <boolean.h>
 
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
+
 size_t utf8_conv_utf32(uint32_t *out, size_t out_chars,
       const char *in, size_t in_size);
 
@@ -43,5 +47,7 @@ const char *utf8skip(const char *str, size_t chars);
 uint32_t utf8_walk(const char **string);
 
 bool utf16_to_char_string(const uint16_t *in, char *s, size_t len);
+
+RETRO_END_DECLS
 
 #endif

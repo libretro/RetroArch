@@ -26,6 +26,10 @@
 #include <stddef.h>
 #include <boolean.h>
 
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
+
 #ifndef NBIO_READ
 #define NBIO_READ   0
 #endif
@@ -92,5 +96,7 @@ void nbio_cancel(struct nbio_t* handle);
  * Deletes the nbio structure and its associated pointer.
  */
 void nbio_free(struct nbio_t* handle);
+
+RETRO_END_DECLS
 
 #endif

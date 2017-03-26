@@ -26,6 +26,8 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+RETRO_BEGIN_DECLS
+
 enum gl_capability_enum
 {
    GL_CAPS_NONE = 0,
@@ -60,5 +62,7 @@ void gl_query_core_context_unset(void);
 bool gl_check_capability(enum gl_capability_enum enum_idx);
 
 bool gl_query_extension(const char *ext);
+
+RETRO_END_DECLS
 
 #endif

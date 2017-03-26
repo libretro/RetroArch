@@ -35,6 +35,10 @@
 
 #include <retro_miscellaneous.h>
 
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
+
 enum file_archive_transfer_type
 {
    ARCHIVE_TRANSFER_NONE = 0,
@@ -202,6 +206,8 @@ uint32_t file_archive_get_file_crc32(const char *path);
 
 extern const struct file_archive_file_backend zlib_backend;
 extern const struct file_archive_file_backend sevenzip_backend;
+
+RETRO_END_DECLS
 
 #endif
 

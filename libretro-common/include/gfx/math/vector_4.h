@@ -25,6 +25,10 @@
 
 #include <stdint.h>
 
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
+
 typedef float vec4_t[4];
 
 void vec4_add(float *dst, const float *src);
@@ -34,6 +38,8 @@ void vec4_subtract(float *dst, const float *src);
 void vec4_scale(float *dst, const float scale);
 
 void vec4_copy(float *dst, const float *src);
+
+RETRO_END_DECLS
 
 #endif
 
