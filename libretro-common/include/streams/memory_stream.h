@@ -26,6 +26,10 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
+
 typedef struct memstream memstream_t;
 
 memstream_t *memstream_open(unsigned writing);
@@ -51,5 +55,7 @@ int memstream_seek(memstream_t *stream, int offset, int whence);
 void memstream_set_buffer(uint8_t *buffer, size_t size);
 
 size_t memstream_get_last_size(void);
+
+RETRO_END_DECLS
 
 #endif

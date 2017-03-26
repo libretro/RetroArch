@@ -26,6 +26,10 @@
 #include <net/net_compat.h>
 #include <net/net_socket.h>
 
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
+
 struct natt_status {
    /** nfds for select when checking for input */
    int nfds;
@@ -73,5 +77,7 @@ bool natt_open_port_any(struct natt_status *status, uint16_t port,
 
 /** Check for port forwarding responses */
 bool natt_read(struct natt_status *status);
+
+RETRO_END_DECLS
 
 #endif

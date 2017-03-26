@@ -56,6 +56,10 @@
 
 #include <retro_inline.h>
 
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
+
 /**
  * sha256_hash:
  * @out               : Output.
@@ -122,5 +126,7 @@ typedef struct {
 void MD5_Init(MD5_CTX *ctx);
 void MD5_Update(MD5_CTX *ctx, const void *data, unsigned long size);
 void MD5_Final(unsigned char *result, MD5_CTX *ctx);
+
+RETRO_END_DECLS
 
 #endif

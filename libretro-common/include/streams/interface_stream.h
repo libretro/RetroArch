@@ -30,6 +30,8 @@
 #include <retro_common_api.h>
 #include <boolean.h>
 
+RETRO_BEGIN_DECLS
+
 enum intfstream_type
 {
    INTFSTREAM_FILE = 0,
@@ -83,5 +85,7 @@ int intfstream_tell(intfstream_internal_t *intf);
 void intfstream_putc(intfstream_internal_t *intf, int c);
 
 int intfstream_close(intfstream_internal_t *intf);
+
+RETRO_END_DECLS
 
 #endif
