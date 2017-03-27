@@ -3025,7 +3025,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_AUTOSAVE_INIT);
-            menu_settings_list_current_add_range(list, list_info, 0, 0, 10, true, false);
+            menu_settings_list_current_add_range(list, list_info, 0, 0, 1, true, false);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
             (*list)[list_info->index - 1].get_string_representation = 
                &setting_get_string_representation_uint_autosave_interval;
