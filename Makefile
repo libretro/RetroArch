@@ -22,6 +22,11 @@ LIBS :=
 DEFINES := -DHAVE_CONFIG_H -DRARCH_INTERNAL -DHAVE_OVERLAY
 DEFINES += -DGLOBAL_CONFIG_DIR='"$(GLOBAL_CONFIG_DIR)"'
 
+ifneq ($(findstring BSD,$(OS)),)
+   CFLAGS += -DBSD
+   LDFLAGS += -L/usr/local/lib
+endif
+
 ifneq ($(findstring DOS,$(OS)),)
    CFLAGS += -march=i386
    LDFLAGS += -lemu

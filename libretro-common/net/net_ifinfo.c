@@ -44,6 +44,10 @@
 
 #include <net/net_ifinfo.h>
 
+#if defined(BSD)
+#include <netinet/in.h>
+#endif
+
 void net_ifinfo_free(net_ifinfo_t *list)
 {
    unsigned k;

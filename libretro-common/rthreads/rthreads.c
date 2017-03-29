@@ -55,7 +55,7 @@
 #include <time.h>
 #endif
 
-#if defined(VITA)
+#if defined(VITA) || defined(BSD)
 #include <sys/time.h>
 #endif
 
