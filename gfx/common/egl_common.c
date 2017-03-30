@@ -238,12 +238,14 @@ bool egl_init_context(egl_ctx_data_t *egl,
 
 bool egl_create_context(egl_ctx_data_t *egl, const EGLint *egl_attribs)
 {
-   egl->ctx    = eglCreateContext(egl->dpy, egl->config, EGL_NO_CONTEXT,
+   EGLContext ctx = eglCreateContext(egl->dpy, egl->config, EGL_NO_CONTEXT,
          egl_attribs);
-   egl->hw_ctx = NULL;
 
-   if (egl->ctx == EGL_NO_CONTEXT)
+   if (ctx == EGL_NO_CONTEXT)
       return false;
+
+   egl->ctx    = ctx;
+   egl->hw_ctx = NULL;
 
    if (egl->use_hw_ctx)
    {
