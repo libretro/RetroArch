@@ -213,13 +213,14 @@ bool egl_init_context(egl_ctx_data_t *egl,
       EGLint *major, EGLint *minor,
      EGLint *n, const EGLint *attrib_ptr)
 {
-   NativeDisplayType display = (NativeDisplayType)display_data;
-   egl->dpy = eglGetDisplay(display);
-   if (!egl->dpy)
+   EGLDisplay dpy            = (NativeDisplayType)eglGetDisplay(display_data);
+   if (dpy == EGL_NO_DISPLAY)
    {
       RARCH_ERR("[EGL]: Couldn't get EGL display.\n");
       return false;
    }
+
+   egl->dpy = dpy;
 
    if (!eglInitialize(egl->dpy, major, minor))
       return false;
