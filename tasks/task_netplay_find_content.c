@@ -114,48 +114,116 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
       !string_is_equal(state->content_path, "N/A"))
       goto no_playlists;
 
-   /* Lobby reports content CRC, try to use CRC matching
-      content with no CRC uses 00000000 */
-   if (!string_is_equal(state->content_crc, "00000000|crc"))
+   /* Core requires content */
+   if (!string_is_equal(state->content_path, "N/A"))
    {
-
-      RARCH_LOG("Using CRC matching\n");
-
-      for (i = 0; i < state->lpl_list->size; i++)
+      /* CRC matching */
+      if (!string_is_equal(state->content_crc, "00000000|crc"))
       {
-         playlist_t *playlist = NULL;
-         const char *lpl_path = state->lpl_list->elems[i].data;
+         RARCH_LOG("[lobby] testing CRC matching for: %s\n", state->content_crc);
 
-         if (!strstr(lpl_path, file_path_str(FILE_PATH_LPL_EXTENSION)))
-            continue;
-
-         playlist = playlist_init(lpl_path, 99999);
-
-         for (j = 0; j < playlist->size; j++)
+         for (i = 0; i < state->lpl_list->size; i++)
          {
-            if (string_is_equal(playlist->entries[j].crc32, state->content_crc) && 
-               strstr(state->core_extensions, path_get_extension(playlist->entries[j].path)))
+            playlist_t *playlist = NULL;
+            const char *lpl_path = state->lpl_list->elems[i].data;
+
+            if (!strstr(lpl_path, file_path_str(FILE_PATH_LPL_EXTENSION)))
+               continue;
+
+            playlist = playlist_init(lpl_path, 99999);
+
+            for (j = 0; j < playlist->size; j++)
             {
-               RARCH_LOG("CRC Match %s\n", playlist->entries[j].crc32);
-               strlcpy(state->content_path, playlist->entries[j].path, sizeof(state->content_path));
-               state->found = true;
-               task_set_data(task, state);
-               task_set_progress(task, 100);
-               task_set_title(task, strdup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND)));
-               task_set_finished(task, true);
-               string_list_free(state->lpl_list);
-               free(playlist);
-               return;
+#if 1
+               RARCH_LOG("[lobby] playlist CRC: %s\n", 
+                  playlist->entries[j].crc32);
+#endif
+               if (string_is_equal(playlist->entries[j].crc32, state->content_crc))
+               {
+                  RARCH_LOG("[lobby] CRC match %s\n", playlist->entries[j].crc32);
+                  strlcpy(state->content_path, playlist->entries[j].path, sizeof(state->content_path));
+                  state->found = true;
+                  task_set_data(task, state);
+                  task_set_progress(task, 100);
+                  task_set_title(task, strdup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND)));
+                  task_set_finished(task, true);
+                  string_list_free(state->lpl_list);
+                  free(playlist);
+                  return;
+               }
+
+               task_set_progress(task, (int)(j/playlist->size*100.0));
             }
 
-            task_set_progress(task, (int)(j/playlist->size*100.0));
+            free(playlist);
+         }
+         /* CRC matching failed, goto filename matching */
+         if (!state->found)
+         {
+            RARCH_LOG("[lobby] CRC matching for: %s failed\n", state->content_crc);
+            goto filename_matching;
+         }
+      }
+      /* filename matching*/
+      else
+      {
+filename_matching:
+         RARCH_LOG("[lobby] testing filename matching for: %s\n", state->content_path);
+         for (i = 0; i < state->lpl_list->size; i++)
+         {
+            playlist_t *playlist = NULL;
+            const char *lpl_path = state->lpl_list->elems[i].data;
+
+            if (!strstr(lpl_path, file_path_str(FILE_PATH_LPL_EXTENSION)))
+               continue;
+
+            playlist = playlist_init(lpl_path, 99999);
+
+            for (j = 0; j < playlist->size; j++)
+            {
+               char entry[PATH_MAX_LENGTH];
+               const char* buf = path_basename(playlist->entries[j].path);
+
+               entry[0]    = '\0';
+
+               strlcpy(entry, buf, sizeof(entry));
+
+               path_remove_extension(entry);
+
+#if 1
+               RARCH_LOG("[lobby] playlist filename: %s\n", 
+                  playlist->entries[j].path);
+#endif
+
+               if ( !string_is_empty(entry) && 
+                     string_is_equal(entry, state->content_path) &&
+                     strstr(state->core_extensions, path_get_extension(playlist->entries[j].path)))
+               {
+                  RARCH_LOG("[lobby] filename match %s\n", playlist->entries[j].path);
+
+                  strlcpy(state->content_path, playlist->entries[j].path, sizeof(state->content_path));
+                  state->found = true;
+                  task_set_data(task, state);
+                  task_set_progress(task, 100);
+                  task_set_title(task, strdup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND)));
+                  task_set_finished(task, true);
+                  string_list_free(state->lpl_list);
+                  free(playlist);
+                  return;
+               }
+
+               task_set_progress(task, (int)(j/playlist->size*100.0));
+            }
+            free(playlist);
          }
 
-         free(playlist);
+         /* filename matching failed */
+         if (!state->found)
+            RARCH_LOG("[lobby] filename matching for: %s failed\n", state->content_path);
       }
    }
    /* Lobby reports core doesn't need content */
-   else if(string_is_equal(state->content_path, "N/A"))
+   else
    {
       state->found = true;
       task_set_data(task, state);
@@ -163,55 +231,6 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
       task_set_title(task, strdup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND)));
       task_set_finished(task, true);
       return;
-   }
-   /* Lobby reports that the core needs content but
-      the CRC wasn't reported */
-   else
-   {
-      RARCH_LOG("Using filename matching\n");
-      for (i = 0; i < state->lpl_list->size; i++)
-      {
-         playlist_t *playlist = NULL;
-         const char *lpl_path = state->lpl_list->elems[i].data;
-
-         if (!strstr(lpl_path, file_path_str(FILE_PATH_LPL_EXTENSION)))
-            continue;
-
-         playlist = playlist_init(lpl_path, 99999);
-
-         for (j = 0; j < playlist->size; j++)
-         {
-            char entry[PATH_MAX_LENGTH];
-            const char* buf = path_basename(playlist->entries[j].path);
-
-            entry[0]    = '\0';
-
-            strlcpy(entry, buf, sizeof(entry));
-
-            path_remove_extension(entry);
-
-            if ( !string_is_empty(entry) && 
-                  string_is_equal(entry, state->content_path) &&
-                  strstr(state->core_extensions, path_get_extension(playlist->entries[j].path)))
-            {
-               RARCH_LOG("Filename match %s\n", playlist->entries[j].path);
-
-               strlcpy(state->content_path, playlist->entries[j].path, sizeof(state->content_path));
-               state->found = true;
-               task_set_data(task, state);
-               task_set_progress(task, 100);
-               task_set_title(task, strdup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND)));
-               task_set_finished(task, true);
-               string_list_free(state->lpl_list);
-               free(playlist);
-               return;
-            }
-
-            task_set_progress(task, (int)(j/playlist->size*100.0));
-         }
-
-         free(playlist);
-      }
    }
 
 no_playlists:
