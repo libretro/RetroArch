@@ -114,8 +114,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
       !string_is_equal(state->content_path, "N/A"))
       goto no_playlists;
 
-   /* Lobby reports content CRC, try to use CRC matching
-      content with no CRC uses 00000000 */
+   /* Lobby reports content CRC, try to use CRC matching */
    if (!string_is_equal(state->content_crc, "00000000|crc"))
    {
 
@@ -165,7 +164,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
       return;
    }
    /* Lobby reports that the core needs content but
-      the CRC wasn't reported */
+      the CRC wasn't reported (00000000|crc) */
    else
    {
       RARCH_LOG("Using filename matching\n");
