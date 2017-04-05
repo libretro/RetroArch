@@ -7,9 +7,6 @@
 #include <vitasdk/utils.h>
 #include <psp2/kernel/threadmgr.h>
 
-// not in sdk		
-void sceClibPrintf(const char *fmt, ...);
-
 #define MAX_THREADS 256
 
 typedef struct reent_for_thread {
@@ -162,7 +159,6 @@ struct _reent *__getreent_for_thread(int thid) {
 
 		if (!free_reent) {
 			// we've exhausted all our resources
-			sceClibPrintf("[VITASDK] FATAL: Exhausted all thread reent resources!");
 			__builtin_trap();
 		}
 	} else {
