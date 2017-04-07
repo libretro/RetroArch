@@ -269,7 +269,8 @@ OBJ += intl/msg_hash_de.o \
        intl/msg_hash_ko.o \
        intl/msg_hash_nl.o \
        intl/msg_hash_pl.o \
-       intl/msg_hash_pt.o \
+       intl/msg_hash_pt_br.o \
+       intl/msg_hash_pt_pt.o \
        intl/msg_hash_ru.o \
        intl/msg_hash_vn.o \
        intl/msg_hash_chs.o
