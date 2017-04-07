@@ -23,7 +23,7 @@
 
 #include "../../configuration.h"
 
-int menu_hash_get_help_pt_enum(enum msg_hash_enums msg, char *s, size_t len)
+int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
    uint32_t driver_hash = 0;
    settings_t      *settings = config_get_ptr();
@@ -947,7 +947,7 @@ int menu_hash_get_help_pt_enum(enum msg_hash_enums msg, char *s, size_t len)
    return 0;
 }
 
-const char *msg_hash_to_str_pt(enum msg_hash_enums msg)
+const char *msg_hash_to_str_pt_br(enum msg_hash_enums msg)
 {
    switch (msg)
    {
@@ -1201,8 +1201,10 @@ const char *msg_hash_to_str_pt(enum msg_hash_enums msg)
          return "Japonês";
       case MENU_ENUM_LABEL_VALUE_LANG_KOREAN:
          return "Coreano";
-      case MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE:
-         return "Português";
+      case MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_BRAZIL:
+         return "Português (Brasileiro)";
+      case MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_PORTUGAL:
+         return "Português (Portugal)";
       case MENU_ENUM_LABEL_VALUE_LANG_RUSSIAN:
          return "Russo";
       case MENU_ENUM_LABEL_VALUE_LANG_SPANISH:

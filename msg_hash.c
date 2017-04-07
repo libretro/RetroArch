@@ -50,8 +50,11 @@ int menu_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
       case RETRO_LANGUAGE_ITALIAN:
          ret = menu_hash_get_help_it_enum(msg, s, len);
          break;
-      case RETRO_LANGUAGE_PORTUGUESE:
-         ret = menu_hash_get_help_pt_enum(msg, s, len);
+      case RETRO_LANGUAGE_PORTUGUESE_BRAZIL:
+         ret = menu_hash_get_help_pt_br_enum(msg, s, len);
+         break;
+      case RETRO_LANGUAGE_PORTUGUESE_PORTUGAL:
+         ret = menu_hash_get_help_pt_pt_enum(msg, s, len);
          break;
       case RETRO_LANGUAGE_DUTCH:
          ret = menu_hash_get_help_nl_enum(msg, s, len);
@@ -109,8 +112,11 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
       case RETRO_LANGUAGE_ITALIAN:
          ret = msg_hash_to_str_it(msg);
          break;
-      case RETRO_LANGUAGE_PORTUGUESE:
-         ret = msg_hash_to_str_pt(msg);
+      case RETRO_LANGUAGE_PORTUGUESE_BRAZIL:
+         ret = msg_hash_to_str_pt_br(msg);
+         break;
+      case RETRO_LANGUAGE_PORTUGUESE_PORTUGAL:
+         ret = msg_hash_to_str_pt_pt(msg);
          break;
       case RETRO_LANGUAGE_DUTCH:
          ret = msg_hash_to_str_nl(msg);
