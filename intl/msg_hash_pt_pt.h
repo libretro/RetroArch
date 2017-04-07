@@ -8,23 +8,23 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_DEVICE_DISCONNECTED_FROM_PORT,
-      "Dispositivo desconectado da porta"
+      "Dispositivo desligado da porta"
       )
 MSG_HASH(
       MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
-      "Comando netplay desconhecido recebido"
+      "Comando Netplay desconhecido recebido"
       )
 MSG_HASH(
       MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
-      "Este arquivo já existe. Sanvando no buffer de backup"
+      "Este ficheiro já existe. Guardando no buffer de cópia de segurança"
       )
 MSG_HASH(
       MSG_GOT_CONNECTION_FROM,
-      "Conexão obtida de: \"%s\""
+      "Ligaçao obtida de: \"%s\""
       )
 MSG_HASH(
       MSG_GOT_CONNECTION_FROM_NAME,
-      "Conexão obtida de: \"%s (%s)\""
+      "Ligação obtida de: \"%s (%s)\""
       )
 MSG_HASH(
       MSG_PUBLIC_ADDRESS,
@@ -32,11 +32,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
-      "Nenhum argumento fornecido e nenhum menu builtin, exibindo ajuda..."
+      "Não foi fornecido qualquer argumento e nenhum menu está contido, mostrando ajuda..."
       )
 MSG_HASH(
       MSG_NETPLAY_USERS_HAS_FLIPPED,
-      "Usuários do netplay retornaram"
+      "Utilizadores do Netplay devolveram"
       )
 MSG_HASH(
       MSG_SETTING_DISK_IN_TRAY,
@@ -48,51 +48,51 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
-      "Você deixou o jogo"
+      "Você saiu do jogo"
       )
 MSG_HASH(
       MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N,
-      "Você se juntou como jogador %d"
+      "Você juntou-se como jogador %d"
       )
 MSG_HASH(
       MSG_NETPLAY_IMPLEMENTATIONS_DIFFER,
-      "As implementações são diferentes. Certifique-se de que está usando exatamente as mesmas versões do RetroArch e do core."
+      "As implementações são diferentes. Certifique-se de que está a versão do RetroArch e do núcleo são as mesmas."
       )
 MSG_HASH(
       MSG_NETPLAY_ENDIAN_DEPENDENT,
-      "Este core não suporta inter-arquitetura de netplay entre esses sistemas"
+      "Este núcleo não suporta inter-arquitetura de Netplay entre estes sistemas"
       )
 MSG_HASH(
       MSG_NETPLAY_PLATFORM_DEPENDENT,
-      "Este core não suporta inter-arquitetura de netplay"
+      "Este núcleo não suporta inter-arquitetura de Netplay"
       )
 MSG_HASH(
       MSG_NETPLAY_ENTER_PASSWORD,
-      "Digite a senha do servidor de netplay:"
+      "Digite a palavra-passe do servidor de Netplay:"
       )
 MSG_HASH(
       MSG_NETPLAY_INCORRECT_PASSWORD,
-      "Senha incorreta"
+      "Palavra-passe incorreta"
       )
 MSG_HASH(
       MSG_NETPLAY_SERVER_NAMED_HANGUP,
-      "\"%s\" foi desconectado"
+      "\"%s\" foi desligado"
       )
 MSG_HASH(
       MSG_NETPLAY_SERVER_HANGUP,
-      "O cliente netplay foi desconectado"
+      "O cliente Netplay foi desligado"
       )
 MSG_HASH(
       MSG_NETPLAY_CLIENT_HANGUP,
-      "Desconectado do netplay"
+      "Desligado do Netplay"
       )
 MSG_HASH(
       MSG_NETPLAY_CANNOT_PLAY_UNPRIVILEGED,
-      "Você não tem permissão para jogar"
+      "Não tem permissão para jogar"
       )
 MSG_HASH(
       MSG_NETPLAY_CANNOT_PLAY_NO_SLOTS,
-      "Não há slots para jogadores livres"
+      "Não existem vagas livres para jogadores"
       )
 MSG_HASH(
       MSG_NETPLAY_CANNOT_PLAY,
@@ -100,11 +100,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_NETPLAY_PEER_PAUSED,
-      "Par do netplay \"%s\" pausou"
+      "O parceiro do Netplay \"%s\" ficou em pausa"
       )
 MSG_HASH(
       MSG_NETPLAY_CHANGED_NICK,
-      "Seu apelido mudou para \"%s\""
+      "A sua alcunha foi alterada para apelido mudou para \"%s\""
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
@@ -128,7 +128,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_AUTODETECT,
-      "Auto-detectar"
+      "Auto-detetar"
       )
 MSG_HASH(
       MSG_AUTOLOADING_SAVESTATE_FROM,
@@ -156,7 +156,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
-      "Senha"
+      "Palavra-passe"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
@@ -164,7 +164,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
-      "Nome de usuário"
+      "Nome de utilizador"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST,
@@ -172,11 +172,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST_END,
-      "Ponto Final da Lista de Contas"
+      "Nó da Lista de Contas"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS,
-      "Retro Achievements"
+      "Conquistas Retro"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
@@ -188,7 +188,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-      "Escanear Conteúdo"
+      "Procurar Conteúdo"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
@@ -200,7 +200,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
-      "Rooms de Netplay"
+      "Salas de Netplay"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ARCHIVE_MODE,
@@ -224,7 +224,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
-      "Driver de Áudio"
+      "Controlador de Áudio"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
@@ -264,7 +264,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
-      "Driver reamplificador de Áudio"
+      "Controlador de Reamostragem de Áudio"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
@@ -368,7 +368,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BLUETOOTH_ENABLE,
-      "Habilitar Bluetooth"
+      "Ativar Bluetooth"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
@@ -384,7 +384,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
-      "Driver da Câmera"
+      "Controlador de Câmera"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEAT,
@@ -584,7 +584,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE,
       "Sobreposição de DPI")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
-      "Driver")
+      "Controlador")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
       "Carregar Modelo no Desligamento do Core")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE,
@@ -694,7 +694,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE,
       "Tipo de Dispositivo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
-      "Driver de Entrada")
+      "Controlador de Entrada")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
       "Ciclo de Trabalho")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
@@ -846,7 +846,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
       "Entrada de Autoconfiguração")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
-      "Driver de Joypad")
+      "Controlador de Comando")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES,
       "Serviços")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED,
@@ -902,7 +902,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_STATE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
       "Permitir Localização")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
-      "Driver de Localização")
+      "Controlador de Localização")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
       "Entrando")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY,
@@ -932,7 +932,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_HEADER_OPACITY,
       "Opacidade do Cabeçalho")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
-      "Driver do Menu")
+      "Controlador de Menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
       "Acelerar Taxa de Quadros do Menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
@@ -1180,9 +1180,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RECORD_CONFIG,
       "Carregar Configuração de Gravação...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
-      "Driver de Gravação")
+      "Controlador de Gravação")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RECORD_ENABLE,
-      "Habilitar Gravação")
+      "Permitir Gravação")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RECORD_PATH,
       "Salvar Saída de Gravação como...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY,
@@ -1444,7 +1444,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_UDEV_SUPPORT,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
       "Suporte Video4Linux2")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
-      "Driver de contexto de vídeo")
+      "Controlador de contexto de vídeo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT,
       "Suporte Vulkan")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WAYLAND_SUPPORT,
@@ -1542,7 +1542,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
       "Desativar Composição de Área de Trabalho")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
-      "Driver de Vídeo")
+      "Controlador de Vídeo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
       "Filtro de Vídeo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,
@@ -1644,7 +1644,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
       "Altura da Janela")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
-      "Driver de Wi-Fi")
+      "Controlador de Wi-Fi")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
       "Wi-Fi")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
@@ -1720,7 +1720,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
       "Habilitar ou desabilitar salvamento de estado, trapaça, função Rewind, função Fast-Forward, pausa e câmera-lenta para todos os jogos.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
-      "Alterar os drivers usados pelo sistema.")
+      "Alterar os controladores utilizados pelo sistema.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
       "Alterar as definições de conquistas.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_SETTINGS,
@@ -1802,7 +1802,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
       "Definir quantos quadros a CPU pode rodar à frente da GPU quando usado o recurso 'Sincronização Sólida de GPU'.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
-      "Informar ao driver de vídeo ao usar explícitamente um modo de carregamento específico.")
+      "Informar ao controlador de vídeo ao usar explícitamente um modo de carregamento específico.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
       "Seleciona qual tela de exibição a ser usada.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
@@ -1860,7 +1860,7 @@ MSG_HASH(MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
 MSG_HASH(MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
       "Os arquivos de opções do Core foi foram criados com sucesso.")
 MSG_HASH(MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,
-      "Não foi possível encontrar nenhum driver próximo")
+      "Não foi possível encontrar nenhum controlador próximo")
 MSG_HASH(MSG_COULD_NOT_FIND_COMPATIBLE_SYSTEM,
       "Não foi possível encontrar uma compatibilidade de sistema.")
 MSG_HASH(MSG_COULD_NOT_FIND_VALID_DATA_TRACK,
@@ -1976,7 +1976,7 @@ MSG_HASH(MSG_FAILED_TO_SEND_NICKNAME_TO_HOST,
 MSG_HASH(MSG_FAILED_TO_SEND_SRAM_DATA_TO_CLIENT,
       "Falha ao enviar os dados SRAM para o cliente.")
 MSG_HASH(MSG_FAILED_TO_START_AUDIO_DRIVER,
-      "Falha ao iniciar o driver de áudio. Continuará sem áudio.")
+      "Falha ao iniciar o controlador de áudio. Continuará sem áudio.")
 MSG_HASH(MSG_FAILED_TO_START_MOVIE_RECORD,
       "Falha ao iniciar a gravação do filme.")
 MSG_HASH(MSG_FAILED_TO_START_RECORDING,
@@ -2106,7 +2106,7 @@ MSG_HASH(MSG_REMOVING_TEMPORARY_CONTENT_FILE,
 MSG_HASH(MSG_RESET,
       "Resetar")
 MSG_HASH(MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT,
-      "Reiniciando a gravação ao reinício do driver.")
+      "Reiniciando a gravação ao reinício do controlador.")
 MSG_HASH(MSG_RESTORED_OLD_SAVE_STATE,
       "Salvamento de estado antigo restaurado.")
 MSG_HASH(MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
@@ -2198,7 +2198,7 @@ MSG_HASH(MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
 MSG_HASH(MSG_VIRTUAL_DISK_TRAY,
       "bandeja de disco virtual.")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-      "latência de áudio desejada em milisegundos. Pode não ser honrado se o driver de áudio não puder prover a latência dada.")
+      "latência de áudio desejada em milisegundos. Pode não ser honrado se o controlador de áudio não puder prover a latência dada.")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_MUTE,
       "Áudio mudo/não-mudo.")
 MSG_HASH(
@@ -2458,7 +2458,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-      "Desabilita de forma forçada o supoerto sRGB FBO. Alguns drivers Intel OpenGL no Windows possui problemas de vídeo com o suporte sRGB FBO se estiver habilitado. Habilitando isso pode fazê-lo funcionar em torno dele."
+      "Desabilita de forma forçada o supoerto sRGB FBO. Alguns controladores Intel OpenGL no Windows possuem problemas de vídeo com o suporte sRGB FBO se estiver habilitado. Habilitando isso pode fazê-lo funcionar em torno dele."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
@@ -2538,47 +2538,47 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-      "Driver de vídeo para uso."
+      "Controlador de vídeo para uso."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-      "Driver de áudio para uso."
+      "Controlador de áudio para uso."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_INPUT_DRIVER,
-      "Driver de entrada para uso. Dependendo do driver de vídeo, pode forcá-lo a um driver de entrada diferente."
+      "Controlador de entrada para uso. Dependendo do controlador de vídeo, pode forçá-lo a um controlador de entrada diferente."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-      "Driver de Joypad para uso."
+      "Controlador de Comando para uso."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
-      "Driver de redimensionamento de áudio para uso."
+      "Controlador de redimensionamento de áudio para uso."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-      "Driver de câmera para uso."
+      "Controlador de câmera para uso."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-      "Driver de localização para uso."
+      "Controlador de localização para uso."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_DRIVER,
-      "Driver de menu para uso."
+      "Controlador de menu para uso."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-      "Driver de gravação para uso."
+      "Controlador de gravação para uso."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-      "Driver de WiFi para uso."
+      "Controlador de Wi-Fi para uso."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
-      "Filtra os arquivos a serem exibidos no explorador de arquivos por extenções suportadas."
+      "Filtra os ficheiros a serem exibidos no explorador de ficheiros por extenções suportadas."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
@@ -2590,11 +2590,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
-      "Subtitui o dispositivo de áudio padrão usado pelo driver de áudio. Isso depende do driver."
+      "Subtitui o dispositivo de áudio padrão usado pelo controlador de áudio. Isso depende do controlador."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
-      "Plugin de Áudio DSP que processa o áudio antes de ser enviado para o driver."
+      "Plugin de Áudio DSP que processa o áudio antes de ser enviado para o controlador."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
