@@ -298,8 +298,10 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
          return "japoński";
       case MENU_ENUM_LABEL_VALUE_LANG_KOREAN:
          return "koreański";
-      case MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE:
-         return "portugalski";
+      case MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_BRAZIL:
+         return "portugalski (brazil)";
+      case MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_PORTUGAL:
+         return "portugalski (portugal)";
       case MENU_ENUM_LABEL_VALUE_LANG_RUSSIAN:
          return "rosyjski";
       case MENU_ENUM_LABEL_VALUE_LANG_SPANISH:
