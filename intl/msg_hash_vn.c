@@ -2473,8 +2473,10 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Tiếng Hàn Quốc";
       case MENU_ENUM_LABEL_VALUE_LANG_POLISH:
          return "Polish";
-      case MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE:
-         return "Tiếng Bồ Đào Nha";
+      case MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_BRAZIL:
+         return "Tiếng Bồ Đào Nha (Brazil)";
+      case MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_PORTUGAL:
+         return "Tiếng Bồ Đào Nha (Portugal)";
       case MENU_ENUM_LABEL_VALUE_LANG_RUSSIAN:
          return "Tiếng Nga";
       case MENU_ENUM_LABEL_VALUE_LANG_SPANISH:

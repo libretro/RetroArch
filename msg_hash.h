@@ -1480,7 +1480,8 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_VALUE_LANG_GERMAN,
    MENU_ENUM_LABEL_VALUE_LANG_ITALIAN,
    MENU_ENUM_LABEL_VALUE_LANG_DUTCH,
-   MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE,
+   MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_BRAZIL,
+   MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_PORTUGAL,
    MENU_ENUM_LABEL_VALUE_LANG_RUSSIAN,
    MENU_ENUM_LABEL_VALUE_LANG_KOREAN,
    MENU_ENUM_LABEL_VALUE_LANG_CHINESE_TRADITIONAL,
@@ -1841,8 +1842,11 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len);
 const char *msg_hash_to_str_ko(enum msg_hash_enums msg);
 int menu_hash_get_help_ko_enum(enum msg_hash_enums msg, char *s, size_t len);
 
-const char *msg_hash_to_str_pt(enum msg_hash_enums msg);
-int menu_hash_get_help_pt_enum(enum msg_hash_enums msg, char *s, size_t len);
+const char *msg_hash_to_str_pt_br(enum msg_hash_enums msg);
+int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len);
+
+const char *msg_hash_to_str_pt_pt(enum msg_hash_enums msg);
+int menu_hash_get_help_pt_pt_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 const char *msg_hash_to_str_pl(enum msg_hash_enums msg);
 int menu_hash_get_help_pl_enum(enum msg_hash_enums msg, char *s, size_t len);
