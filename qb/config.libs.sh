@@ -274,6 +274,7 @@ if [ "$OS" = 'Win32' ]; then
       HAVE_XINPUT=yes
    fi
 
+   HAVE_WASAPI=yes
    HAVE_XAUDIO=yes
 else
    HAVE_D3D9=no

@@ -2066,6 +2066,8 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
          return "Mostrar ancho métrico (mm)";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT:
          return "Soporte de DirectSound";
+      case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WASAPI_SUPPORT:
+         return "Soporte de WASAPI";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT:
          return "Soporte de librerías dinámicas";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYNAMIC_SUPPORT:

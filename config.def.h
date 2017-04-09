@@ -73,6 +73,7 @@ enum audio_driver_enum
    AUDIO_PULSE,
    AUDIO_EXT,
    AUDIO_DSOUND,
+   AUDIO_WASAPI,
    AUDIO_COREAUDIO,
    AUDIO_PS3,
    AUDIO_XENON360,
@@ -252,6 +253,8 @@ enum record_driver_enum
 #define AUDIO_DEFAULT_DRIVER AUDIO_XAUDIO
 #elif defined(HAVE_DSOUND)
 #define AUDIO_DEFAULT_DRIVER AUDIO_DSOUND
+#elif defined(HAVE_WASAPI)
+#define AUDIO_DEFAULT_DRIVER AUDIO_WASAPI
 #elif defined(HAVE_AL)
 #define AUDIO_DEFAULT_DRIVER AUDIO_AL
 #elif defined(HAVE_SL)

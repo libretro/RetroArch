@@ -230,6 +230,7 @@ extern audio_driver_t audio_sdl;
 extern audio_driver_t audio_xa;
 extern audio_driver_t audio_pulse;
 extern audio_driver_t audio_dsound;
+extern audio_driver_t audio_wasapi;
 extern audio_driver_t audio_coreaudio;
 extern audio_driver_t audio_xenon360;
 extern audio_driver_t audio_ps3;

@@ -2917,6 +2917,8 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Display metric width (mm)";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT:
          return "DirectSound support";
+      case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WASAPI_SUPPORT:
+         return "WASAPI support";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT:
          return "Dynamic library support";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYNAMIC_SUPPORT:

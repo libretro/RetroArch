@@ -1515,6 +1515,8 @@ const char *msg_hash_to_str_pt_br(enum msg_hash_enums msg)
          return "Mostrar largura (mm)";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT:
          return "Suporte a DirectSound";
+      case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WASAPI_SUPPORT:
+         return "Suporte a WASAPI";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT:
          return "Suporte a bibliotecas dinâmicas";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_EGL_SUPPORT:

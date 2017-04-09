@@ -184,6 +184,7 @@ static void retroarch_print_features(void)
    _PSUPP(roar,            "RoarAudio",       "Audio driver");
    _PSUPP(pulse,           "PulseAudio",      "Audio driver");
    _PSUPP(dsound,          "DirectSound",     "Audio driver");
+   _PSUPP(wasapi,          "WASAPI",     "Audio driver");
    _PSUPP(xaudio,          "XAudio2",         "Audio driver");
    _PSUPP(al,              "OpenAL",          "Audio driver");
    _PSUPP(sl,              "OpenSL",          "Audio driver");

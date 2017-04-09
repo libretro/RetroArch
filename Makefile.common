@@ -433,6 +433,12 @@ ifeq ($(HAVE_DSOUND), 1)
    LIBS += -ldxguid -ldsound
 endif
 
+ifeq ($(HAVE_WASAPI), 1)
+   OBJ += audio/drivers/wasapi.o
+   DEFINES += -DHAVE_WASAPI
+   LIBS += -lole32 -lksuser
+endif
+
 ifeq ($(HAVE_XAUDIO), 1)
    OBJ += audio/drivers/xaudio.o
    DEFINES += -DHAVE_XAUDIO

@@ -608,6 +608,8 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
          return "Metryczna szerokość wyświetlacza (mm)";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT:
          return "Wsparcie DirectSound";
+      case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WASAPI_SUPPORT:
+         return "Wsparcie WASAPI";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT:
          return "Wsparcie bibliotek dynamicznych";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_EGL_SUPPORT:

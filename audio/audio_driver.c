@@ -84,6 +84,9 @@ static const audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_DSOUND
    &audio_dsound,
 #endif
+#ifdef HAVE_WASAPI
+   &audio_wasapi,
+#endif
 #ifdef HAVE_PULSE
    &audio_pulse,
 #endif

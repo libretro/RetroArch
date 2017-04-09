@@ -184,6 +184,8 @@ const char *config_get_default_audio(void)
          return "sdl2";
       case AUDIO_DSOUND:
          return "dsound";
+      case AUDIO_WASAPI:
+         return "wasapi";
       case AUDIO_XAUDIO:
          return "xaudio";
       case AUDIO_PULSE:
