@@ -6,6 +6,7 @@
 - LOCALIZATION: Update Japanese translation
 - LOCALIZATION/GUI: Korean font should display properly now with XMB/MaterialUI's
 default font
+- WINDOWS: Added WASAPI audio driver for low-latency audio. Both shared and exclusive mode.
 
 # 1.5.0
 - MOBILE: Single-tap for menu entry selection
