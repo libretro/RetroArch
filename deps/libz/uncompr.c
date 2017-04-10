@@ -21,7 +21,7 @@
    enough memory, Z_BUF_ERROR if there was not enough room in the output
    buffer, or Z_DATA_ERROR if the input data was corrupted.
    */
-int uncompress (Bytef *dest, uLongf *destLen, const Bytef *source, uLong sourceLen)
+int uncompress (unsigned char *dest, uint32_t *destLen, const unsigned char *source, uint32_t sourceLen)
 {
    z_stream stream;
    int err;
@@ -29,11 +29,11 @@ int uncompress (Bytef *dest, uLongf *destLen, const Bytef *source, uLong sourceL
    stream.next_in = (Bytef *)source;
    stream.avail_in = (uInt)sourceLen;
    /* Check for source > 64K on 16-bit machine: */
-   if ((uLong)stream.avail_in != sourceLen) return Z_BUF_ERROR;
+   if ((uint32_t)stream.avail_in != sourceLen) return Z_BUF_ERROR;
 
    stream.next_out = dest;
    stream.avail_out = (uInt)*destLen;
-   if ((uLong)stream.avail_out != *destLen) return Z_BUF_ERROR;
+   if ((uint32_t)stream.avail_out != *destLen) return Z_BUF_ERROR;
 
    stream.zalloc = Z_NULL;
    stream.zfree = Z_NULL;
@@ -42,7 +42,8 @@ int uncompress (Bytef *dest, uLongf *destLen, const Bytef *source, uLong sourceL
    if (err != Z_OK) return err;
 
    err = inflate(&stream, Z_FINISH);
-   if (err != Z_STREAM_END) {
+   if (err != Z_STREAM_END)
+   {
       inflateEnd(&stream);
       if (err == Z_NEED_DICT || (err == Z_BUF_ERROR && stream.avail_in == 0))
          return Z_DATA_ERROR;
