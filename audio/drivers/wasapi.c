@@ -27,12 +27,14 @@
 #include <Mmdeviceapi.h>
 #include <Mmreg.h>
 #include <Audioclient.h>
-#include <Functiondiscoverykeys_devpkey.h>
 #include <Propidl.h>
+
+#include <lists/string_list.h>
 
 #include "../audio_driver.h"
 #include "../../verbosity.h"
-#include "../libretro-common/include/lists/string_list.h"
+
+DEFINE_PROPERTYKEY(PKEY_Device_FriendlyName, 0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0x20, 0x67, 0xd1, 0x46, 0xa8, 0x50, 0xe0, 14); /* DEVPROP_TYPE_STRING */
 
 #define WASAPI_CHECK(bool_exp, err_str, err_exp)\
       if (!(bool_exp)) {\
@@ -97,6 +99,7 @@ static bool wasapi_check_device_id(IMMDevice *device, const char *id)
    bool result   = false;
    LPWSTR dev_id = NULL, dev_cmp_id = NULL;
    int id_length = MultiByteToWideChar(CP_ACP, 0, id, -1, NULL, 0);
+
    WASAPI_SR_CHECK(id_length > 0, "MultiByteToWideChar", goto error);
 
    dev_cmp_id = (LPWSTR)malloc(id_length * sizeof(WCHAR));
