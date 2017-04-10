@@ -51,21 +51,14 @@ enum
    RJPEG_SCAN_HEADER
 };
 
-
-typedef struct
-{
-   int      (*read)  (void *user,char *data,int size);
-   void     (*skip)  (void *user,int n);
-   int      (*eof)   (void *user);
-} rjpeg_io_callbacks;
-
 typedef uint8_t *(*rjpeg_resample_row_func)(uint8_t *out, uint8_t *in0, uint8_t *in1,
                                     int w, int hs);
 
 typedef struct
 {
    rjpeg_resample_row_func resample;
-   uint8_t *line0,*line1;
+   uint8_t *line0;
+   uint8_t *line1;
    int hs,vs;   /* expansion factor in each axis */
    int w_lores; /* horizontal pixels pre-expansion */
    int ystep;   /* how far through vertical expansion we are */
@@ -75,7 +68,6 @@ typedef struct
 struct rjpeg
 {
    uint8_t *buff_data;
-   void *empty;
 };
 
 #ifdef _MSC_VER
