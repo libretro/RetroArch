@@ -222,15 +222,15 @@ static IAudioClient *wasapi_init_client(IMMDevice *device, bool exclusive,
    hr = client->lpVtbl->GetDevicePeriod(client, &default_period, &minimum_period);
    WASAPI_HR_CHECK(hr, "IAudioClient::GetDevicePeriod", goto error);
 
-   if (exclusive)
-   {
-      if (latency < minimum_period / 10000)
-         buffer_duration = minimum_period;
-      else
-         buffer_duration = latency * 10000;
-   }
+   if (!exclusive)
+      buffer_duration = 0; // required for event driven shared mode
    else
-      buffer_duration = 0;
+   {
+      // 3 buffers latency (ms) to 2 buffer duration (100ns units)
+      buffer_duration = (double)latency * 10000.0 * 2.0 / 3.0;
+      if (buffer_duration < minimum_period)
+         buffer_duration = minimum_period;
+   }
 
    WAVEFORMATEXTENSIBLE wf;
    wf.Format.nChannels = 2;
@@ -276,11 +276,13 @@ static IAudioClient *wasapi_init_client(IMMDevice *device, bool exclusive,
    hr = client->lpVtbl->GetStreamLatency(client, &stream_latency);
    if(hr != S_OK)
       wasapi_com_err("IAudioClient::GetStreamLatency", hr);
-   else if (!exclusive)
+   else if (exclusive)
+      stream_latency *= 1.5;
+   else
       stream_latency += default_period;
 
-   RARCH_LOG("[WASAPI]: Client initialized (latency %ums).\n",
-         (unsigned)((double)stream_latency / 10000.0 + 0.5));
+   RARCH_LOG("[WASAPI]: Client initialized (max latency %.1fms).\n",
+         (double)stream_latency / 10000.0 + 0.05);
 
    return client;
 
