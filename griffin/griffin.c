@@ -644,6 +644,10 @@ AUDIO
 #include "../audio/drivers/dsound.c"
 #endif
 
+#ifdef HAVE_WASAPI
+#include "../audio/drivers/wasapi.c"
+#endif
+
 #ifdef HAVE_SL
 #include "../audio/drivers/opensl.c"
 #endif
