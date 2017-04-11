@@ -34,6 +34,8 @@
 #include "../video_context_driver.h"
 #include "../drivers/gl_symlinks.h"
 
+RETRO_BEGIN_DECLS
+
 typedef struct gl
 {
    int version_major;
@@ -186,5 +188,7 @@ void gl_load_texture_image(GLenum target,
       GLenum format,
       GLenum type,
       const GLvoid * data);
+
+RETRO_END_DECLS
 
 #endif
