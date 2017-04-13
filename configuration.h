@@ -256,6 +256,15 @@ typedef struct settings
       float rate_control_delta;
       float max_timing_skew;
       float volume; /* dB scale. */
+
+#ifdef HAVE_WASAPI
+      struct
+      {
+         bool exclusive_mode;
+         bool float_format;
+      } wasapi;
+#endif
+
    } audio;
 
    struct
