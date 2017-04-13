@@ -867,6 +867,10 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("show_hidden_files",            &settings->show_hidden_files, true, show_hidden_files, false);
    SETTING_BOOL("input_autodetect_enable",      &settings->input.autodetect_enable, true, input_autodetect_enable, false);
    SETTING_BOOL("audio_rate_control",           &settings->audio.rate_control, true, rate_control, false);
+#ifdef HAVE_WASAPI
+   SETTING_BOOL("audio_wasapi_exclusive_mode",  &settings->audio.wasapi.exclusive_mode, true, true, false);
+   SETTING_BOOL("audio_wasapi_float_format",    &settings->audio.wasapi.float_format, true, true, false);
+#endif
 
    if (global)
    {

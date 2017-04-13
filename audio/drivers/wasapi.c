@@ -33,6 +33,7 @@
 
 #include "../audio_driver.h"
 #include "../../verbosity.h"
+#include "../../configuration.h"
 
 DEFINE_PROPERTYKEY(PKEY_Device_FriendlyName, 0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0x20, 0x67, 0xd1, 0x46, 0xa8, 0x50, 0xe0, 14); /* DEVPROP_TYPE_STRING */
 
@@ -54,26 +55,29 @@ DEFINE_PROPERTYKEY(PKEY_Device_FriendlyName, 0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0
 #define WASAPI_RELEASE(iface)\
       if(iface) {\
          iface->lpVtbl->Release(iface);\
-         iface = NULL;\
-      }
+         iface = NULL; }\
 
 #define WASAPI_FREE(ptr)\
       if(ptr) {\
          free(ptr);\
-         ptr = NULL;\
-      }
+         ptr = NULL; }\
+
+#define WASAPI_CO_FREE(ptr)\
+      if(ptr) {\
+         CoTaskMemFree(ptr);\
+         ptr = NULL; }\
 
 typedef struct
 {
    IMMDevice *device;            /* always valid */
    IAudioClient *client;         /* may be NULL */
    IAudioRenderClient *renderer; /* may be NULL */
-   HANDLE write_event;
+   HANDLE write_event;           /* NULL in nonblocking mode */
    void *buffer;                 /* NULL in shared mode */
    size_t buffer_size;           /* in shared mode holds WASAPI engine buffer size */
    size_t buffer_usage;          /* valid in exclusive mode only */
    size_t frame_size;            /* 4 or 8 only */
-   unsigned latency;             /* in ms (requested, not real) */
+   unsigned latency;             /* in ms (requested, not current) */
    unsigned frame_rate;
    bool running;
 } wasapi_t;
@@ -119,10 +123,8 @@ static bool wasapi_check_device_id(IMMDevice *device, const char *id)
    return result;
 
 error:
-   if (dev_id)
-      CoTaskMemFree(dev_id);
-   if (dev_cmp_id)
-      free(dev_cmp_id);
+   WASAPI_CO_FREE(dev_id);
+   WASAPI_FREE(dev_cmp_id);
 
    return false;
 }
@@ -162,8 +164,7 @@ static IMMDevice *wasapi_init_device(const char *id)
          if (wasapi_check_device_id(device, id))
             break;
 
-         device->lpVtbl->Release(device);
-         device = NULL;
+         WASAPI_RELEASE(device);
       }
    }
    else
@@ -177,8 +178,7 @@ static IMMDevice *wasapi_init_device(const char *id)
    if (!device)
       goto error;
 
-   if (collection)
-      collection->lpVtbl->Release(collection);
+   WASAPI_RELEASE(collection);
    enumerator->lpVtbl->Release(enumerator);
 
    RARCH_LOG("[WASAPI]: Device initialized.\n");
@@ -186,30 +186,44 @@ static IMMDevice *wasapi_init_device(const char *id)
    return device;
 
 error:
-   if (collection)
-      collection->lpVtbl->Release(collection);
-   if (enumerator)
-      enumerator->lpVtbl->Release(enumerator);
+   WASAPI_RELEASE(collection);
+   WASAPI_RELEASE(enumerator);
 
    RARCH_ERR("[WASAPI]: Failed to initialize device.\n");
 
    return NULL;
 }
 
+static unsigned wasapi_adjust_rate(unsigned rate)
+{
+   /* FIXME: use supported frame rates instead of fixed values */
+   if (rate < 46050)
+      rate = 44100;
+   else if (rate < 72000)
+      rate = 48000;
+   else if (rate < 144000)
+      rate = 96000;
+   else
+      rate = 192000;
+
+   return rate;
+}
+
 static IAudioClient *wasapi_init_client(IMMDevice *device, bool exclusive,
-      bool format_float, unsigned rate, unsigned latency)
+      bool format_float, unsigned *rate, unsigned latency)
 {
    WAVEFORMATEXTENSIBLE wf;
    REFERENCE_TIME default_period, minimum_period;
-   IAudioClient *client                           = NULL;
-   REFERENCE_TIME buffer_duration, stream_latency = 0;
-   AUDCLNT_SHAREMODE share_mode                   = exclusive ?
+   IAudioClient *client                            = NULL;
+   REFERENCE_TIME buffer_duration, stream_latency  = 0;
+   AUDCLNT_SHAREMODE share_mode                    = exclusive ?
          AUDCLNT_SHAREMODE_EXCLUSIVE : AUDCLNT_SHAREMODE_SHARED;
-   DWORD stream_flags                             = 
+   DWORD stream_flags                              =
       AUDCLNT_STREAMFLAGS_NOPERSIST |
       AUDCLNT_STREAMFLAGS_EVENTCALLBACK;
-   UINT32 buffer_length                           = 0;
-   HRESULT hr                                     = 
+   UINT32 buffer_length                            = 0;
+   unsigned new_rate                               = wasapi_adjust_rate(*rate);
+   HRESULT hr                                      =
       device->lpVtbl->Activate(device, &IID_IAudioClient,
             CLSCTX_ALL, NULL, (void**)&client);
 
@@ -217,7 +231,7 @@ static IAudioClient *wasapi_init_client(IMMDevice *device, bool exclusive,
          "(%s, %s, %uHz, %ums) ...\n",
          exclusive ? "exclusive" : "shared",
          format_float ? "float" : "pcm",
-         rate, latency);
+         *rate, latency);
 
    WASAPI_HR_CHECK(hr, "IMMDevice::Activate", goto error);
 
@@ -235,12 +249,12 @@ static IAudioClient *wasapi_init_client(IMMDevice *device, bool exclusive,
    }
 
    wf.Format.nChannels               = 2;
-   wf.Format.nSamplesPerSec          = rate;
+   wf.Format.nSamplesPerSec          = new_rate;
 
    if (format_float)
    {
       wf.Format.wFormatTag           = WAVE_FORMAT_EXTENSIBLE;
-      wf.Format.nAvgBytesPerSec      = rate * 8;
+      wf.Format.nAvgBytesPerSec      = new_rate * 8;
       wf.Format.nBlockAlign          = 8;
       wf.Format.wBitsPerSample       = 32;
       wf.Format.cbSize               = sizeof(WORD) + sizeof(DWORD) + sizeof(GUID);
@@ -251,7 +265,7 @@ static IAudioClient *wasapi_init_client(IMMDevice *device, bool exclusive,
    else
    {
       wf.Format.wFormatTag           = WAVE_FORMAT_PCM;
-      wf.Format.nAvgBytesPerSec      = rate * 4;
+      wf.Format.nAvgBytesPerSec      = new_rate * 4;
       wf.Format.nBlockAlign          = 4;
       wf.Format.wBitsPerSample       = 16;
       wf.Format.cbSize               = 0;
@@ -270,15 +284,16 @@ static IAudioClient *wasapi_init_client(IMMDevice *device, bool exclusive,
          CLSCTX_ALL, NULL, (void**)&client);
       WASAPI_HR_CHECK(hr, "IMMDevice::Activate", goto error);
 
-      buffer_duration = 10000.0 * 1000.0 / rate * buffer_length + 0.5;
+      buffer_duration = 10000.0 * 1000.0 / new_rate * buffer_length + 0.5;
       hr = client->lpVtbl->Initialize(client, share_mode, stream_flags,
          buffer_duration, buffer_duration, (WAVEFORMATEX*)&wf, NULL);
    }
 
    WASAPI_HR_CHECK(hr, "IAudioClient::Initialize", goto error);
 
-   hr = client->lpVtbl->GetStreamLatency(client, &stream_latency);
+   *rate = new_rate;
 
+   hr = client->lpVtbl->GetStreamLatency(client, &stream_latency);
    if(hr != S_OK)
       wasapi_com_err("IAudioClient::GetStreamLatency", hr);
    else if (exclusive)
@@ -286,14 +301,13 @@ static IAudioClient *wasapi_init_client(IMMDevice *device, bool exclusive,
    else
       stream_latency += default_period;
 
-   RARCH_LOG("[WASAPI]: Client initialized (max latency %.1fms).\n",
-         (double)stream_latency / 10000.0 + 0.05);
+   RARCH_LOG("[WASAPI]: Client initialized (%uHz, %.1fms).\n",
+         new_rate, (double)stream_latency / 10000.0 + 0.05);
 
    return client;
 
 error:
-   if (client)
-      client->lpVtbl->Release(client);
+   WASAPI_RELEASE(client);
 
    RARCH_ERR("[WASAPI]: Failed to initialize client.\n");
 
@@ -301,13 +315,15 @@ error:
 }
 
 static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
-      unsigned u1, unsigned *u2)
+      unsigned u, unsigned *new_rate)
 {
    HRESULT hr;
-   bool exclusive       = false;
    bool com_initialized = false;
    UINT32 frame_count   = 0;
    BYTE *dest           = NULL;
+   settings_t *settings = config_get_ptr();
+   bool exclusive       = settings->audio.wasapi.exclusive_mode;
+   bool float_format    = settings->audio.wasapi.float_format;
    wasapi_t *w          = (wasapi_t*)calloc(1, sizeof(wasapi_t));
 
    WASAPI_CHECK(w, "Out of memory", return NULL);
@@ -321,34 +337,26 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    if (!w->device)
       goto error;
 
+   *new_rate = rate;
    if ((w->client = wasapi_init_client(w->device,
-         true, true, rate, latency)))
-   {
-      exclusive = true;
-      w->frame_size = 8;
-   }
+         exclusive, float_format, new_rate, latency)));
    else if ((w->client = wasapi_init_client(w->device,
-         true, false, rate, latency)))
-   {
-      exclusive = true;
-      w->frame_size = 4;
-   }
+         exclusive, !float_format, new_rate, latency)))
+      float_format = !float_format;
    else if ((w->client = wasapi_init_client(w->device,
-         false, true, rate, latency)))
-   {
-      exclusive = false;
-      w->frame_size = 8;
-   }
+         !exclusive, float_format, new_rate, latency)))
+      exclusive = !exclusive;
    else if ((w->client = wasapi_init_client(w->device,
-         false, false, rate, latency)))
+         !exclusive, !float_format, new_rate, latency)))
    {
-      exclusive = false;
-      w->frame_size = 4;
+      exclusive = !exclusive;
+      float_format = !float_format;
    }
-   else
+   if (!w->client)
       goto error;
-   
-   w->frame_rate = rate;
+
+   w->frame_size = float_format ? 8 : 4;
+   w->frame_rate = *new_rate;
    w->latency = latency;
 
    hr = w->client->lpVtbl->GetBufferSize(w->client, &frame_count);
@@ -522,13 +530,15 @@ static void wasapi_free(void *wh)
 {
    wasapi_t *w = (wasapi_t*)wh;
 
-   w->renderer->lpVtbl->Release(w->renderer);
-   w->client->lpVtbl->Stop(w->client);
-   w->client->lpVtbl->Release(w->client);
-   w->device->lpVtbl->Release(w->device);
+   WASAPI_RELEASE(w->renderer);
+   if (w->client)
+      w->client->lpVtbl->Stop(w->client);
+   WASAPI_RELEASE(w->client);
+   WASAPI_RELEASE(w->device);
    CoUninitialize();
-   CloseHandle(w->write_event);
-   free(w->buffer);
+   if (w->write_event)
+      CloseHandle(w->write_event);
+   WASAPI_FREE(w->buffer);
    free(w);
 }
 
@@ -643,10 +653,8 @@ error:
    if (prop_var_init)
       PropVariantClear(&prop_var);
    WASAPI_RELEASE(prop_store);
-   if (dev_id_wstr)
-      CoTaskMemFree(dev_id_wstr);
-   if (dev_name_wstr)
-      CoTaskMemFree(dev_name_wstr);
+   WASAPI_CO_FREE(dev_id_wstr);
+   WASAPI_CO_FREE(dev_name_wstr);
    WASAPI_RELEASE(device);
    WASAPI_RELEASE(collection);
    WASAPI_RELEASE(enumerator);
