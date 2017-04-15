@@ -949,13 +949,10 @@ static void handle_hotplug(android_input_t *android,
       }
    }
 
-   /* NVIDIA Shield Portable
-    * This is a simple hack, basically groups the "back"
-    * button with the rest of the gamepad
-    */
    else if(strstr(device_model, "SHIELD") && (
       strstr(device_name, "Virtual") || strstr(device_name, "gpio") ||
-      strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.01")))
+      strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.01") ||
+      strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.02")))
    {
       /* only use the hack if the device is one of the built-in devices */
       RARCH_LOG("Special Device Detected: %s\n", device_model);
@@ -967,8 +964,26 @@ static void handle_hotplug(android_input_t *android,
 
          if ( pad_id2 > 0)
             return;
-
          strlcpy (name_buf, "NVIDIA SHIELD Portable", sizeof(name_buf));
+      }
+   }
+   
+   else if(strstr(device_model, "SHIELD") && (
+      strstr(device_name, "Virtual") || strstr(device_name, "gpio") ||
+      strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.03")))
+   {
+      /* only use the hack if the device is one of the built-in devices */
+      RARCH_LOG("Special Device Detected: %s\n", device_model);
+      {
+         if (strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.03")
+             && android->pads_connected==0)
+            pad_id1 = id;
+         else if (strstr(device_name, "Virtual") || strstr(device_name, "gpio"))
+         {
+            id = pad_id1;
+            return;
+         }
+         strlcpy (name_buf, "NVIDIA SHIELD Gamepad", sizeof(name_buf));
       }
    }
 
