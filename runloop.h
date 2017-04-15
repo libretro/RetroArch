@@ -128,27 +128,27 @@ typedef struct global
 {
    struct
    {
-      char savefile[4096];
-      char savestate[4096];
-      char cheatfile[4096];
-      char ups[4096];
-      char bps[4096];
-      char ips[4096];
-      char remapfile[4096];
+      char savefile[8192];
+      char savestate[8192];
+      char cheatfile[8192];
+      char ups[8192];
+      char bps[8192];
+      char ips[8192];
+      char remapfile[8192];
    } name;
 
    /* Recording. */
    struct
    {
-      char path[4096];
-      char config[4096];
+      char path[8192];
+      char config[8192];
       unsigned width;
       unsigned height;
 
       size_t gpu_width;
       size_t gpu_height;
-      char output_dir[4096];
-      char config_dir[4096];
+      char output_dir[8192];
+      char config_dir[8192];
       bool use_output_dir;
    } record;
 

@@ -52,7 +52,7 @@ static struct string_list *subsystem_fullpaths          = NULL;
 
 static char subsystem_path[PATH_MAX_LENGTH]             = {0};
 static char path_default_shader_preset[PATH_MAX_LENGTH] = {0};
-static char path_main_basename[PATH_MAX_LENGTH]         = {0};
+static char path_main_basename[8192]                    = {0};
 static char path_content[PATH_MAX_LENGTH]               = {0};
 static char path_libretro[PATH_MAX_LENGTH]              = {0};
 static char path_config_file[PATH_MAX_LENGTH]           = {0};

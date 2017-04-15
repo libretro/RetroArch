@@ -186,7 +186,7 @@ void runloop_msg_queue_push(const char *msg,
  **/
 static bool rarch_game_specific_options(char **output)
 {
-   char game_path[255];
+   char game_path[8192];
 
    game_path[0] ='\0';
 
