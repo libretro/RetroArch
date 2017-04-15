@@ -133,7 +133,7 @@ void *glkitview_init(void)
    g_view.enableSetNeedsDisplay = NO;
    [g_view addSubview:g_pause_indicator_view];
     
-   return (__bridge void *)((GLKView*)g_view);
+   return (BRIDGE void *)((GLKView*)g_view);
 #else
     return nsview_get_ptr();
 #endif
