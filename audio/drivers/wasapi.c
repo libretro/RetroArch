@@ -308,7 +308,7 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
 
          wasapi_warn("Unsupported format");
          rate_res = wasapi_pref_rate(j);
-         if (rate_res == *rate) /* allready tested */
+         if (rate_res == *rate) /* requested allready tested */
             rate_res = wasapi_pref_rate(++j); /* skip it */
       }
    }
@@ -421,7 +421,7 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
 
          wasapi_warn("Unsupported format");
          rate_res = wasapi_pref_rate(j);
-         if (rate_res == *rate) /* allready tested */
+         if (rate_res == *rate) /* requested allready tested */
             rate_res = wasapi_pref_rate(++j); /* skip it */
       }
    }
