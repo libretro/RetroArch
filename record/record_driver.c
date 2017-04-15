@@ -200,7 +200,14 @@ void recording_dump_frame(const void *data, unsigned width,
 
    if (has_gpu_record)
    {
-      struct video_viewport vp = {0};
+      struct video_viewport vp;
+
+      vp.x                        = 0;
+      vp.y                        = 0;
+      vp.width                    = 0;
+      vp.height                   = 0;
+      vp.full_width               = 0;
+      vp.full_height              = 0;
 
       video_driver_get_viewport_info(&vp);
 
@@ -357,7 +364,14 @@ bool recording_init(void)
    if (video_driver_supports_recording())
    {
       unsigned gpu_size;
-      struct video_viewport vp = {0};
+      struct video_viewport vp;
+
+      vp.x                        = 0;
+      vp.y                        = 0;
+      vp.width                    = 0;
+      vp.height                   = 0;
+      vp.full_width               = 0;
+      vp.full_height              = 0;
 
       video_driver_get_viewport_info(&vp);
 

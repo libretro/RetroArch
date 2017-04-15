@@ -732,9 +732,16 @@ static INLINE int android_input_poll_event_type_motion(
 
       for (motion_ptr = 0; motion_ptr < pointer_max; motion_ptr++)
       {
-         struct video_viewport vp = {0};
+         struct video_viewport vp;
          float x = AMotionEvent_getX(event, motion_ptr);
          float y = AMotionEvent_getY(event, motion_ptr);
+
+         vp.x                        = 0;
+         vp.y                        = 0;
+         vp.width                    = 0;
+         vp.height                   = 0;
+         vp.full_width               = 0;
+         vp.full_height              = 0;
 
          video_driver_translate_coord_viewport_wrap(
                &vp,

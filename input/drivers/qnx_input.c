@@ -409,9 +409,16 @@ static void qnx_process_touch_event(
          {
             if(qnx->pointer[i].contact_id == -1)
             {
-               struct video_viewport vp = {0};
+               struct video_viewport vp;
 
-               qnx->pointer[i].contact_id = contact_id;
+               vp.x                        = 0;
+               vp.y                        = 0;
+               vp.width                    = 0;
+               vp.height                   = 0;
+               vp.full_width               = 0;
+               vp.full_height              = 0;
+
+               qnx->pointer[i].contact_id  = contact_id;
 
                video_driver_translate_coord_viewport_wrap(
                      &vp,
@@ -469,7 +476,15 @@ static void qnx_process_touch_event(
          {
             if(qnx->pointer[i].contact_id == contact_id)
             {
-               struct video_viewport vp = {0};
+               struct video_viewport vp;
+
+               vp.x                        = 0;
+               vp.y                        = 0;
+               vp.width                    = 0;
+               vp.height                   = 0;
+               vp.full_width               = 0;
+               vp.full_height              = 0;
+
 #if 0
                gl_t *gl = (gl_t*)video_driver_get_ptr(false);
 

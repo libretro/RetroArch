@@ -157,7 +157,15 @@ static void cocoa_input_poll(void *data)
 
    for (i = 0; i < apple->touch_count; i++)
    {
-      struct video_viewport vp = {0};
+      struct video_viewport vp;
+      
+      vp.x                        = 0;
+      vp.y                        = 0;
+      vp.width                    = 0;
+      vp.height                   = 0;
+      vp.full_width               = 0;
+      vp.full_height              = 0;
+
 #ifndef IOS
       apple->touches[i].screen_x *= backing_scale_factor;
       apple->touches[i].screen_y *= backing_scale_factor;

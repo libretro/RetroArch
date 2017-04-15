@@ -677,15 +677,25 @@ static void d3d_calculate_rect(void *data,
 
    if (settings->video.scale_integer && !force_full)
    {
-      struct video_viewport vp = {0};
+      struct video_viewport vp;
+
+      vp.x                        = 0;
+      vp.y                        = 0;
+      vp.width                    = 0;
+      vp.height                   = 0;
+      vp.full_width               = 0;
+      vp.full_height              = 0;
+
       video_viewport_get_scaled_integer(&vp,
             *width,
             *height,
-            video_driver_get_aspect_ratio(), d3d->keep_aspect);
-      *x          = vp.x;
-      *y          = vp.y;
-      *width  = vp.width;
-      *height = vp.height;
+            video_driver_get_aspect_ratio(),
+            d3d->keep_aspect);
+
+      *x                          = vp.x;
+      *y                          = vp.y;
+      *width                      = vp.width;
+      *height                     = vp.height;
    }
    else if (d3d->keep_aspect && !force_full)
    {
