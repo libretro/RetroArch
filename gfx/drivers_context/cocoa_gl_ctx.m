@@ -191,6 +191,8 @@ float get_backing_scale_factor(void)
       backing_scale_def = 0.0f;
    RAScreen *screen     = NULL;
 
+   (void)screen;
+
    if (backing_scale_def != 0.0f)
       return backing_scale_def;
 
