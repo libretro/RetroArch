@@ -184,17 +184,31 @@ void *get_chosen_screen(void)
 
 float get_backing_scale_factor(void)
 {
-   RAScreen *screen = (BRIDGE RAScreen*)get_chosen_screen();
-   if (!screen)
-      return 0.0;
+   static float 
+      backing_scale_def = 0.0f;
+   RAScreen *screen     = NULL;
+
+   if (backing_scale_def != 0.0f)
+      return backing_scale_def;
+
+   backing_scale_def = 1.0f;
 #ifdef HAVE_COCOA
-   CGFloat ret;
-    CocoaView *g_view = (CocoaView*)nsview_get_ptr();
-   SEL selector     = NSSelectorFromString(BOXSTRING("backingScaleFactor"));
-   if ([screen respondsToSelector:selector])
-        return (float)get_from_selector([[g_view window] class], [g_view window], selector, &ret);
+   screen = (BRIDGE RAScreen*)get_chosen_screen();
+
+   if (screen)
+   {
+      SEL selector = NSSelectorFromString(BOXSTRING("backingScaleFactor"));
+      if ([screen respondsToSelector:selector])
+      {
+         CGFloat ret;
+         CocoaView *g_view     = (CocoaView*)nsview_get_ptr();
+         backing_scale_def     = (float)get_from_selector
+            ([[g_view window] class], [g_view window], selector, &ret);
+      }
+   }
 #endif
-   return 1.0f;
+
+   return backing_scale_def;
 }
 
 void cocoagl_gfx_ctx_update(void)
