@@ -56,6 +56,12 @@
 #define UIUserInterfaceIdiomCarPlay 3
 #endif
 
+#if __has_feature(objc_arc)
+#define BRIDGE __bridge
+#else
+#define BRIDGE 
+#endif
+
 @interface EAGLContext (OSXCompat) @end
 @implementation EAGLContext (OSXCompat)
 + (void)clearCurrentContext { [EAGLContext setCurrentContext:nil];  }
@@ -169,27 +175,16 @@ void *get_chosen_screen(void)
    if (settings->video.monitor_index >= screens.count)
    {
       RARCH_WARN("video_monitor_index is greater than the number of connected monitors; using main screen instead.");
-#if __has_feature(objc_arc)
-      return (__bridge void*)screens;
-#else
-      return (void*)screens;
-#endif
+      return (BRIDGE void*)screens;
    }
 	
-#if __has_feature(objc_arc)
-   return ((__bridge void*)[screens objectAtIndex:settings->video.monitor_index]);
-#else
-   return ((void*)[screens objectAtIndex:settings->video.monitor_index]);
-#endif
+   return ((BRIDGE void*)[screens objectAtIndex:settings->video.monitor_index]);
 }
+
 
 float get_backing_scale_factor(void)
 {
-#if __has_feature(objc_arc)
-   RAScreen *screen = (__bridge RAScreen*)get_chosen_screen();
-#else
-   RAScreen *screen = (RAScreen*)get_chosen_screen();
-#endif
+   RAScreen *screen = (BRIDGE RAScreen*)get_chosen_screen();
    if (!screen)
       return 0.0;
 #ifdef HAVE_COCOA
@@ -370,22 +365,18 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
 
 float cocoagl_gfx_ctx_get_native_scale(void)
 {
-    static CGFloat ret = 0.0f;
-    SEL selector     = NSSelectorFromString(BOXSTRING("nativeScale"));
-#if __has_feature(objc_arc)
-    RAScreen *screen = (__bridge RAScreen*)get_chosen_screen();
-#else
-    RAScreen *screen = (RAScreen*)get_chosen_screen();
-#endif
-    
-    if (ret != 0.0f)
-       return ret;
-    if (!screen)
-       return 0.0f;
-    
+   static CGFloat ret = 0.0f;
+   SEL selector     = NSSelectorFromString(BOXSTRING("nativeScale"));
+   RAScreen *screen = (BRIDGE RAScreen*)get_chosen_screen();
+
+   if (ret != 0.0f)
+      return ret;
+   if (!screen)
+      return 0.0f;
+
    if ([screen respondsToSelector:selector])
-       return (float)get_from_selector([screen class], screen, selector, &ret);
-    
+      return (float)get_from_selector([screen class], screen, selector, &ret);
+
    ret          = 1.0f;
    selector     = NSSelectorFromString(BOXSTRING("scale"));
    if ([screen respondsToSelector:selector])
@@ -441,11 +432,7 @@ static void cocoagl_gfx_ctx_update_title(void *data, video_frame_info_t *video_i
 static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types type,
             float *value)
 {
-#if __has_feature(objc_arc)
-    RAScreen *screen              = (__bridge RAScreen*)get_chosen_screen();
-#else
-    RAScreen *screen              = (RAScreen*)get_chosen_screen();
-#endif
+    RAScreen *screen              = (BRIDGE RAScreen*)get_chosen_screen();
 #if defined(HAVE_COCOA)
     NSDictionary *description     = [screen deviceDescription];
     NSSize  display_pixel_size    = [[description objectForKey:NSDeviceSize] sizeValue];
@@ -550,11 +537,7 @@ static void cocoagl_gfx_ctx_swap_buffers(void *data, video_frame_info_t *video_i
 static gfx_ctx_proc_t cocoagl_gfx_ctx_get_proc_address(const char *symbol_name)
 {
    return (gfx_ctx_proc_t)CFBundleGetFunctionPointerForName(CFBundleGetBundleWithIdentifier(GLFrameworkID),
-   (
-#if __has_feature(objc_arc)
-         __bridge
-#endif
-CFStringRef)BOXSTRING(symbol_name)
+   (BRIDGE CFStringRef)BOXSTRING(symbol_name)
          );
 }
 
