@@ -31,11 +31,15 @@
 
 void matrix_3x3_identity(math_matrix_3x3 *mat)
 {
-   unsigned i;
-
-   memset(mat, 0, sizeof(*mat));
-   for (i = 0; i < 3; i++)
-      MAT_ELEM_3X3(*mat, i, i) = 1.0f;
+   MAT_ELEM_3X3(*mat, 0, 0) = 1.0f;
+   MAT_ELEM_3X3(*mat, 0, 1) = 0;
+   MAT_ELEM_3X3(*mat, 0, 2) = 0;
+   MAT_ELEM_3X3(*mat, 1, 0) = 0;
+   MAT_ELEM_3X3(*mat, 1, 1) = 1.0f;
+   MAT_ELEM_3X3(*mat, 1, 2) = 0;
+   MAT_ELEM_3X3(*mat, 2, 0) = 0;
+   MAT_ELEM_3X3(*mat, 2, 1) = 0;
+   MAT_ELEM_3X3(*mat, 2, 2) = 1.0f;
 }
 
 void matrix_3x3_inits(math_matrix_3x3 *mat,
