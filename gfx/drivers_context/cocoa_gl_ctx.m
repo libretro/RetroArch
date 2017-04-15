@@ -161,7 +161,10 @@ static float get_from_selector(Class obj_class, id obj_id, SEL selector, CGFloat
     [invocation setTarget:obj_id];
     [invocation invoke];
     [invocation getReturnValue:ret];
+#if __has_feature(objc_arc)
+#else
     [invocation release];
+#endif
     return *ret;
 }
 
