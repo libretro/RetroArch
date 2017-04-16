@@ -208,7 +208,7 @@ void egl_get_video_size(egl_ctx_data_t *egl, unsigned *width, unsigned *height)
    }
 }
 
-static bool check_egl_version(int minMajorVersion, int minMinorVersion)
+bool check_egl_version(int minMajorVersion, int minMinorVersion)
 {
    int count;
    int major, minor;
@@ -233,7 +233,7 @@ static bool check_egl_version(int minMajorVersion, int minMinorVersion)
    return false;
 }
 
-static bool check_egl_client_extension(const char *name)
+bool check_egl_client_extension(const char *name)
 {
    size_t nameLen;
    const char *str = eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
@@ -260,12 +260,12 @@ static bool check_egl_client_extension(const char *name)
 
 static EGLDisplay get_egl_display(EGLenum platform, void *native)
 {
-#if !defined(ANDROID) && !defined(EMSCRIPTEN)
    if (platform != EGL_NONE)
    {
       /* If the client library supports at least EGL 1.5, then we can call
        * eglGetPlatformDisplay. Otherwise, see if eglGetPlatformDisplayEXT
        * is available. */
+#if defined(EGL_VERSION_1_5)
       if (check_egl_version(1, 5))
       {
          typedef EGLDisplay (EGLAPIENTRY * pfn_eglGetPlatformDisplay)
@@ -282,7 +282,9 @@ static EGLDisplay get_egl_display(EGLenum platform, void *native)
                return dpy;
          }
       }
+#endif // defined(EGL_VERSION_1_5)
 
+#if defined(EGL_EXT_platform_base)
       if (check_egl_client_extension("EGL_EXT_platform_base"))
       {
          PFNEGLGETPLATFORMDISPLAYEXTPROC ptr_eglGetPlatformDisplayEXT;
@@ -297,8 +299,8 @@ static EGLDisplay get_egl_display(EGLenum platform, void *native)
                return dpy;
          }
       }
+#endif // defined(EGL_EXT_platform_base)
    }
-#endif
 
    /* Either the caller didn't provide a platform type, or the EGL
     * implementation doesn't support eglGetPlatformDisplay. In this case, try
