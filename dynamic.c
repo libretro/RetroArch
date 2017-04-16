@@ -191,7 +191,7 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
  *
  * For statically linked cores, pass retro_set_environment as argument.
  */
-void libretro_get_environment_info(void (*func)(retro_environment_t),
+static void libretro_get_environment_info(void (*func)(retro_environment_t),
       bool *load_no_content)
 {
    load_no_content_hook = load_no_content;
