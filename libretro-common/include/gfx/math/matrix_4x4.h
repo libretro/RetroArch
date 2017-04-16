@@ -26,6 +26,7 @@
 #include <retro_inline.h>
 #include <retro_common_api.h>
 
+#include <math.h>
 #include <gfx/math/vector_3.h>
 
 /* Column-major matrix (OpenGL-style).
