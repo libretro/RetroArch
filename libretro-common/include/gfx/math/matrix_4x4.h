@@ -67,8 +67,57 @@ typedef struct math_matrix_4x4
 void matrix_4x4_copy(math_matrix_4x4 *dst, const math_matrix_4x4 *src);
 void matrix_4x4_transpose(math_matrix_4x4 *out, const math_matrix_4x4 *in);
 
-void matrix_4x4_rotate_x(math_matrix_4x4 *mat, float rad);
-void matrix_4x4_rotate_y(math_matrix_4x4 *mat, float rad);
+/*
+ * Builds an X-axis rotation matrix
+ */
+#define matrix_4x4_rotate_x(mat, radians) \
+{ \
+   float cosine             = cosf(radians); \
+   float sine               = sinf(radians); \
+   MAT_ELEM_4X4(mat, 0, 0) = 1.0f; \
+   MAT_ELEM_4X4(mat, 0, 1) = 0.0f; \
+   MAT_ELEM_4X4(mat, 0, 2) = 0.0f; \
+   MAT_ELEM_4X4(mat, 0, 3) = 0.0f; \
+   MAT_ELEM_4X4(mat, 1, 0) = 0.0f; \
+   MAT_ELEM_4X4(mat, 1, 1) = cosine; \
+   MAT_ELEM_4X4(mat, 1, 2) = -sine; \
+   MAT_ELEM_4X4(mat, 1, 3) = 0.0f; \
+   MAT_ELEM_4X4(mat, 2, 0) = 0.0f; \
+   MAT_ELEM_4X4(mat, 2, 1) = sine; \
+   MAT_ELEM_4X4(mat, 2, 2) = cosine; \
+   MAT_ELEM_4X4(mat, 2, 3) = 0.0f; \
+   MAT_ELEM_4X4(mat, 3, 0) = 0.0f; \
+   MAT_ELEM_4X4(mat, 3, 1) = 0.0f; \
+   MAT_ELEM_4X4(mat, 3, 2) = 0.0f; \
+   MAT_ELEM_4X4(mat, 3, 3) = 1.0f; \
+}
+
+/*
+ * Builds a rotation matrix using the 
+ * rotation around the Y-axis.
+ */
+
+#define matrix_4x4_rotate_y(mat, radians) \
+{ \
+   float cosine             = cosf(radians); \
+   float sine               = sinf(radians); \
+   MAT_ELEM_4X4(mat, 0, 0) = cosine; \
+   MAT_ELEM_4X4(mat, 0, 1) = 0.0f; \
+   MAT_ELEM_4X4(mat, 0, 2) = -sine; \
+   MAT_ELEM_4X4(mat, 0, 3) = 0.0f; \
+   MAT_ELEM_4X4(mat, 1, 0) = 0.0f; \
+   MAT_ELEM_4X4(mat, 1, 1) = 1.0f; \
+   MAT_ELEM_4X4(mat, 1, 2) = 0.0f; \
+   MAT_ELEM_4X4(mat, 1, 3) = 0.0f; \
+   MAT_ELEM_4X4(mat, 2, 0) = sine; \
+   MAT_ELEM_4X4(mat, 2, 1) = 0.0f; \
+   MAT_ELEM_4X4(mat, 2, 2) = cosine; \
+   MAT_ELEM_4X4(mat, 2, 3) = 0.0f; \
+   MAT_ELEM_4X4(mat, 3, 0) = 0.0f; \
+   MAT_ELEM_4X4(mat, 3, 1) = 0.0f; \
+   MAT_ELEM_4X4(mat, 3, 2) = 0.0f; \
+   MAT_ELEM_4X4(mat, 3, 3) = 1.0f; \
+}
 
 /*
  * Builds a rotation matrix using the 
@@ -171,7 +220,31 @@ void matrix_4x4_multiply(math_matrix_4x4 *out, const math_matrix_4x4 *a, const m
    MAT_ELEM_4X4(mat, 3, 2) = 0.0f; \
    MAT_ELEM_4X4(mat, 3, 3) = 1.0f
 
-void matrix_4x4_projection(math_matrix_4x4 *out, float y_fov, float aspect, float znear, float zfar);
+/*
+ * Creates a perspective projection matrix.
+ */
+
+#define  matrix_4x4_projection(mat, y_fov, aspect, znear, zfar) \
+{ \
+   float const a            = 1.f / tan((y_fov) / 2.f); \
+   float delta_z            = (zfar) - (znear); \
+   MAT_ELEM_4X4(mat, 0, 0) = a / (aspect); \
+   MAT_ELEM_4X4(mat, 0, 1) = 0.0f; \
+   MAT_ELEM_4X4(mat, 0, 2) = 0.0f; \
+   MAT_ELEM_4X4(mat, 0, 3) = 0.0f; \
+   MAT_ELEM_4X4(mat, 1, 0) = 0.0f; \
+   MAT_ELEM_4X4(mat, 1, 1) = a; \
+   MAT_ELEM_4X4(mat, 1, 2) = 0.0f; \
+   MAT_ELEM_4X4(mat, 1, 3) = 0.0f; \
+   MAT_ELEM_4X4(mat, 2, 0) = 0.0f; \
+   MAT_ELEM_4X4(mat, 2, 1) = 0.0f; \
+   MAT_ELEM_4X4(mat, 2, 2) = -(((zfar) + (znear)) / delta_z); \
+   MAT_ELEM_4X4(mat, 2, 3) = -1.f; \
+   MAT_ELEM_4X4(mat, 3, 0) = 0.0f; \
+   MAT_ELEM_4X4(mat, 3, 1) = 0.0f; \
+   MAT_ELEM_4X4(mat, 3, 2) = -((2.f * (zfar) * (znear)) / delta_z); \
+   MAT_ELEM_4X4(mat, 3, 3) = 0.0f; \
+}
 
 RETRO_END_DECLS
 
