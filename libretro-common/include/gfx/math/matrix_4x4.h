@@ -23,7 +23,6 @@
 #ifndef __LIBRETRO_SDK_GFX_MATH_MATRIX_4X4_H__
 #define __LIBRETRO_SDK_GFX_MATH_MATRIX_4X4_H__
 
-#include <retro_inline.h>
 #include <retro_common_api.h>
 
 #include <math.h>
