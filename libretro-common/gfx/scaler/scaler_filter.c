@@ -43,7 +43,7 @@ static bool allocate_filters(struct scaler_ctx *ctx)
    return ctx->horiz.filter && ctx->vert.filter;
 }
 
-static void gen_filter_point_sub(struct scaler_filter *filter,
+static INLINE void gen_filter_point_sub(struct scaler_filter *filter,
       int len, int pos, int step)
 {
    int i;
@@ -79,7 +79,7 @@ static bool gen_filter_point(struct scaler_ctx *ctx)
    return true;
 }
 
-static void gen_filter_bilinear_sub(struct scaler_filter *filter,
+static INLINE void gen_filter_bilinear_sub(struct scaler_filter *filter,
       int len, int pos, int step)
 {
    int i;
@@ -114,7 +114,7 @@ static bool gen_filter_bilinear(struct scaler_ctx *ctx)
    return true;
 }
 
-static void gen_filter_sinc_sub(struct scaler_filter *filter,
+static INLINE void gen_filter_sinc_sub(struct scaler_filter *filter,
       int len, int pos, int step, double phase_mul)
 {
    int i, j;
@@ -195,22 +195,21 @@ static bool validate_filter(struct scaler_ctx *ctx)
    return true;
 }
 
-static void fixup_filter_sub(struct scaler_filter *filter, int out_len, int in_len)
+static void fixup_filter_sub(struct scaler_filter *filter,
+      int out_len, int in_len)
 {
    int i;
    int max_pos = in_len - filter->filter_len;
 
    for (i = 0; i < out_len; i++)
    {
-      int postsample = filter->filter_pos[i] - max_pos;
+      int postsample =  filter->filter_pos[i] - max_pos;
       int presample  = -filter->filter_pos[i];
 
       if (postsample > 0)
       {
-         int16_t *base_filter = NULL;
          filter->filter_pos[i] -= postsample;
-
-         base_filter = filter->filter + i * filter->filter_stride;
+         int16_t *base_filter   = filter->filter + i * filter->filter_stride;
 
          if (postsample > (int)filter->filter_len)
             memset(base_filter, 0, filter->filter_len * sizeof(int16_t));
@@ -224,9 +223,8 @@ static void fixup_filter_sub(struct scaler_filter *filter, int out_len, int in_l
 
       if (presample > 0)
       {
-         int16_t *base_filter = NULL;
          filter->filter_pos[i] += presample;
-         base_filter = filter->filter + i * filter->filter_stride;
+         int16_t *base_filter   = filter->filter + i * filter->filter_stride;
 
          if (presample > (int)filter->filter_len)
             memset(base_filter, 0, filter->filter_len * sizeof(int16_t));
@@ -234,46 +232,39 @@ static void fixup_filter_sub(struct scaler_filter *filter, int out_len, int in_l
          {
             memmove(base_filter, base_filter + presample,
                   (filter->filter_len - presample) * sizeof(int16_t));
-            memset(base_filter + (filter->filter_len - presample), 0, presample * sizeof(int16_t));
+            memset(base_filter + (filter->filter_len - presample),
+                  0, presample * sizeof(int16_t));
          }
       }
    }
 }
 
-/* Makes sure that we never sample outside our rectangle. */
-static void fixup_filter(struct scaler_ctx *ctx)
-{
-   fixup_filter_sub(&ctx->horiz, ctx->out_width, ctx->in_width);
-   fixup_filter_sub(&ctx->vert, ctx->out_height, ctx->in_height);
-}
-
-
 bool scaler_gen_filter(struct scaler_ctx *ctx)
 {
-   bool ret = true;
-
    switch (ctx->scaler_type)
    {
       case SCALER_TYPE_POINT:
-         ret = gen_filter_point(ctx);
+         if (!gen_filter_point(ctx))
+            return false;
          break;
 
       case SCALER_TYPE_BILINEAR:
-         ret = gen_filter_bilinear(ctx);
+         if (!gen_filter_bilinear(ctx))
+            return false;
          break;
 
       case SCALER_TYPE_SINC:
-         ret = gen_filter_sinc(ctx);
+         if (!gen_filter_sinc(ctx))
+            return false;
          break;
 
       default:
          return false;
    }
 
-   if (!ret)
-      return false;
-
-   fixup_filter(ctx);
+   /* Makes sure that we never sample outside our rectangle. */
+   fixup_filter_sub(&ctx->horiz, ctx->out_width, ctx->in_width);
+   fixup_filter_sub(&ctx->vert, ctx->out_height, ctx->in_height);
 
    return validate_filter(ctx);
 }
