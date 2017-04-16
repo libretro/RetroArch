@@ -34,18 +34,59 @@ typedef struct math_matrix_3x3
    float data[9];
 } math_matrix_3x3;
 
-void matrix_3x3_inits(math_matrix_3x3 *mat,
-                      const float n11, const float n12, const float n13,
-                      const float n21, const float n22, const float n23,
-                      const float n31, const float n32, const float n33);
-void matrix_3x3_identity(math_matrix_3x3 *mat);
-void matrix_3x3_transpose(math_matrix_3x3 *out, const math_matrix_3x3 *in);
+#define MAT_ELEM_3X3(mat, r, c) ((mat).data[3 * (r) + (c)])
+
+#define matrix_3x3_init(mat, n11, n12, n13, n21, n22, n23, n31, n32, n33) \
+   MAT_ELEM_3X3(mat, 0, 0) = n11; \
+   MAT_ELEM_3X3(mat, 0, 1) = n12; \
+   MAT_ELEM_3X3(mat, 0, 2) = n13; \
+   MAT_ELEM_3X3(mat, 1, 0) = n21; \
+   MAT_ELEM_3X3(mat, 1, 1) = n22; \
+   MAT_ELEM_3X3(mat, 1, 2) = n23; \
+   MAT_ELEM_3X3(mat, 2, 0) = n31; \
+   MAT_ELEM_3X3(mat, 2, 1) = n32; \
+   MAT_ELEM_3X3(mat, 2, 2) = n33
+
+#define matrix_3x3_identity(mat) \
+   MAT_ELEM_3X3(mat, 0, 0) = 1.0f; \
+   MAT_ELEM_3X3(mat, 0, 1) = 0; \
+   MAT_ELEM_3X3(mat, 0, 2) = 0; \
+   MAT_ELEM_3X3(mat, 1, 0) = 0; \
+   MAT_ELEM_3X3(mat, 1, 1) = 1.0f; \
+   MAT_ELEM_3X3(mat, 1, 2) = 0; \
+   MAT_ELEM_3X3(mat, 2, 0) = 0; \
+   MAT_ELEM_3X3(mat, 2, 1) = 0; \
+   MAT_ELEM_3X3(mat, 2, 2) = 1.0f
+
+#define matrix_3x3_divide_scalar(mat, s) \
+   MAT_ELEM_3X3(mat, 0, 0) /= s; \
+   MAT_ELEM_3X3(mat, 0, 1) /= s; \
+   MAT_ELEM_3X3(mat, 0, 2) /= s; \
+   MAT_ELEM_3X3(mat, 1, 0) /= s; \
+   MAT_ELEM_3X3(mat, 1, 1) /= s; \
+   MAT_ELEM_3X3(mat, 1, 2) /= s; \
+   MAT_ELEM_3X3(mat, 2, 0) /= s; \
+   MAT_ELEM_3X3(mat, 2, 1) /= s; \
+   MAT_ELEM_3X3(mat, 2, 2) /= s
+
+#define matrix_3x3_transpose(mat, in) \
+   MAT_ELEM_3X3(mat, 0, 0) = MAT_ELEM_3X3(in, 0, 0); \
+   MAT_ELEM_3X3(mat, 1, 0) = MAT_ELEM_3X3(in, 0, 1); \
+   MAT_ELEM_3X3(mat, 2, 0) = MAT_ELEM_3X3(in, 0, 2); \
+   MAT_ELEM_3X3(mat, 0, 1) = MAT_ELEM_3X3(in, 1, 0); \
+   MAT_ELEM_3X3(mat, 1, 1) = MAT_ELEM_3X3(in, 1, 1); \
+   MAT_ELEM_3X3(mat, 2, 1) = MAT_ELEM_3X3(in, 1, 2); \
+   MAT_ELEM_3X3(mat, 0, 2) = MAT_ELEM_3X3(in, 2, 0); \
+   MAT_ELEM_3X3(mat, 1, 2) = MAT_ELEM_3X3(in, 2, 1); \
+   MAT_ELEM_3X3(mat, 2, 2) = MAT_ELEM_3X3(in, 2, 2)
 
 void matrix_3x3_multiply(math_matrix_3x3 *out,
       const math_matrix_3x3 *a, const math_matrix_3x3 *b);
-void matrix_3x3_divide_scalar(math_matrix_3x3 *mat, const float s);
+
 float matrix_3x3_determinant(const math_matrix_3x3 *mat);
+
 void matrix_3x3_adjoint(math_matrix_3x3 *mat);
+
 bool matrix_3x3_invert(math_matrix_3x3 *mat);
 
 bool matrix_3x3_square_to_quad(const float dx0, const float dy0,
