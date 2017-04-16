@@ -283,6 +283,7 @@ typedef struct settings
       /* Set by autoconfiguration in joypad_autoconfig_dir.
        * Does not override main binds. */
       bool autoconfigured[MAX_USERS];
+      bool swap_override;
       int vid[MAX_USERS];
       int pid[MAX_USERS];
 
