@@ -260,6 +260,7 @@ static bool check_egl_client_extension(const char *name)
 
 static EGLDisplay get_egl_display(EGLenum platform, void *native)
 {
+#if !defined(ANDROID) && !defined(EMSCRIPTEN)
    if (platform != EGL_NONE)
    {
       /* If the client library supports at least EGL 1.5, then we can call
@@ -297,6 +298,7 @@ static EGLDisplay get_egl_display(EGLenum platform, void *native)
          }
       }
    }
+#endif
 
    /* Either the caller didn't provide a platform type, or the EGL
     * implementation doesn't support eglGetPlatformDisplay. In this case, try
