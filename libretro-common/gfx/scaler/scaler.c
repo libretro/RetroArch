@@ -62,33 +62,43 @@ void scaler_free(void *ptr)
 
 static bool allocate_frames(struct scaler_ctx *ctx)
 {
-   ctx->scaled.stride = ((ctx->out_width + 7) & ~7) * sizeof(uint64_t);
-   ctx->scaled.width  = ctx->out_width;
-   ctx->scaled.height = ctx->in_height;
-   ctx->scaled.frame  = (uint64_t*)
-      scaler_alloc(sizeof(uint64_t),
+   uint64_t *scaled_frame = NULL;
+   ctx->scaled.stride     = ((ctx->out_width + 7) & ~7) * sizeof(uint64_t);
+   ctx->scaled.width      = ctx->out_width;
+   ctx->scaled.height     = ctx->in_height;
+   scaled_frame           = (uint64_t*)scaler_alloc(sizeof(uint64_t),
             (ctx->scaled.stride * ctx->scaled.height) >> 3);
-   if (!ctx->scaled.frame)
+
+   if (!scaled_frame)
       return false;
+
+   ctx->scaled.frame      = scaled_frame;
 
    if (ctx->in_fmt != SCALER_FMT_ARGB8888)
    {
-      ctx->input.stride = ((ctx->in_width + 7) & ~7) * sizeof(uint32_t);
-      ctx->input.frame = (uint32_t*)
-         scaler_alloc(sizeof(uint32_t),
+      uint32_t *input_frame = NULL;
+      ctx->input.stride     = ((ctx->in_width + 7) & ~7) * sizeof(uint32_t);
+      input_frame           = (uint32_t*)scaler_alloc(sizeof(uint32_t),
                (ctx->input.stride * ctx->in_height) >> 2);
-      if (!ctx->input.frame)
+
+      if (!input_frame)
          return false;
+
+      ctx->input.frame      = input_frame;
    }
 
    if (ctx->out_fmt != SCALER_FMT_ARGB8888)
    {
-      ctx->output.stride = ((ctx->out_width + 7) & ~7) * sizeof(uint32_t);
-      ctx->output.frame  = (uint32_t*)
-         scaler_alloc(sizeof(uint32_t),
+      uint32_t *output_frame = NULL;
+      ctx->output.stride     = ((ctx->out_width + 7) & ~7) * sizeof(uint32_t);
+
+      output_frame           = (uint32_t*)scaler_alloc(sizeof(uint32_t),
                (ctx->output.stride * ctx->out_height) >> 2);
-      if (!ctx->output.frame)
+
+      if (!output_frame)
          return false;
+
+      ctx->output.frame      = output_frame;
    }
 
    return true;
@@ -106,12 +116,6 @@ static bool allocate_frames(struct scaler_ctx *ctx)
  **/
 static bool set_direct_pix_conv(struct scaler_ctx *ctx)
 {
-   if (ctx->in_fmt == ctx->out_fmt)
-   {
-      ctx->direct_pixconv = conv_copy;
-      return true;
-   }
-
    switch (ctx->in_fmt)
    {
       case SCALER_FMT_0RGB1555:
@@ -209,90 +213,82 @@ static bool set_direct_pix_conv(struct scaler_ctx *ctx)
    return true;
 }
 
-static bool set_pix_conv(struct scaler_ctx *ctx)
-{
-   switch (ctx->in_fmt)
-   {
-      case SCALER_FMT_ARGB8888:
-         /* No need to convert :D */
-         break;
-
-      case SCALER_FMT_0RGB1555:
-         ctx->in_pixconv = conv_0rgb1555_argb8888;
-         break;
-
-      case SCALER_FMT_RGB565:
-         ctx->in_pixconv = conv_rgb565_argb8888;
-         break;
-
-      case SCALER_FMT_BGR24:
-         ctx->in_pixconv = conv_bgr24_argb8888;
-         break;
-
-      case SCALER_FMT_RGBA4444:
-         ctx->in_pixconv = conv_rgba4444_argb8888;
-         break;
-
-      default:
-         return false;
-   }
-
-   switch (ctx->out_fmt)
-   {
-      case SCALER_FMT_ARGB8888:
-         /* No need to convert :D */
-         break;
-
-      case SCALER_FMT_RGBA4444:
-         ctx->out_pixconv = conv_argb8888_rgba4444;
-         break;
-
-      case SCALER_FMT_0RGB1555:
-         ctx->out_pixconv = conv_argb8888_0rgb1555;
-         break;
-
-      case SCALER_FMT_BGR24:
-         ctx->out_pixconv = conv_argb8888_bgr24;
-         break;
-
-      default:
-         return false;
-   }
-
-   return true;
-}
-
 bool scaler_ctx_gen_filter(struct scaler_ctx *ctx)
 {
    scaler_ctx_gen_reset(ctx);
 
-   if (ctx->in_width == ctx->out_width && ctx->in_height == ctx->out_height)
-      ctx->unscaled = true; /* Only pixel format conversion ... */
-   else
-   {
-      ctx->scaler_horiz = scaler_argb8888_horiz;
-      ctx->scaler_vert  = scaler_argb8888_vert;
-      ctx->unscaled     = false;
-   }
-
    ctx->scaler_special = NULL;
+   ctx->unscaled       = false;
 
    if (!allocate_frames(ctx))
       return false;
 
-   if (ctx->unscaled)
+   if (     ctx->in_width  == ctx->out_width 
+         && ctx->in_height == ctx->out_height)
    {
-      if (!set_direct_pix_conv(ctx))
+      ctx->unscaled     = true; /* Only pixel format conversion ... */
+
+      if (ctx->in_fmt == ctx->out_fmt)
+         ctx->direct_pixconv = conv_copy;
+      else if (!set_direct_pix_conv(ctx))
          return false;
    }
    else
    {
-      if (!set_pix_conv(ctx))
+      ctx->scaler_horiz = scaler_argb8888_horiz;
+      ctx->scaler_vert  = scaler_argb8888_vert;
+
+      switch (ctx->in_fmt)
+      {
+         case SCALER_FMT_ARGB8888:
+            /* No need to convert :D */
+            break;
+
+         case SCALER_FMT_0RGB1555:
+            ctx->in_pixconv = conv_0rgb1555_argb8888;
+            break;
+
+         case SCALER_FMT_RGB565:
+            ctx->in_pixconv = conv_rgb565_argb8888;
+            break;
+
+         case SCALER_FMT_BGR24:
+            ctx->in_pixconv = conv_bgr24_argb8888;
+            break;
+
+         case SCALER_FMT_RGBA4444:
+            ctx->in_pixconv = conv_rgba4444_argb8888;
+            break;
+
+         default:
+            return false;
+      }
+
+      switch (ctx->out_fmt)
+      {
+         case SCALER_FMT_ARGB8888:
+            /* No need to convert :D */
+            break;
+
+         case SCALER_FMT_RGBA4444:
+            ctx->out_pixconv = conv_argb8888_rgba4444;
+            break;
+
+         case SCALER_FMT_0RGB1555:
+            ctx->out_pixconv = conv_argb8888_0rgb1555;
+            break;
+
+         case SCALER_FMT_BGR24:
+            ctx->out_pixconv = conv_argb8888_bgr24;
+            break;
+
+         default:
+            return false;
+      }
+
+      if (!scaler_gen_filter(ctx))
          return false;
    }
-
-   if (!ctx->unscaled && !scaler_gen_filter(ctx))
-      return false;
 
    return true;
 }
