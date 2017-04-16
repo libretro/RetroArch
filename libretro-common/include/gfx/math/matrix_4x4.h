@@ -95,10 +95,31 @@ void matrix_4x4_rotate_y(math_matrix_4x4 *mat, float rad);
    MAT_ELEM_4X4(mat, 3, 3) = 1.0f; \
 }
 
-void matrix_4x4_ortho(math_matrix_4x4 *mat,
-      float left, float right,
-      float bottom, float top,
-      float znear, float zfar);
+/*
+ * Creates an orthographic projection matrix.
+ */
+#define matrix_4x4_ortho(mat, left, right, bottom, top, znear, zfar) \
+{ \
+   float rl                 = (right) - (left); \
+   float tb                 = (top)   - (bottom); \
+   float fn                 = (zfar)  - (znear); \
+   MAT_ELEM_4X4(mat, 0, 0) =  2.0f / rl; \
+   MAT_ELEM_4X4(mat, 0, 1) =  0.0f; \
+   MAT_ELEM_4X4(mat, 0, 2) =  0.0f; \
+   MAT_ELEM_4X4(mat, 0, 3) = -((left) + (right))  / rl; \
+   MAT_ELEM_4X4(mat, 1, 0) =  0.0f; \
+   MAT_ELEM_4X4(mat, 1, 1) =  2.0f / tb; \
+   MAT_ELEM_4X4(mat, 1, 2) =  0.0f; \
+   MAT_ELEM_4X4(mat, 1, 3) = -((top)  + (bottom)) / tb; \
+   MAT_ELEM_4X4(mat, 2, 0) =  0.0f; \
+   MAT_ELEM_4X4(mat, 2, 1) =  0.0f; \
+   MAT_ELEM_4X4(mat, 2, 2) = -2.0f / fn; \
+   MAT_ELEM_4X4(mat, 2, 3) = -((zfar) + (znear))  / fn; \
+   MAT_ELEM_4X4(mat, 3, 0) =  0.0f; \
+   MAT_ELEM_4X4(mat, 3, 1) =  0.0f; \
+   MAT_ELEM_4X4(mat, 3, 2) =  0.0f; \
+   MAT_ELEM_4X4(mat, 3, 3) =  1.0f; \
+}
 
 void matrix_4x4_lookat(math_matrix_4x4 *out,
       vec3_t eye,

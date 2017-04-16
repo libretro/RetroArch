@@ -281,7 +281,7 @@ static void gl_set_projection(gl_t *gl,
    math_matrix_4x4 rot;
 
    /* Calculate projection. */
-   matrix_4x4_ortho(&gl->mvp_no_rot, ortho->left, ortho->right,
+   matrix_4x4_ortho(gl->mvp_no_rot, ortho->left, ortho->right,
          ortho->bottom, ortho->top, ortho->znear, ortho->zfar);
 
    if (!allow_rotate)
