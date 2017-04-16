@@ -563,7 +563,8 @@ static bool gfx_ctx_drm_egl_set_video_mode(gfx_ctx_drm_data_t *drm)
       case GFX_CTX_OPENGL_ES_API:
       case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
-         if (!egl_init_context(&drm->egl, (EGLNativeDisplayType)g_gbm_dev, &major,
+         if (!egl_init_context(&drm->egl, EGL_PLATFORM_GBM_KHR,
+                  (EGLNativeDisplayType)g_gbm_dev, &major,
                   &minor, &n, attrib_ptr))
             goto error;
 
