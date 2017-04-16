@@ -1621,9 +1621,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
          /* Can potentially be called every frame,
           * don't do anything unless required. */
-         if (geom->base_width != in_geom->base_width ||
-               geom->base_height != in_geom->base_height ||
-               geom->aspect_ratio != in_geom->aspect_ratio)
+         if (  (geom->base_width   != in_geom->base_width)  ||
+               (geom->base_height  != in_geom->base_height) ||
+               (geom->aspect_ratio != in_geom->aspect_ratio))
          {
             geom->base_width   = in_geom->base_width;
             geom->base_height  = in_geom->base_height;
