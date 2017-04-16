@@ -81,15 +81,35 @@ typedef struct math_matrix_4x4
    MAT_ELEM_4X4(mat, 3, 2)    = 0.0f; \
    MAT_ELEM_4X4(mat, 3, 3)    = 1.0f
 
-void matrix_4x4_transpose(math_matrix_4x4 *out, const math_matrix_4x4 *in);
+/*
+ * Sets out to the transposed matrix of in
+ */
+
+#define matrix_4x4_transpose(out, in) \
+   MAT_ELEM_4X4(out, 0, 0) = MAT_ELEM_4X4(in, 0, 0); \
+   MAT_ELEM_4X4(out, 1, 0) = MAT_ELEM_4X4(in, 0, 1); \
+   MAT_ELEM_4X4(out, 2, 0) = MAT_ELEM_4X4(in, 0, 2); \
+   MAT_ELEM_4X4(out, 3, 0) = MAT_ELEM_4X4(in, 0, 3); \
+   MAT_ELEM_4X4(out, 0, 1) = MAT_ELEM_4X4(in, 1, 0); \
+   MAT_ELEM_4X4(out, 1, 1) = MAT_ELEM_4X4(in, 1, 1); \
+   MAT_ELEM_4X4(out, 2, 1) = MAT_ELEM_4X4(in, 1, 2); \
+   MAT_ELEM_4X4(out, 3, 1) = MAT_ELEM_4X4(in, 1, 3); \
+   MAT_ELEM_4X4(out, 0, 2) = MAT_ELEM_4X4(in, 2, 0); \
+   MAT_ELEM_4X4(out, 1, 2) = MAT_ELEM_4X4(in, 2, 1); \
+   MAT_ELEM_4X4(out, 2, 2) = MAT_ELEM_4X4(in, 2, 2); \
+   MAT_ELEM_4X4(out, 3, 2) = MAT_ELEM_4X4(in, 2, 3); \
+   MAT_ELEM_4X4(out, 0, 3) = MAT_ELEM_4X4(in, 3, 0); \
+   MAT_ELEM_4X4(out, 1, 3) = MAT_ELEM_4X4(in, 3, 1); \
+   MAT_ELEM_4X4(out, 2, 3) = MAT_ELEM_4X4(in, 3, 2); \
+   MAT_ELEM_4X4(out, 3, 3) = MAT_ELEM_4X4(in, 3, 3)
 
 /*
  * Builds an X-axis rotation matrix
  */
 #define matrix_4x4_rotate_x(mat, radians) \
 { \
-   float cosine             = cosf(radians); \
-   float sine               = sinf(radians); \
+   float cosine            = cosf(radians); \
+   float sine              = sinf(radians); \
    MAT_ELEM_4X4(mat, 0, 0) = 1.0f; \
    MAT_ELEM_4X4(mat, 0, 1) = 0.0f; \
    MAT_ELEM_4X4(mat, 0, 2) = 0.0f; \
@@ -115,8 +135,8 @@ void matrix_4x4_transpose(math_matrix_4x4 *out, const math_matrix_4x4 *in);
 
 #define matrix_4x4_rotate_y(mat, radians) \
 { \
-   float cosine             = cosf(radians); \
-   float sine               = sinf(radians); \
+   float cosine            = cosf(radians); \
+   float sine              = sinf(radians); \
    MAT_ELEM_4X4(mat, 0, 0) = cosine; \
    MAT_ELEM_4X4(mat, 0, 1) = 0.0f; \
    MAT_ELEM_4X4(mat, 0, 2) = -sine; \
@@ -141,8 +161,8 @@ void matrix_4x4_transpose(math_matrix_4x4 *out, const math_matrix_4x4 *in);
  */
 #define matrix_4x4_rotate_z(mat, radians) \
 { \
-   float cosine             = cosf(radians); \
-   float sine               = sinf(radians); \
+   float cosine            = cosf(radians); \
+   float sine              = sinf(radians); \
    MAT_ELEM_4X4(mat, 0, 0) = cosine; \
    MAT_ELEM_4X4(mat, 0, 1) = -sine; \
    MAT_ELEM_4X4(mat, 0, 2) = 0.0f; \
@@ -166,9 +186,9 @@ void matrix_4x4_transpose(math_matrix_4x4 *out, const math_matrix_4x4 *in);
  */
 #define matrix_4x4_ortho(mat, left, right, bottom, top, znear, zfar) \
 { \
-   float rl                 = (right) - (left); \
-   float tb                 = (top)   - (bottom); \
-   float fn                 = (zfar)  - (znear); \
+   float rl                = (right) - (left); \
+   float tb                = (top)   - (bottom); \
+   float fn                = (zfar)  - (znear); \
    MAT_ELEM_4X4(mat, 0, 0) =  2.0f / rl; \
    MAT_ELEM_4X4(mat, 0, 1) =  0.0f; \
    MAT_ELEM_4X4(mat, 0, 2) =  0.0f; \
@@ -242,8 +262,8 @@ void matrix_4x4_multiply(math_matrix_4x4 *out, const math_matrix_4x4 *a, const m
 
 #define  matrix_4x4_projection(mat, y_fov, aspect, znear, zfar) \
 { \
-   float const a            = 1.f / tan((y_fov) / 2.f); \
-   float delta_z            = (zfar) - (znear); \
+   float const a           = 1.f / tan((y_fov) / 2.f); \
+   float delta_z           = (zfar) - (znear); \
    MAT_ELEM_4X4(mat, 0, 0) = a / (aspect); \
    MAT_ELEM_4X4(mat, 0, 1) = 0.0f; \
    MAT_ELEM_4X4(mat, 0, 2) = 0.0f; \

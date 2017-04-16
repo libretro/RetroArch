@@ -26,21 +26,6 @@
 #include <gfx/math/matrix_4x4.h>
 #include <gfx/math/vector_3.h>
 
-/*
- * Sets out to the transposed matrix of in
- */
-void matrix_4x4_transpose(math_matrix_4x4 *out, const math_matrix_4x4 *in)
-{
-   unsigned i, j;
-   math_matrix_4x4 mat;
-
-   for (i = 0; i < 4; i++)
-      for (j = 0; j < 4; j++)
-         MAT_ELEM_4X4(mat, j, i) = MAT_ELEM_4X4(*in, i, j);
-
-   *out = mat;
-}
-
 void matrix_4x4_lookat(math_matrix_4x4 *out,
       vec3_t eye,
       vec3_t center,
