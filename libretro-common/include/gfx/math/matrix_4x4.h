@@ -212,7 +212,91 @@ void matrix_4x4_lookat(math_matrix_4x4 *out,
       vec3_t center,
       vec3_t up);
 
-void matrix_4x4_multiply(math_matrix_4x4 *out, const math_matrix_4x4 *a, const math_matrix_4x4 *b);
+/*
+ * Multiplies a with b, stores the result in out
+ */
+
+#define matrix_4x4_multiply(out, a, b) \
+   MAT_ELEM_4X4(out, 0, 0) =  \
+      MAT_ELEM_4X4(a, 0, 0) * MAT_ELEM_4X4(b, 0, 0) + \
+      MAT_ELEM_4X4(a, 0, 1) * MAT_ELEM_4X4(b, 1, 0) + \
+      MAT_ELEM_4X4(a, 0, 2) * MAT_ELEM_4X4(b, 2, 0) + \
+      MAT_ELEM_4X4(a, 0, 3) * MAT_ELEM_4X4(b, 3, 0); \
+   MAT_ELEM_4X4(out, 0, 1) =  \
+      MAT_ELEM_4X4(a, 0, 0) * MAT_ELEM_4X4(b, 0, 1) + \
+      MAT_ELEM_4X4(a, 0, 1) * MAT_ELEM_4X4(b, 1, 1) + \
+      MAT_ELEM_4X4(a, 0, 2) * MAT_ELEM_4X4(b, 2, 1) + \
+      MAT_ELEM_4X4(a, 0, 3) * MAT_ELEM_4X4(b, 3, 1); \
+   MAT_ELEM_4X4(out, 0, 2) =  \
+      MAT_ELEM_4X4(a, 0, 0) * MAT_ELEM_4X4(b, 0, 2) + \
+      MAT_ELEM_4X4(a, 0, 1) * MAT_ELEM_4X4(b, 1, 2) + \
+      MAT_ELEM_4X4(a, 0, 2) * MAT_ELEM_4X4(b, 2, 2) + \
+      MAT_ELEM_4X4(a, 0, 3) * MAT_ELEM_4X4(b, 3, 2); \
+   MAT_ELEM_4X4(out, 0, 3) =  \
+      MAT_ELEM_4X4(a, 0, 0) * MAT_ELEM_4X4(b, 0, 3) + \
+      MAT_ELEM_4X4(a, 0, 1) * MAT_ELEM_4X4(b, 1, 3) + \
+      MAT_ELEM_4X4(a, 0, 2) * MAT_ELEM_4X4(b, 2, 3) + \
+      MAT_ELEM_4X4(a, 0, 3) * MAT_ELEM_4X4(b, 3, 3); \
+   MAT_ELEM_4X4(out, 1, 0) =  \
+      MAT_ELEM_4X4(a, 1, 0) * MAT_ELEM_4X4(b, 0, 0) + \
+      MAT_ELEM_4X4(a, 1, 1) * MAT_ELEM_4X4(b, 1, 0) + \
+      MAT_ELEM_4X4(a, 1, 2) * MAT_ELEM_4X4(b, 2, 0) + \
+      MAT_ELEM_4X4(a, 1, 3) * MAT_ELEM_4X4(b, 3, 0); \
+   MAT_ELEM_4X4(out, 1, 1) =  \
+      MAT_ELEM_4X4(a, 1, 0) * MAT_ELEM_4X4(b, 0, 1) + \
+      MAT_ELEM_4X4(a, 1, 1) * MAT_ELEM_4X4(b, 1, 1) + \
+      MAT_ELEM_4X4(a, 1, 2) * MAT_ELEM_4X4(b, 2, 1) + \
+      MAT_ELEM_4X4(a, 1, 3) * MAT_ELEM_4X4(b, 3, 1); \
+   MAT_ELEM_4X4(out, 1, 2) =  \
+      MAT_ELEM_4X4(a, 1, 0) * MAT_ELEM_4X4(b, 0, 2) + \
+      MAT_ELEM_4X4(a, 1, 1) * MAT_ELEM_4X4(b, 1, 2) + \
+      MAT_ELEM_4X4(a, 1, 2) * MAT_ELEM_4X4(b, 2, 2) + \
+      MAT_ELEM_4X4(a, 1, 3) * MAT_ELEM_4X4(b, 3, 2); \
+   MAT_ELEM_4X4(out, 1, 3) =  \
+      MAT_ELEM_4X4(a, 1, 0) * MAT_ELEM_4X4(b, 0, 3) + \
+      MAT_ELEM_4X4(a, 1, 1) * MAT_ELEM_4X4(b, 1, 3) + \
+      MAT_ELEM_4X4(a, 1, 2) * MAT_ELEM_4X4(b, 2, 3) + \
+      MAT_ELEM_4X4(a, 1, 3) * MAT_ELEM_4X4(b, 3, 3); \
+   MAT_ELEM_4X4(out, 2, 0) =  \
+      MAT_ELEM_4X4(a, 2, 0) * MAT_ELEM_4X4(b, 0, 0) + \
+      MAT_ELEM_4X4(a, 2, 1) * MAT_ELEM_4X4(b, 1, 0) + \
+      MAT_ELEM_4X4(a, 2, 2) * MAT_ELEM_4X4(b, 2, 0) + \
+      MAT_ELEM_4X4(a, 2, 3) * MAT_ELEM_4X4(b, 3, 0); \
+   MAT_ELEM_4X4(out, 2, 1) =  \
+      MAT_ELEM_4X4(a, 2, 0) * MAT_ELEM_4X4(b, 0, 1) + \
+      MAT_ELEM_4X4(a, 2, 1) * MAT_ELEM_4X4(b, 1, 1) + \
+      MAT_ELEM_4X4(a, 2, 2) * MAT_ELEM_4X4(b, 2, 1) + \
+      MAT_ELEM_4X4(a, 2, 3) * MAT_ELEM_4X4(b, 3, 1); \
+   MAT_ELEM_4X4(out, 2, 2) =  \
+      MAT_ELEM_4X4(a, 2, 0) * MAT_ELEM_4X4(b, 0, 2) + \
+      MAT_ELEM_4X4(a, 2, 1) * MAT_ELEM_4X4(b, 1, 2) + \
+      MAT_ELEM_4X4(a, 2, 2) * MAT_ELEM_4X4(b, 2, 2) + \
+      MAT_ELEM_4X4(a, 2, 3) * MAT_ELEM_4X4(b, 3, 2); \
+   MAT_ELEM_4X4(out, 2, 3) =  \
+      MAT_ELEM_4X4(a, 2, 0) * MAT_ELEM_4X4(b, 0, 3) + \
+      MAT_ELEM_4X4(a, 2, 1) * MAT_ELEM_4X4(b, 1, 3) + \
+      MAT_ELEM_4X4(a, 2, 2) * MAT_ELEM_4X4(b, 2, 3) + \
+      MAT_ELEM_4X4(a, 2, 3) * MAT_ELEM_4X4(b, 3, 3); \
+   MAT_ELEM_4X4(out, 3, 0) =  \
+      MAT_ELEM_4X4(a, 3, 0) * MAT_ELEM_4X4(b, 0, 0) + \
+      MAT_ELEM_4X4(a, 3, 1) * MAT_ELEM_4X4(b, 1, 0) + \
+      MAT_ELEM_4X4(a, 3, 2) * MAT_ELEM_4X4(b, 2, 0) + \
+      MAT_ELEM_4X4(a, 3, 3) * MAT_ELEM_4X4(b, 3, 0); \
+   MAT_ELEM_4X4(out, 3, 1) =  \
+      MAT_ELEM_4X4(a, 3, 0) * MAT_ELEM_4X4(b, 0, 1) + \
+      MAT_ELEM_4X4(a, 3, 1) * MAT_ELEM_4X4(b, 1, 1) + \
+      MAT_ELEM_4X4(a, 3, 2) * MAT_ELEM_4X4(b, 2, 1) + \
+      MAT_ELEM_4X4(a, 3, 3) * MAT_ELEM_4X4(b, 3, 1); \
+   MAT_ELEM_4X4(out, 3, 2) = \
+      MAT_ELEM_4X4(a, 3, 0) * MAT_ELEM_4X4(b, 0, 2) + \
+      MAT_ELEM_4X4(a, 3, 1) * MAT_ELEM_4X4(b, 1, 2) + \
+      MAT_ELEM_4X4(a, 3, 2) * MAT_ELEM_4X4(b, 2, 2) + \
+      MAT_ELEM_4X4(a, 3, 3) * MAT_ELEM_4X4(b, 3, 2); \
+   MAT_ELEM_4X4(out, 3, 3) =  \
+      MAT_ELEM_4X4(a, 3, 0) * MAT_ELEM_4X4(b, 0, 3) + \
+      MAT_ELEM_4X4(a, 3, 1) * MAT_ELEM_4X4(b, 1, 3) + \
+      MAT_ELEM_4X4(a, 3, 2) * MAT_ELEM_4X4(b, 2, 3) + \
+      MAT_ELEM_4X4(a, 3, 3) * MAT_ELEM_4X4(b, 3, 3)
 
 #define matrix_4x4_scale(mat, x, y, z) \
    MAT_ELEM_4X4(mat, 0, 0) = x; \

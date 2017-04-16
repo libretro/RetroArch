@@ -1325,7 +1325,7 @@ static void vulkan_set_projection(vk_t *vk,
    }
 
    matrix_4x4_rotate_z(rot, M_PI * vk->rotation / 180.0f);
-   matrix_4x4_multiply(&vk->mvp, &rot, &vk->mvp_no_rot);
+   matrix_4x4_multiply(vk->mvp, rot, vk->mvp_no_rot);
 }
 
 static void vulkan_set_rotation(void *data, unsigned rotation)

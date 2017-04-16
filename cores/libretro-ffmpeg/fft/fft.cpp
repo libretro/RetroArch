@@ -297,7 +297,7 @@ static void fft_render(glfft_t *fft, GLuint backbuffer, unsigned width, unsigned
          MAT_ELEM_4X4(mvp_lookat, 3, 3)
          );
 #endif
-   matrix_4x4_multiply(&mvp, &mvp_persp, &mvp_lookat);
+   matrix_4x4_multiply(mvp, &mvp_persp, &mvp_lookat);
 #ifdef GLM_USE_DEBUG
    printf("mvp: \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n\n",
          MAT_ELEM_4X4(mvp, 0, 0),

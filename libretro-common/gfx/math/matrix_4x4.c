@@ -63,31 +63,3 @@ void matrix_4x4_lookat(math_matrix_4x4 *out,
    MAT_ELEM_4X4(*out, 3, 2) = -(zaxis[0] * eye[0] + zaxis[1] * eye[1] + zaxis[2] * eye[2]);
    MAT_ELEM_4X4(*out, 3, 3) = 1.f;
 }
-
-/*
- * Multiplies a with b, stores the result in out
- */
-void matrix_4x4_multiply(
-      math_matrix_4x4 *out,
-      const math_matrix_4x4 *a,
-      const math_matrix_4x4 *b)
-{
-   unsigned r, c, k;
-   math_matrix_4x4 mat;
-
-   if (!out || !a || !b)
-      return;
-
-   for (r = 0; r < 4; r++)
-   {
-      for (c = 0; c < 4; c++)
-      {
-         float dot = 0.0f;
-         for (k = 0; k < 4; k++)
-            dot += MAT_ELEM_4X4(*a, r, k) * MAT_ELEM_4X4(*b, k, c);
-         MAT_ELEM_4X4(mat, r, c) = dot;
-      }
-   }
-
-   *out = mat;
-}

@@ -291,7 +291,7 @@ static void gl_set_projection(gl_t *gl,
    }
 
    matrix_4x4_rotate_z(rot, M_PI * gl->rotation / 180.0f);
-   matrix_4x4_multiply(&gl->mvp, &rot, &gl->mvp_no_rot);
+   matrix_4x4_multiply(gl->mvp, rot, gl->mvp_no_rot);
 }
 
 static void gl_set_viewport_wrapper(void *data, unsigned viewport_width,
