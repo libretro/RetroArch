@@ -27,60 +27,14 @@
 #define FLOATS_ARE_EQUAL(x, y)  (fabs(x - y) <= 0.00001f * ((x) > (y) ? (y) : (x)))
 #define FLOAT_IS_ZERO(x)        (FLOATS_ARE_EQUAL((x) + 1, 1))
 
-void matrix_3x3_multiply(math_matrix_3x3 *out,
-      const math_matrix_3x3 *a, const math_matrix_3x3 *b)
-{
-   unsigned r, c, k;
-   math_matrix_3x3 mat;
-
-   for (r = 0; r < 3; r++)
-   {
-      for (c = 0; c < 3; c++)
-      {
-         float dot = 0.0f;
-         for (k = 0; k < 3; k++)
-            dot += MAT_ELEM_3X3(*a, r, k) * MAT_ELEM_3X3(*b, k, c);
-         MAT_ELEM_3X3(mat, r, c) = dot;
-      }
-   }
-
-   *out = mat;
-}
-
-float matrix_3x3_determinant(const math_matrix_3x3 *mat)
-{
-   float det = MAT_ELEM_3X3(*mat, 0, 0) * (MAT_ELEM_3X3(*mat, 1, 1) * MAT_ELEM_3X3(*mat, 2, 2) - MAT_ELEM_3X3(*mat, 1, 2) * MAT_ELEM_3X3(*mat, 2, 1));
-   det      -= MAT_ELEM_3X3(*mat, 0, 1) * (MAT_ELEM_3X3(*mat, 1, 0) * MAT_ELEM_3X3(*mat, 2, 2) - MAT_ELEM_3X3(*mat, 1, 2) * MAT_ELEM_3X3(*mat, 2, 0));
-   det      += MAT_ELEM_3X3(*mat, 0, 2) * (MAT_ELEM_3X3(*mat, 1, 0) * MAT_ELEM_3X3(*mat, 2, 1) - MAT_ELEM_3X3(*mat, 1, 1) * MAT_ELEM_3X3(*mat, 2, 0));
-
-   return det;
-}
-
-void matrix_3x3_adjoint(math_matrix_3x3 *mat)
-{
-   math_matrix_3x3 out;
-
-   MAT_ELEM_3X3(out, 0, 0) =  (MAT_ELEM_3X3(*mat, 1, 1) * MAT_ELEM_3X3(*mat, 2, 2) - MAT_ELEM_3X3(*mat, 1, 2) * MAT_ELEM_3X3(*mat, 2, 1));
-   MAT_ELEM_3X3(out, 0, 1) = -(MAT_ELEM_3X3(*mat, 0, 1) * MAT_ELEM_3X3(*mat, 2, 2) - MAT_ELEM_3X3(*mat, 0, 2) * MAT_ELEM_3X3(*mat, 2, 1));
-   MAT_ELEM_3X3(out, 0, 2) =  (MAT_ELEM_3X3(*mat, 0, 1) * MAT_ELEM_3X3(*mat, 1, 1) - MAT_ELEM_3X3(*mat, 0, 2) * MAT_ELEM_3X3(*mat, 1, 1));
-   MAT_ELEM_3X3(out, 1, 0) = -(MAT_ELEM_3X3(*mat, 1, 0) * MAT_ELEM_3X3(*mat, 2, 2) - MAT_ELEM_3X3(*mat, 1, 2) * MAT_ELEM_3X3(*mat, 2, 0));
-   MAT_ELEM_3X3(out, 1, 1) =  (MAT_ELEM_3X3(*mat, 0, 0) * MAT_ELEM_3X3(*mat, 2, 2) - MAT_ELEM_3X3(*mat, 0, 2) * MAT_ELEM_3X3(*mat, 2, 0));
-   MAT_ELEM_3X3(out, 1, 2) = -(MAT_ELEM_3X3(*mat, 0, 0) * MAT_ELEM_3X3(*mat, 1, 2) - MAT_ELEM_3X3(*mat, 0, 2) * MAT_ELEM_3X3(*mat, 1, 0));
-   MAT_ELEM_3X3(out, 2, 0) =  (MAT_ELEM_3X3(*mat, 1, 0) * MAT_ELEM_3X3(*mat, 2, 1) - MAT_ELEM_3X3(*mat, 1, 1) * MAT_ELEM_3X3(*mat, 2, 0));
-   MAT_ELEM_3X3(out, 2, 1) = -(MAT_ELEM_3X3(*mat, 0, 0) * MAT_ELEM_3X3(*mat, 2, 1) - MAT_ELEM_3X3(*mat, 0, 1) * MAT_ELEM_3X3(*mat, 2, 0));
-   MAT_ELEM_3X3(out, 2, 2) =  (MAT_ELEM_3X3(*mat, 0, 0) * MAT_ELEM_3X3(*mat, 1, 1) - MAT_ELEM_3X3(*mat, 0, 1) * MAT_ELEM_3X3(*mat, 1, 0));
-
-   *mat = out;
-}
-
 bool matrix_3x3_invert(math_matrix_3x3 *mat)
 {
-   float det = matrix_3x3_determinant(mat);
+   float det = matrix_3x3_determinant(*mat);
 
    if (FLOAT_IS_ZERO(det))
       return false;
 
-   matrix_3x3_adjoint(mat);
+   matrix_3x3_adjoint(*mat);
    matrix_3x3_divide_scalar(*mat, det);
 
    return true;
@@ -180,7 +134,7 @@ bool matrix_3x3_quad_to_quad(
                                   &quad_to_square))
       return false;
 
-   matrix_3x3_multiply(mat, &quad_to_square, &square_to_quad);
+   matrix_3x3_multiply(*mat, quad_to_square, square_to_quad);
 
    return true;
 }
