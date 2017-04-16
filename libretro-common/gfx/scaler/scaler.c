@@ -30,43 +30,13 @@
 #include <gfx/scaler/filter.h>
 #include <gfx/scaler/pixconv.h>
 
-/**
- * scaler_alloc:
- * @elem_size    : size of the elements to be used.
- * @siz          : size of the image that the scaler needs to handle.
- *
- * Allocate and returns a scaler object.
- *
- * Returns: pointer to a scaler object of type 'void *' on success,
- * NULL in case of error. Has to be freed manually.
- **/
-void *scaler_alloc(size_t elem_size, size_t size)
-{
-   void *ptr = calloc(elem_size, size);
-   if (!ptr)
-      return NULL;
-   return ptr;
-}
-
-/**
- * scaler_free:
- * @ptr          : pointer to scaler object.
- *
- * Frees a scaler object.
- **/
-void scaler_free(void *ptr)
-{
-   if (ptr)
-      free(ptr);
-}
-
 static bool allocate_frames(struct scaler_ctx *ctx)
 {
    uint64_t *scaled_frame = NULL;
    ctx->scaled.stride     = ((ctx->out_width + 7) & ~7) * sizeof(uint64_t);
    ctx->scaled.width      = ctx->out_width;
    ctx->scaled.height     = ctx->in_height;
-   scaled_frame           = (uint64_t*)scaler_alloc(sizeof(uint64_t),
+   scaled_frame           = (uint64_t*)calloc(sizeof(uint64_t),
             (ctx->scaled.stride * ctx->scaled.height) >> 3);
 
    if (!scaled_frame)
@@ -78,7 +48,7 @@ static bool allocate_frames(struct scaler_ctx *ctx)
    {
       uint32_t *input_frame = NULL;
       ctx->input.stride     = ((ctx->in_width + 7) & ~7) * sizeof(uint32_t);
-      input_frame           = (uint32_t*)scaler_alloc(sizeof(uint32_t),
+      input_frame           = (uint32_t*)calloc(sizeof(uint32_t),
                (ctx->input.stride * ctx->in_height) >> 2);
 
       if (!input_frame)
@@ -92,7 +62,7 @@ static bool allocate_frames(struct scaler_ctx *ctx)
       uint32_t *output_frame = NULL;
       ctx->output.stride     = ((ctx->out_width + 7) & ~7) * sizeof(uint32_t);
 
-      output_frame           = (uint32_t*)scaler_alloc(sizeof(uint32_t),
+      output_frame           = (uint32_t*)calloc(sizeof(uint32_t),
                (ctx->output.stride * ctx->out_height) >> 2);
 
       if (!output_frame)
@@ -282,13 +252,20 @@ bool scaler_ctx_gen_filter(struct scaler_ctx *ctx)
 
 void scaler_ctx_gen_reset(struct scaler_ctx *ctx)
 {
-   scaler_free(ctx->horiz.filter);
-   scaler_free(ctx->horiz.filter_pos);
-   scaler_free(ctx->vert.filter);
-   scaler_free(ctx->vert.filter_pos);
-   scaler_free(ctx->scaled.frame);
-   scaler_free(ctx->input.frame);
-   scaler_free(ctx->output.frame);
+   if (ctx->horiz.filter)
+      free(ctx->horiz.filter);
+   if (ctx->horiz.filter_pos)
+      free(ctx->horiz.filter_pos);
+   if (ctx->vert.filter)
+      free(ctx->vert.filter);
+   if (ctx->vert.filter_pos)
+      free(ctx->vert.filter_pos);
+   if (ctx->scaled.frame)
+      free(ctx->scaled.frame);
+   if (ctx->input.frame)
+      free(ctx->input.frame);
+   if (ctx->output.frame)
+      free(ctx->output.frame);
 
    ctx->horiz.filter        = NULL;
    ctx->horiz.filter_len    = 0;

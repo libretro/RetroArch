@@ -34,11 +34,11 @@
 
 static bool allocate_filters(struct scaler_ctx *ctx)
 {
-   ctx->horiz.filter     = (int16_t*)scaler_alloc(sizeof(int16_t), ctx->horiz.filter_stride * ctx->out_width);
-   ctx->horiz.filter_pos = (int*)scaler_alloc(sizeof(int), ctx->out_width);
+   ctx->horiz.filter     = (int16_t*)calloc(sizeof(int16_t), ctx->horiz.filter_stride * ctx->out_width);
+   ctx->horiz.filter_pos = (int*)calloc(sizeof(int), ctx->out_width);
 
-   ctx->vert.filter      = (int16_t*)scaler_alloc(sizeof(int16_t), ctx->vert.filter_stride * ctx->out_height);
-   ctx->vert.filter_pos  = (int*)scaler_alloc(sizeof(int), ctx->out_height);
+   ctx->vert.filter      = (int16_t*)calloc(sizeof(int16_t), ctx->vert.filter_stride * ctx->out_height);
+   ctx->vert.filter_pos  = (int*)calloc(sizeof(int), ctx->out_height);
 
    return ctx->horiz.filter && ctx->vert.filter;
 }
