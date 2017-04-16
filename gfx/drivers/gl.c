@@ -290,7 +290,7 @@ static void gl_set_projection(gl_t *gl,
       return;
    }
 
-   matrix_4x4_rotate_z(&rot, M_PI * gl->rotation / 180.0f);
+   matrix_4x4_rotate_z(rot, M_PI * gl->rotation / 180.0f);
    matrix_4x4_multiply(&gl->mvp, &rot, &gl->mvp_no_rot);
 }
 

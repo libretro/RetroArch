@@ -341,7 +341,7 @@ static void vita2d_set_projection(vita_video_t *vita,
       return;
    }
 
-   matrix_4x4_rotate_z(&rot, M_PI * vita->rotation / 180.0f);
+   matrix_4x4_rotate_z(rot, M_PI * vita->rotation / 180.0f);
    matrix_4x4_multiply(&vita->mvp, &rot, &vita->mvp_no_rot);
 }
 
