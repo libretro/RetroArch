@@ -276,7 +276,7 @@ static void fft_render(glfft_t *fft, GLuint backbuffer, unsigned width, unsigned
    printf("center %.2f %.2f %.2f\n", center[0], center[1], center[2]);
    printf("up %.2f %.2f %.2f\n", up[0], up[1], up[2]);
 #endif
-   matrix_4x4_lookat(&mvp_lookat, eye, center, up);
+   matrix_4x4_lookat(mvp_lookat, eye, center, up);
 #ifdef GLM_USE_DEBUG
    printf("mvp_lookat: \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n\n",
          MAT_ELEM_4X4(mvp_lookat, 0, 0),
