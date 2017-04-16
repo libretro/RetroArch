@@ -50,7 +50,7 @@ void gl_ff_matrix(const math_matrix_4x4 *mat)
    glMatrixMode(GL_PROJECTION);
    glLoadMatrixf(mat->data);
    glMatrixMode(GL_MODELVIEW);
-   matrix_4x4_identity(&ident);
+   matrix_4x4_identity(ident);
    glLoadMatrixf(ident.data);
 #endif
 }

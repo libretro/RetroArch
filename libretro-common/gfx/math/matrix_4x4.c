@@ -163,53 +163,6 @@ void matrix_4x4_ortho(math_matrix_4x4 *mat,
    MAT_ELEM_4X4(*mat, 3, 3) =  1.0f;
 }
 
-void matrix_4x4_scale(math_matrix_4x4 *out, float x, float y,
-      float z)
-{
-   MAT_ELEM_4X4(*out, 0, 0) = x;
-   MAT_ELEM_4X4(*out, 0, 1) = 0.0f;
-   MAT_ELEM_4X4(*out, 0, 2) = 0.0f;
-   MAT_ELEM_4X4(*out, 0, 3) = 0.0f;
-   MAT_ELEM_4X4(*out, 1, 0) = 0.0f;
-   MAT_ELEM_4X4(*out, 1, 1) = y;
-   MAT_ELEM_4X4(*out, 1, 2) = 0.0f;
-   MAT_ELEM_4X4(*out, 1, 3) = 0.0f;
-   MAT_ELEM_4X4(*out, 2, 0) = 0.0f;
-   MAT_ELEM_4X4(*out, 2, 1) = 0.0f;
-   MAT_ELEM_4X4(*out, 2, 2) = z;
-   MAT_ELEM_4X4(*out, 2, 3) = 0.0f;
-   MAT_ELEM_4X4(*out, 3, 0) = 0.0f;
-   MAT_ELEM_4X4(*out, 3, 1) = 0.0f;
-   MAT_ELEM_4X4(*out, 3, 2) = 0.0f;
-   MAT_ELEM_4X4(*out, 3, 3) = 1.0f;
-}
-
-/*
- * Builds a translation matrix. All other elements in 
- * the matrix will be set to zero except for the
- * diagonal which is set to 1.0
- */
-void matrix_4x4_translate(math_matrix_4x4 *out, float x,
-      float y, float z)
-{
-   MAT_ELEM_4X4(*out, 0, 0) = 1.0f;
-   MAT_ELEM_4X4(*out, 0, 1) = 0.0f;
-   MAT_ELEM_4X4(*out, 0, 2) = 0.0f;
-   MAT_ELEM_4X4(*out, 0, 3) = x;
-   MAT_ELEM_4X4(*out, 1, 0) = 0.0f;
-   MAT_ELEM_4X4(*out, 1, 1) = 1.0f;
-   MAT_ELEM_4X4(*out, 1, 2) = 1.0f;
-   MAT_ELEM_4X4(*out, 1, 3) = y;
-   MAT_ELEM_4X4(*out, 2, 0) = 0.0f;
-   MAT_ELEM_4X4(*out, 2, 1) = 0.0f;
-   MAT_ELEM_4X4(*out, 2, 2) = 1.0f;
-   MAT_ELEM_4X4(*out, 2, 3) = z;
-   MAT_ELEM_4X4(*out, 3, 0) = 0.0f;
-   MAT_ELEM_4X4(*out, 3, 1) = 0.0f;
-   MAT_ELEM_4X4(*out, 3, 2) = 0.0f;
-   MAT_ELEM_4X4(*out, 3, 3) = 1.0f;
-}
-
 /*
  * Creates a perspective projection matrix.
  */

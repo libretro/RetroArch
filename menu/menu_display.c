@@ -912,7 +912,7 @@ void menu_display_rotate_z(menu_display_ctx_rotate_draw_t *draw)
    if (!draw->scale_enable)
       return;
 
-   matrix_4x4_scale(&matrix_scaled,
+   matrix_4x4_scale(matrix_scaled,
          draw->scale_x, draw->scale_y, draw->scale_z);
    matrix_4x4_multiply(draw->matrix, &matrix_scaled, draw->matrix);
 #endif

@@ -45,28 +45,23 @@ typedef struct math_matrix_4x4
 /*
  * Sets mat to an identity matrix
  */
-static INLINE void matrix_4x4_identity(math_matrix_4x4 *mat)
-{
-   MAT_ELEM_4X4(*mat, 0, 0)    = 1.0f;
-   MAT_ELEM_4X4(*mat, 0, 1)    = 0.0f;
-   MAT_ELEM_4X4(*mat, 0, 2)    = 0.0f;
-   MAT_ELEM_4X4(*mat, 0, 3)    = 0.0f;
-
-   MAT_ELEM_4X4(*mat, 1, 0)    = 0.0f;
-   MAT_ELEM_4X4(*mat, 1, 1)    = 1.0f;
-   MAT_ELEM_4X4(*mat, 1, 2)    = 0.0f;
-   MAT_ELEM_4X4(*mat, 1, 3)    = 0.0f;
-
-   MAT_ELEM_4X4(*mat, 2, 0)    = 0.0f;
-   MAT_ELEM_4X4(*mat, 2, 1)    = 0.0f;
-   MAT_ELEM_4X4(*mat, 2, 2)    = 1.0f;
-   MAT_ELEM_4X4(*mat, 2, 3)    = 0.0f;
-
-   MAT_ELEM_4X4(*mat, 3, 0)    = 0.0f;
-   MAT_ELEM_4X4(*mat, 3, 1)    = 0.0f;
-   MAT_ELEM_4X4(*mat, 3, 2)    = 0.0f;
-   MAT_ELEM_4X4(*mat, 3, 3)    = 1.0f;
-}
+#define matrix_4x4_identity(mat) \
+   MAT_ELEM_4X4(mat, 0, 0)    = 1.0f; \
+   MAT_ELEM_4X4(mat, 0, 1)    = 0.0f; \
+   MAT_ELEM_4X4(mat, 0, 2)    = 0.0f; \
+   MAT_ELEM_4X4(mat, 0, 3)    = 0.0f; \
+   MAT_ELEM_4X4(mat, 1, 0)    = 0.0f; \
+   MAT_ELEM_4X4(mat, 1, 1)    = 1.0f; \
+   MAT_ELEM_4X4(mat, 1, 2)    = 0.0f; \
+   MAT_ELEM_4X4(mat, 1, 3)    = 0.0f; \
+   MAT_ELEM_4X4(mat, 2, 0)    = 0.0f; \
+   MAT_ELEM_4X4(mat, 2, 1)    = 0.0f; \
+   MAT_ELEM_4X4(mat, 2, 2)    = 1.0f; \
+   MAT_ELEM_4X4(mat, 2, 3)    = 0.0f; \
+   MAT_ELEM_4X4(mat, 3, 0)    = 0.0f; \
+   MAT_ELEM_4X4(mat, 3, 1)    = 0.0f; \
+   MAT_ELEM_4X4(mat, 3, 2)    = 0.0f; \
+   MAT_ELEM_4X4(mat, 3, 3)    = 1.0f
 
 void matrix_4x4_copy(math_matrix_4x4 *dst, const math_matrix_4x4 *src);
 void matrix_4x4_transpose(math_matrix_4x4 *out, const math_matrix_4x4 *in);
@@ -87,8 +82,48 @@ void matrix_4x4_lookat(math_matrix_4x4 *out,
 
 void matrix_4x4_multiply(math_matrix_4x4 *out, const math_matrix_4x4 *a, const math_matrix_4x4 *b);
 
-void matrix_4x4_scale(math_matrix_4x4 *out, float x, float y, float z);
-void matrix_4x4_translate(math_matrix_4x4 *out, float x, float y, float z);
+#define matrix_4x4_scale(mat, x, y, z) \
+   MAT_ELEM_4X4(mat, 0, 0) = x; \
+   MAT_ELEM_4X4(mat, 0, 1) = 0.0f; \
+   MAT_ELEM_4X4(mat, 0, 2) = 0.0f; \
+   MAT_ELEM_4X4(mat, 0, 3) = 0.0f; \
+   MAT_ELEM_4X4(mat, 1, 0) = 0.0f; \
+   MAT_ELEM_4X4(mat, 1, 1) = y; \
+   MAT_ELEM_4X4(mat, 1, 2) = 0.0f; \
+   MAT_ELEM_4X4(mat, 1, 3) = 0.0f; \
+   MAT_ELEM_4X4(mat, 2, 0) = 0.0f; \
+   MAT_ELEM_4X4(mat, 2, 1) = 0.0f; \
+   MAT_ELEM_4X4(mat, 2, 2) = z; \
+   MAT_ELEM_4X4(mat, 2, 3) = 0.0f; \
+   MAT_ELEM_4X4(mat, 3, 0) = 0.0f; \
+   MAT_ELEM_4X4(mat, 3, 1) = 0.0f; \
+   MAT_ELEM_4X4(mat, 3, 2) = 0.0f; \
+   MAT_ELEM_4X4(mat, 3, 3) = 1.0f
+
+/*
+ * Builds a translation matrix. All other elements in 
+ * the matrix will be set to zero except for the
+ * diagonal which is set to 1.0
+ */
+
+#define matrix_4x4_translate(mat, x, y, z) \
+   MAT_ELEM_4X4(mat, 0, 0) = 1.0f; \
+   MAT_ELEM_4X4(mat, 0, 1) = 0.0f; \
+   MAT_ELEM_4X4(mat, 0, 2) = 0.0f; \
+   MAT_ELEM_4X4(mat, 0, 3) = x; \
+   MAT_ELEM_4X4(mat, 1, 0) = 0.0f; \
+   MAT_ELEM_4X4(mat, 1, 1) = 1.0f; \
+   MAT_ELEM_4X4(mat, 1, 2) = 1.0f; \
+   MAT_ELEM_4X4(mat, 1, 3) = y; \
+   MAT_ELEM_4X4(mat, 2, 0) = 0.0f; \
+   MAT_ELEM_4X4(mat, 2, 1) = 0.0f; \
+   MAT_ELEM_4X4(mat, 2, 2) = 1.0f; \
+   MAT_ELEM_4X4(mat, 2, 3) = z; \
+   MAT_ELEM_4X4(mat, 3, 0) = 0.0f; \
+   MAT_ELEM_4X4(mat, 3, 1) = 0.0f; \
+   MAT_ELEM_4X4(mat, 3, 2) = 0.0f; \
+   MAT_ELEM_4X4(mat, 3, 3) = 1.0f
+
 void matrix_4x4_projection(math_matrix_4x4 *out, float y_fov, float aspect, float znear, float zfar);
 
 RETRO_END_DECLS
