@@ -183,7 +183,7 @@ static void *gfx_ctx_vc_init(video_frame_info_t *video_info, void *video_driver)
    bcm_host_init();
 
 #ifdef HAVE_EGL
-   if (!egl_init_context(&vc->egl, EGL_DEFAULT_DISPLAY,
+   if (!egl_init_context(&vc->egl, EGL_NONE, EGL_DEFAULT_DISPLAY,
             &major, &minor, &n, attribute_list))
    {
       egl_report_error();
