@@ -177,9 +177,19 @@ static int16_t sdl_mouse_device_state(sdl_input_t *sdl, unsigned id)
 static int16_t sdl_pointer_device_state(sdl_input_t *sdl,
       unsigned idx, unsigned id, bool screen)
 {
-   bool inside              = false;
-   struct video_viewport vp = {0};
-   int16_t res_x = 0, res_y = 0, res_screen_x = 0, res_screen_y = 0;
+   struct video_viewport vp;
+   bool inside                 = false;
+   int16_t res_x               = 0;
+   int16_t res_y               = 0;
+   int16_t res_screen_x        = 0;
+   int16_t res_screen_y        = 0;
+
+   vp.x                        = 0;
+   vp.y                        = 0;
+   vp.width                    = 0;
+   vp.height                   = 0;
+   vp.full_width               = 0;
+   vp.full_height              = 0;
 
    if (!(video_driver_translate_coord_viewport_wrap(&vp, sdl->mouse_abs_x, sdl->mouse_abs_y,
          &res_x, &res_y, &res_screen_x, &res_screen_y)))

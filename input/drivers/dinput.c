@@ -405,12 +405,25 @@ static int16_t dinput_mouse_state_screen(struct dinput_input *di, unsigned id)
 static int16_t dinput_pointer_state(struct dinput_input *di,
       unsigned idx, unsigned id, bool screen)
 {
-   bool pointer_down, inside;
-   int x, y;
-   struct video_viewport vp = {0};
-   int16_t res_x = 0, res_y = 0, res_screen_x = 0, res_screen_y = 0;
-   unsigned num  = 0;
-   struct pointer_status *check_pos = di->pointer_head.next;
+   struct video_viewport vp;
+   bool pointer_down           = false;
+   bool inside                 = false;
+   int x                       = 0;
+   int y                       = 0;
+   int16_t res_x               = 0;
+   int16_t res_y               = 0;
+   int16_t res_screen_x        = 0;
+   int16_t res_screen_y        = 0;
+   unsigned num                = 0;
+   struct pointer_status *
+      check_pos                = di->pointer_head.next;
+
+   vp.x                        = 0;
+   vp.y                        = 0;
+   vp.width                    = 0;
+   vp.height                   = 0;
+   vp.full_width               = 0;
+   vp.full_height              = 0;
 
    while (check_pos && num < idx)
    {

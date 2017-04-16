@@ -1016,7 +1016,7 @@ static void *zarch_init(void **userdata)
    zui->header_height  = 1000; /* dpi / 3; */
    zui->font_size       = 28;
 
-   matrix_4x4_ortho(&zui->mvp, 0, 1, 1, 0, 0, 1);
+   matrix_4x4_ortho(zui->mvp, 0, 1, 1, 0, 0, 1);
 
    return menu;
 error:

@@ -122,11 +122,6 @@ static int input_autoconfigure_joypad_try_from_conf(config_file_t *conf,
    /* Check for name match */
    if (string_is_equal(ident, params->name))
       score += 2;
-   else
-   {
-      if (strstr(params->name, ident))
-         score += 1;
-   }
 
    return score;
 }

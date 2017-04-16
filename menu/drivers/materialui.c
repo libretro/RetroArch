@@ -1903,9 +1903,8 @@ static int mui_pointer_down(void *userdata,
       unsigned ptr, menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
-   size_t selection;
    unsigned width, height;
-   unsigned header_height, i;
+   unsigned header_height;
    mui_handle_t *mui          = (mui_handle_t*)userdata;
 
    if (!mui)

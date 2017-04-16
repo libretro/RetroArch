@@ -776,7 +776,6 @@ OBJ += gfx/video_context_driver.o \
        $(LIBRETRO_COMM_DIR)/gfx/math/vector_2.o \
        $(LIBRETRO_COMM_DIR)/gfx/math/vector_3.o \
        $(LIBRETRO_COMM_DIR)/gfx/math/vector_4.o \
-       $(LIBRETRO_COMM_DIR)/gfx/math/matrix_4x4.o \
        $(LIBRETRO_COMM_DIR)/gfx/math/matrix_3x3.o
 
 ifeq ($(HAVE_KMS), 1)

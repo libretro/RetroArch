@@ -604,7 +604,9 @@ void menu_display_draw_texture(
    draw.prim_type           = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline.id         = 0;
    coords.color             = (const float*)color;
+
    menu_display_rotate_z(&rotate_draw);
+
    draw.texture             = texture;
    draw.x                   = x;
    draw.y                   = height - y;
@@ -906,15 +908,15 @@ void menu_display_rotate_z(menu_display_ctx_rotate_draw_t *draw)
 
    b = (math_matrix_4x4*)menu_disp->get_default_mvp();
 
-   matrix_4x4_rotate_z(&matrix_rotated, draw->rotation);
-   matrix_4x4_multiply(draw->matrix, &matrix_rotated, b);
+   matrix_4x4_rotate_z(matrix_rotated, draw->rotation);
+   matrix_4x4_multiply(*draw->matrix, matrix_rotated, *b);
 
    if (!draw->scale_enable)
       return;
 
-   matrix_4x4_scale(&matrix_scaled,
+   matrix_4x4_scale(matrix_scaled,
          draw->scale_x, draw->scale_y, draw->scale_z);
-   matrix_4x4_multiply(draw->matrix, &matrix_scaled, draw->matrix);
+   matrix_4x4_multiply(*draw->matrix, matrix_scaled, *draw->matrix);
 #endif
 }
 

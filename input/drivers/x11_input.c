@@ -163,9 +163,19 @@ static int16_t x_mouse_state_screen(x11_input_t *x11, unsigned id)
 static int16_t x_pointer_state(x11_input_t *x11,
       unsigned idx, unsigned id, bool screen)
 {
-   bool inside;
-   struct video_viewport vp = {0};
-   int16_t res_x = 0, res_y = 0, res_screen_x = 0, res_screen_y = 0;
+   struct video_viewport vp;
+   bool inside                 = false;
+   int16_t res_x               = 0;
+   int16_t res_y               = 0;
+   int16_t res_screen_x        = 0;
+   int16_t res_screen_y        = 0;
+
+   vp.x                        = 0;
+   vp.y                        = 0;
+   vp.width                    = 0;
+   vp.height                   = 0;
+   vp.full_width               = 0;
+   vp.full_height              = 0;
 
    if (!(video_driver_translate_coord_viewport_wrap(&vp, x11->mouse_x, x11->mouse_y,
          &res_x, &res_y, &res_screen_x, &res_screen_y)))
@@ -303,7 +313,14 @@ static void x_input_poll_mouse(x11_input_t *x11)
       if (x11->grab_mouse && video_driver_is_focused())
       {
          int mid_w, mid_h;
-         struct video_viewport vp = {0};
+         struct video_viewport vp;
+
+         vp.x                        = 0;
+         vp.y                        = 0;
+         vp.width                    = 0;
+         vp.height                   = 0;
+         vp.full_width               = 0;
+         vp.full_height              = 0;
 
          video_driver_get_viewport_info(&vp);
 

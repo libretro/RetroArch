@@ -134,7 +134,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
 
             for (j = 0; j < playlist->size; j++)
             {
-#if 1
+#if 0
                RARCH_LOG("[lobby] playlist CRC: %s\n", 
                   playlist->entries[j].crc32);
 #endif
@@ -190,7 +190,7 @@ filename_matching:
 
                path_remove_extension(entry);
 
-#if 1
+#if 0
                RARCH_LOG("[lobby] playlist filename: %s\n", 
                   playlist->entries[j].path);
 #endif

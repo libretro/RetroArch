@@ -461,9 +461,19 @@ static int16_t udev_analog_pressed(const struct retro_keybind *binds, unsigned i
 static int16_t udev_pointer_state(udev_input_t *udev,
       unsigned idx, unsigned id, bool screen)
 {
-   bool inside              = false;
-   struct video_viewport vp = {0};
-   int16_t res_x = 0, res_y = 0, res_screen_x = 0, res_screen_y = 0;
+   struct video_viewport vp;
+   bool inside                 = false;
+   int16_t res_x               = 0;
+   int16_t res_y               = 0;
+   int16_t res_screen_x        = 0;
+   int16_t res_screen_y        = 0;
+
+   vp.x                        = 0;
+   vp.y                        = 0;
+   vp.width                    = 0;
+   vp.height                   = 0;
+   vp.full_width               = 0;
+   vp.full_height              = 0;
 
    if (!(video_driver_translate_coord_viewport_wrap(&vp, udev->mouse_x, udev->mouse_y,
          &res_x, &res_y, &res_screen_x, &res_screen_y)))

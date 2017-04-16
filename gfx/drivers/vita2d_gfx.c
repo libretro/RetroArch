@@ -332,7 +332,7 @@ static void vita2d_set_projection(vita_video_t *vita,
    math_matrix_4x4 rot;
 
    /* Calculate projection. */
-   matrix_4x4_ortho(&vita->mvp_no_rot, ortho->left, ortho->right,
+   matrix_4x4_ortho(vita->mvp_no_rot, ortho->left, ortho->right,
          ortho->bottom, ortho->top, ortho->znear, ortho->zfar);
 
    if (!allow_rotate)
@@ -341,8 +341,8 @@ static void vita2d_set_projection(vita_video_t *vita,
       return;
    }
 
-   matrix_4x4_rotate_z(&rot, M_PI * vita->rotation / 180.0f);
-   matrix_4x4_multiply(&vita->mvp, &rot, &vita->mvp_no_rot);
+   matrix_4x4_rotate_z(rot, M_PI * vita->rotation / 180.0f);
+   matrix_4x4_multiply(vita->mvp, rot, vita->mvp_no_rot);
 }
 
 static void vita2d_gfx_update_viewport(vita_video_t* vita)
