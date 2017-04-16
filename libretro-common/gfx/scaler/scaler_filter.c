@@ -198,8 +198,8 @@ bool scaler_gen_filter(struct scaler_ctx *ctx)
          x_pos  = (1 << 15) * ctx->in_width / ctx->out_width   - (1 << 15);
          y_pos  = (1 << 15) * ctx->in_height / ctx->out_height - (1 << 15);
 
-         gen_filter_point_sub(&ctx->horiz, ctx->out_width, x_pos, x_step);
-         gen_filter_point_sub(&ctx->vert, ctx->out_height, y_pos, y_step);
+         gen_filter_point_sub(&ctx->horiz, ctx->out_width,  x_pos, x_step);
+         gen_filter_point_sub(&ctx->vert,  ctx->out_height, y_pos, y_step);
 
          ctx->scaler_special = scaler_argb8888_point_special;
          break;
@@ -208,8 +208,8 @@ bool scaler_gen_filter(struct scaler_ctx *ctx)
          x_pos  = (1 << 15) * ctx->in_width / ctx->out_width   - (1 << 15);
          y_pos  = (1 << 15) * ctx->in_height / ctx->out_height - (1 << 15);
 
-         gen_filter_bilinear_sub(&ctx->horiz, ctx->out_width, x_pos, x_step);
-         gen_filter_bilinear_sub(&ctx->vert, ctx->out_height, y_pos, y_step);
+         gen_filter_bilinear_sub(&ctx->horiz, ctx->out_width,  x_pos, x_step);
+         gen_filter_bilinear_sub(&ctx->vert,  ctx->out_height, y_pos, y_step);
          break;
 
       case SCALER_TYPE_SINC:
@@ -231,7 +231,7 @@ bool scaler_gen_filter(struct scaler_ctx *ctx)
 
    /* Makes sure that we never sample outside our rectangle. */
    fixup_filter_sub(&ctx->horiz, ctx->out_width, ctx->in_width);
-   fixup_filter_sub(&ctx->vert, ctx->out_height, ctx->in_height);
+   fixup_filter_sub(&ctx->vert,  ctx->out_height, ctx->in_height);
 
    return validate_filter(ctx);
 }
