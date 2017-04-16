@@ -104,115 +104,6 @@ static bool allocate_frames(struct scaler_ctx *ctx)
    return true;
 }
 
-/**
- * set_direct_pix_conv:
- * @ctx          : pointer to scaler context object.
- *
- * Bind a pixel converter callback function to the 'direct_pixconv' function pointer
- * of the scaler context object.
- *
- * Returns: true if a pixel converter function callback could be bound, false if not.
- * If false, the function callback 'direct_pixconv' is still unbound.
- **/
-static bool set_direct_pix_conv(struct scaler_ctx *ctx)
-{
-   switch (ctx->in_fmt)
-   {
-      case SCALER_FMT_0RGB1555:
-         switch (ctx->out_fmt)
-         {
-            case SCALER_FMT_ARGB8888:
-               ctx->direct_pixconv = conv_0rgb1555_argb8888;
-               break;
-            case SCALER_FMT_RGB565:
-               ctx->direct_pixconv = conv_0rgb1555_rgb565;
-               break;
-            case SCALER_FMT_BGR24:
-               ctx->direct_pixconv = conv_0rgb1555_bgr24;
-               break;
-            default:
-               break;
-         }
-         break;
-      case SCALER_FMT_RGB565:
-         switch (ctx->out_fmt)
-         {
-            case SCALER_FMT_ARGB8888:
-               ctx->direct_pixconv = conv_rgb565_argb8888;
-               break;
-            case SCALER_FMT_BGR24:
-               ctx->direct_pixconv = conv_rgb565_bgr24;
-               break;
-            case SCALER_FMT_0RGB1555:
-               ctx->direct_pixconv = conv_rgb565_0rgb1555;
-               break;
-            default:
-               break;
-         }
-         break;
-      case SCALER_FMT_BGR24:
-         switch (ctx->out_fmt)
-         {
-            case SCALER_FMT_ARGB8888:
-               ctx->direct_pixconv = conv_bgr24_argb8888;
-               break;
-            default:
-               break;
-         }
-         break;
-      case SCALER_FMT_ARGB8888:
-         switch (ctx->out_fmt)
-         {
-            case SCALER_FMT_0RGB1555:
-               ctx->direct_pixconv = conv_argb8888_0rgb1555;
-               break;
-            case SCALER_FMT_BGR24:
-               ctx->direct_pixconv = conv_argb8888_bgr24;
-               break;
-            case SCALER_FMT_ABGR8888:
-               ctx->direct_pixconv = conv_argb8888_abgr8888;
-               break;
-            case SCALER_FMT_RGBA4444:
-               ctx->direct_pixconv = conv_argb8888_rgba4444;
-               break;
-            default:
-               break;
-         }
-         break;
-      case SCALER_FMT_YUYV:
-         switch (ctx->out_fmt)
-         {
-            case SCALER_FMT_ARGB8888:
-               ctx->direct_pixconv = conv_yuyv_argb8888;
-               break;
-            default:
-               break;
-         }
-         break;
-      case SCALER_FMT_RGBA4444:
-         switch (ctx->out_fmt)
-         {
-            case SCALER_FMT_ARGB8888:
-               ctx->direct_pixconv = conv_rgba4444_argb8888;
-               break;
-            case SCALER_FMT_RGB565:
-               ctx->direct_pixconv = conv_rgba4444_rgb565;
-               break;
-            default:
-               break;
-         }
-         break;
-      case SCALER_FMT_ABGR8888:
-         /* FIXME/TODO */
-         break;
-   }
-
-   if (!ctx->direct_pixconv)
-      return false;
-
-   return true;
-}
-
 bool scaler_ctx_gen_filter(struct scaler_ctx *ctx)
 {
    scaler_ctx_gen_reset(ctx);
@@ -230,8 +121,104 @@ bool scaler_ctx_gen_filter(struct scaler_ctx *ctx)
 
       if (ctx->in_fmt == ctx->out_fmt)
          ctx->direct_pixconv = conv_copy;
-      else if (!set_direct_pix_conv(ctx))
-         return false;
+      else
+      {
+         /* Bind a pixel converter callback function to the 
+          * 'direct_pixconv' function pointer of the scaler context object. */
+         switch (ctx->in_fmt)
+         {
+            case SCALER_FMT_0RGB1555:
+               switch (ctx->out_fmt)
+               {
+                  case SCALER_FMT_ARGB8888:
+                     ctx->direct_pixconv = conv_0rgb1555_argb8888;
+                     break;
+                  case SCALER_FMT_RGB565:
+                     ctx->direct_pixconv = conv_0rgb1555_rgb565;
+                     break;
+                  case SCALER_FMT_BGR24:
+                     ctx->direct_pixconv = conv_0rgb1555_bgr24;
+                     break;
+                  default:
+                     break;
+               }
+               break;
+            case SCALER_FMT_RGB565:
+               switch (ctx->out_fmt)
+               {
+                  case SCALER_FMT_ARGB8888:
+                     ctx->direct_pixconv = conv_rgb565_argb8888;
+                     break;
+                  case SCALER_FMT_BGR24:
+                     ctx->direct_pixconv = conv_rgb565_bgr24;
+                     break;
+                  case SCALER_FMT_0RGB1555:
+                     ctx->direct_pixconv = conv_rgb565_0rgb1555;
+                     break;
+                  default:
+                     break;
+               }
+               break;
+            case SCALER_FMT_BGR24:
+               switch (ctx->out_fmt)
+               {
+                  case SCALER_FMT_ARGB8888:
+                     ctx->direct_pixconv = conv_bgr24_argb8888;
+                     break;
+                  default:
+                     break;
+               }
+               break;
+            case SCALER_FMT_ARGB8888:
+               switch (ctx->out_fmt)
+               {
+                  case SCALER_FMT_0RGB1555:
+                     ctx->direct_pixconv = conv_argb8888_0rgb1555;
+                     break;
+                  case SCALER_FMT_BGR24:
+                     ctx->direct_pixconv = conv_argb8888_bgr24;
+                     break;
+                  case SCALER_FMT_ABGR8888:
+                     ctx->direct_pixconv = conv_argb8888_abgr8888;
+                     break;
+                  case SCALER_FMT_RGBA4444:
+                     ctx->direct_pixconv = conv_argb8888_rgba4444;
+                     break;
+                  default:
+                     break;
+               }
+               break;
+            case SCALER_FMT_YUYV:
+               switch (ctx->out_fmt)
+               {
+                  case SCALER_FMT_ARGB8888:
+                     ctx->direct_pixconv = conv_yuyv_argb8888;
+                     break;
+                  default:
+                     break;
+               }
+               break;
+            case SCALER_FMT_RGBA4444:
+               switch (ctx->out_fmt)
+               {
+                  case SCALER_FMT_ARGB8888:
+                     ctx->direct_pixconv = conv_rgba4444_argb8888;
+                     break;
+                  case SCALER_FMT_RGB565:
+                     ctx->direct_pixconv = conv_rgba4444_rgb565;
+                     break;
+                  default:
+                     break;
+               }
+               break;
+            case SCALER_FMT_ABGR8888:
+               /* FIXME/TODO */
+               break;
+         }
+
+         if (!ctx->direct_pixconv)
+            return false;
+      }
    }
    else
    {
@@ -366,14 +353,12 @@ void scaler_ctx_scale(struct scaler_ctx *ctx,
       output_stride = ctx->output.stride;
    }
 
+   /* Take some special, and (hopefully) more optimized path. */
    if (ctx->scaler_special)
-   {
-      /* Take some special, and (hopefully) more optimized path. */
       ctx->scaler_special(ctx, output_frame, input_frame,
             ctx->out_width, ctx->out_height,
             ctx->in_width, ctx->in_height,
             output_stride, input_stride);
-   }
    else
    {
       /* Take generic filter path. */
