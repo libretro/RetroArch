@@ -2400,7 +2400,10 @@ static bool gl_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 #else
       ptr = (const uint8_t*)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
       if (ptr)
-         scaler_ctx_scale(&gl->pbo_readback_scaler, buffer, ptr);
+      {
+         struct scaler_ctx *ctx = &gl->pbo_readback_scaler;
+         scaler_ctx_scale_direct(ctx, buffer, ptr);
+      }
 #endif
 
       if (!ptr)

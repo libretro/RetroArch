@@ -305,15 +305,6 @@ void scaler_ctx_scale(struct scaler_ctx *ctx,
    int input_stride        = ctx->in_stride;
    int output_stride       = ctx->out_stride;
 
-   if (ctx->unscaled)
-   {
-      /* Just perform straight pixel conversion. */
-      ctx->direct_pixconv(output, input,
-            ctx->out_width, ctx->out_height,
-            ctx->out_stride, ctx->in_stride);
-      return;
-   }
-
    if (ctx->in_fmt != SCALER_FMT_ARGB8888)
    {
       ctx->in_pixconv(ctx->input.frame, input,

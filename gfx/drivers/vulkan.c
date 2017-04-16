@@ -21,6 +21,7 @@
 
 #include <compat/strl.h>
 #include <gfx/scaler/scaler.h>
+#include <gfx/video_frame.h>
 #include <formats/image.h>
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
@@ -2329,7 +2330,8 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 
    if (vk->readback.streamed)
    {
-      const uint8_t *src;
+      const uint8_t *src     = NULL;
+      struct scaler_ctx *ctx = NULL;
 
       if (staging->memory == VK_NULL_HANDLE)
          return false;
@@ -2342,7 +2344,10 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 
       vk->readback.scaler.in_stride  = staging->stride;
       vk->readback.scaler.out_stride = -(int)vk->vp.width * 3;
-      scaler_ctx_scale(&vk->readback.scaler, buffer, src);
+
+      ctx                            = &vk->readback.scaler;
+
+      scaler_ctx_scale_direct(ctx, buffer, src);
 
       vkUnmapMemory(vk->context->device, staging->memory);
    }
