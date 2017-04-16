@@ -47,26 +47,25 @@ typedef struct math_matrix_4x4
  */
 static INLINE void matrix_4x4_identity(math_matrix_4x4 *mat)
 {
-   unsigned i;
-
+   MAT_ELEM_4X4(*mat, 0, 0)    = 1.0f;
    MAT_ELEM_4X4(*mat, 0, 1)    = 0.0f;
    MAT_ELEM_4X4(*mat, 0, 2)    = 0.0f;
    MAT_ELEM_4X4(*mat, 0, 3)    = 0.0f;
 
    MAT_ELEM_4X4(*mat, 1, 0)    = 0.0f;
+   MAT_ELEM_4X4(*mat, 1, 1)    = 1.0f;
    MAT_ELEM_4X4(*mat, 1, 2)    = 0.0f;
    MAT_ELEM_4X4(*mat, 1, 3)    = 0.0f;
 
    MAT_ELEM_4X4(*mat, 2, 0)    = 0.0f;
    MAT_ELEM_4X4(*mat, 2, 1)    = 0.0f;
+   MAT_ELEM_4X4(*mat, 2, 2)    = 1.0f;
    MAT_ELEM_4X4(*mat, 2, 3)    = 0.0f;
 
    MAT_ELEM_4X4(*mat, 3, 0)    = 0.0f;
    MAT_ELEM_4X4(*mat, 3, 1)    = 0.0f;
    MAT_ELEM_4X4(*mat, 3, 2)    = 0.0f;
-
-   for (i = 0; i < 4; i++)
-      MAT_ELEM_4X4(*mat, i, i) = 1.0f;
+   MAT_ELEM_4X4(*mat, 3, 3)    = 1.0f;
 }
 
 void matrix_4x4_copy(math_matrix_4x4 *dst, const math_matrix_4x4 *src);
