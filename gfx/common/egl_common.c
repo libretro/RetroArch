@@ -210,62 +210,47 @@ void egl_get_video_size(egl_ctx_data_t *egl, unsigned *width, unsigned *height)
 
 static bool check_egl_version(int minMajorVersion, int minMinorVersion)
 {
-   const char *str = eglQueryString(EGL_NO_DISPLAY, EGL_VERSION);
-   int major, minor;
    int count;
+   int major, minor;
+   const char *str = eglQueryString(EGL_NO_DISPLAY, EGL_VERSION);
 
-   if (str == NULL)
-   {
+   if (!str)
       return false;
-   }
 
    count = sscanf(str, "%d.%d", &major, &minor);
    if (count != 2)
-   {
       return false;
-   }
 
    if (major < minMajorVersion)
-   {
       return false;
-   }
-   else if (major > minMajorVersion)
-   {
+
+   if (major > minMajorVersion)
       return true;
-   }
-   else if (minor >= minMinorVersion)
-   {
+
+   if (minor >= minMinorVersion)
       return true;
-   }
-   else
-   {
-      return false;
-   }
+
+   return false;
 }
 
 static bool check_egl_client_extension(const char *name)
 {
-   const char *str;
    size_t nameLen;
+   const char *str = eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
 
-   str = eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
-   if (str == NULL)
-   {
-      // The EGL implementation doesn't support client extensions at all.
+   /* The EGL implementation doesn't support client extensions at all. */
+   if (!str)
       return false;
-   }
 
    nameLen = strlen(name);
    while (*str != '\0')
    {
-      // Use strspn and strcspn to find the start position and length of each
-      // token in the extension string. Using strtok could also work, but
-      // that would require allocating a copy of the string.
+      /* Use strspn and strcspn to find the start position and length of each
+       * token in the extension string. Using strtok could also work, but
+       * that would require allocating a copy of the string. */
       size_t len = strcspn(str, " ");
       if (len == nameLen && strncmp(str, name, nameLen) == 0)
-      {
          return true;
-      }
       str += len;
       str += strspn(str, " ");
    }
@@ -277,9 +262,9 @@ static EGLDisplay get_egl_display(EGLenum platform, void *native)
 {
    if (platform != EGL_NONE)
    {
-      // If the client library supports at least EGL 1.5, then we can call
-      // eglGetPlatformDisplay. Otherwise, see if eglGetPlatformDisplayEXT
-      // is available.
+      /* If the client library supports at least EGL 1.5, then we can call
+       * eglGetPlatformDisplay. Otherwise, see if eglGetPlatformDisplayEXT
+       * is available. */
       if (check_egl_version(1, 5))
       {
          typedef EGLDisplay (EGLAPIENTRY * pfn_eglGetPlatformDisplay)
@@ -293,9 +278,7 @@ static EGLDisplay get_egl_display(EGLenum platform, void *native)
          {
             EGLDisplay dpy = ptr_eglGetPlatformDisplay(platform, native, NULL);
             if (dpy != EGL_NO_DISPLAY)
-            {
                return dpy;
-            }
          }
       }
 
@@ -310,16 +293,14 @@ static EGLDisplay get_egl_display(EGLenum platform, void *native)
          {
             EGLDisplay dpy = ptr_eglGetPlatformDisplayEXT(platform, native, NULL);
             if (dpy != EGL_NO_DISPLAY)
-            {
                return dpy;
-            }
          }
       }
    }
 
-   // Either the caller didn't provide a platform type, or the EGL
-   // implementation doesn't support eglGetPlatformDisplay. In this case, try
-   // eglGetDisplay and hope for the best.
+   /* Either the caller didn't provide a platform type, or the EGL
+    * implementation doesn't support eglGetPlatformDisplay. In this case, try
+    * eglGetDisplay and hope for the best. */
    RARCH_LOG("[EGL] Falling back to eglGetDisplay\n");
    return eglGetDisplay((EGLNativeDisplayType) native);
 }
