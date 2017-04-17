@@ -143,7 +143,7 @@ static void *android_gfx_ctx_init(video_frame_info_t *video_info, void *video_dr
 #ifdef HAVE_EGL
          RARCH_LOG("Android EGL: GLES version = %d.\n", g_es3 ? 3 : 2);
 
-         if (!egl_init_context(&and->egl, EGL_DEFAULT_DISPLAY,
+         if (!egl_init_context(&and->egl, EGL_NONE, EGL_DEFAULT_DISPLAY,
                   &major, &minor, &n, attribs))
          {
             egl_report_error();

@@ -133,6 +133,8 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    char display_name[128];
    char device_type[128];
    bool block_osd_spam                = false;
+   static bool remote_is_bound        = false;
+
    settings_t      *settings          = config_get_ptr();
 
    msg[0] = display_name[0] = device_type[0] = '\0';
@@ -156,14 +158,14 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
 
    if (string_is_equal(device_type, "remote"))
    {
-      static bool remote_is_bound        = false;
-
       snprintf(msg, sizeof(msg), "%s configured.",
             string_is_empty(display_name) ? params->name : display_name);
 
       if(!remote_is_bound)
          task_set_title(task, strdup(msg));
       remote_is_bound = true;
+      if (params->idx == 0)
+         settings->input.swap_override = true;
    }
    else
    {
@@ -171,6 +173,10 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
             string_is_empty(display_name) ? params->name : display_name,
             msg_hash_to_str(MSG_DEVICE_CONFIGURED_IN_PORT),
             params->idx);
+
+      /* allow overriding the swap menu controls for player 1*/
+      if (params->idx == 0)
+         config_get_bool(conf, "input_swap_override", &settings->input.swap_override);
 
       if (!block_osd_spam)
          task_set_title(task, strdup(msg));

@@ -900,6 +900,7 @@ static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
       case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
          if (!egl_init_context(&wl->egl,
+                  EGL_PLATFORM_WAYLAND_KHR,
                   (EGLNativeDisplayType)wl->dpy,
                   &major, &minor, &n, attrib_ptr))
          {

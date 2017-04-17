@@ -26,26 +26,6 @@
 RETRO_BEGIN_DECLS
 
 /**
- * libretro_get_environment_info:
- * @func                         : Function pointer for get_environment_info.
- * @load_no_content              : If true, core should be able to auto-start
- *                                 without any content loaded.
- *
- * Sets environment callback in order to get statically known 
- * information from it.
- *
- * Fetched via environment callbacks instead of
- * retro_get_system_info(), as this info is part of extensions.
- *
- * Should only be called once right after core load to 
- * avoid overwriting the "real" environ callback.
- *
- * For statically linked cores, pass retro_set_environment as argument.
- */
-void libretro_get_environment_info(void (*)(retro_environment_t),
-      bool *load_no_content);
-
-/**
  * libretro_get_system_info:
  * @path                         : Path to libretro library.
  * @info                         : System info information.

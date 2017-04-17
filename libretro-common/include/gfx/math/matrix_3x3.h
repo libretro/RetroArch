@@ -80,12 +80,56 @@ typedef struct math_matrix_3x3
    MAT_ELEM_3X3(mat, 1, 2) = MAT_ELEM_3X3(in, 2, 1); \
    MAT_ELEM_3X3(mat, 2, 2) = MAT_ELEM_3X3(in, 2, 2)
 
-void matrix_3x3_multiply(math_matrix_3x3 *out,
-      const math_matrix_3x3 *a, const math_matrix_3x3 *b);
+#define matrix_3x3_multiply(out, a, b) \
+   MAT_ELEM_3X3(out, 0, 0) =  \
+      MAT_ELEM_3X3(a, 0, 0) * MAT_ELEM_3X3(b, 0, 0) + \
+      MAT_ELEM_3X3(a, 0, 1) * MAT_ELEM_3X3(b, 1, 0) + \
+      MAT_ELEM_3X3(a, 0, 2) * MAT_ELEM_3X3(b, 2, 0); \
+   MAT_ELEM_3X3(out, 0, 1) = \
+      MAT_ELEM_3X3(a, 0, 0) * MAT_ELEM_3X3(b, 0, 1) + \
+      MAT_ELEM_3X3(a, 0, 1) * MAT_ELEM_3X3(b, 1, 1) + \
+      MAT_ELEM_3X3(a, 0, 2) * MAT_ELEM_3X3(b, 2, 1); \
+   MAT_ELEM_3X3(out, 0, 2) = \
+      MAT_ELEM_3X3(a, 0, 0) * MAT_ELEM_3X3(b, 0, 2) + \
+      MAT_ELEM_3X3(a, 0, 1) * MAT_ELEM_3X3(b, 1, 2) + \
+      MAT_ELEM_3X3(a, 0, 2) * MAT_ELEM_3X3(b, 2, 2); \
+   MAT_ELEM_3X3(out, 1, 0) = \
+      MAT_ELEM_3X3(a, 1, 0) * MAT_ELEM_3X3(b, 0, 0) + \
+      MAT_ELEM_3X3(a, 1, 1) * MAT_ELEM_3X3(b, 1, 0) + \
+      MAT_ELEM_3X3(a, 1, 2) * MAT_ELEM_3X3(b, 2, 0); \
+   MAT_ELEM_3X3(out, 1, 1) =  \
+      MAT_ELEM_3X3(a, 1, 0) * MAT_ELEM_3X3(b, 0, 1) + \
+      MAT_ELEM_3X3(a, 1, 1) * MAT_ELEM_3X3(b, 1, 1) + \
+      MAT_ELEM_3X3(a, 1, 2) * MAT_ELEM_3X3(b, 2, 1); \
+   MAT_ELEM_3X3(out, 1, 2) = \
+      MAT_ELEM_3X3(a, 1, 0) * MAT_ELEM_3X3(b, 0, 2) + \
+      MAT_ELEM_3X3(a, 1, 1) * MAT_ELEM_3X3(b, 1, 2) + \
+      MAT_ELEM_3X3(a, 1, 2) * MAT_ELEM_3X3(b, 2, 2); \
+   MAT_ELEM_3X3(out, 2, 0) =  \
+      MAT_ELEM_3X3(a, 2, 0) * MAT_ELEM_3X3(b, 0, 0) + \
+      MAT_ELEM_3X3(a, 2, 1) * MAT_ELEM_3X3(b, 1, 0) + \
+      MAT_ELEM_3X3(a, 2, 2) * MAT_ELEM_3X3(b, 2, 0); \
+   MAT_ELEM_3X3(out, 2, 1) = \
+      MAT_ELEM_3X3(a, 2, 0) * MAT_ELEM_3X3(b, 0, 1) + \
+      MAT_ELEM_3X3(a, 2, 1) * MAT_ELEM_3X3(b, 1, 1) + \
+      MAT_ELEM_3X3(a, 2, 2) * MAT_ELEM_3X3(b, 2, 1); \
+   MAT_ELEM_3X3(out, 2, 2) =  \
+      MAT_ELEM_3X3(a, 2, 0) * MAT_ELEM_3X3(b, 0, 2) + \
+      MAT_ELEM_3X3(a, 2, 1) * MAT_ELEM_3X3(b, 1, 2) + \
+      MAT_ELEM_3X3(a, 2, 2) * MAT_ELEM_3X3(b, 2, 2)
 
-float matrix_3x3_determinant(const math_matrix_3x3 *mat);
+#define matrix_3x3_determinant(mat) (MAT_ELEM_3X3(mat, 0, 0) * (MAT_ELEM_3X3(mat, 1, 1) * MAT_ELEM_3X3(mat, 2, 2) - MAT_ELEM_3X3(mat, 1, 2) * MAT_ELEM_3X3(mat, 2, 1)) - MAT_ELEM_3X3(mat, 0, 1) * (MAT_ELEM_3X3(mat, 1, 0) * MAT_ELEM_3X3(mat, 2, 2) - MAT_ELEM_3X3(mat, 1, 2) * MAT_ELEM_3X3(mat, 2, 0)) + MAT_ELEM_3X3(mat, 0, 2) * (MAT_ELEM_3X3(mat, 1, 0) * MAT_ELEM_3X3(mat, 2, 1) - MAT_ELEM_3X3(mat, 1, 1) * MAT_ELEM_3X3(mat, 2, 0)))
 
-void matrix_3x3_adjoint(math_matrix_3x3 *mat);
+#define matrix_3x3_adjoint(mat) \
+   MAT_ELEM_3X3(mat, 0, 0) =  (MAT_ELEM_3X3(mat, 1, 1) * MAT_ELEM_3X3(mat, 2, 2) - MAT_ELEM_3X3(mat, 1, 2) * MAT_ELEM_3X3(mat, 2, 1)); \
+   MAT_ELEM_3X3(mat, 0, 1) = -(MAT_ELEM_3X3(mat, 0, 1) * MAT_ELEM_3X3(mat, 2, 2) - MAT_ELEM_3X3(mat, 0, 2) * MAT_ELEM_3X3(mat, 2, 1)); \
+   MAT_ELEM_3X3(mat, 0, 2) =  (MAT_ELEM_3X3(mat, 0, 1) * MAT_ELEM_3X3(mat, 1, 1) - MAT_ELEM_3X3(mat, 0, 2) * MAT_ELEM_3X3(mat, 1, 1)); \
+   MAT_ELEM_3X3(mat, 1, 0) = -(MAT_ELEM_3X3(mat, 1, 0) * MAT_ELEM_3X3(mat, 2, 2) - MAT_ELEM_3X3(mat, 1, 2) * MAT_ELEM_3X3(mat, 2, 0)); \
+   MAT_ELEM_3X3(mat, 1, 1) =  (MAT_ELEM_3X3(mat, 0, 0) * MAT_ELEM_3X3(mat, 2, 2) - MAT_ELEM_3X3(mat, 0, 2) * MAT_ELEM_3X3(mat, 2, 0)); \
+   MAT_ELEM_3X3(mat, 1, 2) = -(MAT_ELEM_3X3(mat, 0, 0) * MAT_ELEM_3X3(mat, 1, 2) - MAT_ELEM_3X3(mat, 0, 2) * MAT_ELEM_3X3(mat, 1, 0)); \
+   MAT_ELEM_3X3(mat, 2, 0) =  (MAT_ELEM_3X3(mat, 1, 0) * MAT_ELEM_3X3(mat, 2, 1) - MAT_ELEM_3X3(mat, 1, 1) * MAT_ELEM_3X3(mat, 2, 0)); \
+   MAT_ELEM_3X3(mat, 2, 1) = -(MAT_ELEM_3X3(mat, 0, 0) * MAT_ELEM_3X3(mat, 2, 1) - MAT_ELEM_3X3(mat, 0, 1) * MAT_ELEM_3X3(mat, 2, 0)); \
+   MAT_ELEM_3X3(mat, 2, 2) =  (MAT_ELEM_3X3(mat, 0, 0) * MAT_ELEM_3X3(mat, 1, 1) - MAT_ELEM_3X3(mat, 0, 1) * MAT_ELEM_3X3(mat, 1, 0))
 
 bool matrix_3x3_invert(math_matrix_3x3 *mat);
 

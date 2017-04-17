@@ -83,7 +83,7 @@ static void *gfx_ctx_opendingux_init(video_frame_info_t *video_info, void *video
 #ifdef HAVE_EGL
    frontend_driver_install_signal_handler();
 
-   if (!egl_init_context(&viv->egl, EGL_DEFAULT_DISPLAY,
+   if (!egl_init_context(&viv->egl, EGL_NONE, EGL_DEFAULT_DISPLAY,
             &major, &minor,
             &n, attribs))
    {
