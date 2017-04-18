@@ -2076,12 +2076,9 @@ bool command_event(enum event_command cmd, void *data)
          command_event_save_auto_state();
          break;
       case CMD_EVENT_AUDIO_STOP:
-         if (!audio_driver_stop())
-            return false;
-         break;
+         return audio_driver_stop();
       case CMD_EVENT_AUDIO_START:
-         audio_driver_start(runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL));
-         break;
+         return audio_driver_start(runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL));
       case CMD_EVENT_AUDIO_MUTE_TOGGLE:
          {
             settings_t *settings      = config_get_ptr();
