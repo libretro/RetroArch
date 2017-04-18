@@ -978,12 +978,21 @@ bool audio_driver_start(bool is_shutdown)
    settings_t *settings      = config_get_ptr();
    if (!current_audio || !current_audio->start 
          || !audio_driver_context_audio_data)
-      return false;
+      goto error;
    if (audio_driver_alive())
-      return false;
+      goto error;
    if (!settings || settings->audio.mute_enable)
-      return false;
-   return current_audio->start(audio_driver_context_audio_data, is_shutdown);
+      goto error;
+   if (!current_audio->start(audio_driver_context_audio_data, is_shutdown))
+      goto error;
+
+   return true;
+
+error:
+   RARCH_ERR("%s\n",
+         msg_hash_to_str(MSG_FAILED_TO_START_AUDIO_DRIVER));
+   audio_driver_unset_active();
+   return false;
 }
 
 bool audio_driver_alive(void)

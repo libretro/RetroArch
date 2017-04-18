@@ -2080,12 +2080,7 @@ bool command_event(enum event_command cmd, void *data)
             return false;
          break;
       case CMD_EVENT_AUDIO_START:
-         if (!audio_driver_start(runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL)))
-         {
-            RARCH_ERR("%s\n",
-                  msg_hash_to_str(MSG_FAILED_TO_START_AUDIO_DRIVER));
-            audio_driver_unset_active();
-         }
+         audio_driver_start(runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL));
          break;
       case CMD_EVENT_AUDIO_MUTE_TOGGLE:
          {
