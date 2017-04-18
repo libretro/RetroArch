@@ -410,10 +410,10 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
          if (hr != AUDCLNT_E_UNSUPPORTED_FORMAT)
          {
             WASAPI_WARN(hr != AUDCLNT_E_DEVICE_IN_USE,
-                  "Exclusive mode disabled", goto error);
+                  "Device already in use", goto error);
 
             WASAPI_WARN(hr != AUDCLNT_E_EXCLUSIVE_MODE_NOT_ALLOWED,
-                  "Device allready in use", goto error);
+                  "Exclusive mode disabled", goto error);
 
             i = 2; /* break from outer loop too */
             break;
