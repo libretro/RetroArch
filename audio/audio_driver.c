@@ -991,7 +991,7 @@ bool audio_driver_start(bool is_shutdown)
 error:
    RARCH_ERR("%s\n",
          msg_hash_to_str(MSG_FAILED_TO_START_AUDIO_DRIVER));
-   audio_driver_unset_active();
+   audio_driver_active = false;
    return false;
 }
 
@@ -1051,11 +1051,6 @@ bool audio_driver_owns_driver(void)
 void audio_driver_set_active(void)
 {
    audio_driver_active = true;
-}
-
-void audio_driver_unset_active(void)
-{
-   audio_driver_active = false;
 }
 
 void audio_driver_destroy(void)
