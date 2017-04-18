@@ -163,7 +163,8 @@ static bool audio_driver_data_own                        = false;
 static void compute_audio_buffer_statistics(void)
 {
    unsigned i, low_water_size, high_water_size, avg, stddev;
-   float avg_filled, deviation;
+   float avg_filled              = 0.0f;
+   float deviation               = 0.0f;
    uint64_t accum                = 0;
    uint64_t accum_var            = 0;
    unsigned low_water_count      = 0;
