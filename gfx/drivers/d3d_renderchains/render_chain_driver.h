@@ -66,7 +66,7 @@ typedef struct renderchain_driver
          unsigned width, unsigned height,
          void *final_viewport);
    void (*set_font_rect)(void *data, const void *param_data);
-   bool (*read_viewport)(void *data, uint8_t *buffer);
+   bool (*read_viewport)(void *data, uint8_t *buffer, bool is_idle);
    void (*viewport_info)(void *data, struct video_viewport *vp);
    const char *ident;
 } renderchain_driver_t;

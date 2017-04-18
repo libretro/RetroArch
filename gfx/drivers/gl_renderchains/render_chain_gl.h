@@ -78,6 +78,10 @@ void gl_renderchain_free(gl_t *gl);
 
 bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height);
 
+void gl_renderchain_viewport_info(void *data, struct video_viewport *vp);
+
+bool gl_renderchain_read_viewport(void *data, uint8_t *buffer, bool is_idle);
+
 void context_bind_hw_render(bool enable);
 
 RETRO_END_DECLS

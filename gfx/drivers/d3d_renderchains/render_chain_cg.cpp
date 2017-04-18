@@ -910,9 +910,12 @@ static bool renderchain_set_pass_size(cg_renderchain_t *chain,
 }
 
 static void cg_d3d9_renderchain_convert_geometry(
-	  void *data, const void *info_data,
-      unsigned *out_width, unsigned *out_height,
-      unsigned width, unsigned height,
+      void *data,
+      const void *info_data,
+      unsigned *out_width,
+      unsigned *out_height,
+      unsigned width,
+      unsigned height,
       void *final_viewport_data)
 {
    const LinkInfo *info        = (const LinkInfo*)info_data;
@@ -998,8 +1001,10 @@ static void d3d_recompute_pass_sizes(cg_renderchain_t *chain,
    }
 }
 
-static void cg_d3d9_renderchain_set_final_viewport(void *data,
-      void *renderchain_data, const void *viewport_data)
+static void cg_d3d9_renderchain_set_final_viewport(
+      void *data,
+      void *renderchain_data,
+      const void *viewport_data)
 {
    d3d_video_t                  *d3d = (d3d_video_t*)data;
    cg_renderchain_t              *chain = (cg_renderchain_t*)renderchain_data;
@@ -1011,7 +1016,9 @@ static void cg_d3d9_renderchain_set_final_viewport(void *data,
    d3d_recompute_pass_sizes(chain, d3d);
 }
 
-static bool cg_d3d9_renderchain_add_pass(void *data, const void *info_data)
+static bool cg_d3d9_renderchain_add_pass(
+      void *data,
+      const void *info_data)
 {
    Pass pass;
    const LinkInfo *info     = (const LinkInfo*)info_data;
@@ -1482,7 +1489,9 @@ static bool cg_d3d9_renderchain_render(
    return true;
 }
 
-static void cg_d3d9_renderchain_set_font_rect(void *data, const void *font_data)
+static void cg_d3d9_renderchain_set_font_rect(
+      void *data,
+      const void *font_data)
 {
    settings_t *settings             = config_get_ptr();
    d3d_video_t *d3d                 = (d3d_video_t*)data;
@@ -1516,7 +1525,7 @@ static void cg_d3d9_renderchain_set_font_rect(void *data, const void *font_data)
    d3d->font_rect_shifted.bottom += 2;
 }
 
-static bool cg_d3d9_renderchain_read_viewport(void *data, uint8_t *buffer)
+static bool cg_d3d9_renderchain_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    unsigned width, height;
    D3DLOCKED_RECT rect;
