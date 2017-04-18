@@ -975,24 +975,15 @@ bool audio_driver_toggle_mute(void)
 
 bool audio_driver_start(bool is_shutdown)
 {
+   settings_t *settings      = config_get_ptr();
    if (!current_audio || !current_audio->start 
          || !audio_driver_context_audio_data)
       return false;
-   return current_audio->start(audio_driver_context_audio_data, is_shutdown);
-}
-
-bool audio_driver_stop(void)
-{
-   if (!current_audio || !current_audio->stop 
-         || !audio_driver_context_audio_data)
+   if (audio_driver_alive())
       return false;
-   return current_audio->stop(audio_driver_context_audio_data);
-}
-
-void audio_driver_unset_callback(void)
-{
-   audio_callback.callback  = NULL;
-   audio_callback.set_state = NULL;
+   if (!settings || settings->audio.mute_enable)
+      return false;
+   return current_audio->start(audio_driver_context_audio_data, is_shutdown);
 }
 
 bool audio_driver_alive(void)
@@ -1002,6 +993,22 @@ bool audio_driver_alive(void)
          && audio_driver_context_audio_data)
       return current_audio->alive(audio_driver_context_audio_data);
    return false;
+}
+
+bool audio_driver_stop(void)
+{
+   if (!current_audio || !current_audio->stop 
+         || !audio_driver_context_audio_data)
+      return false;
+   if (!audio_driver_alive())
+      return false;
+   return current_audio->stop(audio_driver_context_audio_data);
+}
+
+void audio_driver_unset_callback(void)
+{
+   audio_callback.callback  = NULL;
+   audio_callback.set_state = NULL;
 }
 
 void audio_driver_frame_is_reverse(void)
