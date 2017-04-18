@@ -2020,12 +2020,6 @@ bool command_event(enum event_command cmd, void *data)
          {
 #ifdef HAVE_CHEEVOS
             settings_t *settings      = config_get_ptr();
-#endif
-#ifdef HAVE_NETWORKING
-            if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
-               return false;
-#endif
-#ifdef HAVE_CHEEVOS
             if (settings->cheevos.hardcore_mode_enable)
                return false;
 #endif
@@ -2041,13 +2035,8 @@ bool command_event(enum event_command cmd, void *data)
                return false;
 #endif
 
-#ifdef HAVE_NETWORKING
-            if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
-#endif
-            {
-               if (settings->rewind_enable)
-                  state_manager_event_init((unsigned)settings->rewind_buffer_size);
-            }
+            if (settings->rewind_enable)
+               state_manager_event_init((unsigned)settings->rewind_buffer_size);
          }
          break;
       case CMD_EVENT_REWIND_TOGGLE:

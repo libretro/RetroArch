@@ -354,6 +354,10 @@ struct netplay
     * connected_players) */
    uint32_t connected_slaves;
 
+   /* Number of desync operations we're currently performing. If set, we don't
+    * attempt to stay in sync. */
+   uint32_t desync;
+
    /* Maximum player number */
    uint32_t player_max;
 

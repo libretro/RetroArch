@@ -31,6 +31,10 @@
 #include "../verbosity.h"
 #include "../audio/audio_driver.h"
 
+#ifdef HAVE_NETWORKING
+#include "../network/netplay/netplay.h"
+#endif
+
 /* This makes Valgrind throw errors if a core overflows its savestate size. */
 /* Keep it off unless you're chasing a core bug, it slows things down. */
 #define STRICT_BUF_SIZE 0
@@ -687,9 +691,11 @@ bool state_manager_check_rewind(bool pressed,
 {
    bool ret             = false;
    static bool first    = true;
+   bool was_reversed    = false;
 
    if (state_manager_frame_is_reversed())
    {
+      was_reversed = true;
       audio_driver_frame_is_reverse();
       state_manager_set_frame_is_reversed(false);
    }
@@ -710,6 +716,14 @@ bool state_manager_check_rewind(bool pressed,
       if (state_manager_pop(rewind_state.state, &buf))
       {
          retro_ctx_serialize_info_t serial_info;
+
+#ifdef HAVE_NETWORKING
+         if (!was_reversed)
+         {
+            /* Make sure netplay isn't confused */
+            netplay_driver_ctl(RARCH_NETPLAY_CTL_DESYNC_PUSH, NULL);
+         }
+#endif
 
          state_manager_set_frame_is_reversed(true);
 
@@ -735,6 +749,14 @@ bool state_manager_check_rewind(bool pressed,
          serial_info.size       = rewind_state.size;
          core_unserialize(&serial_info);
 
+#ifdef HAVE_NETWORKING
+         if (was_reversed)
+         {
+            /* Tell netplay we're done */
+            netplay_driver_ctl(RARCH_NETPLAY_CTL_DESYNC_POP, NULL);
+         }
+#endif
+
          strlcpy(s, 
                msg_hash_to_str(MSG_REWIND_REACHED_END),
                len);
@@ -746,6 +768,14 @@ bool state_manager_check_rewind(bool pressed,
    else
    {
       static unsigned cnt      = 0;
+
+#ifdef HAVE_NETWORKING
+      if (was_reversed)
+      {
+         /* Tell netplay we're done */
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_DESYNC_POP, NULL);
+      }
+#endif
 
       cnt = (cnt + 1) % (rewind_granularity ?
             rewind_granularity : 1); /* Avoid possible SIGFPE. */
