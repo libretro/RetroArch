@@ -45,6 +45,7 @@
 #include "../../../record/record_driver.h"
 #include "../../../performance_counters.h"
 
+#include "gl_legacy_renderchain.h"
 #include "../video_renderchain_driver.h"
 
 #include "../../../retroarch.h"
