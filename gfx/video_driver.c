@@ -466,7 +466,7 @@ static void video_driver_init_filter(enum retro_pixel_format colfmt)
 
    if (!video_driver_state_filter)
    {
-      RARCH_ERR("Failed to load filter.\n");
+      RARCH_ERR("[Video]: Failed to load filter.\n");
       return;
    }
 
@@ -501,7 +501,7 @@ static void video_driver_init_filter(enum retro_pixel_format colfmt)
    return;
 
 error:
-   RARCH_ERR("Softfilter initialization failed.\n");
+   RARCH_ERR("[Video]: Softfilter initialization failed.\n");
    video_driver_filter_free();
 }
 
@@ -513,7 +513,7 @@ static void video_driver_init_input(const input_driver_t *tmp)
 
    /* Video driver didn't provide an input driver,
     * so we use configured one. */
-   RARCH_LOG("Graphics driver did not initialize an input driver. Attempting to pick a suitable driver.\n");
+   RARCH_LOG("[Video]: Graphics driver did not initialize an input driver. Attempting to pick a suitable driver.\n");
 
    if (tmp)
       *input = tmp;
@@ -530,7 +530,7 @@ static void video_driver_init_input(const input_driver_t *tmp)
       return;
 
 error:
-   RARCH_ERR("Cannot initialize input driver. Exiting ...\n");
+   RARCH_ERR("[Video]: Cannot initialize input driver. Exiting ...\n");
    retroarch_fail(1, "video_driver_init_input()");
 }
 
@@ -549,14 +549,14 @@ static void video_driver_monitor_compute_fps_statistics(void)
          (2 * MEASURE_FRAME_TIME_SAMPLES_COUNT))
    {
       RARCH_LOG(
-            "Does not have enough samples for monitor refresh rate estimation. Requires to run for at least %u frames.\n",
+            "[Video]: Does not have enough samples for monitor refresh rate estimation. Requires to run for at least %u frames.\n",
             2 * MEASURE_FRAME_TIME_SAMPLES_COUNT);
       return;
    }
 
    if (video_monitor_fps_statistics(&avg_fps, &stddev, &samples))
    {
-      RARCH_LOG("Average monitor Hz: %.6f Hz. (%.3f %% frame time deviation, based on %u last samples).\n",
+      RARCH_LOG("[Video]: Average monitor Hz: %.6f Hz. (%.3f %% frame time deviation, based on %u last samples).\n",
             avg_fps, 100.0 * stddev, samples);
    }
 }
@@ -703,7 +703,7 @@ static bool video_driver_init_internal(void)
 
    if (!geom)
    {
-      RARCH_ERR("AV geometry not initialized, cannot initialize video driver.\n");
+      RARCH_ERR("[Video]: AV geometry not initialized, cannot initialize video driver.\n");
       goto error;
    }
 
@@ -761,9 +761,9 @@ static bool video_driver_init_internal(void)
    }
 
    if (width && height)
-      RARCH_LOG("Video @ %ux%u\n", width, height);
+      RARCH_LOG("[Video]: Video @ %ux%u\n", width, height);
    else
-      RARCH_LOG("Video @ fullscreen\n");
+      RARCH_LOG("[Video]: Video @ fullscreen\n");
 
    video_driver_display_type_set(RARCH_DISPLAY_NONE);
    video_driver_display_set(0);
@@ -771,7 +771,7 @@ static bool video_driver_init_internal(void)
 
    if (!video_driver_pixel_converter_init(RARCH_SCALE_BASE * scale))
    {
-      RARCH_ERR("Failed to initialize pixel converter.\n");
+      RARCH_ERR("[Video]: Failed to initialize pixel converter.\n");
       goto error;
    }
 
@@ -803,14 +803,14 @@ static bool video_driver_init_internal(void)
    if (video_driver_is_threaded())
    {
       /* Can't do hardware rendering with threaded driver currently. */
-      RARCH_LOG("Starting threaded video driver ...\n");
+      RARCH_LOG("[Video]: Starting threaded video driver ...\n");
 
       if (!video_init_thread((const video_driver_t**)&current_video,
                &video_driver_data,
                input_get_double_ptr(), input_driver_get_data_ptr(),
                current_video, video))
       {
-         RARCH_ERR("Cannot open threaded video driver ... Exiting ...\n");
+         RARCH_ERR("[Video]: Cannot open threaded video driver ... Exiting ...\n");
          goto error;
       }
    }
@@ -821,7 +821,7 @@ static bool video_driver_init_internal(void)
 
    if (!video_driver_data)
    {
-      RARCH_ERR("Cannot open video driver ... Exiting ...\n");
+      RARCH_ERR("[Video]: Cannot open video driver ... Exiting ...\n");
       goto error;
    }
 
@@ -1053,7 +1053,7 @@ bool video_monitor_fps_statistics(double *refresh_rate,
 
 #if 0
    for (i = 0; i < samples; i++)
-      RARCH_LOG("Interval #%u: %d usec / frame.\n",
+      RARCH_LOG("[Video]: Interval #%u: %d usec / frame.\n",
             i, (int)frame_time_samples[i]);
 #endif
 
@@ -1184,7 +1184,7 @@ void video_driver_monitor_adjust_system_rates(void)
    if (timing_skew <= settings->audio.max_timing_skew)
       return;
 
-   RARCH_LOG("Timings deviate too much. Will not adjust. (Display = %.2f Hz, Game = %.2f Hz)\n",
+   RARCH_LOG("[Video]: Timings deviate too much. Will not adjust. (Display = %.2f Hz, Game = %.2f Hz)\n",
          settings->video.refresh_rate,
          (float)info->fps);
 
@@ -1193,7 +1193,7 @@ void video_driver_monitor_adjust_system_rates(void)
 
    /* We won't be able to do VSync reliably when game FPS > monitor FPS. */
    runloop_ctl(RUNLOOP_CTL_SET_NONBLOCK_FORCED, NULL);
-   RARCH_LOG("Game FPS > Monitor FPS. Cannot rely on VSync.\n");
+   RARCH_LOG("[Video]: Game FPS > Monitor FPS. Cannot rely on VSync.\n");
 }
 
 void video_driver_menu_settings(void **list_data, void *list_info_data,
@@ -1582,7 +1582,7 @@ bool video_driver_find_driver(void)
       if (hwr && hw_render_context_is_vulkan(hwr->context_type))
       {
 #if defined(HAVE_VULKAN)
-         RARCH_LOG("Using HW render, Vulkan driver forced.\n");
+         RARCH_LOG("[Video]: Using HW render, Vulkan driver forced.\n");
          current_video = &video_vulkan;
 #endif
       }
@@ -1590,7 +1590,7 @@ bool video_driver_find_driver(void)
       if (hwr && hw_render_context_is_gl(hwr->context_type))
       {
 #if defined(HAVE_OPENGL) && defined(HAVE_FBO)
-         RARCH_LOG("Using HW render, OpenGL driver forced.\n");
+         RARCH_LOG("[Video]: Using HW render, OpenGL driver forced.\n");
          current_video = &video_gl;
 #endif
       }
