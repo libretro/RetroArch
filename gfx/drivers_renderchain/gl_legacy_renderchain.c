@@ -45,21 +45,22 @@
 #include "../../../record/record_driver.h"
 #include "../../../performance_counters.h"
 
+#include "../video_renderchain_driver.h"
+
 #include "../../../retroarch.h"
 #include "../../../verbosity.h"
-#include "../../common/gl_common.h"
+#include "../common/gl_common.h"
 
-#include "render_chain_gl.h"
 
 #ifdef HAVE_THREADS
-#include "../../video_thread_wrapper.h"
+#include "../video_thread_wrapper.h"
 #endif
 
-#include "../../font_driver.h"
-#include "../../video_context_driver.h"
+#include "../font_driver.h"
+#include "../video_context_driver.h"
 
 #ifdef HAVE_GLSL
-#include "../../drivers_shader/shader_glsl.h"
+#include "../drivers_shader/shader_glsl.h"
 #endif
 
 #ifdef GL_DEBUG
@@ -74,7 +75,7 @@
 #include "../../common/win32_common.h"
 #endif
 
-#include "../../video_shader_driver.h"
+#include "../video_shader_driver.h"
 
 #ifndef GL_SYNC_GPU_COMMANDS_COMPLETE
 #define GL_SYNC_GPU_COMMANDS_COMPLETE     0x9117

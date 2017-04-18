@@ -179,10 +179,10 @@ VIDEO DRIVER
 #include "../gfx/common/d3d_common.cpp"
 #include "../gfx/drivers/d3d.cpp"
 #ifdef _XBOX
-#include "../gfx/drivers/d3d_renderchains/render_chain_xdk.cpp"
+#include "../gfx/drivers_renderchain/xdk_renderchain.cpp"
 #endif
 #ifdef HAVE_CG
-#include "../gfx/drivers/d3d_renderchains/render_chain_cg.cpp"
+#include "../gfx/drivers_renderchain/d3d9_cg_renderchain.cpp"
 #endif
 #endif
 

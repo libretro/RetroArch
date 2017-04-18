@@ -20,9 +20,9 @@
 #include <retro_common_api.h>
 #include <libretro.h>
 
-#include "../../video_driver.h"
-#include "../../video_shader_parse.h"
-#include "../../common/gl_common.h"
+#include "../video_driver.h"
+#include "../video_shader_parse.h"
+#include "../common/gl_common.h"
 
 RETRO_BEGIN_DECLS
 

@@ -40,7 +40,7 @@
 #include <gfx/gl_capabilities.h>
 #include <gfx/video_frame.h>
 
-#include "gl_renderchains/render_chain_gl.h"
+#include "../drivers_renderchain/gl_legacy_renderchain.h"
 
 #include "../../configuration.h"
 #include "../../record/record_driver.h"
