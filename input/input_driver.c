@@ -832,10 +832,11 @@ static INLINE bool input_keys_pressed_internal(
    if (((!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
             || !input_driver_block_hotkey))
    {
-      bool bind_valid = binds[i].valid;
+      bool bind_valid            = binds[i].valid;
 
       joypad_info.joy_idx        = settings->input.joypad_map[0];
       joypad_info.auto_binds     = settings->input.autoconf_binds[joypad_info.joy_idx];
+      joypad_info.axis_threshold = settings->input.axis_threshold;
 
       if (bind_valid && current_input->input_state(current_input_data,
                joypad_info, &binds,
