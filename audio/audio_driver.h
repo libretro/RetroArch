@@ -210,8 +210,6 @@ void audio_driver_unset_callback(void);
 
 void audio_driver_frame_is_reverse(void);
 
-bool audio_driver_alive(void);
-
 bool audio_driver_deinit(void);
 
 bool audio_driver_init(void);

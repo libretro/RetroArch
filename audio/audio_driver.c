@@ -973,6 +973,15 @@ bool audio_driver_toggle_mute(void)
    return true;
 }
 
+static bool audio_driver_alive(void)
+{
+   if (     current_audio 
+         && current_audio->alive 
+         && audio_driver_context_audio_data)
+      return current_audio->alive(audio_driver_context_audio_data);
+   return false;
+}
+
 bool audio_driver_start(bool is_shutdown)
 {
    settings_t *settings      = config_get_ptr();
@@ -995,14 +1004,6 @@ error:
    return false;
 }
 
-bool audio_driver_alive(void)
-{
-   if (     current_audio 
-         && current_audio->alive 
-         && audio_driver_context_audio_data)
-      return current_audio->alive(audio_driver_context_audio_data);
-   return false;
-}
 
 bool audio_driver_stop(void)
 {
