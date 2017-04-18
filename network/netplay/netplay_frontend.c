@@ -996,6 +996,10 @@ void netplay_load_savestate(netplay_t *netplay,
       }
    }
 
+   /* Don't send it if we're expected to be desynced */
+   if (netplay->desync)
+      return;
+
    /* If we can't send it to the peer, loading a state was a bad idea */
    if (netplay->quirks & (
               NETPLAY_QUIRK_NO_SAVESTATES
@@ -1319,6 +1323,17 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          netplay_announce_nat_traversal(netplay_data);
 #endif
          goto done;
+      case RARCH_NETPLAY_CTL_DESYNC_PUSH:
+         netplay_data->desync++;
+         break;
+      case RARCH_NETPLAY_CTL_DESYNC_POP:
+         if (netplay_data->desync)
+         {
+            netplay_data->desync--;
+            if (!netplay_data->desync)
+               netplay_load_savestate(netplay_data, NULL, true);
+         }
+         break;
       default:
       case RARCH_NETPLAY_CTL_NONE:
          ret = false;
