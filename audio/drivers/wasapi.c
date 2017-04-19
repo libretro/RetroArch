@@ -214,7 +214,10 @@ error:
    WASAPI_RELEASE(collection);
    WASAPI_RELEASE(enumerator);
 
-   wasapi_err("Failed to initialize device");
+   if (id)
+      wasapi_warn("Failed to initialize device");
+   else
+      wasapi_err("Failed to initialize device");
 
    return NULL;
 }
@@ -504,6 +507,8 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    com_initialized = true;
 
    w->device = wasapi_init_device(dev_id);
+   if (!w->device && dev_id)
+      w->device = wasapi_init_device(NULL);
    if (!w->device)
       goto error;
 
