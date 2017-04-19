@@ -40,26 +40,27 @@
 #include <gfx/gl_capabilities.h>
 #include <gfx/video_frame.h>
 
-#include "../../../driver.h"
-#include "../../../configuration.h"
-#include "../../../record/record_driver.h"
-#include "../../../performance_counters.h"
+#include "../../driver.h"
+#include "../../configuration.h"
+#include "../../record/record_driver.h"
+#include "../../performance_counters.h"
 
-#include "../../../retroarch.h"
-#include "../../../verbosity.h"
-#include "../../common/gl_common.h"
+#include "gl_legacy_renderchain.h"
+#include "../video_renderchain_driver.h"
 
-#include "render_chain_gl.h"
+#include "../../retroarch.h"
+#include "../../verbosity.h"
+#include "../common/gl_common.h"
 
 #ifdef HAVE_THREADS
-#include "../../video_thread_wrapper.h"
+#include "../video_thread_wrapper.h"
 #endif
 
-#include "../../font_driver.h"
-#include "../../video_context_driver.h"
+#include "../font_driver.h"
+#include "../video_context_driver.h"
 
 #ifdef HAVE_GLSL
-#include "../../drivers_shader/shader_glsl.h"
+#include "../drivers_shader/shader_glsl.h"
 #endif
 
 #ifdef GL_DEBUG
@@ -67,14 +68,14 @@
 #endif
 
 #ifdef HAVE_MENU
-#include "../../../menu/menu_driver.h"
+#include "../../menu/menu_driver.h"
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX)
-#include "../../common/win32_common.h"
+#include "../common/win32_common.h"
 #endif
 
-#include "../../video_shader_driver.h"
+#include "../video_shader_driver.h"
 
 #ifndef GL_SYNC_GPU_COMMANDS_COMPLETE
 #define GL_SYNC_GPU_COMMANDS_COMPLETE     0x9117
@@ -994,4 +995,123 @@ bool gl_renderchain_add_lut(const struct video_shader *shader,
    image_texture_free(&img);
 
    return true;
+}
+
+void gl_renderchain_viewport_info(void *data, struct video_viewport *vp)
+{
+   unsigned width, height;
+   unsigned top_y, top_dist;
+   gl_t *gl         = (gl_t*)data;
+
+   video_driver_get_size(&width, &height);
+
+   *vp             = gl->vp;
+   vp->full_width  = width;
+   vp->full_height = height;
+
+   /* Adjust as GL viewport is bottom-up. */
+   top_y           = vp->y + vp->height;
+   top_dist        = height - top_y;
+   vp->y           = top_dist;
+}
+
+bool gl_renderchain_read_viewport(void *data, uint8_t *buffer, bool is_idle)
+{
+#ifndef NO_GL_READ_PIXELS
+   unsigned                     num_pixels = 0;
+   gl_t                                *gl = (gl_t*)data;
+
+   if (!gl)
+      return false;
+
+   context_bind_hw_render(false);
+
+   num_pixels = gl->vp.width * gl->vp.height;
+
+#ifdef HAVE_GL_ASYNC_READBACK
+   if (gl->pbo_readback_enable)
+   {
+      const uint8_t *ptr  = NULL;
+
+      /* Don't readback if we're in menu mode.
+       * We haven't buffered up enough frames yet, come back later. */
+      if (!gl->pbo_readback_valid[gl->pbo_readback_index])
+         goto error;
+
+      gl->pbo_readback_valid[gl->pbo_readback_index] = false;
+      glBindBuffer(GL_PIXEL_PACK_BUFFER,
+            gl->pbo_readback[gl->pbo_readback_index]);
+
+#ifdef HAVE_OPENGLES3
+      /* Slower path, but should work on all implementations at least. */
+      ptr        = (const uint8_t*)glMapBufferRange(GL_PIXEL_PACK_BUFFER,
+            0, num_pixels * sizeof(uint32_t), GL_MAP_READ_BIT);
+
+      if (ptr)
+      {
+         unsigned y;
+         for (y = 0; y < gl->vp.height; y++)
+         {
+            video_frame_convert_rgba_to_bgr(
+                  (const void*)ptr,
+                  buffer,
+                  gl->vp.width);
+         }
+      }
+#else
+      ptr = (const uint8_t*)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+      if (ptr)
+      {
+         struct scaler_ctx *ctx = &gl->pbo_readback_scaler;
+         scaler_ctx_scale_direct(ctx, buffer, ptr);
+      }
+#endif
+
+      if (!ptr)
+      {
+         RARCH_ERR("[GL]: Failed to map pixel unpack buffer.\n");
+         goto error;
+      }
+
+      glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+      glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+   }
+   else /* Use slow synchronous readbacks. Use this with plain screenshots
+           as we don't really care about performance in this case. */
+#endif
+   {
+      /* GLES2 only guarantees GL_RGBA/GL_UNSIGNED_BYTE
+       * readbacks so do just that.
+       * GLES2 also doesn't support reading back data
+       * from front buffer, so render a cached frame
+       * and have gl_frame() do the readback while it's
+       * in the back buffer.
+       *
+       * Keep codepath similar for GLES and desktop GL.
+       */
+      gl->readback_buffer_screenshot = malloc(num_pixels * sizeof(uint32_t));
+
+      if (!gl->readback_buffer_screenshot)
+         goto error;
+
+      if (!is_idle)
+         video_driver_cached_frame();
+
+      video_frame_convert_rgba_to_bgr(
+            (const void*)gl->readback_buffer_screenshot,
+            buffer,
+            num_pixels);
+
+      free(gl->readback_buffer_screenshot);
+      gl->readback_buffer_screenshot = NULL;
+   }
+
+   context_bind_hw_render(true);
+   return true;
+
+error:
+   context_bind_hw_render(true);
+#endif
+
+   return false;
 }

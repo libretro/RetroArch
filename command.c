@@ -2020,12 +2020,6 @@ bool command_event(enum event_command cmd, void *data)
          {
 #ifdef HAVE_CHEEVOS
             settings_t *settings      = config_get_ptr();
-#endif
-#ifdef HAVE_NETWORKING
-            if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
-               return false;
-#endif
-#ifdef HAVE_CHEEVOS
             if (settings->cheevos.hardcore_mode_enable)
                return false;
 #endif
@@ -2041,13 +2035,8 @@ bool command_event(enum event_command cmd, void *data)
                return false;
 #endif
 
-#ifdef HAVE_NETWORKING
-            if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
-#endif
-            {
-               if (settings->rewind_enable)
-                  state_manager_event_init((unsigned)settings->rewind_buffer_size);
-            }
+            if (settings->rewind_enable)
+               state_manager_event_init((unsigned)settings->rewind_buffer_size);
          }
          break;
       case CMD_EVENT_REWIND_TOGGLE:
@@ -2076,26 +2065,9 @@ bool command_event(enum event_command cmd, void *data)
          command_event_save_auto_state();
          break;
       case CMD_EVENT_AUDIO_STOP:
-         if (!audio_driver_alive())
-            return false;
-
-         if (!audio_driver_stop())
-            return false;
-         break;
+         return audio_driver_stop();
       case CMD_EVENT_AUDIO_START:
-         {
-            settings_t *settings      = config_get_ptr();
-            if (audio_driver_alive())
-               return false;
-
-            if (settings && !settings->audio.mute_enable && !audio_driver_start(runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL)))
-            {
-               RARCH_ERR("%s\n",
-                     msg_hash_to_str(MSG_FAILED_TO_START_AUDIO_DRIVER));
-               audio_driver_unset_active();
-            }
-         }
-         break;
+         return audio_driver_start(runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL));
       case CMD_EVENT_AUDIO_MUTE_TOGGLE:
          {
             settings_t *settings      = config_get_ptr();

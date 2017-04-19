@@ -30,7 +30,7 @@
 #include "../video_coord_array.h"
 #include "../../configuration.h"
 #include "../../dynamic.h"
-#include "d3d_renderchains/render_chain_driver.h"
+#include "../video_renderchain_driver.h"
 
 #ifdef HAVE_THREADS
 #include "../video_thread_wrapper.h"
@@ -1493,7 +1493,7 @@ static bool d3d_read_viewport(void *data, uint8_t *buffer, bool is_idle)
          !d3d->renderchain_driver->read_viewport)
       return false;
 
-   return d3d->renderchain_driver->read_viewport(d3d, buffer);
+   return d3d->renderchain_driver->read_viewport(d3d, buffer, false);
 }
 
 static bool d3d_set_shader(void *data,

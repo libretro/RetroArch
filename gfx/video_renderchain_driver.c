@@ -13,7 +13,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "render_chain_driver.h"
+#include <stdlib.h>
+
+#include "video_renderchain_driver.h"
 
 static const renderchain_driver_t *renderchain_drivers[] = {
 #ifdef HAVE_CG

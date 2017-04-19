@@ -16,9 +16,6 @@
 #if _MSC_VER >= 1200
 #pragma warning(push)
 #endif
-#pragma warning(disable:4201) // anonymous unions warning
-
-
 
 //===========================================================================
 //
@@ -1272,9 +1269,6 @@ D3DXCOLOR* WINAPI D3DXColorAdjustContrast
 }
 #endif
 
-
-
-
 //--------------------------
 // Misc
 //--------------------------
@@ -1291,8 +1285,6 @@ FLOAT WINAPI D3DXFresnelTerm
 #ifdef __cplusplus
 }
 #endif
-
-
 
 //===========================================================================
 //
@@ -1436,158 +1428,23 @@ extern "C" {
 #define D3DXSH_MINORDER 2
 #define D3DXSH_MAXORDER 6
 
-//============================================================================
-//
-//  D3DXSHEvalDirection:
-//  --------------------
-//  Evaluates the Spherical Harmonic basis functions
-//
-//  Parameters:
-//   pOut
-//      Output SH coefficients - basis function Ylm is stored at l*l + m+l
-//      This is the pointer that is returned.
-//   Order
-//      Order of the SH evaluation, generates Order^2 coefs, degree is Order-1
-//   pDir
-//      Direction to evaluate in - assumed to be normalized
-//
-//============================================================================
-
 FLOAT* WINAPI D3DXSHEvalDirection
     (  FLOAT *pOut, UINT Order, CONST D3DXVECTOR3 *pDir );
     
-//============================================================================
-//
-//  D3DXSHRotate:
-//  --------------------
-//  Rotates SH vector by a rotation matrix
-//
-//  Parameters:
-//   pOut
-//      Output SH coefficients - basis function Ylm is stored at l*l + m+l
-//      This is the pointer that is returned (should not alias with pIn.)
-//   Order
-//      Order of the SH evaluation, generates Order^2 coefs, degree is Order-1
-//   pMatrix
-//      Matrix used for rotation - rotation sub matrix should be orthogonal
-//      and have a unit determinant.
-//   pIn
-//      Input SH coeffs (rotated), incorect results if this is also output.
-//
-//============================================================================
-
 FLOAT* WINAPI D3DXSHRotate
     ( FLOAT *pOut, UINT Order, CONST D3DXMATRIX *pMatrix, CONST FLOAT *pIn );
     
-//============================================================================
-//
-//  D3DXSHRotateZ:
-//  --------------------
-//  Rotates the SH vector in the Z axis by an angle
-//
-//  Parameters:
-//   pOut
-//      Output SH coefficients - basis function Ylm is stored at l*l + m+l
-//      This is the pointer that is returned (should not alias with pIn.)
-//   Order
-//      Order of the SH evaluation, generates Order^2 coefs, degree is Order-1
-//   Angle
-//      Angle in radians to rotate around the Z axis.
-//   pIn
-//      Input SH coeffs (rotated), incorect results if this is also output.
-//
-//============================================================================
-
-
 FLOAT* WINAPI D3DXSHRotateZ
     ( FLOAT *pOut, UINT Order, FLOAT Angle, CONST FLOAT *pIn );
     
-//============================================================================
-//
-//  D3DXSHAdd:
-//  --------------------
-//  Adds two SH vectors, pOut[i] = pA[i] + pB[i];
-//
-//  Parameters:
-//   pOut
-//      Output SH coefficients - basis function Ylm is stored at l*l + m+l
-//      This is the pointer that is returned.
-//   Order
-//      Order of the SH evaluation, generates Order^2 coefs, degree is Order-1
-//   pA
-//      Input SH coeffs.
-//   pB
-//      Input SH coeffs (second vector.)
-//
-//============================================================================
-
 FLOAT* WINAPI D3DXSHAdd
     ( FLOAT *pOut, UINT Order, CONST FLOAT *pA, CONST FLOAT *pB );
-
-//============================================================================
-//
-//  D3DXSHScale:
-//  --------------------
-//  Adds two SH vectors, pOut[i] = pA[i]*Scale;
-//
-//  Parameters:
-//   pOut
-//      Output SH coefficients - basis function Ylm is stored at l*l + m+l
-//      This is the pointer that is returned.
-//   Order
-//      Order of the SH evaluation, generates Order^2 coefs, degree is Order-1
-//   pIn
-//      Input SH coeffs.
-//   Scale
-//      Scale factor.
-//
-//============================================================================
 
 FLOAT* WINAPI D3DXSHScale
     ( FLOAT *pOut, UINT Order, CONST FLOAT *pIn, CONST FLOAT Scale );
     
-//============================================================================
-//
-//  D3DXSHDot:
-//  --------------------
-//  Computes the dot product of two SH vectors
-//
-//  Parameters:
-//   Order
-//      Order of the SH evaluation, generates Order^2 coefs, degree is Order-1
-//   pA
-//      Input SH coeffs.
-//   pB
-//      Second set of input SH coeffs.
-//
-//============================================================================
-
 FLOAT WINAPI D3DXSHDot
     ( UINT Order, CONST FLOAT *pA, CONST FLOAT *pB );
-
-//============================================================================
-//
-//  D3DXSHMultiply[O]:
-//  --------------------
-//  Computes the product of two functions represented using SH (f and g), where:
-//  pOut[i] = int(y_i(s) * f(s) * g(s)), where y_i(s) is the ith SH basis
-//  function, f(s) and g(s) are SH functions (sum_i(y_i(s)*c_i)).  The order O
-//  determines the lengths of the arrays, where there should always be O^2 
-//  coefficients.  In general the product of two SH functions of order O generates
-//  and SH function of order 2*O - 1, but we truncate the result.  This means
-//  that the product commutes (f*g == g*f) but doesn't associate 
-//  (f*(g*h) != (f*g)*h.
-//
-//  Parameters:
-//   pOut
-//      Output SH coefficients - basis function Ylm is stored at l*l + m+l
-//      This is the pointer that is returned.
-//   pF
-//      Input SH coeffs for first function.
-//   pG
-//      Second set of input SH coeffs.
-//
-//============================================================================
 
 FLOAT* WINAPI D3DXSHMultiply2( FLOAT *pOut, CONST FLOAT *pF, CONST FLOAT *pG);
 FLOAT* WINAPI D3DXSHMultiply3( FLOAT *pOut, CONST FLOAT *pF, CONST FLOAT *pG);
@@ -1602,148 +1459,21 @@ FLOAT* WINAPI D3DXSHMultiply6( FLOAT *pOut, CONST FLOAT *pF, CONST FLOAT *pG);
 //
 //============================================================================
 
-//============================================================================
-//
-//  D3DXSHEvalDirectionalLight:
-//  --------------------
-//  Evaluates a directional light and returns spectral SH data.  The output 
-//  vector is computed so that if the intensity of R/G/B is unit the resulting
-//  exit radiance of a point directly under the light on a diffuse object with
-//  an albedo of 1 would be 1.0.  This will compute 3 spectral samples, pROut
-//  has to be specified, while pGout and pBout are optional.
-//
-//  Parameters:
-//   Order
-//      Order of the SH evaluation, generates Order^2 coefs, degree is Order-1
-//   pDir
-//      Direction light is coming from (assumed to be normalized.)
-//   RIntensity
-//      Red intensity of light.
-//   GIntensity
-//      Green intensity of light.
-//   BIntensity
-//      Blue intensity of light.
-//   pROut
-//      Output SH vector for Red.
-//   pGOut
-//      Output SH vector for Green (optional.)
-//   pBOut
-//      Output SH vector for Blue (optional.)        
-//
-//============================================================================
-
 HRESULT WINAPI D3DXSHEvalDirectionalLight
     ( UINT Order, CONST D3DXVECTOR3 *pDir, 
       FLOAT RIntensity, FLOAT GIntensity, FLOAT BIntensity,
       FLOAT *pROut, FLOAT *pGOut, FLOAT *pBOut );
-
-//============================================================================
-//
-//  D3DXSHEvalSphericalLight:
-//  --------------------
-//  Evaluates a spherical light and returns spectral SH data.  There is no 
-//  normalization of the intensity of the light like there is for directional
-//  lights, care has to be taken when specifiying the intensities.  This will 
-//  compute 3 spectral samples, pROut has to be specified, while pGout and 
-//  pBout are optional.
-//
-//  Parameters:
-//   Order
-//      Order of the SH evaluation, generates Order^2 coefs, degree is Order-1
-//   pPos
-//      Position of light - reciever is assumed to be at the origin.
-//   Radius
-//      Radius of the spherical light source.
-//   RIntensity
-//      Red intensity of light.
-//   GIntensity
-//      Green intensity of light.
-//   BIntensity
-//      Blue intensity of light.
-//   pROut
-//      Output SH vector for Red.
-//   pGOut
-//      Output SH vector for Green (optional.)
-//   pBOut
-//      Output SH vector for Blue (optional.)        
-//
-//============================================================================
 
 HRESULT WINAPI D3DXSHEvalSphericalLight
     ( UINT Order, CONST D3DXVECTOR3 *pPos, FLOAT Radius,
       FLOAT RIntensity, FLOAT GIntensity, FLOAT BIntensity,
       FLOAT *pROut, FLOAT *pGOut, FLOAT *pBOut );
 
-//============================================================================
-//
-//  D3DXSHEvalConeLight:
-//  --------------------
-//  Evaluates a light that is a cone of constant intensity and returns spectral
-//  SH data.  The output vector is computed so that if the intensity of R/G/B is
-//  unit the resulting exit radiance of a point directly under the light oriented
-//  in the cone direction on a diffuse object with an albedo of 1 would be 1.0.
-//  This will compute 3 spectral samples, pROut has to be specified, while pGout
-//  and pBout are optional.
-//
-//  Parameters:
-//   Order
-//      Order of the SH evaluation, generates Order^2 coefs, degree is Order-1
-//   pDir
-//      Direction light is coming from (assumed to be normalized.)
-//   Radius
-//      Radius of cone in radians.
-//   RIntensity
-//      Red intensity of light.
-//   GIntensity
-//      Green intensity of light.
-//   BIntensity
-//      Blue intensity of light.
-//   pROut
-//      Output SH vector for Red.
-//   pGOut
-//      Output SH vector for Green (optional.)
-//   pBOut
-//      Output SH vector for Blue (optional.)        
-//
-//============================================================================
-
 HRESULT WINAPI D3DXSHEvalConeLight
     ( UINT Order, CONST D3DXVECTOR3 *pDir, FLOAT Radius,
       FLOAT RIntensity, FLOAT GIntensity, FLOAT BIntensity,
       FLOAT *pROut, FLOAT *pGOut, FLOAT *pBOut );
       
-//============================================================================
-//
-//  D3DXSHEvalHemisphereLight:
-//  --------------------
-//  Evaluates a light that is a linear interpolant between two colors over the
-//  sphere.  The interpolant is linear along the axis of the two points, not
-//  over the surface of the sphere (ie: if the axis was (0,0,1) it is linear in
-//  Z, not in the azimuthal angle.)  The resulting spherical lighting function
-//  is normalized so that a point on a perfectly diffuse surface with no
-//  shadowing and a normal pointed in the direction pDir would result in exit
-//  radiance with a value of 1 if the top color was white and the bottom color
-//  was black.  This is a very simple model where Top represents the intensity 
-//  of the "sky" and Bottom represents the intensity of the "ground".
-//
-//  Parameters:
-//   Order
-//      Order of the SH evaluation, generates Order^2 coefs, degree is Order-1
-//   pDir
-//      Axis of the hemisphere.
-//   Top
-//      Color of the upper hemisphere.
-//   Bottom
-//      Color of the lower hemisphere.
-//   pROut
-//      Output SH vector for Red.
-//   pGOut
-//      Output SH vector for Green
-//   pBOut
-//      Output SH vector for Blue        
-//
-//============================================================================
-
 HRESULT WINAPI D3DXSHEvalHemisphereLight
     ( UINT Order, CONST D3DXVECTOR3 *pDir, D3DXCOLOR Top, D3DXCOLOR Bottom,
       FLOAT *pROut, FLOAT *pGOut, FLOAT *pBOut );
@@ -1788,8 +1518,6 @@ HRESULT WINAPI D3DXSHProjectCubeMap
 
 #if _MSC_VER >= 1200
 #pragma warning(pop)
-#else
-#pragma warning(default:4201)
 #endif
 
 #endif // __D3DX9MATH_H__

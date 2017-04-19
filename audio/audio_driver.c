@@ -163,7 +163,8 @@ static bool audio_driver_data_own                        = false;
 static void compute_audio_buffer_statistics(void)
 {
    unsigned i, low_water_size, high_water_size, avg, stddev;
-   float avg_filled, deviation;
+   float avg_filled              = 0.0f;
+   float deviation               = 0.0f;
    uint64_t accum                = 0;
    uint64_t accum_var            = 0;
    unsigned low_water_count      = 0;
@@ -201,9 +202,9 @@ static void compute_audio_buffer_statistics(void)
          high_water_count++;
    }
 
-   RARCH_LOG("Average audio buffer saturation: %.2f %%, standard deviation (percentage points): %.2f %%.\n",
+   RARCH_LOG("[Audio]: Average audio buffer saturation: %.2f %%, standard deviation (percentage points): %.2f %%.\n",
          avg_filled * 100.0, deviation * 100.0);
-   RARCH_LOG("Amount of time spent close to underrun: %.2f %%. Close to blocking: %.2f %%.\n",
+   RARCH_LOG("[Audio]: Amount of time spent close to underrun: %.2f %%. Close to blocking: %.2f %%.\n",
          (100.0 * low_water_count) / (samples - 1),
          (100.0 * high_water_count) / (samples - 1));
 }
@@ -348,7 +349,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
 #ifdef HAVE_THREADS
    if (audio_cb_inited)
    {
-      RARCH_LOG("Starting threaded audio driver ...\n");
+      RARCH_LOG("[Audio]: Starting threaded audio driver ...\n");
       if (!audio_init_thread(
                &current_audio,
                &audio_driver_context_audio_data,
@@ -587,7 +588,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
       double   adjust      = 1.0 + settings->audio.rate_control_delta * direction;
 
 #if 0
-      RARCH_LOG_OUTPUT("Audio buffer is %u%% full\n",
+      RARCH_LOG_OUTPUT("[Audio]: Audio buffer is %u%% full\n",
             (unsigned)(100 - (avail * 100) / audio_driver_buffer_size));
 #endif
 
@@ -596,7 +597,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
          audio_source_ratio_original * adjust;
 
 #if 0
-      RARCH_LOG_OUTPUT("New rate: %lf, Orig rate: %lf\n",
+      RARCH_LOG_OUTPUT("[Audio]: New rate: %lf, Orig rate: %lf\n",
             audio_source_ratio_current,
             audio_source_ratio_original);
 #endif
@@ -786,7 +787,7 @@ void audio_driver_monitor_adjust_system_rates(void)
    if (timing_skew <= settings->audio.max_timing_skew)
       audio_driver_input *= (settings->video.refresh_rate / info->fps);
 
-   RARCH_LOG("Set audio input rate to: %.2f Hz.\n",
+   RARCH_LOG("[Audio]: Set audio input rate to: %.2f Hz.\n",
          audio_driver_input);
 }
 
@@ -973,18 +974,44 @@ bool audio_driver_toggle_mute(void)
    return true;
 }
 
+static bool audio_driver_alive(void)
+{
+   if (     current_audio 
+         && current_audio->alive 
+         && audio_driver_context_audio_data)
+      return current_audio->alive(audio_driver_context_audio_data);
+   return false;
+}
+
 bool audio_driver_start(bool is_shutdown)
 {
+   settings_t *settings      = config_get_ptr();
    if (!current_audio || !current_audio->start 
          || !audio_driver_context_audio_data)
-      return false;
-   return current_audio->start(audio_driver_context_audio_data, is_shutdown);
+      goto error;
+   if (audio_driver_alive())
+      return true;
+   if (!settings || settings->audio.mute_enable)
+      goto error;
+   if (!current_audio->start(audio_driver_context_audio_data, is_shutdown))
+      goto error;
+
+   return true;
+
+error:
+   RARCH_ERR("%s\n",
+         msg_hash_to_str(MSG_FAILED_TO_START_AUDIO_DRIVER));
+   audio_driver_active = false;
+   return false;
 }
+
 
 bool audio_driver_stop(void)
 {
    if (!current_audio || !current_audio->stop 
          || !audio_driver_context_audio_data)
+      return false;
+   if (!audio_driver_alive())
       return false;
    return current_audio->stop(audio_driver_context_audio_data);
 }
@@ -993,15 +1020,6 @@ void audio_driver_unset_callback(void)
 {
    audio_callback.callback  = NULL;
    audio_callback.set_state = NULL;
-}
-
-bool audio_driver_alive(void)
-{
-   if (     current_audio 
-         && current_audio->alive 
-         && audio_driver_context_audio_data)
-      return current_audio->alive(audio_driver_context_audio_data);
-   return false;
 }
 
 void audio_driver_frame_is_reverse(void)
@@ -1035,11 +1053,6 @@ bool audio_driver_owns_driver(void)
 void audio_driver_set_active(void)
 {
    audio_driver_active = true;
-}
-
-void audio_driver_unset_active(void)
-{
-   audio_driver_active = false;
 }
 
 void audio_driver_destroy(void)

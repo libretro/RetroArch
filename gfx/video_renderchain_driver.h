@@ -14,16 +14,16 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __D3D_RENDER_CHAIN_H
-#define __D3D_RENDER_CHAIN_H
+#ifndef __VIDEO_RENDER_CHAIN_H
+#define __VIDEO_RENDER_CHAIN_H
 
 #include <retro_common_api.h>
 #include <libretro.h>
 
-#include "../../video_driver.h"
-#include "../../video_shader_parse.h"
-#include "../../video_state_tracker.h"
-#include "../../../defines/d3d_defines.h"
+#include "video_driver.h"
+#include "video_shader_parse.h"
+#include "video_state_tracker.h"
+#include "../defines/d3d_defines.h"
 
 RETRO_BEGIN_DECLS
 
@@ -66,7 +66,7 @@ typedef struct renderchain_driver
          unsigned width, unsigned height,
          void *final_viewport);
    void (*set_font_rect)(void *data, const void *param_data);
-   bool (*read_viewport)(void *data, uint8_t *buffer);
+   bool (*read_viewport)(void *data, uint8_t *buffer, bool is_idle);
    void (*viewport_info)(void *data, struct video_viewport *vp);
    const char *ident;
 } renderchain_driver_t;

@@ -124,8 +124,6 @@ void audio_driver_unset_own_driver(void);
 
 void audio_driver_set_active(void);
 
-void audio_driver_unset_active(void);
-
 void audio_driver_destroy(void);
 
 void audio_driver_deinit_resampler(void);
@@ -211,8 +209,6 @@ bool audio_driver_owns_driver(void);
 void audio_driver_unset_callback(void);
 
 void audio_driver_frame_is_reverse(void);
-
-bool audio_driver_alive(void);
 
 bool audio_driver_deinit(void);
 

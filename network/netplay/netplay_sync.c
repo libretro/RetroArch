@@ -389,9 +389,10 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
       netplay->self_frame_count++;
    }
 
-   /* Only relevant if we're connected */
+   /* Only relevant if we're connected and not in a desynching operation */
    if ((netplay->is_server && !netplay->connected_players) ||
-       (netplay->self_mode < NETPLAY_CONNECTION_CONNECTED))
+       (netplay->self_mode < NETPLAY_CONNECTION_CONNECTED) ||
+       (netplay->desync))
    {
       netplay->other_frame_count = netplay->self_frame_count;
       netplay->other_ptr = netplay->self_ptr;

@@ -60,6 +60,10 @@
 
 #endif
 
+#ifndef EGL_PLATFORM_GBM_KHR
+#define EGL_PLATFORM_GBM_KHR 0x31D7
+#endif
+
 static enum gfx_ctx_api drm_api           = GFX_CTX_NONE;
 
 static struct gbm_bo *g_bo                = NULL;

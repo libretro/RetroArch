@@ -16,15 +16,15 @@
 
 #include <string.h>
 #include <retro_inline.h>
-#include "render_chain_driver.h"
+#include "../../video_renderchain_driver.h"
 
-#include "../d3d.h"
-#include "../../common/d3d_common.h"
+#include "../drivers/d3d.h"
+#include "../common/d3d_common.h"
 
-#include "../../video_shader_driver.h"
+#include "../video_shader_driver.h"
 
-#include "../../../configuration.h"
-#include "../../../verbosity.h"
+#include "../../configuration.h"
+#include "../../verbosity.h"
 
 typedef struct xdk_renderchain
 {

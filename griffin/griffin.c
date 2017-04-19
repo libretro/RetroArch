@@ -313,11 +313,14 @@ VIDEO DRIVER
 #include "../gfx/drivers/drm_gfx.c"
 #endif
 
+#include "../gfx/video_renderchain_driver.c"
+#include "../gfx/drivers_renderchain/null_renderchain.c"
+
 #ifdef HAVE_OPENGL
 #include "../gfx/common/gl_common.c"
 #include "../gfx/drivers/gl.c"
 #include "../libretro-common/gfx/gl_capabilities.c"
-#include "../gfx/drivers/gl_renderchains/render_chain_gl_legacy.c"
+#include "../gfx/drivers_renderchain/gl_legacy_renderchain.c"
 
 #ifndef HAVE_PSGL
 #include "../libretro-common/glsym/rglgen.c"
@@ -334,11 +337,6 @@ VIDEO DRIVER
 
 #ifdef HAVE_XVIDEO
 #include "../gfx/drivers/xvideo.c"
-#endif
-
-#if defined(HAVE_D3D)
-#include "../gfx/drivers/d3d_renderchains/render_chain_driver.c"
-#include "../gfx/drivers/d3d_renderchains/render_chain_null.c"
 #endif
 
 #if defined(GEKKO)

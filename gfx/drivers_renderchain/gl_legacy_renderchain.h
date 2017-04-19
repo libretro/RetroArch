@@ -20,9 +20,9 @@
 #include <retro_common_api.h>
 #include <libretro.h>
 
-#include "../../video_driver.h"
-#include "../../video_shader_parse.h"
-#include "../../common/gl_common.h"
+#include "../video_driver.h"
+#include "../video_shader_parse.h"
+#include "../common/gl_common.h"
 
 RETRO_BEGIN_DECLS
 
@@ -77,6 +77,10 @@ void gl_check_fbo_dimensions(gl_t *gl);
 void gl_renderchain_free(gl_t *gl);
 
 bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height);
+
+void gl_renderchain_viewport_info(void *data, struct video_viewport *vp);
+
+bool gl_renderchain_read_viewport(void *data, uint8_t *buffer, bool is_idle);
 
 void context_bind_hw_render(bool enable);
 
