@@ -8,6 +8,8 @@ Popular examples of implementations for this API includes videogame system emula
 more generalized 3D programs.
 These programs are instantiated as dynamic libraries. We refer to these as "libretro cores".
 
+[![Build Status](https://travis-ci.org/libretro/RetroArch.svg)](https://travis-ci.org/libretro/RetroArch)
+
 ## libretro
 
 [libretro](http://libretro.com) is an API that exposes generic audio/video/input callbacks.
