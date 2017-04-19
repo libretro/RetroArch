@@ -30,7 +30,7 @@
 #include "../video_coord_array.h"
 #include "../../configuration.h"
 #include "../../dynamic.h"
-#include "d3d_renderchains/render_chain_driver.h"
+#include "../video_renderchain_driver.h"
 
 #ifdef HAVE_THREADS
 #include "../video_thread_wrapper.h"

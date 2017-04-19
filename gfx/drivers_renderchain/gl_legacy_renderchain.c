@@ -73,7 +73,7 @@
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX)
-#include "../../common/win32_common.h"
+#include "../common/win32_common.h"
 #endif
 
 #include "../video_shader_driver.h"

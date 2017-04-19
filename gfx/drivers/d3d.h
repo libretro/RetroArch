@@ -53,7 +53,7 @@
 #include "../font_driver.h"
 #include "../video_context_driver.h"
 #include "../common/d3d_common.h"
-#include "d3d_renderchains/render_chain_driver.h"
+#include "../video_renderchain_driver.h"
 #ifdef _XBOX
 #include "../../defines/xdk_defines.h"
 #endif
