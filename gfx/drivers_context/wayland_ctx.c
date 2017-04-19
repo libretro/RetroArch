@@ -113,6 +113,10 @@ static enum gfx_ctx_api wl_api   = GFX_CTX_NONE;
 #define EGL_OPENGL_ES3_BIT_KHR 0x0040
 #endif
 
+#ifndef EGL_PLATFORM_WAYLAND_KHR
+#define EGL_PLATFORM_WAYLAND_KHR 0x31D8
+#endif
+
 #ifdef HAVE_XKBCOMMON
 /* FIXME: Move this into a header? */
 int init_xkb(int fd, size_t size);
