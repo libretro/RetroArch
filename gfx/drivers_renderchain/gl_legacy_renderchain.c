@@ -40,18 +40,17 @@
 #include <gfx/gl_capabilities.h>
 #include <gfx/video_frame.h>
 
-#include "../../../driver.h"
-#include "../../../configuration.h"
-#include "../../../record/record_driver.h"
-#include "../../../performance_counters.h"
+#include "../../driver.h"
+#include "../../configuration.h"
+#include "../../record/record_driver.h"
+#include "../../performance_counters.h"
 
 #include "gl_legacy_renderchain.h"
 #include "../video_renderchain_driver.h"
 
-#include "../../../retroarch.h"
-#include "../../../verbosity.h"
+#include "../../retroarch.h"
+#include "../../verbosity.h"
 #include "../common/gl_common.h"
-
 
 #ifdef HAVE_THREADS
 #include "../video_thread_wrapper.h"
@@ -69,7 +68,7 @@
 #endif
 
 #ifdef HAVE_MENU
-#include "../../../menu/menu_driver.h"
+#include "../../menu/menu_driver.h"
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX)
