@@ -24,8 +24,8 @@
 #include "../../config.h"
 #endif
 
-#include "../../include/Cg/cg.h"
-#include "../../include/Cg/cgD3D9.h"
+#include "../include/Cg/cg.h"
+#include "../include/Cg/cgD3D9.h"
 
 #include <retro_inline.h>
 #include <compat/strl.h>
@@ -34,10 +34,10 @@
 #include "../d3d.h"
 #include "../d3d_shaders/opaque.cg.d3d9.h"
 
-#include "../../video_renderchain_driver.h"
-#include "../../video_driver.h"
-#include "../../../configuration.h"
-#include "../../../verbosity.h"
+#include "../video_renderchain_driver.h"
+#include "../video_driver.h"
+#include "../../configuration.h"
+#include "../../verbosity.h"
 
 #define cg_d3d9_set_param_1f(param, x) if (param) cgD3D9SetUniform(param, x)
 namespace {
