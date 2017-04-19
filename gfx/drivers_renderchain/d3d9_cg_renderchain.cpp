@@ -31,8 +31,8 @@
 #include <compat/strl.h>
 #include <string/stdstring.h>
 
-#include "../d3d.h"
-#include "../d3d_shaders/opaque.cg.d3d9.h"
+#include "../drivers/d3d.h"
+#include "../drivers/d3d_shaders/opaque.cg.d3d9.h"
 
 #include "../video_renderchain_driver.h"
 #include "../video_driver.h"
@@ -40,7 +40,9 @@
 #include "../../verbosity.h"
 
 #define cg_d3d9_set_param_1f(param, x) if (param) cgD3D9SetUniform(param, x)
-namespace {
+
+namespace
+{
    struct lut_info
    {
       LPDIRECT3DTEXTURE tex;
@@ -67,6 +69,7 @@ namespace {
       std::vector<unsigned> attrib_map;
    };
 };
+
 typedef struct cg_renderchain
 {
    LPDIRECT3DDEVICE dev;
