@@ -1518,8 +1518,6 @@ HRESULT WINAPI D3DXSHProjectCubeMap
 
 #if _MSC_VER >= 1200
 #pragma warning(pop)
-#else
-#pragma warning(default:4201)
 #endif
 
 #endif // __D3DX9MATH_H__
