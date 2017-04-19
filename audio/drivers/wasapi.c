@@ -582,14 +582,11 @@ static ssize_t wasapi_write_sh(wasapi_t *w, const void * data, size_t size)
    ssize_t result;
    UINT32 padding = 0;
 
-   ir = WaitForSingleObject(w->write_event, w->blocking ? INFINITE : 0);
-   if (ir != WAIT_OBJECT_0 && w->blocking)
+   if (w->blocking)
    {
-      wasapi_sys_err("WaitForSingleObject");
-      return -1;
+      ir = WaitForSingleObject(w->write_event, INFINITE);
+      WASAPI_SR_CHECK(ir == WAIT_OBJECT_0, "WaitForSingleObject", return -1);
    }
-   else if (ir != WAIT_OBJECT_0)
-      return 0;
 
    hr = w->client->lpVtbl->GetCurrentPadding(w->client, &padding);
    WASAPI_HR_CHECK(hr, "IAudioClient::GetCurrentPadding", return -1);
