@@ -2431,8 +2431,6 @@ typedef struct _D3DAES_CTR_IV
 #pragma pack()
 #if _MSC_VER >= 1200
 #pragma warning(pop)
-#else
-#pragma warning(default:4201)
 #endif
 
 
