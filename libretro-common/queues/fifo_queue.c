@@ -25,66 +25,26 @@
 
 #include <queues/fifo_queue.h>
 
-struct fifo_buffer
-{
-   uint8_t *buffer;
-   size_t size;
-   size_t first;
-   size_t end;
-};
-
 fifo_buffer_t *fifo_new(size_t size)
 {
+   uint8_t    *buffer = NULL;
    fifo_buffer_t *buf = (fifo_buffer_t*)calloc(1, sizeof(*buf));
 
    if (!buf)
       return NULL;
 
-   buf->buffer = (uint8_t*)calloc(1, size + 1);
-   if (!buf->buffer)
+   buffer = (uint8_t*)calloc(1, size + 1);
+
+   if (!buffer)
    {
       free(buf);
       return NULL;
    }
-   buf->size = size + 1;
+
+   buf->buffer = buffer;
+   buf->size   = size + 1;
 
    return buf;
-}
-
-void fifo_clear(fifo_buffer_t *buffer)
-{
-   buffer->first = 0;
-   buffer->end   = 0;
-}
-
-void fifo_free(fifo_buffer_t *buffer)
-{
-   if (!buffer)
-      return;
-
-   free(buffer->buffer);
-   free(buffer);
-}
-
-size_t fifo_read_avail(fifo_buffer_t *buffer)
-{
-   size_t first = buffer->first;
-   size_t end   = buffer->end;
-
-   if (end < first)
-      end += buffer->size;
-   return end - first;
-}
-
-size_t fifo_write_avail(fifo_buffer_t *buffer)
-{
-   size_t first = buffer->first;
-   size_t end   = buffer->end;
-
-   if (end < first)
-      end += buffer->size;
-
-   return (buffer->size - 1) - (end - first);
 }
 
 void fifo_write(fifo_buffer_t *buffer, const void *in_buf, size_t size)
@@ -95,7 +55,7 @@ void fifo_write(fifo_buffer_t *buffer, const void *in_buf, size_t size)
    if (buffer->end + size > buffer->size)
    {
       first_write = buffer->size - buffer->end;
-      rest_write = size - first_write;
+      rest_write  = size - first_write;
    }
 
    memcpy(buffer->buffer + buffer->end, in_buf, first_write);
@@ -113,7 +73,7 @@ void fifo_read(fifo_buffer_t *buffer, void *in_buf, size_t size)
    if (buffer->first + size > buffer->size)
    {
       first_read = buffer->size - buffer->first;
-      rest_read = size - first_read;
+      rest_read  = size - first_read;
    }
 
    memcpy(in_buf, (const uint8_t*)buffer->buffer + buffer->first, first_read);
