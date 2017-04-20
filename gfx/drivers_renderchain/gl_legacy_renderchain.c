@@ -30,60 +30,27 @@
 
 #include <compat/strl.h>
 #include <gfx/scaler/scaler.h>
-#include <gfx/math/matrix_4x4.h>
 #include <formats/image.h>
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
-#include <libretro.h>
 
 #include <gfx/gl_capabilities.h>
 #include <gfx/video_frame.h>
 
-#include "../../driver.h"
-#include "../../configuration.h"
-#include "../../record/record_driver.h"
-#include "../../performance_counters.h"
-
 #include "gl_legacy_renderchain.h"
 #include "../video_renderchain_driver.h"
-
-#include "../../retroarch.h"
-#include "../../verbosity.h"
 #include "../common/gl_common.h"
 
-#ifdef HAVE_THREADS
-#include "../video_thread_wrapper.h"
-#endif
-
-#include "../font_driver.h"
-#include "../video_context_driver.h"
-
-#ifdef HAVE_GLSL
-#include "../drivers_shader/shader_glsl.h"
-#endif
-
-#ifdef GL_DEBUG
-#include <lists/string_list.h>
-#endif
-
-#ifdef HAVE_MENU
-#include "../../menu/menu_driver.h"
-#endif
+#include "../../driver.h"
+#include "../../configuration.h"
+#include "../../verbosity.h"
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include "../common/win32_common.h"
 #endif
 
 #include "../video_shader_driver.h"
-
-#ifndef GL_SYNC_GPU_COMMANDS_COMPLETE
-#define GL_SYNC_GPU_COMMANDS_COMPLETE     0x9117
-#endif
-
-#ifndef GL_SYNC_FLUSH_COMMANDS_BIT
-#define GL_SYNC_FLUSH_COMMANDS_BIT        0x00000001
-#endif
 
 #define set_texture_coords(coords, xamt, yamt) \
    coords[2] = xamt; \

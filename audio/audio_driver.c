@@ -989,8 +989,6 @@ bool audio_driver_start(bool is_shutdown)
    if (!current_audio || !current_audio->start 
          || !audio_driver_context_audio_data)
       goto error;
-   if (audio_driver_alive())
-      return true;
    if (!settings || settings->audio.mute_enable)
       goto error;
    if (!current_audio->start(audio_driver_context_audio_data, is_shutdown))
