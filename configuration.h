@@ -262,6 +262,7 @@ typedef struct settings
       {
          bool exclusive_mode;
          bool float_format;
+         bool shared_mode_buffering; /* ignored in exclusive mode */
       } wasapi;
 #endif
 
