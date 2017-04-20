@@ -292,8 +292,7 @@ static size_t write_buffer(jack_t *jd, const float *buf, size_t size)
    return written * sizeof(float) * 2;
 }
 
-static ssize_t ja_write(void *data, const void *buf, size_t size,
-      bool is_perfcnt_enable)
+static ssize_t ja_write(void *data, const void *buf, size_t size)
 {
    jack_t *jd = (jack_t*)data;
 

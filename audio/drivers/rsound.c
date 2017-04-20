@@ -102,8 +102,7 @@ error:
    return NULL;
 }
 
-static ssize_t rs_write(void *data, const void *buf, size_t size,
-      bool is_perfcnt_enable)
+static ssize_t rs_write(void *data, const void *buf, size_t size)
 {
    rsd_t *rsd = (rsd_t*)data;
 

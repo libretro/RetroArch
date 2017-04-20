@@ -192,8 +192,7 @@ static bool ax_audio_start(void* data, bool is_shutdown)
    return true;
 }
 
-static ssize_t ax_audio_write(void* data, const void* buf, size_t size,
-      bool is_perfcnt_enable)
+static ssize_t ax_audio_write(void* data, const void* buf, size_t size)
 {
    int i;
    static struct retro_perf_counter ax_audio_write_perf = {0};
@@ -204,10 +203,6 @@ static ssize_t ax_audio_write(void* data, const void* buf, size_t size,
 
    if(!size || (size & 0x3))
       return 0;
-
-   /* Measure copy performance from here */
-   performance_counter_init(ax_audio_write_perf, "ax_audio_write");
-   performance_counter_start_plus(is_perfcnt_enable, ax_audio_write_perf);
 
    if(count > AX_AUDIO_MAX_FREE)
       count = AX_AUDIO_MAX_FREE;
@@ -285,9 +280,6 @@ static ssize_t ax_audio_write(void* data, const void* buf, size_t size,
     */
    if(!AXIsMultiVoiceRunning(ax->mvoice))
       ax_audio_start(ax, false);
-
-   /* Done copying new data */
-   performance_counter_stop_plus(is_perfcnt_enable, ax_audio_write_perf);
 
    /* return what was actually copied */
    return (count << 2);

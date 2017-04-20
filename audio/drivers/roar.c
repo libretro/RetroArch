@@ -58,8 +58,7 @@ static void *ra_init(const char *device, unsigned rate, unsigned latency,
    return roar;
 }
 
-static ssize_t ra_write(void *data, const void *buf, size_t size,
-      bool is_perfcnt_enable)
+static ssize_t ra_write(void *data, const void *buf, size_t size)
 {
    int err;
    size_t written = 0;

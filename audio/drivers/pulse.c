@@ -236,8 +236,7 @@ error:
    return NULL;
 }
 
-static ssize_t pulse_write(void *data, const void *buf_, size_t size,
-      bool is_perfcnt_enable)
+static ssize_t pulse_write(void *data, const void *buf_, size_t size)
 {
    pa_t           *pa = (pa_t*)data;
    const uint8_t *buf = (const uint8_t*)buf_;

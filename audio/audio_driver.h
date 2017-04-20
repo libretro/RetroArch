@@ -67,8 +67,7 @@ typedef struct audio_driver
     * Unless said otherwise with set_nonblock_state(), all writes
     * are blocking, and it should block till it has written all frames.
     */
-   ssize_t (*write)(void *data, const void *buf, size_t size,
-         bool is_perfcnt_enable);
+   ssize_t (*write)(void *data, const void *buf, size_t size);
 
    /* Temporarily pauses the audio driver. */
    bool (*stop)(void *data);

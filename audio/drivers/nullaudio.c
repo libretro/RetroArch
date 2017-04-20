@@ -35,8 +35,7 @@ static void null_audio_free(void *data)
    (void)data;
 }
 
-static ssize_t null_audio_write(void *data, const void *buf, size_t size,
-      bool is_perfcnt_enable)
+static ssize_t null_audio_write(void *data, const void *buf, size_t size)
 {
    (void)data;
    (void)buf;
