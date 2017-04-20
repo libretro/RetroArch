@@ -340,7 +340,7 @@ int16_t input_state(unsigned port, unsigned device,
 
    device &= RETRO_DEVICE_MASK;
 
-   if (bsv_movie_ctl(BSV_MOVIE_CTL_PLAYBACK_ON, NULL))
+   if (bsv_movie_is_playback_on())
    {
       int16_t bsv_result;
       if (bsv_movie_get_input(&bsv_result))
@@ -428,7 +428,7 @@ int16_t input_state(unsigned port, unsigned device,
       }
    }
 
-   if (bsv_movie_ctl(BSV_MOVIE_CTL_PLAYBACK_OFF, NULL))
+   if (bsv_movie_is_playback_off())
       bsv_movie_ctl(BSV_MOVIE_CTL_SET_INPUT, &res);
 
    return res;

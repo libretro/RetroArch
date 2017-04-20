@@ -371,16 +371,22 @@ bool bsv_movie_get_input(int16_t *bsv_data)
    return true;
 }
 
+bool bsv_movie_is_playback_on(void)
+{
+   return bsv_movie_state_handle && bsv_movie_state.movie_playback;
+}
+
+bool bsv_movie_is_playback_off(void)
+{
+   return bsv_movie_state_handle && !bsv_movie_state.movie_playback;
+}
+
 bool bsv_movie_ctl(enum bsv_ctl_state state, void *data)
 {
    switch (state)
    {
       case BSV_MOVIE_CTL_IS_INITED:
          return bsv_movie_state_handle;
-      case BSV_MOVIE_CTL_PLAYBACK_ON:
-         return bsv_movie_state_handle && bsv_movie_state.movie_playback;
-      case BSV_MOVIE_CTL_PLAYBACK_OFF:
-         return bsv_movie_state_handle && !bsv_movie_state.movie_playback;
       case BSV_MOVIE_CTL_START_RECORDING:
          return bsv_movie_state.movie_start_recording;
       case BSV_MOVIE_CTL_SET_START_RECORDING:
