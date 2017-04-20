@@ -103,12 +103,9 @@ bool matrix_3x3_quad_to_square(
       const float sx3, const float sy3,
       math_matrix_3x3 *mat)
 {
-   if (!matrix_3x3_square_to_quad(sx0, sy0, sx1, sy1,
-                                  sx2, sy2, sx3, sy3,
-                                  mat))
-      return false;
-
-   return matrix_3x3_invert(mat);
+   return matrix_3x3_square_to_quad(sx0, sy0, sx1, sy1,
+         sx2, sy2, sx3, sy3,
+         mat) ? matrix_3x3_invert(mat) : false;
 }
 
 bool matrix_3x3_quad_to_quad(
@@ -122,19 +119,22 @@ bool matrix_3x3_quad_to_quad(
       const float sx3, const float sy3,
       math_matrix_3x3 *mat)
 {
-   math_matrix_3x3 quad_to_square, square_to_quad;
+   math_matrix_3x3 square_to_quad;
 
-   if (!matrix_3x3_square_to_quad(dx0, dy0, dx1, dy1,
-                                  dx2, dy2, dx3, dy3,
-                                  &square_to_quad))
-      return false;
+   if (matrix_3x3_square_to_quad(dx0, dy0, dx1, dy1,
+            dx2, dy2, dx3, dy3,
+            &square_to_quad))
+   {
+      math_matrix_3x3 quad_to_square;
+      if (matrix_3x3_quad_to_square(sx0, sy0, sx1, sy1,
+               sx2, sy2, sx3, sy3,
+               &quad_to_square))
+      {
+         matrix_3x3_multiply(*mat, quad_to_square, square_to_quad);
 
-   if (!matrix_3x3_quad_to_square(sx0, sy0, sx1, sy1,
-                                  sx2, sy2, sx3, sy3,
-                                  &quad_to_square))
-      return false;
+         return true;
+      }
+   }
 
-   matrix_3x3_multiply(*mat, quad_to_square, square_to_quad);
-
-   return true;
+   return false;
 }
