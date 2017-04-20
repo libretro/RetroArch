@@ -84,10 +84,11 @@ typedef struct
    IAudioClient *client;
    IAudioRenderClient *renderer;
    HANDLE write_event;
-   void *buffer;        /* NULL in shared mode */
-   size_t buffer_size;  /* in shared mode holds WASAPI engine buffer size */
-   size_t buffer_usage; /* valid in exclusive mode only */
+   void *buffer;        /* NULL in unbuffered shared mode */
+   size_t buffer_size;  /* in unbuffered shared mode holds WASAPI engine buffer size */
+   size_t buffer_usage; /* 0 in unbuffered shared mode */
    size_t frame_size;   /* 4 or 8 only */
+   bool exclusive;
    bool blocking;
    bool running;
 } wasapi_t;
@@ -260,7 +261,7 @@ static void wasapi_set_format(WAVEFORMATEXTENSIBLE *wf,
 }
 
 static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
-      bool *float_fmt, unsigned *rate, double *latency)
+      bool *float_fmt, unsigned *rate, double *latency, bool buffered)
 {
    HRESULT hr;
    WAVEFORMATEXTENSIBLE wf;
@@ -270,6 +271,8 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
    unsigned rate_res             = *rate;
    REFERENCE_TIME default_period = 0;
    REFERENCE_TIME stream_latency = 0;
+   UINT32 buffer_length          = 0;
+   double buffer_latency         = 0.0;
 
    hr = device->lpVtbl->Activate(device, &IID_IAudioClient,
          CLSCTX_ALL, NULL, (void**)&client);
@@ -311,7 +314,7 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
 
          wasapi_warn("Unsupported format");
          rate_res = wasapi_pref_rate(j);
-         if (rate_res == *rate) /* requested allready tested */
+         if (rate_res == *rate) /* requested rate is allready tested */
             rate_res = wasapi_pref_rate(++j); /* skip it */
       }
    }
@@ -322,14 +325,23 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
    *rate = rate_res;
    *latency = 0.0;
 
-   /* next two calls are allowed to fail (we losing latency info only) */
+   /* next three calls are allowed to fail (we losing latency info only) */
    hr = client->lpVtbl->GetStreamLatency(client, &stream_latency);
    WASAPI_HR_WARN(hr, "IAudioClient::GetStreamLatency", return client);
 
    hr = client->lpVtbl->GetDevicePeriod(client, &default_period, NULL);
    WASAPI_HR_WARN(hr, "IAudioClient::GetDevicePeriod", return client);
 
-   *latency = (double)(stream_latency + default_period) / 10000.0;
+   if (buffered)
+   {
+      hr = client->lpVtbl->GetBufferSize(client, &buffer_length);
+      WASAPI_HR_CHECK(hr, "IAudioClient::GetBufferSize", return client);
+
+      /* buffer size is half of WASAPI internal buffer size */
+      buffer_latency = 1000.0 / rate_res * buffer_length / 2.0;
+   }
+
+   *latency = (double)(stream_latency + default_period) / 10000.0 + buffer_latency;
 
    return client;
 
@@ -424,7 +436,7 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
 
          wasapi_warn("Unsupported format");
          rate_res = wasapi_pref_rate(j);
-         if (rate_res == *rate) /* requested allready tested */
+         if (rate_res == *rate) /* requested rate is allready tested */
             rate_res = wasapi_pref_rate(++j); /* skip it */
       }
    }
@@ -439,6 +451,7 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
    hr = client->lpVtbl->GetStreamLatency(client, &stream_latency);
    WASAPI_HR_WARN(hr, "IAudioClient::GetStreamLatency", return client);
 
+   /* our buffer latency is half of WASAPI internal two-buffer latency */
    *latency = (double)stream_latency / 10000.0 * 1.5;
 
    return client;
@@ -450,7 +463,7 @@ error:
 }
 
 static IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
-      bool *float_fmt, unsigned *rate, unsigned latency)
+      bool *float_fmt, unsigned *rate, unsigned latency, bool buffered)
 {
    HRESULT hr;
    double latency_res       = latency;
@@ -461,14 +474,16 @@ static IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
       client = wasapi_init_client_ex(device, float_fmt, rate, &latency_res);
       if (!client)
       {
-         client = wasapi_init_client_sh(device, float_fmt, rate, &latency_res);
+         client = wasapi_init_client_sh(device,
+               float_fmt, rate, &latency_res, buffered);
          if (client)
             *exclusive = false;
       }
    }
    else
    {
-      client = wasapi_init_client_sh(device, float_fmt, rate, &latency_res);
+      client = wasapi_init_client_sh(device,
+            float_fmt, rate, &latency_res, buffered);
       if (!client)
       {
          client = wasapi_init_client_ex(device, float_fmt, rate, &latency_res);
@@ -482,7 +497,7 @@ static IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
    RARCH_LOG("[WASAPI]: Client initialized (%s, %s, %uHz, %.1fms).\n",
          *exclusive ? "exclusive" : "shared",
          *float_fmt ? "float" : "pcm",
-         *rate, latency_res);
+         *rate, latency_res + 0.05);
 
    return client;
 }
@@ -491,13 +506,14 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
       unsigned u, unsigned *new_rate)
 {
    HRESULT hr;
-   bool com_initialized = false;
-   UINT32 frame_count   = 0;
-   BYTE *dest           = NULL;
-   settings_t *settings = config_get_ptr();
-   bool exclusive       = settings->audio.wasapi.exclusive_mode;
-   bool float_format    = settings->audio.wasapi.float_format;
-   wasapi_t *w          = (wasapi_t*)calloc(1, sizeof(wasapi_t));
+   bool com_initialized  = false;
+   UINT32 frame_count    = 0;
+   BYTE *dest            = NULL;
+   settings_t *settings  = config_get_ptr();
+   bool float_format     = settings->audio.wasapi.float_format;
+   bool buffered         = settings->audio.wasapi.shared_mode_buffering;
+   wasapi_t *w           = (wasapi_t*)calloc(1, sizeof(wasapi_t));
+   w->exclusive          = settings->audio.wasapi.exclusive_mode;
 
    WASAPI_CHECK(w, "Out of memory", return NULL);
 
@@ -514,7 +530,7 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
 
    *new_rate = rate;
    w->client = wasapi_init_client(w->device,
-         &exclusive, &float_format, new_rate, latency);
+         &w->exclusive, &float_format, new_rate, latency, buffered);
    if (!w->client)
       goto error;
 
@@ -523,8 +539,15 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
 
    w->frame_size = float_format ? 8 : 4;
    w->buffer_size = frame_count * w->frame_size;
-   if (exclusive)
+   if (w->exclusive || buffered)
    {
+      /* Buffer size in shared buffered mode
+       * is half of WASAPI internal buffer size.
+       * Size changes here must be followed by changes in functions
+       * wasapi_init_client_sh (latency calculation), and
+       * wasapi_write_sh (WASAPI engine buffer free size comparison). */
+      if (!w->exclusive)
+         w->buffer_size /= 2;
       w->buffer = malloc(w->buffer_size);
       WASAPI_CHECK(w->buffer, "Out of memory", goto error);
    }
@@ -584,26 +607,61 @@ static ssize_t wasapi_write_sh(wasapi_t *w, const void * data, size_t size)
    size_t buffer_avail;
    HRESULT hr;
    bool br;
-   ssize_t result;
+   ssize_t result = -1;
    UINT32 padding = 0;
 
-   if (w->blocking)
+   if (w->buffer)
    {
-      ir = WaitForSingleObject(w->write_event, INFINITE);
-      WASAPI_SR_CHECK(ir == WAIT_OBJECT_0, "WaitForSingleObject", return -1);
+      if (w->buffer_usage == w->buffer_size)
+      {
+         if (w->blocking)
+         {
+            ir = WaitForSingleObject(w->write_event, INFINITE);
+            WASAPI_SR_CHECK(ir == WAIT_OBJECT_0, "WaitForSingleObject", return -1);
+         }
+
+         hr = w->client->lpVtbl->GetCurrentPadding(w->client, &padding);
+         WASAPI_HR_CHECK(hr, "IAudioClient::GetCurrentPadding", return -1);
+
+         /* this is ok for current buffer size
+          * (half of WASAPI internal buffer size)*/
+         if (padding * w->frame_size > w->buffer_size)
+            return 0;
+
+         br = wasapi_flush(w, w->buffer, w->buffer_size);
+         if (!br)
+            return -1;
+
+         w->buffer_usage = 0;
+      }
+
+      buffer_avail = w->buffer_size - w->buffer_usage;
+      result = size < buffer_avail ? size : buffer_avail;
+      memcpy(w->buffer + w->buffer_usage, data, result);
+      w->buffer_usage += result;
+   }
+   else
+   {
+      if (w->blocking)
+      {
+         ir = WaitForSingleObject(w->write_event, INFINITE);
+         WASAPI_SR_CHECK(ir == WAIT_OBJECT_0, "WaitForSingleObject", return -1);
+      }
+
+      hr = w->client->lpVtbl->GetCurrentPadding(w->client, &padding);
+      WASAPI_HR_CHECK(hr, "IAudioClient::GetCurrentPadding", return -1);
+
+      buffer_avail = w->buffer_size - padding * w->frame_size;
+      if (!buffer_avail)
+         return 0;
+
+      result = size > buffer_avail ? buffer_avail : size;
+      br = wasapi_flush(w, data, result);
+      if (!br)
+          result = -1;
    }
 
-   hr = w->client->lpVtbl->GetCurrentPadding(w->client, &padding);
-   WASAPI_HR_CHECK(hr, "IAudioClient::GetCurrentPadding", return -1);
-
-   buffer_avail = w->buffer_size - padding * w->frame_size;
-   if (!buffer_avail)
-      return 0;
-
-   result = size > buffer_avail ? buffer_avail : size;
-   br = wasapi_flush(w, data, result);
-
-   return br ? result : -1;
+   return result;
 }
 
 static ssize_t wasapi_write_ex(wasapi_t *w, const void * data, size_t size)
@@ -649,7 +707,7 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t size, bool u)
    {
       for (writen = 0, ir = -1; writen < size && ir; writen += ir)
       {
-         if (w->buffer)
+         if (w->exclusive)
             ir = wasapi_write_ex(w, data + writen, size - writen);
          else
             ir = wasapi_write_sh(w, data + writen, size - writen);
@@ -660,7 +718,7 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t size, bool u)
          }
       }
    }
-   else if (w->buffer)
+   else if (w->exclusive)
       writen = wasapi_write_ex(w, data, size);
    else
       writen = wasapi_write_sh(w, data, size);
@@ -672,7 +730,6 @@ static bool wasapi_stop(void *wh)
 {
    wasapi_t *w = (wasapi_t*)wh;
    HRESULT hr  = w->client->lpVtbl->Stop(w->client);
-
    WASAPI_HR_CHECK(hr, "IAudioClient::Stop", return !w->running);
 
    w->running = false;
@@ -684,6 +741,8 @@ static bool wasapi_start(void *wh, bool u)
 {
    wasapi_t *w = (wasapi_t*)wh;
    HRESULT hr  = w->client->lpVtbl->Start(w->client);
+   WASAPI_WARN(hr != AUDCLNT_E_NOT_STOPPED, "Already started",
+         return w->running);
 
    WASAPI_HR_CHECK(hr, "IAudioClient::Start", return w->running);
 
