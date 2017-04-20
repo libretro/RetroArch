@@ -747,7 +747,13 @@ static enum runloop_state runloop_check_state(
 
       if (runloop_core_shutdown_initiated && settings->load_dummy_on_core_shutdown)
       {
-         content_ctx_info_t content_info = {0};
+         content_ctx_info_t content_info;
+
+         content_info.argc               = 0;
+         content_info.argv               = NULL;
+         content_info.args               = NULL;
+         content_info.environ_get        = NULL;
+
          if (!task_push_start_dummy_core(&content_info))
             return RUNLOOP_STATE_QUIT;
 
