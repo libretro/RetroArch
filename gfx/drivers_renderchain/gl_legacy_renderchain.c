@@ -216,18 +216,19 @@ void gl_renderchain_render(gl_t *gl,
       const struct video_tex_info *feedback_info)
 {
    int i;
-   GLfloat xamt, yamt;
-   unsigned mip_level;
    video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
    video_shader_ctx_params_t params;
    video_shader_ctx_info_t shader_info;
-   struct video_tex_info *fbo_info;
    struct video_tex_info fbo_tex_info[GFX_MAX_SHADERS];
+   struct video_tex_info *fbo_info        = NULL;
    const struct video_fbo_rect *prev_rect = NULL;
-   unsigned fbo_tex_info_cnt = 0;
-   unsigned width            = video_info->width;
-   unsigned height           = video_info->height;
+   GLfloat xamt                           = 0.0f;
+   GLfloat yamt                           = 0.0f;
+   unsigned mip_level                     = 0;
+   unsigned fbo_tex_info_cnt              = 0;
+   unsigned width                         = video_info->width;
+   unsigned height                        = video_info->height;
 
    /* Render the rest of our passes. */
    gl->coords.tex_coord      = fbo_tex_coords;
