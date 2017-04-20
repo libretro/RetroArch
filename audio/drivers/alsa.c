@@ -178,6 +178,7 @@ error:
 }
 
 #define BYTES_TO_FRAMES(bytes, frame_bits)  ((bytes) * 8 / frame_bits)
+#define FRAMES_TO_BYTES(frames, frame_bits) ((frames) * frame_bits / 8)
 
 static ssize_t alsa_write(void *data, const void *buf_, size_t size_)
 {
@@ -327,19 +328,17 @@ static void alsa_free(void *data)
 
 static size_t alsa_write_avail(void *data)
 {
-   alsa_t *alsa = (alsa_t*)data;
+   alsa_t *alsa            = (alsa_t*)data;
    snd_pcm_sframes_t avail = snd_pcm_avail(alsa->pcm);
 
    if (avail < 0)
-   {
-#if 0
-      RARCH_WARN("[ALSA]: snd_pcm_avail() failed: %s\n",
-            snd_strerror(avail));
-#endif
       return alsa->buffer_size;
-   }
 
+#if 0
    return snd_pcm_frames_to_bytes(alsa->pcm, avail);
+#else
+   return FRAMES_TO_BYTES(avail, alsa->frame_bits);
+#endif
 }
 
 static size_t alsa_buffer_size(void *data)
