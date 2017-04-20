@@ -29,6 +29,7 @@ typedef struct alsa
    snd_pcm_t *pcm;
    size_t buffer_size;
    bool nonblock;
+   unsigned int frame_bits;
    bool has_float;
    bool can_pause;
    bool is_paused;
@@ -91,6 +92,9 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency,
    if (snd_pcm_hw_params_set_access(
             alsa->pcm, params, SND_PCM_ACCESS_RW_INTERLEAVED) < 0)
       goto error;
+
+   /* channels hardcoded to 2 for now */
+   alsa->frame_bits = snd_pcm_format_physical_width(format) * 2;
 
    if (snd_pcm_hw_params_set_format(alsa->pcm, params, format) < 0)
       goto error;
@@ -173,13 +177,19 @@ error:
    return NULL;
 }
 
+#define BYTES_TO_FRAMES(bytes, frame_bits)  ((bytes) * 8 / frame_bits)
+
 static ssize_t alsa_write(void *data, const void *buf_, size_t size_)
 {
    alsa_t *alsa              = (alsa_t*)data;
    const uint8_t *buf        = (const uint8_t*)buf_;
    bool eagain_retry         = true;
    snd_pcm_sframes_t written = 0;
+#if 0
    snd_pcm_sframes_t size    = snd_pcm_bytes_to_frames(alsa->pcm, size_);
+#else
+   snd_pcm_sframes_t size    = BYTES_TO_FRAMES(size_, alsa->frame_bits);
+#endif
 
    while (size)
    {
