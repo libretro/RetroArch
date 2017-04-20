@@ -225,21 +225,22 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t size_)
 
          break;
       }
-      else if (frames == -EAGAIN && !alsa->nonblock)
+      else if (frames == -EAGAIN)
       {
-         /* Definitely not supposed to happen. */
-         RARCH_WARN("[ALSA]: poll() was signaled, but EAGAIN returned from write.\n"
-               "Your ALSA driver might be subtly broken.\n");
-
-         if (eagain_retry)
+         if (!alsa->nonblock)
          {
-            eagain_retry = false;
-            continue;
+            /* Definitely not supposed to happen. */
+            RARCH_WARN("[ALSA]: poll() was signaled, but EAGAIN returned from write.\n"
+                  "Your ALSA driver might be subtly broken.\n");
+
+            if (eagain_retry)
+            {
+               eagain_retry = false;
+               continue;
+            }
          }
          return written;
       }
-      else if (frames == -EAGAIN) /* Expected if we're running nonblock. */
-         return written;
       else if (frames < 0)
       {
          RARCH_ERR("[ALSA]: Unknown error occurred (%s).\n",
