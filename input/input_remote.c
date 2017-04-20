@@ -192,11 +192,6 @@ void input_remote_state(
       unsigned idx,
       unsigned id)
 {
-   input_remote_state_t *ol_state  = input_remote_get_state_ptr();
-
-   if (!ol_state)
-      return;
-
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
@@ -206,6 +201,10 @@ void input_remote_state(
       case RETRO_DEVICE_ANALOG:
          {
             unsigned base = 0;
+            input_remote_state_t *ol_state  = input_remote_get_state_ptr();
+
+            if (!ol_state)
+               return;
 
             if (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
                base = 2;

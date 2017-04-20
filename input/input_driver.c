@@ -398,7 +398,8 @@ int16_t input_state(unsigned port, unsigned device,
 #endif
 
 #ifdef HAVE_NETWORKGAMEPAD
-      input_remote_state(&res, port, device, idx, id);
+      if (input_driver_remote)
+         input_remote_state(&res, port, device, idx, id);
 #endif
 
       /* Don't allow turbo for D-pad. */
