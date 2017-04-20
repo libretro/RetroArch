@@ -24,6 +24,7 @@
 #define __LIBRETRO_SDK_GFX_MATH_VECTOR_3_H__
 
 #include <stdint.h>
+#include <math.h>
 
 #include <retro_common_api.h>
 
@@ -31,21 +32,36 @@ RETRO_BEGIN_DECLS
 
 typedef float vec3_t[3];
 
-float vec3_dot(const float *a, const float *b);
+#define vec3_dot(a, b) (a[0] * b[0] + a[1] * b[1] + a[2] * b[2])
 
-void vec3_cross(float* dst, const float *a, const float *b);
+#define vec3_cross(dst, a, b)  \
+   dst[0] = a[1]*b[2] - a[2]*b[1]; \
+   dst[1] = a[2]*b[0] - a[0]*b[2]; \
+   dst[2] = a[0]*b[1] - a[1]*b[0]
 
-float vec3_length(const float *a);
+#define vec3_length(a) sqrtf(vec3_dot(a,a))
 
-void vec3_add(float *dst, const float *src);
+#define vec3_add(dst, src) \
+   dst[0] += src[0]; \
+   dst[1] += src[1]; \
+   dst[2] += src[2]
 
-void vec3_subtract(float *dst, const float *src);
+#define vec3_subtract(dst, src) \
+   dst[0] -= src[0]; \
+   dst[1] -= src[1]; \
+   dst[2] -= src[2]
 
-void vec3_scale(float *dst, const float scale);
+#define vec3_scale(dst, scale) \
+   dst[0] *= scale; \
+   dst[1] *= scale; \
+   dst[2] *= scale
 
-void vec3_copy(float *dst, const float *src);
+#define vec3_copy(dst, src) \
+   dst[0] = src[0]; \
+   dst[1] = src[1]; \
+   dst[2] = src[2]
 
-void vec3_normalize(float *dst);
+#define vec3_normalize(dst) vec3_scale(dst,1.0f / vec3_length(dst))
 
 RETRO_END_DECLS
 
