@@ -27,36 +27,32 @@
 
 void vec4_add(float *dst, const float *src)
 {
-   unsigned i;
-   unsigned n = 4;
-
-   for (i = 0; i < n; i++)
-      dst[i] += src[i];
+   dst[0] += src[0];
+   dst[1] += src[1];
+   dst[2] += src[2];
+   dst[3] += src[3];
 }
 
 void vec4_subtract(float *dst, const float *src)
 {
-   unsigned i;
-   unsigned n = 4;
-
-   for (i = 0; i < n; i++)
-      dst[i] -= src[i];
+   dst[0] -= src[0];
+   dst[1] -= src[1];
+   dst[2] -= src[2];
+   dst[3] -= src[3];
 }
 
 void vec4_scale(float *dst, const float scale)
 {
-   unsigned i;
-   unsigned n = 4;
-
-   for (i = 0; i < n; i++)
-      dst[i] *= scale;
+   dst[0] *= scale;
+   dst[1] *= scale;
+   dst[2] *= scale;
+   dst[3] *= scale;
 }
 
 void vec4_copy(float *dst, const float *src)
 {
-   unsigned i;
-   unsigned n = 4;
-
-   for (i = 0; i < n; i++)
-      dst[i] = src[i];
+   dst[0] = src[0];
+   dst[1] = src[1];
+   dst[2] = src[2];
+   dst[3] = src[3];
 }
