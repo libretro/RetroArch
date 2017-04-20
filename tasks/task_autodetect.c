@@ -169,6 +169,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    }
    else
    {
+      bool tmp = false;
       snprintf(msg, sizeof(msg), "%s %s #%u.",
             string_is_empty(display_name) ? params->name : display_name,
             msg_hash_to_str(MSG_DEVICE_CONFIGURED_IN_PORT),
@@ -176,7 +177,8 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
 
       /* allow overriding the swap menu controls for player 1*/
       if (params->idx == 0)
-         config_get_bool(conf, "input_swap_override", &settings->input.swap_override);
+         if (config_get_bool(conf, "input_swap_override", &tmp))
+            settings->input.swap_override = tmp;
 
       if (!block_osd_spam)
          task_set_title(task, strdup(msg));
