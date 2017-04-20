@@ -471,12 +471,14 @@ error:
 database_info_handle_t *database_info_file_init(const char *path,
       enum database_type type)
 {
-   union string_list_elem_attr attr = {0};
+   union string_list_elem_attr attr;
    database_info_handle_t      *db  = (database_info_handle_t*)
       calloc(1, sizeof(*db));
 
    if (!db)
       return NULL;
+
+   attr.i             = 0;
 
    db->list           = string_list_new();
 

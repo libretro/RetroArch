@@ -72,7 +72,7 @@ typedef struct renderchain_driver
 } renderchain_driver_t;
 
 extern renderchain_driver_t cg_d3d9_renderchain;
-extern renderchain_driver_t xdk_renderchain;
+extern renderchain_driver_t xdk_d3d_renderchain;
 extern renderchain_driver_t null_renderchain;
 
 bool renderchain_init_first(const renderchain_driver_t **renderchain_driver,

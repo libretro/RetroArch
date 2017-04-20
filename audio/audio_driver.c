@@ -456,13 +456,6 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
          RARCH_WARN("Audio rate control was desired, but driver does not support needed features.\n");
    }
 
-   /* If we start muted, stop the audio driver, 
-    * so subsequent unmute works. */
-   if (     !audio_cb_inited 
-         &&  audio_driver_active 
-         &&  settings->audio.mute_enable)
-      audio_driver_stop();
-
    command_event(CMD_EVENT_DSP_FILTER_INIT, NULL);
 
    audio_driver_free_samples_count = 0;
@@ -470,7 +463,6 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    /* Threaded driver is initially stopped. */
    if (
          audio_driver_active
-         && !settings->audio.mute_enable
          && audio_cb_inited
          )
       audio_driver_start(false);
@@ -985,13 +977,8 @@ static bool audio_driver_alive(void)
 
 bool audio_driver_start(bool is_shutdown)
 {
-   settings_t *settings      = config_get_ptr();
    if (!current_audio || !current_audio->start 
          || !audio_driver_context_audio_data)
-      goto error;
-   if (audio_driver_alive())
-      return true;
-   if (!settings || settings->audio.mute_enable)
       goto error;
    if (!current_audio->start(audio_driver_context_audio_data, is_shutdown))
       goto error;

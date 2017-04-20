@@ -195,10 +195,8 @@ typedef interface IDirect3DVolume9              IDirect3DVolume9;
 typedef interface IDirect3DSwapChain9           IDirect3DSwapChain9;
 typedef interface IDirect3DQuery9               IDirect3DQuery9;
 
-
 #include "d3d9types.h"
 #include "d3d9caps.h"
-
 
 #ifdef __cplusplus
 extern "C" {

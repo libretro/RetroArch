@@ -634,7 +634,7 @@ typedef enum _D3DTEXTUREFILTERTYPE
     D3DTEXF_LINEAR          = 2,    /* linear interpolation */
     D3DTEXF_ANISOTROPIC     = 3,    /* anisotropic */
     D3DTEXF_PYRAMIDALQUAD   = 6,    /* 4-sample tent */
-    D3DTEXF_GAUSSIANQUAD    = 7     /* 4-sample gaussian */
+    D3DTEXF_GAUSSIANQUAD    = 7,    /* 4-sample gaussian */
 
        /* D3D9Ex only -- */
 #if !defined(D3D_DISABLE_9EX)
