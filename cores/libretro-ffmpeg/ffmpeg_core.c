@@ -45,6 +45,7 @@ extern "C" {
 
 #include <rthreads/rthreads.h>
 #include <queues/fifo_queue.h>
+#include <string/stdstring.h>
 
 #include <libretro.h>
 #ifdef RARCH_INTERNAL
@@ -339,9 +340,9 @@ static void check_variables(void)
 
    if (CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
-      if (!strcmp(var.value, "enabled"))
+      if (string_is_equal(var.value, "enabled"))
          temporal_interpolation = true;
-      else if (!strcmp(var.value, "disabled"))
+      else if (string_is_equal(var.value, "disabled"))
          temporal_interpolation = false;
    }
 
@@ -373,13 +374,13 @@ static void check_variables(void)
    if (CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &color_var) && color_var.value)
    {
       slock_lock(decode_thread_lock);
-      if (!strcmp(color_var.value, "BT.709"))
+      if (string_is_equal(color_var.value, "BT.709"))
          colorspace = AVCOL_SPC_BT709;
-      else if (!strcmp(color_var.value, "BT.601"))
+      else if (string_is_equal(color_var.value, "BT.601"))
          colorspace = AVCOL_SPC_BT470BG;
-      else if (!strcmp(color_var.value, "FCC"))
+      else if (string_is_equal(color_var.value, "FCC"))
          colorspace = AVCOL_SPC_FCC;
-      else if (!strcmp(color_var.value, "SMPTE240M"))
+      else if (string_is_equal(color_var.value, "SMPTE240M"))
          colorspace = AVCOL_SPC_SMPTE240M;
       else
          colorspace = AVCOL_SPC_UNSPECIFIED;

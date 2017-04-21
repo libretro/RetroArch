@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <string/stdstring.h>
+
 int libretrodb_lua_to_rmsgpack_value(lua_State *L, int index,
       struct rmsgpack_dom_value * out)
 {
@@ -137,7 +139,7 @@ set_nil:
       int j;
       for(j = 0; j < out->val.map.len; j++)
       {
-         if(!strcmp(ordered_keys[i], out->val.map.items[j].key.val.string.buff))
+         if(string_is_equal(ordered_keys[i], out->val.map.items[j].key.val.string.buff))
          {
             *ordered_pairs_outp++ = out->val.map.items[j];
             break;

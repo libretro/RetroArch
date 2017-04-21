@@ -59,7 +59,7 @@ bool path_mkdir(const char *dir)
       return false;
 
    path_parent_dir(basedir);
-   if (!*basedir || !strcmp(basedir, dir))
+   if (!*basedir || string_is_equal(basedir, dir))
       goto end;
 
    if (path_is_directory(basedir))
