@@ -6436,7 +6436,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
 
-         if (!string_is_equal(settings->record.driver, "null"))
+         if (memcmp(settings->record.driver, "null", 4) != 0)
          {
             CONFIG_DIR(
                   list, list_info,
@@ -6592,7 +6592,7 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "State",
                &group_info, &subgroup_info, parent_group);
 
-         if (!string_is_equal(settings->camera.driver, "null"))
+         if (memcmp(settings->camera.driver, "null", 4) != 0)
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -6610,7 +6610,7 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
          }
 
-         if (!string_is_equal(settings->location.driver, "null"))
+         if (memcmp(settings->location.driver, "null", 4) != 0)
          {
             CONFIG_BOOL(
                   list, list_info,
