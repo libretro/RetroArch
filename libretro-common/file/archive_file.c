@@ -56,6 +56,20 @@ struct file_archive_file_data
    size_t size;
 };
 
+static size_t file_archive_size(file_archive_file_data_t *data)
+{
+   if (!data)
+      return 0;
+   return data->size;
+}
+
+static const uint8_t *file_archive_data(file_archive_file_data_t *data)
+{
+   if (!data)
+      return NULL;
+   return (const uint8_t*)data->data;
+}
+
 #ifdef HAVE_MMAP
 /* Closes, unmaps and frees. */
 static void file_archive_free(file_archive_file_data_t *data)
@@ -68,20 +82,6 @@ static void file_archive_free(file_archive_file_data_t *data)
    if (data->fd >= 0)
       close(data->fd);
    free(data);
-}
-
-static const uint8_t *file_archive_data(file_archive_file_data_t *data)
-{
-   if (!data)
-      return NULL;
-   return (const uint8_t*)data->data;
-}
-
-static size_t file_archive_size(file_archive_file_data_t *data)
-{
-   if (!data)
-      return 0;
-   return data->size;
 }
 
 static file_archive_file_data_t* file_archive_open(const char *path)
@@ -126,20 +126,6 @@ static void file_archive_free(file_archive_file_data_t *data)
    if(data->data)
       free(data->data);
    free(data);
-}
-
-static const uint8_t *file_archive_data(file_archive_file_data_t *data)
-{
-   if (!data)
-      return NULL;
-   return (const uint8_t*)data->data;
-}
-
-static size_t file_archive_size(file_archive_file_data_t *data)
-{
-   if (!data)
-      return 0;
-   return data->size;
 }
 
 static file_archive_file_data_t* file_archive_open(const char *path)
