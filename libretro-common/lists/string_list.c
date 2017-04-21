@@ -304,7 +304,7 @@ bool string_list_find_elem_prefix(const struct string_list *list,
    for (i = 0; i < list->size; i++)
    {
       if (string_is_equal_noncase(list->elems[i].data, elem) ||
-            string_is_equal_noncase(list->elems[i].data, prefixed) == 0)
+            string_is_equal_noncase(list->elems[i].data, prefixed))
          return true;
    }
 

@@ -50,27 +50,20 @@ static INLINE bool string_is_equal(const char *a, const char *b)
 
 static INLINE bool string_is_equal_noncase(const char *a, const char *b)
 {
-   bool ret;
-   int i;
-   char *cp1, *cp2;
+   int result;
+   const unsigned char *p1 = (const unsigned char*)a;
+   const unsigned char *p2 = (const unsigned char*)b;
 
    if (!a || !b)
       return false;
+   if (p1 == p2)
+      return false;
 
-   cp1 = (char*)malloc(strlen(a) + 1);
-   cp2 = (char*)malloc(strlen(b) + 1);
+   while ((result = tolower (*p1) - tolower (*p2++)) == 0)
+      if (*p1++ == '\0')
+         break;
 
-   for (i = 0; i < strlen(a) + 1; i++)
-      cp1[i] = tolower((int) (unsigned char) a[i]);
-   for (i = 0; i < strlen(b) + 1; i++)
-      cp2[i] = tolower((int) (unsigned char) b[i]);
-
-   ret = string_is_equal(cp1, cp2);
-
-   free(cp1);
-   free(cp2);
-
-   return ret;
+   return (result == 0);
 }
 
 char *string_to_upper(char *s);
