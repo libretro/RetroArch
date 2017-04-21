@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include <compat/zlib.h>
+#include <string/stdstring.h>
 #include <streams/trans_stream.h>
 
 struct zlib_trans_stream
@@ -70,7 +71,7 @@ static void zlib_inflate_stream_free(void *data)
 static bool zlib_deflate_define(void *data, const char *prop, uint32_t val)
 {
    struct zlib_trans_stream *z = (struct zlib_trans_stream *) data;
-   if (!strcmp(prop, "level"))
+   if (string_is_equal(prop, "level"))
    {
       z->ex = (int) val;
       return true;
@@ -81,7 +82,7 @@ static bool zlib_deflate_define(void *data, const char *prop, uint32_t val)
 static bool zlib_inflate_define(void *data, const char *prop, uint32_t val)
 {
    struct zlib_trans_stream *z = (struct zlib_trans_stream *) data;
-   if (!strcmp(prop, "window_bits"))
+   if (string_is_equal(prop, "window_bits"))
    {
       z->ex = (int) val;
       return true;

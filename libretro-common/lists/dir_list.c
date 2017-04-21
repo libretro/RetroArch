@@ -35,6 +35,7 @@
 #include <compat/strl.h>
 #include <retro_dirent.h>
 
+#include <string/stdstring.h>
 #include <retro_miscellaneous.h>
 
 static int qstrcmp_plain(const void *a_, const void *b_)
@@ -123,7 +124,7 @@ static int parse_dir_entry(const char *name, char *file_path,
    if (!include_dirs && is_dir)
       return 1;
 
-   if (!strcmp(name, ".") || !strcmp(name, ".."))
+   if (string_is_equal(name, ".") || string_is_equal(name, ".."))
       return 1;
 
    if (!is_dir && ext_list &&

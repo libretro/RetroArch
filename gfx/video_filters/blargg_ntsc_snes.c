@@ -19,6 +19,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <boolean.h>
+
+#include <string/stdstring.h>
+
 #include "snes_ntsc/snes_ntsc.h"
 #include "snes_ntsc/snes_ntsc.c"
 
@@ -80,22 +83,22 @@ static void blargg_ntsc_snes_initialize(void *data,
 
    if (config->get_string(userdata, "tvtype", &tvtype, "composite"))
    {
-      if (!strcmp(tvtype, "composite"))
+      if (string_is_equal(tvtype, "composite"))
       {
          setup = snes_ntsc_composite;
          setup.merge_fields = 1;
       }
-      else if (!strcmp(tvtype, "rf"))
+      else if (string_is_equal(tvtype, "rf"))
       {
          setup = snes_ntsc_composite;
          setup.merge_fields = 0;
       }
-      else if (!strcmp(tvtype, "rgb"))
+      else if (string_is_equal(tvtype, "rgb"))
       {
          setup = snes_ntsc_rgb;
          setup.merge_fields = 1;
       }
-      else if (!strcmp(tvtype, "svideo"))
+      else if (string_is_equal(tvtype, "svideo"))
       {
          setup = snes_ntsc_svideo;
          setup.merge_fields = 1;
