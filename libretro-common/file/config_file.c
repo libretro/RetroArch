@@ -745,13 +745,13 @@ bool config_get_bool(config_file_t *conf, const char *key, bool *in)
 
    if (entry)
    {
-      if (string_is_equal_noncase(entry->value, "true"))
+      if (string_is_equal(entry->value, "true"))
          *in = true;
-      else if (string_is_equal_noncase(entry->value, "1"))
+      else if (string_is_equal(entry->value, "1"))
          *in = true;
-      else if (string_is_equal_noncase(entry->value, "false"))
+      else if (string_is_equal(entry->value, "false"))
          *in = false;
-      else if (string_is_equal_noncase(entry->value, "0"))
+      else if (string_is_equal(entry->value, "0"))
          *in = false;
       else
          return false;
