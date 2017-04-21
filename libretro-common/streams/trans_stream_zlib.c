@@ -71,7 +71,7 @@ static void zlib_inflate_stream_free(void *data)
 static bool zlib_deflate_define(void *data, const char *prop, uint32_t val)
 {
    struct zlib_trans_stream *z = (struct zlib_trans_stream *) data;
-   if (string_is_equal(prop, "level"))
+   if (memcmp(prop, "level", 5) == 0)
    {
       z->ex = (int) val;
       return true;
@@ -82,7 +82,7 @@ static bool zlib_deflate_define(void *data, const char *prop, uint32_t val)
 static bool zlib_inflate_define(void *data, const char *prop, uint32_t val)
 {
    struct zlib_trans_stream *z = (struct zlib_trans_stream *) data;
-   if (string_is_equal(prop, "window_bits"))
+   if (memcmp(prop, "window_bits", 11) == 0)
    {
       z->ex = (int) val;
       return true;

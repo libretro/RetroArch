@@ -758,7 +758,7 @@ static void *gl_glsl_init(void *data, const char *path)
       bool ret             = false;
       const char *path_ext = path_get_extension(path);
 
-      if (string_is_equal(path_ext, "glsl"))
+      if (memcmp(path_ext, "glsl", 4) == 0)
       {
          strlcpy(glsl->shader->pass[0].source.path, path,
                sizeof(glsl->shader->pass[0].source.path));
@@ -766,7 +766,7 @@ static void *gl_glsl_init(void *data, const char *path)
          glsl->shader->modern = true;
          ret = true;
       }
-      else if (string_is_equal(path_ext, "glslp"))
+      else if (memcmp(path_ext, "glslp", 5) == 0)
       {
          conf = config_file_new(path);
          if (conf)

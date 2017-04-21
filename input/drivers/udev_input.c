@@ -317,32 +317,32 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    action        = udev_device_get_action(dev);
    devnode       = udev_device_get_devnode(dev);
 
-   if (val_keyboard && string_is_equal(val_keyboard, "1") && devnode)
+   if (val_keyboard && (memcmp(val_keyboard, "1", 1) == 0) && devnode)
       devtype = "keyboard";
 
-   if (val_mouse && string_is_equal(val_mouse, "1") && devnode)
+   if (val_mouse && (memcmp(val_mouse, "1", 1) == 0) && devnode)
       devtype = "mouse";
 
-   if (val_touchpad && string_is_equal(val_touchpad, "1") && devnode)
+   if (val_touchpad && (memcmp(val_touchpad, "1", 1) == 0) && devnode)
       devtype = "touchpad";
 
    if (!devtype)
       goto end;
 
-   if (string_is_equal(action, "add"))
+   if (memcmp(action, "add", 3) == 0)
    {
       device_handle_cb cb      = NULL;
-      if (string_is_equal(devtype, "keyboard"))
+      if (memcmp(devtype, "keyboard", 8) == 0)
          cb = udev_handle_keyboard;
-      else if (string_is_equal(devtype, "touchpad"))
+      else if (memcmp(devtype, "touchpad", 8) == 0)
          cb = udev_handle_touchpad;
-      else if (string_is_equal(devtype, "mouse"))
+      else if (memcmp(devtype, "mouse", 5) == 0)
          cb = udev_handle_mouse;
 
       RARCH_LOG("[udev]: Hotplug add %s: %s.\n", devtype, devnode);
       udev_input_add_device(udev, devnode, cb);
    }
-   else if (string_is_equal(action, "remove"))
+   else if (memcmp(action, "remove", 6) == 0)
    {
       RARCH_LOG("[udev]: Hotplug remove %s: %s.\n", devtype, devnode);
       udev_input_remove_device(udev, devnode);

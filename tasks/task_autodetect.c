@@ -156,7 +156,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    input_autoconfigure_joypad_conf(conf,
          settings->input.autoconf_binds[params->idx]);
 
-   if (string_is_equal(device_type, "remote"))
+   if (memcmp(device_type, "remote", 6) == 0)
    {
       snprintf(msg, sizeof(msg), "%s configured.",
             string_is_empty(display_name) ? params->name : display_name);

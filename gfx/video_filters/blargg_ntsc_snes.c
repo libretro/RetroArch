@@ -83,22 +83,22 @@ static void blargg_ntsc_snes_initialize(void *data,
 
    if (config->get_string(userdata, "tvtype", &tvtype, "composite"))
    {
-      if (string_is_equal(tvtype, "composite"))
+      if (memcmp(tvtype, "composite", 9) == 0)
       {
          setup = snes_ntsc_composite;
          setup.merge_fields = 1;
       }
-      else if (string_is_equal(tvtype, "rf"))
+      else if (memcmp(tvtype, "rf", 2) == 0)
       {
          setup = snes_ntsc_composite;
          setup.merge_fields = 0;
       }
-      else if (string_is_equal(tvtype, "rgb"))
+      else if (memcmp(tvtype, "rgb", 3) == 0)
       {
          setup = snes_ntsc_rgb;
          setup.merge_fields = 1;
       }
-      else if (string_is_equal(tvtype, "svideo"))
+      else if (memcmp(tvtype, "svideo", 6) == 0)
       {
          setup = snes_ntsc_svideo;
          setup.merge_fields = 1;

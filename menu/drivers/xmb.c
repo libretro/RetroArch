@@ -2422,7 +2422,7 @@ static void xmb_render(void *data)
 
 static bool xmb_shader_pipeline_active(video_frame_info_t *video_info)
 {
-   if (!string_is_equal(menu_driver_ident(), "xmb"))
+   if (memcmp(menu_driver_ident(), "xmb", 3) != 0)
       return false;
    if (video_info->menu_shader_pipeline == XMB_SHADER_PIPELINE_WALLPAPER)
       return false;

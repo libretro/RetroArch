@@ -1684,15 +1684,16 @@ static bool check_shader_compatibility(enum file_path_enum enum_idx)
 {
    settings_t *settings = config_get_ptr();
 
-   if (string_is_equal("vulkan", settings->video.driver))
+   if (memcmp(settings->video.driver, "vulkan", 6) == 0)
    {
       if (enum_idx != FILE_PATH_SLANGP_EXTENSION)
          return false;
       return true;
    }
 
-   if (string_is_equal("gl", settings->video.driver) || 
-       string_is_equal("d3d", settings->video.driver))
+   if ((memcmp(settings->video.driver, "gl", 2) == 0) || 
+       (memcmp(settings->video.driver, "d3d", 3) == 0)
+      )
    {
       if (enum_idx == FILE_PATH_SLANGP_EXTENSION)
          return false;
@@ -2107,7 +2108,7 @@ static bool config_load_file(const char *path, bool set_defaults,
 
    if (!string_is_empty(settings->directory.screenshot))
    {
-      if (string_is_equal(settings->directory.screenshot, "default"))
+      if (memcmp(settings->directory.screenshot, "default", 7) == 0)
          *settings->directory.screenshot = '\0';
       else if (!path_is_directory(settings->directory.screenshot))
       {
@@ -2125,36 +2126,36 @@ static bool config_load_file(const char *path, bool set_defaults,
       path_clear(RARCH_PATH_CORE);
    }
 
-   if (string_is_equal(settings->path.menu_wallpaper, "default"))
+   if (memcmp(settings->path.menu_wallpaper, "default", 7) == 0)
       *settings->path.menu_wallpaper = '\0';
-   if (string_is_equal(settings->directory.video_shader, "default"))
+   if (memcmp(settings->directory.video_shader, "default", 7) == 0)
       *settings->directory.video_shader = '\0';
-   if (string_is_equal(settings->directory.video_filter, "default"))
+   if (memcmp(settings->directory.video_filter, "default", 7) == 0)
       *settings->directory.video_filter = '\0';
-   if (string_is_equal(settings->directory.audio_filter, "default"))
+   if (memcmp(settings->directory.audio_filter, "default", 7) == 0)
       *settings->directory.audio_filter = '\0';
-   if (string_is_equal(settings->directory.core_assets, "default"))
+   if (memcmp(settings->directory.core_assets, "default", 7) == 0)
       *settings->directory.core_assets = '\0';
-   if (string_is_equal(settings->directory.assets, "default"))
+   if (memcmp(settings->directory.assets, "default", 7) == 0)
       *settings->directory.assets = '\0';
-   if (string_is_equal(settings->directory.dynamic_wallpapers, "default"))
+   if (memcmp(settings->directory.dynamic_wallpapers, "default", 7) == 0)
       *settings->directory.dynamic_wallpapers = '\0';
-   if (string_is_equal(settings->directory.thumbnails, "default"))
+   if (memcmp(settings->directory.thumbnails, "default", 7) == 0)
       *settings->directory.thumbnails = '\0';
-   if (string_is_equal(settings->directory.playlist, "default"))
+   if (memcmp(settings->directory.playlist, "default", 7) == 0)
       *settings->directory.playlist = '\0';
 #ifdef HAVE_MENU
 
-   if (string_is_equal(settings->directory.menu_content, "default"))
+   if (memcmp(settings->directory.menu_content, "default", 7) == 0)
       *settings->directory.menu_content = '\0';
-   if (string_is_equal(settings->directory.menu_config, "default"))
+   if (memcmp(settings->directory.menu_config, "default", 7) == 0)
       *settings->directory.menu_config = '\0';
 #endif
 #ifdef HAVE_OVERLAY
-   if (string_is_equal(settings->directory.overlay, "default"))
+   if (memcmp(settings->directory.overlay, "default", 7) == 0)
       *settings->directory.overlay = '\0';
 #endif
-   if (string_is_equal(settings->directory.system, "default"))
+   if (memcmp(settings->directory.system, "default", 7) == 0)
       *settings->directory.system = '\0';
 
    if (settings->slowmotion_ratio < 1.0f)
@@ -2174,7 +2175,7 @@ static bool config_load_file(const char *path, bool set_defaults,
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL) &&
          config_get_path(conf, "savefile_directory", tmp_str, sizeof(tmp_str)))
    {
-      if (string_is_equal(tmp_str, "default"))
+      if (memcmp(tmp_str, "default", 7) == 0)
          dir_set(RARCH_DIR_SAVEFILE, g_defaults.dir.sram);
 
       else if (path_is_directory(tmp_str))
@@ -2200,7 +2201,7 @@ static bool config_load_file(const char *path, bool set_defaults,
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL) &&
          config_get_path(conf, "savestate_directory", tmp_str, sizeof(tmp_str)))
    {
-      if (string_is_equal(tmp_str, "default"))
+      if (memcmp(tmp_str, "default", 7) == 0)
          dir_set(RARCH_DIR_SAVESTATE, g_defaults.dir.savestate);
       else if (path_is_directory(tmp_str))
       {

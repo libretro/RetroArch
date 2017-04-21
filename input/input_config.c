@@ -280,13 +280,13 @@ static void parse_hat(struct retro_keybind *bind, const char *str)
       return;
    }
 
-   if      (string_is_equal(dir, "up"))
+   if      (memcmp(dir, "up", 2) == 0)
       hat_dir = HAT_UP_MASK;
-   else if (string_is_equal(dir, "down"))
+   else if (memcmp(dir, "down", 4) == 0)
       hat_dir = HAT_DOWN_MASK;
-   else if (string_is_equal(dir, "left"))
+   else if (memcmp(dir, "left", 4) == 0)
       hat_dir = HAT_LEFT_MASK;
-   else if (string_is_equal(dir, "right"))
+   else if (memcmp(dir, "right", 5) == 0)
       hat_dir = HAT_RIGHT_MASK;
 
    if (hat_dir)
