@@ -29,14 +29,24 @@
 #include <boolean.h>
 
 #include <retro_common_api.h>
+#include <retro_inline.h>
 
 RETRO_BEGIN_DECLS
 
-bool string_is_empty(const char *data);
+static INLINE bool string_is_empty(const char *data)
+{
+   return (data == NULL) || (*data == '\0');
+}
 
-bool string_is_equal(const char *a, const char *b);
+static INLINE bool string_is_equal(const char *a, const char *b)
+{
+   return (a && b) ? (strcmp(a, b) == 0) : false;
+}
 
-bool string_is_equal_noncase(const char *a, const char *b);
+static INLINE bool string_is_equal_noncase(const char *a, const char *b)
+{
+   return (a && b) ? (strcasecmp(a, b) == 0) : false;
+}
 
 char *string_to_upper(char *s);
 

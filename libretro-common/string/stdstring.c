@@ -25,25 +25,6 @@
 
 #include <string/stdstring.h>
 
-bool string_is_empty(const char *data)
-{
-   return (data == NULL) || (*data == '\0');
-}
-
-bool string_is_equal(const char *a, const char *b)
-{
-   if (!a || !b)
-      return false;
-   return (strcmp(a, b) == 0);
-}
-
-bool string_is_equal_noncase(const char *a, const char *b)
-{
-   if (!a || !b)
-      return false;
-   return (strcasecmp(a, b) == 0);
-}
-
 char *string_to_upper(char *s)
 {
    char *cs = (char *)s;
@@ -62,17 +43,15 @@ char *string_to_lower(char *s)
 
 char *string_ucwords(char *s)
 {
-  char *cs = (char *)s;
-  for ( ; *cs != '\0'; cs++)
-  {
-    if (*cs == ' ')
-    {
-      *(cs+1) = toupper(*(cs+1));
-    }
-  }
+   char *cs = (char *)s;
+   for ( ; *cs != '\0'; cs++)
+   {
+      if (*cs == ' ')
+         *(cs+1) = toupper(*(cs+1));
+   }
 
-  s[0] = toupper(s[0]);
-  return s;
+   s[0] = toupper(s[0]);
+   return s;
 }
 
 char *string_replace_substring(const char *in,
