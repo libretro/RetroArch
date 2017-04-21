@@ -28,6 +28,7 @@
 #include <retro_assert.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
+#include <string/stdstring.h>
 
 /**
  * string_list_free
@@ -268,7 +269,7 @@ int string_list_find_elem(const struct string_list *list, const char *elem)
 
    for (i = 0; i < list->size; i++)
    {
-      if (strcasecmp(list->elems[i].data, elem) == 0)
+      if (string_is_equal_noncase(list->elems[i].data, elem))
          return (int)(i + 1);
    }
 
@@ -302,8 +303,8 @@ bool string_list_find_elem_prefix(const struct string_list *list,
 
    for (i = 0; i < list->size; i++)
    {
-      if (strcasecmp(list->elems[i].data, elem) == 0 ||
-            strcasecmp(list->elems[i].data, prefixed) == 0)
+      if (string_is_equal_noncase(list->elems[i].data, elem) ||
+            string_is_equal_noncase(list->elems[i].data, prefixed) == 0)
          return true;
    }
 
