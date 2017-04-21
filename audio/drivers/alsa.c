@@ -202,7 +202,7 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t size_)
             break;
          }
          else if (frames == -EAGAIN)
-            return written;
+            break;
          else if (frames < 0)
             return -1;
 
@@ -244,7 +244,7 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t size_)
                eagain_retry = false;
                continue;
             }
-            return written;
+            break;
          }
          else if (frames < 0)
             return -1;
