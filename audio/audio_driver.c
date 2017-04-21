@@ -510,7 +510,6 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    static struct retro_perf_counter audio_convert_s16   = {0};
    const void *output_data                              = NULL;
    unsigned output_frames                               = 0;
-   size_t   output_size                                 = sizeof(float);
    settings_t *settings                                 = config_get_ptr();
 
    src_data.data_in                                     = NULL;
@@ -609,7 +608,9 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    output_data   = audio_driver_output_samples_buf;
    output_frames = (unsigned)src_data.output_frames;
 
-   if (!audio_driver_use_float)
+   if (audio_driver_use_float)
+      output_frames *= sizeof(float);
+   else
    {
       static struct retro_perf_counter audio_convert_float = {0};
 
@@ -620,12 +621,11 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
       performance_counter_stop_plus(is_perfcnt_enable, audio_convert_float);
 
       output_data = audio_driver_output_samples_conv_buf;
-      output_size = sizeof(int16_t);
+      output_frames *= sizeof(int16_t);
    }
 
    if (current_audio->write(audio_driver_context_audio_data,
-            output_data, output_frames * output_size * 2,
-            is_perfcnt_enable) < 0)
+            output_data, output_frames * 2) < 0)
    {
       audio_driver_active = false;
       return false;

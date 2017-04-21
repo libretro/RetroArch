@@ -184,8 +184,7 @@ static void psp_audio_free(void *data)
    free(psp);
 }
 
-static ssize_t psp_audio_write(void *data, const void *buf, size_t size,
-       bool is_perfcnt_enable)
+static ssize_t psp_audio_write(void *data, const void *buf, size_t size)
 {
    psp_audio_t* psp     = (psp_audio_t*)data;
    uint16_t write_pos   = psp->write_pos;

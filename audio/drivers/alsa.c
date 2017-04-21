@@ -29,6 +29,7 @@ typedef struct alsa
    snd_pcm_t *pcm;
    size_t buffer_size;
    bool nonblock;
+   unsigned int frame_bits;
    bool has_float;
    bool can_pause;
    bool is_paused;
@@ -91,6 +92,9 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency,
    if (snd_pcm_hw_params_set_access(
             alsa->pcm, params, SND_PCM_ACCESS_RW_INTERLEAVED) < 0)
       goto error;
+
+   /* channels hardcoded to 2 for now */
+   alsa->frame_bits = snd_pcm_format_physical_width(format) * 2;
 
    if (snd_pcm_hw_params_set_format(alsa->pcm, params, format) < 0)
       goto error;
@@ -173,14 +177,20 @@ error:
    return NULL;
 }
 
-static ssize_t alsa_write(void *data, const void *buf_, size_t size_,
-      bool is_perfcnt_enable)
+#define BYTES_TO_FRAMES(bytes, frame_bits)  ((bytes) * 8 / frame_bits)
+#define FRAMES_TO_BYTES(frames, frame_bits) ((frames) * frame_bits / 8)
+
+static ssize_t alsa_write(void *data, const void *buf_, size_t size_)
 {
    alsa_t *alsa              = (alsa_t*)data;
    const uint8_t *buf        = (const uint8_t*)buf_;
    bool eagain_retry         = true;
    snd_pcm_sframes_t written = 0;
+#if 0
    snd_pcm_sframes_t size    = snd_pcm_bytes_to_frames(alsa->pcm, size_);
+#else
+   snd_pcm_sframes_t size    = BYTES_TO_FRAMES(size_, alsa->frame_bits);
+#endif
 
    while (size)
    {
@@ -215,21 +225,22 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t size_,
 
          break;
       }
-      else if (frames == -EAGAIN && !alsa->nonblock)
+      else if (frames == -EAGAIN)
       {
-         /* Definitely not supposed to happen. */
-         RARCH_WARN("[ALSA]: poll() was signaled, but EAGAIN returned from write.\n"
-               "Your ALSA driver might be subtly broken.\n");
-
-         if (eagain_retry)
+         if (!alsa->nonblock)
          {
-            eagain_retry = false;
-            continue;
+            /* Definitely not supposed to happen. */
+            RARCH_WARN("[ALSA]: poll() was signaled, but EAGAIN returned from write.\n"
+                  "Your ALSA driver might be subtly broken.\n");
+
+            if (eagain_retry)
+            {
+               eagain_retry = false;
+               continue;
+            }
          }
          return written;
       }
-      else if (frames == -EAGAIN) /* Expected if we're running nonblock. */
-         return written;
       else if (frames < 0)
       {
          RARCH_ERR("[ALSA]: Unknown error occurred (%s).\n",
@@ -318,19 +329,17 @@ static void alsa_free(void *data)
 
 static size_t alsa_write_avail(void *data)
 {
-   alsa_t *alsa = (alsa_t*)data;
+   alsa_t *alsa            = (alsa_t*)data;
    snd_pcm_sframes_t avail = snd_pcm_avail(alsa->pcm);
 
    if (avail < 0)
-   {
-#if 0
-      RARCH_WARN("[ALSA]: snd_pcm_avail() failed: %s\n",
-            snd_strerror(avail));
-#endif
       return alsa->buffer_size;
-   }
 
+#if 0
    return snd_pcm_frames_to_bytes(alsa->pcm, avail);
+#else
+   return FRAMES_TO_BYTES(avail, alsa->frame_bits);
+#endif
 }
 
 static size_t alsa_buffer_size(void *data)

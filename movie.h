@@ -44,8 +44,6 @@ enum bsv_ctl_state
 {
    BSV_MOVIE_CTL_NONE = 0,
    BSV_MOVIE_CTL_IS_INITED,
-   BSV_MOVIE_CTL_PLAYBACK_ON,
-   BSV_MOVIE_CTL_PLAYBACK_OFF,
    BSV_MOVIE_CTL_SET_INPUT,
    BSV_MOVIE_CTL_SET_START_RECORDING,
    BSV_MOVIE_CTL_UNSET_START_RECORDING,
@@ -62,6 +60,10 @@ enum bsv_ctl_state
    BSV_MOVIE_CTL_SET_END,
    BSV_MOVIE_CTL_UNSET_END
 };
+
+bool bsv_movie_is_playback_on(void);
+
+bool bsv_movie_is_playback_off(void);
 
 void bsv_movie_set_path(const char *path);
 
