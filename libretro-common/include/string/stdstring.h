@@ -40,7 +40,11 @@ static INLINE bool string_is_empty(const char *data)
 
 static INLINE bool string_is_equal(const char *a, const char *b)
 {
-   return (a && b) ? (strcmp(a, b) == 0) : false;
+   if (!a || !b)
+      return false;
+   while(*a && (*a == *b))
+      a++, b++;
+   return (*(const unsigned char*)a - *(const unsigned char*)b) == 0;
 }
 
 static INLINE bool string_is_equal_noncase(const char *a, const char *b)
