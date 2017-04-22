@@ -282,7 +282,7 @@ static EGLDisplay get_egl_display(EGLenum platform, void *native)
                return dpy;
          }
       }
-#endif // defined(EGL_VERSION_1_5)
+#endif /* defined(EGL_VERSION_1_5) */
 
 #if defined(EGL_EXT_platform_base)
       if (check_egl_client_extension("EGL_EXT_platform_base"))
@@ -299,7 +299,7 @@ static EGLDisplay get_egl_display(EGLenum platform, void *native)
                return dpy;
          }
       }
-#endif // defined(EGL_EXT_platform_base)
+#endif /* defined(EGL_EXT_platform_base) */
    }
 
    /* Either the caller didn't provide a platform type, or the EGL

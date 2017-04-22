@@ -118,8 +118,11 @@ static void fixup_filter_sub(struct scaler_filter *filter,
 
       if (postsample > 0)
       {
+         int16_t *base_filter   = NULL;
+
          filter->filter_pos[i] -= postsample;
-         int16_t *base_filter   = filter->filter + i * filter->filter_stride;
+
+         base_filter            = filter->filter + i * filter->filter_stride;
 
          if (postsample > (int)filter->filter_len)
             memset(base_filter, 0, filter->filter_len * sizeof(int16_t));
@@ -133,8 +136,10 @@ static void fixup_filter_sub(struct scaler_filter *filter,
 
       if (presample > 0)
       {
+         int16_t *base_filter   = NULL;
+
          filter->filter_pos[i] += presample;
-         int16_t *base_filter   = filter->filter + i * filter->filter_stride;
+         base_filter            = filter->filter + i * filter->filter_stride;
 
          if (presample > (int)filter->filter_len)
             memset(base_filter, 0, filter->filter_len * sizeof(int16_t));
