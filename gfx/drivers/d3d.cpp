@@ -314,7 +314,7 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
 static bool d3d_process_shader(d3d_video_t *d3d)
 {
 #ifdef HAVE_FBO
-   if (string_is_equal(path_get_extension(d3d->shader_path.c_str()), "cgp"))
+   if (memcmp(path_get_extension(d3d->shader_path.c_str()), "cgp", 3) == 0)
       return d3d_init_multipass(d3d);
 #endif
 

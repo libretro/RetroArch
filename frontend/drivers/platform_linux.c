@@ -959,7 +959,7 @@ static bool frontend_linux_powerstate_check_apm(
 
    if (!next_string(&ptr, &str))     /* remaining battery life time units */
       goto error;
-   else if (string_is_equal(str, "min"))
+   else if (memcmp(str, "min", 3) == 0)
       battery_time *= 60;
 
    if (battery_flag == 0xFF) /* unknown state */
@@ -1289,7 +1289,7 @@ static void frontend_linux_get_env(int *argc,
    if (android_app->getStringExtra && jstr)
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
-      bool used = (string_is_equal(argv, "false")) ? false : true;
+      bool used        = (memcmp(argv, "false", 5) == 0) ? false : true;
 
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 

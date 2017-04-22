@@ -98,16 +98,16 @@ void menu_event_osk_append(int ptr)
       menu_event_set_osk_idx(OSK_LOWERCASE_LATIN);
    else if (string_is_equal(osk_grid[ptr],"\xe2\x8a\x95")) /* plus sign (next button) */
 #else
-   if (string_is_equal(osk_grid[ptr],"Bksp"))
+   if (memcmp(osk_grid[ptr], "Bksp", 4) == 0)
       input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
-   else if (string_is_equal(osk_grid[ptr],"Enter"))
+   else if (memcmp(osk_grid[ptr], "Enter", 5) == 0)
       input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
    else
-   if (string_is_equal(osk_grid[ptr],"Upper"))
+   if (memcmp(osk_grid[ptr], "Upper", 5) == 0)
       menu_event_set_osk_idx(OSK_UPPERCASE_LATIN);
-   else if (string_is_equal(osk_grid[ptr],"Lower"))
+   else if (memcmp(osk_grid[ptr], "Lower", 5) == 0)
       menu_event_set_osk_idx(OSK_LOWERCASE_LATIN);
-   else if (string_is_equal(osk_grid[ptr],"Next"))
+   else if (memcmp(osk_grid[ptr], "Next", 4) == 0)
 #endif
       if (menu_event_get_osk_idx() < OSK_TYPE_LAST - 1)
          menu_event_set_osk_idx((enum osk_type)(menu_event_get_osk_idx() + 1));

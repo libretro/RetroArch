@@ -941,7 +941,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
       playlist_get_index(playlist, i,
             NULL, NULL, NULL, &core_name, NULL, NULL);
 
-      if (core_name && string_is_equal(core_name, "imageviewer"))
+      if (core_name && (memcmp(core_name, "imageviewer", 11) == 0))
       {
          strlcpy(xmb->thumbnail_file_path, entry.label,
                sizeof(xmb->thumbnail_file_path));
@@ -1011,9 +1011,9 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
    xmb->savestate_thumbnail_file_path[0] = '\0';
 
    if (     (settings->savestate_thumbnail_enable)
-         && (string_is_equal(entry.label, "state_slot")
-         || (string_is_equal(entry.label, "loadstate"))
-         || (string_is_equal(entry.label, "savestate"))))
+         && ((memcmp(entry.label, "state_slot", 10) == 0)
+         || (memcmp(entry.label, "loadstate", 9) == 0)
+         || (memcmp(entry.label, "savestate", 9) == 0)))
    {
       char path[PATH_MAX_LENGTH];
       global_t         *global = global_get_ptr();

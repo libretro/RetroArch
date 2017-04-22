@@ -147,7 +147,7 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
    }
 #endif
 
-   if (ret && !string_is_equal(ret, "null"))
+   if (ret && (memcmp(ret, "null", 4) != 0))
       return ret;
 
 end:
