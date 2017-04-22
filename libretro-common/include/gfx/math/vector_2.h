@@ -51,9 +51,10 @@ typedef float vec2_t[2];
 
 static INLINE float overflow(void)
 {
+   unsigned i;
    volatile float f = 1e10;
 
-   for(int i = 0; i < 10; ++i)	
+   for(i = 0; i < 10; ++i)	
       f *= f;
    return f;
 }
@@ -67,7 +68,7 @@ static INLINE int16_t tofloat16(float f)
    };
 
    int i, s, e, m;
-   uif32 Entry;
+   union uif32 Entry;
    Entry.f = f;
    i       = (int)Entry.i;
    s       =  (i >> 16) & 0x00008000;

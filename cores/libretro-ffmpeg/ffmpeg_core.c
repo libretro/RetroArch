@@ -1,4 +1,3 @@
-/*  Copyright (C) 2016 - Brad Parker */
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -36,7 +35,7 @@ extern "C" {
 #endif
 
 #ifdef HAVE_GL_FFT
-#include "fft/fft.h"
+#include "ffmpeg_fft.h"
 #endif
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
