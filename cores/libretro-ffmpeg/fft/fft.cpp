@@ -153,6 +153,7 @@ typedef float stub_matrix4x4[4][4];
 static void fft_render(glfft_t *fft, GLuint backbuffer, unsigned width, unsigned height)
 {
    vec3_t eye, center, up;
+   stub_matrix4x4 mvp_real;
    math_matrix_4x4 mvp_lookat, mvp, mvp_persp;
 
    eye[0]               = 0.0f;
@@ -181,7 +182,6 @@ static void fft_render(glfft_t *fft, GLuint backbuffer, unsigned width, unsigned
 
    glUseProgram(fft->block.prog);
 
-   stub_matrix4x4 mvp_real;
    mvp_real[0][0] = MAT_ELEM_4X4(mvp, 0, 0);
    mvp_real[0][1] = MAT_ELEM_4X4(mvp, 0, 1);
    mvp_real[0][2] = MAT_ELEM_4X4(mvp, 0, 2);
