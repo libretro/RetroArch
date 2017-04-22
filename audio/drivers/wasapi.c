@@ -497,7 +497,7 @@ static IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
    RARCH_LOG("[WASAPI]: Client initialized (%s, %s, %uHz, %.1fms).\n",
          *exclusive ? "exclusive" : "shared",
          *float_fmt ? "float" : "pcm",
-         *rate, latency_res + 0.05);
+         *rate, latency_res);
 
    return client;
 }
@@ -697,7 +697,7 @@ static ssize_t wasapi_write_ex(wasapi_t *w, const void * data, size_t size)
    return result;
 }
 
-static ssize_t wasapi_write(void *wh, const void *data, size_t size, bool u)
+static ssize_t wasapi_write(void *wh, const void *data, size_t size)
 {
    size_t writen;
    ssize_t ir;
