@@ -819,7 +819,7 @@ static void *wasapi_device_list_new(void *u)
    char *dev_name_str              = NULL;
    struct string_list *sl          = string_list_new();
 
-   wasapi_log("Enumerating active devices ...");
+   wasapi_log("Enumerating active devices ..");
 
    WASAPI_CHECK(sl, "string_list_new failed", return NULL);
 
