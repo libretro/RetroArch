@@ -29,6 +29,7 @@
 #include <net/net_ifinfo.h>
 #include <retro_miscellaneous.h>
 
+#include <string/stdstring.h>
 #include <net/net_natt.h>
 
 #if HAVE_MINIUPNPC
@@ -189,7 +190,7 @@ bool natt_open_port_any(struct natt_status *status, uint16_t port, enum socket_p
       struct net_ifinfo_entry *entry = list.entries + i;
 
       /* ignore localhost */
-      if (!strcmp(entry->host, "127.0.0.1") || !strcmp(entry->host, "::1"))
+      if (string_is_equal(entry->host, "127.0.0.1") || string_is_equal(entry->host, "::1"))
          continue;
 
       /* make a request for this host */

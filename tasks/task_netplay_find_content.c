@@ -59,7 +59,7 @@ static void netplay_crc_scan_callback(void *task_data,
 
    fflush(stdout);
    if (!string_is_empty(state->core_path) && !string_is_empty(state->content_path) &&
-       !string_is_equal(state->content_path, "N/A"))
+       memcmp(state->content_path, "N/A", 3) != 0)
    {
       command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
       task_push_load_content_with_new_core_from_menu(
@@ -69,7 +69,7 @@ static void netplay_crc_scan_callback(void *task_data,
             NULL, NULL);
    }
    else if (!string_is_empty(state->core_path) && !string_is_empty(state->content_path) &&
-      string_is_equal(state->content_path, "N/A"))
+      memcmp(state->content_path, "N/A", 3) == 0)
    {
       content_ctx_info_t content_info = {0};
 
@@ -111,11 +111,11 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
    }
 
    if (state->lpl_list->size == 0 && 
-      !string_is_equal(state->content_path, "N/A"))
+      memcmp(state->content_path, "N/A", 3) != 0)
       goto no_playlists;
 
    /* Core requires content */
-   if (!string_is_equal(state->content_path, "N/A"))
+   if (memcmp(state->content_path, "N/A", 3) != 0)
    {
       /* CRC matching */
       if (!string_is_equal(state->content_crc, "00000000|crc"))
@@ -285,7 +285,7 @@ bool task_push_netplay_crc_scan(uint32_t crc, char* name,
       {
          strlcpy(state->core_path, info->list[i].path, sizeof(state->core_path));
 
-         if (!string_is_equal(state->content_path, "N/A") && 
+         if ((memcmp(state->content_path, "N/A", 3) != 0) && 
             !string_is_empty(info->list[i].supported_extensions))
          {
             strlcpy(state->core_extensions,

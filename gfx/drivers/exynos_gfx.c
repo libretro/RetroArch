@@ -181,7 +181,7 @@ static int exynos_get_device_index(void)
 
       ver = drmGetVersion(fd);
 
-      if (string_is_equal("exynos", ver->name))
+      if (memcmp(ver->name, "exynos", 6) == 0)
          found = true;
       else
          ++index;

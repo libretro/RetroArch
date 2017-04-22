@@ -202,7 +202,7 @@ bool driver_find_next(const char *label, char *s, size_t len)
 {
    int i = driver_find_index(label, s);
 
-   if (i >= 0 && !string_is_equal(s, "null"))
+   if (i >= 0 && (memcmp(s, "null", 4) != 0))
    {
       find_driver_nonempty(label, i + 1, s, len);
       return true;

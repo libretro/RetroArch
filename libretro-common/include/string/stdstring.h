@@ -25,18 +25,46 @@
 
 #include <stdlib.h>
 #include <stddef.h>
+#include <ctype.h>
 #include <string.h>
 #include <boolean.h>
 
 #include <retro_common_api.h>
+#include <retro_inline.h>
 
 RETRO_BEGIN_DECLS
 
-bool string_is_empty(const char *data);
+static INLINE bool string_is_empty(const char *data)
+{
+   return (data == NULL) || (*data == '\0');
+}
 
-bool string_is_equal(const char *a, const char *b);
+static INLINE bool string_is_equal(const char *a, const char *b)
+{
+   if (!a || !b)
+      return false;
+   while(*a && (*a == *b))
+      a++, b++;
+   return (*(const unsigned char*)a - *(const unsigned char*)b) == 0;
+}
 
-bool string_is_equal_noncase(const char *a, const char *b);
+static INLINE bool string_is_equal_noncase(const char *a, const char *b)
+{
+   int result;
+   const unsigned char *p1 = (const unsigned char*)a;
+   const unsigned char *p2 = (const unsigned char*)b;
+
+   if (!a || !b)
+      return false;
+   if (p1 == p2)
+      return false;
+
+   while ((result = tolower (*p1) - tolower (*p2++)) == 0)
+      if (*p1++ == '\0')
+         break;
+
+   return (result == 0);
+}
 
 char *string_to_upper(char *s);
 

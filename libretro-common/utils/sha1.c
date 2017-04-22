@@ -437,6 +437,7 @@ void SHA1PadMessage(SHA1Context *context)
 #include <io.h>
 #endif
 #include <fcntl.h>
+#include <string/stdstring.h>
 /*#include "sha1.h"*/
 
 /*
@@ -477,8 +478,8 @@ int main(int argc, char *argv[])
     *  Check the program arguments and print usage information if -?
     *  or --help is passed as the first argument.
     */
-   if (argc > 1 && (!strcmp(argv[1],"-?") ||
-            !strcmp(argv[1],"--help")))
+   if (argc > 1 && (string_is_equal(argv[1],"-?") ||
+            string_is_equal(argv[1],"--help")))
    {
       usage();
       return 1;
@@ -498,7 +499,7 @@ int main(int argc, char *argv[])
       if (i == 0)
          i++;
 
-      if (argc == 1 || !strcmp(argv[i],"-"))
+      if (argc == 1 || string_is_equal(argv[i],"-"))
       {
 #ifdef WIN32
          setmode(fileno(stdin), _O_BINARY);

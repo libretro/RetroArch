@@ -485,9 +485,9 @@ enum
    /* Get enabled orientations */
    apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskAll;
    
-   if (string_is_equal(apple_frontend_settings.orientations, "landscape"))
+   if (memcmp(apple_frontend_settings.orientations, "landscape", 9) == 0)
       apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskLandscape;
-   else if (string_is_equal(apple_frontend_settings.orientations, "portrait"))
+   else if (memcmp(apple_frontend_settings.orientations, "portrait", 8) == 0)
       apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskPortrait | UIInterfaceOrientationMaskPortraitUpsideDown;
 }
 

@@ -579,7 +579,7 @@ static struct config_entry_list *config_get_entry(const config_file_t *conf,
 
    for (entry = conf->entries; entry; entry = entry->next)
    {
-      if (hash == entry->key_hash && !strcmp(key, entry->key))
+      if (hash == entry->key_hash && string_is_equal(key, entry->key))
          return entry;
 
       previous = entry;
@@ -745,13 +745,13 @@ bool config_get_bool(config_file_t *conf, const char *key, bool *in)
 
    if (entry)
    {
-      if (strcasecmp(entry->value, "true") == 0)
+      if (memcmp(entry->value, "true", 4) == 0)
          *in = true;
-      else if (strcasecmp(entry->value, "1") == 0)
+      else if (memcmp(entry->value, "1", 1) == 0)
          *in = true;
-      else if (strcasecmp(entry->value, "false") == 0)
+      else if (memcmp(entry->value, "false", 5) == 0)
          *in = false;
-      else if (strcasecmp(entry->value, "0") == 0)
+      else if (memcmp(entry->value, "0", 1) == 0)
          *in = false;
       else
          return false;
@@ -931,7 +931,7 @@ bool config_entry_exists(config_file_t *conf, const char *entry)
 
    while (list)
    {
-      if (!strcmp(entry, list->key))
+      if (string_is_equal(entry, list->key))
          return true;
       list = list->next;
    }

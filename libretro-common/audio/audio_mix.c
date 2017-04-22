@@ -235,14 +235,11 @@ size_t audio_mix_get_chunk_num_samples(audio_chunk_t *chunk)
    {
       if (chunk->resample)
          return chunk->resample_len;
-      else
-         return chunk->rwav->numsamples;
+      return chunk->rwav->numsamples;
    }
-   else
-   {
-      /* no other filetypes supported yet */
-      return 0;
-   }
+
+   /* no other filetypes supported yet */
+   return 0;
 }
 
 /**
@@ -262,11 +259,11 @@ int16_t audio_mix_get_chunk_sample(audio_chunk_t *chunk, unsigned channel, size_
 
    if (chunk->rwav)
    {
-      int sample_size = chunk->rwav->bitspersample / 8;
+      int sample_size    = chunk->rwav->bitspersample / 8;
       int16_t sample_out = 0;
 
       /* 0 is the first/left channel */
-      uint8_t *sample;
+      uint8_t *sample    = NULL;
 
       if (chunk->resample)
          sample = (uint8_t*)chunk->resample_buf +
@@ -279,11 +276,9 @@ int16_t audio_mix_get_chunk_sample(audio_chunk_t *chunk, unsigned channel, size_
 
       return sample_out;
    }
-   else
-   {
-      /* no other filetypes supported yet */
-      return 0;
-   }
+
+   /* no other filetypes supported yet */
+   return 0;
 }
 
 int16_t* audio_mix_get_chunk_samples(audio_chunk_t *chunk)
@@ -313,9 +308,7 @@ int audio_mix_get_chunk_num_channels(audio_chunk_t *chunk)
 
    if (chunk->rwav)
       return chunk->rwav->numchannels;
-   else
-   {
-      /* don't support other formats yet */
-      return 0;
-   }
+
+   /* don't support other formats yet */
+   return 0;
 }

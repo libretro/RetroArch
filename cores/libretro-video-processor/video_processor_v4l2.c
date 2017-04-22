@@ -59,7 +59,10 @@
 #include <libudev.h>
 #endif
 
-struct video_buffer {
+#include <string/stdstring.h>
+
+struct video_buffer
+{
    void   *start;
    size_t   len;
 };
@@ -215,7 +218,7 @@ enumerate_audio_devices(char *buf, size_t buflen)
    {
       name = snd_device_name_get_hint(*n, "NAME");
       ioid = snd_device_name_get_hint(*n, "IOID");
-      if ((ioid == NULL || !strcmp(ioid, "Input")) &&
+      if ((ioid == NULL || string_is_equal(ioid, "Input")) &&
           (!strncmp(name, "hw:", strlen("hw:")) || 
            !strncmp(name, "default:", strlen("default:"))))
       {

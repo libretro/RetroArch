@@ -108,7 +108,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Driver de Vídeo em uso.");
 
-         if (string_is_equal(settings->video.driver, "gl"))
+         if (memcmp(settings->video.driver, "gl", 2) == 0)
          {
             snprintf(s, len,
                   "Driver de Vídeo OpenGL. \n"
@@ -122,7 +122,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "depende do driver GL instalado em sua \n"
                   "placa de vídeo.");
          }
-         else if (string_is_equal(settings->video.driver, "sdl2"))
+         else if (memcmp(settings->video.driver, "sdl2", 4) == 0)
          {
             snprintf(s, len,
                   "Driver de Vídeo SDL 2.\n"
@@ -134,7 +134,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "renderização por software depende da \n"
                   "implementação SDL de sua plataforma.");
          }
-         else if (string_is_equal(settings->video.driver, "sdl1"))
+         else if (memcmp(settings->video.driver, "sdl1", 4) == 0)
          {
             snprintf(s, len,
                   "Driver de Vídeo SDL.\n"
@@ -145,7 +145,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "O desemprenho é considerado subótimo. \n"
                   "Considere seu uso apenas em último caso.");
          }
-         else if (string_is_equal(settings->video.driver, "d3d"))
+         else if (memcmp(settings->video.driver, "d3d", 3) == 0)
          {
             snprintf(s, len,
                   "Driver de Vídeo Direct3D. \n"
@@ -154,7 +154,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "renderização por software depende do driver \n"
                   "D3D instalado em sua placa de vídeo.");
          }
-         else if (string_is_equal(settings->video.driver, "exynos"))
+         else if (memcmp(settings->video.driver, "exynos", 6) == 0)
          {
             snprintf(s, len,
                   "Driver de Vídeo Exynos-G2D. \n"
@@ -166,7 +166,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "O desempenho para cores de renderização por \n"
                   "software deve ser ótimo.");
          }
-         else if (string_is_equal(settings->video.driver, "sunxi"))
+         else if (memcmp(settings->video.driver, "sunxi", 5) == 0)
          {
             snprintf(s, len,
                   "Driver de Vídeo Sunxi-G2D. \n"

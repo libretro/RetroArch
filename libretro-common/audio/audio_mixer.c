@@ -317,7 +317,7 @@ audio_mixer_sound_t* audio_mixer_load_ogg(const char* path)
       return NULL;
    }
    
-   sound->type = AUDIO_MIXER_TYPE_OGG;
+   sound->type           = AUDIO_MIXER_TYPE_OGG;
    sound->types.ogg.size = size;
    sound->types.ogg.data = buffer;
    

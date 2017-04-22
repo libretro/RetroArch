@@ -31,6 +31,7 @@
 #include <boolean.h>
 #include <streams/file_stream.h>
 #include <compat/posix_string.h>
+#include <string/stdstring.h>
 
 #include <formats/rxml.h>
 
@@ -483,7 +484,7 @@ char *rxml_node_attrib(struct rxml_node *node, const char *attrib)
    struct rxml_attrib_node *attribs = NULL;
    for (attribs = node->attrib; attribs; attribs = attribs->next)
    {
-      if (!strcmp(attrib, attribs->attrib))
+      if (string_is_equal(attrib, attribs->attrib))
          return attribs->value;
    }
 

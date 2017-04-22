@@ -131,13 +131,13 @@ static int iso_get_serial(database_state_handle_t *db_state,
    if (rv < 0)
       return rv;
 
-   if (string_is_equal(system_name, "psp"))
+   if (memcmp(system_name, "psp", 3) == 0)
    {
       if (detect_psp_game(name, serial) == 0)
          return 0;
       RARCH_LOG("%s '%s'\n", msg_hash_to_str(MSG_FOUND_DISK_LABEL), serial);
    }
-   else if (string_is_equal(system_name, "ps1"))
+   else if (memcmp(system_name, "ps1", 3) == 0)
    {
       if (detect_ps1_game(name, serial) == 0)
          return 0;

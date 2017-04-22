@@ -184,74 +184,75 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t size_)
 {
    alsa_t *alsa              = (alsa_t*)data;
    const uint8_t *buf        = (const uint8_t*)buf_;
-   bool eagain_retry         = true;
    snd_pcm_sframes_t written = 0;
-#if 0
-   snd_pcm_sframes_t size    = snd_pcm_bytes_to_frames(alsa->pcm, size_);
-#else
    snd_pcm_sframes_t size    = BYTES_TO_FRAMES(size_, alsa->frame_bits);
-#endif
+   size_t frames_size        = alsa->has_float ? sizeof(float) : sizeof(int16_t);
 
-   while (size)
+   if (alsa->nonblock)
    {
-      snd_pcm_sframes_t frames;
-
-      if (!alsa->nonblock)
+      while (size)
       {
+         snd_pcm_sframes_t frames = snd_pcm_writei(alsa->pcm, buf, size);
+
+         if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
+         {
+            if (snd_pcm_recover(alsa->pcm, frames, 1) < 0)
+               return -1;
+
+            break;
+         }
+         else if (frames == -EAGAIN)
+            break;
+         else if (frames < 0)
+            return -1;
+
+         written += frames;
+         buf     += (frames << 1) * frames_size;
+         size    -= frames;
+      }
+   }
+   else
+   {
+      bool eagain_retry         = true;
+
+      while (size)
+      {
+         snd_pcm_sframes_t frames;
          int rc = snd_pcm_wait(alsa->pcm, -1);
 
          if (rc == -EPIPE || rc == -ESTRPIPE || rc == -EINTR)
          {
             if (snd_pcm_recover(alsa->pcm, rc, 1) < 0)
-            {
-               RARCH_ERR("[ALSA]: (#1) Failed to recover from error (%s)\n",
-                     snd_strerror(rc));
                return -1;
-            }
             continue;
          }
-      }
 
-      frames = snd_pcm_writei(alsa->pcm, buf, size);
+         frames = snd_pcm_writei(alsa->pcm, buf, size);
 
-      if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
-      {
-         if (snd_pcm_recover(alsa->pcm, frames, 1) < 0)
+         if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
          {
-            RARCH_ERR("[ALSA]: (#2) Failed to recover from error (%s)\n",
-                  snd_strerror(frames));
-            return -1;
-         }
+            if (snd_pcm_recover(alsa->pcm, frames, 1) < 0)
+               return -1;
 
-         break;
-      }
-      else if (frames == -EAGAIN)
-      {
-         if (!alsa->nonblock)
+            break;
+         }
+         else if (frames == -EAGAIN)
          {
             /* Definitely not supposed to happen. */
-            RARCH_WARN("[ALSA]: poll() was signaled, but EAGAIN returned from write.\n"
-                  "Your ALSA driver might be subtly broken.\n");
-
             if (eagain_retry)
             {
                eagain_retry = false;
                continue;
             }
+            break;
          }
-         return written;
-      }
-      else if (frames < 0)
-      {
-         RARCH_ERR("[ALSA]: Unknown error occurred (%s).\n",
-               snd_strerror(frames));
-         return -1;
-      }
+         else if (frames < 0)
+            return -1;
 
-      written += frames;
-      buf     += (frames << 1) *
-         (alsa->has_float ? sizeof(float) : sizeof(int16_t));
-      size    -= frames;
+         written += frames;
+         buf     += (frames << 1) * frames_size;
+         size    -= frames;
+      }
    }
 
    return written;
@@ -335,11 +336,7 @@ static size_t alsa_write_avail(void *data)
    if (avail < 0)
       return alsa->buffer_size;
 
-#if 0
-   return snd_pcm_frames_to_bytes(alsa->pcm, avail);
-#else
    return FRAMES_TO_BYTES(avail, alsa->frame_bits);
-#endif
 }
 
 static size_t alsa_buffer_size(void *data)
@@ -373,7 +370,7 @@ static void *alsa_device_list_new(void *data)
       /* description of device IOID - input / output identifcation
        * ("Input" or "Output"), NULL means both) */
 
-      if (!io || string_is_equal(io,"Output"))
+      if (!io || (memcmp(io, "Output", 6) == 0))
          string_list_append(s, name, attr);
 
       if (name)

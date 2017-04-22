@@ -123,35 +123,35 @@ static bool menu_display_check_compatibility(
       case MENU_VIDEO_DRIVER_GENERIC:
          return true;
       case MENU_VIDEO_DRIVER_OPENGL:
-         if (string_is_equal(video_driver, "gl"))
+         if (memcmp(video_driver, "gl", 2) == 0)
             return true;
          break;
       case MENU_VIDEO_DRIVER_VULKAN:
-         if (string_is_equal(video_driver, "vulkan"))
+         if (memcmp(video_driver, "vulkan", 6) == 0)
             return true;
          break;
       case MENU_VIDEO_DRIVER_DIRECT3D:
-         if (string_is_equal(video_driver, "d3d"))
+         if (memcmp(video_driver, "d3d", 3) == 0)
             return true;
          break;
       case MENU_VIDEO_DRIVER_VITA2D:
-         if (string_is_equal(video_driver, "vita2d"))
+         if (memcmp(video_driver, "vita2d", 6) == 0)
             return true;
          break;
       case MENU_VIDEO_DRIVER_CTR:
-         if (string_is_equal(video_driver, "ctr"))
+         if (memcmp(video_driver, "ctr", 3) == 0)
             return true;
          break;
       case MENU_VIDEO_DRIVER_CACA:
-         if (string_is_equal(video_driver, "caca"))
+         if (memcmp(video_driver, "caca", 4) == 0)
             return true;
          break;
       case MENU_VIDEO_DRIVER_GDI:
-         if (string_is_equal(video_driver, "gdi"))
+         if (memcmp(video_driver, "gdi", 3) == 0)
             return true;
          break;
       case MENU_VIDEO_DRIVER_VGA:
-         if (string_is_equal(video_driver, "vga"))
+         if (memcmp(video_driver, "vga", 3) == 0)
             return true;
          break;
    }

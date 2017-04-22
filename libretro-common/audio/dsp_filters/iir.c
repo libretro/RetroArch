@@ -26,6 +26,7 @@
 
 #include <retro_miscellaneous.h>
 #include <libretro_dspfilter.h>
+#include <string/stdstring.h>
 
 #define sqr(a) ((a) * (a))
 
@@ -123,7 +124,7 @@ static void iir_process(void *data, struct dspfilter_output *output,
    iir->r.yn2 = yn2_r;
 }
 
-#define CHECK(x) if (!strcmp(str, #x)) return x
+#define CHECK(x) if (string_is_equal(str, #x)) return x
 static enum IIRFilter str_to_type(const char *str)
 {
    CHECK(LPF);

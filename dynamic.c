@@ -933,7 +933,7 @@ static bool dynamic_verify_hw_context(enum retro_hw_context_type type,
    switch (type)
    {
       case RETRO_HW_CONTEXT_VULKAN:
-         if (!string_is_equal(video_ident, "vulkan"))
+         if (memcmp(video_ident, "vulkan", 6) != 0)
             return false;
          break;
       case RETRO_HW_CONTEXT_OPENGLES2:
@@ -941,7 +941,7 @@ static bool dynamic_verify_hw_context(enum retro_hw_context_type type,
       case RETRO_HW_CONTEXT_OPENGLES_VERSION:
       case RETRO_HW_CONTEXT_OPENGL:
       case RETRO_HW_CONTEXT_OPENGL_CORE:
-         if (!string_is_equal(video_ident, "gl"))
+         if (memcmp(video_ident, "gl", 2) != 0)
             return false;
          break;
       default:
