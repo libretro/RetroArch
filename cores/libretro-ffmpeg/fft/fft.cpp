@@ -246,13 +246,13 @@ static void fft_render(glfft_t *fft, GLuint backbuffer, unsigned width, unsigned
    center[1]            = 0.0f;
    center[2]            = 1.0f;
 
-   vec3_add(&center[0], &eye[0]);
+   vec3_add(center, eye);
 
 #ifdef GLM_USE_DEBUG
    printf("center : %.2f, %.2f, %.2f\n", center[0], center[1], center[2]);
 #endif
 
-   matrix_4x4_projection(&mvp_persp, (float)M_HALF_PI, (float)width / height, 1.0f, 500.0f);
+   matrix_4x4_projection(mvp_persp, (float)M_HALF_PI, (float)width / height, 1.0f, 500.0f);
 #ifdef GLM_USE_DEBUG
    printf("mvp_persp: \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n\n",
          MAT_ELEM_4X4(mvp_persp, 0, 0),
@@ -297,7 +297,7 @@ static void fft_render(glfft_t *fft, GLuint backbuffer, unsigned width, unsigned
          MAT_ELEM_4X4(mvp_lookat, 3, 3)
          );
 #endif
-   matrix_4x4_multiply(mvp, &mvp_persp, &mvp_lookat);
+   matrix_4x4_multiply(mvp, mvp_persp, mvp_lookat);
 #ifdef GLM_USE_DEBUG
    printf("mvp: \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n\n",
          MAT_ELEM_4X4(mvp, 0, 0),
