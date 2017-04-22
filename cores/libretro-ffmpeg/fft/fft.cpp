@@ -10,10 +10,7 @@
 #include <filters.h>
 #include <math/complex.h>
 #include <gfx/math/matrix_4x4.h>
-
-#define GLM_SWIZZLE
-#define GLM_FORCE_RADIANS
-#include <glm/packing.hpp>
+#include <gfx/math/vector_2.h>
 
 #if GL_DEBUG
 #define GL_CHECK_ERROR() do { \
@@ -373,6 +370,7 @@ void fft_build_params(glfft_t *fft, GLuint *buffer,
    {
       for (j = i; j < i + step_size; j++)
       {
+         vec2_t tmp;
          int s                 = j - i;
          float phase           = -1.0f * (float)s / step_size;
          unsigned a            = j;
@@ -381,12 +379,14 @@ void fft_build_params(glfft_t *fft, GLuint *buffer,
 
          unsigned read_a       = (step == 0) ? bitinverse(a, size) : a;
          unsigned read_b       = (step == 0) ? bitinverse(b, size) : b;
-         glm::vec2 tmp         = glm::vec2(twiddle.real, twiddle.imag);
+
+         tmp[0]                = twiddle.real;
+         tmp[1]                = twiddle.imag;
 
          buffer[2 * a + 0]     = (read_a << 16) | read_b;
-         buffer[2 * a + 1]     = glm::packHalf2x16(tmp);
+         buffer[2 * a + 1]     = vec2_packHalf2x16(tmp[0], tmp[1]);
          buffer[2 * b + 0]     = (read_a << 16) | read_b;
-         buffer[2 * b + 1]     = glm::packHalf2x16(-tmp);
+         buffer[2 * b + 1]     = vec2_packHalf2x16(-tmp[0], -tmp[1]);
       }
    }
 }
