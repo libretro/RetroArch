@@ -616,3 +616,8 @@ void _start(int argc, char **argv)
    SYSRelaunchTitle(0, 0);
    exit(0);
 }
+
+int usleep (useconds_t __useconds)
+{
+   OSSleepTicks(us_to_ticks(__useconds));
+}
