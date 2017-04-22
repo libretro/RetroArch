@@ -232,7 +232,7 @@ typedef struct math_matrix_4x4
    MAT_ELEM_4X4(out, 2, 3) = 0.0f; \
    MAT_ELEM_4X4(out, 3, 0) = -(xaxis[0] * eye[0] + xaxis[1] * eye[1] + xaxis[2] * eye[2]); \
    MAT_ELEM_4X4(out, 3, 1) = -(yaxis[0] * eye[0] + yaxis[1] * eye[1] + yaxis[2] * eye[2]); \
-   MAT_ELEM_4X4(out, 3, 2) = -(zaxis[0] * eye[0] + zaxis[1] * eye[1] + zaxis[2] * eye[2]); \
+   MAT_ELEM_4X4(out, 3, 2) = (zaxis[0] * eye[0] + zaxis[1] * eye[1] + zaxis[2] * eye[2]); \
    MAT_ELEM_4X4(out, 3, 3) = 1.f; \
 }
 
