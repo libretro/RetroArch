@@ -1677,7 +1677,6 @@ static void mui_preswitch_tabs(mui_handle_t *mui, unsigned action)
 {
    size_t stack_size       = 0;
    file_list_t *menu_stack = NULL;
-   size_t idx              = menu_navigation_get_selection();
 
    if (!mui)
       return;
@@ -2002,7 +2001,6 @@ static void mui_list_insert(void *userdata,
    int i                  = (int)list_size;
    mui_node_t *node       = NULL;
    mui_handle_t *mui      = (mui_handle_t*)userdata;
-   size_t selection       = menu_navigation_get_selection();
 
    if (!mui || !list)
       return;
