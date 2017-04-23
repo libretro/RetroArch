@@ -131,7 +131,7 @@ static void salamander_init(char *s, size_t len)
          config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
          config_file_free(conf);
 
-         if (!string_is_equal(tmp_str, "builtin"))
+         if (memcmp(tmp_str, "builtin", 7) != 0)
             strlcpy(s, tmp_str, len);
       }
 #ifdef GEKKO

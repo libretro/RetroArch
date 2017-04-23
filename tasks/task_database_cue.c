@@ -17,6 +17,7 @@
 
 #include <errno.h>
 #include <ctype.h>
+#include <string.h>
 
 #include <retro_miscellaneous.h>
 #include <compat/strcasestr.h>
@@ -276,31 +277,32 @@ int detect_psp_game(const char *track_path, char *game_id)
       if (filestream_read(fd, game_id, 5) > 0)
       {
          game_id[5] = '\0';
-         if (string_is_equal(game_id, "ULES-")
-          || string_is_equal(game_id, "ULUS-")
-          || string_is_equal(game_id, "ULJS-")
+         if (
+             (memcmp(game_id, "ULES-", 5) == 0)
+          || (memcmp(game_id, "ULUS-", 5) == 0)
+          || (memcmp(game_id, "ULJS-", 5) == 0)
 
-          || string_is_equal(game_id, "ULEM-")
-          || string_is_equal(game_id, "ULUM-")
-          || string_is_equal(game_id, "ULJM-")
+          || (memcmp(game_id, "ULEM-", 5) == 0)
+          || (memcmp(game_id, "ULUM-", 5) == 0)
+          || (memcmp(game_id, "ULJM-", 5) == 0)
 
-          || string_is_equal(game_id, "UCES-")
-          || string_is_equal(game_id, "UCUS-")
-          || string_is_equal(game_id, "UCJS-")
-          || string_is_equal(game_id, "UCAS-")
+          || (memcmp(game_id, "UCES-", 5) == 0)
+          || (memcmp(game_id, "UCUS-", 5) == 0)
+          || (memcmp(game_id, "UCJS-", 5) == 0)
+          || (memcmp(game_id, "UCAS-", 5) == 0)
 
-          || string_is_equal(game_id, "NPEH-")
-          || string_is_equal(game_id, "NPUH-")
-          || string_is_equal(game_id, "NPJH-")
+          || (memcmp(game_id, "NPEH-", 5) == 0)
+          || (memcmp(game_id, "NPUH-", 5) == 0)
+          || (memcmp(game_id, "NPJH-", 5) == 0)
 
-          || string_is_equal(game_id, "NPEG-")
-          || string_is_equal(game_id, "NPUG-")
-          || string_is_equal(game_id, "NPJG-")
-          || string_is_equal(game_id, "NPHG-")
+          || (memcmp(game_id, "NPEG-", 5) == 0)
+          || (memcmp(game_id, "NPUG-", 5) == 0)
+          || (memcmp(game_id, "NPJG-", 5) == 0)
+          || (memcmp(game_id, "NPHG-", 5) == 0)
 
-          || string_is_equal(game_id, "NPEZ-")
-          || string_is_equal(game_id, "NPUZ-")
-          || string_is_equal(game_id, "NPJZ-")
+          || (memcmp(game_id, "NPEZ-", 5) == 0)
+          || (memcmp(game_id, "NPUZ-", 5) == 0)
+          || (memcmp(game_id, "NPJZ-", 5) == 0)
          )
          {
             filestream_seek(fd, pos, SEEK_SET);
