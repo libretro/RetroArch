@@ -48,15 +48,6 @@ bool libretro_get_system_info(const char *path,
  **/
 void libretro_free_system_info(struct retro_system_info *info);
 
-/**
- * libretro_get_current_core_pathname:
- * @name                         : Sanitized name of libretro core.
- * @size                         : Size of @name
- *
- * Transforms a library id to a name suitable as a pathname.
- **/
-void libretro_get_current_core_pathname(char *name, size_t size);
-
 const struct retro_subsystem_info *libretro_find_subsystem_info(
       const struct retro_subsystem_info *info,
       unsigned num_info, const char *ident);

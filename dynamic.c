@@ -301,7 +301,13 @@ static dylib_t libretro_get_system_info_lib(const char *path,
 static bool libretro_get_system_info_static(struct retro_system_info *info,
       bool *load_no_content)
 {
-   struct retro_system_info dummy_info = {0};
+   struct retro_system_info dummy_info;
+
+   dummy_info.library_name     = NULL;
+   dummy_info.library_version  = NULL;
+   dummy_info.valid_extensions = NULL;
+   dummy_info.need_fullpath    = false;
+   dummy_info.block_extract    = false;
 
    if (load_no_content)
    {
@@ -351,8 +357,16 @@ bool libretro_get_system_info(const char *path,
       struct retro_system_info *info, bool *load_no_content)
 {
 #ifdef HAVE_DYNAMIC
-   struct retro_system_info dummy_info = {0};
-   dylib_t lib                         = libretro_get_system_info_lib(
+   dylib_t lib;
+   struct retro_system_info dummy_info;
+
+   dummy_info.library_name     = NULL;
+   dummy_info.library_version  = NULL;
+   dummy_info.valid_extensions = NULL;
+   dummy_info.need_fullpath    = false;
+   dummy_info.block_extract    = false;
+
+   lib                         = libretro_get_system_info_lib(
          path, &dummy_info, load_no_content);
 
    if (!lib)
@@ -615,46 +629,6 @@ static bool load_symbols(enum rarch_core_type type, struct retro_core_t *current
    }
 
    return true;
-}
-
-/**
- * libretro_get_current_core_pathname:
- * @name                         : Sanitized name of libretro core.
- * @size                         : Size of @name
- *
- * Transforms a library id to a name suitable as a pathname.
- **/
-void libretro_get_current_core_pathname(char *name, size_t size)
-{
-   size_t i;
-   struct retro_system_info info;
-   const char                *id = msg_hash_to_str(MSG_UNKNOWN);
-
-   if (size == 0)
-      return;
-
-   core_get_system_info(&info);
-
-   if (info.library_name)
-      id = info.library_name;
-
-   if (!id || strlen(id) >= size)
-   {
-      name[0] = '\0';
-      return;
-   }
-
-   name[strlen(id)] = '\0';
-
-   for (i = 0; id[i] != '\0'; i++)
-   {
-      char c = id[i];
-
-      if (isspace((int)c) || isblank((int)c))
-         name[i] = '_';
-      else
-         name[i] = tolower((int)c);
-   }
 }
 
 /**
