@@ -3737,7 +3737,7 @@ static bool menu_displaylist_push_list_process(menu_displaylist_info_t *info)
       menu_entries_ctl(MENU_ENTRIES_CTL_REFRESH, info->list);
 
    if (info->need_clear)
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
+      menu_navigation_set_selection(idx);
 
    if (info->need_push)
    {

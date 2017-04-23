@@ -157,16 +157,12 @@ void menu_list_flush_stack(menu_list_t *list,
    while (menu_list_flush_stack_type(
             needle, label, type, final_type) != 0)
    {
-      size_t new_selection_ptr;
-
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION,
-            &new_selection_ptr);
+      size_t new_selection_ptr = menu_navigation_get_selection();
 
       if (!menu_list_pop_stack(list, idx, &new_selection_ptr, 1))
          break;
 
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION,
-            &new_selection_ptr);
+      menu_navigation_set_selection(new_selection_ptr);
 
       menu_list = menu_list_get(list, (unsigned)idx);
 

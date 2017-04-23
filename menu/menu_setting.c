@@ -705,13 +705,10 @@ int menu_action_handle_setting(rarch_setting_t *setting,
       case ST_PATH:
          if (action == MENU_ACTION_OK)
          {
-            size_t selection;
             menu_displaylist_info_t  info = {0};
             file_list_t       *menu_stack = menu_entries_get_menu_stack_ptr(0);
             const char      *name         = setting->name;
-
-            if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-               return -1;
+            size_t selection              = menu_navigation_get_selection();
 
             info.list           = menu_stack;
             info.directory_ptr  = selection;
@@ -856,15 +853,11 @@ int menu_setting_set_flags(rarch_setting_t *setting)
 int menu_setting_set(unsigned type, const char *label,
       unsigned action, bool wraparound)
 {
-   size_t selection;
    int ret                    = 0;
-   menu_file_list_cbs_t *cbs  = NULL;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return 0;
-
-   cbs = menu_entries_get_actiondata_at_offset(selection_buf, selection);
+   size_t selection           = menu_navigation_get_selection();
+   menu_file_list_cbs_t *cbs  = menu_entries_get_actiondata_at_offset(
+         selection_buf, selection);
 
    if (!cbs)
       return 0;

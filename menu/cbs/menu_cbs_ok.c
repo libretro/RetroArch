@@ -1325,7 +1325,6 @@ static int action_ok_playlist_entry_collection(const char *path,
    menu_content_ctx_playlist_info_t playlist_info;
    char new_core_path[PATH_MAX_LENGTH];
    content_ctx_info_t content_info         = {0};
-   size_t selection                        = 0;
    size_t selection_ptr                    = 0;
    bool playlist_initialized               = false;
    playlist_t *playlist                    = NULL;
@@ -1338,8 +1337,6 @@ static int action_ok_playlist_entry_collection(const char *path,
    rarch_system_info_t *info               = NULL;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return menu_cbs_exit();
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return menu_cbs_exit();
 
    new_core_path[0] = '\0';
@@ -1452,7 +1449,6 @@ static int action_ok_playlist_entry_collection(const char *path,
 static int action_ok_playlist_entry(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   size_t selection;
    menu_content_ctx_playlist_info_t playlist_info;
    content_ctx_info_t content_info = {0};
    size_t selection_ptr             = 0;
@@ -1464,8 +1460,6 @@ static int action_ok_playlist_entry(const char *path,
    menu_handle_t *menu              = NULL;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return menu_cbs_exit();
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return menu_cbs_exit();
 
    selection_ptr = entry_idx;
@@ -1543,7 +1537,6 @@ static int action_ok_playlist_entry_start_content(const char *path,
 {
    menu_content_ctx_playlist_info_t playlist_info;
    content_ctx_info_t content_info  = {0};
-   size_t selection                 = 0;
    size_t selection_ptr             = 0;
    bool playlist_initialized        = false;
    playlist_t *playlist             = NULL;
@@ -1554,8 +1547,6 @@ static int action_ok_playlist_entry_start_content(const char *path,
    menu_handle_t *menu              = NULL;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return menu_cbs_exit();
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return menu_cbs_exit();
 
    menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
@@ -2054,14 +2045,11 @@ static int action_ok_path_scan_directory(const char *path,
 static int action_ok_core_deferred_set(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   size_t selection;
    char core_display_name[PATH_MAX_LENGTH];
    playlist_t               *playlist      = NULL;
+   size_t selection                        = menu_navigation_get_selection();
 
    core_display_name[0] = '\0';
-
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return menu_cbs_exit();
 
    menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
 
@@ -2080,7 +2068,7 @@ static int action_ok_core_deferred_set(const char *path,
    playlist_write_file(playlist);
 
    menu_entries_pop_stack(&selection, 0, 1);
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
+   menu_navigation_set_selection(selection);
 
    return menu_cbs_exit();
 }
@@ -2088,14 +2076,11 @@ static int action_ok_core_deferred_set(const char *path,
 static int action_ok_core_deferred_set_current_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   size_t selection;
    char core_display_name[PATH_MAX_LENGTH];
    playlist_t               *playlist      = NULL;
+   size_t selection                        = menu_navigation_get_selection();
 
    core_display_name[0] = '\0';
-
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return menu_cbs_exit();
 
    menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
 
@@ -2114,7 +2099,7 @@ static int action_ok_core_deferred_set_current_core(const char *path,
    playlist_write_file(playlist);
 
    menu_entries_pop_stack(&selection, 0, 1);
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
+   menu_navigation_set_selection(selection);
 
    return 0;
 }
@@ -2932,9 +2917,9 @@ static int action_ok_delete_entry(const char *path,
 
    playlist_delete_index(playlist, rpl_entry_selection_ptr);
 
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &new_selection_ptr);
+   new_selection_ptr = menu_navigation_get_selection();
    menu_entries_pop_stack(&new_selection_ptr, 0, 1);
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &new_selection_ptr);
+   menu_navigation_set_selection(new_selection_ptr);
 
    return 0;
 }
@@ -3857,11 +3842,8 @@ static int action_ok_load_archive_detect_core(const char *path,
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &idx))
-      return false;
-
-   menu_path    = menu->scratch2_buf;
-   content_path = menu->scratch_buf;
+   menu_path           = menu->scratch2_buf;
+   content_path        = menu->scratch_buf;
 
    core_info_get_list(&list);
 
@@ -3894,9 +3876,12 @@ static int action_ok_load_archive_detect_core(const char *path,
          }
          return 0;
       case 0:
-         return generic_action_ok_displaylist_push(path, NULL,
-               label, type,
-               idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);
+         {
+            idx = menu_navigation_get_selection();
+            return generic_action_ok_displaylist_push(path, NULL,
+                  label, type,
+                  idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);
+         }
       default:
          break;
    }

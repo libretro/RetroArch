@@ -29,16 +29,13 @@
 
 static int action_info_default(unsigned type, const char *label)
 {
-   size_t selection             = 0;
    menu_displaylist_info_t info = {0};
    file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
+   size_t selection             = menu_navigation_get_selection();
 
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return 0;
-
-   info.list          = menu_stack;
-   info.directory_ptr = selection;
-   info.enum_idx      = MENU_ENUM_LABEL_INFO_SCREEN;
+   info.list                    = menu_stack;
+   info.directory_ptr           = selection;
+   info.enum_idx                = MENU_ENUM_LABEL_INFO_SCREEN;
    strlcpy(info.label,
          msg_hash_to_str(MENU_ENUM_LABEL_INFO_SCREEN),
         sizeof(info.label));

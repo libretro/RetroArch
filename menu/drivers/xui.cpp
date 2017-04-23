@@ -590,8 +590,7 @@ static void xui_render(void *data)
       xui_set_list_text(i, msg_left, msg_right);
    }
 
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return;
+   selection = menu_navigation_get_selection();
 
    XuiListSetCurSelVisible(m_menulist, selection);
 
@@ -610,31 +609,19 @@ static void xui_populate_entries(void *data,
       const char *path,
       const char *label, unsigned i)
 {
-   size_t selection;
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return;
-
-   (void)label;
-   (void)path;
-
+   size_t selection = menu_navigation_get_selection();
    XuiListSetCurSelVisible(m_menulist, selection);
 }
 
 static void xui_navigation_clear(void *data, bool pending_push)
 {
-   size_t selection;
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return;
-
+   size_t selection = menu_navigation_get_selection();
    XuiListSetCurSelVisible(m_menulist, selection);
 }
 
 static void xui_navigation_set_visible(void *data)
 {
-   size_t selection;
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return;
-
+   size_t selection = menu_navigation_get_selection();
    XuiListSetCurSelVisible(m_menulist, selection);
 }
 

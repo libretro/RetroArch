@@ -149,10 +149,8 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
    {
       if (!mouse_oldleft)
       {
-         size_t selection;
          menu_input_t *menu_input = menu_input_get_ptr();
-
-         menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
+         size_t selection         = menu_navigation_get_selection();
 
          BIT64_SET(*input_mouse, MENU_MOUSE_ACTION_BUTTON_L);
 
@@ -282,8 +280,7 @@ static int menu_input_mouse_frame(
 
    if (BIT64_GET(mouse_state, MENU_MOUSE_ACTION_BUTTON_R))
    {
-      size_t selection;
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
+      size_t selection = menu_navigation_get_selection();
       menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
    }
 
@@ -515,8 +512,7 @@ static int menu_input_pointer_post_iterate(
             {
                if (menu_input->pointer.counter > 32)
                {
-                  size_t selection;
-                  menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
+                  size_t selection = menu_navigation_get_selection();
                   if (cbs && cbs->action_start)
                      return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_START);
 
@@ -547,10 +543,8 @@ static int menu_input_pointer_post_iterate(
    {
       if (!pointer_oldback)
       {
-         size_t selection;
          pointer_oldback = true;
-         menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
-         menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
+         menu_entry_action(entry, (unsigned)menu_navigation_get_selection(), MENU_ACTION_CANCEL);
       }
    }
 
@@ -561,14 +555,11 @@ static int menu_input_pointer_post_iterate(
 
 void menu_input_post_iterate(int *ret, unsigned action)
 {
-   size_t selection;
    menu_entry_t entry;
    menu_file_list_cbs_t *cbs  = NULL;
    settings_t *settings       = config_get_ptr();
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return;
+   size_t selection           = menu_navigation_get_selection();
 
    if (selection_buf)
       cbs = menu_entries_get_actiondata_at_offset(selection_buf, selection);
