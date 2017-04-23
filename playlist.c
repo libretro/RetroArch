@@ -189,37 +189,43 @@ void playlist_update(playlist_t *playlist, size_t idx,
    if (path && (path != entry->path))
    {
       free(entry->path);
-      entry->path = strdup(path);
+      entry->path        = strdup(path);
+      playlist->modified = true;
    }
 
    if (label && (label != entry->label))
    {
       free(entry->label);
-      entry->label = strdup(label);
+      entry->label       = strdup(label);
+      playlist->modified = true;
    }
 
    if (core_path && (core_path != entry->core_path))
    {
       free(entry->core_path);
-      entry->core_path = strdup(core_path);
+      entry->core_path   = strdup(core_path);
+      playlist->modified = true;
    }
 
    if (core_name && (core_name != entry->core_name))
    {
       free(entry->core_name);
-      entry->core_name = strdup(core_name);
+      entry->core_name   = strdup(core_name);
+      playlist->modified = true;
    }
 
    if (db_name && (db_name != entry->db_name))
    {
       free(entry->db_name);
-      entry->db_name = strdup(db_name);
+      entry->db_name     = strdup(db_name);
+      playlist->modified = true;
    }
 
    if (crc32 && (crc32 != entry->crc32))
    {
       free(entry->crc32);
-      entry->crc32 = strdup(crc32);
+      entry->crc32       = strdup(crc32);
+      playlist->modified = true;
    }
 }
 
@@ -292,7 +298,7 @@ bool playlist_push(playlist_t *playlist,
             i * sizeof(struct playlist_entry));
       playlist->entries[0] = tmp;
 
-      return true;
+      goto success;
    }
 
    if (playlist->size == playlist->cap)
@@ -328,6 +334,9 @@ bool playlist_push(playlist_t *playlist,
 
    playlist->size++;
 
+success:
+   playlist->modified = true;
+
    return true;
 }
 
@@ -336,7 +345,7 @@ void playlist_write_file(playlist_t *playlist)
    size_t i;
    FILE *file = NULL;
 
-   if (!playlist)
+   if (!playlist || !playlist->modified)
       return;
 
    file = fopen(playlist->conf_path, "w");
