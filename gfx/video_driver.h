@@ -347,7 +347,6 @@ bool video_driver_find_driver(void);
 void video_driver_apply_state_changes(void);
 bool video_driver_read_viewport(uint8_t *buffer, bool is_idle);
 bool video_driver_cached_frame(void);
-uint64_t video_driver_get_frame_count(void);
 bool video_driver_frame_filter_alive(void);
 bool video_driver_frame_filter_is_32bit(void);
 void video_driver_default_settings(void);

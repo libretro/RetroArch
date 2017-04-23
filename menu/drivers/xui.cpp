@@ -67,6 +67,7 @@ HXUIOBJ m_back;
 HXUIOBJ root_menu;
 HXUIOBJ current_menu;
 static msg_queue_t *xui_msg_queue = NULL;
+static uint64_t xui_frame_count   = 0;
 
 class CRetroArch : public CXuiModule
 {
@@ -362,6 +363,8 @@ static void xui_free(void *data)
    (void)data;
    app.Uninit();
 
+   xui_frame_count = 0;
+
    if (xui_msg_queue)
       msg_queue_free(xui_msg_queue);
 }
@@ -421,6 +424,8 @@ static void xui_frame(void *data, video_frame_info_t *video_info)
 
    if (!d3dr)
       return;
+
+   xui_frame_count++;
 
    menu_display_set_viewport(video_info->width, video_info->height);
 
@@ -536,7 +541,7 @@ static void xui_render(void *data)
    const char *dir             = NULL;
    const char *label           = NULL;
    unsigned menu_type          = 0;
-   uint64_t *frame_count       = video_driver_get_frame_count_ptr();
+   uint64_t frame_count        = xui_frame_count;
    bool              msg_force = menu_display_get_msg_force();
 
    menu_display_get_fb_size(&fb_width, &fb_height,
@@ -560,7 +565,7 @@ static void xui_render(void *data)
       mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));
       XuiTextElementSetText(m_menutitle, strw_buffer);
       menu_animation_ticker_str(title, RXUI_TERM_WIDTH(fb_width) - 3,
-            (unsigned int)*frame_count / 15, title, true);
+            (unsigned int)frame_count / 15, title, true);
    }
 
    if (XuiHandleIsValid(m_menutitle))

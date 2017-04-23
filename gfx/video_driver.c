@@ -1647,14 +1647,6 @@ bool video_driver_read_viewport(uint8_t *buffer, bool is_idle)
    return false;
 }
 
-uint64_t video_driver_get_frame_count(void)
-{
-   uint64_t frame_count;
-   video_driver_threaded_lock();
-   frame_count = video_driver_frame_count;
-   video_driver_threaded_unlock();
-   return frame_count;
-}
 
 bool video_driver_frame_filter_alive(void)
 {
@@ -2379,7 +2371,7 @@ void video_driver_get_window_title(char *buf, unsigned len)
 void video_driver_get_status(uint64_t *frame_count, bool * is_alive,
       bool *is_focused)
 {
-   *frame_count = video_driver_get_frame_count();
+   *frame_count = video_driver_frame_count;
    *is_alive    = video_driver_is_alive();
    *is_focused  = video_driver_is_focused();
 }

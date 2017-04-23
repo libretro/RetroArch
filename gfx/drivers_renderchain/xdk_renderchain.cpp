@@ -42,6 +42,7 @@ typedef struct xdk_renderchain
 #endif
    unsigned tex_w;
    unsigned tex_h;
+   uint64_t frame_count;
 } xdk_renderchain_t;
 
 static void renderchain_set_mvp(void *data, unsigned vp_width,
@@ -401,18 +402,17 @@ static bool xdk_renderchain_render(void *data, const void *frame,
 {
    unsigned i;
    unsigned width, height;
-   uint64_t *frame_count    = NULL;
    d3d_video_t      *d3d    = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)d3d->dev;
    settings_t *settings     = config_get_ptr();
    xdk_renderchain_t *chain = (xdk_renderchain_t*)d3d->renderchain_data;
 
-   frame_count = video_driver_get_frame_count_ptr();
+   chain->frame_count++;
 
    video_driver_get_size(&width, &height);
 
    renderchain_blit_to_texture(chain, frame, frame_width, frame_height, pitch);
-   renderchain_set_vertices(d3d, 1, frame_width, frame_height, *frame_count);
+   renderchain_set_vertices(d3d, 1, frame_width, frame_height, chain->frame_count);
 
    d3d_set_texture(d3dr, 0, chain->tex);
    d3d_set_viewports(chain->dev, &d3d->final_viewport);
