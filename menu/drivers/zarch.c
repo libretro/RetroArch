@@ -110,6 +110,7 @@ typedef struct zarch_handle
    unsigned height;
    video_font_raster_block_t tmp_block;
    unsigned hash;
+   uint64_t frame_count;
 
    struct {
       unsigned active;
@@ -323,7 +324,7 @@ static bool zarch_zui_list_item(video_frame_info_t *video_info,
    int                y2 = y1 + 50;
    bool           active = zarch_zui_check_button_up(zui, id, x1, y1, x2, y2);
    const float       *bg = zui_bg_panel;
-   uint64_t frame_count  = video_info->frame_count;
+   uint64_t frame_count  = zui->frame_count;
 
    title_buf[0] = '\0';
 
@@ -875,6 +876,8 @@ static void zarch_frame(void *data, video_frame_info_t *video_info)
    
    if (!zui)
       return;
+
+   zui->frame_count++;
 
    video_driver_get_size(&zui->width, &zui->height);
 

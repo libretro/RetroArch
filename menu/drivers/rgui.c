@@ -385,7 +385,8 @@ static void rgui_blit_cursor(void)
 static void rgui_frame(void *data, video_frame_info_t *video_info)
 {
    rgui_t *rgui                   = (rgui_t*)data;
-   rgui->frame_count              = (unsigned)video_info->frame_count;
+
+   rgui->frame_count++;
 }
 
 static void rgui_render(void *data)
@@ -403,7 +404,7 @@ static void rgui_render(void *data)
    bool msg_force                 = false;
    settings_t *settings           = config_get_ptr();
    rgui_t *rgui                   = (rgui_t*)data;
-   uint64_t frame_count           = rgui ? rgui->frame_count : 0;
+   uint64_t frame_count           = rgui->frame_count;
 
    msg[0] = title[0] = title_buf[0] = title_msg[0] = '\0';
 

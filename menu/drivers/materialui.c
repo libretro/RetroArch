@@ -101,6 +101,7 @@ typedef struct mui_handle
    unsigned glyph_width2;
    char box_message[1024];
    bool mouse_show;
+   uint64_t frame_count;
 
    struct
    {
@@ -793,8 +794,7 @@ static void mui_render_menu_list(
    float sum                               = 0;
    size_t i                                = 0;
    file_list_t *list                       = NULL;
-   uint64_t frame_count                    = 
-      video_info->frame_count;
+   uint64_t frame_count                    = mui->frame_count;
    unsigned header_height                  = 
       menu_display_get_header_height();
 
@@ -1006,7 +1006,6 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
    size_t selection                = 0;
    size_t title_margin             = 0;
    mui_handle_t *mui               = (mui_handle_t*)data;
-   uint64_t frame_count            = video_info->frame_count;
    bool background_rendered        = false;
    bool libretro_running           = video_info->libretro_running;
 
@@ -1024,6 +1023,8 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
 
    if (!mui)
       return;
+
+   mui->frame_count++;
 
    msg[0] = title[0] = title_buf[0] = title_msg[0] = '\0';
 
@@ -1336,7 +1337,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
 
    ticker.s        = title_buf;
    ticker.len      = ticker_limit;
-   ticker.idx      = frame_count / 100;
+   ticker.idx      = mui->frame_count / 100;
    ticker.str      = title;
    ticker.selected = true;
 
@@ -1359,7 +1360,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
 
       ticker.s        = title_buf_msg_tmp;
       ticker.len      = ticker_limit;
-      ticker.idx      = frame_count / 20;
+      ticker.idx      = mui->frame_count / 20;
       ticker.str      = title_buf_msg;
       ticker.selected = true;
 

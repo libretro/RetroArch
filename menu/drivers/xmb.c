@@ -175,7 +175,6 @@ enum
 #define XMB_SYSTEM_TAB_END XMB_SYSTEM_TAB_HISTORY
 #endif
 
-
 typedef struct xmb_handle
 {
    file_list_t *menu_stack_old;
@@ -198,6 +197,7 @@ typedef struct xmb_handle
    char background_file_path[PATH_MAX_LENGTH];
    char thumbnail_file_path[PATH_MAX_LENGTH];
    char savestate_thumbnail_file_path[PATH_MAX_LENGTH];
+   uint64_t frame_count;
 
    bool mouse_show;
 
@@ -2100,7 +2100,7 @@ static void xmb_draw_items(
    menu_display_ctx_rotate_draw_t rotate_draw;
    xmb_node_t *core_node       = NULL;
    size_t end                  = 0;
-   uint64_t frame_count        = video_info->frame_count;
+   uint64_t frame_count        = xmb->frame_count;
 
    if (!list || !list->size)
       return;
@@ -2583,6 +2583,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    if (!xmb)
       return;
+
+   xmb->frame_count++;
 
    menu_disp_info.shadows_enable           = video_info->xmb_shadows_enable;
 
