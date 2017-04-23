@@ -623,7 +623,7 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
    {
       case 0:
          iter.action = MENU_ACTION_OK;
-         menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &iter);
+         menu_driver_iterate(&iter);
          break;
    }
 }

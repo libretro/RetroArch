@@ -89,11 +89,8 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_NAVIGATION_SET_LAST,
    RARCH_MENU_CTL_NAVIGATION_ASCEND_ALPHABET,
    RARCH_MENU_CTL_NAVIGATION_DESCEND_ALPHABET,
-   RARCH_MENU_CTL_IS_PENDING_QUICK_MENU,
    RARCH_MENU_CTL_SET_PENDING_QUICK_MENU,
-   RARCH_MENU_CTL_IS_PENDING_QUIT,
    RARCH_MENU_CTL_SET_PENDING_QUIT,
-   RARCH_MENU_CTL_IS_PENDING_SHUTDOWN,
    RARCH_MENU_CTL_SET_PENDING_SHUTDOWN,
    RARCH_MENU_CTL_DEINIT,
    RARCH_MENU_CTL_INIT,
@@ -131,7 +128,6 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_LIST_CACHE,
    RARCH_MENU_CTL_LIST_INSERT,
    RARCH_MENU_CTL_LIST_PUSH,
-   RARCH_MENU_CTL_ITERATE,
    RARCH_MENU_CTL_ENVIRONMENT,
    RARCH_MENU_CTL_DRIVER_DATA_GET,
    RARCH_MENU_CTL_POINTER_TAP,
@@ -401,6 +397,8 @@ void menu_driver_frame(video_frame_info_t *video_info);
 bool menu_driver_is_texture_set(void);
 
 bool menu_driver_is_alive(void);
+
+bool menu_driver_iterate(menu_ctx_iterate_t *iterate);
 
 extern menu_ctx_driver_t menu_ctx_xui;
 extern menu_ctx_driver_t menu_ctx_rgui;

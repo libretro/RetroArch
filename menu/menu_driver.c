@@ -392,6 +392,50 @@ bool menu_driver_is_texture_set(void)
    return menu_driver_ctx->set_texture;
 }
 
+bool menu_driver_iterate(menu_ctx_iterate_t *iterate)
+{
+   if (menu_driver_pending_quick_menu)
+   {
+      menu_driver_pending_quick_menu = false;
+      menu_entries_flush_stack(NULL, MENU_SETTINGS);
+      menu_display_set_msg_force(true);
+
+      generic_action_ok_displaylist_push("", NULL,
+            "", 0, 0, 0, ACTION_OK_DL_CONTENT_SETTINGS);
+
+      if (menu_driver_pending_quit)
+      {
+         menu_driver_pending_quit     = false;
+         return false;
+      }
+
+      return true;
+   }
+
+   if (menu_driver_pending_quit)
+   {
+      menu_driver_pending_quit     = false;
+      return false;
+   }
+
+   if (menu_driver_pending_shutdown)
+   {
+      menu_driver_pending_shutdown = false;
+      if (!command_event(CMD_EVENT_QUIT, NULL))
+         return false;
+      return true;
+   }
+
+   if (!menu_driver_ctx || !menu_driver_ctx->iterate)
+      return false;
+
+   if (menu_driver_ctx->iterate(menu_driver_data,
+            menu_userdata, iterate->action) == -1)
+      return false;
+
+   return true;
+}
+
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
    switch (state)
@@ -404,18 +448,12 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             *driver_data = menu_driver_data;
          }
          break;
-      case RARCH_MENU_CTL_IS_PENDING_QUICK_MENU:
-         return menu_driver_pending_quick_menu;
       case RARCH_MENU_CTL_SET_PENDING_QUICK_MENU:
          menu_driver_pending_quick_menu = true;
          break;
-      case RARCH_MENU_CTL_IS_PENDING_QUIT:
-         return menu_driver_pending_quit;
       case RARCH_MENU_CTL_SET_PENDING_QUIT:
          menu_driver_pending_quit     = true;
          break;
-      case RARCH_MENU_CTL_IS_PENDING_SHUTDOWN:
-         return menu_driver_pending_shutdown;
       case RARCH_MENU_CTL_SET_PENDING_SHUTDOWN:
          menu_driver_pending_shutdown = true;
          break;
@@ -820,48 +858,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             return menu_driver_ctx->load_image(menu_userdata,
                   load_image_info->data, load_image_info->type);
          }
-      case RARCH_MENU_CTL_ITERATE:
-         {
-            menu_ctx_iterate_t *iterate = (menu_ctx_iterate_t*)data;
-
-            if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_QUICK_MENU, NULL))
-            {
-               menu_driver_pending_quick_menu = false;
-               menu_entries_flush_stack(NULL, MENU_SETTINGS);
-               menu_display_set_msg_force(true);
-
-               generic_action_ok_displaylist_push("", NULL,
-                     "", 0, 0, 0, ACTION_OK_DL_CONTENT_SETTINGS);
-
-               if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_QUIT, NULL))
-               {
-                  menu_driver_pending_quit     = false;
-                  return false;
-               }
-
-               return true;
-            }
-
-            if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_QUIT, NULL))
-            {
-               menu_driver_pending_quit     = false;
-               return false;
-            }
-            if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_SHUTDOWN, NULL))
-            {
-               menu_driver_pending_shutdown = false;
-               if (!command_event(CMD_EVENT_QUIT, NULL))
-                  return false;
-               return true;
-            }
-            if (!menu_driver_ctx || !menu_driver_ctx->iterate)
-               return false;
-
-            if (menu_driver_ctx->iterate(menu_driver_data,
-                     menu_userdata, iterate->action) == -1)
-               return false;
-         }
-         break;
       case RARCH_MENU_CTL_ENVIRONMENT:
          {
             menu_ctx_environment_t *menu_environ =

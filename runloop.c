@@ -772,7 +772,7 @@ static enum runloop_state runloop_check_state(
 
          iter.action             = action;
 
-         if (!menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &iter))
+         if (!menu_driver_iterate(&iter))
             rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
 
          if (focused || !runloop_idle)
