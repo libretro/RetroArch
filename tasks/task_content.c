@@ -941,6 +941,7 @@ error:
    return false;
 }
 
+#ifdef HAVE_MENU
 static bool command_event_cmd_exec(const char *data,
       content_information_ctx_t *content_ctx,
       bool launched_from_cli,
@@ -975,6 +976,7 @@ static bool command_event_cmd_exec(const char *data,
 
    return true;
 }
+#endif
 
 static bool firmware_update_status(
       content_information_ctx_t *content_ctx)

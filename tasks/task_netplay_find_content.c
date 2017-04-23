@@ -58,6 +58,8 @@ static void netplay_crc_scan_callback(void *task_data,
       return;
 
    fflush(stdout);
+
+#ifdef HAVE_MENU
    if (!string_is_empty(state->core_path) && !string_is_empty(state->content_path) &&
        memcmp(state->content_path, "N/A", 3) != 0)
    {
@@ -68,7 +70,9 @@ static void netplay_crc_scan_callback(void *task_data,
             CORE_TYPE_PLAIN,
             NULL, NULL);
    }
-   else if (!string_is_empty(state->core_path) && !string_is_empty(state->content_path) &&
+   else
+#endif
+      if (!string_is_empty(state->core_path) && !string_is_empty(state->content_path) &&
       memcmp(state->content_path, "N/A", 3) == 0)
    {
       content_ctx_info_t content_info = {0};
