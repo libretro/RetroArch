@@ -1017,7 +1017,9 @@ void video_monitor_set_refresh_rate(float hz)
    runloop_msg_queue_push(msg, 1, 180, false);
    RARCH_LOG("%s\n", msg);
 
-   settings->video.refresh_rate = hz;
+   configuration_set_float(settings,
+         settings->video.refresh_rate,
+         hz);
 }
 
 /**

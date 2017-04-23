@@ -374,7 +374,9 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    }
 
    if (new_rate != 0)
-      settings->audio.out_rate = new_rate;
+   {
+      configuration_set_int(settings, settings->audio.out_rate, new_rate);
+   }
 
    if (!audio_driver_context_audio_data)
    {
@@ -930,14 +932,16 @@ bool audio_driver_has_callback(void)
 bool audio_driver_toggle_mute(void)
 {
    settings_t *settings = config_get_ptr();
+   bool new_mute_state  = !settings->audio.mute_enable;
    if (!audio_driver_context_audio_data)
       return false;
    if (!audio_driver_active)
       return false;
 
-   settings->audio.mute_enable = !settings->audio.mute_enable;
+   configuration_set_bool(settings,
+         settings->audio.mute_enable, new_mute_state);
 
-   if (settings->audio.mute_enable)
+   if (new_mute_state)
       command_event(CMD_EVENT_AUDIO_STOP, NULL);
    else if (!command_event(CMD_EVENT_AUDIO_START, NULL))
    {
