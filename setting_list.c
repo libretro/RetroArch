@@ -326,9 +326,8 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
                *setting->value.target.integer = min;
             if (setting->enforce_maxrange && *setting->value.target.integer > max)
             {
-               settings_t *settings = config_get_ptr();
-
 #ifdef HAVE_MENU
+               settings_t *settings = config_get_ptr();
                if (settings && settings->menu.navigation.wraparound.enable)
                   *setting->value.target.integer = min;
                else
@@ -345,9 +344,8 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
                *setting->value.target.unsigned_integer = min;
             if (setting->enforce_maxrange && *setting->value.target.unsigned_integer > max)
             {
-               settings_t *settings = config_get_ptr();
-
 #ifdef HAVE_MENU
+               settings_t *settings = config_get_ptr();
                if (settings && settings->menu.navigation.wraparound.enable)
                   *setting->value.target.unsigned_integer = min;
                else
@@ -364,9 +362,8 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
                *setting->value.target.fraction = min;
             if (setting->enforce_maxrange && *setting->value.target.fraction > max)
             {
-               settings_t *settings = config_get_ptr();
-
 #ifdef HAVE_MENU
+               settings_t *settings = config_get_ptr();
                if (settings && settings->menu.navigation.wraparound.enable)
                   *setting->value.target.fraction = min;
                else
@@ -449,9 +446,8 @@ static int setting_fraction_action_right_default(
    {
       if (*setting->value.target.fraction > max)
       {
-         settings_t *settings = config_get_ptr();
-
 #ifdef HAVE_MENU
+         settings_t *settings = config_get_ptr();
          if (settings && settings->menu.navigation.wraparound.enable)
             *setting->value.target.fraction = min;
          else
