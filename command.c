@@ -860,12 +860,10 @@ static void command_event_disk_control_set_eject(bool new_state, bool print_log)
 {
    char msg[128];
    bool error                                        = false;
-   rarch_system_info_t *info                         = NULL;
    const struct retro_disk_control_callback *control = NULL;
+   rarch_system_info_t *info                         = runloop_get_system_info();
 
    msg[0] = '\0';
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
    if (info)
       control = (const struct retro_disk_control_callback*)&info->disk_control_cb;
@@ -912,12 +910,10 @@ static void command_event_disk_control_set_index(unsigned idx)
    unsigned num_disks;
    char msg[128];
    bool error                                        = false;
-   rarch_system_info_t                      *info    = NULL;
    const struct retro_disk_control_callback *control = NULL;
+   rarch_system_info_t *info                         = runloop_get_system_info();
 
    msg[0] = '\0';
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
    if (info)
       control = (const struct retro_disk_control_callback*)&info->disk_control_cb;
@@ -973,11 +969,9 @@ static bool command_event_disk_control_append_image(const char *path)
    char msg[128];
    struct retro_game_info info                        = {0};
    const struct retro_disk_control_callback *control  = NULL;
-   rarch_system_info_t                       *sysinfo = NULL;
+   rarch_system_info_t *sysinfo                      = runloop_get_system_info();
 
    msg[0] = '\0';
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &sysinfo);
 
    if (sysinfo)
       control = (const struct retro_disk_control_callback*)
@@ -1122,9 +1116,7 @@ static void command_event_init_controllers(void)
 {
    unsigned i;
    settings_t      *settings = config_get_ptr();
-   rarch_system_info_t *info = NULL;
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
+   rarch_system_info_t *info = runloop_get_system_info();
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -2544,8 +2536,7 @@ bool command_event(enum event_command cmd, void *data)
          }
       case CMD_EVENT_DISK_EJECT_TOGGLE:
          {
-            rarch_system_info_t *info = NULL;
-            runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
+            rarch_system_info_t *info = runloop_get_system_info();
 
             if (info && info->disk_control_cb.get_num_images)
             {
@@ -2567,8 +2558,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_DISK_NEXT:
          {
-            rarch_system_info_t *info = NULL;
-            runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
+            rarch_system_info_t *info = runloop_get_system_info();
 
             if (info && info->disk_control_cb.get_num_images)
             {
@@ -2592,8 +2582,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_DISK_PREV:
          {
-            rarch_system_info_t *info = NULL;
-            runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
+            rarch_system_info_t *info = runloop_get_system_info();
 
             if (info && info->disk_control_cb.get_num_images)
             {

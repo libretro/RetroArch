@@ -2294,13 +2294,12 @@ bool config_load_override(void)
    config_file_t *new_conf                = NULL;
    const char *core_name                  = NULL;
    const char *game_name                  = NULL;
-   rarch_system_info_t *system            = NULL;
    bool should_append                     = false;
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+   rarch_system_info_t *system            = runloop_get_system_info();
 
    if (system)
       core_name = system->info.library_name;
+
    game_name = path_basename(path_get(RARCH_PATH_BASENAME));
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
@@ -2447,13 +2446,11 @@ bool config_load_remap(void)
    char remap_directory[PATH_MAX_LENGTH];    /* path to the directory containing retroarch.cfg (prefix)    */
    char core_path[PATH_MAX_LENGTH];          /* final path for core-specific configuration (prefix+suffix) */
    char game_path[PATH_MAX_LENGTH];          /* final path for game-specific configuration (prefix+suffix) */
-   config_file_t *new_conf                 = NULL;
-   const char *core_name                   = NULL;
-   const char *game_name                   = NULL;
-   settings_t *settings                    = config_get_ptr();
-   rarch_system_info_t *system             = NULL;
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+   config_file_t *new_conf                = NULL;
+   const char *core_name                  = NULL;
+   const char *game_name                  = NULL;
+   settings_t *settings                   = config_get_ptr();
+   rarch_system_info_t *system            = runloop_get_system_info();
 
    if (system)
       core_name = system->info.library_name;
@@ -2550,12 +2547,10 @@ bool config_load_shader_preset(void)
    char shader_directory[PATH_MAX_LENGTH];    /* path to the directory containing retroarch.cfg (prefix)    */
    char core_path[PATH_MAX_LENGTH];          /* final path for core-specific configuration (prefix+suffix) */
    char game_path[PATH_MAX_LENGTH];          /* final path for game-specific configuration (prefix+suffix) */
-   const char *core_name                   = NULL;
-   const char *game_name                   = NULL;
-   settings_t *settings                    = config_get_ptr();
-   rarch_system_info_t *system             = NULL;
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+   const char *core_name                  = NULL;
+   const char *game_name                  = NULL;
+   settings_t *settings                   = config_get_ptr();
+   rarch_system_info_t *system            = runloop_get_system_info();
 
    if (system)
       core_name = system->info.library_name;
@@ -3160,8 +3155,6 @@ bool config_save_overrides(int override_type)
    const char *game_name                       = NULL;
    config_file_t *conf                         = NULL;
    settings_t *settings                        = NULL;
-   settings_t *overrides                       = config_get_ptr();
-   rarch_system_info_t *system                 = NULL;
    struct config_bool_setting *bool_settings   = NULL;
    struct config_bool_setting *bool_overrides  = NULL;
    struct config_int_setting *int_settings     = NULL;
@@ -3172,8 +3165,8 @@ bool config_save_overrides(int override_type)
    struct config_array_setting *array_overrides= NULL;
    struct config_path_setting *path_settings   = NULL;
    struct config_path_setting *path_overrides  = NULL;
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+   settings_t *overrides                       = config_get_ptr();
+   rarch_system_info_t *system                 = runloop_get_system_info();
 
    if (system)
       core_name = system->info.library_name;

@@ -601,17 +601,15 @@ static void netplay_announce(void)
 {
    char buf [2048];
    char url [2048]               = "http://newlobby.libretro.com/add/";
-   rarch_system_info_t *system   = NULL;
-   settings_t *settings          = config_get_ptr();
+   char *username                = NULL;
+   char *corename                = NULL;
+   char *gamename                = NULL;
+   char *coreversion             = NULL;
    uint32_t *content_crc_ptr     = NULL;
-   char *username;
-   char *corename;
-   char *gamename;
-   char *coreversion;
+   settings_t *settings          = config_get_ptr();
+   rarch_system_info_t *system   = runloop_get_system_info();
 
    content_get_crc(&content_crc_ptr);
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    net_http_urlencode_full(&username, settings->username);
    net_http_urlencode_full(&corename, system->info.library_name);

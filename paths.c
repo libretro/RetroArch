@@ -65,14 +65,12 @@ void path_set_redirect(void)
    char new_savestate_dir[PATH_MAX_LENGTH];
    uint32_t library_name_hash                  = 0;
    bool check_library_name_hash                = false;
-   rarch_system_info_t      *info              = NULL;
    global_t                *global             = global_get_ptr();
    const char *old_savefile_dir                = dir_get(RARCH_DIR_SAVEFILE);
    const char *old_savestate_dir               = dir_get(RARCH_DIR_SAVESTATE);
+   rarch_system_info_t      *info              = runloop_get_system_info();
 
    new_savefile_dir[0] = new_savestate_dir[0]  = '\0';
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
    if (info && info->info.library_name &&
          !string_is_empty(info->info.library_name))
@@ -296,15 +294,10 @@ static bool path_init_subsystem(void)
 {
    unsigned i, j;
    const struct retro_subsystem_info *info = NULL;
-   rarch_system_info_t             *system = NULL;
    global_t                        *global = global_get_ptr();
+   rarch_system_info_t             *system = runloop_get_system_info();
 
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
-
-   if (!system)
-      return false;
-
-   if (path_is_empty(RARCH_PATH_SUBSYSTEM))
+   if (!system || path_is_empty(RARCH_PATH_SUBSYSTEM))
       return false;
 
    /* For subsystems, we know exactly which RAM types are supported. */

@@ -844,11 +844,10 @@ static bool task_load_content(content_ctx_info_t *content_info,
    {
       char tmp[PATH_MAX_LENGTH];
       struct retro_system_info *info = NULL;
-      rarch_system_info_t *sys_info  = NULL;
+      rarch_system_info_t *sys_info  = runloop_get_system_info();
 
       tmp[0] = '\0';
 
-      runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &sys_info);
       if (sys_info)
          info = &sys_info->info;
 
@@ -1611,12 +1610,10 @@ bool content_init(void)
 
    bool ret                                   = true;
    char *error_string                         = NULL;
-   rarch_system_info_t *sys_info              = NULL;
    settings_t *settings                       = config_get_ptr();
+   rarch_system_info_t *sys_info              = runloop_get_system_info();
 
    temporary_content                          = string_list_new();
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &sys_info);
 
    content_ctx.check_firmware_before_loading  = settings->check_firmware_before_loading;
    content_ctx.temporary_content              = temporary_content;

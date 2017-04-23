@@ -265,14 +265,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             *coreopts = runloop_core_options;
          }
          break;
-      case RUNLOOP_CTL_SYSTEM_INFO_GET:
-         {
-            rarch_system_info_t **system = (rarch_system_info_t**)data;
-            if (!system)
-               return false;
-            *system = &runloop_system;
-         }
-         break;
       case RUNLOOP_CTL_SYSTEM_INFO_FREE:
 
          /* No longer valid. */
@@ -1207,4 +1199,9 @@ end:
    frame_limit_last_time  = cpu_features_get_time_usec();
 
    return 0;
+}
+
+rarch_system_info_t *runloop_get_system_info(void)
+{
+   return &runloop_system;
 }

@@ -425,7 +425,7 @@ static void setting_get_string_representation_uint_libretro_device(void *data,
    unsigned index_offset;
    const struct retro_controller_description *desc = NULL;
    const char *name            = NULL;
-   rarch_system_info_t *system = NULL;
+   rarch_system_info_t *system = runloop_get_system_info();
    rarch_setting_t *setting    = (rarch_setting_t*)data;
    settings_t      *settings   = config_get_ptr();
 
@@ -434,8 +434,7 @@ static void setting_get_string_representation_uint_libretro_device(void *data,
 
    index_offset = setting->index_offset;
 
-   if (runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system)
-         && system)
+   if (system)
    {
       if (index_offset < system->ports.size)
          desc = libretro_find_controller_description(
@@ -1015,7 +1014,7 @@ static int setting_action_start_libretro_device_type(void *data)
    unsigned index_offset, current_device;
    unsigned devices[128], types = 0, port = 0;
    const struct retro_controller_info *desc = NULL;
-   rarch_system_info_t *system = NULL;
+   rarch_system_info_t *system = runloop_get_system_info();
    rarch_setting_t   *setting  = (rarch_setting_t*)data;
 
    if (setting_generic_action_start_default(setting) != 0)
@@ -1027,8 +1026,7 @@ static int setting_action_start_libretro_device_type(void *data)
    devices[types++] = RETRO_DEVICE_NONE;
    devices[types++] = RETRO_DEVICE_JOYPAD;
 
-   if (runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system) 
-         && system)
+   if (system)
    {
       /* Only push RETRO_DEVICE_ANALOG as default if we use an 
        * older core which doesn't use SET_CONTROLLER_INFO. */
@@ -1132,7 +1130,7 @@ static int setting_action_left_libretro_device_type(
    devices[types++] = RETRO_DEVICE_NONE;
    devices[types++] = RETRO_DEVICE_JOYPAD;
 
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+   system           = runloop_get_system_info();
 
    if (system)
    {
@@ -1190,7 +1188,7 @@ static int setting_action_right_libretro_device_type(
    const struct retro_controller_info *desc = NULL;
    rarch_setting_t *setting    = (rarch_setting_t*)data;
    settings_t      *settings   = config_get_ptr();
-   rarch_system_info_t *system = NULL;
+   rarch_system_info_t *system = runloop_get_system_info();
 
    if (!setting)
       return -1;
@@ -1200,8 +1198,7 @@ static int setting_action_right_libretro_device_type(
    devices[types++] = RETRO_DEVICE_NONE;
    devices[types++] = RETRO_DEVICE_JOYPAD;
 
-   if (runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system) 
-         && system)
+   if (system)
    {
       /* Only push RETRO_DEVICE_ANALOG as default if we use an 
        * older core which doesn't use SET_CONTROLLER_INFO. */
@@ -1674,8 +1671,8 @@ void general_write_handler(void *data)
          break;
       case MENU_ENUM_LABEL_VIDEO_ROTATION:
          {
-            rarch_system_info_t *system  = NULL;
-            runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+            rarch_system_info_t *system = runloop_get_system_info();
+
             if (system)
                video_driver_set_rotation(
                      (*setting->value.target.unsigned_integer +
@@ -1877,14 +1874,11 @@ static bool setting_append_list_input_player_options(
    rarch_setting_group_info_t group_info      = {0};
    rarch_setting_group_info_t subgroup_info   = {0};
    settings_t *settings                       = config_get_ptr();
-   rarch_system_info_t *system                = NULL;
-   const char *temp_value                     = NULL;
+   rarch_system_info_t *system                = runloop_get_system_info();
    const struct retro_keybind* const defaults =
       (user == 0) ? retro_keybinds_1 : retro_keybinds_rest;
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
-
-   temp_value =msg_hash_to_str((enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + user));
+   const char *temp_value                     = msg_hash_to_str
+      ((enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + user));
 
    snprintf(buffer[user],    sizeof(buffer[user]),
          "%s %u", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), user + 1);

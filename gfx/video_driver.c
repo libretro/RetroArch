@@ -838,7 +838,7 @@ static bool video_driver_init_internal(void)
       video_driver_get_viewport_info(custom_vp);
    }
 
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+   system              = runloop_get_system_info();
 
    video_driver_set_rotation(
             (settings->video.rotation + system->rotation) % 4);
