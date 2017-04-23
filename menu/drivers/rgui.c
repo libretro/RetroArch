@@ -540,7 +540,8 @@ static void rgui_render(void *data)
          RGUI_TERM_START_X(fb_width),
          title_buf, TITLE_COLOR(settings));
 
-   if (menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
+   if (settings->menu.core_enable && 
+         menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
       blit_line(
             RGUI_TERM_START_X(fb_width),
             (RGUI_TERM_HEIGHT(fb_width, fb_height) * FONT_HEIGHT_STRIDE) +

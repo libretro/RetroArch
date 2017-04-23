@@ -29,6 +29,7 @@
 #include "../../../input/input_keymaps.h"
 #include "../../../input/drivers/cocoa_input.h"
 
+#include "../../../configuration.h"
 #include "../../../runloop.h"
 
 #ifdef HAVE_MENU
@@ -643,8 +644,8 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 
 - (void)viewWillAppear:(BOOL)animated
 {
-   char title_msg[256];
    UIBarButtonItem *item = NULL;
+   settings_t *settings  = config_get_ptr();
     
    [self reloadData];
 
@@ -654,19 +655,28 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
    item = [[UIBarButtonItem alloc] initWithCustomView:self.osdmessage];
    [self setToolbarItems: [NSArray arrayWithObject:item]];
 
-   menu_entries_get_core_title(title_msg, sizeof(title_msg));
-   self.osdmessage.text = BOXSTRING(title_msg);
+   if (settings->menu.core_enable)
+   {
+      char title_msg[256];
+      menu_entries_get_core_title(title_msg, sizeof(title_msg));
+      self.osdmessage.text = BOXSTRING(title_msg);
+   }
 }
 
 - (void)willReloadData
 {
    size_t i, end;
-   char title[256], title_msg[256];
+   char title[256];
    RAMainMenu* __weak weakSelf = NULL;
    NSMutableArray *everything  = [NSMutableArray array];
+   settings_t *settings        = config_get_ptr();
 
-   menu_entries_get_core_title(title_msg, sizeof(title_msg));
-   self.osdmessage.text = BOXSTRING(title_msg);
+   if (settings->menu.core_enable)
+   {
+      char title_msg[256];
+      menu_entries_get_core_title(title_msg, sizeof(title_msg));
+      self.osdmessage.text = BOXSTRING(title_msg);
+   }
 
    menu_entries_get_title(title, sizeof(title));
    self.title = BOXSTRING(title);

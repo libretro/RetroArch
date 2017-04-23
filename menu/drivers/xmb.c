@@ -2583,6 +2583,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    char title_msg[255];
    char title_truncated[255];
    menu_display_frame_info_t menu_disp_info;
+   settings_t *settings                    = config_get_ptr();
    unsigned width                          = video_info->width;
    unsigned height                         = video_info->height;
    bool render_background                  = false;
@@ -2639,7 +2640,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          xmb->margins.title.top, 1, 1, TEXT_ALIGN_LEFT,
          width, height, xmb->font);
 
-   if (menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
+   if (settings->menu.core_enable &&
+         menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
       xmb_draw_text(menu_disp_info, xmb, title_msg, xmb->margins.title.left,
             height - xmb->margins.title.bottom, 1, 1, TEXT_ALIGN_LEFT,
             width, height, xmb->font);

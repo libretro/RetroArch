@@ -165,7 +165,9 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    {
       char str[PATH_MAX_LENGTH] = {0};
 
-      if (menu_entries_get_core_title(str, sizeof(str)) == 0)
+      if (
+            settings->menu.core_enable &&
+            menu_entries_get_core_title(str, sizeof(str)) == 0)
       {
          mbstowcs(strw_buffer, str, sizeof(strw_buffer) / sizeof(wchar_t));
          XuiTextElementSetText(m_menutitlebottom, strw_buffer);
@@ -563,7 +565,9 @@ static void xui_render(void *data)
 
    if (XuiHandleIsValid(m_menutitle))
    {
-      if (menu_entries_get_core_title(title, sizeof(title)) == 0)
+      if (
+            settings->menu.core_enable &&
+            menu_entries_get_core_title(title, sizeof(title)) == 0)
       {
          mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));
          XuiTextElementSetText(m_menutitlebottom, strw_buffer);

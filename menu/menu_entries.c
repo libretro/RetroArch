@@ -27,7 +27,6 @@
 #include "widgets/menu_list.h"
 
 #include "../core.h"
-#include "../configuration.h"
 #include "../runloop.h"
 #include "../version.h"
 
@@ -270,7 +269,6 @@ int menu_entries_get_core_title(char *s, size_t len)
 {
    struct retro_system_info    *system = NULL;
    rarch_system_info_t      *info = NULL;
-   settings_t *settings           = config_get_ptr();
    const char *core_name          = NULL;
    const char *core_version       = NULL;
 
@@ -281,9 +279,6 @@ int menu_entries_get_core_title(char *s, size_t len)
    core_version = system->library_version;
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
-
-   if (!settings || !settings->menu.core_enable)
-      return -1; 
 
    if (string_is_empty(core_name) && info)
       core_name = info->info.library_name;
