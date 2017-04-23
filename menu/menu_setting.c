@@ -1685,6 +1685,9 @@ void general_write_handler(void *data)
       case MENU_ENUM_LABEL_AUDIO_LATENCY:
          rarch_cmd = CMD_EVENT_AUDIO_REINIT;
          break;
+      case MENU_ENUM_LABEL_AUDIO_DEVICE:
+         rarch_cmd = CMD_EVENT_AUDIO_REINIT;
+         break;
       case MENU_ENUM_LABEL_PAL60_ENABLE:
          {
             global_t *global             = global_get_ptr();
