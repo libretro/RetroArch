@@ -851,12 +851,12 @@ static void wiiu_gfx_set_texture_enable(void* data, bool state, bool full_screen
 
 }
 
-static void wiiu_gfx_set_osd_msg(void* data, const char* msg,
-                             const void* params, void* font)
+static void wiiu_gfx_set_osd_msg(void* data,
+      video_frame_info_t *video_info,
+      const char* msg,
+      const void* params, void* font)
 {
 }
-
-
 
 static const video_poke_interface_t wiiu_poke_interface =
 {

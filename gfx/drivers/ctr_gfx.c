@@ -1122,16 +1122,15 @@ static void ctr_unload_texture(void *data, uintptr_t handle)
    free(texture);
 }
 
-static void ctr_set_osd_msg(void *data, const char *msg,
+static void ctr_set_osd_msg(void *data,
+      video_frame_info_t *video_info,
+      const char *msg,
       const void *params, void *font)
 {
-   video_frame_info_t video_info;
    ctr_video_t* ctr = (ctr_video_t*)data;
 
-   video_driver_build_info(&video_info);
-
    if (ctr && ctr->msg_rendering_enabled)
-      font_driver_render_msg(&video_info, font, msg, params);
+      font_driver_render_msg(video_info, font, msg, params);
 }
 
 static const video_poke_interface_t ctr_poke_interface = {

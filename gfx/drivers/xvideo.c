@@ -421,7 +421,6 @@ static void *xv_init(const video_info_t *video,
 {
    unsigned i;
    XWindowAttributes target;
-   video_frame_info_t video_info;
    char buf[128]                          = {0};
    char title[128]                        = {0};
    XSetWindowAttributes attributes        = {0};
@@ -537,8 +536,6 @@ static void *xv_init(const video_info_t *video,
    XSetWindowBackground(g_x11_dpy, g_x11_win, 0);
 
    XMapWindow(g_x11_dpy, g_x11_win);
-
-   video_driver_build_info(&video_info);
 
    video_driver_get_window_title(title, sizeof(title));
 

@@ -295,12 +295,12 @@ static void caca_set_texture_frame(void *data,
       memcpy(caca_menu_frame, frame, pitch * height);
 }
 
-static void caca_set_osd_msg(void *data, const char *msg,
+static void caca_set_osd_msg(void *data,
+      video_frame_info_t *video_info,
+      const char *msg,
       const void *params, void *font)
 {
-   video_frame_info_t video_info;
-   video_driver_build_info(&video_info);
-   font_driver_render_msg(&video_info, font, msg, params);
+   font_driver_render_msg(video_info, font, msg, params);
 }
 
 static const video_poke_interface_t caca_poke_interface = {

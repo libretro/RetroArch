@@ -707,7 +707,9 @@ static void sdl2_poke_texture_enable(void *data, bool enable, bool full_screen)
    vid->menu.active = enable;
 }
 
-static void sdl2_poke_set_osd_msg(void *data, const char *msg,
+static void sdl2_poke_set_osd_msg(void *data, 
+      video_frame_info_t *video_info,
+      const char *msg,
       const void *params, void *font)
 {
    sdl2_video_t *vid = (sdl2_video_t*)data;

@@ -912,8 +912,10 @@ bool video_driver_get_video_output_size(unsigned *width, unsigned *height)
 
 void video_driver_set_osd_msg(const char *msg, const void *data, void *font)
 {
+   video_frame_info_t video_info;
+   video_driver_build_info(&video_info);
    if (video_driver_poke && video_driver_poke->set_osd_msg)
-      video_driver_poke->set_osd_msg(video_driver_data, msg, data, font);
+      video_driver_poke->set_osd_msg(video_driver_data, &video_info, msg, data, font);
 }
 
 void video_driver_set_texture_enable(bool enable, bool fullscreen)

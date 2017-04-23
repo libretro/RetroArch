@@ -748,12 +748,12 @@ static void vita_unload_texture(void *data, uintptr_t handle)
    //free(texture);
 }
 
-static void vita_set_osd_msg(void *data, const char *msg,
+static void vita_set_osd_msg(void *data,
+      video_frame_info_t *video_info,
+      const char *msg,
       const void *params, void *font)
 {
-   video_frame_info_t video_info;
-   video_driver_build_info(&video_info);
-   font_driver_render_msg(&video_info, font, msg, params);
+   font_driver_render_msg(video_info, font, msg, params);
 }
 
 static bool vita_get_current_sw_framebuffer(void *data,

@@ -193,7 +193,8 @@ typedef struct video_poke_interface
 #endif
    /* Enable or disable rendering. */
    void (*set_texture_enable)(void *data, bool enable, bool full_screen);
-   void (*set_osd_msg)(void *data, const char *msg,
+   void (*set_osd_msg)(void *data, video_frame_info_t *video_info,
+         const char *msg,
          const void *params, void *font);
 
    void (*show_mouse)(void *data, bool state);

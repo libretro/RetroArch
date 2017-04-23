@@ -532,10 +532,15 @@ static bool video_thread_handle_packet(
          break;
 
       case CMD_POKE_SET_OSD_MSG:
-         if (thr->poke && thr->poke->set_osd_msg)
-            thr->poke->set_osd_msg(thr->driver_data,
-                  pkt.data.osd_message.msg,
-                  &pkt.data.osd_message.params, NULL);
+         {
+            video_frame_info_t video_info;
+            video_driver_build_info(&video_info);
+            if (thr->poke && thr->poke->set_osd_msg)
+               thr->poke->set_osd_msg(thr->driver_data,
+                     &video_info,
+                     pkt.data.osd_message.msg,
+                     &pkt.data.osd_message.params, NULL);
+         }
          video_thread_reply(thr, &pkt);
          break;
 
@@ -1205,7 +1210,9 @@ static void thread_set_texture_enable(void *data, bool state, bool full_screen)
    slock_unlock(thr->frame.lock);
 }
 
-static void thread_set_osd_msg(void *data, const char *msg,
+static void thread_set_osd_msg(void *data,
+      video_frame_info_t *video_info,
+      const char *msg,
       const void *params, void *font)
 {
    thread_video_t *thr = (thread_video_t*)data;
@@ -1216,7 +1223,7 @@ static void thread_set_osd_msg(void *data, const char *msg,
    /* TODO : find a way to determine if the calling
     * thread is the driver thread or not. */
    if (thr->poke && thr->poke->set_osd_msg)
-      thr->poke->set_osd_msg(thr->driver_data, msg, params, font);
+      thr->poke->set_osd_msg(thr->driver_data, video_info, msg, params, font);
 }
 #endif
 

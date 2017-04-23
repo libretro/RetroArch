@@ -2227,12 +2227,12 @@ static void vulkan_set_texture_enable(void *data, bool state, bool full_screen)
    vk->menu.full_screen = full_screen;
 }
 
-static void vulkan_set_osd_msg(void *data, const char *msg,
+static void vulkan_set_osd_msg(void *data,
+      video_frame_info_t *video_info,
+      const char *msg,
       const void *params, void *font)
 {
-   video_frame_info_t video_info;
-   video_driver_build_info(&video_info);
-   font_driver_render_msg(&video_info, font, msg, params);
+   font_driver_render_msg(video_info, font, msg, params);
 }
 #endif
 
