@@ -85,7 +85,8 @@ void playlist_delete_index(playlist_t *playlist,
    memmove(playlist->entries + idx, playlist->entries + idx + 1,
          (playlist->size - idx) * sizeof(struct playlist_entry));
 
-   playlist->size = playlist->size - 1;
+   playlist->size     = playlist->size - 1;
+   playlist->modified = true;
 
    playlist_write_file(playlist);
 }
@@ -368,6 +369,7 @@ void playlist_write_file(playlist_t *playlist)
             playlist->entries[i].db_name ? playlist->entries[i].db_name : ""
             );
 
+   playlist->modified = false;
    fclose(file);
 }
 
