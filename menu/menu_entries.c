@@ -68,7 +68,7 @@ static bool menu_entries_clear(file_list_t *list)
    if (!list)
       return false;
 
-   menu_driver_ctl(RARCH_MENU_CTL_LIST_CLEAR, list);
+   menu_driver_list_clear(list);
 
    for (i = 0; i < list->size; i++)
       file_list_free_actiondata(list, i);

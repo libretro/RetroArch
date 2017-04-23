@@ -436,6 +436,16 @@ bool menu_driver_iterate(menu_ctx_iterate_t *iterate)
    return true;
 }
 
+bool menu_driver_list_clear(void *data)
+{
+   file_list_t *list = (file_list_t*)data;
+   if (!list)
+      return false;
+   if (menu_driver_ctx->list_clear)
+      menu_driver_ctx->list_clear(list);
+   return true;
+}
+
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
    switch (state)
@@ -777,15 +787,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                   return true;
          }
          return false;
-      case RARCH_MENU_CTL_LIST_CLEAR:
-         {
-            file_list_t *list = (file_list_t*)data;
-            if (!list)
-               return false;
-            if (menu_driver_ctx->list_clear)
-               menu_driver_ctx->list_clear(list);
-         }
-         break;
       case RARCH_MENU_CTL_TOGGLE:
          {
             bool *on = (bool*)data;

@@ -120,7 +120,6 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_FIND_DRIVER,
    RARCH_MENU_CTL_LOAD_IMAGE,
    RARCH_MENU_CTL_LIST_FREE,
-   RARCH_MENU_CTL_LIST_CLEAR,
    RARCH_MENU_CTL_LIST_SET_SELECTION,
    RARCH_MENU_CTL_LIST_GET_SELECTION,
    RARCH_MENU_CTL_LIST_GET_SIZE,
@@ -399,6 +398,8 @@ bool menu_driver_is_texture_set(void);
 bool menu_driver_is_alive(void);
 
 bool menu_driver_iterate(menu_ctx_iterate_t *iterate);
+
+bool menu_driver_list_clear(void *data);
 
 extern menu_ctx_driver_t menu_ctx_xui;
 extern menu_ctx_driver_t menu_ctx_rgui;
