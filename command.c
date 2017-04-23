@@ -1096,7 +1096,7 @@ static void command_event_set_volume(float gain)
    float new_volume          = settings->audio.volume + gain;
 
    new_volume                = MAX(new_volume, -80.0f);
-   new_volume                = MIN(new_volume, -80.0f);
+   new_volume                = MIN(new_volume, 12.0f);
 
    configuration_set_float(settings, settings->audio.volume, new_volume);
 
