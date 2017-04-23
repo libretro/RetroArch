@@ -162,7 +162,9 @@ static void bundle_decompressed(void *task_data,
 
    settings->bundle_assets_extract_last_version =
       settings->bundle_assets_extract_version_current;
-   settings->bundle_finished = true;
+
+   configuration_set_bool(settings, settings->bundle_finished, true);
+
    command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
 }
 #endif
@@ -185,7 +187,10 @@ static bool menu_init(menu_handle_t *menu_data)
    if (settings->menu_show_start_screen)
    {
       menu_dialog_push_pending(true, MENU_DIALOG_WELCOME);
-      settings->menu_show_start_screen   = false;
+
+      configuration_set_bool(settings,
+            settings->menu_show_start_screen, false);
+
       if (settings->config_save_on_exit)
          command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
    }

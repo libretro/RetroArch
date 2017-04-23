@@ -497,6 +497,10 @@ typedef struct settings
 
 } settings_t;
 
+#define configuration_set_bool(settings, var, newvar) \
+   settings->modified = true; \
+   var = newvar
+
 #define configuration_set_int(settings, var, newvar) \
    settings->modified = true; \
    var = newvar
