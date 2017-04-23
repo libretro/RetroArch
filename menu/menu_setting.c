@@ -944,6 +944,7 @@ static int setting_action_start_bind_device(void *data)
 
    index_offset = setting->index_offset;
 
+   settings->modified                       = true;
    settings->input.joypad_map[index_offset] = index_offset;
    return 0;
 }
@@ -1092,6 +1093,7 @@ static int setting_action_left_analog_dpad_mode(void *data, bool wraparound)
 
    port = setting->index_offset;
 
+   settings->modified                     = true;
    settings->input.analog_dpad_mode[port] =
       (settings->input.analog_dpad_mode
        [port] + ANALOG_DPAD_LAST - 1) % ANALOG_DPAD_LAST;
@@ -1110,6 +1112,7 @@ static int setting_action_right_analog_dpad_mode(void *data, bool wraparound)
 
    port = setting->index_offset;
 
+   settings->modified                     = true;
    settings->input.analog_dpad_mode[port] =
       (settings->input.analog_dpad_mode[port] + 1)
       % ANALOG_DPAD_LAST;
@@ -1496,11 +1499,13 @@ void general_read_handler(void *data)
             *setting->value.target.fraction = settings->audio.rate_control_delta;
             if (*setting->value.target.fraction < 0.0005)
             {
+               settings->modified                     = true;
                settings->audio.rate_control       = false;
                settings->audio.rate_control_delta = 0.0;
             }
             else
             {
+               settings->modified                     = true;
                settings->audio.rate_control       = true;
                settings->audio.rate_control_delta = *setting->value.target.fraction;
             }
@@ -1608,17 +1613,20 @@ void general_write_handler(void *data)
          }
          break;
       case MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW:
+         settings->modified              = true;
          settings->audio.max_timing_skew = *setting->value.target.fraction;
          break;
       case MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA:
          if (*setting->value.target.fraction < 0.0005)
          {
-            settings->audio.rate_control = false;
+            settings->modified                 = true;
+            settings->audio.rate_control       = false;
             settings->audio.rate_control_delta = 0.0;
          }
          else
          {
-            settings->audio.rate_control = true;
+            settings->modified                 = true;
+            settings->audio.rate_control       = true;
             settings->audio.rate_control_delta = *setting->value.target.fraction;
          }
          break;
@@ -1629,24 +1637,30 @@ void general_write_handler(void *data)
          rarch_cmd = CMD_EVENT_VIDEO_SET_BLOCKING_STATE;
          break;
       case MENU_ENUM_LABEL_VIDEO_SCALE:
+         settings->modified    = true;
          settings->video.scale = roundf(*setting->value.target.fraction);
 
          if (!settings->video.fullscreen)
             rarch_cmd = CMD_EVENT_REINIT;
          break;
       case MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX:
+         settings->modified            = true;
          settings->input.joypad_map[0] = *setting->value.target.integer;
          break;
       case MENU_ENUM_LABEL_INPUT_PLAYER2_JOYPAD_INDEX:
+         settings->modified            = true;
          settings->input.joypad_map[1] = *setting->value.target.integer;
          break;
       case MENU_ENUM_LABEL_INPUT_PLAYER3_JOYPAD_INDEX:
+         settings->modified            = true;
          settings->input.joypad_map[2] = *setting->value.target.integer;
          break;
       case MENU_ENUM_LABEL_INPUT_PLAYER4_JOYPAD_INDEX:
+         settings->modified            = true;
          settings->input.joypad_map[3] = *setting->value.target.integer;
          break;
       case MENU_ENUM_LABEL_INPUT_PLAYER5_JOYPAD_INDEX:
+         settings->modified            = true;
          settings->input.joypad_map[4] = *setting->value.target.integer;
          break;
       case MENU_ENUM_LABEL_LOG_VERBOSITY:
