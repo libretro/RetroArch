@@ -408,9 +408,6 @@ static void rgui_render(void *data)
 
    msg[0] = title[0] = title_buf[0] = title_msg[0] = '\0';
 
-   if (!rgui)
-      return;
-
    if (!rgui->force_redraw)
    {
       msg_force = menu_display_get_msg_force();
