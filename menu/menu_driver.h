@@ -100,12 +100,10 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_SET_PREVENT_POPULATE,
    RARCH_MENU_CTL_UNSET_PREVENT_POPULATE,
    RARCH_MENU_CTL_IS_PREVENT_POPULATE,
-   RARCH_MENU_CTL_SET_TEXTURE,
    RARCH_MENU_CTL_IS_TOGGLE,
    RARCH_MENU_CTL_SET_TOGGLE,
    RARCH_MENU_CTL_UNSET_TOGGLE,
    RARCH_MENU_CTL_DESTROY,
-   RARCH_MENU_CTL_IS_SET_TEXTURE,
    RARCH_MENU_CTL_SET_OWN_DRIVER,
    RARCH_MENU_CTL_UNSET_OWN_DRIVER,
    RARCH_MENU_CTL_OWNS_DRIVER,
@@ -399,6 +397,8 @@ bool menu_driver_is_binding_state(void);
 void menu_driver_set_binding_state(bool on);
 
 void menu_driver_frame(video_frame_info_t *video_info);
+
+bool menu_driver_is_texture_set(void);
 
 bool menu_driver_is_alive(void);
 

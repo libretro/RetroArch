@@ -47,9 +47,9 @@ static int menu_event_pointer(unsigned *action)
    unsigned fb_width, fb_height;
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
    menu_input_t *menu_input                     = menu_input_get_ptr();
-   int pointer_device                           =
-      menu_driver_ctl(RARCH_MENU_CTL_IS_SET_TEXTURE, NULL) ?
-        RETRO_DEVICE_POINTER : RARCH_DEVICE_POINTER_SCREEN;
+   int pointer_device                           = menu_driver_is_texture_set()
+      ?
+      RETRO_DEVICE_POINTER : RARCH_DEVICE_POINTER_SCREEN;
 
    menu_display_get_fb_size(&fb_width, &fb_height,
          &fb_pitch);

@@ -372,7 +372,8 @@ bool menu_driver_render(bool is_idle)
    if (menu_driver_alive && !is_idle)
       menu_display_libretro();
 
-   menu_driver_ctl(RARCH_MENU_CTL_SET_TEXTURE, NULL);
+   if (menu_driver_ctx->set_texture)
+      menu_driver_ctx->set_texture();
 
    menu_driver_data->state               = 0;
 
@@ -382,6 +383,13 @@ bool menu_driver_render(bool is_idle)
 bool menu_driver_is_alive(void)
 {
    return menu_driver_alive;
+}
+
+bool menu_driver_is_texture_set(void)
+{
+   if (!menu_driver_ctx)
+      return false;
+   return menu_driver_ctx->set_texture;
 }
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
@@ -521,14 +529,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
       case RARCH_MENU_CTL_UNSET_OWN_DRIVER:
          menu_driver_data_own = false;
          break;
-      case RARCH_MENU_CTL_SET_TEXTURE:
-         if (menu_driver_ctx->set_texture)
-            menu_driver_ctx->set_texture();
-         break;
-      case RARCH_MENU_CTL_IS_SET_TEXTURE:
-         if (!menu_driver_ctx)
-            return false;
-         return menu_driver_ctx->set_texture;
       case RARCH_MENU_CTL_OWNS_DRIVER:
          return menu_driver_data_own;
       case RARCH_MENU_CTL_DEINIT:
