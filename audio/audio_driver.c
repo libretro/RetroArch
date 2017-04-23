@@ -951,7 +951,7 @@ bool audio_driver_toggle_mute(void)
    return true;
 }
 
-static bool audio_driver_alive(void)
+static INLINE bool audio_driver_alive(void)
 {
    if (     current_audio 
          && current_audio->alive 
