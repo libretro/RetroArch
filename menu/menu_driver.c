@@ -446,6 +446,18 @@ bool menu_driver_list_clear(void *data)
    return true;
 }
 
+void menu_driver_increment_navigation(void)
+{
+   if (menu_driver_ctx->navigation_increment)
+      menu_driver_ctx->navigation_increment(menu_userdata);
+}
+
+void menu_driver_decrement_navigation(void)
+{
+   if (menu_driver_ctx->navigation_decrement)
+      menu_driver_ctx->navigation_decrement(menu_userdata);
+}
+
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
    switch (state)
@@ -654,14 +666,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT:
          menu_driver_load_no_content = false;
-         break;
-      case RARCH_MENU_CTL_NAVIGATION_INCREMENT:
-         if (menu_driver_ctx->navigation_increment)
-            menu_driver_ctx->navigation_increment(menu_userdata);
-         break;
-      case RARCH_MENU_CTL_NAVIGATION_DECREMENT:
-         if (menu_driver_ctx->navigation_decrement)
-            menu_driver_ctx->navigation_decrement(menu_userdata);
          break;
       case RARCH_MENU_CTL_NAVIGATION_SET:
          {

@@ -82,8 +82,6 @@ enum rarch_menu_ctl_state
 {
    RARCH_MENU_CTL_NONE = 0,
    RARCH_MENU_CTL_REFRESH,
-   RARCH_MENU_CTL_NAVIGATION_INCREMENT,
-   RARCH_MENU_CTL_NAVIGATION_DECREMENT,
    RARCH_MENU_CTL_NAVIGATION_SET,
    RARCH_MENU_CTL_NAVIGATION_CLEAR,
    RARCH_MENU_CTL_NAVIGATION_SET_LAST,
@@ -400,6 +398,10 @@ bool menu_driver_is_alive(void);
 bool menu_driver_iterate(menu_ctx_iterate_t *iterate);
 
 bool menu_driver_list_clear(void *data);
+
+void menu_driver_increment_navigation(void);
+
+void menu_driver_decrement_navigation(void);
 
 extern menu_ctx_driver_t menu_ctx_xui;
 extern menu_ctx_driver_t menu_ctx_rgui;
