@@ -6,8 +6,10 @@
 - LOCALIZATION: Update Japanese translation
 - LOCALIZATION/GUI: Korean font should display properly now with XMB/MaterialUI's
 default font
-- OSX/MACOS: Fix serious memory leak
+- OSX/MACOS: Fixes serious memory leak
 - WINDOWS: Added WASAPI audio driver for low-latency audio. Both shared and exclusive mode.
+- MISC: Various frontend optimizations.
+- VIDEO: Fix threaded video regression; tickering of menu entries would no longer work.
 
 # 1.5.0
 - MOBILE: Single-tap for menu entry selection
