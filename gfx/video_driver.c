@@ -2064,13 +2064,8 @@ void video_driver_frame(const void *data, unsigned width,
 
    video_driver_build_info(&video_info);
 
-   video_driver_threaded_lock();
-   video_info.frame_count = video_driver_frame_count;
-   video_driver_frame_count++;
-   video_driver_threaded_unlock();
-   
    /* Get the amount of frames per seconds. */
-   if (video_info.frame_count)
+   if (video_driver_frame_count)
    {
       unsigned write_index                         = 
          video_driver_frame_time_count++ & 
@@ -2078,7 +2073,7 @@ void video_driver_frame(const void *data, unsigned width,
       video_driver_frame_time_samples[write_index] = new_time - fps_time;
       fps_time                                     = new_time;
 
-      if ((video_info.frame_count % FPS_UPDATE_INTERVAL) == 0)
+      if ((video_driver_frame_count % FPS_UPDATE_INTERVAL) == 0)
       {
          char frames_text[64];
 
@@ -2107,7 +2102,7 @@ void video_driver_frame(const void *data, unsigned width,
          snprintf(frames_text,
                sizeof(frames_text),
                STRING_REP_UINT64,
-               (unsigned long long)video_info.frame_count);
+               (unsigned long long)video_driver_frame_count);
 
          strlcat(video_driver_window_title,
                frames_text,
@@ -2123,7 +2118,7 @@ void video_driver_frame(const void *data, unsigned width,
                "FPS: %6.1f || %s: " STRING_REP_UINT64,
                last_fps,
                msg_hash_to_str(MSG_FRAMES),
-               (unsigned long long)video_info.frame_count);
+               (unsigned long long)video_driver_frame_count);
    }
    else
    {
@@ -2175,9 +2170,11 @@ void video_driver_frame(const void *data, unsigned width,
 
    if (!current_video || !current_video->frame(
             video_driver_data, data, width, height,
-            video_info.frame_count,
+            video_driver_frame_count,
             (unsigned)pitch, video_driver_msg, &video_info))
       video_driver_active = false;
+
+   video_driver_frame_count++;
 
    if (video_info.fps_show)
       runloop_msg_queue_push(video_info.fps_text, 1, 1, false);
@@ -2267,7 +2264,6 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->font_msg_color_g      = settings->video.msg_color_g;
    video_info->font_msg_color_b      = settings->video.msg_color_b;
 
-   video_info->frame_count           = 0;
    video_info->fps_text[0]           = '\0';
 
    video_info->width                 = video_driver_width;

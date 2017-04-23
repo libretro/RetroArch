@@ -128,7 +128,6 @@ typedef struct video_frame_info
    unsigned monitor_index;
    bool font_enable;
    char fps_text[128];
-   uint64_t frame_count;
 
    unsigned width;
    unsigned height;
