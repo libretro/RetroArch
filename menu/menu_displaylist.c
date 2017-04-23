@@ -4286,8 +4286,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          return true;
       case DISPLAYLIST_MAIN_MENU:
          {
-            rarch_system_info_t *system    = runloop_get_system_info();
-
             if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
                menu_displaylist_parse_settings_enum(menu, info,
                      MENU_ENUM_LABEL_CONTENT_SETTINGS,
