@@ -53,7 +53,6 @@
 #include "../driver.h"
 #include "../retroarch.h"
 #include "../runloop.h"
-#include "../performance_counters.h"
 #include "../list_special.h"
 #include "../core.h"
 #include "../command.h"
@@ -1093,20 +1092,14 @@ static bool video_driver_frame_filter(
       unsigned *output_width, unsigned *output_height,
       unsigned *output_pitch)
 {
-   static struct retro_perf_counter softfilter_process = {0};
-   
-   performance_counter_init(softfilter_process, "softfilter_process");
-
    rarch_softfilter_get_output_size(video_driver_state_filter,
          output_width, output_height, width, height);
 
    *output_pitch = (*output_width) * video_driver_state_out_bpp;
 
-   performance_counter_start_plus(video_info->is_perfcnt_enable, softfilter_process);
    rarch_softfilter_process(video_driver_state_filter,
          video_driver_state_buffer, *output_pitch,
          data, width, height, pitch);
-   performance_counter_stop_plus(video_info->is_perfcnt_enable, softfilter_process);
 
    if (video_info->post_filter_record && recording_data)
       recording_dump_frame(video_driver_state_buffer,
