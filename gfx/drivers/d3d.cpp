@@ -982,12 +982,12 @@ static bool d3d_construct(d3d_video_t *d3d,
 {
    gfx_ctx_input_t inp;
    unsigned full_x, full_y;
-   settings_t    *settings     = config_get_ptr();
+   settings_t    *settings   = config_get_ptr();
 
-   d3d->should_resize = false;
+   d3d->should_resize        = false;
 
 #if defined(HAVE_MENU)
-   d3d->menu                = new overlay_t();
+   d3d->menu                 = (overlay_t*)calloc(1, sizeof(*d3d->menu));
 
    if (!d3d->menu)
       return false;
@@ -1224,7 +1224,8 @@ static void d3d_free(void *data)
 #ifdef HAVE_MENU
    d3d_free_overlay(d3d, d3d->menu);
    if (d3d->menu)
-      delete d3d->menu;
+      free(d3d->menu);
+   d3d->menu = NULL;
 #endif
 #endif
 
