@@ -1499,14 +1499,12 @@ void general_read_handler(void *data)
             *setting->value.target.fraction = settings->audio.rate_control_delta;
             if (*setting->value.target.fraction < 0.0005)
             {
-               settings->modified                     = true;
-               settings->audio.rate_control       = false;
+               configuration_set_bool(settings, settings->audio.rate_control, false);
                settings->audio.rate_control_delta = 0.0;
             }
             else
             {
-               settings->modified                     = true;
-               settings->audio.rate_control       = true;
+               configuration_set_bool(settings, settings->audio.rate_control, true);
                settings->audio.rate_control_delta = *setting->value.target.fraction;
             }
             break;
@@ -1619,14 +1617,12 @@ void general_write_handler(void *data)
       case MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA:
          if (*setting->value.target.fraction < 0.0005)
          {
-            settings->modified                 = true;
-            settings->audio.rate_control       = false;
+            configuration_set_bool(settings, settings->audio.rate_control, false);
             settings->audio.rate_control_delta = 0.0;
          }
          else
          {
-            settings->modified                 = true;
-            settings->audio.rate_control       = true;
+            configuration_set_bool(settings, settings->audio.rate_control, true);
             settings->audio.rate_control_delta = *setting->value.target.fraction;
          }
          break;
