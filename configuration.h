@@ -42,6 +42,8 @@ RETRO_BEGIN_DECLS
 
 typedef struct settings
 {
+   bool modified;
+
    video_viewport_t video_viewport_custom;
 
    char playlist_names[PATH_MAX_LENGTH];
@@ -494,6 +496,10 @@ typedef struct settings
 #endif
 
 } settings_t;
+
+#define configuration_set_int(settings, var, newvar) \
+   settings->modified = true; \
+   var = newvar
 
 /**
  * config_get_default_camera:

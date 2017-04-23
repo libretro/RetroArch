@@ -940,10 +940,11 @@ static enum runloop_state runloop_check_state(
    if (runloop_cmd_triggered(trigger_input, RARCH_STATE_SLOT_PLUS))
    {
       char msg[128];
+      int new_state_slot = settings->state_slot + 1;
 
       msg[0] = '\0';
 
-      settings->state_slot++;
+      configuration_set_int(settings, settings->state_slot, new_state_slot);
 
       snprintf(msg, sizeof(msg), "%s: %d",
             msg_hash_to_str(MSG_STATE_SLOT),
@@ -956,11 +957,14 @@ static enum runloop_state runloop_check_state(
    else if (runloop_cmd_triggered(trigger_input, RARCH_STATE_SLOT_MINUS))
    {
       char msg[128];
+      int new_state_slot = settings->state_slot - 1;
 
       msg[0] = '\0';
 
       if (settings->state_slot > 0)
-         settings->state_slot--;
+      {
+         configuration_set_int(settings, settings->state_slot, new_state_slot);
+      }
 
       snprintf(msg, sizeof(msg), "%s: %d",
             msg_hash_to_str(MSG_STATE_SLOT),
