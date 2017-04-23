@@ -554,6 +554,8 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
       }
    }
 
+   src_data.data_out = audio_driver_output_samples_buf;
+
    if (audio_driver_control)
    {
       /* Readjust the audio input rate. */
@@ -582,27 +584,24 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
 #endif
    }
 
-   src_data.data_out = audio_driver_output_samples_buf;
-   src_data.ratio    = audio_source_ratio_current;
+   src_data.ratio = audio_source_ratio_current;
 
    if (is_slowmotion)
       src_data.ratio *= settings->slowmotion_ratio;
 
    audio_driver_resampler->process(audio_driver_resampler_data, &src_data);
 
+   output_data   = audio_driver_output_samples_buf;
    output_frames = (unsigned)src_data.output_frames;
 
    if (audio_driver_use_float)
-   {
-      output_data    = audio_driver_output_samples_buf;
       output_frames *= sizeof(float);
-   }
    else
    {
       convert_float_to_s16(audio_driver_output_samples_conv_buf,
             (const float*)output_data, output_frames * 2);
 
-      output_data    = audio_driver_output_samples_conv_buf;
+      output_data = audio_driver_output_samples_conv_buf;
       output_frames *= sizeof(int16_t);
    }
 
