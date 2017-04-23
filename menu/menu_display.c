@@ -458,7 +458,7 @@ bool menu_display_init_first_driver(void)
                menu_display_ctx_drivers[i]->type))
          continue;
 
-      RARCH_LOG("Found menu display driver: \"%s\".\n",
+      RARCH_LOG("[Menu]: Found menu display driver: \"%s\".\n",
             menu_display_ctx_drivers[i]->ident);
       menu_disp = menu_display_ctx_drivers[i];
       return true;

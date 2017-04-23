@@ -66,7 +66,7 @@ int font_renderer_create_default(const void **data, void **handle,
       *handle = font_backends[i]->init(path, font_size);
       if (*handle)
       {
-         RARCH_LOG("Using font rendering backend: %s.\n",
+         RARCH_LOG("[Font]: Using font rendering backend: %s.\n",
                font_backends[i]->ident);
          *drv = font_backends[i];
          return 1;
