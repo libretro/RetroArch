@@ -621,7 +621,7 @@ static void gl_init_textures_reference(gl_t *gl, unsigned i,
 #endif
 }
 
-static void gl_init_textures(gl_t *gl, video_info_t *video)
+static void gl_init_textures(gl_t *gl, const video_info_t *video)
 {
    unsigned i;
    GLenum internal_fmt, texture_type = 0, texture_fmt = 0;
@@ -1820,7 +1820,7 @@ static void gl_begin_debug(gl_t *gl)
 #endif
 
 
-static void *gl_init(video_info_t *video, const input_driver_t **input, void **input_data)
+static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
    gfx_ctx_mode_t mode;
    gfx_ctx_input_t inp;
@@ -1832,6 +1832,8 @@ static void *gl_init(video_info_t *video, const input_driver_t **input, void **i
    video_shader_ctx_wrap_t wrap_info    = {0};
    unsigned win_width                   = 0;
    unsigned win_height                  = 0;
+   unsigned temp_width                  = 0;
+   unsigned temp_height                 = 0;
    bool force_smooth                    = false;
    const char *vendor                   = NULL;
    const char *renderer                 = NULL;
@@ -1905,39 +1907,46 @@ static void *gl_init(video_info_t *video, const input_driver_t **input, void **i
    gl_begin_debug(gl);
 #endif
 
-   gl->vsync          = video->vsync;
-   gl->fullscreen     = video->fullscreen;
+   gl->vsync      = video->vsync;
+   gl->fullscreen = video->fullscreen;
 
-   mode.width         = 0;
-   mode.height        = 0;
+   mode.width     = 0;
+   mode.height    = 0;
 
    video_context_driver_get_video_size(&mode);
 
-   video->real_width  = mode.width;
-   video->real_height = mode.height;
-   mode.width         = 0;
-   mode.height        = 0;
+   temp_width     = mode.width;
+   temp_height    = mode.height;
+   mode.width     = 0;
+   mode.height    = 0;
 
-   hwr                = video_driver_get_hw_context();
+   /* Get real known video size, which might have been altered by context. */
 
-   gl->vertex_ptr     = hwr->bottom_left_origin
+   if (temp_width != 0 && temp_height != 0)
+      video_driver_set_size(&temp_width, &temp_height);
+
+   video_driver_get_size(&temp_width, &temp_height);
+
+   RARCH_LOG("[GL]: Using resolution %ux%u\n", temp_width, temp_height);
+
+   hwr = video_driver_get_hw_context();
+
+   gl->vertex_ptr    = hwr->bottom_left_origin
       ? vertexes : vertexes_flipped;
 
    /* Better pipelining with GPU due to synchronous glSubTexImage.
     * Multiple async PBOs would be an alternative,
     * but still need multiple textures with PREV.
     */
-   gl->textures       = 4;
-
+   gl->textures      = 4;
 #ifdef HAVE_FBO
-   gl->hw_render_use  = hwr->context_type != RETRO_HW_CONTEXT_NONE;
+   gl->hw_render_use = hwr->context_type != RETRO_HW_CONTEXT_NONE;
 
    if (gl->hw_render_use)
    {
       /* All on GPU, no need to excessively
        * create textures. */
-      gl->textures    = 1;
-
+      gl->textures = 1;
 #ifdef GL_DEBUG
       context_bind_hw_render(true);
       gl_begin_debug(gl);
@@ -1945,7 +1954,6 @@ static void *gl_init(video_info_t *video, const input_driver_t **input, void **i
 #endif
    }
 #endif
-
    gl->white_color_ptr = white_color;
 
 #ifdef HAVE_GLSL
@@ -1991,17 +1999,17 @@ static void *gl_init(video_info_t *video, const input_driver_t **input, void **i
          shader_info.num);
 
    gl->tex_w = gl->tex_h = (RARCH_SCALE_BASE * video->input_scale);
-   gl->keep_aspect       = video->force_aspect;
+   gl->keep_aspect     = video->force_aspect;
 
    /* Apparently need to set viewport for passes
     * when we aren't using FBOs. */
    gl_set_shader_viewport(gl, 0);
    gl_set_shader_viewport(gl, 1);
 
-   mip_level             = 1;
-   gl->tex_mipmap        = video_shader_driver_mipmap_input(&mip_level);
-   shader_filter.index   = 1;
-   shader_filter.smooth  = &force_smooth;
+   mip_level            = 1;
+   gl->tex_mipmap       = video_shader_driver_mipmap_input(&mip_level);
+   shader_filter.index  = 1;
+   shader_filter.smooth = &force_smooth;
 
    if (video_shader_driver_filter_type(&shader_filter))
       gl->tex_min_filter = gl->tex_mipmap ? (force_smooth ?
@@ -2012,13 +2020,13 @@ static void *gl_init(video_info_t *video, const input_driver_t **input, void **i
          (video->smooth ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST)
          : (video->smooth ? GL_LINEAR : GL_NEAREST);
 
-   gl->tex_mag_filter    = min_filter_to_mag(gl->tex_min_filter);
+   gl->tex_mag_filter = min_filter_to_mag(gl->tex_min_filter);
 
-   wrap_info.idx         = 1;
+   wrap_info.idx      = 1;
 
    video_shader_driver_wrap_type(&wrap_info);
 
-   gl->wrap_mode         = gl_wrap_type_to_enum(wrap_info.type);
+   gl->wrap_mode      = gl_wrap_type_to_enum(wrap_info.type);
 
    gl_set_texture_fmts(gl, video->rgb32);
 

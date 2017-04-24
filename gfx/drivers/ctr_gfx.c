@@ -287,7 +287,7 @@ static bool ctr_tasks_finder(retro_task_t *task,void *userdata)
 task_finder_data_t ctr_tasks_finder_data = {ctr_tasks_finder, NULL};
 #endif
 
-static void* ctr_init(video_info_t* video,
+static void* ctr_init(const video_info_t* video,
       const input_driver_t** input, void** input_data)
 {
    float refresh_rate;

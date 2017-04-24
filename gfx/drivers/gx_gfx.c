@@ -572,7 +572,7 @@ static void init_texture(void *data, unsigned width, unsigned height)
    GX_InvalidateTexAll();
 }
 
-static void init_vtx(void *data, video_info_t *video)
+static void init_vtx(void *data, const video_info_t *video)
 {
    Mtx44 m;
    gx_video_t *gx = (gx_video_t*)data;
@@ -693,7 +693,7 @@ static void gx_efb_screenshot(void)
 
 #endif
 
-static void *gx_init(video_info_t *video,
+static void *gx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
    settings_t *settings = config_get_ptr();

@@ -223,7 +223,7 @@ struct thread_video
 
 };
 
-static void *video_thread_init_never_call(video_info_t *video,
+static void *video_thread_init_never_call(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
    (void)video;
