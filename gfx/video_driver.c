@@ -774,8 +774,6 @@ static bool video_driver_init_internal(void)
       goto error;
    }
 
-   video.real_width    = 0;
-   video.real_height   = 0;
    video.width         = width;
    video.height        = height;
    video.fullscreen    = settings->video.fullscreen;
