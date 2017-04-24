@@ -25,7 +25,6 @@
 #include "wiiu/system/memory.h"
 
 #include "audio/audio_driver.h"
-#include "performance_counters.h"
 
 typedef struct
 {
@@ -195,7 +194,6 @@ static bool ax_audio_start(void* data, bool is_shutdown)
 static ssize_t ax_audio_write(void* data, const void* buf, size_t size)
 {
    int i;
-   static struct retro_perf_counter ax_audio_write_perf = {0};
    size_t countAvail   = 0;
    ax_audio_t* ax      = (ax_audio_t*)data;
    const uint16_t* src = buf;

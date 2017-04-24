@@ -20,8 +20,6 @@
 
 #include "../audio_driver.h"
 
-#include "../../performance_counters.h"
-
 typedef struct
 {
    bool nonblocking;
@@ -168,7 +166,6 @@ static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t size)
    int i;
    uint32_t samples_played                     = 0;
    uint64_t current_tick                       = 0;
-   static struct retro_perf_counter ctraudio_f = {0};
    const uint16_t                         *src = buf;
    ctr_csnd_audio_t                       *ctr = (ctr_csnd_audio_t*)data;
 
