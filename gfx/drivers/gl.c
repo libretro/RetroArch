@@ -2561,9 +2561,10 @@ static void gl_get_overlay_interface(void *data,
 
 static retro_proc_address_t gl_get_proc_address(void *data, const char *sym)
 {
-   gfx_ctx_proc_address_t proc_address = {0};
+   gfx_ctx_proc_address_t proc_address;
 
-   proc_address.sym = sym;
+   proc_address.addr = NULL;
+   proc_address.sym  = sym;
 
    video_context_driver_get_proc_address(&proc_address);
 

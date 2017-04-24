@@ -234,7 +234,8 @@ static void *vg_init(const video_info_t *video,
    {
       gfx_ctx_proc_address_t proc_address;
 
-      proc_address.sym = "vgCreateEGLImageTargetKHR";
+      proc_address.addr = NULL;
+      proc_address.sym  = "vgCreateEGLImageTargetKHR";
 
       video_context_driver_get_proc_address(&proc_address);
 
