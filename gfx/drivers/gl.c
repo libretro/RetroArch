@@ -44,9 +44,6 @@
 
 #include "../../configuration.h"
 #include "../../record/record_driver.h"
-#ifdef PERF_ENABLE
-#include "../../performance_counters.h"
-#endif
 
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -690,13 +687,6 @@ static INLINE void gl_copy_frame(gl_t *gl,
       const void *frame,
       unsigned width, unsigned height, unsigned pitch)
 {
-#ifdef PERF_ENABLE
-   static struct retro_perf_counter copy_frame = {0};
-
-   performance_counter_init(copy_frame, "copy_frame");
-   performance_counter_start_plus(video_info->is_perfcnt_enable, copy_frame);
-#endif
-
 #if defined(HAVE_PSGL)
    {
       unsigned h;
@@ -824,9 +814,6 @@ static INLINE void gl_copy_frame(gl_t *gl,
 
       glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
    }
-#endif
-#ifdef PERF_ENABLE
-   performance_counter_stop_plus(video_info->is_perfcnt_enable, copy_frame);
 #endif
 }
 
@@ -1101,13 +1088,6 @@ static bool gl_frame(void *data, const void *frame,
    unsigned width                      = video_info->width;
    unsigned height                     = video_info->height;
 
-#ifdef PERF_ENABLE
-   static struct 
-      retro_perf_counter frame_run     = {0};
-   performance_counter_init(frame_run, "frame_run");
-   performance_counter_start_plus(video_info->is_perfcnt_enable, frame_run);
-#endif
-
    if (!gl)
       return false;
 
@@ -1297,10 +1277,6 @@ static bool gl_frame(void *data, const void *frame,
 
    video_context_driver_update_window_title(video_info);
 
-#ifdef PERF_ENABLE
-   performance_counter_stop_plus(video_info->is_perfcnt_enable, frame_run);
-#endif
-
 #ifdef HAVE_FBO
    /* Reset state which could easily mess up libretro core. */
    if (gl->hw_render_fbo_init)
@@ -1357,14 +1333,6 @@ static bool gl_frame(void *data, const void *frame,
 #ifdef HAVE_GL_SYNC
    if (video_info->hard_sync && gl->have_sync)
    {
-#ifdef PERF_ENABLE
-      static struct retro_perf_counter gl_fence = {0};
-
-      performance_counter_init(gl_fence, "gl_fence");
-      performance_counter_start_plus(video_info->is_perfcnt_enable,
-            gl_fence);
-#endif
-
       glClear(GL_COLOR_BUFFER_BIT);
       gl->fences[gl->fence_count++] =
          glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
@@ -1379,11 +1347,6 @@ static bool gl_frame(void *data, const void *frame,
          memmove(gl->fences, gl->fences + 1,
                gl->fence_count * sizeof(GLsync));
       }
-
-#ifdef PERF_ENABLE
-      performance_counter_stop_plus(video_info->is_perfcnt_enable,
-            gl_fence);
-#endif
    }
 #endif
 

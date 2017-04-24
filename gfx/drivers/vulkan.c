@@ -43,9 +43,6 @@
 #include "../../driver.h"
 #include "../../configuration.h"
 #include "../../record/record_driver.h"
-#ifdef PERF_ENABLE
-#include "../../performance_counters.h"
-#endif
 
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -1583,15 +1580,6 @@ static bool vulkan_frame(void *data, const void *frame,
    VkSemaphore signal_semaphores[2];
    vk_t *vk                                      = (vk_t*)data;
    struct vk_per_frame *chain                    = NULL;
-#ifdef PERF_ENABLE
-   static struct retro_perf_counter frame_run    = {0};
-   static struct retro_perf_counter begin_cmd    = {0};
-   static struct retro_perf_counter build_cmd    = {0};
-   static struct retro_perf_counter end_cmd      = {0};
-   static struct retro_perf_counter copy_frame   = {0};
-   static struct retro_perf_counter swapbuffers  = {0};
-   static struct retro_perf_counter queue_submit = {0};
-#endif
    bool waits_for_semaphores                     = false;
    unsigned width                                = video_info->width;
    unsigned height                               = video_info->height;
@@ -1606,18 +1594,6 @@ static bool vulkan_frame(void *data, const void *frame,
    unsigned frame_index                          = 
       vk->context->current_swapchain_index;
 
-#ifdef PERF_ENABLE
-   performance_counter_init(frame_run, "frame_run");
-   performance_counter_init(copy_frame, "copy_frame");
-   performance_counter_init(swapbuffers, "swapbuffers");
-   performance_counter_init(queue_submit, "queue_submit");
-   performance_counter_init(begin_cmd, "begin_command");
-   performance_counter_init(build_cmd, "build_command");
-   performance_counter_init(end_cmd, "end_command");
-
-   performance_counter_start_plus(video_info->is_perfcnt_enable, frame_run);
-#endif
-
    /* Bookkeeping on start of frame. */
    chain     = &vk->swapchain[frame_index];
    vk->chain = chain;
@@ -1626,18 +1602,12 @@ static bool vulkan_frame(void *data, const void *frame,
    vulkan_buffer_chain_discard(&chain->vbo);
    vulkan_buffer_chain_discard(&chain->ubo);
 
-#ifdef PERF_ENABLE
-   performance_counter_start_plus(video_info->is_perfcnt_enable, begin_cmd);
-#endif
    /* Start recording the command buffer. */
    vk->cmd          = chain->cmd;
    begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
    vkResetCommandBuffer(vk->cmd, 0);
 
    vkBeginCommandBuffer(vk->cmd, &begin_info);
-#ifdef PERF_ENABLE
-   performance_counter_stop_plus(video_info->is_perfcnt_enable, begin_cmd);
-#endif
 
    memset(&vk->tracker, 0, sizeof(vk->tracker));
 
@@ -1662,9 +1632,6 @@ static bool vulkan_frame(void *data, const void *frame,
    }
 
    /* Upload texture */
-#ifdef PERF_ENABLE
-   performance_counter_start_plus(video_info->is_perfcnt_enable, copy_frame);
-#endif
    if (frame && !vk->hw.enable)
    {
       unsigned y;
@@ -1715,17 +1682,11 @@ static bool vulkan_frame(void *data, const void *frame,
 
       vk->last_valid_index = frame_index;
    }
-#ifdef PERF_ENABLE
-   performance_counter_stop_plus(video_info->is_perfcnt_enable, copy_frame);
-#endif
 
    /* Notify filter chain about the new sync index. */
    vulkan_filter_chain_notify_sync_index((vulkan_filter_chain_t*)vk->filter_chain, frame_index);
    vulkan_filter_chain_set_frame_count((vulkan_filter_chain_t*)vk->filter_chain, frame_count);
 
-#ifdef PERF_ENABLE
-   performance_counter_start_plus(video_info->is_perfcnt_enable, build_cmd);
-#endif
    /* Render offscreen filter chain passes. */
    {
       /* Set the source texture in the filter chain */
@@ -1854,9 +1815,6 @@ static bool vulkan_frame(void *data, const void *frame,
    if (vk->overlay.enable)
       vulkan_render_overlay(vk, video_info);
 #endif
-#ifdef PERF_ENABLE
-   performance_counter_stop_plus(video_info->is_perfcnt_enable, build_cmd);
-#endif
 
    /* End the render pass. We're done rendering to backbuffer now. */
    vkCmdEndRenderPass(vk->cmd);
@@ -1925,13 +1883,7 @@ static bool vulkan_frame(void *data, const void *frame,
             vk->context->graphics_queue_index, vk->hw.src_queue_family);
    }
 
-#ifdef PERF_ENABLE
-   performance_counter_start_plus(video_info->is_perfcnt_enable, end_cmd);
-#endif
    vkEndCommandBuffer(vk->cmd);
-#ifdef PERF_ENABLE
-   performance_counter_stop_plus(video_info->is_perfcnt_enable, end_cmd);
-#endif
 
    /* Submit command buffers to GPU. */
 
@@ -1973,11 +1925,6 @@ static bool vulkan_frame(void *data, const void *frame,
    }
    submit_info.pSignalSemaphores = submit_info.signalSemaphoreCount ? signal_semaphores : NULL;
 
-#ifdef PERF_ENABLE
-   performance_counter_stop_plus(video_info->is_perfcnt_enable, frame_run);
-
-   performance_counter_start_plus(video_info->is_perfcnt_enable, queue_submit);
-#endif
 
 #ifdef HAVE_THREADS
    slock_lock(vk->context->queue_lock);
@@ -1988,16 +1935,9 @@ static bool vulkan_frame(void *data, const void *frame,
    slock_unlock(vk->context->queue_lock);
 #endif
 
-#ifdef PERF_ENABLE
-   performance_counter_stop_plus(video_info->is_perfcnt_enable, queue_submit);
-   performance_counter_start_plus(video_info->is_perfcnt_enable, swapbuffers);
-#endif
 
    video_context_driver_swap_buffers(video_info);
 
-#ifdef PERF_ENABLE
-   performance_counter_stop_plus(video_info->is_perfcnt_enable, swapbuffers);
-#endif
 
    if (!vk->context->swap_interval_emulation_lock)
       video_context_driver_update_window_title(video_info);
