@@ -40,7 +40,6 @@
 
 #include "../../retroarch.h"
 #include "../../verbosity.h"
-#include "../../performance_counters.h"
 
 #include "../common/ctr_common.h"
 #ifndef HAVE_THREADS
@@ -472,7 +471,6 @@ static bool ctr_frame(void* data, const void* frame,
    static float        fps = 0.0;
    static int total_frames = 0;
    static int       frames = 0;
-   static struct retro_perf_counter ctrframe_f = {0};
 
    extern bool select_pressed;
 
@@ -611,9 +609,6 @@ static bool ctr_frame(void* data, const void* frame,
    printf(PRINTFPOS(29,0)"fps: %8.4f frames: %i\r", fps, total_frames++);
 #endif
    fflush(stdout);
-
-   performance_counter_init(ctrframe_f, "ctrframe_f");
-   performance_counter_start_plus(video_info->is_perfcnt_enable, ctrframe_f);
 
    if (ctr->should_resize)
       ctr_update_viewport(ctr);
@@ -842,7 +837,6 @@ static bool ctr_frame(void* data, const void* frame,
    ctr->current_buffer_top     ^= 1;
    ctr->p3d_event_pending       = true;
    ctr->ppf_event_pending       = true;
-   performance_counter_stop_plus(video_info->is_perfcnt_enable, ctrframe_f);
 
    return true;
 }

@@ -41,7 +41,6 @@
 
 #include "../../retroarch.h"
 #include "../../driver.h"
-#include "../../performance_counters.h"
 #include "../../content.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
@@ -386,13 +385,8 @@ static bool vg_frame(void *data, const void *frame,
       video_frame_info_t *video_info)
 {
    vg_t                           *vg = (vg_t*)data;
-   static struct retro_perf_counter    vg_fr = {0};
-   static struct retro_perf_counter vg_image = {0};
    unsigned width                            = video_info->width;
    unsigned height                           = video_info->height;
-
-   performance_counter_init(vg_fr, "vg_fr");
-   performance_counter_start_plus(video_info->is_perfcnt_enable, vg_fr);
 
    if (     frame_width != vg->mRenderWidth
          || frame_height != vg->mRenderHeight
@@ -416,10 +410,7 @@ static bool vg_frame(void *data, const void *frame,
    vgClear(0, 0, width, height);
    vgSeti(VG_SCISSORING, VG_TRUE);
 
-   performance_counter_init(vg_image, "vg_image");
-   performance_counter_start_plus(video_info->is_perfcnt_enable, vg_image);
    vg_copy_frame(vg, frame, frame_width, frame_height, pitch);
-   performance_counter_stop_plus(video_info->is_perfcnt_enable, vg_image);
 
 #ifdef HAVE_MENU
    menu_driver_frame(video_info);
@@ -433,8 +424,6 @@ static bool vg_frame(void *data, const void *frame,
 #endif
 
    video_context_driver_update_window_title(video_info);
-
-   performance_counter_stop_plus(video_info->is_perfcnt_enable, vg_fr);
 
    video_context_driver_swap_buffers(video_info);
 
