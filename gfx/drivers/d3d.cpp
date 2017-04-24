@@ -1042,7 +1042,9 @@ static bool d3d_construct(d3d_video_t *d3d,
    {
       unsigned new_width  = info->fullscreen ? full_x : info->width;
       unsigned new_height = info->fullscreen ? full_y : info->height;
-      video_driver_set_size(&new_width, &new_height);
+
+      video->real_width   = new_width;
+      video->real_height  = new_height;
    }
 
 #ifdef HAVE_WINDOW
