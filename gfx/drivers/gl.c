@@ -1913,10 +1913,11 @@ static void *gl_init(video_info_t *video, const input_driver_t **input, void **i
 
    video_context_driver_get_video_size(&mode);
 
-   video->real_width  = mode.width;
-   video->real_height = mode.height;
-   mode.width         = 0;
-   mode.height        = 0;
+   if (mode.width != 0 && mode.height != 0)
+   {
+      video->real_width  = mode.width;
+      video->real_height = mode.height;
+   }
 
    hwr                = video_driver_get_hw_context();
 

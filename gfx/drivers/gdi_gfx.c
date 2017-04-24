@@ -115,27 +115,18 @@ static void *gdi_gfx_init(video_info_t *video,
    if (!video_context_driver_set_video_mode(&mode))
       goto error;
 
-   mode.width     = 0;
-   mode.height    = 0;
+   mode.width         = 0;
+   mode.height        = 0;
 
    video_context_driver_get_video_size(&mode);
 
-   temp_width     = mode.width;
-   temp_height    = mode.height;
-   mode.width     = 0;
-   mode.height    = 0;
+   video->real_width  = mode.width;
+   video->real_height = mode.height;
+   mode.width         = 0;
+   mode.height        = 0;
 
-   /* Get real known video size, which might have been altered by context. */
-
-   if (temp_width != 0 && temp_height != 0)
-      video_driver_set_size(&temp_width, &temp_height);
-
-   video_driver_get_size(&temp_width, &temp_height);
-
-   RARCH_LOG("[GDI]: Using resolution %ux%u\n", temp_width, temp_height);
-
-   inp.input      = input;
-   inp.input_data = input_data;
+   inp.input          = input;
+   inp.input_data     = input_data;
 
    video_context_driver_input_driver(&inp);
 

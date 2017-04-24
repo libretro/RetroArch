@@ -91,7 +91,9 @@ static void *vita2d_gfx_init(video_info_t *video,
    vita->tex_filter   = video->smooth 
       ? SCE_GXM_TEXTURE_FILTER_LINEAR : SCE_GXM_TEXTURE_FILTER_POINT;
 
-   video_driver_set_size(&temp_width, &temp_height);
+   video->real_width  = temp_width;
+   video->real_height = temp_height;
+
    vita2d_gfx_set_viewport(vita, temp_width, temp_height, false, true);
 
 

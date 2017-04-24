@@ -1129,14 +1129,15 @@ static void *vulkan_init(video_info_t *video,
    }
 
    video_context_driver_get_video_size(&mode);
-   temp_width  = mode.width;
-   temp_height = mode.height;
 
-   if (temp_width != 0 && temp_height != 0)
-      video_driver_set_size(&temp_width, &temp_height);
-   video_driver_get_size(&temp_width, &temp_height);
+   temp_width         = mode.width;
+   temp_height        = mode.height;
 
-   RARCH_LOG("[Vulkan]: Using resolution %ux%u\n", temp_width, temp_height);
+   if (mode.width != 0 && mode.height != 0)
+   {
+      video->real_width  = temp_width;
+      video->real_height = temp_height;
+   }
 
    video_context_driver_get_context_data(&vk->context);
 

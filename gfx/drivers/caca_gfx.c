@@ -47,11 +47,11 @@ static void caca_gfx_free(void *data);
 static void caca_gfx_create(void)
 {
    caca_display = caca_create_display(NULL);
-   caca_cv = caca_get_canvas(caca_display);
+   caca_cv      = caca_get_canvas(caca_display);
 
    if(!caca_video_width || !caca_video_height)
    {
-      caca_video_width = caca_get_canvas_width(caca_cv);
+      caca_video_width  = caca_get_canvas_width(caca_cv);
       caca_video_height = caca_get_canvas_height(caca_cv);
    }
 
@@ -61,8 +61,6 @@ static void caca_gfx_create(void)
    else
       caca_dither = caca_create_dither(16, caca_video_width, caca_video_height, caca_video_pitch,
                             0xf800, 0x7e0, 0x1f, 0x0);
-
-   video_driver_set_size(&caca_video_width, &caca_video_height);
 }
 
 static void *caca_gfx_init(video_info_t *video,
@@ -87,6 +85,9 @@ static void *caca_gfx_init(video_info_t *video,
       caca_video_pitch = video->width * 2;
 
    caca_gfx_create();
+
+   video->real_width   = caca_video_width;
+   video->real_height  = caca_video_height;
 
    if (!caca_cv || !caca_dither || !caca_display)
    {
