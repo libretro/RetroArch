@@ -873,6 +873,9 @@ static bool d3d_alive(void *data)
    bool        quit     = false;
    bool        resize   = false;
 
+   /* Needed because some context drivers don't track their sizes */
+   video_driver_get_size(&temp_width, &temp_height);
+
    size_data.quit       = &quit;
    size_data.resize     = &resize;
    size_data.width      = &temp_width;
