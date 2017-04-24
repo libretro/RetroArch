@@ -502,9 +502,7 @@ static void* wiiu_gfx_init(video_info_t* video,
    wiiu->vp.height      = wiiu->render_mode.height;
    wiiu->vp.full_width  = wiiu->render_mode.width;
    wiiu->vp.full_height = wiiu->render_mode.height;
-
-   video->real_width    = wiiu->vp.width;
-   video->real_height   = wiiu->vp.height;
+   video_driver_set_size(&wiiu->vp.width, &wiiu->vp.height);
 
    driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &refresh_rate);
 
