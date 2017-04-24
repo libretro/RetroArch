@@ -106,10 +106,9 @@ static int vulkan_get_message_width(void *data, const char *msg,
          font->font_driver->get_glyph(font->font_data, (uint8_t)msg[i]);
       if (!glyph) /* Do something smarter here ... */
          glyph = font->font_driver->get_glyph(font->font_data, '?');
-      if (!glyph)
-         continue;
 
-      delta_x += glyph->advance_x;
+      if (glyph)
+         delta_x += glyph->advance_x;
    }
 
    return delta_x * scale;
@@ -124,15 +123,15 @@ static void vulkan_raster_font_render_line(
    float inv_tex_size_x, inv_tex_size_y, inv_win_width, inv_win_height;
    unsigned i;
    struct vk_color vk_color;
-   vk_t *vk = font ? font->vk : NULL;
+   vk_t *vk   = font ? font->vk : NULL;
 
    if (!vk)
       return;
 
-   x       = roundf(pos_x * vk->vp.width);
-   y       = roundf((1.0f - pos_y) * vk->vp.height);
-   delta_x = 0;
-   delta_y = 0;
+   x          = roundf(pos_x * vk->vp.width);
+   y          = roundf((1.0f - pos_y) * vk->vp.height);
+   delta_x    = 0;
+   delta_y    = 0;
 
    vk_color.r = color[0];
    vk_color.g = color[1];
@@ -182,10 +181,11 @@ static void vulkan_raster_font_render_line(
             width * inv_tex_size_x,
             height * inv_tex_size_y,
             &vk_color);
+
       font->vertices += 6;
 
-      delta_x += glyph->advance_x;
-      delta_y += glyph->advance_y;
+      delta_x        += glyph->advance_x;
+      delta_y        += glyph->advance_y;
    }
 }
 
