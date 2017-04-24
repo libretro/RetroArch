@@ -49,7 +49,7 @@ typedef struct xshm
    GC gc;
 } xshm_t;
 
-static void *xshm_gfx_init(const video_info_t *video,
+static void *xshm_gfx_init(video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
    xshm_t* xshm = (xshm_t*)malloc(sizeof(xshm_t));

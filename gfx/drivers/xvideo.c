@@ -319,7 +319,7 @@ static const struct format_desc formats[] = {
 };
 
 static bool xv_adaptor_set_format(xv_t *xv, Display *dpy,
-      XvPortID port, const video_info_t *video)
+      XvPortID port, video_info_t *video)
 {
    int i;
    unsigned j;
@@ -416,7 +416,7 @@ static void xv_calc_out_rect(bool keep_aspect,
    }
 }
 
-static void *xv_init(const video_info_t *video,
+static void *xv_init(video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
    unsigned i;

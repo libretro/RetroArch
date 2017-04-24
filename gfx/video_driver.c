@@ -824,6 +824,14 @@ static bool video_driver_init_internal(void)
       goto error;
    }
 
+   /* Get real known video size, which might have been altered by video context. */
+   if (video.real_width != 0 && video.real_height != 0)
+   {
+      video_driver_width  = video.real_width;
+      video_driver_height = video.real_height;
+      RARCH_LOG("[Video]: Using resolution %ux%u\n", video_driver_width, video_driver_width);
+   }
+
    video_driver_poke = NULL;
    if (current_video->poke_interface)
       current_video->poke_interface(video_driver_data, &video_driver_poke);

@@ -132,7 +132,7 @@ static bool d3d_init_imports(d3d_video_t *d3d)
    return true;
 }
 
-static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
+static bool d3d_init_chain(d3d_video_t *d3d, video_info_t *video_info)
 {
    unsigned current_width, current_height, out_width, out_height;
    unsigned i            = 0;
@@ -607,7 +607,7 @@ void d3d_make_d3dpp(void *data,
 #endif
 }
 
-static bool d3d_init_base(void *data, const video_info_t *info)
+static bool d3d_init_base(void *data, video_info_t *info)
 {
    D3DPRESENT_PARAMETERS d3dpp;
    d3d_video_t *d3d = (d3d_video_t*)data;
@@ -773,7 +773,7 @@ static void d3d_set_viewport(void *data,
       d3d->renderchain_driver->set_font_rect(d3d, NULL);
 }
 
-static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
+static bool d3d_initialize(d3d_video_t *d3d, video_info_t *info)
 {
    unsigned width, height;
    bool ret             = true;
@@ -978,7 +978,7 @@ static void d3d_set_osd_msg(void *data,
 /* Delay constructor due to lack of exceptions. */
 
 static bool d3d_construct(d3d_video_t *d3d,
-      const video_info_t *info, const input_driver_t **input,
+      video_info_t *info, const input_driver_t **input,
       void **input_data)
 {
    gfx_ctx_input_t inp;
@@ -1122,7 +1122,7 @@ static const gfx_ctx_driver_t *d3d_get_context(void *data)
          api, major, minor, false);
 }
 
-static void *d3d_init(const video_info_t *info,
+static void *d3d_init(video_info_t *info,
       const input_driver_t **input, void **input_data)
 {
    d3d_video_t            *d3d        = NULL;

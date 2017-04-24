@@ -111,7 +111,7 @@ static void vga_gfx_create(void)
    vga_upload_palette();
 }
 
-static void *vga_gfx_init(const video_info_t *video,
+static void *vga_gfx_init(video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
    vga_t *vga        = (vga_t*)calloc(1, sizeof(*vga));

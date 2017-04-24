@@ -257,7 +257,7 @@ static void psp_on_vblank(u32 sub, psp1_video_t *psp)
       psp->vblank_not_reached = false;
 }
 
-static void *psp_init(const video_info_t *video,
+static void *psp_init(video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
    /* TODO : add ASSERT() checks or use main RAM if 

@@ -92,7 +92,7 @@ static INLINE bool vg_query_extension(const char *ext)
    return ret;
 }
 
-static void *vg_init(const video_info_t *video,
+static void *vg_init(video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
    gfx_ctx_mode_t mode;

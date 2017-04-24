@@ -281,7 +281,7 @@ static void dispmanx_blank_console (void *data)
    dispmanx_surface_update_async(_dispvars, image, _dispvars->back_surface);
 }
 
-static void *dispmanx_gfx_init(const video_info_t *video,
+static void *dispmanx_gfx_init(video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
    struct dispmanx_video *_dispvars = calloc(1, sizeof(struct dispmanx_video));

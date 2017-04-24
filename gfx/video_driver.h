@@ -54,6 +54,9 @@ typedef struct video_info
     */
    unsigned height;
 
+   unsigned real_width;
+   unsigned real_height;
+
    /* Launch in fullscreen mode instead of windowed mode. */
    bool fullscreen;
 
@@ -230,7 +233,7 @@ typedef struct video_driver
     * The video initialization might preinitialize an input driver
     * to override the settings in case the video driver relies on
     * input driver for event handling. */
-   void *(*init)(const video_info_t *video,
+   void *(*init)(video_info_t *video,
          const input_driver_t **input,
          void **input_data);
 
