@@ -73,7 +73,7 @@ static void input_autoconfigure_joypad_reindex_devices(autoconfig_params_t *para
 
       for(j = 0; j < params->max_users; j++)
       {
-         if(string_is_equal(tmp, settings->input.device_names[j])
+         if(string_is_equal(tmp, input_config_get_device_name(j))
                && settings->input.device_name_index[i] == 0)
          {
             configuration_set_uint(settings, settings->input.device_name_index[j], k);
