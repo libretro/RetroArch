@@ -39,6 +39,7 @@
 
 #include "../../gfx/video_shader_driver.h"
 
+#include "../../input/input_config.h"
 #include "../../input/input_remapping.h"
 
 #ifndef BIND_ACTION_START
@@ -109,8 +110,11 @@ static int action_start_input_desc(unsigned type, const char *label)
    (void)label;
 
    if (inp_desc_button_index_offset < RARCH_FIRST_CUSTOM_BIND)
-      settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset] =
-         settings->input.binds[inp_desc_user][inp_desc_button_index_offset].id;
+   {
+      const struct retro_keybind *keyptr = input_config_get_specific_bind(inp_desc_user,
+            inp_desc_button_index_offset);
+      settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset] = keyptr->id;
+   }
    else
       settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset] =
          inp_desc_button_index_offset - RARCH_FIRST_CUSTOM_BIND;

@@ -1242,10 +1242,11 @@ static void android_input_poll_memcpy(void *data)
 static bool android_input_key_pressed(void *data, int key)		
 {		
    rarch_joypad_info_t joypad_info;
-   android_input_t *android = (android_input_t*)data;		
-   settings_t *settings     = config_get_ptr();		
+   android_input_t *android           = (android_input_t*)data;		
+   settings_t *settings               = config_get_ptr();		
+   const struct retro_keybind *keyptr = input_config_get_specific_bind(0, key);
 
-   if(       settings->input.binds[0][key].valid 
+   if(       keyptr->valid 
          && android_keyboard_port_input_pressed(input_config_get_binds(0),
             key))		
       return true;		
@@ -1254,9 +1255,9 @@ static bool android_input_key_pressed(void *data, int key)
    joypad_info.auto_binds     = input_autoconfigure_get_binds(0);
    joypad_info.axis_threshold = settings->input.axis_threshold;
 
-   if (settings->input.binds[0][key].valid &&		
+   if (keyptr->valid &&		
          input_joypad_pressed(android->joypad, joypad_info,
-            0, settings->input.binds[0], key))		
+            0, input_config_get_binds(0), key))		
       return true;		
 
    return false;		

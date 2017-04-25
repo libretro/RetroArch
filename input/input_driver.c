@@ -1026,7 +1026,7 @@ bool input_driver_init(void)
    settings_t *settings       = config_get_ptr();
 
    for (i = 0; i < MAX_USERS; i++)
-      libretro_input_binds[i] = settings->input.binds[i];
+      libretro_input_binds[i] = input_config_get_binds(i);
    if (current_input)
       current_input_data      = current_input->init(settings->input.joypad_driver);
 
