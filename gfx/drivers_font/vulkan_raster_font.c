@@ -119,24 +119,22 @@ static void vulkan_raster_font_render_line(
       float scale, const float color[4], float pos_x,
       float pos_y, unsigned text_align)
 {
-   int x, y, delta_x, delta_y;
-   float inv_tex_size_x, inv_tex_size_y, inv_win_width, inv_win_height;
    unsigned i;
    struct vk_color vk_color;
-   vk_t *vk   = font ? font->vk : NULL;
+   vk_t *vk             = font->vk;
+   int x                = roundf(pos_x * vk->vp.width);
+   int y                = roundf((1.0f - pos_y) * vk->vp.height);
+   int delta_x          = 0;
+   int delta_y          = 0;
+   float inv_tex_size_x = 1.0f / font->texture.width;
+   float inv_tex_size_y = 1.0f / font->texture.height;
+   float inv_win_width  = 1.0f / font->vk->vp.width;
+   float inv_win_height = 1.0f / font->vk->vp.height;
 
-   if (!vk)
-      return;
-
-   x          = roundf(pos_x * vk->vp.width);
-   y          = roundf((1.0f - pos_y) * vk->vp.height);
-   delta_x    = 0;
-   delta_y    = 0;
-
-   vk_color.r = color[0];
-   vk_color.g = color[1];
-   vk_color.b = color[2];
-   vk_color.a = color[3];
+   vk_color.r           = color[0];
+   vk_color.g           = color[1];
+   vk_color.b           = color[2];
+   vk_color.a           = color[3];
 
    switch (text_align)
    {
@@ -147,11 +145,6 @@ static void vulkan_raster_font_render_line(
          x -= vulkan_get_message_width(font, msg, msg_len, scale) / 2;
          break;
    }
-
-   inv_tex_size_x = 1.0f / font->texture.width;
-   inv_tex_size_y = 1.0f / font->texture.height;
-   inv_win_width  = 1.0f / font->vk->vp.width;
-   inv_win_height = 1.0f / font->vk->vp.height;
 
    for (i = 0; i < msg_len; i++)
    {
@@ -203,8 +196,9 @@ static void vulkan_raster_font_render_message(
    /* If the font height is not supported just draw as usual */
    if (!font->font_driver->get_line_height)
    {
-      vulkan_raster_font_render_line(font, msg, strlen(msg),
-            scale, color, pos_x, pos_y, text_align);
+      if (font->vk)
+         vulkan_raster_font_render_line(font, msg, strlen(msg),
+               scale, color, pos_x, pos_y, text_align);
       return;
    }
 
@@ -218,18 +212,20 @@ static void vulkan_raster_font_render_message(
       if (delim)
       {
          unsigned msg_len = delim - msg;
-         vulkan_raster_font_render_line(font, msg, msg_len,
-               scale, color, pos_x, pos_y - (float)lines * line_height,
-               text_align);
+         if (font->vk)
+            vulkan_raster_font_render_line(font, msg, msg_len,
+                  scale, color, pos_x, pos_y - (float)lines * line_height,
+                  text_align);
          msg += msg_len + 1;
          lines++;
       }
       else
       {
          unsigned msg_len = strlen(msg);
-         vulkan_raster_font_render_line(font, msg, msg_len,
-               scale, color, pos_x, pos_y - (float)lines * line_height,
-               text_align);
+         if (font->vk)
+            vulkan_raster_font_render_line(font, msg, msg_len,
+                  scale, color, pos_x, pos_y - (float)lines * line_height,
+                  text_align);
          break;
       }
    }
