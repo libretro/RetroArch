@@ -268,24 +268,22 @@ static void gl_raster_font_render_line(
       GLfloat scale, const GLfloat color[4], GLfloat pos_x,
       GLfloat pos_y, unsigned text_align)
 {
-   int x, y, delta_x, delta_y;
    unsigned i;
    struct video_coords coords;
-   float inv_tex_size_x, inv_tex_size_y, inv_win_width, inv_win_height;
    GLfloat font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_lut_tex_coord[2 * 6 * MAX_MSG_LEN_CHUNK];
-   gl_t      *gl       = font ? font->gl : NULL;
-   const char* msg_end = msg + msg_len;
-
-   if (!gl)
-      return;
-
-   x              = roundf(pos_x * gl->vp.width);
-   y              = roundf(pos_y * gl->vp.height);
-   delta_x        = 0;
-   delta_y        = 0;
+   gl_t      *gl        = font->gl;
+   const char* msg_end  = msg + msg_len;
+   int x                = roundf(pos_x * gl->vp.width);
+   int y                = roundf(pos_y * gl->vp.height);
+   int delta_x          = 0;
+   int delta_y          = 0;
+   float inv_tex_size_x = 1.0f / font->tex_width;
+   float inv_tex_size_y = 1.0f / font->tex_height;
+   float inv_win_width  = 1.0f / font->gl->vp.width;
+   float inv_win_height = 1.0f / font->gl->vp.height;
 
    switch (text_align)
    {
@@ -296,11 +294,6 @@ static void gl_raster_font_render_line(
          x -= gl_get_message_width(font, msg, msg_len, scale) / 2.0;
          break;
    }
-
-   inv_tex_size_x = 1.0f / font->tex_width;
-   inv_tex_size_y = 1.0f / font->tex_height;
-   inv_win_width  = 1.0f / font->gl->vp.width;
-   inv_win_height = 1.0f / font->gl->vp.height;
 
    while (msg < msg_end)
    {
@@ -363,9 +356,10 @@ static void gl_raster_font_render_message(
    /* If the font height is not supported just draw as usual */
    if (!font->font_driver->get_line_height)
    {
-      gl_raster_font_render_line(font,
-            msg, (unsigned)strlen(msg), scale, color, pos_x,
-            pos_y, text_align);
+      if (font->gl)
+         gl_raster_font_render_line(font,
+               msg, (unsigned)strlen(msg), scale, color, pos_x,
+               pos_y, text_align);
       return;
    }
 
@@ -378,9 +372,10 @@ static void gl_raster_font_render_message(
       unsigned msg_len  = delim ? (unsigned)(delim - msg) : (unsigned)strlen(msg);
 
       /* Draw the line */
-      gl_raster_font_render_line(font,
-            msg, msg_len, scale, color, pos_x,
-            pos_y - (float)lines*line_height, text_align);
+      if (font->gl)
+         gl_raster_font_render_line(font,
+               msg, msg_len, scale, color, pos_x,
+               pos_y - (float)lines*line_height, text_align);
 
       if (!delim)
          break;
