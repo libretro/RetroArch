@@ -85,9 +85,9 @@ typedef struct
    IAudioClient *client;
    IAudioRenderClient *renderer;
    HANDLE write_event;
-   fifo_buffer_t *buffer;     /* NULL in unbuffered shared mode */
-   size_t engine_buffer_size; /* WASAPI engine buffer size */
-   size_t frame_size;         /* 4 or 8 only */
+   fifo_buffer_t *buffer; /* NULL in unbuffered shared mode */
+   size_t frame_size;     /* 4 or 8 only */
+   size_t engine_buffer_size;
    bool exclusive;
    bool blocking;
    bool running;
