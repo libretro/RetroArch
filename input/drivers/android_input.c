@@ -1250,7 +1250,7 @@ static bool android_input_key_pressed(void *data, int key)
       return true;		
 
    joypad_info.joy_idx        = 0;
-   joypad_info.auto_binds     = settings->input.autoconf_binds[0];
+   joypad_info.auto_binds     = input_autoconfigure_get_binds(0);
    joypad_info.axis_threshold = settings->input.axis_threshold;
 
    if (settings->input.binds[0][key].valid &&		
@@ -1366,8 +1366,11 @@ static int16_t android_input_state(void *data,
                   (android->pointer[idx].x != -0x8000) &&
                   (android->pointer[idx].y != -0x8000);
             case RARCH_DEVICE_ID_POINTER_BACK:
-               if(settings->input.autoconf_binds[0][RARCH_MENU_TOGGLE].joykey == 0)
+            {
+               const struct retro_keybind *keyptr = input_autoconfigure_get_specific_bind(0, RARCH_MENU_TOGGLE);
+               if (keyptr->joykey == 0)
                   return android_keyboard_input_pressed(AKEYCODE_BACK);
+            }
          }
          break;
       case RARCH_DEVICE_POINTER_SCREEN:
@@ -1382,8 +1385,11 @@ static int16_t android_input_state(void *data,
                   (android->pointer[idx].full_x != -0x8000) &&
                   (android->pointer[idx].full_y != -0x8000);
             case RARCH_DEVICE_ID_POINTER_BACK:
-               if(settings->input.autoconf_binds[0][RARCH_MENU_TOGGLE].joykey == 0)
-                  return android_keyboard_input_pressed(AKEYCODE_BACK);
+               {
+                  const struct retro_keybind *keyptr = input_autoconfigure_get_specific_bind(0, RARCH_MENU_TOGGLE);
+                  if (keyptr->joykey == 0)
+                     return android_keyboard_input_pressed(AKEYCODE_BACK);
+               }
          }
          break;
    }

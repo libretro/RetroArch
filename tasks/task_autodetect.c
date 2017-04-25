@@ -51,6 +51,7 @@ typedef struct autoconfig_params
 } autoconfig_params_t;
 
 static bool input_autoconfigured[MAX_USERS];
+static struct retro_keybind input_autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
 
 /* Adds an index for devices with the same name,
  * so they can be identified in the GUI. */
@@ -162,7 +163,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    input_autoconfigured[params->idx] = true;
 
    input_autoconfigure_joypad_conf(conf,
-         settings->input.autoconf_binds[params->idx]);
+         input_autoconf_binds[params->idx]);
 
    if (memcmp(device_type, "remote", 6) == 0)
    {
@@ -399,11 +400,29 @@ error:
    return false;
 }
 
+const struct retro_keybind *input_autoconfigure_get_specific_bind(unsigned i, unsigned j)
+{
+   return &input_autoconf_binds[i][j];
+}
+
+struct retro_keybind *input_autoconfigure_get_binds(unsigned i)
+{
+   return input_autoconf_binds[i];
+}
+
 void input_autoconfigure_reset(void)
 {
-   unsigned i;
+   unsigned i, j;
+
    for (i = 0; i < MAX_USERS; i++)
+   {
+      for (j = 0; j < RARCH_BIND_LIST_END; j++)
+      {
+         input_autoconf_binds[i][j].joykey  = NO_BTN;
+         input_autoconf_binds[i][j].joyaxis = AXIS_NONE;
+      }
       input_autoconfigured[i] = 0;
+   }
 }
 
 bool input_is_autoconfigured(unsigned i)
@@ -455,10 +474,10 @@ bool input_autoconfigure_connect(
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
-      settings->input.autoconf_binds[state->idx][i].joykey           = NO_BTN;
-      settings->input.autoconf_binds[state->idx][i].joyaxis          = AXIS_NONE;
-      settings->input.autoconf_binds[state->idx][i].joykey_label[0]  = '\0';
-      settings->input.autoconf_binds[state->idx][i].joyaxis_label[0] = '\0';
+      input_autoconf_binds[state->idx][i].joykey           = NO_BTN;
+      input_autoconf_binds[state->idx][i].joyaxis          = AXIS_NONE;
+      input_autoconf_binds[state->idx][i].joykey_label[0]  = '\0';
+      input_autoconf_binds[state->idx][i].joyaxis_label[0] = '\0';
    }
 
    input_autoconfigured[state->idx] = false;

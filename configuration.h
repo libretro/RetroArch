@@ -279,7 +279,6 @@ typedef struct settings
 
       unsigned remap_ids[MAX_USERS][RARCH_BIND_LIST_END];
       struct retro_keybind binds[MAX_USERS][RARCH_BIND_LIST_END];
-      struct retro_keybind autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
 
       unsigned max_users;
 

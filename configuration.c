@@ -1166,16 +1166,6 @@ static void config_set_defaults(void)
             sizeof(retro_keybinds_rest));
 
    input_remapping_set_defaults();
-
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      for (j = 0; j < RARCH_BIND_LIST_END; j++)
-      {
-         settings->input.autoconf_binds[i][j].joykey  = NO_BTN;
-         settings->input.autoconf_binds[i][j].joyaxis = AXIS_NONE;
-      }
-   }
-
    input_autoconfigure_reset();
 
    /* Verify that binds are in proper order. */

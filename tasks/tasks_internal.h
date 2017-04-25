@@ -219,9 +219,14 @@ void *savefile_ptr_get(void);
 
 void path_init_savefile_new(void);
 
-void input_autoconfigure_reset(void);
-
 bool input_is_autoconfigured(unsigned i);
+
+const struct retro_keybind *
+input_autoconfigure_get_specific_bind(unsigned i, unsigned j);
+
+struct retro_keybind *input_autoconfigure_get_binds(unsigned i);
+
+void input_autoconfigure_reset(void);
 
 bool input_autoconfigure_connect(
       const char *name,

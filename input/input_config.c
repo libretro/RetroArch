@@ -35,6 +35,7 @@
 #include "../msg_hash.h"
 #include "../configuration.h"
 #include "../file_path_special.h"
+#include "../tasks/tasks_internal.h"
 #include "../verbosity.h"
 
 /* Input config. */
@@ -524,13 +525,10 @@ bool input_config_get_bind_idx(unsigned port, unsigned *joy_idx_real)
 const struct retro_keybind *input_config_get_bind_auto(unsigned port, unsigned id)
 {
    settings_t *settings = config_get_ptr();
-   unsigned joy_idx     = 0;
-
-   if (settings)
-      joy_idx = settings->input.joypad_map[port];
+   unsigned joy_idx     = settings->input.joypad_map[port];
 
    if (joy_idx < MAX_USERS)
-      return &settings->input.autoconf_binds[joy_idx][id];
+      return input_autoconfigure_get_specific_bind(joy_idx, id);
    return NULL;
 }
 
