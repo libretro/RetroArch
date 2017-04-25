@@ -150,6 +150,12 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
 #endif
 };
 
+struct retro_keybind *input_config_get_specific_bind_ptr(unsigned i, unsigned j)
+{
+   settings_t *settings = config_get_ptr();
+   return (struct retro_keybind*)&settings->input.binds[i][j];
+}
+
 const struct retro_keybind *input_config_get_specific_bind(unsigned i, unsigned j)
 {
    settings_t *settings = config_get_ptr();

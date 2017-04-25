@@ -138,7 +138,8 @@ static int action_scan_input_desc(const char *path,
    else
       key = input_config_translate_str_to_bind_id(label);
 
-   target = (struct retro_keybind*)&settings->input.binds[inp_desc_user][key];
+   target = input_config_get_specific_bind_ptr(inp_desc_user,
+         key);
 
    if (target)
    {

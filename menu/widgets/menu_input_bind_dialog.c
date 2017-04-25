@@ -117,8 +117,7 @@ static int menu_input_key_bind_set_mode_common(
             menu_displaylist_ctl(DISPLAYLIST_PROCESS, &info);
          break;
       case MENU_INPUT_BINDS_CTL_BIND_ALL:
-         menu_input_binds.target  = &settings->input.binds
-            [index_offset][0];
+         menu_input_binds.target  = input_config_get_specific_bind_ptr(index_offset, 0);
          menu_input_binds.begin   = MENU_SETTINGS_BIND_BEGIN;
          menu_input_binds.last    = MENU_SETTINGS_BIND_LAST;
 

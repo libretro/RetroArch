@@ -453,8 +453,7 @@ static void menu_action_setting_disp_set_label_input_desc(
    remap_id = settings->input.remap_ids
       [inp_desc_user][inp_desc_button_index_offset];
 
-   keybind = (const struct retro_keybind*)
-      &settings->input.binds[inp_desc_user][remap_id];
+   keybind   = input_config_get_specific_bind(inp_desc_user, remap_id);
    auto_bind = (const struct retro_keybind*)
       input_config_get_bind_auto(inp_desc_user, remap_id);
 
@@ -469,9 +468,12 @@ static void menu_action_setting_disp_set_label_input_desc(
             descriptor,
             len);
       else
-         strlcpy(s,
-            msg_hash_to_str(settings->input.binds[inp_desc_user][remap_id].enum_idx),
-            len);
+      {
+         const struct retro_keybind *keyptr = input_config_get_specific_bind(inp_desc_user,
+               remap_id);
+
+         strlcpy(s, msg_hash_to_str(keyptr->enum_idx), len);
+      }
    }
 
 

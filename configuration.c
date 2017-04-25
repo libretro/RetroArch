@@ -1642,12 +1642,10 @@ static void read_keybinds_axis(config_file_t *conf, unsigned user,
 static void read_keybinds_user(config_file_t *conf, unsigned user)
 {
    unsigned i;
-   settings_t *settings = config_get_ptr();
 
    for (i = 0; input_config_bind_map_get_valid(i); i++)
    {
-      struct retro_keybind *bind = (struct retro_keybind*)
-         &settings->input.binds[user][i];
+      struct retro_keybind *bind = input_config_get_specific_bind_ptr(user, i);
 
       if (!bind->valid)
          continue;
