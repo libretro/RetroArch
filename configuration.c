@@ -868,14 +868,8 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("input_autodetect_enable",      &settings->input.autodetect_enable, true, input_autodetect_enable, false);
    SETTING_BOOL("audio_rate_control",           &settings->audio.rate_control, true, rate_control, false);
 #ifdef HAVE_WASAPI
-<<<<<<< HEAD
    SETTING_BOOL("audio_wasapi_exclusive_mode",  &settings->audio.wasapi.exclusive_mode, true, true, false);
    SETTING_BOOL("audio_wasapi_float_format",    &settings->audio.wasapi.float_format, true, false, false);
-=======
-   SETTING_BOOL("audio_wasapi_exclusive_mode",        &settings->audio.wasapi.exclusive_mode, true, true, false);
-   SETTING_BOOL("audio_wasapi_float_format",          &settings->audio.wasapi.float_format, true, false, false);
-   SETTING_BOOL("audio_wasapi_shared_mode_buffering", &settings->audio.wasapi.shared_mode_buffering, true, false, false);
->>>>>>> upstream/master
 #endif
 
    if (global)
