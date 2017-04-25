@@ -67,7 +67,7 @@ static void input_autoconfigure_joypad_reindex_devices(autoconfig_params_t *para
    for(i = 0; i < params->max_users; i++)
    {
       unsigned j;
-      const char *tmp = settings->input.device_names[i];
+      const char *tmp = input_config_get_device_name(i);
       int k           = 1;
 
       for(j = 0; j < params->max_users; j++)
@@ -367,7 +367,6 @@ bool input_autoconfigure_disconnect(unsigned i, const char *ident)
    char msg[255];
    retro_task_t         *task      = (retro_task_t*)calloc(1, sizeof(*task));
    autoconfig_disconnect_t *state  = (autoconfig_disconnect_t*)calloc(1, sizeof(*state));
-   settings_t            *settings = config_get_ptr();
 
    if (!state || !task)
       goto error;
@@ -382,7 +381,7 @@ bool input_autoconfigure_disconnect(unsigned i, const char *ident)
 
    strlcpy(state->msg, msg, sizeof(state->msg));
 
-   settings->input.device_names[state->idx][0] = '\0';
+   input_config_clear_device_name(state->idx);
 
    task->state   = state;
    task->handler = input_autoconfigure_disconnect_handler;

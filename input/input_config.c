@@ -495,6 +495,12 @@ void input_config_set_device_name(unsigned port, const char *name)
    }
 }
 
+void input_config_clear_device_name(unsigned port)
+{
+   settings_t *settings = config_get_ptr();
+   settings->input.device_names[port][0] = '\0';
+}
+
 void input_config_set_device(unsigned port, unsigned id)
 {
    settings_t *settings = config_get_ptr();

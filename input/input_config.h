@@ -69,6 +69,8 @@ void input_config_parse_joy_axis(void *data, const char *prefix,
 
 void input_config_set_device_name(unsigned port, const char *name);
 
+void input_config_clear_device_name(unsigned port);
+
 void input_config_set_device(unsigned port, unsigned id);
 
 const char *input_config_get_device_name(unsigned port);
