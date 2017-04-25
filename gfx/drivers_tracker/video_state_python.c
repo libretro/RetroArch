@@ -114,7 +114,7 @@ static PyObject *py_read_input(PyObject *self, PyObject *args)
    settings_t *settings                            = config_get_ptr();
    
    for (i = 0; i < MAX_USERS; i++)
-      py_binds[i] = settings->input.binds[i];
+      py_binds[i]                                  = input_config_get_binds(i);
    
    (void)self;
 
@@ -143,7 +143,7 @@ static PyObject *py_read_analog(PyObject *self, PyObject *args)
    settings_t *settings                   = config_get_ptr();
 
    for (i = 0; i < MAX_USERS; i++)
-      py_binds[i] = settings->input.binds[i];
+      py_binds[i]                         = input_config_get_binds(i);
 
    (void)self;
 
@@ -399,7 +399,7 @@ float py_state_get(py_state_t *handle, const char *id,
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      struct retro_keybind *general_binds = settings->input.binds[i];
+      struct retro_keybind *general_binds = input_config_get_binds(i);
       struct retro_keybind *auto_binds    = input_autoconfigure_get_binds(i);
       enum analog_dpad_mode dpad_mode     = settings->input.analog_dpad_mode[i];
 
@@ -414,7 +414,7 @@ float py_state_get(py_state_t *handle, const char *id,
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      struct retro_keybind *general_binds = settings->input.binds[i];
+      struct retro_keybind *general_binds = input_config_get_binds(i);
       struct retro_keybind *auto_binds    = input_autoconfigure_get_binds(i);
       input_pop_analog_dpad(general_binds);
       input_pop_analog_dpad(auto_binds);

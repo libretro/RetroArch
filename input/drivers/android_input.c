@@ -1246,7 +1246,8 @@ static bool android_input_key_pressed(void *data, int key)
    settings_t *settings     = config_get_ptr();		
 
    if(       settings->input.binds[0][key].valid 
-         && android_keyboard_port_input_pressed(settings->input.binds[0],key))		
+         && android_keyboard_port_input_pressed(input_config_get_binds(0),
+            key))		
       return true;		
 
    joypad_info.joy_idx        = 0;

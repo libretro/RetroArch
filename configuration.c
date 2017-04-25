@@ -1159,10 +1159,10 @@ static void config_set_defaults(void)
    retro_assert(sizeof(settings->input.binds[0]) >= sizeof(retro_keybinds_1));
    retro_assert(sizeof(settings->input.binds[1]) >= sizeof(retro_keybinds_rest));
 
-   memcpy(settings->input.binds[0], retro_keybinds_1, sizeof(retro_keybinds_1));
+   memcpy(input_config_get_binds(0), retro_keybinds_1, sizeof(retro_keybinds_1));
 
    for (i = 1; i < MAX_USERS; i++)
-      memcpy(settings->input.binds[i], retro_keybinds_rest,
+      memcpy(input_config_get_binds(i), retro_keybinds_rest,
             sizeof(retro_keybinds_rest));
 
    input_config_reset();
@@ -1174,8 +1174,9 @@ static void config_set_defaults(void)
    {
       for (j = 0; j < RARCH_BIND_LIST_END; j++)
       {
-         if (settings->input.binds[i][j].valid)
-            retro_assert(j == settings->input.binds[i][j].id);
+         const struct retro_keybind *keyval = input_config_get_specific_bind(i, j);
+         if (keyval->valid)
+            retro_assert(j == keyval->id);
       }
    }
 
@@ -2799,7 +2800,6 @@ static void save_keybind(config_file_t *conf, const char *prefix,
 static void save_keybinds_user(config_file_t *conf, unsigned user)
 {
    unsigned i = 0;
-   settings_t *settings = config_get_ptr();
 
    for (i = 0; input_config_bind_map_get_valid(i); i++)
    {
@@ -2808,7 +2808,7 @@ static void save_keybinds_user(config_file_t *conf, unsigned user)
 
       if (prefix)
          save_keybind(conf, prefix, input_config_bind_map_get_base(i),
-               &settings->input.binds[user][i], true, true);
+               input_config_get_specific_bind(user, i), true, true);
    }
 }
 
@@ -2936,7 +2936,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    for (i = 0; i < RARCH_FIRST_META_KEY; i++)
    {
       save_keybind(conf, "input", input_config_bind_map_get_base(i),
-            &settings->input.binds[user][i], false, false);
+            input_config_get_specific_bind(user, i), false, false);
    }
 
    ret = config_file_write(conf, autoconf_file);
