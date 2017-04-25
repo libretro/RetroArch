@@ -1102,14 +1102,16 @@ static void config_set_defaults(void)
 #endif
 
 #ifdef HAVE_FFMPEG
-   settings->multimedia.builtin_mediaplayer_enable  = true;
+   configuration_set_bool(settings, settings->multimedia.builtin_mediaplayer_enable, true);
 #else
-   settings->multimedia.builtin_mediaplayer_enable  = false;
+   configuration_set_bool(settings, settings->multimedia.builtin_mediaplayer_enable, false);
 #endif
    settings->video.scale                       = scale;
 
    if (rarch_ctl(RARCH_CTL_IS_FORCE_FULLSCREEN, NULL))
-      settings->video.fullscreen               = true;
+   {
+      configuration_set_bool(settings, settings->video.fullscreen, true);
+   }
 
    if (g_defaults.settings.video_threaded_enable != video_threaded)
       settings->video.threaded                 = g_defaults.settings.video_threaded_enable;
