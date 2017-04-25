@@ -560,6 +560,13 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
          AUDCLNT_BUFFERFLAGS_SILENT);
    WASAPI_HR_CHECK(hr, "IAudioRenderClient::ReleaseBuffer", goto error);
 
+   /* TODO: remove next three lines after
+      "Pause when menu activated" option and
+      fullscreen toggling are fixed */
+   hr  = w->client->lpVtbl->Start(w->client);
+   WASAPI_HR_CHECK(hr, "IAudioClient::Start", goto error);
+   w->running = true;
+
    return w;
 
 error:
