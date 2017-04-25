@@ -2926,7 +2926,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    config_set_string(conf, "input_driver",
          settings->input.joypad_driver);
    config_set_string(conf, "input_device",
-         settings->input.device_names[user]);
+         input_config_get_device_name(user));
 
    if(settings->input.vid[user] && settings->input.pid[user])
    {
