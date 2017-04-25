@@ -472,13 +472,13 @@ static void gl_raster_font_render_msg(
       drop_alpha           = 1.0f;
    }
 
-   if (font && font->block)
+   if (font->block)
       font->block->fullscreen = full_screen;
    else
       gl_raster_font_setup_viewport(width, height, font, full_screen);
 
-   if (font && !string_is_empty(msg) && font->gl 
-         && font->font_data && font->font_driver)
+   if (!string_is_empty(msg) && font->gl 
+         && font->font_data  && font->font_driver)
    {
       if (drop_x || drop_y)
       {
