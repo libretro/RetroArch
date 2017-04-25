@@ -868,9 +868,8 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("input_autodetect_enable",      &settings->input.autodetect_enable, true, input_autodetect_enable, false);
    SETTING_BOOL("audio_rate_control",           &settings->audio.rate_control, true, rate_control, false);
 #ifdef HAVE_WASAPI
-   SETTING_BOOL("audio_wasapi_exclusive_mode",        &settings->audio.wasapi.exclusive_mode, true, true, false);
-   SETTING_BOOL("audio_wasapi_float_format",          &settings->audio.wasapi.float_format, true, false, false);
-   SETTING_BOOL("audio_wasapi_shared_mode_buffering", &settings->audio.wasapi.shared_mode_buffering, true, false, false);
+   SETTING_BOOL("audio_wasapi_exclusive_mode",  &settings->audio.wasapi.exclusive_mode, true, true, false);
+   SETTING_BOOL("audio_wasapi_float_format",    &settings->audio.wasapi.float_format, true, false, false);
 #endif
 
    if (global)
@@ -987,6 +986,9 @@ static struct config_int_setting *populate_settings_int(settings_t *settings, in
 #endif
    SETTING_INT("bundle_assets_extract_version_current", &settings->bundle_assets_extract_version_current, true, 0, false);
    SETTING_INT("bundle_assets_extract_last_version",    &settings->bundle_assets_extract_last_version, true, 0, false);
+#ifdef HAVE_WASAPI
+   SETTING_INT("audio_wasapi_sh_buffer_length", &settings->audio.wasapi.sh_buffer_length, true, 0, false);
+#endif
 
    *size = count;
 

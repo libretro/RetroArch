@@ -30,6 +30,7 @@
 #include <Propidl.h>
 
 #include <lists/string_list.h>
+#include <queues/fifo_queue.h>
 
 #include "../audio_driver.h"
 #include "../../verbosity.h"
@@ -84,10 +85,9 @@ typedef struct
    IAudioClient *client;
    IAudioRenderClient *renderer;
    HANDLE write_event;
-   void *buffer;        /* NULL in unbuffered shared mode */
-   size_t buffer_size;  /* in unbuffered shared mode holds WASAPI engine buffer size */
-   size_t buffer_usage; /* 0 in unbuffered shared mode */
-   size_t frame_size;   /* 4 or 8 only */
+   fifo_buffer_t *buffer;     /* NULL in unbuffered shared mode */
+   size_t engine_buffer_size; /* WASAPI engine buffer size */
+   size_t frame_size;         /* 4 or 8 only */
    bool exclusive;
    bool blocking;
    bool running;
@@ -261,7 +261,7 @@ static void wasapi_set_format(WAVEFORMATEXTENSIBLE *wf,
 }
 
 static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
-      bool *float_fmt, unsigned *rate, double *latency, bool buffered)
+      bool *float_fmt, unsigned *rate, double *latency)
 {
    HRESULT hr;
    WAVEFORMATEXTENSIBLE wf;
@@ -272,7 +272,9 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
    REFERENCE_TIME default_period = 0;
    REFERENCE_TIME stream_latency = 0;
    UINT32 buffer_length          = 0;
-   double buffer_latency         = 0.0;
+   double sh_buffer_latency      = 0.0;
+   settings_t *settings          = config_get_ptr();
+   unsigned sh_buffer_length     = settings->audio.wasapi.sh_buffer_length;
 
    hr = device->lpVtbl->Activate(device, &IID_IAudioClient,
          CLSCTX_ALL, NULL, (void**)&client);
@@ -325,23 +327,16 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
    *rate = rate_res;
    *latency = 0.0;
 
-   /* next three calls are allowed to fail (we losing latency info only) */
+   /* next two calls are allowed to fail (we losing latency info only) */
    hr = client->lpVtbl->GetStreamLatency(client, &stream_latency);
    WASAPI_HR_WARN(hr, "IAudioClient::GetStreamLatency", return client);
 
    hr = client->lpVtbl->GetDevicePeriod(client, &default_period, NULL);
    WASAPI_HR_WARN(hr, "IAudioClient::GetDevicePeriod", return client);
 
-   if (buffered)
-   {
-      hr = client->lpVtbl->GetBufferSize(client, &buffer_length);
-      WASAPI_HR_CHECK(hr, "IAudioClient::GetBufferSize", return client);
-
-      /* buffer size is half of WASAPI internal buffer size */
-      buffer_latency = 1000.0 / rate_res * buffer_length / 2.0;
-   }
-
-   *latency = (double)(stream_latency + default_period) / 10000.0 + buffer_latency;
+   if (sh_buffer_length)
+      sh_buffer_latency = 1000.0 / rate_res * sh_buffer_length;
+   *latency = (double)(stream_latency + default_period) / 10000.0 + sh_buffer_latency;
 
    return client;
 
@@ -463,7 +458,7 @@ error:
 }
 
 static IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
-      bool *float_fmt, unsigned *rate, unsigned latency, bool buffered)
+      bool *float_fmt, unsigned *rate, unsigned latency)
 {
    HRESULT hr;
    double latency_res       = latency;
@@ -474,16 +469,14 @@ static IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
       client = wasapi_init_client_ex(device, float_fmt, rate, &latency_res);
       if (!client)
       {
-         client = wasapi_init_client_sh(device,
-               float_fmt, rate, &latency_res, buffered);
+         client = wasapi_init_client_sh(device, float_fmt, rate, &latency_res);
          if (client)
             *exclusive = false;
       }
    }
    else
    {
-      client = wasapi_init_client_sh(device,
-            float_fmt, rate, &latency_res, buffered);
+      client = wasapi_init_client_sh(device, float_fmt, rate, &latency_res);
       if (!client)
       {
          client = wasapi_init_client_ex(device, float_fmt, rate, &latency_res);
@@ -506,14 +499,14 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
       unsigned u, unsigned *new_rate)
 {
    HRESULT hr;
-   bool com_initialized  = false;
-   UINT32 frame_count    = 0;
-   BYTE *dest            = NULL;
-   settings_t *settings  = config_get_ptr();
-   bool float_format     = settings->audio.wasapi.float_format;
-   bool buffered         = settings->audio.wasapi.shared_mode_buffering;
-   wasapi_t *w           = (wasapi_t*)calloc(1, sizeof(wasapi_t));
-   w->exclusive          = settings->audio.wasapi.exclusive_mode;
+   bool com_initialized      = false;
+   UINT32 frame_count        = 0;
+   BYTE *dest                = NULL;
+   settings_t *settings      = config_get_ptr();
+   bool float_format         = settings->audio.wasapi.float_format;
+   unsigned sh_buffer_length = settings->audio.wasapi.sh_buffer_length;
+   wasapi_t *w               = (wasapi_t*)calloc(1, sizeof(wasapi_t));
+   w->exclusive              = settings->audio.wasapi.exclusive_mode;
 
    WASAPI_CHECK(w, "Out of memory", return NULL);
 
@@ -530,7 +523,7 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
 
    *new_rate = rate;
    w->client = wasapi_init_client(w->device,
-         &w->exclusive, &float_format, new_rate, latency, buffered);
+         &w->exclusive, &float_format, new_rate, latency);
    if (!w->client)
       goto error;
 
@@ -538,17 +531,15 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    WASAPI_HR_CHECK(hr, "IAudioClient::GetBufferSize", goto error);
 
    w->frame_size = float_format ? 8 : 4;
-   w->buffer_size = frame_count * w->frame_size;
-   if (w->exclusive || buffered)
+   w->engine_buffer_size = frame_count * w->frame_size;
+   if (w->exclusive)
    {
-      /* Buffer size in shared buffered mode
-       * is half of WASAPI internal buffer size.
-       * Size changes here must be followed by changes in functions
-       * wasapi_init_client_sh (latency calculation), and
-       * wasapi_write_sh (WASAPI engine buffer free size comparison). */
-      if (!w->exclusive)
-         w->buffer_size /= 2;
-      w->buffer = malloc(w->buffer_size);
+      w->buffer = fifo_new(w->engine_buffer_size);
+      WASAPI_CHECK(w->buffer, "Out of memory", goto error);
+   }
+   else if (sh_buffer_length)
+   {
+      w->buffer = fifo_new(sh_buffer_length * w->frame_size);
       WASAPI_CHECK(w->buffer, "Out of memory", goto error);
    }
 
@@ -577,7 +568,8 @@ error:
    WASAPI_RELEASE(w->device);
    if (w->write_event)
       CloseHandle(w->write_event);
-   WASAPI_FREE(w->buffer);
+   if (w->buffer)
+      fifo_free(w->buffer);
    free(w);
    if (com_initialized)
       CoUninitialize();
@@ -601,18 +593,36 @@ static bool wasapi_flush(wasapi_t * w, const void * data, size_t size)
    return true;
 }
 
+static bool wasapi_flush_buffer(wasapi_t * w, size_t size)
+{
+   BYTE *dest         = NULL;
+   UINT32 frame_count = size / w->frame_size;
+   HRESULT hr         = w->renderer->lpVtbl->GetBuffer(w->renderer, frame_count, &dest);
+
+   WASAPI_HR_CHECK(hr, "IAudioRenderClient::GetBuffer", return false)
+
+   fifo_read(w->buffer, dest, size);
+   hr = w->renderer->lpVtbl->ReleaseBuffer(w->renderer, frame_count, 0);
+
+   WASAPI_HR_CHECK(hr, "IAudioRenderClient::ReleaseBuffer", return false);
+
+   return true;
+}
+
 static ssize_t wasapi_write_sh(wasapi_t *w, const void * data, size_t size)
 {
    DWORD ir;
-   size_t buffer_avail;
+   size_t read_avail;
+   size_t write_avail;
    HRESULT hr;
    bool br;
-   ssize_t result = -1;
+   ssize_t writen = -1;
    UINT32 padding = 0;
 
    if (w->buffer)
    {
-      if (w->buffer_usage == w->buffer_size)
+      write_avail = fifo_write_avail(w->buffer);
+      if (!write_avail)
       {
          if (w->blocking)
          {
@@ -623,22 +633,21 @@ static ssize_t wasapi_write_sh(wasapi_t *w, const void * data, size_t size)
          hr = w->client->lpVtbl->GetCurrentPadding(w->client, &padding);
          WASAPI_HR_CHECK(hr, "IAudioClient::GetCurrentPadding", return -1);
 
-         /* this is ok for current buffer size
-          * (half of WASAPI internal buffer size)*/
-         if (padding * w->frame_size > w->buffer_size)
-            return 0;
-
-         br = wasapi_flush(w, w->buffer, w->buffer_size);
-         if (!br)
-            return -1;
-
-         w->buffer_usage = 0;
+         read_avail = fifo_read_avail(w->buffer);
+         write_avail = w->engine_buffer_size - padding * w->frame_size;
+         writen = read_avail < write_avail ? read_avail : write_avail;
+         if (writen)
+         {
+            br = wasapi_flush_buffer(w, writen);
+            if (!br)
+               return -1;
+         }
       }
 
-      buffer_avail = w->buffer_size - w->buffer_usage;
-      result = size < buffer_avail ? size : buffer_avail;
-      memcpy(w->buffer + w->buffer_usage, data, result);
-      w->buffer_usage += result;
+      write_avail = fifo_write_avail(w->buffer);
+      writen = size < write_avail ? size : write_avail;
+      if (writen)
+         fifo_write(w->buffer, data, writen);
    }
    else
    {
@@ -651,27 +660,31 @@ static ssize_t wasapi_write_sh(wasapi_t *w, const void * data, size_t size)
       hr = w->client->lpVtbl->GetCurrentPadding(w->client, &padding);
       WASAPI_HR_CHECK(hr, "IAudioClient::GetCurrentPadding", return -1);
 
-      buffer_avail = w->buffer_size - padding * w->frame_size;
-      if (!buffer_avail)
+      write_avail = w->engine_buffer_size - padding * w->frame_size;
+      if (!write_avail)
          return 0;
 
-      result = size > buffer_avail ? buffer_avail : size;
-      br = wasapi_flush(w, data, result);
-      if (!br)
-          result = -1;
+      writen = size < write_avail ? size : write_avail;
+      if (writen)
+      {
+         br = wasapi_flush(w, data, writen);
+         if (!br)
+            return -1;
+      }
    }
 
-   return result;
+   return writen;
 }
 
 static ssize_t wasapi_write_ex(wasapi_t *w, const void * data, size_t size)
 {
    DWORD ir;
-   size_t buffer_avail;
+   size_t write_avail;
    bool br        = false;
-   ssize_t result = 0;
+   ssize_t writen = 0;
 
-   if (w->buffer_usage == w->buffer_size)
+   write_avail = fifo_write_avail(w->buffer);
+   if (!write_avail)
    {
       ir = WaitForSingleObject(w->write_event, w->blocking ? INFINITE : 0);
       if (ir != WAIT_OBJECT_0 && w->blocking)
@@ -682,19 +695,17 @@ static ssize_t wasapi_write_ex(wasapi_t *w, const void * data, size_t size)
       if (ir != WAIT_OBJECT_0)
          return 0;
 
-      br = wasapi_flush(w, w->buffer, w->buffer_size);
+      br = wasapi_flush_buffer(w, w->engine_buffer_size);
       if (!br)
          return -1;
 
-      w->buffer_usage = 0;
+      write_avail = w->engine_buffer_size;
    }
 
-   buffer_avail = w->buffer_size - w->buffer_usage;
-   result = size < buffer_avail ? size : buffer_avail;
-   memcpy(w->buffer + w->buffer_usage, data, result);
-   w->buffer_usage += result;
+   writen = size < write_avail ? size : write_avail;
+   fifo_write(w->buffer, data, writen);
 
-   return result;
+   return writen;
 }
 
 static ssize_t wasapi_write(void *wh, const void *data, size_t size)
@@ -779,7 +790,8 @@ static void wasapi_free(void *wh)
    WASAPI_RELEASE(w->client);
    WASAPI_RELEASE(w->device);
    CoUninitialize();
-   WASAPI_FREE(w->buffer);
+   if (w->buffer)
+      fifo_free(w->buffer);
    free(w);
 
    ir = WaitForSingleObject(write_event, 20);
@@ -929,19 +941,24 @@ static size_t wasapi_write_avail(void *wh)
    UINT32 padding = 0;
 
    if (w->buffer)
-      return w->buffer_size - w->buffer_usage;
+      return fifo_write_avail(w->buffer);
 
    hr = w->client->lpVtbl->GetCurrentPadding(w->client, &padding);
    WASAPI_HR_CHECK(hr, "IAudioClient::GetCurrentPadding", return 0);
    
-   return w->buffer_size - padding * w->frame_size;
+   return w->engine_buffer_size - padding * w->frame_size;
 }
 
 static size_t wasapi_buffer_size(void *wh)
 {
    wasapi_t *w = (wasapi_t*)wh;
+   settings_t *settings      = config_get_ptr();
+   unsigned sh_buffer_length = settings->audio.wasapi.sh_buffer_length;
 
-   return w->buffer_size;
+   if (!w->exclusive && w->buffer)
+      return sh_buffer_length * w->frame_size;
+
+   return w->engine_buffer_size;
 }
 
 audio_driver_t audio_wasapi = {
