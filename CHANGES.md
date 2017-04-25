@@ -1,13 +1,21 @@
 # 1.5.1 (future)
 - NET: Fix bug #4703 (https://github.com/libretro/RetroArch/issues/4703)
 - ANDROID: Runtime permission checking
+- ANDROID: Improve autoconf fallback
+- ANDROID: Improve shield portable/gamepad device grouping workaround
+- ANDROID: Allow remotes to retain OK/Cancel position when menu_swap_ok_cancel is enabled
 - LOCALIZATION: Update/finish French translation
 - LOCALIZATION: Update German translation
 - LOCALIZATION: Update Japanese translation
 - LOCALIZATION/GUI: Korean font should display properly now with XMB/MaterialUI's
 default font
-- OSX/MACOS: Fix serious memory leak
+- OSX/MACOS: Fixes serious memory leak
 - WINDOWS: Added WASAPI audio driver for low-latency audio. Both shared and exclusive mode.
+- WINDOWS: Core mouse input should be relative again in cores
+- MISC: Various frontend optimizations.
+- VIDEO: Fix threaded video regression; tickering of menu entries would no longer work.
+- LOBBIES: Fallback to filename based matching if no CRC matches are found (for people making playlists by hand)
+- VITA: Fix slow I/O
 
 # 1.5.0
 - MOBILE: Single-tap for menu entry selection

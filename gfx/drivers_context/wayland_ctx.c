@@ -867,7 +867,7 @@ static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
 
    if (!wl->dpy)
    {
-      RARCH_ERR("Failed to connect to Wayland server.\n");
+      RARCH_ERR("[Wayland]: Failed to connect to Wayland server.\n");
       goto error;
    }
 
@@ -879,19 +879,19 @@ static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
 
    if (!wl->compositor)
    {
-      RARCH_ERR("Failed to create compositor.\n");
+      RARCH_ERR("[Wayland]: Failed to create compositor.\n");
       goto error;
    }
 
    if (!wl->shm)
    {
-      RARCH_ERR("Failed to create shm.\n");
+      RARCH_ERR("[Wayland]: Failed to create shm.\n");
       goto error;
    }
 
    if (!wl->shell)
    {
-      RARCH_ERR("Failed to create shell.\n");
+      RARCH_ERR("[Wayland]: Failed to create shell.\n");
       goto error;
    }
 

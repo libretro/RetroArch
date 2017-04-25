@@ -286,6 +286,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       const VkComponentMapping *swizzle,
       enum vk_texture_type type)
 {
+   unsigned i;
    struct vk_texture tex;
    VkMemoryRequirements mem_reqs;
    VkSubresourceLayout layout;
@@ -297,7 +298,6 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    VkCommandBufferAllocateInfo cmd_info = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
    VkSubmitInfo submit_info             = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
    VkCommandBufferBeginInfo begin_info  = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
-   unsigned i;
 
    memset(&tex, 0, sizeof(tex));
 
@@ -313,13 +313,13 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
     */
    if (type == VULKAN_TEXTURE_STATIC)
    {
-      info.mipLevels = vulkan_num_miplevels(width, height);
-      tex.mipmap     = true;
+      info.mipLevels  = vulkan_num_miplevels(width, height);
+      tex.mipmap      = true;
    }
    else
-      info.mipLevels = 1;
+      info.mipLevels  = 1;
 
-   info.samples = VK_SAMPLE_COUNT_1_BIT;
+   info.samples       = VK_SAMPLE_COUNT_1_BIT;
 
    if (type == VULKAN_TEXTURE_STREAMED)
    {
@@ -427,7 +427,8 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       vkGetImageMemoryRequirements(device, tex.image, &mem_reqs);
 
       alloc.allocationSize  = mem_reqs.size;
-      alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(&vk->context->memory_properties,
+      alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(
+            &vk->context->memory_properties,
             mem_reqs.memoryTypeBits,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
             VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
@@ -513,7 +514,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    tex.width  = width;
    tex.height = height;
    tex.format = format;
-   tex.type = type;
+   tex.type   = type;
 
    if (initial && (type == VULKAN_TEXTURE_STREAMED || type == VULKAN_TEXTURE_STAGING))
    {
@@ -538,15 +539,16 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    {
       VkImageCopy region;
       VkCommandBuffer staging;
-      struct vk_texture tmp = vulkan_create_texture(vk, NULL,
+      struct vk_texture tmp       = vulkan_create_texture(vk, NULL,
             width, height, format, initial, NULL, VULKAN_TEXTURE_STAGING);
 
       cmd_info.commandPool        = vk->staging_pool;
       cmd_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
       cmd_info.commandBufferCount = 1;
+
       vkAllocateCommandBuffers(vk->context->device, &cmd_info, &staging);
 
-      begin_info.flags        = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+      begin_info.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
       vkBeginCommandBuffer(staging, &begin_info);
 
@@ -560,7 +562,9 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
        * and transfers from the images without having to
        * mess around with lots of extra transitions at per-level granularity.
        */
-      vulkan_image_layout_transition(vk, staging, tex.image,
+      vulkan_image_layout_transition(vk,
+            staging,
+            tex.image,
             VK_IMAGE_LAYOUT_UNDEFINED,
             tex.mipmap ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             0, VK_ACCESS_TRANSFER_WRITE_BIT,
@@ -576,7 +580,8 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       region.dstSubresource            = region.srcSubresource;
 
       vkCmdCopyImage(staging,
-            tmp.image, VK_IMAGE_LAYOUT_GENERAL,
+            tmp.image,
+            VK_IMAGE_LAYOUT_GENERAL,
             tex.image,
             tex.mipmap ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             1, &region);
@@ -586,24 +591,24 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
          for (i = 1; i < info.mipLevels; i++)
          {
             VkImageBlit blit_region;
-            unsigned src_width = MAX(width >> (i - 1), 1);
-            unsigned src_height = MAX(height >> (i - 1), 1);
-            unsigned target_width = MAX(width >> i, 1);
-            unsigned target_height = MAX(height >> i, 1);
+            unsigned src_width                        = MAX(width >> (i - 1), 1);
+            unsigned src_height                       = MAX(height >> (i - 1), 1);
+            unsigned target_width                     = MAX(width >> i, 1);
+            unsigned target_height                    = MAX(height >> i, 1);
             memset(&blit_region, 0, sizeof(blit_region));
 
-            blit_region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            blit_region.srcSubresource.mipLevel = i - 1;
+            blit_region.srcSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+            blit_region.srcSubresource.mipLevel       = i - 1;
             blit_region.srcSubresource.baseArrayLayer = 0;
-            blit_region.srcSubresource.layerCount = 1;
-            blit_region.dstSubresource = blit_region.srcSubresource;
-            blit_region.dstSubresource.mipLevel = i;
-            blit_region.srcOffsets[1].x = src_width;
-            blit_region.srcOffsets[1].y = src_height;
-            blit_region.srcOffsets[1].z = 1;
-            blit_region.dstOffsets[1].x = target_width;
-            blit_region.dstOffsets[1].y = target_height;
-            blit_region.dstOffsets[1].z = 1;
+            blit_region.srcSubresource.layerCount     = 1;
+            blit_region.dstSubresource                = blit_region.srcSubresource;
+            blit_region.dstSubresource.mipLevel       = i;
+            blit_region.srcOffsets[1].x               = src_width;
+            blit_region.srcOffsets[1].y               = src_height;
+            blit_region.srcOffsets[1].z               = 1;
+            blit_region.dstOffsets[1].x               = target_width;
+            blit_region.dstOffsets[1].y               = target_height;
+            blit_region.dstOffsets[1].z               = 1;
 
             /* Only injects execution and memory barriers,
              * not actual transition. */
@@ -659,7 +664,8 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       slock_unlock(vk->context->queue_lock);
 #endif
 
-      vkFreeCommandBuffers(vk->context->device, vk->staging_pool, 1, &staging);
+      vkFreeCommandBuffers(vk->context->device,
+            vk->staging_pool, 1, &staging);
       vulkan_destroy_texture(
             vk->context->device, &tmp);
       tex.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;

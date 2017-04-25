@@ -161,8 +161,7 @@ GL_SOURCE += $(LIBRETRO_COMM_DIR)/glsym/rglgen.c
 
 ifeq ($(HAVE_GL_FFT), 1)
    DEFINES    += -DHAVE_GL_FFT
-   INCFLAGS   += -I$(CORE_DIR)/fft
-   FFT_SOURCE += $(CORE_DIR)/fft/fft.cpp
+   FFT_SOURCE += $(CORE_DIR)/ffmpeg_fft.c
 endif
 endif
 
@@ -177,6 +176,7 @@ SOURCES_C := 	$(GL_SOURCE) \
                 $(LIBAVFORMAT_SOURCE) \
                 $(LIBSWSCALE_SOURCE) \
                 $(LIBAVCODEC_SOURCE) \
+					 $(FFT_SOURCE) \
                 $(LIBSWRESAMPLE_SOURCE)
 
-SOURCES_CXX := $(FFT_SOURCE)
+SOURCES_CXX :=

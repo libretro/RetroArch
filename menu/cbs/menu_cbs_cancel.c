@@ -55,9 +55,9 @@ static int action_cancel_pop_default(const char *path,
          filebrowser_clear_type();
    }
 
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &new_selection_ptr);
+   new_selection_ptr = menu_navigation_get_selection();
    menu_entries_pop_stack(&new_selection_ptr, 0, 1);
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &new_selection_ptr);
+   menu_navigation_set_selection(new_selection_ptr);
 
    menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH, NULL);
    menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE, NULL);

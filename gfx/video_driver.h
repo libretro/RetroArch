@@ -128,7 +128,6 @@ typedef struct video_frame_info
    unsigned monitor_index;
    bool font_enable;
    char fps_text[128];
-   uint64_t frame_count;
 
    unsigned width;
    unsigned height;
@@ -194,7 +193,8 @@ typedef struct video_poke_interface
 #endif
    /* Enable or disable rendering. */
    void (*set_texture_enable)(void *data, bool enable, bool full_screen);
-   void (*set_osd_msg)(void *data, const char *msg,
+   void (*set_osd_msg)(void *data, video_frame_info_t *video_info,
+         const char *msg,
          const void *params, void *font);
 
    void (*show_mouse)(void *data, bool state);
@@ -348,7 +348,6 @@ bool video_driver_find_driver(void);
 void video_driver_apply_state_changes(void);
 bool video_driver_read_viewport(uint8_t *buffer, bool is_idle);
 bool video_driver_cached_frame(void);
-uint64_t video_driver_get_frame_count(void);
 bool video_driver_frame_filter_alive(void);
 bool video_driver_frame_filter_is_32bit(void);
 void video_driver_default_settings(void);

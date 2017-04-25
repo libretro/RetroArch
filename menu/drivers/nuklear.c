@@ -490,14 +490,12 @@ static bool nk_menu_init_list(void *data)
 static int nk_menu_iterate(void *data, void *userdata, enum menu_action action)
 {
    int ret;
-   size_t selection;
    menu_entry_t entry;
    nk_menu_handle_t *nk   = (nk_menu_handle_t*)userdata;
+   size_t selection       = menu_navigation_get_selection();
 
    if (!nk)
       return -1;
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return 0;
 
    menu_entry_get(&entry, 0, selection, NULL, false);
 

@@ -615,9 +615,9 @@ static int general_push(menu_displaylist_info_t *info,
 {
    struct retro_system_info *system_menu = NULL;
    settings_t        *settings = config_get_ptr();
-   rarch_system_info_t *system = NULL;
    core_info_list_t *list      = NULL;
    menu_handle_t        *menu  = NULL;
+   rarch_system_info_t *system = runloop_get_system_info();
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
@@ -625,7 +625,6 @@ static int general_push(menu_displaylist_info_t *info,
    core_info_get_list(&list);
 
    menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET, &system_menu);
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    switch (id)
    {

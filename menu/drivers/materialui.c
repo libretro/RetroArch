@@ -101,6 +101,7 @@ typedef struct mui_handle
    unsigned glyph_width2;
    char box_message[1024];
    bool mouse_show;
+   uint64_t frame_count;
 
    struct
    {
@@ -793,8 +794,7 @@ static void mui_render_menu_list(
    float sum                               = 0;
    size_t i                                = 0;
    file_list_t *list                       = NULL;
-   uint64_t frame_count                    = 
-      video_info->frame_count;
+   uint64_t frame_count                    = mui->frame_count;
    unsigned header_height                  = 
       menu_display_get_header_height();
 
@@ -808,25 +808,15 @@ static void mui_render_menu_list(
 
    for (; i < menu_entries_get_end(); i++)
    {
-      int y;
-      size_t selection;
       char rich_label[255];
       char entry_value[255];
       bool entry_selected = false;
       mui_node_t *node    = (mui_node_t*)
             menu_entries_get_userdata_at_offset(list, i);
-
+      size_t selection    = menu_navigation_get_selection();
+      int               y = header_height - mui->scroll_y + sum;
       rich_label[0]       = 
          entry_value[0]   = '\0';
-
-      if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-         continue;
-
-      y = header_height - mui->scroll_y + sum;
-
-      /*if ((y - (int)node->line_height) > (int)height
-            || ((y + (int)node->line_height) < 0))
-         continue;*/
 
       menu_entry_get_value((unsigned)i, NULL, entry_value, sizeof(entry_value));
       menu_entry_get_rich_label((unsigned)i, rich_label, sizeof(rich_label));
@@ -870,11 +860,11 @@ static size_t mui_list_get_size(void *data, enum menu_list_type type)
 
 static int mui_get_core_title(char *s, size_t len)
 {
-   struct retro_system_info    *system = NULL;
-   rarch_system_info_t      *info = NULL;
+   struct retro_system_info *system = NULL;
    settings_t *settings           = config_get_ptr();
    const char *core_name          = NULL;
    const char *core_version       = NULL;
+   rarch_system_info_t *info      = runloop_get_system_info();
 
    menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
          &system);
@@ -885,15 +875,12 @@ static int mui_get_core_title(char *s, size_t len)
    if (!settings->menu.core_enable)
       return -1;
 
-   if (runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info))
+   if (info)
    {
-      if (info)
-      {
-         if (string_is_empty(core_name))
-            core_name = info->info.library_name;
-         if (!core_version)
-            core_version = info->info.library_version;
-      }
+      if (string_is_empty(core_name))
+         core_name = info->info.library_name;
+      if (!core_version)
+         core_version = info->info.library_version;
    }
 
    if (string_is_empty(core_name))
@@ -1019,7 +1006,6 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
    size_t selection                = 0;
    size_t title_margin             = 0;
    mui_handle_t *mui               = (mui_handle_t*)data;
-   uint64_t frame_count            = video_info->frame_count;
    bool background_rendered        = false;
    bool libretro_running           = video_info->libretro_running;
 
@@ -1037,6 +1023,8 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
 
    if (!mui)
       return;
+
+   mui->frame_count++;
 
    msg[0] = title[0] = title_buf[0] = title_msg[0] = '\0';
 
@@ -1255,8 +1243,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
 
    menu_entries_get_title(title, sizeof(title));
 
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return;
+   selection = menu_navigation_get_selection();
 
    if (background_rendered || libretro_running)
       menu_display_set_alpha(blue_50, 0.75);
@@ -1350,7 +1337,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
 
    ticker.s        = title_buf;
    ticker.len      = ticker_limit;
-   ticker.idx      = frame_count / 100;
+   ticker.idx      = mui->frame_count / 100;
    ticker.str      = title;
    ticker.selected = true;
 
@@ -1373,7 +1360,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
 
       ticker.s        = title_buf_msg_tmp;
       ticker.len      = ticker_limit;
-      ticker.idx      = frame_count / 20;
+      ticker.idx      = mui->frame_count / 20;
       ticker.str      = title_buf_msg;
       ticker.selected = true;
 
@@ -1568,12 +1555,10 @@ static bool mui_load_image(void *userdata, void *data, enum menu_image_type type
 
 static float mui_get_scroll(mui_handle_t *mui)
 {
-   size_t selection;
    unsigned width, height, half = 0;
+   size_t selection             = menu_navigation_get_selection();
 
    if (!mui)
-      return 0;
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return 0;
 
    video_driver_get_size(&width, &height);
@@ -1688,14 +1673,11 @@ static int mui_environ(enum menu_environ_cb type, void *data, void *userdata)
 
 static void mui_preswitch_tabs(mui_handle_t *mui, unsigned action)
 {
-   size_t idx              = 0;
    size_t stack_size       = 0;
    file_list_t *menu_stack = NULL;
 
    if (!mui)
       return;
-
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
 
    menu_stack = menu_entries_get_menu_stack_ptr(0);
    stack_size = menu_stack->size;
@@ -1933,9 +1915,7 @@ static int mui_pointer_down(void *userdata,
          if (y > (-mui->scroll_y + header_height + node->y)
           && y < (-mui->scroll_y + header_height + node->y + node->line_height)
          )
-         {
-            menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &ii);
-         }
+            menu_navigation_set_selection(ii);
       }
 
 
@@ -1949,7 +1929,6 @@ static int mui_pointer_up(void *userdata,
       unsigned ptr, menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
-   size_t selection;
    unsigned width, height;
    unsigned header_height, i;
    mui_handle_t *mui          = (mui_handle_t*)userdata;
@@ -1962,7 +1941,7 @@ static int mui_pointer_up(void *userdata,
 
    if (y < header_height)
    {
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
+      size_t selection = menu_navigation_get_selection();
       return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
    }
    else if (y > height - mui->tabs_height)
@@ -2016,15 +1995,12 @@ static void mui_list_insert(void *userdata,
       const char *unused,
       size_t list_size)
 {
-   size_t selection;
    float scale_factor;
    int i                  = (int)list_size;
    mui_node_t *node       = NULL;
    mui_handle_t *mui      = (mui_handle_t*)userdata;
 
    if (!mui || !list)
-      return;
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
 
    node = (mui_node_t*)menu_entries_get_userdata_at_offset(list, i);

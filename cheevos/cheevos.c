@@ -1062,8 +1062,7 @@ static size_t cheevos_highest_bit(size_t n)
 
 void cheevos_parse_guest_addr(cheevos_var_t *var, unsigned value)
 {
-   rarch_system_info_t *system = NULL;
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+   rarch_system_info_t *system = runloop_get_system_info();
 
    var->bank_id = -1;
    var->value   = value;
@@ -1784,12 +1783,11 @@ Test all the achievements (call once per frame).
 
 uint8_t *cheevos_get_memory(const cheevos_var_t *var)
 {
-   uint8_t *memory;
+   uint8_t *memory = NULL;
    
    if (var->bank_id >= 0)
    {
-      rarch_system_info_t *system = NULL;
-      runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+      rarch_system_info_t *system = runloop_get_system_info();
 
       if (system->mmaps.num_descriptors != 0)
          memory = (uint8_t *)system->mmaps.descriptors[var->bank_id].core.ptr;
@@ -1799,8 +1797,6 @@ uint8_t *cheevos_get_memory(const cheevos_var_t *var)
       if (memory)
          memory += var->value;
    }
-   else
-      memory = NULL;
    
    return memory;
 }

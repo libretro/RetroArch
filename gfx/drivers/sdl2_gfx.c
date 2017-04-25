@@ -40,7 +40,6 @@
 
 #include "../../configuration.h"
 #include "../../retroarch.h"
-#include "../../performance_counters.h"
 #include "../../verbosity.h"
 #include "../video_context_driver.h"
 
@@ -503,17 +502,9 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
 
    if (frame && video_info->libretro_running)
    {
-      static struct retro_perf_counter sdl_copy_frame = {0};
-
       SDL_RenderClear(vid->renderer);
       sdl_refresh_input_size(vid, false, vid->video.rgb32, width, height, pitch);
-
-      performance_counter_init(sdl_copy_frame, "sdl_copy_frame");
-      performance_counter_start_plus(video_info->is_perfcnt_enable, sdl_copy_frame);
-
       SDL_UpdateTexture(vid->frame.tex, NULL, frame, pitch);
-
-      performance_counter_stop_plus(video_info->is_perfcnt_enable, sdl_copy_frame);
    }
 
    SDL_RenderCopyEx(vid->renderer, vid->frame.tex, NULL, NULL, vid->rotation, NULL, SDL_FLIP_NONE);
@@ -707,7 +698,9 @@ static void sdl2_poke_texture_enable(void *data, bool enable, bool full_screen)
    vid->menu.active = enable;
 }
 
-static void sdl2_poke_set_osd_msg(void *data, const char *msg,
+static void sdl2_poke_set_osd_msg(void *data, 
+      video_frame_info_t *video_info,
+      const char *msg,
       const void *params, void *font)
 {
    sdl2_video_t *vid = (sdl2_video_t*)data;

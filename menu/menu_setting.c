@@ -425,7 +425,7 @@ static void setting_get_string_representation_uint_libretro_device(void *data,
    unsigned index_offset;
    const struct retro_controller_description *desc = NULL;
    const char *name            = NULL;
-   rarch_system_info_t *system = NULL;
+   rarch_system_info_t *system = runloop_get_system_info();
    rarch_setting_t *setting    = (rarch_setting_t*)data;
    settings_t      *settings   = config_get_ptr();
 
@@ -434,8 +434,7 @@ static void setting_get_string_representation_uint_libretro_device(void *data,
 
    index_offset = setting->index_offset;
 
-   if (runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system)
-         && system)
+   if (system)
    {
       if (index_offset < system->ports.size)
          desc = libretro_find_controller_description(
@@ -705,13 +704,10 @@ int menu_action_handle_setting(rarch_setting_t *setting,
       case ST_PATH:
          if (action == MENU_ACTION_OK)
          {
-            size_t selection;
             menu_displaylist_info_t  info = {0};
             file_list_t       *menu_stack = menu_entries_get_menu_stack_ptr(0);
             const char      *name         = setting->name;
-
-            if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-               return -1;
+            size_t selection              = menu_navigation_get_selection();
 
             info.list           = menu_stack;
             info.directory_ptr  = selection;
@@ -856,15 +852,11 @@ int menu_setting_set_flags(rarch_setting_t *setting)
 int menu_setting_set(unsigned type, const char *label,
       unsigned action, bool wraparound)
 {
-   size_t selection;
    int ret                    = 0;
-   menu_file_list_cbs_t *cbs  = NULL;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return 0;
-
-   cbs = menu_entries_get_actiondata_at_offset(selection_buf, selection);
+   size_t selection           = menu_navigation_get_selection();
+   menu_file_list_cbs_t *cbs  = menu_entries_get_actiondata_at_offset(
+         selection_buf, selection);
 
    if (!cbs)
       return 0;
@@ -944,6 +936,7 @@ static int setting_action_start_bind_device(void *data)
 
    index_offset = setting->index_offset;
 
+   settings->modified                       = true;
    settings->input.joypad_map[index_offset] = index_offset;
    return 0;
 }
@@ -1021,7 +1014,7 @@ static int setting_action_start_libretro_device_type(void *data)
    unsigned index_offset, current_device;
    unsigned devices[128], types = 0, port = 0;
    const struct retro_controller_info *desc = NULL;
-   rarch_system_info_t *system = NULL;
+   rarch_system_info_t *system = runloop_get_system_info();
    rarch_setting_t   *setting  = (rarch_setting_t*)data;
 
    if (setting_generic_action_start_default(setting) != 0)
@@ -1033,8 +1026,7 @@ static int setting_action_start_libretro_device_type(void *data)
    devices[types++] = RETRO_DEVICE_NONE;
    devices[types++] = RETRO_DEVICE_JOYPAD;
 
-   if (runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system) 
-         && system)
+   if (system)
    {
       /* Only push RETRO_DEVICE_ANALOG as default if we use an 
        * older core which doesn't use SET_CONTROLLER_INFO. */
@@ -1092,6 +1084,7 @@ static int setting_action_left_analog_dpad_mode(void *data, bool wraparound)
 
    port = setting->index_offset;
 
+   settings->modified                     = true;
    settings->input.analog_dpad_mode[port] =
       (settings->input.analog_dpad_mode
        [port] + ANALOG_DPAD_LAST - 1) % ANALOG_DPAD_LAST;
@@ -1110,6 +1103,7 @@ static int setting_action_right_analog_dpad_mode(void *data, bool wraparound)
 
    port = setting->index_offset;
 
+   settings->modified                     = true;
    settings->input.analog_dpad_mode[port] =
       (settings->input.analog_dpad_mode[port] + 1)
       % ANALOG_DPAD_LAST;
@@ -1136,7 +1130,7 @@ static int setting_action_left_libretro_device_type(
    devices[types++] = RETRO_DEVICE_NONE;
    devices[types++] = RETRO_DEVICE_JOYPAD;
 
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+   system           = runloop_get_system_info();
 
    if (system)
    {
@@ -1194,7 +1188,7 @@ static int setting_action_right_libretro_device_type(
    const struct retro_controller_info *desc = NULL;
    rarch_setting_t *setting    = (rarch_setting_t*)data;
    settings_t      *settings   = config_get_ptr();
-   rarch_system_info_t *system = NULL;
+   rarch_system_info_t *system = runloop_get_system_info();
 
    if (!setting)
       return -1;
@@ -1204,8 +1198,7 @@ static int setting_action_right_libretro_device_type(
    devices[types++] = RETRO_DEVICE_NONE;
    devices[types++] = RETRO_DEVICE_JOYPAD;
 
-   if (runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system) 
-         && system)
+   if (system)
    {
       /* Only push RETRO_DEVICE_ANALOG as default if we use an 
        * older core which doesn't use SET_CONTROLLER_INFO. */
@@ -1496,12 +1489,12 @@ void general_read_handler(void *data)
             *setting->value.target.fraction = settings->audio.rate_control_delta;
             if (*setting->value.target.fraction < 0.0005)
             {
-               settings->audio.rate_control       = false;
+               configuration_set_bool(settings, settings->audio.rate_control, false);
                settings->audio.rate_control_delta = 0.0;
             }
             else
             {
-               settings->audio.rate_control       = true;
+               configuration_set_bool(settings, settings->audio.rate_control, true);
                settings->audio.rate_control_delta = *setting->value.target.fraction;
             }
             break;
@@ -1608,17 +1601,18 @@ void general_write_handler(void *data)
          }
          break;
       case MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW:
+         settings->modified              = true;
          settings->audio.max_timing_skew = *setting->value.target.fraction;
          break;
       case MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA:
          if (*setting->value.target.fraction < 0.0005)
          {
-            settings->audio.rate_control = false;
+            configuration_set_bool(settings, settings->audio.rate_control, false);
             settings->audio.rate_control_delta = 0.0;
          }
          else
          {
-            settings->audio.rate_control = true;
+            configuration_set_bool(settings, settings->audio.rate_control, true);
             settings->audio.rate_control_delta = *setting->value.target.fraction;
          }
          break;
@@ -1629,24 +1623,30 @@ void general_write_handler(void *data)
          rarch_cmd = CMD_EVENT_VIDEO_SET_BLOCKING_STATE;
          break;
       case MENU_ENUM_LABEL_VIDEO_SCALE:
+         settings->modified    = true;
          settings->video.scale = roundf(*setting->value.target.fraction);
 
          if (!settings->video.fullscreen)
             rarch_cmd = CMD_EVENT_REINIT;
          break;
       case MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX:
+         settings->modified            = true;
          settings->input.joypad_map[0] = *setting->value.target.integer;
          break;
       case MENU_ENUM_LABEL_INPUT_PLAYER2_JOYPAD_INDEX:
+         settings->modified            = true;
          settings->input.joypad_map[1] = *setting->value.target.integer;
          break;
       case MENU_ENUM_LABEL_INPUT_PLAYER3_JOYPAD_INDEX:
+         settings->modified            = true;
          settings->input.joypad_map[2] = *setting->value.target.integer;
          break;
       case MENU_ENUM_LABEL_INPUT_PLAYER4_JOYPAD_INDEX:
+         settings->modified            = true;
          settings->input.joypad_map[3] = *setting->value.target.integer;
          break;
       case MENU_ENUM_LABEL_INPUT_PLAYER5_JOYPAD_INDEX:
+         settings->modified            = true;
          settings->input.joypad_map[4] = *setting->value.target.integer;
          break;
       case MENU_ENUM_LABEL_LOG_VERBOSITY:
@@ -1671,8 +1671,8 @@ void general_write_handler(void *data)
          break;
       case MENU_ENUM_LABEL_VIDEO_ROTATION:
          {
-            rarch_system_info_t *system  = NULL;
-            runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+            rarch_system_info_t *system = runloop_get_system_info();
+
             if (system)
                video_driver_set_rotation(
                      (*setting->value.target.unsigned_integer +
@@ -1683,6 +1683,9 @@ void general_write_handler(void *data)
          audio_driver_set_volume_gain(db_to_gain(*setting->value.target.fraction));
          break;
       case MENU_ENUM_LABEL_AUDIO_LATENCY:
+         rarch_cmd = CMD_EVENT_AUDIO_REINIT;
+         break;
+      case MENU_ENUM_LABEL_AUDIO_DEVICE:
          rarch_cmd = CMD_EVENT_AUDIO_REINIT;
          break;
       case MENU_ENUM_LABEL_PAL60_ENABLE:
@@ -1871,14 +1874,11 @@ static bool setting_append_list_input_player_options(
    rarch_setting_group_info_t group_info      = {0};
    rarch_setting_group_info_t subgroup_info   = {0};
    settings_t *settings                       = config_get_ptr();
-   rarch_system_info_t *system                = NULL;
-   const char *temp_value                     = NULL;
+   rarch_system_info_t *system                = runloop_get_system_info();
    const struct retro_keybind* const defaults =
       (user == 0) ? retro_keybinds_1 : retro_keybinds_rest;
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
-
-   temp_value =msg_hash_to_str((enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + user));
+   const char *temp_value                     = msg_hash_to_str
+      ((enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + user));
 
    snprintf(buffer[user],    sizeof(buffer[user]),
          "%s %u", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), user + 1);

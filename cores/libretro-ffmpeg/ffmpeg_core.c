@@ -1,4 +1,3 @@
-/*  Copyright (C) 2016 - Brad Parker */
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -36,7 +35,7 @@ extern "C" {
 #endif
 
 #ifdef HAVE_GL_FFT
-#include "fft/fft.h"
+#include "ffmpeg_fft.h"
 #endif
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
@@ -340,9 +339,9 @@ static void check_variables(void)
 
    if (CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
-      if (string_is_equal(var.value, "enabled"))
+      if (memcmp(var.value, "enabled", 7) == 0)
          temporal_interpolation = true;
-      else if (string_is_equal(var.value, "disabled"))
+      else if (memcmp(var.value, "disabled", 8) == 0)
          temporal_interpolation = false;
    }
 
@@ -378,7 +377,7 @@ static void check_variables(void)
          colorspace = AVCOL_SPC_BT709;
       else if (string_is_equal(color_var.value, "BT.601"))
          colorspace = AVCOL_SPC_BT470BG;
-      else if (string_is_equal(color_var.value, "FCC"))
+      else if (memcmp(color_var.value, "FCC", 3) == 0)
          colorspace = AVCOL_SPC_FCC;
       else if (string_is_equal(color_var.value, "SMPTE240M"))
          colorspace = AVCOL_SPC_SMPTE240M;

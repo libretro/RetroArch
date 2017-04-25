@@ -1463,6 +1463,9 @@ static void frontend_linux_get_env(int *argc,
          strlcpy(app_dir, argv, sizeof(app_dir));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
+      __android_log_print(ANDROID_LOG_INFO,
+         "RetroArch", "[ENV]: app dir: [%s]\n", app_dir);
+
       /* Check for runtime permissions on Android 6.0+ */
       if (env && android_app->checkRuntimePermissions)
          CALL_VOID_METHOD(env, android_app->activity->clazz, android_app->checkRuntimePermissions);
@@ -1889,21 +1892,38 @@ static int frontend_linux_parse_drive_list(void *data)
    file_list_t *list = (file_list_t*)data;
 
 #ifdef ANDROID
-   menu_entries_append_enum(list,
-         app_dir,
-         msg_hash_to_str(MSG_APPLICATION_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
-         MENU_SETTING_ACTION, 0, 0);
-   menu_entries_append_enum(list,
-         internal_storage_app_path,
-         msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
-         MENU_SETTING_ACTION, 0, 0);
-   menu_entries_append_enum(list,
-         internal_storage_path,
-         msg_hash_to_str(MSG_INTERNAL_STORAGE),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
-         MENU_SETTING_ACTION, 0, 0);
+   if (!string_is_empty(app_dir))
+   {
+      menu_entries_append_enum(list,
+            app_dir,
+            msg_hash_to_str(MSG_APPLICATION_DIR),
+            MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+            MENU_SETTING_ACTION, 0, 0);
+   }
+   if (!string_is_empty(internal_storage_app_path))
+   {
+      menu_entries_append_enum(list,
+            internal_storage_app_path,
+            msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
+            MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+            MENU_SETTING_ACTION, 0, 0);
+   }
+   if (!string_is_empty(internal_storage_path))
+   {
+      menu_entries_append_enum(list,
+            internal_storage_path,
+            msg_hash_to_str(MSG_INTERNAL_STORAGE),
+            MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+            MENU_SETTING_ACTION, 0, 0);
+   }
+   else
+   {
+      menu_entries_append_enum(list,
+            "/storage/emulated/0",
+            msg_hash_to_str(MSG_REMOVABLE_STORAGE),
+            MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+            MENU_SETTING_ACTION, 0, 0);
+   }
    menu_entries_append_enum(list,
          "/storage",
          msg_hash_to_str(MSG_REMOVABLE_STORAGE),

@@ -21,7 +21,6 @@
 #include "../../driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
-#include "performance_counters.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -616,10 +615,6 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
    printf("\rfps: %8.8f frames : %5i", fps, wiiu->frames++);
    fflush(stdout);
 
-   static struct retro_perf_counter gfx_frame_perf = {0};
-   performance_counter_init(gfx_frame_perf, "gfx_frame");
-   performance_counter_start_plus(video_info->is_perfcnt_enable, gfx_frame_perf);
-
    if (wiiu->should_resize)
       wiiu_gfx_update_viewport(wiiu);
 
@@ -702,7 +697,6 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
 
    GX2SwapScanBuffers();
    GX2Flush();
-   performance_counter_stop_plus(video_info->is_perfcnt_enable, gfx_frame_perf);
 
    return true;
 }
@@ -851,12 +845,12 @@ static void wiiu_gfx_set_texture_enable(void* data, bool state, bool full_screen
 
 }
 
-static void wiiu_gfx_set_osd_msg(void* data, const char* msg,
-                             const void* params, void* font)
+static void wiiu_gfx_set_osd_msg(void* data,
+      video_frame_info_t *video_info,
+      const char* msg,
+      const void* params, void* font)
 {
 }
-
-
 
 static const video_poke_interface_t wiiu_poke_interface =
 {

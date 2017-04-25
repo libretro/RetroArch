@@ -106,10 +106,9 @@ static int vulkan_get_message_width(void *data, const char *msg,
          font->font_driver->get_glyph(font->font_data, (uint8_t)msg[i]);
       if (!glyph) /* Do something smarter here ... */
          glyph = font->font_driver->get_glyph(font->font_data, '?');
-      if (!glyph)
-         continue;
 
-      delta_x += glyph->advance_x;
+      if (glyph)
+         delta_x += glyph->advance_x;
    }
 
    return delta_x * scale;
@@ -120,24 +119,22 @@ static void vulkan_raster_font_render_line(
       float scale, const float color[4], float pos_x,
       float pos_y, unsigned text_align)
 {
-   int x, y, delta_x, delta_y;
-   float inv_tex_size_x, inv_tex_size_y, inv_win_width, inv_win_height;
    unsigned i;
    struct vk_color vk_color;
-   vk_t *vk = font ? font->vk : NULL;
+   vk_t *vk             = font->vk;
+   int x                = roundf(pos_x * vk->vp.width);
+   int y                = roundf((1.0f - pos_y) * vk->vp.height);
+   int delta_x          = 0;
+   int delta_y          = 0;
+   float inv_tex_size_x = 1.0f / font->texture.width;
+   float inv_tex_size_y = 1.0f / font->texture.height;
+   float inv_win_width  = 1.0f / font->vk->vp.width;
+   float inv_win_height = 1.0f / font->vk->vp.height;
 
-   if (!vk)
-      return;
-
-   x       = roundf(pos_x * vk->vp.width);
-   y       = roundf((1.0f - pos_y) * vk->vp.height);
-   delta_x = 0;
-   delta_y = 0;
-
-   vk_color.r = color[0];
-   vk_color.g = color[1];
-   vk_color.b = color[2];
-   vk_color.a = color[3];
+   vk_color.r           = color[0];
+   vk_color.g           = color[1];
+   vk_color.b           = color[2];
+   vk_color.a           = color[3];
 
    switch (text_align)
    {
@@ -148,11 +145,6 @@ static void vulkan_raster_font_render_line(
          x -= vulkan_get_message_width(font, msg, msg_len, scale) / 2;
          break;
    }
-
-   inv_tex_size_x = 1.0f / font->texture.width;
-   inv_tex_size_y = 1.0f / font->texture.height;
-   inv_win_width  = 1.0f / font->vk->vp.width;
-   inv_win_height = 1.0f / font->vk->vp.height;
 
    for (i = 0; i < msg_len; i++)
    {
@@ -182,10 +174,11 @@ static void vulkan_raster_font_render_line(
             width * inv_tex_size_x,
             height * inv_tex_size_y,
             &vk_color);
+
       font->vertices += 6;
 
-      delta_x += glyph->advance_x;
-      delta_y += glyph->advance_y;
+      delta_x        += glyph->advance_x;
+      delta_y        += glyph->advance_y;
    }
 }
 
@@ -203,8 +196,9 @@ static void vulkan_raster_font_render_message(
    /* If the font height is not supported just draw as usual */
    if (!font->font_driver->get_line_height)
    {
-      vulkan_raster_font_render_line(font, msg, strlen(msg),
-            scale, color, pos_x, pos_y, text_align);
+      if (font->vk)
+         vulkan_raster_font_render_line(font, msg, strlen(msg),
+               scale, color, pos_x, pos_y, text_align);
       return;
    }
 
@@ -218,28 +212,23 @@ static void vulkan_raster_font_render_message(
       if (delim)
       {
          unsigned msg_len = delim - msg;
-         vulkan_raster_font_render_line(font, msg, msg_len,
-               scale, color, pos_x, pos_y - (float)lines * line_height,
-               text_align);
+         if (font->vk)
+            vulkan_raster_font_render_line(font, msg, msg_len,
+                  scale, color, pos_x, pos_y - (float)lines * line_height,
+                  text_align);
          msg += msg_len + 1;
          lines++;
       }
       else
       {
          unsigned msg_len = strlen(msg);
-         vulkan_raster_font_render_line(font, msg, msg_len,
-               scale, color, pos_x, pos_y - (float)lines * line_height,
-               text_align);
+         if (font->vk)
+            vulkan_raster_font_render_line(font, msg, msg_len,
+                  scale, color, pos_x, pos_y - (float)lines * line_height,
+                  text_align);
          break;
       }
    }
-}
-
-static void vulkan_raster_font_setup_viewport(
-      unsigned width, unsigned height,
-      vulkan_raster_t *font, bool full_screen)
-{
-   video_driver_set_viewport(width, height, full_screen, false);
 }
 
 static void vulkan_raster_font_flush(vulkan_raster_t *font)
@@ -291,9 +280,9 @@ static void vulkan_raster_font_render_msg(
       drop_mod    = params->drop_mod;
       drop_alpha  = params->drop_alpha;
 
-      color[0]    = FONT_COLOR_GET_RED(params->color) / 255.0f;
+      color[0]    = FONT_COLOR_GET_RED(params->color)   / 255.0f;
       color[1]    = FONT_COLOR_GET_GREEN(params->color) / 255.0f;
-      color[2]    = FONT_COLOR_GET_BLUE(params->color) / 255.0f;
+      color[2]    = FONT_COLOR_GET_BLUE(params->color)  / 255.0f;
       color[3]    = FONT_COLOR_GET_ALPHA(params->color) / 255.0f;
 
       /* If alpha is 0.0f, turn it into default 1.0f */
@@ -307,19 +296,18 @@ static void vulkan_raster_font_render_msg(
       scale       = 1.0f;
       full_screen = true;
       text_align  = TEXT_ALIGN_LEFT;
+      drop_x      = -2;
+      drop_y      = -2;
+      drop_mod    = 0.3f;
+      drop_alpha  = 1.0f;
 
       color[0]    = video_info->font_msg_color_r;
       color[1]    = video_info->font_msg_color_g;
       color[2]    = video_info->font_msg_color_b;
       color[3]    = 1.0f;
-
-      drop_x      = -2;
-      drop_y      = -2;
-      drop_mod    = 0.3f;
-      drop_alpha  = 1.0f;
    }
 
-   vulkan_raster_font_setup_viewport(width, height, font, full_screen);
+   video_driver_set_viewport(width, height, full_screen, false);
 
    max_glyphs = strlen(msg);
    if (drop_x || drop_y)

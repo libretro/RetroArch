@@ -848,7 +848,7 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
 ifeq ($(HAVE_FFMPEG), 1)
 ifneq ($(C89_BUILD), 1)
 ifneq ($(HAVE_OPENGLES), 1)
-   OBJ += cores/libretro-ffmpeg/fft/fft.o
+   OBJ += cores/libretro-ffmpeg/ffmpeg_fft.o
    DEFINES += -I$(DEPS_DIR) -DHAVE_GL_FFT
    NEED_CXX_LINKER=1
 endif

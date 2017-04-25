@@ -385,7 +385,8 @@ static void rgui_blit_cursor(void)
 static void rgui_frame(void *data, video_frame_info_t *video_info)
 {
    rgui_t *rgui                   = (rgui_t*)data;
-   rgui->frame_count              = (unsigned)video_info->frame_count;
+
+   rgui->frame_count++;
 }
 
 static void rgui_render(void *data)
@@ -403,12 +404,9 @@ static void rgui_render(void *data)
    bool msg_force                 = false;
    settings_t *settings           = config_get_ptr();
    rgui_t *rgui                   = (rgui_t*)data;
-   uint64_t frame_count           = rgui ? rgui->frame_count : 0;
+   uint64_t frame_count           = rgui->frame_count;
 
    msg[0] = title[0] = title_buf[0] = title_msg[0] = '\0';
-
-   if (!rgui)
-      return;
 
    if (!rgui->force_redraw)
    {
@@ -540,7 +538,8 @@ static void rgui_render(void *data)
          RGUI_TERM_START_X(fb_width),
          title_buf, TITLE_COLOR(settings));
 
-   if (menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
+   if (settings->menu.core_enable && 
+         menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
       blit_line(
             RGUI_TERM_START_X(fb_width),
             (RGUI_TERM_HEIGHT(fb_width, fb_height) * FONT_HEIGHT_STRIDE) +
@@ -573,7 +572,6 @@ static void rgui_render(void *data)
    for (; i < end; i++, y += FONT_HEIGHT_STRIDE)
    {
       menu_animation_ctx_ticker_t ticker;
-      size_t selection;
       char entry_path[255];
       char entry_value[255];
       char message[255];
@@ -581,9 +579,7 @@ static void rgui_render(void *data)
       char type_str_buf[255];
       unsigned                entry_spacing = menu_entry_get_spacing((unsigned)i);
       bool                entry_selected    = menu_entry_is_currently_selected((unsigned)i);
-      
-      if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-         continue;
+      size_t selection                      = menu_navigation_get_selection();
 
       if (i > (selection + 100))
          continue;
@@ -762,12 +758,12 @@ static void rgui_navigation_clear(void *data, bool pending_push)
 
 static void rgui_navigation_set(void *data, bool scroll)
 {
-   size_t selection, start, fb_pitch;
+   size_t start, fb_pitch;
    unsigned fb_width, fb_height;
    bool do_set_start              = false;
    size_t end                     = menu_entries_get_end();
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return;
+   size_t selection               = menu_navigation_get_selection();
+
    if (!scroll)
       return;
 
@@ -849,25 +845,22 @@ static int rgui_pointer_tap(void *data,
       unsigned ptr, menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
-   size_t selection;
    unsigned header_height = menu_display_get_header_height();
 
    if (y < header_height)
    {
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
+      size_t selection = menu_navigation_get_selection();
       return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
    }
    else if (ptr <= (menu_entries_get_size() - 1))
    {
-      size_t idx;
       bool scroll              = false;
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
+      size_t selection         = menu_navigation_get_selection();
+
       if (ptr == selection && cbs && cbs->action_select)
          return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
 
-      idx  = ptr;
-
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
+      menu_navigation_set_selection(ptr);
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
    }
 

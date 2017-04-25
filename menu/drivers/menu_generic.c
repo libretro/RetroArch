@@ -70,19 +70,17 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
 {
    menu_entry_t entry;
    enum action_iterate_type iterate_type;
-   size_t selection               = 0;
    unsigned file_type             = 0;
    int ret                        = 0;
    uint32_t hash                  = 0;
    enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
    const char *label              = NULL;
    menu_handle_t *menu            = (menu_handle_t*)data;
+   size_t selection               = menu_navigation_get_selection();
 
    menu_entries_get_last_stack(NULL, &label, &file_type, &enum_idx, NULL);
 
    if (!menu)
-      return 0;
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return 0;
 
    menu->menu_state.msg[0]   = '\0';
@@ -129,8 +127,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
             if (menu_input_key_bind_iterate(&bind))
             {
                menu_entries_pop_stack(&selection, 0, 0);
-               menu_navigation_ctl(
-                     MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
+               menu_navigation_set_selection(selection);
             }
             else
                BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
@@ -250,7 +247,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
    {
       size_t new_selection_ptr = selection;
       menu_entries_pop_stack(&new_selection_ptr, 0, 0);
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
+      menu_navigation_set_selection(selection);
    }
 
    if (BIT64_GET(menu->state, MENU_STATE_POST_ITERATE))

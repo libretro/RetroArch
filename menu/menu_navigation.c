@@ -26,6 +26,18 @@
 #include "menu_driver.h"
 #include "menu_navigation.h"
 
+static size_t selection_ptr            = 0;
+
+size_t menu_navigation_get_selection(void)
+{
+   return selection_ptr;
+}
+
+void menu_navigation_set_selection(size_t val)
+{
+   selection_ptr = val;
+}
+
 bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
 {
    /* Quick jumping indices with L/R.
@@ -36,7 +48,6 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
       unsigned size;
    } scroll_index;
    static unsigned scroll_acceleration    = 0;
-   static size_t selection_ptr            = 0;
 
    switch (state)
    {
@@ -47,10 +58,8 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
          break;
       case MENU_NAVIGATION_CTL_CLEAR:
          {
-            size_t idx         = 0;
             bool scroll        = true;
-
-            menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
+            menu_navigation_set_selection(0);
             menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
             menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_CLEAR, data);
          }
@@ -73,7 +82,8 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
             {
                size_t idx  = selection_ptr + (*scroll_speed);
                bool scroll = true;
-               menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
+
+               menu_navigation_set_selection(idx);
                menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
                menu_navigation_ctl(MENU_NAVIGATION_CTL_INCREMENT, NULL);
             }
@@ -94,7 +104,7 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
                }
             }
             
-            menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_INCREMENT, NULL);
+            menu_driver_increment_navigation();
          }
          break;
       case MENU_NAVIGATION_CTL_DECREMENT:
@@ -121,10 +131,11 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
                   idx = 0;
             }
 
-            menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
+            menu_navigation_set_selection(idx);
             menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
             menu_navigation_ctl(MENU_NAVIGATION_CTL_DECREMENT, NULL);
-            menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_DECREMENT, NULL);
+
+            menu_driver_decrement_navigation();
 
          }
          break;
@@ -135,8 +146,7 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
          {
             size_t  menu_list_size = menu_entries_get_size();
             size_t new_selection = menu_list_size - 1;
-            menu_navigation_ctl(
-                  MENU_NAVIGATION_CTL_SET_SELECTION, &new_selection);
+            menu_navigation_set_selection(new_selection);
             menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_SET_LAST, NULL);
          }
          break;
@@ -190,22 +200,6 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
 
             menu_driver_ctl(
                   RARCH_MENU_CTL_NAVIGATION_DESCEND_ALPHABET, ptr_out);
-         }
-         break;
-      case MENU_NAVIGATION_CTL_GET_SELECTION:
-         {
-            size_t *sel = (size_t*)data;
-            if (!sel)
-               return false;
-            *sel = selection_ptr;
-         }
-         break;
-      case MENU_NAVIGATION_CTL_SET_SELECTION:
-         {
-            size_t *sel = (size_t*)data;
-            if (!sel)
-               return false;
-            selection_ptr = *sel;
          }
          break;
       case MENU_NAVIGATION_CTL_CLEAR_SCROLL_INDICES:

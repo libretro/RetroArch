@@ -190,7 +190,9 @@ static void xshm_poke_texture_enable(void *data, bool enable, bool full_screen)
    
 }
 
-static void xshm_poke_set_osd_msg(void *data, const char *msg,
+static void xshm_poke_set_osd_msg(void *data,
+      video_frame_info_t *video_info,
+      const char *msg,
       const struct font_params *params, void *font)
 {
    

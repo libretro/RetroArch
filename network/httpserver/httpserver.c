@@ -171,7 +171,6 @@ static int httpserver_handle_basic_info(struct mg_connection* conn, void* cbdata
    retro_ctx_memory_info_t vram;
    char core_path[PATH_MAX_LENGTH]                 = {0};
    const char* pixel_format                        = NULL;
-   const rarch_system_info_t* system               = NULL;
    const struct retro_subsystem_info* subsys       = NULL;
    const struct retro_subsystem_rom_info* rom      = NULL;
    const struct retro_subsystem_memory_info* mem   = NULL;
@@ -182,9 +181,7 @@ static int httpserver_handle_basic_info(struct mg_connection* conn, void* cbdata
    const core_option_manager_t* core_opts          = NULL;
    const struct mg_request_info              * req = mg_get_request_info(conn);
    const settings_t                     * settings = config_get_ptr();
-
-   if (!runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system))
-      return httpserver_error(conn, 500, "Could not get system information in %s", __FUNCTION__);
+   rarch_system_info_t *system                     = runloop_get_system_info();
 
    if (string_is_empty(system->info.library_name))
       return httpserver_error(conn, 500, "Core not initialized in %s", __FUNCTION__);
@@ -413,15 +410,12 @@ static int httpserver_handle_get_mmaps(struct mg_connection* conn, void* cbdata)
    unsigned id;
    const struct          mg_request_info* req = mg_get_request_info(conn);
    const                          char* comma = "";
-   rarch_system_info_t               * system = NULL;
    const struct retro_memory_map* mmaps       = NULL;
    const struct retro_memory_descriptor* mmap = NULL;
+   rarch_system_info_t *system                = runloop_get_system_info();
 
    if (strcmp(req->request_method, "GET"))
       return httpserver_error(conn, 405, "Unimplemented method in %s: %s", __FUNCTION__, req->request_method);
-
-   if (!runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system))
-      return httpserver_error(conn, 500, "Could not get system information in %s", __FUNCTION__);
 
    mmaps = &system->mmaps;
    mmap  = mmaps->descriptors;
@@ -469,20 +463,17 @@ static int httpserver_handle_get_mmap(struct mg_connection* conn, void* cbdata)
    uLong buflen;
    const struct mg_request_info         * req = mg_get_request_info(conn);
    const char                         * comma = "";
-   rarch_system_info_t* system                = NULL;
    const struct retro_memory_map* mmaps       = NULL;
    const struct retro_memory_descriptor* mmap = NULL;
    const char* param                          = NULL;
    Bytef* buffer                              = NULL;
+   rarch_system_info_t *system                = runloop_get_system_info();
 
    if (strcmp(req->request_method, "GET"))
       return httpserver_error(conn, 405, "Unimplemented method in %s: %s", __FUNCTION__, req->request_method);
 
    if (sscanf(req->request_uri, "/" MEMORY_MAP "/%u", &id) != 1)
       return httpserver_error(conn, 500, "Malformed request in %s: %s", __FUNCTION__, req->request_uri);
-
-   if (!runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system))
-      return httpserver_error(conn, 500, "Could not get system information in %s", __FUNCTION__);
 
    mmaps = &system->mmaps;
 

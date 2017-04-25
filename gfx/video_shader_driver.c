@@ -106,9 +106,7 @@ bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader)
    const video_poke_interface_t *video_poke = video_driver_get_poke();
 
    shader->data = NULL;
-   if (!video_poke || !video_driver)
-      return false;
-   if (!video_poke->get_current_shader)
+   if (!video_poke || !video_driver || !video_poke->get_current_shader)
       return false;
    shader->data = video_poke->get_current_shader(video_driver);
    return true;

@@ -2652,9 +2652,7 @@ static int menu_displaylist_parse_load_content_settings(
 #ifdef HAVE_LAKKA
       bool show_advanced_settings    = settings->menu.show_advanced_settings;
 #endif
-      rarch_system_info_t *system    = NULL;
-
-      runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+      rarch_system_info_t *system    = runloop_get_system_info();
 
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESUME_CONTENT),
@@ -3251,7 +3249,7 @@ static int menu_displaylist_parse_options_remappings(
          MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME,
          MENU_SETTING_ACTION, 0, 0);
 
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+   system    = runloop_get_system_info();
 
    if (system)
    {
@@ -3737,7 +3735,7 @@ static bool menu_displaylist_push_list_process(menu_displaylist_info_t *info)
       menu_entries_ctl(MENU_ENTRIES_CTL_REFRESH, info->list);
 
    if (info->need_clear)
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
+      menu_navigation_set_selection(idx);
 
    if (info->need_push)
    {
@@ -4288,9 +4286,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          return true;
       case DISPLAYLIST_MAIN_MENU:
          {
-            rarch_system_info_t *system   = NULL;
-            runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
-
             if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
                menu_displaylist_parse_settings_enum(menu, info,
                      MENU_ENUM_LABEL_CONTENT_SETTINGS,

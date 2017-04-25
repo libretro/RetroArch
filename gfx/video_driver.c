@@ -53,7 +53,6 @@
 #include "../driver.h"
 #include "../retroarch.h"
 #include "../runloop.h"
-#include "../performance_counters.h"
 #include "../list_special.h"
 #include "../core.h"
 #include "../command.h"
@@ -839,7 +838,7 @@ static bool video_driver_init_internal(void)
       video_driver_get_viewport_info(custom_vp);
    }
 
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+   system              = runloop_get_system_info();
 
    video_driver_set_rotation(
             (settings->video.rotation + system->rotation) % 4);
@@ -913,8 +912,10 @@ bool video_driver_get_video_output_size(unsigned *width, unsigned *height)
 
 void video_driver_set_osd_msg(const char *msg, const void *data, void *font)
 {
+   video_frame_info_t video_info;
+   video_driver_build_info(&video_info);
    if (video_driver_poke && video_driver_poke->set_osd_msg)
-      video_driver_poke->set_osd_msg(video_driver_data, msg, data, font);
+      video_driver_poke->set_osd_msg(video_driver_data, &video_info, msg, data, font);
 }
 
 void video_driver_set_texture_enable(bool enable, bool fullscreen)
@@ -1018,7 +1019,9 @@ void video_monitor_set_refresh_rate(float hz)
    runloop_msg_queue_push(msg, 1, 180, false);
    RARCH_LOG("%s\n", msg);
 
-   settings->video.refresh_rate = hz;
+   configuration_set_float(settings,
+         settings->video.refresh_rate,
+         hz);
 }
 
 /**
@@ -1093,20 +1096,14 @@ static bool video_driver_frame_filter(
       unsigned *output_width, unsigned *output_height,
       unsigned *output_pitch)
 {
-   static struct retro_perf_counter softfilter_process = {0};
-   
-   performance_counter_init(softfilter_process, "softfilter_process");
-
    rarch_softfilter_get_output_size(video_driver_state_filter,
          output_width, output_height, width, height);
 
    *output_pitch = (*output_width) * video_driver_state_out_bpp;
 
-   performance_counter_start_plus(video_info->is_perfcnt_enable, softfilter_process);
    rarch_softfilter_process(video_driver_state_filter,
          video_driver_state_buffer, *output_pitch,
          data, width, height, pitch);
-   performance_counter_stop_plus(video_info->is_perfcnt_enable, softfilter_process);
 
    if (video_info->post_filter_record && recording_data)
       recording_dump_frame(video_driver_state_buffer,
@@ -1652,14 +1649,6 @@ bool video_driver_read_viewport(uint8_t *buffer, bool is_idle)
    return false;
 }
 
-uint64_t video_driver_get_frame_count(void)
-{
-   uint64_t frame_count;
-   video_driver_threaded_lock();
-   frame_count = video_driver_frame_count;
-   video_driver_threaded_unlock();
-   return frame_count;
-}
 
 bool video_driver_frame_filter_alive(void)
 {
@@ -2069,13 +2058,8 @@ void video_driver_frame(const void *data, unsigned width,
 
    video_driver_build_info(&video_info);
 
-   video_driver_threaded_lock();
-   video_info.frame_count = video_driver_frame_count;
-   video_driver_frame_count++;
-   video_driver_threaded_unlock();
-   
    /* Get the amount of frames per seconds. */
-   if (video_info.frame_count)
+   if (video_driver_frame_count)
    {
       unsigned write_index                         = 
          video_driver_frame_time_count++ & 
@@ -2083,7 +2067,7 @@ void video_driver_frame(const void *data, unsigned width,
       video_driver_frame_time_samples[write_index] = new_time - fps_time;
       fps_time                                     = new_time;
 
-      if ((video_info.frame_count % FPS_UPDATE_INTERVAL) == 0)
+      if ((video_driver_frame_count % FPS_UPDATE_INTERVAL) == 0)
       {
          char frames_text[64];
 
@@ -2112,7 +2096,7 @@ void video_driver_frame(const void *data, unsigned width,
          snprintf(frames_text,
                sizeof(frames_text),
                STRING_REP_UINT64,
-               (unsigned long long)video_info.frame_count);
+               (unsigned long long)video_driver_frame_count);
 
          strlcat(video_driver_window_title,
                frames_text,
@@ -2128,7 +2112,7 @@ void video_driver_frame(const void *data, unsigned width,
                "FPS: %6.1f || %s: " STRING_REP_UINT64,
                last_fps,
                msg_hash_to_str(MSG_FRAMES),
-               (unsigned long long)video_info.frame_count);
+               (unsigned long long)video_driver_frame_count);
    }
    else
    {
@@ -2180,9 +2164,11 @@ void video_driver_frame(const void *data, unsigned width,
 
    if (!current_video || !current_video->frame(
             video_driver_data, data, width, height,
-            video_info.frame_count,
+            video_driver_frame_count,
             (unsigned)pitch, video_driver_msg, &video_info))
       video_driver_active = false;
+
+   video_driver_frame_count++;
 
    if (video_info.fps_show)
       runloop_msg_queue_push(video_info.fps_text, 1, 1, false);
@@ -2272,7 +2258,6 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->font_msg_color_g      = settings->video.msg_color_g;
    video_info->font_msg_color_b      = settings->video.msg_color_b;
 
-   video_info->frame_count           = 0;
    video_info->fps_text[0]           = '\0';
 
    video_info->width                 = video_driver_width;
@@ -2388,7 +2373,7 @@ void video_driver_get_window_title(char *buf, unsigned len)
 void video_driver_get_status(uint64_t *frame_count, bool * is_alive,
       bool *is_focused)
 {
-   *frame_count = video_driver_get_frame_count();
+   *frame_count = video_driver_frame_count;
    *is_alive    = video_driver_is_alive();
    *is_focused  = video_driver_is_focused();
 }

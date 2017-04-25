@@ -175,7 +175,6 @@ enum
 #define XMB_SYSTEM_TAB_END XMB_SYSTEM_TAB_HISTORY
 #endif
 
-
 typedef struct xmb_handle
 {
    file_list_t *menu_stack_old;
@@ -198,6 +197,7 @@ typedef struct xmb_handle
    char background_file_path[PATH_MAX_LENGTH];
    char thumbnail_file_path[PATH_MAX_LENGTH];
    char savestate_thumbnail_file_path[PATH_MAX_LENGTH];
+   uint64_t frame_count;
 
    bool mouse_show;
 
@@ -1073,16 +1073,15 @@ static void xmb_selection_pointer_changed(
 {
    unsigned i, end, height;
    menu_animation_ctx_tag_t tag;
-   size_t selection, num      = 0;
+   size_t num                 = 0;
    int threshold              = 0;
    menu_list_t     *menu_list = NULL;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   size_t selection           = menu_navigation_get_selection();
 
    menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
 
    if (!xmb)
-      return;
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
 
    end       = (unsigned)menu_entries_get_end();
@@ -1559,12 +1558,9 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb)
 static void xmb_list_switch(xmb_handle_t *xmb)
 {
    menu_animation_ctx_entry_t entry;
-   size_t selection;
-   int dir = -1;
+   int dir                    = -1;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return;
+   size_t selection           = menu_navigation_get_selection();
 
    if (xmb->categories.selection_ptr > xmb->categories.selection_ptr_old)
       dir = 1;
@@ -1868,12 +1864,9 @@ static void xmb_list_open(xmb_handle_t *xmb)
 {
    menu_animation_ctx_entry_t entry;
 
-   size_t selection;
    int                    dir = 0;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return;
+   size_t selection           = menu_navigation_get_selection();
 
    xmb->depth = (int)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
 
@@ -2107,7 +2100,7 @@ static void xmb_draw_items(
    menu_display_ctx_rotate_draw_t rotate_draw;
    xmb_node_t *core_node       = NULL;
    size_t end                  = 0;
-   uint64_t frame_count        = video_info->frame_count;
+   uint64_t frame_count        = xmb->frame_count;
 
    if (!list || !list->size)
       return;
@@ -2381,10 +2374,7 @@ static void xmb_render(void *data)
 
    if (settings->menu.pointer.enable || settings->menu.mouse.enable)
    {
-      size_t selection;
-
-      if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-         return;
+      size_t selection = menu_navigation_get_selection();
 
       for (i = 0; i < end; i++)
       {
@@ -2583,6 +2573,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    char title_msg[255];
    char title_truncated[255];
    menu_display_frame_info_t menu_disp_info;
+   settings_t *settings                    = config_get_ptr();
    unsigned width                          = video_info->width;
    unsigned height                         = video_info->height;
    bool render_background                  = false;
@@ -2592,6 +2583,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    if (!xmb)
       return;
+
+   xmb->frame_count++;
 
    menu_disp_info.shadows_enable           = video_info->xmb_shadows_enable;
 
@@ -2626,8 +2619,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          coord_black,
          coord_white);
 
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return;
+   selection = menu_navigation_get_selection();
 
    strlcpy(title_truncated, xmb->title_name, sizeof(title_truncated));
    if (selection > 1)
@@ -2639,7 +2631,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          xmb->margins.title.top, 1, 1, TEXT_ALIGN_LEFT,
          width, height, xmb->font);
 
-   if (menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
+   if (settings->menu.core_enable &&
+         menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
       xmb_draw_text(menu_disp_info, xmb, title_msg, xmb->margins.title.left,
             height - xmb->margins.title.bottom, 1, 1, TEXT_ALIGN_LEFT,
             width, height, xmb->font);
@@ -3063,12 +3056,9 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
 
 static void xmb_layout(xmb_handle_t *xmb)
 {
-   size_t selection;
    unsigned width, height, i, current, end;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return;
+   size_t selection           = menu_navigation_get_selection();
 
    video_driver_get_size(&width, &height);
 
@@ -3602,15 +3592,13 @@ static void xmb_list_insert(void *userdata,
       const char *unused,
       size_t list_size)
 {
-   size_t selection;
    int current            = 0;
    int i                  = (int)list_size;
    xmb_node_t *node       = NULL;
    xmb_handle_t *xmb      = (xmb_handle_t*)userdata;
+   size_t selection       = menu_navigation_get_selection();
 
    if (!xmb || !list)
-      return;
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
 
    node = (xmb_node_t*)menu_entries_get_userdata_at_offset(list, i);
@@ -3733,14 +3721,13 @@ static void xmb_list_deep_copy(const file_list_t *src, file_list_t *dst)
 
 static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action)
 {
-   size_t stack_size, list_size, selection;
+   size_t stack_size, list_size;
    xmb_handle_t      *xmb     = (xmb_handle_t*)data;
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   size_t selection           = menu_navigation_get_selection();
 
    if (!xmb)
-      return;
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
 
    xmb_list_deep_copy(selection_buf, xmb->selection_buf_old);
@@ -4057,26 +4044,21 @@ static int xmb_pointer_tap(void *userdata,
       menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
-   size_t selection;
    unsigned header_height = menu_display_get_header_height();
 
    if (y < header_height)
    {
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
+      size_t selection = menu_navigation_get_selection();
       return (unsigned)menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
    }
    else if (ptr <= (menu_entries_get_size() - 1))
    {
-      size_t idx;
       bool scroll              = false;
-
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
+      size_t selection         = menu_navigation_get_selection();
       if (ptr == selection && cbs && cbs->action_select)
          return (unsigned)menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
 
-      idx  = ptr;
-
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
+      menu_navigation_set_selection(ptr);
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
    }
 

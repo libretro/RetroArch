@@ -162,7 +162,9 @@ static void bundle_decompressed(void *task_data,
 
    settings->bundle_assets_extract_last_version =
       settings->bundle_assets_extract_version_current;
-   settings->bundle_finished = true;
+
+   configuration_set_bool(settings, settings->bundle_finished, true);
+
    command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
 }
 #endif
@@ -185,7 +187,10 @@ static bool menu_init(menu_handle_t *menu_data)
    if (settings->menu_show_start_screen)
    {
       menu_dialog_push_pending(true, MENU_DIALOG_WELCOME);
-      settings->menu_show_start_screen   = false;
+
+      configuration_set_bool(settings,
+            settings->menu_show_start_screen, false);
+
       if (settings->config_save_on_exit)
          command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
    }
@@ -367,7 +372,8 @@ bool menu_driver_render(bool is_idle)
    if (menu_driver_alive && !is_idle)
       menu_display_libretro();
 
-   menu_driver_ctl(RARCH_MENU_CTL_SET_TEXTURE, NULL);
+   if (menu_driver_ctx->set_texture)
+      menu_driver_ctx->set_texture();
 
    menu_driver_data->state               = 0;
 
@@ -377,6 +383,79 @@ bool menu_driver_render(bool is_idle)
 bool menu_driver_is_alive(void)
 {
    return menu_driver_alive;
+}
+
+bool menu_driver_is_texture_set(void)
+{
+   if (!menu_driver_ctx)
+      return false;
+   return menu_driver_ctx->set_texture;
+}
+
+bool menu_driver_iterate(menu_ctx_iterate_t *iterate)
+{
+   if (menu_driver_pending_quick_menu)
+   {
+      menu_driver_pending_quick_menu = false;
+      menu_entries_flush_stack(NULL, MENU_SETTINGS);
+      menu_display_set_msg_force(true);
+
+      generic_action_ok_displaylist_push("", NULL,
+            "", 0, 0, 0, ACTION_OK_DL_CONTENT_SETTINGS);
+
+      if (menu_driver_pending_quit)
+      {
+         menu_driver_pending_quit     = false;
+         return false;
+      }
+
+      return true;
+   }
+
+   if (menu_driver_pending_quit)
+   {
+      menu_driver_pending_quit     = false;
+      return false;
+   }
+
+   if (menu_driver_pending_shutdown)
+   {
+      menu_driver_pending_shutdown = false;
+      if (!command_event(CMD_EVENT_QUIT, NULL))
+         return false;
+      return true;
+   }
+
+   if (!menu_driver_ctx || !menu_driver_ctx->iterate)
+      return false;
+
+   if (menu_driver_ctx->iterate(menu_driver_data,
+            menu_userdata, iterate->action) == -1)
+      return false;
+
+   return true;
+}
+
+bool menu_driver_list_clear(void *data)
+{
+   file_list_t *list = (file_list_t*)data;
+   if (!list)
+      return false;
+   if (menu_driver_ctx->list_clear)
+      menu_driver_ctx->list_clear(list);
+   return true;
+}
+
+void menu_driver_increment_navigation(void)
+{
+   if (menu_driver_ctx->navigation_increment)
+      menu_driver_ctx->navigation_increment(menu_userdata);
+}
+
+void menu_driver_decrement_navigation(void)
+{
+   if (menu_driver_ctx->navigation_decrement)
+      menu_driver_ctx->navigation_decrement(menu_userdata);
 }
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
@@ -391,18 +470,12 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             *driver_data = menu_driver_data;
          }
          break;
-      case RARCH_MENU_CTL_IS_PENDING_QUICK_MENU:
-         return menu_driver_pending_quick_menu;
       case RARCH_MENU_CTL_SET_PENDING_QUICK_MENU:
          menu_driver_pending_quick_menu = true;
          break;
-      case RARCH_MENU_CTL_IS_PENDING_QUIT:
-         return menu_driver_pending_quit;
       case RARCH_MENU_CTL_SET_PENDING_QUIT:
          menu_driver_pending_quit     = true;
          break;
-      case RARCH_MENU_CTL_IS_PENDING_SHUTDOWN:
-         return menu_driver_pending_shutdown;
       case RARCH_MENU_CTL_SET_PENDING_SHUTDOWN:
          menu_driver_pending_shutdown = true;
          break;
@@ -516,14 +589,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
       case RARCH_MENU_CTL_UNSET_OWN_DRIVER:
          menu_driver_data_own = false;
          break;
-      case RARCH_MENU_CTL_SET_TEXTURE:
-         if (menu_driver_ctx->set_texture)
-            menu_driver_ctx->set_texture();
-         break;
-      case RARCH_MENU_CTL_IS_SET_TEXTURE:
-         if (!menu_driver_ctx)
-            return false;
-         return menu_driver_ctx->set_texture;
       case RARCH_MENU_CTL_OWNS_DRIVER:
          return menu_driver_data_own;
       case RARCH_MENU_CTL_DEINIT:
@@ -601,14 +666,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT:
          menu_driver_load_no_content = false;
-         break;
-      case RARCH_MENU_CTL_NAVIGATION_INCREMENT:
-         if (menu_driver_ctx->navigation_increment)
-            menu_driver_ctx->navigation_increment(menu_userdata);
-         break;
-      case RARCH_MENU_CTL_NAVIGATION_DECREMENT:
-         if (menu_driver_ctx->navigation_decrement)
-            menu_driver_ctx->navigation_decrement(menu_userdata);
          break;
       case RARCH_MENU_CTL_NAVIGATION_SET:
          {
@@ -734,15 +791,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                   return true;
          }
          return false;
-      case RARCH_MENU_CTL_LIST_CLEAR:
-         {
-            file_list_t *list = (file_list_t*)data;
-            if (!list)
-               return false;
-            if (menu_driver_ctx->list_clear)
-               menu_driver_ctx->list_clear(list);
-         }
-         break;
       case RARCH_MENU_CTL_TOGGLE:
          {
             bool *on = (bool*)data;
@@ -815,48 +863,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             return menu_driver_ctx->load_image(menu_userdata,
                   load_image_info->data, load_image_info->type);
          }
-      case RARCH_MENU_CTL_ITERATE:
-         {
-            menu_ctx_iterate_t *iterate = (menu_ctx_iterate_t*)data;
-
-            if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_QUICK_MENU, NULL))
-            {
-               menu_driver_pending_quick_menu = false;
-               menu_entries_flush_stack(NULL, MENU_SETTINGS);
-               menu_display_set_msg_force(true);
-
-               generic_action_ok_displaylist_push("", NULL,
-                     "", 0, 0, 0, ACTION_OK_DL_CONTENT_SETTINGS);
-
-               if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_QUIT, NULL))
-               {
-                  menu_driver_pending_quit     = false;
-                  return false;
-               }
-
-               return true;
-            }
-
-            if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_QUIT, NULL))
-            {
-               menu_driver_pending_quit     = false;
-               return false;
-            }
-            if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_SHUTDOWN, NULL))
-            {
-               menu_driver_pending_shutdown = false;
-               if (!command_event(CMD_EVENT_QUIT, NULL))
-                  return false;
-               return true;
-            }
-            if (!menu_driver_ctx || !menu_driver_ctx->iterate)
-               return false;
-
-            if (menu_driver_ctx->iterate(menu_driver_data,
-                     menu_userdata, iterate->action) == -1)
-               return false;
-         }
-         break;
       case RARCH_MENU_CTL_ENVIRONMENT:
          {
             menu_ctx_environment_t *menu_environ =
@@ -943,9 +949,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH:
          {
-            size_t selection;
-            if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-               return false;
+            size_t selection = menu_navigation_get_selection();
 
             if (!menu_driver_ctx || !menu_driver_ctx->update_thumbnail_path)
                return false;
@@ -961,9 +965,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH:
          {
-            size_t selection;
-            if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-               return false;
+            size_t selection = menu_navigation_get_selection();
 
             if (!menu_driver_ctx || !menu_driver_ctx->update_savestate_thumbnail_path)
                return false;

@@ -484,7 +484,6 @@ static bool psp_frame(void *data, const void *frame,
    static int frames;
    static float fps                        = 0.0;
 #endif
-   static struct retro_perf_counter psp_frame_run = {0};
    psp1_video_t *psp                       = (psp1_video_t*)data;
 
    if (!width || !height)
@@ -534,9 +533,6 @@ static bool psp_frame(void *data, const void *frame,
 
    psp->draw_buffer = FROM_GU_POINTER(sceGuSwapBuffers());
 
-   performance_counter_init(psp_frame_run, "psp_frame_run");
-   performance_counter_start_plus(video_info->is_perfcnt_enable, psp_frame_run);
-
    if (psp->should_resize)
       psp_update_viewport(psp, video_info);
 
@@ -567,8 +563,6 @@ static bool psp_frame(void *data, const void *frame,
    }
 
    sceGuFinish();
-
-   performance_counter_stop_plus(video_info->is_perfcnt_enable, psp_frame_run);
 
 #ifdef HAVE_MENU
    menu_driver_frame(video_info);

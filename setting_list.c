@@ -79,6 +79,9 @@ rarch_setting_t setting_terminator_setting(void)
    result.enforce_minrange          = false;
    result.enforce_maxrange          = false;
 
+   result.cmd_trigger.idx           = CMD_EVENT_NONE;
+   result.cmd_trigger.triggered     = false;
+
    result.dont_use_enum_idx_representation = false;
 
    return result;
@@ -326,9 +329,8 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
                *setting->value.target.integer = min;
             if (setting->enforce_maxrange && *setting->value.target.integer > max)
             {
-               settings_t *settings = config_get_ptr();
-
 #ifdef HAVE_MENU
+               settings_t *settings = config_get_ptr();
                if (settings && settings->menu.navigation.wraparound.enable)
                   *setting->value.target.integer = min;
                else
@@ -345,9 +347,8 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
                *setting->value.target.unsigned_integer = min;
             if (setting->enforce_maxrange && *setting->value.target.unsigned_integer > max)
             {
-               settings_t *settings = config_get_ptr();
-
 #ifdef HAVE_MENU
+               settings_t *settings = config_get_ptr();
                if (settings && settings->menu.navigation.wraparound.enable)
                   *setting->value.target.unsigned_integer = min;
                else
@@ -364,9 +365,8 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
                *setting->value.target.fraction = min;
             if (setting->enforce_maxrange && *setting->value.target.fraction > max)
             {
-               settings_t *settings = config_get_ptr();
-
 #ifdef HAVE_MENU
+               settings_t *settings = config_get_ptr();
                if (settings && settings->menu.navigation.wraparound.enable)
                   *setting->value.target.fraction = min;
                else
@@ -449,9 +449,8 @@ static int setting_fraction_action_right_default(
    {
       if (*setting->value.target.fraction > max)
       {
-         settings_t *settings = config_get_ptr();
-
 #ifdef HAVE_MENU
+         settings_t *settings = config_get_ptr();
          if (settings && settings->menu.navigation.wraparound.enable)
             *setting->value.target.fraction = min;
          else
@@ -695,6 +694,9 @@ static rarch_setting_t setting_action_setting(const char* name,
    result.enforce_minrange          = false;
    result.enforce_maxrange          = false;
 
+   result.cmd_trigger.idx           = CMD_EVENT_NONE;
+   result.cmd_trigger.triggered     = false;
+
    result.dont_use_enum_idx_representation = dont_use_enum_idx;
 
    return result;
@@ -754,6 +756,9 @@ static rarch_setting_t setting_group_setting(enum setting_type type, const char*
    result.rounding_fraction         = NULL;
    result.enforce_minrange          = false;
    result.enforce_maxrange          = false;
+
+   result.cmd_trigger.idx           = CMD_EVENT_NONE;
+   result.cmd_trigger.triggered     = false;
 
    result.dont_use_enum_idx_representation = false;
 
@@ -830,6 +835,9 @@ static rarch_setting_t setting_float_setting(const char* name,
    result.original_value.fraction   = *target;
    result.default_value.fraction    = default_value;
 
+   result.cmd_trigger.idx           = CMD_EVENT_NONE;
+   result.cmd_trigger.triggered     = false;
+
    result.dont_use_enum_idx_representation = dont_use_enum_idx;
 
    return result;
@@ -904,6 +912,9 @@ static rarch_setting_t setting_uint_setting(const char* name,
    result.original_value.unsigned_integer = *target;
    result.default_value.unsigned_integer  = default_value;
 
+   result.cmd_trigger.idx           = CMD_EVENT_NONE;
+   result.cmd_trigger.triggered     = false;
+
    result.dont_use_enum_idx_representation = dont_use_enum_idx;
 
    return result;
@@ -977,6 +988,9 @@ static rarch_setting_t setting_hex_setting(const char* name,
    result.value.target.unsigned_integer   = target;
    result.original_value.unsigned_integer = *target;
    result.default_value.unsigned_integer  = default_value;
+
+   result.cmd_trigger.idx           = CMD_EVENT_NONE;
+   result.cmd_trigger.triggered     = false;
 
    result.dont_use_enum_idx_representation = dont_use_enum_idx;
 
@@ -1055,6 +1069,9 @@ static rarch_setting_t setting_bind_setting(const char* name,
 
    result.value.target.keybind      = target;
    result.default_value.keybind     = default_value;
+
+   result.cmd_trigger.idx           = CMD_EVENT_NONE;
+   result.cmd_trigger.triggered     = false;
 
    result.dont_use_enum_idx_representation = dont_use_enum_idx;
 
@@ -1202,6 +1219,9 @@ static rarch_setting_t setting_string_setting(enum setting_type type,
    result.value.target.string       = target;
    result.default_value.string      = default_value;
 
+   result.cmd_trigger.idx           = CMD_EVENT_NONE;
+   result.cmd_trigger.triggered     = false;
+
    switch (type)
    {
       case ST_DIR:
@@ -1317,6 +1337,9 @@ static rarch_setting_t setting_subgroup_setting(enum setting_type type,
    result.enforce_minrange          = false;
    result.enforce_maxrange          = false;
 
+   result.cmd_trigger.idx           = CMD_EVENT_NONE;
+   result.cmd_trigger.triggered     = false;
+
    result.dont_use_enum_idx_representation = dont_use_enum_idx;
 
    return result;
@@ -1395,6 +1418,9 @@ static rarch_setting_t setting_bool_setting(const char* name,
    result.boolean.off_label         = off;
    result.boolean.on_label          = on;
 
+   result.cmd_trigger.idx           = CMD_EVENT_NONE;
+   result.cmd_trigger.triggered     = false;
+
    result.dont_use_enum_idx_representation = dont_use_enum_idx;
 
    return result;
@@ -1468,6 +1494,9 @@ static rarch_setting_t setting_int_setting(const char* name,
    result.value.target.integer      = target;
    result.original_value.integer    = *target;
    result.default_value.integer     = default_value;
+
+   result.cmd_trigger.idx           = CMD_EVENT_NONE;
+   result.cmd_trigger.triggered     = false;
 
    result.dont_use_enum_idx_representation = dont_use_enum_idx;
 

@@ -44,7 +44,6 @@
 
 #include "../../configuration.h"
 #include "../../record/record_driver.h"
-#include "../../performance_counters.h"
 
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -688,11 +687,6 @@ static INLINE void gl_copy_frame(gl_t *gl,
       const void *frame,
       unsigned width, unsigned height, unsigned pitch)
 {
-   static struct retro_perf_counter copy_frame = {0};
-
-   performance_counter_init(copy_frame, "copy_frame");
-   performance_counter_start_plus(video_info->is_perfcnt_enable, copy_frame);
-
 #if defined(HAVE_PSGL)
    {
       unsigned h;
@@ -821,7 +815,6 @@ static INLINE void gl_copy_frame(gl_t *gl,
       glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
    }
 #endif
-   performance_counter_stop_plus(video_info->is_perfcnt_enable, copy_frame);
 }
 
 static INLINE void gl_set_shader_viewport(gl_t *gl, unsigned idx)
@@ -956,12 +949,12 @@ static void gl_set_texture_enable(void *data, bool state, bool full_screen)
    gl->menu_texture_full_screen = full_screen;
 }
 
-static void gl_set_osd_msg(void *data, const char *msg,
+static void gl_set_osd_msg(void *data,
+      video_frame_info_t *video_info,
+      const char *msg,
       const void *params, void *font)
 {
-   video_frame_info_t video_info;
-   video_driver_build_info(&video_info);
-   font_driver_render_msg(&video_info, font, msg, params);
+   font_driver_render_msg(video_info, font, msg, params);
 }
 
 static void gl_show_mouse(void *data, bool state)
@@ -1091,14 +1084,9 @@ static bool gl_frame(void *data, const void *frame,
    video_shader_ctx_params_t params;
    struct video_tex_info feedback_info;
    video_shader_ctx_info_t shader_info;
-   static struct 
-      retro_perf_counter frame_run     = {0};
    gl_t                            *gl = (gl_t*)data;
    unsigned width                      = video_info->width;
    unsigned height                     = video_info->height;
-
-   performance_counter_init(frame_run, "frame_run");
-   performance_counter_start_plus(video_info->is_perfcnt_enable, frame_run);
 
    if (!gl)
       return false;
@@ -1289,8 +1277,6 @@ static bool gl_frame(void *data, const void *frame,
 
    video_context_driver_update_window_title(video_info);
 
-   performance_counter_stop_plus(video_info->is_perfcnt_enable, frame_run);
-
 #ifdef HAVE_FBO
    /* Reset state which could easily mess up libretro core. */
    if (gl->hw_render_fbo_init)
@@ -1347,11 +1333,6 @@ static bool gl_frame(void *data, const void *frame,
 #ifdef HAVE_GL_SYNC
    if (video_info->hard_sync && gl->have_sync)
    {
-      static struct retro_perf_counter gl_fence = {0};
-
-      performance_counter_init(gl_fence, "gl_fence");
-      performance_counter_start_plus(video_info->is_perfcnt_enable,
-            gl_fence);
       glClear(GL_COLOR_BUFFER_BIT);
       gl->fences[gl->fence_count++] =
          glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
@@ -1366,9 +1347,6 @@ static bool gl_frame(void *data, const void *frame,
          memmove(gl->fences, gl->fences + 1,
                gl->fence_count * sizeof(GLsync));
       }
-
-      performance_counter_stop_plus(video_info->is_perfcnt_enable,
-            gl_fence);
    }
 #endif
 
@@ -2546,9 +2524,10 @@ static void gl_get_overlay_interface(void *data,
 
 static retro_proc_address_t gl_get_proc_address(void *data, const char *sym)
 {
-   gfx_ctx_proc_address_t proc_address = {0};
+   gfx_ctx_proc_address_t proc_address;
 
-   proc_address.sym = sym;
+   proc_address.addr = NULL;
+   proc_address.sym  = sym;
 
    video_context_driver_get_proc_address(&proc_address);
 

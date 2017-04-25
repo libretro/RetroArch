@@ -452,11 +452,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
 
 bool menu_entry_is_currently_selected(unsigned id)
 {
-   size_t selection;
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-         return false;
-
-   return (id == selection);
+   return (id == menu_navigation_get_selection());
 }
 
 /* Performs whatever actions are associated with menu entry 'i'.
@@ -481,7 +477,7 @@ int menu_entry_select(uint32_t i)
    entry.type          = 0;
    entry.spacing       = 0;
     
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &i);
+   menu_navigation_set_selection(i);
 
    menu_entry_get(&entry, 0, i, NULL, false);
 

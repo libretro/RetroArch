@@ -470,16 +470,14 @@ static void netplay_handshake_ready(netplay_t *netplay, struct netplay_connectio
 bool netplay_handshake_info(netplay_t *netplay, struct netplay_connection *connection)
 {
    struct info_buf_s info_buf;
-   rarch_system_info_t *core_info;
-   uint32_t *content_crc_ptr;
+   uint32_t      *content_crc_ptr = NULL;
+   rarch_system_info_t *core_info = runloop_get_system_info();
 
    memset(&info_buf, 0, sizeof(info_buf));
    info_buf.cmd[0] = htonl(NETPLAY_CMD_INFO);
    info_buf.cmd[1] = htonl(sizeof(info_buf) - 2*sizeof(uint32_t));
 
    /* Get our core info */
-   core_info = NULL;
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &core_info);
    if (core_info)
    {
       strlcpy(info_buf.core_name, core_info->info.library_name, sizeof(info_buf.core_name));
@@ -487,7 +485,7 @@ bool netplay_handshake_info(netplay_t *netplay, struct netplay_connection *conne
    }
    else
    {
-      strlcpy(info_buf.core_name, "UNKNOWN", sizeof(info_buf.core_name));
+      strlcpy(info_buf.core_name,    "UNKNOWN", sizeof(info_buf.core_name));
       strlcpy(info_buf.core_version, "UNKNOWN", sizeof(info_buf.core_version));
    }
 
@@ -767,9 +765,9 @@ bool netplay_handshake_pre_info(netplay_t *netplay,
    struct info_buf_s info_buf;
    uint32_t cmd_size;
    ssize_t recvd;
-   rarch_system_info_t *core_info;
-   uint32_t *content_crc_ptr;
-   const char *dmsg = NULL;
+   uint32_t *content_crc_ptr      = NULL;
+   const char *dmsg               = NULL;
+   rarch_system_info_t *core_info = runloop_get_system_info();
 
    RECV(&info_buf, sizeof(info_buf.cmd)) {}
 
@@ -807,8 +805,7 @@ bool netplay_handshake_pre_info(netplay_t *netplay,
    }
 
    /* Check the core info */
-   core_info = NULL;
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &core_info);
+
    if (core_info)
    {
       if (strncmp(info_buf.core_name, core_info->info.library_name, sizeof(info_buf.core_name)) ||

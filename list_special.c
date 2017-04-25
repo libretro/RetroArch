@@ -108,13 +108,13 @@ struct string_list *dir_list_new_special(const char *input_dir,
        break;
       case DIR_LIST_SHADERS:
          {
-            union string_list_elem_attr attr = {0};
+            union string_list_elem_attr attr;
             struct string_list *str_list     = string_list_new();
 
             if (!str_list)
                return NULL;
 
-            (void)attr;
+            attr.i = 0;
 
             dir  = input_dir;
 #ifdef HAVE_CG

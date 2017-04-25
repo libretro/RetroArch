@@ -50,7 +50,6 @@
 #include "../font_driver.h"
 
 #include "../../core.h"
-#include "../../performance_counters.h"
 
 #include "../../defines/d3d_defines.h"
 #include "../../verbosity.h"
@@ -873,6 +872,9 @@ static bool d3d_alive(void *data)
    bool        quit     = false;
    bool        resize   = false;
 
+   /* Needed because some context drivers don't track their sizes */
+   video_driver_get_size(&temp_width, &temp_height);
+
    size_data.quit       = &quit;
    size_data.resize     = &resize;
    size_data.width      = &temp_width;
@@ -960,18 +962,17 @@ static void d3d_apply_state_changes(void *data)
       d3d->should_resize = true;
 }
 
-static void d3d_set_osd_msg(void *data, const char *msg,
+static void d3d_set_osd_msg(void *data,
+      video_frame_info_t *video_info,
+      const char *msg,
       const void *params, void *font)
 {
-   video_frame_info_t video_info;
    d3d_video_t          *d3d = (d3d_video_t*)data;
-
-   video_driver_build_info(&video_info);
 
    if (d3d->renderchain_driver->set_font_rect && params)
       d3d->renderchain_driver->set_font_rect(d3d, params);
 
-   font_driver_render_msg(&video_info, NULL, msg, params);
+   font_driver_render_msg(video_info, NULL, msg, params);
 }
 
 /* Delay constructor due to lack of exceptions. */
@@ -982,12 +983,12 @@ static bool d3d_construct(d3d_video_t *d3d,
 {
    gfx_ctx_input_t inp;
    unsigned full_x, full_y;
-   settings_t    *settings     = config_get_ptr();
+   settings_t    *settings   = config_get_ptr();
 
-   d3d->should_resize = false;
+   d3d->should_resize        = false;
 
 #if defined(HAVE_MENU)
-   d3d->menu                = new overlay_t();
+   d3d->menu                 = (overlay_t*)calloc(1, sizeof(*d3d->menu));
 
    if (!d3d->menu)
       return false;
@@ -1224,7 +1225,8 @@ static void d3d_free(void *data)
 #ifdef HAVE_MENU
    d3d_free_overlay(d3d, d3d->menu);
    if (d3d->menu)
-      delete d3d->menu;
+      free(d3d->menu);
+   d3d->menu = NULL;
 #endif
 #endif
 
@@ -1384,8 +1386,6 @@ static bool d3d_frame(void *data, const void *frame,
       uint64_t frame_count, unsigned pitch,
       const char *msg, video_frame_info_t *video_info)
 {
-   static struct 
-      retro_perf_counter d3d_frame     = {0};
    unsigned i                          = 0;
    d3d_video_t *d3d                    = (d3d_video_t*)data;
    HWND window                         = win32_get_window();
@@ -1396,9 +1396,6 @@ static bool d3d_frame(void *data, const void *frame,
 
    if (!frame)
       return true;
-
-   performance_counter_init(d3d_frame, "d3d_frame");
-   performance_counter_start_plus(video_info->is_perfcnt_enable, d3d_frame);
 
    /* We cannot recover in fullscreen. */
    if (d3d->needs_restore)
@@ -1476,8 +1473,6 @@ static bool d3d_frame(void *data, const void *frame,
 #endif
 
    video_context_driver_update_window_title(video_info);
-
-   performance_counter_stop_plus(video_info->is_perfcnt_enable, d3d_frame);
 
    video_context_driver_swap_buffers(video_info);
 

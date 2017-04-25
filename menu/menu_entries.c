@@ -27,7 +27,6 @@
 #include "widgets/menu_list.h"
 
 #include "../core.h"
-#include "../configuration.h"
 #include "../runloop.h"
 #include "../version.h"
 
@@ -69,7 +68,7 @@ static bool menu_entries_clear(file_list_t *list)
    if (!list)
       return false;
 
-   menu_driver_ctl(RARCH_MENU_CTL_LIST_CLEAR, list);
+   menu_driver_list_clear(list);
 
    for (i = 0; i < list->size; i++)
       file_list_free_actiondata(list, i);
@@ -177,13 +176,9 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
  **/
 static bool menu_entries_refresh(void *data)
 {
-   size_t list_size, selection;
+   size_t list_size;
    file_list_t *list = (file_list_t*)data;
-
-   if (!list)
-      return false;
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return false;
+   size_t selection  = menu_navigation_get_selection();
 
    menu_entries_build_scroll_indices(list);
 
@@ -193,7 +188,7 @@ static bool menu_entries_refresh(void *data)
    {
       size_t idx  = list_size - 1;
       bool scroll = true;
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
+      menu_navigation_set_selection(idx);
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
    }
    else if (!list_size)
@@ -270,7 +265,6 @@ int menu_entries_get_core_title(char *s, size_t len)
 {
    struct retro_system_info    *system = NULL;
    rarch_system_info_t      *info = NULL;
-   settings_t *settings           = config_get_ptr();
    const char *core_name          = NULL;
    const char *core_version       = NULL;
 
@@ -279,11 +273,7 @@ int menu_entries_get_core_title(char *s, size_t len)
    
    core_name    = system->library_name;
    core_version = system->library_version;
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
-
-   if (!settings || !settings->menu.core_enable)
-      return -1; 
+   info         = runloop_get_system_info();
 
    if (string_is_empty(core_name) && info)
       core_name = info->info.library_name;
@@ -641,6 +631,8 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
          }
          break;
       case MENU_ENTRIES_CTL_REFRESH:
+         if (!data)
+            return false;
          return menu_entries_refresh(data);
       case MENU_ENTRIES_CTL_CLEAR:
          return menu_entries_clear((file_list_t*)data);

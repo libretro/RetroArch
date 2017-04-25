@@ -40,7 +40,6 @@
 
 #include "../../retroarch.h"
 #include "../../verbosity.h"
-#include "../../performance_counters.h"
 
 #include "../common/ctr_common.h"
 #ifndef HAVE_THREADS
@@ -472,7 +471,6 @@ static bool ctr_frame(void* data, const void* frame,
    static float        fps = 0.0;
    static int total_frames = 0;
    static int       frames = 0;
-   static struct retro_perf_counter ctrframe_f = {0};
 
    extern bool select_pressed;
 
@@ -611,9 +609,6 @@ static bool ctr_frame(void* data, const void* frame,
    printf(PRINTFPOS(29,0)"fps: %8.4f frames: %i\r", fps, total_frames++);
 #endif
    fflush(stdout);
-
-   performance_counter_init(ctrframe_f, "ctrframe_f");
-   performance_counter_start_plus(video_info->is_perfcnt_enable, ctrframe_f);
 
    if (ctr->should_resize)
       ctr_update_viewport(ctr);
@@ -842,7 +837,6 @@ static bool ctr_frame(void* data, const void* frame,
    ctr->current_buffer_top     ^= 1;
    ctr->p3d_event_pending       = true;
    ctr->ppf_event_pending       = true;
-   performance_counter_stop_plus(video_info->is_perfcnt_enable, ctrframe_f);
 
    return true;
 }
@@ -1122,16 +1116,15 @@ static void ctr_unload_texture(void *data, uintptr_t handle)
    free(texture);
 }
 
-static void ctr_set_osd_msg(void *data, const char *msg,
+static void ctr_set_osd_msg(void *data,
+      video_frame_info_t *video_info,
+      const char *msg,
       const void *params, void *font)
 {
-   video_frame_info_t video_info;
    ctr_video_t* ctr = (ctr_video_t*)data;
 
-   video_driver_build_info(&video_info);
-
    if (ctr && ctr->msg_rendering_enabled)
-      font_driver_render_msg(&video_info, font, msg, params);
+      font_driver_render_msg(video_info, font, msg, params);
 }
 
 static const video_poke_interface_t ctr_poke_interface = {

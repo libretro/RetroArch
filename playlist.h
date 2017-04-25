@@ -41,6 +41,7 @@ struct content_playlist
    struct playlist_entry *entries;
    size_t size;
    size_t cap;
+   bool modified;
 
    char *conf_path;
 };

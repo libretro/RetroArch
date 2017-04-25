@@ -110,6 +110,7 @@ typedef struct zarch_handle
    unsigned height;
    video_font_raster_block_t tmp_block;
    unsigned hash;
+   uint64_t frame_count;
 
    struct {
       unsigned active;
@@ -323,7 +324,7 @@ static bool zarch_zui_list_item(video_frame_info_t *video_info,
    int                y2 = y1 + 50;
    bool           active = zarch_zui_check_button_up(zui, id, x1, y1, x2, y2);
    const float       *bg = zui_bg_panel;
-   uint64_t frame_count  = video_info->frame_count;
+   uint64_t frame_count  = zui->frame_count;
 
    title_buf[0] = '\0';
 
@@ -876,6 +877,8 @@ static void zarch_frame(void *data, video_frame_info_t *video_info)
    if (!zui)
       return;
 
+   zui->frame_count++;
+
    video_driver_get_size(&zui->width, &zui->height);
 
    menu_display_set_viewport(video_info->width, video_info->height);
@@ -1108,14 +1111,12 @@ static void zarch_context_reset(void *data)
 static int zarch_iterate(void *data, void *userdata, enum menu_action action)
 {
    int ret;
-   size_t selection;
    menu_entry_t entry;
    zui_t *zui           = (zui_t*)userdata;
+   size_t selection     = menu_navigation_get_selection();
 
    if (!zui)
       return -1;
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return 0;
 
    menu_entry_get(&entry, 0, selection, NULL, false);
 

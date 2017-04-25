@@ -23,6 +23,7 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#include "core.h"
 #include "runloop_defines.h"
 
 RETRO_BEGIN_DECLS
@@ -107,7 +108,6 @@ enum runloop_ctl_state
    RUNLOOP_CTL_CORE_OPTIONS_FREE,
 
    /* System info */
-   RUNLOOP_CTL_SYSTEM_INFO_GET,
    RUNLOOP_CTL_SYSTEM_INFO_INIT,
    RUNLOOP_CTL_SYSTEM_INFO_FREE,
 
@@ -208,6 +208,8 @@ void runloop_get_status(bool *is_paused, bool *is_idle, bool *is_slowmotion,
       bool *is_perfcnt_enable);
 
 bool runloop_ctl(enum runloop_ctl_state state, void *data);
+
+rarch_system_info_t *runloop_get_system_info(void);
 
 RETRO_END_DECLS
 

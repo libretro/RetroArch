@@ -43,7 +43,6 @@
 #include "../video_driver.h"
 
 #include "../../configuration.h"
-#include "../../performance_counters.h"
 
 #include "../video_context_driver.h"
 
@@ -339,7 +338,6 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
       unsigned height, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
-   static struct retro_perf_counter sdl_scale = {0};
    sdl_video_t                    *vid = (sdl_video_t*)data;
    char title[128];
 
@@ -353,9 +351,6 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
    if (SDL_MUSTLOCK(vid->screen))
       SDL_LockSurface(vid->screen);
 
-   performance_counter_init(sdl_scale, "sdl_scale");
-   performance_counter_start_plus(video_info->is_perfcnt_enable, sdl_scale);
-
    video_frame_scale(
          &vid->scaler,
          vid->screen->pixels,
@@ -367,7 +362,6 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
          width,
          height,
          pitch);
-   performance_counter_stop_plus(video_info->is_perfcnt_enable, sdl_scale);
 
 #ifdef HAVE_MENU
    menu_driver_frame(video_info);

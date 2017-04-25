@@ -116,11 +116,10 @@ static int action_left_input_desc(unsigned type, const char *label,
 static int action_left_scroll(unsigned type, const char *label,
       bool wraparound)
 {
-   size_t selection;
    size_t scroll_accel   = 0;
    unsigned scroll_speed = 0, fast_scroll_speed = 0;
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return menu_cbs_exit();
+   size_t selection      = menu_navigation_get_selection();
+
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL, &scroll_accel))
       return false;
 
@@ -131,7 +130,7 @@ static int action_left_scroll(unsigned type, const char *label,
    {
       size_t idx  = selection - fast_scroll_speed;
       bool scroll = true;
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
+      menu_navigation_set_selection(idx);
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
    }
    else
@@ -147,7 +146,6 @@ static int action_left_mainmenu(unsigned type, const char *label,
       bool wraparound)
 {
    menu_ctx_list_t list_info;
-   size_t selection          = 0;
    unsigned        push_list = 0;
    menu_handle_t       *menu  = NULL;
    
@@ -164,15 +162,14 @@ static int action_left_mainmenu(unsigned type, const char *label,
    {
       settings_t       *settings = config_get_ptr();
 
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
+      menu_navigation_set_selection(0);
+
       if ((list_info.selection != 0)
          || settings->menu.navigation.wraparound.enable)
          push_list = 1;
    }
    else
       push_list = 2;
-
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
 
 
    switch (push_list)
@@ -182,12 +179,13 @@ static int action_left_mainmenu(unsigned type, const char *label,
             menu_ctx_list_t list_info;
             file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
             file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+            size_t selection           = menu_navigation_get_selection();
             menu_file_list_cbs_t *cbs  = 
                menu_entries_get_actiondata_at_offset(selection_buf,
                      selection);
 
-            list_info.type   = MENU_LIST_HORIZONTAL;
-            list_info.action = MENU_ACTION_LEFT;
+            list_info.type             = MENU_LIST_HORIZONTAL;
+            list_info.action           = MENU_ACTION_LEFT;
 
             menu_driver_ctl(RARCH_MENU_CTL_LIST_CACHE, &list_info);
 

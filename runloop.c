@@ -265,14 +265,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             *coreopts = runloop_core_options;
          }
          break;
-      case RUNLOOP_CTL_SYSTEM_INFO_GET:
-         {
-            rarch_system_info_t **system = (rarch_system_info_t**)data;
-            if (!system)
-               return false;
-            *system = &runloop_system;
-         }
-         break;
       case RUNLOOP_CTL_SYSTEM_INFO_FREE:
 
          /* No longer valid. */
@@ -780,7 +772,7 @@ static enum runloop_state runloop_check_state(
 
          iter.action             = action;
 
-         if (!menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &iter))
+         if (!menu_driver_iterate(&iter))
             rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
 
          if (focused || !runloop_idle)
@@ -940,10 +932,11 @@ static enum runloop_state runloop_check_state(
    if (runloop_cmd_triggered(trigger_input, RARCH_STATE_SLOT_PLUS))
    {
       char msg[128];
+      int new_state_slot = settings->state_slot + 1;
 
       msg[0] = '\0';
 
-      settings->state_slot++;
+      configuration_set_int(settings, settings->state_slot, new_state_slot);
 
       snprintf(msg, sizeof(msg), "%s: %d",
             msg_hash_to_str(MSG_STATE_SLOT),
@@ -956,11 +949,14 @@ static enum runloop_state runloop_check_state(
    else if (runloop_cmd_triggered(trigger_input, RARCH_STATE_SLOT_MINUS))
    {
       char msg[128];
+      int new_state_slot = settings->state_slot - 1;
 
       msg[0] = '\0';
 
       if (settings->state_slot > 0)
-         settings->state_slot--;
+      {
+         configuration_set_int(settings, settings->state_slot, new_state_slot);
+      }
 
       snprintf(msg, sizeof(msg), "%s: %d",
             msg_hash_to_str(MSG_STATE_SLOT),
@@ -1203,4 +1199,9 @@ end:
    frame_limit_last_time  = cpu_features_get_time_usec();
 
    return 0;
+}
+
+rarch_system_info_t *runloop_get_system_info(void)
+{
+   return &runloop_system;
 }

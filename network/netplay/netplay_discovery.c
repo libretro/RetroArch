@@ -231,6 +231,7 @@ bool netplay_lan_ad_server(netplay_t *netplay)
 
       /* Somebody queried, so check that it's valid */
       addr_size = sizeof(their_addr);
+
       if (recvfrom(lan_ad_server_fd, (char*)&ad_packet_buffer,
             sizeof(struct ad_packet), 0, &their_addr, &addr_size) >=
             (ssize_t) (2*sizeof(uint32_t)))
@@ -247,7 +248,7 @@ bool netplay_lan_ad_server(netplay_t *netplay)
                NETPLAY_PROTOCOL_VERSION)
             continue;
 
-         runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
+         info              = runloop_get_system_info();
 
          /* Now build our response */
          content_get_crc(&content_crc_ptr);
@@ -265,6 +266,7 @@ bool netplay_lan_ad_server(netplay_t *netplay)
                ? path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A",
                NETPLAY_HOST_STR_LEN);
          strlcpy(ad_packet_buffer.nick, netplay->nick, NETPLAY_HOST_STR_LEN);
+
          if (info)
          {
             strlcpy(ad_packet_buffer.core, info->info.library_name,

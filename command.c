@@ -860,12 +860,10 @@ static void command_event_disk_control_set_eject(bool new_state, bool print_log)
 {
    char msg[128];
    bool error                                        = false;
-   rarch_system_info_t *info                         = NULL;
    const struct retro_disk_control_callback *control = NULL;
+   rarch_system_info_t *info                         = runloop_get_system_info();
 
    msg[0] = '\0';
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
    if (info)
       control = (const struct retro_disk_control_callback*)&info->disk_control_cb;
@@ -912,12 +910,10 @@ static void command_event_disk_control_set_index(unsigned idx)
    unsigned num_disks;
    char msg[128];
    bool error                                        = false;
-   rarch_system_info_t                      *info    = NULL;
    const struct retro_disk_control_callback *control = NULL;
+   rarch_system_info_t *info                         = runloop_get_system_info();
 
    msg[0] = '\0';
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
    if (info)
       control = (const struct retro_disk_control_callback*)&info->disk_control_cb;
@@ -973,11 +969,9 @@ static bool command_event_disk_control_append_image(const char *path)
    char msg[128];
    struct retro_game_info info                        = {0};
    const struct retro_disk_control_callback *control  = NULL;
-   rarch_system_info_t                       *sysinfo = NULL;
+   rarch_system_info_t *sysinfo                      = runloop_get_system_info();
 
    msg[0] = '\0';
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &sysinfo);
 
    if (sysinfo)
       control = (const struct retro_disk_control_callback*)
@@ -1099,18 +1093,20 @@ static void command_event_set_volume(float gain)
 {
    char msg[128];
    settings_t *settings      = config_get_ptr();
+   float new_volume          = settings->audio.volume + gain;
 
-   settings->audio.volume += gain;
-   settings->audio.volume  = MAX(settings->audio.volume, -80.0f);
-   settings->audio.volume  = MIN(settings->audio.volume, 12.0f);
+   new_volume                = MAX(new_volume, -80.0f);
+   new_volume                = MIN(new_volume, 12.0f);
+
+   configuration_set_float(settings, settings->audio.volume, new_volume);
 
    snprintf(msg, sizeof(msg), "%s: %.1f dB",
          msg_hash_to_str(MSG_AUDIO_VOLUME),
-         settings->audio.volume);
+         new_volume);
    runloop_msg_queue_push(msg, 1, 180, true);
    RARCH_LOG("%s\n", msg);
 
-   audio_driver_set_volume_gain(db_to_gain(settings->audio.volume));
+   audio_driver_set_volume_gain(db_to_gain(new_volume));
 }
 
 /**
@@ -1122,17 +1118,16 @@ static void command_event_init_controllers(void)
 {
    unsigned i;
    settings_t      *settings = config_get_ptr();
-   rarch_system_info_t *info = NULL;
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
+   rarch_system_info_t *info = runloop_get_system_info();
 
    for (i = 0; i < MAX_USERS; i++)
    {
       retro_ctx_controller_info_t pad;
-      const char *ident   = NULL;
-      bool set_controller = false;
+      const char *ident                               = NULL;
+      bool set_controller                             = false;
       const struct retro_controller_description *desc = NULL;
-      unsigned device = settings->input.libretro_device[i];
+      unsigned device                                 = 
+         settings->input.libretro_device[i];
 
       if (info)
       {
@@ -1322,10 +1317,11 @@ static void command_event_set_savestate_auto_index(void)
 
    dir_list_free(dir_list);
 
-   settings->state_slot = max_idx;
+   configuration_set_int(settings, settings->state_slot, max_idx);
+
    RARCH_LOG("%s: #%d\n",
          msg_hash_to_str(MSG_FOUND_LAST_STATE_SLOT),
-         settings->state_slot);
+         max_idx);
 }
 
 static bool event_init_content(void)
@@ -1787,7 +1783,7 @@ static bool command_event_resize_windowed_scale(void)
       if (!window_scale || *window_scale == 0)
          return false;
 
-      settings->video.scale = *window_scale;
+      configuration_set_float(settings, settings->video.scale, *window_scale);
    }
 
    if (!settings->video.fullscreen)
@@ -1940,7 +1936,10 @@ bool command_event(enum event_command cmd, void *data)
 #endif
 
             if (settings->savestate_auto_index)
-               settings->state_slot++;
+            {
+               int new_state_slot = settings->state_slot + 1;
+               configuration_set_int(settings, settings->state_slot, new_state_slot);
+            }
          }
          return command_event_main_state(cmd);
       case CMD_EVENT_SAVE_STATE_DECREMENT:
@@ -1948,13 +1947,17 @@ bool command_event(enum event_command cmd, void *data)
             settings_t *settings      = config_get_ptr();
             /* Slot -1 is (auto) slot. */
             if (settings->state_slot >= 0)
-               settings->state_slot--;
+            {
+               int new_state_slot = settings->state_slot - 1;
+               configuration_set_int(settings, settings->state_slot, new_state_slot);
+            }
          }
          break;
       case CMD_EVENT_SAVE_STATE_INCREMENT:
          {
             settings_t *settings      = config_get_ptr();
-            settings->state_slot++;
+            int new_state_slot        = settings->state_slot + 1;
+            configuration_set_int(settings, settings->state_slot, new_state_slot);
          }
          break;
       case CMD_EVENT_TAKE_SCREENSHOT:
@@ -2502,12 +2505,15 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_FULLSCREEN_TOGGLE:
          {
             settings_t *settings      = config_get_ptr();
+            bool new_fullscreen_state = !settings->video.fullscreen;
             if (!video_driver_has_windowed())
                return false;
 
             /* If we go fullscreen we drop all drivers and
              * reinitialize to be safe. */
-            settings->video.fullscreen = !settings->video.fullscreen;
+            configuration_set_bool(settings, settings->video.fullscreen,
+                  new_fullscreen_state);
+
             command_event(CMD_EVENT_REINIT, NULL);
             if (settings->video.fullscreen)
                video_driver_hide_mouse();
@@ -2544,8 +2550,7 @@ bool command_event(enum event_command cmd, void *data)
          }
       case CMD_EVENT_DISK_EJECT_TOGGLE:
          {
-            rarch_system_info_t *info = NULL;
-            runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
+            rarch_system_info_t *info = runloop_get_system_info();
 
             if (info && info->disk_control_cb.get_num_images)
             {
@@ -2567,8 +2572,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_DISK_NEXT:
          {
-            rarch_system_info_t *info = NULL;
-            runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
+            rarch_system_info_t *info = runloop_get_system_info();
 
             if (info && info->disk_control_cb.get_num_images)
             {
@@ -2592,8 +2596,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_DISK_PREV:
          {
-            rarch_system_info_t *info = NULL;
-            runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
+            rarch_system_info_t *info = runloop_get_system_info();
 
             if (info && info->disk_control_cb.get_num_images)
             {
