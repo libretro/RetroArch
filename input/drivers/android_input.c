@@ -1369,7 +1369,7 @@ static int16_t android_input_state(void *data,
                   (android->pointer[idx].y != -0x8000);
             case RARCH_DEVICE_ID_POINTER_BACK:
             {
-               const struct retro_keybind *keyptr = input_autoconfigure_get_specific_bind(0, RARCH_MENU_TOGGLE);
+               const struct retro_keybind *keyptr = &input_autoconf_binds[0][RARCH_MENU_TOGGLE];
                if (keyptr->joykey == 0)
                   return android_keyboard_input_pressed(AKEYCODE_BACK);
             }
@@ -1388,7 +1388,7 @@ static int16_t android_input_state(void *data,
                   (android->pointer[idx].full_y != -0x8000);
             case RARCH_DEVICE_ID_POINTER_BACK:
                {
-                  const struct retro_keybind *keyptr = input_autoconfigure_get_specific_bind(0, RARCH_MENU_TOGGLE);
+                  const struct retro_keybind *keyptr = &input_autoconf_binds[0][RARCH_MENU_TOGGLE];
                   if (keyptr->joykey == 0)
                      return android_keyboard_input_pressed(AKEYCODE_BACK);
                }

@@ -92,13 +92,6 @@ void input_config_set_vid(unsigned port, unsigned vid);
 
 int32_t input_config_get_vid(unsigned port);
 
-struct retro_keybind *input_config_get_specific_bind_ptr(unsigned i, unsigned j);
-
-const struct retro_keybind *input_config_get_specific_bind(unsigned i, unsigned j);
-
-const struct retro_keybind *
-input_autoconfigure_get_specific_bind(unsigned i, unsigned j);
-
 void input_config_reset(void);
 
 #endif

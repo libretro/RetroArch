@@ -96,7 +96,7 @@ int menu_dialog_iterate(char *s, size_t len, const char *label)
 
             for (i = 0; i < ARRAY_SIZE(binds); i++)
             {
-               const struct retro_keybind *keybind = input_config_get_specific_bind(0, binds[i]);
+               const struct retro_keybind *keybind = &input_config_binds[0][binds[i]];
                const struct retro_keybind *auto_bind =
                   (const struct retro_keybind*)
                   input_config_get_bind_auto(0, binds[i]);

@@ -1338,7 +1338,7 @@ static int setting_action_ok_bind_defaults(void *data, bool wraparound)
    if (!setting)
       return -1;
 
-   target    = input_config_get_specific_bind_ptr(setting->index_offset, 0);
+   target    =  &input_config_binds[setting->index_offset][0];
    def_binds =  (setting->index_offset) ? 
       retro_keybinds_rest : retro_keybinds_1;
 
@@ -2090,7 +2090,7 @@ static bool setting_append_list_input_player_options(
 
       CONFIG_BIND_ALT(
             list, list_info,
-            input_config_get_specific_bind_ptr(user, i),
+            &input_config_binds[user][i],
             user + 1,
             user,
             strdup(name),
@@ -4408,7 +4408,7 @@ static bool setting_append_list(
 
                CONFIG_BIND_ALT(
                      list, list_info,
-                     input_config_get_specific_bind_ptr(0, i),
+                     &input_config_binds[0][i],
                      0, 0,
                      strdup(input_config_bind_map_get_base(i)),
                      strdup(input_config_bind_map_get_desc(i)),

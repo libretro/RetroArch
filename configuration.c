@@ -1165,7 +1165,7 @@ static void config_set_defaults(void)
    {
       for (j = 0; j < RARCH_BIND_LIST_END; j++)
       {
-         const struct retro_keybind *keyval = input_config_get_specific_bind(i, j);
+         const struct retro_keybind *keyval = &input_config_binds[i][j];
          if (keyval->valid)
             retro_assert(j == keyval->id);
       }
@@ -1645,7 +1645,7 @@ static void read_keybinds_user(config_file_t *conf, unsigned user)
 
    for (i = 0; input_config_bind_map_get_valid(i); i++)
    {
-      struct retro_keybind *bind = input_config_get_specific_bind_ptr(user, i);
+      struct retro_keybind *bind = &input_config_binds[user][i];
 
       if (!bind->valid)
          continue;
@@ -2797,7 +2797,7 @@ static void save_keybinds_user(config_file_t *conf, unsigned user)
 
       if (prefix)
          save_keybind(conf, prefix, input_config_bind_map_get_base(i),
-               input_config_get_specific_bind(user, i), true, true);
+               &input_config_binds[user][i], true, true);
    }
 }
 
@@ -2925,7 +2925,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    for (i = 0; i < RARCH_FIRST_META_KEY; i++)
    {
       save_keybind(conf, "input", input_config_bind_map_get_base(i),
-            input_config_get_specific_bind(user, i), false, false);
+            &input_config_binds[user][i], false, false);
    }
 
    ret = config_file_write(conf, autoconf_file);

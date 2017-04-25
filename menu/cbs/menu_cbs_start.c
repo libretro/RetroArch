@@ -111,8 +111,8 @@ static int action_start_input_desc(unsigned type, const char *label)
 
    if (inp_desc_button_index_offset < RARCH_FIRST_CUSTOM_BIND)
    {
-      const struct retro_keybind *keyptr = input_config_get_specific_bind(inp_desc_user,
-            inp_desc_button_index_offset);
+      const struct retro_keybind *keyptr = &input_config_binds[inp_desc_user]
+            [inp_desc_button_index_offset];
       settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset] = keyptr->id;
    }
    else

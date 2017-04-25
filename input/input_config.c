@@ -153,16 +153,6 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
 #endif
 };
 
-struct retro_keybind *input_config_get_specific_bind_ptr(unsigned i, unsigned j)
-{
-   return (struct retro_keybind*)&input_config_binds[i][j];
-}
-
-const struct retro_keybind *input_config_get_specific_bind(unsigned i, unsigned j)
-{
-   return &input_config_binds[i][j];
-}
-
 static const void *input_config_bind_map_get(unsigned i)
 {
    return (const struct input_bind_map*)&input_config_bind_map[i];
@@ -560,7 +550,7 @@ const struct retro_keybind *input_config_get_bind_auto(unsigned port, unsigned i
    unsigned joy_idx     = settings->input.joypad_map[port];
 
    if (joy_idx < MAX_USERS)
-      return input_autoconfigure_get_specific_bind(joy_idx, id);
+      return &input_autoconf_binds[joy_idx][id];
    return NULL;
 }
 
@@ -602,9 +592,4 @@ void input_config_reset(void)
       input_config_vid[i] = 0;
       input_config_pid[i] = 0;
    }
-}
-
-const struct retro_keybind *input_autoconfigure_get_specific_bind(unsigned i, unsigned j)
-{
-   return &input_autoconf_binds[i][j];
 }

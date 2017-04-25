@@ -175,7 +175,7 @@ void input_remapping_set_defaults(void)
    {
       for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
       {
-         const struct  retro_keybind *keybind = input_config_get_specific_bind(i, j);
+         const struct  retro_keybind *keybind = &input_config_binds[i][j];
          settings->input.remap_ids[i][j]      = keybind->id;
       }
       for (j = 0; j < 4; j++)
