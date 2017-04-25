@@ -1117,7 +1117,6 @@ static int setting_action_left_libretro_device_type(
             types = 0, port = 0;
    const struct retro_controller_info *desc = NULL;
    rarch_setting_t *setting    = (rarch_setting_t*)data;
-   settings_t      *settings   = config_get_ptr();
    rarch_system_info_t *system = NULL;
 
    if (!setting)
@@ -1185,7 +1184,6 @@ static int setting_action_right_libretro_device_type(
             types = 0, port = 0;
    const struct retro_controller_info *desc = NULL;
    rarch_setting_t *setting    = (rarch_setting_t*)data;
-   settings_t      *settings   = config_get_ptr();
    rarch_system_info_t *system = runloop_get_system_info();
 
    if (!setting)

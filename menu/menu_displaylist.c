@@ -525,7 +525,6 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 #endif
    const char *tmp_string                = NULL;
    const frontend_ctx_driver_t *frontend = frontend_get_ptr();
-   settings_t                  *settings = config_get_ptr();
 
    tmp[0] = feat_str[0] = '\0';
 

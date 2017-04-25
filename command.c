@@ -1118,7 +1118,6 @@ static void command_event_set_volume(float gain)
 static void command_event_init_controllers(void)
 {
    unsigned i;
-   settings_t      *settings = config_get_ptr();
    rarch_system_info_t *info = runloop_get_system_info();
 
    for (i = 0; i < MAX_USERS; i++)
