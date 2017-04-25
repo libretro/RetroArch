@@ -55,7 +55,23 @@ typedef struct
    video_font_raster_block_t *block;
 } gl_raster_t;
 
-static void gl_raster_font_free_font(void *data, bool is_threaded);
+static void gl_raster_font_free_font(void *data,
+      bool is_threaded)
+{
+   gl_raster_t *font = (gl_raster_t*)data;
+   if (!font)
+      return;
+
+   if (font->font_driver && font->font_data)
+      font->font_driver->free(font->font_data);
+
+   if (is_threaded)
+      video_context_driver_make_current(true);
+
+   glDeleteTextures(1, &font->tex);
+
+   free(font);
+}
 
 static bool gl_raster_font_upload_atlas(gl_raster_t *font)
 {
@@ -191,23 +207,6 @@ error:
    return NULL;
 }
 
-static void gl_raster_font_free_font(void *data,
-      bool is_threaded)
-{
-   gl_raster_t *font = (gl_raster_t*)data;
-   if (!font)
-      return;
-
-   if (font->font_driver && font->font_data)
-      font->font_driver->free(font->font_data);
-
-   if (is_threaded)
-      video_context_driver_make_current(true);
-
-   glDeleteTextures(1, &font->tex);
-
-   free(font);
-}
 
 static int gl_get_message_width(void *data, const char *msg,
       unsigned msg_len, float scale)
@@ -247,7 +246,7 @@ static void gl_raster_font_draw_vertices(gl_raster_t *font, const video_coords_t
    if (font->atlas->dirty)
    {
       gl_raster_font_upload_atlas(font);
-      font->atlas->dirty = false;
+      font->atlas->dirty   = false;
    }
 
    coords_data.handle_data = NULL;
@@ -369,7 +368,8 @@ static void gl_raster_font_render_message(
    for (;;)
    {
       const char *delim = strchr(msg, '\n');
-      unsigned msg_len  = delim ? (unsigned)(delim - msg) : (unsigned)strlen(msg);
+      unsigned msg_len  = delim 
+         ? (unsigned)(delim - msg) : (unsigned)strlen(msg);
 
       /* Draw the line */
       if (font->gl)
@@ -424,18 +424,12 @@ static void gl_raster_font_render_msg(
    int drop_x, drop_y;
    enum text_alignment text_align   = TEXT_ALIGN_LEFT;
    bool full_screen                 = false ;
-   gl_t                         *gl = NULL;
    gl_raster_t                *font = (gl_raster_t*)data;
    unsigned width                   = video_info->width;
    unsigned height                  = video_info->height;
    const struct font_params *params = (const struct font_params*)userdata;
 
    if (!font || string_is_empty(msg))
-      return;
-
-   gl = font->gl;
-
-   if (!gl)
       return;
 
    if (params)
@@ -492,15 +486,15 @@ static void gl_raster_font_render_msg(
 
       if (font && !string_is_empty(msg) && font->gl && font->font_data && font->font_driver)
          gl_raster_font_render_message(font, msg, scale, color_dark,
-               x + scale * drop_x / gl->vp.width, y +
-               scale * drop_y / gl->vp.height, text_align);
+               x + scale * drop_x / font->gl->vp.width, y +
+               scale * drop_y / font->gl->vp.height, text_align);
    }
 
    if (font && !string_is_empty(msg) && font->gl && font->font_data && font->font_driver)
       gl_raster_font_render_message(font, msg, scale, color, x, y, text_align);
 
    if (!font->block)
-      gl_raster_font_restore_viewport(width, height, gl, false);
+      gl_raster_font_restore_viewport(width, height, font->gl, false);
 }
 
 static const struct font_glyph *gl_raster_font_get_glyph(
