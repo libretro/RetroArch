@@ -63,6 +63,7 @@
 
 #include "defaults.h"
 #include "driver.h"
+#include "input/input_config.h"
 #include "frontend/frontend_driver.h"
 #include "audio/audio_driver.h"
 #include "record/record_driver.h"
@@ -1126,8 +1127,7 @@ static void command_event_init_controllers(void)
       const char *ident                               = NULL;
       bool set_controller                             = false;
       const struct retro_controller_description *desc = NULL;
-      unsigned device                                 = 
-         settings->input.libretro_device[i];
+      unsigned device                                 = input_config_get_device(i);
 
       if (info)
       {
@@ -1146,7 +1146,7 @@ static void command_event_init_controllers(void)
 
          if (device != RETRO_DEVICE_JOYPAD && device != RETRO_DEVICE_NONE)
          {
-            /* Do not fix settings->input.libretro_device[i],
+            /* Do not fix device,
              * because any use of dummy core will reset this,
              * which is not a good idea. */
             RARCH_WARN("Input device ID %u is unknown to this "

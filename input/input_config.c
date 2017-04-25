@@ -505,6 +505,18 @@ void input_config_clear_device_name(unsigned port)
    settings->input.device_names[port][0] = '\0';
 }
 
+unsigned *input_config_get_device_ptr(unsigned port)
+{
+   settings_t *settings = config_get_ptr();
+   return &settings->input.libretro_device[port];
+}
+
+unsigned input_config_get_device(unsigned port)
+{
+   settings_t *settings = config_get_ptr();
+   return settings->input.libretro_device[port];
+}
+
 void input_config_set_device(unsigned port, unsigned id)
 {
    settings_t *settings = config_get_ptr();

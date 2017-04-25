@@ -35,6 +35,7 @@
 #include "../../retroarch.h"
 #include "../../runloop.h"
 #include "../../version.h"
+#include "../../input/input_config.h"
 
 #ifdef HAVE_MENU
 #include "../../menu/widgets/menu_input_dialog.h"
@@ -514,14 +515,13 @@ bool netplay_handshake_info(netplay_t *netplay, struct netplay_connection *conne
 bool netplay_handshake_sync(netplay_t *netplay, struct netplay_connection *connection)
 {
    /* If we're the server, now we send sync info */
+   size_t i;
+   int matchct;
+   uint32_t device;
    uint32_t cmd[5];
    uint32_t connected_players;
-   settings_t *settings = config_get_ptr();
-   size_t i;
-   uint32_t device;
    retro_ctx_memory_info_t mem_info;
    size_t nicklen, nickmangle;
-   int matchct;
    bool nick_matched;
 
    autosave_lock();
@@ -552,7 +552,7 @@ bool netplay_handshake_sync(netplay_t *netplay, struct netplay_connection *conne
    /* Now send the device info */
    for (i = 0; i < MAX_USERS; i++)
    {
-      device = htonl(settings->input.libretro_device[i]);
+      device = htonl(input_config_get_device(i));
       if (!netplay_send(&connection->send_packet_buffer, connection->fd,
                &device, sizeof(device)))
          return false;
@@ -626,7 +626,6 @@ bool netplay_handshake_pre_nick(netplay_t *netplay,
    struct nick_buf_s nick_buf;
    ssize_t recvd;
    char msg[512];
-   settings_t *settings = config_get_ptr();
 
    msg[0] = '\0';
 
@@ -655,6 +654,7 @@ bool netplay_handshake_pre_nick(netplay_t *netplay,
 
    if (netplay->is_server)
    {
+      settings_t *settings = config_get_ptr();
       if (settings->netplay.password[0] || settings->netplay.spectate_password[0])
       {
          /* There's a password, so just put them in PRE_PASSWORD mode */
@@ -721,6 +721,7 @@ bool netplay_handshake_pre_password(netplay_t *netplay,
    /* Calculate the correct password hash(es) and compare */
    correct = false;
    snprintf(password, sizeof(password), "%08X", connection->salt);
+
    if (settings->netplay.password[0])
    {
       strlcpy(password + 8, settings->netplay.password, sizeof(password)-8);

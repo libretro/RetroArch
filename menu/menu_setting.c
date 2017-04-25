@@ -422,25 +422,24 @@ static void setting_get_string_representation_uint_aspect_ratio_index(void *data
 static void setting_get_string_representation_uint_libretro_device(void *data,
       char *s, size_t len)
 {
-   unsigned index_offset;
+   unsigned index_offset, device;
    const struct retro_controller_description *desc = NULL;
    const char *name            = NULL;
    rarch_system_info_t *system = runloop_get_system_info();
    rarch_setting_t *setting    = (rarch_setting_t*)data;
-   settings_t      *settings   = config_get_ptr();
 
    if (!setting)
       return;
 
-   index_offset = setting->index_offset;
+   index_offset                = setting->index_offset;
+   device                      = input_config_get_device(index_offset);
 
    if (system)
    {
       if (index_offset < system->ports.size)
          desc = libretro_find_controller_description(
                &system->ports.data[index_offset],
-               settings->input.libretro_device
-               [index_offset]);
+               device);
    }
 
    if (desc)
@@ -449,8 +448,7 @@ static void setting_get_string_representation_uint_libretro_device(void *data,
    if (!name)
    {
       /* Find generic name. */
-
-      switch (settings->input.libretro_device[index_offset])
+      switch (device)
       {
          case RETRO_DEVICE_NONE:
             name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
@@ -1155,7 +1153,7 @@ static int setting_action_left_libretro_device_type(
       }
    }
 
-   current_device = settings->input.libretro_device[port];
+   current_device = input_config_get_device(port);
    current_idx    = 0;
    for (i = 0; i < types; i++)
    {
@@ -1221,7 +1219,7 @@ static int setting_action_right_libretro_device_type(
       }
    }
 
-   current_device = settings->input.libretro_device[port];
+   current_device = input_config_get_device(port);
    current_idx    = 0;
    for (i = 0; i < types; i++)
    {
@@ -1960,7 +1958,7 @@ static bool setting_append_list_input_player_options(
 
       CONFIG_UINT_ALT(
             list, list_info,
-            &settings->input.libretro_device[user],
+            input_config_get_device_ptr(user),
             key_type[user],
             label_type[user],
             user,

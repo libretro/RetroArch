@@ -1191,7 +1191,7 @@ static void config_set_defaults(void)
       settings->input.joypad_map[i] = i;
       settings->input.analog_dpad_mode[i] = ANALOG_DPAD_NONE;
       if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &i))
-         settings->input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
+         input_config_set_device(i, RETRO_DEVICE_JOYPAD);
    }
 
    video_driver_reset_custom_viewport();
@@ -3054,7 +3054,7 @@ bool config_save_file(const char *path)
       snprintf(cfg, sizeof(cfg), "input_player%u_joypad_index", i + 1);
       config_set_int(conf, cfg, settings->input.joypad_map[i]);
       snprintf(cfg, sizeof(cfg), "input_libretro_device_p%u", i + 1);
-      config_set_int(conf, cfg, settings->input.libretro_device[i]);
+      config_set_int(conf, cfg, input_config_get_device(i));
       snprintf(cfg, sizeof(cfg), "input_player%u_analog_dpad_mode", i + 1);
       config_set_int(conf, cfg, settings->input.analog_dpad_mode[i]);
    }
@@ -3309,7 +3309,7 @@ bool config_save_overrides(int override_type)
             snprintf(cfg, sizeof(cfg), "input_player%u_joypad_index", i + 1);
             config_set_int(conf, cfg, overrides->input.joypad_map[i]);
          }
-         if (settings->input.libretro_device[i] != overrides->input.libretro_device[i])
+         if (input_config_get_device(i) != overrides->input.libretro_device[i])
          {
             snprintf(cfg, sizeof(cfg), "input_libretro_device_p%u", i + 1);
             config_set_int(conf, cfg, overrides->input.libretro_device[i]);

@@ -71,6 +71,10 @@ void input_config_set_device_name(unsigned port, const char *name);
 
 void input_config_clear_device_name(unsigned port);
 
+unsigned *input_config_get_device_ptr(unsigned port);
+
+unsigned input_config_get_device(unsigned port);
+
 void input_config_set_device(unsigned port, unsigned id);
 
 const char *input_config_get_device_name(unsigned port);
