@@ -1332,7 +1332,6 @@ static int setting_action_ok_bind_defaults(void *data, bool wraparound)
    struct retro_keybind *target          = NULL;
    const struct retro_keybind *def_binds = NULL;
    rarch_setting_t *setting              = (rarch_setting_t*)data;
-   settings_t    *settings               = config_get_ptr();
 
    (void)wraparound;
 

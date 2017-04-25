@@ -121,7 +121,6 @@ static int action_scan_input_desc(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    const char *menu_label         = NULL;
-   settings_t           *settings = config_get_ptr();
    unsigned key                   = 0;
    unsigned inp_desc_user         = 0;
    struct retro_keybind *target   = NULL;
