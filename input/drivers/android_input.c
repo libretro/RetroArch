@@ -1244,7 +1244,7 @@ static bool android_input_key_pressed(void *data, int key)
    rarch_joypad_info_t joypad_info;
    android_input_t *android           = (android_input_t*)data;		
    settings_t *settings               = config_get_ptr();		
-   const struct retro_keybind *keyptr = input_config_get_specific_bind(0, key);
+   const struct retro_keybind *keyptr = input_config_binds[0][key];
 
    if(       keyptr->valid 
          && android_keyboard_port_input_pressed(input_config_binds[0],
