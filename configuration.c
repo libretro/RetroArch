@@ -1174,9 +1174,9 @@ static void config_set_defaults(void)
          settings->input.autoconf_binds[i][j].joykey  = NO_BTN;
          settings->input.autoconf_binds[i][j].joyaxis = AXIS_NONE;
       }
-
-      settings->input.autoconfigured[i] = 0;
    }
+
+   input_autoconfigure_reset();
 
    /* Verify that binds are in proper order. */
    for (i = 0; i < MAX_USERS; i++)

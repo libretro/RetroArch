@@ -645,7 +645,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 
    for(controller = 0; controller < MAX_USERS; controller++)
    {
-       if (settings->input.autoconfigured[controller])
+       if (input_is_autoconfigured(controller))
        {
            snprintf(tmp, sizeof(tmp), "Port #%d device name: %s (#%d)",
                  controller, settings->input.device_names[controller],

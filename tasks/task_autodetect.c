@@ -50,6 +50,8 @@ typedef struct autoconfig_params
    char autoconfig_directory[4096];
 } autoconfig_params_t;
 
+static bool input_autoconfigured[MAX_USERS];
+
 /* Adds an index for devices with the same name,
  * so they can be identified in the GUI. */
 static void input_autoconfigure_joypad_reindex_devices(autoconfig_params_t *params)
@@ -154,11 +156,10 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
 
    /* This will be the case if input driver is reinitialized.
     * No reason to spam autoconfigure messages every time. */
-   block_osd_spam = settings->input.autoconfigured[params->idx]
+   block_osd_spam = input_autoconfigured[params->idx]
       && !string_is_empty(params->name);
 
-   configuration_set_bool(settings,
-         settings->input.autoconfigured[params->idx], true);
+   input_autoconfigured[params->idx] = true;
 
    input_autoconfigure_joypad_conf(conf,
          settings->input.autoconf_binds[params->idx]);
@@ -399,6 +400,18 @@ error:
    return false;
 }
 
+void input_autoconfigure_reset(void)
+{
+   unsigned i;
+   for (i = 0; i < MAX_USERS; i++)
+      input_autoconfigured[i] = 0;
+}
+
+bool input_is_autoconfigured(unsigned i)
+{
+   return input_autoconfigured[i];
+}
+
 bool input_autoconfigure_connect(
       const char *name,
       const char *display_name,
@@ -449,8 +462,7 @@ bool input_autoconfigure_connect(
       settings->input.autoconf_binds[state->idx][i].joyaxis_label[0] = '\0';
    }
 
-   configuration_set_bool(settings,
-         settings->input.autoconfigured[state->idx], false);
+   input_autoconfigured[state->idx] = false;
 
    task->state   = state;
    task->handler = input_autoconfigure_connect_handler;
