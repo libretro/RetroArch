@@ -1156,15 +1156,6 @@ static void config_set_defaults(void)
    *settings->cheevos.password                 = '\0';
 #endif
 
-   retro_assert(sizeof(settings->input.binds[0]) >= sizeof(retro_keybinds_1));
-   retro_assert(sizeof(settings->input.binds[1]) >= sizeof(retro_keybinds_rest));
-
-   memcpy(input_config_get_binds(0), retro_keybinds_1, sizeof(retro_keybinds_1));
-
-   for (i = 1; i < MAX_USERS; i++)
-      memcpy(input_config_get_binds(i), retro_keybinds_rest,
-            sizeof(retro_keybinds_rest));
-
    input_config_reset();
    input_remapping_set_defaults();
    input_autoconfigure_reset();

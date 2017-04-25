@@ -23,10 +23,14 @@
 #include <file/file_path.h>
 #include <file/config_file.h>
 #include <string/stdstring.h>
+#include <retro_assert.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
+
+#include "../config.def.h"
+#include "../config.def.keybinds.h"
 
 #include "input_config.h"
 #include "input_keymaps.h"
@@ -582,6 +586,16 @@ int32_t input_config_get_vid(unsigned port)
 void input_config_reset(void)
 {
    unsigned i;
+   settings_t *settings = config_get_ptr();
+
+   retro_assert(sizeof(settings->input.binds[0]) >= sizeof(retro_keybinds_1));
+   retro_assert(sizeof(settings->input.binds[1]) >= sizeof(retro_keybinds_rest));
+
+   memcpy(input_config_get_binds(0), retro_keybinds_1, sizeof(retro_keybinds_1));
+
+   for (i = 1; i < MAX_USERS; i++)
+      memcpy(input_config_get_binds(i), retro_keybinds_rest,
+            sizeof(retro_keybinds_rest));
    
    for (i = 0; i < MAX_USERS; i++)
    {

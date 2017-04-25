@@ -23,6 +23,9 @@
 #include "config.h"
 #endif
 
+#include "config.def.h"
+#include "config.def.keybinds.h"
+
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
 #include "menu/widgets/menu_input_dialog.h"
