@@ -35,8 +35,8 @@
 #include "../config.h"
 #endif
 
-#include "config.def.h"
-#include "config.def.keybinds.h"
+#include "../config.def.h"
+#include "../config.def.keybinds.h"
 
 #if defined(__CELLOS_LV2__)
 #include <sdk_version.h>
