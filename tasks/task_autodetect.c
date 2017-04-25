@@ -467,10 +467,8 @@ bool input_autoconfigure_connect(
    state->max_users = settings->input.max_users;
 
    input_config_set_device_name(state->idx, state->name);
-
-   configuration_set_int(settings, settings->input.pid[state->idx], state->pid);
-   configuration_set_int(settings, settings->input.vid[state->idx], state->vid);
-
+   input_config_set_pid(state->idx, state->pid);
+   input_config_set_vid(state->idx, state->vid);
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {

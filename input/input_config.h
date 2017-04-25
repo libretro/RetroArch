@@ -77,4 +77,14 @@ const char *input_config_get_device_name(unsigned port);
 
 const struct retro_keybind *input_config_get_bind_auto(unsigned port, unsigned id);
 
+void input_config_set_pid(unsigned port, unsigned pid);
+
+int32_t input_config_get_pid(unsigned port);
+
+void input_config_set_vid(unsigned port, unsigned vid);
+
+int32_t input_config_get_vid(unsigned port);
+
+void input_config_reset(void);
+
 #endif

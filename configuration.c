@@ -1165,6 +1165,7 @@ static void config_set_defaults(void)
       memcpy(settings->input.binds[i], retro_keybinds_rest,
             sizeof(retro_keybinds_rest));
 
+   input_config_reset();
    input_remapping_set_defaults();
    input_autoconfigure_reset();
 
@@ -2874,15 +2875,18 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    unsigned i;
    char buf[PATH_MAX_LENGTH];
    char autoconf_file[PATH_MAX_LENGTH];
+   int32_t pid_user                     = 0;
+   int32_t vid_user                     = 0;
    bool ret                             = false;
    config_file_t *conf                  = NULL;
    settings_t *settings                 = config_get_ptr();
    const char *autoconf_dir             = settings->directory.autoconfig;
+   const char *joypad_ident             = settings->input.joypad_driver;
 
    buf[0] = autoconf_file[0]            = '\0';
 
    fill_pathname_join(buf, autoconf_dir,
-         settings->input.joypad_driver, sizeof(buf));
+         joypad_ident, sizeof(buf));
 
    if(path_is_directory(buf))
    {
@@ -2914,17 +2918,19 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
          return false;
    }
 
-   config_set_string(conf, "input_driver",
-         settings->input.joypad_driver);
+   config_set_string(conf, "input_driver", joypad_ident);
    config_set_string(conf, "input_device",
          input_config_get_device_name(user));
 
-   if(settings->input.vid[user] && settings->input.pid[user])
+   pid_user = input_config_get_pid(user);
+   vid_user = input_config_get_vid(user);
+
+   if(pid_user && vid_user)
    {
       config_set_int(conf, "input_vendor_id",
-            settings->input.vid[user]);
+            vid_user);
       config_set_int(conf, "input_product_id",
-            settings->input.pid[user]);
+            pid_user);
    }
 
    for (i = 0; i < RARCH_FIRST_META_KEY; i++)

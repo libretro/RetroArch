@@ -74,6 +74,9 @@ static const char *bind_user_prefix[MAX_USERS] = {
    "input_player16",
 };
 
+static int input_config_vid[MAX_USERS];
+static int input_config_pid[MAX_USERS];
+
 #define DECLARE_BIND(x, bind, desc) { true, 0, #x, desc, bind }
 #define DECLARE_META_BIND(level, x, bind, desc) { true, level, #x, desc, bind }
 
@@ -532,3 +535,33 @@ const struct retro_keybind *input_config_get_bind_auto(unsigned port, unsigned i
    return NULL;
 }
 
+void input_config_set_pid(unsigned port, unsigned pid)
+{
+   input_config_pid[port] = pid;
+}
+
+int32_t input_config_get_pid(unsigned port)
+{
+   return input_config_pid[port];
+}
+
+void input_config_set_vid(unsigned port, unsigned vid)
+{
+   input_config_vid[port] = vid;
+}
+
+int32_t input_config_get_vid(unsigned port)
+{
+   return input_config_vid[port];
+}
+
+void input_config_reset(void)
+{
+   unsigned i;
+   
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      input_config_vid[i] = 0;
+      input_config_pid[i] = 0;
+   }
+}

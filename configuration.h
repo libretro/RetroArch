@@ -285,9 +285,6 @@ typedef struct settings
       /* Set by autoconfiguration in joypad_autoconfig_dir.
        * Does not override main binds. */
       bool swap_override;
-      int vid[MAX_USERS];
-      int pid[MAX_USERS];
-
       unsigned libretro_device[MAX_USERS];
       unsigned analog_dpad_mode[MAX_USERS];
 
