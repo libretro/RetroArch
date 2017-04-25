@@ -29,12 +29,12 @@
 #include "../config.h"
 #endif
 
-#include "../config.def.h"
-#include "../config.def.keybinds.h"
-
 #include "input_config.h"
+#include "input_driver.h"
 #include "input_keymaps.h"
 #include "input_remapping.h"
+
+#include "../config.def.keybinds.h"
 
 #include "../msg_hash.h"
 #include "../configuration.h"
