@@ -710,7 +710,7 @@ uint64_t input_menu_keys_pressed(
          input_driver_block_hotkey = true;
 
       binds_norm = &input_config_binds[0][RARCH_ENABLE_HOTKEY];
-      binds_auto = input_autoconfigure_get_specific_bind(0, RARCH_ENABLE_HOTKEY);
+      binds_auto = &input_autoconf_binds[0][RARCH_ENABLE_HOTKEY];
 
       for (i = 0; i < max_users; i++)
          binds[i] = input_config_binds[i];
@@ -913,10 +913,10 @@ uint64_t input_keys_pressed(
    uint64_t                      ret            = 0;
    settings_t              *settings            = config_get_ptr();
    const struct retro_keybind *binds            = input_config_binds[0];
-   const struct retro_keybind *binds_auto       = input_autoconfigure_get_specific_bind(0, RARCH_ENABLE_HOTKEY);
+   const struct retro_keybind *binds_auto       = &input_autoconf_binds[0][RARCH_ENABLE_HOTKEY];
    const struct retro_keybind *binds_norm       = &binds[RARCH_ENABLE_HOTKEY];
 
-   const struct retro_keybind *focus_binds_auto = input_autoconfigure_get_specific_bind(0, RARCH_GAME_FOCUS_TOGGLE);
+   const struct retro_keybind *focus_binds_auto = &input_autoconf_binds[0][RARCH_GAME_FOCUS_TOGGLE];
    const struct retro_keybind *focus_normal     = &binds[RARCH_GAME_FOCUS_TOGGLE];
    const struct retro_keybind *enable_hotkey    = &input_config_binds[0][RARCH_ENABLE_HOTKEY];
    bool game_focus_toggle_valid                 = false;
