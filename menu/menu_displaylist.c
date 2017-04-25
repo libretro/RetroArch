@@ -648,8 +648,9 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
        if (input_is_autoconfigured(controller))
        {
            snprintf(tmp, sizeof(tmp), "Port #%d device name: %s (#%d)",
-                 controller, input_config_get_device_name(controller),
-                 settings->input.device_name_index[controller]);
+                 controller,
+                 input_config_get_device_name(controller),
+                 input_autoconfigure_get_device_name_index(controller));
            menu_entries_append_enum(info->list, tmp, "",
                  MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0);

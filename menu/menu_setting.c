@@ -1430,7 +1430,7 @@ static void get_string_representation_bind_device(void * data, char *s,
          snprintf(s, len,
                "%s (#%u)",
                device_name,
-               settings->input.device_name_index[map]);
+               input_autoconfigure_get_device_name_index(map));
       else
          snprintf(s, len,
                "%s (%s #%u)",

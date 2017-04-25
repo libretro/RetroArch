@@ -292,7 +292,6 @@ typedef struct settings
       float axis_threshold;
       unsigned joypad_map[MAX_USERS];
       unsigned device[MAX_USERS];
-      unsigned device_name_index[MAX_USERS];
       bool autodetect_enable;
 
       unsigned turbo_period;

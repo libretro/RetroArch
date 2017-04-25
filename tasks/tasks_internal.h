@@ -226,6 +226,8 @@ input_autoconfigure_get_specific_bind(unsigned i, unsigned j);
 
 struct retro_keybind *input_autoconfigure_get_binds(unsigned i);
 
+unsigned input_autoconfigure_get_device_name_index(unsigned i);
+
 void input_autoconfigure_reset(void);
 
 bool input_autoconfigure_connect(

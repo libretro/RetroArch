@@ -52,18 +52,16 @@ typedef struct autoconfig_params
 
 static bool input_autoconfigured[MAX_USERS];
 static struct retro_keybind input_autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
+static unsigned input_device_name_index[MAX_USERS];
 
 /* Adds an index for devices with the same name,
  * so they can be identified in the GUI. */
 static void input_autoconfigure_joypad_reindex_devices(autoconfig_params_t *params)
 {
    unsigned i;
-   settings_t      *settings = config_get_ptr();
 
    for(i = 0; i < params->max_users; i++)
-   {
-      configuration_set_uint(settings, settings->input.device_name_index[i], 0);
-   }
+      input_device_name_index[i] = 0;
 
    for(i = 0; i < params->max_users; i++)
    {
@@ -74,11 +72,8 @@ static void input_autoconfigure_joypad_reindex_devices(autoconfig_params_t *para
       for(j = 0; j < params->max_users; j++)
       {
          if(string_is_equal(tmp, input_config_get_device_name(j))
-               && settings->input.device_name_index[i] == 0)
-         {
-            configuration_set_uint(settings, settings->input.device_name_index[j], k);
-            k++;
-         }
+               && input_device_name_index[i] == 0)
+            input_device_name_index[j] = k++;
       }
    }
 }
@@ -421,13 +416,19 @@ void input_autoconfigure_reset(void)
          input_autoconf_binds[i][j].joykey  = NO_BTN;
          input_autoconf_binds[i][j].joyaxis = AXIS_NONE;
       }
-      input_autoconfigured[i] = 0;
+      input_device_name_index[i] = 0;
+      input_autoconfigured[i]    = 0;
    }
 }
 
 bool input_is_autoconfigured(unsigned i)
 {
    return input_autoconfigured[i];
+}
+
+unsigned input_autoconfigure_get_device_name_index(unsigned i)
+{
+   return input_device_name_index[i];
 }
 
 bool input_autoconfigure_connect(
@@ -442,6 +443,7 @@ bool input_autoconfigure_connect(
    retro_task_t         *task = (retro_task_t*)calloc(1, sizeof(*task));
    autoconfig_params_t *state = (autoconfig_params_t*)calloc(1, sizeof(*state));
    settings_t       *settings = config_get_ptr();
+   const char *dir_autoconf   = settings->directory.autoconfig;
 
    if (!task || !state || !settings->input.autodetect_enable)
       goto error;
@@ -456,9 +458,9 @@ bool input_autoconfigure_connect(
    if (!string_is_empty(driver))
       strlcpy(state->driver, driver, sizeof(state->driver));
 
-   if (!string_is_empty(settings->directory.autoconfig))
+   if (!string_is_empty(dir_autoconf))
       strlcpy(state->autoconfig_directory,
-            settings->directory.autoconfig,
+            dir_autoconf,
             sizeof(state->autoconfig_directory));
 
    state->idx       = idx;
