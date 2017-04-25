@@ -1129,15 +1129,11 @@ static void handle_hotplug(android_input_t *android,
          productId))
       input_config_set_device_name(*port, name_buf);
 
-   if (!string_is_empty(name_buf))
-   {
-      settings_t         *settings = config_get_ptr();
-      strlcpy(settings->input.device_names[*port],
-            name_buf, sizeof(settings->input.device_names[*port]));
-   }
+   input_config_set_device_name(*port, name_buf);
 
-   android->pad_states[android->pads_connected].id = id;
+   android->pad_states[android->pads_connected].id   = id;
    android->pad_states[android->pads_connected].port = *port;
+
    strlcpy(android->pad_states[*port].name, name_buf,
          sizeof(android->pad_states[*port].name));
 

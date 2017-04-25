@@ -1304,17 +1304,16 @@ static int setting_action_ok_bind_all(void *data, bool wraparound)
 static int setting_action_ok_bind_all_save_autoconfig(void *data, bool wraparound)
 {
    unsigned index_offset;
-   settings_t    *settings   = config_get_ptr();
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    const char *name          = NULL;
 
    (void)wraparound;
 
-   if (!settings || !setting)
+   if (!setting)
       return -1;
 
    index_offset = setting->index_offset;
-   name         = settings->input.device_names[index_offset];
+   name         = input_config_get_device_name(index_offset);
 
    if(!string_is_empty(name) && config_save_autoconf_profile(name, index_offset))
       runloop_msg_queue_push(
@@ -1322,6 +1321,7 @@ static int setting_action_ok_bind_all_save_autoconfig(void *data, bool wraparoun
    else
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_AUTOCONFIG_FILE_ERROR_SAVING), 1, 100, true);
+
 
    return 0;
 }
@@ -1424,7 +1424,7 @@ static void get_string_representation_bind_device(void * data, char *s,
 
    if (map < settings->input.max_users)
    {
-      const char *device_name = settings->input.device_names[map];
+      const char *device_name = input_config_get_device_name(map);
 
       if (!string_is_empty(device_name))
          snprintf(s, len,
