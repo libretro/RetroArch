@@ -505,6 +505,10 @@ typedef struct settings
    settings->modified = true; \
    var = newvar
 
+#define configuration_set_uint(settings, var, newvar) \
+   settings->modified = true; \
+   var = newvar
+
 #define configuration_set_int(settings, var, newvar) \
    settings->modified = true; \
    var = newvar

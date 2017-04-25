@@ -58,7 +58,9 @@ static void input_autoconfigure_joypad_reindex_devices(autoconfig_params_t *para
    settings_t      *settings = config_get_ptr();
 
    for(i = 0; i < params->max_users; i++)
-      settings->input.device_name_index[i] = 0;
+   {
+      configuration_set_uint(settings, settings->input.device_name_index[i], 0);
+   }
 
    for(i = 0; i < params->max_users; i++)
    {
@@ -70,7 +72,10 @@ static void input_autoconfigure_joypad_reindex_devices(autoconfig_params_t *para
       {
          if(string_is_equal(tmp, settings->input.device_names[j])
                && settings->input.device_name_index[i] == 0)
-            settings->input.device_name_index[j] = k++;
+         {
+            configuration_set_uint(settings, settings->input.device_name_index[j], k);
+            k++;
+         }
       }
    }
 }
@@ -152,7 +157,9 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    block_osd_spam = settings->input.autoconfigured[params->idx]
       && !string_is_empty(params->name);
 
-   settings->input.autoconfigured[params->idx] = true;
+   configuration_set_bool(settings,
+         settings->input.autoconfigured[params->idx], true);
+
    input_autoconfigure_joypad_conf(conf,
          settings->input.autoconf_binds[params->idx]);
 
@@ -165,7 +172,9 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
          task_set_title(task, strdup(msg));
       remote_is_bound = true;
       if (params->idx == 0)
-         settings->input.swap_override = true;
+      {
+         configuration_set_bool(settings, settings->input.swap_override, true);
+      }
    }
    else
    {
@@ -177,8 +186,12 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
 
       /* allow overriding the swap menu controls for player 1*/
       if (params->idx == 0)
+      {
          if (config_get_bool(conf, "input_swap_override", &tmp))
-            settings->input.swap_override = tmp;
+         {
+            configuration_set_bool(settings, settings->input.swap_override, tmp);
+         }
+      }
 
       if (!block_osd_spam)
          task_set_title(task, strdup(msg));
@@ -423,8 +436,9 @@ bool input_autoconfigure_connect(
    state->max_users = settings->input.max_users;
 
    input_config_set_device_name(state->idx, state->name);
-   settings->input.pid[state->idx]  = state->pid;
-   settings->input.vid[state->idx]  = state->vid;
+
+   configuration_set_int(settings, settings->input.pid[state->idx], state->pid);
+   configuration_set_int(settings, settings->input.vid[state->idx], state->vid);
 
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
@@ -434,7 +448,9 @@ bool input_autoconfigure_connect(
       settings->input.autoconf_binds[state->idx][i].joykey_label[0]  = '\0';
       settings->input.autoconf_binds[state->idx][i].joyaxis_label[0] = '\0';
    }
-   settings->input.autoconfigured[state->idx] = false;
+
+   configuration_set_bool(settings,
+         settings->input.autoconfigured[state->idx], false);
 
    task->state   = state;
    task->handler = input_autoconfigure_connect_handler;
