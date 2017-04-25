@@ -231,13 +231,6 @@ static void vulkan_raster_font_render_message(
    }
 }
 
-static void vulkan_raster_font_setup_viewport(
-      unsigned width, unsigned height,
-      vulkan_raster_t *font, bool full_screen)
-{
-   video_driver_set_viewport(width, height, full_screen, false);
-}
-
 static void vulkan_raster_font_flush(vulkan_raster_t *font)
 {
    const struct vk_draw_triangles call = {
@@ -287,9 +280,9 @@ static void vulkan_raster_font_render_msg(
       drop_mod    = params->drop_mod;
       drop_alpha  = params->drop_alpha;
 
-      color[0]    = FONT_COLOR_GET_RED(params->color) / 255.0f;
+      color[0]    = FONT_COLOR_GET_RED(params->color)   / 255.0f;
       color[1]    = FONT_COLOR_GET_GREEN(params->color) / 255.0f;
-      color[2]    = FONT_COLOR_GET_BLUE(params->color) / 255.0f;
+      color[2]    = FONT_COLOR_GET_BLUE(params->color)  / 255.0f;
       color[3]    = FONT_COLOR_GET_ALPHA(params->color) / 255.0f;
 
       /* If alpha is 0.0f, turn it into default 1.0f */
@@ -303,19 +296,18 @@ static void vulkan_raster_font_render_msg(
       scale       = 1.0f;
       full_screen = true;
       text_align  = TEXT_ALIGN_LEFT;
+      drop_x      = -2;
+      drop_y      = -2;
+      drop_mod    = 0.3f;
+      drop_alpha  = 1.0f;
 
       color[0]    = video_info->font_msg_color_r;
       color[1]    = video_info->font_msg_color_g;
       color[2]    = video_info->font_msg_color_b;
       color[3]    = 1.0f;
-
-      drop_x      = -2;
-      drop_y      = -2;
-      drop_mod    = 0.3f;
-      drop_alpha  = 1.0f;
    }
 
-   vulkan_raster_font_setup_viewport(width, height, font, full_screen);
+   video_driver_set_viewport(width, height, full_screen, false);
 
    max_glyphs = strlen(msg);
    if (drop_x || drop_y)
