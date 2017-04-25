@@ -453,6 +453,7 @@ static void input_config_get_bind_string_joyaxis(char *buf, const char *prefix,
    unsigned axis        = 0;
    char dir             = '\0';
    settings_t *settings = config_get_ptr();
+   bool label_show      = settings->input.input_descriptor_label_show;
 
    if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
    {
@@ -464,8 +465,7 @@ static void input_config_get_bind_string_joyaxis(char *buf, const char *prefix,
       dir = '+';
       axis = AXIS_POS_GET(bind->joyaxis);
    }
-   if (!string_is_empty(bind->joyaxis_label) 
-         && settings->input.input_descriptor_label_show)
+   if (!string_is_empty(bind->joyaxis_label) && label_show)
       snprintf(buf, size, "%s%s (axis) ", prefix, bind->joyaxis_label);
    else
       snprintf(buf, size, "%s%c%u (%s) ", prefix, dir, axis,
