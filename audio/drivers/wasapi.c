@@ -723,10 +723,7 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t size)
          else
             ir = wasapi_write_sh(w, data + writen, size - writen);
          if (ir == -1)
-         {
-            writen = -1;
-            break;
-         }
+            return -1;
       }
    }
    else if (w->exclusive)
