@@ -278,7 +278,6 @@ typedef struct settings
       char device_names[MAX_USERS][64];
 
       unsigned remap_ids[MAX_USERS][RARCH_BIND_LIST_END];
-      struct retro_keybind binds[MAX_USERS][RARCH_BIND_LIST_END];
 
       unsigned max_users;
 

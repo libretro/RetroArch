@@ -81,6 +81,8 @@ static const char *bind_user_prefix[MAX_USERS] = {
 static int input_config_vid[MAX_USERS];
 static int input_config_pid[MAX_USERS];
 
+static struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
+
 #define DECLARE_BIND(x, bind, desc) { true, 0, #x, desc, bind }
 #define DECLARE_META_BIND(level, x, bind, desc) { true, level, #x, desc, bind }
 
@@ -152,20 +154,17 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
 
 struct retro_keybind *input_config_get_specific_bind_ptr(unsigned i, unsigned j)
 {
-   settings_t *settings = config_get_ptr();
-   return (struct retro_keybind*)&settings->input.binds[i][j];
+   return (struct retro_keybind*)&input_config_binds[i][j];
 }
 
 const struct retro_keybind *input_config_get_specific_bind(unsigned i, unsigned j)
 {
-   settings_t *settings = config_get_ptr();
-   return &settings->input.binds[i][j];
+   return &input_config_binds[i][j];
 }
 
 struct retro_keybind *input_config_get_binds(unsigned i)
 {
-   settings_t *settings = config_get_ptr();
-   return settings->input.binds[i];
+   return input_config_binds[i];
 }
 
 static const void *input_config_bind_map_get(unsigned i)
@@ -592,10 +591,9 @@ int32_t input_config_get_vid(unsigned port)
 void input_config_reset(void)
 {
    unsigned i;
-   settings_t *settings = config_get_ptr();
 
-   retro_assert(sizeof(settings->input.binds[0]) >= sizeof(retro_keybinds_1));
-   retro_assert(sizeof(settings->input.binds[1]) >= sizeof(retro_keybinds_rest));
+   retro_assert(sizeof(input_config_binds[0]) >= sizeof(retro_keybinds_1));
+   retro_assert(sizeof(input_config_binds[1]) >= sizeof(retro_keybinds_rest));
 
    memcpy(input_config_get_binds(0), retro_keybinds_1, sizeof(retro_keybinds_1));
 
