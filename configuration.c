@@ -2877,10 +2877,11 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    bool ret                             = false;
    config_file_t *conf                  = NULL;
    settings_t *settings                 = config_get_ptr();
+   const char *autoconf_dir             = settings->directory.autoconfig;
 
    buf[0] = autoconf_file[0]            = '\0';
 
-   fill_pathname_join(buf, settings->directory.autoconfig,
+   fill_pathname_join(buf, autoconf_dir,
          settings->input.joypad_driver, sizeof(buf));
 
    if(path_is_directory(buf))
@@ -2897,7 +2898,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    }
    else
    {
-      fill_pathname_join(buf, settings->directory.autoconfig,
+      fill_pathname_join(buf, autoconf_dir,
             path, sizeof(buf));
       fill_pathname_noext(autoconf_file, buf,
             file_path_str(FILE_PATH_CONFIG_EXTENSION),
