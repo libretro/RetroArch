@@ -51,7 +51,6 @@ typedef struct autoconfig_params
 } autoconfig_params_t;
 
 static bool input_autoconfigured[MAX_USERS];
-static struct retro_keybind input_autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
 static unsigned input_device_name_index[MAX_USERS];
 
 /* Adds an index for devices with the same name,
@@ -393,16 +392,6 @@ error:
       free(task);
 
    return false;
-}
-
-const struct retro_keybind *input_autoconfigure_get_specific_bind(unsigned i, unsigned j)
-{
-   return &input_autoconf_binds[i][j];
-}
-
-struct retro_keybind *input_autoconfigure_get_binds(unsigned i)
-{
-   return input_autoconf_binds[i];
 }
 
 void input_autoconfigure_reset(void)

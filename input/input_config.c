@@ -81,7 +81,8 @@ static const char *bind_user_prefix[MAX_USERS] = {
 static int input_config_vid[MAX_USERS];
 static int input_config_pid[MAX_USERS];
 
-static struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
+struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
+struct retro_keybind input_autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
 
 #define DECLARE_BIND(x, bind, desc) { true, 0, #x, desc, bind }
 #define DECLARE_META_BIND(level, x, bind, desc) { true, level, #x, desc, bind }
@@ -606,4 +607,14 @@ void input_config_reset(void)
       input_config_vid[i] = 0;
       input_config_pid[i] = 0;
    }
+}
+
+const struct retro_keybind *input_autoconfigure_get_specific_bind(unsigned i, unsigned j)
+{
+   return &input_autoconf_binds[i][j];
+}
+
+struct retro_keybind *input_autoconfigure_get_binds(unsigned i)
+{
+   return input_autoconf_binds[i];
 }
