@@ -106,7 +106,7 @@ static bool rwebinput_is_pressed(rwebinput_input_t *rwebinput,
 static bool rwebinput_key_pressed(void *data, int key)
 {
    rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
-   return rwebinput_is_pressed(rwebinput, input_config_get_binds(0), key);
+   return rwebinput_is_pressed(rwebinput, input_config_binds[0], key);
 }
 
 static int16_t rwebinput_mouse_state(rwebinput_input_t *rwebinput, unsigned id)

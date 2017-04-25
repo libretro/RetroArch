@@ -114,7 +114,7 @@ static PyObject *py_read_input(PyObject *self, PyObject *args)
    settings_t *settings                            = config_get_ptr();
    
    for (i = 0; i < MAX_USERS; i++)
-      py_binds[i]                                  = input_config_get_binds(i);
+      py_binds[i]                                  = input_config_binds[i];
    
    (void)self;
 
@@ -125,7 +125,7 @@ static PyObject *py_read_input(PyObject *self, PyObject *args)
       return NULL;
 
    joypad_info.joy_idx    = settings->input.joypad_map[user - 1];
-   joypad_info.auto_binds = input_autoconfigure_get_binds(joypad_info.joy_idx);
+   joypad_info.auto_binds = input_autoconf_binds[joypad_info.joy_idx];
 
    if (!input_driver_is_libretro_input_blocked())
       res = current_input->input_state(current_input_data, joypad_info,
@@ -143,7 +143,7 @@ static PyObject *py_read_analog(PyObject *self, PyObject *args)
    settings_t *settings                   = config_get_ptr();
 
    for (i = 0; i < MAX_USERS; i++)
-      py_binds[i]                         = input_config_get_binds(i);
+      py_binds[i]                         = input_config_binds[i];
 
    (void)self;
 
@@ -154,7 +154,7 @@ static PyObject *py_read_analog(PyObject *self, PyObject *args)
       return NULL;
 
    joypad_info.joy_idx    = settings->input.joypad_map[user - 1];
-   joypad_info.auto_binds = input_autoconfigure_get_binds(joypad_info.joy_idx);
+   joypad_info.auto_binds = input_autoconf_binds[joypad_info.joy_idx];
 
    res = current_input->input_state(current_input_data, 
          joypad_info, py_binds,
@@ -399,8 +399,8 @@ float py_state_get(py_state_t *handle, const char *id,
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      struct retro_keybind *general_binds = input_config_get_binds(i);
-      struct retro_keybind *auto_binds    = input_autoconfigure_get_binds(i);
+      struct retro_keybind *general_binds = input_config_binds[i];
+      struct retro_keybind *auto_binds    = input_autoconf_binds[i];
       enum analog_dpad_mode dpad_mode     = settings->input.analog_dpad_mode[i];
 
       if (dpad_mode == ANALOG_DPAD_NONE)
@@ -414,8 +414,8 @@ float py_state_get(py_state_t *handle, const char *id,
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      struct retro_keybind *general_binds = input_config_get_binds(i);
-      struct retro_keybind *auto_binds    = input_autoconfigure_get_binds(i);
+      struct retro_keybind *general_binds = input_config_binds[i];
+      struct retro_keybind *auto_binds    = input_autoconf_binds[i];
       input_pop_analog_dpad(general_binds);
       input_pop_analog_dpad(auto_binds);
    }

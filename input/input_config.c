@@ -163,11 +163,6 @@ const struct retro_keybind *input_config_get_specific_bind(unsigned i, unsigned 
    return &input_config_binds[i][j];
 }
 
-struct retro_keybind *input_config_get_binds(unsigned i)
-{
-   return input_config_binds[i];
-}
-
 static const void *input_config_bind_map_get(unsigned i)
 {
    return (const struct input_bind_map*)&input_config_bind_map[i];
@@ -596,10 +591,10 @@ void input_config_reset(void)
    retro_assert(sizeof(input_config_binds[0]) >= sizeof(retro_keybinds_1));
    retro_assert(sizeof(input_config_binds[1]) >= sizeof(retro_keybinds_rest));
 
-   memcpy(input_config_get_binds(0), retro_keybinds_1, sizeof(retro_keybinds_1));
+   memcpy(input_config_binds[0], retro_keybinds_1, sizeof(retro_keybinds_1));
 
    for (i = 1; i < MAX_USERS; i++)
-      memcpy(input_config_get_binds(i), retro_keybinds_rest,
+      memcpy(input_config_binds[i], retro_keybinds_rest,
             sizeof(retro_keybinds_rest));
    
    for (i = 0; i < MAX_USERS; i++)
@@ -612,9 +607,4 @@ void input_config_reset(void)
 const struct retro_keybind *input_autoconfigure_get_specific_bind(unsigned i, unsigned j)
 {
    return &input_autoconf_binds[i][j];
-}
-
-struct retro_keybind *input_autoconfigure_get_binds(unsigned i)
-{
-   return input_autoconf_binds[i];
 }

@@ -96,12 +96,8 @@ struct retro_keybind *input_config_get_specific_bind_ptr(unsigned i, unsigned j)
 
 const struct retro_keybind *input_config_get_specific_bind(unsigned i, unsigned j);
 
-struct retro_keybind *input_config_get_binds(unsigned i);
-
 const struct retro_keybind *
 input_autoconfigure_get_specific_bind(unsigned i, unsigned j);
-
-struct retro_keybind *input_autoconfigure_get_binds(unsigned i);
 
 void input_config_reset(void);
 
