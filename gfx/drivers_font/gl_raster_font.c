@@ -419,9 +419,9 @@ static void gl_raster_font_render_msg(
       void *data, const char *msg,
       const void *userdata)
 {
-   GLfloat x, y, scale, drop_mod, drop_alpha;
-   GLfloat color[4], color_dark[4];
+   GLfloat color[4];
    int drop_x, drop_y;
+   GLfloat x, y, scale, drop_mod, drop_alpha;
    enum text_alignment text_align   = TEXT_ALIGN_LEFT;
    bool full_screen                 = false ;
    gl_raster_t                *font = (gl_raster_t*)data;
@@ -477,21 +477,25 @@ static void gl_raster_font_render_msg(
    else
       gl_raster_font_setup_viewport(width, height, font, full_screen);
 
-   if (drop_x || drop_y)
+   if (font && !string_is_empty(msg) && font->gl 
+         && font->font_data && font->font_driver)
    {
-      color_dark[0] = color[0] * drop_mod;
-      color_dark[1] = color[1] * drop_mod;
-      color_dark[2] = color[2] * drop_mod;
-      color_dark[3] = color[3] * drop_alpha;
+      if (drop_x || drop_y)
+      {
+         GLfloat color_dark[4];
 
-      if (font && !string_is_empty(msg) && font->gl && font->font_data && font->font_driver)
+         color_dark[0] = color[0] * drop_mod;
+         color_dark[1] = color[1] * drop_mod;
+         color_dark[2] = color[2] * drop_mod;
+         color_dark[3] = color[3] * drop_alpha;
+
          gl_raster_font_render_message(font, msg, scale, color_dark,
                x + scale * drop_x / font->gl->vp.width, y +
                scale * drop_y / font->gl->vp.height, text_align);
-   }
+      }
 
-   if (font && !string_is_empty(msg) && font->gl && font->font_data && font->font_driver)
       gl_raster_font_render_message(font, msg, scale, color, x, y, text_align);
+   }
 
    if (!font->block)
       gl_raster_font_restore_viewport(width, height, font->gl, false);
