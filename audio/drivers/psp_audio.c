@@ -321,20 +321,21 @@ static bool psp_audio_use_float(void *data)
 
 static size_t psp_write_avail(void *data)
 {
-   psp_audio_t* psp = (psp_audio_t*)data;
-#ifdef VITA
    size_t val;
+   psp_audio_t* psp = (psp_audio_t*)data;
 
+#ifdef VITA
    sceKernelLockLwMutex((struct SceKernelLwMutexWork*)&psp->lock, 1, 0);
+#endif
+
    val = AUDIO_BUFFER_SIZE - ((uint16_t)
          (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK);
+
+#ifdef VITA
    sceKernelUnlockLwMutex((struct SceKernelLwMutexWork*)&psp->lock, 1);
-   return val;
-#else
-   /* TODO */
-   return AUDIO_BUFFER_SIZE - ((uint16_t)
-         (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK);
 #endif
+
+   return ret;
 }
 
 static size_t psp_buffer_size(void *data)
