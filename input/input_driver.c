@@ -260,7 +260,6 @@ float input_sensor_get_input(unsigned port, unsigned id)
    return 0.0f;
 }
 
-static const struct retro_keybind *libretro_input_binds[MAX_USERS];
 
 /**
  * input_poll:
@@ -279,7 +278,6 @@ void input_poll(void)
 
    for (i = 0; i < max_users; i++)
    {
-      libretro_input_binds[i]                 = input_config_binds[i];
       input_driver_turbo_btns.frame_enable[i] = 0;
 
       if (!input_driver_block_libretro_input && 
@@ -1019,8 +1017,6 @@ bool input_driver_init(void)
    unsigned i;
    settings_t *settings       = config_get_ptr();
 
-   for (i = 0; i < MAX_USERS; i++)
-      libretro_input_binds[i] = input_config_binds[i];
    if (current_input)
       current_input_data      = current_input->init(settings->input.joypad_driver);
 

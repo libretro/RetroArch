@@ -83,6 +83,7 @@ static int input_config_pid[MAX_USERS];
 
 struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
 struct retro_keybind input_autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
+const struct retro_keybind *libretro_input_binds[MAX_USERS];
 
 #define DECLARE_BIND(x, bind, desc) { true, 0, #x, desc, bind }
 #define DECLARE_META_BIND(level, x, bind, desc) { true, level, #x, desc, bind }
@@ -589,7 +590,8 @@ void input_config_reset(void)
    
    for (i = 0; i < MAX_USERS; i++)
    {
-      input_config_vid[i] = 0;
-      input_config_pid[i] = 0;
+      input_config_vid[i]     = 0;
+      input_config_pid[i]     = 0;
+      libretro_input_binds[i] = input_config_binds[i];
    }
 }
