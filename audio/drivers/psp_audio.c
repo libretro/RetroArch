@@ -190,20 +190,24 @@ static ssize_t psp_audio_write(void *data, const void *buf, size_t size)
    uint16_t write_pos   = psp->write_pos;
    uint16_t sampleCount = size / sizeof(uint32_t);
 
-#ifdef VITA
    if (psp->nonblocking)
    {
+#ifdef VITA
       if (AUDIO_BUFFER_SIZE - ((uint16_t)
             (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK) < size)
          return 0;
+#else
+      /* TODO */
+#endif
    }
 
+#ifdef VITA
    while (AUDIO_BUFFER_SIZE - ((uint16_t)
-         (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK) < size){
+         (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK) < size)
       sceKernelWaitLwCond((struct SceKernelLwCondWork*)&psp->cond, 0);
-   }
 
    sceKernelLockLwMutex((struct SceKernelLwMutexWork*)&psp->lock, 1, 0);
+#endif
 
    if((write_pos + sampleCount) > AUDIO_BUFFER_SIZE)
    {
@@ -219,36 +223,13 @@ static ssize_t psp_audio_write(void *data, const void *buf, size_t size)
    write_pos      += sampleCount;
    write_pos      &= AUDIO_BUFFER_SIZE_MASK;
    psp->write_pos  = write_pos;
+
+#ifdef VITA
    sceKernelUnlockLwMutex((struct SceKernelLwMutexWork*)&psp->lock, 1);
 
   return size;
 #else
-
-
-
-#if 0
-   if (psp->nonblocking)
-   {
-      /* TODO */
-   }
-#endif
-
-   if((write_pos + sampleCount) > AUDIO_BUFFER_SIZE)
-   {
-      memcpy(psp->buffer + write_pos, buf,
-            (AUDIO_BUFFER_SIZE - write_pos) * sizeof(uint32_t));
-      memcpy(psp->buffer, (uint32_t*) buf +
-            (AUDIO_BUFFER_SIZE - write_pos),
-            (write_pos + sampleCount - AUDIO_BUFFER_SIZE) * sizeof(uint32_t));
-   }
-   else
-      memcpy(psp->buffer + write_pos, buf, size);
-
-   write_pos  += sampleCount;
-   write_pos  &= AUDIO_BUFFER_SIZE_MASK;
-   psp->write_pos = write_pos;
-
-   return sampleCount;
+  return sampleCount;
 #endif
 }
 
