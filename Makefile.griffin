@@ -214,7 +214,7 @@ else ifeq ($(platform), vita)
   WANT_ZLIB						:= 1
   INCLUDE += -Ideps/libvita2d/include
   INCLUDE += -Ideps/libz
-  PLATCFLAGS := -marm -mfloat-abi=hard -fsingle-precision-constant \
+  PLATCFLAGS := -mfloat-abi=hard -fsingle-precision-constant \
        -mword-relocations -fno-unwind-tables -fno-asynchronous-unwind-tables -ftree-vectorize -fno-optimize-sibling-calls
   LIBS += -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub\
 			 -lSceSysmodule_stub -lSceCtrl_stub -lSceTouch_stub -lSceAudio_stub -lSceFiber_stub\
