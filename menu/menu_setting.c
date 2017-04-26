@@ -1680,9 +1680,8 @@ void general_write_handler(void *data)
          audio_driver_set_volume_gain(db_to_gain(*setting->value.target.fraction));
          break;
       case MENU_ENUM_LABEL_AUDIO_LATENCY:
-         rarch_cmd = CMD_EVENT_AUDIO_REINIT;
-         break;
       case MENU_ENUM_LABEL_AUDIO_DEVICE:
+      case MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE:
          rarch_cmd = CMD_EVENT_AUDIO_REINIT;
          break;
       case MENU_ENUM_LABEL_PAL60_ENABLE:
@@ -3904,6 +3903,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
+         menu_settings_list_current_add_range(list, list_info, 1000, 192000, 100.0, true, true);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
          CONFIG_PATH(
