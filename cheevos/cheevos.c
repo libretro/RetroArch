@@ -1715,17 +1715,10 @@ static int cheevos_parse(const char *json)
       NULL
    };
 
-   unsigned core_count, unofficial_count, lboard_count;
-   int res;
    cheevos_readud_t ud;
-   settings_t *settings = config_get_ptr();
-
-   /* Just return OK if cheevos are disabled. */
-   if (!settings->cheevos.enable)
-      return 0;
-
+   unsigned core_count, unofficial_count, lboard_count;
    /* Count the number of achievements in the JSON file. */
-   res = cheevos_count_cheevos(json, &core_count, &unofficial_count,
+   int res = cheevos_count_cheevos(json, &core_count, &unofficial_count,
       &lboard_count);
 
    if (res != JSONSAX_OK)
@@ -2099,8 +2092,8 @@ static int cheevos_login(retro_time_t *timeout)
    urle_pwd[0]                  = '\0';
    request[0]                   = '\0';
 
-   username = settings->cheevos.username;
-   password = settings->cheevos.password;
+   username                     = settings->cheevos.username;
+   password                     = settings->cheevos.password;
 
    if (!username || !*username || !password || !*password)
    {
@@ -3101,7 +3094,7 @@ found:
    if (cheevos_get_by_game_id(&json, game_id, &timeout) == 0 && json != NULL)
 #endif
    {
-      if (!cheevos_parse(json))
+      if (!settings->cheevos.enable || !cheevos_parse(json))
       {
          cheevos_deactivate_unlocks(game_id, &timeout);
          free((void*)json);
@@ -3127,17 +3120,13 @@ void cheevos_reset_game(void)
    const cheevo_t *end = cheevo + cheevos_locals.core.count;
 
    for (; cheevo < end; cheevo++)
-   {
       cheevo->last = 1;
-   }
 
    cheevo = cheevos_locals.unofficial.cheevos;
    end    = cheevo + cheevos_locals.unofficial.count;
 
    for (; cheevo < end; cheevo++)
-   {
       cheevo->last = 1;
-   }
 }
 
 void cheevos_populate_menu(void *data, bool hardcore)
@@ -3260,9 +3249,7 @@ bool cheevos_get_description(cheevos_ctx_desc_t *desc)
       strlcpy(desc->s, cheevos[desc->idx].description, desc->len);
    }
    else
-   {
       *desc->s = 0;
-   }
    
    return true;
 }
