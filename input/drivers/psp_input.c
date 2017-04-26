@@ -57,7 +57,7 @@ static void psp_input_poll(void *data)
 {
    psp_input_t *psp = (psp_input_t*)data;
 
-   if (psp->joypad)
+   if (psp && psp->joypad)
       psp->joypad->poll();
 }
 
