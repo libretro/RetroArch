@@ -834,11 +834,11 @@ void win32_set_window(unsigned *width, unsigned *height,
       bool fullscreen, bool windowed_full, void *rect_data)
 {
 #ifndef _XBOX
-   settings_t *settings  = config_get_ptr();
    RECT *rect            = (RECT*)rect_data;
 
    if (!fullscreen || windowed_full)
    {
+      settings_t *settings      = config_get_ptr();
       const ui_window_t *window = ui_companion_driver_get_window_ptr();
 
       if (!fullscreen && settings->ui.menubar_enable)

@@ -39,7 +39,10 @@
 #include "../../frontend/frontend_driver.h"
 #include "../common/gl_common.h"
 #include "../common/x11_common.h"
+
+#ifdef HAVE_XINERAMA
 #include "../common/xinerama_common.h"
+#endif
 
 #ifdef HAVE_VULKAN
 #include "../common/vulkan_common.h"

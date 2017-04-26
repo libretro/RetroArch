@@ -23,18 +23,23 @@
 #include <file/file_path.h>
 #include <file/config_file.h>
 #include <string/stdstring.h>
+#include <retro_assert.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
 
 #include "input_config.h"
+#include "input_driver.h"
 #include "input_keymaps.h"
 #include "input_remapping.h"
+
+#include "../config.def.keybinds.h"
 
 #include "../msg_hash.h"
 #include "../configuration.h"
 #include "../file_path_special.h"
+#include "../tasks/tasks_internal.h"
 #include "../verbosity.h"
 
 /* Input config. */
@@ -72,6 +77,13 @@ static const char *bind_user_prefix[MAX_USERS] = {
    "input_player15",
    "input_player16",
 };
+
+static int input_config_vid[MAX_USERS];
+static int input_config_pid[MAX_USERS];
+
+struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
+struct retro_keybind input_autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
+const struct retro_keybind *libretro_input_binds[MAX_USERS];
 
 #define DECLARE_BIND(x, bind, desc) { true, 0, #x, desc, bind }
 #define DECLARE_META_BIND(level, x, bind, desc) { true, level, #x, desc, bind }
@@ -427,6 +439,7 @@ static void input_config_get_bind_string_joyaxis(char *buf, const char *prefix,
    unsigned axis        = 0;
    char dir             = '\0';
    settings_t *settings = config_get_ptr();
+   bool label_show      = settings->input.input_descriptor_label_show;
 
    if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
    {
@@ -438,8 +451,7 @@ static void input_config_get_bind_string_joyaxis(char *buf, const char *prefix,
       dir = '+';
       axis = AXIS_POS_GET(bind->joyaxis);
    }
-   if (!string_is_empty(bind->joyaxis_label) 
-         && settings->input.input_descriptor_label_show)
+   if (!string_is_empty(bind->joyaxis_label) && label_show)
       snprintf(buf, size, "%s%s (axis) ", prefix, bind->joyaxis_label);
    else
       snprintf(buf, size, "%s%c%u (%s) ", prefix, dir, axis,
@@ -495,6 +507,24 @@ void input_config_set_device_name(unsigned port, const char *name)
    }
 }
 
+void input_config_clear_device_name(unsigned port)
+{
+   settings_t *settings = config_get_ptr();
+   settings->input.device_names[port][0] = '\0';
+}
+
+unsigned *input_config_get_device_ptr(unsigned port)
+{
+   settings_t *settings = config_get_ptr();
+   return &settings->input.libretro_device[port];
+}
+
+unsigned input_config_get_device(unsigned port)
+{
+   settings_t *settings = config_get_ptr();
+   return settings->input.libretro_device[port];
+}
+
 void input_config_set_device(unsigned port, unsigned id)
 {
    settings_t *settings = config_get_ptr();
@@ -518,13 +548,50 @@ bool input_config_get_bind_idx(unsigned port, unsigned *joy_idx_real)
 const struct retro_keybind *input_config_get_bind_auto(unsigned port, unsigned id)
 {
    settings_t *settings = config_get_ptr();
-   unsigned joy_idx     = 0;
-
-   if (settings)
-      joy_idx = settings->input.joypad_map[port];
+   unsigned joy_idx     = settings->input.joypad_map[port];
 
    if (joy_idx < MAX_USERS)
-      return &settings->input.autoconf_binds[joy_idx][id];
+      return &input_autoconf_binds[joy_idx][id];
    return NULL;
 }
 
+void input_config_set_pid(unsigned port, unsigned pid)
+{
+   input_config_pid[port] = pid;
+}
+
+int32_t input_config_get_pid(unsigned port)
+{
+   return input_config_pid[port];
+}
+
+void input_config_set_vid(unsigned port, unsigned vid)
+{
+   input_config_vid[port] = vid;
+}
+
+int32_t input_config_get_vid(unsigned port)
+{
+   return input_config_vid[port];
+}
+
+void input_config_reset(void)
+{
+   unsigned i;
+
+   retro_assert(sizeof(input_config_binds[0]) >= sizeof(retro_keybinds_1));
+   retro_assert(sizeof(input_config_binds[1]) >= sizeof(retro_keybinds_rest));
+
+   memcpy(input_config_binds[0], retro_keybinds_1, sizeof(retro_keybinds_1));
+
+   for (i = 1; i < MAX_USERS; i++)
+      memcpy(input_config_binds[i], retro_keybinds_rest,
+            sizeof(retro_keybinds_rest));
+   
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      input_config_vid[i]     = 0;
+      input_config_pid[i]     = 0;
+      libretro_input_binds[i] = input_config_binds[i];
+   }
+}

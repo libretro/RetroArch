@@ -20,8 +20,7 @@
 
 static const char *qnx_joypad_name(unsigned pad)
 {
-   settings_t *settings = config_get_ptr();
-   return settings ? settings->input.device_names[pad] : NULL;
+   return input_config_get_device_name(pad);
 }
 
 static bool qnx_joypad_init(void *data)

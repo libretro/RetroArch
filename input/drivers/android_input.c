@@ -1129,15 +1129,11 @@ static void handle_hotplug(android_input_t *android,
          productId))
       input_config_set_device_name(*port, name_buf);
 
-   if (!string_is_empty(name_buf))
-   {
-      settings_t         *settings = config_get_ptr();
-      strlcpy(settings->input.device_names[*port],
-            name_buf, sizeof(settings->input.device_names[*port]));
-   }
+   input_config_set_device_name(*port, name_buf);
 
-   android->pad_states[android->pads_connected].id = id;
+   android->pad_states[android->pads_connected].id   = id;
    android->pad_states[android->pads_connected].port = *port;
+
    strlcpy(android->pad_states[*port].name, name_buf,
          sizeof(android->pad_states[*port].name));
 
@@ -1246,20 +1242,23 @@ static void android_input_poll_memcpy(void *data)
 static bool android_input_key_pressed(void *data, int key)		
 {		
    rarch_joypad_info_t joypad_info;
-   android_input_t *android = (android_input_t*)data;		
-   settings_t *settings     = config_get_ptr();		
+   android_input_t *android           = (android_input_t*)data;		
+   settings_t *settings               = config_get_ptr();		
+   const struct retro_keybind *keyptr = (const struct retro_keybind*)
+      &input_config_binds[0][key];
 
-   if(       settings->input.binds[0][key].valid 
-         && android_keyboard_port_input_pressed(settings->input.binds[0],key))		
+   if(       keyptr->valid 
+         && android_keyboard_port_input_pressed(input_config_binds[0],
+            key))		
       return true;		
 
    joypad_info.joy_idx        = 0;
-   joypad_info.auto_binds     = settings->input.autoconf_binds[0];
+   joypad_info.auto_binds     = input_autoconf_binds[0];
    joypad_info.axis_threshold = settings->input.axis_threshold;
 
-   if (settings->input.binds[0][key].valid &&		
+   if (keyptr->valid &&		
          input_joypad_pressed(android->joypad, joypad_info,
-            0, settings->input.binds[0], key))		
+            0, input_config_binds[0], key))		
       return true;		
 
    return false;		
@@ -1370,8 +1369,11 @@ static int16_t android_input_state(void *data,
                   (android->pointer[idx].x != -0x8000) &&
                   (android->pointer[idx].y != -0x8000);
             case RARCH_DEVICE_ID_POINTER_BACK:
-               if(settings->input.autoconf_binds[0][RARCH_MENU_TOGGLE].joykey == 0)
+            {
+               const struct retro_keybind *keyptr = &input_autoconf_binds[0][RARCH_MENU_TOGGLE];
+               if (keyptr->joykey == 0)
                   return android_keyboard_input_pressed(AKEYCODE_BACK);
+            }
          }
          break;
       case RARCH_DEVICE_POINTER_SCREEN:
@@ -1386,8 +1388,11 @@ static int16_t android_input_state(void *data,
                   (android->pointer[idx].full_x != -0x8000) &&
                   (android->pointer[idx].full_y != -0x8000);
             case RARCH_DEVICE_ID_POINTER_BACK:
-               if(settings->input.autoconf_binds[0][RARCH_MENU_TOGGLE].joykey == 0)
-                  return android_keyboard_input_pressed(AKEYCODE_BACK);
+               {
+                  const struct retro_keybind *keyptr = &input_autoconf_binds[0][RARCH_MENU_TOGGLE];
+                  if (keyptr->joykey == 0)
+                     return android_keyboard_input_pressed(AKEYCODE_BACK);
+               }
          }
          break;
    }

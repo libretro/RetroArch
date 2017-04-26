@@ -18,6 +18,7 @@
 #include <file/file_path.h>
 #include <string/stdstring.h>
 
+#include "input_config.h"
 #include "input_remapping.h"
 #include "../configuration.h"
 #include "../retroarch.h"
@@ -173,7 +174,10 @@ void input_remapping_set_defaults(void)
    for (i = 0; i < MAX_USERS; i++)
    {
       for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
-         settings->input.remap_ids[i][j] = settings->input.binds[i][j].id;
+      {
+         const struct  retro_keybind *keybind = &input_config_binds[i][j];
+         settings->input.remap_ids[i][j]      = keybind->id;
+      }
       for (j = 0; j < 4; j++)
          settings->input.remap_ids[i][RARCH_FIRST_CUSTOM_BIND + j] = j;
    }

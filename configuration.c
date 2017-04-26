@@ -1104,14 +1104,16 @@ static void config_set_defaults(void)
 #endif
 
 #ifdef HAVE_FFMPEG
-   settings->multimedia.builtin_mediaplayer_enable  = true;
+   configuration_set_bool(settings, settings->multimedia.builtin_mediaplayer_enable, true);
 #else
-   settings->multimedia.builtin_mediaplayer_enable  = false;
+   configuration_set_bool(settings, settings->multimedia.builtin_mediaplayer_enable, false);
 #endif
    settings->video.scale                       = scale;
 
    if (rarch_ctl(RARCH_CTL_IS_FORCE_FULLSCREEN, NULL))
-      settings->video.fullscreen               = true;
+   {
+      configuration_set_bool(settings, settings->video.fullscreen, true);
+   }
 
    if (g_defaults.settings.video_threaded_enable != video_threaded)
       settings->video.threaded                 = g_defaults.settings.video_threaded_enable;
@@ -1156,35 +1158,18 @@ static void config_set_defaults(void)
    *settings->cheevos.password                 = '\0';
 #endif
 
-   retro_assert(sizeof(settings->input.binds[0]) >= sizeof(retro_keybinds_1));
-   retro_assert(sizeof(settings->input.binds[1]) >= sizeof(retro_keybinds_rest));
-
-   memcpy(settings->input.binds[0], retro_keybinds_1, sizeof(retro_keybinds_1));
-
-   for (i = 1; i < MAX_USERS; i++)
-      memcpy(settings->input.binds[i], retro_keybinds_rest,
-            sizeof(retro_keybinds_rest));
-
+   input_config_reset();
    input_remapping_set_defaults();
-
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      for (j = 0; j < RARCH_BIND_LIST_END; j++)
-      {
-         settings->input.autoconf_binds[i][j].joykey  = NO_BTN;
-         settings->input.autoconf_binds[i][j].joyaxis = AXIS_NONE;
-      }
-
-      settings->input.autoconfigured[i] = 0;
-   }
+   input_autoconfigure_reset();
 
    /* Verify that binds are in proper order. */
    for (i = 0; i < MAX_USERS; i++)
    {
       for (j = 0; j < RARCH_BIND_LIST_END; j++)
       {
-         if (settings->input.binds[i][j].valid)
-            retro_assert(j == settings->input.binds[i][j].id);
+         const struct retro_keybind *keyval = &input_config_binds[i][j];
+         if (keyval->valid)
+            retro_assert(j == keyval->id);
       }
    }
 
@@ -1200,7 +1185,7 @@ static void config_set_defaults(void)
       settings->input.joypad_map[i] = i;
       settings->input.analog_dpad_mode[i] = ANALOG_DPAD_NONE;
       if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &i))
-         settings->input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
+         input_config_set_device(i, RETRO_DEVICE_JOYPAD);
    }
 
    video_driver_reset_custom_viewport();
@@ -1659,12 +1644,10 @@ static void read_keybinds_axis(config_file_t *conf, unsigned user,
 static void read_keybinds_user(config_file_t *conf, unsigned user)
 {
    unsigned i;
-   settings_t *settings = config_get_ptr();
 
    for (i = 0; input_config_bind_map_get_valid(i); i++)
    {
-      struct retro_keybind *bind = (struct retro_keybind*)
-         &settings->input.binds[user][i];
+      struct retro_keybind *bind = &input_config_binds[user][i];
 
       if (!bind->valid)
          continue;
@@ -2808,7 +2791,6 @@ static void save_keybind(config_file_t *conf, const char *prefix,
 static void save_keybinds_user(config_file_t *conf, unsigned user)
 {
    unsigned i = 0;
-   settings_t *settings = config_get_ptr();
 
    for (i = 0; input_config_bind_map_get_valid(i); i++)
    {
@@ -2817,7 +2799,7 @@ static void save_keybinds_user(config_file_t *conf, unsigned user)
 
       if (prefix)
          save_keybind(conf, prefix, input_config_bind_map_get_base(i),
-               &settings->input.binds[user][i], true, true);
+               &input_config_binds[user][i], true, true);
    }
 }
 
@@ -2884,14 +2866,18 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    unsigned i;
    char buf[PATH_MAX_LENGTH];
    char autoconf_file[PATH_MAX_LENGTH];
+   int32_t pid_user                     = 0;
+   int32_t vid_user                     = 0;
    bool ret                             = false;
    config_file_t *conf                  = NULL;
    settings_t *settings                 = config_get_ptr();
+   const char *autoconf_dir             = settings->directory.autoconfig;
+   const char *joypad_ident             = settings->input.joypad_driver;
 
    buf[0] = autoconf_file[0]            = '\0';
 
-   fill_pathname_join(buf, settings->directory.autoconfig,
-         settings->input.joypad_driver, sizeof(buf));
+   fill_pathname_join(buf, autoconf_dir,
+         joypad_ident, sizeof(buf));
 
    if(path_is_directory(buf))
    {
@@ -2907,7 +2893,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    }
    else
    {
-      fill_pathname_join(buf, settings->directory.autoconfig,
+      fill_pathname_join(buf, autoconf_dir,
             path, sizeof(buf));
       fill_pathname_noext(autoconf_file, buf,
             file_path_str(FILE_PATH_CONFIG_EXTENSION),
@@ -2923,23 +2909,25 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
          return false;
    }
 
-   config_set_string(conf, "input_driver",
-         settings->input.joypad_driver);
+   config_set_string(conf, "input_driver", joypad_ident);
    config_set_string(conf, "input_device",
-         settings->input.device_names[user]);
+         input_config_get_device_name(user));
 
-   if(settings->input.vid[user] && settings->input.pid[user])
+   pid_user = input_config_get_pid(user);
+   vid_user = input_config_get_vid(user);
+
+   if(pid_user && vid_user)
    {
       config_set_int(conf, "input_vendor_id",
-            settings->input.vid[user]);
+            vid_user);
       config_set_int(conf, "input_product_id",
-            settings->input.pid[user]);
+            pid_user);
    }
 
    for (i = 0; i < RARCH_FIRST_META_KEY; i++)
    {
       save_keybind(conf, "input", input_config_bind_map_get_base(i),
-            &settings->input.binds[user][i], false, false);
+            &input_config_binds[user][i], false, false);
    }
 
    ret = config_file_write(conf, autoconf_file);
@@ -3057,7 +3045,7 @@ bool config_save_file(const char *path)
       snprintf(cfg, sizeof(cfg), "input_player%u_joypad_index", i + 1);
       config_set_int(conf, cfg, settings->input.joypad_map[i]);
       snprintf(cfg, sizeof(cfg), "input_libretro_device_p%u", i + 1);
-      config_set_int(conf, cfg, settings->input.libretro_device[i]);
+      config_set_int(conf, cfg, input_config_get_device(i));
       snprintf(cfg, sizeof(cfg), "input_player%u_analog_dpad_mode", i + 1);
       config_set_int(conf, cfg, settings->input.analog_dpad_mode[i]);
    }
@@ -3312,7 +3300,7 @@ bool config_save_overrides(int override_type)
             snprintf(cfg, sizeof(cfg), "input_player%u_joypad_index", i + 1);
             config_set_int(conf, cfg, overrides->input.joypad_map[i]);
          }
-         if (settings->input.libretro_device[i] != overrides->input.libretro_device[i])
+         if (input_config_get_device(i) != overrides->input.libretro_device[i])
          {
             snprintf(cfg, sizeof(cfg), "input_libretro_device_p%u", i + 1);
             config_set_int(conf, cfg, overrides->input.libretro_device[i]);

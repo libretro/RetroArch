@@ -63,6 +63,7 @@
 
 #include "defaults.h"
 #include "driver.h"
+#include "input/input_config.h"
 #include "frontend/frontend_driver.h"
 #include "audio/audio_driver.h"
 #include "record/record_driver.h"
@@ -1117,7 +1118,6 @@ static void command_event_set_volume(float gain)
 static void command_event_init_controllers(void)
 {
    unsigned i;
-   settings_t      *settings = config_get_ptr();
    rarch_system_info_t *info = runloop_get_system_info();
 
    for (i = 0; i < MAX_USERS; i++)
@@ -1126,8 +1126,7 @@ static void command_event_init_controllers(void)
       const char *ident                               = NULL;
       bool set_controller                             = false;
       const struct retro_controller_description *desc = NULL;
-      unsigned device                                 = 
-         settings->input.libretro_device[i];
+      unsigned device                                 = input_config_get_device(i);
 
       if (info)
       {
@@ -1146,7 +1145,7 @@ static void command_event_init_controllers(void)
 
          if (device != RETRO_DEVICE_JOYPAD && device != RETRO_DEVICE_NONE)
          {
-            /* Do not fix settings->input.libretro_device[i],
+            /* Do not fix device,
              * because any use of dummy core will reset this,
              * which is not a good idea. */
             RARCH_WARN("Input device ID %u is unknown to this "
@@ -2074,7 +2073,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_AUDIO_MUTE_TOGGLE:
          {
             settings_t *settings      = config_get_ptr();
-            const char *msg = !settings->audio.mute_enable ?
+            const char *msg           = !settings->audio.mute_enable ?
                msg_hash_to_str(MSG_AUDIO_MUTED):
                msg_hash_to_str(MSG_AUDIO_UNMUTED);
 

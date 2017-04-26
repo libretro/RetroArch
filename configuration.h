@@ -278,18 +278,12 @@ typedef struct settings
       char device_names[MAX_USERS][64];
 
       unsigned remap_ids[MAX_USERS][RARCH_BIND_LIST_END];
-      struct retro_keybind binds[MAX_USERS][RARCH_BIND_LIST_END];
-      struct retro_keybind autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
 
       unsigned max_users;
 
       /* Set by autoconfiguration in joypad_autoconfig_dir.
        * Does not override main binds. */
-      bool autoconfigured[MAX_USERS];
       bool swap_override;
-      int vid[MAX_USERS];
-      int pid[MAX_USERS];
-
       unsigned libretro_device[MAX_USERS];
       unsigned analog_dpad_mode[MAX_USERS];
 
@@ -297,7 +291,6 @@ typedef struct settings
       float axis_threshold;
       unsigned joypad_map[MAX_USERS];
       unsigned device[MAX_USERS];
-      unsigned device_name_index[MAX_USERS];
       bool autodetect_enable;
 
       unsigned turbo_period;
@@ -502,6 +495,10 @@ typedef struct settings
    var = newvar
 
 #define configuration_set_bool(settings, var, newvar) \
+   settings->modified = true; \
+   var = newvar
+
+#define configuration_set_uint(settings, var, newvar) \
    settings->modified = true; \
    var = newvar
 

@@ -50,27 +50,29 @@ typedef struct autoconfig_params
    char autoconfig_directory[4096];
 } autoconfig_params_t;
 
+static bool input_autoconfigured[MAX_USERS];
+static unsigned input_device_name_index[MAX_USERS];
+
 /* Adds an index for devices with the same name,
  * so they can be identified in the GUI. */
 static void input_autoconfigure_joypad_reindex_devices(autoconfig_params_t *params)
 {
    unsigned i;
-   settings_t      *settings = config_get_ptr();
 
    for(i = 0; i < params->max_users; i++)
-      settings->input.device_name_index[i] = 0;
+      input_device_name_index[i] = 0;
 
    for(i = 0; i < params->max_users; i++)
    {
       unsigned j;
-      const char *tmp = settings->input.device_names[i];
+      const char *tmp = input_config_get_device_name(i);
       int k           = 1;
 
       for(j = 0; j < params->max_users; j++)
       {
-         if(string_is_equal(tmp, settings->input.device_names[j])
-               && settings->input.device_name_index[i] == 0)
-            settings->input.device_name_index[j] = k++;
+         if(string_is_equal(tmp, input_config_get_device_name(j))
+               && input_device_name_index[i] == 0)
+            input_device_name_index[j] = k++;
       }
    }
 }
@@ -149,12 +151,13 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
 
    /* This will be the case if input driver is reinitialized.
     * No reason to spam autoconfigure messages every time. */
-   block_osd_spam = settings->input.autoconfigured[params->idx]
+   block_osd_spam = input_autoconfigured[params->idx]
       && !string_is_empty(params->name);
 
-   settings->input.autoconfigured[params->idx] = true;
+   input_autoconfigured[params->idx] = true;
+
    input_autoconfigure_joypad_conf(conf,
-         settings->input.autoconf_binds[params->idx]);
+         input_autoconf_binds[params->idx]);
 
    if (memcmp(device_type, "remote", 6) == 0)
    {
@@ -165,7 +168,9 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
          task_set_title(task, strdup(msg));
       remote_is_bound = true;
       if (params->idx == 0)
-         settings->input.swap_override = true;
+      {
+         configuration_set_bool(settings, settings->input.swap_override, true);
+      }
    }
    else
    {
@@ -177,8 +182,12 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
 
       /* allow overriding the swap menu controls for player 1*/
       if (params->idx == 0)
+      {
          if (config_get_bool(conf, "input_swap_override", &tmp))
-            settings->input.swap_override = tmp;
+         {
+            configuration_set_bool(settings, settings->input.swap_override, tmp);
+         }
+      }
 
       if (!block_osd_spam)
          task_set_title(task, strdup(msg));
@@ -353,7 +362,6 @@ bool input_autoconfigure_disconnect(unsigned i, const char *ident)
    char msg[255];
    retro_task_t         *task      = (retro_task_t*)calloc(1, sizeof(*task));
    autoconfig_disconnect_t *state  = (autoconfig_disconnect_t*)calloc(1, sizeof(*state));
-   settings_t            *settings = config_get_ptr();
 
    if (!state || !task)
       goto error;
@@ -368,7 +376,7 @@ bool input_autoconfigure_disconnect(unsigned i, const char *ident)
 
    strlcpy(state->msg, msg, sizeof(state->msg));
 
-   settings->input.device_names[state->idx][0] = '\0';
+   input_config_clear_device_name(state->idx);
 
    task->state   = state;
    task->handler = input_autoconfigure_disconnect_handler;
@@ -386,6 +394,32 @@ error:
    return false;
 }
 
+void input_autoconfigure_reset(void)
+{
+   unsigned i, j;
+
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      for (j = 0; j < RARCH_BIND_LIST_END; j++)
+      {
+         input_autoconf_binds[i][j].joykey  = NO_BTN;
+         input_autoconf_binds[i][j].joyaxis = AXIS_NONE;
+      }
+      input_device_name_index[i] = 0;
+      input_autoconfigured[i]    = 0;
+   }
+}
+
+bool input_is_autoconfigured(unsigned i)
+{
+   return input_autoconfigured[i];
+}
+
+unsigned input_autoconfigure_get_device_name_index(unsigned i)
+{
+   return input_device_name_index[i];
+}
+
 bool input_autoconfigure_connect(
       const char *name,
       const char *display_name,
@@ -398,6 +432,7 @@ bool input_autoconfigure_connect(
    retro_task_t         *task = (retro_task_t*)calloc(1, sizeof(*task));
    autoconfig_params_t *state = (autoconfig_params_t*)calloc(1, sizeof(*state));
    settings_t       *settings = config_get_ptr();
+   const char *dir_autoconf   = settings->directory.autoconfig;
 
    if (!task || !state || !settings->input.autodetect_enable)
       goto error;
@@ -412,9 +447,9 @@ bool input_autoconfigure_connect(
    if (!string_is_empty(driver))
       strlcpy(state->driver, driver, sizeof(state->driver));
 
-   if (!string_is_empty(settings->directory.autoconfig))
+   if (!string_is_empty(dir_autoconf))
       strlcpy(state->autoconfig_directory,
-            settings->directory.autoconfig,
+            dir_autoconf,
             sizeof(state->autoconfig_directory));
 
    state->idx       = idx;
@@ -423,18 +458,18 @@ bool input_autoconfigure_connect(
    state->max_users = settings->input.max_users;
 
    input_config_set_device_name(state->idx, state->name);
-   settings->input.pid[state->idx]  = state->pid;
-   settings->input.vid[state->idx]  = state->vid;
-
+   input_config_set_pid(state->idx, state->pid);
+   input_config_set_vid(state->idx, state->vid);
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
-      settings->input.autoconf_binds[state->idx][i].joykey           = NO_BTN;
-      settings->input.autoconf_binds[state->idx][i].joyaxis          = AXIS_NONE;
-      settings->input.autoconf_binds[state->idx][i].joykey_label[0]  = '\0';
-      settings->input.autoconf_binds[state->idx][i].joyaxis_label[0] = '\0';
+      input_autoconf_binds[state->idx][i].joykey           = NO_BTN;
+      input_autoconf_binds[state->idx][i].joyaxis          = AXIS_NONE;
+      input_autoconf_binds[state->idx][i].joykey_label[0]  = '\0';
+      input_autoconf_binds[state->idx][i].joyaxis_label[0] = '\0';
    }
-   settings->input.autoconfigured[state->idx] = false;
+
+   input_autoconfigured[state->idx] = false;
 
    task->state   = state;
    task->handler = input_autoconfigure_connect_handler;

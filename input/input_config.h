@@ -21,6 +21,10 @@
 
 #include "input_driver.h"
 
+extern struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
+extern struct retro_keybind input_autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
+extern const struct retro_keybind *libretro_input_binds[MAX_USERS];
+
 const char *input_config_bind_map_get_base(unsigned i);
 
 unsigned input_config_bind_map_get_meta(unsigned i);
@@ -69,10 +73,26 @@ void input_config_parse_joy_axis(void *data, const char *prefix,
 
 void input_config_set_device_name(unsigned port, const char *name);
 
+void input_config_clear_device_name(unsigned port);
+
+unsigned *input_config_get_device_ptr(unsigned port);
+
+unsigned input_config_get_device(unsigned port);
+
 void input_config_set_device(unsigned port, unsigned id);
 
 const char *input_config_get_device_name(unsigned port);
 
 const struct retro_keybind *input_config_get_bind_auto(unsigned port, unsigned id);
+
+void input_config_set_pid(unsigned port, unsigned pid);
+
+int32_t input_config_get_pid(unsigned port);
+
+void input_config_set_vid(unsigned port, unsigned vid);
+
+int32_t input_config_get_vid(unsigned port);
+
+void input_config_reset(void);
 
 #endif

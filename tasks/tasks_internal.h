@@ -219,6 +219,12 @@ void *savefile_ptr_get(void);
 
 void path_init_savefile_new(void);
 
+bool input_is_autoconfigured(unsigned i);
+
+unsigned input_autoconfigure_get_device_name_index(unsigned i);
+
+void input_autoconfigure_reset(void);
+
 bool input_autoconfigure_connect(
       const char *name,
       const char *display_name,

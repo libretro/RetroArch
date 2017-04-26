@@ -71,6 +71,7 @@
 #include "audio/audio_driver.h"
 #include "camera/camera_driver.h"
 #include "record/record_driver.h"
+#include "input/input_config.h"
 #include "input/input_driver.h"
 #include "ui/ui_companion_driver.h"
 #include "core.h"
@@ -1140,8 +1141,8 @@ int runloop_iterate(unsigned *sleep_ms)
    /* Update binds for analog dpad modes. */
    for (i = 0; i < settings->input.max_users; i++)
    {
-      struct retro_keybind *general_binds = settings->input.binds[i];
-      struct retro_keybind *auto_binds    = settings->input.autoconf_binds[i];
+      struct retro_keybind *general_binds = input_config_binds[i];
+      struct retro_keybind *auto_binds    = input_autoconf_binds[i];
       enum analog_dpad_mode dpad_mode     = (enum analog_dpad_mode)settings->input.analog_dpad_mode[i];
 
       if (dpad_mode == ANALOG_DPAD_NONE)
@@ -1163,8 +1164,8 @@ int runloop_iterate(unsigned *sleep_ms)
 
    for (i = 0; i < settings->input.max_users; i++)
    {
-      struct retro_keybind *general_binds = settings->input.binds[i];
-      struct retro_keybind *auto_binds    = settings->input.autoconf_binds[i];
+      struct retro_keybind *general_binds = input_config_binds[i];
+      struct retro_keybind *auto_binds    = input_autoconf_binds[i];
       enum analog_dpad_mode dpad_mode     = (enum analog_dpad_mode)settings->input.analog_dpad_mode[i];
 
       if (dpad_mode == ANALOG_DPAD_NONE)

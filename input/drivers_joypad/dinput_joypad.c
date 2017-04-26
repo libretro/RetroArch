@@ -32,7 +32,6 @@
 #include "../input_config.h"
 #include "../input_joypad_driver.h"
 #include "../input_keymaps.h"
-#include "../../configuration.h"
 #include "../../verbosity.h"
 
 struct dinput_joypad
@@ -66,7 +65,6 @@ extern LPDIRECTINPUT8 g_dinput_ctx;
 static void dinput_joypad_destroy(void)
 {
    unsigned i;
-   settings_t *settings = config_get_ptr();
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -80,7 +78,8 @@ static void dinput_joypad_destroy(void)
       g_pads[i].joy_name = NULL;
       free(g_pads[i].joy_friendly_name);
       g_pads[i].joy_friendly_name = NULL;
-      *settings->input.device_names[i] = '\0';
+
+      input_config_clear_device_name(i);
    }
 
    g_joypad_cnt = 0;

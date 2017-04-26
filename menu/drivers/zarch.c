@@ -1008,15 +1008,8 @@ static void *zarch_init(void **userdata)
    if (!zui)
       goto error;
 
-   *userdata       = zui;
-
-   if (settings->menu.mouse.enable)
-   {
-      RARCH_WARN("Forcing menu_mouse_enable=false\n");
-      settings->menu.mouse.enable = false;
-   }
-
-   zui->header_height  = 1000; /* dpi / 3; */
+   *userdata            = zui;
+   zui->header_height   = 1000; /* dpi / 3; */
    zui->font_size       = 28;
 
    matrix_4x4_ortho(zui->mvp, 0, 1, 1, 0, 0, 1);

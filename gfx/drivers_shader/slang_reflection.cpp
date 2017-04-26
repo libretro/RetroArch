@@ -33,8 +33,10 @@ static bool slang_texture_semantic_is_array(slang_texture_semantic sem)
          return true;
 
       default:
-         return false;
+         break;
    }
+
+   return false;
 }
 
 slang_reflection::slang_reflection()

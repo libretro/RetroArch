@@ -86,7 +86,6 @@ static int menu_input_key_bind_set_mode_common(
    unsigned bind_type            = 0;
    menu_displaylist_info_t info  = {0};
    struct retro_keybind *keybind = NULL;
-   settings_t     *settings      = config_get_ptr();
    unsigned         index_offset = setting->index_offset;
    file_list_t *menu_stack       = menu_entries_get_menu_stack_ptr(0);
    size_t selection              = menu_navigation_get_selection();
@@ -117,8 +116,7 @@ static int menu_input_key_bind_set_mode_common(
             menu_displaylist_ctl(DISPLAYLIST_PROCESS, &info);
          break;
       case MENU_INPUT_BINDS_CTL_BIND_ALL:
-         menu_input_binds.target  = &settings->input.binds
-            [index_offset][0];
+         menu_input_binds.target  = &input_config_binds[index_offset][0];
          menu_input_binds.begin   = MENU_SETTINGS_BIND_BEGIN;
          menu_input_binds.last    = MENU_SETTINGS_BIND_LAST;
 

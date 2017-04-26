@@ -35,6 +35,9 @@
 #include "../config.h"
 #endif
 
+#include "../config.def.h"
+#include "../config.def.keybinds.h"
+
 #if defined(__CELLOS_LV2__)
 #include <sdk_version.h>
 
@@ -422,25 +425,24 @@ static void setting_get_string_representation_uint_aspect_ratio_index(void *data
 static void setting_get_string_representation_uint_libretro_device(void *data,
       char *s, size_t len)
 {
-   unsigned index_offset;
+   unsigned index_offset, device;
    const struct retro_controller_description *desc = NULL;
    const char *name            = NULL;
    rarch_system_info_t *system = runloop_get_system_info();
    rarch_setting_t *setting    = (rarch_setting_t*)data;
-   settings_t      *settings   = config_get_ptr();
 
    if (!setting)
       return;
 
-   index_offset = setting->index_offset;
+   index_offset                = setting->index_offset;
+   device                      = input_config_get_device(index_offset);
 
    if (system)
    {
       if (index_offset < system->ports.size)
          desc = libretro_find_controller_description(
                &system->ports.data[index_offset],
-               settings->input.libretro_device
-               [index_offset]);
+               device);
    }
 
    if (desc)
@@ -449,8 +451,7 @@ static void setting_get_string_representation_uint_libretro_device(void *data,
    if (!name)
    {
       /* Find generic name. */
-
-      switch (settings->input.libretro_device[index_offset])
+      switch (device)
       {
          case RETRO_DEVICE_NONE:
             name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
@@ -1119,7 +1120,6 @@ static int setting_action_left_libretro_device_type(
             types = 0, port = 0;
    const struct retro_controller_info *desc = NULL;
    rarch_setting_t *setting    = (rarch_setting_t*)data;
-   settings_t      *settings   = config_get_ptr();
    rarch_system_info_t *system = NULL;
 
    if (!setting)
@@ -1155,7 +1155,7 @@ static int setting_action_left_libretro_device_type(
       }
    }
 
-   current_device = settings->input.libretro_device[port];
+   current_device = input_config_get_device(port);
    current_idx    = 0;
    for (i = 0; i < types; i++)
    {
@@ -1187,7 +1187,6 @@ static int setting_action_right_libretro_device_type(
             types = 0, port = 0;
    const struct retro_controller_info *desc = NULL;
    rarch_setting_t *setting    = (rarch_setting_t*)data;
-   settings_t      *settings   = config_get_ptr();
    rarch_system_info_t *system = runloop_get_system_info();
 
    if (!setting)
@@ -1221,7 +1220,7 @@ static int setting_action_right_libretro_device_type(
       }
    }
 
-   current_device = settings->input.libretro_device[port];
+   current_device = input_config_get_device(port);
    current_idx    = 0;
    for (i = 0; i < types; i++)
    {
@@ -1304,17 +1303,16 @@ static int setting_action_ok_bind_all(void *data, bool wraparound)
 static int setting_action_ok_bind_all_save_autoconfig(void *data, bool wraparound)
 {
    unsigned index_offset;
-   settings_t    *settings   = config_get_ptr();
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    const char *name          = NULL;
 
    (void)wraparound;
 
-   if (!settings || !setting)
+   if (!setting)
       return -1;
 
    index_offset = setting->index_offset;
-   name         = settings->input.device_names[index_offset];
+   name         = input_config_get_device_name(index_offset);
 
    if(!string_is_empty(name) && config_save_autoconf_profile(name, index_offset))
       runloop_msg_queue_push(
@@ -1322,6 +1320,7 @@ static int setting_action_ok_bind_all_save_autoconfig(void *data, bool wraparoun
    else
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_AUTOCONFIG_FILE_ERROR_SAVING), 1, 100, true);
+
 
    return 0;
 }
@@ -1333,15 +1332,13 @@ static int setting_action_ok_bind_defaults(void *data, bool wraparound)
    struct retro_keybind *target          = NULL;
    const struct retro_keybind *def_binds = NULL;
    rarch_setting_t *setting              = (rarch_setting_t*)data;
-   settings_t    *settings               = config_get_ptr();
 
    (void)wraparound;
 
    if (!setting)
       return -1;
 
-   target    = (struct retro_keybind*)
-      &settings->input.binds[setting->index_offset][0];
+   target    =  &input_config_binds[setting->index_offset][0];
    def_binds =  (setting->index_offset) ? 
       retro_keybinds_rest : retro_keybinds_1;
 
@@ -1424,13 +1421,13 @@ static void get_string_representation_bind_device(void * data, char *s,
 
    if (map < settings->input.max_users)
    {
-      const char *device_name = settings->input.device_names[map];
+      const char *device_name = input_config_get_device_name(map);
 
       if (!string_is_empty(device_name))
          snprintf(s, len,
                "%s (#%u)",
                device_name,
-               settings->input.device_name_index[map]);
+               input_autoconfigure_get_device_name_index(map));
       else
          snprintf(s, len,
                "%s (%s #%u)",
@@ -1683,9 +1680,8 @@ void general_write_handler(void *data)
          audio_driver_set_volume_gain(db_to_gain(*setting->value.target.fraction));
          break;
       case MENU_ENUM_LABEL_AUDIO_LATENCY:
-         rarch_cmd = CMD_EVENT_AUDIO_REINIT;
-         break;
       case MENU_ENUM_LABEL_AUDIO_DEVICE:
+      case MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE:
          rarch_cmd = CMD_EVENT_AUDIO_REINIT;
          break;
       case MENU_ENUM_LABEL_PAL60_ENABLE:
@@ -1960,7 +1956,7 @@ static bool setting_append_list_input_player_options(
 
       CONFIG_UINT_ALT(
             list, list_info,
-            &settings->input.libretro_device[user],
+            input_config_get_device_ptr(user),
             key_type[user],
             label_type[user],
             user,
@@ -2093,7 +2089,7 @@ static bool setting_append_list_input_player_options(
 
       CONFIG_BIND_ALT(
             list, list_info,
-            &settings->input.binds[user][i],
+            &input_config_binds[user][i],
             user + 1,
             user,
             strdup(name),
@@ -3907,6 +3903,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
+         menu_settings_list_current_add_range(list, list_info, 1000, 192000, 100.0, true, true);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
          CONFIG_PATH(
@@ -4411,7 +4408,8 @@ static bool setting_append_list(
 
                CONFIG_BIND_ALT(
                      list, list_info,
-                     &settings->input.binds[0][i], 0, 0,
+                     &input_config_binds[0][i],
+                     0, 0,
                      strdup(input_config_bind_map_get_base(i)),
                      strdup(input_config_bind_map_get_desc(i)),
                      &retro_keybinds_1[i],

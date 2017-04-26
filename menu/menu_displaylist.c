@@ -525,7 +525,6 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 #endif
    const char *tmp_string                = NULL;
    const frontend_ctx_driver_t *frontend = frontend_get_ptr();
-   settings_t                  *settings = config_get_ptr();
 
    tmp[0] = feat_str[0] = '\0';
 
@@ -645,17 +644,19 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 
    for(controller = 0; controller < MAX_USERS; controller++)
    {
-       if (settings->input.autoconfigured[controller])
+       if (input_is_autoconfigured(controller))
        {
            snprintf(tmp, sizeof(tmp), "Port #%d device name: %s (#%d)",
-                 controller, settings->input.device_names[controller],
-                 settings->input.device_name_index[controller]);
+                 controller,
+                 input_config_get_device_name(controller),
+                 input_autoconfigure_get_device_name_index(controller));
            menu_entries_append_enum(info->list, tmp, "",
                  MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
            snprintf(tmp, sizeof(tmp), "Port #%d device VID/PID: %d/%d",
-                 controller, settings->input.vid[controller],
-                 settings->input.pid[controller]);
+                 controller,
+                 input_config_get_vid(controller),
+                 input_config_get_pid(controller));
            menu_entries_append_enum(info->list, tmp, "",
                  MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0);

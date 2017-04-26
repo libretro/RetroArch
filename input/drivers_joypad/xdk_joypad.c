@@ -16,7 +16,7 @@
 
 #include <stdint.h>
 
-#include "../../configuration.h"
+#include "../input_config.h"
 #include "../../tasks/tasks_internal.h"
 
 static uint64_t pad_state[MAX_PADS];
@@ -38,8 +38,7 @@ static const char* const XBOX_CONTROLLER_NAMES[4] =
 
 static const char *xdk_joypad_name(unsigned pad)
 {
-   settings_t *settings = config_get_ptr();
-   return settings ? settings->input.device_names[pad] : NULL;
+   return input_config_get_device_name(pad);
 }
 
 static void xdk_joypad_autodetect_add(unsigned autoconf_pad)

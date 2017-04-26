@@ -27,8 +27,6 @@
 
 #include "input/input_driver.h"
 
-#include "config.def.keybinds.h"
-
 enum video_driver_enum
 {
    VIDEO_GL                 = 0,
