@@ -131,13 +131,12 @@ static int input_autoconfigure_joypad_try_from_conf(config_file_t *conf,
 static void input_autoconfigure_joypad_add(config_file_t *conf,
       autoconfig_params_t *params, retro_task_t *task)
 {
-   char msg[128];
-   char display_name[128];
-   char device_type[128];
-   bool block_osd_spam                = false;
-   static bool remote_is_bound        = false;
-
-   settings_t      *settings          = config_get_ptr();
+   char msg[128], display_name[128], device_type[128];
+   /* This will be the case if input driver is reinitialized.
+    * No reason to spam autoconfigure messages every time. */
+   bool block_osd_spam                = 
+      input_autoconfigured[params->idx]
+      && !string_is_empty(params->name);
 
    msg[0] = display_name[0] = device_type[0] = '\0';
 
@@ -146,14 +145,6 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    config_get_array(conf, "input_device_type", device_type,
          sizeof(device_type));
 
-   if (!settings)
-      return;
-
-   /* This will be the case if input driver is reinitialized.
-    * No reason to spam autoconfigure messages every time. */
-   block_osd_spam = input_autoconfigured[params->idx]
-      && !string_is_empty(params->name);
-
    input_autoconfigured[params->idx] = true;
 
    input_autoconfigure_joypad_conf(conf,
@@ -161,6 +152,8 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
 
    if (memcmp(device_type, "remote", 6) == 0)
    {
+      static bool remote_is_bound        = false;
+
       snprintf(msg, sizeof(msg), "%s configured.",
             string_is_empty(display_name) ? params->name : display_name);
 
@@ -169,6 +162,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
       remote_is_bound = true;
       if (params->idx == 0)
       {
+         settings_t *settings = config_get_ptr();
          configuration_set_bool(settings, settings->input.swap_override, true);
       }
    }
@@ -185,6 +179,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
       {
          if (config_get_bool(conf, "input_swap_override", &tmp))
          {
+            settings_t *settings = config_get_ptr();
             configuration_set_bool(settings, settings->input.swap_override, tmp);
          }
       }
