@@ -1014,7 +1014,6 @@ void input_driver_poll(void)
 
 bool input_driver_init(void)
 {
-   unsigned i;
    settings_t *settings       = config_get_ptr();
 
    if (current_input)
