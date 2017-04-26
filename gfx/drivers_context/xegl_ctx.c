@@ -28,7 +28,10 @@
 #include "../common/egl_common.h"
 #include "../common/gl_common.h"
 #include "../common/x11_common.h"
+
+#ifdef HAVE_XINERAMA
 #include "../common/xinerama_common.h"
+#endif
 
 #ifndef EGL_OPENGL_ES3_BIT_KHR
 #define EGL_OPENGL_ES3_BIT_KHR 0x0040
