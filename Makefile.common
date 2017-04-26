@@ -677,8 +677,10 @@ ifeq ($(HAVE_X11), 1)
           input/drivers/x11_input.o \
 			 gfx/common/dbus_common.o \
           gfx/common/x11_common.o \
-			 gfx/common/xinerama_common.o \
           input/drivers_keyboard/keyboard_event_x11.o
+   ifeq ($(HAVE_XINERAMA), 1)
+      OBJ += gfx/common/xinerama_common.o
+   endif
 
    LIBS += $(X11_LIBS) $(XEXT_LIBS) $(XF86VM_LIBS) $(XINERAMA_LIBS)
    DEFINES += $(X11_CFLAGS) $(XEXT_CFLAGS) $(XF86VM_CFLAGS) $(XINERAMA_CFLAGS)
