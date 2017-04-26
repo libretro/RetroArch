@@ -281,46 +281,43 @@ void input_poll(void)
    {
       libretro_input_binds[i]                 = input_config_binds[i];
       input_driver_turbo_btns.frame_enable[i] = 0;
+
+      if (!input_driver_block_libretro_input && 
+            libretro_input_binds[i][RARCH_TURBO_ENABLE].valid)
+      {
+         rarch_joypad_info_t joypad_info;
+         joypad_info.axis_threshold = settings->input.axis_threshold;
+         joypad_info.joy_idx        = settings->input.joypad_map[i];
+         joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
+
+         input_driver_turbo_btns.frame_enable[i] = current_input->input_state(
+               current_input_data, joypad_info, libretro_input_binds,
+               (unsigned)i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
+      }
    }
 
-   if (!input_driver_block_libretro_input)
-   {
-      rarch_joypad_info_t joypad_info;
-      joypad_info.axis_threshold = settings->input.axis_threshold;
-
-      for (i = 0; i < max_users; i++)
-      {
-         if (libretro_input_binds[i][RARCH_TURBO_ENABLE].valid)
-         {
-            joypad_info.joy_idx        = settings->input.joypad_map[i];
-            joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
-
-            input_driver_turbo_btns.frame_enable[i] = current_input->input_state(
-                  current_input_data, joypad_info, libretro_input_binds,
-                  (unsigned)i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
-         }
-      }
+   if (input_driver_block_libretro_input)
+      return;
 
 #ifdef HAVE_OVERLAY
-      if (overlay_ptr && input_overlay_is_alive(overlay_ptr))
-         input_poll_overlay(
-               overlay_ptr,
-               settings->input.overlay_opacity,
-               settings->input.analog_dpad_mode[0],
-               settings->input.axis_threshold);
+   if (overlay_ptr && input_overlay_is_alive(overlay_ptr))
+      input_poll_overlay(
+            overlay_ptr,
+            settings->input.overlay_opacity,
+            settings->input.analog_dpad_mode[0],
+            settings->input.axis_threshold);
 #endif
 
 #ifdef HAVE_COMMAND
-      if (input_driver_command)
-         command_poll(input_driver_command);
+   if (input_driver_command)
+      command_poll(input_driver_command);
 #endif
 
 #ifdef HAVE_NETWORKGAMEPAD
-      if (input_driver_remote)
-         input_remote_poll(input_driver_remote,
-               settings->input.max_users);
+   if (input_driver_remote)
+      input_remote_poll(input_driver_remote,
+            settings->input.max_users);
 #endif
-   }
 }
 
 /**
