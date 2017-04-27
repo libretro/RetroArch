@@ -163,7 +163,7 @@ static void bundle_decompressed(void *task_data,
    settings->bundle_assets_extract_last_version =
       settings->bundle_assets_extract_version_current;
 
-   configuration_set_bool(settings, settings->bundle_finished, true);
+   configuration_set_bool(settings, settings->bools.bundle_finished, true);
 
    command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
 }

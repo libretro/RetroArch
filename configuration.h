@@ -42,6 +42,12 @@ RETRO_BEGIN_DECLS
 
 typedef struct settings
 {
+   struct
+   {
+      bool placeholder;
+      bool bundle_finished;
+   } bools;
+
    bool modified;
 
    video_viewport_t video_viewport_custom;
@@ -49,7 +55,6 @@ typedef struct settings
    char playlist_names[PATH_MAX_LENGTH];
    char playlist_cores[PATH_MAX_LENGTH];
 
-   bool bundle_finished;
 
    struct
    {

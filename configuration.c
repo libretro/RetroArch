@@ -1003,6 +1003,9 @@ static struct config_int_setting *populate_settings_int(settings_t *settings, in
 static void config_set_defaults(void)
 {
    unsigned i, j;
+#ifdef HAVE_MENU
+   static bool first_initialized   = true;
+#endif
    int float_settings_size         = 0;
    int bool_settings_size          = 0;
    int int_settings_size           = 0;
@@ -1022,9 +1025,6 @@ static void config_set_defaults(void)
    struct config_bool_setting       *bool_settings  = NULL;
    struct config_float_setting      *float_settings = NULL;
    struct config_int_setting        *int_settings   = NULL;
-#ifdef HAVE_MENU
-   static bool first_initialized   = true;
-#endif
    float_settings                  = populate_settings_float  (settings, &float_settings_size);
    bool_settings                   = populate_settings_bool  (settings, &bool_settings_size);
    int_settings                    = populate_settings_int   (settings, &int_settings_size);
