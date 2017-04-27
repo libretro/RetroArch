@@ -718,7 +718,9 @@ static void retroarch_parse_input(int argc, char *argv[])
          case RA_OPT_STATELESS:
             {
                settings_t *settings  = config_get_ptr();
-               settings->netplay.stateless_mode = true;
+
+               configuration_set_bool(settings, settings->netplay.stateless_mode, true);
+
                retroarch_override_setting_set(
                      RARCH_OVERRIDE_SETTING_NETPLAY_STATELESS_MODE, NULL);
             }
@@ -729,7 +731,8 @@ static void retroarch_parse_input(int argc, char *argv[])
                settings_t *settings  = config_get_ptr();
                retroarch_override_setting_set(
                      RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES, NULL);
-               settings->netplay.check_frames = (int)strtoul(optarg, NULL, 0);
+
+               configuration_set_int(settings, settings->netplay.check_frames, (int)strtoul(optarg, NULL, 0));
             }
             break;
 
@@ -738,7 +741,7 @@ static void retroarch_parse_input(int argc, char *argv[])
                settings_t *settings  = config_get_ptr();
                retroarch_override_setting_set(
                      RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT, NULL);
-               settings->netplay.port = (unsigned)strtoul(optarg, NULL, 0);
+               configuration_set_uint(settings, settings->netplay.port, (int)strtoul(optarg, NULL, 0));
             }
             break;
 
