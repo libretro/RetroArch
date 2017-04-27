@@ -1022,12 +1022,9 @@ static void config_set_defaults(void)
    const char *def_wifi            = config_get_default_wifi();
    const char *def_location        = config_get_default_location();
    const char *def_record          = config_get_default_record();
-   struct config_bool_setting       *bool_settings  = NULL;
-   struct config_float_setting      *float_settings = NULL;
-   struct config_int_setting        *int_settings   = NULL;
-   float_settings                  = populate_settings_float  (settings, &float_settings_size);
-   bool_settings                   = populate_settings_bool  (settings, &bool_settings_size);
-   int_settings                    = populate_settings_int   (settings, &int_settings_size);
+   struct config_float_setting      *float_settings = populate_settings_float  (settings, &float_settings_size);
+   struct config_bool_setting       *bool_settings  = populate_settings_bool  (settings, &bool_settings_size);
+   struct config_int_setting        *int_settings   = populate_settings_int   (settings, &int_settings_size);
 
    if (bool_settings && (bool_settings_size > 0))
    {
