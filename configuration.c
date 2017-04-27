@@ -2145,12 +2145,12 @@ static bool config_load_file(const char *path, bool set_defaults,
       *settings->directory.system = '\0';
 
    if (settings->slowmotion_ratio < 1.0f)
-      settings->slowmotion_ratio = 1.0f;
+      configuration_set_float(settings, settings->slowmotion_ratio, 1.0f);
 
    /* Sanitize fastforward_ratio value - previously range was -1
     * and up (with 0 being skipped) */
    if (settings->fastforward_ratio < 0.0f)
-      settings->fastforward_ratio = 0.0f;
+      configuration_set_float(settings, settings->fastforward_ratio, 0.0f);
 
 #ifdef HAVE_LAKKA
    settings->ssh_enable       = path_file_exists(LAKKA_SSH_PATH);
