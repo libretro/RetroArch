@@ -313,8 +313,7 @@ void input_poll(void)
 
 #ifdef HAVE_NETWORKGAMEPAD
    if (input_driver_remote)
-      input_remote_poll(input_driver_remote,
-            settings->input.max_users);
+      input_remote_poll(input_driver_remote, max_users);
 #endif
 }
 
