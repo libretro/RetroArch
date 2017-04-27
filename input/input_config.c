@@ -81,6 +81,7 @@ static const char *bind_user_prefix[MAX_USERS] = {
 static int input_config_vid[MAX_USERS];
 static int input_config_pid[MAX_USERS];
 
+char input_device_names[MAX_USERS][64];
 struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
 struct retro_keybind input_autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
 const struct retro_keybind *libretro_input_binds[MAX_USERS];
@@ -490,27 +491,24 @@ void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
 
 const char *input_config_get_device_name(unsigned port)
 {
-   settings_t *settings = config_get_ptr();
-   if (string_is_empty(settings->input.device_names[port]))
+   if (string_is_empty(input_device_names[port]))
       return NULL;
-   return settings->input.device_names[port];
+   return input_device_names[port];
 }
 
 void input_config_set_device_name(unsigned port, const char *name)
 {
    if (!string_is_empty(name))
    {
-      settings_t *settings = config_get_ptr();
-      strlcpy(settings->input.device_names[port],
+      strlcpy(input_device_names[port],
             name,
-            sizeof(settings->input.device_names[port]));
+            sizeof(input_device_names[port]));
    }
 }
 
 void input_config_clear_device_name(unsigned port)
 {
-   settings_t *settings = config_get_ptr();
-   settings->input.device_names[port][0] = '\0';
+   input_device_names[port][0] = '\0';
 }
 
 unsigned *input_config_get_device_ptr(unsigned port)
@@ -577,7 +575,7 @@ int32_t input_config_get_vid(unsigned port)
 
 void input_config_reset(void)
 {
-   unsigned i;
+   unsigned i, j;
 
    retro_assert(sizeof(input_config_binds[0]) >= sizeof(retro_keybinds_1));
    retro_assert(sizeof(input_config_binds[1]) >= sizeof(retro_keybinds_rest));
@@ -593,5 +591,8 @@ void input_config_reset(void)
       input_config_vid[i]     = 0;
       input_config_pid[i]     = 0;
       libretro_input_binds[i] = input_config_binds[i];
+
+      for (j = 0; j < 64; j++)
+         input_device_names[i][j] = 0;
    }
 }

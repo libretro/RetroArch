@@ -275,7 +275,6 @@ typedef struct settings
       char driver[32];
       char joypad_driver[32];
       char keyboard_layout[64];
-      char device_names[MAX_USERS][64];
 
       unsigned remap_ids[MAX_USERS][RARCH_BIND_LIST_END];
 
