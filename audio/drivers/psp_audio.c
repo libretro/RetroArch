@@ -312,7 +312,7 @@ static size_t psp_write_avail(void *data)
    sceKernelUnlockLwMutex((struct SceKernelLwMutexWork*)&psp->lock, 1);
 #endif
 
-   return ret;
+   return val;
 }
 
 static size_t psp_buffer_size(void *data)
