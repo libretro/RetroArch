@@ -136,7 +136,7 @@ static void xv_init_font(xv_t *xv, const char *font_path, unsigned font_size)
 {
    settings_t *settings = config_get_ptr();
 
-   if (!settings->video.font_enable)
+   if (!settings->bools.video_font_enable)
       return;
 
    if (font_renderer_create_default((const void**)&xv->font_driver, 
@@ -371,7 +371,7 @@ static void xv_calc_out_rect(bool keep_aspect,
    vp->full_width       = vp_width;
    vp->full_height      = vp_height;
 
-   if (settings->video.scale_integer)
+   if (settings->bools.video_scale_integer)
       video_viewport_get_scaled_integer(vp, vp_width, vp_height,
             video_driver_get_aspect_ratio(), keep_aspect);
    else if (!keep_aspect)

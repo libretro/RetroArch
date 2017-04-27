@@ -46,6 +46,35 @@ typedef struct settings
    {
       bool placeholder;
       bool bundle_finished;
+
+      bool video_fullscreen;
+      bool video_windowed_fullscreen;
+      bool video_vsync;
+      bool video_hard_sync;
+      bool video_black_frame_insertion;
+#ifdef GEKKO
+      bool video_vfilter;
+#endif
+      bool video_smooth;
+      bool video_force_aspect;
+      bool video_crop_overscan;
+      bool video_aspect_ratio_auto;
+      bool video_scale_integer;
+      bool video_shader_enable;
+      bool video_threaded;
+      bool video_font_enable;
+      bool video_disable_composition;
+      bool video_post_filter_record;
+      bool video_gpu_record;
+      bool video_gpu_screenshot;
+      bool video_allow_rotate;
+      bool video_shared_context;
+      bool video_force_srgb_disable;
+
+      bool ui_menubar_enable;
+      bool ui_suspend_screensaver_enable;
+      bool ui_companion_start_on_boot;
+      bool ui_companion_enable;
    } bools;
 
    bool modified;
@@ -63,68 +92,33 @@ typedef struct settings
       float scale;
       unsigned window_x;
       unsigned window_y;
-      bool fullscreen;
-      bool windowed_fullscreen;
       unsigned monitor_index;
       unsigned fullscreen_x;
       unsigned fullscreen_y;
-      bool vsync;
-      bool hard_sync;
-      bool black_frame_insertion;
       unsigned max_swapchain_images;
       unsigned swap_interval;
       unsigned hard_sync_frames;
       unsigned frame_delay;
 #ifdef GEKKO
       unsigned viwidth;
-      bool vfilter;
 #endif
-      bool smooth;
-      bool force_aspect;
-      bool crop_overscan;
       float aspect_ratio;
-      bool aspect_ratio_auto;
-      bool scale_integer;
       unsigned aspect_ratio_idx;
       unsigned rotation;
 
-      bool shader_enable;
-
       float refresh_rate;
-      bool threaded;
-
-
       float font_size;
-      bool font_enable;
       float msg_pos_x;
       float msg_pos_y;
       float msg_color_r;
       float msg_color_g;
       float msg_color_b;
-
-      bool disable_composition;
-
-      bool post_filter_record;
-      bool gpu_record;
-      bool gpu_screenshot;
-
-      bool allow_rotate;
-      bool shared_context;
-      bool force_srgb_disable;
    } video;
 
    struct
    {
       char driver[32];
    } record;
-
-   struct
-   {
-      bool menubar_enable;
-      bool suspend_screensaver_enable;
-      bool companion_start_on_boot;
-      bool companion_enable;
-   } ui;
 
 #ifdef HAVE_MENU
    struct

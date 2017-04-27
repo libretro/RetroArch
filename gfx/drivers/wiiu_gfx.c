@@ -165,7 +165,7 @@ static void wiiu_gfx_update_viewport(wiiu_video_t* wiiu)
    if(wiiu->rotation & 0x1)
       desired_aspect = 1.0 / desired_aspect;
 
-   if (settings->video.scale_integer)
+   if (settings->bools.video_scale_integer)
    {
       video_viewport_get_scaled_integer(&wiiu->vp, wiiu->vp.full_width,
             wiiu->vp.full_height, desired_aspect, wiiu->keep_aspect);

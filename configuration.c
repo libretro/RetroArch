@@ -723,9 +723,9 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    global_t   *global                  = global_get_ptr();
    struct config_bool_setting     *tmp = NULL;
 
-   SETTING_BOOL("ui_companion_start_on_boot",    &settings->ui.companion_start_on_boot, true, ui_companion_start_on_boot, false);
-   SETTING_BOOL("ui_companion_enable",           &settings->ui.companion_enable, true, ui_companion_enable, false);
-   SETTING_BOOL("video_gpu_record",              &settings->video.gpu_record, true, gpu_record, false);
+   SETTING_BOOL("ui_companion_start_on_boot",    &settings->bools.ui_companion_start_on_boot, true, ui_companion_start_on_boot, false);
+   SETTING_BOOL("ui_companion_enable",           &settings->bools.ui_companion_enable, true, ui_companion_enable, false);
+   SETTING_BOOL("video_gpu_record",              &settings->bools.video_gpu_record, true, gpu_record, false);
    SETTING_BOOL("input_remap_binds_enable",      &settings->input.remap_binds_enable, true, true, false);
    SETTING_BOOL("all_users_control_menu",        &settings->input.all_users_control_menu, true, all_users_control_menu, false);
    SETTING_BOOL("menu_swap_ok_cancel_buttons",                 &settings->input.menu_swap_ok_cancel_buttons, true, menu_swap_ok_cancel_buttons, false);
@@ -745,40 +745,40 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("builtin_mediaplayer_enable",    &settings->multimedia.builtin_mediaplayer_enable, false, false /* TODO */, false);
    SETTING_BOOL("builtin_imageviewer_enable",    &settings->multimedia.builtin_imageviewer_enable, true, true, false);
    SETTING_BOOL("fps_show",                      &settings->fps_show, true, false, false);
-   SETTING_BOOL("ui_menubar_enable",             &settings->ui.menubar_enable, true, true, false);
-   SETTING_BOOL("suspend_screensaver_enable",    &settings->ui.suspend_screensaver_enable, true, true, false);
+   SETTING_BOOL("ui_menubar_enable",             &settings->bools.ui_menubar_enable, true, true, false);
+   SETTING_BOOL("suspend_screensaver_enable",    &settings->bools.ui_suspend_screensaver_enable, true, true, false);
    SETTING_BOOL("rewind_enable",                 &settings->rewind_enable, true, rewind_enable, false);
    SETTING_BOOL("audio_sync",                    &settings->audio.sync, true, audio_sync, false);
-   SETTING_BOOL("video_shader_enable",           &settings->video.shader_enable, true, shader_enable, false);
+   SETTING_BOOL("video_shader_enable",           &settings->bools.video_shader_enable, true, shader_enable, false);
 
    /* Let implementation decide if automatic, or 1:1 PAR. */
-   SETTING_BOOL("video_aspect_ratio_auto",       &settings->video.aspect_ratio_auto, true, aspect_ratio_auto, false);
+   SETTING_BOOL("video_aspect_ratio_auto",       &settings->bools.video_aspect_ratio_auto, true, aspect_ratio_auto, false);
 
-   SETTING_BOOL("video_allow_rotate",            &settings->video.allow_rotate, true, allow_rotate, false);
-   SETTING_BOOL("video_windowed_fullscreen",     &settings->video.windowed_fullscreen, true, windowed_fullscreen, false);
-   SETTING_BOOL("video_crop_overscan",           &settings->video.crop_overscan, true, crop_overscan, false);
-   SETTING_BOOL("video_scale_integer",           &settings->video.scale_integer, true, scale_integer, false);
-   SETTING_BOOL("video_smooth",                  &settings->video.smooth, true, video_smooth, false);
-   SETTING_BOOL("video_force_aspect",            &settings->video.force_aspect, true, force_aspect, false);
-   SETTING_BOOL("video_threaded",                &settings->video.threaded, true, video_threaded, false);
-   SETTING_BOOL("video_shared_context",          &settings->video.shared_context, true, video_shared_context, false);
+   SETTING_BOOL("video_allow_rotate",            &settings->bools.video_allow_rotate, true, allow_rotate, false);
+   SETTING_BOOL("video_windowed_fullscreen",     &settings->bools.video_windowed_fullscreen, true, windowed_fullscreen, false);
+   SETTING_BOOL("video_crop_overscan",           &settings->bools.video_crop_overscan, true, crop_overscan, false);
+   SETTING_BOOL("video_scale_integer",           &settings->bools.video_scale_integer, true, scale_integer, false);
+   SETTING_BOOL("video_smooth",                  &settings->bools.video_smooth, true, video_smooth, false);
+   SETTING_BOOL("video_force_aspect",            &settings->bools.video_force_aspect, true, force_aspect, false);
+   SETTING_BOOL("video_threaded",                &settings->bools.video_threaded, true, video_threaded, false);
+   SETTING_BOOL("video_shared_context",          &settings->bools.video_shared_context, true, video_shared_context, false);
    SETTING_BOOL("auto_screenshot_filename",      &settings->auto_screenshot_filename, true, auto_screenshot_filename, false);
-   SETTING_BOOL("video_force_srgb_disable",      &settings->video.force_srgb_disable, true, false, false);
-   SETTING_BOOL("video_fullscreen",              &settings->video.fullscreen, true, fullscreen, false);
+   SETTING_BOOL("video_force_srgb_disable",      &settings->bools.video_force_srgb_disable, true, false, false);
+   SETTING_BOOL("video_fullscreen",              &settings->bools.video_fullscreen, true, fullscreen, false);
    SETTING_BOOL("bundle_assets_extract_enable",  &settings->bundle_assets_extract_enable, true, bundle_assets_extract_enable, false);
-   SETTING_BOOL("video_vsync",                   &settings->video.vsync, true, vsync, false);
-   SETTING_BOOL("video_hard_sync",               &settings->video.hard_sync, true, hard_sync, false);
-   SETTING_BOOL("video_black_frame_insertion",   &settings->video.black_frame_insertion, true, black_frame_insertion, false);
-   SETTING_BOOL("video_disable_composition",     &settings->video.disable_composition, true, disable_composition, false);
+   SETTING_BOOL("video_vsync",                   &settings->bools.video_vsync, true, vsync, false);
+   SETTING_BOOL("video_hard_sync",               &settings->bools.video_hard_sync, true, hard_sync, false);
+   SETTING_BOOL("video_black_frame_insertion",   &settings->bools.video_black_frame_insertion, true, black_frame_insertion, false);
+   SETTING_BOOL("video_disable_composition",     &settings->bools.video_disable_composition, true, disable_composition, false);
    SETTING_BOOL("pause_nonactive",               &settings->pause_nonactive, true, pause_nonactive, false);
-   SETTING_BOOL("video_gpu_screenshot",          &settings->video.gpu_screenshot, true, gpu_screenshot, false);
-   SETTING_BOOL("video_post_filter_record",      &settings->video.post_filter_record, true, post_filter_record, false);
+   SETTING_BOOL("video_gpu_screenshot",          &settings->bools.video_gpu_screenshot, true, gpu_screenshot, false);
+   SETTING_BOOL("video_post_filter_record",      &settings->bools.video_post_filter_record, true, post_filter_record, false);
    SETTING_BOOL("keyboard_gamepad_enable",       &settings->input.keyboard_gamepad_enable, true, true, false);
    SETTING_BOOL("core_set_supports_no_game_enable", &settings->set_supports_no_game_enable, true, true, false);
    SETTING_BOOL("audio_enable",                  &settings->audio.enable, true, audio_enable, false);
    SETTING_BOOL("audio_mute_enable",             &settings->audio.mute_enable, true, false, false);
    SETTING_BOOL("location_allow",                &settings->location.allow, true, false, false);
-   SETTING_BOOL("video_font_enable",             &settings->video.font_enable, true, font_enable, false);
+   SETTING_BOOL("video_font_enable",             &settings->bools.video_font_enable, true, font_enable, false);
    SETTING_BOOL("core_updater_auto_extract_archive", &settings->network.buildbot_auto_extract_archive, true, true, false);
    SETTING_BOOL("camera_allow",                  &settings->camera.allow, true, false, false);
 #if defined(VITA)
@@ -789,7 +789,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("small_keyboard_enable",         &settings->input.small_keyboard_enable, true, false, false);
 #endif
 #ifdef GEKKO
-   SETTING_BOOL("video_vfilter",                 &settings->video.vfilter, true, video_vfilter, false);
+   SETTING_BOOL("video_vfilter",                 &settings->bools.video_vfilter, true, video_vfilter, false);
 #endif
 #ifdef HAVE_MENU
    SETTING_BOOL("menu_unified_controls",         &settings->menu.unified_controls, true, false, false);
@@ -874,7 +874,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
 
    if (global)
    {
-      SETTING_BOOL("custom_bgm_enable",             &global->console.sound.system_bgm_enable, true, false, false);
+      SETTING_BOOL("custom_bgm_enable",         &global->console.sound.system_bgm_enable, true, false, false);
    }
 
    *size = count;
@@ -1109,11 +1109,11 @@ static void config_set_defaults(void)
 
    if (rarch_ctl(RARCH_CTL_IS_FORCE_FULLSCREEN, NULL))
    {
-      configuration_set_bool(settings, settings->video.fullscreen, true);
+      configuration_set_bool(settings, settings->bools.video_fullscreen, true);
    }
 
    if (g_defaults.settings.video_threaded_enable != video_threaded)
-      settings->video.threaded                 = g_defaults.settings.video_threaded_enable;
+      settings->bools.video_threaded           = g_defaults.settings.video_threaded_enable;
 
    settings->video.msg_color_r                 = ((message_color >> 16) & 0xff) / 255.0f;
    settings->video.msg_color_g                 = ((message_color >>  8) & 0xff) / 255.0f;
@@ -1844,7 +1844,7 @@ static bool config_load_file(const char *path, bool set_defaults,
    }
 
    if (!rarch_ctl(RARCH_CTL_IS_FORCE_FULLSCREEN, NULL))
-      CONFIG_GET_BOOL_BASE(conf, settings, video.fullscreen, "video_fullscreen");
+      CONFIG_GET_BOOL_BASE(conf, settings, bools.video_fullscreen, "video_fullscreen");
 
 #ifdef HAVE_NETWORKGAMEPAD
    for (i = 0; i < MAX_USERS; i++)

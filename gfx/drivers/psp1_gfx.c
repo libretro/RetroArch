@@ -704,7 +704,7 @@ static void psp_update_viewport(psp1_video_t* psp,
    float height         = SCEGU_SCR_HEIGHT;
    settings_t *settings = config_get_ptr();
 
-   if (settings->video.scale_integer)
+   if (settings->bools.video_scale_integer)
    {
       video_viewport_get_scaled_integer(&psp->vp, SCEGU_SCR_WIDTH,
             SCEGU_SCR_HEIGHT, video_driver_get_aspect_ratio(), psp->keep_aspect);

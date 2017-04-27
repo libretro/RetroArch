@@ -81,7 +81,7 @@ static bool d3d_init_luts(d3d_video_t *d3d)
             d3d->renderchain_data,
             d3d->shader.lut[i].id, d3d->shader.lut[i].path,
             d3d->shader.lut[i].filter == RARCH_FILTER_UNSPEC ?
-            settings->video.smooth :
+            settings->bools.video_smooth :
             (d3d->shader.lut[i].filter == RARCH_FILTER_LINEAR)))
          return false;
    }
@@ -499,7 +499,7 @@ void d3d_make_d3dpp(void *data,
 #ifdef _XBOX
    d3dpp->Windowed             = false;
 #else
-   d3dpp->Windowed             = settings->video.windowed_fullscreen 
+   d3dpp->Windowed             = settings->bools.video_windowed_fullscreen 
       || !info->fullscreen;
 #endif
    d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
@@ -674,7 +674,7 @@ static void d3d_calculate_rect(void *data,
    *x = 0;
    *y = 0;
 
-   if (settings->video.scale_integer && !force_full)
+   if (settings->bools.video_scale_integer && !force_full)
    {
       struct video_viewport vp;
 
@@ -1020,7 +1020,7 @@ static bool d3d_construct(d3d_video_t *d3d,
    g_resize_width  = info->width;
    g_resize_height = info->height;
 
-   windowed_full = settings->video.windowed_fullscreen;
+   windowed_full = settings->bools.video_windowed_fullscreen;
 
    full_x = (windowed_full || info->width  == 0) ?
       (mon_rect.right  - mon_rect.left) : info->width;
@@ -1068,7 +1068,7 @@ static bool d3d_construct(d3d_video_t *d3d,
     * later. */
    enum rarch_shader_type type =
       video_shader_parse_type(settings->path.shader, RARCH_SHADER_NONE);
-   if (settings->video.shader_enable && type == RARCH_SHADER_CG)
+   if (settings->bools.video_shader_enable && type == RARCH_SHADER_CG)
       d3d->shader_path = settings->path.shader;
 
    if (!d3d_process_shader(d3d))

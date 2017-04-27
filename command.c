@@ -1785,7 +1785,7 @@ static bool command_event_resize_windowed_scale(void)
       configuration_set_float(settings, settings->video.scale, *window_scale);
    }
 
-   if (!settings->video.fullscreen)
+   if (!settings->bools.video_fullscreen)
       command_event(CMD_EVENT_REINIT, NULL);
 
    runloop_ctl(RUNLOOP_CTL_SET_WINDOWED_SCALE, &idx);
@@ -2504,17 +2504,17 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_FULLSCREEN_TOGGLE:
          {
             settings_t *settings      = config_get_ptr();
-            bool new_fullscreen_state = !settings->video.fullscreen;
+            bool new_fullscreen_state = !settings->bools.video_fullscreen;
             if (!video_driver_has_windowed())
                return false;
 
             /* If we go fullscreen we drop all drivers and
              * reinitialize to be safe. */
-            configuration_set_bool(settings, settings->video.fullscreen,
+            configuration_set_bool(settings, settings->bools.video_fullscreen,
                   new_fullscreen_state);
 
             command_event(CMD_EVENT_REINIT, NULL);
-            if (settings->video.fullscreen)
+            if (settings->bools.video_fullscreen)
                video_driver_hide_mouse();
             else
                video_driver_show_mouse();

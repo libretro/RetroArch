@@ -606,7 +606,7 @@ static int omapfb_init(omapfb_data_t *pdata, unsigned bpp)
    /* always use triple buffering to reduce chance of tearing */
    pdata->bpp           = bpp;
    pdata->num_pages     = 3;
-   pdata->sync          = settings->video.vsync;
+   pdata->sync          = settings->bools.video_vsync;
 
    return 0;
 }
@@ -835,7 +835,7 @@ static void omap_init_font(omap_video_t *vid, const char *font_path, unsigned fo
    int r, g, b;
    settings_t *settings = config_get_ptr();
 
-   if (!settings->video.font_enable)
+   if (!settings->bools.video_font_enable)
       return;
 
    if (!(font_renderer_create_default(&vid->font_driver, &vid->font,

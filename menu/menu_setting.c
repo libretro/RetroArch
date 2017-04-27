@@ -193,7 +193,7 @@ static int setting_uint_action_left_custom_viewport_width(void *data, bool wrapa
 
    if (custom->width <= 1)
       custom->width = 1;
-   else if (settings->video.scale_integer)
+   else if (settings->bools.video_scale_integer)
    {
       if (custom->width > geom->base_width)
          custom->width -= geom->base_width;
@@ -221,7 +221,7 @@ static int setting_uint_action_right_custom_viewport_width(void *data, bool wrap
 
    video_driver_get_viewport_info(&vp);
 
-   if (settings->video.scale_integer)
+   if (settings->bools.video_scale_integer)
       custom->width += geom->base_width;
    else
       custom->width += 1;
@@ -248,7 +248,7 @@ static int setting_uint_action_left_custom_viewport_height(void *data, bool wrap
 
    if (custom->height <= 1)
       custom->height = 1;
-   else if (settings->video.scale_integer)
+   else if (settings->bools.video_scale_integer)
    {
       if (custom->height > geom->base_height)
          custom->height -= geom->base_height;
@@ -276,7 +276,7 @@ static int setting_uint_action_right_custom_viewport_height(void *data, bool wra
 
    video_driver_get_viewport_info(&vp);
 
-   if (settings->video.scale_integer)
+   if (settings->bools.video_scale_integer)
       custom->height += geom->base_height;
    else
       custom->height += 1;
@@ -956,7 +956,7 @@ static int setting_action_start_custom_viewport_width(void *data)
 
    video_driver_get_viewport_info(&vp);
 
-   if (settings->video.scale_integer)
+   if (settings->bools.video_scale_integer)
       custom->width = ((custom->width + geom->base_width - 1) /
             geom->base_width) * geom->base_width;
    else
@@ -982,7 +982,7 @@ static int setting_action_start_custom_viewport_height(void *data)
 
    video_driver_get_viewport_info(&vp);
 
-   if (settings->video.scale_integer)
+   if (settings->bools.video_scale_integer)
       custom->height = ((custom->height + geom->base_height - 1) /
             geom->base_height) * geom->base_height;
    else
@@ -1621,7 +1621,7 @@ void general_write_handler(void *data)
          settings->modified    = true;
          settings->video.scale = roundf(*setting->value.target.fraction);
 
-         if (!settings->video.fullscreen)
+         if (!settings->bools.video_fullscreen)
             rarch_cmd = CMD_EVENT_REINIT;
          break;
       case MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX:
@@ -1662,7 +1662,7 @@ void general_write_handler(void *data)
          }
          break;
       case MENU_ENUM_LABEL_VIDEO_SMOOTH:
-         video_driver_set_filtering(1, settings->video.smooth);
+         video_driver_set_filtering(1, settings->bools.video_smooth);
          break;
       case MENU_ENUM_LABEL_VIDEO_ROTATION:
          {
@@ -2746,7 +2746,7 @@ static bool setting_append_list(
             START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info,
                   parent_group);
 
-            bool_entries[0].target         = &settings->video.shared_context;
+            bool_entries[0].target         = &settings->bools.video_shared_context;
             bool_entries[0].name_enum_idx  = MENU_ENUM_LABEL_VIDEO_SHARED_CONTEXT;
             bool_entries[0].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT;
             bool_entries[0].default_value  = video_shared_context;
@@ -2770,7 +2770,7 @@ static bool setting_append_list(
             bool_entries[3].default_value  = true;
             bool_entries[3].flags          = SD_FLAG_ADVANCED;
 
-            bool_entries[4].target         = &settings->video.allow_rotate;
+            bool_entries[4].target         = &settings->bools.video_allow_rotate;
             bool_entries[4].name_enum_idx  = MENU_ENUM_LABEL_VIDEO_ALLOW_ROTATE;
             bool_entries[4].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE;
             bool_entries[4].default_value  = allow_rotate;
@@ -3094,7 +3094,7 @@ static bool setting_append_list(
 #if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
          CONFIG_BOOL(
                list, list_info,
-               &settings->ui.suspend_screensaver_enable,
+               &settings->bools.ui_suspend_screensaver_enable,
                MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE,
                MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
                true,
@@ -3154,7 +3154,7 @@ static bool setting_append_list(
          {
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->video.fullscreen,
+                  &settings->bools.video_fullscreen,
                   MENU_ENUM_LABEL_VIDEO_FULLSCREEN,
                   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
                   fullscreen,
@@ -3173,7 +3173,7 @@ static bool setting_append_list(
          {
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->video.windowed_fullscreen,
+                  &settings->bools.video_windowed_fullscreen,
                   MENU_ENUM_LABEL_VIDEO_WINDOWED_FULLSCREEN,
                   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
                   windowed_fullscreen,
@@ -3225,7 +3225,7 @@ static bool setting_append_list(
          {
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->video.force_srgb_disable,
+                  &settings->bools.video_force_srgb_disable,
                   MENU_ENUM_LABEL_VIDEO_FORCE_SRGB_DISABLE,
                   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
                   false,
@@ -3401,7 +3401,7 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->video.scale_integer,
+               &settings->bools.video_scale_integer,
                MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER,
                MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
                scale_integer,
@@ -3450,7 +3450,7 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->video.smooth,
+               &settings->bools.video_smooth,
                MENU_ENUM_LABEL_VIDEO_SMOOTH,
                MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
                video_smooth,
@@ -3493,7 +3493,7 @@ static bool setting_append_list(
 #if defined(HAVE_THREADS)
          CONFIG_BOOL(
                list, list_info,
-               &settings->video.threaded,
+               &settings->bools.video_threaded,
                MENU_ENUM_LABEL_VIDEO_THREADED,
                MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
                video_threaded,
@@ -3511,7 +3511,7 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->video.vsync,
+               &settings->bools.video_vsync,
                MENU_ENUM_LABEL_VIDEO_VSYNC,
                MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
                vsync,
@@ -3560,7 +3560,7 @@ static bool setting_append_list(
          {
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->video.hard_sync,
+                  &settings->bools.video_hard_sync,
                   MENU_ENUM_LABEL_VIDEO_HARD_SYNC,
                   MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
                   hard_sync,
@@ -3607,7 +3607,7 @@ static bool setting_append_list(
 #if !defined(RARCH_MOBILE)
          CONFIG_BOOL(
                list, list_info,
-               &settings->video.black_frame_insertion,
+               &settings->bools.video_black_frame_insertion,
                MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION,
                MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
                black_frame_insertion,
@@ -3633,7 +3633,7 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->video.gpu_screenshot,
+               &settings->bools.video_gpu_screenshot,
                MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT,
                MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
                gpu_screenshot,
@@ -3650,7 +3650,7 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->video.crop_overscan,
+               &settings->bools.video_crop_overscan,
                MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN,
                MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
                crop_overscan,
@@ -4354,7 +4354,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->video.post_filter_record,
+                  &settings->bools.video_post_filter_record,
                   MENU_ENUM_LABEL_VIDEO_POST_FILTER_RECORD,
                   MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD,
                   post_filter_record,
@@ -4370,7 +4370,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->video.gpu_record,
+                  &settings->bools.video_gpu_record,
                   MENU_ENUM_LABEL_VIDEO_GPU_RECORD,
                   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
                   gpu_record,
@@ -4492,7 +4492,7 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->video.font_enable,
+               &settings->bools.video_font_enable,
                MENU_ENUM_LABEL_VIDEO_FONT_ENABLE,
                MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
                font_enable,
@@ -5402,7 +5402,7 @@ static bool setting_append_list(
 #if !defined(RARCH_MOBILE)
          CONFIG_BOOL(
                list, list_info,
-               &settings->video.disable_composition,
+               &settings->bools.video_disable_composition,
                MENU_ENUM_LABEL_VIDEO_DISABLE_COMPOSITION,
                MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
                disable_composition,
@@ -5421,7 +5421,7 @@ static bool setting_append_list(
          {
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->ui.companion_enable,
+                  &settings->bools.ui_companion_enable,
                   MENU_ENUM_LABEL_UI_COMPANION_ENABLE,
                   MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
                   ui_companion_enable,
@@ -5436,7 +5436,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->ui.companion_start_on_boot,
+                  &settings->bools.ui_companion_start_on_boot,
                   MENU_ENUM_LABEL_UI_COMPANION_START_ON_BOOT,
                   MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
                   ui_companion_start_on_boot,
@@ -5451,7 +5451,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->ui.menubar_enable,
+                  &settings->bools.ui_menubar_enable,
                   MENU_ENUM_LABEL_UI_MENUBAR_ENABLE,
                   MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
                   true,

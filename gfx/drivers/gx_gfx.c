@@ -556,7 +556,7 @@ static void init_texture(void *data, unsigned width, unsigned height)
 
    width               &= ~3;
    height              &= ~3;
-   g_filter             = settings->video.smooth ? GX_LINEAR : GX_NEAR;
+   g_filter             = settings->bools.video_smooth ? GX_LINEAR : GX_NEAR;
 
    menu_display_get_fb_size(&fb_width, &fb_height,
          &fb_pitch);

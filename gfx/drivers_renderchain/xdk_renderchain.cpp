@@ -416,9 +416,9 @@ static bool xdk_renderchain_render(void *data, const void *frame,
 
    d3d_set_texture(d3dr, 0, chain->tex);
    d3d_set_viewports(chain->dev, &d3d->final_viewport);
-   d3d_set_sampler_minfilter(d3dr, 0, settings->video.smooth ?
+   d3d_set_sampler_minfilter(d3dr, 0, settings->bools.video_smooth ?
          D3DTEXF_LINEAR : D3DTEXF_POINT);
-   d3d_set_sampler_magfilter(d3dr, 0, settings->video.smooth ?
+   d3d_set_sampler_magfilter(d3dr, 0, settings->bools.video_smooth ?
          D3DTEXF_LINEAR : D3DTEXF_POINT);
 
    d3d_set_vertex_declaration(d3dr, chain->vertex_decl);

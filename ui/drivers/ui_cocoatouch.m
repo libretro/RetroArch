@@ -399,7 +399,7 @@ enum
 #ifdef HAVE_AVFOUNDATION
    [self supportOtherAudioSessions];
 #endif
-   if (settings->ui.companion_start_on_boot)
+   if (settings->bools.ui_companion_start_on_boot)
       return;
     
   [self showGameView];

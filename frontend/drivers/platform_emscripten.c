@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
    emscripten_set_canvas_size(800, 600);
    rarch_main(argc, argv, NULL);
    emscripten_set_main_loop(emscripten_mainloop,
-         settings->video.vsync ? 0 : INT_MAX, 1);
+         settings->bools.video_vsync ? 0 : INT_MAX, 1);
 
    return 0;
 }

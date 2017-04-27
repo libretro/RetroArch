@@ -638,7 +638,7 @@ static void rgui_render(void *data)
    if (rgui->mouse_show)
    {
       settings_t *settings = config_get_ptr();
-      bool cursor_visible  = settings->video.fullscreen ||
+      bool cursor_visible  = settings->bools.video_fullscreen ||
          !video_driver_has_windowed();
 
       if (settings->menu.mouse.enable && cursor_visible)

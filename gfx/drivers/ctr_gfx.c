@@ -134,7 +134,7 @@ static void ctr_update_viewport(ctr_video_t* ctr)
    if(ctr->rotation & 0x1)
       desired_aspect = 1.0 / desired_aspect;
 
-   if (settings->video.scale_integer)
+   if (settings->bools.video_scale_integer)
    {
       video_viewport_get_scaled_integer(&ctr->vp, ctr->vp.full_width,
             ctr->vp.full_height, desired_aspect, ctr->keep_aspect);

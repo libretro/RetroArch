@@ -259,7 +259,7 @@ void menu_shader_manager_set_preset(void *data,
 
    if (!video_driver_set_shader((enum rarch_shader_type)type, preset_path))
    {
-      configuration_set_bool(settings, settings->video.shader_enable, false);
+      configuration_set_bool(settings, settings->bools.video_shader_enable, false);
       return;
    }
 
@@ -268,7 +268,7 @@ void menu_shader_manager_set_preset(void *data,
    strlcpy(settings->path.shader,
          preset_path ? preset_path : "",
          sizeof(settings->path.shader));
-   configuration_set_bool(settings, settings->video.shader_enable, true);
+   configuration_set_bool(settings, settings->bools.video_shader_enable, true);
 
    if (!preset_path || !shader)
       return;

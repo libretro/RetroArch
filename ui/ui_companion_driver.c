@@ -130,7 +130,7 @@ void ui_companion_driver_init_first(void)
 
    if (ui_companion && ui_companion->toggle)
    {
-      if (settings->ui.companion_start_on_boot)
+      if (settings->bools.ui_companion_start_on_boot)
          ui_companion->toggle(ui_companion_data);
    }
 }

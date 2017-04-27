@@ -992,7 +992,7 @@ static enum runloop_state runloop_check_state(
    if (runloop_slowmotion)
    {
       /* Checks if slowmotion toggle/hold was being pressed and/or held. */
-      if (settings->video.black_frame_insertion)
+      if (settings->bools.video_black_frame_insertion)
       {
          if (!runloop_idle)
             video_driver_cached_frame();
