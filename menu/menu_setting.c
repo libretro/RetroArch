@@ -937,8 +937,7 @@ static int setting_action_start_bind_device(void *data)
 
    index_offset = setting->index_offset;
 
-   settings->modified                       = true;
-   settings->input.joypad_map[index_offset] = index_offset;
+   configuration_set_uint(settings, settings->input.joypad_map[index_offset], index_offset);
    return 0;
 }
 
@@ -1085,10 +1084,9 @@ static int setting_action_left_analog_dpad_mode(void *data, bool wraparound)
 
    port = setting->index_offset;
 
-   settings->modified                     = true;
-   settings->input.analog_dpad_mode[port] =
+   configuration_set_uint(settings, settings->input.analog_dpad_mode[port],
       (settings->input.analog_dpad_mode
-       [port] + ANALOG_DPAD_LAST - 1) % ANALOG_DPAD_LAST;
+       [port] + ANALOG_DPAD_LAST - 1) % ANALOG_DPAD_LAST);
 
    return 0;
 }
@@ -1598,8 +1596,8 @@ void general_write_handler(void *data)
          }
          break;
       case MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW:
-         settings->modified              = true;
-         settings->audio.max_timing_skew = *setting->value.target.fraction;
+         configuration_set_float(settings, settings->audio.max_timing_skew,
+               *setting->value.target.fraction);
          break;
       case MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA:
          if (*setting->value.target.fraction < 0.0005)
