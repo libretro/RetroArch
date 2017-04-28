@@ -845,9 +845,9 @@ static void omap_init_font(omap_video_t *vid, const char *font_path, unsigned fo
       return;
    }
 
-   r = settings->video.msg_color_r * 255;
-   g = settings->video.msg_color_g * 255;
-   b = settings->video.msg_color_b * 255;
+   r = settings->floats.video_msg_color_r * 255;
+   g = settings->floats.video_msg_color_g * 255;
+   b = settings->floats.video_msg_color_b * 255;
 
    r = (r < 0) ? 0 : (r > 255 ? 255 : r);
    g = (g < 0) ? 0 : (g > 255 ? 255 : g);
@@ -862,8 +862,8 @@ static void omap_render_msg(omap_video_t *vid, const char *msg)
 {
    const struct font_atlas *atlas = NULL;
    settings_t *settings = config_get_ptr();
-   int msg_base_x = settings->video.msg_pos_x * vid->width;
-   int msg_base_y = (1.0 - settings->video.msg_pos_y) * vid->height;
+   int msg_base_x = settings->floats.video_msg_pos_x * vid->width;
+   int msg_base_y = (1.0 - settings->floats.video_msg_pos_y) * vid->height;
 
    if (!vid->font)
       return;

@@ -132,8 +132,8 @@ static void sdl_render_msg(sdl_video_t *vid, SDL_Surface *buffer,
 
    atlas = vid->font_driver->get_atlas(vid->font);
 
-   msg_base_x = settings->video.msg_pos_x * width;
-   msg_base_y = (1.0f - settings->video.msg_pos_y) * height;
+   msg_base_x = settings->floats.video_msg_pos_x * width;
+   msg_base_y = (1.0f - settings->floats.video_msg_pos_y) * height;
 
    rshift = fmt->Rshift;
    gshift = fmt->Gshift;
