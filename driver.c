@@ -42,6 +42,7 @@
 #include "driver.h"
 #include "runloop.h"
 #include "verbosity.h"
+#include "vfs/vfs_driver.h"
 
 #define HASH_LOCATION_DRIVER           0x09189689U
 #define HASH_CAMERA_DRIVER             0xf25db959U
@@ -362,6 +363,9 @@ void drivers_init(int flags)
       if (input_driver_is_nonblock_state())
          driver_set_nonblock_state();
    }
+
+   if (flags & DRIVER_VFS_MASK)
+      init_vfs();
 }
 
 
@@ -391,6 +395,9 @@ void drivers_init(int flags)
  **/
 static void uninit_drivers(int flags)
 {
+   if (flags & DRIVER_VFS_MASK)
+      deinit_vfs();
+
    core_info_deinit_list();
    core_info_free_current_core();
 

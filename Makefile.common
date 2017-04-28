@@ -248,7 +248,13 @@ OBJ += frontend/frontend.o \
        record/drivers/record_null.o \
        $(LIBRETRO_COMM_DIR)/features/features_cpu.o \
        performance_counters.o \
-       verbosity.o
+       verbosity.o \
+       vfs/local_driver.o \
+       vfs/local_file.o \
+       vfs/retro_driver.o \
+       vfs/retro_file.o \
+       vfs/vfs_driver.o \
+       vfs/vfs_file.o \
 
 
 ifeq ($(HAVE_CC_RESAMPLER), 1)

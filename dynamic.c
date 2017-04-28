@@ -62,6 +62,7 @@
 #include "configuration.h"
 #include "msg_hash.h"
 #include "verbosity.h"
+#include "vfs/vfs_driver.h"
 
 #ifdef HAVE_DYNAMIC
 #define SYMBOL(x) do { \
@@ -1037,37 +1038,48 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY:
-         if (string_is_empty(settings->directory.system))
+      {
+         const char **dir = (const char**)data;
+
+         static char system_dir[PATH_MAX];
+         if (vfs_translate_path(RARCH_VFS_DIR_SYSTEM, system_dir, sizeof(system_dir)))
          {
-            const char *fullpath = path_get(RARCH_PATH_CONTENT);
-            if (!string_is_empty(fullpath))
-            {
-               char temp_path[PATH_MAX_LENGTH];
-
-               temp_path[0] = '\0';
-
-               RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",
-                     fullpath);
-               fill_pathname_basedir(temp_path, fullpath, sizeof(temp_path));
-               dir_set(RARCH_DIR_SYSTEM, temp_path);
-            }
-
-            *(const char**)data = dir_get_ptr(RARCH_DIR_SYSTEM);
+            *dir = system_dir + strlen("file://");
             RARCH_LOG("Environ SYSTEM_DIRECTORY: \"%s\".\n",
-                  dir_get(RARCH_DIR_SYSTEM));
+                  system_dir);
          }
          else
          {
-            *(const char**)data = settings->directory.system;
-            RARCH_LOG("Environ SYSTEM_DIRECTORY: \"%s\".\n",
-               settings->directory.system);
+            static char assets_dir[PATH_MAX];
+            if (vfs_translate_path(RARCH_VFS_DIR_ASSETS, assets_dir, sizeof(assets_dir)))
+            {
+               *dir = assets_dir + strlen("file://");
+               RARCH_WARN("SYSTEM DIR is empty, assume ASSETS DIR %s\n",
+                     assets_dir);
+               dir_set(RARCH_DIR_SYSTEM, *dir);
+            }
+            else
+            {
+               *dir = NULL;
+               RARCH_LOG("Environ SYSTEM_DIRECTORY: not set.\n");
+            }
          }
 
          break;
+      }
 
       case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
-         *(const char**)data = dir_get(RARCH_DIR_CURRENT_SAVEFILE);
+      {
+         const char **dir = (const char**)data;
+
+         static char save_dir[PATH_MAX];
+         if (vfs_translate_path(RARCH_VFS_DIR_SAVE, save_dir, sizeof(save_dir)))
+            *dir = save_dir + strlen("file://");
+         else
+            *dir = NULL;
+
          break;
+      }
 
       case RETRO_ENVIRONMENT_GET_USERNAME:
          *(const char**)data = *settings->username ?
@@ -1406,10 +1418,14 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       {
          const char **dir = (const char**)data;
 
-         *dir = *settings->directory.core_assets ?
-            settings->directory.core_assets : NULL;
+         static char assets_dir[PATH_MAX];
+         if (vfs_translate_path(RARCH_VFS_DIR_ASSETS, assets_dir, sizeof(assets_dir)))
+            *dir = assets_dir + strlen("file://");
+         else
+            *dir = NULL;
+
          RARCH_LOG("Environ CORE_ASSETS_DIRECTORY: \"%s\".\n",
-               settings->directory.core_assets);
+               *dir ? *dir : "not set");
          break;
       }
 
