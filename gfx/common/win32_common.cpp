@@ -794,7 +794,7 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
     * for black frame insertion using video.refresh_rate set to half
     * of the display refresh rate, as well as higher vsync swap intervals. */
    float refresh_mod    = settings->bools.video_black_frame_insertion ? 2.0f : 1.0f;
-   unsigned refresh     = roundf(settings->video.refresh_rate 
+   unsigned refresh     = roundf(settings->floats.video_refresh_rate
          * refresh_mod * settings->video.swap_interval);
 
    if (fullscreen)
