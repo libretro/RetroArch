@@ -434,7 +434,7 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
 
    GX_SetCopyFilter(gx_mode.aa, gx_mode.sample_pattern,
          (gx_mode.xfbMode == VI_XFBMODE_SF) 
-         ? GX_FALSE : settings->video.vfilter,
+         ? GX_FALSE : settings->bools.video_vfilter,
          gx_mode.vfilter);
    GXColor color = { 0, 0, 0, 0xff };
    GX_SetCopyClear(color, GX_MAX_Z24);
