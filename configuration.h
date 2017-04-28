@@ -213,6 +213,35 @@ typedef struct settings
 #endif
    } bools;
 
+   struct
+   {
+      float placeholder;
+      float video_scale;
+      float video_aspect_ratio;
+      float video_refresh_rate;
+      float video_font_size;
+      float video_msg_pos_x;
+      float video_msg_pos_y;
+      float video_msg_color_r;
+      float video_msg_color_g;
+      float video_msg_color_b;
+
+      float menu_wallpaper_opacity;
+      float menu_footer_opacity;
+      float menu_header_opacity;
+
+      float audio_rate_control_delta;
+      float audio_max_timing_skew;
+      float audio_volume; /* dB scale. */
+
+      float input_axis_threshold;
+      float input_overlay_opacity;
+      float input_overlay_scale;
+
+      float slowmotion_ratio;
+      float fastforward_ratio;
+   } floats;
+
    bool modified;
 
    video_viewport_t video_viewport_custom;
@@ -225,7 +254,6 @@ typedef struct settings
    {
       char driver[32];
       char context_driver[32];
-      float scale;
       unsigned window_x;
       unsigned window_y;
       unsigned monitor_index;
@@ -238,17 +266,8 @@ typedef struct settings
 #ifdef GEKKO
       unsigned viwidth;
 #endif
-      float aspect_ratio;
       unsigned aspect_ratio_idx;
       unsigned rotation;
-
-      float refresh_rate;
-      float font_size;
-      float msg_pos_x;
-      float msg_pos_y;
-      float msg_color_r;
-      float msg_color_g;
-      float msg_color_b;
    } video;
 
    struct
@@ -262,21 +281,6 @@ typedef struct settings
       char driver[32];
 
       unsigned thumbnails;
-
-      struct
-      {
-         float opacity;
-      } wallpaper;
-
-      struct
-      {
-         float opacity;
-      } footer;
-
-      struct
-      {
-         float opacity;
-      } header;
 
       struct
       {
@@ -336,9 +340,6 @@ typedef struct settings
       unsigned block_frames;
       unsigned latency;
 
-      float rate_control_delta;
-      float max_timing_skew;
-      float volume; /* dB scale. */
 
 #ifdef HAVE_WASAPI
       struct
@@ -365,15 +366,12 @@ typedef struct settings
       unsigned libretro_device[MAX_USERS];
       unsigned analog_dpad_mode[MAX_USERS];
 
-      float axis_threshold;
       unsigned joypad_map[MAX_USERS];
       unsigned device[MAX_USERS];
 
       unsigned turbo_period;
       unsigned turbo_duty_cycle;
 
-      float overlay_opacity;
-      float overlay_scale;
 
       unsigned bind_timeout;
 
@@ -474,8 +472,6 @@ typedef struct settings
    size_t rewind_buffer_size;
    unsigned rewind_granularity;
 
-   float slowmotion_ratio;
-   float fastforward_ratio;
 
    unsigned autosave_interval;
 

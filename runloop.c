@@ -317,8 +317,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             struct retro_system_av_info *av_info =
                video_viewport_get_system_av_info();
             float fastforward_ratio              =
-               (settings->fastforward_ratio == 0.0f)
-               ? 1.0f : settings->fastforward_ratio;
+               (settings->floats.fastforward_ratio == 0.0f)
+               ? 1.0f : settings->floats.fastforward_ratio;
 
             frame_limit_last_time    = cpu_features_get_time_usec();
             frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f
@@ -828,7 +828,7 @@ static enum runloop_state runloop_check_state(
 
    if (menu_driver_is_alive())
    {
-      if (!settings->bools.menu_throttle_framerate && !settings->fastforward_ratio)
+      if (!settings->bools.menu_throttle_framerate && !settings->floats.fastforward_ratio)
          return RUNLOOP_STATE_MENU_ITERATE;
 
       return RUNLOOP_STATE_END;
@@ -1091,7 +1091,7 @@ int runloop_iterate(unsigned *sleep_ms)
          delta = runloop_frame_time.reference;
 
       if (!is_locked_fps && runloop_slowmotion)
-         delta /= settings->slowmotion_ratio;
+         delta /= settings->floats.slowmotion_ratio;
 
       runloop_frame_time_last = current;
 
@@ -1179,7 +1179,7 @@ int runloop_iterate(unsigned *sleep_ms)
 
    autosave_unlock();
 
-   if (!settings->fastforward_ratio)
+   if (!settings->floats.fastforward_ratio)
       return 0;
 
 end:

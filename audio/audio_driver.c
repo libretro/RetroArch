@@ -312,7 +312,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
 
    /* Accomodate rewind since at some point we might have two full buffers. */
    outsamples_max = max_bufsamples * AUDIO_MAX_RATIO * 
-      settings->slowmotion_ratio;
+      settings->floats.slowmotion_ratio;
 
    conv_buf = (int16_t*)malloc(outsamples_max 
          * sizeof(int16_t));
@@ -570,7 +570,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
          (int)current_audio->write_avail(audio_driver_context_audio_data);
       int      delta_mid   = avail - half_size;
       double   direction   = (double)delta_mid / half_size;
-      double   adjust      = 1.0 + settings->audio.rate_control_delta * direction;
+      double   adjust      = 1.0 + settings->floats.audio_rate_control_delta * direction;
 
 #if 0
       RARCH_LOG_OUTPUT("[Audio]: Audio buffer is %u%% full\n",
@@ -591,7 +591,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    src_data.ratio = audio_source_ratio_current;
 
    if (is_slowmotion)
-      src_data.ratio *= settings->slowmotion_ratio;
+      src_data.ratio *= settings->floats.slowmotion_ratio;
 
    audio_driver_resampler->process(audio_driver_resampler_data, &src_data);
 
@@ -751,6 +751,7 @@ void audio_driver_monitor_adjust_system_rates(void)
    settings_t                   *settings = config_get_ptr();
    const struct retro_system_timing *info = NULL;
    struct retro_system_av_info   *av_info = video_viewport_get_system_av_info();
+   float video_refresh_rate               = settings->floats.video_refresh_rate;
    
    if (av_info)
       info = (const struct retro_system_timing*)&av_info->timing;
@@ -758,11 +759,11 @@ void audio_driver_monitor_adjust_system_rates(void)
    if (!info || info->sample_rate <= 0.0)
       return;
 
-   timing_skew             = fabs(1.0f - info->fps / settings->video.refresh_rate);
+   timing_skew             = fabs(1.0f - info->fps / video_refresh_rate);
    audio_driver_input      = info->sample_rate;
 
-   if (timing_skew <= settings->audio.max_timing_skew)
-      audio_driver_input *= (settings->video.refresh_rate / info->fps);
+   if (timing_skew <= settings->floats.audio_max_timing_skew)
+      audio_driver_input *= (video_refresh_rate / info->fps);
 
    RARCH_LOG("[Audio]: Set audio input rate to: %.2f Hz.\n",
          audio_driver_input);

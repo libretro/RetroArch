@@ -712,8 +712,8 @@ static void task_overlay_handler(retro_task_t *task)
       data->active          = loader->active;
       data->hide_in_menu    = settings->bools.input_overlay_hide_in_menu;
       data->overlay_enable  = settings->bools.input_overlay_enable;
-      data->overlay_opacity = settings->input.overlay_opacity;
-      data->overlay_scale   = settings->input.overlay_scale;
+      data->overlay_opacity = settings->floats.input_overlay_opacity;
+      data->overlay_scale   = settings->floats.input_overlay_scale;
 
       task_set_data(task, data);
    }

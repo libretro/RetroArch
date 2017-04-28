@@ -751,11 +751,11 @@ static bool video_driver_init_internal(void)
             /* Do rounding here to simplify integer scale correctness. */
             unsigned base_width =
                roundf(geom->base_height * video_driver_get_aspect_ratio());
-            width  = roundf(base_width * settings->video.scale);
+            width  = roundf(base_width * settings->floats.video_scale);
          }
          else
-            width  = roundf(geom->base_width   * settings->video.scale);
-         height = roundf(geom->base_height * settings->video.scale);
+            width  = roundf(geom->base_width   * settings->floats.video_scale);
+         height = roundf(geom->base_height * settings->floats.video_scale);
       }
    }
 
@@ -1020,7 +1020,7 @@ void video_monitor_set_refresh_rate(float hz)
    RARCH_LOG("%s\n", msg);
 
    configuration_set_float(settings,
-         settings->video.refresh_rate,
+         settings->floats.video_refresh_rate,
          hz);
 }
 
@@ -1165,6 +1165,7 @@ void video_driver_monitor_adjust_system_rates(void)
    struct retro_system_av_info *av_info   =
       video_viewport_get_system_av_info();
    settings_t *settings                   = config_get_ptr();
+   float video_refresh_rate               = settings->floats.video_refresh_rate;
 
    runloop_ctl(RUNLOOP_CTL_UNSET_NONBLOCK_FORCED, NULL);
 
@@ -1174,18 +1175,18 @@ void video_driver_monitor_adjust_system_rates(void)
    if (!info || info->fps <= 0.0)
       return;
 
-   timing_skew = fabs(1.0f - info->fps / settings->video.refresh_rate);
+   timing_skew = fabs(1.0f - info->fps / video_refresh_rate);
 
    /* We don't want to adjust pitch too much. If we have extreme cases,
     * just don't readjust at all. */
-   if (timing_skew <= settings->audio.max_timing_skew)
+   if (timing_skew <= settings->floats.audio_max_timing_skew)
       return;
 
    RARCH_LOG("[Video]: Timings deviate too much. Will not adjust. (Display = %.2f Hz, Game = %.2f Hz)\n",
-         settings->video.refresh_rate,
+         video_refresh_rate,
          (float)info->fps);
 
-   if (info->fps <= settings->video.refresh_rate)
+   if (info->fps <= video_refresh_rate)
       return;
 
    /* We won't be able to do VSync reliably when game FPS > monitor FPS. */
@@ -1367,7 +1368,7 @@ void video_driver_set_viewport_config(void)
    settings_t *settings = config_get_ptr();
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
 
-   if (settings->video.aspect_ratio < 0.0f)
+   if (settings->floats.video_aspect_ratio < 0.0f)
    {
       struct retro_game_geometry *geom = &av_info->geometry;
 
@@ -1393,7 +1394,7 @@ void video_driver_set_viewport_config(void)
    else
    {
       aspectratio_lut[ASPECT_RATIO_CONFIG].value = 
-         settings->video.aspect_ratio;
+         settings->floats.video_aspect_ratio;
    }
 }
 
@@ -2237,7 +2238,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    settings_t *settings              = NULL;
    video_driver_threaded_lock();
    settings                          = config_get_ptr();
-   video_info->refresh_rate          = settings->video.refresh_rate;
+   video_info->refresh_rate          = settings->floats.video_refresh_rate;
    video_info->black_frame_insertion = 
       settings->bools.video_black_frame_insertion;
    video_info->hard_sync             = settings->bools.video_hard_sync;
@@ -2252,11 +2253,11 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->monitor_index         = settings->video.monitor_index;
    video_info->shared_context        = settings->bools.video_shared_context;
    video_info->font_enable           = settings->bools.video_font_enable;
-   video_info->font_msg_pos_x        = settings->video.msg_pos_x;
-   video_info->font_msg_pos_y        = settings->video.msg_pos_y;
-   video_info->font_msg_color_r      = settings->video.msg_color_r;
-   video_info->font_msg_color_g      = settings->video.msg_color_g;
-   video_info->font_msg_color_b      = settings->video.msg_color_b;
+   video_info->font_msg_pos_x        = settings->floats.video_msg_pos_x;
+   video_info->font_msg_pos_y        = settings->floats.video_msg_pos_y;
+   video_info->font_msg_color_r      = settings->floats.video_msg_color_r;
+   video_info->font_msg_color_g      = settings->floats.video_msg_color_g;
+   video_info->font_msg_color_b      = settings->floats.video_msg_color_b;
 
    video_info->fps_text[0]           = '\0';
 
@@ -2268,8 +2269,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->libretro_running       = false;
 #ifdef HAVE_MENU
    video_info->menu_is_alive          = menu_driver_is_alive();
-   video_info->menu_footer_opacity    = settings->menu.footer.opacity;
-   video_info->menu_header_opacity    = settings->menu.header.opacity;
+   video_info->menu_footer_opacity    = settings->floats.menu_footer_opacity;
+   video_info->menu_header_opacity    = settings->floats.menu_header_opacity;
    video_info->materialui_color_theme = settings->menu.materialui.menu_color_theme;
    video_info->menu_shader_pipeline   = settings->menu.xmb.shader_pipeline;
    video_info->xmb_theme              = settings->menu.xmb.theme;
@@ -2278,7 +2279,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->battery_level_enable   = settings->bools.menu_battery_level_enable;
    video_info->xmb_shadows_enable     = settings->bools.menu_xmb_shadows_enable;
    video_info->xmb_alpha_factor       = settings->menu.xmb.alpha_factor;
-   video_info->menu_wallpaper_opacity = settings->menu.wallpaper.opacity;
+   video_info->menu_wallpaper_opacity = settings->floats.menu_wallpaper_opacity;
 
    if (!settings->bools.menu_pause_libretro)
       video_info->libretro_running    = (rarch_ctl(RARCH_CTL_IS_INITED, NULL)

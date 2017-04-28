@@ -1096,12 +1096,12 @@ static void command_event_set_volume(float gain)
 {
    char msg[128];
    settings_t *settings      = config_get_ptr();
-   float new_volume          = settings->audio.volume + gain;
+   float new_volume          = settings->floats.audio_volume + gain;
 
    new_volume                = MAX(new_volume, -80.0f);
    new_volume                = MIN(new_volume, 12.0f);
 
-   configuration_set_float(settings, settings->audio.volume, new_volume);
+   configuration_set_float(settings, settings->floats.audio_volume, new_volume);
 
    snprintf(msg, sizeof(msg), "%s: %.1f dB",
          msg_hash_to_str(MSG_AUDIO_VOLUME),
@@ -1784,7 +1784,7 @@ static bool command_event_resize_windowed_scale(void)
       if (!window_scale || *window_scale == 0)
          return false;
 
-      configuration_set_float(settings, settings->video.scale, *window_scale);
+      configuration_set_float(settings, settings->floats.video_scale, *window_scale);
    }
 
    if (!settings->bools.video_fullscreen)
@@ -2110,7 +2110,7 @@ bool command_event(enum event_command cmd, void *data)
          {
             settings_t *settings      = config_get_ptr();
 #ifdef HAVE_OVERLAY
-            input_overlay_next(overlay_ptr, settings->input.overlay_opacity);
+            input_overlay_next(overlay_ptr, settings->floats.input_overlay_opacity);
 #endif
          }
          break;
@@ -2260,7 +2260,7 @@ bool command_event(enum event_command cmd, void *data)
          {
 #ifdef HAVE_OVERLAY
             settings_t *settings      = config_get_ptr();
-            input_overlay_set_scale_factor(overlay_ptr, settings->input.overlay_scale);
+            input_overlay_set_scale_factor(overlay_ptr, settings->floats.input_overlay_scale);
 #endif
          }
          break;
@@ -2268,7 +2268,7 @@ bool command_event(enum event_command cmd, void *data)
          {
 #ifdef HAVE_OVERLAY
             settings_t *settings      = config_get_ptr();
-            input_overlay_set_alpha_mod(overlay_ptr, settings->input.overlay_opacity);
+            input_overlay_set_alpha_mod(overlay_ptr, settings->floats.input_overlay_opacity);
 #endif
          }
          break;

@@ -1481,23 +1481,23 @@ void general_read_handler(void *data)
       switch (setting->enum_idx)
       {
          case MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA:
-            *setting->value.target.fraction = settings->audio.rate_control_delta;
+            *setting->value.target.fraction = settings->floats.audio_rate_control_delta;
             if (*setting->value.target.fraction < 0.0005)
             {
                configuration_set_bool(settings, settings->bools.audio_rate_control, false);
-               settings->audio.rate_control_delta = 0.0;
+               settings->floats.audio_rate_control_delta = 0.0;
             }
             else
             {
                configuration_set_bool(settings, settings->bools.audio_rate_control, true);
-               settings->audio.rate_control_delta = *setting->value.target.fraction;
+               settings->floats.audio_rate_control_delta = *setting->value.target.fraction;
             }
             break;
          case MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW:
-            *setting->value.target.fraction = settings->audio.max_timing_skew;
+            *setting->value.target.fraction = settings->floats.audio_max_timing_skew;
             break;
          case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
-            *setting->value.target.fraction = settings->video.refresh_rate;
+            *setting->value.target.fraction = settings->floats.video_refresh_rate;
             break;
          case MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX:
             *setting->value.target.integer = settings->input.joypad_map[0];
@@ -1596,19 +1596,19 @@ void general_write_handler(void *data)
          }
          break;
       case MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW:
-         configuration_set_float(settings, settings->audio.max_timing_skew,
+         configuration_set_float(settings, settings->floats.audio_max_timing_skew,
                *setting->value.target.fraction);
          break;
       case MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA:
          if (*setting->value.target.fraction < 0.0005)
          {
             configuration_set_bool(settings, settings->bools.audio_rate_control, false);
-            settings->audio.rate_control_delta = 0.0;
+            settings->floats.audio_rate_control_delta = 0.0;
          }
          else
          {
             configuration_set_bool(settings, settings->bools.audio_rate_control, true);
-            settings->audio.rate_control_delta = *setting->value.target.fraction;
+            settings->floats.audio_rate_control_delta = *setting->value.target.fraction;
          }
          break;
       case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
@@ -1618,8 +1618,8 @@ void general_write_handler(void *data)
          rarch_cmd = CMD_EVENT_VIDEO_SET_BLOCKING_STATE;
          break;
       case MENU_ENUM_LABEL_VIDEO_SCALE:
-         settings->modified    = true;
-         settings->video.scale = roundf(*setting->value.target.fraction);
+         settings->modified           = true;
+         settings->floats.video_scale = roundf(*setting->value.target.fraction);
 
          if (!settings->bools.video_fullscreen)
             rarch_cmd = CMD_EVENT_REINIT;
@@ -3189,7 +3189,7 @@ static bool setting_append_list(
          }
          CONFIG_FLOAT(
                list, list_info,
-               &settings->video.refresh_rate,
+               &settings->floats.video_refresh_rate,
                MENU_ENUM_LABEL_VIDEO_REFRESH_RATE,
                MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
                refresh_rate,
@@ -3204,7 +3204,7 @@ static bool setting_append_list(
 
          CONFIG_FLOAT(
                list, list_info,
-               &settings->video.refresh_rate,
+               &settings->floats.video_refresh_rate,
                MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO,
                MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
                refresh_rate,
@@ -3359,7 +3359,7 @@ static bool setting_append_list(
          {
             CONFIG_FLOAT(
                   list, list_info,
-                  &settings->video.scale,
+                  &settings->floats.video_scale,
                   MENU_ENUM_LABEL_VIDEO_SCALE,
                   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
                   scale,
@@ -3727,7 +3727,7 @@ static bool setting_append_list(
 
          CONFIG_FLOAT(
                list, list_info,
-               &settings->audio.volume,
+               &settings->floats.audio_volume,
                MENU_ENUM_LABEL_AUDIO_VOLUME,
                MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
                audio_volume,
@@ -3803,7 +3803,7 @@ static bool setting_append_list(
 
          CONFIG_FLOAT(
                list, list_info,
-               &settings->audio.rate_control_delta,
+               &settings->floats.audio_rate_control_delta,
                MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA,
                MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
                rate_control_delta,
@@ -3825,7 +3825,7 @@ static bool setting_append_list(
 
          CONFIG_FLOAT(
                list, list_info,
-               &settings->audio.max_timing_skew,
+               &settings->floats.audio_max_timing_skew,
                MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW,
                MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
                max_timing_skew,
@@ -4185,7 +4185,7 @@ static bool setting_append_list(
 
             CONFIG_FLOAT(
                   list, list_info,
-                  &settings->input.axis_threshold,
+                  &settings->floats.input_axis_threshold,
                   MENU_ENUM_LABEL_INPUT_AXIS_THRESHOLD,
                   MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD,
                   axis_threshold,
@@ -4432,7 +4432,7 @@ static bool setting_append_list(
 
          CONFIG_FLOAT(
                list, list_info,
-               &settings->fastforward_ratio,
+               &settings->floats.fastforward_ratio,
                MENU_ENUM_LABEL_FASTFORWARD_RATIO,
                MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
                fastforward_ratio,
@@ -4447,7 +4447,7 @@ static bool setting_append_list(
 
          CONFIG_FLOAT(
                list, list_info,
-               &settings->slowmotion_ratio,
+               &settings->floats.slowmotion_ratio,
                MENU_ENUM_LABEL_SLOWMOTION_RATIO,
                MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
                slowmotion_ratio,
@@ -4521,7 +4521,7 @@ static bool setting_append_list(
 
          CONFIG_FLOAT(
                list, list_info,
-               &settings->video.font_size,
+               &settings->floats.video_font_size,
                MENU_ENUM_LABEL_VIDEO_FONT_SIZE,
                MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE,
                font_size,
@@ -4535,7 +4535,7 @@ static bool setting_append_list(
 
          CONFIG_FLOAT(
                list, list_info,
-               &settings->video.msg_pos_x,
+               &settings->floats.video_msg_pos_x,
                MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X,
                MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
                message_pos_offset_x,
@@ -4549,7 +4549,7 @@ static bool setting_append_list(
 
          CONFIG_FLOAT(
                list, list_info,
-               &settings->video.msg_pos_y,
+               &settings->floats.video_msg_pos_y,
                MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_Y,
                MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
                message_pos_offset_y,
@@ -4642,7 +4642,7 @@ static bool setting_append_list(
 
          CONFIG_FLOAT(
                list, list_info,
-               &settings->input.overlay_opacity,
+               &settings->floats.input_overlay_opacity,
                MENU_ENUM_LABEL_OVERLAY_OPACITY,
                MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
                0.7f,
@@ -4658,7 +4658,7 @@ static bool setting_append_list(
 
          CONFIG_FLOAT(
                list, list_info,
-               &settings->input.overlay_scale,
+               &settings->floats.input_overlay_scale,
                MENU_ENUM_LABEL_OVERLAY_SCALE,
                MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE,
                1.0f,
@@ -4708,7 +4708,7 @@ static bool setting_append_list(
 
             CONFIG_FLOAT(
                   list, list_info,
-                  &settings->menu.wallpaper.opacity,
+                  &settings->floats.menu_wallpaper_opacity,
                   MENU_ENUM_LABEL_MENU_WALLPAPER_OPACITY,
                   MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
                   menu_wallpaper_opacity,
@@ -5193,7 +5193,7 @@ static bool setting_append_list(
 
             CONFIG_FLOAT(
                   list, list_info,
-                  &settings->menu.header.opacity,
+                  &settings->floats.menu_header_opacity,
                   MENU_ENUM_LABEL_MATERIALUI_MENU_HEADER_OPACITY,
                   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_HEADER_OPACITY,
                   menu_header_opacity,
@@ -5207,7 +5207,7 @@ static bool setting_append_list(
 
             CONFIG_FLOAT(
                   list, list_info,
-                  &settings->menu.footer.opacity,
+                  &settings->floats.menu_footer_opacity,
                   MENU_ENUM_LABEL_MATERIALUI_MENU_FOOTER_OPACITY,
                   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY,
                   menu_footer_opacity,

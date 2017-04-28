@@ -893,27 +893,27 @@ static struct config_float_setting *populate_settings_float(settings_t *settings
    unsigned count = 0;
    struct config_float_setting       *tmp = NULL;
 
-   SETTING_FLOAT("video_aspect_ratio",       &settings->video.aspect_ratio, true, aspect_ratio, false);
-   SETTING_FLOAT("video_scale",              &settings->video.scale, false, 0.0f, false);
-   SETTING_FLOAT("video_refresh_rate",       &settings->video.refresh_rate, true, refresh_rate, false);
-   SETTING_FLOAT("audio_rate_control_delta", &settings->audio.rate_control_delta, true, rate_control_delta, false);
-   SETTING_FLOAT("audio_max_timing_skew",    &settings->audio.max_timing_skew, true, max_timing_skew, false);
-   SETTING_FLOAT("audio_volume",             &settings->audio.volume, true, audio_volume, false);
+   SETTING_FLOAT("video_aspect_ratio",       &settings->floats.video_aspect_ratio, true, aspect_ratio, false);
+   SETTING_FLOAT("video_scale",              &settings->floats.video_scale, false, 0.0f, false);
+   SETTING_FLOAT("video_refresh_rate",       &settings->floats.video_refresh_rate, true, refresh_rate, false);
+   SETTING_FLOAT("audio_rate_control_delta", &settings->floats.audio_rate_control_delta, true, rate_control_delta, false);
+   SETTING_FLOAT("audio_max_timing_skew",    &settings->floats.audio_max_timing_skew, true, max_timing_skew, false);
+   SETTING_FLOAT("audio_volume",             &settings->floats.audio_volume, true, audio_volume, false);
 #ifdef HAVE_OVERLAY
-   SETTING_FLOAT("input_overlay_opacity",    &settings->input.overlay_opacity, true, 0.7f, false);
-   SETTING_FLOAT("input_overlay_scale",      &settings->input.overlay_scale, true, 1.0f, false);
+   SETTING_FLOAT("input_overlay_opacity",    &settings->floats.input_overlay_opacity, true, 0.7f, false);
+   SETTING_FLOAT("input_overlay_scale",      &settings->floats.input_overlay_scale, true, 1.0f, false);
 #endif
 #ifdef HAVE_MENU
-   SETTING_FLOAT("menu_wallpaper_opacity",   &settings->menu.wallpaper.opacity, true, menu_wallpaper_opacity, false);
-   SETTING_FLOAT("menu_footer_opacity",      &settings->menu.footer.opacity,    true, menu_footer_opacity, false);
-   SETTING_FLOAT("menu_header_opacity",      &settings->menu.header.opacity,    true, menu_header_opacity, false);
+   SETTING_FLOAT("menu_wallpaper_opacity",   &settings->floats.menu_wallpaper_opacity, true, menu_wallpaper_opacity, false);
+   SETTING_FLOAT("menu_footer_opacity",      &settings->floats.menu_footer_opacity,    true, menu_footer_opacity, false);
+   SETTING_FLOAT("menu_header_opacity",      &settings->floats.menu_header_opacity,    true, menu_header_opacity, false);
 #endif
-   SETTING_FLOAT("video_message_pos_x",      &settings->video.msg_pos_x,      true, message_pos_offset_x, false);
-   SETTING_FLOAT("video_message_pos_y",      &settings->video.msg_pos_y,      true, message_pos_offset_y, false);
-   SETTING_FLOAT("video_font_size",          &settings->video.font_size,      true, font_size, false);
-   SETTING_FLOAT("fastforward_ratio",        &settings->fastforward_ratio,    true, fastforward_ratio, false);
-   SETTING_FLOAT("slowmotion_ratio",         &settings->slowmotion_ratio,     true, slowmotion_ratio, false);
-   SETTING_FLOAT("input_axis_threshold",     &settings->input.axis_threshold, true, axis_threshold, false);
+   SETTING_FLOAT("video_message_pos_x",      &settings->floats.video_msg_pos_x,      true, message_pos_offset_x, false);
+   SETTING_FLOAT("video_message_pos_y",      &settings->floats.video_msg_pos_y,      true, message_pos_offset_y, false);
+   SETTING_FLOAT("video_font_size",          &settings->floats.video_font_size,      true, font_size, false);
+   SETTING_FLOAT("fastforward_ratio",        &settings->floats.fastforward_ratio,    true, fastforward_ratio, false);
+   SETTING_FLOAT("slowmotion_ratio",         &settings->floats.slowmotion_ratio,     true, slowmotion_ratio, false);
+   SETTING_FLOAT("input_axis_threshold",     &settings->floats.input_axis_threshold, true, axis_threshold, false);
 
    *size = count;
 
@@ -1111,7 +1111,7 @@ static void config_set_defaults(void)
 #else
    configuration_set_bool(settings, settings->bools.multimedia_builtin_mediaplayer_enable, false);
 #endif
-   settings->video.scale                       = scale;
+   settings->floats.video_scale                = scale;
 
    if (rarch_ctl(RARCH_CTL_IS_FORCE_FULLSCREEN, NULL))
    {
@@ -1121,13 +1121,13 @@ static void config_set_defaults(void)
    if (g_defaults.settings.video_threaded_enable != video_threaded)
       settings->bools.video_threaded           = g_defaults.settings.video_threaded_enable;
 
-   settings->video.msg_color_r                 = ((message_color >> 16) & 0xff) / 255.0f;
-   settings->video.msg_color_g                 = ((message_color >>  8) & 0xff) / 255.0f;
-   settings->video.msg_color_b                 = ((message_color >>  0) & 0xff) / 255.0f;
+   settings->floats.video_msg_color_r          = ((message_color >> 16) & 0xff) / 255.0f;
+   settings->floats.video_msg_color_g          = ((message_color >>  8) & 0xff) / 255.0f;
+   settings->floats.video_msg_color_b          = ((message_color >>  0) & 0xff) / 255.0f;
 
    if (g_defaults.settings.video_refresh_rate > 0.0 &&
          g_defaults.settings.video_refresh_rate != refresh_rate)
-      settings->video.refresh_rate             = g_defaults.settings.video_refresh_rate;
+      settings->floats.video_refresh_rate      = g_defaults.settings.video_refresh_rate;
 
    if (audio_device)
       strlcpy(settings->audio.device,
@@ -1138,7 +1138,7 @@ static void config_set_defaults(void)
 
    settings->audio.latency                     = g_defaults.settings.out_latency;
 
-   audio_driver_set_volume_gain(db_to_gain(settings->audio.volume));
+   audio_driver_set_volume_gain(db_to_gain(settings->floats.audio_volume));
 
    settings->rewind_buffer_size                = rewind_buffer_size;
 
@@ -1937,9 +1937,9 @@ static bool config_load_file(const char *path, bool set_defaults,
 
    if (config_get_hex(conf, "video_message_color", &msg_color))
    {
-      settings->video.msg_color_r = ((msg_color >> 16) & 0xff) / 255.0f;
-      settings->video.msg_color_g = ((msg_color >>  8) & 0xff) / 255.0f;
-      settings->video.msg_color_b = ((msg_color >>  0) & 0xff) / 255.0f;
+      settings->floats.video_msg_color_r = ((msg_color >> 16) & 0xff) / 255.0f;
+      settings->floats.video_msg_color_g = ((msg_color >>  8) & 0xff) / 255.0f;
+      settings->floats.video_msg_color_b = ((msg_color >>  0) & 0xff) / 255.0f;
    }
 #ifdef HAVE_MENU
    config_get_hex_base(conf, "menu_entry_normal_color",
@@ -2016,7 +2016,7 @@ static bool config_load_file(const char *path, bool set_defaults,
    settings->video.swap_interval = MAX(settings->video.swap_interval, 1);
    settings->video.swap_interval = MIN(settings->video.swap_interval, 4);
 
-   audio_driver_set_volume_gain(db_to_gain(settings->audio.volume));
+   audio_driver_set_volume_gain(db_to_gain(settings->floats.audio_volume));
 
    if (string_is_empty(settings->path.content_history))
    {
@@ -2147,16 +2147,16 @@ static bool config_load_file(const char *path, bool set_defaults,
    if (memcmp(settings->directory.system, "default", 7) == 0)
       *settings->directory.system = '\0';
 
-   if (settings->slowmotion_ratio < 1.0f)
+   if (settings->floats.slowmotion_ratio < 1.0f)
    {
-      configuration_set_float(settings, settings->slowmotion_ratio, 1.0f);
+      configuration_set_float(settings, settings->floats.slowmotion_ratio, 1.0f);
    }
 
    /* Sanitize fastforward_ratio value - previously range was -1
     * and up (with 0 being skipped) */
-   if (settings->fastforward_ratio < 0.0f)
+   if (settings->floats.fastforward_ratio < 0.0f)
    {
-      configuration_set_float(settings, settings->fastforward_ratio, 0.0f);
+      configuration_set_float(settings, settings->floats.fastforward_ratio, 0.0f);
    }
 
 #ifdef HAVE_LAKKA
@@ -3084,9 +3084,9 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "perfcnt_enable",
          runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL));
 
-   msg_color = (((int)(settings->video.msg_color_r * 255.0f) & 0xff) << 16) +
-               (((int)(settings->video.msg_color_g * 255.0f) & 0xff) <<  8) +
-               (((int)(settings->video.msg_color_b * 255.0f) & 0xff));
+   msg_color = (((int)(settings->floats.video_msg_color_r * 255.0f) & 0xff) << 16) +
+               (((int)(settings->floats.video_msg_color_g * 255.0f) & 0xff) <<  8) +
+               (((int)(settings->floats.video_msg_color_b * 255.0f) & 0xff));
 
    /* Hexadecimal settings */
    config_set_hex(conf, "video_message_color", msg_color);

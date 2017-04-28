@@ -112,9 +112,9 @@ static void sdl2_init_font(sdl2_video_t *vid, const char *font_path,
       return;
    }
 
-   r = settings->video.msg_color_r * 255;
-   g = settings->video.msg_color_g * 255;
-   b = settings->video.msg_color_b * 255;
+   r = settings->floats.video_msg_color_r * 255;
+   g = settings->floats.video_msg_color_g * 255;
+   b = settings->floats.video_msg_color_b * 255;
 
    r = (r < 0) ? 0 : (r > 255 ? 255 : r);
    g = (g < 0) ? 0 : (g > 255 ? 255 : g);
@@ -168,8 +168,8 @@ static void sdl2_render_msg(sdl2_video_t *vid, const char *msg)
    if (!vid->font_data)
       return;
 
-   x       = settings->video.msg_pos_x * width;
-   y       = (1.0f - settings->video.msg_pos_y) * height;
+   x       = settings->floats.video_msg_pos_x * width;
+   y       = (1.0f - settings->floats.video_msg_pos_y) * height;
    delta_x = 0;
    delta_y = 0;
 
@@ -450,7 +450,7 @@ static void *sdl2_gfx_init(const video_info_t *video,
       SDL_ShowCursor(SDL_DISABLE);
 
    sdl2_init_renderer(vid);
-   sdl2_init_font(vid, settings->path.font, settings->video.font_size);
+   sdl2_init_font(vid, settings->path.font, settings->floats.video_font_size);
 
    sdl2_gfx_set_handles(vid);
 
