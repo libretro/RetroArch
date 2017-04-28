@@ -1403,7 +1403,7 @@ static bool command_event_init_core(enum rarch_core_type *data)
    if (!event_init_content())
       return false;
 
-   if (!core_load(settings->input.poll_type_behavior))
+   if (!core_load(settings->uints.input_poll_type_behavior))
       return false;
 
    runloop_ctl(RUNLOOP_CTL_SET_FRAME_LIMIT, NULL);
@@ -2174,8 +2174,11 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_HISTORY_INIT:
          {
-            settings_t *settings      = config_get_ptr();
+            settings_t *settings          = config_get_ptr();
+            unsigned content_history_size = settings->uints.content_history_size;
+
             command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
+
             if (!settings->bools.history_list_enable)
                return false;
 
@@ -2184,7 +2187,7 @@ bool command_event(enum event_command cmd, void *data)
                   settings->path.content_history);
             g_defaults.content_history = playlist_init(
                   settings->path.content_history,
-                  settings->content_history_size);
+                  content_history_size);
 
 #ifdef HAVE_FFMPEG
             RARCH_LOG("%s: [%s].\n",
@@ -2192,14 +2195,14 @@ bool command_event(enum event_command cmd, void *data)
                   settings->path.content_music_history);
             g_defaults.music_history = playlist_init(
                   settings->path.content_music_history,
-                  settings->content_history_size);
+                  content_history_size);
 
             RARCH_LOG("%s: [%s].\n",
                   msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
                   settings->path.content_video_history);
             g_defaults.video_history = playlist_init(
                   settings->path.content_video_history,
-                  settings->content_history_size);
+                  content_history_size);
 #endif
 
 #ifdef HAVE_IMAGEVIEWER
@@ -2208,7 +2211,7 @@ bool command_event(enum event_command cmd, void *data)
                   settings->path.content_image_history);
             g_defaults.image_history = playlist_init(
                   settings->path.content_image_history,
-                  settings->content_history_size);
+                  content_history_size);
 #endif
          }
          break;
@@ -2444,7 +2447,7 @@ bool command_event(enum event_command cmd, void *data)
 
             if (!init_netplay(
                      NULL, hostname ? hostname : settings->netplay.server,
-                     settings->netplay.port))
+                     settings->uints.netplay_port))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                return false;
@@ -2458,7 +2461,7 @@ bool command_event(enum event_command cmd, void *data)
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
             if (!init_netplay(
-                     data, NULL, settings->netplay.port))
+                     data, NULL, settings->uints.netplay_port))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                return false;

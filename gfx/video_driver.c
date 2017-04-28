@@ -721,7 +721,7 @@ static bool video_driver_init_internal(void)
    /* Update CUSTOM viewport. */
    custom_vp = video_viewport_get_custom();
 
-   if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+   if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
       float default_aspect = aspectratio_lut[ASPECT_RATIO_CORE].value;
       aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
@@ -730,19 +730,19 @@ static bool video_driver_init_internal(void)
    }
 
    video_driver_set_aspect_ratio_value(
-      aspectratio_lut[settings->video.aspect_ratio_idx].value);
+      aspectratio_lut[settings->uints.video_aspect_ratio_idx].value);
 
    if (settings->bools.video_fullscreen)
    {
-      width  = settings->video.fullscreen_x;
-      height = settings->video.fullscreen_y;
+      width  = settings->uints.video_fullscreen_x;
+      height = settings->uints.video_fullscreen_y;
    }
    else
    {
-      if(settings->video.window_x || settings->video.window_y)
+      if(settings->uints.video_window_x || settings->uints.video_window_y)
       {
-         width  = settings->video.window_x;
-         height = settings->video.window_y;
+         width  = settings->uints.video_window_x;
+         height = settings->uints.video_window_y;
       }
       else
       {
@@ -780,7 +780,7 @@ static bool video_driver_init_internal(void)
    video.vsync         = settings->bools.video_vsync && !runloop_ctl(RUNLOOP_CTL_IS_NONBLOCK_FORCED, NULL);
    video.force_aspect  = settings->bools.video_force_aspect;
 #ifdef GEKKO
-   video.viwidth       = settings->video.viwidth;
+   video.viwidth       = settings->uints.video_viwidth;
    video.vfilter       = settings->bools.video_vfilter;
 #endif
    video.smooth        = settings->bools.video_smooth;
@@ -788,7 +788,7 @@ static bool video_driver_init_internal(void)
    video.rgb32         = video_driver_state_filter ?
       video_driver_state_out_rgb32 :
       (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
-   video.swap_interval = settings->video.swap_interval;
+   video.swap_interval = settings->uints.video_swap_interval;
    video.font_enable   = settings->bools.video_font_enable;
 
    /* Reset video frame count */
@@ -841,7 +841,7 @@ static bool video_driver_init_internal(void)
    system              = runloop_get_system_info();
 
    video_driver_set_rotation(
-            (settings->video.rotation + system->rotation) % 4);
+            (settings->uints.video_rotation + system->rotation) % 4);
 
    current_video->suppress_screensaver(video_driver_data,
          settings->bools.ui_suspend_screensaver_enable);
@@ -1544,7 +1544,7 @@ void video_driver_set_aspect_ratio(void)
    if (!video_driver_poke || !video_driver_poke->set_aspect_ratio)
       return;
    video_driver_poke->set_aspect_ratio(
-         video_driver_data, settings->video.aspect_ratio_idx);
+         video_driver_data, settings->uints.video_aspect_ratio_idx);
 }
 
 void video_driver_show_mouse(void)
@@ -1921,7 +1921,7 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
    int padding_y        = 0;
    settings_t *settings = config_get_ptr();
 
-   if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+   if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
       struct video_viewport *custom = video_viewport_get_custom();
 
@@ -2242,15 +2242,15 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->black_frame_insertion = 
       settings->bools.video_black_frame_insertion;
    video_info->hard_sync             = settings->bools.video_hard_sync;
-   video_info->hard_sync_frames      = settings->video.hard_sync_frames;
+   video_info->hard_sync_frames      = settings->uints.video_hard_sync_frames;
    video_info->fps_show              = settings->bools.video_fps_show;
    video_info->scale_integer         = settings->bools.video_scale_integer;
-   video_info->aspect_ratio_idx      = settings->video.aspect_ratio_idx;
+   video_info->aspect_ratio_idx      = settings->uints.video_aspect_ratio_idx;
    video_info->post_filter_record    = settings->bools.video_post_filter_record;
-   video_info->max_swapchain_images  = settings->video.max_swapchain_images;
+   video_info->max_swapchain_images  = settings->uints.video_max_swapchain_images;
    video_info->windowed_fullscreen   = settings->bools.video_windowed_fullscreen;
    video_info->fullscreen            = settings->bools.video_fullscreen;
-   video_info->monitor_index         = settings->video.monitor_index;
+   video_info->monitor_index         = settings->uints.video_monitor_index;
    video_info->shared_context        = settings->bools.video_shared_context;
    video_info->font_enable           = settings->bools.video_font_enable;
    video_info->font_msg_pos_x        = settings->floats.video_msg_pos_x;
@@ -2271,14 +2271,14 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->menu_is_alive          = menu_driver_is_alive();
    video_info->menu_footer_opacity    = settings->floats.menu_footer_opacity;
    video_info->menu_header_opacity    = settings->floats.menu_header_opacity;
-   video_info->materialui_color_theme = settings->menu.materialui.menu_color_theme;
-   video_info->menu_shader_pipeline   = settings->menu.xmb.shader_pipeline;
-   video_info->xmb_theme              = settings->menu.xmb.theme;
-   video_info->xmb_color_theme        = settings->menu.xmb.menu_color_theme;
+   video_info->materialui_color_theme = settings->uints.menu_materialui_color_theme;
+   video_info->menu_shader_pipeline   = settings->uints.menu_xmb_shader_pipeline;
+   video_info->xmb_theme              = settings->uints.menu_xmb_theme;
+   video_info->xmb_color_theme        = settings->uints.menu_xmb_color_theme;
    video_info->timedate_enable        = settings->bools.menu_timedate_enable;
    video_info->battery_level_enable   = settings->bools.menu_battery_level_enable;
    video_info->xmb_shadows_enable     = settings->bools.menu_xmb_shadows_enable;
-   video_info->xmb_alpha_factor       = settings->menu.xmb.alpha_factor;
+   video_info->xmb_alpha_factor       = settings->uints.menu_xmb_alpha_factor;
    video_info->menu_wallpaper_opacity = settings->floats.menu_wallpaper_opacity;
 
    if (!settings->bools.menu_pause_libretro)

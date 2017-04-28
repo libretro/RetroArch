@@ -65,7 +65,7 @@ bool input_remapping_load_file(void *data, const char *path)
                key_strings[j], '_', sizeof(key_ident[j]));
          if (config_get_int(conf, key_ident[j], &key_remap)
                && key_remap < RARCH_FIRST_CUSTOM_BIND)
-            settings->input.remap_ids[i][j] = key_remap;
+            settings->uints.input_remap_ids[i][j] = key_remap;
       }
 
       for (j = 0; j < 4; j++)
@@ -80,7 +80,7 @@ bool input_remapping_load_file(void *data, const char *path)
 
          if (config_get_int(conf, key_ident[RARCH_FIRST_CUSTOM_BIND + j],
                   &key_remap) && (key_remap < 4))
-            settings->input.remap_ids[i][RARCH_FIRST_CUSTOM_BIND + j] =
+            settings->uints.input_remap_ids[i][RARCH_FIRST_CUSTOM_BIND + j] =
                key_remap;
       }
    }
@@ -123,7 +123,7 @@ bool input_remapping_save_file(const char *path)
          return false;
    }
 
-   for (i = 0; i < settings->input.max_users; i++)
+   for (i = 0; i < settings->uints.input_max_users; i++)
    {
       char buf[64];
       char key_ident[RARCH_FIRST_CUSTOM_BIND + 4][128]   = {{0}};
@@ -145,15 +145,15 @@ bool input_remapping_save_file(const char *path)
          /* only save values that have been modified */
          if(j < RARCH_FIRST_CUSTOM_BIND)
          {
-            if(settings->input.remap_ids[i][j] != j)
-               config_set_int(conf, key_ident[j], settings->input.remap_ids[i][j]);
+            if(settings->uints.input_remap_ids[i][j] != j)
+               config_set_int(conf, key_ident[j], settings->uints.input_remap_ids[i][j]);
             else
                config_unset(conf,key_ident[j]);
          }
          else
          {
-            if(settings->input.remap_ids[i][j] != j - RARCH_FIRST_CUSTOM_BIND)
-               config_set_int(conf, key_ident[j], settings->input.remap_ids[i][j]);
+            if(settings->uints.input_remap_ids[i][j] != j - RARCH_FIRST_CUSTOM_BIND)
+               config_set_int(conf, key_ident[j], settings->uints.input_remap_ids[i][j]);
             else
                config_unset(conf,key_ident[j]);
          }
@@ -176,9 +176,9 @@ void input_remapping_set_defaults(void)
       for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
       {
          const struct  retro_keybind *keybind = &input_config_binds[i][j];
-         settings->input.remap_ids[i][j]      = keybind->id;
+         settings->uints.input_remap_ids[i][j]      = keybind->id;
       }
       for (j = 0; j < 4; j++)
-         settings->input.remap_ids[i][RARCH_FIRST_CUSTOM_BIND + j] = j;
+         settings->uints.input_remap_ids[i][RARCH_FIRST_CUSTOM_BIND + j] = j;
    }
 }

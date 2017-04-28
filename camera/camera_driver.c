@@ -224,10 +224,10 @@ bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data)
         camera_data = camera_driver->init(
               *settings->camera.device ? settings->camera.device : NULL,
               camera_cb.caps,
-              settings->camera.width ?
-              settings->camera.width : camera_cb.width,
-              settings->camera.height ?
-              settings->camera.height : camera_cb.height);
+              settings->uints.camera_width ?
+              settings->uints.camera_width : camera_cb.width,
+              settings->uints.camera_height ?
+              settings->uints.camera_height : camera_cb.height);
 
         if (!camera_data)
         {

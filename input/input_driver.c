@@ -270,7 +270,7 @@ void input_poll(void)
 {
    size_t i;
    settings_t *settings           = config_get_ptr();
-   unsigned max_users             = settings->input.max_users;
+   unsigned max_users             = settings->uints.input_max_users;
    float axis_threshold           = settings->floats.input_axis_threshold;
    
    current_input->poll(current_input_data);
@@ -286,7 +286,7 @@ void input_poll(void)
       {
          rarch_joypad_info_t joypad_info;
          joypad_info.axis_threshold = axis_threshold;
-         joypad_info.joy_idx        = settings->input.joypad_map[i];
+         joypad_info.joy_idx        = settings->uints.input_joypad_map[i];
          joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
 
          input_driver_turbo_btns.frame_enable[i] = current_input->input_state(
@@ -303,7 +303,7 @@ void input_poll(void)
       input_poll_overlay(
             overlay_ptr,
             settings->floats.input_overlay_opacity,
-            settings->input.analog_dpad_mode[0],
+            settings->uints.input_analog_dpad_mode[0],
             axis_threshold);
 #endif
 
@@ -357,14 +357,14 @@ int16_t input_state(unsigned port, unsigned device,
          {
             case RETRO_DEVICE_JOYPAD:
                if (id < RARCH_FIRST_CUSTOM_BIND)
-                  id = settings->input.remap_ids[port][id];
+                  id = settings->uints.input_remap_ids[port][id];
                break;
             case RETRO_DEVICE_ANALOG:
                if (idx < 2 && id < 2)
                {
                   unsigned new_id = RARCH_FIRST_CUSTOM_BIND + (idx * 2 + id);
 
-                  new_id = settings->input.remap_ids[port][new_id];
+                  new_id = settings->uints.input_remap_ids[port][new_id];
                   idx   = (new_id & 2) >> 1;
                   id    = new_id & 1;
                }
@@ -381,7 +381,7 @@ int16_t input_state(unsigned port, unsigned device,
             rarch_joypad_info_t joypad_info;
 
             joypad_info.axis_threshold = settings->floats.input_axis_threshold;
-            joypad_info.joy_idx        = settings->input.joypad_map[port];
+            joypad_info.joy_idx        = settings->uints.input_joypad_map[port];
             joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
 
             res = current_input->input_state(
@@ -420,8 +420,8 @@ int16_t input_state(unsigned port, unsigned device,
          {
             /* if turbo button is enabled for this key ID */
             res = res && ((input_driver_turbo_btns.count 
-                     % settings->input.turbo_period)
-                  < settings->input.turbo_duty_cycle);
+                     % settings->uints.input_turbo_period)
+                  < settings->uints.input_turbo_duty_cycle);
          }
       }
    }
@@ -478,13 +478,13 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
    unsigned i;
    const struct retro_keybind *binds[MAX_USERS];
    settings_t *settings = config_get_ptr();
-   unsigned max_users   = settings->input.max_users;
+   unsigned max_users   = settings->uints.input_max_users;
 
    for (i = 0; i < max_users; i++)
    {
       struct retro_keybind *general_binds = input_config_binds[i];
       struct retro_keybind *auto_binds    = input_autoconf_binds[i];
-      enum analog_dpad_mode dpad_mode     = (enum analog_dpad_mode)settings->input.analog_dpad_mode[i];
+      enum analog_dpad_mode dpad_mode     = (enum analog_dpad_mode)settings->uints.input_analog_dpad_mode[i];
       binds[i]                            = input_config_binds[i];
 
       if (dpad_mode == ANALOG_DPAD_NONE)
@@ -505,7 +505,7 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
 
          if (binds[0][id].valid)
          {
-            joypad_info.joy_idx        = settings->input.joypad_map[0];
+            joypad_info.joy_idx        = settings->uints.input_joypad_map[0];
             joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
             *input1 |= (current_input->input_state(current_input_data, joypad_info,
                      binds,
@@ -513,7 +513,7 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
          }
          if (binds[1][id].valid)
          {
-            joypad_info.joy_idx        = settings->input.joypad_map[1];
+            joypad_info.joy_idx        = settings->uints.input_joypad_map[1];
             joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
             *input2 |= (current_input->input_state(current_input_data, joypad_info,
                      binds,
@@ -556,7 +556,7 @@ static INLINE bool input_menu_keys_pressed_internal(
          const input_device_driver_t *sec   = current_input->get_sec_joypad_driver 
             ? current_input->get_sec_joypad_driver(current_input_data) : NULL;
 
-         joypad_info.joy_idx        = settings->input.joypad_map[port];
+         joypad_info.joy_idx        = settings->uints.input_joypad_map[port];
          joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
          joypad_info.axis_threshold = settings->floats.input_axis_threshold;
 
@@ -678,7 +678,7 @@ uint64_t input_menu_keys_pressed(
       settings_t     *settings                     = config_get_ptr();
       const struct retro_keybind *binds_norm       = NULL;
       const struct retro_keybind *binds_auto       = NULL;
-      unsigned max_users                           = settings->input.max_users;
+      unsigned max_users                           = settings->uints.input_max_users;
 
       if (settings->bools.menu_unified_controls && !menu_input_dialog_get_display_kb())
          return input_keys_pressed(old_input, last_input,
@@ -710,7 +710,7 @@ uint64_t input_menu_keys_pressed(
 
       if (check_input_driver_block_hotkey(binds_norm, binds_auto))
       {
-         joypad_info.joy_idx               = settings->input.joypad_map[0];
+         joypad_info.joy_idx               = settings->uints.input_joypad_map[0];
          joypad_info.auto_binds            = input_autoconf_binds[joypad_info.joy_idx];
          const struct retro_keybind *htkey = &input_config_binds[0][RARCH_ENABLE_HOTKEY];
 
@@ -725,9 +725,9 @@ uint64_t input_menu_keys_pressed(
 #ifdef HAVE_MENU
       {
          const struct retro_keybind *mtkey = &input_config_binds[0][RARCH_MENU_TOGGLE];
-         if (  ((settings->input.menu_toggle_gamepad_combo != INPUT_TOGGLE_NONE) &&
+         if (  ((settings->uints.input_menu_toggle_gamepad_combo != INPUT_TOGGLE_NONE) &&
                   input_driver_toggle_button_combo(
-                     settings->input.menu_toggle_gamepad_combo, &old_input))
+                     settings->uints.input_menu_toggle_gamepad_combo, &old_input))
                || input_menu_keys_pressed_internal(
                   binds, settings, joypad_info, RARCH_MENU_TOGGLE, max_users,
                   mtkey->valid,
@@ -837,7 +837,7 @@ static INLINE bool input_keys_pressed_internal(
    {
       bool bind_valid            = binds[i].valid;
 
-      joypad_info.joy_idx        = settings->input.joypad_map[0];
+      joypad_info.joy_idx        = settings->uints.input_joypad_map[0];
       joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
       joypad_info.axis_threshold = settings->floats.input_axis_threshold;
 
@@ -927,7 +927,7 @@ uint64_t input_keys_pressed(
 
    if (check_input_driver_block_hotkey(binds_norm, binds_auto))
    {
-      joypad_info.joy_idx        = settings->input.joypad_map[0];
+      joypad_info.joy_idx        = settings->uints.input_joypad_map[0];
       joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
       if (     enable_hotkey->valid
             && current_input->input_state(
@@ -945,7 +945,7 @@ uint64_t input_keys_pressed(
    if (check_input_driver_block_hotkey(
             focus_normal, focus_binds_auto) && game_focus_toggle_valid)
    {
-      joypad_info.joy_idx        = settings->input.joypad_map[0];
+      joypad_info.joy_idx        = settings->uints.input_joypad_map[0];
       joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
       if (current_input->input_state(current_input_data, joypad_info, &binds, 0,
                RETRO_DEVICE_JOYPAD, 0, RARCH_GAME_FOCUS_TOGGLE))
@@ -954,8 +954,8 @@ uint64_t input_keys_pressed(
 
 #ifdef HAVE_MENU
    if (
-         ((settings->input.menu_toggle_gamepad_combo != INPUT_TOGGLE_NONE) &&
-         input_driver_toggle_button_combo(settings->input.menu_toggle_gamepad_combo, &old_input))
+         ((settings->uints.input_menu_toggle_gamepad_combo != INPUT_TOGGLE_NONE) &&
+         input_driver_toggle_button_combo(settings->uints.input_menu_toggle_gamepad_combo, &old_input))
          || input_keys_pressed_internal(settings, joypad_info, RARCH_MENU_TOGGLE, binds))
       ret |= (UINT64_C(1) << RARCH_MENU_TOGGLE);
 #endif
@@ -1180,7 +1180,7 @@ bool input_driver_init_command(void)
             input_driver_command,
             stdin_cmd_enable && !grab_stdin,
             network_cmd_enable,
-            settings->network_cmd_port))
+            settings->uints.network_cmd_port))
       return true;
 
    RARCH_ERR("Failed to initialize command interface.\n");
@@ -1205,7 +1205,7 @@ void input_driver_deinit_remote(void)
       settings_t *settings = config_get_ptr();
 
       input_remote_free(input_driver_remote,
-            settings->input.max_users);
+            settings->uints.input_max_users);
    }
    input_driver_remote = NULL;
 #endif
@@ -1220,8 +1220,8 @@ bool input_driver_init_remote(void)
       return false;
 
    input_driver_remote = input_remote_new(
-         settings->network_remote_base_port,
-         settings->input.max_users);
+         settings->uints.network_remote_base_port,
+         settings->uints.input_max_users);
 
    if (input_driver_remote)
       return true;

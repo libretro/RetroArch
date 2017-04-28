@@ -240,8 +240,8 @@ static bool netplay_poll(void)
                               (netplay_data->run_frame_count - netplay_data->unread_frame_count) :
                               0;
       settings_t *settings  = config_get_ptr();
-      unsigned input_latency_frames_min = settings->netplay.input_latency_frames_min;
-      unsigned input_latency_frames_max = input_latency_frames_min + settings->netplay.input_latency_frames_range;
+      unsigned input_latency_frames_min = settings->uints.netplay_input_latency_frames_min;
+      unsigned input_latency_frames_max = input_latency_frames_min + settings->uints.netplay_input_latency_frames_range;
 
       /* Assume we need a couple frames worth of time to actually run the
        * current frame */
@@ -622,7 +622,7 @@ static void netplay_announce(void)
       "game_name=%s&game_crc=%08X&port=%d"
       "&has_password=%d&has_spectate_password=%d&force_mitm=%d",
       username, corename, coreversion, gamename, *content_crc_ptr,
-      settings->netplay.port,
+      settings->uints.netplay_port,
       *settings->netplay.password ? 1 : 0,
       *settings->netplay.spectate_password ? 1 : 0,
       settings->bools.netplay_use_mitm_server);

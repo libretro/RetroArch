@@ -36,7 +36,7 @@ int menu_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
       goto end;
 
 #ifdef HAVE_LANGEXTRA
-   switch (settings->user_language)
+   switch (settings->uints.user_language)
    {
       case RETRO_LANGUAGE_FRENCH:
          ret = menu_hash_get_help_fr_enum(msg, s, len);
@@ -98,7 +98,7 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
       goto end;
 
 #ifdef HAVE_LANGEXTRA
-   switch (settings->user_language)
+   switch (settings->uints.user_language)
    {
       case RETRO_LANGUAGE_FRENCH:
          ret = msg_hash_to_str_fr(msg);

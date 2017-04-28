@@ -106,8 +106,8 @@ static void gfx_ctx_vc_get_video_size(void *data,
    /* Use dispmanx upscaling if 
     * fullscreen_x and fullscreen_y are set. */
 
-   if (settings->video.fullscreen_x != 0 &&
-      settings->video.fullscreen_y != 0)
+   if (settings->uints.video_fullscreen_x != 0 &&
+      settings->uints.video_fullscreen_y != 0)
    {
       /* Keep input and output aspect ratio equal.
        * There are other aspect ratio settings 
@@ -115,17 +115,17 @@ static void gfx_ctx_vc_get_video_size(void *data,
 
       /*  Calculate source and destination aspect ratios. */
 
-      float srcAspect = (float)settings->video.fullscreen_x 
-         / (float)settings->video.fullscreen_y;
+      float srcAspect = (float)settings->uints.video_fullscreen_x 
+         / (float)settings->uints.video_fullscreen_y;
       float dstAspect = (float)vc->fb_width / (float)vc->fb_height;
 
       /* If source and destination aspect ratios 
        * are not equal correct source width. */
       if (srcAspect != dstAspect)
-         *width = (unsigned)(settings->video.fullscreen_y * dstAspect);
+         *width = (unsigned)(settings->uints.video_fullscreen_y * dstAspect);
       else
-         *width = settings->video.fullscreen_x;
-      *height = settings->video.fullscreen_y;
+         *width = settings->uints.video_fullscreen_x;
+      *height   = settings->uints.video_fullscreen_y;
    }
    else
    {
@@ -212,21 +212,21 @@ static void *gfx_ctx_vc_init(video_frame_info_t *video_info, void *video_driver)
 
    /* Use dispmanx upscaling if fullscreen_x 
     * and fullscreen_y are set. */
-   if (settings->video.fullscreen_x != 0 &&
-      settings->video.fullscreen_y != 0)
+   if (settings->uints.video_fullscreen_x != 0 &&
+      settings->uints.video_fullscreen_y != 0)
    {
       /* Keep input and output aspect ratio equal.
        * There are other aspect ratio settings which can be used to stretch video output. */
 
       /* Calculate source and destination aspect ratios. */
-      float srcAspect = (float)settings->video.fullscreen_x / (float)settings->video.fullscreen_y;
+      float srcAspect = (float)settings->uints.video_fullscreen_x / (float)settings->uints.video_fullscreen_y;
       float dstAspect = (float)vc->fb_width / (float)vc->fb_height;
       /* If source and destination aspect ratios are not equal correct source width. */
       if (srcAspect != dstAspect)
-         src_rect.width = (unsigned)(settings->video.fullscreen_y * dstAspect) << 16;
+         src_rect.width = (unsigned)(settings->uints.video_fullscreen_y * dstAspect) << 16;
       else
-         src_rect.width = settings->video.fullscreen_x << 16;
-      src_rect.height = settings->video.fullscreen_y << 16;
+         src_rect.width = settings->uints.video_fullscreen_x << 16;
+      src_rect.height   = settings->uints.video_fullscreen_y << 16;
    }
    else
    {
@@ -250,24 +250,24 @@ static void *gfx_ctx_vc_init(video_frame_info_t *video_info, void *video_driver)
 
    /* Use dispmanx upscaling if fullscreen_x and fullscreen_y are set. */
 
-   if (settings->video.fullscreen_x != 0 &&
-      settings->video.fullscreen_y != 0)
+   if (settings->uints.video_fullscreen_x != 0 &&
+       settings->uints.video_fullscreen_y != 0)
    {
       /* Keep input and output aspect ratio equal.
        * There are other aspect ratio settings which 
        * can be used to stretch video output. */
 
       /* Calculate source and destination aspect ratios. */
-      float srcAspect = (float)settings->video.fullscreen_x 
-         / (float)settings->video.fullscreen_y;
+      float srcAspect = (float)settings->uints.video_fullscreen_x 
+         / (float)settings->uints.video_fullscreen_y;
       float dstAspect = (float)vc->fb_width / (float)vc->fb_height;
 
       /* If source and destination aspect ratios are not equal correct source width. */
       if (srcAspect != dstAspect)
-         vc->native_window.width = (unsigned)(settings->video.fullscreen_y * dstAspect);
+         vc->native_window.width = (unsigned)(settings->uints.video_fullscreen_y * dstAspect);
       else
-         vc->native_window.width = settings->video.fullscreen_x;
-      vc->native_window.height = settings->video.fullscreen_y;
+         vc->native_window.width = settings->uints.video_fullscreen_x;
+      vc->native_window.height   = settings->uints.video_fullscreen_y;
    }
    else
    {

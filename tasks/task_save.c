@@ -264,10 +264,11 @@ static void autosave_free(autosave_t *handle)
 void autosave_init(void)
 {
    unsigned i;
-   autosave_t **list    = NULL;
-   settings_t *settings = config_get_ptr();
+   autosave_t **list          = NULL;
+   settings_t *settings       = config_get_ptr();
+   unsigned autosave_interval = settings->uints.autosave_interval;
 
-   if (settings->autosave_interval < 1 || !task_save_files)
+   if (autosave_interval < 1 || !task_save_files)
       return;
 
    list = (autosave_t**)calloc(task_save_files->size,
@@ -294,7 +295,7 @@ void autosave_init(void)
       autosave_state.list[i] = autosave_new(path,
             mem_info.data,
             mem_info.size,
-            settings->autosave_interval);
+            autosave_interval);
 
       if (!autosave_state.list[i])
          RARCH_WARN("%s\n", msg_hash_to_str(MSG_AUTOSAVE_FAILED));

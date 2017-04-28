@@ -97,7 +97,7 @@ static const char *omapfb_get_fb_device(void)
 {
    static char fbname[12] = {0};
    settings_t   *settings = config_get_ptr();
-   const int        fbidx = settings->video.monitor_index;
+   const int        fbidx = settings->uints.video_monitor_index;
 
    if (fbidx == 0)
       return "/dev/fb0";

@@ -107,8 +107,8 @@ static int action_left_input_desc(unsigned type, const char *label,
       - (inp_desc_user * (RARCH_FIRST_CUSTOM_BIND + 4));
    settings_t *settings                  = config_get_ptr();
 
-   if (settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset] > 0)
-      settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset]--;
+   if (settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset] > 0)
+      settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset]--;
 
    return 0;
 }

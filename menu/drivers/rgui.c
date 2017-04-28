@@ -72,9 +72,9 @@ static uint16_t *rgui_framebuf_data      = NULL;
 #define NORMAL_COLOR(settings)   0x7FFF
 #define TITLE_COLOR(settings)    HOVER_COLOR(settings)
 #else
-#define HOVER_COLOR(settings)    (argb32_to_rgba4444(settings->menu.entry_hover_color))
-#define NORMAL_COLOR(settings)   (argb32_to_rgba4444(settings->menu.entry_normal_color))
-#define TITLE_COLOR(settings)    (argb32_to_rgba4444(settings->menu.title_color))
+#define HOVER_COLOR(settings)    (argb32_to_rgba4444(settings->uints.menu_entry_hover_color))
+#define NORMAL_COLOR(settings)   (argb32_to_rgba4444(settings->uints.menu_entry_normal_color))
+#define TITLE_COLOR(settings)    (argb32_to_rgba4444(settings->uints.menu_title_color))
 
 static uint16_t argb32_to_rgba4444(uint32_t col)
 {

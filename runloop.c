@@ -983,7 +983,7 @@ static enum runloop_state runloop_check_state(
       s[0] = '\0';
 
       if (state_manager_check_rewind(runloop_cmd_press(current_input, RARCH_REWIND),
-            settings->rewind_granularity, runloop_paused, s, sizeof(s), &t))
+            settings->uints.rewind_granularity, runloop_paused, s, sizeof(s), &t))
          runloop_msg_queue_push(s, 0, t, true);
    }
 
@@ -1063,6 +1063,7 @@ int runloop_iterate(unsigned *sleep_ms)
 #else
    bool menu_is_alive                           = false;
 #endif
+   unsigned max_users                           = settings->uints.input_max_users;
    uint64_t current_input                       =
 
 #ifdef HAVE_MENU
@@ -1139,11 +1140,11 @@ int runloop_iterate(unsigned *sleep_ms)
    camera_driver_ctl(RARCH_CAMERA_CTL_POLL, NULL);
 
    /* Update binds for analog dpad modes. */
-   for (i = 0; i < settings->input.max_users; i++)
+   for (i = 0; i < max_users; i++)
    {
       struct retro_keybind *general_binds = input_config_binds[i];
       struct retro_keybind *auto_binds    = input_autoconf_binds[i];
-      enum analog_dpad_mode dpad_mode     = (enum analog_dpad_mode)settings->input.analog_dpad_mode[i];
+      enum analog_dpad_mode dpad_mode     = (enum analog_dpad_mode)settings->uints.input_analog_dpad_mode[i];
 
       if (dpad_mode == ANALOG_DPAD_NONE)
          continue;
@@ -1152,8 +1153,8 @@ int runloop_iterate(unsigned *sleep_ms)
       input_push_analog_dpad(auto_binds,    dpad_mode);
    }
 
-   if ((settings->video.frame_delay > 0) && !input_driver_is_nonblock)
-      retro_sleep(settings->video.frame_delay);
+   if ((settings->uints.video_frame_delay > 0) && !input_driver_is_nonblock)
+      retro_sleep(settings->uints.video_frame_delay);
 
    core_run();
 
@@ -1162,11 +1163,11 @@ int runloop_iterate(unsigned *sleep_ms)
       cheevos_test();
 #endif
 
-   for (i = 0; i < settings->input.max_users; i++)
+   for (i = 0; i < max_users; i++)
    {
       struct retro_keybind *general_binds = input_config_binds[i];
       struct retro_keybind *auto_binds    = input_autoconf_binds[i];
-      enum analog_dpad_mode dpad_mode     = (enum analog_dpad_mode)settings->input.analog_dpad_mode[i];
+      enum analog_dpad_mode dpad_mode     = (enum analog_dpad_mode)settings->uints.input_analog_dpad_mode[i];
 
       if (dpad_mode == ANALOG_DPAD_NONE)
          continue;

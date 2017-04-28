@@ -742,7 +742,7 @@ static void retroarch_parse_input(int argc, char *argv[])
                settings_t *settings  = config_get_ptr();
                retroarch_override_setting_set(
                      RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT, NULL);
-               configuration_set_uint(settings, settings->netplay.port, (int)strtoul(optarg, NULL, 0));
+               configuration_set_uint(settings, settings->uints.netplay_port, (int)strtoul(optarg, NULL, 0));
             }
             break;
 

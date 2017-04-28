@@ -447,8 +447,8 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
          {
             settings_t *settings = config_get_ptr();
 
-            if (!string_is_empty(settings->menu.xmb.font))
-               strlcpy(s, settings->menu.xmb.font, len);
+            if (!string_is_empty(settings->menu.xmb_font))
+               strlcpy(s, settings->menu.xmb_font, len);
             else
             {
                char s1[PATH_MAX_LENGTH];

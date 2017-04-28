@@ -113,10 +113,10 @@ static int action_start_input_desc(unsigned type, const char *label)
    {
       const struct retro_keybind *keyptr = &input_config_binds[inp_desc_user]
             [inp_desc_button_index_offset];
-      settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset] = keyptr->id;
+      settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset] = keyptr->id;
    }
    else
-      settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset] =
+      settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset] =
          inp_desc_button_index_offset - RARCH_FIRST_CUSTOM_BIND;
 
    return 0;

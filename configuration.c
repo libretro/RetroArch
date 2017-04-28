@@ -638,7 +638,7 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
 
    /* Paths */
 #ifdef HAVE_XMB
-   SETTING_PATH("xmb_font",                   settings->menu.xmb.font, false, NULL, true);
+   SETTING_PATH("xmb_font",                   settings->menu.xmb_font, false, NULL, true);
 #endif
    SETTING_PATH("netplay_nickname",           settings->username, false, NULL, true);
    SETTING_PATH("video_filter",               settings->path.softfilter_plugin, false, NULL, true);
@@ -949,70 +949,70 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    unsigned count                     = 0;
    struct config_uint_setting     *tmp = NULL;
 
-   SETTING_UINT("input_bind_timeout",           &settings->input.bind_timeout,     true, input_bind_timeout, false);
-   SETTING_UINT("input_turbo_period",           &settings->input.turbo_period,     true, turbo_period, false);
-   SETTING_UINT("input_duty_cycle",             &settings->input.turbo_duty_cycle, true, turbo_duty_cycle, false);
-   SETTING_UINT("input_max_users",              &settings->input.max_users,        true, input_max_users, false);
-   SETTING_UINT("input_menu_toggle_gamepad_combo", &settings->input.menu_toggle_gamepad_combo, true, menu_toggle_gamepad_combo, false);
-   SETTING_UINT("audio_latency",                &settings->audio.latency, false, 0 /* TODO */, false);
-   SETTING_UINT("audio_block_frames",           &settings->audio.block_frames, true, 0, false);
-   SETTING_UINT("rewind_granularity",           &settings->rewind_granularity, true, rewind_granularity, false);
-   SETTING_UINT("autosave_interval",            &settings->autosave_interval,  true, autosave_interval, false);
-   SETTING_UINT("libretro_log_level",           &settings->libretro_log_level, true, libretro_log_level, false);
-   SETTING_UINT("keyboard_gamepad_mapping_type",&settings->input.keyboard_gamepad_mapping_type, true, 1, false);
-   SETTING_UINT("input_poll_type_behavior",     &settings->input.poll_type_behavior, true, 2, false);
-   SETTING_UINT("video_monitor_index",          &settings->video.monitor_index, true, monitor_index, false);
-   SETTING_UINT("video_fullscreen_x",           &settings->video.fullscreen_x,  true, fullscreen_x, false);
-   SETTING_UINT("video_fullscreen_y",           &settings->video.fullscreen_y,  true, fullscreen_y, false);
-   SETTING_UINT("video_window_x",               &settings->video.window_x,  true, fullscreen_x, false);
-   SETTING_UINT("video_window_y",               &settings->video.window_y,  true, fullscreen_y, false);
+   SETTING_UINT("input_bind_timeout",           &settings->uints.input_bind_timeout,     true, input_bind_timeout, false);
+   SETTING_UINT("input_turbo_period",           &settings->uints.input_turbo_period,     true, turbo_period, false);
+   SETTING_UINT("input_duty_cycle",             &settings->uints.input_turbo_duty_cycle, true, turbo_duty_cycle, false);
+   SETTING_UINT("input_max_users",              &settings->uints.input_max_users,        true, input_max_users, false);
+   SETTING_UINT("input_menu_toggle_gamepad_combo", &settings->uints.input_menu_toggle_gamepad_combo, true, menu_toggle_gamepad_combo, false);
+   SETTING_UINT("audio_latency",                &settings->uints.audio_latency, false, 0 /* TODO */, false);
+   SETTING_UINT("audio_block_frames",           &settings->uints.audio_block_frames, true, 0, false);
+   SETTING_UINT("rewind_granularity",           &settings->uints.rewind_granularity, true, rewind_granularity, false);
+   SETTING_UINT("autosave_interval",            &settings->uints.autosave_interval,  true, autosave_interval, false);
+   SETTING_UINT("libretro_log_level",           &settings->uints.libretro_log_level, true, libretro_log_level, false);
+   SETTING_UINT("keyboard_gamepad_mapping_type",&settings->uints.input_keyboard_gamepad_mapping_type, true, 1, false);
+   SETTING_UINT("input_poll_type_behavior",     &settings->uints.input_poll_type_behavior, true, 2, false);
+   SETTING_UINT("video_monitor_index",          &settings->uints.video_monitor_index, true, monitor_index, false);
+   SETTING_UINT("video_fullscreen_x",           &settings->uints.video_fullscreen_x,  true, fullscreen_x, false);
+   SETTING_UINT("video_fullscreen_y",           &settings->uints.video_fullscreen_y,  true, fullscreen_y, false);
+   SETTING_UINT("video_window_x",               &settings->uints.video_window_x,  true, fullscreen_x, false);
+   SETTING_UINT("video_window_y",               &settings->uints.video_window_y,  true, fullscreen_y, false);
 #ifdef HAVE_COMMAND
-   SETTING_UINT("network_cmd_port",             &settings->network_cmd_port,    true, network_cmd_port, false);
+   SETTING_UINT("network_cmd_port",             &settings->uints.network_cmd_port,    true, network_cmd_port, false);
 #endif
 #ifdef HAVE_NETWORKGAMEPAD
-   SETTING_UINT("network_remote_base_port",     &settings->network_remote_base_port, true, network_remote_base_port, false);
+   SETTING_UINT("network_remote_base_port",     &settings->uints.network_remote_base_port, true, network_remote_base_port, false);
 #endif
 #ifdef GEKKO
-   SETTING_UINT("video_viwidth",                &settings->video.viwidth, true, video_viwidth, false);
+   SETTING_UINT("video_viwidth",                &settings->uints.video_viwidth, true, video_viwidth, false);
 #endif
 #ifdef HAVE_MENU
-   SETTING_UINT("dpi_override_value",           &settings->menu.dpi.override_value, true, menu_dpi_override_value, false);
-   SETTING_UINT("menu_thumbnails",              &settings->menu.thumbnails, true, menu_thumbnails_default, false);
+   SETTING_UINT("dpi_override_value",           &settings->uints.menu_dpi_override_value, true, menu_dpi_override_value, false);
+   SETTING_UINT("menu_thumbnails",              &settings->uints.menu_thumbnails, true, menu_thumbnails_default, false);
 #ifdef HAVE_XMB
-   SETTING_UINT("xmb_alpha_factor",             &settings->menu.xmb.alpha_factor, true, xmb_alpha_factor, false);
-   SETTING_UINT("xmb_scale_factor",             &settings->menu.xmb.scale_factor, true, xmb_scale_factor, false);
-   SETTING_UINT("xmb_theme",                    &settings->menu.xmb.theme, true, xmb_icon_theme, false);
-   SETTING_UINT("xmb_menu_color_theme",         &settings->menu.xmb.menu_color_theme, true, xmb_theme, false);
+   SETTING_UINT("xmb_alpha_factor",             &settings->uints.menu_xmb_alpha_factor, true, xmb_alpha_factor, false);
+   SETTING_UINT("xmb_scale_factor",             &settings->uints.menu_xmb_scale_factor, true, xmb_scale_factor, false);
+   SETTING_UINT("xmb_theme",                    &settings->uints.menu_xmb_theme, true, xmb_icon_theme, false);
+   SETTING_UINT("xmb_menu_color_theme",         &settings->uints.menu_xmb_color_theme, true, xmb_theme, false);
 #endif
-   SETTING_UINT("materialui_menu_color_theme",  &settings->menu.materialui.menu_color_theme, true, MATERIALUI_THEME_BLUE, false);
+   SETTING_UINT("materialui_menu_color_theme",  &settings->uints.menu_materialui_color_theme, true, MATERIALUI_THEME_BLUE, false);
 #ifdef HAVE_SHADERPIPELINE
-   SETTING_UINT("menu_shader_pipeline",         &settings->menu.xmb.shader_pipeline, true, menu_shader_pipeline, false);
+   SETTING_UINT("menu_shader_pipeline",         &settings->uints.menu_xmb_shader_pipeline, true, menu_shader_pipeline, false);
 #endif
 #endif
-   SETTING_UINT("audio_out_rate",               &settings->audio.out_rate, true, out_rate, false);
+   SETTING_UINT("audio_out_rate",               &settings->uints.audio_out_rate, true, out_rate, false);
    SETTING_UINT("custom_viewport_width",        &settings->video_viewport_custom.width, false, 0 /* TODO */, false);
    SETTING_UINT("custom_viewport_height",       &settings->video_viewport_custom.height, false, 0 /* TODO */, false);
    SETTING_UINT("custom_viewport_x",            (unsigned*)&settings->video_viewport_custom.x, false, 0 /* TODO */, false);
    SETTING_UINT("custom_viewport_y",            (unsigned*)&settings->video_viewport_custom.y, false, 0 /* TODO */, false);
-   SETTING_UINT("content_history_size",         &settings->content_history_size,   true, default_content_history_size, false);
-   SETTING_UINT("video_hard_sync_frames",       &settings->video.hard_sync_frames, true, hard_sync_frames, false);
-   SETTING_UINT("video_frame_delay",            &settings->video.frame_delay,      true, frame_delay, false);
-   SETTING_UINT("video_max_swapchain_images",   &settings->video.max_swapchain_images, true, max_swapchain_images, false);
-   SETTING_UINT("video_swap_interval",          &settings->video.swap_interval, true, swap_interval, false);
-   SETTING_UINT("video_rotation",               &settings->video.rotation, true, ORIENTATION_NORMAL, false);
-   SETTING_UINT("aspect_ratio_index",           &settings->video.aspect_ratio_idx, true, aspect_ratio_idx, false);
+   SETTING_UINT("content_history_size",         &settings->uints.content_history_size,   true, default_content_history_size, false);
+   SETTING_UINT("video_hard_sync_frames",       &settings->uints.video_hard_sync_frames, true, hard_sync_frames, false);
+   SETTING_UINT("video_frame_delay",            &settings->uints.video_frame_delay,      true, frame_delay, false);
+   SETTING_UINT("video_max_swapchain_images",   &settings->uints.video_max_swapchain_images, true, max_swapchain_images, false);
+   SETTING_UINT("video_swap_interval",          &settings->uints.video_swap_interval, true, swap_interval, false);
+   SETTING_UINT("video_rotation",               &settings->uints.video_rotation, true, ORIENTATION_NORMAL, false);
+   SETTING_UINT("aspect_ratio_index",           &settings->uints.video_aspect_ratio_idx, true, aspect_ratio_idx, false);
 #ifdef HAVE_NETWORKING
-   SETTING_UINT("netplay_ip_port",              &settings->netplay.port,         true, RARCH_DEFAULT_PORT, false);
-   SETTING_UINT("netplay_input_latency_frames_min",&settings->netplay.input_latency_frames_min, true, 0, false);
-   SETTING_UINT("netplay_input_latency_frames_range",&settings->netplay.input_latency_frames_range, true, 0, false);
+   SETTING_UINT("netplay_ip_port",              &settings->uints.netplay_port,         true, RARCH_DEFAULT_PORT, false);
+   SETTING_UINT("netplay_input_latency_frames_min",&settings->uints.netplay_input_latency_frames_min, true, 0, false);
+   SETTING_UINT("netplay_input_latency_frames_range",&settings->uints.netplay_input_latency_frames_range, true, 0, false);
 #endif
 #ifdef HAVE_LANGEXTRA
-   SETTING_UINT("user_language",                &settings->user_language, true, RETRO_LANGUAGE_ENGLISH, false);
+   SETTING_UINT("user_language",                &settings->uints.user_language, true, RETRO_LANGUAGE_ENGLISH, false);
 #endif
-   SETTING_UINT("bundle_assets_extract_version_current", &settings->bundle_assets_extract_version_current, true, 0, false);
-   SETTING_UINT("bundle_assets_extract_last_version",    &settings->bundle_assets_extract_last_version, true, 0, false);
+   SETTING_UINT("bundle_assets_extract_version_current", &settings->uints.bundle_assets_extract_version_current, true, 0, false);
+   SETTING_UINT("bundle_assets_extract_last_version",    &settings->uints.bundle_assets_extract_last_version, true, 0, false);
 #ifdef HAVE_WASAPI
-   SETTING_UINT("audio_wasapi_sh_buffer_length", &settings->audio.wasapi.sh_buffer_length, true, 0, false);
+   SETTING_UINT("audio_wasapi_sh_buffer_length", &settings->uints.audio_wasapi_sh_buffer_length, true, 0, false);
 #endif
 
    *size = count;
@@ -1144,12 +1144,12 @@ static void config_set_defaults(void)
       strlcpy(settings->menu.driver,
             def_menu,  sizeof(settings->menu.driver));
 #ifdef HAVE_XMB
-   *settings->menu.xmb.font            = '\0';
+   *settings->menu.xmb_font            = '\0';
 #endif
 
 #ifdef HAVE_MATERIALUI
    if (g_defaults.menu.materialui.menu_color_theme_enable)
-      settings->menu.materialui.menu_color_theme = g_defaults.menu.materialui.menu_color_theme;
+      settings->uints.menu_materialui_color_theme = g_defaults.menu.materialui.menu_color_theme;
 #endif
 #endif
 
@@ -1183,24 +1183,24 @@ static void config_set_defaults(void)
    if (!g_defaults.settings.out_latency)
       g_defaults.settings.out_latency          = out_latency;
 
-   settings->audio.latency                     = g_defaults.settings.out_latency;
+   settings->uints.audio_latency               = g_defaults.settings.out_latency;
 
    audio_driver_set_volume_gain(db_to_gain(settings->floats.audio_volume));
 
    settings->rewind_buffer_size                = rewind_buffer_size;
 
 #ifdef HAVE_LAKKA
-   settings->ssh_enable                        = path_file_exists(LAKKA_SSH_PATH);
-   settings->samba_enable                      = path_file_exists(LAKKA_SAMBA_PATH);
-   settings->bluetooth_enable                  = path_file_exists(LAKKA_BLUETOOTH_PATH);
+   settings->bools.ssh_enable                  = path_file_exists(LAKKA_SSH_PATH);
+   settings->bools.samba_enable                = path_file_exists(LAKKA_SAMBA_PATH);
+   settings->bools.bluetooth_enable            = path_file_exists(LAKKA_BLUETOOTH_PATH);
 #endif
 
 #ifdef HAVE_MENU
    if (first_initialized)
       settings->bools.menu_show_start_screen   = default_menu_show_start_screen;
-   settings->menu.entry_normal_color           = menu_entry_normal_color;
-   settings->menu.entry_hover_color            = menu_entry_hover_color;
-   settings->menu.title_color                  = menu_title_color;
+   settings->uints.menu_entry_normal_color     = menu_entry_normal_color;
+   settings->uints.menu_entry_hover_color      = menu_entry_hover_color;
+   settings->uints.menu_title_color            = menu_title_color;
 #endif
 
 #ifdef HAVE_CHEEVOS
@@ -1232,8 +1232,8 @@ static void config_set_defaults(void)
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      settings->input.joypad_map[i] = i;
-      settings->input.analog_dpad_mode[i] = ANALOG_DPAD_NONE;
+      settings->uints.input_joypad_map[i] = i;
+      settings->uints.input_analog_dpad_mode[i] = ANALOG_DPAD_NONE;
       if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &i))
          input_config_set_device(i, RETRO_DEVICE_JOYPAD);
    }
@@ -1961,7 +1961,7 @@ static bool config_load_file(const char *path, bool set_defaults,
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES, NULL))
       CONFIG_GET_INT_BASE(conf, settings, ints.netplay_check_frames, "netplay_check_frames");
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT, NULL))
-      CONFIG_GET_INT_BASE(conf, settings, netplay.port, "netplay_ip_port");
+      CONFIG_GET_INT_BASE(conf, settings, uints.netplay_port, "netplay_ip_port");
 #endif
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -1970,15 +1970,15 @@ static bool config_load_file(const char *path, bool set_defaults,
       buf[0] = '\0';
 
       snprintf(buf, sizeof(buf), "input_player%u_joypad_index", i + 1);
-      CONFIG_GET_INT_BASE(conf, settings, input.joypad_map[i], buf);
+      CONFIG_GET_INT_BASE(conf, settings, uints.input_joypad_map[i], buf);
 
       snprintf(buf, sizeof(buf), "input_player%u_analog_dpad_mode", i + 1);
-      CONFIG_GET_INT_BASE(conf, settings, input.analog_dpad_mode[i], buf);
+      CONFIG_GET_INT_BASE(conf, settings, uints.input_analog_dpad_mode[i], buf);
 
       if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &i))
       {
          snprintf(buf, sizeof(buf), "input_libretro_device_p%u", i + 1);
-         CONFIG_GET_INT_BASE(conf, settings, input.libretro_device[i], buf);
+         CONFIG_GET_INT_BASE(conf, settings, uints.input_libretro_device[i], buf);
       }
    }
    {
@@ -1999,11 +1999,11 @@ static bool config_load_file(const char *path, bool set_defaults,
    }
 #ifdef HAVE_MENU
    config_get_hex_base(conf, "menu_entry_normal_color",
-         &settings->menu.entry_normal_color);
+         &settings->uints.menu_entry_normal_color);
    config_get_hex_base(conf, "menu_entry_hover_color",
-         &settings->menu.entry_hover_color);
+         &settings->uints.menu_entry_hover_color);
    config_get_hex_base(conf, "menu_title_color",
-         &settings->menu.title_color);
+         &settings->uints.menu_title_color);
 #endif
 
    /* Float settings */
@@ -2063,14 +2063,14 @@ static bool config_load_file(const char *path, bool set_defaults,
    }
 #endif
 
-   if (settings->video.hard_sync_frames > 3)
-      settings->video.hard_sync_frames = 3;
+   if (settings->uints.video_hard_sync_frames > 3)
+      settings->uints.video_hard_sync_frames = 3;
 
-   if (settings->video.frame_delay > 15)
-      settings->video.frame_delay = 15;
+   if (settings->uints.video_frame_delay > 15)
+      settings->uints.video_frame_delay = 15;
 
-   settings->video.swap_interval = MAX(settings->video.swap_interval, 1);
-   settings->video.swap_interval = MIN(settings->video.swap_interval, 4);
+   settings->uints.video_swap_interval = MAX(settings->uints.video_swap_interval, 1);
+   settings->uints.video_swap_interval = MIN(settings->uints.video_swap_interval, 4);
 
    audio_driver_set_volume_gain(db_to_gain(settings->floats.audio_volume));
 
@@ -3066,7 +3066,7 @@ bool config_save_file(const char *path)
 
 #ifdef HAVE_MENU
    config_set_path(conf, "xmb_font",
-         !string_is_empty(settings->menu.xmb.font) ? settings->menu.xmb.font : "");
+         !string_is_empty(settings->menu.xmb_font) ? settings->menu.xmb_font : "");
 #endif
 
    /* String settings  */
@@ -3119,13 +3119,13 @@ bool config_save_file(const char *path)
       cfg[0] = '\0';
 
       snprintf(cfg, sizeof(cfg), "input_device_p%u", i + 1);
-      config_set_int(conf, cfg, settings->input.device[i]);
+      config_set_int(conf, cfg, settings->uints.input_device[i]);
       snprintf(cfg, sizeof(cfg), "input_player%u_joypad_index", i + 1);
-      config_set_int(conf, cfg, settings->input.joypad_map[i]);
+      config_set_int(conf, cfg, settings->uints.input_joypad_map[i]);
       snprintf(cfg, sizeof(cfg), "input_libretro_device_p%u", i + 1);
       config_set_int(conf, cfg, input_config_get_device(i));
       snprintf(cfg, sizeof(cfg), "input_player%u_analog_dpad_mode", i + 1);
-      config_set_int(conf, cfg, settings->input.analog_dpad_mode[i]);
+      config_set_int(conf, cfg, settings->uints.input_analog_dpad_mode[i]);
    }
 
    /* Boolean settings */
@@ -3163,11 +3163,11 @@ bool config_save_file(const char *path)
    config_set_hex(conf, "video_message_color", msg_color);
 #ifdef HAVE_MENU
    config_set_hex(conf, "menu_entry_normal_color",
-         settings->menu.entry_normal_color);
+         settings->uints.menu_entry_normal_color);
    config_set_hex(conf, "menu_entry_hover_color",
-         settings->menu.entry_hover_color);
+         settings->uints.menu_entry_hover_color);
    config_set_hex(conf, "menu_title_color",
-         settings->menu.title_color);
+         settings->uints.menu_title_color);
 #endif
 
 
@@ -3387,25 +3387,25 @@ bool config_save_overrides(int override_type)
          char cfg[64];
 
          cfg[0] = '\0';
-         if (settings->input.device[i] != overrides->input.device[i])
+         if (settings->uints.input_device[i] != overrides->uints.input_device[i])
          {
             snprintf(cfg, sizeof(cfg), "input_device_p%u", i + 1);
-            config_set_int(conf, cfg, overrides->input.device[i]);
+            config_set_int(conf, cfg, overrides->uints.input_device[i]);
          }
-         if (settings->input.joypad_map[i] != overrides->input.joypad_map[i])
+         if (settings->uints.input_joypad_map[i] != overrides->uints.input_joypad_map[i])
          {
             snprintf(cfg, sizeof(cfg), "input_player%u_joypad_index", i + 1);
-            config_set_int(conf, cfg, overrides->input.joypad_map[i]);
+            config_set_int(conf, cfg, overrides->uints.input_joypad_map[i]);
          }
-         if (input_config_get_device(i) != overrides->input.libretro_device[i])
+         if (input_config_get_device(i) != overrides->uints.input_libretro_device[i])
          {
             snprintf(cfg, sizeof(cfg), "input_libretro_device_p%u", i + 1);
-            config_set_int(conf, cfg, overrides->input.libretro_device[i]);
+            config_set_int(conf, cfg, overrides->uints.input_libretro_device[i]);
          }
-         if (settings->input.analog_dpad_mode[i] != overrides->input.analog_dpad_mode[i])
+         if (settings->uints.input_analog_dpad_mode[i] != overrides->uints.input_analog_dpad_mode[i])
          {
             snprintf(cfg, sizeof(cfg), "input_player%u_analog_dpad_mode", i + 1);
-            config_set_int(conf, cfg, overrides->input.analog_dpad_mode[i]);
+            config_set_int(conf, cfg, overrides->uints.input_analog_dpad_mode[i]);
          }
       }
 

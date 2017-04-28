@@ -243,7 +243,7 @@ void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
             MONITOR_DEFAULTTONEAREST);
 
    *hm_to_use = win32_monitor_last;
-   fs_monitor = settings->video.monitor_index;
+   fs_monitor = settings->uints.video_monitor_index;
 
    if (fs_monitor && fs_monitor <= win32_monitor_count
          && win32_monitor_all[fs_monitor - 1])
@@ -795,7 +795,7 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
     * of the display refresh rate, as well as higher vsync swap intervals. */
    float refresh_mod    = settings->bools.video_black_frame_insertion ? 2.0f : 1.0f;
    unsigned refresh     = roundf(settings->floats.video_refresh_rate 
-         * refresh_mod * settings->video.swap_interval);
+         * refresh_mod * settings->uints.video_swap_interval);
 
    if (fullscreen)
    {

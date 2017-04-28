@@ -3215,7 +3215,7 @@ static int menu_displaylist_parse_options_remappings(
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return -1;
 
-   for (p = 0; p < settings->input.max_users; p++)
+   for (p = 0; p < settings->uints.input_max_users; p++)
    {
       char key_type[PATH_MAX_LENGTH];
       char key_analog[PATH_MAX_LENGTH];
@@ -3254,7 +3254,7 @@ static int menu_displaylist_parse_options_remappings(
 
    if (system)
    {
-      for (p = 0; p < settings->input.max_users; p++)
+      for (p = 0; p < settings->uints.input_max_users; p++)
       {
          for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND + 4; retro_id++)
          {
@@ -4923,7 +4923,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   PARSE_ONLY_UINT, false) != -1)
                count++;
 
-            for(user = 0; user < settings->input.max_users; user++)
+            for(user = 0; user < settings->uints.input_max_users; user++)
             {
                if (menu_displaylist_parse_settings_enum(menu, info,
                      (enum msg_hash_enums)(MENU_ENUM_LABEL_NETWORK_REMOTE_USER_1_ENABLE + user),
@@ -5359,7 +5359,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
          {
             unsigned user;
-            for (user = 0; user < settings->input.max_users; user++)
+            for (user = 0; user < settings->uints.input_max_users; user++)
             {
                menu_displaylist_parse_settings_enum(menu, info,
                      (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + user),

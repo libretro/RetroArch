@@ -688,7 +688,7 @@ static void rarch_log_libretro(enum retro_log_level level,
    va_list vp;
    settings_t *settings = config_get_ptr();
 
-   if ((unsigned)level < settings->libretro_log_level)
+   if ((unsigned)level < settings->uints.libretro_log_level)
       return;
 
    va_start(vp, fmt);
@@ -1078,9 +1078,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_GET_LANGUAGE:
 #ifdef HAVE_LANGEXTRA
-         *(unsigned *)data = settings->user_language;
+         *(unsigned *)data = settings->uints.user_language;
          RARCH_LOG("Environ GET_LANGUAGE: \"%u\".\n",
-               settings->user_language);
+               settings->uints.user_language);
 #endif
          break;
 
@@ -1190,7 +1190,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             }
 
             RARCH_LOG("Environ SET_INPUT_DESCRIPTORS:\n");
-            for (p = 0; p < settings->input.max_users; p++)
+            for (p = 0; p < settings->uints.input_max_users; p++)
             {
                for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
                {

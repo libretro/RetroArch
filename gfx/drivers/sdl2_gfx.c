@@ -291,7 +291,7 @@ static void sdl_refresh_viewport(sdl2_video_t *vid)
       video_viewport_get_scaled_integer(&vid->vp,
             win_w, win_h, video_driver_get_aspect_ratio(),
             vid->video.force_aspect);
-   else if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+   else if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
       const struct video_viewport *custom = 
          (const struct video_viewport*)video_viewport_get_custom();

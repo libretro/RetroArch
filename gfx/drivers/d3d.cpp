@@ -506,7 +506,7 @@ void d3d_make_d3dpp(void *data,
 
    if (info->vsync)
    {
-      switch (settings->video.swap_interval)
+      switch (settings->uints.video_swap_interval)
       {
          default:
          case 1:
@@ -701,7 +701,7 @@ static void d3d_calculate_rect(void *data,
       float desired_aspect = video_driver_get_aspect_ratio();
 
 #if defined(HAVE_MENU)
-      if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          video_viewport_t *custom = video_viewport_get_custom();
 

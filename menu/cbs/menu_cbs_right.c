@@ -111,13 +111,13 @@ int action_right_input_desc(unsigned type, const char *label,
 
    if (inp_desc_button_index_offset < RARCH_FIRST_CUSTOM_BIND)
    {
-      if (settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset] < RARCH_FIRST_CUSTOM_BIND - 1)
-         settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset]++;
+      if (settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset] < RARCH_FIRST_CUSTOM_BIND - 1)
+         settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset]++;
    }
    else
    {
-      if (settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset] < 4 - 1)
-         settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset]++;
+      if (settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset] < 4 - 1)
+         settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset]++;
    }
 
    return 0;

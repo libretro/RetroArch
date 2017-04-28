@@ -175,13 +175,13 @@ void *get_chosen_screen(void)
    if (!screens || !settings)
       return NULL;
 
-   if (settings->video.monitor_index >= screens.count)
+   if (settings->uints.video_monitor_index >= screens.count)
    {
       RARCH_WARN("video_monitor_index is greater than the number of connected monitors; using main screen instead.");
       return (BRIDGE void*)screens;
    }
 	
-   return ((BRIDGE void*)[screens objectAtIndex:settings->video.monitor_index]);
+   return ((BRIDGE void*)[screens objectAtIndex:settings->uints.video_monitor_index]);
 }
 
 

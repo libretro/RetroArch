@@ -204,7 +204,7 @@ static void menu_action_setting_disp_set_label_pipeline(
    *s = '\0';
    *w = 19;
 
-   switch (settings->menu.xmb.shader_pipeline)
+   switch (settings->uints.menu_xmb_shader_pipeline)
    {
       case XMB_SHADER_PIPELINE_WALLPAPER:
          strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
@@ -450,7 +450,7 @@ static void menu_action_setting_disp_set_label_input_desc(
 
    descriptor[0] = '\0';
 
-   remap_id = settings->input.remap_ids
+   remap_id = settings->uints.input_remap_ids
       [inp_desc_user][inp_desc_button_index_offset];
 
    keybind   = &input_config_binds[inp_desc_user][remap_id];
@@ -677,7 +677,7 @@ static void menu_action_setting_disp_set_label_poll_type_behavior(
 
    strlcpy(s2, path, len2);
    *w = 19;
-   switch (settings->input.poll_type_behavior)
+   switch (settings->uints.input_poll_type_behavior)
    {
       case 0:
          strlcpy(s,
@@ -713,7 +713,7 @@ static void menu_action_setting_disp_set_label_xmb_theme(
 
    strlcpy(s2, path, len2);
    *w = 19;
-   switch (settings->menu.xmb.theme)
+   switch (settings->uints.menu_xmb_theme)
    {
       case XMB_ICON_THEME_MONOCHROME:
          strlcpy(s,
@@ -783,7 +783,7 @@ static void menu_action_setting_disp_set_label_xmb_menu_color_theme(
    if (!settings)
       return;
 
-   switch (settings->menu.xmb.menu_color_theme)
+   switch (settings->uints.menu_xmb_color_theme)
    {
       case XMB_THEME_WALLPAPER:
          strlcpy(s,
@@ -865,7 +865,7 @@ static void menu_action_setting_disp_set_label_materialui_menu_color_theme(
    if (!settings)
       return;
 
-   switch (settings->menu.materialui.menu_color_theme)
+   switch (settings->uints.menu_materialui_color_theme)
    {
       case MATERIALUI_THEME_BLUE:
          strlcpy(s,
@@ -924,7 +924,7 @@ static void menu_action_setting_disp_set_label_thumbnails(
    strlcpy(s2, path, len2);
    *w = 19;
 
-   switch (settings->menu.thumbnails)
+   switch (settings->uints.menu_thumbnails)
    {
       case 0:
          strlcpy(s, msg_hash_to_str(
@@ -965,7 +965,7 @@ static void menu_action_setting_disp_set_label_menu_toggle_gamepad_combo(
    strlcpy(s2, path, len2);
    *w = 19;
 
-   switch (settings->input.menu_toggle_gamepad_combo)
+   switch (settings->uints.input_menu_toggle_gamepad_combo)
    {
       case INPUT_TOGGLE_NONE:
          strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
@@ -1045,7 +1045,7 @@ static void menu_action_setting_disp_set_label_menu_input_keyboard_gamepad_mappi
 
    strlcpy(s2, path, len2);
 
-   switch (settings->input.keyboard_gamepad_mapping_type)
+   switch (settings->uints.input_keyboard_gamepad_mapping_type)
    {
       case 0:
          strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);

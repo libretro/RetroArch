@@ -251,32 +251,94 @@ typedef struct settings
       int state_slot;
    } ints;
 
+   struct
+   {
+      unsigned placeholder;
+      unsigned audio_out_rate;
+      unsigned audio_block_frames;
+      unsigned audio_latency;
+      unsigned input_remap_ids[MAX_USERS][RARCH_BIND_LIST_END];
+
+      unsigned input_max_users;
+
+      /* Set by autoconfiguration in joypad_autoconfig_dir.
+       * Does not override main binds. */
+      unsigned input_libretro_device[MAX_USERS];
+      unsigned input_analog_dpad_mode[MAX_USERS];
+
+      unsigned input_joypad_map[MAX_USERS];
+      unsigned input_device[MAX_USERS];
+
+      unsigned input_turbo_period;
+      unsigned input_turbo_duty_cycle;
+
+      unsigned input_bind_timeout;
+
+      unsigned input_menu_toggle_gamepad_combo;
+      unsigned input_keyboard_gamepad_mapping_type;
+      unsigned input_poll_type_behavior;
+      unsigned netplay_port;
+      unsigned netplay_input_latency_frames_min;
+      unsigned netplay_input_latency_frames_range;
+      unsigned bundle_assets_extract_version_current;
+      unsigned bundle_assets_extract_last_version;
+      unsigned content_history_size;
+      unsigned libretro_log_level;
+      unsigned rewind_granularity;
+      unsigned autosave_interval;
+      unsigned network_cmd_port;
+      unsigned network_remote_base_port;
+#ifdef HAVE_LANGEXTRA
+      unsigned user_language;
+#endif
+      unsigned video_window_x;
+      unsigned video_window_y;
+      unsigned video_monitor_index;
+      unsigned video_fullscreen_x;
+      unsigned video_fullscreen_y;
+      unsigned video_max_swapchain_images;
+      unsigned video_swap_interval;
+      unsigned video_hard_sync_frames;
+      unsigned video_frame_delay;
+#ifdef GEKKO
+      unsigned video_viwidth;
+#endif
+      unsigned video_aspect_ratio_idx;
+      unsigned video_rotation;
+
+      unsigned menu_thumbnails;
+      unsigned menu_dpi_override_value;
+      unsigned menu_entry_normal_color;
+      unsigned menu_entry_hover_color;
+      unsigned menu_title_color;
+      unsigned menu_xmb_shader_pipeline;
+      unsigned menu_xmb_scale_factor;
+      unsigned menu_xmb_alpha_factor;
+      unsigned menu_xmb_theme;
+      unsigned menu_xmb_color_theme;
+      unsigned menu_materialui_color_theme;
+
+      unsigned camera_width;
+      unsigned camera_height;
+
+#ifdef HAVE_WASAPI
+      unsigned audio_wasapi_sh_buffer_length; /* in frames (0 disables buffering) */
+#endif
+   } uints;
+
    bool modified;
 
    video_viewport_t video_viewport_custom;
 
+   size_t rewind_buffer_size;
+
    char playlist_names[PATH_MAX_LENGTH];
    char playlist_cores[PATH_MAX_LENGTH];
-
 
    struct
    {
       char driver[32];
       char context_driver[32];
-      unsigned window_x;
-      unsigned window_y;
-      unsigned monitor_index;
-      unsigned fullscreen_x;
-      unsigned fullscreen_y;
-      unsigned max_swapchain_images;
-      unsigned swap_interval;
-      unsigned hard_sync_frames;
-      unsigned frame_delay;
-#ifdef GEKKO
-      unsigned viwidth;
-#endif
-      unsigned aspect_ratio_idx;
-      unsigned rotation;
    } video;
 
    struct
@@ -288,44 +350,14 @@ typedef struct settings
    struct
    {
       char driver[32];
-
-      unsigned thumbnails;
-
-      struct
-      {
-         unsigned override_value;
-      } dpi;
-
-
-      unsigned entry_normal_color;
-      unsigned entry_hover_color;
-      unsigned title_color;
-
-      struct
-      {
-         unsigned shader_pipeline;
-         char     font[PATH_MAX_LENGTH];
-         unsigned scale_factor;
-         unsigned alpha_factor;
-         unsigned theme;
-         unsigned menu_color_theme;
-      } xmb;
-
-      struct
-      {
-         unsigned menu_color_theme;
-      } materialui;
-
+      char xmb_font[PATH_MAX_LENGTH];
    } menu;
 #endif
-
 
    struct
    {
       char driver[32];
       char device[255];
-      unsigned width;
-      unsigned height;
    } camera;
 
    struct
@@ -343,16 +375,6 @@ typedef struct settings
       char driver[32];
       char resampler[32];
       char device[255];
-      unsigned out_rate;
-      unsigned block_frames;
-      unsigned latency;
-
-#ifdef HAVE_WASAPI
-      struct
-      {
-         unsigned sh_buffer_length; /* in frames (0 disables buffering) */
-      } wasapi;
-#endif
    } audio;
 
    struct
@@ -361,28 +383,6 @@ typedef struct settings
       char joypad_driver[32];
       char keyboard_layout[64];
 
-      unsigned remap_ids[MAX_USERS][RARCH_BIND_LIST_END];
-
-      unsigned max_users;
-
-
-      /* Set by autoconfiguration in joypad_autoconfig_dir.
-       * Does not override main binds. */
-      unsigned libretro_device[MAX_USERS];
-      unsigned analog_dpad_mode[MAX_USERS];
-
-      unsigned joypad_map[MAX_USERS];
-      unsigned device[MAX_USERS];
-
-      unsigned turbo_period;
-      unsigned turbo_duty_cycle;
-
-
-      unsigned bind_timeout;
-
-      unsigned menu_toggle_gamepad_combo;
-      unsigned keyboard_gamepad_mapping_type;
-      unsigned poll_type_behavior;
    } input;
 
    struct
@@ -451,28 +451,11 @@ typedef struct settings
    struct
    {
       char server[255];
-      unsigned port;
-      unsigned input_latency_frames_min;
-      unsigned input_latency_frames_range;
       char password[128];
       char spectate_password[128];
    } netplay;
 #endif
 
-
-   unsigned bundle_assets_extract_version_current;
-   unsigned bundle_assets_extract_last_version;
-   unsigned content_history_size;
-   unsigned libretro_log_level;
-   unsigned rewind_granularity;
-   unsigned autosave_interval;
-   unsigned network_cmd_port;
-   unsigned network_remote_base_port;
-#ifdef HAVE_LANGEXTRA
-   unsigned user_language;
-#endif
-
-   size_t rewind_buffer_size;
 
    char username[32];
 } settings_t;

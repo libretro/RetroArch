@@ -514,13 +514,13 @@ void input_config_clear_device_name(unsigned port)
 unsigned *input_config_get_device_ptr(unsigned port)
 {
    settings_t *settings = config_get_ptr();
-   return &settings->input.libretro_device[port];
+   return &settings->uints.input_libretro_device[port];
 }
 
 unsigned input_config_get_device(unsigned port)
 {
    settings_t *settings = config_get_ptr();
-   return settings->input.libretro_device[port];
+   return settings->uints.input_libretro_device[port];
 }
 
 void input_config_set_device(unsigned port, unsigned id)
@@ -528,13 +528,13 @@ void input_config_set_device(unsigned port, unsigned id)
    settings_t *settings = config_get_ptr();
 
    if (settings)
-      settings->input.libretro_device[port] = id;
+      settings->uints.input_libretro_device[port] = id;
 }
 
 bool input_config_get_bind_idx(unsigned port, unsigned *joy_idx_real)
 {
    settings_t *settings = config_get_ptr();
-   unsigned joy_idx     = settings->input.joypad_map[port];
+   unsigned joy_idx     = settings->uints.input_joypad_map[port];
 
    if (joy_idx >= MAX_USERS)
       return false;
@@ -546,7 +546,7 @@ bool input_config_get_bind_idx(unsigned port, unsigned *joy_idx_real)
 const struct retro_keybind *input_config_get_bind_auto(unsigned port, unsigned id)
 {
    settings_t *settings = config_get_ptr();
-   unsigned joy_idx     = settings->input.joypad_map[port];
+   unsigned joy_idx     = settings->uints.input_joypad_map[port];
 
    if (joy_idx < MAX_USERS)
       return &input_autoconf_binds[joy_idx][id];

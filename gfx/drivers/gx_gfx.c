@@ -258,7 +258,7 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    VIDEO_SetBlack(true);
    VIDEO_Flush();
    viHeightMultiplier = 1;
-   viWidth = settings->video.viwidth;
+   viWidth            = settings->uints.video_viwidth;
 
 #if defined(HW_RVL)
    progressive = CONF_GetProgressiveScan() > 0 && VIDEO_HaveComponentCable();
@@ -890,15 +890,15 @@ static void gx_resize(void *data)
             g_orientation == ORIENTATION_FLIPPED_ROTATED)
          desired_aspect = 1.0 / desired_aspect;
 
-      if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          struct video_viewport *custom_vp = video_viewport_get_custom();
 
          if (!custom_vp->width || !custom_vp->height)
          {
-            custom_vp->x = 0;
-            custom_vp->y = 0;
-            custom_vp->width = gx->vp.full_width;
+            custom_vp->x      = 0;
+            custom_vp->y      = 0;
+            custom_vp->width  = gx->vp.full_width;
             custom_vp->height = gx->vp.full_height;
          }
 

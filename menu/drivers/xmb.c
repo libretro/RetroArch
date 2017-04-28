@@ -394,7 +394,7 @@ float gradient_dark[16] = {
 const char* xmb_theme_ident(void)
 {
    settings_t *settings = config_get_ptr();
-   switch (settings->menu.xmb.theme)
+   switch (settings->uints.menu_xmb_theme)
    {
       case XMB_ICON_THEME_FLATUI:
          return "flatui";
@@ -422,7 +422,7 @@ static const char *xmb_thumbnails_ident(void)
 {
    settings_t *settings = config_get_ptr();
 
-   switch (settings->menu.thumbnails)
+   switch (settings->uints.menu_thumbnails)
    {
       case 1:
          return "Named_Snaps";
@@ -2924,7 +2924,7 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
    settings_t *settings          = config_get_ptr();
 
    float scale_factor            =
-      (settings->menu.xmb.scale_factor * width) / (1920.0 * 100);
+      (settings->uints.menu_xmb_scale_factor * width) / (1920.0 * 100);
 
    xmb->above_subitem_offset     =   1.5;
    xmb->above_item_offset        =  -1.0;
@@ -2993,10 +2993,10 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
    unsigned new_font_size, new_header_height;
    settings_t *settings          = config_get_ptr();
    float scale_factor            =
-      ((settings->menu.xmb.scale_factor * width) / (1920.0 * 100)) * 1.5;
+      ((settings->uints.menu_xmb_scale_factor * width) / (1920.0 * 100)) * 1.5;
 
 #ifdef _3DS
-   scale_factor = settings->menu.xmb.scale_factor / 400.0;
+   scale_factor = settings->uints.menu_xmb_scale_factor / 400.0;
 #endif
 
    xmb->above_subitem_offset     =  1.5;

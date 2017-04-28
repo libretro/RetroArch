@@ -160,8 +160,8 @@ static void bundle_decompressed(void *task_data,
       free(dec);
    }
 
-   settings->bundle_assets_extract_last_version =
-      settings->bundle_assets_extract_version_current;
+   settings->uints.bundle_assets_extract_last_version =
+      settings->uints.bundle_assets_extract_version_current;
 
    configuration_set_bool(settings, settings->bools.bundle_finished, true);
 
@@ -201,8 +201,8 @@ static bool menu_init(menu_handle_t *menu_data)
 #ifdef IOS
          && menu_dialog_is_push_pending()
 #else
-         && (settings->bundle_assets_extract_version_current
-            != settings->bundle_assets_extract_last_version)
+         && (settings->uints.bundle_assets_extract_version_current
+            != settings->uints.bundle_assets_extract_last_version)
 #endif
       )
    {

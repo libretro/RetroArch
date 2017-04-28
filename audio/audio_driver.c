@@ -353,9 +353,9 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
                &current_audio,
                &audio_driver_context_audio_data,
                *settings->audio.device ? settings->audio.device : NULL,
-               settings->audio.out_rate, &new_rate, 
-               settings->audio.latency,
-               settings->audio.block_frames,
+               settings->uints.audio_out_rate, &new_rate, 
+               settings->uints.audio_latency,
+               settings->uints.audio_block_frames,
                current_audio))
       {
          RARCH_ERR("Cannot open threaded audio driver ... Exiting ...\n");
@@ -368,15 +368,15 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
       audio_driver_context_audio_data = 
          current_audio->init(*settings->audio.device ?
                settings->audio.device : NULL,
-               settings->audio.out_rate,
-               settings->audio.latency,
-               settings->audio.block_frames,
+               settings->uints.audio_out_rate,
+               settings->uints.audio_latency,
+               settings->uints.audio_block_frames,
                &new_rate);
    }
 
    if (new_rate != 0)
    {
-      configuration_set_int(settings, settings->audio.out_rate, new_rate);
+      configuration_set_int(settings, settings->uints.audio_out_rate, new_rate);
    }
 
    if (!audio_driver_context_audio_data)
@@ -400,12 +400,12 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    {
       /* Should never happen. */
       RARCH_WARN("Input rate is invalid (%.3f Hz). Using output rate (%u Hz).\n",
-            audio_driver_input, settings->audio.out_rate);
-      audio_driver_input = settings->audio.out_rate;
+            audio_driver_input, settings->uints.audio_out_rate);
+      audio_driver_input = settings->uints.audio_out_rate;
    }
 
    audio_source_ratio_original   = audio_source_ratio_current =
-      (double)settings->audio.out_rate / audio_driver_input;
+      (double)settings->uints.audio_out_rate / audio_driver_input;
 
    if (!retro_resampler_realloc(
             &audio_driver_resampler_data,
@@ -427,7 +427,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    audio_driver_input_data = aud_inp_data;
    audio_driver_data_ptr   = 0;
 
-   retro_assert(settings->audio.out_rate <
+   retro_assert(settings->uints.audio_out_rate <
          audio_driver_input * AUDIO_MAX_RATIO);
 
    samples_buf = (float*)malloc(outsamples_max * sizeof(float));
@@ -909,7 +909,7 @@ bool audio_driver_disable_callback(void)
 void audio_driver_monitor_set_rate(void)
 {
    settings_t *settings = config_get_ptr();
-   double new_src_ratio = (double)settings->audio.out_rate / 
+   double new_src_ratio = (double)settings->uints.audio_out_rate / 
       audio_driver_input;
 
    audio_source_ratio_original = new_src_ratio;

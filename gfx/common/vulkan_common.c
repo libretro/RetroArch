@@ -2373,8 +2373,8 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    desired_swapchain_images = surface_properties.minImageCount + 1;
 
    /* Limit latency. */
-   if (desired_swapchain_images > settings->video.max_swapchain_images)
-      desired_swapchain_images = settings->video.max_swapchain_images;
+   if (desired_swapchain_images > settings->uints.video_max_swapchain_images)
+      desired_swapchain_images = settings->uints.video_max_swapchain_images;
 
    if (desired_swapchain_images < surface_properties.minImageCount)
       desired_swapchain_images = surface_properties.minImageCount;

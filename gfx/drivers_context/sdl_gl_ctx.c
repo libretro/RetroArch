@@ -245,7 +245,7 @@ static void sdl_ctx_get_video_size(void *data,
    {
 #ifdef HAVE_SDL2
       SDL_DisplayMode mode = {0};
-      int i = settings->video.monitor_index;
+      int i = settings->uints.video_monitor_index;
 
       if (SDL_GetCurrentDisplayMode(i, &mode) < 0)
          RARCH_WARN("[SDL_GL]: Failed to get display #%i mode: %s\n", i,

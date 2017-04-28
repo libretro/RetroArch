@@ -597,13 +597,13 @@ static int exynos_init(struct exynos_data *pdata, unsigned bpp)
    unsigned i;
    settings_t *settings   = config_get_ptr();
 
-   if (settings->video.fullscreen_x != 0 &&
-         settings->video.fullscreen_y != 0)
+   if (settings->uints.video_fullscreen_x != 0 &&
+         settings->uints.video_fullscreen_y != 0)
    {
       for (i = 0; i < g_drm_connector->count_modes; i++)
       {
-         if (g_drm_connector->modes[i].hdisplay == settings->video.fullscreen_x &&
-               g_drm_connector->modes[i].vdisplay == settings->video.fullscreen_y)
+         if (g_drm_connector->modes[i].hdisplay == settings->uints.video_fullscreen_x &&
+               g_drm_connector->modes[i].vdisplay == settings->uints.video_fullscreen_y)
          {
             g_drm_mode = &g_drm_connector->modes[i];
             break;
@@ -613,7 +613,8 @@ static int exynos_init(struct exynos_data *pdata, unsigned bpp)
       if (!g_drm_mode)
       {
          RARCH_ERR("[video_exynos]: requested resolution (%ux%u) not available\n",
-               settings->video.fullscreen_x, settings->video.fullscreen_y);
+               settings->uints.video_fullscreen_x,
+               settings->uints.video_fullscreen_y);
          goto fail;
       }
 

@@ -74,7 +74,7 @@ static bool menu_input_key_bind_custom_bind_keyboard_cb(
    menu_input_binds.begin++;
    menu_input_binds.target++;
    
-   rarch_timer_begin_new_time(&menu_input_binds.timer, settings->input.bind_timeout);
+   rarch_timer_begin_new_time(&menu_input_binds.timer, settings->uints.input_bind_timeout);
 
    return (menu_input_binds.begin <= menu_input_binds.last);
 }
@@ -249,14 +249,14 @@ bool menu_input_key_bind_set_mode(
       return false;
 
    index_offset      = setting->index_offset;
-   menu_bind_port    = settings->input.joypad_map[index_offset];
+   menu_bind_port    = settings->uints.input_joypad_map[index_offset];
 
    menu_input_key_bind_poll_bind_get_rested_axes(
          &menu_input_binds, menu_bind_port);
    menu_input_key_bind_poll_bind_state(
          &menu_input_binds, menu_bind_port, false);
 
-   rarch_timer_begin_new_time(&menu_input_binds.timer, settings->input.bind_timeout);
+   rarch_timer_begin_new_time(&menu_input_binds.timer, settings->uints.input_bind_timeout);
 
    keys.userdata = menu;
    keys.cb       = menu_input_key_bind_custom_bind_keyboard_cb;
@@ -352,7 +352,7 @@ static bool menu_input_key_bind_poll_find_trigger(
    if (!state || !new_state)
       return false;
 
-   for (i = 0; i < settings->input.max_users; i++)
+   for (i = 0; i < settings->uints.input_max_users; i++)
    {
       if (!menu_input_key_bind_poll_find_trigger_pad(
                state, new_state, i))
@@ -392,7 +392,7 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind)
 
       menu_input_binds.begin++;
       menu_input_binds.target++;
-      rarch_timer_begin_new_time(&menu_input_binds.timer, settings->input.bind_timeout);
+      rarch_timer_begin_new_time(&menu_input_binds.timer, settings->uints.input_bind_timeout);
       timed_out = true;
    }
 
@@ -438,7 +438,7 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind)
       }
 
       binds.target++;
-      rarch_timer_begin_new_time(&binds.timer, settings->input.bind_timeout);
+      rarch_timer_begin_new_time(&binds.timer, settings->uints.input_bind_timeout);
    }
    menu_input_binds = binds;
 

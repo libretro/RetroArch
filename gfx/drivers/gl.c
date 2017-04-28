@@ -1463,7 +1463,7 @@ static void gl_set_nonblock_state(void *data, bool state)
    context_bind_hw_render(false);
 
    if (!state)
-      interval = settings->video.swap_interval;
+      interval = settings->uints.video_swap_interval;
 
    video_context_driver_swap_interval(&interval);
    context_bind_hw_render(true);

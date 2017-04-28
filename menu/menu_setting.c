@@ -487,7 +487,7 @@ static void setting_get_string_representation_uint_analog_dpad_mode(void *data,
    if (setting)
    {
       unsigned index_offset = setting->index_offset;
-      strlcpy(s, modes[settings->input.analog_dpad_mode
+      strlcpy(s, modes[settings->uints.input_analog_dpad_mode
             [index_offset] % ANALOG_DPAD_LAST], len);
    }
 }
@@ -533,7 +533,7 @@ static void setting_get_string_representation_uint_user_language(void *data,
    modes[RETRO_LANGUAGE_VIETNAMESE]             = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE);
 
    if (settings)
-      strlcpy(s, modes[settings->user_language], len);
+      strlcpy(s, modes[settings->uints.user_language], len);
 }
 #endif
 
@@ -937,7 +937,7 @@ static int setting_action_start_bind_device(void *data)
 
    index_offset = setting->index_offset;
 
-   configuration_set_uint(settings, settings->input.joypad_map[index_offset], index_offset);
+   configuration_set_uint(settings, settings->uints.input_joypad_map[index_offset], index_offset);
    return 0;
 }
 
@@ -1084,8 +1084,8 @@ static int setting_action_left_analog_dpad_mode(void *data, bool wraparound)
 
    port = setting->index_offset;
 
-   configuration_set_uint(settings, settings->input.analog_dpad_mode[port],
-      (settings->input.analog_dpad_mode
+   configuration_set_uint(settings, settings->uints.input_analog_dpad_mode[port],
+      (settings->uints.input_analog_dpad_mode
        [port] + ANALOG_DPAD_LAST - 1) % ANALOG_DPAD_LAST);
 
    return 0;
@@ -1103,8 +1103,8 @@ static int setting_action_right_analog_dpad_mode(void *data, bool wraparound)
    port = setting->index_offset;
 
    settings->modified                     = true;
-   settings->input.analog_dpad_mode[port] =
-      (settings->input.analog_dpad_mode[port] + 1)
+   settings->uints.input_analog_dpad_mode[port] =
+      (settings->uints.input_analog_dpad_mode[port] + 1)
       % ANALOG_DPAD_LAST;
 
    return 0;
@@ -1254,10 +1254,10 @@ static int setting_action_left_bind_device(void *data, bool wraparound)
 
    index_offset = setting->index_offset;
 
-   p = &settings->input.joypad_map[index_offset];
+   p = &settings->uints.input_joypad_map[index_offset];
 
-   if ((*p) >= settings->input.max_users)
-      *p = settings->input.max_users - 1;
+   if ((*p) >= settings->uints.input_max_users)
+      *p = settings->uints.input_max_users - 1;
    else if ((*p) > 0)
       (*p)--;
 
@@ -1276,9 +1276,9 @@ static int setting_action_right_bind_device(void *data, bool wraparound)
 
    index_offset = setting->index_offset;
 
-   p = &settings->input.joypad_map[index_offset];
+   p = &settings->uints.input_joypad_map[index_offset];
 
-   if (*p < settings->input.max_users)
+   if (*p < settings->uints.input_max_users)
       (*p)++;
 
    return 0;
@@ -1415,9 +1415,9 @@ static void get_string_representation_bind_device(void * data, char *s,
       return;
 
    index_offset = setting->index_offset;
-   map          = settings->input.joypad_map[index_offset];
+   map          = settings->uints.input_joypad_map[index_offset];
 
-   if (map < settings->input.max_users)
+   if (map < settings->uints.input_max_users)
    {
       const char *device_name = input_config_get_device_name(map);
 
@@ -1500,19 +1500,19 @@ void general_read_handler(void *data)
             *setting->value.target.fraction = settings->floats.video_refresh_rate;
             break;
          case MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX:
-            *setting->value.target.integer = settings->input.joypad_map[0];
+            *setting->value.target.integer = settings->uints.input_joypad_map[0];
             break;
          case MENU_ENUM_LABEL_INPUT_PLAYER2_JOYPAD_INDEX:
-            *setting->value.target.integer = settings->input.joypad_map[1];
+            *setting->value.target.integer = settings->uints.input_joypad_map[1];
             break;
          case MENU_ENUM_LABEL_INPUT_PLAYER3_JOYPAD_INDEX:
-            *setting->value.target.integer = settings->input.joypad_map[2];
+            *setting->value.target.integer = settings->uints.input_joypad_map[2];
             break;
          case MENU_ENUM_LABEL_INPUT_PLAYER4_JOYPAD_INDEX:
-            *setting->value.target.integer = settings->input.joypad_map[3];
+            *setting->value.target.integer = settings->uints.input_joypad_map[3];
             break;
          case MENU_ENUM_LABEL_INPUT_PLAYER5_JOYPAD_INDEX:
-            *setting->value.target.integer = settings->input.joypad_map[4];
+            *setting->value.target.integer = settings->uints.input_joypad_map[4];
             break;
          default:
             break;
@@ -1626,23 +1626,23 @@ void general_write_handler(void *data)
          break;
       case MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX:
          settings->modified            = true;
-         settings->input.joypad_map[0] = *setting->value.target.integer;
+         settings->uints.input_joypad_map[0] = *setting->value.target.integer;
          break;
       case MENU_ENUM_LABEL_INPUT_PLAYER2_JOYPAD_INDEX:
          settings->modified            = true;
-         settings->input.joypad_map[1] = *setting->value.target.integer;
+         settings->uints.input_joypad_map[1] = *setting->value.target.integer;
          break;
       case MENU_ENUM_LABEL_INPUT_PLAYER3_JOYPAD_INDEX:
          settings->modified            = true;
-         settings->input.joypad_map[2] = *setting->value.target.integer;
+         settings->uints.input_joypad_map[2] = *setting->value.target.integer;
          break;
       case MENU_ENUM_LABEL_INPUT_PLAYER4_JOYPAD_INDEX:
          settings->modified            = true;
-         settings->input.joypad_map[3] = *setting->value.target.integer;
+         settings->uints.input_joypad_map[3] = *setting->value.target.integer;
          break;
       case MENU_ENUM_LABEL_INPUT_PLAYER5_JOYPAD_INDEX:
          settings->modified            = true;
-         settings->input.joypad_map[4] = *setting->value.target.integer;
+         settings->uints.input_joypad_map[4] = *setting->value.target.integer;
          break;
       case MENU_ENUM_LABEL_LOG_VERBOSITY:
          {
@@ -1975,7 +1975,7 @@ static bool setting_append_list_input_player_options(
 
       CONFIG_UINT_ALT(
             list, list_info,
-            &settings->input.analog_dpad_mode[user],
+            &settings->uints.input_analog_dpad_mode[user],
             key_analog[user],
             label_analog[user],
             user,
@@ -2897,7 +2897,7 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  &settings->libretro_log_level,
+                  &settings->uints.libretro_log_level,
                   MENU_ENUM_LABEL_LIBRETRO_LOG_LEVEL,
                   MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL,
                   libretro_log_level,
@@ -3010,7 +3010,7 @@ static bool setting_append_list(
 #ifdef HAVE_THREADS
             CONFIG_UINT(
                   list, list_info,
-                  &settings->autosave_interval,
+                  &settings->uints.autosave_interval,
                   MENU_ENUM_LABEL_AUTOSAVE_INTERVAL,
                   MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
                   autosave_interval,
@@ -3069,7 +3069,7 @@ static bool setting_append_list(
 #endif
             CONFIG_UINT(
                   list, list_info,
-                  &settings->rewind_granularity,
+                  &settings->uints.rewind_granularity,
                   MENU_ENUM_LABEL_REWIND_GRANULARITY,
                   MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
                   rewind_granularity,
@@ -3136,7 +3136,7 @@ static bool setting_append_list(
 
          CONFIG_UINT(
                list, list_info,
-               &settings->video.monitor_index,
+               &settings->uints.video_monitor_index,
                MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX,
                MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
                monitor_index,
@@ -3245,7 +3245,7 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "Aspect", &group_info, &subgroup_info, parent_group);
          CONFIG_UINT(
                list, list_info,
-               &settings->video.aspect_ratio_idx,
+               &settings->uints.video_aspect_ratio_idx,
                MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_INDEX,
                MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
                aspect_ratio_idx,
@@ -3373,7 +3373,7 @@ static bool setting_append_list(
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
             CONFIG_UINT(
                   list, list_info,
-                  &settings->video.window_x,
+                  &settings->uints.video_window_x,
                   MENU_ENUM_LABEL_VIDEO_WINDOW_WIDTH,
                   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
                   0,
@@ -3386,7 +3386,7 @@ static bool setting_append_list(
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
             CONFIG_UINT(
                   list, list_info,
-                  &settings->video.window_y,
+                  &settings->uints.video_window_y,
                   MENU_ENUM_LABEL_VIDEO_WINDOW_HEIGHT,
                   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
                   0,
@@ -3421,7 +3421,7 @@ static bool setting_append_list(
 #ifdef GEKKO
          CONFIG_UINT(
                list, list_info,
-               &settings->video.viwidth,
+               &settings->uints.video_viwidth,
                MENU_ENUM_LABEL_VIDEO_VI_WIDTH,
                MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
                video_viwidth,
@@ -3467,7 +3467,7 @@ static bool setting_append_list(
 
          CONFIG_UINT(
                list, list_info,
-               &settings->video.rotation,
+               &settings->uints.video_rotation,
                MENU_ENUM_LABEL_VIDEO_ROTATION,
                MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
                0,
@@ -3527,7 +3527,7 @@ static bool setting_append_list(
 
          CONFIG_UINT(
                list, list_info,
-               &settings->video.swap_interval,
+               &settings->uints.video_swap_interval,
                MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL,
                MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
                swap_interval,
@@ -3543,7 +3543,7 @@ static bool setting_append_list(
 
          CONFIG_UINT(
                list, list_info,
-               &settings->video.max_swapchain_images,
+               &settings->uints.video_max_swapchain_images,
                MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
                MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
                max_swapchain_images,
@@ -3577,7 +3577,7 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  &settings->video.hard_sync_frames,
+                  &settings->uints.video_hard_sync_frames,
                   MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES,
                   MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
                   hard_sync_frames,
@@ -3592,7 +3592,7 @@ static bool setting_append_list(
 
          CONFIG_UINT(
                list, list_info,
-               &settings->video.frame_delay,
+               &settings->uints.video_frame_delay,
                MENU_ENUM_LABEL_VIDEO_FRAME_DELAY,
                MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
                frame_delay,
@@ -3788,7 +3788,7 @@ static bool setting_append_list(
 
          CONFIG_UINT(
                list, list_info,
-               &settings->audio.latency,
+               &settings->uints.audio_latency,
                MENU_ENUM_LABEL_AUDIO_LATENCY,
                MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
                g_defaults.settings.out_latency ? 
@@ -3848,7 +3848,7 @@ static bool setting_append_list(
 #ifdef RARCH_MOBILE
          CONFIG_UINT(
                list, list_info,
-               &settings->audio.block_frames,
+               &settings->uints.audio_block_frames,
                MENU_ENUM_LABEL_AUDIO_BLOCK_FRAMES,
                MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
                0,
@@ -3892,7 +3892,7 @@ static bool setting_append_list(
 
          CONFIG_UINT(
                list, list_info,
-               &settings->audio.out_rate,
+               &settings->uints.audio_out_rate,
                MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE,
                MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
                out_rate,
@@ -3936,7 +3936,7 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  &settings->input.max_users,
+                  &settings->uints.input_max_users,
                   MENU_ENUM_LABEL_INPUT_MAX_USERS,
                   MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
                   input_max_users,
@@ -3967,7 +3967,7 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  &settings->input.poll_type_behavior,
+                  &settings->uints.input_poll_type_behavior,
                   MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR,
                   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
                   input_poll_type_behavior,
@@ -4032,7 +4032,7 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  &settings->input.keyboard_gamepad_mapping_type,
+                  &settings->uints.input_keyboard_gamepad_mapping_type,
                   MENU_ENUM_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
                   MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
                   1,
@@ -4062,7 +4062,7 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  &settings->input.menu_toggle_gamepad_combo,
+                  &settings->uints.input_menu_toggle_gamepad_combo,
                   MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
                   MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
                   menu_toggle_gamepad_combo,
@@ -4200,7 +4200,7 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  &settings->input.bind_timeout,
+                  &settings->uints.input_bind_timeout,
                   MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT,
                   MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
                   input_bind_timeout,
@@ -4214,7 +4214,7 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  &settings->input.turbo_period,
+                  &settings->uints.input_turbo_period,
                   MENU_ENUM_LABEL_INPUT_TURBO_PERIOD,
                   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
                   turbo_period,
@@ -4228,7 +4228,7 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  &settings->input.turbo_duty_cycle,
+                  &settings->uints.input_turbo_duty_cycle,
                   MENU_ENUM_LABEL_INPUT_DUTY_CYCLE,
                   MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
                   turbo_duty_cycle,
@@ -4941,7 +4941,7 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  &settings->menu.dpi.override_value,
+                  &settings->uints.menu_dpi_override_value,
                   MENU_ENUM_LABEL_DPI_OVERRIDE_VALUE,
                   MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE,
                   menu_dpi_override_value,
@@ -4959,7 +4959,7 @@ static bool setting_append_list(
          {
             CONFIG_UINT(
                   list, list_info,
-                  &settings->menu.xmb.alpha_factor,
+                  &settings->uints.menu_xmb_alpha_factor,
                   MENU_ENUM_LABEL_XMB_ALPHA_FACTOR,
                   MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
                   xmb_alpha_factor,
@@ -4973,7 +4973,7 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  &settings->menu.xmb.scale_factor,
+                  &settings->uints.menu_xmb_scale_factor,
                   MENU_ENUM_LABEL_XMB_SCALE_FACTOR,
                   MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR,
                   xmb_scale_factor,
@@ -4987,11 +4987,11 @@ static bool setting_append_list(
 
             CONFIG_PATH(
                   list, list_info,
-                  settings->menu.xmb.font,
-                  sizeof(settings->menu.xmb.font),
+                  settings->menu.xmb_font,
+                  sizeof(settings->menu.xmb_font),
                   MENU_ENUM_LABEL_XMB_FONT,
                   MENU_ENUM_LABEL_VALUE_XMB_FONT,
-                  settings->menu.xmb.font,
+                  settings->menu.xmb_font,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -5001,7 +5001,7 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  &settings->menu.xmb.theme,
+                  &settings->uints.menu_xmb_theme,
                   MENU_ENUM_LABEL_XMB_THEME,
                   MENU_ENUM_LABEL_VALUE_XMB_THEME,
                   xmb_icon_theme,
@@ -5031,7 +5031,7 @@ static bool setting_append_list(
 #ifdef HAVE_SHADERPIPELINE
             CONFIG_UINT(
                   list, list_info,
-                  &settings->menu.xmb.shader_pipeline,
+                  &settings->uints.menu_xmb_shader_pipeline,
                   MENU_ENUM_LABEL_XMB_RIBBON_ENABLE,
                   MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
                   menu_shader_pipeline,
@@ -5045,7 +5045,7 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  &settings->menu.xmb.menu_color_theme,
+                  &settings->uints.menu_xmb_color_theme,
                   MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME,
                   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
                   xmb_theme,
@@ -5180,7 +5180,7 @@ static bool setting_append_list(
          {
             CONFIG_UINT(
                   list, list_info,
-                  &settings->menu.materialui.menu_color_theme,
+                  &settings->uints.menu_materialui_color_theme,
                   MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME,
                   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
                   MATERIALUI_THEME_BLUE,
@@ -5240,7 +5240,7 @@ static bool setting_append_list(
          {
             CONFIG_UINT(
                   list, list_info,
-                  &settings->menu.thumbnails,
+                  &settings->uints.menu_thumbnails,
                   MENU_ENUM_LABEL_THUMBNAILS,
                   MENU_ENUM_LABEL_VALUE_THUMBNAILS,
                   menu_thumbnails_default,
@@ -5497,7 +5497,7 @@ static bool setting_append_list(
 
          CONFIG_UINT(
                list, list_info,
-               &settings->content_history_size,
+               &settings->uints.content_history_size,
                MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE,
                MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE,
                default_content_history_size,
@@ -5707,7 +5707,7 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  &settings->netplay.port,
+                  &settings->uints.netplay_port,
                   MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT,
                   MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
                   RARCH_DEFAULT_PORT,
@@ -5827,7 +5827,7 @@ static bool setting_append_list(
 
             CONFIG_INT(
                   list, list_info,
-                  (int *) &settings->netplay.input_latency_frames_min,
+                  (int *) &settings->uints.netplay_input_latency_frames_min,
                   MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
                   MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
                   0,
@@ -5840,7 +5840,7 @@ static bool setting_append_list(
 
             CONFIG_INT(
                   list, list_info,
-                  (int *) &settings->netplay.input_latency_frames_range,
+                  (int *) &settings->uints.netplay_input_latency_frames_range,
                   MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
                   MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
                   0,
@@ -5912,7 +5912,7 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  &settings->network_cmd_port,
+                  &settings->uints.network_cmd_port,
                   MENU_ENUM_LABEL_NETWORK_CMD_PORT,
                   MENU_ENUM_LABEL_VALUE_NETWORK_CMD_PORT,
                   network_cmd_port,
@@ -5941,7 +5941,7 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  &settings->network_remote_base_port,
+                  &settings->uints.network_remote_base_port,
                   MENU_ENUM_LABEL_NETWORK_REMOTE_PORT,
                   MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_PORT,
                   network_remote_base_port,
@@ -5954,7 +5954,7 @@ static bool setting_append_list(
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
             /* TODO/FIXME - add enum_idx */
 
-            for(user = 0; user < settings->input.max_users; user++)
+            for(user = 0; user < settings->uints.input_max_users; user++)
             {
                char s1[64], s2[64];
 
@@ -6116,7 +6116,7 @@ static bool setting_append_list(
 #ifdef HAVE_LANGEXTRA
          CONFIG_UINT(
                list, list_info,
-               &settings->user_language,
+               &settings->uints.user_language,
                MENU_ENUM_LABEL_USER_LANGUAGE,
                MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
                def_user_language,
