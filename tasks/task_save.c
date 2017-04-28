@@ -639,7 +639,7 @@ static bool task_push_undo_save_state(const char *path, void *data, size_t size)
    state->data       = data;
    state->size       = size;
    state->undo_save  = true;
-   state->state_slot = settings->state_slot;
+   state->state_slot = settings->ints.state_slot;
 
    task->type        = TASK_TYPE_BLOCKING;
    task->state       = state;
@@ -997,7 +997,7 @@ static void task_push_save_state(const char *path, void *data, size_t size, bool
    state->autosave         = autosave;
    state->mute             = autosave; /* don't show OSD messages if we are auto-saving */
    state->thumbnail_enable = settings->bools.savestate_thumbnail_enable;
-   state->state_slot       = settings->state_slot;
+   state->state_slot       = settings->ints.state_slot;
 
    task->type              = TASK_TYPE_BLOCKING;
    task->state             = state;
@@ -1067,7 +1067,7 @@ static void task_push_load_and_save_state(const char *path, void *data,
    state->undo_data  = data;
    state->autosave   = autosave;
    state->mute       = autosave; /* don't show OSD messages if we are auto-saving */
-   state->state_slot = settings->state_slot;
+   state->state_slot = settings->ints.state_slot;
 
    task->state       = state;
    task->type        = TASK_TYPE_BLOCKING;
@@ -1203,13 +1203,13 @@ bool content_load_state(const char *path,
    strlcpy(state->path, path, sizeof(state->path));
    state->load_to_backup_buffer = load_to_backup_buffer;
    state->autoload              = autoload;
-   state->state_slot            = settings->state_slot;
+   state->state_slot            = settings->ints.state_slot;
 
-   task->type     = TASK_TYPE_BLOCKING;
-   task->state    = state;
-   task->handler  = task_load_handler;
-   task->callback = content_load_state_cb;
-   task->title    = strdup(msg_hash_to_str(MSG_LOADING_STATE));
+   task->type                   = TASK_TYPE_BLOCKING;
+   task->state                  = state;
+   task->handler                = task_load_handler;
+   task->callback               = content_load_state_cb;
+   task->title                  = strdup(msg_hash_to_str(MSG_LOADING_STATE));
 
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
 

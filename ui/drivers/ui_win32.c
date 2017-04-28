@@ -701,13 +701,13 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
          else if (mode == ID_M_STATE_INDEX_AUTO)
          {
             signed idx = -1;
-            configuration_set_int(settings, settings->state_slot, idx);
+            configuration_set_int(settings, settings->ints.state_slot, idx);
          }
          else if (mode >= (ID_M_STATE_INDEX_AUTO+1) 
                && mode <= (ID_M_STATE_INDEX_AUTO+10))
          {
             signed idx = (mode - (ID_M_STATE_INDEX_AUTO+1));
-            configuration_set_int(settings, settings->state_slot, idx);
+            configuration_set_int(settings, settings->ints.state_slot, idx);
          }
          break;
    }

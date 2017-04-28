@@ -933,15 +933,15 @@ static enum runloop_state runloop_check_state(
    if (runloop_cmd_triggered(trigger_input, RARCH_STATE_SLOT_PLUS))
    {
       char msg[128];
-      int new_state_slot = settings->state_slot + 1;
+      int new_state_slot = settings->ints.state_slot + 1;
 
       msg[0] = '\0';
 
-      configuration_set_int(settings, settings->state_slot, new_state_slot);
+      configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
 
       snprintf(msg, sizeof(msg), "%s: %d",
             msg_hash_to_str(MSG_STATE_SLOT),
-            settings->state_slot);
+            settings->ints.state_slot);
 
       runloop_msg_queue_push(msg, 2, 180, true);
 
@@ -950,18 +950,18 @@ static enum runloop_state runloop_check_state(
    else if (runloop_cmd_triggered(trigger_input, RARCH_STATE_SLOT_MINUS))
    {
       char msg[128];
-      int new_state_slot = settings->state_slot - 1;
+      int new_state_slot = settings->ints.state_slot - 1;
 
       msg[0] = '\0';
 
-      if (settings->state_slot > 0)
+      if (settings->ints.state_slot > 0)
       {
-         configuration_set_int(settings, settings->state_slot, new_state_slot);
+         configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
       }
 
       snprintf(msg, sizeof(msg), "%s: %d",
             msg_hash_to_str(MSG_STATE_SLOT),
-            settings->state_slot);
+            settings->ints.state_slot);
 
       runloop_msg_queue_push(msg, 2, 180, true);
 

@@ -733,7 +733,7 @@ static void retroarch_parse_input(int argc, char *argv[])
                retroarch_override_setting_set(
                      RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES, NULL);
 
-               configuration_set_int(settings, settings->netplay.check_frames, (int)strtoul(optarg, NULL, 0));
+               configuration_set_int(settings, settings->ints.netplay_check_frames, (int)strtoul(optarg, NULL, 0));
             }
             break;
 

@@ -656,8 +656,8 @@ static void menu_action_setting_disp_set_label_state(
 
    strlcpy(s2, path, len2);
    *w = 16;
-   snprintf(s, len, "%d", settings->state_slot);
-   if (settings->state_slot == -1)
+   snprintf(s, len, "%d", settings->ints.state_slot);
+   if (settings->ints.state_slot == -1)
       strlcat(s, " (Auto)", len);
 }
 

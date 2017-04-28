@@ -242,6 +242,14 @@ typedef struct settings
       float fastforward_ratio;
    } floats;
 
+   struct
+   {
+      int netplay_check_frames;
+      int location_update_interval_ms;
+      int location_update_interval_distance;
+      int state_slot;
+   } ints;
+
    bool modified;
 
    video_viewport_t video_viewport_custom;
@@ -327,8 +335,6 @@ typedef struct settings
    struct
    {
       char driver[32];
-      int update_interval_ms;
-      int update_interval_distance;
    } location;
 
    struct
@@ -340,14 +346,12 @@ typedef struct settings
       unsigned block_frames;
       unsigned latency;
 
-
 #ifdef HAVE_WASAPI
       struct
       {
          unsigned sh_buffer_length; /* in frames (0 disables buffering) */
       } wasapi;
 #endif
-
    } audio;
 
    struct
@@ -395,8 +399,6 @@ typedef struct settings
 #endif
 
    char browse_url[4096];
-
-   int state_slot;
 
    struct
    {
@@ -449,13 +451,13 @@ typedef struct settings
    {
       char server[255];
       unsigned port;
-      int check_frames;
       unsigned input_latency_frames_min;
       unsigned input_latency_frames_range;
       char password[128];
       char spectate_password[128];
    } netplay;
 #endif
+
 
    unsigned bundle_assets_extract_version_current;
    unsigned bundle_assets_extract_last_version;
@@ -466,7 +468,7 @@ typedef struct settings
    unsigned network_cmd_port;
    unsigned network_remote_base_port;
 #ifdef HAVE_LANGEXTRA
-   unsigned int user_language;
+   unsigned user_language;
 #endif
 
    size_t rewind_buffer_size;

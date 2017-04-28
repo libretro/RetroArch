@@ -986,10 +986,10 @@ static struct config_int_setting *populate_settings_int(settings_t *settings, in
    SETTING_INT("video_swap_interval",          &settings->video.swap_interval, true, swap_interval, false);
    SETTING_INT("video_rotation",               &settings->video.rotation, true, ORIENTATION_NORMAL, false);
    SETTING_INT("aspect_ratio_index",           &settings->video.aspect_ratio_idx, true, aspect_ratio_idx, false);
-   SETTING_INT("state_slot",                   (unsigned*)&settings->state_slot, false, 0 /* TODO */, false);
+   SETTING_INT("state_slot",                   (unsigned*)&settings->ints.state_slot, false, 0 /* TODO */, false);
 #ifdef HAVE_NETWORKING
    SETTING_INT("netplay_ip_port",              &settings->netplay.port,         true, RARCH_DEFAULT_PORT, false);
-   SETTING_INT("netplay_check_frames",         (unsigned*)&settings->netplay.check_frames, true, netplay_check_frames, false);
+   SETTING_INT("netplay_check_frames",         (unsigned*)&settings->ints.netplay_check_frames, true, netplay_check_frames, false);
    SETTING_INT("netplay_input_latency_frames_min",&settings->netplay.input_latency_frames_min, true, 0, false);
    SETTING_INT("netplay_input_latency_frames_range",&settings->netplay.input_latency_frames_range, true, 0, false);
 #endif
@@ -1909,7 +1909,7 @@ static bool config_load_file(const char *path, bool set_defaults,
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_STATELESS_MODE, NULL))
       CONFIG_GET_BOOL_BASE(conf, settings, bools.netplay_stateless_mode, "netplay_stateless_mode");
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES, NULL))
-      CONFIG_GET_INT_BASE(conf, settings, netplay.check_frames, "netplay_check_frames");
+      CONFIG_GET_INT_BASE(conf, settings, ints.netplay_check_frames, "netplay_check_frames");
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT, NULL))
       CONFIG_GET_INT_BASE(conf, settings, netplay.port, "netplay_ip_port");
 #endif

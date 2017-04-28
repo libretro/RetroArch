@@ -1211,7 +1211,7 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
          netplay_is_client ? (!netplay_client_deferred ? port
             : server_port_deferred   ) : (port != 0 ? port : RARCH_DEFAULT_PORT),
          settings->bools.netplay_stateless_mode,
-         settings->netplay.check_frames,
+         settings->ints.netplay_check_frames,
          &cbs,
          settings->bools.netplay_nat_traversal,
          settings->username,

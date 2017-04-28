@@ -2141,7 +2141,7 @@ static bool setting_append_list(
 
          CONFIG_INT(
                list, list_info,
-               &settings->state_slot,
+               &settings->ints.state_slot,
                MENU_ENUM_LABEL_STATE_SLOT,
                MENU_ENUM_LABEL_VALUE_STATE_SLOT,
                0,
@@ -5813,7 +5813,7 @@ static bool setting_append_list(
 
             CONFIG_INT(
                   list, list_info,
-                  &settings->netplay.check_frames,
+                  &settings->ints.netplay_check_frames,
                   MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES,
                   MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
                   netplay_check_frames,

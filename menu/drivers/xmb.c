@@ -1022,10 +1022,10 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 
       if (global)
       {
-         if (settings->state_slot > 0)
+         if (settings->ints.state_slot > 0)
             snprintf(path, sizeof(path), "%s%d",
-                  global->name.savestate, settings->state_slot);
-         else if (settings->state_slot < 0)
+                  global->name.savestate, settings->ints.state_slot);
+         else if (settings->ints.state_slot < 0)
             fill_pathname_join_delim(path,
                   global->name.savestate, "auto", '.', sizeof(path));
          else

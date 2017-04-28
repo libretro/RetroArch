@@ -1318,7 +1318,7 @@ static void command_event_set_savestate_auto_index(void)
 
    dir_list_free(dir_list);
 
-   configuration_set_int(settings, settings->state_slot, max_idx);
+   configuration_set_int(settings, settings->ints.state_slot, max_idx);
 
    RARCH_LOG("%s: #%d\n",
          msg_hash_to_str(MSG_FOUND_LAST_STATE_SLOT),
@@ -1702,11 +1702,12 @@ static bool command_event_main_state(unsigned cmd)
    if (global)
    {
       settings_t *settings    = config_get_ptr();
+      int state_slot          = settings->ints.state_slot;
 
-      if (settings->state_slot > 0)
+      if (state_slot > 0)
          snprintf(path, sizeof(path), "%s%d",
-               global->name.savestate, settings->state_slot);
-      else if (settings->state_slot < 0)
+               global->name.savestate, state_slot);
+      else if (state_slot < 0)
          fill_pathname_join_delim(path,
                global->name.savestate, "auto", '.', sizeof(path));
       else
@@ -1938,8 +1939,8 @@ bool command_event(enum event_command cmd, void *data)
 
             if (settings->bools.savestate_auto_index)
             {
-               int new_state_slot = settings->state_slot + 1;
-               configuration_set_int(settings, settings->state_slot, new_state_slot);
+               int new_state_slot = settings->ints.state_slot + 1;
+               configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
             }
          }
          return command_event_main_state(cmd);
@@ -1947,18 +1948,18 @@ bool command_event(enum event_command cmd, void *data)
          {
             settings_t *settings      = config_get_ptr();
             /* Slot -1 is (auto) slot. */
-            if (settings->state_slot >= 0)
+            if (settings->ints.state_slot >= 0)
             {
-               int new_state_slot = settings->state_slot - 1;
-               configuration_set_int(settings, settings->state_slot, new_state_slot);
+               int new_state_slot = settings->ints.state_slot - 1;
+               configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
             }
          }
          break;
       case CMD_EVENT_SAVE_STATE_INCREMENT:
          {
             settings_t *settings      = config_get_ptr();
-            int new_state_slot        = settings->state_slot + 1;
-            configuration_set_int(settings, settings->state_slot, new_state_slot);
+            int new_state_slot        = settings->ints.state_slot + 1;
+            configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
          }
          break;
       case CMD_EVENT_TAKE_SCREENSHOT:

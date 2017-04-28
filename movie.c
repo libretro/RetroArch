@@ -506,9 +506,9 @@ static bool runloop_check_movie_init(void)
 
    configuration_set_uint(settings, settings->rewind_granularity, 1);
 
-   if (settings->state_slot > 0)
+   if (settings->ints.state_slot > 0)
       snprintf(path, sizeof(path), "%s%d",
-            bsv_movie_state.movie_path, settings->state_slot);
+            bsv_movie_state.movie_path, settings->ints.state_slot);
    else
       strlcpy(path, bsv_movie_state.movie_path, sizeof(path));
 
