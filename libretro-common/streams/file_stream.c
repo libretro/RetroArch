@@ -534,6 +534,9 @@ int filestream_close(RFILE *stream)
    if (!stream)
       goto error;
 
+   if (stream->ext)
+      free(stream->ext);
+
 #if  defined(PSP)
    if (stream->fd > 0)
       sceIoClose(stream->fd);
