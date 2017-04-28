@@ -3206,8 +3206,8 @@ bool config_save_overrides(int override_type)
    config_load_file(path_get(RARCH_PATH_CONFIG), false, settings);
 
    bool_settings       = populate_settings_bool(settings,   &bool_settings_size);
-   bool_settings_size  = sizeof(settings->bools) / sizeof(settings->bools.placeholder);
-   bool_overrides      = populate_settings_bool(overrides,  &bool_settings_size);
+   tmp_i               = sizeof(settings->bools) / sizeof(settings->bools.placeholder);
+   bool_overrides      = populate_settings_bool(overrides,  &tmp_i);
 
    int_settings        = populate_settings_int(settings,    &int_settings_size);
    tmp_i               = 0;
