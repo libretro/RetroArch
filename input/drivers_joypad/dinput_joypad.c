@@ -29,6 +29,7 @@
 #endif
 
 #include "../../tasks/tasks_internal.h"
+#include "../gfx/video_driver.h"
 #include "../input_config.h"
 #include "../input_joypad_driver.h"
 #include "../input_keymaps.h"
