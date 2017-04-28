@@ -99,7 +99,7 @@ static void sdl_init_font(sdl_video_t *vid, const char *font_path, unsigned font
       return;
 
    if (!font_renderer_create_default((const void**)&vid->font_driver, &vid->font,
-            *settings->path.font ? settings->path.font : NULL,
+            *settings->paths.path_font ? settings->paths.path_font : NULL,
             settings->floats.video_font_size))
    {
       RARCH_LOG("[SDL]: Could not initialize fonts.\n");
@@ -294,7 +294,7 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
       }
    }
 
-   sdl_init_font(vid, settings->path.font, settings->floats.video_font_size);
+   sdl_init_font(vid, settings->paths.path_font, settings->floats.video_font_size);
 
    vid->scaler.scaler_type      = video->smooth ? SCALER_TYPE_BILINEAR : SCALER_TYPE_POINT;
    vid->scaler.in_fmt           = video->rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGB565;

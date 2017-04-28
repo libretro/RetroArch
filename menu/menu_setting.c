@@ -3667,11 +3667,11 @@ static bool setting_append_list(
 
          CONFIG_PATH(
                list, list_info,
-               settings->path.softfilter_plugin,
-               sizeof(settings->path.softfilter_plugin),
+               settings->paths.path_softfilter_plugin,
+               sizeof(settings->paths.path_softfilter_plugin),
                MENU_ENUM_LABEL_VIDEO_FILTER,
                MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
-               settings->directory.video_filter,
+               settings->paths.directory_video_filter,
                &group_info,
                &subgroup_info,
                parent_group,
@@ -3906,11 +3906,11 @@ static bool setting_append_list(
 
          CONFIG_PATH(
                list, list_info,
-               settings->path.audio_dsp_plugin,
-               sizeof(settings->path.audio_dsp_plugin),
+               settings->paths.path_audio_dsp_plugin,
+               sizeof(settings->paths.path_audio_dsp_plugin),
                MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN,
                MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
-               settings->directory.audio_filter,
+               settings->paths.directory_audio_filter,
                &group_info,
                &subgroup_info,
                parent_group,
@@ -4508,8 +4508,8 @@ static bool setting_append_list(
 
          CONFIG_PATH(
                list, list_info,
-               settings->path.font,
-               sizeof(settings->path.font),
+               settings->paths.path_font,
+               sizeof(settings->paths.path_font),
                MENU_ENUM_LABEL_VIDEO_FONT_PATH,
                MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
                "",
@@ -4627,11 +4627,11 @@ static bool setting_append_list(
 
          CONFIG_PATH(
                list, list_info,
-               settings->path.overlay,
-               sizeof(settings->path.overlay),
+               settings->paths.path_overlay,
+               sizeof(settings->paths.path_overlay),
                MENU_ENUM_LABEL_OVERLAY_PRESET,
                MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
-               settings->directory.overlay,
+               settings->paths.directory_overlay,
                &group_info,
                &subgroup_info,
                parent_group,
@@ -4694,8 +4694,8 @@ static bool setting_append_list(
          {
             CONFIG_PATH(
                   list, list_info,
-                  settings->path.menu_wallpaper,
-                  sizeof(settings->path.menu_wallpaper),
+                  settings->paths.path_menu_wallpaper,
+                  sizeof(settings->paths.path_menu_wallpaper),
                   MENU_ENUM_LABEL_MENU_WALLPAPER,
                   MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
                   "",
@@ -4987,11 +4987,11 @@ static bool setting_append_list(
 
             CONFIG_PATH(
                   list, list_info,
-                  settings->menu.xmb_font,
-                  sizeof(settings->menu.xmb_font),
+                  settings->paths.path_menu_xmb_font,
+                  sizeof(settings->paths.path_menu_xmb_font),
                   MENU_ENUM_LABEL_XMB_FONT,
                   MENU_ENUM_LABEL_VALUE_XMB_FONT,
-                  settings->menu.xmb_font,
+                  settings->paths.path_menu_xmb_font,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -5601,8 +5601,8 @@ static bool setting_append_list(
 #ifdef HAVE_NETWORKING
          CONFIG_STRING(
                list, list_info,
-               settings->network.buildbot_url,
-               sizeof(settings->network.buildbot_url),
+               settings->paths.network_buildbot_url,
+               sizeof(settings->paths.network_buildbot_url),
                MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL,
                MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
                buildbot_server_url, 
@@ -5615,8 +5615,8 @@ static bool setting_append_list(
 
          CONFIG_STRING(
                list, list_info,
-               settings->network.buildbot_assets_url,
-               sizeof(settings->network.buildbot_assets_url),
+               settings->paths.network_buildbot_assets_url,
+               sizeof(settings->paths.network_buildbot_assets_url),
                MENU_ENUM_LABEL_BUILDBOT_ASSETS_URL,
                MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
                buildbot_assets_server_url, 
@@ -5692,8 +5692,8 @@ static bool setting_append_list(
 
             CONFIG_STRING(
                   list, list_info,
-                  settings->netplay.server,
-                  sizeof(settings->netplay.server),
+                  settings->paths.netplay_server,
+                  sizeof(settings->paths.netplay_server),
                   MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS,
                   MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
                   "",
@@ -5722,8 +5722,8 @@ static bool setting_append_list(
 
             CONFIG_STRING(
                   list, list_info,
-                  settings->netplay.password,
-                  sizeof(settings->netplay.password),
+                  settings->paths.netplay_password,
+                  sizeof(settings->paths.netplay_password),
                   MENU_ENUM_LABEL_NETPLAY_PASSWORD,
                   MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
                   "",
@@ -5736,8 +5736,8 @@ static bool setting_append_list(
 
             CONFIG_STRING(
                   list, list_info,
-                  settings->netplay.spectate_password,
-                  sizeof(settings->netplay.spectate_password),
+                  settings->paths.netplay_spectate_password,
+                  sizeof(settings->paths.netplay_spectate_password),
                   MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD,
                   MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
                   "",
@@ -6087,8 +6087,8 @@ static bool setting_append_list(
 
          CONFIG_STRING(
                list, list_info,
-               settings->username,
-               sizeof(settings->username),
+               settings->paths.username,
+               sizeof(settings->paths.username),
                MENU_ENUM_LABEL_NETPLAY_NICKNAME,
                MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
                "",
@@ -6101,8 +6101,8 @@ static bool setting_append_list(
 
          CONFIG_STRING(
                list, list_info,
-               settings->browse_url,
-               sizeof(settings->browse_url),
+               settings->paths.browse_url,
+               sizeof(settings->paths.browse_url),
                MENU_ENUM_LABEL_BROWSE_URL,
                MENU_ENUM_LABEL_VALUE_BROWSE_URL,
                "",
@@ -6219,8 +6219,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->directory.system,
-               sizeof(settings->directory.system),
+               settings->paths.directory_system,
+               sizeof(settings->paths.directory_system),
                MENU_ENUM_LABEL_SYSTEM_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY,
                "",
@@ -6233,8 +6233,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->directory.core_assets,
-               sizeof(settings->directory.core_assets),
+               settings->paths.directory_core_assets,
+               sizeof(settings->paths.directory_core_assets),
                MENU_ENUM_LABEL_CORE_ASSETS_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
                "",
@@ -6247,8 +6247,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->directory.assets,
-               sizeof(settings->directory.assets),
+               settings->paths.directory_assets,
+               sizeof(settings->paths.directory_assets),
                MENU_ENUM_LABEL_ASSETS_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
                "",
@@ -6261,8 +6261,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->directory.dynamic_wallpapers,
-               sizeof(settings->directory.dynamic_wallpapers),
+               settings->paths.directory_dynamic_wallpapers,
+               sizeof(settings->paths.directory_dynamic_wallpapers),
                MENU_ENUM_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
                "",
@@ -6275,8 +6275,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->directory.thumbnails,
-               sizeof(settings->directory.thumbnails),
+               settings->paths.directory_thumbnails,
+               sizeof(settings->paths.directory_thumbnails),
                MENU_ENUM_LABEL_THUMBNAILS_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
                "",
@@ -6289,8 +6289,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->directory.menu_content,
-               sizeof(settings->directory.menu_content),
+               settings->paths.directory_menu_content,
+               sizeof(settings->paths.directory_menu_content),
                MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
                "",
@@ -6303,8 +6303,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->directory.menu_config,
-               sizeof(settings->directory.menu_config),
+               settings->paths.directory_menu_config,
+               sizeof(settings->paths.directory_menu_config),
                MENU_ENUM_LABEL_RGUI_CONFIG_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
                "",
@@ -6318,8 +6318,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->directory.libretro,
-               sizeof(settings->directory.libretro),
+               settings->paths.directory_libretro,
+               sizeof(settings->paths.directory_libretro),
                MENU_ENUM_LABEL_LIBRETRO_DIR_PATH,
                MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
                g_defaults.dir.core,
@@ -6333,8 +6333,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->path.libretro_info,
-               sizeof(settings->path.libretro_info),
+               settings->paths.path_libretro_info,
+               sizeof(settings->paths.path_libretro_info),
                MENU_ENUM_LABEL_LIBRETRO_INFO_PATH,
                MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH,
                g_defaults.dir.core_info,
@@ -6349,8 +6349,8 @@ static bool setting_append_list(
 #ifdef HAVE_LIBRETRODB
          CONFIG_DIR(
                list, list_info,
-               settings->path.content_database,
-               sizeof(settings->path.content_database),
+               settings->paths.path_content_database,
+               sizeof(settings->paths.path_content_database),
                MENU_ENUM_LABEL_CONTENT_DATABASE_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
                "",
@@ -6363,8 +6363,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->directory.cursor,
-               sizeof(settings->directory.cursor),
+               settings->paths.directory_cursor,
+               sizeof(settings->paths.directory_cursor),
                MENU_ENUM_LABEL_CURSOR_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY,
                "",
@@ -6378,8 +6378,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->path.cheat_database,
-               sizeof(settings->path.cheat_database),
+               settings->paths.path_cheat_database,
+               sizeof(settings->paths.path_cheat_database),
                MENU_ENUM_LABEL_CHEAT_DATABASE_PATH,
                MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH,
                "",
@@ -6392,8 +6392,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->directory.video_filter,
-               sizeof(settings->directory.video_filter),
+               settings->paths.directory_video_filter,
+               sizeof(settings->paths.directory_video_filter),
                MENU_ENUM_LABEL_VIDEO_FILTER_DIR,
                MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,
                "",
@@ -6406,8 +6406,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->directory.audio_filter,
-               sizeof(settings->directory.audio_filter),
+               settings->paths.directory_audio_filter,
+               sizeof(settings->paths.directory_audio_filter),
                MENU_ENUM_LABEL_AUDIO_FILTER_DIR,
                MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR,
                "",
@@ -6420,8 +6420,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->directory.video_shader,
-               sizeof(settings->directory.video_shader),
+               settings->paths.directory_video_shader,
+               sizeof(settings->paths.directory_video_shader),
                MENU_ENUM_LABEL_VIDEO_SHADER_DIR,
                MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
                g_defaults.dir.shader,
@@ -6465,8 +6465,8 @@ static bool setting_append_list(
 #ifdef HAVE_OVERLAY
          CONFIG_DIR(
                list, list_info,
-               settings->directory.overlay,
-               sizeof(settings->directory.overlay),
+               settings->paths.directory_overlay,
+               sizeof(settings->paths.directory_overlay),
                MENU_ENUM_LABEL_OVERLAY_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
                g_defaults.dir.overlay,
@@ -6480,8 +6480,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->directory.screenshot,
-               sizeof(settings->directory.screenshot),
+               settings->paths.directory_screenshot,
+               sizeof(settings->paths.directory_screenshot),
                MENU_ENUM_LABEL_SCREENSHOT_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
                "",
@@ -6494,8 +6494,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->directory.autoconfig,
-               sizeof(settings->directory.autoconfig),
+               settings->paths.directory_autoconfig,
+               sizeof(settings->paths.directory_autoconfig),
                MENU_ENUM_LABEL_JOYPAD_AUTOCONFIG_DIR,
                MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
                "",
@@ -6508,8 +6508,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->directory.input_remapping,
-               sizeof(settings->directory.input_remapping),
+               settings->paths.directory_input_remapping,
+               sizeof(settings->paths.directory_input_remapping),
                MENU_ENUM_LABEL_INPUT_REMAPPING_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
                "",
@@ -6522,8 +6522,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->directory.playlist,
-               sizeof(settings->directory.playlist),
+               settings->paths.directory_playlist,
+               sizeof(settings->paths.directory_playlist),
                MENU_ENUM_LABEL_PLAYLIST_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
                "",
@@ -6564,8 +6564,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->directory.cache,
-               sizeof(settings->directory.cache),
+               settings->paths.directory_cache,
+               sizeof(settings->paths.directory_cache),
                MENU_ENUM_LABEL_CACHE_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
                "",

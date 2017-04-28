@@ -296,7 +296,7 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
          {
             settings_t *settings     = config_get_ptr();
             fill_pathname_join(s,
-                  settings->directory.autoconfig,
+                  settings->paths.directory_autoconfig,
                   settings->arrays.input_joypad_driver,
                   len);
          }
@@ -307,8 +307,8 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
 
             /* Try config directory setting first,
              * fallback to the location of the current configuration file. */
-            if (!string_is_empty(settings->directory.menu_config))
-               strlcpy(s, settings->directory.menu_config, len);
+            if (!string_is_empty(settings->paths.directory_menu_config))
+               strlcpy(s, settings->paths.directory_menu_config, len);
             else if (!path_is_empty(RARCH_PATH_CONFIG))
                fill_pathname_basedir(s, path_get(RARCH_PATH_CONFIG), len);
          }
@@ -337,7 +337,7 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
          {
             settings_t *settings     = config_get_ptr();
             fill_pathname_join(s, 
-                  settings->directory.assets,
+                  settings->paths.directory_assets,
                   "zarch",
                   len);
          }
@@ -365,8 +365,8 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
          {
             settings_t *settings     = config_get_ptr();
 
-            if (!string_is_empty(settings->path.menu_wallpaper))
-               strlcpy(s, settings->path.menu_wallpaper, len);
+            if (!string_is_empty(settings->paths.path_menu_wallpaper))
+               strlcpy(s, settings->paths.path_menu_wallpaper, len);
             else
             {
                char s1[PATH_MAX_LENGTH];
@@ -393,7 +393,7 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
 
             fill_pathname_join(
                   s1,
-                  settings->directory.assets,
+                  settings->paths.directory_assets,
                   "xmb",
                   sizeof(s1));
             fill_pathname_join(s2,
@@ -409,7 +409,7 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
 
             fill_pathname_join(
                   s,
-                  settings->directory.assets,
+                  settings->paths.directory_assets,
                   "glui",
                   len);
          }
@@ -447,8 +447,8 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
          {
             settings_t *settings = config_get_ptr();
 
-            if (!string_is_empty(settings->menu.xmb_font))
-               strlcpy(s, settings->menu.xmb_font, len);
+            if (!string_is_empty(settings->paths.path_menu_xmb_font))
+               strlcpy(s, settings->paths.path_menu_xmb_font, len);
             else
             {
                char s1[PATH_MAX_LENGTH];

@@ -56,11 +56,11 @@ bool dir_init_shader(void)
    struct rarch_dir_list *dir_list = (struct rarch_dir_list*)&dir_shader_list;
    settings_t           *settings  = config_get_ptr();
 
-   if (!*settings->directory.video_shader)
+   if (!*settings->paths.directory_video_shader)
       return false;
 
    dir_list->list = dir_list_new_special(
-         settings->directory.video_shader, DIR_LIST_SHADERS, NULL);
+         settings->paths.directory_video_shader, DIR_LIST_SHADERS, NULL);
 
    if (!dir_list->list || dir_list->list->size == 0)
    {

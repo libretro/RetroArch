@@ -809,7 +809,7 @@ bool task_push_overlay_load_default(
       retro_task_callback_t cb, void *user_data)
 {
    settings_t *settings = config_get_ptr();
-   const char *path     = settings->path.overlay;
+   const char *path     = settings->paths.path_overlay;
 
    if (string_is_empty(path))
       return false;

@@ -185,9 +185,9 @@ static void menu_action_setting_disp_set_label_filter(
    strlcpy(s2, path, len2);
    strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
 
-   if (settings && *settings->path.softfilter_plugin)
+   if (settings && *settings->paths.path_softfilter_plugin)
       fill_short_pathname_representation(s,
-            settings->path.softfilter_plugin, len);
+            settings->paths.path_softfilter_plugin, len);
 }
 
 static void menu_action_setting_disp_set_label_pipeline(

@@ -1432,9 +1432,9 @@ static void command_event_restore_default_shader_preset(void)
       RARCH_LOG("%s %s\n",
             msg_hash_to_str(MSG_RESTORING_DEFAULT_SHADER_PRESET_TO),
             path_get(RARCH_PATH_DEFAULT_SHADER_PRESET));
-      strlcpy(settings->path.shader,
+      strlcpy(settings->paths.path_shader,
             path_get(RARCH_PATH_DEFAULT_SHADER_PRESET),
-            sizeof(settings->path.shader));
+            sizeof(settings->paths.path_shader));
    }
 
    path_clear(RARCH_PATH_DEFAULT_SHADER_PRESET);
@@ -1521,8 +1521,8 @@ static bool command_event_save_core_config(void)
    config_dir[0]  = config_name[0]   =
    config_path[0] = msg[0]           = '\0';
 
-   if (!string_is_empty(settings->directory.menu_config))
-      strlcpy(config_dir, settings->directory.menu_config,
+   if (!string_is_empty(settings->paths.directory_menu_config))
+      strlcpy(config_dir, settings->paths.directory_menu_config,
             sizeof(config_dir));
    else if (!path_is_empty(RARCH_PATH_CONFIG)) /* Fallback */
       fill_pathname_basedir(config_dir, path_get(RARCH_PATH_CONFIG),
@@ -2122,9 +2122,9 @@ bool command_event(enum event_command cmd, void *data)
          {
             settings_t *settings      = config_get_ptr();
             command_event(CMD_EVENT_DSP_FILTER_DEINIT, NULL);
-            if (string_is_empty(settings->path.audio_dsp_plugin))
+            if (string_is_empty(settings->paths.path_audio_dsp_plugin))
                break;
-            audio_driver_dsp_filter_init(settings->path.audio_dsp_plugin);
+            audio_driver_dsp_filter_init(settings->paths.path_audio_dsp_plugin);
          }
          break;
       case CMD_EVENT_GPU_RECORD_DEINIT:
@@ -2184,33 +2184,33 @@ bool command_event(enum event_command cmd, void *data)
 
             RARCH_LOG("%s: [%s].\n",
                   msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
-                  settings->path.content_history);
+                  settings->paths.path_content_history);
             g_defaults.content_history = playlist_init(
-                  settings->path.content_history,
+                  settings->paths.path_content_history,
                   content_history_size);
 
 #ifdef HAVE_FFMPEG
             RARCH_LOG("%s: [%s].\n",
                   msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
-                  settings->path.content_music_history);
+                  settings->paths.path_content_music_history);
             g_defaults.music_history = playlist_init(
-                  settings->path.content_music_history,
+                  settings->paths.path_content_music_history,
                   content_history_size);
 
             RARCH_LOG("%s: [%s].\n",
                   msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
-                  settings->path.content_video_history);
+                  settings->paths.path_content_video_history);
             g_defaults.video_history = playlist_init(
-                  settings->path.content_video_history,
+                  settings->paths.path_content_video_history,
                   content_history_size);
 #endif
 
 #ifdef HAVE_IMAGEVIEWER
             RARCH_LOG("%s: [%s].\n",
                   msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
-                  settings->path.content_image_history);
+                  settings->paths.path_content_image_history);
             g_defaults.image_history = playlist_init(
-                  settings->path.content_image_history,
+                  settings->paths.path_content_image_history,
                   content_history_size);
 #endif
          }
@@ -2223,7 +2223,7 @@ bool command_event(enum event_command cmd, void *data)
             settings_t *settings      = config_get_ptr();
             command_event(CMD_EVENT_CORE_INFO_DEINIT, NULL);
 
-            if (!string_is_empty(settings->directory.libretro))
+            if (!string_is_empty(settings->paths.directory_libretro))
                core_info_init_list();
          }
          break;
@@ -2446,7 +2446,7 @@ bool command_event(enum event_command cmd, void *data)
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
             if (!init_netplay(
-                     NULL, hostname ? hostname : settings->netplay.server,
+                     NULL, hostname ? hostname : settings->paths.netplay_server,
                      settings->uints.netplay_port))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);

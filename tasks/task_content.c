@@ -1045,8 +1045,8 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
 
    content_ctx.history_list_enable            = settings->bools.history_list_enable;
 
-   if (!string_is_empty(settings->directory.system))
-      content_ctx.directory_system            = strdup(settings->directory.system);
+   if (!string_is_empty(settings->paths.directory_system))
+      content_ctx.directory_system            = strdup(settings->paths.directory_system);
 
 #ifdef HAVE_MENU
    if (!content_info->environ_get)
@@ -1119,8 +1119,8 @@ bool task_push_load_content_from_playlist_from_menu(
 
    content_ctx.history_list_enable            = settings->bools.history_list_enable;
 
-   if (!string_is_empty(settings->directory.system))
-      content_ctx.directory_system            = strdup(settings->directory.system);
+   if (!string_is_empty(settings->paths.directory_system))
+      content_ctx.directory_system            = strdup(settings->paths.directory_system);
 
    /* Set libretro core path */
    runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
@@ -1195,8 +1195,8 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
 
    content_ctx.history_list_enable            = settings->bools.history_list_enable;
 
-   if (!string_is_empty(settings->directory.system))
-      content_ctx.directory_system            = strdup(settings->directory.system);
+   if (!string_is_empty(settings->paths.directory_system))
+      content_ctx.directory_system            = strdup(settings->paths.directory_system);
 
 #ifdef HAVE_MENU
    if (!content_info->environ_get)
@@ -1304,8 +1304,8 @@ bool task_push_load_content_with_new_core_from_menu(
 
    content_ctx.history_list_enable            = settings->bools.history_list_enable;
 
-   if (!string_is_empty(settings->directory.system))
-      content_ctx.directory_system            = strdup(settings->directory.system);
+   if (!string_is_empty(settings->paths.directory_system))
+      content_ctx.directory_system            = strdup(settings->paths.directory_system);
 
    /* Set content path */
    path_set(RARCH_PATH_CONTENT, fullpath);
@@ -1384,8 +1384,8 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
 
    content_ctx.history_list_enable            = settings->bools.history_list_enable;
 
-   if (!string_is_empty(settings->directory.system))
-      content_ctx.directory_system            = strdup(settings->directory.system);
+   if (!string_is_empty(settings->paths.directory_system))
+      content_ctx.directory_system            = strdup(settings->paths.directory_system);
 
 #ifdef HAVE_MENU
    if (!content_info->environ_get)
@@ -1636,10 +1636,10 @@ bool content_init(void)
       content_ctx.history_list_enable         = settings->bools.history_list_enable;
       content_ctx.set_supports_no_game_enable = settings->bools.set_supports_no_game_enable;
 
-      if (!string_is_empty(settings->directory.system))
-         content_ctx.directory_system         = strdup(settings->directory.system);
-      if (!string_is_empty(settings->directory.cache))
-         content_ctx.directory_cache          = strdup(settings->directory.cache);
+      if (!string_is_empty(settings->paths.directory_system))
+         content_ctx.directory_system         = strdup(settings->paths.directory_system);
+      if (!string_is_empty(settings->paths.directory_cache))
+         content_ctx.directory_cache          = strdup(settings->paths.directory_cache);
       if (!string_is_empty(sys_info->info.valid_extensions))
          content_ctx.valid_extensions         = strdup(sys_info->info.valid_extensions);
 

@@ -413,7 +413,7 @@ static bool gl_shader_init(gl_t *gl)
    enum rarch_shader_type type;
    settings_t *settings            = config_get_ptr();
    const char *shader_path         = (settings->bools.video_shader_enable
-         && *settings->path.shader) ? settings->path.shader : NULL;
+         && *settings->paths.path_shader) ? settings->paths.path_shader : NULL;
 
    if (!gl)
    {

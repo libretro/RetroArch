@@ -951,7 +951,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
 
    fill_pathname_join(
          xmb->thumbnail_file_path,
-         settings->directory.thumbnails,
+         settings->paths.directory_thumbnails,
          xmb->title_name,
          sizeof(xmb->thumbnail_file_path));
 
@@ -1404,7 +1404,7 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
       {
          fill_pathname_join_noext(
                path,
-               settings->directory.dynamic_wallpapers,
+               settings->paths.directory_dynamic_wallpapers,
                tmp,
                sizeof(path));
          free(tmp);
@@ -1667,7 +1667,7 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
    info.need_navigation_clear   = false;
    info.list                    = xmb->horizontal_list;
    info.menu_list               = NULL;
-   strlcpy(info.path, settings->directory.playlist, sizeof(info.path));
+   strlcpy(info.path, settings->paths.directory_playlist, sizeof(info.path));
    info.path_b[0]               = '\0';
    info.path_c[0]               = '\0';
    strlcpy(info.label,
@@ -3524,8 +3524,8 @@ static void xmb_context_reset_background(const char *iconpath)
 
    fill_pathname_join(path, iconpath, "bg.png", sizeof(path));
 
-   if (!string_is_empty(settings->path.menu_wallpaper))
-      strlcpy(path, settings->path.menu_wallpaper, sizeof(path));
+   if (!string_is_empty(settings->paths.path_menu_wallpaper))
+      strlcpy(path, settings->paths.path_menu_wallpaper, sizeof(path));
 
 
    if (path_file_exists(path))

@@ -33,7 +33,7 @@ bool find_libretro_core(char *fullpath,
 {
    size_t i;
    settings_t *settings     = config_get_ptr();
-   const char          *dir = settings->directory.libretro;
+   const char          *dir = settings->paths.directory_libretro;
    struct string_list *list = dir_list_new(dir, ext, false, true, false, false);
 
    if (!list)

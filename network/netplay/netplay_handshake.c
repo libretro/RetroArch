@@ -222,7 +222,7 @@ bool netplay_handshake_init_send(netplay_t *netplay,
    header[1] = htonl(netplay_platform_magic());
    header[2] = htonl(NETPLAY_COMPRESSION_SUPPORTED);
    if (netplay->is_server &&
-       (settings->netplay.password[0] || settings->netplay.spectate_password[0]))
+       (settings->paths.netplay_password[0] || settings->paths.netplay_spectate_password[0]))
    {
       /* Demand a password */
       if (simple_rand_next == 1)
@@ -655,7 +655,7 @@ bool netplay_handshake_pre_nick(netplay_t *netplay,
    if (netplay->is_server)
    {
       settings_t *settings = config_get_ptr();
-      if (settings->netplay.password[0] || settings->netplay.spectate_password[0])
+      if (settings->paths.netplay_password[0] || settings->paths.netplay_spectate_password[0])
       {
          /* There's a password, so just put them in PRE_PASSWORD mode */
          connection->mode = NETPLAY_CONNECTION_PRE_PASSWORD;
@@ -722,9 +722,9 @@ bool netplay_handshake_pre_password(netplay_t *netplay,
    correct = false;
    snprintf(password, sizeof(password), "%08X", connection->salt);
 
-   if (settings->netplay.password[0])
+   if (settings->paths.netplay_password[0])
    {
-      strlcpy(password + 8, settings->netplay.password, sizeof(password)-8);
+      strlcpy(password + 8, settings->paths.netplay_password, sizeof(password)-8);
       sha256_hash(corr_password_buf.password, (uint8_t *) password, strlen(password));
       if (!memcmp(password_buf.password, corr_password_buf.password, sizeof(password_buf.password)))
       {
@@ -732,9 +732,9 @@ bool netplay_handshake_pre_password(netplay_t *netplay,
          connection->can_play = true;
       }
    }
-   if (settings->netplay.spectate_password[0])
+   if (settings->paths.netplay_spectate_password[0])
    {
-      strlcpy(password + 8, settings->netplay.spectate_password, sizeof(password)-8);
+      strlcpy(password + 8, settings->paths.netplay_spectate_password, sizeof(password)-8);
       sha256_hash(corr_password_buf.password, (uint8_t *) password, strlen(password));
       if (!memcmp(password_buf.password, corr_password_buf.password, sizeof(password_buf.password)))
          correct = true;

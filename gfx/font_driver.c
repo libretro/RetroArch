@@ -494,7 +494,7 @@ void font_driver_init_osd(void *video_data, bool threading_hint, enum font_drive
       return;
 
    video_font_driver = font_driver_init_first(video_data,
-         *settings->path.font ? settings->path.font : NULL,
+         *settings->paths.path_font ? settings->paths.path_font : NULL,
          settings->floats.video_font_size, threading_hint, api);
 
    if (!video_font_driver)

@@ -130,7 +130,7 @@ bool menu_shader_manager_init(void)
 #ifdef HAVE_SHADER_MANAGER
    settings_t *settings        = config_get_ptr();
    const char *config_path     = path_get(RARCH_PATH_CONFIG);
-   const char *path_shader     = settings->path.shader;
+   const char *path_shader     = settings->paths.path_shader;
 
    menu_shader_manager_free();
 
@@ -199,9 +199,9 @@ bool menu_shader_manager_init(void)
             char preset_path[PATH_MAX_LENGTH];
             config_file_t *conf               = NULL;
             const char *shader_dir            = 
-               *settings->directory.video_shader ?
-               settings->directory.video_shader : 
-               settings->directory.system;
+               *settings->paths.directory_video_shader ?
+               settings->paths.directory_video_shader : 
+               settings->paths.directory_system;
 
             preset_path[0] = '\0';
 
@@ -265,9 +265,9 @@ void menu_shader_manager_set_preset(void *data,
 
    /* Makes sure that we use Menu Preset shader on driver reinit.
     * Only do this when the cgp actually works to avoid potential errors. */
-   strlcpy(settings->path.shader,
+   strlcpy(settings->paths.path_shader,
          preset_path ? preset_path : "",
-         sizeof(settings->path.shader));
+         sizeof(settings->paths.path_shader));
    configuration_set_bool(settings, settings->bools.video_shader_enable, true);
 
    if (!preset_path || !shader)
@@ -390,8 +390,8 @@ bool menu_shader_manager_save_preset(
    if (!fullpath)
    {
       settings_t *settings = config_get_ptr();
-      dirs[0]              = settings->directory.video_shader;
-      dirs[1]              = settings->directory.menu_config;
+      dirs[0]              = settings->paths.directory_video_shader;
+      dirs[1]              = settings->paths.directory_menu_config;
       dirs[2]              = config_directory;
    }
 

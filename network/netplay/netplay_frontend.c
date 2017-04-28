@@ -611,7 +611,7 @@ static void netplay_announce(void)
 
    content_get_crc(&content_crc_ptr);
 
-   net_http_urlencode_full(&username, settings->username);
+   net_http_urlencode_full(&username, settings->paths.username);
    net_http_urlencode_full(&corename, system->info.library_name);
    net_http_urlencode_full(&gamename, !string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))) ? path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A");
    net_http_urlencode_full(&coreversion, system->info.library_version);
@@ -623,8 +623,8 @@ static void netplay_announce(void)
       "&has_password=%d&has_spectate_password=%d&force_mitm=%d",
       username, corename, coreversion, gamename, *content_crc_ptr,
       settings->uints.netplay_port,
-      *settings->netplay.password ? 1 : 0,
-      *settings->netplay.spectate_password ? 1 : 0,
+      *settings->paths.netplay_password ? 1 : 0,
+      *settings->paths.netplay_spectate_password ? 1 : 0,
       settings->bools.netplay_use_mitm_server);
 
    task_push_http_post_transfer(url, buf, true, NULL, netplay_announce_cb, NULL);
@@ -1214,7 +1214,7 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
          settings->ints.netplay_check_frames,
          &cbs,
          settings->bools.netplay_nat_traversal,
-         settings->username,
+         settings->paths.username,
          quirks);
 
    if (netplay_data)

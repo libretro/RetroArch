@@ -357,82 +357,68 @@ typedef struct settings
       char bundle_assets_dst_subdir[PATH_MAX_LENGTH];
    } arrays;
 
+   struct
+   {
+      char placeholder;
+
+
+      char browse_url[4096];
+
+#ifdef HAVE_MENU
+      char path_menu_xmb_font[PATH_MAX_LENGTH];
+#endif
+      char path_cheat_database[PATH_MAX_LENGTH];
+      char path_content_database[PATH_MAX_LENGTH];
+      char path_overlay[PATH_MAX_LENGTH];
+      char path_menu_wallpaper[PATH_MAX_LENGTH];
+      char path_audio_dsp_plugin[PATH_MAX_LENGTH];
+      char path_softfilter_plugin[PATH_MAX_LENGTH];
+      char path_core_options[PATH_MAX_LENGTH];
+      char path_content_history[PATH_MAX_LENGTH];
+      char path_content_music_history[PATH_MAX_LENGTH];
+      char path_content_image_history[PATH_MAX_LENGTH];
+      char path_content_video_history[PATH_MAX_LENGTH];
+      char path_libretro_info[PATH_MAX_LENGTH];
+      char path_cheat_settings[PATH_MAX_LENGTH];
+      char path_shader[PATH_MAX_LENGTH];
+      char path_font[PATH_MAX_LENGTH];
+
+      char network_buildbot_url[255];
+      char network_buildbot_assets_url[255];
+
+      char directory_audio_filter[PATH_MAX_LENGTH];
+      char directory_autoconfig[PATH_MAX_LENGTH];
+      char directory_video_filter[PATH_MAX_LENGTH];
+      char directory_video_shader[PATH_MAX_LENGTH];
+      char directory_content_history[PATH_MAX_LENGTH];
+      char directory_libretro[PATH_MAX_LENGTH];
+      char directory_cursor[PATH_MAX_LENGTH];
+      char directory_input_remapping[PATH_MAX_LENGTH];
+      char directory_overlay[PATH_MAX_LENGTH];
+      char directory_resampler[PATH_MAX_LENGTH];
+      char directory_screenshot[PATH_MAX_LENGTH];
+      char directory_system[PATH_MAX_LENGTH];
+      char directory_cache[PATH_MAX_LENGTH];
+      char directory_playlist[PATH_MAX_LENGTH];
+      char directory_core_assets[PATH_MAX_LENGTH];
+      char directory_assets[PATH_MAX_LENGTH];
+      char directory_dynamic_wallpapers[PATH_MAX_LENGTH];
+      char directory_thumbnails[PATH_MAX_LENGTH];
+      char directory_menu_config[PATH_MAX_LENGTH];
+      char directory_menu_content[PATH_MAX_LENGTH];
+#ifdef HAVE_NETWORKING
+      char netplay_server[255];
+      char netplay_password[128];
+      char netplay_spectate_password[128];
+#endif
+      char username[32];
+   } paths;
+
    bool modified;
 
    video_viewport_t video_viewport_custom;
 
    size_t rewind_buffer_size;
-
-
-
-#ifdef HAVE_MENU
-   struct
-   {
-      char xmb_font[PATH_MAX_LENGTH];
-   } menu;
-#endif
-
-   struct
-   {
-      char buildbot_url[255];
-      char buildbot_assets_url[255];
-   } network;
-
-   char browse_url[4096];
-
-   struct
-   {
-      char cheat_database[PATH_MAX_LENGTH];
-      char content_database[PATH_MAX_LENGTH];
-      char overlay[PATH_MAX_LENGTH];
-      char menu_wallpaper[PATH_MAX_LENGTH];
-      char audio_dsp_plugin[PATH_MAX_LENGTH];
-      char softfilter_plugin[PATH_MAX_LENGTH];
-      char core_options[PATH_MAX_LENGTH];
-      char content_history[PATH_MAX_LENGTH];
-      char content_music_history[PATH_MAX_LENGTH];
-      char content_image_history[PATH_MAX_LENGTH];
-      char content_video_history[PATH_MAX_LENGTH];
-      char libretro_info[PATH_MAX_LENGTH];
-      char cheat_settings[PATH_MAX_LENGTH];
-      char shader[PATH_MAX_LENGTH];
-      char font[PATH_MAX_LENGTH];
-   } path;
-
-   struct
-   {
-      char audio_filter[PATH_MAX_LENGTH];
-      char autoconfig[PATH_MAX_LENGTH];
-      char video_filter[PATH_MAX_LENGTH];
-      char video_shader[PATH_MAX_LENGTH];
-      char content_history[PATH_MAX_LENGTH];
-      char libretro[PATH_MAX_LENGTH];
-      char cursor[PATH_MAX_LENGTH];
-      char input_remapping[PATH_MAX_LENGTH];
-      char overlay[PATH_MAX_LENGTH];
-      char resampler[PATH_MAX_LENGTH];
-      char screenshot[PATH_MAX_LENGTH];
-      char system[PATH_MAX_LENGTH];
-      char cache[PATH_MAX_LENGTH];
-      char playlist[PATH_MAX_LENGTH];
-      char core_assets[PATH_MAX_LENGTH];
-      char assets[PATH_MAX_LENGTH];
-      char dynamic_wallpapers[PATH_MAX_LENGTH];
-      char thumbnails[PATH_MAX_LENGTH];
-      char menu_config[PATH_MAX_LENGTH];
-      char menu_content[PATH_MAX_LENGTH];
-   } directory;
-
-#ifdef HAVE_NETWORKING
-   struct
-   {
-      char server[255];
-      char password[128];
-      char spectate_password[128];
-   } netplay;
-#endif
-
-   char username[32];
 } settings_t;
 
 #define configuration_set_float(settings, var, newvar) \

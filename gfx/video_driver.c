@@ -460,7 +460,7 @@ static void video_driver_init_filter(enum retro_pixel_format colfmt)
    height                    = geom->max_height;
 
    video_driver_state_filter = rarch_softfilter_new(
-         settings->path.softfilter_plugin,
+         settings->paths.path_softfilter_plugin,
          RARCH_SOFTFILTER_THREADS_AUTO, colfmt, width, height);
 
    if (!video_driver_state_filter)
@@ -685,7 +685,7 @@ static bool video_driver_init_internal(void)
 
    video_driver_filter_free();
 
-   if (!string_is_empty(settings->path.softfilter_plugin))
+   if (!string_is_empty(settings->paths.path_softfilter_plugin))
    {
       if (video_driver_is_hw_context())
       {

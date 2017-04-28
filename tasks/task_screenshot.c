@@ -205,7 +205,7 @@ static bool screenshot_dump(
    retro_task_t *task             = (retro_task_t*)calloc(1, sizeof(*task));
    screenshot_task_state_t *state = (screenshot_task_state_t*)
          calloc(1, sizeof(*state));
-   const char *screenshot_dir     = settings->directory.screenshot;
+   const char *screenshot_dir     = settings->paths.directory_screenshot;
 
    screenshot_path[0]             = '\0';
 
@@ -342,7 +342,7 @@ static bool take_screenshot_choice(const char *name_base, bool savestate,
    void *frame_data            = NULL;
    const void* old_data        = NULL;
    settings_t *settings        = config_get_ptr();
-   const char *screenshot_dir  = settings->directory.screenshot;
+   const char *screenshot_dir  = settings->paths.directory_screenshot;
 
    /* No way to infer screenshot directory. */
    if (     string_is_empty(screenshot_dir)

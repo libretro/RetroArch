@@ -1642,8 +1642,8 @@ static void mui_context_reset(void *data)
    menu_display_allocate_white_texture();
    mui_context_reset_textures(mui);
 
-   if (path_file_exists(settings->path.menu_wallpaper))
-      task_push_image_load(settings->path.menu_wallpaper, 
+   if (path_file_exists(settings->paths.path_menu_wallpaper))
+      task_push_image_load(settings->paths.path_menu_wallpaper, 
             menu_display_handle_wallpaper_upload, NULL);
 }
 

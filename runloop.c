@@ -583,7 +583,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
                buf[0] = '\0';
 
                if (settings)
-                  options_path = settings->path.core_options;
+                  options_path = settings->paths.path_core_options;
 
                if (string_is_empty(options_path) && !path_is_empty(RARCH_PATH_CONFIG))
                {

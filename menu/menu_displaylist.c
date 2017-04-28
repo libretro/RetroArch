@@ -177,7 +177,7 @@ static void print_buf_lines(file_list_t *list, char *buf,
 
                   fill_pathname_join_noext(
                         core_path,
-                        settings->path.libretro_info,
+                        settings->paths.path_libretro_info,
                         (extended && !string_is_empty(core_pathname))
                         ? core_pathname : line_start,
                         sizeof(core_path));
@@ -444,7 +444,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
       settings_t *settings           = config_get_ptr();
 
       firmware_info.path             = core_info->path;
-      firmware_info.directory.system = settings->directory.system;
+      firmware_info.directory.system = settings->paths.directory_system;
 
       if (core_info_list_update_missing_firmware(&firmware_info))
       {
@@ -1713,7 +1713,8 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
          file_path_str(FILE_PATH_LPL_EXTENSION),
          sizeof(path_base));
 
-   fill_pathname_join(path_playlist, settings->directory.playlist, path_base,
+   fill_pathname_join(path_playlist,
+         settings->paths.directory_playlist, path_base,
          sizeof(path_playlist));
 
    playlist = playlist_init(path_playlist, COLLECTION_SIZE);
@@ -2612,7 +2613,7 @@ static int menu_displaylist_parse_horizontal_list(
 
    fill_pathname_join(
          path_playlist,
-         settings->directory.playlist,
+         settings->paths.directory_playlist,
          item->path,
          sizeof(path_playlist));
 
@@ -2843,7 +2844,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
 
       db_path[0] = '\0';
 
-      fill_pathname_join_noext(db_path, settings->path.content_database,
+      fill_pathname_join_noext(db_path, settings->paths.path_content_database,
             db_name, sizeof(db_path));
       strlcat(db_path, file_path_str(FILE_PATH_RDB_EXTENSION),
             sizeof(db_path));
@@ -3596,8 +3597,9 @@ static void menu_displaylist_parse_playlist_associations(
       menu_displaylist_info_t *info)
 {
    settings_t      *settings    = config_get_ptr();
-   struct string_list *str_list = dir_list_new_special(settings->directory.playlist,
-            DIR_LIST_COLLECTIONS, NULL);
+   struct string_list *str_list = dir_list_new_special(
+         settings->paths.directory_playlist,
+         DIR_LIST_COLLECTIONS, NULL);
 
    if (str_list && str_list->size)
    {
@@ -3840,7 +3842,7 @@ static bool menu_displaylist_push_internal(
             msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
             sizeof(info->label));
 
-      if (string_is_empty(settings->directory.playlist))
+      if (string_is_empty(settings->paths.directory_playlist))
       {
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          menu_entries_append_enum(info->list,
@@ -3857,7 +3859,7 @@ static bool menu_displaylist_push_internal(
       {
          strlcpy(
                info->path,
-               settings->directory.playlist,
+               settings->paths.directory_playlist,
                sizeof(info->path));
 
          if (!menu_displaylist_ctl(
@@ -5471,7 +5473,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_refresh = true;
          break;
       case DISPLAYLIST_LOAD_CONTENT_LIST:
-         if (!string_is_empty(settings->directory.menu_content))
+         if (!string_is_empty(settings->paths.directory_menu_content))
             menu_entries_append_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES),
                   msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
@@ -5670,7 +5672,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             new_label[0] = '\0';
 
             fill_pathname_join(new_label,
-                  settings->network.buildbot_assets_url,
+                  settings->paths.network_buildbot_assets_url,
                   "cores", sizeof(new_label));
             print_buf_lines(info->list, core_buf, new_label,
                   (int)core_len, FILE_TYPE_DOWNLOAD_URL, true, false);
@@ -5726,7 +5728,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             fill_pathname_join(
                   path_playlist,
-                  settings->directory.playlist,
+                  settings->paths.directory_playlist,
                   info->path,
                   sizeof(path_playlist));
 
@@ -5759,7 +5761,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             menu_displaylist_parse_playlist_history(menu, info,
                   g_defaults.content_history,
                   "history",
-                  settings->path.content_history,
+                  settings->paths.path_content_history,
                   &ret);
          else
          {
@@ -5783,7 +5785,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             menu_displaylist_parse_playlist_history(menu, info,
                   g_defaults.image_history,
                   "images_history",
-                  settings->path.content_image_history,
+                  settings->paths.path_content_image_history,
                   &ret);
          else
          {
@@ -5808,7 +5810,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             menu_displaylist_parse_playlist_history(menu, info,
                   g_defaults.music_history,
                   "music_history",
-                  settings->path.content_music_history,
+                  settings->paths.path_content_music_history,
                   &ret);
          else
          {
@@ -5833,7 +5835,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             menu_displaylist_parse_playlist_history(menu, info,
                   g_defaults.video_history,
                   "video_history",
-                  settings->path.content_video_history,
+                  settings->paths.path_content_video_history,
                   &ret);
          else
          {
@@ -6211,7 +6213,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                file_path_str(FILE_PATH_RDB_EXTENSION),
                sizeof(info->exts));
          info->enum_idx = MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST;
-         strlcpy(info->path, settings->path.content_database, sizeof(info->path));
+         strlcpy(info->path, settings->paths.path_content_database, sizeof(info->path));
          break;
       case DISPLAYLIST_ARCHIVE_ACTION:
 #ifdef HAVE_COMPRESSION
@@ -6247,7 +6249,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          filebrowser_clear_type();
          info->type_default = FILE_TYPE_CURSOR;
          strlcpy(info->exts, "dbc", sizeof(info->exts));
-         strlcpy(info->path, settings->directory.cursor, sizeof(info->path));
+         strlcpy(info->path, settings->paths.directory_cursor, sizeof(info->path));
          break;
       case DISPLAYLIST_CORES:
          {

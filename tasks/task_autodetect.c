@@ -427,7 +427,7 @@ bool input_autoconfigure_connect(
    retro_task_t         *task = (retro_task_t*)calloc(1, sizeof(*task));
    autoconfig_params_t *state = (autoconfig_params_t*)calloc(1, sizeof(*state));
    settings_t       *settings = config_get_ptr();
-   const char *dir_autoconf   = settings->directory.autoconfig;
+   const char *dir_autoconf   = settings->paths.directory_autoconfig;
 
    if (!task || !state || !settings->bools.input_autodetect_enable)
       goto error;

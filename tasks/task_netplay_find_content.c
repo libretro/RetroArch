@@ -272,7 +272,7 @@ bool task_push_netplay_crc_scan(uint32_t crc, char* name,
    strlcpy(state->hostname,      hostname,   sizeof(state->hostname));
    strlcpy(state->core_name,     core_name,  sizeof(state->core_name));
 
-   state->lpl_list = dir_list_new(settings->directory.playlist,
+   state->lpl_list = dir_list_new(settings->paths.directory_playlist,
          NULL, true, true, true, false);
 
    state->found = false;

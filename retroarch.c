@@ -637,8 +637,8 @@ static void retroarch_parse_input(int argc, char *argv[])
                settings_t *settings  = config_get_ptr();
 
                path_clear(RARCH_PATH_CORE);
-               strlcpy(settings->directory.libretro, optarg,
-                     sizeof(settings->directory.libretro));
+               strlcpy(settings->paths.directory_libretro, optarg,
+                     sizeof(settings->paths.directory_libretro));
 
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY, NULL);
@@ -710,8 +710,8 @@ static void retroarch_parse_input(int argc, char *argv[])
                retroarch_override_setting_set(
                      RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS, NULL);
                netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
-               strlcpy(settings->netplay.server, optarg,
-                     sizeof(settings->netplay.server));
+               strlcpy(settings->paths.netplay_server, optarg,
+                     sizeof(settings->paths.netplay_server));
             }
             break;
 
@@ -796,8 +796,8 @@ static void retroarch_parse_input(int argc, char *argv[])
             {
                settings_t *settings  = config_get_ptr();
                rarch_ctl(RARCH_CTL_USERNAME_SET, NULL);
-               strlcpy(settings->username, optarg,
-                     sizeof(settings->username));
+               strlcpy(settings->paths.username, optarg,
+                     sizeof(settings->paths.username));
             }
             break;
 

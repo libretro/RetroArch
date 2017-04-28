@@ -109,7 +109,7 @@ bool input_remapping_save_file(const char *path)
 
    buf[0] = remap_file[0]            = '\0';
 
-   fill_pathname_join(buf, settings->directory.input_remapping,
+   fill_pathname_join(buf, settings->paths.directory_input_remapping,
          path, sizeof(buf));
 
    fill_pathname_noext(remap_file, buf, ".rmp", sizeof(remap_file));

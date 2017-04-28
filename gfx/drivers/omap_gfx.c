@@ -839,7 +839,7 @@ static void omap_init_font(omap_video_t *vid, const char *font_path, unsigned fo
       return;
 
    if (!(font_renderer_create_default(&vid->font_driver, &vid->font,
-               *settings->path.font ? settings->path.font : NULL, settings->video.font_size)))
+               *settings->paths.path_font ? settings->paths.path_font : NULL, settings->video.font_size)))
    {
       RARCH_LOG("[video_omap]: font init failed\n");
       return;
@@ -966,7 +966,7 @@ static void *omap_gfx_init(const video_info_t *video,
    if (input && input_data)
       *input = NULL;
 
-   omap_init_font(vid, settings->path.font, settings->video.font_size);
+   omap_init_font(vid, settings->paths.path_font, settings->video.font_size);
 
    vid->menu.frame = calloc(vid->width * vid->height, vid->bytes_per_pixel);
    if (!vid->menu.frame)

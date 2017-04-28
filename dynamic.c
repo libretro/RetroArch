@@ -1037,7 +1037,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY:
-         if (string_is_empty(settings->directory.system))
+         if (string_is_empty(settings->paths.directory_system))
          {
             const char *fullpath = path_get(RARCH_PATH_CONTENT);
             if (!string_is_empty(fullpath))
@@ -1058,9 +1058,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          }
          else
          {
-            *(const char**)data = settings->directory.system;
+            *(const char**)data = settings->paths.directory_system;
             RARCH_LOG("Environ SYSTEM_DIRECTORY: \"%s\".\n",
-               settings->directory.system);
+               settings->paths.directory_system);
          }
 
          break;
@@ -1070,10 +1070,10 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_USERNAME:
-         *(const char**)data = *settings->username ?
-            settings->username : NULL;
+         *(const char**)data = *settings->paths.username ?
+            settings->paths.username : NULL;
          RARCH_LOG("Environ GET_USERNAME: \"%s\".\n",
-               settings->username);
+               settings->paths.username);
          break;
 
       case RETRO_ENVIRONMENT_GET_LANGUAGE:
@@ -1406,10 +1406,10 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       {
          const char **dir = (const char**)data;
 
-         *dir = *settings->directory.core_assets ?
-            settings->directory.core_assets : NULL;
+         *dir = *settings->paths.directory_core_assets ?
+            settings->paths.directory_core_assets : NULL;
          RARCH_LOG("Environ CORE_ASSETS_DIRECTORY: \"%s\".\n",
-               settings->directory.core_assets);
+               settings->paths.directory_core_assets);
          break;
       }
 

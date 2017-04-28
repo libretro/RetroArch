@@ -334,7 +334,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_AUDIO_DSP_PLUGIN:
          filebrowser_clear_type();
          info.directory_ptr = idx;
-         info_path          = settings->directory.audio_filter;
+         info_path          = settings->paths.directory_audio_filter;
          info_label         = msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN);
          info.enum_idx      = MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
@@ -343,7 +343,7 @@ int generic_action_ok_displaylist_push(const char *path,
          filebrowser_clear_type();
          info.type          = type;
          info.directory_ptr = idx;
-         info_path          = settings->directory.video_shader;
+         info_path          = settings->paths.directory_video_shader;
          info_label         = label;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          break;
@@ -385,7 +385,7 @@ int generic_action_ok_displaylist_push(const char *path,
          filebrowser_clear_type();
          info.type          = type;
          info.directory_ptr = idx;
-         info_path          = settings->directory.video_shader;
+         info_path          = settings->paths.directory_video_shader;
          info_label         = label;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          break;
@@ -408,7 +408,7 @@ int generic_action_ok_displaylist_push(const char *path,
          filebrowser_clear_type();
          info.type          = type;
          info.directory_ptr = idx;
-         info_path          = settings->directory.input_remapping;
+         info_path          = settings->paths.directory_input_remapping;
          info_label         = label;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          break;
@@ -427,7 +427,7 @@ int generic_action_ok_displaylist_push(const char *path,
          filebrowser_clear_type();
          info.type          = type;
          info.directory_ptr = idx;
-         info_path          = settings->directory.menu_content;
+         info_path          = settings->paths.directory_menu_content;
          info_label         = label;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          break;
@@ -443,7 +443,7 @@ int generic_action_ok_displaylist_push(const char *path,
          filebrowser_clear_type();
          info.type          = type;
          info.directory_ptr = idx;
-         info_path          = settings->path.cheat_database;
+         info_path          = settings->paths.path_cheat_database;
          info_label         = label;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          break;
@@ -451,7 +451,7 @@ int generic_action_ok_displaylist_push(const char *path,
          filebrowser_clear_type();
          info.type          = type;
          info.directory_ptr = idx;
-         info_path          = settings->directory.libretro;
+         info_path          = settings->paths.directory_libretro;
          info_label         = label;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_CORE;
          break;
@@ -467,7 +467,7 @@ int generic_action_ok_displaylist_push(const char *path,
          filebrowser_set_type(FILEBROWSER_SELECT_COLLECTION);
          info.type          = type;
          info.directory_ptr = idx;
-         info_path          = settings->directory.playlist;
+         info_path          = settings->paths.directory_playlist;
          info_label         = label;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_COLLECTION;
          break;
@@ -491,10 +491,10 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_CONFIGURATIONS_LIST:
          info.type          = type;
          info.directory_ptr = idx;
-         if (string_is_empty(settings->directory.menu_config))
+         if (string_is_empty(settings->paths.directory_menu_config))
             info_path        = label;
          else
-            info_path        = settings->directory.menu_config;
+            info_path        = settings->paths.directory_menu_config;
          info_label = label;
          dl_type             = DISPLAYLIST_GENERIC;
          break;
@@ -548,7 +548,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_DATABASE_MANAGER_LIST:
          filebrowser_clear_type();
          fill_pathname_join(tmp,
-               settings->path.content_database,
+               settings->paths.path_content_database,
                path, sizeof(tmp));
 
          info.directory_ptr = idx;
@@ -560,7 +560,7 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_CURSOR_MANAGER_LIST:
          filebrowser_clear_type();
-         fill_pathname_join(tmp, settings->directory.cursor,
+         fill_pathname_join(tmp, settings->paths.directory_cursor,
                path, sizeof(tmp));
 
          info.directory_ptr = idx;
@@ -627,7 +627,7 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_DEFERRED_CORE_LIST:
          info.directory_ptr = idx;
-         info_path          = settings->directory.libretro;
+         info_path          = settings->paths.directory_libretro;
          info_label         = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_LIST);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_CORE_LIST;
          dl_type            = DISPLAYLIST_GENERIC;
@@ -635,7 +635,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_DEFERRED_CORE_LIST_SET:
          info.directory_ptr                 = idx;
          rdb_entry_start_game_selection_ptr = (unsigned)idx;
-         info_path                          = settings->directory.libretro;
+         info_path                          = settings->paths.directory_libretro;
          info_label                         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_CORE_LIST_SET);
          info.enum_idx                      = MENU_ENUM_LABEL_DEFERRED_CORE_LIST_SET;
@@ -1066,8 +1066,8 @@ static int generic_action_ok(const char *path,
          {
             settings_t            *settings = config_get_ptr();
 
-            strlcpy(settings->path.menu_wallpaper,
-                  action_path, sizeof(settings->path.menu_wallpaper));
+            strlcpy(settings->paths.path_menu_wallpaper,
+                  action_path, sizeof(settings->paths.path_menu_wallpaper));
 
             if (path_file_exists(action_path))
                task_push_image_load(action_path,
@@ -1884,7 +1884,7 @@ static int generic_action_ok_shader_preset_save(const char *path,
    {
       fill_pathname_join(
             tmp,
-            settings->directory.video_shader,
+            settings->paths.directory_video_shader,
             "presets",
             sizeof(tmp));
       fill_pathname_join(
@@ -1954,7 +1954,7 @@ static void menu_input_st_string_cb_cheat_file_save_as(
          menu_setting_generic(setting, false);
       }
       else if (!string_is_empty(label))
-         cheat_manager_save(str, settings->path.cheat_database);
+         cheat_manager_save(str, settings->paths.path_cheat_database);
    }
 
    menu_input_dialog_end();
@@ -2000,7 +2000,7 @@ static int generic_action_ok_remap_file_save(const char *path,
    if (!string_is_empty(core_name))
       fill_pathname_join(
             directory,
-            settings->directory.input_remapping,
+            settings->paths.directory_input_remapping,
             core_name,
             sizeof(directory));
 
@@ -2395,10 +2395,11 @@ static int generic_action_ok_network(const char *path,
    {
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_DIRS_LIST:
 
-         if (string_is_empty(settings->network.buildbot_assets_url))
+         if (string_is_empty(settings->paths.network_buildbot_assets_url))
             return menu_cbs_exit();
 
-         fill_pathname_join(url_path, settings->network.buildbot_assets_url,
+         fill_pathname_join(url_path,
+               settings->paths.network_buildbot_assets_url,
                "cores/.index-dirs", sizeof(url_path));
          url_label = msg_hash_to_str(enum_idx);
          type_id2  = ACTION_OK_DL_CORE_CONTENT_DIRS_LIST;
@@ -2415,10 +2416,10 @@ static int generic_action_ok_network(const char *path,
          break;
       case MENU_ENUM_LABEL_CB_CORE_UPDATER_LIST:
 
-         if (string_is_empty(settings->network.buildbot_url))
+         if (string_is_empty(settings->paths.network_buildbot_url))
             return menu_cbs_exit();
 
-         fill_pathname_join(url_path, settings->network.buildbot_url,
+         fill_pathname_join(url_path, settings->paths.network_buildbot_url,
                file_path_str(FILE_PATH_INDEX_EXTENDED_URL), sizeof(url_path));
          url_label = msg_hash_to_str(enum_idx);
          type_id2  = ACTION_OK_DL_CORE_UPDATER_LIST;
@@ -2534,32 +2535,32 @@ static void cb_generic_download(void *task_data,
    switch (transf->enum_idx)
    {
       case MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD:
-         dir_path = settings->directory.thumbnails;
+         dir_path = settings->paths.directory_thumbnails;
          break;
       case MENU_ENUM_LABEL_CB_CORE_UPDATER_DOWNLOAD:
-         dir_path = settings->directory.libretro;
+         dir_path = settings->paths.directory_libretro;
          break;
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
-         dir_path = settings->directory.core_assets;
+         dir_path = settings->paths.directory_core_assets;
          extract = settings->bools.network_buildbot_auto_extract_archive;
          break;
       case MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES:
-         dir_path = settings->path.libretro_info;
+         dir_path = settings->paths.path_libretro_info;
          break;
       case MENU_ENUM_LABEL_CB_UPDATE_ASSETS:
-         dir_path = settings->directory.assets;
+         dir_path = settings->paths.directory_assets;
          break;
       case MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES:
-         dir_path = settings->directory.autoconfig;
+         dir_path = settings->paths.directory_autoconfig;
          break;
       case MENU_ENUM_LABEL_CB_UPDATE_DATABASES:
-         dir_path = settings->path.content_database;
+         dir_path = settings->paths.path_content_database;
          break;
       case MENU_ENUM_LABEL_CB_UPDATE_OVERLAYS:
-         dir_path = settings->directory.overlay;
+         dir_path = settings->paths.directory_overlay;
          break;
       case MENU_ENUM_LABEL_CB_UPDATE_CHEATS:
-         dir_path = settings->path.cheat_database;
+         dir_path = settings->paths.path_cheat_database;
          break;
       case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG:
       case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_GLSL:
@@ -2576,7 +2577,7 @@ static void cb_generic_download(void *task_data,
                dirname                                   = "shaders_slang";
 
             fill_pathname_join(shaderdir,
-                  settings->directory.video_shader,
+                  settings->paths.directory_video_shader,
                   dirname,
                   sizeof(shaderdir));
 
@@ -2691,7 +2692,7 @@ static int action_ok_download_generic(const char *path,
    s[0] = s3[0] = '\0';
 
    fill_pathname_join(s,
-         settings->network.buildbot_assets_url,
+         settings->paths.network_buildbot_assets_url,
          "frontend", sizeof(s));
 
    switch (enum_idx)
@@ -2748,7 +2749,7 @@ static int action_ok_download_generic(const char *path,
          strlcpy(s, file_path_str(FILE_PATH_CORE_THUMBNAILS_URL), sizeof(s));
          break;
       default:
-         strlcpy(s, settings->network.buildbot_url, sizeof(s));
+         strlcpy(s, settings->paths.network_buildbot_url, sizeof(s));
          break;
    }
 
@@ -3433,7 +3434,7 @@ static int action_ok_push_content_list(const char *path,
 {
    settings_t            *settings   = config_get_ptr();
    return generic_action_ok_displaylist_push(path,
-         settings->directory.menu_content, label, type, idx,
+         settings->paths.directory_menu_content, label, type, idx,
          entry_idx, ACTION_OK_DL_CONTENT_LIST);
 }
 
@@ -3669,7 +3670,7 @@ static int action_ok_scan_directory_list(const char *path,
 
    filebrowser_clear_type();
    return generic_action_ok_displaylist_push(path,
-         settings->directory.menu_content, label, type, idx,
+         settings->paths.directory_menu_content, label, type, idx,
          entry_idx, ACTION_OK_DL_SCAN_DIR_LIST);
 }
 
@@ -3688,7 +3689,7 @@ static int action_ok_push_downloads_dir(const char *path,
    settings_t            *settings   = config_get_ptr();
 
    filebrowser_clear_type();
-   return generic_action_ok_displaylist_push(path, settings->directory.core_assets,
+   return generic_action_ok_displaylist_push(path, settings->paths.directory_core_assets,
          msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
          type, idx,
          entry_idx, ACTION_OK_DL_CONTENT_LIST);
@@ -4131,7 +4132,7 @@ static int action_ok_netplay_enable_client(const char *path,
    }
 
    /* If no host was specified in the config, ask for one */
-   if (!settings->netplay.server[0])
+   if (!settings->paths.netplay_server[0])
    {
       menu_input_ctx_line_t line;
       memset(&line, 0, sizeof(line));

@@ -62,8 +62,8 @@ int action_scan_file(const char *path,
    fill_pathname_join(fullpath, menu_path, path, sizeof(fullpath));
 
    task_push_dbscan(
-         settings->directory.playlist,
-         settings->path.content_database,
+         settings->paths.directory_playlist,
+         settings->paths.path_content_database,
          fullpath, false, handle_dbscan_finished);
 
    return 0;
@@ -88,8 +88,8 @@ int action_scan_directory(const char *path,
       fill_pathname_join(fullpath, fullpath, path, sizeof(fullpath));
 
    task_push_dbscan(
-         settings->directory.playlist,
-         settings->path.content_database,
+         settings->paths.directory_playlist,
+         settings->paths.path_content_database,
          fullpath, true, handle_dbscan_finished);
 
    return 0;

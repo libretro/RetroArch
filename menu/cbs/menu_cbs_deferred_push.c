@@ -439,7 +439,8 @@ static int deferred_push_cursor_manager_list_deferred(
 
    rdb_path[0] = '\0';
 
-   fill_pathname_join(rdb_path, settings->path.content_database,
+   fill_pathname_join(rdb_path,
+         settings->paths.path_content_database,
          rdb, sizeof(rdb_path));
 
    strlcpy(info->path_b, info->path, sizeof(info->path_b));
