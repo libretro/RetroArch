@@ -203,10 +203,6 @@ MSG_HASH(
       "Netplay-Räume"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_ARCHIVE_MODE,
-      "Verknüpfte Aktion für Archivdateien"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE,
       "Nachfragen"
       )

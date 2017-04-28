@@ -44,8 +44,6 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
    {
       case MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST:
          return "Dodaj treść";
-      case MENU_ENUM_LABEL_VALUE_ARCHIVE_MODE:
-         return "Archive File Association Action";
       case MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE:
          return "Pytaj";
       case MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY:

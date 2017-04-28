@@ -1511,8 +1511,6 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
 #endif
       case MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST:
          return "Lista de logros";
-      case MENU_ENUM_LABEL_VALUE_ARCHIVE_MODE:
-         return "Acción para asociar tipos de archivo";
       case MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY:
          return "Carpeta de recursos";
       case MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES:

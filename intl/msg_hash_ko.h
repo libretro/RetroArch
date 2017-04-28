@@ -203,10 +203,6 @@ MSG_HASH(
       "넷플레이"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_ARCHIVE_MODE,
-      "압축 파일 연결 작업"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE,
       "묻기"
       )

@@ -1953,8 +1953,6 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Thêm nội dung";
       case MENU_ENUM_LABEL_VALUE_ADD_TAB:
          return "Tạo nội dung";
-      case MENU_ENUM_LABEL_VALUE_ARCHIVE_MODE:
-         return "Archive File Association Action";
       case MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE:
          return "Hỏi";
       case MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY:

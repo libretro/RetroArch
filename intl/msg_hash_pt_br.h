@@ -203,10 +203,6 @@ MSG_HASH(
       "Rooms de Netplay"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_ARCHIVE_MODE,
-      "Arquivar Arquivo de Associação de Ação"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE,
       "Perguntar"
       )

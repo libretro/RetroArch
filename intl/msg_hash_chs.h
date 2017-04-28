@@ -208,10 +208,6 @@ MSG_HASH(
       "联机游戏房间"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_ARCHIVE_MODE,
-      "Archive File Association Action"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE,
       "询问"
       )

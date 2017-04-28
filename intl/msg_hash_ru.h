@@ -141,10 +141,6 @@ MSG_HASH(
       "Import content"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_ARCHIVE_MODE,
-      "Archive File Association Action"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE,
       "Ask"
       )

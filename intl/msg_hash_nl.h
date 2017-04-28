@@ -136,10 +136,6 @@ MSG_HASH(
       "Importeer inhoud"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_ARCHIVE_MODE,
-      "Archief Bestand Associatie"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE,
       "Keuze"
       )

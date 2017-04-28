@@ -951,8 +951,6 @@ const char *msg_hash_to_str_pt_br(enum msg_hash_enums msg)
 {
    switch (msg)
    {
-      case MENU_ENUM_LABEL_VALUE_ARCHIVE_MODE:
-         return "Ação para Arquivos Compactados";
       case MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE:
          return "Ask";
       case MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY:

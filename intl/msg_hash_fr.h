@@ -136,10 +136,6 @@ MSG_HASH(
       "Scanner"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_ARCHIVE_MODE,
-      "Mode d'ouverture des archives"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE,
       "Demander"
       )

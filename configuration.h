@@ -382,11 +382,6 @@ typedef struct settings
 
    struct
    {
-      unsigned mode;
-   } archive;
-
-   struct
-   {
       char buildbot_url[255];
       char buildbot_assets_url[255];
    } network;
@@ -402,9 +397,6 @@ typedef struct settings
    char browse_url[4096];
 
    int state_slot;
-
-   unsigned bundle_assets_extract_version_current;
-   unsigned bundle_assets_extract_last_version;
 
    struct
    {
@@ -465,23 +457,21 @@ typedef struct settings
    } netplay;
 #endif
 
+   unsigned bundle_assets_extract_version_current;
+   unsigned bundle_assets_extract_last_version;
    unsigned content_history_size;
-
    unsigned libretro_log_level;
-
-   size_t rewind_buffer_size;
    unsigned rewind_granularity;
-
-
    unsigned autosave_interval;
-
    unsigned network_cmd_port;
    unsigned network_remote_base_port;
-
-   char username[32];
 #ifdef HAVE_LANGEXTRA
    unsigned int user_language;
 #endif
+
+   size_t rewind_buffer_size;
+
+   char username[32];
 } settings_t;
 
 #define configuration_set_float(settings, var, newvar) \
