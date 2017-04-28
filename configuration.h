@@ -328,6 +328,8 @@ typedef struct settings
 
    struct
    {
+      char placeholder;
+
       char playlist_names[PATH_MAX_LENGTH];
       char playlist_cores[PATH_MAX_LENGTH];
       char video_driver[32];

@@ -160,7 +160,13 @@ struct config_path_setting
    GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_path_setting, handle_setting)
 
 #define SETTING_ARRAY(key, configval, default_enable, default_setting, handle_setting) \
-   GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_array_setting, handle_setting)
+   tmp[count].ident      = key; \
+   tmp[count].ptr        = configval; \
+   tmp[count].def_enable = default_enable; \
+   if (default_enable) \
+      tmp[count].def     = default_setting; \
+   tmp[count].handle   = handle_setting; \
+   count++
 
 struct defaults g_defaults;
 static settings_t *configuration_settings = NULL;
@@ -602,7 +608,7 @@ bool config_overlay_enable_default(void)
 static struct config_array_setting *populate_settings_array(settings_t *settings, int *size)
 {
    unsigned count                        = 0;
-   struct config_array_setting *tmp      = NULL;
+   struct config_array_setting  *tmp    = (struct config_array_setting*)malloc((*size + 1) * sizeof(struct config_array_setting));
 
    /* Arrays */
    SETTING_ARRAY("playlist_names",           settings->arrays.playlist_names, false, NULL, true);
@@ -1809,7 +1815,6 @@ static bool config_load_file(const char *path, bool set_defaults,
 {
    unsigned i;
    char tmp_str[PATH_MAX_LENGTH];
-   int array_settings_size                         = 0;
    int path_settings_size                          = 0;
    bool ret                                        = false;
    bool tmp_bool                                   = false;
@@ -1824,6 +1829,7 @@ static bool config_load_file(const char *path, bool set_defaults,
    int float_settings_size                         = sizeof(settings->floats) / sizeof(settings->floats.placeholder);
    int int_settings_size                           = sizeof(settings->ints)   / sizeof(settings->ints.placeholder);
    int uint_settings_size                          = sizeof(settings->uints)   / sizeof(settings->uints.placeholder);
+   int array_settings_size                         = sizeof(settings->arrays)   / sizeof(settings->arrays.placeholder);
    struct config_bool_setting *bool_settings       = populate_settings_bool  (settings, &bool_settings_size);
    struct config_float_setting *float_settings     = populate_settings_float (settings, &float_settings_size);
    struct config_int_setting *int_settings         = populate_settings_int   (settings, &int_settings_size);
@@ -3022,7 +3028,6 @@ bool config_save_file(const char *path)
    float msg_color;
    unsigned i                                        = 0;
    bool ret                                          = false;
-   int array_settings_size                           = 0;
    int path_settings_size                            = 0;
    struct config_bool_setting     *bool_settings     = NULL;
    struct config_int_setting     *int_settings       = NULL;
@@ -3036,6 +3041,7 @@ bool config_save_file(const char *path)
    int float_settings_size                           = sizeof(settings->floats)/ sizeof(settings->floats.placeholder);
    int int_settings_size                             = sizeof(settings->ints)  / sizeof(settings->ints.placeholder);
    int uint_settings_size                            = sizeof(settings->uints) / sizeof(settings->uints.placeholder);
+   int array_settings_size                           = sizeof(settings->arrays)   / sizeof(settings->arrays.placeholder);
 
    if (!conf)
       conf = config_file_new(NULL);
@@ -3302,7 +3308,7 @@ bool config_save_overrides(int override_type)
    float_overrides     = populate_settings_float(overrides, &tmp_i);
 
    array_settings      = populate_settings_array(settings,  &array_settings_size);
-   tmp_i               = 0;
+   tmp_i               = sizeof(settings->arrays)   / sizeof(settings->arrays.placeholder);
    array_overrides     = populate_settings_array (overrides, &tmp_i);
 
    path_settings       = populate_settings_path(settings, &path_settings_size);
