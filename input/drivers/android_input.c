@@ -1254,7 +1254,7 @@ static bool android_input_key_pressed(void *data, int key)
 
    joypad_info.joy_idx        = 0;
    joypad_info.auto_binds     = input_autoconf_binds[0];
-   joypad_info.axis_threshold = settings->input.axis_threshold;
+   joypad_info.axis_threshold = settings->floats.input_axis_threshold;
 
    if (keyptr->valid &&		
          input_joypad_pressed(android->joypad, joypad_info,
