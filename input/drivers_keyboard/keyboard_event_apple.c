@@ -125,7 +125,7 @@ static bool handle_icade_event(unsigned *code, bool *keydown)
    settings_t *settings = config_get_ptr();
    static bool initialized = false;
    bool ret = false;
-   unsigned kb_type_idx = settings->input.keyboard_gamepad_mapping_type;
+   unsigned kb_type_idx = settings->uints.input_keyboard_gamepad_mapping_type;
 
    if (!initialized)
    {
