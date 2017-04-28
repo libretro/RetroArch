@@ -744,7 +744,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("check_firmware_before_loading", &settings->check_firmware_before_loading, true, check_firmware_before_loading, false);
    SETTING_BOOL("builtin_mediaplayer_enable",    &settings->multimedia.builtin_mediaplayer_enable, false, false /* TODO */, false);
    SETTING_BOOL("builtin_imageviewer_enable",    &settings->multimedia.builtin_imageviewer_enable, true, true, false);
-   SETTING_BOOL("fps_show",                      &settings->fps_show, true, false, false);
+   SETTING_BOOL("fps_show",                      &settings->bools.video_fps_show, true, false, false);
    SETTING_BOOL("ui_menubar_enable",             &settings->bools.ui_menubar_enable, true, true, false);
    SETTING_BOOL("suspend_screensaver_enable",    &settings->bools.ui_suspend_screensaver_enable, true, true, false);
    SETTING_BOOL("rewind_enable",                 &settings->rewind_enable, true, rewind_enable, false);
@@ -2142,12 +2142,16 @@ static bool config_load_file(const char *path, bool set_defaults,
       *settings->directory.system = '\0';
 
    if (settings->slowmotion_ratio < 1.0f)
+   {
       configuration_set_float(settings, settings->slowmotion_ratio, 1.0f);
+   }
 
    /* Sanitize fastforward_ratio value - previously range was -1
     * and up (with 0 being skipped) */
    if (settings->fastforward_ratio < 0.0f)
+   {
       configuration_set_float(settings, settings->fastforward_ratio, 0.0f);
+   }
 
 #ifdef HAVE_LAKKA
    settings->ssh_enable       = path_file_exists(LAKKA_SSH_PATH);

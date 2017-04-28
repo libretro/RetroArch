@@ -70,6 +70,7 @@ typedef struct settings
       bool video_allow_rotate;
       bool video_shared_context;
       bool video_force_srgb_disable;
+      bool video_fps_show;
 
       bool audio_enable;
       bool audio_mute_enable;
@@ -462,7 +463,6 @@ typedef struct settings
 #if defined(HAVE_MENU)
    bool menu_show_start_screen;
 #endif
-   bool fps_show;
    bool load_dummy_on_core_shutdown;
    bool check_firmware_before_loading;
 

@@ -3111,7 +3111,7 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->fps_show,
+               &settings->bools.video_fps_show,
                MENU_ENUM_LABEL_FPS_SHOW,
                MENU_ENUM_LABEL_VALUE_FPS_SHOW,
                fps_show,

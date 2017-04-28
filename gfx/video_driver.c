@@ -2242,7 +2242,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
       settings->bools.video_black_frame_insertion;
    video_info->hard_sync             = settings->bools.video_hard_sync;
    video_info->hard_sync_frames      = settings->video.hard_sync_frames;
-   video_info->fps_show              = settings->fps_show;
+   video_info->fps_show              = settings->bools.video_fps_show;
    video_info->scale_integer         = settings->bools.video_scale_integer;
    video_info->aspect_ratio_idx      = settings->video.aspect_ratio_idx;
    video_info->post_filter_record    = settings->bools.video_post_filter_record;
