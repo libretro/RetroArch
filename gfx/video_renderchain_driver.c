@@ -18,7 +18,7 @@
 #include "video_renderchain_driver.h"
 
 static const renderchain_driver_t *renderchain_drivers[] = {
-#ifdef HAVE_CG
+#if defined(_WIN32) && defined(HAVE_D3D9) && defined(HAVE_CG)
    &cg_d3d9_renderchain,
 #endif
 #ifdef _XBOX
