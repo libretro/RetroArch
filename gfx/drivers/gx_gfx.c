@@ -434,7 +434,7 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
 
    GX_SetCopyFilter(gx_mode.aa, gx_mode.sample_pattern,
          (gx_mode.xfbMode == VI_XFBMODE_SF) 
-         ? GX_FALSE : settings->video.vfilter,
+         ? GX_FALSE : settings->bools.video_vfilter,
          gx_mode.vfilter);
    GXColor color = { 0, 0, 0, 0xff };
    GX_SetCopyClear(color, GX_MAX_Z24);
@@ -556,7 +556,7 @@ static void init_texture(void *data, unsigned width, unsigned height)
 
    width               &= ~3;
    height              &= ~3;
-   g_filter             = settings->video.smooth ? GX_LINEAR : GX_NEAR;
+   g_filter             = settings->bools.video_smooth ? GX_LINEAR : GX_NEAR;
 
    menu_display_get_fb_size(&fb_width, &fb_height,
          &fb_pitch);

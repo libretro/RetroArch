@@ -123,11 +123,11 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
    menu_input_t *menu_input                = NULL;
    settings_t *settings                    = config_get_ptr();
    static unsigned ok_old                  = 0;
-   unsigned menu_ok_btn                    = (!settings->input.swap_override && 
-      settings->input.menu_swap_ok_cancel_buttons) ?
+   unsigned menu_ok_btn                    = (!settings->bools.input_swap_override && 
+      settings->bools.input_menu_swap_ok_cancel_buttons) ?
       RETRO_DEVICE_ID_JOYPAD_B : RETRO_DEVICE_ID_JOYPAD_A;
-   unsigned menu_cancel_btn                = (!settings->input.swap_override && 
-      settings->input.menu_swap_ok_cancel_buttons) ?
+   unsigned menu_cancel_btn                = (!settings->bools.input_swap_override && 
+      settings->bools.input_menu_swap_ok_cancel_buttons) ?
       RETRO_DEVICE_ID_JOYPAD_A : RETRO_DEVICE_ID_JOYPAD_B;
    unsigned ok_current                     = (unsigned)(input & UINT64_C(1) << menu_ok_btn);
    unsigned ok_trigger                     = ok_current & ~ok_old;
@@ -285,10 +285,10 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
    if (runloop_cmd_press(trigger_input, RARCH_QUIT_KEY))
       return MENU_ACTION_QUIT;
 
-   mouse_enabled                      = settings->menu.mouse.enable;
+   mouse_enabled                      = settings->bools.menu_mouse_enable;
 #ifdef HAVE_OVERLAY
    if (!mouse_enabled)
-      mouse_enabled = !(settings->input.overlay_enable
+      mouse_enabled = !(settings->bools.input_overlay_enable
             && input_overlay_is_alive(overlay_ptr));
 #endif
 
@@ -298,7 +298,7 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
    if (!mouse_enabled)
       menu_input->mouse.ptr = 0;
 
-   if (settings->menu.pointer.enable)
+   if (settings->bools.menu_pointer_enable)
       menu_event_pointer(&ret);
    else
    {

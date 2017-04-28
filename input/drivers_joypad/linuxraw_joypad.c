@@ -34,7 +34,6 @@
 #include "../input_driver.h"
 
 #include "../common/epoll_common.h"
-#include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
 
@@ -99,10 +98,8 @@ static bool linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *p
 
    if (pad->fd >= 0)
    {
-      settings_t *settings = config_get_ptr();
-
       if (ioctl(pad->fd,
-               JSIOCGNAME(sizeof(settings->input.device_names[0])), pad->ident) >= 0)
+               JSIOCGNAME(sizeof(input_device_names[0])), pad->ident) >= 0)
       {
          RARCH_LOG("[Device]: Found pad: %s on %s.\n", pad->ident, path);
       }
@@ -240,12 +237,11 @@ static bool linuxraw_joypad_init(void *data)
    {
       char path[PATH_MAX_LENGTH];
       struct linuxraw_joypad *pad = (struct linuxraw_joypad*)&linuxraw_pads[i];
-      settings_t *settings        = config_get_ptr();
 
       path[0]                     = '\0';
 
       pad->fd                     = -1;
-      pad->ident                  = settings->input.device_names[i];
+      pad->ident                  = input_device_names[i];
       
       snprintf(path, sizeof(path), "/dev/input/js%u", i);
 

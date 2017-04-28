@@ -1045,7 +1045,7 @@ static void gl_glsl_set_uniform_parameter(
    GLint            location = 0;
    glsl_shader_data_t  *glsl = (glsl_shader_data_t*)data;
 
-   if (!param)
+   if (!glsl || !param)
       return;
 
    if (param->lookup.enable)

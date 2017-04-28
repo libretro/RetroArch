@@ -61,9 +61,9 @@ static void *d3dfonts_w32_init_font(void *video_data,
 
    (void)font_path;
 
-   r               = (settings->video.msg_color_r * 255);
-   g               = (settings->video.msg_color_g * 255);
-   b               = (settings->video.msg_color_b * 255);
+   r               = (settings->floats.video_msg_color_r * 255);
+   g               = (settings->floats.video_msg_color_g * 255);
+   b               = (settings->floats.video_msg_color_b * 255);
    r &= 0xff;
    g &= 0xff;
    b &= 0xff;

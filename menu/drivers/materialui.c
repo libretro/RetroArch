@@ -589,7 +589,7 @@ static void mui_render(void *data)
    menu_display_set_height(height);
    header_height = menu_display_get_header_height();
 
-   if (settings->menu.pointer.enable)
+   if (settings->bools.menu_pointer_enable)
    {
       int16_t        pointer_y = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
       float    old_accel_val   = 0.0f;
@@ -616,7 +616,7 @@ static void mui_render(void *data)
       menu_input_ctl(MENU_INPUT_CTL_POINTER_ACCEL_WRITE, &new_accel_val);
    }
 
-   if (settings->menu.mouse.enable)
+   if (settings->bools.menu_mouse_enable)
    {
       int16_t mouse_y          = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
 
@@ -872,7 +872,7 @@ static int mui_get_core_title(char *s, size_t len)
    core_name                      = system->library_name;
    core_version                   = system->library_version;
 
-   if (!settings->menu.core_enable)
+   if (!settings->bools.menu_core_enable)
       return -1;
 
    if (info)

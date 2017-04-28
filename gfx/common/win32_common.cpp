@@ -416,7 +416,7 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
      case WM_COMMAND:
          {
             settings_t *settings     = config_get_ptr();
-            if (settings->ui.menubar_enable)
+            if (settings->bools.ui_menubar_enable)
                win32_menu_loop(main_window.hwnd, wparam);
          }
          break;
@@ -793,7 +793,7 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
     * an integer, so video.refresh_rate needs to be rounded. Also, account 
     * for black frame insertion using video.refresh_rate set to half
     * of the display refresh rate, as well as higher vsync swap intervals. */
-   float refresh_mod    = settings->video.black_frame_insertion ? 2.0f : 1.0f;
+   float refresh_mod    = settings->bools.video_black_frame_insertion ? 2.0f : 1.0f;
    unsigned refresh     = roundf(settings->video.refresh_rate 
          * refresh_mod * settings->video.swap_interval);
 
@@ -841,7 +841,7 @@ void win32_set_window(unsigned *width, unsigned *height,
       settings_t *settings      = config_get_ptr();
       const ui_window_t *window = ui_companion_driver_get_window_ptr();
 
-      if (!fullscreen && settings->ui.menubar_enable)
+      if (!fullscreen && settings->bools.ui_menubar_enable)
       {
          RECT rc_temp = {0, 0, (LONG)*height, 0x7FFF};
          SetMenu(main_window.hwnd,
@@ -885,7 +885,7 @@ bool win32_set_video_mode(void *data,
    g_resize_width  = width;
    g_resize_height = height;
 
-   windowed_full   = settings->video.windowed_fullscreen;
+   windowed_full   = settings->bools.video_windowed_fullscreen;
 
    win32_set_style(&current_mon, &hm_to_use, &width, &height,
          fullscreen, windowed_full, &rect, &mon_rect, &style);

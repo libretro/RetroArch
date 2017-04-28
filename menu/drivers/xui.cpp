@@ -167,7 +167,7 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
       char str[PATH_MAX_LENGTH] = {0};
 
       if (
-            settings->menu.core_enable &&
+            settings->bools.menu_core_enable &&
             menu_entries_get_core_title(str, sizeof(str)) == 0)
       {
          mbstowcs(strw_buffer, str, sizeof(strw_buffer) / sizeof(wchar_t));
@@ -290,9 +290,9 @@ static void* xui_init(void **userdata)
    if (d3d->resolution_hd_enable)
       RARCH_LOG("HD menus enabled.\n");
 
-   video_info.vsync        = settings->video.vsync;
+   video_info.vsync        = settings->bools.video_vsync;
    video_info.force_aspect = false;
-   video_info.smooth       = settings->video.smooth;
+   video_info.smooth       = settings->bools.video_smooth;
    video_info.input_scale  = 2;
    video_info.fullscreen   = true;
    video_info.rgb32        = false;
@@ -571,7 +571,7 @@ static void xui_render(void *data)
    if (XuiHandleIsValid(m_menutitle))
    {
       if (
-            settings->menu.core_enable &&
+            settings->bools.menu_core_enable &&
             menu_entries_get_core_title(title, sizeof(title)) == 0)
       {
          mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));

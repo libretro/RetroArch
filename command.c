@@ -201,11 +201,13 @@ static bool command_set_shader(const char *arg)
 static bool command_read_ram(const char *arg)
 {
    cheevos_var_t var;
-   const uint8_t * data;
-   unsigned nbytes;
    unsigned i;
+   unsigned nbytes;
    char reply[256];
-   char *reply_at = NULL;
+   const uint8_t * data = NULL;
+   char *reply_at       = NULL;
+
+   reply[0]             = '\0';
 
    strlcpy(reply, "READ_CORE_RAM ", sizeof(reply));
    reply_at = reply + strlen("READ_CORE_RAM ");
@@ -1094,12 +1096,12 @@ static void command_event_set_volume(float gain)
 {
    char msg[128];
    settings_t *settings      = config_get_ptr();
-   float new_volume          = settings->audio.volume + gain;
+   float new_volume          = settings->floats.audio_volume + gain;
 
    new_volume                = MAX(new_volume, -80.0f);
    new_volume                = MIN(new_volume, 12.0f);
 
-   configuration_set_float(settings, settings->audio.volume, new_volume);
+   configuration_set_float(settings, settings->floats.audio_volume, new_volume);
 
    snprintf(msg, sizeof(msg), "%s: %.1f dB",
          msg_hash_to_str(MSG_AUDIO_VOLUME),
@@ -1235,11 +1237,11 @@ static void command_event_load_auto_state(void)
 #endif
 
 #ifdef HAVE_CHEEVOS
-   if (settings->cheevos.hardcore_mode_enable)
+   if (settings->bools.cheevos_hardcore_mode_enable)
       return;
 #endif
 
-   if (!settings->savestate_auto_load)
+   if (!settings->bools.savestate_auto_load)
       return;
 
    if (global)
@@ -1271,7 +1273,7 @@ static void command_event_set_savestate_auto_index(void)
    settings_t *settings             = config_get_ptr();
    global_t   *global               = global_get_ptr();
 
-   if (!settings->savestate_auto_index)
+   if (!settings->bools.savestate_auto_index)
       return;
 
    if (global)
@@ -1369,7 +1371,7 @@ static bool command_event_init_core(enum rarch_core_type *data)
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_INIT, NULL);
 
    /* auto overrides: apply overrides */
-   if(settings->auto_overrides_enable)
+   if(settings->bools.auto_overrides_enable)
    {
       if (config_load_override())
          runloop_ctl(RUNLOOP_CTL_SET_OVERRIDES_ACTIVE, NULL);
@@ -1378,7 +1380,7 @@ static bool command_event_init_core(enum rarch_core_type *data)
    }
 
    /* Auto-remap: apply shader preset files */
-   if(settings->auto_shaders_enable)
+   if(settings->bools.auto_shaders_enable)
       config_load_shader_preset();
 
 
@@ -1389,7 +1391,7 @@ static bool command_event_init_core(enum rarch_core_type *data)
    core_set_environment(&info);
 
    /* Auto-remap: apply remap files */
-   if(settings->auto_remaps_enable)
+   if(settings->bools.auto_remaps_enable)
       config_load_remap();
 
    /* Per-core saves: reset redirection paths */
@@ -1447,7 +1449,7 @@ static bool command_event_save_auto_state(void)
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
-   if (!settings || !settings->savestate_auto_save)
+   if (!settings || !settings->bools.savestate_auto_save)
       return false;
    if (!global)
       return false;
@@ -1460,7 +1462,7 @@ static bool command_event_save_auto_state(void)
       return false;
 
 #ifdef HAVE_CHEEVOS
-   if (settings->cheevos.hardcore_mode_enable)
+   if (settings->bools.cheevos_hardcore_mode_enable)
       return false;
 #endif
 
@@ -1782,10 +1784,10 @@ static bool command_event_resize_windowed_scale(void)
       if (!window_scale || *window_scale == 0)
          return false;
 
-      configuration_set_float(settings, settings->video.scale, *window_scale);
+      configuration_set_float(settings, settings->floats.video_scale, *window_scale);
    }
 
-   if (!settings->video.fullscreen)
+   if (!settings->bools.video_fullscreen)
       command_event(CMD_EVENT_REINIT, NULL);
 
    runloop_ctl(RUNLOOP_CTL_SET_WINDOWED_SCALE, &idx);
@@ -1887,7 +1889,7 @@ bool command_event(enum event_command cmd, void *data)
                return false;
 
 #ifdef HAVE_CHEEVOS
-            if (settings->cheevos.hardcore_mode_enable)
+            if (settings->bools.cheevos_hardcore_mode_enable)
                return false;
 #endif
 
@@ -1930,11 +1932,11 @@ bool command_event(enum event_command cmd, void *data)
          {
             settings_t *settings      = config_get_ptr();
 #ifdef HAVE_CHEEVOS
-            if (settings->cheevos.hardcore_mode_enable)
+            if (settings->bools.cheevos_hardcore_mode_enable)
                return false;
 #endif
 
-            if (settings->savestate_auto_index)
+            if (settings->bools.savestate_auto_index)
             {
                int new_state_slot = settings->state_slot + 1;
                configuration_set_int(settings, settings->state_slot, new_state_slot);
@@ -2022,7 +2024,7 @@ bool command_event(enum event_command cmd, void *data)
          {
 #ifdef HAVE_CHEEVOS
             settings_t *settings      = config_get_ptr();
-            if (settings->cheevos.hardcore_mode_enable)
+            if (settings->bools.cheevos_hardcore_mode_enable)
                return false;
 #endif
 
@@ -2033,18 +2035,18 @@ bool command_event(enum event_command cmd, void *data)
          {
             settings_t *settings      = config_get_ptr();
 #ifdef HAVE_CHEEVOS
-            if (settings->cheevos.hardcore_mode_enable)
+            if (settings->bools.cheevos_hardcore_mode_enable)
                return false;
 #endif
 
-            if (settings->rewind_enable)
+            if (settings->bools.rewind_enable)
                state_manager_event_init((unsigned)settings->rewind_buffer_size);
          }
          break;
       case CMD_EVENT_REWIND_TOGGLE:
          {
             settings_t *settings      = config_get_ptr();
-            if (settings->rewind_enable)
+            if (settings->bools.rewind_enable)
                command_event(CMD_EVENT_REWIND_INIT, NULL);
             else
                command_event(CMD_EVENT_REWIND_DEINIT, NULL);
@@ -2073,7 +2075,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_AUDIO_MUTE_TOGGLE:
          {
             settings_t *settings      = config_get_ptr();
-            const char *msg           = !settings->audio.mute_enable ?
+            const char *msg           = !settings->bools.audio_mute_enable ?
                msg_hash_to_str(MSG_AUDIO_MUTED):
                msg_hash_to_str(MSG_AUDIO_UNMUTED);
 
@@ -2099,7 +2101,7 @@ bool command_event(enum event_command cmd, void *data)
             settings_t *settings      = config_get_ptr();
             command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
 #ifdef HAVE_OVERLAY
-            if (settings->input.overlay_enable)
+            if (settings->bools.input_overlay_enable)
                task_push_overlay_load_default(input_overlay_loaded, NULL);
 #endif
          }
@@ -2108,7 +2110,7 @@ bool command_event(enum event_command cmd, void *data)
          {
             settings_t *settings      = config_get_ptr();
 #ifdef HAVE_OVERLAY
-            input_overlay_next(overlay_ptr, settings->input.overlay_opacity);
+            input_overlay_next(overlay_ptr, settings->floats.input_overlay_opacity);
 #endif
          }
          break;
@@ -2173,7 +2175,7 @@ bool command_event(enum event_command cmd, void *data)
          {
             settings_t *settings      = config_get_ptr();
             command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
-            if (!settings->history_list_enable)
+            if (!settings->bools.history_list_enable)
                return false;
 
             RARCH_LOG("%s: [%s].\n",
@@ -2258,7 +2260,7 @@ bool command_event(enum event_command cmd, void *data)
          {
 #ifdef HAVE_OVERLAY
             settings_t *settings      = config_get_ptr();
-            input_overlay_set_scale_factor(overlay_ptr, settings->input.overlay_scale);
+            input_overlay_set_scale_factor(overlay_ptr, settings->floats.input_overlay_scale);
 #endif
          }
          break;
@@ -2266,7 +2268,7 @@ bool command_event(enum event_command cmd, void *data)
          {
 #ifdef HAVE_OVERLAY
             settings_t *settings      = config_get_ptr();
-            input_overlay_set_alpha_mod(overlay_ptr, settings->input.overlay_opacity);
+            input_overlay_set_alpha_mod(overlay_ptr, settings->floats.input_overlay_opacity);
 #endif
          }
          break;
@@ -2393,7 +2395,7 @@ bool command_event(enum event_command cmd, void *data)
          if (menu_driver_is_alive())
          {
             settings_t *settings      = config_get_ptr();
-            if (settings->menu.pause_libretro)
+            if (settings->bools.menu_pause_libretro)
                command_event(CMD_EVENT_AUDIO_STOP, NULL);
             else
                command_event(CMD_EVENT_AUDIO_START, NULL);
@@ -2401,7 +2403,7 @@ bool command_event(enum event_command cmd, void *data)
          else
          {
             settings_t *settings      = config_get_ptr();
-            if (settings->menu.pause_libretro)
+            if (settings->bools.menu_pause_libretro)
                command_event(CMD_EVENT_AUDIO_START, NULL);
          }
 #endif
@@ -2504,17 +2506,17 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_FULLSCREEN_TOGGLE:
          {
             settings_t *settings      = config_get_ptr();
-            bool new_fullscreen_state = !settings->video.fullscreen;
+            bool new_fullscreen_state = !settings->bools.video_fullscreen;
             if (!video_driver_has_windowed())
                return false;
 
             /* If we go fullscreen we drop all drivers and
              * reinitialize to be safe. */
-            configuration_set_bool(settings, settings->video.fullscreen,
+            configuration_set_bool(settings, settings->bools.video_fullscreen,
                   new_fullscreen_state);
 
             command_event(CMD_EVENT_REINIT, NULL);
-            if (settings->video.fullscreen)
+            if (settings->bools.video_fullscreen)
                video_driver_hide_mouse();
             else
                video_driver_show_mouse();

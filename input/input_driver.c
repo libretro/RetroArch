@@ -271,6 +271,7 @@ void input_poll(void)
    size_t i;
    settings_t *settings           = config_get_ptr();
    unsigned max_users             = settings->input.max_users;
+   float axis_threshold           = settings->floats.input_axis_threshold;
    
    current_input->poll(current_input_data);
 
@@ -284,7 +285,7 @@ void input_poll(void)
             libretro_input_binds[i][RARCH_TURBO_ENABLE].valid)
       {
          rarch_joypad_info_t joypad_info;
-         joypad_info.axis_threshold = settings->input.axis_threshold;
+         joypad_info.axis_threshold = axis_threshold;
          joypad_info.joy_idx        = settings->input.joypad_map[i];
          joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
 
@@ -301,9 +302,9 @@ void input_poll(void)
    if (overlay_ptr && input_overlay_is_alive(overlay_ptr))
       input_poll_overlay(
             overlay_ptr,
-            settings->input.overlay_opacity,
+            settings->floats.input_overlay_opacity,
             settings->input.analog_dpad_mode[0],
-            settings->input.axis_threshold);
+            axis_threshold);
 #endif
 
 #ifdef HAVE_COMMAND
@@ -313,8 +314,7 @@ void input_poll(void)
 
 #ifdef HAVE_NETWORKGAMEPAD
    if (input_driver_remote)
-      input_remote_poll(input_driver_remote,
-            settings->input.max_users);
+      input_remote_poll(input_driver_remote, max_users);
 #endif
 }
 
@@ -351,7 +351,7 @@ int16_t input_state(unsigned port, unsigned device,
    {
       settings_t *settings = config_get_ptr();
 
-      if (settings->input.remap_binds_enable)
+      if (settings->bools.input_remap_binds_enable)
       {
          switch (device)
          {
@@ -380,7 +380,7 @@ int16_t input_state(unsigned port, unsigned device,
          {
             rarch_joypad_info_t joypad_info;
 
-            joypad_info.axis_threshold = settings->input.axis_threshold;
+            joypad_info.axis_threshold = settings->floats.input_axis_threshold;
             joypad_info.joy_idx        = settings->input.joypad_map[port];
             joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
 
@@ -497,7 +497,7 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
    if (!input_driver_block_libretro_input)
    {
       rarch_joypad_info_t joypad_info;
-      joypad_info.axis_threshold = settings->input.axis_threshold;
+      joypad_info.axis_threshold = settings->floats.input_axis_threshold;
 
       for (i = 4; i < 16; i++)
       {
@@ -558,7 +558,7 @@ static INLINE bool input_menu_keys_pressed_internal(
 
          joypad_info.joy_idx        = settings->input.joypad_map[port];
          joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
-         joypad_info.axis_threshold = settings->input.axis_threshold;
+         joypad_info.axis_threshold = settings->floats.input_axis_threshold;
 
          if (sec   && input_joypad_pressed(sec,
                   joypad_info, port, input_config_binds[0], i))
@@ -604,7 +604,6 @@ static INLINE bool input_menu_keys_pressed_internal(
    return false;
 }
 
-#ifdef HAVE_MENU
 static bool input_driver_toggle_button_combo(
       unsigned mode, uint64_t *trigger_input)
 {
@@ -649,7 +648,6 @@ static bool input_driver_toggle_button_combo(
    
    return true;
 }
-#endif
 
 /**
  * input_menu_keys_pressed:
@@ -682,7 +680,7 @@ uint64_t input_menu_keys_pressed(
       const struct retro_keybind *binds_auto       = NULL;
       unsigned max_users                           = settings->input.max_users;
 
-      if (settings->menu.unified_controls && !menu_input_dialog_get_display_kb())
+      if (settings->bools.menu_unified_controls && !menu_input_dialog_get_display_kb())
          return input_keys_pressed(old_input, last_input,
                trigger_input, runloop_paused, nonblock_state);
 
@@ -695,7 +693,7 @@ uint64_t input_menu_keys_pressed(
 
       joypad_info.joy_idx                          = 0;
       joypad_info.auto_binds                       = NULL;
-      joypad_info.axis_threshold                   = settings->input.axis_threshold;
+      joypad_info.axis_threshold                   = settings->floats.input_axis_threshold;
 
       input_driver_block_libretro_input            = false;
       input_driver_block_hotkey                    = false;
@@ -733,7 +731,7 @@ uint64_t input_menu_keys_pressed(
                || input_menu_keys_pressed_internal(
                   binds, settings, joypad_info, RARCH_MENU_TOGGLE, max_users,
                   mtkey->valid,
-                  settings->input.all_users_control_menu))
+                  settings->bools.input_all_users_control_menu))
             ret |= (UINT64_C(1) << RARCH_MENU_TOGGLE);
       }
 #endif
@@ -745,7 +743,7 @@ uint64_t input_menu_keys_pressed(
                input_menu_keys_pressed_internal(binds,
                   settings, joypad_info, i, max_users,
                   mtkey->valid,
-                  settings->input.all_users_control_menu))
+                  settings->bools.input_all_users_control_menu))
             ret |= (UINT64_C(1) << i);
          
       }
@@ -789,7 +787,7 @@ uint64_t input_menu_keys_pressed(
          ids[12][0] = RETROK_RETURN;
          ids[12][1] = RETRO_DEVICE_ID_JOYPAD_A;
 
-         if (settings->input.menu_swap_ok_cancel_buttons)
+         if (settings->bools.input_menu_swap_ok_cancel_buttons)
          {
             ids[11][1] = RETRO_DEVICE_ID_JOYPAD_A;
             ids[12][1] = RETRO_DEVICE_ID_JOYPAD_B;
@@ -841,7 +839,7 @@ static INLINE bool input_keys_pressed_internal(
 
       joypad_info.joy_idx        = settings->input.joypad_map[0];
       joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
-      joypad_info.axis_threshold = settings->input.axis_threshold;
+      joypad_info.axis_threshold = settings->floats.input_axis_threshold;
 
       if (bind_valid && current_input->input_state(current_input_data,
                joypad_info, &binds,
@@ -918,7 +916,7 @@ uint64_t input_keys_pressed(
 
    joypad_info.joy_idx                          = 0;
    joypad_info.auto_binds                       = NULL;
-   joypad_info.axis_threshold                   = settings->input.axis_threshold;
+   joypad_info.axis_threshold                   = settings->floats.input_axis_threshold;
    
    input_driver_block_libretro_input            = false;
    input_driver_block_hotkey                    = false;
@@ -1162,13 +1160,15 @@ bool input_driver_owns_driver(void)
 bool input_driver_init_command(void)
 {
 #ifdef HAVE_COMMAND
-   settings_t *settings = config_get_ptr();
-   if (     !settings->stdin_cmd_enable 
-         && !settings->network_cmd_enable)
+   settings_t *settings    = config_get_ptr();
+   bool stdin_cmd_enable   = settings->bools.stdin_cmd_enable;
+   bool network_cmd_enable = settings->bools.network_cmd_enable;
+   bool grab_stdin         = input_driver_grab_stdin();
+
+   if (!stdin_cmd_enable && !network_cmd_enable)
       return false;
 
-   if (settings->stdin_cmd_enable 
-         && input_driver_grab_stdin())
+   if (stdin_cmd_enable && grab_stdin)
    {
       RARCH_WARN("stdin command interface is desired, but input driver has already claimed stdin.\n"
             "Cannot use this command interface.\n");
@@ -1178,9 +1178,8 @@ bool input_driver_init_command(void)
    
    if (command_network_new(
             input_driver_command,
-            settings->stdin_cmd_enable
-            && !input_driver_grab_stdin(),
-            settings->network_cmd_enable,
+            stdin_cmd_enable && !grab_stdin,
+            network_cmd_enable,
             settings->network_cmd_port))
       return true;
 
@@ -1217,7 +1216,7 @@ bool input_driver_init_remote(void)
 #ifdef HAVE_NETWORKGAMEPAD
    settings_t *settings = config_get_ptr();
 
-   if (!settings->network_remote_enable)
+   if (!settings->bools.network_remote_enable)
       return false;
 
    input_driver_remote = input_remote_new(

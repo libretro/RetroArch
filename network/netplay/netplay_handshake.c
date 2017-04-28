@@ -1027,7 +1027,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
    netplay_recv_flush(&connection->recv_packet_buffer);
 
    /* Ask to switch to playing mode if we should */
-   if (!settings->netplay.start_as_spectator)
+   if (!settings->bools.netplay_start_as_spectator)
       return netplay_cmd_mode(netplay, connection, NETPLAY_CONNECTION_PLAYING);
    else
       return true;

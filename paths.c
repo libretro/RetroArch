@@ -98,7 +98,7 @@ void path_set_redirect(void)
       settings_t *settings = config_get_ptr();
 
       /* per-core saves: append the library_name to the save location */
-      if (      settings->sort_savefiles_enable
+      if (      settings->bools.sort_savefiles_enable
             && !string_is_empty(old_savefile_dir))
       {
          fill_pathname_join(
@@ -127,7 +127,7 @@ void path_set_redirect(void)
       }
 
       /* per-core states: append the library_name to the save location */
-      if (settings->sort_savestates_enable
+      if (settings->bools.sort_savestates_enable
             && !string_is_empty(old_savestate_dir))
       {
          fill_pathname_join(

@@ -196,7 +196,7 @@ static void *vg_init(const video_info_t *video,
 
    if (     video->font_enable
          && font_renderer_create_default((const void**)&vg->font_driver, &vg->mFontRenderer,
-            *settings->path.font ? settings->path.font : NULL, settings->video.font_size))
+            *settings->path.font ? settings->path.font : NULL, settings->floats.video_font_size))
    {
       vg->mFont            = vgCreateFont(0);
 
@@ -206,18 +206,18 @@ static void *vg_init(const video_info_t *video,
          VGfloat paintBg[4];
 
          vg->mFontsOn      = true;
-         vg->mFontHeight   = settings->video.font_size;
+         vg->mFontHeight   = settings->floats.video_font_size;
          vg->mPaintFg      = vgCreatePaint();
          vg->mPaintBg      = vgCreatePaint();
 
-         paintFg[0] = settings->video.msg_color_r;
-         paintFg[1] = settings->video.msg_color_g;
-         paintFg[2] = settings->video.msg_color_b;
+         paintFg[0] = settings->floats.video_msg_color_r;
+         paintFg[1] = settings->floats.video_msg_color_g;
+         paintFg[2] = settings->floats.video_msg_color_b;
          paintFg[3] = 1.0f;
 
-         paintBg[0] = settings->video.msg_color_r / 2.0f;
-         paintBg[1] = settings->video.msg_color_g / 2.0f;
-         paintBg[2] = settings->video.msg_color_b / 2.0f;
+         paintBg[0] = settings->floats.video_msg_color_r / 2.0f;
+         paintBg[1] = settings->floats.video_msg_color_g / 2.0f;
+         paintBg[2] = settings->floats.video_msg_color_b / 2.0f;
          paintBg[3] = 0.5f;
 
          vgSetParameteri(vg->mPaintFg, VG_PAINT_TYPE, VG_PAINT_TYPE_COLOR);

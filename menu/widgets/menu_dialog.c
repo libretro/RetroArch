@@ -208,10 +208,10 @@ int menu_dialog_iterate(char *s, size_t len, const char *label)
          menu_hash_get_help_enum(MENU_ENUM_LABEL_VALUE_EXTRACTING_PLEASE_WAIT,
                s, len);
 
-         if (settings->bundle_finished)
+         if (settings->bools.bundle_finished)
          {
-            settings->bundle_finished = false;
-            do_exit                   = true;
+            settings->bools.bundle_finished = false;
+            do_exit                         = true;
          }
          break;
       case MENU_DIALOG_QUIT_CONFIRM:

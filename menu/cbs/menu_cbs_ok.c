@@ -966,7 +966,12 @@ static int file_load_with_detect_core_wrapper(
    {
       case -1:
          {
-            content_ctx_info_t content_info = {0};
+            content_ctx_info_t content_info;
+
+            content_info.argc        = 0;
+            content_info.argv        = NULL;
+            content_info.args        = NULL;
+            content_info.environ_get = NULL;
 
             if (!task_push_load_content_with_new_core_from_menu(
                      new_core_path, def_info.s,
@@ -1071,7 +1076,12 @@ static int generic_action_ok(const char *path,
          break;
       case ACTION_OK_LOAD_CORE:
          {
-            content_ctx_info_t content_info = {0};
+            content_ctx_info_t content_info;
+
+            content_info.argc        = 0;
+            content_info.argv        = NULL;
+            content_info.args        = NULL;
+            content_info.environ_get = NULL;
 
             flush_type = MENU_SETTINGS;
 
@@ -1094,7 +1104,7 @@ static int generic_action_ok(const char *path,
 
             menu_display_set_msg_force(true);
 
-            if (config_replace(settings->config_save_on_exit, action_path))
+            if (config_replace(settings->bools.config_save_on_exit, action_path))
             {
                bool pending_push = false;
                menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
@@ -1264,11 +1274,16 @@ static int action_ok_file_load(const char *path,
 {
    char menu_path_new[PATH_MAX_LENGTH];
    char full_path_new[PATH_MAX_LENGTH];
-   content_ctx_info_t content_info     = {0};
+   content_ctx_info_t content_info;
    const char *menu_label              = NULL;
    const char *menu_path               = NULL;
    rarch_setting_t *setting            = NULL;
    file_list_t  *menu_stack            = menu_entries_get_menu_stack_ptr(0);
+
+   content_info.argc                   = 0;
+   content_info.argv                   = NULL;
+   content_info.args                   = NULL;
+   content_info.environ_get            = NULL;
 
    menu_path_new[0] = full_path_new[0] = '\0';
 
@@ -1324,17 +1339,22 @@ static int action_ok_playlist_entry_collection(const char *path,
 {
    menu_content_ctx_playlist_info_t playlist_info;
    char new_core_path[PATH_MAX_LENGTH];
-   content_ctx_info_t content_info         = {0};
-   size_t selection_ptr                    = 0;
-   bool playlist_initialized               = false;
-   playlist_t *playlist                    = NULL;
-   const char *entry_path                  = NULL;
-   const char *entry_label                 = NULL;
-   const char *core_path                   = NULL;
-   const char *core_name                   = NULL;
-   playlist_t *tmp_playlist                = NULL;
-   menu_handle_t *menu                     = NULL;
-   rarch_system_info_t *info               = NULL;
+   content_ctx_info_t content_info;
+   size_t selection_ptr                = 0;
+   bool playlist_initialized           = false;
+   playlist_t *playlist                = NULL;
+   const char *entry_path              = NULL;
+   const char *entry_label             = NULL;
+   const char *core_path               = NULL;
+   const char *core_name               = NULL;
+   playlist_t *tmp_playlist            = NULL;
+   menu_handle_t *menu                 = NULL;
+   rarch_system_info_t *info           = NULL;
+
+   content_info.argc                   = 0;
+   content_info.argv                   = NULL;
+   content_info.args                   = NULL;
+   content_info.environ_get            = NULL;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
@@ -1450,14 +1470,19 @@ static int action_ok_playlist_entry(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_content_ctx_playlist_info_t playlist_info;
-   content_ctx_info_t content_info = {0};
-   size_t selection_ptr             = 0;
-   playlist_t *playlist             = g_defaults.content_history;
-   const char *entry_path           = NULL;
-   const char *core_path            = NULL;
-   const char *core_name            = NULL;
-   playlist_t *tmp_playlist         = NULL;
-   menu_handle_t *menu              = NULL;
+   content_ctx_info_t content_info;
+   size_t selection_ptr                = 0;
+   playlist_t *playlist                = g_defaults.content_history;
+   const char *entry_path              = NULL;
+   const char *core_path               = NULL;
+   const char *core_name               = NULL;
+   playlist_t *tmp_playlist            = NULL;
+   menu_handle_t *menu                 = NULL;
+
+   content_info.argc                   = 0;
+   content_info.argv                   = NULL;
+   content_info.args                   = NULL;
+   content_info.environ_get            = NULL;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
@@ -1536,15 +1561,20 @@ static int action_ok_playlist_entry_start_content(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_content_ctx_playlist_info_t playlist_info;
-   content_ctx_info_t content_info  = {0};
-   size_t selection_ptr             = 0;
-   bool playlist_initialized        = false;
-   playlist_t *playlist             = NULL;
-   const char *entry_path           = NULL;
-   const char *core_path            = NULL;
-   const char *core_name            = NULL;
-   playlist_t *tmp_playlist         = NULL;
-   menu_handle_t *menu              = NULL;
+   content_ctx_info_t content_info;
+   size_t selection_ptr                = 0;
+   bool playlist_initialized           = false;
+   playlist_t *playlist                = NULL;
+   const char *entry_path              = NULL;
+   const char *core_path               = NULL;
+   const char *core_name               = NULL;
+   playlist_t *tmp_playlist            = NULL;
+   menu_handle_t *menu                 = NULL;
+
+   content_info.argc                   = 0;
+   content_info.argv                   = NULL;
+   content_info.args                   = NULL;
+   content_info.environ_get            = NULL;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
@@ -2109,8 +2139,14 @@ static int action_ok_deferred_list_stub(const char *path,
 static int action_ok_load_core_deferred(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   content_ctx_info_t content_info;
    menu_handle_t *menu                 = NULL;
-   content_ctx_info_t content_info     = {0};
+
+   content_info.argc                   = 0;
+   content_info.argv                   = NULL;
+   content_info.args                   = NULL;
+   content_info.environ_get            = NULL;
+
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
@@ -2127,7 +2163,12 @@ static int action_ok_load_core_deferred(const char *path,
 static int action_ok_start_net_retropad_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   content_ctx_info_t content_info = {0};
+   content_ctx_info_t content_info;
+
+   content_info.argc                   = 0;
+   content_info.argv                   = NULL;
+   content_info.args                   = NULL;
+   content_info.environ_get            = NULL;
 
    if (!task_push_start_builtin_core(
          &content_info,
@@ -2141,7 +2182,12 @@ static int action_ok_start_net_retropad_core(const char *path,
 static int action_ok_start_video_processor_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   content_ctx_info_t content_info = {0};
+   content_ctx_info_t content_info;
+
+   content_info.argc                   = 0;
+   content_info.argv                   = NULL;
+   content_info.args                   = NULL;
+   content_info.environ_get            = NULL;
 
    if (!task_push_start_builtin_core(
          &content_info,
@@ -2157,12 +2203,18 @@ static int action_ok_file_load_ffmpeg(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char new_path[PATH_MAX_LENGTH];
-   content_ctx_info_t content_info = {0};
+   content_ctx_info_t content_info;
+
    const char *menu_path           = NULL;
    file_list_t *menu_stack         = menu_entries_get_menu_stack_ptr(0);
    menu_entries_get_last(menu_stack, &menu_path, NULL, NULL, NULL);
 
    new_path[0] = '\0';
+
+   content_info.argc                   = 0;
+   content_info.argv                   = NULL;
+   content_info.args                   = NULL;
+   content_info.environ_get            = NULL;
 
    fill_pathname_join(new_path, menu_path, path,
          sizeof(new_path));
@@ -2182,12 +2234,17 @@ static int action_ok_file_load_imageviewer(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char fullpath[PATH_MAX_LENGTH];
-   content_ctx_info_t content_info = {0};
+   content_ctx_info_t content_info;
    const char *menu_path           = NULL;
    file_list_t *menu_stack         = menu_entries_get_menu_stack_ptr(0);
    menu_entries_get_last(menu_stack, &menu_path, NULL, NULL, NULL);
 
    fullpath[0] = '\0';
+
+   content_info.argc                   = 0;
+   content_info.argv                   = NULL;
+   content_info.args                   = NULL;
+   content_info.environ_get            = NULL;
 
    fill_pathname_join(fullpath, menu_path, path,
          sizeof(fullpath));
@@ -2205,7 +2262,12 @@ static int action_ok_file_load_imageviewer(const char *path,
 static int action_ok_file_load_current_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   content_ctx_info_t content_info = {0};
+   content_ctx_info_t content_info;
+
+   content_info.argc                   = 0;
+   content_info.argv                   = NULL;
+   content_info.args                   = NULL;
+   content_info.environ_get            = NULL;
 
    if (!task_push_load_content_with_core_from_menu(
          detect_content_path,
@@ -2220,7 +2282,12 @@ static int action_ok_file_load_current_core(const char *path,
 static int action_ok_file_load_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   content_ctx_info_t content_info     = {0};
+   content_ctx_info_t content_info;
+
+   content_info.argc                   = 0;
+   content_info.argv                   = NULL;
+   content_info.args                   = NULL;
+   content_info.environ_get            = NULL;
 
    if (!task_push_load_content_with_new_core_from_menu(
             path, detect_content_path,
@@ -2474,7 +2541,7 @@ static void cb_generic_download(void *task_data,
          break;
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
          dir_path = settings->directory.core_assets;
-         extract = settings->network.buildbot_auto_extract_archive;
+         extract = settings->bools.network_buildbot_auto_extract_archive;
          break;
       case MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES:
          dir_path = settings->path.libretro_info;
@@ -3674,7 +3741,12 @@ static int action_ok_rpl_entry(const char *path,
 static int action_ok_start_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   content_ctx_info_t content_info = {0};
+   content_ctx_info_t content_info;
+
+   content_info.argc                   = 0;
+   content_info.argv                   = NULL;
+   content_info.args                   = NULL;
+   content_info.environ_get            = NULL;
 
    if (!task_push_start_current_core(&content_info))
       return -1;
@@ -3796,10 +3868,16 @@ static int action_ok_open_archive(const char *path,
 static int action_ok_load_archive(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   content_ctx_info_t content_info = {0};
+   content_ctx_info_t content_info;
+
    menu_handle_t *menu             = NULL;
    const char *menu_path           = NULL;
    const char *content_path        = NULL;
+
+   content_info.argc                   = 0;
+   content_info.argv                   = NULL;
+   content_info.args                   = NULL;
+   content_info.environ_get            = NULL;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
@@ -3861,7 +3939,12 @@ static int action_ok_load_archive_detect_core(const char *path,
    {
       case -1:
          {
-            content_ctx_info_t content_info     = {0};
+            content_ctx_info_t content_info;
+
+            content_info.argc                   = 0;
+            content_info.argv                   = NULL;
+            content_info.args                   = NULL;
+            content_info.environ_get            = NULL;
 
             if (!task_push_load_content_with_new_core_from_menu(
                      new_core_path, def_info.s,

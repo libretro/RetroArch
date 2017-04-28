@@ -126,9 +126,9 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
    static bool mouse_oldright = false;
 
    if (
-         !settings->menu.mouse.enable
+         !settings->bools.menu_mouse_enable
 #ifdef HAVE_OVERLAY
-         || (settings->input.overlay_enable && input_overlay_is_alive(overlay_ptr))
+         || (settings->bools.input_overlay_enable && input_overlay_is_alive(overlay_ptr))
 #endif
          )
    {
@@ -220,11 +220,12 @@ static int menu_input_mouse_frame(
    int ret                  = 0;
    settings_t *settings     = config_get_ptr();
    menu_input_t *menu_input = menu_input_get_ptr();
+   bool mouse_enable        = settings->bools.menu_mouse_enable;
 
-   if (settings->menu.mouse.enable)
+   if (mouse_enable)
       ret  = menu_input_mouse_post_iterate(&mouse_state, cbs, action, &mouse_activity);
 
-   if ((settings->menu.pointer.enable || settings->menu.mouse.enable)
+   if ((settings->bools.menu_pointer_enable || mouse_enable)
       && menu_input_dialog_get_display_kb())
    {
       menu_ctx_pointer_t point;
@@ -418,7 +419,7 @@ static int menu_input_pointer_post_iterate(
       return -1;
 
 #ifdef HAVE_OVERLAY
-   if ((       settings->input.overlay_enable 
+   if ((       settings->bools.input_overlay_enable 
             && input_overlay_is_alive(overlay_ptr)))
       return 0;
 #endif
@@ -579,7 +580,7 @@ void menu_input_post_iterate(int *ret, unsigned action)
 
    *ret = menu_input_mouse_frame(cbs, &entry, action);
 
-   if (settings->menu.pointer.enable)
+   if (settings->bools.menu_pointer_enable)
       *ret |= menu_input_pointer_post_iterate(cbs, &entry, action);
 }
 

@@ -93,7 +93,7 @@ static void gfx_set_dwm(void)
    if (!gfx_init_dwm())
       return;
 
-   if (settings->video.disable_composition == dwm_composition_disabled)
+   if (settings->bools.video_disable_composition == dwm_composition_disabled)
       return;
 
    HRESULT (WINAPI *composition_enable)(UINT) = 
@@ -104,10 +104,10 @@ static void gfx_set_dwm(void)
       return;
    }
 
-   ret = composition_enable(!settings->video.disable_composition);
+   ret = composition_enable(!settings->bools.video_disable_composition);
    if (FAILED(ret))
       RARCH_ERR("Failed to set composition state ...\n");
-   dwm_composition_disabled = settings->video.disable_composition;
+   dwm_composition_disabled = settings->bools.video_disable_composition;
 }
 
 static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)

@@ -1500,9 +1500,9 @@ static void cg_d3d9_renderchain_set_font_rect(
 {
    settings_t *settings             = config_get_ptr();
    d3d_video_t *d3d                 = (d3d_video_t*)data;
-   float pos_x                      = settings->video.msg_pos_x;
-   float pos_y                      = settings->video.msg_pos_y;
-   float font_size                  = settings->video.font_size;
+   float pos_x                      = settings->floats.video_msg_pos_x;
+   float pos_y                      = settings->floats.video_msg_pos_y;
+   float font_size                  = settings->floats.video_font_size;
    const struct font_params *params = (const struct font_params*)font_data;
 
    if (params)

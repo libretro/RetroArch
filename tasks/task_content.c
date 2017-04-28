@@ -904,7 +904,7 @@ static bool task_load_content(content_ctx_info_t *content_info,
          if (launched_from_cli)
          {
             settings_t *settings                       = config_get_ptr();
-            content_ctx->history_list_enable = settings->history_list_enable;
+            content_ctx->history_list_enable = settings->bools.history_list_enable;
          }
 
          if (
@@ -1029,7 +1029,7 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    if (!content_info)
       return false;
 
-   content_ctx.check_firmware_before_loading  = settings->check_firmware_before_loading;
+   content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
    content_ctx.bios_is_missing                = runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.history_list_enable            = false;
@@ -1043,7 +1043,7 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    content_ctx.subsystem.data                 = NULL;
    content_ctx.subsystem.size                 = 0;
 
-   content_ctx.history_list_enable            = settings->history_list_enable;
+   content_ctx.history_list_enable            = settings->bools.history_list_enable;
 
    if (!string_is_empty(settings->directory.system))
       content_ctx.directory_system            = strdup(settings->directory.system);
@@ -1103,7 +1103,7 @@ bool task_push_load_content_from_playlist_from_menu(
    char *error_string                         = NULL;
    settings_t *settings                       = config_get_ptr();
 
-   content_ctx.check_firmware_before_loading  = settings->check_firmware_before_loading;
+   content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
    content_ctx.bios_is_missing                = runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.history_list_enable            = false;
@@ -1117,7 +1117,7 @@ bool task_push_load_content_from_playlist_from_menu(
    content_ctx.subsystem.data                 = NULL;
    content_ctx.subsystem.size                 = 0;
 
-   content_ctx.history_list_enable            = settings->history_list_enable;
+   content_ctx.history_list_enable            = settings->bools.history_list_enable;
 
    if (!string_is_empty(settings->directory.system))
       content_ctx.directory_system            = strdup(settings->directory.system);
@@ -1179,7 +1179,7 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
    if (!content_info)
       return false;
 
-   content_ctx.check_firmware_before_loading  = settings->check_firmware_before_loading;
+   content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
    content_ctx.bios_is_missing                = runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.history_list_enable            = false;
@@ -1193,7 +1193,7 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
    content_ctx.subsystem.data                 = NULL;
    content_ctx.subsystem.size                 = 0;
 
-   content_ctx.history_list_enable            = settings->history_list_enable;
+   content_ctx.history_list_enable            = settings->bools.history_list_enable;
 
    if (!string_is_empty(settings->directory.system))
       content_ctx.directory_system            = strdup(settings->directory.system);
@@ -1288,7 +1288,7 @@ bool task_push_load_content_with_new_core_from_menu(
    char *error_string                         = NULL;
    settings_t *settings                       = config_get_ptr();
 
-   content_ctx.check_firmware_before_loading  = settings->check_firmware_before_loading;
+   content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
    content_ctx.bios_is_missing                = runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.history_list_enable            = false;
@@ -1302,7 +1302,7 @@ bool task_push_load_content_with_new_core_from_menu(
    content_ctx.subsystem.data                 = NULL;
    content_ctx.subsystem.size                 = 0;
 
-   content_ctx.history_list_enable            = settings->history_list_enable;
+   content_ctx.history_list_enable            = settings->bools.history_list_enable;
 
    if (!string_is_empty(settings->directory.system))
       content_ctx.directory_system            = strdup(settings->directory.system);
@@ -1368,7 +1368,7 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
    char *error_string                         = NULL;
    settings_t *settings                       = config_get_ptr();
 
-   content_ctx.check_firmware_before_loading  = settings->check_firmware_before_loading;
+   content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
    content_ctx.bios_is_missing                = runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.history_list_enable            = false;
@@ -1382,7 +1382,7 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
    content_ctx.subsystem.data                 = NULL;
    content_ctx.subsystem.size                 = 0;
 
-   content_ctx.history_list_enable            = settings->history_list_enable;
+   content_ctx.history_list_enable            = settings->bools.history_list_enable;
 
    if (!string_is_empty(settings->directory.system))
       content_ctx.directory_system            = strdup(settings->directory.system);
@@ -1617,7 +1617,7 @@ bool content_init(void)
 
    temporary_content                          = string_list_new();
 
-   content_ctx.check_firmware_before_loading  = settings->check_firmware_before_loading;
+   content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
    content_ctx.temporary_content              = temporary_content;
    content_ctx.history_list_enable            = false;
    content_ctx.directory_system               = NULL;
@@ -1633,8 +1633,8 @@ bool content_init(void)
    
    if (sys_info)
    {
-      content_ctx.history_list_enable         = settings->history_list_enable;
-      content_ctx.set_supports_no_game_enable = settings->set_supports_no_game_enable;
+      content_ctx.history_list_enable         = settings->bools.history_list_enable;
+      content_ctx.set_supports_no_game_enable = settings->bools.set_supports_no_game_enable;
 
       if (!string_is_empty(settings->directory.system))
          content_ctx.directory_system         = strdup(settings->directory.system);

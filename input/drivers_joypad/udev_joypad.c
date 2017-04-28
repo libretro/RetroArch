@@ -38,7 +38,6 @@
 
 #include "../common/udev_common.h"
 
-#include "../../configuration.h"
 #include "../../verbosity.h"
 
 /* Udev/evdev Linux joypad driver.
@@ -213,9 +212,8 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
    unsigned long keybit[NBITS(KEY_MAX)] = {0};
    unsigned long absbit[NBITS(ABS_MAX)] = {0};
    unsigned long ffbit[NBITS(FF_MAX)]   = {0};
-   settings_t *settings                 = config_get_ptr();
 
-   strlcpy(pad->ident, settings->input.device_names[p], sizeof(pad->ident));
+   strlcpy(pad->ident, input_device_names[p], sizeof(pad->ident));
 
    if (ioctl(fd, EVIOCGNAME(sizeof(pad->ident)), pad->ident) < 0)
    {

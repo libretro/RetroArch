@@ -246,7 +246,7 @@ void driver_set_nonblock_state(void)
       settings_t *settings = config_get_ptr();
       bool video_nonblock  = enable;
 
-      if (     !settings->video.vsync 
+      if (     !settings->bools.video_vsync 
             || runloop_ctl(RUNLOOP_CTL_IS_NONBLOCK_FORCED, NULL))
          video_nonblock = true;
       video_driver_set_nonblock_state(video_nonblock);

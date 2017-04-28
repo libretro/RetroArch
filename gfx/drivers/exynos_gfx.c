@@ -1051,16 +1051,16 @@ static int exynos_init_font(struct exynos_video *vid)
    const unsigned buf_bpp    = defaults[EXYNOS_IMAGE_FONT].bpp;
    settings_t *settings      = config_get_ptr();
 
-   if (!settings->video.font_enable)
+   if (!settings->bools.video_font_enable)
       return 0;
 
    if (font_renderer_create_default(&vid->font_driver, &vid->font,
             *settings->video.font_path ? settings->video.font_path : NULL,
-            settings->video.font_size))
+            settings->floats.video_font_size))
    {
-      const int r = settings->video.msg_color_r * 15;
-      const int g = settings->video.msg_color_g * 15;
-      const int b = settings->video.msg_color_b * 15;
+      const int r = settings->floats.video_msg_color_r * 15;
+      const int g = settings->floats.video_msg_color_g * 15;
+      const int b = settings->floats.video_msg_color_b * 15;
 
       vid->font_color = ((b < 0 ? 0 : (b > 15 ? 15 : b)) << 0) |
          ((g < 0 ? 0 : (g > 15 ? 15 : g)) << 4) |
@@ -1099,8 +1099,8 @@ static int exynos_render_msg(struct exynos_video *vid,
    struct exynos_data *pdata = vid->data;
    struct g2d_image *dst     = pdata->src[EXYNOS_IMAGE_FONT];
    settings_t *settings      = config_get_ptr();
-   int msg_base_x            = settings->video.msg_pos_x * dst->width;
-   int msg_base_y            = (1.0f - settings->video.msg_pos_y) * dst->height;
+   int msg_base_x            = settings->floats.video_msg_pos_x * dst->width;
+   int msg_base_y            = (1.0f - settings->floats.video_msg_pos_y) * dst->height;
 
    if (!vid->font || !vid->font_driver)
       return -1;

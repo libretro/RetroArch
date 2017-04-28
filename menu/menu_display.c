@@ -307,7 +307,7 @@ void menu_display_set_font_framebuffer(const uint8_t *buffer)
 bool menu_display_libretro_running(void)
 {
    settings_t *settings = config_get_ptr();
-   if (!settings->menu.pause_libretro)
+   if (!settings->bools.menu_pause_libretro)
    {
       if (rarch_ctl(RARCH_CTL_IS_INITED, NULL)
             && !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
@@ -440,7 +440,7 @@ float menu_display_get_dpi(void)
    metrics.type  = DISPLAY_METRIC_DPI;
    metrics.value = &dpi;
 
-   if (settings->menu.dpi.override_enable)
+   if (settings->bools.menu_dpi_override_enable)
       return settings->menu.dpi.override_value;
    else if (!video_context_driver_get_metrics(&metrics) || !dpi)
       return menu_dpi_override_value;
@@ -1002,10 +1002,10 @@ void menu_display_draw_cursor(
    menu_display_ctx_draw_t draw;
    struct video_coords coords;
    settings_t *settings = config_get_ptr();
-   bool cursor_visible  = settings->video.fullscreen ||
+   bool cursor_visible  = settings->bools.video_fullscreen ||
        !video_driver_has_windowed();
 
-   if (!settings->menu.mouse.enable)
+   if (!settings->bools.menu_mouse_enable)
       return;
    if (!cursor_visible)
       return;

@@ -317,8 +317,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             struct retro_system_av_info *av_info =
                video_viewport_get_system_av_info();
             float fastforward_ratio              =
-               (settings->fastforward_ratio == 0.0f)
-               ? 1.0f : settings->fastforward_ratio;
+               (settings->floats.fastforward_ratio == 0.0f)
+               ? 1.0f : settings->floats.fastforward_ratio;
 
             frame_limit_last_time    = cpu_features_get_time_usec();
             frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f
@@ -498,7 +498,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          {
 #ifdef HAVE_THREADS
             settings_t *settings = config_get_ptr();
-            bool threaded_enable = settings->threaded_data_runloop_enable;
+            bool threaded_enable = settings->bools.threaded_data_runloop_enable;
 #else
             bool threaded_enable = false;
 #endif
@@ -565,7 +565,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             const struct retro_variable *vars =
                (const struct retro_variable*)data;
 
-            if (settings && settings->game_specific_options)
+            if (settings && settings->bools.game_specific_options)
                ret = rarch_game_specific_options(&game_options_path);
 
             if(ret)
@@ -674,7 +674,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
  */
 #define time_to_exit(quit_key_pressed) (runloop_shutdown_initiated || quit_key_pressed || !is_alive || bsv_movie_ctl(BSV_MOVIE_CTL_END_EOF, NULL) || (runloop_max_frames && (frame_count >= runloop_max_frames)) || runloop_exec)
 
-#define runloop_check_cheevos() (settings->cheevos.enable && cheevos_loaded && (!cheats_are_enabled && !cheats_were_enabled))
+#define runloop_check_cheevos() (settings->bools.cheevos_enable && cheevos_loaded && (!cheats_are_enabled && !cheats_were_enabled))
 
 static enum runloop_state runloop_check_state(
       settings_t *settings,
@@ -727,7 +727,7 @@ static enum runloop_state runloop_check_state(
    }
    else if (prev_overlay_restore)
    {
-      if (!settings->input.overlay_hide_in_menu)
+      if (!settings->bools.input_overlay_hide_in_menu)
          command_event(CMD_EVENT_OVERLAY_INIT, NULL);
       prev_overlay_restore = false;
    }
@@ -738,7 +738,7 @@ static enum runloop_state runloop_check_state(
       if (runloop_exec)
          runloop_exec = false;
 
-      if (runloop_core_shutdown_initiated && settings->load_dummy_on_core_shutdown)
+      if (runloop_core_shutdown_initiated && settings->bools.load_dummy_on_core_shutdown)
       {
          content_ctx_info_t content_info;
 
@@ -767,7 +767,7 @@ static enum runloop_state runloop_check_state(
 
       {
          enum menu_action action = (enum menu_action)menu_event(current_input, trigger_input);
-         bool focused            = settings->pause_nonactive ? is_focused : true;
+         bool focused            = settings->bools.pause_nonactive ? is_focused : true;
 
          focused                 = focused && !ui_companion_is_on_foreground();
 
@@ -828,14 +828,14 @@ static enum runloop_state runloop_check_state(
 
    if (menu_driver_is_alive())
    {
-      if (!settings->menu.throttle_framerate && !settings->fastforward_ratio)
+      if (!settings->bools.menu_throttle_framerate && !settings->floats.fastforward_ratio)
          return RUNLOOP_STATE_MENU_ITERATE;
 
       return RUNLOOP_STATE_END;
    }
 #endif
 
-   if (settings->pause_nonactive)
+   if (settings->bools.pause_nonactive)
       focused                = is_focused;
 
    if (runloop_cmd_triggered(trigger_input, RARCH_SCREENSHOT))
@@ -974,7 +974,7 @@ static enum runloop_state runloop_check_state(
       command_event(CMD_EVENT_LOAD_STATE, NULL);
 
 #ifdef HAVE_CHEEVOS
-   if (!settings->cheevos.hardcore_mode_enable)
+   if (!settings->bools.cheevos_hardcore_mode_enable)
 #endif
    {
       char s[128];
@@ -992,7 +992,7 @@ static enum runloop_state runloop_check_state(
    if (runloop_slowmotion)
    {
       /* Checks if slowmotion toggle/hold was being pressed and/or held. */
-      if (settings->video.black_frame_insertion)
+      if (settings->bools.video_black_frame_insertion)
       {
          if (!runloop_idle)
             video_driver_cached_frame();
@@ -1091,7 +1091,7 @@ int runloop_iterate(unsigned *sleep_ms)
          delta = runloop_frame_time.reference;
 
       if (!is_locked_fps && runloop_slowmotion)
-         delta /= settings->slowmotion_ratio;
+         delta /= settings->floats.slowmotion_ratio;
 
       runloop_frame_time_last = current;
 
@@ -1179,7 +1179,7 @@ int runloop_iterate(unsigned *sleep_ms)
 
    autosave_unlock();
 
-   if (!settings->fastforward_ratio)
+   if (!settings->floats.fastforward_ratio)
       return 0;
 
 end:

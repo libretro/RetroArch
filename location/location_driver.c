@@ -137,7 +137,7 @@ bool driver_location_start(void)
 
    if (location_driver && location_data && location_driver->start)
    {
-      if (settings->location.allow)
+      if (settings->bools.location_allow)
          return location_driver->start(location_data);
 
       runloop_msg_queue_push("Location is explicitly disabled.\n", 1, 180, true);

@@ -32,7 +32,6 @@ cp -f ../kernel_functions.prx ../pkg/${platform}/kernel_functions.prx
 # Vita
 elif [ $PLATFORM = "vita" ] ; then
 platform=vita
-MAKEFILE_GRIFFIN=yes
 SALAMANDER=yes
 EXT=a
 mkdir -p ../pkg/vita/vpk
@@ -129,7 +128,7 @@ if [ $SALAMANDER = "yes" ]; then
    fi
    if [ $PLATFORM = "vita" ] ; then
      mkdir -p ../pkg/${platform}/retroarch.vpk/vpk/sce_sys/livearea/contents
-     vita-make-fself -s ../retroarchvita_salamander.velf ../pkg/${platform}/retroarch.vpk/vpk/eboot.bin
+     vita-make-fself -c -s ../retroarchvita_salamander.velf ../pkg/${platform}/retroarch.vpk/vpk/eboot.bin
      vita-mksfoex -s TITLE_ID=RETROVITA "RetroArch" ../pkg/${platform}/retroarch.vpk/vpk/sce_sys/param.sfo
      cp ../pkg/${platform}/assets/ICON0.PNG ../pkg/${platform}/retroarch.vpk/vpk/sce_sys/icon0.png
      cp -R ../pkg/${platform}/assets/livearea ../pkg/${platform}/retroarch.vpk/vpk/sce_sys/
@@ -261,7 +260,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
       mkdir -p ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/
       mkdir -p ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/livearea
       mkdir -p ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/livearea/contents
-      vita-make-fself -s ../retroarch_${platform}.velf ../pkg/${platform}/${name}_libretro.vpk/vpk/eboot.bin
+      cp ../retroarch_${platform}.self ../pkg/${platform}/${name}_libretro.vpk/vpk/eboot.bin
       cp ../pkg/${platform}/${name}_libretro.vpk/vpk/eboot.bin ../pkg/${platform}/retroarch.vpk/vpk/${name}_libretro.self
       vita-mksfoex -s TITLE_ID=RETR${COUNTER_ID} "RetroArch ${name}" ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/param.sfo
       cp ../pkg/${platform}/assets/ICON0.PNG ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/icon0.png

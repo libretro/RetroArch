@@ -783,7 +783,7 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
 static bool vulkan_init_filter_chain(vk_t *vk)
 {
    settings_t *settings = config_get_ptr();
-   const char *shader_path = (settings->video.shader_enable && *settings->path.shader) ?
+   const char *shader_path = (settings->bools.video_shader_enable && *settings->path.shader) ?
       settings->path.shader : NULL;
 
    enum rarch_shader_type type = video_shader_parse_type(shader_path, RARCH_SHADER_NONE);
@@ -1051,7 +1051,7 @@ static void vulkan_init_readback(vk_t *vk)
     */
    settings_t *settings    = config_get_ptr();
    bool *recording_enabled = recording_is_enabled();
-   vk->readback.streamed   = settings->video.gpu_record && *recording_enabled;
+   vk->readback.streamed   = settings->bools.video_gpu_record && *recording_enabled;
 
    if (!vk->readback.streamed)
       return;
@@ -1374,7 +1374,7 @@ static void vulkan_set_viewport(void *data, unsigned viewport_width,
 
    video_context_driver_translate_aspect(&aspect_data);
 
-   if (settings->video.scale_integer && !force_full)
+   if (settings->bools.video_scale_integer && !force_full)
    {
       video_viewport_get_scaled_integer(&vk->vp,
             viewport_width, viewport_height,

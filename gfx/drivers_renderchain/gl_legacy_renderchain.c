@@ -454,8 +454,8 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
    bool mipmapped               = false;
    bool smooth                  = false;
    settings_t *settings         = config_get_ptr();
-   GLuint base_filt             = settings->video.smooth ? GL_LINEAR : GL_NEAREST;
-   GLuint base_mip_filt         = settings->video.smooth ? 
+   GLuint base_filt             = settings->bools.video_smooth ? GL_LINEAR : GL_NEAREST;
+   GLuint base_mip_filt         = settings->bools.video_smooth ? 
       GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST;
 
    glBindTexture(GL_TEXTURE_2D, texture);
@@ -513,7 +513,7 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
                RARCH_ERR("[GL]: sRGB FBO was requested, but it is not supported. Falling back to UNORM. Result may have banding!\n");
       }
        
-      if (settings->video.force_srgb_disable)
+      if (settings->bools.video_force_srgb_disable)
          srgb_fbo = false;
        
       if (srgb_fbo && gl->has_srgb_fbo)

@@ -622,8 +622,10 @@ static void netplay_announce(void)
       "game_name=%s&game_crc=%08X&port=%d"
       "&has_password=%d&has_spectate_password=%d&force_mitm=%d",
       username, corename, coreversion, gamename, *content_crc_ptr,
-      settings->netplay.port, *settings->netplay.password ? 1 : 0, *settings->netplay.spectate_password ? 1 : 0,
-      settings->netplay.use_mitm_server);
+      settings->netplay.port,
+      *settings->netplay.password ? 1 : 0,
+      *settings->netplay.spectate_password ? 1 : 0,
+      settings->bools.netplay_use_mitm_server);
 
    task_push_http_post_transfer(url, buf, true, NULL, netplay_announce_cb, NULL);
 
@@ -766,7 +768,7 @@ bool netplay_pre_frame(netplay_t *netplay)
 
    retro_assert(netplay);
 
-   if (settings->netplay.public_announce)
+   if (settings->bools.netplay_public_announce)
    {
       reannounce++;
       if ((netplay->is_server || is_mitm) && (reannounce % 600 == 0))
@@ -788,7 +790,7 @@ bool netplay_pre_frame(netplay_t *netplay)
       netplay_try_init_serialization(netplay);
    }
 
-   if (netplay->is_server && !settings->netplay.use_mitm_server)
+   if (netplay->is_server && !settings->bools.netplay_use_mitm_server)
    {
       /* Advertise our server */
       netplay_lan_ad_server(netplay);
@@ -1198,7 +1200,7 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
          msg_hash_to_str(MSG_WAITING_FOR_CLIENT),
          0, 180, false);
 
-      if (settings->netplay.public_announce)
+      if (settings->bools.netplay_public_announce)
          netplay_announce();
    }
 
@@ -1208,13 +1210,16 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
             : server_address_deferred) : NULL,
          netplay_is_client ? (!netplay_client_deferred ? port
             : server_port_deferred   ) : (port != 0 ? port : RARCH_DEFAULT_PORT),
-         settings->netplay.stateless_mode, settings->netplay.check_frames, &cbs,
-         settings->netplay.nat_traversal, settings->username,
+         settings->bools.netplay_stateless_mode,
+         settings->netplay.check_frames,
+         &cbs,
+         settings->bools.netplay_nat_traversal,
+         settings->username,
          quirks);
 
    if (netplay_data)
    {
-      if (netplay_data->is_server && !settings->netplay.start_as_spectator)
+      if (netplay_data->is_server && !settings->bools.netplay_start_as_spectator)
          netplay_data->self_mode = NETPLAY_CONNECTION_PLAYING;
       return true;
    }

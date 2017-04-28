@@ -326,7 +326,7 @@ bool recording_init(void)
       return false;
    }
 
-   if (!settings->video.gpu_record 
+   if (!settings->bools.video_gpu_record 
          && video_driver_is_hw_context())
    {
       RARCH_WARN("%s.\n",
@@ -387,7 +387,7 @@ bool recording_init(void)
       params.fb_width   = next_pow2(vp.width);
       params.fb_height  = next_pow2(vp.height);
 
-      if (settings->video.force_aspect &&
+      if (settings->bools.video_force_aspect &&
             (video_driver_get_aspect_ratio() > 0.0f))
          params.aspect_ratio  = video_driver_get_aspect_ratio();
       else
@@ -412,13 +412,13 @@ bool recording_init(void)
          params.out_height = recording_height;
       }
 
-      if (settings->video.force_aspect &&
+      if (settings->bools.video_force_aspect &&
             (video_driver_get_aspect_ratio() > 0.0f))
          params.aspect_ratio = video_driver_get_aspect_ratio();
       else
          params.aspect_ratio = (float)params.out_width / params.out_height;
 
-      if (settings->video.post_filter_record 
+      if (settings->bools.video_post_filter_record 
             && video_driver_frame_filter_alive())
       {
          unsigned max_width  = 0;

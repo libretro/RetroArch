@@ -136,19 +136,19 @@ static void xv_init_font(xv_t *xv, const char *font_path, unsigned font_size)
 {
    settings_t *settings = config_get_ptr();
 
-   if (!settings->video.font_enable)
+   if (!settings->bools.video_font_enable)
       return;
 
    if (font_renderer_create_default((const void**)&xv->font_driver, 
             &xv->font, *settings->path.font 
-            ? settings->path.font : NULL, settings->video.font_size))
+            ? settings->path.font : NULL, settings->floats.video_font_size))
    {
       int r, g, b;
-      r = settings->video.msg_color_r * 255;
+      r = settings->floats.video_msg_color_r * 255;
       r = (r < 0 ? 0 : (r > 255 ? 255 : r));
-      g = settings->video.msg_color_g * 255;
+      g = settings->floats.video_msg_color_g * 255;
       g = (g < 0 ? 0 : (g > 255 ? 255 : g));
-      b = settings->video.msg_color_b * 255;
+      b = settings->floats.video_msg_color_b * 255;
       b = (b < 0 ? 0 : (b > 255 ? 255 : b));
 
       xv_calculate_yuv(&xv->font_y, &xv->font_u, &xv->font_v,
@@ -371,7 +371,7 @@ static void xv_calc_out_rect(bool keep_aspect,
    vp->full_width       = vp_width;
    vp->full_height      = vp_height;
 
-   if (settings->video.scale_integer)
+   if (settings->bools.video_scale_integer)
       video_viewport_get_scaled_integer(vp, vp_width, vp_height,
             video_driver_get_aspect_ratio(), keep_aspect);
    else if (!keep_aspect)
@@ -605,7 +605,7 @@ static void *xv_init(const video_info_t *video,
    }
 
    xv_init_yuv_tables(xv);
-   xv_init_font(xv, settings->path.font, settings->video.font_size);
+   xv_init_font(xv, settings->path.font, settings->floats.video_font_size);
 
    if (!x11_input_ctx_new(true))
       goto error;
@@ -690,8 +690,8 @@ static void xv_render_msg(xv_t *xv, const char *msg,
 
    atlas          = xv->font_driver->get_atlas(xv->font);
 
-   msg_base_x     = settings->video.msg_pos_x * width;
-   msg_base_y     = height * (1.0f - settings->video.msg_pos_y);
+   msg_base_x     = settings->floats.video_msg_pos_x * width;
+   msg_base_y     = height * (1.0f - settings->floats.video_msg_pos_y);
 
    luma_index[0]  = xv->luma_index[0];
    luma_index[1]  = xv->luma_index[1];

@@ -199,7 +199,7 @@ static int action_right_mainmenu(unsigned type, const char *label,
       menu_navigation_set_selection(0);
 
       if ((list_info.selection != (list_horiz_info.size + list_tabs_info.size))
-         || settings->menu.navigation.wraparound.enable)
+         || settings->bools.menu_navigation_wraparound_enable)
          return action_right_goto_tab();
    }
    else

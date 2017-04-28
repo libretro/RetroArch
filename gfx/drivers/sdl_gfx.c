@@ -95,20 +95,20 @@ static void sdl_init_font(sdl_video_t *vid, const char *font_path, unsigned font
    int r, g, b;
    settings_t *settings = config_get_ptr();
 
-   if (!settings->video.font_enable)
+   if (!settings->bools.video_font_enable)
       return;
 
    if (!font_renderer_create_default((const void**)&vid->font_driver, &vid->font,
             *settings->path.font ? settings->path.font : NULL,
-            settings->video.font_size))
+            settings->floats.video_font_size))
    {
       RARCH_LOG("[SDL]: Could not initialize fonts.\n");
       return;
    }
 
-   r = settings->video.msg_color_r * 255;
-   g = settings->video.msg_color_g * 255;
-   b = settings->video.msg_color_b * 255;
+   r = settings->floats.video_msg_color_r * 255;
+   g = settings->floats.video_msg_color_g * 255;
+   b = settings->floats.video_msg_color_b * 255;
 
    r = (r < 0) ? 0 : (r > 255 ? 255 : r);
    g = (g < 0) ? 0 : (g > 255 ? 255 : g);
@@ -132,8 +132,8 @@ static void sdl_render_msg(sdl_video_t *vid, SDL_Surface *buffer,
 
    atlas = vid->font_driver->get_atlas(vid->font);
 
-   msg_base_x = settings->video.msg_pos_x * width;
-   msg_base_y = (1.0f - settings->video.msg_pos_y) * height;
+   msg_base_x = settings->floats.video_msg_pos_x * width;
+   msg_base_y = (1.0f - settings->floats.video_msg_pos_y) * height;
 
    rshift = fmt->Rshift;
    gshift = fmt->Gshift;
@@ -294,7 +294,7 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
       }
    }
 
-   sdl_init_font(vid, settings->path.font, settings->video.font_size);
+   sdl_init_font(vid, settings->path.font, settings->floats.video_font_size);
 
    vid->scaler.scaler_type      = video->smooth ? SCALER_TYPE_BILINEAR : SCALER_TYPE_POINT;
    vid->scaler.in_fmt           = video->rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGB565;

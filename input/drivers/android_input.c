@@ -1339,7 +1339,6 @@ static int16_t android_input_state(void *data,
       const struct retro_keybind **binds, unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   settings_t *settings               = config_get_ptr();
    android_input_t *android           = (android_input_t*)data;
 
    switch (device)

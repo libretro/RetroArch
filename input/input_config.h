@@ -24,6 +24,7 @@
 extern struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
 extern struct retro_keybind input_autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
 extern const struct retro_keybind *libretro_input_binds[MAX_USERS];
+extern char input_device_names[MAX_USERS][64];
 
 const char *input_config_bind_map_get_base(unsigned i);
 

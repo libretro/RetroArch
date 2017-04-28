@@ -582,7 +582,7 @@ D3DTEXTUREFILTERTYPE d3d_translate_filter(unsigned type)
       case RARCH_FILTER_UNSPEC:
          {
             settings_t *settings = config_get_ptr();
-            if (!settings->video.smooth)
+            if (!settings->bools.video_smooth)
                break;
          }
          /* fall-through */

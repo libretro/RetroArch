@@ -1010,7 +1010,7 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 
    xmb->savestate_thumbnail_file_path[0] = '\0';
 
-   if (     (settings->savestate_thumbnail_enable)
+   if (     (settings->bools.savestate_thumbnail_enable)
          && ((memcmp(entry.label, "state_slot", 10) == 0)
          || (memcmp(entry.label, "loadstate", 9) == 0)
          || (memcmp(entry.label, "savestate", 9) == 0)))
@@ -1393,7 +1393,7 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
    size_t end           = 0;
    settings_t *settings = config_get_ptr();
 
-   if (settings->menu.dynamic_wallpaper_enable)
+   if (settings->bools.menu_dynamic_wallpaper_enable)
    {
       char path[PATH_MAX_LENGTH];
       char *tmp = string_replace_substring(xmb->title_name, "/", " ");
@@ -2361,6 +2361,8 @@ static void xmb_render(void *data)
    settings_t   *settings   = config_get_ptr();
    xmb_handle_t *xmb        = (xmb_handle_t*)data;
    unsigned      end        = (unsigned)menu_entries_get_size();
+   bool mouse_enable        = settings->bools.menu_mouse_enable;
+   bool pointer_enable      = settings->bools.menu_pointer_enable;
 
    if (!xmb)
       return;
@@ -2372,7 +2374,7 @@ static void xmb_render(void *data)
    if (menu_animation_get_ideal_delta_time(&delta))
       menu_animation_update(delta.ideal);
 
-   if (settings->menu.pointer.enable || settings->menu.mouse.enable)
+   if (pointer_enable || mouse_enable)
    {
       size_t selection = menu_navigation_get_selection();
 
@@ -2385,13 +2387,13 @@ static void xmb_render(void *data)
          int16_t mouse_y   = menu_input_mouse_state(MENU_MOUSE_Y_AXIS)
             + (xmb->cursor.size/2);
 
-         if (settings->menu.pointer.enable)
+         if (pointer_enable)
          {
             if (pointer_y > item_y1 && pointer_y < item_y2)
                menu_input_ctl(MENU_INPUT_CTL_POINTER_PTR, &i);
          }
 
-         if (settings->menu.mouse.enable)
+         if (mouse_enable)
          {
             if (mouse_y > item_y1 && mouse_y < item_y2)
                menu_input_ctl(MENU_INPUT_CTL_MOUSE_PTR, &i);
@@ -2631,7 +2633,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          xmb->margins.title.top, 1, 1, TEXT_ALIGN_LEFT,
          width, height, xmb->font);
 
-   if (settings->menu.core_enable &&
+   if (settings->bools.menu_core_enable &&
          menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
       xmb_draw_text(menu_disp_info, xmb, title_msg, xmb->margins.title.left,
             height - xmb->margins.title.bottom, 1, 1, TEXT_ALIGN_LEFT,
@@ -3209,26 +3211,26 @@ static void *xmb_init(void **userdata)
 
    xmb->system_tab_end                = 0;
    xmb->tabs[xmb->system_tab_end]     = XMB_SYSTEM_TAB_MAIN;
-   if (settings->menu.xmb.show_settings)
+   if (settings->bools.menu_xmb_show_settings)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_SETTINGS;
-   if (settings->menu.xmb.show_history)
+   if (settings->bools.menu_xmb_show_history)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_HISTORY;
 #ifdef HAVE_IMAGEVIEWER
-   if (settings->menu.xmb.show_images)
+   if (settings->bools.menu_xmb_show_images)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_IMAGES;
 #endif
 #ifdef HAVE_FFMPEG
-   if (settings->menu.xmb.show_music)
+   if (settings->bools.menu_xmb_show_music)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_MUSIC;
-   if (settings->menu.xmb.show_video)
+   if (settings->bools.menu_xmb_show_video)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_VIDEO;
 #endif
 #ifdef HAVE_NETWORKING
-   if (settings->menu.xmb.show_netplay)
+   if (settings->bools.menu_xmb_show_netplay)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_NETPLAY;
 #endif
 #ifdef HAVE_LIBRETRODB
-	if (settings->menu.xmb.show_add)
+	if (settings->bools.menu_xmb_show_add)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_ADD;
 #endif
 
@@ -4013,13 +4015,35 @@ static int xmb_list_push(void *data, void *userdata,
 
 static bool xmb_menu_init_list(void *data)
 {
-   menu_displaylist_info_t info = {0};
+   menu_displaylist_info_t info;
+
    file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
    file_list_t *selection_buf   = menu_entries_get_selection_buf_ptr(0);
 
+   info.need_sort               = false;
+   info.need_refresh            = false;
+   info.need_entries_refresh    = false;
+   info.need_push               = false;
+   info.push_builtin_cores      = false;
+   info.download_core           = false;
+   info.need_clear              = false;
+   info.need_navigation_clear   = false;
+   info.list                    = NULL;
+   info.menu_list               = NULL;
+   info.path[0]                 = '\0';
+   info.path_b[0]               = '\0';
+   info.path_c[0]               = '\0';
    strlcpy(info.label,
          msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU), sizeof(info.label));
-   info.enum_idx = MENU_ENUM_LABEL_MAIN_MENU;
+   info.label_hash              = 0;
+   strlcpy(info.exts,
+         file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT), sizeof(info.exts));
+   info.type                    = 0;
+   info.type_default            = FILE_TYPE_PLAIN;
+   info.directory_ptr           = 0;
+   info.flags                   = 0;
+   info.enum_idx                = MENU_ENUM_LABEL_MAIN_MENU;
+   info.setting                 = NULL;
 
    menu_entries_append_enum(menu_stack, info.path,
          info.label,

@@ -962,9 +962,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
    switch (cmd)
    {
       case RETRO_ENVIRONMENT_GET_OVERSCAN:
-         *(bool*)data = !settings->video.crop_overscan;
+         *(bool*)data = !settings->bools.video_crop_overscan;
          RARCH_LOG("Environ GET_OVERSCAN: %u\n",
-               (unsigned)!settings->video.crop_overscan);
+               (unsigned)!settings->bools.video_crop_overscan);
          break;
 
       case RETRO_ENVIRONMENT_GET_CAN_DUPE:
@@ -1010,7 +1010,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       {
          unsigned rotation = *(const unsigned*)data;
          RARCH_LOG("Environ SET_ROTATION: %u\n", rotation);
-         if (!settings->video.allow_rotate)
+         if (!settings->bools.video_allow_rotate)
             break;
 
          if (system)

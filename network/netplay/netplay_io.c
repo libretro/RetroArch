@@ -694,9 +694,9 @@ static bool netplay_get_cmd(netplay_t *netplay,
          }
 
          /* Check if their slave mode request corresponds with what we allow */
-         if (settings->netplay.require_slaves)
+         if (settings->bools.netplay_require_slaves)
             slave = true;
-         else if (!settings->netplay.allow_slaves)
+         else if (!settings->bools.netplay_allow_slaves)
             slave = false;
 
          payload[0] = htonl(netplay->self_frame_count + 1);

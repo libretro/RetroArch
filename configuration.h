@@ -42,6 +42,206 @@ RETRO_BEGIN_DECLS
 
 typedef struct settings
 {
+   struct
+   {
+      bool placeholder;
+
+      /* Video */
+      bool video_fullscreen;
+      bool video_windowed_fullscreen;
+      bool video_vsync;
+      bool video_hard_sync;
+      bool video_black_frame_insertion;
+#ifdef GEKKO
+      bool video_vfilter;
+#endif
+      bool video_smooth;
+      bool video_force_aspect;
+      bool video_crop_overscan;
+      bool video_aspect_ratio_auto;
+      bool video_scale_integer;
+      bool video_shader_enable;
+      bool video_threaded;
+      bool video_font_enable;
+      bool video_disable_composition;
+      bool video_post_filter_record;
+      bool video_gpu_record;
+      bool video_gpu_screenshot;
+      bool video_allow_rotate;
+      bool video_shared_context;
+      bool video_force_srgb_disable;
+      bool video_fps_show;
+
+      /* Audio */
+      bool audio_enable;
+      bool audio_mute_enable;
+      bool audio_sync;
+      bool audio_rate_control;
+#ifdef HAVE_WASAPI
+      bool audio_wasapi_exclusive_mode;
+      bool audio_wasapi_float_format;
+#endif
+
+      /* Input */
+      bool input_swap_override;
+      bool input_remap_binds_enable;
+      bool input_autodetect_enable;
+      bool input_overlay_enable;
+      bool input_overlay_enable_autopreferred;
+      bool input_overlay_hide_in_menu;
+      bool input_descriptor_label_show;
+      bool input_descriptor_hide_unbound;
+      bool input_all_users_control_menu;
+      bool input_menu_swap_ok_cancel_buttons;
+#if defined(VITA)
+      bool input_backtouch_enable;
+      bool input_backtouch_toggle;
+#endif
+#if TARGET_OS_IPHONE
+      bool input_small_keyboard_enable;
+#endif
+      bool input_keyboard_gamepad_enable;
+
+#ifdef HAVE_MENU
+      /* Menu */
+      bool menu_show_start_screen;
+      bool menu_pause_libretro;
+      bool menu_timedate_enable;
+      bool menu_battery_level_enable;
+      bool menu_core_enable;
+      bool menu_dynamic_wallpaper_enable;
+      bool menu_throttle;
+      bool menu_mouse_enable;
+      bool menu_pointer_enable;
+      bool menu_navigation_wraparound_enable;
+      bool menu_navigation_browser_filter_supported_extensions_enable;
+      bool menu_dpi_override_enable;
+      bool menu_show_advanced_settings;
+      bool menu_throttle_framerate;
+      bool menu_linear_filter;
+      bool menu_xmb_shadows_enable;
+      bool menu_xmb_show_settings;
+      bool menu_xmb_show_images;
+      bool menu_xmb_show_music;
+      bool menu_xmb_show_video;
+      bool menu_xmb_show_netplay;
+      bool menu_xmb_show_history;
+      bool menu_xmb_show_add;
+      bool menu_unified_controls;
+#endif
+
+#ifdef HAVE_NETWORKING
+      /* Netplay */
+      bool netplay_public_announce;
+      bool netplay_start_as_spectator;
+      bool netplay_allow_slaves;
+      bool netplay_require_slaves;
+      bool netplay_stateless_mode;
+      bool netplay_swap_input;
+      bool netplay_nat_traversal;
+      bool netplay_use_mitm_server;
+#endif
+
+      /* Network */
+      bool network_buildbot_auto_extract_archive;
+
+      /* UI */
+      bool ui_menubar_enable;
+      bool ui_suspend_screensaver_enable;
+      bool ui_companion_start_on_boot;
+      bool ui_companion_enable;
+
+#ifdef HAVE_CHEEVOS
+      /* Cheevos */
+      bool cheevos_enable;
+      bool cheevos_test_unofficial;
+      bool cheevos_hardcore_mode_enable;
+#endif
+
+      /* Camera */
+      bool camera_allow;
+
+      /* WiFi */
+      bool wifi_allow;
+
+      /* Location */
+      bool location_allow;
+
+      /* Multimedia */
+      bool multimedia_builtin_mediaplayer_enable;
+      bool multimedia_builtin_imageviewer_enable;
+
+      /* Bundle */
+      bool bundle_finished;
+      bool bundle_assets_extract_enable;
+
+      /* Misc. */
+#ifdef HAVE_THREADS
+      bool threaded_data_runloop_enable;
+#endif
+      bool set_supports_no_game_enable;
+      bool auto_screenshot_filename;
+      bool history_list_enable;
+      bool playlist_entry_remove;
+      bool rewind_enable;
+      bool pause_nonactive;
+      bool block_sram_overwrite;
+      bool savestate_auto_index;
+      bool savestate_auto_save;
+      bool savestate_auto_load;
+      bool savestate_thumbnail_enable;
+      bool network_cmd_enable;
+      bool stdin_cmd_enable;
+      bool network_remote_enable;
+      bool network_remote_enable_user[MAX_USERS];
+      bool load_dummy_on_core_shutdown;
+      bool check_firmware_before_loading;
+
+      bool game_specific_options;
+      bool auto_overrides_enable;
+      bool auto_remaps_enable;
+      bool auto_shaders_enable;
+
+      bool sort_savefiles_enable;
+      bool sort_savestates_enable;
+      bool config_save_on_exit;
+      bool show_hidden_files;
+#ifdef HAVE_LAKKA
+      bool ssh_enable;
+      bool samba_enable;
+      bool bluetooth_enable;
+#endif
+   } bools;
+
+   struct
+   {
+      float placeholder;
+      float video_scale;
+      float video_aspect_ratio;
+      float video_refresh_rate;
+      float video_font_size;
+      float video_msg_pos_x;
+      float video_msg_pos_y;
+      float video_msg_color_r;
+      float video_msg_color_g;
+      float video_msg_color_b;
+
+      float menu_wallpaper_opacity;
+      float menu_footer_opacity;
+      float menu_header_opacity;
+
+      float audio_rate_control_delta;
+      float audio_max_timing_skew;
+      float audio_volume; /* dB scale. */
+
+      float input_axis_threshold;
+      float input_overlay_opacity;
+      float input_overlay_scale;
+
+      float slowmotion_ratio;
+      float fastforward_ratio;
+   } floats;
+
    bool modified;
 
    video_viewport_t video_viewport_custom;
@@ -49,63 +249,25 @@ typedef struct settings
    char playlist_names[PATH_MAX_LENGTH];
    char playlist_cores[PATH_MAX_LENGTH];
 
-   bool bundle_finished;
 
    struct
    {
       char driver[32];
       char context_driver[32];
-      float scale;
       unsigned window_x;
       unsigned window_y;
-      bool fullscreen;
-      bool windowed_fullscreen;
       unsigned monitor_index;
       unsigned fullscreen_x;
       unsigned fullscreen_y;
-      bool vsync;
-      bool hard_sync;
-      bool black_frame_insertion;
       unsigned max_swapchain_images;
       unsigned swap_interval;
       unsigned hard_sync_frames;
       unsigned frame_delay;
 #ifdef GEKKO
       unsigned viwidth;
-      bool vfilter;
 #endif
-      bool smooth;
-      bool force_aspect;
-      bool crop_overscan;
-      float aspect_ratio;
-      bool aspect_ratio_auto;
-      bool scale_integer;
       unsigned aspect_ratio_idx;
       unsigned rotation;
-
-      bool shader_enable;
-
-      float refresh_rate;
-      bool threaded;
-
-
-      float font_size;
-      bool font_enable;
-      float msg_pos_x;
-      float msg_pos_y;
-      float msg_color_r;
-      float msg_color_g;
-      float msg_color_b;
-
-      bool disable_composition;
-
-      bool post_filter_record;
-      bool gpu_record;
-      bool gpu_screenshot;
-
-      bool allow_rotate;
-      bool shared_context;
-      bool force_srgb_disable;
    } video;
 
    struct
@@ -113,79 +275,22 @@ typedef struct settings
       char driver[32];
    } record;
 
-   struct
-   {
-      bool menubar_enable;
-      bool suspend_screensaver_enable;
-      bool companion_start_on_boot;
-      bool companion_enable;
-   } ui;
-
 #ifdef HAVE_MENU
    struct
    {
       char driver[32];
-      bool pause_libretro;
-      bool timedate_enable;
-      bool battery_level_enable;
-      bool core_enable;
-      bool dynamic_wallpaper_enable;
+
       unsigned thumbnails;
-      bool throttle;
 
       struct
       {
-         float opacity;
-      } wallpaper;
-
-      struct
-      {
-         float opacity;
-      } footer;
-
-      struct
-      {
-         float opacity;
-      } header;
-
-      struct
-      {
-         bool enable;
-      } mouse;
-
-      struct
-      {
-         bool enable;
-      } pointer;
-
-      struct
-      {
-         struct
-         {
-            bool enable;
-         } wraparound;
-         struct
-         {
-            struct
-            {
-               bool supported_extensions_enable;
-            } filter;
-         } browser;
-      } navigation;
-
-      struct
-      {
-         bool     override_enable;
          unsigned override_value;
       } dpi;
 
-      bool show_advanced_settings;
 
       unsigned entry_normal_color;
       unsigned entry_hover_color;
       unsigned title_color;
-      bool throttle_framerate;
-      bool linear_filter;
 
       struct
       {
@@ -195,14 +300,6 @@ typedef struct settings
          unsigned alpha_factor;
          unsigned theme;
          unsigned menu_color_theme;
-         bool     shadows_enable;
-         bool     show_settings;
-         bool     show_images;
-         bool     show_music;
-         bool     show_video;
-         bool     show_netplay;
-         bool     show_history;
-         bool     show_add;
       } xmb;
 
       struct
@@ -210,19 +307,14 @@ typedef struct settings
          unsigned menu_color_theme;
       } materialui;
 
-      bool unified_controls;
    } menu;
 #endif
 
-#ifdef HAVE_THREADS
-   bool threaded_data_runloop_enable;
-#endif
 
    struct
    {
       char driver[32];
       char device[255];
-      bool allow;
       unsigned width;
       unsigned height;
    } camera;
@@ -230,13 +322,11 @@ typedef struct settings
    struct
    {
       char driver[32];
-      bool allow;
    } wifi;
 
    struct
    {
       char driver[32];
-      bool allow;
       int update_interval_ms;
       int update_interval_distance;
    } location;
@@ -246,25 +336,15 @@ typedef struct settings
       char driver[32];
       char resampler[32];
       char device[255];
-      bool enable;
-      bool mute_enable;
       unsigned out_rate;
       unsigned block_frames;
       unsigned latency;
-      bool sync;
 
-
-      bool rate_control;
-      float rate_control_delta;
-      float max_timing_skew;
-      float volume; /* dB scale. */
 
 #ifdef HAVE_WASAPI
       struct
       {
          unsigned sh_buffer_length; /* in frames (0 disables buffering) */
-         bool exclusive_mode;
-         bool float_format;
       } wasapi;
 #endif
 
@@ -275,49 +355,27 @@ typedef struct settings
       char driver[32];
       char joypad_driver[32];
       char keyboard_layout[64];
-      char device_names[MAX_USERS][64];
 
       unsigned remap_ids[MAX_USERS][RARCH_BIND_LIST_END];
 
       unsigned max_users;
 
+
       /* Set by autoconfiguration in joypad_autoconfig_dir.
        * Does not override main binds. */
-      bool swap_override;
       unsigned libretro_device[MAX_USERS];
       unsigned analog_dpad_mode[MAX_USERS];
 
-      bool remap_binds_enable;
-      float axis_threshold;
       unsigned joypad_map[MAX_USERS];
       unsigned device[MAX_USERS];
-      bool autodetect_enable;
 
       unsigned turbo_period;
       unsigned turbo_duty_cycle;
 
-      bool overlay_enable;
-      bool overlay_enable_autopreferred;
-      bool overlay_hide_in_menu;
-      float overlay_opacity;
-      float overlay_scale;
 
       unsigned bind_timeout;
-      bool input_descriptor_label_show;
-      bool input_descriptor_hide_unbound;
 
       unsigned menu_toggle_gamepad_combo;
-      bool all_users_control_menu;
-
-      bool menu_swap_ok_cancel_buttons;
-#if defined(VITA)
-      bool backtouch_enable;
-      bool backtouch_toggle;
-#endif
-#if TARGET_OS_IPHONE
-      bool small_keyboard_enable;
-#endif
-      bool keyboard_gamepad_enable;
       unsigned keyboard_gamepad_mapping_type;
       unsigned poll_type_behavior;
    } input;
@@ -331,23 +389,11 @@ typedef struct settings
    {
       char buildbot_url[255];
       char buildbot_assets_url[255];
-      bool buildbot_auto_extract_archive;
    } network;
-
-   bool set_supports_no_game_enable;
-
-   struct
-   {
-      bool builtin_mediaplayer_enable;
-      bool builtin_imageviewer_enable;
-   } multimedia;
 
 #ifdef HAVE_CHEEVOS
    struct
    {
-      bool enable;
-      bool test_unofficial;
-      bool hardcore_mode_enable;
       char username[32];
       char password[32];
    } cheevos;
@@ -357,7 +403,6 @@ typedef struct settings
 
    int state_slot;
 
-   bool bundle_assets_extract_enable;
    unsigned bundle_assets_extract_version_current;
    unsigned bundle_assets_extract_last_version;
 
@@ -410,21 +455,13 @@ typedef struct settings
 #ifdef HAVE_NETWORKING
    struct
    {
-      bool public_announce;
       char server[255];
       unsigned port;
-      bool start_as_spectator;
-      bool allow_slaves;
-      bool require_slaves;
-      bool stateless_mode;
       int check_frames;
       unsigned input_latency_frames_min;
       unsigned input_latency_frames_range;
-      bool swap_input;
-      bool nat_traversal;
       char password[128];
       char spectate_password[128];
-      bool use_mitm_server;
    } netplay;
 #endif
 
@@ -432,62 +469,19 @@ typedef struct settings
 
    unsigned libretro_log_level;
 
-   bool auto_screenshot_filename;
-
-   bool history_list_enable;
-   bool playlist_entry_remove;
-   bool rewind_enable;
    size_t rewind_buffer_size;
    unsigned rewind_granularity;
 
-   float slowmotion_ratio;
-   float fastforward_ratio;
 
-   bool pause_nonactive;
    unsigned autosave_interval;
 
-   bool block_sram_overwrite;
-   bool savestate_auto_index;
-   bool savestate_auto_save;
-   bool savestate_auto_load;
-   bool savestate_thumbnail_enable;
-
-   bool network_cmd_enable;
    unsigned network_cmd_port;
-   bool stdin_cmd_enable;
-   bool network_remote_enable;
-   bool network_remote_enable_user[MAX_USERS];
    unsigned network_remote_base_port;
-
-#if defined(HAVE_MENU)
-   bool menu_show_start_screen;
-#endif
-   bool fps_show;
-   bool load_dummy_on_core_shutdown;
-   bool check_firmware_before_loading;
-
-   bool game_specific_options;
-   bool auto_overrides_enable;
-   bool auto_remaps_enable;
-   bool auto_shaders_enable;
-
-   bool sort_savefiles_enable;
-   bool sort_savestates_enable;
 
    char username[32];
 #ifdef HAVE_LANGEXTRA
    unsigned int user_language;
 #endif
-
-   bool config_save_on_exit;
-   bool show_hidden_files;
-
-#ifdef HAVE_LAKKA
-   bool ssh_enable;
-   bool samba_enable;
-   bool bluetooth_enable;
-#endif
-
 } settings_t;
 
 #define configuration_set_float(settings, var, newvar) \

@@ -503,10 +503,10 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    UINT32 frame_count        = 0;
    BYTE *dest                = NULL;
    settings_t *settings      = config_get_ptr();
-   bool float_format         = settings->audio.wasapi.float_format;
+   bool float_format         = settings->bools.audio_wasapi_float_format;
    unsigned sh_buffer_length = settings->audio.wasapi.sh_buffer_length;
    wasapi_t *w               = (wasapi_t*)calloc(1, sizeof(wasapi_t));
-   w->exclusive              = settings->audio.wasapi.exclusive_mode;
+   w->exclusive              = settings->bools.audio_wasapi_exclusive_mode;
 
    WASAPI_CHECK(w, "Out of memory", return NULL);
 

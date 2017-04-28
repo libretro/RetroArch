@@ -354,7 +354,7 @@ static void vita2d_gfx_update_viewport(vita_video_t* vita)
    float height         = PSP_FB_HEIGHT;
    settings_t *settings = config_get_ptr();
 
-   if (settings->video.scale_integer)
+   if (settings->bools.video_scale_integer)
    {
       video_viewport_get_scaled_integer(&vita->vp, PSP_FB_WIDTH,
             PSP_FB_HEIGHT, video_driver_get_aspect_ratio(), vita->keep_aspect);
@@ -459,7 +459,7 @@ static void vita2d_gfx_set_viewport(void *data, unsigned viewport_width,
 
    video_context_driver_translate_aspect(&aspect_data);
 
-   if (settings->video.scale_integer && !force_full)
+   if (settings->bools.video_scale_integer && !force_full)
    {
       video_viewport_get_scaled_integer(&vita->vp,
             viewport_width, viewport_height,

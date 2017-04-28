@@ -251,11 +251,12 @@ static void psp_joypad_poll(void)
 #if defined(VITA)
       if (psp2_model == SCE_KERNEL_MODEL_VITA 
          && !menu_driver_is_alive()
-         && settings->input.backtouch_enable)
+         && settings->bools.input_backtouch_enable)
       {
          unsigned i;
          SceTouchData touch_surface = {0};
-         sceTouchPeek(settings->input.backtouch_toggle ? SCE_TOUCH_PORT_FRONT : SCE_TOUCH_PORT_BACK, &touch_surface, 1);
+         sceTouchPeek(settings->bools.input_backtouch_toggle 
+               ? SCE_TOUCH_PORT_FRONT : SCE_TOUCH_PORT_BACK, &touch_surface, 1);
 
          for (i = 0; i < touch_surface.reportNum; i++)
          {

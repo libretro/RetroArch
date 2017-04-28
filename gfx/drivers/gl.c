@@ -412,7 +412,7 @@ static bool gl_shader_init(gl_t *gl)
    video_shader_ctx_init_t init_data;
    enum rarch_shader_type type;
    settings_t *settings            = config_get_ptr();
-   const char *shader_path         = (settings->video.shader_enable
+   const char *shader_path         = (settings->bools.video_shader_enable
          && *settings->path.shader) ? settings->path.shader : NULL;
 
    if (!gl)
@@ -920,7 +920,7 @@ static void gl_set_texture_frame(void *data,
 
    context_bind_hw_render(false);
 
-   menu_filter = settings->menu.linear_filter ? TEXTURE_FILTER_LINEAR : TEXTURE_FILTER_NEAREST;
+   menu_filter = settings->bools.menu_linear_filter ? TEXTURE_FILTER_LINEAR : TEXTURE_FILTER_NEAREST;
 
    if (!gl->menu_texture)
       glGenTextures(1, &gl->menu_texture);
@@ -1502,7 +1502,7 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
 
 #ifdef HAVE_GL_SYNC
    gl->have_sync = gl_check_capability(GL_CAPS_SYNC);
-   if (gl->have_sync && settings->video.hard_sync)
+   if (gl->have_sync && settings->bools.video_hard_sync)
       RARCH_LOG("[GL]: Using ARB_sync to reduce latency.\n");
 #endif
 
@@ -1525,7 +1525,7 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
 #endif
 
    gl->has_fp_fbo      = gl_check_capability(GL_CAPS_FP_FBO);
-   if (settings->video.force_srgb_disable)
+   if (settings->bools.video_force_srgb_disable)
       gl->has_srgb_fbo = false;
    else
       gl->has_srgb_fbo = gl_check_capability(GL_CAPS_SRGB_FBO);
@@ -1614,7 +1614,7 @@ static void gl_init_pbo_readback(gl_t *gl)
     * driver.recording_data, because recording is
     * not initialized yet.
     */
-   gl->pbo_readback_enable = settings->video.gpu_record
+   gl->pbo_readback_enable = settings->bools.video_gpu_record
       && *recording_enabled;
 
    if (!gl->pbo_readback_enable)
@@ -1682,7 +1682,7 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
 
    (void)api_name;
 
-   gl_shared_context_use = settings->video.shared_context
+   gl_shared_context_use = settings->bools.video_shared_context
       && hwr->context_type != RETRO_HW_CONTEXT_NONE;
 
    return video_context_driver_init_first(gl, settings->video.context_driver,
@@ -2168,7 +2168,7 @@ static void gl_update_tex_filter_frame(gl_t *gl)
    shader_filter.smooth              = &smooth;
 
    if (!video_shader_driver_filter_type(&shader_filter))
-      smooth = settings->video.smooth;
+      smooth = settings->bools.video_smooth;
 
    mip_level                         = 1;
    wrap_info.idx                     = 1;

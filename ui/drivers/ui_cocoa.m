@@ -334,7 +334,7 @@ static void open_core_handler(ui_browser_window_state_t *state, bool result)
     ui_companion_event_command(CMD_EVENT_LOAD_CORE);
                 
     if (menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL)
-                      && settings->set_supports_no_game_enable)
+                      && settings->bools.set_supports_no_game_enable)
     {
         content_ctx_info_t content_info = {0};
         path_clear(RARCH_PATH_CONTENT);

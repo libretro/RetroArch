@@ -273,7 +273,7 @@ static bool audio_driver_deinit_internal(void)
 
    audio_driver_rewind_size  = 0;
 
-   if (settings && !settings->audio.enable)
+   if (settings && !settings->bools.audio_enable)
    {
       audio_driver_active = false;
       return false;
@@ -312,7 +312,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
 
    /* Accomodate rewind since at some point we might have two full buffers. */
    outsamples_max = max_bufsamples * AUDIO_MAX_RATIO * 
-      settings->slowmotion_ratio;
+      settings->floats.slowmotion_ratio;
 
    conv_buf = (int16_t*)malloc(outsamples_max 
          * sizeof(int16_t));
@@ -338,7 +338,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    audio_driver_rewind_buf              = rewind_buf;
    audio_driver_rewind_size             = max_bufsamples;
 
-   if (!settings->audio.enable)
+   if (!settings->bools.audio_enable)
    {
       audio_driver_active = false;
       return false;
@@ -368,7 +368,8 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
       audio_driver_context_audio_data = 
          current_audio->init(*settings->audio.device ?
                settings->audio.device : NULL,
-               settings->audio.out_rate, settings->audio.latency,
+               settings->audio.out_rate,
+               settings->audio.latency,
                settings->audio.block_frames,
                &new_rate);
    }
@@ -389,7 +390,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
          && current_audio->use_float(audio_driver_context_audio_data))
       audio_driver_use_float = true;
 
-   if (!settings->audio.sync && audio_driver_active)
+   if (!settings->bools.audio_sync && audio_driver_active)
    {
       command_event(CMD_EVENT_AUDIO_SET_NONBLOCKING_STATE, NULL);
       audio_driver_chunk_size = audio_driver_chunk_nonblock_size;
@@ -442,7 +443,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    if (
          !audio_cb_inited
          && audio_driver_active 
-         && settings->audio.rate_control
+         && settings->bools.audio_rate_control
          )
    {
       /* Audio rate control requires write_avail
@@ -481,8 +482,9 @@ void audio_driver_set_nonblocking_state(bool enable)
          audio_driver_active
          && audio_driver_context_audio_data
       )
-      current_audio->set_nonblock_state(audio_driver_context_audio_data,
-            settings->audio.sync ? enable : true);
+      current_audio->set_nonblock_state(
+            audio_driver_context_audio_data,
+            settings->bools.audio_sync ? enable : true);
 
    audio_driver_chunk_size = enable ? 
       audio_driver_chunk_nonblock_size : 
@@ -523,7 +525,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    runloop_get_status(&is_paused, &is_idle, &is_slowmotion,
          &is_perfcnt_enable);
 
-   if (is_paused || settings->audio.mute_enable)
+   if (is_paused || settings->bools.audio_mute_enable)
       return true;
    if (!audio_driver_active || !audio_driver_input_data)
       return false;
@@ -568,7 +570,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
          (int)current_audio->write_avail(audio_driver_context_audio_data);
       int      delta_mid   = avail - half_size;
       double   direction   = (double)delta_mid / half_size;
-      double   adjust      = 1.0 + settings->audio.rate_control_delta * direction;
+      double   adjust      = 1.0 + settings->floats.audio_rate_control_delta * direction;
 
 #if 0
       RARCH_LOG_OUTPUT("[Audio]: Audio buffer is %u%% full\n",
@@ -589,7 +591,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    src_data.ratio = audio_source_ratio_current;
 
    if (is_slowmotion)
-      src_data.ratio *= settings->slowmotion_ratio;
+      src_data.ratio *= settings->floats.slowmotion_ratio;
 
    audio_driver_resampler->process(audio_driver_resampler_data, &src_data);
 
@@ -749,6 +751,7 @@ void audio_driver_monitor_adjust_system_rates(void)
    settings_t                   *settings = config_get_ptr();
    const struct retro_system_timing *info = NULL;
    struct retro_system_av_info   *av_info = video_viewport_get_system_av_info();
+   float video_refresh_rate               = settings->floats.video_refresh_rate;
    
    if (av_info)
       info = (const struct retro_system_timing*)&av_info->timing;
@@ -756,11 +759,11 @@ void audio_driver_monitor_adjust_system_rates(void)
    if (!info || info->sample_rate <= 0.0)
       return;
 
-   timing_skew             = fabs(1.0f - info->fps / settings->video.refresh_rate);
+   timing_skew             = fabs(1.0f - info->fps / video_refresh_rate);
    audio_driver_input      = info->sample_rate;
 
-   if (timing_skew <= settings->audio.max_timing_skew)
-      audio_driver_input *= (settings->video.refresh_rate / info->fps);
+   if (timing_skew <= settings->floats.audio_max_timing_skew)
+      audio_driver_input *= (video_refresh_rate / info->fps);
 
    RARCH_LOG("[Audio]: Set audio input rate to: %.2f Hz.\n",
          audio_driver_input);
@@ -932,14 +935,14 @@ bool audio_driver_has_callback(void)
 bool audio_driver_toggle_mute(void)
 {
    settings_t *settings = config_get_ptr();
-   bool new_mute_state  = !settings->audio.mute_enable;
+   bool new_mute_state  = !settings->bools.audio_mute_enable;
    if (!audio_driver_context_audio_data)
       return false;
    if (!audio_driver_active)
       return false;
 
    configuration_set_bool(settings,
-         settings->audio.mute_enable, new_mute_state);
+         settings->bools.audio_mute_enable, new_mute_state);
 
    if (new_mute_state)
       command_event(CMD_EVENT_AUDIO_STOP, NULL);
