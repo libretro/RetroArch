@@ -781,7 +781,7 @@ static bool video_driver_init_internal(void)
    video.force_aspect  = settings->bools.video_force_aspect;
 #ifdef GEKKO
    video.viwidth       = settings->video.viwidth;
-   video.vfilter       = settings->video.vfilter;
+   video.vfilter       = settings->bools.video_vfilter;
 #endif
    video.smooth        = settings->bools.video_smooth;
    video.input_scale   = scale;

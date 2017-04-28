@@ -3434,7 +3434,7 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->video.vfilter,
+               &settings->bools.video_vfilter,
                MENU_ENUM_LABEL_VIDEO_VFILTER,
                MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
                video_vfilter,
