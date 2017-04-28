@@ -108,13 +108,17 @@ struct string_list *dir_list_new_special(const char *input_dir,
        break;
       case DIR_LIST_SHADERS:
          {
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_VULKAN)
             union string_list_elem_attr attr;
+#endif
             struct string_list *str_list     = string_list_new();
 
             if (!str_list)
                return NULL;
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_VULKAN)
             attr.i = 0;
+#endif
 
             dir  = input_dir;
 #ifdef HAVE_CG
