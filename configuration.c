@@ -748,7 +748,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("ui_menubar_enable",             &settings->bools.ui_menubar_enable, true, true, false);
    SETTING_BOOL("suspend_screensaver_enable",    &settings->bools.ui_suspend_screensaver_enable, true, true, false);
    SETTING_BOOL("rewind_enable",                 &settings->rewind_enable, true, rewind_enable, false);
-   SETTING_BOOL("audio_sync",                    &settings->audio.sync, true, audio_sync, false);
+   SETTING_BOOL("audio_sync",                    &settings->bools.audio_sync, true, audio_sync, false);
    SETTING_BOOL("video_shader_enable",           &settings->bools.video_shader_enable, true, shader_enable, false);
 
    /* Let implementation decide if automatic, or 1:1 PAR. */
@@ -775,8 +775,8 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("video_post_filter_record",      &settings->bools.video_post_filter_record, true, post_filter_record, false);
    SETTING_BOOL("keyboard_gamepad_enable",       &settings->input.keyboard_gamepad_enable, true, true, false);
    SETTING_BOOL("core_set_supports_no_game_enable", &settings->set_supports_no_game_enable, true, true, false);
-   SETTING_BOOL("audio_enable",                  &settings->audio.enable, true, audio_enable, false);
-   SETTING_BOOL("audio_mute_enable",             &settings->audio.mute_enable, true, false, false);
+   SETTING_BOOL("audio_enable",                  &settings->bools.audio_enable, true, audio_enable, false);
+   SETTING_BOOL("audio_mute_enable",             &settings->bools.audio_mute_enable, true, false, false);
    SETTING_BOOL("location_allow",                &settings->location.allow, true, false, false);
    SETTING_BOOL("video_font_enable",             &settings->bools.video_font_enable, true, font_enable, false);
    SETTING_BOOL("core_updater_auto_extract_archive", &settings->network.buildbot_auto_extract_archive, true, true, false);
@@ -866,10 +866,10 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("config_save_on_exit",          &settings->config_save_on_exit, true, config_save_on_exit, false);
    SETTING_BOOL("show_hidden_files",            &settings->show_hidden_files, true, show_hidden_files, false);
    SETTING_BOOL("input_autodetect_enable",      &settings->input.autodetect_enable, true, input_autodetect_enable, false);
-   SETTING_BOOL("audio_rate_control",           &settings->audio.rate_control, true, rate_control, false);
+   SETTING_BOOL("audio_rate_control",           &settings->bools.audio_rate_control, true, rate_control, false);
 #ifdef HAVE_WASAPI
-   SETTING_BOOL("audio_wasapi_exclusive_mode",  &settings->audio.wasapi.exclusive_mode, true, true, false);
-   SETTING_BOOL("audio_wasapi_float_format",    &settings->audio.wasapi.float_format, true, false, false);
+   SETTING_BOOL("audio_wasapi_exclusive_mode",  &settings->bools.audio_wasapi_exclusive_mode, true, true, false);
+   SETTING_BOOL("audio_wasapi_float_format",    &settings->bools.audio_wasapi_float_format, true, false, false);
 #endif
 
    if (global)

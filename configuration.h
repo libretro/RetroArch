@@ -71,6 +71,15 @@ typedef struct settings
       bool video_shared_context;
       bool video_force_srgb_disable;
 
+      bool audio_enable;
+      bool audio_mute_enable;
+      bool audio_sync;
+      bool audio_rate_control;
+#ifdef HAVE_WASAPI
+      bool audio_wasapi_exclusive_mode;
+      bool audio_wasapi_float_format;
+#endif
+
       bool ui_menubar_enable;
       bool ui_suspend_screensaver_enable;
       bool ui_companion_start_on_boot;
@@ -245,15 +254,10 @@ typedef struct settings
       char driver[32];
       char resampler[32];
       char device[255];
-      bool enable;
-      bool mute_enable;
       unsigned out_rate;
       unsigned block_frames;
       unsigned latency;
-      bool sync;
 
-
-      bool rate_control;
       float rate_control_delta;
       float max_timing_skew;
       float volume; /* dB scale. */
@@ -262,8 +266,6 @@ typedef struct settings
       struct
       {
          unsigned sh_buffer_length; /* in frames (0 disables buffering) */
-         bool exclusive_mode;
-         bool float_format;
       } wasapi;
 #endif
 

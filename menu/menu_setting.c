@@ -1484,12 +1484,12 @@ void general_read_handler(void *data)
             *setting->value.target.fraction = settings->audio.rate_control_delta;
             if (*setting->value.target.fraction < 0.0005)
             {
-               configuration_set_bool(settings, settings->audio.rate_control, false);
+               configuration_set_bool(settings, settings->bools.audio_rate_control, false);
                settings->audio.rate_control_delta = 0.0;
             }
             else
             {
-               configuration_set_bool(settings, settings->audio.rate_control, true);
+               configuration_set_bool(settings, settings->bools.audio_rate_control, true);
                settings->audio.rate_control_delta = *setting->value.target.fraction;
             }
             break;
@@ -1602,12 +1602,12 @@ void general_write_handler(void *data)
       case MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA:
          if (*setting->value.target.fraction < 0.0005)
          {
-            configuration_set_bool(settings, settings->audio.rate_control, false);
+            configuration_set_bool(settings, settings->bools.audio_rate_control, false);
             settings->audio.rate_control_delta = 0.0;
          }
          else
          {
-            configuration_set_bool(settings, settings->audio.rate_control, true);
+            configuration_set_bool(settings, settings->bools.audio_rate_control, true);
             settings->audio.rate_control_delta = *setting->value.target.fraction;
          }
          break;
@@ -3695,7 +3695,7 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->audio.enable,
+               &settings->bools.audio_enable,
                MENU_ENUM_LABEL_AUDIO_ENABLE,
                MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
                audio_enable,
@@ -3711,7 +3711,7 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->audio.mute_enable,
+               &settings->bools.audio_mute_enable,
                MENU_ENUM_LABEL_AUDIO_MUTE,
                MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
                false,
@@ -3771,7 +3771,7 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->audio.sync,
+               &settings->bools.audio_sync,
                MENU_ENUM_LABEL_AUDIO_SYNC,
                MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
                audio_sync,

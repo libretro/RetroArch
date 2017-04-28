@@ -273,7 +273,7 @@ static bool audio_driver_deinit_internal(void)
 
    audio_driver_rewind_size  = 0;
 
-   if (settings && !settings->audio.enable)
+   if (settings && !settings->bools.audio_enable)
    {
       audio_driver_active = false;
       return false;
@@ -338,7 +338,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    audio_driver_rewind_buf              = rewind_buf;
    audio_driver_rewind_size             = max_bufsamples;
 
-   if (!settings->audio.enable)
+   if (!settings->bools.audio_enable)
    {
       audio_driver_active = false;
       return false;
@@ -368,7 +368,8 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
       audio_driver_context_audio_data = 
          current_audio->init(*settings->audio.device ?
                settings->audio.device : NULL,
-               settings->audio.out_rate, settings->audio.latency,
+               settings->audio.out_rate,
+               settings->audio.latency,
                settings->audio.block_frames,
                &new_rate);
    }
@@ -389,7 +390,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
          && current_audio->use_float(audio_driver_context_audio_data))
       audio_driver_use_float = true;
 
-   if (!settings->audio.sync && audio_driver_active)
+   if (!settings->bools.audio_sync && audio_driver_active)
    {
       command_event(CMD_EVENT_AUDIO_SET_NONBLOCKING_STATE, NULL);
       audio_driver_chunk_size = audio_driver_chunk_nonblock_size;
@@ -442,7 +443,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    if (
          !audio_cb_inited
          && audio_driver_active 
-         && settings->audio.rate_control
+         && settings->bools.audio_rate_control
          )
    {
       /* Audio rate control requires write_avail
@@ -481,8 +482,9 @@ void audio_driver_set_nonblocking_state(bool enable)
          audio_driver_active
          && audio_driver_context_audio_data
       )
-      current_audio->set_nonblock_state(audio_driver_context_audio_data,
-            settings->audio.sync ? enable : true);
+      current_audio->set_nonblock_state(
+            audio_driver_context_audio_data,
+            settings->bools.audio_sync ? enable : true);
 
    audio_driver_chunk_size = enable ? 
       audio_driver_chunk_nonblock_size : 
@@ -523,7 +525,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    runloop_get_status(&is_paused, &is_idle, &is_slowmotion,
          &is_perfcnt_enable);
 
-   if (is_paused || settings->audio.mute_enable)
+   if (is_paused || settings->bools.audio_mute_enable)
       return true;
    if (!audio_driver_active || !audio_driver_input_data)
       return false;
@@ -932,14 +934,14 @@ bool audio_driver_has_callback(void)
 bool audio_driver_toggle_mute(void)
 {
    settings_t *settings = config_get_ptr();
-   bool new_mute_state  = !settings->audio.mute_enable;
+   bool new_mute_state  = !settings->bools.audio_mute_enable;
    if (!audio_driver_context_audio_data)
       return false;
    if (!audio_driver_active)
       return false;
 
    configuration_set_bool(settings,
-         settings->audio.mute_enable, new_mute_state);
+         settings->bools.audio_mute_enable, new_mute_state);
 
    if (new_mute_state)
       command_event(CMD_EVENT_AUDIO_STOP, NULL);
