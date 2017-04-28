@@ -2092,8 +2092,8 @@ static int cheevos_login(retro_time_t *timeout)
    urle_pwd[0]                  = '\0';
    request[0]                   = '\0';
 
-   username                     = settings->cheevos.username;
-   password                     = settings->cheevos.password;
+   username                     = settings->arrays.cheevos_username;
+   password                     = settings->arrays.cheevos_password;
 
    if (!username || !*username || !password || !*password)
    {
@@ -2142,7 +2142,9 @@ static void cheevos_make_unlock_url(const cheevo_t *cheevo, char* url, size_t ur
    snprintf(
       url, url_size,
       "http://retroachievements.org/dorequest.php?r=awardachievement&u=%s&t=%s&a=%u&h=%d",
-      settings->cheevos.username, cheevos_locals.token, cheevo->id,
+      settings->arrays.cheevos_username,
+      cheevos_locals.token,
+      cheevo->id,
       settings->bools.cheevos_hardcore_mode_enable ? 1 : 0
    );
 
@@ -2272,7 +2274,8 @@ static void cheevos_make_lboard_url(const cheevos_leaderboard_t *lboard,
    hash[0] = '\0';
 
 	snprintf(signature, sizeof(signature), "%u%s%u", lboard->id,
-      settings->cheevos.username, lboard->id);
+      settings->arrays.cheevos_username,
+      lboard->id);
 
    MD5_Init(&ctx);
    MD5_Update(&ctx, (void*)signature, strlen(signature));
@@ -2282,7 +2285,9 @@ static void cheevos_make_lboard_url(const cheevos_leaderboard_t *lboard,
       url, url_size,
       "http://retroachievements.org/dorequest.php?r=submitlbentry&u=%s&t=%s&i=%u&s=%d"
       "&v=%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
-      settings->cheevos.username, cheevos_locals.token, lboard->id,
+      settings->arrays.cheevos_username,
+      cheevos_locals.token,
+      lboard->id,
       lboard->last_value,
       hash[ 0], hash[ 1], hash[ 2], hash[ 3],
       hash[ 4], hash[ 5], hash[ 6], hash[ 7],
@@ -2423,7 +2428,8 @@ static int cheevos_get_by_game_id(const char **json,
       snprintf(
          request, sizeof(request),
          "http://retroachievements.org/dorequest.php?r=patch&u=%s&g=%u&f=3&l=1&t=%s",
-         settings->cheevos.username, game_id, cheevos_locals.token
+         settings->arrays.cheevos_username,
+         game_id, cheevos_locals.token
       );
 
       request[sizeof(request) - 1] = 0;
@@ -2502,7 +2508,8 @@ static void cheevos_make_playing_url(unsigned game_id, char* url, size_t url_siz
    snprintf(
       url, url_size,
       "http://retroachievements.org/dorequest.php?r=postactivity&u=%s&t=%s&a=3&m=%u",
-      settings->cheevos.username, cheevos_locals.token, game_id
+      settings->arrays.cheevos_username,
+      cheevos_locals.token, game_id
    );
 
    url[url_size - 1] = 0;
@@ -2629,7 +2636,8 @@ static int cheevos_deactivate_unlocks(unsigned game_id, retro_time_t *timeout)
       snprintf(
          request, sizeof(request),
          "http://retroachievements.org/dorequest.php?r=unlocks&u=%s&t=%s&g=%u&h=0",
-         settings->cheevos.username, cheevos_locals.token, game_id
+         settings->arrays.cheevos_username,
+         cheevos_locals.token, game_id
       );
 
       request[sizeof(request) - 1] = 0;
@@ -2658,7 +2666,8 @@ static int cheevos_deactivate_unlocks(unsigned game_id, retro_time_t *timeout)
       snprintf(
          request, sizeof(request),
          "http://retroachievements.org/dorequest.php?r=unlocks&u=%s&t=%s&g=%u&h=1",
-         settings->cheevos.username, cheevos_locals.token, game_id
+         settings->arrays.cheevos_username,
+         cheevos_locals.token, game_id
       );
 
       request[sizeof(request) - 1] = 0;

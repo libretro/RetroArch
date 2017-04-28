@@ -97,7 +97,7 @@ void find_location_driver(void)
    settings_t *settings = config_get_ptr();
 
    drv.label = "location_driver";
-   drv.s     = settings->location.driver;
+   drv.s     = settings->arrays.location_driver;
 
    driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
 
@@ -109,7 +109,7 @@ void find_location_driver(void)
    {
       unsigned d;
       RARCH_ERR("Couldn't find any location driver named \"%s\"\n",
-            settings->location.driver);
+            settings->arrays.location_driver);
       RARCH_LOG_OUTPUT("Available location drivers are:\n");
       for (d = 0; location_driver_find_handle(d); d++)
          RARCH_LOG_OUTPUT("\t%s\n", location_driver_find_ident(d));

@@ -196,8 +196,8 @@ static bool menu_init(menu_handle_t *menu_data)
    }
 
    if (      settings->bools.bundle_assets_extract_enable
-         && !string_is_empty(settings->path.bundle_assets_src)
-         && !string_is_empty(settings->path.bundle_assets_dst)
+         && !string_is_empty(settings->arrays.bundle_assets_src)
+         && !string_is_empty(settings->arrays.bundle_assets_dst)
 #ifdef IOS
          && menu_dialog_is_push_pending()
 #else
@@ -208,9 +208,9 @@ static bool menu_init(menu_handle_t *menu_data)
    {
       menu_dialog_push_pending(true, MENU_DIALOG_HELP_EXTRACT);
 #ifdef HAVE_COMPRESSION
-      task_push_decompress(settings->path.bundle_assets_src,
-            settings->path.bundle_assets_dst,
-            NULL, settings->path.bundle_assets_dst_subdir,
+      task_push_decompress(settings->arrays.bundle_assets_src,
+            settings->arrays.bundle_assets_dst,
+            NULL, settings->arrays.bundle_assets_dst_subdir,
             NULL, bundle_decompressed, NULL);
 #endif
    }
@@ -502,7 +502,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             settings_t *settings = config_get_ptr();
 
             drv.label = "menu_driver";
-            drv.s     = settings->menu.driver;
+            drv.s     = settings->arrays.menu_driver;
 
             driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
 
@@ -515,7 +515,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             {
                unsigned d;
                RARCH_WARN("Couldn't find any menu driver named \"%s\"\n",
-                     settings->menu.driver);
+                     settings->arrays.menu_driver);
                RARCH_LOG_OUTPUT("Available menu drivers are:\n");
                for (d = 0; menu_driver_find_handle(d); d++)
                   RARCH_LOG_OUTPUT("\t%s\n", menu_driver_find_ident(d));
@@ -638,8 +638,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                return false;
             }
 
-            strlcpy(settings->menu.driver, menu_driver_ctx->ident,
-                  sizeof(settings->menu.driver));
+            strlcpy(settings->arrays.menu_driver, menu_driver_ctx->ident,
+                  sizeof(settings->arrays.menu_driver));
 
             if (menu_driver_ctx->lists_init)
             {

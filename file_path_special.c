@@ -297,7 +297,7 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
             settings_t *settings     = config_get_ptr();
             fill_pathname_join(s,
                   settings->directory.autoconfig,
-                  settings->input.joypad_driver,
+                  settings->arrays.input_joypad_driver,
                   len);
          }
          break;

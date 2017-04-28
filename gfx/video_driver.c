@@ -1607,7 +1607,7 @@ bool video_driver_find_driver(void)
    }
 
    drv.label = "video_driver";
-   drv.s     = settings->video.driver;
+   drv.s     = settings->arrays.video_driver;
 
    driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
 
@@ -1619,7 +1619,7 @@ bool video_driver_find_driver(void)
    {
       unsigned d;
       RARCH_ERR("Couldn't find any video driver named \"%s\"\n",
-            settings->video.driver);
+            settings->arrays.video_driver);
       RARCH_LOG_OUTPUT("Available video drivers are:\n");
       for (d = 0; video_driver_find_handle(d); d++)
          RARCH_LOG_OUTPUT("\t%s\n", video_driver_find_ident(d));

@@ -103,7 +103,7 @@ void find_record_driver(void)
    settings_t *settings = config_get_ptr();
 
    drv.label = "record_driver";
-   drv.s     = settings->record.driver;
+   drv.s     = settings->arrays.record_driver;
 
    driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
 
@@ -116,7 +116,7 @@ void find_record_driver(void)
       unsigned d;
 
       RARCH_ERR("Couldn't find any record driver named \"%s\"\n",
-            settings->audio.driver);
+            settings->arrays.record_driver);
       RARCH_LOG_OUTPUT("Available record drivers are:\n");
       for (d = 0; record_driver_find_handle(d); d++)
          RARCH_LOG_OUTPUT("\t%s\n", record_driver_find_ident(d));

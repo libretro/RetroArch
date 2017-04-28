@@ -81,7 +81,7 @@ static void *gdi_gfx_init(const video_info_t *video,
    gdi_gfx_create();
 
    ctx_driver = video_context_driver_init_first(gdi,
-         settings->video.context_driver,
+         settings->arrays.video_context_driver,
          GFX_CTX_GDI_API, 1, 0, false);
    if (!ctx_driver)
       goto error;

@@ -132,7 +132,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_INPUT_DRIVER:
          if (settings)
-            driver_hash = msg_hash_calculate(settings->input.driver);
+            driver_hash = msg_hash_calculate(settings->arrays.input_driver);
 
          switch (driver_hash)
          {
@@ -232,7 +232,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Controlador de vídeo actual.");
 
-         if (memcmp(settings->video.driver, "gl", 2) == 0)
+         if (memcmp(settings->arrays.video_driver, "gl", 2) == 0)
          {
             snprintf(s, len,
                   "Controlador de vídeo OpenGL. \n"
@@ -247,7 +247,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "del controlador GL que tenga tu \n"
                   "tarjeta gráfica.");
          }
-         else if (memcmp(settings->video.driver, "sdl2", 4) == 0)
+         else if (memcmp(settings->arrays.video_driver, "sdl2", 4) == 0)
          {
             snprintf(s, len,
                   "Controlador de vídeo SDL 2.\n"
@@ -259,7 +259,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "libretro por software depende de la \n"
                   "implementación SDL de tu plataforma.");
          }
-         else if (memcmp(settings->video.driver, "sdl1", 4) == 0)
+         else if (memcmp(settings->arrays.video_driver, "sdl1", 4) == 0)
          {
             snprintf(s, len,
                   "Controlador de vídeo SDL.\n"
@@ -271,7 +271,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "a lo óptimo. Utilízalo únicamente como \n"
                   "último recurso.");
          }
-         else if (memcmp(settings->video.driver, "d3d", 3) == 0)
+         else if (memcmp(settings->arrays.video_driver, "d3d", 3) == 0)
          {
             snprintf(s, len,
                   "Controlador de vídeo Direct3D. \n"
@@ -281,7 +281,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "del controlador D3D de tu tarjeta \n"
                   "gráfica.");
          }
-         else if (memcmp(settings->video.driver, "exynos", 6) == 0)
+         else if (memcmp(settings->arrays.video_driver, "exynos", 6) == 0)
          {
             snprintf(s, len,
                   "Controlador de vídeo Exynos-G2D. \n"
@@ -295,7 +295,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "renderizados por software debería \n"
                   "ser óptimo.");
          }
-         else if (memcmp(settings->video.driver, "drm", 3) == 0)
+         else if (memcmp(settings->arrays.video_driver, "drm", 3) == 0)
          {
             snprintf(s, len,
                   "Controlador de vídeo de DRM simple. \n"
@@ -306,7 +306,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                   " \n"
                   "El blitting se hace por software.");
          }
-         else if (memcmp(settings->video.driver, "sunxi", 5) == 0)
+         else if (memcmp(settings->arrays.video_driver, "sunxi", 5) == 0)
          {
             snprintf(s, len,
                   "Controlador de vídeo Sunxi-G2D. \n"
@@ -325,7 +325,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER:
          if (settings)
-            driver_hash = msg_hash_calculate(settings->audio.resampler);
+            driver_hash = msg_hash_calculate(settings->arrays.audio_resampler);
 
          switch (driver_hash)
          {

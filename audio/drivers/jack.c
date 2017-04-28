@@ -106,7 +106,7 @@ static int parse_ports(char **dest_ports, const char **jports)
    char           *save   = NULL;
    int           parsed   = 0;
    settings_t *settings   = config_get_ptr();
-   char *audio_device_cpy = strdup(settings->audio.device);
+   char *audio_device_cpy = strdup(settings->arrays.audio_device);
    const char      *con   = strtok_r(audio_device_cpy, ",", &save);
 
    if (con)

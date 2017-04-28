@@ -605,31 +605,31 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
    struct config_array_setting *tmp      = NULL;
 
    /* Arrays */
-   SETTING_ARRAY("playlist_names",           settings->playlist_names, false, NULL, true);
-   SETTING_ARRAY("playlist_cores",           settings->playlist_cores, false, NULL, true);
-   SETTING_ARRAY("video_driver",             settings->video.driver,   false, NULL, true);
-   SETTING_ARRAY("record_driver",            settings->record.driver,  false, NULL, true);
-   SETTING_ARRAY("camera_driver",            settings->camera.driver,  false, NULL, true);
-   SETTING_ARRAY("wifi_driver",              settings->wifi.driver,    false, NULL, true);
-   SETTING_ARRAY("location_driver",          settings->location.driver,false, NULL, true);
+   SETTING_ARRAY("playlist_names",           settings->arrays.playlist_names, false, NULL, true);
+   SETTING_ARRAY("playlist_cores",           settings->arrays.playlist_cores, false, NULL, true);
+   SETTING_ARRAY("video_driver",             settings->arrays.video_driver,   false, NULL, true);
+   SETTING_ARRAY("record_driver",            settings->arrays.record_driver,  false, NULL, true);
+   SETTING_ARRAY("camera_driver",            settings->arrays.camera_driver,  false, NULL, true);
+   SETTING_ARRAY("wifi_driver",              settings->arrays.wifi_driver,    false, NULL, true);
+   SETTING_ARRAY("location_driver",          settings->arrays.location_driver,false, NULL, true);
 #ifdef HAVE_MENU
-   SETTING_ARRAY("menu_driver",              settings->menu.driver,    false, NULL, true);
+   SETTING_ARRAY("menu_driver",              settings->arrays.menu_driver,    false, NULL, true);
 #endif
-   SETTING_ARRAY("audio_device",             settings->audio.device,   false, NULL, true);
-   SETTING_ARRAY("camera_device",            settings->camera.device,  false, NULL, true);
+   SETTING_ARRAY("audio_device",             settings->arrays.audio_device,   false, NULL, true);
+   SETTING_ARRAY("camera_device",            settings->arrays.camera_device,  false, NULL, true);
 #ifdef HAVE_CHEEVOS
-   SETTING_ARRAY("cheevos_username",         settings->cheevos.username, false, NULL, true);
-   SETTING_ARRAY("cheevos_password",         settings->cheevos.password, false, NULL, true);
+   SETTING_ARRAY("cheevos_username",         settings->arrays.cheevos_username, false, NULL, true);
+   SETTING_ARRAY("cheevos_password",         settings->arrays.cheevos_password, false, NULL, true);
 #endif
-   SETTING_ARRAY("video_context_driver",     settings->video.context_driver,   false, NULL, true);
-   SETTING_ARRAY("audio_driver",             settings->audio.driver,           false, NULL, true);
-   SETTING_ARRAY("audio_resampler",          settings->audio.resampler,        false, NULL, true);
-   SETTING_ARRAY("input_driver",             settings->input.driver,           false, NULL, true);
-   SETTING_ARRAY("input_joypad_driver",      settings->input.joypad_driver,    false, NULL, true);
-   SETTING_ARRAY("input_keyboard_layout",    settings->input.keyboard_layout,  false, NULL, true);
-   SETTING_ARRAY("bundle_assets_src_path",   settings->path.bundle_assets_src, false, NULL, true);
-   SETTING_ARRAY("bundle_assets_dst_path",   settings->path.bundle_assets_dst, false, NULL, true);
-   SETTING_ARRAY("bundle_assets_dst_path_subdir", settings->path.bundle_assets_dst_subdir, false, NULL, true);
+   SETTING_ARRAY("video_context_driver",     settings->arrays.video_context_driver,   false, NULL, true);
+   SETTING_ARRAY("audio_driver",             settings->arrays.audio_driver,           false, NULL, true);
+   SETTING_ARRAY("audio_resampler",          settings->arrays.audio_resampler,        false, NULL, true);
+   SETTING_ARRAY("input_driver",             settings->arrays.input_driver,           false, NULL, true);
+   SETTING_ARRAY("input_joypad_driver",      settings->arrays.input_joypad_driver,    false, NULL, true);
+   SETTING_ARRAY("input_keyboard_layout",    settings->arrays.input_keyboard_layout,  false, NULL, true);
+   SETTING_ARRAY("bundle_assets_src_path",   settings->arrays.bundle_assets_src, false, NULL, true);
+   SETTING_ARRAY("bundle_assets_dst_path",   settings->arrays.bundle_assets_dst, false, NULL, true);
+   SETTING_ARRAY("bundle_assets_dst_path_subdir", settings->arrays.bundle_assets_dst_subdir, false, NULL, true);
 
    *size = count;
 
@@ -1119,36 +1119,36 @@ static void config_set_defaults(void)
    }
 
    if (def_camera)
-      strlcpy(settings->camera.driver,
-            def_camera, sizeof(settings->camera.driver));
+      strlcpy(settings->arrays.camera_driver,
+            def_camera, sizeof(settings->arrays.camera_driver));
    if (def_wifi)
-      strlcpy(settings->wifi.driver,
-            def_wifi, sizeof(settings->wifi.driver));
+      strlcpy(settings->arrays.wifi_driver,
+            def_wifi, sizeof(settings->arrays.wifi_driver));
    if (def_location)
-      strlcpy(settings->location.driver,
-            def_location, sizeof(settings->location.driver));
+      strlcpy(settings->arrays.location_driver,
+            def_location, sizeof(settings->arrays.location_driver));
    if (def_video)
-      strlcpy(settings->video.driver,
-            def_video, sizeof(settings->video.driver));
+      strlcpy(settings->arrays.video_driver,
+            def_video, sizeof(settings->arrays.video_driver));
    if (def_audio)
-      strlcpy(settings->audio.driver,
-            def_audio, sizeof(settings->audio.driver));
+      strlcpy(settings->arrays.audio_driver,
+            def_audio, sizeof(settings->arrays.audio_driver));
    if (def_audio_resampler)
-      strlcpy(settings->audio.resampler,
-            def_audio_resampler, sizeof(settings->audio.resampler));
+      strlcpy(settings->arrays.audio_resampler,
+            def_audio_resampler, sizeof(settings->arrays.audio_resampler));
    if (def_input)
-      strlcpy(settings->input.driver,
-            def_input, sizeof(settings->input.driver));
+      strlcpy(settings->arrays.input_driver,
+            def_input, sizeof(settings->arrays.input_driver));
    if (def_joypad)
-      strlcpy(settings->input.joypad_driver,
-            def_joypad, sizeof(settings->input.joypad_driver));
+      strlcpy(settings->arrays.input_joypad_driver,
+            def_joypad, sizeof(settings->arrays.input_joypad_driver));
    if (def_record)
-      strlcpy(settings->record.driver,
-            def_record, sizeof(settings->record.driver));
+      strlcpy(settings->arrays.record_driver,
+            def_record, sizeof(settings->arrays.record_driver));
 #ifdef HAVE_MENU
    if (def_menu)
-      strlcpy(settings->menu.driver,
-            def_menu,  sizeof(settings->menu.driver));
+      strlcpy(settings->arrays.menu_driver,
+            def_menu,  sizeof(settings->arrays.menu_driver));
 #ifdef HAVE_XMB
    *settings->menu.xmb_font            = '\0';
 #endif
@@ -1183,8 +1183,8 @@ static void config_set_defaults(void)
       settings->floats.video_refresh_rate      = g_defaults.settings.video_refresh_rate;
 
    if (audio_device)
-      strlcpy(settings->audio.device,
-            audio_device, sizeof(settings->audio.device));
+      strlcpy(settings->arrays.audio_device,
+            audio_device, sizeof(settings->arrays.audio_device));
 
    if (!g_defaults.settings.out_latency)
       g_defaults.settings.out_latency          = out_latency;
@@ -1210,8 +1210,8 @@ static void config_set_defaults(void)
 #endif
 
 #ifdef HAVE_CHEEVOS
-   *settings->cheevos.username                 = '\0';
-   *settings->cheevos.password                 = '\0';
+   *settings->arrays.cheevos_username                 = '\0';
+   *settings->arrays.cheevos_password                 = '\0';
 #endif
 
    input_config_reset();
@@ -1234,7 +1234,7 @@ static void config_set_defaults(void)
    strlcpy(settings->network.buildbot_assets_url, buildbot_assets_server_url,
          sizeof(settings->network.buildbot_assets_url));
 
-   *settings->input.keyboard_layout                = '\0';
+   *settings->arrays.input_keyboard_layout                = '\0';
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -1301,9 +1301,9 @@ static void config_set_defaults(void)
    *settings->path.cheat_settings    = '\0';
    *settings->path.shader            = '\0';
 #ifndef IOS
-   *settings->path.bundle_assets_src = '\0';
-   *settings->path.bundle_assets_dst = '\0';
-   *settings->path.bundle_assets_dst_subdir = '\0';
+   *settings->arrays.bundle_assets_src = '\0';
+   *settings->arrays.bundle_assets_dst = '\0';
+   *settings->arrays.bundle_assets_dst_subdir = '\0';
 #endif
    *settings->path.cheat_database    = '\0';
    *settings->path.menu_wallpaper    = '\0';
@@ -1311,8 +1311,8 @@ static void config_set_defaults(void)
    *settings->path.overlay           = '\0';
    *settings->path.softfilter_plugin = '\0';
 
-   *settings->playlist_names = '\0';
-   *settings->playlist_cores = '\0';
+   *settings->arrays.playlist_names = '\0';
+   *settings->arrays.playlist_cores = '\0';
    *settings->directory.content_history = '\0';
    *settings->path.audio_dsp_plugin = '\0';
 
@@ -1726,15 +1726,15 @@ static bool check_shader_compatibility(enum file_path_enum enum_idx)
 {
    settings_t *settings = config_get_ptr();
 
-   if (memcmp(settings->video.driver, "vulkan", 6) == 0)
+   if (memcmp(settings->arrays.video_driver, "vulkan", 6) == 0)
    {
       if (enum_idx != FILE_PATH_SLANGP_EXTENSION)
          return false;
       return true;
    }
 
-   if ((memcmp(settings->video.driver, "gl", 2) == 0) || 
-       (memcmp(settings->video.driver, "d3d", 3) == 0)
+   if ((memcmp(settings->arrays.video_driver, "gl", 2) == 0) || 
+       (memcmp(settings->arrays.video_driver, "d3d", 3) == 0)
       )
    {
       if (enum_idx == FILE_PATH_SLANGP_EXTENSION)
@@ -2297,7 +2297,7 @@ static bool config_load_file(const char *path, bool set_defaults,
                continue;
 
             RARCH_LOG("Incompatible shader for backend %s, clearing...\n",
-                  settings->video.driver);
+                  settings->arrays.video_driver);
             settings->path.shader[0] = '\0';
             break;
          }
@@ -2943,7 +2943,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    config_file_t *conf                  = NULL;
    settings_t *settings                 = config_get_ptr();
    const char *autoconf_dir             = settings->directory.autoconfig;
-   const char *joypad_ident             = settings->input.joypad_driver;
+   const char *joypad_ident             = settings->arrays.input_joypad_driver;
 
    buf[0] = autoconf_file[0]            = '\0';
 

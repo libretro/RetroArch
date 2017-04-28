@@ -323,8 +323,8 @@ static int playlist_association_left(unsigned type, const char *label,
 
    core_path[0] = new_playlist_cores[0] = '\0';
 
-   stnames = string_split(settings->playlist_names, ";");
-   stcores = string_split(settings->playlist_cores, ";");
+   stnames = string_split(settings->arrays.playlist_names, ";");
+   stcores = string_split(settings->arrays.playlist_cores, ";");
 
    if (!menu_content_playlist_find_associated_core(path,
             core_path, sizeof(core_path)))
@@ -356,8 +356,8 @@ static int playlist_association_left(unsigned type, const char *label,
    string_list_join_concat(new_playlist_cores,
          sizeof(new_playlist_cores), stcores, ";");
 
-   strlcpy(settings->playlist_cores,
-         new_playlist_cores, sizeof(settings->playlist_cores));
+   strlcpy(settings->arrays.playlist_cores,
+         new_playlist_cores, sizeof(settings->arrays.playlist_cores));
 
    string_list_free(stnames);
    string_list_free(stcores);

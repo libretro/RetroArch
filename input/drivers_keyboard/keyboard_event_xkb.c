@@ -88,9 +88,9 @@ int init_xkb(int fd, size_t size)
 
          rule.rules = "evdev";
 
-         if (*settings->input.keyboard_layout)
+         if (*settings->arrays.input_keyboard_layout)
          {
-            list = string_split(settings->input.keyboard_layout, ":");
+            list = string_split(settings->arrays.input_keyboard_layout, ":");
             if (list && list->size >= 2)
                rule.variant = list->elems[1].data;
             if (list && list->size >= 1)

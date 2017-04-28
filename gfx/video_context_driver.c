@@ -127,13 +127,13 @@ bool video_context_driver_find_prev_driver(void)
 {
    settings_t *settings = config_get_ptr();
    int                i = find_video_context_driver_index(
-         settings->video.context_driver);
+         settings->arrays.video_context_driver);
 
    if (i > 0)
    {
-      strlcpy(settings->video.context_driver,
+      strlcpy(settings->arrays.video_context_driver,
             gfx_ctx_drivers[i - 1]->ident,
-            sizeof(settings->video.context_driver));
+            sizeof(settings->arrays.video_context_driver));
       return true;
    }
 
@@ -149,13 +149,13 @@ bool video_context_driver_find_prev_driver(void)
 bool video_context_driver_find_next_driver(void)
 {
    settings_t *settings = config_get_ptr();
-   int i = find_video_context_driver_index(settings->video.context_driver);
+   int i = find_video_context_driver_index(settings->arrays.video_context_driver);
 
    if (i >= 0 && gfx_ctx_drivers[i + 1])
    {
-      strlcpy(settings->video.context_driver,
+      strlcpy(settings->arrays.video_context_driver,
             gfx_ctx_drivers[i + 1]->ident,
-            sizeof(settings->video.context_driver));
+            sizeof(settings->arrays.video_context_driver));
       return true;
    }
 
@@ -419,7 +419,7 @@ bool video_context_driver_get_metrics(gfx_ctx_metrics_t *metrics)
 bool video_context_driver_input_driver(gfx_ctx_input_t *inp)
 {
    settings_t *settings    = config_get_ptr();
-   const char *joypad_name = settings ? settings->input.joypad_driver : NULL;
+   const char *joypad_name = settings ? settings->arrays.input_joypad_driver : NULL;
 
    if (!current_video_context || !current_video_context->input_driver)
       return false;

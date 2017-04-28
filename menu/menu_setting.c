@@ -2232,7 +2232,7 @@ static bool setting_append_list(
                   parent_group);
          }
 
-         if (memcmp(settings->menu.driver, "xmb", 3) != 0)
+         if (memcmp(settings->arrays.menu_driver, "xmb", 3) != 0)
          {
             CONFIG_ACTION(
                   list, list_info,
@@ -2553,7 +2553,7 @@ static bool setting_append_list(
                parent_group);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
-         if (memcmp(settings->wifi.driver, "null", 4) != 0)
+         if (memcmp(settings->arrays.wifi_driver, "null", 4) != 0)
          {
             CONFIG_ACTION(
                   list, list_info,
@@ -2636,71 +2636,71 @@ static bool setting_append_list(
             START_SUB_GROUP(list, list_info, "State", &group_info,
                   &subgroup_info, parent_group);
 
-            string_options_entries[0].target         = settings->input.driver;
-            string_options_entries[0].len            = sizeof(settings->input.driver);
+            string_options_entries[0].target         = settings->arrays.input_driver;
+            string_options_entries[0].len            = sizeof(settings->arrays.input_driver);
             string_options_entries[0].name_enum_idx  = MENU_ENUM_LABEL_INPUT_DRIVER;
             string_options_entries[0].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_DRIVER;
             string_options_entries[0].default_value  = config_get_default_input();
             string_options_entries[0].values         = config_get_input_driver_options();
 
-            string_options_entries[1].target         = settings->input.joypad_driver;
-            string_options_entries[1].len            = sizeof(settings->input.joypad_driver);
+            string_options_entries[1].target         = settings->arrays.input_joypad_driver;
+            string_options_entries[1].len            = sizeof(settings->arrays.input_joypad_driver);
             string_options_entries[1].name_enum_idx  = MENU_ENUM_LABEL_JOYPAD_DRIVER;
             string_options_entries[1].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER;
             string_options_entries[1].default_value  = config_get_default_joypad();
             string_options_entries[1].values         = config_get_joypad_driver_options();
 
-            string_options_entries[2].target         = settings->video.driver;
-            string_options_entries[2].len            = sizeof(settings->video.driver);
+            string_options_entries[2].target         = settings->arrays.video_driver;
+            string_options_entries[2].len            = sizeof(settings->arrays.video_driver);
             string_options_entries[2].name_enum_idx  = MENU_ENUM_LABEL_VIDEO_DRIVER;
             string_options_entries[2].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER;
             string_options_entries[2].default_value  = config_get_default_video();
             string_options_entries[2].values         = config_get_video_driver_options();
 
-            string_options_entries[3].target         = settings->audio.driver;
-            string_options_entries[3].len            = sizeof(settings->audio.driver);
+            string_options_entries[3].target         = settings->arrays.audio_driver;
+            string_options_entries[3].len            = sizeof(settings->arrays.audio_driver);
             string_options_entries[3].name_enum_idx  = MENU_ENUM_LABEL_AUDIO_DRIVER;
             string_options_entries[3].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER;
             string_options_entries[3].default_value  = config_get_default_audio();
             string_options_entries[3].values         = config_get_audio_driver_options();
 
-            string_options_entries[4].target         = settings->audio.resampler;
-            string_options_entries[4].len            = sizeof(settings->audio.resampler);
+            string_options_entries[4].target         = settings->arrays.audio_resampler;
+            string_options_entries[4].len            = sizeof(settings->arrays.audio_resampler);
             string_options_entries[4].name_enum_idx  = MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER;
             string_options_entries[4].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER;
             string_options_entries[4].default_value  = config_get_default_audio_resampler();
             string_options_entries[4].values         = config_get_audio_resampler_driver_options();
 
-            string_options_entries[5].target         = settings->camera.driver;
-            string_options_entries[5].len            = sizeof(settings->camera.driver);
+            string_options_entries[5].target         = settings->arrays.camera_driver;
+            string_options_entries[5].len            = sizeof(settings->arrays.camera_driver);
             string_options_entries[5].name_enum_idx  = MENU_ENUM_LABEL_CAMERA_DRIVER;
             string_options_entries[5].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER;
             string_options_entries[5].default_value  = config_get_default_camera();
             string_options_entries[5].values         = config_get_camera_driver_options();
 
-            string_options_entries[6].target         = settings->wifi.driver;
-            string_options_entries[6].len            = sizeof(settings->wifi.driver);
+            string_options_entries[6].target         = settings->arrays.wifi_driver;
+            string_options_entries[6].len            = sizeof(settings->arrays.wifi_driver);
             string_options_entries[6].name_enum_idx  = MENU_ENUM_LABEL_WIFI_DRIVER;
             string_options_entries[6].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_WIFI_DRIVER;
             string_options_entries[6].default_value  = config_get_default_wifi();
             string_options_entries[6].values         = config_get_wifi_driver_options();
 
-            string_options_entries[7].target         = settings->location.driver;
-            string_options_entries[7].len            = sizeof(settings->location.driver);
+            string_options_entries[7].target         = settings->arrays.location_driver;
+            string_options_entries[7].len            = sizeof(settings->arrays.location_driver);
             string_options_entries[7].name_enum_idx  = MENU_ENUM_LABEL_LOCATION_DRIVER;
             string_options_entries[7].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER;
             string_options_entries[7].default_value  = config_get_default_location();
             string_options_entries[7].values         = config_get_location_driver_options();
 
-            string_options_entries[8].target         = settings->menu.driver;
-            string_options_entries[8].len            = sizeof(settings->menu.driver);
+            string_options_entries[8].target         = settings->arrays.menu_driver;
+            string_options_entries[8].len            = sizeof(settings->arrays.menu_driver);
             string_options_entries[8].name_enum_idx  = MENU_ENUM_LABEL_MENU_DRIVER;
             string_options_entries[8].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_MENU_DRIVER;
             string_options_entries[8].default_value  = config_get_default_menu();
             string_options_entries[8].values         = config_get_menu_driver_options();
 
-            string_options_entries[9].target         = settings->record.driver;
-            string_options_entries[9].len            = sizeof(settings->record.driver);
+            string_options_entries[9].target         = settings->arrays.record_driver;
+            string_options_entries[9].len            = sizeof(settings->arrays.record_driver);
             string_options_entries[9].name_enum_idx  = MENU_ENUM_LABEL_RECORD_DRIVER;
             string_options_entries[9].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_RECORD_DRIVER;
             string_options_entries[9].default_value  = config_get_default_record();
@@ -3221,7 +3221,7 @@ static bool setting_append_list(
             &setting_get_string_representation_st_float_video_refresh_rate_auto;
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
-         if (memcmp(settings->video.driver, "gl", 2) == 0)
+         if (memcmp(settings->arrays.video_driver, "gl", 2) == 0)
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -3556,7 +3556,7 @@ static bool setting_append_list(
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
-         if (memcmp(settings->video.driver, "gl", 2) == 0)
+         if (memcmp(settings->arrays.video_driver, "gl", 2) == 0)
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -3875,8 +3875,8 @@ static bool setting_append_list(
 #if !defined(RARCH_CONSOLE)
          CONFIG_STRING(
                list, list_info,
-               settings->audio.device,
-               sizeof(settings->audio.device),
+               settings->arrays.audio_device,
+               sizeof(settings->arrays.audio_device),
                MENU_ENUM_LABEL_AUDIO_DEVICE,
                MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
                "",
@@ -4690,7 +4690,7 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-         if (memcmp(settings->menu.driver, "rgui", 4) != 0)
+         if (memcmp(settings->arrays.menu_driver, "rgui", 4) != 0)
          {
             CONFIG_PATH(
                   list, list_info,
@@ -4722,7 +4722,7 @@ static bool setting_append_list(
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
          }
 
-         if (memcmp(settings->menu.driver, "xmb", 3) == 0)
+         if (memcmp(settings->arrays.menu_driver, "xmb", 3) == 0)
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -4922,7 +4922,7 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "Display", &group_info, &subgroup_info, parent_group);
 
          /* only GLUI uses these values, don't show them on other drivers */
-         if (memcmp(settings->menu.driver, "glui", 4) == 0)
+         if (memcmp(settings->arrays.menu_driver, "glui", 4) == 0)
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -4955,7 +4955,7 @@ static bool setting_append_list(
 
 #ifdef HAVE_XMB
          /* only XMB uses these values, don't show them on other drivers */
-         if (memcmp(settings->menu.driver, "xmb", 3) == 0)
+         if (memcmp(settings->arrays.menu_driver, "xmb", 3) == 0)
          {
             CONFIG_UINT(
                   list, list_info,
@@ -5176,7 +5176,7 @@ static bool setting_append_list(
 
 #ifdef HAVE_MATERIALUI
          /* only MaterialUI uses these values, don't show them on other drivers */
-         if (memcmp(settings->menu.driver, "glui", 4) == 0)
+         if (memcmp(settings->arrays.menu_driver, "glui", 4) == 0)
          {
             CONFIG_UINT(
                   list, list_info,
@@ -5236,7 +5236,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_ADVANCED);
 
-         if (memcmp(settings->menu.driver, "xmb", 3) == 0)
+         if (memcmp(settings->arrays.menu_driver, "xmb", 3) == 0)
          {
             CONFIG_UINT(
                   list, list_info,
@@ -5336,7 +5336,7 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-         if (memcmp(settings->record.driver, "null", 4) != 0)
+         if (memcmp(settings->arrays.record_driver, "null", 4) != 0)
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -6175,8 +6175,8 @@ static bool setting_append_list(
 #ifdef HAVE_CHEEVOS
          CONFIG_STRING(
                list, list_info,
-               settings->cheevos.username,
-               sizeof(settings->cheevos.username),
+               settings->arrays.cheevos_username,
+               sizeof(settings->arrays.cheevos_username),
                MENU_ENUM_LABEL_CHEEVOS_USERNAME,
                MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
                "",
@@ -6189,8 +6189,8 @@ static bool setting_append_list(
 
          CONFIG_STRING(
                list, list_info,
-               settings->cheevos.password,
-               sizeof(settings->cheevos.password),
+               settings->arrays.cheevos_password,
+               sizeof(settings->arrays.cheevos_password),
                MENU_ENUM_LABEL_CHEEVOS_PASSWORD,
                MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
                "",
@@ -6432,7 +6432,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
 
-         if (memcmp(settings->record.driver, "null", 4) != 0)
+         if (memcmp(settings->arrays.record_driver, "null", 4) != 0)
          {
             CONFIG_DIR(
                   list, list_info,
@@ -6588,7 +6588,7 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "State",
                &group_info, &subgroup_info, parent_group);
 
-         if (memcmp(settings->camera.driver, "null", 4) != 0)
+         if (memcmp(settings->arrays.camera_driver, "null", 4) != 0)
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -6606,7 +6606,7 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
          }
 
-         if (memcmp(settings->location.driver, "null", 4) != 0)
+         if (memcmp(settings->arrays.location_driver, "null", 4) != 0)
          {
             CONFIG_BOOL(
                   list, list_info,

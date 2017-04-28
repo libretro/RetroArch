@@ -219,8 +219,8 @@ static int action_start_playlist_association(unsigned type, const char *label)
 
    new_playlist_cores[0] = '\0';
 
-   stnames = string_split(settings->playlist_names, ";");
-   stcores = string_split(settings->playlist_cores, ";");
+   stnames = string_split(settings->arrays.playlist_names, ";");
+   stcores = string_split(settings->arrays.playlist_cores, ";");
    found   = string_list_find_elem(stnames, path);
 
    if (found)
@@ -230,8 +230,8 @@ static int action_start_playlist_association(unsigned type, const char *label)
    string_list_join_concat(new_playlist_cores,
          sizeof(new_playlist_cores), stcores, ";");
 
-   strlcpy(settings->playlist_cores,
-         new_playlist_cores, sizeof(settings->playlist_cores));
+   strlcpy(settings->arrays.playlist_cores,
+         new_playlist_cores, sizeof(settings->arrays.playlist_cores));
 
    string_list_free(stcores);
    string_list_free(stnames);

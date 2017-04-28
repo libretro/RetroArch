@@ -67,7 +67,7 @@ static const gfx_ctx_driver_t *vulkan_get_context(vk_t *vk)
    enum gfx_ctx_api api = GFX_CTX_VULKAN_API;
 
    return video_context_driver_init_first(
-         vk, settings->video.context_driver,
+         vk, settings->arrays.video_context_driver,
          api, major, minor, false);
 }
 

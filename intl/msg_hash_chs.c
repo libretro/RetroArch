@@ -674,7 +674,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_INPUT_DRIVER:
          if (settings)
-            driver_hash = msg_hash_calculate(settings->input.driver);
+            driver_hash = msg_hash_calculate(settings->arrays.input_driver);
 
          switch (driver_hash)
          {
@@ -753,7 +753,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "当前视频驱动.");
 
-         if (memcmp(settings->video.driver, "gl", 2) == 0)
+         if (memcmp(settings->arrays.video_driver, "gl", 2) == 0)
          {
             snprintf(s, len,
                   "OpenGL视频驱动. \n"
@@ -767,7 +767,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "dependent on your graphics card's \n"
                   "underlying GL driver).");
          }
-         else if (memcmp(settings->video.driver, "sdl2", 4) == 0)
+         else if (memcmp(settings->arrays.video_driver, "sdl2", 4) == 0)
          {
             snprintf(s, len,
                   "SDL 2 视频驱动.\n"
@@ -779,7 +779,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "core implementations is dependent \n"
                   "on your platform SDL implementation.");
          }
-         else if (memcmp(settings->video.driver, "sdl1", 4) == 0)
+         else if (memcmp(settings->arrays.video_driver, "sdl1", 4) == 0)
          {
             snprintf(s, len,
                   "SDL 视频驱动.\n"
@@ -790,7 +790,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "Performance is considered to be suboptimal. \n"
                   "Consider using it only as a last resort.");
          }
-         else if (memcmp(settings->video.driver, "d3d", 3) == 0)
+         else if (memcmp(settings->arrays.video_driver, "d3d", 3) == 0)
          {
             snprintf(s, len,
                   "Direct3D 视频驱动. \n"
@@ -799,7 +799,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "is dependent on your graphic card's \n"
                   "underlying D3D driver).");
          }
-         else if (memcmp(settings->video.driver, "exynos", 6) == 0)
+         else if (memcmp(settings->arrays.video_driver, "exynos", 6) == 0)
          {
             snprintf(s, len,
                   "Exynos-G2D 视频驱动. \n"
@@ -811,7 +811,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "Performance for software rendered cores \n"
                   "should be optimal.");
          }
-         else if (memcmp(settings->video.driver, "drm", 3) == 0)
+         else if (memcmp(settings->arrays.video_driver, "drm", 3) == 0)
          {
             snprintf(s, len,
                   "Plain DRM 视频驱动. \n"
@@ -820,7 +820,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "libdrm for hardware scaling using \n"
                   "GPU overlays.");
          }
-         else if (memcmp(settings->video.driver, "sunxi", 5) == 0)
+         else if (memcmp(settings->arrays.video_driver, "sunxi", 5) == 0)
          {
             snprintf(s, len,
                   "Sunxi-G2D 视频驱动. \n"
@@ -838,7 +838,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER:
          if (settings)
-            driver_hash = msg_hash_calculate(settings->audio.resampler);
+            driver_hash = msg_hash_calculate(settings->arrays.audio_resampler);
 
          switch (driver_hash)
          {

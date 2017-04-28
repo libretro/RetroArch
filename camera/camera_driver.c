@@ -136,7 +136,7 @@ bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data)
             driver_ctx_info_t drv;
 
             drv.label = "camera_driver";
-            drv.s     = settings->camera.driver;
+            drv.s     = settings->arrays.camera_driver;
 
             driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
 
@@ -148,7 +148,7 @@ bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data)
             {
                unsigned d;
                RARCH_ERR("Couldn't find any camera driver named \"%s\"\n",
-                     settings->camera.driver);
+                     settings->arrays.camera_driver);
                RARCH_LOG_OUTPUT("Available camera drivers are:\n");
                for (d = 0; camera_driver_find_handle(d); d++)
                   RARCH_LOG_OUTPUT("\t%s\n", camera_driver_find_ident(d));
@@ -222,7 +222,7 @@ bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data)
            return false;
 
         camera_data = camera_driver->init(
-              *settings->camera.device ? settings->camera.device : NULL,
+              *settings->arrays.camera_device ? settings->arrays.camera_device : NULL,
               camera_cb.caps,
               settings->uints.camera_width ?
               settings->uints.camera_width : camera_cb.width,

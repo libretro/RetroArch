@@ -250,7 +250,7 @@ static int menu_displaylist_parse_netplay(
          msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS),
          MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS, MENU_SETTING_GROUP, 0, 0);
 
-   if (memcmp(settings->menu.driver, "xmb", 3) != 0)
+   if (memcmp(settings->arrays.menu_driver, "xmb", 3) != 0)
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_TAB),
             msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB),
@@ -3604,8 +3604,8 @@ static void menu_displaylist_parse_playlist_associations(
       unsigned i;
       char new_playlist_names[PATH_MAX_LENGTH];
       char new_playlist_cores[PATH_MAX_LENGTH];
-      struct string_list *stnames  = string_split(settings->playlist_names, ";");
-      struct string_list *stcores  = string_split(settings->playlist_cores, ";");
+      struct string_list *stnames  = string_split(settings->arrays.playlist_names, ";");
+      struct string_list *stcores  = string_split(settings->arrays.playlist_cores, ";");
 
       new_playlist_names[0] = new_playlist_cores[0] = '\0';
 
@@ -3651,10 +3651,10 @@ static void menu_displaylist_parse_playlist_associations(
       string_list_join_concat(new_playlist_cores,
             sizeof(new_playlist_cores), stcores, ";");
 
-      strlcpy(settings->playlist_names,
-            new_playlist_names, sizeof(settings->playlist_names));
-      strlcpy(settings->playlist_cores,
-            new_playlist_cores, sizeof(settings->playlist_cores));
+      strlcpy(settings->arrays.playlist_names,
+            new_playlist_names, sizeof(settings->arrays.playlist_names));
+      strlcpy(settings->arrays.playlist_cores,
+            new_playlist_cores, sizeof(settings->arrays.playlist_cores));
 
       string_list_free(stnames);
       string_list_free(stcores);
@@ -4793,7 +4793,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push    = true;
          break;
       case DISPLAYLIST_WIFI_SETTINGS_LIST:
-         if (memcmp(settings->wifi.driver, "null", 4) == 0)
+         if (memcmp(settings->arrays.wifi_driver, "null", 4) == 0)
             menu_entries_append_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND),
                   msg_hash_to_str(MENU_ENUM_LABEL_NO_NETWORKS_FOUND),
@@ -5389,7 +5389,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_LOGGING_SETTINGS,   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS,   PARSE_ACTION, false);
-         if (memcmp(settings->record.driver, "null", 4) != 0)
+         if (memcmp(settings->arrays.record_driver, "null", 4) != 0)
             ret = menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_RECORDING_SETTINGS,   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,

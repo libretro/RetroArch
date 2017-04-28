@@ -105,7 +105,7 @@ static void *vg_init(const video_info_t *video,
    settings_t        *settings = config_get_ptr();
    vg_t                    *vg = (vg_t*)calloc(1, sizeof(vg_t));
    const gfx_ctx_driver_t *ctx = video_context_driver_init_first(
-         vg, settings->video.context_driver,
+         vg, settings->arrays.video_context_driver,
          GFX_CTX_OPENVG_API, 0, 0, false);
 
    if (!vg || !ctx)

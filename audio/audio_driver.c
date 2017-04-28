@@ -352,7 +352,8 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
       if (!audio_init_thread(
                &current_audio,
                &audio_driver_context_audio_data,
-               *settings->audio.device ? settings->audio.device : NULL,
+               *settings->arrays.audio_device 
+               ? settings->arrays.audio_device : NULL,
                settings->uints.audio_out_rate, &new_rate, 
                settings->uints.audio_latency,
                settings->uints.audio_block_frames,
@@ -366,8 +367,8 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
 #endif
    {
       audio_driver_context_audio_data = 
-         current_audio->init(*settings->audio.device ?
-               settings->audio.device : NULL,
+         current_audio->init(*settings->arrays.audio_device ?
+               settings->arrays.audio_device : NULL,
                settings->uints.audio_out_rate,
                settings->uints.audio_latency,
                settings->uints.audio_block_frames,
@@ -410,11 +411,11 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    if (!retro_resampler_realloc(
             &audio_driver_resampler_data,
             &audio_driver_resampler,
-            settings->audio.resampler,
+            settings->arrays.audio_resampler,
             audio_source_ratio_original))
    {
       RARCH_ERR("Failed to initialize resampler \"%s\".\n",
-            settings->audio.resampler);
+            settings->arrays.audio_resampler);
       audio_driver_active = false;
    }
 
@@ -795,7 +796,7 @@ bool audio_driver_find_driver(void)
    settings_t *settings = config_get_ptr();
 
    drv.label = "audio_driver";
-   drv.s     = settings->audio.driver;
+   drv.s     = settings->arrays.audio_driver;
 
    driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
 
@@ -807,7 +808,7 @@ bool audio_driver_find_driver(void)
    {
       unsigned d;
       RARCH_ERR("Couldn't find any audio driver named \"%s\"\n",
-            settings->audio.driver);
+            settings->arrays.audio_driver);
       RARCH_LOG_OUTPUT("Available audio drivers are:\n");
       for (d = 0; audio_driver_find_handle(d); d++)
          RARCH_LOG_OUTPUT("\t%s\n", audio_driver_find_ident(d));

@@ -1118,7 +1118,7 @@ static const gfx_ctx_driver_t *d3d_get_context(void *data)
    enum gfx_ctx_api api = GFX_CTX_DIRECT3D9_API;
 #endif
    return video_context_driver_init_first(data,
-         settings->video.context_driver,
+         settings->arrays.video_context_driver,
          api, major, minor, false);
 }
 

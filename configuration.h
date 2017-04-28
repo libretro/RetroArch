@@ -326,78 +326,55 @@ typedef struct settings
 #endif
    } uints;
 
+   struct
+   {
+      char playlist_names[PATH_MAX_LENGTH];
+      char playlist_cores[PATH_MAX_LENGTH];
+      char video_driver[32];
+      char record_driver[32];
+      char camera_driver[32];
+      char wifi_driver[32];
+      char location_driver[32];
+#ifdef HAVE_MENU
+      char menu_driver[32];
+#endif
+      char audio_device[255];
+      char camera_device[255];
+#ifdef HAVE_CHEEVOS
+      char cheevos_username[32];
+      char cheevos_password[32];
+#endif
+      char video_context_driver[32];
+      char audio_driver[32];
+      char audio_resampler[32];
+      char input_driver[32];
+      char input_joypad_driver[32];
+      char input_keyboard_layout[64];
+      char bundle_assets_src[PATH_MAX_LENGTH];
+      char bundle_assets_dst[PATH_MAX_LENGTH];
+      char bundle_assets_dst_subdir[PATH_MAX_LENGTH];
+   } arrays;
+
    bool modified;
 
    video_viewport_t video_viewport_custom;
 
    size_t rewind_buffer_size;
 
-   char playlist_names[PATH_MAX_LENGTH];
-   char playlist_cores[PATH_MAX_LENGTH];
 
-   struct
-   {
-      char driver[32];
-      char context_driver[32];
-   } video;
-
-   struct
-   {
-      char driver[32];
-   } record;
 
 #ifdef HAVE_MENU
    struct
    {
-      char driver[32];
       char xmb_font[PATH_MAX_LENGTH];
    } menu;
 #endif
 
    struct
    {
-      char driver[32];
-      char device[255];
-   } camera;
-
-   struct
-   {
-      char driver[32];
-   } wifi;
-
-   struct
-   {
-      char driver[32];
-   } location;
-
-   struct
-   {
-      char driver[32];
-      char resampler[32];
-      char device[255];
-   } audio;
-
-   struct
-   {
-      char driver[32];
-      char joypad_driver[32];
-      char keyboard_layout[64];
-
-   } input;
-
-   struct
-   {
       char buildbot_url[255];
       char buildbot_assets_url[255];
    } network;
-
-#ifdef HAVE_CHEEVOS
-   struct
-   {
-      char username[32];
-      char password[32];
-   } cheevos;
-#endif
 
    char browse_url[4096];
 
@@ -416,9 +393,6 @@ typedef struct settings
       char content_video_history[PATH_MAX_LENGTH];
       char libretro_info[PATH_MAX_LENGTH];
       char cheat_settings[PATH_MAX_LENGTH];
-      char bundle_assets_src[PATH_MAX_LENGTH];
-      char bundle_assets_dst[PATH_MAX_LENGTH];
-      char bundle_assets_dst_subdir[PATH_MAX_LENGTH];
       char shader[PATH_MAX_LENGTH];
       char font[PATH_MAX_LENGTH];
    } path;
@@ -455,7 +429,6 @@ typedef struct settings
       char spectate_password[128];
    } netplay;
 #endif
-
 
    char username[32];
 } settings_t;

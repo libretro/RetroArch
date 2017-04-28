@@ -1015,7 +1015,7 @@ bool input_driver_init(void)
    settings_t *settings       = config_get_ptr();
 
    if (current_input)
-      current_input_data      = current_input->init(settings->input.joypad_driver);
+      current_input_data      = current_input->init(settings->arrays.input_joypad_driver);
 
    if (!current_input_data)
       return false;
@@ -1066,7 +1066,7 @@ bool input_driver_find_driver(void)
    settings_t *settings = config_get_ptr();
 
    drv.label            = "input_driver";
-   drv.s                = settings->input.driver;
+   drv.s                = settings->arrays.input_driver;
 
    driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
 
@@ -1079,7 +1079,7 @@ bool input_driver_find_driver(void)
    {
       unsigned d;
       RARCH_ERR("Couldn't find any input driver named \"%s\"\n",
-            settings->input.driver);
+            settings->arrays.input_driver);
       RARCH_LOG_OUTPUT("Available input drivers are:\n");
       for (d = 0; input_driver_find_handle(d); d++)
          RARCH_LOG_OUTPUT("\t%s\n", input_driver_find_ident(d));
