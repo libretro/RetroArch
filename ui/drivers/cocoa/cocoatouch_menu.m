@@ -655,7 +655,7 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
    item = [[UIBarButtonItem alloc] initWithCustomView:self.osdmessage];
    [self setToolbarItems: [NSArray arrayWithObject:item]];
 
-   if (settings->menu.core_enable)
+   if (settings->bools.menu_core_enable)
    {
       char title_msg[256];
       menu_entries_get_core_title(title_msg, sizeof(title_msg));
@@ -671,7 +671,7 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
    NSMutableArray *everything  = [NSMutableArray array];
    settings_t *settings        = config_get_ptr();
 
-   if (settings->menu.core_enable)
+   if (settings->bools.menu_core_enable)
    {
       char title_msg[256];
       menu_entries_get_core_title(title_msg, sizeof(title_msg));
