@@ -3446,6 +3446,8 @@ bool config_save_overrides(int override_type)
       free(uint_settings);
    if (int_overrides)
       free(int_overrides);
+   if (uint_overrides)
+      free(uint_overrides);
    if (float_settings)
       free(float_settings);
    if (float_overrides)

@@ -981,11 +981,14 @@ static void retroarch_main_init_media(void)
 {
    settings_t *settings     = config_get_ptr();
    const char    *fullpath  = path_get(RARCH_PATH_CONTENT);
-   bool builtin_imageviewer = settings->bools.multimedia_builtin_imageviewer_enable;
-   bool builtin_mediaplayer = settings->bools.multimedia_builtin_mediaplayer_enable;
+   bool builtin_imageviewer = false;
+   bool builtin_mediaplayer = false;
 
    if (!settings)
       return;
+
+   builtin_imageviewer      = settings->bools.multimedia_builtin_imageviewer_enable;
+   builtin_mediaplayer      = settings->bools.multimedia_builtin_mediaplayer_enable;
 
    if (!builtin_mediaplayer && !builtin_imageviewer)
       return;
