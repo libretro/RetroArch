@@ -107,10 +107,6 @@ struct config_path_setting
 
 #define GENERAL_SETTING(key, configval, default_enable, default_setting, type, handle_setting) \
 { \
-   if (count == 0) \
-      tmp = (type*)malloc(sizeof(type) * (count + 1)); \
-   else \
-      tmp = (type*)realloc(tmp, sizeof(type) * (count + 1)); \
    tmp[count].ident      = key; \
    tmp[count].ptr        = configval; \
    tmp[count].def_enable = default_enable; \
@@ -121,52 +117,22 @@ struct config_path_setting
 } 
 
 #define SETTING_BOOL(key, configval, default_enable, default_setting, handle_setting) \
-   tmp[count].ident      = key; \
-   tmp[count].ptr        = configval; \
-   tmp[count].def_enable = default_enable; \
-   if (default_enable) \
-      tmp[count].def     = default_setting; \
-   tmp[count].handle   = handle_setting; \
-   count++
+   GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_bool_setting, handle_setting)
 
 #define SETTING_FLOAT(key, configval, default_enable, default_setting, handle_setting) \
-   tmp[count].ident      = key; \
-   tmp[count].ptr        = configval; \
-   tmp[count].def_enable = default_enable; \
-   if (default_enable) \
-      tmp[count].def     = default_setting; \
-   tmp[count].handle   = handle_setting; \
-   count++
+   GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_float_setting, handle_setting)
 
 #define SETTING_INT(key, configval, default_enable, default_setting, handle_setting) \
-   tmp[count].ident      = key; \
-   tmp[count].ptr        = configval; \
-   tmp[count].def_enable = default_enable; \
-   if (default_enable) \
-      tmp[count].def     = default_setting; \
-   tmp[count].handle   = handle_setting; \
-   count++
+   GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_int_setting, handle_setting)
 
 #define SETTING_UINT(key, configval, default_enable, default_setting, handle_setting) \
-   tmp[count].ident      = key; \
-   tmp[count].ptr        = configval; \
-   tmp[count].def_enable = default_enable; \
-   if (default_enable) \
-      tmp[count].def     = default_setting; \
-   tmp[count].handle   = handle_setting; \
-   count++
+   GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_uint_setting, handle_setting)
 
 #define SETTING_PATH(key, configval, default_enable, default_setting, handle_setting) \
    GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_path_setting, handle_setting)
 
 #define SETTING_ARRAY(key, configval, default_enable, default_setting, handle_setting) \
-   tmp[count].ident      = key; \
-   tmp[count].ptr        = configval; \
-   tmp[count].def_enable = default_enable; \
-   if (default_enable) \
-      tmp[count].def     = default_setting; \
-   tmp[count].handle   = handle_setting; \
-   count++
+   GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_array_setting, handle_setting)
 
 struct defaults g_defaults;
 static settings_t *configuration_settings = NULL;
@@ -645,8 +611,8 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
 static struct config_path_setting *populate_settings_path(settings_t *settings, int *size)
 {
    unsigned count = 0;
-   struct config_path_setting     *tmp = NULL;
    global_t   *global                  = global_get_ptr();
+   struct config_path_setting  *tmp    = (struct config_path_setting*)malloc((*size + 1) * sizeof(struct config_path_setting));
 
    /* Paths */
 #ifdef HAVE_XMB
@@ -1815,7 +1781,6 @@ static bool config_load_file(const char *path, bool set_defaults,
 {
    unsigned i;
    char tmp_str[PATH_MAX_LENGTH];
-   int path_settings_size                          = 0;
    bool ret                                        = false;
    bool tmp_bool                                   = false;
    char *save                                      = NULL;
@@ -1825,11 +1790,12 @@ static bool config_load_file(const char *path, bool set_defaults,
 #ifdef HAVE_NETWORKING
    char *override_netplay_ip_address               = NULL;
 #endif
-   int bool_settings_size                          = sizeof(settings->bools) / sizeof(settings->bools.placeholder);
+   int bool_settings_size                          = sizeof(settings->bools)  / sizeof(settings->bools.placeholder);
    int float_settings_size                         = sizeof(settings->floats) / sizeof(settings->floats.placeholder);
    int int_settings_size                           = sizeof(settings->ints)   / sizeof(settings->ints.placeholder);
-   int uint_settings_size                          = sizeof(settings->uints)   / sizeof(settings->uints.placeholder);
-   int array_settings_size                         = sizeof(settings->arrays)   / sizeof(settings->arrays.placeholder);
+   int uint_settings_size                          = sizeof(settings->uints)  / sizeof(settings->uints.placeholder);
+   int array_settings_size                         = sizeof(settings->arrays) / sizeof(settings->arrays.placeholder);
+   int path_settings_size                          = sizeof(settings->paths)  / sizeof(settings->paths.placeholder);
    struct config_bool_setting *bool_settings       = populate_settings_bool  (settings, &bool_settings_size);
    struct config_float_setting *float_settings     = populate_settings_float (settings, &float_settings_size);
    struct config_int_setting *int_settings         = populate_settings_int   (settings, &int_settings_size);
@@ -3032,7 +2998,6 @@ bool config_save_file(const char *path)
    float msg_color;
    unsigned i                                        = 0;
    bool ret                                          = false;
-   int path_settings_size                            = 0;
    struct config_bool_setting     *bool_settings     = NULL;
    struct config_int_setting     *int_settings       = NULL;
    struct config_uint_setting     *uint_settings     = NULL;
@@ -3045,7 +3010,8 @@ bool config_save_file(const char *path)
    int float_settings_size                           = sizeof(settings->floats)/ sizeof(settings->floats.placeholder);
    int int_settings_size                             = sizeof(settings->ints)  / sizeof(settings->ints.placeholder);
    int uint_settings_size                            = sizeof(settings->uints) / sizeof(settings->uints.placeholder);
-   int array_settings_size                           = sizeof(settings->arrays)   / sizeof(settings->arrays.placeholder);
+   int array_settings_size                           = sizeof(settings->arrays)/ sizeof(settings->arrays.placeholder);
+   int path_settings_size                            = sizeof(settings->paths) / sizeof(settings->paths.placeholder);
 
    if (!conf)
       conf = config_file_new(NULL);
@@ -3230,8 +3196,6 @@ bool config_save_overrides(int override_type)
    char game_path[PATH_MAX_LENGTH];
    int tmp_i                                   = 0;
    unsigned i                                  = 0;
-   int array_settings_size                     = 0;
-   int path_settings_size                      = 0;
    bool ret                                    = false;
    const char *core_name                       = NULL;
    const char *game_name                       = NULL;
@@ -3250,10 +3214,12 @@ bool config_save_overrides(int override_type)
    struct config_path_setting *path_settings   = NULL;
    struct config_path_setting *path_overrides  = NULL;
    settings_t *overrides                       = config_get_ptr();
-   int bool_settings_size                      = sizeof(settings->bools) / sizeof(settings->bools.placeholder);
+   int bool_settings_size                      = sizeof(settings->bools)  / sizeof(settings->bools.placeholder);
    int float_settings_size                     = sizeof(settings->floats) / sizeof(settings->floats.placeholder);
    int int_settings_size                       = sizeof(settings->ints)   / sizeof(settings->ints.placeholder);
-   int uint_settings_size                      = sizeof(settings->uints)   / sizeof(settings->uints.placeholder);
+   int uint_settings_size                      = sizeof(settings->uints)  / sizeof(settings->uints.placeholder);
+   int array_settings_size                     = sizeof(settings->arrays) / sizeof(settings->arrays.placeholder);
+   int path_settings_size                      = sizeof(settings->paths)  / sizeof(settings->paths.placeholder);
    rarch_system_info_t *system                 = runloop_get_system_info();
 
    if (system)
@@ -3317,7 +3283,7 @@ bool config_save_overrides(int override_type)
    array_overrides     = populate_settings_array (overrides, &tmp_i);
 
    path_settings       = populate_settings_path(settings, &path_settings_size);
-   tmp_i               = 0;
+   tmp_i               = sizeof(settings->paths)   / sizeof(settings->paths.placeholder);
    path_overrides      = populate_settings_path (overrides, &tmp_i);
 
    RARCH_LOG("[overrides] looking for changed settings... \n");
