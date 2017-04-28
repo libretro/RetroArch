@@ -66,7 +66,7 @@ void filebrowser_parse(void *data, unsigned type_data)
                                           type_data;
    bool path_is_compressed              = path_is_compressed_file(info->path);
    bool filter_ext                      =
-      settings->menu.navigation.browser.filter.supported_extensions_enable;
+      settings->bools.menu_navigation_browser_filter_supported_extensions_enable;
 
 
    if (string_is_equal(info->label,
@@ -78,7 +78,7 @@ void filebrowser_parse(void *data, unsigned type_data)
    else
       str_list = dir_list_new(info->path,
             filter_ext ? info->exts : NULL,
-            true, settings->show_hidden_files, true, false);
+            true, settings->bools.show_hidden_files, true, false);
 
 #ifdef HAVE_LIBRETRODB
    if (filebrowser_types == FILEBROWSER_SCAN_DIR)
@@ -181,26 +181,26 @@ void filebrowser_parse(void *data, unsigned type_data)
          }
 
          if (!is_dir && 
-               (settings->multimedia.builtin_mediaplayer_enable ||
-                settings->multimedia.builtin_imageviewer_enable))
+               (settings->bools.multimedia_builtin_mediaplayer_enable ||
+                settings->bools.multimedia_builtin_imageviewer_enable))
          {
             switch (path_is_media_type(path))
             {
                case RARCH_CONTENT_MOVIE:
 #ifdef HAVE_FFMPEG
-                  if (settings->multimedia.builtin_mediaplayer_enable)
+                  if (settings->bools.multimedia_builtin_mediaplayer_enable)
                      file_type = FILE_TYPE_MOVIE;
 #endif
                   break;
                case RARCH_CONTENT_MUSIC:
 #ifdef HAVE_FFMPEG
-                  if (settings->multimedia.builtin_mediaplayer_enable)
+                  if (settings->bools.multimedia_builtin_mediaplayer_enable)
                      file_type = FILE_TYPE_MUSIC;
 #endif
                   break;
                case RARCH_CONTENT_IMAGE:
 #ifdef HAVE_IMAGEVIEWER
-                  if (settings->multimedia.builtin_imageviewer_enable
+                  if (settings->bools.multimedia_builtin_imageviewer_enable
                         && type != DISPLAYLIST_IMAGES)
                      file_type = FILE_TYPE_IMAGEVIEWER;
                   else

@@ -2143,7 +2143,7 @@ static void cheevos_make_unlock_url(const cheevo_t *cheevo, char* url, size_t ur
       url, url_size,
       "http://retroachievements.org/dorequest.php?r=awardachievement&u=%s&t=%s&a=%u&h=%d",
       settings->cheevos.username, cheevos_locals.token, cheevo->id,
-      settings->cheevos.hardcore_mode_enable ? 1 : 0
+      settings->bools.cheevos_hardcore_mode_enable ? 1 : 0
    );
 
    url[url_size - 1] = 0;
@@ -2180,7 +2180,7 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
    const cheevo_t *end = set->cheevos + set->count;
    int mode, valid;
 
-   if (settings->cheevos.hardcore_mode_enable)
+   if (settings->bools.cheevos_hardcore_mode_enable)
       mode = CHEEVOS_ACTIVE_HARDCORE;
    else
       mode = CHEEVOS_ACTIVE_SOFTCORE;
@@ -2411,7 +2411,7 @@ static int cheevos_get_by_game_id(const char **json,
    settings_t *settings = config_get_ptr();
 
    /* Just return OK if cheevos are disabled. */
-   if (!settings->cheevos.enable)
+   if (!settings->bools.cheevos_enable)
       return 0;
 
    if (!cheevos_login(timeout))
@@ -3009,7 +3009,7 @@ bool cheevos_load(const void *data)
 
    /* Bail out if cheevos are disabled.
     * But set the above anyways, command_read_ram needs it. */
-   if (!settings->cheevos.enable)
+   if (!settings->bools.cheevos_enable)
       return true;
 
    /* Use the supported extensions as a hint
@@ -3094,7 +3094,7 @@ found:
    if (cheevos_get_by_game_id(&json, game_id, &timeout) == 0 && json != NULL)
 #endif
    {
-      if (!settings->cheevos.enable || !cheevos_parse(json))
+      if (!settings->bools.cheevos_enable || !cheevos_parse(json))
       {
          cheevos_deactivate_unlocks(game_id, &timeout);
          free((void*)json);
@@ -3178,7 +3178,7 @@ void cheevos_populate_menu(void *data, bool hardcore)
       }
    }
 
-   if (settings->cheevos.test_unofficial)
+   if (settings->bools.cheevos_test_unofficial)
    {
       cheevo = cheevos_locals.unofficial.cheevos;
       end    = cheevos_locals.unofficial.cheevos
@@ -3280,11 +3280,11 @@ bool cheevos_toggle_hardcore_mode(void)
    settings_t *settings = config_get_ptr();
 
    /* reset and deinit rewind to avoid cheat the score */
-   if (settings->cheevos.hardcore_mode_enable)
+   if (settings->bools.cheevos_hardcore_mode_enable)
    {
       /* send reset core cmd to avoid any user savestate previusly loaded */
       command_event(CMD_EVENT_RESET, NULL);
-      if (settings->rewind_enable)
+      if (settings->bools.rewind_enable)
          command_event(CMD_EVENT_REWIND_DEINIT, NULL);
 
       RARCH_LOG("%s\n", msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_ENABLE));
@@ -3293,7 +3293,7 @@ bool cheevos_toggle_hardcore_mode(void)
    }
    else
    {
-      if (settings->rewind_enable)
+      if (settings->bools.rewind_enable)
          command_event(CMD_EVENT_REWIND_INIT, NULL);
    }
 
@@ -3306,7 +3306,7 @@ void cheevos_test(void)
 
    cheevos_test_cheevo_set(&cheevos_locals.core);
 
-   if (settings->cheevos.test_unofficial)
+   if (settings->bools.cheevos_test_unofficial)
       cheevos_test_cheevo_set(&cheevos_locals.unofficial);
 
 #ifdef CHEEVOS_ENABLE_LBOARDS

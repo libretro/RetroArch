@@ -151,7 +151,8 @@ struct string_list *dir_list_new_special(const char *input_dir,
          return NULL;
    }
 
-   return dir_list_new(dir, exts, include_dirs, settings->show_hidden_files, type == DIR_LIST_CORE_INFO, recursive);
+   return dir_list_new(dir, exts, include_dirs, settings->bools.show_hidden_files,
+         type == DIR_LIST_CORE_INFO, recursive);
 }
 
 struct string_list *string_list_new_special(enum string_list_type type,

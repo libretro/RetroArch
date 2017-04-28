@@ -1104,7 +1104,7 @@ static int generic_action_ok(const char *path,
 
             menu_display_set_msg_force(true);
 
-            if (config_replace(settings->config_save_on_exit, action_path))
+            if (config_replace(settings->bools.config_save_on_exit, action_path))
             {
                bool pending_push = false;
                menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
@@ -2541,7 +2541,7 @@ static void cb_generic_download(void *task_data,
          break;
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
          dir_path = settings->directory.core_assets;
-         extract = settings->network.buildbot_auto_extract_archive;
+         extract = settings->bools.network_buildbot_auto_extract_archive;
          break;
       case MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES:
          dir_path = settings->path.libretro_info;

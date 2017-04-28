@@ -69,7 +69,7 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
             settings_t *settings   = config_get_ptr();
             unsigned *scroll_speed = (unsigned*)data;
             size_t  menu_list_size = menu_entries_get_size();
-            bool wraparound_enable = settings->menu.navigation.wraparound.enable;
+            bool wraparound_enable = settings->bools.menu_navigation_wraparound_enable;
 
             if (!scroll_speed)
                return false;
@@ -114,7 +114,7 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
             settings_t *settings   = config_get_ptr();
             unsigned *scroll_speed = (unsigned*)data;
             size_t  menu_list_size = menu_entries_get_size();
-            bool wraparound_enable = settings->menu.navigation.wraparound.enable;
+            bool wraparound_enable = settings->bools.menu_navigation_wraparound_enable;
 
             if (!scroll_speed)
                return false;

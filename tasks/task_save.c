@@ -391,7 +391,7 @@ bool content_undo_load_state(void)
     * the backing up of it and
     * its flushing could all be in their 
     * own functions... */
-   if (settings->block_sram_overwrite && task_save_files
+   if (settings->bools.block_sram_overwrite && task_save_files
          && task_save_files->size)
    {
       RARCH_LOG("%s.\n",
@@ -862,7 +862,7 @@ static void content_load_state_cb(void *task_data,
       return;
    }
 
-   if (settings->block_sram_overwrite && task_save_files
+   if (settings->bools.block_sram_overwrite && task_save_files
          && task_save_files->size)
    {
       RARCH_LOG("%s.\n",
@@ -996,7 +996,7 @@ static void task_push_save_state(const char *path, void *data, size_t size, bool
    state->size             = size;
    state->autosave         = autosave;
    state->mute             = autosave; /* don't show OSD messages if we are auto-saving */
-   state->thumbnail_enable = settings->savestate_thumbnail_enable;
+   state->thumbnail_enable = settings->bools.savestate_thumbnail_enable;
    state->state_slot       = settings->state_slot;
 
    task->type              = TASK_TYPE_BLOCKING;

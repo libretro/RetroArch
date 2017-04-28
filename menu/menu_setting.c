@@ -378,7 +378,7 @@ static int setting_string_action_right_driver(void *data,
    {
       settings_t *settings = config_get_ptr();
 
-      if (settings && settings->menu.navigation.wraparound.enable)
+      if (settings && settings->bools.menu_navigation_wraparound_enable)
       {
          drv.label = setting->name;
          drv.s     = setting->value.target.string;
@@ -1748,7 +1748,7 @@ static void overlay_enable_toggle_change_handler(void *data)
    if (!setting)
       return;
 
-   if (settings && settings->input.overlay_hide_in_menu)
+   if (settings && settings->bools.input_overlay_hide_in_menu)
    {
       command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
       return;
@@ -2061,7 +2061,7 @@ static bool setting_append_list_input_player_options(
             sizeof(label));
 
       if (
-            settings->input.input_descriptor_label_show
+            settings->bools.input_descriptor_label_show
             && (i < RARCH_FIRST_META_KEY)
             && core_has_set_input_descriptor()
             && (i != RARCH_TURBO_ENABLE)
@@ -2076,7 +2076,7 @@ static bool setting_append_list_input_player_options(
             strlcat(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
                   sizeof(label));
 
-            if (settings->input.input_descriptor_hide_unbound)
+            if (settings->bools.input_descriptor_hide_unbound)
                continue;
          }
       }
@@ -2221,7 +2221,7 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 
-         if (settings->history_list_enable)
+         if (settings->bools.history_list_enable)
          {
             CONFIG_ACTION(
                   list, list_info,
@@ -2752,19 +2752,19 @@ static bool setting_append_list(
             bool_entries[0].default_value  = video_shared_context;
             bool_entries[0].flags          = SD_FLAG_ADVANCED;
 
-            bool_entries[1].target         = &settings->load_dummy_on_core_shutdown;
+            bool_entries[1].target         = &settings->bools.load_dummy_on_core_shutdown;
             bool_entries[1].name_enum_idx  = MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN;
             bool_entries[1].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN;
             bool_entries[1].default_value  = load_dummy_on_core_shutdown;
             bool_entries[1].flags          = SD_FLAG_ADVANCED;
 
-            bool_entries[2].target         = &settings->set_supports_no_game_enable;
+            bool_entries[2].target         = &settings->bools.set_supports_no_game_enable;
             bool_entries[2].name_enum_idx  = MENU_ENUM_LABEL_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE;
             bool_entries[2].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE;
             bool_entries[2].default_value  = true;
             bool_entries[2].flags          = SD_FLAG_ADVANCED;
 
-            bool_entries[3].target         = &settings->check_firmware_before_loading;
+            bool_entries[3].target         = &settings->bools.check_firmware_before_loading;
             bool_entries[3].name_enum_idx  = MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE;
             bool_entries[3].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE;
             bool_entries[3].default_value  = true;
@@ -2811,37 +2811,37 @@ static bool setting_append_list(
             START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info,
                   parent_group);
 
-            bool_entries[0].target         = &settings->config_save_on_exit;
+            bool_entries[0].target         = &settings->bools.config_save_on_exit;
             bool_entries[0].name_enum_idx  = MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT;
             bool_entries[0].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT;
             bool_entries[0].default_value  = config_save_on_exit;
             bool_entries[0].flags          = SD_FLAG_NONE;
 
-            bool_entries[1].target         = &settings->show_hidden_files;
+            bool_entries[1].target         = &settings->bools.show_hidden_files;
             bool_entries[1].name_enum_idx  = MENU_ENUM_LABEL_SHOW_HIDDEN_FILES;
             bool_entries[1].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES;
             bool_entries[1].default_value  = show_hidden_files;
             bool_entries[1].flags          = SD_FLAG_NONE;
 
-            bool_entries[2].target         = &settings->game_specific_options;
+            bool_entries[2].target         = &settings->bools.game_specific_options;
             bool_entries[2].name_enum_idx  = MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS;
             bool_entries[2].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS;
             bool_entries[2].default_value  = default_game_specific_options;
             bool_entries[2].flags          = SD_FLAG_ADVANCED;
 
-            bool_entries[3].target         = &settings->auto_overrides_enable;
+            bool_entries[3].target         = &settings->bools.auto_overrides_enable;
             bool_entries[3].name_enum_idx  = MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE;
             bool_entries[3].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE;
             bool_entries[3].default_value  = default_auto_overrides_enable;
             bool_entries[3].flags          = SD_FLAG_ADVANCED;
 
-            bool_entries[4].target         = &settings->auto_remaps_enable;
+            bool_entries[4].target         = &settings->bools.auto_remaps_enable;
             bool_entries[4].name_enum_idx  = MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE;
             bool_entries[4].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE;
             bool_entries[4].default_value  = default_auto_remaps_enable;
             bool_entries[4].flags          = SD_FLAG_ADVANCED;
 
-            bool_entries[5].target         = &settings->auto_shaders_enable;
+            bool_entries[5].target         = &settings->bools.auto_shaders_enable;
             bool_entries[5].name_enum_idx  = MENU_ENUM_LABEL_AUTO_SHADERS_ENABLE;
             bool_entries[5].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE;
             bool_entries[5].default_value  = default_auto_shaders_enable;
@@ -2947,43 +2947,43 @@ static bool setting_append_list(
             START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info,
                   parent_group);
 
-            bool_entries[0].target         = &settings->sort_savefiles_enable;
+            bool_entries[0].target         = &settings->bools.sort_savefiles_enable;
             bool_entries[0].name_enum_idx  = MENU_ENUM_LABEL_SORT_SAVEFILES_ENABLE;
             bool_entries[0].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE;
             bool_entries[0].default_value  = default_sort_savefiles_enable;
             bool_entries[0].flags          = SD_FLAG_ADVANCED;
 
-            bool_entries[1].target         = &settings->sort_savestates_enable;
+            bool_entries[1].target         = &settings->bools.sort_savestates_enable;
             bool_entries[1].name_enum_idx  = MENU_ENUM_LABEL_SORT_SAVESTATES_ENABLE;
             bool_entries[1].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE;
             bool_entries[1].default_value  = default_sort_savestates_enable;
             bool_entries[1].flags          = SD_FLAG_ADVANCED;
 
-            bool_entries[2].target         = &settings->block_sram_overwrite;
+            bool_entries[2].target         = &settings->bools.block_sram_overwrite;
             bool_entries[2].name_enum_idx  = MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE;
             bool_entries[2].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE;
             bool_entries[2].default_value  = block_sram_overwrite;
             bool_entries[2].flags          = SD_FLAG_NONE;
 
-            bool_entries[3].target         = &settings->savestate_auto_index;
+            bool_entries[3].target         = &settings->bools.savestate_auto_index;
             bool_entries[3].name_enum_idx  = MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX;
             bool_entries[3].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX;
             bool_entries[3].default_value  = savestate_auto_index;
             bool_entries[3].flags          = SD_FLAG_NONE;
 
-            bool_entries[4].target         = &settings->savestate_auto_save;
+            bool_entries[4].target         = &settings->bools.savestate_auto_save;
             bool_entries[4].name_enum_idx  = MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE;
             bool_entries[4].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE;
             bool_entries[4].default_value  = savestate_auto_save;
             bool_entries[4].flags          = SD_FLAG_NONE;
 
-            bool_entries[5].target         = &settings->savestate_auto_load;
+            bool_entries[5].target         = &settings->bools.savestate_auto_load;
             bool_entries[5].name_enum_idx  = MENU_ENUM_LABEL_SAVESTATE_AUTO_LOAD;
             bool_entries[5].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD;
             bool_entries[5].default_value  = savestate_auto_load;
             bool_entries[5].flags          = SD_FLAG_NONE;
 
-            bool_entries[6].target         = &settings->savestate_thumbnail_enable;
+            bool_entries[6].target         = &settings->bools.savestate_thumbnail_enable;
             bool_entries[6].name_enum_idx  = MENU_ENUM_LABEL_SAVESTATE_THUMBNAIL_ENABLE;
             bool_entries[6].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE;
             bool_entries[6].default_value  = savestate_thumbnail_enable;
@@ -3041,7 +3041,7 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->rewind_enable,
+               &settings->bools.rewind_enable,
                MENU_ENUM_LABEL_REWIND_ENABLE,
                MENU_ENUM_LABEL_VALUE_REWIND_ENABLE,
                rewind_enable,
@@ -3950,7 +3950,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->menu.unified_controls,
+                  &settings->bools.menu_unified_controls,
                   MENU_ENUM_LABEL_INPUT_UNIFIED_MENU_CONTROLS,
                   MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
                   false,
@@ -3982,7 +3982,7 @@ static bool setting_append_list(
 #ifdef VITA
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->input.backtouch_enable,
+                  &settings->bools.input_backtouch_enable,
                   MENU_ENUM_LABEL_INPUT_TOUCH_ENABLE,
                   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
                   input_backtouch_enable,
@@ -3998,7 +3998,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->input.backtouch_toggle,
+                  &settings->bools.input_backtouch_toggle,
                   MENU_ENUM_LABEL_INPUT_PREFER_FRONT_TOUCH,
                   MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
                   input_backtouch_toggle,
@@ -4016,7 +4016,7 @@ static bool setting_append_list(
 #if TARGET_OS_IPHONE
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->input.keyboard_gamepad_enable,
+                  &settings->bools.input_keyboard_gamepad_enable,
                   MENU_ENUM_LABEL_INPUT_ICADE_ENABLE,
                   MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
                   false,
@@ -4045,7 +4045,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->input.small_keyboard_enable,
+                  &settings->bools.input_small_keyboard_enable,
                   MENU_ENUM_LABEL_INPUT_SMALL_KEYBOARD_ENABLE,
                   MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
                   false,
@@ -4075,7 +4075,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->input.menu_swap_ok_cancel_buttons,
+                  &settings->bools.input_menu_swap_ok_cancel_buttons,
                   MENU_ENUM_LABEL_MENU_INPUT_SWAP_OK_CANCEL,
                   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
                   menu_swap_ok_cancel_buttons,
@@ -4091,7 +4091,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->input.all_users_control_menu,
+                  &settings->bools.input_all_users_control_menu,
                   MENU_ENUM_LABEL_INPUT_ALL_USERS_CONTROL_MENU,
                   MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
                   all_users_control_menu,
@@ -4108,7 +4108,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->input.remap_binds_enable,
+                  &settings->bools.input_remap_binds_enable,
                   MENU_ENUM_LABEL_INPUT_REMAP_BINDS_ENABLE,
                   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
                   true,
@@ -4124,7 +4124,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->input.autodetect_enable,
+                  &settings->bools.input_autodetect_enable,
                   MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE,
                   MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
                   input_autodetect_enable,
@@ -4141,7 +4141,7 @@ static bool setting_append_list(
 #if 0
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->input.input_descriptor_label_show,
+                  &settings->bools.input_descriptor_label_show,
                   MENU_ENUM_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW,
                   MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW,
                   true,
@@ -4157,7 +4157,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->input.input_descriptor_hide_unbound,
+                  &settings->bools.input_descriptor_hide_unbound,
                   MENU_ENUM_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND,
                   MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND,
                   input_descriptor_hide_unbound,
@@ -4461,7 +4461,7 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->menu.throttle_framerate,
+               &settings->bools.menu_throttle_framerate,
                MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE,
                MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
                true,
@@ -4576,7 +4576,7 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->input.overlay_enable,
+               &settings->bools.input_overlay_enable,
                MENU_ENUM_LABEL_INPUT_OVERLAY_ENABLE,
                MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
                config_overlay_enable_default(),
@@ -4593,7 +4593,7 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->input.overlay_enable_autopreferred,
+               &settings->bools.input_overlay_enable_autopreferred,
                MENU_ENUM_LABEL_OVERLAY_AUTOLOAD_PREFERRED,
                MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
                true,
@@ -4610,7 +4610,7 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->input.overlay_hide_in_menu,
+               &settings->bools.input_overlay_hide_in_menu,
                MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU,
                MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
                overlay_hide_in_menu,
@@ -4726,7 +4726,7 @@ static bool setting_append_list(
          {
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->menu.dynamic_wallpaper_enable,
+                  &settings->bools.menu_dynamic_wallpaper_enable,
                   MENU_ENUM_LABEL_DYNAMIC_WALLPAPER,
                   MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,
                   true,
@@ -4745,7 +4745,7 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->menu.pause_libretro,
+               &settings->bools.menu_pause_libretro,
                MENU_ENUM_LABEL_PAUSE_LIBRETRO,
                MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
                true,
@@ -4763,7 +4763,7 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->menu.mouse.enable,
+               &settings->bools.menu_mouse_enable,
                MENU_ENUM_LABEL_MOUSE_ENABLE,
                MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
                def_mouse_enable,
@@ -4779,7 +4779,7 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->menu.pointer.enable,
+               &settings->bools.menu_pointer_enable,
                MENU_ENUM_LABEL_POINTER_ENABLE,
                MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
                pointer_enable,
@@ -4795,7 +4795,7 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->menu.linear_filter,
+               &settings->bools.menu_linear_filter,
                MENU_ENUM_LABEL_MENU_LINEAR_FILTER,
                MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
                true,
@@ -4822,7 +4822,7 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->menu.navigation.wraparound.enable,
+               &settings->bools.menu_navigation_wraparound_enable,
                MENU_ENUM_LABEL_NAVIGATION_WRAPAROUND,
                MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
                true,
@@ -4841,7 +4841,7 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->menu.show_advanced_settings,
+               &settings->bools.menu_show_advanced_settings,
                MENU_ENUM_LABEL_SHOW_ADVANCED_SETTINGS,
                MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
                show_advanced_settings,
@@ -4857,7 +4857,7 @@ static bool setting_append_list(
 #ifdef HAVE_THREADS
          CONFIG_BOOL(
                list, list_info,
-               &settings->threaded_data_runloop_enable,
+               &settings->bools.threaded_data_runloop_enable,
                MENU_ENUM_LABEL_THREADED_DATA_RUNLOOP_ENABLE,
                MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
                threaded_data_runloop_enable,
@@ -4926,7 +4926,7 @@ static bool setting_append_list(
          {
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->menu.dpi.override_enable,
+                  &settings->bools.menu_dpi_override_enable,
                   MENU_ENUM_LABEL_DPI_OVERRIDE_ENABLE,
                   MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE,
                   menu_dpi_override_enable,
@@ -5015,7 +5015,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->menu.xmb.shadows_enable,
+                  &settings->bools.menu_xmb_shadows_enable,
                   MENU_ENUM_LABEL_XMB_SHADOWS_ENABLE,
                   MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
                   xmb_shadows_enable,
@@ -5058,7 +5058,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->menu.xmb.show_settings,
+                  &settings->bools.menu_xmb_show_settings,
                   MENU_ENUM_LABEL_XMB_SHOW_SETTINGS,
                   MENU_ENUM_LABEL_VALUE_XMB_SHOW_SETTINGS,
                   xmb_show_settings,
@@ -5075,7 +5075,7 @@ static bool setting_append_list(
 #ifdef HAVE_IMAGEVIEWER
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->menu.xmb.show_images,
+                  &settings->bools.menu_xmb_show_images,
                   MENU_ENUM_LABEL_XMB_SHOW_IMAGES,
                   MENU_ENUM_LABEL_VALUE_XMB_SHOW_IMAGES,
                   xmb_show_images,
@@ -5092,7 +5092,7 @@ static bool setting_append_list(
 #ifdef HAVE_FFMPEG
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->menu.xmb.show_music,
+                  &settings->bools.menu_xmb_show_music,
                   MENU_ENUM_LABEL_XMB_SHOW_MUSIC,
                   MENU_ENUM_LABEL_VALUE_XMB_SHOW_MUSIC,
                   xmb_show_music,
@@ -5107,7 +5107,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->menu.xmb.show_video,
+                  &settings->bools.menu_xmb_show_video,
                   MENU_ENUM_LABEL_XMB_SHOW_VIDEO,
                   MENU_ENUM_LABEL_VALUE_XMB_SHOW_VIDEO,
                   xmb_show_video,
@@ -5123,7 +5123,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->menu.xmb.show_history,
+                  &settings->bools.menu_xmb_show_history,
                   MENU_ENUM_LABEL_XMB_SHOW_HISTORY,
                   MENU_ENUM_LABEL_VALUE_XMB_SHOW_HISTORY,
                   xmb_show_history,
@@ -5139,7 +5139,7 @@ static bool setting_append_list(
 #ifdef HAVE_NETWORKING
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->menu.xmb.show_netplay,
+                  &settings->bools.menu_xmb_show_netplay,
                   MENU_ENUM_LABEL_XMB_SHOW_NETPLAY,
                   MENU_ENUM_LABEL_VALUE_XMB_SHOW_NETPLAY,
                   xmb_show_netplay,
@@ -5156,7 +5156,7 @@ static bool setting_append_list(
 #ifdef HAVE_LIBRETRODB
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->menu.xmb.show_add,
+                  &settings->bools.menu_xmb_show_add,
                   MENU_ENUM_LABEL_XMB_SHOW_ADD,
                   MENU_ENUM_LABEL_VALUE_XMB_SHOW_ADD,
                   xmb_show_add,
@@ -5223,7 +5223,7 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->menu_show_start_screen,
+               &settings->bools.menu_show_start_screen,
                MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN,
                MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
                default_menu_show_start_screen,
@@ -5254,7 +5254,7 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->menu.timedate_enable,
+               &settings->bools.menu_timedate_enable,
                MENU_ENUM_LABEL_TIMEDATE_ENABLE,
                MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
                true,
@@ -5269,7 +5269,7 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->menu.battery_level_enable,
+               &settings->bools.menu_battery_level_enable,
                MENU_ENUM_LABEL_BATTERY_LEVEL_ENABLE,
                MENU_ENUM_LABEL_VALUE_BATTERY_LEVEL_ENABLE,
                true,
@@ -5284,7 +5284,7 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->menu.core_enable,
+               &settings->bools.menu_core_enable,
                MENU_ENUM_LABEL_CORE_ENABLE,
                MENU_ENUM_LABEL_VALUE_CORE_ENABLE,
                true,
@@ -5311,7 +5311,7 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->menu.navigation.browser.filter.supported_extensions_enable,
+               &settings->bools.menu_navigation_browser_filter_supported_extensions_enable,
                MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
                MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
                true,
@@ -5340,7 +5340,7 @@ static bool setting_append_list(
          {
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->multimedia.builtin_mediaplayer_enable,
+                  &settings->bools.multimedia_builtin_mediaplayer_enable,
                   MENU_ENUM_LABEL_USE_BUILTIN_PLAYER,
                   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
                   true,
@@ -5358,7 +5358,7 @@ static bool setting_append_list(
 #ifdef HAVE_IMAGEVIEWER
          CONFIG_BOOL(
                list, list_info,
-               &settings->multimedia.builtin_imageviewer_enable,
+               &settings->bools.multimedia_builtin_imageviewer_enable,
                MENU_ENUM_LABEL_USE_BUILTIN_IMAGE_VIEWER,
                MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
                true,
@@ -5386,7 +5386,7 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->pause_nonactive,
+               &settings->bools.pause_nonactive,
                MENU_ENUM_LABEL_PAUSE_NONACTIVE,
                MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
                pause_nonactive,
@@ -5481,7 +5481,7 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->history_list_enable,
+               &settings->bools.history_list_enable,
                MENU_ENUM_LABEL_HISTORY_LIST_ENABLE,
                MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
                true,
@@ -5514,7 +5514,7 @@ static bool setting_append_list(
 
 		 CONFIG_BOOL(
                list, list_info,
-               &settings->playlist_entry_remove,
+               &settings->bools.playlist_entry_remove,
                MENU_ENUM_LABEL_PLAYLIST_ENTRY_REMOVE,
                MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE,
                def_playlist_entry_remove,
@@ -5541,7 +5541,7 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->cheevos.enable,
+               &settings->bools.cheevos_enable,
                MENU_ENUM_LABEL_CHEEVOS_ENABLE,
                MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
                cheevos_enable,
@@ -5557,7 +5557,7 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->cheevos.test_unofficial,
+               &settings->bools.cheevos_test_unofficial,
                MENU_ENUM_LABEL_CHEEVOS_TEST_UNOFFICIAL,
                MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
                true,
@@ -5573,7 +5573,7 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->cheevos.hardcore_mode_enable,
+               &settings->bools.cheevos_hardcore_mode_enable,
                MENU_ENUM_LABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
                MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
                false,
@@ -5629,7 +5629,7 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->network.buildbot_auto_extract_archive,
+               &settings->bools.network_buildbot_auto_extract_archive,
                MENU_ENUM_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
                MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
                true,
@@ -5662,7 +5662,7 @@ static bool setting_append_list(
 #endif
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->netplay.public_announce,
+                  &settings->bools.netplay_public_announce,
                   MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE,
                   MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
                   true,
@@ -5677,7 +5677,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->netplay.use_mitm_server,
+                  &settings->bools.netplay_use_mitm_server,
                   MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER,
                   MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
                   netplay_use_mitm_server,
@@ -5750,7 +5750,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->netplay.start_as_spectator,
+                  &settings->bools.netplay_start_as_spectator,
                   MENU_ENUM_LABEL_NETPLAY_START_AS_SPECTATOR,
                   MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
                   false,
@@ -5765,7 +5765,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->netplay.allow_slaves,
+                  &settings->bools.netplay_allow_slaves,
                   MENU_ENUM_LABEL_NETPLAY_ALLOW_SLAVES,
                   MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
                   true,
@@ -5781,7 +5781,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->netplay.require_slaves,
+                  &settings->bools.netplay_require_slaves,
                   MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES,
                   MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
                   false,
@@ -5797,7 +5797,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->netplay.stateless_mode,
+                  &settings->bools.netplay_stateless_mode,
                   MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE,
                   MENU_ENUM_LABEL_VALUE_NETPLAY_STATELESS_MODE,
                   false,
@@ -5853,7 +5853,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->netplay.nat_traversal,
+                  &settings->bools.netplay_nat_traversal,
                   MENU_ENUM_LABEL_NETPLAY_NAT_TRAVERSAL,
                   MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
                   true,
@@ -5869,7 +5869,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->netplay.swap_input,
+                  &settings->bools.netplay_swap_input,
                   MENU_ENUM_LABEL_NETPLAY_CLIENT_SWAP_INPUT,
                   MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT,
                   netplay_client_swap_input,
@@ -5897,7 +5897,7 @@ static bool setting_append_list(
 #if defined(HAVE_NETWORK_CMD)
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->network_cmd_enable,
+                  &settings->bools.network_cmd_enable,
                   MENU_ENUM_LABEL_NETWORK_CMD_ENABLE,
                   MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
                   network_cmd_enable,
@@ -5926,7 +5926,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->network_remote_enable,
+                  &settings->bools.network_remote_enable,
                   MENU_ENUM_LABEL_NETWORK_REMOTE_ENABLE,
                   MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_ENABLE,
                   false,
@@ -5964,7 +5964,7 @@ static bool setting_append_list(
 
                CONFIG_BOOL_ALT(
                      list, list_info,
-                     &settings->network_remote_enable_user[user],
+                     &settings->bools.network_remote_enable_user[user],
                      /* todo: figure out this value, it's working fine but I don't think this is correct */
                      strdup(s1),
                      strdup(s2),
@@ -5983,7 +5983,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->stdin_cmd_enable,
+                  &settings->bools.stdin_cmd_enable,
                   MENU_ENUM_LABEL_STDIN_CMD_ENABLE,
                   MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE,
                   stdin_cmd_enable,
@@ -6016,7 +6016,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->ssh_enable,
+                  &settings->bools.ssh_enable,
                   MENU_ENUM_LABEL_SSH_ENABLE,
                   MENU_ENUM_LABEL_VALUE_SSH_ENABLE,
                   true,
@@ -6032,7 +6032,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->samba_enable,
+                  &settings->bools.samba_enable,
                   MENU_ENUM_LABEL_SAMBA_ENABLE,
                   MENU_ENUM_LABEL_VALUE_SAMBA_ENABLE,
                   true,
@@ -6048,7 +6048,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->bluetooth_enable,
+                  &settings->bools.bluetooth_enable,
                   MENU_ENUM_LABEL_BLUETOOTH_ENABLE,
                   MENU_ENUM_LABEL_VALUE_BLUETOOTH_ENABLE,
                   true,
@@ -6592,7 +6592,7 @@ static bool setting_append_list(
          {
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->camera.allow,
+                  &settings->bools.camera_allow,
                   MENU_ENUM_LABEL_CAMERA_ALLOW,
                   MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
                   false,
@@ -6610,7 +6610,7 @@ static bool setting_append_list(
          {
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->location.allow,
+                  &settings->bools.location_allow,
                   MENU_ENUM_LABEL_LOCATION_ALLOW,
                   MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
                   false,

@@ -201,11 +201,13 @@ static bool command_set_shader(const char *arg)
 static bool command_read_ram(const char *arg)
 {
    cheevos_var_t var;
-   const uint8_t * data;
-   unsigned nbytes;
    unsigned i;
+   unsigned nbytes;
    char reply[256];
-   char *reply_at = NULL;
+   const uint8_t * data = NULL;
+   char *reply_at       = NULL;
+
+   reply[0]             = '\0';
 
    strlcpy(reply, "READ_CORE_RAM ", sizeof(reply));
    reply_at = reply + strlen("READ_CORE_RAM ");
@@ -1235,11 +1237,11 @@ static void command_event_load_auto_state(void)
 #endif
 
 #ifdef HAVE_CHEEVOS
-   if (settings->cheevos.hardcore_mode_enable)
+   if (settings->bools.cheevos_hardcore_mode_enable)
       return;
 #endif
 
-   if (!settings->savestate_auto_load)
+   if (!settings->bools.savestate_auto_load)
       return;
 
    if (global)
@@ -1271,7 +1273,7 @@ static void command_event_set_savestate_auto_index(void)
    settings_t *settings             = config_get_ptr();
    global_t   *global               = global_get_ptr();
 
-   if (!settings->savestate_auto_index)
+   if (!settings->bools.savestate_auto_index)
       return;
 
    if (global)
@@ -1369,7 +1371,7 @@ static bool command_event_init_core(enum rarch_core_type *data)
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_INIT, NULL);
 
    /* auto overrides: apply overrides */
-   if(settings->auto_overrides_enable)
+   if(settings->bools.auto_overrides_enable)
    {
       if (config_load_override())
          runloop_ctl(RUNLOOP_CTL_SET_OVERRIDES_ACTIVE, NULL);
@@ -1378,7 +1380,7 @@ static bool command_event_init_core(enum rarch_core_type *data)
    }
 
    /* Auto-remap: apply shader preset files */
-   if(settings->auto_shaders_enable)
+   if(settings->bools.auto_shaders_enable)
       config_load_shader_preset();
 
 
@@ -1389,7 +1391,7 @@ static bool command_event_init_core(enum rarch_core_type *data)
    core_set_environment(&info);
 
    /* Auto-remap: apply remap files */
-   if(settings->auto_remaps_enable)
+   if(settings->bools.auto_remaps_enable)
       config_load_remap();
 
    /* Per-core saves: reset redirection paths */
@@ -1447,7 +1449,7 @@ static bool command_event_save_auto_state(void)
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
-   if (!settings || !settings->savestate_auto_save)
+   if (!settings || !settings->bools.savestate_auto_save)
       return false;
    if (!global)
       return false;
@@ -1460,7 +1462,7 @@ static bool command_event_save_auto_state(void)
       return false;
 
 #ifdef HAVE_CHEEVOS
-   if (settings->cheevos.hardcore_mode_enable)
+   if (settings->bools.cheevos_hardcore_mode_enable)
       return false;
 #endif
 
@@ -1887,7 +1889,7 @@ bool command_event(enum event_command cmd, void *data)
                return false;
 
 #ifdef HAVE_CHEEVOS
-            if (settings->cheevos.hardcore_mode_enable)
+            if (settings->bools.cheevos_hardcore_mode_enable)
                return false;
 #endif
 
@@ -1930,11 +1932,11 @@ bool command_event(enum event_command cmd, void *data)
          {
             settings_t *settings      = config_get_ptr();
 #ifdef HAVE_CHEEVOS
-            if (settings->cheevos.hardcore_mode_enable)
+            if (settings->bools.cheevos_hardcore_mode_enable)
                return false;
 #endif
 
-            if (settings->savestate_auto_index)
+            if (settings->bools.savestate_auto_index)
             {
                int new_state_slot = settings->state_slot + 1;
                configuration_set_int(settings, settings->state_slot, new_state_slot);
@@ -2022,7 +2024,7 @@ bool command_event(enum event_command cmd, void *data)
          {
 #ifdef HAVE_CHEEVOS
             settings_t *settings      = config_get_ptr();
-            if (settings->cheevos.hardcore_mode_enable)
+            if (settings->bools.cheevos_hardcore_mode_enable)
                return false;
 #endif
 
@@ -2033,18 +2035,18 @@ bool command_event(enum event_command cmd, void *data)
          {
             settings_t *settings      = config_get_ptr();
 #ifdef HAVE_CHEEVOS
-            if (settings->cheevos.hardcore_mode_enable)
+            if (settings->bools.cheevos_hardcore_mode_enable)
                return false;
 #endif
 
-            if (settings->rewind_enable)
+            if (settings->bools.rewind_enable)
                state_manager_event_init((unsigned)settings->rewind_buffer_size);
          }
          break;
       case CMD_EVENT_REWIND_TOGGLE:
          {
             settings_t *settings      = config_get_ptr();
-            if (settings->rewind_enable)
+            if (settings->bools.rewind_enable)
                command_event(CMD_EVENT_REWIND_INIT, NULL);
             else
                command_event(CMD_EVENT_REWIND_DEINIT, NULL);
@@ -2099,7 +2101,7 @@ bool command_event(enum event_command cmd, void *data)
             settings_t *settings      = config_get_ptr();
             command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
 #ifdef HAVE_OVERLAY
-            if (settings->input.overlay_enable)
+            if (settings->bools.input_overlay_enable)
                task_push_overlay_load_default(input_overlay_loaded, NULL);
 #endif
          }
@@ -2173,7 +2175,7 @@ bool command_event(enum event_command cmd, void *data)
          {
             settings_t *settings      = config_get_ptr();
             command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
-            if (!settings->history_list_enable)
+            if (!settings->bools.history_list_enable)
                return false;
 
             RARCH_LOG("%s: [%s].\n",
@@ -2393,7 +2395,7 @@ bool command_event(enum event_command cmd, void *data)
          if (menu_driver_is_alive())
          {
             settings_t *settings      = config_get_ptr();
-            if (settings->menu.pause_libretro)
+            if (settings->bools.menu_pause_libretro)
                command_event(CMD_EVENT_AUDIO_STOP, NULL);
             else
                command_event(CMD_EVENT_AUDIO_START, NULL);
@@ -2401,7 +2403,7 @@ bool command_event(enum event_command cmd, void *data)
          else
          {
             settings_t *settings      = config_get_ptr();
-            if (settings->menu.pause_libretro)
+            if (settings->bools.menu_pause_libretro)
                command_event(CMD_EVENT_AUDIO_START, NULL);
          }
 #endif

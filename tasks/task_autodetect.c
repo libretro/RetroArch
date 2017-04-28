@@ -163,7 +163,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
       if (params->idx == 0)
       {
          settings_t *settings = config_get_ptr();
-         configuration_set_bool(settings, settings->input.swap_override, true);
+         configuration_set_bool(settings, settings->bools.input_swap_override, true);
       }
    }
    else
@@ -180,7 +180,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
          if (config_get_bool(conf, "input_swap_override", &tmp))
          {
             settings_t *settings = config_get_ptr();
-            configuration_set_bool(settings, settings->input.swap_override, tmp);
+            configuration_set_bool(settings, settings->bools.input_swap_override, tmp);
          }
       }
 
@@ -429,7 +429,7 @@ bool input_autoconfigure_connect(
    settings_t       *settings = config_get_ptr();
    const char *dir_autoconf   = settings->directory.autoconfig;
 
-   if (!task || !state || !settings->input.autodetect_enable)
+   if (!task || !state || !settings->bools.input_autodetect_enable)
       goto error;
 
    if (!string_is_empty(display_name))

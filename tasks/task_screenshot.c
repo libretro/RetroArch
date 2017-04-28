@@ -225,7 +225,7 @@ static bool screenshot_dump(
    state->frame               = frame;
    state->userbuf             = userbuf;
    state->silence             = savestate;
-   state->history_list_enable = settings->history_list_enable;
+   state->history_list_enable = settings->bools.history_list_enable;
    state->pixel_format_type   = video_driver_get_pixel_format();
 
    if (savestate)
@@ -233,7 +233,7 @@ static bool screenshot_dump(
             sizeof(state->filename), "%s.png", name_base);
    else
    {
-      if (settings->auto_screenshot_filename)
+      if (settings->bools.auto_screenshot_filename)
          fill_str_dated_filename(state->shotname, path_basename(name_base),
                IMG_EXT, sizeof(state->shotname));
       else

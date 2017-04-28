@@ -707,14 +707,14 @@ static int general_push(menu_displaylist_info_t *info,
 
    (void)settings;
 
-   if (settings->multimedia.builtin_mediaplayer_enable ||
-         settings->multimedia.builtin_imageviewer_enable)
+   if (settings->bools.multimedia_builtin_mediaplayer_enable ||
+         settings->bools.multimedia_builtin_imageviewer_enable)
    {
       struct retro_system_info sysinfo = {0};
 
       (void)sysinfo;
 #ifdef HAVE_FFMPEG
-      if (settings->multimedia.builtin_mediaplayer_enable)
+      if (settings->bools.multimedia_builtin_mediaplayer_enable)
       {
          libretro_ffmpeg_retro_get_system_info(&sysinfo);
          strlcat(info->exts, "|", sizeof(info->exts));
@@ -722,7 +722,7 @@ static int general_push(menu_displaylist_info_t *info,
       }
 #endif
 #ifdef HAVE_IMAGEVIEWER
-      if (settings->multimedia.builtin_imageviewer_enable)
+      if (settings->bools.multimedia_builtin_imageviewer_enable)
       {
          libretro_imageviewer_retro_get_system_info(&sysinfo);
          strlcat(info->exts, "|", sizeof(info->exts));

@@ -393,7 +393,7 @@ static void input_config_get_bind_string_joykey(char *buf, const char *prefix,
       const struct retro_keybind *bind, size_t size)
 {
    settings_t *settings = config_get_ptr();
-   bool label_show      = settings->input.input_descriptor_label_show;
+   bool label_show      = settings->bools.input_descriptor_label_show;
 
    if (GET_HAT_DIR(bind->joykey))
    {
@@ -440,7 +440,7 @@ static void input_config_get_bind_string_joyaxis(char *buf, const char *prefix,
    unsigned axis        = 0;
    char dir             = '\0';
    settings_t *settings = config_get_ptr();
-   bool label_show      = settings->input.input_descriptor_label_show;
+   bool label_show      = settings->bools.input_descriptor_label_show;
 
    if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
    {

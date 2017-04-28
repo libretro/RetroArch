@@ -188,7 +188,7 @@ bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data)
       case RARCH_CAMERA_CTL_START:
         if (camera_driver && camera_data && camera_driver->start)
         {
-           if (settings->camera.allow)
+           if (settings->bools.camera_allow)
               return camera_driver->start(camera_data);
 
            runloop_msg_queue_push(

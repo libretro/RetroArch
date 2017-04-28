@@ -138,7 +138,7 @@ input_remote_t *input_remote_new(uint16_t port, unsigned max_users)
    for(user = 0; user < max_users; user ++)
    {
       handle->net_fd[user] = -1;
-      if(settings->network_remote_enable_user[user])
+      if(settings->bools.network_remote_enable_user[user])
          if (!input_remote_init_network(handle, port, user))
             goto error;
    }
@@ -235,7 +235,7 @@ void input_remote_poll(input_remote_t *handle, unsigned max_users)
    
    for(user = 0; user < max_users; user++)
    {
-      if (settings->network_remote_enable_user[user])
+      if (settings->bools.network_remote_enable_user[user])
       {
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
          struct remote_message msg;

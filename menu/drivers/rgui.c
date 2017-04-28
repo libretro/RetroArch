@@ -439,7 +439,7 @@ static void rgui_render(void *data)
 
    rgui->force_redraw        = false;
 
-   if (settings->menu.pointer.enable)
+   if (settings->bools.menu_pointer_enable)
    {
       unsigned new_val;
 
@@ -465,7 +465,7 @@ static void rgui_render(void *data)
       }
    }
 
-   if (settings->menu.mouse.enable)
+   if (settings->bools.menu_mouse_enable)
    {
       unsigned new_mouse_ptr;
       int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
@@ -538,14 +538,14 @@ static void rgui_render(void *data)
          RGUI_TERM_START_X(fb_width),
          title_buf, TITLE_COLOR(settings));
 
-   if (settings->menu.core_enable && 
+   if (settings->bools.menu_core_enable && 
          menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
       blit_line(
             RGUI_TERM_START_X(fb_width),
             (RGUI_TERM_HEIGHT(fb_width, fb_height) * FONT_HEIGHT_STRIDE) +
             RGUI_TERM_START_Y(fb_height) + 2, title_msg, hover_color);
 
-   if (settings->menu.timedate_enable)
+   if (settings->bools.menu_timedate_enable)
    {
       menu_display_ctx_datetime_t datetime;
       char timedate[255];
@@ -641,7 +641,7 @@ static void rgui_render(void *data)
       bool cursor_visible  = settings->bools.video_fullscreen ||
          !video_driver_has_windowed();
 
-      if (settings->menu.mouse.enable && cursor_visible)
+      if (settings->bools.menu_mouse_enable && cursor_visible)
          rgui_blit_cursor();
    }
 }

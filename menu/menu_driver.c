@@ -184,18 +184,18 @@ static bool menu_init(menu_handle_t *menu_data)
    if (!menu_entries_ctl(MENU_ENTRIES_CTL_INIT, NULL))
       return false;
 
-   if (settings->menu_show_start_screen)
+   if (settings->bools.menu_show_start_screen)
    {
       menu_dialog_push_pending(true, MENU_DIALOG_WELCOME);
 
       configuration_set_bool(settings,
-            settings->menu_show_start_screen, false);
+            settings->bools.menu_show_start_screen, false);
 
-      if (settings->config_save_on_exit)
+      if (settings->bools.config_save_on_exit)
          command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
    }
 
-   if (      settings->bundle_assets_extract_enable
+   if (      settings->bools.bundle_assets_extract_enable
          && !string_is_empty(settings->path.bundle_assets_src)
          && !string_is_empty(settings->path.bundle_assets_dst)
 #ifdef IOS
@@ -268,7 +268,7 @@ static void menu_driver_toggle(bool on)
       /* Stop all rumbling before entering the menu. */
       command_event(CMD_EVENT_RUMBLE_STOP, NULL);
 
-      if (settings && settings->menu.pause_libretro)
+      if (settings && settings->bools.menu_pause_libretro)
          command_event(CMD_EVENT_AUDIO_STOP, NULL);
 
       /* Override keyboard callback to redirect to menu instead.
@@ -287,7 +287,7 @@ static void menu_driver_toggle(bool on)
       if (!runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL))
          driver_set_nonblock_state();
 
-      if (settings && settings->menu.pause_libretro)
+      if (settings && settings->bools.menu_pause_libretro)
          command_event(CMD_EVENT_AUDIO_START, NULL);
 
       /* Restore libretro keyboard callback. */
@@ -363,7 +363,7 @@ bool menu_driver_render(bool is_idle)
    if (BIT64_GET(menu_driver_data->state, MENU_STATE_BLIT))
    {
       settings_t *settings = config_get_ptr();
-      menu_animation_update_time(settings->menu.timedate_enable);
+      menu_animation_update_time(settings->bools.menu_timedate_enable);
 
       if (menu_driver_ctx->render)
          menu_driver_ctx->render(menu_userdata);

@@ -719,7 +719,8 @@ static void retroarch_parse_input(int argc, char *argv[])
             {
                settings_t *settings  = config_get_ptr();
 
-               configuration_set_bool(settings, settings->netplay.stateless_mode, true);
+               configuration_set_bool(settings,
+                     settings->bools.netplay_stateless_mode, true);
 
                retroarch_override_setting_set(
                      RARCH_OVERRIDE_SETTING_NETPLAY_STATELESS_MODE, NULL);
@@ -978,15 +979,15 @@ static void retroarch_validate_cpu_features(void)
 
 static void retroarch_main_init_media(void)
 {
-   settings_t *settings    = config_get_ptr();
-   const char    *fullpath = path_get(RARCH_PATH_CONTENT);
+   settings_t *settings     = config_get_ptr();
+   const char    *fullpath  = path_get(RARCH_PATH_CONTENT);
+   bool builtin_imageviewer = settings->bools.multimedia_builtin_imageviewer_enable;
+   bool builtin_mediaplayer = settings->bools.multimedia_builtin_mediaplayer_enable;
 
    if (!settings)
       return;
 
-   if (  !settings->multimedia.builtin_mediaplayer_enable &&
-         !settings->multimedia.builtin_imageviewer_enable
-      )
+   if (!builtin_mediaplayer && !builtin_imageviewer)
       return;
 
    if (string_is_empty(fullpath))
@@ -996,7 +997,7 @@ static void retroarch_main_init_media(void)
    {
       case RARCH_CONTENT_MOVIE:
       case RARCH_CONTENT_MUSIC:
-         if (settings->multimedia.builtin_mediaplayer_enable)
+         if (builtin_mediaplayer)
          {
 #ifdef HAVE_FFMPEG
             retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
@@ -1006,7 +1007,7 @@ static void retroarch_main_init_media(void)
          break;
 #ifdef HAVE_IMAGEVIEWER
       case RARCH_CONTENT_IMAGE:
-         if (settings->multimedia.builtin_imageviewer_enable)
+         if (builtin_imageviewer)
          {
             retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
             retroarch_set_current_core_type(CORE_TYPE_IMAGEVIEWER, false);
@@ -1340,7 +1341,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 #ifdef HAVE_OVERLAY
          {
             settings_t *settings                    = config_get_ptr();
-            if (settings && settings->input.overlay_hide_in_menu)
+            if (settings && settings->bools.input_overlay_hide_in_menu)
                command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
          }
 #endif
@@ -1353,7 +1354,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 #ifdef HAVE_OVERLAY
          {
             settings_t *settings                    = config_get_ptr();
-            if (settings && settings->input.overlay_hide_in_menu)
+            if (settings && settings->bools.input_overlay_hide_in_menu)
                command_event(CMD_EVENT_OVERLAY_INIT, NULL);
          }
 #endif

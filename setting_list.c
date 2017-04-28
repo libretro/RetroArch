@@ -155,7 +155,7 @@ static int setting_int_action_right_default(void *data, bool wraparound)
          settings_t *settings = config_get_ptr();
 
 #ifdef HAVE_MENU
-         if (settings && settings->menu.navigation.wraparound.enable)
+         if (settings && settings->bools.menu_navigation_wraparound_enable)
             *setting->value.target.integer = min;
          else
 #endif
@@ -267,7 +267,7 @@ static int setting_uint_action_right_default(void *data, bool wraparound)
          settings_t *settings = config_get_ptr();
 
 #ifdef HAVE_MENU
-         if (settings && settings->menu.navigation.wraparound.enable)
+         if (settings && settings->bools.menu_navigation_wraparound_enable)
             *setting->value.target.unsigned_integer = min;
          else
 #endif
@@ -334,7 +334,7 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
             {
 #ifdef HAVE_MENU
                settings_t *settings = config_get_ptr();
-               if (settings && settings->menu.navigation.wraparound.enable)
+               if (settings && settings->bools.menu_navigation_wraparound_enable)
                   *setting->value.target.integer = min;
                else
 #endif
@@ -352,7 +352,7 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
             {
 #ifdef HAVE_MENU
                settings_t *settings = config_get_ptr();
-               if (settings && settings->menu.navigation.wraparound.enable)
+               if (settings && settings->bools.menu_navigation_wraparound_enable)
                   *setting->value.target.unsigned_integer = min;
                else
 #endif
@@ -370,7 +370,7 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
             {
 #ifdef HAVE_MENU
                settings_t *settings = config_get_ptr();
-               if (settings && settings->menu.navigation.wraparound.enable)
+               if (settings && settings->bools.menu_navigation_wraparound_enable)
                   *setting->value.target.fraction = min;
                else
 #endif
@@ -454,7 +454,7 @@ static int setting_fraction_action_right_default(
       {
 #ifdef HAVE_MENU
          settings_t *settings = config_get_ptr();
-         if (settings && settings->menu.navigation.wraparound.enable)
+         if (settings && settings->bools.menu_navigation_wraparound_enable)
             *setting->value.target.fraction = min;
          else
 #endif

@@ -2274,13 +2274,13 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->menu_shader_pipeline   = settings->menu.xmb.shader_pipeline;
    video_info->xmb_theme              = settings->menu.xmb.theme;
    video_info->xmb_color_theme        = settings->menu.xmb.menu_color_theme;
-   video_info->timedate_enable        = settings->menu.timedate_enable;
-   video_info->battery_level_enable   = settings->menu.battery_level_enable;
-   video_info->xmb_shadows_enable     = settings->menu.xmb.shadows_enable;
+   video_info->timedate_enable        = settings->bools.menu_timedate_enable;
+   video_info->battery_level_enable   = settings->bools.menu_battery_level_enable;
+   video_info->xmb_shadows_enable     = settings->bools.menu_xmb_shadows_enable;
    video_info->xmb_alpha_factor       = settings->menu.xmb.alpha_factor;
    video_info->menu_wallpaper_opacity = settings->menu.wallpaper.opacity;
 
-   if (!settings->menu.pause_libretro)
+   if (!settings->bools.menu_pause_libretro)
       video_info->libretro_running    = (rarch_ctl(RARCH_CTL_IS_INITED, NULL)
             && !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL));
 #else

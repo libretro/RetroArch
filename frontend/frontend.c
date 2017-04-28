@@ -51,7 +51,7 @@ void main_exit(void *args)
 {
    settings_t *settings = config_get_ptr();
 
-   if (settings->config_save_on_exit)
+   if (settings->bools.config_save_on_exit)
       command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
 
 #ifdef HAVE_MENU

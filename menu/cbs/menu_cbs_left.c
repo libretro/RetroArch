@@ -165,7 +165,7 @@ static int action_left_mainmenu(unsigned type, const char *label,
       menu_navigation_set_selection(0);
 
       if ((list_info.selection != 0)
-         || settings->menu.navigation.wraparound.enable)
+         || settings->bools.menu_navigation_wraparound_enable)
          push_list = 1;
    }
    else

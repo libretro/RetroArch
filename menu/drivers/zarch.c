@@ -932,7 +932,7 @@ static void zarch_frame(void *data, video_frame_info_t *video_info)
          break;
    }
 
-   if (settings->menu.mouse.enable)
+   if (settings->bools.menu_mouse.enable)
       zarch_zui_draw_cursor(
             zarch_zui_input_state(zui, MENU_ZARCH_MOUSE_X),
             zarch_zui_input_state(zui, MENU_ZARCH_MOUSE_Y));

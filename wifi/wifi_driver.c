@@ -194,7 +194,7 @@ bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
       case RARCH_WIFI_CTL_START:
         if (wifi_driver && wifi_data && wifi_driver->start)
         {
-           if (settings->wifi.allow)
+           if (settings->bools.wifi_allow)
               return wifi_driver->start(wifi_data);
         }
         return false;

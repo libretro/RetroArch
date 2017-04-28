@@ -1727,7 +1727,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       char tmp[PATH_MAX_LENGTH];
       char crc_str[20];
       database_info_t *db_info_entry = &db_info->list[i];
-      bool show_advanced_settings    = settings->menu.show_advanced_settings;
+      bool show_advanced_settings    = settings->bools.menu_show_advanced_settings;
 
       crc_str[0] = tmp[0] = '\0';
 
@@ -2294,11 +2294,11 @@ static int menu_displaylist_parse_settings_internal(void *data,
 
 #ifdef HAVE_LAKKA
       if ((flags & SD_FLAG_ADVANCED || flags & SD_FLAG_LAKKA_ADVANCED) &&
-            !settings->menu.show_advanced_settings)
+            !settings->bools.menu_show_advanced_settings)
          goto loop;
 #else
       if (flags & SD_FLAG_ADVANCED &&
-            !settings->menu.show_advanced_settings)
+            !settings->bools.menu_show_advanced_settings)
          goto loop;
 #endif
 
@@ -2487,11 +2487,11 @@ static int menu_displaylist_parse_settings_internal_enum(void *data,
 
 #ifdef HAVE_LAKKA
       if ((flags & SD_FLAG_ADVANCED || flags & SD_FLAG_LAKKA_ADVANCED) &&
-            !settings->menu.show_advanced_settings)
+            !settings->bools.menu_show_advanced_settings)
          goto loop;
 #else
       if (flags & SD_FLAG_ADVANCED &&
-            !settings->menu.show_advanced_settings)
+            !settings->bools.menu_show_advanced_settings)
          goto loop;
 #endif
 
@@ -2651,7 +2651,7 @@ static int menu_displaylist_parse_load_content_settings(
    if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
    {
 #ifdef HAVE_LAKKA
-      bool show_advanced_settings    = settings->menu.show_advanced_settings;
+      bool show_advanced_settings    = settings->bools.menu_show_advanced_settings;
 #endif
       rarch_system_info_t *system    = runloop_get_system_info();
 
@@ -2773,7 +2773,7 @@ static int menu_displaylist_parse_load_content_settings(
             MENU_SETTING_ACTION, 0, 0);
 
 #ifdef HAVE_CHEEVOS
-      if(settings->cheevos.enable)
+      if(settings->bools.cheevos_enable)
       {
          menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST),
@@ -2824,7 +2824,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
             msg_hash_to_str(MENU_ENUM_LABEL_RUN),
             MENU_ENUM_LABEL_RUN, FILE_TYPE_PLAYLIST_ENTRY, 0, idx);
       
-	  if (settings->playlist_entry_remove)	  
+	  if (settings->bools.playlist_entry_remove)	  
 	  menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DELETE_ENTRY),
             msg_hash_to_str(MENU_ENUM_LABEL_DELETE_ENTRY),
@@ -3304,7 +3304,7 @@ static int menu_displaylist_parse_playlists(
       return 0;
    }
 
-   str_list = dir_list_new(info->path, NULL, true, settings->show_hidden_files, true, false);
+   str_list = dir_list_new(info->path, NULL, true, settings->bools.show_hidden_files, true, false);
 
    if (!str_list)
    {
@@ -3417,8 +3417,7 @@ static int menu_displaylist_parse_cores(
    }
 
    str_list = dir_list_new(info->path, info->exts,
-         true, settings->show_hidden_files, true, false);
-
+         true, settings->bools.show_hidden_files, true, false);
 
    {
       char out_dir[PATH_MAX_LENGTH];
@@ -4492,7 +4491,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_LIBRETRO_LOG_LEVEL,
                PARSE_ONLY_UINT, false);
-         if (settings->menu.show_advanced_settings)
+         if (settings->bools.menu_show_advanced_settings)
             menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_PERFCNT_ENABLE,
                   PARSE_ONLY_BOOL, false);
@@ -4509,7 +4508,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_SLOWMOTION_RATIO,
                PARSE_ONLY_FLOAT, false);
-         if (settings->menu.show_advanced_settings)
+         if (settings->bools.menu_show_advanced_settings)
             menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE,
                   PARSE_ONLY_BOOL, false);
@@ -5756,7 +5755,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          }
          break;
       case DISPLAYLIST_HISTORY:
-         if (settings->history_list_enable)
+         if (settings->bools.history_list_enable)
             menu_displaylist_parse_playlist_history(menu, info,
                   g_defaults.content_history,
                   "history",
@@ -5780,7 +5779,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_IMAGES_HISTORY:
 #ifdef HAVE_IMAGEVIEWER
-         if (settings->history_list_enable)
+         if (settings->bools.history_list_enable)
             menu_displaylist_parse_playlist_history(menu, info,
                   g_defaults.image_history,
                   "images_history",
@@ -5805,7 +5804,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_MUSIC_HISTORY:
 #ifdef HAVE_FFMPEG
-         if (settings->history_list_enable)
+         if (settings->bools.history_list_enable)
             menu_displaylist_parse_playlist_history(menu, info,
                   g_defaults.music_history,
                   "music_history",
@@ -5830,7 +5829,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_VIDEO_HISTORY:
 #ifdef HAVE_FFMPEG
-         if (settings->history_list_enable)
+         if (settings->bools.history_list_enable)
             menu_displaylist_parse_playlist_history(menu, info,
                   g_defaults.video_history,
                   "video_history",
@@ -6157,7 +6156,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             runloop_ctl(RUNLOOP_CTL_GET_CORE_OPTION_SIZE, &opts);
 
-            if (settings->game_specific_options)
+            if (settings->bools.game_specific_options)
             {
                if (!runloop_ctl(RUNLOOP_CTL_IS_GAME_OPTIONS_ACTIVE, NULL))
                   menu_entries_append_enum(info->list,
