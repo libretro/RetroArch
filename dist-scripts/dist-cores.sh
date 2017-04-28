@@ -260,7 +260,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
       mkdir -p ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/
       mkdir -p ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/livearea
       mkdir -p ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/livearea/contents
-      vita-make-fself -c -s ../retroarch_${platform}.velf ../pkg/${platform}/${name}_libretro.vpk/vpk/eboot.bin
+      cp ../retroarch_${platform}.self ../pkg/${platform}/${name}_libretro.vpk/vpk/eboot.bin
       cp ../pkg/${platform}/${name}_libretro.vpk/vpk/eboot.bin ../pkg/${platform}/retroarch.vpk/vpk/${name}_libretro.self
       vita-mksfoex -s TITLE_ID=RETR${COUNTER_ID} "RetroArch ${name}" ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/param.sfo
       cp ../pkg/${platform}/assets/ICON0.PNG ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/icon0.png
