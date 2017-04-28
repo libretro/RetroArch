@@ -142,7 +142,7 @@ static void ctr_update_viewport(ctr_video_t* ctr)
    else if (ctr->keep_aspect)
    {
 #if defined(HAVE_MENU)
-      if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          struct video_viewport *custom = video_viewport_get_custom();
 
