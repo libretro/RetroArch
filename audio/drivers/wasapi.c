@@ -274,7 +274,7 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
    UINT32 buffer_length          = 0;
    double sh_buffer_latency      = 0.0;
    settings_t *settings          = config_get_ptr();
-   unsigned sh_buffer_length     = settings->audio.wasapi.sh_buffer_length;
+   unsigned sh_buffer_length     = settings->uints.audio_wasapi_sh_buffer_length;
 
    hr = device->lpVtbl->Activate(device, &IID_IAudioClient,
          CLSCTX_ALL, NULL, (void**)&client);
@@ -504,7 +504,7 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    BYTE *dest                = NULL;
    settings_t *settings      = config_get_ptr();
    bool float_format         = settings->bools.audio_wasapi_float_format;
-   unsigned sh_buffer_length = settings->audio.wasapi.sh_buffer_length;
+   unsigned sh_buffer_length = settings->uints.audio_wasapi_sh_buffer_length;
    wasapi_t *w               = (wasapi_t*)calloc(1, sizeof(wasapi_t));
    w->exclusive              = settings->bools.audio_wasapi_exclusive_mode;
 
@@ -957,7 +957,7 @@ static size_t wasapi_buffer_size(void *wh)
 {
    wasapi_t *w = (wasapi_t*)wh;
    settings_t *settings      = config_get_ptr();
-   unsigned sh_buffer_length = settings->audio.wasapi.sh_buffer_length;
+   unsigned sh_buffer_length = settings->uints.audio_wasapi_sh_buffer_length;
 
    if (!w->exclusive && w->buffer)
       return sh_buffer_length * w->frame_size;
