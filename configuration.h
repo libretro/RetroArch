@@ -244,6 +244,7 @@ typedef struct settings
 
    struct
    {
+      int placeholder;
       int netplay_check_frames;
       int location_update_interval_ms;
       int location_update_interval_distance;
