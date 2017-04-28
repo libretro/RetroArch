@@ -691,11 +691,15 @@ bool state_manager_check_rewind(bool pressed,
 {
    bool ret             = false;
    static bool first    = true;
+#ifdef HAVE_NETWORKING
    bool was_reversed    = false;
+#endif
 
-   if (state_manager_frame_is_reversed())
+   if (frame_is_reversed)
    {
+#ifdef HAVE_NETWORKING
       was_reversed = true;
+#endif
       audio_driver_frame_is_reverse();
       state_manager_set_frame_is_reversed(false);
    }
@@ -718,11 +722,9 @@ bool state_manager_check_rewind(bool pressed,
          retro_ctx_serialize_info_t serial_info;
 
 #ifdef HAVE_NETWORKING
+         /* Make sure netplay isn't confused */
          if (!was_reversed)
-         {
-            /* Make sure netplay isn't confused */
             netplay_driver_ctl(RARCH_NETPLAY_CTL_DESYNC_PUSH, NULL);
-         }
 #endif
 
          state_manager_set_frame_is_reversed(true);
@@ -750,11 +752,9 @@ bool state_manager_check_rewind(bool pressed,
          core_unserialize(&serial_info);
 
 #ifdef HAVE_NETWORKING
+         /* Tell netplay we're done */
          if (was_reversed)
-         {
-            /* Tell netplay we're done */
             netplay_driver_ctl(RARCH_NETPLAY_CTL_DESYNC_POP, NULL);
-         }
 #endif
 
          strlcpy(s, 
@@ -770,11 +770,9 @@ bool state_manager_check_rewind(bool pressed,
       static unsigned cnt      = 0;
 
 #ifdef HAVE_NETWORKING
+      /* Tell netplay we're done */
       if (was_reversed)
-      {
-         /* Tell netplay we're done */
          netplay_driver_ctl(RARCH_NETPLAY_CTL_DESYNC_POP, NULL);
-      }
 #endif
 
       cnt = (cnt + 1) % (rewind_granularity ?
