@@ -121,7 +121,13 @@ struct config_path_setting
    count++
 
 #define SETTING_FLOAT(key, configval, default_enable, default_setting, handle_setting) \
-   GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_float_setting, handle_setting)
+   tmp[count].ident      = key; \
+   tmp[count].ptr        = configval; \
+   tmp[count].def_enable = default_enable; \
+   if (default_enable) \
+      tmp[count].def     = default_setting; \
+   tmp[count].handle   = handle_setting; \
+   count++
 
 #define SETTING_INT(key, configval, default_enable, default_setting, handle_setting) \
    GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_int_setting, handle_setting)
@@ -891,7 +897,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
 static struct config_float_setting *populate_settings_float(settings_t *settings, int *size)
 {
    unsigned count = 0;
-   struct config_float_setting       *tmp = NULL;
+   struct config_float_setting  *tmp      = (struct config_float_setting*)calloc((*size + 1), sizeof(struct config_float_setting));
 
    SETTING_FLOAT("video_aspect_ratio",       &settings->floats.video_aspect_ratio, true, aspect_ratio, false);
    SETTING_FLOAT("video_scale",              &settings->floats.video_scale, false, 0.0f, false);
@@ -1012,10 +1018,10 @@ static void config_set_defaults(void)
 #ifdef HAVE_MENU
    static bool first_initialized   = true;
 #endif
-   int float_settings_size         = 0;
    int int_settings_size           = 0;
    settings_t *settings            = config_get_ptr();
-   int bool_settings_size          = sizeof(settings->bools) / sizeof(settings->bools.placeholder);
+   int bool_settings_size          = sizeof(settings->bools)  / sizeof(settings->bools.placeholder);
+   int float_settings_size         = sizeof(settings->floats) / sizeof(settings->floats.placeholder);
    const char *def_video           = config_get_default_video();
    const char *def_audio           = config_get_default_audio();
    const char *def_audio_resampler = config_get_default_audio_resampler();
@@ -1757,7 +1763,6 @@ static bool config_load_file(const char *path, bool set_defaults,
    unsigned i;
    char tmp_str[PATH_MAX_LENGTH];
    int int_settings_size                           = 0;
-   int float_settings_size                         = 0;
    int array_settings_size                         = 0;
    int path_settings_size                          = 0;
    bool ret                                        = false;
@@ -1770,6 +1775,7 @@ static bool config_load_file(const char *path, bool set_defaults,
    char *override_netplay_ip_address               = NULL;
 #endif
    int bool_settings_size                          = sizeof(settings->bools) / sizeof(settings->bools.placeholder);
+   int float_settings_size                         = sizeof(settings->floats) / sizeof(settings->floats.placeholder);
    struct config_bool_setting *bool_settings       = populate_settings_bool  (settings, &bool_settings_size);
    struct config_float_setting *float_settings     = populate_settings_float (settings, &float_settings_size);
    struct config_int_setting *int_settings         = populate_settings_int   (settings, &int_settings_size);
@@ -2959,7 +2965,6 @@ bool config_save_file(const char *path)
    unsigned i                                        = 0;
    bool ret                                          = false;
    int int_settings_size                             = 0;
-   int float_settings_size                           = 0;
    int array_settings_size                           = 0;
    int path_settings_size                            = 0;
    struct config_bool_setting     *bool_settings     = NULL;
@@ -2970,6 +2975,7 @@ bool config_save_file(const char *path)
    config_file_t                              *conf  = config_file_new(path);
    settings_t                              *settings = config_get_ptr();
    int bool_settings_size                            = sizeof(settings->bools) / sizeof(settings->bools.placeholder);
+   int float_settings_size                           = sizeof(settings->floats) / sizeof(settings->floats.placeholder);
 
    if (!conf)
       conf = config_file_new(NULL);
@@ -3143,7 +3149,6 @@ bool config_save_overrides(int override_type)
    int tmp_i                                   = 0;
    unsigned i                                  = 0;
    int int_settings_size                       = 0;
-   int float_settings_size                     = 0;
    int array_settings_size                     = 0;
    int path_settings_size                      = 0;
    bool ret                                    = false;
@@ -3163,6 +3168,7 @@ bool config_save_overrides(int override_type)
    struct config_path_setting *path_overrides  = NULL;
    settings_t *overrides                       = config_get_ptr();
    int bool_settings_size                      = sizeof(settings->bools) / sizeof(settings->bools.placeholder);
+   int float_settings_size                     = sizeof(settings->floats) / sizeof(settings->floats.placeholder);
    rarch_system_info_t *system                 = runloop_get_system_info();
 
    if (system)
@@ -3214,7 +3220,7 @@ bool config_save_overrides(int override_type)
    int_overrides       = populate_settings_int (overrides,  &tmp_i);
 
    float_settings      = populate_settings_float(settings,  &float_settings_size);
-   tmp_i               = 0;
+   tmp_i               = sizeof(settings->floats) / sizeof(settings->floats.placeholder);
    float_overrides     = populate_settings_float(overrides, &tmp_i);
 
    array_settings      = populate_settings_array(settings,  &array_settings_size);
