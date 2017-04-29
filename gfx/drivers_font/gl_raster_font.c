@@ -355,10 +355,9 @@ static void gl_raster_font_render_message(
    /* If the font height is not supported just draw as usual */
    if (!font->font_driver->get_line_height)
    {
-      if (font->gl)
-         gl_raster_font_render_line(font,
-               msg, (unsigned)strlen(msg), scale, color, pos_x,
-               pos_y, text_align);
+      gl_raster_font_render_line(font,
+            msg, (unsigned)strlen(msg), scale, color, pos_x,
+            pos_y, text_align);
       return;
    }
 
@@ -372,10 +371,9 @@ static void gl_raster_font_render_message(
          ? (unsigned)(delim - msg) : (unsigned)strlen(msg);
 
       /* Draw the line */
-      if (font->gl)
-         gl_raster_font_render_line(font,
-               msg, msg_len, scale, color, pos_x,
-               pos_y - (float)lines*line_height, text_align);
+      gl_raster_font_render_line(font,
+            msg, msg_len, scale, color, pos_x,
+            pos_y - (float)lines*line_height, text_align);
 
       if (!delim)
          break;
@@ -489,12 +487,14 @@ static void gl_raster_font_render_msg(
          color_dark[2] = color[2] * drop_mod;
          color_dark[3] = color[3] * drop_alpha;
 
-         gl_raster_font_render_message(font, msg, scale, color_dark,
-               x + scale * drop_x / font->gl->vp.width, y +
-               scale * drop_y / font->gl->vp.height, text_align);
+         if (font->gl)
+            gl_raster_font_render_message(font, msg, scale, color_dark,
+                  x + scale * drop_x / font->gl->vp.width, y +
+                  scale * drop_y / font->gl->vp.height, text_align);
       }
 
-      gl_raster_font_render_message(font, msg, scale, color, x, y, text_align);
+      if (font->gl)
+         gl_raster_font_render_message(font, msg, scale, color, x, y, text_align);
    }
 
    if (!font->block)
