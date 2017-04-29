@@ -792,6 +792,13 @@ static const float max_timing_skew = 0.05;
 /* Default audio volume in dB. (0.0 dB == unity gain). */
 static const float audio_volume = 0.0;
 
+#ifdef HAVE_WASAPI
+/* WASAPI defaults */
+static const bool wasapi_exclusive_mode = true;
+static const bool wasapi_float_format = false;
+static const unsigned wasapi_sh_buffer_length = 0;
+#endif
+
 /* MISC */
 
 /* Enables displaying the current frames per second. */
