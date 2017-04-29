@@ -62,7 +62,7 @@ struct ad_packet
    char nick[NETPLAY_HOST_STR_LEN];
    char core[NETPLAY_HOST_STR_LEN];
    char core_version[NETPLAY_HOST_STR_LEN];
-   char content[NETPLAY_HOST_STR_LEN];
+   char content[NETPLAY_HOST_LONGSTR_LEN];
    char content_crc[NETPLAY_HOST_STR_LEN];
 };
 
@@ -264,7 +264,7 @@ bool netplay_lan_ad_server(netplay_t *netplay)
          strlcpy(ad_packet_buffer.content, !string_is_empty(
                   path_basename(path_get(RARCH_PATH_BASENAME))) 
                ? path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A",
-               NETPLAY_HOST_STR_LEN);
+               NETPLAY_HOST_LONGSTR_LEN);
          strlcpy(ad_packet_buffer.nick, netplay->nick, NETPLAY_HOST_STR_LEN);
 
          if (info)
@@ -399,14 +399,14 @@ static bool netplay_lan_ad_client(void)
          strlcpy(host->core_version, ad_packet_buffer.core_version,
             NETPLAY_HOST_STR_LEN);
          strlcpy(host->content, ad_packet_buffer.content,
-            NETPLAY_HOST_STR_LEN);
+            NETPLAY_HOST_LONGSTR_LEN);
 
          host->content_crc                  = 
             atoi(ad_packet_buffer.content_crc);
          host->nick[NETPLAY_HOST_STR_LEN-1] =
             host->core[NETPLAY_HOST_STR_LEN-1] =
             host->core_version[NETPLAY_HOST_STR_LEN-1] =
-            host->content[NETPLAY_HOST_STR_LEN-1] = '\0';
+            host->content[NETPLAY_HOST_LONGSTR_LEN-1] = '\0';
       }
    }
 
