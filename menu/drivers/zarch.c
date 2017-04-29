@@ -584,7 +584,7 @@ static int zarch_zui_render_lay_root_load(
       unsigned cwd_offset;
 
       if (!zui->load_cwd)
-         zui->load_cwd = strdup(settings->directory.menu_content);
+         zui->load_cwd = strdup(settings->paths.directory_menu_content);
 
       if (!zui->load_dlist)
       {
@@ -993,7 +993,6 @@ static void zarch_frame(void *data, video_frame_info_t *video_info)
 static void *zarch_init(void **userdata)
 {
    zui_t *zui                              = NULL;
-   settings_t *settings                    = config_get_ptr();
    menu_handle_t *menu                     = (menu_handle_t*)
       calloc(1, sizeof(*menu));
 
@@ -1092,7 +1091,7 @@ static void zarch_context_reset(void *data)
 
    zarch_context_bg_destroy(zui);
 
-   task_push_image_load(settings->path.menu_wallpaper,
+   task_push_image_load(settings->paths.path_menu_wallpaper,
          menu_display_handle_wallpaper_upload, NULL);
 
    menu_display_allocate_white_texture();
