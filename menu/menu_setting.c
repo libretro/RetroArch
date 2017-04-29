@@ -1680,6 +1680,9 @@ void general_write_handler(void *data)
       case MENU_ENUM_LABEL_AUDIO_LATENCY:
       case MENU_ENUM_LABEL_AUDIO_DEVICE:
       case MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE:
+      case MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE:
+      case MENU_ENUM_LABEL_AUDIO_WASAPI_FLOAT_FORMAT:
+      case MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH:
          rarch_cmd = CMD_EVENT_AUDIO_REINIT;
          break;
       case MENU_ENUM_LABEL_PAL60_ENABLE:
@@ -3919,6 +3922,57 @@ static bool setting_append_list(
          menu_settings_list_current_add_values(list, list_info, "dsp");
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_DSP_FILTER_INIT);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+#ifdef HAVE_WASAPI
+         if (memcmp(settings->arrays.audio_driver, "wasapi", 6) == 0)
+         {
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.audio_wasapi_exclusive_mode,
+                  MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
+                  MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
+                  wasapi_exclusive_mode,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE
+                  );
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.audio_wasapi_float_format,
+                  MENU_ENUM_LABEL_AUDIO_WASAPI_FLOAT_FORMAT,
+                  MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
+                  wasapi_float_format,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_ADVANCED
+                  );
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.audio_wasapi_sh_buffer_length,
+                  MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+                  MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+                  wasapi_sh_buffer_length,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 1024, 16.0, true, true);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+            }
+#endif
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);

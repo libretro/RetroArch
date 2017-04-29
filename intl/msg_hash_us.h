@@ -275,6 +275,18 @@ MSG_HASH(
       "Audio Volume Level (dB)"
       )
 MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
+      "WASAPI Exclusive Mode"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
+      "WASAPI Float Format"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+      "WASAPI Shared Buffer Length"
+      )
+MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
       "SaveRAM Autosave Interval"
       )
@@ -2234,6 +2246,18 @@ MSG_HASH(
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
       "Audio volume (in dB). 0 dB is normal volume, and no gain is applied."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
+      "Allow the WASAPI driver to take exclusive control of the audio device. If disabled, it will use shared mode instead."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
+      "Use float format for the WASAPI driver, if supported by your audio device."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+      "The audio buffer length when using the WASAPI driver in shared mode."
       )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SYNC,
