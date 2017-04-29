@@ -416,8 +416,6 @@ typedef struct settings
 
    bool modified;
 
-   video_viewport_t video_viewport_custom;
-
    size_t rewind_buffer_size;
 } settings_t;
 

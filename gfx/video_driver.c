@@ -144,6 +144,8 @@ static retro_time_t video_driver_frame_time_samples[MEASURE_FRAME_TIME_SAMPLES_C
 static uint64_t video_driver_frame_time_count            = 0;
 static uint64_t video_driver_frame_count                 = 0;
 
+static video_viewport_t video_viewport_custom;
+
 void *video_driver_data                                  = NULL;
 video_driver_t *current_video                            = NULL;
 
@@ -673,12 +675,12 @@ error:
 static bool video_driver_init_internal(void)
 {
    unsigned max_dim, scale, width, height;
-   video_viewport_t *custom_vp            = NULL;
    const input_driver_t *tmp              = NULL;
    const struct retro_game_geometry *geom = NULL;
    rarch_system_info_t *system            = NULL;
    video_info_t video                     = {0};
    static uint16_t dummy_pixels[32]       = {0};
+   video_viewport_t *custom_vp            = &video_viewport_custom;
    settings_t *settings                   = config_get_ptr();
    struct retro_system_av_info *av_info   =
       video_viewport_get_system_av_info();
@@ -719,8 +721,6 @@ static bool video_driver_init_internal(void)
    video_driver_set_viewport_config();
 
    /* Update CUSTOM viewport. */
-   custom_vp = video_viewport_get_custom();
-
    if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
       float default_aspect = aspectratio_lut[ASPECT_RATIO_CORE].value;
@@ -1460,9 +1460,7 @@ void video_driver_set_viewport_core(void)
 
 void video_driver_reset_custom_viewport(void)
 {
-   struct video_viewport *custom_vp = video_viewport_get_custom();
-   if (!custom_vp)
-      return;
+   struct video_viewport *custom_vp = &video_viewport_custom;
 
    custom_vp->width  = 0;
    custom_vp->height = 0;
@@ -1923,7 +1921,7 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
 
    if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
-      struct video_viewport *custom = video_viewport_get_custom();
+      struct video_viewport *custom = &video_viewport_custom;
 
       if (custom)
       {
@@ -1994,8 +1992,7 @@ struct retro_system_av_info *video_viewport_get_system_av_info(void)
 
 struct video_viewport *video_viewport_get_custom(void)
 {
-   settings_t *settings = config_get_ptr();
-   return &settings->video_viewport_custom;
+   return &video_viewport_custom;
 }
 
 unsigned video_pixel_get_alignment(unsigned pitch)

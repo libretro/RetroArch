@@ -3087,99 +3087,22 @@ static bool setting_append_list(
          END_GROUP(list, list_info, parent_group);
          break;
       case SETTINGS_LIST_VIDEO:
-         START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS), parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_SETTINGS);
+         {
+            struct video_viewport *custom_vp   = video_viewport_get_custom();
+            START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS), parent_group);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_SETTINGS);
 
-         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
+            parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
 
-         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+            START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
 #if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.ui_suspend_screensaver_enable,
-               MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE,
-               MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
-               true,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-#endif
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.video_fps_show,
-               MENU_ENUM_LABEL_FPS_SHOW,
-               MENU_ENUM_LABEL_VALUE_FPS_SHOW,
-               fps_show,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-
-         END_SUB_GROUP(list, list_info, parent_group);
-         START_SUB_GROUP(list, list_info, "Platform-specific", &group_info, &subgroup_info, parent_group);
-
-         video_driver_menu_settings((void**)list, (void*)list_info, (void*)&group_info, (void*)&subgroup_info, parent_group);
-
-         END_SUB_GROUP(list, list_info, parent_group);
-
-         END_SUB_GROUP(list, list_info, parent_group);
-         START_SUB_GROUP(list, list_info, "Monitor", &group_info, &subgroup_info, parent_group);
-
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.video_monitor_index,
-               MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX,
-               MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
-               monitor_index,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
-         menu_settings_list_current_add_range(list, list_info, 0, 1, 1, true, false);
-         (*list)[list_info->index - 1].get_string_representation = 
-            &setting_get_string_representation_uint_video_monitor_index;
-
-         if (video_driver_has_windowed())
-         {
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->bools.video_fullscreen,
-                  MENU_ENUM_LABEL_VIDEO_FULLSCREEN,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
-                  fullscreen,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_CMD_APPLY_AUTO);
-            menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
-            settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-         }
-         if (video_driver_has_windowed())
-         {
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.video_windowed_fullscreen,
-                  MENU_ENUM_LABEL_VIDEO_WINDOWED_FULLSCREEN,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
-                  windowed_fullscreen,
+                  &settings->bools.ui_suspend_screensaver_enable,
+                  MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
+                  true,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -3189,49 +3112,14 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-         }
-         CONFIG_FLOAT(
-               list, list_info,
-               &settings->floats.video_refresh_rate,
-               MENU_ENUM_LABEL_VIDEO_REFRESH_RATE,
-               MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
-               refresh_rate,
-               "%.3f Hz",
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         menu_settings_list_current_add_range(list, list_info, 0, 0, 0.001, true, false);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+#endif
 
-         CONFIG_FLOAT(
-               list, list_info,
-               &settings->floats.video_refresh_rate,
-               MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO,
-               MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
-               refresh_rate,
-               "%.3f Hz",
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_start  = &setting_action_start_video_refresh_rate_auto;
-         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_video_refresh_rate_auto;
-         (*list)[list_info->index - 1].action_select = &setting_action_ok_video_refresh_rate_auto;
-         (*list)[list_info->index - 1].get_string_representation = 
-            &setting_get_string_representation_st_float_video_refresh_rate_auto;
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-         if (memcmp(settings->arrays.video_driver, "gl", 2) == 0)
-         {
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->bools.video_force_srgb_disable,
-                  MENU_ENUM_LABEL_VIDEO_FORCE_SRGB_DISABLE,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
-                  false,
+                  &settings->bools.video_fps_show,
+                  MENU_ENUM_LABEL_FPS_SHOW,
+                  MENU_ENUM_LABEL_VALUE_FPS_SHOW,
+                  fps_show,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -3239,334 +3127,538 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler,
-                  SD_FLAG_CMD_APPLY_AUTO | SD_FLAG_ADVANCED
-                  );
+                  SD_FLAG_NONE);
+
+            END_SUB_GROUP(list, list_info, parent_group);
+            START_SUB_GROUP(list, list_info, "Platform-specific", &group_info, &subgroup_info, parent_group);
+
+            video_driver_menu_settings((void**)list, (void*)list_info, (void*)&group_info, (void*)&subgroup_info, parent_group);
+
+            END_SUB_GROUP(list, list_info, parent_group);
+
+            END_SUB_GROUP(list, list_info, parent_group);
+            START_SUB_GROUP(list, list_info, "Monitor", &group_info, &subgroup_info, parent_group);
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.video_monitor_index,
+                  MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
+                  monitor_index,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
             menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
-         }
+            menu_settings_list_current_add_range(list, list_info, 0, 1, 1, true, false);
+            (*list)[list_info->index - 1].get_string_representation = 
+               &setting_get_string_representation_uint_video_monitor_index;
 
-         END_SUB_GROUP(list, list_info, parent_group);
-         START_SUB_GROUP(list, list_info, "Aspect", &group_info, &subgroup_info, parent_group);
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.video_aspect_ratio_idx,
-               MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_INDEX,
-               MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
-               aspect_ratio_idx,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         menu_settings_list_current_add_cmd(
-               list,
-               list_info,
-               CMD_EVENT_VIDEO_SET_ASPECT_RATIO);
-         menu_settings_list_current_add_range(
-               list,
-               list_info,
-               0,
-               LAST_ASPECT_RATIO,
-               1,
-               true,
-               true);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
-         (*list)[list_info->index - 1].get_string_representation = 
-            &setting_get_string_representation_uint_aspect_ratio_index;
-
-         CONFIG_INT(
-               list, list_info,
-               &settings->video_viewport_custom.x,
-               MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_X,
-               MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
-               0,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         menu_settings_list_current_add_range(list, list_info, -99999, 0, 1, false, false);
-         menu_settings_list_current_add_cmd(
-               list,
-               list_info,
-               CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-         CONFIG_INT(
-               list, list_info,
-               &settings->video_viewport_custom.y,
-               MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-               MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
-               0,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         menu_settings_list_current_add_range(list, list_info, -99999, 0, 1, false, false);
-         menu_settings_list_current_add_cmd(
-               list,
-               list_info,
-               CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-         CONFIG_UINT(
-               list, list_info,
-               &settings->video_viewport_custom.width,
-               MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-               MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-               0,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         menu_settings_list_current_add_range(list, list_info, 0, 0, 1, true, false);
-         (*list)[list_info->index - 1].get_string_representation =
-         &setting_get_string_representation_uint_custom_viewport_width;
-         (*list)[list_info->index - 1].action_start = &setting_action_start_custom_viewport_width;
-         (*list)[list_info->index - 1].action_left  = setting_uint_action_left_custom_viewport_width;
-         (*list)[list_info->index - 1].action_right = setting_uint_action_right_custom_viewport_width;
-         menu_settings_list_current_add_cmd(
-               list,
-               list_info,
-               CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-         CONFIG_UINT(
-               list, list_info,
-               &settings->video_viewport_custom.height,
-               MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-               MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-               0,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         menu_settings_list_current_add_range(list, list_info, 0, 0, 1, true, false);
-         (*list)[list_info->index - 1].get_string_representation =
-         &setting_get_string_representation_uint_custom_viewport_height;
-         (*list)[list_info->index - 1].action_start = &setting_action_start_custom_viewport_height;
-         (*list)[list_info->index - 1].action_left  = setting_uint_action_left_custom_viewport_height;
-         (*list)[list_info->index - 1].action_right = setting_uint_action_right_custom_viewport_height;
-         menu_settings_list_current_add_cmd(
-               list,
-               list_info,
-               CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-         END_SUB_GROUP(list, list_info, parent_group);
-         START_SUB_GROUP(list, list_info, "Scaling", &group_info, &subgroup_info, parent_group);
-
-         if (video_driver_has_windowed())
-         {
+            if (video_driver_has_windowed())
+            {
+               CONFIG_BOOL(
+                     list, list_info,
+                     &settings->bools.video_fullscreen,
+                     MENU_ENUM_LABEL_VIDEO_FULLSCREEN,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+                     fullscreen,
+                     MENU_ENUM_LABEL_VALUE_OFF,
+                     MENU_ENUM_LABEL_VALUE_ON,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler,
+                     SD_FLAG_CMD_APPLY_AUTO);
+               menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
+               settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+            }
+            if (video_driver_has_windowed())
+            {
+               CONFIG_BOOL(
+                     list, list_info,
+                     &settings->bools.video_windowed_fullscreen,
+                     MENU_ENUM_LABEL_VIDEO_WINDOWED_FULLSCREEN,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+                     windowed_fullscreen,
+                     MENU_ENUM_LABEL_VALUE_OFF,
+                     MENU_ENUM_LABEL_VALUE_ON,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler,
+                     SD_FLAG_NONE);
+               settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+            }
             CONFIG_FLOAT(
                   list, list_info,
-                  &settings->floats.video_scale,
-                  MENU_ENUM_LABEL_VIDEO_SCALE,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-                  scale,
-                  "%.1fx",
+                  &settings->floats.video_refresh_rate,
+                  MENU_ENUM_LABEL_VIDEO_REFRESH_RATE,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
+                  refresh_rate,
+                  "%.3f Hz",
                   &group_info,
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 1.0, 10.0, 1.0, true, true);
+            menu_settings_list_current_add_range(list, list_info, 0, 0, 0.001, true, false);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+            CONFIG_FLOAT(
+                  list, list_info,
+                  &settings->floats.video_refresh_rate,
+                  MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
+                  refresh_rate,
+                  "%.3f Hz",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_start  = &setting_action_start_video_refresh_rate_auto;
+            (*list)[list_info->index - 1].action_ok     = &setting_action_ok_video_refresh_rate_auto;
+            (*list)[list_info->index - 1].action_select = &setting_action_ok_video_refresh_rate_auto;
+            (*list)[list_info->index - 1].get_string_representation = 
+               &setting_get_string_representation_st_float_video_refresh_rate_auto;
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+            if (memcmp(settings->arrays.video_driver, "gl", 2) == 0)
+            {
+               CONFIG_BOOL(
+                     list, list_info,
+                     &settings->bools.video_force_srgb_disable,
+                     MENU_ENUM_LABEL_VIDEO_FORCE_SRGB_DISABLE,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
+                     false,
+                     MENU_ENUM_LABEL_VALUE_OFF,
+                     MENU_ENUM_LABEL_VALUE_ON,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler,
+                     SD_FLAG_CMD_APPLY_AUTO | SD_FLAG_ADVANCED
+                     );
+               menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
+            }
+
+            END_SUB_GROUP(list, list_info, parent_group);
+            START_SUB_GROUP(list, list_info, "Aspect", &group_info, &subgroup_info, parent_group);
             CONFIG_UINT(
                   list, list_info,
-                  &settings->uints.video_window_x,
-                  MENU_ENUM_LABEL_VIDEO_WINDOW_WIDTH,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+                  &settings->uints.video_aspect_ratio_idx,
+                  MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_INDEX,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
+                  aspect_ratio_idx,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_cmd(
+                  list,
+                  list_info,
+                  CMD_EVENT_VIDEO_SET_ASPECT_RATIO);
+            menu_settings_list_current_add_range(
+                  list,
+                  list_info,
+                  0,
+                  LAST_ASPECT_RATIO,
+                  1,
+                  true,
+                  true);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+            (*list)[list_info->index - 1].get_string_representation = 
+               &setting_get_string_representation_uint_aspect_ratio_index;
+
+            CONFIG_INT(
+                  list, list_info,
+                  &custom_vp->x,
+                  MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_X,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
                   0,
                   &group_info,
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0, 7680, 8, true, true);
+            menu_settings_list_current_add_range(list, list_info, -99999, 0, 1, false, false);
+            menu_settings_list_current_add_cmd(
+                  list,
+                  list_info,
+                  CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-            CONFIG_UINT(
+
+            CONFIG_INT(
                   list, list_info,
-                  &settings->uints.video_window_y,
-                  MENU_ENUM_LABEL_VIDEO_WINDOW_HEIGHT,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+                  &custom_vp->y,
+                  MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_Y,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
                   0,
                   &group_info,
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0, 4320, 8, true, true);
+            menu_settings_list_current_add_range(list, list_info, -99999, 0, 1, false, false);
+            menu_settings_list_current_add_cmd(
+                  list,
+                  list_info,
+                  CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-         }
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.video_scale_integer,
-               MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER,
-               MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
-               scale_integer,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-         menu_settings_list_current_add_cmd(
-               list,
-               list_info,
-               CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
+            CONFIG_UINT(
+                  list, list_info,
+                  &custom_vp->width,
+                  MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+                  0,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 0, 1, true, false);
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_custom_viewport_width;
+            (*list)[list_info->index - 1].action_start = &setting_action_start_custom_viewport_width;
+            (*list)[list_info->index - 1].action_left  = setting_uint_action_left_custom_viewport_width;
+            (*list)[list_info->index - 1].action_right = setting_uint_action_right_custom_viewport_width;
+            menu_settings_list_current_add_cmd(
+                  list,
+                  list_info,
+                  CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
-#ifdef GEKKO
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.video_viwidth,
-               MENU_ENUM_LABEL_VIDEO_VI_WIDTH,
-               MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
-               video_viwidth,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         menu_settings_list_current_add_range(list, list_info, 640, 720, 2, true, true);
+            CONFIG_UINT(
+                  list, list_info,
+                  &custom_vp->height,
+                  MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+                  0,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 0, 1, true, false);
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_custom_viewport_height;
+            (*list)[list_info->index - 1].action_start = &setting_action_start_custom_viewport_height;
+            (*list)[list_info->index - 1].action_left  = setting_uint_action_left_custom_viewport_height;
+            (*list)[list_info->index - 1].action_right = setting_uint_action_right_custom_viewport_height;
+            menu_settings_list_current_add_cmd(
+                  list,
+                  list_info,
+                  CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.video_vfilter,
-               MENU_ENUM_LABEL_VIDEO_VFILTER,
-               MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
-               video_vfilter,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-#endif
+            END_SUB_GROUP(list, list_info, parent_group);
+            START_SUB_GROUP(list, list_info, "Scaling", &group_info, &subgroup_info, parent_group);
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.video_smooth,
-               MENU_ENUM_LABEL_VIDEO_SMOOTH,
-               MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
-               video_smooth,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-               );
-         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
+            if (video_driver_has_windowed())
+            {
+               CONFIG_FLOAT(
+                     list, list_info,
+                     &settings->floats.video_scale,
+                     MENU_ENUM_LABEL_VIDEO_SCALE,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
+                     scale,
+                     "%.1fx",
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+               menu_settings_list_current_add_range(list, list_info, 1.0, 10.0, 1.0, true, true);
+               settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+               CONFIG_UINT(
+                     list, list_info,
+                     &settings->uints.video_window_x,
+                     MENU_ENUM_LABEL_VIDEO_WINDOW_WIDTH,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+                     0,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+               menu_settings_list_current_add_range(list, list_info, 0, 7680, 8, true, true);
+               settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+               CONFIG_UINT(
+                     list, list_info,
+                     &settings->uints.video_window_y,
+                     MENU_ENUM_LABEL_VIDEO_WINDOW_HEIGHT,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+                     0,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+               menu_settings_list_current_add_range(list, list_info, 0, 4320, 8, true, true);
+               settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+            }
 
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.video_rotation,
-               MENU_ENUM_LABEL_VIDEO_ROTATION,
-               MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
-               0,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
-         (*list)[list_info->index - 1].get_string_representation = 
-            &setting_get_string_representation_uint_video_rotation;
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-
-         END_SUB_GROUP(list, list_info, parent_group);
-         START_SUB_GROUP(
-               list,
-               list_info,
-               "Synchronization",
-               &group_info,
-               &subgroup_info,
-               parent_group);
-
-#if defined(HAVE_THREADS)
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.video_threaded,
-               MENU_ENUM_LABEL_VIDEO_THREADED,
-               MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
-               video_threaded,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_CMD_APPLY_AUTO
-               );
-         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
-#endif
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.video_vsync,
-               MENU_ENUM_LABEL_VIDEO_VSYNC,
-               MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
-               vsync,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-               );
-
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.video_swap_interval,
-               MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL,
-               MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
-               swap_interval,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_VIDEO_SET_BLOCKING_STATE);
-         menu_settings_list_current_add_range(list, list_info, 1, 4, 1, true, true);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.video_max_swapchain_images,
-               MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
-               MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
-               max_swapchain_images,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         menu_settings_list_current_add_range(list, list_info, 1, 4, 1, true, true);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-         if (memcmp(settings->arrays.video_driver, "gl", 2) == 0)
-         {
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->bools.video_hard_sync,
-                  MENU_ENUM_LABEL_VIDEO_HARD_SYNC,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
-                  hard_sync,
+                  &settings->bools.video_scale_integer,
+                  MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
+                  scale_integer,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            menu_settings_list_current_add_cmd(
+                  list,
+                  list_info,
+                  CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
+
+#ifdef GEKKO
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.video_viwidth,
+                  MENU_ENUM_LABEL_VIDEO_VI_WIDTH,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
+                  video_viwidth,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 640, 720, 2, true, true);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.video_vfilter,
+                  MENU_ENUM_LABEL_VIDEO_VFILTER,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
+                  video_vfilter,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+#endif
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.video_smooth,
+                  MENU_ENUM_LABEL_VIDEO_SMOOTH,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
+                  video_smooth,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE
+                  );
+            menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.video_rotation,
+                  MENU_ENUM_LABEL_VIDEO_ROTATION,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
+                  0,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
+            (*list)[list_info->index - 1].get_string_representation = 
+               &setting_get_string_representation_uint_video_rotation;
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+
+            END_SUB_GROUP(list, list_info, parent_group);
+            START_SUB_GROUP(
+                  list,
+                  list_info,
+                  "Synchronization",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group);
+
+#if defined(HAVE_THREADS)
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.video_threaded,
+                  MENU_ENUM_LABEL_VIDEO_THREADED,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
+                  video_threaded,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_CMD_APPLY_AUTO
+                  );
+            menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
+#endif
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.video_vsync,
+                  MENU_ENUM_LABEL_VIDEO_VSYNC,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+                  vsync,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE
+                  );
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.video_swap_interval,
+                  MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+                  swap_interval,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_VIDEO_SET_BLOCKING_STATE);
+            menu_settings_list_current_add_range(list, list_info, 1, 4, 1, true, true);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.video_max_swapchain_images,
+                  MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
+                  max_swapchain_images,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 1, 4, 1, true, true);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+            if (memcmp(settings->arrays.video_driver, "gl", 2) == 0)
+            {
+               CONFIG_BOOL(
+                     list, list_info,
+                     &settings->bools.video_hard_sync,
+                     MENU_ENUM_LABEL_VIDEO_HARD_SYNC,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+                     hard_sync,
+                     MENU_ENUM_LABEL_VALUE_OFF,
+                     MENU_ENUM_LABEL_VALUE_ON,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler,
+                     SD_FLAG_NONE
+                     );
+               settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+               CONFIG_UINT(
+                     list, list_info,
+                     &settings->uints.video_hard_sync_frames,
+                     MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+                     hard_sync_frames,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+               menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
+               settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+            }
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.video_frame_delay,
+                  MENU_ENUM_LABEL_VIDEO_FRAME_DELAY,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
+                  frame_delay,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 15, 1, true, true);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+#if !defined(RARCH_MOBILE)
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.video_black_frame_insertion,
+                  MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
+                  black_frame_insertion,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE
+                  );
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+#endif
+            END_SUB_GROUP(list, list_info, parent_group);
+            START_SUB_GROUP(
+                  list,
+                  list_info,
+                  "Miscellaneous",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.video_gpu_screenshot,
+                  MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
+                  gpu_screenshot,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE
+                  );
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.video_crop_overscan,
+                  MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
+                  crop_overscan,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -3578,114 +3670,25 @@ static bool setting_append_list(
                   );
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
-            CONFIG_UINT(
+            CONFIG_PATH(
                   list, list_info,
-                  &settings->uints.video_hard_sync_frames,
-                  MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
-                  hard_sync_frames,
+                  settings->paths.path_softfilter_plugin,
+                  sizeof(settings->paths.path_softfilter_plugin),
+                  MENU_ENUM_LABEL_VIDEO_FILTER,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
+                  settings->paths.directory_video_filter,
                   &group_info,
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
+            menu_settings_list_current_add_values(list, list_info, "filt");
+            menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+            END_SUB_GROUP(list, list_info, parent_group);
+            END_GROUP(list, list_info, parent_group);
          }
-
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.video_frame_delay,
-               MENU_ENUM_LABEL_VIDEO_FRAME_DELAY,
-               MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-               frame_delay,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         menu_settings_list_current_add_range(list, list_info, 0, 15, 1, true, true);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-#if !defined(RARCH_MOBILE)
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.video_black_frame_insertion,
-               MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION,
-               MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
-               black_frame_insertion,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-               );
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-#endif
-         END_SUB_GROUP(list, list_info, parent_group);
-         START_SUB_GROUP(
-               list,
-               list_info,
-               "Miscellaneous",
-               &group_info,
-               &subgroup_info,
-               parent_group);
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.video_gpu_screenshot,
-               MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT,
-               MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
-               gpu_screenshot,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-               );
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.video_crop_overscan,
-               MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN,
-               MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
-               crop_overscan,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-               );
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-         CONFIG_PATH(
-               list, list_info,
-               settings->paths.path_softfilter_plugin,
-               sizeof(settings->paths.path_softfilter_plugin),
-               MENU_ENUM_LABEL_VIDEO_FILTER,
-               MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
-               settings->paths.directory_video_filter,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         menu_settings_list_current_add_values(list, list_info, "filt");
-         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-         END_SUB_GROUP(list, list_info, parent_group);
-         END_GROUP(list, list_info, parent_group);
          break;
       case SETTINGS_LIST_AUDIO:
          START_GROUP(list, list_info, &group_info,
