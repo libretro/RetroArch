@@ -808,7 +808,8 @@ static bool video_driver_init_internal(void)
    video_driver_find_driver();
 
 #ifdef HAVE_THREADS
-   if (video_driver_is_threaded())
+   video.is_threaded   = video_driver_is_threaded();
+   if (video.is_threaded)
    {
       /* Can't do hardware rendering with threaded driver currently. */
       RARCH_LOG("[Video]: Starting threaded video driver ...\n");

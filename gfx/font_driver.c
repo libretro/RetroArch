@@ -454,14 +454,13 @@ void font_driver_free(void *font_data)
 
 font_data_t *font_driver_init_first(
       void *video_data, const char *font_path, float font_size,
-      bool threading_hint, enum font_driver_render_api api)
+      bool threading_hint, bool is_threaded,
+      enum font_driver_render_api api)
 {
    const void *font_driver = NULL;
    void *font_handle       = NULL;
    bool ok                 = false;
-   bool is_threaded        = false;
 #ifdef HAVE_THREADS
-   is_threaded             = video_driver_is_threaded();
 
    if (     threading_hint 
          && is_threaded 
@@ -487,7 +486,11 @@ font_data_t *font_driver_init_first(
 }
 
 
-void font_driver_init_osd(void *video_data, bool threading_hint, enum font_driver_render_api api)
+void font_driver_init_osd(
+      void *video_data,
+      bool threading_hint, 
+      bool is_threaded,
+      enum font_driver_render_api api)
 {
    settings_t *settings = config_get_ptr();
    if (video_font_driver)
@@ -495,7 +498,7 @@ void font_driver_init_osd(void *video_data, bool threading_hint, enum font_drive
 
    video_font_driver = font_driver_init_first(video_data,
          *settings->paths.path_font ? settings->paths.path_font : NULL,
-         settings->floats.video_font_size, threading_hint, api);
+         settings->floats.video_font_size, threading_hint, is_threaded, api);
 
    if (!video_font_driver)
       RARCH_ERR("[font]: Failed to initialize OSD font.\n");

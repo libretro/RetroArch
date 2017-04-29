@@ -435,7 +435,9 @@ static void* ctr_init(const video_info_t* video,
    driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &refresh_rate);
    aptHook(&ctr->lcd_aptHook, ctr_lcd_aptHook, ctr);
 
-   font_driver_init_osd(ctr, false, FONT_DRIVER_RENDER_CTR);
+   font_driver_init_osd(ctr, false, 
+         video->is_threaded,
+         FONT_DRIVER_RENDER_CTR);
 
    ctr->msg_rendering_enabled = false;
    ctr->menu_texture_frame_enable = false;

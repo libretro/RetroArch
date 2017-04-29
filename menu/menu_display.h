@@ -175,7 +175,8 @@ typedef struct menu_display_ctx_driver
    const float *(*get_default_tex_coords)(void);
    bool (*font_init_first)(
          void **font_handle, void *video_data,
-         const char *font_path, float font_size);
+         const char *font_path, float font_size,
+         bool is_threaded);
    enum menu_display_driver_type type;
    const char *ident;
 } menu_display_ctx_driver_t;
@@ -202,7 +203,6 @@ void menu_display_blend_begin(void);
 void menu_display_blend_end(void);
 
 void menu_display_font_free(font_data_t *font);
-font_data_t *menu_display_font_main_init(menu_display_ctx_font_t *font);
 void menu_display_font_bind_block(font_data_t *font, void *block);
 bool menu_display_font_flush_block(unsigned width, unsigned height, font_data_t *font);
 

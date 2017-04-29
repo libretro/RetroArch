@@ -157,10 +157,19 @@ void font_driver_flush(unsigned width, unsigned height, void *font_data);
 
 void font_driver_free(void *font_data);
 
-font_data_t *font_driver_init_first(void *video_data, const char *font_path,
-      float font_size, bool threading_hint, enum font_driver_render_api api);
+font_data_t *font_driver_init_first(
+      void *video_data,
+      const char *font_path,
+      float font_size,
+      bool threading_hint,
+      bool is_threaded,
+      enum font_driver_render_api api);
 
-void font_driver_init_osd(void *video_data, bool threading_hint, enum font_driver_render_api api);
+void font_driver_init_osd(
+      void *video_data,
+      bool threading_hint,
+      bool is_threaded,
+      enum font_driver_render_api api);
 void font_driver_free_osd(void);
 
 extern font_renderer_t gl_raster_font;

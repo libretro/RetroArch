@@ -2075,7 +2075,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    video_context_driver_input_driver(&inp);
 
    if (video->font_enable)
-      font_driver_init_osd(gl, false, FONT_DRIVER_RENDER_OPENGL_API);
+      font_driver_init_osd(gl, false, 
+            video->is_threaded,
+            FONT_DRIVER_RENDER_OPENGL_API);
 
 #ifdef HAVE_GL_ASYNC_READBACK
    gl_init_pbo_readback(gl);

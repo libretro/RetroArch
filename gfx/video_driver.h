@@ -84,6 +84,8 @@ typedef struct video_info
     * otherwise nearest filtering. */
    bool smooth;
 
+   bool is_threaded;
+
    /* 
     * input_scale defines the maximum size of the picture that will
     * ever be used with the frame callback.
