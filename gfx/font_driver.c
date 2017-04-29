@@ -439,7 +439,8 @@ void font_driver_free(void *font_data)
    {
       bool is_threaded        = false;
 #ifdef HAVE_THREADS
-      is_threaded             = video_driver_is_threaded();
+      bool *is_threaded_tmp   = video_driver_get_threaded();
+      is_threaded             = *is_threaded_tmp;
 #endif
 
       if (font->renderer && font->renderer->free)
