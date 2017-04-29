@@ -67,7 +67,7 @@
 
 /* Define this macro with a string to save the JSON file to disk with
  * that name. */
-#define CHEEVOS_SAVE_JSON "megamanx11.json"
+#undef CHEEVOS_SAVE_JSON
 
 /* Define this macro to have the password and token logged. THIS WILL DISCLOSE
  * THE USER'S PASSWORD, TAKE CARE! */
