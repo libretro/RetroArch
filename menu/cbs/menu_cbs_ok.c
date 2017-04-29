@@ -3549,7 +3549,7 @@ finish:
                      sizeof(netplay_room_list[i].coreversion));
                strlcpy(netplay_room_list[i].gamename,
                      room_data->elems[j + 5].data,
-                     sizeof(netplay_room_list[i].coreversion));
+                     sizeof(netplay_room_list[i].gamename));
 
                netplay_room_list[i].port      = atoi(room_data->elems[j + 2].data);
                netplay_room_list[i].gamecrc   = atoi(room_data->elems[j + 6].data);
@@ -3615,7 +3615,7 @@ finish:
                      sizeof(netplay_room_list[i].coreversion));
                strlcpy(netplay_room_list[i].gamename,
                      host->content,
-                     sizeof(netplay_room_list[i].coreversion));
+                     sizeof(netplay_room_list[i].gamename));
 
                netplay_room_list[i].port      = 55435;
                netplay_room_list[i].gamecrc   = host->content_crc;
