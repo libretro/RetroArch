@@ -258,6 +258,41 @@ int menu_entries_get_title(char *s, size_t len)
    return 0;
 }
 
+int menu_entries_get_core_name(char *s, size_t len)
+{
+   struct retro_system_info    *system = NULL;
+   rarch_system_info_t      *info = NULL;
+   const char *core_name          = NULL;
+
+   menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
+         &system);
+   
+   core_name    = system->library_name;
+   info         = runloop_get_system_info();
+
+   if (string_is_empty(core_name) && info)
+      core_name = info->info.library_name;
+   if (string_is_empty(core_name))
+      core_name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
+
+   snprintf(s, len, "%s", core_name);
+
+   return 0;
+}
+
+bool menu_entries_current_core_is_no_core(void)
+{
+   char corename[255];
+   const char *no_core_str = NULL;
+
+   corename[0] = '\0';
+
+   menu_entries_get_core_name(corename, sizeof(corename));
+
+   no_core_str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
+
+   return string_is_equal(corename, no_core_str);
+}
 
 /* Sets 's' to the name of the current core 
  * (shown at the top of the UI). */

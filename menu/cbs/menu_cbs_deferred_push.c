@@ -695,13 +695,57 @@ static int general_push(menu_displaylist_info_t *info,
          }
          break;
       case PUSH_DETECT_CORE_LIST:
-         if (list && !string_is_empty(list->all_ext))
-            strlcpy(info->exts, list->all_ext, sizeof(info->exts));
-         else if (system_menu->valid_extensions)
          {
-            if (!string_is_empty(system_menu->valid_extensions))
-               strlcpy(info->exts, system_menu->valid_extensions,
-                     sizeof(info->exts));
+            char newstring[PATH_MAX_LENGTH];
+            union string_list_elem_attr attr;
+            struct string_list *str_list2    = string_list_new();
+
+            newstring[0] = '\0';
+            attr.i       = 0;
+
+            if (system_menu->valid_extensions)
+            {
+               if (!string_is_empty(system_menu->valid_extensions))
+               {
+                  unsigned x;
+                  struct string_list *str_list    = string_split(system_menu->valid_extensions, "|");
+
+                  for (x = 0; x < str_list->size; x++)
+                  {
+                     const char *elem = str_list->elems[x].data;
+                     string_list_append(str_list2, elem, attr);
+                  }
+
+                  string_list_free(str_list);
+               }
+            }
+
+            if (menu_entries_current_core_is_no_core())
+            {
+               if (list && !string_is_empty(list->all_ext))
+               {
+                  unsigned x;
+                  struct string_list *str_list    = string_split(list->all_ext, "|");
+
+                  for (x = 0; x < str_list->size; x++)
+                  {
+                     if (!string_list_find_elem(str_list2, str_list->elems[x].data))
+                     {
+                        const char *elem = str_list->elems[x].data;
+                        string_list_append(str_list2, elem, attr);
+                     }
+                  }
+
+                  string_list_free(str_list);
+               }
+            }
+
+            string_list_join_concat(newstring, sizeof(newstring),
+                  str_list2, "|");
+
+            strlcpy(info->exts, newstring, sizeof(info->exts));
+
+            string_list_free(str_list2);
          }
          break;
    }
