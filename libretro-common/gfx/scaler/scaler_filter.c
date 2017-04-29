@@ -156,7 +156,8 @@ static void fixup_filter_sub(struct scaler_filter *filter,
 
 bool scaler_gen_filter(struct scaler_ctx *ctx)
 {
-   int x_pos, x_step, y_pos, y_step, sinc_size;
+   int x_pos, x_step, y_pos, y_step;
+   int sinc_size = 0;
 
    switch (ctx->scaler_type)
    {
@@ -221,7 +222,7 @@ bool scaler_gen_filter(struct scaler_ctx *ctx)
          /* Need to expand the filter when downsampling 
           * to get a proper low-pass effect. */
 
-         x_pos  = (1 << 15) * ctx->in_width / ctx->out_width   - (1 << 15) - (sinc_size << 15);
+         x_pos  = (1 << 15) * ctx->in_width  / ctx->out_width  - (1 << 15) - (sinc_size << 15);
          y_pos  = (1 << 15) * ctx->in_height / ctx->out_height - (1 << 15) - (sinc_size << 15);
 
          gen_filter_sinc_sub(&ctx->horiz, ctx->out_width, x_pos, x_step,
