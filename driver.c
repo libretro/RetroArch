@@ -355,7 +355,7 @@ void drivers_init(int flags)
       if (flags & DRIVER_MENU_MASK)
       {
          menu_driver_ctl(RARCH_MENU_CTL_INIT, NULL);
-         menu_driver_ctl(RARCH_MENU_CTL_CONTEXT_RESET, NULL);
+         menu_driver_context_reset(video_is_threaded);
       }
    }
 #endif

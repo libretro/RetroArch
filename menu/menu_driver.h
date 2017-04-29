@@ -112,7 +112,6 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_PLAYLIST_INIT,
    RARCH_MENU_CTL_PLAYLIST_GET,
    RARCH_MENU_CTL_TOGGLE,
-   RARCH_MENU_CTL_CONTEXT_RESET,
    RARCH_MENU_CTL_CONTEXT_DESTROY,
    RARCH_MENU_CTL_POPULATE_ENTRIES,
    RARCH_MENU_CTL_FIND_DRIVER,
@@ -400,6 +399,8 @@ bool menu_driver_iterate(menu_ctx_iterate_t *iterate);
 bool menu_driver_list_clear(void *data);
 
 void menu_driver_increment_navigation(void);
+
+bool menu_driver_context_reset(bool is_threaded);
 
 void menu_driver_decrement_navigation(void);
 

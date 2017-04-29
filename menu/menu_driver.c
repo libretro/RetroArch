@@ -458,6 +458,14 @@ void menu_driver_decrement_navigation(void)
       menu_driver_ctx->navigation_decrement(menu_userdata);
 }
 
+bool menu_driver_context_reset(bool is_threaded)
+{
+   if (!menu_driver_ctx || !menu_driver_ctx->context_reset)
+      return false;
+   menu_driver_ctx->context_reset(menu_userdata);
+   return true;
+}
+
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
    switch (state)
@@ -811,11 +819,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 #endif
          }
-         break;
-      case RARCH_MENU_CTL_CONTEXT_RESET:
-         if (!menu_driver_ctx || !menu_driver_ctx->context_reset)
-            return false;
-         menu_driver_ctx->context_reset(menu_userdata);
          break;
       case RARCH_MENU_CTL_CONTEXT_DESTROY:
          if (!menu_driver_ctx || !menu_driver_ctx->context_destroy)
