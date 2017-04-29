@@ -458,12 +458,50 @@ void menu_driver_decrement_navigation(void)
       menu_driver_ctx->navigation_decrement(menu_userdata);
 }
 
-bool menu_driver_context_reset(bool video_is_threaded)
+static bool menu_driver_context_reset(bool video_is_threaded)
 {
    if (!menu_driver_ctx || !menu_driver_ctx->context_reset)
       return false;
    menu_driver_ctx->context_reset(menu_userdata, video_is_threaded);
    return true;
+}
+
+static bool menu_driver_init_internal(bool video_is_threaded)
+{
+   settings_t *settings  = config_get_ptr();
+   menu_update_libretro_info();
+   if (menu_driver_data)
+      return true;
+
+   menu_driver_data = (menu_handle_t*)
+      menu_driver_ctx->init(&menu_userdata);
+
+   if (!menu_driver_data || !menu_init(menu_driver_data))
+   {
+      retroarch_fail(1, "init_menu()");
+      return false;
+   }
+
+   strlcpy(settings->arrays.menu_driver, menu_driver_ctx->ident,
+         sizeof(settings->arrays.menu_driver));
+
+   if (menu_driver_ctx->lists_init)
+   {
+      if (!menu_driver_ctx->lists_init(menu_driver_data))
+      {
+         retroarch_fail(1, "init_menu()");
+         return false;
+      }
+   }
+
+   return true;
+}
+
+bool menu_driver_init(bool video_is_threaded)
+{
+   if (menu_driver_init_internal(video_is_threaded))
+         return menu_driver_context_reset(video_is_threaded);
+   return false;
 }
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
@@ -629,35 +667,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             free(menu_driver_data);
          }
          menu_driver_data = NULL;
-         break;
-      case RARCH_MENU_CTL_INIT:
-         {
-            settings_t *settings  = config_get_ptr();
-            menu_update_libretro_info();
-            if (menu_driver_data)
-               return true;
-
-            menu_driver_data = (menu_handle_t*)
-               menu_driver_ctx->init(&menu_userdata);
-
-            if (!menu_driver_data || !menu_init(menu_driver_data))
-            {
-               retroarch_fail(1, "init_menu()");
-               return false;
-            }
-
-            strlcpy(settings->arrays.menu_driver, menu_driver_ctx->ident,
-                  sizeof(settings->arrays.menu_driver));
-
-            if (menu_driver_ctx->lists_init)
-            {
-               if (!menu_driver_ctx->lists_init(menu_driver_data))
-               {
-                  retroarch_fail(1, "init_menu()");
-                  return false;
-               }
-            }
-         }
          break;
       case RARCH_MENU_CTL_LOAD_NO_CONTENT_GET:
          {

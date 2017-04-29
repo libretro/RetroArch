@@ -91,7 +91,6 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_SET_PENDING_QUIT,
    RARCH_MENU_CTL_SET_PENDING_SHUTDOWN,
    RARCH_MENU_CTL_DEINIT,
-   RARCH_MENU_CTL_INIT,
    RARCH_MENU_CTL_SET_PREVENT_POPULATE,
    RARCH_MENU_CTL_UNSET_PREVENT_POPULATE,
    RARCH_MENU_CTL_IS_PREVENT_POPULATE,
@@ -400,9 +399,9 @@ bool menu_driver_list_clear(void *data);
 
 void menu_driver_increment_navigation(void);
 
-bool menu_driver_context_reset(bool is_threaded);
-
 void menu_driver_decrement_navigation(void);
+
+bool menu_driver_init(bool video_is_threaded);
 
 extern menu_ctx_driver_t menu_ctx_xui;
 extern menu_ctx_driver_t menu_ctx_rgui;

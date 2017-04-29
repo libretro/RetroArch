@@ -353,10 +353,7 @@ void drivers_init(int flags)
    if (flags & DRIVER_VIDEO_MASK)
    {
       if (flags & DRIVER_MENU_MASK)
-      {
-         menu_driver_ctl(RARCH_MENU_CTL_INIT, NULL);
-         menu_driver_context_reset(video_is_threaded);
-      }
+         menu_driver_init(video_is_threaded);
    }
 #endif
 
