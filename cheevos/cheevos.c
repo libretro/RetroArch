@@ -3288,7 +3288,12 @@ bool cheevos_unload(void)
       return false;
 
    cheevos_free_cheevo_set(&cheevos_locals.core);
+   cheevos_locals.core.cheevos = NULL;
+   cheevos_locals.core.count = 0;
+   
    cheevos_free_cheevo_set(&cheevos_locals.unofficial);
+   cheevos_locals.unofficial.cheevos = NULL;
+   cheevos_locals.unofficial.count = 0;
 
    cheevos_loaded = 0;
 
