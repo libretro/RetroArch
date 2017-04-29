@@ -606,6 +606,10 @@ void video_driver_get_record_status(
       bool *has_gpu_record, 
       uint8_t **gpu_buf);
 
+bool *video_driver_get_threaded(void);
+
+void video_driver_set_threaded(bool val);
+
 void video_driver_get_status(uint64_t *frame_count, bool * is_alive,
       bool *is_focused);
 

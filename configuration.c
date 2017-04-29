@@ -768,7 +768,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("video_scale_integer",           &settings->bools.video_scale_integer, true, scale_integer, false);
    SETTING_BOOL("video_smooth",                  &settings->bools.video_smooth, true, video_smooth, false);
    SETTING_BOOL("video_force_aspect",            &settings->bools.video_force_aspect, true, force_aspect, false);
-   SETTING_BOOL("video_threaded",                &settings->bools.video_threaded, true, video_threaded, false);
+   SETTING_BOOL("video_threaded",                video_driver_get_threaded(), true, video_threaded, false);
    SETTING_BOOL("video_shared_context",          &settings->bools.video_shared_context, true, video_shared_context, false);
    SETTING_BOOL("auto_screenshot_filename",      &settings->bools.auto_screenshot_filename, true, auto_screenshot_filename, false);
    SETTING_BOOL("video_force_srgb_disable",      &settings->bools.video_force_srgb_disable, true, false, false);
@@ -1145,7 +1145,7 @@ static void config_set_defaults(void)
    }
 
    if (g_defaults.settings.video_threaded_enable != video_threaded)
-      settings->bools.video_threaded           = g_defaults.settings.video_threaded_enable;
+      video_driver_set_threaded(g_defaults.settings.video_threaded_enable);
 
    settings->floats.video_msg_color_r          = ((message_color >> 16) & 0xff) / 255.0f;
    settings->floats.video_msg_color_g          = ((message_color >>  8) & 0xff) / 255.0f;

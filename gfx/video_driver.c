@@ -130,6 +130,7 @@ const void *frame_cache_data                             = NULL;
 static unsigned frame_cache_width                        = 0;
 static unsigned frame_cache_height                       = 0;
 static size_t frame_cache_pitch                          = 0;
+static bool   video_driver_threaded                      = false;
 
 static float video_driver_aspect_ratio                   = 0.0f;
 static unsigned video_driver_width                       = 0;
@@ -349,12 +350,20 @@ static bool hw_render_context_is_gl(enum retro_hw_context_type type)
    return false;
 }
 
+bool *video_driver_get_threaded(void)
+{
+   return &video_driver_threaded;
+}
+
+void video_driver_set_threaded(bool val)
+{
+   video_driver_threaded = val;
+}
+
 bool video_driver_is_threaded(void)
 {
 #ifdef HAVE_THREADS
-   settings_t *settings = config_get_ptr();
-   if (!video_driver_is_hw_context()
-         && settings->bools.video_threaded)
+   if (!video_driver_is_hw_context() && video_driver_threaded)
       return true;
 #endif
    return false;
