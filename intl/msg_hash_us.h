@@ -284,7 +284,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-      "WASAPI Buffer Length"
+      "WASAPI Shared Buffer Length"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
@@ -2249,7 +2249,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
-      "Allow the WASAPI driver to take exclusive control of the audio device. If disabled, use shared mode instead."
+      "Allow the WASAPI driver to take exclusive control of the audio device. If disabled, it will use shared mode instead."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
@@ -2257,7 +2257,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-      "The length of the buffer when using the WASAPI driver in shared mode."
+      "The audio buffer length when using the WASAPI driver in shared mode."
       )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SYNC,
