@@ -280,7 +280,7 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
 
    if (input && input_data)
    {
-      void *sdl_input = input_sdl.init(settings->input.joypad_driver);
+      void *sdl_input = input_sdl.init(settings->arrays.input_joypad_driver);
 
       if (sdl_input)
       {
