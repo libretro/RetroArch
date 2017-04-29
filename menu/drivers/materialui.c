@@ -1407,7 +1407,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
    menu_display_unset_viewport(video_info->width, video_info->height);
 }
 
-static void mui_layout(mui_handle_t *mui)
+static void mui_layout(mui_handle_t *mui, bool video_is_threaded)
 {
    float scale_factor;
    int new_font_size, new_font_size2;
@@ -1629,7 +1629,7 @@ static void mui_populate_entries(
    mui->scroll_y = mui_get_scroll(mui);
 }
 
-static void mui_context_reset(void *data)
+static void mui_context_reset(void *data, bool is_threaded)
 {
    mui_handle_t *mui              = (mui_handle_t*)data;
    settings_t *settings           = config_get_ptr();
@@ -1637,7 +1637,7 @@ static void mui_context_reset(void *data)
    if (!mui || !settings)
       return;
 
-   mui_layout(mui);
+   mui_layout(mui, is_threaded);
    mui_context_bg_destroy(mui);
    menu_display_allocate_white_texture();
    mui_context_reset_textures(mui);

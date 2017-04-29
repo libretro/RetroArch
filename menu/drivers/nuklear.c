@@ -419,7 +419,7 @@ static void nk_menu_context_load_textures(nk_menu_handle_t *nk,
    }
 }
 
-static void nk_menu_context_reset(void *data)
+static void nk_menu_context_reset(void *data, bool is_threaded)
 {
    char iconpath[PATH_MAX_LENGTH] = {0};
    nk_menu_handle_t *nk           = (nk_menu_handle_t*)data;

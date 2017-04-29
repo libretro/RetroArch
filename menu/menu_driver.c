@@ -458,11 +458,11 @@ void menu_driver_decrement_navigation(void)
       menu_driver_ctx->navigation_decrement(menu_userdata);
 }
 
-bool menu_driver_context_reset(bool is_threaded)
+bool menu_driver_context_reset(bool video_is_threaded)
 {
    if (!menu_driver_ctx || !menu_driver_ctx->context_reset)
       return false;
-   menu_driver_ctx->context_reset(menu_userdata);
+   menu_driver_ctx->context_reset(menu_userdata, video_is_threaded);
    return true;
 }
 

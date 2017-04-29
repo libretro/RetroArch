@@ -1081,7 +1081,7 @@ static bool zarch_load_image(void *userdata,
    return true;
 }
 
-static void zarch_context_reset(void *data)
+static void zarch_context_reset(void *data, bool is_threaded)
 {
    settings_t *settings  = config_get_ptr();
    zui_t          *zui   = (zui_t*)data;

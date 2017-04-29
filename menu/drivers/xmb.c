@@ -3533,7 +3533,7 @@ static void xmb_context_reset_background(const char *iconpath)
             menu_display_handle_wallpaper_upload, NULL);
 }
 
-static void xmb_context_reset(void *data)
+static void xmb_context_reset(void *data, bool is_threaded)
 {
    char iconpath[PATH_MAX_LENGTH];
    xmb_handle_t *xmb               = (xmb_handle_t*)data;
