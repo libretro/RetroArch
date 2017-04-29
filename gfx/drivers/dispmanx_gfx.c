@@ -104,7 +104,6 @@ struct dispmanx_video
 
    /* For threading */
    scond_t *vsync_condition;	
-   slock_t *vsync_cond_mutex;
    slock_t *pending_mutex;
    unsigned int pageflip_pending;
 
@@ -152,9 +151,10 @@ static struct dispmanx_page *dispmanx_get_free_page(void *data, struct dispmanx_
        * wait until a free page is freed by vsync CB. */
       if (!page)
       {
-         slock_lock(_dispvars->vsync_cond_mutex);
-         scond_wait(_dispvars->vsync_condition, _dispvars->vsync_cond_mutex);
-         slock_unlock(_dispvars->vsync_cond_mutex);
+         slock_lock(_dispvars->pending_mutex);
+          if (_dispvars->pageflip_pending > 0)
+             scond_wait(_dispvars->vsync_condition, _dispvars->pending_mutex);
+         slock_unlock(_dispvars->pending_mutex);
       }
    }
 
@@ -426,7 +426,6 @@ static void *dispmanx_gfx_init(const video_info_t *video,
 
    /* Initialize the rest of the mutexes and conditions. */
    _dispvars->vsync_condition  = scond_new();
-   _dispvars->vsync_cond_mutex = slock_new();
    _dispvars->pending_mutex    = slock_new();
    _dispvars->core_width       = 0;
    _dispvars->core_height      = 0;
@@ -697,7 +696,6 @@ static void dispmanx_gfx_free(void *data)
 
    /* Destroy mutexes and conditions. */
    slock_free(_dispvars->pending_mutex);
-   slock_free(_dispvars->vsync_cond_mutex);
    scond_free(_dispvars->vsync_condition);		
 
    free(_dispvars);
