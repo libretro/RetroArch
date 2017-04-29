@@ -88,6 +88,12 @@
    display_lock = NULL; \
    context_lock = NULL
 
+#ifdef HAVE_THREADS
+#define video_driver_is_threaded() ((!video_driver_is_hw_context() && video_driver_threaded) ? true : false)
+#else
+#define video_driver_is_threaded() (false)
+#endif
+
 #define video_driver_threaded_lock() \
    if (video_driver_is_threaded()) \
       video_driver_lock()
@@ -358,15 +364,6 @@ bool *video_driver_get_threaded(void)
 void video_driver_set_threaded(bool val)
 {
    video_driver_threaded = val;
-}
-
-bool video_driver_is_threaded(void)
-{
-#ifdef HAVE_THREADS
-   if (!video_driver_is_hw_context() && video_driver_threaded)
-      return true;
-#endif
-   return false;
 }
 
 /**

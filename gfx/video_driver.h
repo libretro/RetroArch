@@ -385,7 +385,6 @@ bool video_driver_get_hw_render_interface(const struct
 bool video_driver_get_viewport_info(struct video_viewport *viewport);
 void video_driver_set_title_buf(void);
 void video_driver_monitor_adjust_system_rates(void);
-bool video_driver_is_threaded(void);
 
 /**
  * video_driver_find_handle:
