@@ -337,13 +337,11 @@ void gl_set_viewport(void *data, video_frame_info_t *video_info,
 #if defined(HAVE_MENU)
       if (video_info->aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         const struct video_viewport *custom = video_viewport_get_custom();
-
          /* GL has bottom-left origin viewport. */
-         x      = custom->x;
-         y      = height - custom->y - custom->height;
-         viewport_width  = custom->width;
-         viewport_height = custom->height;
+         x      = video_info->custom_vp_x;
+         y      = height - video_info->custom_vp_y - video_info->custom_vp_height;
+         viewport_width  = video_info->custom_vp_width;
+         viewport_height = video_info->custom_vp_height;
       }
       else
 #endif

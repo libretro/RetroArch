@@ -2255,6 +2255,12 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->font_msg_color_r      = settings->floats.video_msg_color_r;
    video_info->font_msg_color_g      = settings->floats.video_msg_color_g;
    video_info->font_msg_color_b      = settings->floats.video_msg_color_b;
+   video_info->custom_vp_x           = video_viewport_custom.x;
+   video_info->custom_vp_y           = video_viewport_custom.y;
+   video_info->custom_vp_width       = video_viewport_custom.width;
+   video_info->custom_vp_height      = video_viewport_custom.height;
+   video_info->custom_vp_full_width  = video_viewport_custom.full_width;
+   video_info->custom_vp_full_height = video_viewport_custom.full_height;
 
    video_info->fps_text[0]           = '\0';
 

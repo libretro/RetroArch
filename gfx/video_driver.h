@@ -159,6 +159,13 @@ typedef struct video_frame_info
    bool is_perfcnt_enable;
 
    bool menu_is_alive;
+
+   int custom_vp_x;
+   int custom_vp_y;
+   unsigned custom_vp_width;
+   unsigned custom_vp_height;
+   unsigned custom_vp_full_width;
+   unsigned custom_vp_full_height;
 } video_frame_info_t;
 
 /* Optionally implemented interface to poke more
