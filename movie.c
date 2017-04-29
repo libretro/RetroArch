@@ -316,7 +316,7 @@ static void bsv_movie_frame_rewind(bsv_movie_t *handle)
 
 static void bsv_movie_init_state(void)
 {
-   settings_t *settings = config_get_ptr();
+   bool set_granularity = false;
 
    if (bsv_movie_ctl(BSV_MOVIE_CTL_START_PLAYBACK, NULL))
    {
@@ -334,7 +334,7 @@ static void bsv_movie_init_state(void)
             2, 180, false);
       RARCH_LOG("%s.\n", msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK));
 
-      configuration_set_uint(settings, settings->uints.rewind_granularity, 1);
+      set_granularity = true;
    }
    else if (bsv_movie_state.movie_start_recording)
    {
@@ -359,6 +359,12 @@ static void bsv_movie_init_state(void)
             msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
             bsv_movie_state.movie_start_path);
 
+      set_granularity = true;
+   }
+
+   if (set_granularity)
+   {
+      settings_t *settings = config_get_ptr();
       configuration_set_uint(settings, settings->uints.rewind_granularity, 1);
    }
 }
@@ -508,7 +514,8 @@ static bool runloop_check_movie_init(void)
 
    if (settings->ints.state_slot > 0)
       snprintf(path, sizeof(path), "%s%d",
-            bsv_movie_state.movie_path, settings->ints.state_slot);
+            bsv_movie_state.movie_path,
+            settings->ints.state_slot);
    else
       strlcpy(path, bsv_movie_state.movie_path, sizeof(path));
 
