@@ -41,7 +41,6 @@
 
 extern void *memcpy_neon(void *dst, const void *src, size_t n);
 
-
 static void vita2d_gfx_set_viewport(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate);
       
@@ -186,7 +185,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
    }
 
    if (vita->should_resize)
-      vita2d_gfx_update_viewport(vita);
+      vita2d_gfx_update_viewport(vita, video_info);
 
    vita2d_start_drawing();
 
@@ -345,7 +344,8 @@ static void vita2d_set_projection(vita_video_t *vita,
    matrix_4x4_multiply(vita->mvp, rot, vita->mvp_no_rot);
 }
 
-static void vita2d_gfx_update_viewport(vita_video_t* vita)
+static void vita2d_gfx_update_viewport(vita_video_t* vita,
+      video_frame_info_t *video_info)
 {
    int x                = 0;
    int y                = 0;
@@ -374,15 +374,10 @@ static void vita2d_gfx_update_viewport(vita_video_t* vita)
 #if defined(HAVE_MENU)
       if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         struct video_viewport *custom = video_viewport_get_custom();
-
-         if (custom)
-         {
-            x      = custom->x;
-            y      = custom->y;
-            width  = custom->width;
-            height = custom->height;
-         }
+         x      = video_info->custom_vp_x;
+         y      = video_info->custom_vp_y;
+         width  = video_info->custom_vp_width;
+         height = video_info->custom_vp_height;
       }
       else
 #endif

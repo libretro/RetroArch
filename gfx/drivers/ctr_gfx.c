@@ -122,7 +122,7 @@ static INLINE void ctr_set_screen_coords(ctr_video_t * ctr)
 }
 
 
-static void ctr_update_viewport(ctr_video_t* ctr)
+static void ctr_update_viewport(ctr_video_t* ctr, video_frame_info_t *video_info)
 {
    int x                = 0;
    int y                = 0;
@@ -144,15 +144,10 @@ static void ctr_update_viewport(ctr_video_t* ctr)
 #if defined(HAVE_MENU)
       if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         struct video_viewport *custom = video_viewport_get_custom();
-
-         if (custom)
-         {
-            x      = custom->x;
-            y      = custom->y;
-            width  = custom->width;
-            height = custom->height;
-         }
+         x      = video_info->custom_vp_x;
+         y      = video_info->custom_vp_y;
+         width  = video_info->custom_vp_width;
+         height = video_info->custom_vp_height;
       }
       else
 #endif
@@ -611,7 +606,7 @@ static bool ctr_frame(void* data, const void* frame,
    fflush(stdout);
 
    if (ctr->should_resize)
-      ctr_update_viewport(ctr);
+      ctr_update_viewport(ctr, video_info);
 
    ctrGuSetMemoryFill(true, (u32*)ctr->drawbuffers.top.left, 0x00000000,
                     (u32*)ctr->drawbuffers.top.left + 2 * CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT,
