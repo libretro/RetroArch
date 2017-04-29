@@ -130,7 +130,8 @@ static void vita2d_free_overlay(vita_video_t *vita)
 }
 #endif
 
-static void vita2d_gfx_update_viewport(vita_video_t* vita);
+static void vita2d_gfx_update_viewport(vita_video_t* vita,
+      video_frame_info_t *video_info);
 
 static bool vita2d_gfx_frame(void *data, const void *frame,
       unsigned width, unsigned height, uint64_t frame_count,
