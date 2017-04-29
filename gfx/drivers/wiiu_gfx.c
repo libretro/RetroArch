@@ -290,7 +290,7 @@ static void* wiiu_gfx_init(const video_info_t* video,
    if (input && input_data)
    {
       settings_t *settings = config_get_ptr();
-      wiiuinput            = input_wiiu.init(settings->paths.input_joypad_driver);
+      wiiuinput            = input_wiiu.init(settings->arrays.input_joypad_driver);
       *input               = wiiuinput ? &input_wiiu : NULL;
       *input_data          = wiiuinput;
    }
