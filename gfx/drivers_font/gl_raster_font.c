@@ -497,7 +497,7 @@ static void gl_raster_font_render_msg(
          gl_raster_font_render_message(font, msg, scale, color, x, y, text_align);
    }
 
-   if (!font->block)
+   if (!font->block && font->gl)
       gl_raster_font_restore_viewport(width, height, font->gl, false);
 }
 
@@ -524,7 +524,9 @@ static void gl_raster_font_flush_block(unsigned width, unsigned height,
 
    gl_raster_font_setup_viewport(width, height, font, block->fullscreen);
    gl_raster_font_draw_vertices(font, (video_coords_t*)&block->carr.coords);
-   gl_raster_font_restore_viewport(width, height, font->gl, block->fullscreen);
+
+   if (font->gl)
+      gl_raster_font_restore_viewport(width, height, font->gl, block->fullscreen);
 }
 
 static void gl_raster_font_bind_block(void *data, void *userdata)
