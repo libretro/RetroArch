@@ -1097,7 +1097,9 @@ static void zarch_context_reset(void *data, bool is_threaded)
    menu_display_allocate_white_texture();
 
    menu_display_set_header_height(zui->header_height);
-   zui->font = menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH_FONT, zui->font_size);
+   zui->font = menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH_FONT,
+         zui->font_size,
+         is_threaded);
 }
 
 static int zarch_iterate(void *data, void *userdata, enum menu_action action)

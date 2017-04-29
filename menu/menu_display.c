@@ -212,23 +212,24 @@ void menu_display_font_free(font_data_t *font)
    font_driver_free(font);
 }
 
-static font_data_t *menu_display_font_main_init(menu_display_ctx_font_t *font)
+static font_data_t *menu_display_font_main_init(menu_display_ctx_font_t *font,
+      bool is_threaded)
 {
    font_data_t *font_data = NULL;
-   bool *is_threaded      = video_driver_get_threaded();
 
    if (!font || !menu_disp)
       return NULL;
 
    if (!menu_disp->font_init_first((void**)&font_data,
             video_driver_get_ptr(false),
-            font->path, font->size, *is_threaded))
+            font->path, font->size, is_threaded))
       return NULL;
 
    return font_data;
 }
 
-font_data_t *menu_display_font(enum application_special_type type, float font_size)
+font_data_t *menu_display_font(enum application_special_type type, float font_size,
+      bool is_threaded)
 {
    menu_display_ctx_font_t font_info;
    char fontpath[PATH_MAX_LENGTH];
@@ -240,7 +241,7 @@ font_data_t *menu_display_font(enum application_special_type type, float font_si
    font_info.path = fontpath;
    font_info.size = font_size;
 
-   return menu_display_font_main_init(&font_info);
+   return menu_display_font_main_init(&font_info, is_threaded);
 }
 
 void menu_display_font_bind_block(font_data_t *font, void *block)

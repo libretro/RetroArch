@@ -295,7 +295,8 @@ void menu_display_draw_text(
 
 void menu_display_set_alpha(float *color, float alpha_value);
 
-font_data_t *menu_display_font(enum application_special_type type, float font_size);
+font_data_t *menu_display_font(enum application_special_type type, float font_size,
+      bool video_is_threaded);
 
 void menu_display_reset_textures_list(const char *texture_path, const char *iconpath,
       uintptr_t *item, enum texture_filter_type filter_type);

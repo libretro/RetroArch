@@ -1440,11 +1440,15 @@ static void mui_layout(mui_handle_t *mui, bool video_is_threaded)
    mui->glyph_width = new_font_size * 3/4;
    mui->glyph_width2 = new_font_size2 * 3/4;
 
-   mui->font = menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_FONT,
-         new_font_size);
+   mui->font = menu_display_font(
+         APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_FONT,
+         new_font_size,
+         video_is_threaded);
 
-   mui->font2 = menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_FONT,
-         new_font_size2);
+   mui->font2 = menu_display_font(
+         APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_FONT,
+         new_font_size2,
+         video_is_threaded);
 
    if (mui->font) /* calculate a more realistic ticker_limit */
    {
