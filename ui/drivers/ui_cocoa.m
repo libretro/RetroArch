@@ -387,7 +387,7 @@ static void open_document_handler(ui_browser_window_state_t *state, bool result)
         browser_state.filters       = strdup("dylib");
         browser_state.filters_title = strdup("Core");
         browser_state.title         = strdup("Load Core");
-        browser_state.startdir      = strdup(settings->directory.libretro);
+        browser_state.startdir      = strdup(settings->paths.directory_libretro);
         
         bool result = browser->open(&browser_state);
         open_core_handler(&browser_state, result);
@@ -407,7 +407,7 @@ static void open_document_handler(ui_browser_window_state_t *state, bool result)
     {
         ui_browser_window_state_t browser_state = {{0}};
         settings_t *settings  = config_get_ptr();
-        NSString *startdir    = BOXSTRING(settings->directory.menu_content);
+        NSString *startdir    = BOXSTRING(settings->paths.directory_menu_content);
         
         if (!startdir.length)
             startdir           = BOXSTRING("/");
@@ -430,7 +430,7 @@ static void open_document_handler(ui_browser_window_state_t *state, bool result)
 - (IBAction)showCoresDirectory:(id)sender
 {
    settings_t *settings = config_get_ptr();
-   [[NSWorkspace sharedWorkspace] openFile:BOXSTRING(settings->directory.libretro)];
+   [[NSWorkspace sharedWorkspace] openFile:BOXSTRING(settings->paths.directory_libretro)];
 }
 
 - (IBAction)showPreferences:(id)sender
