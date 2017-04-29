@@ -143,7 +143,7 @@ static void xmb_init_ribbon(nk_menu_handle_t * xmb)
    free(ribbon_verts);
 }
 
-static void *nk_menu_init(void **userdata)
+static void *nk_menu_init(void **userdata, bool video_is_threaded)
 {
 #if 1
    unsigned i;
@@ -159,7 +159,7 @@ static void *nk_menu_init(void **userdata)
    if (!menu)
       goto error;
 
-   if (!menu_display_init_first_driver())
+   if (!menu_display_init_first_driver(video_is_threaded))
       goto error;
 
    nk = (nk_menu_handle_t*)calloc(1, sizeof(nk_menu_handle_t));

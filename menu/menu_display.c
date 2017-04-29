@@ -103,10 +103,10 @@ void menu_display_toggle_set_reason(enum menu_toggle_reason reason)
   menu_display_toggle_reason = reason;
 }
 
-static const char *menu_video_get_ident(void)
+static const char *menu_video_get_ident(bool video_is_threaded)
 {
 #ifdef HAVE_THREADS
-   if (video_driver_is_threaded())
+   if (video_is_threaded)
       return video_thread_get_ident();
 #endif
 
@@ -114,9 +114,10 @@ static const char *menu_video_get_ident(void)
 }
 
 static bool menu_display_check_compatibility(
-      enum menu_display_driver_type type)
+      enum menu_display_driver_type type,
+      bool video_is_threaded)
 {
-   const char *video_driver = menu_video_get_ident();
+   const char *video_driver = menu_video_get_ident(video_is_threaded);
 
    switch (type)
    {
@@ -450,14 +451,15 @@ float menu_display_get_dpi(void)
    return dpi;
 }
 
-bool menu_display_init_first_driver(void)
+bool menu_display_init_first_driver(bool video_is_threaded)
 {
    unsigned i;
 
    for (i = 0; menu_display_ctx_drivers[i]; i++)
    {
       if (!menu_display_check_compatibility(
-               menu_display_ctx_drivers[i]->type))
+               menu_display_ctx_drivers[i]->type,
+               video_is_threaded))
          continue;
 
       RARCH_LOG("[Menu]: Found menu display driver: \"%s\".\n",

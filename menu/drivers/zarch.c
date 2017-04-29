@@ -990,7 +990,7 @@ static void zarch_frame(void *data, video_frame_info_t *video_info)
    menu_display_unset_viewport(video_info->width, video_info->height);
 }
 
-static void *zarch_init(void **userdata)
+static void *zarch_init(void **userdata, bool video_is_threaded)
 {
    zui_t *zui                              = NULL;
    menu_handle_t *menu                     = (menu_handle_t*)
@@ -999,7 +999,7 @@ static void *zarch_init(void **userdata)
    if (!menu)
       goto error;
 
-   if (!menu_display_init_first_driver())
+   if (!menu_display_init_first_driver(video_is_threaded))
       goto error;
 
    zui       = (zui_t*)calloc(1, sizeof(zui_t));

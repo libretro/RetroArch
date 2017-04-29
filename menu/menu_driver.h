@@ -228,7 +228,7 @@ typedef struct menu_ctx_driver
    int   (*iterate)(void *data, void *userdata, enum menu_action action);
    void  (*render)(void *data);
    void  (*frame)(void *data, video_frame_info_t *video_info);
-   void* (*init)(void**);
+   void* (*init)(void**, bool);
    void  (*free)(void*);
    void  (*context_reset)(void *data, bool video_is_threaded);
    void  (*context_destroy)(void *data);

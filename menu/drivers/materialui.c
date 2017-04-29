@@ -1469,7 +1469,7 @@ static void mui_layout(mui_handle_t *mui, bool video_is_threaded)
    }
 }
 
-static void *mui_init(void **userdata)
+static void *mui_init(void **userdata, bool video_is_threaded)
 {
    mui_handle_t   *mui = NULL;
    menu_handle_t *menu = (menu_handle_t*)
@@ -1478,7 +1478,7 @@ static void *mui_init(void **userdata)
    if (!menu)
       goto error;
 
-   if (!menu_display_init_first_driver())
+   if (!menu_display_init_first_driver(video_is_threaded))
       goto error;
 
    mui = (mui_handle_t*)calloc(1, sizeof(mui_handle_t));

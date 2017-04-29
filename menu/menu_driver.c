@@ -474,7 +474,7 @@ static bool menu_driver_init_internal(bool video_is_threaded)
       return true;
 
    menu_driver_data = (menu_handle_t*)
-      menu_driver_ctx->init(&menu_userdata);
+      menu_driver_ctx->init(&menu_userdata, video_is_threaded);
 
    if (!menu_driver_data || !menu_init(menu_driver_data))
    {

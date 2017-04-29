@@ -3168,7 +3168,7 @@ static void xmb_init_ribbon(xmb_handle_t * xmb)
 
 
 
-static void *xmb_init(void **userdata)
+static void *xmb_init(void **userdata, bool video_is_threaded)
 {
    unsigned width, height;
    xmb_handle_t *xmb          = NULL;
@@ -3178,7 +3178,7 @@ static void *xmb_init(void **userdata)
    if (!menu)
       goto error;
 
-   if (!menu_display_init_first_driver())
+   if (!menu_display_init_first_driver(video_is_threaded))
       goto error;
 
    video_driver_get_size(&width, &height);

@@ -653,7 +653,7 @@ static void rgui_framebuffer_free(void)
    rgui_framebuf_data = NULL;
 }
 
-static void *rgui_init(void **userdata)
+static void *rgui_init(void **userdata, bool video_is_threaded)
 {
    size_t fb_pitch, start;
    unsigned fb_width, fb_height, new_font_height;
