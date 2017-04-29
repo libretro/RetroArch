@@ -655,19 +655,6 @@ static int general_push(menu_displaylist_info_t *info,
 
    switch (id)
    {
-      case PUSH_ARCHIVE_OPEN_DETECT_CORE:
-         if (list && !string_is_empty(list->all_ext))
-            strlcpy(info->exts, list->all_ext, sizeof(info->exts));
-         else if (system_menu->valid_extensions)
-         {
-            if (!string_is_empty(system_menu->valid_extensions))
-               strlcpy(info->exts, system_menu->valid_extensions,
-                     sizeof(info->exts));
-         }
-         else
-            strlcpy(info->exts, system->valid_extensions, sizeof(info->exts));
-
-         break;
       case PUSH_ARCHIVE_OPEN:
          if (system_menu->valid_extensions)
          {
@@ -694,6 +681,7 @@ static int general_push(menu_displaylist_info_t *info,
                strlcpy(info->exts, system->valid_extensions, sizeof(info->exts));
          }
          break;
+      case PUSH_ARCHIVE_OPEN_DETECT_CORE:
       case PUSH_DETECT_CORE_LIST:
          {
             char newstring[PATH_MAX_LENGTH];
