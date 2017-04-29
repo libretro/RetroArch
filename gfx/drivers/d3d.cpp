@@ -705,13 +705,10 @@ static void d3d_calculate_rect(void *data,
       {
          video_viewport_t *custom = video_viewport_get_custom();
 
-         if (custom)
-         {
-            *x          = custom->x;
-            *y          = custom->y;
-            *width      = custom->width;
-            *height     = custom->height;
-         }
+         *x          = custom->x;
+         *y          = custom->y;
+         *width      = custom->width;
+         *height     = custom->height;
       }
       else
 #endif

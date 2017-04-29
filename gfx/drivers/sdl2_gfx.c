@@ -296,13 +296,10 @@ static void sdl_refresh_viewport(sdl2_video_t *vid)
       const struct video_viewport *custom = 
          (const struct video_viewport*)video_viewport_get_custom();
 
-      if (custom)
-      {
-         vid->vp.x = custom->x;
-         vid->vp.y = custom->y;
-         vid->vp.width  = custom->width;
-         vid->vp.height = custom->height;
-      }
+      vid->vp.x = custom->x;
+      vid->vp.y = custom->y;
+      vid->vp.width  = custom->width;
+      vid->vp.height = custom->height;
    }
    else if (vid->video.force_aspect)
    {

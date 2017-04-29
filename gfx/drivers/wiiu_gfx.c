@@ -177,13 +177,10 @@ static void wiiu_gfx_update_viewport(wiiu_video_t* wiiu)
       {
          struct video_viewport *custom = video_viewport_get_custom();
 
-         if (custom)
-         {
-            x      = custom->x;
-            y      = custom->y;
-            width  = custom->width;
-            height = custom->height;
-         }
+         x      = custom->x;
+         y      = custom->y;
+         width  = custom->width;
+         height = custom->height;
       }
       else
 #endif

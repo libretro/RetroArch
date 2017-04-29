@@ -471,7 +471,6 @@ static void vita2d_gfx_set_viewport(void *data, unsigned viewport_width,
       {
          const struct video_viewport *custom = video_viewport_get_custom();
 
-         /* Vukan has top-left origin viewport. */
          x               = custom->x;
          y               = custom->y;
          viewport_width  = custom->width;
