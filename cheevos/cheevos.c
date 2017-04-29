@@ -65,6 +65,10 @@
  * from retroachievements.org. */
 #undef CHEEVOS_JSON_OVERRIDE
 
+/* Define this macro with a string to save the JSON file to disk with
+ * that name. */
+#undef CHEEVOS_SAVE_JSON
+
 /* Define this macro to have the password and token logged. THIS WILL DISCLOSE
  * THE USER'S PASSWORD, TAKE CARE! */
 #undef CHEEVOS_LOG_PASSWORD
@@ -3103,6 +3107,13 @@ found:
    if (cheevos_get_by_game_id(&json, game_id, &timeout) == 0 && json != NULL)
 #endif
    {
+#ifdef CHEEVOS_SAVE_JSON
+      {
+         FILE* file = fopen(CHEEVOS_SAVE_JSON, "w");
+         fwrite((void*)json, 1, strlen(json), file);
+         fclose(file);
+      }
+#endif
       if (!settings->bools.cheevos_enable || !cheevos_parse(json))
       {
          cheevos_deactivate_unlocks(game_id, &timeout);
