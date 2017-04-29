@@ -710,9 +710,10 @@ uint64_t input_menu_keys_pressed(
 
       if (check_input_driver_block_hotkey(binds_norm, binds_auto))
       {
+         const struct retro_keybind *htkey = &input_config_binds[0][RARCH_ENABLE_HOTKEY];
+
          joypad_info.joy_idx               = settings->uints.input_joypad_map[0];
          joypad_info.auto_binds            = input_autoconf_binds[joypad_info.joy_idx];
-         const struct retro_keybind *htkey = &input_config_binds[0][RARCH_ENABLE_HOTKEY];
 
          if (htkey->valid 
                && current_input->input_state(current_input_data, joypad_info,
