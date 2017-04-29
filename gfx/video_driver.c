@@ -94,19 +94,19 @@
 #define video_driver_is_threaded() (false)
 #endif
 
-#define video_driver_threaded_lock() \
-   if (video_driver_is_threaded()) \
+#define video_driver_threaded_lock(is_threaded) \
+   if (is_threaded) \
       video_driver_lock()
 
-#define video_driver_threaded_unlock() \
-   if (video_driver_is_threaded()) \
+#define video_driver_threaded_unlock(is_threaded) \
+   if (is_threaded) \
       video_driver_unlock()
 #else
 #define video_driver_lock()            ((void)0)
 #define video_driver_unlock()          ((void)0)
 #define video_driver_lock_free()       ((void)0)
-#define video_driver_threaded_lock()   ((void)0)
-#define video_driver_threaded_unlock() ((void)0)
+#define video_driver_threaded_lock(is_threaded)   ((void)0)
+#define video_driver_threaded_unlock(is_threaded) ((void)0)
 #define video_driver_context_lock()    ((void)0)
 #define video_driver_context_unlock()  ((void)0)
 #endif
@@ -994,22 +994,26 @@ void video_driver_cached_frame_get(const void **data, unsigned *width,
 
 void video_driver_get_size(unsigned *width, unsigned *height)
 {
-   video_driver_threaded_lock();
+   bool is_threaded = video_driver_is_threaded();
+
+   video_driver_threaded_lock(is_threaded);
    if (width)
       *width  = video_driver_width;
    if (height)
       *height = video_driver_height;
-   video_driver_threaded_unlock();
+   video_driver_threaded_unlock(is_threaded);
 }
 
 void video_driver_set_size(unsigned *width, unsigned *height)
 {
-   video_driver_threaded_lock();
+   bool is_threaded = video_driver_is_threaded();
+
+   video_driver_threaded_lock(is_threaded);
    if (width)
       video_driver_width  = *width;
    if (height)
       video_driver_height = *height;
-   video_driver_threaded_unlock();
+   video_driver_threaded_unlock(is_threaded);
 }
 
 /**
@@ -2241,8 +2245,9 @@ void video_driver_build_info(video_frame_info_t *video_info)
    bool is_paused                    = false;
    bool is_idle                      = false;
    bool is_slowmotion                = false;
+   bool is_threaded                  = video_driver_is_threaded();
    settings_t *settings              = NULL;
-   video_driver_threaded_lock();
+   video_driver_threaded_lock(is_threaded);
    settings                          = config_get_ptr();
    video_info->refresh_rate          = settings->floats.video_refresh_rate;
    video_info->black_frame_insertion = 
@@ -2317,7 +2322,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->runloop_is_paused      = is_paused;
    video_info->runloop_is_idle        = is_idle;
    video_info->runloop_is_slowmotion  = is_slowmotion;
-   video_driver_threaded_unlock();
+   video_driver_threaded_unlock(is_threaded);
 }
 
 /**
