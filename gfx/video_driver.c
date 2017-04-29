@@ -66,6 +66,12 @@
 #define FPS_UPDATE_INTERVAL 256
 
 #ifdef HAVE_THREADS
+#define video_driver_is_threaded() ((!video_driver_is_hw_context() && video_driver_threaded) ? true : false)
+#else
+#define video_driver_is_threaded() (false)
+#endif
+
+#ifdef HAVE_THREADS
 #define video_driver_lock() \
    if (display_lock) \
       slock_lock(display_lock)
@@ -87,12 +93,6 @@
    slock_free(context_lock); \
    display_lock = NULL; \
    context_lock = NULL
-
-#ifdef HAVE_THREADS
-#define video_driver_is_threaded() ((!video_driver_is_hw_context() && video_driver_threaded) ? true : false)
-#else
-#define video_driver_is_threaded() (false)
-#endif
 
 #define video_driver_threaded_lock(is_threaded) \
    if (is_threaded) \
@@ -1069,8 +1069,12 @@ bool video_monitor_fps_statistics(double *refresh_rate,
    retro_time_t accum   = 0, avg, accum_var = 0;
    unsigned samples      = MIN(MEASURE_FRAME_TIME_SAMPLES_COUNT,
          (unsigned)video_driver_frame_time_count);
+#ifdef HAVE_THREADS
+   if (video_driver_is_threaded())
+      return false;
+#endif
 
-   if (video_driver_is_threaded() || (samples < 2))
+   if (samples < 2)
       return false;
 
    /* Measure statistics on frame time (microsecs), *not* FPS. */
