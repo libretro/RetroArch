@@ -631,26 +631,26 @@ void menu_display_draw_texture_slice(
    float V_BL[2], V_BR[2], V_TL[2], V_TR[2], T_BL[2], T_BR[2], T_TL[2], T_TR[2];
 
    /* need space for the coordinates of two triangles in a strip, so 8 vertices */
-   float *tex_coord = (float*)malloc(8 * sizeof(float));
+   float *tex_coord  = (float*)malloc(8 * sizeof(float));
    float *vert_coord = (float*)malloc(8 * sizeof(float));
-   float *colors = (float*)malloc(16 * sizeof(float));
+   float *colors     = (float*)malloc(16 * sizeof(float));
 
    /* normalized width/height of the amount to offset from the corners,
     * for both the vertex and texture coordinates */
-   float vert_woff = (offset * scale_factor) / (float)width;
-   float vert_hoff = (offset * scale_factor) / (float)height;
-   float tex_woff = offset / (float)w;
-   float tex_hoff = offset / (float)h;
+   float vert_woff   = (offset * scale_factor) / (float)width;
+   float vert_hoff   = (offset * scale_factor) / (float)height;
+   float tex_woff    = offset / (float)w;
+   float tex_hoff    = offset / (float)h;
 
    /* the width/height of the middle sections of both the scaled and original image */
-   float vert_scaled_mid_width = (new_w - (offset * scale_factor * 2)) / (float)width;
+   float vert_scaled_mid_width  = (new_w - (offset * scale_factor * 2)) / (float)width;
    float vert_scaled_mid_height = (new_h - (offset * scale_factor * 2)) / (float)height;
-   float tex_mid_width = (w - (offset * 2)) / (float)w;
-   float tex_mid_height = (h - (offset * 2)) / (float)h;
+   float tex_mid_width          = (w - (offset * 2)) / (float)w;
+   float tex_mid_height         = (h - (offset * 2)) / (float)h;
 
    /* normalized coordinates for the start position of the image */
-   float norm_x = x / (float)width;
-   float norm_y = (height - y) / (float)height;
+   float norm_x                 = x / (float)width;
+   float norm_y                 = (height - y) / (float)height;
 
    /* the four vertices of the top-left corner of the image,
     * used as a starting point for all the other sections */
