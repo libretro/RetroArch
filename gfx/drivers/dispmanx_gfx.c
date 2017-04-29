@@ -16,6 +16,8 @@
 
 #include <bcm_host.h>
 
+#include <rthreads/rthreads.h>
+
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
@@ -34,6 +36,10 @@ struct dispmanx_page
    /* Each page contains it's own resource handler 
     * instead of pointing to in by page number */
    DISPMANX_RESOURCE_HANDLE_T resource;
+   bool used;
+   /* Each page has it's own mutex for
+    * isolating it's used flag access. */
+   slock_t *page_used_mutex;
 
    /* This field will allow us to access the 
     * main _dispvars struct from the vsync CB function */
@@ -51,7 +57,10 @@ struct dispmanx_surface
    struct dispmanx_page *pages;
    /* the page that's currently on screen */
    struct dispmanx_page *current_page;
-   bool flip_page;
+   /*The page to wich we will dump the render. We need to know this
+    * already when we enter the surface update function. No time to wait
+    * for free pages before blitting and showing the just rendered frame! */
+   struct dispmanx_page *next_page;
    unsigned int bpp;   
 
    VC_RECT_T src_rect;
@@ -93,6 +102,12 @@ struct dispmanx_video
    unsigned int dispmanx_width;
    unsigned int dispmanx_height;
 
+   /* For threading */
+   scond_t *vsync_condition;	
+   slock_t *vsync_cond_mutex;
+   slock_t *pending_mutex;
+   unsigned int pageflip_pending;
+
    /* Menu */
    bool menu_active;
 
@@ -114,15 +129,94 @@ struct dispmanx_video
    float aspect_ratio;
 };
 
+/* If no free page is available when called, wait for a page flip. */
+static struct dispmanx_page *dispmanx_get_free_page(void *data, struct dispmanx_surface *surface)
+{
+   unsigned i;
+   struct dispmanx_video *_dispvars = data;
+   struct dispmanx_page *page = NULL;
+
+   while (!page)
+   {
+      /* Try to find a free page */
+      for (i = 0; i < surface->numpages; ++i)
+      {
+         if (!surface->pages[i].used)
+         {
+            page = (surface->pages) + i;
+            break;
+         }
+      }
+      
+      /* If no page is free at the moment,
+       * wait until a free page is freed by vsync CB. */
+      if (!page)
+      {
+         slock_lock(_dispvars->vsync_cond_mutex);
+         scond_wait(_dispvars->vsync_condition, _dispvars->vsync_cond_mutex);
+         slock_unlock(_dispvars->vsync_cond_mutex);
+      }
+   }
+
+   /* We mark the choosen page as used */
+   slock_lock(page->page_used_mutex);
+   page->used = true;
+   slock_unlock(page->page_used_mutex);
+
+   return page;
+}
+
+static void dispmanx_vsync_callback(DISPMANX_UPDATE_HANDLE_T u, void *data)
+{
+   struct dispmanx_page *page = data;
+   struct dispmanx_surface *surface = page->surface;
+
+   /* Marking the page as free must be done before the signaling
+    * so when update_main continues (it won't continue until we signal) 
+    * we can chose this page as free */
+   if (surface->current_page)
+   {
+      slock_lock(surface->current_page->page_used_mutex);
+
+      /* We mark as free the page that was visible until now */
+      surface->current_page->used = false;
+      slock_unlock(surface->current_page->page_used_mutex);
+   }
+   
+   /* The page on which we issued the flip that
+    * caused this callback becomes the visible one */
+   surface->current_page = page;
+
+   /* These two things must be isolated "atomically" to avoid getting 
+    * a false positive in the pending_mutex test in update_main. */ 
+   slock_lock(page->dispvars->pending_mutex);
+
+   page->dispvars->pageflip_pending--;	
+   scond_signal(page->dispvars->vsync_condition);
+
+   slock_unlock(page->dispvars->pending_mutex);
+}
+
 static void dispmanx_surface_free(void *data, struct dispmanx_surface **sp)
 {
    int i;	
    struct dispmanx_video *_dispvars = data;
    struct dispmanx_surface *surface = *sp;
 
+   /* What if we run into the vsync cb code after freeing the surface? 
+    * We could be trying to get non-existant lock, signal non-existant condition..
+    * So we wait for any pending flips to complete before freeing any surface. */ 
+   slock_lock(_dispvars->pending_mutex);
+   if (_dispvars->pageflip_pending > 0)
+      scond_wait(_dispvars->vsync_condition, _dispvars->pending_mutex);
+
+   slock_unlock(_dispvars->pending_mutex);
+
    for (i = 0; i < surface->numpages; i++)
    { 
       vc_dispmanx_resource_delete(surface->pages[i].resource);
+      surface->pages[i].used = false;   
+      slock_free(surface->pages[i].page_used_mutex); 
    }
 
    free(surface->pages);
@@ -166,12 +260,16 @@ static void dispmanx_surface_setup(void *data,  int src_width, int src_height,
 
    for (i = 0; i < surface->numpages; i++)
    {
+      surface->pages[i].used = false;   
       surface->pages[i].surface = surface;   
       surface->pages[i].dispvars = _dispvars;   
+      surface->pages[i].page_used_mutex = slock_new(); 
    }
 
-   /* We blit to page 0 first */
-   surface->flip_page = 0;
+   /* No need to mutex this access to the "used" member because
+    * the flipping/callbacks are not still running */
+   surface->next_page = &(surface->pages[0]);
+   surface->next_page->used = true;
 
    /* The "visible" width obtained from the core pitch. We blit based on 
     * the "visible" width, for cores with things between scanlines. */
@@ -227,24 +325,40 @@ static void dispmanx_surface_update_async(void *data, const void *frame,
 static void dispmanx_surface_update(void *data, const void *frame,
       struct dispmanx_surface *surface)
 {
+   /* Updating is very delicate: we REALLY want to show the just rendered frame ASAP,
+    * so we dump and issue flip, and then we can wait for free pages, but we don't
+    * want to wait for free pages at the beggining of the update or we will be 
+    * adding lag! */
+  
    struct dispmanx_video *_dispvars = data;
-   struct dispmanx_page       *page = NULL;
-
-   page = &surface->pages[surface->flip_page];
-
+   
    /* Frame blitting */
-   vc_dispmanx_resource_write_data(page->resource, surface->pixformat,
+   vc_dispmanx_resource_write_data(surface->next_page->resource, surface->pixformat,
          surface->pitch, (void*)frame, &(surface->bmp_rect));
 
+   /* Dispmanx doesn't support more than one pending pageflip. Doing so would overwrite
+    * the page in the callback function, so we would be always freeing the same page. */
+   slock_lock(_dispvars->pending_mutex);
+   if (_dispvars->pageflip_pending > 0)
+      scond_wait(_dispvars->vsync_condition, _dispvars->pending_mutex);
+   slock_unlock(_dispvars->pending_mutex);
+   
    /* Issue a page flip that will be done at the next vsync. */
    _dispvars->update = vc_dispmanx_update_start(0);
 
    vc_dispmanx_element_change_source(_dispvars->update, surface->element,
-         page->resource);
+         surface->next_page->resource);
 
-   vc_dispmanx_update_submit_sync(_dispvars->update);
+   vc_dispmanx_update_submit(_dispvars->update,
+      dispmanx_vsync_callback, (void*)(surface->next_page));
 
-   surface->flip_page = !surface->flip_page;
+   slock_lock(_dispvars->pending_mutex);
+   _dispvars->pageflip_pending++;
+   slock_unlock(_dispvars->pending_mutex);
+
+   /* Get the next page ready for our next surface_update re-entry. 
+    * It's OK to wait now that we've issued the flip to the last produced frame! */
+   surface->next_page = dispmanx_get_free_page(_dispvars, surface);
 }
 
 /* Enable/disable bilinear filtering. */
@@ -300,6 +414,7 @@ static void *dispmanx_gfx_init(const video_info_t *video,
 
    /* Setup surface parameters */
    _dispvars->vc_image_ptr     = 0;
+   _dispvars->pageflip_pending = 0;	
    _dispvars->menu_active      = false;
    _dispvars->rgb32            = video->rgb32; 
 
@@ -309,7 +424,10 @@ static void *dispmanx_gfx_init(const video_info_t *video,
     * before we get to gfx_frame(). */
    _dispvars->aspect_ratio = video_driver_get_aspect_ratio();
 
-   /* Initialize the rest of video variables. */
+   /* Initialize the rest of the mutexes and conditions. */
+   _dispvars->vsync_condition  = scond_new();
+   _dispvars->vsync_cond_mutex = slock_new();
+   _dispvars->pending_mutex    = slock_new();
    _dispvars->core_width       = 0;
    _dispvars->core_height      = 0;
    _dispvars->menu_width       = 0;
@@ -576,6 +694,11 @@ static void dispmanx_gfx_free(void *data)
    /* Close display and deinitialize. */
    vc_dispmanx_display_close(_dispvars->display);
    bcm_host_deinit();
+
+   /* Destroy mutexes and conditions. */
+   slock_free(_dispvars->pending_mutex);
+   slock_free(_dispvars->vsync_cond_mutex);
+   scond_free(_dispvars->vsync_condition);		
 
    free(_dispvars);
 }
