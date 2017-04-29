@@ -295,6 +295,7 @@ static bool driver_update_system_av_info(const struct retro_system_av_info *info
  **/
 void drivers_init(int flags)
 {
+   bool video_is_threaded = false;
    if (flags & DRIVER_VIDEO_MASK)
       video_driver_unset_own_driver();
    if (flags & DRIVER_AUDIO_MASK)
@@ -322,7 +323,7 @@ void drivers_init(int flags)
          video_driver_get_hw_context();
 
       video_driver_monitor_reset();
-      video_driver_init();
+      video_driver_init(&video_is_threaded);
 
       if (!video_driver_is_video_cache_context_ack()
             && hwr->context_reset)
@@ -349,10 +350,13 @@ void drivers_init(int flags)
    core_info_init_current_core();
 
 #ifdef HAVE_MENU
-   if (flags & DRIVER_MENU_MASK)
+   if (flags & DRIVER_VIDEO_MASK)
    {
-      menu_driver_ctl(RARCH_MENU_CTL_INIT, NULL);
-      menu_driver_ctl(RARCH_MENU_CTL_CONTEXT_RESET, NULL);
+      if (flags & DRIVER_MENU_MASK)
+      {
+         menu_driver_ctl(RARCH_MENU_CTL_INIT, NULL);
+         menu_driver_ctl(RARCH_MENU_CTL_CONTEXT_RESET, NULL);
+      }
    }
 #endif
 

@@ -344,7 +344,7 @@ void video_driver_unset_rgba(void);
 bool video_driver_supports_rgba(void);
 bool video_driver_get_next_video_out(void);
 bool video_driver_get_prev_video_out(void);
-bool video_driver_init(void);
+bool video_driver_init(bool *video_is_threaded);
 void video_driver_destroy_data(void);
 void video_driver_free(void);
 void video_driver_free_hw_context(void);

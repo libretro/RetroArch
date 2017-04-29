@@ -681,7 +681,7 @@ error:
    return false;
 }
 
-static bool video_driver_init_internal(void)
+static bool video_driver_init_internal(bool *video_is_threaded)
 {
    unsigned max_dim, scale, width, height;
    const input_driver_t *tmp              = NULL;
@@ -809,6 +809,8 @@ static bool video_driver_init_internal(void)
 
 #ifdef HAVE_THREADS
    video.is_threaded   = video_driver_is_threaded();
+   *video_is_threaded  = video.is_threaded;
+
    if (video.is_threaded)
    {
       /* Can't do hardware rendering with threaded driver currently. */
@@ -1523,10 +1525,10 @@ bool video_driver_get_prev_video_out(void)
    return true;
 }
 
-bool video_driver_init(void)
+bool video_driver_init(bool *video_is_threaded)
 {
    video_driver_lock_new();
-   return video_driver_init_internal();
+   return video_driver_init_internal(video_is_threaded);
 }
 
 void video_driver_destroy_data(void)
