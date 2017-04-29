@@ -29,6 +29,7 @@
 #include "../command.h"
 #include "../configuration.h"
 #include "../driver.h"
+#include "../gfx/video_driver.h"
 #include "../retroarch.h"
 #include "../runloop.h"
 #include "../verbosity.h"

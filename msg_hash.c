@@ -14,10 +14,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
 #include <string.h>
 
 #include <rhash.h>
 #include <string/stdstring.h>
+#include <libretro.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

@@ -21,6 +21,7 @@
 #include <compat/strl.h>
 #include <lists/dir_list.h>
 #include <file/file_path.h>
+#include <file/config_file.h>
 #include <string/stdstring.h>
 
 #include "../input/input_config.h"

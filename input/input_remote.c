@@ -29,6 +29,7 @@
 #include <compat/posix_string.h>
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
+#include <libretro.h>
 #include <net/net_compat.h>
 #include <net/net_socket.h>
 

@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../msg_hash.h"
+#include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -21,6 +21,7 @@
 #include <compat/strl.h>
 #include <string/stdstring.h>
 
+#include "../msg_hash.h"
 #include "../../configuration.h"
 
 int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)

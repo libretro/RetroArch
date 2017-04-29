@@ -33,6 +33,7 @@
 
 #include "audio_driver.h"
 #include "audio_thread_wrapper.h"
+#include "../gfx/video_driver.h"
 #include "../record/record_driver.h"
 #include "../frontend/frontend_driver.h"
 
