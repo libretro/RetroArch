@@ -590,7 +590,9 @@ static void video_driver_pixel_converter_free(void)
 
 static void video_driver_free_internal(void)
 {
+#ifdef HAVE_THREADS
    bool is_threaded     = video_driver_is_threaded();
+#endif
 
    command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
 
@@ -615,8 +617,10 @@ static void video_driver_free_internal(void)
 
    command_event(CMD_EVENT_SHADER_DIR_DEINIT, NULL);
 
+#ifdef HAVE_THREADS
    if (is_threaded)
       return;
+#endif
 
    video_driver_monitor_compute_fps_statistics();
 }
@@ -994,26 +998,32 @@ void video_driver_cached_frame_get(const void **data, unsigned *width,
 
 void video_driver_get_size(unsigned *width, unsigned *height)
 {
+#ifdef HAVE_THREADS
    bool is_threaded = video_driver_is_threaded();
-
    video_driver_threaded_lock(is_threaded);
+#endif
    if (width)
       *width  = video_driver_width;
    if (height)
       *height = video_driver_height;
+#ifdef HAVE_THREADS
    video_driver_threaded_unlock(is_threaded);
+#endif
 }
 
 void video_driver_set_size(unsigned *width, unsigned *height)
 {
+#ifdef HAVE_THREADS
    bool is_threaded = video_driver_is_threaded();
-
    video_driver_threaded_lock(is_threaded);
+#endif
    if (width)
       video_driver_width  = *width;
    if (height)
       video_driver_height = *height;
+#ifdef HAVE_THREADS
    video_driver_threaded_unlock(is_threaded);
+#endif
 }
 
 /**
@@ -2245,9 +2255,11 @@ void video_driver_build_info(video_frame_info_t *video_info)
    bool is_paused                    = false;
    bool is_idle                      = false;
    bool is_slowmotion                = false;
-   bool is_threaded                  = video_driver_is_threaded();
    settings_t *settings              = NULL;
+#ifdef HAVE_THREADS
+   bool is_threaded                  = video_driver_is_threaded();
    video_driver_threaded_lock(is_threaded);
+#endif
    settings                          = config_get_ptr();
    video_info->refresh_rate          = settings->floats.video_refresh_rate;
    video_info->black_frame_insertion = 
@@ -2322,7 +2334,9 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->runloop_is_paused      = is_paused;
    video_info->runloop_is_idle        = is_idle;
    video_info->runloop_is_slowmotion  = is_slowmotion;
+#ifdef HAVE_THREADS
    video_driver_threaded_unlock(is_threaded);
+#endif
 }
 
 /**
