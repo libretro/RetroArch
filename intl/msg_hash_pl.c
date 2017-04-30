@@ -67,7 +67,7 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_MUTE:
          return "Wycisz dźwięk";
       case MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE:
-         return "Częstotliwość próbkowania dźwięku (KHz)";
+         return "Częstotliwość próbkowania dźwięku (Hz)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA:
          return "Audio Rate Control Delta";
       case MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER:

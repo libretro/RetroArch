@@ -975,7 +975,7 @@ const char *msg_hash_to_str_pt_pt(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_MUTE:
          return "Silenciar Áudio";
       case MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE:
-         return "Taxa de Amostragem de Áudio (KHz)";
+         return "Taxa de Amostragem de Áudio (Hz)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA:
          return "Variação Máxima de Taxa de Áudio";
       case MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER:
