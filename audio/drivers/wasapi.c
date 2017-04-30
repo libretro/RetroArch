@@ -496,7 +496,7 @@ static IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
 }
 
 static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
-      unsigned u, unsigned *new_rate)
+      unsigned u1, unsigned *u2)
 {
    HRESULT hr;
    bool com_initialized      = false;
@@ -521,9 +521,8 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    if (!w->device)
       goto error;
 
-   *new_rate = rate;
    w->client = wasapi_init_client(w->device,
-         &w->exclusive, &float_format, new_rate, latency);
+         &w->exclusive, &float_format, &rate, latency);
    if (!w->client)
       goto error;
 
