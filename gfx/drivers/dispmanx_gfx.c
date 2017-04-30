@@ -43,7 +43,7 @@ struct dispmanx_page
 
    /* This field will allow us to access the 
     * main _dispvars struct from the vsync CB function */
-   struct dispmanx_video *dispvars;	
+   struct dispmanx_video *dispvars;
 
    /* This field will allow us to access the 
     * surface the page belongs to. */
@@ -103,7 +103,7 @@ struct dispmanx_video
    unsigned int dispmanx_height;
 
    /* For threading */
-   scond_t *vsync_condition;	
+   scond_t *vsync_condition;
    slock_t *pending_mutex;
    unsigned int pageflip_pending;
 
@@ -191,7 +191,7 @@ static void dispmanx_vsync_callback(DISPMANX_UPDATE_HANDLE_T u, void *data)
     * a false positive in the pending_mutex test in update_main. */ 
    slock_lock(page->dispvars->pending_mutex);
 
-   page->dispvars->pageflip_pending--;	
+   page->dispvars->pageflip_pending--;
    scond_signal(page->dispvars->vsync_condition);
 
    slock_unlock(page->dispvars->pending_mutex);
@@ -223,7 +223,7 @@ static void dispmanx_surface_free(void *data, struct dispmanx_surface **sp)
 
    _dispvars->update = vc_dispmanx_update_start(0);
    vc_dispmanx_element_remove(_dispvars->update, surface->element);
-   vc_dispmanx_update_submit_sync(_dispvars->update);		
+   vc_dispmanx_update_submit_sync(_dispvars->update);
 
    free(surface);
    *sp = NULL;
@@ -235,7 +235,7 @@ static void dispmanx_surface_setup(void *data,  int src_width, int src_height,
       struct dispmanx_surface **sp)
 {
    struct dispmanx_video *_dispvars = data;
-   int i, dst_width, dst_height, dst_xpos, dst_ypos;
+   int i, dst_width, dst_height, dst_xpos, dst_ypos, visible_width;
    struct dispmanx_surface *surface = NULL;
 
    *sp = calloc (1, sizeof(struct dispmanx_surface));
@@ -273,9 +273,9 @@ static void dispmanx_surface_setup(void *data,  int src_width, int src_height,
 
    /* The "visible" width obtained from the core pitch. We blit based on 
     * the "visible" width, for cores with things between scanlines. */
-   int visible_width = visible_pitch / (bpp / 8);
+   visible_width = visible_pitch / (bpp / 8);
    
-   dst_width  = _dispvars->dispmanx_height * aspect;	
+   dst_width  = _dispvars->dispmanx_height * aspect;
    dst_height = _dispvars->dispmanx_height;
 
    /* If we obtain a scaled image width that is bigger than the physical screen width,
@@ -288,8 +288,8 @@ static void dispmanx_surface_setup(void *data,  int src_width, int src_height,
 
    /* We configure the rects now. */
    vc_dispmanx_rect_set(&surface->dst_rect, dst_xpos, dst_ypos, dst_width, dst_height);
-   vc_dispmanx_rect_set(&surface->bmp_rect, 0, 0, src_width, src_height);	
-   vc_dispmanx_rect_set(&surface->src_rect, 0, 0, src_width << 16, src_height << 16);	
+   vc_dispmanx_rect_set(&surface->bmp_rect, 0, 0, src_width, src_height);
+   vc_dispmanx_rect_set(&surface->src_rect, 0, 0, src_width << 16, src_height << 16);
 
    for (i = 0; i < surface->numpages; i++)
    {
@@ -349,12 +349,12 @@ static void dispmanx_surface_update(void *data, const void *frame,
    vc_dispmanx_element_change_source(_dispvars->update, surface->element,
          surface->next_page->resource);
 
-   vc_dispmanx_update_submit(_dispvars->update,
-      dispmanx_vsync_callback, (void*)(surface->next_page));
-
    slock_lock(_dispvars->pending_mutex);
    _dispvars->pageflip_pending++;
    slock_unlock(_dispvars->pending_mutex);
+
+   vc_dispmanx_update_submit(_dispvars->update,
+      dispmanx_vsync_callback, (void*)(surface->next_page));
 
    /* Get the next page ready for our next surface_update re-entry. 
     * It's OK to wait now that we've issued the flip to the last produced frame! */
@@ -364,10 +364,10 @@ static void dispmanx_surface_update(void *data, const void *frame,
 /* Enable/disable bilinear filtering. */
 static void dispmanx_set_scaling (bool bilinear_filter)
 {
-      if (bilinear_filter)
-         vc_gencmd_send( "%s", "scaling_kernel 0 -2 -6 -8 -10 -8 -3 2 18 50 82 119 155 187 213 227 227 213 187 155 119 82 50 18 2 -3 -8 -10 -8 -6 -2 0 0");
-      else
-         vc_gencmd_send( "%s", "scaling_kernel 0 0 0 0 0 0 0 0 1 1 1 1 255 255 255 255 255 255 255 255 1 1 1 1 0 0 0 0 0 0 0 0 1");
+   if (bilinear_filter)
+      vc_gencmd_send("%s", "scaling_kernel 0 -2 -6 -8 -10 -8 -3 2 18 50 82 119 155 187 213 227 227 213 187 155 119 82 50 18 2 -3 -8 -10 -8 -6 -2 0 0");
+   else
+      vc_gencmd_send("%s", "scaling_kernel 0 0 0 0 0 0 0 0 1 1 1 1 255 255 255 255 255 255 255 255 1 1 1 1 0 0 0 0 0 0 0 0 1");
 }
 
 static void dispmanx_blank_console (void *data)
@@ -414,7 +414,7 @@ static void *dispmanx_gfx_init(const video_info_t *video,
 
    /* Setup surface parameters */
    _dispvars->vc_image_ptr     = 0;
-   _dispvars->pageflip_pending = 0;	
+   _dispvars->pageflip_pending = 0;
    _dispvars->menu_active      = false;
    _dispvars->rgb32            = video->rgb32; 
 
@@ -696,7 +696,7 @@ static void dispmanx_gfx_free(void *data)
 
    /* Destroy mutexes and conditions. */
    slock_free(_dispvars->pending_mutex);
-   scond_free(_dispvars->vsync_condition);		
+   scond_free(_dispvars->vsync_condition);
 
    free(_dispvars);
 }
