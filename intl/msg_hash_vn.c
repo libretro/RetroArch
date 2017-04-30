@@ -1977,7 +1977,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_MUTE:
          return "Âm thanh Mute";
       case MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE:
-         return "Âm thanh Output Rate (KHz)";
+         return "Âm thanh Output Rate (Hz)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA:
          return "Âm thanh Rate Control Delta";
       case MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER:

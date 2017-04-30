@@ -1534,7 +1534,7 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_MUTE:
          return "Silenciar sonido";
       case MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE:
-         return "Frecuencia de sonido (KHz)";
+         return "Frecuencia de sonido (Hz)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA:
          return "Delta de control de frecuencia de sonido";
       case MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER:
