@@ -29,8 +29,8 @@ void libretro_dummy_retro_init(void)
 {
    unsigned i;
 
-   frame_buf = (uint16_t*)calloc(320 * 240, sizeof(uint16_t));
-   for (i = 0; i < 320 * 240; i++)
+   frame_buf = (uint16_t*)calloc(32 * 32, sizeof(uint16_t));
+   for (i = 0; i < 32 * 32; i++)
       frame_buf[i] = 4 << 5;
 }
 
@@ -70,10 +70,10 @@ void libretro_dummy_retro_get_system_av_info(
    info->timing.fps = 60.0;
    info->timing.sample_rate = 30000.0;
 
-   info->geometry.base_width  = 320;
-   info->geometry.base_height = 240;
-   info->geometry.max_width   = 320;
-   info->geometry.max_height  = 240;
+   info->geometry.base_width  = 32;
+   info->geometry.base_height = 32;
+   info->geometry.max_width   = 32;
+   info->geometry.max_height  = 32;
    info->geometry.aspect_ratio = 4.0 / 3.0;
 }
 
@@ -126,7 +126,7 @@ void libretro_dummy_retro_reset(void)
 void libretro_dummy_retro_run(void)
 {
    dummy_input_poll_cb();
-   dummy_video_cb(frame_buf, 320, 240, 640);
+   dummy_video_cb(frame_buf, 32, 32, 64);
 }
 
 /* This should never be called, it's only used as a placeholder. */
