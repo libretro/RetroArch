@@ -3191,6 +3191,34 @@ static bool setting_append_list(
                      general_read_handler,
                      SD_FLAG_NONE);
                settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+               CONFIG_UINT(
+                     list, list_info,
+                     &settings->uints.video_fullscreen_x,
+                     MENU_ENUM_LABEL_VIDEO_FULLSCREEN_X,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+                     fullscreen_x,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+               menu_settings_list_current_add_range(list, list_info, 0, 7680, 8, true, true);
+               settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+               CONFIG_UINT(
+                     list, list_info,
+                     &settings->uints.video_fullscreen_y,
+                     MENU_ENUM_LABEL_VIDEO_FULLSCREEN_Y,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+                     fullscreen_y,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+               menu_settings_list_current_add_range(list, list_info, 0, 4320, 8, true, true);
+               settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
             }
             CONFIG_FLOAT(
                   list, list_info,
