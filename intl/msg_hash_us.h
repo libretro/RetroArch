@@ -1547,6 +1547,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY,
       "<Use this directory>")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
       "Allow rotation")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
+      "Config Aspect Ratio")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_AUTO,
       "Auto Aspect Ratio")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
@@ -1659,6 +1661,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
       "Window Width")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
       "Window Height")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+      "Fullscreen Width")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+      "Fullscreen Height")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
       "Wi-Fi Driver")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
@@ -2462,6 +2468,10 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
       "Set the custom width size for the display window. Leaving it at 0 will attempt to scale the window as large as possible.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
       "Set the custom height size for the display window. Leaving it at 0 will attempt to scale the window as large as possible.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+      "Set the custom width size for the non-windowed fullscreen mode. Leaving it at 0 will use the desktop resolution.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+      "Set the custom height size for the non-windowed fullscreen mode. Leaving it at 0 will use the desktop resolution")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
       "Specify custom X axis position for onscreen text.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
@@ -2981,6 +2991,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
       "Quickly access all relevant in-game settings.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_INFORMATION,
       "View information pertaining to the application/core.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
+      "Floating point value for video aspect ratio (width / height), used if the Aspect Ratio is set to 'Config'.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
       "Custom viewport height that is used if the Aspect Ratio is set to 'Custom'.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,

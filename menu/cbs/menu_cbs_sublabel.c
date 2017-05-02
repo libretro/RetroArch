@@ -136,6 +136,8 @@ default_sublabel_macro(action_bind_sublabel_system_information,            MENU_
 default_sublabel_macro(action_bind_sublabel_quit_retroarch,                MENU_ENUM_SUBLABEL_QUIT_RETROARCH)
 default_sublabel_macro(action_bind_sublabel_video_window_width,            MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH)
 default_sublabel_macro(action_bind_sublabel_video_window_height,           MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT)
+default_sublabel_macro(action_bind_sublabel_video_fullscreen_x,            MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X)
+default_sublabel_macro(action_bind_sublabel_video_fullscreen_y,            MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y)
 default_sublabel_macro(action_bind_sublabel_video_message_pos_x,           MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X)
 default_sublabel_macro(action_bind_sublabel_video_message_pos_y,           MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y)
 default_sublabel_macro(action_bind_sublabel_video_font_size,               MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE)
@@ -315,6 +317,7 @@ default_sublabel_macro(action_bind_sublabel_cheat_file_load,                    
 default_sublabel_macro(action_bind_sublabel_cheat_file_save_as,                    MENU_ENUM_SUBLABEL_CHEAT_FILE_SAVE_AS)
 default_sublabel_macro(action_bind_sublabel_quick_menu,                            MENU_ENUM_SUBLABEL_CONTENT_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_core_information,                      MENU_ENUM_SUBLABEL_CORE_INFORMATION)
+default_sublabel_macro(action_bind_sublabel_video_aspect_ratio,                    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO)
 default_sublabel_macro(action_bind_sublabel_video_viewport_custom_height,          MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT)
 default_sublabel_macro(action_bind_sublabel_video_viewport_custom_width,           MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH)
 default_sublabel_macro(action_bind_sublabel_video_viewport_custom_x,               MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X)
@@ -392,6 +395,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_Y:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_viewport_custom_y);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_aspect_ratio);
             break;
          case MENU_ENUM_LABEL_CORE_INFORMATION:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_information);
@@ -939,6 +945,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_VIDEO_WINDOW_HEIGHT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_window_height);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_FULLSCREEN_X:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_fullscreen_x);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_FULLSCREEN_Y:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_fullscreen_y);
             break;
          case MENU_ENUM_LABEL_QUIT_RETROARCH:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quit_retroarch);
