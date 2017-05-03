@@ -103,13 +103,11 @@ int action_switch_thumbnail(const char *path,
 
    if (!settings)
       return -1;
-   if (settings->uints.menu_thumbnails == 0)
-      return 0;
 
    settings->uints.menu_thumbnails++;
 
    if (settings->uints.menu_thumbnails > 3)
-      settings->uints.menu_thumbnails = 1;
+      settings->uints.menu_thumbnails = 0;
 
    menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
    menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
