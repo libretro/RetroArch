@@ -3859,6 +3859,9 @@ static void xmb_context_destroy(void *data)
    for (i = 0; i < XMB_TEXTURE_LAST; i++)
       video_driver_texture_unload(&xmb->textures.list[i]);
 
+   video_driver_texture_unload(&xmb->thumbnail);
+   video_driver_texture_unload(&xmb->savestate_thumbnail);
+
    xmb_context_destroy_horizontal_list(xmb);
    xmb_context_bg_destroy(xmb);
 
