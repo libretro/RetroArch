@@ -847,7 +847,7 @@ static void xmb_render_messagebox_internal(
       if (len > longest)
       {
          longest = len;
-         longest_width = font_driver_get_message_width(xmb->font, msg, len, 1);
+         longest_width = font_driver_get_message_width(xmb->font, msg, strlen(msg), 1);
       }
    }
 
@@ -2696,7 +2696,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
          snprintf(msg, sizeof(msg), "%d%%", percent);
 
-         percent_width = (unsigned)font_driver_get_message_width(xmb->font, msg, (unsigned)utf8len(msg), 1);
+         percent_width = (unsigned)font_driver_get_message_width(xmb->font, msg, (unsigned)strlen(msg), 1);
 
          xmb_draw_text(menu_disp_info, xmb, msg,
                width - xmb->margins.title.left - x_pos,

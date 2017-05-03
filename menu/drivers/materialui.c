@@ -486,7 +486,7 @@ static void mui_render_messagebox(mui_handle_t *mui,
       if (len > longest)
       {
          longest = len;
-         longest_width = font_driver_get_message_width(mui->font, msg, len, 1);
+         longest_width = font_driver_get_message_width(mui->font, msg, strlen(msg), 1);
       }
    }
 
