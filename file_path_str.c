@@ -147,7 +147,7 @@ const char *file_path_str(enum file_path_enum enum_idx)
          str = "http://thumbnailpacks.libretro.com";
          break;
       case FILE_PATH_LAKKA_URL:
-         str = "http://mirror.lakka.tv/nightly";
+         str = "http://le.builds.lakka.tv";
          break;
       case FILE_PATH_SHADERS_GLSL_ZIP:
          str = "shaders_glsl.zip";
