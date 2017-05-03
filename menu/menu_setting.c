@@ -1791,7 +1791,7 @@ static void ssh_enable_toggle_change_handler(void *data)
 {
    bool enable           = false;
    settings_t *settings  = config_get_ptr();
-   if (settings && settings->ssh_enable)
+   if (settings && settings->bools.ssh_enable)
       enable = true;
 
    systemd_service_toggle(LAKKA_SSH_PATH, (char*)"sshd.service",
@@ -1802,7 +1802,7 @@ static void samba_enable_toggle_change_handler(void *data)
 {
    bool enable           = false;
    settings_t *settings  = config_get_ptr();
-   if (settings && settings->samba_enable)
+   if (settings && settings->bools.samba_enable)
       enable = true;
 
    systemd_service_toggle(LAKKA_SAMBA_PATH, (char*)"smbd.service",
@@ -1813,7 +1813,7 @@ static void bluetooth_enable_toggle_change_handler(void *data)
 {
    bool enable           = false;
    settings_t *settings  = config_get_ptr();
-   if (settings && settings->bluetooth_enable)
+   if (settings && settings->bools.bluetooth_enable)
       enable = true;
 
    systemd_service_toggle(LAKKA_BLUETOOTH_PATH, (char*)"bluetooth.service",
