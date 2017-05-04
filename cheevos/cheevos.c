@@ -3088,10 +3088,9 @@ bool cheevos_load(const void *data)
 found:
 #ifdef CHEEVOS_JSON_OVERRIDE
    {
-      FILE* file;
       size_t size;
+      FILE *file = fopen(CHEEVOS_JSON_OVERRIDE, "rb");
 
-      file = fopen(CHEEVOS_JSON_OVERRIDE, "rb");
       fseek(file, 0, SEEK_END);
       size = ftell(file);
       fseek(file, 0, SEEK_SET);
@@ -3160,9 +3159,9 @@ void cheevos_populate_menu(void *data, bool hardcore)
 
    for (i = 0; cheevo < end; i++, cheevo++)
    {
-      if (!hardcore)
+      if (hardcore)
       {
-         if (cheevo->active & CHEEVOS_ACTIVE_SOFTCORE)
+         if (cheevo->active & CHEEVOS_ACTIVE_HARDCORE)
             menu_entries_append_enum(info->list, cheevo->title,
                   cheevo->description, MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
                   MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
@@ -3173,7 +3172,7 @@ void cheevos_populate_menu(void *data, bool hardcore)
       }
       else
       {
-         if (cheevo->active & CHEEVOS_ACTIVE_HARDCORE)
+         if (cheevo->active & CHEEVOS_ACTIVE_SOFTCORE)
             menu_entries_append_enum(info->list, cheevo->title,
                   cheevo->description, MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
                   MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
@@ -3193,9 +3192,9 @@ void cheevos_populate_menu(void *data, bool hardcore)
 
       for (i = cheevos_locals.core.count; cheevo < end; i++, cheevo++)
       {
-         if (!hardcore)
+         if (hardcore)
          {
-            if (cheevo->active & CHEEVOS_ACTIVE_SOFTCORE)
+            if (cheevo->active & CHEEVOS_ACTIVE_HARDCORE)
                menu_entries_append_enum(info->list, cheevo->title,
                      cheevo->description, MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
                      MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
@@ -3206,7 +3205,7 @@ void cheevos_populate_menu(void *data, bool hardcore)
          }
          else
          {
-            if (cheevo->active & CHEEVOS_ACTIVE_HARDCORE)
+            if (cheevo->active & CHEEVOS_ACTIVE_SOFTCORE)
                menu_entries_append_enum(info->list, cheevo->title,
                      cheevo->description, MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
                      MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
