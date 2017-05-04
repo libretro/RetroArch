@@ -398,8 +398,7 @@ static void cheevos_log_url(const char* format, const char* url)
          do
          {
             *aux++ = *next++;
-         }
-         while (next[-1] != 0);
+         }while(next[-1] != 0);
       }
       else
          *aux = 0;
@@ -768,6 +767,7 @@ static int cheevos_getvalue__json_key(void *userdata,
    cheevos_getvalueud_t* ud = (cheevos_getvalueud_t*)userdata;
 
    ud->is_key = cheevos_djb2(name, length) == ud->key_hash;
+
    return 0;
 }
 
@@ -3011,6 +3011,7 @@ bool cheevos_load(const void *data)
    cheevos_locals.meminfo[3].id = RETRO_MEMORY_RTC;
    core_get_memory(&cheevos_locals.meminfo[3]);
 
+#ifndef NDEBUG
    RARCH_LOG("CHEEVOS system RAM: %p %u\n",
       cheevos_locals.meminfo[0].data, cheevos_locals.meminfo[0].size);
    RARCH_LOG("CHEEVOS save RAM:   %p %u\n",
@@ -3019,6 +3020,7 @@ bool cheevos_load(const void *data)
       cheevos_locals.meminfo[2].data, cheevos_locals.meminfo[2].size);
    RARCH_LOG("CHEEVOS RTC:        %p %u\n",
       cheevos_locals.meminfo[3].data, cheevos_locals.meminfo[3].size);
+#endif
 
    /* Bail out if cheevos are disabled.
     * But set the above anyways, command_read_ram needs it. */
@@ -3040,32 +3042,30 @@ bool cheevos_load(const void *data)
             int j;
             unsigned hash;
             const char *end = strchr(ext, '|');
+            size_t djb_size = end - ext;
 
             if (end)
-            {
-               hash = cheevos_djb2(ext, end - ext);
-               ext = end + 1;
-            }
+               ext  = end + 1;
             else
             {
-               hash = cheevos_djb2(ext, strlen(ext));
-               ext = NULL;
+               djb_size = strlen(ext);
+               ext      = NULL;
             }
+
+            hash = cheevos_djb2(ext, djb_size);
 
             for (j = 0; finders[i].ext_hashes[j]; j++)
             {
-               if (finders[i].ext_hashes[j] == hash)
-               {
-                  RARCH_LOG("CHEEVOS testing %s.\n", finders[i].name);
+               if (finders[i].ext_hashes[j] != hash)
+                  continue;
 
-                  game_id = finders[i].finder(info, 5000000);
+               game_id = finders[i].finder(info, 5000000);
 
-                  if (game_id)
-                     goto found;
+               if (game_id)
+                  goto found;
 
-                  ext = NULL; /* force next finder */
-                  break;
-               }
+               ext = NULL; /* force next finder */
+               break;
             }
          }
       }
@@ -3075,8 +3075,6 @@ bool cheevos_load(const void *data)
    {
       if (finders[i].ext_hashes)
          continue;
-
-      RARCH_LOG("CHEEVOS testing %s.\n", finders[i].name);
 
       game_id = finders[i].finder(info, 5000000);
 
@@ -3114,7 +3112,7 @@ found:
          fclose(file);
       }
 #endif
-      if (!settings->bools.cheevos_enable || !cheevos_parse(json))
+      if (!cheevos_parse(json))
       {
          cheevos_deactivate_unlocks(game_id, &timeout);
          free((void*)json);
@@ -3164,38 +3162,27 @@ void cheevos_populate_menu(void *data, bool hardcore)
    {
       if (!hardcore)
       {
-         if (!(cheevo->active & CHEEVOS_ACTIVE_SOFTCORE))
-         {
-            menu_entries_append_enum(info->list, cheevo->title,
-                  cheevo->description, MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY,
-                  MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
-            items_found++;
-         }
-         else
-         {
+         if (cheevo->active & CHEEVOS_ACTIVE_SOFTCORE)
             menu_entries_append_enum(info->list, cheevo->title,
                   cheevo->description, MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
                   MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
-            items_found++;
-         }
+         else
+            menu_entries_append_enum(info->list, cheevo->title,
+                  cheevo->description, MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY,
+                  MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
       }
       else
       {
-         if (!(cheevo->active & CHEEVOS_ACTIVE_HARDCORE))
-         {
-            menu_entries_append_enum(info->list, cheevo->title,
-                  cheevo->description, MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY,
-                  MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
-            items_found++;
-         }
-         else
-         {
+         if (cheevo->active & CHEEVOS_ACTIVE_HARDCORE)
             menu_entries_append_enum(info->list, cheevo->title,
                   cheevo->description, MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
                   MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
-            items_found++;
-         }
+         else
+            menu_entries_append_enum(info->list, cheevo->title,
+                  cheevo->description, MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY,
+                  MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
       }
+      items_found++;
    }
 
    if (settings->bools.cheevos_test_unofficial)
@@ -3208,38 +3195,27 @@ void cheevos_populate_menu(void *data, bool hardcore)
       {
          if (!hardcore)
          {
-            if (!(cheevo->active & CHEEVOS_ACTIVE_SOFTCORE))
-            {
-               menu_entries_append_enum(info->list, cheevo->title,
-                     cheevo->description, MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY,
-                     MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
-               items_found++;
-            }
-            else
-            {
+            if (cheevo->active & CHEEVOS_ACTIVE_SOFTCORE)
                menu_entries_append_enum(info->list, cheevo->title,
                      cheevo->description, MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
                      MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
-               items_found++;
-            }
+            else
+               menu_entries_append_enum(info->list, cheevo->title,
+                     cheevo->description, MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY,
+                     MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
          }
          else
          {
-            if (!(cheevo->active & CHEEVOS_ACTIVE_HARDCORE))
-            {
-               menu_entries_append_enum(info->list, cheevo->title,
-                     cheevo->description, MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY,
-                     MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
-               items_found++;
-            }
-            else
-            {
+            if (cheevo->active & CHEEVOS_ACTIVE_HARDCORE)
                menu_entries_append_enum(info->list, cheevo->title,
                      cheevo->description, MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
                      MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
-               items_found++;
-            }
+            else
+               menu_entries_append_enum(info->list, cheevo->title,
+                     cheevo->description, MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY,
+                     MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
          }
+         items_found++;
       }
    }
 
@@ -3289,11 +3265,11 @@ bool cheevos_unload(void)
 
    cheevos_free_cheevo_set(&cheevos_locals.core);
    cheevos_locals.core.cheevos = NULL;
-   cheevos_locals.core.count = 0;
+   cheevos_locals.core.count   = 0;
    
    cheevos_free_cheevo_set(&cheevos_locals.unofficial);
    cheevos_locals.unofficial.cheevos = NULL;
-   cheevos_locals.unofficial.count = 0;
+   cheevos_locals.unofficial.count   = 0;
 
    cheevos_loaded = 0;
 
