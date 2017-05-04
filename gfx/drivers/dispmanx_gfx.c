@@ -129,10 +129,10 @@ struct dispmanx_video
 };
 
 /* If no free page is available when called, wait for a page flip. */
-static struct dispmanx_page *dispmanx_get_free_page(void *data, struct dispmanx_surface *surface)
+static struct dispmanx_page *dispmanx_get_free_page(struct dispmanx_video *_dispvars,
+      struct dispmanx_surface *surface)
 {
    unsigned i;
-   struct dispmanx_video *_dispvars = data;
    struct dispmanx_page *page = NULL;
 
    while (!page)
@@ -197,10 +197,10 @@ static void dispmanx_vsync_callback(DISPMANX_UPDATE_HANDLE_T u, void *data)
    slock_unlock(page->dispvars->pending_mutex);
 }
 
-static void dispmanx_surface_free(void *data, struct dispmanx_surface **sp)
+static void dispmanx_surface_free(struct dispmanx_video *_dispvars,
+      struct dispmanx_surface **sp)
 {
-   int i;	
-   struct dispmanx_video *_dispvars = data;
+   int i;
    struct dispmanx_surface *surface = *sp;
 
    /* What if we run into the vsync cb code after freeing the surface? 
@@ -229,16 +229,16 @@ static void dispmanx_surface_free(void *data, struct dispmanx_surface **sp)
    *sp = NULL;
 }
 
-static void dispmanx_surface_setup(void *data,  int src_width, int src_height, 
+static void dispmanx_surface_setup(struct dispmanx_video *_dispvars,
+      int src_width, int src_height,
       int visible_pitch, int bpp, VC_IMAGE_TYPE_T pixformat,
-      int alpha, float aspect, int numpages, int layer, 
+      int alpha, float aspect, int numpages, int layer,
       struct dispmanx_surface **sp)
 {
-   struct dispmanx_video *_dispvars = data;
    int i, dst_width, dst_height, dst_xpos, dst_ypos, visible_width;
    struct dispmanx_surface *surface = NULL;
 
-   *sp = calloc (1, sizeof(struct dispmanx_surface));
+   *sp = calloc(1, sizeof(struct dispmanx_surface));
 
    surface = *sp;   
 
@@ -247,7 +247,7 @@ static void dispmanx_surface_setup(void *data,  int src_width, int src_height,
    /* We receive the pitch for what we consider "useful info", 
     * excluding things that are between scanlines. 
     * Then we align it to 16 pixels (not bytes) for performance reasons. */
-   surface->pitch  = ALIGN_UP(visible_pitch, (pixformat == VC_IMAGE_XRGB8888 ? 64 : 32));
+   surface->pitch = ALIGN_UP(visible_pitch, (pixformat == VC_IMAGE_XRGB8888 ? 64 : 32));
 
    /* Transparency disabled */
    surface->alpha.flags = DISPMANX_FLAGS_ALPHA_FIXED_ALL_PIXELS;
@@ -308,10 +308,8 @@ static void dispmanx_surface_setup(void *data,  int src_width, int src_height,
    vc_dispmanx_update_submit_sync(_dispvars->update);
 }
 
-static void dispmanx_surface_update_async(void *data, const void *frame,
-      struct dispmanx_surface *surface)
+static void dispmanx_surface_update_async(const void *frame, struct dispmanx_surface *surface)
 {
-   struct dispmanx_video *_dispvars = data;
    struct dispmanx_page       *page = NULL;
    
    /* Since it's an async update, there's no need for multiple pages */
@@ -322,26 +320,22 @@ static void dispmanx_surface_update_async(void *data, const void *frame,
          surface->pitch, (void*)frame, &(surface->bmp_rect));
 }
 
-static void dispmanx_surface_update(void *data, const void *frame,
-      struct dispmanx_surface *surface)
+static void dispmanx_surface_update(struct dispmanx_video *_dispvars, const void *frame,
+      struct dispmanx_surface *surface, video_frame_info_t *video_info)
 {
-   /* Updating is very delicate: we REALLY want to show the just rendered frame ASAP,
-    * so we dump and issue flip, and then we can wait for free pages, but we don't
-    * want to wait for free pages at the beggining of the update or we will be 
-    * adding lag! */
-  
-   struct dispmanx_video *_dispvars = data;
-   
    /* Frame blitting */
    vc_dispmanx_resource_write_data(surface->next_page->resource, surface->pixformat,
          surface->pitch, (void*)frame, &(surface->bmp_rect));
 
-   /* Dispmanx doesn't support more than one pending pageflip. Doing so would overwrite
-    * the page in the callback function, so we would be always freeing the same page. */
-   slock_lock(_dispvars->pending_mutex);
-   if (_dispvars->pageflip_pending > 0)
-      scond_wait(_dispvars->vsync_condition, _dispvars->pending_mutex);
-   slock_unlock(_dispvars->pending_mutex);
+   /* Dispmanx doesn't support more than 1 pending frame flip, if we're "triple" buffering,
+    * then wait at the last possible moment for any outstanding vsync to finish. */
+   if (video_info->max_swapchain_images >= 3)
+   {
+      slock_lock(_dispvars->pending_mutex);
+      if (_dispvars->pageflip_pending > 0)
+         scond_wait(_dispvars->vsync_condition, _dispvars->pending_mutex);
+      slock_unlock(_dispvars->pending_mutex);
+   }
    
    /* Issue a page flip that will be done at the next vsync. */
    _dispvars->update = vc_dispmanx_update_start(0);
@@ -356,8 +350,17 @@ static void dispmanx_surface_update(void *data, const void *frame,
    vc_dispmanx_update_submit(_dispvars->update,
       dispmanx_vsync_callback, (void*)(surface->next_page));
 
-   /* Get the next page ready for our next surface_update re-entry. 
-    * It's OK to wait now that we've issued the flip to the last produced frame! */
+   /* If we are "double" buffering, wait immediately after the flip for the vsync
+    * before continuing */
+   if (video_info->max_swapchain_images <= 2)
+   {
+      slock_lock(_dispvars->pending_mutex);
+      if (_dispvars->pageflip_pending > 0)
+         scond_wait(_dispvars->vsync_condition, _dispvars->pending_mutex);
+      slock_unlock(_dispvars->pending_mutex);
+   }
+
+   /* At this point, there will always be a free page available */
    surface->next_page = dispmanx_get_free_page(_dispvars, surface);
 }
 
@@ -370,11 +373,10 @@ static void dispmanx_set_scaling (bool bilinear_filter)
       vc_gencmd_send("%s", "scaling_kernel 0 0 0 0 0 0 0 0 1 1 1 1 255 255 255 255 255 255 255 255 1 1 1 1 0 0 0 0 0 0 0 0 1");
 }
 
-static void dispmanx_blank_console (void *data)
+static void dispmanx_blank_console (struct dispmanx_video *_dispvars)
 {
    /* Since pitch will be aligned to 16 pixels (not bytes) we use a
     * 16 pixels image to save the alignment */
-   struct dispmanx_video *_dispvars = data;
    uint16_t image[16] = {0x0000};
    float aspect = (float)_dispvars->dispmanx_width / (float)_dispvars->dispmanx_height;   
 
@@ -392,7 +394,7 @@ static void dispmanx_blank_console (void *data)
    
    /* Updating 1-page surface synchronously asks for truble, since the 1st CB will
     * signal but not free because the only page is on screen, so get_free will wait forever. */
-   dispmanx_surface_update_async(_dispvars, image, _dispvars->back_surface);
+   dispmanx_surface_update_async(image, _dispvars->back_surface);
 }
 
 static void *dispmanx_gfx_init(const video_info_t *video,
@@ -481,7 +483,7 @@ static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
             _dispvars->rgb32 ? VC_IMAGE_XRGB8888 : VC_IMAGE_RGB565,
             255,
             _dispvars->aspect_ratio, 
-            video_info->max_swapchain_images,
+            2,
             0,
             &_dispvars->main_surface);
 
@@ -496,7 +498,7 @@ static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
 #endif
 
    /* Update main surface: locate free page, blit and flip. */
-   dispmanx_surface_update(_dispvars, frame, _dispvars->main_surface);
+   dispmanx_surface_update(_dispvars, frame, _dispvars->main_surface, video_info);
    return true;
 }
 
@@ -543,7 +545,7 @@ static void dispmanx_set_texture_frame(void *data, const void *frame, bool rgb32
    /* We update the menu surface if menu is active.
     * This update is asynchronous, yet menu screen update
     * will be synced because main surface updating is synchronous */
-   dispmanx_surface_update_async(_dispvars, frame, _dispvars->menu_surface);
+   dispmanx_surface_update_async(frame, _dispvars->menu_surface);
 }
 
 static void dispmanx_gfx_set_nonblock_state(void *data, bool state)
