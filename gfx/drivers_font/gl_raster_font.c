@@ -267,22 +267,11 @@ static void gl_raster_font_render_line(
       GLfloat scale, const GLfloat color[4], GLfloat pos_x,
       GLfloat pos_y, unsigned text_align)
 {
-   unsigned i;
    struct video_coords coords;
-   GLfloat font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
-   GLfloat font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK];
-   GLfloat font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
-   GLfloat font_lut_tex_coord[2 * 6 * MAX_MSG_LEN_CHUNK];
    gl_t      *gl        = font->gl;
    const char* msg_end  = msg + msg_len;
    int x                = roundf(pos_x * gl->vp.width);
    int y                = roundf(pos_y * gl->vp.height);
-   int delta_x          = 0;
-   int delta_y          = 0;
-   float inv_tex_size_x = 1.0f / font->tex_width;
-   float inv_tex_size_y = 1.0f / font->tex_height;
-   float inv_win_width  = 1.0f / font->gl->vp.width;
-   float inv_win_height = 1.0f / font->gl->vp.height;
 
    switch (text_align)
    {
@@ -296,7 +285,18 @@ static void gl_raster_font_render_line(
 
    while (msg < msg_end)
    {
-      i = 0;
+      GLfloat font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
+      GLfloat font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK];
+      GLfloat font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
+      GLfloat font_lut_tex_coord[2 * 6 * MAX_MSG_LEN_CHUNK];
+      float inv_tex_size_x = 1.0f / font->tex_width;
+      float inv_tex_size_y = 1.0f / font->tex_height;
+      float inv_win_width  = 1.0f / font->gl->vp.width;
+      float inv_win_height = 1.0f / font->gl->vp.height;
+      unsigned i           = 0;
+      int delta_x          = 0;
+      int delta_y          = 0;
+
       while ((i < MAX_MSG_LEN_CHUNK) && (msg < msg_end))
       {         
          int off_x, off_y, tex_x, tex_y, width, height;
