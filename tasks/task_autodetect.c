@@ -49,8 +49,6 @@ typedef struct autoconfig_params
    int32_t pid;
    uint32_t max_users;
    char autoconfig_directory[4096];
-   bool set_swap;
-   bool swap_val;
 } autoconfig_params_t;
 
 static bool input_autoconfigured[MAX_USERS];
@@ -165,8 +163,8 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
       remote_is_bound = true;
       if (params->idx == 0)
       {
-         params->set_swap = true;
-         params->swap_val = true;
+         settings_t *settings = config_get_ptr();
+         configuration_set_bool(settings, settings->bools.input_swap_override, true);
       }
    }
    else
@@ -182,8 +180,8 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
       {
          if (config_get_bool(conf, "input_swap_override", &tmp))
          {
-            params->set_swap = true;
-            params->swap_val = tmp;
+            settings_t *settings = config_get_ptr();
+            configuration_set_bool(settings, settings->bools.input_swap_override, tmp);
          }
       }
 
@@ -300,18 +298,6 @@ static bool input_autoconfigure_joypad_from_conf_internal(
    if (string_is_empty(params->autoconfig_directory))
       return true;
    return false;
-}
-
-static void input_autoconfigure_connect_finished(void *task_data,
-                           void *user_data, const char *error)
-{
-   autoconfig_params_t *params = (autoconfig_params_t*)task_data;
-
-   if (params && params->set_swap)
-   {
-      settings_t *settings        = config_get_ptr();
-      configuration_set_bool(settings, settings->bools.input_swap_override, params->swap_val);
-   }
 }
 
 static void input_autoconfigure_connect_handler(retro_task_t *task)
@@ -481,9 +467,8 @@ bool input_autoconfigure_connect(
 
    input_autoconfigured[state->idx] = false;
 
-   task->state    = state;
-   task->handler  = input_autoconfigure_connect_handler;
-   task->callback = input_autoconfigure_connect_finished;
+   task->state   = state;
+   task->handler = input_autoconfigure_connect_handler;
 
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
 
