@@ -1340,11 +1340,8 @@ static int setting_action_ok_bind_defaults(void *data, bool wraparound)
    def_binds =  (setting->index_offset) ? 
       retro_keybinds_rest : retro_keybinds_1;
 
-   if (!target)
-      return -1;
-
-   lim.min = MENU_SETTINGS_BIND_BEGIN;
-   lim.max = MENU_SETTINGS_BIND_LAST;
+   lim.min   = MENU_SETTINGS_BIND_BEGIN;
+   lim.max   = MENU_SETTINGS_BIND_LAST;
 
    menu_input_key_bind_set_min_max(&lim);
 
