@@ -319,7 +319,7 @@ static void bsv_movie_init_state(void)
 {
    bool set_granularity = false;
 
-   if (bsv_movie_ctl(BSV_MOVIE_CTL_START_PLAYBACK, NULL))
+   if (bsv_movie_state.movie_start_playback)
    {
       if (!(bsv_movie_init_handle(bsv_movie_state.movie_start_path,
                   RARCH_MOVIE_PLAYBACK)))
@@ -401,16 +401,12 @@ bool bsv_movie_ctl(enum bsv_ctl_state state, void *data)
    {
       case BSV_MOVIE_CTL_IS_INITED:
          return bsv_movie_state_handle;
-      case BSV_MOVIE_CTL_START_RECORDING:
-         return bsv_movie_state.movie_start_recording;
       case BSV_MOVIE_CTL_SET_START_RECORDING:
          bsv_movie_state.movie_start_recording = true;
          break;
       case BSV_MOVIE_CTL_UNSET_START_RECORDING:
          bsv_movie_state.movie_start_recording = false;
          break;
-      case BSV_MOVIE_CTL_START_PLAYBACK:
-         return bsv_movie_state.movie_start_playback;
       case BSV_MOVIE_CTL_SET_START_PLAYBACK:
          bsv_movie_state.movie_start_playback = true;
          break;
