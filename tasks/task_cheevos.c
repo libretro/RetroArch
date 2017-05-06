@@ -2848,7 +2848,6 @@ static unsigned cheevos_is_nes_game(
       struct nes_header *header,
       size_t *bytes, size_t *offset)
 {
-   size_t rom_size = 256;
    int mapper_no   = 0;
    bool round      = false;
 
@@ -2858,22 +2857,30 @@ static unsigned cheevos_is_nes_game(
          || header->id[3] != 0x1a)
       return false;
 
-   if (header->rom_size)
-      rom_size = next_pow2(header->rom_size);
-
    /* from FCEU core - compute size using the cart mapper */
-   mapper_no   = (header->rom_type >> 4) | (header->rom_type2 & 0xF0);
+   mapper_no = (header->rom_type >> 4) | (header->rom_type2 & 0xF0);
 
    /* for games not to the power of 2, so we just read enough
     * PRG rom from it, but we have to keep ROM_size to the power of 2
     * since PRGCartMapping wants ROM_size to be to the power of 2
     * so instead if not to power of 2, we just use head.ROM_size when
     * we use FCEU_read. */
-   round = mapper_no != 53 && mapper_no != 198 && mapper_no != 228;
-   *bytes = (round) ? rom_size : header->rom_size;
+   round     = mapper_no != 53 && mapper_no != 198 && mapper_no != 228;
+
+   *bytes    = header->rom_size;
+
+   if (round)
+   {
+      size_t rom_size = 256;
+
+      if (header->rom_size)
+         rom_size = next_pow2(header->rom_size);
+
+      *bytes = rom_size;
+   }
 
    /* from FCEU core - check if Trainer included in ROM data */
-   *offset = sizeof(struct nes_header) + 
+   *offset  = sizeof(struct nes_header) + 
       (header->rom_type & 4 ? sizeof(struct nes_header) : 0);
 
    return true;
