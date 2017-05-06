@@ -83,7 +83,6 @@ typedef struct settings
 #endif
 
       /* Input */
-      bool input_swap_override;
       bool input_remap_binds_enable;
       bool input_autodetect_enable;
       bool input_overlay_enable;

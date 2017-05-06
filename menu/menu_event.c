@@ -36,6 +36,7 @@
 
 #include "../configuration.h"
 #include "../runloop_defines.h"
+#include "../tasks/tasks_internal.h"
 
 static unsigned char menu_keyboard_key_state[RETROK_LAST] = {0};
 
@@ -123,10 +124,11 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
    menu_input_t *menu_input                = NULL;
    settings_t *settings                    = config_get_ptr();
    static unsigned ok_old                  = 0;
-   unsigned menu_ok_btn                    = (!settings->bools.input_swap_override && 
+   bool input_swap_override                = input_autoconfigure_get_swap_override();
+   unsigned menu_ok_btn                    = (!input_swap_override && 
       settings->bools.input_menu_swap_ok_cancel_buttons) ?
       RETRO_DEVICE_ID_JOYPAD_B : RETRO_DEVICE_ID_JOYPAD_A;
-   unsigned menu_cancel_btn                = (!settings->bools.input_swap_override && 
+   unsigned menu_cancel_btn                = (!input_swap_override && 
       settings->bools.input_menu_swap_ok_cancel_buttons) ?
       RETRO_DEVICE_ID_JOYPAD_A : RETRO_DEVICE_ID_JOYPAD_B;
    unsigned ok_current                     = (unsigned)(input & UINT64_C(1) << menu_ok_btn);

@@ -53,6 +53,12 @@ typedef struct autoconfig_params
 
 static bool input_autoconfigured[MAX_USERS];
 static unsigned input_device_name_index[MAX_USERS];
+static bool input_autoconfigure_swap_override;
+
+bool input_autoconfigure_get_swap_override(void)
+{
+   return input_autoconfigure_swap_override;
+}
 
 /* Adds an index for devices with the same name,
  * so they can be identified in the GUI. */
@@ -162,10 +168,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
          task_set_title(task, strdup(msg));
       remote_is_bound = true;
       if (params->idx == 0)
-      {
-         settings_t *settings = config_get_ptr();
-         configuration_set_bool(settings, settings->bools.input_swap_override, true);
-      }
+         input_autoconfigure_swap_override = true;
    }
    else
    {
@@ -179,10 +182,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
       if (params->idx == 0)
       {
          if (config_get_bool(conf, "input_swap_override", &tmp))
-         {
-            settings_t *settings = config_get_ptr();
-            configuration_set_bool(settings, settings->bools.input_swap_override, tmp);
-         }
+            input_autoconfigure_swap_override = tmp;
       }
 
       if (!block_osd_spam)
@@ -404,6 +404,8 @@ void input_autoconfigure_reset(void)
       input_device_name_index[i] = 0;
       input_autoconfigured[i]    = 0;
    }
+
+   input_autoconfigure_swap_override = false;
 }
 
 bool input_is_autoconfigured(unsigned i)

@@ -235,6 +235,8 @@ bool input_autoconfigure_connect(
 
 bool input_autoconfigure_disconnect(unsigned i, const char *ident);
 
+bool input_autoconfigure_get_swap_override(void);
+
 void task_push_get_powerstate(void);
 
 enum frontend_powerstate get_last_powerstate(int *percent);
