@@ -257,6 +257,7 @@ int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id);
 
 uint64_t input_keys_pressed(
+      void *data,
       uint64_t old_input,
       uint64_t *last_input,
       uint64_t *trigger_input,
@@ -265,6 +266,7 @@ uint64_t input_keys_pressed(
 
 #ifdef HAVE_MENU
 uint64_t input_menu_keys_pressed(
+      void *data,
       uint64_t old_input,
       uint64_t *last_input,
       uint64_t *trigger_input,

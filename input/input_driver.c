@@ -662,6 +662,7 @@ static bool input_driver_toggle_button_combo(
  * Returns: Input sample containg a mask of all pressed keys.
  */
 uint64_t input_menu_keys_pressed(
+      void *data,
       uint64_t old_input,
       uint64_t *last_input,
       uint64_t *trigger_input,
@@ -675,13 +676,13 @@ uint64_t input_menu_keys_pressed(
       unsigned i;
       rarch_joypad_info_t joypad_info;
       const struct retro_keybind *binds[MAX_USERS] = {NULL};
-      settings_t     *settings                     = config_get_ptr();
+      settings_t     *settings                     = (settings_t*)data;
       const struct retro_keybind *binds_norm       = NULL;
       const struct retro_keybind *binds_auto       = NULL;
       unsigned max_users                           = settings->uints.input_max_users;
 
       if (settings->bools.menu_unified_controls && !menu_input_dialog_get_display_kb())
-         return input_keys_pressed(old_input, last_input,
+         return input_keys_pressed(settings, old_input, last_input,
                trigger_input, runloop_paused, nonblock_state);
 
       for (i = 0; i < max_users; i++)
@@ -896,6 +897,7 @@ static INLINE bool input_keys_pressed_internal(
  * Returns: Input sample containg a mask of all pressed keys.
  */
 uint64_t input_keys_pressed(
+      void *data,
       uint64_t old_input,
       uint64_t *last_input,
       uint64_t *trigger_input,
@@ -905,7 +907,7 @@ uint64_t input_keys_pressed(
    unsigned i;
    rarch_joypad_info_t joypad_info;
    uint64_t                      ret            = 0;
-   settings_t              *settings            = config_get_ptr();
+   settings_t              *settings            = (settings_t*)data;
    const struct retro_keybind *binds            = input_config_binds[0];
    const struct retro_keybind *binds_auto       = &input_autoconf_binds[0][RARCH_ENABLE_HOTKEY];
    const struct retro_keybind *binds_norm       = &binds[RARCH_ENABLE_HOTKEY];

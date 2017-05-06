@@ -1068,11 +1068,11 @@ int runloop_iterate(unsigned *sleep_ms)
 
 #ifdef HAVE_MENU
       menu_is_alive ? 
-      input_menu_keys_pressed(old_input,
+      input_menu_keys_pressed(settings, old_input,
             &last_input, &trigger_input, runloop_paused,
             &input_driver_is_nonblock) :
 #endif
-      input_keys_pressed(old_input, &last_input,
+      input_keys_pressed(settings, old_input, &last_input,
             &trigger_input, runloop_paused,
             &input_driver_is_nonblock);
 
