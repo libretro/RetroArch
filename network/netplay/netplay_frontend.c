@@ -605,11 +605,9 @@ static void netplay_announce(void)
    char *corename                = NULL;
    char *gamename                = NULL;
    char *coreversion             = NULL;
-   uint32_t *content_crc_ptr     = NULL;
    settings_t *settings          = config_get_ptr();
    rarch_system_info_t *system   = runloop_get_system_info();
-
-   content_get_crc(&content_crc_ptr);
+   uint32_t content_crc          = content_get_crc();
 
    net_http_urlencode_full(&username, settings->paths.username);
    net_http_urlencode_full(&corename, system->info.library_name);
@@ -621,7 +619,7 @@ static void netplay_announce(void)
    snprintf(buf, sizeof(buf), "username=%s&core_name=%s&core_version=%s&"
       "game_name=%s&game_crc=%08X&port=%d"
       "&has_password=%d&has_spectate_password=%d&force_mitm=%d",
-      username, corename, coreversion, gamename, *content_crc_ptr,
+      username, corename, coreversion, gamename, content_crc,
       settings->uints.netplay_port,
       *settings->paths.netplay_password ? 1 : 0,
       *settings->paths.netplay_spectate_password ? 1 : 0,

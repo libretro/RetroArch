@@ -74,7 +74,7 @@ static struct bsv_state bsv_movie_state;
 static bool bsv_movie_init_playback(bsv_movie_t *handle, const char *path)
 {
    uint32_t state_size;
-   uint32_t *content_crc_ptr = NULL;
+   uint32_t content_crc      = 0;
    uint32_t header[4]        = {0};
    RFILE *file               = filestream_open(path, RFILE_MODE_READ, -1);
 
@@ -102,10 +102,11 @@ static bool bsv_movie_init_playback(bsv_movie_t *handle, const char *path)
       return false;
    }
 
-   content_get_crc(&content_crc_ptr);
+   content_crc               = content_get_crc();
 
-   if (swap_if_big32(header[CRC_INDEX]) != *content_crc_ptr)
-      RARCH_WARN("%s.\n", msg_hash_to_str(MSG_CRC32_CHECKSUM_MISMATCH));
+   if (content_crc != 0)
+      if (swap_if_big32(header[CRC_INDEX]) != content_crc)
+         RARCH_WARN("%s.\n", msg_hash_to_str(MSG_CRC32_CHECKSUM_MISMATCH));
 
    state_size = swap_if_big32(header[STATE_SIZE_INDEX]);
 
@@ -149,8 +150,8 @@ static bool bsv_movie_init_record(bsv_movie_t *handle, const char *path)
 {
    retro_ctx_size_info_t info;
    uint32_t state_size;
+   uint32_t content_crc      = 0;
    uint32_t header[4]        = {0};
-   uint32_t *content_crc_ptr = NULL;
    RFILE *file               = filestream_open(path, RFILE_MODE_WRITE, -1);
 
    if (!file)
@@ -159,14 +160,14 @@ static bool bsv_movie_init_record(bsv_movie_t *handle, const char *path)
       return false;
    }
 
-   handle->file              = file;
+   handle->file             = file;
 
-   content_get_crc(&content_crc_ptr);
+   content_crc              = content_get_crc();
 
    /* This value is supposed to show up as
     * BSV1 in a HEX editor, big-endian. */
    header[MAGIC_INDEX]      = swap_if_little32(BSV_MAGIC);
-   header[CRC_INDEX]        = swap_if_big32(*content_crc_ptr);
+   header[CRC_INDEX]        = swap_if_big32(content_crc);
 
    core_serialize_size(&info);
 

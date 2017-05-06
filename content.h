@@ -66,7 +66,7 @@ void content_set_does_not_need_content(void);
 
 void content_unset_does_not_need_content(void);
 
-bool content_get_crc(uint32_t **content_crc_ptr);
+uint32_t content_get_crc(void);
 
 void content_deinit(void);
 

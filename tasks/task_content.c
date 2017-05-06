@@ -132,7 +132,7 @@ typedef struct content_information_ctx
 static struct string_list *temporary_content                  = NULL;
 static bool _content_is_inited                                = false;
 static bool core_does_not_need_content                        = false;
-static uint32_t content_crc                                   = 0;
+static uint32_t content_rom_crc                               = 0;
 
 /**
  * content_file_read:
@@ -320,7 +320,6 @@ static bool load_content_into_memory(
       unsigned i, const char *path, void **buf,
       ssize_t *length)
 {
-   uint32_t *content_crc_ptr = NULL;
    uint8_t *ret_buf          = NULL;
 
    RARCH_LOG("%s: %s.\n",
@@ -349,11 +348,9 @@ static bool load_content_into_memory(
                   (void*)length);
       }
 
-      content_get_crc(&content_crc_ptr);
+      content_rom_crc = encoding_crc32(0, ret_buf, *length);
 
-      *content_crc_ptr = encoding_crc32(0, ret_buf, *length);
-
-      RARCH_LOG("CRC32: 0x%x .\n", (unsigned)*content_crc_ptr);
+      RARCH_LOG("CRC32: 0x%x .\n", (unsigned)content_rom_crc);
    }
 
    *buf = ret_buf;
@@ -1577,12 +1574,9 @@ void content_unset_does_not_need_content(void)
    core_does_not_need_content = false;
 }
 
-bool content_get_crc(uint32_t **content_crc_ptr)
+uint32_t content_get_crc(void)
 {
-   if (!content_crc_ptr)
-      return false;
-   *content_crc_ptr = &content_crc;
-   return true;
+   return content_rom_crc;
 }
 
 bool content_is_inited(void)
@@ -1611,7 +1605,7 @@ void content_deinit(void)
    }
 
    temporary_content          = NULL;
-   content_crc                = 0;
+   content_rom_crc            = 0;
    _content_is_inited         = false;
    core_does_not_need_content = false;
 }

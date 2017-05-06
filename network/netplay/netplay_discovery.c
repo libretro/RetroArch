@@ -237,7 +237,7 @@ bool netplay_lan_ad_server(netplay_t *netplay)
             (ssize_t) (2*sizeof(uint32_t)))
       {
          char s[NETPLAY_HOST_STR_LEN];
-         uint32_t *content_crc_ptr     = NULL;
+         uint32_t content_crc         = 0;
 
          /* Make sure it's a valid query */
          if (memcmp((void *) &ad_packet_buffer, "RANQ", 4))
@@ -251,7 +251,7 @@ bool netplay_lan_ad_server(netplay_t *netplay)
          info              = runloop_get_system_info();
 
          /* Now build our response */
-         content_get_crc(&content_crc_ptr);
+         content_crc = content_get_crc();
 
          memset(&ad_packet_buffer, 0, sizeof(struct ad_packet));
          memcpy(&ad_packet_buffer, "RANS", 4);
@@ -274,7 +274,8 @@ bool netplay_lan_ad_server(netplay_t *netplay)
             strlcpy(ad_packet_buffer.core_version, info->info.library_version,
                NETPLAY_HOST_STR_LEN);
          }
-         snprintf(s, sizeof(s), "%d", *content_crc_ptr);
+
+         snprintf(s, sizeof(s), "%d", content_crc);
          strlcpy(ad_packet_buffer.content_crc, s,
             NETPLAY_HOST_STR_LEN);
 

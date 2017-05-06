@@ -471,7 +471,7 @@ static void netplay_handshake_ready(netplay_t *netplay, struct netplay_connectio
 bool netplay_handshake_info(netplay_t *netplay, struct netplay_connection *connection)
 {
    struct info_buf_s info_buf;
-   uint32_t      *content_crc_ptr = NULL;
+   uint32_t      content_crc      = 0;
    rarch_system_info_t *core_info = runloop_get_system_info();
 
    memset(&info_buf, 0, sizeof(info_buf));
@@ -491,10 +491,10 @@ bool netplay_handshake_info(netplay_t *netplay, struct netplay_connection *conne
    }
 
    /* Get our content CRC */
-   content_crc_ptr = NULL;
-   content_get_crc(&content_crc_ptr);
-   if (content_crc_ptr)
-      info_buf.content_crc = htonl(*content_crc_ptr);
+   content_crc = content_get_crc();
+
+   if (content_crc != 0)
+      info_buf.content_crc = htonl(content_crc);
 
    /* Send it off and wait for info back */
    if (!netplay_send(&connection->send_packet_buffer, connection->fd,
@@ -766,7 +766,7 @@ bool netplay_handshake_pre_info(netplay_t *netplay,
    struct info_buf_s info_buf;
    uint32_t cmd_size;
    ssize_t recvd;
-   uint32_t *content_crc_ptr      = NULL;
+   uint32_t content_crc           = 0;
    const char *dmsg               = NULL;
    rarch_system_info_t *core_info = runloop_get_system_info();
 
@@ -818,11 +818,11 @@ bool netplay_handshake_pre_info(netplay_t *netplay,
    }
 
    /* Check the content CRC */
-   content_crc_ptr = NULL;
-   content_get_crc(&content_crc_ptr);
-   if (content_crc_ptr)
+   content_crc = content_get_crc();
+
+   if (content_crc != 0)
    {
-      if (ntohl(info_buf.content_crc) != *content_crc_ptr)
+      if (ntohl(info_buf.content_crc) != content_crc)
       {
          dmsg = msg_hash_to_str(MSG_CONTENT_CRC32S_DIFFER);
          goto error;
