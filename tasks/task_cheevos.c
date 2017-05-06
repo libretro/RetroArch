@@ -2828,35 +2828,66 @@ static unsigned cheevos_find_game_id_genesis(
    return cheevos_get_game_id(hash, &timeout);
 }
 
+/* Note about the references to the FCEU emulator below. There is no
+ * core-specific code in this function, it's rather Retro Achievements
+ * specific code that must be followed to the letter so we compute
+ * the correct ROM hash. Retro Achievements does indeed use some
+ * FCEU related method to compute the hash, since its NES emulator
+ * is based on it. */
+struct nes_header
+{
+   uint8_t id[4]; /* NES^Z */
+   uint8_t rom_size;
+   uint8_t vrom_size;
+   uint8_t rom_type;
+   uint8_t rom_type2;
+   uint8_t reserve[8];
+};
+
+static unsigned cheevos_is_nes_game(
+      struct nes_header *header,
+      size_t *bytes, size_t *offset)
+{
+   size_t rom_size = 256;
+   int mapper_no   = 0;
+   bool round      = false;
+
+   if (     header->id[0] != 'N'
+         || header->id[1] != 'E'
+         || header->id[2] != 'S'
+         || header->id[3] != 0x1a)
+      return false;
+
+   if (header->rom_size)
+      rom_size = next_pow2(header->rom_size);
+
+   /* from FCEU core - compute size using the cart mapper */
+   mapper_no   = (header->rom_type >> 4) | (header->rom_type2 & 0xF0);
+
+   /* for games not to the power of 2, so we just read enough
+    * PRG rom from it, but we have to keep ROM_size to the power of 2
+    * since PRGCartMapping wants ROM_size to be to the power of 2
+    * so instead if not to power of 2, we just use head.ROM_size when
+    * we use FCEU_read. */
+   round = mapper_no != 53 && mapper_no != 198 && mapper_no != 228;
+   *bytes = (round) ? rom_size : header->rom_size;
+
+   /* from FCEU core - check if Trainer included in ROM data */
+   *offset = sizeof(struct nes_header) + 
+      (header->rom_type & 4 ? sizeof(struct nes_header) : 0);
+
+   return true;
+}
+
 static unsigned cheevos_find_game_id_nes(
       const struct retro_game_info *info,
       retro_time_t timeout)
 {
-   /* Note about the references to the FCEU emulator below. There is no
-    * core-specific code in this function, it's rather Retro Achievements
-    * specific code that must be followed to the letter so we compute
-    * the correct ROM hash. Retro Achievements does indeed use some
-    * FCEU related method to compute the hash, since its NES emulator
-    * is based on it. */
-   struct
-   {
-      uint8_t id[4]; /* NES^Z */
-      uint8_t rom_size;
-      uint8_t vrom_size;
-      uint8_t rom_type;
-      uint8_t rom_type2;
-      uint8_t reserve[8];
-   } header;
-
-   size_t rom_size, offset, count;
+   struct nes_header header;
+   size_t bytes;
+   size_t offset, count;
    MD5_CTX ctx;
    uint8_t hash[16];
-
-   size_t bytes;
-   RFILE *file;
-   ssize_t num_read;
-   int mapper_no;
-   bool round;
 
    if (info->data)
    {
@@ -2867,7 +2898,8 @@ static unsigned cheevos_find_game_id_nes(
    }
    else
    {
-      file = filestream_open(info->path, RFILE_MODE_READ, 0);
+      ssize_t num_read = 0;
+      RFILE *file      = filestream_open(info->path, RFILE_MODE_READ, 0);
 
       if (!file)
          return 0;
@@ -2879,30 +2911,8 @@ static unsigned cheevos_find_game_id_nes(
          return 0;
    }
 
-   if (     header.id[0] != 'N'
-         || header.id[1] != 'E'
-         || header.id[2] != 'S'
-         || header.id[3] != 0x1a)
+   if (!cheevos_is_nes_game(&header, &bytes, &offset))
       return 0;
-
-   if (header.rom_size)
-      rom_size = next_pow2(header.rom_size);
-   else
-      rom_size = 256;
-
-   /* from FCEU core - compute size using the cart mapper */
-   mapper_no = (header.rom_type >> 4) | (header.rom_type2 & 0xF0);
-
-   /* for games not to the power of 2, so we just read enough
-    * PRG rom from it, but we have to keep ROM_size to the power of 2
-    * since PRGCartMapping wants ROM_size to be to the power of 2
-    * so instead if not to power of 2, we just use head.ROM_size when
-    * we use FCEU_read. */
-   round = mapper_no != 53 && mapper_no != 198 && mapper_no != 228;
-   bytes = (round) ? rom_size : header.rom_size;
-
-   /* from FCEU core - check if Trainer included in ROM data */
-   offset = sizeof(header) + (header.rom_type & 4 ? sizeof(header) : 0);
 
    MD5_Init(&ctx);
    count = cheevos_eval_md5(info, offset, 0x4000 * bytes, &ctx);
