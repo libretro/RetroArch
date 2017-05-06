@@ -5,11 +5,11 @@
 
 MSG_HASH(
       MSG_COMPILER,
-      "Compiler"
+      "Компилятор"
       )
 MSG_HASH(
       MSG_UNKNOWN_COMPILER,
-      "Unknown compiler"
+      "Неизвестный Компилятор"
       )
 MSG_HASH(
       MSG_DEVICE_DISCONNECTED_FROM_PORT,
@@ -45,7 +45,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_WAITING_FOR_CLIENT,
-      "Waiting for client ..."
+      "Ожидание клиент..."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
@@ -65,7 +65,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_AUDIO_VOLUME,
-      "Audio volume"
+      "Громкость"
       )
 MSG_HASH(
       MSG_AUTODETECT,
@@ -97,7 +97,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
-      "Password"
+      "Пароль"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
@@ -105,7 +105,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
-      "Username"
+      "Имя"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST,
@@ -230,7 +230,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
-      "Back"
+      "Назад"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
@@ -274,11 +274,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_INFO,
-      "Info"
+      "Информация"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_QUIT,
-      "Quit"
+      "Выход"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_SCROLL_UP,
@@ -382,7 +382,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
-      "Close"
+      "Закрыть"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONFIG,
@@ -442,21 +442,21 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES,
       "License(s)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
-      "Permissions")
+      "Разрешения")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS,
       "Supported extensions")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER,
       "System manufacturer")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
-      "System name")
+      "Системное имя")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
-      "Controls")
+      "Управление")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_LIST,
-      "Load Core")
+      "Загрузить ядро")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
-      "Options")
+      "Опции")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
-      "Core")
+      "Ядро")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
       "Start a Core Automatically")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
