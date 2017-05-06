@@ -389,6 +389,9 @@ static bool gfx_ctx_x_set_resize(void *data,
 #ifdef HAVE_VULKAN
          {
             gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
+
+            /* FIXME/TODO - threading error here */
+
             if (!vulkan_create_swapchain(&x->vk, width, height, x->g_interval))
             {
                RARCH_ERR("[X/Vulkan]: Failed to update swapchain.\n");
@@ -800,6 +803,8 @@ static bool gfx_ctx_x_set_video_mode(void *data,
             unsigned width = 0, height = 0;
             x11_check_window(x, &quit, &resize, &width, &height,
                   shutdown);
+
+            /* FIXME/TODO - threading error here */
 
             /* Use XCB surface since it's the most supported WSI.
              * We can obtain the XCB connection directly from X11. */
