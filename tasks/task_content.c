@@ -1026,7 +1026,9 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    if (!content_info)
       return false;
 
+#ifdef HAVE_CHEEVOS
    content_ctx.cheevos_enable                 = settings->bools.cheevos_enable;
+#endif
    content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
    content_ctx.bios_is_missing                = runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL);
@@ -1101,7 +1103,9 @@ bool task_push_load_content_from_playlist_from_menu(
    char *error_string                         = NULL;
    settings_t *settings                       = config_get_ptr();
 
+#ifdef HAVE_CHEEVOS
    content_ctx.cheevos_enable                 = settings->bools.cheevos_enable;
+#endif
    content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
    content_ctx.bios_is_missing                = runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL);
@@ -1178,7 +1182,9 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
    if (!content_info)
       return false;
 
+#ifdef HAVE_CHEEVOS
    content_ctx.cheevos_enable                 = settings->bools.cheevos_enable;
+#endif
    content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
    content_ctx.bios_is_missing                = runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL);
@@ -1288,7 +1294,9 @@ bool task_push_load_content_with_new_core_from_menu(
    char *error_string                         = NULL;
    settings_t *settings                       = config_get_ptr();
 
+#ifdef HAVE_CHEEVOS
    content_ctx.cheevos_enable                 = settings->bools.cheevos_enable;
+#endif
    content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
    content_ctx.bios_is_missing                = runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL);
@@ -1369,7 +1377,9 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
    char *error_string                         = NULL;
    settings_t *settings                       = config_get_ptr();
 
+#ifdef HAVE_CHEEVOS
    content_ctx.cheevos_enable                 = settings->bools.cheevos_enable;
+#endif
    content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
    content_ctx.bios_is_missing                = runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL);
@@ -1619,7 +1629,9 @@ bool content_init(void)
 
    temporary_content                          = string_list_new();
 
+#ifdef HAVE_CHEEVOS
    content_ctx.cheevos_enable                 = settings->bools.cheevos_enable;
+#endif
    content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
    content_ctx.temporary_content              = temporary_content;
    content_ctx.history_list_enable            = false;
