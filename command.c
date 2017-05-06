@@ -43,7 +43,7 @@
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "cheevos/cheevos.h"
+#include "tasks/task_cheevos.h"
 #endif
 
 #ifdef HAVE_MENU

@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* TODO/FIXME - turn these into actual tasks */
+
 #include <string.h>
 #include <ctype.h>
 
@@ -31,7 +33,7 @@
 #include "../menu/menu_entries.h"
 #endif
 
-#include "cheevos.h"
+#include "task_cheevos.h"
 
 #include "../command.h"
 #include "../dynamic.h"

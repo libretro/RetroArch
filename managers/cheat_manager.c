@@ -30,7 +30,7 @@
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "../cheevos/cheevos.h"
+#include "../tasks/task_cheevos.h"
 #endif
 
 #include "cheat_manager.h"

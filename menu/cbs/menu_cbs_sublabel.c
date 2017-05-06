@@ -19,7 +19,7 @@
 #include "../menu_cbs.h"
 
 #ifdef HAVE_CHEEVOS
-#include "../../cheevos/cheevos.h"
+#include "../../tasks/task_cheevos.h"
 #endif
 #include "../../verbosity.h"
 
