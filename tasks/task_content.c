@@ -591,14 +591,15 @@ static bool content_file_load(
 #ifdef HAVE_CHEEVOS
    if (!special)
    {
-      const void *load_data = NULL;
       const char *path      = content->elems[0].data;
 
       cheevos_set_cheats();
 
       if (!string_is_empty(path))
-         load_data = info;
-      cheevos_load(load_data);
+      {
+         settings_t *settings = config_get_ptr();
+         cheevos_load(settings->bools.cheevos_enable, info);
+      }
    }
 #endif
 

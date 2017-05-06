@@ -20,6 +20,8 @@
 #include <stdlib.h>
 
 #include <retro_common_api.h>
+#include <boolean.h>
+#include <libretro.h>
 
 RETRO_BEGIN_DECLS
 
@@ -39,7 +41,7 @@ typedef struct
    unsigned previous;
 } cheevos_var_t;
 
-bool cheevos_load(const void *data);
+bool cheevos_load(bool cheevos_enable, const struct retro_game_info *info);
 
 void cheevos_reset_game(void);
 

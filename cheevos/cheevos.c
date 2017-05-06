@@ -2944,7 +2944,7 @@ static unsigned cheevos_find_game_id_nes(
    return cheevos_get_game_id(hash, &timeout);
 }
 
-bool cheevos_load(const void *data)
+bool cheevos_load(bool cheevos_enable, const struct retro_game_info *info)
 {
    static const uint32_t genesis_exts[] =
    {
@@ -2988,15 +2988,13 @@ bool cheevos_load(const void *data)
    const char *json     = NULL;
    retro_time_t timeout = 5000000;
    unsigned game_id     = 0;
-   settings_t *settings = config_get_ptr();
-   const struct retro_game_info *info = (const struct retro_game_info*)data;
 
    url[0]                = '\0';
 
    cheevos_loaded        = 0;
 
    /* Just return OK if the core doesn't support cheevos, or info is NULL. */
-   if (!cheevos_locals.core_supports || !info)
+   if (!cheevos_locals.core_supports)
       return true;
 
    cheevos_locals.meminfo[0].id = RETRO_MEMORY_SYSTEM_RAM;
@@ -3024,7 +3022,7 @@ bool cheevos_load(const void *data)
 
    /* Bail out if cheevos are disabled.
     * But set the above anyways, command_read_ram needs it. */
-   if (!settings->bools.cheevos_enable)
+   if (!cheevos_enable)
       return true;
 
    /* Use the supported extensions as a hint
