@@ -3012,18 +3012,22 @@ bool cheevos_load(bool cheevos_enable, const struct retro_game_info *info)
          {
             int j;
             unsigned hash;
-            const char *end = strchr(ext, '|');
-            size_t djb_size = end - ext;
+            const char *end      = strchr(ext, '|');
+            size_t djb_size      = end - ext;
+            const char *ext_path = ext;
 
             if (end)
-               ext  = end + 1;
+            {
+               ext_path = end + 1;
+               ext      = end + 1;
+            }
             else
             {
                djb_size = strlen(ext);
                ext      = NULL;
             }
 
-            hash = cheevos_djb2(ext, djb_size);
+            hash = cheevos_djb2(ext_path, djb_size);
 
             for (j = 0; finders[i].ext_hashes[j]; j++)
             {
