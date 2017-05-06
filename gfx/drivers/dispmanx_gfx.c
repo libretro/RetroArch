@@ -209,7 +209,6 @@ static void dispmanx_surface_free(struct dispmanx_video *_dispvars,
    slock_lock(_dispvars->pending_mutex);
    if (_dispvars->pageflip_pending > 0)
       scond_wait(_dispvars->vsync_condition, _dispvars->pending_mutex);
-
    slock_unlock(_dispvars->pending_mutex);
 
    for (i = 0; i < surface->numpages; i++)
@@ -321,22 +320,19 @@ static void dispmanx_surface_update_async(const void *frame, struct dispmanx_sur
 }
 
 static void dispmanx_surface_update(struct dispmanx_video *_dispvars, const void *frame,
-      struct dispmanx_surface *surface, video_frame_info_t *video_info)
+      struct dispmanx_surface *surface)
 {
    /* Frame blitting */
    vc_dispmanx_resource_write_data(surface->next_page->resource, surface->pixformat,
          surface->pitch, (void*)frame, &(surface->bmp_rect));
 
-   /* Dispmanx doesn't support more than 1 pending frame flip, if we're "triple" buffering,
-    * then wait at the last possible moment for any outstanding vsync to finish. */
-   if (video_info->max_swapchain_images >= 3)
-   {
-      slock_lock(_dispvars->pending_mutex);
-      if (_dispvars->pageflip_pending > 0)
-         scond_wait(_dispvars->vsync_condition, _dispvars->pending_mutex);
-      slock_unlock(_dispvars->pending_mutex);
-   }
-   
+   /* Dispmanx doesn't support more than one pending pageflip. Doing so would overwrite
+    * the page in the callback function, so we would be always freeing the same page. */
+   slock_lock(_dispvars->pending_mutex);
+   if (_dispvars->pageflip_pending > 0)
+      scond_wait(_dispvars->vsync_condition, _dispvars->pending_mutex);
+   slock_unlock(_dispvars->pending_mutex);
+
    /* Issue a page flip that will be done at the next vsync. */
    _dispvars->update = vc_dispmanx_update_start(0);
 
@@ -350,17 +346,7 @@ static void dispmanx_surface_update(struct dispmanx_video *_dispvars, const void
    vc_dispmanx_update_submit(_dispvars->update,
       dispmanx_vsync_callback, (void*)(surface->next_page));
 
-   /* If we are "double" buffering, wait immediately after the flip for the vsync
-    * before continuing */
-   if (video_info->max_swapchain_images <= 2)
-   {
-      slock_lock(_dispvars->pending_mutex);
-      if (_dispvars->pageflip_pending > 0)
-         scond_wait(_dispvars->vsync_condition, _dispvars->pending_mutex);
-      slock_unlock(_dispvars->pending_mutex);
-   }
-
-   /* At this point, there will always be a free page available */
+   /* This may block waiting on a new page when max_swapchain_images <= 2 */
    surface->next_page = dispmanx_get_free_page(_dispvars, surface);
 }
 
@@ -483,7 +469,7 @@ static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
             _dispvars->rgb32 ? VC_IMAGE_XRGB8888 : VC_IMAGE_RGB565,
             255,
             _dispvars->aspect_ratio, 
-            2,
+            video_info->max_swapchain_images,
             0,
             &_dispvars->main_surface);
 
@@ -498,7 +484,7 @@ static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
 #endif
 
    /* Update main surface: locate free page, blit and flip. */
-   dispmanx_surface_update(_dispvars, frame, _dispvars->main_surface, video_info);
+   dispmanx_surface_update(_dispvars, frame, _dispvars->main_surface);
    return true;
 }
 
