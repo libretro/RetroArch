@@ -69,11 +69,11 @@ struct bsv_state
 };
 
 static bsv_movie_t     *bsv_movie_state_handle = NULL;
-static struct bsv_state bsv_movie_state;
+static struct bsv_state bsv_movie_state        = NULL;
 
 static bool bsv_movie_init_playback(bsv_movie_t *handle, const char *path)
 {
-   uint32_t state_size;
+   uint32_t state_size       = 0;
    uint32_t content_crc      = 0;
    uint32_t header[4]        = {0};
    RFILE *file               = filestream_open(path, RFILE_MODE_READ, -1);
@@ -149,7 +149,7 @@ static bool bsv_movie_init_playback(bsv_movie_t *handle, const char *path)
 static bool bsv_movie_init_record(bsv_movie_t *handle, const char *path)
 {
    retro_ctx_size_info_t info;
-   uint32_t state_size;
+   uint32_t state_size       = 0;
    uint32_t content_crc      = 0;
    uint32_t header[4]        = {0};
    RFILE *file               = filestream_open(path, RFILE_MODE_WRITE, -1);
