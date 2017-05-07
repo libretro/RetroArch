@@ -51,12 +51,14 @@ enum bsv_ctl_state
    BSV_MOVIE_CTL_UNSET_START_PLAYBACK,
    BSV_MOVIE_CTL_UNSET_PLAYBACK,
    BSV_MOVIE_CTL_FRAME_REWIND,
-   BSV_MOVIE_CTL_DEINIT,
-   BSV_MOVIE_CTL_INIT,
    BSV_MOVIE_CTL_SET_END_EOF,
    BSV_MOVIE_CTL_SET_END,
    BSV_MOVIE_CTL_UNSET_END
 };
+
+void bsv_movie_deinit(void);
+
+bool bsv_movie_init(void);
 
 bool bsv_movie_is_playback_on(void);
 

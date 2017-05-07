@@ -211,7 +211,7 @@ static void bsv_movie_free(bsv_movie_t *handle)
    free(handle);
 }
 
-static bsv_movie_t *bsv_movie_init(const char *path,
+static bsv_movie_t *bsv_movie_init_internal(const char *path,
       enum rarch_movie_type type)
 {
    size_t *frame_pos   = NULL;
@@ -315,14 +315,16 @@ static void bsv_movie_frame_rewind(bsv_movie_t *handle)
    }
 }
 
-static void bsv_movie_init_state(void)
+bool bsv_movie_init(void)
 {
    bool set_granularity = false;
+   bool ret             = true;
 
    if (bsv_movie_state.movie_start_playback)
    {
-      if (!(bsv_movie_init_handle(bsv_movie_state.movie_start_path,
-                  RARCH_MOVIE_PLAYBACK)))
+      ret = bsv_movie_init_handle(bsv_movie_state.movie_start_path,
+                  RARCH_MOVIE_PLAYBACK);
+      if (!ret)
       {
          RARCH_ERR("%s: \"%s\".\n",
                msg_hash_to_str(MSG_FAILED_TO_LOAD_MOVIE_FILE),
@@ -345,14 +347,15 @@ static void bsv_movie_init_state(void)
             msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
             bsv_movie_state.movie_start_path);
 
-      if (!(bsv_movie_init_handle(bsv_movie_state.movie_start_path,
-                  RARCH_MOVIE_RECORD)))
+      ret = bsv_movie_init_handle(bsv_movie_state.movie_start_path,
+                  RARCH_MOVIE_RECORD);
+      if (!ret)
       {
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD),
                1, 180, true);
          RARCH_ERR("%s.\n", msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
-         return;
+         return ret;
       }
 
       runloop_msg_queue_push(msg, 1, 180, true);
@@ -368,6 +371,8 @@ static void bsv_movie_init_state(void)
       settings_t *settings = config_get_ptr();
       configuration_set_uint(settings, settings->uints.rewind_granularity, 1);
    }
+
+   return ret;
 }
 
 bool bsv_movie_get_input(int16_t *bsv_data)
@@ -425,14 +430,6 @@ bool bsv_movie_ctl(enum bsv_ctl_state state, void *data)
       case BSV_MOVIE_CTL_UNSET_PLAYBACK:
          bsv_movie_state.movie_playback = false;
          break;
-      case BSV_MOVIE_CTL_DEINIT:
-         if (bsv_movie_state_handle)
-            bsv_movie_free(bsv_movie_state_handle);
-         bsv_movie_state_handle = NULL;
-         break;
-      case BSV_MOVIE_CTL_INIT:
-         bsv_movie_init_state();
-         break;
       case BSV_MOVIE_CTL_FRAME_REWIND:
          bsv_movie_frame_rewind(bsv_movie_state_handle);
          break;
@@ -467,10 +464,19 @@ void bsv_movie_set_start_path(const char *path)
 bool bsv_movie_init_handle(const char *path,
       enum rarch_movie_type type)
 {
-   bsv_movie_state_handle = bsv_movie_init(path, type);
+   bsv_movie_state_handle = bsv_movie_init_internal(path, type);
    if (!bsv_movie_state_handle)
       return false;
    return true;
+}
+
+void bsv_movie_deinit(void)
+{
+   if (!bsv_movie_state_handle)
+      return;
+
+   bsv_movie_free(bsv_movie_state_handle);
+   bsv_movie_state_handle = NULL;
 }
 
 /* Checks if movie is being played back. */

@@ -2426,11 +2426,11 @@ bool command_event(enum event_command cmd, void *data)
             return false;
          break;
       case CMD_EVENT_BSV_MOVIE_DEINIT:
-         bsv_movie_ctl(BSV_MOVIE_CTL_DEINIT, NULL);
+         bsv_movie_deinit();
          break;
       case CMD_EVENT_BSV_MOVIE_INIT:
          command_event(CMD_EVENT_BSV_MOVIE_DEINIT, NULL);
-         bsv_movie_ctl(BSV_MOVIE_CTL_INIT, NULL);
+         bsv_movie_init();
          break;
 #ifdef HAVE_NETWORKING
       case CMD_EVENT_NETPLAY_DEINIT:
