@@ -261,7 +261,7 @@ static void autosave_free(autosave_t *handle)
 }
 
 
-void autosave_init(void)
+bool autosave_init(void)
 {
    unsigned i;
    autosave_t **list          = NULL;
@@ -269,12 +269,12 @@ void autosave_init(void)
    unsigned autosave_interval = settings->uints.autosave_interval;
 
    if (autosave_interval < 1 || !task_save_files)
-      return;
+      return false;
 
    list = (autosave_t**)calloc(task_save_files->size,
                sizeof(*autosave_state.list));
    if (!list)
-      return;
+      return false;
 
    autosave_state.list = list;
    autosave_state.num  = (unsigned)task_save_files->size;
@@ -282,24 +282,32 @@ void autosave_init(void)
    for (i = 0; i < task_save_files->size; i++)
    {
       retro_ctx_memory_info_t mem_info;
-      const char *path = task_save_files->elems[i].data;
-      unsigned    type = task_save_files->elems[i].attr.i;
+      autosave_t *auto_st = NULL;
+      const char *path    = task_save_files->elems[i].data;
+      unsigned    type    = task_save_files->elems[i].attr.i;
 
-      mem_info.id = type;
+      mem_info.id         = type;
 
       core_get_memory(&mem_info);
 
       if (mem_info.size <= 0)
          continue;
 
-      autosave_state.list[i] = autosave_new(path,
+      auto_st             = autosave_new(path,
             mem_info.data,
             mem_info.size,
             autosave_interval);
 
-      if (!autosave_state.list[i])
+      if (!auto_st)
+      {
          RARCH_WARN("%s\n", msg_hash_to_str(MSG_AUTOSAVE_FAILED));
+         continue;
+      }
+
+      autosave_state.list[i] = auto_st;
    }
+
+   return true;
 }
 
 void autosave_deinit(void)
