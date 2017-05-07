@@ -1208,7 +1208,7 @@ ifeq ($(HAVE_NETWORKING), 1)
    ifeq ($(HAVE_CHEEVOS), 1)
       ifeq ($(HAVE_THREADS), 1)
          DEFINES += -DHAVE_CHEEVOS
-         OBJ += tasks/task_cheevos.o \
+         OBJ += cheevos/cheevos.o \
 					 $(LIBRETRO_COMM_DIR)/utils/md5.o
       endif
    endif
