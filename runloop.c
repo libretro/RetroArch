@@ -132,6 +132,7 @@ static bool runloop_perfcnt_enable                         = false;
 static bool runloop_overrides_active                       = false;
 static bool runloop_game_options_active                    = false;
 static bool runloop_missing_bios                           = false;
+static bool runloop_autosave                               = false;
 static retro_time_t frame_limit_minimum_time               = 0.0;
 static retro_time_t frame_limit_last_time                  = 0.0;
 
@@ -392,6 +393,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          runloop_paused                    = false;
          runloop_slowmotion                = false;
          runloop_overrides_active          = false;
+         runloop_autosave                  = false;
          runloop_ctl(RUNLOOP_CTL_FRAME_TIME_FREE, NULL);
          break;
       case RUNLOOP_CTL_GLOBAL_FREE:
@@ -1040,6 +1042,30 @@ static enum runloop_state runloop_check_state(
 #define runloop_netplay_pause() ((void)0)
 #endif
 
+void runloop_set(enum runloop_action action)
+{
+   switch (action)
+   {
+      case RUNLOOP_ACTION_AUTOSAVE:
+         runloop_autosave = true;
+         break;
+      case RUNLOOP_ACTION_NONE:
+         break;
+   }
+}
+
+void runloop_unset(enum runloop_action action)
+{
+   switch (action)
+   {
+      case RUNLOOP_ACTION_AUTOSAVE:
+         runloop_autosave = false;
+         break;
+      case RUNLOOP_ACTION_NONE:
+         break;
+   }
+}
+
 /**
  * runloop_iterate:
  *
@@ -1133,7 +1159,8 @@ int runloop_iterate(unsigned *sleep_ms)
          break;
    }
 
-   autosave_lock();
+   if (runloop_autosave)
+      autosave_lock();
 
    bsv_movie_set_frame_start();
 
@@ -1178,7 +1205,8 @@ int runloop_iterate(unsigned *sleep_ms)
 
    bsv_movie_set_frame_end();
 
-   autosave_unlock();
+   if (runloop_autosave)
+      autosave_unlock();
 
    if (!settings->floats.fastforward_ratio)
       return 0;

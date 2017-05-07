@@ -28,6 +28,12 @@
 
 RETRO_BEGIN_DECLS
 
+enum runloop_action
+{
+   RUNLOOP_ACTION_NONE = 0,
+   RUNLOOP_ACTION_AUTOSAVE
+};
+
 enum runloop_ctl_state
 {
    RUNLOOP_CTL_NONE = 0,
@@ -208,6 +214,10 @@ void runloop_get_status(bool *is_paused, bool *is_idle, bool *is_slowmotion,
       bool *is_perfcnt_enable);
 
 bool runloop_ctl(enum runloop_ctl_state state, void *data);
+
+void runloop_set(enum runloop_action action);
+
+void runloop_unset(enum runloop_action action);
 
 rarch_system_info_t *runloop_get_system_info(void);
 
