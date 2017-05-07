@@ -224,59 +224,59 @@ enum record_driver_enum
 #endif
 
 #if defined(__CELLOS_LV2__)
-#define AUDIO_DEFAULT_DRIVER AUDIO_PS3
+static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PS3;
 #elif defined(XENON)
-#define AUDIO_DEFAULT_DRIVER AUDIO_XENON360
+static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_XENON360;
 #elif defined(GEKKO)
-#define AUDIO_DEFAULT_DRIVER AUDIO_WII
+static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_WII;
 #elif defined(WIIU)
-#define AUDIO_DEFAULT_DRIVER AUDIO_WIIU
+static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_WIIU;
 #elif defined(PSP) || defined(VITA)
-#define AUDIO_DEFAULT_DRIVER AUDIO_PSP
+static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PSP;
 #elif defined(_3DS)
-#define AUDIO_DEFAULT_DRIVER AUDIO_CTR
+static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_CTR;
 #elif defined(HAVE_PULSE)
-#define AUDIO_DEFAULT_DRIVER AUDIO_PULSE
+static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PULSE;
 #elif defined(HAVE_ALSA) && defined(HAVE_VIDEOCORE)
-#define AUDIO_DEFAULT_DRIVER AUDIO_ALSATHREAD
+static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_ALSATHREAD;
 #elif defined(HAVE_ALSA)
-#define AUDIO_DEFAULT_DRIVER AUDIO_ALSA
+static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_ALSA;
 #elif defined(HAVE_OSS)
-#define AUDIO_DEFAULT_DRIVER AUDIO_OSS
+static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_OSS;
 #elif defined(HAVE_JACK)
-#define AUDIO_DEFAULT_DRIVER AUDIO_JACK
+static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_JACK;
 #elif defined(HAVE_COREAUDIO)
-#define AUDIO_DEFAULT_DRIVER AUDIO_COREAUDIO
+static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_COREAUDIO;
 #elif defined(HAVE_XAUDIO)
-#define AUDIO_DEFAULT_DRIVER AUDIO_XAUDIO
+static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_XAUDIO;
 #elif defined(HAVE_DSOUND)
-#define AUDIO_DEFAULT_DRIVER AUDIO_DSOUND
+static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_DSOUND;
 #elif defined(HAVE_WASAPI)
-#define AUDIO_DEFAULT_DRIVER AUDIO_WASAPI
+static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_WASAPI;
 #elif defined(HAVE_AL)
-#define AUDIO_DEFAULT_DRIVER AUDIO_AL
+static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_AL;
 #elif defined(HAVE_SL)
-#define AUDIO_DEFAULT_DRIVER AUDIO_SL
+static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_SL;
 #elif defined(EMSCRIPTEN)
-#define AUDIO_DEFAULT_DRIVER AUDIO_RWEBAUDIO
+static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_RWEBAUDIO;
 #elif defined(HAVE_SDL)
-#define AUDIO_DEFAULT_DRIVER AUDIO_SDL
+static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_SDL;
 #elif defined(HAVE_SDL2)
-#define AUDIO_DEFAULT_DRIVER AUDIO_SDL2
+static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_SDL2;
 #elif defined(HAVE_RSOUND)
-#define AUDIO_DEFAULT_DRIVER AUDIO_RSOUND
+static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_RSOUND;
 #elif defined(HAVE_ROAR)
-#define AUDIO_DEFAULT_DRIVER AUDIO_ROAR
+static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_ROAR;
 #elif defined(HAVE_DYLIB) && !defined(ANDROID)
-#define AUDIO_DEFAULT_DRIVER AUDIO_EXT
+static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_EXT;
 #else
-#define AUDIO_DEFAULT_DRIVER AUDIO_NULL
+static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_NULL;
 #endif
 
 #if defined(PSP) || defined(EMSCRIPTEN)
-#define AUDIO_DEFAULT_RESAMPLER_DRIVER  AUDIO_RESAMPLER_CC
+static enum audio_resampler_driver_enum AUDIO_DEFAULT_RESAMPLER_DRIVER = AUDIO_RESAMPLER_CC;
 #else
-#define AUDIO_DEFAULT_RESAMPLER_DRIVER  AUDIO_RESAMPLER_SINC
+static enum audio_resampler_driver_enum AUDIO_DEFAULT_RESAMPLER_DRIVER = AUDIO_RESAMPLER_SINC;
 #endif
 
 #if defined(HAVE_FFMPEG)

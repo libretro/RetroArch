@@ -69,7 +69,7 @@ struct bsv_state
 };
 
 static bsv_movie_t     *bsv_movie_state_handle = NULL;
-static struct bsv_state bsv_movie_state        = NULL;
+static struct bsv_state bsv_movie_state;
 
 static bool bsv_movie_init_playback(bsv_movie_t *handle, const char *path)
 {
