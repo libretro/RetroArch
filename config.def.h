@@ -280,9 +280,9 @@ static enum audio_resampler_driver_enum AUDIO_DEFAULT_RESAMPLER_DRIVER = AUDIO_R
 #endif
 
 #if defined(HAVE_FFMPEG)
-#define RECORD_DEFAULT_DRIVER RECORD_FFMPEG
+static enum record_driver_enum RECORD_DEFAULT_DRIVER = RECORD_FFMPEG;
 #else
-#define RECORD_DEFAULT_DRIVER RECORD_NULL
+static enum record_driver_enum RECORD_DEFAULT_DRIVER = RECORD_NULL;
 #endif
 
 #if defined(XENON)
