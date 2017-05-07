@@ -248,7 +248,6 @@ error:
 /* Used for rewinding while playback/record. */
 void bsv_movie_set_frame_start(void)
 {
-   RARCH_LOG("movie state: %d\n", bsv_movie_state_handle);
    if (bsv_movie_state_handle)
       bsv_movie_state_handle->frame_pos[bsv_movie_state_handle->frame_ptr] 
          = filestream_tell(bsv_movie_state_handle->file);
