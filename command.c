@@ -2067,9 +2067,8 @@ bool command_event(enum event_command cmd, void *data)
             runloop_set(RUNLOOP_ACTION_AUTOSAVE);
          else
             runloop_unset(RUNLOOP_ACTION_AUTOSAVE);
-#else
-         break;
 #endif
+         break;
       case CMD_EVENT_AUTOSAVE_STATE:
          command_event_save_auto_state();
          break;
