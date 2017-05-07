@@ -104,6 +104,8 @@ void driver_camera_stop(void);
 
 bool driver_camera_start(void);
 
+void camera_driver_poll(void);
+
 bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data);
 
 RETRO_END_DECLS
