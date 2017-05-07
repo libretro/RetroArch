@@ -402,7 +402,10 @@ static void path_init_savefile_internal(void)
    path_init_savefile_new();
 
    if (!path_init_subsystem())
-      path_init_savefile_rtc();
+   {
+      global_t *global = global_get_ptr();
+      path_init_savefile_rtc(global->name.savefile);
+   }
 }
 
 

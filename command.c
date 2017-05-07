@@ -2063,9 +2063,10 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_AUTOSAVE_INIT:
          command_event(CMD_EVENT_AUTOSAVE_DEINIT, NULL);
 #ifdef HAVE_THREADS
-         autosave_init();
-#endif
+         return autosave_init();
+#else
          break;
+#endif
       case CMD_EVENT_AUTOSAVE_STATE:
          command_event_save_auto_state();
          break;

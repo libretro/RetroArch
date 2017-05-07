@@ -213,7 +213,7 @@ bool event_load_save_files(void);
 
 bool event_save_files(void);
 
-void path_init_savefile_rtc(void);
+void path_init_savefile_rtc(const char *savefile_path);
 
 void *savefile_ptr_get(void);
 
