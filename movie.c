@@ -248,6 +248,7 @@ error:
 /* Used for rewinding while playback/record. */
 void bsv_movie_set_frame_start(void)
 {
+   RARCH_LOG("movie state: %d\n", bsv_movie_state_handle);
    if (bsv_movie_state_handle)
       bsv_movie_state_handle->frame_pos[bsv_movie_state_handle->frame_ptr] 
          = filestream_tell(bsv_movie_state_handle->file);
@@ -313,6 +314,15 @@ static void bsv_movie_frame_rewind(bsv_movie_t *handle)
       else
          filestream_seek(handle->file, handle->min_file_pos, SEEK_SET);
    }
+}
+
+static bool bsv_movie_init_handle(const char *path,
+      enum rarch_movie_type type)
+{
+   bsv_movie_state_handle = bsv_movie_init_internal(path, type);
+   if (!bsv_movie_state_handle)
+      return false;
+   return true;
 }
 
 bool bsv_movie_init(void)
@@ -459,15 +469,6 @@ void bsv_movie_set_start_path(const char *path)
 {
    strlcpy(bsv_movie_state.movie_start_path, path,
          sizeof(bsv_movie_state.movie_start_path));
-}
-
-bool bsv_movie_init_handle(const char *path,
-      enum rarch_movie_type type)
-{
-   bsv_movie_state_handle = bsv_movie_init_internal(path, type);
-   if (!bsv_movie_state_handle)
-      return false;
-   return true;
 }
 
 void bsv_movie_deinit(void)

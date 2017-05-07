@@ -1208,7 +1208,7 @@ static void command_event_deinit_core(bool reinit)
    command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
 }
 
-static void command_event_init_cheats(void)
+static bool command_event_init_cheats(void)
 {
    bool allow_cheats = true;
 #ifdef HAVE_NETWORKING
@@ -1218,9 +1218,11 @@ static void command_event_init_cheats(void)
    allow_cheats &= !bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL);
 
    if (!allow_cheats)
-      return;
+      return false;
 
    /* TODO/FIXME - add some stuff here. */
+
+   return true;
 }
 
 static void command_event_load_auto_state(void)
@@ -2016,8 +2018,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_CHEATS_INIT:
          command_event(CMD_EVENT_CHEATS_DEINIT, NULL);
-         command_event_init_cheats();
-         break;
+         return command_event_init_cheats();
       case CMD_EVENT_CHEATS_APPLY:
          cheat_manager_apply_cheats();
          break;
@@ -2430,7 +2431,10 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_BSV_MOVIE_INIT:
          command_event(CMD_EVENT_BSV_MOVIE_DEINIT, NULL);
-         bsv_movie_init();
+         if (bsv_movie_init())
+            runloop_set(RUNLOOP_ACTION_BSV_MOVIE);
+         else
+            runloop_unset(RUNLOOP_ACTION_BSV_MOVIE);
          break;
 #ifdef HAVE_NETWORKING
       case CMD_EVENT_NETPLAY_DEINIT:

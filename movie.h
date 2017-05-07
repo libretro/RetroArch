@@ -80,8 +80,6 @@ bool bsv_movie_ctl(enum bsv_ctl_state state, void *data);
 
 bool bsv_movie_check(void);
 
-bool bsv_movie_init_handle(const char *path, enum rarch_movie_type type);
-
 RETRO_END_DECLS
 
 #endif

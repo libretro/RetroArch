@@ -132,6 +132,7 @@ static bool runloop_perfcnt_enable                         = false;
 static bool runloop_overrides_active                       = false;
 static bool runloop_game_options_active                    = false;
 static bool runloop_missing_bios                           = false;
+static bool runloop_bsv_movie                              = false;
 static bool runloop_autosave                               = false;
 static retro_time_t frame_limit_minimum_time               = 0.0;
 static retro_time_t frame_limit_last_time                  = 0.0;
@@ -393,6 +394,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          runloop_paused                    = false;
          runloop_slowmotion                = false;
          runloop_overrides_active          = false;
+         runloop_bsv_movie                 = false;
          runloop_autosave                  = false;
          runloop_ctl(RUNLOOP_CTL_FRAME_TIME_FREE, NULL);
          break;
@@ -674,7 +676,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
  * d) Video driver no longer alive.
  * e) End of BSV movie and BSV EOF exit is true. (TODO/FIXME - explain better)
  */
-#define time_to_exit(quit_key_pressed) (runloop_shutdown_initiated || quit_key_pressed || !is_alive || bsv_movie_is_end_of_file() || (runloop_max_frames && (frame_count >= runloop_max_frames)) || runloop_exec)
+#define time_to_exit(quit_key_pressed) (runloop_shutdown_initiated || quit_key_pressed || !is_alive || (runloop_bsv_movie && bsv_movie_is_end_of_file()) || (runloop_max_frames && (frame_count >= runloop_max_frames)) || runloop_exec)
 
 #define runloop_check_cheevos() (settings->bools.cheevos_enable && cheevos_loaded && (!cheats_are_enabled && !cheats_were_enabled))
 
@@ -1009,7 +1011,12 @@ static enum runloop_state runloop_check_state(
    }
 
    if (runloop_cmd_triggered(trigger_input, RARCH_MOVIE_RECORD_TOGGLE))
-      bsv_movie_check();
+   {
+      if (bsv_movie_check())
+         runloop_set(RUNLOOP_ACTION_BSV_MOVIE);
+      else
+         runloop_unset(RUNLOOP_ACTION_BSV_MOVIE);
+   }
 
    if (runloop_cmd_triggered(trigger_input, RARCH_SHADER_NEXT) ||
       runloop_cmd_triggered(trigger_input, RARCH_SHADER_PREV))
@@ -1046,6 +1053,9 @@ void runloop_set(enum runloop_action action)
 {
    switch (action)
    {
+      case RUNLOOP_ACTION_BSV_MOVIE:
+         runloop_bsv_movie = true;
+         break;
       case RUNLOOP_ACTION_AUTOSAVE:
          runloop_autosave = true;
          break;
@@ -1058,6 +1068,9 @@ void runloop_unset(enum runloop_action action)
 {
    switch (action)
    {
+      case RUNLOOP_ACTION_BSV_MOVIE:
+         runloop_bsv_movie = false;
+         break;
       case RUNLOOP_ACTION_AUTOSAVE:
          runloop_autosave = false;
          break;
@@ -1162,7 +1175,8 @@ int runloop_iterate(unsigned *sleep_ms)
    if (runloop_autosave)
       autosave_lock();
 
-   bsv_movie_set_frame_start();
+   if (runloop_bsv_movie)
+      bsv_movie_set_frame_start();
 
    camera_driver_ctl(RARCH_CAMERA_CTL_POLL, NULL);
 
@@ -1203,7 +1217,8 @@ int runloop_iterate(unsigned *sleep_ms)
       input_pop_analog_dpad(auto_binds);
    }
 
-   bsv_movie_set_frame_end();
+   if (runloop_bsv_movie)
+      bsv_movie_set_frame_end();
 
    if (runloop_autosave)
       autosave_unlock();
