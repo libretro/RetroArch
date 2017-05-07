@@ -1164,7 +1164,7 @@ int runloop_iterate(unsigned *sleep_ms)
 
    bsv_movie_set_frame_start();
 
-   camera_driver_ctl(RARCH_CAMERA_CTL_POLL, NULL);
+   camera_driver_poll();
 
    /* Update binds for analog dpad modes. */
    for (i = 0; i < max_users; i++)

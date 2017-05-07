@@ -48,6 +48,12 @@ static const camera_driver_t *camera_drivers[] = {
    NULL,
 };
 
+static struct retro_camera_callback camera_cb;
+static const camera_driver_t *camera_driver   = NULL;
+static void *camera_data                      = NULL;
+static bool camera_driver_active              = false;
+static bool camera_driver_data_own            = false;
+
 /**
  * camera_driver_find_handle:
  * @idx                : index of driver to get handle to.
@@ -102,14 +108,20 @@ bool driver_camera_start(void)
    return camera_driver_ctl(RARCH_CAMERA_CTL_START, NULL);
 }
 
+void camera_driver_poll(void)
+{
+   if (!camera_cb.caps)
+      return;
+   if (!camera_driver || !camera_driver->poll || !camera_data)
+      return;
+   camera_driver->poll(camera_data,
+         camera_cb.frame_raw_framebuffer,
+         camera_cb.frame_opengl_texture);
+}
+
 bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data)
 {
    settings_t        *settings = config_get_ptr();
-   static struct retro_camera_callback camera_cb;
-   static const camera_driver_t *camera_driver   = NULL;
-   static void *camera_data                      = NULL;
-   static bool camera_driver_active              = false;
-   static bool camera_driver_data_own            = false;
 
    switch (state)
    {
@@ -194,15 +206,6 @@ bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data)
            runloop_msg_queue_push(
                  "Camera is explicitly disabled.\n", 1, 180, false);
         }
-        break;
-      case RARCH_CAMERA_CTL_POLL:
-        if (!camera_cb.caps)
-           return false;
-        if (!camera_driver || !camera_driver->poll || !camera_data)
-           return false;
-        camera_driver->poll(camera_data,
-              camera_cb.frame_raw_framebuffer,
-              camera_cb.frame_opengl_texture);
         break;
       case RARCH_CAMERA_CTL_SET_CB:
         {
