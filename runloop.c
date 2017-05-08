@@ -751,7 +751,10 @@ static enum runloop_state runloop_check_state(
          content_info.environ_get        = NULL;
 
          if (!task_push_start_dummy_core(&content_info))
+         {
+            retroarch_main_quit();
             return RUNLOOP_STATE_QUIT;
+         }
 
          /* Loads dummy core instead of exiting RetroArch completely.
           * Aborts core shutdown if invoked. */
@@ -760,7 +763,7 @@ static enum runloop_state runloop_check_state(
       }
       else
       {
-         command_event_quit();
+         retroarch_main_quit();
          return RUNLOOP_STATE_QUIT;
       }
    }

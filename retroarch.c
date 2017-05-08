@@ -1676,3 +1676,23 @@ void retroarch_fail(int error_code, const char *error)
    strlcpy(error_string, error, sizeof(error_string));
    longjmp(error_sjlj_context, error_code);
 }
+
+bool retroarch_main_quit(void)
+{
+   command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
+   command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
+   command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
+
+#ifdef HAVE_DYNAMIC
+#ifdef HAVE_MENU
+   menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_DEINIT, NULL);
+#endif
+#endif
+
+   runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
+#ifdef HAVE_MENU
+   rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+#endif
+
+   return true;
+}

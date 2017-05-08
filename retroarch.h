@@ -191,6 +191,8 @@ void retroarch_fail(int error_code, const char *error);
  **/
 bool retroarch_main_init(int argc, char *argv[]);
 
+bool retroarch_main_quit(void);
+
 RETRO_END_DECLS
 
 #endif

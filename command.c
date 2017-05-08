@@ -1756,26 +1756,6 @@ static bool command_event_main_state(unsigned cmd)
    return ret;
 }
 
-bool command_event_quit(void)
-{
-   command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
-   command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
-   command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
-
-#ifdef HAVE_DYNAMIC
-#ifdef HAVE_MENU
-   menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_DEINIT, NULL);
-#endif
-#endif
-
-   runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
-#ifdef HAVE_MENU
-   rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
-#endif
-
-   return true;
-}
-
 static bool command_event_resize_windowed_scale(void)
 {
    unsigned idx           = 0;
@@ -1995,7 +1975,7 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_QUIT:
-         return command_event_quit();
+         return retroarch_main_quit();
       case CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE:
 #ifdef HAVE_CHEEVOS
          cheevos_toggle_hardcore_mode();
