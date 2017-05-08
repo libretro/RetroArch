@@ -92,6 +92,10 @@
 #define CHEEVOS_JSON_KEY_MEM          0x0b8807e4U
 #define CHEEVOS_JSON_KEY_FORMAT       0xb341208eU
 
+#define CHEEVOS_SIX_MB     ( 6 * 1024 * 1024)
+#define CHEEVOS_EIGHT_MB   ( 8 * 1024 * 1024)
+#define CHEEVOS_SIZE_LIMIT (32 * 1024 * 1024)
+
 enum
 {
    /* Don't change those, the values match the console IDs
@@ -2704,9 +2708,6 @@ static int cheevos_deactivate_unlocks(unsigned game_id, retro_time_t *timeout)
 #endif
 }
 
-#define CHEEVOS_SIX_MB   (6 * 1024 * 1024)
-#define CHEEVOS_EIGHT_MB (8 * 1024 * 1024)
-
 static INLINE unsigned cheevos_next_power_of_2(unsigned n)
 {
    n--;
@@ -2736,6 +2737,11 @@ static size_t cheevos_eval_md5(
       if (info->size - offset < max_size)
          max_size = info->size - offset;
 
+#ifdef CHEEVOS_SIZE_LIMIT
+      if (max_size > CHEEVOS_SIZE_LIMIT)
+         max_size = CHEEVOS_SIZE_LIMIT;
+#endif
+
       MD5_Update(ctx, (void*)((uint8_t*)info->data + offset), max_size);
       return max_size;
    }
@@ -2746,8 +2752,22 @@ static size_t cheevos_eval_md5(
 
       if (!file)
          return 0;
+      
+      size = filestream_get_size(file);
+      
+      if (max_size == 0)
+         max_size = size;
+      
+      if (size - offset < max_size)
+         max_size = size - offset;
+      
+#ifdef CHEEVOS_SIZE_LIMIT
+      if (max_size > CHEEVOS_SIZE_LIMIT)
+         max_size = CHEEVOS_SIZE_LIMIT;
+#endif
 
       filestream_seek(file, offset, SEEK_SET);
+      size = 0;
 
       for (;;)
       {
@@ -2755,7 +2775,7 @@ static size_t cheevos_eval_md5(
          ssize_t num_read;
          size_t to_read = sizeof(buffer);
 
-         if (max_size != 0 && to_read > max_size)
+         if (to_read > max_size)
             to_read = max_size;
 
          num_read = filestream_read(file, (void*)buffer, to_read);

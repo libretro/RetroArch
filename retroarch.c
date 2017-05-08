@@ -1044,7 +1044,8 @@ bool retroarch_main_init(int argc, char *argv[])
       return false;
    }
 
-   rarch_ctl(RARCH_CTL_SET_ERROR_ON_INIT, NULL);
+   rarch_error_on_init = true;
+
    retro_main_log_file_init(NULL);
    retroarch_parse_input(argc, argv);
 
@@ -1116,14 +1117,14 @@ bool retroarch_main_init(int argc, char *argv[])
 
    command_event(CMD_EVENT_SET_PER_GAME_RESOLUTION, NULL);
 
-   rarch_ctl(RARCH_CTL_UNSET_ERROR_ON_INIT, NULL);
-   rarch_ctl(RARCH_CTL_SET_INITED, NULL);
+   rarch_error_on_init     = false;
+   rarch_is_inited         = true;
 
    return true;
 
 error:
    command_event(CMD_EVENT_CORE_DEINIT, NULL);
-   rarch_ctl(RARCH_CTL_UNSET_INITED, NULL);
+   rarch_is_inited         = false;
    return false;
 }
 
@@ -1190,12 +1191,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          return has_set_username;
       case RARCH_CTL_IS_INITED:
          return rarch_is_inited;
-      case RARCH_CTL_UNSET_INITED:
-         rarch_is_inited         = false;
-         break;
-      case RARCH_CTL_SET_INITED:
-         rarch_is_inited         = true;
-         break;
       case RARCH_CTL_DESTROY:
          has_set_username        = false;
          rarch_is_inited         = false;
@@ -1250,7 +1245,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          path_deinit_subsystem();
          path_deinit_savefile();
 
-         rarch_ctl(RARCH_CTL_UNSET_INITED, NULL);
+         rarch_is_inited         = false;
 
 #ifdef HAVE_THREAD_STORAGE
          sthread_tls_delete(&rarch_tls);
@@ -1313,14 +1308,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_UNSET_SRAM_ENABLE:
          rarch_use_sram = false;
          break;
-      case RARCH_CTL_SET_ERROR_ON_INIT:
-         rarch_error_on_init = true;
-         break;
-      case RARCH_CTL_UNSET_ERROR_ON_INIT:
-         rarch_error_on_init = false;
-         break;
-      case RARCH_CTL_IS_ERROR_ON_INIT:
-         return rarch_error_on_init;
       case RARCH_CTL_SET_FORCE_FULLSCREEN:
          rarch_force_fullscreen = true;
          break;
@@ -1671,8 +1658,28 @@ void retroarch_fail(int error_code, const char *error)
    /* We cannot longjmp unless we're in retroarch_main_init().
     * If not, something went very wrong, and we should
     * just exit right away. */
-   retro_assert(rarch_ctl(RARCH_CTL_IS_ERROR_ON_INIT, NULL));
+   retro_assert(rarch_error_on_init);
 
    strlcpy(error_string, error, sizeof(error_string));
    longjmp(error_sjlj_context, error_code);
+}
+
+bool retroarch_main_quit(void)
+{
+   command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
+   command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
+   command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
+
+#ifdef HAVE_DYNAMIC
+#ifdef HAVE_MENU
+   menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_DEINIT, NULL);
+#endif
+#endif
+
+   runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
+#ifdef HAVE_MENU
+   rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+#endif
+
+   return true;
 }

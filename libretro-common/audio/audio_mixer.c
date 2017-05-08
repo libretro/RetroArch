@@ -425,10 +425,10 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound, bool repeat,
       float volume, audio_mixer_stop_cb_t stop_cb)
 {
    unsigned i;
-   audio_mixer_voice_t* voice = NULL;
    bool res                   = false;
+   audio_mixer_voice_t* voice = s_voices;
    
-   for (i = 0, voice = s_voices; i < AUDIO_MIXER_MAX_VOICES; i++, voice++)
+   for (i = 0; i < AUDIO_MIXER_MAX_VOICES; i++, voice++)
    {
       if (voice->type == AUDIO_MIXER_TYPE_NONE)
       {
@@ -455,7 +455,8 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound, bool repeat,
 
 void audio_mixer_stop(audio_mixer_voice_t* voice)
 {
-   voice->stop_cb(voice, AUDIO_MIXER_SOUND_STOPPED);
+   if (voice && voice->stop_cb)
+      voice->stop_cb(voice, AUDIO_MIXER_SOUND_STOPPED);
 }
 
 static void mix_wav(float* buffer, size_t num_frames, audio_mixer_voice_t* voice)
@@ -579,9 +580,9 @@ void audio_mixer_mix(float* buffer, size_t num_frames)
    unsigned i;
    size_t j                   = 0;
    float* sample              = NULL;
-   audio_mixer_voice_t* voice = NULL;
+   audio_mixer_voice_t* voice = s_voices;
    
-   for (i = 0, voice = s_voices; i < AUDIO_MIXER_MAX_VOICES; i++, voice++)
+   for (i = 0; i < AUDIO_MIXER_MAX_VOICES; i++, voice++)
    {
       if (voice->type == AUDIO_MIXER_TYPE_WAV)
          mix_wav(buffer, num_frames, voice);

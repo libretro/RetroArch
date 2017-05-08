@@ -39,10 +39,6 @@ enum rarch_ctl_state
    /* Deinitializes RetroArch. */
    RARCH_CTL_MAIN_DEINIT,
 
-   RARCH_CTL_UNSET_INITED,
-
-   RARCH_CTL_SET_INITED,
-
    RARCH_CTL_IS_INITED,
 
    RARCH_CTL_IS_PLAIN_CORE,
@@ -97,11 +93,6 @@ enum rarch_ctl_state
    RARCH_CTL_SET_BLOCK_CONFIG_READ,
    RARCH_CTL_UNSET_BLOCK_CONFIG_READ,
    RARCH_CTL_IS_BLOCK_CONFIG_READ,
-
-   /* Error */
-   RARCH_CTL_SET_ERROR_ON_INIT,
-   RARCH_CTL_UNSET_ERROR_ON_INIT,
-   RARCH_CTL_IS_ERROR_ON_INIT,
 
    /* Username */
    RARCH_CTL_HAS_SET_USERNAME,
@@ -190,6 +181,8 @@ void retroarch_fail(int error_code, const char *error);
  * Returns: 1 (true) on success, otherwise false (0) if there was an error.
  **/
 bool retroarch_main_init(int argc, char *argv[]);
+
+bool retroarch_main_quit(void);
 
 RETRO_END_DECLS
 

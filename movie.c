@@ -73,7 +73,7 @@ static struct bsv_state bsv_movie_state;
 
 static bool bsv_movie_init_playback(bsv_movie_t *handle, const char *path)
 {
-   uint32_t state_size;
+   uint32_t state_size       = 0;
    uint32_t content_crc      = 0;
    uint32_t header[4]        = {0};
    RFILE *file               = filestream_open(path, RFILE_MODE_READ, -1);
@@ -149,7 +149,7 @@ static bool bsv_movie_init_playback(bsv_movie_t *handle, const char *path)
 static bool bsv_movie_init_record(bsv_movie_t *handle, const char *path)
 {
    retro_ctx_size_info_t info;
-   uint32_t state_size;
+   uint32_t state_size       = 0;
    uint32_t content_crc      = 0;
    uint32_t header[4]        = {0};
    RFILE *file               = filestream_open(path, RFILE_MODE_WRITE, -1);
@@ -464,9 +464,11 @@ void bsv_movie_set_start_path(const char *path)
 bool bsv_movie_init_handle(const char *path,
       enum rarch_movie_type type)
 {
-   bsv_movie_state_handle = bsv_movie_init_internal(path, type);
-   if (!bsv_movie_state_handle)
+   bsv_movie_t *state     = bsv_movie_init_internal(path, type);
+   if (!state)
       return false;
+
+   bsv_movie_state_handle = state;
    return true;
 }
 
@@ -536,23 +538,19 @@ static bool runloop_check_movie_init(void)
    bsv_movie_init_handle(path, RARCH_MOVIE_RECORD);
 
    if (!bsv_movie_state_handle)
-      return false;
-
-   if (bsv_movie_state_handle)
-   {
-      runloop_msg_queue_push(msg, 2, 180, true);
-      RARCH_LOG("%s \"%s\".\n",
-            msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
-            path);
-   }
-   else
    {
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD),
             2, 180, true);
       RARCH_ERR("%s\n",
             msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
+      return false;
    }
+
+   runloop_msg_queue_push(msg, 2, 180, true);
+   RARCH_LOG("%s \"%s\".\n",
+         msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
+         path);
 
    return true;
 }

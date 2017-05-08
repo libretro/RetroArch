@@ -56,6 +56,7 @@
 #endif
 
 #include "autosave.h"
+#include "command.h"
 #include "configuration.h"
 #include "driver.h"
 #include "movie.h"
@@ -447,14 +448,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             runloop_idle = *ptr;
          }
          break;
-      case RUNLOOP_CTL_SET_SLOWMOTION:
-         {
-            bool *ptr = (bool*)data;
-            if (!ptr)
-               return false;
-            runloop_slowmotion = *ptr;
-         }
-         break;
       case RUNLOOP_CTL_SET_PAUSED:
          {
             bool *ptr = (bool*)data;
@@ -516,9 +509,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_IS_SHUTDOWN:
          return runloop_shutdown_initiated;
-      case RUNLOOP_CTL_SET_EXEC:
-         runloop_exec = true;
-         break;
       case RUNLOOP_CTL_DATA_DEINIT:
          task_queue_deinit();
          break;
@@ -750,7 +740,10 @@ static enum runloop_state runloop_check_state(
          content_info.environ_get        = NULL;
 
          if (!task_push_start_dummy_core(&content_info))
+         {
+            retroarch_main_quit();
             return RUNLOOP_STATE_QUIT;
+         }
 
          /* Loads dummy core instead of exiting RetroArch completely.
           * Aborts core shutdown if invoked. */
@@ -758,7 +751,10 @@ static enum runloop_state runloop_check_state(
          runloop_core_shutdown_initiated = false;
       }
       else
+      {
+         retroarch_main_quit();
          return RUNLOOP_STATE_QUIT;
+      }
    }
 
 #ifdef HAVE_MENU
