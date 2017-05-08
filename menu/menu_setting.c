@@ -3761,7 +3761,7 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->bools.audio_mute_enable,
+               audio_get_bool_ptr(AUDIO_ACTION_MUTE_ENABLE),
                MENU_ENUM_LABEL_AUDIO_MUTE,
                MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
                false,

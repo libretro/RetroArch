@@ -74,7 +74,6 @@ typedef struct settings
 
       /* Audio */
       bool audio_enable;
-      bool audio_mute_enable;
       bool audio_sync;
       bool audio_rate_control;
 #ifdef HAVE_WASAPI

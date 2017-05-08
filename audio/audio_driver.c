@@ -150,6 +150,7 @@ static void *audio_driver_resampler_data                 = NULL;
 static const audio_driver_t *current_audio               = NULL;
 static void *audio_driver_context_audio_data             = NULL;
 
+static bool audio_driver_mute_enable                     = false;
 static bool audio_driver_use_float                       = false;
 static bool audio_driver_active                          = false;
 static bool audio_driver_data_own                        = false;
@@ -531,7 +532,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    runloop_get_status(&is_paused, &is_idle, &is_slowmotion,
          &is_perfcnt_enable);
 
-   if (is_paused || settings->bools.audio_mute_enable)
+   if (is_paused || audio_driver_mute_enable)
       return true;
    if (!audio_driver_active || !audio_driver_input_data)
       return false;
@@ -947,14 +948,13 @@ bool audio_driver_has_callback(void)
 bool audio_driver_toggle_mute(void)
 {
    settings_t *settings = config_get_ptr();
-   bool new_mute_state  = !settings->bools.audio_mute_enable;
+   bool new_mute_state  = !audio_driver_mute_enable;
    if (!audio_driver_context_audio_data)
       return false;
    if (!audio_driver_active)
       return false;
 
-   configuration_set_bool(settings,
-         settings->bools.audio_mute_enable, new_mute_state);
+   audio_driver_mute_enable = new_mute_state;
 
    if (new_mute_state)
       command_event(CMD_EVENT_AUDIO_STOP, NULL);
@@ -1047,4 +1047,17 @@ void audio_driver_destroy(void)
    audio_driver_active   = false;
    audio_driver_data_own = false;
    current_audio         = NULL;
+}
+
+bool *audio_get_bool_ptr(enum audio_action action)
+{
+   switch (action)
+   {
+      case AUDIO_ACTION_MUTE_ENABLE:
+         return &audio_driver_mute_enable;
+      case AUDIO_ACTION_NONE:
+         break;
+   }
+
+   return NULL;
 }

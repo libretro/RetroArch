@@ -2060,7 +2060,8 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_AUDIO_MUTE_TOGGLE:
          {
             settings_t *settings      = config_get_ptr();
-            const char *msg           = !settings->bools.audio_mute_enable ?
+            bool audio_mute_enable    = *(audio_get_bool_ptr(AUDIO_ACTION_MUTE_ENABLE));
+            const char *msg           = !audio_mute_enable ?
                msg_hash_to_str(MSG_AUDIO_MUTED):
                msg_hash_to_str(MSG_AUDIO_UNMUTED);
 
