@@ -478,15 +478,17 @@ void audio_mixer_stop(audio_mixer_voice_t* voice)
       voice->stop_cb(voice, AUDIO_MIXER_SOUND_STOPPED);
 }
 
-static void mix_wav(float* buffer, size_t num_frames, audio_mixer_voice_t* voice)
+static void audio_mixer_mix_wav(float* buffer, size_t num_frames,
+      audio_mixer_voice_t* voice,
+      float volume)
 {
    int i;
    unsigned buf_free                = (unsigned)(num_frames * 2);
    const audio_mixer_sound_t* sound = voice->sound;
    unsigned pcm_available           = sound->types.wav.frames 
       * 2 - voice->types.wav.position;
-   const float* pcm                 = sound->types.wav.pcm + voice->types.wav.position;
-   float volume                     = voice->volume;
+   const float* pcm                 = sound->types.wav.pcm + 
+      voice->types.wav.position;
    
 again:
    if (pcm_available < buf_free)
@@ -521,18 +523,16 @@ again:
 }
 
 #ifdef HAVE_STB_VORBIS
-static void mix_ogg(float* buffer, size_t num_frames, audio_mixer_voice_t* voice)
+static void audio_mixer_mix_ogg(float* buffer, size_t num_frames,
+      audio_mixer_voice_t* voice,
+      float volume)
 {
    int i;
-   float temp_buffer[AUDIO_MIXER_TEMP_OGG_BUFFER];
    struct resampler_data info;
+   float temp_buffer[AUDIO_MIXER_TEMP_OGG_BUFFER];
    unsigned buf_free                = num_frames * 2;
    unsigned temp_samples            = 0;
-   float volume                     = voice->volume;
    float* pcm                       = NULL;
-#if 0
-   const audio_mixer_sound_t* sound = voice->sound;
-#endif
    
    if (voice->types.ogg.position == voice->types.ogg.samples)
    {
@@ -603,12 +603,21 @@ void audio_mixer_mix(float* buffer, size_t num_frames)
    
    for (i = 0; i < AUDIO_MIXER_MAX_VOICES; i++, voice++)
    {
-      if (voice->type == AUDIO_MIXER_TYPE_WAV)
-         mix_wav(buffer, num_frames, voice);
+      float volume = voice->volume;
+
+      switch (voice->type)
+      {
+         case AUDIO_MIXER_TYPE_WAV:
+            audio_mixer_mix_wav(buffer, num_frames, voice, volume);
+            break;
+         case AUDIO_MIXER_TYPE_OGG:
 #ifdef HAVE_STB_VORBIS
-      else if (voice->type == AUDIO_MIXER_TYPE_OGG)
-         mix_ogg(buffer, num_frames, voice);
+            audio_mixer_mix_ogg(buffer, num_frames, voice, volume);
 #endif
+            break;
+         case AUDIO_MIXER_TYPE_NONE:
+            break;
+      }
    }
    
    for (j = 0, sample = buffer; j < num_frames; j++, sample++)
