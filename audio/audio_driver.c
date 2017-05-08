@@ -876,6 +876,7 @@ bool audio_driver_get_devices_list(void **data)
 
 bool audio_driver_deinit(void)
 {
+   audio_mixer_done();
    audio_driver_free_devices_list();
    if (!audio_driver_deinit_internal())
       return false;
