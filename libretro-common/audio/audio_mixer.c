@@ -50,7 +50,7 @@
 #define AUDIO_MIXER_TYPE_WAV        1
 #define AUDIO_MIXER_TYPE_OGG        2
 
-struct audio_mixer_sound_t
+struct audio_mixer_sound
 {
    unsigned type;
    
@@ -74,12 +74,12 @@ struct audio_mixer_sound_t
    } types;
 };
 
-struct audio_mixer_voice_t
+struct audio_mixer_voice
 {
    unsigned type;
    bool     repeat;
    float    volume;
-   audio_mixer_sound_t*  sound;
+   audio_mixer_sound_t *sound;
    audio_mixer_stop_cb_t stop_cb;
    
    union
@@ -96,7 +96,7 @@ struct audio_mixer_voice_t
          /* ogg */
          unsigned    position;
          unsigned    samples;
-         stb_vorbis* stream;
+         stb_vorbis *stream;
          float*      buffer;
          unsigned    buf_samples;
          void*       resampler_data;
@@ -329,6 +329,9 @@ audio_mixer_sound_t* audio_mixer_load_ogg(const char* path)
 
 void audio_mixer_destroy(audio_mixer_sound_t* sound)
 {
+   if (!sound)
+      return;
+
    switch (sound->type)
    {
       case AUDIO_MIXER_TYPE_WAV:
