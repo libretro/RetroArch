@@ -448,14 +448,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             runloop_idle = *ptr;
          }
          break;
-      case RUNLOOP_CTL_SET_SLOWMOTION:
-         {
-            bool *ptr = (bool*)data;
-            if (!ptr)
-               return false;
-            runloop_slowmotion = *ptr;
-         }
-         break;
       case RUNLOOP_CTL_SET_PAUSED:
          {
             bool *ptr = (bool*)data;
@@ -517,9 +509,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_IS_SHUTDOWN:
          return runloop_shutdown_initiated;
-      case RUNLOOP_CTL_SET_EXEC:
-         runloop_exec = true;
-         break;
       case RUNLOOP_CTL_DATA_DEINIT:
          task_queue_deinit();
          break;
