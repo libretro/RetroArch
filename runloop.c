@@ -56,6 +56,7 @@
 #endif
 
 #include "autosave.h"
+#include "command.h"
 #include "configuration.h"
 #include "driver.h"
 #include "movie.h"
@@ -758,7 +759,10 @@ static enum runloop_state runloop_check_state(
          runloop_core_shutdown_initiated = false;
       }
       else
+      {
+         command_event_quit();
          return RUNLOOP_STATE_QUIT;
+      }
    }
 
 #ifdef HAVE_MENU

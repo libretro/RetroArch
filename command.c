@@ -1756,7 +1756,7 @@ static bool command_event_main_state(unsigned cmd)
    return ret;
 }
 
-void handle_quit_event(void)
+bool command_event_quit(void)
 {
    command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
    command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
@@ -1772,6 +1772,8 @@ void handle_quit_event(void)
 #ifdef HAVE_MENU
    rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
 #endif
+
+   return true;
 }
 
 static bool command_event_resize_windowed_scale(void)
@@ -1993,8 +1995,7 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_QUIT:
-         handle_quit_event();
-         break;
+         return command_event_quit();
       case CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE:
 #ifdef HAVE_CHEEVOS
          cheevos_toggle_hardcore_mode();
