@@ -22,7 +22,7 @@ typedef struct _KPADData
     u8 device_type;
     u8 wpad_error;
     u8 pos_valid;
-    u8 unused_4[1];
+    u8 format;
 
     union
     {
@@ -45,6 +45,19 @@ typedef struct _KPADData
             f32 rtrigger;
         } classic;
 
+        struct
+        {
+            u32 hold;
+            u32 trigger;
+            u32 release;
+            f32 lstick_x;
+            f32 lstick_y;
+            f32 rstick_x;
+            f32 rstick_y;
+            s32 charging;
+            s32 wired;
+        } pro;
+
         u32 unused_6[20];
     };
     u32 unused_7[16];
@@ -53,6 +66,7 @@ typedef struct _KPADData
 
 void KPADInit (void);
 s32 KPADRead(s32 chan, void * data, u32 size);
+s32 KPADReadEx(s32 chan, KPADData * data, u32 size, s32 *error);
 
 #ifdef __cplusplus
 }
