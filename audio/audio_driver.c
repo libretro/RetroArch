@@ -949,7 +949,6 @@ bool audio_driver_has_callback(void)
 
 bool audio_driver_toggle_mute(void)
 {
-   settings_t *settings = config_get_ptr();
    bool new_mute_state  = !audio_driver_mute_enable;
    if (!audio_driver_context_audio_data)
       return false;
