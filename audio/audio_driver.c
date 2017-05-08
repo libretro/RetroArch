@@ -764,14 +764,12 @@ void audio_driver_monitor_adjust_system_rates(void)
 {
    float timing_skew;
    settings_t                   *settings = config_get_ptr();
-   const struct retro_system_timing *info = NULL;
    struct retro_system_av_info   *av_info = video_viewport_get_system_av_info();
    float video_refresh_rate               = settings->floats.video_refresh_rate;
    float max_timing_skew                  = settings->floats.audio_max_timing_skew;
+   const struct retro_system_timing *info = av_info ? 
+      (const struct retro_system_timing*)&av_info->timing : NULL;
    
-   if (av_info)
-      info = (const struct retro_system_timing*)&av_info->timing;
-
    if (!info || info->sample_rate <= 0.0)
       return;
 
