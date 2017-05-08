@@ -228,7 +228,6 @@ typedef struct settings
       float menu_footer_opacity;
       float menu_header_opacity;
 
-      float audio_rate_control_delta;
       float audio_max_timing_skew;
       float audio_volume; /* dB scale. */
 

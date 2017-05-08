@@ -1266,7 +1266,7 @@ static struct config_float_setting *populate_settings_float(settings_t *settings
    SETTING_FLOAT("video_aspect_ratio",       &settings->floats.video_aspect_ratio, true, aspect_ratio, false);
    SETTING_FLOAT("video_scale",              &settings->floats.video_scale, false, 0.0f, false);
    SETTING_FLOAT("video_refresh_rate",       &settings->floats.video_refresh_rate, true, refresh_rate, false);
-   SETTING_FLOAT("audio_rate_control_delta", &settings->floats.audio_rate_control_delta, true, rate_control_delta, false);
+   SETTING_FLOAT("audio_rate_control_delta", audio_get_float_ptr(AUDIO_ACTION_RATE_CONTROL_DELTA), true, rate_control_delta, false);
    SETTING_FLOAT("audio_max_timing_skew",    &settings->floats.audio_max_timing_skew, true, max_timing_skew, false);
    SETTING_FLOAT("audio_volume",             &settings->floats.audio_volume, true, audio_volume, false);
 #ifdef HAVE_OVERLAY

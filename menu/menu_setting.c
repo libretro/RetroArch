@@ -1478,16 +1478,16 @@ void general_read_handler(void *data)
       switch (setting->enum_idx)
       {
          case MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA:
-            *setting->value.target.fraction = settings->floats.audio_rate_control_delta;
+            *setting->value.target.fraction = *(audio_get_float_ptr(AUDIO_ACTION_RATE_CONTROL_DELTA));
             if (*setting->value.target.fraction < 0.0005)
             {
                configuration_set_bool(settings, settings->bools.audio_rate_control, false);
-               settings->floats.audio_rate_control_delta = 0.0;
+               audio_set_float(AUDIO_ACTION_RATE_CONTROL_DELTA, 0.0f);
             }
             else
             {
                configuration_set_bool(settings, settings->bools.audio_rate_control, true);
-               settings->floats.audio_rate_control_delta = *setting->value.target.fraction;
+               audio_set_float(AUDIO_ACTION_RATE_CONTROL_DELTA, *setting->value.target.fraction);
             }
             break;
          case MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW:
@@ -1600,12 +1600,12 @@ void general_write_handler(void *data)
          if (*setting->value.target.fraction < 0.0005)
          {
             configuration_set_bool(settings, settings->bools.audio_rate_control, false);
-            settings->floats.audio_rate_control_delta = 0.0;
+            audio_set_float(AUDIO_ACTION_RATE_CONTROL_DELTA, 0.0f);
          }
          else
          {
             configuration_set_bool(settings, settings->bools.audio_rate_control, true);
-            settings->floats.audio_rate_control_delta = *setting->value.target.fraction;
+            audio_set_float(AUDIO_ACTION_RATE_CONTROL_DELTA, *setting->value.target.fraction);
          }
          break;
       case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
@@ -3853,7 +3853,7 @@ static bool setting_append_list(
 
          CONFIG_FLOAT(
                list, list_info,
-               &settings->floats.audio_rate_control_delta,
+               audio_get_float_ptr(AUDIO_ACTION_RATE_CONTROL_DELTA),
                MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA,
                MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
                rate_control_delta,
