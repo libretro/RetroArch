@@ -154,6 +154,8 @@ static bool audio_driver_use_float                       = false;
 static bool audio_driver_active                          = false;
 static bool audio_driver_data_own                        = false;
 
+static bool audio_mixer_active                           = false;
+
 /**
  * compute_audio_buffer_statistics:
  *
@@ -599,7 +601,8 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
 
    audio_driver_resampler->process(audio_driver_resampler_data, &src_data);
 
-   audio_mixer_mix(audio_driver_output_samples_buf, src_data.output_frames);
+   if (audio_mixer_active)
+      audio_mixer_mix(audio_driver_output_samples_buf, src_data.output_frames);
 
    output_data   = audio_driver_output_samples_buf;
    output_frames = (unsigned)src_data.output_frames;
