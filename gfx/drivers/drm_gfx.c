@@ -37,7 +37,6 @@
 #endif
 
 #include "../font_driver.h"
-#include "../video_context_driver.h"
 #include "../../retroarch.h"
 
 #include "drm_pixformats.h"

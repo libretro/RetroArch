@@ -769,8 +769,7 @@ endif
 
 # Video
 
-OBJ += gfx/video_context_driver.o \
-       gfx/drivers_context/gfx_null_ctx.o \
+OBJ += gfx/drivers_context/gfx_null_ctx.o \
        gfx/video_state_tracker.o
 
 ifeq ($(HAVE_KMS), 1)

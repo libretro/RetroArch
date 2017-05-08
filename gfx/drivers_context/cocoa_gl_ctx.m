@@ -39,7 +39,7 @@
 #include <compat/apple_compat.h>
 
 #import "../../ui/drivers/cocoa/cocoa_common.h"
-#include "../video_context_driver.h"
+#include "../video_driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
 

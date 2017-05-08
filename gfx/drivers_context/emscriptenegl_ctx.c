@@ -25,7 +25,7 @@
 #include "../../config.h"
 #endif
 
-#include "../video_context_driver.h"
+#include "../video_driver.h"
 
 #ifdef HAVE_EGL
 #include "../common/egl_common.h"

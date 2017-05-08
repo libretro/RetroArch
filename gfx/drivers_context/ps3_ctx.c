@@ -33,7 +33,7 @@
 #include "../../configuration.h"
 #include "../../defines/ps3_defines.h"
 #include "../common/gl_common.h"
-#include "../video_context_driver.h"
+#include "../video_driver.h"
 
 typedef struct gfx_ctx_ps3_data
 {

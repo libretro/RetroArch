@@ -46,7 +46,7 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../font_driver.h"
-#include "../video_context_driver.h"
+#include "../video_driver.h"
 #include "../drivers_shader/shader_vulkan.h"
 
 RETRO_BEGIN_DECLS

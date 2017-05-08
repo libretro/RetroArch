@@ -50,7 +50,7 @@
 #include "core.h"
 #include "driver.h"
 #include "performance_counters.h"
-#include "gfx/video_context_driver.h"
+#include "gfx/video_driver.h"
 
 #include "cores/internal_cores.h"
 #include "frontend/frontend_driver.h"

@@ -41,7 +41,7 @@
 
 #include "../../configuration.h"
 #include "../../dynamic.h"
-#include "../video_context_driver.h"
+#include "../video_driver.h"
 
 #include "../common/win32_common.h"
 

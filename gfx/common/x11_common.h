@@ -22,7 +22,6 @@
 #include <boolean.h>
 
 #include "../video_driver.h"
-#include "../video_context_driver.h"
 
 extern Window   g_x11_win;
 extern Display *g_x11_dpy;

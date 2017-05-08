@@ -19,7 +19,7 @@
 #include <retro_miscellaneous.h>
 
 #include "../../gfx/font_driver.h"
-#include "../../gfx/video_context_driver.h"
+#include "../../gfx/video_driver.h"
 
 #include "../menu_display.h"
 

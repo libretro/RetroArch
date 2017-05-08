@@ -41,7 +41,6 @@
 #include "../widgets/menu_input_dialog.h"
 
 #include "../../gfx/video_driver.h"
-#include "../../gfx/video_context_driver.h"
 
 #include "../../configuration.h"
 #include "../../runloop.h"

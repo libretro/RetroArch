@@ -50,7 +50,7 @@
 #include "../../driver.h"
 #include "../../paths.h"
 #include "../../runloop.h"
-#include "../../gfx/video_context_driver.h"
+#include "../../gfx/video_driver.h"
 #include "../../gfx/video_shader_driver.h"
 #include "../../tasks/tasks_internal.h"
 

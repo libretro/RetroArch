@@ -54,7 +54,6 @@
 #endif
 
 #include "../font_driver.h"
-#include "../video_context_driver.h"
 
 #ifdef HAVE_GLSL
 #include "../drivers_shader/shader_glsl.h"

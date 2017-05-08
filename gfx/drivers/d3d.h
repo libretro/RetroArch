@@ -51,7 +51,7 @@
 #endif
 
 #include "../font_driver.h"
-#include "../video_context_driver.h"
+#include "../video_driver.h"
 #include "../common/d3d_common.h"
 #include "../video_renderchain_driver.h"
 #ifdef _XBOX

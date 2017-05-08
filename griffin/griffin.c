@@ -153,8 +153,6 @@ CHEATS
 /*============================================================
 VIDEO CONTEXT
 ============================================================ */
-
-#include "../gfx/video_context_driver.c"
 #include "../gfx/drivers_context/gfx_null_ctx.c"
 
 #if defined(__CELLOS_LV2__)

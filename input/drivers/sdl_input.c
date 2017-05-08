@@ -30,7 +30,7 @@
 #include "../input_keymaps.h"
 #include "../input_keyboard.h"
 
-#include "../../gfx/video_context_driver.h"
+#include "../../gfx/video_driver.h"
 #include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
 

@@ -33,7 +33,6 @@
 #include "../common/vita2d_common.h"
 #include "../../driver.h"
 #include "../video_coord_array.h"
-#include "../video_context_driver.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
 

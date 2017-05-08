@@ -27,7 +27,7 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 #include "../../driver.h"
-#include "../video_context_driver.h"
+#include "../video_driver.h"
 
 #ifdef _XBOX
 #include "../../defines/xdk_defines.h"

@@ -53,7 +53,7 @@
 #define DEFAULT_SHADER_TYPE RARCH_SHADER_NONE
 #endif
 
-#include "video_context_driver.h"
+#include "video_driver.h"
 
 RETRO_BEGIN_DECLS
 
