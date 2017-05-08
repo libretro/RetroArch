@@ -21,6 +21,8 @@
 #include <wiiu/vpad.h>
 #include <wiiu/kpad.h>
 
+#include "wiiu/controller_patcher/ControllerPatcherWrapper.h"
+
 #include "../input_config.h"
 #include "../input_driver.h"
 #include "../input_joypad_driver.h"
@@ -158,9 +160,9 @@ static void wiiu_joypad_poll(void)
    int c;
    VPADStatus vpad;
    VPADReadError vpadError;
-
    VPADRead(0, &vpad, 1, &vpadError);
-
+   setControllerDataFromHID(&vpad);
+   vpadError = VPAD_READ_SUCCESS;
    if (!vpadError)
    {
       pad_state[0] = vpad.hold & ~0x7F800000; /* clear out emulated analog sticks */
