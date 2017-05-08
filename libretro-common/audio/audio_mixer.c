@@ -79,8 +79,8 @@ struct audio_mixer_sound
 
 struct audio_mixer_voice
 {
-   unsigned type;
    bool     repeat;
+   unsigned type;
    float    volume;
    audio_mixer_sound_t *sound;
    audio_mixer_stop_cb_t stop_cb;
@@ -99,19 +99,19 @@ struct audio_mixer_voice
          /* ogg */
          unsigned    position;
          unsigned    samples;
-         stb_vorbis *stream;
-         float*      buffer;
          unsigned    buf_samples;
-         void*       resampler_data;
+         float*      buffer;
          float       ratio;
-         const retro_resampler_t* resampler;
+         stb_vorbis *stream;
+         void       *resampler_data;
+         const retro_resampler_t *resampler;
       } ogg;
 #endif
    } types;
 };
 
-static audio_mixer_voice_t s_voices[AUDIO_MIXER_MAX_VOICES];
-static unsigned s_rate                                       = 0;
+static struct audio_mixer_voice s_voices[AUDIO_MIXER_MAX_VOICES];
+static unsigned s_rate = 0;
 
 static bool wav2float(const rwav_t* wav, float** pcm, size_t samples_out)
 {
