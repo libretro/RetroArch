@@ -1015,10 +1015,11 @@ void input_driver_poll(void)
 
 bool input_driver_init(void)
 {
-   settings_t *settings       = config_get_ptr();
-
    if (current_input)
+   {
+      settings_t *settings    = config_get_ptr();
       current_input_data      = current_input->init(settings->arrays.input_joypad_driver);
+   }
 
    if (!current_input_data)
       return false;

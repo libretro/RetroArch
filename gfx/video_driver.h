@@ -114,60 +114,57 @@ typedef struct video_info
 
 typedef struct video_frame_info
 {
-   float menu_wallpaper_opacity;
-   float refresh_rate;
+   bool input_driver_nonblock_state;
    bool shared_context;
    bool black_frame_insertion;
    bool hard_sync;
-   unsigned hard_sync_frames;
    bool fps_show;
    bool scale_integer;
-   unsigned aspect_ratio_idx;
    bool post_filter_record;
-   unsigned max_swapchain_images;
    bool windowed_fullscreen;
    bool fullscreen;
-   unsigned monitor_index;
    bool font_enable;
-   char fps_text[128];
-
-   unsigned width;
-   unsigned height;
-
-   float font_msg_pos_x;
-   float font_msg_pos_y;
-   float font_msg_color_r;
-   float font_msg_color_g;
-   float font_msg_color_b;
    bool use_rgba;
    bool libretro_running;
-
-   float menu_header_opacity;
-   float menu_footer_opacity;
-
    bool xmb_shadows_enable;
-   float xmb_alpha_factor;
-   unsigned xmb_theme;
-   unsigned xmb_color_theme;
-   unsigned menu_shader_pipeline;
-
-   unsigned materialui_color_theme;
-
    bool battery_level_enable;
    bool timedate_enable;
    bool runloop_is_slowmotion;
    bool runloop_is_idle;
    bool runloop_is_paused;
    bool is_perfcnt_enable;
-
    bool menu_is_alive;
 
    int custom_vp_x;
    int custom_vp_y;
+
+   unsigned hard_sync_frames;
+   unsigned aspect_ratio_idx;
+   unsigned max_swapchain_images;
+   unsigned monitor_index;
+   unsigned width;
+   unsigned height;
+   unsigned xmb_theme;
+   unsigned xmb_color_theme;
+   unsigned menu_shader_pipeline;
+   unsigned materialui_color_theme;
    unsigned custom_vp_width;
    unsigned custom_vp_height;
    unsigned custom_vp_full_width;
    unsigned custom_vp_full_height;
+
+   float menu_wallpaper_opacity;
+   float refresh_rate;
+   float font_msg_pos_x;
+   float font_msg_pos_y;
+   float font_msg_color_r;
+   float font_msg_color_g;
+   float font_msg_color_b;
+   float menu_header_opacity;
+   float menu_footer_opacity;
+   float xmb_alpha_factor;
+
+   char fps_text[128];
 } video_frame_info_t;
 
 /* Optionally implemented interface to poke more

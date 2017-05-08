@@ -53,6 +53,7 @@
 #include "../driver.h"
 #include "../retroarch.h"
 #include "../runloop.h"
+#include "../input/input_driver.h"
 #include "../list_special.h"
 #include "../core.h"
 #include "../command.h"
@@ -2338,6 +2339,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->runloop_is_paused      = is_paused;
    video_info->runloop_is_idle        = is_idle;
    video_info->runloop_is_slowmotion  = is_slowmotion;
+
+   video_info->input_driver_nonblock_state = input_driver_is_nonblock_state();
 #ifdef HAVE_THREADS
    video_driver_threaded_unlock(is_threaded);
 #endif

@@ -1318,7 +1318,7 @@ static bool gl_frame(void *data, const void *frame,
     * and pause to prevent flicker. */
    if (
          video_info->black_frame_insertion
-         && !input_driver_is_nonblock_state()
+         && !video_info->input_driver_nonblock_state
          && !video_info->runloop_is_slowmotion
          && !video_info->runloop_is_paused)
    {
