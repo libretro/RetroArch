@@ -559,8 +559,8 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
 
       if (dsp_data.output)
       {
-         src_data.data_in      = dsp_data.output;
-         src_data.input_frames = dsp_data.output_frames;
+         src_data.data_in            = dsp_data.output;
+         src_data.input_frames       = dsp_data.output_frames;
       }
    }
 
@@ -583,7 +583,8 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
             (unsigned)(100 - (avail * 100) / audio_driver_buffer_size));
 #endif
 
-      audio_driver_free_samples_buf[write_idx] = avail;
+      audio_driver_free_samples_buf
+         [write_idx]               = avail;
       audio_source_ratio_current   = 
          audio_source_ratio_original * adjust;
 
@@ -594,7 +595,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
 #endif
    }
 
-   src_data.ratio = audio_source_ratio_current;
+   src_data.ratio     = audio_source_ratio_current;
 
    if (is_slowmotion)
       src_data.ratio *= settings->floats.slowmotion_ratio;
@@ -604,18 +605,18 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    if (audio_mixer_active)
       audio_mixer_mix(audio_driver_output_samples_buf, src_data.output_frames);
 
-   output_data   = audio_driver_output_samples_buf;
-   output_frames = (unsigned)src_data.output_frames;
+   output_data        = audio_driver_output_samples_buf;
+   output_frames      = (unsigned)src_data.output_frames;
 
    if (audio_driver_use_float)
-      output_frames *= sizeof(float);
+      output_frames  *= sizeof(float);
    else
    {
       convert_float_to_s16(audio_driver_output_samples_conv_buf,
             (const float*)output_data, output_frames * 2);
 
-      output_data = audio_driver_output_samples_conv_buf;
-      output_frames *= sizeof(int16_t);
+      output_data     = audio_driver_output_samples_conv_buf;
+      output_frames  *= sizeof(int16_t);
    }
 
    if (current_audio->write(audio_driver_context_audio_data,
