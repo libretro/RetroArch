@@ -557,18 +557,14 @@ static bool runloop_check_movie_init(void)
 
 bool bsv_movie_check(void)
 {
-   if (bsv_movie_state_handle && bsv_movie_state.movie_playback)
+   if (!bsv_movie_state_handle)
+      return runloop_check_movie_init();
+
+   if (bsv_movie_state.movie_playback)
    {
       if (!bsv_movie_state.movie_end)
          return false;
       return bsv_movie_check_movie_playback();
-   }
-
-   if (!bsv_movie_state_handle)
-   {
-      if (bsv_movie_state_handle)
-         return false;
-      return runloop_check_movie_init();
    }
 
    return runloop_check_movie_record();
