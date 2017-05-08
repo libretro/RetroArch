@@ -125,13 +125,13 @@ static bool wav2float(const rwav_t* wav, float** pcm, size_t* samples_out)
    
    *pcm = f;
    
-   if (wav->numchannels == 1)
+   if (wav->bitspersample == 8)
    {
-      if (wav->bitspersample == 8)
+      float sample      = 0.0f;
+      const uint8_t *u8 = (const uint8_t*)wav->samples;
+
+      if (wav->numchannels == 1)
       {
-         float sample      = 0.0f;
-         const uint8_t *u8 = (const uint8_t*)wav->samples;
-         
          for (i = wav->numsamples; i != 0; i--)
          {
             sample = (float)*u8++ / 255.0f;
@@ -140,14 +140,29 @@ static bool wav2float(const rwav_t* wav, float** pcm, size_t* samples_out)
             *f++   = sample;
          }
       }
-      else
+      else if (wav->numchannels == 2)
       {
-         /* TODO/FIXME note to leiradel - can we use audio/conversion/s16_to_float
-          * functions here? */
+         for (i = wav->numsamples; i != 0; i--)
+         {
+            sample = (float)*u8++ / 255.0f;
+            sample = sample * 2.0f - 1.0f;
+            *f++   = sample;
+            sample = (float)*u8++ / 255.0f;
+            sample = sample * 2.0f - 1.0f;
+            *f++   = sample;
+         }
+      }
+   }
+   else
+   {
+      /* TODO/FIXME note to leiradel - can we use audio/conversion/s16_to_float
+       * functions here? */
 
-         float sample       = 0.0f;
-         const int16_t *s16 = (const int16_t*)wav->samples;
-         
+      float sample       = 0.0f;
+      const int16_t *s16 = (const int16_t*)wav->samples;
+
+      if (wav->numchannels == 1)
+      {
          for (i = wav->numsamples; i != 0; i--)
          {
             sample = (float)((int)*s16++ + 32768) / 65535.0f;
@@ -156,32 +171,8 @@ static bool wav2float(const rwav_t* wav, float** pcm, size_t* samples_out)
             *f++   = sample;
          }
       }
-   }
-   else if (wav->numchannels == 2)
-   {
-      if (wav->bitspersample == 8)
+      else if (wav->numchannels == 2)
       {
-         float sample      = 0.0f;
-         const uint8_t *u8 = (const uint8_t*)wav->samples;
-         
-         for (i = wav->numsamples; i != 0; i--)
-         {
-            sample = (float)*u8++ / 255.0f;
-            sample = sample * 2.0f - 1.0f;
-            *f++   = sample;
-            sample = (float)*u8++ / 255.0f;
-            sample = sample * 2.0f - 1.0f;
-            *f++   = sample;
-         }
-      }
-      else
-      {
-         /* TODO/FIXME note to leiradel - can we use audio/conversion/s16_to_float
-          * functions here? */
-
-         float sample       = 0.0f;
-         const int16_t *s16 = (const int16_t*)wav->samples;
-         
          for (i = wav->numsamples; i != 0; i--)
          {
             sample = (float)((int)*s16++ + 32768) / 65535.0f;
@@ -193,7 +184,7 @@ static bool wav2float(const rwav_t* wav, float** pcm, size_t* samples_out)
          }
       }
    }
-   
+
    return true;
 }
 
@@ -261,27 +252,28 @@ audio_mixer_sound_t* audio_mixer_load_wav(const char* path)
    ssize_t size               = 0;
    /* WAV samples converted to float */
    float* pcm                 = NULL;
-   float* resampled           = NULL;
    size_t samples             = 0;
    /* Result */
    audio_mixer_sound_t* sound = NULL;
+   int rwav_ret               = 0;
    
    if (filestream_read_file(path, &buffer, &size) == 0)
       return NULL;
    
-   if (rwav_load(&wav, buffer, size) != RWAV_ITERATE_DONE)
-   {
-      free(buffer);
-      return NULL;
-   }
-   
+   rwav_ret = rwav_load(&wav, buffer, size);
+
    free(buffer);
+
+   if (rwav_ret != RWAV_ITERATE_DONE)
+      return NULL;
    
    if (!wav2float(&wav, &pcm, &samples))
       return NULL;
    
    if (wav.samplerate != s_rate)
    {
+      float* resampled           = NULL;
+
       if (!one_shot_resample(pcm, samples,
                wav.samplerate, &resampled, &samples))
          return NULL;
@@ -303,6 +295,7 @@ audio_mixer_sound_t* audio_mixer_load_wav(const char* path)
    sound->types.wav.pcm    = pcm;
    
    rwav_free(&wav);
+
    return sound;
 }
 
