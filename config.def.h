@@ -25,8 +25,6 @@
 #include "config.h"
 #endif
 
-#include "input/input_driver.h"
-
 #if defined(HW_RVL)
 #define MAX_GAMMA_SETTING 30
 #elif defined(GEKKO)
