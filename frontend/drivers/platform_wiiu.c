@@ -407,9 +407,9 @@ int main(int argc, char **argv)
 #endif
    verbosity_enable();
 
+   printf("starting\n");
    ControllerPatcherInit();
 
-   printf("starting\n");
    fflush(stdout);
    DEBUG_VAR(ARGV_PTR);
    if(ARGV_PTR && ((u32)ARGV_PTR < 0x01000000))

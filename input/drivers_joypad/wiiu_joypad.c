@@ -35,7 +35,7 @@
 #include "wiiu_dbg.h"
 
 #ifndef MAX_PADS
-#define MAX_PADS 5
+#define MAX_PADS 16
 #endif
 
 #define WIIUINPUT_TYPE_WIIMOTE               0x00
@@ -44,22 +44,31 @@
 #define WIIUINPUT_TYPE_PRO_CONTROLLER        0x1F
 #define WIIUINPUT_TYPE_NONE                  0xFD
 
+#define GAMEPAD_COUNT   1
+#define KPAD_COUNT      4
+#define HID_COUNT       (MAX_PADS - GAMEPAD_COUNT - KPAD_COUNT)
+#define GAMEPAD_OFFSET  0
+#define KPAD_OFFSET     (GAMEPAD_OFFSET + GAMEPAD_COUNT)
+#define HID_OFFSET      (KPAD_OFFSET + KPAD_COUNT)
+
 static uint64_t pad_state[MAX_PADS];
-static u8 pad_type[MAX_PADS - 1] = {WIIUINPUT_TYPE_NONE, WIIUINPUT_TYPE_NONE, WIIUINPUT_TYPE_NONE, WIIUINPUT_TYPE_NONE};
+static u8 pad_type[KPAD_COUNT] = {WIIUINPUT_TYPE_NONE, WIIUINPUT_TYPE_NONE, WIIUINPUT_TYPE_NONE, WIIUINPUT_TYPE_NONE};
+
+static u8 hid_status[HID_COUNT];
+static InputDataEx hid_data[HID_COUNT];
 static int16_t analog_state[MAX_PADS][2][2];
 extern uint64_t lifecycle_state;
 static bool wiiu_pad_inited = false;
-
-
 
 static const char* wiiu_joypad_name(unsigned pad)
 {
    if (pad == 0)
       return "WIIU Gamepad";
 
-   if (pad < MAX_PADS)
+   if (pad < MAX_PADS && pad < (HID_OFFSET) && pad > GAMEPAD_OFFSET)
    {
-      switch (pad_type[pad - 1])
+      int i = pad - KPAD_OFFSET;
+      switch (pad_type[i])
       {
       case WIIUINPUT_TYPE_NONE:
          return "N/A";
@@ -78,6 +87,10 @@ static const char* wiiu_joypad_name(unsigned pad)
       }
    }
 
+   if(pad < MAX_PADS){
+        return "HID Controller";
+   }
+
    return "unknown";
 }
 
@@ -91,7 +104,7 @@ static void wiiu_joypad_autodetect_add(unsigned autoconf_pad)
             0,
             0
          ))
-      input_config_set_device_name(autoconf_pad, wiiu_joypad_name(autoconf_pad));
+        input_config_set_device_name(autoconf_pad, wiiu_joypad_name(autoconf_pad));
 }
 
 static bool wiiu_joypad_button(unsigned port_num, uint16_t key)
@@ -161,7 +174,6 @@ static void wiiu_joypad_poll(void)
    VPADStatus vpad;
    VPADReadError vpadError;
    VPADRead(0, &vpad, 1, &vpadError);
-   setControllerDataFromHID(&vpad);
    vpadError = VPAD_READ_SUCCESS;
    if (!vpadError)
    {
@@ -230,11 +242,40 @@ static void wiiu_joypad_poll(void)
          break;
       }
    }
+
+   memset(hid_data,0,sizeof(hid_data));
+   int result = gettingInputAllDevicesEx(hid_data,HID_COUNT);
+
+   if(result+HID_OFFSET > MAX_PADS){
+        result = MAX_PADS - HID_OFFSET;
+   }
+   for(int i = HID_OFFSET;i<result+HID_OFFSET;i++){
+        int hid_index = i-HID_OFFSET;
+        u8 old_status = hid_status[hid_index];
+        u8 new_status = hid_data[hid_index].status;    //TODO: defines for the status.
+
+        if(old_status == 1 || new_status == 1){
+            hid_status[hid_index] = new_status;
+            if(old_status == 0 && new_status == 1){ //Pas was attached
+                wiiu_joypad_autodetect_add(i);
+            }else if(old_status == 1 && new_status == 0){ //Pad was detached
+               input_autoconfigure_disconnect(i, wiiu_joypad.ident);
+            }else if(old_status == 1 && new_status == 1){ // Pad is still connected
+                pad_state[i] = hid_data[hid_index].button_data.hold & ~0x7F800000; /* clear out emulated analog sticks */
+                analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT]  [RETRO_DEVICE_ID_ANALOG_X] = hid_data[hid_index].stick_data.leftStickX  * 0x7FF0;
+                analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT]  [RETRO_DEVICE_ID_ANALOG_Y] = hid_data[hid_index].stick_data.leftStickY  * 0x7FF0;
+                analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_X] = hid_data[hid_index].stick_data.rightStickX * 0x7FF0;
+                analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_Y] = hid_data[hid_index].stick_data.rightStickY * 0x7FF0;
+            }
+        }
+   }
 }
 
 static bool wiiu_joypad_init(void* data)
 {
    wiiu_joypad_autodetect_add(0);
+   memset(hid_status,0,sizeof(hid_status));
+
    wiiu_joypad_poll();
    wiiu_pad_inited = true;
    (void)data;
