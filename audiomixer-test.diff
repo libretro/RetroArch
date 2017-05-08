@@ -1,14 +1,28 @@
 diff --git a/audio/audio_driver.c b/audio/audio_driver.c
-index 10dcbc5b3..dd959f900 100644
+index 10dcbc5b3..203e89d0a 100644
 --- a/audio/audio_driver.c
 +++ b/audio/audio_driver.c
-@@ -597,6 +597,9 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
+@@ -597,6 +597,8 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
  
     audio_driver_resampler->process(audio_driver_resampler_data, &src_data);
  
-+   audio_mixer_load_wav("/home/squarepusher/nav.wav");
 +   audio_mixer_mix(audio_driver_output_samples_buf, src_data.output_frames);
 +
     output_data   = audio_driver_output_samples_buf;
     output_frames = (unsigned)src_data.output_frames;
  
+diff --git a/runloop.c b/runloop.c
+index 0e3a8dc44..4f79b2ed7 100644
+--- a/runloop.c
++++ b/runloop.c
+@@ -1021,7 +1021,10 @@ static enum runloop_state runloop_check_state(
+       command_event(CMD_EVENT_DISK_PREV, NULL);
+ 
+    if (runloop_cmd_triggered(trigger_input, RARCH_RESET))
++   {
+       command_event(CMD_EVENT_RESET, NULL);
++      audio_mixer_load_wav("/home/squarepusher/piano2.wav");
++   }
+ 
+    cheat_manager_state_checks(
+          runloop_cmd_triggered(trigger_input, RARCH_CHEAT_INDEX_PLUS),
