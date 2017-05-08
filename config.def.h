@@ -188,39 +188,39 @@ enum record_driver_enum
 #endif
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(__CELLOS_LV2__)
-#define VIDEO_DEFAULT_DRIVER VIDEO_GL
+static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GL;
 #elif defined(GEKKO)
-#define VIDEO_DEFAULT_DRIVER VIDEO_WII
+static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_WII;
 #elif defined(WIIU)
-#define VIDEO_DEFAULT_DRIVER VIDEO_WIIU
+static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_WIIU;
 #elif defined(XENON)
-#define VIDEO_DEFAULT_DRIVER VIDEO_XENON360
+static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_XENON360;
 #elif (defined(_XBOX1) || defined(_XBOX360)) && (defined(HAVE_D3D8) || defined(HAVE_D3D9))
-#define VIDEO_DEFAULT_DRIVER VIDEO_XDK_D3D
+static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_XDK_D3D;
 #elif defined(HAVE_D3D9)
-#define VIDEO_DEFAULT_DRIVER VIDEO_D3D9
+static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_D3D9;
 #elif defined(HAVE_VG)
-#define VIDEO_DEFAULT_DRIVER VIDEO_VG
+static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_VG;
 #elif defined(HAVE_VITA2D)
-#define VIDEO_DEFAULT_DRIVER VIDEO_VITA2D
+static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_VITA2D;
 #elif defined(PSP)
-#define VIDEO_DEFAULT_DRIVER VIDEO_PSP1
+static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_PSP1;
 #elif defined(_3DS)
-#define VIDEO_DEFAULT_DRIVER VIDEO_CTR
+static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_CTR;
 #elif defined(HAVE_XVIDEO)
-#define VIDEO_DEFAULT_DRIVER VIDEO_XVIDEO
+static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_XVIDEO;
 #elif defined(HAVE_SDL)
-#define VIDEO_DEFAULT_DRIVER VIDEO_SDL
+static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL;
 #elif defined(HAVE_SDL2)
-#define VIDEO_DEFAULT_DRIVER VIDEO_SDL2
+static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL2;
 #elif defined(_WIN32) && !defined(_XBOX)
-#define VIDEO_DEFAULT_DRIVER VIDEO_GDI
+static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GDI;
 #elif defined(DJGPP)
-#define VIDEO_DEFAULT_DRIVER VIDEO_VGA
+static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_VGA;
 #elif defined(HAVE_DYLIB) && !defined(ANDROID)
-#define VIDEO_DEFAULT_DRIVER VIDEO_EXT
+static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_EXT;
 #else
-#define VIDEO_DEFAULT_DRIVER VIDEO_NULL
+static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_NULL;
 #endif
 
 #if defined(__CELLOS_LV2__)
@@ -286,47 +286,47 @@ static enum record_driver_enum RECORD_DEFAULT_DRIVER = RECORD_NULL;
 #endif
 
 #if defined(XENON)
-#define INPUT_DEFAULT_DRIVER INPUT_XENON360
+static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_XENON360;
 #elif defined(_XBOX360) || defined(_XBOX) || defined(HAVE_XINPUT2) || defined(HAVE_XINPUT_XBOX1)
-#define INPUT_DEFAULT_DRIVER INPUT_XINPUT
+static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_XINPUT;
 #elif defined(ANDROID)
-#define INPUT_DEFAULT_DRIVER INPUT_ANDROID
+static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_ANDROID;
 #elif defined(EMSCRIPTEN) && defined(HAVE_SDL2)
-#define INPUT_DEFAULT_DRIVER INPUT_SDL2
+static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SDL2;
 #elif defined(EMSCRIPTEN)
-#define INPUT_DEFAULT_DRIVER INPUT_RWEBINPUT
+static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_RWEBINPUT;
 #elif defined(_WIN32)
-#define INPUT_DEFAULT_DRIVER INPUT_DINPUT
+static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_DINPUT;
 #elif defined(__CELLOS_LV2__)
-#define INPUT_DEFAULT_DRIVER INPUT_PS3
+static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PS3;
 #elif defined(PSP) || defined(VITA)
-#define INPUT_DEFAULT_DRIVER INPUT_PSP
+static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PSP;
 #elif defined(_3DS)
-#define INPUT_DEFAULT_DRIVER INPUT_CTR
+static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_CTR;
 #elif defined(GEKKO)
-#define INPUT_DEFAULT_DRIVER INPUT_WII
+static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_WII;
 #elif defined(WIIU)
-#define INPUT_DEFAULT_DRIVER INPUT_WIIU
+static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_WIIU;
 #elif defined(HAVE_UDEV)
-#define INPUT_DEFAULT_DRIVER INPUT_UDEV
+static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_UDEV;
 #elif defined(__linux__) && !defined(ANDROID)
-#define INPUT_DEFAULT_DRIVER INPUT_LINUXRAW
+static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_LINUXRAW;
 #elif defined(HAVE_X11)
-#define INPUT_DEFAULT_DRIVER INPUT_X
+static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_X;
 #elif defined(HAVE_WAYLAND)
-#define INPUT_DEFAULT_DRIVER INPUT_WAYLAND
+static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_WAYLAND;
 #elif defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
-#define INPUT_DEFAULT_DRIVER INPUT_COCOA
+static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_COCOA;
 #elif defined(__QNX__)
-#define INPUT_DEFAULT_DRIVER INPUT_QNX
+static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_QNX;
 #elif defined(HAVE_SDL)
-#define INPUT_DEFAULT_DRIVER INPUT_SDL
+static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SDL;
 #elif defined(HAVE_SDL2)
-#define INPUT_DEFAULT_DRIVER INPUT_SDL2
+static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SDL2;
 #elif defined(DJGPP)
-#define INPUT_DEFAULT_DRIVER INPUT_DOS
+static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_DOS;
 #else
-#define INPUT_DEFAULT_DRIVER INPUT_NULL
+static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_NULL;
 #endif
 
 #if defined(__CELLOS_LV2__)
