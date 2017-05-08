@@ -762,6 +762,7 @@ void audio_driver_monitor_adjust_system_rates(void)
    const struct retro_system_timing *info = NULL;
    struct retro_system_av_info   *av_info = video_viewport_get_system_av_info();
    float video_refresh_rate               = settings->floats.video_refresh_rate;
+   float max_timing_skew                  = settings->floats.audio_max_timing_skew;
    
    if (av_info)
       info = (const struct retro_system_timing*)&av_info->timing;
@@ -772,7 +773,7 @@ void audio_driver_monitor_adjust_system_rates(void)
    timing_skew             = fabs(1.0f - info->fps / video_refresh_rate);
    audio_driver_input      = info->sample_rate;
 
-   if (timing_skew <= settings->floats.audio_max_timing_skew)
+   if (timing_skew <= max_timing_skew)
       audio_driver_input *= (video_refresh_rate / info->fps);
 
    RARCH_LOG("[Audio]: Set audio input rate to: %.2f Hz.\n",
