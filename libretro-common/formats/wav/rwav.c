@@ -155,9 +155,9 @@ int rwav_iterate(rwav_iterator_t *iter)
    return RWAV_ITERATE_ERROR;
 }
 
-int rwav_load(rwav_t* out, const void* buf, size_t size)
+enum rwav_state rwav_load(rwav_t* out, const void* buf, size_t size)
 {
-   int res;
+   enum rwav_state res;
    rwav_iterator_t iter;
 
    iter.out             = NULL;

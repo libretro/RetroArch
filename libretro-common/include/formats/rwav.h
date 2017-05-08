@@ -75,7 +75,7 @@ int rwav_iterate(rwav_iterator_t *iter);
 /**
  * Loads the entire data in one go.
  */
-int rwav_load(rwav_t* out, const void* buf, size_t size);
+enum rwav_state rwav_load(rwav_t* out, const void* buf, size_t size);
 
 /**
  * Frees parsed wave data.
