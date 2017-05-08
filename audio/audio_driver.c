@@ -464,6 +464,8 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
 
    audio_driver_free_samples_count = 0;
 
+   audio_mixer_init(settings->uints.audio_out_rate);
+
    /* Threaded driver is initially stopped. */
    if (
          audio_driver_active
@@ -596,6 +598,8 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
       src_data.ratio *= settings->floats.slowmotion_ratio;
 
    audio_driver_resampler->process(audio_driver_resampler_data, &src_data);
+
+   audio_mixer_mix(audio_driver_output_samples_buf, src_data.output_frames);
 
    output_data   = audio_driver_output_samples_buf;
    output_frames = (unsigned)src_data.output_frames;
