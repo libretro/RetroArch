@@ -113,15 +113,12 @@ struct audio_mixer_voice
 static audio_mixer_voice_t s_voices[AUDIO_MIXER_MAX_VOICES];
 static unsigned s_rate                                       = 0;
 
-static bool wav2float(const rwav_t* wav, float** pcm, size_t* samples_out)
+static bool wav2float(const rwav_t* wav, float** pcm, size_t samples_out)
 {
    size_t i;
-   float* f           = NULL;
-
    /* Allocate on a 16-byte boundary, and pad to a multiple of 16 bytes */
-   *samples_out       = wav->numsamples * 2;
-   f                  = (float*)memalign_alloc(16,
-         ((*samples_out + 15) & ~15) * sizeof(float));
+   float *f           = (float*)memalign_alloc(16,
+         ((samples_out + 15) & ~15) * sizeof(float));
    
    if (!f)
       return false;
@@ -270,7 +267,8 @@ audio_mixer_sound_t* audio_mixer_load_wav(const char* path)
    if (rwav_ret != RWAV_ITERATE_DONE)
       return NULL;
    
-   if (!wav2float(&wav, &pcm, &samples))
+   samples       = wav.numsamples * 2;
+   if (!wav2float(&wav, &pcm, samples))
       return NULL;
    
    if (wav.samplerate != s_rate)
