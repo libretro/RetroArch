@@ -255,7 +255,7 @@ audio_mixer_sound_t* audio_mixer_load_wav(const char* path)
    size_t samples             = 0;
    /* Result */
    audio_mixer_sound_t* sound = NULL;
-   int rwav_ret               = 0;
+   enum rwav_state rwav_ret   = RWAV_ITERATE_ERROR;
    
    if (filestream_read_file(path, &buffer, &size) == 0)
       return NULL;

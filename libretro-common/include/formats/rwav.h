@@ -47,28 +47,17 @@ typedef struct
    
    /* PCM data */
    const void* samples;
-}
-rwav_t;
+} rwav_t;
 
-enum
+enum rwav_state
 {
-   RWAV_ITERATE_ERROR = -1,
-   RWAV_ITERATE_MORE = 0,
-   RWAV_ITERATE_DONE = 1,
-   
+   RWAV_ITERATE_ERROR    = -1,
+   RWAV_ITERATE_MORE     = 0,
+   RWAV_ITERATE_DONE     = 1,
    RWAV_ITERATE_BUF_SIZE = 4096
 };
 
-typedef struct
-{
-   /* internal data, don't touch */
-   rwav_t *out;
-   const uint8_t *data;
-   size_t size;
-   size_t i, j;
-   int    step;
-}
-rwav_iterator_t;
+typedef struct rwav_iterator rwav_iterator_t;
 
 /**
  * Initializes the iterator to fill the out structure with data parsed from buf.
