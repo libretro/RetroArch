@@ -1051,10 +1051,10 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
 
    /* Preliminary stuff that has to be done before we
     * load the actual content. Can differ per mode. */
-   runloop_ctl(RUNLOOP_CTL_STATE_FREE, NULL);
 #ifdef HAVE_MENU
    menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
 #endif
+   runloop_ctl(RUNLOOP_CTL_STATE_FREE, NULL);
    runloop_ctl(RUNLOOP_CTL_DATA_DEINIT, NULL);
    runloop_ctl(RUNLOOP_CTL_TASK_INIT, NULL);
 

@@ -455,7 +455,8 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound, bool repeat,
 
 void audio_mixer_stop(audio_mixer_voice_t* voice)
 {
-   voice->stop_cb(voice, AUDIO_MIXER_SOUND_STOPPED);
+   if (voice && voice->stop_cb)
+      voice->stop_cb(voice, AUDIO_MIXER_SOUND_STOPPED);
 }
 
 static void mix_wav(float* buffer, size_t num_frames, audio_mixer_voice_t* voice)
