@@ -438,24 +438,24 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound, bool repeat,
       if (!voice)
          continue;
 
-      if (voice->type == AUDIO_MIXER_TYPE_NONE)
-      {
-         switch (sound->type)
-         {
-            case AUDIO_MIXER_TYPE_WAV:
-               res = audio_mixer_play_wav(sound, voice, repeat, volume, stop_cb);
-               break;
-            case AUDIO_MIXER_TYPE_OGG:
-#ifdef HAVE_STB_VORBIS
-               res = audio_mixer_play_ogg(sound, voice, repeat, volume, stop_cb);
-#endif
-               break;
-            case AUDIO_MIXER_TYPE_NONE:
-               break;
-         }
+      if (voice->type != AUDIO_MIXER_TYPE_NONE)
+         continue;
 
-         break;
+      switch (sound->type)
+      {
+         case AUDIO_MIXER_TYPE_WAV:
+            res = audio_mixer_play_wav(sound, voice, repeat, volume, stop_cb);
+            break;
+         case AUDIO_MIXER_TYPE_OGG:
+#ifdef HAVE_STB_VORBIS
+            res = audio_mixer_play_ogg(sound, voice, repeat, volume, stop_cb);
+#endif
+            break;
+         case AUDIO_MIXER_TYPE_NONE:
+            break;
       }
+
+      break;
    }
 
    if (!res)
