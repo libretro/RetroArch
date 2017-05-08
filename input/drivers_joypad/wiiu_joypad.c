@@ -174,7 +174,6 @@ static void wiiu_joypad_poll(void)
    VPADStatus vpad;
    VPADReadError vpadError;
    VPADRead(0, &vpad, 1, &vpadError);
-   vpadError = VPAD_READ_SUCCESS;
    if (!vpadError)
    {
       pad_state[0] = vpad.hold & ~0x7F800000; /* clear out emulated analog sticks */
