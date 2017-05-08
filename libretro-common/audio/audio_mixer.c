@@ -435,9 +435,6 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound, bool repeat,
 
    for (i = 0; i < AUDIO_MIXER_MAX_VOICES; i++, voice++)
    {
-      if (!voice)
-         continue;
-
       if (voice->type != AUDIO_MIXER_TYPE_NONE)
          continue;
 
