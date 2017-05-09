@@ -270,8 +270,9 @@ static void add_sub_conf(config_file_t *conf, char *line)
    real_path[0] = '\0';
 
 #ifdef _WIN32
-   fill_pathname_resolve_relative(real_path, conf->path,
-         path, sizeof(real_path));
+   if (!string_is_empty(conf->path))
+      fill_pathname_resolve_relative(real_path, conf->path,
+            path, sizeof(real_path));
 #else
 #ifndef __CELLOS_LV2__
    if (*path == '~')
@@ -282,8 +283,9 @@ static void add_sub_conf(config_file_t *conf, char *line)
    }
    else
 #endif
-      fill_pathname_resolve_relative(real_path, conf->path,
-            path, sizeof(real_path));
+      if (!string_is_empty(conf->path))
+         fill_pathname_resolve_relative(real_path, conf->path,
+               path, sizeof(real_path));
 #endif
 
    sub_conf = (config_file_t*)
