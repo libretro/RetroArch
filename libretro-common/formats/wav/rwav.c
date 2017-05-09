@@ -56,7 +56,7 @@ void rwav_init(rwav_iterator_t* iter, rwav_t* out, const void* buf, size_t size)
    out->samples = NULL;
 }
 
-int rwav_iterate(rwav_iterator_t *iter)
+enum rwav_state rwav_iterate(rwav_iterator_t *iter)
 {
    size_t s;
    uint16_t *u16       = NULL;
@@ -149,7 +149,10 @@ int rwav_iterate(rwav_iterator_t *iter)
                s -= 2;
             }
          }
-         return iter->i < rwav->subchunk2size ? RWAV_ITERATE_MORE : RWAV_ITERATE_DONE;
+
+         if (iter->i < rwav->subchunk2size)
+            return RWAV_ITERATE_MORE;
+         return RWAV_ITERATE_DONE;
    }
    
    return RWAV_ITERATE_ERROR;
