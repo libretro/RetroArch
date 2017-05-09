@@ -226,15 +226,10 @@ static void task_image_load_free_internal(nbio_handle_t *nbio)
 
 static int cb_nbio_generic(nbio_handle_t *nbio, size_t *len)
 {
-   void      *ptr                  = NULL;
    struct nbio_image_handle *image = (struct nbio_image_handle*)nbio->data;
+   void *ptr                       = nbio_get_ptr(nbio->handle, len);
 
-   if (!image || !image->handle)
-      goto error;
-
-   ptr = nbio_get_ptr(nbio->handle, len);
-
-   if (!ptr)
+   if (!ptr || !image || !image->handle)
       goto error;
 
    image_transfer_set_buffer_ptr(image->handle, nbio->image_type, ptr);
@@ -369,11 +364,11 @@ bool task_push_image_load(const char *fullpath, retro_task_callback_t cb, void *
    nbio->status       = NBIO_STATUS_INIT;
 
 
-   t->state     = nbio;
-   t->handler   = task_file_load_handler;
-   t->cleanup   = task_image_load_free;
-   t->callback  = cb;
-   t->user_data = user_data;
+   t->state           = nbio;
+   t->handler         = task_file_load_handler;
+   t->cleanup         = task_image_load_free;
+   t->callback        = cb;
+   t->user_data       = user_data;
 
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, t);
 
