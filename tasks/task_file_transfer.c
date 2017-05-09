@@ -16,7 +16,6 @@
 #include <string.h>
 #include <errno.h>
 #include <file/nbio.h>
-#include <formats/image.h>
 #include <compat/strl.h>
 #include <retro_assert.h>
 #include <retro_miscellaneous.h>
@@ -76,23 +75,12 @@ void task_file_load_handler(retro_task_t *task)
          case NBIO_STATUS_INIT:
             if (nbio && !string_is_empty(nbio->path))
             {
-               const char *fullpath  = nbio->path;
-               struct nbio_t *handle = nbio_open(fullpath, NBIO_READ);
+               struct nbio_t *handle = nbio_open(nbio->path, NBIO_READ);
 
                if (handle)
                {
                   nbio->handle       = handle;
                   nbio->status       = NBIO_STATUS_TRANSFER;
-
-                  if (strstr(fullpath, file_path_str(FILE_PATH_PNG_EXTENSION)))
-                     nbio->image_type = IMAGE_TYPE_PNG;
-                  else if (strstr(fullpath, file_path_str(FILE_PATH_JPEG_EXTENSION)) 
-                        || strstr(fullpath, file_path_str(FILE_PATH_JPG_EXTENSION)))
-                     nbio->image_type = IMAGE_TYPE_JPEG;
-                  else if (strstr(fullpath, file_path_str(FILE_PATH_BMP_EXTENSION)))
-                     nbio->image_type = IMAGE_TYPE_BMP;
-                  else if (strstr(fullpath, file_path_str(FILE_PATH_TGA_EXTENSION)))
-                     nbio->image_type = IMAGE_TYPE_TGA;
 
                   nbio_begin_read(handle);
                   return;
@@ -116,16 +104,17 @@ void task_file_load_handler(retro_task_t *task)
             break;
       }
 
-      switch (nbio->image_type)
+      switch (nbio->type)
       {
-         case IMAGE_TYPE_PNG:
-         case IMAGE_TYPE_JPEG:
-         case IMAGE_TYPE_TGA:
-         case IMAGE_TYPE_BMP:
+         case NBIO_TYPE_PNG:
+         case NBIO_TYPE_JPEG:
+         case NBIO_TYPE_TGA:
+         case NBIO_TYPE_BMP:
             if (!task_image_load_handler(task))
                task_set_finished(task, true);
             break;
-         case 0:
+         case NBIO_TYPE_NONE:
+         default:
             if (nbio->is_finished)
                task_set_finished(task, true);
             break;

@@ -24,7 +24,6 @@
 
 #include <queues/message_queue.h>
 #include <queues/task_queue.h>
-#include <formats/image.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -62,9 +61,18 @@ enum nbio_status_flags
    NBIO_FLAG_IMAGE_SUPPORTS_RGBA
 };
 
+enum nbio_type
+{
+   NBIO_TYPE_NONE = 0,
+   NBIO_TYPE_JPEG,
+   NBIO_TYPE_PNG,
+   NBIO_TYPE_TGA,
+   NBIO_TYPE_BMP
+};
+
 typedef struct nbio_handle
 {
-   enum image_type_enum image_type;
+   enum nbio_type type;
    void *data;
    bool is_finished;
    transfer_cb_t  cb;

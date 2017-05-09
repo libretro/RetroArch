@@ -43,6 +43,7 @@ enum image_status_enum
 
 struct nbio_image_handle
 {
+   enum image_type_enum type;
    struct texture_image ti;
    bool is_blocking;
    bool is_blocking_on_processing;
@@ -88,29 +89,14 @@ static int cb_image_menu_upload_generic(void *data, size_t len)
    return 0;
 }
 
-static int task_image_iterate_transfer_parse(nbio_handle_t *nbio)
-{
-   struct nbio_image_handle *image = (struct nbio_image_handle*)nbio->data;
-
-   if (image->handle && image->cb)
-   {
-      size_t len = 0;
-      image->cb(nbio, len);
-   }
-
-   return 0;
-}
-
 static int task_image_process(
-      nbio_handle_t *nbio,
+      struct nbio_image_handle *image,
       unsigned *width,
       unsigned *height)
 {
-   struct nbio_image_handle *image = (struct nbio_image_handle*)nbio->data;
-
    int retval = image_transfer_process(
          image->handle,
-         nbio->image_type,
+         image->type,
          &image->ti.pixels, image->size, width, height);
 
    if (retval == IMAGE_PROCESS_ERROR)
@@ -132,7 +118,7 @@ static int cb_image_menu_generic(nbio_handle_t *nbio)
    if (!image)
       return -1;
 
-   retval = task_image_process(nbio, &width, &height);
+   retval = task_image_process(image, &width, &height);
 
    switch (retval)
    {
@@ -162,20 +148,19 @@ static int cb_image_menu_thumbnail(void *data, size_t len)
    return 0;
 }
 
-static int task_image_iterate_process_transfer(nbio_handle_t *nbio)
+static int task_image_iterate_process_transfer(struct nbio_image_handle *image)
 {
    unsigned i;
    int retval                      = 0;
    unsigned width                  = 0;
    unsigned height                 = 0;
-   struct nbio_image_handle *image = (struct nbio_image_handle*)nbio->data;
 
    if (!image)
       return -1;
 
    for (i = 0; i < image->processing_pos_increment; i++)
    {
-      retval = task_image_process(nbio,
+      retval = task_image_process(image,
                &width, &height);
       if (retval != IMAGE_PROCESS_NEXT)
          break;
@@ -188,10 +173,9 @@ static int task_image_iterate_process_transfer(nbio_handle_t *nbio)
    return -1;
 }
 
-static int task_image_iterate_transfer(nbio_handle_t *nbio)
+static int task_image_iterate_transfer(struct nbio_image_handle *image)
 {
    unsigned i;
-   struct nbio_image_handle *image = (struct nbio_image_handle*)nbio->data;
 
    if (!image)
       goto error;
@@ -201,7 +185,7 @@ static int task_image_iterate_transfer(nbio_handle_t *nbio)
 
    for (i = 0; i < image->pos_increment; i++)
    {
-      if (!image_transfer_iterate(image->handle, nbio->image_type))
+      if (!image_transfer_iterate(image->handle, image->type))
          goto error;
    }
 
@@ -211,14 +195,9 @@ error:
    return -1;
 }
 
-static void task_image_load_free_internal(nbio_handle_t *nbio)
+static void task_image_load_free_internal(struct nbio_image_handle *image)
 {
-   struct nbio_image_handle *image = (struct nbio_image_handle*)nbio->data;
-
-   if (!image)
-      return;
-
-   image_transfer_free(image->handle, nbio->image_type);
+   image_transfer_free(image->handle, image->type);
 
    image->handle                 = NULL;
    image->cb                     = NULL;
@@ -232,14 +211,14 @@ static int cb_nbio_generic(nbio_handle_t *nbio, size_t *len)
    if (!ptr || !image || !image->handle)
       goto error;
 
-   image_transfer_set_buffer_ptr(image->handle, nbio->image_type, ptr);
+   image_transfer_set_buffer_ptr(image->handle, image->type, ptr);
 
    image->size                     = *len;
    image->pos_increment            = (*len / 2) ? ((unsigned)(*len / 2)) : 1;
    image->processing_pos_increment = (*len / 4) ?
        ((unsigned)(*len / 4)) : 1;
 
-   if (!image_transfer_start(image->handle, nbio->image_type))
+   if (!image_transfer_start(image->handle, image->type))
       goto error;
 
    image->is_blocking   = false;
@@ -249,7 +228,8 @@ static int cb_nbio_generic(nbio_handle_t *nbio, size_t *len)
    return 0;
 
 error:
-   task_image_load_free_internal(nbio);
+   if (image)
+      task_image_load_free_internal(image);
    if (nbio->data)
       free(nbio->data);
    nbio->data = NULL;
@@ -258,19 +238,18 @@ error:
 
 static int cb_nbio_image_menu_thumbnail(void *data, size_t len)
 {
-   struct nbio_image_handle *image = NULL;
-   void *handle               = NULL;
-   nbio_handle_t *nbio        = (nbio_handle_t*)data; 
+   void *handle                    = NULL;
+   nbio_handle_t *nbio             = (nbio_handle_t*)data; 
+   struct nbio_image_handle *image = nbio ? 
+      (struct nbio_image_handle*)nbio->data : NULL;
 
    if (!nbio)
       goto error;
 
-   handle = image_transfer_new(nbio->image_type);
+   handle = image_transfer_new(image->type);
 
    if (!handle)
       goto error;
-
-   image         = (struct nbio_image_handle*)nbio->data;
  
    image->handle = handle;
    image->size   = len;
@@ -292,21 +271,29 @@ bool task_image_load_handler(retro_task_t *task)
       switch (image->status)
       {
          case IMAGE_STATUS_PROCESS_TRANSFER:
-            if (task_image_iterate_process_transfer(nbio) == -1)
+            if (task_image_iterate_process_transfer(image) == -1)
                image->status = IMAGE_STATUS_PROCESS_TRANSFER_PARSE;
             break;
          case IMAGE_STATUS_TRANSFER_PARSE:
-            task_image_iterate_transfer_parse(nbio);
+            if (image->handle && image->cb)
+            {
+               size_t len = 0;
+               image->cb(nbio, len);
+            }
             if (image->is_blocking_on_processing)
                image->status = IMAGE_STATUS_PROCESS_TRANSFER;
             break;
          case IMAGE_STATUS_TRANSFER:
             if (!image->is_blocking)
-               if (task_image_iterate_transfer(nbio) == -1)
+               if (task_image_iterate_transfer(image) == -1)
                   image->status = IMAGE_STATUS_TRANSFER_PARSE;
             break;
          case IMAGE_STATUS_PROCESS_TRANSFER_PARSE:
-            task_image_iterate_transfer_parse(nbio);
+            if (image->handle && image->cb)
+            {
+               size_t len = 0;
+               image->cb(nbio, len);
+            }
             if (!image->is_finished)
                break;
          case IMAGE_STATUS_TRANSFER_PARSE_FREE:
@@ -356,6 +343,31 @@ bool task_push_image_load(const char *fullpath, retro_task_callback_t cb, void *
    if (!image)
       goto error;
 
+   nbio->type         = NBIO_TYPE_NONE;
+   image->type        = IMAGE_TYPE_NONE;
+
+   if (strstr(fullpath, file_path_str(FILE_PATH_PNG_EXTENSION)))
+   {
+      nbio->type      = NBIO_TYPE_PNG;
+      image->type     = IMAGE_TYPE_PNG;
+   }
+   else if (strstr(fullpath, file_path_str(FILE_PATH_JPEG_EXTENSION)) 
+         || strstr(fullpath, file_path_str(FILE_PATH_JPG_EXTENSION)))
+   {
+      nbio->type      = NBIO_TYPE_JPEG;
+      image->type     = IMAGE_TYPE_JPEG;
+   }
+   else if (strstr(fullpath, file_path_str(FILE_PATH_BMP_EXTENSION)))
+   {
+      nbio->type      = NBIO_TYPE_BMP;
+      image->type     = IMAGE_TYPE_BMP;
+   }
+   else if (strstr(fullpath, file_path_str(FILE_PATH_TGA_EXTENSION)))
+   {
+      nbio->type      = NBIO_TYPE_TGA;
+      image->type     = IMAGE_TYPE_TGA;
+   }
+
    image->status      = IMAGE_STATUS_TRANSFER;
 
    nbio->data         = (struct nbio_image_handle*)image;
@@ -393,7 +405,10 @@ void task_image_load_free(retro_task_t *task)
 
    if (nbio)
    {
-      task_image_load_free_internal(nbio);
+      struct nbio_image_handle *image = (struct nbio_image_handle*)nbio->data;
+      
+      if (image)
+         task_image_load_free_internal(image);
       if (nbio->data)
          free(nbio->data);
       nbio_free(nbio->handle);
