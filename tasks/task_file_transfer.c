@@ -17,15 +17,11 @@
 #include <errno.h>
 #include <file/nbio.h>
 #include <compat/strl.h>
-#include <retro_assert.h>
 #include <retro_miscellaneous.h>
-#include <lists/string_list.h>
-#include <rhash.h>
 
 #include <string/stdstring.h>
 
 #include "tasks_internal.h"
-#include "../file_path_special.h"
 #include "../verbosity.h"
 
 static int task_file_transfer_iterate_transfer(nbio_handle_t *nbio)

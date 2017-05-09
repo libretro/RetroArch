@@ -14,16 +14,14 @@
  */
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 
 #include <file/nbio.h>
 #include <formats/image.h>
 #include <compat/strl.h>
-#include <retro_assert.h>
 #include <retro_miscellaneous.h>
-#include <lists/string_list.h>
-#include <rhash.h>
 
 #include "../gfx/video_driver.h"
 #include "../file_path_special.h"
