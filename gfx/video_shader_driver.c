@@ -138,14 +138,8 @@ bool video_shader_driver_deinit(void)
 /* Finds first suitable shader context driver. */
 bool video_shader_driver_init_first(void)
 {
-   unsigned i;
-
-   for (i = 0; shader_ctx_drivers[i]; i++)
-   {
-      current_shader = shader_ctx_drivers[i];
-      return true;
-   }
-   return false;
+   current_shader = shader_ctx_drivers[0];
+   return true;
 }
 
 bool video_shader_driver_init(video_shader_ctx_init_t *init)
