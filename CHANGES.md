@@ -1,4 +1,5 @@
 # 1.5.1 (future)
+- AUTOSAVE/SRAM - Fix bug #3829 / #4820 (https://github.com/libretro/RetroArch/issues/3829)
 - NET: Fix bug #4703 (https://github.com/libretro/RetroArch/issues/4703)
 - ANDROID: Runtime permission checking
 - ANDROID: Improve autoconf fallback
