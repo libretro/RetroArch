@@ -4286,7 +4286,7 @@ static bool setting_append_list(
 
             CONFIG_FLOAT(
                   list, list_info,
-                  &settings->floats.input_axis_threshold,
+                  input_driver_get_float(INPUT_ACTION_AXIS_THRESHOLD),
                   MENU_ENUM_LABEL_INPUT_AXIS_THRESHOLD,
                   MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD,
                   axis_threshold,

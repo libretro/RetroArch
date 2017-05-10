@@ -1243,7 +1243,6 @@ static bool android_input_key_pressed(void *data, int key)
 {		
    rarch_joypad_info_t joypad_info;
    android_input_t *android           = (android_input_t*)data;		
-   settings_t *settings               = config_get_ptr();		
    const struct retro_keybind *keyptr = (const struct retro_keybind*)
       &input_config_binds[0][key];
 
@@ -1254,7 +1253,7 @@ static bool android_input_key_pressed(void *data, int key)
 
    joypad_info.joy_idx        = 0;
    joypad_info.auto_binds     = input_autoconf_binds[0];
-   joypad_info.axis_threshold = settings->floats.input_axis_threshold;
+   joypad_info.axis_threshold = *(input_driver_get_float(INPUT_ACTION_AXIS_THRESHOLD));
 
    if (keyptr->valid &&		
          input_joypad_pressed(android->joypad, joypad_info,

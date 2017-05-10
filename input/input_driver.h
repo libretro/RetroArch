@@ -48,6 +48,12 @@ enum input_toggle_type
    INPUT_TOGGLE_LAST
 };
 
+enum input_action
+{
+   INPUT_ACTION_NONE = 0,
+   INPUT_ACTION_AXIS_THRESHOLD
+};
+
 struct retro_keybind
 {
    bool valid;
@@ -335,6 +341,8 @@ bool input_driver_init_remote(void);
 bool input_driver_grab_mouse(void);
 
 bool input_driver_ungrab_mouse(void);
+
+float *input_driver_get_float(enum input_action action);
 
 bool input_driver_is_data_ptr_same(void *data);
 

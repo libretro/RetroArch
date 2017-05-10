@@ -123,6 +123,7 @@ static bool input_driver_block_libretro_input     = false;
 static bool input_driver_nonblock_state           = false;
 static bool input_driver_flushing_input           = false;
 static bool input_driver_data_own                 = false;
+static float input_driver_axis_threshold          = 0.0f;
 
 /**
  * input_driver_find_handle:
@@ -271,7 +272,6 @@ void input_poll(void)
    size_t i;
    settings_t *settings           = config_get_ptr();
    unsigned max_users             = settings->uints.input_max_users;
-   float axis_threshold           = settings->floats.input_axis_threshold;
    
    current_input->poll(current_input_data);
 
@@ -285,7 +285,7 @@ void input_poll(void)
             libretro_input_binds[i][RARCH_TURBO_ENABLE].valid)
       {
          rarch_joypad_info_t joypad_info;
-         joypad_info.axis_threshold = axis_threshold;
+         joypad_info.axis_threshold = input_driver_axis_threshold;
          joypad_info.joy_idx        = settings->uints.input_joypad_map[i];
          joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
 
@@ -304,7 +304,7 @@ void input_poll(void)
             overlay_ptr,
             settings->floats.input_overlay_opacity,
             settings->uints.input_analog_dpad_mode[0],
-            axis_threshold);
+            input_driver_axis_threshold);
 #endif
 
 #ifdef HAVE_COMMAND
@@ -380,7 +380,7 @@ int16_t input_state(unsigned port, unsigned device,
          {
             rarch_joypad_info_t joypad_info;
 
-            joypad_info.axis_threshold = settings->floats.input_axis_threshold;
+            joypad_info.axis_threshold = input_driver_axis_threshold;
             joypad_info.joy_idx        = settings->uints.input_joypad_map[port];
             joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
 
@@ -497,7 +497,7 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
    if (!input_driver_block_libretro_input)
    {
       rarch_joypad_info_t joypad_info;
-      joypad_info.axis_threshold = settings->floats.input_axis_threshold;
+      joypad_info.axis_threshold = input_driver_axis_threshold;
 
       for (i = 4; i < 16; i++)
       {
@@ -558,7 +558,7 @@ static INLINE bool input_menu_keys_pressed_internal(
 
          joypad_info.joy_idx        = settings->uints.input_joypad_map[port];
          joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
-         joypad_info.axis_threshold = settings->floats.input_axis_threshold;
+         joypad_info.axis_threshold = input_driver_axis_threshold;
 
          if (sec   && input_joypad_pressed(sec,
                   joypad_info, port, input_config_binds[0], i))
@@ -694,7 +694,7 @@ uint64_t input_menu_keys_pressed(
 
       joypad_info.joy_idx                          = 0;
       joypad_info.auto_binds                       = NULL;
-      joypad_info.axis_threshold                   = settings->floats.input_axis_threshold;
+      joypad_info.axis_threshold                   = input_driver_axis_threshold;
 
       input_driver_block_libretro_input            = false;
       input_driver_block_hotkey                    = false;
@@ -841,7 +841,7 @@ static INLINE bool input_keys_pressed_internal(
 
       joypad_info.joy_idx        = settings->uints.input_joypad_map[0];
       joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
-      joypad_info.axis_threshold = settings->floats.input_axis_threshold;
+      joypad_info.axis_threshold = input_driver_axis_threshold;
 
       if (bind_valid && current_input->input_state(current_input_data,
                joypad_info, &binds,
@@ -919,7 +919,7 @@ uint64_t input_keys_pressed(
 
    joypad_info.joy_idx                          = 0;
    joypad_info.auto_binds                       = NULL;
-   joypad_info.axis_threshold                   = settings->floats.input_axis_threshold;
+   joypad_info.axis_threshold                   = input_driver_axis_threshold;
    
    input_driver_block_libretro_input            = false;
    input_driver_block_hotkey                    = false;
@@ -1242,6 +1242,20 @@ bool input_driver_grab_mouse(void)
 
    current_input->grab_mouse(current_input_data, true);
    return true;
+}
+
+float *input_driver_get_float(enum input_action action)
+{
+   switch (action)
+   {
+      case INPUT_ACTION_AXIS_THRESHOLD:
+         return &input_driver_axis_threshold;
+      default:
+      case INPUT_ACTION_NONE:
+         break;
+   }
+
+   return NULL;
 }
 
 bool input_driver_ungrab_mouse(void)

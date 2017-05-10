@@ -32,6 +32,7 @@
 
 #include "file_path_special.h"
 #include "audio/audio_driver.h"
+#include "input/input_driver.h"
 #include "configuration.h"
 #include "content.h"
 #include "config.def.h"
@@ -1283,7 +1284,7 @@ static struct config_float_setting *populate_settings_float(settings_t *settings
    SETTING_FLOAT("video_font_size",          &settings->floats.video_font_size,      true, font_size, false);
    SETTING_FLOAT("fastforward_ratio",        &settings->floats.fastforward_ratio,    true, fastforward_ratio, false);
    SETTING_FLOAT("slowmotion_ratio",         &settings->floats.slowmotion_ratio,     true, slowmotion_ratio, false);
-   SETTING_FLOAT("input_axis_threshold",     &settings->floats.input_axis_threshold, true, axis_threshold, false);
+   SETTING_FLOAT("input_axis_threshold",     input_driver_get_float(INPUT_ACTION_AXIS_THRESHOLD), true, axis_threshold, false);
 
    *size = count;
 
