@@ -257,10 +257,9 @@ static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
    GLint status;
    const char *source[4];
    char version[32];
-   const char* existing_version;
+   const char *existing_version = strstr(program, "#version");
 
-   version[0] = '\0';
-   existing_version = strstr(program, "#version");
+   version[0]                   = '\0';
 
    if(existing_version)
    {
