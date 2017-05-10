@@ -257,10 +257,29 @@ static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
    GLint status;
    const char *source[4];
    char version[32];
+   const char* existing_version;
 
    version[0] = '\0';
+   existing_version = strstr(program, "#version");
 
-   if (glsl_core && !strstr(program, "#version"))
+   if(existing_version)
+   {
+      int len = 8;
+      while(existing_version[len] && isspace(existing_version[len]))
+         len++;
+      while(existing_version[len] && !isspace(existing_version[len]))
+         len++;
+
+      program = existing_version + len;
+
+      if(len > (sizeof(version) - 2))
+         len = sizeof(version) - 2;
+
+      strncpy(version, existing_version, len);
+      version[len] = '\n';
+      version[len + 1] = '\0';
+   }
+   else if (glsl_core)
    {
       unsigned version_no = 0;
       unsigned gl_ver = glsl_major * 100 + glsl_minor * 10;
