@@ -26,6 +26,7 @@
 
 #include <compat/strl.h>
 #include <formats/image.h>
+#include <retro_miscellaneous.h>
 
 #include "slang_reflection.hpp"
 
@@ -45,7 +46,7 @@ static const uint32_t opaque_frag[] =
 
 static unsigned num_miplevels(unsigned width, unsigned height)
 {
-   unsigned size   = std::max(width, height);
+   unsigned size   = MAX(width, height);
    unsigned levels = 0;
    while (size)
    {
@@ -280,23 +281,23 @@ class Framebuffer
       void generate_mips(VkCommandBuffer cmd);
 
    private:
-      VkDevice device = VK_NULL_HANDLE;
       const VkPhysicalDeviceMemoryProperties &memory_properties;
-      VkImage image = VK_NULL_HANDLE;
-      VkImageView view = VK_NULL_HANDLE;
+      VkDevice device     = VK_NULL_HANDLE;
+      VkImage image       = VK_NULL_HANDLE;
+      VkImageView view    = VK_NULL_HANDLE;
       VkImageView fb_view = VK_NULL_HANDLE;
       Size2D size;
       VkFormat format;
       unsigned max_levels;
-      unsigned levels = 0;
+      unsigned levels           = 0;
 
       VkFramebuffer framebuffer = VK_NULL_HANDLE;
-      VkRenderPass render_pass = VK_NULL_HANDLE;
+      VkRenderPass render_pass  = VK_NULL_HANDLE;
 
       struct
       {
-         size_t size = 0;
-         uint32_t type = 0;
+         size_t size           = 0;
+         uint32_t type         = 0;
          VkDeviceMemory memory = VK_NULL_HANDLE;
       } memory;
 
@@ -2267,23 +2268,23 @@ void Framebuffer::generate_mips(VkCommandBuffer cmd)
       }
 
       VkImageBlit blit_region = {};
-      unsigned src_width = std::max(size.width >> (i - 1), 1u);
-      unsigned src_height = std::max(size.height >> (i - 1), 1u);
-      unsigned target_width = std::max(size.width >> i, 1u);
-      unsigned target_height = std::max(size.height >> i, 1u);
+      unsigned src_width      = MAX(size.width >> (i - 1), 1u);
+      unsigned src_height     = MAX(size.height >> (i - 1), 1u);
+      unsigned target_width   = MAX(size.width >> i, 1u);
+      unsigned target_height  = MAX(size.height >> i, 1u);
 
-      blit_region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-      blit_region.srcSubresource.mipLevel = i - 1;
+      blit_region.srcSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+      blit_region.srcSubresource.mipLevel       = i - 1;
       blit_region.srcSubresource.baseArrayLayer = 0;
-      blit_region.srcSubresource.layerCount = 1;
-      blit_region.dstSubresource = blit_region.srcSubresource;
-      blit_region.dstSubresource.mipLevel = i;
-      blit_region.srcOffsets[1].x = src_width;
-      blit_region.srcOffsets[1].y = src_height;
-      blit_region.srcOffsets[1].z = 1;
-      blit_region.dstOffsets[1].x = target_width;
-      blit_region.dstOffsets[1].y = target_height;
-      blit_region.dstOffsets[1].z = 1;
+      blit_region.srcSubresource.layerCount     = 1;
+      blit_region.dstSubresource                = blit_region.srcSubresource;
+      blit_region.dstSubresource.mipLevel       = i;
+      blit_region.srcOffsets[1].x               = src_width;
+      blit_region.srcOffsets[1].y               = src_height;
+      blit_region.srcOffsets[1].z               = 1;
+      blit_region.dstOffsets[1].x               = target_width;
+      blit_region.dstOffsets[1].y               = target_height;
+      blit_region.dstOffsets[1].z               = 1;
 
       vkCmdBlitImage(cmd,
             image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
@@ -2646,6 +2647,7 @@ static unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(VkCommandBuffer cm
       vulkan_filter_chain *chain,
       const video_shader_lut *shader)
 {
+   unsigned i;
    texture_image image;
    unique_ptr<Buffer> buffer;
    VkMemoryRequirements mem_reqs;
@@ -2728,29 +2730,29 @@ static unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(VkCommandBuffer cm
          shader->mipmap ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          1, &region);
 
-   for (unsigned i = 1; i < image_info.mipLevels; i++)
+   for (i = 1; i < image_info.mipLevels; i++)
    {
       VkImageBlit blit_region = {};
-      unsigned src_width = std::max(image.width >> (i - 1), 1u);
-      unsigned src_height = std::max(image.height >> (i - 1), 1u);
-      unsigned target_width = std::max(image.width >> i, 1u);
-      unsigned target_height = std::max(image.height >> i, 1u);
+      unsigned src_width      = MAX(image.width >> (i - 1), 1u);
+      unsigned src_height     = MAX(image.height >> (i - 1), 1u);
+      unsigned target_width   = MAX(image.width >> i, 1u);
+      unsigned target_height  = MAX(image.height >> i, 1u);
 
-      blit_region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-      blit_region.srcSubresource.mipLevel = i - 1;
+      blit_region.srcSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+      blit_region.srcSubresource.mipLevel       = i - 1;
       blit_region.srcSubresource.baseArrayLayer = 0;
-      blit_region.srcSubresource.layerCount = 1;
-      blit_region.dstSubresource = blit_region.srcSubresource;
-      blit_region.dstSubresource.mipLevel = i;
-      blit_region.srcOffsets[1].x = src_width;
-      blit_region.srcOffsets[1].y = src_height;
-      blit_region.srcOffsets[1].z = 1;
-      blit_region.dstOffsets[1].x = target_width;
-      blit_region.dstOffsets[1].y = target_height;
-      blit_region.dstOffsets[1].z = 1;
+      blit_region.srcSubresource.layerCount     = 1;
+      blit_region.dstSubresource                = blit_region.srcSubresource;
+      blit_region.dstSubresource.mipLevel       = i;
+      blit_region.srcOffsets[1].x               = src_width;
+      blit_region.srcOffsets[1].y               = src_height;
+      blit_region.srcOffsets[1].z               = 1;
+      blit_region.dstOffsets[1].x               = target_width;
+      blit_region.dstOffsets[1].y               = target_height;
+      blit_region.dstOffsets[1].z               = 1;
 
-      // Only injects execution and memory barriers,
-      // not actual transition.
+      /* Only injects execution and memory barriers,
+       * not actual transition. */
       image_layout_transition(cmd, tex,
             VK_IMAGE_LAYOUT_GENERAL,
             VK_IMAGE_LAYOUT_GENERAL,
@@ -2847,6 +2849,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       const struct vulkan_filter_chain_create_info *info,
       const char *path, vulkan_filter_chain_filter filter)
 {
+   unsigned i;
    unique_ptr<video_shader> shader{ new video_shader() };
    if (!shader)
       return nullptr;
@@ -2873,7 +2876,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
 
    shader->num_parameters = 0;
 
-   for (unsigned i = 0; i < shader->passes; i++)
+   for (i = 0; i < shader->passes; i++)
    {
       const video_shader_pass *pass = &shader->pass[i];
       const video_shader_pass *next_pass =
@@ -3061,16 +3064,19 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
    if (last_pass_is_fbo)
    {
       struct vulkan_filter_chain_pass_info pass_info;
-      memset(&pass_info, 0, sizeof(pass_info));
-      pass_info.scale_type_x = VULKAN_FILTER_CHAIN_SCALE_VIEWPORT;
-      pass_info.scale_type_y = VULKAN_FILTER_CHAIN_SCALE_VIEWPORT;
-      pass_info.scale_x = 1.0f;
-      pass_info.scale_y = 1.0f;
-      pass_info.rt_format = tmpinfo.swapchain.format;
+
+      pass_info.scale_type_x  = VULKAN_FILTER_CHAIN_SCALE_VIEWPORT;
+      pass_info.scale_type_y  = VULKAN_FILTER_CHAIN_SCALE_VIEWPORT;
+      pass_info.scale_x       = 1.0f;
+      pass_info.scale_y       = 1.0f;
+
+      pass_info.rt_format     = tmpinfo.swapchain.format;
 
       pass_info.source_filter = filter;
-      pass_info.mip_filter = VULKAN_FILTER_CHAIN_NEAREST;
-      pass_info.address = VULKAN_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE;
+      pass_info.mip_filter    = VULKAN_FILTER_CHAIN_NEAREST;
+      pass_info.address       = VULKAN_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE;
+
+      pass_info.max_levels    = 0;
 
       chain->set_pass_info(shader->passes, pass_info);
 
