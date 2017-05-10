@@ -2172,17 +2172,18 @@ Framebuffer::Framebuffer(
 
 void Framebuffer::clear(VkCommandBuffer cmd)
 {
+   VkClearColorValue color;
+   VkImageSubresourceRange range;
+
    image_layout_transition(cmd, image,
          VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          0, VK_ACCESS_TRANSFER_WRITE_BIT,
          VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
          VK_PIPELINE_STAGE_TRANSFER_BIT);
 
-   VkClearColorValue color;
    memset(&color, 0, sizeof(color));
-
-   VkImageSubresourceRange range;
    memset(&range, 0, sizeof(range));
+
    range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
    range.levelCount = 1;
    range.layerCount = 1;
@@ -2199,6 +2200,7 @@ void Framebuffer::clear(VkCommandBuffer cmd)
 
 void Framebuffer::generate_mips(VkCommandBuffer cmd)
 {
+   unsigned i;
    // This is run every frame, so make sure
    // we aren't opting into the "lazy" way of doing this. :)
    VkImageMemoryBarrier barriers[2] = {
@@ -2245,7 +2247,7 @@ void Framebuffer::generate_mips(VkCommandBuffer cmd)
          0, nullptr,
          2, barriers);
 
-   for (unsigned i = 1; i < levels; i++)
+   for (i = 1; i < levels; i++)
    {
       // For subsequent passes, we have to transition from DST_OPTIMAL to SRC_OPTIMAL,
       // but only do so one mip-level at a time.
@@ -2326,20 +2328,22 @@ void Framebuffer::generate_mips(VkCommandBuffer cmd)
 void Framebuffer::copy(VkCommandBuffer cmd,
       VkImage src_image, VkImageLayout src_layout)
 {
+   VkImageCopy region;
+
    image_layout_transition(cmd, image,
          VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          0, VK_ACCESS_TRANSFER_WRITE_BIT,
          VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
          VK_PIPELINE_STAGE_TRANSFER_BIT);
 
-   VkImageCopy region;
    memset(&region, 0, sizeof(region));
+
    region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
    region.srcSubresource.layerCount = 1;
-   region.dstSubresource = region.srcSubresource;
-   region.extent.width = size.width;
-   region.extent.height = size.height;
-   region.extent.depth = 1;
+   region.dstSubresource            = region.srcSubresource;
+   region.extent.width              = size.width;
+   region.extent.height             = size.height;
+   region.extent.depth              = 1;
 
    vkCmdCopyImage(cmd,
          src_image, src_layout,
@@ -2545,7 +2549,6 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_default(
    if (!chain)
       return nullptr;
 
-   memset(&pass_info, 0, sizeof(pass_info));
    pass_info.scale_type_x  = VULKAN_FILTER_CHAIN_SCALE_VIEWPORT;
    pass_info.scale_type_y  = VULKAN_FILTER_CHAIN_SCALE_VIEWPORT;
    pass_info.scale_x       = 1.0f;
@@ -2554,6 +2557,8 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_default(
    pass_info.source_filter = filter;
    pass_info.mip_filter    = VULKAN_FILTER_CHAIN_NEAREST;
    pass_info.address       = VULKAN_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE;
+   pass_info.max_levels    = 0;
+
    chain->set_pass_info(0, pass_info);
 
    chain->set_shader(0, VK_SHADER_STAGE_VERTEX_BIT,
@@ -2878,13 +2883,22 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
 
    for (i = 0; i < shader->passes; i++)
    {
-      const video_shader_pass *pass = &shader->pass[i];
+      glslang_output output;
+      struct vulkan_filter_chain_pass_info pass_info;
+      const video_shader_pass *pass      = &shader->pass[i];
       const video_shader_pass *next_pass =
          i + 1 < shader->passes ? &shader->pass[i + 1] : nullptr;
-      struct vulkan_filter_chain_pass_info pass_info;
-      memset(&pass_info, 0, sizeof(pass_info));
 
-      glslang_output output;
+      pass_info.scale_type_x  = VULKAN_FILTER_CHAIN_SCALE_ORIGINAL;
+      pass_info.scale_type_y  = VULKAN_FILTER_CHAIN_SCALE_ORIGINAL;
+      pass_info.scale_x       = 0.0f;
+      pass_info.scale_y       = 0.0f;
+      pass_info.rt_format     = VK_FORMAT_UNDEFINED; 
+      pass_info.source_filter = VULKAN_FILTER_CHAIN_LINEAR;
+      pass_info.mip_filter    = VULKAN_FILTER_CHAIN_LINEAR;
+      pass_info.address       = VULKAN_FILTER_CHAIN_ADDRESS_REPEAT;
+      pass_info.max_levels    = 0;
+
       if (!glslang_compile_shader(pass->source.path, &output))
       {
          RARCH_ERR("Failed to compile shader: \"%s\".\n",
@@ -2963,15 +2977,14 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
             pass->filter == RARCH_FILTER_LINEAR ? VULKAN_FILTER_CHAIN_LINEAR : 
             VULKAN_FILTER_CHAIN_NEAREST;
       }
-      pass_info.address = wrap_to_address(pass->wrap);
+      pass_info.address    = wrap_to_address(pass->wrap);
+      pass_info.max_levels = 1;
 
       // TODO: Expose max_levels in slangp.
       // CGP format is a bit awkward in that it uses mipmap_input,
       // so we much check if next pass needs the mipmapping.
       if (next_pass && next_pass->mipmap)
          pass_info.max_levels = ~0u;
-      else
-         pass_info.max_levels = 1;
 
       pass_info.mip_filter = pass->filter != RARCH_FILTER_NEAREST && pass_info.max_levels > 1
          ? VULKAN_FILTER_CHAIN_LINEAR : VULKAN_FILTER_CHAIN_NEAREST;
