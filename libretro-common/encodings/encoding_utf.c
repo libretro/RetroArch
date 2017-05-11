@@ -218,10 +218,10 @@ uint32_t utf8_walk(const char **string)
       ret = (ret<<6) | (utf8_walkbyte(string) & 0x3F);
 
    if (first >= 0xF0)
-      return ret | (first&31)<<18;
+      return ret | (first&7)<<18;
    if (first >= 0xE0)
       return ret | (first&15)<<12;
-   return ret | (first&7)<<6;
+   return ret | (first&31)<<6;
 }
 
 static bool utf16_to_char(uint8_t **utf_data,
