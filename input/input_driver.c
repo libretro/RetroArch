@@ -1206,12 +1206,8 @@ void input_driver_deinit_remote(void)
 {
 #ifdef HAVE_NETWORKGAMEPAD
    if (input_driver_remote)
-   {
-      settings_t *settings = config_get_ptr();
-
       input_remote_free(input_driver_remote,
             input_driver_max_users);
-   }
    input_driver_remote = NULL;
 #endif
 }
