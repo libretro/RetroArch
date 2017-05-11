@@ -261,22 +261,17 @@ static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
 
    version[0]                   = '\0';
 
-   if(existing_version)
+   if (existing_version)
    {
-      int len = 8;
-      while(existing_version[len] && isspace(existing_version[len]))
-         len++;
-      while(existing_version[len] && !isspace(existing_version[len]))
-         len++;
-
-      program = existing_version + len;
-
-      if(len > (sizeof(version) - 2))
-         len = sizeof(version) - 2;
-
-      strncpy(version, existing_version, len);
-      version[len] = '\n';
-      version[len + 1] = '\0';
+      unsigned version_no = strtoul(existing_version + 8, (char**)&program, 10);
+#ifdef HAVE_OPENGLES
+      if (version_no < 130)
+         version_no = 100;
+      else
+         version_no = 300;
+#endif
+      snprintf(version, sizeof(version), "#version %u\n", version_no);
+      RARCH_LOG("[GLSL]: Using GLSL version %u.\n", version_no);
    }
    else if (glsl_core)
    {
