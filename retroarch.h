@@ -176,8 +176,6 @@ enum runloop_ctl_state
 
    RUNLOOP_CTL_IS_PAUSED,
    RUNLOOP_CTL_SET_PAUSED,
-   RUNLOOP_CTL_SET_MAX_FRAMES,
-   RUNLOOP_CTL_GLOBAL_FREE,
 
    RUNLOOP_CTL_SET_CORE_SHUTDOWN,
 
@@ -185,7 +183,6 @@ enum runloop_ctl_state
    RUNLOOP_CTL_IS_SHUTDOWN,
 
    /* Runloop state */
-   RUNLOOP_CTL_CLEAR_STATE,
    RUNLOOP_CTL_STATE_FREE,
 
    /* Performance counters */
@@ -198,10 +195,6 @@ enum runloop_ctl_state
    RUNLOOP_CTL_FRONTEND_KEY_EVENT_GET,
    RUNLOOP_CTL_KEY_EVENT_GET,
    RUNLOOP_CTL_DATA_DEINIT,
-
-   /* Message queue */
-   RUNLOOP_CTL_MSG_QUEUE_INIT,
-   RUNLOOP_CTL_MSG_QUEUE_DEINIT,
 
    /* Core options */
    RUNLOOP_CTL_HAS_CORE_OPTIONS,

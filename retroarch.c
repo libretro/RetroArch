@@ -231,6 +231,70 @@ static bool runloop_autosave                               = false;
 static retro_time_t frame_limit_minimum_time               = 0.0;
 static retro_time_t frame_limit_last_time                  = 0.0;
 
+static void retroarch_msg_queue_deinit(void)
+{
+   if (!runloop_msg_queue)
+      return;
+
+#ifdef HAVE_THREADS
+   slock_lock(_runloop_msg_queue_lock);
+#endif
+
+   msg_queue_free(runloop_msg_queue);
+
+#ifdef HAVE_THREADS
+   slock_unlock(_runloop_msg_queue_lock);
+#endif
+
+#ifdef HAVE_THREADS
+   slock_free(_runloop_msg_queue_lock);
+   _runloop_msg_queue_lock = NULL;
+#endif
+
+   runloop_msg_queue = NULL;
+}
+
+static void retroarch_msg_queue_init(void)
+{
+   retroarch_msg_queue_deinit();
+   runloop_msg_queue = msg_queue_new(8);
+   retro_assert(runloop_msg_queue);
+
+#ifdef HAVE_THREADS
+   _runloop_msg_queue_lock = slock_new();
+   retro_assert(_runloop_msg_queue_lock);
+#endif
+}
+
+static void global_free(void)
+{
+   global_t *global = NULL;
+   command_event(CMD_EVENT_TEMPORARY_CONTENT_DEINIT, NULL);
+
+   path_deinit_subsystem();
+   command_event(CMD_EVENT_RECORD_DEINIT, NULL);
+   command_event(CMD_EVENT_LOG_FILE_DEINIT, NULL);
+
+   rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
+   rarch_ctl(RARCH_CTL_UNSET_SRAM_LOAD_DISABLED, NULL);
+   rarch_ctl(RARCH_CTL_UNSET_SRAM_SAVE_DISABLED, NULL);
+   rarch_ctl(RARCH_CTL_UNSET_SRAM_ENABLE, NULL);
+   rarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
+   rarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
+   rarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
+   rarch_ctl(RARCH_CTL_UNSET_PATCH_BLOCKED, NULL);
+   runloop_overrides_active   = false;
+
+   core_unset_input_descriptors();
+
+   global = global_get_ptr();
+   path_clear_all();
+   dir_clear_all();
+   memset(global, 0, sizeof(struct global));
+   retroarch_override_setting_free_state();
+}
+
+
 static void retroarch_print_features(void)
 {
    puts("");
@@ -902,10 +966,7 @@ static void retroarch_parse_input(int argc, char *argv[])
             break;
 
          case RA_OPT_MAX_FRAMES:
-            {
-               unsigned max_frames = (unsigned)strtoul(optarg, NULL, 10);
-               runloop_ctl(RUNLOOP_CTL_SET_MAX_FRAMES, &max_frames);
-            }
+            runloop_max_frames  = (unsigned)strtoul(optarg, NULL, 10);
             break;
 
          case RA_OPT_SUBSYSTEM:
@@ -1208,7 +1269,6 @@ error:
    return false;
 }
 
-
 bool rarch_ctl(enum rarch_ctl_state state, void *data)
 {
    static bool rarch_is_sram_load_disabled = false;
@@ -1278,12 +1338,12 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          rarch_block_config_read = false;
          rarch_force_fullscreen  = false;
 
-         runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_DEINIT, NULL);
+         retroarch_msg_queue_deinit();
          driver_ctl(RARCH_DRIVER_CTL_UNINIT_ALL, NULL);
          command_event(CMD_EVENT_LOG_FILE_DEINIT, NULL);
 
          runloop_ctl(RUNLOOP_CTL_STATE_FREE,  NULL);
-         runloop_ctl(RUNLOOP_CTL_GLOBAL_FREE, NULL);
+         global_free();
          runloop_ctl(RUNLOOP_CTL_DATA_DEINIT, NULL);
          config_free();
          break;
@@ -1299,7 +1359,9 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
          config_init();
 
-         runloop_ctl(RUNLOOP_CTL_CLEAR_STATE, NULL);
+         driver_ctl(RARCH_DRIVER_CTL_DEINIT,  NULL);
+         runloop_ctl(RUNLOOP_CTL_STATE_FREE,  NULL);
+         global_free();
          break;
       case RARCH_CTL_MAIN_DEINIT:
          if (!rarch_ctl(RARCH_CTL_IS_INITED, NULL))
@@ -1344,7 +1406,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
                input_config_set_device(i, RETRO_DEVICE_JOYPAD);
          }
          runloop_ctl(RUNLOOP_CTL_HTTPSERVER_INIT, NULL);
-         runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_INIT, NULL);
+         retroarch_msg_queue_init();
          break;
       case RARCH_CTL_SET_PATHS_REDIRECT:
          {
@@ -1770,6 +1832,7 @@ global_t *global_get_ptr(void)
    return &g_extern;
 }
 
+
 void runloop_msg_queue_push(const char *msg,
       unsigned prio, unsigned duration,
       bool flush)
@@ -2024,47 +2087,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          runloop_autosave                  = false;
          runloop_ctl(RUNLOOP_CTL_FRAME_TIME_FREE, NULL);
          break;
-      case RUNLOOP_CTL_GLOBAL_FREE:
-         {
-            global_t *global = NULL;
-            command_event(CMD_EVENT_TEMPORARY_CONTENT_DEINIT, NULL);
-
-            path_deinit_subsystem();
-            command_event(CMD_EVENT_RECORD_DEINIT, NULL);
-            command_event(CMD_EVENT_LOG_FILE_DEINIT, NULL);
-
-            rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
-            rarch_ctl(RARCH_CTL_UNSET_SRAM_LOAD_DISABLED, NULL);
-            rarch_ctl(RARCH_CTL_UNSET_SRAM_SAVE_DISABLED, NULL);
-            rarch_ctl(RARCH_CTL_UNSET_SRAM_ENABLE, NULL);
-            rarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
-            rarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
-            rarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
-            rarch_ctl(RARCH_CTL_UNSET_PATCH_BLOCKED, NULL);
-            runloop_overrides_active   = false;
-
-            core_unset_input_descriptors();
-
-            global = global_get_ptr();
-            path_clear_all();
-            dir_clear_all();
-            memset(global, 0, sizeof(struct global));
-            retroarch_override_setting_free_state();
-         }
-         break;
-      case RUNLOOP_CTL_CLEAR_STATE:
-         driver_ctl(RARCH_DRIVER_CTL_DEINIT,  NULL);
-         runloop_ctl(RUNLOOP_CTL_STATE_FREE,  NULL);
-         runloop_ctl(RUNLOOP_CTL_GLOBAL_FREE, NULL);
-         break;
-      case RUNLOOP_CTL_SET_MAX_FRAMES:
-         {
-            unsigned *ptr = (unsigned*)data;
-            if (!ptr)
-               return false;
-            runloop_max_frames = *ptr;
-         }
-         break;
       case RUNLOOP_CTL_IS_IDLE:
          return runloop_idle;
       case RUNLOOP_CTL_SET_IDLE:
@@ -2085,37 +2107,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_IS_PAUSED:
          return runloop_paused;
-      case RUNLOOP_CTL_MSG_QUEUE_DEINIT:
-         if (!runloop_msg_queue)
-            return true;
-
-#ifdef HAVE_THREADS
-         slock_lock(_runloop_msg_queue_lock);
-#endif
-
-         msg_queue_free(runloop_msg_queue);
-
-#ifdef HAVE_THREADS
-         slock_unlock(_runloop_msg_queue_lock);
-#endif
-
-#ifdef HAVE_THREADS
-         slock_free(_runloop_msg_queue_lock);
-         _runloop_msg_queue_lock = NULL;
-#endif
-
-         runloop_msg_queue = NULL;
-         break;
-      case RUNLOOP_CTL_MSG_QUEUE_INIT:
-         runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_DEINIT, NULL);
-         runloop_msg_queue = msg_queue_new(8);
-         retro_assert(runloop_msg_queue);
-
-#ifdef HAVE_THREADS
-         _runloop_msg_queue_lock = slock_new();
-         retro_assert(_runloop_msg_queue_lock);
-#endif
-         break;
       case RUNLOOP_CTL_TASK_INIT:
          {
 #ifdef HAVE_THREADS
