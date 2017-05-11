@@ -105,6 +105,7 @@ bool input_remapping_save_file(const char *path)
    char buf[PATH_MAX_LENGTH];
    char remap_file[PATH_MAX_LENGTH];
    config_file_t               *conf = NULL;
+   unsigned max_users                = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
    settings_t              *settings = config_get_ptr();
 
    buf[0] = remap_file[0]            = '\0';
@@ -123,7 +124,7 @@ bool input_remapping_save_file(const char *path)
          return false;
    }
 
-   for (i = 0; i < settings->uints.input_max_users; i++)
+   for (i = 0; i < max_users; i++)
    {
       char buf[64];
       char key_ident[RARCH_FIRST_CUSTOM_BIND + 4][128]   = {{0}};

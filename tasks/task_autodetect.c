@@ -453,7 +453,7 @@ bool input_autoconfigure_connect(
    state->idx       = idx;
    state->vid       = vid;
    state->pid       = pid;
-   state->max_users = settings->uints.input_max_users;
+   state->max_users = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
 
    input_config_set_device_name(state->idx, state->name);
    input_config_set_pid(state->idx, state->pid);

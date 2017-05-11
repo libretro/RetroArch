@@ -1190,17 +1190,22 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             }
 
             RARCH_LOG("Environ SET_INPUT_DESCRIPTORS:\n");
-            for (p = 0; p < settings->uints.input_max_users; p++)
+
             {
-               for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
+               unsigned max_users = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+
+               for (p = 0; p < max_users; p++)
                {
-                  const char *description = system->input_desc_btn[p][retro_id];
+                  for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
+                  {
+                     const char *description = system->input_desc_btn[p][retro_id];
 
-                  if (!description)
-                     continue;
+                     if (!description)
+                        continue;
 
-                  RARCH_LOG("\tRetroPad, User %u, Button \"%s\" => \"%s\"\n",
-                        p + 1, libretro_btn_desc[retro_id], description);
+                     RARCH_LOG("\tRetroPad, User %u, Button \"%s\" => \"%s\"\n",
+                           p + 1, libretro_btn_desc[retro_id], description);
+                  }
                }
             }
 

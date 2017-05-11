@@ -255,8 +255,6 @@ typedef struct settings
       unsigned audio_latency;
       unsigned input_remap_ids[MAX_USERS][RARCH_BIND_LIST_END];
 
-      unsigned input_max_users;
-
       /* Set by autoconfiguration in joypad_autoconfig_dir.
        * Does not override main binds. */
       unsigned input_libretro_device[MAX_USERS];

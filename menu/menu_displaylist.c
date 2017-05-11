@@ -3211,12 +3211,12 @@ static int menu_displaylist_parse_options_remappings(
    unsigned p, retro_id;
    rarch_system_info_t *system = NULL;
    menu_handle_t       *menu   = NULL;
-   settings_t        *settings = config_get_ptr();
+   unsigned max_users          = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return -1;
 
-   for (p = 0; p < settings->uints.input_max_users; p++)
+   for (p = 0; p < max_users; p++)
    {
       char key_type[PATH_MAX_LENGTH];
       char key_analog[PATH_MAX_LENGTH];
@@ -3255,7 +3255,7 @@ static int menu_displaylist_parse_options_remappings(
 
    if (system)
    {
-      for (p = 0; p < settings->uints.input_max_users; p++)
+      for (p = 0; p < max_users; p++)
       {
          for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND + 4; retro_id++)
          {
@@ -4925,12 +4925,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   PARSE_ONLY_UINT, false) != -1)
                count++;
 
-            for(user = 0; user < settings->uints.input_max_users; user++)
             {
-               if (menu_displaylist_parse_settings_enum(menu, info,
-                     (enum msg_hash_enums)(MENU_ENUM_LABEL_NETWORK_REMOTE_USER_1_ENABLE + user),
-                     PARSE_ONLY_BOOL, false) != -1)
-                  count++;
+               unsigned max_users          = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+               for(user = 0; user < max_users; user++)
+               {
+                  if (menu_displaylist_parse_settings_enum(menu, info,
+                           (enum msg_hash_enums)(MENU_ENUM_LABEL_NETWORK_REMOTE_USER_1_ENABLE + user),
+                           PARSE_ONLY_BOOL, false) != -1)
+                     count++;
+               }
             }
 
             if (menu_displaylist_parse_settings_enum(menu, info,
@@ -5381,7 +5384,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
          {
             unsigned user;
-            for (user = 0; user < settings->uints.input_max_users; user++)
+            unsigned max_users          = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+            for (user = 0; user < max_users; user++)
             {
                menu_displaylist_parse_settings_enum(menu, info,
                      (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + user),

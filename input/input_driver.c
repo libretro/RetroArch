@@ -124,6 +124,7 @@ static bool input_driver_nonblock_state           = false;
 static bool input_driver_flushing_input           = false;
 static bool input_driver_data_own                 = false;
 static float input_driver_axis_threshold          = 0.0f;
+static unsigned input_driver_max_users            = 0;
 
 /**
  * input_driver_find_handle:
@@ -271,7 +272,7 @@ void input_poll(void)
 {
    size_t i;
    settings_t *settings           = config_get_ptr();
-   unsigned max_users             = settings->uints.input_max_users;
+   unsigned max_users             = input_driver_max_users;
    
    current_input->poll(current_input_data);
 
@@ -478,7 +479,7 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
    unsigned i;
    const struct retro_keybind *binds[MAX_USERS];
    settings_t *settings = config_get_ptr();
-   unsigned max_users   = settings->uints.input_max_users;
+   unsigned max_users   = input_driver_max_users;
 
    for (i = 0; i < max_users; i++)
    {
@@ -679,7 +680,7 @@ uint64_t input_menu_keys_pressed(
       settings_t     *settings                     = (settings_t*)data;
       const struct retro_keybind *binds_norm       = NULL;
       const struct retro_keybind *binds_auto       = NULL;
-      unsigned max_users                           = settings->uints.input_max_users;
+      unsigned max_users                           = input_driver_max_users;
 
       if (settings->bools.menu_unified_controls && !menu_input_dialog_get_display_kb())
          return input_keys_pressed(settings, old_input, last_input,
@@ -1209,7 +1210,7 @@ void input_driver_deinit_remote(void)
       settings_t *settings = config_get_ptr();
 
       input_remote_free(input_driver_remote,
-            settings->uints.input_max_users);
+            input_driver_max_users);
    }
    input_driver_remote = NULL;
 #endif
@@ -1225,7 +1226,7 @@ bool input_driver_init_remote(void)
 
    input_driver_remote = input_remote_new(
          settings->uints.network_remote_base_port,
-         settings->uints.input_max_users);
+         input_driver_max_users);
 
    if (input_driver_remote)
       return true;
@@ -1250,6 +1251,20 @@ float *input_driver_get_float(enum input_action action)
    {
       case INPUT_ACTION_AXIS_THRESHOLD:
          return &input_driver_axis_threshold;
+      default:
+      case INPUT_ACTION_NONE:
+         break;
+   }
+
+   return NULL;
+}
+
+unsigned *input_driver_get_uint(enum input_action action)
+{
+   switch (action)
+   {
+      case INPUT_ACTION_MAX_USERS:
+         return &input_driver_max_users;
       default:
       case INPUT_ACTION_NONE:
          break;
