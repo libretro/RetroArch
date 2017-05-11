@@ -17,6 +17,8 @@ default font
 - VIDEO: Fix threaded video regression; tickering of menu entries would no longer work.
 - LOBBIES: Fallback to filename based matching if no CRC matches are found (for people making playlists by hand)
 - VITA: Fix slow I/O
+- VITA: Fix 30fps menu (poke into input now instead of reading the entire input buffer which apparently is slow)
+- VITA: Fix frame throttle
 - VULKAN: Fix some crashes on loading some thumbnails
 
 # 1.5.0

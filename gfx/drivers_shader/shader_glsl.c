@@ -1379,7 +1379,10 @@ static bool gl_glsl_set_mvp(void *data, void *shader_data, const math_matrix_4x4
    (void)data;
 
    if (!glsl || !glsl->shader->modern)
-      goto fallback;
+   {
+      gl_ff_matrix(mat);
+      return false;
+   }
 
    loc = glsl->uniforms[glsl->active_idx].mvp;
    if (loc >= 0)
@@ -1394,11 +1397,8 @@ static bool gl_glsl_set_mvp(void *data, void *shader_data, const math_matrix_4x4
          current_mat_data[glsl->active_idx]         = *mat->data;
       }
    }
-   return true;
 
-fallback:
-   gl_ff_matrix(mat);
-   return false;
+   return true;
 }
 
 #define gl_glsl_set_coord_array(attribs, coord1, coord2, coords, size, multiplier) \
