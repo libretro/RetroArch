@@ -34,7 +34,6 @@
 #include "../../paths.h"
 #include "../../core.h"
 #include "../../retroarch.h"
-#include "../../runloop.h"
 #include "../../tasks/tasks_internal.h"
 
 id apple_platform;

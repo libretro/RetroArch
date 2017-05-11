@@ -36,7 +36,7 @@
 #include "../retroarch.h"
 
 #ifndef HAVE_MAIN
-#include "../runloop.h"
+#include "../retroarch.h"
 #endif
 
 /**

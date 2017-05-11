@@ -40,7 +40,7 @@
 #include "core.h"
 #include "core_info.h"
 #include "driver.h"
-#include "runloop.h"
+#include "retroarch.h"
 #include "verbosity.h"
 
 #define HASH_LOCATION_DRIVER           0x09189689U

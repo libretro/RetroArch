@@ -30,7 +30,7 @@
 #include "../../../input/drivers/cocoa_input.h"
 
 #include "../../../configuration.h"
-#include "../../../runloop.h"
+#include "../../../retroarch.h"
 
 #ifdef HAVE_MENU
 #include "../../../menu/widgets/menu_entry.h"

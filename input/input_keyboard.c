@@ -19,13 +19,13 @@
 #include <string.h>
 #include <ctype.h>
 
+#include <encodings/utf.h>
+
 #include "input_keyboard.h"
 
 #include "input_driver.h"
 
-#include <encodings/utf.h>
-
-#include "../runloop.h"
+#include "../retroarch.h"
 
 struct input_keyboard_line
 {

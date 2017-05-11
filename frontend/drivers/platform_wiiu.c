@@ -37,7 +37,7 @@
 
 
 #include "tasks/tasks_internal.h"
-#include "runloop.h"
+#include "../../retroarch.h"
 #include <sys/socket.h>
 #include "fs/fs_utils.h"
 #include "fs/sd_fat_devoptab.h"

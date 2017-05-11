@@ -50,7 +50,7 @@
 
 #include "../../core_info.h"
 #include "../../configuration.h"
-#include "../../runloop.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
 

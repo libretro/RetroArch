@@ -48,7 +48,6 @@
 #include "../../input/input_remapping.h"
 #include "../../paths.h"
 #include "../../retroarch.h"
-#include "../../runloop.h"
 #include "../../verbosity.h"
 #include "../../lakka.h"
 #include "../../wifi/wifi_driver.h"

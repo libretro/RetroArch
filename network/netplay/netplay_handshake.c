@@ -33,7 +33,6 @@
 #include "../../configuration.h"
 #include "../../content.h"
 #include "../../retroarch.h"
-#include "../../runloop.h"
 #include "../../version.h"
 #include "../../input/input_config.h"
 

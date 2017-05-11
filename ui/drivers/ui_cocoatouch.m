@@ -33,7 +33,7 @@
 #endif
 #include "../../configuration.h"
 #include "../../frontend/frontend.h"
-#include "../../runloop.h"
+#include "../../retroarch.h"
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_setting.h"

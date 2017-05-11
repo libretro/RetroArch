@@ -58,7 +58,6 @@
 #include "dirs.h"
 #include "paths.h"
 #include "retroarch.h"
-#include "runloop.h"
 #include "configuration.h"
 #include "msg_hash.h"
 #include "verbosity.h"

@@ -832,7 +832,6 @@ RETROARCH
 #include "../retroarch.c"
 #include "../dirs.c"
 #include "../paths.c"
-#include "../runloop.c"
 #include "../libretro-common/queues/task_queue.c"
 
 #include "../msg_hash.c"

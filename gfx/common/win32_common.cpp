@@ -26,7 +26,7 @@
 #include "../../verbosity.h"
 #include "../../driver.h"
 #include "../../paths.h"
-#include "../../runloop.h"
+#include "../../retroarch.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../core_info.h"
 

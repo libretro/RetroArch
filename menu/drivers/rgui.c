@@ -46,7 +46,7 @@
 #include "../widgets/menu_input_dialog.h"
 
 #include "../../configuration.h"
-#include "../../runloop.h"
+#include "../../retroarch.h"
 #include "../../gfx/drivers_font_renderer/bitmap.h"
 
 #define RGUI_TERM_START_X(width)        (width / 21)

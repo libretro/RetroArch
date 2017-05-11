@@ -24,17 +24,17 @@
 #include <string/stdstring.h>
 #include <net/net_http.h>
 
+#include <file/file_path.h>
+
 #include "netplay_private.h"
 
 #include "../../configuration.h"
 #include "../../input/input_driver.h"
-#include "../../runloop.h"
-
 #include "../../tasks/tasks_internal.h"
-#include <file/file_path.h>
 #include "../../file_path_special.h"
 #include "../../paths.h"
 #include "../../command.h"
+#include "../../retroarch.h"
 
 /* Only used before init_netplay */
 static bool netplay_enabled = false;

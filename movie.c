@@ -27,7 +27,6 @@
 #include "core.h"
 #include "content.h"
 #include "retroarch.h"
-#include "runloop.h"
 #include "msg_hash.h"
 #include "verbosity.h"
 

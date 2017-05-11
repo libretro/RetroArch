@@ -35,7 +35,7 @@
 #include "../ui_companion_driver.h"
 #include "../../core.h"
 #include "../../configuration.h"
-#include "../../runloop.h"
+#include "../../retroarch.h"
 #include "../../tasks/tasks_internal.h"
 
 #ifdef HAVE_QT_WRAPPER

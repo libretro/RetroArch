@@ -60,7 +60,7 @@
 #include "../../file_path_special.h"
 #include "../../configuration.h"
 #include "../../defaults.h"
-#include "../../runloop.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../ui/ui_companion_driver.h"
 

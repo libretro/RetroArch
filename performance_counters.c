@@ -27,7 +27,7 @@
 
 #include "performance_counters.h"
 
-#include "runloop.h"
+#include "retroarch.h"
 #include "verbosity.h"
 
 #ifdef _WIN32

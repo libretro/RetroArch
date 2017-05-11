@@ -160,7 +160,6 @@ OBJ += frontend/frontend.o \
        command.o \
        msg_hash.o \
        intl/msg_hash_us.o \
-       runloop.o \
        $(LIBRETRO_COMM_DIR)/queues/task_queue.o \
        tasks/task_content.o \
        tasks/task_save.o \

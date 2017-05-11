@@ -34,7 +34,6 @@
 #include "../../managers/core_option_manager.h"
 #include "../../managers/cheat_manager.h"
 #include "../../retroarch.h"
-#include "../../runloop.h"
 #include "../../performance_counters.h"
 
 #include "../../gfx/video_shader_driver.h"

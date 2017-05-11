@@ -34,7 +34,7 @@
 #include "../playlist.h"
 #include "../command.h"
 #include "../core_info.h"
-#include "../../runloop.h"
+#include "../../retroarch.h"
 
 typedef struct
 {

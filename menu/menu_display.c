@@ -35,7 +35,6 @@
 #include "../config.def.h"
 #include "../retroarch.h"
 #include "../configuration.h"
-#include "../runloop.h"
 #include "../core.h"
 #include "../gfx/video_driver.h"
 #include "../gfx/video_thread_wrapper.h"

@@ -65,7 +65,6 @@
 #include "../managers/core_option_manager.h"
 #include "../paths.h"
 #include "../retroarch.h"
-#include "../runloop.h"
 #include "../core.h"
 #include "../frontend/frontend_driver.h"
 #include "../ui/ui_companion_driver.h"

@@ -43,7 +43,7 @@
 #include "../../gfx/video_driver.h"
 
 #include "../../configuration.h"
-#include "../../runloop.h"
+#include "../../retroarch.h"
 
 #include "../../gfx/drivers/d3d.h"
 

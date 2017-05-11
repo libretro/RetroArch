@@ -39,7 +39,7 @@
 #include "../../managers/cheat_manager.h"
 #include "../../performance_counters.h"
 #include "../../paths.h"
-#include "../../runloop.h"
+#include "../../retroarch.h"
 #include "../../wifi/wifi_driver.h"
 
 #ifndef BIND_ACTION_GET_VALUE

@@ -50,7 +50,7 @@
 
 #include "../defaults.h"
 #include "../configuration.h"
-#include "../runloop.h"
+#include "../retroarch.h"
 #include "../paths.h"
 #include "../msg_hash.h"
 

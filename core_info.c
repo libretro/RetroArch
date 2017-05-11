@@ -27,7 +27,7 @@
 #include "config.h"
 #endif
 
-#include "runloop.h"
+#include "retroarch.h"
 #include "verbosity.h"
 
 #include "config.def.h"

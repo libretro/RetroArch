@@ -31,7 +31,7 @@
 #include "netplay_discovery.h"
 
 #include "../../autosave.h"
-#include "../../runloop.h"
+#include "../../retroarch.h"
 
 #if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY)
 #define HAVE_INET6 1

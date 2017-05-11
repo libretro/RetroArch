@@ -41,7 +41,6 @@
 #include "../driver.h"
 #include "../configuration.h"
 #include "../retroarch.h"
-#include "../runloop.h"
 #include "../verbosity.h"
 #include "../list_special.h"
 

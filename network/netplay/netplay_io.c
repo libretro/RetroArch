@@ -25,7 +25,7 @@
 #include "netplay_private.h"
 
 #include "../../configuration.h"
-#include "../../runloop.h"
+#include "../../retroarch.h"
 #include "../../tasks/tasks_internal.h"
 
 #if 0

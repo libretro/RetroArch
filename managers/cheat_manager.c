@@ -36,7 +36,7 @@
 #include "cheat_manager.h"
 
 #include "../msg_hash.h"
-#include "../runloop.h"
+#include "../retroarch.h"
 #include "../dynamic.h"
 #include "../core.h"
 #include "../verbosity.h"

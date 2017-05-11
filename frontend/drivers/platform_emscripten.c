@@ -37,7 +37,6 @@
 #include "../../defaults.h"
 #include "../../content.h"
 #include "../../retroarch.h"
-#include "../../runloop.h"
 #include "../../command.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../file_path_special.h"

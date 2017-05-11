@@ -57,7 +57,7 @@
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../playlist.h"
-#include "../../runloop.h"
+#include "../../retroarch.h"
 
 #include "../../tasks/tasks_internal.h"
 

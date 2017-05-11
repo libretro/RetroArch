@@ -38,7 +38,7 @@
 #include "../configuration.h"
 #include "../performance_counters.h"
 #include "../msg_hash.h"
-#include "../runloop.h"
+#include "../retroarch.h"
 #include "../core.h"
 
 #include "../network/net_http_special.h"

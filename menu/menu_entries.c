@@ -27,7 +27,7 @@
 #include "widgets/menu_list.h"
 
 #include "../core.h"
-#include "../runloop.h"
+#include "../retroarch.h"
 #include "../version.h"
 
 void menu_entries_get_at_offset(const file_list_t *list, size_t idx,

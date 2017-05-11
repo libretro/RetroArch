@@ -49,7 +49,7 @@
 #include "../../configuration.h"
 #include "../../driver.h"
 #include "../../paths.h"
-#include "../../runloop.h"
+#include "../../retroarch.h"
 #include "../../gfx/video_driver.h"
 #include "../../gfx/video_shader_driver.h"
 #include "../../tasks/tasks_internal.h"

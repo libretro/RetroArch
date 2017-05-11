@@ -42,7 +42,6 @@
 #include "core.h"
 #include "msg_hash.h"
 #include "retroarch.h"
-#include "runloop.h"
 #include "verbosity.h"
 #include "tasks/tasks_internal.h"
 

@@ -26,7 +26,7 @@
 #include "font_driver.h"
 #include "video_shader_driver.h"
 
-#include "../runloop.h"
+#include "../retroarch.h"
 #include "../verbosity.h"
 
 enum thread_cmd

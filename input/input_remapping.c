@@ -22,7 +22,6 @@
 #include "input_remapping.h"
 #include "../configuration.h"
 #include "../retroarch.h"
-#include "../runloop.h"
 
 /**
  * input_remapping_load_file:

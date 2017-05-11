@@ -32,7 +32,7 @@
 #include "../list_special.h"
 #include "../msg_hash.h"
 #include "../playlist.h"
-#include "../runloop.h"
+#include "../retroarch.h"
 #include "../verbosity.h"
 #include "../core_info.h"
 

@@ -87,7 +87,7 @@
 
 #include "core.h"
 #include "verbosity.h"
-#include "runloop.h"
+#include "retroarch.h"
 #include "configuration.h"
 #include "input/input_remapping.h"
 
