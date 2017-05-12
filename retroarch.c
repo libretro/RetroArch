@@ -183,6 +183,12 @@ static enum rarch_core_type current_core_type           = CORE_TYPE_PLAIN;
 static enum rarch_core_type explicit_current_core_type  = CORE_TYPE_PLAIN;
 static char error_string[255]                           = {0};
 
+#ifdef HAVE_THREAD_STORAGE
+static sthread_tls_t rarch_tls;
+const void *MAGIC_POINTER                               = (void*)0xB16B00B5;
+#endif
+
+
 static retro_bits_t has_set_libretro_device;
 static bool has_set_core                                = false;
 static bool has_set_username                            = false;
@@ -203,6 +209,14 @@ static bool has_set_netplay_check_frames                = false;
 static bool has_set_ups_pref                            = false;
 static bool has_set_bps_pref                            = false;
 static bool has_set_ips_pref                            = false;
+
+static bool rarch_is_sram_load_disabled                 = false;
+static bool rarch_is_sram_save_disabled                 = false;
+static bool rarch_use_sram                              = false;
+static bool rarch_ups_pref                              = false;
+static bool rarch_bps_pref                              = false;
+static bool rarch_ips_pref                              = false;
+static bool rarch_patch_blocked                         = false;
 
 static rarch_system_info_t runloop_system;
 static struct retro_frame_time_callback runloop_frame_time;
@@ -275,15 +289,15 @@ static void global_free(void)
    command_event(CMD_EVENT_RECORD_DEINIT, NULL);
    command_event(CMD_EVENT_LOG_FILE_DEINIT, NULL);
 
-   rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
-   rarch_ctl(RARCH_CTL_UNSET_SRAM_LOAD_DISABLED, NULL);
-   rarch_ctl(RARCH_CTL_UNSET_SRAM_SAVE_DISABLED, NULL);
-   rarch_ctl(RARCH_CTL_UNSET_SRAM_ENABLE, NULL);
-   rarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
-   rarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
-   rarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
-   rarch_ctl(RARCH_CTL_UNSET_PATCH_BLOCKED, NULL);
-   runloop_overrides_active   = false;
+   rarch_block_config_read               = false;
+   rarch_is_sram_load_disabled           = false;
+   rarch_is_sram_save_disabled           = false;
+   rarch_use_sram                        = false;
+   rarch_bps_pref                        = false;
+   rarch_ips_pref                        = false;
+   rarch_ups_pref                        = false;
+   rarch_patch_blocked                   = false;
+   runloop_overrides_active              = false;
 
    core_unset_input_descriptors();
 
@@ -626,10 +640,10 @@ static void retroarch_parse_input(int argc, char *argv[])
 
    retroarch_override_setting_free_state();
 
-   rarch_ctl(RARCH_CTL_USERNAME_UNSET, NULL);
-   rarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
-   rarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
-   rarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
+   has_set_username                      = false;
+   rarch_ups_pref                        = false;
+   rarch_ips_pref                        = false;
+   rarch_bps_pref                        = false;
    *global->name.ups                     = '\0';
    *global->name.bps                     = '\0';
    *global->name.ips                     = '\0';
@@ -724,7 +738,7 @@ static void retroarch_parse_input(int argc, char *argv[])
             break;
 
          case 'f':
-            rarch_ctl(RARCH_CTL_SET_FORCE_FULLSCREEN, NULL);
+            rarch_force_fullscreen = true;
             break;
 
          case 'S':
@@ -824,13 +838,13 @@ static void retroarch_parse_input(int argc, char *argv[])
          case 'M':
             if (memcmp(optarg, "noload-nosave", 13) == 0)
             {
-               rarch_ctl(RARCH_CTL_SET_SRAM_LOAD_DISABLED, NULL);
-               rarch_ctl(RARCH_CTL_SET_SRAM_SAVE_DISABLED, NULL);
+               rarch_is_sram_load_disabled = true;
+               rarch_is_sram_save_disabled = true;
             }
             else if (memcmp(optarg, "noload-save", 11) == 0)
-               rarch_ctl(RARCH_CTL_SET_SRAM_LOAD_DISABLED, NULL);
+               rarch_is_sram_load_disabled = true;
             else if (memcmp(optarg, "load-nosave", 11) == 0)
-               rarch_ctl(RARCH_CTL_SET_SRAM_SAVE_DISABLED, NULL);
+               rarch_is_sram_save_disabled = true;
             else if (memcmp(optarg, "load-save", 9) != 0)
             {
                RARCH_ERR("Invalid argument in --sram-mode.\n");
@@ -939,7 +953,9 @@ static void retroarch_parse_input(int argc, char *argv[])
          case RA_OPT_NICK:
             {
                settings_t *settings  = config_get_ptr();
-               rarch_ctl(RARCH_CTL_USERNAME_SET, NULL);
+
+               has_set_username = true;
+
                strlcpy(settings->paths.username, optarg,
                      sizeof(settings->paths.username));
             }
@@ -1053,7 +1069,7 @@ static bool retroarch_init_state(void)
    video_driver_set_active();
    audio_driver_set_active();
 
-   rarch_ctl(RARCH_CTL_UNSET_FORCE_FULLSCREEN, NULL);
+   rarch_force_fullscreen = false;
 
    return true;
 }
@@ -1269,20 +1285,17 @@ error:
    return false;
 }
 
+bool retroarch_is_on_main_thread(void)
+{
+#ifdef HAVE_THREAD_STORAGE
+   if (sthread_tls_get(&rarch_tls) != MAGIC_POINTER)
+      return false;
+#endif
+   return true;
+}
+
 bool rarch_ctl(enum rarch_ctl_state state, void *data)
 {
-   static bool rarch_is_sram_load_disabled = false;
-   static bool rarch_is_sram_save_disabled = false;
-   static bool rarch_use_sram              = false;
-   static bool rarch_ups_pref              = false;
-   static bool rarch_bps_pref              = false;
-   static bool rarch_ips_pref              = false;
-   static bool rarch_patch_blocked         = false;
-#ifdef HAVE_THREAD_STORAGE
-   static sthread_tls_t rarch_tls;
-   const void *MAGIC_POINTER = (void*)0xB16B00B5;
-#endif
-
    switch(state)
    {
       case RARCH_CTL_IS_PATCH_BLOCKED:
@@ -1347,12 +1360,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          runloop_ctl(RUNLOOP_CTL_DATA_DEINIT, NULL);
          config_free();
          break;
-      case RARCH_CTL_DEINIT:
-         if (!rarch_ctl(RARCH_CTL_IS_INITED, NULL))
-            return false;
-
-         driver_ctl(RARCH_DRIVER_CTL_UNINIT_ALL, NULL);
-         break;
       case RARCH_CTL_PREINIT:
 
          command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
@@ -1364,7 +1371,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          global_free();
          break;
       case RARCH_CTL_MAIN_DEINIT:
-         if (!rarch_ctl(RARCH_CTL_IS_INITED, NULL))
+         if (!rarch_is_inited)
             return false;
          command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
          command_event(CMD_EVENT_COMMAND_DEINIT, NULL);
@@ -1394,7 +1401,9 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 #endif
          break;
       case RARCH_CTL_INIT:
-         rarch_ctl(RARCH_CTL_DEINIT, NULL);
+         if (rarch_is_inited)
+            driver_ctl(RARCH_DRIVER_CTL_UNINIT_ALL, NULL);
+
 #ifdef HAVE_THREAD_STORAGE
          sthread_tls_create(&rarch_tls);
          sthread_tls_set(&rarch_tls, MAGIC_POINTER);
@@ -1440,7 +1449,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             bool contentless = false;
             bool is_inited   = false;
             content_get_status(&contentless, &is_inited);
-            rarch_use_sram = rarch_ctl(RARCH_CTL_IS_PLAIN_CORE, NULL)
+            rarch_use_sram = (current_core_type == CORE_TYPE_PLAIN)
                && !contentless;
          }
          break;
@@ -1449,12 +1458,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          break;
       case RARCH_CTL_UNSET_SRAM_ENABLE:
          rarch_use_sram = false;
-         break;
-      case RARCH_CTL_SET_FORCE_FULLSCREEN:
-         rarch_force_fullscreen = true;
-         break;
-      case RARCH_CTL_UNSET_FORCE_FULLSCREEN:
-         rarch_force_fullscreen = false;
          break;
       case RARCH_CTL_IS_FORCE_FULLSCREEN:
          return rarch_force_fullscreen;
@@ -1491,12 +1494,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          }
 #endif
          break;
-      case RARCH_CTL_IS_MAIN_THREAD:
-#ifdef HAVE_THREAD_STORAGE
-         return sthread_tls_get(&rarch_tls) == MAGIC_POINTER;
-#else
-         return true;
-#endif
       case RARCH_CTL_NONE:
       default:
          return false;
@@ -2415,8 +2412,7 @@ static enum runloop_state runloop_check_state(
    {
       if (menu_driver_is_alive())
       {
-         if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) &&
-               !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+         if (rarch_is_inited && (current_core_type != CORE_TYPE_DUMMY))
          {
             rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
             menu_event_kb_set(false, RETROK_F1);
@@ -2425,12 +2421,11 @@ static enum runloop_state runloop_check_state(
    }
    else if ((!menu_event_kb_is_set(RETROK_F1) && 
             runloop_cmd_triggered(trigger_input, RARCH_MENU_TOGGLE)) ||
-         rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+         (current_core_type == CORE_TYPE_DUMMY))
    {
       if (menu_driver_is_alive())
       {
-         if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) &&
-               !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+         if (rarch_is_inited && (current_core_type != CORE_TYPE_DUMMY))
             rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
       }
       else

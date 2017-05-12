@@ -34,10 +34,6 @@ enum rarch_ctl_state
 {
    RARCH_CTL_NONE = 0,
 
-   /* Will teardown drivers and clears all
-    * internal state of the program. */
-   RARCH_CTL_DEINIT,
-
    /* Initialize all drivers. */
    RARCH_CTL_INIT,
 
@@ -90,8 +86,6 @@ enum rarch_ctl_state
    RARCH_CTL_UNSET_SRAM_SAVE_DISABLED,
 
    /* Force fullscreen */
-   RARCH_CTL_SET_FORCE_FULLSCREEN,
-   RARCH_CTL_UNSET_FORCE_FULLSCREEN,
    RARCH_CTL_IS_FORCE_FULLSCREEN,
 
    /* Block config read */
@@ -102,9 +96,7 @@ enum rarch_ctl_state
    /* Username */
    RARCH_CTL_HAS_SET_USERNAME,
    RARCH_CTL_USERNAME_SET,
-   RARCH_CTL_USERNAME_UNSET,
-
-   RARCH_CTL_IS_MAIN_THREAD
+   RARCH_CTL_USERNAME_UNSET
 };
 
 enum rarch_capabilities
@@ -367,6 +359,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data);
 void runloop_set(enum runloop_action action);
 
 void runloop_unset(enum runloop_action action);
+
+bool retroarch_is_on_main_thread(void);
 
 rarch_system_info_t *runloop_get_system_info(void);
 
