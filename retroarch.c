@@ -1815,7 +1815,7 @@ bool retroarch_main_quit(void)
 #endif
 #endif
 
-   runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
+   runloop_shutdown_initiated = true;
 #ifdef HAVE_MENU
    rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
 #endif
@@ -2208,11 +2208,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 
          }
          break;
-      case RUNLOOP_CTL_CORE_OPTIONS_FREE:
-         if (runloop_core_options)
-            core_option_manager_free(runloop_core_options);
-         runloop_core_options          = NULL;
-         break;
       case RUNLOOP_CTL_CORE_OPTIONS_DEINIT:
          {
             if (!runloop_core_options)
@@ -2232,7 +2227,9 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             if (runloop_game_options_active)
                runloop_game_options_active = false;
 
-            runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_FREE, NULL);
+            if (runloop_core_options)
+               core_option_manager_free(runloop_core_options);
+            runloop_core_options          = NULL;
          }
          break;
       case RUNLOOP_CTL_KEY_EVENT_GET:
