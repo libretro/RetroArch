@@ -1644,21 +1644,19 @@ void general_write_handler(void *data)
          settings->uints.input_joypad_map[4] = *setting->value.target.integer;
          break;
       case MENU_ENUM_LABEL_LOG_VERBOSITY:
-         {
-            if (setting 
-                  && setting->value.target.boolean 
-                  && *setting->value.target.boolean)
-               verbosity_enable();
-            else
-               verbosity_disable();
+         if (setting 
+               && setting->value.target.boolean 
+               && *setting->value.target.boolean)
+            verbosity_enable();
+         else
+            verbosity_disable();
 
-            if (setting 
-                  && setting->value.target.boolean
-                  && *setting->value.target.boolean)
-               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL);
-            else
-               retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL);
-         }
+         if (setting 
+               && setting->value.target.boolean
+               && *setting->value.target.boolean)
+            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL);
+         else
+            retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL);
          break;
       case MENU_ENUM_LABEL_VIDEO_SMOOTH:
          video_driver_set_filtering(1, settings->bools.video_smooth);
