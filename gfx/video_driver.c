@@ -754,11 +754,11 @@ error:
 
 static bool video_driver_init_internal(bool *video_is_threaded)
 {
+   video_info_t video;
    unsigned max_dim, scale, width, height;
    const input_driver_t *tmp              = NULL;
    const struct retro_game_geometry *geom = NULL;
    rarch_system_info_t *system            = NULL;
-   video_info_t video                     = {0};
    static uint16_t dummy_pixels[32]       = {0};
    video_viewport_t *custom_vp            = &video_viewport_custom;
    settings_t *settings                   = config_get_ptr();
@@ -859,6 +859,8 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    video.fullscreen    = settings->bools.video_fullscreen;
    video.vsync         = settings->bools.video_vsync && !runloop_ctl(RUNLOOP_CTL_IS_NONBLOCK_FORCED, NULL);
    video.force_aspect  = settings->bools.video_force_aspect;
+   video.font_enable   = settings->bools.video_font_enable;
+   video.swap_interval = settings->uints.video_swap_interval;
 #ifdef GEKKO
    video.viwidth       = settings->uints.video_viwidth;
    video.vfilter       = settings->bools.video_vfilter;
@@ -868,8 +870,6 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    video.rgb32         = video_driver_state_filter ?
       video_driver_state_out_rgb32 :
       (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
-   video.swap_interval = settings->uints.video_swap_interval;
-   video.font_enable   = settings->bools.video_font_enable;
 
    /* Reset video frame count */
    video_driver_frame_count = 0;
@@ -911,8 +911,9 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    if (current_video->poke_interface)
       current_video->poke_interface(video_driver_data, &video_driver_poke);
 
-   if (current_video->viewport_info && (!custom_vp->width ||
-            !custom_vp->height))
+   if (current_video->viewport_info && 
+         (!custom_vp->width  ||
+          !custom_vp->height))
    {
       /* Force custom viewport to have sane parameters. */
       custom_vp->width = width;
