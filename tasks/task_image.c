@@ -195,6 +195,25 @@ static void task_image_load_free_internal(struct nbio_image_handle *image)
    image->cb                     = NULL;
 }
 
+static void task_image_load_free(retro_task_t *task)
+{
+   nbio_handle_t       *nbio  = task ? (nbio_handle_t*)task->state : NULL;
+
+   if (nbio)
+   {
+      struct nbio_image_handle *image = (struct nbio_image_handle*)nbio->data;
+      
+      if (image)
+         task_image_load_free_internal(image);
+      if (nbio->data)
+         free(nbio->data);
+      nbio_free(nbio->handle);
+      nbio->data        = NULL;
+      nbio->handle      = NULL;
+      free(nbio);
+   }
+}
+
 static int cb_nbio_generic(nbio_handle_t *nbio, size_t *len)
 {
    struct nbio_image_handle *image = (struct nbio_image_handle*)nbio->data;
@@ -389,23 +408,4 @@ error_msg:
          fullpath, strerror(errno));
 
    return false;
-}
-
-void task_image_load_free(retro_task_t *task)
-{
-   nbio_handle_t       *nbio  = task ? (nbio_handle_t*)task->state : NULL;
-
-   if (nbio)
-   {
-      struct nbio_image_handle *image = (struct nbio_image_handle*)nbio->data;
-      
-      if (image)
-         task_image_load_free_internal(image);
-      if (nbio->data)
-         free(nbio->data);
-      nbio_free(nbio->handle);
-      nbio->data        = NULL;
-      nbio->handle      = NULL;
-      free(nbio);
-   }
 }

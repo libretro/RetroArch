@@ -128,18 +128,7 @@ bool task_push_overlay_load_default(
         retro_task_callback_t cb, void *user_data);
 #endif
     
-int find_first_data_track(const char* cue_path,
-      int32_t* offset, char* track_path, size_t max_len);
-
-int detect_system(const char* track_path, const char** system_name);
-
-int detect_ps1_game(const char *track_path, char *game_id);
-
-int detect_psp_game(const char *track_path, char *game_id);
-
 bool task_check_decompress(const char *source_file);
-
-bool task_image_load_handler(retro_task_t *task);
 
 bool task_push_decompress(
       const char *source_file,
@@ -212,8 +201,6 @@ bool task_push_load_content_with_core_from_menu(
       retro_task_callback_t cb,
       void *user_data);
 #endif
-
-void task_image_load_free(retro_task_t *task);
 
 void task_file_load_handler(retro_task_t *task);
 

@@ -62,6 +62,15 @@ typedef struct db_handle
    char content_database_path[4096];
 } db_handle_t;
 
+int find_first_data_track(const char* cue_path,
+      int32_t* offset, char* track_path, size_t max_len);
+
+int detect_system(const char* track_path, const char** system_name);
+
+int detect_ps1_game(const char *track_path, char *game_id);
+
+int detect_psp_game(const char *track_path, char *game_id);
+
 static void database_info_set_type(database_info_handle_t *handle, enum database_type type)
 {
    if (!handle)

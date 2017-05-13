@@ -24,6 +24,8 @@
 #include "tasks_internal.h"
 #include "../verbosity.h"
 
+bool task_image_load_handler(retro_task_t *task);
+
 static int task_file_transfer_iterate_transfer(nbio_handle_t *nbio)
 {
    size_t i;
