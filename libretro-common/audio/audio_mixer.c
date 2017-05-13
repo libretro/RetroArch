@@ -23,7 +23,6 @@
 #include <audio/audio_mixer.h>
 #include <audio/audio_resampler.h>
 
-#include <streams/file_stream.h>
 #include <formats/rwav.h>
 #include <memalign.h>
 
@@ -243,26 +242,16 @@ void audio_mixer_done(void)
       s_voices[i].type = AUDIO_MIXER_TYPE_NONE;
 }
 
-audio_mixer_sound_t* audio_mixer_load_wav(const char* path)
+audio_mixer_sound_t* audio_mixer_load_wav(const char* path, void *buffer, ssize_t size)
 {
    /* WAV data */
    rwav_t wav;
-   /* Raw WAV bytes */
-   void* buffer               = NULL;
-   ssize_t size               = 0;
    /* WAV samples converted to float */
    float* pcm                 = NULL;
    size_t samples             = 0;
    /* Result */
    audio_mixer_sound_t* sound = NULL;
-   enum rwav_state rwav_ret   = RWAV_ITERATE_ERROR;
-   
-   if (filestream_read_file(path, &buffer, &size) == 0)
-      return NULL;
-   
-   rwav_ret = rwav_load(&wav, buffer, size);
-
-   free(buffer);
+   enum rwav_state rwav_ret   = rwav_load(&wav, buffer, size);
 
    if (rwav_ret != RWAV_ITERATE_DONE)
       return NULL;
@@ -300,23 +289,13 @@ audio_mixer_sound_t* audio_mixer_load_wav(const char* path)
    return sound;
 }
 
-audio_mixer_sound_t* audio_mixer_load_ogg(const char* path)
+audio_mixer_sound_t* audio_mixer_load_ogg(const char* path, void *buffer, ssize_t size)
 {
 #ifdef HAVE_STB_VORBIS
-   ssize_t size;
-   void* buffer               = NULL;
-   audio_mixer_sound_t* sound = NULL;
-   
-   if (filestream_read_file(path, &buffer, &size) == 0)
-      return NULL;
-   
-   sound = (audio_mixer_sound_t*)malloc(sizeof(audio_mixer_sound_t));
+   audio_mixer_sound_t* sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
    
    if (!sound)
-   {
-      free(buffer);
       return NULL;
-   }
    
    sound->type           = AUDIO_MIXER_TYPE_OGG;
    sound->types.ogg.size = size;

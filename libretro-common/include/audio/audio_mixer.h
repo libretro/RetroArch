@@ -25,6 +25,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdlib.h>
 
 #include <boolean.h>
 #include <retro_common_api.h>
@@ -45,8 +46,8 @@ void audio_mixer_init(unsigned rate);
 
 void audio_mixer_done(void);
 
-audio_mixer_sound_t* audio_mixer_load_wav(const char* path);
-audio_mixer_sound_t* audio_mixer_load_ogg(const char* path);
+audio_mixer_sound_t* audio_mixer_load_wav(const char* path, void *buffer, ssize_t size);
+audio_mixer_sound_t* audio_mixer_load_ogg(const char* path, void *buffer, ssize_t size);
 
 void audio_mixer_destroy(audio_mixer_sound_t* sound);
 
