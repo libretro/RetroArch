@@ -30,10 +30,12 @@
 #include "../menu/menu_entries.h"
 #include "../menu/menu_driver.h"
 
-typedef struct
+typedef struct wifi_handle wifi_handle_t;
+
+struct wifi_handle
 {
    struct string_list *ssid_list;
-} wifi_handle_t;
+};
 
 static void wifi_scan_callback(void *task_data,
                                void *user_data, const char *error)

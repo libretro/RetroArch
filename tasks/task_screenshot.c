@@ -58,7 +58,9 @@
 
 #include "tasks_internal.h"
 
-typedef struct
+typedef struct screenshot_task_state screenshot_task_state_t;
+
+struct screenshot_task_state
 {
 #ifdef _XBOX1
    D3DSurface *surf;
@@ -78,7 +80,7 @@ typedef struct
    bool is_paused;
    bool history_list_enable;
    unsigned pixel_format_type;
-} screenshot_task_state_t;
+};
 
 /**
  * task_screenshot_handler:
