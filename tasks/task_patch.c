@@ -33,7 +33,6 @@
 #include <encodings/crc32.h>
 
 #include "../msg_hash.h"
-#include "../retroarch.h"
 #include "../verbosity.h"
 
 enum bps_mode
@@ -640,6 +639,9 @@ static bool try_ips_patch(bool allow_ips,
  *
  **/
 static void patch_content(
+      bool is_ips_pref,
+      bool is_bps_pref,
+      bool is_ups_pref,
       const char *name_ips,
       const char *name_bps,
       const char *name_ups,
@@ -647,9 +649,6 @@ static void patch_content(
       void *data)
 {
    ssize_t *size    = (ssize_t*)data;
-   bool is_ips_pref = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
-   bool is_bps_pref = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
-   bool is_ups_pref = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
    bool allow_ups   = !is_bps_pref && !is_ips_pref;
    bool allow_ips   = !is_ups_pref && !is_bps_pref;
    bool allow_bps   = !is_ups_pref && !is_ips_pref;
