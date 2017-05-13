@@ -679,6 +679,24 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
             MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
             MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
+#ifdef HAVE_LAKKA
+      if (frontend->get_lakka_version)
+      {
+         frontend->get_lakka_version(tmp2, sizeof(tmp2));
+
+         fill_pathname_noext(tmp,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION),
+               ": ",
+               sizeof(tmp));
+         strlcat(tmp, frontend->get_lakka_version ?
+               tmp2 : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+               sizeof(tmp));
+         menu_entries_append_enum(info->list, tmp, "",
+               MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
+               MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+      }
+#endif
+
       if (frontend->get_name)
       {
          frontend->get_name(tmp2, sizeof(tmp2));

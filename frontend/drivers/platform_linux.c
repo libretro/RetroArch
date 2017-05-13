@@ -1205,6 +1205,26 @@ static void frontend_linux_get_os(char *s,
 #endif
 }
 
+#ifdef HAVE_LAKKA
+static void frontend_linux_get_lakka_version(char *s,
+      size_t len)
+{
+   char version[128];
+   size_t vlen;
+   FILE *command_file = popen("cat /etc/release", "r");
+
+   fgets(version, sizeof(version), command_file);
+   vlen = strlen(version);
+
+   if (vlen > 0 && version[vlen-1] == '\n')
+      version[--vlen] = '\0';
+
+   strlcpy(s, version, len);
+
+   pclose(command_file);
+}
+#endif
+
 static void frontend_linux_get_env(int *argc,
       char *argv[], void *data, void *params_data)
 {
@@ -2131,6 +2151,9 @@ frontend_ctx_driver_t frontend_ctx_linux = {
    frontend_linux_destroy_signal_handler_state,
    NULL,                         /* attach_console */
    NULL,                         /* detach_console */
+#ifdef HAVE_LAKKA
+   frontend_linux_get_lakka_version,    /* get_lakka_version */
+#endif
 #ifdef ANDROID
    "android"
 #else
