@@ -96,15 +96,18 @@
 
 #define MAX_ARGS 32
 
-typedef struct content_stream
+typedef struct content_stream content_stream_t;
+typedef struct content_information_ctx content_information_ctx_t;
+
+struct content_stream
 {
    uint32_t a;
    const uint8_t *b;
    size_t c;
    uint32_t crc;
-} content_stream_t;
+};
 
-typedef struct content_information_ctx
+struct content_information_ctx
 {
    struct
    {
@@ -125,7 +128,7 @@ typedef struct content_information_ctx
    bool check_firmware_before_loading;
 
    struct string_list *temporary_content;
-} content_information_ctx_t;
+};
 
 static struct string_list *temporary_content                  = NULL;
 static bool _content_is_inited                                = false;
