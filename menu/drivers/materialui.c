@@ -673,11 +673,7 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
    uintptr_t texture_switch        = 0;
    bool do_draw_text               = false;
    size_t usable_width             = width - (mui->margin * 2);
-#ifdef VITA
-   uint32_t sublabel_color         = 0xff888888;
-#else
    uint32_t sublabel_color         = 0x888888ff;
-#endif
 
    label_str[0] = value_str[0]     = 
       sublabel_str[0]              = '\0';
@@ -969,15 +965,10 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
    char title_buf[255];
    char title_msg[255];
 
-#ifdef VITA
-   uint32_t black_opaque_54        = 0x8a000000;
-   uint32_t black_opaque_87        = 0xde000000;
-   uint32_t white_opaque_70        = 0xb3ffffff;
-#else
    uint32_t black_opaque_54        = 0x0000008a;
    uint32_t black_opaque_87        = 0x000000de;
    uint32_t white_opaque_70        = 0xffffffb3;
-#endif
+
    /* https://material.google.com/style/color.html#color-color-palette */
    /* Hex values converted to RGB normalized decimals, alpha set to 1 */
    float blue_500[16]              = {0};
