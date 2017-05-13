@@ -510,7 +510,6 @@ static bool apply_patch_content(uint8_t **buf,
 {
    size_t target_size;
    enum patch_error err     = PATCH_UNKNOWN;
-   bool success             = false;
    uint8_t *patched_content = NULL;
    ssize_t ret_size         = *size;
    uint8_t *ret_buf         = *buf;
@@ -546,7 +545,9 @@ static bool apply_patch_content(uint8_t **buf,
       RARCH_LOG("%s (%s).\n",
             msg_hash_to_str(MSG_FATAL_ERROR_RECEIVED_IN),
             patch_desc);
-      success = true;
+      free(ret_buf);
+      *buf  = patched_content;
+      *size = target_size;
    }
    else
       RARCH_ERR("%s %s: %s #%u\n",
@@ -554,13 +555,6 @@ static bool apply_patch_content(uint8_t **buf,
             patch_desc,
             msg_hash_to_str(MSG_ERROR),
             (unsigned)err);
-
-   if (success)
-   {
-      free(ret_buf);
-      *buf  = patched_content;
-      *size = target_size;
-   }
 
    return true;
 }
