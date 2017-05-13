@@ -272,7 +272,7 @@ audio_mixer_sound_t* audio_mixer_load_wav(const char* path, void *buffer, ssize_
       pcm = resampled;
    }
    
-   sound = (audio_mixer_sound_t*)malloc(sizeof(audio_mixer_sound_t));
+   sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
    
    if (!sound)
    {
