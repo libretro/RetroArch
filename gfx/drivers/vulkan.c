@@ -1258,12 +1258,6 @@ static bool vulkan_alive(void *data)
    return ret;
 }
 
-static bool vulkan_focus(void *data)
-{
-   (void)data;
-   return video_context_driver_focus();
-}
-
 static bool vulkan_suppress_screensaver(void *data, bool enable)
 {
    (void)data;
@@ -2570,9 +2564,9 @@ video_driver_t video_vulkan = {
    vulkan_frame,
    vulkan_set_nonblock_state,
    vulkan_alive,
-   vulkan_focus,
+   NULL,                         /* focus */
    vulkan_suppress_screensaver,
-   NULL, /* has_windowed */
+   NULL,                         /* has_windowed */
    vulkan_set_shader,
    vulkan_free,
    "vulkan",
@@ -2580,7 +2574,7 @@ video_driver_t video_vulkan = {
    vulkan_set_rotation,
    vulkan_viewport_info,
    vulkan_read_viewport,
-   NULL,                           /* vulkan_read_frame_raw */
+   NULL,                         /* vulkan_read_frame_raw */
 
 #ifdef HAVE_OVERLAY
    vulkan_get_overlay_interface,
@@ -2588,6 +2582,6 @@ video_driver_t video_vulkan = {
    NULL,
 #endif
    vulkan_get_poke_interface,
-   NULL,                           /* vulkan_wrap_type_to_enum */
+   NULL,                         /* vulkan_wrap_type_to_enum */
 };
 

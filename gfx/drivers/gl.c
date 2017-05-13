@@ -2130,11 +2130,6 @@ static bool gl_alive(void *data)
    return ret;
 }
 
-static bool gl_focus(void *data)
-{
-   return video_context_driver_focus();
-}
-
 static bool gl_suppress_screensaver(void *data, bool enable)
 {
    bool enabled = enable;
@@ -2709,7 +2704,7 @@ video_driver_t video_gl = {
    gl_frame,
    gl_set_nonblock_state,
    gl_alive,
-   gl_focus,
+   NULL,                    /* focus */
    gl_suppress_screensaver,
    NULL,                    /* has_windowed */
 

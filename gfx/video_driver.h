@@ -519,7 +519,7 @@ extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 
 #define video_driver_is_alive()   ((current_video) ? current_video->alive(video_driver_data) : true)
 
-#define video_driver_is_focused() (current_video->focus(video_driver_data))
+bool video_driver_is_focused(void);
 
 bool video_driver_has_windowed(void);
 
@@ -905,8 +905,6 @@ void video_context_driver_destroy(void);
 #define video_context_driver_swap_buffers(video_info) \
    if (current_video_context && current_video_context->swap_buffers) \
       current_video_context->swap_buffers(video_context_data, video_info)
-
-#define video_context_driver_focus() ((video_context_data && current_video_context->has_focus && current_video_context->has_focus(video_context_data)) ? true : false)
 
 #define video_context_driver_set_resize(mode_info) \
    if (current_video_context && current_video_context->set_resize) \

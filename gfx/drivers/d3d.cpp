@@ -906,11 +906,6 @@ static bool d3d_alive(void *data)
    return ret;
 }
 
-static bool d3d_focus(void *data)
-{
-   return video_context_driver_focus();
-}
-
 static bool d3d_suppress_screensaver(void *data, bool enable)
 {
    bool enabled = enable;
@@ -1714,9 +1709,9 @@ video_driver_t video_d3d = {
    d3d_frame,
    d3d_set_nonblock_state,
    d3d_alive,
-   d3d_focus,
+   NULL,                      /* focus */
    d3d_suppress_screensaver,
-   NULL, /* has_windowed */
+   NULL,                      /* has_windowed */
    d3d_set_shader,
    d3d_free,
    "d3d",
@@ -1724,7 +1719,7 @@ video_driver_t video_d3d = {
    d3d_set_rotation,
    d3d_viewport_info,
    d3d_read_viewport,
-   NULL, /* read_frame_raw */
+   NULL,                      /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    d3d_get_overlay_interface,
 #endif

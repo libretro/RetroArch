@@ -2481,6 +2481,7 @@ void video_driver_get_window_title(char *buf, unsigned len)
    }
 }
 
+
 void video_driver_get_status(uint64_t *frame_count, bool * is_alive,
       bool *is_focused)
 {
@@ -2904,12 +2905,21 @@ bool video_context_driver_set_flags(gfx_ctx_flags_t *flags)
    return true;
 }
 
+bool video_driver_is_focused(void)
+{
+   if (current_video->focus)
+      return current_video->focus(video_driver_data);
+   else if (video_context_data && current_video_context->has_focus)
+      return current_video_context->has_focus(video_context_data);
+   return true;
+}
+
 bool video_driver_has_windowed(void)
 {
 #if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
    return false;
 #else
-   if (current_video->has_windowed && current_video->has_windowed(video_driver_data))
+   if (video_driver_data && current_video->has_windowed)
       return current_video->has_windowed(video_driver_data);
    else if (video_context_data && current_video_context->has_windowed)
       return current_video_context->has_windowed(video_context_data);
