@@ -312,23 +312,24 @@ void menu_display_set_font_framebuffer(const uint8_t *buffer)
    menu_display_font_framebuf = buffer;
 }
 
-bool menu_display_libretro_running(void)
+static bool menu_display_libretro_running(
+      bool rarch_is_inited, 
+      bool rarch_is_dummy_core)
 {
    settings_t *settings = config_get_ptr();
    if (!settings->bools.menu_pause_libretro)
    {
-      if (rarch_ctl(RARCH_CTL_IS_INITED, NULL)
-            && !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+      if (rarch_is_inited && !rarch_is_dummy_core)
          return true;
    }
    return false;
 }
 
-bool menu_display_libretro(void)
+bool menu_display_libretro(bool is_idle, bool rarch_is_inited, bool rarch_is_dummy_core)
 {
    video_driver_set_texture_enable(true, false);
 
-   if (menu_display_libretro_running())
+   if (menu_display_libretro_running(rarch_is_inited, rarch_is_dummy_core))
    {
       if (!input_driver_is_libretro_input_blocked())
          input_driver_set_libretro_input_blocked();
@@ -339,7 +340,7 @@ bool menu_display_libretro(void)
       return true;
    }
 
-   if (runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
+   if (is_idle)
       return true; /* Maybe return false here for indication of idleness? */
    return video_driver_cached_frame();
 }

@@ -463,9 +463,12 @@ static void blit_line(int x, int y, const char *message, bool green)
 
 static void xui_render_background(void)
 {
+#if 0
+   /* TODO/FIXME - refactor this */
    if (menu_display_libretro_running())
       XuiElementSetShow(m_background, FALSE);
    else
+#endif
       XuiElementSetShow(m_background, TRUE);
 }
 

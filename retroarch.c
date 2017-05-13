@@ -2376,7 +2376,10 @@ static enum runloop_state runloop_check_state(
             rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
 
          if (focused || !runloop_idle)
-            menu_driver_render(runloop_idle);
+            menu_driver_render(runloop_idle, rarch_is_inited,
+                  (current_core_type == CORE_TYPE_DUMMY)
+                  )
+                  ;
 
          if (!focused)
             return RUNLOOP_STATE_SLEEP;

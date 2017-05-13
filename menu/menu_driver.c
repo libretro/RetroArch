@@ -332,7 +332,8 @@ static void menu_update_libretro_info(void)
    command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
 }
 
-bool menu_driver_render(bool is_idle)
+bool menu_driver_render(bool is_idle, bool rarch_is_inited,
+      bool rarch_is_dummy_core)
 {
    if (!menu_driver_data)
       return false;
@@ -369,7 +370,7 @@ bool menu_driver_render(bool is_idle)
    }
 
    if (menu_driver_alive && !is_idle)
-      menu_display_libretro();
+      menu_display_libretro(is_idle, rarch_is_inited, rarch_is_dummy_core);
 
    if (menu_driver_ctx->set_texture)
       menu_driver_ctx->set_texture();

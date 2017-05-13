@@ -379,7 +379,7 @@ extern unsigned int rdb_entry_start_game_selection_ptr;
 
 const char *menu_driver_ident(void);
 
-bool menu_driver_render(bool is_idle);
+bool menu_driver_render(bool is_idle, bool is_inited, bool is_dummy);
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data);
 
