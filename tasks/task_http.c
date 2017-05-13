@@ -35,13 +35,13 @@ enum http_status_enum
    HTTP_STATUS_TRANSFER_PARSE_FREE
 };
 
-typedef struct http_transfer_info
+struct http_transfer_info
 {
    char url[255];
    int progress;
-} http_transfer_info_t;
+};
 
-typedef struct http_handle
+struct http_handle
 {
    struct
    {
@@ -54,7 +54,10 @@ typedef struct http_handle
    transfer_cb_t  cb;
    unsigned status;
    bool error;
-} http_handle_t;
+};
+
+typedef struct http_transfer_info http_transfer_info_t;
+typedef struct http_handle http_handle_t;
 
 static int task_http_con_iterate_transfer(http_handle_t *http)
 {
