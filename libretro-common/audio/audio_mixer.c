@@ -242,7 +242,7 @@ void audio_mixer_done(void)
       s_voices[i].type = AUDIO_MIXER_TYPE_NONE;
 }
 
-audio_mixer_sound_t* audio_mixer_load_wav(const char* path, void *buffer, ssize_t size)
+audio_mixer_sound_t* audio_mixer_load_wav(const char* path, void *buffer, int32_t size)
 {
    /* WAV data */
    rwav_t wav;
@@ -289,7 +289,7 @@ audio_mixer_sound_t* audio_mixer_load_wav(const char* path, void *buffer, ssize_
    return sound;
 }
 
-audio_mixer_sound_t* audio_mixer_load_ogg(const char* path, void *buffer, ssize_t size)
+audio_mixer_sound_t* audio_mixer_load_ogg(const char* path, void *buffer, int32_t size)
 {
 #ifdef HAVE_STB_VORBIS
    audio_mixer_sound_t* sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
