@@ -26,7 +26,8 @@
 
 #include "core_type.h"
 #include "core.h"
-#include "runloop_defines.h"
+
+#define runloop_cmd_press(current_input, id)     (BIT64_GET(current_input, id))
 
 RETRO_BEGIN_DECLS
 
@@ -41,8 +42,6 @@ enum rarch_ctl_state
    RARCH_CTL_MAIN_DEINIT,
 
    RARCH_CTL_IS_INITED,
-
-   RARCH_CTL_IS_PLAIN_CORE,
 
    RARCH_CTL_IS_DUMMY_CORE,
 

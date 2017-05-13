@@ -35,7 +35,7 @@
 #include "menu_navigation.h"
 
 #include "../configuration.h"
-#include "../runloop_defines.h"
+#include "../retroarch.h"
 #include "../tasks/tasks_internal.h"
 
 static unsigned char menu_keyboard_key_state[RETROK_LAST] = {0};

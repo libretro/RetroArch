@@ -1330,8 +1330,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_UNSET_IPS_PREF:
          rarch_ips_pref = false;
          break;
-      case RARCH_CTL_IS_PLAIN_CORE:
-         return (current_core_type == CORE_TYPE_PLAIN);
       case RARCH_CTL_IS_DUMMY_CORE:
          return (current_core_type == CORE_TYPE_DUMMY);
       case RARCH_CTL_USERNAME_SET:
