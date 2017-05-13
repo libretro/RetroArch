@@ -67,7 +67,9 @@ enum nbio_type
    NBIO_TYPE_JPEG,
    NBIO_TYPE_PNG,
    NBIO_TYPE_TGA,
-   NBIO_TYPE_BMP
+   NBIO_TYPE_BMP,
+   NBIO_TYPE_OGG,
+   NBIO_TYPE_WAV
 };
 
 typedef struct nbio_handle
