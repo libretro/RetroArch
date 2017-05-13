@@ -33,25 +33,25 @@
 #include "../configuration.h"
 #include "../verbosity.h"
 
-typedef struct
+typedef struct overlay_loader overlay_loader_t;
+
+struct overlay_loader
 {
    enum overlay_status state;
    enum overlay_image_transfer_status loading_status;
    config_file_t *conf;
    char *overlay_path;
+   struct overlay *overlays;
+   struct overlay *active;
+   bool overlay_enable;
+   bool overlay_hide_in_menu;
+   size_t resolve_pos;
    unsigned size;
    unsigned pos;
    unsigned pos_increment;
-   struct overlay *overlays;
-   struct overlay *active;
-   size_t resolve_pos;
-
-   bool overlay_enable;
-   bool overlay_hide_in_menu;
    float overlay_opacity;
    float overlay_scale;
-
-} overlay_loader_t;
+};
 
 static void task_overlay_image_done(struct overlay *overlay)
 {

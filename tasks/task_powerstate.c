@@ -22,11 +22,13 @@
 static int              power_percent = 0;
 static enum frontend_powerstate state = FRONTEND_POWERSTATE_NONE;
 
-typedef struct
+typedef struct powerstate powerstate_t;
+
+struct powerstate
 {
    int percent;
    enum frontend_powerstate state;
-} powerstate_t;
+};
 
 enum frontend_powerstate get_last_powerstate(int *percent)
 {

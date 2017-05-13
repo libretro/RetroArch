@@ -33,23 +33,26 @@
 
 #include "tasks_internal.h"
 
-typedef struct autoconfig_disconnect
+typedef struct autoconfig_disconnect autoconfig_disconnect_t;
+typedef struct autoconfig_params     autoconfig_params_t;
+
+struct autoconfig_disconnect
 {
    unsigned idx;
    char msg[255];
-} autoconfig_disconnect_t;
+};
 
-typedef struct autoconfig_params
+struct autoconfig_params
 {
    char  name[255];
    char  driver[255];
    char  display_name[255];
-   unsigned idx;
+   char autoconfig_directory[4096];
    int32_t vid;
    int32_t pid;
+   unsigned idx;
    uint32_t max_users;
-   char autoconfig_directory[4096];
-} autoconfig_params_t;
+};
 
 static bool input_autoconfigured[MAX_USERS];
 static unsigned input_device_name_index[MAX_USERS];
