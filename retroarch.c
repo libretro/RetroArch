@@ -920,21 +920,21 @@ static void retroarch_parse_input(int argc, char *argv[])
          case RA_OPT_BPS:
             strlcpy(global->name.bps, optarg,
                   sizeof(global->name.bps));
-            rarch_ctl(RARCH_CTL_SET_BPS_PREF, NULL);
+            rarch_bps_pref = true;
             retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_BPS_PREF, NULL);
             break;
 
          case 'U':
             strlcpy(global->name.ups, optarg,
                   sizeof(global->name.ups));
-            rarch_ctl(RARCH_CTL_SET_UPS_PREF, NULL);
+            rarch_ups_pref = true;
             retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_UPS_PREF, NULL);
             break;
 
          case RA_OPT_IPS:
             strlcpy(global->name.ips, optarg,
                   sizeof(global->name.ips));
-            rarch_ctl(RARCH_CTL_SET_IPS_PREF, NULL);
+            rarch_ips_pref = true;
             retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_IPS_PREF, NULL);
             break;
 
@@ -1308,25 +1308,16 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          break;
       case RARCH_CTL_IS_BPS_PREF:
          return rarch_bps_pref;
-      case RARCH_CTL_SET_BPS_PREF:
-         rarch_bps_pref = true;
-         break;
       case RARCH_CTL_UNSET_BPS_PREF:
          rarch_bps_pref = false;
          break;
       case RARCH_CTL_IS_UPS_PREF:
          return rarch_ups_pref;
-      case RARCH_CTL_SET_UPS_PREF:
-         rarch_ups_pref = true;
-         break;
       case RARCH_CTL_UNSET_UPS_PREF:
          rarch_ups_pref = false;
          break;
       case RARCH_CTL_IS_IPS_PREF:
          return rarch_ips_pref;
-      case RARCH_CTL_SET_IPS_PREF:
-         rarch_ips_pref = true;
-         break;
       case RARCH_CTL_UNSET_IPS_PREF:
          rarch_ips_pref = false;
          break;
