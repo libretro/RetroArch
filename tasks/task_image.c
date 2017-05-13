@@ -106,17 +106,11 @@ static int task_image_process(
    return retval;
 }
 
-static int cb_image_menu_generic(nbio_handle_t *nbio)
+static int task_image_menu_generic(struct nbio_image_handle *image)
 {
-   int retval                      = 0;
    unsigned width                  = 0;
    unsigned height                 = 0;
-   struct nbio_image_handle *image = (struct nbio_image_handle*)nbio->data;
-
-   if (!image)
-      return -1;
-
-   retval = task_image_process(image, &width, &height);
+   int retval                      = task_image_process(image, &width, &height);
 
    switch (retval)
    {
@@ -138,7 +132,7 @@ static int cb_image_menu_thumbnail(void *data, size_t len)
    nbio_handle_t        *nbio = (nbio_handle_t*)data; 
    struct nbio_image_handle *image = (struct nbio_image_handle*)nbio->data;
 
-   if (cb_image_menu_generic(nbio) != 0)
+   if (!image || task_image_menu_generic(image) != 0)
       return -1;
 
    image->cb = &cb_image_menu_upload_generic;
