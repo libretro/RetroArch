@@ -46,7 +46,6 @@
 #include "../widgets/menu_input_dialog.h"
 
 #include "../../configuration.h"
-#include "../../retroarch.h"
 #include "../../gfx/drivers_font_renderer/bitmap.h"
 
 #define RGUI_TERM_START_X(width)        (width / 21)
@@ -389,7 +388,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
    rgui->frame_count++;
 }
 
-static void rgui_render(void *data)
+static void rgui_render(void *data, bool is_idle)
 {
    menu_animation_ctx_ticker_t ticker;
    unsigned x, y;
@@ -416,7 +415,7 @@ static void rgui_render(void *data)
             && menu_driver_is_alive() && !msg_force)
          return;
 
-      if (runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
+      if (is_idle)
          return;
 
       if (!menu_display_get_update_pending())

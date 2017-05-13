@@ -560,7 +560,7 @@ static void mui_compute_entries_box(mui_handle_t* mui, int width)
    }
 }
 
-static void mui_render(void *data)
+static void mui_render(void *data, bool is_idle)
 {
    menu_animation_ctx_delta_t delta;
    float delta_time;

@@ -55,7 +55,6 @@
 
 #include "../../verbosity.h"
 #include "../../configuration.h"
-#include "../../retroarch.h"
 #include "../../playlist.h"
 #include "../../retroarch.h"
 
@@ -2353,7 +2352,7 @@ static void xmb_draw_items(
    menu_display_blend_end();
 }
 
-static void xmb_render(void *data)
+static void xmb_render(void *data, bool is_idle)
 {
    size_t i;
    float delta_time;

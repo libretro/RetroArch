@@ -366,7 +366,7 @@ bool menu_driver_render(bool is_idle, bool rarch_is_inited,
       menu_animation_update_time(settings->bools.menu_timedate_enable);
 
       if (menu_driver_ctx->render)
-         menu_driver_ctx->render(menu_userdata);
+         menu_driver_ctx->render(menu_userdata, is_idle);
    }
 
    if (menu_driver_alive && !is_idle)
