@@ -25,15 +25,14 @@
 
 #include "cocoa/cocoa_common.h"
 #include "../ui_companion_driver.h"
+#include "../../configuration.h"
+#include "../../frontend/frontend.h"
 #include "../../input/drivers/cocoa_input.h"
 #include "../../input/drivers_keyboard/keyboard_event_apple.h"
 #include "../../retroarch.h"
 #ifdef HAVE_AVFOUNDATION
 #import <AVFoundation/AVFoundation.h>
 #endif
-#include "../../configuration.h"
-#include "../../frontend/frontend.h"
-#include "../../retroarch.h"
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_setting.h"
