@@ -4089,7 +4089,7 @@ static int xmb_pointer_tap(void *userdata,
          return (unsigned)menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
 
       menu_navigation_set_selection(ptr);
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
+      menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_SET, &scroll);
    }
 
    return 0;

@@ -141,7 +141,7 @@ static int action_right_scroll(unsigned type, const char *label,
       bool scroll = true;
 
       menu_navigation_set_selection(idx);
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
+      menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_SET, &scroll);
    }
    else
    {

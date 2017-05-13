@@ -60,7 +60,7 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
          {
             bool scroll        = true;
             menu_navigation_set_selection(0);
-            menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
+            menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_SET, &scroll);
             menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_CLEAR, data);
          }
          break;
@@ -84,7 +84,7 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
                bool scroll = true;
 
                menu_navigation_set_selection(idx);
-               menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
+               menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_SET, &scroll);
                menu_navigation_ctl(MENU_NAVIGATION_CTL_INCREMENT, NULL);
             }
             else
@@ -132,15 +132,12 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
             }
 
             menu_navigation_set_selection(idx);
-            menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
+            menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_SET, &scroll);
             menu_navigation_ctl(MENU_NAVIGATION_CTL_DECREMENT, NULL);
 
             menu_driver_decrement_navigation();
 
          }
-         break;
-      case MENU_NAVIGATION_CTL_SET:
-         menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_SET, data);
          break;
       case MENU_NAVIGATION_CTL_SET_LAST:
          {

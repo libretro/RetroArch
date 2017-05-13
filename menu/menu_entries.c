@@ -189,7 +189,7 @@ static bool menu_entries_refresh(void *data)
       size_t idx  = list_size - 1;
       bool scroll = true;
       menu_navigation_set_selection(idx);
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
+      menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_SET, &scroll);
    }
    else if (!list_size)
    {
