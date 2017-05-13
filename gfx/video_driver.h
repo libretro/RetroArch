@@ -523,7 +523,7 @@ bool video_driver_is_focused(void);
 
 bool video_driver_has_windowed(void);
 
-#define video_driver_cached_frame_has_valid_framebuffer() (frame_cache_data ? (frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID) : false)
+bool video_driver_cached_frame_has_valid_framebuffer(void);
 
 void video_driver_destroy(void);
 void video_driver_set_cached_frame_ptr(const void *data);
@@ -857,8 +857,6 @@ extern const gfx_ctx_driver_t gfx_ctx_opendingux_fbdev;
 extern const gfx_ctx_driver_t gfx_ctx_khr_display;
 extern const gfx_ctx_driver_t gfx_ctx_gdi;
 extern const gfx_ctx_driver_t gfx_ctx_null;
-
-extern const void *frame_cache_data;
 
 extern void *video_driver_data;
 extern video_driver_t *current_video;

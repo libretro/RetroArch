@@ -1945,7 +1945,8 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_TAKE_SCREENSHOT:
-         if (!take_screenshot(path_get(RARCH_PATH_BASENAME), false))
+         if (!take_screenshot(path_get(RARCH_PATH_BASENAME), false,
+                  video_driver_cached_frame_has_valid_framebuffer()))
             return false;
          break;
       case CMD_EVENT_UNLOAD_CORE:

@@ -334,7 +334,7 @@ static bool take_screenshot_raw(const char *name_base, void *userbuf,
 }
 
 static bool take_screenshot_choice(const char *name_base, bool savestate,
-      bool is_paused, bool is_idle)
+      bool is_paused, bool is_idle, bool has_valid_framebuffer)
 {
    size_t old_pitch;
    unsigned old_width, old_height;
@@ -362,7 +362,7 @@ static bool take_screenshot_choice(const char *name_base, bool savestate,
 #endif
    }
 
-   if (!video_driver_cached_frame_has_valid_framebuffer())
+   if (!has_valid_framebuffer)
       return take_screenshot_raw(name_base, NULL, savestate, is_idle, is_paused);
 
    if (!video_driver_supports_read_frame_raw())
@@ -387,7 +387,7 @@ static bool take_screenshot_choice(const char *name_base, bool savestate,
    return ret;
 }
 
-bool take_screenshot(const char *name_base, bool silence)
+bool take_screenshot(const char *name_base, bool silence, bool has_valid_framebuffer)
 {
    bool is_paused         = false;
    bool is_idle           = false;
@@ -397,7 +397,8 @@ bool take_screenshot(const char *name_base, bool silence)
 
    runloop_get_status(&is_paused, &is_idle, &is_slowmotion, &is_perfcnt_enable);
 
-   ret       = take_screenshot_choice(name_base, silence, is_paused, is_idle);
+   ret       = take_screenshot_choice(name_base, silence, is_paused, is_idle,
+         has_valid_framebuffer);
 
    if (is_paused && !is_idle)
          video_driver_cached_frame();

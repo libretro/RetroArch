@@ -204,7 +204,7 @@ bool task_push_load_content_with_core_from_menu(
 
 void task_file_load_handler(retro_task_t *task);
 
-bool take_screenshot(const char *path, bool silence);
+bool take_screenshot(const char *path, bool silence, bool has_valid_framebuffer);
 
 bool event_load_save_files(void);
 

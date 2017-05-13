@@ -132,7 +132,7 @@ static bool                video_driver_state_out_rgb32  = false;
 
 static enum retro_pixel_format video_driver_pix_fmt      = RETRO_PIXEL_FORMAT_0RGB1555;
 
-const void *frame_cache_data                             = NULL;
+static const void *frame_cache_data                      = NULL;
 static unsigned frame_cache_width                        = 0;
 static unsigned frame_cache_height                       = 0;
 static size_t frame_cache_pitch                          = 0;
@@ -2925,4 +2925,11 @@ bool video_driver_has_windowed(void)
       return current_video_context->has_windowed(video_context_data);
    return false;
 #endif
+}
+
+bool video_driver_cached_frame_has_valid_framebuffer(void)
+{
+   if (frame_cache_data)
+      return (frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID);
+   return false;
 }
