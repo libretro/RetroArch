@@ -1271,12 +1271,6 @@ static bool vulkan_suppress_screensaver(void *data, bool enable)
    return video_context_driver_suppress_screensaver(&enabled);
 }
 
-static bool vulkan_has_windowed(void *data)
-{
-   (void)data;
-   return video_context_driver_has_windowed();
-}
-
 static bool vulkan_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
@@ -2578,7 +2572,7 @@ video_driver_t video_vulkan = {
    vulkan_alive,
    vulkan_focus,
    vulkan_suppress_screensaver,
-   vulkan_has_windowed,
+   NULL, /* has_windowed */
    vulkan_set_shader,
    vulkan_free,
    "vulkan",

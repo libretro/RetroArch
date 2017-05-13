@@ -576,13 +576,6 @@ static bool dispmanx_gfx_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool dispmanx_gfx_has_windowed(void *data)
-{
-   (void)data;
-
-   return false;
-}
-
 static bool dispmanx_gfx_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
@@ -695,7 +688,7 @@ video_driver_t video_dispmanx = {
    dispmanx_gfx_alive,
    dispmanx_gfx_focus,
    dispmanx_gfx_suppress_screensaver,
-   dispmanx_gfx_has_windowed,
+   NULL, /* has_windowed */
    dispmanx_gfx_set_shader,
    dispmanx_gfx_free,
    "dispmanx",

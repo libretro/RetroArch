@@ -1121,12 +1121,6 @@ static bool gx_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool gx_has_windowed(void *data)
-{
-   (void)data;
-   return false;
-}
-
 static void gx_set_rotation(void *data, unsigned orientation)
 {
    gx_video_t *gx = (gx_video_t*)data;
@@ -1591,7 +1585,7 @@ video_driver_t video_gx = {
    gx_alive,
    gx_focus,
    gx_suppress_screensaver,
-   gx_has_windowed,
+   NULL, /* has_windowed */
    gx_set_shader,
    gx_free,
    "gx",

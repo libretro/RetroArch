@@ -604,12 +604,6 @@ static bool psp_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool psp_has_windowed(void *data)
-{
-   (void)data;
-   return false;
-}
-
 static void psp_free(void *data)
 {
    psp1_video_t *psp = (psp1_video_t*)data;
@@ -964,7 +958,7 @@ video_driver_t video_psp1 = {
    psp_alive,
    psp_focus,
    psp_suppress_screensaver,
-   psp_has_windowed,
+   NULL, /* has_windowed */
    psp_set_shader,
    psp_free,
    "psp1",

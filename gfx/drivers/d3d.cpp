@@ -917,11 +917,6 @@ static bool d3d_suppress_screensaver(void *data, bool enable)
    return video_context_driver_suppress_screensaver(&enabled);
 }
 
-static bool d3d_has_windowed(void *data)
-{
-   return video_context_driver_has_windowed();
-}
-
 static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
@@ -1721,7 +1716,7 @@ video_driver_t video_d3d = {
    d3d_alive,
    d3d_focus,
    d3d_suppress_screensaver,
-   d3d_has_windowed,
+   NULL, /* has_windowed */
    d3d_set_shader,
    d3d_free,
    "d3d",

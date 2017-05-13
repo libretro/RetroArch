@@ -290,12 +290,6 @@ static bool vita2d_gfx_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool vita2d_gfx_has_windowed(void *data)
-{
-   (void)data;
-   return true;
-}
-
 static void vita2d_gfx_free(void *data)
 {
    vita_video_t *vita = (vita_video_t *)data;
@@ -964,7 +958,7 @@ video_driver_t video_vita2d = {
    vita2d_gfx_alive,
    vita2d_gfx_focus,
    vita2d_gfx_suppress_screensaver,
-   vita2d_gfx_has_windowed,
+   NULL, /* has_windowed */
    vita2d_gfx_set_shader,
    vita2d_gfx_free,
    "vita2d",

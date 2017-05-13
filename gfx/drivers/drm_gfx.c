@@ -915,13 +915,6 @@ static bool drm_gfx_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool drm_gfx_has_windowed(void *data)
-{
-   (void)data;
-
-   return false;
-}
-
 static bool drm_gfx_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
@@ -1018,7 +1011,7 @@ video_driver_t video_drm = {
    drm_gfx_alive,
    drm_gfx_focus,
    drm_gfx_suppress_screensaver,
-   drm_gfx_has_windowed,
+   NULL, /* has_windowed */
    drm_gfx_set_shader,
    drm_gfx_free,
    "drm",

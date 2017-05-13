@@ -865,12 +865,6 @@ static bool ctr_suppress_screensaver(void* data, bool enable)
    return false;
 }
 
-static bool ctr_has_windowed(void* data)
-{
-   (void)data;
-   return false;
-}
-
 static void ctr_free(void* data)
 {
    ctr_video_t* ctr = (ctr_video_t*)data;
@@ -1178,7 +1172,7 @@ video_driver_t video_ctr =
    ctr_alive,
    ctr_focus,
    ctr_suppress_screensaver,
-   ctr_has_windowed,
+   NULL, /* has_windowed */
    ctr_set_shader,
    ctr_free,
    "ctr",

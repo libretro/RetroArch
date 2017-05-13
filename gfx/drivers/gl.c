@@ -2141,11 +2141,6 @@ static bool gl_suppress_screensaver(void *data, bool enable)
    return video_context_driver_suppress_screensaver(&enabled);
 }
 
-static bool gl_has_windowed(void *data)
-{
-   return video_context_driver_has_windowed();
-}
-
 static void gl_update_tex_filter_frame(gl_t *gl)
 {
    video_shader_ctx_filter_t shader_filter;
@@ -2716,7 +2711,7 @@ video_driver_t video_gl = {
    gl_alive,
    gl_focus,
    gl_suppress_screensaver,
-   gl_has_windowed,
+   NULL,                    /* has_windowed */
 
    gl_set_shader,
 

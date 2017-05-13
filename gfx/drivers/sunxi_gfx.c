@@ -825,13 +825,6 @@ static void sunxi_gfx_set_rotation(void *data, unsigned rotation)
    (void)rotation;
 }
 
-static bool sunxi_gfx_has_windowed(void *data)
-{
-   (void)data;
-
-   return false;
-}
-
 static bool sunxi_gfx_suppress_screensaver(void *data, bool enable)
 {
    (void)data;
@@ -971,7 +964,7 @@ video_driver_t video_sunxi = {
   sunxi_gfx_alive,
   sunxi_gfx_focus,
   sunxi_gfx_suppress_screensaver,
-  sunxi_gfx_has_windowed,
+  NULL, /* has_windowed */
   sunxi_gfx_set_shader,
   sunxi_gfx_free,
   "sunxi",

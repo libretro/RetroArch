@@ -273,12 +273,6 @@ static bool vga_gfx_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool vga_gfx_has_windowed(void *data)
-{
-   (void)data;
-   return true;
-}
-
 static void vga_gfx_free(void *data)
 {
    (void)data;
@@ -447,7 +441,7 @@ video_driver_t video_vga = {
    vga_gfx_alive,
    vga_gfx_focus,
    vga_gfx_suppress_screensaver,
-   vga_gfx_has_windowed,
+   NULL, /* has_windowed */
    vga_gfx_set_shader,
    vga_gfx_free,
    "vga",

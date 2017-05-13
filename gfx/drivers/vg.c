@@ -459,11 +459,6 @@ static bool vg_suppress_screensaver(void *data, bool enable)
    return video_context_driver_suppress_screensaver(&enabled);
 }
 
-static bool vg_has_windowed(void *data)
-{
-   return video_context_driver_has_windowed();
-}
-
 static bool vg_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
@@ -509,7 +504,7 @@ video_driver_t video_vg = {
    vg_alive,
    vg_focus,
    vg_suppress_screensaver,
-   vg_has_windowed,
+   NULL, /* has_windowed */
    vg_set_shader,
    vg_free,
    "vg",

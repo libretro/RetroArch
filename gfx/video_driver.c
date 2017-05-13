@@ -2903,3 +2903,16 @@ bool video_context_driver_set_flags(gfx_ctx_flags_t *flags)
    current_video_context->set_flags(video_context_data, flags->flags);
    return true;
 }
+
+bool video_driver_has_windowed(void)
+{
+#if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
+   return false;
+#else
+   if (current_video->has_windowed && current_video->has_windowed(video_driver_data))
+      return current_video->has_windowed(video_driver_data);
+   else if (video_context_data && current_video_context->has_windowed)
+      return current_video_context->has_windowed(video_context_data);
+   return false;
+#endif
+}
