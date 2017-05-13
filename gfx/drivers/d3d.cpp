@@ -1471,8 +1471,6 @@ static bool d3d_frame(void *data, const void *frame,
    }
 #endif
 
-   video_context_driver_update_window_title(video_info);
-
    video_context_driver_swap_buffers(video_info);
 
    return true;

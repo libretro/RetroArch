@@ -1936,12 +1936,7 @@ static bool vulkan_frame(void *data, const void *frame,
    slock_unlock(vk->context->queue_lock);
 #endif
 
-
    video_context_driver_swap_buffers(video_info);
-
-
-   if (!vk->context->swap_interval_emulation_lock)
-      video_context_driver_update_window_title(video_info);
 
    /* Handle spurious swapchain invalidations as soon as we can,
     * i.e. right after swap buffers. */

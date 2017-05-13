@@ -2267,6 +2267,9 @@ void video_driver_frame(const void *data, unsigned width,
 
    if (video_info.fps_show)
       runloop_msg_queue_push(video_info.fps_text, 1, 1, false);
+
+   if (current_video_context && current_video_context->update_window_title)
+      current_video_context->update_window_title(video_context_data, &video_info);
 }
 
 void video_driver_display_type_set(enum rarch_display_type type)

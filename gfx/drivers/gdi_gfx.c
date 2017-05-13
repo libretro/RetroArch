@@ -272,8 +272,6 @@ static bool gdi_gfx_frame(void *data, const void *frame,
 
    InvalidateRect(hwnd, NULL, false);
 
-   video_context_driver_update_window_title(video_info);
-
    return true;
 }
 
