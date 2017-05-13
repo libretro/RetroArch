@@ -508,23 +508,14 @@ static bool apply_patch_content(uint8_t **buf,
       ssize_t *size, const char *patch_desc, const char *patch_path,
       patch_func_t func, void *patch_data, ssize_t patch_size)
 {
-   size_t target_size;
    enum patch_error err     = PATCH_UNKNOWN;
-   uint8_t *patched_content = NULL;
    ssize_t ret_size         = *size;
    uint8_t *ret_buf         = *buf;
-   
-   if (patch_size < 0)
-      return false;
-
-   if (!path_file_exists(patch_path))
-      return false;
+   size_t target_size       = ret_size * 4; /* Just to be sure. */
+   uint8_t *patched_content = (uint8_t*)malloc(target_size);
 
    RARCH_LOG("Found %s file in \"%s\", attempting to patch ...\n",
          patch_desc, patch_path);
-
-   target_size     = ret_size * 4; /* Just to be sure. */
-   patched_content = (uint8_t*)malloc(target_size);
 
    if (!patched_content)
    {
@@ -563,7 +554,7 @@ static bool try_bps_patch(bool allow_bps, const char *name_bps,
       uint8_t **buf, ssize_t *size)
 {
    if (allow_bps && !string_is_empty(name_bps))
-      if (path_is_valid(name_bps))
+      if (path_is_valid(name_bps) && path_file_exists(name_bps))
       {
          ssize_t patch_size;
          bool ret                 = false;
@@ -572,10 +563,15 @@ static bool try_bps_patch(bool allow_bps, const char *name_bps,
          if (!filestream_read_file(name_bps, &patch_data, &patch_size))
             return false;
 
-         ret                      = apply_patch_content(
-               buf, size, "BPS", name_bps,
-               bps_apply_patch, patch_data, patch_size);
-         free(patch_data);
+         if (patch_size >= 0)
+         {
+            ret                      = apply_patch_content(
+                  buf, size, "BPS", name_bps,
+                  bps_apply_patch, patch_data, patch_size);
+         }
+
+         if (patch_data)
+            free(patch_data);
          return ret;
       }
    return false;
@@ -585,7 +581,7 @@ static bool try_ups_patch(bool allow_ups, const char *name_ups,
       uint8_t **buf, ssize_t *size)
 {
    if (allow_ups && !string_is_empty(name_ups))
-      if (path_is_valid(name_ups))
+      if (path_is_valid(name_ups) && path_file_exists(name_ups))
       {
          ssize_t patch_size;
          bool ret                 = false;
@@ -594,10 +590,15 @@ static bool try_ups_patch(bool allow_ups, const char *name_ups,
          if (!filestream_read_file(name_ups, &patch_data, &patch_size))
             return false;
 
-         ret                      = apply_patch_content(
-               buf, size, "UPS", name_ups,
-               ups_apply_patch, patch_data, patch_size);
-         free(patch_data);
+         if (patch_size >= 0)
+         {
+            ret                      = apply_patch_content(
+                  buf, size, "UPS", name_ups,
+                  ups_apply_patch, patch_data, patch_size);
+         }
+
+         if (patch_data)
+            free(patch_data);
          return ret;
       }
    return false;
@@ -607,7 +608,7 @@ static bool try_ips_patch(bool allow_ips,
       const char *name_ips, uint8_t **buf, ssize_t *size)
 {
    if (allow_ips && !string_is_empty(name_ips))
-      if (path_is_valid(name_ips))
+      if (path_is_valid(name_ips) && path_file_exists(name_ips))
       {
          ssize_t patch_size;
          bool ret                 = false;
@@ -616,10 +617,15 @@ static bool try_ips_patch(bool allow_ips,
          if (!filestream_read_file(name_ips, &patch_data, &patch_size))
             return false;
 
-         ret                      = apply_patch_content(
-               buf, size, "IPS", name_ips,
-               ips_apply_patch, patch_data, patch_size);
-         free(patch_data);
+         if (patch_size >= 0)
+         {
+            ret                      = apply_patch_content(
+                  buf, size, "IPS", name_ips,
+                  ips_apply_patch, patch_data, patch_size);
+         }
+
+         if (patch_data)
+            free(patch_data);
          return ret;
       }
    return false;
