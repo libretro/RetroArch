@@ -62,22 +62,37 @@ enum patch_error
 
 struct bps_data
 {
-   const uint8_t *modify_data, *source_data; 
+   const uint8_t *modify_data;
+   const uint8_t *source_data;
    uint8_t *target_data;
-   size_t modify_length, source_length, target_length;
-   size_t modify_offset, source_offset, target_offset;
-   uint32_t modify_checksum, source_checksum, target_checksum;
-
-   size_t source_relative_offset, target_relative_offset, output_offset;
+   size_t modify_length;
+   size_t source_length;
+   size_t target_length;
+   size_t modify_offset;
+   size_t source_offset;
+   size_t target_offset;
+   uint32_t modify_checksum;
+   uint32_t source_checksum;
+   uint32_t target_checksum;
+   size_t source_relative_offset;
+   size_t target_relative_offset;
+   size_t output_offset;
 };
 
 struct ups_data
 {
-   const uint8_t *patch_data, *source_data; 
+   const uint8_t *patch_data;
+   const uint8_t *source_data; 
    uint8_t *target_data;
-   unsigned patch_length, source_length, target_length;
-   unsigned patch_offset, source_offset, target_offset;
-   unsigned patch_checksum, source_checksum, target_checksum;
+   unsigned patch_length;
+   unsigned source_length;
+   unsigned target_length;
+   unsigned patch_offset;
+   unsigned source_offset;
+   unsigned target_offset;
+   unsigned patch_checksum;
+   unsigned source_checksum;
+   unsigned target_checksum;
 };
 
 typedef enum patch_error (*patch_func_t)(const uint8_t*, size_t,
@@ -127,7 +142,7 @@ static enum patch_error bps_apply_patch(
    size_t modify_source_size;
    size_t modify_target_size;
    size_t modify_markup_size;
-   struct bps_data bps = {0};
+   struct bps_data bps;
    uint32_t modify_source_checksum = 0;
    uint32_t modify_target_checksum = 0;
    uint32_t modify_modify_checksum = 0;
@@ -135,22 +150,32 @@ static enum patch_error bps_apply_patch(
    if (modify_length < 19)
       return PATCH_PATCH_TOO_SMALL;
 
-   bps.modify_data     = modify_data;
-   bps.modify_length   = modify_length;
-   bps.target_data     = target_data;
-   bps.target_length   = *target_length;
-   bps.source_data     = source_data;
-   bps.source_length   = source_length;
-   bps.modify_checksum = ~0;
-   bps.target_checksum = ~0;
+   bps.modify_data            = modify_data;
+   bps.source_data            = source_data;
+   bps.target_data            = target_data;
+   bps.modify_length          = modify_length;
+   bps.source_length          = source_length;
+   bps.target_length          = *target_length;
+   bps.modify_offset          = 0;
+   bps.source_offset          = 0;
+   bps.target_offset          = 0;
+   bps.modify_checksum        = ~0;
+   bps.source_checksum        = 0;
+   bps.target_checksum        = ~0;
+   bps.source_relative_offset = 0;
+   bps.target_relative_offset = 0;
+   bps.output_offset          = 0;
 
-   if ((bps_read(&bps) != 'B') || (bps_read(&bps) != 'P') ||
-         (bps_read(&bps) != 'S') || (bps_read(&bps) != '1'))
+   if (  (bps_read(&bps) != 'B') || 
+         (bps_read(&bps) != 'P') ||
+         (bps_read(&bps) != 'S') || 
+         (bps_read(&bps) != '1'))
       return PATCH_PATCH_INVALID_HEADER;
 
    modify_source_size  = bps_decode(&bps);
    modify_target_size  = bps_decode(&bps);
    modify_markup_size  = bps_decode(&bps);
+
    for (i = 0; i < modify_markup_size; i++)
       bps_read(&bps);
 
@@ -294,13 +319,13 @@ static enum patch_error ups_apply_patch(
       uint8_t *targetdata, size_t *targetlength)
 {
    size_t i;
+   struct ups_data data;
    unsigned source_read_length;
    unsigned target_read_length;
    uint32_t patch_result_checksum;
    uint32_t patch_read_checksum  = 0;
    uint32_t source_read_checksum = 0;
    uint32_t target_read_checksum = 0;
-   struct ups_data data          = {0};
 
    data.patch_data      = patchdata;
    data.source_data     = sourcedata;
@@ -308,31 +333,37 @@ static enum patch_error ups_apply_patch(
    data.patch_length    = (unsigned)patchlength;
    data.source_length   = (unsigned)sourcelength;
    data.target_length   = (unsigned)*targetlength;
+   data.patch_offset    = 0;
+   data.source_offset   = 0;
+   data.target_offset   = 0;
    data.patch_checksum  = ~0;
    data.source_checksum = ~0;
    data.target_checksum = ~0;
 
    if (data.patch_length < 18) 
       return PATCH_PATCH_INVALID;
-   if (ups_patch_read(&data) != 'U') 
-      return PATCH_PATCH_INVALID;
-   if (ups_patch_read(&data) != 'P') 
-      return PATCH_PATCH_INVALID;
-   if (ups_patch_read(&data) != 'S') 
-      return PATCH_PATCH_INVALID;
-   if (ups_patch_read(&data) != '1') 
+
+   if (
+         (ups_patch_read(&data) != 'U') ||
+         (ups_patch_read(&data) != 'P') ||
+         (ups_patch_read(&data) != 'S') ||
+         (ups_patch_read(&data) != '1')
+      )
       return PATCH_PATCH_INVALID;
 
    source_read_length = (unsigned)ups_decode(&data);
    target_read_length = (unsigned)ups_decode(&data);
 
-   if (data.source_length != source_read_length
-         && data.source_length != target_read_length) 
+   if (     (data.source_length != source_read_length)
+         && (data.source_length != target_read_length)) 
       return PATCH_SOURCE_INVALID;
+
    *targetlength = (data.source_length == source_read_length ?
          target_read_length : source_read_length);
+
    if (data.target_length < *targetlength) 
       return PATCH_TARGET_TOO_SMALL;
+
    data.target_length = (unsigned)*targetlength;
 
    while (data.patch_offset < data.patch_length - 12) 
