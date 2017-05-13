@@ -48,14 +48,17 @@
 
 uintptr_t menu_display_white_texture;
 
-static enum menu_toggle_reason menu_display_toggle_reason = MENU_TOGGLE_REASON_NONE;
 
 static video_coord_array_t menu_disp_ca;
+
+static enum 
+menu_toggle_reason menu_display_toggle_reason    = MENU_TOGGLE_REASON_NONE;
 
 static unsigned menu_display_framebuf_width      = 0;
 static unsigned menu_display_framebuf_height     = 0;
 static size_t menu_display_framebuf_pitch        = 0;
 static unsigned menu_display_header_height       = 0;
+static bool menu_display_has_windowed            = false;
 static bool menu_display_msg_force               = false;
 static bool menu_display_font_alloc_framebuf     = false;
 static bool menu_display_framebuf_dirty          = false;
@@ -274,6 +277,7 @@ void menu_display_deinit(void)
    menu_display_msg_force       = false;
    menu_display_header_height   = 0;
    menu_disp                    = NULL;
+   menu_display_has_windowed    = false;
 
    menu_animation_ctl(MENU_ANIMATION_CTL_DEINIT, NULL);
    menu_display_framebuffer_deinit();
@@ -281,8 +285,10 @@ void menu_display_deinit(void)
 
 bool menu_display_init(void)
 {
-   menu_display_msg_queue  = msg_queue_new(8);
-   menu_disp_ca.allocated  =  0;
+   menu_display_msg_queue    = msg_queue_new(8);
+   menu_disp_ca.allocated    =  0;
+
+   menu_display_has_windowed = video_driver_has_windowed();
    return true;
 }
 
@@ -1006,7 +1012,7 @@ void menu_display_draw_cursor(
    struct video_coords coords;
    settings_t *settings = config_get_ptr();
    bool cursor_visible  = settings->bools.video_fullscreen ||
-       !video_driver_has_windowed();
+       !menu_display_has_windowed;
 
    if (!settings->bools.menu_mouse_enable)
       return;
