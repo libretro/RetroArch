@@ -308,16 +308,14 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    float *samples_buf    = NULL;
    int16_t *conv_buf     = NULL;
    int16_t *rewind_buf   = NULL;
-   size_t outsamples_max = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
    size_t max_bufsamples = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
    settings_t *settings  = config_get_ptr();
+   /* Accomodate rewind since at some point we might have two full buffers. */
+   size_t outsamples_max = AUDIO_CHUNK_SIZE_NONBLOCKING * 2 * AUDIO_MAX_RATIO * 
+      settings->floats.slowmotion_ratio;
 
    convert_s16_to_float_init_simd();
    convert_float_to_s16_init_simd();
-
-   /* Accomodate rewind since at some point we might have two full buffers. */
-   outsamples_max = max_bufsamples * AUDIO_MAX_RATIO * 
-      settings->floats.slowmotion_ratio;
 
    conv_buf = (int16_t*)malloc(outsamples_max 
          * sizeof(int16_t));
