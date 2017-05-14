@@ -99,7 +99,7 @@ typedef enum patch_error (*patch_func_t)(const uint8_t*, size_t,
 
 static uint8_t bps_read(struct bps_data *bps)
 {
-   uint8_t data = bps->modify_data[bps->modify_offset++];
+   uint8_t data         = bps->modify_data[bps->modify_offset++];
    bps->modify_checksum = ~(encoding_crc32(
          ~bps->modify_checksum, &data, 1));
    return data;
@@ -124,9 +124,6 @@ static uint64_t bps_decode(struct bps_data *bps)
 
 static void bps_write(struct bps_data *bps, uint8_t data)
 {
-   if (!bps)
-      return;
-
    bps->target_data[bps->output_offset++] = data;
    bps->target_checksum = ~(encoding_crc32(~bps->target_checksum, &data, 1));
 }
