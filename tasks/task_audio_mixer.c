@@ -32,8 +32,8 @@
 
 struct nbio_audio_mixer_handle
 {
+   audio_mixer_sound_t *handle;
    bool is_finished;
-   void *handle;
 };
 
 static void task_audio_mixer_cleanup(nbio_handle_t *nbio)
@@ -64,20 +64,16 @@ static int cb_nbio_audio_wav_loaded(void *data, size_t len)
    struct nbio_audio_mixer_handle *image = nbio ? 
       (struct nbio_audio_mixer_handle*)nbio->data : NULL;
    void *ptr                       = nbio_get_ptr(nbio->handle, &len);
-   audio_mixer_sound_t *audmix     = audio_mixer_load_wav(ptr, len);
 
-   if (!audmix ||
-       !audio_mixer_play(audmix, true, 0.0f, NULL)
-      )
+   image->handle                   = audio_mixer_load_wav(ptr, len);
+
+   if (!image->handle)
    {
       task_audio_mixer_cleanup(nbio);
       return -1;
    }
 
-   free(ptr);
-
    image->is_finished              = true;
-   nbio->is_finished               = true;
 
    return 0;
 }
@@ -90,18 +86,16 @@ static int cb_nbio_audio_ogg_loaded(void *data, size_t len)
       (struct nbio_audio_mixer_handle*)nbio->data : NULL;
 
    void *ptr                       = nbio_get_ptr(nbio->handle, &len);
-   audio_mixer_sound_t *audmix     = audio_mixer_load_ogg(ptr, len);
 
-   if (!audmix ||
-       !audio_mixer_play(audmix, true, 0.0f, NULL)
-      )
+   image->handle                   = audio_mixer_load_ogg(ptr, len);
+
+   if (!image->handle)
    {
       task_audio_mixer_cleanup(nbio);
       return -1;
    }
 
    image->is_finished              = true;
-   nbio->is_finished               = true;
 
    return 0;
 }
@@ -112,10 +106,22 @@ bool task_audio_mixer_load_handler(retro_task_t *task)
    nbio_handle_t            *nbio  = (nbio_handle_t*)task->state;
    struct nbio_audio_mixer_handle *image = (struct nbio_audio_mixer_handle*)nbio->data;
 
-   if (     nbio->is_finished
-         && (image && image->is_finished )
+   if (  
+            (image && image->is_finished )
          && (!task_get_cancelled(task)))
+   {
+      audio_mixer_sound_t *data = (audio_mixer_sound_t*)calloc(1, sizeof(*data));
+
+      if (data)
+      {
+         memcpy((void*)data, &image->handle, sizeof(audio_mixer_sound_t));
+      }
+
+      task_set_data(task, data);
+
+      nbio->is_finished = true;
       return false;
+   }
 
    return true;
 }

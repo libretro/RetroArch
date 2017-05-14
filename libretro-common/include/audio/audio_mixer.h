@@ -27,10 +27,45 @@
 #include <stddef.h>
 #include <stdlib.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <boolean.h>
 #include <retro_common_api.h>
 
 RETRO_BEGIN_DECLS
+
+enum audio_mixer_type
+{
+   AUDIO_MIXER_TYPE_NONE = 0,
+   AUDIO_MIXER_TYPE_WAV,
+   AUDIO_MIXER_TYPE_OGG
+};
+
+struct audio_mixer_sound
+{
+   enum audio_mixer_type type;
+   
+   union
+   {
+      struct
+      {
+         /* wav */
+         unsigned frames;
+         const float* pcm;
+      } wav;
+      
+#ifdef HAVE_STB_VORBIS
+      struct
+      {
+         /* ogg */
+         unsigned size;
+         const void* data;
+      } ogg;
+#endif
+   } types;
+};
 
 typedef struct audio_mixer_sound audio_mixer_sound_t;
 typedef struct audio_mixer_voice audio_mixer_voice_t;

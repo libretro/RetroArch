@@ -39,6 +39,7 @@
 
 #include <compat/strl.h>
 #include <compat/getopt.h>
+#include <audio/audio_mixer.h>
 #include <compat/posix_string.h>
 #include <file/file_path.h>
 #include <retro_stat.h>
@@ -2261,7 +2262,11 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 static void runloop_upload_audio(void *task_data,
       void *user_data, const char *err)
 {
-   RARCH_LOG("GETS HERE.\n");
+   audio_mixer_sound_t *handle = (audio_mixer_sound_t*)task_data;
+
+   if (handle)
+      audio_mixer_play(handle, true, 1.0f, NULL);
+
    free(user_data);
 }
 #endif
