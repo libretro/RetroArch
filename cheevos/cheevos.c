@@ -3115,8 +3115,6 @@ static int cheevos_iterate(coro_t* coro)
       if (COUNT > CHEEVOS_SIZE_LIMIT)
          COUNT = CHEEVOS_SIZE_LIMIT;
 
-      RARCH_LOG("CHEEVOS calculating MD5 for %p + %lu, %lu.\n", DATA, OFFSET, COUNT);
-      
       MD5_Update(&MD5, (void*)((uint8_t*)DATA + OFFSET), COUNT);
       CORO_RET();
       
@@ -3127,8 +3125,6 @@ static int cheevos_iterate(coro_t* coro)
     *************************************************************************/
    CORO_SUB(FILL_MD5)
    
-      RARCH_LOG("CHEEVOS filling MD5 for %lu, %lu.\n", OFFSET, COUNT);
-      
       {
          char buffer[4096];
 
@@ -3420,6 +3416,7 @@ static int cheevos_iterate(coro_t* coro)
       if (!JSON)
          CORO_GOTO(PLAYING);
       
+      RARCH_LOG("CHEEVOS posted playing activity.\n");
       CORO_RET();
 
    CORO_LEAVE();
