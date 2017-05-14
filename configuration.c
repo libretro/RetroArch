@@ -1719,7 +1719,7 @@ static void config_set_defaults(void)
       if (string_is_empty(settings->paths.path_overlay))
             fill_pathname_join(settings->paths.path_overlay,
                   settings->paths.directory_overlay,
-                  "gamepads/retropad/retropad.cfg",
+                  "gamepads/flat/retropad.cfg",
                   sizeof(settings->paths.path_overlay));
 #endif
    }
