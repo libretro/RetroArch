@@ -32,7 +32,6 @@
 
 struct nbio_audio_mixer_handle
 {
-   enum nbio_type type;
    bool is_finished;
    void *handle;
 };
@@ -142,18 +141,15 @@ bool task_push_audio_mixer_load(const char *fullpath, retro_task_callback_t cb, 
       goto error;
 
    nbio->type         = NBIO_TYPE_NONE;
-   image->type        = NBIO_TYPE_NONE;
 
    if (strstr(fullpath, file_path_str(FILE_PATH_WAV_EXTENSION)))
    {
       nbio->type      = NBIO_TYPE_WAV;
-      image->type     = NBIO_TYPE_WAV;
       nbio->cb        = &cb_nbio_audio_wav_loaded;
    }
    else if (strstr(fullpath, file_path_str(FILE_PATH_OGG_EXTENSION)))
    {
       nbio->type      = NBIO_TYPE_OGG;
-      image->type     = NBIO_TYPE_OGG;
       nbio->cb        = &cb_nbio_audio_ogg_loaded;
    }
 
