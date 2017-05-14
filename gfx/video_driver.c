@@ -2908,10 +2908,10 @@ bool video_context_driver_set_flags(gfx_ctx_flags_t *flags)
 
 bool video_driver_is_focused(void)
 {
-   if (current_video->focus)
-      return current_video->focus(video_driver_data);
-   else if (video_context_data && current_video_context->has_focus)
+   if (video_context_data && current_video_context->has_focus)
       return current_video_context->has_focus(video_context_data);
+   else if (current_video->focus)
+      return current_video->focus(video_driver_data);
    return true;
 }
 
