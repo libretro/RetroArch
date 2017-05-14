@@ -416,6 +416,7 @@ FONTS
 INPUT
 ============================================================ */
 #include "../tasks/task_autodetect.c"
+#include "../tasks/task_audio_mixer.c"
 #include "../input/input_joypad_driver.c"
 #include "../input/input_config.c"
 #include "../input/input_keymaps.c"
