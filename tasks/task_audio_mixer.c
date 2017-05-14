@@ -61,14 +61,11 @@ static void task_audio_mixer_load_free(retro_task_t *task)
 
 static int cb_nbio_audio_wav_loaded(void *data, size_t len)
 {
-   void *ptr                       = NULL;
    nbio_handle_t *nbio             = (nbio_handle_t*)data; 
    struct nbio_audio_mixer_handle *image = nbio ? 
       (struct nbio_audio_mixer_handle*)nbio->data : NULL;
-   audio_mixer_sound_t *audmix     = NULL;
-
-   ptr                             = nbio_get_ptr(nbio->handle, &len);
-   audmix                          = audio_mixer_load_wav(ptr, len);
+   void *ptr                       = nbio_get_ptr(nbio->handle, &len);
+   audio_mixer_sound_t *audmix     = audio_mixer_load_wav(ptr, len);
 
    if (!audmix ||
        !audio_mixer_play(audmix, true, 0.0f, NULL)
@@ -88,15 +85,13 @@ static int cb_nbio_audio_wav_loaded(void *data, size_t len)
 
 static int cb_nbio_audio_ogg_loaded(void *data, size_t len)
 {
-   void *ptr                       = NULL;
    nbio_handle_t *nbio             = (nbio_handle_t*)data; 
    struct nbio_audio_mixer_handle 
       *image                       = nbio ? 
       (struct nbio_audio_mixer_handle*)nbio->data : NULL;
-   audio_mixer_sound_t *audmix     = NULL;
 
-   ptr                             = nbio_get_ptr(nbio->handle, &len);
-   audmix                          = audio_mixer_load_ogg(ptr, len);
+   void *ptr                       = nbio_get_ptr(nbio->handle, &len);
+   audio_mixer_sound_t *audmix     = audio_mixer_load_ogg(ptr, len);
 
    if (!audmix ||
        !audio_mixer_play(audmix, true, 0.0f, NULL)
