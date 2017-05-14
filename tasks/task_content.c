@@ -138,18 +138,6 @@ static bool _content_is_inited                                = false;
 static bool core_does_not_need_content                        = false;
 static uint32_t content_rom_crc                               = 0;
 
-/**
- * content_file_read:
- * @path             : path to file.
- * @buf              : buffer to allocate and read the contents of the
- *                     file into. Needs to be freed manually.
- * @length           : Number of items read, -1 on error.
- *
- * Read the contents of a file into @buf. Will call file_archive_compressed_read
- * if path contains a compressed file, otherwise will call filestream_read_file().
- *
- * Returns: 1 if file read, 0 on error.
- */
 static int content_file_read(const char *path, void **buf, ssize_t *length)
 {
 #ifdef HAVE_COMPRESSION
@@ -285,7 +273,7 @@ static bool content_load(content_ctx_info_t *info)
    if (!retroarch_main_init(wrap_args->argc, wrap_args->argv))
    {
       retval = false;
-      goto error;
+      goto end;
    }
 
 #ifdef HAVE_MENU
@@ -300,7 +288,7 @@ static bool content_load(content_ctx_info_t *info)
    frontend_driver_process_args(rarch_argc_ptr, rarch_argv_ptr);
    frontend_driver_content_loaded();
 
-error:
+end:
    for (i = 0; i < ARRAY_SIZE(argv_copy); i++)
       free(argv_copy[i]);
    free(wrap_args);
@@ -328,6 +316,7 @@ static bool load_content_into_memory(
 
    RARCH_LOG("%s: %s.\n",
          msg_hash_to_str(MSG_LOADING_CONTENT_FILE), path);
+
    if (!content_file_read(path, (void**) &ret_buf, length))
       return false;
 
@@ -746,15 +735,18 @@ static bool content_file_init(
       ? NULL : content_file_init_subsystem(content_ctx, error_string, &ret);
 
    if (!ret)
-      goto error;
+      return false;
 
    content = string_list_new();
 
    if (!content)
-      goto error;
+      return false;
 
    if (!content_file_init_set_attribs(content, special, content_ctx, error_string))
-      goto error;
+   {
+      string_list_free(content);
+      return false;
+   }
 
    info                   = (struct retro_game_info*)
       calloc(content->size, sizeof(*info));
@@ -771,9 +763,8 @@ static bool content_file_init(
       free(info);
    }
 
-error:
-   if (content)
-      string_list_free(content);
+   string_list_free(content);
+
    return ret;
 }
 
@@ -836,7 +827,21 @@ static bool task_load_content(content_ctx_info_t *content_info,
    name[0] = msg[0] = '\0';
 
    if (!content_load(content_info))
-      goto error;
+   {
+      if (launched_from_menu)
+      {
+         if (!path_is_empty(RARCH_PATH_CONTENT) && !string_is_empty(name))
+         {
+            snprintf(msg, sizeof(msg), "%s %s.\n",
+                  msg_hash_to_str(MSG_FAILED_TO_LOAD),
+                  name);
+            *error_string = strdup(msg);
+         }
+      }
+      if (string_is_empty(name))
+         *error_string = strdup("This core requires a content file.\n");
+      return false;
+   }
 
    content_get_status(&contentless, &is_inited);
 
@@ -925,21 +930,6 @@ static bool task_load_content(content_ctx_info_t *content_info,
    }
 
    return true;
-
-error:
-   if (launched_from_menu)
-   {
-      if (!path_is_empty(RARCH_PATH_CONTENT) && !string_is_empty(name))
-      {
-         snprintf(msg, sizeof(msg), "%s %s.\n",
-               msg_hash_to_str(MSG_FAILED_TO_LOAD),
-               name);
-         *error_string = strdup(msg);
-      }
-   }
-   if (string_is_empty(name))
-      *error_string = strdup("This core requires a content file.\n");
-   return false;
 }
 
 #ifdef HAVE_MENU
@@ -1072,26 +1062,24 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    /* Load content */
    if (!task_load_content(content_info, &content_ctx,
             false, false, &error_string))
-      goto error;
-
-   if (content_ctx.directory_system)
-      free(content_ctx.directory_system);
-
-   return true;
-
-error:
-
-   if (error_string)
    {
-      runloop_msg_queue_push(error_string, 2, 90, true);
-      RARCH_ERR(error_string);
-      free(error_string);
+      if (error_string)
+      {
+         runloop_msg_queue_push(error_string, 2, 90, true);
+         RARCH_ERR(error_string);
+         free(error_string);
+      }
+
+      if (content_ctx.directory_system)
+         free(content_ctx.directory_system);
+
+      return false;
    }
 
    if (content_ctx.directory_system)
       free(content_ctx.directory_system);
 
-   return false;
+   return true;
 }
 
 #ifdef HAVE_MENU
@@ -1142,7 +1130,22 @@ bool task_push_load_content_from_playlist_from_menu(
     * execute the new core from this point. If this returns false,
     * we assume we can dynamically load the core. */
    if (!command_event_cmd_exec(fullpath, &content_ctx, CONTENT_MODE_LOAD_NONE, &error_string))
-      goto error;
+   {
+      if (error_string)
+      {
+         runloop_msg_queue_push(error_string, 2, 90, true);
+         RARCH_ERR(error_string);
+         free(error_string);
+      }
+
+      rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
+
+      if (content_ctx.directory_system)
+         free(content_ctx.directory_system);
+
+      return false;
+   }
+
 #ifndef HAVE_DYNAMIC
    runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
    rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
@@ -1157,22 +1160,6 @@ bool task_push_load_content_from_playlist_from_menu(
       free(content_ctx.directory_system);
 
    return true;
-
-error:
-
-   if (error_string)
-   {
-      runloop_msg_queue_push(error_string, 2, 90, true);
-      RARCH_ERR(error_string);
-      free(error_string);
-   }
-
-   rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
-
-   if (content_ctx.directory_system)
-      free(content_ctx.directory_system);
-
-   return false;
 }
 #endif
 
@@ -1226,7 +1213,23 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
 
    if (!task_load_content(content_info, &content_ctx,
             true, false, &error_string))
-      goto error;
+   {
+      if (error_string)
+      {
+         runloop_msg_queue_push(error_string, 2, 90, true);
+         RARCH_ERR(error_string);
+         free(error_string);
+      }
+
+#ifdef HAVE_MENU
+      rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
+#endif
+
+      if (content_ctx.directory_system)
+         free(content_ctx.directory_system);
+
+      return false;
+   }
 
 #ifdef HAVE_MENU
    /* Push quick menu onto menu stack */
@@ -1237,24 +1240,6 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
       free(content_ctx.directory_system);
 
    return true;
-
-error:
-
-   if (error_string)
-   {
-      runloop_msg_queue_push(error_string, 2, 90, true);
-      RARCH_ERR(error_string);
-      free(error_string);
-   }
-
-#ifdef HAVE_MENU
-   rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
-#endif
-
-   if (content_ctx.directory_system)
-      free(content_ctx.directory_system);
-
-   return false;
 }
 
 bool task_push_load_new_core(
@@ -1666,18 +1651,16 @@ bool content_init(void)
       content_ctx.subsystem.size              = sys_info->subsystem.size;
    }
 
+   _content_is_inited = true;
+
    if (     !temporary_content 
          || !content_file_init(&content_ctx, &error_string))
    {
       content_deinit();
 
-      ret = false;
-      goto end;
+      ret                = false;
    }
 
-   _content_is_inited = true;
-
-end:
    if (content_ctx.directory_system)
       free(content_ctx.directory_system);
    if (content_ctx.directory_cache)
