@@ -15,6 +15,7 @@
 
 #include <string.h>
 
+#include <encodings/utf.h>
 #include <compat/strl.h>
 
 #include "../common/vulkan_common.h"
@@ -25,8 +26,10 @@ typedef struct
 {
    vk_t *vk;
    struct vk_texture texture;
+   struct vk_texture texture_optimal;
    const font_renderer_driver_t *font_driver;
    void *font_data;
+   struct font_atlas *atlas;
 
    struct vk_vertex *pv;
    struct vk_buffer_range range;
@@ -39,7 +42,6 @@ static void *vulkan_raster_font_init_font(void *data,
       const char *font_path, float font_size,
       bool is_threaded)
 {
-   const struct font_atlas *atlas = NULL;
    vulkan_raster_t *font          = 
       (vulkan_raster_t*)calloc(1, sizeof(*font));
 
@@ -65,10 +67,17 @@ static void *vulkan_raster_font_init_font(void *data,
       return NULL;
    }
 
-   atlas = font->font_driver->get_atlas(font->font_data);
+   font->atlas = font->font_driver->get_atlas(font->font_data);
    font->texture = vulkan_create_texture(font->vk, NULL,
-         atlas->width, atlas->height, VK_FORMAT_R8_UNORM, atlas->buffer,
-         NULL /*&swizzle*/, VULKAN_TEXTURE_STATIC);
+         font->atlas->width, font->atlas->height, VK_FORMAT_R8_UNORM, font->atlas->buffer,
+         NULL /*&swizzle*/, VULKAN_TEXTURE_STAGING);
+
+   vulkan_map_persistent_texture(
+         font->vk->context->device, &font->texture);
+
+   font->texture_optimal = vulkan_create_texture(font->vk, NULL,
+         font->atlas->width, font->atlas->height, VK_FORMAT_R8_UNORM, NULL,
+         NULL /*&swizzle*/, VULKAN_TEXTURE_DYNAMIC);
 
    return font;
 }
@@ -85,6 +94,8 @@ static void vulkan_raster_font_free_font(void *data, bool is_threaded)
    vkQueueWaitIdle(font->vk->context->queue);
    vulkan_destroy_texture( 
          font->vk->context->device, &font->texture);
+   vulkan_destroy_texture(
+         font->vk->context->device, &font->texture_optimal);
 
    free(font);
 }
@@ -122,6 +133,7 @@ static void vulkan_raster_font_render_line(
    unsigned i;
    struct vk_color vk_color;
    vk_t *vk             = font->vk;
+   const char* msg_end  = msg + msg_len;
    int x                = roundf(pos_x * vk->vp.width);
    int y                = roundf((1.0f - pos_y) * vk->vp.height);
    int delta_x          = 0;
@@ -146,11 +158,12 @@ static void vulkan_raster_font_render_line(
          break;
    }
 
-   for (i = 0; i < msg_len; i++)
+   while (msg < msg_end)
    {
       int off_x, off_y, tex_x, tex_y, width, height;
+      unsigned code                  = utf8_walk(&msg);
       const struct font_glyph *glyph =
-         font->font_driver->get_glyph(font->font_data, (uint8_t)msg[i]);
+         font->font_driver->get_glyph(font->font_data, code);
 
       if (!glyph) /* Do something smarter here ... */
          glyph = font->font_driver->get_glyph(font->font_data, '?');
@@ -235,13 +248,29 @@ static void vulkan_raster_font_flush(vulkan_raster_t *font)
 {
    const struct vk_draw_triangles call = {
       font->vk->pipelines.font,
-      &font->texture,
+      &font->texture_optimal,
       font->vk->samplers.mipmap_linear,
       &font->vk->mvp,
       sizeof(font->vk->mvp),
       &font->range,
       font->vertices,
    };
+
+   if(font->atlas->dirty)
+   {
+      int i = 0;
+      for(i = 0; i < font->atlas->height; i++)
+      {
+         uint8_t* src = font->atlas->buffer + i * font->atlas->width;
+         uint8_t* dst = (uint8_t*)font->texture.mapped + i * font->texture.stride;
+         memcpy(dst, src, font->atlas->width);
+      }
+      vulkan_sync_texture_to_gpu(font->vk, &font->texture);
+      vulkan_copy_staging_to_dynamic(font->vk, font->vk->cmd,
+            &font->texture_optimal, &font->texture);
+
+      font->atlas->dirty = false;
+   }
 
    vulkan_draw_triangles(font->vk, &call);
 }
