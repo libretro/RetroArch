@@ -334,17 +334,15 @@ static bool load_content_into_memory(
 
       /* Attempt to apply a patch. */
       if (!content_ctx->patch_is_blocked)
-      {
-            patch_content(
-                  content_ctx->is_ips_pref,
-                  content_ctx->is_bps_pref,
-                  content_ctx->is_ups_pref,
-                  content_ctx->name_ips,
-                  content_ctx->name_bps,
-                  content_ctx->name_ups,
-                  (uint8_t**)&ret_buf,
-                  (void*)length);
-      }
+         patch_content(
+               content_ctx->is_ips_pref,
+               content_ctx->is_bps_pref,
+               content_ctx->is_ups_pref,
+               content_ctx->name_ips,
+               content_ctx->name_bps,
+               content_ctx->name_ups,
+               (uint8_t**)&ret_buf,
+               (void*)length);
 
       content_rom_crc = encoding_crc32(0, ret_buf, *length);
 
