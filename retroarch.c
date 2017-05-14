@@ -2257,6 +2257,15 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
    return true;
 }
 
+#if 0
+static void runloop_upload_audio(void *task_data,
+      void *user_data, const char *err)
+{
+   RARCH_LOG("GETS HERE.\n");
+   free(user_data);
+}
+#endif
+
 /* Time to exit out of the main loop?
  * Reasons for exiting:
  * a) Shutdown environment callback was invoked.
@@ -2626,7 +2635,8 @@ static enum runloop_state runloop_check_state(
    {
       command_event(CMD_EVENT_RESET, NULL);
 #if 0
-      task_push_audio_mixer_load("/home/squarepusher/SumertimeBlues.ogg", NULL, NULL);
+      task_push_audio_mixer_load("/home/squarepusher/SumertimeBlues.ogg",
+            runloop_upload_audio, NULL);
 #endif
    }
 
