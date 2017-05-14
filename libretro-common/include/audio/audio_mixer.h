@@ -35,7 +35,7 @@ RETRO_BEGIN_DECLS
 typedef struct audio_mixer_sound audio_mixer_sound_t;
 typedef struct audio_mixer_voice audio_mixer_voice_t;
 
-typedef void (*audio_mixer_stop_cb_t)(audio_mixer_sound_t* voice, unsigned reason);
+typedef void (*audio_mixer_stop_cb_t)(audio_mixer_sound_t* sound, unsigned reason);
 
 /* Reasons passed to the stop callback. */
 #define AUDIO_MIXER_SOUND_FINISHED 0
