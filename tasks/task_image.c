@@ -108,20 +108,20 @@ static int task_image_process(
 
 static int cb_image_menu_thumbnail(void *data, size_t len)
 {
-   unsigned width                  = 0;
-   unsigned height                 = 0;
-   nbio_handle_t        *nbio = (nbio_handle_t*)data; 
-   struct nbio_image_handle *image = (struct nbio_image_handle*)nbio->data;
-   int retval                      = task_image_process(image, &width, &height);
+   unsigned width                   = 0;
+   unsigned height                  = 0;
+   nbio_handle_t        *nbio       = (nbio_handle_t*)data; 
+   struct nbio_image_handle *image  = (struct nbio_image_handle*)nbio->data;
+   int retval                       = task_image_process(image, &width, &height);
 
    if ((retval == IMAGE_PROCESS_ERROR)    ||
        (retval == IMAGE_PROCESS_ERROR_END)
       )
       return -1;
 
-   image->is_blocking_on_processing         = (retval != IMAGE_PROCESS_END);
-   image->is_finished                       = (retval == IMAGE_PROCESS_END);
-   image->cb                                = &cb_image_menu_upload_generic;
+   image->is_blocking_on_processing = (retval != IMAGE_PROCESS_END);
+   image->is_finished               = (retval == IMAGE_PROCESS_END);
+   image->cb                        = &cb_image_menu_upload_generic;
 
    return 0;
 }
@@ -180,24 +180,19 @@ static void task_image_load_free(retro_task_t *task)
 static int cb_nbio_image_menu_thumbnail(void *data, size_t len)
 {
    void *ptr                       = NULL;
-   void *handle                    = NULL;
    nbio_handle_t *nbio             = (nbio_handle_t*)data; 
    struct nbio_image_handle *image = nbio ? 
       (struct nbio_image_handle*)nbio->data : NULL;
-
-   if (!image)
-      return -1;
-
-   handle = image_transfer_new(image->type);
+   void *handle                    = image_transfer_new(image->type);
 
    if (!handle)
       return -1;
 
-   image->handle = handle;
-   image->size   = len;
-   image->cb     = &cb_image_menu_thumbnail;
+   image->handle                   = handle;
+   image->size                     = len;
+   image->cb                       = &cb_image_menu_thumbnail;
 
-   ptr           = nbio_get_ptr(nbio->handle, &len);
+   ptr                             = nbio_get_ptr(nbio->handle, &len);
 
    image_transfer_set_buffer_ptr(image->handle, image->type, ptr);
 
@@ -213,9 +208,9 @@ static int cb_nbio_image_menu_thumbnail(void *data, size_t len)
       return -1;
    }
 
-   image->is_blocking   = false;
-   image->is_finished   = false;
-   nbio->is_finished    = true;
+   image->is_blocking              = false;
+   image->is_finished              = false;
+   nbio->is_finished               = true;
 
    return 0;
 }
