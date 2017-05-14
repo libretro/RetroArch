@@ -715,28 +715,20 @@ static bool content_file_init_set_attribs(
  **/
 static bool content_file_init(
       content_information_ctx_t *content_ctx,
+      struct string_list *content,
       char **error_string)
 {
    struct retro_game_info               *info = NULL;
-   struct string_list *content                = NULL;
-   bool ret                                   = path_is_empty(RARCH_PATH_SUBSYSTEM) 
+   bool ret                                   = 
+      path_is_empty(RARCH_PATH_SUBSYSTEM) 
       ? true : false;
-   const struct retro_subsystem_info *special = path_is_empty(RARCH_PATH_SUBSYSTEM) 
+   const struct retro_subsystem_info *special = 
+      path_is_empty(RARCH_PATH_SUBSYSTEM) 
       ? NULL : content_file_init_subsystem(content_ctx, error_string, &ret);
 
-   if (!ret)
+   if (  !ret || 
+         !content_file_init_set_attribs(content, special, content_ctx, error_string))
       return false;
-
-   content = string_list_new();
-
-   if (!content)
-      return false;
-
-   if (!content_file_init_set_attribs(content, special, content_ctx, error_string))
-   {
-      string_list_free(content);
-      return false;
-   }
 
    info                   = (struct retro_game_info*)
       calloc(content->size, sizeof(*info));
@@ -754,8 +746,6 @@ static bool content_file_init(
 
       free(info);
    }
-
-   string_list_free(content);
 
    return ret;
 }
@@ -1699,6 +1689,7 @@ bool content_init(void)
 
    bool ret                                   = true;
    char *error_string                         = NULL;
+   struct string_list *content                = NULL;
    global_t *global                           = global_get_ptr();
    settings_t *settings                       = config_get_ptr();
    rarch_system_info_t *sys_info              = runloop_get_system_info();
@@ -1755,14 +1746,17 @@ bool content_init(void)
    }
 
    _content_is_inited = true;
+   content            = string_list_new();
 
    if (     !temporary_content 
-         || !content_file_init(&content_ctx, &error_string))
+         || !content_file_init(&content_ctx, content, &error_string))
    {
       content_deinit();
 
       ret                = false;
    }
+
+   string_list_free(content);
 
    if (content_ctx.name_ips)
       free(content_ctx.name_ips);
