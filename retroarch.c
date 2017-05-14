@@ -2257,7 +2257,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
    return true;
 }
 
-#if 1
+#if 0
 static void runloop_upload_audio(void *task_data,
       void *user_data, const char *err)
 {
@@ -2634,7 +2634,7 @@ static enum runloop_state runloop_check_state(
    if (runloop_cmd_triggered(trigger_input, RARCH_RESET))
    {
       command_event(CMD_EVENT_RESET, NULL);
-#if 1
+#if 0
       task_push_audio_mixer_load("/home/squarepusher/SumertimeBlues.ogg",
             runloop_upload_audio, NULL);
 #endif
