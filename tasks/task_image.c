@@ -177,37 +177,9 @@ static void task_image_load_free(retro_task_t *task)
    }
 }
 
-static int cb_nbio_generic(nbio_handle_t *nbio, size_t *len)
-{
-   struct nbio_image_handle *image = (struct nbio_image_handle*)nbio->data;
-   void *ptr                       = nbio_get_ptr(nbio->handle, len);
-
-   if (!ptr || !image || !image->handle)
-      goto error;
-
-   image_transfer_set_buffer_ptr(image->handle, image->type, ptr);
-
-   image->size                     = *len;
-   image->pos_increment            = (*len / 2) ? ((unsigned)(*len / 2)) : 1;
-   image->processing_pos_increment = (*len / 4) ?
-       ((unsigned)(*len / 4)) : 1;
-
-   if (!image_transfer_start(image->handle, image->type))
-      goto error;
-
-   image->is_blocking   = false;
-   image->is_finished   = false;
-   nbio->is_finished    = true;
-
-   return 0;
-
-error:
-   task_image_cleanup(nbio);
-   return -1;
-}
-
 static int cb_nbio_image_menu_thumbnail(void *data, size_t len)
 {
+   void *ptr                       = NULL;
    void *handle                    = NULL;
    nbio_handle_t *nbio             = (nbio_handle_t*)data; 
    struct nbio_image_handle *image = nbio ? 
@@ -225,7 +197,27 @@ static int cb_nbio_image_menu_thumbnail(void *data, size_t len)
    image->size   = len;
    image->cb     = &cb_image_menu_thumbnail;
 
-   return cb_nbio_generic(nbio, &len);
+   ptr           = nbio_get_ptr(nbio->handle, &len);
+
+   image_transfer_set_buffer_ptr(image->handle, image->type, ptr);
+
+   image->size                     = len;
+   image->pos_increment            = (len / 2) ? 
+      ((unsigned)(len / 2)) : 1;
+   image->processing_pos_increment = (len / 4) ?
+       ((unsigned)(len / 4)) : 1;
+
+   if (!image_transfer_start(image->handle, image->type))
+   {
+      task_image_cleanup(nbio);
+      return -1;
+   }
+
+   image->is_blocking   = false;
+   image->is_finished   = false;
+   nbio->is_finished    = true;
+
+   return 0;
 }
 
 bool task_image_load_handler(retro_task_t *task)
