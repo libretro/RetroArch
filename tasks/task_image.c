@@ -31,12 +31,11 @@
 
 enum image_status_enum
 {
-   IMAGE_STATUS_POLL = 0,
+   IMAGE_STATUS_NONE = 0,
    IMAGE_STATUS_TRANSFER,
    IMAGE_STATUS_TRANSFER_PARSE,
    IMAGE_STATUS_PROCESS_TRANSFER,
-   IMAGE_STATUS_PROCESS_TRANSFER_PARSE,
-   IMAGE_STATUS_TRANSFER_PARSE_FREE
+   IMAGE_STATUS_PROCESS_TRANSFER_PARSE
 };
 
 struct nbio_image_handle
@@ -259,9 +258,7 @@ bool task_image_load_handler(retro_task_t *task)
             }
             if (!image->is_finished)
                break;
-         case IMAGE_STATUS_TRANSFER_PARSE_FREE:
-         case IMAGE_STATUS_POLL:
-         default:
+         case IMAGE_STATUS_NONE:
             break;
       }
    }
