@@ -760,7 +760,8 @@ bool task_push_overlay_load_default(
    /* Prevent overlay from being loaded if it already is being loaded */
    find_data.func     = task_overlay_finder;
    find_data.userdata = (void*)overlay_path;
-   if (task_queue_ctl(TASK_QUEUE_CTL_FIND, &find_data))
+
+   if (task_queue_find(&find_data))
       goto error;
 
    conf = config_file_new(overlay_path);
@@ -800,7 +801,7 @@ bool task_push_overlay_load_default(
    t->callback              = cb;
    t->user_data             = user_data;
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, t);
+   task_queue_push(t);
 
    return true;
 

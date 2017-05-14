@@ -75,5 +75,5 @@ void task_push_get_powerstate(void)
    task->callback = task_powerstate_cb;
    task->mute     = true;
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+   task_queue_push(task);
 }

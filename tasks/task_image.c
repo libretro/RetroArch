@@ -342,7 +342,7 @@ bool task_push_image_load(const char *fullpath, retro_task_callback_t cb, void *
    t->callback        = cb;
    t->user_data       = user_data;
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, t);
+   task_queue_push(t);
 
    return true;
 

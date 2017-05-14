@@ -736,7 +736,7 @@ bool task_push_dbscan(
    if (db->handle)
       db->handle->status = DATABASE_STATUS_ITERATE_BEGIN;
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, t);
+   task_queue_push(t);
 
    return true;
 

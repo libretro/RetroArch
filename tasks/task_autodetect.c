@@ -380,7 +380,7 @@ bool input_autoconfigure_disconnect(unsigned i, const char *ident)
    task->state   = state;
    task->handler = input_autoconfigure_disconnect_handler;
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+   task_queue_push(task);
 
    return true;
 
@@ -475,7 +475,7 @@ bool input_autoconfigure_connect(
    task->state   = state;
    task->handler = input_autoconfigure_connect_handler;
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+   task_queue_push(task);
 
    return true;
 

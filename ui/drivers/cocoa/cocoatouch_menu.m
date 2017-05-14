@@ -769,7 +769,7 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 - (void)menuSelect: (uint32_t) i
 {
    menu_entry_select(i);
-   task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
+   task_queue_check();
 }
 
 - (void)menuBack

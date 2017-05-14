@@ -3500,6 +3500,6 @@ bool cheevos_load(const void *data)
    task->progress  = 0;
    task->title     = NULL;
    
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+   task_queue_push(task);
    return true;
 }

@@ -658,7 +658,7 @@ static bool task_push_undo_save_state(const char *path, void *data, size_t size)
    task->callback                = undo_save_state_cb;
    task->title                   = strdup(msg_hash_to_str(MSG_UNDOING_SAVE_STATE));
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+   task_queue_push(task);
 
    return true;
 
@@ -1018,7 +1018,7 @@ static void task_push_save_state(const char *path, void *data, size_t size, bool
    task->title             = strdup(msg_hash_to_str(MSG_SAVING_STATE));
    task->mute              = state->mute;
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+   task_queue_push(task);
 
    return;
 
@@ -1089,7 +1089,7 @@ static void task_push_load_and_save_state(const char *path, void *data,
    task->title       = strdup(msg_hash_to_str(MSG_LOADING_STATE));
    task->mute        = state->mute;
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+   task_queue_push(task);
 
    return;
 
@@ -1225,7 +1225,7 @@ bool content_load_state(const char *path,
    task->callback               = content_load_state_cb;
    task->title                  = strdup(msg_hash_to_str(MSG_LOADING_STATE));
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+   task_queue_push(task);
 
    return true;
 

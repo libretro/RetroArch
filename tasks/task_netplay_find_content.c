@@ -307,7 +307,7 @@ bool task_push_netplay_crc_scan(uint32_t crc, char* name,
    task->callback       = netplay_crc_scan_callback;
    task->title          = strdup("Looking for matching content...");
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+   task_queue_push(task);
 
    return true;
 

@@ -267,7 +267,7 @@ static bool screenshot_dump(
    if (!savestate)
       task->title    = strdup(msg_hash_to_str(MSG_TAKING_SCREENSHOT));
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+   task_queue_push(task);
 
    return true;
 }

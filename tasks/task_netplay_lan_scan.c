@@ -104,7 +104,7 @@ bool task_push_netplay_lan_scan(void)
    task->callback = netplay_lan_scan_callback;
    task->title    = strdup(msg_hash_to_str(MSG_NETPLAY_LAN_SCANNING));
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+   task_queue_push(task);
 
    return true;
 }
@@ -121,7 +121,7 @@ bool task_push_netplay_lan_scan_rooms(void)
    task->callback = netplay_lan_scan_callback;
    task->title    = strdup(msg_hash_to_str(MSG_NETPLAY_LAN_SCANNING));
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+   task_queue_push(task);
 
    return true;
 }

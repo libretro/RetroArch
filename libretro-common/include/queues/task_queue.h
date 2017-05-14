@@ -43,53 +43,6 @@ enum task_type
 };
 
 
-enum task_queue_ctl_state
-{
-   TASK_QUEUE_CTL_NONE = 0,
-
-   /**
-    * Calls func for every running task
-    * until it returns true.
-    * Returns a task or NULL if not found.
-    */
-   TASK_QUEUE_CTL_FIND,
-
-   /**
-    * Calls func for every running task when handler
-    * parameter matches task handler, allowing the
-    * list parameter to be filled with user-defined
-    * data.
-    */
-   TASK_QUEUE_CTL_RETRIEVE,
-
-   /* Blocks until all tasks have finished.
-    * This must only be called from the main thread. */
-   TASK_QUEUE_CTL_WAIT,
-
-   /* Checks for finished tasks
-    * Takes the finished tasks, if any,
-    * and runs their callbacks.
-    * This must only be called from the main thread. */
-   TASK_QUEUE_CTL_CHECK,
-
-   /* Pushes a task
-    * The task will start as soon as possible. */
-   TASK_QUEUE_CTL_PUSH,
-
-   /* Sends a signal to terminate all the tasks.
-    *
-    * This won't terminate the tasks immediately.
-    * They will finish as soon as possible.
-    *
-    * This must only be called from the main thread. */
-   TASK_QUEUE_CTL_RESET,
-
-   /**
-    * Signals a task to end without waiting for
-    * it to complete. */
-   TASK_QUEUE_CTL_CANCEL
- };
-
 typedef struct retro_task retro_task_t;
 typedef void (*retro_task_callback_t)(void *task_data,
       void *user_data, const char *error);
@@ -177,8 +130,6 @@ typedef struct task_retriever_data
    task_retriever_info_t *list;
 } task_retriever_data_t;
 
-bool task_queue_ctl(enum task_queue_ctl_state state, void *data);
-
 void *task_queue_retriever_info_next(task_retriever_info_t **link);
 
 void task_queue_retriever_info_free(task_retriever_info_t *list);
@@ -223,6 +174,18 @@ void task_queue_set_threaded(void);
 void task_queue_unset_threaded(void);
 
 bool task_queue_is_threaded(void);
+
+bool task_queue_find(task_finder_data_t *find_data);
+
+void task_queue_retrieve(task_retriever_data_t *data);
+
+void task_queue_check(void);
+
+void task_queue_push(retro_task_t *task);
+
+void task_queue_wait(void);
+
+void task_queue_reset(void);
 
 /* Deinitializes the task system.
  * This deinitializes the task system.

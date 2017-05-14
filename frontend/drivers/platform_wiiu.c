@@ -450,7 +450,7 @@ int main(int argc, char **argv)
       if (ret == 1 && sleep_ms > 0)
          retro_sleep(sleep_ms);
 
-      task_queue_ctl(TASK_QUEUE_CTL_WAIT, NULL);
+      task_queue_wait();
 
       if (ret == -1)
          break;

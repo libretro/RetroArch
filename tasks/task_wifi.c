@@ -110,7 +110,7 @@ bool task_push_wifi_scan(void)
    task->title          = strdup(msg_hash_to_str(
                            MSG_SCANNING_WIRELESS_NETWORKS));
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+   task_queue_push(task);
 
    return true;
 

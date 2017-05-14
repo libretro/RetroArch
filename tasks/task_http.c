@@ -255,7 +255,7 @@ static void* task_push_http_transfer_generic(
    find_data.userdata = (void*)url;
 
    /* Concurrent download of the same file is not allowed */
-   if (task_queue_ctl(TASK_QUEUE_CTL_FIND, &find_data))
+   if (task_queue_find(&find_data))
    {
       RARCH_LOG("[http] '%s'' is already being downloaded.\n", url);
       return NULL;
@@ -295,7 +295,7 @@ static void* task_push_http_transfer_generic(
 
    t->title                = strdup(tmp);
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, t);
+   task_queue_push(t);
 
    return t;
 
@@ -341,6 +341,7 @@ task_retriever_info_t *http_task_get_transfer_list(void)
    retrieve_data.func         = task_http_retriever;
 
    /* Build list of current HTTP transfers and return it */
-   task_queue_ctl(TASK_QUEUE_CTL_RETRIEVE, &retrieve_data);
+   task_queue_retrieve(&retrieve_data);
+
    return retrieve_data.list;
 }
