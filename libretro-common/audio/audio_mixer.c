@@ -449,7 +449,7 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound, bool repeat,
 void audio_mixer_stop(audio_mixer_voice_t* voice)
 {
    if (voice && voice->stop_cb)
-      voice->stop_cb(voice, AUDIO_MIXER_SOUND_STOPPED);
+      voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_STOPPED);
 }
 
 static void audio_mixer_mix_wav(float* buffer, size_t num_frames,
@@ -473,7 +473,7 @@ again:
       if (voice->repeat)
       {
          if (voice->stop_cb)
-            voice->stop_cb(voice, AUDIO_MIXER_SOUND_REPEATED);
+            voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_REPEATED);
 
          buf_free                  -= pcm_available;
          pcm_available              = sound->types.wav.frames * 2;
@@ -483,7 +483,7 @@ again:
       }
 
       if (voice->stop_cb)
-         voice->stop_cb(voice, AUDIO_MIXER_SOUND_FINISHED);
+         voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_FINISHED);
 
       voice->type = AUDIO_MIXER_TYPE_NONE;
    }
@@ -520,7 +520,7 @@ again:
          if (voice->repeat)
          {
             if (voice->stop_cb)
-               voice->stop_cb(voice, AUDIO_MIXER_SOUND_REPEATED);
+               voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_REPEATED);
 
             stb_vorbis_seek_start(voice->types.ogg.stream);
             goto again;
@@ -528,7 +528,7 @@ again:
          else
          {
             if (voice->stop_cb)
-               voice->stop_cb(voice, AUDIO_MIXER_SOUND_FINISHED);
+               voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_FINISHED);
 
             voice->type = AUDIO_MIXER_TYPE_NONE;
             return;
