@@ -2623,7 +2623,12 @@ static enum runloop_state runloop_check_state(
       command_event(CMD_EVENT_DISK_PREV, NULL);
 
    if (runloop_cmd_triggered(trigger_input, RARCH_RESET))
+   {
       command_event(CMD_EVENT_RESET, NULL);
+#if 0
+      task_push_audio_mixer_load("/home/squarepusher/SumertimeBlues.ogg", NULL, NULL);
+#endif
+   }
 
    cheat_manager_state_checks(
          runloop_cmd_triggered(trigger_input, RARCH_CHEAT_INDEX_PLUS),

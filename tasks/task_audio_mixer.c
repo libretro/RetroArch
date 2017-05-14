@@ -78,6 +78,8 @@ static int cb_nbio_audio_wav_loaded(void *data, size_t len)
       return -1;
    }
 
+   free(ptr);
+
    image->is_finished              = true;
    nbio->is_finished               = true;
 
@@ -103,7 +105,6 @@ static int cb_nbio_audio_ogg_loaded(void *data, size_t len)
       task_audio_mixer_cleanup(nbio);
       return -1;
    }
-
 
    image->is_finished              = true;
    nbio->is_finished               = true;
