@@ -495,18 +495,15 @@ static bool content_file_load(
       const struct string_list *content,
       content_information_ctx_t *content_ctx,
       char **error_string,
-      const struct retro_subsystem_info *special
+      const struct retro_subsystem_info *special,
+      struct string_list *additional_path_allocs
       )
 {
    unsigned i;
    retro_ctx_load_content_info_t load_info;
    char msg[1024];
-   struct string_list *additional_path_allocs = string_list_new();
 
    msg[0] = '\0';
-
-   if (!additional_path_allocs)
-      return false;
 
    for (i = 0; i < content->size; i++)
    {
@@ -522,7 +519,7 @@ static bool content_file_load(
                sizeof(msg)
                );
          *error_string = strdup(msg);
-         goto error;
+         return false;
       }
 
       info[i].path = NULL;
@@ -545,7 +542,7 @@ static bool content_file_load(
                   msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
                   path);
             *error_string = strdup(msg);
-            goto error;
+            return false;
          }
 
          info[i].size = len;
@@ -565,7 +562,7 @@ static bool content_file_load(
                   &info[i], i,
                   additional_path_allocs, need_fullpath, path,
                   error_string))
-            goto error;
+            return false;
 #endif
       }
    }
@@ -579,7 +576,7 @@ static bool content_file_load(
       snprintf(msg, sizeof(msg),
             "%s.", msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
       *error_string = strdup(msg);
-      goto error;
+      return false;
    }
 
 #ifdef HAVE_CHEEVOS
@@ -592,14 +589,7 @@ static bool content_file_load(
    }
 #endif
 
-   string_list_free(additional_path_allocs);
-
    return true;
-
-error:
-   string_list_free(additional_path_allocs);
-   
-   return false;
 }
 
 static const struct retro_subsystem_info *content_file_init_subsystem(
@@ -754,8 +744,10 @@ static bool content_file_init(
    if (info)
    {
       unsigned i;
+      struct string_list *additional_path_allocs = string_list_new();
       ret = content_file_load(info, content, content_ctx, error_string,
-            special);
+            special, additional_path_allocs);
+      string_list_free(additional_path_allocs);
 
       for (i = 0; i < content->size; i++)
          free((void*)info[i].data);
