@@ -20,6 +20,7 @@
 #include <streams/file_stream.h>
 #include <compat/strl.h>
 #include <rhash.h>
+#include <retro_miscellaneous.h>
 #include <net/net_http.h>
 #include <libretro.h>
 
@@ -2394,19 +2395,6 @@ static int cheevos_deactivate_unlocks(const char* json, unsigned mode)
 }
 #endif
 
-static INLINE unsigned cheevos_next_power_of_2(unsigned n)
-{
-   n--;
-
-   n |= n >> 1;
-   n |= n >> 2;
-   n |= n >> 4;
-   n |= n >> 8;
-   n |= n >> 16;
-
-   return n + 1;
-}
-
 void cheevos_reset_game(void)
 {
    cheevo_t *cheevo    = cheevos_locals.core.cheevos;
@@ -3052,7 +3040,7 @@ static int cheevos_iterate(coro_t* coro)
       }
 
       if (HEADER.rom_size)
-         ROMSIZE = cheevos_next_power_of_2(HEADER.rom_size);
+         ROMSIZE = next_pow2(HEADER.rom_size);
       else
          ROMSIZE = 256;
 
