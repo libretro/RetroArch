@@ -105,7 +105,7 @@ const char *file_path_str(enum file_path_enum enum_idx)
          str = ".ogg";
          break;
       case FILE_PATH_WAV_EXTENSION:
-         str = ".ogg";
+         str = ".wav";
          break;
       case FILE_PATH_JPEG_EXTENSION:
          str = ".jpeg";
