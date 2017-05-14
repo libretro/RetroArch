@@ -115,6 +115,10 @@ struct content_information_ctx
       unsigned size;
    } subsystem;
 
+   char *name_ips;
+   char *name_bps;
+   char *name_ups;
+
    char *valid_extensions;
    char *directory_cache;
    char *directory_system;
@@ -1029,6 +1033,9 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    content_ctx.history_list_enable            = false;
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
+   content_ctx.name_ips                       = NULL;
+   content_ctx.name_bps                       = NULL;
+   content_ctx.name_ups                       = NULL;
    content_ctx.valid_extensions               = NULL;
    content_ctx.block_extract                  = false;
    content_ctx.need_fullpath                  = false;
@@ -1104,6 +1111,9 @@ bool task_push_load_content_from_playlist_from_menu(
    content_ctx.history_list_enable            = false;
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
+   content_ctx.name_ips                       = NULL;
+   content_ctx.name_bps                       = NULL;
+   content_ctx.name_ups                       = NULL;
    content_ctx.valid_extensions               = NULL;
    content_ctx.block_extract                  = false;
    content_ctx.need_fullpath                  = false;
@@ -1182,6 +1192,9 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
    content_ctx.history_list_enable            = false;
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
+   content_ctx.name_ips                       = NULL;
+   content_ctx.name_bps                       = NULL;
+   content_ctx.name_ups                       = NULL;
    content_ctx.valid_extensions               = NULL;
    content_ctx.block_extract                  = false;
    content_ctx.need_fullpath                  = false;
@@ -1292,6 +1305,9 @@ bool task_push_load_content_with_new_core_from_menu(
    content_ctx.history_list_enable            = false;
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
+   content_ctx.name_ips                       = NULL;
+   content_ctx.name_bps                       = NULL;
+   content_ctx.name_ups                       = NULL;
    content_ctx.valid_extensions               = NULL;
    content_ctx.block_extract                  = false;
    content_ctx.need_fullpath                  = false;
@@ -1375,6 +1391,9 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
    content_ctx.history_list_enable            = false;
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
+   content_ctx.name_ips                       = NULL;
+   content_ctx.name_bps                       = NULL;
+   content_ctx.name_ups                       = NULL;
    content_ctx.valid_extensions               = NULL;
    content_ctx.block_extract                  = false;
    content_ctx.need_fullpath                  = false;
@@ -1623,6 +1642,9 @@ bool content_init(void)
    content_ctx.history_list_enable            = false;
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
+   content_ctx.name_ips                       = NULL;
+   content_ctx.name_bps                       = NULL;
+   content_ctx.name_ups                       = NULL;
    content_ctx.valid_extensions               = NULL;
    content_ctx.block_extract                  = false;
    content_ctx.need_fullpath                  = false;
