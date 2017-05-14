@@ -335,15 +335,13 @@ static bool load_content_into_memory(
       /* Attempt to apply a patch. */
       if (!content_ctx->patch_is_blocked)
       {
-         global_t *global = global_get_ptr();
-         if (global)
             patch_content(
                   content_ctx->is_ips_pref,
                   content_ctx->is_bps_pref,
                   content_ctx->is_ups_pref,
-                  global->name.ips,
-                  global->name.bps,
-                  global->name.ups,
+                  content_ctx->name_ips,
+                  content_ctx->name_bps,
+                  content_ctx->name_ups,
                   (uint8_t**)&ret_buf,
                   (void*)length);
       }
@@ -1017,8 +1015,9 @@ static bool firmware_update_status(
 bool task_push_start_dummy_core(content_ctx_info_t *content_info)
 {
    content_information_ctx_t content_ctx;
-  
+   bool ret                                   = true;
    char *error_string                         = NULL;
+   global_t *global                           = global_get_ptr();
    settings_t *settings                       = config_get_ptr();
 
    if (!content_info)
@@ -1045,6 +1044,16 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    content_ctx.subsystem.size                 = 0;
 
    content_ctx.history_list_enable            = settings->bools.history_list_enable;
+
+   if (global)
+   {
+      if (!string_is_empty(global->name.ips))
+         content_ctx.name_ips                 = strdup(global->name.ips);
+      if (!string_is_empty(global->name.bps))
+         content_ctx.name_bps                 = strdup(global->name.bps);
+      if (!string_is_empty(global->name.ups))
+         content_ctx.name_ups                 = strdup(global->name.ups);
+   }
 
    if (!string_is_empty(settings->paths.directory_system))
       content_ctx.directory_system            = strdup(settings->paths.directory_system);
@@ -1077,16 +1086,19 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
          free(error_string);
       }
 
-      if (content_ctx.directory_system)
-         free(content_ctx.directory_system);
-
-      return false;
+      ret =  false;
    }
 
+   if (content_ctx.name_ips)
+      free(content_ctx.name_ips);
+   if (content_ctx.name_bps)
+      free(content_ctx.name_bps);
+   if (content_ctx.name_ups)
+      free(content_ctx.name_ups);
    if (content_ctx.directory_system)
       free(content_ctx.directory_system);
 
-   return true;
+   return ret;
 }
 
 #ifdef HAVE_MENU
@@ -1099,7 +1111,9 @@ bool task_push_load_content_from_playlist_from_menu(
 {
    content_information_ctx_t content_ctx;
   
+   bool ret                                   = true;
    char *error_string                         = NULL;
+   global_t *global                           = global_get_ptr();
    settings_t *settings                       = config_get_ptr();
 
    content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
@@ -1123,6 +1137,16 @@ bool task_push_load_content_from_playlist_from_menu(
    content_ctx.subsystem.size                 = 0;
 
    content_ctx.history_list_enable            = settings->bools.history_list_enable;
+
+   if (global)
+   {
+      if (!string_is_empty(global->name.ips))
+         content_ctx.name_ips                 = strdup(global->name.ips);
+      if (!string_is_empty(global->name.bps))
+         content_ctx.name_bps                 = strdup(global->name.bps);
+      if (!string_is_empty(global->name.ups))
+         content_ctx.name_ups                 = strdup(global->name.ups);
+   }
 
    if (!string_is_empty(settings->paths.directory_system))
       content_ctx.directory_system            = strdup(settings->paths.directory_system);
@@ -1150,10 +1174,8 @@ bool task_push_load_content_from_playlist_from_menu(
 
       rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
 
-      if (content_ctx.directory_system)
-         free(content_ctx.directory_system);
-
-      return false;
+      ret = false;
+      goto end;
    }
 
 #ifndef HAVE_DYNAMIC
@@ -1166,10 +1188,17 @@ bool task_push_load_content_from_playlist_from_menu(
    command_event(CMD_EVENT_LOAD_CORE, NULL);
 #endif
 
+end:
+   if (content_ctx.name_ips)
+      free(content_ctx.name_ips);
+   if (content_ctx.name_bps)
+      free(content_ctx.name_bps);
+   if (content_ctx.name_ups)
+      free(content_ctx.name_ups);
    if (content_ctx.directory_system)
       free(content_ctx.directory_system);
 
-   return true;
+   return ret;
 }
 #endif
 
@@ -1177,7 +1206,9 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
 {
    content_information_ctx_t content_ctx;
   
+   bool ret                                   = true;
    char *error_string                         = NULL;
+   global_t *global                           = global_get_ptr();
    settings_t *settings                       = config_get_ptr();
 
    if (!content_info)
@@ -1204,6 +1235,16 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
    content_ctx.subsystem.size                 = 0;
 
    content_ctx.history_list_enable            = settings->bools.history_list_enable;
+
+   if (global)
+   {
+      if (!string_is_empty(global->name.ips))
+         content_ctx.name_ips                 = strdup(global->name.ips);
+      if (!string_is_empty(global->name.bps))
+         content_ctx.name_bps                 = strdup(global->name.bps);
+      if (!string_is_empty(global->name.ups))
+         content_ctx.name_ups                 = strdup(global->name.ups);
+   }
 
    if (!string_is_empty(settings->paths.directory_system))
       content_ctx.directory_system            = strdup(settings->paths.directory_system);
@@ -1238,10 +1279,8 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
       rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
 #endif
 
-      if (content_ctx.directory_system)
-         free(content_ctx.directory_system);
-
-      return false;
+      ret = false;
+      goto end;
    }
 
 #ifdef HAVE_MENU
@@ -1249,10 +1288,17 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
    menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
 #endif
 
+end:
+   if (content_ctx.name_ips)
+      free(content_ctx.name_ips);
+   if (content_ctx.name_bps)
+      free(content_ctx.name_bps);
+   if (content_ctx.name_ups)
+      free(content_ctx.name_ups);
    if (content_ctx.directory_system)
       free(content_ctx.directory_system);
 
-   return true;
+   return ret;
 }
 
 bool task_push_load_new_core(
@@ -1293,7 +1339,9 @@ bool task_push_load_content_with_new_core_from_menu(
 {
    content_information_ctx_t content_ctx;
   
+   bool ret                                   = true;
    char *error_string                         = NULL;
+   global_t *global                           = global_get_ptr();
    settings_t *settings                       = config_get_ptr();
 
    content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
@@ -1317,6 +1365,16 @@ bool task_push_load_content_with_new_core_from_menu(
    content_ctx.subsystem.size                 = 0;
 
    content_ctx.history_list_enable            = settings->bools.history_list_enable;
+
+   if (global)
+   {
+      if (!string_is_empty(global->name.ips))
+         content_ctx.name_ips                 = strdup(global->name.ips);
+      if (!string_is_empty(global->name.bps))
+         content_ctx.name_bps                 = strdup(global->name.bps);
+      if (!string_is_empty(global->name.ups))
+         content_ctx.name_ups                 = strdup(global->name.ups);
+   }
 
    if (!string_is_empty(settings->paths.directory_system))
       content_ctx.directory_system            = strdup(settings->paths.directory_system);
@@ -1350,10 +1408,8 @@ bool task_push_load_content_with_new_core_from_menu(
 
       rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
 
-      if (content_ctx.directory_system)
-         free(content_ctx.directory_system);
-
-      return false;
+      ret = false;
+      goto end;
    }
 
 #else
@@ -1366,10 +1422,17 @@ bool task_push_load_content_with_new_core_from_menu(
    if (type != CORE_TYPE_DUMMY)
       menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
 
+end:
+   if (content_ctx.name_ips)
+      free(content_ctx.name_ips);
+   if (content_ctx.name_bps)
+      free(content_ctx.name_bps);
+   if (content_ctx.name_ups)
+      free(content_ctx.name_ups);
    if (content_ctx.directory_system)
       free(content_ctx.directory_system);
 
-   return true;
+   return ret;
 }
 #endif
 
@@ -1380,6 +1443,7 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
 
    bool ret                                   = false;
    char *error_string                         = NULL;
+   global_t *global                           = global_get_ptr();
    settings_t *settings                       = config_get_ptr();
 
    content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
@@ -1404,6 +1468,16 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
 
    content_ctx.history_list_enable            = settings->bools.history_list_enable;
 
+   if (global)
+   {
+      if (!string_is_empty(global->name.ips))
+         content_ctx.name_ips                 = strdup(global->name.ips);
+      if (!string_is_empty(global->name.bps))
+         content_ctx.name_bps                 = strdup(global->name.bps);
+      if (!string_is_empty(global->name.ups))
+         content_ctx.name_ups                 = strdup(global->name.ups);
+   }
+
    if (!string_is_empty(settings->paths.directory_system))
       content_ctx.directory_system            = strdup(settings->paths.directory_system);
 
@@ -1417,6 +1491,12 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
 
    ret = task_load_content(content_info, &content_ctx, true, loading_from_cli, &error_string);
 
+   if (content_ctx.name_ips)
+      free(content_ctx.name_ips);
+   if (content_ctx.name_bps)
+      free(content_ctx.name_bps);
+   if (content_ctx.name_ups)
+      free(content_ctx.name_ups);
    if (content_ctx.directory_system)
       free(content_ctx.directory_system);
 
@@ -1629,6 +1709,7 @@ bool content_init(void)
 
    bool ret                                   = true;
    char *error_string                         = NULL;
+   global_t *global                           = global_get_ptr();
    settings_t *settings                       = config_get_ptr();
    rarch_system_info_t *sys_info              = runloop_get_system_info();
 
@@ -1653,6 +1734,16 @@ bool content_init(void)
 
    content_ctx.subsystem.data                 = NULL;
    content_ctx.subsystem.size                 = 0;
+
+   if (global)
+   {
+      if (!string_is_empty(global->name.ips))
+         content_ctx.name_ips                 = strdup(global->name.ips);
+      if (!string_is_empty(global->name.bps))
+         content_ctx.name_bps                 = strdup(global->name.bps);
+      if (!string_is_empty(global->name.ups))
+         content_ctx.name_ups                 = strdup(global->name.ups);
+   }
    
    if (sys_info)
    {
@@ -1683,6 +1774,12 @@ bool content_init(void)
       ret                = false;
    }
 
+   if (content_ctx.name_ips)
+      free(content_ctx.name_ips);
+   if (content_ctx.name_bps)
+      free(content_ctx.name_bps);
+   if (content_ctx.name_ups)
+      free(content_ctx.name_ups);
    if (content_ctx.directory_system)
       free(content_ctx.directory_system);
    if (content_ctx.directory_cache)
