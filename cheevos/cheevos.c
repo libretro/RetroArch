@@ -2694,6 +2694,10 @@ typedef struct
 
 static int cheevos_iterate(coro_t* coro)
 {
+   ssize_t num_read = 0;
+   size_t to_read   = 4096;
+   uint8_t *buffer  = NULL;
+   const char *end  = NULL;
    enum
    {
       /* Negative values because CORO_SUB generates positive values */
@@ -2802,9 +2806,7 @@ static int cheevos_iterate(coro_t* coro)
 
          for (;;)
          {
-            uint8_t *buffer = (uint8_t*)DATA + LEN;
-            size_t to_read = 4096;
-            ssize_t num_read;
+            buffer = (uint8_t*)DATA + LEN;
 
             if (to_read > COUNT)
                to_read = COUNT;
@@ -2814,7 +2816,7 @@ static int cheevos_iterate(coro_t* coro)
             if (num_read <= 0)
                break;
 
-            LEN += num_read;
+            LEN   += num_read;
             COUNT -= num_read;
             
             if (COUNT == 0)
@@ -2839,7 +2841,7 @@ static int cheevos_iterate(coro_t* coro)
             while (EXT)
             {
                unsigned hash;
-               const char *end = strchr(EXT, '|');
+               end = strchr(EXT, '|');
 
                if (end)
                {

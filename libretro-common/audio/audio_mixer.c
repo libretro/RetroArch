@@ -386,7 +386,7 @@ static bool audio_mixer_play_ogg(
 
    voice->types.ogg.resampler      = resamp;
    voice->types.ogg.resampler_data = resampler_data;
-   voice->types.ogg.buffer         = ogg_buffer;
+   voice->types.ogg.buffer         = (float*)ogg_buffer;
    voice->types.ogg.buf_samples    = samples;
    voice->types.ogg.ratio          = ratio;
    voice->types.ogg.stream         = stb_vorbis;
