@@ -2708,7 +2708,7 @@ static int cheevos_iterate(coro_t* coro)
       LOGIN       = -9,
       HTTP_GET    = -10,
       DEACTIVATE  = -11,
-      PLAYING     = -12,
+      PLAYING     = -12
    };
    
    static const uint32_t genesis_exts[] =
