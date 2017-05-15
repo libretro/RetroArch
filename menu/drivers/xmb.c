@@ -4083,13 +4083,12 @@ static int xmb_pointer_tap(void *userdata,
    }
    else if (ptr <= (menu_entries_get_size() - 1))
    {
-      bool scroll              = false;
       size_t selection         = menu_navigation_get_selection();
       if (ptr == selection && cbs && cbs->action_select)
          return (unsigned)menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
 
       menu_navigation_set_selection(ptr);
-      menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_SET, &scroll);
+      menu_driver_navigation_set(false);
    }
 
    return 0;

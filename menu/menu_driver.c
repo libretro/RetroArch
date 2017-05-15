@@ -504,6 +504,12 @@ bool menu_driver_init(bool video_is_threaded)
    return false;
 }
 
+void menu_driver_navigation_set(bool scroll)
+{
+   if (menu_driver_ctx->navigation_set)
+      menu_driver_ctx->navigation_set(menu_userdata, scroll);
+}
+
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
    switch (state)
@@ -683,16 +689,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT:
          menu_driver_load_no_content = false;
-         break;
-      case RARCH_MENU_CTL_NAVIGATION_SET:
-         {
-            bool *scroll = (bool*)data;
-
-            if (!scroll)
-               return false;
-            if (menu_driver_ctx->navigation_set)
-               menu_driver_ctx->navigation_set(menu_userdata, *scroll);
-         }
          break;
       case RARCH_MENU_CTL_NAVIGATION_SET_LAST:
          if (menu_driver_ctx->navigation_set_last)

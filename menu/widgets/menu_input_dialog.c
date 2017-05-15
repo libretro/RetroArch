@@ -39,9 +39,8 @@ static void menu_input_search_cb(void *userdata, const char *str)
 
    if (str && *str && file_list_search(selection_buf, str, &idx))
    {
-      bool scroll = true;
       menu_navigation_set_selection(idx);
-      menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_SET, &scroll);
+      menu_driver_navigation_set(true);
    }
 
    menu_input_dialog_end();

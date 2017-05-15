@@ -187,9 +187,8 @@ static bool menu_entries_refresh(void *data)
    if ((selection >= list_size) && list_size)
    {
       size_t idx  = list_size - 1;
-      bool scroll = true;
       menu_navigation_set_selection(idx);
-      menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_SET, &scroll);
+      menu_driver_navigation_set(true);
    }
    else if (!list_size)
    {

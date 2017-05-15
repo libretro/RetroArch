@@ -138,10 +138,9 @@ static int action_right_scroll(unsigned type, const char *label,
    if (selection  + fast_scroll_speed < (menu_entries_get_size()))
    {
       size_t idx  = selection + fast_scroll_speed;
-      bool scroll = true;
 
       menu_navigation_set_selection(idx);
-      menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_SET, &scroll);
+      menu_driver_navigation_set(true);
    }
    else
    {

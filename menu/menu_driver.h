@@ -82,7 +82,6 @@ enum rarch_menu_ctl_state
 {
    RARCH_MENU_CTL_NONE = 0,
    RARCH_MENU_CTL_REFRESH,
-   RARCH_MENU_CTL_NAVIGATION_SET,
    RARCH_MENU_CTL_NAVIGATION_CLEAR,
    RARCH_MENU_CTL_NAVIGATION_SET_LAST,
    RARCH_MENU_CTL_NAVIGATION_ASCEND_ALPHABET,
@@ -400,6 +399,8 @@ bool menu_driver_list_clear(void *data);
 void menu_driver_increment_navigation(void);
 
 void menu_driver_decrement_navigation(void);
+
+void menu_driver_navigation_set(bool scroll);
 
 bool menu_driver_init(bool video_is_threaded);
 
