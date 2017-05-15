@@ -78,6 +78,9 @@
 #include "../wifi/wifi_driver.h"
 #include "../tasks/tasks_internal.h"
 
+void netplay_lan_scan_callback(void *task_data,
+                               void *user_data, const char *error);
+
 static char new_path_entry[4096]        = {0};
 static char new_lbl_entry[4096]         = {0};
 static char new_entry[4096]             = {0};
@@ -4983,7 +4986,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             if (!hosts || hosts->size == 0)
             {
-               task_push_netplay_lan_scan();
+               task_push_netplay_lan_scan(netplay_lan_scan_callback);
 
                menu_entries_append_enum(info->list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND),

@@ -26,55 +26,6 @@
 #include "../verbosity.h"
 #include "../network/netplay/netplay_discovery.h"
 
-#ifdef HAVE_MENU
-#include "../menu/menu_entries.h"
-#include "../menu/menu_driver.h"
-#endif
-
-static void netplay_lan_scan_callback(void *task_data,
-                               void *user_data, const char *error)
-{
-   struct netplay_host_list *netplay_hosts = NULL;
-
-#ifdef HAVE_MENU
-   enum msg_hash_enums enum_idx            = MSG_UNKNOWN;
-   unsigned menu_type                      = 0;
-   const char *label                       = NULL;
-   const char *path                        = NULL;
-
-   menu_entries_get_last_stack(&path, &label, &menu_type, &enum_idx, NULL);
-
-   /* Don't push the results if we left the LAN scan menu */
-   if (!string_is_equal(label,
-         msg_hash_to_str(
-            MENU_ENUM_LABEL_DEFERRED_NETPLAY_LAN_SCAN_SETTINGS_LIST)))
-      return;
-
-   if (!netplay_discovery_driver_ctl(
-            RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES,
-            (void *) &netplay_hosts))
-      return;
-
-   if (netplay_hosts->size > 0)
-   {
-      unsigned i;
-      file_list_t *file_list = menu_entries_get_selection_buf_ptr(0);
-
-      menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, file_list);
-
-      for (i = 0; i < netplay_hosts->size; i++)
-      {
-         struct netplay_host *host = &netplay_hosts->hosts[i];
-         menu_entries_append_enum(file_list,
-               host->nick,
-               msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_CONNECT_TO),
-               MENU_ENUM_LABEL_NETPLAY_CONNECT_TO,
-               MENU_NETPLAY_LAN_SCAN, 0, 0);
-      }
-   }
-#endif
-}
-
 static void task_netplay_lan_scan_handler(retro_task_t *task)
 {
    if (init_netplay_discovery())
@@ -92,7 +43,7 @@ static void task_netplay_lan_scan_handler(retro_task_t *task)
    return;
 }
 
-bool task_push_netplay_lan_scan(void)
+bool task_push_netplay_lan_scan(retro_task_callback_t cb)
 {
    retro_task_t *task = (retro_task_t*)calloc(1, sizeof(*task));
 
@@ -101,7 +52,7 @@ bool task_push_netplay_lan_scan(void)
 
    task->type     = TASK_TYPE_BLOCKING;
    task->handler  = task_netplay_lan_scan_handler;
-   task->callback = netplay_lan_scan_callback;
+   task->callback = cb;
    task->title    = strdup(msg_hash_to_str(MSG_NETPLAY_LAN_SCANNING));
 
    task_queue_push(task);
@@ -109,7 +60,7 @@ bool task_push_netplay_lan_scan(void)
    return true;
 }
 
-bool task_push_netplay_lan_scan_rooms(void)
+bool task_push_netplay_lan_scan_rooms(retro_task_callback_t cb)
 {
    retro_task_t *task = (retro_task_t*)calloc(1, sizeof(*task));
 
@@ -118,7 +69,7 @@ bool task_push_netplay_lan_scan_rooms(void)
 
    task->type     = TASK_TYPE_BLOCKING;
    task->handler  = task_netplay_lan_scan_handler;
-   task->callback = netplay_lan_scan_callback;
+   task->callback = cb;
    task->title    = strdup(msg_hash_to_str(MSG_NETPLAY_LAN_SCANNING));
 
    task_queue_push(task);
