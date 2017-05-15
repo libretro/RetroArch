@@ -1507,7 +1507,7 @@ static void config_set_defaults(void)
 #endif
    settings->floats.video_scale                = scale;
 
-   if (rarch_ctl(RARCH_CTL_IS_FORCE_FULLSCREEN, NULL))
+   if (retroarch_is_forced_fullscreen())
    {
       configuration_set_bool(settings, settings->bools.video_fullscreen, true);
    }
@@ -2245,7 +2245,7 @@ static bool config_load_file(const char *path, bool set_defaults,
          *bool_settings[i].ptr = tmp;
    }
 
-   if (!rarch_ctl(RARCH_CTL_IS_FORCE_FULLSCREEN, NULL))
+   if (!retroarch_is_forced_fullscreen())
       CONFIG_GET_BOOL_BASE(conf, settings, bools.video_fullscreen, "video_fullscreen");
 
 #ifdef HAVE_NETWORKGAMEPAD

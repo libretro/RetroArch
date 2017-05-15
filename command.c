@@ -1395,7 +1395,7 @@ static bool command_event_init_core(enum rarch_core_type *data)
       config_load_remap();
 
    /* Per-core saves: reset redirection paths */
-   rarch_ctl(RARCH_CTL_SET_PATHS_REDIRECT, NULL);
+   path_set_redirect();
 
    if (!core_init())
       return false;

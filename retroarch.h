@@ -49,8 +49,6 @@ enum rarch_ctl_state
 
    RARCH_CTL_DESTROY,
 
-   RARCH_CTL_SET_PATHS_REDIRECT,
-
    RARCH_CTL_IS_BPS_PREF,
    RARCH_CTL_UNSET_BPS_PREF,
 
@@ -76,9 +74,6 @@ enum rarch_ctl_state
    RARCH_CTL_IS_SRAM_SAVE_DISABLED,
    RARCH_CTL_SET_SRAM_SAVE_DISABLED,
    RARCH_CTL_UNSET_SRAM_SAVE_DISABLED,
-
-   /* Force fullscreen */
-   RARCH_CTL_IS_FORCE_FULLSCREEN,
 
    /* Block config read */
    RARCH_CTL_SET_BLOCK_CONFIG_READ,
@@ -297,6 +292,8 @@ void retroarch_override_setting_free_state(void);
 bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx, void *data);
 
 bool retroarch_validate_game_options(char *s, size_t len, bool mkdir);
+
+bool retroarch_is_forced_fullscreen(void);
 
 void retroarch_set_current_core_type(enum rarch_core_type type, bool explicitly_set);
 

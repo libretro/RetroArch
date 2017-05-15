@@ -1436,15 +1436,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          runloop_ctl(RUNLOOP_CTL_HTTPSERVER_INIT, NULL);
          retroarch_msg_queue_init();
          break;
-      case RARCH_CTL_SET_PATHS_REDIRECT:
-         {
-            bool contentless = false;
-            bool is_inited   = false;
-            content_get_status(&contentless, &is_inited);
-
-            path_set_redirect();
-         }
-         break;
       case RARCH_CTL_IS_SRAM_LOAD_DISABLED:
          return rarch_is_sram_load_disabled;
       case RARCH_CTL_SET_SRAM_LOAD_DISABLED:
@@ -1478,8 +1469,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_UNSET_SRAM_ENABLE:
          rarch_use_sram = false;
          break;
-      case RARCH_CTL_IS_FORCE_FULLSCREEN:
-         return rarch_force_fullscreen;
       case RARCH_CTL_SET_BLOCK_CONFIG_READ:
          rarch_block_config_read = true;
          break;
@@ -1496,6 +1485,10 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
    return true;
 }
 
+bool retroarch_is_forced_fullscreen(void)
+{
+   return rarch_force_fullscreen;
+}
 
 bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx, void *data)
 {
