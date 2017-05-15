@@ -510,6 +510,14 @@ void menu_driver_navigation_set(bool scroll)
       menu_driver_ctx->navigation_set(menu_userdata, scroll);
 }
 
+void menu_driver_populate_entries(menu_displaylist_info_t *info)
+{
+   if (menu_driver_ctx->populate_entries)
+      menu_driver_ctx->populate_entries(
+            menu_userdata, info->path,
+            info->label, info->type);
+}
+
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
    switch (state)
@@ -727,18 +735,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             if (menu_driver_ctx->navigation_clear)
                menu_driver_ctx->navigation_clear(
                      menu_userdata, pending_push);
-         }
-         break;
-      case RARCH_MENU_CTL_POPULATE_ENTRIES:
-         {
-            menu_displaylist_info_t *info = (menu_displaylist_info_t*)data;
-
-            if (!info)
-               return false;
-            if (menu_driver_ctx->populate_entries)
-               menu_driver_ctx->populate_entries(
-                     menu_userdata, info->path,
-                     info->label, info->type);
          }
          break;
       case RARCH_MENU_CTL_LIST_GET_ENTRY:
