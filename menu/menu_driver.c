@@ -247,7 +247,8 @@ static void menu_driver_toggle(bool on)
    if (!on)
       menu_display_toggle_set_reason(MENU_TOGGLE_REASON_NONE);
 
-   menu_driver_ctl(RARCH_MENU_CTL_TOGGLE, &on);
+   if (menu_driver_ctx && menu_driver_ctx->toggle)
+      menu_driver_ctx->toggle(menu_userdata, on);
 
    if (on)
       menu_driver_alive = true;
@@ -652,7 +653,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
       case RARCH_MENU_CTL_OWNS_DRIVER:
          return menu_driver_data_own;
       case RARCH_MENU_CTL_DEINIT:
-         menu_driver_ctl(RARCH_MENU_CTL_CONTEXT_DESTROY, NULL);
+         if (menu_driver_ctx && menu_driver_ctx->context_destroy)
+            menu_driver_ctx->context_destroy(menu_userdata);
          if (menu_driver_ctl(RARCH_MENU_CTL_OWNS_DRIVER, NULL))
             return true;
          menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
@@ -800,16 +802,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                   return true;
          }
          return false;
-      case RARCH_MENU_CTL_TOGGLE:
-         {
-            bool *on = (bool*)data;
-            if (!on)
-               return false;
-
-            if (menu_driver_ctx && menu_driver_ctx->toggle)
-               menu_driver_ctx->toggle(menu_userdata, *on);
-         }
-         break;
       case RARCH_MENU_CTL_REFRESH:
          {
 #if 0
@@ -820,11 +812,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 #endif
          }
-         break;
-      case RARCH_MENU_CTL_CONTEXT_DESTROY:
-         if (!menu_driver_ctx || !menu_driver_ctx->context_destroy)
-            return false;
-         menu_driver_ctx->context_destroy(menu_userdata);
          break;
       case RARCH_MENU_CTL_LIST_SET_SELECTION:
          {
