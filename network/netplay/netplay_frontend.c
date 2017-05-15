@@ -1271,6 +1271,11 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
             ret = false;
             goto done;
 
+         case RARCH_NETPLAY_CTL_IS_SERVER_ENABLED:
+            ret = netplay_enabled && !netplay_is_client;
+            RARCH_LOG("TEST: %d = %d && %d", ret, netplay_enabled, netplay_is_client);
+            goto done;
+
          default:
             goto done;
       }
@@ -1286,6 +1291,10 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          ret = false;
          goto done;
       case RARCH_NETPLAY_CTL_IS_ENABLED:
+         goto done;
+      case RARCH_NETPLAY_CTL_IS_SERVER_ENABLED:
+         ret = netplay_enabled && !netplay_is_client;
+         RARCH_LOG("TEST: %d = %d && %d", ret, netplay_enabled, netplay_is_client);
          goto done;
       case RARCH_NETPLAY_CTL_POST_FRAME:
          netplay_post_frame(netplay_data);

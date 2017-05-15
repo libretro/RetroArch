@@ -42,6 +42,7 @@
 
 #ifdef HAVE_NETWORKING
 #include <net/net_http_parse.h>
+#include "../../network/netplay/netplay.h"
 #include "../network/netplay/netplay_discovery.h"
 #endif
 
@@ -3016,11 +3017,32 @@ static int menu_displaylist_parse_netplay_room_list(
 {
 
 #ifdef HAVE_NETWORKING
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST),
-         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST),
-         MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST,
-         MENU_SETTING_ACTION, 0, 0);
+
+   if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+   {
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST),
+            msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST),
+            MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST,
+            MENU_SETTING_ACTION, 0, 0);
+   }
+   else if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER_ENABLED, NULL))
+   {
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST),
+            msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_DISCONNECT),
+            MENU_ENUM_LABEL_NETPLAY_DISCONNECT,
+            MENU_SETTING_ACTION, 0, 0);
+   }
+   else
+   {
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT),
+            msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_DISCONNECT),
+            MENU_ENUM_LABEL_NETPLAY_DISCONNECT,
+            MENU_SETTING_ACTION, 0, 0);
+   }
+   
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS),
          msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS),
