@@ -237,6 +237,7 @@ int generic_action_ok_displaylist_push(const char *path,
    char tmp[PATH_MAX_LENGTH];
    char parent_dir[PATH_MAX_LENGTH];
    char action_path[PATH_MAX_LENGTH];
+   char lpl_basename[PATH_MAX_LENGTH];
    enum menu_displaylist_ctl_state dl_type = DISPLAYLIST_NONE;
    menu_displaylist_info_t      info       = {0};
    const char           *menu_label        = NULL;
@@ -252,7 +253,7 @@ int generic_action_ok_displaylist_push(const char *path,
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
-   new_path_tmp[0] = tmp[0] = parent_dir[0] = action_path[0] = '\0';
+   new_path_tmp[0] = tmp[0] = parent_dir[0] = action_path[0] = lpl_basename[0] = '\0';
 
    menu_entries_get_last_stack(&menu_path, &menu_label, NULL, &enum_idx, NULL);
 
@@ -549,6 +550,9 @@ int generic_action_ok_displaylist_push(const char *path,
          fill_pathname_join(tmp,
                settings->paths.path_content_database,
                path, sizeof(tmp));
+
+         fill_pathname_base_noext(lpl_basename, path, sizeof(lpl_basename));
+         menu_driver_ctl(RARCH_MENU_CTL_SET_THUMBNAIL_SYSTEM, lpl_basename);
 
          info.directory_ptr = idx;
          info_path          = tmp;
@@ -3432,6 +3436,7 @@ static int action_ok_push_content_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    settings_t            *settings   = config_get_ptr();
+   filebrowser_set_type(FILEBROWSER_SELECT_FILE);
    return generic_action_ok_displaylist_push(path,
          settings->paths.directory_menu_content, label, type, idx,
          entry_idx, ACTION_OK_DL_CONTENT_LIST);
@@ -3679,6 +3684,7 @@ static int action_ok_scan_directory_list(const char *path,
 static int action_ok_push_random_dir(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   filebrowser_set_type(FILEBROWSER_SELECT_FILE);
    return generic_action_ok_displaylist_push(path, path,
          msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
          type, idx,
@@ -3690,7 +3696,7 @@ static int action_ok_push_downloads_dir(const char *path,
 {
    settings_t            *settings   = config_get_ptr();
 
-   filebrowser_clear_type();
+   filebrowser_set_type(FILEBROWSER_SELECT_FILE);
    return generic_action_ok_displaylist_push(path, settings->paths.directory_core_assets,
          msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
          type, idx,

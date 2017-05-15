@@ -2080,6 +2080,8 @@ menu_ctx_driver_t menu_ctx_mui = {
    NULL,
    NULL,
    NULL,
+   NULL,
+   NULL,
    mui_osk_ptr_at_pos,
    NULL,
    NULL,

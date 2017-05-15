@@ -50,6 +50,7 @@
 #include "../widgets/menu_list.h"
 #include "../widgets/menu_input_dialog.h"
 #include "../widgets/menu_osk.h"
+#include "../widgets/menu_filebrowser.h"
 
 #include "../menu_event.h"
 
@@ -194,6 +195,8 @@ typedef struct xmb_handle
    float savestate_thumbnail_width;
    float savestate_thumbnail_height;
    char background_file_path[PATH_MAX_LENGTH];
+   char thumbnail_system[PATH_MAX_LENGTH];
+   char thumbnail_content[PATH_MAX_LENGTH];
    char thumbnail_file_path[PATH_MAX_LENGTH];
    char savestate_thumbnail_file_path[PATH_MAX_LENGTH];
    uint64_t frame_count;
@@ -926,7 +929,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
          return;
       }
    }
-   else if (xmb_list_get_selection(xmb) <= XMB_SYSTEM_TAB_SETTINGS)
+   else if (filebrowser_get_type() != FILEBROWSER_NONE)
    {
       xmb->thumbnail_file_path[0] = '\0';
       xmb->thumbnail = 0;
@@ -951,7 +954,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
    fill_pathname_join(
          xmb->thumbnail_file_path,
          settings->paths.directory_thumbnails,
-         xmb->title_name,
+         xmb->thumbnail_system,
          sizeof(xmb->thumbnail_file_path));
 
    fill_pathname_join(xmb->thumbnail_file_path, xmb->thumbnail_file_path,
@@ -962,7 +965,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
     * http://datomatic.no-intro.org/stuff/The%20Official%20No-Intro%20Convention%20(20071030).zip
     * Replace these characters in the entry name with underscores.
     */
-   tmp = strdup(entry.path);
+   tmp = strdup(xmb->thumbnail_content);
 
    while((scrub_char_pointer = strpbrk(tmp, "&*/:`<>?\\|")))
       *scrub_char_pointer = '_';
@@ -1050,8 +1053,28 @@ static void xmb_update_thumbnail_image(void *data)
    if (path_file_exists(xmb->thumbnail_file_path))
       task_push_image_load(xmb->thumbnail_file_path,
             menu_display_handle_thumbnail_upload, NULL);
-   else if (xmb->depth == 1)
+   else
       xmb->thumbnail = 0;
+}
+
+static void xmb_set_thumbnail_system(void *data, char* thumbnail_system)
+{
+   xmb_handle_t *xmb = (xmb_handle_t*)data;
+   if (!xmb)
+      return;
+
+   strlcpy(xmb->thumbnail_system,
+      thumbnail_system, sizeof(xmb->thumbnail_system));
+}
+
+static void xmb_set_thumbnail_content(void *data, char* thumbnail_content)
+{
+   xmb_handle_t *xmb = (xmb_handle_t*)data;
+   if (!xmb)
+      return;
+
+   strlcpy(xmb->thumbnail_content,
+      thumbnail_content, sizeof(xmb->thumbnail_content));
 }
 
 static void xmb_update_savestate_thumbnail_image(void *data)
@@ -1070,6 +1093,7 @@ static void xmb_update_savestate_thumbnail_image(void *data)
 static void xmb_selection_pointer_changed(
       xmb_handle_t *xmb, bool allow_animations)
 {
+   menu_entry_t e;
    unsigned i, end, height;
    menu_animation_ctx_tag_t tag;
    size_t num                 = 0;
@@ -1082,6 +1106,19 @@ static void xmb_selection_pointer_changed(
 
    if (!xmb)
       return;
+
+   e.path[0]       = '\0';
+   e.label[0]      = '\0';
+   e.sublabel[0]   = '\0';
+   e.value[0]      = '\0';
+   e.rich_label[0] = '\0';
+   e.enum_idx      = MSG_UNKNOWN;
+   e.entry_idx     = 0;
+   e.idx           = 0;
+   e.type          = 0;
+   e.spacing       = 0;
+
+   menu_entry_get(&e, 0, selection, NULL, true);
 
    end       = (unsigned)menu_entries_get_end();
    threshold = xmb->icon.size*10;
@@ -1115,11 +1152,27 @@ static void xmb_selection_pointer_changed(
          iz             = xmb->items.active.zoom;
 
          if (!string_is_equal(xmb_thumbnails_ident(),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))
-               && (depth == 1 || xmb_list_get_selection(xmb) <= XMB_SYSTEM_TAB_SETTINGS))
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
          {
-            xmb_update_thumbnail_path(xmb, i);
-            xmb_update_thumbnail_image(xmb);
+            if (xmb_list_get_selection(xmb) > XMB_SYSTEM_TAB_SETTINGS && depth == 1)
+            {
+               xmb_set_thumbnail_content(xmb, e.path);
+               xmb_update_thumbnail_path(xmb, i);
+               xmb_update_thumbnail_image(xmb);
+            }
+            else if (((e.type == FILE_TYPE_IMAGE || e.type == FILE_TYPE_RDB || e.type == FILE_TYPE_RDB_ENTRY)
+               && xmb_list_get_selection(xmb) <= XMB_SYSTEM_TAB_SETTINGS))
+            {
+               xmb_set_thumbnail_content(xmb, e.path);
+               xmb_update_thumbnail_path(xmb, i);
+               xmb_update_thumbnail_image(xmb);
+            }
+            else if (filebrowser_get_type() != FILEBROWSER_NONE)
+            {
+               xmb_set_thumbnail_content(xmb, "");
+               xmb_update_thumbnail_path(xmb, i);
+               xmb_update_thumbnail_image(xmb);
+            }
          }
          xmb_update_savestate_thumbnail_path(xmb, i);
          xmb_update_savestate_thumbnail_image(xmb);
@@ -1305,7 +1358,12 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &skip);
 
    if (xmb_list_get_selection(xmb) <= XMB_SYSTEM_TAB_SETTINGS)
+   {
+      if (xmb->depth < 4)
+         xmb_set_thumbnail_content(xmb, "");
       xmb_update_thumbnail_path(xmb, 0);
+      xmb_update_thumbnail_image(xmb);
+   }
 }
 
 static xmb_node_t *xmb_node_allocate_userdata(xmb_handle_t *xmb, unsigned i)
@@ -1556,6 +1614,7 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb)
 
 static void xmb_list_switch(xmb_handle_t *xmb)
 {
+   menu_entry_t e;
    menu_animation_ctx_entry_t entry;
    int dir                    = -1;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
@@ -1590,6 +1649,21 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    if (!string_is_equal(xmb_thumbnails_ident(),
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
    {
+      e.path[0]       = '\0';
+      e.label[0]      = '\0';
+      e.sublabel[0]   = '\0';
+      e.value[0]      = '\0';
+      e.rich_label[0] = '\0';
+      e.enum_idx      = MSG_UNKNOWN;
+      e.entry_idx     = 0;
+      e.idx           = 0;
+      e.type          = 0;
+      e.spacing       = 0;
+
+      menu_entry_get(&e, 0, selection, NULL, true);
+
+      xmb_set_thumbnail_content(xmb, e.path);
+
       xmb_update_thumbnail_path(xmb, 0);
       xmb_update_thumbnail_image(xmb);
    }
@@ -4131,6 +4205,8 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_pointer_tap,
    xmb_update_thumbnail_path,
    xmb_update_thumbnail_image,
+   xmb_set_thumbnail_system,
+   xmb_set_thumbnail_content,
    xmb_osk_ptr_at_pos,
    xmb_update_savestate_thumbnail_path,
    xmb_update_savestate_thumbnail_image

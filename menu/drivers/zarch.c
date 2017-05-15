@@ -1181,8 +1181,13 @@ menu_ctx_driver_t menu_ctx_zarch = {
    NULL,
    zarch_load_image,
    "zarch",
-   NULL,
-   NULL,
-   NULL,
-   NULL
+   NULL,  /* environ */
+   NULL,  /* pointer_tap */
+   NULL,  /* update_thumbnail_path */
+   NULL,  /* update_thumbnail_image */
+   NULL,  /* set_thumbnail_system */
+   NULL,  /* set_thumbnail_content */
+   NULL,  /* osk_ptr_at_pos */
+   NULL,  /* update_savestate_thumbnail_path */
+   NULL,  /* update_savestate_thumbnail_image */
 };
