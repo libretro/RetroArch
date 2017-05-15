@@ -1295,6 +1295,35 @@ bool retroarch_is_on_main_thread(void)
    return true;
 }
 
+void rarch_menu_running(void)
+{
+#ifdef HAVE_MENU
+   menu_driver_ctl(RARCH_MENU_CTL_SET_TOGGLE, NULL);
+#endif
+#ifdef HAVE_OVERLAY
+   {
+      settings_t *settings                    = config_get_ptr();
+      if (settings && settings->bools.input_overlay_hide_in_menu)
+         command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
+   }
+#endif
+}
+
+void rarch_menu_running_finished(void)
+{
+#ifdef HAVE_MENU
+   menu_driver_ctl(RARCH_MENU_CTL_UNSET_TOGGLE, NULL);
+#endif
+   video_driver_set_texture_enable(false, false);
+#ifdef HAVE_OVERLAY
+   {
+      settings_t *settings                    = config_get_ptr();
+      if (settings && settings->bools.input_overlay_hide_in_menu)
+         command_event(CMD_EVENT_OVERLAY_INIT, NULL);
+   }
+#endif
+}
+
 bool rarch_ctl(enum rarch_ctl_state state, void *data)
 {
    switch(state)
@@ -1459,31 +1488,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          break;
       case RARCH_CTL_IS_BLOCK_CONFIG_READ:
          return rarch_block_config_read;
-      case RARCH_CTL_MENU_RUNNING:
-#ifdef HAVE_MENU
-         menu_driver_ctl(RARCH_MENU_CTL_SET_TOGGLE, NULL);
-#endif
-#ifdef HAVE_OVERLAY
-         {
-            settings_t *settings                    = config_get_ptr();
-            if (settings && settings->bools.input_overlay_hide_in_menu)
-               command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
-         }
-#endif
-         break;
-      case RARCH_CTL_MENU_RUNNING_FINISHED:
-#ifdef HAVE_MENU
-         menu_driver_ctl(RARCH_MENU_CTL_UNSET_TOGGLE, NULL);
-#endif
-         video_driver_set_texture_enable(false, false);
-#ifdef HAVE_OVERLAY
-         {
-            settings_t *settings                    = config_get_ptr();
-            if (settings && settings->bools.input_overlay_hide_in_menu)
-               command_event(CMD_EVENT_OVERLAY_INIT, NULL);
-         }
-#endif
-         break;
       case RARCH_CTL_NONE:
       default:
          return false;
@@ -1806,9 +1810,7 @@ bool retroarch_main_quit(void)
 #endif
 
    runloop_shutdown_initiated = true;
-#ifdef HAVE_MENU
-   rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
-#endif
+   rarch_menu_running_finished();
 
    return true;
 }
@@ -2387,7 +2389,7 @@ static enum runloop_state runloop_check_state(
          iter.action             = action;
 
          if (!menu_driver_iterate(&iter))
-            rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+            rarch_menu_running_finished();
 
          if (focused || !runloop_idle)
             menu_driver_render(runloop_idle, rarch_is_inited,
@@ -2417,7 +2419,7 @@ static enum runloop_state runloop_check_state(
       {
          if (rarch_is_inited && (current_core_type != CORE_TYPE_DUMMY))
          {
-            rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+            rarch_menu_running_finished();
             menu_event_kb_set(false, RETROK_F1);
          }
       }
@@ -2429,12 +2431,12 @@ static enum runloop_state runloop_check_state(
       if (menu_driver_is_alive())
       {
          if (rarch_is_inited && (current_core_type != CORE_TYPE_DUMMY))
-            rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+            rarch_menu_running_finished();
       }
       else
       {
         menu_display_toggle_set_reason(MENU_TOGGLE_REASON_USER);
-        rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
+        rarch_menu_running();
       }
    }
    else

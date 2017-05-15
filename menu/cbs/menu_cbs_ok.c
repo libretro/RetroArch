@@ -4104,9 +4104,7 @@ static void action_ok_netplay_enable_client_hostname_cb(
    }
 
    menu_input_dialog_end();
-
-   /* Force the menu to close */
-   rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+   rarch_menu_running_finished();
 }
 #endif
 

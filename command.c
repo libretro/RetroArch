@@ -1888,9 +1888,9 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_MENU_TOGGLE:
 #ifdef HAVE_MENU
          if (menu_driver_is_alive())
-            rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+            rarch_menu_running_finished();
          else
-            rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
+            rarch_menu_running();
 #endif
          break;
       case CMD_EVENT_CONTROLLERS_INIT:
@@ -2304,7 +2304,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_RESUME:
-         rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+         rarch_menu_running_finished();
          if (ui_companion_is_on_foreground())
             ui_companion_driver_toggle();
          break;

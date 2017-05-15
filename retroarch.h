@@ -49,10 +49,6 @@ enum rarch_ctl_state
 
    RARCH_CTL_DESTROY,
 
-   /* Menu running? */
-   RARCH_CTL_MENU_RUNNING,
-   RARCH_CTL_MENU_RUNNING_FINISHED,
-
    RARCH_CTL_SET_PATHS_REDIRECT,
 
    RARCH_CTL_IS_BPS_PREF,
@@ -354,6 +350,10 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data);
 void runloop_set(enum runloop_action action);
 
 void runloop_unset(enum runloop_action action);
+
+void rarch_menu_running(void);
+
+void rarch_menu_running_finished(void);
 
 bool retroarch_is_on_main_thread(void);
 

@@ -56,7 +56,7 @@ static void rarch_enable_ui(void)
 
    runloop_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
    runloop_ctl(RUNLOOP_CTL_SET_IDLE,   &boolean);
-   rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
+   rarch_menu_running();
 }
 
 static void rarch_disable_ui(void)
@@ -67,7 +67,7 @@ static void rarch_disable_ui(void)
 
    runloop_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
    runloop_ctl(RUNLOOP_CTL_SET_IDLE,   &boolean);
-   rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+   rarch_menu_running_finished();
 #ifdef HAVE_AVFOUNDATION
    [[RetroArch_iOS get] supportOtherAudioSessions];
 #endif
