@@ -40,6 +40,11 @@ struct audio_mixer_handle
 
 static void audio_mixer_stopped(audio_mixer_sound_t *sound, unsigned reason)
 {
+   if (sound && reason != AUDIO_MIXER_SOUND_REPEATED)
+   {
+      audio_mixer_destroy(sound);
+      audio_set_bool(AUDIO_ACTION_MIXER, false);
+   }
 }
 
 static void task_audio_mixer_load_handler(retro_task_t *task)
