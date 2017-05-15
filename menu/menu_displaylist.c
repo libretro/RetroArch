@@ -4093,7 +4093,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
    disp_list.info = info;
    disp_list.type = type;
 
-   if (menu_driver_ctl(RARCH_MENU_CTL_LIST_PUSH, &disp_list))
+   if (menu_driver_push_list(&disp_list))
       return true;
 
    switch (type)

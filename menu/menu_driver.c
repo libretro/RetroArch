@@ -527,6 +527,15 @@ bool menu_driver_load_image(menu_ctx_load_image_t *load_image_info)
    return false;
 }
 
+bool menu_driver_push_list(menu_ctx_displaylist_t *disp_list)
+{
+   if (menu_driver_ctx->list_push)
+      if (menu_driver_ctx->list_push(menu_driver_data,
+               menu_userdata, disp_list->info, disp_list->type) == 0)
+         return true;
+   return false;
+}
+
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
    switch (state)
@@ -800,16 +809,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             }
          }
          break;
-      case RARCH_MENU_CTL_LIST_PUSH:
-         {
-            menu_ctx_displaylist_t *disp_list = (menu_ctx_displaylist_t*)data;
-
-            if (menu_driver_ctx->list_push)
-               if (menu_driver_ctx->list_push(menu_driver_data,
-                        menu_userdata, disp_list->info, disp_list->type) == 0)
-                  return true;
-         }
-         return false;
       case RARCH_MENU_CTL_REFRESH:
          {
 #if 0

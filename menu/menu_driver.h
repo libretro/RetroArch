@@ -117,7 +117,6 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_LIST_GET_ENTRY,
    RARCH_MENU_CTL_LIST_CACHE,
    RARCH_MENU_CTL_LIST_INSERT,
-   RARCH_MENU_CTL_LIST_PUSH,
    RARCH_MENU_CTL_ENVIRONMENT,
    RARCH_MENU_CTL_DRIVER_DATA_GET,
    RARCH_MENU_CTL_POINTER_TAP,
@@ -401,6 +400,8 @@ void menu_driver_navigation_set(bool scroll);
 void menu_driver_populate_entries(menu_displaylist_info_t *info);
 
 bool menu_driver_load_image(menu_ctx_load_image_t *load_image_info);
+
+bool menu_driver_push_list(menu_ctx_displaylist_t *disp_list);
 
 bool menu_driver_init(bool video_is_threaded);
 
