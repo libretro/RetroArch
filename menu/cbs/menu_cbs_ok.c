@@ -3572,7 +3572,6 @@ static int action_ok_scan_directory_list(const char *path,
 static int action_ok_push_random_dir(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   filebrowser_set_type(FILEBROWSER_SELECT_FILE);
    return generic_action_ok_displaylist_push(path, path,
          msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
          type, idx,
