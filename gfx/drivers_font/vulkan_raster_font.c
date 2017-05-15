@@ -30,6 +30,7 @@ typedef struct
    const font_renderer_driver_t *font_driver;
    void *font_data;
    struct font_atlas *atlas;
+   bool needs_update;
 
    struct vk_vertex *pv;
    struct vk_buffer_range range;
@@ -79,6 +80,8 @@ static void *vulkan_raster_font_init_font(void *data,
          font->atlas->width, font->atlas->height, VK_FORMAT_R8_UNORM, NULL,
          NULL /*&swizzle*/, VULKAN_TEXTURE_DYNAMIC);
 
+   font->needs_update = true;
+
    return font;
 }
 
@@ -100,6 +103,23 @@ static void vulkan_raster_font_free_font(void *data, bool is_threaded)
    free(font);
 }
 
+static INLINE void vulkan_raster_font_update_glyph(vulkan_raster_t *font, const struct font_glyph *glyph)
+{
+   if(font->atlas->dirty)
+   {
+      int row;
+      for(row = glyph->atlas_offset_y; row < (glyph->atlas_offset_y + glyph->height); row++)
+      {
+         uint8_t* src = font->atlas->buffer + row * font->atlas->width + glyph->atlas_offset_x;
+         uint8_t* dst = (uint8_t*)font->texture.mapped + row * font->texture.stride + glyph->atlas_offset_x;
+         memcpy(dst, src, glyph->width);
+      }
+
+      font->atlas->dirty = false;
+      font->needs_update = true;
+   }
+}
+
 static int vulkan_get_message_width(void *data, const char *msg,
       unsigned msg_len, float scale)
 {
@@ -118,8 +138,12 @@ static int vulkan_get_message_width(void *data, const char *msg,
       if (!glyph) /* Do something smarter here ... */
          glyph = font->font_driver->get_glyph(font->font_data, '?');
 
+
       if (glyph)
+      {
+         vulkan_raster_font_update_glyph(font, glyph);
          delta_x += glyph->advance_x;
+      }
    }
 
    return delta_x * scale;
@@ -130,7 +154,6 @@ static void vulkan_raster_font_render_line(
       float scale, const float color[4], float pos_x,
       float pos_y, unsigned text_align)
 {
-   unsigned i;
    struct vk_color vk_color;
    vk_t *vk             = font->vk;
    const char* msg_end  = msg + msg_len;
@@ -169,6 +192,8 @@ static void vulkan_raster_font_render_line(
          glyph = font->font_driver->get_glyph(font->font_data, '?');
       if (!glyph)
          continue;
+
+      vulkan_raster_font_update_glyph(font, glyph);
 
       off_x  = glyph->draw_offset_x;
       off_y  = glyph->draw_offset_y;
@@ -256,20 +281,45 @@ static void vulkan_raster_font_flush(vulkan_raster_t *font)
       font->vertices,
    };
 
-   if(font->atlas->dirty)
+   if(font->needs_update)
    {
-      int i = 0;
-      for(i = 0; i < font->atlas->height; i++)
-      {
-         uint8_t* src = font->atlas->buffer + i * font->atlas->width;
-         uint8_t* dst = (uint8_t*)font->texture.mapped + i * font->texture.stride;
-         memcpy(dst, src, font->atlas->width);
-      }
-      vulkan_sync_texture_to_gpu(font->vk, &font->texture);
-      vulkan_copy_staging_to_dynamic(font->vk, font->vk->cmd,
+      VkCommandBuffer staging;
+      VkSubmitInfo submit_info             = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
+      VkCommandBufferAllocateInfo cmd_info = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
+      VkCommandBufferBeginInfo begin_info  = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+
+      cmd_info.commandPool        = font->vk->staging_pool;
+      cmd_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+      cmd_info.commandBufferCount = 1;
+      vkAllocateCommandBuffers(font->vk->context->device, &cmd_info, &staging);
+
+      begin_info.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+      vkBeginCommandBuffer(staging, &begin_info);
+
+      vulkan_copy_staging_to_dynamic(font->vk, staging,
             &font->texture_optimal, &font->texture);
 
-      font->atlas->dirty = false;
+      vkEndCommandBuffer(staging);
+
+#ifdef HAVE_THREADS
+      slock_lock(font->vk->context->queue_lock);
+#endif
+
+      submit_info.commandBufferCount = 1;
+      submit_info.pCommandBuffers    = &staging;
+      vkQueueSubmit(font->vk->context->queue,
+            1, &submit_info, VK_NULL_HANDLE);
+
+      vkQueueWaitIdle(font->vk->context->queue);
+
+#ifdef HAVE_THREADS
+      slock_unlock(font->vk->context->queue_lock);
+#endif
+
+      vkFreeCommandBuffers(font->vk->context->device,
+            font->vk->staging_pool, 1, &staging);
+
+      font->needs_update = false;
    }
 
    vulkan_draw_triangles(font->vk, &call);
@@ -369,13 +419,20 @@ static void vulkan_raster_font_render_msg(
 static const struct font_glyph *vulkan_raster_font_get_glyph(
       void *data, uint32_t code)
 {
+   const struct font_glyph* glyph;
    vulkan_raster_t *font = (vulkan_raster_t*)data;
 
    if (!font || !font->font_driver)
       return NULL;
    if (!font->font_driver->ident)
        return NULL;
-   return font->font_driver->get_glyph((void*)font->font_driver, code);
+
+   glyph = font->font_driver->get_glyph((void*)font->font_driver, code);
+
+   if(glyph)
+      vulkan_raster_font_update_glyph(font, glyph);
+
+   return glyph;
 }
 
 static void vulkan_raster_font_flush_block(unsigned width, unsigned height,
