@@ -1146,7 +1146,8 @@ static void xmb_selection_pointer_changed(
 
       if (i == selection)
       {
-         unsigned depth = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
+         unsigned depth  = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
+         size_t xmb_list = xmb_list_get_selection(xmb);
 
          ia             = xmb->items.active.alpha;
          iz             = xmb->items.active.zoom;
@@ -1154,14 +1155,14 @@ static void xmb_selection_pointer_changed(
          if (!string_is_equal(xmb_thumbnails_ident(),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
          {
-            if (xmb_list_get_selection(xmb) > XMB_SYSTEM_TAB_SETTINGS && depth == 1)
+            if (xmb_list > XMB_SYSTEM_TAB_SETTINGS && depth == 1)
             {
                xmb_set_thumbnail_content(xmb, e.path);
                xmb_update_thumbnail_path(xmb, i);
                xmb_update_thumbnail_image(xmb);
             }
             else if (((e.type == FILE_TYPE_IMAGE || e.type == FILE_TYPE_RDB || e.type == FILE_TYPE_RDB_ENTRY)
-               && xmb_list_get_selection(xmb) <= XMB_SYSTEM_TAB_SETTINGS))
+               && xmb_list <= XMB_SYSTEM_TAB_SETTINGS))
             {
                xmb_set_thumbnail_content(xmb, e.path);
                xmb_update_thumbnail_path(xmb, i);
