@@ -32,7 +32,7 @@
 
 #include "tasks_internal.h"
 
-struct nbio_audio_mixer_handle
+struct audio_mixer_handle
 {
    enum audio_mixer_type type;
    char path[4095];
@@ -51,7 +51,7 @@ static void task_audio_mixer_load_handler(retro_task_t *task)
    void *buffer                          = NULL;
    ssize_t size                          = 0;
    audio_mixer_sound_t *handle           = NULL;
-   struct nbio_audio_mixer_handle *image = (struct nbio_audio_mixer_handle*)task->state;
+   struct audio_mixer_handle *image      = (struct audio_mixer_handle*)task->state;
 
    if (filestream_read_file(image->path, &buffer, &size) == 0)
    {
@@ -87,13 +87,13 @@ static void task_audio_mixer_load_handler(retro_task_t *task)
 
 bool task_push_audio_mixer_load(const char *fullpath, retro_task_callback_t cb, void *user_data)
 {
-   struct nbio_audio_mixer_handle   *image = NULL;
+   struct audio_mixer_handle   *image = NULL;
    retro_task_t                   *t = (retro_task_t*)calloc(1, sizeof(*t));
 
    if (!t)
       goto error_msg;
 
-   image              = (struct nbio_audio_mixer_handle*)calloc(1, sizeof(*image));   
+   image              = (struct audio_mixer_handle*)calloc(1, sizeof(*image));   
    if (!image)
       goto error;
 
