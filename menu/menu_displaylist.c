@@ -3979,6 +3979,47 @@ static void menu_displaylist_parse_playlist_history(
          (void*)menu->db_playlist_file);
 }
 
+#ifdef HAVE_NETWORKING
+static void wifi_scan_callback(void *task_data,
+                               void *user_data, const char *error)
+{
+   unsigned i;
+   file_list_t *file_list        = NULL;
+   struct string_list *ssid_list = NULL;
+
+   const char *path              = NULL;
+   const char *label             = NULL;
+   unsigned menu_type            = 0;
+   enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
+
+   menu_entries_get_last_stack(&path, &label, &menu_type, &enum_idx, NULL);
+
+   /* Don't push the results if we left the wifi menu */
+   if (!string_is_equal(label,
+         msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST)))
+      return;
+
+   file_list = menu_entries_get_selection_buf_ptr(0);
+   menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, file_list);
+
+   ssid_list = string_list_new();
+
+   driver_wifi_get_ssids(ssid_list);
+
+   for (i = 0; i < ssid_list->size; i++)
+   {
+      const char *ssid = ssid_list->elems[i].data;
+      menu_entries_append_enum(file_list,
+            ssid,
+            msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_WIFI),
+            MENU_ENUM_LABEL_CONNECT_WIFI,
+            MENU_WIFI, 0, 0);
+   }
+
+   string_list_free(ssid_list);
+}
+#endif
+
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 {
    size_t i;
@@ -4829,7 +4870,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             if (ssid_list->size == 0)
             {
-               task_push_wifi_scan();
+               task_push_wifi_scan(wifi_scan_callback);
 
                menu_entries_append_enum(info->list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND),

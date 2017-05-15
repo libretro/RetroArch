@@ -15,70 +15,22 @@
 
 #include <string.h>
 #include <errno.h>
-#include <file/nbio.h>
-#include <formats/image.h>
 #include <compat/strl.h>
 #include <retro_assert.h>
 #include <retro_miscellaneous.h>
-#include <lists/string_list.h>
-#include <rhash.h>
 #include <string/stdstring.h>
 
 #include "tasks_internal.h"
 #include "../verbosity.h"
 #include "../wifi/wifi_driver.h"
-#include "../menu/menu_entries.h"
-#include "../menu/menu_driver.h"
 
 typedef struct wifi_handle wifi_handle_t;
 
 struct wifi_handle
 {
-   struct string_list *ssid_list;
+   void *empty;
 };
 
-static void wifi_scan_callback(void *task_data,
-                               void *user_data, const char *error)
-{
-   unsigned i;
-   file_list_t *file_list        = NULL;
-   struct string_list *ssid_list = NULL;
-
-#ifdef HAVE_MENU
-   const char *path              = NULL;
-   const char *label             = NULL;
-   unsigned menu_type            = 0;
-   enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
-
-   menu_entries_get_last_stack(&path, &label, &menu_type, &enum_idx, NULL);
-
-   /* Don't push the results if we left the wifi menu */
-   if (!string_is_equal(label,
-         msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST)))
-      return;
-
-   file_list = menu_entries_get_selection_buf_ptr(0);
-   menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, file_list);
-#endif
-
-   ssid_list = string_list_new();
-
-   driver_wifi_get_ssids(ssid_list);
-
-#ifdef HAVE_MENU
-   for (i = 0; i < ssid_list->size; i++)
-   {
-      const char *ssid = ssid_list->elems[i].data;
-      menu_entries_append_enum(file_list,
-            ssid,
-            msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_WIFI),
-            MENU_ENUM_LABEL_CONNECT_WIFI,
-            MENU_WIFI, 0, 0);
-   }
-#endif
-
-   string_list_free(ssid_list);
-}
 
 static void task_wifi_scan_handler(retro_task_t *task)
 {
@@ -91,7 +43,7 @@ static void task_wifi_scan_handler(retro_task_t *task)
    return;
 }
 
-bool task_push_wifi_scan(void)
+bool task_push_wifi_scan(retro_task_callback_t cb)
 {
    retro_task_t   *task = (retro_task_t *)calloc(1, sizeof(*task));
    wifi_handle_t *state = (wifi_handle_t*)calloc(1, sizeof(*state));
@@ -99,14 +51,12 @@ bool task_push_wifi_scan(void)
    if (!task || !state)
       goto error;
 
-   state->ssid_list     = string_list_new();
-
    /* blocking means no other task can run while this one is running, 
     * which is the default */
    task->type           = TASK_TYPE_BLOCKING;
    task->state          = state;
    task->handler        = task_wifi_scan_handler;
-   task->callback       = wifi_scan_callback;
+   task->callback       = cb;
    task->title          = strdup(msg_hash_to_str(
                            MSG_SCANNING_WIRELESS_NETWORKS));
 
