@@ -265,12 +265,6 @@ void filebrowser_parse(void *data, unsigned type_data)
             MENU_SETTING_NO_ITEM, 0, 0);
    }
 
-   /* We don't want to show 'filter by extension' for this. */
-   if (filebrowser_types == FILEBROWSER_SELECT_DIR)
-      goto end;
-   if (filebrowser_types == FILEBROWSER_SCAN_DIR)
-      goto end;
-
 end:
    menu_entries_prepend(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY),
