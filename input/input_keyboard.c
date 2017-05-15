@@ -324,7 +324,7 @@ void input_keyboard_event(bool down, unsigned code,
    else
    {
       retro_keyboard_event_t *key_event = NULL;
-      runloop_ctl(RUNLOOP_CTL_KEY_EVENT_GET, &key_event);
+      rarch_ctl(RARCH_CTL_KEY_EVENT_GET, &key_event);
 
       if (key_event && *key_event)
          (*key_event)(down, code, character, mod);

@@ -2916,7 +2916,7 @@ static bool setting_append_list(
             START_SUB_GROUP(list, list_info, "Performance Counters", &group_info, &subgroup_info,
                   parent_group);
 
-            runloop_ctl(RUNLOOP_CTL_GET_PERFCNT, &tmp_b);
+            rarch_ctl(RARCH_CTL_GET_PERFCNT, &tmp_b);
 
             CONFIG_BOOL(
                   list, list_info,

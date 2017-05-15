@@ -1456,7 +1456,7 @@ static void menu_action_setting_disp_set_label_core_options(file_list_t* list,
    *s = '\0';
    *w = 19;
 
-   if (runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
+   if (rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
    {
       core_opt = core_option_manager_get_val(coreopts,
             type - MENU_SETTINGS_CORE_OPTION_START);

@@ -329,7 +329,7 @@ static void open_core_handler(ui_browser_window_state_t *state, bool result)
 
     settings_t *settings = config_get_ptr();
                 
-    runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)state->result);
+    rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, (void*)state->result);
     ui_companion_event_command(CMD_EVENT_LOAD_CORE);
                 
     if (menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL)
@@ -481,7 +481,7 @@ static void open_document_handler(ui_browser_window_state_t *state, bool result)
    if (sender_tag >= 10 && sender_tag <= 19)
    {
       unsigned idx = (sender_tag - (10-1));
-      runloop_ctl(RUNLOOP_CTL_SET_WINDOWED_SCALE, &idx);
+      rarch_ctl(RARCH_CTL_SET_WINDOWED_SCALE, &idx);
       cmd = CMD_EVENT_RESIZE_WINDOWED_SCALE;
    }
 

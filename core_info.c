@@ -507,7 +507,7 @@ static bool core_info_list_update_missing_firmware_internal(
    if (!info)
       return false;
 
-   runloop_ctl(RUNLOOP_CTL_UNSET_MISSING_BIOS, NULL);
+   rarch_ctl(RARCH_CTL_UNSET_MISSING_BIOS, NULL);
    for (i = 0; i < info->firmware_count; i++)
    {
       if (string_is_empty(info->firmware[i].path))
@@ -518,7 +518,7 @@ static bool core_info_list_update_missing_firmware_internal(
       info->firmware[i].missing = !path_file_exists(path);
       if (info->firmware[i].missing && !info->firmware[i].optional)
       {
-         runloop_ctl(RUNLOOP_CTL_SET_MISSING_BIOS, NULL);
+         rarch_ctl(RARCH_CTL_SET_MISSING_BIOS, NULL);
          RARCH_WARN("Firmware missing: %s\n", info->firmware[i].path);
       }
    }

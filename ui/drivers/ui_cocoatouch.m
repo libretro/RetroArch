@@ -54,8 +54,8 @@ static void rarch_enable_ui(void)
 
    ui_companion_set_foreground(true);
 
-   runloop_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
-   runloop_ctl(RUNLOOP_CTL_SET_IDLE,   &boolean);
+   rarch_ctl(RARCH_CTL_SET_PAUSED, &boolean);
+   rarch_ctl(RARCH_CTL_SET_IDLE,   &boolean);
    rarch_menu_running();
 }
 
@@ -65,8 +65,8 @@ static void rarch_disable_ui(void)
 
    ui_companion_set_foreground(false);
 
-   runloop_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
-   runloop_ctl(RUNLOOP_CTL_SET_IDLE,   &boolean);
+   rarch_ctl(RARCH_CTL_SET_PAUSED, &boolean);
+   rarch_ctl(RARCH_CTL_SET_IDLE,   &boolean);
    rarch_menu_running_finished();
 #ifdef HAVE_AVFOUNDATION
    [[RetroArch_iOS get] supportOtherAudioSessions];
@@ -97,7 +97,7 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
       return;
    }
 
-   if (runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
+   if (rarch_ctl(RARCH_CTL_IS_IDLE, NULL))
       return;
    CFRunLoopWakeUp(CFRunLoopGetMain());
 }

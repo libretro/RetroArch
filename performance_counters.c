@@ -64,7 +64,7 @@ unsigned retro_get_perf_count_libretro(void)
 void rarch_perf_register(struct retro_perf_counter *perf)
 {
    if (
-            !runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL)
+            !rarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL)
          || perf->registered
          || perf_ptr_rarch >= MAX_COUNTERS
       )
@@ -107,7 +107,7 @@ static void log_counters(struct retro_perf_counter **counters, unsigned num)
 
 void rarch_perf_log(void)
 {
-   if (!runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL))
+   if (!rarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL))
       return;
 
    RARCH_LOG("[PERF]: Performance counters (RetroArch):\n");

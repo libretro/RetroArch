@@ -91,7 +91,7 @@ static void callback_sysutil_exit(uint64_t status,
             if (frontend)
                frontend->shutdown = frontend_ps3_shutdown;
 
-            runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
+            rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
          }
          break;
    }
@@ -573,7 +573,7 @@ static void frontend_ps3_process_args(int *argc, char *argv[])
       char path[PATH_MAX_LENGTH] = {0};
       strlcpy(path, argv[0], sizeof(path));
       if (path_file_exists(path))
-         runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, path);
+         rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, path);
    }
 #endif
 }

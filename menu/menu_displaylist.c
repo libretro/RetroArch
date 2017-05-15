@@ -2918,7 +2918,7 @@ static int menu_displaylist_parse_information_list(
          MENU_SETTING_ACTION, 0, 0);
 #endif
 
-   if (runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL))
+   if (rarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL))
    {
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS),
@@ -6275,15 +6275,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push = true;
          break;
       case DISPLAYLIST_CORE_OPTIONS:
-         if (runloop_ctl(RUNLOOP_CTL_HAS_CORE_OPTIONS, NULL))
+         if (rarch_ctl(RARCH_CTL_HAS_CORE_OPTIONS, NULL))
          {
             size_t opts = 0;
 
-            runloop_ctl(RUNLOOP_CTL_GET_CORE_OPTION_SIZE, &opts);
+            rarch_ctl(RARCH_CTL_GET_CORE_OPTION_SIZE, &opts);
 
             if (settings->bools.game_specific_options)
             {
-               if (!runloop_ctl(RUNLOOP_CTL_IS_GAME_OPTIONS_ACTIVE, NULL))
+               if (!rarch_ctl(RARCH_CTL_IS_GAME_OPTIONS_ACTIVE, NULL))
                   menu_entries_append_enum(info->list,
                         msg_hash_to_str(
                            MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE),
@@ -6312,7 +6312,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             {
                core_option_manager_t *coreopts = NULL;
 
-               runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
+               rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
 
                for (i = 0; i < opts; i++)
                   menu_entries_append_enum(info->list,

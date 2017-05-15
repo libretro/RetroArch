@@ -1006,7 +1006,7 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
    content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
-   content_ctx.bios_is_missing                = runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL);
+   content_ctx.bios_is_missing                = rarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.history_list_enable            = false;
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
@@ -1049,9 +1049,9 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
 #ifdef HAVE_MENU
    menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
 #endif
-   runloop_ctl(RUNLOOP_CTL_STATE_FREE, NULL);
-   runloop_ctl(RUNLOOP_CTL_DATA_DEINIT, NULL);
-   runloop_ctl(RUNLOOP_CTL_TASK_INIT, NULL);
+   rarch_ctl(RARCH_CTL_STATE_FREE, NULL);
+   rarch_ctl(RARCH_CTL_DATA_DEINIT, NULL);
+   rarch_ctl(RARCH_CTL_TASK_INIT, NULL);
 
    /* Load content */
    if (!task_load_content(content_info, &content_ctx,
@@ -1099,7 +1099,7 @@ bool task_push_load_content_from_playlist_from_menu(
    content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
    content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
-   content_ctx.bios_is_missing                = runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL);
+   content_ctx.bios_is_missing                = rarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.history_list_enable            = false;
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
@@ -1130,7 +1130,7 @@ bool task_push_load_content_from_playlist_from_menu(
       content_ctx.directory_system            = strdup(settings->paths.directory_system);
 
    /* Set libretro core path */
-   runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
+   rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, (void*)core_path);
 
    /* Is content required by this core? */
    if (fullpath)
@@ -1157,7 +1157,7 @@ bool task_push_load_content_from_playlist_from_menu(
    }
 
 #ifndef HAVE_DYNAMIC
-   runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
+   rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
    rarch_menu_running_finished();
 #endif
 
@@ -1197,7 +1197,7 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
    content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
    content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
-   content_ctx.bios_is_missing                = runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL);
+   content_ctx.bios_is_missing                = rarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.history_list_enable            = false;
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
@@ -1286,7 +1286,7 @@ bool task_push_load_new_core(
       void *user_data)
 {
    /* Set libretro core path */
-   runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
+   rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, (void*)core_path);
 
    /* Load core */
    command_event(CMD_EVENT_LOAD_CORE, NULL);
@@ -1325,7 +1325,7 @@ bool task_push_load_content_with_new_core_from_menu(
    content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
    content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
-   content_ctx.bios_is_missing                = runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL);
+   content_ctx.bios_is_missing                = rarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.history_list_enable            = false;
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
@@ -1359,7 +1359,7 @@ bool task_push_load_content_with_new_core_from_menu(
    path_set(RARCH_PATH_CONTENT, fullpath);
 
    /* Set libretro core path */
-   runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
+   rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, (void*)core_path);
 
 #ifdef HAVE_DYNAMIC
    /* Load core */
@@ -1427,7 +1427,7 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
    content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
    content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
-   content_ctx.bios_is_missing                = runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL);
+   content_ctx.bios_is_missing                = rarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.history_list_enable            = false;
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
@@ -1502,7 +1502,7 @@ bool task_push_load_content_with_new_core_from_companion_ui(
    path_set(RARCH_PATH_CONTENT, fullpath);
 
    /* Set libretro core path */
-   runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
+   rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, (void*)core_path);
 #ifdef HAVE_DYNAMIC
    command_event(CMD_EVENT_LOAD_CORE, NULL);
 #endif

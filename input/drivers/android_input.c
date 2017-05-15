@@ -368,8 +368,8 @@ static void android_input_poll_main_cmd(void)
          {
             bool boolean = false;
 
-            runloop_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
-            runloop_ctl(RUNLOOP_CTL_SET_IDLE,   &boolean);
+            rarch_ctl(RARCH_CTL_SET_PAUSED, &boolean);
+            rarch_ctl(RARCH_CTL_SET_IDLE,   &boolean);
             video_driver_unset_stub_frame();
 
             if ((android_app->sensor_state_mask
@@ -388,8 +388,8 @@ static void android_input_poll_main_cmd(void)
          {
             bool boolean = true;
 
-            runloop_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
-            runloop_ctl(RUNLOOP_CTL_SET_IDLE,   &boolean);
+            rarch_ctl(RARCH_CTL_SET_PAUSED, &boolean);
+            rarch_ctl(RARCH_CTL_SET_IDLE,   &boolean);
             video_driver_set_stub_frame();
 
             /* Avoid draining battery while app is not being used. */
@@ -1291,13 +1291,13 @@ static void android_input_poll(void *data)
       
       if (android_app->destroyRequested != 0)
       {
-         runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
+         rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
          return;
       }
 
       if (android_app->reinitRequested != 0)
       {
-         if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
+         if (rarch_ctl(RARCH_CTL_IS_PAUSED, NULL))
             command_event(CMD_EVENT_REINIT, NULL);
          android_app_write_cmd(android_app, APP_CMD_REINIT_DONE);
          return;
@@ -1318,13 +1318,13 @@ bool android_run_events(void *data)
    /* Check if we are exiting. */
    if (android_app->destroyRequested != 0)
    {
-      runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
+      rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
       return false;
    }
 
    if (android_app->reinitRequested != 0)
    {
-      if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
+      if (rarch_ctl(RARCH_CTL_IS_PAUSED, NULL))
          command_event(CMD_EVENT_REINIT, NULL);
       android_app_write_cmd(android_app, APP_CMD_REINIT_DONE);
    }

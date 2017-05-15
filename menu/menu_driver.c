@@ -254,8 +254,8 @@ static void menu_driver_toggle(bool on)
    else
       menu_driver_alive = false;
 
-   runloop_ctl(RUNLOOP_CTL_FRONTEND_KEY_EVENT_GET, &frontend_key_event);
-   runloop_ctl(RUNLOOP_CTL_KEY_EVENT_GET,          &key_event);
+   rarch_ctl(RARCH_CTL_FRONTEND_KEY_EVENT_GET, &frontend_key_event);
+   rarch_ctl(RARCH_CTL_KEY_EVENT_GET,          &key_event);
 
    if (menu_driver_alive)
    {
@@ -278,12 +278,12 @@ static void menu_driver_toggle(bool on)
          *frontend_key_event        = *key_event;
          *key_event                 = menu_input_key_event;
 
-         runloop_ctl(RUNLOOP_CTL_SET_FRAME_TIME_LAST, NULL);
+         rarch_ctl(RARCH_CTL_SET_FRAME_TIME_LAST, NULL);
       }
    }
    else
    {
-      if (!runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL))
+      if (!rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL))
          driver_set_nonblock_state();
 
       if (settings && settings->bools.menu_pause_libretro)

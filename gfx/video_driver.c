@@ -857,7 +857,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    video.width         = width;
    video.height        = height;
    video.fullscreen    = settings->bools.video_fullscreen;
-   video.vsync         = settings->bools.video_vsync && !runloop_ctl(RUNLOOP_CTL_IS_NONBLOCK_FORCED, NULL);
+   video.vsync         = settings->bools.video_vsync && !rarch_ctl(RARCH_CTL_IS_NONBLOCK_FORCED, NULL);
    video.force_aspect  = settings->bools.video_force_aspect;
    video.font_enable   = settings->bools.video_font_enable;
    video.swap_interval = settings->uints.video_swap_interval;
@@ -1265,7 +1265,7 @@ void video_driver_monitor_adjust_system_rates(void)
    settings_t *settings                   = config_get_ptr();
    float video_refresh_rate               = settings->floats.video_refresh_rate;
 
-   runloop_ctl(RUNLOOP_CTL_UNSET_NONBLOCK_FORCED, NULL);
+   rarch_ctl(RARCH_CTL_UNSET_NONBLOCK_FORCED, NULL);
 
    if  (av_info)
       info = (const struct retro_system_timing*)&av_info->timing;
@@ -1288,7 +1288,7 @@ void video_driver_monitor_adjust_system_rates(void)
       return;
 
    /* We won't be able to do VSync reliably when game FPS > monitor FPS. */
-   runloop_ctl(RUNLOOP_CTL_SET_NONBLOCK_FORCED, NULL);
+   rarch_ctl(RARCH_CTL_SET_NONBLOCK_FORCED, NULL);
    RARCH_LOG("[Video]: Game FPS > Monitor FPS. Cannot rely on VSync.\n");
 }
 
@@ -2670,7 +2670,7 @@ bool video_context_driver_check_window(gfx_ctx_size_t *size_data)
          && current_video_context
          && current_video_context->check_window)
    {
-      bool is_shutdown = runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL);
+      bool is_shutdown = rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL);
       current_video_context->check_window(video_context_data,
             size_data->quit,
             size_data->resize,

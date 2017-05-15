@@ -1697,7 +1697,7 @@ static void config_set_defaults(void)
       strlcpy(settings->paths.network_buildbot_url,
             g_defaults.path.buildbot_server_url, sizeof(settings->paths.network_buildbot_url));
    if (!string_is_empty(g_defaults.path.core))
-      runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, g_defaults.path.core);
+      rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, g_defaults.path.core);
    if (!string_is_empty(g_defaults.dir.database))
       strlcpy(settings->paths.path_content_database, g_defaults.dir.database,
             sizeof(settings->paths.path_content_database));
@@ -2280,9 +2280,9 @@ static bool config_load_file(const char *path, bool set_defaults,
       if (config_get_bool(conf, tmp, &tmp_bool))
       {
          if (tmp_bool)
-            runloop_ctl(RUNLOOP_CTL_SET_PERFCNT_ENABLE, NULL);
+            rarch_ctl(RARCH_CTL_SET_PERFCNT_ENABLE, NULL);
          else
-            runloop_ctl(RUNLOOP_CTL_UNSET_PERFCNT_ENABLE, NULL);
+            rarch_ctl(RARCH_CTL_UNSET_PERFCNT_ENABLE, NULL);
       }
    }
 
@@ -3385,7 +3385,7 @@ bool config_save_file(const char *path)
    if (!conf)
       conf = config_file_new(NULL);
 
-   if (!conf || runloop_ctl(RUNLOOP_CTL_IS_OVERRIDES_ACTIVE, NULL))
+   if (!conf || rarch_ctl(RARCH_CTL_IS_OVERRIDES_ACTIVE, NULL))
    {
       if (conf)
          config_file_free(conf);
@@ -3505,7 +3505,7 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "log_verbosity",
          verbosity_is_enabled());
    config_set_bool(conf, "perfcnt_enable",
-         runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL));
+         rarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL));
 
    msg_color = (((int)(settings->floats.video_msg_color_r * 255.0f) & 0xff) << 16) +
                (((int)(settings->floats.video_msg_color_g * 255.0f) & 0xff) <<  8) +

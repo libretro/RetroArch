@@ -671,9 +671,9 @@ void uninit_libretro_sym(struct retro_core_t *current_core)
 
    memset(current_core, 0, sizeof(struct retro_core_t));
 
-   runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_DEINIT, NULL);
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_FREE, NULL);
-   runloop_ctl(RUNLOOP_CTL_FRAME_TIME_FREE, NULL);
+   rarch_ctl(RARCH_CTL_CORE_OPTIONS_DEINIT, NULL);
+   rarch_ctl(RARCH_CTL_SYSTEM_INFO_FREE, NULL);
+   rarch_ctl(RARCH_CTL_FRAME_TIME_FREE, NULL);
    camera_driver_ctl(RARCH_CAMERA_CTL_UNSET_ACTIVE, NULL);
    location_driver_ctl(RARCH_LOCATION_CTL_UNSET_ACTIVE, NULL);
 
@@ -926,7 +926,7 @@ static bool dynamic_verify_hw_context(enum retro_hw_context_type type,
 
 static void core_performance_counter_start(struct retro_perf_counter *perf)
 {
-   if (runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL))
+   if (rarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL))
    {
       perf->call_cnt++;
       perf->start      = cpu_features_get_perf_counter();
@@ -935,7 +935,7 @@ static void core_performance_counter_start(struct retro_perf_counter *perf)
 
 static void core_performance_counter_stop(struct retro_perf_counter *perf)
 {
-   if (runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL))
+   if (rarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL))
       perf->total += cpu_features_get_perf_counter() - perf->start;
 }
 
@@ -972,7 +972,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_VARIABLE:
-         if (!runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_GET, data))
+         if (!rarch_ctl(RARCH_CTL_CORE_OPTIONS_GET, data))
          {
             struct retro_variable *var = (struct retro_variable*)data;
 
@@ -986,14 +986,14 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE:
-         *(bool*)data = runloop_ctl(RUNLOOP_CTL_IS_CORE_OPTION_UPDATED, NULL);
+         *(bool*)data = rarch_ctl(RARCH_CTL_IS_CORE_OPTION_UPDATED, NULL);
          break;
 
       case RETRO_ENVIRONMENT_SET_VARIABLES:
          RARCH_LOG("Environ SET_VARIABLES.\n");
 
-         runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_DEINIT, NULL);
-         runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_INIT,   data);
+         rarch_ctl(RARCH_CTL_CORE_OPTIONS_DEINIT, NULL);
+         rarch_ctl(RARCH_CTL_CORE_OPTIONS_INIT,   data);
 
          break;
 
@@ -1022,8 +1022,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SHUTDOWN:
          RARCH_LOG("Environ SHUTDOWN.\n");
-         runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN,      NULL);
-         runloop_ctl(RUNLOOP_CTL_SET_CORE_SHUTDOWN, NULL);
+         rarch_ctl(RARCH_CTL_SET_SHUTDOWN,      NULL);
+         rarch_ctl(RARCH_CTL_SET_CORE_SHUTDOWN, NULL);
          break;
 
       case RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL:
@@ -1221,8 +1221,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          const struct retro_keyboard_callback *info =
             (const struct retro_keyboard_callback*)data;
 
-         runloop_ctl(RUNLOOP_CTL_FRONTEND_KEY_EVENT_GET, &frontend_key_event);
-         runloop_ctl(RUNLOOP_CTL_KEY_EVENT_GET, &key_event);
+         rarch_ctl(RARCH_CTL_FRONTEND_KEY_EVENT_GET, &frontend_key_event);
+         rarch_ctl(RARCH_CTL_KEY_EVENT_GET, &key_event);
 
          RARCH_LOG("Environ SET_KEYBOARD_CALLBACK.\n");
          if (key_event)
@@ -1309,7 +1309,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK:
       {
          RARCH_LOG("Environ SET_FRAME_TIME_CALLBACK.\n");
-         runloop_ctl(RUNLOOP_CTL_SET_FRAME_TIME, data);
+         rarch_ctl(RARCH_CTL_SET_FRAME_TIME, data);
          break;
       }
 

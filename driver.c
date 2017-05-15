@@ -222,7 +222,7 @@ static void driver_adjust_system_rates(void)
    if (!video_driver_get_ptr(false))
       return;
 
-   if (runloop_ctl(RUNLOOP_CTL_IS_NONBLOCK_FORCED, NULL))
+   if (rarch_ctl(RARCH_CTL_IS_NONBLOCK_FORCED, NULL))
       command_event(CMD_EVENT_VIDEO_SET_NONBLOCKING_STATE, NULL);
    else
       driver_set_nonblock_state();
@@ -247,7 +247,7 @@ void driver_set_nonblock_state(void)
       bool video_nonblock  = enable;
 
       if (     !settings->bools.video_vsync 
-            || runloop_ctl(RUNLOOP_CTL_IS_NONBLOCK_FORCED, NULL))
+            || rarch_ctl(RARCH_CTL_IS_NONBLOCK_FORCED, NULL))
          video_nonblock = true;
       video_driver_set_nonblock_state(video_nonblock);
    }
@@ -330,7 +330,7 @@ void drivers_init(int flags)
          hwr->context_reset();
       video_driver_unset_video_cache_context_ack();
 
-      runloop_ctl(RUNLOOP_CTL_SET_FRAME_TIME_LAST, NULL);
+      rarch_ctl(RARCH_CTL_SET_FRAME_TIME_LAST, NULL);
    }
 
    if (flags & DRIVER_AUDIO_MASK)

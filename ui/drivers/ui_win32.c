@@ -627,7 +627,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
             switch (mode)
             {
                case ID_M_LOAD_CORE:
-                  runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, win32_file);
+                  rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, win32_file);
                   cmd         = CMD_EVENT_LOAD_CORE;
                   break;
                case ID_M_LOAD_CONTENT:
@@ -695,7 +695,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
          if (mode >= ID_M_WINDOW_SCALE_1X && mode <= ID_M_WINDOW_SCALE_10X)
          {
             unsigned idx = (mode - (ID_M_WINDOW_SCALE_1X-1));
-            runloop_ctl(RUNLOOP_CTL_SET_WINDOWED_SCALE, &idx);
+            rarch_ctl(RARCH_CTL_SET_WINDOWED_SCALE, &idx);
             cmd = CMD_EVENT_RESIZE_WINDOWED_SCALE;
          }
          else if (mode == ID_M_STATE_INDEX_AUTO)
