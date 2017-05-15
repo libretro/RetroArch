@@ -20,6 +20,7 @@ default font
 - VITA: Fix slow I/O
 - VITA: Fix 30fps menu (poke into input now instead of reading the entire input buffer which apparently is slow)
 - VITA: Fix frame throttle
+- VULKAN: Unicode font rendering support. Should fix bad character encoding for French characters, etc.
 - VULKAN: Fix some crashes on loading some thumbnails
 
 # 1.5.0
