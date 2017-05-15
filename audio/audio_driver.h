@@ -37,7 +37,8 @@ enum audio_action
 {
    AUDIO_ACTION_NONE = 0,
    AUDIO_ACTION_RATE_CONTROL_DELTA,
-   AUDIO_ACTION_MUTE_ENABLE
+   AUDIO_ACTION_MUTE_ENABLE,
+   AUDIO_ACTION_MIXER
 };
 
 typedef struct audio_driver
@@ -217,6 +218,10 @@ void audio_driver_unset_callback(void);
 void audio_driver_frame_is_reverse(void);
 
 void audio_set_float(enum audio_action action, float val);
+
+void audio_set_bool(enum audio_action action, bool val);
+
+void audio_unset_bool(enum audio_action action, bool val);
 
 float *audio_get_float_ptr(enum audio_action action);
 

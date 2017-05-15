@@ -204,8 +204,6 @@ bool task_push_load_content_with_core_from_menu(
       void *user_data);
 #endif
 
-bool task_audio_mixer_load_handler(retro_task_t *task);
-
 void task_file_load_handler(retro_task_t *task);
 
 bool take_screenshot(const char *path, bool silence, bool has_valid_framebuffer);

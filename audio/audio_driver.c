@@ -1047,6 +1047,19 @@ void audio_driver_destroy(void)
    current_audio         = NULL;
 }
 
+void audio_set_bool(enum audio_action action, bool val)
+{
+   switch (action)
+   {
+      case AUDIO_ACTION_MIXER:
+         audio_mixer_active = val;
+         break;
+      case AUDIO_ACTION_NONE:
+      default:
+         break;
+   }
+}
+
 void audio_set_float(enum audio_action action, float val)
 {
    switch (action)

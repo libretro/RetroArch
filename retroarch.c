@@ -2229,19 +2229,6 @@ bool runloop_msg_queue_pull(const char **ret)
    return true;
 }
 
-#if 0
-static void runloop_upload_audio(void *task_data,
-      void *user_data, const char *err)
-{
-   audio_mixer_sound_t *handle = (audio_mixer_sound_t*)task_data;
-
-   if (handle)
-      audio_mixer_play(handle, true, 1.0f, NULL);
-
-   free(user_data);
-}
-#endif
-
 /* Time to exit out of the main loop?
  * Reasons for exiting:
  * a) Shutdown environment callback was invoked.
@@ -2612,7 +2599,7 @@ static enum runloop_state runloop_check_state(
       command_event(CMD_EVENT_RESET, NULL);
 #if 0
       task_push_audio_mixer_load("/home/squarepusher/SumertimeBlues.ogg",
-            runloop_upload_audio, NULL);
+            NULL, NULL);
 #endif
    }
 
