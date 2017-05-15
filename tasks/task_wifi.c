@@ -24,14 +24,6 @@
 #include "../verbosity.h"
 #include "../wifi/wifi_driver.h"
 
-typedef struct wifi_handle wifi_handle_t;
-
-struct wifi_handle
-{
-   void *empty;
-};
-
-
 static void task_wifi_scan_handler(retro_task_t *task)
 {
    driver_wifi_scan();
@@ -39,22 +31,19 @@ static void task_wifi_scan_handler(retro_task_t *task)
    task_set_progress(task, 100);
    task_set_title(task, strdup(msg_hash_to_str(MSG_WIFI_SCAN_COMPLETE)));
    task_set_finished(task, true);
-
-   return;
 }
 
 bool task_push_wifi_scan(retro_task_callback_t cb)
 {
    retro_task_t   *task = (retro_task_t *)calloc(1, sizeof(*task));
-   wifi_handle_t *state = (wifi_handle_t*)calloc(1, sizeof(*state));
 
-   if (!task || !state)
-      goto error;
+   if (!task)
+      return false;
 
    /* blocking means no other task can run while this one is running, 
     * which is the default */
    task->type           = TASK_TYPE_BLOCKING;
-   task->state          = state;
+   task->state          = NULL;
    task->handler        = task_wifi_scan_handler;
    task->callback       = cb;
    task->title          = strdup(msg_hash_to_str(
@@ -63,12 +52,4 @@ bool task_push_wifi_scan(retro_task_callback_t cb)
    task_queue_push(task);
 
    return true;
-
-error:
-   if (state)
-      free(state);
-   if (task)
-      free(task);
-
-   return false;
 }

@@ -927,9 +927,7 @@ static bool command_event_cmd_exec(const char *data,
    content_info.argv        = NULL;
    content_info.args        = NULL;
    content_info.environ_get = NULL;
-#ifdef HAVE_MENU
    content_info.environ_get = menu_content_environment_get;
-#endif
 #endif
 
    if (path_get(RARCH_PATH_CONTENT) != (void*)data)
