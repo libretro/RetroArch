@@ -519,6 +519,14 @@ void menu_driver_populate_entries(menu_displaylist_info_t *info)
             info->label, info->type);
 }
 
+bool menu_driver_load_image(menu_ctx_load_image_t *load_image_info)
+{
+   if (menu_driver_ctx && menu_driver_ctx->load_image)
+      return menu_driver_ctx->load_image(menu_userdata,
+            load_image_info->data, load_image_info->type);
+   return false;
+}
+
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
    switch (state)
@@ -845,15 +853,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                   list->label, list->idx);
          }
          break;
-      case RARCH_MENU_CTL_LOAD_IMAGE:
-         {
-            menu_ctx_load_image_t *load_image_info =
-               (menu_ctx_load_image_t*)data;
-            if (!menu_driver_ctx || !menu_driver_ctx->load_image)
-               return false;
-            return menu_driver_ctx->load_image(menu_userdata,
-                  load_image_info->data, load_image_info->type);
-         }
       case RARCH_MENU_CTL_ENVIRONMENT:
          {
             menu_ctx_environment_t *menu_environ =

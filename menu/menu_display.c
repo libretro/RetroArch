@@ -951,7 +951,7 @@ void menu_display_handle_thumbnail_upload(void *task_data,
    load_image_info.data = img;
    load_image_info.type = MENU_IMAGE_THUMBNAIL;
 
-   menu_driver_ctl(RARCH_MENU_CTL_LOAD_IMAGE, &load_image_info);
+   menu_driver_load_image(&load_image_info);
 
    image_texture_free(img);
    free(img);
@@ -967,7 +967,7 @@ void menu_display_handle_savestate_thumbnail_upload(void *task_data,
    load_image_info.data = img;
    load_image_info.type = MENU_IMAGE_SAVESTATE_THUMBNAIL;
 
-   menu_driver_ctl(RARCH_MENU_CTL_LOAD_IMAGE, &load_image_info);
+   menu_driver_load_image(&load_image_info);
 
    image_texture_free(img);
    free(img);
@@ -983,7 +983,7 @@ void menu_display_handle_wallpaper_upload(void *task_data,
    load_image_info.data = img;
    load_image_info.type = MENU_IMAGE_WALLPAPER;
 
-   menu_driver_ctl(RARCH_MENU_CTL_LOAD_IMAGE, &load_image_info);
+   menu_driver_load_image(&load_image_info);
    image_texture_free(img);
    free(img);
    free(user_data);

@@ -110,7 +110,6 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_PLAYLIST_INIT,
    RARCH_MENU_CTL_PLAYLIST_GET,
    RARCH_MENU_CTL_FIND_DRIVER,
-   RARCH_MENU_CTL_LOAD_IMAGE,
    RARCH_MENU_CTL_LIST_FREE,
    RARCH_MENU_CTL_LIST_SET_SELECTION,
    RARCH_MENU_CTL_LIST_GET_SELECTION,
@@ -400,6 +399,8 @@ void menu_driver_decrement_navigation(void);
 void menu_driver_navigation_set(bool scroll);
 
 void menu_driver_populate_entries(menu_displaylist_info_t *info);
+
+bool menu_driver_load_image(menu_ctx_load_image_t *load_image_info);
 
 bool menu_driver_init(bool video_is_threaded);
 
