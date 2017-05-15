@@ -436,8 +436,6 @@ static int menu_input_pointer_post_iterate(
       metrics.type  = DISPLAY_METRIC_DPI;
       metrics.value = &dpi;
 
-      video_context_driver_get_metrics(&metrics);
-
       menu_input->pointer.counter++;
 
       if (menu_input->pointer.counter == 1 &&
@@ -466,23 +464,26 @@ static int menu_input_pointer_post_iterate(
          pointer_old_y                     = pointer_y;
          pointer_oldpressed[0]             = true;
       }
-      else if (abs(pointer_x - start_x) > (dpi / 10)
-            || abs(pointer_y - start_y) > (dpi / 10))
+      else if (video_context_driver_get_metrics(&metrics))
       {
-         float s, delta_time;
+         if (abs(pointer_x - start_x) > (dpi / 10)
+               || abs(pointer_y - start_y) > (dpi / 10))
+         {
+            float s, delta_time;
 
-         menu_input_ctl(MENU_INPUT_CTL_SET_POINTER_DRAGGED, NULL);
-         menu_input->pointer.dx            = pointer_x - pointer_old_x;
-         menu_input->pointer.dy            = pointer_y - pointer_old_y;
-         pointer_old_x                     = pointer_x;
-         pointer_old_y                     = pointer_y;
+            menu_input_ctl(MENU_INPUT_CTL_SET_POINTER_DRAGGED, NULL);
+            menu_input->pointer.dx            = pointer_x - pointer_old_x;
+            menu_input->pointer.dy            = pointer_y - pointer_old_y;
+            pointer_old_x                     = pointer_x;
+            pointer_old_y                     = pointer_y;
 
-         menu_animation_ctl(MENU_ANIMATION_CTL_DELTA_TIME, &delta_time);
+            menu_animation_ctl(MENU_ANIMATION_CTL_DELTA_TIME, &delta_time);
 
-         s = menu_input->pointer.dy;
-         menu_input->pointer.accel = (accel0 + accel1 + s) / 3;
-         accel0                    = accel1;
-         accel1                    = menu_input->pointer.accel;
+            s = menu_input->pointer.dy;
+            menu_input->pointer.accel = (accel0 + accel1 + s) / 3;
+            accel0                    = accel1;
+            accel1                    = menu_input->pointer.accel;
+         }
       }
    }
    else
