@@ -27,18 +27,14 @@
 
 #include "msg_hash.h"
 
-#include "configuration.h"
+static unsigned uint_user_language;
 
 int menu_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
    int ret = -1;
-   settings_t *settings = config_get_ptr();
-
-   if (!settings)
-      goto end;
 
 #ifdef HAVE_LANGEXTRA
-   switch (settings->uints.user_language)
+   switch (uint_user_language)
    {
       case RETRO_LANGUAGE_FRENCH:
          ret = menu_hash_get_help_fr_enum(msg, s, len);
@@ -87,20 +83,15 @@ int menu_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
    if (ret == 0)
       return ret;
 
-end:
    return menu_hash_get_help_us_enum(msg, s, len);
 }
 
 const char *msg_hash_to_str(enum msg_hash_enums msg)
 {
    const char *ret = NULL;
-   settings_t *settings = config_get_ptr();
-
-   if (!settings)
-      goto end;
 
 #ifdef HAVE_LANGEXTRA
-   switch (settings->uints.user_language)
+   switch (uint_user_language)
    {
       case RETRO_LANGUAGE_FRENCH:
          ret = msg_hash_to_str_fr(msg);
@@ -152,7 +143,6 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
    if (ret && (memcmp(ret, "null", 4) != 0))
       return ret;
 
-end:
    return msg_hash_to_str_us(msg);
 }
 
@@ -378,4 +368,29 @@ enum msg_file_type msg_hash_to_file_type(uint32_t hash)
    }
 
    return FILE_TYPE_NONE;
+}
+
+unsigned *msg_hash_get_uint(enum msg_hash_action type)
+{
+   switch (type)
+   {
+      case MSG_HASH_USER_LANGUAGE:
+         return &uint_user_language;
+      case MSG_HASH_NONE:
+         break;
+   }
+
+   return NULL;
+}
+
+void msg_hash_set_uint(enum msg_hash_action type, unsigned val)
+{
+   switch (type)
+   {
+      case MSG_HASH_USER_LANGUAGE:
+         uint_user_language = val;
+         break;
+      case MSG_HASH_NONE:
+         break;
+   }
 }

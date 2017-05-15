@@ -1077,9 +1077,11 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_GET_LANGUAGE:
 #ifdef HAVE_LANGEXTRA
-         *(unsigned *)data = settings->uints.user_language;
-         RARCH_LOG("Environ GET_LANGUAGE: \"%u\".\n",
-               settings->uints.user_language);
+         {
+            unsigned user_lang = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
+            *(unsigned *)data  = user_lang;
+            RARCH_LOG("Environ GET_LANGUAGE: \"%u\".\n", user_lang);
+         }
 #endif
          break;
 

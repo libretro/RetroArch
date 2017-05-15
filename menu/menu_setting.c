@@ -512,7 +512,6 @@ static void setting_get_string_representation_uint_user_language(void *data,
       char *s, size_t len)
 {
    const char *modes[RETRO_LANGUAGE_LAST];
-   settings_t      *settings = config_get_ptr();
 
    modes[RETRO_LANGUAGE_ENGLISH]                = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_ENGLISH);
    modes[RETRO_LANGUAGE_JAPANESE]               = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_JAPANESE);
@@ -531,8 +530,7 @@ static void setting_get_string_representation_uint_user_language(void *data,
    modes[RETRO_LANGUAGE_POLISH]                 = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_POLISH);
    modes[RETRO_LANGUAGE_VIETNAMESE]             = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE);
 
-   if (settings)
-      strlcpy(s, modes[settings->uints.user_language], len);
+   strlcpy(s, modes[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)], len);
 }
 #endif
 
@@ -6220,7 +6218,7 @@ static bool setting_append_list(
 #ifdef HAVE_LANGEXTRA
          CONFIG_UINT(
                list, list_info,
-               &settings->uints.user_language,
+               msg_hash_get_uint(MSG_HASH_USER_LANGUAGE),
                MENU_ENUM_LABEL_USER_LANGUAGE,
                MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
                def_user_language,
