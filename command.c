@@ -392,14 +392,14 @@ static void command_parse_msg(command_t *handle, char *buf, enum cmd_source_t so
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
 static bool command_network_init(command_t *handle, uint16_t port)
 {
-   int fd;
    struct addrinfo *res  = NULL;
+   int fd                = socket_init((void**)&res, port,
+         NULL, SOCKET_TYPE_DATAGRAM);
 
    RARCH_LOG("%s %hu.\n",
          msg_hash_to_str(MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT),
          (unsigned short)port);
 
-   fd = socket_init((void**)&res, port, NULL, SOCKET_TYPE_DATAGRAM);
 
    if (fd < 0)
       goto error;
@@ -437,9 +437,10 @@ static bool send_udp_packet(const char *host,
    int fd                      = -1;
    bool ret                    = true;
 
-   hints.ai_socktype = SOCK_DGRAM;
+   hints.ai_socktype           = SOCK_DGRAM;
 
    snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
+
    if (getaddrinfo_retro(host, port_buf, &hints, &res) < 0)
       return false;
 
@@ -794,12 +795,6 @@ static void command_stdin_poll(command_t *handle)
 #endif
 #endif
 
-static void command_local_poll(command_t *handle)
-{
-   if (!handle->local_enable)
-      return;
-}
-
 bool command_poll(command_t *handle)
 {
    memset(handle->state, 0, sizeof(handle->state));
@@ -813,8 +808,6 @@ bool command_poll(command_t *handle)
 #ifdef HAVE_STDIN_CMD
    command_stdin_poll(handle);
 #endif
-
-   command_local_poll(handle);
 
    return true;
 }
