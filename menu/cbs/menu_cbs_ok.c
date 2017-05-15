@@ -3652,45 +3652,7 @@ finish:
 }
 
 void netplay_lan_scan_callback(void *task_data,
-                               void *user_data, const char *error)
-{
-   struct netplay_host_list *netplay_hosts = NULL;
-   enum msg_hash_enums enum_idx            = MSG_UNKNOWN;
-   unsigned menu_type                      = 0;
-   const char *label                       = NULL;
-   const char *path                        = NULL;
-
-   menu_entries_get_last_stack(&path, &label, &menu_type, &enum_idx, NULL);
-
-   /* Don't push the results if we left the LAN scan menu */
-   if (!string_is_equal(label,
-         msg_hash_to_str(
-            MENU_ENUM_LABEL_DEFERRED_NETPLAY_LAN_SCAN_SETTINGS_LIST)))
-      return;
-
-   if (!netplay_discovery_driver_ctl(
-            RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES,
-            (void *) &netplay_hosts))
-      return;
-
-   if (netplay_hosts->size > 0)
-   {
-      unsigned i;
-      file_list_t *file_list = menu_entries_get_selection_buf_ptr(0);
-
-      menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, file_list);
-
-      for (i = 0; i < netplay_hosts->size; i++)
-      {
-         struct netplay_host *host = &netplay_hosts->hosts[i];
-         menu_entries_append_enum(file_list,
-               host->nick,
-               msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_CONNECT_TO),
-               MENU_ENUM_LABEL_NETPLAY_CONNECT_TO,
-               MENU_NETPLAY_LAN_SCAN, 0, 0);
-      }
-   }
-}
+                               void *user_data, const char *error);
 
 static int action_ok_push_netplay_refresh_rooms(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
