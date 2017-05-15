@@ -47,7 +47,6 @@ static void audio_mixer_stopped(audio_mixer_sound_t *sound, unsigned reason)
 
 static void task_audio_mixer_load_handler(retro_task_t *task)
 {
-   unsigned i;
    void *buffer                          = NULL;
    ssize_t size                          = 0;
    audio_mixer_sound_t *handle           = NULL;
