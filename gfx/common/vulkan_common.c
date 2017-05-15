@@ -159,7 +159,7 @@ void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
    retro_assert(staging->type == VULKAN_TEXTURE_STAGING);
 
    vulkan_sync_texture_to_gpu(vk, staging);
-   vulkan_transition_texture(vk, staging);
+   vulkan_transition_texture(vk, cmd, staging);
 
    /* We don't have to sync against previous TRANSFER, 
     * since we observed the completion by fences. 
@@ -170,7 +170,7 @@ void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
     * We would also need to optionally maintain extra textures due to 
     * changes in resolution, so this seems like the sanest and 
     * simplest solution. */
-   vulkan_image_layout_transition(vk, vk->cmd, dynamic->image,
+   vulkan_image_layout_transition(vk, cmd, dynamic->image,
          VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          0, VK_ACCESS_TRANSFER_WRITE_BIT,
          VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
@@ -184,12 +184,12 @@ void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
    region.srcSubresource.layerCount = 1;
    region.dstSubresource = region.srcSubresource;
 
-   vkCmdCopyImage(vk->cmd,
+   vkCmdCopyImage(cmd,
          staging->image, VK_IMAGE_LAYOUT_GENERAL,
          dynamic->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          1, &region);
 
-   vulkan_image_layout_transition(vk, vk->cmd,
+   vulkan_image_layout_transition(vk, cmd,
          dynamic->image,
          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -729,7 +729,7 @@ static void vulkan_write_quad_descriptors(
    }
 }
 
-void vulkan_transition_texture(vk_t *vk, struct vk_texture *texture)
+void vulkan_transition_texture(vk_t *vk, VkCommandBuffer cmd, struct vk_texture *texture)
 {
    /* Transition to GENERAL layout for linear streamed textures.
     * We're using linear textures here, so only 
@@ -744,7 +744,7 @@ void vulkan_transition_texture(vk_t *vk, struct vk_texture *texture)
    switch (texture->type)
    {
       case VULKAN_TEXTURE_STREAMED:
-         vulkan_image_layout_transition(vk, vk->cmd, texture->image,
+         vulkan_image_layout_transition(vk, cmd, texture->image,
                texture->layout, VK_IMAGE_LAYOUT_GENERAL,
                VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
                VK_PIPELINE_STAGE_HOST_BIT,
@@ -752,7 +752,7 @@ void vulkan_transition_texture(vk_t *vk, struct vk_texture *texture)
          break;
 
       case VULKAN_TEXTURE_STAGING:
-         vulkan_image_layout_transition(vk, vk->cmd, texture->image,
+         vulkan_image_layout_transition(vk, cmd, texture->image,
                texture->layout, VK_IMAGE_LAYOUT_GENERAL,
                VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
                VK_PIPELINE_STAGE_HOST_BIT,
@@ -786,7 +786,7 @@ static void vulkan_check_dynamic_state(
 void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
 {
    if (call->texture)
-      vulkan_transition_texture(vk, call->texture);
+      vulkan_transition_texture(vk, vk->cmd, call->texture);
 
    if (call->pipeline != vk->tracker.pipeline)
    {
@@ -844,7 +844,7 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
 
 void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
 {
-   vulkan_transition_texture(vk, quad->texture);
+   vulkan_transition_texture(vk, vk->cmd, quad->texture);
 
    if (quad->pipeline != vk->tracker.pipeline)
    {
