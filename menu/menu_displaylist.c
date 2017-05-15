@@ -83,7 +83,109 @@ static char new_lbl_entry[4096]         = {0};
 static char new_entry[4096]             = {0};
 static enum msg_hash_enums new_type     = MSG_UNKNOWN;
 
+/* HACK - we have to find some way to pass state inbetween
+ * function pointer callback functions that don't necessarily
+ * call each other. */
+static char *core_buf                   = NULL;
+static size_t core_len                  = 0;
+
 #ifdef HAVE_NETWORKING
+void cb_net_generic_subdir(void *task_data, void *user_data, const char *err)
+{
+   char subdir_path[PATH_MAX_LENGTH];
+   http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
+   menu_file_transfer_t *state       = (menu_file_transfer_t*)user_data;
+
+   subdir_path[0] = '\0';
+
+   if (!data || err)
+      goto finish;
+
+   memcpy(subdir_path, data->data, data->len * sizeof(char));
+   subdir_path[data->len] = '\0';
+
+finish:
+   if (!err && !strstr(subdir_path, file_path_str(FILE_PATH_INDEX_DIRS_URL)))
+   {
+      char parent_dir[PATH_MAX_LENGTH];
+
+      parent_dir[0] = '\0';
+
+      fill_pathname_parent_dir(parent_dir,
+            state->path, sizeof(parent_dir));
+
+      /*generic_action_ok_displaylist_push(parent_dir, NULL,
+            subdir_path, 0, 0, 0, ACTION_OK_DL_CORE_CONTENT_DIRS_SUBDIR_LIST);*/
+   }
+
+   if (data)
+   {
+      if (data->data)
+         free(data->data);
+      free(data);
+   }
+
+   if (user_data)
+      free(user_data);
+}
+
+void cb_net_generic(void *task_data, void *user_data, const char *err)
+{
+   bool refresh                = false;
+   http_transfer_data_t *data  = (http_transfer_data_t*)task_data;
+   menu_file_transfer_t *state = (menu_file_transfer_t*)user_data;
+
+   if (core_buf)
+      free(core_buf);
+
+
+   core_buf = NULL;
+   core_len = 0;
+
+   if (!data || err)
+      goto finish;
+
+   core_buf = (char*)malloc((data->len+1) * sizeof(char));
+
+   if (!core_buf)
+      goto finish;
+
+   memcpy(core_buf, data->data, data->len * sizeof(char));
+   core_buf[data->len] = '\0';
+   core_len      = data->len;
+
+finish:
+   refresh = true;
+   menu_entries_ctl(MENU_ENTRIES_CTL_UNSET_REFRESH, &refresh);
+
+   if (data)
+   {
+      if (data->data)
+         free(data->data);
+      free(data);
+   }
+
+   if (!err && !strstr(state->path, file_path_str(FILE_PATH_INDEX_DIRS_URL)))
+   {
+      char parent_dir[PATH_MAX_LENGTH];
+      menu_file_transfer_t *transf     = NULL;
+
+      parent_dir[0] = '\0';
+
+      fill_pathname_parent_dir(parent_dir,
+            state->path, sizeof(parent_dir));
+      strlcat(parent_dir, file_path_str(FILE_PATH_INDEX_DIRS_URL), sizeof(parent_dir));
+
+      transf           = (menu_file_transfer_t*)calloc(1, sizeof(*transf));
+      strlcpy(transf->path, parent_dir, sizeof(transf->path));
+
+      task_push_http_transfer(parent_dir, true, "index_dirs", cb_net_generic_subdir, transf);
+   }
+
+   if (state)
+      free(state);
+}
+
 static void print_buf_lines(file_list_t *list, char *buf,
       const char *label, int buf_size,
       enum msg_file_type type, bool append, bool extended)

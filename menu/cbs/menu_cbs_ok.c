@@ -57,12 +57,6 @@
 #include "../../network/netplay/netplay_discovery.h"
 #endif
 
-typedef struct
-{
-   enum msg_hash_enums enum_idx;
-   char path[PATH_MAX_LENGTH];
-} menu_file_transfer_t;
-
 enum
 {
    ACTION_OK_LOAD_PRESET = 0,
@@ -96,14 +90,7 @@ unsigned rpl_entry_selection_ptr                 = 0;
 unsigned rdb_entry_start_game_selection_ptr      = 0;
 size_t                     hack_shader_pass      = 0;
 
-/* HACK - we have to find some way to pass state inbetween
- * function pointer callback functions that don't necessarily
- * call each other. */
-char *core_buf                                   = NULL;
-size_t core_len                                  = 0;
-
 #ifdef HAVE_NETWORKING
-
 #ifdef HAVE_LAKKA
 static char lakka_project[128];
 
@@ -123,110 +110,11 @@ static char *lakka_get_project(void)
 }
 #endif
 
-static void cb_net_generic_subdir(void *task_data, void *user_data, const char *err)
-{
-   char subdir_path[PATH_MAX_LENGTH];
-   http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
-   menu_file_transfer_t *state       = (menu_file_transfer_t*)user_data;
-
-   subdir_path[0] = '\0';
-
-   if (!data || err)
-      goto finish;
-
-   memcpy(subdir_path, data->data, data->len * sizeof(char));
-   subdir_path[data->len] = '\0';
-
-finish:
-   if (!err && !strstr(subdir_path, file_path_str(FILE_PATH_INDEX_DIRS_URL)))
-   {
-      char parent_dir[PATH_MAX_LENGTH];
-
-      parent_dir[0] = '\0';
-
-      fill_pathname_parent_dir(parent_dir,
-            state->path, sizeof(parent_dir));
-
-      /*generic_action_ok_displaylist_push(parent_dir, NULL,
-            subdir_path, 0, 0, 0, ACTION_OK_DL_CORE_CONTENT_DIRS_SUBDIR_LIST);*/
-   }
-
-   if (err)
-      RARCH_ERR("%s: %s\n", msg_hash_to_str(MSG_DOWNLOAD_FAILED), err);
-
-   if (data)
-   {
-      if (data->data)
-         free(data->data);
-      free(data);
-   }
-
-   if (user_data)
-      free(user_data);
-}
+void cb_net_generic_subdir(void *task_data, void *user_data, const char *err);
 
 /* defined in menu_cbs_deferred_push */
-static void cb_net_generic(void *task_data, void *user_data, const char *err)
-{
-   bool refresh                = false;
-   http_transfer_data_t *data  = (http_transfer_data_t*)task_data;
-   menu_file_transfer_t *state = (menu_file_transfer_t*)user_data;
-
-   if (core_buf)
-      free(core_buf);
-
-
-   core_buf = NULL;
-   core_len = 0;
-
-   if (!data || err)
-      goto finish;
-
-   core_buf = (char*)malloc((data->len+1) * sizeof(char));
-
-   if (!core_buf)
-      goto finish;
-
-   memcpy(core_buf, data->data, data->len * sizeof(char));
-   core_buf[data->len] = '\0';
-   core_len      = data->len;
-
-finish:
-   refresh = true;
-   menu_entries_ctl(MENU_ENTRIES_CTL_UNSET_REFRESH, &refresh);
-
-   if (err)
-      RARCH_ERR("%s: %s\n", msg_hash_to_str(MSG_DOWNLOAD_FAILED), err);
-
-   if (data)
-   {
-      if (data->data)
-         free(data->data);
-      free(data);
-   }
-
-   if (!err && !strstr(state->path, file_path_str(FILE_PATH_INDEX_DIRS_URL)))
-   {
-      char parent_dir[PATH_MAX_LENGTH];
-      menu_file_transfer_t *transf     = NULL;
-
-      parent_dir[0] = '\0';
-
-      fill_pathname_parent_dir(parent_dir,
-            state->path, sizeof(parent_dir));
-      strlcat(parent_dir, file_path_str(FILE_PATH_INDEX_DIRS_URL), sizeof(parent_dir));
-
-      transf           = (menu_file_transfer_t*)calloc(1, sizeof(*transf));
-      strlcpy(transf->path, parent_dir, sizeof(transf->path));
-
-      task_push_http_transfer(parent_dir, true, "index_dirs", cb_net_generic_subdir, transf);
-   }
-
-   if (state)
-      free(state);
-}
+void cb_net_generic(void *task_data, void *user_data, const char *err);
 #endif
-
 
 int generic_action_ok_displaylist_push(const char *path,
       const char *new_path,
