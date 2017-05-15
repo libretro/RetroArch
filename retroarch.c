@@ -1438,20 +1438,8 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          break;
       case RARCH_CTL_IS_SRAM_LOAD_DISABLED:
          return rarch_is_sram_load_disabled;
-      case RARCH_CTL_SET_SRAM_LOAD_DISABLED:
-         rarch_is_sram_load_disabled = true;
-         break;
-      case RARCH_CTL_UNSET_SRAM_LOAD_DISABLED:
-         rarch_is_sram_load_disabled = false;
-         break;
       case RARCH_CTL_IS_SRAM_SAVE_DISABLED:
          return rarch_is_sram_save_disabled;
-      case RARCH_CTL_SET_SRAM_SAVE_DISABLED:
-         rarch_is_sram_save_disabled = true;
-         break;
-      case RARCH_CTL_UNSET_SRAM_SAVE_DISABLED:
-         rarch_is_sram_save_disabled = false;
-         break;
       case RARCH_CTL_IS_SRAM_USED:
          return rarch_use_sram;
       case RARCH_CTL_SET_SRAM_ENABLE:
