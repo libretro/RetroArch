@@ -138,11 +138,11 @@ void netplay_log_connection(const struct sockaddr_storage *their_addr,
  */
 uint32_t netplay_impl_magic(void)
 {
-   size_t i, len;
+   size_t i;
    uint32_t res                        = 0;
    const char *ver                     = PACKAGE_VERSION;
+   size_t len                          = strlen(ver);
 
-   len = strlen(ver);
    for (i = 0; i < len; i++)
       res ^= ver[i] << (i & 0xf);
 
@@ -185,17 +185,18 @@ static bool netplay_endian_mismatch(uint32_t pma, uint32_t pmb)
 
 static unsigned long simple_rand_next = 1;
 
-static int simple_rand()
+static int simple_rand(void)
 {
    simple_rand_next = simple_rand_next * 1103515245 + 12345;
    return((unsigned)(simple_rand_next/65536) % 32768);
 }
 
-static void simple_srand(unsigned int seed) {
+static void simple_srand(unsigned int seed)
+{
    simple_rand_next = seed;
 }
 
-static uint32_t simple_rand_uint32()
+static uint32_t simple_rand_uint32(void)
 {
    uint32_t parts[3];
    parts[0] = simple_rand();
@@ -214,14 +215,17 @@ static uint32_t simple_rand_uint32()
 bool netplay_handshake_init_send(netplay_t *netplay,
    struct netplay_connection *connection)
 {
-   uint32_t header[4] = {0};
+   uint32_t header[4];
    settings_t *settings = config_get_ptr();
 
    header[0] = htonl(netplay_impl_magic());
    header[1] = htonl(netplay_platform_magic());
    header[2] = htonl(NETPLAY_COMPRESSION_SUPPORTED);
+   header[3] = 0;
+
    if (netplay->is_server &&
-       (settings->paths.netplay_password[0] || settings->paths.netplay_spectate_password[0]))
+       (settings->paths.netplay_password[0] || 
+        settings->paths.netplay_spectate_password[0]))
    {
       /* Demand a password */
       if (simple_rand_next == 1)
@@ -434,19 +438,20 @@ error:
    return false;
 }
 
-static void netplay_handshake_ready(netplay_t *netplay, struct netplay_connection *connection)
+static void netplay_handshake_ready(netplay_t *netplay,
+      struct netplay_connection *connection)
 {
    char msg[512];
 
    if (netplay->is_server)
    {
-      netplay_log_connection(&connection->addr, (unsigned)(connection - netplay->connections), connection->nick);
+      netplay_log_connection(&connection->addr,
+            (unsigned)(connection - netplay->connections), connection->nick);
 
       /* Send them the savestate */
-      if (!(netplay->quirks & (NETPLAY_QUIRK_NO_SAVESTATES|NETPLAY_QUIRK_NO_TRANSMISSION)))
-      {
+      if (!(netplay->quirks & 
+               (NETPLAY_QUIRK_NO_SAVESTATES|NETPLAY_QUIRK_NO_TRANSMISSION)))
          netplay->force_send_savestate = true;
-      }
    }
    else
    {
@@ -468,7 +473,8 @@ static void netplay_handshake_ready(netplay_t *netplay, struct netplay_connectio
  *
  * Send an INFO command.
  */
-bool netplay_handshake_info(netplay_t *netplay, struct netplay_connection *connection)
+bool netplay_handshake_info(netplay_t *netplay,
+      struct netplay_connection *connection)
 {
    struct info_buf_s info_buf;
    uint32_t      content_crc      = 0;
@@ -481,13 +487,17 @@ bool netplay_handshake_info(netplay_t *netplay, struct netplay_connection *conne
    /* Get our core info */
    if (core_info)
    {
-      strlcpy(info_buf.core_name, core_info->info.library_name, sizeof(info_buf.core_name));
-      strlcpy(info_buf.core_version, core_info->info.library_version, sizeof(info_buf.core_version));
+      strlcpy(info_buf.core_name,
+            core_info->info.library_name, sizeof(info_buf.core_name));
+      strlcpy(info_buf.core_version,
+            core_info->info.library_version, sizeof(info_buf.core_version));
    }
    else
    {
-      strlcpy(info_buf.core_name,    "UNKNOWN", sizeof(info_buf.core_name));
-      strlcpy(info_buf.core_version, "UNKNOWN", sizeof(info_buf.core_version));
+      strlcpy(info_buf.core_name,
+            "UNKNOWN", sizeof(info_buf.core_name));
+      strlcpy(info_buf.core_version,
+            "UNKNOWN", sizeof(info_buf.core_version));
    }
 
    /* Get our content CRC */
@@ -512,17 +522,18 @@ bool netplay_handshake_info(netplay_t *netplay, struct netplay_connection *conne
  *
  * Send a SYNC command.
  */
-bool netplay_handshake_sync(netplay_t *netplay, struct netplay_connection *connection)
+bool netplay_handshake_sync(netplay_t *netplay,
+      struct netplay_connection *connection)
 {
    /* If we're the server, now we send sync info */
    size_t i;
    int matchct;
-   uint32_t device;
    uint32_t cmd[5];
-   uint32_t connected_players;
    retro_ctx_memory_info_t mem_info;
-   size_t nicklen, nickmangle;
-   bool nick_matched;
+   uint32_t device            = 0;
+   uint32_t connected_players = 0;
+   size_t nicklen, nickmangle = 0;
+   bool nick_matched          = false;
 
    autosave_lock();
    mem_info.id = RETRO_MEMORY_SAVE_RAM;
@@ -585,7 +596,8 @@ bool netplay_handshake_sync(netplay_t *netplay, struct netplay_connection *conne
       if (nick_matched)
       {
          /* Somebody has this nick, make a new one! */
-         snprintf(connection->nick + nickmangle, NETPLAY_NICK_LEN - nickmangle, " (%d)", ++matchct);
+         snprintf(connection->nick + nickmangle,
+               NETPLAY_NICK_LEN - nickmangle, " (%d)", ++matchct);
          connection->nick[NETPLAY_NICK_LEN - 1] = '\0';
       }
    } while (nick_matched);
@@ -655,7 +667,9 @@ bool netplay_handshake_pre_nick(netplay_t *netplay,
    if (netplay->is_server)
    {
       settings_t *settings = config_get_ptr();
-      if (settings->paths.netplay_password[0] || settings->paths.netplay_spectate_password[0])
+
+      if (  settings->paths.netplay_password[0] || 
+            settings->paths.netplay_spectate_password[0])
       {
          /* There's a password, so just put them in PRE_PASSWORD mode */
          connection->mode = NETPLAY_CONNECTION_PRE_PASSWORD;
@@ -694,7 +708,7 @@ bool netplay_handshake_pre_password(netplay_t *netplay,
    char password[8+NETPLAY_PASS_LEN]; /* 8 for salt */
    ssize_t recvd;
    char msg[512];
-   bool correct;
+   bool correct         = false;
    settings_t *settings = config_get_ptr();
 
    msg[0] = '\0';
@@ -724,9 +738,14 @@ bool netplay_handshake_pre_password(netplay_t *netplay,
 
    if (settings->paths.netplay_password[0])
    {
-      strlcpy(password + 8, settings->paths.netplay_password, sizeof(password)-8);
-      sha256_hash(corr_password_buf.password, (uint8_t *) password, strlen(password));
-      if (!memcmp(password_buf.password, corr_password_buf.password, sizeof(password_buf.password)))
+      strlcpy(password + 8,
+            settings->paths.netplay_password, sizeof(password)-8);
+
+      sha256_hash(corr_password_buf.password,
+            (uint8_t *) password, strlen(password));
+
+      if (!memcmp(password_buf.password,
+               corr_password_buf.password, sizeof(password_buf.password)))
       {
          correct = true;
          connection->can_play = true;
@@ -734,9 +753,14 @@ bool netplay_handshake_pre_password(netplay_t *netplay,
    }
    if (settings->paths.netplay_spectate_password[0])
    {
-      strlcpy(password + 8, settings->paths.netplay_spectate_password, sizeof(password)-8);
-      sha256_hash(corr_password_buf.password, (uint8_t *) password, strlen(password));
-      if (!memcmp(password_buf.password, corr_password_buf.password, sizeof(password_buf.password)))
+      strlcpy(password + 8,
+            settings->paths.netplay_spectate_password, sizeof(password)-8);
+
+      sha256_hash(corr_password_buf.password,
+            (uint8_t *) password, strlen(password));
+
+      if (!memcmp(password_buf.password,
+               corr_password_buf.password, sizeof(password_buf.password)))
          correct = true;
    }
 
@@ -809,8 +833,10 @@ bool netplay_handshake_pre_info(netplay_t *netplay,
 
    if (core_info)
    {
-      if (strncmp(info_buf.core_name, core_info->info.library_name, sizeof(info_buf.core_name)) ||
-          strncmp(info_buf.core_version, core_info->info.library_version, sizeof(info_buf.core_version)))
+      if (strncmp(info_buf.core_name,
+               core_info->info.library_name, sizeof(info_buf.core_name)) ||
+          strncmp(info_buf.core_version,
+             core_info->info.library_version, sizeof(info_buf.core_version)))
       {
          dmsg = msg_hash_to_str(MSG_NETPLAY_IMPLEMENTATIONS_DIFFER);
          goto error;
@@ -972,7 +998,8 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
    {
       char msg[512];
       strlcpy(netplay->nick, new_nick, NETPLAY_NICK_LEN);
-      snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_NETPLAY_CHANGED_NICK), netplay->nick);
+      snprintf(msg, sizeof(msg),
+            msg_hash_to_str(MSG_NETPLAY_CHANGED_NICK), netplay->nick);
       RARCH_LOG("%s\n", msg);
       runloop_msg_queue_push(msg, 1, 180, false);
    }
@@ -1041,13 +1068,10 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
 bool netplay_handshake(netplay_t *netplay,
    struct netplay_connection *connection, bool *had_input)
 {
-   bool ret;
+   bool ret = false;
 
    switch (connection->mode)
    {
-      case NETPLAY_CONNECTION_NONE:
-         /* Huh?! */
-         return false;
       case NETPLAY_CONNECTION_INIT:
          ret = netplay_handshake_init(netplay, connection, had_input);
          break;
@@ -1063,6 +1087,7 @@ bool netplay_handshake(netplay_t *netplay,
       case NETPLAY_CONNECTION_PRE_SYNC:
          ret = netplay_handshake_pre_sync(netplay, connection, had_input);
          break;
+      case NETPLAY_CONNECTION_NONE:
       default:
          return false;
    }
