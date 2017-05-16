@@ -772,7 +772,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Aktueller Grafiktreiber");
 
-         if (memcmp(settings->arrays.video_driver, "gl", 2) == 0)
+         if (string_is_equal_fast(settings->arrays.video_driver, "gl", 2))
          {
             snprintf(s, len,
                   "OpenGL-Grafiktreiber. \n"
@@ -785,7 +785,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "als auch bei libretro-GL-Cores, hängt von dem \n"
                   "GL-Treiber deiner Grafikkarte ab.");
          }
-         else if (memcmp(settings->arrays.video_driver, "sdl2", 4) == 0)
+         else if (string_is_equal_fast(settings->arrays.video_driver, "sdl2", 4))
          {
             snprintf(s, len,
                   "SDL2-Grafiktreiber.\n"
@@ -796,7 +796,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "Die Leistung hängt von der SDL- \n"
                   "Implementierung deiner Plattform ab.");
          }
-         else if (memcmp(settings->arrays.video_driver, "sdl1", 4) == 0)
+         else if (string_is_equal_fast(settings->arrays.video_driver, "sdl1", 4))
          {
             snprintf(s, len,
                   "SDL-Grafiktreiber.\n"
@@ -808,7 +808,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "solltest diesen Treiber nur als letzte \n"
                   "Möglichkeit verwenden.");
          }
-         else if (memcmp(settings->arrays.video_driver, "d3d", 3) == 0)
+         else if (string_is_equal_fast(settings->arrays.video_driver, "d3d", 3))
          {
              snprintf(s, len,
                   "Direct3D-Grafiktreiber. \n"
@@ -817,7 +817,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "Cores hängt von dem D3D-Treiber deiner \n"
                   "Grafikkarte ab.");
          }
-         else if (memcmp(settings->arrays.video_driver, "exynos", 6) == 0)
+         else if (string_is_equal_fast(settings->arrays.video_driver, "exynos", 6))
          {
             snprintf(s, len,
                   "Exynos-G2D-Grafiktreiber. \n"
@@ -829,7 +829,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "Die Leistung bei software-gerendeten Cores sollte \n"
                   "optimal sein.");
          }
-         else if (memcmp(settings->arrays.video_driver, "drm", 3) == 0)
+         else if (string_is_equal_fast(settings->arrays.video_driver, "drm", 3))
          {
             snprintf(s, len,
                   "DRM-Grafiktreiber \n"
@@ -838,7 +838,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "Er verwendet libdrm für Hardware-Skalierung und \n"
                   "GPU-Overlays.");
          }
-         else if (memcmp(settings->arrays.video_driver, "sunxi", 5) == 0)
+         else if (string_is_equal_fast(settings->arrays.video_driver, "sunxi", 5))
          {
             snprintf(s, len,
                   "Sunxi-G2D-Grafiktreiber\n"
@@ -2033,7 +2033,7 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
 #ifdef HAVE_MENU
    const char *ret = menu_hash_to_str_de_label_enum(msg);
 
-   if (ret && (memcmp(ret, "null", 4) != 0))
+   if (ret && (string_is_not_equal_fast(ret, "null", 4)))
       return ret;
 #endif
 
