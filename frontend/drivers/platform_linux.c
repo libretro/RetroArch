@@ -900,6 +900,9 @@ static bool next_string(char **_ptr, char **_str)
 
 static bool int_string(char *str, int *val)
 {
+   if (!str)
+      return false;
+
    char *endptr = NULL;
    *val = (int) strtol(str, &endptr, 0);
    return ((*str != '\0') && (*endptr == '\0'));
