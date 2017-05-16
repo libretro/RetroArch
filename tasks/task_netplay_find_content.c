@@ -102,12 +102,14 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
    netplay_crc_handle_t *state = (netplay_crc_handle_t*)task->state;
 
    task_set_progress(task, 0);
+   task_free_title(task);
    task_set_title(task, strdup("Looking for compatible content..."));
    task_set_finished(task, false);
 
    if (!state->lpl_list)
    {
       task_set_progress(task, 100);
+      task_free_title(task);
       task_set_title(task, strdup("Playlist directory not found"));
       task_set_finished(task, true);
       free(state);
@@ -149,6 +151,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
                   state->found = true;
                   task_set_data(task, state);
                   task_set_progress(task, 100);
+                  task_free_title(task);
                   task_set_title(task, strdup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND)));
                   task_set_finished(task, true);
                   string_list_free(state->lpl_list);
@@ -209,6 +212,7 @@ filename_matching:
                   state->found = true;
                   task_set_data(task, state);
                   task_set_progress(task, 100);
+                  task_free_title(task);
                   task_set_title(task, strdup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND)));
                   task_set_finished(task, true);
                   string_list_free(state->lpl_list);
@@ -232,6 +236,7 @@ filename_matching:
       state->found = true;
       task_set_data(task, state);
       task_set_progress(task, 100);
+      task_free_title(task);
       task_set_title(task, strdup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND)));
       task_set_finished(task, true);
       return;
@@ -240,6 +245,7 @@ filename_matching:
 no_playlists:
    string_list_free(state->lpl_list);
    task_set_progress(task, 100);
+   task_free_title(task);
    task_set_title(task, strdup("Content not found, try manual load or disconnect from host"));
    task_set_finished(task, true);
    command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);

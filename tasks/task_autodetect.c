@@ -168,7 +168,10 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
             string_is_empty(display_name) ? params->name : display_name);
 
       if(!remote_is_bound)
+      {
+         task_free_title(task);
          task_set_title(task, strdup(msg));
+      }
       remote_is_bound = true;
       if (params->idx == 0)
          input_autoconfigure_swap_override = true;
@@ -189,7 +192,10 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
       }
 
       if (!block_osd_spam)
+      {
+         task_free_title(task);
          task_set_title(task, strdup(msg));
+      }
    }
 
 
@@ -335,6 +341,7 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
             params->name, (long)params->vid, (long)params->pid,
             msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED));
 #endif
+      task_free_title(task);
       task_set_title(task, strdup(msg));
    }
 
