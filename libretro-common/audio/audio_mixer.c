@@ -45,6 +45,30 @@
 #define AUDIO_MIXER_MAX_VOICES      8
 #define AUDIO_MIXER_TEMP_OGG_BUFFER 8192
 
+struct audio_mixer_sound
+{
+   enum audio_mixer_type type;
+   
+   union
+   {
+      struct
+      {
+         /* wav */
+         unsigned frames;
+         const float* pcm;
+      } wav;
+      
+#ifdef HAVE_STB_VORBIS
+      struct
+      {
+         /* ogg */
+         unsigned size;
+         const void* data;
+      } ogg;
+#endif
+   } types;
+};
+
 struct audio_mixer_voice
 {
    bool     repeat;
