@@ -1124,10 +1124,13 @@ static void netplay_toggle_play_spectate(netplay_t *netplay)
 bool netplay_disconnect(netplay_t *netplay)
 {
    size_t i;
+
    if (!netplay)
       return true;
    for (i = 0; i < netplay->connections_size; i++)
       netplay_hangup(netplay, &netplay->connections[i]);
+
+   deinit_netplay();
    return true;
 }
 
@@ -1137,6 +1140,7 @@ void deinit_netplay(void)
    {
       netplay_free(netplay_data);
       netplay_enabled = false;
+      netplay_is_client = false;
       is_mitm = false;
    }
    netplay_data = NULL;
@@ -1271,11 +1275,13 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
             ret = false;
             goto done;
 
-         case RARCH_NETPLAY_CTL_IS_SERVER_ENABLED:
+         case RARCH_NETPLAY_CTL_IS_SERVER:
             ret = netplay_enabled && !netplay_is_client;
-            RARCH_LOG("TEST: %d = %d && %d", ret, netplay_enabled, netplay_is_client);
             goto done;
 
+         case RARCH_NETPLAY_CTL_IS_CONNECTED:
+            ret = false;
+            goto done;
          default:
             goto done;
       }
@@ -1292,9 +1298,11 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          goto done;
       case RARCH_NETPLAY_CTL_IS_ENABLED:
          goto done;
-      case RARCH_NETPLAY_CTL_IS_SERVER_ENABLED:
+      case RARCH_NETPLAY_CTL_IS_SERVER:
          ret = netplay_enabled && !netplay_is_client;
-         RARCH_LOG("TEST: %d = %d && %d", ret, netplay_enabled, netplay_is_client);
+         goto done;
+      case RARCH_NETPLAY_CTL_IS_CONNECTED:
+         ret = netplay_data->is_connected;
          goto done;
       case RARCH_NETPLAY_CTL_POST_FRAME:
          netplay_post_frame(netplay_data);
