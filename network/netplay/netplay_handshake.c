@@ -297,15 +297,19 @@ static void handshake_password(void *ignore, const char *line)
 bool netplay_handshake_init(netplay_t *netplay,
    struct netplay_connection *connection, bool *had_input)
 {
-   uint32_t header[4] = {0};
    ssize_t recvd;
-   const char *dmsg;
    struct nick_buf_s nick_buf;
-   uint32_t local_pmagic, remote_pmagic;
-   uint32_t compression;
-   struct compression_transcoder *ctrans;
+   uint32_t header[4];
+   uint32_t local_pmagic                 = 0;
+   uint32_t remote_pmagic                = 0;
+   uint32_t compression                  = 0;
+   struct compression_transcoder *ctrans = NULL;
+   const char *dmsg                      = NULL;
 
-   dmsg = NULL;
+   header[0] = 0;
+   header[1] = 0;
+   header[2] = 0;
+   header[3] = 0;
 
    RECV(header, sizeof(header))
    {
@@ -320,8 +324,9 @@ bool netplay_handshake_init(netplay_t *netplay,
    }
 
    /* We only care about platform magic if our core is quirky */
-   local_pmagic = netplay_platform_magic();
+   local_pmagic  = netplay_platform_magic();
    remote_pmagic = ntohl(header[1]);
+
    if ((netplay->quirks & NETPLAY_QUIRK_ENDIAN_DEPENDENT) &&
        netplay_endian_mismatch(local_pmagic, remote_pmagic))
    {
@@ -338,8 +343,9 @@ bool netplay_handshake_init(netplay_t *netplay,
    }
 
    /* Check what compression is supported */
-   compression = ntohl(header[2]);
+   compression  = ntohl(header[2]);
    compression &= NETPLAY_COMPRESSION_SUPPORTED;
+
    if (compression & NETPLAY_COMPRESSION_ZLIB)
    {
       ctrans = &netplay->compress_zlib;
@@ -362,13 +368,14 @@ bool netplay_handshake_init(netplay_t *netplay,
       }
       connection->compression_supported = 0;
    }
+
    if (!ctrans->decompression_backend)
       ctrans->decompression_backend = ctrans->compression_backend->reverse;
 
    /* Allocate our compression stream */
    if (!ctrans->compression_stream)
    {
-      ctrans->compression_stream = ctrans->compression_backend->stream_new();
+      ctrans->compression_stream   = ctrans->compression_backend->stream_new();
       ctrans->decompression_stream = ctrans->decompression_backend->stream_new();
    }
    if (!ctrans->compression_stream || !ctrans->decompression_stream)
@@ -426,18 +433,15 @@ static void netplay_handshake_ready(netplay_t *netplay,
       struct netplay_connection *connection)
 {
    char msg[512];
+   msg[0] = '\0';
 
    if (netplay->is_server)
    {
-      char msg[512];
       unsigned slot = (unsigned)(connection - netplay->connections);
       
-      msg[0] = '\0';
       netplay_log_connection(&connection->addr,
             slot, connection->nick, msg, sizeof(msg));
 
-      runloop_msg_queue_push(msg, 1, 180, false);
-      RARCH_LOG("%s\n", msg);
       RARCH_LOG("%s %u\n", msg_hash_to_str(MSG_CONNECTION_SLOT), slot);
 
       /* Send them the savestate */
@@ -451,9 +455,10 @@ static void netplay_handshake_ready(netplay_t *netplay,
       snprintf(msg, sizeof(msg), "%s: \"%s\"",
             msg_hash_to_str(MSG_CONNECTED_TO),
             connection->nick);
-      RARCH_LOG("%s\n", msg);
-      runloop_msg_queue_push(msg, 1, 180, false);
    }
+
+   RARCH_LOG("%s\n", msg);
+   runloop_msg_queue_push(msg, 1, 180, false);
 
    /* Unstall if we were waiting for this */
    if (netplay->stall == NETPLAY_STALL_NO_CONNECTION)
@@ -939,26 +944,30 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
    /* And the flip state */
    RECV(&flip_frame, sizeof(flip_frame))
       return false;
-   flip_frame = ntohl(flip_frame);
-   netplay->flip = !!flip_frame;
+
+   flip_frame          = ntohl(flip_frame);
+   netplay->flip       = !!flip_frame;
    netplay->flip_frame = flip_frame;
 
    /* Set our frame counters as requested */
-   netplay->self_frame_count = netplay->run_frame_count =
-      netplay->other_frame_count = netplay->unread_frame_count =
+   netplay->self_frame_count      = netplay->run_frame_count    =
+      netplay->other_frame_count  = netplay->unread_frame_count =
       netplay->server_frame_count = new_frame_count;
+
    for (i = 0; i < netplay->buffer_size; i++)
    {
       struct delta_frame *ptr = &netplay->buffer[i];
-      ptr->used = false;
+
+      ptr->used               = false;
 
       if (i == netplay->self_ptr)
       {
          /* Clear out any current data but still use this frame */
          if (!netplay_delta_frame_ready(netplay, ptr, 0))
             return false;
-         ptr->frame = new_frame_count;
-         ptr->have_local = true;
+
+         ptr->frame       = new_frame_count;
+         ptr->have_local  = true;
          netplay->run_ptr = netplay->other_ptr = netplay->unread_ptr =
             netplay->server_ptr = i;
 
@@ -968,7 +977,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
    {
       if (connected_players & (1<<i))
       {
-         netplay->read_ptr[i] = netplay->self_ptr;
+         netplay->read_ptr[i]         = netplay->self_ptr;
          netplay->read_frame_count[i] = netplay->self_frame_count;
       }
    }
@@ -978,14 +987,17 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
    {
       RECV(&device, sizeof(device))
          return false;
+
       pad.port   = (unsigned)i;
       pad.device = ntohl(device);
+
       core_set_controller_port_device(&pad);
    }
 
    /* Get our nick */
    RECV(new_nick, NETPLAY_NICK_LEN)
       return false;
+
    if (strncmp(netplay->nick, new_nick, NETPLAY_NICK_LEN))
    {
       char msg[512];
@@ -1048,8 +1060,8 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
    /* Ask to switch to playing mode if we should */
    if (!settings->bools.netplay_start_as_spectator)
       return netplay_cmd_mode(netplay, connection, NETPLAY_CONNECTION_PLAYING);
-   else
-      return true;
+
+   return true;
 }
 
 /**
