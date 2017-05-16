@@ -571,15 +571,13 @@ static void video_driver_init_filter(enum retro_pixel_format colfmt)
          width * height * video_driver_state_out_bpp);
 #endif
    if (!buf)
-      goto error;
+   {
+      RARCH_ERR("[Video]: Softfilter initialization failed.\n");
+      video_driver_filter_free();
+      return;
+   }
 
    video_driver_state_buffer    = buf;
-
-   return;
-
-error:
-   RARCH_ERR("[Video]: Softfilter initialization failed.\n");
-   video_driver_filter_free();
 }
 
 static void video_driver_init_input(const input_driver_t *tmp)
