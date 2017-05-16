@@ -126,35 +126,35 @@ static bool menu_display_check_compatibility(
       case MENU_VIDEO_DRIVER_GENERIC:
          return true;
       case MENU_VIDEO_DRIVER_OPENGL:
-         if (memcmp(video_driver, "gl", 2) == 0)
+         if (string_is_equal_fast(video_driver, "gl", 2))
             return true;
          break;
       case MENU_VIDEO_DRIVER_VULKAN:
-         if (memcmp(video_driver, "vulkan", 6) == 0)
+         if (string_is_equal_fast(video_driver, "vulkan", 6))
             return true;
          break;
       case MENU_VIDEO_DRIVER_DIRECT3D:
-         if (memcmp(video_driver, "d3d", 3) == 0)
+         if (string_is_equal_fast(video_driver, "d3d", 3))
             return true;
          break;
       case MENU_VIDEO_DRIVER_VITA2D:
-         if (memcmp(video_driver, "vita2d", 6) == 0)
+         if (string_is_equal_fast(video_driver, "vita2d", 6))
             return true;
          break;
       case MENU_VIDEO_DRIVER_CTR:
-         if (memcmp(video_driver, "ctr", 3) == 0)
+         if (string_is_equal_fast(video_driver, "ctr", 3))
             return true;
          break;
       case MENU_VIDEO_DRIVER_CACA:
-         if (memcmp(video_driver, "caca", 4) == 0)
+         if (string_is_equal_fast(video_driver, "caca", 4))
             return true;
          break;
       case MENU_VIDEO_DRIVER_GDI:
-         if (memcmp(video_driver, "gdi", 3) == 0)
+         if (string_is_equal_fast(video_driver, "gdi", 3))
             return true;
          break;
       case MENU_VIDEO_DRIVER_VGA:
-         if (memcmp(video_driver, "vga", 3) == 0)
+         if (string_is_equal_fast(video_driver, "vga", 3))
             return true;
          break;
    }

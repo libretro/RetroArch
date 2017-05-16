@@ -747,13 +747,13 @@ bool config_get_bool(config_file_t *conf, const char *key, bool *in)
 
    if (entry)
    {
-      if (memcmp(entry->value, "true", 4) == 0)
+      if (string_is_equal_fast(entry->value, "true", 4))
          *in = true;
-      else if (memcmp(entry->value, "1", 1) == 0)
+      else if (string_is_equal_fast(entry->value, "1", 1))
          *in = true;
-      else if (memcmp(entry->value, "false", 5) == 0)
+      else if (string_is_equal_fast(entry->value, "false", 5))
          *in = false;
-      else if (memcmp(entry->value, "0", 1) == 0)
+      else if (string_is_equal_fast(entry->value, "0", 1))
          *in = false;
       else
          return false;
