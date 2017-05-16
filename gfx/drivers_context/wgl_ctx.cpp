@@ -589,11 +589,21 @@ static bool gfx_ctx_wgl_has_windowed(void *data)
 
 static gfx_ctx_proc_t gfx_ctx_wgl_get_proc_address(const char *symbol)
 {
-#if defined(HAVE_OPENGL) || defined(HAVE_VULKAN)
-   gfx_ctx_proc_t func = (gfx_ctx_proc_t)wglGetProcAddress(symbol);
-   if (func)
-      return func;
+   switch (win32_api)
+   {
+      case GFX_CTX_OPENGL_API:
+#if defined(HAVE_OPENGL)
+         {
+            gfx_ctx_proc_t func = (gfx_ctx_proc_t)wglGetProcAddress(symbol);
+            if (func)
+               return func;
+         }
 #endif
+         break;
+      default:
+         break;
+   }
+
    return (gfx_ctx_proc_t)GetProcAddress((HINSTANCE)dll_handle, symbol);
 }
 
