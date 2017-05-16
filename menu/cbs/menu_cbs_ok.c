@@ -3513,6 +3513,12 @@ finish:
                      sizeof(netplay_room_list[i].nickname));
 
                address = &host->addr;
+
+#if 0
+               /* TODO/FIXME - inet_ntop is not portable. Need to create
+                * a wrapper function in libretro-common which will wrap
+                * this and ensure that it will work on most platforms.
+                */
                if (address->sa_family == AF_INET)
                {
                    struct sockaddr_in *sin = (struct sockaddr_in *) address;
@@ -3525,6 +3531,11 @@ finish:
                   inet_ntop(AF_INET6, &sin->sin6_addr, 
                      netplay_room_list[i].address, INET6_ADDRSTRLEN);
                }
+#else
+               strlcpy(netplay_room_list[i].address,		
+                     inet_ntoa(((struct sockaddr_in*)(address))->sin_addr),		
+                     sizeof(netplay_room_list[i].address));
+#endif
 
                strlcpy(netplay_room_list[i].corename,
                      host->core,
