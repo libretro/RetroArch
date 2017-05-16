@@ -29,6 +29,7 @@ static void task_wifi_scan_handler(retro_task_t *task)
    driver_wifi_scan();
 
    task_set_progress(task, 100);
+   task_free_title(task);
    task_set_title(task, strdup(msg_hash_to_str(MSG_WIFI_SCAN_COMPLETE)));
    task_set_finished(task, true);
 }
