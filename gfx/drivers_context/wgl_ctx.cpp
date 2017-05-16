@@ -102,6 +102,7 @@ static enum gfx_ctx_api win32_api         = GFX_CTX_NONE;
 
 static dylib_t          dll_handle        = NULL; /* Handle to OpenGL32.dll */
 
+#if defined(HAVE_OPENGL)
 static void setup_pixel_format(HDC hdc)
 {
    PIXELFORMATDESCRIPTOR pfd = {0};
@@ -117,7 +118,6 @@ static void setup_pixel_format(HDC hdc)
    SetPixelFormat(hdc, ChoosePixelFormat(hdc, &pfd), &pfd);
 }
 
-#if defined(HAVE_OPENGL)
 static void create_gl_context(HWND hwnd, bool *quit)
 {
    struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
@@ -203,8 +203,7 @@ static void create_gl_context(HWND hwnd, bool *quit)
       *aptr = 0;
 
       if (!pcreate_context)
-         pcreate_context = (wglCreateContextAttribsProc)
-            wglGetProcAddress("wglCreateContextAttribsARB");
+         pcreate_context = (wglCreateContextAttribsProc)gfx_ctx_wgl_get_proc_address("wglCreateContextAttribsARB");
 
       if (pcreate_context)
       {
@@ -540,12 +539,8 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
    switch (win32_api)
    {
       case GFX_CTX_OPENGL_API:
-#ifdef HAVE_OPENGL
-         p_swap_interval = (BOOL (APIENTRY *)(int))
-            wglGetProcAddress("wglSwapIntervalEXT");
-#endif
+         p_swap_interval = (BOOL (APIENTRY *)(int))gfx_ctx_wgl_get_proc_address("wglSwapIntervalEXT");
          break;
-
       case GFX_CTX_NONE:
       default:
          break;
