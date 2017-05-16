@@ -74,6 +74,7 @@ struct netplay_room
    int  host_method;
    bool has_password;
    bool has_spectate_password;
+   bool lan;
    bool fixed;
    struct netplay_room *next;
 };
