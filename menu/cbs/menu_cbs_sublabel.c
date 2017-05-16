@@ -353,9 +353,13 @@ static int action_bind_sublabel_netplay_room(
    if (i < 1)
       return 0;
 
-   snprintf(s,len, "%s (%s)\n%s (%08x)", 
+   snprintf(s,len, "%s (%s)\n%s (%08x)\nType: %s (%s)", 
       netplay_room_list[i - 2].corename, netplay_room_list[i - 2].coreversion, 
-      netplay_room_list[i - 2].gamename, netplay_room_list[i - 2].gamecrc);
+      netplay_room_list[i - 2].gamename, netplay_room_list[i - 2].gamecrc,
+      netplay_room_list[i - 2].lan ? "LAN game" : 
+      (netplay_room_list[i - 2].host_method == NETPLAY_HOST_METHOD_MITM ? 
+      "MITM game" : "Lobby game"), netplay_room_list[i - 2].address);
+
 #if 0
    strlcpy(s, netplay_room_list[i - 2].corename, len);
 #endif
