@@ -872,8 +872,8 @@ endif
          GL_LIBS := -framework OpenGL
          OBJ += gfx/drivers_context/cgl_ctx.o
       else ifneq ($(findstring Win32,$(OS)),)
-         GL_LIBS := -lopengl32 -lgdi32 -lcomdlg32 -lcomctl32
-			WANT_WGL=1
+         GL_LIBS := -lopengl32 -lgdi32 -lcomdlg32
+	 WANT_WGL=1
       endif
       LIBS += $(GL_LIBS)
    endif
@@ -987,6 +987,7 @@ endif
 
 ifeq ($(WANT_WGL), 1)
 	OBJ += gfx/drivers_context/wgl_ctx.o
+LIBS += -lcomctl32
 endif
 
 ifeq ($(HAVE_OMAP), 1)
