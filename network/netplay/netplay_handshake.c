@@ -43,7 +43,7 @@
 #ifndef HAVE_SOCKET_LEGACY
 /* Custom inet_ntop. Win32 doesn't seem to support this ... */
 void netplay_log_connection(const struct sockaddr_storage *their_addr,
-      unsigned slot, const char *nick)
+      unsigned slot, const char *nick, char *s, size_t len)
 {
    union
    {
@@ -54,11 +54,8 @@ void netplay_log_connection(const struct sockaddr_storage *their_addr,
    const char *str               = NULL;
    char buf_v4[INET_ADDRSTRLEN]  = {0};
    char buf_v6[INET6_ADDRSTRLEN] = {0};
-   char msg[512];
 
-   msg[0] = '\0';
-
-   u.storage = their_addr;
+   u.storage                     = their_addr;
 
    switch (their_addr->ss_family)
    {
@@ -96,25 +93,19 @@ void netplay_log_connection(const struct sockaddr_storage *their_addr,
 
    if (str)
    {
-      snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_GOT_CONNECTION_FROM_NAME),
+      snprintf(s, len, msg_hash_to_str(MSG_GOT_CONNECTION_FROM_NAME),
             nick, str);
-      runloop_msg_queue_push(msg, 1, 180, false);
-      RARCH_LOG("%s\n", msg);
    }
    else
    {
-      snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_GOT_CONNECTION_FROM),
+      snprintf(s, len, msg_hash_to_str(MSG_GOT_CONNECTION_FROM),
             nick);
-      runloop_msg_queue_push(msg, 1, 180, false);
-      RARCH_LOG("%s\n", msg);
    }
-   RARCH_LOG("%s %u\n", msg_hash_to_str(MSG_CONNECTION_SLOT),
-         slot);
 }
 
 #else
 void netplay_log_connection(const struct sockaddr_storage *their_addr,
-      unsigned slot, const char *nick)
+      unsigned slot, const char *nick, char *s, size_t len)
 {
    char msg[512];
 
@@ -445,8 +436,16 @@ static void netplay_handshake_ready(netplay_t *netplay,
 
    if (netplay->is_server)
    {
+      char msg[512];
+      unsigned slot = (unsigned)(connection - netplay->connections);
+      
+      msg[0] = '\0';
       netplay_log_connection(&connection->addr,
-            (unsigned)(connection - netplay->connections), connection->nick);
+            slot, connection->nick, msg, sizeof(msg));
+
+      runloop_msg_queue_push(msg, 1, 180, false);
+      RARCH_LOG("%s\n", msg);
+      RARCH_LOG("%s %u\n", msg_hash_to_str(MSG_CONNECTION_SLOT), slot);
 
       /* Send them the savestate */
       if (!(netplay->quirks & 
