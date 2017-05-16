@@ -450,6 +450,7 @@ static void netplay_handshake_ready(netplay_t *netplay, struct netplay_connectio
    }
    else
    {
+      netplay->is_connected = true;
       snprintf(msg, sizeof(msg), "%s: \"%s\"",
             msg_hash_to_str(MSG_CONNECTED_TO),
             connection->nick);
