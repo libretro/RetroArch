@@ -3510,10 +3510,19 @@ finish:
                      sizeof(netplay_room_list[i].nickname));
 
                address = &host->addr;
+               if (address->sa_family == AF_INET)
+               {
+                   struct sockaddr_in *sin = (struct sockaddr_in *) address;
+                   inet_ntop(AF_INET, &sin->sin_addr, 
+                      netplay_room_list[i].address, INET6_ADDRSTRLEN);
+               }
+               else if (address->sa_family == AF_INET6)
+               {
+                  struct sockaddr_in6 *sin = (struct sockaddr_in6 *) address;
+                  inet_ntop(AF_INET6, &sin->sin6_addr, 
+                     netplay_room_list[i].address, INET6_ADDRSTRLEN);
+               }
 
-               strlcpy(netplay_room_list[i].address,
-                     inet_ntoa(((struct sockaddr_in*)(address))->sin_addr),
-                     sizeof(netplay_room_list[i].address));
                strlcpy(netplay_room_list[i].corename,
                      host->core,
                      sizeof(netplay_room_list[i].corename));
