@@ -160,7 +160,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    input_autoconfigure_joypad_conf(conf,
          input_autoconf_binds[params->idx]);
 
-   if (memcmp(device_type, "remote", 6) == 0)
+   if (string_is_equal_fast(device_type, "remote", 6))
    {
       static bool remote_is_bound        = false;
 

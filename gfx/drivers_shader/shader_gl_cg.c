@@ -1053,7 +1053,7 @@ static void *gl_cg_init(void *data, const char *path)
    memset(cg->alias_define, 0, sizeof(cg->alias_define));
 
    if (    !string_is_empty(path) 
-         && (memcmp(path_get_extension(path), "cgp", 3) == 0))
+         && string_is_equal_fast(path_get_extension(path), "cgp", 3))
    {
       if (!gl_cg_load_preset(cg, path))
          goto error;

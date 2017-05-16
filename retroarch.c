@@ -837,16 +837,16 @@ static void retroarch_parse_input(int argc, char *argv[])
             break;
 
          case 'M':
-            if (memcmp(optarg, "noload-nosave", 13) == 0)
+            if (string_is_equal_fast(optarg, "noload-nosave", 13))
             {
                rarch_is_sram_load_disabled = true;
                rarch_is_sram_save_disabled = true;
             }
-            else if (memcmp(optarg, "noload-save", 11) == 0)
+            else if (string_is_equal_fast(optarg, "noload-save", 11))
                rarch_is_sram_load_disabled = true;
-            else if (memcmp(optarg, "load-nosave", 11) == 0)
+            else if (string_is_equal_fast(optarg, "load-nosave", 11))
                rarch_is_sram_save_disabled = true;
-            else if (memcmp(optarg, "load-save", 9) != 0)
+            else if (string_is_not_equal_fast(optarg, "load-save", 9))
             {
                RARCH_ERR("Invalid argument in --sram-mode.\n");
                retroarch_print_help(argv[0]);

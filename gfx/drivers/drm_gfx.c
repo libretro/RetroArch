@@ -414,7 +414,7 @@ static uint64_t drm_plane_type(drmModePlane *plane)
    for (j = 0; j < props->count_props; j++)
    {
       /* found the type property */
-      if (memcmp(drmModeGetProperty(drm.fd, props->props[j])->name, "type", 4) == 0)
+      if (string_is_equal_fast(drmModeGetProperty(drm.fd, props->props[j])->name, "type", 4))
          return (props->prop_values[j]);
    }
    return (0);

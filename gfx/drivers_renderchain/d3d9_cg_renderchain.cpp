@@ -299,7 +299,7 @@ static bool cg_d3d9_renderchain_init_shader_fvf(void *data, void *pass_data)
 
    for (count = 0; count < MAXD3DDECLLENGTH; count++)
    {
-      if (memcmp(&decl_end, &decl[count], sizeof(decl_end)) == 0)
+      if (string_is_equal_fast(&decl_end, &decl[count], sizeof(decl_end)))
          break;
    }
 

@@ -22,6 +22,7 @@
 
 #include <file/file_path.h>
 #include <queues/task_queue.h>
+#include <string/stdstring.h>
 
 #include "cocoa/cocoa_common.h"
 #include "../ui_companion_driver.h"
@@ -484,10 +485,11 @@ enum
    /* Get enabled orientations */
    apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskAll;
    
-   if (memcmp(apple_frontend_settings.orientations, "landscape", 9) == 0)
+   if (string_is_equal_fast(apple_frontend_settings.orientations, "landscape", 9))
       apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskLandscape;
-   else if (memcmp(apple_frontend_settings.orientations, "portrait", 8) == 0)
-      apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskPortrait | UIInterfaceOrientationMaskPortraitUpsideDown;
+   else if (string_is_equal_fast(apple_frontend_settings.orientations, "portrait", 8))
+      apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskPortrait 
+         | UIInterfaceOrientationMaskPortraitUpsideDown;
 }
 
 - (void)mainMenuRefresh 

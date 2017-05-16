@@ -418,15 +418,15 @@ static void udev_joypad_handle_hotplug(struct udev_device *dev)
    const char *action  = udev_device_get_action(dev);
    const char *devnode = udev_device_get_devnode(dev);
 
-   if (!val || (memcmp(val, "1", 1) != 0) || !devnode)
+   if (!val || string_is_not_equal_fast(val, "1", 1) || !devnode)
       goto end;
 
-   if (memcmp(action, "add", 3) == 0)
+   if (string_is_equal_fast(action, "add", 3))
    {
       RARCH_LOG("[udev]: Hotplug add: %s.\n", devnode);
       udev_check_device(dev, devnode);
    }
-   else if (memcmp(action, "remove", 6) == 0)
+   else if (string_is_equal_fast(action, "remove", 6))
    {
       RARCH_LOG("[udev]: Hotplug remove: %s.\n", devnode);
       udev_joypad_remove_device(devnode);

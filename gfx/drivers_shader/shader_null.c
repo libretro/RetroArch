@@ -81,7 +81,7 @@ static bool shader_null_set_mvp(void *data, void *shader_data, const math_matrix
 {
 #ifdef HAVE_OPENGL
 #ifndef NO_GL_FF_MATRIX
-   if (memcmp(video_driver_get_ident(), "gl", 2) == 0)
+   if (string_is_equal_fast(video_driver_get_ident(), "gl", 2))
       gl_ff_matrix(mat);
 #endif
 #endif
@@ -92,7 +92,7 @@ static bool shader_null_set_coords(void *handle_data, void *shader_data, const s
 {
 #ifdef HAVE_OPENGL
 #ifndef NO_GL_FF_VERTEX
-   if (memcmp(video_driver_get_ident(), "gl", 2) == 0)
+   if (string_is_equal_fast(video_driver_get_ident(), "gl", 2))
       gl_ff_vertex(coords);
 #endif
 #endif

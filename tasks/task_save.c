@@ -33,6 +33,7 @@
 #include <rthreads/rthreads.h>
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
+#include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../core.h"
@@ -149,8 +150,8 @@ static void autosave_thread(void *data)
       bool differ;
 
       slock_lock(save->lock);
-      differ = memcmp(save->buffer, save->retro_buffer,
-            save->bufsize) != 0;
+      differ = string_is_not_equal_fast(save->buffer, save->retro_buffer,
+            save->bufsize);
       if (differ)
          memcpy(save->buffer, save->retro_buffer, save->bufsize);
       slock_unlock(save->lock);

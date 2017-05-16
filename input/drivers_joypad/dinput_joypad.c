@@ -23,6 +23,7 @@
 
 #include <boolean.h>
 #include <compat/strl.h>
+#include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -123,7 +124,7 @@ static bool guid_is_xinput_device(const GUID* product_guid)
 
    for (i = 0; i < ARRAY_SIZE(common_xinput_guids); ++i)
    {
-      if (memcmp(product_guid, &common_xinput_guids[i], sizeof(GUID)) == 0)
+      if (string_is_equal_fast(product_guid, &common_xinput_guids[i], sizeof(GUID)))
          return true;
    }
 

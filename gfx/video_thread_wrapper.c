@@ -21,6 +21,7 @@
 #include <compat/strl.h>
 #include <features/features_cpu.h>
 #include <rthreads/rthreads.h>
+#include <string/stdstring.h>
 
 #include "video_thread_wrapper.h"
 #include "font_driver.h"
@@ -376,7 +377,7 @@ static bool video_thread_handle_packet(
 
          thr->driver->viewport_info(thr->driver_data, &vp);
 
-         if (memcmp(&vp, &thr->read_vp, sizeof(vp)) == 0)
+         if (string_is_equal_fast(&vp, &thr->read_vp, sizeof(vp)))
          {
             /* We can read safely
              *

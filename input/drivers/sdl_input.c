@@ -302,7 +302,7 @@ static void sdl_grab_mouse(void *data, bool state)
       SDL_Window *w;
    };
 
-   if (memcmp(video_driver_get_ident(), "sdl2", 4) != 0)
+   if (string_is_not_equal_fast(video_driver_get_ident(), "sdl2", 4))
       return;
 
    /* First member of sdl2_video_t is the window */
