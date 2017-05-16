@@ -3048,26 +3048,9 @@ static int menu_displaylist_parse_netplay_room_list(
          msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS),
          MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS,
          MENU_SETTING_ACTION, 0, 0);
-   
-   if (netplay_room_count > 0)
-   {
-      unsigned i;
-      for (i = 0; i < (unsigned)netplay_room_count; i++)
-      {
-         char s[PATH_MAX_LENGTH];
 
-         s[0] = '\0';
+   netplay_refresh_rooms_menu(info->list);
 
-         snprintf(s, sizeof(s),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME), netplay_room_list[i].nickname);
-         menu_entries_append_enum(info->list,
-               s,
-               msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM),
-               MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,
-               MENU_ROOM, 0, 0);
-
-      }
-   }
 #endif
 
    return 0;
