@@ -102,6 +102,26 @@ static enum gfx_ctx_api win32_api         = GFX_CTX_NONE;
 
 static dylib_t          dll_handle        = NULL; /* Handle to OpenGL32.dll */
 
+static gfx_ctx_proc_t gfx_ctx_wgl_get_proc_address(const char *symbol)
+{
+   switch (win32_api)
+   {
+      case GFX_CTX_OPENGL_API:
+#if defined(HAVE_OPENGL)
+         {
+            gfx_ctx_proc_t func = (gfx_ctx_proc_t)wglGetProcAddress(symbol);
+            if (func)
+               return func;
+         }
+#endif
+         break;
+      default:
+         break;
+   }
+
+   return (gfx_ctx_proc_t)GetProcAddress((HINSTANCE)dll_handle, symbol);
+}
+
 #if defined(HAVE_OPENGL)
 static void setup_pixel_format(HDC hdc)
 {
@@ -582,25 +602,6 @@ static bool gfx_ctx_wgl_has_windowed(void *data)
    return true;
 }
 
-static gfx_ctx_proc_t gfx_ctx_wgl_get_proc_address(const char *symbol)
-{
-   switch (win32_api)
-   {
-      case GFX_CTX_OPENGL_API:
-#if defined(HAVE_OPENGL)
-         {
-            gfx_ctx_proc_t func = (gfx_ctx_proc_t)wglGetProcAddress(symbol);
-            if (func)
-               return func;
-         }
-#endif
-         break;
-      default:
-         break;
-   }
-
-   return (gfx_ctx_proc_t)GetProcAddress((HINSTANCE)dll_handle, symbol);
-}
 
 static bool gfx_ctx_wgl_get_metrics(void *data,
 	enum display_metric_types type, float *value)
