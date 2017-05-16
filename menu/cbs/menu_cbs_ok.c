@@ -3477,7 +3477,6 @@ finish:
       {
          char s[PATH_MAX_LENGTH];
          int i                                = 0;
-         int j                                = 0;
          int k                                = 0;
          file_list_t *file_list               = menu_entries_get_selection_buf_ptr(0);
 

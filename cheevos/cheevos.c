@@ -2796,7 +2796,6 @@ static int cheevos_iterate(coro_t* coro)
          {
             buffer   = (uint8_t*)DATA + LEN;
             to_read  = 4096;
-            num_read = 0;
 
             if (to_read > COUNT)
                to_read = COUNT;
