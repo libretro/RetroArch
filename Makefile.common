@@ -1,6 +1,7 @@
 ROOT_DIR          := .
 DEPS_DIR          := $(ROOT_DIR)/deps
 LIBRETRO_COMM_DIR := $(ROOT_DIR)/libretro-common
+WANT_WGL           = 0
 
 ifeq ($(HAVE_GL_CONTEXT),)
    HAVE_GL_CONTEXT=0
@@ -872,7 +873,7 @@ endif
          OBJ += gfx/drivers_context/cgl_ctx.o
       else ifneq ($(findstring Win32,$(OS)),)
          GL_LIBS := -lopengl32 -lgdi32 -lcomdlg32 -lcomctl32
-         OBJ += gfx/drivers_context/wgl_ctx.o
+			WANT_WGL=1
       endif
       LIBS += $(GL_LIBS)
    endif
@@ -925,6 +926,7 @@ endif
 ifeq ($(HAVE_VULKAN), 1)
    ifneq ($(findstring Win32,$(OS)),)
       GLSLANG_PLATFORM := Windows
+		WANT_WGL = 1
    else
       GLSLANG_PLATFORM := Unix
    endif
@@ -983,6 +985,9 @@ ifeq ($(HAVE_VULKAN), 1)
    DEFINES += -DHAVE_SLANG
 endif
 
+ifeq ($(WANT_WGL), 1)
+	OBJ += gfx/drivers_context/wgl_ctx.o
+endif
 
 ifeq ($(HAVE_OMAP), 1)
    OBJ += gfx/drivers/omap_gfx.o
