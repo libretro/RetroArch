@@ -17,6 +17,7 @@ default font
 - VIDEO: Fix threaded video regression; tickering of menu entries would no longer work.
 - WII: Fix crashing issues which could occur with the dummy core
 - LOBBIES: Fallback to filename based matching if no CRC matches are found (for people making playlists by hand)
+- LOBBIES: GUI refinement, show stop hosting when a host has been started, show disconnect when playing as client
 - VITA: Fix slow I/O
 - VITA: Fix 30fps menu (poke into input now instead of reading the entire input buffer which apparently is slow)
 - VITA: Fix frame throttle
