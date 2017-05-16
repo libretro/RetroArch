@@ -107,16 +107,9 @@ void netplay_log_connection(const struct sockaddr_storage *their_addr,
 void netplay_log_connection(const struct sockaddr_storage *their_addr,
       unsigned slot, const char *nick, char *s, size_t len)
 {
-   char msg[512];
-
-   msg[0] = '\0';
-
-   snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_GOT_CONNECTION_FROM),
+   /* Stub code - will need to be implemented */
+   snprintf(s, len, msg_hash_to_str(MSG_GOT_CONNECTION_FROM),
          nick);
-   runloop_msg_queue_push(msg, 1, 180, false);
-   RARCH_LOG("%s\n", msg);
-   RARCH_LOG("%s %u\n",
-         msg_hash_to_str(MSG_CONNECTION_SLOT), slot);
 }
 
 #endif
