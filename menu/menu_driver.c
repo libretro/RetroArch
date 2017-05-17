@@ -46,6 +46,8 @@
 #include "../ui/ui_companion_driver.h"
 #include "../verbosity.h"
 
+#define SCROLL_INDEX_SIZE (2 * (26 + 2) + 1)
+
 static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 #if defined(HAVE_XUI)
    &menu_ctx_xui,
@@ -83,6 +85,12 @@ static playlist_t *menu_driver_playlist         = NULL;
 static menu_handle_t *menu_driver_data          = NULL;
 static const menu_ctx_driver_t *menu_driver_ctx = NULL;
 static void *menu_userdata                      = NULL;
+
+/* Quick jumping indices with L/R.
+ * Rebuilt when parsing directory. */
+static size_t scroll_index_list[SCROLL_INDEX_SIZE];
+static unsigned scroll_index_size               = 0;
+static unsigned scroll_acceleration             = 0;
 static size_t menu_driver_selection_ptr         = 0;
 
 bool menu_driver_is_binding_state(void)
@@ -428,18 +436,6 @@ bool menu_driver_list_clear(void *data)
    return true;
 }
 
-void menu_driver_increment_navigation(void)
-{
-   if (menu_driver_ctx->navigation_increment)
-      menu_driver_ctx->navigation_increment(menu_userdata);
-}
-
-void menu_driver_decrement_navigation(void)
-{
-   if (menu_driver_ctx->navigation_decrement)
-      menu_driver_ctx->navigation_decrement(menu_userdata);
-}
-
 static bool menu_driver_context_reset(bool video_is_threaded)
 {
    if (!menu_driver_ctx || !menu_driver_ctx->context_reset)
@@ -660,8 +656,16 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
          if (menu_driver_data)
          {
+            unsigned i;
+
+            scroll_acceleration       = 0;
+            menu_driver_selection_ptr = 0;
+            scroll_index_size         = 0;
+
+            for (i = 0; i < SCROLL_INDEX_SIZE; i++)
+               scroll_index_list[i] = 0;
+
             menu_input_ctl(MENU_INPUT_CTL_DEINIT, NULL);
-            menu_navigation_ctl(MENU_NAVIGATION_CTL_DEINIT, NULL);
 
             if (menu_driver_ctx && menu_driver_ctx->free)
                menu_driver_ctx->free(menu_userdata);
@@ -970,29 +974,10 @@ void menu_navigation_set_selection(size_t val)
    menu_driver_selection_ptr = val;
 }
 
-#define SCROLL_INDEX_SIZE (2 * (26 + 2) + 1)
-
 bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
 {
-   unsigned i;
-   /* Quick jumping indices with L/R.
-    * Rebuilt when parsing directory. */
-   static size_t scroll_index_list[SCROLL_INDEX_SIZE];
-   static unsigned scroll_index_size      = 0;
-   static unsigned scroll_acceleration    = 0;
-
    switch (state)
    {
-      case MENU_NAVIGATION_CTL_DEINIT:
-         {
-            scroll_acceleration       = 0;
-            menu_driver_selection_ptr = 0;
-            scroll_index_size         = 0;
-
-            for (i = 0; i < SCROLL_INDEX_SIZE; i++)
-               scroll_index_list[i] = 0;
-         }
-         break;
       case MENU_NAVIGATION_CTL_CLEAR:
          {
             bool *pending_push = (bool*)data;
@@ -1045,7 +1030,8 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
                }
             }
             
-            menu_driver_increment_navigation();
+            if (menu_driver_ctx->navigation_increment)
+               menu_driver_ctx->navigation_increment(menu_userdata);
          }
          break;
       case MENU_NAVIGATION_CTL_DECREMENT:
@@ -1075,8 +1061,8 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
             menu_driver_navigation_set(true);
             menu_navigation_ctl(MENU_NAVIGATION_CTL_DECREMENT, NULL);
 
-            menu_driver_decrement_navigation();
-
+            if (menu_driver_ctx->navigation_decrement)
+               menu_driver_ctx->navigation_decrement(menu_userdata);
          }
          break;
       case MENU_NAVIGATION_CTL_SET_LAST:

@@ -204,7 +204,6 @@ enum menu_navigation_ctl_state
 {
    MENU_NAVIGATION_CTL_NONE = 0,
    MENU_NAVIGATION_CTL_CLEAR,
-   MENU_NAVIGATION_CTL_DEINIT,
    MENU_NAVIGATION_CTL_INCREMENT,
    MENU_NAVIGATION_CTL_DECREMENT,
    MENU_NAVIGATION_CTL_SET_LAST,
@@ -408,10 +407,6 @@ bool menu_driver_is_alive(void);
 bool menu_driver_iterate(menu_ctx_iterate_t *iterate);
 
 bool menu_driver_list_clear(void *data);
-
-void menu_driver_increment_navigation(void);
-
-void menu_driver_decrement_navigation(void);
 
 void menu_driver_navigation_set(bool scroll);
 
