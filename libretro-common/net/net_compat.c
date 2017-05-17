@@ -362,6 +362,9 @@ struct in_addr6_compat
 
 const char *inet_ntop_compat(int af, const void *src, char *dst, socklen_t cnt)
 {
+#if defined(VITA)
+   return sceNetInetNtop(af,src,dst,cnt);
+#else
    if (af == AF_INET)
    {
       struct sockaddr_in in;
@@ -386,4 +389,5 @@ const char *inet_ntop_compat(int af, const void *src, char *dst, socklen_t cnt)
 #endif
 
    return NULL;
+#endif
 }
