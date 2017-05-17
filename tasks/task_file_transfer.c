@@ -90,14 +90,13 @@ void task_file_load_handler(retro_task_t *task)
          case NBIO_STATUS_TRANSFER_PARSE:
             if (task_file_transfer_iterate_parse(nbio) == -1)
                task_set_cancelled(task, true);
-            nbio->status = NBIO_STATUS_TRANSFER_PARSE_FREE;
+            nbio->status = NBIO_STATUS_TRANSFER_FINISHED;
             break;
          case NBIO_STATUS_TRANSFER:
             if (task_file_transfer_iterate_transfer(nbio) == -1)
                nbio->status = NBIO_STATUS_TRANSFER_PARSE;
             break;
-         case NBIO_STATUS_TRANSFER_PARSE_FREE:
-         default:
+         case NBIO_STATUS_TRANSFER_FINISHED:
             break;
       }
 
