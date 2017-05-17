@@ -38,6 +38,12 @@ RETRO_BEGIN_DECLS
 
 typedef int (*transfer_cb_t)(void *data, size_t len);
 
+typedef struct nbio_buf
+{
+   void *buf;
+   unsigned bufsize;
+} nbio_buf_t;
+
 enum content_mode_load
 {
    CONTENT_MODE_LOAD_NONE = 0,
@@ -204,6 +210,8 @@ bool task_push_load_content_with_core_from_menu(
 #endif
 
 void task_file_load_handler(retro_task_t *task);
+
+bool task_audio_mixer_load_handler(retro_task_t *task);
 
 bool take_screenshot(const char *path, bool silence, bool has_valid_framebuffer);
 

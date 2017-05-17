@@ -35,7 +35,9 @@
 
 struct audio_mixer_handle
 {
-   audio_mixer_sound_t *handle;
+   nbio_buf_t *buffer;
+   bool copy_data_over;
+   bool is_finished;
    enum audio_mixer_type type;
    char path[4095];
 };
@@ -51,7 +53,14 @@ static void audio_mixer_stopped(audio_mixer_sound_t *sound, unsigned reason)
 
 static void task_audio_mixer_load_free(retro_task_t *task)
 {
-   nbio_handle_t       *nbio  = task ? (nbio_handle_t*)task->state : NULL;
+   nbio_handle_t       *nbio        = task ? (nbio_handle_t*)task->state : NULL;
+   struct audio_mixer_handle *image = (struct audio_mixer_handle*)nbio->data;
+
+   if (image)
+   {
+      if (image->buffer)
+         free(image->buffer);
+   }
 
    if (nbio)
    {
@@ -67,35 +76,85 @@ static int cb_nbio_audio_mixer_load(void *data, size_t len)
       (struct audio_mixer_handle*)nbio->data : NULL;
    void *ptr                       = nbio_get_ptr(nbio->handle, &len);
 
-   switch (image->type)
-   {
-      case AUDIO_MIXER_TYPE_OGG:
-         handle = audio_mixer_load_ogg(ptr, len);
-         break;
-      case AUDIO_MIXER_TYPE_WAV:
-         handle = audio_mixer_load_wav(ptr, len);
-         break;
-      case AUDIO_MIXER_TYPE_NONE:
-         break;
-   }
+   image->buffer                   = (nbio_buf_t*)calloc(1, sizeof(*image->buffer));
 
-   if (handle)
-   {
-      audio_mixer_play(handle, true, 1.0f, audio_mixer_stopped);
+   if (!image->buffer)
+      return -1;
 
-      image->handle                   = handle;
-   }
-
+   image->buffer->buf              = ptr;
+   image->buffer->bufsize          = len;
+   image->copy_data_over           = true;
    nbio->is_finished               = true;
-
 
    return 0;
 }
 
-void task_audio_mixer_handle_upload(void *task_data,
+static void task_audio_mixer_handle_upload_ogg(void *task_data,
       void *user_data, const char *err)
 {
-   audio_set_bool(AUDIO_ACTION_MIXER, true);
+   nbio_buf_t             *img = (nbio_buf_t*)task_data;
+
+   if (!img)
+      return;
+
+   {
+      audio_mixer_sound_t *handle = audio_mixer_load_ogg(img->buf, img->bufsize);
+      audio_mixer_play(handle, true, 1.0f, audio_mixer_stopped);
+
+      audio_set_bool(AUDIO_ACTION_MIXER, true);
+   }
+
+   free(img);
+   free(user_data);
+}
+
+static void task_audio_mixer_handle_upload_wav(void *task_data,
+      void *user_data, const char *err)
+{
+   nbio_buf_t *img = (nbio_buf_t*)task_data;
+
+   if (!img)
+      return;
+   {
+      audio_mixer_sound_t *handle = audio_mixer_load_wav(img->buf, img->bufsize);
+      audio_mixer_play(handle, true, 1.0f, audio_mixer_stopped);
+
+      audio_set_bool(AUDIO_ACTION_MIXER, true);
+   }
+
+   free(img);
+   free(user_data);
+}
+
+bool task_audio_mixer_load_handler(retro_task_t *task)
+{
+   nbio_handle_t             *nbio  = (nbio_handle_t*)task->state;
+   struct audio_mixer_handle *image = (struct audio_mixer_handle*)nbio->data;
+
+   if (       
+         nbio->is_finished 
+         && (image && !image->is_finished)
+         && (image->copy_data_over)
+         && (!task_get_cancelled(task)))
+   {
+      nbio_buf_t *img = (nbio_buf_t*)calloc(1, sizeof(*img));
+
+      if (img)
+      {
+         img->buf     = image->buffer->buf;
+         img->bufsize = image->buffer->bufsize;
+      }
+
+      task_set_data(task, img);
+
+      image->copy_data_over = false;
+      image->is_finished    = true;
+
+
+      return false;
+   }
+
+   return true;
 }
 
 bool task_push_audio_mixer_load(const char *fullpath, retro_task_callback_t cb, void *user_data)
@@ -118,6 +177,8 @@ bool task_push_audio_mixer_load(const char *fullpath, retro_task_callback_t cb, 
    if (!image)
       goto error;
 
+   image->is_finished = false;
+
    strlcpy(image->path, fullpath, sizeof(image->path));
 
    nbio->type         = NBIO_TYPE_NONE;
@@ -126,10 +187,14 @@ bool task_push_audio_mixer_load(const char *fullpath, retro_task_callback_t cb, 
    if (strstr(fullpath, file_path_str(FILE_PATH_WAV_EXTENSION)))
    {
       image->type     = AUDIO_MIXER_TYPE_WAV;
+      nbio->type      = NBIO_TYPE_WAV;
+      t->callback     = task_audio_mixer_handle_upload_wav;
    }
    else if (strstr(fullpath, file_path_str(FILE_PATH_OGG_EXTENSION)))
    {
       image->type     = AUDIO_MIXER_TYPE_OGG;
+      nbio->type      = NBIO_TYPE_OGG;
+      t->callback     = task_audio_mixer_handle_upload_ogg;
    }
 
    nbio->data         = (struct audio_mixer_handle*)image;
@@ -140,7 +205,6 @@ bool task_push_audio_mixer_load(const char *fullpath, retro_task_callback_t cb, 
    t->state           = nbio;
    t->handler         = task_file_load_handler;
    t->cleanup         = task_audio_mixer_load_free;
-   t->callback        = task_audio_mixer_handle_upload;
    t->user_data       = user_data;
 
    task_queue_push(t);
