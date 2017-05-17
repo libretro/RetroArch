@@ -20,9 +20,6 @@
 
 #include <retro_common_api.h>
 
-#include "../input/input_driver.h"
-#include "../input/input_keyboard.h"
-
 RETRO_BEGIN_DECLS
 
 enum menu_action

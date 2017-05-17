@@ -302,9 +302,6 @@ static void menu_driver_toggle(bool on)
       if (key_event && frontend_key_event)
          *key_event = *frontend_key_event;
    }
-
-   /* Prevent stray input */
-   input_driver_set_flushing_input();
 }
 
 const char *menu_driver_ident(void)
