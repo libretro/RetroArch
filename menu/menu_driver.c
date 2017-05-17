@@ -698,10 +698,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
       case RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT:
          menu_driver_load_no_content = false;
          break;
-      case RARCH_MENU_CTL_NAVIGATION_SET_LAST:
-         if (menu_driver_ctx->navigation_set_last)
-            menu_driver_ctx->navigation_set_last(menu_userdata);
-         break;
       case RARCH_MENU_CTL_NAVIGATION_ASCEND_ALPHABET:
          {
             size_t *ptr_out = (size_t*)data;
@@ -724,17 +720,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             if (menu_driver_ctx->navigation_descend_alphabet)
                menu_driver_ctx->navigation_descend_alphabet(
                      menu_userdata, ptr_out);
-         }
-         break;
-      case RARCH_MENU_CTL_NAVIGATION_CLEAR:
-         {
-            bool *pending_push = (bool*)data;
-
-            if (!pending_push)
-               return false;
-            if (menu_driver_ctx->navigation_clear)
-               menu_driver_ctx->navigation_clear(
-                     menu_userdata, pending_push);
          }
          break;
       case RARCH_MENU_CTL_LIST_GET_ENTRY:
@@ -1010,9 +995,15 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
          break;
       case MENU_NAVIGATION_CTL_CLEAR:
          {
+            bool *pending_push = (bool*)data;
+
             menu_navigation_set_selection(0);
             menu_driver_navigation_set(true);
-            menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_CLEAR, data);
+
+            if (pending_push)
+               if (menu_driver_ctx->navigation_clear)
+                  menu_driver_ctx->navigation_clear(
+                        menu_userdata, pending_push);
          }
          break;
       case MENU_NAVIGATION_CTL_INCREMENT:
@@ -1093,7 +1084,9 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
             size_t menu_list_size = menu_entries_get_size();
             size_t new_selection  = menu_list_size - 1;
             menu_navigation_set_selection(new_selection);
-            menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_SET_LAST, NULL);
+
+            if (menu_driver_ctx->navigation_set_last)
+               menu_driver_ctx->navigation_set_last(menu_userdata);
          }
          break;
       case MENU_NAVIGATION_CTL_ASCEND_ALPHABET:
