@@ -3513,7 +3513,7 @@ finish:
 
                address = &host->addr;
 
-#if 0
+#ifdef INET6_ADDRSTRLEN
                /* TODO/FIXME - inet_ntop is not portable. Need to create
                 * a wrapper function in libretro-common which will wrap
                 * this and ensure that it will work on most platforms.
