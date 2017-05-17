@@ -92,7 +92,7 @@ char *inet_ntoa(struct SceNetInAddr in)
 {
 	static char ip_addr[INET_ADDRSTRLEN + 1];
 
-	if(sceNetInetNtop(AF_INET, &in, ip_addr, INET_ADDRSTRLEN) == NULL)
+   if (inet_ntop_compat(AF_INET, &in, i_paddr, INET_ADDRSTRLEN) == NULL)
 		strlcpy(ip_addr, "Invalid", sizeof(ip_addr));
 
 	return ip_addr;
@@ -362,7 +362,7 @@ struct in_addr6_compat
 
 const char *inet_ntop_compat(int af, const void *src, char *dst, socklen_t cnt)
 {
-#if defined(VITA)
+#if defined(VITA) || defined(__ORBIS__)
    return sceNetInetNtop(af,src,dst,cnt);
 #else
    if (af == AF_INET)
