@@ -30,7 +30,6 @@
 #include "menu_cbs.h"
 #include "menu_display.h"
 #include "menu_event.h"
-#include "menu_navigation.h"
 #include "widgets/menu_dialog.h"
 #include "widgets/menu_list.h"
 #include "menu_shader.h"
@@ -84,6 +83,7 @@ static playlist_t *menu_driver_playlist         = NULL;
 static menu_handle_t *menu_driver_data          = NULL;
 static const menu_ctx_driver_t *menu_driver_ctx = NULL;
 static void *menu_userdata                      = NULL;
+static size_t menu_driver_selection_ptr         = 0;
 
 bool menu_driver_is_binding_state(void)
 {
@@ -988,6 +988,215 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       default:
       case RARCH_MENU_CTL_NONE:
+         break;
+   }
+
+   return true;
+}
+
+size_t menu_navigation_get_selection(void)
+{
+   return menu_driver_selection_ptr;
+}
+
+void menu_navigation_set_selection(size_t val)
+{
+   menu_driver_selection_ptr = val;
+}
+
+#define SCROLL_INDEX_SIZE (2 * (26 + 2) + 1)
+
+bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
+{
+   unsigned i;
+   /* Quick jumping indices with L/R.
+    * Rebuilt when parsing directory. */
+   static size_t scroll_index_list[SCROLL_INDEX_SIZE];
+   static unsigned scroll_index_size      = 0;
+   static unsigned scroll_acceleration    = 0;
+
+   switch (state)
+   {
+      case MENU_NAVIGATION_CTL_DEINIT:
+         {
+            scroll_acceleration       = 0;
+            menu_driver_selection_ptr = 0;
+            scroll_index_size         = 0;
+
+            for (i = 0; i < SCROLL_INDEX_SIZE; i++)
+               scroll_index_list[i] = 0;
+         }
+         break;
+      case MENU_NAVIGATION_CTL_CLEAR:
+         {
+            menu_navigation_set_selection(0);
+            menu_driver_navigation_set(true);
+            menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_CLEAR, data);
+         }
+         break;
+      case MENU_NAVIGATION_CTL_INCREMENT:
+         {
+            settings_t *settings   = config_get_ptr();
+            unsigned *scroll_speed = (unsigned*)data;
+            size_t  menu_list_size = menu_entries_get_size();
+            bool wraparound_enable = settings->bools.menu_navigation_wraparound_enable;
+
+            if (!scroll_speed)
+               return false;
+
+            if (menu_driver_selection_ptr >= menu_list_size - 1
+                  && !wraparound_enable)
+               return false;
+
+            if ((menu_driver_selection_ptr + (*scroll_speed)) < menu_list_size)
+            {
+               size_t idx  = menu_driver_selection_ptr + (*scroll_speed);
+
+               menu_navigation_set_selection(idx);
+               menu_driver_navigation_set(true);
+               menu_navigation_ctl(MENU_NAVIGATION_CTL_INCREMENT, NULL);
+            }
+            else
+            {
+               if (wraparound_enable)
+               {
+                  bool pending_push = false;
+                  menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
+               }
+               else
+               {
+                  if (menu_list_size > 0)
+                  {
+                     menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_LAST,  NULL);
+                     menu_navigation_ctl(MENU_NAVIGATION_CTL_INCREMENT, NULL);
+                  }
+               }
+            }
+            
+            menu_driver_increment_navigation();
+         }
+         break;
+      case MENU_NAVIGATION_CTL_DECREMENT:
+         {
+            size_t idx             = 0;
+            settings_t *settings   = config_get_ptr();
+            unsigned *scroll_speed = (unsigned*)data;
+            size_t  menu_list_size = menu_entries_get_size();
+            bool wraparound_enable = settings->bools.menu_navigation_wraparound_enable;
+
+            if (!scroll_speed)
+               return false;
+
+            if (menu_driver_selection_ptr == 0 && !wraparound_enable)
+               return false;
+
+            if (menu_driver_selection_ptr >= *scroll_speed)
+               idx = menu_driver_selection_ptr - *scroll_speed;
+            else
+            {
+               idx  = menu_list_size - 1;
+               if (!wraparound_enable)
+                  idx = 0;
+            }
+
+            menu_navigation_set_selection(idx);
+            menu_driver_navigation_set(true);
+            menu_navigation_ctl(MENU_NAVIGATION_CTL_DECREMENT, NULL);
+
+            menu_driver_decrement_navigation();
+
+         }
+         break;
+      case MENU_NAVIGATION_CTL_SET_LAST:
+         {
+            size_t menu_list_size = menu_entries_get_size();
+            size_t new_selection  = menu_list_size - 1;
+            menu_navigation_set_selection(new_selection);
+            menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_SET_LAST, NULL);
+         }
+         break;
+      case MENU_NAVIGATION_CTL_ASCEND_ALPHABET:
+         {
+            size_t ptr;
+            size_t i               = 0;
+            size_t *ptr_out        = (size_t*)&menu_driver_selection_ptr;
+            size_t  menu_list_size = menu_entries_get_size();
+
+            if (!scroll_index_size || !ptr_out)
+               return false;
+
+            ptr = *ptr_out;
+
+            if (ptr == scroll_index_list[scroll_index_size - 1])
+            {
+               *ptr_out = menu_list_size - 1;
+               menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_ASCEND_ALPHABET, ptr_out);
+               return true;
+            }
+
+            while (i < scroll_index_size - 1
+                  && scroll_index_list[i + 1] <= ptr)
+               i++;
+            *ptr_out = scroll_index_list[i + 1];
+
+            if (*ptr_out >= menu_list_size)
+               *ptr_out = menu_list_size - 1;
+
+            menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_ASCEND_ALPHABET, ptr_out);
+         }
+         break;
+      case MENU_NAVIGATION_CTL_DESCEND_ALPHABET:
+         {
+            size_t ptr;
+            size_t i        = 0;
+            size_t *ptr_out = (size_t*)&menu_driver_selection_ptr;
+
+            if (!scroll_index_size || !ptr_out)
+               return false;
+
+            ptr = *ptr_out;
+
+            if (ptr == 0)
+               return false;
+
+            i   = scroll_index_size - 1;
+
+            while (i && scroll_index_list[i - 1] >= ptr)
+               i--;
+            *ptr_out = scroll_index_list[i - 1];
+
+            menu_driver_ctl(
+                  RARCH_MENU_CTL_NAVIGATION_DESCEND_ALPHABET, ptr_out);
+         }
+         break;
+      case MENU_NAVIGATION_CTL_CLEAR_SCROLL_INDICES:
+         scroll_index_size = 0;
+         break;
+      case MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX:
+         {
+            size_t *sel = (size_t*)data;
+            if (!sel)
+               return false;
+            scroll_index_list[scroll_index_size++] = *sel;
+         }
+         break;
+      case MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL:
+         {
+            size_t *sel = (size_t*)data;
+            if (!sel)
+               return false;
+            *sel = scroll_acceleration;
+         }
+         break;
+      case MENU_NAVIGATION_CTL_SET_SCROLL_ACCEL:
+         {
+            size_t *sel = (size_t*)data;
+            if (!sel)
+               return false;
+            scroll_acceleration = (unsigned)(*sel);
+         }
+         break;
+      case MENU_NAVIGATION_CTL_NONE:
          break;
    }
 

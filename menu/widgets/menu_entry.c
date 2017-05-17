@@ -21,7 +21,6 @@
 #include "menu_input_dialog.h"
 
 #include "../menu_driver.h"
-#include "../menu_navigation.h"
 
 /* This file provides an abstraction of the currently displayed
  * menu.

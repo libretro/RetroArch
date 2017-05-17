@@ -980,7 +980,6 @@ MENU
 #include "../menu/cbs/menu_cbs_down.c"
 #include "../menu/cbs/menu_cbs_contentlist_switch.c"
 #include "../menu/menu_shader.c"
-#include "../menu/menu_navigation.c"
 #include "../menu/menu_display.c"
 #include "../menu/menu_displaylist.c"
 #include "../menu/menu_animation.c"

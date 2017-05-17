@@ -34,7 +34,7 @@
 
 #ifdef HAVE_MENU
 #include "../../../menu/widgets/menu_entry.h"
-#include "../../../menu/menu_navigation.h"
+#include "../../../menu/menu_driver.h"
 #include "../../../menu/drivers/menu_generic.h"
 #endif
 

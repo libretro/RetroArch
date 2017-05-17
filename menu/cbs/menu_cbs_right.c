@@ -28,7 +28,6 @@
 #include "../menu_input.h"
 #include "../menu_setting.h"
 #include "../menu_shader.h"
-#include "../menu_navigation.h"
 
 #include "../widgets/menu_list.h"
 

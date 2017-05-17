@@ -14,7 +14,6 @@
  */
 
 #include "../menu_driver.h"
-#include "../menu_navigation.h"
 #include "../menu_cbs.h"
 
 #ifndef BIND_ACTION_DOWN

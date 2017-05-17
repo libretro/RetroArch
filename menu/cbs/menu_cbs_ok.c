@@ -31,7 +31,6 @@
 #include "../menu_display.h"
 #include "../menu_setting.h"
 #include "../menu_shader.h"
-#include "../menu_navigation.h"
 #include "../widgets/menu_dialog.h"
 #include "../widgets/menu_filebrowser.h"
 #include "../widgets/menu_input_dialog.h"

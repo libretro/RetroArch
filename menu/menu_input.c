@@ -30,7 +30,6 @@
 #include "menu_driver.h"
 #include "menu_input.h"
 #include "menu_animation.h"
-#include "menu_navigation.h"
 #include "menu_event.h"
 
 #include "../configuration.h"

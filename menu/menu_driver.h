@@ -202,6 +202,22 @@ enum menu_settings_type
    MENU_SETTINGS_LAST
 };
 
+enum menu_navigation_ctl_state
+{
+   MENU_NAVIGATION_CTL_NONE = 0,
+   MENU_NAVIGATION_CTL_CLEAR,
+   MENU_NAVIGATION_CTL_DEINIT,
+   MENU_NAVIGATION_CTL_INCREMENT,
+   MENU_NAVIGATION_CTL_DECREMENT,
+   MENU_NAVIGATION_CTL_SET_LAST,
+   MENU_NAVIGATION_CTL_DESCEND_ALPHABET,
+   MENU_NAVIGATION_CTL_ASCEND_ALPHABET,
+   MENU_NAVIGATION_CTL_CLEAR_SCROLL_INDICES,
+   MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX,
+   MENU_NAVIGATION_CTL_SET_SCROLL_ACCEL,
+   MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL
+};
+
 typedef struct
 {
    char deferred_path[PATH_MAX_LENGTH];
@@ -408,6 +424,12 @@ bool menu_driver_load_image(menu_ctx_load_image_t *load_image_info);
 bool menu_driver_push_list(menu_ctx_displaylist_t *disp_list);
 
 bool menu_driver_init(bool video_is_threaded);
+
+size_t menu_navigation_get_selection(void);
+
+void menu_navigation_set_selection(size_t val);
+
+bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data);
 
 extern menu_ctx_driver_t menu_ctx_xui;
 extern menu_ctx_driver_t menu_ctx_rgui;

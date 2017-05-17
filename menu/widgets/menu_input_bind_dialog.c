@@ -21,7 +21,6 @@
 #include "menu_input_bind_dialog.h"
 
 #include "../menu_driver.h"
-#include "../menu_navigation.h"
 
 #include "../../input/input_config.h"
 

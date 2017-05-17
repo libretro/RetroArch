@@ -19,7 +19,6 @@
 #include "menu_input_dialog.h"
 
 #include "../menu_driver.h"
-#include "../menu_navigation.h"
 #include "../../input/input_driver.h"
 
 static const char **menu_input_dialog_keyboard_buffer      = {NULL};

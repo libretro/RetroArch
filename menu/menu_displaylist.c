@@ -52,7 +52,6 @@
 
 #include "menu_content.h"
 #include "menu_driver.h"
-#include "menu_navigation.h"
 #include "menu_shader.h"
 #include "widgets/menu_dialog.h"
 #include "widgets/menu_list.h"

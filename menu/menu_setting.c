@@ -56,7 +56,6 @@
 #include "menu_animation.h"
 #include "menu_display.h"
 #include "menu_input.h"
-#include "menu_navigation.h"
 
 #include "../core.h"
 #include "../configuration.h"

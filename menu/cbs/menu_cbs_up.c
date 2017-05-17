@@ -15,7 +15,6 @@
 
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
-#include "../menu_navigation.h"
 
 #ifndef BIND_ACTION_UP
 #define BIND_ACTION_UP(cbs, name) \
