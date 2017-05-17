@@ -355,8 +355,7 @@ int inet_ptrton(int af, const char *src, void *dst)
 #endif
 }
 
-#ifdef _WIN32
-const char *inet_ntop(int af, const void *src, char *dst, socklen_t cnt)
+const char *inet_ntop_compat(int af, const void *src, char *dst, socklen_t cnt)
 {
    if (af == AF_INET)
    {
@@ -380,4 +379,3 @@ const char *inet_ntop(int af, const void *src, char *dst, socklen_t cnt)
    }
    return NULL;
 }
-#endif

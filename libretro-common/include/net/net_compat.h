@@ -238,8 +238,6 @@ bool network_init(void);
  **/
 void network_deinit(void);
 
-#ifdef _WIN32
-const char *inet_ntop(int af, const void *src, char *dst, socklen_t cnt);
-#endif
+const char *inet_ntop_compat(int af, const void *src, char *dst, socklen_t cnt);
 
 #endif

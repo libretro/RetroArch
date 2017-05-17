@@ -3502,6 +3502,7 @@ finish:
          if (lan_room_count != 0)
          {
             struct netplay_host *host = NULL;
+
             for (host = &lan_hosts->hosts[k]; i < netplay_room_count + lan_room_count; i++)
             {
                struct sockaddr *address = NULL;
@@ -3512,28 +3513,18 @@ finish:
 
                address = &host->addr;
 
-#ifdef INET6_ADDRSTRLEN
-               /* TODO/FIXME - inet_ntop is not portable. Need to create
-                * a wrapper function in libretro-common which will wrap
-                * this and ensure that it will work on most platforms.
-                */
                if (address->sa_family == AF_INET)
                {
                    struct sockaddr_in *sin = (struct sockaddr_in *) address;
-                   inet_ntop(AF_INET, &sin->sin_addr, 
+                   inet_ntop_compat(AF_INET, &sin->sin_addr, 
                       netplay_room_list[i].address, INET6_ADDRSTRLEN);
                }
                else if (address->sa_family == AF_INET6)
                {
                   struct sockaddr_in6 *sin = (struct sockaddr_in6 *) address;
-                  inet_ntop(AF_INET6, &sin->sin6_addr, 
+                  inet_ntop_compat(AF_INET6, &sin->sin6_addr, 
                      netplay_room_list[i].address, INET6_ADDRSTRLEN);
                }
-#else
-               strlcpy(netplay_room_list[i].address,		
-                     inet_ntoa(((struct sockaddr_in*)(address))->sin_addr),		
-                     sizeof(netplay_room_list[i].address));
-#endif
 
                strlcpy(netplay_room_list[i].corename,
                      host->core,
