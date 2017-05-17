@@ -20,6 +20,7 @@
 #include <string.h>
 #include <errno.h>
 
+#include <file/nbio.h>
 #include <audio/audio_mixer.h>
 #include <streams/file_stream.h>
 #include <compat/strl.h>
@@ -47,52 +48,57 @@ static void audio_mixer_stopped(audio_mixer_sound_t *sound, unsigned reason)
    }
 }
 
-static void task_audio_mixer_load_handler(retro_task_t *task)
+static void task_audio_mixer_load_free(retro_task_t *task)
 {
-   void *buffer                          = NULL;
-   ssize_t size                          = 0;
-   audio_mixer_sound_t *handle           = NULL;
-   struct audio_mixer_handle *image      = (struct audio_mixer_handle*)task->state;
+   nbio_handle_t       *nbio  = task ? (nbio_handle_t*)task->state : NULL;
 
-   if (filestream_read_file(image->path, &buffer, &size) == 0)
+   if (nbio)
    {
-      task_set_finished(task, true);
-      return;
+      free(nbio);
    }
+}
 
-   switch (image->type)
-   {
-      case AUDIO_MIXER_TYPE_WAV:
-         handle                          = audio_mixer_load_wav(buffer, size);
-         break;
-      case AUDIO_MIXER_TYPE_OGG:
-         handle                          = audio_mixer_load_ogg(buffer, size);
-         break;
-      case AUDIO_MIXER_TYPE_NONE:
-         break;
-   }
+static int cb_nbio_audio_mixer_load(void *data, size_t len)
+{
+   void *ptr                       = NULL;
+   audio_mixer_sound_t *handle     = NULL;
+   nbio_handle_t *nbio             = (nbio_handle_t*)data; 
+   struct audio_mixer_handle *image = nbio ? 
+      (struct audio_mixer_handle*)nbio->data : NULL;
 
-   if (handle)
-      audio_mixer_play(handle, true, 1.0f, audio_mixer_stopped);
+   ptr                             = nbio_get_ptr(nbio->handle, &len);
+   
+   image->handle = audio_mixer_load_ogg(ptr, len);
 
-   free(buffer);
+   audio_mixer_play(handle, true, 1.0f, audio_mixer_stopped);
 
+   nbio->is_finished               = true;
+
+
+   return 0;
+}
+
+void task_audio_mixer_handle_upload(void *task_data,
+      void *user_data, const char *err)
+{
    audio_set_bool(AUDIO_ACTION_MIXER, true);
-
-   task_set_progress(task, 100);
-#if 0
-   task_set_title(task, strdup(msg_hash_to_str(MSG_WIFI_SCAN_COMPLETE)));
-#endif
-   task_set_finished(task, true);
 }
 
 bool task_push_audio_mixer_load(const char *fullpath, retro_task_callback_t cb, void *user_data)
 {
+   nbio_handle_t             *nbio    = NULL;
    struct audio_mixer_handle   *image = NULL;
-   retro_task_t                   *t = (retro_task_t*)calloc(1, sizeof(*t));
+   retro_task_t                   *t  = (retro_task_t*)calloc(1, sizeof(*t));
 
    if (!t)
       goto error_msg;
+
+   nbio               = (nbio_handle_t*)calloc(1, sizeof(*nbio));
+
+   if (!nbio)
+      goto error;
+
+   strlcpy(nbio->path, fullpath, sizeof(nbio->path));
 
    image              = (struct audio_mixer_handle*)calloc(1, sizeof(*image));   
    if (!image)
@@ -100,6 +106,7 @@ bool task_push_audio_mixer_load(const char *fullpath, retro_task_callback_t cb, 
 
    strlcpy(image->path, fullpath, sizeof(image->path));
 
+   nbio->type         = NBIO_TYPE_NONE;
    image->type        = AUDIO_MIXER_TYPE_NONE;
 
    if (strstr(fullpath, file_path_str(FILE_PATH_WAV_EXTENSION)))
@@ -111,9 +118,16 @@ bool task_push_audio_mixer_load(const char *fullpath, retro_task_callback_t cb, 
       image->type     = AUDIO_MIXER_TYPE_OGG;
    }
 
-   t->state           = image;
-   t->handler         = task_audio_mixer_load_handler;
-   t->callback        = NULL;
+   nbio->data         = (struct audio_mixer_handle*)image;
+   nbio->is_finished  = false;
+   nbio->cb           = &cb_nbio_audio_mixer_load;
+   nbio->status       = NBIO_STATUS_INIT;
+
+   t->state           = nbio;
+   t->handler         = task_file_load_handler;
+   t->cleanup         = task_audio_mixer_load_free;
+   t->callback        = task_audio_mixer_handle_upload;
+   t->user_data       = user_data;
 
    task_queue_push(t);
 
