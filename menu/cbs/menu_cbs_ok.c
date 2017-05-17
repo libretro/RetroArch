@@ -3434,7 +3434,6 @@ void netplay_refresh_rooms_menu(file_list_t *list)
    }
 }
 
-
 static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const char *err)
 {
    char buf[PATH_MAX_LENGTH];
