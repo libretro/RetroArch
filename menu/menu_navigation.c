@@ -38,23 +38,28 @@ void menu_navigation_set_selection(size_t val)
    selection_ptr = val;
 }
 
+#define SCROLL_INDEX_SIZE (2 * (26 + 2) + 1)
+
 bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
 {
+   unsigned i;
    /* Quick jumping indices with L/R.
     * Rebuilt when parsing directory. */
-   static struct scroll_indices
-   {
-      size_t list[2 * (26 + 2) + 1];
-      unsigned size;
-   } scroll_index;
+   static size_t scroll_index_list[SCROLL_INDEX_SIZE];
+   static unsigned scroll_index_size      = 0;
    static unsigned scroll_acceleration    = 0;
 
    switch (state)
    {
       case MENU_NAVIGATION_CTL_DEINIT:
-         scroll_acceleration = 0;
-         selection_ptr       = 0;
-         memset(&scroll_index, 0, sizeof(struct scroll_indices));
+         {
+            scroll_acceleration = 0;
+            selection_ptr       = 0;
+            scroll_index_size   = 0;
+
+            for (i = 0; i < SCROLL_INDEX_SIZE; i++)
+               scroll_index_list[i] = 0;
+         }
          break;
       case MENU_NAVIGATION_CTL_CLEAR:
          {
@@ -150,22 +155,22 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
             size_t *ptr_out        = (size_t*)&selection_ptr;
             size_t  menu_list_size = menu_entries_get_size();
 
-            if (!scroll_index.size || !ptr_out)
+            if (!scroll_index_size || !ptr_out)
                return false;
 
             ptr = *ptr_out;
 
-            if (ptr == scroll_index.list[scroll_index.size - 1])
+            if (ptr == scroll_index_list[scroll_index_size - 1])
             {
                *ptr_out = menu_list_size - 1;
                menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_ASCEND_ALPHABET, ptr_out);
                return true;
             }
 
-            while (i < scroll_index.size - 1
-                  && scroll_index.list[i + 1] <= ptr)
+            while (i < scroll_index_size - 1
+                  && scroll_index_list[i + 1] <= ptr)
                i++;
-            *ptr_out = scroll_index.list[i + 1];
+            *ptr_out = scroll_index_list[i + 1];
 
             if (*ptr_out >= menu_list_size)
                *ptr_out = menu_list_size - 1;
@@ -178,7 +183,7 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
             size_t i = 0, ptr;
             size_t *ptr_out = (size_t*)&selection_ptr;
 
-            if (!scroll_index.size || !ptr_out)
+            if (!scroll_index_size || !ptr_out)
                return false;
 
             ptr = *ptr_out;
@@ -186,25 +191,25 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
             if (ptr == 0)
                return false;
 
-            i   = scroll_index.size - 1;
+            i   = scroll_index_size - 1;
 
-            while (i && scroll_index.list[i - 1] >= ptr)
+            while (i && scroll_index_list[i - 1] >= ptr)
                i--;
-            *ptr_out = scroll_index.list[i - 1];
+            *ptr_out = scroll_index_list[i - 1];
 
             menu_driver_ctl(
                   RARCH_MENU_CTL_NAVIGATION_DESCEND_ALPHABET, ptr_out);
          }
          break;
       case MENU_NAVIGATION_CTL_CLEAR_SCROLL_INDICES:
-         scroll_index.size = 0;
+         scroll_index_size = 0;
          break;
       case MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX:
          {
             size_t *sel = (size_t*)data;
             if (!sel)
                return false;
-            scroll_index.list[scroll_index.size++] = *sel;
+            scroll_index_list[scroll_index_size++] = *sel;
          }
          break;
       case MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL:
