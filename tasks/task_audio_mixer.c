@@ -35,6 +35,7 @@
 
 struct audio_mixer_handle
 {
+   audio_mixer_sound_t *handle;
    enum audio_mixer_type type;
    char path[4095];
 };
@@ -60,17 +61,30 @@ static void task_audio_mixer_load_free(retro_task_t *task)
 
 static int cb_nbio_audio_mixer_load(void *data, size_t len)
 {
-   void *ptr                       = NULL;
    audio_mixer_sound_t *handle     = NULL;
    nbio_handle_t *nbio             = (nbio_handle_t*)data; 
-   struct audio_mixer_handle *image = nbio ? 
+   struct audio_mixer_handle *image= nbio ? 
       (struct audio_mixer_handle*)nbio->data : NULL;
+   void *ptr                       = nbio_get_ptr(nbio->handle, &len);
 
-   ptr                             = nbio_get_ptr(nbio->handle, &len);
-   
-   image->handle = audio_mixer_load_ogg(ptr, len);
+   switch (image->type)
+   {
+      case AUDIO_MIXER_TYPE_OGG:
+         handle = audio_mixer_load_ogg(ptr, len);
+         break;
+      case AUDIO_MIXER_TYPE_WAV:
+         handle = audio_mixer_load_wav(ptr, len);
+         break;
+      case AUDIO_MIXER_TYPE_NONE:
+         break;
+   }
 
-   audio_mixer_play(handle, true, 1.0f, audio_mixer_stopped);
+   if (handle)
+   {
+      audio_mixer_play(handle, true, 1.0f, audio_mixer_stopped);
+
+      image->handle                   = handle;
+   }
 
    nbio->is_finished               = true;
 
