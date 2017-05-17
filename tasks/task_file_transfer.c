@@ -97,7 +97,6 @@ void task_file_load_handler(retro_task_t *task)
                nbio->status = NBIO_STATUS_TRANSFER_PARSE;
             break;
          case NBIO_STATUS_TRANSFER_PARSE_FREE:
-         case NBIO_STATUS_POLL:
          default:
             break;
       }

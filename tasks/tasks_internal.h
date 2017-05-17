@@ -49,7 +49,6 @@ enum content_mode_load
 enum nbio_status_enum
 {
    NBIO_STATUS_INIT = 0,
-   NBIO_STATUS_POLL,
    NBIO_STATUS_TRANSFER,
    NBIO_STATUS_TRANSFER_PARSE,
    NBIO_STATUS_TRANSFER_PARSE_FREE
