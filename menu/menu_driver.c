@@ -1023,57 +1023,50 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case MENU_NAVIGATION_CTL_ASCEND_ALPHABET:
          {
-            size_t ptr;
             size_t i               = 0;
-            size_t *ptr_out        = (size_t*)&menu_driver_selection_ptr;
             size_t  menu_list_size = menu_entries_get_size();
 
-            if (!scroll_index_size || !ptr_out)
+            if (!scroll_index_size)
                return false;
 
-            ptr = *ptr_out;
-
-            if (ptr == scroll_index_list[scroll_index_size - 1])
-               *ptr_out = menu_list_size - 1;
+            if (menu_driver_selection_ptr == scroll_index_list[scroll_index_size - 1])
+               menu_driver_selection_ptr = menu_list_size - 1;
             else
             {
                while (i < scroll_index_size - 1
-                     && scroll_index_list[i + 1] <= ptr)
+                     && scroll_index_list[i + 1] <= menu_driver_selection_ptr)
                   i++;
-               *ptr_out = scroll_index_list[i + 1];
+               menu_driver_selection_ptr = scroll_index_list[i + 1];
 
-               if (*ptr_out >= menu_list_size)
-                  *ptr_out = menu_list_size - 1;
+               if (menu_driver_selection_ptr >= menu_list_size)
+                  menu_driver_selection_ptr = menu_list_size - 1;
             }
 
             if (menu_driver_ctx->navigation_ascend_alphabet)
                menu_driver_ctx->navigation_ascend_alphabet(
-                     menu_userdata, ptr_out);
+                     menu_userdata, &menu_driver_selection_ptr);
          }
          break;
       case MENU_NAVIGATION_CTL_DESCEND_ALPHABET:
          {
-            size_t ptr;
             size_t i        = 0;
-            size_t *ptr_out = (size_t*)&menu_driver_selection_ptr;
 
-            if (!scroll_index_size || !ptr_out)
+            if (!scroll_index_size)
                return false;
 
-            ptr = *ptr_out;
-
-            if (ptr == 0)
+            if (menu_driver_selection_ptr == 0)
                return false;
 
             i   = scroll_index_size - 1;
 
-            while (i && scroll_index_list[i - 1] >= ptr)
+            while (i && scroll_index_list[i - 1] >= menu_driver_selection_ptr)
                i--;
-            *ptr_out = scroll_index_list[i - 1];
+
+            menu_driver_selection_ptr = scroll_index_list[i - 1];
 
             if (menu_driver_ctx->navigation_descend_alphabet)
                menu_driver_ctx->navigation_descend_alphabet(
-                     menu_userdata, ptr_out);
+                     menu_userdata, &menu_driver_selection_ptr);
          }
          break;
       case MENU_NAVIGATION_CTL_CLEAR_SCROLL_INDICES:
