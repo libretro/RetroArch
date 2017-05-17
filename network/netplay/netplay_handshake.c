@@ -40,6 +40,9 @@
 #include "../../menu/widgets/menu_input_dialog.h"
 #endif
 
+/* TODO/FIXME - replace netplay_log_connection with calls
+ * to inet_ntop_compat and move runloop message queue pushing
+ * outside */
 #ifndef HAVE_SOCKET_LEGACY
 /* Custom inet_ntop. Win32 doesn't seem to support this ... */
 void netplay_log_connection(const struct sockaddr_storage *their_addr,
