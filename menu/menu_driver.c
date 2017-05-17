@@ -989,7 +989,6 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
 
                menu_navigation_set_selection(idx);
                menu_driver_navigation_set(true);
-               menu_navigation_ctl(MENU_NAVIGATION_CTL_INCREMENT, NULL);
             }
             else
             {
@@ -998,14 +997,8 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
                   bool pending_push = false;
                   menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
                }
-               else
-               {
-                  if (menu_list_size > 0)
-                  {
-                     menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_LAST,  NULL);
-                     menu_navigation_ctl(MENU_NAVIGATION_CTL_INCREMENT, NULL);
-                  }
-               }
+               else if (menu_list_size > 0)
+                  menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_LAST,  NULL);
             }
             
             if (menu_driver_ctx->navigation_increment)
@@ -1037,7 +1030,6 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
 
             menu_navigation_set_selection(idx);
             menu_driver_navigation_set(true);
-            menu_navigation_ctl(MENU_NAVIGATION_CTL_DECREMENT, NULL);
 
             if (menu_driver_ctx->navigation_decrement)
                menu_driver_ctx->navigation_decrement(menu_userdata);
