@@ -948,20 +948,17 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
       case MENU_NAVIGATION_CTL_INCREMENT:
          {
             settings_t *settings   = config_get_ptr();
-            unsigned *scroll_speed = (unsigned*)data;
+            unsigned scroll_speed  = *((unsigned*)data);
             size_t  menu_list_size = menu_entries_get_size();
             bool wraparound_enable = settings->bools.menu_navigation_wraparound_enable;
-
-            if (!scroll_speed)
-               return false;
 
             if (menu_driver_selection_ptr >= menu_list_size - 1
                   && !wraparound_enable)
                return false;
 
-            if ((menu_driver_selection_ptr + (*scroll_speed)) < menu_list_size)
+            if ((menu_driver_selection_ptr + scroll_speed) < menu_list_size)
             {
-               size_t idx  = menu_driver_selection_ptr + (*scroll_speed);
+               size_t idx  = menu_driver_selection_ptr + scroll_speed;
 
                menu_navigation_set_selection(idx);
                menu_driver_navigation_set(true);
@@ -985,18 +982,15 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          {
             size_t idx             = 0;
             settings_t *settings   = config_get_ptr();
-            unsigned *scroll_speed = (unsigned*)data;
+            unsigned scroll_speed  = *((unsigned*)data);
             size_t  menu_list_size = menu_entries_get_size();
             bool wraparound_enable = settings->bools.menu_navigation_wraparound_enable;
-
-            if (!scroll_speed)
-               return false;
 
             if (menu_driver_selection_ptr == 0 && !wraparound_enable)
                return false;
 
-            if (menu_driver_selection_ptr >= *scroll_speed)
-               idx = menu_driver_selection_ptr - *scroll_speed;
+            if (menu_driver_selection_ptr >= scroll_speed)
+               idx = menu_driver_selection_ptr - scroll_speed;
             else
             {
                idx  = menu_list_size - 1;
