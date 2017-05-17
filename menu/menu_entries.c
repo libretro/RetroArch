@@ -143,8 +143,8 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
    if (!list || !list->size)
       return;
 
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR_SCROLL_INDICES, NULL);
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX, &scroll_value);
+   menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR_SCROLL_INDICES, NULL);
+   menu_driver_ctl(MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX, &scroll_value);
 
    current        = menu_entries_elem_get_first_char(list, 0);
    current_is_dir = menu_entries_elem_is_dir(list, 0);
@@ -155,7 +155,7 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
       bool is_dir = menu_entries_elem_is_dir(list, (unsigned)i);
 
       if ((current_is_dir && !is_dir) || (first > current))
-         menu_navigation_ctl(MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX, &i);
+         menu_driver_ctl(MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX, &i);
 
       current        = first;
       current_is_dir = is_dir;
@@ -163,7 +163,7 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
 
 
    scroll_value = list->size - 1;
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX, &scroll_value);
+   menu_driver_ctl(MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX, &scroll_value);
 }
 
 /**
@@ -192,7 +192,7 @@ static bool menu_entries_refresh(void *data)
    else if (!list_size)
    {
       bool pending_push = true;
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
+      menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
    }
 
    return true;

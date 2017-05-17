@@ -287,13 +287,13 @@ static int menu_input_mouse_frame(
    if (BIT64_GET(mouse_state, MENU_MOUSE_ACTION_WHEEL_DOWN))
    {
       unsigned increment_by = 1;
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_INCREMENT, &increment_by);
+      menu_driver_ctl(MENU_NAVIGATION_CTL_INCREMENT, &increment_by);
    }
 
    if (BIT64_GET(mouse_state, MENU_MOUSE_ACTION_WHEEL_UP))
    {
       unsigned decrement_by = 1;
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_DECREMENT, &decrement_by);
+      menu_driver_ctl(MENU_NAVIGATION_CTL_DECREMENT, &decrement_by);
    }
 
    if (BIT64_GET(mouse_state, MENU_MOUSE_ACTION_HORIZ_WHEEL_UP))

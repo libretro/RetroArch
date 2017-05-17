@@ -118,7 +118,7 @@ static int action_left_scroll(unsigned type, const char *label,
    unsigned scroll_speed = 0, fast_scroll_speed = 0;
    size_t selection      = menu_navigation_get_selection();
 
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL, &scroll_accel))
+   if (!menu_driver_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL, &scroll_accel))
       return false;
 
    scroll_speed          = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 1);
@@ -133,7 +133,7 @@ static int action_left_scroll(unsigned type, const char *label,
    else
    {
       bool pending_push = false;
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
+      menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
    }
 
    return 0;

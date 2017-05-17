@@ -935,28 +935,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             menu_driver_ctx->update_savestate_thumbnail_image(menu_userdata);
          }
          break;
-      default:
-      case RARCH_MENU_CTL_NONE:
-         break;
-   }
-
-   return true;
-}
-
-size_t menu_navigation_get_selection(void)
-{
-   return menu_driver_selection_ptr;
-}
-
-void menu_navigation_set_selection(size_t val)
-{
-   menu_driver_selection_ptr = val;
-}
-
-bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
-{
-   switch (state)
-   {
       case MENU_NAVIGATION_CTL_CLEAR:
          {
             bool *pending_push = (bool*)data;
@@ -996,10 +974,10 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
                if (wraparound_enable)
                {
                   bool pending_push = false;
-                  menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
+                  menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
                }
                else if (menu_list_size > 0)
-                  menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_LAST,  NULL);
+                  menu_driver_ctl(MENU_NAVIGATION_CTL_SET_LAST,  NULL);
             }
             
             if (menu_driver_ctx->navigation_increment)
@@ -1128,9 +1106,20 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
             scroll_acceleration = (unsigned)(*sel);
          }
          break;
-      case MENU_NAVIGATION_CTL_NONE:
+      default:
+      case RARCH_MENU_CTL_NONE:
          break;
    }
 
    return true;
+}
+
+size_t menu_navigation_get_selection(void)
+{
+   return menu_driver_selection_ptr;
+}
+
+void menu_navigation_set_selection(size_t val)
+{
+   menu_driver_selection_ptr = val;
 }

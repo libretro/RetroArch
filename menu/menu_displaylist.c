@@ -3776,7 +3776,7 @@ static bool menu_displaylist_push_list_process(menu_displaylist_info_t *info)
    if (info->need_navigation_clear)
    {
       bool pending_push = true;
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
+      menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
    }
 
    if (info->need_entries_refresh)

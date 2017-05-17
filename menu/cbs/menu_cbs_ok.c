@@ -997,7 +997,7 @@ static int generic_action_ok(const char *path,
             if (config_replace(settings->bools.config_save_on_exit, action_path))
             {
                bool pending_push = false;
-               menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
+               menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
                ret = -1;
             }
          }
