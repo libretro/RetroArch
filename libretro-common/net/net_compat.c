@@ -336,7 +336,7 @@ void network_deinit(void)
 
 uint16_t inet_htons(uint16_t hostshort)
 {
-#ifdef VITA
+#if defined(VITA) || defined(__ORBIS__)
    return sceNetHtons(hostshort);
 #else
    return htons(hostshort);
@@ -345,7 +345,7 @@ uint16_t inet_htons(uint16_t hostshort)
 
 int inet_ptrton(int af, const char *src, void *dst)
 {
-#if defined(VITA)
+#if defined(VITA) || defined(__ORBIS__)
    return sceNetInetPton(af, src, dst);	
 #elif defined(GEKKO) || defined(_WIN32)
    /* TODO/FIXME - should use InetPton on Vista and later */
