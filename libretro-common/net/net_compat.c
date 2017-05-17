@@ -92,7 +92,7 @@ char *inet_ntoa(struct SceNetInAddr in)
 {
 	static char ip_addr[INET_ADDRSTRLEN + 1];
 
-   if (inet_ntop_compat(AF_INET, &in, i_paddr, INET_ADDRSTRLEN) == NULL)
+   if (inet_ntop_compat(AF_INET, &in, ip_addr, INET_ADDRSTRLEN) == NULL)
 		strlcpy(ip_addr, "Invalid", sizeof(ip_addr));
 
 	return ip_addr;
