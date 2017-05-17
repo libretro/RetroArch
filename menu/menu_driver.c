@@ -511,6 +511,18 @@ bool menu_driver_push_list(menu_ctx_displaylist_t *disp_list)
    return false;
 }
 
+void menu_driver_set_thumbnail_system(char *s, size_t len)
+{
+   if (menu_driver_ctx && menu_driver_ctx->set_thumbnail_system)
+      menu_driver_ctx->set_thumbnail_system(menu_userdata, s, len);
+}
+
+void menu_driver_set_thumbnail_content(char *s, size_t len)
+{
+   if (menu_driver_ctx && menu_driver_ctx->set_thumbnail_content)
+      menu_driver_ctx->set_thumbnail_content(menu_userdata, s, len);
+}
+
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
    switch (state)
@@ -896,24 +908,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             if (!menu_driver_ctx || !menu_driver_ctx->update_thumbnail_image)
                return false;
             menu_driver_ctx->update_thumbnail_image(menu_userdata);
-         }
-         break;
-      case RARCH_MENU_CTL_SET_THUMBNAIL_SYSTEM:
-         {
-            char *thumbnail_system = (char*)data;
-
-            if (!menu_driver_ctx || !menu_driver_ctx->set_thumbnail_system)
-               return false;
-            menu_driver_ctx->set_thumbnail_system(menu_userdata, thumbnail_system);
-         }
-         break;
-      case RARCH_MENU_CTL_SET_THUMBNAIL_CONTENT:
-         {
-            char *thumbnail_content = (char*)data;
-
-            if (!menu_driver_ctx || !menu_driver_ctx->set_thumbnail_content)
-               return false;
-            menu_driver_ctx->set_thumbnail_content(menu_userdata, thumbnail_content);
          }
          break;
       case RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH:

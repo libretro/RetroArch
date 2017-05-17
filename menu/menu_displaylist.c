@@ -1829,7 +1829,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
    fill_short_pathname_representation_noext(path_base, info->path,
          sizeof(path_base));
 
-   menu_driver_ctl(RARCH_MENU_CTL_SET_THUMBNAIL_SYSTEM, path_base);
+   menu_driver_set_thumbnail_system(path_base, sizeof(path_base));
 
    strlcat(path_base,
          file_path_str(FILE_PATH_LPL_EXTENSION),
@@ -1857,7 +1857,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       snprintf(crc_str, sizeof(crc_str), "%08X", db_info_entry->crc32);
 
       if (db_info_entry->name)
-         menu_driver_ctl(RARCH_MENU_CTL_SET_THUMBNAIL_CONTENT, db_info_entry->name);
+         menu_driver_set_thumbnail_content(db_info_entry->name, strlen(db_info_entry->name)); 
 
       menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
       menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
@@ -2745,7 +2745,7 @@ static int menu_displaylist_parse_horizontal_list(
          item->path,
          sizeof(path_playlist));
 
-   menu_driver_ctl(RARCH_MENU_CTL_SET_THUMBNAIL_SYSTEM, lpl_basename);
+   menu_driver_set_thumbnail_system(lpl_basename, sizeof(lpl_basename));
 
    menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_INIT, (void*)path_playlist);
 

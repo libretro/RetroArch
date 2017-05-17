@@ -439,7 +439,7 @@ int generic_action_ok_displaylist_push(const char *path,
                path, sizeof(tmp));
 
          fill_pathname_base_noext(lpl_basename, path, sizeof(lpl_basename));
-         menu_driver_ctl(RARCH_MENU_CTL_SET_THUMBNAIL_SYSTEM, lpl_basename);
+         menu_driver_set_thumbnail_system(lpl_basename, sizeof(lpl_basename));
 
          info.directory_ptr = idx;
          info_path          = tmp;

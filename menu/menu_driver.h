@@ -122,8 +122,6 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_BIND_INIT,
    RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH,
    RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE,
-   RARCH_MENU_CTL_SET_THUMBNAIL_SYSTEM,
-   RARCH_MENU_CTL_SET_THUMBNAIL_CONTENT,
    RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH,
    RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE,
    MENU_NAVIGATION_CTL_CLEAR,
@@ -268,8 +266,8 @@ typedef struct menu_ctx_driver
          menu_entry_t *entry, unsigned action);
    void (*update_thumbnail_path)(void *data, unsigned i);
    void (*update_thumbnail_image)(void *data);
-   void (*set_thumbnail_system)(void *data, char* thumbnail_system);
-   void (*set_thumbnail_content)(void *data, char* thumbnail_content);
+   void (*set_thumbnail_system)(void *data, char* s, size_t len);
+   void (*set_thumbnail_content)(void *data, char* s, size_t len);
    int  (*osk_ptr_at_pos)(void *data, int x, int y, unsigned width, unsigned height);
    void (*update_savestate_thumbnail_path)(void *data, unsigned i);
    void (*update_savestate_thumbnail_image)(void *data);
@@ -410,6 +408,10 @@ bool menu_driver_load_image(menu_ctx_load_image_t *load_image_info);
 bool menu_driver_push_list(menu_ctx_displaylist_t *disp_list);
 
 bool menu_driver_init(bool video_is_threaded);
+
+void menu_driver_set_thumbnail_system(char *s, size_t len);
+
+void menu_driver_set_thumbnail_content(char *s, size_t len);
 
 size_t menu_navigation_get_selection(void);
 

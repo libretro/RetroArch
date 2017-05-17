@@ -1056,24 +1056,31 @@ static void xmb_update_thumbnail_image(void *data)
       xmb->thumbnail = 0;
 }
 
-static void xmb_set_thumbnail_system(void *data, char* thumbnail_system)
+static void xmb_set_thumbnail_system(void *data, char*s, size_t len)
 {
    xmb_handle_t *xmb = (xmb_handle_t*)data;
    if (!xmb)
       return;
 
-   strlcpy(xmb->thumbnail_system,
-      thumbnail_system, sizeof(xmb->thumbnail_system));
+   strlcpy(xmb->thumbnail_system, s, len);
 }
 
-static void xmb_set_thumbnail_content(void *data, char* thumbnail_content)
+static void xmb_reset_thumbnail_content(void *data)
+{
+   xmb_handle_t *xmb = (xmb_handle_t*)data;
+   if (!xmb)
+      return;
+   memset(xmb->thumbnail_content, 0, sizeof(xmb->thumbnail_content));
+   xmb->thumbnail_content[0] = '\0';
+}
+
+static void xmb_set_thumbnail_content(void *data, char *s, size_t len)
 {
    xmb_handle_t *xmb = (xmb_handle_t*)data;
    if (!xmb)
       return;
 
-   strlcpy(xmb->thumbnail_content,
-      thumbnail_content, sizeof(xmb->thumbnail_content));
+   strlcpy(xmb->thumbnail_content, s, len);
 }
 
 static void xmb_update_savestate_thumbnail_image(void *data)
@@ -1156,20 +1163,20 @@ static void xmb_selection_pointer_changed(
          {
             if (xmb_list > XMB_SYSTEM_TAB_SETTINGS && depth == 1)
             {
-               xmb_set_thumbnail_content(xmb, e.path);
+               xmb_set_thumbnail_content(xmb, e.path, sizeof(e.path));
                xmb_update_thumbnail_path(xmb, i);
                xmb_update_thumbnail_image(xmb);
             }
             else if (((e.type == FILE_TYPE_IMAGE || e.type == FILE_TYPE_RDB || e.type == FILE_TYPE_RDB_ENTRY)
                && xmb_list <= XMB_SYSTEM_TAB_SETTINGS))
             {
-               xmb_set_thumbnail_content(xmb, e.path);
+               xmb_set_thumbnail_content(xmb, e.path, sizeof(e.path));
                xmb_update_thumbnail_path(xmb, i);
                xmb_update_thumbnail_image(xmb);
             }
             else if (filebrowser_get_type() != FILEBROWSER_NONE)
             {
-               xmb_set_thumbnail_content(xmb, "");
+               xmb_reset_thumbnail_content(xmb);
                xmb_update_thumbnail_path(xmb, i);
                xmb_update_thumbnail_image(xmb);
             }
@@ -1360,7 +1367,7 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
    if (xmb_list_get_selection(xmb) <= XMB_SYSTEM_TAB_SETTINGS)
    {
       if (xmb->depth < 4)
-         xmb_set_thumbnail_content(xmb, "");
+         xmb_reset_thumbnail_content(xmb);
       xmb_update_thumbnail_path(xmb, 0);
       xmb_update_thumbnail_image(xmb);
    }
@@ -1662,7 +1669,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
 
       menu_entry_get(&e, 0, selection, NULL, true);
 
-      xmb_set_thumbnail_content(xmb, e.path);
+      xmb_set_thumbnail_content(xmb, e.path, sizeof(e.path));
 
       xmb_update_thumbnail_path(xmb, 0);
       xmb_update_thumbnail_image(xmb);
