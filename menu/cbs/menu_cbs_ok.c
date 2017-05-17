@@ -3523,12 +3523,14 @@ finish:
                    inet_ntop_compat(AF_INET, &sin->sin_addr, 
                       netplay_room_list[i].address, INET6_ADDRSTRLEN);
                }
+#if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY)
                else if (address->sa_family == AF_INET6)
                {
                   struct sockaddr_in6 *sin = (struct sockaddr_in6 *) address;
                   inet_ntop_compat(AF_INET6, &sin->sin6_addr, 
                      netplay_room_list[i].address, INET6_ADDRSTRLEN);
                }
+#endif
 
                strlcpy(netplay_room_list[i].corename,
                      host->core,
