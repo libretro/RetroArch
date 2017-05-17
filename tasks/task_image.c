@@ -267,12 +267,17 @@ bool task_image_load_handler(retro_task_t *task)
          && (image && image->is_finished )
          && (!task_get_cancelled(task)))
    {
-      void *data = malloc(sizeof(image->ti));
+      struct texture_image *img = (struct texture_image*)malloc(sizeof(struct texture_image));
 
-      if (data)
-         memcpy(data, &image->ti, sizeof(image->ti));
+      if (img)
+      {
+         img->width         = image->ti.width;
+         img->height        = image->ti.height;
+         img->pixels        = image->ti.pixels;
+         img->supports_rgba = image->ti.supports_rgba;
+      }
 
-      task_set_data(task, data);
+      task_set_data(task, img);
 
       return false;
    }
