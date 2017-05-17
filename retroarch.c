@@ -230,7 +230,7 @@ static slock_t *_runloop_msg_queue_lock                    = NULL;
 static msg_queue_t *runloop_msg_queue                      = NULL;
 static unsigned runloop_pending_windowed_scale             = 0;
 static retro_usec_t runloop_frame_time_last                = 0;
-static unsigned runloop_max_frames                         = false;
+static unsigned runloop_max_frames                         = 0;
 static bool runloop_force_nonblock                         = false;
 static bool runloop_paused                                 = false;
 static bool runloop_idle                                   = false;
@@ -2241,7 +2241,7 @@ bool runloop_msg_queue_pull(const char **ret)
  * d) Video driver no longer alive.
  * e) End of BSV movie and BSV EOF exit is true. (TODO/FIXME - explain better)
  */
-#define time_to_exit(quit_key_pressed) (runloop_shutdown_initiated || quit_key_pressed || !is_alive || bsv_movie_is_end_of_file() || (runloop_max_frames && (frame_count >= runloop_max_frames)) || runloop_exec)
+#define time_to_exit(quit_key_pressed) (runloop_shutdown_initiated || quit_key_pressed || !is_alive || bsv_movie_is_end_of_file() || ((runloop_max_frames != 0) && (frame_count >= runloop_max_frames)) || runloop_exec)
 
 #define runloop_check_cheevos() (settings->bools.cheevos_enable && cheevos_loaded && (!cheats_are_enabled && !cheats_were_enabled))
 
@@ -2270,6 +2270,7 @@ static enum runloop_state runloop_check_state(
 #else
    bool menu_is_alive               = false;
 #endif
+   bool pause_nonactive             = settings->bools.pause_nonactive;
 
    video_driver_get_status(&frame_count, &is_alive, &is_focused);
 
@@ -2343,7 +2344,7 @@ static enum runloop_state runloop_check_state(
 
       {
          enum menu_action action = (enum menu_action)menu_event(current_input, trigger_input);
-         bool focused            = settings->bools.pause_nonactive ? is_focused : true;
+         bool focused            = pause_nonactive ? is_focused : true;
 
          focused                 = focused && !ui_companion_is_on_foreground();
 
@@ -2412,7 +2413,7 @@ static enum runloop_state runloop_check_state(
    }
 #endif
 
-   if (settings->bools.pause_nonactive)
+   if (pause_nonactive)
       focused                = is_focused;
 
    if (runloop_cmd_triggered(trigger_input, RARCH_SCREENSHOT))
