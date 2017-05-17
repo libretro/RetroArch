@@ -355,6 +355,11 @@ int inet_ptrton(int af, const char *src, void *dst)
 #endif
 }
 
+struct in_addr6_compat
+{
+   unsigned char ip_addr[16];
+};
+
 const char *inet_ntop_compat(int af, const void *src, char *dst, socklen_t cnt)
 {
    if (af == AF_INET)
@@ -367,15 +372,18 @@ const char *inet_ntop_compat(int af, const void *src, char *dst, socklen_t cnt)
                sockaddr_in), dst, cnt, NULL, 0, NI_NUMERICHOST);
       return dst;
    }
+#if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY)
    else if (af == AF_INET6)
    {
       struct sockaddr_in6 in;
       memset(&in, 0, sizeof(in));
       in.sin6_family = AF_INET6;
-      memcpy(&in.sin6_addr, src, sizeof(struct in_addr6));
+      memcpy(&in.sin6_addr, src, sizeof(struct in_addr6_compat));
       getnameinfo((struct sockaddr *)&in, sizeof(struct
                sockaddr_in6), dst, cnt, NULL, 0, NI_NUMERICHOST);
       return dst;
    }
+#endif
+
    return NULL;
 }
