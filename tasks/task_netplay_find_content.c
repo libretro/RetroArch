@@ -257,6 +257,7 @@ bool task_push_netplay_crc_scan(uint32_t crc, char* name,
       const char *hostname, const char *core_name)
 {
    unsigned i;
+   union string_list_elem_attr attr;
    core_info_list_t *info      = NULL;
    settings_t        *settings = config_get_ptr();
    retro_task_t          *task = (retro_task_t *)calloc(1, sizeof(*task));
@@ -281,6 +282,8 @@ bool task_push_netplay_crc_scan(uint32_t crc, char* name,
    state->lpl_list = dir_list_new(settings->paths.directory_playlist,
          NULL, true, true, true, false);
 
+   attr.i = 0;
+   string_list_append(state->lpl_list, settings->paths.path_content_history, attr);
    state->found = false;
 
    for (i=0; i < info->count; i++)
