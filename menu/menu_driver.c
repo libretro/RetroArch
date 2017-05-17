@@ -322,6 +322,25 @@ void menu_driver_frame(video_frame_info_t *video_info)
       menu_driver_ctx->frame(menu_userdata, video_info);
 }
 
+/**
+ * menu_update_libretro_info:
+ *
+ * Update menu state which depends on config.
+ **/
+static void menu_update_libretro_info(void)
+{
+   struct retro_system_info *info = NULL;
+
+   menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
+         &info);
+
+   if (!info)
+      return;
+
+   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+   command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+}
+
 bool menu_driver_render(bool is_idle, bool rarch_is_inited,
       bool rarch_is_dummy_core)
 {
@@ -447,9 +466,9 @@ static bool menu_driver_context_reset(bool video_is_threaded)
 static bool menu_driver_init_internal(bool video_is_threaded)
 {
    settings_t *settings  = config_get_ptr();
-
-   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
-   command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+   menu_update_libretro_info();
+   if (menu_driver_data)
+      return true;
 
    menu_driver_data = (menu_handle_t*)
       menu_driver_ctx->init(&menu_userdata, video_is_threaded);
