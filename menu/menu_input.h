@@ -18,6 +18,7 @@
 #ifndef _MENU_INPUT_H
 #define _MENU_INPUT_H
 
+#include <stdint.h>
 #include <retro_common_api.h>
 
 RETRO_BEGIN_DECLS
