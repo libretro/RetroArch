@@ -649,8 +649,10 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
       case RARCH_MENU_CTL_DEINIT:
          if (menu_driver_ctx && menu_driver_ctx->context_destroy)
             menu_driver_ctx->context_destroy(menu_userdata);
-         if (menu_driver_ctl(RARCH_MENU_CTL_OWNS_DRIVER, NULL))
+
+         if (menu_driver_data_own)
             return true;
+
          menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
          menu_shader_manager_free();
 
@@ -701,30 +703,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT:
          menu_driver_load_no_content = false;
-         break;
-      case RARCH_MENU_CTL_NAVIGATION_ASCEND_ALPHABET:
-         {
-            size_t *ptr_out = (size_t*)data;
-
-            if (!ptr_out)
-               return false;
-
-            if (menu_driver_ctx->navigation_ascend_alphabet)
-               menu_driver_ctx->navigation_ascend_alphabet(
-                     menu_userdata, ptr_out);
-         }
-         break;
-      case RARCH_MENU_CTL_NAVIGATION_DESCEND_ALPHABET:
-         {
-            size_t *ptr_out = (size_t*)data;
-
-            if (!ptr_out)
-               return false;
-
-            if (menu_driver_ctx->navigation_descend_alphabet)
-               menu_driver_ctx->navigation_descend_alphabet(
-                     menu_userdata, ptr_out);
-         }
          break;
       case RARCH_MENU_CTL_LIST_GET_ENTRY:
          {
@@ -1088,21 +1066,21 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
             ptr = *ptr_out;
 
             if (ptr == scroll_index_list[scroll_index_size - 1])
-            {
                *ptr_out = menu_list_size - 1;
-               menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_ASCEND_ALPHABET, ptr_out);
-               return true;
+            else
+            {
+               while (i < scroll_index_size - 1
+                     && scroll_index_list[i + 1] <= ptr)
+                  i++;
+               *ptr_out = scroll_index_list[i + 1];
+
+               if (*ptr_out >= menu_list_size)
+                  *ptr_out = menu_list_size - 1;
             }
 
-            while (i < scroll_index_size - 1
-                  && scroll_index_list[i + 1] <= ptr)
-               i++;
-            *ptr_out = scroll_index_list[i + 1];
-
-            if (*ptr_out >= menu_list_size)
-               *ptr_out = menu_list_size - 1;
-
-            menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_ASCEND_ALPHABET, ptr_out);
+            if (menu_driver_ctx->navigation_ascend_alphabet)
+               menu_driver_ctx->navigation_ascend_alphabet(
+                     menu_userdata, ptr_out);
          }
          break;
       case MENU_NAVIGATION_CTL_DESCEND_ALPHABET:
@@ -1125,8 +1103,9 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
                i--;
             *ptr_out = scroll_index_list[i - 1];
 
-            menu_driver_ctl(
-                  RARCH_MENU_CTL_NAVIGATION_DESCEND_ALPHABET, ptr_out);
+            if (menu_driver_ctx->navigation_descend_alphabet)
+               menu_driver_ctx->navigation_descend_alphabet(
+                     menu_userdata, ptr_out);
          }
          break;
       case MENU_NAVIGATION_CTL_CLEAR_SCROLL_INDICES:
