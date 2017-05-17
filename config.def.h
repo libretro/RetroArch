@@ -263,12 +263,10 @@ static float menu_footer_opacity = 1.000;
 
 static float menu_header_opacity = 1.000;
 
-#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL) || defined(HAVE_VULKAN)
 #if defined(HAVE_OPENGLES2) || (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
 static unsigned menu_shader_pipeline = 1;
 #else
 static unsigned menu_shader_pipeline = 2;
-#endif
 #endif
 
 static bool show_advanced_settings            = false;
