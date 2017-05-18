@@ -52,7 +52,6 @@ static const shader_backend_t *video_shader_set_backend(enum rarch_shader_type t
    {
       case RARCH_SHADER_CG:
          {
-
 #ifdef HAVE_CG
             gfx_ctx_flags_t flags;
             video_context_driver_get_flags(&flags);
@@ -86,7 +85,7 @@ static const shader_backend_t *video_shader_set_backend(enum rarch_shader_type t
 
 bool video_shader_driver_get_prev_textures(video_shader_ctx_texture_t *texture)
 {
-   if (!texture || !current_shader)
+   if (!texture)
    {
       if (texture)
          texture->id = 0;
@@ -99,7 +98,7 @@ bool video_shader_driver_get_prev_textures(video_shader_ctx_texture_t *texture)
 
 bool video_shader_driver_get_ident(video_shader_ctx_ident_t *ident)
 {
-   if (!current_shader || !ident)
+   if (!ident)
       return false;
    ident->ident = current_shader->ident;
    return true;
@@ -119,11 +118,8 @@ bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader)
 
 bool video_shader_driver_direct_get_current_shader(video_shader_ctx_t *shader)
 {
-   shader->data = NULL;
-   if (!current_shader || !current_shader->get_current_shader)
-      return false;
-
    shader->data = current_shader->get_current_shader(shader_data);
+
    return true;
 }
 
@@ -177,6 +173,12 @@ static void video_shader_driver_use_null(void *data,
    (void)idx;
    (void)set_active;
 }
+
+static struct video_shader *video_shader_driver_get_current_shader_null(void *data)
+{
+   return NULL;
+}
+
 
 static void video_shader_driver_set_params_null(void *data, void *shader_data,
       unsigned width, unsigned height, 
@@ -235,6 +237,8 @@ static void video_shader_driver_reset_to_defaults(void)
       current_shader->filter_type       = video_shader_driver_filter_type_null;
    if (!current_shader->num_shaders)
       current_shader->num_shaders       = video_shader_driver_num_null;
+   if (!current_shader->get_current_shader)
+      current_shader->get_current_shader= video_shader_driver_get_current_shader_null;
 }
 
 /* Finds first suitable shader context driver. */

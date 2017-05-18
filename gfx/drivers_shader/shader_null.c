@@ -72,11 +72,6 @@ static bool shader_null_get_feedback_pass(void *data, unsigned *idx)
    return false;
 }
 
-static struct video_shader *shader_null_get_current_shader(void *data)
-{
-   return NULL;
-}
-
 static bool shader_null_compile_program(
       void *data,
       unsigned idx,
@@ -103,7 +98,7 @@ const shader_backend_t shader_null_backend = {
    shader_null_get_prev_textures,
    shader_null_get_feedback_pass,
    NULL,
-   shader_null_get_current_shader,
+   NULL,
 
    RARCH_SHADER_NONE,
    "nullshader"
