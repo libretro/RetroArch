@@ -944,6 +944,37 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
    return true;
 }
 
+static void audio_driver_mixer_remove_stream(unsigned i)
+{
+   audio_mixer_sound_t *handle = audio_mixer_streams[i].handle;
+   audio_mixer_voice_t *voice  = audio_mixer_streams[i].voice;
+
+   switch (audio_mixer_streams[i].state)
+   {
+      case AUDIO_STREAM_STATE_PLAYING:
+      case AUDIO_STREAM_STATE_PLAYING_LOOPED:
+         audio_mixer_stop(voice);
+#if 0
+         /* TODO - crashes at this part */
+         if (handle)
+            audio_mixer_destroy(handle);
+#endif
+         break;
+      case AUDIO_STREAM_STATE_STOPPED:
+         if (handle)
+            audio_mixer_destroy(handle);
+         break;
+      case AUDIO_STREAM_STATE_NONE:
+         break;
+   }
+
+   audio_mixer_streams[i].state   = AUDIO_STREAM_STATE_NONE;
+   audio_mixer_streams[i].volume  = 0.0f;
+   audio_mixer_streams[i].stop_cb = NULL;
+   audio_mixer_streams[i].handle  = NULL;
+   audio_mixer_streams[i].voice   = NULL;
+}
+
 static void audio_driver_mixer_deinit(void)
 {
    unsigned i;
@@ -951,36 +982,7 @@ static void audio_driver_mixer_deinit(void)
    audio_set_bool(AUDIO_ACTION_MIXER, false);
 
    for (i = 0; i < MAX_STREAMS; i++)
-   {
-      bool deassign_slot          = false;
-      audio_mixer_sound_t *handle = audio_mixer_streams[i].handle;
-      audio_mixer_voice_t *voice  = audio_mixer_streams[i].voice;
-
-      switch (audio_mixer_streams[i].state)
-      {
-         case AUDIO_STREAM_STATE_PLAYING:
-         case AUDIO_STREAM_STATE_PLAYING_LOOPED:
-            audio_mixer_stop(voice);
-#if 0
-            /* TODO - crashes at this part */
-            if (handle)
-               audio_mixer_destroy(handle);
-#endif
-            break;
-         case AUDIO_STREAM_STATE_STOPPED:
-            if (handle)
-               audio_mixer_destroy(handle);
-            break;
-         case AUDIO_STREAM_STATE_NONE:
-            break;
-      }
-
-      audio_mixer_streams[i].state   = AUDIO_STREAM_STATE_NONE;
-      audio_mixer_streams[i].volume  = 0.0f;
-      audio_mixer_streams[i].stop_cb = NULL;
-      audio_mixer_streams[i].handle  = NULL;
-      audio_mixer_streams[i].voice   = NULL;
-   }
+      audio_driver_mixer_remove_stream(i);
 
    audio_mixer_current_max_idx = 0;
    audio_mixer_done();
