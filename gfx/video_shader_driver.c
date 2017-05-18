@@ -16,9 +16,14 @@
 #include <string.h>
 
 #include <string/stdstring.h>
+#include <gfx/math/matrix_4x4.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
+#endif
+
+#ifdef HAVE_OPENGL
+#include "common/gl_common.h"
 #endif
 
 #include "video_shader_driver.h"
@@ -38,7 +43,7 @@ static const shader_backend_t *shader_ctx_drivers[] = {
    NULL
 };
 
-const shader_backend_t *current_shader = NULL;
+shader_backend_t *current_shader       = NULL;
 void *shader_data                      = NULL;
 
 static const shader_backend_t *video_shader_set_backend(enum rarch_shader_type type)
@@ -135,10 +140,71 @@ bool video_shader_driver_deinit(void)
    return true;
 }
 
+static enum gfx_wrap_type video_shader_driver_wrap_type_null(void *data, unsigned index)
+{
+   return RARCH_WRAP_BORDER;
+}
+
+static bool video_shader_driver_set_mvp_null(void *data, void *shader_data, const math_matrix_4x4 *mat)
+{
+#ifdef HAVE_OPENGL
+#ifndef NO_GL_FF_MATRIX
+   if (string_is_equal_fast(video_driver_get_ident(), "gl", 2))
+      gl_ff_matrix(mat);
+#endif
+#endif
+   return false;
+}
+
+static bool video_shader_driver_set_coords_null(void *handle_data, void *shader_data, const struct video_coords *coords)
+{
+#ifdef HAVE_OPENGL
+#ifndef NO_GL_FF_VERTEX
+   if (string_is_equal_fast(video_driver_get_ident(), "gl", 2))
+      gl_ff_vertex(coords);
+#endif
+#endif
+   return false;
+}
+
+static void video_shader_driver_use_null(void *data, void *shader_data, unsigned idx, bool set_active)
+{
+   (void)data;
+   (void)idx;
+   (void)set_active;
+}
+
+static void video_shader_driver_set_params_null(void *data, void *shader_data,
+      unsigned width, unsigned height, 
+      unsigned tex_width, unsigned tex_height, 
+      unsigned out_width, unsigned out_height,
+      unsigned frame_count,
+      const void *info, 
+      const void *prev_info, 
+      const void *feedback_info,
+      const void *fbo_info, unsigned fbo_info_cnt)
+{
+}
+
+static void video_shader_driver_reset_to_defaults(void)
+{
+   if (!current_shader->wrap_type)
+      current_shader->wrap_type  = video_shader_driver_wrap_type_null;
+   if (!current_shader->set_mvp)
+      current_shader->set_mvp    = video_shader_driver_set_mvp_null;
+   if (!current_shader->set_coords)
+      current_shader->set_coords = video_shader_driver_set_coords_null;
+   if (!current_shader->use)
+      current_shader->use        = video_shader_driver_use_null;
+   if (!current_shader->set_params)
+      current_shader->set_params = video_shader_driver_set_params_null;
+}
+
 /* Finds first suitable shader context driver. */
 bool video_shader_driver_init_first(void)
 {
-   current_shader = shader_ctx_drivers[0];
+   current_shader = (shader_backend_t*)shader_ctx_drivers[0];
+   video_shader_driver_reset_to_defaults();
    return true;
 }
 
@@ -160,7 +226,8 @@ bool video_shader_driver_init(video_shader_ctx_init_t *init)
       return false;
 
    shader_data    = tmp;
-   current_shader = init->shader;
+   current_shader = (shader_backend_t*)init->shader;
+   video_shader_driver_reset_to_defaults();
 
    return true;
 }
@@ -228,8 +295,6 @@ bool video_shader_driver_compile_program(struct shader_program_info *program_inf
 
 bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap)
 {
-   if (!current_shader || !current_shader->wrap_type)
-      return false;
    wrap->type = current_shader->wrap_type(shader_data, wrap->idx);
    return true;
 }

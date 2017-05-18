@@ -286,8 +286,7 @@ bool video_shader_driver_deinit(void);
       current_shader->set_uniform_parameter(shader_data, &param, NULL)
 
 #define video_shader_driver_set_parameters(params) \
-   if (current_shader && current_shader->set_params) \
-      current_shader->set_params(params.data, shader_data, params.width, params.height, params.tex_width, params.tex_height, params.out_width, params.out_height, params.frame_counter, params.info, params.prev_info, params.feedback_info, params.fbo_info, params.fbo_info_cnt)
+   current_shader->set_params(params.data, shader_data, params.width, params.height, params.tex_width, params.tex_height, params.out_width, params.out_height, params.frame_counter, params.info, params.prev_info, params.feedback_info, params.fbo_info, params.fbo_info_cnt)
 
 bool video_shader_driver_init_first(void);
 
@@ -298,8 +297,7 @@ bool video_shader_driver_get_feedback_pass(unsigned *data);
 bool video_shader_driver_mipmap_input(unsigned *index);
 
 #define video_shader_driver_set_coords(coords) \
-   if (current_shader && current_shader->set_coords) \
-     if (!current_shader->set_coords(coords.handle_data, shader_data, (const struct video_coords*)coords.data) && current_shader->set_coords_fallback) \
+   if (!current_shader->set_coords(coords.handle_data, shader_data, (const struct video_coords*)coords.data) && current_shader->set_coords_fallback) \
       current_shader->set_coords_fallback(coords.handle_data, shader_data, (const struct video_coords*)coords.data)
 
 bool video_shader_driver_scale(video_shader_ctx_scale_t *scaler);
@@ -307,7 +305,7 @@ bool video_shader_driver_scale(video_shader_ctx_scale_t *scaler);
 bool video_shader_driver_info(video_shader_ctx_info_t *shader_info);
 
 #define video_shader_driver_set_mvp(mvp) \
-   if (mvp.matrix && current_shader && current_shader->set_mvp) \
+   if (mvp.matrix) \
       current_shader->set_mvp(mvp.data, shader_data, mvp.matrix) \
 
 bool video_shader_driver_filter_type(video_shader_ctx_filter_t *filter);
@@ -315,12 +313,11 @@ bool video_shader_driver_filter_type(video_shader_ctx_filter_t *filter);
 bool video_shader_driver_compile_program(struct shader_program_info *program_info);
 
 #define video_shader_driver_use(shader_info) \
-   if (current_shader) \
-      current_shader->use(shader_info.data, shader_data, shader_info.idx, shader_info.set_active)
+   current_shader->use(shader_info.data, shader_data, shader_info.idx, shader_info.set_active)
 
 bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap);
 
-extern const shader_backend_t *current_shader;
+extern shader_backend_t *current_shader;
 extern void *shader_data;
 
 extern const shader_backend_t gl_glsl_backend;
