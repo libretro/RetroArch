@@ -1051,7 +1051,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             while (i && scroll_index_list[i - 1] >= menu_driver_selection_ptr)
                i--;
 
-            menu_driver_selection_ptr = scroll_index_list[i - 1];
+            if (i > 0)
+               menu_driver_selection_ptr = scroll_index_list[i - 1];
 
             if (menu_driver_ctx->navigation_descend_alphabet)
                menu_driver_ctx->navigation_descend_alphabet(
