@@ -1337,15 +1337,13 @@ bool video_driver_cached_frame(void)
 void video_driver_monitor_adjust_system_rates(void)
 {
    float timing_skew;
-   const struct retro_system_timing *info = NULL;
    struct retro_system_av_info *av_info   = &video_driver_av_info;
    settings_t *settings                   = config_get_ptr();
    float video_refresh_rate               = settings->floats.video_refresh_rate;
+   const struct retro_system_timing *info = (const struct retro_system_timing*)&av_info->timing;
 
    rarch_ctl(RARCH_CTL_UNSET_NONBLOCK_FORCED, NULL);
 
-   if  (av_info)
-      info = (const struct retro_system_timing*)&av_info->timing;
 
    if (!info || info->fps <= 0.0)
       return;
@@ -1577,11 +1575,8 @@ void video_driver_set_viewport_square_pixel(void)
 {
    unsigned len, highest, i, aspect_x, aspect_y;
    unsigned width, height;
-   struct retro_game_geometry *geom     = NULL;
    struct retro_system_av_info *av_info = &video_driver_av_info;
-
-   if (av_info)
-      geom = &av_info->geometry;
+   struct retro_game_geometry *geom     = &av_info->geometry;
 
    if (!geom)
       return;
