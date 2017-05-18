@@ -78,6 +78,9 @@ typedef struct video_frame_info video_frame_info_t;
 
 typedef void (*update_window_title_cb)(void*, video_frame_info_t *video_info);
 typedef void (*swap_buffers_cb)(void*, video_frame_info_t *video_info);
+typedef bool (*get_metrics_cb)(void *data, enum display_metric_types type,
+      float *value);
+typedef bool (*set_resize_cb)(void*, unsigned, unsigned);
 
 typedef struct video_info
 {
@@ -206,6 +209,8 @@ typedef struct video_frame_info
    char fps_text[128];
    update_window_title_cb cb_update_window_title;
    swap_buffers_cb        cb_swap_buffers;
+   get_metrics_cb         cb_get_metrics;
+   set_resize_cb          cb_set_resize;
    void *context_data;
 } video_frame_info_t;
 
@@ -239,8 +244,7 @@ typedef struct gfx_ctx_driver
 
    void (*get_video_output_next)(void*);
 
-   bool (*get_metrics)(void *data, enum display_metric_types type,
-         float *value);
+   get_metrics_cb get_metrics;
 
    /* Translates a window size to an aspect ratio.
     * In most cases this will be just width / height, but
@@ -259,7 +263,7 @@ typedef struct gfx_ctx_driver
 
    /* Acknowledge a resize event. This is needed for some APIs.
     * Most backends will ignore this. */
-   bool (*set_resize)(void*, unsigned, unsigned);
+   set_resize_cb set_resize;
 
    /* Checks if window has input focus. */
    bool (*has_focus)(void*);
@@ -908,10 +912,6 @@ bool video_context_driver_set(const gfx_ctx_driver_t *data);
 
 void video_context_driver_destroy(void);
 
-#define video_context_driver_set_resize(mode_info) \
-   if (current_video_context && current_video_context->set_resize) \
-      current_video_context->set_resize(video_context_data, mode_info.width, mode_info.height)
-
 bool video_context_driver_get_video_output_size(gfx_ctx_size_t *size_data);
 
 bool video_context_driver_swap_interval(unsigned *interval);
@@ -944,7 +944,7 @@ bool video_context_driver_input_driver(gfx_ctx_input_t *inp);
 
 void video_context_driver_free(void);
 
-extern const gfx_ctx_driver_t *current_video_context;
+extern gfx_ctx_driver_t current_video_context;
 
 extern void *video_context_data;
 

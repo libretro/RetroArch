@@ -1125,7 +1125,7 @@ static bool gl_frame(void *data, const void *frame,
       mode.width        = width;
       mode.height       = height;
 
-      video_context_driver_set_resize(mode);
+      video_info->cb_set_resize(video_info->context_data, mode.width, mode.height);
 
 #ifdef HAVE_FBO
       if (gl->fbo_inited)
