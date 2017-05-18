@@ -223,8 +223,6 @@ VIDEO CONTEXT
 /*============================================================
 VIDEO SHADERS
 ============================================================ */
-
-#include "../gfx/video_shader_driver.c"
 #include "../gfx/video_shader_parse.c"
 #include "../gfx/drivers_shader/shader_null.c"
 
