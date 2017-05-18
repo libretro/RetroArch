@@ -68,7 +68,7 @@
 #include "../core.h"
 #include "../frontend/frontend_driver.h"
 #include "../ui/ui_companion_driver.h"
-#include "../gfx/video_shader_driver.h"
+#include "../gfx/video_driver.h"
 #include "../config.features.h"
 #include "../version_git.h"
 #include "../input/input_config.h"

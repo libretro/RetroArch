@@ -50,7 +50,7 @@
 #include "../common/win32_common.h"
 #endif
 
-#include "../video_shader_driver.h"
+#include "../video_driver.h"
 
 #define set_texture_coords(coords, xamt, yamt) \
    coords[2] = xamt; \

@@ -51,7 +51,6 @@
 #include "../../paths.h"
 #include "../../retroarch.h"
 #include "../../gfx/video_driver.h"
-#include "../../gfx/video_shader_driver.h"
 #include "../../tasks/tasks_internal.h"
 
 #include "../../gfx/common/gl_common.h"

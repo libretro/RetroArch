@@ -30,7 +30,7 @@
 #include "nk_common.h"
 
 #include "../../menu_display.h"
-#include "../../../gfx/video_shader_driver.h"
+#include "../../../gfx/video_driver.h"
 
 #ifdef HAVE_GLSL
 #include "../../../gfx/drivers/gl_shaders/pipeline_nuklear.glsl.vert.h"

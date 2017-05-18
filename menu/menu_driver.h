@@ -31,7 +31,7 @@
 #include "menu_input.h"
 #include "menu_entries.h"
 
-#include "../gfx/video_shader_driver.h"
+#include "../gfx/video_driver.h"
 
 RETRO_BEGIN_DECLS
 

@@ -46,7 +46,7 @@
 
 #include "../include/Cg/cg.h"
 
-#include "../video_shader_driver.h"
+#include "../video_driver.h"
 #include "../video_shader_parse.h"
 #include "../../core.h"
 #include "../../managers/state_manager.h"

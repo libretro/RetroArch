@@ -75,8 +75,6 @@
 #include "../common/win32_common.h"
 #endif
 
-#include "../video_shader_driver.h"
-
 #ifndef GL_SYNC_GPU_COMMANDS_COMPLETE
 #define GL_SYNC_GPU_COMMANDS_COMPLETE     0x9117
 #endif

@@ -27,7 +27,7 @@
 #include "../../config.h"
 #endif
 
-#include "../video_shader_driver.h"
+#include "../video_driver.h"
 
 typedef struct null_shader_data
 {
