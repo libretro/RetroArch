@@ -45,6 +45,8 @@
 
 #define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
 
+#define AUDIO_MIXER_MAX_STREAMS 8
+
 static const audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_ALSA
    &audio_alsa,
@@ -123,10 +125,8 @@ struct audio_mixer_stream
    float volume;
 };
 
-#define MAX_STREAMS 8
-
 static unsigned audio_mixer_current_max_idx              = 0;
-static struct audio_mixer_stream audio_mixer_streams[MAX_STREAMS] = {0};
+static struct audio_mixer_stream audio_mixer_streams[AUDIO_MIXER_MAX_STREAMS] = {0};
 
 static size_t audio_driver_chunk_size                    = 0;
 static size_t audio_driver_chunk_nonblock_size           = 0;
@@ -898,7 +898,7 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
    audio_mixer_stop_cb_t stop_cb = NULL;
    bool looped                   = false;
 
-   if (audio_mixer_current_max_idx >= MAX_STREAMS)
+   if (audio_mixer_current_max_idx >= AUDIO_MIXER_MAX_STREAMS)
       return false;
 
    if (params->state == AUDIO_STREAM_STATE_NONE)
@@ -986,7 +986,7 @@ static void audio_driver_mixer_deinit(void)
 
    audio_set_bool(AUDIO_ACTION_MIXER, false);
 
-   for (i = 0; i < MAX_STREAMS; i++)
+   for (i = 0; i < AUDIO_MIXER_MAX_STREAMS; i++)
       audio_driver_mixer_remove_stream(i);
 
    audio_mixer_current_max_idx = 0;
