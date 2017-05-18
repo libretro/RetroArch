@@ -2266,9 +2266,6 @@ void video_driver_frame(const void *data, unsigned width,
 
    if (video_info.fps_show)
       runloop_msg_queue_push(video_info.fps_text, 1, 1, false);
-
-   if (current_video_context && current_video_context->update_window_title)
-      current_video_context->update_window_title(video_context_data, &video_info);
 }
 
 void video_driver_display_type_set(enum rarch_display_type type)
@@ -2412,6 +2409,16 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->runloop_is_slowmotion  = is_slowmotion;
 
    video_info->input_driver_nonblock_state = input_driver_is_nonblock_state();
+
+   video_info->context_data           = video_context_data;
+
+   video_info->cb_update_window_title = NULL;
+   if (current_video_context)
+   {
+      if (current_video_context->update_window_title)
+         video_info->cb_update_window_title = current_video_context->update_window_title;
+   }
+
 #ifdef HAVE_THREADS
    video_driver_threaded_unlock(is_threaded);
 #endif

@@ -1272,6 +1272,10 @@ static bool gl_frame(void *data, const void *frame,
    gl_render_overlay(gl, video_info);
 #endif
 
+   if (video_info->cb_update_window_title)
+      video_info->cb_update_window_title(
+            video_info->context_data, video_info);
+
 #ifdef HAVE_FBO
    /* Reset state which could easily mess up libretro core. */
    if (gl->hw_render_fbo_init)

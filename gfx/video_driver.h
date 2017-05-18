@@ -74,6 +74,10 @@ enum display_flags
 
 typedef void (*gfx_ctx_proc_t)(void);
 
+typedef struct video_frame_info video_frame_info_t;
+
+typedef void (*update_window_title)(void*, video_frame_info_t *video_info);
+
 typedef struct video_info
 {
    /* Width of window. 
@@ -199,6 +203,8 @@ typedef struct video_frame_info
    float xmb_alpha_factor;
 
    char fps_text[128];
+   update_window_title cb_update_window_title;
+   void *context_data;
 } video_frame_info_t;
 
 typedef struct gfx_ctx_driver
@@ -242,7 +248,7 @@ typedef struct gfx_ctx_driver
    float (*translate_aspect)(void*, unsigned, unsigned);
 
    /* Asks driver to update window title (FPS, etc). */
-   void (*update_window_title)(void*, video_frame_info_t *video_info);
+   update_window_title update_window_title;
 
    /* Queries for resize and quit events.
     * Also processes events. */
