@@ -2343,11 +2343,10 @@ void video_driver_frame(const void *data, unsigned width,
          && msg)
       strlcpy(video_driver_msg, msg, sizeof(video_driver_msg));
 
-   if (!current_video || !current_video->frame(
-            video_driver_data, data, width, height,
-            video_driver_frame_count,
-            (unsigned)pitch, video_driver_msg, &video_info))
-      video_driver_active = false;
+   video_driver_active = current_video->frame(
+         video_driver_data, data, width, height,
+         video_driver_frame_count,
+         (unsigned)pitch, video_driver_msg, &video_info);
 
    video_driver_frame_count++;
 
