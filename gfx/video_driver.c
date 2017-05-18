@@ -486,6 +486,62 @@ const video_poke_interface_t *video_driver_get_poke(void)
    return video_driver_poke;
 }
 
+static void video_context_driver_reset(void)
+{
+   if (!current_video_context.get_metrics)
+      current_video_context.get_metrics         = get_metrics_null;
+
+   if (!current_video_context.update_window_title)
+      current_video_context.update_window_title = update_window_title_null;
+
+   if (!current_video_context.set_resize)
+      current_video_context.set_resize          = set_resize_null;
+
+   if (!current_video_context.swap_buffers)
+      current_video_context.swap_buffers        = swap_buffers_null;
+}
+
+bool video_context_driver_set(const gfx_ctx_driver_t *data)
+{
+   if (!data)
+      return false;
+   current_video_context                     = *data;
+   video_context_driver_reset();
+   return true;
+}
+
+void video_context_driver_destroy(void)
+{
+   current_video_context.init                       = NULL;
+   current_video_context.bind_api                   = NULL;
+   current_video_context.swap_interval              = NULL;
+   current_video_context.set_video_mode             = NULL;
+   current_video_context.get_video_size             = NULL;
+   current_video_context.get_video_output_size      = NULL;
+   current_video_context.get_video_output_prev      = NULL;
+   current_video_context.get_video_output_next      = NULL;
+   current_video_context.get_metrics                = get_metrics_null;
+   current_video_context.translate_aspect           = NULL;
+   current_video_context.update_window_title        = update_window_title_null;
+   current_video_context.check_window               = NULL;
+   current_video_context.set_resize                 = set_resize_null;
+   current_video_context.has_focus                  = NULL;
+   current_video_context.suppress_screensaver       = NULL;
+   current_video_context.has_windowed               = NULL;
+   current_video_context.swap_buffers               = swap_buffers_null;
+   current_video_context.input_driver               = NULL;
+   current_video_context.get_proc_address           = NULL;
+   current_video_context.image_buffer_init          = NULL;
+   current_video_context.image_buffer_write         = NULL;
+   current_video_context.show_mouse                 = NULL;
+   current_video_context.ident                      = NULL;
+   current_video_context.get_flags                  = NULL;
+   current_video_context.set_flags                  = NULL;
+   current_video_context.bind_hw_render             = NULL;
+   current_video_context.get_context_data           = NULL;
+   current_video_context.make_current               = NULL;
+}
+
 /**
  * video_driver_get_current_framebuffer:
  *
@@ -960,6 +1016,8 @@ static bool video_driver_init_internal(bool *video_is_threaded)
 #if defined(PSP)
    video_driver_set_texture_frame(&dummy_pixels, false, 1, 1, 1.0f);
 #endif
+
+   video_context_driver_reset();
 
    return true;
 
@@ -2757,56 +2815,6 @@ void video_context_driver_make_current(bool release)
       current_video_context.make_current(release);
 }
 
-bool video_context_driver_set(const gfx_ctx_driver_t *data)
-{
-   if (!data)
-      return false;
-   current_video_context                     = *data;
-   if (!current_video_context.get_metrics)
-      current_video_context.get_metrics         = get_metrics_null;
-
-   if (!current_video_context.update_window_title)
-      current_video_context.update_window_title = update_window_title_null;
-
-   if (!current_video_context.set_resize)
-      current_video_context.set_resize          = set_resize_null;
-
-   if (!current_video_context.swap_buffers)
-      current_video_context.swap_buffers        = swap_buffers_null;
-   return true;
-}
-
-void video_context_driver_destroy(void)
-{
-   current_video_context.init                       = NULL;
-   current_video_context.bind_api                   = NULL;
-   current_video_context.swap_interval              = NULL;
-   current_video_context.set_video_mode             = NULL;
-   current_video_context.get_video_size             = NULL;
-   current_video_context.get_video_output_size      = NULL;
-   current_video_context.get_video_output_prev      = NULL;
-   current_video_context.get_video_output_next      = NULL;
-   current_video_context.get_metrics                = get_metrics_null;
-   current_video_context.translate_aspect           = NULL;
-   current_video_context.update_window_title        = update_window_title_null;
-   current_video_context.check_window               = NULL;
-   current_video_context.set_resize                 = set_resize_null;
-   current_video_context.has_focus                  = NULL;
-   current_video_context.suppress_screensaver       = NULL;
-   current_video_context.has_windowed               = NULL;
-   current_video_context.swap_buffers               = swap_buffers_null;
-   current_video_context.input_driver               = NULL;
-   current_video_context.get_proc_address           = NULL;
-   current_video_context.image_buffer_init          = NULL;
-   current_video_context.image_buffer_write         = NULL;
-   current_video_context.show_mouse                 = NULL;
-   current_video_context.ident                      = NULL;
-   current_video_context.get_flags                  = NULL;
-   current_video_context.set_flags                  = NULL;
-   current_video_context.bind_hw_render             = NULL;
-   current_video_context.get_context_data           = NULL;
-   current_video_context.make_current               = NULL;
-}
 
 bool video_context_driver_translate_aspect(gfx_ctx_aspect_t *aspect)
 {
