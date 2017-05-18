@@ -159,7 +159,7 @@ bool task_push_audio_mixer_load(const char *fullpath, retro_task_callback_t cb, 
    retro_task_t                   *t  = (retro_task_t*)calloc(1, sizeof(*t));
 
    if (!t)
-      goto error_msg;
+      goto error;
 
    nbio               = (nbio_handle_t*)calloc(1, sizeof(*nbio));
 
@@ -214,9 +214,9 @@ error:
       nbio_free(nbio->handle);
       free(nbio);
    }
-   free(t);
+   if (t)
+      free(t);
 
-error_msg:
    RARCH_ERR("[audio mixer load] Failed to open '%s': %s.\n",
          fullpath, strerror(errno));
 
