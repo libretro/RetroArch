@@ -1574,7 +1574,7 @@ static int action_ok_lookup_setting(const char *path,
 static int action_ok_menu_wallpaper(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   filebrowser_set_type(FILEBROWSER_SELECT_FILE);
+   filebrowser_set_type(FILEBROWSER_SELECT_IMAGE);
    return action_ok_lookup_setting(path, label, type, idx, entry_idx);
 }
 
