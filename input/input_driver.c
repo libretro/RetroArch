@@ -95,6 +95,9 @@ static const input_driver_t *input_drivers[] = {
 #ifdef DJGPP
    &input_dos,
 #endif
+#ifdef _WIN32
+   &input_winraw,
+#endif
    &input_null,
    NULL,
 };

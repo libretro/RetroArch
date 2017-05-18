@@ -756,6 +756,10 @@ ifeq ($(HAVE_PARPORT), 1)
    OBJ += input/drivers_joypad/parport_joypad.o
 endif
 
+ifneq ($(findstring Win32,$(OS)),)
+   OBJ += input/drivers/winraw_input.o
+endif
+
 # Companion UI
 
 ifneq ($(findstring Win32,$(OS)),)
