@@ -1093,10 +1093,11 @@ bool input_driver_find_driver(void)
       current_input = (const input_driver_t*)
          input_driver_find_handle(0);
 
-      if (current_input)
-         return true;
-      retroarch_fail(1, "find_input_driver()");
-      return false;
+      if (!current_input)
+      {
+         retroarch_fail(1, "find_input_driver()");
+         return false;
+      }
    }
 
    return true;
