@@ -22,7 +22,6 @@
 
 #include <file/nbio.h>
 #include <audio/audio_mixer.h>
-#include <streams/file_stream.h>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
 
@@ -53,7 +52,7 @@ static void audio_mixer_stopped(audio_mixer_sound_t *sound, unsigned reason)
 
 static void task_audio_mixer_load_free(retro_task_t *task)
 {
-   nbio_handle_t       *nbio        = task ? (nbio_handle_t*)task->state : NULL;
+   nbio_handle_t       *nbio        = (nbio_handle_t*)task->state;
    struct audio_mixer_handle *image = (struct audio_mixer_handle*)nbio->data;
 
    if (image)
@@ -62,25 +61,23 @@ static void task_audio_mixer_load_free(retro_task_t *task)
          free(image->buffer);
    }
 
-   if (nbio)
-   {
-      free(nbio);
-   }
+   if (nbio->data)
+      free(nbio->data);
+   nbio_free(nbio->handle);
+   free(nbio);
 }
 
 static int cb_nbio_audio_mixer_load(void *data, size_t len)
 {
-   audio_mixer_sound_t *handle     = NULL;
    nbio_handle_t *nbio             = (nbio_handle_t*)data; 
-   struct audio_mixer_handle *image= nbio ? 
-      (struct audio_mixer_handle*)nbio->data : NULL;
+   struct audio_mixer_handle *image= (struct audio_mixer_handle*)nbio->data;
    void *ptr                       = nbio_get_ptr(nbio->handle, &len);
+   nbio_buf_t *buffer              = (nbio_buf_t*)calloc(1, sizeof(*image->buffer));
 
-   image->buffer                   = (nbio_buf_t*)calloc(1, sizeof(*image->buffer));
-
-   if (!image->buffer)
+   if (!buffer)
       return -1;
 
+   image->buffer                   = buffer;
    image->buffer->buf              = ptr;
    image->buffer->bufsize          = len;
    image->copy_data_over           = true;
@@ -212,6 +209,13 @@ bool task_push_audio_mixer_load(const char *fullpath, retro_task_callback_t cb, 
    return true;
 
 error:
+   if (nbio)
+   {
+      if (nbio->data)
+         free(nbio->data);
+      nbio_free(nbio->handle);
+      free(nbio);
+   }
    free(t);
 
 error_msg:
