@@ -88,7 +88,7 @@ static void task_audio_mixer_handle_upload_ogg(void *task_data,
 
    params.volume               = 1.0f;
    params.type                 = AUDIO_MIXER_TYPE_OGG;
-   params.state                = AUDIO_STREAM_STATE_PLAYING_LOOPED;
+   params.state                = AUDIO_STREAM_STATE_PLAYING;
    params.buf                  = img->buf;
    params.bufsize              = img->bufsize;
    params.cb                   = NULL;
@@ -110,7 +110,7 @@ static void task_audio_mixer_handle_upload_wav(void *task_data,
 
    params.volume               = 1.0f;
    params.type                 = AUDIO_MIXER_TYPE_WAV;
-   params.state                = AUDIO_STREAM_STATE_PLAYING_LOOPED;
+   params.state                = AUDIO_STREAM_STATE_PLAYING;
    params.buf                  = img->buf;
    params.bufsize              = img->bufsize;
    params.cb                   = NULL;

@@ -952,6 +952,13 @@ static void audio_driver_mixer_remove_stream(unsigned i)
    switch (audio_mixer_streams[i].state)
    {
       case AUDIO_STREAM_STATE_PLAYING:
+         audio_mixer_stop(voice);
+#if 0
+         /* TODO - crashes at this part */
+         if (handle)
+            audio_mixer_destroy(handle);
+#endif
+         break;
       case AUDIO_STREAM_STATE_PLAYING_LOOPED:
          audio_mixer_stop(voice);
 #if 0
