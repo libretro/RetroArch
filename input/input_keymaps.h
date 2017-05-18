@@ -59,6 +59,7 @@ extern const struct rarch_key_map rarch_key_map_android[];
 extern const struct rarch_key_map rarch_key_map_qnx[];
 extern const struct rarch_key_map rarch_key_map_dos[];
 extern const struct rarch_key_map rarch_key_map_wiiu[];
+extern const struct rarch_key_map rarch_key_map_winraw[];
 
 /**
  * input_keymaps_init_keyboard_lut:
