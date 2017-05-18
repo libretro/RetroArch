@@ -210,6 +210,11 @@ static bool video_shader_driver_filter_type_null(void *data, unsigned idx, bool 
    return false;
 }
 
+static unsigned video_shader_driver_num_null(void *data)
+{
+   return 0;
+}
+
 static void video_shader_driver_reset_to_defaults(void)
 {
    if (!current_shader->wrap_type)
@@ -228,6 +233,8 @@ static void video_shader_driver_reset_to_defaults(void)
       current_shader->mipmap_input      = video_shader_driver_mipmap_input_null;
    if (!current_shader->filter_type)
       current_shader->filter_type       = video_shader_driver_filter_type_null;
+   if (!current_shader->num_shaders)
+      current_shader->num_shaders       = video_shader_driver_num_null;
 }
 
 /* Finds first suitable shader context driver. */
@@ -293,9 +300,8 @@ bool video_shader_driver_info(video_shader_ctx_info_t *shader_info)
    if (!shader_info)
       return false;
 
-   shader_info->num = 0;
-   if (current_shader->num_shaders)
-      shader_info->num = current_shader->num_shaders(shader_data);
+   shader_info->num = current_shader->num_shaders(shader_data);
+
    return true;
 }
 

@@ -61,12 +61,6 @@ static void shader_null_set_uniform_parameter(
 {
 }
 
-static unsigned shader_null_num(void *data)
-{
-   return 0;
-}
-
-
 static unsigned shader_null_get_prev_textures(void *data)
 {
    return 0;
@@ -99,7 +93,7 @@ const shader_backend_t shader_null_backend = {
    shader_null_set_uniform_parameter,
    shader_null_compile_program,
    NULL,
-   shader_null_num,
+   NULL,
    NULL,
    NULL,
    NULL,
