@@ -130,6 +130,8 @@ static unsigned            video_driver_state_scale      = 0;
 static unsigned            video_driver_state_out_bpp    = 0;
 static bool                video_driver_state_out_rgb32  = false;
 
+static struct retro_system_av_info video_driver_av_info;
+
 static enum retro_pixel_format video_driver_pix_fmt      = RETRO_PIXEL_FORMAT_0RGB1555;
 
 static const void *frame_cache_data                      = NULL;
@@ -599,8 +601,7 @@ static void video_driver_init_filter(enum retro_pixel_format colfmt)
    void *buf                            = NULL;
    struct retro_game_geometry *geom     = NULL;
    settings_t *settings                 = config_get_ptr();
-   struct retro_system_av_info *av_info =
-      video_viewport_get_system_av_info();
+   struct retro_system_av_info *av_info = &video_driver_av_info;
 
    /* Deprecated format. Gets pre-converted. */
    if (colfmt == RETRO_PIXEL_FORMAT_0RGB1555)
@@ -838,8 +839,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    static uint16_t dummy_pixels[32]       = {0};
    video_viewport_t *custom_vp            = &video_viewport_custom;
    settings_t *settings                   = config_get_ptr();
-   struct retro_system_av_info *av_info   =
-      video_viewport_get_system_av_info();
+   struct retro_system_av_info *av_info   = &video_driver_av_info;
 
    video_driver_filter_free();
 
@@ -1338,8 +1338,7 @@ void video_driver_monitor_adjust_system_rates(void)
 {
    float timing_skew;
    const struct retro_system_timing *info = NULL;
-   struct retro_system_av_info *av_info   =
-      video_viewport_get_system_av_info();
+   struct retro_system_av_info *av_info   = &video_driver_av_info;
    settings_t *settings                   = config_get_ptr();
    float video_refresh_rate               = settings->floats.video_refresh_rate;
 
@@ -1541,8 +1540,8 @@ bool video_driver_supports_read_frame_raw(void)
 
 void video_driver_set_viewport_config(void)
 {
-   settings_t *settings = config_get_ptr();
-   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+   settings_t *settings                   = config_get_ptr();
+   struct retro_system_av_info *av_info   = &video_driver_av_info;
 
    if (settings->floats.video_aspect_ratio < 0.0f)
    {
@@ -1579,8 +1578,7 @@ void video_driver_set_viewport_square_pixel(void)
    unsigned len, highest, i, aspect_x, aspect_y;
    unsigned width, height;
    struct retro_game_geometry *geom     = NULL;
-   struct retro_system_av_info *av_info = 
-      video_viewport_get_system_av_info();
+   struct retro_system_av_info *av_info = &video_driver_av_info;
 
    if (av_info)
       geom = &av_info->geometry;
@@ -1615,9 +1613,8 @@ void video_driver_set_viewport_square_pixel(void)
 
 void video_driver_set_viewport_core(void)
 {
-   struct retro_system_av_info *av_info = 
-      video_viewport_get_system_av_info();
-   struct retro_game_geometry *geom = &av_info->geometry;
+   struct retro_system_av_info *av_info = &video_driver_av_info;
+   struct retro_game_geometry *geom     = &av_info->geometry;
 
    if (!geom || geom->base_width <= 0.0f || geom->base_height <= 0.0f)
       return;
@@ -2112,12 +2109,8 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
       unsigned base_width;
       /* Use system reported sizes as these define the 
        * geometry for the "normal" case. */
-      struct retro_system_av_info *av_info = 
-         video_viewport_get_system_av_info();
-      unsigned base_height = 0;
-      
-      if (av_info)
-         base_height = av_info->geometry.base_height;
+      struct retro_system_av_info *av_info = &video_driver_av_info;
+      unsigned base_height                 = av_info->geometry.base_height;
 
       if (base_height == 0)
          base_height = 1;
@@ -2161,9 +2154,7 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
 
 struct retro_system_av_info *video_viewport_get_system_av_info(void)
 {
-   static struct retro_system_av_info av_info;
-
-   return &av_info;
+   return &video_driver_av_info;
 }
 
 struct video_viewport *video_viewport_get_custom(void)
