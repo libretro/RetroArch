@@ -203,6 +203,13 @@ static bool video_shader_driver_mipmap_input_null(void *data, unsigned idx)
    return false;
 }
 
+static bool video_shader_driver_filter_type_null(void *data, unsigned idx, bool *smooth)
+{
+   (void)idx;
+   (void)smooth;
+   return false;
+}
+
 static void video_shader_driver_reset_to_defaults(void)
 {
    if (!current_shader->wrap_type)
@@ -219,6 +226,8 @@ static void video_shader_driver_reset_to_defaults(void)
       current_shader->shader_scale      = video_shader_driver_scale_null;
    if (!current_shader->mipmap_input)
       current_shader->mipmap_input      = video_shader_driver_mipmap_input_null;
+   if (!current_shader->filter_type)
+      current_shader->filter_type       = video_shader_driver_filter_type_null;
 }
 
 /* Finds first suitable shader context driver. */
@@ -293,7 +302,6 @@ bool video_shader_driver_info(video_shader_ctx_info_t *shader_info)
 bool video_shader_driver_filter_type(video_shader_ctx_filter_t *filter)
 {
    if (     filter
-         && current_shader->filter_type 
          && current_shader->filter_type(shader_data,
             filter->index, filter->smooth))
       return true;

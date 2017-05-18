@@ -66,12 +66,6 @@ static unsigned shader_null_num(void *data)
    return 0;
 }
 
-static bool shader_null_filter_type(void *data, unsigned idx, bool *smooth)
-{
-   (void)idx;
-   (void)smooth;
-   return false;
-}
 
 static unsigned shader_null_get_prev_textures(void *data)
 {
@@ -106,7 +100,7 @@ const shader_backend_t shader_null_backend = {
    shader_null_compile_program,
    NULL,
    shader_null_num,
-   shader_null_filter_type,
+   NULL,
    NULL,
    NULL,
    NULL,
