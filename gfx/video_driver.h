@@ -76,7 +76,8 @@ typedef void (*gfx_ctx_proc_t)(void);
 
 typedef struct video_frame_info video_frame_info_t;
 
-typedef void (*update_window_title)(void*, video_frame_info_t *video_info);
+typedef void (*update_window_title_cb)(void*, video_frame_info_t *video_info);
+typedef void (*swap_buffers_cb)(void*, video_frame_info_t *video_info);
 
 typedef struct video_info
 {
@@ -203,7 +204,8 @@ typedef struct video_frame_info
    float xmb_alpha_factor;
 
    char fps_text[128];
-   update_window_title cb_update_window_title;
+   update_window_title_cb cb_update_window_title;
+   swap_buffers_cb        cb_swap_buffers;
    void *context_data;
 } video_frame_info_t;
 
@@ -248,7 +250,7 @@ typedef struct gfx_ctx_driver
    float (*translate_aspect)(void*, unsigned, unsigned);
 
    /* Asks driver to update window title (FPS, etc). */
-   update_window_title update_window_title;
+   update_window_title_cb update_window_title;
 
    /* Queries for resize and quit events.
     * Also processes events. */
@@ -270,7 +272,7 @@ typedef struct gfx_ctx_driver
 
    /* Swaps buffers. VBlank sync depends on
     * earlier calls to swap_interval. */
-   void (*swap_buffers)(void*, video_frame_info_t *video_info);
+   swap_buffers_cb swap_buffers;
 
    /* Most video backends will want to use a certain input driver.
     * Checks for it here. */
@@ -905,10 +907,6 @@ void video_context_driver_make_current(bool restore);
 bool video_context_driver_set(const gfx_ctx_driver_t *data);
 
 void video_context_driver_destroy(void);
-
-#define video_context_driver_swap_buffers(video_info) \
-   if (current_video_context && current_video_context->swap_buffers) \
-      current_video_context->swap_buffers(video_context_data, video_info)
 
 #define video_context_driver_set_resize(mode_info) \
    if (current_video_context && current_video_context->set_resize) \

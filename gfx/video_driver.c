@@ -2322,6 +2322,14 @@ bool video_driver_texture_unload(uintptr_t *id)
    return true;
 }
 
+static void update_window_title_null(void *data, video_frame_info_t *video_info)
+{
+}
+
+static void swap_buffers_null(void *data, video_frame_info_t *video_info)
+{
+}
+
 void video_driver_build_info(video_frame_info_t *video_info)
 {
    bool is_perfcnt_enable            = false;
@@ -2412,11 +2420,15 @@ void video_driver_build_info(video_frame_info_t *video_info)
 
    video_info->context_data           = video_context_data;
 
-   video_info->cb_update_window_title = NULL;
+   video_info->cb_update_window_title = update_window_title_null;
+   video_info->cb_swap_buffers        = swap_buffers_null;
+
    if (current_video_context)
    {
       if (current_video_context->update_window_title)
          video_info->cb_update_window_title = current_video_context->update_window_title;
+      if (current_video_context->swap_buffers)
+         video_info->cb_swap_buffers        = current_video_context->swap_buffers;
    }
 
 #ifdef HAVE_THREADS
