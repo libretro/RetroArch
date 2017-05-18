@@ -49,7 +49,8 @@ void filebrowser_clear_type(void)
 
 void filebrowser_set_type(enum filebrowser_enums type)
 {
-   filebrowser_types = type;
+   if (filebrowser_types != FILEBROWSER_SELECT_FILE)
+      filebrowser_types = type;
 }
 
 void filebrowser_parse(void *data, unsigned type_data)
