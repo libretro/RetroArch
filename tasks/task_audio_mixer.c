@@ -41,15 +41,6 @@ struct audio_mixer_handle
    char path[4095];
 };
 
-static void audio_mixer_stopped(audio_mixer_sound_t *sound, unsigned reason)
-{
-   if (reason != AUDIO_MIXER_SOUND_REPEATED)
-   {
-      audio_mixer_destroy(sound);
-      audio_set_bool(AUDIO_ACTION_MIXER, false);
-   }
-}
-
 static void task_audio_mixer_load_free(retro_task_t *task)
 {
    nbio_handle_t       *nbio        = (nbio_handle_t*)task->state;
@@ -89,17 +80,20 @@ static int cb_nbio_audio_mixer_load(void *data, size_t len)
 static void task_audio_mixer_handle_upload_ogg(void *task_data,
       void *user_data, const char *err)
 {
+   audio_mixer_stream_params_t params;
    nbio_buf_t             *img = (nbio_buf_t*)task_data;
 
    if (!img)
       return;
 
-   {
-      audio_mixer_sound_t *handle = audio_mixer_load_ogg(img->buf, img->bufsize);
-      audio_mixer_play(handle, true, 1.0f, audio_mixer_stopped);
+   params.volume               = 1.0f;
+   params.type                 = AUDIO_MIXER_TYPE_OGG;
+   params.state                = AUDIO_STREAM_STATE_PLAYING_LOOPED;
+   params.buf                  = img->buf;
+   params.bufsize              = img->bufsize;
+   params.cb                   = NULL;
 
-      audio_set_bool(AUDIO_ACTION_MIXER, true);
-   }
+   audio_driver_mixer_add_stream(&params);
 
    free(img);
    free(user_data);
@@ -108,16 +102,20 @@ static void task_audio_mixer_handle_upload_ogg(void *task_data,
 static void task_audio_mixer_handle_upload_wav(void *task_data,
       void *user_data, const char *err)
 {
+   audio_mixer_stream_params_t params;
    nbio_buf_t *img = (nbio_buf_t*)task_data;
 
    if (!img)
       return;
-   {
-      audio_mixer_sound_t *handle = audio_mixer_load_wav(img->buf, img->bufsize);
-      audio_mixer_play(handle, true, 1.0f, audio_mixer_stopped);
 
-      audio_set_bool(AUDIO_ACTION_MIXER, true);
-   }
+   params.volume               = 1.0f;
+   params.type                 = AUDIO_MIXER_TYPE_WAV;
+   params.state                = AUDIO_STREAM_STATE_PLAYING_LOOPED;
+   params.buf                  = img->buf;
+   params.bufsize              = img->bufsize;
+   params.cb                   = NULL;
+
+   audio_driver_mixer_add_stream(&params);
 
    free(img);
    free(user_data);

@@ -302,17 +302,22 @@ audio_mixer_sound_t* audio_mixer_load_ogg(void *buffer, int32_t size)
 
 void audio_mixer_destroy(audio_mixer_sound_t* sound)
 {
+   void *handle = NULL;
    if (!sound)
       return;
 
    switch (sound->type)
    {
       case AUDIO_MIXER_TYPE_WAV:
-         memalign_free((void*)sound->types.wav.pcm);
+         handle = (void*)sound->types.wav.pcm;
+         if (handle)
+            memalign_free(handle);
          break;
       case AUDIO_MIXER_TYPE_OGG:
 #ifdef HAVE_STB_VORBIS
-         memalign_free((void*)sound->types.ogg.data);
+         handle = (void*)sound->types.ogg.data;
+         if (handle)
+            memalign_free(handle);
 #endif
          break;
       case AUDIO_MIXER_TYPE_NONE:

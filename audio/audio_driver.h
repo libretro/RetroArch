@@ -22,6 +22,7 @@
 #include <sys/types.h>
 
 #include <boolean.h>
+#include <audio/audio_mixer.h>
 #include <retro_common_api.h>
 
 RETRO_BEGIN_DECLS
@@ -122,6 +123,24 @@ typedef struct audio_driver
 
    size_t (*buffer_size)(void *data);
 } audio_driver_t;
+
+enum audio_mixer_state
+{
+   AUDIO_STREAM_STATE_NONE = 0,
+   AUDIO_STREAM_STATE_STOPPED,
+   AUDIO_STREAM_STATE_PLAYING,
+   AUDIO_STREAM_STATE_PLAYING_LOOPED
+};
+
+typedef struct audio_mixer_stream_params
+{
+   float volume;
+   enum audio_mixer_type  type;
+   enum audio_mixer_state state;
+   void *buf;
+   size_t bufsize;
+   audio_mixer_stop_cb_t cb;
+} audio_mixer_stream_params_t;
 
 void audio_driver_destroy_data(void);
 
@@ -230,6 +249,8 @@ bool *audio_get_bool_ptr(enum audio_action action);
 bool audio_driver_deinit(void);
 
 bool audio_driver_init(void);
+
+bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params);
 
 extern audio_driver_t audio_rsound;
 extern audio_driver_t audio_oss;
