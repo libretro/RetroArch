@@ -217,6 +217,12 @@ static unsigned video_shader_driver_num_null(void *data)
    return 0;
 }
 
+static bool video_shader_driver_get_feedback_pass_null(void *data, unsigned *idx)
+{
+   (void)idx;
+   return false;
+}
+
 static void video_shader_driver_reset_to_defaults(void)
 {
    if (!current_shader->wrap_type)
@@ -239,6 +245,8 @@ static void video_shader_driver_reset_to_defaults(void)
       current_shader->num_shaders       = video_shader_driver_num_null;
    if (!current_shader->get_current_shader)
       current_shader->get_current_shader= video_shader_driver_get_current_shader_null;
+   if (!current_shader->get_feedback_pass)
+      current_shader->get_feedback_pass = video_shader_driver_get_feedback_pass_null;
 }
 
 /* Finds first suitable shader context driver. */
@@ -275,18 +283,13 @@ bool video_shader_driver_init(video_shader_ctx_init_t *init)
 
 bool video_shader_driver_get_feedback_pass(unsigned *data)
 {
-   if (     current_shader 
-         && current_shader->get_feedback_pass
-         && current_shader->get_feedback_pass(shader_data, data))
-      return true;
-   return false;
+   return current_shader->get_feedback_pass(shader_data, data);
 }
 
 bool video_shader_driver_mipmap_input(unsigned *index)
 {
    return current_shader->mipmap_input(shader_data, *index);
 }
-
 
 bool video_shader_driver_scale(video_shader_ctx_scale_t *scaler)
 {
@@ -311,19 +314,14 @@ bool video_shader_driver_info(video_shader_ctx_info_t *shader_info)
 
 bool video_shader_driver_filter_type(video_shader_ctx_filter_t *filter)
 {
-   if (     filter
-         && current_shader->filter_type(shader_data,
-            filter->index, filter->smooth))
-      return true;
-   return false;
+   return (filter) ? current_shader->filter_type(shader_data, 
+         filter->index, filter->smooth) : false;
 }
 
 bool video_shader_driver_compile_program(struct shader_program_info *program_info)
 {
-   if (program_info)
-      return current_shader->compile_program(program_info->data,
-            program_info->idx, NULL, program_info);
-   return false;
+   return (program_info) ? current_shader->compile_program(program_info->data,
+         program_info->idx, NULL, program_info) : false;
 }
 
 bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap)

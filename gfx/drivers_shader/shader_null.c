@@ -66,12 +66,6 @@ static unsigned shader_null_get_prev_textures(void *data)
    return 0;
 }
 
-static bool shader_null_get_feedback_pass(void *data, unsigned *idx)
-{
-   (void)idx;
-   return false;
-}
-
 static bool shader_null_compile_program(
       void *data,
       unsigned idx,
@@ -96,7 +90,7 @@ const shader_backend_t shader_null_backend = {
    NULL,
    NULL,
    shader_null_get_prev_textures,
-   shader_null_get_feedback_pass,
+   NULL,
    NULL,
    NULL,
 
