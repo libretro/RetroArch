@@ -901,6 +901,9 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
    if (audio_mixer_current_max_idx >= MAX_STREAMS)
       return false;
 
+   if (params->state == AUDIO_STREAM_STATE_NONE)
+      return false;
+
    switch (params->type)
    {
       case AUDIO_MIXER_TYPE_WAV:
@@ -916,21 +919,16 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
    if (!handle)
       return false;
 
-   switch (params->state)
+   if (params->state == AUDIO_STREAM_STATE_PLAYING)
    {
-      case AUDIO_STREAM_STATE_NONE:
-         return false;
-      case AUDIO_STREAM_STATE_STOPPED:
-         break;
-      case AUDIO_STREAM_STATE_PLAYING:
-         voice = audio_mixer_play(handle, looped, params->volume, stop_cb);
-         audio_set_bool(AUDIO_ACTION_MIXER, true);
-         break;
-      case AUDIO_STREAM_STATE_PLAYING_LOOPED:
-         looped = true;
-         voice  = audio_mixer_play(handle, looped, params->volume, stop_cb);
-         audio_set_bool(AUDIO_ACTION_MIXER, true);
-         break;
+      voice = audio_mixer_play(handle, looped, params->volume, stop_cb);
+      audio_set_bool(AUDIO_ACTION_MIXER, true);
+   }
+   else if (params->state == AUDIO_STREAM_STATE_PLAYING_LOOPED)
+   {
+      looped = true;
+      voice  = audio_mixer_play(handle, looped, params->volume, stop_cb);
+      audio_set_bool(AUDIO_ACTION_MIXER, true);
    }
 
    audio_mixer_streams[audio_mixer_current_max_idx].handle  = handle;
