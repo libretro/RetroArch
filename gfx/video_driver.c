@@ -402,7 +402,7 @@ static bool get_metrics_null(void *data, enum display_metric_types type,
    return false;
 }
 
-bool set_resize_null(void *a, unsigned b, unsigned c)
+static bool set_resize_null(void *a, unsigned b, unsigned c)
 {
    return false;
 }
