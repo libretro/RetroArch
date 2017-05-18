@@ -140,12 +140,14 @@ bool video_shader_driver_deinit(void)
    return true;
 }
 
-static enum gfx_wrap_type video_shader_driver_wrap_type_null(void *data, unsigned index)
+static enum gfx_wrap_type video_shader_driver_wrap_type_null(
+      void *data, unsigned index)
 {
    return RARCH_WRAP_BORDER;
 }
 
-static bool video_shader_driver_set_mvp_null(void *data, void *shader_data, const math_matrix_4x4 *mat)
+static bool video_shader_driver_set_mvp_null(void *data,
+      void *shader_data, const math_matrix_4x4 *mat)
 {
 #ifdef HAVE_OPENGL
 #ifndef NO_GL_FF_MATRIX
@@ -156,7 +158,8 @@ static bool video_shader_driver_set_mvp_null(void *data, void *shader_data, cons
    return false;
 }
 
-static bool video_shader_driver_set_coords_null(void *handle_data, void *shader_data, const struct video_coords *coords)
+static bool video_shader_driver_set_coords_null(void *handle_data,
+      void *shader_data, const struct video_coords *coords)
 {
 #ifdef HAVE_OPENGL
 #ifndef NO_GL_FF_VERTEX
@@ -167,7 +170,8 @@ static bool video_shader_driver_set_coords_null(void *handle_data, void *shader_
    return false;
 }
 
-static void video_shader_driver_use_null(void *data, void *shader_data, unsigned idx, bool set_active)
+static void video_shader_driver_use_null(void *data,
+      void *shader_data, unsigned idx, bool set_active)
 {
    (void)data;
    (void)idx;
@@ -186,6 +190,19 @@ static void video_shader_driver_set_params_null(void *data, void *shader_data,
 {
 }
 
+static void video_shader_driver_scale_null(void *data,
+      unsigned idx, struct gfx_fbo_scale *scale)
+{
+   (void)idx;
+   (void)scale;
+}
+
+static bool video_shader_driver_mipmap_input_null(void *data, unsigned idx)
+{
+   (void)idx;
+   return false;
+}
+
 static void video_shader_driver_reset_to_defaults(void)
 {
    if (!current_shader->wrap_type)
@@ -198,6 +215,10 @@ static void video_shader_driver_reset_to_defaults(void)
       current_shader->use        = video_shader_driver_use_null;
    if (!current_shader->set_params)
       current_shader->set_params = video_shader_driver_set_params_null;
+   if (!current_shader->shader_scale)
+      current_shader->shader_scale      = video_shader_driver_scale_null;
+   if (!current_shader->mipmap_input)
+      current_shader->mipmap_input      = video_shader_driver_mipmap_input_null;
 }
 
 /* Finds first suitable shader context driver. */
@@ -243,11 +264,9 @@ bool video_shader_driver_get_feedback_pass(unsigned *data)
 
 bool video_shader_driver_mipmap_input(unsigned *index)
 {
-   if (     current_shader 
-         && current_shader->mipmap_input(shader_data, *index))
-      return true;
-   return false;
+   return current_shader->mipmap_input(shader_data, *index);
 }
+
 
 bool video_shader_driver_scale(video_shader_ctx_scale_t *scaler)
 {
@@ -256,16 +275,13 @@ bool video_shader_driver_scale(video_shader_ctx_scale_t *scaler)
 
    scaler->scale->valid = false;
 
-   if (!current_shader || !current_shader->shader_scale)
-      return false;
-
    current_shader->shader_scale(shader_data, scaler->idx, scaler->scale);
    return true;
 }
 
 bool video_shader_driver_info(video_shader_ctx_info_t *shader_info)
 {
-   if (!shader_info || !current_shader)
+   if (!shader_info)
       return false;
 
    shader_info->num = 0;
@@ -277,7 +293,6 @@ bool video_shader_driver_info(video_shader_ctx_info_t *shader_info)
 bool video_shader_driver_filter_type(video_shader_ctx_filter_t *filter)
 {
    if (     filter
-         && current_shader 
          && current_shader->filter_type 
          && current_shader->filter_type(shader_data,
             filter->index, filter->smooth))
@@ -287,10 +302,10 @@ bool video_shader_driver_filter_type(video_shader_ctx_filter_t *filter)
 
 bool video_shader_driver_compile_program(struct shader_program_info *program_info)
 {
-   if (!current_shader || !program_info)
-      return false;
-   return current_shader->compile_program(program_info->data,
-         program_info->idx, NULL, program_info);
+   if (program_info)
+      return current_shader->compile_program(program_info->data,
+            program_info->idx, NULL, program_info);
+   return false;
 }
 
 bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap)

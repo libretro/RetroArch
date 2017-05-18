@@ -73,22 +73,9 @@ static bool shader_null_filter_type(void *data, unsigned idx, bool *smooth)
    return false;
 }
 
-static void shader_null_shader_scale(void *data,
-      unsigned idx, struct gfx_fbo_scale *scale)
-{
-   (void)idx;
-   (void)scale;
-}
-
 static unsigned shader_null_get_prev_textures(void *data)
 {
    return 0;
-}
-
-static bool shader_null_mipmap_input(void *data, unsigned idx)
-{
-   (void)idx;
-   return false;
 }
 
 static bool shader_null_get_feedback_pass(void *data, unsigned *idx)
@@ -121,13 +108,13 @@ const shader_backend_t shader_null_backend = {
    shader_null_num,
    shader_null_filter_type,
    NULL,
-   shader_null_shader_scale,
+   NULL,
    NULL,
    NULL,
    NULL,
    shader_null_get_prev_textures,
    shader_null_get_feedback_pass,
-   shader_null_mipmap_input,
+   NULL,
    shader_null_get_current_shader,
 
    RARCH_SHADER_NONE,
