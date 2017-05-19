@@ -182,7 +182,7 @@ static int cb_nbio_image_menu_thumbnail(void *data, size_t len)
    nbio_handle_t *nbio             = (nbio_handle_t*)data; 
    struct nbio_image_handle *image = nbio ? 
       (struct nbio_image_handle*)nbio->data : NULL;
-   void *handle                    = image_transfer_new(image->type);
+   void *handle                    = image ? image_transfer_new(image->type) : NULL;
 
    if (!handle)
       return -1;
