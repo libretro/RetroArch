@@ -2250,6 +2250,7 @@ static enum runloop_state runloop_check_state(
       uint64_t old_input,
       uint64_t trigger_input,
       bool input_driver_is_nonblock,
+      bool menu_is_alive,
       unsigned *sleep_ms)
 {
    static bool old_focus            = true;
@@ -2275,7 +2276,7 @@ static enum runloop_state runloop_check_state(
    {
       bool fullscreen_toggled = !runloop_paused
 #ifdef HAVE_MENU
-         || menu_driver_is_alive();
+         || menu_is_alive;
 #endif
 
       if (fullscreen_toggled)
@@ -2334,7 +2335,7 @@ static enum runloop_state runloop_check_state(
    }
 
 #ifdef HAVE_MENU
-   if (menu_driver_is_alive())
+   if (menu_is_alive)
    {
       menu_ctx_iterate_t iter;
       core_poll();
@@ -2714,6 +2715,7 @@ int runloop_iterate(unsigned *sleep_ms)
             old_input,
             trigger_input,
             input_driver_is_nonblock,
+            menu_is_alive,
             sleep_ms))
    {
       case RUNLOOP_STATE_QUIT:
