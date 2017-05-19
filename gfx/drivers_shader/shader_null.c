@@ -88,7 +88,6 @@ const shader_backend_t shader_null_backend = {
    NULL,
    NULL,
    NULL,
-   NULL,
    shader_null_get_prev_textures,
    NULL,
    NULL,
