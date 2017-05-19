@@ -579,10 +579,22 @@ static void gfx_ctx_wgl_input_driver(void *data,
       const char *joypad_name,
       const input_driver_t **input, void **input_data)
 {
-   dinput_wgl           = input_dinput.init(joypad_name);
+   settings_t *settings = config_get_ptr();
 
-   *input               = dinput_wgl ? &input_dinput : NULL;
-   *input_data          = dinput_wgl;
+   if (memcmp(settings->arrays.input_driver, "raw", 4) == 0)
+   {
+      *input_data = input_winraw.init(joypad_name);
+      if (*input_data)
+      {
+         *input = &input_winraw;
+         dinput_wgl = NULL;
+         return;
+      }
+   }
+
+   dinput_wgl  = input_dinput.init(joypad_name);
+   *input      = dinput_wgl ? &input_dinput : NULL;
+   *input_data = dinput_wgl;
 }
 
 static bool gfx_ctx_wgl_has_focus(void *data)
