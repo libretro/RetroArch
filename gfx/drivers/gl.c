@@ -217,7 +217,6 @@ static void gl_overlay_tex_geom(void *data,
 
 static void gl_render_overlay(gl_t *gl, video_frame_info_t *video_info)
 {
-   video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
    unsigned i;
    unsigned width                      = video_info->width;
@@ -245,10 +244,7 @@ static void gl_render_overlay(gl_t *gl, video_frame_info_t *video_info)
 
    video_shader_driver_set_coords(coords);
 
-   mvp.data             = gl;
-   mvp.matrix           = &gl->mvp_no_rot;
-
-   video_shader_driver_set_mvp(mvp);
+   video_info->cb_shader_set_mvp(gl, video_info->shader_data, &gl->mvp_no_rot);
 
    for (i = 0; i < gl->overlays; i++)
    {
@@ -1001,7 +997,6 @@ static void gl_pbo_async_readback(gl_t *gl)
 
 static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
 {
-   video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
    GLfloat color[16];
    unsigned width         = video_info->width;
@@ -1041,10 +1036,7 @@ static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
 
    video_shader_driver_set_coords(coords);
 
-   mvp.data             = gl;
-   mvp.matrix           = &gl->mvp_no_rot;
-
-   video_shader_driver_set_mvp(mvp);
+   video_info->cb_shader_set_mvp(gl, video_info->shader_data, &gl->mvp_no_rot);
 
    glEnable(GL_BLEND);
 
@@ -1072,7 +1064,6 @@ static bool gl_frame(void *data, const void *frame,
       unsigned pitch, const char *msg,
       video_frame_info_t *video_info)
 {
-   video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
    video_shader_ctx_params_t params;
    struct video_tex_info feedback_info;
@@ -1230,10 +1221,7 @@ static bool gl_frame(void *data, const void *frame,
 
    video_shader_driver_set_coords(coords);
 
-   mvp.data             = gl;
-   mvp.matrix           = &gl->mvp;
-
-   video_shader_driver_set_mvp(mvp);
+   video_info->cb_shader_set_mvp(gl, video_info->shader_data, &gl->mvp);
 
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
