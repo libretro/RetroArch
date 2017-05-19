@@ -13,7 +13,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
 #include "../input_driver.h"
@@ -58,9 +57,9 @@ static winraw_mouse_t *g_mouse;
 
 HWND winraw_create_window(const char *cls_name, WNDPROC wnd_proc)
 {
-   WNDCLASSA wc = {0};
    HWND wnd;
    BOOL r;
+   WNDCLASSA wc = {0};
 
    wc.hInstance = GetModuleHandleA(NULL);
    if (!wc.hInstance)
@@ -94,9 +93,11 @@ error:
 
 void winraw_destroy_window(HWND wnd)
 {
-   WINDOWINFO wi = { sizeof(WINDOWINFO), .atomWindowType = 0 };
-   void *cls     = 0;
    BOOL r;
+   WINDOWINFO wi;
+
+   wi.cbSize         = sizeof(WINDOWINFO);
+   wi.atomWindowType = 0;
 
    if (!wnd)
       return;
@@ -109,7 +110,7 @@ void winraw_destroy_window(HWND wnd)
       WINRAW_SYS_WRN("DestroyWindow");
    if (wi.atomWindowType)
    {
-      cls += wi.atomWindowType;
+      void *cls = (void*)wi.atomWindowType;
       r = UnregisterClassA((LPCSTR)cls, NULL);
       if (!r)
          WINRAW_SYS_WRN("UnregisterClassA");
