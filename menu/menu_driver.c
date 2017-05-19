@@ -320,38 +320,6 @@ bool menu_display_font_flush_block(unsigned width, unsigned height,
    return true;
 }
 
-void menu_display_framebuffer_deinit(void)
-{
-   menu_display_framebuf_width  = 0;
-   menu_display_framebuf_height = 0;
-   menu_display_framebuf_pitch  = 0;
-}
-
-void menu_display_deinit(void)
-{
-   if (menu_display_msg_queue)
-      msg_queue_free(menu_display_msg_queue);
-
-   video_coord_array_free(&menu_disp_ca);
-   menu_display_msg_queue       = NULL;
-   menu_display_msg_force       = false;
-   menu_display_header_height   = 0;
-   menu_disp                    = NULL;
-   menu_display_has_windowed    = false;
-
-   menu_animation_ctl(MENU_ANIMATION_CTL_DEINIT, NULL);
-   menu_display_framebuffer_deinit();
-}
-
-bool menu_display_init(void)
-{
-   menu_display_msg_queue    = msg_queue_new(8);
-   menu_disp_ca.allocated    =  0;
-
-   menu_display_has_windowed = video_driver_has_windowed();
-   return true;
-}
-
 void menu_display_coords_array_reset(void)
 {
    menu_disp_ca.coords.vertices = 0;
@@ -1420,8 +1388,10 @@ static bool menu_init(menu_handle_t *menu_data)
 
    menu_shader_manager_init();
 
-   if (!menu_display_init())
-      return false;
+   menu_display_msg_queue    = msg_queue_new(8);
+   menu_disp_ca.allocated    =  0;
+
+   menu_display_has_windowed = video_driver_has_windowed();
 
    return true;
 }
@@ -1884,7 +1854,21 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             menu_userdata = NULL;
 
             menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_DEINIT, NULL);
-            menu_display_deinit();
+            if (menu_display_msg_queue)
+               msg_queue_free(menu_display_msg_queue);
+
+            video_coord_array_free(&menu_disp_ca);
+            menu_display_msg_queue       = NULL;
+            menu_display_msg_force       = false;
+            menu_display_header_height   = 0;
+            menu_disp                    = NULL;
+            menu_display_has_windowed    = false;
+
+            menu_animation_ctl(MENU_ANIMATION_CTL_DEINIT, NULL);
+
+            menu_display_framebuf_width  = 0;
+            menu_display_framebuf_height = 0;
+            menu_display_framebuf_pitch  = 0;
             menu_entries_ctl(MENU_ENTRIES_CTL_DEINIT, NULL);
 
             command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
