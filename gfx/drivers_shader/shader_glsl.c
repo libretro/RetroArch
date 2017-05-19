@@ -1433,10 +1433,10 @@ static bool gl_glsl_set_coords(void *handle_data, void *shader_data,
       /* Avoid hitting malloc on every single regular quad draw. */
 
       size_t elems  = 0;
-      elems        += (uni->color)         * 4;
-      elems        += (uni->tex_coord)     * 2;
-      elems        += (uni->vertex_coord)  * 2;
-      elems        += (uni->lut_tex_coord) * 2;
+      elems        += (uni->color >= 0)         * 4;
+      elems        += (uni->tex_coord >= 0)     * 2;
+      elems        += (uni->vertex_coord >= 0)  * 2;
+      elems        += (uni->lut_tex_coord >= 0) * 2;
 
       elems        *= coords->vertices * sizeof(GLfloat);
 
