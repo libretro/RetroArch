@@ -34,6 +34,7 @@
 #include <commdlg.h>
 
 #include <dynamic/dylib.h>
+#include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -581,7 +582,7 @@ static void gfx_ctx_wgl_input_driver(void *data,
 {
    settings_t *settings = config_get_ptr();
 
-   if (memcmp(settings->arrays.input_driver, "raw", 4) == 0)
+   if (string_is_equal_fast(settings->arrays.input_driver, "raw", 4))
    {
       *input_data = input_winraw.init(joypad_name);
       if (*input_data)
