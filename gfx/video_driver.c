@@ -121,6 +121,8 @@ typedef struct video_pixel_scaler
    void *scaler_out;
 } video_pixel_scaler_t;
 
+void (*video_driver_cb_shader_use)(void *data, void *shader_data, unsigned index, bool set_active);
+
 /* Opaque handles to currently running window.
  * Used by e.g. input drivers which bind to a window.
  * Drivers are responsible for setting these if an input driver
@@ -2512,11 +2514,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->cb_get_metrics         = current_video_context.get_metrics;
    video_info->cb_set_resize          = current_video_context.set_resize;
 
-   if (current_shader)
-      video_info->cb_shader_use       = current_shader->use;
-
-   if (!video_info->cb_shader_use)
-      video_info->cb_shader_use       = video_shader_driver_use_null;
+   video_info->cb_shader_use          = video_driver_cb_shader_use;
 
 #ifdef HAVE_THREADS
    video_driver_threaded_unlock(is_threaded);
@@ -3194,8 +3192,13 @@ static void video_shader_driver_reset_to_defaults(void)
       current_shader->set_mvp           = video_shader_driver_set_mvp_null;
    if (!current_shader->set_coords)
       current_shader->set_coords        = video_shader_driver_set_coords_null;
-   if (!current_shader->use)
+   if (current_shader->use)
+      video_driver_cb_shader_use        = current_shader->use;
+   else 
+   {
       current_shader->use               = video_shader_driver_use_null;
+      video_driver_cb_shader_use        = video_shader_driver_use_null;
+   }
    if (!current_shader->set_params)
       current_shader->set_params        = video_shader_driver_set_params_null;
    if (!current_shader->shader_scale)
