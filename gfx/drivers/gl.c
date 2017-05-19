@@ -808,7 +808,7 @@ static INLINE void gl_copy_frame(gl_t *gl,
 #endif
 }
 
-static INLINE void gl_set_shader_viewport(gl_t *gl, unsigned idx)
+static INLINE void gl_set_shader_viewports(gl_t *gl)
 {
    unsigned width, height;
    video_shader_ctx_info_t shader_info;
@@ -816,7 +816,14 @@ static INLINE void gl_set_shader_viewport(gl_t *gl, unsigned idx)
    video_driver_get_size(&width, &height);
 
    shader_info.data       = gl;
-   shader_info.idx        = idx;
+   shader_info.idx        = 0;
+   shader_info.set_active = true;
+
+   video_shader_driver_use(shader_info);
+   gl_set_viewport_wrapper(gl, width, height, false, true);
+
+   shader_info.data       = gl;
+   shader_info.idx        = 1;
    shader_info.set_active = true;
 
    video_shader_driver_use(shader_info);
@@ -1986,8 +1993,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    /* Apparently need to set viewport for passes
     * when we aren't using FBOs. */
-   gl_set_shader_viewport(gl, 0);
-   gl_set_shader_viewport(gl, 1);
+   gl_set_shader_viewports(gl);
 
    mip_level            = 1;
    gl->tex_mipmap       = video_shader_driver_mipmap_input(&mip_level);
@@ -2272,8 +2278,7 @@ static bool gl_set_shader(void *data,
 #endif
 
    /* Apparently need to set viewport for passes when we aren't using FBOs. */
-   gl_set_shader_viewport(gl, 0);
-   gl_set_shader_viewport(gl, 1);
+   gl_set_shader_viewports(gl);
    context_bind_hw_render(true);
 #if defined(_WIN32) && !defined(_XBOX)
    /* Shader dialog is disabled for now, until video_threaded issues are fixed.
