@@ -430,7 +430,6 @@ static void cocoagl_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned
 static void cocoagl_gfx_ctx_update_title(void *data, void *data2)
 {
    ui_window_cocoa_t view;
-   video_frame_info_t *video_info = (video_frame_info_t*)data2;
    const ui_window_t *window      = ui_companion_driver_get_window_ptr();
 
    view.data = (CocoaView*)nsview_get_ptr();
