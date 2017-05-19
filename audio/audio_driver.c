@@ -126,7 +126,7 @@ struct audio_mixer_stream
 };
 
 static unsigned audio_mixer_current_max_idx              = 0;
-static struct audio_mixer_stream audio_mixer_streams[AUDIO_MIXER_MAX_STREAMS] = {0};
+static struct audio_mixer_stream audio_mixer_streams[AUDIO_MIXER_MAX_STREAMS] = {{0}};
 
 static size_t audio_driver_chunk_size                    = 0;
 static size_t audio_driver_chunk_nonblock_size           = 0;
