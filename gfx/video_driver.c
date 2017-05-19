@@ -3046,11 +3046,7 @@ static const shader_backend_t *video_shader_set_backend(enum rarch_shader_type t
 bool video_shader_driver_get_prev_textures(video_shader_ctx_texture_t *texture)
 {
    if (!texture)
-   {
-      if (texture)
-         texture->id = 0;
       return false;
-   }
    texture->id = current_shader->get_prev_textures(shader_data);
 
    return true;
