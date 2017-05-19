@@ -427,7 +427,7 @@ INPUT
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX)
-#inxclude "../input/drivers/winraw_input.c"
+#include "../input/drivers/winraw_input.c"
 #endif
 
 #include "../input/input_autodetect_builtin.c"
