@@ -53,7 +53,7 @@ typedef struct
 static winraw_keyboard_t *g_keyboard = NULL;
 static winraw_mouse_t *g_mouse       = NULL;
 
-static HWND winraw_create_window(const char *cls_name, WNDPROC wnd_proc)
+static HWND winraw_create_window(WNDPROC wnd_proc)
 {
    HWND wnd;
    WNDCLASSA wc = {0};
@@ -67,14 +67,14 @@ static HWND winraw_create_window(const char *cls_name, WNDPROC wnd_proc)
    }
 
    wc.lpfnWndProc   = wnd_proc;
-   wc.lpszClassName = cls_name;
+   wc.lpszClassName = "winraw-input";
    if (!RegisterClassA(&wc) && GetLastError() != ERROR_CLASS_ALREADY_EXISTS)
    {
       WINRAW_SYS_ERR("RegisterClassA");
       return NULL;
    }
 
-   wnd = CreateWindowExA(0, cls_name, NULL, 0, 0, 0, 0, 0,
+   wnd = CreateWindowExA(0, wc.lpszClassName, NULL, 0, 0, 0, 0, 0,
          HWND_MESSAGE, NULL, NULL, NULL);
    if (!wnd)
    {
@@ -85,39 +85,26 @@ static HWND winraw_create_window(const char *cls_name, WNDPROC wnd_proc)
    return wnd;
 
 error:
-   UnregisterClassA(cls_name, NULL);
+   UnregisterClassA(wc.lpszClassName, NULL);
    return NULL;
 }
 
 static void winraw_destroy_window(HWND wnd)
 {
    BOOL r;
-   WINDOWINFO wi;
-
-   wi.cbSize         = sizeof(WINDOWINFO);
-   wi.atomWindowType = 0;
 
    if (!wnd)
       return;
-
-   r = GetWindowInfo(wnd, &wi);
-
-   if (!r)
-      WINRAW_SYS_WRN("GetWindowInfo");
 
    r = DestroyWindow(wnd);
 
    if (!r)
       WINRAW_SYS_WRN("DestroyWindow");
 
-   if (wi.atomWindowType)
-   {
-      void *cls = (void*)wi.atomWindowType;
-      r         = UnregisterClassA((LPCSTR)cls, NULL);
+   r = UnregisterClassA("winraw-input", NULL);
 
-      if (!r)
-         WINRAW_SYS_WRN("UnregisterClassA");
-   }
+   if (!r)
+      WINRAW_SYS_WRN("UnregisterClassA");
 }
 
 static bool winraw_set_keyboard_input(HWND window)
@@ -310,7 +297,7 @@ static void *winraw_init(const char *joypad_driver)
 
    input_keymaps_init_keyboard_lut(rarch_key_map_winraw);
 
-   wr->window = winraw_create_window("winraw-input", winraw_callback);
+   wr->window = winraw_create_window(winraw_callback);
    if (!wr->window)
    {
       WINRAW_ERR("winraw_create_window failed.");
