@@ -522,30 +522,30 @@ bool file_archive_extract_file(
    bool ret                                 = true;
    struct string_list *list                 = string_split(valid_exts, "|");
 
+   userdata.archive_path[0]                 = '\0';
+   userdata.first_extracted_file_path       = NULL;
+   userdata.extracted_file_path             = NULL;
+   userdata.extraction_directory            = extraction_directory;
+   userdata.archive_path_size               = archive_path_size;
+   userdata.ext                             = list;
+   userdata.list                            = NULL;
+   userdata.found_file                      = false;
+   userdata.list_only                       = false;
+   userdata.context                         = NULL;
+   userdata.archive_name[0]                 = '\0';
+   userdata.crc                             = 0;
+   userdata.dec                             = NULL;
+
+   userdata.decomp_state.opt_file           = NULL;
+   userdata.decomp_state.needle             = NULL;
+   userdata.decomp_state.size               = 0;
+   userdata.decomp_state.found              = NULL;
+
    if (!list)
    {
       ret = false;
       goto end;
    }
-
-   userdata.archive_path[0]           = '\0';
-   userdata.first_extracted_file_path = NULL;
-   userdata.extracted_file_path       = NULL;
-   userdata.extraction_directory      = extraction_directory;
-   userdata.archive_path_size         = archive_path_size;
-   userdata.ext                       = list;
-   userdata.list                      = NULL;
-   userdata.found_file                = false;
-   userdata.list_only                 = false;
-   userdata.context                   = NULL;
-   userdata.archive_name[0]           = '\0';
-   userdata.crc                       = 0;
-   userdata.dec                       = NULL;
-
-   userdata.decomp_state.opt_file     = NULL;
-   userdata.decomp_state.needle       = NULL;
-   userdata.decomp_state.size         = 0;
-   userdata.decomp_state.found        = NULL;
 
    if (!file_archive_walk(archive_path, valid_exts,
             file_archive_extract_cb, &userdata))

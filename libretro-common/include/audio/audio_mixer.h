@@ -31,8 +31,8 @@
 
 RETRO_BEGIN_DECLS
 
-typedef struct audio_mixer_sound_t audio_mixer_sound_t;
-typedef struct audio_mixer_voice_t audio_mixer_voice_t;
+typedef struct audio_mixer_sound audio_mixer_sound_t;
+typedef struct audio_mixer_voice audio_mixer_voice_t;
 
 typedef void (*audio_mixer_stop_cb_t)(audio_mixer_voice_t* voice, unsigned reason);
 
@@ -42,6 +42,7 @@ typedef void (*audio_mixer_stop_cb_t)(audio_mixer_voice_t* voice, unsigned reaso
 #define AUDIO_MIXER_SOUND_REPEATED 2
 
 void audio_mixer_init(unsigned rate);
+
 void audio_mixer_done(void);
 
 audio_mixer_sound_t* audio_mixer_load_wav(const char* path);
@@ -49,8 +50,10 @@ audio_mixer_sound_t* audio_mixer_load_ogg(const char* path);
 
 void audio_mixer_destroy(audio_mixer_sound_t* sound);
 
-audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound, bool repeat, float volume, audio_mixer_stop_cb_t stop_cb);
-void                 audio_mixer_stop(audio_mixer_voice_t* voice);
+audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
+      bool repeat, float volume, audio_mixer_stop_cb_t stop_cb);
+
+void audio_mixer_stop(audio_mixer_voice_t* voice);
 
 void audio_mixer_mix(float* buffer, size_t num_frames);
 

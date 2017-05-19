@@ -225,7 +225,7 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
    stream->fd = sceIoOpen(path, flags, mode_int);
 #else
 #if defined(HAVE_BUFFERED_IO)
-   if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
+   if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0 && mode_str)
    {
       stream->fp = fopen(path, mode_str);
       if (!stream->fp)

@@ -1,8 +1,17 @@
 diff --git a/audio/audio_driver.c b/audio/audio_driver.c
-index 10dcbc5b3..203e89d0a 100644
+index 10dcbc5b3..0d2bb4d85 100644
 --- a/audio/audio_driver.c
 +++ b/audio/audio_driver.c
-@@ -597,6 +597,8 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
+@@ -464,6 +464,8 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
+ 
+    audio_driver_free_samples_count = 0;
+ 
++   audio_mixer_init(48000);
++
+    /* Threaded driver is initially stopped. */
+    if (
+          audio_driver_active
+@@ -597,6 +599,8 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
  
     audio_driver_resampler->process(audio_driver_resampler_data, &src_data);
  
@@ -21,7 +30,7 @@ index 0e3a8dc44..4f79b2ed7 100644
     if (runloop_cmd_triggered(trigger_input, RARCH_RESET))
 +   {
        command_event(CMD_EVENT_RESET, NULL);
-+      audio_mixer_load_wav("/home/squarepusher/piano2.wav");
++      audio_mixer_load_ogg("/home/squarepusher/SumertimeBlues.ogg");
 +   }
  
     cheat_manager_state_checks(

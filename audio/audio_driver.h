@@ -33,6 +33,13 @@ RETRO_BEGIN_DECLS
 
 #define AUDIO_MAX_RATIO                16
 
+enum audio_action
+{
+   AUDIO_ACTION_NONE = 0,
+   AUDIO_ACTION_RATE_CONTROL_DELTA,
+   AUDIO_ACTION_MUTE_ENABLE
+};
+
 typedef struct audio_driver
 {
    /* Creates and initializes handle to audio driver.
@@ -208,6 +215,12 @@ bool audio_driver_owns_driver(void);
 void audio_driver_unset_callback(void);
 
 void audio_driver_frame_is_reverse(void);
+
+void audio_set_float(enum audio_action action, float val);
+
+float *audio_get_float_ptr(enum audio_action action);
+
+bool *audio_get_bool_ptr(enum audio_action action);
 
 bool audio_driver_deinit(void);
 

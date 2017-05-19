@@ -106,7 +106,7 @@ static const audio_driver_t *audio_drivers[] = {
    &audio_rwebaudio,
 #endif
 #if defined(PSP) || defined(VITA)
-   &audio_psp,
+  &audio_psp,
 #endif   
 #ifdef _3DS
    &audio_ctr_csnd,
@@ -122,37 +122,42 @@ static size_t audio_driver_chunk_block_size              = 0;
 
 static size_t audio_driver_rewind_ptr                    = 0;
 static size_t audio_driver_rewind_size                   = 0;
-static int16_t *audio_driver_rewind_buf                  = NULL;
 
-static float *audio_driver_input_data                    = NULL;
+static int16_t *audio_driver_rewind_buf                  = NULL;
+static int16_t *audio_driver_output_samples_conv_buf     = NULL;
 
 static unsigned audio_driver_free_samples_buf[AUDIO_BUFFER_FREE_SAMPLES_COUNT];
 static uint64_t audio_driver_free_samples_count          = 0;
 
-static float   *audio_driver_output_samples_buf          = NULL;
-static int16_t *audio_driver_output_samples_conv_buf     = NULL;
-
-static float audio_driver_volume_gain                    = 0.0f;
-
 static size_t audio_driver_buffer_size                   = 0;
 static size_t audio_driver_data_ptr                      = 0;
 
-static bool  audio_driver_control                        = false; 
+static bool audio_driver_control                         = false; 
+static bool audio_driver_mute_enable                     = false;
+static bool audio_driver_use_float                       = false;
+static bool audio_driver_active                          = false;
+static bool audio_driver_data_own                        = false;
+static bool audio_mixer_active                           = false;
+
+static float audio_driver_rate_control_delta             = 0.0f;
 static float audio_driver_input                          = 0.0f;
+static float audio_driver_volume_gain                    = 0.0f;
+
+static float *audio_driver_input_data                    = NULL;
+static float *audio_driver_output_samples_buf            = NULL;
+
 static double audio_source_ratio_original                = 0.0f;
 static double audio_source_ratio_current                 = 0.0f;
+
 static struct retro_audio_callback audio_callback        = {0};
 
 static retro_dsp_filter_t *audio_driver_dsp              = NULL;
 static struct string_list *audio_driver_devices_list     = NULL;
 static const retro_resampler_t *audio_driver_resampler   = NULL;
+
 static void *audio_driver_resampler_data                 = NULL;
 static const audio_driver_t *current_audio               = NULL;
 static void *audio_driver_context_audio_data             = NULL;
-
-static bool audio_driver_use_float                       = false;
-static bool audio_driver_active                          = false;
-static bool audio_driver_data_own                        = false;
 
 /**
  * compute_audio_buffer_statistics:
@@ -464,6 +469,8 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
 
    audio_driver_free_samples_count = 0;
 
+   audio_mixer_init(settings->uints.audio_out_rate);
+
    /* Threaded driver is initially stopped. */
    if (
          audio_driver_active
@@ -513,7 +520,6 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    bool is_slowmotion                                   = false;
    const void *output_data                              = NULL;
    unsigned output_frames                               = 0;
-   settings_t *settings                                 = config_get_ptr();
 
    src_data.data_in                                     = NULL;
    src_data.data_out                                    = NULL;
@@ -527,7 +533,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    runloop_get_status(&is_paused, &is_idle, &is_slowmotion,
          &is_perfcnt_enable);
 
-   if (is_paused || settings->bools.audio_mute_enable)
+   if (is_paused || audio_driver_mute_enable)
       return true;
    if (!audio_driver_active || !audio_driver_input_data)
       return false;
@@ -555,8 +561,8 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
 
       if (dsp_data.output)
       {
-         src_data.data_in      = dsp_data.output;
-         src_data.input_frames = dsp_data.output_frames;
+         src_data.data_in            = dsp_data.output;
+         src_data.input_frames       = dsp_data.output_frames;
       }
    }
 
@@ -572,14 +578,15 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
          (int)current_audio->write_avail(audio_driver_context_audio_data);
       int      delta_mid   = avail - half_size;
       double   direction   = (double)delta_mid / half_size;
-      double   adjust      = 1.0 + settings->floats.audio_rate_control_delta * direction;
+      double   adjust      = 1.0 + audio_driver_rate_control_delta * direction;
 
 #if 0
       RARCH_LOG_OUTPUT("[Audio]: Audio buffer is %u%% full\n",
             (unsigned)(100 - (avail * 100) / audio_driver_buffer_size));
 #endif
 
-      audio_driver_free_samples_buf[write_idx] = avail;
+      audio_driver_free_samples_buf
+         [write_idx]               = avail;
       audio_source_ratio_current   = 
          audio_source_ratio_original * adjust;
 
@@ -590,25 +597,31 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
 #endif
    }
 
-   src_data.ratio = audio_source_ratio_current;
+   src_data.ratio     = audio_source_ratio_current;
 
    if (is_slowmotion)
-      src_data.ratio *= settings->floats.slowmotion_ratio;
+   {
+      settings_t *settings  = config_get_ptr();
+      src_data.ratio       *= settings->floats.slowmotion_ratio;
+   }
 
    audio_driver_resampler->process(audio_driver_resampler_data, &src_data);
 
-   output_data   = audio_driver_output_samples_buf;
-   output_frames = (unsigned)src_data.output_frames;
+   if (audio_mixer_active)
+      audio_mixer_mix(audio_driver_output_samples_buf, src_data.output_frames);
+
+   output_data        = audio_driver_output_samples_buf;
+   output_frames      = (unsigned)src_data.output_frames;
 
    if (audio_driver_use_float)
-      output_frames *= sizeof(float);
+      output_frames  *= sizeof(float);
    else
    {
       convert_float_to_s16(audio_driver_output_samples_conv_buf,
             (const float*)output_data, output_frames * 2);
 
-      output_data = audio_driver_output_samples_conv_buf;
-      output_frames *= sizeof(int16_t);
+      output_data     = audio_driver_output_samples_conv_buf;
+      output_frames  *= sizeof(int16_t);
    }
 
    if (current_audio->write(audio_driver_context_audio_data,
@@ -754,6 +767,7 @@ void audio_driver_monitor_adjust_system_rates(void)
    const struct retro_system_timing *info = NULL;
    struct retro_system_av_info   *av_info = video_viewport_get_system_av_info();
    float video_refresh_rate               = settings->floats.video_refresh_rate;
+   float max_timing_skew                  = settings->floats.audio_max_timing_skew;
    
    if (av_info)
       info = (const struct retro_system_timing*)&av_info->timing;
@@ -764,7 +778,7 @@ void audio_driver_monitor_adjust_system_rates(void)
    timing_skew             = fabs(1.0f - info->fps / video_refresh_rate);
    audio_driver_input      = info->sample_rate;
 
-   if (timing_skew <= settings->floats.audio_max_timing_skew)
+   if (timing_skew <= max_timing_skew)
       audio_driver_input *= (video_refresh_rate / info->fps);
 
    RARCH_LOG("[Audio]: Set audio input rate to: %.2f Hz.\n",
@@ -872,6 +886,7 @@ bool audio_driver_get_devices_list(void **data)
 
 bool audio_driver_deinit(void)
 {
+   audio_mixer_done();
    audio_driver_free_devices_list();
    if (!audio_driver_deinit_internal())
       return false;
@@ -937,14 +952,13 @@ bool audio_driver_has_callback(void)
 bool audio_driver_toggle_mute(void)
 {
    settings_t *settings = config_get_ptr();
-   bool new_mute_state  = !settings->bools.audio_mute_enable;
+   bool new_mute_state  = !audio_driver_mute_enable;
    if (!audio_driver_context_audio_data)
       return false;
    if (!audio_driver_active)
       return false;
 
-   configuration_set_bool(settings,
-         settings->bools.audio_mute_enable, new_mute_state);
+   audio_driver_mute_enable = new_mute_state;
 
    if (new_mute_state)
       command_event(CMD_EVENT_AUDIO_STOP, NULL);
@@ -1037,4 +1051,45 @@ void audio_driver_destroy(void)
    audio_driver_active   = false;
    audio_driver_data_own = false;
    current_audio         = NULL;
+}
+
+void audio_set_float(enum audio_action action, float val)
+{
+   switch (action)
+   {
+      case AUDIO_ACTION_RATE_CONTROL_DELTA:
+         audio_driver_rate_control_delta = val;
+         break;
+      case AUDIO_ACTION_NONE:
+      default:
+         break;
+   }
+}
+
+float *audio_get_float_ptr(enum audio_action action)
+{
+   switch (action)
+   {
+      case AUDIO_ACTION_RATE_CONTROL_DELTA:
+         return &audio_driver_rate_control_delta;
+      case AUDIO_ACTION_NONE:
+      default:
+         break;
+   }
+
+   return NULL;
+}
+
+bool *audio_get_bool_ptr(enum audio_action action)
+{
+   switch (action)
+   {
+      case AUDIO_ACTION_MUTE_ENABLE:
+         return &audio_driver_mute_enable;
+      case AUDIO_ACTION_NONE:
+      default:
+         break;
+   }
+
+   return NULL;
 }
