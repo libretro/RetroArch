@@ -20,10 +20,8 @@
 #include "../video_driver.h"
 #include "../../verbosity.h"
 
-#define WINRAW_LOG(msg)\
-      RARCH_LOG("[WINRAW]: "msg"\n")
-#define WINRAW_ERR(err)\
-      RARCH_ERR("[WINRAW]: "err"\n")
+#define WINRAW_LOG(msg) RARCH_LOG("[WINRAW]: "msg"\n")
+#define WINRAW_ERR(err) RARCH_ERR("[WINRAW]: "err"\n")
 
 #define WINRAW_SYS_WRN(fun)\
       RARCH_WARN("[WINRAW]: "fun" failed with error %lu.\n", GetLastError())
@@ -52,23 +50,23 @@ typedef struct
    bool mouse_grab;
 } winraw_input_t;
 
-static winraw_keyboard_t *g_keyboard;
-static winraw_mouse_t *g_mouse;
+static winraw_keyboard_t *g_keyboard = NULL;
+static winraw_mouse_t *g_mouse       = NULL;
 
-HWND winraw_create_window(const char *cls_name, WNDPROC wnd_proc)
+static HWND winraw_create_window(const char *cls_name, WNDPROC wnd_proc)
 {
    HWND wnd;
-   BOOL r;
    WNDCLASSA wc = {0};
 
    wc.hInstance = GetModuleHandleA(NULL);
+
    if (!wc.hInstance)
    {
       WINRAW_SYS_ERR("GetModuleHandleA");
       return NULL;
    }
 
-   wc.lpfnWndProc = wnd_proc;
+   wc.lpfnWndProc   = wnd_proc;
    wc.lpszClassName = cls_name;
    if (!RegisterClassA(&wc) && GetLastError() != ERROR_CLASS_ALREADY_EXISTS)
    {
@@ -91,7 +89,7 @@ error:
    return NULL;
 }
 
-void winraw_destroy_window(HWND wnd)
+static void winraw_destroy_window(HWND wnd)
 {
    BOOL r;
    WINDOWINFO wi;
@@ -103,15 +101,20 @@ void winraw_destroy_window(HWND wnd)
       return;
 
    r = GetWindowInfo(wnd, &wi);
+
    if (!r)
       WINRAW_SYS_WRN("GetWindowInfo");
+
    r = DestroyWindow(wnd);
+
    if (!r)
       WINRAW_SYS_WRN("DestroyWindow");
+
    if (wi.atomWindowType)
    {
       void *cls = (void*)wi.atomWindowType;
-      r = UnregisterClassA((LPCSTR)cls, NULL);
+      r         = UnregisterClassA((LPCSTR)cls, NULL);
+
       if (!r)
          WINRAW_SYS_WRN("UnregisterClassA");
    }
@@ -127,7 +130,8 @@ static bool winraw_set_keyboard_input(HWND window)
    rid.usUsagePage = 0x01; /* generic desktop */
    rid.usUsage     = 0x06; /* keyboard */
 
-   r = RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE));
+   r               = RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE));
+
    if (!r)
    {
       WINRAW_SYS_ERR("RegisterRawInputDevices");
@@ -143,15 +147,16 @@ static bool winraw_set_mouse_input(HWND window, bool grab)
    BOOL r;
 
    if (window)
-      rid.dwFlags = grab ? RIDEV_CAPTUREMOUSE : 0;
+      rid.dwFlags  = grab ? RIDEV_CAPTUREMOUSE : 0;
    else
-      rid.dwFlags = RIDEV_REMOVE;
+      rid.dwFlags  = RIDEV_REMOVE;
 
    rid.hwndTarget  = window;
    rid.usUsagePage = 0x01; /* generic desktop */
    rid.usUsage     = 0x02; /* mouse */
 
-   r = RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE));
+   r               = RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE));
+
    if (!r)
    {
       WINRAW_SYS_ERR("RegisterRawInputDevices");
@@ -211,10 +216,10 @@ static int16_t winraw_joypad_state(winraw_input_t *wr,
 static LRESULT CALLBACK winraw_callback(HWND wnd, UINT msg, WPARAM wpar, LPARAM lpar)
 {
    static uint8_t data[1024];
+   UINT r;
+   POINT crs_pos;
    RAWINPUT *ri = (RAWINPUT*)data;
    UINT size    = sizeof(data);
-   POINT crs_pos;
-   UINT r;
 
    if (msg != WM_INPUT)
       return DefWindowProcA(wnd, msg, wpar, lpar);
@@ -290,19 +295,18 @@ end:
 
 static void *winraw_init(const char *joypad_driver)
 {
-   winraw_input_t *wr;
-   bool r;
+   bool r             = false;
+   winraw_input_t *wr = (winraw_input_t *)calloc(1, sizeof(winraw_input_t));
+   g_keyboard         = (winraw_keyboard_t*)calloc(1, sizeof(winraw_keyboard_t));
+   g_mouse            = (winraw_mouse_t*)calloc(1, sizeof(winraw_mouse_t));
 
-   WINRAW_LOG("Initializing input driver ...");
-
-   wr = (winraw_input_t *)calloc(1, sizeof(winraw_input_t));
-   g_keyboard = (winraw_keyboard_t*)calloc(1, sizeof(winraw_keyboard_t));
-   g_mouse = (winraw_mouse_t*)calloc(1, sizeof(winraw_mouse_t));
    if (!wr || !g_keyboard || !g_mouse)
    {
       WINRAW_ERR("calloc failed.");
       goto error;
    }
+
+   WINRAW_LOG("Initializing input driver ...");
 
    input_keymaps_init_keyboard_lut(rarch_key_map_winraw);
 
