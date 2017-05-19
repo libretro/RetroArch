@@ -29,7 +29,6 @@
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
-#include "../../menu/menu_display.h"
 #endif
 
 #ifdef HW_RVL
