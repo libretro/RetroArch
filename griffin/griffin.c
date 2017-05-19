@@ -426,6 +426,10 @@ INPUT
 #include "../input/common/x11_input_common.c"
 #endif
 
+#if defined(_WIN32) && !defined(_XBOX)
+#inxclude "../input/drivers/winraw_input.c"
+#endif
+
 #include "../input/input_autodetect_builtin.c"
 
 #if defined(__CELLOS_LV2__)
