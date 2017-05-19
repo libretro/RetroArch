@@ -249,7 +249,7 @@ static void menu_driver_toggle(bool on)
    retro_keyboard_event_t *key_event          = NULL;
    retro_keyboard_event_t *frontend_key_event = NULL;
    settings_t                 *settings       = config_get_ptr();
-   bool pause_libretro                        = settings->bools.menu_pause_libretro;
+   bool pause_libretro                        = settings ? settings->bools.menu_pause_libretro : false;
 
    menu_driver_toggled = on;
 

@@ -1244,7 +1244,8 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
    node             = (mui_node_t*)menu_entries_get_userdata_at_offset(
          list, selection);
 
-   menu_display_draw_quad(
+   if (node)
+      menu_display_draw_quad(
       0,
       header_height - mui->scroll_y + node->y,
       width,
