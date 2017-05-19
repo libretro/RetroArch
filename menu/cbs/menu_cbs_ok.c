@@ -251,7 +251,6 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type                 = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_FILE_BROWSER_SELECT_DIR:
-         filebrowser_set_type(FILEBROWSER_SELECT_DIR);
          if (path)
             strlcpy(menu->deferred_path, path,
                   sizeof(menu->deferred_path));
@@ -351,7 +350,6 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_CONTENT_COLLECTION_LIST:
-         filebrowser_set_type(FILEBROWSER_SELECT_COLLECTION);
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = settings->paths.directory_playlist;
@@ -3273,6 +3271,7 @@ static int action_ok_browse_url_list(const char *path,
 static int action_ok_content_collection_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   filebrowser_set_type(FILEBROWSER_SELECT_COLLECTION);
    return generic_action_ok_displaylist_push(path, NULL, label, type, idx,
          entry_idx, ACTION_OK_DL_CONTENT_COLLECTION_LIST);
 }
@@ -3635,6 +3634,7 @@ int action_ok_push_generic_list(const char *path,
 int action_ok_push_filebrowser_list_dir_select(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   filebrowser_set_type(FILEBROWSER_SELECT_DIR);
    strlcpy(filebrowser_label, label, sizeof(filebrowser_label));
    return generic_action_ok_displaylist_push(path, NULL, label, type, idx,
          entry_idx, ACTION_OK_DL_FILE_BROWSER_SELECT_DIR);
