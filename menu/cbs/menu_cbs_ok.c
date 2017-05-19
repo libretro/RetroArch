@@ -1576,6 +1576,13 @@ static int action_ok_menu_wallpaper(const char *path,
    return action_ok_lookup_setting(path, label, type, idx, entry_idx);
 }
 
+static int action_ok_menu_font(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   filebrowser_set_type(FILEBROWSER_SELECT_FONT);
+   return action_ok_lookup_setting(path, label, type, idx, entry_idx);
+}
+
 static int action_ok_menu_wallpaper_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -4164,6 +4171,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       {
          case MENU_ENUM_LABEL_MENU_WALLPAPER:
             BIND_ACTION_OK(cbs, action_ok_menu_wallpaper);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_FONT_PATH:
+            BIND_ACTION_OK(cbs, action_ok_menu_font);
             break;
          case MENU_ENUM_LABEL_BROWSE_START:
             BIND_ACTION_OK(cbs, action_ok_browse_url_start);

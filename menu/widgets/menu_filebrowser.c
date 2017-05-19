@@ -140,7 +140,10 @@ void filebrowser_parse(void *data, unsigned type_data)
                break;
             case RARCH_PLAIN_FILE:
             default:
-               file_type = (enum msg_file_type)info->type_default;
+               if (filebrowser_types == FILEBROWSER_SELECT_FONT)
+                  file_type = FILE_TYPE_FONT;
+               else
+                  file_type = (enum msg_file_type)info->type_default;
                switch (type)
                {
                   /* in case of deferred_core_list we have to interpret
