@@ -1003,7 +1003,6 @@ static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
 {
    video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
-   video_shader_ctx_info_t shader_info;
    GLfloat color[16];
    unsigned width         = video_info->width;
    unsigned height        = video_info->height;
@@ -1033,11 +1032,7 @@ static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
    gl->coords.color     = color;
    glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
 
-   shader_info.data       = gl;
-   shader_info.idx        = VIDEO_SHADER_STOCK_BLEND;
-   shader_info.set_active = true;
-
-   video_shader_driver_use(shader_info);
+   video_info->cb_shader_use(gl, video_info->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
 
    gl->coords.vertices  = 4;
 
