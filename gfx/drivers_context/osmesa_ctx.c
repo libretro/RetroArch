@@ -337,7 +337,7 @@ static bool osmesa_ctx_has_windowed(void *data)
    return true;
 }
 
-static void osmesa_ctx_swap_buffers(void *data, video_frame_info_t *video_info)
+static void osmesa_ctx_swap_buffers(void *data, void *data2)
 {
    gfx_ctx_osmesa_data_t *osmesa = (gfx_ctx_osmesa_data_t*)data;
    osmesa_fifo_accept(osmesa);

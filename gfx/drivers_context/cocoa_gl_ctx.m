@@ -427,10 +427,11 @@ static void cocoagl_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned
 }
 
 #if defined(HAVE_COCOA)
-static void cocoagl_gfx_ctx_update_title(void *data, video_frame_info_t *video_info)
+static void cocoagl_gfx_ctx_update_title(void *data, void *data2)
 {
    ui_window_cocoa_t view;
-   const ui_window_t *window  = ui_companion_driver_get_window_ptr();
+   video_frame_info_t *video_info = (video_frame_info_t*)data2;
+   const ui_window_t *window      = ui_companion_driver_get_window_ptr();
 
    view.data = (CocoaView*)nsview_get_ptr();
 
@@ -538,7 +539,7 @@ static bool cocoagl_gfx_ctx_has_windowed(void *data)
 }
 #endif
 
-static void cocoagl_gfx_ctx_swap_buffers(void *data, video_frame_info_t *video_info)
+static void cocoagl_gfx_ctx_swap_buffers(void *data, void *data2)
 {
    if (!(--g_fast_forward_skips < 0))
       return;

@@ -319,14 +319,6 @@ typedef struct video_shader_ctx_texture
 
 typedef void (*gfx_ctx_proc_t)(void);
 
-typedef struct video_frame_info video_frame_info_t;
-
-typedef void (*update_window_title_cb)(void*, video_frame_info_t *video_info);
-typedef void (*swap_buffers_cb)(void*, video_frame_info_t *video_info);
-typedef bool (*get_metrics_cb)(void *data, enum display_metric_types type,
-      float *value);
-typedef bool (*set_resize_cb)(void*, unsigned, unsigned);
-
 typedef struct video_info
 {
    /* Width of window. 
@@ -452,12 +444,19 @@ typedef struct video_frame_info
    float xmb_alpha_factor;
 
    char fps_text[128];
-   update_window_title_cb cb_update_window_title;
-   swap_buffers_cb        cb_swap_buffers;
-   get_metrics_cb         cb_get_metrics;
-   set_resize_cb          cb_set_resize;
+   void (*cb_update_window_title)(void*, void *);
+   void (*cb_swap_buffers)(void*, void *);
+   bool (*cb_get_metrics)(void *data, enum display_metric_types type,
+      float *value);
+   bool (*cb_set_resize)(void*, unsigned, unsigned);
    void *context_data;
 } video_frame_info_t;
+
+typedef void (*update_window_title_cb)(void*, void*);
+typedef bool (*get_metrics_cb)(void *data, enum display_metric_types type,
+      float *value);
+typedef bool (*set_resize_cb)(void*, unsigned, unsigned);
+
 
 typedef struct gfx_ctx_driver
 {
@@ -521,7 +520,7 @@ typedef struct gfx_ctx_driver
 
    /* Swaps buffers. VBlank sync depends on
     * earlier calls to swap_interval. */
-   swap_buffers_cb swap_buffers;
+   void (*swap_buffers)(void*, void *);
 
    /* Most video backends will want to use a certain input driver.
     * Checks for it here. */

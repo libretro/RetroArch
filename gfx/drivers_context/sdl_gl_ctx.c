@@ -266,7 +266,7 @@ static void sdl_ctx_get_video_size(void *data,
    }
 }
 
-static void sdl_ctx_update_title(void *data, video_frame_info_t *video_info)
+static void sdl_ctx_update_title(void *data, void *data2)
 {
    char title[128];
 
@@ -365,7 +365,7 @@ static bool sdl_ctx_has_windowed(void *data)
    return true;
 }
 
-static void sdl_ctx_swap_buffers(void *data, video_frame_info_t *video_info)
+static void sdl_ctx_swap_buffers(void *data, void *data2)
 {
 #ifdef HAVE_SDL2
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;

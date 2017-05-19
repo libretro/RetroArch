@@ -86,7 +86,7 @@ static bool gfx_ctx_gdi_set_resize(void *data,
    return false;
 }
 
-static void gfx_ctx_gdi_update_window_title(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_gdi_update_window_title(void *data, void *data2)
 {
    const ui_window_t *window = ui_companion_driver_get_window_ptr();
    char title[128];
@@ -284,7 +284,7 @@ static uint32_t gfx_ctx_gdi_get_flags(void *data)
    return flags;
 }
 
-static void gfx_ctx_gdi_swap_buffers(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_gdi_swap_buffers(void *data, void *data2)
 {
    (void)data;
 

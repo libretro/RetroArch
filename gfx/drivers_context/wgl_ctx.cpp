@@ -350,7 +350,7 @@ static void gfx_ctx_wgl_check_window(void *data, bool *quit,
    }
 }
 
-static void gfx_ctx_wgl_swap_buffers(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_wgl_swap_buffers(void *data, void *data2)
 {
    (void)data;
 
@@ -405,7 +405,7 @@ static bool gfx_ctx_wgl_set_resize(void *data,
    return false;
 }
 
-static void gfx_ctx_wgl_update_title(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_wgl_update_title(void *data, void *data2)
 {
    const ui_window_t *window = ui_companion_driver_get_window_ptr();
 

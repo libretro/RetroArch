@@ -75,7 +75,7 @@ static bool gfx_ctx_d3d_set_resize(void *data, unsigned new_width, unsigned new_
    return true;
 }
 
-static void gfx_ctx_d3d_swap_buffers(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_d3d_swap_buffers(void *data, void *data2)
 {
    d3d_video_t      *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
@@ -83,8 +83,9 @@ static void gfx_ctx_d3d_swap_buffers(void *data, video_frame_info_t *video_info)
    d3d_swap(d3d, d3dr);
 }
 
-static void gfx_ctx_d3d_update_title(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_d3d_update_title(void *data, void *data2)
 {
+   video_frame_info_t *video_info = (video_frame_info_t*)data2;
 #ifdef _XBOX
    if (video_info->fps_show)
    {

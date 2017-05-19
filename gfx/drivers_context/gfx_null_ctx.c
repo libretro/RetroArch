@@ -34,7 +34,7 @@ static void gfx_ctx_null_check_window(void *data, bool *quit,
    (void)resize;
 }
 
-static void gfx_ctx_null_swap_buffers(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_null_swap_buffers(void *data, void *data2)
 {
    (void)data;
 }

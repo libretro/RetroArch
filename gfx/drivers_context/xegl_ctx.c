@@ -490,7 +490,7 @@ static void gfx_ctx_xegl_show_mouse(void *data, bool state)
    x11_show_mouse(g_x11_dpy, g_x11_win, state);
 }
 
-static void gfx_ctx_xegl_swap_buffers(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_xegl_swap_buffers(void *data, void *data2)
 {
    xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
 

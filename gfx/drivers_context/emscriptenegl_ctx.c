@@ -74,7 +74,7 @@ static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
    *quit       = false;
 }
 
-static void gfx_ctx_emscripten_swap_buffers(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_emscripten_swap_buffers(void *data, void *data2)
 {
    (void)data;
    /* no-op in emscripten, no way to force swap/wait for VSync in browsers */

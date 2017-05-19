@@ -228,9 +228,10 @@ static bool gfx_ctx_drm_queue_flip(void)
    return false;
 }
 
-static void gfx_ctx_drm_swap_buffers(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_drm_swap_buffers(void *data, void *data2)
 {
-   gfx_ctx_drm_data_t *drm = (gfx_ctx_drm_data_t*)data;
+   gfx_ctx_drm_data_t        *drm = (gfx_ctx_drm_data_t*)data;
+   video_frame_info_t *video_info = (video_frame_info_t*)data2;
 
    switch (drm_api)
    {

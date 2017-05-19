@@ -388,11 +388,11 @@ static const shader_backend_t *shader_ctx_drivers[] = {
 
 /* Stub functions */
 
-static void update_window_title_null(void *data, video_frame_info_t *video_info)
+static void update_window_title_null(void *data, void *data2)
 {
 }
 
-static void swap_buffers_null(void *data, video_frame_info_t *video_info)
+static void swap_buffers_null(void *data, void *data2)
 {
 }
 

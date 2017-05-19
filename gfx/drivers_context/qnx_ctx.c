@@ -413,7 +413,7 @@ static void gfx_ctx_qnx_set_swap_interval(void *data, unsigned swap_interval)
 #endif
 }
 
-static void gfx_ctx_qnx_swap_buffers(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_qnx_swap_buffers(void *data, void *data2)
 {
    qnx_ctx_data_t *qnx = (qnx_ctx_data_t*)data;
 
