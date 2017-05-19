@@ -1166,7 +1166,8 @@ static void xmb_selection_pointer_changed(
                xmb_update_thumbnail_path(xmb, i);
                xmb_update_thumbnail_image(xmb);
             }
-            else if (((e.type == FILE_TYPE_IMAGE || e.type == FILE_TYPE_RDB || e.type == FILE_TYPE_RDB_ENTRY)
+            else if (((e.type == FILE_TYPE_IMAGE || e.type == FILE_TYPE_IMAGEVIEWER ||
+                        e.type == FILE_TYPE_RDB || e.type == FILE_TYPE_RDB_ENTRY)
                && xmb_list <= XMB_SYSTEM_TAB_SETTINGS))
             {
                xmb_set_thumbnail_content(xmb, e.path, sizeof(e.path));
