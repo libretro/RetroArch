@@ -449,7 +449,11 @@ typedef struct video_frame_info
    bool (*cb_get_metrics)(void *data, enum display_metric_types type,
       float *value);
    bool (*cb_set_resize)(void*, unsigned, unsigned);
+
+   void (*cb_shader_use)(void *data, void *shader_data, unsigned index, bool set_active);
+
    void *context_data;
+   void *shader_data;
 } video_frame_info_t;
 
 typedef void (*update_window_title_cb)(void*, void*);

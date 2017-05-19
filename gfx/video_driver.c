@@ -2408,6 +2408,14 @@ bool video_driver_texture_unload(uintptr_t *id)
    return true;
 }
 
+static void video_shader_driver_use_null(void *data,
+      void *shader_data, unsigned idx, bool set_active)
+{
+   (void)data;
+   (void)idx;
+   (void)set_active;
+}
+
 void video_driver_build_info(video_frame_info_t *video_info)
 {
    bool is_perfcnt_enable            = false;
@@ -2497,11 +2505,18 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->input_driver_nonblock_state = input_driver_is_nonblock_state();
 
    video_info->context_data           = video_context_data;
+   video_info->shader_data            = shader_data;
 
    video_info->cb_update_window_title = current_video_context.update_window_title;
    video_info->cb_swap_buffers        = current_video_context.swap_buffers;
    video_info->cb_get_metrics         = current_video_context.get_metrics;
    video_info->cb_set_resize          = current_video_context.set_resize;
+
+   if (current_shader)
+      video_info->cb_shader_use       = current_shader->use;
+
+   if (!video_info->cb_shader_use)
+      video_info->cb_shader_use       = video_shader_driver_use_null;
 
 #ifdef HAVE_THREADS
    video_driver_threaded_unlock(is_threaded);
@@ -3122,14 +3137,6 @@ static bool video_shader_driver_set_coords_null(void *handle_data,
    return false;
 }
 
-static void video_shader_driver_use_null(void *data,
-      void *shader_data, unsigned idx, bool set_active)
-{
-   (void)data;
-   (void)idx;
-   (void)set_active;
-}
-
 static struct video_shader *video_shader_driver_get_current_shader_null(void *data)
 {
    return NULL;
@@ -3182,15 +3189,15 @@ static bool video_shader_driver_get_feedback_pass_null(void *data, unsigned *idx
 static void video_shader_driver_reset_to_defaults(void)
 {
    if (!current_shader->wrap_type)
-      current_shader->wrap_type  = video_shader_driver_wrap_type_null;
+      current_shader->wrap_type         = video_shader_driver_wrap_type_null;
    if (!current_shader->set_mvp)
-      current_shader->set_mvp    = video_shader_driver_set_mvp_null;
+      current_shader->set_mvp           = video_shader_driver_set_mvp_null;
    if (!current_shader->set_coords)
-      current_shader->set_coords = video_shader_driver_set_coords_null;
+      current_shader->set_coords        = video_shader_driver_set_coords_null;
    if (!current_shader->use)
-      current_shader->use        = video_shader_driver_use_null;
+      current_shader->use               = video_shader_driver_use_null;
    if (!current_shader->set_params)
-      current_shader->set_params = video_shader_driver_set_params_null;
+      current_shader->set_params        = video_shader_driver_set_params_null;
    if (!current_shader->shader_scale)
       current_shader->shader_scale      = video_shader_driver_scale_null;
    if (!current_shader->mipmap_input)

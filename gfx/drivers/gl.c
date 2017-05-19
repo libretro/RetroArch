@@ -219,7 +219,6 @@ static void gl_render_overlay(gl_t *gl, video_frame_info_t *video_info)
 {
    video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
-   video_shader_ctx_info_t shader_info;
    unsigned i;
    unsigned width                      = video_info->width;
    unsigned height                     = video_info->height;
@@ -233,11 +232,8 @@ static void gl_render_overlay(gl_t *gl, video_frame_info_t *video_info)
       glViewport(0, 0, width, height);
 
    /* Ensure that we reset the attrib array. */
-   shader_info.data       = gl;
-   shader_info.idx        = VIDEO_SHADER_STOCK_BLEND;
-   shader_info.set_active = true;
-
-   video_shader_driver_use(shader_info);
+   video_info->cb_shader_use(gl,
+         video_info->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
 
    gl->coords.vertex    = gl->overlay_vertex_coord;
    gl->coords.tex_coord = gl->overlay_tex_coord;
@@ -1078,7 +1074,6 @@ static bool gl_frame(void *data, const void *frame,
    video_shader_ctx_coords_t coords;
    video_shader_ctx_params_t params;
    struct video_tex_info feedback_info;
-   video_shader_ctx_info_t shader_info;
    gl_t                            *gl = (gl_t*)data;
    unsigned width                      = video_info->width;
    unsigned height                     = video_info->height;
@@ -1093,11 +1088,7 @@ static bool gl_frame(void *data, const void *frame,
       glBindVertexArray(gl->vao);
 #endif
 
-   shader_info.data       = gl;
-   shader_info.idx        = 1;
-   shader_info.set_active = true;
-
-   video_shader_driver_use(shader_info);
+   video_info->cb_shader_use(gl, video_info->shader_data, 1, true);
 
 #ifdef IOS
    /* Apparently the viewport is lost each frame, thanks Apple. */
@@ -1277,11 +1268,7 @@ static bool gl_frame(void *data, const void *frame,
    /* Reset state which could easily mess up libretro core. */
    if (gl->hw_render_fbo_init)
    {
-      shader_info.data       = gl;
-      shader_info.idx        = 0;
-      shader_info.set_active = true;
-
-      video_shader_driver_use(shader_info);
+      video_info->cb_shader_use(gl, video_info->shader_data, 0, true);
 
       glBindTexture(GL_TEXTURE_2D, 0);
 #ifndef NO_GL_FF_VERTEX
