@@ -22,7 +22,6 @@
 #include "menu_generic.h"
 
 #include "../menu_driver.h"
-#include "../menu_display.h"
 #include "../widgets/menu_dialog.h"
 #include "../widgets/menu_input_bind_dialog.h"
 

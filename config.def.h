@@ -226,7 +226,7 @@ static const bool overlay_hide_in_menu = true;
 static const bool display_keyboard_overlay = false;
 
 #ifdef HAVE_MENU
-#include "menu/menu_display.h"
+#include "menu/menu_driver.h"
 
 static bool default_block_config_read = true;
 

@@ -24,7 +24,7 @@
 #include "../../gfx/video_driver.h"
 #include "../../gfx/common/gl_common.h"
 
-#include "../menu_display.h"
+#include "../menu_driver.h"
 
 static const GLfloat gl_vertexes[] = {
    0, 0,

@@ -23,7 +23,7 @@
 #include "../../gfx/font_driver.h"
 #include "../../gfx/video_driver.h"
 
-#include "../menu_display.h"
+#include "../menu_driver.h"
 
 static void *menu_display_caca_get_default_mvp(void)
 {

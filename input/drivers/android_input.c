@@ -30,7 +30,7 @@
 #endif
 
 #ifdef HAVE_MENU
-#include "../../menu/menu_display.h"
+#include "../../menu/menu_driver.h"
 #endif
 
 #include "../input_config.h"

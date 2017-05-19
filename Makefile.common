@@ -582,7 +582,6 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/cbs/menu_cbs_up.o \
           menu/cbs/menu_cbs_down.o \
           menu/cbs/menu_cbs_contentlist_switch.o \
-          menu/menu_display.o \
           menu/menu_displaylist.o \
           menu/menu_animation.o \
           menu/drivers_display/menu_display_null.o \

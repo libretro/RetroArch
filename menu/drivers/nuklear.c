@@ -37,7 +37,6 @@
 
 #include "../menu_driver.h"
 #include "../menu_animation.h"
-#include "../menu_display.h"
 
 #include "../../core.h"
 #include "../../core_info.h"

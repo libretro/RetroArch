@@ -31,7 +31,6 @@
 
 #include "menu_driver.h"
 #include "menu_animation.h"
-#include "menu_display.h"
 
 #include "../configuration.h"
 #include "../retroarch.h"

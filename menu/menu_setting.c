@@ -54,7 +54,6 @@
 #include "menu_setting.h"
 #include "menu_driver.h"
 #include "menu_animation.h"
-#include "menu_display.h"
 #include "menu_input.h"
 
 #include "../core.h"

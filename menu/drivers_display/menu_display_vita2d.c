@@ -21,7 +21,7 @@
 #include "../../config.h"
 #endif
 
-#include "../menu_display.h"
+#include "../menu_driver.h"
 
 #include "../../retroarch.h"
 #include "../../gfx/font_driver.h"

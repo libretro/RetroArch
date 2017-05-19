@@ -26,7 +26,6 @@
 
 #include "menu_content.h"
 #include "menu_driver.h"
-#include "menu_display.h"
 #include "menu_shader.h"
 
 #include "../core_info.h"

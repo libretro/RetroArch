@@ -43,7 +43,6 @@
 
 #include "../menu_driver.h"
 #include "../menu_animation.h"
-#include "../menu_display.h"
 
 #include "../widgets/menu_entry.h"
 #include "../widgets/menu_list.h"

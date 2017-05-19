@@ -24,7 +24,6 @@
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
 #include "../menu_input.h"
-#include "../menu_display.h"
 #include "../menu_setting.h"
 #include "../menu_shader.h"
 

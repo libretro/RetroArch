@@ -29,7 +29,7 @@
 
 #include "nk_common.h"
 
-#include "../../menu_display.h"
+#include "../../menu_driver.h"
 #include "../../../gfx/video_driver.h"
 
 #ifdef HAVE_GLSL

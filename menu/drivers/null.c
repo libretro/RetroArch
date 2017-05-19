@@ -21,7 +21,6 @@
 #include <stdio.h>
 
 #include "../menu_driver.h"
-#include "../menu_display.h"
 
 menu_ctx_driver_t menu_ctx_null = {
   NULL,  /* set_texture */

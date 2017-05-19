@@ -26,7 +26,6 @@
 #include "../menu_animation.h"
 #include "../menu_cbs.h"
 #include "../menu_shader.h"
-#include "../menu_display.h"
 
 #include "../../tasks/tasks_internal.h"
 #include "../../input/input_config.h"
