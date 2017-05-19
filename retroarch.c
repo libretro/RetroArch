@@ -2264,11 +2264,6 @@ static enum runloop_state runloop_check_state(
    uint64_t frame_count             = 0;
    bool focused                     = true;
    bool pause_pressed               = runloop_cmd_triggered(trigger_input, RARCH_PAUSE_TOGGLE);
-#ifdef HAVE_MENU
-   bool menu_is_alive               = menu_driver_is_alive();
-#else
-   bool menu_is_alive               = false;
-#endif
    bool pause_nonactive             = settings->bools.pause_nonactive;
 
    video_driver_get_status(&frame_count, &is_alive, &is_focused);
@@ -2278,7 +2273,10 @@ static enum runloop_state runloop_check_state(
 
    if (runloop_cmd_triggered(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
    {
-      bool fullscreen_toggled = !runloop_paused || menu_is_alive;
+      bool fullscreen_toggled = !runloop_paused
+#ifdef HAVE_MENU
+         || menu_driver_is_alive();
+#endif
 
       if (fullscreen_toggled)
          command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
@@ -2336,7 +2334,7 @@ static enum runloop_state runloop_check_state(
    }
 
 #ifdef HAVE_MENU
-   if (menu_is_alive)
+   if (menu_driver_is_alive())
    {
       menu_ctx_iterate_t iter;
       core_poll();
@@ -2376,7 +2374,7 @@ static enum runloop_state runloop_check_state(
 #ifdef HAVE_MENU
    if (menu_event_kb_is_set(RETROK_F1) == 1)
    {
-      if (menu_is_alive)
+      if (menu_driver_is_alive())
       {
          if (rarch_is_inited && (current_core_type != CORE_TYPE_DUMMY))
          {
@@ -2389,7 +2387,7 @@ static enum runloop_state runloop_check_state(
             runloop_cmd_triggered(trigger_input, RARCH_MENU_TOGGLE)) ||
          (current_core_type == CORE_TYPE_DUMMY))
    {
-      if (menu_is_alive)
+      if (menu_driver_is_alive())
       {
          if (rarch_is_inited && (current_core_type != CORE_TYPE_DUMMY))
             rarch_menu_running_finished();
@@ -2403,7 +2401,7 @@ static enum runloop_state runloop_check_state(
    else
       menu_event_kb_set(false, RETROK_F1);
 
-   if (menu_is_alive)
+   if (menu_driver_is_alive())
    {
       if (!settings->bools.menu_throttle_framerate && !settings->floats.fastforward_ratio)
          return RUNLOOP_STATE_MENU_ITERATE;
