@@ -27,7 +27,6 @@
 #include "configuration.h"
 #include "command.h"
 #include "defaults.h"
-#include "gfx/video_driver.h"
 #include "list_special.h"
 #include "file_path_special.h"
 #include "msg_hash.h"
