@@ -24,6 +24,7 @@
 #include <audio/audio_resampler.h>
 
 #include <formats/rwav.h>
+#include <rthreads/rthreads.h>
 #include <memalign.h>
 
 #include <stdlib.h>
@@ -104,6 +105,7 @@ struct audio_mixer_voice
 
 static struct audio_mixer_voice s_voices[AUDIO_MIXER_MAX_VOICES];
 static unsigned s_rate = 0;
+static slock_t* s_locker = NULL;
 
 static bool wav2float(const rwav_t* wav, float** pcm, size_t samples_out)
 {
@@ -225,11 +227,17 @@ void audio_mixer_init(unsigned rate)
    
    for (i = 0; i < AUDIO_MIXER_MAX_VOICES; i++)
       s_voices[i].type = AUDIO_MIXER_TYPE_NONE;
+   
+   s_locker = slock_new();
 }
 
 void audio_mixer_done(void)
 {
    unsigned i;
+   
+   /* Dont call audio mixer functions after this point */
+   slock_free(s_locker);
+   s_locker = NULL;
    
    for (i = 0; i < AUDIO_MIXER_MAX_VOICES; i++)
       s_voices[i].type = AUDIO_MIXER_TYPE_NONE;
@@ -250,6 +258,7 @@ audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size)
       return NULL;
    
    samples       = wav.numsamples * 2;
+   
    if (!wav2float(&wav, &pcm, samples))
       return NULL;
    
@@ -317,7 +326,7 @@ void audio_mixer_destroy(audio_mixer_sound_t* sound)
 #ifdef HAVE_STB_VORBIS
          handle = (void*)sound->types.ogg.data;
          if (handle)
-            memalign_free(handle);
+            free(handle);
 #endif
          break;
       case AUDIO_MIXER_TYPE_NONE:
@@ -332,7 +341,6 @@ static bool audio_mixer_play_wav(audio_mixer_sound_t* sound,
       audio_mixer_stop_cb_t stop_cb)
 {
    voice->types.wav.position = 0;
-   
    return true;
 }
 
@@ -390,7 +398,6 @@ static bool audio_mixer_play_ogg(
    voice->types.ogg.stream         = stb_vorbis;
    voice->types.ogg.position       = 0;
    voice->types.ogg.samples        = 0;
-   voice->type                     = AUDIO_MIXER_TYPE_OGG;
 
    return true;
 
@@ -409,6 +416,8 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound, bool repeat,
 
    if (!sound)
       return NULL;
+   
+   slock_lock(s_locker);
 
    for (i = 0; i < AUDIO_MIXER_MAX_VOICES; i++, voice++)
    {
@@ -431,6 +440,8 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound, bool repeat,
 
       break;
    }
+   
+   slock_unlock(s_locker);
 
    if (!res)
       return NULL;
@@ -446,8 +457,16 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound, bool repeat,
 
 void audio_mixer_stop(audio_mixer_voice_t* voice)
 {
-   if (voice && voice->stop_cb)
-      voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_STOPPED);
+   if (voice)
+   {
+      slock_lock(s_locker);
+      
+      if (voice->stop_cb)
+         voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_STOPPED);
+      
+      voice->type = AUDIO_MIXER_TYPE_NONE;
+      slock_unlock(s_locker);
+   }
 }
 
 static void audio_mixer_mix_wav(float* buffer, size_t num_frames,
@@ -573,6 +592,8 @@ void audio_mixer_mix(float* buffer, size_t num_frames)
    float* sample              = NULL;
    audio_mixer_voice_t* voice = s_voices;
    
+   slock_lock(s_locker);
+   
    for (i = 0; i < AUDIO_MIXER_MAX_VOICES; i++, voice++)
    {
       float volume = voice->volume;
@@ -591,6 +612,8 @@ void audio_mixer_mix(float* buffer, size_t num_frames)
             break;
       }
    }
+   
+   slock_unlock(s_locker);
    
    for (j = 0, sample = buffer; j < num_frames; j++, sample++)
    {
