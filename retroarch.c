@@ -162,8 +162,7 @@ enum
 
 enum  runloop_state
 {
-   RUNLOOP_STATE_NONE = 0,
-   RUNLOOP_STATE_ITERATE,
+   RUNLOOP_STATE_ITERATE = 0,
    RUNLOOP_STATE_SLEEP,
    RUNLOOP_STATE_MENU_ITERATE,
    RUNLOOP_STATE_END,
@@ -280,6 +279,23 @@ static void retroarch_msg_queue_init(void)
 #endif
 }
 
+static void retroarch_override_setting_free_state(void)
+{
+   unsigned i;
+   for (i = 0; i < RARCH_OVERRIDE_SETTING_LAST; i++)
+   {
+      if (i == RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE)
+      {
+         unsigned j;
+         for (j = 0; j < MAX_USERS; j++)
+            retroarch_override_setting_unset((enum rarch_override_setting)(i), &j);
+      }
+      else
+         retroarch_override_setting_unset((enum rarch_override_setting)(i), NULL);
+   }
+}
+
+
 static void global_free(void)
 {
    global_t *global = NULL;
@@ -307,7 +323,6 @@ static void global_free(void)
    memset(global, 0, sizeof(struct global));
    retroarch_override_setting_free_state();
 }
-
 
 static void retroarch_print_features(void)
 {
@@ -2013,22 +2028,6 @@ void retroarch_override_setting_unset(enum rarch_override_setting enum_idx, void
    }
 }
 
-void retroarch_override_setting_free_state(void)
-{
-   unsigned i;
-   for (i = 0; i < RARCH_OVERRIDE_SETTING_LAST; i++)
-   {
-      if (i == RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE)
-      {
-         unsigned j;
-         for (j = 0; j < MAX_USERS; j++)
-            retroarch_override_setting_unset((enum rarch_override_setting)(i), &j);
-      }
-      else
-         retroarch_override_setting_unset((enum rarch_override_setting)(i), NULL);
-   }
-}
-
 int retroarch_get_capabilities(enum rarch_capabilities type,
       char *s, size_t len)
 {
@@ -2269,8 +2268,10 @@ static enum runloop_state runloop_check_state(
 
    video_driver_get_status(&frame_count, &is_alive, &is_focused);
 
+#ifdef HAVE_OVERLAY
    if (runloop_cmd_triggered(trigger_input, RARCH_OVERLAY_NEXT))
       command_event(CMD_EVENT_OVERLAY_NEXT, NULL);
+#endif
 
    if (runloop_cmd_triggered(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
    {
@@ -2736,7 +2737,6 @@ int runloop_iterate(unsigned *sleep_ms)
          runloop_netplay_pause();
          return 0;
       case RUNLOOP_STATE_ITERATE:
-      case RUNLOOP_STATE_NONE:
          break;
    }
 

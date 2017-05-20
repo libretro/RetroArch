@@ -181,9 +181,6 @@ struct uniform_info
    } result;
 };
 
-
-
-
 typedef struct shader_backend
 {
    void *(*init)(void *data, const char *path);
@@ -779,10 +776,6 @@ struct aspect_ratio_elem
 
 extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 
-#define video_driver_is_alive()   ((current_video) ? current_video->alive(video_driver_data) : true)
-
-bool video_driver_is_focused(void);
-
 bool video_driver_has_windowed(void);
 
 bool video_driver_cached_frame_has_valid_framebuffer(void);
@@ -1120,9 +1113,6 @@ extern const gfx_ctx_driver_t gfx_ctx_khr_display;
 extern const gfx_ctx_driver_t gfx_ctx_gdi;
 extern const gfx_ctx_driver_t gfx_ctx_null;
 
-extern void *video_driver_data;
-extern video_driver_t *current_video;
-
 /**
  * video_context_driver_init_first:
  * @data                    : Input data.
@@ -1194,10 +1184,6 @@ bool video_context_driver_input_driver(gfx_ctx_input_t *inp);
 
 void video_context_driver_free(void);
 
-extern gfx_ctx_driver_t current_video_context;
-
-extern void *video_context_data;
-
 bool video_shader_driver_get_prev_textures(video_shader_ctx_texture_t *texture);
 
 bool video_shader_driver_get_ident(video_shader_ctx_ident_t *ident);
@@ -1243,6 +1229,8 @@ bool video_shader_driver_compile_program(struct shader_program_info *program_inf
    current_shader->use(shader_info.data, shader_data, shader_info.idx, shader_info.set_active)
 
 bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap);
+
+extern bool (*video_driver_cb_has_focus)(void);
 
 extern shader_backend_t *current_shader;
 extern void *shader_data;

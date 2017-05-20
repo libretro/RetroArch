@@ -65,6 +65,7 @@ ARCHIVE FILE
 /*============================================================
 COMPRESSION
 ============================================================ */
+#include "../libretro-common/streams/stdin_stream.c"
 #include "../libretro-common/streams/trans_stream.c"
 #include "../libretro-common/streams/trans_stream_pipe.c"
 

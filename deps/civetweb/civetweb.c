@@ -133,6 +133,7 @@ mg_static_assert(sizeof(void *) >= sizeof(int), "data type size check");
 #include <assert.h>
 
 #include <compat/strl.h>
+#include <net/net_compat.h>
 
 /* clock_gettime is not implemented on OSX */
 int clock_gettime(int clk_id, struct timespec *t);
@@ -5727,7 +5728,7 @@ mg_inet_pton(int af, const char *src, void *dst, size_t dstlen)
   memset(&hints, 0, sizeof(struct addrinfo));
   hints.ai_family = af;
 
-  if (getaddrinfo(src, NULL, &hints, &res) != 0) {
+  if (getaddrinfo_retro(src, NULL, &hints, &res) != 0) {
     /* bad src string or bad address family */
     return 0;
   }

@@ -30,9 +30,6 @@ static int task_file_transfer_iterate_transfer(nbio_handle_t *nbio)
 {
    size_t i;
 
-   if (!nbio)
-      return -1;
-   
    nbio->pos_increment = 5;
 
    if (nbio->is_finished)
@@ -49,9 +46,6 @@ static int task_file_transfer_iterate_transfer(nbio_handle_t *nbio)
 
 static int task_file_transfer_iterate_parse(nbio_handle_t *nbio)
 {
-   if (!nbio)
-      return -1;
-
    if (nbio->cb)
    {
       int len = 0;
@@ -88,12 +82,12 @@ void task_file_load_handler(retro_task_t *task)
             }
             break;
          case NBIO_STATUS_TRANSFER_PARSE:
-            if (task_file_transfer_iterate_parse(nbio) == -1)
+            if (!nbio || task_file_transfer_iterate_parse(nbio) == -1)
                task_set_cancelled(task, true);
             nbio->status = NBIO_STATUS_TRANSFER_FINISHED;
             break;
          case NBIO_STATUS_TRANSFER:
-            if (task_file_transfer_iterate_transfer(nbio) == -1)
+            if (!nbio || task_file_transfer_iterate_transfer(nbio) == -1)
                nbio->status = NBIO_STATUS_TRANSFER_PARSE;
             break;
          case NBIO_STATUS_TRANSFER_FINISHED:

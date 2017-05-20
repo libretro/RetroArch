@@ -27,8 +27,7 @@
 
 enum http_status_enum
 {
-   HTTP_STATUS_POLL = 0,
-   HTTP_STATUS_CONNECTION_TRANSFER,
+   HTTP_STATUS_CONNECTION_TRANSFER = 0,
    HTTP_STATUS_CONNECTION_TRANSFER_PARSE,
    HTTP_STATUS_TRANSFER,
    HTTP_STATUS_TRANSFER_PARSE,
@@ -155,7 +154,6 @@ static void task_http_transfer_handler(retro_task_t *task)
             goto task_finished;
          break;
       case HTTP_STATUS_TRANSFER_PARSE:
-      case HTTP_STATUS_POLL:
          goto task_finished;
       default:
          break;

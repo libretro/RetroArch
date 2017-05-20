@@ -240,4 +240,6 @@ void network_deinit(void);
 
 const char *inet_ntop_compat(int af, const void *src, char *dst, socklen_t cnt);
 
+bool udp_send_packet(const char *host, uint16_t port, const char *msg);
+
 #endif

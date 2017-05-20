@@ -53,6 +53,8 @@
 #define herror(A) printf("%s\n", A)
 #endif
 
+#include <net/net_compat.h>
+
 #include "connecthostport.h"
 
 #ifndef MAXHOSTNAMELEN
@@ -173,7 +175,7 @@ int connecthostport(const char * host, unsigned short port,
 		strncpy(tmp_host, host, MAXHOSTNAMELEN);
 	}
 	tmp_host[MAXHOSTNAMELEN] = '\0';
-	n = getaddrinfo(tmp_host, port_str, &hints, &ai);
+	n = getaddrinfo_retro(tmp_host, port_str, &hints, &ai);
 	if(n != 0)
 	{
 #ifdef _WIN32
