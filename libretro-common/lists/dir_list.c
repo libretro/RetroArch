@@ -155,46 +155,6 @@ static int parse_dir_entry(const char *name, char *file_path,
 }
 
 /**
- * dir_list_new:
- * @dir                : directory path.
- * @ext                : allowed extensions of file directory entries to include.
- * @include_dirs       : include directories as part of the finished directory listing?
- * @include_hidden     : include hidden files and directories as part of the finished directory listing?
- * @include_compressed : Only include files which match ext. Do not try to match compressed files, etc.
- * @recursive          : list directory contents recursively
- *
- * Create a directory listing.
- *
- * Returns: pointer to a directory listing of type 'struct string_list *' on success,
- * NULL in case of error. Has to be freed manually.
- **/
-struct string_list *dir_list_new(const char *dir,
-      const char *ext, bool include_dirs,
-      bool include_hidden, bool include_compressed,
-      bool recursive)
-{
-   struct string_list *ext_list   = NULL;
-   struct string_list *list       = NULL;
-
-   if (!(list = string_list_new()))
-      return NULL;
-
-   if (ext)
-      ext_list = string_split(ext, "|");
-
-   if(dir_list_read(dir, list, ext_list, include_dirs,
-            include_hidden, include_compressed, recursive) == -1)
-   {
-      string_list_free(list);
-      string_list_free(ext_list);
-      return NULL;
-   }
-
-   string_list_free(ext_list);
-   return list;
-}
-
-/**
  * dir_list_read:
  * @dir                : directory path.
  * @list               : the string list to add files to
@@ -208,7 +168,7 @@ struct string_list *dir_list_new(const char *dir,
  *
  * Returns: -1 on error, 0 on success.
  **/
-int dir_list_read(const char *dir,
+static int dir_list_read(const char *dir,
       struct string_list *list, struct string_list *ext_list,
       bool include_dirs, bool include_hidden,
       bool include_compressed, bool recursive)
@@ -276,3 +236,44 @@ int dir_list_read(const char *dir,
 
    return 0;
 }
+
+/**
+ * dir_list_new:
+ * @dir                : directory path.
+ * @ext                : allowed extensions of file directory entries to include.
+ * @include_dirs       : include directories as part of the finished directory listing?
+ * @include_hidden     : include hidden files and directories as part of the finished directory listing?
+ * @include_compressed : Only include files which match ext. Do not try to match compressed files, etc.
+ * @recursive          : list directory contents recursively
+ *
+ * Create a directory listing.
+ *
+ * Returns: pointer to a directory listing of type 'struct string_list *' on success,
+ * NULL in case of error. Has to be freed manually.
+ **/
+struct string_list *dir_list_new(const char *dir,
+      const char *ext, bool include_dirs,
+      bool include_hidden, bool include_compressed,
+      bool recursive)
+{
+   struct string_list *ext_list   = NULL;
+   struct string_list *list       = NULL;
+
+   if (!(list = string_list_new()))
+      return NULL;
+
+   if (ext)
+      ext_list = string_split(ext, "|");
+
+   if(dir_list_read(dir, list, ext_list, include_dirs,
+            include_hidden, include_compressed, recursive) == -1)
+   {
+      string_list_free(list);
+      string_list_free(ext_list);
+      return NULL;
+   }
+
+   string_list_free(ext_list);
+   return list;
+}
+
