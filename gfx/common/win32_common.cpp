@@ -356,6 +356,7 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
    return 0;
 }
 
+#ifndef _XBOX
 static LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
 		WPARAM wparam, LPARAM lparam)
 {
@@ -419,6 +420,7 @@ static LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
 
    return DefWindowProc(hwnd, message, wparam, lparam);
 }
+#endif
 
 static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
