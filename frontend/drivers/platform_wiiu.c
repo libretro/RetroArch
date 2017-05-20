@@ -405,9 +405,9 @@ int main(int argc, char **argv)
    KPADInit();
 #endif
    verbosity_enable();
-
+#ifndef IS_SALAMANDER
    ControllerPatcherInit();
-
+#endif
    fflush(stdout);
    DEBUG_VAR(ARGV_PTR);
    if(ARGV_PTR && ((u32)ARGV_PTR < 0x01000000))
@@ -459,9 +459,9 @@ int main(int argc, char **argv)
 
    }
    while (1);
-
+#ifndef IS_SALAMANDER
    ControllerPatcherDeInit();
-
+#endif
    main_exit(NULL);
 #endif
 #endif
