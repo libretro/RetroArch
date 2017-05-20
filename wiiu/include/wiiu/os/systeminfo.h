@@ -15,6 +15,7 @@ typedef struct
 }OSSystemInfo;
 
 OSSystemInfo *OSGetSystemInfo();
+s32 * __gh_errno_ptr(void);
 
 #ifdef __cplusplus
 }

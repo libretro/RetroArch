@@ -54,9 +54,10 @@
 #include <wiiu/vpad.h>
 #include <wiiu/kpad.h>
 
+#include "wiiu/controller_patcher/ControllerPatcherWrapper.h"
+
 #include <fat.h>
 #include <iosuhax.h>
-
 #include "wiiu_dbg.h"
 #include "hbl.h"
 
@@ -405,7 +406,8 @@ int main(int argc, char **argv)
 #endif
    verbosity_enable();
 
-   printf("starting\n");
+   ControllerPatcherInit();
+
    fflush(stdout);
    DEBUG_VAR(ARGV_PTR);
    if(ARGV_PTR && ((u32)ARGV_PTR < 0x01000000))
@@ -457,6 +459,8 @@ int main(int argc, char **argv)
 
    }
    while (1);
+
+   ControllerPatcherDeInit();
 
    main_exit(NULL);
 #endif
