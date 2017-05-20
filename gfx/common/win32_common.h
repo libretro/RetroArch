@@ -43,9 +43,6 @@ extern bool g_inited;
 extern bool g_restore_desktop;
 extern ui_window_win32_t main_window;
 
-LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
-      WPARAM wparam, LPARAM lparam);
-
 void win32_monitor_get_info(void);
 
 void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id);
