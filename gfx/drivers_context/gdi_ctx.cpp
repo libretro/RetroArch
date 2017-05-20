@@ -28,6 +28,8 @@
 #include <windows.h>
 #include <commdlg.h>
 
+#include <string/stdstring.h>
+
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
@@ -217,11 +219,22 @@ static void gfx_ctx_gdi_input_driver(void *data,
       const input_driver_t **input, void **input_data)
 {
    (void)data;
+   settings_t *settings = config_get_ptr();
 
-   dinput_gdi   = input_dinput.init(joypad_name);
+   if (string_is_equal_fast(settings->arrays.input_driver, "raw", 4))
+   {
+      *input_data = input_winraw.init(joypad_name);
+      if (*input_data)
+      {
+         *input = &input_winraw;
+         dinput_gdi = NULL;
+         return;
+      }
+   }
 
-   *input       = dinput_gdi ? &input_dinput : NULL;
-   *input_data  = dinput_gdi;
+   dinput_gdi  = input_dinput.init(joypad_name);
+   *input      = dinput_gdi ? &input_dinput : NULL;
+   *input_data = dinput_gdi;
 }
 
 static bool gfx_ctx_gdi_has_focus(void *data)
