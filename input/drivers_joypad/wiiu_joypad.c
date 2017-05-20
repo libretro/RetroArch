@@ -55,10 +55,12 @@ static uint64_t pad_state[MAX_PADS];
 static u8 pad_type[KPAD_COUNT] = {WIIUINPUT_TYPE_NONE, WIIUINPUT_TYPE_NONE, WIIUINPUT_TYPE_NONE, WIIUINPUT_TYPE_NONE};
 
 static u8 hid_status[HID_COUNT];
-static InputDataEx hid_data[HID_COUNT];
+static InputData hid_data[HID_COUNT];
 static int16_t analog_state[MAX_PADS][2][2];
 extern uint64_t lifecycle_state;
 static bool wiiu_pad_inited = false;
+
+static char hidName[HID_COUNT][255];
 
 static const char* wiiu_joypad_name(unsigned pad)
 {
@@ -88,7 +90,9 @@ static const char* wiiu_joypad_name(unsigned pad)
    }
 
    if(pad < MAX_PADS){
-        return "HID Controller";
+        s32 hid_index = pad-HID_OFFSET;
+        sprintf(hidName[hid_index],"HID %04X/%04X",hid_data[hid_index].device_info.vidpid.vid,hid_data[hid_index].device_info.vidpid.pid);
+        return hidName[hid_index];
    }
 
    return "unknown";
@@ -243,7 +247,7 @@ static void wiiu_joypad_poll(void)
    }
 
    memset(hid_data,0,sizeof(hid_data));
-   int result = gettingInputAllDevicesEx(hid_data,HID_COUNT);
+   int result = gettingInputAllDevices(hid_data,HID_COUNT);
 
    if(result+HID_OFFSET > MAX_PADS){
         result = MAX_PADS - HID_OFFSET;

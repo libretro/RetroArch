@@ -58,7 +58,6 @@
 
 #include <fat.h>
 #include <iosuhax.h>
-
 #include "wiiu_dbg.h"
 #include "hbl.h"
 
@@ -407,7 +406,6 @@ int main(int argc, char **argv)
 #endif
    verbosity_enable();
 
-   printf("starting\n");
    ControllerPatcherInit();
 
    fflush(stdout);
