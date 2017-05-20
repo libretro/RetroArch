@@ -1093,19 +1093,14 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
 {
    char core_path[PATH_MAX_LENGTH];
    char config_directory[PATH_MAX_LENGTH];
-   const char *core_name                  = NULL;
-   const char *game_name                  = NULL;
    rarch_system_info_t *system            = runloop_get_system_info();
-
-   config_directory[0] = core_path[0]     = '\0';
-
-   if (system)
-      core_name = system->info.library_name;
-
-   game_name = path_basename(path_get(RARCH_PATH_BASENAME));
+   const char *core_name                  = system ? system->info.library_name : NULL;
+   const char *game_name                  = path_basename(path_get(RARCH_PATH_BASENAME));
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
+
+   config_directory[0] = core_path[0]     = '\0';
 
    fill_pathname_application_special(config_directory,
          sizeof(config_directory),
