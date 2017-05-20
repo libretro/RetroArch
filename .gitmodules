@@ -1,4 +1,0 @@
-[submodule "wiiu/controller_patcher"]
-	path = wiiu/controller_patcher
-	url = https://github.com/Maschell/controller_patcher
-	branch = retroarch
