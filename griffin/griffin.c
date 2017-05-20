@@ -534,10 +534,6 @@ INPUT (HID)
  KEYBOARD EVENT
  ============================================================ */
 
-#ifdef HAVE_X11
-#include "../input/drivers_keyboard/keyboard_event_x11.c"
-#endif
-
 #ifdef __APPLE__
 #include "../input/drivers_keyboard/keyboard_event_apple.c"
 #endif
