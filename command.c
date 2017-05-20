@@ -90,7 +90,6 @@
 
 struct command
 {
-   bool local_enable;
 #ifdef HAVE_STDIN_CMD
    bool stdin_enable;
    char stdin_buf[STDIN_BUF_SIZE];
@@ -540,13 +539,11 @@ static bool command_stdin_init(command_t *handle)
 }
 #endif
 
-command_t *command_new(bool local_enable)
+command_t *command_new(void)
 {
    command_t *handle = (command_t*)calloc(1, sizeof(*handle));
    if (!handle)
       return NULL;
-
-   handle->local_enable = local_enable;
 
    return handle;
 }
