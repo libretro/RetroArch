@@ -123,7 +123,7 @@ typedef struct video_pixel_scaler
 
 static void (*video_driver_cb_shader_use)(void *data, void *shader_data, unsigned index, bool set_active);
 static bool (*video_driver_cb_shader_set_mvp)(void *data, void *shader_data, const math_matrix_4x4 *mat);
-static bool (*video_driver_cb_has_focus)(void);
+bool (*video_driver_cb_has_focus)(void);
 
 /* Opaque handles to currently running window.
  * Used by e.g. input drivers which bind to a window.

@@ -776,8 +776,6 @@ struct aspect_ratio_elem
 
 extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 
-bool video_driver_is_focused(void);
-
 bool video_driver_has_windowed(void);
 
 bool video_driver_cached_frame_has_valid_framebuffer(void);
@@ -1235,6 +1233,8 @@ bool video_shader_driver_compile_program(struct shader_program_info *program_inf
    current_shader->use(shader_info.data, shader_data, shader_info.idx, shader_info.set_active)
 
 bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap);
+
+extern bool (*video_driver_cb_has_focus)(void);
 
 extern shader_backend_t *current_shader;
 extern void *shader_data;
