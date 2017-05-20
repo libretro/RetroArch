@@ -280,6 +280,23 @@ static void retroarch_msg_queue_init(void)
 #endif
 }
 
+static void retroarch_override_setting_free_state(void)
+{
+   unsigned i;
+   for (i = 0; i < RARCH_OVERRIDE_SETTING_LAST; i++)
+   {
+      if (i == RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE)
+      {
+         unsigned j;
+         for (j = 0; j < MAX_USERS; j++)
+            retroarch_override_setting_unset((enum rarch_override_setting)(i), &j);
+      }
+      else
+         retroarch_override_setting_unset((enum rarch_override_setting)(i), NULL);
+   }
+}
+
+
 static void global_free(void)
 {
    global_t *global = NULL;
@@ -307,7 +324,6 @@ static void global_free(void)
    memset(global, 0, sizeof(struct global));
    retroarch_override_setting_free_state();
 }
-
 
 static void retroarch_print_features(void)
 {
@@ -2010,22 +2026,6 @@ void retroarch_override_setting_unset(enum rarch_override_setting enum_idx, void
       case RARCH_OVERRIDE_SETTING_NONE:
       default:
          break;
-   }
-}
-
-void retroarch_override_setting_free_state(void)
-{
-   unsigned i;
-   for (i = 0; i < RARCH_OVERRIDE_SETTING_LAST; i++)
-   {
-      if (i == RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE)
-      {
-         unsigned j;
-         for (j = 0; j < MAX_USERS; j++)
-            retroarch_override_setting_unset((enum rarch_override_setting)(i), &j);
-      }
-      else
-         retroarch_override_setting_unset((enum rarch_override_setting)(i), NULL);
    }
 }
 
