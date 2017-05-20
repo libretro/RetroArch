@@ -20,6 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -390,4 +391,56 @@ const char *inet_ntop_compat(int af, const void *src, char *dst, socklen_t cnt)
 
    return NULL;
 #endif
+}
+
+bool udp_send_packet(const char *host,
+      uint16_t port, const char *msg)
+{
+   char port_buf[16]           = {0};
+   struct addrinfo hints       = {0};
+   struct addrinfo *res        = NULL;
+   const struct addrinfo *tmp  = NULL;
+   int fd                      = -1;
+   bool ret                    = true;
+
+   hints.ai_socktype           = SOCK_DGRAM;
+
+   snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
+
+   if (getaddrinfo_retro(host, port_buf, &hints, &res) < 0)
+      return false;
+
+   /* Send to all possible targets.
+    * "localhost" might resolve to several different IPs. */
+   tmp = (const struct addrinfo*)res;
+   while (tmp)
+   {
+      ssize_t len, ret_len;
+
+      fd = socket(tmp->ai_family, tmp->ai_socktype, tmp->ai_protocol);
+      if (fd < 0)
+      {
+         ret = false;
+         goto end;
+      }
+
+      len     = strlen(msg);
+      ret_len = sendto(fd, msg, len, 0, tmp->ai_addr, tmp->ai_addrlen);
+
+      if (ret_len < len)
+      {
+         ret = false;
+         goto end;
+      }
+
+      socket_close(fd);
+      fd = -1;
+      tmp = tmp->ai_next;
+   }
+
+end:
+   freeaddrinfo_retro(res);
+   if (fd >= 0)
+      socket_close(fd);
+   return ret;
 }
