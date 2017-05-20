@@ -451,11 +451,12 @@ static void resampler_sinc_process_c(void *re_, struct resampler_data *data)
 
          output[0] = sum_l;
          output[1] = sum_r;
+
+         output += 2;
+         out_frames++;
+         resamp->time += ratio;
       }
 
-      output += 2;
-      out_frames++;
-      resamp->time += ratio;
    }
 
    data->output_frames = out_frames;
