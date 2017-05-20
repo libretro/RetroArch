@@ -89,18 +89,6 @@ static bool x_key_pressed(x11_input_t *x11, int key)
    return ret;
 }
 
-static bool x_is_pressed(x11_input_t *x11,
-      const struct retro_keybind *binds, unsigned id)
-{
-   if (id < RARCH_BIND_LIST_END)
-   {
-      const struct retro_keybind *bind = &binds[id];
-      return x_key_pressed(x11, binds[id].key);
-   }
-
-   return false;
-}
-
 static int16_t x_pressed_analog(x11_input_t *x11,
       const struct retro_keybind *binds, unsigned idx, unsigned id)
 {
@@ -110,9 +98,9 @@ static int16_t x_pressed_analog(x11_input_t *x11,
 
    input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
 
-   if (binds && binds[id_minus].valid && x_is_pressed(x11, binds, id_minus))
+   if (binds && binds[id_minus].valid && x_key_pressed(x11, binds[id_minus].key))
       pressed_minus = -0x7fff;
-   if (binds && binds[id_plus].valid && x_is_pressed(x11, binds, id_plus))
+   if (binds && binds[id_plus].valid && x_key_pressed(x11, binds[id_plus].key))
       pressed_plus  =  0x7fff;
 
    return pressed_plus + pressed_minus;
@@ -239,7 +227,7 @@ static int16_t x_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return x_is_pressed(x11, binds[port], id) ||
+         return x_key_pressed(x11, binds[port][id].key) ||
             input_joypad_pressed(x11->joypad, joypad_info, port, binds[port], id);
       case RETRO_DEVICE_KEYBOARD:
          return x_key_pressed(x11, id);
