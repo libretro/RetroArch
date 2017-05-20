@@ -2334,31 +2334,27 @@ static enum runloop_state runloop_check_state(
    if (menu_is_alive)
    {
       menu_ctx_iterate_t iter;
-      core_poll();
+      enum menu_action action = (enum menu_action)menu_event(current_input, trigger_input);
+      bool focused            = pause_nonactive ? is_focused : true;
 
-      {
-         enum menu_action action = (enum menu_action)menu_event(current_input, trigger_input);
-         bool focused            = pause_nonactive ? is_focused : true;
+      focused                 = focused && !ui_companion_is_on_foreground();
 
-         focused                 = focused && !ui_companion_is_on_foreground();
+      iter.action             = action;
 
-         iter.action             = action;
+      if (!menu_driver_iterate(&iter))
+         rarch_menu_running_finished();
 
-         if (!menu_driver_iterate(&iter))
-            rarch_menu_running_finished();
+      if (focused || !runloop_idle)
+         menu_driver_render(runloop_idle, rarch_is_inited,
+               (current_core_type == CORE_TYPE_DUMMY)
+               )
+            ;
 
-         if (focused || !runloop_idle)
-            menu_driver_render(runloop_idle, rarch_is_inited,
-                  (current_core_type == CORE_TYPE_DUMMY)
-                  )
-                  ;
+      if (!focused)
+         return RUNLOOP_STATE_SLEEP;
 
-         if (!focused)
-            return RUNLOOP_STATE_SLEEP;
-
-         if (action == MENU_ACTION_QUIT && !menu_driver_is_binding_state())
-            return RUNLOOP_STATE_QUIT;
-      }
+      if (action == MENU_ACTION_QUIT && !menu_driver_is_binding_state())
+         return RUNLOOP_STATE_QUIT;
    }
 #endif
 
@@ -2666,8 +2662,11 @@ int runloop_iterate(unsigned *sleep_ms)
    bool menu_is_alive                           = false;
 #endif
    unsigned max_users                           = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
-   uint64_t current_input                       =
+   uint64_t current_input                       = 0;
 
+   core_poll();
+
+   current_input =
 #ifdef HAVE_MENU
       menu_is_alive ? 
       input_menu_keys_pressed(settings, old_input,
@@ -2719,16 +2718,13 @@ int runloop_iterate(unsigned *sleep_ms)
          command_event(CMD_EVENT_QUIT, NULL);
          return -1;
       case RUNLOOP_STATE_SLEEP:
-         core_poll();
          runloop_netplay_pause();
          *sleep_ms = 10;
          return 1;
       case RUNLOOP_STATE_END:
-         core_poll();
          runloop_netplay_pause();
          goto end;
       case RUNLOOP_STATE_MENU_ITERATE:
-         core_poll();
          runloop_netplay_pause();
          return 0;
       case RUNLOOP_STATE_ITERATE:
