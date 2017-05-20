@@ -23,6 +23,7 @@
 #include <retro_stat.h>
 
 #include "dirs.h"
+#include "command.h"
 #include "configuration.h"
 #include "command.h"
 #include "defaults.h"
@@ -108,9 +109,6 @@ bool dir_free_shader(void)
  **/
 void dir_check_shader(bool pressed_next, bool pressed_prev)
 {
-   char msg[128];
-   const char *shader              = NULL;
-   enum rarch_shader_type type     = RARCH_SHADER_NONE;
    struct rarch_dir_list *dir_list = (struct rarch_dir_list*)&dir_shader_list;
 
    if (!dir_list || !dir_list->list)
@@ -131,40 +129,7 @@ void dir_check_shader(bool pressed_next, bool pressed_prev)
    else
       return;
 
-   shader   = dir_list->list->elems[dir_list->ptr].data;
-
-   switch (msg_hash_to_file_type(msg_hash_calculate(
-               path_get_extension(shader))))
-   {
-      case FILE_TYPE_SHADER_GLSL:
-      case FILE_TYPE_SHADER_PRESET_GLSLP:
-         type = RARCH_SHADER_GLSL;
-         break;
-      case FILE_TYPE_SHADER_SLANG:
-      case FILE_TYPE_SHADER_PRESET_SLANGP:
-         type = RARCH_SHADER_SLANG;
-         break;
-      case FILE_TYPE_SHADER_CG:
-      case FILE_TYPE_SHADER_PRESET_CGP:
-         type = RARCH_SHADER_CG;
-         break;
-      default:
-         return;
-   }
-
-   msg[0] = '\0';
-
-   snprintf(msg, sizeof(msg), "%s #%u: \"%s\".",
-         msg_hash_to_str(MSG_SHADER),
-         (unsigned)dir_list->ptr, shader);
-   runloop_msg_queue_push(msg, 2, 120, true);
-
-   RARCH_LOG("%s \"%s\".\n",
-         msg_hash_to_str(MSG_APPLYING_SHADER),
-         shader);
-
-   if (!video_driver_set_shader(type, shader))
-      RARCH_WARN("%s\n", msg_hash_to_str(MSG_FAILED_TO_APPLY_SHADER));
+   command_set_shader(dir_list->list->elems[dir_list->ptr].data);
 }
 
 /* empty functions */
