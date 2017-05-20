@@ -54,9 +54,7 @@
 #include "menu_setting.h"
 #include "menu_driver.h"
 #include "menu_animation.h"
-#include "menu_display.h"
 #include "menu_input.h"
-#include "menu_navigation.h"
 
 #include "../core.h"
 #include "../configuration.h"
@@ -67,7 +65,6 @@
 #include "../paths.h"
 #include "../dynamic.h"
 #include "../list_special.h"
-#include "../runloop.h"
 #include "../verbosity.h"
 #include "../camera/camera_driver.h"
 #include "../wifi/wifi_driver.h"
@@ -513,7 +510,6 @@ static void setting_get_string_representation_uint_user_language(void *data,
       char *s, size_t len)
 {
    const char *modes[RETRO_LANGUAGE_LAST];
-   settings_t      *settings = config_get_ptr();
 
    modes[RETRO_LANGUAGE_ENGLISH]                = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_ENGLISH);
    modes[RETRO_LANGUAGE_JAPANESE]               = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_JAPANESE);
@@ -532,8 +528,7 @@ static void setting_get_string_representation_uint_user_language(void *data,
    modes[RETRO_LANGUAGE_POLISH]                 = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_POLISH);
    modes[RETRO_LANGUAGE_VIETNAMESE]             = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE);
 
-   if (settings)
-      strlcpy(s, modes[settings->uints.user_language], len);
+   strlcpy(s, modes[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)], len);
 }
 #endif
 
@@ -1246,6 +1241,7 @@ static int setting_action_left_bind_device(void *data, bool wraparound)
 {
    unsigned index_offset;
    unsigned               *p = NULL;
+   unsigned max_users        = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
 
@@ -1256,8 +1252,8 @@ static int setting_action_left_bind_device(void *data, bool wraparound)
 
    p = &settings->uints.input_joypad_map[index_offset];
 
-   if ((*p) >= settings->uints.input_max_users)
-      *p = settings->uints.input_max_users - 1;
+   if ((*p) >= max_users)
+      *p = max_users - 1;
    else if ((*p) > 0)
       (*p)--;
 
@@ -1268,6 +1264,7 @@ static int setting_action_right_bind_device(void *data, bool wraparound)
 {
    unsigned index_offset;
    unsigned               *p = NULL;
+   unsigned max_users        = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
 
@@ -1278,7 +1275,7 @@ static int setting_action_right_bind_device(void *data, bool wraparound)
 
    p = &settings->uints.input_joypad_map[index_offset];
 
-   if (*p < settings->uints.input_max_users)
+   if (*p < max_users)
       (*p)++;
 
    return 0;
@@ -1405,6 +1402,7 @@ static void get_string_representation_bind_device(void * data, char *s,
       size_t len)
 {
    unsigned index_offset, map = 0;
+   unsigned max_users        = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
 
@@ -1414,7 +1412,7 @@ static void get_string_representation_bind_device(void * data, char *s,
    index_offset = setting->index_offset;
    map          = settings->uints.input_joypad_map[index_offset];
 
-   if (map < settings->uints.input_max_users)
+   if (map < max_users)
    {
       const char *device_name = input_config_get_device_name(map);
 
@@ -1642,21 +1640,19 @@ void general_write_handler(void *data)
          settings->uints.input_joypad_map[4] = *setting->value.target.integer;
          break;
       case MENU_ENUM_LABEL_LOG_VERBOSITY:
-         {
-            if (setting 
-                  && setting->value.target.boolean 
-                  && *setting->value.target.boolean)
-               verbosity_enable();
-            else
-               verbosity_disable();
+         if (setting 
+               && setting->value.target.boolean 
+               && *setting->value.target.boolean)
+            verbosity_enable();
+         else
+            verbosity_disable();
 
-            if (setting 
-                  && setting->value.target.boolean
-                  && *setting->value.target.boolean)
-               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL);
-            else
-               retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL);
-         }
+         if (setting 
+               && setting->value.target.boolean
+               && *setting->value.target.boolean)
+            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL);
+         else
+            retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL);
          break;
       case MENU_ENUM_LABEL_VIDEO_SMOOTH:
          video_driver_set_filtering(1, settings->bools.video_smooth);
@@ -2232,7 +2228,7 @@ static bool setting_append_list(
                   parent_group);
          }
 
-         if (memcmp(settings->arrays.menu_driver, "xmb", 3) != 0)
+         if (string_is_not_equal_fast(settings->arrays.menu_driver, "xmb", 3))
          {
             CONFIG_ACTION(
                   list, list_info,
@@ -2553,7 +2549,7 @@ static bool setting_append_list(
                parent_group);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
-         if (memcmp(settings->arrays.wifi_driver, "null", 4) != 0)
+         if (string_is_not_equal_fast(settings->arrays.wifi_driver, "null", 4))
          {
             CONFIG_ACTION(
                   list, list_info,
@@ -2916,7 +2912,7 @@ static bool setting_append_list(
             START_SUB_GROUP(list, list_info, "Performance Counters", &group_info, &subgroup_info,
                   parent_group);
 
-            runloop_ctl(RUNLOOP_CTL_GET_PERFCNT, &tmp_b);
+            rarch_ctl(RARCH_CTL_GET_PERFCNT, &tmp_b);
 
             CONFIG_BOOL(
                   list, list_info,
@@ -3251,7 +3247,7 @@ static bool setting_append_list(
                &setting_get_string_representation_st_float_video_refresh_rate_auto;
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
-            if (memcmp(settings->arrays.video_driver, "gl", 2) == 0)
+            if (string_is_equal_fast(settings->arrays.video_driver, "gl", 2))
             {
                CONFIG_BOOL(
                      list, list_info,
@@ -3605,7 +3601,7 @@ static bool setting_append_list(
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
-            if (memcmp(settings->arrays.video_driver, "gl", 2) == 0)
+            if (string_is_equal_fast(settings->arrays.video_driver, "gl", 2))
             {
                CONFIG_BOOL(
                      list, list_info,
@@ -3971,7 +3967,7 @@ static bool setting_append_list(
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
 #ifdef HAVE_WASAPI
-         if (memcmp(settings->arrays.audio_driver, "wasapi", 6) == 0)
+         if (string_is_equal_fast(settings->arrays.audio_driver, "wasapi", 6))
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -4037,7 +4033,7 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  &settings->uints.input_max_users,
+                  input_driver_get_uint(INPUT_ACTION_MAX_USERS),
                   MENU_ENUM_LABEL_INPUT_MAX_USERS,
                   MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
                   input_max_users,
@@ -4286,7 +4282,7 @@ static bool setting_append_list(
 
             CONFIG_FLOAT(
                   list, list_info,
-                  &settings->floats.input_axis_threshold,
+                  input_driver_get_float(INPUT_ACTION_AXIS_THRESHOLD),
                   MENU_ENUM_LABEL_INPUT_AXIS_THRESHOLD,
                   MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD,
                   axis_threshold,
@@ -4791,7 +4787,7 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-         if (memcmp(settings->arrays.menu_driver, "rgui", 4) != 0)
+         if (string_is_not_equal_fast(settings->arrays.menu_driver, "rgui", 4))
          {
             CONFIG_PATH(
                   list, list_info,
@@ -4823,7 +4819,7 @@ static bool setting_append_list(
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
          }
 
-         if (memcmp(settings->arrays.menu_driver, "xmb", 3) == 0)
+         if (string_is_equal_fast(settings->arrays.menu_driver, "xmb", 3))
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -5023,7 +5019,7 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "Display", &group_info, &subgroup_info, parent_group);
 
          /* only GLUI uses these values, don't show them on other drivers */
-         if (memcmp(settings->arrays.menu_driver, "glui", 4) == 0)
+         if (string_is_equal_fast(settings->arrays.menu_driver, "glui", 4))
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -5056,7 +5052,7 @@ static bool setting_append_list(
 
 #ifdef HAVE_XMB
          /* only XMB uses these values, don't show them on other drivers */
-         if (memcmp(settings->arrays.menu_driver, "xmb", 3) == 0)
+         if (string_is_equal_fast(settings->arrays.menu_driver, "xmb", 3))
          {
             CONFIG_UINT(
                   list, list_info,
@@ -5277,7 +5273,7 @@ static bool setting_append_list(
 
 #ifdef HAVE_MATERIALUI
          /* only MaterialUI uses these values, don't show them on other drivers */
-         if (memcmp(settings->arrays.menu_driver, "glui", 4) == 0)
+         if (string_is_equal_fast(settings->arrays.menu_driver, "glui", 4))
          {
             CONFIG_UINT(
                   list, list_info,
@@ -5337,7 +5333,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_ADVANCED);
 
-         if (memcmp(settings->arrays.menu_driver, "xmb", 3) == 0)
+         if (string_is_equal_fast(settings->arrays.menu_driver, "xmb", 3))
          {
             CONFIG_UINT(
                   list, list_info,
@@ -5437,7 +5433,7 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-         if (memcmp(settings->arrays.record_driver, "null", 4) != 0)
+         if (string_is_not_equal_fast(settings->arrays.record_driver, "null", 4))
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -5518,7 +5514,7 @@ static bool setting_append_list(
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
 #endif
 
-         if (memcmp(ui_companion_driver_get_ident(), "null", 4) != 0)
+         if (string_is_not_equal_fast(ui_companion_driver_get_ident(), "null", 4))
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -6055,31 +6051,34 @@ static bool setting_append_list(
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
             /* TODO/FIXME - add enum_idx */
 
-            for(user = 0; user < settings->uints.input_max_users; user++)
             {
-               char s1[64], s2[64];
+               unsigned max_users        = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+               for(user = 0; user < max_users; user++)
+               {
+                  char s1[64], s2[64];
 
-               snprintf(s1, sizeof(s1), "%s_user_p%d", msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_REMOTE_ENABLE), user + 1);
-               snprintf(s2, sizeof(s2), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_USER_REMOTE_ENABLE), user + 1);
+                  snprintf(s1, sizeof(s1), "%s_user_p%d", msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_REMOTE_ENABLE), user + 1);
+                  snprintf(s2, sizeof(s2), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_USER_REMOTE_ENABLE), user + 1);
 
 
-               CONFIG_BOOL_ALT(
-                     list, list_info,
-                     &settings->bools.network_remote_enable_user[user],
-                     /* todo: figure out this value, it's working fine but I don't think this is correct */
-                     strdup(s1),
-                     strdup(s2),
-                     false,
-                     MENU_ENUM_LABEL_VALUE_OFF,
-                     MENU_ENUM_LABEL_VALUE_ON,
-                     &group_info,
-                     &subgroup_info,
-                     parent_group,
-                     general_write_handler,
-                     general_read_handler,
-                     SD_FLAG_ADVANCED);
-               settings_data_list_current_add_free_flags(list, list_info, SD_FREE_FLAG_NAME | SD_FREE_FLAG_SHORT);
-               menu_settings_list_current_add_enum_idx(list, list_info, (enum msg_hash_enums)(MENU_ENUM_LABEL_NETWORK_REMOTE_USER_1_ENABLE + user));
+                  CONFIG_BOOL_ALT(
+                        list, list_info,
+                        &settings->bools.network_remote_enable_user[user],
+                        /* todo: figure out this value, it's working fine but I don't think this is correct */
+                        strdup(s1),
+                        strdup(s2),
+                        false,
+                        MENU_ENUM_LABEL_VALUE_OFF,
+                        MENU_ENUM_LABEL_VALUE_ON,
+                        &group_info,
+                        &subgroup_info,
+                        parent_group,
+                        general_write_handler,
+                        general_read_handler,
+                        SD_FLAG_ADVANCED);
+                  settings_data_list_current_add_free_flags(list, list_info, SD_FREE_FLAG_NAME | SD_FREE_FLAG_SHORT);
+                  menu_settings_list_current_add_enum_idx(list, list_info, (enum msg_hash_enums)(MENU_ENUM_LABEL_NETWORK_REMOTE_USER_1_ENABLE + user));
+               }
             }
 
             CONFIG_BOOL(
@@ -6217,7 +6216,7 @@ static bool setting_append_list(
 #ifdef HAVE_LANGEXTRA
          CONFIG_UINT(
                list, list_info,
-               &settings->uints.user_language,
+               msg_hash_get_uint(MSG_HASH_USER_LANGUAGE),
                MENU_ENUM_LABEL_USER_LANGUAGE,
                MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
                def_user_language,
@@ -6533,7 +6532,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
 
-         if (memcmp(settings->arrays.record_driver, "null", 4) != 0)
+         if (string_is_not_equal_fast(settings->arrays.record_driver, "null", 4))
          {
             CONFIG_DIR(
                   list, list_info,
@@ -6689,7 +6688,7 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "State",
                &group_info, &subgroup_info, parent_group);
 
-         if (memcmp(settings->arrays.camera_driver, "null", 4) != 0)
+         if (string_is_not_equal_fast(settings->arrays.camera_driver, "null", 4))
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -6707,7 +6706,7 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
          }
 
-         if (memcmp(settings->arrays.location_driver, "null", 4) != 0)
+         if (string_is_not_equal_fast(settings->arrays.location_driver, "null", 4))
          {
             CONFIG_BOOL(
                   list, list_info,

@@ -87,7 +87,7 @@ bool task_push_netplay_nat_traversal(void *nat_traversal_state, uint16_t port)
    task->callback = netplay_nat_traversal_callback;
    task->task_data = ntsd;
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+   task_queue_push(task);
 
    return true;
 #else

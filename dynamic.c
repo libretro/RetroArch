@@ -50,7 +50,7 @@
 #include "core.h"
 #include "driver.h"
 #include "performance_counters.h"
-#include "gfx/video_context_driver.h"
+#include "gfx/video_driver.h"
 
 #include "cores/internal_cores.h"
 #include "frontend/frontend_driver.h"
@@ -58,7 +58,6 @@
 #include "dirs.h"
 #include "paths.h"
 #include "retroarch.h"
-#include "runloop.h"
 #include "configuration.h"
 #include "msg_hash.h"
 #include "verbosity.h"
@@ -672,9 +671,9 @@ void uninit_libretro_sym(struct retro_core_t *current_core)
 
    memset(current_core, 0, sizeof(struct retro_core_t));
 
-   runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_DEINIT, NULL);
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_FREE, NULL);
-   runloop_ctl(RUNLOOP_CTL_FRAME_TIME_FREE, NULL);
+   rarch_ctl(RARCH_CTL_CORE_OPTIONS_DEINIT, NULL);
+   rarch_ctl(RARCH_CTL_SYSTEM_INFO_FREE, NULL);
+   rarch_ctl(RARCH_CTL_FRAME_TIME_FREE, NULL);
    camera_driver_ctl(RARCH_CAMERA_CTL_UNSET_ACTIVE, NULL);
    location_driver_ctl(RARCH_LOCATION_CTL_UNSET_ACTIVE, NULL);
 
@@ -907,7 +906,7 @@ static bool dynamic_verify_hw_context(enum retro_hw_context_type type,
    switch (type)
    {
       case RETRO_HW_CONTEXT_VULKAN:
-         if (memcmp(video_ident, "vulkan", 6) != 0)
+         if (string_is_not_equal_fast(video_ident, "vulkan", 6))
             return false;
          break;
       case RETRO_HW_CONTEXT_OPENGLES2:
@@ -915,7 +914,7 @@ static bool dynamic_verify_hw_context(enum retro_hw_context_type type,
       case RETRO_HW_CONTEXT_OPENGLES_VERSION:
       case RETRO_HW_CONTEXT_OPENGL:
       case RETRO_HW_CONTEXT_OPENGL_CORE:
-         if (memcmp(video_ident, "gl", 2) != 0)
+         if (string_is_not_equal_fast(video_ident, "gl", 2))
             return false;
          break;
       default:
@@ -927,7 +926,7 @@ static bool dynamic_verify_hw_context(enum retro_hw_context_type type,
 
 static void core_performance_counter_start(struct retro_perf_counter *perf)
 {
-   if (runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL))
+   if (rarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL))
    {
       perf->call_cnt++;
       perf->start      = cpu_features_get_perf_counter();
@@ -936,7 +935,7 @@ static void core_performance_counter_start(struct retro_perf_counter *perf)
 
 static void core_performance_counter_stop(struct retro_perf_counter *perf)
 {
-   if (runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL))
+   if (rarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL))
       perf->total += cpu_features_get_perf_counter() - perf->start;
 }
 
@@ -973,7 +972,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_VARIABLE:
-         if (!runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_GET, data))
+         if (!rarch_ctl(RARCH_CTL_CORE_OPTIONS_GET, data))
          {
             struct retro_variable *var = (struct retro_variable*)data;
 
@@ -987,14 +986,14 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE:
-         *(bool*)data = runloop_ctl(RUNLOOP_CTL_IS_CORE_OPTION_UPDATED, NULL);
+         *(bool*)data = rarch_ctl(RARCH_CTL_IS_CORE_OPTION_UPDATED, NULL);
          break;
 
       case RETRO_ENVIRONMENT_SET_VARIABLES:
          RARCH_LOG("Environ SET_VARIABLES.\n");
 
-         runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_DEINIT, NULL);
-         runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_INIT,   data);
+         rarch_ctl(RARCH_CTL_CORE_OPTIONS_DEINIT, NULL);
+         rarch_ctl(RARCH_CTL_CORE_OPTIONS_INIT,   data);
 
          break;
 
@@ -1023,8 +1022,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SHUTDOWN:
          RARCH_LOG("Environ SHUTDOWN.\n");
-         runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN,      NULL);
-         runloop_ctl(RUNLOOP_CTL_SET_CORE_SHUTDOWN, NULL);
+         rarch_ctl(RARCH_CTL_SET_SHUTDOWN,      NULL);
+         rarch_ctl(RARCH_CTL_SET_CORE_SHUTDOWN, NULL);
          break;
 
       case RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL:
@@ -1078,9 +1077,11 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_GET_LANGUAGE:
 #ifdef HAVE_LANGEXTRA
-         *(unsigned *)data = settings->uints.user_language;
-         RARCH_LOG("Environ GET_LANGUAGE: \"%u\".\n",
-               settings->uints.user_language);
+         {
+            unsigned user_lang = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
+            *(unsigned *)data  = user_lang;
+            RARCH_LOG("Environ GET_LANGUAGE: \"%u\".\n", user_lang);
+         }
 #endif
          break;
 
@@ -1190,17 +1191,22 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             }
 
             RARCH_LOG("Environ SET_INPUT_DESCRIPTORS:\n");
-            for (p = 0; p < settings->uints.input_max_users; p++)
+
             {
-               for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
+               unsigned max_users = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+
+               for (p = 0; p < max_users; p++)
                {
-                  const char *description = system->input_desc_btn[p][retro_id];
+                  for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
+                  {
+                     const char *description = system->input_desc_btn[p][retro_id];
 
-                  if (!description)
-                     continue;
+                     if (!description)
+                        continue;
 
-                  RARCH_LOG("\tRetroPad, User %u, Button \"%s\" => \"%s\"\n",
-                        p + 1, libretro_btn_desc[retro_id], description);
+                     RARCH_LOG("\tRetroPad, User %u, Button \"%s\" => \"%s\"\n",
+                           p + 1, libretro_btn_desc[retro_id], description);
+                  }
                }
             }
 
@@ -1217,8 +1223,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          const struct retro_keyboard_callback *info =
             (const struct retro_keyboard_callback*)data;
 
-         runloop_ctl(RUNLOOP_CTL_FRONTEND_KEY_EVENT_GET, &frontend_key_event);
-         runloop_ctl(RUNLOOP_CTL_KEY_EVENT_GET, &key_event);
+         rarch_ctl(RARCH_CTL_FRONTEND_KEY_EVENT_GET, &frontend_key_event);
+         rarch_ctl(RARCH_CTL_KEY_EVENT_GET, &key_event);
 
          RARCH_LOG("Environ SET_KEYBOARD_CALLBACK.\n");
          if (key_event)
@@ -1305,7 +1311,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK:
       {
          RARCH_LOG("Environ SET_FRAME_TIME_CALLBACK.\n");
-         runloop_ctl(RUNLOOP_CTL_SET_FRAME_TIME, data);
+         rarch_ctl(RARCH_CTL_SET_FRAME_TIME, data);
          break;
       }
 

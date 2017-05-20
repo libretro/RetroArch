@@ -46,7 +46,7 @@
 
 #include "../include/Cg/cg.h"
 
-#include "../video_shader_driver.h"
+#include "../video_driver.h"
 #include "../video_shader_parse.h"
 #include "../../core.h"
 #include "../../managers/state_manager.h"
@@ -261,14 +261,13 @@ static bool gl_cg_set_mvp(void *data, void *shader_data, const math_matrix_4x4 *
 {
    cg_shader_data_t *cg = (cg_shader_data_t*)shader_data;
    if (!cg || !cg->prg[cg->active_idx].mvp)
-      goto fallback;
+   {
+      gl_ff_matrix(mat);
+      return false;
+   }
 
    cgGLSetMatrixParameterfc(cg->prg[cg->active_idx].mvp, mat->data);
    return true;
-
-fallback:
-   gl_ff_matrix(mat);
-   return false;
 }
 
 static bool gl_cg_set_coords(void *handle_data, void *shader_data, const struct video_coords *coords)
@@ -1054,7 +1053,7 @@ static void *gl_cg_init(void *data, const char *path)
    memset(cg->alias_define, 0, sizeof(cg->alias_define));
 
    if (    !string_is_empty(path) 
-         && (memcmp(path_get_extension(path), "cgp", 3) == 0))
+         && string_is_equal_fast(path_get_extension(path), "cgp", 3))
    {
       if (!gl_cg_load_preset(cg, path))
          goto error;

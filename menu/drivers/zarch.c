@@ -42,15 +42,13 @@
 #include "../menu_driver.h"
 #include "../menu_animation.h"
 #include "../widgets/menu_entry.h"
-#include "../menu_display.h"
-#include "../menu_navigation.h"
 #include "../../retroarch.h"
 
 #include "../../gfx/font_driver.h"
 
 #include "../../core_info.h"
 #include "../../configuration.h"
-#include "../../runloop.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
 
@@ -1181,8 +1179,13 @@ menu_ctx_driver_t menu_ctx_zarch = {
    NULL,
    zarch_load_image,
    "zarch",
-   NULL,
-   NULL,
-   NULL,
-   NULL
+   NULL,  /* environ */
+   NULL,  /* pointer_tap */
+   NULL,  /* update_thumbnail_path */
+   NULL,  /* update_thumbnail_image */
+   NULL,  /* set_thumbnail_system */
+   NULL,  /* set_thumbnail_content */
+   NULL,  /* osk_ptr_at_pos */
+   NULL,  /* update_savestate_thumbnail_path */
+   NULL,  /* update_savestate_thumbnail_image */
 };

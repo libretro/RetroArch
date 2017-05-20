@@ -19,7 +19,6 @@
 #include "menu_input_dialog.h"
 
 #include "../menu_driver.h"
-#include "../menu_navigation.h"
 #include "../../input/input_driver.h"
 
 static const char **menu_input_dialog_keyboard_buffer      = {NULL};
@@ -39,9 +38,8 @@ static void menu_input_search_cb(void *userdata, const char *str)
 
    if (str && *str && file_list_search(selection_buf, str, &idx))
    {
-      bool scroll = true;
       menu_navigation_set_selection(idx);
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
+      menu_driver_navigation_set(true);
    }
 
    menu_input_dialog_end();

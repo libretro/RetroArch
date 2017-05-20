@@ -410,7 +410,7 @@ static void *hlsl_init(void *data, const char *path)
    if (!hlsl_data)
 	   return NULL;
 
-   if (path && (memcmp(path_get_extension(path), ".cgp", 4) == 0))
+   if (path && (string_is_equal_fast(path_get_extension(path), ".cgp", 4)))
    {
       if (!hlsl_load_preset(hlsl_data, d3d, path))
          goto error;

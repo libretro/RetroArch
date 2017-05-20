@@ -21,11 +21,11 @@
 #include "../../config.h"
 #endif
 
-#include "../menu_display.h"
+#include "../menu_driver.h"
 
 #include "../../retroarch.h"
 #include "../../gfx/font_driver.h"
-#include "../../gfx/video_context_driver.h"
+#include "../../gfx/video_driver.h"
 #include "../../gfx/drivers/d3d.h"
 #include "../../gfx/common/d3d_common.h"
 
@@ -172,15 +172,6 @@ static void menu_display_d3d_draw(void *data)
    menu_display_d3d_viewport(draw);
    menu_display_d3d_bind_texture(draw);
 
-#if 0
-   mat = (math_matrix_4x4*)draw->matrix_data;
-   if (!mat)
-      mat                         = (math_matrix_4x4*)
-         menu_display_d3d_get_default_mvp();
-   video_shader_driver_set_coords(draw->coords);
-   video_shader_driver_set_mvp(mat);
-#endif
-
    d3d_draw_primitive(d3d->dev, (D3DPRIMITIVETYPE)
          menu_display_prim_to_d3d_enum(draw->prim_type),
          0, draw->coords->vertices);
@@ -189,11 +180,10 @@ static void menu_display_d3d_draw(void *data)
 static void menu_display_d3d_draw_pipeline(void *data)
 {
 #if defined(HAVE_HLSL) || defined(HAVE_CG)
-   video_shader_ctx_info_t shader_info;
    menu_display_ctx_draw_t *draw     = (menu_display_ctx_draw_t*)data;
    struct uniform_info uniform_param = {0};
    static float t                    = 0;
-   video_coord_array_t *ca             = NULL;
+   video_coord_array_t *ca           = NULL;
 
    ca = menu_display_get_coords_array();
 
@@ -207,11 +197,6 @@ static void menu_display_d3d_draw_pipeline(void *data)
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
       case VIDEO_SHADER_MENU_3:
-         shader_info.data                = NULL;
-         shader_info.idx                 = draw->pipeline.id;
-         shader_info.set_active          = true;
-
-         video_shader_driver_use(shader_info);
 
          t += 0.01;
 
@@ -224,7 +209,6 @@ static void menu_display_d3d_draw_pipeline(void *data)
          uniform_param.lookup.ident      = "time";
          uniform_param.result.f.v0       = t;
 
-         video_shader_driver_set_parameter(uniform_param);
          break;
    }
 #endif

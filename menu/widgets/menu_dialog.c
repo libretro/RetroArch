@@ -27,7 +27,6 @@
 
 #include "menu_dialog.h"
 
-#include "../menu_display.h"
 #include "../menu_driver.h"
 
 #include "../../retroarch.h"

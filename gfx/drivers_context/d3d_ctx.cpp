@@ -25,10 +25,12 @@
 #endif
 
 #include <compat/strl.h>
+#include <string/stdstring.h>
 
 #include "../drivers/d3d.h"
 #include "../common/win32_common.h"
 
+#include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../../ui/ui_companion_driver.h"
 
@@ -75,7 +77,7 @@ static bool gfx_ctx_d3d_set_resize(void *data, unsigned new_width, unsigned new_
    return true;
 }
 
-static void gfx_ctx_d3d_swap_buffers(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_d3d_swap_buffers(void *data, void *data2)
 {
    d3d_video_t      *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
@@ -83,8 +85,9 @@ static void gfx_ctx_d3d_swap_buffers(void *data, video_frame_info_t *video_info)
    d3d_swap(d3d, d3dr);
 }
 
-static void gfx_ctx_d3d_update_title(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_d3d_update_title(void *data, void *data2)
 {
+   video_frame_info_t *video_info = (video_frame_info_t*)data2;
 #ifdef _XBOX
    if (video_info->fps_show)
    {
@@ -186,6 +189,19 @@ static void gfx_ctx_d3d_input_driver(void *data,
    *input               = xinput ? (const input_driver_t*)&input_xinput : NULL;
    *input_data          = xinput;
 #else
+   settings_t *settings = config_get_ptr();
+
+   if (string_is_equal_fast(settings->arrays.input_driver, "raw", 4))
+   {
+      *input_data = input_winraw.init(name);
+      if (*input_data)
+      {
+         *input = &input_winraw;
+         dinput = NULL;
+         return;
+      }
+   }
+
    dinput               = input_dinput.init(name);
    *input               = dinput ? &input_dinput : NULL;
    *input_data          = dinput;

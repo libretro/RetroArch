@@ -42,6 +42,7 @@
 
 #ifdef HAVE_NETWORKING
 #include <net/net_http_parse.h>
+#include "../../network/netplay/netplay.h"
 #include "../network/netplay/netplay_discovery.h"
 #endif
 
@@ -51,7 +52,6 @@
 
 #include "menu_content.h"
 #include "menu_driver.h"
-#include "menu_navigation.h"
 #include "menu_shader.h"
 #include "widgets/menu_dialog.h"
 #include "widgets/menu_list.h"
@@ -65,11 +65,10 @@
 #include "../managers/core_option_manager.h"
 #include "../paths.h"
 #include "../retroarch.h"
-#include "../runloop.h"
 #include "../core.h"
 #include "../frontend/frontend_driver.h"
 #include "../ui/ui_companion_driver.h"
-#include "../gfx/video_shader_driver.h"
+#include "../gfx/video_driver.h"
 #include "../config.features.h"
 #include "../version_git.h"
 #include "../input/input_config.h"
@@ -84,7 +83,109 @@ static char new_lbl_entry[4096]         = {0};
 static char new_entry[4096]             = {0};
 static enum msg_hash_enums new_type     = MSG_UNKNOWN;
 
+/* HACK - we have to find some way to pass state inbetween
+ * function pointer callback functions that don't necessarily
+ * call each other. */
+static char *core_buf                   = NULL;
+static size_t core_len                  = 0;
+
 #ifdef HAVE_NETWORKING
+void cb_net_generic_subdir(void *task_data, void *user_data, const char *err)
+{
+   char subdir_path[PATH_MAX_LENGTH];
+   http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
+   menu_file_transfer_t *state       = (menu_file_transfer_t*)user_data;
+
+   subdir_path[0] = '\0';
+
+   if (!data || err)
+      goto finish;
+
+   memcpy(subdir_path, data->data, data->len * sizeof(char));
+   subdir_path[data->len] = '\0';
+
+finish:
+   if (!err && !strstr(subdir_path, file_path_str(FILE_PATH_INDEX_DIRS_URL)))
+   {
+      char parent_dir[PATH_MAX_LENGTH];
+
+      parent_dir[0] = '\0';
+
+      fill_pathname_parent_dir(parent_dir,
+            state->path, sizeof(parent_dir));
+
+      /*generic_action_ok_displaylist_push(parent_dir, NULL,
+            subdir_path, 0, 0, 0, ACTION_OK_DL_CORE_CONTENT_DIRS_SUBDIR_LIST);*/
+   }
+
+   if (data)
+   {
+      if (data->data)
+         free(data->data);
+      free(data);
+   }
+
+   if (user_data)
+      free(user_data);
+}
+
+void cb_net_generic(void *task_data, void *user_data, const char *err)
+{
+   bool refresh                = false;
+   http_transfer_data_t *data  = (http_transfer_data_t*)task_data;
+   menu_file_transfer_t *state = (menu_file_transfer_t*)user_data;
+
+   if (core_buf)
+      free(core_buf);
+
+
+   core_buf = NULL;
+   core_len = 0;
+
+   if (!data || err)
+      goto finish;
+
+   core_buf = (char*)malloc((data->len+1) * sizeof(char));
+
+   if (!core_buf)
+      goto finish;
+
+   memcpy(core_buf, data->data, data->len * sizeof(char));
+   core_buf[data->len] = '\0';
+   core_len      = data->len;
+
+finish:
+   refresh = true;
+   menu_entries_ctl(MENU_ENTRIES_CTL_UNSET_REFRESH, &refresh);
+
+   if (data)
+   {
+      if (data->data)
+         free(data->data);
+      free(data);
+   }
+
+   if (!err && !strstr(state->path, file_path_str(FILE_PATH_INDEX_DIRS_URL)))
+   {
+      char parent_dir[PATH_MAX_LENGTH];
+      menu_file_transfer_t *transf     = NULL;
+
+      parent_dir[0] = '\0';
+
+      fill_pathname_parent_dir(parent_dir,
+            state->path, sizeof(parent_dir));
+      strlcat(parent_dir, file_path_str(FILE_PATH_INDEX_DIRS_URL), sizeof(parent_dir));
+
+      transf           = (menu_file_transfer_t*)calloc(1, sizeof(*transf));
+      strlcpy(transf->path, parent_dir, sizeof(transf->path));
+
+      task_push_http_transfer(parent_dir, true, "index_dirs", cb_net_generic_subdir, transf);
+   }
+
+   if (state)
+      free(state);
+}
+
 static void print_buf_lines(file_list_t *list, char *buf,
       const char *label, int buf_size,
       enum msg_file_type type, bool append, bool extended)
@@ -187,7 +288,7 @@ static void print_buf_lines(file_list_t *list, char *buf,
 
                   if (!string_is_empty(last))
                   {
-                     if (memcmp(last, "_libretro", 9) != 0)
+                     if (string_is_not_equal_fast(last, "_libretro", 9))
                         *last = '\0';
                   }
 
@@ -250,7 +351,7 @@ static int menu_displaylist_parse_netplay(
          msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS),
          MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS, MENU_SETTING_GROUP, 0, 0);
 
-   if (memcmp(settings->arrays.menu_driver, "xmb", 3) != 0)
+   if (string_is_not_equal_fast(settings->arrays.menu_driver, "xmb", 3))
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_TAB),
             msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB),
@@ -679,6 +780,24 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
       menu_entries_append_enum(info->list, tmp, "",
             MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
             MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+
+#ifdef HAVE_LAKKA
+      if (frontend->get_lakka_version)
+      {
+         frontend->get_lakka_version(tmp2, sizeof(tmp2));
+
+         fill_pathname_noext(tmp,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION),
+               ": ",
+               sizeof(tmp));
+         strlcat(tmp, frontend->get_lakka_version ?
+               tmp2 : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+               sizeof(tmp));
+         menu_entries_append_enum(info->list, tmp, "",
+               MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
+               MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+      }
+#endif
 
       if (frontend->get_name)
       {
@@ -1709,6 +1828,9 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
 
    fill_short_pathname_representation_noext(path_base, info->path,
          sizeof(path_base));
+
+   menu_driver_set_thumbnail_system(path_base, sizeof(path_base));
+
    strlcat(path_base,
          file_path_str(FILE_PATH_LPL_EXTENSION),
          sizeof(path_base));
@@ -1733,6 +1855,12 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       crc_str[0] = tmp[0] = '\0';
 
       snprintf(crc_str, sizeof(crc_str), "%08X", db_info_entry->crc32);
+
+      if (db_info_entry->name)
+         menu_driver_set_thumbnail_content(db_info_entry->name, strlen(db_info_entry->name)); 
+
+      menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
+      menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
 
       if (playlist)
       {
@@ -2617,6 +2745,8 @@ static int menu_displaylist_parse_horizontal_list(
          item->path,
          sizeof(path_playlist));
 
+   menu_driver_set_thumbnail_system(lpl_basename, sizeof(lpl_basename));
+
    menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_INIT, (void*)path_playlist);
 
    strlcpy(menu->db_playlist_file,
@@ -2629,7 +2759,7 @@ static int menu_displaylist_parse_horizontal_list(
 
    playlist_qsort(playlist);
 
-   if (memcmp(lpl_basename, "content_history", 15) == 0)
+   if (string_is_equal_fast(lpl_basename, "content_history", 15))
       is_historylist = true;
 
    menu_displaylist_parse_playlist(info,
@@ -2901,7 +3031,7 @@ static int menu_displaylist_parse_information_list(
          MENU_SETTING_ACTION, 0, 0);
 #endif
 
-   if (runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL))
+   if (rarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL))
    {
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS),
@@ -2996,36 +3126,7 @@ static int menu_displaylist_parse_netplay_room_list(
 {
 
 #ifdef HAVE_NETWORKING
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST),
-         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST),
-         MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST,
-         MENU_SETTING_ACTION, 0, 0);
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS),
-         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS),
-         MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS,
-         MENU_SETTING_ACTION, 0, 0);
-   
-   if (netplay_room_count > 0)
-   {
-      unsigned i;
-      for (i = 0; i < (unsigned)netplay_room_count; i++)
-      {
-         char s[PATH_MAX_LENGTH];
-
-         s[0] = '\0';
-
-         snprintf(s, sizeof(s),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME), netplay_room_list[i].nickname);
-         menu_entries_append_enum(info->list,
-               s,
-               msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM),
-               MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,
-               MENU_ROOM, 0, 0);
-
-      }
-   }
+   netplay_refresh_rooms_menu(info->list);
 #endif
 
    return 0;
@@ -3211,12 +3312,12 @@ static int menu_displaylist_parse_options_remappings(
    unsigned p, retro_id;
    rarch_system_info_t *system = NULL;
    menu_handle_t       *menu   = NULL;
-   settings_t        *settings = config_get_ptr();
+   unsigned max_users          = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return -1;
 
-   for (p = 0; p < settings->uints.input_max_users; p++)
+   for (p = 0; p < max_users; p++)
    {
       char key_type[PATH_MAX_LENGTH];
       char key_analog[PATH_MAX_LENGTH];
@@ -3255,7 +3356,7 @@ static int menu_displaylist_parse_options_remappings(
 
    if (system)
    {
-      for (p = 0; p < settings->uints.input_max_users; p++)
+      for (p = 0; p < max_users; p++)
       {
          for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND + 4; retro_id++)
          {
@@ -3675,7 +3776,7 @@ static bool menu_displaylist_push_list_process(menu_displaylist_info_t *info)
    if (info->need_navigation_clear)
    {
       bool pending_push = true;
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
+      menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
    }
 
    if (info->need_entries_refresh)
@@ -3742,7 +3843,7 @@ static bool menu_displaylist_push_list_process(menu_displaylist_info_t *info)
    if (info->need_push)
    {
       info->label_hash = msg_hash_calculate(info->label);
-      menu_driver_ctl(RARCH_MENU_CTL_POPULATE_ENTRIES, info);
+      menu_driver_populate_entries(info);
       ui_companion_driver_notify_list_loaded(info->list, info->menu_list);
    }
 
@@ -3959,6 +4060,88 @@ static void menu_displaylist_parse_playlist_history(
          (void*)menu->db_playlist_file);
 }
 
+#ifdef HAVE_NETWORKING
+static void wifi_scan_callback(void *task_data,
+                               void *user_data, const char *error)
+{
+   unsigned i;
+   file_list_t *file_list        = NULL;
+   struct string_list *ssid_list = NULL;
+
+   const char *path              = NULL;
+   const char *label             = NULL;
+   unsigned menu_type            = 0;
+   enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
+
+   menu_entries_get_last_stack(&path, &label, &menu_type, &enum_idx, NULL);
+
+   /* Don't push the results if we left the wifi menu */
+   if (!string_is_equal(label,
+         msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST)))
+      return;
+
+   file_list = menu_entries_get_selection_buf_ptr(0);
+   menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, file_list);
+
+   ssid_list = string_list_new();
+
+   driver_wifi_get_ssids(ssid_list);
+
+   for (i = 0; i < ssid_list->size; i++)
+   {
+      const char *ssid = ssid_list->elems[i].data;
+      menu_entries_append_enum(file_list,
+            ssid,
+            msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_WIFI),
+            MENU_ENUM_LABEL_CONNECT_WIFI,
+            MENU_WIFI, 0, 0);
+   }
+
+   string_list_free(ssid_list);
+}
+
+void netplay_lan_scan_callback(void *task_data,
+                               void *user_data, const char *error)
+{
+   struct netplay_host_list *netplay_hosts = NULL;
+   enum msg_hash_enums enum_idx            = MSG_UNKNOWN;
+   unsigned menu_type                      = 0;
+   const char *label                       = NULL;
+   const char *path                        = NULL;
+
+   menu_entries_get_last_stack(&path, &label, &menu_type, &enum_idx, NULL);
+
+   /* Don't push the results if we left the LAN scan menu */
+   if (!string_is_equal(label,
+         msg_hash_to_str(
+            MENU_ENUM_LABEL_DEFERRED_NETPLAY_LAN_SCAN_SETTINGS_LIST)))
+      return;
+
+   if (!netplay_discovery_driver_ctl(
+            RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES,
+            (void *) &netplay_hosts))
+      return;
+
+   if (netplay_hosts->size > 0)
+   {
+      unsigned i;
+      file_list_t *file_list = menu_entries_get_selection_buf_ptr(0);
+
+      menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, file_list);
+
+      for (i = 0; i < netplay_hosts->size; i++)
+      {
+         struct netplay_host *host = &netplay_hosts->hosts[i];
+         menu_entries_append_enum(file_list,
+               host->nick,
+               msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_CONNECT_TO),
+               MENU_ENUM_LABEL_NETPLAY_CONNECT_TO,
+               MENU_NETPLAY_LAN_SCAN, 0, 0);
+      }
+   }
+}
+#endif
+
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 {
    size_t i;
@@ -3994,7 +4177,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
    disp_list.info = info;
    disp_list.type = type;
 
-   if (menu_driver_ctl(RARCH_MENU_CTL_LIST_PUSH, &disp_list))
+   if (menu_driver_push_list(&disp_list))
       return true;
 
    switch (type)
@@ -4795,7 +4978,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push    = true;
          break;
       case DISPLAYLIST_WIFI_SETTINGS_LIST:
-         if (memcmp(settings->arrays.wifi_driver, "null", 4) == 0)
+         if (string_is_equal_fast(settings->arrays.wifi_driver, "null", 4))
             menu_entries_append_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND),
                   msg_hash_to_str(MENU_ENUM_LABEL_NO_NETWORKS_FOUND),
@@ -4809,7 +4992,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             if (ssid_list->size == 0)
             {
-               task_push_wifi_scan();
+               task_push_wifi_scan(wifi_scan_callback);
 
                menu_entries_append_enum(info->list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND),
@@ -4925,12 +5108,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   PARSE_ONLY_UINT, false) != -1)
                count++;
 
-            for(user = 0; user < settings->uints.input_max_users; user++)
             {
-               if (menu_displaylist_parse_settings_enum(menu, info,
-                     (enum msg_hash_enums)(MENU_ENUM_LABEL_NETWORK_REMOTE_USER_1_ENABLE + user),
-                     PARSE_ONLY_BOOL, false) != -1)
-                  count++;
+               unsigned max_users          = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+               for(user = 0; user < max_users; user++)
+               {
+                  if (menu_displaylist_parse_settings_enum(menu, info,
+                           (enum msg_hash_enums)(MENU_ENUM_LABEL_NETWORK_REMOTE_USER_1_ENABLE + user),
+                           PARSE_ONLY_BOOL, false) != -1)
+                     count++;
+               }
             }
 
             if (menu_displaylist_parse_settings_enum(menu, info,
@@ -4963,7 +5149,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             if (!hosts || hosts->size == 0)
             {
-               task_push_netplay_lan_scan();
+               task_push_netplay_lan_scan(netplay_lan_scan_callback);
 
                menu_entries_append_enum(info->list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND),
@@ -5381,7 +5567,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
          {
             unsigned user;
-            for (user = 0; user < settings->uints.input_max_users; user++)
+            unsigned max_users          = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+            for (user = 0; user < max_users; user++)
             {
                menu_displaylist_parse_settings_enum(menu, info,
                      (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + user),
@@ -5411,7 +5598,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_LOGGING_SETTINGS,   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS,   PARSE_ACTION, false);
-         if (memcmp(settings->arrays.record_driver, "null", 4) != 0)
+         if (string_is_not_equal_fast(settings->arrays.record_driver, "null", 4))
             ret = menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_RECORDING_SETTINGS,   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
@@ -6172,15 +6359,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push = true;
          break;
       case DISPLAYLIST_CORE_OPTIONS:
-         if (runloop_ctl(RUNLOOP_CTL_HAS_CORE_OPTIONS, NULL))
+         if (rarch_ctl(RARCH_CTL_HAS_CORE_OPTIONS, NULL))
          {
             size_t opts = 0;
 
-            runloop_ctl(RUNLOOP_CTL_GET_CORE_OPTION_SIZE, &opts);
+            rarch_ctl(RARCH_CTL_GET_CORE_OPTION_SIZE, &opts);
 
             if (settings->bools.game_specific_options)
             {
-               if (!runloop_ctl(RUNLOOP_CTL_IS_GAME_OPTIONS_ACTIVE, NULL))
+               if (!rarch_ctl(RARCH_CTL_IS_GAME_OPTIONS_ACTIVE, NULL))
                   menu_entries_append_enum(info->list,
                         msg_hash_to_str(
                            MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE),
@@ -6209,7 +6396,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             {
                core_option_manager_t *coreopts = NULL;
 
-               runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
+               rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
 
                for (i = 0; i < opts; i++)
                   menu_entries_append_enum(info->list,
@@ -6346,7 +6533,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          strlcpy(info->exts, "filt", sizeof(info->exts));
          break;
       case DISPLAYLIST_IMAGES:
-         if (filebrowser_get_type() != FILEBROWSER_SELECT_FILE)
+         if (     (filebrowser_get_type() != FILEBROWSER_SELECT_FILE)
+               && (filebrowser_get_type() != FILEBROWSER_SELECT_IMAGE))
             filebrowser_clear_type();
          info->type_default = FILE_TYPE_IMAGE;
          {

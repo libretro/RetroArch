@@ -22,8 +22,7 @@
 
 #include "../common/gl_common.h"
 #include "../font_driver.h"
-#include "../video_shader_driver.h"
-#include "../video_context_driver.h"
+#include "../video_driver.h"
 
 /* TODO: Move viewport side effects to the caller: it's a source of bugs. */
 

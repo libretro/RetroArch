@@ -43,7 +43,7 @@
 #include <compat/strl.h>
 #include <net/net_compat.h>
 
-#include "../../runloop.h"
+#include "../../retroarch.h"
 #include "../../version.h"
 #include "netplay.h"
 #include "netplay_discovery.h"

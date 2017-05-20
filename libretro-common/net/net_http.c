@@ -324,7 +324,7 @@ struct http_t *net_http_new(struct http_connection_t *conn)
       net_http_send_str(fd, &error, "\r\n");
    }
 
-   if (conn->methodcopy && (memcmp(conn->methodcopy, "POST", 4) == 0))
+   if (conn->methodcopy && (string_is_equal_fast(conn->methodcopy, "POST", 4)))
    {
       size_t post_len, len;
       char *len_str        = NULL;
@@ -361,7 +361,7 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    net_http_send_str(fd, &error, "Connection: close\r\n");
    net_http_send_str(fd, &error, "\r\n");
 
-   if (conn->methodcopy && (memcmp(conn->methodcopy, "POST", 4) == 0))
+   if (conn->methodcopy && (string_is_equal_fast(conn->methodcopy, "POST", 4)))
       net_http_send_str(fd, &error, conn->postdatacopy);
 
    if (error)

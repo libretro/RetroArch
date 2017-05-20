@@ -16,7 +16,6 @@
 #include <compat/strl.h>
 
 #include "../menu_driver.h"
-#include "../menu_navigation.h"
 #include "../menu_cbs.h"
 
 #include "../widgets/menu_dialog.h"

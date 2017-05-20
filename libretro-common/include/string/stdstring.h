@@ -48,6 +48,9 @@ static INLINE bool string_is_equal(const char *a, const char *b)
    return (*(const unsigned char*)a - *(const unsigned char*)b) == 0;
 }
 
+#define string_is_not_equal_fast(a, b, size) (memcmp(a, b, size) != 0)
+#define string_is_equal_fast(a, b, size) (memcmp(a, b, size) == 0)
+
 static INLINE bool string_is_equal_noncase(const char *a, const char *b)
 {
    int result;

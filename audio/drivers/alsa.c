@@ -370,7 +370,7 @@ static void *alsa_device_list_new(void *data)
       /* description of device IOID - input / output identifcation
        * ("Input" or "Output"), NULL means both) */
 
-      if (!io || (memcmp(io, "Output", 6) == 0))
+      if (!io || (string_is_equal_fast(io, "Output", 6)))
          string_list_append(s, name, attr);
 
       if (name)

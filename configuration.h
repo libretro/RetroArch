@@ -231,7 +231,6 @@ typedef struct settings
       float audio_max_timing_skew;
       float audio_volume; /* dB scale. */
 
-      float input_axis_threshold;
       float input_overlay_opacity;
       float input_overlay_scale;
 
@@ -255,8 +254,6 @@ typedef struct settings
       unsigned audio_block_frames;
       unsigned audio_latency;
       unsigned input_remap_ids[MAX_USERS][RARCH_BIND_LIST_END];
-
-      unsigned input_max_users;
 
       /* Set by autoconfiguration in joypad_autoconfig_dir.
        * Does not override main binds. */
@@ -285,9 +282,6 @@ typedef struct settings
       unsigned autosave_interval;
       unsigned network_cmd_port;
       unsigned network_remote_base_port;
-#ifdef HAVE_LANGEXTRA
-      unsigned user_language;
-#endif
       unsigned video_window_x;
       unsigned video_window_y;
       unsigned video_monitor_index;

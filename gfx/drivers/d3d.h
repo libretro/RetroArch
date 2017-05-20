@@ -46,12 +46,8 @@
 
 #include "../../driver.h"
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-#include "../video_shader_driver.h"
-#endif
-
 #include "../font_driver.h"
-#include "../video_context_driver.h"
+#include "../video_driver.h"
 #include "../common/d3d_common.h"
 #include "../video_renderchain_driver.h"
 #ifdef _XBOX

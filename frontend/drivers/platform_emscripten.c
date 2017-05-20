@@ -37,7 +37,6 @@
 #include "../../defaults.h"
 #include "../../content.h"
 #include "../../retroarch.h"
-#include "../../runloop.h"
 #include "../../command.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../file_path_special.h"
@@ -49,7 +48,9 @@ static void emscripten_mainloop(void)
 
    if (ret == 1 && sleep_ms > 0)
       retro_sleep(sleep_ms);
-   task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
+
+   task_queue_check();
+
    if (ret != -1)
       return;
 

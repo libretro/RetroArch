@@ -85,6 +85,9 @@ typedef struct frontend_ctx_driver
    void (*destroy_signal_handler_state)(void);
    void (*attach_console)(void);
    void (*detach_console)(void);
+#ifdef HAVE_LAKKA
+   void (*get_lakka_version)(char *, size_t);
+#endif
 
    const char *ident;
 

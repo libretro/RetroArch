@@ -22,18 +22,18 @@
 
 #include <file/file_path.h>
 #include <queues/task_queue.h>
+#include <string/stdstring.h>
 
 #include "cocoa/cocoa_common.h"
 #include "../ui_companion_driver.h"
+#include "../../configuration.h"
+#include "../../frontend/frontend.h"
 #include "../../input/drivers/cocoa_input.h"
 #include "../../input/drivers_keyboard/keyboard_event_apple.h"
 #include "../../retroarch.h"
 #ifdef HAVE_AVFOUNDATION
 #import <AVFoundation/AVFoundation.h>
 #endif
-#include "../../configuration.h"
-#include "../../frontend/frontend.h"
-#include "../../runloop.h"
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_setting.h"
@@ -55,9 +55,9 @@ static void rarch_enable_ui(void)
 
    ui_companion_set_foreground(true);
 
-   runloop_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
-   runloop_ctl(RUNLOOP_CTL_SET_IDLE,   &boolean);
-   rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
+   rarch_ctl(RARCH_CTL_SET_PAUSED, &boolean);
+   rarch_ctl(RARCH_CTL_SET_IDLE,   &boolean);
+   rarch_menu_running();
 }
 
 static void rarch_disable_ui(void)
@@ -66,9 +66,9 @@ static void rarch_disable_ui(void)
 
    ui_companion_set_foreground(false);
 
-   runloop_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
-   runloop_ctl(RUNLOOP_CTL_SET_IDLE,   &boolean);
-   rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+   rarch_ctl(RARCH_CTL_SET_PAUSED, &boolean);
+   rarch_ctl(RARCH_CTL_SET_IDLE,   &boolean);
+   rarch_menu_running_finished();
 #ifdef HAVE_AVFOUNDATION
    [[RetroArch_iOS get] supportOtherAudioSessions];
 #endif
@@ -89,7 +89,7 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
 
    if (ret == 1 && !ui_companion_is_on_foreground() && sleep_ms > 0)
       retro_sleep(sleep_ms);
-   task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
+   task_queue_check();
 
    if (ret == -1)
    {
@@ -98,7 +98,7 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
       return;
    }
 
-   if (runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
+   if (rarch_ctl(RARCH_CTL_IS_IDLE, NULL))
       return;
    CFRunLoopWakeUp(CFRunLoopGetMain());
 }
@@ -485,10 +485,11 @@ enum
    /* Get enabled orientations */
    apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskAll;
    
-   if (memcmp(apple_frontend_settings.orientations, "landscape", 9) == 0)
+   if (string_is_equal_fast(apple_frontend_settings.orientations, "landscape", 9))
       apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskLandscape;
-   else if (memcmp(apple_frontend_settings.orientations, "portrait", 8) == 0)
-      apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskPortrait | UIInterfaceOrientationMaskPortraitUpsideDown;
+   else if (string_is_equal_fast(apple_frontend_settings.orientations, "portrait", 8))
+      apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskPortrait 
+         | UIInterfaceOrientationMaskPortraitUpsideDown;
 }
 
 - (void)mainMenuRefresh 

@@ -308,7 +308,7 @@ static int sevenzip_parse_file_init(file_archive_transfer_t *state,
    if (state->archive_size < SEVENZIP_MAGIC_LEN)
       goto error;
 
-   if (memcmp(state->data, SEVENZIP_MAGIC, SEVENZIP_MAGIC_LEN) != 0)
+   if (string_is_not_equal_fast(state->data, SEVENZIP_MAGIC, SEVENZIP_MAGIC_LEN))
       goto error;
 
    state->stream = sevenzip_context;

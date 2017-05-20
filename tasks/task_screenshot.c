@@ -50,7 +50,7 @@
 
 #include "../defaults.h"
 #include "../configuration.h"
-#include "../runloop.h"
+#include "../retroarch.h"
 #include "../paths.h"
 #include "../msg_hash.h"
 
@@ -58,7 +58,9 @@
 
 #include "tasks_internal.h"
 
-typedef struct
+typedef struct screenshot_task_state screenshot_task_state_t;
+
+struct screenshot_task_state
 {
 #ifdef _XBOX1
    D3DSurface *surf;
@@ -78,7 +80,7 @@ typedef struct
    bool is_paused;
    bool history_list_enable;
    unsigned pixel_format_type;
-} screenshot_task_state_t;
+};
 
 /**
  * task_screenshot_handler:
@@ -265,7 +267,7 @@ static bool screenshot_dump(
    if (!savestate)
       task->title    = strdup(msg_hash_to_str(MSG_TAKING_SCREENSHOT));
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+   task_queue_push(task);
 
    return true;
 }
@@ -334,7 +336,7 @@ static bool take_screenshot_raw(const char *name_base, void *userbuf,
 }
 
 static bool take_screenshot_choice(const char *name_base, bool savestate,
-      bool is_paused, bool is_idle)
+      bool is_paused, bool is_idle, bool has_valid_framebuffer)
 {
    size_t old_pitch;
    unsigned old_width, old_height;
@@ -362,7 +364,7 @@ static bool take_screenshot_choice(const char *name_base, bool savestate,
 #endif
    }
 
-   if (!video_driver_cached_frame_has_valid_framebuffer())
+   if (!has_valid_framebuffer)
       return take_screenshot_raw(name_base, NULL, savestate, is_idle, is_paused);
 
    if (!video_driver_supports_read_frame_raw())
@@ -387,7 +389,7 @@ static bool take_screenshot_choice(const char *name_base, bool savestate,
    return ret;
 }
 
-bool take_screenshot(const char *name_base, bool silence)
+bool take_screenshot(const char *name_base, bool silence, bool has_valid_framebuffer)
 {
    bool is_paused         = false;
    bool is_idle           = false;
@@ -397,7 +399,8 @@ bool take_screenshot(const char *name_base, bool silence)
 
    runloop_get_status(&is_paused, &is_idle, &is_slowmotion, &is_perfcnt_enable);
 
-   ret       = take_screenshot_choice(name_base, silence, is_paused, is_idle);
+   ret       = take_screenshot_choice(name_base, silence, is_paused, is_idle,
+         has_valid_framebuffer);
 
    if (is_paused && !is_idle)
          video_driver_cached_frame();

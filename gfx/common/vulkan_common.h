@@ -46,7 +46,7 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../font_driver.h"
-#include "../video_context_driver.h"
+#include "../video_driver.h"
 #include "../drivers_shader/shader_vulkan.h"
 
 RETRO_BEGIN_DECLS
@@ -413,7 +413,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
 void vulkan_sync_texture_to_gpu(vk_t *vk, const struct vk_texture *tex);
 void vulkan_sync_texture_to_cpu(vk_t *vk, const struct vk_texture *tex);
 
-void vulkan_transition_texture(vk_t *vk, struct vk_texture *texture);
+void vulkan_transition_texture(vk_t *vk, VkCommandBuffer cmd, struct vk_texture *texture);
 
 void vulkan_transfer_image_ownership(VkCommandBuffer cmd,
       VkImage image, VkImageLayout layout,

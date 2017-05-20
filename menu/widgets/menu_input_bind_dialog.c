@@ -21,8 +21,9 @@
 #include "menu_input_bind_dialog.h"
 
 #include "../menu_driver.h"
-#include "../menu_navigation.h"
 
+#include "../../input/input_driver.h"
+#include "../../input/input_keyboard.h"
 #include "../../input/input_config.h"
 
 #include "../../configuration.h"
@@ -347,12 +348,12 @@ static bool menu_input_key_bind_poll_find_trigger(
       struct menu_bind_state *new_state)
 {
    unsigned i;
-   settings_t *settings = config_get_ptr();
+   unsigned max_users   = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
 
    if (!state || !new_state)
       return false;
 
-   for (i = 0; i < settings->uints.input_max_users; i++)
+   for (i = 0; i < max_users; i++)
    {
       if (!menu_input_key_bind_poll_find_trigger_pad(
                state, new_state, i))

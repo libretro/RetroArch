@@ -37,7 +37,6 @@
 #endif
 
 #include "../font_driver.h"
-#include "../video_context_driver.h"
 
 #include "../../retroarch.h"
 #include "../../driver.h"
@@ -423,9 +422,10 @@ static bool vg_frame(void *data, const void *frame,
       vg_draw_message(vg, msg);
 #endif
 
-   video_context_driver_update_window_title(video_info);
-
-   video_context_driver_swap_buffers(video_info);
+   video_info->cb_update_window_title(
+         video_info->context_data, video_info);
+   video_info->cb_swap_buffers(
+         video_info->context_data, video_info);
 
    return true;
 }
@@ -451,20 +451,10 @@ static bool vg_alive(void *data)
    return !quit;
 }
 
-static bool vg_focus(void *data)
-{
-   return video_context_driver_focus();
-}
-
 static bool vg_suppress_screensaver(void *data, bool enable)
 {
    bool enabled = enable;
    return video_context_driver_suppress_screensaver(&enabled);
-}
-
-static bool vg_has_windowed(void *data)
-{
-   return video_context_driver_has_windowed();
 }
 
 static bool vg_set_shader(void *data,
@@ -510,19 +500,19 @@ video_driver_t video_vg = {
    vg_frame,
    vg_set_nonblock_state,
    vg_alive,
-   vg_focus,
+   NULL,                      /* focused */
    vg_suppress_screensaver,
-   vg_has_windowed,
+   NULL,                      /* has_windowed */
    vg_set_shader,
    vg_free,
    "vg",
-   NULL, /* set_viewport */
+   NULL,                      /* set_viewport */
    vg_set_rotation,
    vg_viewport_info,
    vg_read_viewport,
-   NULL, /* read_frame_raw */
+   NULL,                      /* read_frame_raw */
 #ifdef HAVE_OVERLAY
-  NULL, /* overlay_interface */
+  NULL,                       /* overlay_interface */
 #endif
   vg_get_poke_interface
 };

@@ -41,7 +41,6 @@
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
-#include "../video_context_driver.h"
 
 typedef struct sdl2_tex
 {

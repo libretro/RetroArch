@@ -34,6 +34,7 @@
 #include <commdlg.h>
 
 #include <dynamic/dylib.h>
+#include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -41,7 +42,7 @@
 
 #include "../../configuration.h"
 #include "../../dynamic.h"
-#include "../video_context_driver.h"
+#include "../video_driver.h"
 
 #include "../common/win32_common.h"
 
@@ -102,6 +103,27 @@ static enum gfx_ctx_api win32_api         = GFX_CTX_NONE;
 
 static dylib_t          dll_handle        = NULL; /* Handle to OpenGL32.dll */
 
+static gfx_ctx_proc_t gfx_ctx_wgl_get_proc_address(const char *symbol)
+{
+   switch (win32_api)
+   {
+      case GFX_CTX_OPENGL_API:
+#if defined(HAVE_OPENGL)
+         {
+            gfx_ctx_proc_t func = (gfx_ctx_proc_t)wglGetProcAddress(symbol);
+            if (func)
+               return func;
+         }
+#endif
+         break;
+      default:
+         break;
+   }
+
+   return (gfx_ctx_proc_t)GetProcAddress((HINSTANCE)dll_handle, symbol);
+}
+
+#if defined(HAVE_OPENGL)
 static void setup_pixel_format(HDC hdc)
 {
    PIXELFORMATDESCRIPTOR pfd = {0};
@@ -117,7 +139,6 @@ static void setup_pixel_format(HDC hdc)
    SetPixelFormat(hdc, ChoosePixelFormat(hdc, &pfd), &pfd);
 }
 
-#if defined(HAVE_OPENGL)
 static void create_gl_context(HWND hwnd, bool *quit)
 {
    struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
@@ -203,8 +224,7 @@ static void create_gl_context(HWND hwnd, bool *quit)
       *aptr = 0;
 
       if (!pcreate_context)
-         pcreate_context = (wglCreateContextAttribsProc)
-            wglGetProcAddress("wglCreateContextAttribsARB");
+         pcreate_context = (wglCreateContextAttribsProc)gfx_ctx_wgl_get_proc_address("wglCreateContextAttribsARB");
 
       if (pcreate_context)
       {
@@ -331,7 +351,7 @@ static void gfx_ctx_wgl_check_window(void *data, bool *quit,
    }
 }
 
-static void gfx_ctx_wgl_swap_buffers(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_wgl_swap_buffers(void *data, void *data2)
 {
    (void)data;
 
@@ -386,7 +406,7 @@ static bool gfx_ctx_wgl_set_resize(void *data,
    return false;
 }
 
-static void gfx_ctx_wgl_update_title(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_wgl_update_title(void *data, void *data2)
 {
    const ui_window_t *window = ui_companion_driver_get_window_ptr();
 
@@ -540,12 +560,8 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
    switch (win32_api)
    {
       case GFX_CTX_OPENGL_API:
-#ifdef HAVE_OPENGL
-         p_swap_interval = (BOOL (APIENTRY *)(int))
-            wglGetProcAddress("wglSwapIntervalEXT");
-#endif
+         p_swap_interval = (BOOL (APIENTRY *)(int))gfx_ctx_wgl_get_proc_address("wglSwapIntervalEXT");
          break;
-
       case GFX_CTX_NONE:
       default:
          break;
@@ -564,10 +580,22 @@ static void gfx_ctx_wgl_input_driver(void *data,
       const char *joypad_name,
       const input_driver_t **input, void **input_data)
 {
-   dinput_wgl           = input_dinput.init(joypad_name);
+   settings_t *settings = config_get_ptr();
 
-   *input               = dinput_wgl ? &input_dinput : NULL;
-   *input_data          = dinput_wgl;
+   if (string_is_equal_fast(settings->arrays.input_driver, "raw", 4))
+   {
+      *input_data = input_winraw.init(joypad_name);
+      if (*input_data)
+      {
+         *input = &input_winraw;
+         dinput_wgl = NULL;
+         return;
+      }
+   }
+
+   dinput_wgl  = input_dinput.init(joypad_name);
+   *input      = dinput_wgl ? &input_dinput : NULL;
+   *input_data = dinput_wgl;
 }
 
 static bool gfx_ctx_wgl_has_focus(void *data)
@@ -587,15 +615,6 @@ static bool gfx_ctx_wgl_has_windowed(void *data)
    return true;
 }
 
-static gfx_ctx_proc_t gfx_ctx_wgl_get_proc_address(const char *symbol)
-{
-#if defined(HAVE_OPENGL) || defined(HAVE_VULKAN)
-   gfx_ctx_proc_t func = (gfx_ctx_proc_t)wglGetProcAddress(symbol);
-   if (func)
-      return func;
-#endif
-   return (gfx_ctx_proc_t)GetProcAddress((HINSTANCE)dll_handle, symbol);
-}
 
 static bool gfx_ctx_wgl_get_metrics(void *data,
 	enum display_metric_types type, float *value)

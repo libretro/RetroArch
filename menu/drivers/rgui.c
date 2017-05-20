@@ -40,13 +40,10 @@
 
 #include "../menu_driver.h"
 #include "../menu_animation.h"
-#include "../menu_display.h"
-#include "../menu_navigation.h"
 
 #include "../widgets/menu_input_dialog.h"
 
 #include "../../configuration.h"
-#include "../../runloop.h"
 #include "../../gfx/drivers_font_renderer/bitmap.h"
 
 #define RGUI_TERM_START_X(width)        (width / 21)
@@ -389,7 +386,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
    rgui->frame_count++;
 }
 
-static void rgui_render(void *data)
+static void rgui_render(void *data, bool is_idle)
 {
    menu_animation_ctx_ticker_t ticker;
    unsigned x, y;
@@ -416,7 +413,7 @@ static void rgui_render(void *data)
             && menu_driver_is_alive() && !msg_force)
          return;
 
-      if (runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
+      if (is_idle)
          return;
 
       if (!menu_display_get_update_pending())
@@ -854,14 +851,13 @@ static int rgui_pointer_tap(void *data,
    }
    else if (ptr <= (menu_entries_get_size() - 1))
    {
-      bool scroll              = false;
       size_t selection         = menu_navigation_get_selection();
 
       if (ptr == selection && cbs && cbs->action_select)
          return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
 
       menu_navigation_set_selection(ptr);
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
+      menu_driver_navigation_set(false);
    }
 
    return 0;
@@ -902,6 +898,11 @@ menu_ctx_driver_t menu_ctx_rgui = {
    "rgui",
    rgui_environ,
    rgui_pointer_tap,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
    NULL,
    NULL
 };

@@ -34,7 +34,6 @@
 #include "../../paths.h"
 #include "../../core.h"
 #include "../../retroarch.h"
-#include "../../runloop.h"
 #include "../../tasks/tasks_internal.h"
 
 id apple_platform;
@@ -240,7 +239,7 @@ static char** waiting_argv;
        ret = runloop_iterate(&sleep_ms);
        if (ret == 1 && sleep_ms > 0)
           retro_sleep(sleep_ms);
-       task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
+       task_queue_check();
        while(CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.002, FALSE) == kCFRunLoopRunHandledSource);
        if (ret == -1)
           break;
@@ -330,7 +329,7 @@ static void open_core_handler(ui_browser_window_state_t *state, bool result)
 
     settings_t *settings = config_get_ptr();
                 
-    runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)state->result);
+    rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, (void*)state->result);
     ui_companion_event_command(CMD_EVENT_LOAD_CORE);
                 
     if (menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL)
@@ -482,7 +481,7 @@ static void open_document_handler(ui_browser_window_state_t *state, bool result)
    if (sender_tag >= 10 && sender_tag <= 19)
    {
       unsigned idx = (sender_tag - (10-1));
-      runloop_ctl(RUNLOOP_CTL_SET_WINDOWED_SCALE, &idx);
+      rarch_ctl(RARCH_CTL_SET_WINDOWED_SCALE, &idx);
       cmd = CMD_EVENT_RESIZE_WINDOWED_SCALE;
    }
 

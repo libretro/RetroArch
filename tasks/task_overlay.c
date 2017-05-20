@@ -33,25 +33,25 @@
 #include "../configuration.h"
 #include "../verbosity.h"
 
-typedef struct
+typedef struct overlay_loader overlay_loader_t;
+
+struct overlay_loader
 {
    enum overlay_status state;
    enum overlay_image_transfer_status loading_status;
    config_file_t *conf;
    char *overlay_path;
+   struct overlay *overlays;
+   struct overlay *active;
+   bool overlay_enable;
+   bool overlay_hide_in_menu;
+   size_t resolve_pos;
    unsigned size;
    unsigned pos;
    unsigned pos_increment;
-   struct overlay *overlays;
-   struct overlay *active;
-   size_t resolve_pos;
-
-   bool overlay_enable;
-   bool overlay_hide_in_menu;
    float overlay_opacity;
    float overlay_scale;
-
-} overlay_loader_t;
+};
 
 static void task_overlay_image_done(struct overlay *overlay)
 {
@@ -760,7 +760,8 @@ bool task_push_overlay_load_default(
    /* Prevent overlay from being loaded if it already is being loaded */
    find_data.func     = task_overlay_finder;
    find_data.userdata = (void*)overlay_path;
-   if (task_queue_ctl(TASK_QUEUE_CTL_FIND, &find_data))
+
+   if (task_queue_find(&find_data))
       goto error;
 
    conf = config_file_new(overlay_path);
@@ -800,7 +801,7 @@ bool task_push_overlay_load_default(
    t->callback              = cb;
    t->user_data             = user_data;
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, t);
+   task_queue_push(t);
 
    return true;
 

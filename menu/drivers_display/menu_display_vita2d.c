@@ -21,12 +21,11 @@
 #include "../../config.h"
 #endif
 
-#include "../menu_display.h"
+#include "../menu_driver.h"
 
 #include "../../retroarch.h"
 #include "../../gfx/font_driver.h"
-#include "../../gfx/video_context_driver.h"
-#include "../../gfx/video_shader_driver.h"
+#include "../../gfx/video_driver.h"
 #include "../../gfx/common/vita2d_common.h"
 #include "../../defines/psp_defines.h"
 

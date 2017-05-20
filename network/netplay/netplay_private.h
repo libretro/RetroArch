@@ -330,6 +330,9 @@ struct netplay
    /* Are we the server? */
    bool is_server;
 
+   /* Are we the connected? */
+   bool is_connected;
+
    /* Our nickname */
    char nick[NETPLAY_NICK_LEN];
 

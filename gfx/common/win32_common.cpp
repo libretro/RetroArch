@@ -26,7 +26,7 @@
 #include "../../verbosity.h"
 #include "../../driver.h"
 #include "../../paths.h"
-#include "../../runloop.h"
+#include "../../retroarch.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../core_info.h"
 
@@ -190,7 +190,7 @@ INT_PTR CALLBACK PickCoreProc(HWND hDlg, UINT message,
                         core_info_list_get_supported_cores(core_info_list,
                               path_get(RARCH_PATH_CONTENT), &core_info, &list_size);
                         info = (const core_info_t*)&core_info[lbItem];
-                        runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH,info->path);
+                        rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH,info->path);
                      } 
                      break;
                }

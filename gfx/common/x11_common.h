@@ -22,7 +22,6 @@
 #include <boolean.h>
 
 #include "../video_driver.h"
-#include "../video_context_driver.h"
 
 extern Window   g_x11_win;
 extern Display *g_x11_dpy;
@@ -63,7 +62,7 @@ bool x11_alive(void *data);
 
 bool x11_connect(void);
 
-void x11_update_title(void *data, video_frame_info_t *video_info);
+void x11_update_title(void *data, void *data2);
 
 bool x11_input_ctx_new(bool true_full);
 

@@ -49,8 +49,6 @@
 #include "../../driver.h"
 #include "../../retroarch.h"
 
-#include "../video_context_driver.h"
-
 typedef struct omapfb_page
 {
   unsigned yoffset;

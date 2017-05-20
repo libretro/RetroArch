@@ -49,7 +49,6 @@
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
 #include "menu/menu_content.h"
-#include "menu/menu_display.h"
 #include "menu/menu_shader.h"
 #include "menu/widgets/menu_dialog.h"
 #endif
@@ -87,7 +86,7 @@
 
 #include "core.h"
 #include "verbosity.h"
-#include "runloop.h"
+#include "retroarch.h"
 #include "configuration.h"
 #include "input/input_remapping.h"
 
@@ -392,14 +391,14 @@ static void command_parse_msg(command_t *handle, char *buf, enum cmd_source_t so
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
 static bool command_network_init(command_t *handle, uint16_t port)
 {
-   int fd;
    struct addrinfo *res  = NULL;
+   int fd                = socket_init((void**)&res, port,
+         NULL, SOCKET_TYPE_DATAGRAM);
 
    RARCH_LOG("%s %hu.\n",
          msg_hash_to_str(MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT),
          (unsigned short)port);
 
-   fd = socket_init((void**)&res, port, NULL, SOCKET_TYPE_DATAGRAM);
 
    if (fd < 0)
       goto error;
@@ -437,9 +436,10 @@ static bool send_udp_packet(const char *host,
    int fd                      = -1;
    bool ret                    = true;
 
-   hints.ai_socktype = SOCK_DGRAM;
+   hints.ai_socktype           = SOCK_DGRAM;
 
    snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
+
    if (getaddrinfo_retro(host, port_buf, &hints, &res) < 0)
       return false;
 
@@ -794,12 +794,6 @@ static void command_stdin_poll(command_t *handle)
 #endif
 #endif
 
-static void command_local_poll(command_t *handle)
-{
-   if (!handle->local_enable)
-      return;
-}
-
 bool command_poll(command_t *handle)
 {
    memset(handle->state, 0, sizeof(handle->state));
@@ -813,8 +807,6 @@ bool command_poll(command_t *handle)
 #ifdef HAVE_STDIN_CMD
    command_stdin_poll(handle);
 #endif
-
-   command_local_poll(handle);
 
    return true;
 }
@@ -1368,15 +1360,15 @@ static bool command_event_init_core(enum rarch_core_type *data)
    if (!core_init_symbols(data))
       return false;
 
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_INIT, NULL);
+   rarch_ctl(RARCH_CTL_SYSTEM_INFO_INIT, NULL);
 
    /* auto overrides: apply overrides */
    if(settings->bools.auto_overrides_enable)
    {
       if (config_load_override())
-         runloop_ctl(RUNLOOP_CTL_SET_OVERRIDES_ACTIVE, NULL);
+         rarch_ctl(RARCH_CTL_SET_OVERRIDES_ACTIVE, NULL);
       else
-         runloop_ctl(RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
+         rarch_ctl(RARCH_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
    }
 
    /* Auto-remap: apply shader preset files */
@@ -1395,7 +1387,7 @@ static bool command_event_init_core(enum rarch_core_type *data)
       config_load_remap();
 
    /* Per-core saves: reset redirection paths */
-   rarch_ctl(RARCH_CTL_SET_PATHS_REDIRECT, NULL);
+   path_set_redirect();
 
    if (!core_init())
       return false;
@@ -1406,20 +1398,20 @@ static bool command_event_init_core(enum rarch_core_type *data)
    if (!core_load(settings->uints.input_poll_type_behavior))
       return false;
 
-   runloop_ctl(RUNLOOP_CTL_SET_FRAME_LIMIT, NULL);
+   rarch_ctl(RARCH_CTL_SET_FRAME_LIMIT, NULL);
 
    return true;
 }
 
 static void command_event_disable_overrides(void)
 {
-   if (!runloop_ctl(RUNLOOP_CTL_IS_OVERRIDES_ACTIVE, NULL))
+   if (!rarch_ctl(RARCH_CTL_IS_OVERRIDES_ACTIVE, NULL))
       return;
 
    /* reload the original config */
 
    config_unload_override();
-   runloop_ctl(RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
+   rarch_ctl(RARCH_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
 }
 
 static void command_event_restore_default_shader_preset(void)
@@ -1583,12 +1575,12 @@ static bool command_event_save_core_config(void)
             sizeof(config_path));
    }
 
-   if (runloop_ctl(RUNLOOP_CTL_IS_OVERRIDES_ACTIVE, NULL))
+   if (rarch_ctl(RARCH_CTL_IS_OVERRIDES_ACTIVE, NULL))
    {
       /* Overrides block config file saving,
        * make it appear as overrides weren't enabled
        * for a manual save. */
-      runloop_ctl(RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
+      rarch_ctl(RARCH_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
       overrides_active = true;
    }
 
@@ -1597,9 +1589,9 @@ static bool command_event_save_core_config(void)
    runloop_msg_queue_push(msg, 1, 180, true);
 
    if (overrides_active)
-      runloop_ctl(RUNLOOP_CTL_SET_OVERRIDES_ACTIVE, NULL);
+      rarch_ctl(RARCH_CTL_SET_OVERRIDES_ACTIVE, NULL);
    else
-      runloop_ctl(RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
+      rarch_ctl(RARCH_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
    return ret;
 }
 
@@ -1633,7 +1625,7 @@ static void command_event_save_current_config(enum override_type type)
 
             /* set overrides to active so the original config can be
                restored after closing content */
-            runloop_ctl(RUNLOOP_CTL_SET_OVERRIDES_ACTIVE, NULL);
+            rarch_ctl(RARCH_CTL_SET_OVERRIDES_ACTIVE, NULL);
          }
          else
          {
@@ -1762,7 +1754,7 @@ static bool command_event_resize_windowed_scale(void)
    unsigned *window_scale = NULL;
    settings_t *settings   = config_get_ptr();
 
-   if (runloop_ctl(RUNLOOP_CTL_GET_WINDOWED_SCALE, &window_scale))
+   if (rarch_ctl(RARCH_CTL_GET_WINDOWED_SCALE, &window_scale))
    {
       if (!window_scale || *window_scale == 0)
          return false;
@@ -1773,7 +1765,7 @@ static bool command_event_resize_windowed_scale(void)
    if (!settings->bools.video_fullscreen)
       command_event(CMD_EVENT_REINIT, NULL);
 
-   runloop_ctl(RUNLOOP_CTL_SET_WINDOWED_SCALE, &idx);
+   rarch_ctl(RARCH_CTL_SET_WINDOWED_SCALE, &idx);
 
    return true;
 }
@@ -1888,9 +1880,9 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_MENU_TOGGLE:
 #ifdef HAVE_MENU
          if (menu_driver_is_alive())
-            rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+            rarch_menu_running_finished();
          else
-            rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
+            rarch_menu_running();
 #endif
          break;
       case CMD_EVENT_CONTROLLERS_INIT:
@@ -1945,7 +1937,8 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_TAKE_SCREENSHOT:
-         if (!take_screenshot(path_get(RARCH_PATH_BASENAME), false))
+         if (!take_screenshot(path_get(RARCH_PATH_BASENAME), false,
+                  video_driver_cached_frame_has_valid_framebuffer()))
             return false;
          break;
       case CMD_EVENT_UNLOAD_CORE:
@@ -2056,10 +2049,9 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_AUDIO_STOP:
          return audio_driver_stop();
       case CMD_EVENT_AUDIO_START:
-         return audio_driver_start(runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL));
+         return audio_driver_start(rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL));
       case CMD_EVENT_AUDIO_MUTE_TOGGLE:
          {
-            settings_t *settings      = config_get_ptr();
             bool audio_mute_enable    = *(audio_get_bool_ptr(AUDIO_ACTION_MUTE_ENABLE));
             const char *msg           = !audio_mute_enable ?
                msg_hash_to_str(MSG_AUDIO_MUTED):
@@ -2304,7 +2296,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_RESUME:
-         rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+         rarch_menu_running_finished();
          if (ui_companion_is_on_foreground())
             ui_companion_driver_toggle();
          break;
@@ -2362,21 +2354,21 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_PAUSE_TOGGLE:
-         boolean = runloop_ctl(RUNLOOP_CTL_IS_PAUSED,  NULL);
+         boolean = rarch_ctl(RARCH_CTL_IS_PAUSED,  NULL);
          boolean = !boolean;
-         runloop_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
+         rarch_ctl(RARCH_CTL_SET_PAUSED, &boolean);
          command_event(CMD_EVENT_PAUSE_CHECKS, NULL);
          break;
       case CMD_EVENT_UNPAUSE:
          boolean = false;
 
-         runloop_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
+         rarch_ctl(RARCH_CTL_SET_PAUSED, &boolean);
          command_event(CMD_EVENT_PAUSE_CHECKS, NULL);
          break;
       case CMD_EVENT_PAUSE:
          boolean = true;
 
-         runloop_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
+         rarch_ctl(RARCH_CTL_SET_PAUSED, &boolean);
          command_event(CMD_EVENT_PAUSE_CHECKS, NULL);
          break;
       case CMD_EVENT_MENU_PAUSE_LIBRETRO:
@@ -2694,7 +2686,7 @@ bool command_event(enum event_command cmd, void *data)
          command_event_set_volume(-0.5f);
          break;
       case CMD_EVENT_SET_FRAME_LIMIT:
-         runloop_ctl(RUNLOOP_CTL_SET_FRAME_LIMIT, NULL);
+         rarch_ctl(RARCH_CTL_SET_FRAME_LIMIT, NULL);
          break;
       case CMD_EVENT_DISABLE_OVERRIDES:
          command_event_disable_overrides();

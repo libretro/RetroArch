@@ -24,7 +24,6 @@
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
 #include "../menu_input.h"
-#include "../menu_display.h"
 #include "../menu_setting.h"
 #include "../menu_shader.h"
 
@@ -34,10 +33,9 @@
 #include "../../managers/core_option_manager.h"
 #include "../../managers/cheat_manager.h"
 #include "../../retroarch.h"
-#include "../../runloop.h"
 #include "../../performance_counters.h"
 
-#include "../../gfx/video_shader_driver.h"
+#include "../../gfx/video_driver.h"
 
 #include "../../input/input_config.h"
 #include "../../input/input_remapping.h"
@@ -197,7 +195,7 @@ static int action_start_core_setting(unsigned type,
    unsigned idx                = type - MENU_SETTINGS_CORE_OPTION_START;
    core_option_manager_t *coreopts = NULL;
    
-   if (runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
+   if (rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
       core_option_manager_set_default(coreopts, idx);
 
    return 0;

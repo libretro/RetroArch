@@ -32,7 +32,7 @@
 #include "../list_special.h"
 #include "../msg_hash.h"
 #include "../playlist.h"
-#include "../runloop.h"
+#include "../retroarch.h"
 #include "../verbosity.h"
 #include "../core_info.h"
 
@@ -61,6 +61,15 @@ typedef struct db_handle
    char playlist_directory[4096];
    char content_database_path[4096];
 } db_handle_t;
+
+int find_first_data_track(const char* cue_path,
+      int32_t* offset, char* track_path, size_t max_len);
+
+int detect_system(const char* track_path, const char** system_name);
+
+int detect_ps1_game(const char *track_path, char *game_id);
+
+int detect_psp_game(const char *track_path, char *game_id);
 
 static void database_info_set_type(database_info_handle_t *handle, enum database_type type)
 {
@@ -131,13 +140,13 @@ static int iso_get_serial(database_state_handle_t *db_state,
    if (rv < 0)
       return rv;
 
-   if (memcmp(system_name, "psp", 3) == 0)
+   if (string_is_equal_fast(system_name, "psp", 3))
    {
       if (detect_psp_game(name, serial) == 0)
          return 0;
       RARCH_LOG("%s '%s'\n", msg_hash_to_str(MSG_FOUND_DISK_LABEL), serial);
    }
-   else if (memcmp(system_name, "ps1", 3) == 0)
+   else if (string_is_equal_fast(system_name, "ps1", 3))
    {
       if (detect_ps1_game(name, serial) == 0)
          return 0;
@@ -727,7 +736,7 @@ bool task_push_dbscan(
    if (db->handle)
       db->handle->status = DATABASE_STATUS_ITERATE_BEGIN;
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, t);
+   task_queue_push(t);
 
    return true;
 

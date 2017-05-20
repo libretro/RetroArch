@@ -273,18 +273,13 @@ static int libretrodb_find_index(libretrodb_t *db, const char *index_name,
    return -1;
 }
 
-static int node_compare(const void *a, const void *b, void *ctx)
-{
-   return memcmp(a, b, *(uint8_t *)ctx);
-}
-
 static int binsearch(const void *buff, const void *item,
       uint64_t count, uint8_t field_size, uint64_t *offset)
 {
    int mid            = (int)(count / 2);
    int item_size      = field_size + sizeof(uint64_t);
    uint64_t *current  = (uint64_t *)buff + (mid * item_size);
-   int rv             = node_compare(current, item, &field_size);
+   int rv             = memcmp(current, item, field_size);
 
    if (rv == 0)
    {
@@ -456,6 +451,11 @@ static int node_iter(void *value, void *ctx)
 static uint64_t libretrodb_tell(libretrodb_t *db)
 {
    return filestream_seek(db->fd, 0, SEEK_CUR);
+}
+
+static int node_compare(const void *a, const void *b, void *ctx)
+{
+   return memcmp(a, b, *(uint8_t *)ctx);
 }
 
 int libretrodb_create_index(libretrodb_t *db,

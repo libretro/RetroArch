@@ -270,8 +270,9 @@ static void add_sub_conf(config_file_t *conf, char *line)
    real_path[0] = '\0';
 
 #ifdef _WIN32
-   fill_pathname_resolve_relative(real_path, conf->path,
-         path, sizeof(real_path));
+   if (!string_is_empty(conf->path))
+      fill_pathname_resolve_relative(real_path, conf->path,
+            path, sizeof(real_path));
 #else
 #ifndef __CELLOS_LV2__
    if (*path == '~')
@@ -282,8 +283,9 @@ static void add_sub_conf(config_file_t *conf, char *line)
    }
    else
 #endif
-      fill_pathname_resolve_relative(real_path, conf->path,
-            path, sizeof(real_path));
+      if (!string_is_empty(conf->path))
+         fill_pathname_resolve_relative(real_path, conf->path,
+               path, sizeof(real_path));
 #endif
 
    sub_conf = (config_file_t*)
@@ -745,13 +747,13 @@ bool config_get_bool(config_file_t *conf, const char *key, bool *in)
 
    if (entry)
    {
-      if (memcmp(entry->value, "true", 4) == 0)
+      if (string_is_equal_fast(entry->value, "true", 4))
          *in = true;
-      else if (memcmp(entry->value, "1", 1) == 0)
+      else if (string_is_equal_fast(entry->value, "1", 1))
          *in = true;
-      else if (memcmp(entry->value, "false", 5) == 0)
+      else if (string_is_equal_fast(entry->value, "false", 5))
          *in = false;
-      else if (memcmp(entry->value, "0", 1) == 0)
+      else if (string_is_equal_fast(entry->value, "0", 1))
          *in = false;
       else
          return false;

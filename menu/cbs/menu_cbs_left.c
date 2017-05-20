@@ -28,7 +28,6 @@
 #include "../menu_input.h"
 #include "../menu_setting.h"
 #include "../menu_shader.h"
-#include "../menu_navigation.h"
 
 #include "../widgets/menu_list.h"
 
@@ -38,7 +37,6 @@
 #include "../../managers/cheat_manager.h"
 #include "../../file_path_special.h"
 #include "../../retroarch.h"
-#include "../../runloop.h"
 
 #ifndef BIND_ACTION_LEFT
 #define BIND_ACTION_LEFT(cbs, name) \
@@ -120,7 +118,7 @@ static int action_left_scroll(unsigned type, const char *label,
    unsigned scroll_speed = 0, fast_scroll_speed = 0;
    size_t selection      = menu_navigation_get_selection();
 
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL, &scroll_accel))
+   if (!menu_driver_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL, &scroll_accel))
       return false;
 
    scroll_speed          = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 1);
@@ -129,14 +127,13 @@ static int action_left_scroll(unsigned type, const char *label,
    if (selection > fast_scroll_speed)
    {
       size_t idx  = selection - fast_scroll_speed;
-      bool scroll = true;
       menu_navigation_set_selection(idx);
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
+      menu_driver_navigation_set(true);
    }
    else
    {
       bool pending_push = false;
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
+      menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
    }
 
    return 0;
@@ -370,7 +367,7 @@ static int core_setting_left(unsigned type, const char *label,
 {
    unsigned idx     = type - MENU_SETTINGS_CORE_OPTION_START;
 
-   runloop_ctl(RUNLOOP_CTL_CORE_OPTION_PREV, &idx);
+   rarch_ctl(RARCH_CTL_CORE_OPTION_PREV, &idx);
 
    return 0;
 }

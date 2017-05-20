@@ -21,7 +21,6 @@
 #include "menu_input_dialog.h"
 
 #include "../menu_driver.h"
-#include "../menu_navigation.h"
 
 /* This file provides an abstraction of the currently displayed
  * menu.
@@ -503,10 +502,10 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
             ret = cbs->action_down(entry->type, entry->label);
          break;
       case MENU_ACTION_SCROLL_UP:
-         menu_navigation_ctl(MENU_NAVIGATION_CTL_DESCEND_ALPHABET, NULL);
+         menu_driver_ctl(MENU_NAVIGATION_CTL_DESCEND_ALPHABET, NULL);
          break;
       case MENU_ACTION_SCROLL_DOWN:
-         menu_navigation_ctl(MENU_NAVIGATION_CTL_ASCEND_ALPHABET, NULL);
+         menu_driver_ctl(MENU_NAVIGATION_CTL_ASCEND_ALPHABET, NULL);
          break;
       case MENU_ACTION_CANCEL:
          if (cbs && cbs->action_cancel)

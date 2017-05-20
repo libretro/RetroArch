@@ -30,11 +30,11 @@
 #include "../../../input/drivers/cocoa_input.h"
 
 #include "../../../configuration.h"
-#include "../../../runloop.h"
+#include "../../../retroarch.h"
 
 #ifdef HAVE_MENU
 #include "../../../menu/widgets/menu_entry.h"
-#include "../../../menu/menu_navigation.h"
+#include "../../../menu/menu_driver.h"
 #include "../../../menu/drivers/menu_generic.h"
 #endif
 
@@ -769,7 +769,7 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 - (void)menuSelect: (uint32_t) i
 {
    menu_entry_select(i);
-   task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
+   task_queue_check();
 }
 
 - (void)menuBack

@@ -1,6 +1,7 @@
 ROOT_DIR          := .
 DEPS_DIR          := $(ROOT_DIR)/deps
 LIBRETRO_COMM_DIR := $(ROOT_DIR)/libretro-common
+WANT_WGL           = 0
 
 ifeq ($(HAVE_GL_CONTEXT),)
    HAVE_GL_CONTEXT=0
@@ -160,12 +161,12 @@ OBJ += frontend/frontend.o \
        command.o \
        msg_hash.o \
        intl/msg_hash_us.o \
-       runloop.o \
        $(LIBRETRO_COMM_DIR)/queues/task_queue.o \
        tasks/task_content.o \
        tasks/task_save.o \
        tasks/task_file_transfer.o \
        tasks/task_image.o \
+       tasks/task_audio_mixer.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.o \
        $(LIBRETRO_COMM_DIR)/lists/file_list.o \
@@ -222,7 +223,6 @@ OBJ += frontend/frontend.o \
        tasks/task_powerstate.o \
        $(LIBRETRO_COMM_DIR)/gfx/scaler/scaler.o \
        gfx/drivers_shader/shader_null.o \
-       gfx/video_shader_driver.o \
        gfx/video_shader_parse.o \
        $(LIBRETRO_COMM_DIR)/gfx/scaler/pixconv.o \
        $(LIBRETRO_COMM_DIR)/gfx/scaler/scaler_int.o \
@@ -555,7 +555,6 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/menu_input.o \
           menu/menu_event.o \
           menu/menu_entries.o \
-          menu/menu_navigation.o  \
           menu/menu_setting.o \
           menu/menu_shader.o \
 			 menu/widgets/menu_filebrowser.o \
@@ -583,7 +582,6 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/cbs/menu_cbs_up.o \
           menu/cbs/menu_cbs_down.o \
           menu/cbs/menu_cbs_contentlist_switch.o \
-          menu/menu_display.o \
           menu/menu_displaylist.o \
           menu/menu_animation.o \
           menu/drivers_display/menu_display_null.o \
@@ -757,6 +755,10 @@ ifeq ($(HAVE_PARPORT), 1)
    OBJ += input/drivers_joypad/parport_joypad.o
 endif
 
+ifneq ($(findstring Win32,$(OS)),)
+   OBJ += input/drivers/winraw_input.o
+endif
+
 # Companion UI
 
 ifneq ($(findstring Win32,$(OS)),)
@@ -769,8 +771,7 @@ endif
 
 # Video
 
-OBJ += gfx/video_context_driver.o \
-       gfx/drivers_context/gfx_null_ctx.o \
+OBJ += gfx/drivers_context/gfx_null_ctx.o \
        gfx/video_state_tracker.o
 
 ifeq ($(HAVE_KMS), 1)
@@ -872,8 +873,8 @@ endif
          GL_LIBS := -framework OpenGL
          OBJ += gfx/drivers_context/cgl_ctx.o
       else ifneq ($(findstring Win32,$(OS)),)
-         GL_LIBS := -lopengl32 -lgdi32 -lcomdlg32 -lcomctl32
-         OBJ += gfx/drivers_context/wgl_ctx.o
+         GL_LIBS := -lopengl32 -lgdi32 -lcomdlg32
+	 WANT_WGL=1
       endif
       LIBS += $(GL_LIBS)
    endif
@@ -926,6 +927,7 @@ endif
 ifeq ($(HAVE_VULKAN), 1)
    ifneq ($(findstring Win32,$(OS)),)
       GLSLANG_PLATFORM := Windows
+		WANT_WGL = 1
    else
       GLSLANG_PLATFORM := Unix
    endif
@@ -984,6 +986,10 @@ ifeq ($(HAVE_VULKAN), 1)
    DEFINES += -DHAVE_SLANG
 endif
 
+ifeq ($(WANT_WGL), 1)
+	OBJ += gfx/drivers_context/wgl_ctx.o
+LIBS += -lcomctl32
+endif
 
 ifeq ($(HAVE_OMAP), 1)
    OBJ += gfx/drivers/omap_gfx.o

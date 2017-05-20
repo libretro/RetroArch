@@ -21,11 +21,10 @@
 
 #include "../../retroarch.h"
 #include "../../gfx/font_driver.h"
-#include "../../gfx/video_context_driver.h"
-#include "../../gfx/video_shader_driver.h"
+#include "../../gfx/video_driver.h"
 #include "../../gfx/common/gl_common.h"
 
-#include "../menu_display.h"
+#include "../menu_driver.h"
 
 static const GLfloat gl_vertexes[] = {
    0, 0,

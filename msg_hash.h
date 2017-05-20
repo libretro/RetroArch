@@ -29,6 +29,12 @@
 
 RETRO_BEGIN_DECLS
 
+enum msg_hash_action
+{
+   MSG_HASH_NONE = 0,
+   MSG_HASH_USER_LANGUAGE
+};
+
 enum msg_file_type
 {
    FILE_TYPE_NONE = 0,
@@ -916,6 +922,7 @@ enum msg_hash_enums
 
    /* Netplay */
    MENU_LABEL(NETPLAY_ENABLE_HOST),
+   MENU_LABEL(NETPLAY_DISABLE_HOST),
    MENU_LABEL(NETPLAY_ENABLE_CLIENT),
    MENU_LABEL(NETPLAY_DISCONNECT),
    MENU_LABEL(NETPLAY_SETTINGS),
@@ -1382,6 +1389,7 @@ enum msg_hash_enums
 
    /* System information */
 
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION,
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYNAMIC_SUPPORT,
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
@@ -1873,6 +1881,10 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len);
 int menu_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 enum msg_file_type msg_hash_to_file_type(uint32_t hash);
+
+unsigned *msg_hash_get_uint(enum msg_hash_action type);
+
+void msg_hash_set_uint(enum msg_hash_action type, unsigned val);
 
 uint32_t msg_hash_calculate(const char *s);
 

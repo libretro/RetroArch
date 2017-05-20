@@ -49,8 +49,7 @@ void filebrowser_clear_type(void)
 
 void filebrowser_set_type(enum filebrowser_enums type)
 {
-   if (filebrowser_types != FILEBROWSER_SELECT_FILE)
-      filebrowser_types = type;
+   filebrowser_types = type;
 }
 
 void filebrowser_parse(void *data, unsigned type_data)
@@ -141,7 +140,10 @@ void filebrowser_parse(void *data, unsigned type_data)
                break;
             case RARCH_PLAIN_FILE:
             default:
-               file_type = (enum msg_file_type)info->type_default;
+               if (filebrowser_types == FILEBROWSER_SELECT_FONT)
+                  file_type = FILE_TYPE_FONT;
+               else
+                  file_type = (enum msg_file_type)info->type_default;
                switch (type)
                {
                   /* in case of deferred_core_list we have to interpret
@@ -206,7 +208,7 @@ void filebrowser_parse(void *data, unsigned type_data)
                   else
                      file_type = FILE_TYPE_IMAGE;
 #endif
-                  if (filebrowser_types == FILEBROWSER_SELECT_FILE)
+                  if (filebrowser_types == FILEBROWSER_SELECT_IMAGE)
                      file_type = FILE_TYPE_IMAGE;
                   break;
                default:
@@ -264,12 +266,6 @@ void filebrowser_parse(void *data, unsigned type_data)
             MENU_ENUM_LABEL_NO_ITEMS,
             MENU_SETTING_NO_ITEM, 0, 0);
    }
-
-   /* We don't want to show 'filter by extension' for this. */
-   if (filebrowser_types == FILEBROWSER_SELECT_DIR)
-      goto end;
-   if (filebrowser_types == FILEBROWSER_SCAN_DIR)
-      goto end;
 
 end:
    menu_entries_prepend(info->list,

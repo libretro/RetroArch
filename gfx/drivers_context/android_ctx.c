@@ -471,7 +471,7 @@ dpi_fallback:
    return true;
 }
 
-static void android_gfx_ctx_swap_buffers(void *data, video_frame_info_t *video_info)
+static void android_gfx_ctx_swap_buffers(void *data, void *data2)
 {
    android_ctx_data_t *and  = (android_ctx_data_t*)data;
 

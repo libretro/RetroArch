@@ -20,6 +20,8 @@
 #include <streams/file_stream.h>
 #include <compat/strl.h>
 #include <rhash.h>
+#include <retro_miscellaneous.h>
+#include <net/net_http.h>
 #include <libretro.h>
 
 #ifdef HAVE_CONFIG_H
@@ -38,7 +40,7 @@
 #include "../configuration.h"
 #include "../performance_counters.h"
 #include "../msg_hash.h"
-#include "../runloop.h"
+#include "../retroarch.h"
 #include "../core.h"
 
 #include "../network/net_http_special.h"
@@ -283,7 +285,7 @@ typedef struct
 
 typedef struct
 {
-   unsigned (*finder)(const struct retro_game_info *, retro_time_t);
+   int label;
    const char *name;
    const uint32_t *ext_hashes;
 } cheevos_finder_t;
@@ -719,51 +721,6 @@ static uint32_t cheevos_djb2(const char* str, size_t length)
       hash = (hash << 5) + hash + *aux++;
 
    return hash;
-}
-
-static int cheevos_http_get(const char **result, size_t *size,
-      const char *url, retro_time_t *timeout)
-{
-   const char *msg = NULL;
-
-#ifdef CHEEVOS_NO_TIMEOUT
-   int ret         = net_http_get(result, size, url, NULL);
-#else
-   int ret         = net_http_get(result, size, url, timeout);
-#endif
-
-   if (ret == NET_HTTP_GET_OK)
-   {
-      if (*result != NULL)
-      {
-         return ret;
-      }
-      
-      RARCH_ERR("CHEEVOS error during HTTP GET: ok.\n");
-      return NET_HTTP_GET_CONNECT_ERROR;
-   }
-
-   switch (ret)
-   {
-      case NET_HTTP_GET_MALFORMED_URL:
-         msg = "malformed url";
-         break;
-
-      case NET_HTTP_GET_CONNECT_ERROR:
-         msg = "connect error";
-         break;
-
-      case NET_HTTP_GET_TIMEOUT:
-         msg = "timeout";
-         break;
-
-      default:
-         msg = "unknown error";
-         break;
-   }
-
-   RARCH_ERR("CHEEVOS error during HTTP GET: %s.\n", msg);
-   return ret;
 }
 
 static int cheevos_getvalue__json_key(void *userdata,
@@ -2082,67 +2039,6 @@ static void cheevos_url_encode(const char *str, char *encoded, size_t len)
    *encoded = 0;
 }
 
-static int cheevos_login(retro_time_t *timeout)
-{
-   int res;
-   char urle_user[64];
-   char urle_pwd[64];
-   char request[256];
-   const char *json             = NULL;
-   const char *username         = NULL;
-   const char *password         = NULL;
-   settings_t *settings         = config_get_ptr();
-
-   if (cheevos_locals.token[0])
-      return 0;
-
-   urle_user[0]                 = '\0';
-   urle_pwd[0]                  = '\0';
-   request[0]                   = '\0';
-
-   username                     = settings->arrays.cheevos_username;
-   password                     = settings->arrays.cheevos_password;
-
-   if (!username || !*username || !password || !*password)
-   {
-      runloop_msg_queue_push("Missing Retro Achievements account information.", 0, 5 * 60, false);
-      runloop_msg_queue_push("Please fill in your account information in Settings.", 0, 5 * 60, false);
-      RARCH_ERR("CHEEVOS username and/or password not informed.\n");
-      return -1;
-   }
-
-   cheevos_url_encode(username, urle_user, sizeof(urle_user));
-   cheevos_url_encode(password, urle_pwd, sizeof(urle_pwd));
-
-   snprintf(
-      request, sizeof(request),
-      "http://retroachievements.org/dorequest.php?r=login&u=%s&p=%s",
-      urle_user, urle_pwd
-   );
-
-   request[sizeof(request) - 1] = 0;
-
-#ifdef CHEEVOS_LOG_URLS
-   cheevos_log_url("CHEEVOS url to login: %s\n", request);
-#endif
-
-   if (!cheevos_http_get(&json, NULL, request, timeout))
-   {
-      res = cheevos_get_value(json, CHEEVOS_JSON_KEY_TOKEN,
-            cheevos_locals.token, sizeof(cheevos_locals.token));
-
-      free((void*)json);
-
-      if (!res)
-         return 0;
-   }
-
-   runloop_msg_queue_push("Retro Achievements login error.",
-         0, 5 * 60, false);
-   RARCH_ERR("CHEEVOS error getting user token.\n");
-   return -1;
-}
-
 static void cheevos_make_unlock_url(const cheevo_t *cheevo, char* url, size_t url_size)
 {
    settings_t *settings = config_get_ptr();
@@ -2414,140 +2310,6 @@ static void cheevos_free_cheevo_set(const cheevoset_t *set)
    free((void*)set->cheevos);
 }
 
-/*****************************************************************************
-Load achievements from retroachievements.org.
-*****************************************************************************/
-
-static int cheevos_get_by_game_id(const char **json,
-      unsigned game_id, retro_time_t *timeout)
-{
-   settings_t *settings = config_get_ptr();
-
-   /* Just return OK if cheevos are disabled. */
-   if (!settings->bools.cheevos_enable)
-      return 0;
-
-   if (!cheevos_login(timeout))
-   {
-      char request[256];
-
-      request[0] = '\0';
-
-      snprintf(
-         request, sizeof(request),
-         "http://retroachievements.org/dorequest.php?r=patch&u=%s&g=%u&f=3&l=1&t=%s",
-         settings->arrays.cheevos_username,
-         game_id, cheevos_locals.token
-      );
-
-      request[sizeof(request) - 1] = 0;
-
-#ifdef CHEEVOS_LOG_URLS
-      cheevos_log_url("CHEEVOS url to get the list of cheevos: %s\n", request);
-#endif
-
-      if (!cheevos_http_get(json, NULL, request, timeout))
-      {
-         RARCH_LOG("CHEEVOS got achievements for game id %u.\n", game_id);
-         return 0;
-      }
-
-      RARCH_ERR("CHEEVOS error getting achievements for game id %u.\n", game_id);
-   }
-
-   return -1;
-}
-
-static unsigned cheevos_get_game_id(unsigned char *hash, retro_time_t *timeout)
-{
-   int res;
-   char request[256];
-   char game_id[16];
-   const char* json  = NULL;
-
-   request[0] = '\0';
-   game_id[0] = '\0';
-
-   RARCH_LOG(
-      "CHEEVOS getting game id for hash %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n",
-      hash[ 0], hash[ 1], hash[ 2], hash[ 3],
-      hash[ 4], hash[ 5], hash[ 6], hash[ 7],
-      hash[ 8], hash[ 9], hash[10], hash[11],
-      hash[12], hash[13], hash[14], hash[15]
-   );
-
-   snprintf(
-      request, sizeof(request),
-      "http://retroachievements.org/dorequest.php?r=gameid&m=%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
-      hash[ 0], hash[ 1], hash[ 2], hash[ 3],
-      hash[ 4], hash[ 5], hash[ 6], hash[ 7],
-      hash[ 8], hash[ 9], hash[10], hash[11],
-      hash[12], hash[13], hash[14], hash[15]
-   );
-
-   request[sizeof(request) - 1] = 0;
-
-#ifdef CHEEVOS_LOG_URLS
-   cheevos_log_url("CHEEVOS url to get the game's id: %s\n", request);
-#endif
-
-   if (!cheevos_http_get(&json, NULL, request, timeout))
-   {
-      res = cheevos_get_value(json, CHEEVOS_JSON_KEY_GAMEID,
-            game_id, sizeof(game_id));
-
-      free((void*)json);
-
-      if (!res)
-      {
-         RARCH_LOG("CHEEVOS got game id %s.\n", game_id);
-         return (unsigned)strtoul(game_id, NULL, 10);
-      }
-   }
-
-   RARCH_ERR("CHEEVOS error getting game_id.\n");
-   return 0;
-}
-
-static void cheevos_make_playing_url(unsigned game_id, char* url, size_t url_size)
-{
-   settings_t *settings = config_get_ptr();
-
-   snprintf(
-      url, url_size,
-      "http://retroachievements.org/dorequest.php?r=postactivity&u=%s&t=%s&a=3&m=%u",
-      settings->arrays.cheevos_username,
-      cheevos_locals.token, game_id
-   );
-
-   url[url_size - 1] = 0;
-
-#ifdef CHEEVOS_LOG_URLS
-   cheevos_log_url("CHEEVOS url to post the 'playing' activity: %s\n", url);
-#endif
-}
-
-static void cheevos_playing(void *task_data, void *user_data, const char *error)
-{
-   unsigned game_id = (unsigned)(uintptr_t)user_data;
-
-   if (error == NULL)
-   {
-      RARCH_LOG("CHEEVOS posted playing game %u activity.\n", game_id);
-   }
-   else
-   {
-      char url[256];
-
-      url[0] = '\0';
-
-      RARCH_ERR("CHEEVOS error posting playing game %u activity, will retry...\n", game_id);
-
-      cheevos_make_playing_url(game_id, url, sizeof(url));
-      task_push_http_transfer(url, true, NULL, cheevos_playing, (void*)(uintptr_t)game_id);
-   }
-}
-
 #ifndef CHEEVOS_DONT_DEACTIVATE
 static int cheevos_deactivate__json_index(void *userdata, unsigned int index)
 {
@@ -2606,13 +2368,9 @@ static int cheevos_deactivate__json_number(void *userdata,
 
    return 0;
 }
-#endif
 
-static int cheevos_deactivate_unlocks(unsigned game_id, retro_time_t *timeout)
+static int cheevos_deactivate_unlocks(const char* json, unsigned mode)
 {
-   /* Only call this function after the cheevos have been loaded. */
-
-#ifndef CHEEVOS_DONT_DEACTIVATE
    static const jsonsax_handlers_t handlers =
    {
       NULL,
@@ -2629,530 +2387,13 @@ static int cheevos_deactivate_unlocks(unsigned game_id, retro_time_t *timeout)
       NULL
    };
 
-   int res = 0;
    cheevos_deactivate_t ud;
-   const char* json             = NULL;
 
-   if (!cheevos_login(timeout))
-   {
-      char request[256];
-      settings_t *settings = config_get_ptr();
-
-      request[0] = '\0';
-
-      /* Deactivate achievements in softcore mode. */
-      snprintf(
-         request, sizeof(request),
-         "http://retroachievements.org/dorequest.php?r=unlocks&u=%s&t=%s&g=%u&h=0",
-         settings->arrays.cheevos_username,
-         cheevos_locals.token, game_id
-      );
-
-      request[sizeof(request) - 1] = 0;
-
-#ifdef CHEEVOS_LOG_URLS
-      cheevos_log_url("CHEEVOS url to get the list of unlocked cheevos in softcore: %s\n", request);
+   ud.is_element = 0;
+   ud.mode = mode;
+   return jsonsax_parse(json, &handlers, (void*)&ud) != JSONSAX_OK;
+}
 #endif
-
-      if (!cheevos_http_get(&json, NULL, request, timeout))
-      {
-         ud.is_element = 0;
-         ud.mode = CHEEVOS_ACTIVE_SOFTCORE;
-         res = jsonsax_parse(json, &handlers, (void*)&ud);
-         free((void*)json);
-
-         if (res == JSONSAX_OK)
-            RARCH_LOG("CHEEVOS deactivated unlocked achievements in softcore mode.\n");
-         else
-         {
-            RARCH_ERR("CHEEVOS error deactivating unlocked achievements in softcore mode.\n");
-            res = -1;
-         }
-      }
-
-      /* Deactivate achievements in hardcore mode. */
-      snprintf(
-         request, sizeof(request),
-         "http://retroachievements.org/dorequest.php?r=unlocks&u=%s&t=%s&g=%u&h=1",
-         settings->arrays.cheevos_username,
-         cheevos_locals.token, game_id
-      );
-
-      request[sizeof(request) - 1] = 0;
-
-#ifdef CHEEVOS_LOG_URLS
-      cheevos_log_url("CHEEVOS url to get the list of unlocked cheevos in hardcore: %s\n", request);
-#endif
-
-      if (!cheevos_http_get(&json, NULL, request, timeout))
-      {
-         ud.is_element = 0;
-         ud.mode = CHEEVOS_ACTIVE_HARDCORE;
-         res = jsonsax_parse(json, &handlers, (void*)&ud);
-         free((void*)json);
-
-         if (res == JSONSAX_OK)
-            RARCH_LOG("CHEEVOS deactivated unlocked achievements in hardcore mode.\n");
-         else
-         {
-            RARCH_ERR("CHEEVOS error deactivating unlocked achievements in hardcore mode.\n");
-            res = -1;
-         }
-      }
-   }
-
-   return res;
-#else
-   RARCH_LOG("CHEEVOS cheevo deactivation is disabled\n");
-   return 0;
-#endif
-}
-
-static INLINE unsigned cheevos_next_power_of_2(unsigned n)
-{
-   n--;
-
-   n |= n >> 1;
-   n |= n >> 2;
-   n |= n >> 4;
-   n |= n >> 8;
-   n |= n >> 16;
-
-   return n + 1;
-}
-
-static size_t cheevos_eval_md5(
-      const struct retro_game_info *info,
-      size_t offset,
-      size_t max_size,
-      MD5_CTX *ctx)
-{
-   MD5_Init(ctx);
-
-   if (info->data)
-   {
-      if (max_size == 0)
-         max_size = info->size;
-
-      if (info->size - offset < max_size)
-         max_size = info->size - offset;
-
-#ifdef CHEEVOS_SIZE_LIMIT
-      if (max_size > CHEEVOS_SIZE_LIMIT)
-         max_size = CHEEVOS_SIZE_LIMIT;
-#endif
-
-      MD5_Update(ctx, (void*)((uint8_t*)info->data + offset), max_size);
-      return max_size;
-   }
-   else
-   {
-      size_t size = 0;
-      RFILE *file = filestream_open(info->path, RFILE_MODE_READ, 0);
-
-      if (!file)
-         return 0;
-      
-      size = filestream_get_size(file);
-      
-      if (max_size == 0)
-         max_size = size;
-      
-      if (size - offset < max_size)
-         max_size = size - offset;
-      
-#ifdef CHEEVOS_SIZE_LIMIT
-      if (max_size > CHEEVOS_SIZE_LIMIT)
-         max_size = CHEEVOS_SIZE_LIMIT;
-#endif
-
-      filestream_seek(file, offset, SEEK_SET);
-      size = 0;
-
-      for (;;)
-      {
-         uint8_t buffer[4096];
-         ssize_t num_read;
-         size_t to_read = sizeof(buffer);
-
-         if (to_read > max_size)
-            to_read = max_size;
-
-         num_read = filestream_read(file, (void*)buffer, to_read);
-
-         if (num_read <= 0)
-            break;
-
-         MD5_Update(ctx, (void*)buffer, num_read);
-         size += num_read;
-         
-         if (max_size != 0)
-         {
-            max_size -= num_read;
-            
-            if (max_size == 0)
-               break;
-         }
-      }
-
-      filestream_close(file);
-      return size;
-   }
-}
-
-static void cheevos_fill_md5(size_t size, char fill, MD5_CTX *ctx)
-{
-   char buffer[4096];
-
-   memset((void*)buffer, fill, sizeof(buffer));
-
-   while (size > 0)
-   {
-      size_t len = sizeof(buffer);
-
-      if (len > size)
-         len = size;
-
-      MD5_Update(ctx, (void*)buffer, len);
-      size -= len;
-   }
-}
-
-static unsigned cheevos_find_game_id_generic(
-      const struct retro_game_info *info,
-      retro_time_t timeout)
-{
-   MD5_CTX ctx;
-   retro_time_t to;
-   uint8_t hash[16];
-   size_t size      = cheevos_eval_md5(info, 0, 0, &ctx);
-
-   hash[0] = '\0';
-
-   MD5_Final(hash, &ctx);
-
-   if (!size)
-      return 0;
-
-   to = timeout;
-   return cheevos_get_game_id(hash, &to);
-}
-
-static unsigned cheevos_find_game_id_snes(
-      const struct retro_game_info *info,
-      retro_time_t timeout)
-{
-   MD5_CTX ctx;
-   uint8_t hash[16];
-   size_t count = cheevos_eval_md5(info, 0, 0, &ctx);
-
-   if (count == 0)
-   {
-      MD5_Final(hash, &ctx);
-      return 0;
-   }
-
-   if (count < CHEEVOS_EIGHT_MB)
-      cheevos_fill_md5(CHEEVOS_EIGHT_MB - count, 0, &ctx);
-   
-   MD5_Final(hash, &ctx);
-   return cheevos_get_game_id(hash, &timeout);
-}
-
-static unsigned cheevos_find_game_id_genesis(
-      const struct retro_game_info *info, retro_time_t timeout)
-{
-   MD5_CTX ctx;
-   uint8_t hash[16];
-   size_t count = cheevos_eval_md5(info, 0, 0, &ctx);
-
-   if (count == 0)
-   {
-      MD5_Final(hash, &ctx);
-      return 0;
-   }
-
-   if (count < CHEEVOS_SIX_MB)
-      cheevos_fill_md5(CHEEVOS_SIX_MB - count, 0, &ctx);
-   
-   MD5_Final(hash, &ctx);
-   return cheevos_get_game_id(hash, &timeout);
-}
-
-static unsigned cheevos_find_game_id_nes(
-      const struct retro_game_info *info,
-      retro_time_t timeout)
-{
-   /* Note about the references to the FCEU emulator below. There is no
-    * core-specific code in this function, it's rather Retro Achievements
-    * specific code that must be followed to the letter so we compute
-    * the correct ROM hash. Retro Achievements does indeed use some
-    * FCEU related method to compute the hash, since its NES emulator
-    * is based on it. */
-   struct
-   {
-      uint8_t id[4]; /* NES^Z */
-      uint8_t rom_size;
-      uint8_t vrom_size;
-      uint8_t rom_type;
-      uint8_t rom_type2;
-      uint8_t reserve[8];
-   } header;
-
-   size_t rom_size, offset, count;
-   MD5_CTX ctx;
-   uint8_t hash[16];
-
-   size_t bytes;
-   RFILE *file;
-   ssize_t num_read;
-   int mapper_no;
-   bool round;
-
-   if (info->data)
-   {
-      if (info->size < sizeof(header))
-         return 0;
-
-      memcpy((void*)&header, info->data, sizeof(header));
-   }
-   else
-   {
-      file = filestream_open(info->path, RFILE_MODE_READ, 0);
-
-      if (!file)
-         return 0;
-
-      num_read = filestream_read(file, (void*)&header, sizeof(header));
-      filestream_close(file);
-
-      if (num_read < (ssize_t)sizeof(header))
-         return 0;
-   }
-
-   if (     header.id[0] != 'N'
-         || header.id[1] != 'E'
-         || header.id[2] != 'S'
-         || header.id[3] != 0x1a)
-      return 0;
-
-   if (header.rom_size)
-      rom_size = cheevos_next_power_of_2(header.rom_size);
-   else
-      rom_size = 256;
-
-   /* from FCEU core - compute size using the cart mapper */
-   mapper_no = (header.rom_type >> 4) | (header.rom_type2 & 0xF0);
-
-   /* for games not to the power of 2, so we just read enough
-    * PRG rom from it, but we have to keep ROM_size to the power of 2
-    * since PRGCartMapping wants ROM_size to be to the power of 2
-    * so instead if not to power of 2, we just use head.ROM_size when
-    * we use FCEU_read. */
-   round = mapper_no != 53 && mapper_no != 198 && mapper_no != 228;
-   bytes = (round) ? rom_size : header.rom_size;
-
-   /* from FCEU core - check if Trainer included in ROM data */
-   offset = sizeof(header) + (header.rom_type & 4 ? sizeof(header) : 0);
-
-   MD5_Init(&ctx);
-   count = cheevos_eval_md5(info, offset, 0x4000 * bytes, &ctx);
-   count = 0x4000 * bytes - count;
-   cheevos_fill_md5(count, (char)0xff, &ctx);
-   MD5_Final(hash, &ctx);
-
-   return cheevos_get_game_id(hash, &timeout);
-}
-
-bool cheevos_load(const void *data)
-{
-   static const uint32_t genesis_exts[] =
-   {
-      0x0b888feeU, /* mdx */
-      0x005978b6U, /* md  */
-      0x0b88aa89U, /* smd */
-      0x0b88767fU, /* gen */
-      0x0b8861beU, /* bin */
-      0x0b886782U, /* cue */
-      0x0b8880d0U, /* iso */
-      0x0b88aa98U, /* sms */
-      0x005977f3U, /* gg  */
-      0x0059797fU, /* sg  */
-      0
-   };
-
-   static const uint32_t snes_exts[] =
-   {
-      0x0b88aa88U, /* smc */
-      0x0b8872bbU, /* fig */
-      0x0b88a9a1U, /* sfc */
-      0x0b887623U, /* gd3 */
-      0x0b887627U, /* gd7 */
-      0x0b886bf3U, /* dx2 */
-      0x0b886312U, /* bsx */
-      0x0b88abd2U, /* swc */
-      0
-   };
-
-   static cheevos_finder_t finders[] =
-   {
-      {cheevos_find_game_id_snes,    "SNES (8Mb padding)",      snes_exts},
-      {cheevos_find_game_id_genesis, "Genesis (6Mb padding)",   genesis_exts},
-      {cheevos_find_game_id_nes,     "NES (discards VROM)",     NULL},
-      {cheevos_find_game_id_generic, "Generic (plain content)", NULL},
-   };
-
-   struct retro_system_info sysinfo;
-   unsigned i;
-   char url[256];
-   const char *json     = NULL;
-   retro_time_t timeout = 5000000;
-   unsigned game_id     = 0;
-   settings_t *settings = config_get_ptr();
-   const struct retro_game_info *info = (const struct retro_game_info*)data;
-
-   url[0]                = '\0';
-
-   cheevos_loaded        = 0;
-
-   /* Just return OK if the core doesn't support cheevos, or info is NULL. */
-   if (!cheevos_locals.core_supports || !info)
-      return true;
-
-   cheevos_locals.meminfo[0].id = RETRO_MEMORY_SYSTEM_RAM;
-   core_get_memory(&cheevos_locals.meminfo[0]);
-
-   cheevos_locals.meminfo[1].id = RETRO_MEMORY_SAVE_RAM;
-   core_get_memory(&cheevos_locals.meminfo[1]);
-
-   cheevos_locals.meminfo[2].id = RETRO_MEMORY_VIDEO_RAM;
-   core_get_memory(&cheevos_locals.meminfo[2]);
-
-   cheevos_locals.meminfo[3].id = RETRO_MEMORY_RTC;
-   core_get_memory(&cheevos_locals.meminfo[3]);
-
-   RARCH_LOG("CHEEVOS system RAM: %p %u\n",
-      cheevos_locals.meminfo[0].data, cheevos_locals.meminfo[0].size);
-   RARCH_LOG("CHEEVOS save RAM:   %p %u\n",
-      cheevos_locals.meminfo[1].data, cheevos_locals.meminfo[1].size);
-   RARCH_LOG("CHEEVOS video RAM:  %p %u\n",
-      cheevos_locals.meminfo[2].data, cheevos_locals.meminfo[2].size);
-   RARCH_LOG("CHEEVOS RTC:        %p %u\n",
-      cheevos_locals.meminfo[3].data, cheevos_locals.meminfo[3].size);
-
-   /* Bail out if cheevos are disabled.
-    * But set the above anyways, command_read_ram needs it. */
-   if (!settings->bools.cheevos_enable)
-      return true;
-
-   /* Use the supported extensions as a hint
-    * to what method we should use. */
-   core_get_system_info(&sysinfo);
-
-   for (i = 0; i < ARRAY_SIZE(finders); i++)
-   {
-      if (finders[i].ext_hashes)
-      {
-         const char *ext = sysinfo.valid_extensions;
-
-         while (ext)
-         {
-            int j;
-            unsigned hash;
-            const char *end = strchr(ext, '|');
-
-            if (end)
-            {
-               hash = cheevos_djb2(ext, end - ext);
-               ext = end + 1;
-            }
-            else
-            {
-               hash = cheevos_djb2(ext, strlen(ext));
-               ext = NULL;
-            }
-
-            for (j = 0; finders[i].ext_hashes[j]; j++)
-            {
-               if (finders[i].ext_hashes[j] == hash)
-               {
-                  RARCH_LOG("CHEEVOS testing %s.\n", finders[i].name);
-
-                  game_id = finders[i].finder(info, 5000000);
-
-                  if (game_id)
-                     goto found;
-
-                  ext = NULL; /* force next finder */
-                  break;
-               }
-            }
-         }
-      }
-   }
-
-   for (i = 0; i < ARRAY_SIZE(finders); i++)
-   {
-      if (finders[i].ext_hashes)
-         continue;
-
-      RARCH_LOG("CHEEVOS testing %s.\n", finders[i].name);
-
-      game_id = finders[i].finder(info, 5000000);
-
-      if (game_id)
-         goto found;
-   }
-
-   RARCH_LOG("CHEEVOS this game doesn't feature achievements.\n");
-   return false;
-
-found:
-#ifdef CHEEVOS_JSON_OVERRIDE
-   {
-      FILE* file;
-      size_t size;
-
-      file = fopen(CHEEVOS_JSON_OVERRIDE, "rb");
-      fseek(file, 0, SEEK_END);
-      size = ftell(file);
-      fseek(file, 0, SEEK_SET);
-
-      json = (const char*)malloc(size);
-      fread((void*)json, 1, size, file);
-
-      fclose(file);
-   }
-#else
-   if (cheevos_get_by_game_id(&json, game_id, &timeout) == 0 && json != NULL)
-#endif
-   {
-#ifdef CHEEVOS_SAVE_JSON
-      {
-         FILE* file = fopen(CHEEVOS_SAVE_JSON, "w");
-         fwrite((void*)json, 1, strlen(json), file);
-         fclose(file);
-      }
-#endif
-      if (!settings->bools.cheevos_enable || !cheevos_parse(json))
-      {
-         cheevos_deactivate_unlocks(game_id, &timeout);
-         free((void*)json);
-         cheevos_loaded = true;
-
-         cheevos_make_playing_url(game_id, url, sizeof(url));
-         task_push_http_transfer(url, true, NULL,
-               cheevos_playing, (void*)(uintptr_t)game_id);
-         return true;
-      }
-
-      free((void*)json);
-   }
-
-   runloop_msg_queue_push("Error loading achievements.", 0, 5 * 60, false);
-   RARCH_ERR("CHEEVOS error loading achievements.\n");
-   return false;
-}
 
 void cheevos_reset_game(void)
 {
@@ -3374,4 +2615,878 @@ void cheevos_set_support_cheevos(bool state)
 bool cheevos_get_support_cheevos(void)
 {
   return cheevos_locals.core_supports;
+}
+
+typedef struct
+{
+   uint8_t id[4]; /* NES^Z */
+   uint8_t rom_size;
+   uint8_t vrom_size;
+   uint8_t rom_type;
+   uint8_t rom_type2;
+   uint8_t reserve[8];
+} cheevos_nes_header_t;
+
+#define CORO_VARS \
+   void *data; \
+   size_t len; \
+   const char *path; \
+   settings_t *settings; \
+   struct retro_system_info sysinfo; \
+   unsigned i; \
+   unsigned j; \
+   const char *ext; \
+   MD5_CTX md5; \
+   unsigned char hash[16]; \
+   unsigned gameid; \
+   char *json; \
+   size_t count; \
+   size_t offset; \
+   cheevos_nes_header_t header; \
+   size_t romsize, bytes; \
+   int mapper; \
+   bool round; \
+   RFILE* stream; \
+   size_t size; \
+   char url[256]; \
+   struct http_connection_t *conn; \
+   struct http_t *http;
+
+#include "coro.h"
+
+#define INFO     CORO_VAR(info)
+#define DATA     CORO_VAR(data)
+#define LEN      CORO_VAR(len)
+#define PATH     CORO_VAR(path)
+#define SETTINGS CORO_VAR(settings)
+#define SYSINFO  CORO_VAR(sysinfo)
+#define I        CORO_VAR(i)
+#define J        CORO_VAR(j)
+#define EXT      CORO_VAR(ext)
+#define MD5      CORO_VAR(md5)
+#define HASH     CORO_VAR(hash)
+#define GAMEID   CORO_VAR(gameid)
+#define JSON     CORO_VAR(json)
+#define COUNT    CORO_VAR(count)
+#define OFFSET   CORO_VAR(offset)
+#define HEADER   CORO_VAR(header)
+#define ROMSIZE  CORO_VAR(romsize)
+#define BYTES    CORO_VAR(bytes)
+#define MAPPER   CORO_VAR(mapper)
+#define ROUND    CORO_VAR(round)
+#define STREAM   CORO_VAR(stream)
+#define SIZE     CORO_VAR(size)
+#define URL      CORO_VAR(url)
+#define CONN     CORO_VAR(conn)
+#define HTTP     CORO_VAR(http)
+
+static int cheevos_iterate(coro_t* coro)
+{
+   ssize_t num_read = 0;
+   size_t to_read   = 4096;
+   uint8_t *buffer  = NULL;
+   const char *end  = NULL;
+   enum
+   {
+      /* Negative values because CORO_SUB generates positive values */
+      SNES_MD5    = -1,
+      GENESIS_MD5 = -2,
+      NES_MD5     = -3,
+      GENERIC_MD5 = -4,
+      EVAL_MD5    = -5,
+      FILL_MD5    = -6,
+      GET_GAMEID  = -7,
+      GET_CHEEVOS = -8,
+      LOGIN       = -9,
+      HTTP_GET    = -10,
+      DEACTIVATE  = -11,
+      PLAYING     = -12
+   };
+   
+   static const uint32_t genesis_exts[] =
+   {
+      0x0b888feeU, /* mdx */
+      0x005978b6U, /* md  */
+      0x0b88aa89U, /* smd */
+      0x0b88767fU, /* gen */
+      0x0b8861beU, /* bin */
+      0x0b886782U, /* cue */
+      0x0b8880d0U, /* iso */
+      0x0b88aa98U, /* sms */
+      0x005977f3U, /* gg  */
+      0x0059797fU, /* sg  */
+      0
+   };
+
+   static const uint32_t snes_exts[] =
+   {
+      0x0b88aa88U, /* smc */
+      0x0b8872bbU, /* fig */
+      0x0b88a9a1U, /* sfc */
+      0x0b887623U, /* gd3 */
+      0x0b887627U, /* gd7 */
+      0x0b886bf3U, /* dx2 */
+      0x0b886312U, /* bsx */
+      0x0b88abd2U, /* swc */
+      0
+   };
+
+   static cheevos_finder_t finders[] =
+   {
+      {SNES_MD5,    "SNES (8Mb padding)",      snes_exts},
+      {GENESIS_MD5, "Genesis (6Mb padding)",   genesis_exts},
+      {NES_MD5,     "NES (discards VROM)",     NULL},
+      {GENERIC_MD5, "Generic (plain content)", NULL},
+   };
+   
+   CORO_ENTER()
+   
+      SETTINGS = config_get_ptr();
+
+      cheevos_locals.meminfo[0].id = RETRO_MEMORY_SYSTEM_RAM;
+      core_get_memory(&cheevos_locals.meminfo[0]);
+
+      cheevos_locals.meminfo[1].id = RETRO_MEMORY_SAVE_RAM;
+      core_get_memory(&cheevos_locals.meminfo[1]);
+
+      cheevos_locals.meminfo[2].id = RETRO_MEMORY_VIDEO_RAM;
+      core_get_memory(&cheevos_locals.meminfo[2]);
+
+      cheevos_locals.meminfo[3].id = RETRO_MEMORY_RTC;
+      core_get_memory(&cheevos_locals.meminfo[3]);
+
+      RARCH_LOG("CHEEVOS system RAM: %p %u\n",
+         cheevos_locals.meminfo[0].data, cheevos_locals.meminfo[0].size);
+      RARCH_LOG("CHEEVOS save RAM:   %p %u\n",
+         cheevos_locals.meminfo[1].data, cheevos_locals.meminfo[1].size);
+      RARCH_LOG("CHEEVOS video RAM:  %p %u\n",
+         cheevos_locals.meminfo[2].data, cheevos_locals.meminfo[2].size);
+      RARCH_LOG("CHEEVOS RTC:        %p %u\n",
+         cheevos_locals.meminfo[3].data, cheevos_locals.meminfo[3].size);
+
+      /* Bail out if cheevos are disabled.
+       * But set the above anyways, command_read_ram needs it. */
+      if (!SETTINGS->bools.cheevos_enable)
+         CORO_STOP();
+      
+      /* Load the content into memory, or copy it over to our own buffer */
+      if (!DATA)
+      {
+         STREAM = filestream_open(PATH, RFILE_MODE_READ, 0);
+
+         if (!STREAM)
+            CORO_STOP();
+         
+         CORO_YIELD();
+         LEN = 0;
+         COUNT = filestream_get_size(STREAM);
+         
+         if (COUNT > CHEEVOS_SIZE_LIMIT)
+            COUNT = CHEEVOS_SIZE_LIMIT;
+         
+         DATA = malloc(COUNT);
+         
+         if (!DATA)
+         {
+            filestream_close(STREAM);
+            CORO_STOP();
+         }
+
+         for (;;)
+         {
+            buffer   = (uint8_t*)DATA + LEN;
+            to_read  = 4096;
+
+            if (to_read > COUNT)
+               to_read = COUNT;
+
+            num_read = filestream_read(STREAM, (void*)buffer, to_read);
+
+            if (num_read <= 0)
+               break;
+
+            LEN   += num_read;
+            COUNT -= num_read;
+            
+            if (COUNT == 0)
+               break;
+            
+            CORO_YIELD();
+         }
+
+         filestream_close(STREAM);
+      }
+      
+      /* Use the supported extensions as a hint
+       * to what method we should use. */
+      core_get_system_info(&SYSINFO);
+
+      for (I = 0; I < ARRAY_SIZE(finders); I++)
+      {
+         if (finders[I].ext_hashes)
+         {
+            EXT = SYSINFO.valid_extensions;
+
+            while (EXT)
+            {
+               unsigned hash;
+               end = strchr(EXT, '|');
+
+               if (end)
+               {
+                  hash = cheevos_djb2(EXT, end - EXT);
+                  EXT = end + 1;
+               }
+               else
+               {
+                  hash = cheevos_djb2(EXT, strlen(EXT));
+                  EXT = NULL;
+               }
+
+               for (J = 0; finders[I].ext_hashes[J]; J++)
+               {
+                  if (finders[I].ext_hashes[J] == hash)
+                  {
+                     RARCH_LOG("CHEEVOS testing %s.\n", finders[I].name);
+                     
+                     /*
+                      * Inputs:  INFO
+                      * Outputs: GAMEID, the game was found if it's different from 0
+                      */
+                     CORO_GOSUB(finders[I].label);
+
+                     if (GAMEID != 0)
+                        goto found;
+
+                     EXT = NULL; /* force next finder */
+                     break;
+                  }
+               }
+            }
+         }
+      }
+
+      for (I = 0; I < ARRAY_SIZE(finders); I++)
+      {
+         if (finders[I].ext_hashes)
+            continue;
+
+         RARCH_LOG("CHEEVOS testing %s.\n", finders[I].name);
+         
+         /*
+          * Inputs:  INFO
+          * Outputs: GAMEID
+          */
+         CORO_GOSUB(finders[I].label);
+
+         if (GAMEID != 0)
+            goto found;
+      }
+
+      RARCH_LOG("CHEEVOS this game doesn't feature achievements.\n");
+      CORO_STOP();
+
+      found:
+      
+#ifdef CHEEVOS_JSON_OVERRIDE
+      {
+         FILE* file;
+         size_t size;
+
+         file = fopen(CHEEVOS_JSON_OVERRIDE, "rb");
+         fseek(file, 0, SEEK_END);
+         size = ftell(file);
+         fseek(file, 0, SEEK_SET);
+
+         JSON = (const char*)malloc(size + 1);
+         fread((void*)JSON, 1, size, file);
+
+         fclose(file);
+         JSON[size] = 0;
+      }
+#else
+      CORO_GOSUB(GET_CHEEVOS);
+      
+      if (!JSON)
+      {
+         runloop_msg_queue_push("Error loading achievements.", 0, 5 * 60, false);
+         RARCH_ERR("CHEEVOS error loading achievements.\n");
+         CORO_STOP();
+      }
+   
+#endif
+
+#ifdef CHEEVOS_SAVE_JSON
+      {
+         FILE* file = fopen(CHEEVOS_SAVE_JSON, "w");
+         fwrite((void*)JSON, 1, strlen(JSON), file);
+         fclose(file);
+      }
+#endif
+      if (cheevos_parse(JSON))
+      {
+         free((void*)JSON);
+         CORO_STOP();
+      }
+      
+      free((void*)JSON);
+      cheevos_loaded = true;
+
+      /*
+       * Inputs:  GAMEID
+       * Outputs:
+       */
+      CORO_GOSUB(DEACTIVATE);
+      
+      /*
+       * Inputs:  GAMEID
+       * Outputs: 
+       */
+      CORO_GOSUB(PLAYING);
+      CORO_STOP();
+
+   /**************************************************************************
+    * Info   Tries to identify a SNES game
+    * Input  INFO the content info
+    * Output GAMEID the Retro Achievements game ID, or 0 if not found
+    *************************************************************************/
+   CORO_SUB(SNES_MD5)
+   
+      MD5_Init(&MD5);
+      
+      OFFSET = COUNT = 0;
+      CORO_GOSUB(EVAL_MD5);
+
+      if (COUNT == 0)
+      {
+         MD5_Final(HASH, &MD5);
+         GAMEID = 0;
+         CORO_RET();
+      }
+
+      if (COUNT < CHEEVOS_EIGHT_MB)
+      {
+         /*
+          * Inputs:  MD5, OFFSET, COUNT
+          * Outputs: MD5
+          */
+         OFFSET = 0;
+         COUNT = CHEEVOS_EIGHT_MB - COUNT;
+         CORO_GOSUB(FILL_MD5);
+      }
+      
+      MD5_Final(HASH, &MD5);
+      CORO_GOTO(GET_GAMEID);
+      
+   /**************************************************************************
+    * Info   Tries to identify a Genesis game
+    * Input  INFO the content info
+    * Output GAMEID the Retro Achievements game ID, or 0 if not found
+    *************************************************************************/
+   CORO_SUB(GENESIS_MD5)
+   
+      MD5_Init(&MD5);
+      
+      OFFSET = COUNT = 0;
+      CORO_GOSUB(EVAL_MD5);
+
+      if (COUNT == 0)
+      {
+         MD5_Final(HASH, &MD5);
+         GAMEID = 0;
+         CORO_RET();
+      }
+
+      if (COUNT < CHEEVOS_SIX_MB)
+      {
+         OFFSET = 0;
+         COUNT = CHEEVOS_SIX_MB - COUNT;
+         CORO_GOSUB(FILL_MD5);
+      }
+      
+      MD5_Final(HASH, &MD5);
+      CORO_GOTO(GET_GAMEID);
+   
+   /**************************************************************************
+    * Info   Tries to identify a NES game
+    * Input  INFO the content info
+    * Output GAMEID the Retro Achievements game ID, or 0 if not found
+    *************************************************************************/
+   CORO_SUB(NES_MD5)
+   
+      /* Note about the references to the FCEU emulator below. There is no
+       * core-specific code in this function, it's rather Retro Achievements
+       * specific code that must be followed to the letter so we compute
+       * the correct ROM hash. Retro Achievements does indeed use some
+       * FCEU related method to compute the hash, since its NES emulator
+       * is based on it. */
+      
+      if (LEN < sizeof(HEADER))
+      {
+         GAMEID = 0;
+         CORO_RET();
+      }
+
+      memcpy((void*)&HEADER, DATA, sizeof(HEADER));
+
+      if (     HEADER.id[0] != 'N'
+            || HEADER.id[1] != 'E'
+            || HEADER.id[2] != 'S'
+            || HEADER.id[3] != 0x1a)
+      {
+         GAMEID = 0;
+         CORO_RET();
+      }
+
+      if (HEADER.rom_size)
+         ROMSIZE = next_pow2(HEADER.rom_size);
+      else
+         ROMSIZE = 256;
+
+      /* from FCEU core - compute size using the cart mapper */
+      MAPPER = (HEADER.rom_type >> 4) | (HEADER.rom_type2 & 0xF0);
+
+      /* for games not to the power of 2, so we just read enough
+       * PRG rom from it, but we have to keep ROM_size to the power of 2
+       * since PRGCartMapping wants ROM_size to be to the power of 2
+       * so instead if not to power of 2, we just use head.ROM_size when
+       * we use FCEU_read. */
+      ROUND = MAPPER != 53 && MAPPER != 198 && MAPPER != 228;
+      BYTES = (ROUND) ? ROMSIZE : HEADER.rom_size;
+
+      /* from FCEU core - check if Trainer included in ROM data */
+      MD5_Init(&MD5);
+      OFFSET = sizeof(HEADER) + (HEADER.rom_type & 4 ? sizeof(HEADER) : 0);
+      COUNT = 0x4000 * BYTES;
+      CORO_GOSUB(EVAL_MD5);
+      
+      if (COUNT < 0x4000 * BYTES)
+      {
+         OFFSET = 0xff;
+         COUNT = 0x4000 * BYTES - COUNT;
+         CORO_GOSUB(FILL_MD5);
+      }
+      
+      MD5_Final(HASH, &MD5);
+      CORO_GOTO(GET_GAMEID);
+      
+   /**************************************************************************
+    * Info   Tries to identify a "generic" game
+    * Input  INFO the content info
+    * Output GAMEID the Retro Achievements game ID, or 0 if not found
+    *************************************************************************/
+   CORO_SUB(GENERIC_MD5)
+   
+      MD5_Init(&MD5);
+      
+      OFFSET = 0;
+      COUNT = 0;
+      CORO_GOSUB(EVAL_MD5);
+
+      MD5_Final(HASH, &MD5);
+
+      if (COUNT == 0)
+         CORO_RET();
+
+      CORO_GOTO(GET_GAMEID);
+   
+   /**************************************************************************
+    * Info    Evaluates the MD5 hash
+    * Inputs  INFO, OFFSET, COUNT
+    * Outputs MD5, COUNT
+    *************************************************************************/
+   CORO_SUB(EVAL_MD5)
+   
+      if (COUNT == 0)
+         COUNT = LEN;
+
+      if (LEN - OFFSET < COUNT)
+         COUNT = LEN - OFFSET;
+
+      if (COUNT > CHEEVOS_SIZE_LIMIT)
+         COUNT = CHEEVOS_SIZE_LIMIT;
+
+      MD5_Update(&MD5, (void*)((uint8_t*)DATA + OFFSET), COUNT);
+      CORO_RET();
+      
+   /**************************************************************************
+    * Info    Updates the MD5 hash with a repeated value
+    * Inputs  OFFSET, COUNT
+    * Outputs MD5
+    *************************************************************************/
+   CORO_SUB(FILL_MD5)
+   
+      {
+         char buffer[4096];
+
+         while (COUNT > 0)
+         {
+            size_t len = sizeof(buffer);
+
+            if (len > COUNT)
+               len = COUNT;
+
+            memset((void*)buffer, OFFSET, len);
+            MD5_Update(&MD5, (void*)buffer, len);
+            COUNT -= len;
+         }
+      }
+      
+      CORO_RET();
+   
+   /**************************************************************************
+    * Info    Gets the achievements from Retro Achievements
+    * Inputs  HASH
+    * Outputs GAMEID
+    *************************************************************************/
+   CORO_SUB(GET_GAMEID)
+      
+      {
+         char gameid[16];
+         
+         RARCH_LOG(
+            "CHEEVOS getting game id for hash %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n",
+            HASH[ 0], HASH[ 1], HASH[ 2], HASH[ 3],
+            HASH[ 4], HASH[ 5], HASH[ 6], HASH[ 7],
+            HASH[ 8], HASH[ 9], HASH[10], HASH[11],
+            HASH[12], HASH[13], HASH[14], HASH[15]
+         );
+
+         snprintf(
+            URL, sizeof(URL),
+            "http://retroachievements.org/dorequest.php?r=gameid&m=%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+            HASH[ 0], HASH[ 1], HASH[ 2], HASH[ 3],
+            HASH[ 4], HASH[ 5], HASH[ 6], HASH[ 7],
+            HASH[ 8], HASH[ 9], HASH[10], HASH[11],
+            HASH[12], HASH[13], HASH[14], HASH[15]
+         );
+
+         URL[sizeof(URL) - 1] = 0;
+
+#ifdef CHEEVOS_LOG_URLS
+         cheevos_log_url("CHEEVOS url to get the game's id: %s\n", URL);
+#endif
+
+         CORO_GOSUB(HTTP_GET);
+         
+         if (!JSON)
+            CORO_RET();
+         
+         if (cheevos_get_value(JSON, CHEEVOS_JSON_KEY_GAMEID, gameid, sizeof(gameid)))
+         {
+            free((void*)JSON);
+            RARCH_ERR("CHEEVOS error getting game_id.\n");
+            CORO_RET();
+         }
+
+         free((void*)JSON);
+         RARCH_LOG("CHEEVOS got game id %s.\n", gameid);
+         GAMEID = strtol(gameid, NULL, 10);
+         CORO_RET();
+      }
+      
+   /**************************************************************************
+    * Info    Gets the achievements from Retro Achievements
+    * Inputs  GAMEID
+    * Outputs JSON
+    *************************************************************************/
+   CORO_SUB(GET_CHEEVOS)
+   
+      CORO_GOSUB(LOGIN);
+   
+      snprintf(
+         URL, sizeof(URL),
+         "http://retroachievements.org/dorequest.php?r=patch&u=%s&g=%u&f=3&l=1&t=%s",
+         SETTINGS->arrays.cheevos_username,
+         GAMEID, cheevos_locals.token
+      );
+
+      URL[sizeof(URL) - 1] = 0;
+
+#ifdef CHEEVOS_LOG_URLS
+      cheevos_log_url("CHEEVOS url to get the list of cheevos: %s\n", URL);
+#endif
+
+      CORO_GOSUB(HTTP_GET);
+      
+      if (!JSON)
+      {
+         RARCH_ERR("CHEEVOS error getting achievements for game id %u.\n", GAMEID);
+         CORO_STOP();
+      }
+      
+      RARCH_LOG("CHEEVOS got achievements for game id %u.\n", GAMEID);
+      CORO_RET();
+   
+   /**************************************************************************
+    * Info Logs in the user at Retro Achievements
+    *************************************************************************/
+   CORO_SUB(LOGIN)
+   
+      if (cheevos_locals.token[0])
+         CORO_RET();
+      
+      {
+         const char *username = SETTINGS->arrays.cheevos_username;
+         const char *password = SETTINGS->arrays.cheevos_password;
+         char urle_user[64];
+         char urle_pwd[64];
+
+         if (!username || !*username || !password || !*password)
+         {
+            runloop_msg_queue_push("Missing Retro Achievements account information.", 0, 5 * 60, false);
+            runloop_msg_queue_push("Please fill in your account information in Settings.", 0, 5 * 60, false);
+            RARCH_ERR("CHEEVOS username and/or password not informed.\n");
+            CORO_STOP();
+         }
+
+         cheevos_url_encode(username, urle_user, sizeof(urle_user));
+         cheevos_url_encode(password, urle_pwd, sizeof(urle_pwd));
+
+         snprintf(
+            URL, sizeof(URL),
+            "http://retroachievements.org/dorequest.php?r=login&u=%s&p=%s",
+            urle_user, urle_pwd
+         );
+
+         URL[sizeof(URL) - 1] = 0;
+      }
+
+#ifdef CHEEVOS_LOG_URLS
+      cheevos_log_url("CHEEVOS url to login: %s\n", URL);
+#endif
+
+      CORO_GOSUB(HTTP_GET);
+      
+      if (JSON)
+      {
+         int res = cheevos_get_value(JSON, CHEEVOS_JSON_KEY_TOKEN, cheevos_locals.token, sizeof(cheevos_locals.token));
+         free((void*)JSON);
+
+         if (!res)
+            CORO_RET();
+      }
+
+      runloop_msg_queue_push("Retro Achievements login error.", 0, 5 * 60, false);
+      RARCH_ERR("CHEEVOS error getting user token.\n");
+      CORO_STOP();
+   
+   /**************************************************************************
+    * Info    Makes a HTTP GET request
+    * Inputs  URL
+    * Outputs JSON
+    *************************************************************************/
+   CORO_SUB(HTTP_GET)
+   
+      JSON = NULL;
+      CONN = net_http_connection_new(URL, "GET", NULL);
+      
+      if (!CONN)
+         CORO_RET();
+      
+      /* Don't bother with timeouts here, it's just a string scan. */
+      while (!net_http_connection_iterate(CONN)) {}
+      
+      /* Error finishing the connection descriptor. */
+      if (!net_http_connection_done(CONN))
+      {
+         net_http_connection_free(CONN);
+         CORO_RET();
+      }
+      
+      HTTP = net_http_new(CONN);
+
+      /* Error connecting to the endpoint. */
+      if (!HTTP)
+      {
+         net_http_connection_free(CONN);
+         CORO_RET();
+      }
+
+      while (!net_http_update(HTTP, NULL, NULL))
+         CORO_YIELD();
+      
+      {
+         size_t length;
+         uint8_t *data = net_http_data(HTTP, &length, false);
+         
+         if (data)
+         {
+            JSON = (char*)malloc(length + 1);
+            
+            if (JSON)
+            {
+               memcpy((void*)JSON, (void*)data, length);
+               free(data);
+               JSON[length] = 0;
+            }
+         }
+      }
+      
+      net_http_delete(HTTP);
+      net_http_connection_free(CONN);
+      CORO_RET();
+   
+   /**************************************************************************
+    * Info    Deactivates the achievements already awarded
+    * Inputs  GAMEID
+    * Outputs 
+    *************************************************************************/
+   CORO_SUB(DEACTIVATE)
+   
+#ifndef CHEEVOS_DONT_DEACTIVATE
+      CORO_GOSUB(LOGIN);
+      
+      /* Deactivate achievements in softcore mode. */
+      snprintf(
+         URL, sizeof(URL),
+         "http://retroachievements.org/dorequest.php?r=unlocks&u=%s&t=%s&g=%u&h=0",
+         SETTINGS->arrays.cheevos_username,
+         cheevos_locals.token, GAMEID
+      );
+
+      URL[sizeof(URL) - 1] = 0;
+
+#ifdef CHEEVOS_LOG_URLS
+      cheevos_log_url("CHEEVOS url to get the list of unlocked cheevos in softcore: %s\n", URL);
+#endif
+
+      CORO_GOSUB(HTTP_GET);
+      
+      if (!cheevos_deactivate_unlocks(JSON, CHEEVOS_ACTIVE_SOFTCORE))
+         RARCH_LOG("CHEEVOS deactivated unlocked achievements in softcore mode.\n");
+      else
+         RARCH_ERR("CHEEVOS error deactivating unlocked achievements in softcore mode.\n");
+      
+      /* Deactivate achievements in hardcore mode. */
+      snprintf(
+         URL, sizeof(URL),
+         "http://retroachievements.org/dorequest.php?r=unlocks&u=%s&t=%s&g=%u&h=1",
+         SETTINGS->arrays.cheevos_username,
+         cheevos_locals.token, GAMEID
+      );
+
+      URL[sizeof(URL) - 1] = 0;
+
+#ifdef CHEEVOS_LOG_URLS
+      cheevos_log_url("CHEEVOS url to get the list of unlocked cheevos in hardcore: %s\n", URL);
+#endif
+      
+      CORO_GOSUB(HTTP_GET);
+
+      if (!cheevos_deactivate_unlocks(JSON, CHEEVOS_ACTIVE_HARDCORE))
+         RARCH_LOG("CHEEVOS deactivated unlocked achievements in hardcore mode.\n");
+      else
+         RARCH_ERR("CHEEVOS error deactivating unlocked achievements in hardcore mode.\n");
+      
+#endif
+      CORO_RET();
+   
+   /**************************************************************************
+    * Info    Posts the "playing" activity to Retro Achievements
+    * Inputs  GAMEID
+    * Outputs 
+    *************************************************************************/
+   CORO_SUB(PLAYING)
+
+      snprintf(
+         URL, sizeof(URL),
+         "http://retroachievements.org/dorequest.php?r=postactivity&u=%s&t=%s&a=3&m=%u",
+         SETTINGS->arrays.cheevos_username,
+         cheevos_locals.token, GAMEID
+      );
+
+      URL[sizeof(URL) - 1] = 0;
+
+#ifdef CHEEVOS_LOG_URLS
+      cheevos_log_url("CHEEVOS url to post the 'playing' activity: %s\n", URL);
+#endif
+      
+      CORO_GOSUB(HTTP_GET);
+      
+      if (!JSON)
+         CORO_GOTO(PLAYING);
+      
+      RARCH_LOG("CHEEVOS posted playing activity.\n");
+      CORO_RET();
+
+   CORO_LEAVE();
+}
+
+static void cheevos_task_handler(retro_task_t *task)
+{
+   coro_t *coro = (coro_t*)task->state;
+   
+   if (!cheevos_iterate(coro))
+   {
+      task_set_finished(task, true);
+      free(DATA);
+      free((void*)PATH);
+      free((void*)coro);
+   }
+}
+
+bool cheevos_load(const void *data)
+{
+   retro_task_t *task;
+   coro_t *coro;
+   const struct retro_game_info *info;
+   
+   cheevos_loaded = 0;
+
+   if (!cheevos_locals.core_supports || !data)
+      return false;
+   
+   coro = (coro_t*)calloc(1, sizeof(*coro));
+   
+   if (!coro)
+      return false;
+   
+   task = (retro_task_t*)calloc(1, sizeof(*task));
+   
+   if (!task)
+   {
+      free((void*)coro);
+      return false;
+   }
+   
+   CORO_SETUP(coro);
+   
+   info = (const struct retro_game_info*)data;
+   
+   if (info->data)
+   {
+      LEN = info->size;
+      
+      if (LEN > CHEEVOS_SIZE_LIMIT)
+         LEN = CHEEVOS_SIZE_LIMIT;
+      
+      DATA = malloc(LEN);
+      
+      if (!DATA)
+      {
+         free((void*)task);
+         free((void*)coro);
+         return false;
+      }
+      
+      memcpy(DATA, info->data, LEN);
+      PATH = NULL;
+   }
+   else
+   {
+      DATA = NULL;
+      PATH = strdup(info->path);
+   }
+   
+   task->handler   = cheevos_task_handler;
+   task->state     = (void*)coro;
+   task->mute      = true;
+   task->callback  = NULL;
+   task->user_data = NULL;
+   task->progress  = 0;
+   task->title     = NULL;
+   
+   task_queue_push(task);
+   return true;
 }

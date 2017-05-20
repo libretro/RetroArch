@@ -33,6 +33,7 @@
 #include <rthreads/rthreads.h>
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
+#include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../core.h"
@@ -45,6 +46,7 @@
 #include "../core.h"
 #include "../file_path_special.h"
 #include "../configuration.h"
+#include "../gfx/video_driver.h"
 #include "../msg_hash.h"
 #include "../retroarch.h"
 #include "../verbosity.h"
@@ -91,6 +93,7 @@ typedef struct
    bool mute;
    int state_slot;
    bool thumbnail_enable;
+   bool has_valid_framebuffer;
 } save_task_state_t;
 
 typedef save_task_state_t load_task_data_t;
@@ -147,8 +150,8 @@ static void autosave_thread(void *data)
       bool differ;
 
       slock_lock(save->lock);
-      differ = memcmp(save->buffer, save->retro_buffer,
-            save->bufsize) != 0;
+      differ = string_is_not_equal_fast(save->buffer, save->retro_buffer,
+            save->bufsize);
       if (differ)
          memcpy(save->buffer, save->retro_buffer, save->bufsize);
       slock_unlock(save->lock);
@@ -207,26 +210,26 @@ static autosave_t *autosave_new(const char *path,
       const void *data, size_t size,
       unsigned interval)
 {
-   autosave_t *handle   = (autosave_t*)calloc(1, sizeof(*handle));
+   autosave_t *handle            = (autosave_t*)calloc(1, sizeof(*handle));
    if (!handle)
       goto error;
 
-   handle->bufsize      = size;
-   handle->interval     = interval;
-   handle->path         = path;
-   handle->buffer       = malloc(size);
-   handle->retro_buffer = data;
+   handle->bufsize               = size;
+   handle->interval              = interval;
+   handle->path                  = path;
+   handle->buffer                = malloc(size);
+   handle->retro_buffer          = data;
 
    if (!handle->buffer)
       goto error;
 
    memcpy(handle->buffer, handle->retro_buffer, handle->bufsize);
 
-   handle->lock         = slock_new();
-   handle->cond_lock    = slock_new();
-   handle->cond         = scond_new();
+   handle->lock                  = slock_new();
+   handle->cond_lock             = slock_new();
+   handle->cond                  = scond_new();
 
-   handle->thread       = sthread_create(autosave_thread, handle);
+   handle->thread                = sthread_create(autosave_thread, handle);
 
    return handle;
 
@@ -644,18 +647,19 @@ static bool task_push_undo_save_state(const char *path, void *data, size_t size)
       goto error;
 
    strlcpy(state->path, path, sizeof(state->path));
-   state->data       = data;
-   state->size       = size;
-   state->undo_save  = true;
-   state->state_slot = settings->ints.state_slot;
+   state->data                   = data;
+   state->size                   = size;
+   state->undo_save              = true;
+   state->state_slot             = settings->ints.state_slot;
+   state->has_valid_framebuffer  = video_driver_cached_frame_has_valid_framebuffer();
 
-   task->type        = TASK_TYPE_BLOCKING;
-   task->state       = state;
-   task->handler     = task_save_handler;
-   task->callback    = undo_save_state_cb;
-   task->title       = strdup(msg_hash_to_str(MSG_UNDOING_SAVE_STATE));
+   task->type                    = TASK_TYPE_BLOCKING;
+   task->state                   = state;
+   task->handler                 = task_save_handler;
+   task->callback                = undo_save_state_cb;
+   task->title                   = strdup(msg_hash_to_str(MSG_UNDOING_SAVE_STATE));
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+   task_queue_push(task);
 
    return true;
 
@@ -977,7 +981,7 @@ static void save_state_cb(void *task_data,
    char               *path = strdup(state->path);
 
    if (state->thumbnail_enable)
-      take_screenshot(path, true);
+      take_screenshot(path, true, state->has_valid_framebuffer);
 
    free(path);
 }
@@ -1006,6 +1010,7 @@ static void task_push_save_state(const char *path, void *data, size_t size, bool
    state->mute             = autosave; /* don't show OSD messages if we are auto-saving */
    state->thumbnail_enable = settings->bools.savestate_thumbnail_enable;
    state->state_slot       = settings->ints.state_slot;
+   state->has_valid_framebuffer  = video_driver_cached_frame_has_valid_framebuffer();
 
    task->type              = TASK_TYPE_BLOCKING;
    task->state             = state;
@@ -1014,7 +1019,7 @@ static void task_push_save_state(const char *path, void *data, size_t size, bool
    task->title             = strdup(msg_hash_to_str(MSG_SAVING_STATE));
    task->mute              = state->mute;
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+   task_queue_push(task);
 
    return;
 
@@ -1076,6 +1081,7 @@ static void task_push_load_and_save_state(const char *path, void *data,
    state->autosave   = autosave;
    state->mute       = autosave; /* don't show OSD messages if we are auto-saving */
    state->state_slot = settings->ints.state_slot;
+   state->has_valid_framebuffer  = video_driver_cached_frame_has_valid_framebuffer();
 
    task->state       = state;
    task->type        = TASK_TYPE_BLOCKING;
@@ -1084,7 +1090,7 @@ static void task_push_load_and_save_state(const char *path, void *data,
    task->title       = strdup(msg_hash_to_str(MSG_LOADING_STATE));
    task->mute        = state->mute;
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+   task_queue_push(task);
 
    return;
 
@@ -1139,7 +1145,7 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
    {
       if (save_to_disk)
       {
-         if (path_file_exists(path))
+         if (path_file_exists(path) && !autosave)
          {
             /* Before overwritting the savestate file, load it into a buffer
             to allow undo_save_state() to work */
@@ -1212,6 +1218,7 @@ bool content_load_state(const char *path,
    state->load_to_backup_buffer = load_to_backup_buffer;
    state->autoload              = autoload;
    state->state_slot            = settings->ints.state_slot;
+   state->has_valid_framebuffer  = video_driver_cached_frame_has_valid_framebuffer();
 
    task->type                   = TASK_TYPE_BLOCKING;
    task->state                  = state;
@@ -1219,7 +1226,7 @@ bool content_load_state(const char *path,
    task->callback               = content_load_state_cb;
    task->title                  = strdup(msg_hash_to_str(MSG_LOADING_STATE));
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+   task_queue_push(task);
 
    return true;
 

@@ -293,7 +293,7 @@ static void vita2d_font_render_msg(
       g    				= FONT_COLOR_GET_GREEN(params->color);
       b    				= FONT_COLOR_GET_BLUE(params->color);
       alpha    		= FONT_COLOR_GET_ALPHA(params->color);
-      color    		= params->color;
+      color    		= RGBA8(r,g,b,alpha);
    }
    else
    {

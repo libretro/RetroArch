@@ -33,7 +33,6 @@
 #include "../common/vita2d_common.h"
 #include "../../driver.h"
 #include "../video_coord_array.h"
-#include "../video_context_driver.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
 
@@ -289,12 +288,6 @@ static bool vita2d_gfx_suppress_screensaver(void *data, bool enable)
    (void)data;
    (void)enable;
    return false;
-}
-
-static bool vita2d_gfx_has_windowed(void *data)
-{
-   (void)data;
-   return true;
 }
 
 static void vita2d_gfx_free(void *data)
@@ -965,7 +958,7 @@ video_driver_t video_vita2d = {
    vita2d_gfx_alive,
    vita2d_gfx_focus,
    vita2d_gfx_suppress_screensaver,
-   vita2d_gfx_has_windowed,
+   NULL, /* has_windowed */
    vita2d_gfx_set_shader,
    vita2d_gfx_free,
    "vita2d",

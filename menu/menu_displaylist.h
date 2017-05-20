@@ -206,7 +206,9 @@ typedef struct menu_displaylist_ctx_entry
 } menu_displaylist_ctx_entry_t;
 
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data);
-
+#ifdef HAVE_NETWORKING
+void netplay_refresh_rooms_menu(file_list_t *list);
+#endif
 RETRO_END_DECLS
 
 #endif

@@ -203,7 +203,7 @@ static bool gfx_ctx_opendingux_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static void gfx_ctx_opendingux_swap_buffers(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_opendingux_swap_buffers(void *data, void *data2)
 {
    opendingux_ctx_data_t *viv = (opendingux_ctx_data_t*)data;
 

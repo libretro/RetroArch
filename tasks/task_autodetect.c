@@ -33,23 +33,26 @@
 
 #include "tasks_internal.h"
 
-typedef struct autoconfig_disconnect
+typedef struct autoconfig_disconnect autoconfig_disconnect_t;
+typedef struct autoconfig_params     autoconfig_params_t;
+
+struct autoconfig_disconnect
 {
    unsigned idx;
    char msg[255];
-} autoconfig_disconnect_t;
+};
 
-typedef struct autoconfig_params
+struct autoconfig_params
 {
    char  name[255];
    char  driver[255];
    char  display_name[255];
-   unsigned idx;
+   char autoconfig_directory[4096];
    int32_t vid;
    int32_t pid;
+   unsigned idx;
    uint32_t max_users;
-   char autoconfig_directory[4096];
-} autoconfig_params_t;
+};
 
 static bool input_autoconfigured[MAX_USERS];
 static unsigned input_device_name_index[MAX_USERS];
@@ -157,7 +160,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    input_autoconfigure_joypad_conf(conf,
          input_autoconf_binds[params->idx]);
 
-   if (memcmp(device_type, "remote", 6) == 0)
+   if (string_is_equal_fast(device_type, "remote", 6))
    {
       static bool remote_is_bound        = false;
 
@@ -165,7 +168,10 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
             string_is_empty(display_name) ? params->name : display_name);
 
       if(!remote_is_bound)
+      {
+         task_free_title(task);
          task_set_title(task, strdup(msg));
+      }
       remote_is_bound = true;
       if (params->idx == 0)
          input_autoconfigure_swap_override = true;
@@ -186,7 +192,10 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
       }
 
       if (!block_osd_spam)
+      {
+         task_free_title(task);
          task_set_title(task, strdup(msg));
+      }
    }
 
 
@@ -313,14 +322,7 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
       char msg[255];
 
       msg[0] = '\0';
-#ifndef ANDROID
-      RARCH_LOG("[Autodetect]: no profiles found for %s (%d/%d).\n",
-            params->name, params->vid, params->pid);
-
-      snprintf(msg, sizeof(msg), "%s (%ld/%ld) %s.",
-            params->name, (long)params->vid, (long)params->pid,
-            msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED));
-#else
+#ifdef ANDROID
       strlcpy(params->name, "Android Gamepad", sizeof(params->name));
       if(input_autoconfigure_joypad_from_conf_internal(params, task))
       {
@@ -331,7 +333,15 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
                params->name, (long)params->vid, (long)params->pid,
                msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED_FALLBACK));
       }
+#else
+      RARCH_LOG("[Autodetect]: no profiles found for %s (%d/%d).\n",
+            params->name, params->vid, params->pid);
+
+      snprintf(msg, sizeof(msg), "%s (%ld/%ld) %s.",
+            params->name, (long)params->vid, (long)params->pid,
+            msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED));
 #endif
+      task_free_title(task);
       task_set_title(task, strdup(msg));
    }
 
@@ -377,7 +387,7 @@ bool input_autoconfigure_disconnect(unsigned i, const char *ident)
    task->state   = state;
    task->handler = input_autoconfigure_disconnect_handler;
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+   task_queue_push(task);
 
    return true;
 
@@ -453,7 +463,7 @@ bool input_autoconfigure_connect(
    state->idx       = idx;
    state->vid       = vid;
    state->pid       = pid;
-   state->max_users = settings->uints.input_max_users;
+   state->max_users = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
 
    input_config_set_device_name(state->idx, state->name);
    input_config_set_pid(state->idx, state->pid);
@@ -472,7 +482,7 @@ bool input_autoconfigure_connect(
    task->state   = state;
    task->handler = input_autoconfigure_connect_handler;
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+   task_queue_push(task);
 
    return true;
 

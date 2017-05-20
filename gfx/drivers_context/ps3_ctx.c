@@ -33,7 +33,7 @@
 #include "../../configuration.h"
 #include "../../defines/ps3_defines.h"
 #include "../common/gl_common.h"
-#include "../video_context_driver.h"
+#include "../video_driver.h"
 
 typedef struct gfx_ctx_ps3_data
 {
@@ -173,7 +173,7 @@ static bool gfx_ctx_ps3_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static void gfx_ctx_ps3_swap_buffers(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_ps3_swap_buffers(void *data, void *data2)
 {
    (void)data;
 #ifdef HAVE_LIBDBGFONT

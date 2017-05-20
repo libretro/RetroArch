@@ -278,31 +278,31 @@ int detect_psp_game(const char *track_path, char *game_id)
       {
          game_id[5] = '\0';
          if (
-             (memcmp(game_id, "ULES-", 5) == 0)
-          || (memcmp(game_id, "ULUS-", 5) == 0)
-          || (memcmp(game_id, "ULJS-", 5) == 0)
+             (string_is_equal_fast(game_id, "ULES-", 5))
+          || (string_is_equal_fast(game_id, "ULUS-", 5))
+          || (string_is_equal_fast(game_id, "ULJS-", 5))
 
-          || (memcmp(game_id, "ULEM-", 5) == 0)
-          || (memcmp(game_id, "ULUM-", 5) == 0)
-          || (memcmp(game_id, "ULJM-", 5) == 0)
+          || (string_is_equal_fast(game_id, "ULEM-", 5))
+          || (string_is_equal_fast(game_id, "ULUM-", 5))
+          || (string_is_equal_fast(game_id, "ULJM-", 5))
 
-          || (memcmp(game_id, "UCES-", 5) == 0)
-          || (memcmp(game_id, "UCUS-", 5) == 0)
-          || (memcmp(game_id, "UCJS-", 5) == 0)
-          || (memcmp(game_id, "UCAS-", 5) == 0)
+          || (string_is_equal_fast(game_id, "UCES-", 5))
+          || (string_is_equal_fast(game_id, "UCUS-", 5))
+          || (string_is_equal_fast(game_id, "UCJS-", 5))
+          || (string_is_equal_fast(game_id, "UCAS-", 5))
 
-          || (memcmp(game_id, "NPEH-", 5) == 0)
-          || (memcmp(game_id, "NPUH-", 5) == 0)
-          || (memcmp(game_id, "NPJH-", 5) == 0)
+          || (string_is_equal_fast(game_id, "NPEH-", 5))
+          || (string_is_equal_fast(game_id, "NPUH-", 5))
+          || (string_is_equal_fast(game_id, "NPJH-", 5))
 
-          || (memcmp(game_id, "NPEG-", 5) == 0)
-          || (memcmp(game_id, "NPUG-", 5) == 0)
-          || (memcmp(game_id, "NPJG-", 5) == 0)
-          || (memcmp(game_id, "NPHG-", 5) == 0)
+          || (string_is_equal_fast(game_id, "NPEG-", 5))
+          || (string_is_equal_fast(game_id, "NPUG-", 5))
+          || (string_is_equal_fast(game_id, "NPJG-", 5))
+          || (string_is_equal_fast(game_id, "NPHG-", 5))
 
-          || (memcmp(game_id, "NPEZ-", 5) == 0)
-          || (memcmp(game_id, "NPUZ-", 5) == 0)
-          || (memcmp(game_id, "NPJZ-", 5) == 0)
+          || (string_is_equal_fast(game_id, "NPEZ-", 5))
+          || (string_is_equal_fast(game_id, "NPUZ-", 5))
+          || (string_is_equal_fast(game_id, "NPJZ-", 5))
          )
          {
             filestream_seek(fd, pos, SEEK_SET);
@@ -354,7 +354,7 @@ int detect_system(const char *track_path, const char **system_name)
          goto clean;
       }
 
-      if (memcmp(MAGIC_NUMBERS[i].magic, magic, MAGIC_LEN) == 0)
+      if (string_is_equal_fast(MAGIC_NUMBERS[i].magic, magic, MAGIC_LEN))
       {
          *system_name = MAGIC_NUMBERS[i].system_name;
          rv = 0;
@@ -366,7 +366,7 @@ int detect_system(const char *track_path, const char **system_name)
    if (filestream_read(fd, magic, 8) > 0)
    {
       magic[8] = '\0';
-      if (memcmp(magic, "PSP GAME", 8) == 0)
+      if (string_is_equal_fast(magic, "PSP GAME", 8))
       {
          *system_name = "psp\0";
          rv = 0;
@@ -403,7 +403,7 @@ int find_first_data_track(const char *cue_path,
 
    while (get_token(fd, tmp_token, MAX_TOKEN_LEN) > 0)
    {
-      if (memcmp(tmp_token, "FILE", 4) == 0)
+      if (string_is_equal_fast(tmp_token, "FILE", 4))
       {
          char cue_dir[PATH_MAX_LENGTH];
 
@@ -415,13 +415,13 @@ int find_first_data_track(const char *cue_path,
          fill_pathname_join(track_path, cue_dir, tmp_token, max_len);
 
       }
-      else if (memcmp(tmp_token, "TRACK", 5) == 0)
+      else if (string_is_equal_fast(tmp_token, "TRACK", 5))
       {
          int m, s, f;
          get_token(fd, tmp_token, MAX_TOKEN_LEN);
          get_token(fd, tmp_token, MAX_TOKEN_LEN);
 
-         if (memcmp(tmp_token, "AUDIO", 5) == 0)
+         if (string_is_equal_fast(tmp_token, "AUDIO", 5))
             continue;
 
          find_token(fd, "INDEX");

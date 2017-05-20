@@ -25,7 +25,7 @@
 #include <compat/zlib.h>
 
 #include "../../core.h"
-#include "../../runloop.h"
+#include "../../retroarch.h"
 #include "../../core.h"
 #include "../../gfx/video_driver.h"
 #include "../../managers/core_option_manager.h"
@@ -380,7 +380,7 @@ static int httpserver_handle_basic_info(struct mg_connection* conn, void* cbdata
    }
 
    mg_printf(conn, "],\"coreOptions\":[");
-   runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_LIST_GET, (void*)&core_opts);
+   rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, (void*)&core_opts);
    opts = core_opts->opts;
 
    for (p = 0; p < core_opts->size; p++, opts++)

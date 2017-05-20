@@ -47,7 +47,6 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 
-#include "../video_context_driver.h"
 #include "../video_coord_array.h"
 
 static void vulkan_set_viewport(void *data, unsigned viewport_width,
@@ -1259,23 +1258,11 @@ static bool vulkan_alive(void *data)
    return ret;
 }
 
-static bool vulkan_focus(void *data)
-{
-   (void)data;
-   return video_context_driver_focus();
-}
-
 static bool vulkan_suppress_screensaver(void *data, bool enable)
 {
    (void)data;
    bool enabled = enable;
    return video_context_driver_suppress_screensaver(&enabled);
-}
-
-static bool vulkan_has_windowed(void *data)
-{
-   (void)data;
-   return video_context_driver_has_windowed();
 }
 
 static bool vulkan_set_shader(void *data,
@@ -1571,7 +1558,7 @@ static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t *video_info)
    slock_unlock(vk->context->queue_lock);
 #endif
 
-   video_context_driver_swap_buffers(video_info);
+   video_info->cb_swap_buffers(video_info->context_data, video_info);
 }
 
 static bool vulkan_frame(void *data, const void *frame,
@@ -1727,7 +1714,7 @@ static bool vulkan_frame(void *data, const void *frame,
          if (vk->swapchain[vk->last_valid_index].texture_optimal.memory != VK_NULL_HANDLE)
             tex = &vk->swapchain[vk->last_valid_index].texture_optimal;
          else
-            vulkan_transition_texture(vk, tex);
+            vulkan_transition_texture(vk, vk->cmd, tex);
 
          input.image  = tex->image;
          input.view   = tex->view;
@@ -1937,12 +1924,11 @@ static bool vulkan_frame(void *data, const void *frame,
    slock_unlock(vk->context->queue_lock);
 #endif
 
-
-   video_context_driver_swap_buffers(video_info);
-
+   video_info->cb_swap_buffers(video_info->context_data, video_info);
 
    if (!vk->context->swap_interval_emulation_lock)
-      video_context_driver_update_window_title(video_info);
+      video_info->cb_update_window_title(
+            video_info->context_data, video_info);
 
    /* Handle spurious swapchain invalidations as soon as we can,
     * i.e. right after swap buffers. */
@@ -1951,7 +1937,8 @@ static bool vulkan_frame(void *data, const void *frame,
       gfx_ctx_mode_t mode;
       mode.width  = width;
       mode.height = height;
-      video_context_driver_set_resize(mode);
+
+      video_info->cb_set_resize(video_info->context_data, mode.width, mode.height);
 
       vk->should_resize = false;
    }
@@ -1961,7 +1948,7 @@ static bool vulkan_frame(void *data, const void *frame,
     * and pause to prevent flicker. */
    if (
          video_info->black_frame_insertion
-         && !input_driver_is_nonblock_state()
+         && !video_info->input_driver_nonblock_state
          && !video_info->runloop_is_slowmotion
          && !video_info->runloop_is_paused)
    {
@@ -2582,9 +2569,9 @@ video_driver_t video_vulkan = {
    vulkan_frame,
    vulkan_set_nonblock_state,
    vulkan_alive,
-   vulkan_focus,
+   NULL,                         /* focus */
    vulkan_suppress_screensaver,
-   vulkan_has_windowed,
+   NULL,                         /* has_windowed */
    vulkan_set_shader,
    vulkan_free,
    "vulkan",
@@ -2592,7 +2579,7 @@ video_driver_t video_vulkan = {
    vulkan_set_rotation,
    vulkan_viewport_info,
    vulkan_read_viewport,
-   NULL,                           /* vulkan_read_frame_raw */
+   NULL,                         /* vulkan_read_frame_raw */
 
 #ifdef HAVE_OVERLAY
    vulkan_get_overlay_interface,
@@ -2600,6 +2587,6 @@ video_driver_t video_vulkan = {
    NULL,
 #endif
    vulkan_get_poke_interface,
-   NULL,                           /* vulkan_wrap_type_to_enum */
+   NULL,                         /* vulkan_wrap_type_to_enum */
 };
 

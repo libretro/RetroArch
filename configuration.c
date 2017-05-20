@@ -32,6 +32,7 @@
 
 #include "file_path_special.h"
 #include "audio/audio_driver.h"
+#include "input/input_driver.h"
 #include "configuration.h"
 #include "content.h"
 #include "config.def.h"
@@ -43,7 +44,6 @@
 #include "dirs.h"
 #include "paths.h"
 #include "retroarch.h"
-#include "runloop.h"
 #include "verbosity.h"
 #include "lakka.h"
 
@@ -1283,7 +1283,7 @@ static struct config_float_setting *populate_settings_float(settings_t *settings
    SETTING_FLOAT("video_font_size",          &settings->floats.video_font_size,      true, font_size, false);
    SETTING_FLOAT("fastforward_ratio",        &settings->floats.fastforward_ratio,    true, fastforward_ratio, false);
    SETTING_FLOAT("slowmotion_ratio",         &settings->floats.slowmotion_ratio,     true, slowmotion_ratio, false);
-   SETTING_FLOAT("input_axis_threshold",     &settings->floats.input_axis_threshold, true, axis_threshold, false);
+   SETTING_FLOAT("input_axis_threshold",     input_driver_get_float(INPUT_ACTION_AXIS_THRESHOLD), true, axis_threshold, false);
 
    *size = count;
 
@@ -1299,7 +1299,7 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("input_bind_timeout",           &settings->uints.input_bind_timeout,     true, input_bind_timeout, false);
    SETTING_UINT("input_turbo_period",           &settings->uints.input_turbo_period,     true, turbo_period, false);
    SETTING_UINT("input_duty_cycle",             &settings->uints.input_turbo_duty_cycle, true, turbo_duty_cycle, false);
-   SETTING_UINT("input_max_users",              &settings->uints.input_max_users,        true, input_max_users, false);
+   SETTING_UINT("input_max_users",              input_driver_get_uint(INPUT_ACTION_MAX_USERS),        true, input_max_users, false);
    SETTING_UINT("input_menu_toggle_gamepad_combo", &settings->uints.input_menu_toggle_gamepad_combo, true, menu_toggle_gamepad_combo, false);
    SETTING_UINT("audio_latency",                &settings->uints.audio_latency, false, 0 /* TODO */, false);
    SETTING_UINT("audio_block_frames",           &settings->uints.audio_block_frames, true, 0, false);
@@ -1332,9 +1332,7 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("xmb_menu_color_theme",         &settings->uints.menu_xmb_color_theme, true, xmb_theme, false);
 #endif
    SETTING_UINT("materialui_menu_color_theme",  &settings->uints.menu_materialui_color_theme, true, MATERIALUI_THEME_BLUE, false);
-#ifdef HAVE_SHADERPIPELINE
    SETTING_UINT("menu_shader_pipeline",         &settings->uints.menu_xmb_shader_pipeline, true, menu_shader_pipeline, false);
-#endif
 #endif
    SETTING_UINT("audio_out_rate",               &settings->uints.audio_out_rate, true, out_rate, false);
    SETTING_UINT("custom_viewport_width",        &custom_vp->width, false, 0 /* TODO */, false);
@@ -1354,7 +1352,7 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("netplay_input_latency_frames_range",&settings->uints.netplay_input_latency_frames_range, true, 0, false);
 #endif
 #ifdef HAVE_LANGEXTRA
-   SETTING_UINT("user_language",                &settings->uints.user_language, true, RETRO_LANGUAGE_ENGLISH, false);
+   SETTING_UINT("user_language",                msg_hash_get_uint(MSG_HASH_USER_LANGUAGE), true, RETRO_LANGUAGE_ENGLISH, false);
 #endif
    SETTING_UINT("bundle_assets_extract_version_current", &settings->uints.bundle_assets_extract_version_current, true, 0, false);
    SETTING_UINT("bundle_assets_extract_last_version",    &settings->uints.bundle_assets_extract_last_version, true, 0, false);
@@ -1507,7 +1505,7 @@ static void config_set_defaults(void)
 #endif
    settings->floats.video_scale                = scale;
 
-   if (rarch_ctl(RARCH_CTL_IS_FORCE_FULLSCREEN, NULL))
+   if (retroarch_is_forced_fullscreen())
    {
       configuration_set_bool(settings, settings->bools.video_fullscreen, true);
    }
@@ -1697,7 +1695,7 @@ static void config_set_defaults(void)
       strlcpy(settings->paths.network_buildbot_url,
             g_defaults.path.buildbot_server_url, sizeof(settings->paths.network_buildbot_url));
    if (!string_is_empty(g_defaults.path.core))
-      runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, g_defaults.path.core);
+      rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, g_defaults.path.core);
    if (!string_is_empty(g_defaults.dir.database))
       strlcpy(settings->paths.path_content_database, g_defaults.dir.database,
             sizeof(settings->paths.path_content_database));
@@ -1719,7 +1717,7 @@ static void config_set_defaults(void)
       if (string_is_empty(settings->paths.path_overlay))
             fill_pathname_join(settings->paths.path_overlay,
                   settings->paths.directory_overlay,
-                  "gamepads/retropad/retropad.cfg",
+                  "gamepads/flat/retropad.cfg",
                   sizeof(settings->paths.path_overlay));
 #endif
    }
@@ -2067,15 +2065,15 @@ static bool check_shader_compatibility(enum file_path_enum enum_idx)
 {
    settings_t *settings = config_get_ptr();
 
-   if (memcmp(settings->arrays.video_driver, "vulkan", 6) == 0)
+   if (string_is_equal_fast(settings->arrays.video_driver, "vulkan", 6))
    {
       if (enum_idx != FILE_PATH_SLANGP_EXTENSION)
          return false;
       return true;
    }
 
-   if ((memcmp(settings->arrays.video_driver, "gl", 2) == 0) || 
-       (memcmp(settings->arrays.video_driver, "d3d", 3) == 0)
+   if (string_is_equal_fast(settings->arrays.video_driver, "gl", 2) || 
+       string_is_equal_fast(settings->arrays.video_driver, "d3d", 3)
       )
    {
       if (enum_idx == FILE_PATH_SLANGP_EXTENSION)
@@ -2245,7 +2243,7 @@ static bool config_load_file(const char *path, bool set_defaults,
          *bool_settings[i].ptr = tmp;
    }
 
-   if (!rarch_ctl(RARCH_CTL_IS_FORCE_FULLSCREEN, NULL))
+   if (!retroarch_is_forced_fullscreen())
       CONFIG_GET_BOOL_BASE(conf, settings, bools.video_fullscreen, "video_fullscreen");
 
 #ifdef HAVE_NETWORKGAMEPAD
@@ -2280,9 +2278,9 @@ static bool config_load_file(const char *path, bool set_defaults,
       if (config_get_bool(conf, tmp, &tmp_bool))
       {
          if (tmp_bool)
-            runloop_ctl(RUNLOOP_CTL_SET_PERFCNT_ENABLE, NULL);
+            rarch_ctl(RARCH_CTL_SET_PERFCNT_ENABLE, NULL);
          else
-            runloop_ctl(RUNLOOP_CTL_UNSET_PERFCNT_ENABLE, NULL);
+            rarch_ctl(RARCH_CTL_UNSET_PERFCNT_ENABLE, NULL);
       }
    }
 
@@ -2504,7 +2502,7 @@ static bool config_load_file(const char *path, bool set_defaults,
 
    if (!string_is_empty(settings->paths.directory_screenshot))
    {
-      if (memcmp(settings->paths.directory_screenshot, "default", 7) == 0)
+      if (string_is_equal_fast(settings->paths.directory_screenshot, "default", 7))
          *settings->paths.directory_screenshot = '\0';
       else if (!path_is_directory(settings->paths.directory_screenshot))
       {
@@ -2522,36 +2520,36 @@ static bool config_load_file(const char *path, bool set_defaults,
       path_clear(RARCH_PATH_CORE);
    }
 
-   if (memcmp(settings->paths.path_menu_wallpaper, "default", 7) == 0)
+   if (string_is_equal_fast(settings->paths.path_menu_wallpaper, "default", 7))
       *settings->paths.path_menu_wallpaper = '\0';
-   if (memcmp(settings->paths.directory_video_shader, "default", 7) == 0)
+   if (string_is_equal_fast(settings->paths.directory_video_shader, "default", 7))
       *settings->paths.directory_video_shader = '\0';
-   if (memcmp(settings->paths.directory_video_filter, "default", 7) == 0)
+   if (string_is_equal_fast(settings->paths.directory_video_filter, "default", 7))
       *settings->paths.directory_video_filter = '\0';
-   if (memcmp(settings->paths.directory_audio_filter, "default", 7) == 0)
+   if (string_is_equal_fast(settings->paths.directory_audio_filter, "default", 7))
       *settings->paths.directory_audio_filter = '\0';
-   if (memcmp(settings->paths.directory_core_assets, "default", 7) == 0)
+   if (string_is_equal_fast(settings->paths.directory_core_assets, "default", 7))
       *settings->paths.directory_core_assets = '\0';
-   if (memcmp(settings->paths.directory_assets, "default", 7) == 0)
+   if (string_is_equal_fast(settings->paths.directory_assets, "default", 7))
       *settings->paths.directory_assets = '\0';
-   if (memcmp(settings->paths.directory_dynamic_wallpapers, "default", 7) == 0)
+   if (string_is_equal_fast(settings->paths.directory_dynamic_wallpapers, "default", 7))
       *settings->paths.directory_dynamic_wallpapers = '\0';
-   if (memcmp(settings->paths.directory_thumbnails, "default", 7) == 0)
+   if (string_is_equal_fast(settings->paths.directory_thumbnails, "default", 7))
       *settings->paths.directory_thumbnails = '\0';
-   if (memcmp(settings->paths.directory_playlist, "default", 7) == 0)
+   if (string_is_equal_fast(settings->paths.directory_playlist, "default", 7))
       *settings->paths.directory_playlist = '\0';
 #ifdef HAVE_MENU
 
-   if (memcmp(settings->paths.directory_menu_content, "default", 7) == 0)
+   if (string_is_equal_fast(settings->paths.directory_menu_content, "default", 7))
       *settings->paths.directory_menu_content = '\0';
-   if (memcmp(settings->paths.directory_menu_config, "default", 7) == 0)
+   if (string_is_equal_fast(settings->paths.directory_menu_config, "default", 7))
       *settings->paths.directory_menu_config = '\0';
 #endif
 #ifdef HAVE_OVERLAY
-   if (memcmp(settings->paths.directory_overlay, "default", 7) == 0)
+   if (string_is_equal_fast(settings->paths.directory_overlay, "default", 7))
       *settings->paths.directory_overlay = '\0';
 #endif
-   if (memcmp(settings->paths.directory_system, "default", 7) == 0)
+   if (string_is_equal_fast(settings->paths.directory_system, "default", 7))
       *settings->paths.directory_system = '\0';
 
    if (settings->floats.slowmotion_ratio < 1.0f)
@@ -2575,7 +2573,7 @@ static bool config_load_file(const char *path, bool set_defaults,
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL) &&
          config_get_path(conf, "savefile_directory", tmp_str, sizeof(tmp_str)))
    {
-      if (memcmp(tmp_str, "default", 7) == 0)
+      if (string_is_equal_fast(tmp_str, "default", 7))
          dir_set(RARCH_DIR_SAVEFILE, g_defaults.dir.sram);
 
       else if (path_is_directory(tmp_str))
@@ -2601,7 +2599,7 @@ static bool config_load_file(const char *path, bool set_defaults,
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL) &&
          config_get_path(conf, "savestate_directory", tmp_str, sizeof(tmp_str)))
    {
-      if (memcmp(tmp_str, "default", 7) == 0)
+      if (string_is_equal_fast(tmp_str, "default", 7))
          dir_set(RARCH_DIR_SAVESTATE, g_defaults.dir.savestate);
       else if (path_is_directory(tmp_str))
       {
@@ -3385,7 +3383,7 @@ bool config_save_file(const char *path)
    if (!conf)
       conf = config_file_new(NULL);
 
-   if (!conf || runloop_ctl(RUNLOOP_CTL_IS_OVERRIDES_ACTIVE, NULL))
+   if (!conf || rarch_ctl(RARCH_CTL_IS_OVERRIDES_ACTIVE, NULL))
    {
       if (conf)
          config_file_free(conf);
@@ -3505,7 +3503,7 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "log_verbosity",
          verbosity_is_enabled());
    config_set_bool(conf, "perfcnt_enable",
-         runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL));
+         rarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL));
 
    msg_color = (((int)(settings->floats.video_msg_color_r * 255.0f) & 0xff) << 16) +
                (((int)(settings->floats.video_msg_color_g * 255.0f) & 0xff) <<  8) +

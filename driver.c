@@ -40,7 +40,7 @@
 #include "core.h"
 #include "core_info.h"
 #include "driver.h"
-#include "runloop.h"
+#include "retroarch.h"
 #include "verbosity.h"
 
 #define HASH_LOCATION_DRIVER           0x09189689U
@@ -202,7 +202,7 @@ bool driver_find_next(const char *label, char *s, size_t len)
 {
    int i = driver_find_index(label, s);
 
-   if (i >= 0 && (memcmp(s, "null", 4) != 0))
+   if (i >= 0 && string_is_not_equal_fast(s, "null", 4))
    {
       find_driver_nonempty(label, i + 1, s, len);
       return true;
@@ -222,7 +222,7 @@ static void driver_adjust_system_rates(void)
    if (!video_driver_get_ptr(false))
       return;
 
-   if (runloop_ctl(RUNLOOP_CTL_IS_NONBLOCK_FORCED, NULL))
+   if (rarch_ctl(RARCH_CTL_IS_NONBLOCK_FORCED, NULL))
       command_event(CMD_EVENT_VIDEO_SET_NONBLOCKING_STATE, NULL);
    else
       driver_set_nonblock_state();
@@ -247,7 +247,7 @@ void driver_set_nonblock_state(void)
       bool video_nonblock  = enable;
 
       if (     !settings->bools.video_vsync 
-            || runloop_ctl(RUNLOOP_CTL_IS_NONBLOCK_FORCED, NULL))
+            || rarch_ctl(RARCH_CTL_IS_NONBLOCK_FORCED, NULL))
          video_nonblock = true;
       video_driver_set_nonblock_state(video_nonblock);
    }
@@ -330,7 +330,7 @@ void drivers_init(int flags)
          hwr->context_reset();
       video_driver_unset_video_cache_context_ack();
 
-      runloop_ctl(RUNLOOP_CTL_SET_FRAME_TIME_LAST, NULL);
+      rarch_ctl(RARCH_CTL_SET_FRAME_TIME_LAST, NULL);
    }
 
    if (flags & DRIVER_AUDIO_MASK)

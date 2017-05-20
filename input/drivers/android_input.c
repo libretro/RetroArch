@@ -30,7 +30,7 @@
 #endif
 
 #ifdef HAVE_MENU
-#include "../../menu/menu_display.h"
+#include "../../menu/menu_driver.h"
 #endif
 
 #include "../input_config.h"
@@ -42,7 +42,6 @@
 #include "../drivers_keyboard/keyboard_event_android.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../performance_counters.h"
-#include "../../configuration.h"
 
 #define MAX_TOUCH 16
 #define MAX_NUM_KEYBOARDS 3
@@ -369,8 +368,8 @@ static void android_input_poll_main_cmd(void)
          {
             bool boolean = false;
 
-            runloop_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
-            runloop_ctl(RUNLOOP_CTL_SET_IDLE,   &boolean);
+            rarch_ctl(RARCH_CTL_SET_PAUSED, &boolean);
+            rarch_ctl(RARCH_CTL_SET_IDLE,   &boolean);
             video_driver_unset_stub_frame();
 
             if ((android_app->sensor_state_mask
@@ -389,8 +388,8 @@ static void android_input_poll_main_cmd(void)
          {
             bool boolean = true;
 
-            runloop_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
-            runloop_ctl(RUNLOOP_CTL_SET_IDLE,   &boolean);
+            rarch_ctl(RARCH_CTL_SET_PAUSED, &boolean);
+            rarch_ctl(RARCH_CTL_SET_IDLE,   &boolean);
             video_driver_set_stub_frame();
 
             /* Avoid draining battery while app is not being used. */
@@ -1243,7 +1242,6 @@ static bool android_input_key_pressed(void *data, int key)
 {		
    rarch_joypad_info_t joypad_info;
    android_input_t *android           = (android_input_t*)data;		
-   settings_t *settings               = config_get_ptr();		
    const struct retro_keybind *keyptr = (const struct retro_keybind*)
       &input_config_binds[0][key];
 
@@ -1254,7 +1252,7 @@ static bool android_input_key_pressed(void *data, int key)
 
    joypad_info.joy_idx        = 0;
    joypad_info.auto_binds     = input_autoconf_binds[0];
-   joypad_info.axis_threshold = settings->floats.input_axis_threshold;
+   joypad_info.axis_threshold = *(input_driver_get_float(INPUT_ACTION_AXIS_THRESHOLD));
 
    if (keyptr->valid &&		
          input_joypad_pressed(android->joypad, joypad_info,
@@ -1293,13 +1291,13 @@ static void android_input_poll(void *data)
       
       if (android_app->destroyRequested != 0)
       {
-         runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
+         rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
          return;
       }
 
       if (android_app->reinitRequested != 0)
       {
-         if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
+         if (rarch_ctl(RARCH_CTL_IS_PAUSED, NULL))
             command_event(CMD_EVENT_REINIT, NULL);
          android_app_write_cmd(android_app, APP_CMD_REINIT_DONE);
          return;
@@ -1320,13 +1318,13 @@ bool android_run_events(void *data)
    /* Check if we are exiting. */
    if (android_app->destroyRequested != 0)
    {
-      runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
+      rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
       return false;
    }
 
    if (android_app->reinitRequested != 0)
    {
-      if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
+      if (rarch_ctl(RARCH_CTL_IS_PAUSED, NULL))
          command_event(CMD_EVENT_REINIT, NULL);
       android_app_write_cmd(android_app, APP_CMD_REINIT_DONE);
    }

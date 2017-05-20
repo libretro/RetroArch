@@ -48,6 +48,13 @@ enum input_toggle_type
    INPUT_TOGGLE_LAST
 };
 
+enum input_action
+{
+   INPUT_ACTION_NONE = 0,
+   INPUT_ACTION_AXIS_THRESHOLD,
+   INPUT_ACTION_MAX_USERS
+};
+
 struct retro_keybind
 {
    bool valid;
@@ -336,6 +343,10 @@ bool input_driver_grab_mouse(void);
 
 bool input_driver_ungrab_mouse(void);
 
+float *input_driver_get_float(enum input_action action);
+
+unsigned *input_driver_get_uint(enum input_action action);
+
 bool input_driver_is_data_ptr_same(void *data);
 
 extern input_driver_t input_android;
@@ -355,6 +366,7 @@ extern input_driver_t input_cocoa;
 extern input_driver_t input_qnx;
 extern input_driver_t input_rwebinput;
 extern input_driver_t input_dos;
+extern input_driver_t input_winraw;
 extern input_driver_t input_null;
 
 RETRO_END_DECLS

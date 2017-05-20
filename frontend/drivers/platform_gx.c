@@ -423,7 +423,7 @@ static void frontend_gx_process_args(int *argc, char *argv[])
       char path[PATH_MAX_LENGTH] = {0};
       strlcpy(path, strrchr(argv[0], '/') + 1, sizeof(path));
       if (path_file_exists(path))
-         runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, path);
+         rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, path);
    }
 #endif
 }

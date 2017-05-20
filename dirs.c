@@ -32,7 +32,7 @@
 #include "msg_hash.h"
 #include "paths.h"
 #include "content.h"
-#include "runloop.h"
+#include "retroarch.h"
 #include "verbosity.h"
 
 struct rarch_dir_list

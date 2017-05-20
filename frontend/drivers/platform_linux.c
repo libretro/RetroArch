@@ -62,7 +62,6 @@
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
-#include "../../menu/menu_display.h"
 #include "../../menu/menu_entries.h"
 #endif
 
@@ -384,7 +383,9 @@ static void android_app_entry(void *data)
 
       if (ret == 1 && sleep_ms > 0)
          retro_sleep(sleep_ms);
-      task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
+
+      task_queue_check();
+
       if (ret == -1)
          break;
    }while(1);
@@ -899,6 +900,9 @@ static bool next_string(char **_ptr, char **_str)
 static bool int_string(char *str, int *val)
 {
    char *endptr = NULL;
+   if (!str)
+      return false;
+
    *val = (int) strtol(str, &endptr, 0);
    return ((*str != '\0') && (*endptr == '\0'));
 }
@@ -959,7 +963,7 @@ static bool frontend_linux_powerstate_check_apm(
 
    if (!next_string(&ptr, &str))     /* remaining battery life time units */
       goto error;
-   else if (memcmp(str, "min", 3) == 0)
+   else if (string_is_equal_fast(str, "min", 3))
       battery_time *= 60;
 
    if (battery_flag == 0xFF) /* unknown state */
@@ -1205,6 +1209,26 @@ static void frontend_linux_get_os(char *s,
 #endif
 }
 
+#ifdef HAVE_LAKKA
+static void frontend_linux_get_lakka_version(char *s,
+      size_t len)
+{
+   char version[128];
+   size_t vlen;
+   FILE *command_file = popen("cat /etc/release", "r");
+
+   fgets(version, sizeof(version), command_file);
+   vlen = strlen(version);
+
+   if (vlen > 0 && version[vlen-1] == '\n')
+      version[--vlen] = '\0';
+
+   strlcpy(s, version, len);
+
+   pclose(command_file);
+}
+#endif
+
 static void frontend_linux_get_env(int *argc,
       char *argv[], void *data, void *params_data)
 {
@@ -1289,7 +1313,7 @@ static void frontend_linux_get_env(int *argc,
    if (android_app->getStringExtra && jstr)
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
-      bool used        = (memcmp(argv, "false", 5) == 0) ? false : true;
+      bool used        = string_is_equal_fast(argv, "false", 5) ? false : true;
 
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
@@ -2131,6 +2155,9 @@ frontend_ctx_driver_t frontend_ctx_linux = {
    frontend_linux_destroy_signal_handler_state,
    NULL,                         /* attach_console */
    NULL,                         /* detach_console */
+#ifdef HAVE_LAKKA
+   frontend_linux_get_lakka_version,    /* get_lakka_version */
+#endif
 #ifdef ANDROID
    "android"
 #else

@@ -54,7 +54,6 @@
 #endif
 
 #include "../font_driver.h"
-#include "../video_context_driver.h"
 
 #ifdef HAVE_GLSL
 #include "../drivers_shader/shader_glsl.h"
@@ -75,8 +74,6 @@
 #if defined(_WIN32) && !defined(_XBOX)
 #include "../common/win32_common.h"
 #endif
-
-#include "../video_shader_driver.h"
 
 #ifndef GL_SYNC_GPU_COMMANDS_COMPLETE
 #define GL_SYNC_GPU_COMMANDS_COMPLETE     0x9117
@@ -220,9 +217,7 @@ static void gl_overlay_tex_geom(void *data,
 
 static void gl_render_overlay(gl_t *gl, video_frame_info_t *video_info)
 {
-   video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
-   video_shader_ctx_info_t shader_info;
    unsigned i;
    unsigned width                      = video_info->width;
    unsigned height                     = video_info->height;
@@ -236,11 +231,8 @@ static void gl_render_overlay(gl_t *gl, video_frame_info_t *video_info)
       glViewport(0, 0, width, height);
 
    /* Ensure that we reset the attrib array. */
-   shader_info.data       = gl;
-   shader_info.idx        = VIDEO_SHADER_STOCK_BLEND;
-   shader_info.set_active = true;
-
-   video_shader_driver_use(shader_info);
+   video_info->cb_shader_use(gl,
+         video_info->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
 
    gl->coords.vertex    = gl->overlay_vertex_coord;
    gl->coords.tex_coord = gl->overlay_tex_coord;
@@ -252,10 +244,7 @@ static void gl_render_overlay(gl_t *gl, video_frame_info_t *video_info)
 
    video_shader_driver_set_coords(coords);
 
-   mvp.data             = gl;
-   mvp.matrix           = &gl->mvp_no_rot;
-
-   video_shader_driver_set_mvp(mvp);
+   video_info->cb_shader_set_mvp(gl, video_info->shader_data, &gl->mvp_no_rot);
 
    for (i = 0; i < gl->overlays; i++)
    {
@@ -815,7 +804,7 @@ static INLINE void gl_copy_frame(gl_t *gl,
 #endif
 }
 
-static INLINE void gl_set_shader_viewport(gl_t *gl, unsigned idx)
+static INLINE void gl_set_shader_viewports(gl_t *gl)
 {
    unsigned width, height;
    video_shader_ctx_info_t shader_info;
@@ -823,7 +812,14 @@ static INLINE void gl_set_shader_viewport(gl_t *gl, unsigned idx)
    video_driver_get_size(&width, &height);
 
    shader_info.data       = gl;
-   shader_info.idx        = idx;
+   shader_info.idx        = 0;
+   shader_info.set_active = true;
+
+   video_shader_driver_use(shader_info);
+   gl_set_viewport_wrapper(gl, width, height, false, true);
+
+   shader_info.data       = gl;
+   shader_info.idx        = 1;
    shader_info.set_active = true;
 
    video_shader_driver_use(shader_info);
@@ -1001,9 +997,7 @@ static void gl_pbo_async_readback(gl_t *gl)
 
 static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
 {
-   video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
-   video_shader_ctx_info_t shader_info;
    GLfloat color[16];
    unsigned width         = video_info->width;
    unsigned height        = video_info->height;
@@ -1033,11 +1027,7 @@ static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
    gl->coords.color     = color;
    glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
 
-   shader_info.data       = gl;
-   shader_info.idx        = VIDEO_SHADER_STOCK_BLEND;
-   shader_info.set_active = true;
-
-   video_shader_driver_use(shader_info);
+   video_info->cb_shader_use(gl, video_info->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
 
    gl->coords.vertices  = 4;
 
@@ -1046,10 +1036,7 @@ static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
 
    video_shader_driver_set_coords(coords);
 
-   mvp.data             = gl;
-   mvp.matrix           = &gl->mvp_no_rot;
-
-   video_shader_driver_set_mvp(mvp);
+   video_info->cb_shader_set_mvp(gl, video_info->shader_data, &gl->mvp_no_rot);
 
    glEnable(GL_BLEND);
 
@@ -1077,11 +1064,9 @@ static bool gl_frame(void *data, const void *frame,
       unsigned pitch, const char *msg,
       video_frame_info_t *video_info)
 {
-   video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
    video_shader_ctx_params_t params;
    struct video_tex_info feedback_info;
-   video_shader_ctx_info_t shader_info;
    gl_t                            *gl = (gl_t*)data;
    unsigned width                      = video_info->width;
    unsigned height                     = video_info->height;
@@ -1096,11 +1081,7 @@ static bool gl_frame(void *data, const void *frame,
       glBindVertexArray(gl->vao);
 #endif
 
-   shader_info.data       = gl;
-   shader_info.idx        = 1;
-   shader_info.set_active = true;
-
-   video_shader_driver_use(shader_info);
+   video_info->cb_shader_use(gl, video_info->shader_data, 1, true);
 
 #ifdef IOS
    /* Apparently the viewport is lost each frame, thanks Apple. */
@@ -1126,7 +1107,7 @@ static bool gl_frame(void *data, const void *frame,
       mode.width        = width;
       mode.height       = height;
 
-      video_context_driver_set_resize(mode);
+      video_info->cb_set_resize(video_info->context_data, mode.width, mode.height);
 
 #ifdef HAVE_FBO
       if (gl->fbo_inited)
@@ -1240,10 +1221,7 @@ static bool gl_frame(void *data, const void *frame,
 
    video_shader_driver_set_coords(coords);
 
-   mvp.data             = gl;
-   mvp.matrix           = &gl->mvp;
-
-   video_shader_driver_set_mvp(mvp);
+   video_info->cb_shader_set_mvp(gl, video_info->shader_data, &gl->mvp);
 
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -1273,17 +1251,14 @@ static bool gl_frame(void *data, const void *frame,
    gl_render_overlay(gl, video_info);
 #endif
 
-   video_context_driver_update_window_title(video_info);
+   video_info->cb_update_window_title(
+         video_info->context_data, video_info);
 
 #ifdef HAVE_FBO
    /* Reset state which could easily mess up libretro core. */
    if (gl->hw_render_fbo_init)
    {
-      shader_info.data       = gl;
-      shader_info.idx        = 0;
-      shader_info.set_active = true;
-
-      video_shader_driver_use(shader_info);
+      video_info->cb_shader_use(gl, video_info->shader_data, 0, true);
 
       glBindTexture(GL_TEXTURE_2D, 0);
 #ifndef NO_GL_FF_VERTEX
@@ -1318,15 +1293,15 @@ static bool gl_frame(void *data, const void *frame,
     * and pause to prevent flicker. */
    if (
          video_info->black_frame_insertion
-         && !input_driver_is_nonblock_state()
+         && !video_info->input_driver_nonblock_state
          && !video_info->runloop_is_slowmotion
          && !video_info->runloop_is_paused)
    {
-      video_context_driver_swap_buffers(video_info);
+      video_info->cb_swap_buffers(video_info->context_data, video_info);
       glClear(GL_COLOR_BUFFER_BIT);
    }
 
-   video_context_driver_swap_buffers(video_info);
+   video_info->cb_swap_buffers(video_info->context_data, video_info);
 
 #ifdef HAVE_GL_SYNC
    if (video_info->hard_sync && gl->have_sync)
@@ -2001,8 +1976,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    /* Apparently need to set viewport for passes
     * when we aren't using FBOs. */
-   gl_set_shader_viewport(gl, 0);
-   gl_set_shader_viewport(gl, 1);
+   gl_set_shader_viewports(gl);
 
    mip_level            = 1;
    gl->tex_mipmap       = video_shader_driver_mipmap_input(&mip_level);
@@ -2133,20 +2107,10 @@ static bool gl_alive(void *data)
    return ret;
 }
 
-static bool gl_focus(void *data)
-{
-   return video_context_driver_focus();
-}
-
 static bool gl_suppress_screensaver(void *data, bool enable)
 {
    bool enabled = enable;
    return video_context_driver_suppress_screensaver(&enabled);
-}
-
-static bool gl_has_windowed(void *data)
-{
-   return video_context_driver_has_windowed();
 }
 
 static void gl_update_tex_filter_frame(gl_t *gl)
@@ -2297,8 +2261,7 @@ static bool gl_set_shader(void *data,
 #endif
 
    /* Apparently need to set viewport for passes when we aren't using FBOs. */
-   gl_set_shader_viewport(gl, 0);
-   gl_set_shader_viewport(gl, 1);
+   gl_set_shader_viewports(gl);
    context_bind_hw_render(true);
 #if defined(_WIN32) && !defined(_XBOX)
    /* Shader dialog is disabled for now, until video_threaded issues are fixed.
@@ -2717,9 +2680,9 @@ video_driver_t video_gl = {
    gl_frame,
    gl_set_nonblock_state,
    gl_alive,
-   gl_focus,
+   NULL,                    /* focus */
    gl_suppress_screensaver,
-   gl_has_windowed,
+   NULL,                    /* has_windowed */
 
    gl_set_shader,
 

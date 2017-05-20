@@ -31,7 +31,7 @@
 #include "../../verbosity.h"
 #include "../font_driver.h"
 #include "../video_coord_array.h"
-#include "../video_context_driver.h"
+#include "../video_driver.h"
 #include "../drivers/gl_symlinks.h"
 
 RETRO_BEGIN_DECLS
@@ -155,6 +155,41 @@ typedef struct gl
 bool gl_load_luts(const struct video_shader *generic_shader,
       GLuint *lut_textures);
 
+#ifdef NO_GL_FF_VERTEX
+#define gl_ff_vertex(coords) ((void)0)
+#else
+static INLINE void gl_ff_vertex(const struct video_coords *coords)
+{
+   /* Fall back to fixed function-style if needed and possible. */
+   glClientActiveTexture(GL_TEXTURE1);
+   glTexCoordPointer(2, GL_FLOAT, 0, coords->lut_tex_coord);
+   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+   glClientActiveTexture(GL_TEXTURE0);
+   glVertexPointer(2, GL_FLOAT, 0, coords->vertex);
+   glEnableClientState(GL_VERTEX_ARRAY);
+   glColorPointer(4, GL_FLOAT, 0, coords->color);
+   glEnableClientState(GL_COLOR_ARRAY);
+   glTexCoordPointer(2, GL_FLOAT, 0, coords->tex_coord);
+   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+}
+#endif
+
+#ifdef NO_GL_FF_MATRIX
+#define gl_ff_matrix(mat) ((void)0)
+#else
+static INLINE void gl_ff_matrix(const math_matrix_4x4 *mat)
+{
+   math_matrix_4x4 ident;
+
+   /* Fall back to fixed function-style if needed and possible. */
+   glMatrixMode(GL_PROJECTION);
+   glLoadMatrixf(mat->data);
+   glMatrixMode(GL_MODELVIEW);
+   matrix_4x4_identity(ident);
+   glLoadMatrixf(ident.data);
+}
+#endif
+
 static INLINE unsigned gl_wrap_type_to_enum(enum gfx_wrap_type type)
 {
    switch (type)
@@ -176,9 +211,8 @@ static INLINE unsigned gl_wrap_type_to_enum(enum gfx_wrap_type type)
    return 0;
 }
 
+
 bool gl_query_core_context_in_use(void);
-void gl_ff_vertex(const struct video_coords *coords);
-void gl_ff_matrix(const math_matrix_4x4 *mat);
 void gl_load_texture_image(GLenum target,
       GLint level,
       GLint internalFormat,

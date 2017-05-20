@@ -37,7 +37,7 @@
 
 
 #include "tasks/tasks_internal.h"
-#include "runloop.h"
+#include "../../retroarch.h"
 #include <sys/socket.h>
 #include "fs/fs_utils.h"
 #include "fs/sd_fat_devoptab.h"
@@ -454,7 +454,7 @@ int main(int argc, char **argv)
       if (ret == 1 && sleep_ms > 0)
          retro_sleep(sleep_ms);
 
-      task_queue_ctl(TASK_QUEUE_CTL_WAIT, NULL);
+      task_queue_wait();
 
       if (ret == -1)
          break;

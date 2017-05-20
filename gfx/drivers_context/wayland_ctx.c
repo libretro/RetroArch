@@ -499,22 +499,22 @@ static void registry_handle_global(void *data, struct wl_registry *reg,
 
    (void)version;
 
-   if (memcmp(interface, "wl_compositor", 13) == 0)
+   if (string_is_equal_fast(interface, "wl_compositor", 13))
       wl->compositor = (struct wl_compositor*)wl_registry_bind(reg,
             id, &wl_compositor_interface, 3);
-   else if (memcmp(interface, "wl_output", 9) == 0)
+   else if (string_is_equal_fast(interface, "wl_output", 9))
    {
       output = (struct wl_output*)wl_registry_bind(reg,
             id, &wl_output_interface, 2);
       wl_output_add_listener(output, &output_listener, wl);
       wl_display_roundtrip(wl->dpy);
    }
-   else if (memcmp(interface, "wl_shell", 8) == 0)
+   else if (string_is_equal_fast(interface, "wl_shell", 8))
       wl->shell = (struct wl_shell*)
          wl_registry_bind(reg, id, &wl_shell_interface, 1);
-   else if (memcmp(interface, "wl_shm", 6) == 0)
+   else if (string_is_equal_fast(interface, "wl_shm", 6))
       wl->shm = (struct wl_shm*)wl_registry_bind(reg, id, &wl_shm_interface, 1);
-   else if (memcmp(interface, "wl_seat", 7) == 0)
+   else if (string_is_equal_fast(interface, "wl_seat", 7))
    {
       wl->seat = (struct wl_seat*)wl_registry_bind(reg, id, &wl_seat_interface, 4);
       wl_seat_add_listener(wl->seat, &seat_listener, wl);
@@ -720,7 +720,7 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
    return true;
 }
 
-static void gfx_ctx_wl_update_title(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_wl_update_title(void *data, void *data2)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    char title[128];
@@ -1567,7 +1567,7 @@ static void *gfx_ctx_wl_get_context_data(void *data)
 }
 #endif
 
-static void gfx_ctx_wl_swap_buffers(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_wl_swap_buffers(void *data, void *data2)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 

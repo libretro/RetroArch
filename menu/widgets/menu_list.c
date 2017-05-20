@@ -20,7 +20,6 @@
 #include "menu_list.h"
 
 #include "../menu_driver.h"
-#include "../menu_navigation.h"
 
 struct menu_list
 {

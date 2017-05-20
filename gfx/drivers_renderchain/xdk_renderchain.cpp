@@ -21,7 +21,7 @@
 #include "../drivers/d3d.h"
 #include "../common/d3d_common.h"
 
-#include "../video_shader_driver.h"
+#include "../video_driver.h"
 
 #include "../../configuration.h"
 #include "../../verbosity.h"

@@ -17,8 +17,9 @@
 #ifndef __RARCH_HLSL_H
 #define __RARCH_HLSL_H
 
-#include "../video_shader_driver.h"
 #include <stdint.h>
+
+#include "../video_driver.h"
 
 void hlsl_set_proj_matrix(void *data, XMMATRIX rotation_value);
 

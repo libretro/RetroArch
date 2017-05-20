@@ -103,7 +103,7 @@ static JSON_Parser_HandlerResult JSON_CALL StringHandler(JSON_Parser parser, cha
    {
       if (pValue && length)
       {
-         if (pCtx->cur_field && memcmp(pCtx->cur_field, "game_crc", 8) == 0)
+         if (pCtx->cur_field && string_is_equal_fast(pCtx->cur_field, "game_crc", 8))
          {
             /* CRC comes in as a string but it is stored as an unsigned casted to int */
             *((int*)pCtx->cur_member) = (int)strtoul(pValue, NULL, 16);
@@ -185,7 +185,7 @@ static JSON_Parser_HandlerResult JSON_CALL ObjectMemberHandler(JSON_Parser parse
    if (!pValue || !length)
       return JSON_Parser_Continue;
 
-   if (pCtx->state == STATE_OBJECT_START && memcmp(pValue, "fields", 6) == 0)
+   if (pCtx->state == STATE_OBJECT_START && string_is_equal_fast(pValue, "fields", 6))
       pCtx->state = STATE_FIELDS_START;
 
    if (pCtx->state == STATE_FIELDS_OBJECT_START)
@@ -195,46 +195,46 @@ static JSON_Parser_HandlerResult JSON_CALL ObjectMemberHandler(JSON_Parser parse
 
       pCtx->cur_field = strdup(pValue);
 
-      if (memcmp(pValue, "username", 8) == 0)
+      if (string_is_equal_fast(pValue, "username", 8))
       {
          pCtx->cur_member = &rooms->cur->nickname;
          pCtx->cur_member_size = sizeof(rooms->cur->nickname);
       }
-      else if (memcmp(pValue, "game_name", 9) == 0)
+      else if (string_is_equal_fast(pValue, "game_name", 9))
       {
          pCtx->cur_member = &rooms->cur->gamename;
          pCtx->cur_member_size = sizeof(rooms->cur->gamename);
       }
-      else if (memcmp(pValue, "core_name", 9) == 0)
+      else if (string_is_equal_fast(pValue, "core_name", 9))
       {
          pCtx->cur_member = &rooms->cur->corename;
          pCtx->cur_member_size = sizeof(rooms->cur->corename);
       }
-      else if (memcmp(pValue, "ip", 2) == 0)
+      else if (string_is_equal_fast(pValue, "ip", 2))
       {
          pCtx->cur_member = &rooms->cur->address;
          pCtx->cur_member_size = sizeof(rooms->cur->address);
       }
-      else if (memcmp(pValue, "port", 4) == 0)
+      else if (string_is_equal_fast(pValue, "port", 4))
          pCtx->cur_member = &rooms->cur->port;
-      else if (memcmp(pValue, "game_crc", 8) == 0)
+      else if (string_is_equal_fast(pValue, "game_crc", 8))
          pCtx->cur_member = &rooms->cur->gamecrc;
-      else if (memcmp(pValue, "core_version", 12) == 0)
+      else if (string_is_equal_fast(pValue, "core_version", 12))
       {
          pCtx->cur_member = &rooms->cur->coreversion;
          pCtx->cur_member_size = sizeof(rooms->cur->coreversion);
       }
-      else if (memcmp(pValue, "has_password", 12) == 0)
+      else if (string_is_equal_fast(pValue, "has_password", 12))
          pCtx->cur_member = &rooms->cur->has_password;
-      else if (memcmp(pValue, "has_spectate_password", 21) == 0)
+      else if (string_is_equal_fast(pValue, "has_spectate_password", 21))
          pCtx->cur_member = &rooms->cur->has_spectate_password;
-      else if (memcmp(pValue, "fixed", 5) == 0)
+      else if (string_is_equal_fast(pValue, "fixed", 5))
          pCtx->cur_member = &rooms->cur->fixed;
-      else if (memcmp(pValue, "mitm_ip", 7) == 0)
+      else if (string_is_equal_fast(pValue, "mitm_ip", 7))
          pCtx->cur_member = &rooms->cur->mitm_address;
-      else if (memcmp(pValue, "mitm_port", 9) == 0)
+      else if (string_is_equal_fast(pValue, "mitm_port", 9))
          pCtx->cur_member = &rooms->cur->mitm_port;
-      else if (memcmp(pValue, "host_method", 11) == 0)
+      else if (string_is_equal_fast(pValue, "host_method", 11))
          pCtx->cur_member = &rooms->cur->host_method;
       else
       {

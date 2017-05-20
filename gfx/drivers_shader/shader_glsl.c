@@ -257,10 +257,27 @@ static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
    GLint status;
    const char *source[4];
    char version[32];
+   const char *existing_version = strstr(program, "#version");
 
-   version[0] = '\0';
+   version[0]                   = '\0';
 
-   if (glsl_core && !strstr(program, "#version"))
+   if (existing_version)
+   {
+      const char* version_extra = "";
+      unsigned version_no = strtoul(existing_version + 8, (char**)&program, 10);
+#ifdef HAVE_OPENGLES
+      if (version_no < 130)
+         version_no = 100;
+      else
+      {
+         version_extra = " es";
+         version_no = 300;
+      }
+#endif
+      snprintf(version, sizeof(version), "#version %u%s\n", version_no, version_extra);
+      RARCH_LOG("[GLSL]: Using GLSL version %u%s.\n", version_no, version_extra);
+   }
+   else if (glsl_core)
    {
       unsigned version_no = 0;
       unsigned gl_ver = glsl_major * 100 + glsl_minor * 10;
@@ -758,7 +775,7 @@ static void *gl_glsl_init(void *data, const char *path)
       bool ret             = false;
       const char *path_ext = path_get_extension(path);
 
-      if (memcmp(path_ext, "glslp", 5) == 0)
+      if (string_is_equal_fast(path_ext, "glslp", 5))
       {
          conf = config_file_new(path);
          if (conf)
@@ -767,7 +784,7 @@ static void *gl_glsl_init(void *data, const char *path)
             glsl->shader->modern = true;
          }
       }
-      else if (memcmp(path_ext, "glsl", 4) == 0)
+      else if (string_is_equal_fast(path_ext, "glsl", 4))
       {
          strlcpy(glsl->shader->pass[0].source.path, path,
                sizeof(glsl->shader->pass[0].source.path));
@@ -1361,7 +1378,10 @@ static bool gl_glsl_set_mvp(void *data, void *shader_data, const math_matrix_4x4
    (void)data;
 
    if (!glsl || !glsl->shader->modern)
-      goto fallback;
+   {
+      gl_ff_matrix(mat);
+      return false;
+   }
 
    loc = glsl->uniforms[glsl->active_idx].mvp;
    if (loc >= 0)
@@ -1376,11 +1396,8 @@ static bool gl_glsl_set_mvp(void *data, void *shader_data, const math_matrix_4x4
          current_mat_data[glsl->active_idx]         = *mat->data;
       }
    }
-   return true;
 
-fallback:
-   gl_ff_matrix(mat);
-   return false;
+   return true;
 }
 
 #define gl_glsl_set_coord_array(attribs, coord1, coord2, coords, size, multiplier) \

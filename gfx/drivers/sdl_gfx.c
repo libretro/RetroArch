@@ -44,8 +44,6 @@
 
 #include "../../configuration.h"
 
-#include "../video_context_driver.h"
-
 typedef struct sdl_menu_frame
 {
    bool active;

@@ -37,7 +37,7 @@
 #include "../frontend_driver.h"
 #include "../../configuration.h"
 #include "../../defaults.h"
-#include "../../runloop.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 /* We only load this library once, so we let it be 

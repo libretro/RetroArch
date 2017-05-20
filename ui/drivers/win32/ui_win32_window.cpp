@@ -47,7 +47,7 @@
 
 #include "../../ui_companion_driver.h"
 #include "../../../driver.h"
-#include "../../../runloop.h"
+#include "../../../retroarch.h"
 #include "../../../tasks/tasks_internal.h"
 
 static void ui_window_win32_destroy(void *data)

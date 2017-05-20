@@ -29,7 +29,7 @@
 #include <OpenGL/OpenGL.h>
 #include <OpenGL/gl.h>
 
-#include "../video_context_driver.h"
+#include "../video_driver.h"
 
 typedef int CGSConnectionID;
 typedef int CGSWindowID;

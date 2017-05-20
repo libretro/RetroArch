@@ -15,7 +15,6 @@
 
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
-#include "../menu_navigation.h"
 
 #ifndef BIND_ACTION_UP
 #define BIND_ACTION_UP(cbs, name) \
@@ -27,7 +26,7 @@ static int action_bind_up_generic(unsigned type, const char *label)
 {
    size_t scroll_accel    = 0;
    unsigned scroll_speed  = 0;
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL, &scroll_accel))
+   if (!menu_driver_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL, &scroll_accel))
       return -1;
 
    scroll_speed           = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 1);
@@ -35,7 +34,7 @@ static int action_bind_up_generic(unsigned type, const char *label)
    if (menu_entries_get_size() <= 0)
       return 0;
 
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_DECREMENT, &scroll_speed);
+   menu_driver_ctl(MENU_NAVIGATION_CTL_DECREMENT, &scroll_speed);
 
    return 0;
 }

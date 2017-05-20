@@ -503,7 +503,7 @@ bool x11_connect(void)
    return true;
 }
 
-void x11_update_title(void *data, video_frame_info_t *video_info)
+void x11_update_title(void *data, void *data2)
 {
    char title[128];
 

@@ -659,7 +659,7 @@ static void qnx_handle_navigator_event(
        command_event(CMD_EVENT_MENU_TOGGLE, NULL);
        return;
    shutdown:
-       runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
+       rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
        return;
 }
 

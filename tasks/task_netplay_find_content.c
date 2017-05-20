@@ -34,7 +34,7 @@
 #include "../playlist.h"
 #include "../command.h"
 #include "../core_info.h"
-#include "../../runloop.h"
+#include "../../retroarch.h"
 
 typedef struct
 {
@@ -61,7 +61,7 @@ static void netplay_crc_scan_callback(void *task_data,
 
 #ifdef HAVE_MENU
    if (!string_is_empty(state->core_path) && !string_is_empty(state->content_path) &&
-       memcmp(state->content_path, "N/A", 3) != 0)
+       string_is_not_equal_fast(state->content_path, "N/A", 3))
    {
       command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
       task_push_load_content_with_new_core_from_menu(
@@ -73,7 +73,7 @@ static void netplay_crc_scan_callback(void *task_data,
    else
 #endif
       if (!string_is_empty(state->core_path) && !string_is_empty(state->content_path) &&
-      memcmp(state->content_path, "N/A", 3) == 0)
+      string_is_equal_fast(state->content_path, "N/A", 3))
    {
       content_ctx_info_t content_info = {0};
 
@@ -102,12 +102,14 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
    netplay_crc_handle_t *state = (netplay_crc_handle_t*)task->state;
 
    task_set_progress(task, 0);
+   task_free_title(task);
    task_set_title(task, strdup("Looking for compatible content..."));
    task_set_finished(task, false);
 
    if (!state->lpl_list)
    {
       task_set_progress(task, 100);
+      task_free_title(task);
       task_set_title(task, strdup("Playlist directory not found"));
       task_set_finished(task, true);
       free(state);
@@ -115,11 +117,11 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
    }
 
    if (state->lpl_list->size == 0 && 
-      memcmp(state->content_path, "N/A", 3) != 0)
+      string_is_not_equal_fast(state->content_path, "N/A", 3))
       goto no_playlists;
 
    /* Core requires content */
-   if (memcmp(state->content_path, "N/A", 3) != 0)
+   if (string_is_not_equal_fast(state->content_path, "N/A", 3))
    {
       /* CRC matching */
       if (!string_is_equal(state->content_crc, "00000000|crc"))
@@ -149,6 +151,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
                   state->found = true;
                   task_set_data(task, state);
                   task_set_progress(task, 100);
+                  task_free_title(task);
                   task_set_title(task, strdup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND)));
                   task_set_finished(task, true);
                   string_list_free(state->lpl_list);
@@ -209,6 +212,7 @@ filename_matching:
                   state->found = true;
                   task_set_data(task, state);
                   task_set_progress(task, 100);
+                  task_free_title(task);
                   task_set_title(task, strdup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND)));
                   task_set_finished(task, true);
                   string_list_free(state->lpl_list);
@@ -232,6 +236,7 @@ filename_matching:
       state->found = true;
       task_set_data(task, state);
       task_set_progress(task, 100);
+      task_free_title(task);
       task_set_title(task, strdup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND)));
       task_set_finished(task, true);
       return;
@@ -240,6 +245,7 @@ filename_matching:
 no_playlists:
    string_list_free(state->lpl_list);
    task_set_progress(task, 100);
+   task_free_title(task);
    task_set_title(task, strdup("Content not found, try manual load or disconnect from host"));
    task_set_finished(task, true);
    command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
@@ -251,6 +257,7 @@ bool task_push_netplay_crc_scan(uint32_t crc, char* name,
       const char *hostname, const char *core_name)
 {
    unsigned i;
+   union string_list_elem_attr attr;
    core_info_list_t *info      = NULL;
    settings_t        *settings = config_get_ptr();
    retro_task_t          *task = (retro_task_t *)calloc(1, sizeof(*task));
@@ -275,6 +282,8 @@ bool task_push_netplay_crc_scan(uint32_t crc, char* name,
    state->lpl_list = dir_list_new(settings->paths.directory_playlist,
          NULL, true, true, true, false);
 
+   attr.i = 0;
+   string_list_append(state->lpl_list, settings->paths.path_content_history, attr);
    state->found = false;
 
    for (i=0; i < info->count; i++)
@@ -289,7 +298,7 @@ bool task_push_netplay_crc_scan(uint32_t crc, char* name,
       {
          strlcpy(state->core_path, info->list[i].path, sizeof(state->core_path));
 
-         if ((memcmp(state->content_path, "N/A", 3) != 0) && 
+         if (string_is_not_equal_fast(state->content_path, "N/A", 3) && 
             !string_is_empty(info->list[i].supported_extensions))
          {
             strlcpy(state->core_extensions,
@@ -307,7 +316,7 @@ bool task_push_netplay_crc_scan(uint32_t crc, char* name,
    task->callback       = netplay_crc_scan_callback;
    task->title          = strdup("Looking for matching content...");
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+   task_queue_push(task);
 
    return true;
 

@@ -28,10 +28,8 @@
 
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
-#include "../menu_display.h"
 #include "../menu_setting.h"
 #include "../menu_shader.h"
-#include "../menu_navigation.h"
 #include "../widgets/menu_dialog.h"
 #include "../widgets/menu_filebrowser.h"
 #include "../widgets/menu_input_dialog.h"
@@ -48,7 +46,6 @@
 #include "../../input/input_remapping.h"
 #include "../../paths.h"
 #include "../../retroarch.h"
-#include "../../runloop.h"
 #include "../../verbosity.h"
 #include "../../lakka.h"
 #include "../../wifi/wifi_driver.h"
@@ -57,12 +54,6 @@
 #include "../../network/netplay/netplay.h"
 #include "../../network/netplay/netplay_discovery.h"
 #endif
-
-typedef struct
-{
-   enum msg_hash_enums enum_idx;
-   char path[PATH_MAX_LENGTH];
-} menu_file_transfer_t;
 
 enum
 {
@@ -97,14 +88,7 @@ unsigned rpl_entry_selection_ptr                 = 0;
 unsigned rdb_entry_start_game_selection_ptr      = 0;
 size_t                     hack_shader_pass      = 0;
 
-/* HACK - we have to find some way to pass state inbetween
- * function pointer callback functions that don't necessarily
- * call each other. */
-char *core_buf                                   = NULL;
-size_t core_len                                  = 0;
-
 #ifdef HAVE_NETWORKING
-
 #ifdef HAVE_LAKKA
 static char lakka_project[128];
 
@@ -124,110 +108,11 @@ static char *lakka_get_project(void)
 }
 #endif
 
-static void cb_net_generic_subdir(void *task_data, void *user_data, const char *err)
-{
-   char subdir_path[PATH_MAX_LENGTH];
-   http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
-   menu_file_transfer_t *state       = (menu_file_transfer_t*)user_data;
-
-   subdir_path[0] = '\0';
-
-   if (!data || err)
-      goto finish;
-
-   memcpy(subdir_path, data->data, data->len * sizeof(char));
-   subdir_path[data->len] = '\0';
-
-finish:
-   if (!err && !strstr(subdir_path, file_path_str(FILE_PATH_INDEX_DIRS_URL)))
-   {
-      char parent_dir[PATH_MAX_LENGTH];
-
-      parent_dir[0] = '\0';
-
-      fill_pathname_parent_dir(parent_dir,
-            state->path, sizeof(parent_dir));
-
-      /*generic_action_ok_displaylist_push(parent_dir, NULL,
-            subdir_path, 0, 0, 0, ACTION_OK_DL_CORE_CONTENT_DIRS_SUBDIR_LIST);*/
-   }
-
-   if (err)
-      RARCH_ERR("%s: %s\n", msg_hash_to_str(MSG_DOWNLOAD_FAILED), err);
-
-   if (data)
-   {
-      if (data->data)
-         free(data->data);
-      free(data);
-   }
-
-   if (user_data)
-      free(user_data);
-}
+void cb_net_generic_subdir(void *task_data, void *user_data, const char *err);
 
 /* defined in menu_cbs_deferred_push */
-static void cb_net_generic(void *task_data, void *user_data, const char *err)
-{
-   bool refresh                = false;
-   http_transfer_data_t *data  = (http_transfer_data_t*)task_data;
-   menu_file_transfer_t *state = (menu_file_transfer_t*)user_data;
-
-   if (core_buf)
-      free(core_buf);
-
-
-   core_buf = NULL;
-   core_len = 0;
-
-   if (!data || err)
-      goto finish;
-
-   core_buf = (char*)malloc((data->len+1) * sizeof(char));
-
-   if (!core_buf)
-      goto finish;
-
-   memcpy(core_buf, data->data, data->len * sizeof(char));
-   core_buf[data->len] = '\0';
-   core_len      = data->len;
-
-finish:
-   refresh = true;
-   menu_entries_ctl(MENU_ENTRIES_CTL_UNSET_REFRESH, &refresh);
-
-   if (err)
-      RARCH_ERR("%s: %s\n", msg_hash_to_str(MSG_DOWNLOAD_FAILED), err);
-
-   if (data)
-   {
-      if (data->data)
-         free(data->data);
-      free(data);
-   }
-
-   if (!err && !strstr(state->path, file_path_str(FILE_PATH_INDEX_DIRS_URL)))
-   {
-      char parent_dir[PATH_MAX_LENGTH];
-      menu_file_transfer_t *transf     = NULL;
-
-      parent_dir[0] = '\0';
-
-      fill_pathname_parent_dir(parent_dir,
-            state->path, sizeof(parent_dir));
-      strlcat(parent_dir, file_path_str(FILE_PATH_INDEX_DIRS_URL), sizeof(parent_dir));
-
-      transf           = (menu_file_transfer_t*)calloc(1, sizeof(*transf));
-      strlcpy(transf->path, parent_dir, sizeof(transf->path));
-
-      task_push_http_transfer(parent_dir, true, "index_dirs", cb_net_generic_subdir, transf);
-   }
-
-   if (state)
-      free(state);
-}
+void cb_net_generic(void *task_data, void *user_data, const char *err);
 #endif
-
 
 int generic_action_ok_displaylist_push(const char *path,
       const char *new_path,
@@ -238,6 +123,7 @@ int generic_action_ok_displaylist_push(const char *path,
    char tmp[PATH_MAX_LENGTH];
    char parent_dir[PATH_MAX_LENGTH];
    char action_path[PATH_MAX_LENGTH];
+   char lpl_basename[PATH_MAX_LENGTH];
    enum menu_displaylist_ctl_state dl_type = DISPLAYLIST_NONE;
    menu_displaylist_info_t      info       = {0};
    const char           *menu_label        = NULL;
@@ -253,7 +139,7 @@ int generic_action_ok_displaylist_push(const char *path,
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
-   new_path_tmp[0] = tmp[0] = parent_dir[0] = action_path[0] = '\0';
+   new_path_tmp[0] = tmp[0] = parent_dir[0] = action_path[0] = lpl_basename[0] = '\0';
 
    menu_entries_get_last_stack(&menu_path, &menu_label, NULL, &enum_idx, NULL);
 
@@ -364,7 +250,6 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type                 = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_FILE_BROWSER_SELECT_DIR:
-         filebrowser_set_type(FILEBROWSER_SELECT_DIR);
          if (path)
             strlcpy(menu->deferred_path, path,
                   sizeof(menu->deferred_path));
@@ -464,7 +349,6 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_CONTENT_COLLECTION_LIST:
-         filebrowser_set_type(FILEBROWSER_SELECT_COLLECTION);
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = settings->paths.directory_playlist;
@@ -550,6 +434,9 @@ int generic_action_ok_displaylist_push(const char *path,
          fill_pathname_join(tmp,
                settings->paths.path_content_database,
                path, sizeof(tmp));
+
+         fill_pathname_base_noext(lpl_basename, path, sizeof(lpl_basename));
+         menu_driver_set_thumbnail_system(lpl_basename, sizeof(lpl_basename));
 
          info.directory_ptr = idx;
          info_path          = tmp;
@@ -1107,7 +994,7 @@ static int generic_action_ok(const char *path,
             if (config_replace(settings->bools.config_save_on_exit, action_path))
             {
                bool pending_push = false;
-               menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
+               menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
                ret = -1;
             }
          }
@@ -1684,7 +1571,14 @@ static int action_ok_lookup_setting(const char *path,
 static int action_ok_menu_wallpaper(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   filebrowser_set_type(FILEBROWSER_SELECT_FILE);
+   filebrowser_set_type(FILEBROWSER_SELECT_IMAGE);
+   return action_ok_lookup_setting(path, label, type, idx, entry_idx);
+}
+
+static int action_ok_menu_font(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   filebrowser_set_type(FILEBROWSER_SELECT_FONT);
    return action_ok_lookup_setting(path, label, type, idx, entry_idx);
 }
 
@@ -3383,6 +3277,7 @@ static int action_ok_browse_url_list(const char *path,
 static int action_ok_content_collection_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   filebrowser_set_type(FILEBROWSER_SELECT_COLLECTION);
    return generic_action_ok_displaylist_push(path, NULL, label, type, idx,
          entry_idx, ACTION_OK_DL_CONTENT_COLLECTION_LIST);
 }
@@ -3433,6 +3328,7 @@ static int action_ok_push_content_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    settings_t            *settings   = config_get_ptr();
+   filebrowser_set_type(FILEBROWSER_SELECT_FILE);
    return generic_action_ok_displaylist_push(path,
          settings->paths.directory_menu_content, label, type, idx,
          entry_idx, ACTION_OK_DL_CONTENT_LIST);
@@ -3448,6 +3344,105 @@ static int action_ok_push_scan_file(const char *path,
 }
 
 #ifdef HAVE_NETWORKING
+struct netplay_host_list *lan_hosts;
+int lan_room_count;
+void netplay_refresh_rooms_menu(file_list_t *list)
+{
+   char s[PATH_MAX_LENGTH];
+   int i                                = 0;
+   int j                                = 0;
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, list);
+
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
+      netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL))
+   {
+      menu_entries_append_enum(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST),
+            msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_DISCONNECT),
+            MENU_ENUM_LABEL_NETPLAY_DISCONNECT,
+            MENU_SETTING_ACTION, 0, 0);
+   }
+   else if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
+      !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL) &&
+      netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_CONNECTED, NULL))
+   {
+      menu_entries_append_enum(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT),
+            msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_DISCONNECT),
+            MENU_ENUM_LABEL_NETPLAY_DISCONNECT,
+            MENU_SETTING_ACTION, 0, 0);
+   }
+   else
+   {
+      menu_entries_append_enum(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST),
+            msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST),
+            MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST,
+            MENU_SETTING_ACTION, 0, 0);
+   }
+
+   menu_entries_append_enum(list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS),
+         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS),
+         MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS,
+         MENU_SETTING_ACTION, 0, 0);
+
+   if (netplay_room_count != 0)
+   {
+      RARCH_LOG ("Found %d rooms...\n", netplay_room_count);
+
+      for (i = 0; i < netplay_room_count; i++)
+      {
+         /* Uncomment this to debug mismatched room parameters*/
+#if 0
+         RARCH_LOG("Room Data: %d\n"
+               "Nickname:         %s\n"
+               "Address:          %s\n"
+               "Port:             %d\n"
+               "Core:             %s\n"
+               "Core Version:     %s\n"
+               "Game:             %s\n"
+               "Game CRC:         %08x\n"
+               "Timestamp:        %d\n", room_data->elems[j + 6].data,
+               netplay_room_list[i].nickname,
+               netplay_room_list[i].address,
+               netplay_room_list[i].port,
+               netplay_room_list[i].corename,
+               netplay_room_list[i].coreversion,
+               netplay_room_list[i].gamename,
+               netplay_room_list[i].gamecrc,
+               netplay_room_list[i].timestamp);
+#endif
+         j+=8;
+         if (netplay_room_list[i].lan)
+         {
+            snprintf(s, sizeof(s),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME_LAN),
+               netplay_room_list[i].nickname);
+         }
+         else
+         {
+            snprintf(s, sizeof(s),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME),
+               netplay_room_list[i].nickname);
+         }
+
+         menu_entries_append_enum(list,
+               s,
+               msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM),
+               MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,
+               MENU_ROOM, 0, 0);
+      }
+
+      netplay_rooms_free();
+   }
+}
+
+#ifndef INET6_ADDRSTRLEN
+#define INET6_ADDRSTRLEN 46
+#endif
+
 static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const char *err)
 {
    char buf[PATH_MAX_LENGTH];
@@ -3489,15 +3484,10 @@ finish:
       {
          char s[PATH_MAX_LENGTH];
          int i                                = 0;
-         int j                                = 0;
          int k                                = 0;
-         int lan_room_count                   = 0;
-         struct netplay_host_list *lan_hosts  = NULL;
          file_list_t *file_list               = menu_entries_get_selection_buf_ptr(0);
 
-#if 1
          netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, &lan_hosts);
-#endif
          if (lan_hosts)
             lan_room_count                    = (int)lan_hosts->size;
 
@@ -3515,85 +3505,13 @@ finish:
             calloc(netplay_room_count + lan_room_count,
                   sizeof(struct netplay_room));
 
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, file_list);
-         menu_entries_append_enum(file_list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST),
-               msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST),
-               MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST,
-               MENU_SETTING_ACTION, 0, 0);
-         menu_entries_append_enum(file_list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS),
-               msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS),
-               MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS,
-               MENU_SETTING_ACTION, 0, 0);
-
-         if (netplay_room_count != 0)
-         {
-            RARCH_LOG ("Found %d rooms...\n", netplay_room_count);
-
-            for (i = 0; i < netplay_room_count; i++)
-            {
-               memcpy(&netplay_room_list[i], netplay_room_get(i), sizeof(netplay_room_list[i]));
-
-               /*strlcpy(netplay_room_list[i].nickname,
-                     room_data->elems[j + 0].data,
-                     sizeof(netplay_room_list[i].nickname));
-               strlcpy(netplay_room_list[i].address,
-                     room_data->elems[j + 1].data,
-                     sizeof(netplay_room_list[i].address));
-               strlcpy(netplay_room_list[i].corename,
-                     room_data->elems[j + 3].data,
-                     sizeof(netplay_room_list[i].corename));
-               strlcpy(netplay_room_list[i].coreversion,
-                     room_data->elems[j + 4].data,
-                     sizeof(netplay_room_list[i].coreversion));
-               strlcpy(netplay_room_list[i].gamename,
-                     room_data->elems[j + 5].data,
-                     sizeof(netplay_room_list[i].gamename));
-
-               netplay_room_list[i].port      = atoi(room_data->elems[j + 2].data);
-               netplay_room_list[i].gamecrc   = atoi(room_data->elems[j + 6].data);
-               netplay_room_list[i].timestamp = atoi(room_data->elems[j + 7].data);*/
-
-               /* Uncomment this to debug mismatched room parameters*/
-#if 0
-               RARCH_LOG("Room Data: %d\n"
-                     "Nickname:         %s\n"
-                     "Address:          %s\n"
-                     "Port:             %d\n"
-                     "Core:             %s\n"
-                     "Core Version:     %s\n"
-                     "Game:             %s\n"
-                     "Game CRC:         %08x\n"
-                     "Timestamp:        %d\n", room_data->elems[j + 6].data,
-                     netplay_room_list[i].nickname,
-                     netplay_room_list[i].address,
-                     netplay_room_list[i].port,
-                     netplay_room_list[i].corename,
-                     netplay_room_list[i].coreversion,
-                     netplay_room_list[i].gamename,
-                     netplay_room_list[i].gamecrc,
-                     netplay_room_list[i].timestamp);
-#endif
-               j+=8;
-
-               snprintf(s, sizeof(s),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME),
-                     netplay_room_list[i].nickname);
-
-               menu_entries_append_enum(file_list,
-                     s,
-                     msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM),
-                     MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,
-                     MENU_ROOM, 0, 0);
-            }
-
-            netplay_rooms_free();
-         }
+         for (i = 0; i < netplay_room_count; i++)
+            memcpy(&netplay_room_list[i], netplay_room_get(i), sizeof(netplay_room_list[i]));
 
          if (lan_room_count != 0)
          {
             struct netplay_host *host = NULL;
+
             for (host = &lan_hosts->hosts[k]; i < netplay_room_count + lan_room_count; i++)
             {
                struct sockaddr *address = NULL;
@@ -3604,9 +3522,21 @@ finish:
 
                address = &host->addr;
 
-               strlcpy(netplay_room_list[i].address,
-                     inet_ntoa(((struct sockaddr_in*)(address))->sin_addr),
-                     sizeof(netplay_room_list[i].address));
+               if (address->sa_family == AF_INET)
+               {
+                   struct sockaddr_in *sin = (struct sockaddr_in *) address;
+                   inet_ntop_compat(AF_INET, &sin->sin_addr, 
+                      netplay_room_list[i].address, INET6_ADDRSTRLEN);
+               }
+#if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY)
+               else if (address->sa_family == AF_INET6)
+               {
+                  struct sockaddr_in6 *sin = (struct sockaddr_in6 *) address;
+                  inet_ntop_compat(AF_INET6, &sin->sin6_addr, 
+                     netplay_room_list[i].address, INET6_ADDRSTRLEN);
+               }
+#endif
+
                strlcpy(netplay_room_list[i].corename,
                      host->core,
                      sizeof(netplay_room_list[i].corename));
@@ -3620,20 +3550,15 @@ finish:
                netplay_room_list[i].port      = 55435;
                netplay_room_list[i].gamecrc   = host->content_crc;
                netplay_room_list[i].timestamp = 0;
+               netplay_room_list[i].lan = true;
 
                snprintf(s, sizeof(s),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME_LAN),
                      netplay_room_list[i].nickname);
-
-               menu_entries_append_enum(file_list,
-                     s,
-                     msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM),
-                     MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,
-                     MENU_ROOM, 0, 0);
-               k++;
             }
             netplay_room_count += lan_room_count;
          }
+         netplay_refresh_rooms_menu(file_list);
       }
    }
 
@@ -3652,11 +3577,14 @@ finish:
 
 }
 
+void netplay_lan_scan_callback(void *task_data,
+                               void *user_data, const char *error);
+
 static int action_ok_push_netplay_refresh_rooms(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char url [2048] = "http://newlobby.libretro.com/list/";
-   task_push_netplay_lan_scan();
+   task_push_netplay_lan_scan(netplay_lan_scan_callback);
    task_push_http_transfer(url, true, NULL, netplay_refresh_rooms_cb, NULL);
    return 0;
 }
@@ -3688,7 +3616,7 @@ static int action_ok_push_downloads_dir(const char *path,
 {
    settings_t            *settings   = config_get_ptr();
 
-   filebrowser_clear_type();
+   filebrowser_set_type(FILEBROWSER_SELECT_FILE);
    return generic_action_ok_displaylist_push(path, settings->paths.directory_core_assets,
          msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
          type, idx,
@@ -3712,6 +3640,7 @@ int action_ok_push_generic_list(const char *path,
 int action_ok_push_filebrowser_list_dir_select(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   filebrowser_set_type(FILEBROWSER_SELECT_DIR);
    strlcpy(filebrowser_label, label, sizeof(filebrowser_label));
    return generic_action_ok_displaylist_push(path, NULL, label, type, idx,
          entry_idx, ACTION_OK_DL_FILE_BROWSER_SELECT_DIR);
@@ -4102,9 +4031,7 @@ static void action_ok_netplay_enable_client_hostname_cb(
    }
 
    menu_input_dialog_end();
-
-   /* Force the menu to close */
-   rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+   rarch_menu_running_finished();
 }
 #endif
 
@@ -4243,6 +4170,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       {
          case MENU_ENUM_LABEL_MENU_WALLPAPER:
             BIND_ACTION_OK(cbs, action_ok_menu_wallpaper);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_FONT_PATH:
+            BIND_ACTION_OK(cbs, action_ok_menu_font);
             break;
          case MENU_ENUM_LABEL_BROWSE_START:
             BIND_ACTION_OK(cbs, action_ok_browse_url_start);

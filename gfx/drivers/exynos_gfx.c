@@ -181,7 +181,7 @@ static int exynos_get_device_index(void)
 
       ver = drmGetVersion(fd);
 
-      if (memcmp(ver->name, "exynos", 6) == 0)
+      if (string_is_equal_fast(ver->name, "exynos", 6))
          found = true;
       else
          ++index;
@@ -1374,13 +1374,6 @@ static bool exynos_gfx_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool exynos_gfx_has_windowed(void *data)
-{
-   (void)data;
-
-   return false;
-}
-
 static void exynos_gfx_set_rotation(void *data, unsigned rotation)
 {
    struct exynos_video *vid = (struct exynos_video*)data;
@@ -1536,7 +1529,7 @@ video_driver_t video_exynos = {
   exynos_gfx_alive,
   exynos_gfx_focus,
   exynos_gfx_suppress_screensaver,
-  exynos_gfx_has_windowed,
+  NULL, /* has_windowed */
   exynos_gfx_set_shader,
   exynos_gfx_free,
   "exynos",

@@ -138,11 +138,6 @@ static bool xshm_gfx_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool xshm_gfx_has_windowed(void *data)
-{
-   return true;
-}
-
 static void xshm_gfx_free(void *data)
 {
    

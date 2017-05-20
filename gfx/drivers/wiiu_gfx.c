@@ -728,12 +728,6 @@ static bool wiiu_gfx_suppress_screensaver(void* data, bool enable)
    return false;
 }
 
-static bool wiiu_gfx_has_windowed(void* data)
-{
-   (void)data;
-   return true;
-}
-
 static bool wiiu_gfx_set_shader(void* data,
                                 enum rarch_shader_type type, const char* path)
 {
@@ -887,7 +881,7 @@ video_driver_t video_wiiu =
    wiiu_gfx_alive,
    wiiu_gfx_focus,
    wiiu_gfx_suppress_screensaver,
-   wiiu_gfx_has_windowed,
+   NULL, /* has_windowed */
    wiiu_gfx_set_shader,
    wiiu_gfx_free,
    "gx2",

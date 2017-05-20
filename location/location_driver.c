@@ -26,7 +26,6 @@
 #include "../core.h"
 #include "../driver.h"
 #include "../retroarch.h"
-#include "../runloop.h"
 #include "../list_special.h"
 #include "../verbosity.h"
 

@@ -105,16 +105,7 @@ frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident)
  **/
 frontend_ctx_driver_t *frontend_ctx_init_first(void)
 {
-   unsigned i;
-   frontend_ctx_driver_t *frontend = NULL;
-
-   for (i = 0; frontend_ctx_drivers[i]; i++)
-   {
-      frontend = frontend_ctx_drivers[i];
-      break;
-   }
-
-   return frontend;
+   return frontend_ctx_drivers[0];
 }
 
 bool frontend_driver_get_core_extension(char *s, size_t len)

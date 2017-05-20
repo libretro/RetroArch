@@ -35,16 +35,13 @@
 #include "../widgets/menu_entry.h"
 #include "../menu_entries.h"
 #include "../menu_input.h"
-#include "../menu_navigation.h"
 #include "../menu_setting.h"
-#include "../menu_display.h"
 #include "../widgets/menu_input_dialog.h"
 
 #include "../../gfx/video_driver.h"
-#include "../../gfx/video_context_driver.h"
 
 #include "../../configuration.h"
-#include "../../runloop.h"
+#include "../../retroarch.h"
 
 #include "../../gfx/drivers/d3d.h"
 
@@ -441,13 +438,13 @@ static void xui_frame(void *data, video_frame_info_t *video_info)
 
    XuiRenderSetViewTransform( app.GetDC(), &matOrigView );
 
-   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_PULL, &message);
+   rarch_ctl(RARCH_CTL_MSG_QUEUE_PULL, &message);
 
    if (message)
       xui_render_message(message);
    else
    {
-      runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_PULL, &message);
+      rarch_ctl(RARCH_CTL_MSG_QUEUE_PULL, &message);
 
       if (message)
          xui_render_message(message);
@@ -464,9 +461,12 @@ static void blit_line(int x, int y, const char *message, bool green)
 
 static void xui_render_background(void)
 {
+#if 0
+   /* TODO/FIXME - refactor this */
    if (menu_display_libretro_running())
       XuiElementSetShow(m_background, FALSE);
    else
+#endif
       XuiElementSetShow(m_background, TRUE);
 }
 
@@ -533,7 +533,7 @@ static void xui_set_list_text(int index, const wchar_t* leftText,
    }
 }
 
-static void xui_render(void *data)
+static void xui_render(void *data, bool is_idle)
 {
    size_t end, i, selection, fb_pitch;
    unsigned fb_width, fb_height;
@@ -724,6 +724,8 @@ menu_ctx_driver_t menu_ctx_xui = {
    NULL,          /* pointer_tap */
    NULL,          /* update_thumbnail_path */
    NULL,          /* update_thumbnail_image */
+   NULL,          /* set_thumbnail_system */
+   NULL,          /* set_thumbnail_content */
    NULL,          /* osk_ptr_at_pos */
    NULL,          /* update_savestate_thumbnail_path */
    NULL           /* update_savestate_thumbnail_image */

@@ -25,8 +25,8 @@
 #include "../input_keymaps.h"
 #include "../input_keyboard.h"
 
-#include "../../runloop.h"
 #include "../../driver.h"
+#include "../../retroarch.h"
 
 #include "keyboard_event_apple.h"
 

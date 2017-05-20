@@ -153,8 +153,6 @@ CHEATS
 /*============================================================
 VIDEO CONTEXT
 ============================================================ */
-
-#include "../gfx/video_context_driver.c"
 #include "../gfx/drivers_context/gfx_null_ctx.c"
 
 #if defined(__CELLOS_LV2__)
@@ -225,11 +223,7 @@ VIDEO CONTEXT
 /*============================================================
 VIDEO SHADERS
 ============================================================ */
-
-#ifdef HAVE_SHADERS
-#include "../gfx/video_shader_driver.c"
 #include "../gfx/video_shader_parse.c"
-
 #include "../gfx/drivers_shader/shader_null.c"
 
 #ifdef HAVE_CG
@@ -244,8 +238,6 @@ VIDEO SHADERS
 
 #ifdef HAVE_GLSL
 #include "../gfx/drivers_shader/shader_glsl.c"
-#endif
-
 #endif
 
 /*============================================================
@@ -418,6 +410,7 @@ FONTS
 INPUT
 ============================================================ */
 #include "../tasks/task_autodetect.c"
+#include "../tasks/task_audio_mixer.c"
 #include "../input/input_joypad_driver.c"
 #include "../input/input_config.c"
 #include "../input/input_keymaps.c"
@@ -431,6 +424,10 @@ INPUT
 
 #ifdef HAVE_X11
 #include "../input/common/x11_input_common.c"
+#endif
+
+#if defined(_WIN32) && !defined(_XBOX)
+#include "../input/drivers/winraw_input.c"
 #endif
 
 #include "../input/input_autodetect_builtin.c"
@@ -834,7 +831,6 @@ RETROARCH
 #include "../retroarch.c"
 #include "../dirs.c"
 #include "../paths.c"
-#include "../runloop.c"
 #include "../libretro-common/queues/task_queue.c"
 
 #include "../msg_hash.c"
@@ -982,8 +978,6 @@ MENU
 #include "../menu/cbs/menu_cbs_down.c"
 #include "../menu/cbs/menu_cbs_contentlist_switch.c"
 #include "../menu/menu_shader.c"
-#include "../menu/menu_navigation.c"
-#include "../menu/menu_display.c"
 #include "../menu/menu_displaylist.c"
 #include "../menu/menu_animation.c"
 

@@ -19,7 +19,7 @@
 #include <retro_miscellaneous.h>
 
 #include "../wifi_driver.h"
-#include "../../runloop.h"
+#include "../../retroarch.h"
 #include "../../lakka.h"
 
 static bool connman_cache[256] = {0};

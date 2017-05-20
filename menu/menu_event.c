@@ -31,11 +31,9 @@
 
 #include "menu_driver.h"
 #include "menu_animation.h"
-#include "menu_display.h"
-#include "menu_navigation.h"
 
 #include "../configuration.h"
-#include "../runloop_defines.h"
+#include "../retroarch.h"
 #include "../tasks/tasks_internal.h"
 
 static unsigned char menu_keyboard_key_state[RETROK_LAST] = {0};
@@ -162,7 +160,7 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
          first_held           = false;
          trigger_input |= input & input_repeat;
 
-         menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL,
+         menu_driver_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL,
                &new_scroll_accel);
 
          new_scroll_accel = MIN(new_scroll_accel + 1, 64);
@@ -178,7 +176,7 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
    }
 
    if (set_scroll)
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SCROLL_ACCEL,
+      menu_driver_ctl(MENU_NAVIGATION_CTL_SET_SCROLL_ACCEL,
             &new_scroll_accel);
 
    menu_animation_ctl(MENU_ANIMATION_CTL_DELTA_TIME, &delta_time);

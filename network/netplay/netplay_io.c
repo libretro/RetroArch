@@ -25,7 +25,7 @@
 #include "netplay_private.h"
 
 #include "../../configuration.h"
-#include "../../runloop.h"
+#include "../../retroarch.h"
 #include "../../tasks/tasks_internal.h"
 
 #if 0
@@ -111,6 +111,7 @@ void netplay_hangup(netplay_t *netplay, struct netplay_connection *connection)
    else
    {
       dmsg = msg_hash_to_str(MSG_NETPLAY_CLIENT_HANGUP);
+      netplay->is_connected = false;
    }
    RARCH_LOG("%s\n", dmsg);
    runloop_msg_queue_push(dmsg, 1, 180, false);

@@ -33,6 +33,7 @@
 #include <formats/image.h>
 #include <formats/rpng.h>
 #include <streams/trans_stream.h>
+#include <string/stdstring.h>
 
 #include "rpng_internal.h"
 
@@ -152,7 +153,7 @@ static enum png_chunk_type png_chunk_type(const struct png_chunk *chunk)
 
    for (i = 0; i < ARRAY_SIZE(chunk_map); i++)
    {
-      if (memcmp(chunk->type, chunk_map[i].id, 4) == 0)
+      if (string_is_equal_fast(chunk->type, chunk_map[i].id, 4))
          return chunk_map[i].type;
    }
 
@@ -1153,7 +1154,7 @@ bool rpng_start(rpng_t *rpng)
    for (i = 0; i < 8; i++)
       header[i] = rpng->buff_data[i];
 
-   if (memcmp(header, png_magic, sizeof(png_magic)) != 0)
+   if (string_is_not_equal_fast(header, png_magic, sizeof(png_magic)))
       return false;
 
    rpng->buff_data += 8;

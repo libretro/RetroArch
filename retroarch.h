@@ -17,21 +17,23 @@
 #ifndef __RETROARCH_H
 #define __RETROARCH_H
 
-#include <boolean.h>
+#include <stdint.h>
+#include <stddef.h>
+#include <stdlib.h>
 
 #include <retro_common_api.h>
+#include <boolean.h>
 
 #include "core_type.h"
+#include "core.h"
+
+#define runloop_cmd_press(current_input, id)     (BIT64_GET(current_input, id))
 
 RETRO_BEGIN_DECLS
 
 enum rarch_ctl_state
 {
    RARCH_CTL_NONE = 0,
-
-   /* Will teardown drivers and clears all
-    * internal state of the program. */
-   RARCH_CTL_DEINIT,
 
    /* Initialize all drivers. */
    RARCH_CTL_INIT,
@@ -41,22 +43,13 @@ enum rarch_ctl_state
 
    RARCH_CTL_IS_INITED,
 
-   RARCH_CTL_IS_PLAIN_CORE,
-
    RARCH_CTL_IS_DUMMY_CORE,
 
    RARCH_CTL_PREINIT,
 
    RARCH_CTL_DESTROY,
 
-   /* Menu running? */
-   RARCH_CTL_MENU_RUNNING,
-   RARCH_CTL_MENU_RUNNING_FINISHED,
-
-   RARCH_CTL_SET_PATHS_REDIRECT,
-
    RARCH_CTL_IS_BPS_PREF,
-   RARCH_CTL_SET_BPS_PREF,
    RARCH_CTL_UNSET_BPS_PREF,
 
    RARCH_CTL_IS_PATCH_BLOCKED,
@@ -64,11 +57,9 @@ enum rarch_ctl_state
    RARCH_CTL_UNSET_PATCH_BLOCKED,
 
    RARCH_CTL_IS_UPS_PREF,
-   RARCH_CTL_SET_UPS_PREF,
    RARCH_CTL_UNSET_UPS_PREF,
 
    RARCH_CTL_IS_IPS_PREF,
-   RARCH_CTL_SET_IPS_PREF,
    RARCH_CTL_UNSET_IPS_PREF,
 
    RARCH_CTL_IS_SRAM_USED,
@@ -77,17 +68,7 @@ enum rarch_ctl_state
    RARCH_CTL_UNSET_SRAM_ENABLE,
 
    RARCH_CTL_IS_SRAM_LOAD_DISABLED,
-   RARCH_CTL_SET_SRAM_LOAD_DISABLED,
-   RARCH_CTL_UNSET_SRAM_LOAD_DISABLED,
-
    RARCH_CTL_IS_SRAM_SAVE_DISABLED,
-   RARCH_CTL_SET_SRAM_SAVE_DISABLED,
-   RARCH_CTL_UNSET_SRAM_SAVE_DISABLED,
-
-   /* Force fullscreen */
-   RARCH_CTL_SET_FORCE_FULLSCREEN,
-   RARCH_CTL_UNSET_FORCE_FULLSCREEN,
-   RARCH_CTL_IS_FORCE_FULLSCREEN,
 
    /* Block config read */
    RARCH_CTL_SET_BLOCK_CONFIG_READ,
@@ -99,7 +80,76 @@ enum rarch_ctl_state
    RARCH_CTL_USERNAME_SET,
    RARCH_CTL_USERNAME_UNSET,
 
-   RARCH_CTL_IS_MAIN_THREAD
+   RARCH_CTL_SET_FRAME_LIMIT,
+
+   RARCH_CTL_TASK_INIT,
+
+   RARCH_CTL_FRAME_TIME_FREE,
+   RARCH_CTL_SET_FRAME_TIME_LAST,
+   RARCH_CTL_SET_FRAME_TIME,
+
+   RARCH_CTL_IS_IDLE,
+   RARCH_CTL_SET_IDLE,
+
+   RARCH_CTL_GET_WINDOWED_SCALE,
+   RARCH_CTL_SET_WINDOWED_SCALE,
+
+   RARCH_CTL_IS_OVERRIDES_ACTIVE,
+   RARCH_CTL_SET_OVERRIDES_ACTIVE,
+   RARCH_CTL_UNSET_OVERRIDES_ACTIVE,
+
+   RARCH_CTL_IS_MISSING_BIOS,
+   RARCH_CTL_SET_MISSING_BIOS,
+   RARCH_CTL_UNSET_MISSING_BIOS,
+
+   RARCH_CTL_IS_GAME_OPTIONS_ACTIVE,
+
+   RARCH_CTL_IS_NONBLOCK_FORCED,
+   RARCH_CTL_SET_NONBLOCK_FORCED,
+   RARCH_CTL_UNSET_NONBLOCK_FORCED,
+
+   RARCH_CTL_SET_LIBRETRO_PATH,
+
+   RARCH_CTL_IS_PAUSED,
+   RARCH_CTL_SET_PAUSED,
+
+   RARCH_CTL_SET_CORE_SHUTDOWN,
+
+   RARCH_CTL_SET_SHUTDOWN,
+   RARCH_CTL_IS_SHUTDOWN,
+
+   /* Runloop state */
+   RARCH_CTL_STATE_FREE,
+
+   /* Performance counters */
+   RARCH_CTL_GET_PERFCNT,
+   RARCH_CTL_SET_PERFCNT_ENABLE,
+   RARCH_CTL_UNSET_PERFCNT_ENABLE,
+   RARCH_CTL_IS_PERFCNT_ENABLE,
+
+   /* Key event */
+   RARCH_CTL_FRONTEND_KEY_EVENT_GET,
+   RARCH_CTL_KEY_EVENT_GET,
+   RARCH_CTL_DATA_DEINIT,
+
+   /* Core options */
+   RARCH_CTL_HAS_CORE_OPTIONS,
+   RARCH_CTL_GET_CORE_OPTION_SIZE,
+   RARCH_CTL_IS_CORE_OPTION_UPDATED,
+   RARCH_CTL_CORE_OPTIONS_LIST_GET,
+   RARCH_CTL_CORE_OPTION_PREV,
+   RARCH_CTL_CORE_OPTION_NEXT,
+   RARCH_CTL_CORE_OPTIONS_GET,
+   RARCH_CTL_CORE_OPTIONS_INIT,
+   RARCH_CTL_CORE_OPTIONS_DEINIT,
+
+   /* System info */
+   RARCH_CTL_SYSTEM_INFO_INIT,
+   RARCH_CTL_SYSTEM_INFO_FREE,
+
+   /* HTTP server */
+   RARCH_CTL_HTTPSERVER_INIT,
+   RARCH_CTL_HTTPSERVER_DESTROY
 };
 
 enum rarch_capabilities
@@ -129,6 +179,12 @@ enum rarch_override_setting
    RARCH_OVERRIDE_SETTING_LAST
 };
 
+enum runloop_action
+{
+   RUNLOOP_ACTION_NONE = 0,
+   RUNLOOP_ACTION_AUTOSAVE
+};
+
 struct rarch_main_wrap
 {
    int argc;
@@ -144,6 +200,73 @@ struct rarch_main_wrap
    bool touched;
 };
 
+typedef struct rarch_resolution
+{
+   unsigned idx;
+   unsigned id;
+} rarch_resolution_t;
+
+/* All run-time- / command line flag-related globals go here. */
+
+typedef struct global
+{
+   struct
+   {
+      char savefile[8192];
+      char savestate[8192];
+      char cheatfile[8192];
+      char ups[8192];
+      char bps[8192];
+      char ips[8192];
+      char remapfile[8192];
+   } name;
+
+   /* Recording. */
+   struct
+   {
+      char path[8192];
+      char config[8192];
+      unsigned width;
+      unsigned height;
+
+      size_t gpu_width;
+      size_t gpu_height;
+      char output_dir[8192];
+      char config_dir[8192];
+      bool use_output_dir;
+   } record;
+
+   /* Settings and/or global state that is specific to 
+    * a console-style implementation. */
+   struct
+   {
+      struct
+      {
+         struct
+         {
+            rarch_resolution_t current;
+            rarch_resolution_t initial;
+            uint32_t *list;
+            unsigned count;
+            bool check;
+         } resolutions;
+
+         unsigned gamma_correction;
+         unsigned int flicker_filter_index;
+         unsigned char soft_filter_index;
+         bool pal_enable;
+         bool pal60_enable;
+      } screen;
+
+      struct
+      {
+         bool system_bgm_enable;
+      } sound;
+
+      bool flickerfilter_enable;
+      bool softfilter_enable;
+   } console;
+} global_t;
 
 bool rarch_ctl(enum rarch_ctl_state state, void *data);
 
@@ -159,6 +282,8 @@ void retroarch_override_setting_free_state(void);
 bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx, void *data);
 
 bool retroarch_validate_game_options(char *s, size_t len, bool mkdir);
+
+bool retroarch_is_forced_fullscreen(void);
 
 void retroarch_set_current_core_type(enum rarch_core_type type, bool explicitly_set);
 
@@ -183,6 +308,41 @@ void retroarch_fail(int error_code, const char *error);
 bool retroarch_main_init(int argc, char *argv[]);
 
 bool retroarch_main_quit(void);
+
+global_t *global_get_ptr(void);
+
+/**
+ * runloop_iterate:
+ *
+ * Run Libretro core in RetroArch for one frame.
+ *
+ * Returns: 0 on successful run, 
+ * Returns 1 if we have to wait until button input in order 
+ * to wake up the loop.
+ * Returns -1 if we forcibly quit out of the 
+ * RetroArch iteration loop. 
+ **/
+int runloop_iterate(unsigned *sleep_ms);
+
+void runloop_msg_queue_push(const char *msg, unsigned prio,
+      unsigned duration, bool flush);
+
+bool runloop_msg_queue_pull(const char **ret);
+
+void runloop_get_status(bool *is_paused, bool *is_idle, bool *is_slowmotion,
+      bool *is_perfcnt_enable);
+
+void runloop_set(enum runloop_action action);
+
+void runloop_unset(enum runloop_action action);
+
+void rarch_menu_running(void);
+
+void rarch_menu_running_finished(void);
+
+bool retroarch_is_on_main_thread(void);
+
+rarch_system_info_t *runloop_get_system_info(void);
 
 RETRO_END_DECLS
 

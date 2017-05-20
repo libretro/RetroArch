@@ -526,14 +526,14 @@ static bool ctr_frame(void* data, const void* frame,
    }
    frames++;
 #ifndef HAVE_THREADS
-   if(task_queue_ctl(TASK_QUEUE_CTL_FIND, &ctr_tasks_finder_data))
+   if(task_queue_find(&ctr_tasks_finder_data))
    {
 #if 0
       ctr->vsync_event_pending = true;
 #endif
       while(ctr->vsync_event_pending)
       {
-         task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
+         task_queue_check();
          svcSleepThread(0);
 #if 0
          aptMainLoop();
@@ -865,12 +865,6 @@ static bool ctr_suppress_screensaver(void* data, bool enable)
    return false;
 }
 
-static bool ctr_has_windowed(void* data)
-{
-   (void)data;
-   return false;
-}
-
 static void ctr_free(void* data)
 {
    ctr_video_t* ctr = (ctr_video_t*)data;
@@ -1178,7 +1172,7 @@ video_driver_t video_ctr =
    ctr_alive,
    ctr_focus,
    ctr_suppress_screensaver,
-   ctr_has_windowed,
+   NULL, /* has_windowed */
    ctr_set_shader,
    ctr_free,
    "ctr",

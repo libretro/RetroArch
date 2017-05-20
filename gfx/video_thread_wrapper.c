@@ -21,12 +21,12 @@
 #include <compat/strl.h>
 #include <features/features_cpu.h>
 #include <rthreads/rthreads.h>
+#include <string/stdstring.h>
 
 #include "video_thread_wrapper.h"
 #include "font_driver.h"
-#include "video_shader_driver.h"
 
-#include "../runloop.h"
+#include "../retroarch.h"
 #include "../verbosity.h"
 
 enum thread_cmd
@@ -376,7 +376,7 @@ static bool video_thread_handle_packet(
 
          thr->driver->viewport_info(thr->driver_data, &vp);
 
-         if (memcmp(&vp, &thr->read_vp, sizeof(vp)) == 0)
+         if (string_is_equal_fast(&vp, &thr->read_vp, sizeof(vp)))
          {
             /* We can read safely
              *
@@ -661,7 +661,7 @@ static bool video_thread_alive(void *data)
    bool ret;
    thread_video_t *thr = (thread_video_t*)data;
 
-   if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
+   if (rarch_ctl(RARCH_CTL_IS_PAUSED, NULL))
    {
       thread_packet_t pkt = { CMD_ALIVE };
 

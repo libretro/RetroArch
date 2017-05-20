@@ -313,7 +313,7 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
 static bool d3d_process_shader(d3d_video_t *d3d)
 {
 #ifdef HAVE_FBO
-   if (memcmp(path_get_extension(d3d->shader_path.c_str()), "cgp", 3) == 0)
+   if (string_is_equal_fast(path_get_extension(d3d->shader_path.c_str()), "cgp", 3))
       return d3d_init_multipass(d3d);
 #endif
 
@@ -893,7 +893,7 @@ static bool d3d_alive(void *data)
          mode.width  = temp_width;
          mode.height = temp_height;
 
-         video_context_driver_set_resize(mode);
+         current_video_context.set_resize(video_context_data, mode.width, mode.height);
          d3d_restore(d3d);
       }
 
@@ -906,20 +906,10 @@ static bool d3d_alive(void *data)
    return ret;
 }
 
-static bool d3d_focus(void *data)
-{
-   return video_context_driver_focus();
-}
-
 static bool d3d_suppress_screensaver(void *data, bool enable)
 {
    bool enabled = enable;
    return video_context_driver_suppress_screensaver(&enabled);
-}
-
-static bool d3d_has_windowed(void *data)
-{
-   return video_context_driver_has_windowed();
 }
 
 static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
@@ -1471,9 +1461,11 @@ static bool d3d_frame(void *data, const void *frame,
    }
 #endif
 
-   video_context_driver_update_window_title(video_info);
+   video_info->cb_update_window_title(
+         video_info->context_data, video_info);
 
-   video_context_driver_swap_buffers(video_info);
+   video_info->cb_swap_buffers(
+         video_info->context_data, video_info);
 
    return true;
 }
@@ -1721,9 +1713,9 @@ video_driver_t video_d3d = {
    d3d_frame,
    d3d_set_nonblock_state,
    d3d_alive,
-   d3d_focus,
+   NULL,                      /* focus */
    d3d_suppress_screensaver,
-   d3d_has_windowed,
+   NULL,                      /* has_windowed */
    d3d_set_shader,
    d3d_free,
    "d3d",
@@ -1731,7 +1723,7 @@ video_driver_t video_d3d = {
    d3d_set_rotation,
    d3d_viewport_info,
    d3d_read_viewport,
-   NULL, /* read_frame_raw */
+   NULL,                      /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    d3d_get_overlay_interface,
 #endif

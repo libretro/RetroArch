@@ -19,9 +19,9 @@
 #include <retro_miscellaneous.h>
 
 #include "../../gfx/font_driver.h"
-#include "../../gfx/video_context_driver.h"
+#include "../../gfx/video_driver.h"
 
-#include "../menu_display.h"
+#include "../menu_driver.h"
 
 static void *menu_display_null_get_default_mvp(void)
 {

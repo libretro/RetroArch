@@ -21,9 +21,9 @@
 
 #include "../../config.def.h"
 #include "../../gfx/font_driver.h"
-#include "../../gfx/video_context_driver.h"
+#include "../../gfx/video_driver.h"
 
-#include "../menu_display.h"
+#include "../menu_driver.h"
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include "../../gfx/common/win32_common.h"

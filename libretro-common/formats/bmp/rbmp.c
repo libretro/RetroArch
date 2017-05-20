@@ -293,11 +293,10 @@ static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
          }
          if (bpp == 16 || bpp == 32)
          {
-            mr = mg = mb = 0;
-
             switch (compress)
             {
                case 0:
+#if 0
                   if (bpp == 32)
                   {
                      mr = 0xffu << 16;
@@ -311,6 +310,7 @@ static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
                      mg = 31u <<  5;
                      mb = 31u <<  0;
                   }
+#endif
                   break;
                case 3:
                   mr = rbmp__get32le(s);
@@ -323,6 +323,9 @@ static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
                      return 0;
                   break;
                default:
+#if 0
+                  mr = mg = mb = 0;
+#endif
                   break;
             }
 

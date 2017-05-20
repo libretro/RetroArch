@@ -311,7 +311,6 @@ static bool rpng_save_image(const char *path,
          {
             filter = 4;
             chosen_filtered = paeth_filtered;
-            min_sad = paeth_score;
          }
 
          *encode_target++ = filter;
