@@ -32,6 +32,8 @@
 #include <unistd.h>
 #endif
 
+#include <boolean.h>
+
 #if defined(_WIN32) && defined(_XBOX)
 size_t read_stdin(char *buf, size_t size)
 {
