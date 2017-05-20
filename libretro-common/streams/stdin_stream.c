@@ -24,12 +24,17 @@
 #include <ctype.h>
 
 #ifdef _WIN32
+#ifndef _XBOX
+#include <windows.h>
+#endif
 #include <direct.h>
 #else
 #include <unistd.h>
 #endif
 
-#ifdef _WIN32
+#ifndef _XBOX
+
+#if defined(_WIN32)
 size_t read_stdin(char *buf, size_t size)
 {
    DWORD i;
@@ -133,4 +138,6 @@ size_t read_stdin(char *buf, size_t size)
 
    return has_read;
 }
+#endif
+
 #endif
