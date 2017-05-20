@@ -1184,10 +1184,6 @@ bool video_context_driver_input_driver(gfx_ctx_input_t *inp);
 
 void video_context_driver_free(void);
 
-extern gfx_ctx_driver_t current_video_context;
-
-extern void *video_context_data;
-
 bool video_shader_driver_get_prev_textures(video_shader_ctx_texture_t *texture);
 
 bool video_shader_driver_get_ident(video_shader_ctx_ident_t *ident);

@@ -205,9 +205,9 @@ static slock_t *display_lock                             = NULL;
 static slock_t *context_lock                             = NULL;
 #endif
 
-gfx_ctx_driver_t current_video_context;
+static gfx_ctx_driver_t current_video_context;
 
-void *video_context_data                                 = NULL;
+static void *video_context_data                          = NULL;
 
 shader_backend_t *current_shader                         = NULL;
 void *shader_data                                        = NULL;
