@@ -1066,6 +1066,8 @@ void video_driver_set_threaded(bool val);
 void video_driver_get_status(uint64_t *frame_count, bool * is_alive,
       bool *is_focused);
 
+void video_driver_set_resize(unsigned width, unsigned height);
+
 extern video_driver_t video_gl;
 extern video_driver_t video_vulkan;
 extern video_driver_t video_psp1;
