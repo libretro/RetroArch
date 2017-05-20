@@ -1,12 +1,12 @@
 TARGET		    := retroarch_wiiu
 BUILD_HBL_ELF	     = 1
-BUILD_RPX	     = 1
+BUILD_RPX	         = 1
 DEBUG                = 0
 GRIFFIN_BUILD        = 0
 WHOLE_ARCHIVE_LINK   = 0
 
-PC_DEVELOPMENT_IP_ADDRESS  =
-PC_DEVELOPMENT_TCP_PORT	   =
+PC_DEVELOPMENT_IP_ADDRESS  = 
+PC_DEVELOPMENT_TCP_PORT	   = 
 
 OBJ :=
 OBJ += wiiu/system/memory.o
@@ -27,6 +27,7 @@ OBJ += wiiu/controller_patcher/patcher/ControllerPatcherHID.o
 OBJ += wiiu/controller_patcher/utils/CPRetainVars.o
 OBJ += wiiu/controller_patcher/utils/CPStringTools.o
 OBJ += wiiu/controller_patcher/utils/PadConst.o
+OBJ += wiiu/controller_patcher/utils/FSHelper.o
 OBJ += wiiu/tex_shader.o
 OBJ += wiiu/hbl.o
 
