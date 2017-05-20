@@ -98,6 +98,8 @@ struct ip_mreqn
 #include "miniupnpc.h"
 #include "receivedata.h"
 
+#include <net/net_compat.h>
+
 #if !(defined(_WIN32) || defined(__amigaos__) || defined(__amigaos4__))
 
 #include "codelength.h"
@@ -757,7 +759,7 @@ ssdpDiscoverDevices(const char * const deviceTypes[],
 		hints.ai_family = AF_UNSPEC; /* AF_INET6 or AF_INET */
 		hints.ai_socktype = SOCK_DGRAM;
 		/*hints.ai_flags = */
-		if ((rv = getaddrinfo(ipv6
+		if ((rv = getaddrinfo_retro(ipv6
 		                      ? (linklocal ? UPNP_MCAST_LL_ADDR : UPNP_MCAST_SL_ADDR)
 		                      : UPNP_MCAST_ADDR,
 		                      XSTR(SSDP_PORT), &hints, &servinfo)) != 0) {
