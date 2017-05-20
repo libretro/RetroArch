@@ -163,8 +163,8 @@ static uint64_t video_driver_frame_count                 = 0;
 
 static video_viewport_t video_viewport_custom;
 
-void *video_driver_data                                  = NULL;
-video_driver_t *current_video                            = NULL;
+static void *video_driver_data                           = NULL;
+static video_driver_t *current_video                     = NULL;
 
 /* Interface for "poking". */
 static const video_poke_interface_t *video_driver_poke   = NULL;
@@ -2609,12 +2609,11 @@ void video_driver_get_window_title(char *buf, unsigned len)
    }
 }
 
-
 void video_driver_get_status(uint64_t *frame_count, bool * is_alive,
       bool *is_focused)
 {
    *frame_count = video_driver_frame_count;
-   *is_alive    = video_driver_is_alive();
+   *is_alive    = current_video ? current_video->alive(video_driver_data) : true;
    *is_focused  = video_driver_cb_has_focus();
 }
 

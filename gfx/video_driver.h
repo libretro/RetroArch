@@ -181,9 +181,6 @@ struct uniform_info
    } result;
 };
 
-
-
-
 typedef struct shader_backend
 {
    void *(*init)(void *data, const char *path);
@@ -779,8 +776,6 @@ struct aspect_ratio_elem
 
 extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 
-#define video_driver_is_alive()   ((current_video) ? current_video->alive(video_driver_data) : true)
-
 bool video_driver_is_focused(void);
 
 bool video_driver_has_windowed(void);
@@ -1119,9 +1114,6 @@ extern const gfx_ctx_driver_t gfx_ctx_opendingux_fbdev;
 extern const gfx_ctx_driver_t gfx_ctx_khr_display;
 extern const gfx_ctx_driver_t gfx_ctx_gdi;
 extern const gfx_ctx_driver_t gfx_ctx_null;
-
-extern void *video_driver_data;
-extern video_driver_t *current_video;
 
 /**
  * video_context_driver_init_first:
