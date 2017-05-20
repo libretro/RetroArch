@@ -406,14 +406,14 @@ static void uninit_drivers(int flags)
    if ((flags & DRIVER_CAMERA_MASK) && !camera_driver_ctl(RARCH_CAMERA_CTL_OWNS_DRIVER, NULL))
       camera_driver_ctl(RARCH_CAMERA_CTL_DEINIT, NULL);
 
-   if (flags & DRIVER_AUDIO_MASK)
-      audio_driver_deinit();
-
    if ((flags & DRIVER_WIFI_MASK) && !wifi_driver_ctl(RARCH_WIFI_CTL_OWNS_DRIVER, NULL))
       wifi_driver_ctl(RARCH_WIFI_CTL_DEINIT, NULL);
 
    if (flags & DRIVERS_VIDEO_INPUT)
       video_driver_free();
+
+   if (flags & DRIVER_AUDIO_MASK)
+      audio_driver_deinit();
 
    if ((flags & DRIVER_VIDEO_MASK) && !video_driver_owns_driver())
       video_driver_destroy_data();
