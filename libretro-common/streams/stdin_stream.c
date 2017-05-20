@@ -32,9 +32,13 @@
 #include <unistd.h>
 #endif
 
-#ifndef _XBOX
-
-#if defined(_WIN32)
+#if defined(_WIN32) && defined(_XBOX)
+size_t read_stdin(char *buf, size_t size)
+{
+   /* Not implemented. */
+   return 0;
+}
+#elif defined(_WIN32)
 size_t read_stdin(char *buf, size_t size)
 {
    DWORD i;
@@ -138,6 +142,4 @@ size_t read_stdin(char *buf, size_t size)
 
    return has_read;
 }
-#endif
-
 #endif
