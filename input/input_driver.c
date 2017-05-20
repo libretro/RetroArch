@@ -1183,7 +1183,7 @@ bool input_driver_init_command(void)
             "Cannot use this command interface.\n");
    }
 
-   input_driver_command = command_new(false);
+   input_driver_command = command_new();
    
    if (command_network_new(
             input_driver_command,

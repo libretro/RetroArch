@@ -90,7 +90,6 @@
 
 struct command
 {
-   bool local_enable;
 #ifdef HAVE_STDIN_CMD
    bool stdin_enable;
    char stdin_buf[STDIN_BUF_SIZE];
@@ -157,8 +156,7 @@ struct cmd_action_map
    const char *arg_desc;
 };
 
-#ifdef HAVE_COMMAND
-static bool command_set_shader(const char *arg)
+bool command_set_shader(const char *arg)
 {
    char msg[256];
    enum rarch_shader_type type = RARCH_SHADER_NONE;
@@ -190,7 +188,7 @@ static bool command_set_shader(const char *arg)
    return video_driver_set_shader(type, arg);
 }
 
-
+#ifdef HAVE_COMMAND
 #ifdef HAVE_CHEEVOS
 static bool command_read_ram(const char *arg)
 {
@@ -541,13 +539,11 @@ static bool command_stdin_init(command_t *handle)
 }
 #endif
 
-command_t *command_new(bool local_enable)
+command_t *command_new(void)
 {
    command_t *handle = (command_t*)calloc(1, sizeof(*handle));
    if (!handle)
       return NULL;
-
-   handle->local_enable = local_enable;
 
    return handle;
 }
@@ -631,8 +627,6 @@ static void command_stdin_poll(command_t *handle)
 
 bool command_poll(command_t *handle)
 {
-   memset(handle->state, 0, sizeof(handle->state));
-
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
 #ifdef HAVE_COMMAND
    command_network_poll(handle);

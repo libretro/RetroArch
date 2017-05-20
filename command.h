@@ -221,6 +221,8 @@ enum event_command
    CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET
 };
 
+bool command_set_shader(const char *arg);
+
 #ifdef HAVE_COMMAND
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
 bool command_network_send(const char *cmd_);
@@ -233,7 +235,7 @@ bool command_network_new(
       bool network_enable,
       uint16_t port);
 
-command_t *command_new(bool local_enable);
+command_t *command_new(void);
 
 bool command_poll(command_t *handle);
 

@@ -886,14 +886,8 @@ static bool d3d_alive(void *data)
 
       if (resize)
       {
-         gfx_ctx_mode_t mode;
-
          d3d->should_resize = true;
-
-         mode.width  = temp_width;
-         mode.height = temp_height;
-
-         current_video_context.set_resize(video_context_data, mode.width, mode.height);
+         video_driver_set_resize(temp_width, temp_height);
          d3d_restore(d3d);
       }
 
