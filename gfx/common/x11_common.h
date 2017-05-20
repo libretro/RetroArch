@@ -44,7 +44,6 @@ void x11_set_window_attr(Display *dpy, Window win);
 
 bool x11_create_input_context(Display *dpy, Window win, XIM *xim, XIC *xic);
 void x11_destroy_input_context(XIM *xim, XIC *xic);
-void x11_handle_key_event(XEvent *event, XIC ic, bool filter);
 
 bool x11_get_metrics(void *data,
       enum display_metric_types type, float *value);

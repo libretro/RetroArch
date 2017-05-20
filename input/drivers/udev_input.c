@@ -39,13 +39,14 @@
 #include <file/file_path.h>
 #include <compat/strl.h>
 #include <string/stdstring.h>
+#include <retro_miscellaneous.h>
 
 #include "../input_config.h"
 #include "../input_driver.h"
 #include "../input_joypad_driver.h"
 #include "../input_keymaps.h"
+#include "../input_keyboard.h"
 
-#include "../drivers_keyboard/keyboard_event_udev.h"
 #include "../../gfx/video_driver.h"
 #include "../common/linux_common.h"
 #include "../common/udev_common.h"
@@ -53,16 +54,18 @@
 
 #include "../../verbosity.h"
 
+#define UDEV_MAX_KEYS (KEY_MAX + 7) / 8
+
 typedef struct udev_input udev_input_t;
 
-typedef void (*device_handle_cb)(void *data,
-      const struct input_event *event, udev_input_device_t *dev);
+typedef struct udev_input_device udev_input_device_t;
 
 struct udev_input_device
 {
    int fd;
    dev_t dev;
-   device_handle_cb handle_cb;
+   void (*handle_cb)(void *data,
+         const struct input_event *event, udev_input_device_t *dev);
    char devnode[PATH_MAX_LENGTH];
 
    union
@@ -81,6 +84,9 @@ struct udev_input_device
       } touchpad;
    } state;
 };
+
+typedef void (*device_handle_cb)(void *data,
+      const struct input_event *event, udev_input_device_t *dev);
 
 struct udev_input
 {
@@ -102,7 +108,69 @@ struct udev_input
 
 #ifdef HAVE_XKBCOMMON
 int init_xkb(int fd, size_t size);
+void free_xkb(void);
+int handle_xkb(int code, int value);
 #endif
+
+static uint8_t udev_key_state[UDEV_MAX_KEYS];
+
+static void udev_handle_keyboard(void *data,
+      const struct input_event *event, udev_input_device_t *dev)
+{
+   bool key_handled = false;
+
+   switch (event->type)
+   {
+      case EV_KEY:
+         if (event->value)
+            BIT_SET(udev_key_state, event->code);
+         else
+            BIT_CLEAR(udev_key_state, event->code);
+
+#ifdef HAVE_XKBCOMMON
+         if (handle_xkb(event->code, event->value) == 0)
+            return;
+#endif
+
+         input_keyboard_event(event->value,
+               input_keymaps_translate_keysym_to_rk(event->code),
+               0, 0, RETRO_DEVICE_KEYBOARD);
+         break;
+
+      default:
+         break;
+   }
+}
+
+static bool udev_input_is_pressed(const struct retro_keybind *binds, unsigned id)
+{
+   if (id < RARCH_BIND_LIST_END)
+   {
+      const struct retro_keybind *bind = &binds[id];
+      unsigned bit = input_keymaps_translate_rk_to_keysym(binds[id].key);
+      return BIT_GET(udev_key_state, bit);
+   }
+   return false;
+}
+
+static bool udev_input_state_kb(void *data, const struct retro_keybind **binds,
+      unsigned port, unsigned device, unsigned idx, unsigned id)
+{
+   unsigned bit = input_keymaps_translate_rk_to_keysym((enum retro_key)id);
+   return id < RETROK_LAST && BIT_GET(udev_key_state, bit);
+}
+
+static void udev_input_kb_free(void)
+{
+   unsigned i;
+
+#ifdef HAVE_XKBCOMMON
+   free_xkb();
+#endif
+
+   for (i = 0; i < UDEV_MAX_KEYS; i++)
+      udev_key_state[i] = 0;
+}
 
 static void udev_handle_touchpad(void *data,
       const struct input_event *event, udev_input_device_t *dev)

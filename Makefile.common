@@ -676,7 +676,6 @@ ifeq ($(HAVE_X11), 1)
           input/drivers/x11_input.o \
 			 gfx/common/dbus_common.o \
           gfx/common/x11_common.o \
-          input/drivers_keyboard/keyboard_event_x11.o \
 			 gfx/common/xinerama_common.o
 
    LIBS += $(X11_LIBS) $(XEXT_LIBS) $(XF86VM_LIBS) $(XINERAMA_LIBS)
@@ -710,7 +709,6 @@ ifeq ($(HAVE_UDEV), 1)
    LIBS += $(UDEV_LIBS)
    OBJ += input/drivers/udev_input.o \
 			 input/common/udev_common.o \
-          input/drivers_keyboard/keyboard_event_udev.o \
           input/drivers_joypad/udev_joypad.o
 endif
 
