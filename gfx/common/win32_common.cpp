@@ -41,6 +41,8 @@
 #include <windows.h>
 #include <commdlg.h>
 #include "../../retroarch.h"
+#include "../../input/input_keyboard.h"
+#include "../../input/input_keymaps.h"
 #include "../video_thread_wrapper.h"
 #include <shellapi.h>
 
