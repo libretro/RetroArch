@@ -117,8 +117,6 @@ static uint8_t udev_key_state[UDEV_MAX_KEYS];
 static void udev_handle_keyboard(void *data,
       const struct input_event *event, udev_input_device_t *dev)
 {
-   bool key_handled = false;
-
    switch (event->type)
    {
       case EV_KEY:
@@ -140,17 +138,6 @@ static void udev_handle_keyboard(void *data,
       default:
          break;
    }
-}
-
-static bool udev_input_is_pressed(const struct retro_keybind *binds, unsigned id)
-{
-   if (id < RARCH_BIND_LIST_END)
-   {
-      const struct retro_keybind *bind = &binds[id];
-      unsigned bit = input_keymaps_translate_rk_to_keysym(binds[id].key);
-      return BIT_GET(udev_key_state, bit);
-   }
-   return false;
 }
 
 static void udev_input_kb_free(void)
@@ -511,9 +498,11 @@ static int16_t udev_analog_pressed(const struct retro_keybind *binds, unsigned i
 
    input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
 
-   if (binds && binds[id_minus].valid && udev_input_is_pressed(binds, id_minus))
+   if (binds && binds[id_minus].valid && 
+         BIT_GET(udev_key_state, input_keymaps_translate_rk_to_keysym(binds[id_minus].key)))
       pressed_minus = -0x7fff;
-   if (binds && binds[id_plus].valid && udev_input_is_pressed(binds, id_plus))
+   if (binds && binds[id_plus].valid && 
+      BIT_GET(udev_key_state, input_keymaps_translate_rk_to_keysym(binds[id_plus].key)))
       pressed_plus = 0x7fff;
 
    return pressed_plus + pressed_minus;
@@ -580,12 +569,8 @@ static int16_t udev_input_state(void *data,
    {
       case RETRO_DEVICE_JOYPAD:
          bit = input_keymaps_translate_rk_to_keysym(binds[port][id].key);
-         if (id < RARCH_BIND_LIST_END)
-         {
-            const struct retro_keybind *bind      = &binds[port][id];
-            if (BIT_GET(udev_key_state, bit))
-               return true;
-         }
+         if (BIT_GET(udev_key_state, bit))
+            return true;
          return input_joypad_pressed(udev->joypad, joypad_info, port, binds[port], id);
       case RETRO_DEVICE_ANALOG:
          ret = udev_analog_pressed(binds[port], idx, id);
