@@ -2268,8 +2268,10 @@ static enum runloop_state runloop_check_state(
 
    video_driver_get_status(&frame_count, &is_alive, &is_focused);
 
+#ifdef HAVE_OVERLAY
    if (runloop_cmd_triggered(trigger_input, RARCH_OVERLAY_NEXT))
       command_event(CMD_EVENT_OVERLAY_NEXT, NULL);
+#endif
 
    if (runloop_cmd_triggered(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
    {
