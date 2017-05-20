@@ -162,8 +162,7 @@ enum
 
 enum  runloop_state
 {
-   RUNLOOP_STATE_NONE = 0,
-   RUNLOOP_STATE_ITERATE,
+   RUNLOOP_STATE_ITERATE = 0,
    RUNLOOP_STATE_SLEEP,
    RUNLOOP_STATE_MENU_ITERATE,
    RUNLOOP_STATE_END,
@@ -2736,7 +2735,6 @@ int runloop_iterate(unsigned *sleep_ms)
          runloop_netplay_pause();
          return 0;
       case RUNLOOP_STATE_ITERATE:
-      case RUNLOOP_STATE_NONE:
          break;
    }
 
