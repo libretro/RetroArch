@@ -123,6 +123,7 @@ typedef struct video_pixel_scaler
 
 static void (*video_driver_cb_shader_use)(void *data, void *shader_data, unsigned index, bool set_active);
 static bool (*video_driver_cb_shader_set_mvp)(void *data, void *shader_data, const math_matrix_4x4 *mat);
+static bool (*video_driver_cb_has_focus)(void);
 
 /* Opaque handles to currently running window.
  * Used by e.g. input drivers which bind to a window.
@@ -512,6 +513,21 @@ const video_poke_interface_t *video_driver_get_poke(void)
    return video_driver_poke;
 }
 
+static bool video_context_has_focus(void)
+{
+   return current_video_context.has_focus(video_context_data);
+}
+
+static bool video_driver_has_focus(void)
+{
+   return current_video->focus(video_driver_data);
+}
+
+static bool null_driver_has_focus(void)
+{
+   return true;
+}
+
 static void video_context_driver_reset(void)
 {
    if (!current_video_context.get_metrics)
@@ -525,6 +541,9 @@ static void video_context_driver_reset(void)
 
    if (!current_video_context.swap_buffers)
       current_video_context.swap_buffers        = swap_buffers_null;
+
+   if (current_video_context.has_focus)
+      video_driver_cb_has_focus = video_context_has_focus;
 }
 
 bool video_context_driver_set(const gfx_ctx_driver_t *data)
@@ -1006,6 +1025,9 @@ static bool video_driver_init_internal(bool *video_is_threaded)
       RARCH_ERR("[Video]: Cannot open video driver ... Exiting ...\n");
       goto error;
    }
+
+   if (current_video->focus)
+      video_driver_cb_has_focus = video_driver_has_focus;
 
    video_driver_poke = NULL;
    if (current_video->poke_interface)
@@ -1512,6 +1534,7 @@ static void video_driver_lock_new(void)
 
 void video_driver_destroy(void)
 {
+   video_driver_cb_has_focus      = null_driver_has_focus;
    video_driver_use_rgba          = false;
    video_driver_data_own          = false;
    video_driver_active            = false;
@@ -2592,7 +2615,7 @@ void video_driver_get_status(uint64_t *frame_count, bool * is_alive,
 {
    *frame_count = video_driver_frame_count;
    *is_alive    = video_driver_is_alive();
-   *is_focused  = video_driver_is_focused();
+   *is_focused  = video_driver_cb_has_focus();
 }
 
 /**
@@ -2993,11 +3016,7 @@ bool video_context_driver_set_flags(gfx_ctx_flags_t *flags)
 
 bool video_driver_is_focused(void)
 {
-   if (video_context_data && current_video_context.has_focus)
-      return current_video_context.has_focus(video_context_data);
-   else if (current_video->focus)
-      return current_video->focus(video_driver_data);
-   return true;
+   return video_driver_cb_has_focus();
 }
 
 bool video_driver_has_windowed(void)
