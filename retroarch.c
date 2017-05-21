@@ -2285,8 +2285,17 @@ static enum runloop_state runloop_check_state(
          command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
    }
 
-   if (runloop_cmd_triggered(trigger_input, RARCH_GRAB_MOUSE_TOGGLE))
-      command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
+   /* Check mouse grab toggle */
+   {
+      static bool old_pressed = false;
+      bool pressed            = runloop_cmd_press(
+            current_input, RARCH_GRAB_MOUSE_TOGGLE);
+
+      if (pressed && !old_pressed)
+         command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
+
+      old_pressed             = pressed;
+   }
 
 
 #ifdef HAVE_OVERLAY
@@ -2415,21 +2424,48 @@ static enum runloop_state runloop_check_state(
    if (pause_nonactive)
       focused                = is_focused;
 
-   if (runloop_cmd_triggered(trigger_input, RARCH_SCREENSHOT))
-      command_event(CMD_EVENT_TAKE_SCREENSHOT, NULL);
-
-   if (runloop_cmd_triggered(trigger_input, RARCH_MUTE))
-      command_event(CMD_EVENT_AUDIO_MUTE_TOGGLE, NULL);
-
-   if (runloop_cmd_triggered(trigger_input, RARCH_OSK))
+   /* Check screenshot toggle */
    {
-      if (input_keyboard_ctl(
-               RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED, NULL))
-         input_keyboard_ctl(
-               RARCH_INPUT_KEYBOARD_CTL_UNSET_LINEFEED_ENABLED, NULL);
-      else
-         input_keyboard_ctl(
-               RARCH_INPUT_KEYBOARD_CTL_SET_LINEFEED_ENABLED, NULL);
+      static bool old_pressed = false;
+      bool pressed            = runloop_cmd_press(
+            current_input, RARCH_SCREENSHOT);
+
+      if (pressed && old_pressed)
+         command_event(CMD_EVENT_TAKE_SCREENSHOT, NULL);
+
+      old_pressed             = pressed;
+   }
+
+   /* Check audio mute toggle */
+   {
+      static bool old_pressed = false;
+      bool pressed            = runloop_cmd_press(
+            current_input, RARCH_MUTE);
+
+      if (pressed && !old_pressed)
+         command_event(CMD_EVENT_AUDIO_MUTE_TOGGLE, NULL);
+
+      old_pressed             = pressed;
+   }
+
+   /* Check OSK toggle */
+   {
+      static bool old_pressed = false;
+      bool pressed            = runloop_cmd_press(
+            current_input, RARCH_OSK);
+
+      if (pressed && !old_pressed)
+      {
+         if (input_keyboard_ctl(
+                  RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED, NULL))
+            input_keyboard_ctl(
+                  RARCH_INPUT_KEYBOARD_CTL_UNSET_LINEFEED_ENABLED, NULL);
+         else
+            input_keyboard_ctl(
+                  RARCH_INPUT_KEYBOARD_CTL_SET_LINEFEED_ENABLED, NULL);
+      }
+
+      old_pressed             = pressed;
    }
 
    if (runloop_cmd_press(current_input, RARCH_VOLUME_UP))
@@ -2473,22 +2509,23 @@ static enum runloop_state runloop_check_state(
    if (!focused)
       return RUNLOOP_STATE_SLEEP;
 
-   if (runloop_paused)
+   /* check pause state */
    {
-      /* check pause state */
-
-      bool check_is_oneshot = runloop_cmd_triggered(trigger_input,
-            RARCH_FRAMEADVANCE)
-         || runloop_cmd_press(current_input, RARCH_REWIND);
-      if (runloop_cmd_triggered(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
+      if (runloop_paused)
       {
-         command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
-         if (!runloop_idle)
-            video_driver_cached_frame();
-      }
+         bool check_is_oneshot = runloop_cmd_triggered(trigger_input,
+               RARCH_FRAMEADVANCE)
+            || runloop_cmd_press(current_input, RARCH_REWIND);
+         if (runloop_cmd_triggered(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
+         {
+            command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
+            if (!runloop_idle)
+               video_driver_cached_frame();
+         }
 
-      if (!check_is_oneshot)
-         return RUNLOOP_STATE_SLEEP;
+         if (!check_is_oneshot)
+            return RUNLOOP_STATE_SLEEP;
+      }
    }
 
    /* To avoid continous switching if we hold the button down, we require
@@ -2598,27 +2635,38 @@ static enum runloop_state runloop_check_state(
          runloop_msg_queue_push(s, 0, t, true);
    }
 
-   runloop_slowmotion = runloop_cmd_press(current_input, RARCH_SLOWMOTION);
-
-   if (runloop_slowmotion)
+   /* Checks if slowmotion toggle/hold was being pressed and/or held. */
    {
-      /* Checks if slowmotion toggle/hold was being pressed and/or held. */
-      if (settings->bools.video_black_frame_insertion)
-      {
-         if (!runloop_idle)
-            video_driver_cached_frame();
-      }
+      runloop_slowmotion = runloop_cmd_press(current_input, RARCH_SLOWMOTION);
 
-      if (state_manager_frame_is_reversed())
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 2, 30, true);
-      else
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_SLOW_MOTION), 2, 30, true);
+      if (runloop_slowmotion)
+      {
+         if (settings->bools.video_black_frame_insertion)
+         {
+            if (!runloop_idle)
+               video_driver_cached_frame();
+         }
+
+         if (state_manager_frame_is_reversed())
+            runloop_msg_queue_push(
+                  msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 2, 30, true);
+         else
+            runloop_msg_queue_push(
+                  msg_hash_to_str(MSG_SLOW_MOTION), 2, 30, true);
+      }
    }
 
-   if (runloop_cmd_triggered(trigger_input, RARCH_MOVIE_RECORD_TOGGLE))
-      bsv_movie_check();
+   /* Check movie record toggle */
+   {
+      static bool old_pressed = false;
+      bool pressed            = runloop_cmd_press(
+            current_input, RARCH_MOVIE_RECORD_TOGGLE);
+
+      if (pressed && !old_pressed)
+         bsv_movie_check();
+
+      old_pressed             = pressed;
+   }
 
    if (runloop_cmd_triggered(trigger_input, RARCH_SHADER_NEXT) ||
       runloop_cmd_triggered(trigger_input, RARCH_SHADER_PREV))
