@@ -2867,7 +2867,6 @@ int runloop_iterate(unsigned *sleep_ms)
    static uint64_t last_input                   = 0;
    bool input_driver_is_nonblock                = false;
    settings_t *settings                         = config_get_ptr();
-   uint64_t old_input                           = last_input;
 #ifdef HAVE_MENU
    bool menu_is_alive                           = menu_driver_is_alive();
 #else
@@ -2881,11 +2880,13 @@ int runloop_iterate(unsigned *sleep_ms)
    current_input =
 #ifdef HAVE_MENU
       menu_is_alive ? 
-      input_menu_keys_pressed(settings,old_input,
-            &last_input, runloop_paused,
+      input_menu_keys_pressed(settings,
+            &last_input,
+            runloop_paused,
             &input_driver_is_nonblock) :
 #endif
-      input_keys_pressed(settings, old_input, &last_input,
+      input_keys_pressed(settings,
+            &last_input,
             runloop_paused,
             &input_driver_is_nonblock);
 

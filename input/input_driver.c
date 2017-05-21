@@ -667,7 +667,6 @@ static bool input_driver_toggle_button_combo(
  */
 uint64_t input_menu_keys_pressed(
       void *data,
-      uint64_t old_input,
       uint64_t *last_input,
       bool runloop_paused,
       bool *nonblock_state)
@@ -685,7 +684,7 @@ uint64_t input_menu_keys_pressed(
       unsigned max_users                           = input_driver_max_users;
 
       if (settings->bools.menu_unified_controls && !menu_input_dialog_get_display_kb())
-         return input_keys_pressed(settings, old_input, last_input,
+         return input_keys_pressed(settings, last_input,
                runloop_paused, nonblock_state);
 
       for (i = 0; i < max_users; i++)
@@ -732,7 +731,7 @@ uint64_t input_menu_keys_pressed(
          const struct retro_keybind *mtkey = &input_config_binds[0][RARCH_MENU_TOGGLE];
          if (  ((settings->uints.input_menu_toggle_gamepad_combo != INPUT_TOGGLE_NONE) &&
                   input_driver_toggle_button_combo(
-                     settings->uints.input_menu_toggle_gamepad_combo, old_input))
+                     settings->uints.input_menu_toggle_gamepad_combo, *last_input))
                || input_menu_keys_pressed_internal(
                   binds, settings, joypad_info, RARCH_MENU_TOGGLE, max_users,
                   mtkey->valid,
@@ -897,7 +896,6 @@ static INLINE bool input_keys_pressed_internal(
  */
 uint64_t input_keys_pressed(
       void *data,
-      uint64_t old_input,
       uint64_t *last_input,
       bool runloop_paused,
       bool *nonblock_state)
@@ -957,7 +955,7 @@ uint64_t input_keys_pressed(
    if (
          ((settings->uints.input_menu_toggle_gamepad_combo != INPUT_TOGGLE_NONE) &&
          input_driver_toggle_button_combo(
-            settings->uints.input_menu_toggle_gamepad_combo, old_input))
+            settings->uints.input_menu_toggle_gamepad_combo, *last_input))
          || input_keys_pressed_internal(settings, joypad_info, RARCH_MENU_TOGGLE, binds))
       ret |= (UINT64_C(1) << RARCH_MENU_TOGGLE);
 #endif
