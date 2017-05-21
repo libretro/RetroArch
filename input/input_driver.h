@@ -263,18 +263,10 @@ void input_poll(void);
 int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id);
 
-uint64_t input_keys_pressed(
-      void *data,
-      uint64_t *last_input,
-      bool runloop_paused,
-      bool *nonblock_state);
+uint64_t input_keys_pressed(void *data, uint64_t *last_input);
 
 #ifdef HAVE_MENU
-uint64_t input_menu_keys_pressed(
-      void *data,
-      uint64_t *last_input,
-      bool runloop_paused,
-      bool *nonblock_state);
+uint64_t input_menu_keys_pressed(void *data, uint64_t *last_input);
 #endif
 
 void *input_driver_get_data(void);

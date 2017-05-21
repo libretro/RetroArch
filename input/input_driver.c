@@ -665,11 +665,7 @@ static bool input_driver_toggle_button_combo(
  *
  * Returns: Input sample containg a mask of all pressed keys.
  */
-uint64_t input_menu_keys_pressed(
-      void *data,
-      uint64_t *last_input,
-      bool runloop_paused,
-      bool *nonblock_state)
+uint64_t input_menu_keys_pressed(void *data, uint64_t *last_input)
 {
    uint64_t             ret                     = 0;
 
@@ -684,8 +680,7 @@ uint64_t input_menu_keys_pressed(
       unsigned max_users                           = input_driver_max_users;
 
       if (settings->bools.menu_unified_controls && !menu_input_dialog_get_display_kb())
-         return input_keys_pressed(settings, last_input,
-               runloop_paused, nonblock_state);
+         return input_keys_pressed(settings, last_input);
 
       for (i = 0; i < max_users; i++)
       {
@@ -807,7 +802,6 @@ uint64_t input_menu_keys_pressed(
    }
 
    *last_input     = ret;
-   *nonblock_state = input_driver_nonblock_state;
 
    return ret;
 }
@@ -881,11 +875,7 @@ static INLINE bool input_keys_pressed_internal(
  *
  * Returns: Input sample containg a mask of all pressed keys.
  */
-uint64_t input_keys_pressed(
-      void *data,
-      uint64_t *last_input,
-      bool runloop_paused,
-      bool *nonblock_state)
+uint64_t input_keys_pressed(void *data, uint64_t *last_input)
 {
    unsigned i;
    rarch_joypad_info_t joypad_info;
@@ -955,7 +945,6 @@ uint64_t input_keys_pressed(
    }
 
    *last_input     = ret;
-   *nonblock_state = input_driver_nonblock_state;
 
    return ret;
 }

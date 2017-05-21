@@ -2244,7 +2244,7 @@ bool runloop_msg_queue_pull(const char **ret)
 static enum runloop_state runloop_check_state(
       settings_t *settings,
       uint64_t current_input,
-      bool input_driver_is_nonblock,
+      bool input_nonblock_state,
       bool menu_is_alive,
       unsigned *sleep_ms)
 {
@@ -2605,7 +2605,7 @@ static enum runloop_state runloop_check_state(
 
       if (new_button_state && !old_button_state)
       {
-         if (input_driver_is_nonblock)
+         if (input_nonblock_state)
             input_driver_unset_nonblock_state();
          else
             input_driver_set_nonblock_state();
@@ -2866,8 +2866,8 @@ int runloop_iterate(unsigned *sleep_ms)
 {
    unsigned i;
    retro_time_t current, target, to_sleep_ms;
+   bool input_nonblock_state                    = input_driver_is_nonblock_state();
    static uint64_t last_input                   = 0;
-   bool input_driver_is_nonblock                = false;
    settings_t *settings                         = config_get_ptr();
 #ifdef HAVE_MENU
    bool menu_is_alive                           = menu_driver_is_alive();
@@ -2882,15 +2882,9 @@ int runloop_iterate(unsigned *sleep_ms)
    current_input =
 #ifdef HAVE_MENU
       menu_is_alive ? 
-      input_menu_keys_pressed(settings,
-            &last_input,
-            runloop_paused,
-            &input_driver_is_nonblock) :
+      input_menu_keys_pressed(settings, &last_input) :
 #endif
-      input_keys_pressed(settings,
-            &last_input,
-            runloop_paused,
-            &input_driver_is_nonblock);
+      input_keys_pressed(settings, &last_input);
 
    if (input_driver_flushing_input)
    { 
@@ -2912,7 +2906,7 @@ int runloop_iterate(unsigned *sleep_ms)
       retro_time_t current     = cpu_features_get_time_usec();
       retro_time_t delta       = current - runloop_frame_time_last;
       bool is_locked_fps       = (runloop_paused ||
-                                  input_driver_is_nonblock) |
+                                  input_nonblock_state) |
                                   !!recording_data;
 
 
@@ -2934,7 +2928,7 @@ int runloop_iterate(unsigned *sleep_ms)
          runloop_check_state(
             settings,
             current_input,
-            input_driver_is_nonblock,
+            input_nonblock_state,
             menu_is_alive,
             sleep_ms))
    {
@@ -2977,7 +2971,7 @@ int runloop_iterate(unsigned *sleep_ms)
       input_push_analog_dpad(auto_binds,    dpad_mode);
    }
 
-   if ((settings->uints.video_frame_delay > 0) && !input_driver_is_nonblock)
+   if ((settings->uints.video_frame_delay > 0) && !input_nonblock_state)
       retro_sleep(settings->uints.video_frame_delay);
 
    core_run();
