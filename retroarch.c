@@ -2242,6 +2242,63 @@ bool runloop_msg_queue_pull(const char **ret)
 #define runloop_netplay_pause() ((void)0)
 #endif
 
+static void check_state_slots(
+      settings_t *settings,
+      uint64_t current_input,
+      uint64_t old_input,
+      uint64_t trigger_input)
+{
+   static bool old_should_slot_increase = false;
+   static bool old_should_slot_decrease = false;
+   bool should_slot_increase            = runloop_cmd_press(
+         current_input, RARCH_STATE_SLOT_PLUS);
+   bool should_slot_decrease            = runloop_cmd_press(
+         current_input, RARCH_STATE_SLOT_MINUS);
+
+   /* Checks if the state increase/decrease keys have been pressed 
+    * for this frame. */
+   if (should_slot_increase && !old_should_slot_increase)
+   {
+      char msg[128];
+      int new_state_slot = settings->ints.state_slot + 1;
+
+      msg[0] = '\0';
+
+      configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
+
+      snprintf(msg, sizeof(msg), "%s: %d",
+            msg_hash_to_str(MSG_STATE_SLOT),
+            settings->ints.state_slot);
+
+      runloop_msg_queue_push(msg, 2, 180, true);
+
+      RARCH_LOG("%s\n", msg);
+   }
+   else if (should_slot_decrease && !old_should_slot_decrease)
+   {
+      char msg[128];
+      int new_state_slot = settings->ints.state_slot - 1;
+
+      msg[0] = '\0';
+
+      if (settings->ints.state_slot > 0)
+      {
+         configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
+      }
+
+      snprintf(msg, sizeof(msg), "%s: %d",
+            msg_hash_to_str(MSG_STATE_SLOT),
+            settings->ints.state_slot);
+
+      runloop_msg_queue_push(msg, 2, 180, true);
+
+      RARCH_LOG("%s\n", msg);
+   }
+
+   old_should_slot_increase = should_slot_increase;
+   old_should_slot_decrease = should_slot_decrease;
+}
+
 static enum runloop_state runloop_check_state(
       settings_t *settings,
       uint64_t current_input,
@@ -2500,45 +2557,7 @@ static enum runloop_state runloop_check_state(
       driver_set_nonblock_state();
    }
 
-   /* Checks if the state increase/decrease keys have been pressed 
-    * for this frame. */
-   if (runloop_cmd_triggered(trigger_input, RARCH_STATE_SLOT_PLUS))
-   {
-      char msg[128];
-      int new_state_slot = settings->ints.state_slot + 1;
-
-      msg[0] = '\0';
-
-      configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
-
-      snprintf(msg, sizeof(msg), "%s: %d",
-            msg_hash_to_str(MSG_STATE_SLOT),
-            settings->ints.state_slot);
-
-      runloop_msg_queue_push(msg, 2, 180, true);
-
-      RARCH_LOG("%s\n", msg);
-   }
-   else if (runloop_cmd_triggered(trigger_input, RARCH_STATE_SLOT_MINUS))
-   {
-      char msg[128];
-      int new_state_slot = settings->ints.state_slot - 1;
-
-      msg[0] = '\0';
-
-      if (settings->ints.state_slot > 0)
-      {
-         configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
-      }
-
-      snprintf(msg, sizeof(msg), "%s: %d",
-            msg_hash_to_str(MSG_STATE_SLOT),
-            settings->ints.state_slot);
-
-      runloop_msg_queue_push(msg, 2, 180, true);
-
-      RARCH_LOG("%s\n", msg);
-   }
+   check_state_slots(settings, current_input, old_input, trigger_input);
 
    if (runloop_cmd_triggered(trigger_input, RARCH_SAVE_STATE_KEY))
       command_event(CMD_EVENT_SAVE_STATE, NULL);
