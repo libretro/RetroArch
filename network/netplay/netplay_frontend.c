@@ -1311,11 +1311,8 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          ret = netplay_pre_frame(netplay_data);
          goto done;
       case RARCH_NETPLAY_CTL_FLIP_PLAYERS:
-         {
-            bool *state = (bool*)data;
-            if (netplay_data->is_server && *state)
-               netplay_flip_users(netplay_data);
-         }
+         if (netplay_data->is_server)
+            netplay_flip_users(netplay_data);
          break;
       case RARCH_NETPLAY_CTL_GAME_WATCH:
          netplay_toggle_play_spectate(netplay_data);
