@@ -363,8 +363,10 @@ void cheat_manager_toggle_index(unsigned i)
    cheat_manager_update(handle, i);
 }
 
-void cheat_manager_toggle(cheat_manager_t *handle)
+void cheat_manager_toggle(void)
 {
+   cheat_manager_t *handle = cheat_manager_state;
+
    if (!handle)
       return;
 
@@ -373,8 +375,10 @@ void cheat_manager_toggle(cheat_manager_t *handle)
    cheat_manager_update(handle, handle->ptr);
 }
 
-void cheat_manager_index_next(cheat_manager_t *handle)
+void cheat_manager_index_next(void)
 {
+   cheat_manager_t *handle = cheat_manager_state;
+
    if (!handle)
       return;
 
@@ -382,8 +386,10 @@ void cheat_manager_index_next(cheat_manager_t *handle)
    cheat_manager_update(handle, handle->ptr);
 }
 
-void cheat_manager_index_prev(cheat_manager_t *handle)
+void cheat_manager_index_prev(void)
 {
+   cheat_manager_t *handle = cheat_manager_state;
+
    if (!handle)
       return;
 
@@ -424,15 +430,12 @@ void cheat_manager_state_checks(
       bool cheat_index_minus_pressed,
       bool cheat_toggle_pressed)
 {
-   cheat_manager_t *handle = cheat_manager_state;
-   if (!handle)
-      return;
    if (cheat_index_plus_pressed)
-      cheat_manager_index_next(handle);
+      cheat_manager_index_next();
    else if (cheat_index_minus_pressed)
-      cheat_manager_index_prev(handle);
+      cheat_manager_index_prev();
    else if (cheat_toggle_pressed)
-      cheat_manager_toggle(handle);
+      cheat_manager_toggle();
 }
 
 void cheat_manager_state_free(void)

@@ -44,11 +44,11 @@ void cheat_manager_set_code(unsigned index, const char *str);
 
 void cheat_manager_free(void);
 
-void cheat_manager_index_next(cheat_manager_t *handle);
+void cheat_manager_index_next(void);
 
-void cheat_manager_index_prev(cheat_manager_t *handle);
+void cheat_manager_index_prev(void);
 
-void cheat_manager_toggle(cheat_manager_t *handle);
+void cheat_manager_toggle(void);
 
 void cheat_manager_apply_cheats(void);
 
