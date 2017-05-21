@@ -823,9 +823,6 @@ uint64_t input_menu_keys_pressed(
       }
    }
 
-   if (menu_driver_is_binding_state())
-      *trigger_input = 0;
-
    *nonblock_state = input_driver_nonblock_state;
 
    return ret;

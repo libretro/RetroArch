@@ -2258,6 +2258,11 @@ static enum runloop_state runloop_check_state(
 
    video_driver_get_status(&frame_count, &is_alive, &is_focused);
 
+#ifdef HAVE_MENU
+   if (menu_driver_is_binding_state())
+      current_input = 0;
+#endif
+
 #ifdef HAVE_OVERLAY
    /* Check next overlay */
    {
@@ -2397,6 +2402,7 @@ static enum runloop_state runloop_check_state(
 
    if (runloop_idle)
       return RUNLOOP_STATE_SLEEP;
+
 
    /* Check game focus toggle */
    {
