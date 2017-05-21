@@ -2242,12 +2242,7 @@ bool runloop_msg_queue_pull(const char **ret)
 #define runloop_netplay_pause() ((void)0)
 #endif
 
-static void check_state_slots(
-      settings_t *settings,
-      uint64_t current_input,
-      uint64_t old_input,
-      uint64_t trigger_input
-      )
+static void check_state_slots(settings_t *settings, uint64_t current_input)
 {
    static bool old_should_slot_increase = false;
    static bool old_should_slot_decrease = false;
@@ -2300,12 +2295,7 @@ static void check_state_slots(
    old_should_slot_decrease = should_slot_decrease;
 }
 
-static void check_savestates(
-      settings_t *settings,
-      uint64_t current_input,
-      uint64_t old_input,
-      uint64_t trigger_input
-      )
+static void check_savestates(uint64_t current_input)
 {
    static bool old_should_savestate = false;
    static bool old_should_loadstate = false;
@@ -2321,6 +2311,38 @@ static void check_savestates(
 
    old_should_savestate             = should_savestate;
    old_should_loadstate             = should_loadstate;
+}
+
+#ifdef HAVE_OVERLAY
+static void check_next_overlay(uint64_t current_input)
+{
+   static bool old_should_check_next_overlay = false;
+   bool should_check_next_overlay            = runloop_cmd_press(
+         current_input, RARCH_OVERLAY_NEXT);
+
+   if (should_check_next_overlay && !old_should_check_next_overlay)
+      command_event(CMD_EVENT_OVERLAY_NEXT, NULL);
+
+   old_should_check_next_overlay             = should_check_next_overlay;
+}
+#endif
+
+static void check_reset(uint64_t current_input)
+{
+   static bool old_state = false;
+   bool new_state        = runloop_cmd_press(
+         current_input, RARCH_RESET);
+
+   if (new_state && !old_state)
+   {
+      command_event(CMD_EVENT_RESET, NULL);
+#if 0
+      task_push_audio_mixer_load("/home/squarepusher/SumertimeBlues.ogg",
+            NULL, NULL);
+#endif
+   }
+
+   old_state = new_state;
 }
 
 static enum runloop_state runloop_check_state(
@@ -2349,8 +2371,7 @@ static enum runloop_state runloop_check_state(
    video_driver_get_status(&frame_count, &is_alive, &is_focused);
 
 #ifdef HAVE_OVERLAY
-   if (runloop_cmd_triggered(trigger_input, RARCH_OVERLAY_NEXT))
-      command_event(CMD_EVENT_OVERLAY_NEXT, NULL);
+   check_next_overlay(current_input);
 #endif
 
    if (runloop_cmd_triggered(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
@@ -2581,8 +2602,8 @@ static enum runloop_state runloop_check_state(
       driver_set_nonblock_state();
    }
 
-   check_state_slots(settings, current_input, old_input, trigger_input);
-   check_savestates(settings, current_input, old_input, trigger_input);
+   check_state_slots(settings, current_input);
+   check_savestates(current_input);
 
 #ifdef HAVE_CHEEVOS
    if (!settings->bools.cheevos_hardcore_mode_enable)
@@ -2633,14 +2654,7 @@ static enum runloop_state runloop_check_state(
    else if (runloop_cmd_triggered(trigger_input, RARCH_DISK_PREV))
       command_event(CMD_EVENT_DISK_PREV, NULL);
 
-   if (runloop_cmd_triggered(trigger_input, RARCH_RESET))
-   {
-      command_event(CMD_EVENT_RESET, NULL);
-#if 0
-      task_push_audio_mixer_load("/home/squarepusher/SumertimeBlues.ogg",
-            NULL, NULL);
-#endif
-   }
+   check_reset(current_input);
 
    cheat_manager_state_checks(
          runloop_cmd_triggered(trigger_input, RARCH_CHEAT_INDEX_PLUS),
