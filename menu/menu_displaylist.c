@@ -1848,16 +1848,18 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
    for (i = 0; i < db_info->count; i++)
    {
       char tmp[PATH_MAX_LENGTH];
+      char thumbnail_content[PATH_MAX_LENGTH];
       char crc_str[20];
       database_info_t *db_info_entry = &db_info->list[i];
       bool show_advanced_settings    = settings->bools.menu_show_advanced_settings;
 
-      crc_str[0] = tmp[0] = '\0';
+      crc_str[0] = tmp[0] = thumbnail_content[0] = '\0';
 
       snprintf(crc_str, sizeof(crc_str), "%08X", db_info_entry->crc32);
+      strlcpy(thumbnail_content, db_info_entry->name, sizeof(thumbnail_content));
 
       if (db_info_entry->name)
-         menu_driver_set_thumbnail_content(db_info_entry->name, strlen(db_info_entry->name)); 
+         menu_driver_set_thumbnail_content(thumbnail_content, sizeof(thumbnail_content)); 
 
       menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
       menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
