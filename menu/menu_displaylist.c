@@ -1856,7 +1856,9 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       crc_str[0] = tmp[0] = thumbnail_content[0] = '\0';
 
       snprintf(crc_str, sizeof(crc_str), "%08X", db_info_entry->crc32);
-      strlcpy(thumbnail_content, db_info_entry->name, sizeof(thumbnail_content));
+
+      if (!string_is_empty(db_info_entry->name))
+         strlcpy(thumbnail_content, db_info_entry->name, sizeof(thumbnail_content));
 
       if (!string_is_empty(thumbnail_content))
          menu_driver_set_thumbnail_content(thumbnail_content, sizeof(thumbnail_content)); 
