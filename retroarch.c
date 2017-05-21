@@ -2865,7 +2865,6 @@ void runloop_unset(enum runloop_action action)
 int runloop_iterate(unsigned *sleep_ms)
 {
    unsigned i;
-   retro_time_t current, target, to_sleep_ms;
    bool input_nonblock_state                    = input_driver_is_nonblock_state();
    static uint64_t last_input                   = 0;
    settings_t *settings                         = config_get_ptr();
@@ -3001,25 +3000,24 @@ int runloop_iterate(unsigned *sleep_ms)
    if (runloop_autosave)
       autosave_unlock();
 
-   if (!settings->floats.fastforward_ratio)
-      return 0;
-
-end:
-
-   current                        = cpu_features_get_time_usec();
-   target                         = frame_limit_last_time +
-      frame_limit_minimum_time;
-   to_sleep_ms                    = (target - current) / 1000;
-
-   if (to_sleep_ms > 0)
+   if (settings->floats.fastforward_ratio)
+      end:
    {
-      *sleep_ms = (unsigned)to_sleep_ms;
-      /* Combat jitter a bit. */
-      frame_limit_last_time += frame_limit_minimum_time;
-      return 1;
-   }
 
-   frame_limit_last_time  = cpu_features_get_time_usec();
+      retro_time_t to_sleep_ms  = (
+            (frame_limit_last_time + frame_limit_minimum_time)
+            - cpu_features_get_time_usec()) / 1000;
+
+      if (to_sleep_ms > 0)
+      {
+         *sleep_ms = (unsigned)to_sleep_ms;
+         /* Combat jitter a bit. */
+         frame_limit_last_time += frame_limit_minimum_time;
+         return 1;
+      }
+
+      frame_limit_last_time  = cpu_features_get_time_usec();
+   }
 
    return 0;
 }
