@@ -2256,7 +2256,6 @@ static enum runloop_state runloop_check_state(
    bool is_alive                    = false;
    uint64_t frame_count             = 0;
    bool focused                     = true;
-   bool pause_pressed               = runloop_cmd_triggered(trigger_input, RARCH_PAUSE_TOGGLE);
    bool pause_nonactive             = settings->bools.pause_nonactive;
 
    video_driver_get_status(&frame_count, &is_alive, &is_focused);
@@ -2448,21 +2447,28 @@ static enum runloop_state runloop_check_state(
    }
 #endif
 
-   /* Check if libretro pause key was pressed. If so, pause or
-    * unpause the libretro core. */
+   {
+      static bool old_pause_pressed = false;
+      bool pause_pressed            = runloop_cmd_press(
+            current_input, RARCH_PAUSE_TOGGLE);
 
-   /* FRAMEADVANCE will set us into pause mode. */
-   pause_pressed |= !runloop_paused 
-      && runloop_cmd_triggered(trigger_input, RARCH_FRAMEADVANCE);
+      /* Check if libretro pause key was pressed. If so, pause or
+       * unpause the libretro core. */
 
-   if (focused && pause_pressed)
-      command_event(CMD_EVENT_PAUSE_TOGGLE, NULL);
-   else if (focused && !old_focus)
-      command_event(CMD_EVENT_UNPAUSE, NULL);
-   else if (!focused && old_focus)
-      command_event(CMD_EVENT_PAUSE, NULL);
+      /* FRAMEADVANCE will set us into pause mode. */
+      pause_pressed |= !runloop_paused 
+         && runloop_cmd_triggered(trigger_input, RARCH_FRAMEADVANCE);
 
-   old_focus = focused;
+      if (focused && pause_pressed && !old_pause_pressed)
+         command_event(CMD_EVENT_PAUSE_TOGGLE, NULL);
+      else if (focused && !old_focus)
+         command_event(CMD_EVENT_UNPAUSE, NULL);
+      else if (!focused && old_focus)
+         command_event(CMD_EVENT_PAUSE, NULL);
+
+      old_focus           = focused;
+      old_pause_pressed   = pause_pressed; 
+   }
 
    if (!focused)
       return RUNLOOP_STATE_SLEEP;
