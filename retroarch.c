@@ -2255,13 +2255,13 @@ static enum runloop_state runloop_check_state(
    bool focused                     = true;
    bool pause_nonactive             = settings->bools.pause_nonactive;
    bool fs_toggle_triggered         = false;
-
-   video_driver_get_status(&frame_count, &is_alive, &is_focused);
-
 #ifdef HAVE_MENU
-   if (menu_driver_is_binding_state())
+   bool menu_driver_binding_state   = menu_driver_is_binding_state();
+   if (menu_driver_binding_state)
       current_input = 0;
 #endif
+
+   video_driver_get_status(&frame_count, &is_alive, &is_focused);
 
 #ifdef HAVE_OVERLAY
    /* Check next overlay */
@@ -2395,7 +2395,7 @@ static enum runloop_state runloop_check_state(
       if (!focused)
          return RUNLOOP_STATE_SLEEP;
 
-      if (action == MENU_ACTION_QUIT && !menu_driver_is_binding_state())
+      if (action == MENU_ACTION_QUIT && !menu_driver_binding_state)
          return RUNLOOP_STATE_QUIT;
    }
 #endif
