@@ -2246,7 +2246,8 @@ static void check_state_slots(
       settings_t *settings,
       uint64_t current_input,
       uint64_t old_input,
-      uint64_t trigger_input)
+      uint64_t trigger_input
+      )
 {
    static bool old_should_slot_increase = false;
    static bool old_should_slot_decrease = false;
@@ -2297,6 +2298,29 @@ static void check_state_slots(
 
    old_should_slot_increase = should_slot_increase;
    old_should_slot_decrease = should_slot_decrease;
+}
+
+static void check_savestates(
+      settings_t *settings,
+      uint64_t current_input,
+      uint64_t old_input,
+      uint64_t trigger_input
+      )
+{
+   static bool old_should_savestate = false;
+   static bool old_should_loadstate = false;
+   bool should_savestate            = runloop_cmd_press(
+         current_input, RARCH_SAVE_STATE_KEY);
+   bool should_loadstate            = runloop_cmd_press(
+         current_input, RARCH_LOAD_STATE_KEY);
+
+   if (should_savestate && !old_should_savestate)
+      command_event(CMD_EVENT_SAVE_STATE, NULL);
+   if (should_loadstate && !old_should_loadstate)
+      command_event(CMD_EVENT_LOAD_STATE, NULL);
+
+   old_should_savestate             = should_savestate;
+   old_should_loadstate             = should_loadstate;
 }
 
 static enum runloop_state runloop_check_state(
@@ -2558,11 +2582,7 @@ static enum runloop_state runloop_check_state(
    }
 
    check_state_slots(settings, current_input, old_input, trigger_input);
-
-   if (runloop_cmd_triggered(trigger_input, RARCH_SAVE_STATE_KEY))
-      command_event(CMD_EVENT_SAVE_STATE, NULL);
-   else if (runloop_cmd_triggered(trigger_input, RARCH_LOAD_STATE_KEY))
-      command_event(CMD_EVENT_LOAD_STATE, NULL);
+   check_savestates(settings, current_input, old_input, trigger_input);
 
 #ifdef HAVE_CHEEVOS
    if (!settings->bools.cheevos_hardcore_mode_enable)
