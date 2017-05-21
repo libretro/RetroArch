@@ -29,11 +29,11 @@
 
 #define MOD_MAP_SIZE 5
 
-static struct xkb_context *xkb_ctx;
-static struct xkb_keymap  *xkb_map;
-static struct xkb_state   *xkb_state;
-static xkb_mod_index_t    *mod_map_idx;
-static uint16_t           *mod_map_bit;
+static struct xkb_context *xkb_ctx     = NULL;
+static struct xkb_keymap  *xkb_map     = NULL;
+static struct xkb_state   *xkb_state   = NULL;
+static xkb_mod_index_t    *mod_map_idx = NULL;
+static uint16_t           *mod_map_bit = 0;
 
 void free_xkb(void)
 {
@@ -58,7 +58,8 @@ void free_xkb(void)
 int init_xkb(int fd, size_t size)
 {
    char *map_str;
-   mod_map_idx          = (xkb_mod_index_t *)calloc(MOD_MAP_SIZE, sizeof(xkb_mod_index_t));
+   mod_map_idx          = (xkb_mod_index_t *)calloc(
+         MOD_MAP_SIZE, sizeof(xkb_mod_index_t));
 
    if (!mod_map_idx)
       goto error;
@@ -77,7 +78,8 @@ int init_xkb(int fd, size_t size)
          if (map_str == MAP_FAILED)
             goto error;
 
-         xkb_map = xkb_keymap_new_from_string(xkb_ctx, map_str, XKB_KEYMAP_FORMAT_TEXT_V1, XKB_KEYMAP_COMPILE_NO_FLAGS);
+         xkb_map = xkb_keymap_new_from_string(xkb_ctx, map_str,
+               XKB_KEYMAP_FORMAT_TEXT_V1, XKB_KEYMAP_COMPILE_NO_FLAGS);
          munmap(map_str, size);
       }
       else
@@ -97,7 +99,9 @@ int init_xkb(int fd, size_t size)
                rule.layout = list->elems[0].data;
          }
 
-         xkb_map = xkb_keymap_new_from_names(xkb_ctx, &rule, XKB_MAP_COMPILE_NO_FLAGS);
+         xkb_map = xkb_keymap_new_from_names(xkb_ctx,
+               &rule, XKB_MAP_COMPILE_NO_FLAGS);
+
          if (list)
             string_list_free(list);
       }
@@ -137,7 +141,8 @@ error:
    return -1;
 }
 
-void handle_xkb_state_mask(uint32_t depressed, uint32_t latched, uint32_t locked, uint32_t group)
+void handle_xkb_state_mask(uint32_t depressed,
+      uint32_t latched, uint32_t locked, uint32_t group)
 {
    if (!xkb_state)
       return;
@@ -181,7 +186,8 @@ int handle_xkb(int code, int value)
       if (*map_idx != XKB_MOD_INVALID)
          mod |= xkb_state_mod_index_is_active(
                xkb_state, *map_idx,
-               (enum xkb_state_component)((XKB_STATE_MODS_EFFECTIVE) > 0)) ? *map_bit : 0;
+               (enum xkb_state_component)
+               ((XKB_STATE_MODS_EFFECTIVE) > 0)) ? *map_bit : 0;
    }
 
    input_keyboard_event(value, input_keymaps_translate_keysym_to_rk(code),
