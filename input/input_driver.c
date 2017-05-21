@@ -665,7 +665,7 @@ static bool input_driver_toggle_button_combo(
  *
  * Returns: Input sample containg a mask of all pressed keys.
  */
-uint64_t input_menu_keys_pressed(void *data, uint64_t *last_input)
+uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
 {
    uint64_t             ret                     = 0;
 
@@ -726,7 +726,7 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t *last_input)
          const struct retro_keybind *mtkey = &input_config_binds[0][RARCH_MENU_TOGGLE];
          if (  ((settings->uints.input_menu_toggle_gamepad_combo != INPUT_TOGGLE_NONE) &&
                   input_driver_toggle_button_combo(
-                     settings->uints.input_menu_toggle_gamepad_combo, *last_input))
+                     settings->uints.input_menu_toggle_gamepad_combo, last_input))
                || input_menu_keys_pressed_internal(
                   binds, settings, joypad_info, RARCH_MENU_TOGGLE, max_users,
                   mtkey->valid,
@@ -801,8 +801,6 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t *last_input)
       }
    }
 
-   *last_input     = ret;
-
    return ret;
 }
 #endif
@@ -875,7 +873,7 @@ static INLINE bool input_keys_pressed_internal(
  *
  * Returns: Input sample containg a mask of all pressed keys.
  */
-uint64_t input_keys_pressed(void *data, uint64_t *last_input)
+uint64_t input_keys_pressed(void *data, uint64_t last_input)
 {
    unsigned i;
    rarch_joypad_info_t joypad_info;
@@ -932,7 +930,7 @@ uint64_t input_keys_pressed(void *data, uint64_t *last_input)
    if (
          ((settings->uints.input_menu_toggle_gamepad_combo != INPUT_TOGGLE_NONE) &&
          input_driver_toggle_button_combo(
-            settings->uints.input_menu_toggle_gamepad_combo, *last_input))
+            settings->uints.input_menu_toggle_gamepad_combo, last_input))
          || input_keys_pressed_internal(settings, joypad_info, RARCH_MENU_TOGGLE, binds))
       ret |= (UINT64_C(1) << RARCH_MENU_TOGGLE);
 #endif
@@ -943,8 +941,6 @@ uint64_t input_keys_pressed(void *data, uint64_t *last_input)
             input_keys_pressed_internal(settings, joypad_info, i, binds))
          ret |= (UINT64_C(1) << i);
    }
-
-   *last_input     = ret;
 
    return ret;
 }

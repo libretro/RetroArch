@@ -2882,9 +2882,11 @@ int runloop_iterate(unsigned *sleep_ms)
    current_input =
 #ifdef HAVE_MENU
       menu_is_alive ? 
-      input_menu_keys_pressed(settings, &last_input) :
+      input_menu_keys_pressed(settings, last_input) :
 #endif
-      input_keys_pressed(settings, &last_input);
+      input_keys_pressed(settings, last_input);
+
+   last_input                                   = current_input;
 
    if (input_driver_flushing_input)
    { 
