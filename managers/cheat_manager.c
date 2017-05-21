@@ -425,19 +425,6 @@ bool cheat_manager_get_code_state(unsigned i)
    return handle->cheats[i].state;
 }
 
-void cheat_manager_state_checks(
-      bool cheat_index_plus_pressed,
-      bool cheat_index_minus_pressed,
-      bool cheat_toggle_pressed)
-{
-   if (cheat_index_plus_pressed)
-      cheat_manager_index_next();
-   else if (cheat_index_minus_pressed)
-      cheat_manager_index_prev();
-   else if (cheat_toggle_pressed)
-      cheat_manager_toggle();
-}
-
 void cheat_manager_state_free(void)
 {
    cheat_manager_free();

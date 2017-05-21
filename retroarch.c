@@ -2699,10 +2699,29 @@ static enum runloop_state runloop_check_state(
       old_state = new_state;
    }
 
-   cheat_manager_state_checks(
-         runloop_cmd_triggered(trigger_input, RARCH_CHEAT_INDEX_PLUS),
-         runloop_cmd_triggered(trigger_input, RARCH_CHEAT_INDEX_MINUS),
-         runloop_cmd_triggered(trigger_input, RARCH_CHEAT_TOGGLE));
+   /* Check cheats */
+   {
+      static bool old_cheat_index_plus   = false;
+      static bool old_cheat_index_minus  = false;
+      static bool old_cheat_index_toggle = false;
+      bool cheat_index_plus              = runloop_cmd_press(
+            current_input, RARCH_CHEAT_INDEX_PLUS);
+      bool cheat_index_minus             = runloop_cmd_press(
+            current_input, RARCH_CHEAT_INDEX_MINUS);
+      bool cheat_index_toggle            = runloop_cmd_press(
+            current_input, RARCH_CHEAT_TOGGLE);
+
+      if (cheat_index_plus && !old_cheat_index_plus)
+         cheat_manager_index_next();
+      else if (cheat_index_minus && !old_cheat_index_minus)
+         cheat_manager_index_prev();
+      else if (cheat_index_toggle && !old_cheat_index_toggle)
+         cheat_manager_toggle();
+
+      old_cheat_index_plus               = cheat_index_plus;
+      old_cheat_index_minus              = cheat_index_minus;
+      old_cheat_index_toggle             = cheat_index_toggle;
+   }
 
    return RUNLOOP_STATE_ITERATE;
 }

@@ -64,11 +64,6 @@ const char *cheat_manager_get_code(unsigned i);
 
 bool cheat_manager_get_code_state(unsigned i);
 
-void cheat_manager_state_checks(
-      bool cheat_index_plus_pressed,
-      bool cheat_index_minus_pressed,
-      bool cheat_toggle_pressed);
-
 void cheat_manager_state_free(void);
 
 bool cheat_manager_alloc_if_empty(void);
