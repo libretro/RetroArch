@@ -36,6 +36,8 @@
 
 #include <boolean.h>
 
+#include <streams/stdin_stream.h>
+
 #if defined(_WIN32) && defined(_XBOX)
 size_t read_stdin(char *buf, size_t size)
 {
