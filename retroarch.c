@@ -2522,17 +2522,22 @@ static enum runloop_state runloop_check_state(
    }
 #endif
 
+   /* Check pause */
    {
+      static bool old_frameadvance  = false;
       static bool old_pause_pressed = false;
+      bool check_is_oneshot         = true;
+      bool frameadvance_pressed     = runloop_cmd_press(
+            current_input, RARCH_FRAMEADVANCE);
       bool pause_pressed            = runloop_cmd_press(
             current_input, RARCH_PAUSE_TOGGLE);
+      bool trig_frameadvance        = frameadvance_pressed && !old_frameadvance;
 
       /* Check if libretro pause key was pressed. If so, pause or
        * unpause the libretro core. */
 
       /* FRAMEADVANCE will set us into pause mode. */
-      pause_pressed                |= !runloop_paused 
-         && runloop_cmd_triggered(trigger_input, RARCH_FRAMEADVANCE);
+      pause_pressed                |= !runloop_paused && trig_frameadvance;
 
       if (focused && pause_pressed && !old_pause_pressed)
          command_event(CMD_EVENT_PAUSE_TOGGLE, NULL);
@@ -2543,29 +2548,27 @@ static enum runloop_state runloop_check_state(
 
       old_focus           = focused;
       old_pause_pressed   = pause_pressed; 
-   }
+      old_frameadvance    = frameadvance_pressed;
 
-   if (!focused)
-      return RUNLOOP_STATE_SLEEP;
-
-   /* check pause state */
-   {
       if (runloop_paused)
       {
-         bool check_is_oneshot = runloop_cmd_triggered(trigger_input,
-               RARCH_FRAMEADVANCE)
-            || runloop_cmd_press(current_input, RARCH_REWIND);
+         check_is_oneshot = trig_frameadvance || 
+            runloop_cmd_press(current_input, RARCH_REWIND);
+
          if (runloop_cmd_triggered(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
          {
             command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
             if (!runloop_idle)
                video_driver_cached_frame();
          }
-
-         if (!check_is_oneshot)
-            return RUNLOOP_STATE_SLEEP;
       }
+
+      if (!check_is_oneshot)
+         return RUNLOOP_STATE_SLEEP;
    }
+
+   if (!focused)
+      return RUNLOOP_STATE_SLEEP;
 
    /* Check fast forward button */
    /* To avoid continous switching if we hold the button down, we require
