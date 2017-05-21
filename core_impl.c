@@ -91,13 +91,8 @@ void core_set_input_state(retro_ctx_input_state_info_t *info)
  * Initializes libretro callbacks, and binds the libretro callbacks
  * to default callback functions.
  **/
-static bool core_init_libretro_cbs(void *data)
+static bool core_init_libretro_cbs(struct retro_callbacks *cbs)
 {
-   struct retro_callbacks *cbs = (struct retro_callbacks*)data;
-
-   if (!cbs)
-      return false;
-
    current_core.retro_set_video_refresh(video_driver_frame);
    current_core.retro_set_audio_sample(audio_driver_sample);
    current_core.retro_set_audio_sample_batch(audio_driver_sample_batch);
