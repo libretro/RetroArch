@@ -2358,9 +2358,6 @@ static enum runloop_state runloop_check_state(
 #ifdef HAVE_OVERLAY
    static char prev_overlay_restore = false;
 #endif
-#ifdef HAVE_NETWORKING
-   bool tmp                         = false;
-#endif
    bool is_focused                  = false;
    bool is_alive                    = false;
    uint64_t frame_count             = 0;
@@ -2535,12 +2532,13 @@ static enum runloop_state runloop_check_state(
       command_event(CMD_EVENT_VOLUME_DOWN, NULL);
 
 #ifdef HAVE_NETWORKING
-   tmp = runloop_cmd_triggered(trigger_input, RARCH_NETPLAY_FLIP);
-   netplay_driver_ctl(RARCH_NETPLAY_CTL_FLIP_PLAYERS, &tmp);
-   tmp = runloop_cmd_triggered(trigger_input, RARCH_NETPLAY_GAME_WATCH);
-   if (tmp)
-      netplay_driver_ctl(RARCH_NETPLAY_CTL_GAME_WATCH, NULL);
-   tmp = runloop_cmd_triggered(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY);
+   {
+      bool tmp = runloop_cmd_triggered(trigger_input, RARCH_NETPLAY_FLIP);
+      netplay_driver_ctl(RARCH_NETPLAY_CTL_FLIP_PLAYERS, &tmp);
+      tmp = runloop_cmd_triggered(trigger_input, RARCH_NETPLAY_GAME_WATCH);
+      if (tmp)
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_GAME_WATCH, NULL);
+   }
 #endif
 
    /* Check if libretro pause key was pressed. If so, pause or
