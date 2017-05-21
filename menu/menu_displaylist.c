@@ -1546,6 +1546,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 {
    unsigned i;
    size_t list_size = 0;
+   size_t selection = menu_navigation_get_selection();
 
    if (!playlist)
       return -1;
@@ -1560,6 +1561,14 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
             MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE,
             MENU_INFO_MESSAGE, 0, 0);
       return 0;
+   }
+
+   if (!string_is_empty(info->path))
+   {
+      char lpl_basename[PATH_MAX_LENGTH];
+      lpl_basename[0] = '\0';
+      fill_pathname_base_noext(lpl_basename, info->path, sizeof(lpl_basename));
+      menu_driver_set_thumbnail_system(lpl_basename, sizeof(lpl_basename));
    }
 
    for (i = 0; i < list_size; i++)
@@ -1581,6 +1590,15 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 
       if (core_name)
          strlcpy(fill_buf, core_name, sizeof(fill_buf));
+
+      if (!is_history && i == selection)
+      {
+         char content_basename[PATH_MAX_LENGTH];
+         strlcpy(content_basename, label, sizeof(content_basename));
+         menu_driver_set_thumbnail_content(content_basename, PATH_MAX_LENGTH);
+         menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
+         menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
+      }
 
       if (path)
       {

@@ -1162,7 +1162,8 @@ static void xmb_selection_pointer_changed(
          if (!string_is_equal(xmb_thumbnails_ident(),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
          {
-            if (xmb_list > XMB_SYSTEM_TAB_SETTINGS && depth == 1)
+            if ((xmb_list > XMB_SYSTEM_TAB_SETTINGS && depth == 1) ||
+                (xmb_list < XMB_SYSTEM_TAB_SETTINGS && depth == 4))
             {
                xmb_set_thumbnail_content(xmb, e.path, sizeof(e.path));
                xmb_update_thumbnail_path(xmb, i);
