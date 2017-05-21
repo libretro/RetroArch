@@ -663,11 +663,6 @@ bool state_manager_frame_is_reversed(void)
    return frame_is_reversed;
 }
 
-static void state_manager_set_frame_is_reversed(bool value)
-{
-   frame_is_reversed = value;
-}
-
 void state_manager_event_deinit(void)
 {
    if (rewind_state.state)
@@ -701,7 +696,7 @@ bool state_manager_check_rewind(bool pressed,
       was_reversed = true;
 #endif
       audio_driver_frame_is_reverse();
-      state_manager_set_frame_is_reversed(false);
+      frame_is_reversed = false;
    }
 
    if (first)
@@ -727,7 +722,7 @@ bool state_manager_check_rewind(bool pressed,
             netplay_driver_ctl(RARCH_NETPLAY_CTL_DESYNC_PUSH, NULL);
 #endif
 
-         state_manager_set_frame_is_reversed(true);
+         frame_is_reversed = true;
 
          audio_driver_setup_rewind();
 
