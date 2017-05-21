@@ -17,5 +17,5 @@ void main()
    vec3 normal = normalize(cross(x, y));
    float c = 1.0 - dot(normal, up);
    c = (1.0 - cos(c * c)) / 3.0;
-   FragColor = vec4(1.0, 1.0, 1.0, c);
+   FragColor = vec4(c, c, c, 1.0);
 }

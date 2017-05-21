@@ -171,6 +171,17 @@ static void menu_display_gl_draw_pipeline(void *data)
    {
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
+         glBlendFunc(GL_ONE, GL_ONE);
+         break;
+      default:
+         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+         break;
+   }
+
+   switch (draw->pipeline.id)
+   {
+      case VIDEO_SHADER_MENU:
+      case VIDEO_SHADER_MENU_2:
       case VIDEO_SHADER_MENU_3:
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
