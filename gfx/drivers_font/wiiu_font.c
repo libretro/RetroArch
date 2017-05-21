@@ -207,22 +207,22 @@ static void wiiu_font_render_line(
 
 
       float x0 = x + off_x + delta_x * scale;
-      float y0 = y + off_y + delta_y * scale;
+      float y0 = y + off_y + delta_y * scale + height * scale;
       float u0 = tex_x;
       float v0 = tex_y;
       float x1 = x0 + width * scale;
-      float y1 = y0 + height * scale;
+      float y1 = y0 - height * scale;
       float u1 = u0 + width;
       float v1 = v0 + height;
 
       pos[0].x = (2.0f * x0 / wiiu->color_buffer.surface.width) - 1.0f;
-      pos[0].y = (2.0f * y0 / wiiu->color_buffer.surface.height) - 1.0f;
+      pos[0].y = (-2.0f * y0 / wiiu->color_buffer.surface.height) + 1.0f;
       pos[1].x = (2.0f * x1 / wiiu->color_buffer.surface.width) - 1.0f;;
-      pos[1].y = (2.0f * y0 / wiiu->color_buffer.surface.height) - 1.0f;
+      pos[1].y = (-2.0f * y0 / wiiu->color_buffer.surface.height) + 1.0f;
       pos[2].x = (2.0f * x1 / wiiu->color_buffer.surface.width) - 1.0f;;
-      pos[2].y = (2.0f * y1 / wiiu->color_buffer.surface.height) - 1.0f;
+      pos[2].y = (-2.0f * y1 / wiiu->color_buffer.surface.height) + 1.0f;
       pos[3].x = (2.0f * x0 / wiiu->color_buffer.surface.width) - 1.0f;;
-      pos[3].y = (2.0f * y1 / wiiu->color_buffer.surface.height) - 1.0f;
+      pos[3].y = (-2.0f * y1 / wiiu->color_buffer.surface.height) + 1.0f;
       pos += 4;
 
       coord[0].u = u0 / font->texture.surface.width;
