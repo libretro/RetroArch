@@ -130,8 +130,6 @@
 #define DEFAULT_EXT ""
 #endif
 
-#define runloop_cmd_triggered(trigger_input, id) (BIT64_GET(trigger_input, id))
-
 /* Descriptive names for options without short variant.
  *
  * Please keep the name in sync with the option name.
