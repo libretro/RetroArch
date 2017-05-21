@@ -24,6 +24,10 @@
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
 
+#ifdef WIIU
+#include <wiiu/os.h>
+#endif
+
 #include FT_FREETYPE_H
 #include "../font_driver.h"
 
@@ -217,9 +221,26 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
    if (err)
       goto error;
 
-   err = FT_New_Face(handle->lib, font_path, 0, &handle->face);
-   if (err)
-      goto error;
+#ifdef WIIU
+   if(!*font_path)
+   {
+      void* font_data = NULL;
+      uint32_t font_size = 0;
+
+      if(!OSGetSharedData(SHARED_FONT_DEFAULT, 0, &font_data, &font_size))
+         goto error;
+
+      err = FT_New_Memory_Face(handle->lib, font_data, font_size, 0, &handle->face);
+      if (err)
+         goto error;
+   }
+   else
+#endif
+   {
+      err = FT_New_Face(handle->lib, font_path, 0, &handle->face);
+      if (err)
+         goto error;
+   }
 
    err = FT_Select_Charmap(handle->face, FT_ENCODING_UNICODE);
    if (err)
@@ -266,6 +287,9 @@ static const char *font_paths[] = {
 /* Highly OS/platform dependent. */
 static const char *font_renderer_ft_get_default_font(void)
 {
+#ifdef WIIU
+   return "";
+#else
    size_t i;
 
    for (i = 0; i < ARRAY_SIZE(font_paths); i++)
@@ -275,6 +299,7 @@ static const char *font_renderer_ft_get_default_font(void)
    }
 
    return NULL;
+#endif
 }
 
 static int font_renderer_ft_get_line_height(void* data)

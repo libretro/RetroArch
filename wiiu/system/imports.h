@@ -29,6 +29,7 @@ IMPORT(OSYieldThread);
 IMPORT(OSGetSystemTime);
 IMPORT(OSGetSystemTick);
 IMPORT(OSGetSymbolName);
+IMPORT(OSGetSharedData);
 IMPORT(OSEffectiveToPhysical);
 
 IMPORT(exit);
