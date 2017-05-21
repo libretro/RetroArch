@@ -669,7 +669,6 @@ uint64_t input_menu_keys_pressed(
       void *data,
       uint64_t old_input,
       uint64_t *last_input,
-      uint64_t *trigger_input,
       bool runloop_paused,
       bool *nonblock_state)
 {
@@ -687,7 +686,7 @@ uint64_t input_menu_keys_pressed(
 
       if (settings->bools.menu_unified_controls && !menu_input_dialog_get_display_kb())
          return input_keys_pressed(settings, old_input, last_input,
-               trigger_input, runloop_paused, nonblock_state);
+               runloop_paused, nonblock_state);
 
       for (i = 0; i < max_users; i++)
       {
@@ -808,7 +807,6 @@ uint64_t input_menu_keys_pressed(
       }
    }
 
-   *trigger_input = ret & ~old_input;
    *last_input    = ret;
 
    if (input_driver_flushing_input)
@@ -901,7 +899,6 @@ uint64_t input_keys_pressed(
       void *data,
       uint64_t old_input,
       uint64_t *last_input,
-      uint64_t *trigger_input,
       bool runloop_paused,
       bool *nonblock_state)
 {
@@ -972,7 +969,6 @@ uint64_t input_keys_pressed(
          ret |= (UINT64_C(1) << i);
    }
 
-   *trigger_input = ret & ~old_input;
    *last_input    = ret;
 
    if (input_driver_flushing_input)

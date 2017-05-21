@@ -267,7 +267,6 @@ uint64_t input_keys_pressed(
       void *data,
       uint64_t old_input,
       uint64_t *last_input,
-      uint64_t *trigger_input,
       bool runloop_paused,
       bool *nonblock_state);
 
@@ -276,7 +275,6 @@ uint64_t input_menu_keys_pressed(
       void *data,
       uint64_t old_input,
       uint64_t *last_input,
-      uint64_t *trigger_input,
       bool runloop_paused,
       bool *nonblock_state);
 #endif

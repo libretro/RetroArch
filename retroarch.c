@@ -2242,7 +2242,6 @@ bool runloop_msg_queue_pull(const char **ret)
 static enum runloop_state runloop_check_state(
       settings_t *settings,
       uint64_t current_input,
-      uint64_t trigger_input,
       bool input_driver_is_nonblock,
       bool menu_is_alive,
       unsigned *sleep_ms)
@@ -2375,13 +2374,15 @@ static enum runloop_state runloop_check_state(
 #ifdef HAVE_MENU
    if (menu_is_alive)
    {
+      static uint64_t old_input = 0;
       menu_ctx_iterate_t iter;
-      enum menu_action action = (enum menu_action)menu_event(current_input, trigger_input);
-      bool focused            = pause_nonactive ? is_focused : true;
+      uint64_t trigger_input    = current_input & ~old_input;
+      enum menu_action action   = (enum menu_action)menu_event(current_input, trigger_input);
+      bool focused              = pause_nonactive ? is_focused : true;
 
-      focused                 = focused && !ui_companion_is_on_foreground();
+      focused                   = focused && !ui_companion_is_on_foreground();
 
-      iter.action             = action;
+      iter.action               = action;
 
       if (!menu_driver_iterate(&iter))
          rarch_menu_running_finished();
@@ -2391,6 +2392,8 @@ static enum runloop_state runloop_check_state(
                (current_core_type == CORE_TYPE_DUMMY)
                )
             ;
+
+      old_input                 = current_input;
 
       if (!focused)
          return RUNLOOP_STATE_SLEEP;
@@ -2861,7 +2864,6 @@ int runloop_iterate(unsigned *sleep_ms)
 {
    unsigned i;
    retro_time_t current, target, to_sleep_ms;
-   uint64_t trigger_input                       = 0;
    static uint64_t last_input                   = 0;
    bool input_driver_is_nonblock                = false;
    settings_t *settings                         = config_get_ptr();
@@ -2880,11 +2882,11 @@ int runloop_iterate(unsigned *sleep_ms)
 #ifdef HAVE_MENU
       menu_is_alive ? 
       input_menu_keys_pressed(settings,old_input,
-            &last_input, &trigger_input, runloop_paused,
+            &last_input, runloop_paused,
             &input_driver_is_nonblock) :
 #endif
       input_keys_pressed(settings, old_input, &last_input,
-            &trigger_input, runloop_paused,
+            runloop_paused,
             &input_driver_is_nonblock);
 
    if (runloop_frame_time.callback)
@@ -2917,7 +2919,6 @@ int runloop_iterate(unsigned *sleep_ms)
          runloop_check_state(
             settings,
             current_input,
-            trigger_input,
             input_driver_is_nonblock,
             menu_is_alive,
             sleep_ms))
