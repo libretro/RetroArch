@@ -246,7 +246,6 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
          input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
 
       trigger_input = 0;
-      ok_trigger    = 0;
    }
    else
    {
