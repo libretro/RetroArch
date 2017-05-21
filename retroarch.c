@@ -2249,12 +2249,14 @@ static enum runloop_state runloop_check_state(
       bool menu_is_alive,
       unsigned *sleep_ms)
 {
+   static bool old_fs_toggle_pressed= false;
    static bool old_focus            = true;
    bool is_focused                  = false;
    bool is_alive                    = false;
    uint64_t frame_count             = 0;
    bool focused                     = true;
    bool pause_nonactive             = settings->bools.pause_nonactive;
+   bool fs_toggle_triggered         = false;
 
    video_driver_get_status(&frame_count, &is_alive, &is_focused);
 
@@ -2272,15 +2274,24 @@ static enum runloop_state runloop_check_state(
    }
 #endif
 
-   if (runloop_cmd_triggered(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
+   /* Check fullscreen toggle */
    {
-      bool fullscreen_toggled = !runloop_paused
+      bool fs_toggle_pressed = runloop_cmd_press(
+            current_input, RARCH_FULLSCREEN_TOGGLE_KEY);
+      fs_toggle_triggered    = fs_toggle_pressed && !old_fs_toggle_pressed;
+
+      if (fs_toggle_triggered)
+      {
+         bool fullscreen_toggled = !runloop_paused
 #ifdef HAVE_MENU
-         || menu_is_alive;
+            || menu_is_alive;
 #endif
 
-      if (fullscreen_toggled)
-         command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
+         if (fullscreen_toggled)
+            command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
+      }
+
+      old_fs_toggle_pressed = fs_toggle_pressed;
    }
 
    /* Check mouse grab toggle */
@@ -2555,7 +2566,7 @@ static enum runloop_state runloop_check_state(
          check_is_oneshot = trig_frameadvance || 
             runloop_cmd_press(current_input, RARCH_REWIND);
 
-         if (runloop_cmd_triggered(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
+         if (fs_toggle_triggered)
          {
             command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
             if (!runloop_idle)
