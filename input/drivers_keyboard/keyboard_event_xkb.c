@@ -19,13 +19,14 @@
 
 #include <xkbcommon/xkbcommon.h>
 
+#include <sys/mman.h>
+
 #include <lists/string_list.h>
 
 #include "../input_joypad_driver.h"
 #include "../input_keymaps.h"
 #include "../input_keyboard.h"
 #include "../../configuration.h"
-#include <sys/mman.h>
 
 #define MOD_MAP_SIZE 5
 
