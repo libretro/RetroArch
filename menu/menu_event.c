@@ -248,33 +248,35 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
       trigger_input = 0;
       ok_trigger    = 0;
    }
-
-   if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP))
-      ret = MENU_ACTION_UP;
-   else if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN))
-      ret = MENU_ACTION_DOWN;
-   else if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT))
-      ret = MENU_ACTION_LEFT;
-   else if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT))
-      ret = MENU_ACTION_RIGHT;
-   else if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L))
-      ret = MENU_ACTION_SCROLL_UP;
-   else if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R))
-      ret = MENU_ACTION_SCROLL_DOWN;
-   else if (ok_trigger)
-      ret = MENU_ACTION_OK;
-   else if (trigger_input & (UINT64_C(1) << menu_cancel_btn))
-      ret = MENU_ACTION_CANCEL;
-   else if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_X))
-      ret = MENU_ACTION_SEARCH;
-   else if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_Y))
-      ret = MENU_ACTION_SCAN;
-   else if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_START))
-      ret = MENU_ACTION_START;
-   else if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_SELECT))
-      ret = MENU_ACTION_INFO;
-   else if (trigger_input & (UINT64_C(1) << RARCH_MENU_TOGGLE))
-      ret = MENU_ACTION_TOGGLE;
+   else
+   {
+      if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP))
+         ret = MENU_ACTION_UP;
+      else if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN))
+         ret = MENU_ACTION_DOWN;
+      else if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT))
+         ret = MENU_ACTION_LEFT;
+      else if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT))
+         ret = MENU_ACTION_RIGHT;
+      else if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L))
+         ret = MENU_ACTION_SCROLL_UP;
+      else if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R))
+         ret = MENU_ACTION_SCROLL_DOWN;
+      else if (ok_trigger)
+         ret = MENU_ACTION_OK;
+      else if (trigger_input & (UINT64_C(1) << menu_cancel_btn))
+         ret = MENU_ACTION_CANCEL;
+      else if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_X))
+         ret = MENU_ACTION_SEARCH;
+      else if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_Y))
+         ret = MENU_ACTION_SCAN;
+      else if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_START))
+         ret = MENU_ACTION_START;
+      else if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_SELECT))
+         ret = MENU_ACTION_INFO;
+      else if (trigger_input & (UINT64_C(1) << RARCH_MENU_TOGGLE))
+         ret = MENU_ACTION_TOGGLE;
+   }
 
    if (menu_event_kb_is_set(RETROK_F11))
    {
