@@ -2402,34 +2402,43 @@ static enum runloop_state runloop_check_state(
    }
 
 #ifdef HAVE_MENU
-   if (menu_event_kb_is_set(RETROK_F1) == 1)
+   /* Check menu toggle */
    {
-      if (menu_driver_is_alive())
+      static bool old_pressed = false;
+      bool pressed            = runloop_cmd_press(
+            current_input, RARCH_MENU_TOGGLE);
+
+      if (menu_event_kb_is_set(RETROK_F1) == 1)
       {
-         if (rarch_is_inited && (current_core_type != CORE_TYPE_DUMMY))
+         if (menu_driver_is_alive())
          {
-            rarch_menu_running_finished();
-            menu_event_kb_set(false, RETROK_F1);
+            if (rarch_is_inited && (current_core_type != CORE_TYPE_DUMMY))
+            {
+               rarch_menu_running_finished();
+               menu_event_kb_set(false, RETROK_F1);
+            }
          }
       }
-   }
-   else if ((!menu_event_kb_is_set(RETROK_F1) && 
-            runloop_cmd_triggered(trigger_input, RARCH_MENU_TOGGLE)) ||
-         (current_core_type == CORE_TYPE_DUMMY))
-   {
-      if (menu_driver_is_alive())
+      else if ((!menu_event_kb_is_set(RETROK_F1) && 
+               (pressed && !old_pressed)) ||
+            (current_core_type == CORE_TYPE_DUMMY))
       {
-         if (rarch_is_inited && (current_core_type != CORE_TYPE_DUMMY))
-            rarch_menu_running_finished();
+         if (menu_driver_is_alive())
+         {
+            if (rarch_is_inited && (current_core_type != CORE_TYPE_DUMMY))
+               rarch_menu_running_finished();
+         }
+         else
+         {
+            menu_display_toggle_set_reason(MENU_TOGGLE_REASON_USER);
+            rarch_menu_running();
+         }
       }
       else
-      {
-        menu_display_toggle_set_reason(MENU_TOGGLE_REASON_USER);
-        rarch_menu_running();
-      }
+         menu_event_kb_set(false, RETROK_F1);
+
+      old_pressed             = pressed;
    }
-   else
-      menu_event_kb_set(false, RETROK_F1);
 
    if (menu_driver_is_alive())
    {
