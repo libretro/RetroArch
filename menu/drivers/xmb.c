@@ -229,6 +229,7 @@ typedef struct xmb_handle
       } label;
 
       float dialog;
+      float slice;
    } margins;
 
    float above_subitem_offset;
@@ -855,12 +856,13 @@ static void xmb_render_messagebox_internal(
 
    menu_display_draw_texture_slice(
          x - longest_width/2 - xmb->margins.dialog,
-         y + 32 - xmb->margins.dialog,
+         y + xmb->margins.slice - xmb->margins.dialog,
          256, 256,
          longest_width + xmb->margins.dialog*2,
          line_height * list->size + xmb->margins.dialog*2,
          width, height,
-         &coord_white[0], 32, 1.0, xmb->textures.list[XMB_TEXTURE_DIALOG_SLICE]);
+         &coord_white[0],
+         xmb->margins.slice, 1.0, xmb->textures.list[XMB_TEXTURE_DIALOG_SLICE]);
 
    for (i = 0; i < list->size; i++)
    {
@@ -3048,6 +3050,8 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
    xmb->margins.setting.left     = 600.0 * scale_factor;
    xmb->margins.dialog           = 48 * scale_factor;
 
+   xmb->margins.slice            = 16;
+
    xmb->icon.size                = 128.0 * scale_factor;
    xmb->font_size                = new_font_size;
 
@@ -3116,6 +3120,7 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
    xmb->margins.label.top        = new_font_size / 3.0;
    xmb->margins.setting.left     = 600.0 * scale_factor;
    xmb->margins.dialog           = 48 * scale_factor;
+   xmb->margins.slice            = 16;
    xmb->icon.size                = 128.0 * scale_factor;
    xmb->font_size                = new_font_size;
 
