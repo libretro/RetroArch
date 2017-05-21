@@ -123,6 +123,8 @@ struct audio_mixer_stream
    audio_mixer_stop_cb_t stop_cb;
    enum audio_mixer_state state;
    float volume;
+   void *buf;
+   size_t bufsize;
 };
 
 static unsigned audio_mixer_current_max_idx              = 0;
@@ -897,6 +899,7 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
    audio_mixer_sound_t *handle   = NULL;
    audio_mixer_stop_cb_t stop_cb = NULL;
    bool looped                   = false;
+   void *buf                     = malloc(params->bufsize);
 
    if (audio_mixer_current_max_idx >= AUDIO_MIXER_MAX_STREAMS)
       return false;
@@ -904,13 +907,15 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
    if (params->state == AUDIO_STREAM_STATE_NONE)
       return false;
 
+   memcpy(buf, params->buf, params->bufsize);
+
    switch (params->type)
    {
       case AUDIO_MIXER_TYPE_WAV:
-         handle = audio_mixer_load_wav(params->buf, params->bufsize);
+         handle = audio_mixer_load_wav(buf, params->bufsize);
          break;
       case AUDIO_MIXER_TYPE_OGG:
-         handle = audio_mixer_load_ogg(params->buf, params->bufsize);
+         handle = audio_mixer_load_ogg(buf, params->bufsize);
          break;
       case AUDIO_MIXER_TYPE_NONE:
          return false;
@@ -931,6 +936,7 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
       audio_set_bool(AUDIO_ACTION_MIXER, true);
    }
 
+   audio_mixer_streams[audio_mixer_current_max_idx].buf     = buf;
    audio_mixer_streams[audio_mixer_current_max_idx].handle  = handle;
    audio_mixer_streams[audio_mixer_current_max_idx].voice   = voice;
    audio_mixer_streams[audio_mixer_current_max_idx].state   = params->state;
@@ -951,7 +957,7 @@ static void audio_driver_mixer_remove_stream(unsigned i)
    {
       case AUDIO_STREAM_STATE_PLAYING:
          audio_mixer_stop(voice);
-#if 0
+#if 1
          /* TODO - crashes at this part */
          if (handle)
             audio_mixer_destroy(handle);
@@ -959,7 +965,7 @@ static void audio_driver_mixer_remove_stream(unsigned i)
          break;
       case AUDIO_STREAM_STATE_PLAYING_LOOPED:
          audio_mixer_stop(voice);
-#if 0
+#if 1
          /* TODO - crashes at this part */
          if (handle)
             audio_mixer_destroy(handle);
