@@ -60,7 +60,7 @@ else
 	OBJ := $(filter-out $(BLACKLIST),$(OBJ))
 
 	OBJ += gfx/drivers/wiiu_gfx.o
-#	OBJ += gfx/drivers_font/wiiu_font.o
+	OBJ += gfx/drivers_font/wiiu_font.o
 #	OBJ += menu/drivers_display/menu_display_wiiu.o
 	OBJ += input/drivers/wiiu_input.o
 	OBJ += input/drivers_joypad/wiiu_joypad.o

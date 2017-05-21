@@ -30,89 +30,13 @@
 #include "../../menu/menu_driver.h"
 #endif
 
+#include "gfx/common/gx2_common.h"
 #include "system/memory.h"
-#include "tex_shader.h"
 
 #include "wiiu_dbg.h"
 
 #include "../font_driver.h"
 
-#undef _X
-#undef _B
-
-#define _X 0x00
-#define _Y 0x01
-#define _Z 0x02
-#define _W 0x03
-#define _R 0x00
-#define _G 0x01
-#define _B 0x02
-#define _A 0x03
-#define _0 0x04
-#define _1 0x05
-#define GX2_COMP_SEL(c0, c1, c2, c3) (((c0) << 24) | ((c1) << 16) | ((c2) << 8) | (c3))
-
-//#define GX2_CAN_ACCESS_DATA_SECTION
-
-typedef struct
-{
-   int width;
-   int height;
-   GX2TVRenderMode mode;
-} wiiu_render_mode_t;
-
-typedef struct
-{
-   float x;
-   float y;
-}position_t;
-
-typedef struct
-{
-   float u;
-   float v;
-}tex_coord_t;
-
-typedef struct
-{
-   tex_shader_t* shader;
-   struct
-   {
-      GX2Texture texture;
-      int width;
-      int height;
-      bool enable;
-      position_t* position;
-      tex_coord_t* tex_coord;
-   } menu;
-
-   GX2Sampler sampler_nearest;
-   GX2Sampler sampler_linear;
-   GX2Texture texture;
-   position_t* position;
-   tex_coord_t* tex_coord;
-   int width;
-   int height;
-
-
-   void* drc_scan_buffer;
-   void* tv_scan_buffer;
-   GX2ColorBuffer color_buffer;
-   GX2ContextState* ctx_state;
-   void* cmd_buffer;
-
-   wiiu_render_mode_t render_mode;
-   video_viewport_t vp;
-   int frames;
-   OSTime last_vsync;
-   bool vsync;
-   bool rgb32;
-   bool smooth;
-   unsigned rotation;
-   bool keep_aspect;
-   bool should_resize;
-
-} wiiu_video_t;
 
 static const wiiu_render_mode_t wiiu_render_mode_map[] =
 {
@@ -503,6 +427,10 @@ static void* wiiu_gfx_init(const video_info_t* video,
 
    driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &refresh_rate);
 
+   font_driver_init_osd(wiiu, false,
+         video->is_threaded,
+         FONT_DRIVER_RENDER_WIIU);
+
    return wiiu;
 }
 
@@ -686,8 +614,13 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
       GX2SetPixelSampler(&wiiu->sampler_linear, wiiu->shader->sampler.location);
 
       GX2DrawEx(GX2_PRIMITIVE_MODE_QUADS, 4, 0, 1);
-      GX2DrawDone();
    }
+
+   if (msg)
+      font_driver_render_msg(video_info, NULL, msg, NULL);
+
+   if (wiiu->menu.enable)
+      GX2DrawDone();
 
    GX2CopyColorBufferToScanBuffer(&wiiu->color_buffer, GX2_SCAN_TARGET_DRC);
    GX2CopyColorBufferToScanBuffer(&wiiu->color_buffer, GX2_SCAN_TARGET_TV);
@@ -841,6 +774,11 @@ static void wiiu_gfx_set_osd_msg(void* data,
       const char* msg,
       const void* params, void* font)
 {
+   wiiu_video_t* wiiu = (wiiu_video_t*)data;
+
+   if (wiiu)
+      font_driver_render_msg(video_info, font, msg, params);
+
 }
 
 static const video_poke_interface_t wiiu_poke_interface =

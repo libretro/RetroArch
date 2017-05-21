@@ -72,6 +72,8 @@ typedef enum GX2BlendMode
    GX2_BLEND_MODE_INV_SRC1_COLOR          = 16,
    GX2_BLEND_MODE_SRC1_ALPHA              = 17,
    GX2_BLEND_MODE_INV_SRC1_ALPHA          = 18,
+   GX2_BLEND_MODE_BLEND_ALPHA             = 19,
+   GX2_BLEND_MODE_INV_BLEND_ALPHA         = 20,
 } GX2BlendMode;
 
 typedef enum GX2BlendCombineMode

@@ -132,6 +132,7 @@ IMPORT(GX2SetScissor);
 IMPORT(GX2SetDepthOnlyControl);
 IMPORT(GX2SetColorControl);
 IMPORT(GX2SetBlendControl);
+IMPORT(GX2SetBlendConstantColor);
 IMPORT(GX2SetCullOnlyControl);
 IMPORT(GX2CalcFetchShaderSizeEx);
 IMPORT(GX2InitFetchShaderEx);

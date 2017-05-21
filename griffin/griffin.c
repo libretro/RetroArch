@@ -391,6 +391,10 @@ FONTS
 #include "../gfx/drivers_font/ctr_font.c"
 #endif
 
+#if defined(WIIU)
+#include "../gfx/drivers_font/wiiu_font.c"
+#endif
+
 #if defined(HAVE_CACA)
 #include "../gfx/drivers_font/caca_font.c"
 #endif
