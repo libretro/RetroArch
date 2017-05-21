@@ -257,9 +257,6 @@ static void retroarch_msg_queue_deinit(void)
 
 #ifdef HAVE_THREADS
    slock_unlock(_runloop_msg_queue_lock);
-#endif
-
-#ifdef HAVE_THREADS
    slock_free(_runloop_msg_queue_lock);
    _runloop_msg_queue_lock = NULL;
 #endif
