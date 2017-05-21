@@ -2235,6 +2235,13 @@ bool runloop_msg_queue_pull(const char **ret)
 
 #define runloop_check_cheevos() (settings->bools.cheevos_enable && cheevos_loaded && (!cheats_are_enabled && !cheats_were_enabled))
 
+#ifdef HAVE_NETWORKING
+/* FIXME: This is an ugly way to tell Netplay this... */
+#define runloop_netplay_pause() netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL)
+#else
+#define runloop_netplay_pause() ((void)0)
+#endif
+
 static enum runloop_state runloop_check_state(
       settings_t *settings,
       uint64_t current_input,
@@ -2603,13 +2610,6 @@ static enum runloop_state runloop_check_state(
 
    return RUNLOOP_STATE_ITERATE;
 }
-
-#ifdef HAVE_NETWORKING
-/* FIXME: This is an ugly way to tell Netplay this... */
-#define runloop_netplay_pause() netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL)
-#else
-#define runloop_netplay_pause() ((void)0)
-#endif
 
 void runloop_set(enum runloop_action action)
 {
