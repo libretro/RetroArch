@@ -2252,9 +2252,6 @@ static enum runloop_state runloop_check_state(
       unsigned *sleep_ms)
 {
    static bool old_focus            = true;
-#ifdef HAVE_OVERLAY
-   static char prev_overlay_restore = false;
-#endif
    bool is_focused                  = false;
    bool is_alive                    = false;
    uint64_t frame_count             = 0;
@@ -2294,17 +2291,20 @@ static enum runloop_state runloop_check_state(
 
 
 #ifdef HAVE_OVERLAY
-   if (input_keyboard_ctl(
-            RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED, NULL))
    {
-      prev_overlay_restore  = false;
-      command_event(CMD_EVENT_OVERLAY_INIT, NULL);
-   }
-   else if (prev_overlay_restore)
-   {
-      if (!settings->bools.input_overlay_hide_in_menu)
+      static char prev_overlay_restore = false;
+      if (input_keyboard_ctl(
+               RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED, NULL))
+      {
+         prev_overlay_restore  = false;
          command_event(CMD_EVENT_OVERLAY_INIT, NULL);
-      prev_overlay_restore = false;
+      }
+      else if (prev_overlay_restore)
+      {
+         if (!settings->bools.input_overlay_hide_in_menu)
+            command_event(CMD_EVENT_OVERLAY_INIT, NULL);
+         prev_overlay_restore = false;
+      }
    }
 #endif
 
