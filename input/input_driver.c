@@ -609,40 +609,40 @@ static INLINE bool input_menu_keys_pressed_internal(
 }
 
 static bool input_driver_toggle_button_combo(
-      unsigned mode, uint64_t *trigger_input)
+      unsigned mode, uint64_t input)
 {
    switch (mode)
    {
       case INPUT_TOGGLE_DOWN_Y_L_R:
-         if (!BIT64_GET(*trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_DOWN))
             return false;
-         if (!BIT64_GET(*trigger_input, RETRO_DEVICE_ID_JOYPAD_Y))
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_Y))
             return false;
-         if (!BIT64_GET(*trigger_input, RETRO_DEVICE_ID_JOYPAD_L))
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_L))
             return false;
-         if (!BIT64_GET(*trigger_input, RETRO_DEVICE_ID_JOYPAD_R))
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_R))
             return false;
          break;
       case INPUT_TOGGLE_L3_R3:
-         if (!BIT64_GET(*trigger_input, RETRO_DEVICE_ID_JOYPAD_L3))
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_L3))
             return false;
-         if (!BIT64_GET(*trigger_input, RETRO_DEVICE_ID_JOYPAD_R3))
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_R3))
             return false;
          break;
       case INPUT_TOGGLE_L1_R1_START_SELECT:
-         if (!BIT64_GET(*trigger_input, RETRO_DEVICE_ID_JOYPAD_START))
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_START))
             return false;
-         if (!BIT64_GET(*trigger_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_SELECT))
             return false;
-         if (!BIT64_GET(*trigger_input, RETRO_DEVICE_ID_JOYPAD_L))
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_L))
             return false;
-         if (!BIT64_GET(*trigger_input, RETRO_DEVICE_ID_JOYPAD_R))
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_R))
             return false;
          break;
       case INPUT_TOGGLE_START_SELECT:
-         if (!BIT64_GET(*trigger_input, RETRO_DEVICE_ID_JOYPAD_START))
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_START))
             return false;
-         if (!BIT64_GET(*trigger_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_SELECT))
             return false;
          break;
       default:
@@ -733,7 +733,7 @@ uint64_t input_menu_keys_pressed(
          const struct retro_keybind *mtkey = &input_config_binds[0][RARCH_MENU_TOGGLE];
          if (  ((settings->uints.input_menu_toggle_gamepad_combo != INPUT_TOGGLE_NONE) &&
                   input_driver_toggle_button_combo(
-                     settings->uints.input_menu_toggle_gamepad_combo, &old_input))
+                     settings->uints.input_menu_toggle_gamepad_combo, old_input))
                || input_menu_keys_pressed_internal(
                   binds, settings, joypad_info, RARCH_MENU_TOGGLE, max_users,
                   mtkey->valid,
@@ -959,7 +959,8 @@ uint64_t input_keys_pressed(
 #ifdef HAVE_MENU
    if (
          ((settings->uints.input_menu_toggle_gamepad_combo != INPUT_TOGGLE_NONE) &&
-         input_driver_toggle_button_combo(settings->uints.input_menu_toggle_gamepad_combo, &old_input))
+         input_driver_toggle_button_combo(
+            settings->uints.input_menu_toggle_gamepad_combo, old_input))
          || input_keys_pressed_internal(settings, joypad_info, RARCH_MENU_TOGGLE, binds))
       ret |= (UINT64_C(1) << RARCH_MENU_TOGGLE);
 #endif
