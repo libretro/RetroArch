@@ -58,19 +58,21 @@ void free_xkb(void)
 
 int init_xkb(int fd, size_t size)
 {
-   char *map_str;
+   char *map_str        = NULL;
    mod_map_idx          = (xkb_mod_index_t *)calloc(
          MOD_MAP_SIZE, sizeof(xkb_mod_index_t));
 
    if (!mod_map_idx)
       goto error;
 
-   mod_map_bit = (uint16_t*)calloc(MOD_MAP_SIZE, sizeof(uint16_t));
+   mod_map_bit          = (uint16_t*)
+      calloc(MOD_MAP_SIZE, sizeof(uint16_t));
 
    if (!mod_map_bit)
       goto error;
 
-   xkb_ctx = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+   xkb_ctx              = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+
    if (xkb_ctx)
    {
       if (fd >= 0)
@@ -107,6 +109,7 @@ int init_xkb(int fd, size_t size)
             string_list_free(list);
       }
    }
+
    if (xkb_map)
    {
       xkb_mod_index_t *map_idx = (xkb_mod_index_t*)&mod_map_idx[0];
