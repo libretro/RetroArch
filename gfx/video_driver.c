@@ -1363,23 +1363,16 @@ void video_driver_set_pixel_format(enum retro_pixel_format fmt)
  **/
 bool video_driver_cached_frame(void)
 {
-   retro_ctx_frame_info_t info;
    void *recording  = recording_driver_get_data_ptr();
 
    /* Cannot allow recording when pushing duped frames. */
    recording_data   = NULL;
 
-   /* Not 100% safe, since the library might have
-    * freed the memory, but no known implementations do this.
-    * It would be really stupid at any rate ...
-    */
-   info.data        = (frame_cache_data != RETRO_HW_FRAME_BUFFER_VALID) 
-      ? frame_cache_data : NULL;
-   info.width       = frame_cache_width;
-   info.height      = frame_cache_height;
-   info.pitch       = frame_cache_pitch;
-
-   core_frame(&info);
+   retro_ctx.frame_cb(
+         (frame_cache_data != RETRO_HW_FRAME_BUFFER_VALID) 
+         ? frame_cache_data : NULL,
+         frame_cache_width,
+         frame_cache_height, frame_cache_pitch);
 
    recording_data   = recording;
 

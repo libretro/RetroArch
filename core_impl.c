@@ -44,8 +44,21 @@
 #include "gfx/video_driver.h"
 #include "audio/audio_driver.h"
 
-static struct              retro_callbacks retro_ctx;
+struct                     retro_callbacks retro_ctx;
 struct                     retro_core_t current_core;
+
+static void retro_run_null(void)
+{
+}
+
+static void retro_frame_null(const void *data, unsigned width,
+      unsigned height, size_t pitch)
+{
+}
+
+static void retro_input_poll_null(void)
+{
+}
 
 static void core_input_state_poll_maybe(void)
 {
@@ -133,11 +146,11 @@ bool core_deinit(void *data)
    if (!cbs)
       return false;
 
-   cbs->frame_cb        = NULL;
+   cbs->frame_cb        = retro_frame_null;
    cbs->sample_cb       = NULL;
    cbs->sample_batch_cb = NULL;
    cbs->state_cb        = NULL;
-   cbs->poll_cb         = NULL;
+   cbs->poll_cb         = retro_input_poll_null;
 
    current_core.inited  = false;
 
@@ -244,10 +257,6 @@ void core_uninit_symbols(void)
    current_core.symbols_inited = false;
 }
 
-static void retro_run_null(void)
-{
-}
-
 bool core_init_symbols(enum rarch_core_type *type)
 {
    if (!type)
@@ -308,9 +317,7 @@ bool core_get_system_info(struct retro_system_info *system)
 
 bool core_unserialize(retro_ctx_serialize_info_t *info)
 {
-   if (!info)
-      return false;
-   if (!current_core.retro_unserialize(info->data_const, info->size))
+   if (!info || !current_core.retro_unserialize(info->data_const, info->size))
       return false;
 
 #if HAVE_NETWORKING
@@ -322,9 +329,7 @@ bool core_unserialize(retro_ctx_serialize_info_t *info)
 
 bool core_serialize(retro_ctx_serialize_info_t *info)
 {
-   if (!info)
-      return false;
-   if (!current_core.retro_serialize(info->data, info->size))
+   if (!info || !current_core.retro_serialize(info->data, info->size))
       return false;
    return true;
 }
@@ -345,21 +350,6 @@ uint64_t core_serialization_quirks(void)
 void core_set_serialization_quirks(uint64_t quirks)
 {
    current_core.serialization_quirks_v = quirks;
-}
-
-void core_frame(retro_ctx_frame_info_t *info)
-{
-   if (retro_ctx.frame_cb)
-      retro_ctx.frame_cb(
-            info->data, info->width, info->height, info->pitch);
-}
-
-bool core_poll(void)
-{
-   if (!retro_ctx.poll_cb)
-      return false;
-   retro_ctx.poll_cb();
-   return true;
 }
 
 bool core_set_environment(retro_ctx_environ_info_t *info)

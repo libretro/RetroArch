@@ -141,14 +141,6 @@ typedef struct retro_ctx_environ_info
    retro_environment_t env;
 } retro_ctx_environ_info_t;
 
-typedef struct retro_ctx_frame_info
-{
-   const void *data;
-   unsigned width;
-   unsigned height;
-   size_t pitch;
-} retro_ctx_frame_info_t;
-
 typedef struct retro_callbacks
 {
    retro_video_refresh_t frame_cb;
@@ -184,10 +176,6 @@ bool core_deinit(void *data);
 bool core_unload_game(void);
 
 bool core_reset(void);
-
-void core_frame(retro_ctx_frame_info_t *info);
-
-bool core_poll(void);
 
 bool core_set_environment(retro_ctx_environ_info_t *info);
 
@@ -248,6 +236,8 @@ bool core_is_symbols_inited(void);
 bool core_is_inited(void);
 
 bool core_is_game_loaded(void);
+
+extern struct retro_callbacks retro_ctx;
 
 RETRO_END_DECLS
 

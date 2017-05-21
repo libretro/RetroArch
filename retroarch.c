@@ -2664,7 +2664,7 @@ int runloop_iterate(unsigned *sleep_ms)
    unsigned max_users                           = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
    uint64_t current_input                       = 0;
 
-   core_poll();
+   retro_ctx.poll_cb();
 
    current_input =
 #ifdef HAVE_MENU
