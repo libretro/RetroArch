@@ -2256,6 +2256,7 @@ static enum runloop_state runloop_check_state(
    bool pause_nonactive             = settings->bools.pause_nonactive;
    bool fs_toggle_triggered         = false;
 #ifdef HAVE_MENU
+   bool menu_driver_binding_state   = menu_driver_is_binding_state();
    bool menu_is_alive               = menu_driver_is_alive();
    uint64_t current_input           =
       menu_is_alive ? 
@@ -2268,7 +2269,6 @@ static enum runloop_state runloop_check_state(
    last_input                       = current_input;
 
 #ifdef HAVE_MENU
-   bool menu_driver_binding_state   = menu_driver_is_binding_state();
    if (menu_driver_binding_state)
       current_input = 0;
 #endif
