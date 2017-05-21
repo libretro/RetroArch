@@ -2420,11 +2420,8 @@ static enum runloop_state runloop_check_state(
    /* Check menu toggle */
    {
       static bool old_pressed = false;
-      unsigned mode           = settings->uints.input_menu_toggle_gamepad_combo;
       bool pressed            = runloop_cmd_press(
-            current_input, RARCH_MENU_TOGGLE) || 
-         ((mode != INPUT_TOGGLE_NONE) && 
-          input_driver_toggle_button_combo(mode, current_input));
+            current_input, RARCH_MENU_TOGGLE);
 
       if (menu_event_kb_is_set(RETROK_F1) == 1)
       {

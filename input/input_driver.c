@@ -608,7 +608,7 @@ static INLINE bool input_menu_keys_pressed_internal(
    return false;
 }
 
-bool input_driver_toggle_button_combo(
+static bool input_driver_toggle_button_combo(
       unsigned mode, uint64_t input)
 {
    switch (mode)
@@ -727,6 +727,20 @@ uint64_t input_menu_keys_pressed(
          else
             input_driver_block_hotkey         = true;
       }
+
+#ifdef HAVE_MENU
+      {
+         const struct retro_keybind *mtkey = &input_config_binds[0][RARCH_MENU_TOGGLE];
+         if (  ((settings->uints.input_menu_toggle_gamepad_combo != INPUT_TOGGLE_NONE) &&
+                  input_driver_toggle_button_combo(
+                     settings->uints.input_menu_toggle_gamepad_combo, old_input))
+               || input_menu_keys_pressed_internal(
+                  binds, settings, joypad_info, RARCH_MENU_TOGGLE, max_users,
+                  mtkey->valid,
+                  settings->bools.input_all_users_control_menu))
+            ret |= (UINT64_C(1) << RARCH_MENU_TOGGLE);
+      }
+#endif
 
       for (i = 0; i < RARCH_BIND_LIST_END; i++)
       {
@@ -941,6 +955,15 @@ uint64_t input_keys_pressed(
                RETRO_DEVICE_JOYPAD, 0, RARCH_GAME_FOCUS_TOGGLE))
          input_driver_block_hotkey = false;
    }
+
+#ifdef HAVE_MENU
+   if (
+         ((settings->uints.input_menu_toggle_gamepad_combo != INPUT_TOGGLE_NONE) &&
+         input_driver_toggle_button_combo(
+            settings->uints.input_menu_toggle_gamepad_combo, old_input))
+         || input_keys_pressed_internal(settings, joypad_info, RARCH_MENU_TOGGLE, binds))
+      ret |= (UINT64_C(1) << RARCH_MENU_TOGGLE);
+#endif
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
