@@ -667,137 +667,133 @@ static bool input_driver_toggle_button_combo(
  */
 uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
 {
+   unsigned i;
+   rarch_joypad_info_t joypad_info;
    uint64_t             ret                     = 0;
+   const struct retro_keybind *binds[MAX_USERS] = {NULL};
+   settings_t     *settings                     = (settings_t*)data;
+   const struct retro_keybind *binds_norm       = NULL;
+   const struct retro_keybind *binds_auto       = NULL;
+   unsigned max_users                           = input_driver_max_users;
 
-   if (current_input && current_input_data)
+   if (settings->bools.menu_unified_controls && !menu_input_dialog_get_display_kb())
+      return input_keys_pressed(settings, last_input);
+
+   for (i = 0; i < max_users; i++)
    {
-      unsigned i;
-      rarch_joypad_info_t joypad_info;
-      const struct retro_keybind *binds[MAX_USERS] = {NULL};
-      settings_t     *settings                     = (settings_t*)data;
-      const struct retro_keybind *binds_norm       = NULL;
-      const struct retro_keybind *binds_auto       = NULL;
-      unsigned max_users                           = input_driver_max_users;
+      struct retro_keybind *auto_binds          = input_autoconf_binds[i];
 
-      if (settings->bools.menu_unified_controls && !menu_input_dialog_get_display_kb())
-         return input_keys_pressed(settings, last_input);
+      input_push_analog_dpad(auto_binds, ANALOG_DPAD_LSTICK);
+   }
 
-      for (i = 0; i < max_users; i++)
-      {
-         struct retro_keybind *auto_binds          = input_autoconf_binds[i];
+   joypad_info.joy_idx                          = 0;
+   joypad_info.auto_binds                       = NULL;
+   joypad_info.axis_threshold                   = input_driver_axis_threshold;
 
-         input_push_analog_dpad(auto_binds, ANALOG_DPAD_LSTICK);
-      }
+   input_driver_block_libretro_input            = false;
+   input_driver_block_hotkey                    = false;
 
-      joypad_info.joy_idx                          = 0;
-      joypad_info.auto_binds                       = NULL;
-      joypad_info.axis_threshold                   = input_driver_axis_threshold;
+   if (current_input->keyboard_mapping_is_blocked 
+         && current_input->keyboard_mapping_is_blocked(current_input_data))
+      input_driver_block_hotkey = true;
 
-      input_driver_block_libretro_input            = false;
-      input_driver_block_hotkey                    = false;
+   binds_norm = &input_config_binds[0][RARCH_ENABLE_HOTKEY];
+   binds_auto = &input_autoconf_binds[0][RARCH_ENABLE_HOTKEY];
 
-      if (current_input->keyboard_mapping_is_blocked 
-            && current_input->keyboard_mapping_is_blocked(current_input_data))
-         input_driver_block_hotkey = true;
+   for (i = 0; i < max_users; i++)
+      binds[i] = input_config_binds[i];
 
-      binds_norm = &input_config_binds[0][RARCH_ENABLE_HOTKEY];
-      binds_auto = &input_autoconf_binds[0][RARCH_ENABLE_HOTKEY];
+   if (check_input_driver_block_hotkey(binds_norm, binds_auto))
+   {
+      const struct retro_keybind *htkey = &input_config_binds[0][RARCH_ENABLE_HOTKEY];
 
-      for (i = 0; i < max_users; i++)
-         binds[i] = input_config_binds[i];
+      joypad_info.joy_idx               = settings->uints.input_joypad_map[0];
+      joypad_info.auto_binds            = input_autoconf_binds[joypad_info.joy_idx];
 
-      if (check_input_driver_block_hotkey(binds_norm, binds_auto))
-      {
-         const struct retro_keybind *htkey = &input_config_binds[0][RARCH_ENABLE_HOTKEY];
-
-         joypad_info.joy_idx               = settings->uints.input_joypad_map[0];
-         joypad_info.auto_binds            = input_autoconf_binds[joypad_info.joy_idx];
-
-         if (htkey->valid 
-               && current_input->input_state(current_input_data, joypad_info,
-                  &binds[0], 0, RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY))
-            input_driver_block_libretro_input = true;
-         else
-            input_driver_block_hotkey         = true;
-      }
+      if (htkey->valid 
+            && current_input->input_state(current_input_data, joypad_info,
+               &binds[0], 0, RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY))
+         input_driver_block_libretro_input = true;
+      else
+         input_driver_block_hotkey         = true;
+   }
 
 #ifdef HAVE_MENU
-      {
-         const struct retro_keybind *mtkey = &input_config_binds[0][RARCH_MENU_TOGGLE];
-         if (  ((settings->uints.input_menu_toggle_gamepad_combo != INPUT_TOGGLE_NONE) &&
-                  input_driver_toggle_button_combo(
-                     settings->uints.input_menu_toggle_gamepad_combo, last_input))
-               || input_menu_keys_pressed_internal(
-                  binds, settings, joypad_info, RARCH_MENU_TOGGLE, max_users,
-                  mtkey->valid,
-                  settings->bools.input_all_users_control_menu))
-            ret |= (UINT64_C(1) << RARCH_MENU_TOGGLE);
-      }
+   {
+      const struct retro_keybind *mtkey = &input_config_binds[0][RARCH_MENU_TOGGLE];
+      if (  ((settings->uints.input_menu_toggle_gamepad_combo != INPUT_TOGGLE_NONE) &&
+               input_driver_toggle_button_combo(
+                  settings->uints.input_menu_toggle_gamepad_combo, last_input))
+            || input_menu_keys_pressed_internal(
+               binds, settings, joypad_info, RARCH_MENU_TOGGLE, max_users,
+               mtkey->valid,
+               settings->bools.input_all_users_control_menu))
+         ret |= (UINT64_C(1) << RARCH_MENU_TOGGLE);
+   }
 #endif
 
-      for (i = 0; i < RARCH_BIND_LIST_END; i++)
+   for (i = 0; i < RARCH_BIND_LIST_END; i++)
+   {
+      const struct retro_keybind *mtkey = &input_config_binds[0][i];
+      if (i != RARCH_MENU_TOGGLE &&
+            input_menu_keys_pressed_internal(binds,
+               settings, joypad_info, i, max_users,
+               mtkey->valid,
+               settings->bools.input_all_users_control_menu))
+         ret |= (UINT64_C(1) << i);
+
+   }
+
+   for (i = 0; i < max_users; i++)
+   {
+      struct retro_keybind *auto_binds    = input_autoconf_binds[i];
+      input_pop_analog_dpad(auto_binds);
+   }
+
+   if (!menu_input_dialog_get_display_kb())
+   {
+      unsigned ids[13][2];
+      const struct retro_keybind *quitkey = &input_config_binds[0][RARCH_QUIT_KEY];
+      const struct retro_keybind *fskey   = &input_config_binds[0][RARCH_FULLSCREEN_TOGGLE_KEY];
+
+      ids[0][0]  = RETROK_SPACE;
+      ids[0][1]  = RETRO_DEVICE_ID_JOYPAD_START;
+      ids[1][0]  = RETROK_SLASH;
+      ids[1][1]  = RETRO_DEVICE_ID_JOYPAD_X;
+      ids[2][0]  = RETROK_RSHIFT;
+      ids[2][1]  = RETRO_DEVICE_ID_JOYPAD_SELECT;
+      ids[3][0]  = RETROK_RIGHT;
+      ids[3][1]  = RETRO_DEVICE_ID_JOYPAD_RIGHT;
+      ids[4][0]  = RETROK_LEFT;
+      ids[4][1]  = RETRO_DEVICE_ID_JOYPAD_LEFT;
+      ids[5][0]  = RETROK_DOWN;
+      ids[5][1]  = RETRO_DEVICE_ID_JOYPAD_DOWN;
+      ids[6][0]  = RETROK_UP;
+      ids[6][1]  = RETRO_DEVICE_ID_JOYPAD_UP;
+      ids[7][0]  = RETROK_PAGEUP;
+      ids[7][1]  = RETRO_DEVICE_ID_JOYPAD_L;
+      ids[8][0]  = RETROK_PAGEDOWN;
+      ids[8][1]  = RETRO_DEVICE_ID_JOYPAD_R;
+      ids[9][0]  = quitkey->key;
+      ids[9][1]  = RARCH_QUIT_KEY;
+      ids[10][0] = fskey->key;
+      ids[10][1] = RARCH_FULLSCREEN_TOGGLE_KEY;
+      ids[11][0] = RETROK_BACKSPACE;
+      ids[11][1] = RETRO_DEVICE_ID_JOYPAD_B;
+      ids[12][0] = RETROK_RETURN;
+      ids[12][1] = RETRO_DEVICE_ID_JOYPAD_A;
+
+      if (settings->bools.input_menu_swap_ok_cancel_buttons)
       {
-         const struct retro_keybind *mtkey = &input_config_binds[0][i];
-         if (i != RARCH_MENU_TOGGLE &&
-               input_menu_keys_pressed_internal(binds,
-                  settings, joypad_info, i, max_users,
-                  mtkey->valid,
-                  settings->bools.input_all_users_control_menu))
-            ret |= (UINT64_C(1) << i);
-         
+         ids[11][1] = RETRO_DEVICE_ID_JOYPAD_A;
+         ids[12][1] = RETRO_DEVICE_ID_JOYPAD_B;
       }
 
-      for (i = 0; i < max_users; i++)
+      for (i = 0; i < 13; i++)
       {
-         struct retro_keybind *auto_binds    = input_autoconf_binds[i];
-         input_pop_analog_dpad(auto_binds);
-      }
-
-      if (!menu_input_dialog_get_display_kb())
-      {
-         unsigned ids[13][2];
-         const struct retro_keybind *quitkey = &input_config_binds[0][RARCH_QUIT_KEY];
-         const struct retro_keybind *fskey   = &input_config_binds[0][RARCH_FULLSCREEN_TOGGLE_KEY];
-
-         ids[0][0]  = RETROK_SPACE;
-         ids[0][1]  = RETRO_DEVICE_ID_JOYPAD_START;
-         ids[1][0]  = RETROK_SLASH;
-         ids[1][1]  = RETRO_DEVICE_ID_JOYPAD_X;
-         ids[2][0]  = RETROK_RSHIFT;
-         ids[2][1]  = RETRO_DEVICE_ID_JOYPAD_SELECT;
-         ids[3][0]  = RETROK_RIGHT;
-         ids[3][1]  = RETRO_DEVICE_ID_JOYPAD_RIGHT;
-         ids[4][0]  = RETROK_LEFT;
-         ids[4][1]  = RETRO_DEVICE_ID_JOYPAD_LEFT;
-         ids[5][0]  = RETROK_DOWN;
-         ids[5][1]  = RETRO_DEVICE_ID_JOYPAD_DOWN;
-         ids[6][0]  = RETROK_UP;
-         ids[6][1]  = RETRO_DEVICE_ID_JOYPAD_UP;
-         ids[7][0]  = RETROK_PAGEUP;
-         ids[7][1]  = RETRO_DEVICE_ID_JOYPAD_L;
-         ids[8][0]  = RETROK_PAGEDOWN;
-         ids[8][1]  = RETRO_DEVICE_ID_JOYPAD_R;
-         ids[9][0]  = quitkey->key;
-         ids[9][1]  = RARCH_QUIT_KEY;
-         ids[10][0] = fskey->key;
-         ids[10][1] = RARCH_FULLSCREEN_TOGGLE_KEY;
-         ids[11][0] = RETROK_BACKSPACE;
-         ids[11][1] = RETRO_DEVICE_ID_JOYPAD_B;
-         ids[12][0] = RETROK_RETURN;
-         ids[12][1] = RETRO_DEVICE_ID_JOYPAD_A;
-
-         if (settings->bools.input_menu_swap_ok_cancel_buttons)
-         {
-            ids[11][1] = RETRO_DEVICE_ID_JOYPAD_A;
-            ids[12][1] = RETRO_DEVICE_ID_JOYPAD_B;
-         }
-
-         for (i = 0; i < 13; i++)
-         {
-            if (current_input->input_state(current_input_data, joypad_info, binds, 0,
-                     RETRO_DEVICE_KEYBOARD, 0, ids[i][0]))
-               BIT64_SET(ret, ids[i][1]);
-         }
+         if (current_input->input_state(current_input_data, joypad_info, binds, 0,
+                  RETRO_DEVICE_KEYBOARD, 0, ids[i][0]))
+            BIT64_SET(ret, ids[i][1]);
       }
    }
 
