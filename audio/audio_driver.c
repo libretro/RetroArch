@@ -899,12 +899,17 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
    audio_mixer_sound_t *handle   = NULL;
    audio_mixer_stop_cb_t stop_cb = NULL;
    bool looped                   = false;
-   void *buf                     = malloc(params->bufsize);
-
+   void *buf                     = NULL;
+   
    if (audio_mixer_current_max_idx >= AUDIO_MIXER_MAX_STREAMS)
       return false;
 
    if (params->state == AUDIO_STREAM_STATE_NONE)
+      return false;
+
+   buf = malloc(params->bufsize);
+
+   if (!buf)
       return false;
 
    memcpy(buf, params->buf, params->bufsize);
@@ -918,11 +923,15 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
          handle = audio_mixer_load_ogg(buf, params->bufsize);
          break;
       case AUDIO_MIXER_TYPE_NONE:
+         free(buf);
          return false;
    }
 
    if (!handle)
+   {
+      free(buf);
       return false;
+   }
 
    if (params->state == AUDIO_STREAM_STATE_PLAYING)
    {
