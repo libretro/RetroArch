@@ -2528,26 +2528,38 @@ static enum runloop_state runloop_check_state(
       }
    }
 
+   /* Check fast forward button */
    /* To avoid continous switching if we hold the button down, we require
     * that the button must go from pressed to unpressed back to pressed
     * to be able to toggle between then.
     */
-   if (runloop_cmd_triggered(trigger_input, RARCH_FAST_FORWARD_KEY))
    {
-      if (input_driver_is_nonblock)
-         input_driver_unset_nonblock_state();
-      else
-         input_driver_set_nonblock_state();
-      driver_set_nonblock_state();
-   }
-   else if ((runloop_cmd_pressed(old_input, RARCH_FAST_FORWARD_HOLD_KEY) 
-         != runloop_cmd_press(current_input, RARCH_FAST_FORWARD_HOLD_KEY)))
-   {
-      if (runloop_cmd_press(current_input, RARCH_FAST_FORWARD_HOLD_KEY))
-         input_driver_set_nonblock_state();
-      else
-         input_driver_unset_nonblock_state();
-      driver_set_nonblock_state();
+      static bool old_button_state      = false;
+      static bool old_hold_button_state = false;
+      bool new_button_state             = runloop_cmd_press(
+            current_input, RARCH_FAST_FORWARD_KEY);
+      bool new_hold_button_state        = runloop_cmd_press(
+            current_input, RARCH_FAST_FORWARD_HOLD_KEY);
+
+      if (new_button_state && !old_button_state)
+      {
+         if (input_driver_is_nonblock)
+            input_driver_unset_nonblock_state();
+         else
+            input_driver_set_nonblock_state();
+         driver_set_nonblock_state();
+      }
+      else if (old_hold_button_state != new_hold_button_state)
+      {
+         if (new_hold_button_state)
+            input_driver_set_nonblock_state();
+         else
+            input_driver_unset_nonblock_state();
+         driver_set_nonblock_state();
+      }
+
+      old_button_state                  = new_button_state;
+      old_hold_button_state             = new_hold_button_state;
    }
 
    /* Check state slots */
