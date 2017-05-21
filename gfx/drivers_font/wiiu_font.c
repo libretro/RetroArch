@@ -34,6 +34,7 @@ typedef struct
    GX2Texture texture;
    const font_renderer_driver_t* font_driver;
    void* font_data;
+   struct font_atlas* atlas;
    struct
    {
       position_t* positions;
@@ -47,7 +48,6 @@ static void* wiiu_font_init_font(void* data, const char* font_path,
       float font_size, bool is_threaded)
 {
    int i;
-   struct font_atlas* atlas = NULL;
    wiiu_font_t* font = (wiiu_font_t*)calloc(1, sizeof(*font));
 
    if (!font)
@@ -61,9 +61,9 @@ static void* wiiu_font_init_font(void* data, const char* font_path,
       return NULL;
    }
 
-   atlas = font->font_driver->get_atlas(font->font_data);
-   font->texture.surface.width       = atlas->width;
-   font->texture.surface.height      = atlas->height;
+   font->atlas = font->font_driver->get_atlas(font->font_data);
+   font->texture.surface.width       = font->atlas->width;
+   font->texture.surface.height      = font->atlas->height;
    font->texture.surface.depth       = 1;
    font->texture.surface.dim         = GX2_SURFACE_DIM_TEXTURE_2D;
    font->texture.surface.tileMode    = GX2_TILE_MODE_LINEAR_ALIGNED;
@@ -77,14 +77,14 @@ static void* wiiu_font_init_font(void* data, const char* font_path,
    font->texture.surface.image = MEM1_alloc(font->texture.surface.imageSize,
                                  font->texture.surface.alignment);
 
-   for (i = 0; (i < atlas->height) && (i < font->texture.surface.height); i++)
+   for (i = 0; (i < font->atlas->height) && (i < font->texture.surface.height); i++)
       memcpy(font->texture.surface.image + (i * font->texture.surface.pitch),
-             atlas->buffer + (i * atlas->width), atlas->width);
+             font->atlas->buffer + (i * font->atlas->width), font->atlas->width);
 
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, font->texture.surface.image,
                  font->texture.surface.imageSize);
 
-   atlas->dirty = false;
+   font->atlas->dirty = false;
 
    font->vertex_cache.size = 0x1000;
    font->vertex_cache.positions = MEM2_alloc(font->vertex_cache.size * sizeof(position_t), GX2_VERTEX_BUFFER_ALIGNMENT);
@@ -246,6 +246,17 @@ static void wiiu_font_render_line(
 
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, font->vertex_cache.positions + font->vertex_cache.current, count * sizeof(position_t));
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, font->vertex_cache.tex_coords + font->vertex_cache.current, count * sizeof(tex_coord_t));
+
+   if(font->atlas->dirty)
+   {
+      for (i = 0; (i < font->atlas->height) && (i < font->texture.surface.height); i++)
+         memcpy(font->texture.surface.image + (i * font->texture.surface.pitch),
+                font->atlas->buffer + (i * font->atlas->width), font->atlas->width);
+
+      GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, font->texture.surface.image,
+                    font->texture.surface.imageSize);
+      font->atlas->dirty = false;
+   }
 
 
 #if 0
