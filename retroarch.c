@@ -2668,11 +2668,23 @@ static enum runloop_state runloop_check_state(
       old_pressed             = pressed;
    }
 
-   if (runloop_cmd_triggered(trigger_input, RARCH_SHADER_NEXT) ||
-      runloop_cmd_triggered(trigger_input, RARCH_SHADER_PREV))
-      dir_check_shader(
-            runloop_cmd_triggered(trigger_input, RARCH_SHADER_NEXT),
-            runloop_cmd_triggered(trigger_input, RARCH_SHADER_PREV));
+   /* Check shader prev/next */
+   {
+      static bool old_shader_next = false;
+      static bool old_shader_prev = false;
+      bool shader_next            = runloop_cmd_press(
+            current_input, RARCH_SHADER_NEXT);
+      bool shader_prev            = runloop_cmd_press(
+            current_input, RARCH_SHADER_PREV);
+      bool trig_shader_next       = shader_next && !old_shader_next;
+      bool trig_shader_prev       = shader_prev && !old_shader_prev;
+
+      if (trig_shader_next || trig_shader_prev)
+         dir_check_shader(trig_shader_next, trig_shader_prev);
+
+      old_shader_next             = shader_next;
+      old_shader_prev             = shader_prev;
+   }
 
    if (runloop_cmd_triggered(trigger_input, RARCH_DISK_EJECT_TOGGLE))
       command_event(CMD_EVENT_DISK_EJECT_TOGGLE, NULL);
