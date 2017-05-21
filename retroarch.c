@@ -2314,35 +2314,47 @@ static enum runloop_state runloop_check_state(
    }
 #endif
 
-   if (time_to_exit(runloop_cmd_press(trigger_input, RARCH_QUIT_KEY)))
+   /* Check quit key */
    {
-      if (runloop_exec)
-         runloop_exec = false;
+      static bool old_quit_key = false;
+      bool quit_key            = runloop_cmd_press(
+            current_input, RARCH_QUIT_KEY);
+      bool trig_quit_key       = quit_key && !old_quit_key;
 
-      if (runloop_core_shutdown_initiated && settings->bools.load_dummy_on_core_shutdown)
+      old_quit_key             = quit_key;
+
+      if (time_to_exit(trig_quit_key))
       {
-         content_ctx_info_t content_info;
+         if (runloop_exec)
+            runloop_exec = false;
 
-         content_info.argc               = 0;
-         content_info.argv               = NULL;
-         content_info.args               = NULL;
-         content_info.environ_get        = NULL;
-
-         if (!task_push_start_dummy_core(&content_info))
+         if (runloop_core_shutdown_initiated && settings->bools.load_dummy_on_core_shutdown)
          {
+            content_ctx_info_t content_info;
+
+            content_info.argc               = 0;
+            content_info.argv               = NULL;
+            content_info.args               = NULL;
+            content_info.environ_get        = NULL;
+
+            if (!task_push_start_dummy_core(&content_info))
+            {
+               old_quit_key                 = quit_key;
+               retroarch_main_quit();
+               return RUNLOOP_STATE_QUIT;
+            }
+
+            /* Loads dummy core instead of exiting RetroArch completely.
+             * Aborts core shutdown if invoked. */
+            runloop_shutdown_initiated      = false;
+            runloop_core_shutdown_initiated = false;
+         }
+         else
+         {
+            old_quit_key                 = quit_key;
             retroarch_main_quit();
             return RUNLOOP_STATE_QUIT;
          }
-
-         /* Loads dummy core instead of exiting RetroArch completely.
-          * Aborts core shutdown if invoked. */
-         runloop_shutdown_initiated      = false;
-         runloop_core_shutdown_initiated = false;
-      }
-      else
-      {
-         retroarch_main_quit();
-         return RUNLOOP_STATE_QUIT;
       }
    }
 
