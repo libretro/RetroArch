@@ -131,7 +131,6 @@
 #endif
 
 #define runloop_cmd_triggered(trigger_input, id) (BIT64_GET(trigger_input, id))
-#define runloop_cmd_pressed(old_input, id)       (BIT64_GET(old_input, id))
 
 /* Descriptive names for options without short variant.
  *
@@ -2245,7 +2244,6 @@ bool runloop_msg_queue_pull(const char **ret)
 static enum runloop_state runloop_check_state(
       settings_t *settings,
       uint64_t current_input,
-      uint64_t old_input,
       uint64_t trigger_input,
       bool input_driver_is_nonblock,
       bool menu_is_alive,
@@ -2379,8 +2377,17 @@ static enum runloop_state runloop_check_state(
    if (runloop_idle)
       return RUNLOOP_STATE_SLEEP;
 
-   if (runloop_cmd_triggered(trigger_input, RARCH_GAME_FOCUS_TOGGLE))
-      command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, (void*)(intptr_t)0);
+   /* Check game focus toggle */
+   {
+      static bool old_pressed = false;
+      bool pressed            = runloop_cmd_press(
+            current_input, RARCH_GAME_FOCUS_TOGGLE);
+
+      if (pressed && !old_pressed)
+         command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, (void*)(intptr_t)0);
+
+      old_pressed             = pressed;
+   }
 
 #ifdef HAVE_MENU
    if (menu_event_kb_is_set(RETROK_F1) == 1)
@@ -2492,7 +2499,7 @@ static enum runloop_state runloop_check_state(
        * unpause the libretro core. */
 
       /* FRAMEADVANCE will set us into pause mode. */
-      pause_pressed |= !runloop_paused 
+      pause_pressed                |= !runloop_paused 
          && runloop_cmd_triggered(trigger_input, RARCH_FRAMEADVANCE);
 
       if (focused && pause_pressed && !old_pause_pressed)
@@ -2698,12 +2705,29 @@ static enum runloop_state runloop_check_state(
       old_shader_prev             = shader_prev;
    }
 
-   if (runloop_cmd_triggered(trigger_input, RARCH_DISK_EJECT_TOGGLE))
-      command_event(CMD_EVENT_DISK_EJECT_TOGGLE, NULL);
-   else if (runloop_cmd_triggered(trigger_input, RARCH_DISK_NEXT))
-      command_event(CMD_EVENT_DISK_NEXT, NULL);
-   else if (runloop_cmd_triggered(trigger_input, RARCH_DISK_PREV))
-      command_event(CMD_EVENT_DISK_PREV, NULL);
+   /* Check disk */
+   {
+      static bool old_disk_eject  = false;
+      static bool old_disk_next   = false;
+      static bool old_disk_prev   = false;
+      bool disk_eject             = runloop_cmd_press(
+            current_input, RARCH_DISK_EJECT_TOGGLE);
+      bool disk_next              = runloop_cmd_press(
+            current_input, RARCH_DISK_NEXT);
+      bool disk_prev              = runloop_cmd_press(
+            current_input, RARCH_DISK_PREV);
+
+      if (disk_eject && !old_disk_eject)
+         command_event(CMD_EVENT_DISK_EJECT_TOGGLE, NULL);
+      else if (disk_next && !old_disk_next)
+         command_event(CMD_EVENT_DISK_NEXT, NULL);
+      else if (disk_prev && !old_disk_prev)
+         command_event(CMD_EVENT_DISK_PREV, NULL);
+
+      old_disk_eject              = disk_eject;
+      old_disk_prev               = disk_prev;
+      old_disk_next               = disk_next;
+   }
 
    /* Check reset */
    {
@@ -2805,7 +2829,7 @@ int runloop_iterate(unsigned *sleep_ms)
    current_input =
 #ifdef HAVE_MENU
       menu_is_alive ? 
-      input_menu_keys_pressed(settings, old_input,
+      input_menu_keys_pressed(settings,old_input,
             &last_input, &trigger_input, runloop_paused,
             &input_driver_is_nonblock) :
 #endif
@@ -2843,7 +2867,6 @@ int runloop_iterate(unsigned *sleep_ms)
          runloop_check_state(
             settings,
             current_input,
-            old_input,
             trigger_input,
             input_driver_is_nonblock,
             menu_is_alive,
