@@ -107,6 +107,14 @@ struct retro_core_t
    unsigned (*retro_get_region)(void);
    void *(*retro_get_memory_data)(unsigned);
    size_t (*retro_get_memory_size)(unsigned);
+
+   unsigned poll_type;
+   bool inited;
+   bool symbols_inited;
+   bool game_loaded;
+   bool input_polled;
+   bool has_set_input_descriptors;
+   uint64_t serialization_quirks_v;
 };
 
 /**
