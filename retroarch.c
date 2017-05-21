@@ -2243,11 +2243,10 @@ bool runloop_msg_queue_pull(const char **ret)
 
 static enum runloop_state runloop_check_state(
       settings_t *settings,
-      uint64_t current_input,
       bool input_nonblock_state,
-      bool menu_is_alive,
       unsigned *sleep_ms)
 {
+   static uint64_t last_input       = 0;
    static bool old_fs_toggle_pressed= false;
    static bool old_focus            = true;
    bool is_focused                  = false;
@@ -2257,10 +2256,34 @@ static enum runloop_state runloop_check_state(
    bool pause_nonactive             = settings->bools.pause_nonactive;
    bool fs_toggle_triggered         = false;
 #ifdef HAVE_MENU
+   bool menu_is_alive               = menu_driver_is_alive();
+   uint64_t current_input           =
+      menu_is_alive ? 
+      input_menu_keys_pressed(settings, last_input) :
+      input_keys_pressed(settings, last_input);
+#else
+   uint64_t current_input           =
+      input_keys_pressed(settings, last_input);
+#endif
+   last_input                       = current_input;
+
+#ifdef HAVE_MENU
    bool menu_driver_binding_state   = menu_driver_is_binding_state();
    if (menu_driver_binding_state)
       current_input = 0;
 #endif
+
+   if (input_driver_flushing_input)
+   { 
+      input_driver_flushing_input = false; 
+      if (current_input) 
+      {
+         current_input = 0;
+         if (runloop_paused)
+            BIT64_SET(current_input, RARCH_PAUSE_TOGGLE);
+         input_driver_flushing_input = true; 
+      }
+   }
 
    video_driver_get_status(&frame_count, &is_alive, &is_focused);
 
@@ -2866,38 +2889,10 @@ int runloop_iterate(unsigned *sleep_ms)
 {
    unsigned i;
    bool input_nonblock_state                    = input_driver_is_nonblock_state();
-   static uint64_t last_input                   = 0;
    settings_t *settings                         = config_get_ptr();
-#ifdef HAVE_MENU
-   bool menu_is_alive                           = menu_driver_is_alive();
-#else
-   bool menu_is_alive                           = false;
-#endif
    unsigned max_users                           = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
-   uint64_t current_input                       = 0;
 
    retro_ctx.poll_cb();
-
-   current_input =
-#ifdef HAVE_MENU
-      menu_is_alive ? 
-      input_menu_keys_pressed(settings, last_input) :
-#endif
-      input_keys_pressed(settings, last_input);
-
-   last_input                                   = current_input;
-
-   if (input_driver_flushing_input)
-   { 
-      input_driver_flushing_input = false; 
-      if (current_input) 
-      {
-         current_input = 0;
-         if (runloop_paused)
-            BIT64_SET(current_input, RARCH_PAUSE_TOGGLE);
-         input_driver_flushing_input = true; 
-      }
-   }
 
    if (runloop_frame_time.callback)
    {
@@ -2928,9 +2923,7 @@ int runloop_iterate(unsigned *sleep_ms)
    switch ((enum runloop_state)
          runloop_check_state(
             settings,
-            current_input,
             input_nonblock_state,
-            menu_is_alive,
             sleep_ms))
    {
       case RUNLOOP_STATE_QUIT:
