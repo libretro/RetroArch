@@ -241,6 +241,8 @@ static bool runloop_autosave                               = false;
 static retro_time_t frame_limit_minimum_time               = 0.0;
 static retro_time_t frame_limit_last_time                  = 0.0;
 
+extern bool input_driver_flushing_input;
+
 static void retroarch_msg_queue_deinit(void)
 {
    if (!runloop_msg_queue)
@@ -2889,6 +2891,18 @@ int runloop_iterate(unsigned *sleep_ms)
             &last_input,
             runloop_paused,
             &input_driver_is_nonblock);
+
+   if (input_driver_flushing_input)
+   { 
+      input_driver_flushing_input = false; 
+      if (current_input) 
+      {
+         current_input = 0;
+         if (runloop_paused)
+            BIT64_SET(current_input, RARCH_PAUSE_TOGGLE);
+         input_driver_flushing_input = true; 
+      }
+   }
 
    if (runloop_frame_time.callback)
    {

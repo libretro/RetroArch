@@ -124,7 +124,7 @@ void *current_input_data                          = NULL;
 static bool input_driver_block_hotkey             = false;
 static bool input_driver_block_libretro_input     = false;
 static bool input_driver_nonblock_state           = false;
-static bool input_driver_flushing_input           = false;
+bool input_driver_flushing_input                  = false;
 static bool input_driver_data_own                 = false;
 static float input_driver_axis_threshold          = 0.0f;
 static unsigned input_driver_max_users            = 0;
@@ -806,20 +806,7 @@ uint64_t input_menu_keys_pressed(
       }
    }
 
-   *last_input    = ret;
-
-   if (input_driver_flushing_input)
-   { 
-      input_driver_flushing_input = false; 
-      if (ret) 
-      {
-         ret = 0;
-         if (runloop_paused)
-            BIT64_SET(ret, RARCH_PAUSE_TOGGLE);
-         input_driver_flushing_input = true; 
-      }
-   }
-
+   *last_input     = ret;
    *nonblock_state = input_driver_nonblock_state;
 
    return ret;
@@ -967,20 +954,7 @@ uint64_t input_keys_pressed(
          ret |= (UINT64_C(1) << i);
    }
 
-   *last_input    = ret;
-
-   if (input_driver_flushing_input)
-   { 
-      input_driver_flushing_input = false; 
-      if (ret) 
-      {
-         ret = 0;
-         if (runloop_paused)
-            BIT64_SET(ret, RARCH_PAUSE_TOGGLE);
-         input_driver_flushing_input = true; 
-      }
-   }
-
+   *last_input     = ret;
    *nonblock_state = input_driver_nonblock_state;
 
    return ret;
