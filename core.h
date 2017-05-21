@@ -154,7 +154,7 @@ bool core_load(unsigned poll_type_behavior);
 
 bool core_unload(void);
 
-bool core_set_default_callbacks(void *data);
+bool core_set_default_callbacks(struct retro_callbacks *cbs);
 
 bool core_set_rewind_callbacks(void);
 

@@ -117,13 +117,8 @@ static bool core_init_libretro_cbs(struct retro_callbacks *cbs)
  *
  * Binds the libretro callbacks to default callback functions.
  **/
-bool core_set_default_callbacks(void *data)
+bool core_set_default_callbacks(struct retro_callbacks *cbs)
 {
-   struct retro_callbacks *cbs = (struct retro_callbacks*)data;
-
-   if (!cbs)
-      return false;
-
    cbs->frame_cb        = video_driver_frame;
    cbs->sample_cb       = audio_driver_sample;
    cbs->sample_batch_cb = audio_driver_sample_batch;
@@ -254,9 +249,7 @@ void core_uninit_symbols(void)
 
 bool core_init_symbols(enum rarch_core_type *type)
 {
-   if (!type)
-      return false;
-   if (!init_libretro_sym(*type, &current_core))
+   if (!type || !init_libretro_sym(*type, &current_core))
       return false;
 
    if (!current_core.retro_run)
