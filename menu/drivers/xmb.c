@@ -577,7 +577,7 @@ static void xmb_draw_icon(
 
    draw.width           = icon_size;
    draw.height          = icon_size;
-#if defined(VITA)
+#if defined(VITA) || defined(WIIU)
    draw.width          *= scale_factor;
    draw.height         *= scale_factor;
 #endif
@@ -598,7 +598,7 @@ static void xmb_draw_icon(
       draw.x            = x + shadow_offset;
       draw.y            = height - y - shadow_offset;
 
-#if defined(VITA)
+#if defined(VITA) || defined(WIIU)
       if(scale_factor < 1)
       {
          draw.x         = draw.x + (icon_size-draw.width)/2;
@@ -612,7 +612,7 @@ static void xmb_draw_icon(
    draw.x               = x;
    draw.y               = height - y;
 
-#if defined(VITA)
+#if defined(VITA) || defined(WIIU)
    if(scale_factor < 1)
    {
       draw.x            = draw.x + (icon_size-draw.width)/2;
