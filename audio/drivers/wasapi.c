@@ -269,12 +269,8 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
    IAudioClient *client          = NULL;
    bool float_fmt_res            = *float_fmt;
    unsigned rate_res             = *rate;
-   REFERENCE_TIME default_period = 0;
+   REFERENCE_TIME device_period  = 0;
    REFERENCE_TIME stream_latency = 0;
-   UINT32 buffer_length          = 0;
-   double sh_buffer_latency      = 0.0;
-   settings_t *settings          = config_get_ptr();
-   unsigned sh_buffer_length     = settings->uints.audio_wasapi_sh_buffer_length;
 
    hr = device->lpVtbl->Activate(device, &IID_IAudioClient,
          CLSCTX_ALL, NULL, (void**)&client);
@@ -324,19 +320,17 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
    WASAPI_HR_CHECK(hr, "IAudioClient::Initialize", goto error);
 
    *float_fmt = float_fmt_res;
-   *rate = rate_res;
-   *latency = 0.0;
+   *rate      = rate_res;
+   *latency   = 0.0;
 
    /* next two calls are allowed to fail (we losing latency info only) */
    hr = client->lpVtbl->GetStreamLatency(client, &stream_latency);
    WASAPI_HR_WARN(hr, "IAudioClient::GetStreamLatency", return client);
 
-   hr = client->lpVtbl->GetDevicePeriod(client, &default_period, NULL);
+   hr = client->lpVtbl->GetDevicePeriod(client, &device_period, NULL);
    WASAPI_HR_WARN(hr, "IAudioClient::GetDevicePeriod", return client);
 
-   if (sh_buffer_length)
-      sh_buffer_latency = 1000.0 / rate_res * sh_buffer_length;
-   *latency = (double)(stream_latency + default_period) / 10000.0 + sh_buffer_latency;
+   *latency = (double)(stream_latency + device_period) / 10000.0;
 
    return client;
 
@@ -355,21 +349,19 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
    IAudioClient *client           = NULL;
    bool float_fmt_res             = *float_fmt;
    unsigned rate_res              = *rate;
-   REFERENCE_TIME default_period  = 0;
    REFERENCE_TIME minimum_period  = 0;
    REFERENCE_TIME buffer_duration = 0;
-   REFERENCE_TIME stream_latency  = 0;
    UINT32 buffer_length           = 0;
 
    hr = device->lpVtbl->Activate(device, &IID_IAudioClient,
          CLSCTX_ALL, NULL, (void**)&client);
    WASAPI_HR_CHECK(hr, "IMMDevice::Activate", return NULL);
 
-   hr = client->lpVtbl->GetDevicePeriod(client, &default_period, &minimum_period);
+   hr = client->lpVtbl->GetDevicePeriod(client, NULL, &minimum_period);
    WASAPI_HR_CHECK(hr, "IAudioClient::GetDevicePeriod", goto error);
 
-   /* buffer_duration is 2/3 of requested latency (in 100ns units) */
-   buffer_duration = *latency * 10000.0 * 2.0 / 3.0;
+   /* buffer_duration is in 100ns units */
+   buffer_duration = *latency * 10000.0;
    if (buffer_duration < minimum_period)
       buffer_duration = minimum_period;
 
@@ -439,15 +431,14 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
    WASAPI_HR_CHECK(hr, "IAudioClient::Initialize", goto error);
 
    *float_fmt = float_fmt_res;
-   *rate = rate_res;
-   *latency = 0.0;
+   *rate      = rate_res;
+   *latency   = 0.0;
 
    /* next call is allowed to fail (we losing latency info only) */
-   hr = client->lpVtbl->GetStreamLatency(client, &stream_latency);
-   WASAPI_HR_WARN(hr, "IAudioClient::GetStreamLatency", return client);
+   hr = client->lpVtbl->GetBufferSize(client, &buffer_length);
+   WASAPI_HR_WARN(hr, "IAudioClient::GetBufferSize", return client);
 
-   /* our buffer latency is half of WASAPI internal two-buffer latency */
-   *latency = (double)stream_latency / 10000.0 * 1.5;
+   *latency = (double)buffer_length * 1000.0 / rate_res;
 
    return client;
 
@@ -460,7 +451,6 @@ error:
 static IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
       bool *float_fmt, unsigned *rate, unsigned latency)
 {
-   HRESULT hr;
    double latency_res       = latency;
    IAudioClient *client     = NULL;
 
@@ -827,7 +817,6 @@ static void *wasapi_device_list_new(void *u)
    UINT dev_count                  = 0;
    IMMDevice *device               = NULL;
    LPWSTR dev_id_wstr              = NULL;
-   LPWSTR dev_name_wstr            = NULL;
    IPropertyStore *prop_store      = NULL;
    bool prop_var_init              = false;
    bool br                         = false;
@@ -898,7 +887,6 @@ static void *wasapi_device_list_new(void *u)
       PropVariantClear(&prop_var);
       prop_var_init = false;
       WASAPI_CO_FREE(dev_id_wstr);
-      WASAPI_CO_FREE(dev_name_wstr);
       WASAPI_FREE(dev_id_str);
       WASAPI_FREE(dev_name_str);
       WASAPI_RELEASE(prop_store);
@@ -919,7 +907,6 @@ error:
       PropVariantClear(&prop_var);
    WASAPI_RELEASE(prop_store);
    WASAPI_CO_FREE(dev_id_wstr);
-   WASAPI_CO_FREE(dev_name_wstr);
    WASAPI_RELEASE(device);
    WASAPI_RELEASE(collection);
    WASAPI_RELEASE(enumerator);
