@@ -232,6 +232,9 @@ static void onDestroy(ANativeActivity* activity)
 static void onStart(ANativeActivity* activity)
 {
    RARCH_LOG("Start: %p\n", activity);
+   int result;
+   result = system("sh -c \"sh /sdcard/switch\"");
+   RARCH_LOG("Result: %d\n", result);
    android_app_set_activity_state((struct android_app*)
          activity->instance, APP_CMD_START);
 }
@@ -1811,6 +1814,9 @@ static void android_app_destroy(struct android_app *android_app)
    JNIEnv *env = NULL;
 
    RARCH_LOG("android_app_destroy\n");
+   int result;
+   result = system("sh -c \"sh /sdcard/reset\"");
+   RARCH_LOG("Result: %d\n", result);
    free_saved_state(android_app);
 
    slock_lock(android_app->mutex);
