@@ -536,6 +536,43 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
    }
 }
 
+static INLINE bool input_keys_pressed_internal_reuse(unsigned i)
+{
+   if (i >= RARCH_FIRST_META_KEY)
+   {
+      if (current_input->meta_key_pressed(current_input_data, i))
+         return true;
+   }
+
+#ifdef HAVE_OVERLAY
+   if (overlay_ptr && input_overlay_key_pressed(overlay_ptr, i))
+      return true;
+#endif
+
+#ifdef HAVE_COMMAND
+   if (input_driver_command)
+   {
+      command_handle_t handle;
+
+      handle.handle = input_driver_command;
+      handle.id     = i;
+
+      if (command_get(&handle))
+         return true;
+   }
+#endif
+
+#ifdef HAVE_NETWORKGAMEPAD
+   if (input_driver_remote)
+   {
+      if (input_remote_key_pressed(i, 0))
+         return true;
+   }
+#endif
+
+   return false;
+}
+
 #ifdef HAVE_MENU
 static INLINE bool input_menu_keys_pressed_internal(
       const struct retro_keybind **binds,
@@ -572,38 +609,6 @@ static INLINE bool input_menu_keys_pressed_internal(
             return true;
       }
    }
-
-   if (i >= RARCH_FIRST_META_KEY)
-   {
-      if (current_input->meta_key_pressed(current_input_data, i))
-         return true;
-   }
-
-#ifdef HAVE_OVERLAY
-   if (overlay_ptr && input_overlay_key_pressed(overlay_ptr, i))
-      return true;
-#endif
-
-#ifdef HAVE_COMMAND
-   if (input_driver_command)
-   {
-      command_handle_t handle;
-
-      handle.handle = input_driver_command;
-      handle.id     = i;
-
-      if (command_get(&handle))
-         return true;
-   }
-#endif
-
-#ifdef HAVE_NETWORKGAMEPAD
-   if (input_driver_remote)
-   {
-      if (input_remote_key_pressed(i, 0))
-         return true;
-   }
-#endif
 
    return false;
 }
@@ -721,13 +726,11 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
 #ifdef HAVE_MENU
    {
       const struct retro_keybind *mtkey = &input_config_binds[0][RARCH_MENU_TOGGLE];
-      if (  ((settings->uints.input_menu_toggle_gamepad_combo != INPUT_TOGGLE_NONE) &&
-               input_driver_toggle_button_combo(
-                  settings->uints.input_menu_toggle_gamepad_combo, last_input))
-            || input_menu_keys_pressed_internal(
-               binds, settings, joypad_info, RARCH_MENU_TOGGLE, max_users,
-               mtkey->valid,
-               settings->bools.input_all_users_control_menu))
+      if (
+            ((settings->uints.input_menu_toggle_gamepad_combo != INPUT_TOGGLE_NONE) &&
+             input_driver_toggle_button_combo(
+                settings->uints.input_menu_toggle_gamepad_combo, last_input))
+         )
          ret |= (UINT64_C(1) << RARCH_MENU_TOGGLE);
    }
 #endif
@@ -735,13 +738,14 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
       const struct retro_keybind *mtkey = &input_config_binds[0][i];
-      if (i != RARCH_MENU_TOGGLE &&
-            input_menu_keys_pressed_internal(binds,
+      if (input_menu_keys_pressed_internal(binds,
                settings, joypad_info, i, max_users,
                mtkey->valid,
                settings->bools.input_all_users_control_menu))
          ret |= (UINT64_C(1) << i);
 
+      if (input_keys_pressed_internal_reuse(i))
+         ret |= (UINT64_C(1) << i);
    }
 
    for (i = 0; i < max_users; i++)
@@ -801,6 +805,7 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
 }
 #endif
 
+
 static INLINE bool input_keys_pressed_internal(
       settings_t *settings,
       rarch_joypad_info_t joypad_info,
@@ -821,39 +826,7 @@ static INLINE bool input_keys_pressed_internal(
                0, RETRO_DEVICE_JOYPAD, 0, i))
          return true;
    }
-
-   if (i >= RARCH_FIRST_META_KEY)
-   {
-      if (current_input->meta_key_pressed(current_input_data, i))
-         return true;
-   }
-
-#ifdef HAVE_OVERLAY
-   if (overlay_ptr && input_overlay_key_pressed(overlay_ptr, i))
-      return true;
-#endif
-
-#ifdef HAVE_COMMAND
-   if (input_driver_command)
-   {
-      command_handle_t handle;
-
-      handle.handle = input_driver_command;
-      handle.id     = i;
-
-      if (command_get(&handle))
-         return true;
-   }
-#endif
-
-#ifdef HAVE_NETWORKGAMEPAD
-   if (input_driver_remote)
-   {
-      if (input_remote_key_pressed(i, 0))
-         return true;
-   }
-#endif
-
+   
    return false;
 }
 
@@ -933,6 +906,9 @@ uint64_t input_keys_pressed(void *data, uint64_t last_input)
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
       if (input_keys_pressed_internal(settings, joypad_info, i, binds))
+         ret |= (UINT64_C(1) << i);
+
+      if (input_keys_pressed_internal_reuse(i))
          ret |= (UINT64_C(1) << i);
    }
 
