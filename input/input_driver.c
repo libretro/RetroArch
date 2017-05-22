@@ -667,16 +667,16 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
          )
       {
          unsigned port;
-         unsigned port_max = settings->bools.input_all_users_control_menu 
+         unsigned port_max                  = 
+            settings->bools.input_all_users_control_menu 
             ? max_users : 1;
+         const input_device_driver_t *first = current_input->get_joypad_driver 
+            ? current_input->get_joypad_driver(current_input_data) : NULL;
+         const input_device_driver_t *sec   = current_input->get_sec_joypad_driver 
+            ? current_input->get_sec_joypad_driver(current_input_data) : NULL;
 
          for (port = 0; port < port_max; port++)
          {
-            const input_device_driver_t *first = current_input->get_joypad_driver 
-               ? current_input->get_joypad_driver(current_input_data) : NULL;
-            const input_device_driver_t *sec   = current_input->get_sec_joypad_driver 
-               ? current_input->get_sec_joypad_driver(current_input_data) : NULL;
-
             if (  (sec   && input_joypad_pressed(sec,
                         joypad_info, port, input_config_binds[0], i)) ||
                   (first && input_joypad_pressed(first,
@@ -723,13 +723,10 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
 #endif
 
 #ifdef HAVE_NETWORKGAMEPAD
-      if (input_driver_remote)
+      if (input_driver_remote && input_remote_key_pressed(i, 0))
       {
-         if (input_remote_key_pressed(i, 0))
-         {
-            ret |= (UINT64_C(1) << i);
-            continue;
-         }
+         ret |= (UINT64_C(1) << i);
+         continue;
       }
 #endif
    }
@@ -861,32 +858,29 @@ uint64_t input_keys_pressed(void *data, uint64_t last_input)
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
-      if (((!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
-               || !input_driver_block_hotkey))
+      if (
+            ((!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
+               || !input_driver_block_hotkey) &&
+            binds[i].valid && current_input->input_state(current_input_data,
+               joypad_info, &binds,
+               0, RETRO_DEVICE_JOYPAD, 0, i)
+         )
       {
-         bool bind_valid            = binds[i].valid;
-
-
-         if (bind_valid && current_input->input_state(current_input_data,
-                  joypad_info, &binds,
-                  0, RETRO_DEVICE_JOYPAD, 0, i))
-         {
-            ret |= (UINT64_C(1) << i);
-            continue;
-         }
+         ret |= (UINT64_C(1) << i);
+         continue;
       }
 
-      if (i >= RARCH_FIRST_META_KEY)
+      if ((i >= RARCH_FIRST_META_KEY) &&
+            current_input->meta_key_pressed(current_input_data, i)
+            )
       {
-         if (current_input->meta_key_pressed(current_input_data, i))
-         {
-            ret |= (UINT64_C(1) << i);
-            continue;
-         }
+         ret |= (UINT64_C(1) << i);
+         continue;
       }
 
 #ifdef HAVE_OVERLAY
-      if (overlay_ptr && input_overlay_key_pressed(overlay_ptr, i))
+      if (overlay_ptr && 
+            input_overlay_key_pressed(overlay_ptr, i))
       {
          ret |= (UINT64_C(1) << i);
          continue;
@@ -910,13 +904,11 @@ uint64_t input_keys_pressed(void *data, uint64_t last_input)
 #endif
 
 #ifdef HAVE_NETWORKGAMEPAD
-      if (input_driver_remote)
+      if (input_driver_remote && 
+            input_remote_key_pressed(i, 0))
       {
-         if (input_remote_key_pressed(i, 0))
-         {
-            ret |= (UINT64_C(1) << i);
-            continue;
-         }
+         ret |= (UINT64_C(1) << i);
+         continue;
       }
 #endif
    }
