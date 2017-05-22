@@ -48,6 +48,7 @@
 #include <sys/iosupport.h>
 
 #include <wiiu/os/foreground.h>
+#include <wiiu/gx2/event.h>
 #include <wiiu/procui.h>
 #include <wiiu/sysapp.h>
 #include <wiiu/ios.h>
@@ -383,6 +384,16 @@ void SaveCallback()
    OSSavesDone_ReadyToRelease();
 }
 
+static bool swap_is_pending(void* start_time)
+{
+   uint32_t swap_count, flip_count;
+   OSTime last_flip , last_vsync;
+
+   GX2GetSwapStatus(&swap_count, &flip_count, &last_flip, &last_vsync);
+
+   return last_vsync < *(OSTime*)start_time;
+}
+
 int main(int argc, char **argv)
 {
 #if 1
@@ -447,12 +458,20 @@ int main(int argc, char **argv)
    do
    {
       unsigned sleep_ms = 0;
+
+      if(video_driver_get_ptr(false))
+      {
+         OSTime start_time = OSGetSystemTime();
+         task_queue_wait(swap_is_pending, &start_time);
+      }
+      else
+         task_queue_wait(NULL, NULL);
+
       int ret = runloop_iterate(&sleep_ms);
 
       if (ret == 1 && sleep_ms > 0)
          retro_sleep(sleep_ms);
 
-      task_queue_wait();
 
       if (ret == -1)
          break;
