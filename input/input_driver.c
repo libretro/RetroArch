@@ -536,43 +536,6 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
    }
 }
 
-static INLINE bool input_keys_pressed_internal_reuse(unsigned i)
-{
-   if (i >= RARCH_FIRST_META_KEY)
-   {
-      if (current_input->meta_key_pressed(current_input_data, i))
-         return true;
-   }
-
-#ifdef HAVE_OVERLAY
-   if (overlay_ptr && input_overlay_key_pressed(overlay_ptr, i))
-      return true;
-#endif
-
-#ifdef HAVE_COMMAND
-   if (input_driver_command)
-   {
-      command_handle_t handle;
-
-      handle.handle = input_driver_command;
-      handle.id     = i;
-
-      if (command_get(&handle))
-         return true;
-   }
-#endif
-
-#ifdef HAVE_NETWORKGAMEPAD
-   if (input_driver_remote)
-   {
-      if (input_remote_key_pressed(i, 0))
-         return true;
-   }
-#endif
-
-   return false;
-}
-
 #ifdef HAVE_MENU
 static bool input_driver_toggle_button_combo(
       unsigned mode, uint64_t input)
@@ -721,10 +684,10 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
             joypad_info.axis_threshold = input_driver_axis_threshold;
 
             if (  (sec   && input_joypad_pressed(sec,
-                     joypad_info, port, input_config_binds[0], i)) ||
+                        joypad_info, port, input_config_binds[0], i)) ||
                   (first && input_joypad_pressed(first,
-                     joypad_info, port, input_config_binds[0], i))
-                  )
+                                                 joypad_info, port, input_config_binds[0], i))
+               )
             {
                ret |= (UINT64_C(1) << i);
                continue;
@@ -732,8 +695,49 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
          }
       }
 
-      if (input_keys_pressed_internal_reuse(i))
+      if (i >= RARCH_FIRST_META_KEY)
+      {
+         if (current_input->meta_key_pressed(current_input_data, i))
+         {
+            ret |= (UINT64_C(1) << i);
+            continue;
+         }
+      }
+
+#ifdef HAVE_OVERLAY
+      if (overlay_ptr && input_overlay_key_pressed(overlay_ptr, i))
+      {
          ret |= (UINT64_C(1) << i);
+         continue;
+      }
+#endif
+
+#ifdef HAVE_COMMAND
+      if (input_driver_command)
+      {
+         command_handle_t handle;
+
+         handle.handle = input_driver_command;
+         handle.id     = i;
+
+         if (command_get(&handle))
+         {
+            ret |= (UINT64_C(1) << i);
+            continue;
+         }
+      }
+#endif
+
+#ifdef HAVE_NETWORKGAMEPAD
+      if (input_driver_remote)
+      {
+         if (input_remote_key_pressed(i, 0))
+         {
+            ret |= (UINT64_C(1) << i);
+            continue;
+         }
+      }
+#endif
    }
 
    for (i = 0; i < max_users; i++)
@@ -897,8 +901,49 @@ uint64_t input_keys_pressed(void *data, uint64_t last_input)
          }
       }
 
-      if (input_keys_pressed_internal_reuse(i))
+      if (i >= RARCH_FIRST_META_KEY)
+      {
+         if (current_input->meta_key_pressed(current_input_data, i))
+         {
+            ret |= (UINT64_C(1) << i);
+            continue;
+         }
+      }
+
+#ifdef HAVE_OVERLAY
+      if (overlay_ptr && input_overlay_key_pressed(overlay_ptr, i))
+      {
          ret |= (UINT64_C(1) << i);
+         continue;
+      }
+#endif
+
+#ifdef HAVE_COMMAND
+      if (input_driver_command)
+      {
+         command_handle_t handle;
+
+         handle.handle = input_driver_command;
+         handle.id     = i;
+
+         if (command_get(&handle))
+         {
+            ret |= (UINT64_C(1) << i);
+            continue;
+         }
+      }
+#endif
+
+#ifdef HAVE_NETWORKGAMEPAD
+      if (input_driver_remote)
+      {
+         if (input_remote_key_pressed(i, 0))
+         {
+            ret |= (UINT64_C(1) << i);
+            continue;
+         }
+      }
+#endif
    }
 
    return ret;
