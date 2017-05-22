@@ -235,17 +235,17 @@ void win32_monitor_get_info(void)
 
 void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
 {
-   unsigned i, fs_monitor;
+   unsigned i;
    settings_t *settings = config_get_ptr();
    MONITORINFOEX *mon   = (MONITORINFOEX*)data;
    HMONITOR *hm_to_use  = (HMONITOR*)hm_data;
+   unsigned fs_monitor  = settings->uints.video_monitor_index;
 
    if (!win32_monitor_last)
       win32_monitor_last = MonitorFromWindow(GetDesktopWindow(),
             MONITOR_DEFAULTTONEAREST);
 
-   *hm_to_use = win32_monitor_last;
-   fs_monitor = settings->uints.video_monitor_index;
+   *hm_to_use    = win32_monitor_last;
 
    if (fs_monitor && fs_monitor <= win32_monitor_count
          && win32_monitor_all[fs_monitor - 1])
@@ -289,8 +289,8 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
 
       core_info_get_list(&core_info_list);
 
-     if (!core_info_list)
-        return 0;
+      if (!core_info_list)
+         return 0;
 
       core_info_list_get_supported_cores(core_info_list,
             (const char*)szFilename, &core_info, &list_size);
@@ -427,7 +427,6 @@ static LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
 static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
-
    if (message == WM_NCLBUTTONDBLCLK)
       doubleclick_on_titlebar = true;
 
@@ -609,24 +608,25 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
          if (menu_driver_is_alive() && !gdi_has_menu_frame())
          {
             RECT rect;
+            TRIVERTEX vertex[2];
+            GRADIENT_RECT gRect;
+
             GetClientRect(hwnd, &rect);
 
-            TRIVERTEX vertex[2];
-            vertex[0].x     = rect.left;
-            vertex[0].y     = rect.top;
-            vertex[0].Red   = 1 << 8;
-            vertex[0].Green = 81 << 8;
-            vertex[0].Blue  = 127 << 8;
-            vertex[0].Alpha = 0;
+            vertex[0].x      = rect.left;
+            vertex[0].y      = rect.top;
+            vertex[0].Red    = 1   << 8;
+            vertex[0].Green  = 81  << 8;
+            vertex[0].Blue   = 127 << 8;
+            vertex[0].Alpha  = 0;
 
-            vertex[1].x     = rect.right;
-            vertex[1].y     = rect.bottom;
-            vertex[1].Red   = 0;
-            vertex[1].Green = 1 << 8;
-            vertex[1].Blue  = 33 << 8;
-            vertex[1].Alpha = 0;
+            vertex[1].x      = rect.right;
+            vertex[1].y      = rect.bottom;
+            vertex[1].Red    = 0;
+            vertex[1].Green  = 1  << 8;
+            vertex[1].Blue   = 33 << 8;
+            vertex[1].Alpha  = 0;
 
-            GRADIENT_RECT gRect;
             gRect.LowerRight = 0;
             gRect.UpperLeft  = 1;
 
@@ -780,7 +780,7 @@ void win32_check_window(bool *quit, bool *resize,
    if (application)
       application->process_events();
 #endif
-   *quit = g_quit;
+   *quit            = g_quit;
 
    if (g_resized)
    {
@@ -806,7 +806,8 @@ bool win32_suppress_screensaver(void *data, bool enable)
       if (!frontend)
          return false;
 
-      frontend->get_os(tmp, sizeof(tmp), &major, &minor);
+      if (frontend->get_os)
+         frontend->get_os(tmp, sizeof(tmp), &major, &minor);
 
       if (major*100+minor >= 601)
       {
@@ -911,7 +912,12 @@ void win32_set_window(unsigned *width, unsigned *height,
 
       if (!fullscreen && settings->bools.ui_menubar_enable)
       {
-         RECT rc_temp = {0, 0, (LONG)*height, 0x7FFF};
+         RECT rc_temp;
+         rc_temp.left   = 0;
+         rc_temp.top    = 0;
+         rc_temp.right  = (LONG)*height;
+         rc_temp.bottom = 0x7FFF;
+
          SetMenu(main_window.hwnd,
                LoadMenu(GetModuleHandle(NULL),MAKEINTRESOURCE(IDR_MENU)));
          SendMessage(main_window.hwnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rc_temp);
@@ -942,10 +948,15 @@ bool win32_set_video_mode(void *data,
    unsigned mon_id;
    MONITORINFOEX current_mon;
    bool windowed_full;
-   RECT rect             = {0};
+   RECT rect;
    HMONITOR hm_to_use    = NULL;
    settings_t *settings  = config_get_ptr();
    int res               = 0;
+
+   rect.left             = 0;
+   rect.top              = 0;
+   rect.right            = 0;
+   rect.bottom           = 0;
 
    win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
 
