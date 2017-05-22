@@ -14,6 +14,7 @@ default font
 - MENU: Improved rendering for XMB ribbon; using additive blending (Vulkan/GL)
 - OSX/MACOS: Fixes serious memory leak
 - WINDOWS: Added WASAPI audio driver for low-latency audio. Both shared and exclusive mode.
+- WINDOWS: Added RawInput input driver for low-latency, low-level input.
 - WINDOWS: Core mouse input should be relative again in cores
 - MISC: Various frontend optimizations.
 - VIDEO: Fix threaded video regression; tickering of menu entries would no longer work.
