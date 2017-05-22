@@ -797,18 +797,6 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
 }
 #endif
 
-
-static INLINE bool input_keys_pressed_internal(
-      settings_t *settings,
-      rarch_joypad_info_t joypad_info,
-      unsigned i,
-      const struct retro_keybind *binds)
-{
-   
-   return false;
-}
-
-
 /**
  * input_keys_pressed:
  *
