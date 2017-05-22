@@ -926,15 +926,13 @@ uint64_t input_keys_pressed(void *data, uint64_t last_input)
    if (
          ((settings->uints.input_menu_toggle_gamepad_combo != INPUT_TOGGLE_NONE) &&
          input_driver_toggle_button_combo(
-            settings->uints.input_menu_toggle_gamepad_combo, last_input))
-         || input_keys_pressed_internal(settings, joypad_info, RARCH_MENU_TOGGLE, binds))
+            settings->uints.input_menu_toggle_gamepad_combo, last_input)))
       ret |= (UINT64_C(1) << RARCH_MENU_TOGGLE);
 #endif
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
-      if (  (i != RARCH_MENU_TOGGLE) && 
-            input_keys_pressed_internal(settings, joypad_info, i, binds))
+      if (input_keys_pressed_internal(settings, joypad_info, i, binds))
          ret |= (UINT64_C(1) << i);
    }
 
