@@ -668,7 +668,7 @@ static bool input_driver_toggle_button_combo(
  * and you need a bitmask of more than 64 entries, reimplement
  * it to use something like rarch_bits_t.
  *
- * Returns: Input sample containg a mask of all pressed keys.
+ * Returns: Input sample containing a mask of all pressed keys.
  */
 uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
 {
@@ -743,8 +743,7 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
                mtkey->valid,
                settings->bools.input_all_users_control_menu))
          ret |= (UINT64_C(1) << i);
-
-      if (input_keys_pressed_internal_reuse(i))
+      else if (input_keys_pressed_internal_reuse(i))
          ret |= (UINT64_C(1) << i);
    }
 
@@ -840,7 +839,7 @@ static INLINE bool input_keys_pressed_internal(
  * and you need a bitmask of more than 64 entries, reimplement
  * it to use something like rarch_bits_t.
  *
- * Returns: Input sample containg a mask of all pressed keys.
+ * Returns: Input sample containing a mask of all pressed keys.
  */
 uint64_t input_keys_pressed(void *data, uint64_t last_input)
 {
@@ -907,8 +906,7 @@ uint64_t input_keys_pressed(void *data, uint64_t last_input)
    {
       if (input_keys_pressed_internal(settings, joypad_info, i, binds))
          ret |= (UINT64_C(1) << i);
-
-      if (input_keys_pressed_internal_reuse(i))
+      else if (input_keys_pressed_internal_reuse(i))
          ret |= (UINT64_C(1) << i);
    }
 
