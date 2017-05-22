@@ -3156,7 +3156,7 @@ static int action_ok_netplay_connect_room(const char *path,
    {
       snprintf(tmp_hostname,
             sizeof(tmp_hostname),
-            "%s:%d",
+            "%s|%d",
          netplay_room_list[idx - 2].mitm_address,
          netplay_room_list[idx - 2].mitm_port);
    }
@@ -3164,7 +3164,7 @@ static int action_ok_netplay_connect_room(const char *path,
    {
       snprintf(tmp_hostname,
             sizeof(tmp_hostname),
-            "%s:%d",
+            "%s|%d",
          netplay_room_list[idx - 2].address,
          netplay_room_list[idx - 2].port);
    }

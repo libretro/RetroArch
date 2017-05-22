@@ -2271,19 +2271,22 @@ bool command_event(enum event_command cmd, void *data)
 
             /* new codepath, uses the same logic as init_deferred, expects
                buf to be addres|port */
+            RARCH_LOG("%s\n", buf);
             if (strstr(buf, "|"))
             {
                static struct string_list *hostname = NULL;
                hostname = string_split(buf, "|");
+               RARCH_LOG("%s %d\n", hostname->elems[0].data, atoi(hostname->elems[1].data));
 
                if (!init_netplay(NULL, hostname->elems[0].data, 
                   atoi(hostname->elems[1].data)))
                {
-                  string_list_free(hostname);
                   command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                   string_list_free(hostname);
                   return false;
                }
+
+               string_list_free(hostname);
             }
             /* old codepath accessed via, netplay/scan local network
                not sure how/if it works, it seems it doesn't */
@@ -2308,7 +2311,6 @@ bool command_event(enum event_command cmd, void *data)
             if (!init_netplay_deferred(
                hostname->elems[0].data, atoi(hostname->elems[1].data)))
             {
-               string_list_free(hostname);
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                string_list_free(hostname);
                return false;
