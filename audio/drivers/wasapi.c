@@ -271,7 +271,6 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
    unsigned rate_res             = *rate;
    REFERENCE_TIME device_period  = 0;
    REFERENCE_TIME stream_latency = 0;
-   UINT32 buffer_length          = 0;
 
    hr = device->lpVtbl->Activate(device, &IID_IAudioClient,
          CLSCTX_ALL, NULL, (void**)&client);
@@ -350,7 +349,6 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
    IAudioClient *client           = NULL;
    bool float_fmt_res             = *float_fmt;
    unsigned rate_res              = *rate;
-   REFERENCE_TIME default_period  = 0;
    REFERENCE_TIME minimum_period  = 0;
    REFERENCE_TIME buffer_duration = 0;
    UINT32 buffer_length           = 0;
@@ -359,7 +357,7 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
          CLSCTX_ALL, NULL, (void**)&client);
    WASAPI_HR_CHECK(hr, "IMMDevice::Activate", return NULL);
 
-   hr = client->lpVtbl->GetDevicePeriod(client, &default_period, &minimum_period);
+   hr = client->lpVtbl->GetDevicePeriod(client, NULL, &minimum_period);
    WASAPI_HR_CHECK(hr, "IAudioClient::GetDevicePeriod", goto error);
 
    /* buffer_duration is in 100ns units */
@@ -453,7 +451,6 @@ error:
 static IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
       bool *float_fmt, unsigned *rate, unsigned latency)
 {
-   HRESULT hr;
    double latency_res       = latency;
    IAudioClient *client     = NULL;
 
@@ -820,7 +817,6 @@ static void *wasapi_device_list_new(void *u)
    UINT dev_count                  = 0;
    IMMDevice *device               = NULL;
    LPWSTR dev_id_wstr              = NULL;
-   LPWSTR dev_name_wstr            = NULL;
    IPropertyStore *prop_store      = NULL;
    bool prop_var_init              = false;
    bool br                         = false;
@@ -891,7 +887,6 @@ static void *wasapi_device_list_new(void *u)
       PropVariantClear(&prop_var);
       prop_var_init = false;
       WASAPI_CO_FREE(dev_id_wstr);
-      WASAPI_CO_FREE(dev_name_wstr);
       WASAPI_FREE(dev_id_str);
       WASAPI_FREE(dev_name_str);
       WASAPI_RELEASE(prop_store);
@@ -912,7 +907,6 @@ error:
       PropVariantClear(&prop_var);
    WASAPI_RELEASE(prop_store);
    WASAPI_CO_FREE(dev_id_wstr);
-   WASAPI_CO_FREE(dev_name_wstr);
    WASAPI_RELEASE(device);
    WASAPI_RELEASE(collection);
    WASAPI_RELEASE(enumerator);
