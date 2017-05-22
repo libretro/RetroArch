@@ -1,5 +1,6 @@
 # 1.5.1 (future)
 - AUTOSAVE/SRAM - Fix bug #3829 / #4820 (https://github.com/libretro/RetroArch/issues/3829)
+- ENDIANNESS: Fixed database scanning. Should fix scanning on PS3/WiiU/Wii, etc.
 - NET: Fix bug #4703 (https://github.com/libretro/RetroArch/issues/4703)
 - ANDROID: Runtime permission checking
 - ANDROID: Improve autoconf fallback
@@ -10,6 +11,7 @@
 - LOCALIZATION: Update Japanese translation
 - LOCALIZATION/GUI: Korean font should display properly now with XMB/MaterialUI's
 default font
+- MENU: Improved rendering for XMB ribbon; using additive blending (Vulkan/GL)
 - OSX/MACOS: Fixes serious memory leak
 - WINDOWS: Added WASAPI audio driver for low-latency audio. Both shared and exclusive mode.
 - WINDOWS: Core mouse input should be relative again in cores
