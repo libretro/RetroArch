@@ -2276,6 +2276,8 @@ bool command_event(enum event_command cmd, void *data)
             {
                static struct string_list *hostname = NULL;
                hostname = string_split(buf, "|");
+               RARCH_LOG("[netplay] connecting to %s:%d\n", 
+                  hostname->elems[0].data, atoi(hostname->elems[1].data));
 
                if (!init_netplay(NULL, hostname->elems[0].data, 
                   atoi(hostname->elems[1].data)))
@@ -2306,6 +2308,8 @@ bool command_event(enum event_command cmd, void *data)
             hostname = string_split(buf, "|");
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+            RARCH_LOG("[netplay] connecting to %s:%d\n", 
+               hostname->elems[0].data, atoi(hostname->elems[1].data));
 
             if (!init_netplay_deferred(
                hostname->elems[0].data, atoi(hostname->elems[1].data)))
