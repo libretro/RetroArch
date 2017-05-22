@@ -79,7 +79,7 @@ typedef int ssize_t;
 #define STRING_REP_INT64  "%I64u"
 #define STRING_REP_UINT64 "%I64u"
 #define STRING_REP_ULONG  "%Iu"
-#elif defined(__STDC_VERSION__) && __STDC_VERSION__>=199901L && !defined(VITA)
+#elif defined(__STDC_VERSION__) && __STDC_VERSION__>=199901L && !defined(VITA) && !defined(WIIU)
 #define STRING_REP_INT64  "%llu"
 #define STRING_REP_UINT64 "%llu"
 #define STRING_REP_ULONG  "%zu"

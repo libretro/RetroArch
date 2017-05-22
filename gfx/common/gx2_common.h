@@ -88,5 +88,6 @@ typedef struct
    unsigned rotation;
    bool keep_aspect;
    bool should_resize;
+   bool render_msg_enabled;
 
 } wiiu_video_t;

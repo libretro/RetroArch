@@ -108,7 +108,7 @@ static int task_database_iterate_start(database_info_handle_t *db,
 
    snprintf(msg, sizeof(msg),
          STRING_REP_ULONG "/" STRING_REP_ULONG ": %s %s...\n",
-#if defined(_WIN32) || defined(__STDC_VERSION__) && __STDC_VERSION__>=199901L && !defined(VITA)
+#if defined(_WIN32) || defined(__STDC_VERSION__) && __STDC_VERSION__>=199901L && !defined(VITA) &&!defined(WIIU)
          db->list_ptr,
          db->list->size,
 #else

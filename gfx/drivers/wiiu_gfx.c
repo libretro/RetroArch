@@ -542,10 +542,10 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
 #if 0
    static u32 last_frame_tick;
    if (!(wiiu->menu.enable))
-      printf("\r frame time : %10.6f ms            \n", (float)(currentTick - last_frame_tick) * 1000.0f / (float)wiiu_timer_clock);
+      printf("frame time : %10.6f ms            \r", (float)(currentTick - last_frame_tick) * 1000.0f / (float)wiiu_timer_clock);
    last_frame_tick = currentTick;
 #endif
-   printf("\rfps: %8.8f frames : %5i", fps, wiiu->frames++);
+   printf("fps: %8.8f frames : %5i\r", fps, wiiu->frames++);
    fflush(stdout);
 
    if (wiiu->should_resize)
@@ -625,11 +625,15 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
    GX2SetAttribBuffer(1, wiiu->vertex_cache.size * sizeof(tex_coord_t), sizeof(tex_coord_t), wiiu->vertex_cache.tex_coords);
    GX2SetPixelSampler(&wiiu->sampler_linear, wiiu->shader->sampler.location);
 
+   wiiu->render_msg_enabled = true;
+
    if (wiiu->menu.enable)
       menu_driver_frame(video_info);
 
    if (msg)
       font_driver_render_msg(video_info, NULL, msg, NULL);
+
+   wiiu->render_msg_enabled = false;
 
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->vertex_cache.positions, wiiu->vertex_cache.current * sizeof(position_t));
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->vertex_cache.tex_coords, wiiu->vertex_cache.current * sizeof(tex_coord_t));
@@ -827,7 +831,12 @@ static void wiiu_gfx_set_osd_msg(void* data,
    wiiu_video_t* wiiu = (wiiu_video_t*)data;
 
    if (wiiu)
-      font_driver_render_msg(video_info, font, msg, params);
+   {
+      if (wiiu->render_msg_enabled)
+         font_driver_render_msg(video_info, font, msg, params);
+      else
+         printf("OSD msg: %s\n", msg);
+   }
 
 }
 
