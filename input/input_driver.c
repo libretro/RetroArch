@@ -649,6 +649,7 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
    {
       const struct retro_keybind *mtkey = &input_config_binds[0][RARCH_MENU_TOGGLE];
       if (
+            mtkey->valid &&
             ((settings->uints.input_menu_toggle_gamepad_combo != INPUT_TOGGLE_NONE) &&
              input_driver_toggle_button_combo(
                 settings->uints.input_menu_toggle_gamepad_combo, last_input))
