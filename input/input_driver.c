@@ -615,8 +615,8 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
       input_push_analog_dpad(auto_binds, ANALOG_DPAD_LSTICK);
    }
 
-   joypad_info.joy_idx                          = 0;
-   joypad_info.auto_binds                       = NULL;
+   joypad_info.joy_idx                          = settings->uints.input_joypad_map[0];
+   joypad_info.auto_binds                       = input_autoconf_binds[joypad_info.joy_idx];
    joypad_info.axis_threshold                   = input_driver_axis_threshold;
 
    input_driver_block_libretro_input            = false;
@@ -636,8 +636,6 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
    {
       const struct retro_keybind *htkey = &input_config_binds[0][RARCH_ENABLE_HOTKEY];
 
-      joypad_info.joy_idx               = settings->uints.input_joypad_map[0];
-      joypad_info.auto_binds            = input_autoconf_binds[joypad_info.joy_idx];
 
       if (htkey->valid 
             && current_input->input_state(current_input_data, joypad_info,
@@ -679,14 +677,10 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
             const input_device_driver_t *sec   = current_input->get_sec_joypad_driver 
                ? current_input->get_sec_joypad_driver(current_input_data) : NULL;
 
-            joypad_info.joy_idx        = settings->uints.input_joypad_map[port];
-            joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
-            joypad_info.axis_threshold = input_driver_axis_threshold;
-
             if (  (sec   && input_joypad_pressed(sec,
                         joypad_info, port, input_config_binds[0], i)) ||
                   (first && input_joypad_pressed(first,
-                                                 joypad_info, port, input_config_binds[0], i))
+                        joypad_info, port, input_config_binds[0], i))
                )
             {
                ret |= (UINT64_C(1) << i);
@@ -823,8 +817,8 @@ uint64_t input_keys_pressed(void *data, uint64_t last_input)
    const struct retro_keybind *enable_hotkey    = &input_config_binds[0][RARCH_ENABLE_HOTKEY];
    bool game_focus_toggle_valid                 = false;
 
-   joypad_info.joy_idx                          = 0;
-   joypad_info.auto_binds                       = NULL;
+   joypad_info.joy_idx                          = settings->uints.input_joypad_map[0];
+   joypad_info.auto_binds                       = input_autoconf_binds[joypad_info.joy_idx];
    joypad_info.axis_threshold                   = input_driver_axis_threshold;
    
    input_driver_block_libretro_input            = false;
@@ -836,8 +830,6 @@ uint64_t input_keys_pressed(void *data, uint64_t last_input)
 
    if (check_input_driver_block_hotkey(binds_norm, binds_auto))
    {
-      joypad_info.joy_idx        = settings->uints.input_joypad_map[0];
-      joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
       if (     enable_hotkey->valid
             && current_input->input_state(
                current_input_data, joypad_info, &binds, 0,
@@ -854,8 +846,6 @@ uint64_t input_keys_pressed(void *data, uint64_t last_input)
    if (check_input_driver_block_hotkey(
             focus_normal, focus_binds_auto) && game_focus_toggle_valid)
    {
-      joypad_info.joy_idx        = settings->uints.input_joypad_map[0];
-      joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
       if (current_input->input_state(current_input_data, joypad_info, &binds, 0,
                RETRO_DEVICE_JOYPAD, 0, RARCH_GAME_FOCUS_TOGGLE))
          input_driver_block_hotkey = false;
@@ -876,9 +866,6 @@ uint64_t input_keys_pressed(void *data, uint64_t last_input)
       {
          bool bind_valid            = binds[i].valid;
 
-         joypad_info.joy_idx        = settings->uints.input_joypad_map[0];
-         joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
-         joypad_info.axis_threshold = input_driver_axis_threshold;
 
          if (bind_valid && current_input->input_state(current_input_data,
                   joypad_info, &binds,
