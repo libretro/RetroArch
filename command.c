@@ -2280,8 +2280,7 @@ bool command_event(enum event_command cmd, void *data)
                to do this but for now I'll just use a string list */
             char                           *buf = (char *)data;
             static struct string_list *hostname = NULL;
-
-            hostname = string_split(buf, ":");
+            hostname = string_split(buf, "|");
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
