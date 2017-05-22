@@ -46,6 +46,8 @@ typedef struct
    char core_path[PATH_MAX_LENGTH];
    char core_extensions[PATH_MAX_LENGTH];
    bool found;
+   bool current;
+   bool contentless;
 } netplay_crc_handle_t;
 
 static void netplay_crc_scan_callback(void *task_data,
@@ -63,6 +65,8 @@ static void netplay_crc_scan_callback(void *task_data,
    if (!string_is_empty(state->core_path) && !string_is_empty(state->content_path) &&
        string_is_not_equal_fast(state->content_path, "N/A", 3))
    {
+      RARCH_LOG("[lobby] loading core %s with content file %s\n", 
+         state->core_path, state->content_path);
       command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
       task_push_load_content_with_new_core_from_menu(
             state->core_path, state->content_path,
@@ -72,15 +76,22 @@ static void netplay_crc_scan_callback(void *task_data,
    }
    else
 #endif
-      if (!string_is_empty(state->core_path) && !string_is_empty(state->content_path) &&
-      string_is_equal_fast(state->content_path, "N/A", 3))
+   if (!string_is_empty(state->core_path) && !string_is_empty(state->content_path) &&
+      string_is_equal_fast(state->content_path, "N/A", 3) && !state->current)
    {
+      RARCH_LOG("[lobby] loading contentless core %s\n", state->core_path);
       content_ctx_info_t content_info = {0};
 
       command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
       task_push_load_new_core(state->core_path, NULL,
             &content_info, CORE_TYPE_PLAIN, NULL, NULL);
       task_push_start_current_core(&content_info);
+   }
+   else if (!string_is_empty(state->core_path) && !string_is_empty(state->content_path) &&
+      string_is_equal_fast(state->content_path, "N/A", 3) && state->current)
+   {
+      RARCH_LOG("[lobby] loading core %s with current content\n", state->core_path);
+      command_event(CMD_EVENT_NETPLAY_INIT_DIRECT, state->hostname);
    }
    else
    {
@@ -100,7 +111,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
 {
    size_t i, j;
    netplay_crc_handle_t *state = (netplay_crc_handle_t*)task->state;
-
+   char current[PATH_MAX_LENGTH];
    task_set_progress(task, 0);
    task_free_title(task);
    task_set_title(task, strdup("Looking for compatible content..."));
@@ -128,6 +139,22 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
       {
          RARCH_LOG("[lobby] testing CRC matching for: %s\n", state->content_crc);
 
+         snprintf(current, sizeof(current), "%X|crc", content_get_crc());
+         RARCH_LOG("[lobby] current content crc: %s\n", current);
+         if (string_is_equal(current, state->content_crc))
+         {
+            RARCH_LOG("[lobby] CRC match %s with currently loaded content\n", current);
+            strlcpy(state->content_path, "N/A", sizeof(state->content_path));
+            state->found = true;
+            state->current = true;
+            task_set_data(task, state);
+            task_set_progress(task, 100);
+            task_free_title(task);
+            task_set_title(task, strdup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND)));
+            task_set_finished(task, true);
+            string_list_free(state->lpl_list);
+            return;
+         }
          for (i = 0; i < state->lpl_list->size; i++)
          {
             playlist_t *playlist = NULL;
