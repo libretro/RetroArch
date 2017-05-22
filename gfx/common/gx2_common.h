@@ -64,6 +64,13 @@ typedef struct
    int width;
    int height;
 
+   struct
+   {
+      position_t* positions;
+      tex_coord_t* tex_coords;
+      int size;
+      int current;
+   }vertex_cache;
 
    void* drc_scan_buffer;
    void* tv_scan_buffer;

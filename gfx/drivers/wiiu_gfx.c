@@ -17,6 +17,7 @@
 #include <string.h>
 #include <wiiu/os.h>
 #include <wiiu/gx2.h>
+#include <formats/image.h>
 
 #include "../../driver.h"
 #include "../../configuration.h"
@@ -391,6 +392,11 @@ static void* wiiu_gfx_init(const video_info_t* video,
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, wiiu->menu.texture.surface.image,
                  wiiu->menu.texture.surface.imageSize);
 
+   wiiu->vertex_cache.size = 0x1000;
+   wiiu->vertex_cache.current = 0;
+   wiiu->vertex_cache.positions = MEM2_alloc(wiiu->vertex_cache.size * sizeof(position_t), GX2_VERTEX_BUFFER_ALIGNMENT);
+   wiiu->vertex_cache.tex_coords = MEM2_alloc(wiiu->vertex_cache.size * sizeof(tex_coord_t), GX2_VERTEX_BUFFER_ALIGNMENT);
+
    /* init samplers */
    GX2InitSampler(&wiiu->sampler_nearest, GX2_TEX_CLAMP_MODE_CLAMP, GX2_TEX_XY_FILTER_MODE_POINT);
    GX2InitSampler(&wiiu->sampler_linear, GX2_TEX_CLAMP_MODE_CLAMP, GX2_TEX_XY_FILTER_MODE_LINEAR);
@@ -459,6 +465,8 @@ static void wiiu_gfx_free(void* data)
    MEM2_free(wiiu->cmd_buffer);
    MEM2_free(wiiu->texture.surface.image);
    MEM2_free(wiiu->menu.texture.surface.image);
+   MEM2_free(wiiu->vertex_cache.positions);
+   MEM2_free(wiiu->vertex_cache.tex_coords);
 
    MEM1_free(wiiu->color_buffer.surface.image);
 
@@ -601,10 +609,6 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
 
    GX2DrawEx(GX2_PRIMITIVE_MODE_QUADS, 4, 0, 1);
 
-#ifdef HAVE_MENU
-   menu_driver_frame(video_info);
-#endif
-
    if (wiiu->menu.enable)
    {
       GX2SetAttribBuffer(0, 4 * sizeof(*wiiu->menu.position), sizeof(*wiiu->menu.position), wiiu->menu.position);
@@ -616,8 +620,19 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
       GX2DrawEx(GX2_PRIMITIVE_MODE_QUADS, 4, 0, 1);
    }
 
+   wiiu->vertex_cache.current = 0;
+   GX2SetAttribBuffer(0, wiiu->vertex_cache.size * sizeof(position_t), sizeof(position_t), wiiu->vertex_cache.positions);
+   GX2SetAttribBuffer(1, wiiu->vertex_cache.size * sizeof(tex_coord_t), sizeof(tex_coord_t), wiiu->vertex_cache.tex_coords);
+   GX2SetPixelSampler(&wiiu->sampler_linear, wiiu->shader->sampler.location);
+
+   if (wiiu->menu.enable)
+      menu_driver_frame(video_info);
+
    if (msg)
       font_driver_render_msg(video_info, NULL, msg, NULL);
+
+   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->vertex_cache.positions, wiiu->vertex_cache.current * sizeof(position_t));
+   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->vertex_cache.tex_coords, wiiu->vertex_cache.current * sizeof(tex_coord_t));
 
    if (wiiu->menu.enable)
       GX2DrawDone();
@@ -698,11 +713,46 @@ static bool wiiu_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
 static uintptr_t wiiu_gfx_load_texture(void* video_data, void* data,
       bool threaded, enum texture_filter_type filter_type)
 {
-   return 0;
+   int i;
+   wiiu_video_t* wiiu = (wiiu_video_t*) video_data;
+   struct texture_image *image = (struct texture_image*)data;
+
+   if (!wiiu)
+      return 0;
+
+   GX2Texture* texture = calloc(1, sizeof(GX2Texture));
+
+   texture->surface.width       = image->width;
+   texture->surface.height      = image->height;
+   texture->surface.depth       = 1;
+   texture->surface.dim         = GX2_SURFACE_DIM_TEXTURE_2D;
+   texture->surface.tileMode    = GX2_TILE_MODE_LINEAR_ALIGNED;
+   texture->viewNumSlices       = 1;
+
+   texture->surface.format   = GX2_SURFACE_FORMAT_UNORM_R8_G8_B8_A8;
+   texture->compMap          = GX2_COMP_SEL(_G, _B, _A, _R);
+
+   GX2CalcSurfaceSizeAndAlignment(&texture->surface);
+   GX2InitTextureRegs(texture);
+   texture->surface.image = MEM2_alloc(texture->surface.imageSize, texture->surface.alignment);
+
+   for (i = 0; (i < image->height) && (i < texture->surface.height); i++)
+      memcpy((uint32_t*)texture->surface.image + (i * texture->surface.pitch),
+             image->pixels + (i * image->width), image->width * sizeof(image->pixels));
+
+   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, texture->surface.image, texture->surface.imageSize);
+
+   return (uintptr_t)texture;
 }
 static void wiiu_gfx_unload_texture(void* data, uintptr_t handle)
 {
+   GX2Texture* texture = (GX2Texture*)handle;
 
+   if(!texture)
+      return;
+
+   MEM2_free(texture->surface.image);
+   free(texture);
 }
 static void wiiu_gfx_set_filtering(void* data, unsigned index, bool smooth)
 {

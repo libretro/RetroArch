@@ -39,7 +39,7 @@ ifeq ($(GRIFFIN_BUILD), 1)
 	DEFINES += -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA -DWANT_ZLIB -DHAVE_CC_RESAMPLER
 	DEFINES += -DHAVE_STB_FONT -DHAVE_LANGEXTRA
 #	DEFINES += -DHAVE_FREETYPE
-#	DEFINES += -DHAVE_XMB -DHAVE_MATERIALUI
+	DEFINES += -DHAVE_XMB -DHAVE_MATERIALUI
 else
 	HAVE_MENU_COMMON = 1
 	HAVE_RTGA = 1
@@ -52,8 +52,8 @@ else
 	HAVE_BUILTINZLIB = 1
 	HAVE_LIBRETRODB = 1
 	HAVE_ZARCH = 0
-	HAVE_MATERIALUI = 0
-	HAVE_XMB = 0
+	HAVE_MATERIALUI = 1
+	HAVE_XMB = 1
 	HAVE_STB_FONT = 1
 #	HAVE_FREETYPE = 1
 	HAVE_LANGEXTRA = 1
@@ -66,7 +66,7 @@ else
 
 	OBJ += gfx/drivers/wiiu_gfx.o
 	OBJ += gfx/drivers_font/wiiu_font.o
-#	OBJ += menu/drivers_display/menu_display_wiiu.o
+	OBJ += menu/drivers_display/menu_display_wiiu.o
 	OBJ += input/drivers/wiiu_input.o
 	OBJ += input/drivers_joypad/wiiu_joypad.o
 	OBJ += audio/drivers/wiiu_audio.o

@@ -35,13 +35,6 @@ typedef struct
    const font_renderer_driver_t* font_driver;
    void* font_data;
    struct font_atlas* atlas;
-   struct
-   {
-      position_t* positions;
-      tex_coord_t* tex_coords;
-      int size;
-      int current;
-   }vertex_cache;
 } wiiu_font_t;
 
 static void* wiiu_font_init_font(void* data, const char* font_path,
@@ -78,17 +71,13 @@ static void* wiiu_font_init_font(void* data, const char* font_path,
                                  font->texture.surface.alignment);
 
    for (i = 0; (i < font->atlas->height) && (i < font->texture.surface.height); i++)
-      memcpy(font->texture.surface.image + (i * font->texture.surface.pitch),
+      memcpy((uint8_t*)font->texture.surface.image + (i * font->texture.surface.pitch),
              font->atlas->buffer + (i * font->atlas->width), font->atlas->width);
 
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, font->texture.surface.image,
                  font->texture.surface.imageSize);
 
    font->atlas->dirty = false;
-
-   font->vertex_cache.size = 0x1000;
-   font->vertex_cache.positions = MEM2_alloc(font->vertex_cache.size * sizeof(position_t), GX2_VERTEX_BUFFER_ALIGNMENT);
-   font->vertex_cache.tex_coords = MEM2_alloc(font->vertex_cache.size * sizeof(tex_coord_t), GX2_VERTEX_BUFFER_ALIGNMENT);
 
    return font;
 }
@@ -104,8 +93,6 @@ static void wiiu_font_free_font(void* data, bool is_threaded)
       font->font_driver->free(font->font_data);
 
    MEM1_free(font->texture.surface.image);
-   MEM2_free(font->vertex_cache.positions);
-   MEM2_free(font->vertex_cache.tex_coords);
    free(font);
 }
 
@@ -159,7 +146,7 @@ static void wiiu_font_render_line(
    int delta_x      = 0;
    int delta_y      = 0;
 
-   if(font->vertex_cache.size < (msg_len * 4))
+   if(wiiu->vertex_cache.current + (msg_len * 4) > wiiu->vertex_cache.size)
       return;
 
    switch (text_align)
@@ -173,11 +160,8 @@ static void wiiu_font_render_line(
          break;
    }
 
-   if ((font->vertex_cache.size - font->vertex_cache.current) < (msg_len * 4))
-      font->vertex_cache.current = 0;
-
-   position_t* pos = font->vertex_cache.positions + font->vertex_cache.current;
-   tex_coord_t* coord = font->vertex_cache.tex_coords + font->vertex_cache.current;
+   position_t* pos = wiiu->vertex_cache.positions + wiiu->vertex_cache.current;
+   tex_coord_t* coord = wiiu->vertex_cache.tex_coords + wiiu->vertex_cache.current;
 
    for (i = 0; i < msg_len; i++)
    {
@@ -239,13 +223,14 @@ static void wiiu_font_render_line(
       delta_y += glyph->advance_y;
    }
 
-   int count = pos - font->vertex_cache.positions - font->vertex_cache.current;
+   int count = pos - wiiu->vertex_cache.positions - wiiu->vertex_cache.current;
 
    if (!count)
       return;
 
-   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, font->vertex_cache.positions + font->vertex_cache.current, count * sizeof(position_t));
-   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, font->vertex_cache.tex_coords + font->vertex_cache.current, count * sizeof(tex_coord_t));
+
+   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->vertex_cache.positions + wiiu->vertex_cache.current, count * sizeof(position_t));
+   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->vertex_cache.tex_coords + wiiu->vertex_cache.current, count * sizeof(tex_coord_t));
 
    if(font->atlas->dirty)
    {
@@ -264,11 +249,7 @@ static void wiiu_font_render_line(
    DEBUG_VAR(color);
 #endif
 
-   GX2SetAttribBuffer(0, font->vertex_cache.size * sizeof(position_t), sizeof(position_t), font->vertex_cache.positions);
-   GX2SetAttribBuffer(1, font->vertex_cache.size * sizeof(tex_coord_t), sizeof(tex_coord_t), font->vertex_cache.tex_coords);
-
    GX2SetPixelTexture(&font->texture, wiiu->shader->sampler.location);
-   GX2SetPixelSampler(&wiiu->sampler_linear, wiiu->shader->sampler.location);
 
    GX2SetBlendConstantColor(((color >> 0) & 0xFF) / 255.0f, ((color >> 8) & 0xFF) / 255.0f,
                             ((color >> 16) & 0xFF) / 255.0f, ((color >> 24) & 0xFF) / 255.0f);
@@ -276,12 +257,12 @@ static void wiiu_font_render_line(
    GX2SetBlendControl(GX2_RENDER_TARGET_0, GX2_BLEND_MODE_BLEND_FACTOR, GX2_BLEND_MODE_INV_SRC_ALPHA, GX2_BLEND_COMBINE_MODE_ADD,
                       GX2_ENABLE,          GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA, GX2_BLEND_COMBINE_MODE_ADD);
 
-   GX2DrawEx(GX2_PRIMITIVE_MODE_QUADS, count, font->vertex_cache.current, 1);
+   GX2DrawEx(GX2_PRIMITIVE_MODE_QUADS, count, wiiu->vertex_cache.current, 1);
 
    GX2SetBlendControl(GX2_RENDER_TARGET_0, GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA, GX2_BLEND_COMBINE_MODE_ADD,
                       GX2_ENABLE,          GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA, GX2_BLEND_COMBINE_MODE_ADD);
 
-   font->vertex_cache.current = pos - font->vertex_cache.positions;
+   wiiu->vertex_cache.current = pos - wiiu->vertex_cache.positions;
 }
 
 static void wiiu_font_render_message(

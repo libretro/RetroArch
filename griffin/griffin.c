@@ -1002,6 +1002,10 @@ MENU
 #include "../menu/drivers_display/menu_display_ctr.c"
 #endif
 
+#ifdef WIIU
+#include "../menu/drivers_display/menu_display_wiiu.c"
+#endif
+
 #ifdef HAVE_CACA
 #include "../menu/drivers_display/menu_display_caca.c"
 #endif

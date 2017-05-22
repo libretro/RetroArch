@@ -100,6 +100,9 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #ifdef _3DS
    &menu_display_ctx_ctr,
 #endif
+#ifdef WIIU
+   &menu_display_ctx_wiiu,
+#endif
 #ifdef HAVE_CACA
    &menu_display_ctx_caca,
 #endif
@@ -203,6 +206,10 @@ static bool menu_display_check_compatibility(
          break;
       case MENU_VIDEO_DRIVER_CTR:
          if (string_is_equal_fast(video_driver, "ctr", 3))
+            return true;
+         break;
+      case MENU_VIDEO_DRIVER_WIIU:
+         if (string_is_equal_fast(video_driver, "gx2", 3))
             return true;
          break;
       case MENU_VIDEO_DRIVER_CACA:
@@ -937,7 +944,7 @@ void menu_display_draw_texture_slice(
 
 void menu_display_rotate_z(menu_display_ctx_rotate_draw_t *draw)
 {
-#if !defined(VITA)
+#if !defined(VITA) && !defined(_3DS) && !defined(WIIU)
    math_matrix_4x4 matrix_rotated, matrix_scaled;
    math_matrix_4x4 *b = NULL;
 

@@ -224,7 +224,7 @@ static void *font_renderer_stb_unicode_init(const char *font_path, float font_si
    if(!*font_path)
    {
       uint32_t size = 0;
-      if (!OSGetSharedData(SHARED_FONT_DEFAULT, 0, &self->font_data, &size))
+      if (!OSGetSharedData(SHARED_FONT_DEFAULT, 0, (void**)&self->font_data, &size))
          goto error;
    }
    else
