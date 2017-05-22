@@ -16,9 +16,12 @@ default font
 - MISC: Various frontend optimizations.
 - VIDEO: Fix threaded video regression; tickering of menu entries would no longer work.
 - WII: Fix crashing issues which could occur with the dummy core
+- WIIU: HID Controller support
+- WIIU: XMB/MaterialUI menu driver support
 - LOBBIES: Fallback to filename based matching if no CRC matches are found (for people making playlists by hand)
 - LOBBIES: GUI refinement, show stop hosting when a host has been started, show disconnect when playing as client
 - LOBBIES: if the game is already loaded it will try to connect directly instead of re-loading content (non-fullpath cores only)
+- THUMBNAILS: Thumbnails show up now in Load Content -> Collection, Information -> Database 
 - VITA: Fix slow I/O
 - VITA: Fix 30fps menu (poke into input now instead of reading the entire input buffer which apparently is slow)
 - VITA: Fix frame throttle
