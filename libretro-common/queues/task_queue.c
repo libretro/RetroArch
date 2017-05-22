@@ -47,7 +47,7 @@ struct retro_task_impl
    void (*push_running)(retro_task_t *);
    void (*cancel)(void *);
    void (*reset)(void);
-   void (*wait)(void);
+   void (*wait)(retro_task_condition_fn_t, void *);
    void (*gather)(void);
    bool (*find)(retro_task_finder_t, void*);
    void (*retrieve)(task_retriever_data_t *data);
@@ -189,9 +189,9 @@ static void retro_task_regular_gather(void)
    retro_task_internal_gather();
 }
 
-static void retro_task_regular_wait(void)
+static void retro_task_regular_wait(retro_task_condition_fn_t cond, void* data)
 {
-   while (tasks_running.front)
+   while (tasks_running.front && (!cond || cond(data)))
       retro_task_regular_gather();
 }
 
@@ -373,7 +373,7 @@ static void retro_task_threaded_gather(void)
    slock_unlock(property_lock);
 }
 
-static void retro_task_threaded_wait(void)
+static void retro_task_threaded_wait(retro_task_condition_fn_t cond, void* data)
 {
    bool wait = false;
 
@@ -382,7 +382,8 @@ static void retro_task_threaded_wait(void)
       retro_task_threaded_gather();
 
       slock_lock(running_lock);
-      wait = (tasks_running.front != NULL);
+      wait = (tasks_running.front != NULL) &&
+             (!cond || cond(data));
       slock_unlock(running_lock);
    } while (wait);
 }
@@ -637,9 +638,9 @@ void task_queue_push(retro_task_t *task)
    impl_current->push_running(task);
 }
 
-void task_queue_wait(void)
+void task_queue_wait(retro_task_condition_fn_t cond, void* data)
 {
-   impl_current->wait();
+   impl_current->wait(cond, data);
 }
 
 void task_queue_reset(void)

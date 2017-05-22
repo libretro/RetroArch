@@ -57,6 +57,8 @@ typedef void (*retro_task_queue_msg_t)(const char *msg,
 
 typedef bool (*retro_task_retriever_t)(retro_task_t *task, void *data);
 
+typedef bool (*retro_task_condition_fn_t)(void *data);
+
 typedef struct
 {
    char *source_file;
@@ -200,9 +202,12 @@ void task_queue_check(void);
  * The task will start as soon as possible. */		
 void task_queue_push(retro_task_t *task);
 
-/* Blocks until all tasks have finished.		
+/* Blocks until all tasks have finished
+ * will return early if cond is not NULL
+ * and cond(data) returns false.
  * This must only be called from the main thread. */
-void task_queue_wait(void);
+void task_queue_wait(retro_task_condition_fn_t cond, void* data);
+
 
 /* Sends a signal to terminate all the tasks.		
  *		
