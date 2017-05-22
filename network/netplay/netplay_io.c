@@ -312,6 +312,29 @@ void netplay_send_raw_cmd_all(netplay_t *netplay,
    }
 }
 
+/**
+ * netplay_send_flush_all
+ *
+ * Flush all of our output buffers
+ */
+static void netplay_send_flush_all(netplay_t *netplay,
+   struct netplay_connection *except)
+{
+   size_t i;
+   for (i = 0; i < netplay->connections_size; i++)
+   {
+      struct netplay_connection *connection = &netplay->connections[i];
+      if (connection == except)
+         continue;
+      if (connection->active && connection->mode >= NETPLAY_CONNECTION_CONNECTED)
+      {
+         if (!netplay_send_flush(&connection->send_packet_buffer,
+            connection->fd, true))
+            netplay_hangup(netplay, connection);
+      }
+   }
+}
+
 static bool netplay_cmd_nak(netplay_t *netplay,
    struct netplay_connection *connection)
 {
@@ -1308,9 +1331,14 @@ static bool netplay_get_cmd(netplay_t *netplay,
             netplay->remote_paused = true;
             if (netplay->is_server)
             {
+               /* Inform peers */
                snprintf(msg, sizeof(msg)-1, msg_hash_to_str(MSG_NETPLAY_PEER_PAUSED), connection->nick);
                netplay_send_raw_cmd_all(netplay, connection, NETPLAY_CMD_PAUSE,
                      connection->nick, NETPLAY_NICK_LEN);
+
+               /* We may not reach post_frame soon, so flush the pause message
+                * immediately. */
+               netplay_send_flush_all(netplay, connection);
             }
             else
             {
