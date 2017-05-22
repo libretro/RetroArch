@@ -502,12 +502,6 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
 
    wiiu_video_t* wiiu = (wiiu_video_t*) data;
 
-   if (!width || !height)
-   {
-      GX2WaitForVsync();
-      return true;
-   }
-
    if(wiiu->vsync)
    {
       uint32_t swap_count;
@@ -526,6 +520,10 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
          wiiu->last_vsync = last_vsync;
    }
    GX2WaitForFlip();
+
+
+   if (!width || !height)
+      return true;
 
    static u32 lastTick , currentTick;
    currentTick = OSGetSystemTick();
