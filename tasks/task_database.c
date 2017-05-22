@@ -402,8 +402,7 @@ static int task_database_iterate_crc_lookup(
 
       snprintf(query, sizeof(query),
             "{crc:or(b\"%08X\",b\"%08X\")}",
-            swap_if_big32(db_state->crc),
-            swap_if_big32(db_state->archive_crc));
+            db_state->crc, db_state->archive_crc);
 
       database_info_list_iterate_new(db_state, query);
    }
