@@ -413,9 +413,9 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
                CLSCTX_ALL, NULL, (void**)&client);
             WASAPI_HR_CHECK(hr, "IMMDevice::Activate", return NULL);
 
-            hr = client->lpVtbl->Initialize(client, AUDCLNT_SHAREMODE_SHARED,
+            hr = client->lpVtbl->Initialize(client, AUDCLNT_SHAREMODE_EXCLUSIVE,
                   AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_NOPERSIST,
-                  0, 0, (WAVEFORMATEX*)&wf, NULL);
+                  buffer_duration, buffer_duration, (WAVEFORMATEX*)&wf, NULL);
          }
          if (hr != AUDCLNT_E_UNSUPPORTED_FORMAT)
          {
