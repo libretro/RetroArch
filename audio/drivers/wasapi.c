@@ -269,12 +269,9 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
    IAudioClient *client          = NULL;
    bool float_fmt_res            = *float_fmt;
    unsigned rate_res             = *rate;
-   REFERENCE_TIME default_period = 0;
+   REFERENCE_TIME device_period  = 0;
    REFERENCE_TIME stream_latency = 0;
    UINT32 buffer_length          = 0;
-   double sh_buffer_latency      = 0.0;
-   settings_t *settings          = config_get_ptr();
-   unsigned sh_buffer_length     = settings->uints.audio_wasapi_sh_buffer_length;
 
    hr = device->lpVtbl->Activate(device, &IID_IAudioClient,
          CLSCTX_ALL, NULL, (void**)&client);
@@ -324,19 +321,17 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
    WASAPI_HR_CHECK(hr, "IAudioClient::Initialize", goto error);
 
    *float_fmt = float_fmt_res;
-   *rate = rate_res;
-   *latency = 0.0;
+   *rate      = rate_res;
+   *latency   = 0.0;
 
    /* next two calls are allowed to fail (we losing latency info only) */
    hr = client->lpVtbl->GetStreamLatency(client, &stream_latency);
    WASAPI_HR_WARN(hr, "IAudioClient::GetStreamLatency", return client);
 
-   hr = client->lpVtbl->GetDevicePeriod(client, &default_period, NULL);
+   hr = client->lpVtbl->GetDevicePeriod(client, &device_period, NULL);
    WASAPI_HR_WARN(hr, "IAudioClient::GetDevicePeriod", return client);
 
-   if (sh_buffer_length)
-      sh_buffer_latency = 1000.0 / rate_res * sh_buffer_length;
-   *latency = (double)(stream_latency + default_period) / 10000.0 + sh_buffer_latency;
+   *latency = (double)(stream_latency + device_period) / 10000.0;
 
    return client;
 
@@ -358,7 +353,6 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
    REFERENCE_TIME default_period  = 0;
    REFERENCE_TIME minimum_period  = 0;
    REFERENCE_TIME buffer_duration = 0;
-   REFERENCE_TIME stream_latency  = 0;
    UINT32 buffer_length           = 0;
 
    hr = device->lpVtbl->Activate(device, &IID_IAudioClient,
@@ -368,8 +362,8 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
    hr = client->lpVtbl->GetDevicePeriod(client, &default_period, &minimum_period);
    WASAPI_HR_CHECK(hr, "IAudioClient::GetDevicePeriod", goto error);
 
-   /* buffer_duration is 2/3 of requested latency (in 100ns units) */
-   buffer_duration = *latency * 10000.0 * 2.0 / 3.0;
+   /* buffer_duration is in 100ns units */
+   buffer_duration = *latency * 10000.0;
    if (buffer_duration < minimum_period)
       buffer_duration = minimum_period;
 
@@ -439,15 +433,14 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
    WASAPI_HR_CHECK(hr, "IAudioClient::Initialize", goto error);
 
    *float_fmt = float_fmt_res;
-   *rate = rate_res;
-   *latency = 0.0;
+   *rate      = rate_res;
+   *latency   = 0.0;
 
    /* next call is allowed to fail (we losing latency info only) */
-   hr = client->lpVtbl->GetStreamLatency(client, &stream_latency);
-   WASAPI_HR_WARN(hr, "IAudioClient::GetStreamLatency", return client);
+   hr = client->lpVtbl->GetBufferSize(client, &buffer_length);
+   WASAPI_HR_WARN(hr, "IAudioClient::GetBufferSize", return client);
 
-   /* our buffer latency is half of WASAPI internal two-buffer latency */
-   *latency = (double)stream_latency / 10000.0 * 1.5;
+   *latency = (double)buffer_length * 1000.0 / rate_res;
 
    return client;
 
