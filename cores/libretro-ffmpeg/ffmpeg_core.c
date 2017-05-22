@@ -274,7 +274,7 @@ void CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
       { "ffmpeg_temporal_interp", "Temporal Interpolation; enabled|disabled" },
 #ifdef HAVE_GL_FFT
-      { "ffmpeg_fft_resolution", "GLFFT Resolution; 1280x720|1920x1080|640x360|320x180" },
+      { "ffmpeg_fft_resolution", "GLFFT Resolution; 1280x720|1920x1080|2560x1440|3840x2160|640x360|320x180" },
       { "ffmpeg_fft_multisample", "GLFFT Multisample; 1x|2x|4x" },
 #endif
 #endif
