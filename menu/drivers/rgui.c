@@ -240,9 +240,6 @@ static bool rguidisp_init_font(menu_handle_t *menu)
    if (font_bmp_buf)
       return init_font(menu, font_bmp_buf);
 
-   if (!font_bin_buf)
-      return false;
-
    menu_display_set_font_framebuffer(font_bin_buf);
 
    return true;
