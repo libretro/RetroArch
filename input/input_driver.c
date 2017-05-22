@@ -574,45 +574,6 @@ static INLINE bool input_keys_pressed_internal_reuse(unsigned i)
 }
 
 #ifdef HAVE_MENU
-static INLINE bool input_menu_keys_pressed_internal(
-      const struct retro_keybind **binds,
-      settings_t *settings,
-      rarch_joypad_info_t joypad_info,
-      unsigned i,
-      unsigned max_users,
-      bool bind_valid, bool all_users_control_menu)
-{
-   if (
-         (((!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
-           || !input_driver_block_hotkey)) && bind_valid
-      )
-   {
-      unsigned port;
-      unsigned port_max = all_users_control_menu ? max_users : 1;
-
-      for (port = 0; port < port_max; port++)
-      {
-         const input_device_driver_t *first = current_input->get_joypad_driver 
-            ? current_input->get_joypad_driver(current_input_data) : NULL;
-         const input_device_driver_t *sec   = current_input->get_sec_joypad_driver 
-            ? current_input->get_sec_joypad_driver(current_input_data) : NULL;
-
-         joypad_info.joy_idx        = settings->uints.input_joypad_map[port];
-         joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
-         joypad_info.axis_threshold = input_driver_axis_threshold;
-
-         if (sec   && input_joypad_pressed(sec,
-                  joypad_info, port, input_config_binds[0], i))
-            return true;
-         if (first && input_joypad_pressed(first,
-                  joypad_info, port, input_config_binds[0], i))
-            return true;
-      }
-   }
-
-   return false;
-}
-
 static bool input_driver_toggle_button_combo(
       unsigned mode, uint64_t input)
 {
@@ -738,12 +699,40 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
       const struct retro_keybind *mtkey = &input_config_binds[0][i];
-      if (input_menu_keys_pressed_internal(binds,
-               settings, joypad_info, i, max_users,
-               mtkey->valid,
-               settings->bools.input_all_users_control_menu))
-         ret |= (UINT64_C(1) << i);
-      else if (input_keys_pressed_internal_reuse(i))
+
+      if (
+            (((!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
+              || !input_driver_block_hotkey)) && mtkey->valid
+         )
+      {
+         unsigned port;
+         unsigned port_max = settings->bools.input_all_users_control_menu 
+            ? max_users : 1;
+
+         for (port = 0; port < port_max; port++)
+         {
+            const input_device_driver_t *first = current_input->get_joypad_driver 
+               ? current_input->get_joypad_driver(current_input_data) : NULL;
+            const input_device_driver_t *sec   = current_input->get_sec_joypad_driver 
+               ? current_input->get_sec_joypad_driver(current_input_data) : NULL;
+
+            joypad_info.joy_idx        = settings->uints.input_joypad_map[port];
+            joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
+            joypad_info.axis_threshold = input_driver_axis_threshold;
+
+            if (  (sec   && input_joypad_pressed(sec,
+                     joypad_info, port, input_config_binds[0], i)) ||
+                  (first && input_joypad_pressed(first,
+                     joypad_info, port, input_config_binds[0], i))
+                  )
+            {
+               ret |= (UINT64_C(1) << i);
+               continue;
+            }
+         }
+      }
+
+      if (input_keys_pressed_internal_reuse(i))
          ret |= (UINT64_C(1) << i);
    }
 
@@ -811,20 +800,6 @@ static INLINE bool input_keys_pressed_internal(
       unsigned i,
       const struct retro_keybind *binds)
 {
-   if (((!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
-            || !input_driver_block_hotkey))
-   {
-      bool bind_valid            = binds[i].valid;
-
-      joypad_info.joy_idx        = settings->uints.input_joypad_map[0];
-      joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
-      joypad_info.axis_threshold = input_driver_axis_threshold;
-
-      if (bind_valid && current_input->input_state(current_input_data,
-               joypad_info, &binds,
-               0, RETRO_DEVICE_JOYPAD, 0, i))
-         return true;
-   }
    
    return false;
 }
@@ -904,9 +879,25 @@ uint64_t input_keys_pressed(void *data, uint64_t last_input)
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
-      if (input_keys_pressed_internal(settings, joypad_info, i, binds))
-         ret |= (UINT64_C(1) << i);
-      else if (input_keys_pressed_internal_reuse(i))
+      if (((!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
+               || !input_driver_block_hotkey))
+      {
+         bool bind_valid            = binds[i].valid;
+
+         joypad_info.joy_idx        = settings->uints.input_joypad_map[0];
+         joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
+         joypad_info.axis_threshold = input_driver_axis_threshold;
+
+         if (bind_valid && current_input->input_state(current_input_data,
+                  joypad_info, &binds,
+                  0, RETRO_DEVICE_JOYPAD, 0, i))
+         {
+            ret |= (UINT64_C(1) << i);
+            continue;
+         }
+      }
+
+      if (input_keys_pressed_internal_reuse(i))
          ret |= (UINT64_C(1) << i);
    }
 
