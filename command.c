@@ -2276,7 +2276,6 @@ bool command_event(enum event_command cmd, void *data)
             {
                static struct string_list *hostname = NULL;
                hostname = string_split(buf, "|");
-               RARCH_LOG("%s %d\n", hostname->elems[0].data, atoi(hostname->elems[1].data));
 
                if (!init_netplay(NULL, hostname->elems[0].data, 
                   atoi(hostname->elems[1].data)))
