@@ -360,7 +360,7 @@ static int menu_displaylist_parse_netplay(
    return 0;
 }
 
-#ifndef HAVE_SOCKET_LEGACY
+#if !defined(HAVE_SOCKET_LEGACY) && !defined(WIIU)
 #include <net/net_ifinfo.h>
 
 static int menu_displaylist_parse_network_info(menu_displaylist_info_t *info)
@@ -6103,10 +6103,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push    = true;
          break;
       case DISPLAYLIST_NETWORK_INFO:
-#ifdef HAVE_NETWORKING
-#ifndef HAVE_SOCKET_LEGACY
+#if defined(HAVE_NETWORKING) && !defined(HAVE_SOCKET_LEGACY) && !defined(WIIU)
          menu_displaylist_parse_network_info(info);
-#endif
 #endif
          info->need_push    = true;
          info->need_refresh = true;

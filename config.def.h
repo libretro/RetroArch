@@ -603,6 +603,8 @@ static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/linux/
 #else
 static char buildbot_server_url[] = "";
 #endif
+#elif defined(WIIU)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/nintendo/wiiu/latest/";
 #else
 static char buildbot_server_url[] = "";
 #endif

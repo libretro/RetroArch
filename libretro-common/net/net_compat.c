@@ -168,7 +168,7 @@ int getaddrinfo_retro(const char *node, const char *service,
 
    if (!hints->ai_family)
    {
-#if defined(_WIN32) || defined(HAVE_SOCKET_LEGACY)
+#if defined(_WIN32) || defined(HAVE_SOCKET_LEGACY) || defined(WIIU)
       hints->ai_family    = AF_INET;
 #else
       hints->ai_family    = AF_UNSPEC;
@@ -300,6 +300,8 @@ bool network_init(void)
    char t[16];
    if (if_config(t, NULL, NULL, TRUE, 10) < 0)
       return false;
+#elif defined(WIIU)
+   socket_lib_init();
 #else
    signal(SIGPIPE, SIG_IGN); /* Do not like SIGPIPE killing our app. */
 #endif
@@ -365,6 +367,8 @@ const char *inet_ntop_compat(int af, const void *src, char *dst, socklen_t cnt)
 {
 #if defined(VITA) || defined(__ORBIS__)
    return sceNetInetNtop(af,src,dst,cnt);
+#elif defined(WIIU)
+   return inet_ntop(af, src, dst, cnt);
 #else
    if (af == AF_INET)
    {

@@ -20,6 +20,7 @@
 #include "../ControllerPatcher.hpp"
 
 #include "sys/socket.h"
+#include "netinet/in.h"
 #include "wiiu/os.h"
 
 #define WIIU_CP_TCP_HANDSHAKE               WIIU_CP_TCP_HANDSHAKE_VERSION_3
