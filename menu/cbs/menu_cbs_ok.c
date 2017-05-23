@@ -3442,6 +3442,26 @@ void netplay_refresh_rooms_menu(file_list_t *list)
 #ifndef INET6_ADDRSTRLEN
 #define INET6_ADDRSTRLEN 46
 #endif
+/*
++int IN6_IS_ADDR_V4MAPPED(const struct in6_addr *a)
++{
++	return ((a->s6_words[0] == 0) &&
++		(a->s6_words[1] == 0) &&
++		(a->s6_words[2] == 0) &&
++		(a->s6_words[3] == 0) &&
++		(a->s6_words[4] == 0) &&
++		(a->s6_words[5] == 0xffff));
++}
+*/
+#ifndef IN6_IS_ADDR_V4MAPPED
+#define IN6_IS_ADDR_V4MAPPED(a) \
+       ((((a)->s6_words[0]) == 0) && \
+        (((a)->s6_words[1]) == 0) && \
+        (((a)->s6_words[2]) == 0) && \
+        (((a)->s6_words[3]) == 0) && \
+        (((a)->s6_words[4]) == 0) && \
+        (((a)->s6_words[5]) == 0xFFFF))
+#endif
 
 static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const char *err)
 {
@@ -3526,7 +3546,8 @@ finish:
                {
                    struct sockaddr_in *sin = (struct sockaddr_in *) address;
                    inet_ntop_compat(AF_INET, &sin->sin_addr, 
-                      netplay_room_list[i].address, INET6_ADDRSTRLEN);
+                      netplay_room_list[i].address, INET_ADDRSTRLEN);
+                  RARCH_LOG("IPv4 address: %s\n", netplay_room_list[i].address);
                }
 #if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY)
                else if (address->sa_family == AF_INET6)
@@ -3534,6 +3555,18 @@ finish:
                   struct sockaddr_in6 *sin = (struct sockaddr_in6 *) address;
                   inet_ntop_compat(AF_INET6, &sin->sin6_addr, 
                      netplay_room_list[i].address, INET6_ADDRSTRLEN);
+
+                  RARCH_LOG("IPv6 address: %s\n", netplay_room_list[i].address);
+                  if (IN6_IS_ADDR_V4MAPPED(&sin->sin6_addr))
+                  {
+                     RARCH_LOG("IPv6 address is mapped\n");
+                     const uint8_t *bytes = ((const struct sockaddr_in6 *)address)->sin6_addr.s6_addr;
+                     bytes += 12;
+                     struct in_addr addr4 = { *(const uint32_t *)bytes };
+                     inet_ntop_compat(AF_INET, &addr4, 
+                        netplay_room_list[i].address, INET6_ADDRSTRLEN);
+                     RARCH_LOG("IPv4 address: %s\n", netplay_room_list[i].address);
+                  }
                }
 #endif
 
