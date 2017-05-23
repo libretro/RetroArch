@@ -1766,12 +1766,15 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
    info.enum_idx                = MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST;
    info.setting                 = NULL;
 
-   if (menu_displaylist_ctl(DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, &info))
+   if (!string_is_empty(info.path))
    {
-      size_t i;
-      for (i=0; i < xmb->horizontal_list->size; i++)
-         xmb_node_allocate_userdata(xmb, (unsigned)i);
-      menu_displaylist_ctl(DISPLAYLIST_PROCESS, &info);
+      if (menu_displaylist_ctl(DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, &info))
+      {
+         size_t i;
+         for (i=0; i < xmb->horizontal_list->size; i++)
+            xmb_node_allocate_userdata(xmb, (unsigned)i);
+         menu_displaylist_ctl(DISPLAYLIST_PROCESS, &info);
+      }
    }
 }
 
