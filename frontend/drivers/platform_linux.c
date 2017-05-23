@@ -1235,6 +1235,7 @@ static void frontend_linux_get_lakka_version(char *s,
 static void frontend_linux_get_env(int *argc,
       char *argv[], void *data, void *params_data)
 {
+   unsigned i;
 #ifdef ANDROID
    int32_t major, minor, rel;
    char device_model[PROP_VALUE_MAX] = {0};
@@ -1518,158 +1519,147 @@ static void frontend_linux_get_env(int *argc,
             "RetroArch", "[ENV]: application location: [%s]\n", app_dir);
          if (args && *app_dir)
          {
-            fill_pathname_join(g_defaults.dir.assets, app_dir,
-                  "assets", sizeof(g_defaults.dir.assets));
-            fill_pathname_join(g_defaults.dir.cache, app_dir,
-                  "tmp", sizeof(g_defaults.dir.cache));
-            fill_pathname_join(g_defaults.dir.shader, app_dir,
-                  "shaders", sizeof(g_defaults.dir.shader));
-            fill_pathname_join(g_defaults.dir.overlay, app_dir,
-                  "overlays", sizeof(g_defaults.dir.overlay));
-            fill_pathname_join(g_defaults.dir.core, app_dir,
-                  "cores", sizeof(g_defaults.dir.core));
-            fill_pathname_join(g_defaults.dir.core_info,
-                  app_dir, "info", sizeof(g_defaults.dir.core_info));
-            fill_pathname_join(g_defaults.dir.autoconfig,
-                  app_dir, "autoconfig", sizeof(g_defaults.dir.autoconfig));
-            fill_pathname_join(g_defaults.dir.audio_filter,
-                  app_dir, "filters/audio", sizeof(g_defaults.dir.audio_filter));
-            fill_pathname_join(g_defaults.dir.video_filter,
-                  app_dir, "filters/video", sizeof(g_defaults.dir.video_filter));
-            strlcpy(g_defaults.dir.content_history,
-                  app_dir, sizeof(g_defaults.dir.content_history));
-            fill_pathname_join(g_defaults.dir.database,
-                  app_dir, "database/rdb", sizeof(g_defaults.dir.database));
-            fill_pathname_join(g_defaults.dir.cursor,
-                  app_dir, "database/cursors", sizeof(g_defaults.dir.cursor));
-            fill_pathname_join(g_defaults.dir.wallpapers,
-                  app_dir, "assets/wallpapers", sizeof(g_defaults.dir.wallpapers));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], app_dir,
+                  "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE], app_dir,
+                  "tmp", sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER], app_dir,
+                  "shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], app_dir,
+                  "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], app_dir,
+                  "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
+                  app_dir, "info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
+                  app_dir, "autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER],
+                  app_dir, "filters/audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
+                  app_dir, "filters/video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
+            strlcpy(g_defualts.dirs[DEFAULT_DIR_CONTENT_HISTORY],
+                  app_dir, sizeof(g_defualts.dirs[DEFAULT_DIR_CONTENT_HISTORY]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE],
+                  app_dir, "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CURSOR],
+                  app_dir, "database/cursors", sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS],
+                  app_dir, "assets/wallpapers", sizeof(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS]));
             if(!string_is_empty(downloads_dir) && test_permissions(downloads_dir))
             {
-               fill_pathname_join(g_defaults.dir.core_assets,
-                     downloads_dir, "", sizeof(g_defaults.dir.core_assets));
+               fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
+                     downloads_dir, "", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
             }
             else
             {
-               fill_pathname_join(g_defaults.dir.core_assets,
-                     app_dir, "downloads", sizeof(g_defaults.dir.core_assets));
-               path_mkdir(g_defaults.dir.core_assets);
+               fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
+                     app_dir, "downloads",
+                     sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
             }
 
             __android_log_print(ANDROID_LOG_INFO,
                "RetroArch", "[ENV]: default download folder: [%s]",
-               g_defaults.dir.core_assets);
+               g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]);
 
             switch (perms)
             {
                /* Set defaults for this since we can't guarantee saving on content dir will
                   work in this case */
                case INTERNAL_STORAGE_APPDIR_WRITABLE:
-                  fill_pathname_join(g_defaults.dir.sram,
-                        internal_storage_app_path, "saves", sizeof(g_defaults.dir.sram));
-                  fill_pathname_join(g_defaults.dir.savestate,
-                        internal_storage_app_path, "states", sizeof(g_defaults.dir.savestate));
-                  fill_pathname_join(g_defaults.dir.system,
-                        internal_storage_app_path, "system", sizeof(g_defaults.dir.system));
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM],
+                        internal_storage_app_path, "saves", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
+                        internal_storage_app_path, "states", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
+                        internal_storage_app_path, "system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
 
-                  fill_pathname_join(g_defaults.dir.menu_config,
-                        internal_storage_app_path, "config", sizeof(g_defaults.dir.menu_config));
-                  fill_pathname_join(g_defaults.dir.remap,
-                        g_defaults.dir.menu_config, "remaps", sizeof(g_defaults.dir.remap));
-                  fill_pathname_join(g_defaults.dir.thumbnails,
-                        internal_storage_app_path, "thumbnails", sizeof(g_defaults.dir.thumbnails));
-                  fill_pathname_join(g_defaults.dir.playlist,
-                        internal_storage_app_path, "playlists", sizeof(g_defaults.dir.playlist));
-                  fill_pathname_join(g_defaults.dir.cheats,
-                        internal_storage_app_path, "cheats", sizeof(g_defaults.dir.cheats));
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
+                        internal_storage_app_path, "config", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP],
+                        g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], "remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS],
+                        internal_storage_app_path, "thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
+                        internal_storage_app_path, "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS],
+                        internal_storage_app_path, "cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
 
                   if(!string_is_empty(screenshot_dir) && test_permissions(screenshot_dir))
                   {
-                     fill_pathname_join(g_defaults.dir.screenshot,
-                           screenshot_dir, "", sizeof(g_defaults.dir.screenshot));
+                     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
+                           screenshot_dir, "", sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
                   }
                   else
                   {
-                     fill_pathname_join(g_defaults.dir.screenshot,
-                           internal_storage_app_path, "screenshots", sizeof(g_defaults.dir.screenshot));
-                     path_mkdir(g_defaults.dir.screenshot);
+                     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
+                           internal_storage_app_path, "screenshots",
+                           sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
                   }
 
-                  path_mkdir(g_defaults.dir.sram);
-                  path_mkdir(g_defaults.dir.savestate);
-                  path_mkdir(g_defaults.dir.system);
                   break;
                case INTERNAL_STORAGE_NOT_WRITABLE:
                   /* Set defaults for this since we can't guarantee saving on content dir will
                      work in this case */
-                  fill_pathname_join(g_defaults.dir.sram,
-                        app_dir, "saves", sizeof(g_defaults.dir.sram));
-                  fill_pathname_join(g_defaults.dir.savestate,
-                        app_dir, "states", sizeof(g_defaults.dir.savestate));
-                  fill_pathname_join(g_defaults.dir.system,
-                        app_dir, "system", sizeof(g_defaults.dir.system));
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM],
+                        app_dir, "saves", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
+                        app_dir, "states", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
+                        app_dir, "system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
 
-                  fill_pathname_join(g_defaults.dir.menu_config,
-                        app_dir, "config", sizeof(g_defaults.dir.menu_config));
-                  fill_pathname_join(g_defaults.dir.remap,
-                        g_defaults.dir.menu_config, "remaps", sizeof(g_defaults.dir.remap));
-                  fill_pathname_join(g_defaults.dir.thumbnails,
-                        app_dir, "thumbnails", sizeof(g_defaults.dir.thumbnails));
-                  fill_pathname_join(g_defaults.dir.playlist,
-                        app_dir, "playlists", sizeof(g_defaults.dir.playlist));
-                  fill_pathname_join(g_defaults.dir.cheats,
-                        app_dir, "cheats", sizeof(g_defaults.dir.cheats));
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
+                        app_dir, "config", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP],
+                        g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], "remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS],
+                        app_dir, "thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
+                        app_dir, "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS],
+                        app_dir, "cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
 
                   if(!string_is_empty(screenshot_dir) && test_permissions(screenshot_dir))
                   {
-                     fill_pathname_join(g_defaults.dir.screenshot,
-                           screenshot_dir, "", sizeof(g_defaults.dir.screenshot));
+                     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
+                           screenshot_dir, "", sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
                   }
                   else
                   {
-                     fill_pathname_join(g_defaults.dir.screenshot,
-                           app_dir, "screenshots", sizeof(g_defaults.dir.screenshot));
-                     path_mkdir(g_defaults.dir.screenshot);
+                     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
+                           app_dir, "screenshots",
+                           sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
                   }
 
-                  path_mkdir(g_defaults.dir.sram);
-                  path_mkdir(g_defaults.dir.savestate);
-                  path_mkdir(g_defaults.dir.system);
                   break;
                case INTERNAL_STORAGE_WRITABLE:
                   /* Don't set defaults for saves, states, system or screenshots
                      in this case to be able to honour saving on content dir */
-                  fill_pathname_join(g_defaults.dir.menu_config,
-                        internal_storage_path, "RetroArch/config", sizeof(g_defaults.dir.menu_config));
-                  fill_pathname_join(g_defaults.dir.remap,
-                        g_defaults.dir.menu_config, "remaps", sizeof(g_defaults.dir.remap));
-                  fill_pathname_join(g_defaults.dir.thumbnails,
-                        internal_storage_path, "RetroArch/thumbnails", sizeof(g_defaults.dir.thumbnails));
-                  fill_pathname_join(g_defaults.dir.playlist,
-                        internal_storage_path, "RetroArch/playlists", sizeof(g_defaults.dir.playlist));
-                  fill_pathname_join(g_defaults.dir.cheats,
-                        internal_storage_path, "RetroArch/cheats", sizeof(g_defaults.dir.cheats));
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
+                        internal_storage_path, "RetroArch/config", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP],
+                        g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], "remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS],
+                        internal_storage_path, "RetroArch/thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
+                        internal_storage_path, "RetroArch/playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS],
+                        internal_storage_path, "RetroArch/cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
                default:
                   break;
             }
-            path_mkdir(g_defaults.dir.menu_config);
-            path_mkdir(g_defaults.dir.remap);
-            path_mkdir(g_defaults.dir.thumbnails);
-            path_mkdir(g_defaults.dir.playlist);
-            path_mkdir(g_defaults.dir.cheats);
 
             __android_log_print(ANDROID_LOG_INFO,
                "RetroArch", "[ENV]: default savefile folder: [%s]",
-               g_defaults.dir.sram);
+               g_defaults.dirs[DEFAULT_DIR_SRAM]);
             __android_log_print(ANDROID_LOG_INFO,
                "RetroArch", "[ENV]: default savestate folder: [%s]",
-               g_defaults.dir.savestate);
+               g_defaults.dirs[DEFAULT_DIR_SAVESTATE]);
             __android_log_print(ANDROID_LOG_INFO,
                "RetroArch", "[ENV]: default system folder: [%s]",
-               g_defaults.dir.system);
+               g_defaults.dirs[DEFAULT_DIR_SYSTEM]);
             __android_log_print(ANDROID_LOG_INFO,
                "RetroArch", "[ENV]: default screenshot folder: [%s]",
-               g_defaults.dir.screenshot);
+               g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]);
          }
       }
    }
@@ -1746,52 +1736,59 @@ static void frontend_linux_get_env(int *argc,
    else
       snprintf(base_path, sizeof(base_path), "retroarch");
 
-   fill_pathname_join(g_defaults.dir.core, base_path,
-         "cores", sizeof(g_defaults.dir.core));
-   fill_pathname_join(g_defaults.dir.core_info, base_path,
-         "cores", sizeof(g_defaults.dir.core_info));
-   fill_pathname_join(g_defaults.dir.autoconfig, base_path,
-         "autoconfig", sizeof(g_defaults.dir.autoconfig));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], base_path,
+         "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], base_path,
+         "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG], base_path,
+         "autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
 
    if (path_is_directory("/usr/local/share/retroarch/assets"))
-      fill_pathname_join(g_defaults.dir.assets, "/usr/local/share/retroarch",
-            "assets", sizeof(g_defaults.dir.assets));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], "/usr/local/share/retroarch",
+            "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
    else if (path_is_directory("/usr/share/retroarch/assets"))
-      fill_pathname_join(g_defaults.dir.assets, "/usr/share/retroarch",
-            "assets", sizeof(g_defaults.dir.assets));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], "/usr/share/retroarch",
+            "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
    else if (path_is_directory("/usr/local/share/games/retroarch/assets"))
-      fill_pathname_join(g_defaults.dir.assets, "/usr/local/share/games/retroarch",
-            "assets", sizeof(g_defaults.dir.assets));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], "/usr/local/share/games/retroarch",
+            "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
    else if (path_is_directory("/usr/share/games/retroarch/assets"))
-      fill_pathname_join(g_defaults.dir.assets, "/usr/share/games/retroarch",
-            "assets", sizeof(g_defaults.dir.assets));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], "/usr/share/games/retroarch",
+            "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
    else
-      fill_pathname_join(g_defaults.dir.assets, base_path,
-            "assets", sizeof(g_defaults.dir.assets));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], base_path,
+            "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
 
-   fill_pathname_join(g_defaults.dir.menu_config, base_path,
-         "config", sizeof(g_defaults.dir.menu_config));
-   fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.menu_config,
-         "remaps", sizeof(g_defaults.dir.remap));
-   fill_pathname_join(g_defaults.dir.playlist, base_path,
-         "playlists", sizeof(g_defaults.dir.playlist));
-   fill_pathname_join(g_defaults.dir.cursor, base_path,
-         "database/cursors", sizeof(g_defaults.dir.cursor));
-   fill_pathname_join(g_defaults.dir.database, base_path,
-         "database/rdb", sizeof(g_defaults.dir.database));
-   fill_pathname_join(g_defaults.dir.shader, base_path,
-         "shaders", sizeof(g_defaults.dir.shader));
-   fill_pathname_join(g_defaults.dir.cheats, base_path,
-         "cheats", sizeof(g_defaults.dir.cheats));
-   fill_pathname_join(g_defaults.dir.overlay, base_path,
-         "overlay", sizeof(g_defaults.dir.overlay));
-   fill_pathname_join(g_defaults.dir.core_assets, base_path,
-         "downloads", sizeof(g_defaults.dir.core_assets));
-   fill_pathname_join(g_defaults.dir.screenshot, base_path,
-         "screenshots", sizeof(g_defaults.dir.screenshot));
-   fill_pathname_join(g_defaults.dir.thumbnails, base_path,
-         "thumbnails", sizeof(g_defaults.dir.thumbnails));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], base_path,
+         "config", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP], g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
+         "remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST], base_path,
+         "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CURSOR], base_path,
+         "database/cursors", sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], base_path,
+         "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER], base_path,
+         "shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS], base_path,
+         "cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], base_path,
+         "overlay", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], base_path,
+         "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT], base_path,
+         "screenshots", sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS], base_path,
+         "thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
 #endif
+
+   for (i = 0; i < DEFAULT_DIR_LAST; i++)
+   {
+      const char *dir_path = g_defaults.dirs[i];
+      if (!string_is_empty(dir_path))
+         path_mkdir(dir_path);
+   }
 }
 
 #ifdef ANDROID

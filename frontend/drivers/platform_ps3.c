@@ -193,15 +193,15 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
             == CELL_GAME_ATTRIBUTE_APP_HOME)
          RARCH_LOG("RetroArch was launched from host machine (APP_HOME).\n");
 
-      ret = cellGameContentPermit(content_info_path, g_defaults.dir.port);
+      ret = cellGameContentPermit(content_info_path, g_defaults.dirs[DEFAULT_DIR_PORT]);
 
 #ifdef HAVE_MULTIMAN
       if (multiman_detected)
       {
          fill_pathname_join(content_info_path, "/dev_hdd0/game/",
                EMULATOR_CONTENT_DIR, sizeof(content_info_path));
-         fill_pathname_join(g_defaults.dir.port, content_info_path,
-               "USRDIR", sizeof(g_defaults.dir.port));
+         fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PORT], content_info_path,
+               "USRDIR", sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
       }
 #endif
 
@@ -211,35 +211,48 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
       {
          RARCH_LOG("cellGameContentPermit() OK.\n");
          RARCH_LOG("content_info_path : [%s].\n", content_info_path);
-         RARCH_LOG("usrDirPath : [%s].\n", g_defaults.dir.port);
+         RARCH_LOG("usrDirPath : [%s].\n", g_defaults.dirs[DEFAULT_DIR_PORT]);
       }
 
-      strlcpy(g_defaults.dir.content_history,
-            g_defaults.dir.port, sizeof(g_defaults.dir.content_history));
-      fill_pathname_join(g_defaults.dir.core, g_defaults.dir.port,
-            "cores", sizeof(g_defaults.dir.core));
-      fill_pathname_join(g_defaults.dir.core_info, g_defaults.dir.core,
-            "info", sizeof(g_defaults.dir.core_info));
-      fill_pathname_join(g_defaults.dir.savestate, g_defaults.dir.core,
-            "savestates", sizeof(g_defaults.dir.savestate));
-      fill_pathname_join(g_defaults.dir.sram, g_defaults.dir.core,
-            "savefiles", sizeof(g_defaults.dir.sram));
-      fill_pathname_join(g_defaults.dir.system, g_defaults.dir.core,
-            "system", sizeof(g_defaults.dir.system));
-      fill_pathname_join(g_defaults.dir.shader,  g_defaults.dir.core,
-            "shaders_cg", sizeof(g_defaults.dir.shader));
-      fill_pathname_join(g_defaults.path.config, g_defaults.dir.port,
+      strlcpy(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY],
+            g_defaults.dirs[DEFAULT_DIR_PORT],
+            sizeof(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE],
+            g_defaults.dirs[DEFAULT_DIR_PORT],
+            "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
+            g_defaults.dirs[DEFAULT_DIR_CORE],
+            "info",
+            sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
+            g_defaults.dirs[DEFAULT_DIR_CORE],
+            "savestates", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM],
+            g_defaults.dirs[DEFAULT_DIR_CORE],
+            "savefiles", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
+            g_defaults.dirs[DEFAULT_DIR_CORE],
+            "system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER],
+            g_defaults.dirs[DEFAULT_DIR_CORE],
+            "shaders_cg", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+      fill_pathname_join(g_defaults.path.config, g_defaults.dirs[DEFAULT_DIR_PORT],
             file_path_str(FILE_PATH_MAIN_CONFIG),  sizeof(g_defaults.path.config));
-      fill_pathname_join(g_defaults.dir.overlay, g_defaults.dir.core,
-            "overlays", sizeof(g_defaults.dir.overlay));
-      fill_pathname_join(g_defaults.dir.assets,   g_defaults.dir.core,
-            "assets", sizeof(g_defaults.dir.assets));
-      fill_pathname_join(g_defaults.dir.cursor,   g_defaults.dir.core,
-            "database/cursors", sizeof(g_defaults.dir.cursor));
-      fill_pathname_join(g_defaults.dir.database,   g_defaults.dir.core,
-            "database/rdb", sizeof(g_defaults.dir.database));
-      fill_pathname_join(g_defaults.dir.playlist,   g_defaults.dir.core,
-            "playlists", sizeof(g_defaults.dir.playlist));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY],
+            g_defaults.dirs[DEFAULT_DIR_CORE],
+            "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS],
+            g_defaults.dirs[DEFAULT_DIR_CORE],
+            "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CURSOR],
+            g_defaults.dirs[DEFAULT_DIR_CORE],
+            "database/cursors", sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE],
+            g_defaults.dirs[DEFAULT_DIR_CORE],
+            "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
+            g_defaults.dirs[DEFAULT_DIR_CORE],
+            "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
    }
 
 #ifndef IS_SALAMANDER

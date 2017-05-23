@@ -297,60 +297,17 @@ static void check_defaults_dir_create_dir(const char *path)
 
 void dir_check_defaults(void)
 {
+   unsigned i;
    /* early return for people with a custom folder setup
       so it doesn't create unnecessary directories
     */
    if (path_file_exists("custom.ini"))
       return;
 
-   if (!string_is_empty(g_defaults.dir.core_assets))
-      check_defaults_dir_create_dir(g_defaults.dir.core_assets);
-   if (!string_is_empty(g_defaults.dir.remap))
-      check_defaults_dir_create_dir(g_defaults.dir.remap);
-   if (!string_is_empty(g_defaults.dir.screenshot))
-      check_defaults_dir_create_dir(g_defaults.dir.screenshot);
-   if (!string_is_empty(g_defaults.dir.core))
-      check_defaults_dir_create_dir(g_defaults.dir.core);
-   if (!string_is_empty(g_defaults.dir.autoconfig))
-      check_defaults_dir_create_dir(g_defaults.dir.autoconfig);
-   if (!string_is_empty(g_defaults.dir.audio_filter))
-      check_defaults_dir_create_dir(g_defaults.dir.audio_filter);
-   if (!string_is_empty(g_defaults.dir.video_filter))
-      check_defaults_dir_create_dir(g_defaults.dir.video_filter);
-   if (!string_is_empty(g_defaults.dir.assets))
-      check_defaults_dir_create_dir(g_defaults.dir.assets);
-   if (!string_is_empty(g_defaults.dir.playlist))
-      check_defaults_dir_create_dir(g_defaults.dir.playlist);
-   if (!string_is_empty(g_defaults.dir.core))
-      check_defaults_dir_create_dir(g_defaults.dir.core);
-   if (!string_is_empty(g_defaults.dir.core_info))
-      check_defaults_dir_create_dir(g_defaults.dir.core_info);
-   if (!string_is_empty(g_defaults.dir.overlay))
-      check_defaults_dir_create_dir(g_defaults.dir.overlay);
-   if (!string_is_empty(g_defaults.dir.port))
-      check_defaults_dir_create_dir(g_defaults.dir.port);
-   if (!string_is_empty(g_defaults.dir.shader))
-      check_defaults_dir_create_dir(g_defaults.dir.shader);
-   if (!string_is_empty(g_defaults.dir.savestate))
-      check_defaults_dir_create_dir(g_defaults.dir.savestate);
-   if (!string_is_empty(g_defaults.dir.sram))
-      check_defaults_dir_create_dir(g_defaults.dir.sram);
-   if (!string_is_empty(g_defaults.dir.system))
-      check_defaults_dir_create_dir(g_defaults.dir.system);
-   if (!string_is_empty(g_defaults.dir.resampler))
-      check_defaults_dir_create_dir(g_defaults.dir.resampler);
-   if (!string_is_empty(g_defaults.dir.menu_config))
-      check_defaults_dir_create_dir(g_defaults.dir.menu_config);
-   if (!string_is_empty(g_defaults.dir.content_history))
-      check_defaults_dir_create_dir(g_defaults.dir.content_history);
-   if (!string_is_empty(g_defaults.dir.cache))
-      check_defaults_dir_create_dir(g_defaults.dir.cache);
-   if (!string_is_empty(g_defaults.dir.database))
-      check_defaults_dir_create_dir(g_defaults.dir.database);
-   if (!string_is_empty(g_defaults.dir.cursor))
-      check_defaults_dir_create_dir(g_defaults.dir.cursor);
-   if (!string_is_empty(g_defaults.dir.cheats))
-      check_defaults_dir_create_dir(g_defaults.dir.cheats);
-   if (!string_is_empty(g_defaults.dir.thumbnails))
-      check_defaults_dir_create_dir(g_defaults.dir.thumbnails);
+   for (i = 0; i < DEFAULT_DIR_LAST; i++)
+   {
+      const char *dir_path = g_defaults.dirs[i];
+      if (!string_is_empty(dir_path))
+         check_defaults_dir_create_dir(dir_path);
+   }
 }

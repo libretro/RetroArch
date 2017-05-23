@@ -179,9 +179,12 @@ static void frontend_win32_init(void *data)
 {
 	typedef BOOL (WINAPI *isProcessDPIAwareProc)();
 	typedef BOOL (WINAPI *setProcessDPIAwareProc)();
-	HMODULE handle                         = GetModuleHandle("User32.dll");
-	isProcessDPIAwareProc  isDPIAwareProc  = (isProcessDPIAwareProc)dylib_proc(handle, "IsProcessDPIAware");
-	setProcessDPIAwareProc setDPIAwareProc = (setProcessDPIAwareProc)dylib_proc(handle, "SetProcessDPIAware");
+	HMODULE handle                         = 
+      GetModuleHandle("User32.dll");
+	isProcessDPIAwareProc  isDPIAwareProc  = 
+      (isProcessDPIAwareProc)dylib_proc(handle, "IsProcessDPIAware");
+	setProcessDPIAwareProc setDPIAwareProc = 
+      (setProcessDPIAwareProc)dylib_proc(handle, "SetProcessDPIAware");
 
 	if (isDPIAwareProc)
 	{
@@ -257,63 +260,55 @@ static void frontend_win32_environment_get(int *argc, char *argv[],
 {
    gfx_set_dwm();
 
-   fill_pathname_expand_special(g_defaults.dir.assets,
-      ":\\assets", sizeof(g_defaults.dir.assets));
-   fill_pathname_expand_special(g_defaults.dir.audio_filter,
-      ":\\filters\\audio", sizeof(g_defaults.dir.audio_filter));
-   fill_pathname_expand_special(g_defaults.dir.video_filter,
-      ":\\filters\\video", sizeof(g_defaults.dir.video_filter));
-   fill_pathname_expand_special(g_defaults.dir.cheats,
-      ":\\cheats", sizeof(g_defaults.dir.cheats));
-   fill_pathname_expand_special(g_defaults.dir.database,
-      ":\\database\\rdb", sizeof(g_defaults.dir.database));
-   fill_pathname_expand_special(g_defaults.dir.cursor,
-      ":\\database\\cursors", sizeof(g_defaults.dir.cursor));
-   fill_pathname_expand_special(g_defaults.dir.playlist,
-      ":\\playlists", sizeof(g_defaults.dir.assets));
-   fill_pathname_expand_special(g_defaults.dir.menu_config,
-      ":\\config", sizeof(g_defaults.dir.menu_config));
-   fill_pathname_expand_special(g_defaults.dir.remap,
-      ":\\config\\remaps", sizeof(g_defaults.dir.remap));
-   fill_pathname_expand_special(g_defaults.dir.wallpapers,
-      ":\\assets\\wallpapers", sizeof(g_defaults.dir.wallpapers));
-   fill_pathname_expand_special(g_defaults.dir.thumbnails,
-      ":\\thumbnails", sizeof(g_defaults.dir.thumbnails));
-   fill_pathname_expand_special(g_defaults.dir.overlay,
-      ":\\overlays", sizeof(g_defaults.dir.overlay));
-   fill_pathname_expand_special(g_defaults.dir.core,
-      ":\\cores", sizeof(g_defaults.dir.core));
-   fill_pathname_expand_special(g_defaults.dir.core_info,
-      ":\\info", sizeof(g_defaults.dir.core_info));
-   fill_pathname_expand_special(g_defaults.dir.autoconfig,
-      ":\\autoconfig", sizeof(g_defaults.dir.autoconfig));
-   fill_pathname_expand_special(g_defaults.dir.shader,
-      ":\\shaders", sizeof(g_defaults.dir.shader));
-   fill_pathname_expand_special(g_defaults.dir.core_assets,
-      ":\\downloads", sizeof(g_defaults.dir.core_assets));
-   fill_pathname_expand_special(g_defaults.dir.screenshot,
-      ":\\screenshots", sizeof(g_defaults.dir.screenshot));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_ASSETS],
+      ":\\assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_AUDIO_FILTER],
+      ":\\filters\\audio", sizeof(g_defaults.dirs[DEFAULT_AUDIO_FILTER]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
+      ":\\filters\\video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CHEATS],
+      ":\\cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_DATABASE],
+      ":\\database\\rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CURSOR],
+      ":\\database\\cursors", sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
+      ":\\playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
+      ":\\config", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_REMAP],
+      ":\\config\\remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS],
+      ":\\assets\\wallpapers", sizeof(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_THUMBNAIL],
+      ":\\thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAIL]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_OVERLAY],
+      ":\\overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE],
+      ":\\cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
+      ":\\info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
+      ":\\autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SHADER],
+      ":\\shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE]_assets,
+      ":\\downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]_assets));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
+      ":\\screenshots", sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
 
-/* don't force this in the driver anymore, these will be handled by
-   a dummy config file  so they can be reset to content dir
-
-   fill_pathname_expand_special(g_defaults.dir.sram,
-      ":\\saves", sizeof(g_defaults.dir.sram));
-   fill_pathname_expand_special(g_defaults.dir.savestate,
-      ":\\states", sizeof(g_defaults.dir.savestate));
-   fill_pathname_expand_special(g_defaults.dir.system,
-      ":\\system", sizeof(g_defaults.dir.system));
-*/
 #ifdef HAVE_MENU
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
-   snprintf(g_defaults.settings.menu, sizeof(g_defaults.settings.menu), "xmb");
+   snprintf(g_defaults.settings.menu,
+         sizeof(g_defaults.settings.menu), "xmb");
 #endif
 #endif
 }
 
 static uint64_t frontend_win32_get_mem_total(void)
 {
-   /* OSes below 2000 don't have the Ex version, and non-Ex cannot work with >4GB RAM */
+   /* OSes below 2000 don't have the Ex version,
+    * and non-Ex cannot work with >4GB RAM */
 #if _WIN32_WINNT > 0x0400
 	MEMORYSTATUSEX mem_info;
 	mem_info.dwLength = sizeof(MEMORYSTATUSEX);
@@ -329,7 +324,8 @@ static uint64_t frontend_win32_get_mem_total(void)
 
 static uint64_t frontend_win32_get_mem_used(void)
 {
-   /* OSes below 2000 don't have the Ex version, and non-Ex cannot work with >4GB RAM */
+   /* OSes below 2000 don't have the Ex version, 
+    * and non-Ex cannot work with >4GB RAM */
 #if _WIN32_WINNT > 0x0400
 	MEMORYSTATUSEX mem_info;
 	mem_info.dwLength = sizeof(MEMORYSTATUSEX);
@@ -349,25 +345,30 @@ static void frontend_win32_attach_console(void)
 #ifdef _WIN32_WINNT_WINXP
 
    /* msys will start the process with FILE_TYPE_PIPE connected.
-    *   cmd will start the process with FILE_TYPE_UNKNOWN connected (since this is subsystem windows application
-    * ... UNLESS stdout/stderr were redirected (then FILE_TYPE_DISK will be connected most likely)
+    *   cmd will start the process with FILE_TYPE_UNKNOWN connected 
+    *   (since this is subsystem windows application
+    * ... UNLESS stdout/stderr were redirected (then FILE_TYPE_DISK 
+    * will be connected most likely)
     * explorer will start the process with NOTHING connected.
     *
     * Now, let's not reconnect anything that's already connected.
     * If any are disconnected, open a console, and connect to them.
-    * In case we're launched from msys or cmd, try attaching to the parent process console first.
-    * Take care to leave a record of what we did, so we can undo it precisely
+    * In case we're launched from msys or cmd, try attaching to the 
+    * parent process console first.
+    *
+    * Take care to leave a record of what we did, so we can 
+    * undo it precisely.
     */
 
-   bool need_stdout = (GetFileType(GetStdHandle(STD_OUTPUT_HANDLE)) == FILE_TYPE_UNKNOWN);
-   bool need_stderr = (GetFileType(GetStdHandle(STD_ERROR_HANDLE)) == FILE_TYPE_UNKNOWN);
+   bool need_stdout = (GetFileType(GetStdHandle(STD_OUTPUT_HANDLE)) 
+         == FILE_TYPE_UNKNOWN);
+   bool need_stderr = (GetFileType(GetStdHandle(STD_ERROR_HANDLE)) 
+         == FILE_TYPE_UNKNOWN);
 
    if(need_stdout || need_stderr)
    {
       if(!AttachConsole( ATTACH_PARENT_PROCESS))
-      {
          AllocConsole();
-      }
 
       if(need_stdout) freopen( "CONOUT$", "w", stdout );
       if(need_stderr) freopen( "CONOUT$", "w", stderr );
@@ -386,8 +387,9 @@ static void frontend_win32_detach_console(void)
 
    if(console_needs_free)
    {
-      /* we don't reconnect stdout/stderr to anything here, because by definition, they weren't connected to anything in the first place. */
-
+      /* we don't reconnect stdout/stderr to anything here, 
+       * because by definition, they weren't connected to 
+       * anything in the first place. */
       FreeConsole();
       console_needs_free = false;
    }
