@@ -22,6 +22,7 @@
 #include <queues/task_queue.h>
 #include <retro_stat.h>
 #include <file/file_path.h>
+#include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -158,7 +159,7 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
    {
       const char *dir_path = g_defaults.dirs[i];
       if (!string_is_empty(dir_path))
-         check_defaults_dir_create_dir(dir_path);
+         path_mkdir(dir_path);
    }
 
    snprintf(g_defaults.settings.menu, sizeof(g_defaults.settings.menu), "rgui");

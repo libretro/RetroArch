@@ -20,10 +20,11 @@
 #include <libgen.h>
 #include <dirent.h>
 
-#include <boolean.h>
-
 #include <bps/bps.h>
 #include <packageinfo.h>
+
+#include <boolean.h>
+#include <string/stdstring.h>
 
 #include "../../defaults.h"
 #include "../../dynamic.h"
@@ -159,7 +160,7 @@ static void frontend_qnx_get_environment_settings(int *argc, char *argv[],
    {
       const char *dir_path = g_defaults.dirs[i];
       if (!string_is_empty(dir_path))
-         check_defaults_dir_create_dir(dir_path);
+         path_mkdir(dir_path);
    }
 
    /* set glui as default menu */

@@ -225,7 +225,7 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
    {
       const char *dir_path = g_defaults.dirs[i];
       if (!string_is_empty(dir_path))
-         check_defaults_dir_create_dir(dir_path);
+         path_mkdir(dir_path);
    }
 }
 

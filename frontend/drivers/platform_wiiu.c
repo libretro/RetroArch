@@ -21,6 +21,7 @@
 #include <boolean.h>
 
 #include <file/file_path.h>
+#include <string/stdstring.h>
 
 #ifndef IS_SALAMANDER
 #include <lists/file_list.h>
@@ -118,7 +119,7 @@ static void frontend_wiiu_get_environment_settings(int *argc, char *argv[],
    {
       const char *dir_path = g_defaults.dirs[i];
       if (!string_is_empty(dir_path))
-         check_defaults_dir_create_dir(dir_path);
+         path_mkdir(dir_path);
    }
 }
 
