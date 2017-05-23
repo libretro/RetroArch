@@ -261,16 +261,14 @@ static void wasapi_set_format(WAVEFORMATEXTENSIBLE *wf,
 }
 
 static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
-      bool *float_fmt, unsigned *rate, double *latency)
+      bool *float_fmt, unsigned *rate, unsigned latency)
 {
    HRESULT hr;
    WAVEFORMATEXTENSIBLE wf;
    int i, j;
-   IAudioClient *client          = NULL;
-   bool float_fmt_res            = *float_fmt;
-   unsigned rate_res             = *rate;
-   REFERENCE_TIME device_period  = 0;
-   REFERENCE_TIME stream_latency = 0;
+   IAudioClient *client = NULL;
+   bool float_fmt_res   = *float_fmt;
+   unsigned rate_res    = *rate;
 
    hr = device->lpVtbl->Activate(device, &IID_IAudioClient,
          CLSCTX_ALL, NULL, (void**)&client);
@@ -286,8 +284,8 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
       /* for requested rate (first) and all preferred rates */
       for (j = 0; rate_res; ++j)
       {
-         RARCH_LOG("[WASAPI]: Initializing client (shared, %s, %uHz) ...\n",
-               float_fmt_res ? "float" : "pcm", rate_res);
+         RARCH_LOG("[WASAPI]: Initializing client (shared, %s, %uHz, %ums) ...\n",
+               float_fmt_res ? "float" : "pcm", rate_res, latency);
 
          wasapi_set_format(&wf, float_fmt_res, rate_res);
          hr = client->lpVtbl->Initialize(client, AUDCLNT_SHAREMODE_SHARED,
@@ -321,16 +319,6 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
 
    *float_fmt = float_fmt_res;
    *rate      = rate_res;
-   *latency   = 0.0;
-
-   /* next two calls are allowed to fail (we losing latency info only) */
-   hr = client->lpVtbl->GetStreamLatency(client, &stream_latency);
-   WASAPI_HR_WARN(hr, "IAudioClient::GetStreamLatency", return client);
-
-   hr = client->lpVtbl->GetDevicePeriod(client, &device_period, NULL);
-   WASAPI_HR_WARN(hr, "IAudioClient::GetDevicePeriod", return client);
-
-   *latency = (double)(stream_latency + device_period) / 10000.0;
 
    return client;
 
@@ -341,7 +329,7 @@ error:
 }
 
 static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
-      bool *float_fmt, unsigned *rate, double *latency)
+      bool *float_fmt, unsigned *rate, unsigned latency)
 {
    HRESULT hr;
    WAVEFORMATEXTENSIBLE wf;
@@ -361,7 +349,7 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
    WASAPI_HR_CHECK(hr, "IAudioClient::GetDevicePeriod", goto error);
 
    /* buffer_duration is in 100ns units */
-   buffer_duration = *latency * 10000.0;
+   buffer_duration = latency * 10000.0;
    if (buffer_duration < minimum_period)
       buffer_duration = minimum_period;
 
@@ -375,9 +363,8 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
       /* for requested rate (first) and all preferred rates */
       for (j = 0; rate_res; ++j)
       {
-         RARCH_LOG("[WASAPI]: Initializing client "
-               "(exclusive, %s, %uHz, %.1fms) ...\n",
-               float_fmt_res ? "float" : "pcm", rate_res, *latency);
+         RARCH_LOG("[WASAPI]: Initializing client (exclusive, %s, %uHz, %ums) ...\n",
+               float_fmt_res ? "float" : "pcm", rate_res, latency);
 
          wasapi_set_format(&wf, float_fmt_res, rate_res);
          hr = client->lpVtbl->Initialize(client, AUDCLNT_SHAREMODE_EXCLUSIVE,
@@ -432,13 +419,6 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
 
    *float_fmt = float_fmt_res;
    *rate      = rate_res;
-   *latency   = 0.0;
-
-   /* next call is allowed to fail (we losing latency info only) */
-   hr = client->lpVtbl->GetBufferSize(client, &buffer_length);
-   WASAPI_HR_WARN(hr, "IAudioClient::GetBufferSize", return client);
-
-   *latency = (double)buffer_length * 1000.0 / rate_res;
 
    return client;
 
@@ -451,25 +431,29 @@ error:
 static IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
       bool *float_fmt, unsigned *rate, unsigned latency)
 {
-   double latency_res       = latency;
-   IAudioClient *client     = NULL;
+   HRESULT hr;
+   IAudioClient *client;
+   double latency_res;
+   REFERENCE_TIME device_period  = 0;
+   REFERENCE_TIME stream_latency = 0;
+   UINT32 buffer_length          = 0;
 
    if (*exclusive)
    {
-      client = wasapi_init_client_ex(device, float_fmt, rate, &latency_res);
+      client = wasapi_init_client_ex(device, float_fmt, rate, latency);
       if (!client)
       {
-         client = wasapi_init_client_sh(device, float_fmt, rate, &latency_res);
+         client = wasapi_init_client_sh(device, float_fmt, rate, latency);
          if (client)
             *exclusive = false;
       }
    }
    else
    {
-      client = wasapi_init_client_sh(device, float_fmt, rate, &latency_res);
+      client = wasapi_init_client_sh(device, float_fmt, rate, latency);
       if (!client)
       {
-         client = wasapi_init_client_ex(device, float_fmt, rate, &latency_res);
+         client = wasapi_init_client_ex(device, float_fmt, rate, latency);
          if (client)
             *exclusive = true;
       }
@@ -477,10 +461,40 @@ static IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
 
    WASAPI_CHECK(client, "Failed to initialize client", return NULL);
 
+   /* next calls are allowed to fail (we losing info only) */
+
+   if (*exclusive)
+      hr = client->lpVtbl->GetDevicePeriod(client, NULL, &device_period);
+   else
+      hr = client->lpVtbl->GetDevicePeriod(client, &device_period, NULL);
+   if (FAILED(hr))
+      wasapi_com_warn("IAudioClient::GetDevicePeriod", hr);
+
+   if (!*exclusive)
+   {
+      hr = client->lpVtbl->GetStreamLatency(client, &stream_latency);
+      if (FAILED(hr))
+         wasapi_com_warn("IAudioClient::GetStreamLatency", hr);
+   }
+
+   hr = client->lpVtbl->GetBufferSize(client, &buffer_length);
+   if (FAILED(hr))
+      wasapi_com_warn("IAudioClient::GetBufferSize", hr);
+
+   if (*exclusive)
+      latency_res = (double)buffer_length * 1000.0 / (*rate);
+   else
+      latency_res = (double)(stream_latency + device_period) / 10000.0;
+
    RARCH_LOG("[WASAPI]: Client initialized (%s, %s, %uHz, %.1fms).\n",
          *exclusive ? "exclusive" : "shared",
-         *float_fmt ? "float" : "pcm",
-         *rate, latency_res);
+         *float_fmt ? "float" : "pcm", *rate, latency_res);
+
+   RARCH_LOG("[WASAPI]: Client's buffer length is %u frames (%.1fms).\n",
+         buffer_length, (double)buffer_length * 1000.0 / (*rate));
+
+   RARCH_LOG("[WASAPI]: Device period is %.1fms (%lld frames).\n",
+         (double)device_period / 10000.0, device_period * (*rate) / 10000000);
 
    return client;
 }
@@ -525,12 +539,20 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    {
       w->buffer = fifo_new(w->engine_buffer_size);
       WASAPI_CHECK(w->buffer, "Out of memory", goto error);
+
+      RARCH_LOG("[WASAPI]: Intermediate buffer length is %u frames (%.1fms).\n",
+            frame_count, (double)frame_count * 1000.0 / rate);
    }
    else if (sh_buffer_length)
    {
       w->buffer = fifo_new(sh_buffer_length * w->frame_size);
       WASAPI_CHECK(w->buffer, "Out of memory", goto error);
+
+      RARCH_LOG("[WASAPI]: Intermediate buffer length is %u frames (%.1fms).\n",
+            sh_buffer_length, (double)sh_buffer_length * 1000.0 / rate);
    }
+   else
+      wasapi_log("Intermediate buffer is off");
 
    w->write_event = CreateEventA(NULL, FALSE, FALSE, NULL);
    WASAPI_SR_CHECK(w->write_event, "CreateEventA", goto error);
@@ -549,9 +571,6 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
          AUDCLNT_BUFFERFLAGS_SILENT);
    WASAPI_HR_CHECK(hr, "IAudioRenderClient::ReleaseBuffer", goto error);
 
-   /* TODO: remove next four lines after
-      "Pause when menu activated" option and
-      fullscreen toggling are fixed */
    hr = w->client->lpVtbl->Start(w->client);
    WASAPI_HR_CHECK(hr, "IAudioClient::Start", goto error);
    w->running = true;
@@ -746,8 +765,9 @@ static bool wasapi_start(void *wh, bool u)
 {
    wasapi_t *w = (wasapi_t*)wh;
    HRESULT hr  = w->client->lpVtbl->Start(w->client);
-   WASAPI_WARN(hr != AUDCLNT_E_NOT_STOPPED, "Already started",
-         return w->running);
+
+   if (hr == AUDCLNT_E_NOT_STOPPED)
+      return true;
 
    WASAPI_HR_CHECK(hr, "IAudioClient::Start", return w->running);
 
