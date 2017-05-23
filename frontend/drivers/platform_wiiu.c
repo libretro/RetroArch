@@ -404,7 +404,11 @@ int main(int argc, char **argv)
 #endif
    ProcUIInit(&SaveCallback);
 
+#ifdef IS_SALAMANDER
+   socket_lib_init();
+#else
    network_init();
+#endif
 #if defined(PC_DEVELOPMENT_IP_ADDRESS) && defined(PC_DEVELOPMENT_TCP_PORT)
    log_init(PC_DEVELOPMENT_IP_ADDRESS, PC_DEVELOPMENT_TCP_PORT);
    devoptab_list[STD_OUT] = &dotab_stdout;
