@@ -262,8 +262,8 @@ static void frontend_win32_environment_get(int *argc, char *argv[],
 
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_ASSETS],
       ":\\assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_AUDIO_FILTER],
-      ":\\filters\\audio", sizeof(g_defaults.dirs[DEFAULT_AUDIO_FILTER]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER],
+      ":\\filters\\audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
       ":\\filters\\video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CHEATS],
@@ -280,8 +280,8 @@ static void frontend_win32_environment_get(int *argc, char *argv[],
       ":\\config\\remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS],
       ":\\assets\\wallpapers", sizeof(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS]));
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_THUMBNAIL],
-      ":\\thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAIL]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS],
+      ":\\thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_OVERLAY],
       ":\\overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE],
