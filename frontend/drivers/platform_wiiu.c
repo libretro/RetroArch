@@ -38,7 +38,9 @@
 
 #include "tasks/tasks_internal.h"
 #include "../../retroarch.h"
+#include <net/net_compat.h>
 #include <sys/socket.h>
+#include <arpa/inet.h>
 #include "fs/fs_utils.h"
 #include "fs/sd_fat_devoptab.h"
 #include "system/dynamic.h"
@@ -79,10 +81,9 @@ static void frontend_wiiu_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
    (void)args;
-   DEBUG_LINE();
 
    fill_pathname_basedir(g_defaults.dir.port, elf_path_cst, sizeof(g_defaults.dir.port));
-   DEBUG_LINE();
+
    RARCH_LOG("port dir: [%s]\n", g_defaults.dir.port);
 
    fill_pathname_join(g_defaults.dir.core_assets, g_defaults.dir.port,
@@ -403,7 +404,7 @@ int main(int argc, char **argv)
 #endif
    ProcUIInit(&SaveCallback);
 
-   socket_lib_init();
+   network_init();
 #if defined(PC_DEVELOPMENT_IP_ADDRESS) && defined(PC_DEVELOPMENT_TCP_PORT)
    log_init(PC_DEVELOPMENT_IP_ADDRESS, PC_DEVELOPMENT_TCP_PORT);
    devoptab_list[STD_OUT] = &dotab_stdout;

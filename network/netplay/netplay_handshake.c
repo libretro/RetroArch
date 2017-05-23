@@ -43,7 +43,7 @@
 /* TODO/FIXME - replace netplay_log_connection with calls
  * to inet_ntop_compat and move runloop message queue pushing
  * outside */
-#ifndef HAVE_SOCKET_LEGACY
+#if !defined(HAVE_SOCKET_LEGACY) && !defined(WIIU)
 /* Custom inet_ntop. Win32 doesn't seem to support this ... */
 void netplay_log_connection(const struct sockaddr_storage *their_addr,
       unsigned slot, const char *nick, char *s, size_t len)

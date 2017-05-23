@@ -110,7 +110,7 @@ int socket_receive_all_blocking(int fd, void *data_, size_t size)
 
 bool socket_nonblock(int fd)
 {
-#if defined(__CELLOS_LV2__) || defined(VITA)
+#if defined(__CELLOS_LV2__) || defined(VITA) || defined(WIIU)
    int i = 1;
    setsockopt(fd, SOL_SOCKET, SO_NBIO, &i, sizeof(int));
    return true;
@@ -127,7 +127,7 @@ int socket_close(int fd)
 #if defined(_WIN32) && !defined(_XBOX360)
    /* WinSock has headers from the stone age. */
    return closesocket(fd);
-#elif defined(__CELLOS_LV2__)
+#elif defined(__CELLOS_LV2__) || defined(WIIU)
    return socketclose(fd);
 #elif defined(VITA)
    return sceNetSocketClose(fd);
@@ -227,8 +227,7 @@ int socket_connect(int fd, void *data, bool timeout_enable)
 {
    struct addrinfo *addr = (struct addrinfo*)data;
 
-#ifndef _WIN32
-#ifndef VITA
+#if !defined(_WIN32) && !defined(VITA) && !defined(WIIU)
    if (timeout_enable)
    {
       struct timeval timeout;
@@ -237,7 +236,6 @@ int socket_connect(int fd, void *data, bool timeout_enable)
 
       setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof timeout);
    }
-#endif
 #endif
 
    return connect(fd, addr->ai_addr, addr->ai_addrlen);

@@ -158,8 +158,6 @@ static void wiiu_gfx_update_viewport(wiiu_video_t* wiiu)
                     (wiiu->vp.y + wiiu->vp.height) * scale_h);
 
    wiiu->should_resize = false;
-   DEBUG_LINE();
-
 }
 
 static void wiiu_gfx_set_aspect_ratio(void* data, unsigned aspect_ratio_idx)

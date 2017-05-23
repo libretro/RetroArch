@@ -17,7 +17,7 @@ void DisassemblePPCRange(void *start, void *end, void* printf_func, void* GetSym
 #define DEBUG_DISASM(start, count) DisassemblePPCRange((void*)start, (u32*)(start) + (count), printf, OSGetSymbolName, 0)
 
 //#define DEBUG_HOLD() do{printf("%s@%s:%d.\n",__FUNCTION__, __FILE__, __LINE__);fflush(stdout);wait_for_input();}while(0)
-#define DEBUG_LINE() do{printf("%s@%s:%d.\n",__FUNCTION__, __FILE__, __LINE__);fflush(stdout);}while(0)
+#define DEBUG_LINE() do{printf("%s:%4d %s().\n", __FILE__, __LINE__, __FUNCTION__);fflush(stdout);}while(0)
 #define DEBUG_STR(X) printf( "%s: %s\n", #X, (char*)(X))
 #define DEBUG_VAR(X) printf( "%-20s: 0x%08X\n", #X, (u32)(X))
 #define DEBUG_VAR2(X) printf( "%-20s: 0x%08X (%i)\n", #X, (u32)(X), (int)(X))
