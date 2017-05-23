@@ -6394,13 +6394,14 @@ static bool setting_append_list(
                sizeof(settings->paths.directory_thumbnails),
                MENU_ENUM_LABEL_THUMBNAILS_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
-               "",
+               g_defaults.dirs[DEFAULT_DIR_THUMBNAILS], 
                MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
                &group_info,
                &subgroup_info,
                parent_group,
                general_write_handler,
                general_read_handler);
+         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
 
          CONFIG_DIR(
                list, list_info,
@@ -6408,13 +6409,14 @@ static bool setting_append_list(
                sizeof(settings->paths.directory_menu_content),
                MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-               "",
+               g_defaults.dirs[DEFAULT_DIR_MENU_CONTENT],
                MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
                &group_info,
                &subgroup_info,
                parent_group,
                general_write_handler,
                general_read_handler);
+         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
 
          CONFIG_DIR(
                list, list_info,
@@ -6422,14 +6424,14 @@ static bool setting_append_list(
                sizeof(settings->paths.directory_menu_config),
                MENU_ENUM_LABEL_RGUI_CONFIG_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
-               "",
+               g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
                MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
                &group_info,
                &subgroup_info,
                parent_group,
                general_write_handler,
                general_read_handler);
-
+         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
 
          CONFIG_DIR(
                list, list_info,
@@ -6468,13 +6470,14 @@ static bool setting_append_list(
                sizeof(settings->paths.path_content_database),
                MENU_ENUM_LABEL_CONTENT_DATABASE_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
-               "",
+               g_defaults.dirs[DEFAULT_DIR_DATABASE],
                MENU_ENUM_LABEL_VALUE_DIRECTORY_NONE,
                &group_info,
                &subgroup_info,
                parent_group,
                general_write_handler,
                general_read_handler);
+         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
 
          CONFIG_DIR(
                list, list_info,
@@ -6482,13 +6485,14 @@ static bool setting_append_list(
                sizeof(settings->paths.directory_cursor),
                MENU_ENUM_LABEL_CURSOR_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY,
-               "",
+               g_defaults.dirs[DEFAULT_DIR_CURSOR],
                MENU_ENUM_LABEL_VALUE_DIRECTORY_NONE,
                &group_info,
                &subgroup_info,
                parent_group,
                general_write_handler,
                general_read_handler);
+         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
 #endif
 
          CONFIG_DIR(
@@ -6497,13 +6501,14 @@ static bool setting_append_list(
                sizeof(settings->paths.path_cheat_database),
                MENU_ENUM_LABEL_CHEAT_DATABASE_PATH,
                MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH,
-               "",
+               g_defaults.dirs[DEFAULT_DIR_CHEATS],
                MENU_ENUM_LABEL_VALUE_DIRECTORY_NONE,
                &group_info,
                &subgroup_info,
                parent_group,
                general_write_handler,
                general_read_handler);
+         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
 
          CONFIG_DIR(
                list, list_info,
@@ -6511,13 +6516,14 @@ static bool setting_append_list(
                sizeof(settings->paths.directory_video_filter),
                MENU_ENUM_LABEL_VIDEO_FILTER_DIR,
                MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,
-               "",
+               g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
                MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
                &group_info,
                &subgroup_info,
                parent_group,
                general_write_handler,
                general_read_handler);
+         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
 
          CONFIG_DIR(
                list, list_info,
@@ -6525,13 +6531,14 @@ static bool setting_append_list(
                sizeof(settings->paths.directory_audio_filter),
                MENU_ENUM_LABEL_AUDIO_FILTER_DIR,
                MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR,
-               "",
+               g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER],
                MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
                &group_info,
                &subgroup_info,
                parent_group,
                general_write_handler,
                general_read_handler);
+         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
 
          CONFIG_DIR(
                list, list_info,
@@ -6599,13 +6606,14 @@ static bool setting_append_list(
                sizeof(settings->paths.directory_screenshot),
                MENU_ENUM_LABEL_SCREENSHOT_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
-               "",
+               g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
                MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
                &group_info,
                &subgroup_info,
                parent_group,
                general_write_handler,
                general_read_handler);
+         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
 
          CONFIG_DIR(
                list, list_info,
@@ -6613,13 +6621,14 @@ static bool setting_append_list(
                sizeof(settings->paths.directory_autoconfig),
                MENU_ENUM_LABEL_JOYPAD_AUTOCONFIG_DIR,
                MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
-               "",
+               g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
                MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
                &group_info,
                &subgroup_info,
                parent_group,
                general_write_handler,
                general_read_handler);
+         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
 
          CONFIG_DIR(
                list, list_info,
@@ -6641,13 +6650,14 @@ static bool setting_append_list(
                sizeof(settings->paths.directory_playlist),
                MENU_ENUM_LABEL_PLAYLIST_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
-               "",
+               g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
                MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
                &group_info,
                &subgroup_info,
                parent_group,
                general_write_handler,
                general_read_handler);
+         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
 
          CONFIG_DIR(
                list, list_info,
@@ -6683,13 +6693,14 @@ static bool setting_append_list(
                sizeof(settings->paths.directory_cache),
                MENU_ENUM_LABEL_CACHE_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
-               "",
+               g_defaults.dirs[DEFAULT_DIR_CACHE],
                MENU_ENUM_LABEL_VALUE_DIRECTORY_NONE,
                &group_info,
                &subgroup_info,
                parent_group,
                general_write_handler,
                general_read_handler);
+         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
