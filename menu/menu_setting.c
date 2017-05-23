@@ -6350,7 +6350,7 @@ static bool setting_append_list(
                sizeof(settings->paths.directory_core_assets),
                MENU_ENUM_LABEL_CORE_ASSETS_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
-               "",
+               g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], 
                MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
                &group_info,
                &subgroup_info,
@@ -6358,7 +6358,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          (*list)[list_info->index - 1].action_start = directory_action_start_generic;
-         (*list)[list_info->index - 1].default_value.string = g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS];
 
          CONFIG_DIR(
                list, list_info,
@@ -6366,7 +6365,7 @@ static bool setting_append_list(
                sizeof(settings->paths.directory_assets),
                MENU_ENUM_LABEL_ASSETS_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
-               "",
+               g_defaults.dirs[DEFAULT_DIR_ASSETS],
                MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
                &group_info,
                &subgroup_info,
@@ -6374,7 +6373,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          (*list)[list_info->index - 1].action_start = directory_action_start_generic;
-         (*list)[list_info->index - 1].default_value.string = g_defaults.dirs[DEFAULT_DIR_ASSETS];
 
          CONFIG_DIR(
                list, list_info,
