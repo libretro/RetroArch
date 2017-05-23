@@ -575,7 +575,8 @@ bool test_permissions(const char *path)
    ret = path_mkdir(buf);
 
    __android_log_print(ANDROID_LOG_INFO,
-      "RetroArch", "Create %s in %s %s\n", buf, path, ret ? "true" : "false");
+      "RetroArch", "Create %s in %s %s\n", buf, path,
+      ret ? "true" : "false");
 
    if(ret)
       rmdir(buf);
@@ -1238,14 +1239,14 @@ static void frontend_linux_get_env(int *argc,
    unsigned i;
 #ifdef ANDROID
    int32_t major, minor, rel;
-   char device_model[PROP_VALUE_MAX] = {0};
-   char device_id[PROP_VALUE_MAX]    = {0};
-   struct rarch_main_wrap      *args = NULL;
-   JNIEnv                       *env = NULL;
-   jobject                       obj = NULL;
-   jstring                      jstr = NULL;
+   char device_model[PROP_VALUE_MAX]  = {0};
+   char device_id[PROP_VALUE_MAX]     = {0};
+   struct rarch_main_wrap      *args  = NULL;
+   JNIEnv                       *env  = NULL;
+   jobject                       obj  = NULL;
+   jstring                      jstr  = NULL;
    jboolean                     jbool = JNI_FALSE;
-   struct android_app   *android_app = (struct android_app*)data;
+   struct android_app   *android_app  = (struct android_app*)data;
 
    if (!android_app)
       return;
@@ -1380,7 +1381,9 @@ static void frontend_linux_get_env(int *argc,
       internal_storage_path[0] = '\0';
 
       if (argv && *argv)
-         strlcpy(internal_storage_path, argv, sizeof(internal_storage_path));
+         strlcpy(internal_storage_path, argv,
+               sizeof(internal_storage_path));
+
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
       if (!string_is_empty(internal_storage_path))
@@ -1465,7 +1468,9 @@ static void frontend_linux_get_env(int *argc,
       *internal_storage_app_path = '\0';
 
       if (argv && *argv)
-         strlcpy(internal_storage_app_path, argv, sizeof(internal_storage_app_path));
+         strlcpy(internal_storage_app_path, argv,
+               sizeof(internal_storage_app_path));
+
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
       if (!string_is_empty(internal_storage_app_path))
@@ -1496,9 +1501,11 @@ static void frontend_linux_get_env(int *argc,
 
       /* Check for runtime permissions on Android 6.0+ */
       if (env && android_app->checkRuntimePermissions)
-         CALL_VOID_METHOD(env, android_app->activity->clazz, android_app->checkRuntimePermissions);
+         CALL_VOID_METHOD(env, android_app->activity->clazz,
+               android_app->checkRuntimePermissions);
 
-      //set paths depending on the ability to write to internal_storage_path
+      /* set paths depending on the ability to write 
+       * to internal_storage_path */
 
       if(!string_is_empty(internal_storage_path))
       {
@@ -1530,25 +1537,33 @@ static void frontend_linux_get_env(int *argc,
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], app_dir,
                   "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
-                  app_dir, "info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+                  app_dir, "info",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
-                  app_dir, "autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
+                  app_dir, "autoconfig",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER],
-                  app_dir, "filters/audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
+                  app_dir, "filters/audio",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
-                  app_dir, "filters/video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
+                  app_dir, "filters/video",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
             strlcpy(g_defualts.dirs[DEFAULT_DIR_CONTENT_HISTORY],
                   app_dir, sizeof(g_defualts.dirs[DEFAULT_DIR_CONTENT_HISTORY]));
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE],
-                  app_dir, "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
+                  app_dir, "database/rdb",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CURSOR],
-                  app_dir, "database/cursors", sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
+                  app_dir, "database/cursors",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS],
-                  app_dir, "assets/wallpapers", sizeof(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS]));
+                  app_dir, "assets/wallpapers",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS]));
             if(!string_is_empty(downloads_dir) && test_permissions(downloads_dir))
             {
                fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
-                     downloads_dir, "", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
+                     downloads_dir, "",
+                     sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
             }
             else
             {
@@ -1563,31 +1578,41 @@ static void frontend_linux_get_env(int *argc,
 
             switch (perms)
             {
-               /* Set defaults for this since we can't guarantee saving on content dir will
-                  work in this case */
+               /* Set defaults for this since we can't guarantee 
+                * saving on content dir will work in this case */
                case INTERNAL_STORAGE_APPDIR_WRITABLE:
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM],
-                        internal_storage_app_path, "saves", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
+                        internal_storage_app_path, "saves",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
-                        internal_storage_app_path, "states", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
+                        internal_storage_app_path, "states",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
-                        internal_storage_app_path, "system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+                        internal_storage_app_path, "system",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
 
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
-                        internal_storage_app_path, "config", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
+                        internal_storage_app_path, "config",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP],
-                        g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], "remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
+                        g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], "remaps",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS],
-                        internal_storage_app_path, "thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
+                        internal_storage_app_path, "thumbnails",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
-                        internal_storage_app_path, "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
+                        internal_storage_app_path, "playlists",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS],
-                        internal_storage_app_path, "cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+                        internal_storage_app_path, "cheats",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
 
-                  if(!string_is_empty(screenshot_dir) && test_permissions(screenshot_dir))
+                  if(     !string_is_empty(screenshot_dir) 
+                        && test_permissions(screenshot_dir))
                   {
                      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
-                           screenshot_dir, "", sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
+                           screenshot_dir, "",
+                           sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
                   }
                   else
                   {
@@ -1598,30 +1623,40 @@ static void frontend_linux_get_env(int *argc,
 
                   break;
                case INTERNAL_STORAGE_NOT_WRITABLE:
-                  /* Set defaults for this since we can't guarantee saving on content dir will
-                     work in this case */
+                  /* Set defaults for this since we can't guarantee 
+                   * saving on content dir will work in this case. */
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM],
-                        app_dir, "saves", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
+                        app_dir, "saves",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
-                        app_dir, "states", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
+                        app_dir, "states",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
-                        app_dir, "system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+                        app_dir, "system",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
 
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
-                        app_dir, "config", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
+                        app_dir, "config",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP],
-                        g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], "remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
+                        g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], "remaps",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS],
-                        app_dir, "thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
+                        app_dir, "thumbnails",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
-                        app_dir, "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
+                        app_dir, "playlists",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS],
-                        app_dir, "cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+                        app_dir, "cheats",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
 
-                  if(!string_is_empty(screenshot_dir) && test_permissions(screenshot_dir))
+                  if(      !string_is_empty(screenshot_dir) 
+                        &&  test_permissions(screenshot_dir))
                   {
                      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
-                           screenshot_dir, "", sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
+                           screenshot_dir, "",
+                           sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
                   }
                   else
                   {
@@ -1635,15 +1670,20 @@ static void frontend_linux_get_env(int *argc,
                   /* Don't set defaults for saves, states, system or screenshots
                      in this case to be able to honour saving on content dir */
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
-                        internal_storage_path, "RetroArch/config", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
+                        internal_storage_path, "RetroArch/config",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP],
-                        g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], "remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
+                        g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], "remaps",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS],
-                        internal_storage_path, "RetroArch/thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
+                        internal_storage_path, "RetroArch/thumbnails",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
-                        internal_storage_path, "RetroArch/playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
+                        internal_storage_path, "RetroArch/playlists",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS],
-                        internal_storage_path, "RetroArch/cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+                        internal_storage_path, "RetroArch/cheats",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
                default:
                   break;
             }
@@ -1667,7 +1707,8 @@ static void frontend_linux_get_env(int *argc,
    /* Check if we are an Android TV device */
    if (env && android_app->isAndroidTV)
    {
-      CALL_BOOLEAN_METHOD(env, jbool, android_app->activity->clazz, android_app->isAndroidTV);
+      CALL_BOOLEAN_METHOD(env, jbool,
+            android_app->activity->clazz, android_app->isAndroidTV);
 
       if (jbool != JNI_FALSE)
          is_android_tv_device = true;
@@ -1720,7 +1761,8 @@ static void frontend_linux_get_env(int *argc,
    {
       g_defaults.overlay.set    = true;
       g_defaults.overlay.enable = false;
-      snprintf(g_defaults.settings.menu, sizeof(g_defaults.settings.menu), "xmb");
+      strlcpy(g_defaults.settings.menu, "xmb",
+            sizeof(g_defaults.settings.menu));
    }
 #else
    char base_path[PATH_MAX] = {0};
@@ -1744,16 +1786,20 @@ static void frontend_linux_get_env(int *argc,
          "autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
 
    if (path_is_directory("/usr/local/share/retroarch/assets"))
-      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], "/usr/local/share/retroarch",
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS],
+            "/usr/local/share/retroarch",
             "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
    else if (path_is_directory("/usr/share/retroarch/assets"))
-      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], "/usr/share/retroarch",
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS],
+            "/usr/share/retroarch",
             "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
    else if (path_is_directory("/usr/local/share/games/retroarch/assets"))
-      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], "/usr/local/share/games/retroarch",
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS],
+            "/usr/local/share/games/retroarch",
             "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
    else if (path_is_directory("/usr/share/games/retroarch/assets"))
-      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], "/usr/share/games/retroarch",
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS],
+            "/usr/share/games/retroarch",
             "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
    else
       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], base_path,
@@ -1761,7 +1807,8 @@ static void frontend_linux_get_env(int *argc,
 
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], base_path,
          "config", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP], g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP],
+         g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
          "remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST], base_path,
          "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
@@ -1987,7 +2034,8 @@ static bool frontend_linux_set_fork(enum frontend_fork fork_mode)
 
          {
             char executable_path[PATH_MAX_LENGTH] = {0};
-            fill_pathname_application_path(executable_path, sizeof(executable_path));
+            fill_pathname_application_path(executable_path,
+                  sizeof(executable_path));
             path_set(RARCH_PATH_CORE, executable_path);
          }
          command_event(CMD_EVENT_QUIT, NULL);
@@ -2090,7 +2138,8 @@ VALGRIND_PRINTF_BACKTRACE("SIGINT");
    linux_sighandler_quit++;
    if (linux_sighandler_quit == 1) {}
    if (linux_sighandler_quit == 2) exit(1);
-   if (linux_sighandler_quit >= 3) abort(); /* in case there's a second deadlock in a C++ destructor or something */
+   /* in case there's a second deadlock in a C++ destructor or something */
+   if (linux_sighandler_quit >= 3) abort(); 
 }
 
 static void frontend_linux_install_signal_handlers(void)
