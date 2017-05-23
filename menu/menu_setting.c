@@ -2113,6 +2113,19 @@ static const char* config_get_audio_resampler_driver_options(void)
    return char_list_new_special(STRING_LIST_AUDIO_RESAMPLER_DRIVERS, NULL);
 }
 
+static int directory_action_start_generic(void *data)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   setting_set_with_string_representation(setting,
+         setting->default_value.string);
+
+   return 0;
+}
+
 static bool setting_append_list(
       enum settings_list_type type,
       rarch_setting_t **list,
@@ -6344,6 +6357,8 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
+         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
+         (*list)[list_info->index - 1].default_value.string = g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS];
 
          CONFIG_DIR(
                list, list_info,
@@ -6358,6 +6373,8 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
+         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
+         (*list)[list_info->index - 1].default_value.string = g_defaults.dirs[DEFAULT_DIR_ASSETS];
 
          CONFIG_DIR(
                list, list_info,
