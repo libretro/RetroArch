@@ -292,8 +292,8 @@ static void frontend_win32_environment_get(int *argc, char *argv[],
       ":\\autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SHADER],
       ":\\shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE]_assets,
-      ":\\downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]_assets));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
+      ":\\downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
       ":\\screenshots", sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
 
