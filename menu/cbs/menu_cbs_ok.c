@@ -3445,15 +3445,12 @@ void netplay_refresh_rooms_menu(file_list_t *list)
 
 static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const char *err)
 {
-   char buf[PATH_MAX_LENGTH];
    const char *path              = NULL;
    const char *label             = NULL;
    unsigned menu_type            = 0;
    enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
 
    http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
-
-   buf[0] = '\0';
 
    menu_entries_get_last_stack(&path, &label, &menu_type, &enum_idx, NULL);
 
@@ -3465,17 +3462,11 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
    if (!data || err)
       goto finish;
 
-   if (data)
-   {
-      if (data->data)
-         memcpy(buf, data->data, data->len * sizeof(char));
-      buf[data->len] = '\0';
-   }
+   data->data[data->len] = '\0';
 
-finish:
-   if (!err && !strstr(buf, file_path_str(FILE_PATH_NETPLAY_ROOM_LIST_URL)))
+   if (!strstr(data->data, file_path_str(FILE_PATH_NETPLAY_ROOM_LIST_URL)))
    {
-      if (string_is_empty(buf))
+      if (string_is_empty(data->data))
       {
          netplay_room_count = 0;
          RARCH_LOG("Room list empty\n");
@@ -3491,7 +3482,7 @@ finish:
          if (lan_hosts)
             lan_room_count                    = (int)lan_hosts->size;
 
-         netplay_rooms_parse(buf);
+         netplay_rooms_parse(data->data);
 
          if (netplay_room_list)
             free(netplay_room_list);
@@ -3561,6 +3552,8 @@ finish:
          netplay_refresh_rooms_menu(file_list);
       }
    }
+
+finish:
 
    if (err)
       RARCH_ERR("%s: %s\n", msg_hash_to_str(MSG_DOWNLOAD_FAILED), err);
