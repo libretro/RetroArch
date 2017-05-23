@@ -555,7 +555,8 @@ static void xmb_draw_icon(
       float rotation,
       float scale_factor,
       float *color,
-      float shadow_offset)
+      float shadow_offset,
+      float icon_scale)
 {
    menu_display_ctx_draw_t draw;
    struct video_coords coords;
@@ -581,6 +582,9 @@ static void xmb_draw_icon(
    draw.width          *= scale_factor;
    draw.height         *= scale_factor;
 #endif
+   // Allow the icon to be scaled outside of the scale factor.
+   draw.width          *= icon_scale;
+   draw.height         *= icon_scale;
    draw.coords          = &coords;
    draw.matrix_data     = mymat;
    draw.texture         = texture;
@@ -2413,7 +2417,8 @@ static void xmb_draw_items(
                rotation,
                scale_factor,
                &color[0],
-               xmb->shadow_offset);
+               xmb->shadow_offset,
+               1.0);
       }
 
       menu_display_set_alpha(color, MIN(node->alpha, xmb->alpha));
@@ -2433,7 +2438,8 @@ static void xmb_draw_items(
                0,
                1,
                &color[0],
-               xmb->shadow_offset);
+               xmb->shadow_offset,
+               1.0);
    }
 
    menu_display_blend_end();
@@ -2738,6 +2744,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    /* Clock image */
    menu_display_set_alpha(coord_white, MIN(xmb->alpha, 1.00f));
 
+   /* The Clock/Battery icon size */
+   float status_icon_scale = 0.25f;
+
    if (video_info->battery_level_enable)
    {
       char msg[12];
@@ -2760,9 +2769,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
       if (percent > 0)
       {
-         size_t x_pos      = xmb->icon.size / 6;
-         size_t x_pos_icon = xmb->margins.title.left;
-
          if (coord_white[3] != 0)
             xmb_draw_icon(
                   menu_disp_info,
@@ -2770,22 +2776,23 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   &mymat,
                   xmb->textures.list[charging
                   ? XMB_TEXTURE_BATTERY_CHARGING : XMB_TEXTURE_BATTERY_FULL],
-                  width - (xmb->icon.size / 2) - x_pos_icon,
-                  xmb->icon.size,
+                  width - xmb->margins.title.left - (xmb->icon.size * status_icon_scale),
+                  xmb->margins.title.top + (xmb->icon.size * status_icon_scale) / 5,
                   width,
                   height,
                   1,
                   0,
                   1,
                   &coord_white[0],
-                  xmb->shadow_offset);
+                  xmb->shadow_offset,
+                  status_icon_scale);
 
          snprintf(msg, sizeof(msg), "%d%%", percent);
 
          percent_width = (unsigned)font_driver_get_message_width(xmb->font, msg, (unsigned)strlen(msg), 1);
 
          xmb_draw_text(menu_disp_info, xmb, msg,
-               width - xmb->margins.title.left - x_pos,
+               width - xmb->margins.title.left - (xmb->icon.size * status_icon_scale * 1.2),
                xmb->margins.title.top, 1, 1, TEXT_ALIGN_RIGHT,
                width, height, xmb->font);
       }
@@ -2797,26 +2804,27 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       char timedate[255];
       int x_pos = 0;
 
+      // Move the timedate widget over if the battery percent is active.
+      if (percent_width)
+         x_pos = percent_width + (xmb->icon.size / 2);
+
       if (coord_white[3] != 0)
       {
-         int x_pos = 0;
-
-         if (percent_width)
-            x_pos = percent_width + (xmb->icon.size / 2.5);
-
          xmb_draw_icon(
                menu_disp_info,
                xmb->icon.size,
                &mymat,
                xmb->textures.list[XMB_TEXTURE_CLOCK],
-               width - xmb->icon.size - x_pos,
-               xmb->icon.size,width,
+               width - xmb->margins.title.left - (xmb->icon.size * status_icon_scale) - x_pos,
+                  xmb->margins.title.top + (xmb->icon.size * status_icon_scale) / 5,
+               width,
                height,
                1,
                0,
                1,
                &coord_white[0],
-               xmb->shadow_offset);
+               xmb->shadow_offset,
+               status_icon_scale);
       }
 
       timedate[0]        = '\0';
@@ -2827,11 +2835,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
       menu_display_timedate(&datetime);
 
-      if (percent_width)
-         x_pos = percent_width + (xmb->icon.size / 2.5);
-
       xmb_draw_text(menu_disp_info, xmb, timedate,
-            width - xmb->margins.title.left - xmb->icon.size / 4 - x_pos,
+            width - xmb->margins.title.left - (xmb->icon.size * status_icon_scale * 1.2) - x_pos,
             xmb->margins.title.top, 1, 1, TEXT_ALIGN_RIGHT,
             width, height, xmb->font);
    }
@@ -2856,7 +2861,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             0,
             1,
             &coord_white[0],
-            xmb->shadow_offset);
+            xmb->shadow_offset,
+            1.0);
 
    menu_display_blend_begin();
 
@@ -2905,7 +2911,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                rotation,
                scale_factor,
                &item_color[0],
-               xmb->shadow_offset);
+               xmb->shadow_offset,
+               1.0);
       }
    }
 
