@@ -35,6 +35,7 @@
 #include "../command.h"
 #include "../core_info.h"
 #include "../../retroarch.h"
+#include "../../menu/menu_driver.h"
 
 typedef struct
 {
@@ -55,11 +56,14 @@ static void netplay_crc_scan_callback(void *task_data,
 {
    netplay_crc_handle_t *state     = (netplay_crc_handle_t*)task_data;
    content_ctx_info_t content_info = {0};
+   rarch_system_info_t *info       = NULL;
 
    if (!state)
       return;
 
    fflush(stdout);
+
+   menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET, &info);
 
 #ifdef HAVE_MENU
    /* regular core with content file */
@@ -70,11 +74,15 @@ static void netplay_crc_scan_callback(void *task_data,
          state->core_path, state->content_path);
 
       command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
-      task_push_load_content_with_new_core_from_menu(
-            state->core_path, state->content_path,
-            &content_info,
-            CORE_TYPE_PLAIN,
-            NULL, NULL);
+
+      if (string_is_equal(info->info.library_name, state->core_name))
+         task_push_load_content_with_core_from_menu(
+               state->content_path, &content_info,
+               CORE_TYPE_PLAIN, NULL, NULL);
+      else
+         task_push_load_content_with_new_core_from_menu(
+               state->core_path, state->content_path,
+               &content_info, CORE_TYPE_PLAIN, NULL, NULL);
    }
    else
 #endif
@@ -87,8 +95,11 @@ static void netplay_crc_scan_callback(void *task_data,
       content_ctx_info_t content_info = {0};
 
       command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
-      task_push_load_new_core(state->core_path, NULL,
-            &content_info, CORE_TYPE_PLAIN, NULL, NULL);
+
+      if (!string_is_equal(info->info.library_name, state->core_name))
+         task_push_load_new_core(state->core_path, NULL,
+               &content_info, CORE_TYPE_PLAIN, NULL, NULL);
+
       task_push_start_current_core(&content_info);
    }
    /* regular core with current content */
