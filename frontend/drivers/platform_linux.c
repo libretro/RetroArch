@@ -2061,6 +2061,8 @@ static void frontend_linux_exec(const char *path, bool should_load_game)
    newargv[0] = malloc(len);
 
    strlcpy(newargv[0], path, len);
+
+   execv(path, newargv);
 }
 
 static void frontend_linux_exitspawn(char *core_path, size_t core_path_size)
