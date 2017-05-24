@@ -1356,9 +1356,6 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
 #endif
    SETTING_UINT("bundle_assets_extract_version_current", &settings->uints.bundle_assets_extract_version_current, true, 0, false);
    SETTING_UINT("bundle_assets_extract_last_version",    &settings->uints.bundle_assets_extract_last_version, true, 0, false);
-#ifdef HAVE_WASAPI
-   SETTING_UINT("audio_wasapi_sh_buffer_length", &settings->uints.audio_wasapi_sh_buffer_length, true, wasapi_sh_buffer_length, false);
-#endif
 
    *size = count;
 
@@ -1373,6 +1370,9 @@ static struct config_int_setting *populate_settings_int(settings_t *settings, in
    SETTING_INT("state_slot",                   &settings->ints.state_slot, false, 0 /* TODO */, false);
 #ifdef HAVE_NETWORKING
    SETTING_INT("netplay_check_frames",         &settings->ints.netplay_check_frames, true, netplay_check_frames, false);
+#endif
+#ifdef HAVE_WASAPI
+   SETTING_INT("audio_wasapi_sh_buffer_length", &settings->ints.audio_wasapi_sh_buffer_length, true, wasapi_sh_buffer_length, false);
 #endif
 
    *size = count;

@@ -245,6 +245,10 @@ typedef struct settings
       int location_update_interval_ms;
       int location_update_interval_distance;
       int state_slot;
+
+#ifdef HAVE_WASAPI
+      int audio_wasapi_sh_buffer_length;
+#endif
    } ints;
 
    struct
@@ -311,10 +315,6 @@ typedef struct settings
 
       unsigned camera_width;
       unsigned camera_height;
-
-#ifdef HAVE_WASAPI
-      unsigned audio_wasapi_sh_buffer_length; /* in frames (0 disables buffering) */
-#endif
    } uints;
 
    struct
