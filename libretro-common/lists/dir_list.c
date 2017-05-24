@@ -124,8 +124,7 @@ static int parse_dir_entry(const char *name, char *file_path,
    if (!include_dirs && is_dir)
       return 1;
 
-   if ((name[0] == '.' && name[1] == '\0') ||
-       (name[0] == '.' && name[1] == '.' && name[2] == '\0'))
+   if (string_is_equal(name, ".") || string_is_equal(name, ".."))
       return 1;
 
    if (!is_dir && ext_list &&
