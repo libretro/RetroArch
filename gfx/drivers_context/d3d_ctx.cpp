@@ -191,6 +191,8 @@ static void gfx_ctx_d3d_input_driver(void *data,
 #else
    settings_t *settings = config_get_ptr();
 
+#if _WIN32_WINNT >= 0x0501
+   /* winraw only available since XP */
    if (string_is_equal_fast(settings->arrays.input_driver, "raw", 4))
    {
       *input_data = input_winraw.init(name);
@@ -201,6 +203,7 @@ static void gfx_ctx_d3d_input_driver(void *data,
          return;
       }
    }
+#endif
 
    dinput               = input_dinput.init(name);
    *input               = dinput ? &input_dinput : NULL;

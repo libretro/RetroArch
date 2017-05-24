@@ -95,7 +95,8 @@ static const input_driver_t *input_drivers[] = {
 #ifdef DJGPP
    &input_dos,
 #endif
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_XBOX) && _WIN32_WINNT >= 0x0501
+   /* winraw only available since XP */
    &input_winraw,
 #endif
    &input_null,

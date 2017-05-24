@@ -221,6 +221,8 @@ static void gfx_ctx_gdi_input_driver(void *data,
    (void)data;
    settings_t *settings = config_get_ptr();
 
+#if _WIN32_WINNT >= 0x0501
+   /* winraw only available since XP */
    if (string_is_equal_fast(settings->arrays.input_driver, "raw", 4))
    {
       *input_data = input_winraw.init(joypad_name);
@@ -231,6 +233,7 @@ static void gfx_ctx_gdi_input_driver(void *data,
          return;
       }
    }
+#endif
 
    dinput_gdi  = input_dinput.init(joypad_name);
    *input      = dinput_gdi ? &input_dinput : NULL;

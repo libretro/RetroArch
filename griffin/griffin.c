@@ -431,7 +431,8 @@ INPUT
 #include "../input/common/x11_input_common.c"
 #endif
 
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && _WIN32_WINNT >= 0x0501
+/* winraw only available since XP */
 #include "../input/drivers/winraw_input.c"
 #endif
 
