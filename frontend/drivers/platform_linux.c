@@ -1549,8 +1549,8 @@ static void frontend_linux_get_env(int *argc,
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
                   app_dir, "filters/video",
                   sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
-            strlcpy(g_defualts.dirs[DEFAULT_DIR_CONTENT_HISTORY],
-                  app_dir, sizeof(g_defualts.dirs[DEFAULT_DIR_CONTENT_HISTORY]));
+            strlcpy(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY],
+                  app_dir, sizeof(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]));
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE],
                   app_dir, "database/rdb",
                   sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
