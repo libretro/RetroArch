@@ -377,10 +377,6 @@ static bool audio_mixer_play_ogg(
 
    info                    = stb_vorbis_get_info(stb_vorbis);
    
-   /* Only stereo supported for now */
-   if (info.channels != 2)
-      goto error;
-   
    if (info.sample_rate != s_rate)
    {
       ratio = (double)s_rate / (double)info.sample_rate;
