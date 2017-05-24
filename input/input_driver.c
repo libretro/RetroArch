@@ -537,50 +537,6 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
 }
 
 #ifdef HAVE_MENU
-static bool input_driver_toggle_button_combo(
-      unsigned mode, uint64_t input)
-{
-   switch (mode)
-   {
-      case INPUT_TOGGLE_DOWN_Y_L_R:
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_DOWN))
-            return false;
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_Y))
-            return false;
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_L))
-            return false;
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_R))
-            return false;
-         break;
-      case INPUT_TOGGLE_L3_R3:
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_L3))
-            return false;
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_R3))
-            return false;
-         break;
-      case INPUT_TOGGLE_L1_R1_START_SELECT:
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_START))
-            return false;
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_SELECT))
-            return false;
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_L))
-            return false;
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_R))
-            return false;
-         break;
-      case INPUT_TOGGLE_START_SELECT:
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_START))
-            return false;
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_SELECT))
-            return false;
-         break;
-      default:
-      case INPUT_TOGGLE_NONE:
-         return false;
-   }
-   
-   return true;
-}
 
 /**
  * input_menu_keys_pressed:
@@ -644,19 +600,6 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
       else
          input_driver_block_hotkey         = true;
    }
-
-#ifdef HAVE_MENU
-   {
-      const struct retro_keybind *mtkey = &input_config_binds[0][RARCH_MENU_TOGGLE];
-      if (
-            mtkey->valid &&
-            ((settings->uints.input_menu_toggle_gamepad_combo != INPUT_TOGGLE_NONE) &&
-             input_driver_toggle_button_combo(
-                settings->uints.input_menu_toggle_gamepad_combo, last_input))
-         )
-         ret |= (UINT64_C(1) << RARCH_MENU_TOGGLE);
-   }
-#endif
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
@@ -848,14 +791,6 @@ uint64_t input_keys_pressed(void *data, uint64_t last_input)
                RETRO_DEVICE_JOYPAD, 0, RARCH_GAME_FOCUS_TOGGLE))
          input_driver_block_hotkey = false;
    }
-
-#ifdef HAVE_MENU
-   if (
-         ((settings->uints.input_menu_toggle_gamepad_combo != INPUT_TOGGLE_NONE) &&
-         input_driver_toggle_button_combo(
-            settings->uints.input_menu_toggle_gamepad_combo, last_input)))
-      ret |= (UINT64_C(1) << RARCH_MENU_TOGGLE);
-#endif
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {

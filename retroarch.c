@@ -2241,6 +2241,53 @@ bool runloop_msg_queue_pull(const char **ret)
 #define runloop_netplay_pause() ((void)0)
 #endif
 
+#ifdef HAVE_MENU
+static bool input_driver_toggle_button_combo(
+      unsigned mode, uint64_t input)
+{
+   switch (mode)
+   {
+      case INPUT_TOGGLE_DOWN_Y_L_R:
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_DOWN))
+            return false;
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_Y))
+            return false;
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_L))
+            return false;
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_R))
+            return false;
+         break;
+      case INPUT_TOGGLE_L3_R3:
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_L3))
+            return false;
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_R3))
+            return false;
+         break;
+      case INPUT_TOGGLE_L1_R1_START_SELECT:
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_START))
+            return false;
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_SELECT))
+            return false;
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_L))
+            return false;
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_R))
+            return false;
+         break;
+      case INPUT_TOGGLE_START_SELECT:
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_START))
+            return false;
+         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_SELECT))
+            return false;
+         break;
+      default:
+      case INPUT_TOGGLE_NONE:
+         return false;
+   }
+   
+   return true;
+}
+#endif
+
 static enum runloop_state runloop_check_state(
       settings_t *settings,
       bool input_nonblock_state,
@@ -2269,6 +2316,11 @@ static enum runloop_state runloop_check_state(
    last_input                       = current_input;
 
 #ifdef HAVE_MENU
+   if (
+         ((settings->uints.input_menu_toggle_gamepad_combo != INPUT_TOGGLE_NONE) &&
+          input_driver_toggle_button_combo(
+             settings->uints.input_menu_toggle_gamepad_combo, last_input)))
+      current_input |= (UINT64_C(1) << RARCH_MENU_TOGGLE);
    if (menu_driver_binding_state)
       current_input = 0;
 #endif
