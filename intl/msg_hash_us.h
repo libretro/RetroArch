@@ -2267,7 +2267,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-      "The audio buffer length when using the WASAPI driver in shared mode."
+      "The intermediate buffer length (in frames) when using the WASAPI driver in shared mode."
       )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SYNC,

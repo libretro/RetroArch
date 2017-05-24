@@ -505,10 +505,11 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    HRESULT hr;
    bool com_initialized      = false;
    UINT32 frame_count        = 0;
+   REFERENCE_TIME dev_period = 0;
    BYTE *dest                = NULL;
    settings_t *settings      = config_get_ptr();
    bool float_format         = settings->bools.audio_wasapi_float_format;
-   unsigned sh_buffer_length = settings->uints.audio_wasapi_sh_buffer_length;
+   int sh_buffer_length      = settings->ints.audio_wasapi_sh_buffer_length;
    wasapi_t *w               = (wasapi_t*)calloc(1, sizeof(wasapi_t));
    w->exclusive              = settings->bools.audio_wasapi_exclusive_mode;
 
@@ -545,6 +546,14 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    }
    else if (sh_buffer_length)
    {
+      if (sh_buffer_length < 0)
+      {
+         hr = w->client->lpVtbl->GetDevicePeriod(w->client, &dev_period, NULL);
+         WASAPI_HR_CHECK(hr, "IAudioClient::GetDevicePeriod", goto error);
+
+         sh_buffer_length = dev_period * rate / 10000000;
+      }
+
       w->buffer = fifo_new(sh_buffer_length * w->frame_size);
       WASAPI_CHECK(w->buffer, "Out of memory", goto error);
 
@@ -963,11 +972,9 @@ static size_t wasapi_write_avail(void *wh)
 static size_t wasapi_buffer_size(void *wh)
 {
    wasapi_t *w = (wasapi_t*)wh;
-   settings_t *settings      = config_get_ptr();
-   unsigned sh_buffer_length = settings->uints.audio_wasapi_sh_buffer_length;
 
    if (!w->exclusive && w->buffer)
-      return sh_buffer_length * w->frame_size;
+      return w->buffer->size;
 
    return w->engine_buffer_size;
 }

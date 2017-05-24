@@ -174,6 +174,24 @@ static void setting_get_string_representation_uint_custom_viewport_height(void *
             *setting->value.target.unsigned_integer);
 }
 
+#ifdef HAVE_WASAPI
+static void setting_get_string_representation_int_audio_wasapi_sh_buffer_length(void *data,
+      char *s, size_t len)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (!setting)
+      return;
+
+   if (*setting->value.target.integer > 0)
+      snprintf(s, len, "%d",
+            *setting->value.target.integer);
+   else if (*setting->value.target.integer == 0)
+      strlcpy(s, "0 (Off)", len);
+   else
+      strlcpy(s, "Auto", len);
+}
+#endif
+
 static int setting_uint_action_left_custom_viewport_width(void *data, bool wraparound)
 {
    video_viewport_t vp;
@@ -4011,12 +4029,12 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler,
-                  SD_FLAG_ADVANCED
+                  SD_FLAG_NONE
                   );
 
-            CONFIG_UINT(
+            CONFIG_INT(
                   list, list_info,
-                  &settings->uints.audio_wasapi_sh_buffer_length,
+                  &settings->ints.audio_wasapi_sh_buffer_length,
                   MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
                   MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
                   wasapi_sh_buffer_length,
@@ -4025,8 +4043,10 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0, 1024, 16.0, true, true);
+            menu_settings_list_current_add_range(list, list_info, -16.0f, 0.0f, 16.0f, true, false);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+            (*list)[list_info->index - 1].get_string_representation =
+                  &setting_get_string_representation_int_audio_wasapi_sh_buffer_length;
             }
 #endif
 

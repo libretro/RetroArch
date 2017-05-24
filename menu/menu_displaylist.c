@@ -5525,7 +5525,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-               PARSE_ONLY_UINT, false);
+               PARSE_ONLY_INT, false);
 #endif
 
          info->need_refresh = true;
