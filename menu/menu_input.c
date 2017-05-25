@@ -224,13 +224,14 @@ static int menu_input_mouse_frame(
    if (mouse_enable)
       ret  = menu_input_mouse_post_iterate(&mouse_state, cbs, action, &mouse_activity);
 
-   if ((settings->bools.menu_pointer_enable || mouse_enable)
-      && menu_input_dialog_get_display_kb())
+   if ((settings->bools.menu_pointer_enable || mouse_enable))
    {
       menu_ctx_pointer_t point;
       point.x      = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
       point.y      = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
-      menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
+
+      if (menu_input_dialog_get_display_kb())
+         menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
 
       if (rarch_timer_is_running(&mouse_activity_timer))
          rarch_timer_tick(&mouse_activity_timer);
