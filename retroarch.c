@@ -2306,7 +2306,7 @@ static enum runloop_state runloop_check_state(
    bool menu_driver_binding_state   = menu_driver_is_binding_state();
    bool menu_is_alive               = menu_driver_is_alive();
    uint64_t current_input           =
-      menu_is_alive ? 
+      menu_is_alive && !(settings->bools.menu_unified_controls && !menu_input_dialog_get_display_kb())? 
       input_menu_keys_pressed(settings, last_input) :
       input_keys_pressed(settings, last_input);
 #else

@@ -31,6 +31,7 @@
 
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
+#include "../menu/menu_input.h"
 #include "../menu/widgets/menu_input_dialog.h"
 #endif
 
@@ -561,9 +562,6 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
    const struct retro_keybind *binds_norm       = NULL;
    const struct retro_keybind *binds_auto       = NULL;
    unsigned max_users                           = input_driver_max_users;
-
-   if (settings->bools.menu_unified_controls && !menu_input_dialog_get_display_kb())
-      return input_keys_pressed(settings, last_input);
 
    for (i = 0; i < max_users; i++)
    {
