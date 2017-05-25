@@ -193,11 +193,6 @@ static int deferred_push_network_settings_list(menu_displaylist_info_t *info)
    return deferred_push_dlist(info, DISPLAYLIST_NETWORK_SETTINGS_LIST);
 }
 
-static int deferred_push_netplay_lan_scan_settings_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_NETPLAY_LAN_SCAN_SETTINGS_LIST);
-}
-
 static int deferred_push_lakka_services_list(menu_displaylist_info_t *info)
 {
    return deferred_push_dlist(info, DISPLAYLIST_LAKKA_SERVICES_LIST);
@@ -312,7 +307,7 @@ static int deferred_push_options(menu_displaylist_info_t *info)
 
 static int deferred_push_netplay(menu_displaylist_info_t *info)
 {
-   return deferred_push_dlist(info, DISPLAYLIST_NETPLAY);
+   return deferred_push_dlist(info, DISPLAYLIST_NETPLAY_ROOM_LIST);
 }
 
 static int deferred_push_content_settings(menu_displaylist_info_t *info)
@@ -985,12 +980,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
    if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_wifi_settings_list);
-      return 0;
-   }
-
-   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_NETPLAY_LAN_SCAN_SETTINGS_LIST)))
-   {
-      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_netplay_lan_scan_settings_list);
       return 0;
    }
 

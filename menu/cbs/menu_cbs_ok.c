@@ -3133,13 +3133,6 @@ static int action_ok_network_list(const char *path,
          entry_idx, ACTION_OK_DL_NETWORK_SETTINGS_LIST);
 }
 
-static int action_ok_netplay_lan_scan_list(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_displaylist_push(path, NULL, label, type, idx,
-         entry_idx, ACTION_OK_DL_NETPLAY_LAN_SCAN_SETTINGS_LIST);
-}
-
 static int action_ok_netplay_connect_room(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -3455,8 +3448,8 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
    menu_entries_get_last_stack(&path, &label, &menu_type, &enum_idx, NULL);
 
    /* Don't push the results if we left the netplay menu */
-   if (!string_is_equal(label,
-         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB)))
+   if (!string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB))
+    && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY)))
       return;
 
    if (!data || err)
@@ -4464,9 +4457,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_NETWORK_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_network_list);
-            break;
-         case MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_netplay_lan_scan_list);
             break;
          case MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM:
             BIND_ACTION_OK(cbs, action_ok_netplay_connect_room);

@@ -324,42 +324,6 @@ static void print_buf_lines(file_list_t *list, char *buf,
     * with a newline, just ignore the partial last line. */
 }
 
-static int menu_displaylist_parse_netplay(
-      menu_displaylist_info_t *info)
-{
-   settings_t *settings = config_get_ptr();
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST),
-         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST),
-         MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST,
-         MENU_SETTING_ACTION, 0, 0);
-
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT),
-         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT),
-         MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT,
-         MENU_SETTING_ACTION, 0, 0);
-
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT),
-         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_DISCONNECT),
-         MENU_ENUM_LABEL_NETPLAY_DISCONNECT,
-         MENU_SETTING_ACTION, 0, 0);
-
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_LAN_SCAN_SETTINGS),
-         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS),
-         MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS, MENU_SETTING_GROUP, 0, 0);
-
-   if (string_is_not_equal_fast(settings->arrays.menu_driver, "xmb", 3))
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_TAB),
-            msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB),
-            MENU_ENUM_LABEL_NETPLAY_TAB, MENU_SETTING_GROUP, 0, 0);
-
-   return 0;
-}
-
 #if !defined(HAVE_SOCKET_LEGACY) && !defined(WIIU)
 #include <net/net_ifinfo.h>
 
@@ -2878,12 +2842,6 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS,
                MENU_SETTING_ACTION, 0, 0);
 
-#if defined(HAVE_NETWORKING) && !defined(HAVE_LAKKA)
-      menu_displaylist_parse_settings_enum(menu, info,
-            MENU_ENUM_LABEL_NETPLAY,
-            PARSE_ACTION, false);
-#endif
-
 #ifdef HAVE_LAKKA
       if (show_advanced_settings)
 #endif
@@ -4231,7 +4189,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_DATABASE_ENTRY:
       case DISPLAYLIST_DATABASE_QUERY:
       case DISPLAYLIST_OPTIONS_SHADERS:
-      case DISPLAYLIST_NETPLAY:
       case DISPLAYLIST_CORE_CONTENT:
       case DISPLAYLIST_CORE_CONTENT_DIRS:
       case DISPLAYLIST_PLAYLIST_COLLECTION:
@@ -4276,7 +4233,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_UPDATER_SETTINGS_LIST:
       case DISPLAYLIST_WIFI_SETTINGS_LIST:
       case DISPLAYLIST_NETWORK_SETTINGS_LIST:
-      case DISPLAYLIST_NETPLAY_LAN_SCAN_SETTINGS_LIST:
       case DISPLAYLIST_LAKKA_SERVICES_LIST:
       case DISPLAYLIST_USER_SETTINGS_LIST:
       case DISPLAYLIST_DIRECTORY_SETTINGS_LIST:
@@ -5161,49 +5117,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_refresh = true;
          info->need_push    = true;
          break;
-      case DISPLAYLIST_NETPLAY_LAN_SCAN_SETTINGS_LIST:
-#ifdef HAVE_NETWORKING
-         {
-            struct netplay_host_list *hosts;
-
-            if (!netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, &hosts))
-               hosts = NULL;
-
-            if (!hosts || hosts->size == 0)
-            {
-               task_push_netplay_lan_scan(netplay_lan_scan_callback);
-
-               menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND),
-                     msg_hash_to_str(MENU_ENUM_LABEL_NO_NETPLAY_HOSTS_FOUND),
-                     MENU_ENUM_LABEL_NO_NETPLAY_HOSTS_FOUND,
-                     0, 0, 0);
-            }
-            else
-            {
-               size_t i;
-               for (i = 0; i < hosts->size; i++)
-               {
-                  struct netplay_host *host = &hosts->hosts[i];
-                  menu_entries_append_enum(info->list,
-                        host->nick,
-                        msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_LAN),
-                        MENU_ENUM_LABEL_CONNECT_NETPLAY_LAN,
-                        MENU_NETPLAY_LAN_SCAN, 0, 0);
-               }
-            }
-         }
-#else
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND),
-               msg_hash_to_str(MENU_ENUM_LABEL_NO_NETPLAY_HOSTS_FOUND),
-               MENU_ENUM_LABEL_NO_NETPLAY_HOSTS_FOUND,
-               0, 0, 0);
-#endif
-
-         info->need_refresh = true;
-         info->need_push    = true;
-         break;
       case DISPLAYLIST_LAKKA_SERVICES_LIST:
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_SSH_ENABLE,
@@ -5846,20 +5759,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_OPTIONS_SHADERS:
          ret = menu_displaylist_parse_shader_options(info);
-
-         info->need_push    = true;
-         break;
-      case DISPLAYLIST_NETPLAY:
-#ifdef HAVE_NETWORKING
-         ret = menu_displaylist_parse_netplay(info);
-#else
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
-               msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
-               MENU_ENUM_LABEL_NO_ITEMS,
-               MENU_SETTING_NO_ITEM, 0, 0);
-         ret = 0;
-#endif
 
          info->need_push    = true;
          break;
