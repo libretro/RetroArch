@@ -5121,7 +5121,7 @@ static bool setting_append_list(
                   sizeof(settings->paths.path_menu_xmb_font),
                   MENU_ENUM_LABEL_XMB_FONT,
                   MENU_ENUM_LABEL_VALUE_XMB_FONT,
-                  settings->paths.path_menu_xmb_font,
+                  "",
                   &group_info,
                   &subgroup_info,
                   parent_group,
