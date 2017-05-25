@@ -62,6 +62,7 @@
 #include "menu/menu_driver.h"
 #include "menu/menu_event.h"
 #include "menu/widgets/menu_dialog.h"
+#include "menu/widgets/menu_input_dialog.h"
 #endif
 
 #ifdef HAVE_CHEEVOS
