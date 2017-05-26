@@ -4122,6 +4122,16 @@ void netplay_lan_scan_callback(void *task_data,
 }
 #endif
 
+bool menu_displaylist_process(void *data)
+{
+   return menu_displaylist_push_list_process((menu_displaylist_info_t*)data);
+}
+
+bool menu_displaylist_push_onto_stack(void *data)
+{
+   return menu_displaylist_push((menu_displaylist_ctx_entry_t*)data);
+}
+
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 {
    size_t i;
@@ -4136,16 +4146,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
    bool load_content             = true;
    bool use_filebrowser          = false;
    menu_displaylist_info_t *info = (menu_displaylist_info_t*)data;
-
-   switch (type)
-   {
-      case DISPLAYLIST_PROCESS:
-         return menu_displaylist_push_list_process(info);
-      case DISPLAYLIST_PUSH_ONTO_STACK:
-         return menu_displaylist_push((menu_displaylist_ctx_entry_t*)data);
-      default:
-         break;
-   }
 
    if (!info || !menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       goto error;
@@ -4163,12 +4163,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
    switch (type)
    {
       case DISPLAYLIST_NETPLAY_LAN_SCAN_SETTINGS_LIST:
-         /* TODO/FIXME ? */
-         break;
-      case DISPLAYLIST_PUSH_ONTO_STACK:
-         /* TODO/FIXME ? */
-         break;
-      case DISPLAYLIST_PROCESS:
          /* TODO/FIXME ? */
          break;
       case DISPLAYLIST_OPTIONS_MANAGEMENT:

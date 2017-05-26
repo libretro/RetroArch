@@ -1140,7 +1140,7 @@ static bool zarch_menu_init_list(void *data)
    if (menu_displaylist_ctl(DISPLAYLIST_HISTORY, &info))
    {
       info.need_push = true;
-      return menu_displaylist_ctl(DISPLAYLIST_PROCESS, &info);
+      return menu_displaylist_process(&info);
    }
 
    return false;

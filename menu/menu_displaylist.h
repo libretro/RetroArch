@@ -158,8 +158,6 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_CORE_CONTENT,
    DISPLAYLIST_CORE_CONTENT_DIRS,
    DISPLAYLIST_CORE_CONTENT_DIRS_SUBDIR,
-   DISPLAYLIST_PROCESS,
-   DISPLAYLIST_PUSH_ONTO_STACK,
    DISPLAYLIST_PENDING_CLEAR
 };
 
@@ -204,6 +202,9 @@ typedef struct menu_displaylist_ctx_entry
    file_list_t *stack;
    file_list_t *list;
 } menu_displaylist_ctx_entry_t;
+
+bool menu_displaylist_process(void *data);
+bool menu_displaylist_push_onto_stack(void *data);
 
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data);
 #ifdef HAVE_NETWORKING

@@ -42,7 +42,7 @@ static int action_info_default(unsigned type, const char *label)
    if (!menu_displaylist_ctl(DISPLAYLIST_HELP, &info))
       return -1;
 
-   if (!menu_displaylist_ctl(DISPLAYLIST_PROCESS, &info))
+   if (!menu_displaylist_process(&info))
       return -1;
 
    return 0;

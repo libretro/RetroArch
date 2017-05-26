@@ -1773,7 +1773,7 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
          size_t i;
          for (i=0; i < xmb->horizontal_list->size; i++)
             xmb_node_allocate_userdata(xmb, (unsigned)i);
-         menu_displaylist_ctl(DISPLAYLIST_PROCESS, &info);
+         menu_displaylist_process(&info);
       }
    }
 }
@@ -4003,7 +4003,7 @@ static int deferred_push_content_actions(menu_displaylist_info_t *info)
    if (!menu_displaylist_ctl(
          DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS, info))
       return -1;
-   menu_displaylist_ctl(DISPLAYLIST_PROCESS, info);
+   menu_displaylist_process(&info);
    return 0;
 }
 
@@ -4150,7 +4150,7 @@ static bool xmb_menu_init_list(void *data)
 
    info.need_push = true;
 
-   if (!menu_displaylist_ctl(DISPLAYLIST_PROCESS, &info))
+   if (!menu_displaylist_process(&info))
       return false;
 
    return true;

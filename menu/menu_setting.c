@@ -731,7 +731,7 @@ int menu_action_handle_setting(rarch_setting_t *setting,
             strlcpy(info.label, name, sizeof(info.label));
 
             if (menu_displaylist_ctl(DISPLAYLIST_GENERIC, &info))
-               menu_displaylist_ctl(DISPLAYLIST_PROCESS, &info);
+               menu_displaylist_process(&info);
          }
          /* fall-through. */
       case ST_BOOL:
@@ -1604,7 +1604,7 @@ void general_write_handler(void *data)
             info.enum_idx      = MENU_ENUM_LABEL_HELP;
 
             if (menu_displaylist_ctl(DISPLAYLIST_GENERIC, &info))
-               menu_displaylist_ctl(DISPLAYLIST_PROCESS, &info);
+               menu_displaylist_process(&info);
             setting_set_with_string_representation(setting, "false");
          }
          break;
