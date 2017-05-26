@@ -4147,7 +4147,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
    bool use_filebrowser          = false;
    menu_displaylist_info_t *info = (menu_displaylist_info_t*)data;
 
-   if (!info)
+   if (!info || !menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       goto error;
 
    settings = config_get_ptr();
