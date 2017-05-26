@@ -127,6 +127,7 @@ IMPORT(setsockopt);
 IMPORT(shutdown);
 IMPORT(socket);
 IMPORT(select);
+IMPORT(socketlasterr);
 
 IMPORT_END();
 

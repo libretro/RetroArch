@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-#define SOL_SOCKET      0xFFFF
+#define SOL_SOCKET      -1
 
 #define INADDR_ANY      0
 
@@ -22,6 +22,11 @@ extern "C" {
 
 #define SO_REUSEADDR    0x0004
 #define SO_NBIO         0x1014
+
+
+// return codes
+#define SO_SUCCESS      0
+#define SO_EWOULDBLOCK  6
 
 
 typedef uint32_t socklen_t;
@@ -62,6 +67,8 @@ int setsockopt(int sockfd, int level, int optname, const void *optval, socklen_t
 int shutdown(int sockfd, int how);
 int socket(int domain, int type, int protocol);
 int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
+
+int socketlasterr(void);
 
 #ifdef __cplusplus
 }

@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-
+#define TCP_NODELAY      0x2004
 
 #ifdef __cplusplus
 }
