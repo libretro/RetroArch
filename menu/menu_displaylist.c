@@ -3746,12 +3746,9 @@ static void menu_displaylist_parse_playlist_associations(
    string_list_free(str_list);
 }
 
-static bool menu_displaylist_push_list_process(menu_displaylist_info_t *info)
+static void menu_displaylist_push_list_process(menu_displaylist_info_t *info)
 {
    size_t idx   = 0;
-
-   if (!info)
-      return false;
 
    if (info->need_navigation_clear)
    {
@@ -3826,8 +3823,6 @@ static bool menu_displaylist_push_list_process(menu_displaylist_info_t *info)
       menu_driver_populate_entries(info);
       ui_companion_driver_notify_list_loaded(info->list, info->menu_list);
    }
-
-   return true;
 }
 
 static bool menu_displaylist_push_internal(
@@ -3933,6 +3928,8 @@ static bool menu_displaylist_push_internal(
                MENU_INFO_MESSAGE, 0, 0);
          info->need_refresh = true;
          info->need_push    = true;
+
+         return true;
       }
       else
       {
@@ -3941,11 +3938,10 @@ static bool menu_displaylist_push_internal(
                settings->paths.directory_playlist,
                sizeof(info->path));
 
-         if (!menu_displaylist_ctl(
+         if (menu_displaylist_ctl(
                   DISPLAYLIST_DATABASE_PLAYLISTS, info))
-            return false;
+            return true;
       }
-      return true;
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TAB)))
    {
@@ -3995,7 +3991,10 @@ bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry)
       return false;
 
    if (menu_displaylist_push_internal(label, entry, &info))
-      return menu_displaylist_push_list_process(&info);
+   {
+      menu_displaylist_push_list_process(&info);
+      return true;
+   }
 
    cbs = menu_entries_get_last_stack_actiondata();
 
@@ -4119,7 +4118,15 @@ void netplay_lan_scan_callback(void *task_data,
 
 bool menu_displaylist_process(void *data)
 {
-   return menu_displaylist_push_list_process((menu_displaylist_info_t*)data);
+   menu_displaylist_info_t *info = (menu_displaylist_info_t*)data;
+
+   if (info)
+   {
+      menu_displaylist_push_list_process(info);
+      return true;
+   }
+
+   return false;
 }
 
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
@@ -4291,8 +4298,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          if (string_is_equal(info->path, file_path_str(FILE_PATH_CONTENT_HISTORY)))
          {
-            if (menu_displaylist_ctl(DISPLAYLIST_HISTORY, info))
-               return menu_displaylist_push_list_process(info);
+            if (menu_displaylist_ctl(DISPLAYLIST_HISTORY, info) && info)
+            {
+               menu_displaylist_push_list_process(info);
+               return true;
+            }
             return false;
          }
          else
