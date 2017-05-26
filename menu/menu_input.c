@@ -227,8 +227,13 @@ static int menu_input_mouse_frame(
    if ((settings->bools.menu_pointer_enable || mouse_enable))
    {
       menu_ctx_pointer_t point;
-      point.x      = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
-      point.y      = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
+      point.x       = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
+      point.y       = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
+      point.ptr     = 0;
+      point.cbs     = NULL;
+      point.entry   = NULL;
+      point.action  = 0;
+      point.retcode = 0;
 
       if (menu_input_dialog_get_display_kb())
          menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
