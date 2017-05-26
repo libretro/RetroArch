@@ -4148,7 +4148,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
    menu_displaylist_info_t *info = (menu_displaylist_info_t*)data;
 
    if (!info || !menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      goto error;
+      return false;
 
    settings = config_get_ptr();
 
@@ -4177,7 +4177,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             struct string_list *str_list  = string_split(info->label, "|");
 
             if (!str_list)
-               goto error;
+               return false;
 
             strlcpy(info->path_b,
                   str_list->elems[1].data, sizeof(info->path_b));
@@ -4303,7 +4303,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          {
             if (menu_displaylist_ctl(DISPLAYLIST_HISTORY, info))
                return menu_displaylist_push_list_process(info);
-            goto error;
+            return false;
          }
          else
          {
@@ -6096,7 +6096,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                      entry->enum_idx,
                      entry->parse_type,
                      entry->add_empty_entry) == -1)
-               goto error;
+               return false;
          }
          break;
       case DISPLAYLIST_HELP:
@@ -6545,10 +6545,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
    }
 
    if (ret != 0)
-      goto error;
+      return false;
 
    return true;
-
-error:
-   return false;
 }
