@@ -4568,33 +4568,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   {
                      strlcpy(new_path_entry, core_path, sizeof(new_path_entry));
                      snprintf(new_entry, sizeof(new_entry), "Current core (%s)", core_name);
-                     if (type == DISPLAYLIST_CORES_COLLECTION_SUPPORTED)
-                     {
-                        new_lbl_entry[0] = '\0';
-                        new_type         = MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION_CURRENT_CORE;
-                     }
-                     else
-                     {
-                        strlcpy(new_lbl_entry, core_path, sizeof(new_lbl_entry));
-                        new_type = MENU_ENUM_LABEL_DETECT_CORE_LIST_OK_CURRENT_CORE;
-                     }
+                     strlcpy(new_lbl_entry, core_path, sizeof(new_lbl_entry));
+                     new_type = MENU_ENUM_LABEL_DETECT_CORE_LIST_OK_CURRENT_CORE;
                   }
                   else if (core_path)
                   {
-                     switch (type)
-                     {
-                        case DISPLAYLIST_CORES_COLLECTION_SUPPORTED:
-                           menu_entries_append_enum(info->list, core_path, "",
-                                 MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
-                                 FILE_TYPE_CORE, 0, 0);
-                           break;
-                        default:
-                           menu_entries_append_enum(info->list, core_path,
-                                 msg_hash_to_str(MENU_ENUM_LABEL_DETECT_CORE_LIST_OK),
-                                 MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,
-                                 FILE_TYPE_CORE, 0, 0);
-                           break;
-                     }
+                     menu_entries_append_enum(info->list, core_path,
+                           msg_hash_to_str(MENU_ENUM_LABEL_DETECT_CORE_LIST_OK),
+                           MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,
+                           FILE_TYPE_CORE, 0, 0);
 
                      menu_entries_set_alt_at_offset(info->list, j, core_name);
                      j++;
@@ -4681,34 +4663,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   {
                      strlcpy(new_path_entry, core_path, sizeof(new_path_entry));
                      snprintf(new_entry, sizeof(new_entry), "Current core (%s)", core_name);
-                     if (type == DISPLAYLIST_CORES_COLLECTION_SUPPORTED)
-                     {
-                        new_lbl_entry[0] = '\0';
-                        new_type         = MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION_CURRENT_CORE;
-                     }
-                     else
-                     {
-                        strlcpy(new_lbl_entry, core_path, sizeof(new_lbl_entry));
-                        new_type = MENU_ENUM_LABEL_DETECT_CORE_LIST_OK_CURRENT_CORE;
-                     }
+                     new_lbl_entry[0] = '\0';
+                     new_type         = MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION_CURRENT_CORE;
                   }
                   else if (core_path)
                   {
-                     switch (type)
-                     {
-                        case DISPLAYLIST_CORES_COLLECTION_SUPPORTED:
-                           menu_entries_append_enum(info->list, core_path, "",
-                                 MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
-                                 FILE_TYPE_CORE, 0, 0);
-                           break;
-                        default:
-                           menu_entries_append_enum(info->list, core_path,
-                                 msg_hash_to_str(MENU_ENUM_LABEL_DETECT_CORE_LIST_OK),
-                                 MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,
-                                 FILE_TYPE_CORE, 0, 0);
-                           break;
-                     }
-
+                     menu_entries_append_enum(info->list, core_path, "",
+                           MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
+                           FILE_TYPE_CORE, 0, 0);
                      menu_entries_set_alt_at_offset(info->list, j, core_name);
                      j++;
                   }
