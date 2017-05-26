@@ -4133,6 +4133,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
    core_info_list_t *list        = NULL;
    menu_handle_t       *menu     = NULL;
    settings_t      *settings     = NULL;
+   bool load_content             = true;
    bool use_filebrowser          = false;
    menu_displaylist_info_t *info = (menu_displaylist_info_t*)data;
 
@@ -6448,6 +6449,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          strlcpy(info->exts, "lpl", sizeof(info->exts));
          break;
       case DISPLAYLIST_FONTS:
+         load_content = false;
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          filebrowser_clear_type();
          info->type_default = FILE_TYPE_FONT;
@@ -6526,7 +6528,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
    {
       if (string_is_empty(info->path))
       {
-         if (frontend_driver_parse_drive_list(info->list, true) != 0)
+         if (frontend_driver_parse_drive_list(info->list, load_content) != 0)
             menu_entries_append_enum(info->list, "/", "",
                   MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
          info->need_refresh = true;
