@@ -3837,15 +3837,13 @@ static bool menu_displaylist_push_internal(
 {
    if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB)))
    {
-      if (!menu_displaylist_ctl(DISPLAYLIST_HISTORY, info))
-         return false;
-      return true;
+      if (menu_displaylist_ctl(DISPLAYLIST_HISTORY, info))
+         return true;
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS_TAB)))
    {
-      if (!menu_displaylist_ctl(DISPLAYLIST_SETTINGS_ALL, info))
-         return false;
-      return true;
+      if (menu_displaylist_ctl(DISPLAYLIST_SETTINGS_ALL, info))
+         return true;
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MUSIC_TAB)))
    {
@@ -3951,21 +3949,18 @@ static bool menu_displaylist_push_internal(
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TAB)))
    {
-         if (!menu_displaylist_ctl(DISPLAYLIST_SCAN_DIRECTORY_LIST, info))
-            return false;
+      if (menu_displaylist_ctl(DISPLAYLIST_SCAN_DIRECTORY_LIST, info))
          return true;
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB)))
    {
-         if (!menu_displaylist_ctl(DISPLAYLIST_NETPLAY_ROOM_LIST, info))
-            return false;
+      if (menu_displaylist_ctl(DISPLAYLIST_NETPLAY_ROOM_LIST, info))
          return true;
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU)))
    {
-      if (!menu_displaylist_ctl(DISPLAYLIST_HORIZONTAL, info))
-         return false;
-      return true;
+      if (menu_displaylist_ctl(DISPLAYLIST_HORIZONTAL, info))
+         return true;
    }
 
    return false;
