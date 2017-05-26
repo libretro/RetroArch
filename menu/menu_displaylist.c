@@ -4133,21 +4133,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 {
    size_t i;
    menu_ctx_displaylist_t disp_list;
-#ifdef HAVE_SHADER_MANAGER
-   video_shader_ctx_t shader_info;
-#endif
    int ret                       = 0;
    core_info_list_t *list        = NULL;
    menu_handle_t       *menu     = NULL;
-   settings_t      *settings     = NULL;
    bool load_content             = true;
    bool use_filebrowser          = false;
    menu_displaylist_info_t *info = (menu_displaylist_info_t*)data;
+   settings_t      *settings     = config_get_ptr();
 
-   if (!info || !menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return false;
-
-   settings = config_get_ptr();
 
    core_info_get_list(&list);
 
@@ -5953,26 +5948,29 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_SHADER_PARAMETERS_PRESET:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 #ifdef HAVE_SHADER_MANAGER
-         video_shader_driver_get_current_shader(&shader_info);
-
-         if (shader_info.data)
-            ret = deferred_push_video_shader_parameters_common(
-                  info, shader_info.data,
-                  (type == DISPLAYLIST_SHADER_PARAMETERS)
-                  ? MENU_SETTINGS_SHADER_PARAMETER_0
-                  : MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
-                  );
-         else
          {
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS),
-                  msg_hash_to_str(MENU_ENUM_LABEL_NO_SHADER_PARAMETERS),
-                  MENU_ENUM_LABEL_NO_SHADER_PARAMETERS,
-                  0, 0, 0);
-            ret = 0;
-         }
+            video_shader_ctx_t shader_info;
+            video_shader_driver_get_current_shader(&shader_info);
 
-         info->need_push = true;
+            if (shader_info.data)
+               ret = deferred_push_video_shader_parameters_common(
+                     info, shader_info.data,
+                     (type == DISPLAYLIST_SHADER_PARAMETERS)
+                     ? MENU_SETTINGS_SHADER_PARAMETER_0
+                     : MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
+                     );
+            else
+            {
+               menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS),
+                     msg_hash_to_str(MENU_ENUM_LABEL_NO_SHADER_PARAMETERS),
+                     MENU_ENUM_LABEL_NO_SHADER_PARAMETERS,
+                     0, 0, 0);
+               ret = 0;
+            }
+
+            info->need_push = true;
+         }
 #endif
          break;
       case DISPLAYLIST_PERFCOUNTERS_CORE:
