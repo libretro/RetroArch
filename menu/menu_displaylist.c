@@ -3971,7 +3971,7 @@ static bool menu_displaylist_push_internal(
    return false;
 }
 
-static bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry)
+bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry)
 {
    menu_file_list_cbs_t *cbs      = NULL;
    const char *path               = NULL;
@@ -4125,11 +4125,6 @@ void netplay_lan_scan_callback(void *task_data,
 bool menu_displaylist_process(void *data)
 {
    return menu_displaylist_push_list_process((menu_displaylist_info_t*)data);
-}
-
-bool menu_displaylist_push_onto_stack(void *data)
-{
-   return menu_displaylist_push((menu_displaylist_ctx_entry_t*)data);
 }
 
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)

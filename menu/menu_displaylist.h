@@ -204,7 +204,8 @@ typedef struct menu_displaylist_ctx_entry
 } menu_displaylist_ctx_entry_t;
 
 bool menu_displaylist_process(void *data);
-bool menu_displaylist_push_onto_stack(void *data);
+
+bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry);
 
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data);
 #ifdef HAVE_NETWORKING
