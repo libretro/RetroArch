@@ -76,7 +76,7 @@ bool nk_wnd_file_picker(nk_menu_handle_t *nk, char* title, char* in, char* out, 
    if (!drives)
    {
       drives = (file_list_t*)calloc(1, sizeof(file_list_t));
-      frontend_driver_parse_drive_list(drives);
+      frontend_driver_parse_drive_list(drives, false);
    }
 
    if (!string_is_empty(in) && string_is_empty(path))

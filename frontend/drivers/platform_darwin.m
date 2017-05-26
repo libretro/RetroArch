@@ -625,7 +625,7 @@ static enum frontend_architecture frontend_darwin_get_architecture(void)
 #endif
 }
 
-static int frontend_darwin_parse_drive_list(void *data)
+static int frontend_darwin_parse_drive_list(void *data, bool load_content)
 {
    int ret = -1;
 #if TARGET_OS_IPHONE
@@ -636,6 +636,9 @@ static int frontend_darwin_parse_drive_list(void *data)
    char bundle_path_buf[PATH_MAX_LENGTH] = {0};
    char home_dir_buf[PATH_MAX_LENGTH]    = {0};
    CFBundleRef bundle = CFBundleGetMainBundle();
+   enum msg_hash_enums enum_idx = load_content ?
+      MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
+      MSG_UNKNOWN;
 
    bundle_url  = CFBundleCopyBundleURL(bundle);
    bundle_path = CFURLCopyPath(bundle_url);
@@ -648,11 +651,11 @@ static int frontend_darwin_parse_drive_list(void *data)
    menu_entries_append_enum(list,
          home_dir_buf,
         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-        MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+        enum_idx,
         MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(list, "/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         enum_idx,
         MENU_SETTING_ACTION, 0, 0);
 
    ret = 0;

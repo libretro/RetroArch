@@ -76,7 +76,7 @@ typedef struct frontend_ctx_driver
    void (*content_loaded)(void);
    enum frontend_architecture (*get_architecture)(void);
    enum frontend_powerstate (*get_powerstate)(int *seconds, int *percent);
-   int  (*parse_drive_list)(void*);
+   int  (*parse_drive_list)(void*, bool);
    uint64_t (*get_total_mem)(void);
    uint64_t (*get_used_mem)(void);
    void (*install_signal_handler)(void);
@@ -131,7 +131,7 @@ frontend_ctx_driver_t *frontend_get_ptr(void);
  **/
 frontend_ctx_driver_t *frontend_ctx_init_first(void);
 
-int frontend_driver_parse_drive_list(void *data);
+int frontend_driver_parse_drive_list(void *data, bool load_content);
 
 void frontend_driver_content_loaded(void);
 

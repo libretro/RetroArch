@@ -1965,10 +1965,13 @@ static void frontend_linux_init(void *data)
 
 }
 
-static int frontend_linux_parse_drive_list(void *data)
+static int frontend_linux_parse_drive_list(void *data, bool load_content)
 {
 #ifdef HAVE_MENU
    file_list_t *list = (file_list_t*)data;
+   enum msg_hash_enums enum_idx = load_content ?
+      MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
+      MSG_UNKNOWN;
 
 #ifdef ANDROID
    if (!string_is_empty(app_dir))
@@ -1976,7 +1979,7 @@ static int frontend_linux_parse_drive_list(void *data)
       menu_entries_append_enum(list,
             app_dir,
             msg_hash_to_str(MSG_APPLICATION_DIR),
-            MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+            enum_idx,
             MENU_SETTING_ACTION, 0, 0);
    }
    if (!string_is_empty(internal_storage_app_path))
@@ -1984,7 +1987,7 @@ static int frontend_linux_parse_drive_list(void *data)
       menu_entries_append_enum(list,
             internal_storage_app_path,
             msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
-            MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+            enum_idx,
             MENU_SETTING_ACTION, 0, 0);
    }
    if (!string_is_empty(internal_storage_path))
@@ -1992,7 +1995,7 @@ static int frontend_linux_parse_drive_list(void *data)
       menu_entries_append_enum(list,
             internal_storage_path,
             msg_hash_to_str(MSG_INTERNAL_STORAGE),
-            MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+            enum_idx,
             MENU_SETTING_ACTION, 0, 0);
    }
    else
@@ -2000,19 +2003,19 @@ static int frontend_linux_parse_drive_list(void *data)
       menu_entries_append_enum(list,
             "/storage/emulated/0",
             msg_hash_to_str(MSG_REMOVABLE_STORAGE),
-            MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+            enum_idx,
             MENU_SETTING_ACTION, 0, 0);
    }
    menu_entries_append_enum(list,
          "/storage",
          msg_hash_to_str(MSG_REMOVABLE_STORAGE),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         enum_idx, 
          MENU_SETTING_ACTION, 0, 0);
 #endif
 
    menu_entries_append_enum(list, "/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         enum_idx,
          MENU_SETTING_ACTION, 0, 0);
 #endif
 

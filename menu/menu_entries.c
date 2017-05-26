@@ -405,7 +405,8 @@ void menu_entries_append(file_list_t *list, const char *path, const char *label,
    menu_cbs_init(list, cbs, path, label, type, idx);
 }
 
-void menu_entries_append_enum(file_list_t *list, const char *path, const char *label,
+void menu_entries_append_enum(file_list_t *list, const char *path,
+      const char *label,
       enum msg_hash_enums enum_idx,
       unsigned type, size_t directory_ptr, size_t entry_idx)
 {

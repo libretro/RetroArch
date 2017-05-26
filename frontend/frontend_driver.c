@@ -202,13 +202,13 @@ frontend_ctx_driver_t *frontend_get_ptr(void)
    return current_frontend_ctx;
 }
 
-int frontend_driver_parse_drive_list(void *data)
+int frontend_driver_parse_drive_list(void *data, bool load_content)
 {
    frontend_ctx_driver_t *frontend = frontend_get_ptr();
 
    if (!frontend || !frontend->parse_drive_list)
       return -1;
-   return frontend->parse_drive_list(data);
+   return frontend->parse_drive_list(data, load_content);
 }
 
 void frontend_driver_content_loaded(void)

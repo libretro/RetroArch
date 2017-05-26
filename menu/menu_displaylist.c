@@ -3380,7 +3380,7 @@ static int menu_displaylist_parse_playlists(
 
    if (string_is_empty(info->path))
    {
-      if (frontend_driver_parse_drive_list(info->list) != 0)
+      if (frontend_driver_parse_drive_list(info->list, true) != 0)
          menu_entries_append_enum(info->list, "/", "",
                MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
       return 0;
@@ -3492,7 +3492,7 @@ static int menu_displaylist_parse_cores(
 
    if (string_is_empty(info->path))
    {
-      if (frontend_driver_parse_drive_list(info->list) != 0)
+      if (frontend_driver_parse_drive_list(info->list, true) != 0)
          menu_entries_append_enum(info->list, "/", "",
                MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
       return 0;
@@ -5914,7 +5914,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_SETTING_ACTION, 0, 0);
 #endif
 
-         if (frontend_driver_parse_drive_list(info->list) != 0)
+         if (frontend_driver_parse_drive_list(info->list, true) != 0)
             menu_entries_append_enum(info->list, "/",
                   msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
                   MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
@@ -6526,7 +6526,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
    {
       if (string_is_empty(info->path))
       {
-         if (frontend_driver_parse_drive_list(info->list) != 0)
+         if (frontend_driver_parse_drive_list(info->list, true) != 0)
             menu_entries_append_enum(info->list, "/", "",
                   MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
          info->need_refresh = true;

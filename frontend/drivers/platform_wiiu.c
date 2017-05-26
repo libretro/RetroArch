@@ -152,22 +152,25 @@ enum frontend_architecture frontend_wiiu_get_architecture(void)
    return FRONTEND_ARCH_PPC;
 }
 
-static int frontend_wiiu_parse_drive_list(void *data)
+static int frontend_wiiu_parse_drive_list(void *data, bool load_content)
 {
 #ifndef IS_SALAMANDER
    file_list_t *list = (file_list_t *)data;
+   enum msg_hash_enums enum_idx = load_content ?
+      MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
+      MSG_UNKNOWN;
 
    if (!list)
       return -1;
 
    menu_entries_append_enum(list, WIIU_SD_PATH,
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         enum_idx,
          MENU_SETTING_ACTION, 0, 0);
 
    menu_entries_append_enum(list, WIIU_USB_PATH,
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         enum_idx,
          MENU_SETTING_ACTION, 0, 0);
 #endif
    return 0;

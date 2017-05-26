@@ -438,42 +438,45 @@ enum frontend_architecture frontend_psp_get_architecture(void)
 #endif
 }
 
-static int frontend_psp_parse_drive_list(void *data)
+static int frontend_psp_parse_drive_list(void *data, bool load_content)
 {
 #ifndef IS_SALAMANDER
    file_list_t *list = (file_list_t*)data;
+   enum msg_hash_enums enum_idx = load_content ?
+      MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
+      MSG_UNKNOWN;
 
 #ifdef VITA
    menu_entries_append_enum(list,
          "app0:/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         enum_idx,
          MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(list,
          "ur0:/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         enum_idx,
          MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(list,
          "ux0:/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         enum_idx,
          MENU_SETTING_ACTION, 0, 0);
 #else
    menu_entries_append_enum(list,
          "ms0:/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         enum_idx,
          MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(list,
          "ef0:/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         enum_idx,
          MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(list,
          "host0:/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+         enum_idx,
          MENU_SETTING_ACTION, 0, 0);
 #endif
 #endif
