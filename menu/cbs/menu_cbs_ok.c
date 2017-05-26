@@ -3455,6 +3455,7 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
    if (!data || err)
       goto finish;
 
+   data->data = (char*)realloc(data->data, data->len + 1);
    data->data[data->len] = '\0';
 
    if (!strstr(data->data, file_path_str(FILE_PATH_NETPLAY_ROOM_LIST_URL)))
