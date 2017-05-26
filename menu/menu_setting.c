@@ -5128,6 +5128,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+            menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
 
             CONFIG_UINT(
                   list, list_info,
