@@ -6290,6 +6290,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                file_path_str(FILE_PATH_RDB_EXTENSION),
                sizeof(info->exts));
          info->enum_idx     = MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST;
+         load_content       = false;
          use_filebrowser    = true;
          strlcpy(info->path, settings->paths.path_content_database, sizeof(info->path));
          break;
@@ -6297,6 +6298,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          filebrowser_clear_type();
          info->type_default = FILE_TYPE_CURSOR;
+         load_content       = false;
          use_filebrowser    = true;
          strlcpy(info->exts, "dbc", sizeof(info->exts));
          strlcpy(info->path, settings->paths.directory_cursor, sizeof(info->path));
@@ -6306,6 +6308,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          filebrowser_clear_type();
          info->type_default = FILE_TYPE_CONFIG;
          strlcpy(info->exts, "cfg", sizeof(info->exts));
+         load_content       = false;
          use_filebrowser    = true;
          break;
       case DISPLAYLIST_SHADER_PRESET:
@@ -6425,7 +6428,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             info->need_refresh = true;
             info->need_push    = true;
          }
-         use_filebrowser    = true;
 #endif
          break;
       case DISPLAYLIST_AUDIO_FILTERS:
@@ -6440,6 +6442,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          filebrowser_clear_type();
          info->type_default = FILE_TYPE_CHEAT;
+         load_content       = false;
          use_filebrowser    = true;
          strlcpy(info->exts, "cht", sizeof(info->exts));
          break;
@@ -6451,10 +6454,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          strlcpy(info->exts, "lpl", sizeof(info->exts));
          break;
       case DISPLAYLIST_FONTS:
-         load_content = false;
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          filebrowser_clear_type();
          info->type_default = FILE_TYPE_FONT;
+         load_content       = false;
          use_filebrowser    = true;
          strlcpy(info->exts, "ttf", sizeof(info->exts));
          break;
@@ -6462,14 +6465,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          filebrowser_clear_type();
          info->type_default = FILE_TYPE_OVERLAY;
+         load_content       = false;
          use_filebrowser    = true;
          strlcpy(info->exts, "cfg", sizeof(info->exts));
          break;
       case DISPLAYLIST_RECORD_CONFIG_FILES:
-         load_content = false;
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          filebrowser_clear_type();
          info->type_default = FILE_TYPE_RECORD_CONFIG;
+         load_content       = false;
          use_filebrowser    = true;
          strlcpy(info->exts, "cfg", sizeof(info->exts));
          break;
@@ -6477,6 +6481,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          filebrowser_clear_type();
          info->type_default = FILE_TYPE_REMAP;
+         load_content       = false;
          use_filebrowser    = true;
          strlcpy(info->exts, "rmp", sizeof(info->exts));
          break;
