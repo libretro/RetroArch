@@ -6368,6 +6368,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          filebrowser_clear_type();
          info->type_default = FILE_TYPE_VIDEOFILTER;
+         load_content       = false;
          use_filebrowser    = true;
          strlcpy(info->exts, "filt", sizeof(info->exts));
          break;
@@ -6431,6 +6432,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          filebrowser_clear_type();
          info->type_default = FILE_TYPE_AUDIOFILTER;
+         load_content       = false;
          use_filebrowser    = true;
          strlcpy(info->exts, "dsp", sizeof(info->exts));
          break;
