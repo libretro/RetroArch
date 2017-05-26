@@ -1980,7 +1980,7 @@ static int frontend_linux_parse_drive_list(void *data, bool load_content)
             app_dir,
             msg_hash_to_str(MSG_APPLICATION_DIR),
             enum_idx,
-            MENU_SETTING_ACTION, 0, 0);
+            FILE_TYPE_DIRECTORY, 0, 0);
    }
    if (!string_is_empty(internal_storage_app_path))
    {
@@ -1988,7 +1988,7 @@ static int frontend_linux_parse_drive_list(void *data, bool load_content)
             internal_storage_app_path,
             msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
             enum_idx,
-            MENU_SETTING_ACTION, 0, 0);
+            FILE_TYPE_DIRECTORY, 0, 0);
    }
    if (!string_is_empty(internal_storage_path))
    {
@@ -1996,7 +1996,7 @@ static int frontend_linux_parse_drive_list(void *data, bool load_content)
             internal_storage_path,
             msg_hash_to_str(MSG_INTERNAL_STORAGE),
             enum_idx,
-            MENU_SETTING_ACTION, 0, 0);
+            FILE_TYPE_DIRECTORY, 0, 0);
    }
    else
    {
@@ -2004,13 +2004,13 @@ static int frontend_linux_parse_drive_list(void *data, bool load_content)
             "/storage/emulated/0",
             msg_hash_to_str(MSG_REMOVABLE_STORAGE),
             enum_idx,
-            MENU_SETTING_ACTION, 0, 0);
+            FILE_TYPE_DIRECTORY, 0, 0);
    }
    menu_entries_append_enum(list,
          "/storage",
          msg_hash_to_str(MSG_REMOVABLE_STORAGE),
          enum_idx, 
-         MENU_SETTING_ACTION, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0);
 #endif
 
    menu_entries_append_enum(list, "/",
