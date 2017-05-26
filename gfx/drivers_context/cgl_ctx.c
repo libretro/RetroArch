@@ -93,7 +93,7 @@ static void gfx_ctx_cgl_check_window(void *data, bool *quit,
    }
 }
 
-static void gfx_ctx_cgl_swap_buffers(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_cgl_swap_buffers(void *data, void *data2)
 {
    gfx_ctx_cgl_data_t *cgl = (gfx_ctx_cgl_data_t*)data;
 
