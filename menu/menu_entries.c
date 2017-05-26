@@ -29,6 +29,13 @@
 #include "../retroarch.h"
 #include "../version.h"
 
+/* Flagged when menu entries need to be refreshed */
+static bool menu_entries_need_refresh              = false;
+static bool menu_entries_nonblocking_refresh       = false;
+static size_t menu_entries_begin                   = 0;
+static rarch_setting_t *menu_entries_list_settings = NULL;
+static menu_list_t *menu_entries_list              = NULL;
+
 void menu_entries_get_at_offset(const file_list_t *list, size_t idx,
       const char **path, const char **label, unsigned *file_type,
       size_t *entry_idx, const char **alt)
@@ -326,8 +333,7 @@ int menu_entries_get_core_title(char *s, size_t len)
 
 file_list_t *menu_entries_get_menu_stack_ptr(size_t idx)
 {
-   menu_list_t *menu_list         = NULL;
-   menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
+   menu_list_t *menu_list         = menu_entries_list;
    if (!menu_list)
       return NULL;
    return menu_list_get(menu_list, (unsigned)idx);
@@ -335,8 +341,7 @@ file_list_t *menu_entries_get_menu_stack_ptr(size_t idx)
 
 file_list_t *menu_entries_get_selection_buf_ptr(size_t idx)
 {
-   menu_list_t *menu_list         = NULL;
-   menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
+   menu_list_t *menu_list         = menu_entries_list;
    if (!menu_list)
       return NULL;
    return menu_list_get_selection(menu_list, (unsigned)idx);
@@ -500,8 +505,7 @@ void menu_entries_prepend(file_list_t *list, const char *path, const char *label
 
 menu_file_list_cbs_t *menu_entries_get_last_stack_actiondata(void)
 {
-   menu_list_t *menu_list         = NULL;
-   menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
+   menu_list_t *menu_list         = menu_entries_list;
    if (!menu_list)
       return NULL;
    return (menu_file_list_cbs_t*)file_list_get_last_actiondata(
@@ -512,8 +516,7 @@ void menu_entries_get_last_stack(const char **path, const char **label,
       unsigned *file_type, enum msg_hash_enums *enum_idx, size_t *entry_idx)
 {
    menu_file_list_cbs_t *cbs      = NULL;
-   menu_list_t *menu_list         = NULL;
-   menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
+   menu_list_t *menu_list         = menu_entries_list;
    if (!menu_list)
       return;
 
@@ -526,24 +529,21 @@ void menu_entries_get_last_stack(const char **path, const char **label,
 
 void menu_entries_flush_stack(const char *needle, unsigned final_type)
 {
-   menu_list_t *menu_list         = NULL;
-   menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
+   menu_list_t *menu_list         = menu_entries_list;
    if (menu_list)
       menu_list_flush_stack(menu_list, 0, needle, final_type);
 }
 
 void menu_entries_pop_stack(size_t *ptr, size_t idx, bool animate)
 {
-   menu_list_t *menu_list         = NULL;
-   menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
+   menu_list_t *menu_list         = menu_entries_list;
    if (menu_list)
       menu_list_pop_stack(menu_list, idx, ptr, animate);
 }
 
 size_t menu_entries_get_stack_size(size_t idx)
 {
-   menu_list_t *menu_list         = NULL;
-   menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
+   menu_list_t *menu_list         = menu_entries_list;
    if (!menu_list)
       return 0;
    return menu_list_get_stack_size(menu_list, idx);
@@ -551,8 +551,7 @@ size_t menu_entries_get_stack_size(size_t idx)
 
 size_t menu_entries_get_size(void)
 {
-   menu_list_t *menu_list         = NULL;
-   menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
+   menu_list_t *menu_list         = menu_entries_list;
    if (!menu_list)
       return 0;
    return file_list_get_size(menu_list_get_selection(menu_list, 0));
@@ -571,13 +570,6 @@ rarch_setting_t *menu_entries_get_setting(uint32_t i)
 
 bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
 {
-   /* Flagged when menu entries need to be refreshed */
-   static bool menu_entries_need_refresh              = false;
-   static bool menu_entries_nonblocking_refresh       = false;
-   static size_t menu_entries_begin                   = 0;
-   static rarch_setting_t *menu_entries_list_settings = NULL;
-   static menu_list_t *menu_entries_list              = NULL;
-
    switch (state)
    {
       case MENU_ENTRIES_CTL_DEINIT:
