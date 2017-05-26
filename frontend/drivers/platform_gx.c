@@ -481,23 +481,23 @@ static int frontend_gx_parse_drive_list(void *data, bool load_content)
          "sd:/",
          msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
          enum_idx,
-         MENU_SETTING_ACTION, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
          "usb:/",
          msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
          enum_idx,
-         MENU_SETTING_ACTION, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0);
 #endif
    menu_entries_append_enum(list,
          "carda:/",
          msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
          enum_idx,
-         MENU_SETTING_ACTION, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
          "cardb:/",
          msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
          enum_idx,
-         MENU_SETTING_ACTION, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0);
 #endif
 
    return 0;

@@ -652,11 +652,11 @@ static int frontend_darwin_parse_drive_list(void *data, bool load_content)
          home_dir_buf,
         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
         enum_idx,
-        MENU_SETTING_ACTION, 0, 0);
+        FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list, "/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-        MENU_SETTING_ACTION, 0, 0);
+        FILE_TYPE_DIRECTORY, 0, 0);
 
    ret = 0;
 

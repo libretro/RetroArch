@@ -451,33 +451,33 @@ static int frontend_psp_parse_drive_list(void *data, bool load_content)
          "app0:/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         MENU_SETTING_ACTION, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
          "ur0:/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         MENU_SETTING_ACTION, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
          "ux0:/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         MENU_SETTING_ACTION, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0);
 #else
    menu_entries_append_enum(list,
          "ms0:/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         MENU_SETTING_ACTION, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
          "ef0:/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         MENU_SETTING_ACTION, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
          "host0:/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         MENU_SETTING_ACTION, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0);
 #endif
 #endif
 
