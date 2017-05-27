@@ -182,7 +182,9 @@ void filebrowser_parse(void *data, unsigned type_data)
                file_type = FILE_TYPE_PLAYLIST_COLLECTION;
          }
 
-         if (!is_dir && 
+         if (!is_dir && path_is_media_type(path) == RARCH_CONTENT_MUSIC)
+            file_type = FILE_TYPE_MUSIC;
+         else if (!is_dir && 
                (settings->bools.multimedia_builtin_mediaplayer_enable ||
                 settings->bools.multimedia_builtin_imageviewer_enable))
          {
@@ -192,12 +194,6 @@ void filebrowser_parse(void *data, unsigned type_data)
 #ifdef HAVE_FFMPEG
                   if (settings->bools.multimedia_builtin_mediaplayer_enable)
                      file_type = FILE_TYPE_MOVIE;
-#endif
-                  break;
-               case RARCH_CONTENT_MUSIC:
-#ifdef HAVE_FFMPEG
-                  if (settings->bools.multimedia_builtin_mediaplayer_enable)
-                     file_type = FILE_TYPE_MUSIC;
 #endif
                   break;
                case RARCH_CONTENT_IMAGE:

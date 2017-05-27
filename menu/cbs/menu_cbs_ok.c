@@ -168,6 +168,20 @@ int generic_action_ok_displaylist_push(const char *path,
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST;
          dl_type                 = DISPLAYLIST_GENERIC;
          break;
+      case ACTION_OK_DL_MUSIC:
+         if (!string_is_empty(path))
+            strlcpy(menu->scratch_buf, path, sizeof(menu->scratch_buf));
+         if (!string_is_empty(menu_path))
+            strlcpy(menu->scratch2_buf, menu_path, sizeof(menu->scratch2_buf));
+
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_MUSIC);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_MUSIC;
+         info_path          = path;
+         info.type          = type;
+         info.directory_ptr = idx;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
       case ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE:
          if (menu)
          {
@@ -1716,6 +1730,36 @@ static int action_ok_audio_add_to_mixer(const char *path,
    return 0;
 }
 
+static int action_ok_audio_add_to_mixer_and_collection(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   char combined_path[PATH_MAX_LENGTH];
+   const char *entry_path              = NULL;
+   menu_handle_t *menu                 = NULL;
+
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return menu_cbs_exit();
+
+   fill_pathname_join(combined_path, menu->scratch2_buf,
+         menu->scratch_buf, sizeof(combined_path));
+
+   playlist_push(g_defaults.music_history, 
+         combined_path,
+         NULL,
+         "builtin",
+         "musicplayer",
+         NULL,
+         NULL);
+
+   playlist_write_file(g_defaults.music_history);
+
+   if(path_file_exists(combined_path))
+      task_push_audio_mixer_load(combined_path,
+            NULL, NULL);
+
+   return 0;
+}
+
 static int action_ok_menu_wallpaper(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -2239,8 +2283,6 @@ static int action_ok_start_video_processor_core(const char *path,
 
    return 0;
 }
-
-#ifdef HAVE_FFMPEG
 static int action_ok_file_load_ffmpeg(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -2270,7 +2312,34 @@ static int action_ok_file_load_ffmpeg(const char *path,
 
    return 0;
 }
-#endif
+
+static int action_ok_audio_run(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   char combined_path[PATH_MAX_LENGTH];
+   content_ctx_info_t content_info;
+   menu_handle_t *menu                 = NULL;
+
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return menu_cbs_exit();
+
+   fill_pathname_join(combined_path, menu->scratch2_buf,
+         menu->scratch_buf, sizeof(combined_path));
+
+   content_info.argc                   = 0;
+   content_info.argv                   = NULL;
+   content_info.args                   = NULL;
+   content_info.environ_get            = NULL;
+
+   if (!task_push_load_content_with_core_from_menu(
+         combined_path,
+         &content_info,
+         CORE_TYPE_FFMPEG,
+         NULL, NULL))
+      return -1;
+
+   return 0;
+}
 
 static int action_ok_file_load_imageviewer(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -3871,6 +3940,14 @@ static int action_ok_open_archive_detect_core(const char *path,
          ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE);
 }
 
+static int action_ok_file_load_music(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, NULL,
+         label, type, idx, entry_idx,
+         ACTION_OK_DL_MUSIC);
+}
+
 static int action_ok_push_accounts_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -4339,6 +4416,12 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_RUN_MUSIC:
+            BIND_ACTION_OK(cbs, action_ok_audio_run);
+            break;
+         case MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION:
+            BIND_ACTION_OK(cbs, action_ok_audio_add_to_mixer_and_collection);
+            break;
          case MENU_ENUM_LABEL_ADD_TO_MIXER:
             BIND_ACTION_OK(cbs, action_ok_audio_add_to_mixer);
             break;
@@ -5067,11 +5150,13 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             }
             break;
          case FILE_TYPE_MOVIE:
-         case FILE_TYPE_MUSIC:
 #ifdef HAVE_FFMPEG
             /* TODO/FIXME - handle scan case */
             BIND_ACTION_OK(cbs, action_ok_file_load_ffmpeg);
 #endif
+            break;
+         case FILE_TYPE_MUSIC:
+            BIND_ACTION_OK(cbs, action_ok_file_load_music);
             break;
          case FILE_TYPE_IMAGEVIEWER:
             /* TODO/FIXME - handle scan case */

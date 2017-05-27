@@ -870,11 +870,9 @@ static bool task_load_content(content_ctx_info_t *content_info,
 #endif
                break;
             case RARCH_CONTENT_MUSIC:
-#ifdef HAVE_FFMPEG
                playlist_tmp         = g_defaults.music_history;
                core_name            = "musicplayer";
                core_path            = "builtin";
-#endif
                break;
             case RARCH_CONTENT_IMAGE:
 #ifdef HAVE_IMAGEVIEWER

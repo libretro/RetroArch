@@ -5220,7 +5220,6 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
 #endif
 
-#ifdef HAVE_FFMPEG
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.menu_xmb_show_music,
@@ -5236,6 +5235,7 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
 
+#ifdef HAVE_FFMPEG
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.menu_xmb_show_video,

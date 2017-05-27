@@ -90,8 +90,8 @@ enum
    XMB_TEXTURE_MAIN_MENU = 0,
    XMB_TEXTURE_SETTINGS,
    XMB_TEXTURE_HISTORY,
-#ifdef HAVE_FFMPEG
    XMB_TEXTURE_MUSICS,
+#ifdef HAVE_FFMPEG
    XMB_TEXTURE_MOVIES,
 #endif
 #ifdef HAVE_NETWORKING
@@ -147,8 +147,8 @@ enum
    XMB_SYSTEM_TAB_MAIN = 0,
    XMB_SYSTEM_TAB_SETTINGS,
    XMB_SYSTEM_TAB_HISTORY,
-#ifdef HAVE_FFMPEG
    XMB_SYSTEM_TAB_MUSIC,
+#ifdef HAVE_FFMPEG
    XMB_SYSTEM_TAB_VIDEO,
 #endif
 #ifdef HAVE_IMAGEVIEWER
@@ -159,19 +159,6 @@ enum
 #endif
    XMB_SYSTEM_TAB_ADD
 };
-
-
-#if defined(HAVE_LIBRETRODB)
-#define XMB_SYSTEM_TAB_END XMB_SYSTEM_TAB_ADD
-#elif defined(HAVE_NETWORKING)
-#define XMB_SYSTEM_TAB_END XMB_SYSTEM_TAB_NETPLAY
-#elif defined(HAVE_IMAGEVIEWER)
-#define XMB_SYSTEM_TAB_END XMB_SYSTEM_TAB_IMAGES
-#elif defined(HAVE_FFMPEG)
-#define XMB_SYSTEM_TAB_END XMB_SYSTEM_TAB_MUSIC
-#else
-#define XMB_SYSTEM_TAB_END XMB_SYSTEM_TAB_HISTORY
-#endif
 
 typedef struct xmb_handle
 {
@@ -308,9 +295,9 @@ typedef struct xmb_handle
 #ifdef HAVE_IMAGEVIEWER
    xmb_node_t images_tab_node;
 #endif
+   xmb_node_t music_tab_node;
 #ifdef HAVE_FFMPEG
    xmb_node_t video_tab_node;
-   xmb_node_t music_tab_node;
 #endif
    xmb_node_t settings_tab_node;
    xmb_node_t history_tab_node;
@@ -1559,9 +1546,9 @@ static xmb_node_t* xmb_get_node(xmb_handle_t *xmb, unsigned i)
       case XMB_SYSTEM_TAB_IMAGES:
          return &xmb->images_tab_node;
 #endif
-#ifdef HAVE_FFMPEG
       case XMB_SYSTEM_TAB_MUSIC:
          return &xmb->music_tab_node;
+#ifdef HAVE_FFMPEG
       case XMB_SYSTEM_TAB_VIDEO:
          return &xmb->video_tab_node;
 #endif
@@ -2092,23 +2079,21 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          if (core_node)
             return core_node->content_icon;
 
-#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_FFMPEG)
          switch (xmb_get_system_tab(xmb, (unsigned)xmb->categories.selection_ptr))
          {
+            case XMB_SYSTEM_TAB_MUSIC:
+               return xmb->textures.list[XMB_TEXTURE_MUSIC];
 #ifdef HAVE_IMAGEVIEWER
             case XMB_SYSTEM_TAB_IMAGES:
                return xmb->textures.list[XMB_TEXTURE_IMAGE];
 #endif
 #ifdef HAVE_FFMPEG
-            case XMB_SYSTEM_TAB_MUSIC:
-               return xmb->textures.list[XMB_TEXTURE_MUSIC];
             case XMB_SYSTEM_TAB_VIDEO:
                return xmb->textures.list[XMB_TEXTURE_MOVIE];
 #endif
             default:
                break;
          }
-#endif
          return xmb->textures.list[XMB_TEXTURE_FILE];
       case FILE_TYPE_CARCHIVE:
          return xmb->textures.list[XMB_TEXTURE_ZIP];
@@ -3311,9 +3296,9 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    if (settings->bools.menu_xmb_show_images)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_IMAGES;
 #endif
-#ifdef HAVE_FFMPEG
    if (settings->bools.menu_xmb_show_music)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_MUSIC;
+#ifdef HAVE_FFMPEG
    if (settings->bools.menu_xmb_show_video)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_VIDEO;
 #endif
@@ -3460,9 +3445,9 @@ static const char *xmb_texture_path(unsigned id)
          return "settings.png";
       case XMB_TEXTURE_HISTORY:
          return "history.png";
-#ifdef HAVE_FFMPEG
       case XMB_TEXTURE_MUSICS:
          return "musics.png";
+#ifdef HAVE_FFMPEG
       case XMB_TEXTURE_MOVIES:
          return "movies.png";
 #endif
@@ -3580,11 +3565,11 @@ static void xmb_context_reset_textures(
    xmb->history_tab_node.alpha  = xmb->categories.active.alpha;
    xmb->history_tab_node.zoom   = xmb->categories.active.zoom;
 
-#ifdef HAVE_FFMPEG
    xmb->music_tab_node.icon     = xmb->textures.list[XMB_TEXTURE_MUSICS];
    xmb->music_tab_node.alpha    = xmb->categories.active.alpha;
    xmb->music_tab_node.zoom     = xmb->categories.active.zoom;
 
+#ifdef HAVE_FFMPEG
    xmb->video_tab_node.icon     = xmb->textures.list[XMB_TEXTURE_MOVIES];
    xmb->video_tab_node.alpha    = xmb->categories.active.alpha;
    xmb->video_tab_node.zoom     = xmb->categories.active.zoom;
@@ -3892,13 +3877,13 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
                   MENU_IMAGES_TAB;
                break;
 #endif
-#ifdef HAVE_FFMPEG
             case XMB_SYSTEM_TAB_MUSIC:
                menu_stack->list[stack_size - 1].label =
                   strdup(msg_hash_to_str(MENU_ENUM_LABEL_MUSIC_TAB));
                menu_stack->list[stack_size - 1].type =
                   MENU_MUSIC_TAB;
                break;
+#ifdef HAVE_FFMPEG
             case XMB_SYSTEM_TAB_VIDEO:
                menu_stack->list[stack_size - 1].label =
                   strdup(msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_TAB));

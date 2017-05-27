@@ -4111,6 +4111,37 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
    switch (type)
    {
+      case DISPLAYLIST_MUSIC_LIST:
+         {
+            char combined_path[PATH_MAX_LENGTH];
+
+            fill_pathname_join(combined_path, menu->scratch2_buf,
+                  menu->scratch_buf, sizeof(combined_path));
+
+            const char *ext = path_get_extension(combined_path);
+
+            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+
+            if (audio_driver_mixer_extension_supported(ext))
+               menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION),
+                     msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION),
+                     MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION,
+                     FILE_TYPE_PLAYLIST_ENTRY, 0, 0);
+
+#ifdef HAVE_FFMPEG
+            if (settings->bools.multimedia_builtin_mediaplayer_enable)
+               menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RUN_MUSIC),
+                     msg_hash_to_str(MENU_ENUM_LABEL_RUN_MUSIC),
+                     MENU_ENUM_LABEL_RUN_MUSIC,
+                     FILE_TYPE_PLAYLIST_ENTRY, 0, 0);
+#endif
+         }
+         info->need_push    = true;
+         info->need_refresh = true;
+         info->need_clear   = true;
+         break;
       case DISPLAYLIST_NETPLAY_LAN_SCAN_SETTINGS_LIST:
          /* TODO/FIXME ? */
          break;

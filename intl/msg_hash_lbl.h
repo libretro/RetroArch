@@ -227,6 +227,8 @@ MSG_HASH(MENU_ENUM_LABEL_DATABASE_MANAGER,
       "database_manager")
 MSG_HASH(MENU_ENUM_LABEL_DATABASE_MANAGER_LIST,
       "database_manager_list")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_MUSIC,
+      "deferred_music")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_BROWSE_URL_START,
       "deferred_browse_url_start")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_BROWSE_URL_LIST,
@@ -837,6 +839,8 @@ MSG_HASH(MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN,
       "rgui_show_start_screen")
 MSG_HASH(MENU_ENUM_LABEL_RUN,
       "collection")
+MSG_HASH(MENU_ENUM_LABEL_RUN_MUSIC,
+      "collection_music")
 MSG_HASH(MENU_ENUM_LABEL_SAMBA_ENABLE,
       "samba_enable")
 MSG_HASH(MENU_ENUM_LABEL_SAVEFILE_DIRECTORY,
@@ -1223,3 +1227,5 @@ MSG_HASH(MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER,
       "netplay_use_mitm_server")
 MSG_HASH(MENU_ENUM_LABEL_ADD_TO_MIXER,
       "audio_add_to_mixer")
+MSG_HASH(MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION,
+      "audio_add_to_mixer_and_collection")

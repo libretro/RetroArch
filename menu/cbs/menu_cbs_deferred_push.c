@@ -93,6 +93,11 @@ static int deferred_main_menu_list(menu_displaylist_info_t *info)
    return deferred_push_dlist(info, DISPLAYLIST_MAIN_MENU);
 }
 
+static int deferred_music_list(menu_displaylist_info_t *info)
+{
+   return deferred_push_dlist(info, DISPLAYLIST_MUSIC_LIST);
+}
+
 static int deferred_user_binds_list(menu_displaylist_info_t *info)
 {
    return deferred_push_dlist(info, DISPLAYLIST_USER_BINDS_LIST);
@@ -1022,7 +1027,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
 #endif
       return 0;
    }
-
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MUSIC)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_music_list);
+      return 0;
+   }
    if (strstr(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rdb_entry_detail);
