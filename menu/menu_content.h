@@ -40,21 +40,8 @@ typedef struct menu_content_ctx_defer_info
    size_t len;
 } menu_content_ctx_defer_info_t;
 
-/**
- * menu_content_playlist_load:
- * @playlist             : Playlist handle.
- * @idx                  : Index in playlist.
- *
- * Initializes core and loads content based on playlist entry.
- **/
-bool menu_content_playlist_load(menu_content_ctx_playlist_info_t *info);
-
 bool menu_content_playlist_find_associated_core(const char *path,
       char *s, size_t len);
-
-bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info,
-      bool load_content_with_current_core,
-      char *new_core_path, size_t len);
 
 RETRO_END_DECLS
 
