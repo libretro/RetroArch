@@ -203,7 +203,7 @@ typedef struct menu_displaylist_ctx_entry
    file_list_t *list;
 } menu_displaylist_ctx_entry_t;
 
-bool menu_displaylist_process(void *data);
+bool menu_displaylist_process(menu_displaylist_info_t *info);
 
 bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry);
 

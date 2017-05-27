@@ -3747,85 +3747,6 @@ static void menu_displaylist_parse_playlist_associations(
    string_list_free(str_list);
 }
 
-static void menu_displaylist_push_list_process(menu_displaylist_info_t *info)
-{
-   size_t idx   = 0;
-
-   if (info->need_navigation_clear)
-   {
-      bool pending_push = true;
-      menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
-   }
-
-   if (info->need_entries_refresh)
-   {
-      bool refresh = false;
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   }
-
-   if (info->need_sort)
-      file_list_sort_on_alt(info->list);
-
-#if defined(HAVE_NETWORKING) && !defined(HAVE_LAKKA)
-   if (info->download_core)
-   {
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE),
-            msg_hash_to_str(MENU_ENUM_LABEL_CORE_UPDATER_LIST),
-            MENU_ENUM_LABEL_CORE_UPDATER_LIST,
-            MENU_SETTING_ACTION, 0, 0);
-   }
-#endif
-   
-   if (info->push_builtin_cores)
-   {
-#if defined(HAVE_VIDEO_PROCESSOR)
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR),
-            msg_hash_to_str(MENU_ENUM_LABEL_START_VIDEO_PROCESSOR),
-            MENU_ENUM_LABEL_START_VIDEO_PROCESSOR,
-            MENU_SETTING_ACTION, 0, 0);
-#endif
-
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD) && defined(HAVE_NETWORKGAMEPAD_CORE)
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD),
-            msg_hash_to_str(MENU_ENUM_LABEL_START_NET_RETROPAD),
-            MENU_ENUM_LABEL_START_NET_RETROPAD,
-            MENU_SETTING_ACTION, 0, 0);
-#endif
-   }
-
-   if (!string_is_empty(new_entry))
-   {
-      menu_entries_prepend(info->list,
-            new_path_entry,
-            new_lbl_entry,
-            new_type,
-            FILE_TYPE_CORE, 0, 0);
-      menu_entries_set_alt_at_offset(info->list, 0,
-            new_entry);
-
-      new_type          = MSG_UNKNOWN;
-      new_lbl_entry[0]  = '\0';
-      new_path_entry[0] = '\0';
-      new_entry[0]      = '\0';
-   }
-
-   if (info->need_refresh)
-      menu_entries_ctl(MENU_ENTRIES_CTL_REFRESH, info->list);
-
-   if (info->need_clear)
-      menu_navigation_set_selection(idx);
-
-   if (info->need_push)
-   {
-      info->label_hash = msg_hash_calculate(info->label);
-      menu_driver_populate_entries(info);
-      ui_companion_driver_notify_list_loaded(info->list, info->menu_list);
-   }
-}
-
 static bool menu_displaylist_push_internal(
       const char *label,
       menu_displaylist_ctx_entry_t *entry,
@@ -3992,10 +3913,7 @@ bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry)
       return false;
 
    if (menu_displaylist_push_internal(label, entry, &info))
-   {
-      menu_displaylist_push_list_process(&info);
-      return true;
-   }
+      return menu_displaylist_process(&info);
 
    cbs = menu_entries_get_last_stack_actiondata();
 
@@ -4076,17 +3994,84 @@ static void wifi_scan_callback(void *task_data,
 }
 #endif
 
-bool menu_displaylist_process(void *data)
+bool menu_displaylist_process(menu_displaylist_info_t *info)
 {
-   menu_displaylist_info_t *info = (menu_displaylist_info_t*)data;
+   size_t idx   = 0;
 
-   if (info)
+   if (info->need_navigation_clear)
    {
-      menu_displaylist_push_list_process(info);
-      return true;
+      bool pending_push = true;
+      menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
    }
 
-   return false;
+   if (info->need_entries_refresh)
+   {
+      bool refresh = false;
+      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   }
+
+   if (info->need_sort)
+      file_list_sort_on_alt(info->list);
+
+#if defined(HAVE_NETWORKING) && !defined(HAVE_LAKKA)
+   if (info->download_core)
+   {
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE),
+            msg_hash_to_str(MENU_ENUM_LABEL_CORE_UPDATER_LIST),
+            MENU_ENUM_LABEL_CORE_UPDATER_LIST,
+            MENU_SETTING_ACTION, 0, 0);
+   }
+#endif
+   
+   if (info->push_builtin_cores)
+   {
+#if defined(HAVE_VIDEO_PROCESSOR)
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR),
+            msg_hash_to_str(MENU_ENUM_LABEL_START_VIDEO_PROCESSOR),
+            MENU_ENUM_LABEL_START_VIDEO_PROCESSOR,
+            MENU_SETTING_ACTION, 0, 0);
+#endif
+
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD) && defined(HAVE_NETWORKGAMEPAD_CORE)
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD),
+            msg_hash_to_str(MENU_ENUM_LABEL_START_NET_RETROPAD),
+            MENU_ENUM_LABEL_START_NET_RETROPAD,
+            MENU_SETTING_ACTION, 0, 0);
+#endif
+   }
+
+   if (!string_is_empty(new_entry))
+   {
+      menu_entries_prepend(info->list,
+            new_path_entry,
+            new_lbl_entry,
+            new_type,
+            FILE_TYPE_CORE, 0, 0);
+      menu_entries_set_alt_at_offset(info->list, 0,
+            new_entry);
+
+      new_type          = MSG_UNKNOWN;
+      new_lbl_entry[0]  = '\0';
+      new_path_entry[0] = '\0';
+      new_entry[0]      = '\0';
+   }
+
+   if (info->need_refresh)
+      menu_entries_ctl(MENU_ENTRIES_CTL_REFRESH, info->list);
+
+   if (info->need_clear)
+      menu_navigation_set_selection(idx);
+
+   if (info->need_push)
+   {
+      info->label_hash = msg_hash_calculate(info->label);
+      menu_driver_populate_entries(info);
+      ui_companion_driver_notify_list_loaded(info->list, info->menu_list);
+   }
+   return true;
 }
 
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
@@ -4254,10 +4239,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          if (string_is_equal(info->path, file_path_str(FILE_PATH_CONTENT_HISTORY)))
          {
             if (menu_displaylist_ctl(DISPLAYLIST_HISTORY, info) && info)
-            {
-               menu_displaylist_push_list_process(info);
-               return true;
-            }
+               return menu_displaylist_process(info);
             return false;
          }
          else

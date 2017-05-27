@@ -4006,7 +4006,7 @@ static int deferred_push_content_actions(menu_displaylist_info_t *info)
    if (!menu_displaylist_ctl(
          DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS, info))
       return -1;
-   menu_displaylist_process(&info);
+   menu_displaylist_process(info);
    return 0;
 }
 
