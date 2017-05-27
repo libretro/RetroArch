@@ -7,17 +7,17 @@
 
 RETRO_BEGIN_DECLS
 
-typedef struct GLFFT glfft_t;
+typedef struct GLFFT fft_t;
 
-glfft_t *glfft_new(unsigned fft_steps, rglgen_proc_address_t proc);
+fft_t *fft_new(unsigned fft_steps, rglgen_proc_address_t proc);
 
-void glfft_free(glfft_t *fft);
+void fft_free(fft_t *fft);
 
-void glfft_init_multisample(glfft_t *fft, unsigned width, unsigned height, unsigned samples);
+void fft_init_multisample(fft_t *fft, unsigned width, unsigned height, unsigned samples);
 
-void glfft_step_fft(glfft_t *fft, const GLshort *buffer, unsigned frames);
+void fft_step_fft(fft_t *fft, const GLshort *buffer, unsigned frames);
 
-void glfft_render(glfft_t *fft, GLuint backbuffer, unsigned width, unsigned height);
+void fft_render(fft_t *fft, GLuint backbuffer, unsigned width, unsigned height);
 
 RETRO_END_DECLS
 
