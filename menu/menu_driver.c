@@ -1211,13 +1211,6 @@ void menu_display_draw_text(
    video_driver_set_osd_msg(text, &params, (void*)font);
 }
 
-void menu_display_set_alpha(float *color, float alpha_value)
-{
-   if (!color)
-      return;
-   color[3] = color[7] = color[11] = color[15] = alpha_value;
-}
-
 void menu_display_reset_textures_list(
       const char *texture_path, const char *iconpath,
       uintptr_t *item, enum texture_filter_type filter_type)

@@ -679,7 +679,7 @@ static void xmb_draw_thumbnail(
    draw.x                   = x;
    draw.y                   = height - y;
 
-   menu_display_set_alpha((float*)coords.color, 1.0f);
+   menu_display_set_alpha(color, 1.0f);
 
    menu_display_draw(&draw);
 }
