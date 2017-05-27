@@ -903,7 +903,9 @@ bool audio_driver_mixer_extension_supported(const char *ext)
 
    attr.i = 0;
 
+#ifdef HAVE_STB_VORBIS
    string_list_append(str_list, "ogg", attr);
+#endif
    string_list_append(str_list, "wav", attr);
 
    for (i = 0; i < str_list->size; i++)
