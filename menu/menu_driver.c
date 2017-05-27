@@ -440,9 +440,7 @@ void menu_display_set_font_data_init(bool state)
 
 bool menu_display_get_update_pending(void)
 {
-   if (menu_animation_is_active())
-      return true;
-   if (menu_display_get_framebuffer_dirty_flag())
+   if (menu_animation_is_active() || menu_display_framebuf_dirty)
       return true;
    return false;
 }
@@ -521,9 +519,8 @@ bool menu_display_restore_clear_color(void)
 
 void menu_display_clear_color(menu_display_ctx_clearcolor_t *color)
 {
-   if (!menu_disp || !menu_disp->clear_color)
-      return;
-   menu_disp->clear_color(color);
+   if (menu_disp && menu_disp->clear_color)
+      menu_disp->clear_color(color);
 }
 
 void menu_display_draw(menu_display_ctx_draw_t *draw)
@@ -540,9 +537,8 @@ void menu_display_draw(menu_display_ctx_draw_t *draw)
 
 void menu_display_draw_pipeline(menu_display_ctx_draw_t *draw)
 {
-   if (!menu_disp || !draw || !menu_disp->draw_pipeline)
-      return;
-   menu_disp->draw_pipeline(draw);
+   if (menu_disp && draw && menu_disp->draw_pipeline)
+      menu_disp->draw_pipeline(draw);
 }
 
 void menu_display_draw_bg(menu_display_ctx_draw_t *draw,
@@ -1050,9 +1046,7 @@ void menu_display_draw_cursor(
    bool cursor_visible  = settings->bools.video_fullscreen ||
        !menu_display_has_windowed;
 
-   if (!settings->bools.menu_mouse_enable)
-      return;
-   if (!cursor_visible)
+   if (!settings->bools.menu_mouse_enable || !cursor_visible)
       return;
 
    coords.vertices      = 4;
@@ -1237,7 +1231,8 @@ void menu_display_set_alpha(float *color, float alpha_value)
    color[3] = color[7] = color[11] = color[15] = alpha_value;
 }
 
-void menu_display_reset_textures_list(const char *texture_path, const char *iconpath,
+void menu_display_reset_textures_list(
+      const char *texture_path, const char *iconpath,
       uintptr_t *item, enum texture_filter_type filter_type)
 {
    struct texture_image ti;
@@ -1411,7 +1406,8 @@ static void menu_input_key_event(bool down, unsigned keycode,
    (void)mod;
 
 #if 0
-   RARCH_LOG("down: %d, keycode: %d, mod: %d, character: %d\n", down, keycode, mod, character);
+   RARCH_LOG("down: %d, keycode: %d, mod: %d, character: %d\n",
+         down, keycode, mod, character);
 #endif
 
    menu_event_kb_set(down, (enum retro_key)keycode);
@@ -1422,7 +1418,8 @@ static void menu_driver_toggle(bool on)
    retro_keyboard_event_t *key_event          = NULL;
    retro_keyboard_event_t *frontend_key_event = NULL;
    settings_t                 *settings       = config_get_ptr();
-   bool pause_libretro                        = settings ? settings->bools.menu_pause_libretro : false;
+   bool pause_libretro                        = settings ? 
+      settings->bools.menu_pause_libretro : false;
 
    menu_driver_toggled = on;
 
@@ -1504,7 +1501,7 @@ bool menu_driver_render(bool is_idle, bool rarch_is_inited,
       BIT64_SET(menu_driver_data->state, MENU_STATE_RENDER_FRAMEBUFFER);
 
    if (BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_FRAMEBUFFER))
-      menu_display_set_framebuffer_dirty_flag();
+      menu_display_framebuf_dirty = true;
 
    if (BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_MESSAGEBOX)
          && !string_is_empty(menu_driver_data->menu_state.msg))
@@ -1548,9 +1545,9 @@ bool menu_driver_is_alive(void)
 
 bool menu_driver_is_texture_set(void)
 {
-   if (!menu_driver_ctx)
-      return false;
-   return menu_driver_ctx->set_texture;
+   if (menu_driver_ctx)
+      return menu_driver_ctx->set_texture;
+   return false;
 }
 
 bool menu_driver_iterate(menu_ctx_iterate_t *iterate)
