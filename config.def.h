@@ -244,8 +244,8 @@ static bool xmb_show_settings    = true;
 #ifdef HAVE_IMAGEVIEWER
 static bool xmb_show_images      = true;
 #endif
-#ifdef HAVE_FFMPEG
 static bool xmb_show_music       = true;
+#ifdef HAVE_FFMPEG
 static bool xmb_show_video       = true;
 #endif
 #ifdef HAVE_NETWORKING
