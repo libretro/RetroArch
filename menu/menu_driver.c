@@ -584,7 +584,8 @@ void menu_display_draw_quad(
    coords.lut_tex_coord = NULL;
    coords.color         = color;
 
-   menu_display_blend_begin();
+   if (menu_disp && menu_disp->blend_begin)
+      menu_disp->blend_begin();
 
    draw.x           = x;
    draw.y           = (int)height - y - (int)h;
@@ -597,7 +598,9 @@ void menu_display_draw_quad(
    draw.pipeline.id = 0;
 
    menu_display_draw(&draw);
-   menu_display_blend_end();
+
+   if (menu_disp && menu_disp->blend_end)
+      menu_disp->blend_end();
 }
 
 void menu_display_draw_texture(
@@ -1036,7 +1039,8 @@ void menu_display_draw_cursor(
    coords.lut_tex_coord = NULL;
    coords.color         = (const float*)color;
 
-   menu_display_blend_begin();
+   if (menu_disp && menu_disp->blend_begin)
+      menu_disp->blend_begin();
 
    draw.x               = x - (cursor_size / 2);
    draw.y               = (int)height - y - (cursor_size / 2);
@@ -1048,7 +1052,9 @@ void menu_display_draw_cursor(
    draw.prim_type       = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
    menu_display_draw(&draw);
-   menu_display_blend_end();
+
+   if (menu_disp && menu_disp->blend_end)
+      menu_disp->blend_end();
 }
 
 static INLINE float menu_display_scalef(float val,
