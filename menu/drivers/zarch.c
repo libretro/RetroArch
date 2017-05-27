@@ -905,7 +905,7 @@ static void zarch_frame(void *data, video_frame_info_t *video_info)
 
    zui->tmp_block.carr.coords.vertices = 0;
 
-   menu_display_font_bind_block((font_data_t*)zui->font, &zui->tmp_block);
+   font_driver_bind_block(zui->font, &zui->tmp_block);
 
    menu_display_push_quad(zui->width, zui->height, zui_bg_screen,
          0, 0, zui->width, zui->height);
@@ -983,8 +983,9 @@ static void zarch_frame(void *data, video_frame_info_t *video_info)
 
    zui->rendering = false;
 
-   menu_display_font_flush_block(video_info->width, video_info->height, 
-         (font_data_t*)zui->font);
+   font_driver_flush(video_info->width, video_inof->height, zui->font);
+   font_driver_bind_block(zui->font, NULL);
+
    menu_display_unset_viewport(video_info->width, video_info->height);
 }
 

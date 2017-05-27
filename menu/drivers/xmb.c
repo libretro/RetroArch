@@ -2680,8 +2680,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    title_msg[0]       = '\0';
    title_truncated[0] = '\0';
 
-   menu_display_font_bind_block(xmb->font, &xmb->raster_block);
-   menu_display_font_bind_block(xmb->font2, &xmb->raster_block2);
+   font_driver_bind_block(xmb->font, &xmb->raster_block);
+   font_driver_bind_block(xmb->font2, &xmb->raster_block2);
 
    xmb->raster_block.carr.coords.vertices = 0;
    xmb->raster_block2.carr.coords.vertices = 0;
@@ -2940,8 +2940,11 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          width,
          height);
 
-   menu_display_font_flush_block(video_info->width, video_info->height, xmb->font);
-   menu_display_font_flush_block(video_info->width, video_info->height, xmb->font2);
+   font_driver_flush(video_info->width, video_info->height, xmb->font);
+   font_driver_bind_block(xmb->font, NULL);
+
+   font_driver_flush(video_info->width, video_info->height, xmb->font2);
+   font_driver_bind_block(xmb->font2, NULL);
 
    if (xmb->savestate_thumbnail)
       xmb_draw_thumbnail(menu_disp_info,

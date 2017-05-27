@@ -1254,8 +1254,8 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
       &highlighted_entry_color[0]
    );
 
-   menu_display_font_bind_block(mui->font, &mui->raster_block);
-   menu_display_font_bind_block(mui->font2, &mui->raster_block2);
+   font_driver_bind_block(mui->font, &mui->raster_block);
+   font_driver_bind_block(mui->font2, &mui->raster_block2);
 
    if (menu_display_get_update_pending())
       mui_render_menu_list(
@@ -1268,8 +1268,12 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
             &active_tab_marker_color[0]
             );
 
-   menu_display_font_flush_block(video_info->width, video_info->height, mui->font);
-   menu_display_font_flush_block(video_info->width, video_info->height, mui->font2);
+   font_driver_flush(video_info->width, video_info->height, mui->font);
+   font_driver_bind_block(mui->font, NULL);
+
+   font_driver_flush(video_info->width, video_info->height, mui->font2);
+   font_driver_bind_block(mui->font2, NULL);
+
    menu_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);
 
    /* header */

@@ -594,8 +594,6 @@ void menu_display_blend_begin(void);
 void menu_display_blend_end(void);
 
 void menu_display_font_free(font_data_t *font);
-void menu_display_font_bind_block(font_data_t *font, void *block);
-bool menu_display_font_flush_block(unsigned width, unsigned height, font_data_t *font);
 
 void menu_display_coords_array_reset(void);
 video_coord_array_t *menu_display_get_coords_array(void);

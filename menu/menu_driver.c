@@ -308,19 +308,6 @@ font_data_t *menu_display_font(enum application_special_type type, float font_si
    return menu_display_font_main_init(&font_info, is_threaded);
 }
 
-void menu_display_font_bind_block(font_data_t *font, void *block)
-{
-   font_driver_bind_block(font, block);
-}
-
-bool menu_display_font_flush_block(unsigned width, unsigned height,
-      font_data_t *font)
-{
-   font_driver_flush(width, height, font);
-   font_driver_bind_block(font, NULL);
-   return true;
-}
-
 void menu_display_coords_array_reset(void)
 {
    menu_disp_ca.coords.vertices = 0;
