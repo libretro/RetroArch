@@ -3273,31 +3273,31 @@ static int action_ok_netplay_connect_room(const char *path,
       command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
-   if (netplay_room_list[idx - 2].host_method == NETPLAY_HOST_METHOD_MITM)
+   if (netplay_room_list[idx - 3].host_method == NETPLAY_HOST_METHOD_MITM)
    {
       snprintf(tmp_hostname,
             sizeof(tmp_hostname),
             "%s|%d",
-         netplay_room_list[idx - 2].mitm_address,
-         netplay_room_list[idx - 2].mitm_port);
+         netplay_room_list[idx - 3].mitm_address,
+         netplay_room_list[idx - 3].mitm_port);
    }
    else
    {
       snprintf(tmp_hostname,
             sizeof(tmp_hostname),
             "%s|%d",
-         netplay_room_list[idx - 2].address,
-         netplay_room_list[idx - 2].port);
+         netplay_room_list[idx - 3].address,
+         netplay_room_list[idx - 3].port);
    }
 
    RARCH_LOG("Connecting to: %s with game: %s/%08x\n", 
          tmp_hostname,
-         netplay_room_list[idx - 2].gamename,
-         netplay_room_list[idx - 2].gamecrc);
+         netplay_room_list[idx - 3].gamename,
+         netplay_room_list[idx - 3].gamecrc);
 
-   task_push_netplay_crc_scan(netplay_room_list[idx - 2].gamecrc,
-      netplay_room_list[idx - 2].gamename,
-      tmp_hostname, netplay_room_list[idx - 2].corename);
+   task_push_netplay_crc_scan(netplay_room_list[idx - 3].gamecrc,
+      netplay_room_list[idx - 3].gamename,
+      tmp_hostname, netplay_room_list[idx - 3].corename);
 
 #else
    return -1;
@@ -3497,11 +3497,17 @@ void netplay_refresh_rooms_menu(file_list_t *list)
    else
    {
       menu_entries_append_enum(list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST),
-            msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST),
-            MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST,
-            MENU_SETTING_ACTION, 0, 0);
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST),
+         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST),
+         MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST,
+         MENU_SETTING_ACTION, 0, 0);
    }
+
+   menu_entries_append_enum(list,
+      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT),
+      msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT),
+      MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT,
+      MENU_SETTING_ACTION, 0, 0);
 
    menu_entries_append_enum(list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS),
@@ -4171,11 +4177,26 @@ static void action_ok_netplay_enable_client_hostname_cb(
    void *ignore, const char *hostname)
 {
    char tmp_hostname[512];
+   bool contentless = false;
+   bool is_inited   = false;
+
+   content_get_status(&contentless, &is_inited);
 
    if (hostname && hostname[0])
    {
       strlcpy(tmp_hostname, hostname, sizeof(tmp_hostname));
-      command_event(CMD_EVENT_NETPLAY_INIT, (void *) tmp_hostname);
+      if (!is_inited)
+      {
+         command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, (void *) tmp_hostname);
+         runloop_msg_queue_push(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
+            1, 480, true);
+      }
+      else
+      {
+         command_event(CMD_EVENT_NETPLAY_INIT_DIRECT, (void *) tmp_hostname);
+         generic_action_ok_command(CMD_EVENT_RESUME);
+      }
    }
    else
    {
@@ -4193,46 +4214,23 @@ static int action_ok_netplay_enable_client(const char *path,
 {
 #ifdef HAVE_NETWORKING
    settings_t *settings = config_get_ptr();
-   bool contentless     = false;
-   bool is_inited       = false;
-
-   content_get_status(&contentless, &is_inited);
 
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
       command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
-   /* If we haven't yet started, this will load on its own */
-   if (!is_inited)
-   {
-      runloop_msg_queue_push(
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
-            1, 480, true);
-      return 0;
-   }
-
    /* If no host was specified in the config, ask for one */
-   if (!settings->paths.netplay_server[0])
-   {
-      menu_input_ctx_line_t line;
-      memset(&line, 0, sizeof(line));
-      line.label = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS);
-      line.label_setting = "no_setting";
-      line.cb = action_ok_netplay_enable_client_hostname_cb;
-      if (!menu_input_dialog_start(&line))
-         return -1;
-      return 0;
-   }
-
-   /* Enable Netplay itself */
-   if (!command_event(CMD_EVENT_NETPLAY_INIT, NULL))
+   menu_input_ctx_line_t line;
+   memset(&line, 0, sizeof(line));
+   line.label = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS);
+   line.label_setting = "no_setting";
+   line.cb = action_ok_netplay_enable_client_hostname_cb;
+   if (!menu_input_dialog_start(&line))
       return -1;
-
-   return generic_action_ok_command(CMD_EVENT_RESUME);
+   return 0;
 
 #else
    return -1;
-
 #endif
 }
 
