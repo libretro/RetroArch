@@ -911,7 +911,7 @@ bool audio_driver_mixer_extension_supported(const char *ext)
    for (i = 0; i < str_list->size; i++)
    {
       const char *str_ext = str_list->elems[i].data;
-      if (string_is_equal(str_ext, ext))
+      if (string_is_equal_noncase(str_ext, ext))
       {
          ret = true;
          break;
