@@ -1953,6 +1953,13 @@ bool command_event(enum event_command cmd, void *data)
          }
          g_defaults.content_history = NULL;
 
+         if (g_defaults.music_history)
+         {
+            playlist_write_file(g_defaults.music_history);
+            playlist_free(g_defaults.music_history);
+         }
+         g_defaults.music_history = NULL;
+
 #ifdef HAVE_FFMPEG
          if (g_defaults.video_history)
          {
@@ -1961,12 +1968,6 @@ bool command_event(enum event_command cmd, void *data)
          }
          g_defaults.video_history = NULL;
 
-         if (g_defaults.music_history)
-         {
-            playlist_write_file(g_defaults.music_history);
-            playlist_free(g_defaults.music_history);
-         }
-         g_defaults.music_history = NULL;
 #endif
 
 #ifdef HAVE_IMAGEVIEWER
@@ -1995,7 +1996,6 @@ bool command_event(enum event_command cmd, void *data)
                   settings->paths.path_content_history,
                   content_history_size);
 
-#ifdef HAVE_FFMPEG
             RARCH_LOG("%s: [%s].\n",
                   msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
                   settings->paths.path_content_music_history);
@@ -2003,6 +2003,7 @@ bool command_event(enum event_command cmd, void *data)
                   settings->paths.path_content_music_history,
                   content_history_size);
 
+#ifdef HAVE_FFMPEG
             RARCH_LOG("%s: [%s].\n",
                   msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
                   settings->paths.path_content_video_history);
