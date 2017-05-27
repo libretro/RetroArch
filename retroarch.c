@@ -296,7 +296,8 @@ static void retroarch_override_setting_free_state(void)
 static void global_free(void)
 {
    global_t *global = NULL;
-   command_event(CMD_EVENT_TEMPORARY_CONTENT_DEINIT, NULL);
+
+   content_deinit();
 
    path_deinit_subsystem();
    command_event(CMD_EVENT_RECORD_DEINIT, NULL);
@@ -1445,7 +1446,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
          command_event(CMD_EVENT_CORE_DEINIT, NULL);
 
-         command_event(CMD_EVENT_TEMPORARY_CONTENT_DEINIT, NULL);
+         content_deinit();
 
          path_deinit_subsystem();
          path_deinit_savefile();

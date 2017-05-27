@@ -2372,9 +2372,6 @@ bool command_event(enum event_command cmd, void *data)
          command_event(CMD_EVENT_REMOTE_DEINIT, NULL);
          input_driver_init_remote();
          break;
-      case CMD_EVENT_TEMPORARY_CONTENT_DEINIT:
-         content_deinit();
-         break;
       case CMD_EVENT_LOG_FILE_DEINIT:
          retro_main_log_file_deinit();
          break;
