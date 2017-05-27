@@ -2264,55 +2264,46 @@ bool command_event(enum event_command cmd, void *data)
       /* init netplay via lobby when content is loaded */
       case CMD_EVENT_NETPLAY_INIT_DIRECT:
          {
-            char            *buf = (char *)data;
-            settings_t *settings = config_get_ptr();
-
-            command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
-
-            /* new codepath, uses the same logic as init_deferred, expects
-               buf to be addres|port */
-            RARCH_LOG("%s\n", buf);
-            if (strstr(buf, "|"))
-            {
-               static struct string_list *hostname = NULL;
-               hostname = string_split(buf, "|");
-               RARCH_LOG("[netplay] connecting to %s:%d\n", 
-                  hostname->elems[0].data, atoi(hostname->elems[1].data));
-
-               if (!init_netplay(NULL, hostname->elems[0].data, 
-                  atoi(hostname->elems[1].data)))
-               {
-                  command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
-                  string_list_free(hostname);
-                  return false;
-               }
-
-               string_list_free(hostname);
-            }
-            /* old codepath accessed via, netplay/scan local network
-               not sure how/if it works, it seems it doesn't */
-            else if (!init_netplay(data, NULL, 
-               settings->uints.netplay_port))
-            {
-               command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
-               return false;
-            }
-         }
-         break;
-      /* init netplay via lobby when content is notloaded */
-      case CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED:
-         {
             /* buf is expected to be address|port */
-            char                           *buf = (char *)data;
+            char *buf = (char *)data;
             static struct string_list *hostname = NULL;
             hostname = string_split(buf, "|");
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
-            RARCH_LOG("[netplay] connecting to %s:%d\n", 
-               hostname->elems[0].data, atoi(hostname->elems[1].data));
 
-            if (!init_netplay_deferred(
-               hostname->elems[0].data, atoi(hostname->elems[1].data)))
+            RARCH_LOG("[netplay] connecting to %s:%d\n", 
+               hostname->elems[0].data, !string_is_empty(hostname->elems[1].data) 
+               ? atoi(hostname->elems[1].data) : 55435);
+
+            if (!init_netplay(NULL, hostname->elems[0].data, 
+               !string_is_empty(hostname->elems[1].data) 
+               ? atoi(hostname->elems[1].data) : 55435))
+            {
+               command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+               string_list_free(hostname);
+               return false;
+            }
+
+            string_list_free(hostname);
+         }
+         break;
+      /* init netplay via lobby when content is not loaded */
+      case CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED:
+         {
+            /* buf is expected to be address|port */
+            char *buf = (char *)data;
+            static struct string_list *hostname = NULL;
+            hostname = string_split(buf, "|");
+
+            command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+
+            RARCH_LOG("[netplay] connecting to %s:%d\n", 
+               hostname->elems[0].data, !string_is_empty(hostname->elems[1].data) 
+               ? atoi(hostname->elems[1].data) : 55435);
+
+            if (!init_netplay_deferred(hostname->elems[0].data,
+               !string_is_empty(hostname->elems[1].data) 
+               ? atoi(hostname->elems[1].data) : 55435))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                string_list_free(hostname);
