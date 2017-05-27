@@ -2915,6 +2915,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
    unsigned idx                    = rpl_entry_selection_ptr;
    menu_handle_t *menu             = NULL;
    const char *label               = NULL;
+   const char *entry_path          = NULL;
    const char *core_path           = NULL;
    const char *core_name           = NULL;
    const char *db_name             = NULL;
@@ -2924,6 +2925,11 @@ static int menu_displaylist_parse_horizontal_content_actions(
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return -1;
+
+   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
+
+   playlist_get_index(playlist, idx,
+         &entry_path, &label, &core_path, &core_name, NULL, &db_name);
 
    if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
          && string_is_equal(menu->deferred_path, fullpath))
@@ -2942,11 +2948,6 @@ static int menu_displaylist_parse_horizontal_content_actions(
             MENU_ENUM_LABEL_DELETE_ENTRY,
             MENU_SETTING_ACTION_DELETE_ENTRY, 0, 0);
    }
-
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
-
-   playlist_get_index(playlist, idx,
-         NULL, &label, &core_path, &core_name, NULL, &db_name);
 
    if (!string_is_empty(db_name))
    {
