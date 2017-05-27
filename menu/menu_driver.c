@@ -168,21 +168,16 @@ void menu_display_toggle_set_reason(enum menu_toggle_reason reason)
   menu_display_toggle_reason = reason;
 }
 
-static const char *menu_video_get_ident(bool video_is_threaded)
-{
-#ifdef HAVE_THREADS
-   if (video_is_threaded)
-      return video_thread_get_ident();
-#endif
-
-   return video_driver_get_ident();
-}
-
 static bool menu_display_check_compatibility(
       enum menu_display_driver_type type,
       bool video_is_threaded)
 {
-   const char *video_driver = menu_video_get_ident(video_is_threaded);
+   const char *video_driver =
+#ifdef HAVE_THREADS
+      (video_is_threaded) ?
+      video_thread_get_ident() :
+#endif
+      video_driver_get_ident();
 
    switch (type)
    {
@@ -265,16 +260,14 @@ void menu_display_timedate(menu_display_ctx_datetime_t *datetime)
 
 void menu_display_blend_begin(void)
 {
-   if (!menu_disp || !menu_disp->blend_begin)
-      return;
-   menu_disp->blend_begin();
+   if (menu_disp && menu_disp->blend_begin)
+      menu_disp->blend_begin();
 }
 
 void menu_display_blend_end(void)
 {
-   if (!menu_disp || !menu_disp->blend_end)
-      return;
-   menu_disp->blend_end();
+   if (menu_disp && menu_disp->blend_end)
+      menu_disp->blend_end();
 }
 
 void menu_display_font_free(font_data_t *font)
@@ -282,7 +275,8 @@ void menu_display_font_free(font_data_t *font)
    font_driver_free(font);
 }
 
-static font_data_t *menu_display_font_main_init(menu_display_ctx_font_t *font,
+static font_data_t *menu_display_font_main_init(
+      menu_display_ctx_font_t *font,
       bool is_threaded)
 {
    font_data_t *font_data = NULL;
