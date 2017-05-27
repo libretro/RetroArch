@@ -1188,8 +1188,8 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
 #ifdef HAVE_IMAGEVIEWER
    SETTING_BOOL("xmb_show_images",               &settings->bools.menu_xmb_show_images, true, xmb_show_images, false);
 #endif
-#ifdef HAVE_FFMPEG
    SETTING_BOOL("xmb_show_music",                &settings->bools.menu_xmb_show_music, true, xmb_show_music, false);
+#ifdef HAVE_FFMPEG
    SETTING_BOOL("xmb_show_video",                &settings->bools.menu_xmb_show_video, true, xmb_show_video, false);
 #endif
 #ifdef HAVE_NETWORKING
