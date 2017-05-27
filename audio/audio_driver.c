@@ -25,6 +25,7 @@
 #include <audio/dsp_filter.h>
 #include <file/file_path.h>
 #include <lists/dir_list.h>
+#include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -891,6 +892,33 @@ bool audio_driver_get_devices_list(void **data)
       return false;
    *ptr = audio_driver_devices_list;
    return true;
+}
+
+bool audio_driver_mixer_extension_supported(const char *ext)
+{
+   union string_list_elem_attr attr;
+   unsigned i;
+   bool ret                      = false;
+   struct string_list *str_list  = string_list_new();
+
+   attr.i = 0;
+
+   string_list_append(str_list, "ogg", attr);
+   string_list_append(str_list, "wav", attr);
+
+   for (i = 0; i < str_list->size; i++)
+   {
+      const char *str_ext = str_list->elems[i].data;
+      if (string_is_equal(str_ext, ext))
+      {
+         ret = true;
+         break;
+      }
+   }
+
+   string_list_free(str_list);
+
+   return ret;
 }
 
 bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)

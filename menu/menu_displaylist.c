@@ -58,6 +58,7 @@
 #include "widgets/menu_filebrowser.h"
 #include "menu_cbs.h"
 
+#include "../audio/audio_driver.h"
 #include "../configuration.h"
 #include "../file_path_special.h"
 #include "../defaults.h"
@@ -2936,6 +2937,17 @@ static int menu_displaylist_parse_horizontal_content_actions(
       menu_displaylist_parse_load_content_settings(info);
    else
    {
+      const char *ext = path_get_extension(entry_path);
+
+      if (audio_driver_mixer_extension_supported(ext))
+      {
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER),
+               msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_MIXER),
+               MENU_ENUM_LABEL_ADD_TO_MIXER,
+               FILE_TYPE_PLAYLIST_ENTRY, 0, idx);
+      }
+
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RUN),
             msg_hash_to_str(MENU_ENUM_LABEL_RUN),

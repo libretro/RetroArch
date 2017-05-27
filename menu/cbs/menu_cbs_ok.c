@@ -1696,6 +1696,26 @@ static int action_ok_lookup_setting(const char *path,
    return menu_setting_set(type, label, MENU_ACTION_OK, false);
 }
 
+static int action_ok_audio_add_to_mixer(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   const char *entry_path              = NULL;
+   playlist_t *tmp_playlist            = NULL;
+   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
+
+   if (!tmp_playlist)
+      return -1;
+
+   playlist_get_index(tmp_playlist, entry_idx,
+         &entry_path, NULL, NULL, NULL, NULL, NULL);
+
+   if(path_file_exists(entry_path))
+      task_push_audio_mixer_load(entry_path,
+            NULL, NULL);
+
+   return 0;
+}
+
 static int action_ok_menu_wallpaper(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -4319,6 +4339,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_ADD_TO_MIXER:
+            BIND_ACTION_OK(cbs, action_ok_audio_add_to_mixer);
+            break;
          case MENU_ENUM_LABEL_MENU_WALLPAPER:
             BIND_ACTION_OK(cbs, action_ok_menu_wallpaper);
             break;

@@ -1221,3 +1221,5 @@ MSG_HASH(MENU_ENUM_LABEL_SHADER_PIPELINE_BOKEH,
       "shader_pipeline_bokeh")
 MSG_HASH(MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER,
       "netplay_use_mitm_server")
+MSG_HASH(MENU_ENUM_LABEL_ADD_TO_MIXER,
+      "audio_add_to_mixer")
