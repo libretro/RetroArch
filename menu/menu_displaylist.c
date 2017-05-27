@@ -4349,7 +4349,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          }
          break;
       case DISPLAYLIST_MUSIC_HISTORY:
-#ifdef HAVE_FFMPEG
          if (settings->bools.history_list_enable)
             menu_displaylist_parse_playlist_history(menu, info,
                   g_defaults.music_history,
@@ -4371,7 +4370,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             info->need_refresh = true;
             info->need_push    = true;
          }
-#endif
          break;
       case DISPLAYLIST_VIDEO_HISTORY:
 #ifdef HAVE_FFMPEG
@@ -5057,10 +5055,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_XMB_SHOW_IMAGES,
                PARSE_ONLY_BOOL, false);
 #endif
-#ifdef HAVE_FFMPEG
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_XMB_SHOW_MUSIC,
                PARSE_ONLY_BOOL, false);
+#ifdef HAVE_FFMPEG
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_XMB_SHOW_VIDEO,
                PARSE_ONLY_BOOL, false);
