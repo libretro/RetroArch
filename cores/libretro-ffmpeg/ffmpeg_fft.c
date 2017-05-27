@@ -153,8 +153,6 @@ typedef float stub_matrix4x4[4][4];
 static INLINE unsigned log2i(unsigned x)
 {
    unsigned res;
-   if (x==0)
-      return 0; /* shouldn't happen */
    
    for (res = 0; x; x >>= 1)
       res++;
@@ -164,8 +162,8 @@ static INLINE unsigned log2i(unsigned x)
 static INLINE unsigned bitinverse(unsigned x, unsigned size)
 {
    unsigned i;
-   unsigned size_log2 = log2i(size);
-   unsigned ret = 0;
+   unsigned size_log2 = (size == 0) ? 0 : log2i(size);
+   unsigned ret       = 0;
 
    for (i = 0; i < size_log2; i++)
       ret |= ((x >> i) & 0x1) << (size_log2 - 1 - i);
