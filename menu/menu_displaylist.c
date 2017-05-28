@@ -4486,7 +4486,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                }
                else
                {
-#ifndef HAVE_DYNAMIC
                   if (system)
                   {
                      menu_entries_append_enum(info->list,
@@ -4498,7 +4497,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                            0);
                   }
                   else
-#endif
                   {
                      menu_entries_append_enum(info->list,
                            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORES_AVAILABLE),
