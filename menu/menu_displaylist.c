@@ -4205,6 +4205,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                (int)core_len, FILE_TYPE_DOWNLOAD_CORE_CONTENT, true, false);
          info->need_push    = true;
          info->need_refresh = true;
+         info->need_clear   = true;
 #endif
          break;
       case DISPLAYLIST_CORE_CONTENT_DIRS_SUBDIR:
@@ -4244,6 +4245,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   (int)core_len, FILE_TYPE_DOWNLOAD_URL, true, false);
             info->need_push    = true;
             info->need_refresh = true;
+            info->need_clear   = true;
 #endif
          }
          break;
