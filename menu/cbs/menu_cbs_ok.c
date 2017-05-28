@@ -2281,6 +2281,8 @@ static int action_ok_start_video_processor_core(const char *path,
 
    return 0;
 }
+
+#ifdef HAVE_FFMPEG
 static int action_ok_file_load_ffmpeg(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -2310,6 +2312,7 @@ static int action_ok_file_load_ffmpeg(const char *path,
 
    return 0;
 }
+#endif
 
 static int action_ok_audio_run(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)

@@ -296,11 +296,6 @@ static dylib_t libretro_get_system_info_lib(const char *path,
 
    return lib;
 }
-#else
-static void libretro_get_system_info_static(struct retro_system_info *info,
-      bool *load_no_content)
-{
-}
 #endif
 
 

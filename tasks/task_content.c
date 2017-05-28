@@ -1391,7 +1391,9 @@ bool task_push_load_content_with_new_core_from_menu(
    if (type != CORE_TYPE_DUMMY)
       menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
 
+#ifdef HAVE_DYNAMIC
 end:
+#endif
    if (content_ctx.name_ips)
       free(content_ctx.name_ips);
    if (content_ctx.name_bps)

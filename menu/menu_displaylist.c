@@ -84,13 +84,13 @@ static char new_lbl_entry[4096]         = {0};
 static char new_entry[4096]             = {0};
 static enum msg_hash_enums new_type     = MSG_UNKNOWN;
 
+#ifdef HAVE_NETWORKING
 /* HACK - we have to find some way to pass state inbetween
  * function pointer callback functions that don't necessarily
  * call each other. */
 static char *core_buf                   = NULL;
 static size_t core_len                  = 0;
 
-#ifdef HAVE_NETWORKING
 void cb_net_generic_subdir(void *task_data, void *user_data, const char *err)
 {
    char subdir_path[PATH_MAX_LENGTH];
@@ -4111,6 +4111,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
    switch (type)
    {
+      case DISPLAYLIST_ACHIEVEMENT_LIST:
+         /* TODO/FIXME */
+         break;
+      case DISPLAYLIST_ACHIEVEMENT_LIST_HARDCORE:
+         /* TODO/FIXME */
+         break;
       case DISPLAYLIST_MUSIC_LIST:
          {
             char combined_path[PATH_MAX_LENGTH];
@@ -4463,6 +4469,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             if (cores_names_size == 0)
             {
+               rarch_system_info_t *system_info = runloop_get_system_info();
+               struct retro_system_info *system = &system_info->info;
+               const char *core_name            = system ? system->library_name : NULL;
+
                if (!path_is_empty(RARCH_PATH_CORE))
                {
 
@@ -4474,32 +4484,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                         0,
                         0);
 
-                  {
-                     const char *core_name            = NULL;
-                     rarch_system_info_t *system_info = runloop_get_system_info();
-                     struct retro_system_info *system = &system_info->info;
-
-                     if (system)
-                        core_name = system->library_name;
-
-                     if (!string_is_empty(core_name))
-                        menu_entries_set_alt_at_offset(info->list, 0,
-                              core_name);
-                  }
+                  if (!string_is_empty(core_name))
+                     menu_entries_set_alt_at_offset(info->list, 0,
+                           core_name);
                }
                else
                {
 #ifndef HAVE_DYNAMIC
-                  const char *core_name            = NULL;
-                  struct retro_system_info *system = NULL;
-
-                  menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
-                        &system);
-
                   if (system)
                   {
-                     core_name = system->library_name;
-
                      menu_entries_append_enum(info->list,
                            core_name,
                            core_name,
