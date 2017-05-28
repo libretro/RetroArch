@@ -103,7 +103,7 @@ static JSON_Parser_HandlerResult JSON_CALL StringHandler(JSON_Parser parser, cha
    {
       if (pValue && length)
       {
-         if (pCtx->cur_field && string_is_equal_fast(pCtx->cur_field, "game_crc", 8))
+         if (pCtx->cur_field && string_is_equal(pCtx->cur_field, "game_crc"))
          {
             /* CRC comes in as a string but it is stored as an unsigned casted to int */
             *((int*)pCtx->cur_member) = (int)strtoul(pValue, NULL, 16);
@@ -176,7 +176,8 @@ static JSON_Parser_HandlerResult JSON_CALL EndObjectHandler(JSON_Parser parser)
    return JSON_Parser_Continue;
 }
 
-static JSON_Parser_HandlerResult JSON_CALL ObjectMemberHandler(JSON_Parser parser, char* pValue, size_t length, JSON_StringAttributes attributes)
+static JSON_Parser_HandlerResult JSON_CALL ObjectMemberHandler(JSON_Parser parser,
+      char* pValue, size_t length, JSON_StringAttributes attributes)
 {
    Context* pCtx = (Context*)JSON_Parser_GetUserData(parser);
    (void)parser;
@@ -185,62 +186,88 @@ static JSON_Parser_HandlerResult JSON_CALL ObjectMemberHandler(JSON_Parser parse
    if (!pValue || !length)
       return JSON_Parser_Continue;
 
-   if (pCtx->state == STATE_OBJECT_START && string_is_equal_fast(pValue, "fields", 6))
+   if (pCtx->state == STATE_OBJECT_START && !string_is_empty(pValue)
+         && string_is_equal_fast(pValue, "fields", 6))
       pCtx->state = STATE_FIELDS_START;
 
    if (pCtx->state == STATE_FIELDS_OBJECT_START)
    {
       if (pCtx->cur_field)
          free(pCtx->cur_field);
+      pCtx->cur_field = NULL;
 
-      pCtx->cur_field = strdup(pValue);
-
-      if (string_is_equal_fast(pValue, "username", 8))
+      if (!string_is_empty(pValue))
       {
-         pCtx->cur_member = &rooms->cur->nickname;
-         pCtx->cur_member_size = sizeof(rooms->cur->nickname);
-      }
-      else if (string_is_equal_fast(pValue, "game_name", 9))
-      {
-         pCtx->cur_member = &rooms->cur->gamename;
-         pCtx->cur_member_size = sizeof(rooms->cur->gamename);
-      }
-      else if (string_is_equal_fast(pValue, "core_name", 9))
-      {
-         pCtx->cur_member = &rooms->cur->corename;
-         pCtx->cur_member_size = sizeof(rooms->cur->corename);
-      }
-      else if (string_is_equal_fast(pValue, "ip", 2))
-      {
-         pCtx->cur_member = &rooms->cur->address;
-         pCtx->cur_member_size = sizeof(rooms->cur->address);
-      }
-      else if (string_is_equal_fast(pValue, "port", 4))
-         pCtx->cur_member = &rooms->cur->port;
-      else if (string_is_equal_fast(pValue, "game_crc", 8))
-         pCtx->cur_member = &rooms->cur->gamecrc;
-      else if (string_is_equal_fast(pValue, "core_version", 12))
-      {
-         pCtx->cur_member = &rooms->cur->coreversion;
-         pCtx->cur_member_size = sizeof(rooms->cur->coreversion);
-      }
-      else if (string_is_equal_fast(pValue, "has_password", 12))
-         pCtx->cur_member = &rooms->cur->has_password;
-      else if (string_is_equal_fast(pValue, "has_spectate_password", 21))
-         pCtx->cur_member = &rooms->cur->has_spectate_password;
-      else if (string_is_equal_fast(pValue, "fixed", 5))
-         pCtx->cur_member = &rooms->cur->fixed;
-      else if (string_is_equal_fast(pValue, "mitm_ip", 7))
-         pCtx->cur_member = &rooms->cur->mitm_address;
-      else if (string_is_equal_fast(pValue, "mitm_port", 9))
-         pCtx->cur_member = &rooms->cur->mitm_port;
-      else if (string_is_equal_fast(pValue, "host_method", 11))
-         pCtx->cur_member = &rooms->cur->host_method;
-      else
-      {
-         /* unknown field, ignore it */
-         free(pCtx->cur_field);
-         pCtx->cur_field = NULL;
+         if (string_is_equal_fast(pValue, "username", 8))
+         {
+            pCtx->cur_field       = strdup(pValue);
+            pCtx->cur_member      = &rooms->cur->nickname;
+            pCtx->cur_member_size = sizeof(rooms->cur->nickname);
+         }
+         else if (string_is_equal_fast(pValue, "game_name", 9))
+         {
+            pCtx->cur_field       = strdup(pValue);
+            pCtx->cur_member      = &rooms->cur->gamename;
+            pCtx->cur_member_size = sizeof(rooms->cur->gamename);
+         }
+         else if (string_is_equal_fast(pValue, "core_name", 9))
+         {
+            pCtx->cur_field       = strdup(pValue);
+            pCtx->cur_member      = &rooms->cur->corename;
+            pCtx->cur_member_size = sizeof(rooms->cur->corename);
+         }
+         else if (string_is_equal_fast(pValue, "ip", 2))
+         {
+            pCtx->cur_field       = strdup(pValue);
+            pCtx->cur_member      = &rooms->cur->address;
+            pCtx->cur_member_size = sizeof(rooms->cur->address);
+         }
+         else if (string_is_equal_fast(pValue, "port", 4))
+         {
+            pCtx->cur_field       = strdup(pValue);
+            pCtx->cur_member      = &rooms->cur->port;
+         }
+         else if (string_is_equal_fast(pValue, "game_crc", 8))
+         {
+            pCtx->cur_field       = strdup(pValue);
+            pCtx->cur_member      = &rooms->cur->gamecrc;
+         }
+         else if (string_is_equal_fast(pValue, "core_version", 12))
+         {
+            pCtx->cur_field       = strdup(pValue);
+            pCtx->cur_member      = &rooms->cur->coreversion;
+            pCtx->cur_member_size = sizeof(rooms->cur->coreversion);
+         }
+         else if (string_is_equal_fast(pValue, "has_password", 12))
+         {
+            pCtx->cur_field       = strdup(pValue);
+            pCtx->cur_member      = &rooms->cur->has_password;
+         }
+         else if (string_is_equal_fast(pValue, "has_spectate_password", 21))
+         {
+            pCtx->cur_field       = strdup(pValue);
+            pCtx->cur_member      = &rooms->cur->has_spectate_password;
+         }
+         else if (string_is_equal_fast(pValue, "fixed", 5))
+         {
+            pCtx->cur_field       = strdup(pValue);
+            pCtx->cur_member      = &rooms->cur->fixed;
+         }
+         else if (string_is_equal_fast(pValue, "mitm_ip", 7))
+         {
+            pCtx->cur_field       = strdup(pValue);
+            pCtx->cur_member      = &rooms->cur->mitm_address;
+         }
+         else if (string_is_equal_fast(pValue, "mitm_port", 9))
+         {
+            pCtx->cur_field       = strdup(pValue);
+            pCtx->cur_member      = &rooms->cur->mitm_port;
+         }
+         else if (string_is_equal_fast(pValue, "host_method", 11))
+         {
+            pCtx->cur_field       = strdup(pValue);
+            pCtx->cur_member      = &rooms->cur->host_method;
+         }
       }
    }
 
