@@ -1584,9 +1584,27 @@ bool menu_driver_list_clear(void *data)
    return true;
 }
 
+static void menu_update_libretro_info(void)
+{
+   struct retro_system_info *info = NULL;
+
+   menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
+         &info);
+
+   if (!info)
+      return;
+
+   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+   command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+}
+
 static bool menu_driver_init_internal(bool video_is_threaded)
 {
    settings_t *settings           = config_get_ptr();
+   menu_update_libretro_info();
+
+   if (menu_driver_data)
+      return true;
 
    menu_driver_data               = (menu_handle_t*)
       menu_driver_ctx->init(&menu_userdata, video_is_threaded);
@@ -1612,22 +1630,18 @@ static bool menu_driver_init_internal(bool video_is_threaded)
    return true;
 }
 
+static bool menu_driver_context_reset(bool video_is_threaded)
+{
+   if (!menu_driver_ctx || !menu_driver_ctx->context_reset)
+      return false;
+   menu_driver_ctx->context_reset(menu_userdata, video_is_threaded);
+   return true;
+}
+
 bool menu_driver_init(bool video_is_threaded)
 {
-   struct retro_system_info *info = &menu_driver_system;
-
-   if (info)
-   {
-      /* Update menu state which depends on config. */
-      command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
-      command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
-   }
-
-   if (menu_driver_data || menu_driver_init_internal(video_is_threaded))
-   {
-      if (menu_driver_ctx && menu_driver_ctx->context_reset)
-         menu_driver_ctx->context_reset(menu_userdata, video_is_threaded);
-   }
+   if (menu_driver_init_internal(video_is_threaded))
+      return menu_driver_context_reset(video_is_threaded);
    return false;
 }
 
