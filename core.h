@@ -60,6 +60,7 @@ typedef struct rarch_system_info
 
    unsigned rotation;
    unsigned performance_level;
+   bool load_no_content;
 
    const char *input_desc_btn[MAX_USERS][RARCH_FIRST_META_KEY];
    char valid_extensions[255];

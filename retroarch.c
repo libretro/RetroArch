@@ -1538,6 +1538,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          break;
       case RARCH_CTL_SYSTEM_INFO_FREE:
          /* No longer valid. */
+
          if (runloop_system.subsystem.data)
             free(runloop_system.subsystem.data);
          runloop_system.subsystem.data = NULL;
@@ -1557,8 +1558,14 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          runloop_frontend_key_event = NULL;
 
          audio_driver_unset_callback();
+
+         runloop_system.info.library_name     = NULL;
+         runloop_system.info.library_version  = NULL;
+         runloop_system.info.valid_extensions = NULL;
+         runloop_system.info.need_fullpath         = false;
+         runloop_system.info.block_extract         = false;
+
          memset(&runloop_system, 0, sizeof(rarch_system_info_t));
-         memset(&runloop_system.info, 0, sizeof(struct retro_system_info));
          break;
       case RARCH_CTL_SET_FRAME_TIME_LAST:
          runloop_frame_time_last        = 0;

@@ -380,7 +380,9 @@ bool core_unload_game(void)
 {
    video_driver_free_hw_context();
    audio_driver_stop();
+
    current_core.retro_unload_game();
+
    current_core.game_loaded = false;
    return true;
 }

@@ -1643,30 +1643,25 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_LOAD_CORE_PERSIST:
          {
 #ifdef HAVE_MENU
-            bool *ptr = NULL;
+            core_info_ctx_find_t info_find;
             rarch_system_info_t *system_info = runloop_get_system_info();
             struct retro_system_info *system = &system_info->info;
 
-            if (menu_driver_ctl(RARCH_MENU_CTL_LOAD_NO_CONTENT_GET, &ptr))
-            {
-               core_info_ctx_find_t info_find;
-
 #if defined(HAVE_DYNAMIC)
-               if (string_is_empty(path_get(RARCH_PATH_CORE)))
-                  return false;
+            if (string_is_empty(path_get(RARCH_PATH_CORE)))
+               return false;
 #endif
-               libretro_get_system_info(
-                     path_get(RARCH_PATH_CORE),
-                     system,
-                     ptr);
-               info_find.path = path_get(RARCH_PATH_CORE);
+            libretro_get_system_info(
+                  path_get(RARCH_PATH_CORE),
+                  system,
+                  &system_info->load_no_content);
+            info_find.path = path_get(RARCH_PATH_CORE);
 
-               if (!core_info_load(&info_find))
-               {
+            if (!core_info_load(&info_find))
+            {
 #ifdef HAVE_DYNAMIC
-                  return false;
+               return false;
 #endif
-               }
             }
 #endif
          }
@@ -1773,7 +1768,6 @@ bool command_event(enum event_command cmd, void *data)
 
             content_get_status(&contentless, &is_inited);
 
-            rarch_ctl(RARCH_CTL_SYSTEM_INFO_FREE, NULL);
             command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
             command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
             command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
@@ -1783,10 +1777,10 @@ bool command_event(enum event_command cmd, void *data)
                   return false;
 #ifdef HAVE_DYNAMIC
             path_clear(RARCH_PATH_CORE);
-#else
+            rarch_ctl(RARCH_CTL_SYSTEM_INFO_FREE, NULL);
+#endif
             core_unload_game();
             core_unload();
-#endif
          }
          break;
       case CMD_EVENT_QUIT:

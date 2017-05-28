@@ -6000,16 +6000,19 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          {
             rarch_system_info_t *system    = runloop_get_system_info();
 
-            (void)system;
+            if (system)
+            {
+               if ( !string_is_empty(system->info.library_name) &&
+                     !string_is_equal(system->info.library_name,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)))
+                  menu_displaylist_parse_settings_enum(menu, info,
+                        MENU_ENUM_LABEL_CONTENT_SETTINGS,
+                        PARSE_ACTION, false);
 
-            if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-               menu_displaylist_parse_settings_enum(menu, info,
-                     MENU_ENUM_LABEL_CONTENT_SETTINGS,
-                     PARSE_ACTION, false);
-
-            if (menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL))
-               menu_displaylist_parse_settings_enum(menu, info,
-                     MENU_ENUM_LABEL_START_CORE, PARSE_ACTION, false);
+               if (system->load_no_content)
+                  menu_displaylist_parse_settings_enum(menu, info,
+                        MENU_ENUM_LABEL_START_CORE, PARSE_ACTION, false);
+            }
 
 
 #ifndef HAVE_DYNAMIC

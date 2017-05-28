@@ -138,7 +138,6 @@ static menu_display_ctx_driver_t *menu_disp      = NULL;
 
 static bool menu_driver_pending_quick_menu      = false;
 static bool menu_driver_prevent_populate        = false;
-static bool menu_driver_load_no_content         = false;
 static bool menu_driver_alive                   = false;
 static bool menu_driver_toggled                 = false;
 static bool menu_driver_data_own                = false;
@@ -1685,7 +1684,6 @@ void menu_driver_destroy(void)
    menu_driver_pending_quit       = false;
    menu_driver_pending_shutdown   = false;
    menu_driver_prevent_populate   = false;
-   menu_driver_load_no_content    = false;
    menu_driver_alive              = false;
    menu_driver_data_own           = false;
    menu_driver_ctx                = NULL;
@@ -1850,22 +1848,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             free(menu_driver_data);
          }
          menu_driver_data = NULL;
-         break;
-      case RARCH_MENU_CTL_LOAD_NO_CONTENT_GET:
-         {
-            bool **ptr = (bool**)data;
-            if (!ptr)
-               return false;
-            *ptr = (bool*)&menu_driver_load_no_content;
-         }
-         break;
-      case RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT:
-         return menu_driver_load_no_content;
-      case RARCH_MENU_CTL_SET_LOAD_NO_CONTENT:
-         menu_driver_load_no_content = true;
-         break;
-      case RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT:
-         menu_driver_load_no_content = false;
          break;
       case RARCH_MENU_CTL_LIST_GET_ENTRY:
          {

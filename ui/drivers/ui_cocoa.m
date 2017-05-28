@@ -278,12 +278,11 @@ static char** waiting_argv;
 {
    if (filenames.count == 1 && [filenames objectAtIndex:0])
    {
-      struct retro_system_info         *system = NULL;
-      NSString *__core = [filenames objectAtIndex:0];
-      const char *core_name = NULL;
+      rarch_system_info_t *info        = runloop_get_system_info();
+      struct retro_system_info *system = &info->info;
+      NSString *__core                 = [filenames objectAtIndex:0];
+      const char *core_name            = NULL;
 
-      menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET, &system);
-      
       if (system)
          core_name = system->library_name;
 		
@@ -320,6 +319,7 @@ static char** waiting_argv;
 
 static void open_core_handler(ui_browser_window_state_t *state, bool result)
 {
+   rarch_system_info_t *info      = runloop_get_system_info();
     if (!state)
         return;
     if (string_is_empty(state->result))
@@ -332,8 +332,8 @@ static void open_core_handler(ui_browser_window_state_t *state, bool result)
     rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, (void*)state->result);
     ui_companion_event_command(CMD_EVENT_LOAD_CORE);
                 
-    if (menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL)
-                      && settings->bools.set_supports_no_game_enable)
+    if (info && info->load_no_content
+          && settings->bools.set_supports_no_game_enable)
     {
         content_ctx_info_t content_info = {0};
         path_clear(RARCH_PATH_CONTENT);
@@ -354,10 +354,9 @@ static void open_document_handler(ui_browser_window_state_t *state, bool result)
     if (!result)
         return;
     
-    struct retro_system_info *system = NULL;
+    rarch_system_info_t *info        = runloop_get_system_info();
+    struct retro_system_info *system = &info->info;
     const char            *core_name = NULL;
-                
-    menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET, &system);
                 
     if (system)
         core_name = system->library_name;

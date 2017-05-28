@@ -756,12 +756,12 @@ static void menu_content_environment_get(int *argc, char *argv[],
       void *args, void *params_data)
 {
    struct rarch_main_wrap *wrap_args = (struct rarch_main_wrap*)params_data;
+   rarch_system_info_t *sys_info     = runloop_get_system_info();
 
    if (!wrap_args)
       return;
 
-   wrap_args->no_content       = menu_driver_ctl(
-         RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL);
+   wrap_args->no_content       = sys_info->load_no_content;
 
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL))
       wrap_args->verbose       = verbosity_is_enabled();
@@ -990,6 +990,7 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    char *error_string                         = NULL;
    global_t *global                           = global_get_ptr();
    settings_t *settings                       = config_get_ptr();
+   rarch_system_info_t *sys_info              = runloop_get_system_info();
 
    if (!content_info)
       return false;
@@ -1039,9 +1040,7 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
 
    /* Preliminary stuff that has to be done before we
     * load the actual content. Can differ per mode. */
-#ifdef HAVE_MENU
-   menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
-#endif
+   sys_info->load_no_content = false;
    rarch_ctl(RARCH_CTL_STATE_FREE, NULL);
    rarch_ctl(RARCH_CTL_DATA_DEINIT, NULL);
    rarch_ctl(RARCH_CTL_TASK_INIT, NULL);
@@ -1086,6 +1085,7 @@ bool task_push_load_content_from_playlist_from_menu(
    char *error_string                         = NULL;
    global_t *global                           = global_get_ptr();
    settings_t *settings                       = config_get_ptr();
+   rarch_system_info_t *sys_info              = runloop_get_system_info();
 
    content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
    content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
@@ -1127,9 +1127,9 @@ bool task_push_load_content_from_playlist_from_menu(
 
    /* Is content required by this core? */
    if (fullpath)
-      menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
+      sys_info->load_no_content = false;
    else
-      menu_driver_ctl(RARCH_MENU_CTL_SET_LOAD_NO_CONTENT, NULL);
+      sys_info->load_no_content = true;
 
    /* On targets that have no dynamic core loading support, we'd
     * execute the new core from this point. If this returns false,
