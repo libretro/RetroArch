@@ -96,7 +96,6 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_IS_TOGGLE,
    RARCH_MENU_CTL_SET_TOGGLE,
    RARCH_MENU_CTL_UNSET_TOGGLE,
-   RARCH_MENU_CTL_DESTROY,
    RARCH_MENU_CTL_SET_OWN_DRIVER,
    RARCH_MENU_CTL_UNSET_OWN_DRIVER,
    RARCH_MENU_CTL_OWNS_DRIVER,
@@ -683,6 +682,8 @@ font_data_t *menu_display_font(enum application_special_type type, float font_si
 
 void menu_display_reset_textures_list(const char *texture_path, const char *iconpath,
       uintptr_t *item, enum texture_filter_type filter_type);
+
+void menu_driver_destroy(void);
 
 extern uintptr_t menu_display_white_texture;
 

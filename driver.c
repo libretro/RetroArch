@@ -434,7 +434,7 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
          audio_driver_destroy();
          input_driver_destroy();
 #ifdef HAVE_MENU
-         menu_driver_ctl(RARCH_MENU_CTL_DESTROY, NULL);
+         menu_driver_destroy();
 #endif
          location_driver_ctl(RARCH_LOCATION_CTL_DESTROY, NULL);
          camera_driver_ctl(RARCH_CAMERA_CTL_DESTROY, NULL);

@@ -1688,6 +1688,19 @@ void menu_driver_set_thumbnail_content(char *s, size_t len)
       menu_driver_ctx->set_thumbnail_content(menu_userdata, s, len);
 }
 
+void menu_driver_destroy(void)
+{
+   menu_driver_pending_quick_menu = false;
+   menu_driver_pending_quit       = false;
+   menu_driver_pending_shutdown   = false;
+   menu_driver_prevent_populate   = false;
+   menu_driver_load_no_content    = false;
+   menu_driver_alive              = false;
+   menu_driver_data_own           = false;
+   menu_driver_ctx                = NULL;
+   menu_userdata                  = NULL;
+}
+
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
    switch (state)
@@ -1708,17 +1721,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_SET_PENDING_SHUTDOWN:
          menu_driver_pending_shutdown = true;
-         break;
-      case RARCH_MENU_CTL_DESTROY:
-         menu_driver_pending_quick_menu = false;
-         menu_driver_pending_quit       = false;
-         menu_driver_pending_shutdown   = false;
-         menu_driver_prevent_populate   = false;
-         menu_driver_load_no_content    = false;
-         menu_driver_alive              = false;
-         menu_driver_data_own           = false;
-         menu_driver_ctx                = NULL;
-         menu_userdata                  = NULL;
          break;
       case RARCH_MENU_CTL_PLAYLIST_FREE:
          if (menu_driver_playlist)
