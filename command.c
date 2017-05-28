@@ -1644,10 +1644,8 @@ bool command_event(enum event_command cmd, void *data)
          {
 #ifdef HAVE_MENU
             bool *ptr = NULL;
-            struct retro_system_info *system = NULL;
-
-            menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_DEINIT, NULL);
-            menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET, &system);
+            rarch_system_info_t *system_info = runloop_get_system_info();
+            struct retro_system_info *system = &system_info->info;
 
             if (menu_driver_ctl(RARCH_MENU_CTL_LOAD_NO_CONTENT_GET, &ptr))
             {
@@ -1775,6 +1773,7 @@ bool command_event(enum event_command cmd, void *data)
 
             content_get_status(&contentless, &is_inited);
 
+            rarch_ctl(RARCH_CTL_SYSTEM_INFO_FREE, NULL);
             command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
             command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
             command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
@@ -1783,9 +1782,6 @@ bool command_event(enum event_command cmd, void *data)
                if (!task_push_start_dummy_core(&content_info))
                   return false;
 #ifdef HAVE_DYNAMIC
-#ifdef HAVE_MENU
-            menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_DEINIT, NULL);
-#endif
             path_clear(RARCH_PATH_CORE);
 #else
             core_unload_game();

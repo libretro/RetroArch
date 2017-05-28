@@ -4476,10 +4476,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
                   {
                      const char *core_name            = NULL;
-                     struct retro_system_info *system = NULL;
-
-                     menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
-                           &system);
+                     rarch_system_info_t *system_info = runloop_get_system_info();
+                     struct retro_system_info *system = &system_info->info;
 
                      if (system)
                         core_name = system->library_name;
@@ -4594,10 +4592,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
                   {
                      const char *core_name            = NULL;
-                     struct retro_system_info *system = NULL;
-
-                     menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
-                           &system);
+                     rarch_system_info_t *system_info = runloop_get_system_info();
+                     struct retro_system_info *system = &system_info->info;
 
                      if (system)
                         core_name = system->library_name;
@@ -6002,6 +5998,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_MAIN_MENU:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          {
+            rarch_system_info_t *system    = runloop_get_system_info();
+
+            (void)system;
+
             if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
                menu_displaylist_parse_settings_enum(menu, info,
                      MENU_ENUM_LABEL_CONTENT_SETTINGS,

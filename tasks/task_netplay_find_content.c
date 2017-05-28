@@ -56,14 +56,13 @@ static void netplay_crc_scan_callback(void *task_data,
 {
    netplay_crc_handle_t *state     = (netplay_crc_handle_t*)task_data;
    content_ctx_info_t content_info = {0};
-   rarch_system_info_t *info       = NULL;
+   rarch_system_info_t *info        = runloop_get_system_info();
+   struct retro_system_info *system = &info->info;
 
    if (!state)
       return;
 
    fflush(stdout);
-
-   menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET, &info);
 
 #ifdef HAVE_MENU
    /* regular core with content file */
@@ -75,7 +74,7 @@ static void netplay_crc_scan_callback(void *task_data,
 
       command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
 
-      if (string_is_equal(info->info.library_name, state->core_name))
+      if (system && string_is_equal(system->library_name, state->core_name))
          task_push_load_content_with_core_from_menu(
                state->content_path, &content_info,
                CORE_TYPE_PLAIN, NULL, NULL);

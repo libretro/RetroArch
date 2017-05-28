@@ -839,11 +839,6 @@ static bool task_load_content(content_ctx_info_t *content_info,
       if (sys_info)
          info = &sys_info->info;
 
-#ifdef HAVE_MENU
-      if (launched_from_menu)
-         menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET, &info);
-#endif
-
       strlcpy(tmp, path_get(RARCH_PATH_CONTENT), sizeof(tmp));
 
       if (!launched_from_menu)

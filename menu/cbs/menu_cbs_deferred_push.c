@@ -614,18 +614,16 @@ end:
 static int general_push(menu_displaylist_info_t *info,
       unsigned id, enum menu_displaylist_ctl_state state)
 {
-   struct retro_system_info *system_menu = NULL;
    settings_t        *settings = config_get_ptr();
    core_info_list_t *list      = NULL;
    menu_handle_t        *menu  = NULL;
    rarch_system_info_t *system = runloop_get_system_info();
+   struct retro_system_info *system_menu = &system->info;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
    core_info_get_list(&list);
-
-   menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET, &system_menu);
 
    switch (id)
    {
@@ -656,7 +654,7 @@ static int general_push(menu_displaylist_info_t *info,
    switch (id)
    {
       case PUSH_ARCHIVE_OPEN:
-         if (system_menu->valid_extensions)
+         if (system_menu && system_menu->valid_extensions)
          {
             if (*system_menu->valid_extensions)
                strlcpy(info->exts, system_menu->valid_extensions,
@@ -669,7 +667,7 @@ static int general_push(menu_displaylist_info_t *info,
          if (menu_setting_get_browser_selection_type(info->setting) == ST_DIR)
          {
          }
-         else if (system_menu->valid_extensions)
+         else if (system_menu && system_menu->valid_extensions)
          {
             if (*system_menu->valid_extensions)
                strlcpy(info->exts, system_menu->valid_extensions,
@@ -691,7 +689,7 @@ static int general_push(menu_displaylist_info_t *info,
             newstring[0] = '\0';
             attr.i       = 0;
 
-            if (system_menu->valid_extensions)
+            if (system_menu && system_menu->valid_extensions)
             {
                if (!string_is_empty(system_menu->valid_extensions))
                {

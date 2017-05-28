@@ -265,15 +265,12 @@ int menu_entries_get_title(char *s, size_t len)
 
 int menu_entries_get_core_name(char *s, size_t len)
 {
-   struct retro_system_info    *system = NULL;
-   rarch_system_info_t      *info = NULL;
-   const char *core_name          = NULL;
+   rarch_system_info_t      *info      = runloop_get_system_info();
+   struct retro_system_info    *system = &info->info;
+   const char *core_name               = NULL;
 
-   menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
-         &system);
-   
-   core_name    = system->library_name;
-   info         = runloop_get_system_info();
+   if (system)
+      core_name    = system->library_name;
 
    if (string_is_empty(core_name) && info)
       core_name = info->info.library_name;
@@ -303,17 +300,16 @@ bool menu_entries_current_core_is_no_core(void)
  * (shown at the top of the UI). */
 int menu_entries_get_core_title(char *s, size_t len)
 {
-   struct retro_system_info    *system = NULL;
-   rarch_system_info_t      *info = NULL;
    const char *core_name          = NULL;
    const char *core_version       = NULL;
+   rarch_system_info_t      *info      = runloop_get_system_info();
+   struct retro_system_info    *system = &info->info;
 
-   menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
-         &system);
-   
-   core_name    = system->library_name;
-   core_version = system->library_version;
-   info         = runloop_get_system_info();
+   if (system)
+   {
+      core_name    = system->library_name;
+      core_version = system->library_version;
+   }
 
    if (string_is_empty(core_name) && info)
       core_name = info->info.library_name;

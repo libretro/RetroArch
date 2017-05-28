@@ -136,7 +136,6 @@ static const uint8_t *menu_display_font_framebuf = NULL;
 static msg_queue_t *menu_display_msg_queue       = NULL;
 static menu_display_ctx_driver_t *menu_disp      = NULL;
 
-static struct retro_system_info menu_driver_system;
 static bool menu_driver_pending_quick_menu      = false;
 static bool menu_driver_prevent_populate        = false;
 static bool menu_driver_load_no_content         = false;
@@ -1586,14 +1585,6 @@ bool menu_driver_list_clear(void *data)
 
 static void menu_update_libretro_info(void)
 {
-   struct retro_system_info *info = NULL;
-
-   menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
-         &info);
-
-   if (!info)
-      return;
-
    command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
    command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
 }
@@ -1781,24 +1772,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             *playlist = menu_driver_playlist;
          }
          break;
-      case RARCH_MENU_CTL_SYSTEM_INFO_GET:
-         {
-            struct retro_system_info **system =
-               (struct retro_system_info**)data;
-            if (!system)
-               return false;
-            *system = &menu_driver_system;
-         }
-         break;
-      case RARCH_MENU_CTL_SYSTEM_INFO_DEINIT:
-#ifndef HAVE_DYNAMIC
-         if (frontend_driver_has_fork())
-#endif
-         {
-            libretro_free_system_info(&menu_driver_system);
-            memset(&menu_driver_system, 0, sizeof(struct retro_system_info));
-         }
-         break;
       case RARCH_MENU_CTL_SET_PREVENT_POPULATE:
          menu_driver_prevent_populate = true;
          break;
@@ -1853,7 +1826,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                free(menu_userdata);
             menu_userdata = NULL;
 
-            menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_DEINIT, NULL);
             if (menu_display_msg_queue)
                msg_queue_free(menu_display_msg_queue);
 

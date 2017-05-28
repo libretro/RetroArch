@@ -1537,7 +1537,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          }
          break;
       case RARCH_CTL_SYSTEM_INFO_FREE:
-
          /* No longer valid. */
          if (runloop_system.subsystem.data)
             free(runloop_system.subsystem.data);
@@ -1559,6 +1558,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
          audio_driver_unset_callback();
          memset(&runloop_system, 0, sizeof(rarch_system_info_t));
+         memset(&runloop_system.info, 0, sizeof(struct retro_system_info));
          break;
       case RARCH_CTL_SET_FRAME_TIME_LAST:
          runloop_frame_time_last        = 0;
@@ -2143,12 +2143,6 @@ bool retroarch_main_quit(void)
    command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
    command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
    command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
-
-#ifdef HAVE_DYNAMIC
-#ifdef HAVE_MENU
-   menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_DEINIT, NULL);
-#endif
-#endif
 
    runloop_shutdown_initiated = true;
    rarch_menu_running_finished();

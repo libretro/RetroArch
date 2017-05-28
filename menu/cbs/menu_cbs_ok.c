@@ -1378,7 +1378,8 @@ static int action_ok_playlist_entry_collection(const char *path,
    const char *core_name               = NULL;
    playlist_t *tmp_playlist            = NULL;
    menu_handle_t *menu                 = NULL;
-   rarch_system_info_t *info           = NULL;
+   rarch_system_info_t *info           = runloop_get_system_info();
+   struct retro_system_info *system    = &info->info;
 
    content_info.argc                   = 0;
    content_info.argv                   = NULL;
@@ -1408,14 +1409,12 @@ static int action_ok_playlist_entry_collection(const char *path,
    playlist_get_index(playlist, selection_ptr,
          &entry_path, &entry_label, &core_path, &core_name, NULL, NULL);
 
-   menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET, &info);
-
    /* If the currently loaded core's name is equal 
     * to the core name from the playlist entry,
     * then we directly load this game with the current core.
     */
-   if (info && 
-         string_is_equal(info->info.library_name, core_name))
+   if (system && 
+         string_is_equal(system->library_name, core_name))
    {
       if (playlist_initialized)
          playlist_free(tmp_playlist);
