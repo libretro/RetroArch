@@ -67,13 +67,15 @@ static void parse_context_free(Context* pCtx)
    JSON_Parser_Free(pCtx->parser);
 }
 
-static JSON_Parser_HandlerResult JSON_CALL EncodingDetectedHandler(JSON_Parser parser)
+static JSON_Parser_HandlerResult JSON_CALL EncodingDetectedHandler(
+      JSON_Parser parser)
 {
    (void)parser;
    return JSON_Parser_Continue;
 }
 
-static JSON_Parser_HandlerResult JSON_CALL NullHandler(JSON_Parser parser)
+static JSON_Parser_HandlerResult JSON_CALL NullHandler(
+      JSON_Parser parser)
 {
    Context* pCtx = (Context*)JSON_Parser_GetUserData(parser);
    (void)parser;
@@ -81,7 +83,8 @@ static JSON_Parser_HandlerResult JSON_CALL NullHandler(JSON_Parser parser)
    return JSON_Parser_Continue;
 }
 
-static JSON_Parser_HandlerResult JSON_CALL BooleanHandler(JSON_Parser parser, JSON_Boolean value)
+static JSON_Parser_HandlerResult JSON_CALL BooleanHandler(
+      JSON_Parser parser, JSON_Boolean value)
 {
    Context* pCtx = (Context*)JSON_Parser_GetUserData(parser);
    (void)parser;
@@ -93,7 +96,9 @@ static JSON_Parser_HandlerResult JSON_CALL BooleanHandler(JSON_Parser parser, JS
    return JSON_Parser_Continue;
 }
 
-static JSON_Parser_HandlerResult JSON_CALL StringHandler(JSON_Parser parser, char* pValue, size_t length, JSON_StringAttributes attributes)
+static JSON_Parser_HandlerResult JSON_CALL StringHandler(
+      JSON_Parser parser, char* pValue, size_t length,
+      JSON_StringAttributes attributes)
 {
    Context* pCtx = (Context*)JSON_Parser_GetUserData(parser);
    (void)parser;
@@ -103,20 +108,26 @@ static JSON_Parser_HandlerResult JSON_CALL StringHandler(JSON_Parser parser, cha
    {
       if (pValue && length)
       {
-         if (pCtx->cur_field && string_is_equal(pCtx->cur_field, "game_crc"))
+         if (pCtx->cur_field)
          {
-            /* CRC comes in as a string but it is stored as an unsigned casted to int */
-            *((int*)pCtx->cur_member) = (int)strtoul(pValue, NULL, 16);
+            if (!string_is_empty(pCtx->cur_field) &&
+                  string_is_equal_fast(pCtx->cur_field, "game_crc", 8))
+            {
+               /* CRC comes in as a string but it is stored 
+                * as an unsigned casted to int. */
+               *((int*)pCtx->cur_member) = (int)strtoul(pValue, NULL, 16);
+            }
+            else
+               strlcpy((char*)pCtx->cur_member, pValue, PATH_MAX_LENGTH);
          }
-         else if (pCtx->cur_field)
-            strlcpy((char*)pCtx->cur_member, pValue, PATH_MAX_LENGTH);
       }
    }
 
    return JSON_Parser_Continue;
 }
 
-static JSON_Parser_HandlerResult JSON_CALL NumberHandler(JSON_Parser parser, char* pValue, size_t length, JSON_NumberAttributes attributes)
+static JSON_Parser_HandlerResult JSON_CALL NumberHandler(
+      JSON_Parser parser, char* pValue, size_t length, JSON_NumberAttributes attributes)
 {
    Context* pCtx = (Context*)JSON_Parser_GetUserData(parser);
    (void)parser;
@@ -132,7 +143,8 @@ static JSON_Parser_HandlerResult JSON_CALL NumberHandler(JSON_Parser parser, cha
    return JSON_Parser_Continue;
 }
 
-static JSON_Parser_HandlerResult JSON_CALL SpecialNumberHandler(JSON_Parser parser, JSON_SpecialNumber value)
+static JSON_Parser_HandlerResult JSON_CALL SpecialNumberHandler(
+      JSON_Parser parser, JSON_SpecialNumber value)
 {
    Context* pCtx = (Context*)JSON_Parser_GetUserData(parser);
    (void)parser;
@@ -151,13 +163,13 @@ static JSON_Parser_HandlerResult JSON_CALL StartObjectHandler(JSON_Parser parser
 
       if (!rooms->head)
       {
-         rooms->head = (struct netplay_room*)calloc(1, sizeof(*rooms->head));
-         rooms->cur = rooms->head;
+         rooms->head      = (struct netplay_room*)calloc(1, sizeof(*rooms->head));
+         rooms->cur       = rooms->head;
       }
       else if (!rooms->cur->next)
       {
          rooms->cur->next = (struct netplay_room*)calloc(1, sizeof(*rooms->cur->next));
-         rooms->cur = rooms->cur->next;
+         rooms->cur       = rooms->cur->next;
       }
    }
    else if (pCtx->state == STATE_ARRAY_START)
