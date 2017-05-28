@@ -298,7 +298,6 @@ static dylib_t libretro_get_system_info_lib(const char *path,
 }
 #endif
 
-
 /**
  * libretro_get_system_info:
  * @path                         : Path to libretro library.
