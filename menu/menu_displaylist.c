@@ -4115,6 +4115,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          {
             char combined_path[PATH_MAX_LENGTH];
 
+            combined_path[0] = '\0';
+
             fill_pathname_join(combined_path, menu->scratch2_buf,
                   menu->scratch_buf, sizeof(combined_path));
 
@@ -4281,7 +4283,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          if (string_is_equal(info->path, file_path_str(FILE_PATH_CONTENT_HISTORY)))
          {
-            if (menu_displaylist_ctl(DISPLAYLIST_HISTORY, info) && info)
+            if (menu_displaylist_ctl(DISPLAYLIST_HISTORY, info))
                return menu_displaylist_process(info);
             return false;
          }

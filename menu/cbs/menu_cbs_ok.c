@@ -1735,6 +1735,8 @@ static int action_ok_audio_add_to_mixer_and_collection(const char *path,
    char combined_path[PATH_MAX_LENGTH];
    menu_handle_t *menu                 = NULL;
 
+   combined_path[0] = '\0';
+
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
