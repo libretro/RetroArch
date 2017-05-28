@@ -930,7 +930,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
       playlist_get_index(playlist, i,
             NULL, NULL, NULL, &core_name, NULL, NULL);
 
-      if (core_name && string_is_equal_fast(core_name, "imageviewer", 11))
+      if (string_is_equal(core_name, "imageviewer"))
       {
          strlcpy(xmb->thumbnail_file_path, entry.label,
                sizeof(xmb->thumbnail_file_path));

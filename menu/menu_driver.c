@@ -2198,10 +2198,14 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX:
          {
-            size_t *sel = (size_t*)data;
+            size_t *sel      = (size_t*)data;
             if (!sel)
                return false;
-            scroll_index_list[scroll_index_size++] = *sel;
+
+            if ((scroll_index_size + 1) >= SCROLL_INDEX_SIZE)
+               scroll_index_list[scroll_index_size]   = *sel;
+            else
+               scroll_index_list[scroll_index_size++] = *sel;
          }
          break;
       case MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL:
