@@ -1095,6 +1095,7 @@ static void xmb_selection_pointer_changed(
    menu_list_t     *menu_list = NULL;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    size_t selection           = menu_navigation_get_selection();
+   const char *thumb_ident    = xmb_thumbnails_ident();
 
    menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
 
@@ -1146,7 +1147,7 @@ static void xmb_selection_pointer_changed(
          ia             = xmb->items.active.alpha;
          iz             = xmb->items.active.zoom;
 
-         if (!string_is_equal(xmb_thumbnails_ident(),
+         if (!string_is_equal(thumb_ident,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
          {
             if ((xmb_list > XMB_SYSTEM_TAB_SETTINGS && depth == 1) ||
@@ -2172,6 +2173,7 @@ static void xmb_draw_items(
    xmb_node_t *core_node       = NULL;
    size_t end                  = 0;
    uint64_t frame_count        = xmb->frame_count;
+   const char *thumb_ident     = xmb_thumbnails_ident();
 
    if (!list || !list->size)
       return;
@@ -2294,8 +2296,7 @@ static void xmb_draw_items(
       {
          if (xmb->savestate_thumbnail ||
                (!string_is_equal
-                (
-                 xmb_thumbnails_ident(),
+                (thumb_ident,
                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))
                 && xmb->thumbnail)
             )
