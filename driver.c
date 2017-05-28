@@ -396,7 +396,7 @@ void driver_uninit(int flags)
    core_info_free_current_core();
 
 #ifdef HAVE_MENU
-   if (flags & DRIVER_MENU_MASK)
+   if (flags & DRIVER_MENU_MASK && !menu_driver_ctl(RARCH_MENU_CTL_OWNS_DRIVER, NULL))
       menu_driver_ctl(RARCH_MENU_CTL_DEINIT, NULL);
 #endif
 
@@ -414,6 +414,9 @@ void driver_uninit(int flags)
 
    if (flags & DRIVER_AUDIO_MASK)
       audio_driver_deinit();
+
+   if ((flags & DRIVER_MENU_MASK) && !menu_driver_ctl(RARCH_MENU_CTL_OWNS_DRIVER, NULL))
+      menu_driver_destroy_data();
 
    if ((flags & DRIVER_VIDEO_MASK) && !video_driver_owns_driver())
       video_driver_destroy_data();
