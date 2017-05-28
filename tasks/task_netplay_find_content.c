@@ -108,6 +108,7 @@ static void netplay_crc_scan_callback(void *task_data,
    {
       RARCH_LOG("[lobby] loading core %s with current content\n", state->core_path);
       command_event(CMD_EVENT_NETPLAY_INIT_DIRECT, state->hostname);
+      command_event(CMD_EVENT_RESUME, NULL);
    }
    /* no match found */
    else

@@ -1,4 +1,4 @@
-# 1.5.1 (future)
+# 1.5.0+ (future)
 - AUTOSAVE/SRAM - Fix bug #3829 / #4820 (https://github.com/libretro/RetroArch/issues/3829)
 - ENDIANNESS: Fixed database scanning. Should fix scanning on PS3/WiiU/Wii, etc.
 - NET: Fix bug #4703 (https://github.com/libretro/RetroArch/issues/4703)
@@ -9,8 +9,7 @@
 - LOCALIZATION: Update/finish French translation
 - LOCALIZATION: Update German translation
 - LOCALIZATION: Update Japanese translation
-- LOCALIZATION/GUI: Korean font should display properly now with XMB/MaterialUI's
-default font
+- LOCALIZATION/GUI: Korean font should display properly now with XMB/MaterialUI's default font
 - MENU: Improved rendering for XMB ribbon; using additive blending (Vulkan/GL)
 - OSX/MACOS: Fixes serious memory leak
 - WINDOWS: Added WASAPI audio driver for low-latency audio. Both shared and exclusive mode.
@@ -25,6 +24,7 @@ default font
 - LOBBIES: Fallback to filename based matching if no CRC matches are found (for people making playlists by hand)
 - LOBBIES: GUI refinement, show stop hosting when a host has been started, show disconnect when playing as client
 - LOBBIES: if the game is already loaded it will try to connect directly instead of re-loading content (non-fullpath cores only)
+- LOBBIES: unify both netplay menus
 - THUMBNAILS: Thumbnails show up now in Load Content -> Collection, Information -> Database 
 - VITA: Fix slow I/O
 - VITA: Fix 30fps menu (poke into input now instead of reading the entire input buffer which apparently is slow)
