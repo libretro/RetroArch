@@ -65,13 +65,6 @@ enum driver_ctl_state
    RARCH_DRIVER_CTL_NONE = 0,
    RARCH_DRIVER_CTL_DEINIT,
 
-   /* Deinitializes drivers.
-    * @data is a bitmask which determines 
-    * which drivers get deinitialized. */
-   RARCH_DRIVER_CTL_UNINIT,
-
-   RARCH_DRIVER_CTL_UNINIT_ALL,
-
    /* Attempts to find a default driver for 
     * all driver types.
     *
@@ -114,6 +107,8 @@ bool driver_ctl(enum driver_ctl_state state, void *data);
  * If nonblock state is false, sets blocking state for both
  * audio and video drivers instead. */
 void driver_set_nonblock_state(void);
+
+void driver_uninit(int flags);
 
 void drivers_init(int flags);
 

@@ -1409,7 +1409,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          rarch_force_fullscreen  = false;
 
          retroarch_msg_queue_deinit();
-         driver_ctl(RARCH_DRIVER_CTL_UNINIT_ALL, NULL);
+         driver_uninit(DRIVERS_CMD_ALL);
          command_event(CMD_EVENT_LOG_FILE_DEINIT, NULL);
 
          rarch_ctl(RARCH_CTL_STATE_FREE,  NULL);
@@ -1459,7 +1459,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          break;
       case RARCH_CTL_INIT:
          if (rarch_is_inited)
-            driver_ctl(RARCH_DRIVER_CTL_UNINIT_ALL, NULL);
+            driver_uninit(DRIVERS_CMD_ALL);
 
 #ifdef HAVE_THREAD_STORAGE
          sthread_tls_create(&rarch_tls);

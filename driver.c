@@ -390,7 +390,7 @@ void drivers_init(int flags)
  * Typically, if a driver intends to make use of this, it should 
  * set this to true at the end of its 'init' function.
  **/
-static void uninit_drivers(int flags)
+void driver_uninit(int flags)
 {
    core_info_deinit_list();
    core_info_free_current_core();
@@ -441,19 +441,6 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
          wifi_driver_ctl(RARCH_WIFI_CTL_DESTROY, NULL);
          core_uninit_libretro_callbacks();
          break;
-      case RARCH_DRIVER_CTL_UNINIT:
-         {
-            int *flags = (int*)data;
-            if (!flags)
-               return false;
-            uninit_drivers(*flags);
-         }
-         break;
-      case RARCH_DRIVER_CTL_UNINIT_ALL:
-         {
-            int flags = DRIVERS_CMD_ALL;
-            return driver_ctl(RARCH_DRIVER_CTL_UNINIT, &flags);
-         }
       case RARCH_DRIVER_CTL_INIT_PRE:
          audio_driver_find_driver();
          video_driver_find_driver();

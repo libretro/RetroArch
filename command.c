@@ -1020,10 +1020,7 @@ static void command_event_deinit_core(bool reinit)
    core_uninit_symbols();
 
    if (reinit)
-   {
-      int flags = DRIVERS_CMD_ALL;
-      driver_ctl(RARCH_DRIVER_CTL_UNINIT, &flags);
-   }
+      driver_uninit(DRIVERS_CMD_ALL);
 
    command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
    command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
@@ -2085,9 +2082,8 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_AUDIO_REINIT:
          {
-            int flags = DRIVER_AUDIO_MASK;
-            driver_ctl(RARCH_DRIVER_CTL_UNINIT, &flags);
-            drivers_init(flags);
+            driver_uninit(DRIVER_AUDIO_MASK);
+            drivers_init(DRIVER_AUDIO_MASK);
          }
          break;
       case CMD_EVENT_RESET_CONTEXT:
@@ -2095,18 +2091,17 @@ bool command_event(enum event_command cmd, void *data)
             /* RARCH_DRIVER_CTL_UNINIT clears the callback struct so we
              * need to make sure to keep a copy */
             struct retro_hw_render_callback hwr_copy;
-            int flags                            = DRIVERS_CMD_ALL;
             struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
             const struct retro_hw_render_context_negotiation_interface *iface = 
                video_driver_get_context_negotiation_interface();
             memcpy(&hwr_copy, hwr, sizeof(hwr_copy));
 
-            driver_ctl(RARCH_DRIVER_CTL_UNINIT, &flags);
+            driver_uninit(DRIVERS_CMD_ALL);
 
             memcpy(hwr, &hwr_copy, sizeof(*hwr));
             video_driver_set_context_negotiation_interface(iface);
 
-            drivers_init(flags);
+            drivers_init(DRIVERS_CMD_ALL);
          }
          break;
       case CMD_EVENT_SHUTDOWN:
