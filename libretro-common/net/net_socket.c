@@ -54,7 +54,7 @@ int socket_init(void **address, uint16_t port, const char *server, enum socket_t
 
    snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
 
-   if (getaddrinfo_retro(server, port_buf, &hints, addrinfo) < 0)
+   if (getaddrinfo_retro(server, port_buf, &hints, addrinfo) != 0)
       goto error;
 
    addr = (struct addrinfo*)*addrinfo;
