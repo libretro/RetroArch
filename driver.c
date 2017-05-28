@@ -29,6 +29,7 @@
 #endif
 
 #include "command.h"
+#include "dynamic.h"
 #include "msg_hash.h"
 
 #include "audio/audio_driver.h"
@@ -394,6 +395,15 @@ void driver_uninit(int flags)
 {
    core_info_deinit_list();
    core_info_free_current_core();
+
+#ifndef HAVE_DYNAMIC
+   if (frontend_driver_has_fork())
+#endif
+   {
+      rarch_system_info_t *system = runloop_get_system_info();
+      libretro_free_system_info(&system->info);
+      memset(&system->info, 0, sizeof(struct retro_system_info));
+   }
 
 #ifdef HAVE_MENU
    if (flags & DRIVER_MENU_MASK)
