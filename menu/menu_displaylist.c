@@ -4111,12 +4111,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
    switch (type)
    {
-      case DISPLAYLIST_ACHIEVEMENT_LIST:
-         /* TODO/FIXME */
-         break;
-      case DISPLAYLIST_ACHIEVEMENT_LIST_HARDCORE:
-         /* TODO/FIXME */
-         break;
       case DISPLAYLIST_MUSIC_LIST:
          {
             char combined_path[PATH_MAX_LENGTH];
@@ -4436,20 +4430,22 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push    = true;
          info->need_refresh = true;
          break;
-#ifdef HAVE_CHEEVOS
       case DISPLAYLIST_ACHIEVEMENT_LIST:
+#ifdef HAVE_CHEEVOS
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          cheevos_populate_menu(info, false);
          info->need_push    = true;
          info->need_refresh = true;
+#endif
          break;
       case DISPLAYLIST_ACHIEVEMENT_LIST_HARDCORE:
+#ifdef HAVE_CHEEVOS
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          cheevos_populate_menu(info, true);
          info->need_push    = true;
          info->need_refresh = true;
-         break;
 #endif
+         break;
 
       case DISPLAYLIST_CORES_SUPPORTED:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
