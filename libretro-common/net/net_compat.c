@@ -411,7 +411,7 @@ bool udp_send_packet(const char *host,
 
    snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
 
-   if (getaddrinfo_retro(host, port_buf, &hints, &res) < 0)
+   if (getaddrinfo_retro(host, port_buf, &hints, &res) != 0)
       return false;
 
    /* Send to all possible targets.

@@ -131,14 +131,14 @@ static bool init_tcp_socket(netplay_t *netplay, void *direct_host,
          hints.ai_flags = AI_PASSIVE;
 
       snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
-      if (getaddrinfo_retro(server, port_buf, &hints, &res) < 0)
+      if (getaddrinfo_retro(server, port_buf, &hints, &res) != 0)
       {
 #ifdef HAVE_INET6
          if (!server)
          {
             /* Didn't work with IPv6, try wildcard */
             hints.ai_family = 0;
-            if (getaddrinfo_retro(server, port_buf, &hints, &res) < 0)
+            if (getaddrinfo_retro(server, port_buf, &hints, &res) != 0)
                return false;
          }
          else
