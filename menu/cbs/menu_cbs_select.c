@@ -107,12 +107,6 @@ static int action_select_path_use_directory(const char *path,
    return action_ok_path_use_directory(path, label, type, idx, 0 /* unused */);
 }
 
-static int action_select_directory(const char *path, const char *label, unsigned type,
-      size_t idx)
-{
-   return action_ok_directory_push(path, label, type, idx, 0 /* ignored */);
-}
-
 static int action_select_driver_setting(const char *path, const char *label, unsigned type,
       size_t idx)
 {
@@ -180,9 +174,6 @@ static int menu_cbs_init_bind_select_compare_type(
    {
       switch (type)
       {
-         case FILE_TYPE_DIRECTORY:
-            BIND_ACTION_SELECT(cbs, action_select_directory);
-            break;
          case FILE_TYPE_USE_DIRECTORY:
             BIND_ACTION_SELECT(cbs, action_select_path_use_directory);
             break;
