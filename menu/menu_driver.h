@@ -685,8 +685,6 @@ void menu_display_reset_textures_list(const char *texture_path, const char *icon
 
 void menu_driver_destroy(void);
 
-void menu_driver_destroy_data(void);
-
 extern uintptr_t menu_display_white_texture;
 
 extern menu_display_ctx_driver_t menu_display_ctx_gl;

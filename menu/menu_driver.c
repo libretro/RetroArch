@@ -1688,11 +1688,6 @@ void menu_driver_set_thumbnail_content(char *s, size_t len)
       menu_driver_ctx->set_thumbnail_content(menu_userdata, s, len);
 }
 
-void menu_driver_destroy_data(void)
-{
-   menu_driver_ctx                = NULL;
-}
-
 void menu_driver_destroy(void)
 {
    menu_driver_pending_quick_menu = false;
@@ -1702,6 +1697,7 @@ void menu_driver_destroy(void)
    menu_driver_load_no_content    = false;
    menu_driver_alive              = false;
    menu_driver_data_own           = false;
+   menu_driver_ctx                = NULL;
    menu_userdata                  = NULL;
 }
 
@@ -1851,10 +1847,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             menu_input_ctl(MENU_INPUT_CTL_DEINIT, NULL);
 
             if (menu_driver_ctx && menu_driver_ctx->free)
-            {
                menu_driver_ctx->free(menu_userdata);
-               menu_driver_ctx = NULL;
-            }
 
             if (menu_userdata)
                free(menu_userdata);
