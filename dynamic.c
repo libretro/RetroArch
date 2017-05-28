@@ -354,6 +354,14 @@ bool libretro_get_system_info(const char *path,
 
    memcpy(info, &dummy_info, sizeof(*info));
 
+   if (!string_is_empty(dummy_info.library_name))
+      info->library_name    = strdup(dummy_info.library_name);
+   if (!string_is_empty(dummy_info.library_version))
+      info->library_version    = strdup(dummy_info.library_version);
+
+   if (dummy_info.valid_extensions)
+      info->valid_extensions = strdup(dummy_info.valid_extensions);
+
 #ifdef HAVE_DYNAMIC
    dylib_close(lib);
 #endif
