@@ -1653,7 +1653,7 @@ void menu_driver_navigation_set(bool scroll)
 
 void menu_driver_populate_entries(menu_displaylist_info_t *info)
 {
-   if (menu_driver_ctx->populate_entries)
+   if (menu_driver_ctx && menu_driver_ctx->populate_entries)
       menu_driver_ctx->populate_entries(
             menu_userdata, info->path,
             info->label, info->type);
