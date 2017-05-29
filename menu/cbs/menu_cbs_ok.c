@@ -2323,6 +2323,8 @@ static int action_ok_audio_run(const char *path,
    content_ctx_info_t content_info;
    menu_handle_t *menu                 = NULL;
 
+   combined_path[0] = '\0';
+
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
