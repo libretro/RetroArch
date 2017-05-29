@@ -610,9 +610,9 @@ static void netplay_announce(void)
    uint32_t content_crc          = content_get_crc();
 
    net_http_urlencode_full(&username, settings->paths.username);
-   net_http_urlencode_full(&corename, system->info.library_name);
+   net_http_urlencode_full(&corename, system->info_int.library_name);
    net_http_urlencode_full(&gamename, !string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))) ? path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A");
-   net_http_urlencode_full(&coreversion, system->info.library_version);
+   net_http_urlencode_full(&coreversion, system->info_int.library_version);
 
    buf[0] = '\0';
 

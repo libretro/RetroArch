@@ -145,14 +145,21 @@ libretro_find_controller_description(
  *
  * Frees system information.
  **/
-void libretro_free_system_info(struct retro_system_info *info)
+void libretro_free_system_info(struct retro_system_info_internal *info)
 {
    if (!info)
       return;
 
-   free((void*)info->library_name);
-   free((void*)info->library_version);
-   free((void*)info->valid_extensions);
+   if (info->library_name != NULL)
+      free(info->library_name);
+   if (info->library_version != NULL)
+      free(info->library_version);
+   if (info->valid_extensions != NULL)
+      free(info->valid_extensions);
+
+   info->library_name     = NULL;
+   info->library_version  = NULL;
+   info->valid_extensions = NULL;
    memset(info, 0, sizeof(*info));
 }
 
@@ -311,7 +318,7 @@ static dylib_t libretro_get_system_info_lib(const char *path,
  * Returns: true (1) if successful, otherwise false (0).
  **/
 bool libretro_get_system_info(const char *path,
-      struct retro_system_info *info, bool *load_no_content)
+      struct retro_system_info_internal *info, bool *load_no_content)
 {
    struct retro_system_info dummy_info;
 #ifdef HAVE_DYNAMIC
@@ -352,13 +359,23 @@ bool libretro_get_system_info(const char *path,
    retro_get_system_info(&dummy_info);
 #endif
 
-   memcpy(info, &dummy_info, sizeof(*info));
+   if (info->library_name != NULL)
+      free(info->library_name);
+   if (info->library_version != NULL)
+      free(info->library_version);
+   if (info->valid_extensions != NULL)
+      free(info->valid_extensions);
+
+   info->need_fullpath      = dummy_info.need_fullpath;
+   info->block_extract      = dummy_info.block_extract;
+   info->library_version    = NULL;
+   info->library_name       = NULL;
+   info->valid_extensions   = NULL;
 
    if (!string_is_empty(dummy_info.library_name))
       info->library_name    = strdup(dummy_info.library_name);
    if (!string_is_empty(dummy_info.library_version))
       info->library_version    = strdup(dummy_info.library_version);
-
    if (dummy_info.valid_extensions)
       info->valid_extensions = strdup(dummy_info.valid_extensions);
 

@@ -54,9 +54,48 @@ typedef struct rarch_memory_map
    unsigned num_descriptors;
 } rarch_memory_map_t;
 
+struct retro_system_info_internal
+{
+   /* All pointers are owned by libretro implementation, and pointers must 
+    * remain valid until retro_deinit() is called. */
+
+   char *library_name;      /* Descriptive name of library. Should not 
+                                   * contain any version numbers, etc. */
+   char *library_version;   /* Descriptive version of core. */
+
+   char *valid_extensions;  /* A string listing probably content 
+                             * extensions the core will be able to 
+                             * load, separated with pipe.
+                             * I.e. "bin|rom|iso".
+                             * Typically used for a GUI to filter 
+                             * out extensions. */
+
+   /* If true, retro_load_game() is guaranteed to provide a valid pathname 
+    * in retro_game_info::path.
+    * ::data and ::size are both invalid.
+    *
+    * If false, ::data and ::size are guaranteed to be valid, but ::path 
+    * might not be valid.
+    *
+    * This is typically set to true for libretro implementations that must 
+    * load from file.
+    * Implementations should strive for setting this to false, as it allows 
+    * the frontend to perform patching, etc. */
+   bool        need_fullpath;                                       
+
+   /* If true, the frontend is not allowed to extract any archives before 
+    * loading the real content.
+    * Necessary for certain libretro implementations that load games 
+    * from zipped archives. */
+   bool        block_extract;     
+};
+
 typedef struct rarch_system_info
 {
+   struct retro_system_info_internal info_int;
+#if 0
    struct retro_system_info info;
+#endif
 
    unsigned rotation;
    unsigned performance_level;

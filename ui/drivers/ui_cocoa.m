@@ -279,7 +279,7 @@ static char** waiting_argv;
    if (filenames.count == 1 && [filenames objectAtIndex:0])
    {
       rarch_system_info_t *info        = runloop_get_system_info();
-      struct retro_system_info *system = &info->info;
+      struct retro_system_info_internal *system = &info->info_int;
       NSString *__core                 = [filenames objectAtIndex:0];
       const char *core_name            = NULL;
 
@@ -355,7 +355,7 @@ static void open_document_handler(ui_browser_window_state_t *state, bool result)
         return;
     
     rarch_system_info_t *info        = runloop_get_system_info();
-    struct retro_system_info *system = &info->info;
+    struct retro_system_info_internal *system = &info->info_int;
     const char            *core_name = NULL;
                 
     if (system)

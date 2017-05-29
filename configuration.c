@@ -2715,7 +2715,7 @@ bool config_load_override(void)
    rarch_system_info_t *system            = runloop_get_system_info();
 
    if (system)
-      core_name = system->info.library_name;
+      core_name = system->info_int.library_name;
 
    game_name = path_basename(path_get(RARCH_PATH_BASENAME));
 
@@ -2870,7 +2870,7 @@ bool config_load_remap(void)
    rarch_system_info_t *system            = runloop_get_system_info();
 
    if (system)
-      core_name = system->info.library_name;
+      core_name = system->info_int.library_name;
 
    game_name = path_basename(path_get(RARCH_PATH_BASENAME));
 
@@ -2970,7 +2970,7 @@ bool config_load_shader_preset(void)
    rarch_system_info_t *system            = runloop_get_system_info();
 
    if (system)
-      core_name = system->info.library_name;
+      core_name = system->info_int.library_name;
 
    game_name = path_basename(path_get(RARCH_PATH_BASENAME));
 
@@ -3605,7 +3605,7 @@ bool config_save_overrides(int override_type)
    rarch_system_info_t *system                 = runloop_get_system_info();
 
    if (system)
-      core_name = system->info.library_name;
+      core_name = system->info_int.library_name;
 
    game_name = path_basename(path_get(RARCH_PATH_BASENAME));
 

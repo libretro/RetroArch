@@ -269,9 +269,9 @@ bool netplay_lan_ad_server(netplay_t *netplay)
 
          if (info)
          {
-            strlcpy(ad_packet_buffer.core, info->info.library_name,
+            strlcpy(ad_packet_buffer.core, info->info_int.library_name,
                NETPLAY_HOST_STR_LEN);
-            strlcpy(ad_packet_buffer.core_version, info->info.library_version,
+            strlcpy(ad_packet_buffer.core_version, info->info_int.library_version,
                NETPLAY_HOST_STR_LEN);
          }
 

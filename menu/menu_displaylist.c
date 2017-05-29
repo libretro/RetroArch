@@ -2990,8 +2990,8 @@ static int menu_displaylist_parse_information_list(
    core_info_get_current_core(&core_info);
 
    if (  system &&
-         (!string_is_empty(system->info.library_name) &&
-          !string_is_equal(system->info.library_name,
+         (!string_is_empty(system->info_int.library_name) &&
+          !string_is_equal(system->info_int.library_name,
              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE))
          )
          && core_info && core_info->config_data
@@ -4477,7 +4477,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             if (cores_names_size == 0)
             {
                rarch_system_info_t *system_info = runloop_get_system_info();
-               struct retro_system_info *system = &system_info->info;
+               struct retro_system_info_internal *system = &system_info->info_int;
                const char *core_name            = system ? system->library_name : NULL;
 
                if (!path_is_empty(RARCH_PATH_CORE))
@@ -4591,7 +4591,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   {
                      const char *core_name            = NULL;
                      rarch_system_info_t *system_info = runloop_get_system_info();
-                     struct retro_system_info *system = &system_info->info;
+                     struct retro_system_info_internal *system = &system_info->info_int;
 
                      if (system)
                         core_name = system->library_name;
@@ -6000,8 +6000,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             if (system)
             {
-               if ( !string_is_empty(system->info.library_name) &&
-                     !string_is_equal(system->info.library_name,
+               if ( !string_is_empty(system->info_int.library_name) &&
+                     !string_is_equal(system->info_int.library_name,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)))
                   menu_displaylist_parse_settings_enum(menu, info,
                         MENU_ENUM_LABEL_CONTENT_SETTINGS,

@@ -21,6 +21,7 @@
 #include <retro_common_api.h>
 #include <libretro.h>
 
+#include "core.h"
 #include "core_type.h"
 
 RETRO_BEGIN_DECLS
@@ -38,7 +39,7 @@ RETRO_BEGIN_DECLS
  * Returns: true (1) if successful, otherwise false (0).
  **/
 bool libretro_get_system_info(const char *path,
-      struct retro_system_info *info, bool *load_no_content);
+      struct retro_system_info_internal *info, bool *load_no_content);
 
 /**
  * libretro_free_system_info:
@@ -46,7 +47,7 @@ bool libretro_get_system_info(const char *path,
  *
  * Frees system information.
  **/
-void libretro_free_system_info(struct retro_system_info *info);
+void libretro_free_system_info(struct retro_system_info_internal *info);
 
 const struct retro_subsystem_info *libretro_find_subsystem_info(
       const struct retro_subsystem_info *info,

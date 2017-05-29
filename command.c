@@ -1645,7 +1645,7 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_MENU
             core_info_ctx_find_t info_find;
             rarch_system_info_t *system_info = runloop_get_system_info();
-            struct retro_system_info *system = &system_info->info;
+            struct retro_system_info_internal *system = &system_info->info_int;
 
 #if defined(HAVE_DYNAMIC)
             if (string_is_empty(path_get(RARCH_PATH_CORE)))
