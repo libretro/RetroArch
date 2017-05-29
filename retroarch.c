@@ -2876,13 +2876,7 @@ static enum runloop_state runloop_check_state(
             current_input, RARCH_RESET);
 
       if (new_state && !old_state)
-      {
          command_event(CMD_EVENT_RESET, NULL);
-#if 0
-         task_push_audio_mixer_load("/home/squarepusher/SumertimeBlues.ogg",
-               NULL, NULL);
-#endif
-      }
 
       old_state = new_state;
    }
