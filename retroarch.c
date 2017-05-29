@@ -679,7 +679,6 @@ static void retroarch_parse_input(int argc, char *argv[])
 
    for (;;)
    {
-      int port;
       int c = getopt_long(argc, argv, optstring, opts, NULL);
 
 #if 0
@@ -696,51 +695,51 @@ static void retroarch_parse_input(int argc, char *argv[])
             exit(0);
 
          case 'd':
-         {
-            unsigned new_port;
-            unsigned id = 0;
-            struct string_list *list = string_split(optarg, ":");
-
-            port = 0;
-
-            if (list && list->size == 2)
             {
-               port = (int)strtol(list->elems[0].data, NULL, 0);
-               id   = (unsigned)strtoul(list->elems[1].data, NULL, 0);
+               unsigned new_port;
+               unsigned id              = 0;
+               struct string_list *list = string_split(optarg, ":");
+               int    port              = 0;
+
+               if (list && list->size == 2)
+               {
+                  port = (int)strtol(list->elems[0].data, NULL, 0);
+                  id   = (unsigned)strtoul(list->elems[1].data, NULL, 0);
+               }
+               string_list_free(list);
+
+               if (port < 1 || port > MAX_USERS)
+               {
+                  RARCH_ERR("%s\n", msg_hash_to_str(MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT));
+                  retroarch_print_help(argv[0]);
+                  retroarch_fail(1, "retroarch_parse_input()");
+               }
+               new_port = port -1;
+
+               input_config_set_device(new_port, id);
+
+               retroarch_override_setting_set(
+                     RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &new_port);
             }
-            string_list_free(list);
-
-            if (port < 1 || port > MAX_USERS)
-            {
-               RARCH_ERR("%s\n", msg_hash_to_str(MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT));
-               retroarch_print_help(argv[0]);
-               retroarch_fail(1, "retroarch_parse_input()");
-            }
-            new_port = port -1;
-
-            input_config_set_device(new_port, id);
-
-            retroarch_override_setting_set(
-                  RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &new_port);
             break;
-         }
 
          case 'A':
-         {
-            unsigned new_port;
-            port = (int)strtol(optarg, NULL, 0);
-            if (port < 1 || port > MAX_USERS)
             {
-               RARCH_ERR("Connect dualanalog to a valid port.\n");
-               retroarch_print_help(argv[0]);
-               retroarch_fail(1, "retroarch_parse_input()");
-            }
-            new_port = port - 1;
+               unsigned new_port;
+               int port = (int)strtol(optarg, NULL, 0);
 
-            input_config_set_device(new_port, RETRO_DEVICE_ANALOG);
-            retroarch_override_setting_set(
-                  RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &new_port);
-         }
+               if (port < 1 || port > MAX_USERS)
+               {
+                  RARCH_ERR("Connect dualanalog to a valid port.\n");
+                  retroarch_print_help(argv[0]);
+                  retroarch_fail(1, "retroarch_parse_input()");
+               }
+               new_port = port - 1;
+
+               input_config_set_device(new_port, RETRO_DEVICE_ANALOG);
+               retroarch_override_setting_set(
+                     RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &new_port);
+            }
             break;
 
          case 's':
@@ -770,7 +769,8 @@ static void retroarch_parse_input(int argc, char *argv[])
          case 'N':
             {
                unsigned new_port;
-               port = (int)strtol(optarg, NULL, 0);
+               int port = (int)strtol(optarg, NULL, 0);
+
                if (port < 1 || port > MAX_USERS)
                {
                   RARCH_ERR("%s\n",
@@ -904,7 +904,9 @@ static void retroarch_parse_input(int argc, char *argv[])
                retroarch_override_setting_set(
                      RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES, NULL);
 
-               configuration_set_int(settings, settings->ints.netplay_check_frames, (int)strtoul(optarg, NULL, 0));
+               configuration_set_int(settings,
+                     settings->ints.netplay_check_frames,
+                     (int)strtoul(optarg, NULL, 0));
             }
             break;
 
@@ -913,7 +915,9 @@ static void retroarch_parse_input(int argc, char *argv[])
                settings_t *settings  = config_get_ptr();
                retroarch_override_setting_set(
                      RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT, NULL);
-               configuration_set_uint(settings, settings->uints.netplay_port, (int)strtoul(optarg, NULL, 0));
+               configuration_set_uint(settings,
+                     settings->uints.netplay_port,
+                     (int)strtoul(optarg, NULL, 0));
             }
             break;
 
@@ -1031,7 +1035,8 @@ static void retroarch_parse_input(int argc, char *argv[])
    }
    
 #ifdef HAVE_GIT_VERSION
-   RARCH_LOG("This is RetroArch version %s (Git %s)\n", PACKAGE_VERSION, retroarch_git_version);
+   RARCH_LOG("This is RetroArch version %s (Git %s)\n",
+         PACKAGE_VERSION, retroarch_git_version);
 #endif
 
    if (explicit_menu)
