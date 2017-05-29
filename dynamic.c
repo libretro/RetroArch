@@ -147,8 +147,13 @@ libretro_find_controller_description(
  **/
 void libretro_free_system_info(struct retro_system_info *info)
 {
-   if (info)
-      memset(info, 0, sizeof(*info));
+   if (!info)
+      return;
+
+   free((void*)info->library_name);
+   free((void*)info->library_version);
+   free((void*)info->valid_extensions);
+   memset(info, 0, sizeof(*info));
 }
 
 
@@ -308,14 +313,23 @@ static dylib_t libretro_get_system_info_lib(const char *path,
 bool libretro_get_system_info(const char *path,
       struct retro_system_info *info, bool *load_no_content)
 {
+   struct retro_system_info dummy_info;
 #ifdef HAVE_DYNAMIC
-   dylib_t lib = libretro_get_system_info_lib(
-         path, info, load_no_content);
+   dylib_t lib;
+#endif
+
+   dummy_info.library_name     = NULL;
+   dummy_info.library_version  = NULL;
+   dummy_info.valid_extensions = NULL;
+   dummy_info.need_fullpath    = false;
+   dummy_info.block_extract    = false;
+
+#ifdef HAVE_DYNAMIC
+   lib                         = libretro_get_system_info_lib(
+         path, &dummy_info, load_no_content);
 
    if (!lib)
       return false;
-
-   dylib_close(lib);
 #else
    if (load_no_content)
    {
@@ -335,7 +349,21 @@ bool libretro_get_system_info(const char *path,
       ignore_environment_cb = false;
    }
 
-   retro_get_system_info(info);
+   retro_get_system_info(&dummy_info);
+#endif
+
+   memcpy(info, &dummy_info, sizeof(*info));
+
+   if (!string_is_empty(dummy_info.library_name))
+      info->library_name    = strdup(dummy_info.library_name);
+   if (!string_is_empty(dummy_info.library_version))
+      info->library_version    = strdup(dummy_info.library_version);
+
+   if (dummy_info.valid_extensions)
+      info->valid_extensions = strdup(dummy_info.valid_extensions);
+
+#ifdef HAVE_DYNAMIC
+   dylib_close(lib);
 #endif
 
    return true;

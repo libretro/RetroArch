@@ -1651,7 +1651,6 @@ bool command_event(enum event_command cmd, void *data)
             if (string_is_empty(path_get(RARCH_PATH_CORE)))
                return false;
 #endif
-            libretro_free_system_info(system);
             libretro_get_system_info(
                   path_get(RARCH_PATH_CORE),
                   system,
