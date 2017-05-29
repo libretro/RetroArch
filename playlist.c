@@ -149,28 +149,24 @@ static void playlist_free_entry(struct playlist_entry *entry)
    if (!entry)
       return;
 
-   if (!string_is_empty(entry->path))
+   if (entry->path != NULL)
       free(entry->path);
-   entry->path      = NULL;
-
-   if (!string_is_empty(entry->label))
+   if (entry->label != NULL)
       free(entry->label);
-   entry->label     = NULL;
-
-   if (!string_is_empty(entry->core_path))
+   if (entry->core_path != NULL)
       free(entry->core_path);
-   entry->core_path = NULL;
-
-   if (!string_is_empty(entry->core_name))
+   if (entry->core_name != NULL)
       free(entry->core_name);
-   entry->core_name = NULL;
-
-   if (!string_is_empty(entry->db_name))
+   if (entry->db_name != NULL)
       free(entry->db_name);
-   entry->db_name   = NULL;
-
-   if (!string_is_empty(entry->crc32))
+   if (entry->crc32 != NULL)
       free(entry->crc32);
+
+   entry->path      = NULL;
+   entry->label     = NULL;
+   entry->core_path = NULL;
+   entry->core_name = NULL;
+   entry->db_name   = NULL;
    entry->crc32     = NULL;
 }
 
@@ -189,42 +185,54 @@ void playlist_update(playlist_t *playlist, size_t idx,
 
    if (path && (path != entry->path))
    {
-      free(entry->path);
+      if (entry->path != NULL)
+         free(entry->path);
+      entry->path        = NULL;
       entry->path        = strdup(path);
       playlist->modified = true;
    }
 
    if (label && (label != entry->label))
    {
-      free(entry->label);
+      if (entry->label != NULL)
+         free(entry->label);
+      entry->label       = NULL;
       entry->label       = strdup(label);
       playlist->modified = true;
    }
 
    if (core_path && (core_path != entry->core_path))
    {
-      free(entry->core_path);
+      if (entry->core_path != NULL)
+         free(entry->core_path);
+      entry->core_path   = NULL;
       entry->core_path   = strdup(core_path);
       playlist->modified = true;
    }
 
    if (core_name && (core_name != entry->core_name))
    {
-      free(entry->core_name);
+      if (entry->core_name != NULL)
+         free(entry->core_name);
+      entry->core_name   = NULL;
       entry->core_name   = strdup(core_name);
       playlist->modified = true;
    }
 
    if (db_name && (db_name != entry->db_name))
    {
-      free(entry->db_name);
+      if (entry->db_name != NULL)
+         free(entry->db_name);
+      entry->db_name     = NULL;
       entry->db_name     = strdup(db_name);
       playlist->modified = true;
    }
 
    if (crc32 && (crc32 != entry->crc32))
    {
-      free(entry->crc32);
+      if (entry->crc32 != NULL)
+         free(entry->crc32);
+      entry->crc32       = NULL;
       entry->crc32       = strdup(crc32);
       playlist->modified = true;
    }
