@@ -19,7 +19,6 @@
 #include <time.h>
 
 #include <compat/strl.h>
-#include <queues/message_queue.h>
 #include <retro_miscellaneous.h>
 #include <formats/image.h>
 #include <file/file_path.h>
@@ -133,7 +132,6 @@ static bool menu_display_msg_force               = false;
 static bool menu_display_font_alloc_framebuf     = false;
 static bool menu_display_framebuf_dirty          = false;
 static const uint8_t *menu_display_font_framebuf = NULL;
-static msg_queue_t *menu_display_msg_queue       = NULL;
 static menu_display_ctx_driver_t *menu_disp      = NULL;
 
 static bool menu_driver_pending_quick_menu      = false;
@@ -1368,7 +1366,6 @@ static bool menu_init(menu_handle_t *menu_data)
 
    menu_shader_manager_init();
 
-   menu_display_msg_queue    = msg_queue_new(8);
    menu_disp_ca.allocated    =  0;
 
    menu_display_has_windowed = video_driver_has_windowed();
@@ -1833,11 +1830,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                memset(&system->info, 0, sizeof(struct retro_system_info));
             }
 
-            if (menu_display_msg_queue)
-               msg_queue_free(menu_display_msg_queue);
-
             video_coord_array_free(&menu_disp_ca);
-            menu_display_msg_queue       = NULL;
             menu_display_msg_force       = false;
             menu_display_header_height   = 0;
             menu_disp                    = NULL;
