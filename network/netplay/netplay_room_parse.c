@@ -110,8 +110,7 @@ static JSON_Parser_HandlerResult JSON_CALL StringHandler(
       {
          if (pCtx->cur_field)
          {
-            if (!string_is_empty(pCtx->cur_field) &&
-                  string_is_equal_fast(pCtx->cur_field, "game_crc", 8))
+            if (string_is_equal(pCtx->cur_field, "game_crc"))
             {
                /* CRC comes in as a string but it is stored 
                 * as an unsigned casted to int. */
