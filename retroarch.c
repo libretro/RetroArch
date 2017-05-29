@@ -161,6 +161,7 @@ enum
 enum  runloop_state
 {
    RUNLOOP_STATE_ITERATE = 0,
+   RUNLOOP_STATE_POLLED_AND_SLEEP,
    RUNLOOP_STATE_SLEEP,
    RUNLOOP_STATE_MENU_ITERATE,
    RUNLOOP_STATE_END,
@@ -2468,35 +2469,43 @@ static enum runloop_state runloop_check_state(
    {
       static uint64_t old_input = 0;
       menu_ctx_iterate_t iter;
-      uint64_t trigger_input    = current_input & ~old_input;
-      enum menu_action action   = (enum menu_action)menu_event(current_input, trigger_input);
-      bool focused              = pause_nonactive ? is_focused : true;
 
-      focused                   = focused && !ui_companion_is_on_foreground();
+      retro_ctx.poll_cb();
 
-      iter.action               = action;
+      {
+         uint64_t trigger_input    = current_input & ~old_input;
+         enum menu_action action   = (enum menu_action)menu_event(current_input, trigger_input);
+         bool focused              = pause_nonactive ? is_focused : true;
 
-      if (!menu_driver_iterate(&iter))
-         rarch_menu_running_finished();
+         focused                   = focused && !ui_companion_is_on_foreground();
 
-      if (focused || !runloop_idle)
-         menu_driver_render(runloop_idle, rarch_is_inited,
-               (current_core_type == CORE_TYPE_DUMMY)
-               )
-            ;
+         iter.action               = action;
 
-      old_input                 = current_input;
+         if (!menu_driver_iterate(&iter))
+            rarch_menu_running_finished();
 
-      if (!focused)
-         return RUNLOOP_STATE_SLEEP;
+         if (focused || !runloop_idle)
+            menu_driver_render(runloop_idle, rarch_is_inited,
+                  (current_core_type == CORE_TYPE_DUMMY)
+                  )
+               ;
 
-      if (action == MENU_ACTION_QUIT && !menu_driver_binding_state)
-         return RUNLOOP_STATE_QUIT;
+         old_input                 = current_input;
+
+         if (!focused)
+            return RUNLOOP_STATE_POLLED_AND_SLEEP;
+
+         if (action == MENU_ACTION_QUIT && !menu_driver_binding_state)
+            return RUNLOOP_STATE_QUIT;
+      }
+
+      if (runloop_idle)
+         return RUNLOOP_STATE_POLLED_AND_SLEEP;
    }
+   else
 #endif
-
-   if (runloop_idle)
-      return RUNLOOP_STATE_SLEEP;
+      if (runloop_idle)
+         return RUNLOOP_STATE_SLEEP;
 
 
    /* Check game focus toggle */
@@ -2953,8 +2962,6 @@ int runloop_iterate(unsigned *sleep_ms)
    settings_t *settings                         = config_get_ptr();
    unsigned max_users                           = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
 
-   retro_ctx.poll_cb();
-
    if (runloop_frame_time.callback)
    {
       /* Updates frame timing if frame timing callback is in use by the core.
@@ -2991,7 +2998,12 @@ int runloop_iterate(unsigned *sleep_ms)
          frame_limit_last_time = 0.0;
          command_event(CMD_EVENT_QUIT, NULL);
          return -1;
+      case RUNLOOP_STATE_POLLED_AND_SLEEP:
+         runloop_netplay_pause();
+         *sleep_ms = 10;
+         return 1;
       case RUNLOOP_STATE_SLEEP:
+         retro_ctx.poll_cb();
          runloop_netplay_pause();
          *sleep_ms = 10;
          return 1;
