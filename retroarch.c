@@ -1559,9 +1559,16 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
          audio_driver_unset_callback();
 
-         runloop_system.info.library_name     = NULL;
-         runloop_system.info.library_version  = NULL;
-         runloop_system.info.valid_extensions = NULL;
+         if (!string_is_empty(runloop_system.info.library_name))
+            free((void*)runloop_system.info.library_name);
+         if (!string_is_empty(runloop_system.info.library_version))
+            free((void*)runloop_system.info.library_version);
+         if (!string_is_empty(runloop_system.info.valid_extensions))
+            free((void*)runloop_system.info.valid_extensions);
+
+         runloop_system.info.library_name          = NULL;
+         runloop_system.info.library_version       = NULL;
+         runloop_system.info.valid_extensions      = NULL;
          runloop_system.info.need_fullpath         = false;
          runloop_system.info.block_extract         = false;
 
