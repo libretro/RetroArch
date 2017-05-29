@@ -329,24 +329,32 @@ static bool load_content_into_memory(
 
    if (i == 0)
    {
-      /* First content file is significant, attempt to do patching,
-       * CRC checking, etc. */
+      enum rarch_content_type type = path_is_media_type(path);
 
-      /* Attempt to apply a patch. */
-      if (!content_ctx->patch_is_blocked)
-         patch_content(
-               content_ctx->is_ips_pref,
-               content_ctx->is_bps_pref,
-               content_ctx->is_ups_pref,
-               content_ctx->name_ips,
-               content_ctx->name_bps,
-               content_ctx->name_ups,
-               (uint8_t**)&ret_buf,
-               (void*)length);
+      /* If we have a media type, ignore CRC32 calculation. */
+      if (type == RARCH_CONTENT_NONE)
+      {
+         /* First content file is significant, attempt to do patching,
+          * CRC checking, etc. */
 
-      content_rom_crc = encoding_crc32(0, ret_buf, *length);
+         /* Attempt to apply a patch. */
+         if (!content_ctx->patch_is_blocked)
+            patch_content(
+                  content_ctx->is_ips_pref,
+                  content_ctx->is_bps_pref,
+                  content_ctx->is_ups_pref,
+                  content_ctx->name_ips,
+                  content_ctx->name_bps,
+                  content_ctx->name_ups,
+                  (uint8_t**)&ret_buf,
+                  (void*)length);
 
-      RARCH_LOG("CRC32: 0x%x .\n", (unsigned)content_rom_crc);
+         content_rom_crc = encoding_crc32(0, ret_buf, *length);
+
+         RARCH_LOG("CRC32: 0x%x .\n", (unsigned)content_rom_crc);
+      }
+      else
+         content_rom_crc = 0;
    }
 
    *buf = ret_buf;
@@ -582,9 +590,12 @@ static bool content_file_load(
 #ifdef HAVE_CHEEVOS
    if (!special)
    {
+      const char *content_path     = content->elems[0].data;
+      enum rarch_content_type type = path_is_media_type(content_path);
+
       cheevos_set_cheats();
 
-      if (!string_is_empty(content->elems[0].data))
+      if (type == RARCH_CONTENT_NONE && !string_is_empty(content_path))
          cheevos_load(info);
    }
 #endif
