@@ -2984,11 +2984,18 @@ static int menu_displaylist_parse_horizontal_content_actions(
 static int menu_displaylist_parse_information_list(
       menu_displaylist_info_t *info)
 {
-   core_info_t *core_info    = NULL;
+   core_info_t *core_info         = NULL;
+   rarch_system_info_t *system    = runloop_get_system_info();
 
    core_info_get_current_core(&core_info);
 
-   if (core_info && core_info->config_data)
+   if (  system &&
+         (!string_is_empty(system->info.library_name) &&
+          !string_is_equal(system->info.library_name,
+             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE))
+         )
+         && core_info && core_info->config_data
+      )
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFORMATION),
             msg_hash_to_str(MENU_ENUM_LABEL_CORE_INFORMATION),
