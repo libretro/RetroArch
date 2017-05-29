@@ -612,7 +612,9 @@ static void xmb_draw_icon(
 static void xmb_draw_thumbnail(
       menu_display_frame_info_t menu_disp_info,
       xmb_handle_t *xmb, float *color,
-      unsigned width, unsigned height, float w, float h, uintptr_t texture)
+      unsigned width, unsigned height, 
+      float x, float y,
+      float w, float h, uintptr_t texture)
 {
    unsigned i;
    menu_display_ctx_rotate_draw_t rotate_draw;
@@ -620,11 +622,6 @@ static void xmb_draw_thumbnail(
    struct video_coords coords;
    math_matrix_4x4 mymat;
    float shadow[16];
-   float y                  =
-      xmb->margins.screen.top + xmb->icon.size + h;
-   float x                  =
-      xmb->margins.screen.left + xmb->icon.spacing.horizontal +
-      xmb->icon.spacing.horizontal*4 - xmb->icon.size / 4;
 
    rotate_draw.matrix       = &mymat;
    rotate_draw.rotation     = 0;
@@ -2935,6 +2932,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    if (xmb->savestate_thumbnail)
       xmb_draw_thumbnail(menu_disp_info,
             xmb, &coord_white[0], width, height,
+            xmb->margins.screen.left + xmb->icon.spacing.horizontal +
+                  xmb->icon.spacing.horizontal*4 - xmb->icon.size / 4,
+            xmb->margins.screen.top + xmb->icon.size + xmb->savestate_thumbnail_height,
             xmb->savestate_thumbnail_width, xmb->savestate_thumbnail_height,
             xmb->savestate_thumbnail);
    else if (xmb->thumbnail
@@ -2948,6 +2948,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
       xmb_draw_thumbnail(menu_disp_info,
             xmb, &coord_white[0], width, height,
+            xmb->margins.screen.left + xmb->icon.spacing.horizontal +
+                  xmb->icon.spacing.horizontal*4 - xmb->icon.size / 4,
+            xmb->margins.screen.top + xmb->icon.size + xmb->thumbnail_height,
             xmb->thumbnail_width, xmb->thumbnail_height,
             xmb->thumbnail);
    }
