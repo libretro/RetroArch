@@ -1418,7 +1418,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          config_free();
          break;
       case RARCH_CTL_PREINIT:
-
+         libretro_free_system_info(&runloop_system.info);
          command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
 
          config_init();
