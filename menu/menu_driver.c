@@ -1826,8 +1826,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 #endif
             {
                rarch_system_info_t *system = runloop_get_system_info();
-               libretro_free_system_info(&system->info_int);
-               memset(&system->info_int, 0, sizeof(struct retro_system_info_internal));
+               libretro_free_system_info(&system->info);
+               memset(&system->info, 0, sizeof(struct retro_system_info));
             }
 
             video_coord_array_free(&menu_disp_ca);

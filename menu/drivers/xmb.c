@@ -4038,8 +4038,8 @@ static int xmb_list_push(void *data, void *userdata,
             entry.parse_type      = PARSE_ACTION;
             entry.add_empty_entry = false;
 
-            if (!string_is_empty(system->info_int.library_name) &&
-                  !string_is_equal(system->info_int.library_name,
+            if (!string_is_empty(system->info.library_name) &&
+                  !string_is_equal(system->info.library_name,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)))
             {
                entry.enum_idx      = MENU_ENUM_LABEL_CONTENT_SETTINGS;

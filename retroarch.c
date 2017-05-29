@@ -1098,7 +1098,7 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
    char core_path[PATH_MAX_LENGTH];
    char config_directory[PATH_MAX_LENGTH];
    rarch_system_info_t *system            = &runloop_system;
-   const char *core_name                  = system ? system->info_int.library_name : NULL;
+   const char *core_name                  = system ? system->info.library_name : NULL;
    const char *game_name                  = path_basename(path_get(RARCH_PATH_BASENAME));
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
@@ -1424,7 +1424,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          config_free();
          break;
       case RARCH_CTL_PREINIT:
-         libretro_free_system_info(&runloop_system.info_int);
+         libretro_free_system_info(&runloop_system.info);
          command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
 
          config_init();
@@ -1510,29 +1510,19 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_IS_BLOCK_CONFIG_READ:
          return rarch_block_config_read;
       case RARCH_CTL_SYSTEM_INFO_INIT:
-         {
-            struct retro_system_info system_info;
+         core_get_system_info(&runloop_system.info);
 
-            core_get_system_info(&system_info);
+         if (!runloop_system.info.library_name)
+            runloop_system.info.library_name = msg_hash_to_str(MSG_UNKNOWN);
+         if (!runloop_system.info.library_version)
+            runloop_system.info.library_version = "v0";
 
-            if (!string_is_empty(system_info.library_name))
-               runloop_system.info_int.library_name    = strdup(system_info.library_name);
-            else
-               runloop_system.info_int.library_name = strdup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE));
+         video_driver_set_title_buf();
 
-            if (!string_is_empty(system_info.library_version))
-               runloop_system.info_int.library_version = strdup(system_info.library_version);
-
-            if (!string_is_empty(system_info.valid_extensions))
-               runloop_system.info_int.valid_extensions = strdup(system_info.valid_extensions);
-            else
-               runloop_system.info_int.valid_extensions = strdup(DEFAULT_EXT);
-
-            runloop_system.info_int.need_fullpath       = system_info.need_fullpath;
-            runloop_system.info_int.block_extract       = system_info.block_extract;
-
-            video_driver_set_title_buf();
-         }
+         strlcpy(runloop_system.valid_extensions,
+               runloop_system.info.valid_extensions ?
+               runloop_system.info.valid_extensions : DEFAULT_EXT,
+               sizeof(runloop_system.valid_extensions));
          break;
       case RARCH_CTL_GET_CORE_OPTION_SIZE:
          {
@@ -1575,18 +1565,18 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
          audio_driver_unset_callback();
 
-         if (runloop_system.info_int.library_name != NULL)
-            free(runloop_system.info_int.library_name);
-         if (runloop_system.info_int.library_version != NULL)
-            free(runloop_system.info_int.library_version);
-         if (runloop_system.info_int.valid_extensions != NULL)
-            free(runloop_system.info_int.valid_extensions);
+         if (!string_is_empty(runloop_system.info.library_name))
+            free((void*)runloop_system.info.library_name);
+         if (!string_is_empty(runloop_system.info.library_version))
+            free((void*)runloop_system.info.library_version);
+         if (!string_is_empty(runloop_system.info.valid_extensions))
+            free((void*)runloop_system.info.valid_extensions);
 
-         runloop_system.info_int.library_name          = NULL;
-         runloop_system.info_int.library_version       = NULL;
-         runloop_system.info_int.valid_extensions      = NULL;
-         runloop_system.info_int.need_fullpath         = false;
-         runloop_system.info_int.block_extract         = false;
+         runloop_system.info.library_name          = NULL;
+         runloop_system.info.library_version       = NULL;
+         runloop_system.info.valid_extensions      = NULL;
+         runloop_system.info.need_fullpath         = false;
+         runloop_system.info.block_extract         = false;
 
          memset(&runloop_system, 0, sizeof(rarch_system_info_t));
          break;

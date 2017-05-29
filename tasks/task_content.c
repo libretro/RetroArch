@@ -842,13 +842,13 @@ static bool task_load_content(content_ctx_info_t *content_info,
    if (is_inited || contentless)
    {
       char tmp[PATH_MAX_LENGTH];
-      struct retro_system_info_internal *info = NULL;
+      struct retro_system_info *info = NULL;
       rarch_system_info_t *sys_info  = runloop_get_system_info();
 
       tmp[0] = '\0';
 
       if (sys_info)
-         info = &sys_info->info_int;
+         info = &sys_info->info;
 
       strlcpy(tmp, path_get(RARCH_PATH_CONTENT), sizeof(tmp));
 
@@ -1725,11 +1725,11 @@ bool content_init(void)
          content_ctx.directory_system         = strdup(settings->paths.directory_system);
       if (!string_is_empty(settings->paths.directory_cache))
          content_ctx.directory_cache          = strdup(settings->paths.directory_cache);
-      if (!string_is_empty(sys_info->info_int.valid_extensions))
-         content_ctx.valid_extensions         = strdup(sys_info->info_int.valid_extensions);
+      if (!string_is_empty(sys_info->info.valid_extensions))
+         content_ctx.valid_extensions         = strdup(sys_info->info.valid_extensions);
 
-      content_ctx.block_extract               = sys_info->info_int.block_extract;
-      content_ctx.need_fullpath               = sys_info->info_int.need_fullpath;
+      content_ctx.block_extract               = sys_info->info.block_extract;
+      content_ctx.need_fullpath               = sys_info->info.need_fullpath;
 
       content_ctx.subsystem.data              = sys_info->subsystem.data;
       content_ctx.subsystem.size              = sys_info->subsystem.size;

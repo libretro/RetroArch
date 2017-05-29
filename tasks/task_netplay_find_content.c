@@ -57,7 +57,7 @@ static void netplay_crc_scan_callback(void *task_data,
    netplay_crc_handle_t *state     = (netplay_crc_handle_t*)task_data;
    content_ctx_info_t content_info = {0};
    rarch_system_info_t *info        = runloop_get_system_info();
-   struct retro_system_info_internal *system = &info->info_int;
+   struct retro_system_info *system = &info->info;
 
    if (!state)
       return;
@@ -95,7 +95,7 @@ static void netplay_crc_scan_callback(void *task_data,
 
       command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
 
-      if (!string_is_equal(info->info_int.library_name, state->core_name))
+      if (!string_is_equal(info->info.library_name, state->core_name))
          task_push_load_new_core(state->core_path, NULL,
                &content_info, CORE_TYPE_PLAIN, NULL, NULL);
 

@@ -488,9 +488,9 @@ bool netplay_handshake_info(netplay_t *netplay,
    if (core_info)
    {
       strlcpy(info_buf.core_name,
-            core_info->info_int.library_name, sizeof(info_buf.core_name));
+            core_info->info.library_name, sizeof(info_buf.core_name));
       strlcpy(info_buf.core_version,
-            core_info->info_int.library_version, sizeof(info_buf.core_version));
+            core_info->info.library_version, sizeof(info_buf.core_version));
    }
    else
    {
@@ -834,9 +834,9 @@ bool netplay_handshake_pre_info(netplay_t *netplay,
    if (core_info)
    {
       if (strncmp(info_buf.core_name,
-               core_info->info_int.library_name, sizeof(info_buf.core_name)) ||
+               core_info->info.library_name, sizeof(info_buf.core_name)) ||
           strncmp(info_buf.core_version,
-             core_info->info_int.library_version, sizeof(info_buf.core_version)))
+             core_info->info.library_version, sizeof(info_buf.core_version)))
       {
          dmsg = msg_hash_to_str(MSG_NETPLAY_IMPLEMENTATIONS_DIFFER);
          goto error;

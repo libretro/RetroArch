@@ -857,7 +857,7 @@ static int mui_get_core_title(char *s, size_t len)
    const char *core_name          = NULL;
    const char *core_version       = NULL;
    rarch_system_info_t *info      = runloop_get_system_info();
-   struct retro_system_info_internal *system = &info->info_int;
+   struct retro_system_info *system = &info->info;
 
    core_name                      = system->library_name;
    core_version                   = system->library_version;
@@ -868,9 +868,9 @@ static int mui_get_core_title(char *s, size_t len)
    if (info)
    {
       if (string_is_empty(core_name))
-         core_name = info->info_int.library_name;
+         core_name = info->info.library_name;
       if (!core_version)
-         core_version = info->info_int.library_version;
+         core_version = info->info.library_version;
    }
 
    if (string_is_empty(core_name))
@@ -1807,8 +1807,8 @@ static int mui_list_push(void *data, void *userdata,
             entry.parse_type      = PARSE_ACTION;
             entry.add_empty_entry = false;
 
-            if (!string_is_empty(system->info_int.library_name) &&
-                  !string_is_equal(system->info_int.library_name,
+            if (!string_is_empty(system->info.library_name) &&
+                  !string_is_equal(system->info.library_name,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)))
             {
                entry.enum_idx      = MENU_ENUM_LABEL_CONTENT_SETTINGS;
