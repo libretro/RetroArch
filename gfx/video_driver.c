@@ -2502,9 +2502,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->xmb_alpha_factor       = settings->uints.menu_xmb_alpha_factor;
    video_info->menu_wallpaper_opacity = settings->floats.menu_wallpaper_opacity;
 
-   if (!settings->bools.menu_pause_libretro)
-      video_info->libretro_running    = (rarch_ctl(RARCH_CTL_IS_INITED, NULL)
-            && !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL));
+   video_info->libretro_running    = (rarch_ctl(RARCH_CTL_IS_INITED, NULL)
+         && !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL));
 #else
    video_info->menu_is_alive          = false;
    video_info->menu_footer_opacity    = 0.0f;
