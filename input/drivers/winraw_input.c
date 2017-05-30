@@ -51,10 +51,6 @@ typedef struct
    bool mouse_grab;
 } winraw_input_t;
 
-/*static int g_mice_x_min, g_mice_x_max;
-static int g_mice_y_min, g_mice_y_max;
-static double g_mice_x_gain, g_mice_y_gain;*/
-
 static winraw_keyboard_t *g_keyboard = NULL;
 static winraw_mouse_t *g_mice        = NULL;
 static unsigned g_mouse_cnt          = 0;
@@ -306,15 +302,6 @@ static void winraw_update_mouse_state(winraw_mouse_t *mouse, RAWMOUSE *state)
       }
    }
 
-   /*if (mouse->x < g_mice_x_min)
-      mouse->x = g_mice_x_min;
-   else if (mouse->x > g_mice_x_max)
-      mouse->x = g_mice_x_max;
-   if (mouse->y < g_mice_y_min)
-      mouse->y = g_mice_y_min;
-   else if (mouse->y > g_mice_y_max)
-      mouse->y = g_mice_y_max;*/
-
    if (state->usButtonFlags & RI_MOUSE_LEFT_BUTTON_DOWN)
       mouse->btn_l = true;
    else if (state->usButtonFlags & RI_MOUSE_LEFT_BUTTON_UP)
@@ -420,26 +407,6 @@ static void *winraw_init(const char *joypad_driver)
       WINRAW_LOG("Mouse unavailable.");
    else
    {
-      /*src_vid_info = video_viewport_get_system_av_info();
-      r = video_driver_get_viewport_info(&dst_vid_info);
-      if (!r)
-      {
-         WINRAW_ERR("video_driver_get_viewport_info failed");
-         goto error;
-      }
-
-      RARCH_LOG("[WINRAW]: src vid: width=%u, height=%u",
-            src_vid_info->geometry.base_width,
-            src_vid_info->geometry.base_height);
-      RARCH_LOG("[WINRAW]: dst vid: x=%u, y=%u, width=%u, height=%u",
-            dst_vid_info.x, dst_vid_info.y,
-            dst_vid_info.width, dst_vid_info.height);
-
-      g_mice_x_min = dst_vid_info.x;
-      g_mice_x_max = dst_vid_info.x + dst_vid_info.width - 1;
-      g_mice_y_min = dst_vid_info.y;
-      g_mice_y_max = dst_vid_info.y + dst_vid_info.height - 1;*/
-
       wr->mice = (winraw_mouse_t*)malloc(g_mouse_cnt * sizeof(winraw_mouse_t));
       if (!wr->mice)
       {
@@ -523,20 +490,17 @@ static int16_t winraw_input_state(void *d,
       case RETRO_DEVICE_MOUSE:
          if (port < g_mouse_cnt)
             return winraw_mouse_state(&wr->mice[port], false, id);
-         return 0;
+         break;
       case RARCH_DEVICE_MOUSE_SCREEN:
          if (port < g_mouse_cnt)
             return winraw_mouse_state(&wr->mice[port], true, id);
-         return 0;
+         break;
       case RETRO_DEVICE_JOYPAD:
          return winraw_joypad_state(wr, joypad_info, binds[port], port, id);
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
             return input_joypad_analog(wr->joypad, joypad_info,
                   port, index, id, binds[port]);
-      case RETRO_DEVICE_POINTER:
-         /* TODO */
-         return 0;
    }
 
    return 0;
@@ -571,8 +535,7 @@ static uint64_t winraw_get_capabilities(void *u)
    return RETRO_DEVICE_KEYBOARD |
           RETRO_DEVICE_MOUSE |
           RETRO_DEVICE_JOYPAD |
-          RETRO_DEVICE_ANALOG |
-          RETRO_DEVICE_POINTER;
+          RETRO_DEVICE_ANALOG;
 }
 
 static void winraw_grab_mouse(void *d, bool grab)
