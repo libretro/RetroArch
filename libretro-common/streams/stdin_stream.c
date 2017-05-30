@@ -38,7 +38,7 @@
 
 #include <streams/stdin_stream.h>
 
-#if defined(_WIN32) && defined(_XBOX)
+#if (defined(_WIN32) && defined(_XBOX)) || defined(__CELLOS_LV2__)
 size_t read_stdin(char *buf, size_t size)
 {
    /* Not implemented. */
