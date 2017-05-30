@@ -923,11 +923,16 @@ bool audio_driver_mixer_extension_supported(const char *ext)
    return ret;
 }
 
+static void audio_mixer_play_stop_cb(audio_mixer_sound_t* sound, unsigned reason)
+{
+   audio_mixer_current_max_idx--;
+}
+
 bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
 {
    audio_mixer_voice_t *voice    = NULL;
    audio_mixer_sound_t *handle   = NULL;
-   audio_mixer_stop_cb_t stop_cb = NULL;
+   audio_mixer_stop_cb_t stop_cb = audio_mixer_play_stop_cb;
    bool looped                   = false;
    void *buf                     = NULL;
    
