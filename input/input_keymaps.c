@@ -1515,7 +1515,7 @@ const struct rarch_key_map rarch_key_map_dos[] = {
 };
 #endif
 
-#ifdef _WIN32
+#if defined(_WIN32) && _WIN32_WINNT >= 0x0501
 const struct rarch_key_map rarch_key_map_winraw[] = {
    { VK_BACK, RETROK_BACKSPACE },
    { VK_TAB, RETROK_TAB },
@@ -1614,6 +1614,19 @@ const struct rarch_key_map rarch_key_map_winraw[] = {
    { VK_RCONTROL, RETROK_RCTRL },
    { VK_LMENU, RETROK_LALT },
    { VK_RMENU, RETROK_RALT },
+   { VK_RETURN, RETROK_KP_ENTER },
+   { VK_CAPITAL, RETROK_CAPSLOCK },
+   { VK_OEM_1, RETROK_SEMICOLON },
+   { VK_OEM_PLUS, RETROK_EQUALS },
+   { VK_OEM_COMMA, RETROK_COMMA },
+   { VK_OEM_MINUS, RETROK_MINUS },
+   { VK_OEM_PERIOD, RETROK_PERIOD },
+   { VK_OEM_2, RETROK_SLASH },
+   { VK_OEM_3, RETROK_BACKQUOTE },
+   { VK_OEM_4, RETROK_LEFTBRACKET },
+   { VK_OEM_5, RETROK_BACKSLASH },
+   { VK_OEM_6, RETROK_RIGHTBRACKET },
+   { VK_OEM_7, RETROK_QUOTE },
    { 0, RETROK_UNKNOWN }
 };
 #endif
