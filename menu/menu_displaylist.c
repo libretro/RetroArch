@@ -2939,7 +2939,8 @@ static int menu_displaylist_parse_horizontal_content_actions(
    {
       const char *ext = path_get_extension(entry_path);
 
-      if (audio_driver_mixer_extension_supported(ext))
+      if (!string_is_empty(ext) &&
+            audio_driver_mixer_extension_supported(ext))
       {
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER),

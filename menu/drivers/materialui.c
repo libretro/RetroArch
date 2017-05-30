@@ -1368,18 +1368,27 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
 
    if (menu_input_dialog_get_display_kb())
    {
-      const char *str   = menu_input_dialog_get_buffer();
-      const char *label = menu_input_dialog_get_label_buffer();
+      const char *str          = menu_input_dialog_get_buffer();
+      const char *label        = menu_input_dialog_get_label_buffer();
+      float *body_bg_color_ptr = &body_bg_color[0];
 
       menu_display_draw_quad(0, 0, width, height, width, height, &black_bg[0]);
       snprintf(msg, sizeof(msg), "%s\n%s", label, str);
-      mui_render_messagebox(mui, video_info, msg, &body_bg_color[0], font_hover_color);
+
+      if (body_bg_color_ptr)
+         mui_render_messagebox(mui, video_info,
+               msg, body_bg_color_ptr, font_hover_color);
    }
 
    if (!string_is_empty(mui->box_message))
    {
+      float *body_bg_color_ptr = &body_bg_color[0];
+
       menu_display_draw_quad(0, 0, width, height, width, height, &black_bg[0]);
-      mui_render_messagebox(mui, video_info, mui->box_message, &body_bg_color[0], font_hover_color);
+
+      if (body_bg_color_ptr)
+         mui_render_messagebox(mui, video_info,
+               mui->box_message, body_bg_color_ptr, font_hover_color);
       mui->box_message[0] = '\0';
    }
 
