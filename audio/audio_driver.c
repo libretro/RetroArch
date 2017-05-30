@@ -923,13 +923,32 @@ bool audio_driver_mixer_extension_supported(const char *ext)
    return ret;
 }
 
-static void audio_mixer_play_stop_cb(audio_mixer_sound_t* sound, unsigned reason)
+static int audio_mixer_find_index(audio_mixer_sound_t *sound)
 {
-   /* TODO/FIXME - fix leaks */
+   unsigned i;
+
+   for (i = 0; i < AUDIO_MIXER_MAX_STREAMS; i++)
+   {
+      audio_mixer_sound_t *handle = audio_mixer_streams[i].handle;
+      if (handle == sound)
+         return i;
+   }
+   return -1;
+}
+
+static void audio_mixer_play_stop_cb(audio_mixer_sound_t *sound, unsigned reason)
+{
+   int idx = audio_mixer_find_index(sound);
 
    switch (reason)
    {
       case AUDIO_MIXER_SOUND_FINISHED:
+         audio_mixer_destroy(sound);
+         audio_mixer_streams[idx].state   = AUDIO_STREAM_STATE_NONE;
+         audio_mixer_streams[idx].volume  = 0.0f;
+         audio_mixer_streams[idx].stop_cb = NULL;
+         audio_mixer_streams[idx].handle  = NULL;
+         audio_mixer_streams[idx].voice   = NULL;
          audio_mixer_current_max_idx--;
          break;
       case AUDIO_MIXER_SOUND_STOPPED:
