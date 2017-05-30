@@ -124,7 +124,7 @@ static PyObject *py_read_input(PyObject *self, PyObject *args)
    if (user > MAX_USERS || user < 1 || key >= RARCH_FIRST_META_KEY)
       return NULL;
 
-   joypad_info.joy_idx    = settings->input.joypad_map[user - 1];
+   joypad_info.joy_idx    = settings->uints.input_joypad_map[user - 1];
    joypad_info.auto_binds = input_autoconf_binds[joypad_info.joy_idx];
 
    if (!input_driver_is_libretro_input_blocked())
@@ -153,7 +153,7 @@ static PyObject *py_read_analog(PyObject *self, PyObject *args)
    if (user > MAX_USERS || user < 1 || index > 1 || id > 1)
       return NULL;
 
-   joypad_info.joy_idx    = settings->input.joypad_map[user - 1];
+   joypad_info.joy_idx    = settings->uints.input_joypad_map[user - 1];
    joypad_info.auto_binds = input_autoconf_binds[joypad_info.joy_idx];
 
    res = current_input->input_state(current_input_data, 
@@ -401,7 +401,7 @@ float py_state_get(py_state_t *handle, const char *id,
    {
       struct retro_keybind *general_binds = input_config_binds[i];
       struct retro_keybind *auto_binds    = input_autoconf_binds[i];
-      enum analog_dpad_mode dpad_mode     = settings->input.analog_dpad_mode[i];
+      enum analog_dpad_mode dpad_mode     = settings->uints.input_analog_dpad_mode[i];
 
       if (dpad_mode == ANALOG_DPAD_NONE)
          continue;
