@@ -929,6 +929,9 @@ void menu_display_rotate_z(menu_display_ctx_rotate_draw_t *draw)
 
    b = (math_matrix_4x4*)menu_disp->get_default_mvp();
 
+   if (!b)
+      return;
+
    matrix_4x4_rotate_z(matrix_rotated, draw->rotation);
    matrix_4x4_multiply(*draw->matrix, matrix_rotated, *b);
 
