@@ -1673,23 +1673,20 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_LOAD_STATE:
-         {
-#ifdef HAVE_CHEEVOS
-            settings_t *settings      = config_get_ptr();
-#endif
-            /* Immutable - disallow savestate load when
-             * we absolutely cannot change game state. */
-            if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
-               return false;
+         /* Immutable - disallow savestate load when
+          * we absolutely cannot change game state. */
+         if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
+            return false;
 
 #ifdef HAVE_CHEEVOS
+         {
+            settings_t *settings      = config_get_ptr();
             if (settings->bools.cheevos_hardcore_mode_enable)
                return false;
+         }
 #endif
 
-            return command_event_main_state(cmd);
-         }
-         break;
+         return command_event_main_state(cmd);
       case CMD_EVENT_UNDO_LOAD_STATE:
          return command_event_main_state(cmd);
       case CMD_EVENT_UNDO_SAVE_STATE:
