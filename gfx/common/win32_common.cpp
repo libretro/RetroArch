@@ -362,8 +362,7 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
 static LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
 		WPARAM wparam, LPARAM lparam)
 {
-   unsigned scancode = (lparam >> 16) & 0xff;
-   unsigned keycode = input_keymaps_translate_keysym_to_rk(scancode);
+   unsigned keycode;
    uint16_t mod     = 0;
    bool keydown     = true;
 
@@ -398,9 +397,14 @@ static LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
          if (message == WM_KEYUP || message == WM_SYSKEYUP)
             keydown = false;
 
-         /* DirectInput uses scancodes directly. */
-         input_keyboard_event(keydown, keycode, 0, mod,
-               RETRO_DEVICE_KEYBOARD);
+#if _WIN32_WINNT >= 0x0501
+         if (string_is_equal_fast(config_get_ptr()->arrays.input_driver, "raw", 4))
+            keycode = input_keymaps_translate_keysym_to_rk((unsigned)(wparam));
+         else
+#endif
+            keycode = input_keymaps_translate_keysym_to_rk((lparam >> 16) & 0xff);
+
+         input_keyboard_event(keydown, keycode, 0, mod, RETRO_DEVICE_KEYBOARD);
 
          if (message == WM_SYSKEYDOWN)
          {
