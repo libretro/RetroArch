@@ -1097,8 +1097,7 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
 {
    char core_path[PATH_MAX_LENGTH];
    char config_directory[PATH_MAX_LENGTH];
-   rarch_system_info_t *system            = &runloop_system;
-   const char *core_name                  = system ? system->info.library_name : NULL;
+   const char *core_name                  = runloop_system.info.library_name;
    const char *game_name                  = path_basename(path_get(RARCH_PATH_BASENAME));
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
