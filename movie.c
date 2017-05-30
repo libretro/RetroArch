@@ -86,12 +86,7 @@ static bool bsv_movie_init_playback(bsv_movie_t *handle, const char *path)
    handle->file              = file;
    handle->playback          = true;
 
-   if (filestream_read(handle->file, header, 4) != 4)
-   {
-      RARCH_ERR("%s\n", msg_hash_to_str(MSG_COULD_NOT_READ_MOVIE_HEADER));
-      return false;
-   }
-
+   filestream_read(handle->file, header, sizeof(uint32_t) * 4);
    /* Compatibility with old implementation that
     * used incorrect documentation. */
    if (swap_if_little32(header[MAGIC_INDEX]) != BSV_MAGIC
@@ -109,6 +104,13 @@ static bool bsv_movie_init_playback(bsv_movie_t *handle, const char *path)
 
    state_size = swap_if_big32(header[STATE_SIZE_INDEX]);
 
+   #if 0
+      RARCH_ERR("----- debug %u -----\n", header[0]);
+      RARCH_ERR("----- debug %u -----\n", header[1]);
+      RARCH_ERR("----- debug %u -----\n", header[2]);
+      RARCH_ERR("----- debug %u -----\n", header[3]);
+   #endif
+
    if (state_size)
    {
       retro_ctx_size_info_t info;
@@ -120,7 +122,6 @@ static bool bsv_movie_init_playback(bsv_movie_t *handle, const char *path)
 
       handle->state      = buf;
       handle->state_size = state_size;
-
       if (filestream_read(handle->file, handle->state, state_size) != state_size)
       {
          RARCH_ERR("%s\n", msg_hash_to_str(MSG_COULD_NOT_READ_STATE_FROM_MOVIE));
@@ -173,8 +174,14 @@ static bool bsv_movie_init_record(bsv_movie_t *handle, const char *path)
    state_size               = (unsigned)info.size;
 
    header[STATE_SIZE_INDEX] = swap_if_big32(state_size);
+#if 0
+   RARCH_ERR("----- debug %u -----\n", header[0]);
+   RARCH_ERR("----- debug %u -----\n", header[1]);
+   RARCH_ERR("----- debug %u -----\n", header[2]);
+   RARCH_ERR("----- debug %u -----\n", header[3]);
+#endif
 
-   filestream_write(handle->file, header, sizeof(uint32_t));
+   filestream_write(handle->file, header, 4 * sizeof(uint32_t));
 
    handle->min_file_pos     = sizeof(header) + state_size;
    handle->state_size       = state_size;
