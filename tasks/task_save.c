@@ -1080,6 +1080,8 @@ static void task_push_load_and_save_state(const char *path, void *data,
    state->undo_data  = data;
    state->autosave   = autosave;
    state->mute       = autosave; /* don't show OSD messages if we are auto-saving */
+   if(load_to_backup_buffer)
+      state->mute       = true;
    state->state_slot = settings->ints.state_slot;
    state->has_valid_framebuffer  = video_driver_cached_frame_has_valid_framebuffer();
 
