@@ -925,7 +925,18 @@ bool audio_driver_mixer_extension_supported(const char *ext)
 
 static void audio_mixer_play_stop_cb(audio_mixer_sound_t* sound, unsigned reason)
 {
-   audio_mixer_current_max_idx--;
+   /* TODO/FIXME - fix leaks */
+
+   switch (reason)
+   {
+      case AUDIO_MIXER_SOUND_FINISHED:
+         audio_mixer_current_max_idx--;
+         break;
+      case AUDIO_MIXER_SOUND_STOPPED:
+         break;
+      case AUDIO_MIXER_SOUND_REPEATED:
+         break;
+   }
 }
 
 bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
