@@ -5467,23 +5467,20 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-         if (string_is_not_equal_fast(settings->arrays.record_driver, "null", 4))
-         {
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.multimedia_builtin_mediaplayer_enable,
-                  MENU_ENUM_LABEL_USE_BUILTIN_PLAYER,
-                  MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
-                  true,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
-         }
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.multimedia_builtin_mediaplayer_enable,
+               MENU_ENUM_LABEL_USE_BUILTIN_PLAYER,
+               MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
+               true,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
 
 
 #ifdef HAVE_IMAGEVIEWER
@@ -5502,6 +5499,21 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
 #endif
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.filter_by_current_core,
+               MENU_ENUM_LABEL_FILTER_BY_CURRENT_CORE,
+               MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
+               true,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);

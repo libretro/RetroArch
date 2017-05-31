@@ -706,7 +706,7 @@ static int general_push(menu_displaylist_info_t *info,
                }
             }
 
-            if (menu_entries_current_core_is_no_core())
+            if (!settings->bools.filter_by_current_core)
             {
                if (list && !string_is_empty(list->all_ext))
                {

@@ -1229,3 +1229,5 @@ MSG_HASH(MENU_ENUM_LABEL_ADD_TO_MIXER,
       "audio_add_to_mixer")
 MSG_HASH(MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION,
       "audio_add_to_mixer_and_collection")
+MSG_HASH(MENU_ENUM_LABEL_FILTER_BY_CURRENT_CORE,
+      "filter_by_current_Core")

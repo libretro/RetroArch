@@ -102,6 +102,7 @@ typedef struct settings
 
 #ifdef HAVE_MENU
       /* Menu */
+      bool filter_by_current_core;
       bool menu_show_start_screen;
       bool menu_pause_libretro;
       bool menu_timedate_enable;
