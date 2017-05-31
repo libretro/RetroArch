@@ -130,17 +130,11 @@ static int setting_bind_action_ok(void *data, bool wraparound)
 static int setting_int_action_right_default(void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
-#ifdef HAVE_MENU
-   double               min = 0.0f;
-#endif
    double               max = 0.0f;
    
    if (!setting)
       return -1;
 
-#ifdef HAVE_MENU
-   min = setting->min;
-#endif
    max = setting->max;
 
    (void)wraparound; /* TODO/FIXME - handle this */
@@ -153,8 +147,9 @@ static int setting_int_action_right_default(void *data, bool wraparound)
       if (*setting->value.target.integer > max)
       {
          settings_t *settings = config_get_ptr();
-
 #ifdef HAVE_MENU
+         double          min  = setting->min;
+
          if (settings && settings->bools.menu_navigation_wraparound_enable)
             *setting->value.target.integer = min;
          else
@@ -241,17 +236,11 @@ static int setting_uint_action_left_default(void *data, bool wraparound)
 static int setting_uint_action_right_default(void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
-#ifdef HAVE_MENU
-   double               min = 0.0f;
-#endif
    double               max = 0.0f;
    
    if (!setting)
       return -1;
 
-#ifdef HAVE_MENU
-   min = setting->min;
-#endif
    max = setting->max;
 
    (void)wraparound; /* TODO/FIXME - handle this */
@@ -267,6 +256,8 @@ static int setting_uint_action_right_default(void *data, bool wraparound)
          settings_t *settings = config_get_ptr();
 
 #ifdef HAVE_MENU
+         double           min = setting->min;
+
          if (settings && settings->bools.menu_navigation_wraparound_enable)
             *setting->value.target.unsigned_integer = min;
          else
@@ -405,12 +396,9 @@ static int setting_fraction_action_left_default(
       void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
-   double               min = 0.0f;
    
    if (!setting)
       return -1;
-
-   min = setting->min;
 
    (void)wraparound; /* TODO/FIXME - handle this */
 
@@ -419,6 +407,7 @@ static int setting_fraction_action_left_default(
 
    if (setting->enforce_minrange)
    {
+      double min = setting->min;
       if (*setting->value.target.fraction < min)
          *setting->value.target.fraction = min;
    }
@@ -430,17 +419,11 @@ static int setting_fraction_action_right_default(
       void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
-#ifdef HAVE_MENU
-   double               min = 0.0f;
-#endif
    double               max = 0.0f;
 
    if (!setting)
       return -1;
 
-#ifdef HAVE_MENU
-   min = setting->min;
-#endif
    max = setting->max;
 
    (void)wraparound; /* TODO/FIXME - handle this */
@@ -454,6 +437,8 @@ static int setting_fraction_action_right_default(
       {
 #ifdef HAVE_MENU
          settings_t *settings = config_get_ptr();
+         double          min  = setting->min;
+
          if (settings && settings->bools.menu_navigation_wraparound_enable)
             *setting->value.target.fraction = min;
          else
