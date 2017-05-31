@@ -2159,9 +2159,12 @@ void retroarch_fail(int error_code, const char *error)
 
 bool retroarch_main_quit(void)
 {
-   command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
-   command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
-   command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
+   if (!runloop_shutdown_initiated)
+   {
+      command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
+      command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
+      command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
+   }
 
    runloop_shutdown_initiated = true;
    rarch_menu_running_finished();
