@@ -2582,7 +2582,7 @@ static void xmb_draw_bg(
          if (!running && draw.texture)
             draw.color = &coord_white[0];
 
-         if (video_info->xmb_color_theme == XMB_THEME_WALLPAPER)
+         if (running || video_info->xmb_color_theme == XMB_THEME_WALLPAPER)
             add_opacity = true;
 
          menu_display_draw_bg(&draw, video_info, add_opacity);
