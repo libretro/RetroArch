@@ -54,7 +54,7 @@ static const char *stock_xmb_ribbon_simple = CG(
    output main_fragment(uniform input IN) 
    {
       output OUT;
-      OUT.color = float4(1.0, 1.0, 1.0, 0.05);
+      OUT.color = float4(0.05, 0.05, 0.05, 1.0);
       return OUT;
    }
 );
