@@ -1,34 +1,33 @@
 // Menu resources (Japanese)
 //
-// The encoding for this file is CP932.
 
 LANGUAGE LANG_JAPANESE, SUBLANG_NEUTRAL
 IDR_MENU MENU
 {
-    POPUP "ƒtƒ@ƒCƒ‹"
+    POPUP "ãƒ•ã‚¡ã‚¤ãƒ«"
     {
-        MENUITEM "ƒRƒA‚ðƒ[ƒh...", ID_M_LOAD_CORE
-        MENUITEM "ƒRƒ“ƒeƒ“ƒc‚ðƒ[ƒh...", ID_M_LOAD_CONTENT
+        MENUITEM "ã‚³ã‚¢ã‚’ãƒ­ãƒ¼ãƒ‰...", ID_M_LOAD_CORE
+        MENUITEM "ã‚³ãƒ³ãƒ†ãƒ³ãƒ„ã‚’ãƒ­ãƒ¼ãƒ‰...", ID_M_LOAD_CONTENT
         MENUITEM SEPARATOR
-        MENUITEM "I—¹", ID_M_QUIT
+        MENUITEM "çµ‚äº†", ID_M_QUIT
     }
-    POPUP "ƒRƒ}ƒ“ƒh"
+    POPUP "ã‚³ãƒžãƒ³ãƒ‰"
     {
-        POPUP "ƒI[ƒfƒBƒIÝ’è"
+        POPUP "ã‚ªãƒ¼ãƒ‡ã‚£ã‚ªè¨­å®š"
         {
-            MENUITEM "ƒI[ƒfƒBƒI‚ðÁ‰¹", ID_M_MUTE_TOGGLE
+            MENUITEM "ã‚ªãƒ¼ãƒ‡ã‚£ã‚ªã‚’æ¶ˆéŸ³", ID_M_MUTE_TOGGLE
         }
-        POPUP "ƒfƒBƒXƒN‘€ì"
+        POPUP "ãƒ‡ã‚£ã‚¹ã‚¯æ“ä½œ"
         {
-            MENUITEM "ƒfƒBƒXƒNŽæ‚èo‚µ", ID_M_DISK_CYCLE
-            MENUITEM "‘O‚ÌƒfƒBƒXƒN", ID_M_DISK_PREV
-            MENUITEM "ŽŸ‚ÌƒfƒBƒXƒN", ID_M_DISK_NEXT
+            MENUITEM "ãƒ‡ã‚£ã‚¹ã‚¯å–ã‚Šå‡ºã—", ID_M_DISK_CYCLE
+            MENUITEM "å‰ã®ãƒ‡ã‚£ã‚¹ã‚¯", ID_M_DISK_PREV
+            MENUITEM "æ¬¡ã®ãƒ‡ã‚£ã‚¹ã‚¯", ID_M_DISK_NEXT
         }
-        POPUP "•Û‘¶ó‘ÔÝ’è"
+        POPUP "ä¿å­˜çŠ¶æ…‹è¨­å®š"
         {
-            POPUP "ó‘Ô‚ÌƒCƒ“ƒfƒbƒNƒX"
+            POPUP "çŠ¶æ…‹ã®ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹"
             {
-                MENUITEM "-1 (Ž©“®)", ID_M_STATE_INDEX_AUTO
+                MENUITEM "-1 (è‡ªå‹•)", ID_M_STATE_INDEX_AUTO
                 MENUITEM "0", ID_M_STATE_INDEX_AUTO
                 MENUITEM "1", ID_M_STATE_INDEX_AUTO
                 MENUITEM "2", ID_M_STATE_INDEX_AUTO
@@ -40,18 +39,18 @@ IDR_MENU MENU
                 MENUITEM "8", ID_M_STATE_INDEX_AUTO
                 MENUITEM "9", ID_M_STATE_INDEX_AUTO
             }
-            MENUITEM "•Û‘¶ó‘Ô‚ðƒ[ƒh", ID_M_LOAD_STATE
-            MENUITEM "ó‘Ô•Û‘¶", ID_M_SAVE_STATE
+            MENUITEM "ä¿å­˜çŠ¶æ…‹ã‚’ãƒ­ãƒ¼ãƒ‰", ID_M_LOAD_STATE
+            MENUITEM "çŠ¶æ…‹ä¿å­˜", ID_M_SAVE_STATE
         }
-        MENUITEM "ƒŠƒZƒbƒg", ID_M_RESET
-        MENUITEM "ƒƒjƒ…[‚ÉØ‚è‘Ö‚¦", ID_M_MENU_TOGGLE
-        MENUITEM "ˆêŽž’âŽ~", ID_M_PAUSE_TOGGLE
-        MENUITEM "ƒ}ƒEƒXƒOƒ‰ƒuØ‚è‘Ö‚¦", ID_M_MOUSE_GRAB
-        MENUITEM "ƒXƒNƒŠ[ƒ“ƒVƒ‡ƒbƒg‚ðŽB‚é", ID_M_TAKE_SCREENSHOT
+        MENUITEM "ãƒªã‚»ãƒƒãƒˆ", ID_M_RESET
+        MENUITEM "ãƒ¡ãƒ‹ãƒ¥ãƒ¼ã«åˆ‡ã‚Šæ›¿ãˆ", ID_M_MENU_TOGGLE
+        MENUITEM "ä¸€æ™‚åœæ­¢", ID_M_PAUSE_TOGGLE
+        MENUITEM "ãƒžã‚¦ã‚¹ã‚°ãƒ©ãƒ–åˆ‡ã‚Šæ›¿ãˆ", ID_M_MOUSE_GRAB
+        MENUITEM "ã‚¹ã‚¯ãƒªãƒ¼ãƒ³ã‚·ãƒ§ãƒƒãƒˆã‚’æ’®ã‚‹", ID_M_TAKE_SCREENSHOT
     }
-    POPUP "ƒEƒBƒ“ƒhƒE"
+    POPUP "ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦"
     {
-        POPUP "ƒEƒBƒ“ƒhƒE‚ÌƒXƒP[ƒ‹"
+        POPUP "ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ã‚¹ã‚±ãƒ¼ãƒ«"
         {
             MENUITEM "1x", ID_M_WINDOW_SCALE_1X
             MENUITEM "2x", ID_M_WINDOW_SCALE_2X
@@ -64,9 +63,9 @@ IDR_MENU MENU
             MENUITEM "9x", ID_M_WINDOW_SCALE_9X
             MENUITEM "10x", ID_M_WINDOW_SCALE_10X
         }
-        MENUITEM "”r‘¼“I‚Èƒtƒ‹ƒXƒNƒŠ[ƒ“Ø‚è‘Ö‚¦", ID_M_FULL_SCREEN
+        MENUITEM "æŽ’ä»–çš„ãªãƒ•ãƒ«ã‚¹ã‚¯ãƒªãƒ¼ãƒ³åˆ‡ã‚Šæ›¿ãˆ", ID_M_FULL_SCREEN
         // Shader dialog is disabled for now, until video_threaded issues are fixed.
-        //MENUITEM "ƒVƒF[ƒ_[‚Ìƒpƒ‰ƒ[ƒ^", ID_M_SHADER_PARAMETERS
+        //MENUITEM "ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼ã®ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿", ID_M_SHADER_PARAMETERS
     }
 }
 
@@ -78,11 +77,11 @@ IDR_MENU MENU
 LANGUAGE LANG_JAPANESE, SUBLANG_NEUTRAL
 IDD_PICKCORE DIALOG 0, 0, 225, 118
 STYLE DS_3DLOOK | DS_CENTER | DS_MODALFRAME | DS_SHELLFONT | WS_CAPTION | WS_VISIBLE | WS_POPUP | WS_SYSMENU
-CAPTION "ƒRƒA‘I‘ð"
+CAPTION "ã‚³ã‚¢é¸æŠž"
 FONT 8, "Ms Shell Dlg"
 {
-    PUSHBUTTON      "ƒLƒƒƒ“ƒZƒ‹", IDCANCEL, 170, 32, 50, 14, 0, WS_EX_LEFT
+    PUSHBUTTON      "ã‚­ãƒ£ãƒ³ã‚»ãƒ«", IDCANCEL, 170, 32, 50, 14, 0, WS_EX_LEFT
     DEFPUSHBUTTON   "OK", IDOK, 170, 15, 50, 14, 0, WS_EX_LEFT
     LISTBOX         ID_CORELISTBOX, 5, 55, 214, 60, WS_TABSTOP | WS_VSCROLL | LBS_NOINTEGRALHEIGHT | LBS_SORT | LBS_NOTIFY, WS_EX_LEFT
-    LTEXT           "ƒRƒ“ƒeƒ“ƒc‚ÉŽg—p‚·‚éƒRƒA‚ð‘I‘ð‚µ‚Ä‚­‚¾‚³‚¢B", 0, 9, 12, 160, 17, SS_LEFT, WS_EX_LEFT
+    LTEXT           "ã‚³ãƒ³ãƒ†ãƒ³ãƒ„ã«ä½¿ç”¨ã™ã‚‹ã‚³ã‚¢ã‚’é¸æŠžã—ã¦ãã ã•ã„ã€‚", 0, 9, 12, 160, 17, SS_LEFT, WS_EX_LEFT
 }

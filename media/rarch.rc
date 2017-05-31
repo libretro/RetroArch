@@ -3,7 +3,7 @@
 // http://www.resedit.net
 #include "../ui/drivers/ui_win32_resource.h"
 #include <windows.h>
-
+#pragma code_page(65001)
 // Menu resources
 //
 LANGUAGE LANG_ENGLISH, SUBLANG_NEUTRAL
