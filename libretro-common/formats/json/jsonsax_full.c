@@ -2020,14 +2020,10 @@ reprocess:
             codepointToRecord = c;
             goto recordNumberCodepointAndAdvance;
          }
-         else
-         {
-            /* The number is finished. */
-            if (!JSON_Parser_ProcessToken(parser))
-               return JSON_Failure;
-            goto reprocess;
-         }
-         goto advance;
+         /* The number is finished. */
+         if (!JSON_Parser_ProcessToken(parser))
+            return JSON_Failure;
+         goto reprocess;
 
       case LEXING_NUMBER_DECIMAL_DIGITS:
          if (c >= '0' && c <= '9')
@@ -2049,14 +2045,10 @@ reprocess:
             parser->lexerState = LEXING_NUMBER_AFTER_E;
             goto recordNumberCodepointAndAdvance;
          }
-         else
-         {
-            /* The number is finished. */
-            if (!JSON_Parser_ProcessToken(parser))
-               return JSON_Failure;
-            goto reprocess;
-         }
-         goto advance;
+         /* The number is finished. */
+         if (!JSON_Parser_ProcessToken(parser))
+            return JSON_Failure;
+         goto reprocess;
 
       case LEXING_NUMBER_AFTER_DOT:
          if (c >= '0' && c <= '9')
@@ -2082,14 +2074,10 @@ reprocess:
             parser->lexerState = LEXING_NUMBER_AFTER_E;
             goto recordNumberCodepointAndAdvance;
          }
-         else
-         {
-            /* The number is finished. */
-            if (!JSON_Parser_ProcessToken(parser))
-               return JSON_Failure;
-            goto reprocess;
-         }
-         goto advance;
+         /* The number is finished. */
+         if (!JSON_Parser_ProcessToken(parser))
+            return JSON_Failure;
+         goto reprocess;
 
       case LEXING_NUMBER_AFTER_E:
          if (c == '+')
@@ -2132,14 +2120,10 @@ reprocess:
             codepointToRecord = c;
             goto recordNumberCodepointAndAdvance;
          }
-         else
-         {
-            /* The number is finished. */
-            if (!JSON_Parser_ProcessToken(parser))
-               return JSON_Failure;
-            goto reprocess;
-         }
-         goto advance;
+         /* The number is finished. */
+         if (!JSON_Parser_ProcessToken(parser))
+            return JSON_Failure;
+         goto reprocess;
 
       case LEXING_COMMENT_AFTER_SLASH:
          if (c == '/')
