@@ -110,12 +110,12 @@ static bool task_overlay_load_desc(
       bool normalized, float alpha_mod, float range_mod)
 {
    float width_mod, height_mod;
-   float tmp_float;
    uint32_t box_hash, key_hash;
    char overlay_desc_key[64];
    char conf_key[64];
    char overlay_desc_normalized_key[64];
    char overlay[256];
+   float tmp_float                      = 0.0f;
    bool tmp_bool                        = false;
    bool ret                             = true;
    bool by_pixel                        = false;
