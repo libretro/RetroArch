@@ -1,4 +1,4 @@
-# 1.5.0+ (future)
+# 1.6.0
 - AUTOSAVE/SRAM - Fix bug #3829 / #4820 (https://github.com/libretro/RetroArch/issues/3829)
 - ENDIANNESS: Fixed database scanning. Should fix scanning on PS3/WiiU/Wii, etc.
 - NET: Fix bug #4703 (https://github.com/libretro/RetroArch/issues/4703)
@@ -31,6 +31,7 @@
 - VITA: Fix frame throttle
 - VULKAN: Unicode font rendering support. Should fix bad character encoding for French characters, etc.
 - VULKAN: Fix some crashes on loading some thumbnails
+- AUDIO: Audio mixer support. Mix up to 8 streams with the game's audio.
 
 # 1.5.0
 - MOBILE: Single-tap for menu entry selection
