@@ -1063,7 +1063,8 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
    command_event(CMD_EVENT_OVERLAY_INIT, NULL);
 
-   video_driver_cached_frame_set(&dummy_pixels, 4, 4, 8);
+   if (!frame_cache_data)
+      video_driver_cached_frame_set(&dummy_pixels, 4, 4, 8);
 
 #if defined(PSP)
    video_driver_set_texture_frame(&dummy_pixels, false, 1, 1, 1.0f);
@@ -2502,9 +2503,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->xmb_alpha_factor       = settings->uints.menu_xmb_alpha_factor;
    video_info->menu_wallpaper_opacity = settings->floats.menu_wallpaper_opacity;
 
-   if (!settings->bools.menu_pause_libretro)
-      video_info->libretro_running    = (rarch_ctl(RARCH_CTL_IS_INITED, NULL)
-            && !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL));
+   video_info->libretro_running       = core_is_game_loaded();
 #else
    video_info->menu_is_alive          = false;
    video_info->menu_footer_opacity    = 0.0f;
