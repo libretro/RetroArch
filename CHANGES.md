@@ -10,6 +10,7 @@
 - LOCALIZATION: Update German translation
 - LOCALIZATION: Update Japanese translation
 - LOCALIZATION/GUI: Korean font should display properly now with XMB/MaterialUI's default font
+- LOCALIZATION: Update Russian translation
 - MENU: Improved rendering for XMB ribbon; using additive blending (Vulkan/GL)
 - OSX/MACOS: Fixes serious memory leak
 - WINDOWS: Added WASAPI audio driver for low-latency audio. Both shared and exclusive mode.
