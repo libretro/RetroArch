@@ -36,6 +36,9 @@
 
 #endif
 
+#include <string/stdstring.h>
+
+#include "../../configuration.h"
 #include "../../frontend/frontend_driver.h"
 #include "../common/gl_common.h"
 #include "../common/x11_common.h"
@@ -900,8 +903,21 @@ static void gfx_ctx_x_input_driver(void *data,
       const char *joypad_name,
       const input_driver_t **input, void **input_data)
 {
-   void *xinput = input_x.init(joypad_name);
+#ifdef HAVE_UDEV
+   settings_t *settings = config_get_ptr();
 
+   if (string_is_equal_fast(settings->arrays.input_driver, "udev", 5))
+   {
+      *input_data = input_udev.init(joypad_name);
+      if (*input_data)
+      {
+         *input = &input_udev;
+         return;
+      }
+   }
+#endif
+
+   void *xinput = input_x.init(joypad_name);
    *input       = xinput ? &input_x : NULL;
    *input_data  = xinput;
 }
