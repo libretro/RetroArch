@@ -12,19 +12,19 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
-      "Unknown netplay command received"
+      "Comando sconosciuto del netplay ricevuto"
       )
 MSG_HASH(
       MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
-      "File already exists. Saving to backup buffer"
+      "Il file esiste già. Salvataggio in buffer di backup"
       )
 MSG_HASH(
       MSG_GOT_CONNECTION_FROM,
-      "Got connection from: \"%s\""
+      "Connessione da: \"%s\""
       )
 MSG_HASH(
       MSG_GOT_CONNECTION_FROM_NAME,
-      "Got connection from: \"%s (%s)\""
+      "Hai connessione da: \"%s (%s)\""
       )
 MSG_HASH(
       MSG_PUBLIC_ADDRESS,
@@ -32,11 +32,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
-      "No arguments supplied and no menu builtin, displaying help..."
+      "Nessun argomento fornito e nessun menu incorporato, che mostra aiuto ..."
       )
 MSG_HASH(
       MSG_NETPLAY_USERS_HAS_FLIPPED,
-      "Netplay users has flipped"
+      "Gli utenti del Netplay hanno flippato"
       )
 MSG_HASH(
       MSG_SETTING_DISK_IN_TRAY,
@@ -44,19 +44,19 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_WAITING_FOR_CLIENT,
-      "Waiting for client ..."
+      "In attesa di un client ..."
       )
 MSG_HASH(
       MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
-      "You have left the game"
+      "Sei uscito dal gioco"
       )
 MSG_HASH(
       MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N,
-      "You have joined as player %d"
+      "Sei diventato un giocatore %d"
       )
 MSG_HASH(
       MSG_NETPLAY_IMPLEMENTATIONS_DIFFER,
-      "Implementations differ. Make sure you're using the exact same versions of RetroArch and the core."
+      "Le implementazioni differiscono. Assicurati di utilizzare le stesse versioni di RetroArch e del core."
       )
 MSG_HASH(
       MSG_NETPLAY_ENDIAN_DEPENDENT,
@@ -64,7 +64,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_NETPLAY_PLATFORM_DEPENDENT,
-      "This core does not support inter-architecture netplay"
+      "Questo core non supporta la rete di inter-architettura"
       )
 MSG_HASH(
       MSG_NETPLAY_ENTER_PASSWORD,
@@ -80,7 +80,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_NETPLAY_SERVER_HANGUP,
-      "A netplay client has disconnected"
+      "Un client del netplay si è scollegato"
       )
 MSG_HASH(
       MSG_NETPLAY_CLIENT_HANGUP,
@@ -88,39 +88,39 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_NETPLAY_CANNOT_PLAY_UNPRIVILEGED,
-      "You do not have permission to play"
+      "Non hai il permesso di giocare"
       )
 MSG_HASH(
       MSG_NETPLAY_CANNOT_PLAY_NO_SLOTS,
-      "There are no free player slots"
+      "Non ci sono slot liberi per i giocatori "
       )
 MSG_HASH(
       MSG_NETPLAY_CANNOT_PLAY,
-      "Cannot switch to play mode"
+      "Impossibile passare alla modalità di riproduzione"
       )
 MSG_HASH(
       MSG_NETPLAY_PEER_PAUSED,
-      "Netplay peer \"%s\" paused"
+      "Netplay peer \"%s\" in pausa"
       )
 MSG_HASH(
       MSG_NETPLAY_CHANGED_NICK,
-      "Your nickname changed to \"%s\""
+      "Il tuo nickname è stato cambiato in \"%s\""
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
-      "Give hardware-rendered cores their own private context. Avoids having to assume hardware state changes inbetween frames."
+      "Fornire i core hardware resi nel proprio contesto privato. Evita di assumere cambiamenti di stato hardware tra i fotogrammi."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_SETTINGS,
-      "Adjusts settings related to the appearance of the menu screen."
+      "Regola le impostazioni relative all'aspetto della schermata del menu."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
-      "Hard-synchronize the CPU and GPU. Reduces latency at the cost of performance."
+      "Sincronizzare duramente la CPU e la GPU. Riduce la latenza al costo della prestazione."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_THREADED,
-      "Improves performance at the cost of latency and more video stuttering. Use only if you cannot obtain full speed otherwise."
+      "Migliora le prestazioni a costo di latenza e dello stuttering video. Utilizzarlo solo se non è possibile ottenere una piena velocità."
       )
 MSG_HASH(
       MSG_AUDIO_VOLUME,
@@ -128,11 +128,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_AUTODETECT,
-      "Autodetect"
+      "Torvato automaticamente"
       )
 MSG_HASH(
       MSG_AUTOLOADING_SAVESTATE_FROM,
-      "Auto-loading savestate from"
+      "Carica automaticamente il salvataggio da"
       )
 MSG_HASH(
       MSG_CAPABILITIES,
@@ -144,15 +144,15 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_CONNECTING_TO_PORT,
-      "Connecting to port"
+      "Connessione alla porta"
       )
 MSG_HASH(
       MSG_CONNECTION_SLOT,
-      "Connection slot"
+      "Connessione allo slot"
       )
 MSG_HASH(
       MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY,
-      "Sorry, unimplemented: cores that don't demand content cannot participate in netplay."
+      "Spiacenti, non implementati: i core che non richiedono contenuti non possono partecipare al netplay."
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
@@ -234,7 +234,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
       "Carica file di rimappatura automaticamente")
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
-      "Load Shader Presets Automatically"
+      "Carica Shader Presets Automaticamente"
       )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
       "Indietro")
@@ -256,7 +256,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
       "Menù a comparsa")
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS,
-      "Basic menu controls"
+      "Controlli del menu di base"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_CONFIRM,
@@ -272,7 +272,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_SCROLL_UP,
-      "Scroll Up"
+      "Scorrere verso l'alto"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_START,
@@ -280,7 +280,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_KEYBOARD,
-      "Toggle Keyboard"
+      "Toggle Tastiera"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_MENU,
@@ -422,7 +422,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
       "Aggiorna")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
-      "CPU Architecture:")
+      "Architettura CPU:")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CPU_CORES,
       "CPU Cores:")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY,
@@ -485,7 +485,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR,
       "Colore evidenziato delle voci dei menù")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ENTRY_NORMAL_COLOR,
-      "Colore normale voce dei menù")
+      "Colore normale della voce dei menù")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FALSE,
       "Falso")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -1621,7 +1621,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
       "Modifica le impostazioni per il login.")
 MSG_HASH(MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
-      "Change settings for the user interface.")
+      "Modifica le impostazioni per l'interfaccia utente.")
 MSG_HASH(MENU_ENUM_SUBLABEL_USER_SETTINGS,
       "Modifica accounts, username, e linguaggio.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS,
@@ -1633,47 +1633,47 @@ MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
       "Configura il server e le impostazioni di rete.")
 MSG_HASH(MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-      "Scan contents and add to the database.")
+      "Scansione dei contenuti per aggiungerli al database.")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
       "Regola le impostazioni per l'uscita audio.")
 MSG_HASH(MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE,
       "Abilita o disabilita il bluetooth.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
-      "Saves changes to configuration file on exit.")
+      "Salva le modifiche al file di configurazione all'uscita.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
       "Modifica le impostazioni predefinite per i file di configurazione.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
-      "Manage and create configuration files.")
+      "Gestione e creazione di file di configurazione.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CPU_CORES,
-      "Amount of cores that the CPU has.")
+      "Quantità di core che la CPU ha.")
 MSG_HASH(MENU_ENUM_SUBLABEL_FPS_SHOW,
       "Visualizza il framerate corrente al secondo sullo schermo.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
       "Configura le impostazioni hotkey .")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
-      "Gamepad button combination to toggle menu.")
+      "Combinazioni dei pulsanti del Gamepad per attivare il menu.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
       "Regola le impostazioni per joypad, tastiera e mouse.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
       "Configura i controlli per questo utente.")
 MSG_HASH(MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
-      "Enable or disable logging to the terminal.")
+      "Abilitare o disattivare la registrazione dal terminale.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY,
-      "Join or host a netplay session.")
+      "Unisci o ospita una sessione di netplay.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_LAN_SCAN_SETTINGS,
-      "Search for and connect to netplay hosts on the local network.")
+      "Cerca e connetti all' host netplay sulla rete locale.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
-      "Display core, network and system information.")
+      "Visualizzare le informazioni dei core, di rete e di sistema.")
 MSG_HASH(MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
-      "Download add-ons, components and contents for RetroArch.")
+      "Scarica i componenti aggiuntivi, i componenti e il contenuto di RetroArch.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAMBA_ENABLE,
-      "Enable or disable network sharing of your folders.")
+      "Attiva o disattiva la condivisione di rete delle cartelle.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SERVICES_SETTINGS,
-      "Manage operating system level services.")
+      "Gestire i servizi del livello di sistema operativo.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
-      "Show hidden files/directories inside the file browser.")
+      "Mostra file / directory nascoste all'interno del file browser.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SSH_ENABLE,
-      "Enable or disable remote command line access.")
+      "Attiva o disattiva l'accesso alla riga di comando remota.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
       "Prevents your system's screensaver from becoming active.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
