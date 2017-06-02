@@ -532,10 +532,10 @@ static void winraw_free(void *d)
 
 static uint64_t winraw_get_capabilities(void *u)
 {
-   return RETRO_DEVICE_KEYBOARD |
-          RETRO_DEVICE_MOUSE |
-          RETRO_DEVICE_JOYPAD |
-          RETRO_DEVICE_ANALOG;
+   return (1 << RETRO_DEVICE_KEYBOARD) |
+          (1 << RETRO_DEVICE_MOUSE) |
+          (1 << RETRO_DEVICE_JOYPAD) |
+          (1 << RETRO_DEVICE_ANALOG);
 }
 
 static void winraw_grab_mouse(void *d, bool grab)
