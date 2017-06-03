@@ -860,9 +860,24 @@ static uint64_t udev_input_get_capabilities(void *data)
 
 static void udev_input_grab_mouse(void *data, bool state)
 {
-   /* Dummy for now. Might be useful in the future. */
-   (void)data;
-   (void)state;
+   Display *display;
+   Window window;
+
+   if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
+   {
+      RARCH_WARN("[udev]: Mouse grab/ungrab feature unavailable.\n");
+      return;
+   }
+
+   display = (Display*)video_driver_display_get();
+   window  = (Window)video_driver_window_get();
+
+   if (state)
+      XGrabPointer(display, window, False,
+            ButtonPressMask | ButtonReleaseMask | PointerMotionMask,
+            GrabModeAsync, GrabModeAsync, window, None, CurrentTime);
+   else
+      XUngrabPointer(display, CurrentTime);
 }
 
 static bool udev_input_set_rumble(void *data, unsigned port, enum retro_rumble_effect effect, uint16_t strength)
