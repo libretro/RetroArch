@@ -36,6 +36,10 @@
 #include "../../config.h"
 #endif
 
+#ifdef HAVE_X11
+#include <X11/Xlib.h>
+#endif
+
 #include <file/file_path.h>
 #include <compat/strl.h>
 #include <string/stdstring.h>
@@ -77,7 +81,7 @@ static const char *g_dev_type_str[] =
 
 typedef struct
 {
-   int16_t x, y;
+   int16_t x, y, dlt_x, dlt_y;
    bool l, r, m;
    bool wu, wd, whu, whd;
 } udev_input_mouse_t;
@@ -199,7 +203,7 @@ static void udev_handle_touchpad(void *data,
                float rel_x  = x_norm - dev->state.touchpad.x;
 
                if (dev->state.touchpad.touch && mouse)
-                  mouse->x += (int16_t)roundf(dev->state.touchpad.mod_x * rel_x);
+                  mouse->dlt_x += (int16_t)roundf(dev->state.touchpad.mod_x * rel_x);
 
                dev->state.touchpad.x = x_norm;
                /* Some factor, not sure what's good to do here ... */
@@ -216,7 +220,7 @@ static void udev_handle_touchpad(void *data,
                float rel_y  = y_norm - dev->state.touchpad.y;
 
                if (dev->state.touchpad.touch && mouse)
-                  mouse->y += (int16_t)roundf(dev->state.touchpad.mod_y * rel_y);
+                  mouse->dlt_y += (int16_t)roundf(dev->state.touchpad.mod_y * rel_y);
 
                dev->state.touchpad.y = y_norm;
 
@@ -275,10 +279,10 @@ static void udev_handle_mouse(void *data,
          switch (event->code)
          {
             case REL_X:
-               mouse->x += event->value;
+               mouse->dlt_x += event->value;
                break;
             case REL_Y:
-               mouse->y += event->value;
+               mouse->dlt_y += event->value;
                break;
             case REL_WHEEL:
                if (event->value == 1)
@@ -418,22 +422,50 @@ end:
    udev_device_unref(dev);
 }
 
+static void udev_input_get_pointer_position(int *x, int *y)
+{
+#ifdef HAVE_X11
+   Display *display;
+   Window window, w;
+   int p;
+   unsigned m;
+
+   if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
+   {
+      *x = *y = 0;
+      return;
+   }
+
+   display = (Display*)video_driver_display_get();
+   window = (Window)video_driver_window_get();
+
+   XQueryPointer(display, window, &w, &w, &p, &p, x, y, &m);
+#else
+   *x = *y = 0;
+#endif
+}
+
 static void udev_input_poll(void *data)
 {
    int i, ret;
    struct epoll_event events[32];
    udev_input_mouse_t *mouse;
+   int x, y;
    udev_input_t *udev = (udev_input_t*)data;
 
    if (!udev)
       return;
+
+   udev_input_get_pointer_position(&x, &y);
 
    for (i = 0; i < udev->num_devices; ++i)
    {
       if (udev->devices[i]->type == UDEV_INPUT_MOUSE)
       {
          mouse = &udev->devices[i]->state.mouse;
-         mouse->x = mouse->y = 0;
+         mouse->x = x;
+         mouse->y = y;
+         mouse->dlt_x = mouse->dlt_y = 0;
          mouse->wu = mouse->wd = mouse->whu = mouse->whd = false;
       }
    }
@@ -464,7 +496,7 @@ static void udev_input_poll(void *data)
       udev->joypad->poll();
 }
 
-static int16_t udev_mouse_state(udev_input_t *udev, unsigned port, unsigned id)
+static int16_t udev_mouse_state(udev_input_t *udev, unsigned port, unsigned id, bool screen)
 {
    unsigned i, j;
    udev_input_mouse_t *mouse = NULL;
@@ -487,9 +519,9 @@ static int16_t udev_mouse_state(udev_input_t *udev, unsigned port, unsigned id)
    switch (id)
    {
       case RETRO_DEVICE_ID_MOUSE_X:
-         return mouse->x;
+         return screen ? mouse->x : mouse->dlt_x;
       case RETRO_DEVICE_ID_MOUSE_Y:
-         return mouse->y;
+         return screen ? mouse->y : mouse->dlt_y;
       case RETRO_DEVICE_ID_MOUSE_LEFT:
          return mouse->l;
       case RETRO_DEVICE_ID_MOUSE_RIGHT:
@@ -532,9 +564,9 @@ static int16_t udev_lightgun_state(udev_input_t *udev, unsigned port, unsigned i
    switch (id)
    {
       case RETRO_DEVICE_ID_LIGHTGUN_X:
-         return mouse->x;
+         return mouse->dlt_x;
       case RETRO_DEVICE_ID_LIGHTGUN_Y:
-         return mouse->y;
+         return mouse->dlt_y;
       case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
          return mouse->l;
       case RETRO_DEVICE_ID_LIGHTGUN_CURSOR:
@@ -661,7 +693,9 @@ static int16_t udev_input_state(void *data,
          bit = input_keymaps_translate_rk_to_keysym((enum retro_key)id);
          return id < RETROK_LAST && BIT_GET(udev_key_state, bit);
       case RETRO_DEVICE_MOUSE:
-         return udev_mouse_state(udev, port, id);
+         return udev_mouse_state(udev, port, id, false);
+      case RARCH_DEVICE_MOUSE_SCREEN:
+         return udev_mouse_state(udev, port, id, true);
 
       case RETRO_DEVICE_POINTER:
          return udev_pointer_state(udev, port, id, false);
@@ -810,6 +844,10 @@ static void *udev_input_init(const char *joypad_driver)
 
    linux_terminal_disable_input();
 
+#ifndef HAVE_X11
+   RARCH_WARN("[udev]: Full-screen pointer won't be available.\n");
+#endif
+
    return udev;
 
 error:
@@ -831,9 +869,28 @@ static uint64_t udev_input_get_capabilities(void *data)
 
 static void udev_input_grab_mouse(void *data, bool state)
 {
-   /* Dummy for now. Might be useful in the future. */
-   (void)data;
-   (void)state;
+#ifdef HAVE_X11
+   Display *display;
+   Window window;
+
+   if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
+   {
+      RARCH_WARN("[udev]: Mouse grab/ungrab feature unavailable.\n");
+      return;
+   }
+
+   display = (Display*)video_driver_display_get();
+   window  = (Window)video_driver_window_get();
+
+   if (state)
+      XGrabPointer(display, window, False,
+            ButtonPressMask | ButtonReleaseMask | PointerMotionMask,
+            GrabModeAsync, GrabModeAsync, window, None, CurrentTime);
+   else
+      XUngrabPointer(display, CurrentTime);
+#else
+   RARCH_WARN("[udev]: Mouse grab/ungrab feature unavailable.\n");
+#endif
 }
 
 static bool udev_input_set_rumble(void *data, unsigned port, enum retro_rumble_effect effect, uint16_t strength)
