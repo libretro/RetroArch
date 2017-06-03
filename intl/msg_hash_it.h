@@ -1687,7 +1687,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
       "Sets how many frames the CPU can run ahead of the GPU when using 'Hard GPU Sync'.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
-      "Indica al driver video di utilizzare esplicitamente una modalità di buffering specificata.")
+      "Indica al driver video di utilizzare esplicitamente una modalità di buffering specifica.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
       "Seleziona quale schermo da utilizzare.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
@@ -1707,9 +1707,9 @@ MSG_HASH(MSG_APPLYING_CHEAT,
 MSG_HASH(MSG_APPLYING_SHADER,
       "Applying shader")
 MSG_HASH(MSG_AUDIO_MUTED,
-      "Audio muted.")
+      "MUTO.")
 MSG_HASH(MSG_AUDIO_UNMUTED,
-      "Audio unmuted.")
+      "MUTO Disattivato.")
 MSG_HASH(MSG_AUTOCONFIG_FILE_ERROR_SAVING,
       "Error saving autoconf file.")
 MSG_HASH(MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
@@ -1719,7 +1719,7 @@ MSG_HASH(MSG_AUTOSAVE_FAILED,
 MSG_HASH(MSG_AUTO_SAVE_STATE_TO,
       "Auto save state to")
 MSG_HASH(MSG_BLOCKING_SRAM_OVERWRITE,
-      "Blocking SRAM Overwrite")
+      "Bloccare SRAM Overwrite")
 MSG_HASH(MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
       "Bringing up command interface on port")
 MSG_HASH(MSG_BYTES,
@@ -1803,7 +1803,7 @@ MSG_HASH(MSG_EXTRACTING_FILE,
 MSG_HASH(MSG_FAILED_SAVING_CONFIG_TO,
       "Failed saving config to")
 MSG_HASH(MSG_FAILED_TO,
-      "Failed to")
+      "Non è riuscito a")
 MSG_HASH(MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
       "Failed to accept incoming spectator.")
 MSG_HASH(MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT,
@@ -1819,17 +1819,17 @@ MSG_HASH(MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
 MSG_HASH(MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
       "Failed to get nickname from client.")
 MSG_HASH(MSG_FAILED_TO_LOAD,
-      "Failed to load")
+      "Caricamento fallito")
 MSG_HASH(MSG_FAILED_TO_LOAD_CONTENT,
-      "Failed to load content")
+      "Impossibile caricare il contenuto")
 MSG_HASH(MSG_FAILED_TO_LOAD_MOVIE_FILE,
-      "Failed to load movie file")
+      "Impossibile caricare il file del filmato")
 MSG_HASH(MSG_FAILED_TO_LOAD_OVERLAY,
       "Failed to load overlay.")
 MSG_HASH(MSG_FAILED_TO_LOAD_STATE,
       "Failed to load state from")
 MSG_HASH(MSG_FAILED_TO_OPEN_LIBRETRO_CORE,
-      "Failed to open libretro core")
+      "Impossibile aprire il core libretro ")
 MSG_HASH(MSG_FAILED_TO_PATCH,
       "Failed to patch")
 MSG_HASH(MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT,
@@ -1845,13 +1845,13 @@ MSG_HASH(MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
 MSG_HASH(MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
       "Failed to remove disk from tray.")
 MSG_HASH(MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
-      "Failed to remove temporary file")
+      "Impossibile rimuovere il file temporaneo")
 MSG_HASH(MSG_FAILED_TO_SAVE_SRAM,
       "Failed to save SRAM")
 MSG_HASH(MSG_FAILED_TO_SAVE_STATE_TO,
       "Failed to save state to")
 MSG_HASH(MSG_FAILED_TO_SEND_NICKNAME,
-      "Failed to send nickname.")
+      "Impossibile inviare il nickname.")
 MSG_HASH(MSG_FAILED_TO_SEND_NICKNAME_SIZE,
       "Failed to send nickname size.")
 MSG_HASH(MSG_FAILED_TO_SEND_NICKNAME_TO_CLIENT,
@@ -1877,7 +1877,7 @@ MSG_HASH(MSG_FAILED_TO_UNMUTE_AUDIO,
 MSG_HASH(MSG_FATAL_ERROR_RECEIVED_IN,
       "Fatal error received in")
 MSG_HASH(MSG_FILE_NOT_FOUND,
-      "File not found")
+      "File non trovato")
 MSG_HASH(MSG_FOUND_AUTO_SAVESTATE_IN,
       "Found auto savestate in")
 MSG_HASH(MSG_FOUND_DISK_LABEL,
@@ -1911,13 +1911,13 @@ MSG_HASH(MSG_INPUT_CHEAT_FILENAME,
 MSG_HASH(MSG_INPUT_PRESET_FILENAME,
       "Preset Filename")
 MSG_HASH(MSG_INTERFACE,
-      "Interface")
+      "Interfaccia")
 MSG_HASH(MSG_INTERNAL_STORAGE,
       "Memoria interna")
 MSG_HASH(MSG_REMOVABLE_STORAGE,
       "Removable Storage")
 MSG_HASH(MSG_INVALID_NICKNAME_SIZE,
-      "Invalid nickname size.")
+      "Dimensione del nickname non valido.")
 MSG_HASH(MSG_IN_BYTES,
       "in bytes")
 MSG_HASH(MSG_IN_GIGABYTES,
@@ -1933,7 +1933,7 @@ MSG_HASH(MSG_LOADED_STATE_FROM_SLOT,
 MSG_HASH(MSG_LOADED_STATE_FROM_SLOT_AUTO,
       "Loaded state from slot #-1 (auto).")
 MSG_HASH(MSG_LOADING,
-      "Caricando")
+      "Caricamento")
 MSG_HASH(MSG_FIRMWARE,
       "One or more firmware files are missing")
 MSG_HASH(MSG_LOADING_CONTENT_FILE,
@@ -1941,9 +1941,9 @@ MSG_HASH(MSG_LOADING_CONTENT_FILE,
 MSG_HASH(MSG_LOADING_HISTORY_FILE,
       "Loading history file")
 MSG_HASH(MSG_LOADING_STATE,
-      "Loading state")
+      "Caricamento dello stato")
 MSG_HASH(MSG_MEMORY,
-      "Memory")
+      "Memoria")
 MSG_HASH(MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE,
       "Movie file is not a valid BSV1 file.")
 MSG_HASH(MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
@@ -1965,13 +1965,13 @@ MSG_HASH(MSG_OVERRIDES_ERROR_SAVING,
 MSG_HASH(MSG_OVERRIDES_SAVED_SUCCESSFULLY,
       "Overrides saved successfully.")
 MSG_HASH(MSG_PAUSED,
-      "Paused.")
+      "Pausa.")
 MSG_HASH(MSG_PROGRAM,
       "RetroArch")
 MSG_HASH(MSG_READING_FIRST_DATA_TRACK,
       "Reading first data track...")
 MSG_HASH(MSG_RECEIVED,
-      "received")
+      "ricevuto")
 MSG_HASH(MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
       "Recording terminated due to resize.")
 MSG_HASH(MSG_RECORDING_TO,
@@ -2073,9 +2073,9 @@ MSG_HASH(MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT,
 MSG_HASH(MSG_VALUE_DISCONNECTING_DEVICE_FROM_PORT,
       "Disconnecting device from port")
 MSG_HASH(MSG_VALUE_REBOOTING,
-      "Rebooting...")
+      "Riavvio in corso...")
 MSG_HASH(MSG_VALUE_SHUTTING_DOWN,
-      "Shutting down...")
+      "Spegnimento in corso...")
 MSG_HASH(MSG_VERSION_OF_LIBRETRO_API,
       "Versione delle API di libretro ")
 MSG_HASH(MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
@@ -2085,7 +2085,7 @@ MSG_HASH(MSG_VIRTUAL_DISK_TRAY,
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
       "Desired audio latency in milliseconds. Might not be honored if the audio driver can't provide given latency.")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_MUTE,
-      "Mute/unmute audio.")
+      "Audio Muto/non Muto .")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
       "Helps smooth out imperfections in timing when synchronizing audio and video at the same time. Be aware that if disabled, proper synchronization is nearly impossible to obtain."
@@ -2100,7 +2100,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-      "Maximum amount of users supported by RetroArch."
+      "Massima quantità di utenti supportati da RetroArch."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
@@ -2112,11 +2112,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
-      "Audio volume (in dB). 0 dB is normal volume, no gain applied."
+      "Audio volume (in dB). 0 dB è un volume normale , nessun guadagno applicato."
       )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SYNC,
-   "Synchronize audio. Recommended."
+   "Sincronizzare l'audio. Consigliato."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AXIS_THRESHOLD,
@@ -2156,7 +2156,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
-   "Enable audio output."
+   "Abilita audio output."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
@@ -2164,15 +2164,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED,
-   "failed"
+   "fallito"
    )
 MSG_HASH(
    MSG_SUCCEEDED,
-   "succeeded"
+   "Riuscito"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
-   "not configured"
+   "non configurato"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED_FALLBACK,
