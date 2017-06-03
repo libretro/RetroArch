@@ -32,10 +32,12 @@
 #include <linux/input.h>
 #include <linux/kd.h>
 
-#include <X11/Xlib.h>
-
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
+#endif
+
+#ifdef HAVE_X11
+#include <X11/Xlib.h>
 #endif
 
 #include <file/file_path.h>
@@ -422,6 +424,7 @@ end:
 
 static void udev_input_get_pointer_position(int *x, int *y)
 {
+#ifdef HAVE_X11
    Display *display;
    Window window, w;
    int p;
@@ -429,7 +432,6 @@ static void udev_input_get_pointer_position(int *x, int *y)
 
    if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
    {
-      RARCH_WARN("[udev]: Pointer position unavailable.\n");
       *x = *y = 0;
       return;
    }
@@ -438,6 +440,9 @@ static void udev_input_get_pointer_position(int *x, int *y)
    window = (Window)video_driver_window_get();
 
    XQueryPointer(display, window, &w, &w, &p, &p, x, y, &m);
+#else
+   *x = *y = 0;
+#endif
 }
 
 static void udev_input_poll(void *data)
@@ -839,6 +844,10 @@ static void *udev_input_init(const char *joypad_driver)
 
    linux_terminal_disable_input();
 
+#ifndef HAVE_X11
+   RARCH_WARN("[udev]: Full-screen pointer won't be available.\n");
+#endif
+
    return udev;
 
 error:
@@ -860,6 +869,7 @@ static uint64_t udev_input_get_capabilities(void *data)
 
 static void udev_input_grab_mouse(void *data, bool state)
 {
+#ifdef HAVE_X11
    Display *display;
    Window window;
 
@@ -878,6 +888,9 @@ static void udev_input_grab_mouse(void *data, bool state)
             GrabModeAsync, GrabModeAsync, window, None, CurrentTime);
    else
       XUngrabPointer(display, CurrentTime);
+#else
+   RARCH_WARN("[udev]: Mouse grab/ungrab feature unavailable.\n");
+#endif
 }
 
 static bool udev_input_set_rumble(void *data, unsigned port, enum retro_rumble_effect effect, uint16_t strength)
