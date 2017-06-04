@@ -50,80 +50,6 @@ extern int stb_vorbis_get_sample_offset(stb_vorbis *f);
  * of the memory buffer. In pushdata mode it returns 0. */
 extern unsigned int stb_vorbis_get_file_offset(stb_vorbis *f);
 
-/*   PUSHDATA API */
-
-#ifndef STB_VORBIS_NO_PUSHDATA_API
-
-/* this API allows you to get blocks of data from any source and hand
- * them to stb_vorbis. you have to buffer them; stb_vorbis will tell
- * you how much it used, and you have to give it the rest next time;
- * and stb_vorbis may not have enough data to work with and you will
- * need to give it the same data again PLUS more. Note that the Vorbis
- * specification does not bound the size of an individual frame.
- */
-
-extern stb_vorbis *stb_vorbis_open_pushdata(
-         unsigned char *datablock, int datablock_length_in_bytes,
-         int *datablock_memory_consumed_in_bytes,
-         int *error,
-         stb_vorbis_alloc *alloc_buffer);
-/* create a vorbis decoder by passing in the initial data block containing
- *    the ogg&vorbis headers (you don't need to do parse them, just provide
- *    the first N bytes of the file--you're told if it's not enough, see below)
- * on success, returns an stb_vorbis *, does not set error, returns the amount of
- *    data parsed/consumed on this call in *datablock_memory_consumed_in_bytes;
- * on failure, returns NULL on error and sets *error, does not change *datablock_memory_consumed
- * if returns NULL and *error is VORBIS_need_more_data, then the input block was
- *       incomplete and you need to pass in a larger block from the start of the file
- */
-
-extern int stb_vorbis_decode_frame_pushdata(
-         stb_vorbis *f, unsigned char *datablock, int datablock_length_in_bytes,
-         int *channels,             /* place to write number of float * buffers */
-         float ***output,           /* place to write float ** array of float * buffers */
-         int *samples               /* place to write number of output samples */
-     );
-
-/* decode a frame of audio sample data if possible from the passed-in data block
- *
- * return value: number of bytes we used from datablock
- *
- * possible cases:
- *     0 bytes used, 0 samples output (need more data)
- *     N bytes used, 0 samples output (resynching the stream, keep going)
- *     N bytes used, M samples output (one frame of data)
- * note that after opening a file, you will ALWAYS get one N-bytes,0-sample
- * frame, because Vorbis always "discards" the first frame.
- *
- * Note that on resynch, stb_vorbis will rarely consume all of the buffer,
- * instead only datablock_length_in_bytes-3 or less. This is because it wants
- * to avoid missing parts of a page header if they cross a datablock boundary,
- * without writing state-machiney code to record a partial detection.
- *
- * The number of channels returned are stored in *channels (which can be
- * NULL--it is always the same as the number of channels reported by
- * get_info). *output will contain an array of float* buffers, one per
- * channel. In other words, (*output)[0][0] contains the first sample from
- * the first channel, and (*output)[1][0] contains the first sample from
- * the second channel.
- */
-
-extern void stb_vorbis_flush_pushdata(stb_vorbis *f);
-
-/* inform stb_vorbis that your next datablock will not be contiguous with
- * previous ones (e.g. you've seeked in the data); future attempts to decode
- * frames will cause stb_vorbis to resynchronize (as noted above), and
- * once it sees a valid Ogg page (typically 4-8KB, as large as 64KB), it
- * will begin decoding the _next_ frame.
- *
- * if you want to seek using pushdata, you need to seek in your file, then
- * call stb_vorbis_flush_pushdata(), then start calling decoding, then once
- * decoding is returning you data, call stb_vorbis_get_sample_offset, and
- * if you don't like the result, seek your file again and repeat.
- */
-#endif
-
-
 /*   PULLING INPUT API */
 
 #ifndef STB_VORBIS_NO_PULLDATA_API
@@ -229,14 +155,6 @@ enum STBVorbisError
  * crucial)
  */
 
-/* STB_VORBIS_NO_PUSHDATA_API
- *     does not compile the code for the various stb_vorbis_*_pushdata()
- *     functions
- */
-#if 0
-#define STB_VORBIS_NO_PUSHDATA_API
-#endif
-
 /* STB_VORBIS_NO_PULLDATA_API
  *     does not compile the code for the non-pushdata APIs
  */
@@ -255,23 +173,6 @@ enum STBVorbisError
  */
 #ifndef STB_VORBIS_MAX_CHANNELS
 #define STB_VORBIS_MAX_CHANNELS    16  /* enough for anyone? */
-#endif
-
-/* STB_VORBIS_PUSHDATA_CRC_COUNT [number]
- *     after a flush_pushdata(), stb_vorbis begins scanning for the
- *     next valid page, without backtracking. when it finds something
- *     that looks like a page, it streams through it and verifies its
- *     CRC32. Should that validation fail, it keeps scanning. But it's
- *     possible that _while_ streaming through to check the CRC32 of
- *     one candidate page, it sees another candidate page. This #define
- *     determines how many "overlapping" candidate pages it can search
- *     at once. Note that "real" pages are typically ~4KB to ~8KB, whereas
- *     garbage pages could be as big as 64KB, but probably average ~16KB.
- *     So don't hose ourselves by scanning an apparent 64KB page and
- *     missing a ton of real ones in the interim; so minimum of 2
- */
-#ifndef STB_VORBIS_PUSHDATA_CRC_COUNT
-#define STB_VORBIS_PUSHDATA_CRC_COUNT  4
 #endif
 
 /* STB_VORBIS_FAST_HUFFMAN_LENGTH [number]
@@ -552,22 +453,13 @@ struct stb_vorbis
 
   /* push mode scanning */
    int page_crc_tests; /* only in push_mode: number of tests active; -1 if not searching */
-#ifndef STB_VORBIS_NO_PUSHDATA_API
-   CRCscan scan[STB_VORBIS_PUSHDATA_CRC_COUNT];
-#endif
 
   /* sample-access */
    int channel_buffer_start;
    int channel_buffer_end;
 };
 
-#if defined(STB_VORBIS_NO_PUSHDATA_API)
-   #define IS_PUSH_MODE(f)   FALSE
-#elif defined(STB_VORBIS_NO_PULLDATA_API)
-   #define IS_PUSH_MODE(f)   TRUE
-#else
-   #define IS_PUSH_MODE(f)   ((f)->push_mode)
-#endif
+#define IS_PUSH_MODE(f)   FALSE
 
 typedef struct stb_vorbis vorb;
 
@@ -1016,9 +908,6 @@ static void skip(vorb *z, int n)
 
 static int set_file_offset(stb_vorbis *f, unsigned int loc)
 {
-   #ifndef STB_VORBIS_NO_PUSHDATA_API
-   if (f->push_mode) return 0;
-   #endif
    f->eof = 0;
    if (f->stream_start + loc >= f->stream_end || f->stream_start + loc < f->stream_start) {
       f->stream = f->stream_end;
@@ -2792,73 +2681,6 @@ static void vorbis_pump_first_frame(stb_vorbis *f)
       vorbis_finish_frame(f, len, left, right);
 }
 
-#ifndef STB_VORBIS_NO_PUSHDATA_API
-static int is_whole_packet_present(stb_vorbis *f, int end_page)
-{
-   /* make sure that we have the packet available before continuing...
-    * this requires a full ogg parse, but we know we can fetch from f->stream
-
-    * instead of coding this out explicitly, we could save the current read state,
-    * read the next packet with get8() until end-of-packet, check f->eof, then
-    * reset the state? but that would be slower, esp. since we'd have over 256 bytes
-    * of state to restore (primarily the page segment table)
-    */
-
-   int s = f->next_seg, first = TRUE;
-   uint8_t *p = f->stream;
-
-   if (s != -1) { /* if we're not starting the packet with a 'continue on next page' flag */
-      for (; s < f->segment_count; ++s) {
-         p += f->segments[s];
-         if (f->segments[s] < 255)               /* stop at first short segment */
-            break;
-      }
-      /* either this continues, or it ends it... */
-      if (end_page)
-         if (s < f->segment_count-1)             return error(f, VORBIS_invalid_stream);
-      if (s == f->segment_count)
-         s = -1; /* set 'crosses page' flag */
-      if (p > f->stream_end)                     return error(f, VORBIS_need_more_data);
-      first = FALSE;
-   }
-   for (; s == -1;) {
-      uint8_t *q; 
-      int n;
-
-      /* check that we have the page header ready */
-      if (p + 26 >= f->stream_end)               return error(f, VORBIS_need_more_data);
-      /* validate the page */
-      if (memcmp(p, ogg_page_header, 4))         return error(f, VORBIS_invalid_stream);
-      if (p[4] != 0)                             return error(f, VORBIS_invalid_stream);
-      if (first) { /* the first segment must NOT have 'continued_packet', later ones MUST */
-         if (f->previous_length)
-            if ((p[5] & PAGEFLAG_continued_packet))  return error(f, VORBIS_invalid_stream);
-         /* if no previous length, we're resynching, so we can come in on a continued-packet,
-          * which we'll just drop */
-      } else {
-         if (!(p[5] & PAGEFLAG_continued_packet)) return error(f, VORBIS_invalid_stream);
-      }
-      n = p[26]; /* segment counts */
-      q = p+27;  /* q points to segment table */
-      p = q + n; /* advance past header */
-      /* make sure we've read the segment table */
-      if (p > f->stream_end)                     return error(f, VORBIS_need_more_data);
-      for (s=0; s < n; ++s) {
-         p += q[s];
-         if (q[s] < 255)
-            break;
-      }
-      if (end_page)
-         if (s < n-1)                            return error(f, VORBIS_invalid_stream);
-      if (s == n)
-         s = -1; /* set 'crosses page' flag */
-      if (p > f->stream_end)                     return error(f, VORBIS_need_more_data);
-      first = FALSE;
-   }
-   return TRUE;
-}
-#endif /* !STB_VORBIS_NO_PUSHDATA_API */
-
 static int start_decoder(vorb *f)
 {
    uint8_t header[6], x,y;
@@ -2915,17 +2737,6 @@ static int start_decoder(vorb *f)
 
    /* third packet! */
    if (!start_packet(f))                            return FALSE;
-
-   #ifndef STB_VORBIS_NO_PUSHDATA_API
-   if (IS_PUSH_MODE(f)) {
-      if (!is_whole_packet_present(f, TRUE)) {
-         /* convert error in ogg header to write type */
-         if (f->error == VORBIS_invalid_stream)
-            f->error = VORBIS_invalid_setup;
-         return FALSE;
-      }
-   }
-   #endif
 
    crc32_init(); /* always init it, to avoid multithread race conditions */
 
@@ -3465,216 +3276,8 @@ static stb_vorbis * vorbis_alloc(stb_vorbis *f)
    return p;
 }
 
-#ifndef STB_VORBIS_NO_PUSHDATA_API
-
-void stb_vorbis_flush_pushdata(stb_vorbis *f)
-{
-   f->previous_length = 0;
-   f->page_crc_tests  = 0;
-   f->discard_samples_deferred = 0;
-   f->current_loc_valid = FALSE;
-   f->first_decode = FALSE;
-   f->samples_output = 0;
-   f->channel_buffer_start = 0;
-   f->channel_buffer_end = 0;
-}
-
-static int vorbis_search_for_page_pushdata(vorb *f, uint8_t *data, int data_len)
-{
-   int i,n;
-   for (i=0; i < f->page_crc_tests; ++i)
-      f->scan[i].bytes_done = 0;
-
-   /* if we have room for more scans, search for them first, because
-    * they may cause us to stop early if their header is incomplete */
-   if (f->page_crc_tests < STB_VORBIS_PUSHDATA_CRC_COUNT) {
-      if (data_len < 4) return 0;
-      data_len -= 3; /* need to look for 4-byte sequence, so don't miss
-                      * one that straddles a boundary */
-      for (i=0; i < data_len; ++i) {
-         if (data[i] == 0x4f) {
-            if (0==memcmp(data+i, ogg_page_header, 4)) {
-               int j,len;
-               uint32_t crc;
-               /* make sure we have the whole page header */
-               if (i+26 >= data_len || i+27+data[i+26] >= data_len) {
-                  /* only read up to this page start, so hopefully we'll
-                   * have the whole page header start next time */
-                  data_len = i;
-                  break;
-               }
-               /* ok, we have it all; compute the length of the page */
-               len = 27 + data[i+26];
-               for (j=0; j < data[i+26]; ++j)
-                  len += data[i+27+j];
-               /* scan everything up to the embedded crc (which we must 0) */
-               crc = 0;
-               for (j=0; j < 22; ++j)
-                  crc = crc32_update(crc, data[i+j]);
-               /* now process 4 0-bytes */
-               for (   ; j < 26; ++j)
-                  crc = crc32_update(crc, 0);
-               /* len is the total number of bytes we need to scan */
-               n = f->page_crc_tests++;
-               f->scan[n].bytes_left = len-j;
-               f->scan[n].crc_so_far = crc;
-               f->scan[n].goal_crc = data[i+22] + (data[i+23] << 8) + (data[i+24]<<16) + (data[i+25]<<24);
-               /* if the last frame on a page is continued to the next, then
-                * we can't recover the sample_loc immediately */
-               if (data[i+27+data[i+26]-1] == 255)
-                  f->scan[n].sample_loc = ~0;
-               else
-                  f->scan[n].sample_loc = data[i+6] + (data[i+7] << 8) + (data[i+ 8]<<16) + (data[i+ 9]<<24);
-               f->scan[n].bytes_done = i+j;
-               if (f->page_crc_tests == STB_VORBIS_PUSHDATA_CRC_COUNT)
-                  break;
-               /* keep going if we still have room for more */
-            }
-         }
-      }
-   }
-
-   for (i=0; i < f->page_crc_tests;) {
-      uint32_t crc;
-      int j;
-      int n = f->scan[i].bytes_done;
-      int m = f->scan[i].bytes_left;
-      if (m > data_len - n) m = data_len - n;
-      /* m is the bytes to scan in the current chunk */
-      crc = f->scan[i].crc_so_far;
-      for (j=0; j < m; ++j)
-         crc = crc32_update(crc, data[n+j]);
-      f->scan[i].bytes_left -= m;
-      f->scan[i].crc_so_far = crc;
-      if (f->scan[i].bytes_left == 0) {
-         /* does it match? */
-         if (f->scan[i].crc_so_far == f->scan[i].goal_crc) {
-            /* Houston, we have page */
-            data_len = n+m; /* consumption amount is wherever that scan ended */
-            f->page_crc_tests = -1; /* drop out of page scan mode */
-            f->previous_length = 0; /* decode-but-don't-output one frame */
-            f->next_seg = -1;       /* start a new page */
-            f->current_loc = f->scan[i].sample_loc; /* set the current sample location */
-                                    /* to the amount we'd have decoded had we decoded this page */
-            f->current_loc_valid = f->current_loc != ~0U;
-            return data_len;
-         }
-         /* delete entry */
-         f->scan[i] = f->scan[--f->page_crc_tests];
-      } else {
-         ++i;
-      }
-   }
-
-   return data_len;
-}
-
-/* return value: number of bytes we used */
-int stb_vorbis_decode_frame_pushdata(
-         stb_vorbis *f,                 /* the file we're decoding */
-         uint8_t *data, int data_len,     /* the memory available for decoding */
-         int *channels,                 /* place to write number of float * buffers */
-         float ***output,               /* place to write float ** array of float * buffers */
-         int *samples                   /* place to write number of output samples */
-     )
-{
-   int i;
-   int len,right,left;
-
-   if (!IS_PUSH_MODE(f)) return error(f, VORBIS_invalid_api_mixing);
-
-   if (f->page_crc_tests >= 0) {
-      *samples = 0;
-      return vorbis_search_for_page_pushdata(f, data, data_len);
-   }
-
-   f->stream     = data;
-   f->stream_end = data + data_len;
-   f->error      = VORBIS__no_error;
-
-   /* check that we have the entire packet in memory */
-   if (!is_whole_packet_present(f, FALSE)) {
-      *samples = 0;
-      return 0;
-   }
-
-   if (!vorbis_decode_packet(f, &len, &left, &right)) {
-      /* save the actual error we encountered */
-      enum STBVorbisError error = f->error;
-      if (error == VORBIS_bad_packet_type) {
-         /* flush and resynch */
-         f->error = VORBIS__no_error;
-         while (get8_packet(f) != EOP)
-            if (f->eof) break;
-         *samples = 0;
-         return f->stream - data;
-      }
-      if (error == VORBIS_continued_packet_flag_invalid) {
-         if (f->previous_length == 0) {
-            /* we may be resynching, in which case it's ok to hit one
-             * of these; just discard the packet */
-            f->error = VORBIS__no_error;
-            while (get8_packet(f) != EOP)
-               if (f->eof) break;
-            *samples = 0;
-            return f->stream - data;
-         }
-      }
-      /* if we get an error while parsing, what to do?
-       * well, it DEFINITELY won't work to continue from where we are! */
-      stb_vorbis_flush_pushdata(f);
-      /* restore the error that actually made us bail */
-      f->error = error;
-      *samples = 0;
-      return 1;
-   }
-
-   /* success! */
-   len = vorbis_finish_frame(f, len, left, right);
-   for (i=0; i < f->channels; ++i)
-      f->outputs[i] = f->channel_buffers[i] + left;
-
-   if (channels) *channels = f->channels;
-   *samples = len;
-   *output = f->outputs;
-   return f->stream - data;
-}
-
-stb_vorbis *stb_vorbis_open_pushdata(
-         unsigned char *data, int data_len, /* the memory available for decoding */
-         int *data_used,              /* only defined if result is not NULL */
-         int *error, stb_vorbis_alloc *alloc)
-{
-   stb_vorbis *f, p;
-   vorbis_init(&p, alloc);
-   p.stream     = data;
-   p.stream_end = data + data_len;
-   p.push_mode  = TRUE;
-   if (!start_decoder(&p)) {
-      if (p.eof)
-         *error = VORBIS_need_more_data;
-      else
-         *error = p.error;
-      return NULL;
-   }
-   f = vorbis_alloc(&p);
-   if (f) {
-      *f = p;
-      *data_used = f->stream - data;
-      *error = 0;
-      return f;
-   } else {
-      vorbis_deinit(&p);
-      return NULL;
-   }
-}
-#endif /* STB_VORBIS_NO_PUSHDATA_API */
-
 unsigned int stb_vorbis_get_file_offset(stb_vorbis *f)
 {
-   #ifndef STB_VORBIS_NO_PUSHDATA_API
-   if (f->push_mode) return 0;
-   #endif
    return f->stream - f->stream_start;
 }
 
