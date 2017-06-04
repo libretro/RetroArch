@@ -127,11 +127,6 @@ struct udev_input
    unsigned num_devices;
 };
 
-#ifdef HAVE_XKBCOMMON
-int init_xkb(int fd, size_t size);
-void free_xkb(void);
-#endif
-
 static uint8_t udev_key_state[UDEV_MAX_KEYS];
 
 static void udev_handle_keyboard(void *data,
@@ -158,10 +153,6 @@ static void udev_handle_keyboard(void *data,
 static void udev_input_kb_free(void)
 {
    unsigned i;
-
-#ifdef HAVE_XKBCOMMON
-   free_xkb();
-#endif
 
    for (i = 0; i < UDEV_MAX_KEYS; i++)
       udev_key_state[i] = 0;
@@ -815,11 +806,6 @@ static void *udev_input_init(const char *joypad_driver)
       udev_monitor_filter_add_match_subsystem_devtype(udev->monitor, "input", NULL);
       udev_monitor_enable_receiving(udev->monitor);
    }
-
-#ifdef HAVE_XKBCOMMON
-   if (init_xkb(-1, 0) == -1)
-      goto error;
-#endif
 
    if (!epoll_new(&udev->epfd))
    {
