@@ -1,48 +1,3 @@
-/* Ogg Vorbis audio decoder - v1.05 - public domain
- * http://nothings.org/stb_vorbis/
- *
- * Written by Sean Barrett in 2007, last updated in 2014
- * Sponsored by RAD Game Tools.
- *
- * Placed in the public domain April 2007 by the author: no copyright
- * is claimed, and you may use it for any purpose you like.
- *
- * No warranty for any purpose is expressed or implied by the author (nor
- * by RAD Game Tools). Report bugs and send enhancements to the author.
- *
- * Limitations:
- *
- *   - seeking not supported except manually via PUSHDATA api
- *   - floor 0 not supported (used in old ogg vorbis files pre-2004)
- *   - lossless sample-truncation at beginning ignored
- *   - cannot concatenate multiple vorbis streams
- *   - sample positions are 32-bit, limiting seekable 192Khz
- *       files to around 6 hours (Ogg supports 64-bit)
- *
- * Bugfix/warning contributors:
- *    Terje Mathisen     Niklas Frykholm     Andy Hill
- *    Casey Muratori     John Bolton         Gargaj
- *    Laurent Gomila     Marc LeBlanc        Ronny Chevalier
- *    Bernhard Wodo      Evan Balster			"alxprd"@github
- *    Tom Beaumont       Ingo Leitgeb        Nicolas Guillemot
- * (If you reported a bug but do not appear in this list, it is because
- * someone else reported the bug before you. There were too many of you to
- * list them all because I was lax about updating for a long time, sorry.)
- *
- * Partial history:
- *    1.05    - 2015/04/19 - don't define __forceinline if it's redundant
- *    1.04    - 2014/08/27 - fix missing const-correct case in API
- *    1.03    - 2014/08/07 - warning fixes
- *    1.02    - 2014/07/09 - declare qsort comparison as explicitly _cdecl in Windows
- *    1.01    - 2014/06/18 - fix stb_vorbis_get_samples_float (interleaved was correct)
- *    1.0     - 2014/05/26 - fix memory leaks; fix warnings; fix bugs in >2-channel;
- *                           (API change) report sample rate for decode-full-file funcs
- *    0.99996 -            - bracket #include <malloc.h> for macintosh compilation
- *    0.99995 -            - avoid alias-optimization issue in float-to-int conversion
- *
- * See end of file for full version history.
- */
-
 #ifndef STB_VORBIS_INCLUDE_STB_VORBIS_H
 #define STB_VORBIS_INCLUDE_STB_VORBIS_H
 
@@ -51,37 +6,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/*   THREAD SAFETY */
-
-/* Individual stb_vorbis* handles are not thread-safe; you cannot decode from
- * them from multiple threads at the same time. However, you can have multiple
- * stb_vorbis* handles and decode from them independently in multiple thrads.
- */
-
-
-/*   MEMORY ALLOCATION */
-
-/* normally stb_vorbis uses malloc() to allocate memory at startup,
- * and alloca() to allocate temporary memory during a frame on the
- * stack. (Memory consumption will depend on the amount of setup
- * data in the file and how you set the compile flags for speed
- * vs. size. In my test files the maximal-size usage is ~150KB.)
- *
- * You can modify the wrapper functions in the source (setup_malloc,
- * setup_temp_malloc, temp_malloc) to change this behavior, or you
- * can use a simpler allocation model: you pass in a buffer from
- * which stb_vorbis will allocate _all_ its memory (including the
- * temp memory). "open" may fail with a VORBIS_outofmem if you
- * do not pass in enough data; there is no way to determine how
- * much you do need except to succeed (at which point you can
- * query get_info to find the exact amount required. yes I know
- * this is lame).
- *
- * If you pass in a non-NULL buffer of the type below, allocation
- * will occur from it as described above. Otherwise just pass NULL
- * to use malloc()/alloca()
- */
 
 typedef struct
 {
@@ -320,15 +244,6 @@ enum STBVorbisError
 #define STB_VORBIS_NO_PULLDATA_API
 #endif
 
-/* STB_VORBIS_NO_FAST_SCALED_FLOAT
- *      does not use a fast float-to-int trick to accelerate float-to-int on
- *      most platforms which requires endianness be defined correctly.
- */
-#if 0
-#define STB_VORBIS_NO_FAST_SCALED_FLOAT
-#endif
-
-
 /* STB_VORBIS_MAX_CHANNELS [number]
  *     globally define this to the maximum number of channels you need.
  *     The spec does not put a restriction on channels except that
@@ -395,28 +310,6 @@ enum STBVorbisError
 #define STB_VORBIS_NO_HUFFMAN_BINARY_SEARCH
 #endif
 
-/* STB_VORBIS_DIVIDES_IN_RESIDUE
- *     stb_vorbis precomputes the result of the scalar residue decoding
- *     that would otherwise require a divide per chunk. you can trade off
- *     space for time by defining this symbol.
- */
-#if 0
-#define STB_VORBIS_DIVIDES_IN_RESIDUE
-#endif
-
-/* STB_VORBIS_DIVIDES_IN_CODEBOOK
- *     vorbis VQ codebooks can be encoded two ways: with every case explicitly
- *     stored, or with all elements being chosen from a small range of values,
- *     and all values possible in all elements. By default, stb_vorbis expands
- *     this latter kind out to look like the former kind for ease of decoding,
- *     because otherwise an integer divide-per-vector-element is required to
- *     unpack the index. If you define STB_VORBIS_DIVIDES_IN_CODEBOOK, you can
- *     trade off storage for speed.
- */
-#if 0
-#define STB_VORBIS_DIVIDES_IN_CODEBOOK
-#endif
-
 /* STB_VORBIS_CODEBOOK_SHORTS
  *     The vorbis file format encodes VQ codebook floats as ax+b where a and
  *     b are floating point per-codebook constants, and x is a 16-bit int.
@@ -426,52 +319,6 @@ enum STBVorbisError
  */
 #ifndef STB_VORBIS_CODEBOOK_SHORTS
 #define STB_VORBIS_CODEBOOK_FLOATS
-#endif
-
-/* STB_VORBIS_DIVIDE_TABLE
- *     this replaces small integer divides in the floor decode loop with
- *     table lookups. made less than 1% difference, so disabled by default.
- */
-
-/* STB_VORBIS_NO_INLINE_DECODE
- *     disables the inlining of the scalar codebook fast-huffman decode.
- *     might save a little codespace; useful for debugging
- */
-#if 0
-#define STB_VORBIS_NO_INLINE_DECODE
-#endif
-
-/* STB_VORBIS_NO_DEFER_FLOOR
- *     Normally we only decode the floor without synthesizing the actual
- *     full curve. We can instead synthesize the curve immediately. This
- *     requires more memory and is very likely slower, so I don't think
- *     you'd ever want to do it except for debugging.
- */
-#if 0
-#define STB_VORBIS_NO_DEFER_FLOOR
-#endif
-
-#ifndef STB_VORBIS_NO_FAST_SCALED_FLOAT
-
-   /* only need endianness for fast-float-to-int, which we don't
-    * use for pushdata */
-
-   #ifndef STB_VORBIS_BIG_ENDIAN
-     #define STB_VORBIS_ENDIAN  0
-   #else
-     #define STB_VORBIS_ENDIAN  1
-   #endif
-
-#endif
-
-#ifndef STB_VORBIS_NO_CRT
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include <math.h>
-#if !(defined(__APPLE__) || defined(MACOSX) || defined(macintosh) || defined(Macintosh))
-#include <malloc.h>
-#endif
 #endif
 
 #include <retro_inline.h>
@@ -689,11 +536,7 @@ struct stb_vorbis
    float *previous_window[STB_VORBIS_MAX_CHANNELS];
    int previous_length;
 
-   #ifndef STB_VORBIS_NO_DEFER_FLOOR
    int16 *finalY[STB_VORBIS_MAX_CHANNELS];
-   #else
-   float *floor_buffers[STB_VORBIS_MAX_CHANNELS];
-   #endif
 
    uint32 current_loc; /* sample location of next frame to decode */
    int    current_loc_valid;
@@ -764,11 +607,6 @@ static int error(vorb *f, enum STBVorbisError e)
 #define array_size_required(count,size)  (count*(sizeof(void *)+(size)))
 
 #define temp_alloc(f,size)              (f->alloc.alloc_buffer ? setup_temp_malloc(f,size) : alloca(size))
-#ifdef dealloca
-#define temp_free(f,p)                  (f->alloc.alloc_buffer ? 0 : dealloca(size))
-#else
-#define temp_free(f,p)                  0
-#endif
 #define temp_alloc_save(f)              ((f)->temp_offset)
 #define temp_alloc_restore(f,p)         ((f)->temp_offset = (p))
 
@@ -844,7 +682,6 @@ static INLINE uint32 crc32_update(uint32 crc, uint8 byte)
 {
    return (crc << 8) ^ stb_vorbis_crc_table[byte ^ (crc >> 24)];
 }
-
 
 /* used in setup, and for huffman that doesn't go fast path */
 static unsigned int bit_reverse(unsigned int n)
@@ -1486,23 +1323,6 @@ static int codebook_decode_scalar_raw(vorb *f, Codebook *c)
    return -1;
 }
 
-#ifndef STB_VORBIS_NO_INLINE_DECODE
-
-#define DECODE_RAW(var, f,c)                                  \
-   if (f->valid_bits < STB_VORBIS_FAST_HUFFMAN_LENGTH)        \
-      prep_huffman(f);                                        \
-   var = f->acc & FAST_HUFFMAN_TABLE_MASK;                    \
-   var = c->fast_huffman[var];                                \
-   if (var >= 0) {                                            \
-      int n = c->codeword_lengths[var];                       \
-      f->acc >>= n;                                           \
-      f->valid_bits -= n;                                     \
-      if (f->valid_bits < 0) { f->valid_bits = 0; var = -1; } \
-   } else {                                                   \
-      var = codebook_decode_scalar_raw(f,c);                  \
-   }
-
-#else
 
 static int codebook_decode_scalar(vorb *f, Codebook *c)
 {
@@ -1523,22 +1343,11 @@ static int codebook_decode_scalar(vorb *f, Codebook *c)
 
 #define DECODE_RAW(var,f,c)    var = codebook_decode_scalar(f,c);
 
-#endif
-
 #define DECODE(var,f,c)                                       \
    DECODE_RAW(var,f,c)                                        \
    if (c->sparse) var = c->sorted_values[var];
 
-#ifndef STB_VORBIS_DIVIDES_IN_CODEBOOK
-  #define DECODE_VQ(var,f,c)   DECODE_RAW(var,f,c)
-#else
-  #define DECODE_VQ(var,f,c)   DECODE(var,f,c)
-#endif
-
-
-
-
-
+#define DECODE_VQ(var,f,c)   DECODE_RAW(var,f,c)
 
 /* CODEBOOK_ELEMENT_FAST is an optimization for the CODEBOOK_FLOATS case
  * where we avoid one addition */
@@ -1578,21 +1387,6 @@ static int codebook_decode(vorb *f, Codebook *c, float *output, int len)
    if (z < 0) return FALSE;
    if (len > c->dimensions) len = c->dimensions;
 
-#ifdef STB_VORBIS_DIVIDES_IN_CODEBOOK
-   if (c->lookup_type == 1) {
-      float last = CODEBOOK_ELEMENT_BASE(c);
-      int div = 1;
-      for (i=0; i < len; ++i) {
-         int off = (z / div) % c->lookup_values;
-         float val = CODEBOOK_ELEMENT_FAST(c,off) + last;
-         output[i] += val;
-         if (c->sequence_p) last = val + c->minimum_value;
-         div *= c->lookup_values;
-      }
-      return TRUE;
-   }
-#endif
-
    z *= c->dimensions;
    if (c->sequence_p) {
       float last = CODEBOOK_ELEMENT_BASE(c);
@@ -1618,20 +1412,6 @@ static int codebook_decode_step(vorb *f, Codebook *c, float *output, int len, in
    if (z < 0) return FALSE;
    if (len > c->dimensions) len = c->dimensions;
 
-#ifdef STB_VORBIS_DIVIDES_IN_CODEBOOK
-   if (c->lookup_type == 1) {
-      int div = 1;
-      for (i=0; i < len; ++i) {
-         int off = (z / div) % c->lookup_values;
-         float val = CODEBOOK_ELEMENT_FAST(c,off) + last;
-         output[i*step] += val;
-         if (c->sequence_p) last = val;
-         div *= c->lookup_values;
-      }
-      return TRUE;
-   }
-#endif
-
    z *= c->dimensions;
    for (i=0; i < len; ++i) {
       float val = CODEBOOK_ELEMENT_FAST(c,z+i) + last;
@@ -1654,9 +1434,7 @@ static int codebook_decode_deinterleave_repeat(vorb *f, Codebook *c, float **out
    while (total_decode > 0) {
       float last = CODEBOOK_ELEMENT_BASE(c);
       DECODE_VQ(z,f,c);
-      #ifndef STB_VORBIS_DIVIDES_IN_CODEBOOK
       assert(!c->sparse || z < c->sorted_entries);
-      #endif
       if (z < 0) {
          if (!f->bytes_in_seg)
             if (f->last_seg) return FALSE;
@@ -1671,37 +1449,21 @@ static int codebook_decode_deinterleave_repeat(vorb *f, Codebook *c, float **out
          effective = len*ch - (p_inter*ch - c_inter);
       }
 
-   #ifdef STB_VORBIS_DIVIDES_IN_CODEBOOK
-      if (c->lookup_type == 1) {
-         int div = 1;
+      z *= c->dimensions;
+      if (c->sequence_p) {
          for (i=0; i < effective; ++i) {
-            int off = (z / div) % c->lookup_values;
-            float val = CODEBOOK_ELEMENT_FAST(c,off) + last;
+            float val = CODEBOOK_ELEMENT_FAST(c,z+i) + last;
             if (outputs[c_inter])
                outputs[c_inter][p_inter] += val;
             if (++c_inter == ch) { c_inter = 0; ++p_inter; }
-            if (c->sequence_p) last = val;
-            div *= c->lookup_values;
+            last = val;
          }
-      } else
-   #endif
-      {
-         z *= c->dimensions;
-         if (c->sequence_p) {
-            for (i=0; i < effective; ++i) {
-               float val = CODEBOOK_ELEMENT_FAST(c,z+i) + last;
-               if (outputs[c_inter])
-                  outputs[c_inter][p_inter] += val;
-               if (++c_inter == ch) { c_inter = 0; ++p_inter; }
-               last = val;
-            }
-         } else {
-            for (i=0; i < effective; ++i) {
-               float val = CODEBOOK_ELEMENT_FAST(c,z+i) + last;
-               if (outputs[c_inter])
-                  outputs[c_inter][p_inter] += val;
-               if (++c_inter == ch) { c_inter = 0; ++p_inter; }
-            }
+      } else {
+         for (i=0; i < effective; ++i) {
+            float val = CODEBOOK_ELEMENT_FAST(c,z+i) + last;
+            if (outputs[c_inter])
+               outputs[c_inter][p_inter] += val;
+            if (++c_inter == ch) { c_inter = 0; ++p_inter; }
          }
       }
 
@@ -1712,7 +1474,6 @@ static int codebook_decode_deinterleave_repeat(vorb *f, Codebook *c, float **out
    return TRUE;
 }
 
-#ifndef STB_VORBIS_DIVIDES_IN_CODEBOOK
 static int codebook_decode_deinterleave_repeat_2(vorb *f, Codebook *c, float **outputs, int *c_inter_p, int *p_inter_p, int len, int total_decode)
 {
    int c_inter = *c_inter_p;
@@ -1790,7 +1551,6 @@ static int codebook_decode_deinterleave_repeat_2(vorb *f, Codebook *c, float **o
    *p_inter_p = p_inter;
    return TRUE;
 }
-#endif
 
 static int predict_point(int x, int x0, int x1, int y0, int y1)
 {
@@ -1880,51 +1640,23 @@ static float inverse_db_table[256] =
  *     ... also, isn't the whole point of Bresenham's algorithm to NOT
  * have to divide in the setup? sigh.
  */
-#ifndef STB_VORBIS_NO_DEFER_FLOOR
 #define LINE_OP(a,b)   a *= b
-#else
-#define LINE_OP(a,b)   a = b
-#endif
-
-#ifdef STB_VORBIS_DIVIDE_TABLE
-#define DIVTAB_NUMER   32
-#define DIVTAB_DENOM   64
-int8 integer_divide_table[DIVTAB_NUMER][DIVTAB_DENOM]; /* 2KB */
-#endif
 
 static INLINE void draw_line(float *output, int x0, int y0, int x1, int y1, int n)
 {
    int dy = y1 - y0;
    int adx = x1 - x0;
    int ady = abs(dy);
-   int base;
    int x=x0,y=y0;
    int err = 0;
    int sy;
+   int base = dy / adx;
 
-#ifdef STB_VORBIS_DIVIDE_TABLE
-   if (adx < DIVTAB_DENOM && ady < DIVTAB_NUMER) {
-      if (dy < 0) {
-         base = -integer_divide_table[ady][adx];
-         sy = base-1;
-      } else {
-         base =  integer_divide_table[ady][adx];
-         sy = base+1;
-      }
-   } else {
-      base = dy / adx;
-      if (dy < 0)
-         sy = base - 1;
-      else
-         sy = base+1;
-   }
-#else
-   base = dy / adx;
    if (dy < 0)
       sy = base - 1;
    else
       sy = base+1;
-#endif
+
    ady -= abs(base) * adx;
    if (x1 > n) x1 = n;
    LINE_OP(output[x], inverse_db_table[y]);
@@ -1968,11 +1700,7 @@ static void decode_residue(vorb *f, float *residue_buffers[], int ch, int n, int
    int n_read = r->end - r->begin;
    int part_read = n_read / r->part_size;
    int temp_alloc_point = temp_alloc_save(f);
-   #ifndef STB_VORBIS_DIVIDES_IN_RESIDUE
    uint8 ***part_classdata = (uint8 ***) temp_block_array(f,f->channels, part_read * sizeof(**part_classdata));
-   #else
-   int **classifications = (int **) temp_block_array(f,f->channels, part_read * sizeof(**classifications));
-   #endif
 
    for (i=0; i < ch; ++i)
       if (!do_not_decode[i])
@@ -1996,42 +1724,24 @@ static void decode_residue(vorb *f, float *residue_buffers[], int ch, int n, int
                   int q;
                   DECODE(q,f,c);
                   if (q == EOP) goto done;
-                  #ifndef STB_VORBIS_DIVIDES_IN_RESIDUE
                   part_classdata[0][class_set] = r->classdata[q];
-                  #else
-                  for (i=classwords-1; i >= 0; --i) {
-                     classifications[0][i+pcount] = q % r->classifications;
-                     q /= r->classifications;
-                  }
-                  #endif
                }
                for (i=0; i < classwords && pcount < part_read; ++i, ++pcount) {
                   int z = r->begin + pcount*r->part_size;
-                  #ifndef STB_VORBIS_DIVIDES_IN_RESIDUE
                   int c = part_classdata[0][class_set][i];
-                  #else
-                  int c = classifications[0][pcount];
-                  #endif
                   int b = r->residue_books[c][pass];
                   if (b >= 0) {
                      Codebook *book = f->codebooks + b;
-                     #ifdef STB_VORBIS_DIVIDES_IN_CODEBOOK
-                     if (!codebook_decode_deinterleave_repeat(f, book, residue_buffers, ch, &c_inter, &p_inter, n, r->part_size))
-                        goto done;
-                     #else
                      /* saves 1% */
                      if (!codebook_decode_deinterleave_repeat_2(f, book, residue_buffers, &c_inter, &p_inter, n, r->part_size))
                         goto done;
-                     #endif
                   } else {
                      z += r->part_size;
                      c_inter = z & 1;
                      p_inter = z >> 1;
                   }
                }
-               #ifndef STB_VORBIS_DIVIDES_IN_RESIDUE
                ++class_set;
-               #endif
             }
          } else if (ch == 1) {
             while (pcount < part_read) {
@@ -2042,22 +1752,11 @@ static void decode_residue(vorb *f, float *residue_buffers[], int ch, int n, int
                   int q;
                   DECODE(q,f,c);
                   if (q == EOP) goto done;
-                  #ifndef STB_VORBIS_DIVIDES_IN_RESIDUE
                   part_classdata[0][class_set] = r->classdata[q];
-                  #else
-                  for (i=classwords-1; i >= 0; --i) {
-                     classifications[0][i+pcount] = q % r->classifications;
-                     q /= r->classifications;
-                  }
-                  #endif
                }
                for (i=0; i < classwords && pcount < part_read; ++i, ++pcount) {
                   int z = r->begin + pcount*r->part_size;
-                  #ifndef STB_VORBIS_DIVIDES_IN_RESIDUE
                   int c = part_classdata[0][class_set][i];
-                  #else
-                  int c = classifications[0][pcount];
-                  #endif
                   int b = r->residue_books[c][pass];
                   if (b >= 0) {
                      Codebook *book = f->codebooks + b;
@@ -2069,9 +1768,7 @@ static void decode_residue(vorb *f, float *residue_buffers[], int ch, int n, int
                      p_inter = z;
                   }
                }
-               #ifndef STB_VORBIS_DIVIDES_IN_RESIDUE
                ++class_set;
-               #endif
             }
          } else {
             while (pcount < part_read) {
@@ -2082,22 +1779,11 @@ static void decode_residue(vorb *f, float *residue_buffers[], int ch, int n, int
                   int q;
                   DECODE(q,f,c);
                   if (q == EOP) goto done;
-                  #ifndef STB_VORBIS_DIVIDES_IN_RESIDUE
                   part_classdata[0][class_set] = r->classdata[q];
-                  #else
-                  for (i=classwords-1; i >= 0; --i) {
-                     classifications[0][i+pcount] = q % r->classifications;
-                     q /= r->classifications;
-                  }
-                  #endif
                }
                for (i=0; i < classwords && pcount < part_read; ++i, ++pcount) {
                   int z = r->begin + pcount*r->part_size;
-                  #ifndef STB_VORBIS_DIVIDES_IN_RESIDUE
                   int c = part_classdata[0][class_set][i];
-                  #else
-                  int c = classifications[0][pcount];
-                  #endif
                   int b = r->residue_books[c][pass];
                   if (b >= 0) {
                      Codebook *book = f->codebooks + b;
@@ -2109,9 +1795,7 @@ static void decode_residue(vorb *f, float *residue_buffers[], int ch, int n, int
                      p_inter = z / ch;
                   }
                }
-               #ifndef STB_VORBIS_DIVIDES_IN_RESIDUE
                ++class_set;
-               #endif
             }
          }
       }
@@ -2128,25 +1812,14 @@ static void decode_residue(vorb *f, float *residue_buffers[], int ch, int n, int
                   int temp;
                   DECODE(temp,f,c);
                   if (temp == EOP) goto done;
-                  #ifndef STB_VORBIS_DIVIDES_IN_RESIDUE
                   part_classdata[j][class_set] = r->classdata[temp];
-                  #else
-                  for (i=classwords-1; i >= 0; --i) {
-                     classifications[j][i+pcount] = temp % r->classifications;
-                     temp /= r->classifications;
-                  }
-                  #endif
                }
             }
          }
          for (i=0; i < classwords && pcount < part_read; ++i, ++pcount) {
             for (j=0; j < ch; ++j) {
                if (!do_not_decode[j]) {
-                  #ifndef STB_VORBIS_DIVIDES_IN_RESIDUE
                   int c = part_classdata[j][class_set][i];
-                  #else
-                  int c = classifications[j][pcount];
-                  #endif
                   int b = r->residue_books[c][pass];
                   if (b >= 0) {
                      float *target = residue_buffers[j];
@@ -2159,9 +1832,7 @@ static void decode_residue(vorb *f, float *residue_buffers[], int ch, int n, int
                }
             }
          }
-         #ifndef STB_VORBIS_DIVIDES_IN_RESIDUE
          ++class_set;
-         #endif
       }
    }
   done:
@@ -2748,11 +2419,8 @@ static float *get_window(vorb *f, int len)
    return NULL;
 }
 
-#ifndef STB_VORBIS_NO_DEFER_FLOOR
 typedef int16 YTYPE;
-#else
-typedef int YTYPE;
-#endif
+
 static int do_floor(vorb *f, Mapping *map, int i, int n, float *target, YTYPE *finalY, uint8 *step2_flag)
 {
    int n2 = n >> 1;
@@ -2766,11 +2434,7 @@ static int do_floor(vorb *f, Mapping *map, int i, int n, float *target, YTYPE *f
       int lx = 0, ly = finalY[0] * g->floor1_multiplier;
       for (q=1; q < g->values; ++q) {
          j = g->sorted_order[q];
-         #ifndef STB_VORBIS_NO_DEFER_FLOOR
          if (finalY[j] >= 0)
-         #else
-         if (step2_flag[j])
-         #endif
          {
             int hy = finalY[j] * g->floor1_multiplier;
             int hx = g->Xlist[j];
@@ -2931,15 +2595,11 @@ static int vorbis_decode_packet_rest(vorb *f, int *len, Mode *m, int left_start,
                }
             }
 
-#ifdef STB_VORBIS_NO_DEFER_FLOOR
-            do_floor(f, map, i, n, f->floor_buffers[i], finalY, step2_flag);
-#else
             /* defer final floor computation until _after_ residue */
             for (j=0; j < g->values; ++j) {
                if (!step2_flag[j])
                   finalY[j] = -1;
             }
-#endif
          } else {
            error:
             zero_channel[i] = TRUE;
@@ -3009,7 +2669,6 @@ static int vorbis_decode_packet_rest(vorb *f, int *len, Mode *m, int left_start,
    }
 
    /* finish decoding the floors */
-#ifndef STB_VORBIS_NO_DEFER_FLOOR
    for (i=0; i < f->channels; ++i) {
       if (really_zero_channel[i]) {
          memset(f->channel_buffers[i], 0, sizeof(*f->channel_buffers[i]) * n2);
@@ -3017,16 +2676,6 @@ static int vorbis_decode_packet_rest(vorb *f, int *len, Mode *m, int left_start,
          do_floor(f, map, i, n, f->channel_buffers[i], f->finalY[i], NULL);
       }
    }
-#else
-   for (i=0; i < f->channels; ++i) {
-      if (really_zero_channel[i]) {
-         memset(f->channel_buffers[i], 0, sizeof(*f->channel_buffers[i]) * n2);
-      } else {
-         for (j=0; j < n2; ++j)
-            f->channel_buffers[i][j] *= f->floor_buffers[i][j];
-      }
-   }
-#endif
 
 /* INVERSE MDCT */
    for (i=0; i < f->channels; ++i)
@@ -3444,7 +3093,6 @@ static int start_decoder(vorb *f)
             mults[j] = q;
          }
 
-#ifndef STB_VORBIS_DIVIDES_IN_CODEBOOK
          if (c->lookup_type == 1) {
             int len, sparse = c->sparse;
             /* pre-expand the lookup1-style multiplicands, to avoid a divide in the inner loop */
@@ -3467,8 +3115,7 @@ static int start_decoder(vorb *f)
                             /* in this case (and this case only) we could pre-expand c->sequence_p,
                              * and throw away the decode logic for it; have to ALSO do
                              * it in the case below, but it can only be done if
-                             *    STB_VORBIS_CODEBOOK_FLOATS
-                             *   !STB_VORBIS_DIVIDES_IN_CODEBOOK */
+                             *    STB_VORBIS_CODEBOOK_FLOATS     */
                          #endif
                   div *= c->lookup_values;
                }
@@ -3477,7 +3124,6 @@ static int start_decoder(vorb *f)
             c->lookup_type = 2;
          }
          else
-#endif
          {
             c->multiplicands = (stb_vorbis_codetype *) setup_malloc(f, sizeof(c->multiplicands[0]) * c->lookup_values);
             #ifndef STB_VORBIS_CODEBOOK_FLOATS
@@ -3488,9 +3134,7 @@ static int start_decoder(vorb *f)
             #endif
             setup_temp_free(f, mults,sizeof(mults[0])*c->lookup_values);
          }
-#ifndef STB_VORBIS_DIVIDES_IN_CODEBOOK
         skip:;
-#endif
 
          #ifdef STB_VORBIS_CODEBOOK_FLOATS
          if (c->lookup_type == 2 && c->sequence_p) {
@@ -3698,22 +3342,12 @@ static int start_decoder(vorb *f)
       f->channel_buffers[i] = (float *) setup_malloc(f, sizeof(float) * f->blocksize_1);
       f->previous_window[i] = (float *) setup_malloc(f, sizeof(float) * f->blocksize_1/2);
       f->finalY[i]          = (int16 *) setup_malloc(f, sizeof(int16) * longest_floorlist);
-      #ifdef STB_VORBIS_NO_DEFER_FLOOR
-      f->floor_buffers[i]   = (float *) setup_malloc(f, sizeof(float) * f->blocksize_1/2);
-      #endif
    }
 
    if (!init_blocksize(f, 0, f->blocksize_0)) return FALSE;
    if (!init_blocksize(f, 1, f->blocksize_1)) return FALSE;
    f->blocksize[0] = f->blocksize_0;
    f->blocksize[1] = f->blocksize_1;
-
-#ifdef STB_VORBIS_DIVIDE_TABLE
-   if (integer_divide_table[1][1]==0)
-      for (i=0; i < DIVTAB_NUMER; ++i)
-         for (j=1; j < DIVTAB_DENOM; ++j)
-            integer_divide_table[i][j] = i / j;
-#endif
 
    /* compute how much temporary memory is needed */
 
@@ -3729,11 +3363,7 @@ static int start_decoder(vorb *f)
          if (part_read > max_part_read)
             max_part_read = part_read;
       }
-      #ifndef STB_VORBIS_DIVIDES_IN_RESIDUE
       classify_mem = f->channels * (sizeof(void*) + max_part_read * sizeof(uint8 *));
-      #else
-      classify_mem = f->channels * (sizeof(void*) + max_part_read * sizeof(int *));
-      #endif
 
       f->temp_memory_required = classify_mem;
       if (imdct_mem > f->temp_memory_required)
@@ -3787,9 +3417,6 @@ static void vorbis_deinit(stb_vorbis *p)
    for (i=0; i < p->channels; ++i) {
       setup_free(p, p->channel_buffers[i]);
       setup_free(p, p->previous_window[i]);
-      #ifdef STB_VORBIS_NO_DEFER_FLOOR
-      setup_free(p, p->floor_buffers[i]);
-      #endif
       setup_free(p, p->finalY[i]);
    }
    for (i=0; i < 2; ++i) {
@@ -3827,8 +3454,7 @@ int stb_vorbis_get_sample_offset(stb_vorbis *f)
 {
    if (f->current_loc_valid)
       return f->current_loc;
-   else
-      return -1;
+   return -1;
 }
 
 stb_vorbis_info stb_vorbis_get_info(stb_vorbis *f)
@@ -4681,50 +4307,5 @@ int stb_vorbis_get_samples_float(stb_vorbis *f, int channels, float **buffer, in
    return n;
 }
 #endif /* STB_VORBIS_NO_PULLDATA_API */
-
-/* Version history
-    1.05    - 2015/04/19 - don't define __forceinline if it's redundant
-    1.04    - 2014/08/27 - fix missing const-correct case in API
-    1.03    - 2014/08/07 - Warning fixes
-    1.02    - 2014/07/09 - Declare qsort compare function _cdecl on windows
-    1.01    - 2014/06/18 - fix stb_vorbis_get_samples_float
-    1.0     - 2014/05/26 - fix memory leaks; fix warnings; fix bugs in multichannel
-                           (API change) report sample rate for decode-full-file funcs
-    0.99996 - bracket #include <malloc.h> for macintosh compilation by Laurent Gomila
-    0.99995 - use union instead of pointer-cast for fast-float-to-int to avoid alias-optimization problem
-    0.99994 - change fast-float-to-int to work in single-precision FPU mode, remove endian-dependence
-    0.99993 - remove assert that fired on legal files with empty tables
-    0.99992 - rewind-to-start
-    0.99991 - bugfix to stb_vorbis_get_samples_short by Bernhard Wodo
-    0.9999 - (should have been 0.99990) fix no-CRT support, compiling as C++
-    0.9998 - add a full-decode function with a memory source
-    0.9997 - fix a bug in the read-from-FILE case in 0.9996 addition
-    0.9996 - query length of vorbis stream in samples/seconds
-    0.9995 - bugfix to another optimization that only happened in certain files
-    0.9994 - bugfix to one of the optimizations that caused significant (but inaudible?) errors
-    0.9993 - performance improvements; runs in 99% to 104% of time of reference implementation
-    0.9992 - performance improvement of IMDCT; now performs close to reference implementation
-    0.9991 - performance improvement of IMDCT
-    0.999 - (should have been 0.9990) performance improvement of IMDCT
-    0.998 - no-CRT support from Casey Muratori
-    0.997 - bugfixes for bugs found by Terje Mathisen
-    0.996 - bugfix: fast-huffman decode initialized incorrectly for sparse codebooks; fixing gives 10% speedup - found by Terje Mathisen
-    0.995 - bugfix: fix to 'effective' overrun detection - found by Terje Mathisen
-    0.994 - bugfix: garbage decode on final VQ symbol of a non-multiple - found by Terje Mathisen
-    0.993 - bugfix: pushdata API required 1 extra byte for empty page (failed to consume final page if empty) - found by Terje Mathisen
-    0.992 - fixes for MinGW warning
-    0.991 - turn fast-float-conversion on by default
-    0.990 - fix push-mode seek recovery if you seek into the headers
-    0.98b - fix to bad release of 0.98
-    0.98 - fix push-mode seek recovery; robustify float-to-int and support non-fast mode
-    0.97 - builds under c++ (typecasting, don't use 'class' keyword)
-    0.96 - somehow MY 0.95 was right, but the web one was wrong, so here's my 0.95 rereleased as 0.96, fixes a typo in the clamping code
-    0.95 - clamping code for 16-bit functions
-    0.94 - not publically released
-    0.93 - fixed all-zero-floor case (was decoding garbage)
-    0.92 - fixed a memory leak
-    0.91 - conditional compiles to omit parts of the API and the infrastructure to support them: STB_VORBIS_NO_PULLDATA_API, STB_VORBIS_NO_PUSHDATA_API, STB_VORBIS_NO_STDIO, STB_VORBIS_NO_INTEGER_CONVERSION
-    0.90 - first public release
-*/
 
 #endif /* STB_VORBIS_HEADER_ONLY */
