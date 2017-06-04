@@ -280,6 +280,7 @@ static void udev_handle_mouse(void *data,
                   mouse->whu = 1;
                else if (event->value == -1)
                   mouse->whd = 1;
+               break;
          }
    }
 }
@@ -288,9 +289,11 @@ static bool udev_input_add_device(udev_input_t *udev,
       enum udev_input_dev_type type, const char *devnode, device_handle_cb cb)
 {
    int fd;
+   struct stat st;
    udev_input_device_t **tmp;
    udev_input_device_t *device = NULL;
-   struct stat st              = {0};
+
+   st.st_dev                   = 0;
 
    if (stat(devnode, &st) < 0)
       return false;
