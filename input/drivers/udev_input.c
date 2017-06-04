@@ -130,7 +130,6 @@ struct udev_input
 #ifdef HAVE_XKBCOMMON
 int init_xkb(int fd, size_t size);
 void free_xkb(void);
-int handle_xkb(int code, int value);
 #endif
 
 static uint8_t udev_key_state[UDEV_MAX_KEYS];
@@ -145,11 +144,6 @@ static void udev_handle_keyboard(void *data,
             BIT_SET(udev_key_state, event->code);
          else
             BIT_CLEAR(udev_key_state, event->code);
-
-#ifdef HAVE_XKBCOMMON
-         if (handle_xkb(event->code, event->value) == 0)
-            return;
-#endif
 
          input_keyboard_event(event->value,
                input_keymaps_translate_keysym_to_rk(event->code),
