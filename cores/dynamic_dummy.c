@@ -126,8 +126,7 @@ void libretro_dummy_retro_reset(void)
 void libretro_dummy_retro_run(void)
 {
    dummy_input_poll_cb();
-   if (frame_buf)
-      dummy_video_cb(frame_buf, 320, 240, 640);
+   dummy_video_cb(frame_buf, 320, 240, 640);
 }
 
 /* This should never be called, it's only used as a placeholder. */
