@@ -23,22 +23,22 @@
 
 #include "internal_cores.h"
 
-static uint16_t *frame_buf;
+static uint16_t *dummy_frame_buf;
 
 void libretro_dummy_retro_init(void)
 {
    unsigned i;
 
-   frame_buf = (uint16_t*)calloc(320 * 240, sizeof(uint16_t));
+   dummy_frame_buf = (uint16_t*)calloc(320 * 240, sizeof(uint16_t));
    for (i = 0; i < 320 * 240; i++)
-      frame_buf[i] = 4 << 5;
+      dummy_frame_buf[i] = 4 << 5;
 }
 
 void libretro_dummy_retro_deinit(void)
 {
-   if (frame_buf)
-      free(frame_buf);
-   frame_buf = NULL;
+   if (dummy_frame_buf)
+      free(dummy_frame_buf);
+   dummy_frame_buf = NULL;
 }
 
 unsigned libretro_dummy_retro_api_version(void)
@@ -126,7 +126,7 @@ void libretro_dummy_retro_reset(void)
 void libretro_dummy_retro_run(void)
 {
    dummy_input_poll_cb();
-   dummy_video_cb(frame_buf, 320, 240, 640);
+   dummy_video_cb(dummy_frame_buf, 320, 240, 640);
 }
 
 /* This should never be called, it's only used as a placeholder. */
