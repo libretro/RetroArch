@@ -466,10 +466,15 @@ static bool android_input_init_handle(void)
 {
    if (libandroid_handle != NULL) /* already initialized */
       return true;
-
+#ifdef ANDROID_AARCH64
+   if ((libandroid_handle = dlopen("/system/lib64/libandroid.so",
+               RTLD_LOCAL | RTLD_LAZY)) == 0)
+   return false;
+#else
    if ((libandroid_handle = dlopen("/system/lib/libandroid.so",
                RTLD_LOCAL | RTLD_LAZY)) == 0)
-      return false;
+   return false;
+#endif
 
    if ((p_AMotionEvent_getAxisValue = dlsym(RTLD_DEFAULT,
                "AMotionEvent_getAxisValue")))

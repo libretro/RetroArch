@@ -42,6 +42,10 @@ DEFINES += -DSINC_LOWER_QUALITY
 DEFINES += -DANDROID_ARM_V7
 endif
 
+ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
+   DEFINES += -DANDROID_AARCH64
+endif
+
 ifeq ($(TARGET_ARCH),mips)
    DEFINES += -DANDROID_MIPS -D__mips__ -D__MIPSEL__
 endif
