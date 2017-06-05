@@ -2388,6 +2388,7 @@ static bool config_load_file(const char *path, bool set_defaults,
    }
 
    /* Path settings  */
+#if !TARGET_OS_IPHONE
    for (i = 0; i < (unsigned)path_settings_size; i++)
    {
       if (!path_settings[i].handle)
@@ -2395,6 +2396,7 @@ static bool config_load_file(const char *path, bool set_defaults,
       if (config_get_path(conf, path_settings[i].ident, tmp_str, sizeof(tmp_str)))
          strlcpy(path_settings[i].ptr, tmp_str, PATH_MAX_LENGTH);
    }
+#endif
 
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY, NULL))
    {
