@@ -774,12 +774,15 @@ static bool open_devices(udev_input_t *udev,
       {
          int fd = open(devnode, O_RDONLY | O_NONBLOCK);
 
-         RARCH_LOG("[udev] Adding device %s as type %s.\n",
-               devnode, type_str);
-         if (!udev_input_add_device(udev, type, devnode, cb))
-            RARCH_ERR("[udev] Failed to open device: %s (%s).\n",
-                  devnode, strerror(errno));
-         close(fd);
+         if (fd != -1)
+         {
+            RARCH_LOG("[udev] Adding device %s as type %s.\n",
+                  devnode, type_str);
+            if (!udev_input_add_device(udev, type, devnode, cb))
+               RARCH_ERR("[udev] Failed to open device: %s (%s).\n",
+                     devnode, strerror(errno));
+            close(fd);
+         }
       }
 
       udev_device_unref(dev);
