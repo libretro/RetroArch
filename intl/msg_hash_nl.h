@@ -16,15 +16,15 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
-      "File already exists. Saving to backup buffer"
+      "Bestand bestaat al. Saven naar backup buffer"
       )
 MSG_HASH(
       MSG_GOT_CONNECTION_FROM,
-      "Got connection from: \"%s\""
+      "Verbonden met: \"%s\""
       )
 MSG_HASH(
       MSG_GOT_CONNECTION_FROM_NAME,
-      "Got connection from: \"%s (%s)\""
+      "Verbonden met: \"%s (%s)\""
       )
 MSG_HASH(
       MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
@@ -40,7 +40,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_WAITING_FOR_CLIENT,
-      "Waiting for client ..."
+      "Wachten op client ..."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
@@ -72,7 +72,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_CAPABILITIES,
-      "Capabilities"
+      "Mogelijkheden"
       )
 MSG_HASH(
       MSG_CONNECTING_TO_NETPLAY_HOST,
@@ -84,7 +84,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_CONNECTION_SLOT,
-      "Connection slot"
+      "Connectie slot"
       )
 MSG_HASH(
       MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY,
@@ -92,7 +92,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
-      "Password"
+      "Wachtwoord"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
@@ -100,7 +100,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
-      "Username"
+      "Gebruikersnaam"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST,
@@ -145,7 +145,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
-      "Block Frames"
+      "Blok Frames"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
@@ -189,7 +189,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
-      "Dynamic Audio Rate Control"
+      "Dynamische Audio Rate Control"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
@@ -209,7 +209,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
-      "SaveRAM Autosave Interval"
+      "Periodiek SaveRAM Autosaven"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
@@ -281,7 +281,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_START,
-      "Defaults"
+      "Standaard"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_KEYBOARD,
@@ -345,7 +345,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
-      "Description"
+      "Omschrijving"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
@@ -411,7 +411,7 @@ MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE,
       "Geschiedenislijst grootte")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
-      "Snel,enu")
+      "Snelmenu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
       "Core Assets")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
@@ -463,7 +463,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
       "Updater")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
-      "CPU Architecture:")
+      "CPU Architectuur:")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CPU_CORES,
       "CPU Cores:")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY,
@@ -1391,9 +1391,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE,
       "Fout opgetreden tijdens lezen van gecomprimeerd bestand.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE,
-      "Undo Load State")
+      "Laden van State Ongedaan Maken")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE,
-      "Undo Save State")
+      "Save State Ongedaan Maken")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UNKNOWN,
       "Onbekend")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
@@ -1911,7 +1911,7 @@ MSG_HASH(MSG_GOT_INVALID_DISK_INDEX,
 MSG_HASH(MSG_GRAB_MOUSE_STATE,
       "Grab mouse state")
 MSG_HASH(MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING,
-      "Libretro core is hardware rendered. Must use post-shaded recording as well.")
+      "Libretro core is hardware-geaccelereerd. Must use post-shaded recording as well.")
 MSG_HASH(MSG_INFLATED_CHECKSUM_DID_NOT_MATCH_CRC32,
       "Inflated checksum did not match CRC32.")
 MSG_HASH(MSG_INPUT_CHEAT,
@@ -1923,7 +1923,7 @@ MSG_HASH(MSG_INPUT_PRESET_FILENAME,
 MSG_HASH(MSG_INTERFACE,
       "Interface")
 MSG_HASH(MSG_INTERNAL_STORAGE,
-      "Internal Storage")
+      "Interne Opslag")
 MSG_HASH(MSG_REMOVABLE_STORAGE,
       "Removable Storage")
 MSG_HASH(MSG_INVALID_NICKNAME_SIZE,
@@ -1943,9 +1943,9 @@ MSG_HASH(MSG_LOADED_STATE_FROM_SLOT,
 MSG_HASH(MSG_LOADED_STATE_FROM_SLOT_AUTO,
       "Loaded state from slot #-1 (auto).")
 MSG_HASH(MSG_LOADING,
-      "Loading")
+      "Laden")
 MSG_HASH(MSG_FIRMWARE,
-      "One or more firmware files are missing")
+      "Firmware bestanden ontbreken")
 MSG_HASH(MSG_LOADING_CONTENT_FILE,
       "Loading content file")
 MSG_HASH(MSG_LOADING_HISTORY_FILE,
@@ -2035,7 +2035,7 @@ MSG_HASH(MSG_SAVING_STATE,
 MSG_HASH(MSG_SCANNING,
       "Scanning")
 MSG_HASH(MSG_SCANNING_OF_DIRECTORY_FINISHED,
-      "Scanning of directory finished")
+      "Scannen van directory voltooid")
 MSG_HASH(MSG_SENDING_COMMAND,
       "Sending command")
 MSG_HASH(MSG_SEVERAL_PATCHES_ARE_EXPLICITLY_DEFINED,
@@ -2051,7 +2051,7 @@ MSG_HASH(MSG_SLOW_MOTION,
 MSG_HASH(MSG_SLOW_MOTION_REWIND,
       "Slow motion rewind.")
 MSG_HASH(MSG_SRAM_WILL_NOT_BE_SAVED,
-      "SRAM will not be saved.")
+      "SRAM zal niet opgeslagen worden.")
 MSG_HASH(MSG_STARTING_MOVIE_PLAYBACK,
       "Starting movie playback.")
 MSG_HASH(MSG_STARTING_MOVIE_RECORD_TO,
@@ -2061,15 +2061,15 @@ MSG_HASH(MSG_STATE_SIZE,
 MSG_HASH(MSG_STATE_SLOT,
       "State slot")
 MSG_HASH(MSG_TAKING_SCREENSHOT,
-      "Taking screenshot.")
+      "Schermafdruk maken.")
 MSG_HASH(MSG_TO,
       "to")
 MSG_HASH(MSG_UNDID_LOAD_STATE,
-      "Undid load state.")
+      "Laden van state ongedaan gemaakt.")
 MSG_HASH(MSG_UNDOING_SAVE_STATE,
-      "Undoing save state")
+      "Save state ongedaan maken")
 MSG_HASH(MSG_UNKNOWN,
-      "Unknown")
+      "Onbekend")
 MSG_HASH(MSG_UNPAUSED,
       "Unpaused.")
 MSG_HASH(MSG_UNRECOGNIZED_COMMAND,
@@ -2083,11 +2083,11 @@ MSG_HASH(MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT,
 MSG_HASH(MSG_VALUE_DISCONNECTING_DEVICE_FROM_PORT,
       "Disconnecting device from port")
 MSG_HASH(MSG_VALUE_REBOOTING,
-      "Rebooting...")
+      "Opnieuw opstarten...")
 MSG_HASH(MSG_VALUE_SHUTTING_DOWN,
-      "Shutting down...")
+      "Afsluiten...")
 MSG_HASH(MSG_VERSION_OF_LIBRETRO_API,
-      "Version of libretro API")
+      "Versie van libretro API")
 MSG_HASH(MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
       "Viewport size calculation failed! Will continue using raw data. This will probably not work right ...")
 MSG_HASH(MSG_VIRTUAL_DISK_TRAY,
@@ -2126,7 +2126,7 @@ MSG_HASH(
       )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SYNC,
-   "Synchronize audio. Recommended."
+   "Synchroniseer audio. Aangeraden."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AXIS_THRESHOLD,
@@ -2162,7 +2162,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Vertical refresh rate of your screen. Used to calculate a suitable audio input rate. NOTE: This will be ignored if 'Threaded Video' is enabled."
+   "Verticale refresh rate van je scherm. Wordt gebruikt om een toepasselijke audio input rate te calculeren. LET OP: Deze optie wordt genegeerd als 'Threaded Video' is ingeschakeld."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
@@ -2174,7 +2174,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED,
-   "failed"
+   "gefaald"
    )
 MSG_HASH(
    MSG_SUCCEEDED,
@@ -2182,7 +2182,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
-   "not configured"
+   "niet geconfigureerd"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED_FALLBACK,
@@ -2194,11 +2194,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DEVELOPER,
-   "Database - Filter : Developer"
+   "Database - Filter : Ontwikkelaar"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_PUBLISHER,
-   "Database - Filter : Publisher"
+   "Database - Filter : Uitgever"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISABLED,
