@@ -25,7 +25,8 @@
 
 #include "../../input/input_driver.h"
 
-#define UDEV_MAX_KEYS (KEY_MAX + 7) / 8
+#define UDEV_KEY_MAX			0x2ff
+#define UDEV_MAX_KEYS (UDEV_KEY_MAX + 7) / 8
 
 typedef struct input_ctx_wayland_data
 {
