@@ -40,31 +40,44 @@ static KBDModifier keyboardModifier = 0x00;
 static unsigned char keyboardCode = 0x00;
 static KEYState keyboardState[256] = { KBD_WIIU_NULL };
 
-void kb_connection_callback(KBDKeyEvent *key) {
+typedef struct wiiu_input
+{
+   bool blocked;
+   const input_device_driver_t *joypad;
+} wiiu_input_t;
+
+uint64_t lifecycle_state;
+
+
+void kb_connection_callback(KBDKeyEvent *key)
+{
 	keyboardChannel = keyboardChannel + (key->channel + 0x01);
 }
 
-void kb_disconnection_callback(KBDKeyEvent *key) {
+void kb_disconnection_callback(KBDKeyEvent *key)
+{
 	keyboardChannel = keyboardChannel - (key->channel + 0x01);
 }
 
-void kb_key_callback(KBDKeyEvent *key) {
+void kb_key_callback(KBDKeyEvent *key)
+{
+   uint16_t mod  = 0;
+   unsigned code = 0;
+
    keyboardModifier = key->modifier;
    keyboardCode = key->scancode;
 
    bool pressed = false;
-      
+
    if (key->state > 0)
-   {
       pressed = true;
-   }
-   uint16_t mod = 0;
-   unsigned code = input_keymaps_translate_keysym_to_rk(key->scancode);
+
+   code                = input_keymaps_translate_keysym_to_rk(key->scancode);
    keyboardState[code] = key->state;
-   
+
    if (key->modifier & KBD_WIIU_SHIFT)
       mod |= RETROKMOD_SHIFT;
-      
+
    if (key->modifier & KBD_WIIU_CTRL)
       mod |= RETROKMOD_CTRL;
 
@@ -83,14 +96,6 @@ void kb_key_callback(KBDKeyEvent *key) {
    input_keyboard_event(pressed, code, (char)key->UTF16, mod,
          RETRO_DEVICE_KEYBOARD);
 }
-
-typedef struct wiiu_input
-{
-   bool blocked;
-   const input_device_driver_t *joypad;
-} wiiu_input_t;
-
-uint64_t lifecycle_state;
 
 static void wiiu_input_poll(void *data)
 {
