@@ -92,14 +92,14 @@ static int16_t x_pressed_analog(x11_input_t *x11,
 
    sym                   = rarch_keysym_lut[(enum retro_key)id_minus_key];
    keycode               = XKeysymToKeycode(x11->display, sym);
-   if (binds && binds[id_minus].valid 
+   if (      binds[id_minus].valid 
          && (id_minus_key < RETROK_LAST)
          && (x11->state[keycode >> 3] & (1 << (keycode & 7))))
       pressed_minus = -0x7fff;
 
    sym                   = rarch_keysym_lut[(enum retro_key)id_plus_key];
    keycode               = XKeysymToKeycode(x11->display, sym);
-   if (binds && binds[id_plus].valid 
+   if (      binds[id_plus].valid 
          && (id_plus_key < RETROK_LAST) 
          && (x11->state[keycode >> 3] & (1 << (keycode & 7))))
       pressed_plus  =  0x7fff;
