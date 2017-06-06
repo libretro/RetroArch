@@ -378,12 +378,12 @@ static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_CTR;
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_WII;
 #elif defined(WIIU)
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_WIIU;
+#elif defined(HAVE_X11)
+static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_X;
 #elif defined(HAVE_UDEV)
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_UDEV;
 #elif defined(__linux__) && !defined(ANDROID)
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_LINUXRAW;
-#elif defined(HAVE_X11)
-static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_X;
 #elif defined(HAVE_WAYLAND)
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_WAYLAND;
 #elif defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
