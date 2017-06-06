@@ -91,7 +91,7 @@ enum retro_key input_keymaps_translate_keysym_to_rk(unsigned sym);
  **/
 void input_keymaps_translate_rk_to_str(enum retro_key key, char *buf, size_t size);
 
-enum retro_key rarch_keysym_lut[RETROK_LAST];
+extern enum retro_key rarch_keysym_lut[RETROK_LAST];
 
 RETRO_END_DECLS
 
