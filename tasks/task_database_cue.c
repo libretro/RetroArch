@@ -408,49 +408,46 @@ int find_first_data_track(const char *cue_path,
 
    while (get_token(fd, tmp_token, MAX_TOKEN_LEN) > 0)
    {
-      if (!string_is_empty(tmp_token))
+      if (string_is_equal(tmp_token, "FILE"))
       {
-         if (string_is_equal_fast(tmp_token, "FILE", 4))
+         char cue_dir[PATH_MAX_LENGTH];
+
+         cue_dir[0] = '\0';
+
+         fill_pathname_basedir(cue_dir, cue_path, sizeof(cue_dir));
+
+         get_token(fd, tmp_token, MAX_TOKEN_LEN);
+         fill_pathname_join(track_path, cue_dir, tmp_token, max_len);
+
+      }
+      else if (string_is_equal(tmp_token, "TRACK"))
+      {
+         int m, s, f;
+         get_token(fd, tmp_token, MAX_TOKEN_LEN);
+         get_token(fd, tmp_token, MAX_TOKEN_LEN);
+
+         if (string_is_equal(tmp_token, "AUDIO"))
+            continue;
+
+         find_token(fd, "INDEX");
+         get_token(fd, tmp_token, MAX_TOKEN_LEN);
+         get_token(fd, tmp_token, MAX_TOKEN_LEN);
+
+         if (sscanf(tmp_token, "%02d:%02d:%02d", &m, &s, &f) < 3)
          {
-            char cue_dir[PATH_MAX_LENGTH];
-
-            cue_dir[0] = '\0';
-
-            fill_pathname_basedir(cue_dir, cue_path, sizeof(cue_dir));
-
-            get_token(fd, tmp_token, MAX_TOKEN_LEN);
-            fill_pathname_join(track_path, cue_dir, tmp_token, max_len);
-
+            RARCH_LOG("Error parsing time stamp '%s'\n", tmp_token);
+            filestream_close(fd);
+            return -errno;
          }
-         else if (string_is_equal_fast(tmp_token, "TRACK", 5))
-         {
-            int m, s, f;
-            get_token(fd, tmp_token, MAX_TOKEN_LEN);
-            get_token(fd, tmp_token, MAX_TOKEN_LEN);
 
-            if (string_is_equal_fast(tmp_token, "AUDIO", 5))
-               continue;
+         *offset = ((m * 60) * (s * 75) * f) * 25;
 
-            find_token(fd, "INDEX");
-            get_token(fd, tmp_token, MAX_TOKEN_LEN);
-            get_token(fd, tmp_token, MAX_TOKEN_LEN);
+         RARCH_LOG("%s '%s+%d'\n",
+               msg_hash_to_str(MSG_FOUND_FIRST_DATA_TRACK_ON_FILE),
+               track_path, *offset);
 
-            if (sscanf(tmp_token, "%02d:%02d:%02d", &m, &s, &f) < 3)
-            {
-               RARCH_LOG("Error parsing time stamp '%s'\n", tmp_token);
-               filestream_close(fd);
-               return -errno;
-            }
-
-            *offset = ((m * 60) * (s * 75) * f) * 25;
-
-            RARCH_LOG("%s '%s+%d'\n",
-                  msg_hash_to_str(MSG_FOUND_FIRST_DATA_TRACK_ON_FILE),
-                  track_path, *offset);
-
-            rv = 0;
-            goto clean;
-         }
+         rv = 0;
+         goto clean;
       }
    }
 
