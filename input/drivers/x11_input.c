@@ -222,22 +222,21 @@ static int16_t x_input_state(void *data,
       const struct retro_keybind **binds, unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {
-   int16_t ret                = 0;
    x11_input_t *x11           = (x11_input_t*)data;
 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
          {
-            int key           = binds[port][id].key;
-            int keycode       = XKeysymToKeycode(x11->display,
-                  rarch_keysym_lut[(enum retro_key)key]);
-            ret = x11->state[keycode >> 3] & (1 << (keycode & 7));
+            int16_t ret = 0;
+            int keycode = XKeysymToKeycode(x11->display,
+                  rarch_keysym_lut[(enum retro_key)binds[port][id].key]);
+            ret         = x11->state[keycode >> 3] & (1 << (keycode & 7));
+            if (!ret)
+               ret      = input_joypad_pressed(x11->joypad,
+                     joypad_info, port, binds[port], id);
+            return ret;
          }
-         if (!ret)
-            return input_joypad_pressed(x11->joypad,
-                  joypad_info, port, binds[port], id);
-         return ret;
       case RETRO_DEVICE_KEYBOARD:
          if (id < RETROK_LAST)
          {
@@ -248,13 +247,15 @@ static int16_t x_input_state(void *data,
          break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
-            ret = x_pressed_analog(x11, binds[port], idx, id);
-         if (!ret && binds[port])
-            return input_joypad_analog(x11->joypad, joypad_info,
-                  port, idx,
-                  id, binds[port]);
-         return ret;
-
+         {
+            int16_t ret = x_pressed_analog(x11, binds[port], idx, id);
+            if (!ret)
+               ret = input_joypad_analog(x11->joypad, joypad_info,
+                     port, idx,
+                     id, binds[port]);
+            return ret;
+         }
+         break;
       case RETRO_DEVICE_MOUSE:
          return x_mouse_state(x11, id);
       case RARCH_DEVICE_MOUSE_SCREEN:
