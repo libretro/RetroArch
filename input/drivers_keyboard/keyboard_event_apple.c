@@ -52,7 +52,7 @@ static const unsigned char MAC_NATIVE_TO_HID[128] = {
 #define HIDKEY(X) (X < 128) ? MAC_NATIVE_TO_HID[X] : 0
 #endif
 
-static uint32_t apple_key_state[MAX_KEYS];
+uint32_t apple_key_state[MAX_KEYS];
 
 #if TARGET_OS_IPHONE
 static bool handle_small_keyboard(unsigned* code, bool down)
@@ -306,24 +306,6 @@ void apple_input_keyboard_event(bool down,
          character, (enum retro_mod)mod, device);
 }
 
-int16_t apple_input_is_pressed(unsigned port_num,
-   const struct retro_keybind *binds, unsigned id)
-{
-   if (id < RARCH_BIND_LIST_END)
-   {
-      const struct retro_keybind *bind = &binds[id];
-      unsigned bit = rarch_keysym_lut[bind->key];
-      return apple_key_state[bit];
-   }
-   return 0;
-}
-
-int16_t apple_keyboard_state(unsigned id)
-{
-   unsigned bit = rarch_keysym_lut[(enum retro_key)id];
-   return (id < RETROK_LAST) && apple_key_state[bit];
-}
-
 int32_t apple_keyboard_find_any_key(void)
 {
    unsigned i;
@@ -333,11 +315,4 @@ int32_t apple_keyboard_find_any_key(void)
          return apple_key_name_map[i].hid_id;
 
    return 0;
-}
-
-void apple_keyboard_free(void)
-{
-   unsigned i;
-   for (i = 0; i < MAX_KEYS; i++)
-      apple_key_state[i] = 0;
 }

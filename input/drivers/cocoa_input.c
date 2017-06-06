@@ -291,7 +291,9 @@ static int16_t cocoa_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return apple_input_is_pressed(port, binds[port], id) ||
+         if (id < RARCH_BIND_LIST_END)
+            return apple_key_state[rarch_keysym_lut[binds[id].key]];
+         return
             input_joypad_pressed(apple->joypad, joypad_info, port, binds[port], id)
 #ifdef HAVE_MFI
             || input_joypad_pressed(apple->sec_joypad, joypad_info, port, binds[port], id)
@@ -308,7 +310,7 @@ static int16_t cocoa_input_state(void *data,
                   idx, id, binds[port]);
          return ret;
       case RETRO_DEVICE_KEYBOARD:
-         return apple_keyboard_state(id);
+         return (id < RETROK_LAST) && apple_key_state[rarch_keysym_lut[(enum retro_key)id]];
       case RETRO_DEVICE_MOUSE:
          return cocoa_mouse_state(apple, id);
        case RARCH_DEVICE_MOUSE_SCREEN:
@@ -328,6 +330,7 @@ static bool cocoa_input_meta_key_pressed(void *data, int key)
 
 static void cocoa_input_free(void *data)
 {
+   unsigned i;
    cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
     
    if (!apple || !data)
@@ -339,7 +342,9 @@ static void cocoa_input_free(void *data)
    if (apple->sec_joypad)
        apple->sec_joypad->destroy();
     
-   apple_keyboard_free();
+   for (i = 0; i < MAX_KEYS; i++)
+      apple_key_state[i] = 0;
+
    free(apple);
 }
 
