@@ -1371,42 +1371,6 @@ bool input_joypad_set_rumble(const input_device_driver_t *drv,
 }
 
 /**
- * input_joypad_is_pressed:
- * @drv                     : Input device driver handle.
- * @port                    : User number.
- * @binds                   : Binds of user.
- * @key                     : Identifier of key.
- *
- * Checks if key (@key) was being pressed by user
- * with number @port with provided keybinds (@binds).
- *
- * Returns: true (1) if key was pressed, otherwise
- * false (0).
- **/
-bool input_joypad_pressed(
-      const input_device_driver_t *drv,
-      rarch_joypad_info_t joypad_info,
-      unsigned port,
-      const struct retro_keybind *binds,
-      unsigned key)
-{
-   /* Auto-binds are per joypad, not per user. */
-   uint64_t                        joykey = (binds[key].joykey != NO_BTN)
-      ? binds[key].joykey : joypad_info.auto_binds[key].joykey;
-
-   if ((uint16_t)joykey == NO_BTN || !drv->button(joypad_info.joy_idx, (uint16_t)joykey))
-   {
-      uint32_t joyaxis     = (binds[key].joyaxis != AXIS_NONE) 
-         ? binds[key].joyaxis : joypad_info.auto_binds[key].joyaxis;
-      int16_t  axis        = drv->axis(joypad_info.joy_idx, joyaxis);
-      float    scaled_axis = (float)abs(axis) / 0x8000;
-      return scaled_axis > joypad_info.axis_threshold;
-   }
-
-   return true;
-}
-
-/**
  * input_joypad_analog:
  * @drv                     : Input device driver handle.
  * @port                    : User number.
