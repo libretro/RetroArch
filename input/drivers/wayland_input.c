@@ -109,8 +109,9 @@ static void input_wl_poll(void *data)
 
    wl->mouse.delta_x = wl->mouse.x - wl->mouse.last_x;
    wl->mouse.delta_y = wl->mouse.y - wl->mouse.last_y;
-   wl->mouse.last_x = wl->mouse.x;
-   wl->mouse.last_y = wl->mouse.y;
+   wl->mouse.last_x  = wl->mouse.x;
+   wl->mouse.last_y  = wl->mouse.y;
+
    if (!wl->mouse.focus)
    {
       wl->mouse.delta_x = 0;
@@ -119,18 +120,6 @@ static void input_wl_poll(void *data)
 
    if (wl->joypad)
       wl->joypad->poll();
-}
-
-static bool input_wl_is_pressed(input_ctx_wayland_data_t *wl,
-      const struct retro_keybind *binds, unsigned id)
-{
-   if (id < RARCH_BIND_LIST_END)
-   {
-      const struct retro_keybind *bind = &binds[id];
-      unsigned bit = rarch_keysym_lut[binds[id].key];
-      return BIT_GET(wl->key_state, bit);
-   }
-   return false;
 }
 
 static int16_t input_wl_analog_pressed(input_ctx_wayland_data_t *wl,
@@ -144,9 +133,17 @@ static int16_t input_wl_analog_pressed(input_ctx_wayland_data_t *wl,
 
    input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
 
-   if (binds && binds[id_minus].valid && input_wl_is_pressed(wl, binds, id_minus))
+   if (binds 
+         && binds[id_minus].valid 
+         && (id_minus < RARCH_BIND_LIST_END)
+         && BIT_GET(wl->key_state, rarch_keysym_lut[binds[id_minus].key])
+      )
       pressed_minus = -0x7fff;
-   if (binds && binds[id_plus].valid && input_wl_is_pressed(wl, binds, id_plus))
+   if (binds 
+         && binds[id_plus].valid 
+         && (id_plus < RARCH_BIND_LIST_END)
+         && BIT_GET(wl->key_state, rarch_keysym_lut[binds[id_plus].key])
+      )
       pressed_plus = 0x7fff;
 
    return pressed_plus + pressed_minus;
@@ -218,10 +215,9 @@ static int16_t input_wl_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (binds[port] && binds[port][id].valid)
-            return input_wl_is_pressed(wl, binds[port], id) ||
-               input_joypad_pressed(wl->joypad, joypad_info, port, binds[port], id);
-         break;
+         if (id < RARCH_BIND_LIST_END)
+            return BIT_GET(wl->key_state, rarch_keysym_lut[binds[id]->key]);
+         return input_joypad_pressed(wl->joypad, joypad_info, port, binds[port], id);
       case RETRO_DEVICE_ANALOG:
          ret = input_wl_analog_pressed(wl, binds[port], idx, id);
          if (!ret && binds[port])
