@@ -644,7 +644,8 @@ endif
 endif
 
 ifeq ($(HAVE_WAYLAND), 1)
- OBJ += gfx/drivers_context/wayland_ctx.o
+ OBJ += gfx/drivers_context/wayland_ctx.o \
+		  input/drivers/wayland_input.o
  DEFINES += $(WAYLAND_CFLAGS) $(WAYLAND_CURSOR_CFLAGS)
  LIBS += $(WAYLAND_LIBS) $(WAYLAND_CURSOR_LIBS)
 endif

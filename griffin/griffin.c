@@ -470,6 +470,10 @@ INPUT
 #include "../input/drivers_joypad/dos_joypad.c"
 #endif
 
+#ifdef HAVE_WAYLAND
+#include "../input/drivers/wayland_input.c"
+#endif
+
 #ifdef HAVE_DINPUT
 #include "../input/drivers/dinput.c"
 #include "../input/drivers_joypad/dinput_joypad.c"
