@@ -89,9 +89,9 @@ static void netplay_crc_scan_callback(void *task_data,
    if (!string_is_empty(state->core_path) && !string_is_empty(state->content_path) 
       && state->contentless)
    {
+      content_ctx_info_t content_info = {0};
 
       RARCH_LOG("[lobby] loading contentless core %s\n", state->core_path);
-      content_ctx_info_t content_info = {0};
 
       command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
 
