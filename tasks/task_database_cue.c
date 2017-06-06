@@ -278,50 +278,47 @@ int detect_psp_game(const char *track_path, char *game_id)
       {
          game_id[5] = '\0';
 
-         if (!string_is_empty(game_id))
-         {
-            if (
-                     (string_is_equal_fast(game_id, "ULES-", 5))
-                  || (string_is_equal_fast(game_id, "ULUS-", 5))
-                  || (string_is_equal_fast(game_id, "ULJS-", 5))
+         if (
+               (string_is_equal(game_id, "ULES-"))
+               || (string_is_equal(game_id, "ULUS-"))
+               || (string_is_equal(game_id, "ULJS-"))
 
-                  || (string_is_equal_fast(game_id, "ULEM-", 5))
-                  || (string_is_equal_fast(game_id, "ULUM-", 5))
-                  || (string_is_equal_fast(game_id, "ULJM-", 5))
+               || (string_is_equal(game_id, "ULEM-"))
+               || (string_is_equal(game_id, "ULUM-"))
+               || (string_is_equal(game_id, "ULJM-"))
 
-                  || (string_is_equal_fast(game_id, "UCES-", 5))
-                  || (string_is_equal_fast(game_id, "UCUS-", 5))
-                  || (string_is_equal_fast(game_id, "UCJS-", 5))
-                  || (string_is_equal_fast(game_id, "UCAS-", 5))
+               || (string_is_equal(game_id, "UCES-"))
+               || (string_is_equal(game_id, "UCUS-"))
+               || (string_is_equal(game_id, "UCJS-"))
+               || (string_is_equal(game_id, "UCAS-"))
 
-                  || (string_is_equal_fast(game_id, "NPEH-", 5))
-                  || (string_is_equal_fast(game_id, "NPUH-", 5))
-                  || (string_is_equal_fast(game_id, "NPJH-", 5))
+               || (string_is_equal(game_id, "NPEH-"))
+               || (string_is_equal(game_id, "NPUH-"))
+               || (string_is_equal(game_id, "NPJH-"))
 
-                  || (string_is_equal_fast(game_id, "NPEG-", 5))
-                  || (string_is_equal_fast(game_id, "NPUG-", 5))
-                  || (string_is_equal_fast(game_id, "NPJG-", 5))
-                  || (string_is_equal_fast(game_id, "NPHG-", 5))
+               || (string_is_equal(game_id, "NPEG-"))
+               || (string_is_equal(game_id, "NPUG-"))
+               || (string_is_equal(game_id, "NPJG-"))
+               || (string_is_equal(game_id, "NPHG-"))
 
-                  || (string_is_equal_fast(game_id, "NPEZ-", 5))
-                  || (string_is_equal_fast(game_id, "NPUZ-", 5))
-                  || (string_is_equal_fast(game_id, "NPJZ-", 5))
-                  )
+               || (string_is_equal(game_id, "NPEZ-"))
+               || (string_is_equal(game_id, "NPUZ-"))
+               || (string_is_equal(game_id, "NPJZ-"))
+               )
+               {
+                  filestream_seek(fd, pos, SEEK_SET);
+                  if (filestream_read(fd, game_id, 10) > 0)
                   {
-                     filestream_seek(fd, pos, SEEK_SET);
-                     if (filestream_read(fd, game_id, 10) > 0)
-                     {
 #if 0
-                        game_id[4] = '-';
-                        game_id[8] = game_id[9];
-                        game_id[9] = game_id[10];
+                     game_id[4] = '-';
+                     game_id[8] = game_id[9];
+                     game_id[9] = game_id[10];
 #endif
-                        game_id[10] = '\0';
-                        rv = true;
-                     }
-                     break;
+                     game_id[10] = '\0';
+                     rv = true;
                   }
-         }
+                  break;
+               }
       }
       else
          break;
@@ -374,7 +371,7 @@ int detect_system(const char *track_path, const char **system_name)
    {
       magic[8] = '\0';
       if (!string_is_empty(magic) &&
-            string_is_equal_fast(magic, "PSP GAME", 8))
+            string_is_equal(magic, "PSP GAME"))
       {
          *system_name = "psp\0";
          rv = 0;
