@@ -74,14 +74,6 @@ static bool sdl_key_pressed(int key)
    return keymap[sym];
 }
 
-static bool sdl_is_pressed(sdl_input_t *sdl, unsigned port_num,
-      const struct retro_keybind *binds, unsigned key)
-{
-   if ((binds[key].key < RETROK_LAST) && sdl_key_pressed(binds[key].key))
-      return true;
-   return false;
-}
-
 static int16_t sdl_analog_pressed(sdl_input_t *sdl, const struct retro_keybind *binds,
       unsigned idx, unsigned id)
 {
@@ -106,43 +98,21 @@ static bool sdl_input_meta_key_pressed(void *data, int key)
 
 static int16_t sdl_joypad_device_state(sdl_input_t *sdl,
       rarch_joypad_info_t joypad_info,
-      const struct retro_keybind **binds_, 
+      const struct retro_keybind *binds, 
       unsigned port, unsigned id, enum input_device_type *device)
 {
-   if (id < RARCH_BIND_LIST_END)
+   if ((binds[id].key < RETROK_LAST) && sdl_key_pressed(binds[id].key))
    {
-      const struct retro_keybind *binds = binds_[port];
+      *device = INPUT_DEVICE_TYPE_KEYBOARD;
+      return 1;
+   }
 
-      if (sdl_is_pressed(sdl, port, binds, id))
-      {
-         *device = INPUT_DEVICE_TYPE_KEYBOARD;
-         return 1;
-      }
-
-      if (input_joypad_pressed(sdl->joypad, joypad_info, 0, binds, id))
-      {
-         *device = INPUT_DEVICE_TYPE_JOYPAD;
-         return 1;
-      }
+   if (input_joypad_pressed(sdl->joypad, joypad_info, 0, binds, id))
+   {
+      *device = INPUT_DEVICE_TYPE_JOYPAD;
+      return 1;
    }
    return 0;
-}
-
-static int16_t sdl_analog_device_state(sdl_input_t *sdl,
-      rarch_joypad_info_t joypad_info,
-      const struct retro_keybind **binds,
-      unsigned port_num, unsigned idx, unsigned id)
-{
-   int16_t ret                = binds[port_num] ? sdl_analog_pressed(sdl, binds[port_num], idx, id) : 0;
-
-   if (!ret && binds[port_num])
-      ret = input_joypad_analog(sdl->joypad, joypad_info, port_num, idx, id, binds[port_num]);
-   return ret;
-}
-
-static int16_t sdl_keyboard_device_state(sdl_input_t *sdl, unsigned id)
-{
-   return (id < RETROK_LAST) && sdl_key_pressed(id);
 }
 
 static int16_t sdl_mouse_device_state(sdl_input_t *sdl, unsigned id)
@@ -236,31 +206,42 @@ static int16_t sdl_lightgun_device_state(sdl_input_t *sdl, unsigned id)
    return 0;
 }
 
-static int16_t sdl_input_state(void *data_,
+static int16_t sdl_input_state(void *data,
       rarch_joypad_info_t joypad_info,
       const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
    enum input_device_type type = INPUT_DEVICE_TYPE_NONE;
-   sdl_input_t *data = (sdl_input_t*)data_;
+   sdl_input_t *sdl = (sdl_input_t*)data;
 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return sdl_joypad_device_state(data, joypad_info, binds, port, id, &type);
+         if (id < RARCH_BIND_LIST_END)
+            return sdl_joypad_device_state(sdl,
+                  joypad_info, binds[port], port, id, &type);
+         break;
       case RETRO_DEVICE_ANALOG:
-         return sdl_analog_device_state(data, joypad_info, binds, port, idx, id);
+         if (binds[port])
+         {
+            int16_t ret = sdl_analog_pressed(sdl, binds[port], idx, id);
+            if (!ret)
+               ret = input_joypad_analog(sdl->joypad,
+                     joypad_info, port, idx, id, binds[port]);
+            return ret;
+         }
+         break;
       case RETRO_DEVICE_MOUSE:
-         return sdl_mouse_device_state(data, id);
+         return sdl_mouse_device_state(sdl, id);
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
          if (idx == 0)
-            return sdl_pointer_device_state(data, idx, id, device == RARCH_DEVICE_POINTER_SCREEN);
+            return sdl_pointer_device_state(sdl, idx, id, device == RARCH_DEVICE_POINTER_SCREEN);
          break;
       case RETRO_DEVICE_KEYBOARD:
-         return sdl_keyboard_device_state(data, id);
+         return (id < RETROK_LAST) && sdl_key_pressed(id);
       case RETRO_DEVICE_LIGHTGUN:
-         return sdl_lightgun_device_state(data, id);
+         return sdl_lightgun_device_state(sdl, id);
    }
 
    return 0;
