@@ -416,19 +416,11 @@ end:
 #ifdef HAVE_X11
 static void udev_input_get_pointer_position(int *x, int *y)
 {
-   Window window, w;
+   Window w;
    int p;
    unsigned m;
-   Display *display = NULL;
-
-   if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
-   {
-      *x = *y = 0;
-      return;
-   }
-
-   display = (Display*)video_driver_display_get();
-   window  = (Window)video_driver_window_get();
+   Display *display = (Display*)video_driver_display_get();
+   Window window    = (Window)video_driver_window_get();
 
    XQueryPointer(display, window, &w, &w, &p, &p, x, y, &m);
 }
@@ -442,9 +434,6 @@ static void udev_input_poll(void *data)
    int x                     = 0;
    int y                     = 0;
    udev_input_t *udev        = (udev_input_t*)data;
-
-   if (!udev)
-      return;
 
 #ifdef HAVE_X11
    if (video_driver_display_type_get() == RARCH_DISPLAY_X11)
