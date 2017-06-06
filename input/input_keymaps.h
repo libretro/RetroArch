@@ -81,17 +81,6 @@ void input_keymaps_init_keyboard_lut(const struct rarch_key_map *map);
 enum retro_key input_keymaps_translate_keysym_to_rk(unsigned sym);
 
 /**
- * input_keymaps_translate_rk_to_keysym:
- * @key                   : Retro key identifier
- *
- * Translates a retro key identifier to a key symbol
- * from the keyboard layout table.
- *
- * Returns: key symbol from the keyboard layout table.
- **/
-unsigned input_keymaps_translate_rk_to_keysym(enum retro_key key);
-
-/**
  * input_keymaps_translate_rk_to_str:
  * @key                   : Retro key identifier.
  * @buf                   : Buffer.
@@ -101,6 +90,8 @@ unsigned input_keymaps_translate_rk_to_keysym(enum retro_key key);
  * identifier string.
  **/
 void input_keymaps_translate_rk_to_str(enum retro_key key, char *buf, size_t size);
+
+enum retro_key rarch_keysym_lut[RETROK_LAST];
 
 RETRO_END_DECLS
 

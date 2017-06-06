@@ -725,9 +725,9 @@ static void qnx_input_poll(void *data)
    }
 }
 
-bool qnx_keyboard_pressed(qnx_input_t *qnx, unsigned id)
+static bool qnx_keyboard_pressed(qnx_input_t *qnx, unsigned id)
 {
-    unsigned bit = input_keymaps_translate_rk_to_keysym((enum retro_key)id);
+    unsigned bit = rarch_keysym_lut[(enum retro_key)id];
     return id < RETROK_LAST && BIT_GET(qnx->keyboard_state, bit);
 }
 

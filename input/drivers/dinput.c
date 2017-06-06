@@ -267,12 +267,7 @@ static void dinput_poll(void *data)
 
 static bool dinput_keyboard_pressed(struct dinput_input *di, unsigned key)
 {
-   unsigned sym;
-
-   if (key >= RETROK_LAST)
-      return false;
-
-   sym = input_keymaps_translate_rk_to_keysym((enum retro_key)key);
+   unsigned sym = rarch_keysym_lut[(enum retro_key)key];
    return di->state[sym] & 0x80;
 }
 
@@ -283,10 +278,7 @@ static bool dinput_is_pressed(struct dinput_input *di,
 {
    const struct retro_keybind *bind = &binds[id];
 
-   if (id >= RARCH_BIND_LIST_END)
-      return false;
-
-   if (!di->blocked && dinput_keyboard_pressed(di, bind->key))
+   if (!di->blocked && (bind->key < RETROK_LAST) && dinput_keyboard_pressed(di, bind->key))
       return true;
    if (binds && binds[id].valid && input_joypad_pressed(di->joypad, joypad_info, port, binds, id))
       return true;
@@ -310,9 +302,9 @@ static int16_t dinput_pressed_analog(struct dinput_input *di,
    if (!bind_minus->valid || !bind_plus->valid)
       return 0;
 
-   if (dinput_keyboard_pressed(di, bind_minus->key))
+   if ((bind_minus->key < RETROK_LAST) && dinput_keyboard_pressed(di, bind_minus->key))
       pressed_minus = -0x7fff;
-   if (dinput_keyboard_pressed(di, bind_plus->key))
+   if ((bind_plus->key  < RETROK_LAST) && dinput_keyboard_pressed(di, bind_plus->key))
       pressed_plus  = 0x7fff;
 
    return pressed_plus + pressed_minus;
@@ -485,10 +477,11 @@ static int16_t dinput_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return dinput_is_pressed(di, joypad_info, binds[port], port, id);
+         if (id < RARCH_BIND_LIST_END)
+            return dinput_is_pressed(di, joypad_info, binds[port], port, id);
+         break;
       case RETRO_DEVICE_KEYBOARD:
-         return dinput_keyboard_pressed(di, id);
-
+         return (id < RETROK_LAST) && dinput_keyboard_pressed(di, id);
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
          {

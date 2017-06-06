@@ -144,119 +144,119 @@ static bool handle_icade_event(unsigned *code, bool *keydown)
       /* iPega PG-9017 */
       j = 1;
 
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_a)].key = RETROK_LEFT;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_q)].key = RETROK_LEFT;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_c)].key = RETROK_RIGHT;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_d)].key = RETROK_RIGHT;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_e)].key = RETROK_UP;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_w)].key = RETROK_UP;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_x)].key = RETROK_DOWN;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_z)].key = RETROK_DOWN;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_f)].key = RETROK_z;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_u)].key = RETROK_z;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_i)].key = RETROK_q;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_m)].key = RETROK_q;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_j)].key = RETROK_a;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_n)].key = RETROK_a;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_k)].key = RETROK_w;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_p)].key = RETROK_w;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_h)].key = RETROK_x;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_r)].key = RETROK_x;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_y)].key = RETROK_s;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_t)].key = RETROK_s;
+      icade_maps[j][rarch_keysym_lut[RETROK_a]].key = RETROK_LEFT;
+      icade_maps[j][rarch_keysym_lut[RETROK_q]].key = RETROK_LEFT;
+      icade_maps[j][rarch_keysym_lut[RETROK_c]].key = RETROK_RIGHT;
+      icade_maps[j][rarch_keysym_lut[RETROK_d]].key = RETROK_RIGHT;
+      icade_maps[j][rarch_keysym_lut[RETROK_e]].key = RETROK_UP;
+      icade_maps[j][rarch_keysym_lut[RETROK_w]].key = RETROK_UP;
+      icade_maps[j][rarch_keysym_lut[RETROK_x]].key = RETROK_DOWN;
+      icade_maps[j][rarch_keysym_lut[RETROK_z]].key = RETROK_DOWN;
+      icade_maps[j][rarch_keysym_lut[RETROK_f]].key = RETROK_z;
+      icade_maps[j][rarch_keysym_lut[RETROK_u]].key = RETROK_z;
+      icade_maps[j][rarch_keysym_lut[RETROK_i]].key = RETROK_q;
+      icade_maps[j][rarch_keysym_lut[RETROK_m]].key = RETROK_q;
+      icade_maps[j][rarch_keysym_lut[RETROK_j]].key = RETROK_a;
+      icade_maps[j][rarch_keysym_lut[RETROK_n]].key = RETROK_a;
+      icade_maps[j][rarch_keysym_lut[RETROK_k]].key = RETROK_w;
+      icade_maps[j][rarch_keysym_lut[RETROK_p]].key = RETROK_w;
+      icade_maps[j][rarch_keysym_lut[RETROK_h]].key = RETROK_x;
+      icade_maps[j][rarch_keysym_lut[RETROK_r]].key = RETROK_x;
+      icade_maps[j][rarch_keysym_lut[RETROK_y]].key = RETROK_s;
+      icade_maps[j][rarch_keysym_lut[RETROK_t]].key = RETROK_s;
 
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_e)].up  = true;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_z)].up  = true;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_q)].up  = true;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_c)].up  = true;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_f)].up  = true;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_m)].up  = true;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_t)].up  = true;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_n)].up  = true;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_p)].up  = true;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_r)].up  = true;
+      icade_maps[j][rarch_keysym_lut[RETROK_e]].up  = true;
+      icade_maps[j][rarch_keysym_lut[RETROK_z]].up  = true;
+      icade_maps[j][rarch_keysym_lut[RETROK_q]].up  = true;
+      icade_maps[j][rarch_keysym_lut[RETROK_c]].up  = true;
+      icade_maps[j][rarch_keysym_lut[RETROK_f]].up  = true;
+      icade_maps[j][rarch_keysym_lut[RETROK_m]].up  = true;
+      icade_maps[j][rarch_keysym_lut[RETROK_t]].up  = true;
+      icade_maps[j][rarch_keysym_lut[RETROK_n]].up  = true;
+      icade_maps[j][rarch_keysym_lut[RETROK_p]].up  = true;
+      icade_maps[j][rarch_keysym_lut[RETROK_r]].up  = true;
 
       /* 8-bitty */
       j = 2;
 
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_a)].key = RETROK_LEFT;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_q)].key = RETROK_LEFT;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_c)].key = RETROK_RIGHT;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_d)].key = RETROK_RIGHT;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_e)].key = RETROK_UP;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_w)].key = RETROK_UP;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_x)].key = RETROK_DOWN;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_z)].key = RETROK_DOWN;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_h)].key = RETROK_q;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_r)].key = RETROK_q;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_j)].key = RETROK_w;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_n)].key = RETROK_w;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_i)].key = RETROK_a;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_m)].key = RETROK_a;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_k)].key = RETROK_z;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_p)].key = RETROK_z;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_y)].key = RETROK_RSHIFT;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_t)].key = RETROK_RSHIFT;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_u)].key = RETROK_RETURN;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_f)].key = RETROK_RETURN;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_l)].key = RETROK_x;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_v)].key = RETROK_x;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_o)].key = RETROK_s;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_g)].key = RETROK_s;
+      icade_maps[j][rarch_keysym_lut[RETROK_a]].key = RETROK_LEFT;
+      icade_maps[j][rarch_keysym_lut[RETROK_q]].key = RETROK_LEFT;
+      icade_maps[j][rarch_keysym_lut[RETROK_c]].key = RETROK_RIGHT;
+      icade_maps[j][rarch_keysym_lut[RETROK_d]].key = RETROK_RIGHT;
+      icade_maps[j][rarch_keysym_lut[RETROK_e]].key = RETROK_UP;
+      icade_maps[j][rarch_keysym_lut[RETROK_w]].key = RETROK_UP;
+      icade_maps[j][rarch_keysym_lut[RETROK_x]].key = RETROK_DOWN;
+      icade_maps[j][rarch_keysym_lut[RETROK_z]].key = RETROK_DOWN;
+      icade_maps[j][rarch_keysym_lut[RETROK_h]].key = RETROK_q;
+      icade_maps[j][rarch_keysym_lut[RETROK_r]].key = RETROK_q;
+      icade_maps[j][rarch_keysym_lut[RETROK_j]].key = RETROK_w;
+      icade_maps[j][rarch_keysym_lut[RETROK_n]].key = RETROK_w;
+      icade_maps[j][rarch_keysym_lut[RETROK_i]].key = RETROK_a;
+      icade_maps[j][rarch_keysym_lut[RETROK_m]].key = RETROK_a;
+      icade_maps[j][rarch_keysym_lut[RETROK_k]].key = RETROK_z;
+      icade_maps[j][rarch_keysym_lut[RETROK_p]].key = RETROK_z;
+      icade_maps[j][rarch_keysym_lut[RETROK_y]].key = RETROK_RSHIFT;
+      icade_maps[j][rarch_keysym_lut[RETROK_t]].key = RETROK_RSHIFT;
+      icade_maps[j][rarch_keysym_lut[RETROK_u]].key = RETROK_RETURN;
+      icade_maps[j][rarch_keysym_lut[RETROK_f]].key = RETROK_RETURN;
+      icade_maps[j][rarch_keysym_lut[RETROK_l]].key = RETROK_x;
+      icade_maps[j][rarch_keysym_lut[RETROK_v]].key = RETROK_x;
+      icade_maps[j][rarch_keysym_lut[RETROK_o]].key = RETROK_s;
+      icade_maps[j][rarch_keysym_lut[RETROK_g]].key = RETROK_s;
 
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_e)].up  = true;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_z)].up  = true;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_q)].up  = true;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_c)].up  = true;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_r)].up  = true;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_n)].up  = true;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_m)].up  = true;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_p)].up  = true;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_t)].up  = true;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_f)].up  = true;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_v)].up  = true;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_g)].up  = true;
+      icade_maps[j][rarch_keysym_lut[RETROK_e]].up  = true;
+      icade_maps[j][rarch_keysym_lut[RETROK_z]].up  = true;
+      icade_maps[j][rarch_keysym_lut[RETROK_q]].up  = true;
+      icade_maps[j][rarch_keysym_lut[RETROK_c]].up  = true;
+      icade_maps[j][rarch_keysym_lut[RETROK_r]].up  = true;
+      icade_maps[j][rarch_keysym_lut[RETROK_n]].up  = true;
+      icade_maps[j][rarch_keysym_lut[RETROK_m]].up  = true;
+      icade_maps[j][rarch_keysym_lut[RETROK_p]].up  = true;
+      icade_maps[j][rarch_keysym_lut[RETROK_t]].up  = true;
+      icade_maps[j][rarch_keysym_lut[RETROK_f]].up  = true;
+      icade_maps[j][rarch_keysym_lut[RETROK_v]].up  = true;
+      icade_maps[j][rarch_keysym_lut[RETROK_g]].up  = true;
 
       /* SNES30 8bitDo */
       j = 3;
 
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_e)].key = RETROK_UP;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_w)].key = RETROK_UP;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_x)].key = RETROK_DOWN;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_z)].key = RETROK_DOWN;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_a)].key = RETROK_LEFT;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_q)].key = RETROK_LEFT;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_c)].key = RETROK_RIGHT;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_d)].key = RETROK_RIGHT;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_u)].key = RETROK_x;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_f)].key = RETROK_x;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_h)].key = RETROK_z;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_r)].key = RETROK_z;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_y)].key = RETROK_a;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_t)].key = RETROK_a;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_j)].key = RETROK_s;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_n)].key = RETROK_s;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_k)].key = RETROK_q;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_p)].key = RETROK_q;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_i)].key = RETROK_w;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_m)].key = RETROK_w;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_l)].key = RETROK_RSHIFT;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_v)].key = RETROK_RSHIFT;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_o)].key = RETROK_RETURN;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_g)].key = RETROK_RETURN;
+      icade_maps[j][rarch_keysym_lut[RETROK_e]].key = RETROK_UP;
+      icade_maps[j][rarch_keysym_lut[RETROK_w]].key = RETROK_UP;
+      icade_maps[j][rarch_keysym_lut[RETROK_x]].key = RETROK_DOWN;
+      icade_maps[j][rarch_keysym_lut[RETROK_z]].key = RETROK_DOWN;
+      icade_maps[j][rarch_keysym_lut[RETROK_a]].key = RETROK_LEFT;
+      icade_maps[j][rarch_keysym_lut[RETROK_q]].key = RETROK_LEFT;
+      icade_maps[j][rarch_keysym_lut[RETROK_c]].key = RETROK_RIGHT;
+      icade_maps[j][rarch_keysym_lut[RETROK_d]].key = RETROK_RIGHT;
+      icade_maps[j][rarch_keysym_lut[RETROK_u]].key = RETROK_x;
+      icade_maps[j][rarch_keysym_lut[RETROK_f]].key = RETROK_x;
+      icade_maps[j][rarch_keysym_lut[RETROK_h]].key = RETROK_z;
+      icade_maps[j][rarch_keysym_lut[RETROK_r]].key = RETROK_z;
+      icade_maps[j][rarch_keysym_lut[RETROK_y]].key = RETROK_a;
+      icade_maps[j][rarch_keysym_lut[RETROK_t]].key = RETROK_a;
+      icade_maps[j][rarch_keysym_lut[RETROK_j]].key = RETROK_s;
+      icade_maps[j][rarch_keysym_lut[RETROK_n]].key = RETROK_s;
+      icade_maps[j][rarch_keysym_lut[RETROK_k]].key = RETROK_q;
+      icade_maps[j][rarch_keysym_lut[RETROK_p]].key = RETROK_q;
+      icade_maps[j][rarch_keysym_lut[RETROK_i]].key = RETROK_w;
+      icade_maps[j][rarch_keysym_lut[RETROK_m]].key = RETROK_w;
+      icade_maps[j][rarch_keysym_lut[RETROK_l]].key = RETROK_RSHIFT;
+      icade_maps[j][rarch_keysym_lut[RETROK_v]].key = RETROK_RSHIFT;
+      icade_maps[j][rarch_keysym_lut[RETROK_o]].key = RETROK_RETURN;
+      icade_maps[j][rarch_keysym_lut[RETROK_g]].key = RETROK_RETURN;
 
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_v)].up  = true;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_g)].up  = true;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_e)].up  = true;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_z)].up  = true;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_q)].up  = true;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_c)].up  = true;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_r)].up  = true;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_f)].up  = true;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_n)].up  = true;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_t)].up  = true;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_p)].up  = true;
-      icade_maps[j][input_keymaps_translate_rk_to_keysym(RETROK_m)].up  = true;
+      icade_maps[j][rarch_keysym_lut[RETROK_v]].up  = true;
+      icade_maps[j][rarch_keysym_lut[RETROK_g]].up  = true;
+      icade_maps[j][rarch_keysym_lut[RETROK_e]].up  = true;
+      icade_maps[j][rarch_keysym_lut[RETROK_z]].up  = true;
+      icade_maps[j][rarch_keysym_lut[RETROK_q]].up  = true;
+      icade_maps[j][rarch_keysym_lut[RETROK_c]].up  = true;
+      icade_maps[j][rarch_keysym_lut[RETROK_r]].up  = true;
+      icade_maps[j][rarch_keysym_lut[RETROK_f]].up  = true;
+      icade_maps[j][rarch_keysym_lut[RETROK_n]].up  = true;
+      icade_maps[j][rarch_keysym_lut[RETROK_t]].up  = true;
+      icade_maps[j][rarch_keysym_lut[RETROK_p]].up  = true;
+      icade_maps[j][rarch_keysym_lut[RETROK_m]].up  = true;
 
       initialized = true;
    }
@@ -265,7 +265,7 @@ static bool handle_icade_event(unsigned *code, bool *keydown)
    {
       *keydown     = icade_maps[kb_type_idx][*code].up ? false : true;
       ret          = true;
-      *code        = input_keymaps_translate_rk_to_keysym(icade_maps[kb_type_idx][*code].key);
+      *code        = rarch_keysym_lut[icade_maps[kb_type_idx][*code].key];
    }
 
    return ret;
@@ -312,7 +312,7 @@ int16_t apple_input_is_pressed(unsigned port_num,
    if (id < RARCH_BIND_LIST_END)
    {
       const struct retro_keybind *bind = &binds[id];
-      unsigned bit = input_keymaps_translate_rk_to_keysym(bind->key);
+      unsigned bit = rarch_keysym_lut[bind->key];
       return apple_key_state[bit];
    }
    return 0;
@@ -320,7 +320,7 @@ int16_t apple_input_is_pressed(unsigned port_num,
 
 int16_t apple_keyboard_state(unsigned id)
 {
-   unsigned bit = input_keymaps_translate_rk_to_keysym((enum retro_key)id);
+   unsigned bit = rarch_keysym_lut[(enum retro_key)id];
    return (id < RETROK_LAST) && apple_key_state[bit];
 }
 

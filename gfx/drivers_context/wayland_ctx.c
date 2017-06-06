@@ -195,7 +195,7 @@ static void keyboard_handle_key(void *data,
       return;
 #endif
    input_keyboard_event(value,
-         input_keymaps_translate_keysym_to_rk(key),
+         rarch_keysym_lut[key],
          0, 0, RETRO_DEVICE_KEYBOARD);
 }
 
@@ -1244,7 +1244,7 @@ bool input_wl_is_pressed(gfx_ctx_wayland_data_t *wl, const struct retro_keybind 
    if (id < RARCH_BIND_LIST_END)
    {
       const struct retro_keybind *bind = &binds[id];
-      unsigned bit = input_keymaps_translate_rk_to_keysym(binds[id].key);
+      unsigned bit = rarch_keysym_lut[binds[id].key];
       return BIT_GET(wl->key_state, bit);
    }
    return false;
@@ -1271,7 +1271,7 @@ static int16_t input_wl_analog_pressed(gfx_ctx_wayland_data_t *wl, const struct 
 bool input_wl_state_kb(gfx_ctx_wayland_data_t *wl, const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
-   unsigned bit = input_keymaps_translate_rk_to_keysym((enum retro_key)id);
+   unsigned bit = rarch_keysym_lut[(enum retro_key)id];
    return id < RETROK_LAST && BIT_GET(wl->key_state, bit);
 }
 

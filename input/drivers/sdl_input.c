@@ -61,29 +61,24 @@ static void *sdl_input_init(const char *joypad_driver)
 static bool sdl_key_pressed(int key)
 {
    int num_keys;
-   const uint8_t *keymap;
-   unsigned sym;
-
-   if (key >= RETROK_LAST)
-      return false;
-
-   sym = input_keymaps_translate_rk_to_keysym((enum retro_key)key);
-
+   unsigned sym          = rarch_keysym_lut[(enum retro_key)key];
 #ifdef HAVE_SDL2
-   sym = SDL_GetScancodeFromKey(sym);
-   keymap = SDL_GetKeyboardState(&num_keys);
+   const uint8_t *keymap = SDL_GetKeyboardState(&num_keys);
+   sym                   = SDL_GetScancodeFromKey(sym);
 #else
-   keymap = SDL_GetKeyState(&num_keys);
+   const uint8_t *keymap = SDL_GetKeyState(&num_keys);
 #endif
+
    if (sym >= (unsigned)num_keys)
       return false;
 
    return keymap[sym];
 }
 
-static bool sdl_is_pressed(sdl_input_t *sdl, unsigned port_num, const struct retro_keybind *binds, unsigned key)
+static bool sdl_is_pressed(sdl_input_t *sdl, unsigned port_num,
+      const struct retro_keybind *binds, unsigned key)
 {
-   if (sdl_key_pressed(binds[key].key))
+   if ((binds[key].key < RETROK_LAST) && sdl_key_pressed(binds[key].key))
       return true;
    return false;
 }
@@ -97,9 +92,9 @@ static int16_t sdl_analog_pressed(sdl_input_t *sdl, const struct retro_keybind *
 
    input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
 
-   if (sdl_key_pressed(binds[id_minus].key))
+   if ((binds[id_minus].key < RETROK_LAST) && sdl_key_pressed(binds[id_minus].key))
       pressed_minus = -0x7fff;
-   if (sdl_key_pressed(binds[id_plus].key))
+   if ((binds[id_plus].key  < RETROK_LAST) && sdl_key_pressed(binds[id_plus].key))
       pressed_plus  = 0x7fff;
 
    return pressed_plus + pressed_minus;
@@ -148,7 +143,7 @@ static int16_t sdl_analog_device_state(sdl_input_t *sdl,
 
 static int16_t sdl_keyboard_device_state(sdl_input_t *sdl, unsigned id)
 {
-   return sdl_key_pressed(id);
+   return (id < RETROK_LAST) && sdl_key_pressed(id);
 }
 
 static int16_t sdl_mouse_device_state(sdl_input_t *sdl, unsigned id)

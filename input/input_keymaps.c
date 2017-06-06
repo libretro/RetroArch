@@ -1631,7 +1631,7 @@ const struct rarch_key_map rarch_key_map_winraw[] = {
 };
 #endif
 
-static enum retro_key rarch_keysym_lut[RETROK_LAST];
+enum retro_key rarch_keysym_lut[RETROK_LAST];
 
 /**
  * input_keymaps_init_keyboard_lut:
@@ -1702,18 +1702,4 @@ void input_keymaps_translate_rk_to_str(enum retro_key key, char *buf, size_t siz
       strlcpy(buf, input_config_key_map[i].str, size);
       break;
    }
-}
-
-/**
- * input_keymaps_translate_rk_to_keysym:
- * @key                   : Retro key identifier
- *
- * Translates a retro key identifier to a key symbol
- * from the keyboard layout table.
- *
- * Returns: key symbol from the keyboard layout table.
- **/
-unsigned input_keymaps_translate_rk_to_keysym(enum retro_key key)
-{
-   return rarch_keysym_lut[key];
 }

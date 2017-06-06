@@ -75,7 +75,7 @@ static void *x_input_init(const char *joypad_driver)
 
 static bool x_key_pressed(x11_input_t *x11, int key)
 {
-   unsigned sym     = input_keymaps_translate_rk_to_keysym((enum retro_key)key);
+   unsigned sym     = rarch_keysym_lut[(enum retro_key)key];
    int keycode      = XKeysymToKeycode(x11->display, sym);
 
    return x11->state[keycode >> 3] & (1 << (keycode & 7));

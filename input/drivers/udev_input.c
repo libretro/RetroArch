@@ -583,11 +583,11 @@ static int16_t udev_analog_pressed(const struct retro_keybind *binds,
 
    if (binds && binds[id_minus].valid && 
          BIT_GET(udev_key_state,
-            input_keymaps_translate_rk_to_keysym(binds[id_minus].key)))
+            rarch_keysym_lut[binds[id_minus].key]))
       pressed_minus = -0x7fff;
    if (binds && binds[id_plus].valid && 
       BIT_GET(udev_key_state,
-         input_keymaps_translate_rk_to_keysym(binds[id_plus].key)))
+         rarch_keysym_lut[binds[id_plus].key]))
       pressed_plus = 0x7fff;
 
    return pressed_plus + pressed_minus;
@@ -661,14 +661,12 @@ static int16_t udev_input_state(void *data,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
    int16_t ret;
-   unsigned bit;
    udev_input_t *udev         = (udev_input_t*)data;
 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         bit = input_keymaps_translate_rk_to_keysym(binds[port][id].key);
-         if (BIT_GET(udev_key_state, bit))
+         if (BIT_GET(udev_key_state, rarch_keysym_lut[binds[port][id].key]))
             return true;
          return input_joypad_pressed(udev->joypad,
                joypad_info, port, binds[port], id);
@@ -679,8 +677,8 @@ static int16_t udev_input_state(void *data,
                   joypad_info, port, idx, id, binds[port]);
          return ret;
       case RETRO_DEVICE_KEYBOARD:
-         bit = input_keymaps_translate_rk_to_keysym((enum retro_key)id);
-         return id < RETROK_LAST && BIT_GET(udev_key_state, bit);
+         return id < RETROK_LAST && BIT_GET(udev_key_state,
+               rarch_keysym_lut[(enum retro_key)id]);
       case RETRO_DEVICE_MOUSE:
          return udev_mouse_state(udev, port, id, false);
       case RARCH_DEVICE_MOUSE_SCREEN:
