@@ -680,11 +680,37 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
 
          for (port = 0; port < port_max; port++)
          {
-            if (  (sec   && input_joypad_pressed(sec,
-                        joypad_info, port, input_config_binds[0], i)) ||
-                  (first && input_joypad_pressed(first,
-                        joypad_info, port, input_config_binds[0], i))
-               )
+            bool      pressed    = false;
+            uint64_t  joykey     = (input_config_binds[0][i].joykey != NO_BTN)
+               ? input_config_binds[0][i].joykey : joypad_info.auto_binds[i].joykey;
+            uint32_t joyaxis     = (input_config_binds[0][i].joyaxis != AXIS_NONE) 
+               ? input_config_binds[0][i].joyaxis : joypad_info.auto_binds[i].joyaxis;
+            
+            if (sec)
+            {
+               if ((uint16_t)joykey == NO_BTN || !sec->button(joypad_info.joy_idx, (uint16_t)joykey))
+               {
+                  int16_t  axis        = sec->axis(joypad_info.joy_idx, joyaxis);
+                  float    scaled_axis = (float)abs(axis) / 0x8000;
+                  pressed              = scaled_axis > joypad_info.axis_threshold;
+               }
+               else
+                  pressed              = true;
+            }
+
+            if (!pressed && first)
+            {
+               if ((uint16_t)joykey == NO_BTN || !first->button(joypad_info.joy_idx, (uint16_t)joykey))
+               {
+                  int16_t  axis        = first->axis(joypad_info.joy_idx, joyaxis);
+                  float    scaled_axis = (float)abs(axis) / 0x8000;
+                  pressed              = scaled_axis > joypad_info.axis_threshold;
+               }
+               else
+                  pressed              = true;
+            }
+
+            if (pressed)
             {
                ret |= (UINT64_C(1) << i);
                continue;
