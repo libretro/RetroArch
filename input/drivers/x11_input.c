@@ -75,32 +75,29 @@ static void *x_input_init(const char *joypad_driver)
 
 static bool x_key_pressed(x11_input_t *x11, int key)
 {
-   unsigned sym;
-   int keycode;
-   bool ret;
+   unsigned sym     = input_keymaps_translate_rk_to_keysym((enum retro_key)key);
+   int keycode      = XKeysymToKeycode(x11->display, sym);
 
-   if (key >= RETROK_LAST)
-      return false;
-
-   sym     = input_keymaps_translate_rk_to_keysym((enum retro_key)key);
-   keycode = XKeysymToKeycode(x11->display, sym);
-   ret     = x11->state[keycode >> 3] & (1 << (keycode & 7));
-
-   return ret;
+   return x11->state[keycode >> 3] & (1 << (keycode & 7));
 }
 
 static int16_t x_pressed_analog(x11_input_t *x11,
       const struct retro_keybind *binds, unsigned idx, unsigned id)
 {
    int16_t pressed_minus = 0, pressed_plus = 0;
-   unsigned id_minus = 0;
-   unsigned id_plus  = 0;
+   unsigned id_minus     = 0;
+   unsigned id_plus      = 0;
+   int id_minus_key      = 0;
+   int id_plus_key       = 0;
 
    input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
 
-   if (binds && binds[id_minus].valid && x_key_pressed(x11, binds[id_minus].key))
+   id_minus_key          = binds[id_minus].key;
+   id_plus_key           = binds[id_plus].key;
+
+   if (binds && binds[id_minus].valid && (id_minus_key < RETROK_LAST) && x_key_pressed(x11, id_minus_key))
       pressed_minus = -0x7fff;
-   if (binds && binds[id_plus].valid && x_key_pressed(x11, binds[id_plus].key))
+   if (binds && binds[id_plus].valid && (id_plus_key < RETROK_LAST) && x_key_pressed(x11, id_plus_key))
       pressed_plus  =  0x7fff;
 
    return pressed_plus + pressed_minus;
@@ -222,15 +219,18 @@ static int16_t x_input_state(void *data,
       unsigned device, unsigned idx, unsigned id)
 {
    int16_t ret                = 0;
+   int key                    = 0;
    x11_input_t *x11           = (x11_input_t*)data;
 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return x_key_pressed(x11, binds[port][id].key) ||
+         key                  = binds[port][id].key;
+         return ((key < RETROK_LAST) && x_key_pressed(x11, key)) ||
             input_joypad_pressed(x11->joypad, joypad_info, port, binds[port], id);
+         break;
       case RETRO_DEVICE_KEYBOARD:
-         return x_key_pressed(x11, id);
+         return (id < RETROK_LAST) && x_key_pressed(x11, id);
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
             ret = x_pressed_analog(x11, binds[port], idx, id);
