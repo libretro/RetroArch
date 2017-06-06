@@ -22,6 +22,7 @@
 
 #include <boolean.h>
 #include <compat/strl.h>
+#include <retro_inline.h>
 
 #include "../input_config.h"
 #include "../input_joypad_driver.h"
@@ -73,7 +74,7 @@ static void *x_input_init(const char *joypad_driver)
    return x11;
 }
 
-static bool x_key_pressed(x11_input_t *x11, int key)
+static INLINE bool x_key_pressed(x11_input_t *x11, int key)
 {
    unsigned sym     = rarch_keysym_lut[(enum retro_key)key];
    int keycode      = XKeysymToKeycode(x11->display, sym);
