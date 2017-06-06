@@ -29,7 +29,6 @@
 #include "../../defines/ps3_defines.h"
 
 #include "../input_driver.h"
-#include "../input_joypad_driver.h"
 
 #ifdef HAVE_MOUSE
 #ifndef __PSL1GHT__

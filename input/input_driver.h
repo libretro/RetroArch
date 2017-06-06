@@ -23,13 +23,16 @@
 
 #include <boolean.h>
 #include <retro_common_api.h>
+#include <libretro.h>
 
-#include "input_joypad_driver.h"
 #include "input_defines.h"
 
 #include "../msg_hash.h"
 
 RETRO_BEGIN_DECLS
+
+typedef struct rarch_joypad_driver input_device_driver_t;
+
 
 enum input_device_type
 {
@@ -85,6 +88,13 @@ struct retro_keybind
    char     joyaxis_label[256];
 };
 
+typedef struct rarch_joypad_info
+{
+   unsigned joy_idx;
+   const struct retro_keybind *auto_binds;
+   float axis_threshold;
+} rarch_joypad_info_t;
+
 typedef struct input_driver
 {
    /* Inits input driver. 
@@ -124,6 +134,21 @@ typedef struct input_driver
    bool (*keyboard_mapping_is_blocked)(void *data);
    void (*keyboard_mapping_set_block)(void *data, bool value);
 } input_driver_t;
+
+struct rarch_joypad_driver
+{
+   bool (*init)(void *data);
+   bool (*query_pad)(unsigned);
+   void (*destroy)(void);
+   bool (*button)(unsigned, uint16_t);
+   uint64_t (*get_buttons)(unsigned);
+   int16_t (*axis)(unsigned, uint32_t);
+   void (*poll)(void);
+   bool (*set_rumble)(unsigned, enum retro_rumble_effect, uint16_t);
+   const char *(*name)(unsigned);
+
+   const char *ident;
+};
 
 extern const input_driver_t *current_input;
 extern void *current_input_data;
@@ -336,6 +361,197 @@ float *input_driver_get_float(enum input_action action);
 unsigned *input_driver_get_uint(enum input_action action);
 
 bool input_driver_is_data_ptr_same(void *data);
+
+/**
+ * joypad_driver_find_handle:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: handle to joypad driver at index. Can be NULL
+ * if nothing found.
+ **/
+const void *joypad_driver_find_handle(int index);
+
+/**
+ * joypad_driver_find_ident:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: Human-readable identifier of joypad driver at index. Can be NULL
+ * if nothing found.
+ **/
+const char *joypad_driver_find_ident(int index);
+
+/**
+ * config_get_joypad_driver_options:
+ *
+ * Get an enumerated list of all joypad driver names, separated by '|'.
+ *
+ * Returns: string listing of all joypad driver names, separated by '|'.
+ **/
+const char* config_get_joypad_driver_options(void);
+
+/**
+ * input_joypad_init_driver:
+ * @ident                           : identifier of driver to initialize.
+ *
+ * Initialize a joypad driver of name @ident.
+ *
+ * If ident points to NULL or a zero-length string, 
+ * equivalent to calling input_joypad_init_first().
+ *
+ * Returns: joypad driver if found, otherwise NULL.
+ **/
+const input_device_driver_t *input_joypad_init_driver(const char *ident, void *data);
+
+/**
+ * input_joypad_init_first:
+ *
+ * Finds first suitable joypad driver and initializes.
+ *
+ * Returns: joypad driver if found, otherwise NULL.
+ **/
+const input_device_driver_t *input_joypad_init_first(void *data);
+
+/**
+ * input_conv_analog_id_to_bind_id:
+ * @idx                     : Analog key index.
+ *                            E.g.: 
+ *                            - RETRO_DEVICE_INDEX_ANALOG_LEFT
+ *                            - RETRO_DEVICE_INDEX_ANALOG_RIGHT
+ * @ident                   : Analog key identifier.
+ *                            E.g.:
+ *                            - RETRO_DEVICE_ID_ANALOG_X
+ *                            - RETRO_DEVICE_ID_ANALOG_Y
+ * @ident_minus             : Bind ID minus, will be set by function.
+ * @ident_plus              : Bind ID plus,  will be set by function.
+ *
+ * Takes as input analog key identifiers and converts
+ * them to corresponding bind IDs @ident_minus and @ident_plus.
+ **/
+void input_conv_analog_id_to_bind_id(unsigned idx, unsigned ident,
+      unsigned *ident_minus, unsigned *ident_plus);
+
+/**
+ * input_joypad_pressed:
+ * @drv                     : Input device driver handle.
+ * @port                    : User number.
+ * @binds                   : Binds of user.
+ * @key                     : Identifier of key.
+ *
+ * Checks if key (@key) was being pressed by user
+ * with number @port with provided keybinds (@binds).
+ *
+ * Returns: true (1) if key was pressed, otherwise
+ * false (0).
+ **/
+bool input_joypad_pressed(const input_device_driver_t *driver,
+      rarch_joypad_info_t joypad_info,
+      unsigned port,
+      const struct retro_keybind *binds,
+      unsigned key);
+
+/**
+ * input_joypad_analog:
+ * @drv                     : Input device driver handle.
+ * @port                    : User number.
+ * @idx                     : Analog key index.
+ *                            E.g.: 
+ *                            - RETRO_DEVICE_INDEX_ANALOG_LEFT
+ *                            - RETRO_DEVICE_INDEX_ANALOG_RIGHT
+ * @ident                   : Analog key identifier.
+ *                            E.g.:
+ *                            - RETRO_DEVICE_ID_ANALOG_X
+ *                            - RETRO_DEVICE_ID_ANALOG_Y
+ * @binds                   : Binds of user.
+ *
+ * Gets analog value of analog key identifiers @idx and @ident
+ * from user with number @port with provided keybinds (@binds).
+ *
+ * Returns: analog value on success, otherwise 0.
+ **/
+int16_t input_joypad_analog(const input_device_driver_t *driver,
+      rarch_joypad_info_t joypad_info,
+      unsigned port, unsigned idx, unsigned ident,
+      const void *binds);
+
+/**
+ * input_joypad_set_rumble:
+ * @drv                     : Input device driver handle.
+ * @port                    : User number.
+ * @effect                  : Rumble effect to set.
+ * @strength                : Strength of rumble effect.
+ *
+ * Sets rumble effect @effect with strength @strength.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+bool input_joypad_set_rumble(const input_device_driver_t *driver,
+      unsigned port, enum retro_rumble_effect effect, uint16_t strength);
+
+/**
+ * input_joypad_axis_raw:  
+ * @drv                     : Input device driver handle.
+ * @port                    : Joystick number.
+ * @axis                    : Identifier of axis.
+ *
+ * Checks if axis (@axis) was being pressed by user   
+ * with joystick number @port.
+ *
+ * Returns: true (1) if axis was pressed, otherwise
+ * false (0).
+ **/
+int16_t input_joypad_axis_raw(const input_device_driver_t *driver,
+      unsigned port, unsigned axis);
+
+/**
+ * input_joypad_button_raw:
+ * @drv                     : Input device driver handle.
+ * @port                    : Joystick number.
+ * @button                  : Identifier of key.
+ *
+ * Checks if key (@button) was being pressed by user
+ * with joystick number @port.
+ *
+ * Returns: true (1) if key was pressed, otherwise
+ * false (0).
+ **/
+bool input_joypad_button_raw(const input_device_driver_t *driver,
+      unsigned port, unsigned button);
+
+bool input_joypad_hat_raw(const input_device_driver_t *driver,
+      unsigned joypad, unsigned hat_dir, unsigned hat);
+
+/**
+ * input_joypad_name:  
+ * @drv                     : Input device driver handle.
+ * @port                    : Joystick number.
+ *
+ * Gets name of the joystick (@port).
+ *
+ * Returns: name of joystick #port.
+ **/
+const char *input_joypad_name(const input_device_driver_t *driver,
+      unsigned port);
+
+bool input_config_get_bind_idx(unsigned port, unsigned *joy_idx_real);
+
+extern input_device_driver_t dinput_joypad;
+extern input_device_driver_t linuxraw_joypad;
+extern input_device_driver_t parport_joypad;
+extern input_device_driver_t udev_joypad;
+extern input_device_driver_t xinput_joypad;
+extern input_device_driver_t sdl_joypad;
+extern input_device_driver_t ps3_joypad;
+extern input_device_driver_t psp_joypad;
+extern input_device_driver_t ctr_joypad;
+extern input_device_driver_t xdk_joypad;
+extern input_device_driver_t gx_joypad;
+extern input_device_driver_t wiiu_joypad;
+extern input_device_driver_t hid_joypad;
+extern input_device_driver_t android_joypad;
+extern input_device_driver_t qnx_joypad;
+extern input_device_driver_t null_joypad;
+extern input_device_driver_t mfi_joypad;
+extern input_device_driver_t dos_joypad;
 
 extern input_driver_t input_android;
 extern input_driver_t input_sdl;

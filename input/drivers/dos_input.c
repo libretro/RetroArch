@@ -19,7 +19,6 @@
 
 #include "../input_driver.h"
 #include "../input_keymaps.h"
-#include "../input_joypad_driver.h"
 #include "../drivers_keyboard/keyboard_event_dos.h"
 
 typedef struct dos_input

@@ -25,7 +25,7 @@
 #include <retro_inline.h>
 
 #include "../input_config.h"
-#include "../input_joypad_driver.h"
+#include "../input_driver.h"
 #include "../input_keymaps.h"
 
 #include "../../gfx/video_driver.h"

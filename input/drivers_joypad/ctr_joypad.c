@@ -18,7 +18,6 @@
 #include "../../config.h"
 #endif
 
-#include "../input_joypad_driver.h"
 #include "../input_driver.h"
 #include "../input_config.h"
 

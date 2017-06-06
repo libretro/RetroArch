@@ -45,7 +45,7 @@
 #include "../../frontend/frontend_driver.h"
 #include "../../input/input_keyboard.h"
 #include "../../input/input_keymaps.h"
-#include "../../input/input_joypad_driver.h"
+#include "../../input/input_driver.h"
 #include <linux/input.h>
 
 typedef struct gfx_ctx_wayland_data

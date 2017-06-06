@@ -31,7 +31,6 @@
 
 #include "../input_keymaps.h"
 #include "../input_driver.h"
-#include "../input_joypad_driver.h"
 
 typedef struct linuxraw_input
 {
