@@ -292,7 +292,7 @@ static int16_t cocoa_input_state(void *data,
    {
       case RETRO_DEVICE_JOYPAD:
          if (id < RARCH_BIND_LIST_END)
-            return apple_key_state[rarch_keysym_lut[binds[id].key]];
+            return apple_key_state[rarch_keysym_lut[binds[port][id].key]];
          return
             input_joypad_pressed(apple->joypad, joypad_info, port, binds[port], id)
 #ifdef HAVE_MFI
