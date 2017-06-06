@@ -1777,7 +1777,8 @@ bool command_event(enum event_command cmd, void *data)
             rarch_ctl(RARCH_CTL_SYSTEM_INFO_FREE, NULL);
 #endif
             core_unload_game();
-            core_unload();
+            if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+               core_unload();
          }
          break;
       case CMD_EVENT_QUIT:
