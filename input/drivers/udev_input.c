@@ -664,9 +664,6 @@ static int16_t udev_input_state(void *data,
    unsigned bit;
    udev_input_t *udev         = (udev_input_t*)data;
 
-   if (!udev)
-      return 0;
-
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
@@ -681,7 +678,6 @@ static int16_t udev_input_state(void *data,
             ret = input_joypad_analog(udev->joypad,
                   joypad_info, port, idx, id, binds[port]);
          return ret;
-
       case RETRO_DEVICE_KEYBOARD:
          bit = input_keymaps_translate_rk_to_keysym((enum retro_key)id);
          return id < RETROK_LAST && BIT_GET(udev_key_state, bit);
