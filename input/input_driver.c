@@ -1392,7 +1392,7 @@ bool input_joypad_set_rumble(const input_device_driver_t *drv,
 int16_t input_joypad_analog(const input_device_driver_t *drv,
       rarch_joypad_info_t joypad_info,
       unsigned port, unsigned idx, unsigned ident,
-      const void *binds_data)
+      const struct retro_keybind *binds)
 {
    uint32_t axis_minus, axis_plus;
    int16_t  pressed_minus, pressed_plus, res;
@@ -1400,8 +1400,6 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
    unsigned ident_plus                    = 0;
    const struct retro_keybind *bind_minus = NULL;
    const struct retro_keybind *bind_plus  = NULL;
-   const struct retro_keybind *binds      = (const struct retro_keybind*)
-      binds_data;
 
    input_conv_analog_id_to_bind_id(idx, ident, &ident_minus, &ident_plus);
 
