@@ -549,7 +549,7 @@ static void video_context_driver_reset(void)
       current_video_context.swap_buffers        = swap_buffers_null;
 
    if (current_video_context.has_focus)
-      video_driver_cb_has_focus = video_context_has_focus;
+      video_driver_cb_has_focus                 = video_context_has_focus;
 }
 
 bool video_context_driver_set(const gfx_ctx_driver_t *data)
@@ -3018,11 +3018,6 @@ bool video_context_driver_set_flags(gfx_ctx_flags_t *flags)
       return false;
    current_video_context.set_flags(video_context_data, flags->flags);
    return true;
-}
-
-bool video_driver_is_focused(void)
-{
-   return video_driver_cb_has_focus();
 }
 
 bool video_driver_has_windowed(void)
