@@ -479,7 +479,7 @@ static int16_t winraw_input_state(void *d,
          if (id < RETROK_LAST)
          {
             unsigned key = rarch_keysym_lut[(enum retro_key)id];
-            return wr->keyboard.keys[key]
+            return wr->keyboard.keys[key];
          }
          break;
       case RETRO_DEVICE_MOUSE:
