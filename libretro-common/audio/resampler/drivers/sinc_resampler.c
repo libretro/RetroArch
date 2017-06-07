@@ -137,9 +137,7 @@ typedef struct rarch_sinc_resampler
 /* Assumes that taps >= 8, and that taps is a multiple of 8. */
 void process_sinc_neon_asm(float *out, const float *left, 
       const float *right, const float *coeff, unsigned taps);
-#endif
 
-#if defined(__ARM_NEON__) 
 static void resampler_sinc_process_neon(void *re_, struct resampler_data *data)
 {
    rarch_sinc_resampler_t *resamp = (rarch_sinc_resampler_t*)re_;
@@ -176,12 +174,7 @@ static void resampler_sinc_process_neon(void *re_, struct resampler_data *data)
          const float *buffer_r    = resamp->buffer_r + resamp->ptr;
          unsigned taps            = resamp->taps;
          unsigned phase           = resamp->time >> SUBPHASE_BITS;
-#if SINC_COEFF_LERP
-         const float *phase_table = resamp->phase_table + phase * taps * 2;
-         const float *delta_table = phase_table + taps;
-#else
          const float *phase_table = resamp->phase_table + phase * taps;
-#endif
 
          process_sinc_neon_asm(output, buffer_l, buffer_r, phase_table, taps);
 
