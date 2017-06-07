@@ -57,6 +57,10 @@
 
 #include "../../verbosity.h"
 
+#if defined(HAVE_XKBCOMMON) && defined(HAVE_PLAIN_DRM)
+#define UDEV_XKB_HANDLING
+#endif
+
 #define UDEV_MAX_KEYS (KEY_MAX + 7) / 8
 
 typedef struct udev_input udev_input_t;
@@ -124,13 +128,27 @@ struct udev_input
    int epfd;
    udev_input_device_t **devices;
    unsigned num_devices;
+
+#ifdef UDEV_XKB_HANDLING
+   bool xkb_handling;
+#endif
 };
+
+#ifdef UDEV_XKB_HANDLING
+int init_xkb(int fd, size_t size);
+void free_xkb(void);
+int handle_xkb(int code, int value);
+#endif
 
 static uint8_t udev_key_state[UDEV_MAX_KEYS];
 
 static void udev_handle_keyboard(void *data,
       const struct input_event *event, udev_input_device_t *dev)
 {
+#ifdef UDEV_XKB_HANDLING
+   udev_input_t *udev = (udev_input_t*)data;
+#endif
+
    switch (event->type)
    {
       case EV_KEY:
@@ -138,6 +156,11 @@ static void udev_handle_keyboard(void *data,
             BIT_SET(udev_key_state, event->code);
          else
             BIT_CLEAR(udev_key_state, event->code);
+
+#ifdef UDEV_XKB_HANDLING
+         if (udev->xkb_handling && handle_xkb(event->code, event->value) == 0)
+            return;
+#endif
 
          input_keyboard_event(event->value,
                input_keymaps_translate_keysym_to_rk(event->code),
@@ -155,6 +178,10 @@ static void udev_input_kb_free(void)
 
    for (i = 0; i < UDEV_MAX_KEYS; i++)
       udev_key_state[i] = 0;
+
+#ifdef UDEV_XKB_HANDLING
+   free_xkb();
+#endif
 }
 
 static void udev_handle_touchpad(void *data,
@@ -797,6 +824,15 @@ static void *udev_input_init(const char *joypad_driver)
       udev_monitor_filter_add_match_subsystem_devtype(udev->monitor, "input", NULL);
       udev_monitor_enable_receiving(udev->monitor);
    }
+
+#ifdef UDEV_XKB_HANDLING
+   if (init_xkb(-1, 0) == -1)
+      goto error;
+
+   gfx_ctx_ident_t ctx_ident;
+   video_context_driver_get_ident(&ctx_ident);
+   udev->xkb_handling = string_is_equal_fast(ctx_ident.ident, "kms", 4);
+#endif
 
    if (!epoll_new(&udev->epfd))
    {
