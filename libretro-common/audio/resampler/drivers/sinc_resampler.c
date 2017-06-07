@@ -96,6 +96,12 @@
 #define ENABLE_AVX 0
 #endif
 
+#if SINC_COEFF_LERP
+#define TAPS_MULT 2
+#else
+#define TAPS_MULT 1
+#endif
+
 #if defined(SINC_WINDOW_LANCZOS)
 #define window_function(idx)  (lanzcos_window_function(idx))
 #elif defined(SINC_WINDOW_KAISER)
@@ -225,19 +231,15 @@ static void resampler_sinc_process_avx(void *re_, struct resampler_data *data)
          const float *buffer_r    = resamp->buffer_r + resamp->ptr;
          unsigned taps            = resamp->taps;
          unsigned phase           = resamp->time >> SUBPHASE_BITS;
+         const float *phase_table = resamp->phase_table + phase * taps * TAPS_MULT;
 #if SINC_COEFF_LERP
-         const float *phase_table = resamp->phase_table + phase * taps * 2;
          const float *delta_table = phase_table + taps;
-#else
-         const float *phase_table = resamp->phase_table + phase * taps;
+         __m256 delta             = _mm256_set1_ps((float)
+               (resamp->time & SUBPHASE_MASK) * SUBPHASE_MOD);
 #endif
 
          __m256 sum_l             = _mm256_setzero_ps();
          __m256 sum_r             = _mm256_setzero_ps();
-#if SINC_COEFF_LERP
-         __m256 delta             = _mm256_set1_ps((float)
-               (resamp->time & SUBPHASE_MASK) * SUBPHASE_MOD);
-#endif
 
          for (i = 0; i < taps; i += 8)
          {
@@ -312,24 +314,20 @@ static void resampler_sinc_process_sse(void *re_, struct resampler_data *data)
       while (resamp->time < PHASES)
       {
          unsigned i;
+         __m128 sum;
          const float *buffer_l    = resamp->buffer_l + resamp->ptr;
          const float *buffer_r    = resamp->buffer_r + resamp->ptr;
          unsigned taps            = resamp->taps;
          unsigned phase           = resamp->time >> SUBPHASE_BITS;
+         const float *phase_table = resamp->phase_table + phase * taps * TAPS_MULT;
 #if SINC_COEFF_LERP
-         const float *phase_table = resamp->phase_table + phase * taps * 2;
          const float *delta_table = phase_table + taps;
-#else
-         const float *phase_table = resamp->phase_table + phase * taps;
-#endif
-
-         __m128 sum;
-         __m128 sum_l             = _mm_setzero_ps();
-         __m128 sum_r             = _mm_setzero_ps();
-#if SINC_COEFF_LERP
          __m128 delta             = _mm_set1_ps((float)
                (resamp->time & SUBPHASE_MASK) * SUBPHASE_MOD);
 #endif
+
+         __m128 sum_l             = _mm_setzero_ps();
+         __m128 sum_r             = _mm_setzero_ps();
 
          for (i = 0; i < taps; i += 4)
          {
@@ -418,18 +416,14 @@ static void resampler_sinc_process_c(void *re_, struct resampler_data *data)
          const float *buffer_r    = resamp->buffer_r + resamp->ptr;
          unsigned taps            = resamp->taps;
          unsigned phase           = resamp->time >> SUBPHASE_BITS;
+         const float *phase_table = resamp->phase_table + phase * taps * TAPS_MULT; 
 #if SINC_COEFF_LERP
-         const float *phase_table = resamp->phase_table + phase * taps * 2;
          const float *delta_table = phase_table + taps;
-#else
-         const float *phase_table = resamp->phase_table + phase * taps;
-#endif
-         float sum_l              = 0.0f;
-         float sum_r              = 0.0f;
-#if SINC_COEFF_LERP
          float delta              = (float)
             (resamp->time & SUBPHASE_MASK) * SUBPHASE_MOD;
 #endif
+         float sum_l              = 0.0f;
+         float sum_r              = 0.0f;
 
          for (i = 0; i < taps; i++)
          {
@@ -551,10 +545,7 @@ static void *resampler_sinc_new(const struct resampler_config *config,
    re->taps     = (re->taps + 3) & ~3;
 #endif
 
-   phase_elems  = (1 << PHASE_BITS) * re->taps;
-#if SINC_COEFF_LERP
-   phase_elems *= 2;
-#endif
+   phase_elems  = ((1 << PHASE_BITS) * re->taps) * TAPS_MULT;
    elems        = phase_elems + 4 * re->taps;
 
    re->main_buffer = (float*)memalign_alloc(128, sizeof(float) * elems);
