@@ -155,6 +155,8 @@ retry:
          {
             struct inotify_event *event = (struct inotify_event*)&event_buf[0];
 
+            event_buf[rc] = '\0';
+
             /* Can read multiple events in one read() call. */
 
             for (j = 0; j < rc; j += event->len + sizeof(struct inotify_event))
