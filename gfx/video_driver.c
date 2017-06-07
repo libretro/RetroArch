@@ -3136,26 +3136,36 @@ static enum gfx_wrap_type video_shader_driver_wrap_type_null(
 static bool video_shader_driver_set_mvp_null(void *data,
       void *shader_data, const math_matrix_4x4 *mat)
 {
-#ifdef HAVE_OPENGL
-#ifndef NO_GL_FF_MATRIX
-   if (string_is_equal_fast(video_driver_get_ident(), "gl", 2))
-      gl_ff_matrix(mat);
-#endif
-#endif
    return false;
 }
+
+#ifdef HAVE_OPENGL
+#ifndef NO_GL_FF_MATRIX
+static bool video_shader_driver_set_mvp_null_gl(void *data,
+      void *shader_data, const math_matrix_4x4 *mat)
+{
+   gl_ff_matrix(mat);
+   return false;
+}
+#endif
+#endif
 
 static bool video_shader_driver_set_coords_null(void *handle_data,
       void *shader_data, const struct video_coords *coords)
 {
-#ifdef HAVE_OPENGL
-#ifndef NO_GL_FF_VERTEX
-   if (string_is_equal_fast(video_driver_get_ident(), "gl", 2))
-      gl_ff_vertex(coords);
-#endif
-#endif
    return false;
 }
+
+#ifdef HAVE_OPENGL
+#ifndef NO_GL_FF_VERTEX
+static bool video_shader_driver_set_coords_null_gl(void *handle_data,
+      void *shader_data, const struct video_coords *coords)
+{
+   gl_ff_vertex(coords);
+   return false;
+}
+#endif
+#endif
 
 static struct video_shader *video_shader_driver_get_current_shader_null(void *data)
 {
@@ -3214,11 +3224,32 @@ static void video_shader_driver_reset_to_defaults(void)
       video_driver_cb_shader_set_mvp    = current_shader->set_mvp;
    else
    {
-      current_shader->set_mvp           = video_shader_driver_set_mvp_null;
-      video_driver_cb_shader_set_mvp    = video_shader_driver_set_mvp_null;
+#ifdef HAVE_OPENGL
+#ifndef NO_GL_FF_MATRIX
+      if (string_is_equal_fast(video_driver_get_ident(), "gl", 2))
+      {
+         current_shader->set_mvp           = video_shader_driver_set_mvp_null_gl;
+         video_driver_cb_shader_set_mvp    = video_shader_driver_set_mvp_null_gl;
+      }
+      else
+#endif
+#endif
+      {
+         current_shader->set_mvp           = video_shader_driver_set_mvp_null;
+         video_driver_cb_shader_set_mvp    = video_shader_driver_set_mvp_null;
+      }
    }
    if (!current_shader->set_coords)
-      current_shader->set_coords        = video_shader_driver_set_coords_null;
+   {
+#ifdef HAVE_OPENGL
+#ifndef NO_GL_FF_VERTEX
+      if (string_is_equal_fast(video_driver_get_ident(), "gl", 2))
+         current_shader->set_coords        = video_shader_driver_set_coords_null_gl;
+      else
+#endif
+#endif
+         current_shader->set_coords        = video_shader_driver_set_coords_null;
+   }
    if (current_shader->use)
       video_driver_cb_shader_use        = current_shader->use;
    else 
