@@ -315,6 +315,11 @@ static int deferred_push_netplay(menu_displaylist_info_t *info)
    return deferred_push_dlist(info, DISPLAYLIST_NETPLAY_ROOM_LIST);
 }
 
+static int deferred_push_netplay_sublist(menu_displaylist_info_t *info)
+{
+   return deferred_push_dlist(info, DISPLAYLIST_NETPLAY);
+}
+
 static int deferred_push_content_settings(menu_displaylist_info_t *info)
 {
    return deferred_push_dlist(info, DISPLAYLIST_CONTENT_SETTINGS);
@@ -1038,6 +1043,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rpl_entry_actions);
+   }
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_NETPLAY)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_netplay_sublist);
    }
    else
    {

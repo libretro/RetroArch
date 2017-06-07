@@ -4159,6 +4159,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          /* TODO/FIXME ? */
          break;
       case DISPLAYLIST_NETPLAY:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          /* TODO/FIXME ? */
          break;
       case DISPLAYLIST_DATABASE_ENTRY:
