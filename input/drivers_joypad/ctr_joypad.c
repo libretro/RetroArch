@@ -44,13 +44,13 @@ static const char *ctr_joypad_name(unsigned pad)
 static void ctr_joypad_autodetect_add(unsigned autoconf_pad)
 {
    if (!input_autoconfigure_connect(
-         ctr_joypad_name(autoconf_pad),
-         NULL,
-         ctr_joypad.ident,
-         autoconf_pad,
-         0,
-         0
-         ))
+            ctr_joypad_name(autoconf_pad),
+            NULL,
+            ctr_joypad.ident,
+            autoconf_pad,
+            0,
+            0
+            ))
       input_config_set_device_name(autoconf_pad, ctr_joypad_name(autoconf_pad));
 }
 
@@ -168,9 +168,9 @@ static void ctr_joypad_poll(void)
 
    /* panic button */
    if((state_tmp & KEY_START) &&
-      (state_tmp & KEY_SELECT) &&
-      (state_tmp & KEY_L) &&
-      (state_tmp & KEY_R))
+         (state_tmp & KEY_SELECT) &&
+         (state_tmp & KEY_L) &&
+         (state_tmp & KEY_R))
       command_event(CMD_EVENT_QUIT, NULL);
 
 }
