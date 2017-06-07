@@ -383,9 +383,7 @@ bool bsv_movie_init(void)
 
 bool bsv_movie_get_input(int16_t *bsv_data)
 {
-   if (filestream_read(bsv_movie_state_handle->file, bsv_data, 1) != 1)
-      return false;
-
+   filestream_read(bsv_movie_state_handle->file, bsv_data, sizeof(int16_t));
    *bsv_data = swap_if_big16(*bsv_data);
 
    return true;
@@ -444,7 +442,7 @@ bool bsv_movie_ctl(enum bsv_ctl_state state, void *data)
             int16_t *bsv_data = (int16_t*)data;
 
             *bsv_data = swap_if_big16(*bsv_data);
-            filestream_write(bsv_movie_state_handle->file, bsv_data, 1);
+            filestream_write(bsv_movie_state_handle->file, bsv_data, sizeof(int16_t));
          }
          break;
       case BSV_MOVIE_CTL_NONE:
