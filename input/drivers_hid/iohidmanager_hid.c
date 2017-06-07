@@ -89,12 +89,10 @@ static bool iohidmanager_check_for_id(apple_input_rec_t *rec, uint32_t id)
 
 static void iohidmanager_append_record(apple_input_rec_t *rec, apple_input_rec_t *new)
 {
-    apple_input_rec_t *tmp = rec;
-    while(tmp->next)
-    {
-        tmp = tmp->next;
-    }
-    tmp->next = new;
+   apple_input_rec_t *tmp = rec;
+   while(tmp->next)
+      tmp = tmp->next;
+   tmp->next = new;
 }
 
 static bool iohidmanager_hid_joypad_query(void *data, unsigned pad)
@@ -125,12 +123,12 @@ static bool iohidmanager_hid_joypad_button(void *data,
    uint64_t buttons          = 
       iohidmanager_hid_joypad_get_buttons(data, port);
    iohidmanager_hid_t *hid   = (iohidmanager_hid_t*)data;
-   unsigned h = GET_HAT(joykey);
    unsigned hat_dir = GET_HAT_DIR(joykey);
 
    /* Check hat. */
    if (hat_dir)
    {
+      unsigned h = GET_HAT(joykey);
       if(h >= 1)
          return false;
 
@@ -168,7 +166,7 @@ static bool iohidmanager_hid_joypad_rumble(void *data, unsigned pad,
 static int16_t iohidmanager_hid_joypad_axis(void *data,
       unsigned port, uint32_t joyaxis)
 {
-   iohidmanager_hid_t          *hid = (iohidmanager_hid_t*)data;
+   iohidmanager_hid_t   *hid = (iohidmanager_hid_t*)data;
    int16_t               val = 0;
 
    if (joyaxis == AXIS_NONE)
@@ -255,88 +253,86 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
                switch (use)
                {
                   case kHIDUsage_GD_Hatswitch:
-                  {
-                     tmp = adapter->hats;
+                     {
+                        tmp = adapter->hats;
+
+                        while(tmp && tmp->cookie != (IOHIDElementCookie)cookie)
+                           tmp = tmp->next;
+
+                        if(tmp->cookie == (IOHIDElementCookie)cookie)
+                        {
+                           CFIndex range = IOHIDElementGetLogicalMax(element) - IOHIDElementGetLogicalMin(element);
+                           CFIndex val   = IOHIDValueGetIntegerValue(value);
+
+                           if(range == 3)
+                              val *= 2;
+
+                           switch(val)
+                           {
+                              case 0:
+                                 /* pos = up */
+                                 hid->hats[adapter->slot][0] = 0;
+                                 hid->hats[adapter->slot][1] = -1;
+                                 break;
+                              case 1:
+                                 /* pos = up+right */
+                                 hid->hats[adapter->slot][0] = 1;
+                                 hid->hats[adapter->slot][1] = -1;
+                                 break;
+                              case 2:
+                                 /* pos = right */
+                                 hid->hats[adapter->slot][0] = 1;
+                                 hid->hats[adapter->slot][1] = 0;
+                                 break;
+                              case 3:
+                                 /* pos = down+right */
+                                 hid->hats[adapter->slot][0] = 1;
+                                 hid->hats[adapter->slot][1] = 1;
+                                 break;
+                              case 4:
+                                 /* pos = down */
+                                 hid->hats[adapter->slot][0] = 0;
+                                 hid->hats[adapter->slot][1] = 1;
+                                 break;
+                              case 5:
+                                 /* pos = down+left */
+                                 hid->hats[adapter->slot][0] = -1;
+                                 hid->hats[adapter->slot][1] = 1;
+                                 break;
+                              case 6:
+                                 /* pos = left */
+                                 hid->hats[adapter->slot][0] = -1;
+                                 hid->hats[adapter->slot][1] = 0;
+                                 break;
+                              case 7:
+                                 /* pos = up_left */
+                                 hid->hats[adapter->slot][0] = -1;
+                                 hid->hats[adapter->slot][1] = -1;
+                                 break;
+                              default:
+                                 /* pos = centered */
+                                 hid->hats[adapter->slot][0] = 0;
+                                 hid->hats[adapter->slot][1] = 0;
+                                 break;
+                           }
+                        }
+                     }
+                     break;
+                  default:
+                     tmp = adapter->axes;
 
                      while(tmp && tmp->cookie != (IOHIDElementCookie)cookie)
                         tmp = tmp->next;
 
                      if(tmp->cookie == (IOHIDElementCookie)cookie)
                      {
-                        CFIndex range = IOHIDElementGetLogicalMax(element) - IOHIDElementGetLogicalMin(element);
-                        CFIndex val   = IOHIDValueGetIntegerValue(value);
+                        CFIndex min   = IOHIDElementGetPhysicalMin(element);
+                        CFIndex state = IOHIDValueGetIntegerValue(value) - min;
+                        CFIndex max   = IOHIDElementGetPhysicalMax(element) - min;
+                        float val     = (float)state / (float)max;
 
-                        if(range == 3)
-                           val *= 2;
-
-                        switch(val)
-                        {
-                            case 0:
-                              /* pos = up */
-                              hid->hats[adapter->slot][0] = 0;
-                              hid->hats[adapter->slot][1] = -1;
-                              break;
-                            case 1:
-                              /* pos = up+right */
-                              hid->hats[adapter->slot][0] = 1;
-                              hid->hats[adapter->slot][1] = -1;
-                              break;
-                            case 2:
-                              /* pos = right */
-                              hid->hats[adapter->slot][0] = 1;
-                              hid->hats[adapter->slot][1] = 0;
-                              break;
-                            case 3:
-                              /* pos = down+right */
-                              hid->hats[adapter->slot][0] = 1;
-                              hid->hats[adapter->slot][1] = 1;
-                              break;
-                            case 4:
-                              /* pos = down */
-                              hid->hats[adapter->slot][0] = 0;
-                              hid->hats[adapter->slot][1] = 1;
-                              break;
-                            case 5:
-                              /* pos = down+left */
-                              hid->hats[adapter->slot][0] = -1;
-                              hid->hats[adapter->slot][1] = 1;
-                              break;
-                            case 6:
-                              /* pos = left */
-                              hid->hats[adapter->slot][0] = -1;
-                              hid->hats[adapter->slot][1] = 0;
-                              break;
-                            case 7:
-                              /* pos = up_left */
-                              hid->hats[adapter->slot][0] = -1;
-                              hid->hats[adapter->slot][1] = -1;
-                              break;
-                            default:
-                              /* pos = centered */
-                              hid->hats[adapter->slot][0] = 0;
-                              hid->hats[adapter->slot][1] = 0;
-                              break;
-                        }
-                     }
-                  }
-                  break;
-                  default:
-                     {
-                        tmp = adapter->axes;
-
-                        while(tmp && tmp->cookie != (IOHIDElementCookie)cookie)
-                            tmp = tmp->next;
-
-                        if(tmp->cookie == (IOHIDElementCookie)cookie)
-                        {
-                           CFIndex min   = IOHIDElementGetPhysicalMin(element);
-                           CFIndex state = IOHIDValueGetIntegerValue(value) - min;
-                           CFIndex max   = IOHIDElementGetPhysicalMax(element) - min;
-                           float val     = (float)state / (float)max;
-
-                           hid->axes[adapter->slot][tmp->id] =
-                              ((val * 2.0f) - 1.0f) * 32767.0f;
-                        }
+                        hid->axes[adapter->slot][tmp->id] =
+                           ((val * 2.0f) - 1.0f) * 32767.0f;
                      }
                      break;
                }
@@ -347,21 +343,19 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
          switch (type)
          {
             case kIOHIDElementTypeInput_Button:
+               tmp = adapter->buttons;
+
+               while(tmp && tmp->cookie != (IOHIDElementCookie)cookie)
+                  tmp = tmp->next;
+
+               if(tmp->cookie == (IOHIDElementCookie)cookie)
                {
-                  tmp = adapter->buttons;
+                  CFIndex state = IOHIDValueGetIntegerValue(value);
 
-                  while(tmp && tmp->cookie != (IOHIDElementCookie)cookie)
-                     tmp = tmp->next;
-
-                  if(tmp->cookie == (IOHIDElementCookie)cookie)
-                  {
-                     CFIndex state = IOHIDValueGetIntegerValue(value);
-
-                     if (state)
-                        BIT64_SET(hid->buttons[adapter->slot], tmp->id);
-                     else
-                        BIT64_CLEAR(hid->buttons[adapter->slot], tmp->id);
-                  }
+                  if (state)
+                     BIT64_SET(hid->buttons[adapter->slot], tmp->id);
+                  else
+                     BIT64_CLEAR(hid->buttons[adapter->slot], tmp->id);
                }
                break;
          }
