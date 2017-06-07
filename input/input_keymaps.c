@@ -932,10 +932,14 @@ const struct rarch_key_map rarch_key_map_x11[] = {
    /*{ ?, RETROK_POWER },*/
    { XK_EuroSign, RETROK_EURO },
    { XK_Undo, RETROK_UNDO },
-   { XK_KP_Up,  RETROK_KP0 },
-   { XK_KP_Down,  RETROK_KP1 },
-   { XK_KP_Left,  RETROK_KP2 },
-   { XK_KP_Right,  RETROK_KP3 },
+   /* FIXME(shizeeg): RetroArch can't handle these buttons atm. 
+    * Do we really need RETROK_KP_INSERT, RETROK_KP_END,
+    * RETROK_KP_DOWN, RETROK_KP_PAGEDOWN ???
+    *
+   { XK_KP_Insert,  RETROK_KP0 },
+   { XK_KP_End,  RETROK_KP1 },
+   { XK_KP_Down,  RETROK_KP2 },
+   { XK_KP_Page_Down,  RETROK_KP3 },*/
    { XF86XK_Calculator, RETROK_HELP },
 
    { 0, RETROK_UNKNOWN },
