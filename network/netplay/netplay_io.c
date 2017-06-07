@@ -130,21 +130,19 @@ void netplay_hangup(netplay_t *netplay, struct netplay_connection *connection)
    }
    else
    {
-      /* Remove this player */
+      /* Mark the player for removal */
       if (connection->mode == NETPLAY_CONNECTION_PLAYING ||
           connection->mode == NETPLAY_CONNECTION_SLAVE)
       {
+         /* This special mode keeps the connection object alive long enough to
+          * send the disconnection message at the correct time */
+         connection->mode = NETPLAY_CONNECTION_DELAYED_DISCONNECT;
+         connection->delay_frame = netplay->read_frame_count[connection->player];
+
+         /* Mark them as not playing anymore */
          netplay->connected_players &= ~(1<<connection->player);
          netplay->connected_slaves  &= ~(1<<connection->player);
 
-         /* FIXME: Duplication */
-         if (netplay->is_server)
-         {
-            uint32_t payload[2];
-            payload[0] = htonl(netplay->read_frame_count[connection->player]);
-            payload[1] = htonl(connection->player);
-            netplay_send_raw_cmd_all(netplay, connection, NETPLAY_CMD_MODE, payload, sizeof(payload));
-         }
       }
 
    }
@@ -152,6 +150,42 @@ void netplay_hangup(netplay_t *netplay, struct netplay_connection *connection)
    /* Unpause them */
    if (connection->paused)
       remote_unpaused(netplay, connection);
+}
+
+/**
+ * netplay_delayed_state_change:
+ *
+ * Handle any pending state changes which are ready as of the beginning of the
+ * current frame.
+ */
+void netplay_delayed_state_change(netplay_t *netplay)
+{
+   struct netplay_connection *connection;
+   size_t i;
+
+   for (i = 0; i < netplay->connections_size; i++)
+   {
+      connection = &netplay->connections[i];
+      if ((connection->active || connection->mode == NETPLAY_CONNECTION_DELAYED_DISCONNECT) &&
+          connection->delay_frame &&
+          connection->delay_frame <= netplay->self_frame_count)
+      {
+         /* Something was delayed! Prepare the MODE command */
+         uint32_t payload[2];
+         payload[0] = htonl(connection->delay_frame);
+         payload[1] = htonl(connection->player);
+
+         /* Remove the connection entirely if relevant */
+         if (connection->mode == NETPLAY_CONNECTION_DELAYED_DISCONNECT)
+            connection->mode = NETPLAY_CONNECTION_NONE;
+
+         /* Then send the mode change packet */
+         netplay_send_raw_cmd_all(netplay, connection, NETPLAY_CMD_MODE, payload, sizeof(payload));
+
+         /* And forget the delay frame */
+         connection->delay_frame = 0;
+      }
+   }
 }
 
 /* Send the specified input data */
@@ -663,16 +697,12 @@ static bool netplay_get_cmd(netplay_t *netplay,
              connection->mode == NETPLAY_CONNECTION_SLAVE)
          {
             /* The frame we haven't received is their end frame */
-            payload[0] = htonl(netplay->read_frame_count[connection->player]);
+            connection->delay_frame = netplay->read_frame_count[connection->player];
 
             /* Mark them as not playing anymore */
             connection->mode = NETPLAY_CONNECTION_SPECTATING;
             netplay->connected_players &= ~(1<<connection->player);
             netplay->connected_slaves  &= ~(1<<connection->player);
-
-            /* Tell everyone */
-            payload[1] = htonl(connection->player);
-            netplay_send_raw_cmd_all(netplay, connection, NETPLAY_CMD_MODE, payload, sizeof(payload));
 
             /* Announce it */
             msg[sizeof(msg)-1] = '\0';
@@ -729,6 +759,14 @@ static bool netplay_get_cmd(netplay_t *netplay,
          {
             RARCH_ERR("NETPLAY_CMD_PLAY from a server.\n");
             return netplay_cmd_nak(netplay, connection);
+         }
+
+         if (connection->delay_frame)
+         {
+            /* Can't switch modes while a mode switch is already in progress. */
+            payload[0] = htonl(NETPLAY_CMD_MODE_REFUSED_REASON_TOO_FAST);
+            netplay_send_raw_cmd(netplay, connection, NETPLAY_CMD_MODE_REFUSED, payload, sizeof(uint32_t));
+            break;
          }
 
          if (!connection->can_play)
