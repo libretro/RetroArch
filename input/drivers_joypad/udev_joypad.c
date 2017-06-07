@@ -568,36 +568,30 @@ error:
    return false;
 }
 
-static bool udev_joypad_button_hat(const void *data, uint16_t joykey, unsigned hat_dir)
-{
-   const struct udev_joypad *pad = (const struct udev_joypad*)data;
-   unsigned h                    = GET_HAT(joykey);
-
-   if (h >= NUM_HATS)
-      return false;
-
-   switch (hat_dir)
-   {
-      case HAT_LEFT_MASK:
-         return pad->hats[h][0] < 0;
-      case HAT_RIGHT_MASK:
-         return pad->hats[h][0] > 0;
-      case HAT_UP_MASK:
-         return pad->hats[h][1] < 0;
-      case HAT_DOWN_MASK:
-         return pad->hats[h][1] > 0;
-   }
-
-   return 0;
-}
-
 static bool udev_joypad_button(unsigned port, uint16_t joykey)
 {
    const struct udev_joypad *pad = (const struct udev_joypad*)&udev_pads[port];
-   unsigned hat_dir = GET_HAT_DIR(joykey);
+   unsigned hat_dir              = GET_HAT_DIR(joykey);
 
    if (hat_dir)
-      return udev_joypad_button_hat(pad, joykey, hat_dir);
+   {
+      unsigned h = GET_HAT(joykey);
+      if (h < NUM_HATS)
+      {
+         switch (hat_dir)
+         {
+            case HAT_LEFT_MASK:
+               return pad->hats[h][0] < 0;
+            case HAT_RIGHT_MASK:
+               return pad->hats[h][0] > 0;
+            case HAT_UP_MASK:
+               return pad->hats[h][1] < 0;
+            case HAT_DOWN_MASK:
+               return pad->hats[h][1] > 0;
+         }
+      }
+      return false;
+   }
    return joykey < UDEV_NUM_BUTTONS && BIT64_GET(pad->buttons, joykey);
 }
 
