@@ -116,15 +116,15 @@ enum analog_dpad_mode
  * internally in RetroArch for simplicity, so they are mapped into [16, 23].
  */
 
-#define AXIS_NEG(x)        (((uint32_t)(x) << 16) | UINT16_C(0xFFFF))
-#define AXIS_POS(x)        ((uint32_t)(x) | UINT32_C(0xFFFF0000))
-#define AXIS_NONE          UINT32_C(0xFFFFFFFF)
-#define AXIS_DIR_NONE      UINT16_C(0xFFFF)
+#define AXIS_NEG(x)        (((uint32_t)(x) << 16) | 0xFFFFU)
+#define AXIS_POS(x)        ((uint32_t)(x) | 0xFFFF0000UL)
+#define AXIS_NONE          0xFFFFFFFFUL
+#define AXIS_DIR_NONE      0xFFFFU
 
-#define AXIS_NEG_GET(x)    (((uint32_t)(x) >> 16) & UINT16_C(0xFFFF))
-#define AXIS_POS_GET(x)    ((uint32_t)(x) & UINT16_C(0xFFFF))
+#define AXIS_NEG_GET(x)    (((uint32_t)(x) >> 16) & 0xFFFFU)
+#define AXIS_POS_GET(x)    ((uint32_t)(x) & 0xFFFFU)
 
-#define NO_BTN             UINT16_C(0xFFFF)
+#define NO_BTN             0xFFFFU
 
 #define HAT_UP_SHIFT       15
 #define HAT_DOWN_SHIFT     14
