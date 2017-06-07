@@ -165,6 +165,10 @@ static bool get_self_input_state(netplay_t *netplay)
          netplay_send_cur_input(netplay, &netplay->connections[i]);
    }
 
+   /* Handle any delayed state changes */
+   if (netplay->is_server)
+      netplay_delayed_state_change(netplay);
+
    return true;
 }
 
@@ -847,7 +851,7 @@ void netplay_post_frame(netplay_t *netplay)
       if (connection->active &&
           !netplay_send_flush(&connection->send_packet_buffer, connection->fd,
             false))
-         netplay_hangup(netplay, &netplay->connections[0]);
+         netplay_hangup(netplay, connection);
    }
 }
 
