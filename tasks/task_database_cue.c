@@ -356,9 +356,7 @@ int detect_system(const char *track_path, const char **system_name)
          goto clean;
       }
 
-      if (!string_is_empty(MAGIC_NUMBERS[i].magic) &&
-          !string_is_empty(magic) &&
-          string_is_equal_fast(MAGIC_NUMBERS[i].magic, magic, MAGIC_LEN))
+      if (string_is_equal_fast(MAGIC_NUMBERS[i].magic, magic, MAGIC_LEN))
       {
          *system_name = MAGIC_NUMBERS[i].system_name;
          rv = 0;
