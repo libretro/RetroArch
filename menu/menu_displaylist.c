@@ -2836,6 +2836,14 @@ static int menu_displaylist_parse_load_content_settings(
             MENU_ENUM_LABEL_CORE_OPTIONS,
             MENU_SETTING_ACTION, 0, 0);
 
+#if 0
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS),
+            msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_SETTINGS),
+            MENU_ENUM_LABEL_NETPLAY_SETTINGS,
+            MENU_SETTING_ACTION, 0, 0);
+#endif
+
       if (core_has_set_input_descriptor())
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS),
@@ -4160,6 +4168,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_NETPLAY:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         info->need_push    = true;
          /* TODO/FIXME ? */
          break;
       case DISPLAYLIST_DATABASE_ENTRY:
