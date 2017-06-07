@@ -81,19 +81,6 @@ static const char *psp_joypad_name(unsigned pad)
 #endif
 }
 
-static void psp_joypad_autodetect_add(unsigned autoconf_pad)
-{
-   if (!input_autoconfigure_connect(
-         psp_joypad_name(autoconf_pad),
-         NULL,
-         psp_joypad.ident,
-         autoconf_pad,
-         0,
-         0
-         ))
-      input_config_set_device_name(autoconf_pad, psp_joypad_name(autoconf_pad));
-}
-
 static bool psp_joypad_init(void *data)
 {
    unsigned i;
@@ -114,7 +101,17 @@ static bool psp_joypad_init(void *data)
 #endif
 
    for (i = 0; i < players_count; i++)
-      psp_joypad_autodetect_add(i);
+   {
+      if (!input_autoconfigure_connect(
+               psp_joypad_name(i),
+               NULL,
+               psp_joypad.ident,
+               i,
+               0,
+               0
+               ))
+         input_config_set_device_name(i, psp_joypad_name(i));
+   }
 
    return true;
 }
@@ -209,7 +206,17 @@ static void psp_joypad_poll(void)
 
          if (old_ctrl_info.port[player + 1] == SCE_CTRL_TYPE_UNPAIRED &&
                curr_ctrl_info.port[player + 1] != SCE_CTRL_TYPE_UNPAIRED)
-            psp_joypad_autodetect_add(player);
+         {
+            if (!input_autoconfigure_connect(
+                     psp_joypad_name(player),
+                     NULL,
+                     psp_joypad.ident,
+                     player,
+                     0,
+                     0
+                     ))
+               input_config_set_device_name(player, psp_joypad_name(player));
+         }
       }
       memcpy(&old_ctrl_info, &curr_ctrl_info, sizeof(SceCtrlPortInfo));
    }
