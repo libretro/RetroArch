@@ -100,68 +100,6 @@ static INLINE int16_t udev_compute_axis(const struct input_absinfo *info, int va
    return axis;
 }
 
-static void udev_poll_pad(struct udev_joypad *pad, unsigned p)
-{
-   int i, len;
-   struct input_event events[32];
-
-   if (pad->fd < 0)
-      return;
-
-   while ((len = read(pad->fd, events, sizeof(events))) > 0)
-   {
-      len /= sizeof(*events);
-      for (i = 0; i < len; i++)
-      {
-         int code = events[i].code;
-         switch (events[i].type)
-         {
-            case EV_KEY:
-               if (code >= 0 && code < KEY_MAX)
-               {
-                  if (events[i].value)
-                     BIT64_SET(pad->buttons, pad->button_bind[code]);
-                  else
-                     BIT64_CLEAR(pad->buttons, pad->button_bind[code]);
-               }
-               break;
-
-            case EV_ABS:
-               if (code >= ABS_MISC)
-                  break;
-
-               switch (code)
-               {
-                  case ABS_HAT0X:
-                  case ABS_HAT0Y:
-                  case ABS_HAT1X:
-                  case ABS_HAT1Y:
-                  case ABS_HAT2X:
-                  case ABS_HAT2Y:
-                  case ABS_HAT3X:
-                  case ABS_HAT3Y:
-                  {
-                     code                           -= ABS_HAT0X;
-                     pad->hats[code >> 1][code & 1]  = events[i].value;
-                     break;
-                  }
-
-                  default:
-                  {
-                     unsigned axis   = pad->axes_bind[code];
-                     pad->axes[axis] = udev_compute_axis(&pad->absinfo[axis], events[i].value);
-                     break;
-                  }
-               }
-               break;
-
-            default:
-               break;
-         }
-      }
-   }
-}
-
 static int udev_find_vacant_pad(void)
 {
    unsigned i;
@@ -412,30 +350,6 @@ static void udev_joypad_destroy(void)
    udev_joypad_fd  = NULL;
 }
 
-static void udev_joypad_handle_hotplug(struct udev_device *dev)
-{
-   const char *val     = udev_device_get_property_value(dev, "ID_INPUT_JOYSTICK");
-   const char *action  = udev_device_get_action(dev);
-   const char *devnode = udev_device_get_devnode(dev);
-
-   if (!val || string_is_not_equal_fast(val, "1", 1) || !devnode)
-      goto end;
-
-   if (string_is_equal_fast(action, "add", 3))
-   {
-      RARCH_LOG("[udev]: Hotplug add: %s.\n", devnode);
-      udev_check_device(dev, devnode);
-   }
-   else if (string_is_equal_fast(action, "remove", 6))
-   {
-      RARCH_LOG("[udev]: Hotplug remove: %s.\n", devnode);
-      udev_joypad_remove_device(devnode);
-   }
-
-end:
-   udev_device_unref(dev);
-}
-
 static bool udev_set_rumble(unsigned i,
       enum retro_rumble_effect effect, uint16_t strength)
 {
@@ -508,17 +422,99 @@ static bool udev_set_rumble(unsigned i,
 
 static void udev_joypad_poll(void)
 {
-   unsigned i;
+   unsigned p;
 
    while (udev_joypad_mon && udev_hotplug_available(udev_joypad_mon))
    {
       struct udev_device *dev = udev_monitor_receive_device(udev_joypad_mon);
+
       if (dev)
-         udev_joypad_handle_hotplug(dev);
+      {
+         const char *val     = udev_device_get_property_value(dev, "ID_INPUT_JOYSTICK");
+         const char *action  = udev_device_get_action(dev);
+         const char *devnode = udev_device_get_devnode(dev);
+
+         if (val && string_is_equal_fast(val, "1", 1) && devnode)
+         {
+            if (string_is_equal_fast(action, "add", 3))
+            {
+               RARCH_LOG("[udev]: Hotplug add: %s.\n", devnode);
+               udev_check_device(dev, devnode);
+            }
+            else if (string_is_equal_fast(action, "remove", 6))
+            {
+               RARCH_LOG("[udev]: Hotplug remove: %s.\n", devnode);
+               udev_joypad_remove_device(devnode);
+            }
+         }
+
+         udev_device_unref(dev);
+      }
    }
 
-   for (i = 0; i < MAX_USERS; i++)
-      udev_poll_pad(&udev_pads[i], i);
+   for (p = 0; p < MAX_USERS; p++)
+   {
+      int i, len;
+      struct input_event events[32];
+      struct udev_joypad *pad = &udev_pads[p];
+
+      if (pad->fd < 0)
+         continue;
+
+      while ((len = read(pad->fd, events, sizeof(events))) > 0)
+      {
+         len /= sizeof(*events);
+         for (i = 0; i < len; i++)
+         {
+            uint16_t type = events[i].type;
+            uint16_t code = events[i].code;
+            int32_t value = events[i].value;
+
+            switch (type)
+            {
+               case EV_KEY:
+                  if (code > 0 && code < KEY_MAX)
+                  {
+                     if (value)
+                        BIT64_SET(pad->buttons, pad->button_bind[code]);
+                     else
+                        BIT64_CLEAR(pad->buttons, pad->button_bind[code]);
+                  }
+                  break;
+
+               case EV_ABS:
+                  if (code >= ABS_MISC)
+                     break;
+
+                  switch (code)
+                  {
+                     case ABS_HAT0X:
+                     case ABS_HAT0Y:
+                     case ABS_HAT1X:
+                     case ABS_HAT1Y:
+                     case ABS_HAT2X:
+                     case ABS_HAT2Y:
+                     case ABS_HAT3X:
+                     case ABS_HAT3Y:
+                        code                           -= ABS_HAT0X;
+                        pad->hats[code >> 1][code & 1]  = value;
+                        break;
+                     default:
+                        {
+                           unsigned axis   = pad->axes_bind[code];
+                           pad->axes[axis] = udev_compute_axis(
+                                 &pad->absinfo[axis], value);
+                           break;
+                        }
+                  }
+                  break;
+
+               default:
+                  break;
+            }
+         }
+      }
+   }
 }
 
 static bool udev_joypad_init(void *data)
