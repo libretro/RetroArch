@@ -85,16 +85,14 @@ static void linuxraw_poll_pad(struct linuxraw_joypad *pad)
 static bool linuxraw_joypad_init_pad(const char *path,
       struct linuxraw_joypad *pad)
 {
-   if (pad->fd >= 0)
-      return false;
-
    /* Device can have just been created, but not made accessible (yet).
       IN_ATTRIB will signal when permissions change. */
    if (access(path, R_OK) < 0)
       return false;
+   if (pad->fd >= 0)
+      return false;
 
-   pad->fd = open(path, O_RDONLY | O_NONBLOCK);
-
+   pad->fd     = open(path, O_RDONLY | O_NONBLOCK);
    *pad->ident = '\0';
 
    if (pad->fd >= 0)
@@ -107,13 +105,10 @@ static bool linuxraw_joypad_init_pad(const char *path,
       else
          RARCH_ERR("[Device]: Didn't find ident of %s.\n", path);
 
-      if (!epoll_add(&linuxraw_epoll, pad->fd, pad))
-         goto error;
-
-      return true;
+      if (epoll_add(&linuxraw_epoll, pad->fd, pad))
+         return true;
    }
 
-error:
    RARCH_ERR("[Device]: Failed to open pad %s (error: %s).\n",
          path, strerror(errno));
    return false;
