@@ -132,6 +132,7 @@ static bool gl_raster_font_upload_atlas(gl_raster_t *font)
                *dst++ = *src++;
             }
             break;
+#if 0
          case 4:
             for (j = 0; j < font->atlas->width; ++j)
             {
@@ -141,6 +142,7 @@ static bool gl_raster_font_upload_atlas(gl_raster_t *font)
                *dst++ = *src++;
             }
             break;
+#endif
          default:
             RARCH_ERR("Unsupported number of components: %u\n",
                   (unsigned)ncomponents);
@@ -186,7 +188,7 @@ static void *gl_raster_font_init_font(void *data,
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-   font->atlas = font->font_driver->get_atlas(font->font_data);
+   font->atlas      = font->font_driver->get_atlas(font->font_data);
    font->tex_width  = next_pow2(font->atlas->width);
    font->tex_height = next_pow2(font->atlas->height);
 
@@ -402,15 +404,6 @@ static void gl_raster_font_setup_viewport(unsigned width, unsigned height,
    video_shader_driver_use(shader_info);
 }
 
-static void gl_raster_font_restore_viewport(unsigned width, unsigned height,
-      gl_t *gl, bool full_screen)
-{
-   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-
-   glDisable(GL_BLEND);
-   video_driver_set_viewport(width, height, full_screen, true);
-}
-
 static void gl_raster_font_render_msg(
       video_frame_info_t *video_info,
       void *data, const char *msg,
@@ -497,7 +490,13 @@ static void gl_raster_font_render_msg(
    }
 
    if (!font->block && font->gl)
-      gl_raster_font_restore_viewport(width, height, font->gl, false);
+   {
+      /* restore viewport */
+      glBindTexture(GL_TEXTURE_2D, font->gl->texture[font->gl->tex_index]);
+
+      glDisable(GL_BLEND);
+      video_driver_set_viewport(width, height, false, true);
+   }
 }
 
 static const struct font_glyph *gl_raster_font_get_glyph(
@@ -525,7 +524,13 @@ static void gl_raster_font_flush_block(unsigned width, unsigned height,
    gl_raster_font_draw_vertices(font, (video_coords_t*)&block->carr.coords);
 
    if (font->gl)
-      gl_raster_font_restore_viewport(width, height, font->gl, block->fullscreen);
+   {
+      /* restore viewport */
+      glBindTexture(GL_TEXTURE_2D, font->gl->texture[font->gl->tex_index]);
+
+      glDisable(GL_BLEND);
+      video_driver_set_viewport(width, height, block->fullscreen, true);
+   }
 }
 
 static void gl_raster_font_bind_block(void *data, void *userdata)
