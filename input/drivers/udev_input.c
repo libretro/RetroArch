@@ -54,6 +54,7 @@
 #include "../common/linux_common.h"
 #include "../common/udev_common.h"
 #include "../common/epoll_common.h"
+#include "../configuration.h"
 
 #include "../../verbosity.h"
 
@@ -182,6 +183,33 @@ static void udev_input_kb_free(void)
 #ifdef UDEV_XKB_HANDLING
    free_xkb();
 #endif
+}
+
+static udev_input_mouse_t *udev_get_mouse(struct udev_input *udev, unsigned port)
+{
+   unsigned i;
+   unsigned mouse_index      = 0;
+   settings_t *settings      = config_get_ptr();
+   udev_input_mouse_t *mouse = NULL;
+
+   if (port >= MAX_USERS)
+      return NULL;
+
+   for (i = 0; i < udev->num_devices; ++i)
+   {
+      if (udev->devices[i]->type != UDEV_INPUT_MOUSE)
+         continue;
+
+      if (mouse_index == settings->uints.input_mouse_index[port])
+      {
+         mouse = &udev->devices[i]->state.mouse;
+         break;
+      }
+
+      ++mouse_index;
+   }
+
+   return mouse;
 }
 
 static void udev_handle_touchpad(void *data,
@@ -512,20 +540,7 @@ static void udev_input_poll(void *data)
 static int16_t udev_mouse_state(udev_input_t *udev,
       unsigned port, unsigned id, bool screen)
 {
-   unsigned i, j;
-   udev_input_mouse_t *mouse = NULL;
-
-   for (i = j = 0; i < udev->num_devices; ++i)
-   {
-      if (udev->devices[i]->type != UDEV_INPUT_MOUSE)
-         continue;
-      if (j == port)
-      {
-         mouse = &udev->devices[i]->state.mouse;
-         break;
-      }
-      ++j;
-   }
+   udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
 
    if (!mouse)
       return 0;
@@ -558,20 +573,7 @@ static int16_t udev_mouse_state(udev_input_t *udev,
 static int16_t udev_lightgun_state(udev_input_t *udev,
       unsigned port, unsigned id)
 {
-   unsigned i, j;
-   udev_input_mouse_t *mouse = NULL;
-
-   for (i = j = 0; i < udev->num_devices; ++i)
-   {
-      if (udev->devices[i]->type != UDEV_INPUT_MOUSE)
-         continue;
-      if (j == port)
-      {
-         mouse = &udev->devices[i]->state.mouse;
-         break;
-      }
-      ++j;
-   }
+   udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
 
    if (!mouse)
       return 0;
@@ -623,13 +625,12 @@ static int16_t udev_pointer_state(udev_input_t *udev,
       unsigned port, unsigned id, bool screen)
 {
    struct video_viewport vp;
-   unsigned i, j;
    bool inside                 = false;
    int16_t res_x               = 0;
    int16_t res_y               = 0;
    int16_t res_screen_x        = 0;
    int16_t res_screen_y        = 0;
-   udev_input_mouse_t *mouse   = NULL;
+   udev_input_mouse_t *mouse   = udev_get_mouse(udev, port);
 
    vp.x                        = 0;
    vp.y                        = 0;
@@ -637,18 +638,6 @@ static int16_t udev_pointer_state(udev_input_t *udev,
    vp.height                   = 0;
    vp.full_width               = 0;
    vp.full_height              = 0;
-
-   for (i = j = 0; i < udev->num_devices; ++i)
-   {
-      if (udev->devices[i]->type != UDEV_INPUT_MOUSE)
-         continue;
-      if (j == port)
-      {
-         mouse = &udev->devices[i]->state.mouse;
-         break;
-      }
-      ++j;
-   }
 
    if (!mouse)
       return 0;
