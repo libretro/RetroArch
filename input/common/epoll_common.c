@@ -43,11 +43,6 @@ void epoll_free(int *epoll_fd)
    *epoll_fd = -1;
 }
 
-int epoll_waiting(int *epoll_fd, void *events, int maxevents, int timeout)
-{
-   return epoll_wait(*epoll_fd, (struct epoll_event*)events, maxevents, timeout);
-}
-
 bool epoll_add(int *epoll_fd, int fd, void *device)
 {
    struct epoll_event event;
