@@ -546,13 +546,13 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    runloop_get_status(&is_paused, &is_idle, &is_slowmotion,
          &is_perfcnt_enable);
 
-   if (is_paused || audio_driver_mute_enable)
+   if (is_paused)
       return true;
    if (!audio_driver_active || !audio_driver_input_data)
       return false;
 
    convert_s16_to_float(audio_driver_input_data, data, samples,
-         audio_driver_volume_gain);
+         audio_driver_mute_enable ? 0.0f : audio_driver_volume_gain);
 
    src_data.data_in               = audio_driver_input_data;
    src_data.input_frames          = samples >> 1;
@@ -1140,21 +1140,7 @@ bool audio_driver_has_callback(void)
 
 bool audio_driver_toggle_mute(void)
 {
-   bool new_mute_state  = !audio_driver_mute_enable;
-   if (!audio_driver_context_audio_data)
-      return false;
-   if (!audio_driver_active)
-      return false;
-
-   audio_driver_mute_enable = new_mute_state;
-
-   if (new_mute_state)
-      command_event(CMD_EVENT_AUDIO_STOP, NULL);
-   else if (!command_event(CMD_EVENT_AUDIO_START, NULL))
-   {
-      audio_driver_active = false;
-      return false;
-   }
+   audio_driver_mute_enable  = !audio_driver_mute_enable;
    return true;
 }
 
