@@ -157,6 +157,7 @@ static bool audio_mixer_active                           = false;
 static float audio_driver_rate_control_delta             = 0.0f;
 static float audio_driver_input                          = 0.0f;
 static float audio_driver_volume_gain                    = 0.0f;
+static float audio_driver_mixer_volume_gain              = 0.0f;
 
 static float *audio_driver_input_data                    = NULL;
 static float *audio_driver_output_samples_buf            = NULL;
@@ -621,7 +622,8 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    audio_driver_resampler->process(audio_driver_resampler_data, &src_data);
 
    if (audio_mixer_active)
-      audio_mixer_mix(audio_driver_output_samples_buf, src_data.output_frames, 0.0f);
+      audio_mixer_mix(audio_driver_output_samples_buf, src_data.output_frames,
+            audio_driver_mixer_volume_gain);
 
    output_data        = audio_driver_output_samples_buf;
    output_frames      = (unsigned)src_data.output_frames;
@@ -1241,6 +1243,9 @@ void audio_set_float(enum audio_action action, float val)
    {
       case AUDIO_ACTION_VOLUME_GAIN:
          audio_driver_volume_gain = db_to_gain(val);
+         break;
+      case AUDIO_ACTION_MIXER_VOLUME_GAIN:
+         audio_driver_mixer_volume_gain = db_to_gain(val);
          break;
       case AUDIO_ACTION_RATE_CONTROL_DELTA:
          audio_driver_rate_control_delta = val;
