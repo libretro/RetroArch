@@ -50,7 +50,7 @@ int epoll_waiting(int *epoll_fd, void *events, int maxevents, int timeout)
 
 bool epoll_add(int *epoll_fd, int fd, void *device)
 {
-   struct epoll_event event    = {0};
+   struct epoll_event event;
 
    event.events             = EPOLLIN;
    event.data.ptr           = device;
