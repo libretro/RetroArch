@@ -1240,7 +1240,7 @@ void audio_set_float(enum audio_action action, float val)
    switch (action)
    {
       case AUDIO_ACTION_VOLUME_GAIN:
-         audio_driver_volume_gain = val;
+         audio_driver_volume_gain = db_to_gain(val);
          break;
       case AUDIO_ACTION_RATE_CONTROL_DELTA:
          audio_driver_rate_control_delta = val;
