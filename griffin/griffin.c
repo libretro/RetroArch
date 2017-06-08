@@ -495,7 +495,6 @@ INPUT
 #endif
 
 #ifdef HAVE_UDEV
-#include "../input/common/udev_common.c"
 #include "../input/drivers/udev_input.c"
 #include "../input/drivers_joypad/udev_joypad.c"
 #endif

@@ -26,6 +26,7 @@
 #include <sys/stat.h>
 
 #include <sys/epoll.h>
+#include <sys/poll.h>
 
 #include <libudev.h>
 #include <linux/types.h>
@@ -52,7 +53,6 @@
 
 #include "../../gfx/video_driver.h"
 #include "../common/linux_common.h"
-#include "../common/udev_common.h"
 #include "../common/epoll_common.h"
 
 #include "../../verbosity.h"
@@ -455,8 +455,10 @@ static void udev_input_get_pointer_position(int *x, int *y)
 static void udev_input_poll(void *data)
 {
    int i, ret;
+   struct pollfd fds;
    struct epoll_event events[32];
    udev_input_mouse_t *mouse = NULL;
+   bool hotplug_avail        = false;
    int x                     = 0;
    int y                     = 0;
    udev_input_t *udev        = (udev_input_t*)data;
@@ -482,7 +484,12 @@ static void udev_input_poll(void *data)
       }
    }
 
-   while (udev->monitor && udev_hotplug_available(udev->monitor))
+   fds.fd        = udev_monitor_get_fd(udev->monitor);
+   fds.events    = POLLIN;
+   fds.revents   = 0;
+   hotplug_avail = (poll(&fds, 1, 0) == 1) && (fds.revents & POLLIN);
+
+   while (udev->monitor && hotplug_avail)
       udev_input_handle_hotplug(udev);
 
    ret = epoll_waiting(&udev->epfd, events, ARRAY_SIZE(events), 0);
