@@ -934,6 +934,33 @@ static void command_event_set_volume(float gain)
 }
 
 /**
+ * event_set_mixer_volume:
+ * @gain      : amount of gain to be applied to current volume level.
+ *
+ * Adjusts the current audio volume level.
+ *
+ **/
+static void command_event_set_mixer_volume(float gain)
+{
+   char msg[128];
+   settings_t *settings      = config_get_ptr();
+   float new_volume          = settings->floats.audio_mixer_volume + gain;
+
+   new_volume                = MAX(new_volume, -80.0f);
+   new_volume                = MIN(new_volume, 12.0f);
+
+   configuration_set_float(settings, settings->floats.audio_mixer_volume, new_volume);
+
+   snprintf(msg, sizeof(msg), "%s: %.1f dB",
+         msg_hash_to_str(MSG_AUDIO_VOLUME),
+         new_volume);
+   runloop_msg_queue_push(msg, 1, 180, true);
+   RARCH_LOG("%s\n", msg);
+
+   audio_set_float(AUDIO_ACTION_VOLUME_GAIN, new_volume);
+}
+
+/**
  * command_event_init_controllers:
  *
  * Initialize libretro controllers.
@@ -2511,6 +2538,12 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_VOLUME_DOWN:
          command_event_set_volume(-0.5f);
+         break;
+      case CMD_EVENT_MIXER_VOLUME_UP:
+         command_event_set_mixer_volume(0.5f);
+         break;
+      case CMD_EVENT_MIXER_VOLUME_DOWN:
+         command_event_set_mixer_volume(-0.5f);
          break;
       case CMD_EVENT_SET_FRAME_LIMIT:
          rarch_ctl(RARCH_CTL_SET_FRAME_LIMIT, NULL);

@@ -3017,3 +3017,15 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION,
       "Add to mixer")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
       "Filter by current core")
+MSG_HASH(
+      MSG_AUDIO_MIXER_VOLUME,
+      "Global audio mixer volume"
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
+      "Global audio mixer volume (in dB). 0 dB is normal volume, and no gain is applied."
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
+      "Audio Mixer Volume Level (dB)"
+      )

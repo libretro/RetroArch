@@ -105,6 +105,7 @@ default_sublabel_macro(action_bind_sublabel_input_poll_type_behavior,      MENU_
 default_sublabel_macro(action_bind_sublabel_input_all_users_control_menu,  MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU)
 default_sublabel_macro(action_bind_sublabel_input_bind_timeout,            MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT)
 default_sublabel_macro(action_bind_sublabel_audio_volume,                  MENU_ENUM_SUBLABEL_AUDIO_VOLUME)
+default_sublabel_macro(action_bind_sublabel_audio_mixer_volume,            MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME)
 default_sublabel_macro(action_bind_sublabel_audio_sync,                    MENU_ENUM_SUBLABEL_AUDIO_SYNC)
 default_sublabel_macro(action_bind_sublabel_axis_threshold,                MENU_ENUM_SUBLABEL_INPUT_AXIS_THRESHOLD)
 default_sublabel_macro(action_bind_sublabel_input_turbo_period,            MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD)
@@ -1036,6 +1037,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_AUDIO_VOLUME:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_volume);
+            break;
+         case MENU_ENUM_LABEL_AUDIO_MIXER_VOLUME:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_mixer_volume);
             break;
          case MENU_ENUM_LABEL_INPUT_ALL_USERS_CONTROL_MENU:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_all_users_control_menu);

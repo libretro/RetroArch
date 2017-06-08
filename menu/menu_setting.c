@@ -1688,6 +1688,9 @@ void general_write_handler(void *data)
       case MENU_ENUM_LABEL_AUDIO_VOLUME:
          audio_set_float(AUDIO_ACTION_VOLUME_GAIN, *setting->value.target.fraction);
          break;
+      case MENU_ENUM_LABEL_AUDIO_MIXER_VOLUME:
+         audio_set_float(AUDIO_ACTION_MIXER_VOLUME_GAIN, *setting->value.target.fraction);
+         break;
       case MENU_ENUM_LABEL_AUDIO_LATENCY:
       case MENU_ENUM_LABEL_AUDIO_DEVICE:
       case MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE:
@@ -3808,6 +3811,20 @@ static bool setting_append_list(
                MENU_ENUM_LABEL_AUDIO_VOLUME,
                MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
                audio_volume,
+               "%.1f",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         menu_settings_list_current_add_range(list, list_info, -80, 12, 1.0, true, true);
+
+         CONFIG_FLOAT(
+               list, list_info,
+               &settings->floats.audio_mixer_volume,
+               MENU_ENUM_LABEL_AUDIO_MIXER_VOLUME,
+               MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
+               audio_mixer_volume,
                "%.1f",
                &group_info,
                &subgroup_info,

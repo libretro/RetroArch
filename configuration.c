@@ -1270,6 +1270,7 @@ static struct config_float_setting *populate_settings_float(settings_t *settings
    SETTING_FLOAT("audio_rate_control_delta", audio_get_float_ptr(AUDIO_ACTION_RATE_CONTROL_DELTA), true, rate_control_delta, false);
    SETTING_FLOAT("audio_max_timing_skew",    &settings->floats.audio_max_timing_skew, true, max_timing_skew, false);
    SETTING_FLOAT("audio_volume",             &settings->floats.audio_volume, true, audio_volume, false);
+   SETTING_FLOAT("audio_mixer_volume",       &settings->floats.audio_mixer_volume, true, audio_mixer_volume, false);
 #ifdef HAVE_OVERLAY
    SETTING_FLOAT("input_overlay_opacity",    &settings->floats.input_overlay_opacity, true, 0.7f, false);
    SETTING_FLOAT("input_overlay_scale",      &settings->floats.input_overlay_scale, true, 1.0f, false);
@@ -1532,6 +1533,7 @@ static void config_set_defaults(void)
    settings->uints.audio_latency               = g_defaults.settings.out_latency;
 
    audio_set_float(AUDIO_ACTION_VOLUME_GAIN, settings->floats.audio_volume);
+   audio_set_float(AUDIO_ACTION_MIXER_VOLUME_GAIN, settings->floats.audio_mixer_volume);
 
    settings->rewind_buffer_size                = rewind_buffer_size;
 
@@ -2441,6 +2443,7 @@ static bool config_load_file(const char *path, bool set_defaults,
    settings->uints.video_swap_interval = MIN(settings->uints.video_swap_interval, 4);
 
    audio_set_float(AUDIO_ACTION_VOLUME_GAIN, settings->floats.audio_volume);
+   audio_set_float(AUDIO_ACTION_MIXER_VOLUME_GAIN, settings->floats.audio_mixer_volume);
 
    if (string_is_empty(settings->paths.path_content_history))
    {

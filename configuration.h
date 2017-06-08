@@ -231,6 +231,7 @@ typedef struct settings
 
       float audio_max_timing_skew;
       float audio_volume; /* dB scale. */
+      float audio_mixer_volume; /* dB scale. */
 
       float input_overlay_opacity;
       float input_overlay_scale;

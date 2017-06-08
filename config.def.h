@@ -414,6 +414,9 @@ static const float max_timing_skew = 0.05;
 /* Default audio volume in dB. (0.0 dB == unity gain). */
 static const float audio_volume = 0.0;
 
+/* Default audio volume of the audio mixer in dB. (0.0 dB == unity gain). */
+static const float audio_mixer_volume = 0.0;
+
 #ifdef HAVE_WASAPI
 /* WASAPI defaults */
 static const bool wasapi_exclusive_mode  = true;
