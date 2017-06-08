@@ -148,6 +148,7 @@ static size_t audio_driver_buffer_size                   = 0;
 static size_t audio_driver_data_ptr                      = 0;
 
 static bool audio_driver_control                         = false; 
+static bool audio_driver_mixer_mute_enable               = false;
 static bool audio_driver_mute_enable                     = false;
 static bool audio_driver_use_float                       = false;
 static bool audio_driver_active                          = false;
@@ -534,6 +535,8 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    bool is_slowmotion                                   = false;
    const void *output_data                              = NULL;
    unsigned output_frames                               = 0;
+   float audio_volume_gain                              = !audio_driver_mute_enable ? 
+      audio_driver_volume_gain : 0.0f;
 
    src_data.data_in                                     = NULL;
    src_data.data_out                                    = NULL;
@@ -553,7 +556,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
       return false;
 
    convert_s16_to_float(audio_driver_input_data, data, samples,
-         audio_driver_mute_enable ? 0.0f : audio_driver_volume_gain);
+         audio_volume_gain);
 
    src_data.data_in               = audio_driver_input_data;
    src_data.input_frames          = samples >> 1;
@@ -622,8 +625,14 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    audio_driver_resampler->process(audio_driver_resampler_data, &src_data);
 
    if (audio_mixer_active)
-      audio_mixer_mix(audio_driver_output_samples_buf, src_data.output_frames,
-            audio_driver_mixer_volume_gain);
+   {
+      bool override     = audio_driver_mixer_mute_enable ? true : 
+         (audio_driver_mixer_volume_gain != 0.0f) ? true : false;
+      float mixer_gain  = !audio_driver_mixer_mute_enable ? 
+         audio_driver_mixer_volume_gain : 0.0f;
+      audio_mixer_mix(audio_driver_output_samples_buf,
+            src_data.output_frames, mixer_gain, override);
+   }
 
    output_data        = audio_driver_output_samples_buf;
    output_frames      = (unsigned)src_data.output_frames;
@@ -1141,6 +1150,12 @@ bool audio_driver_toggle_mute(void)
    return true;
 }
 
+bool audio_driver_mixer_toggle_mute(void)
+{
+   audio_driver_mixer_mute_enable  = !audio_driver_mixer_mute_enable;
+   return true;
+}
+
 static INLINE bool audio_driver_alive(void)
 {
    if (     current_audio 
@@ -1274,6 +1289,8 @@ bool *audio_get_bool_ptr(enum audio_action action)
 {
    switch (action)
    {
+      case AUDIO_ACTION_MIXER_MUTE_ENABLE:
+         return &audio_driver_mixer_mute_enable;
       case AUDIO_ACTION_MUTE_ENABLE:
          return &audio_driver_mute_enable;
       case AUDIO_ACTION_NONE:

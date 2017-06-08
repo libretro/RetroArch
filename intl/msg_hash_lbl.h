@@ -1235,3 +1235,5 @@ MSG_HASH(MENU_ENUM_LABEL_FILTER_BY_CURRENT_CORE,
       "filter_by_current_Core")
 MSG_HASH(MENU_ENUM_LABEL_AUDIO_MIXER_VOLUME,
       "audio_mixer_volume")
+MSG_HASH(MENU_ENUM_LABEL_AUDIO_MIXER_MUTE,
+      "audio_mixer_mute_enable")
