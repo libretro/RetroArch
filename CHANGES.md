@@ -1,3 +1,13 @@
+# 1.6.1 (future)
+- AUDIO: Mute now no longer disables/enables audio but instead properly mutes the audio volume.
+  Mute is also independent from the audio mixer volume.
+- AUDIO: Audio mixer's volume can now be independently increased/decreased, and muted.
+- SDL2: Fix 'SDL2 driver does not see the hat on wired Xbox 360 controller"
+- SCANNING: Fix PS1 game scanning
+- VITA: Add support for external USB if mounted
+- LOCALIZATION: Update Italian translation
+- LOCALIZATION: Update Russian translation
+
 # 1.6.0
 - AUTOSAVE/SRAM - Fix bug #3829 / #4820 (https://github.com/libretro/RetroArch/issues/3829)
 - ENDIANNESS: Fixed database scanning. Should fix scanning on PS3/WiiU/Wii, etc.
