@@ -930,7 +930,7 @@ static void command_event_set_volume(float gain)
    runloop_msg_queue_push(msg, 1, 180, true);
    RARCH_LOG("%s\n", msg);
 
-   audio_driver_set_volume_gain(db_to_gain(new_volume));
+   audio_set_float(AUDIO_ACTION_VOLUME_GAIN, new_volume);
 }
 
 /**

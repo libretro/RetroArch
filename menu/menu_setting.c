@@ -1686,7 +1686,7 @@ void general_write_handler(void *data)
          }
          break;
       case MENU_ENUM_LABEL_AUDIO_VOLUME:
-         audio_driver_set_volume_gain(db_to_gain(*setting->value.target.fraction));
+         audio_set_float(AUDIO_ACTION_VOLUME_GAIN, db_to_gain(*setting->value.target.fraction));
          break;
       case MENU_ENUM_LABEL_AUDIO_LATENCY:
       case MENU_ENUM_LABEL_AUDIO_DEVICE:

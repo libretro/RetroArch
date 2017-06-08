@@ -1531,7 +1531,7 @@ static void config_set_defaults(void)
 
    settings->uints.audio_latency               = g_defaults.settings.out_latency;
 
-   audio_driver_set_volume_gain(db_to_gain(settings->floats.audio_volume));
+   audio_set_float(AUDIO_ACTION_VOLUME_GAIN, settings->floats.audio_volume);
 
    settings->rewind_buffer_size                = rewind_buffer_size;
 
@@ -2440,7 +2440,7 @@ static bool config_load_file(const char *path, bool set_defaults,
    settings->uints.video_swap_interval = MAX(settings->uints.video_swap_interval, 1);
    settings->uints.video_swap_interval = MIN(settings->uints.video_swap_interval, 4);
 
-   audio_driver_set_volume_gain(db_to_gain(settings->floats.audio_volume));
+   audio_set_float(AUDIO_ACTION_VOLUME_GAIN, settings->floats.audio_volume);
 
    if (string_is_empty(settings->paths.path_content_history))
    {

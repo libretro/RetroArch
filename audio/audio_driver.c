@@ -727,11 +727,6 @@ size_t audio_driver_sample_batch_rewind(const int16_t *data, size_t frames)
    return frames;
 }
 
-void audio_driver_set_volume_gain(float gain)
-{
-   audio_driver_volume_gain = gain;
-}
-
 void audio_driver_dsp_filter_free(void)
 {
    if (audio_driver_dsp)
@@ -1244,6 +1239,9 @@ void audio_set_float(enum audio_action action, float val)
 {
    switch (action)
    {
+      case AUDIO_ACTION_VOLUME_GAIN:
+         audio_driver_volume_gain = val;
+         break;
       case AUDIO_ACTION_RATE_CONTROL_DELTA:
          audio_driver_rate_control_delta = val;
          break;
