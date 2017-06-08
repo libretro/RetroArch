@@ -267,6 +267,7 @@ typedef struct settings
 
       unsigned input_joypad_map[MAX_USERS];
       unsigned input_device[MAX_USERS];
+      unsigned input_mouse_index[MAX_USERS];
 
       unsigned input_turbo_period;
       unsigned input_turbo_duty_cycle;
