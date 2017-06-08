@@ -621,7 +621,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    audio_driver_resampler->process(audio_driver_resampler_data, &src_data);
 
    if (audio_mixer_active)
-      audio_mixer_mix(audio_driver_output_samples_buf, src_data.output_frames);
+      audio_mixer_mix(audio_driver_output_samples_buf, src_data.output_frames, 0.0f);
 
    output_data        = audio_driver_output_samples_buf;
    output_frames      = (unsigned)src_data.output_frames;
