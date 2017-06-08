@@ -563,7 +563,7 @@ bool netplay_handshake_sync(netplay_t *netplay,
    /* Now send the device info */
    for (i = 0; i < MAX_USERS; i++)
    {
-      device = htonl(input_config_get_device(i));
+      device = htonl(input_config_get_device((unsigned)i));
       if (!netplay_send(&connection->send_packet_buffer, connection->fd,
                &device, sizeof(device)))
          return false;

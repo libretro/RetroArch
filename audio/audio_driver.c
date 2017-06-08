@@ -986,10 +986,10 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
    switch (params->type)
    {
       case AUDIO_MIXER_TYPE_WAV:
-         handle = audio_mixer_load_wav(buf, params->bufsize);
+         handle = audio_mixer_load_wav(buf, (int32_t)params->bufsize);
          break;
       case AUDIO_MIXER_TYPE_OGG:
-         handle = audio_mixer_load_ogg(buf, params->bufsize);
+         handle = audio_mixer_load_ogg(buf, (int32_t)params->bufsize);
          break;
       case AUDIO_MIXER_TYPE_NONE:
          free(buf);

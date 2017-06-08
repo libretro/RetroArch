@@ -264,7 +264,7 @@ static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
    if (existing_version)
    {
       const char* version_extra = "";
-      unsigned version_no = strtoul(existing_version + 8, (char**)&program, 10);
+      unsigned version_no = (unsigned)strtoul(existing_version + 8, (char**)&program, 10);
 #ifdef HAVE_OPENGLES
       if (version_no < 130)
          version_no = 100;
