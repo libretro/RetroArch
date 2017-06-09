@@ -951,15 +951,19 @@ static void audio_mixer_play_stop_cb(audio_mixer_sound_t *sound, unsigned reason
       case AUDIO_MIXER_SOUND_FINISHED:
          audio_mixer_destroy(sound);
 
-         if (audio_mixer_streams[idx].buf != NULL)
-            free(audio_mixer_streams[idx].buf);
-         audio_mixer_streams[idx].state   = AUDIO_STREAM_STATE_NONE;
-         audio_mixer_streams[idx].volume  = 0.0f;
-         audio_mixer_streams[idx].buf     = NULL;
-         audio_mixer_streams[idx].stop_cb = NULL;
-         audio_mixer_streams[idx].handle  = NULL;
-         audio_mixer_streams[idx].voice   = NULL;
-         audio_mixer_current_max_idx--;
+         if (idx >= 0)
+         {
+            unsigned i = (unsigned)idx;
+            if (audio_mixer_streams[i].buf != NULL)
+               free(audio_mixer_streams[i].buf);
+            audio_mixer_streams[i].state   = AUDIO_STREAM_STATE_NONE;
+            audio_mixer_streams[i].volume  = 0.0f;
+            audio_mixer_streams[i].buf     = NULL;
+            audio_mixer_streams[i].stop_cb = NULL;
+            audio_mixer_streams[i].handle  = NULL;
+            audio_mixer_streams[i].voice   = NULL;
+            audio_mixer_current_max_idx--;
+         }
          break;
       case AUDIO_MIXER_SOUND_STOPPED:
          break;
