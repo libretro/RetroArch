@@ -285,9 +285,6 @@ static int16_t cocoa_input_state(void *data,
    int16_t ret               = 0;
    cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
 
-   if (!apple || !apple->joypad)
-      return 0;
-
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
