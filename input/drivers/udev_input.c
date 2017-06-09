@@ -90,6 +90,13 @@ typedef struct
    bool wu, wd, whu, whd;
 } udev_input_mouse_t;
 
+typedef struct
+{
+   struct input_absinfo info_x;
+   struct input_absinfo info_y;
+   udev_input_mouse_t mouse; /* touch-pad will be presented to RA/core as mouse */
+} udev_input_touchpad_t;
+
 struct udev_input_device
 {
    int fd;
@@ -102,15 +109,7 @@ struct udev_input_device
    union
    {
       udev_input_mouse_t mouse;
-
-      struct
-      {
-         float x, y;
-         float mod_x, mod_y;
-         struct input_absinfo info_x;
-         struct input_absinfo info_y;
-         bool touch;
-      } touchpad;
+      udev_input_touchpad_t touchpad;
    } state;
 };
 
@@ -197,12 +196,15 @@ static udev_input_mouse_t *udev_get_mouse(struct udev_input *udev, unsigned port
 
    for (i = 0; i < udev->num_devices; ++i)
    {
-      if (udev->devices[i]->type != UDEV_INPUT_MOUSE)
+      if (udev->devices[i]->type == UDEV_INPUT_KEYBOARD)
          continue;
 
       if (mouse_index == settings->uints.input_mouse_index[port])
       {
-         mouse = &udev->devices[i]->state.mouse;
+         if (udev->devices[i]->type == UDEV_INPUT_MOUSE)
+            mouse = &udev->devices[i]->state.mouse;
+         else
+            mouse = &udev->devices[i]->state.touchpad.mouse;
          break;
       }
 
@@ -215,75 +217,43 @@ static udev_input_mouse_t *udev_get_mouse(struct udev_input *udev, unsigned port
 static void udev_handle_touchpad(void *data,
       const struct input_event *event, udev_input_device_t *dev)
 {
-   unsigned i;
-   udev_input_t *udev        = (udev_input_t*)data;
-   udev_input_mouse_t *mouse = NULL;
-
-   for (i = 0; i < udev->num_devices; ++i)
-   {
-      if (udev->devices[i]->type == UDEV_INPUT_MOUSE)
-      {
-         mouse = &udev->devices[i]->state.mouse;
-         break;
-      }
-   }
+   int16_t pos;
+   unsigned width                  = 0;
+   unsigned height                 = 0;
+   udev_input_touchpad_t *touchpad = &dev->state.touchpad;
+   udev_input_mouse_t *mouse       = &dev->state.touchpad.mouse;
 
    switch (event->type)
    {
       case EV_ABS:
+         video_driver_get_size(&width, &height);
          switch (event->code)
          {
             case ABS_X:
-            {
-               int x        = event->value - dev->state.touchpad.info_x.minimum;
-               int range    = dev->state.touchpad.info_x.maximum - 
-                  dev->state.touchpad.info_x.minimum;
-               float x_norm = (float)x / range;
-               float rel_x  = x_norm - dev->state.touchpad.x;
-
-               if (dev->state.touchpad.touch && mouse)
-                  mouse->dlt_x += (int16_t)roundf(dev->state.touchpad.mod_x * rel_x);
-
-               dev->state.touchpad.x = x_norm;
-               /* Some factor, not sure what's good to do here ... */
-               dev->state.touchpad.mod_x = 500.0f;
+               pos = (float)(event->value - touchpad->info_x.minimum) /
+                     (touchpad->info_x.maximum - touchpad->info_x.minimum) * width;
+               mouse->dlt_x += pos - mouse->x;
+               mouse->x = pos;
                break;
-            }
-
             case ABS_Y:
-            {
-               int y        = event->value - dev->state.touchpad.info_y.minimum;
-               int range    = dev->state.touchpad.info_y.maximum - 
-                  dev->state.touchpad.info_y.minimum;
-               float y_norm = (float)y / range;
-               float rel_y  = y_norm - dev->state.touchpad.y;
-
-               if (dev->state.touchpad.touch && mouse)
-                  mouse->dlt_y += (int16_t)roundf(dev->state.touchpad.mod_y * rel_y);
-
-               dev->state.touchpad.y = y_norm;
-
-               /* Some factor, not sure what's good to do here ... */
-               dev->state.touchpad.mod_y = 500.0f;
-               break;
-            }
-
-            default:
-               break;
+               pos = (float)(event->value - touchpad->info_y.minimum) /
+                     (touchpad->info_y.maximum - touchpad->info_y.minimum) * height;
+               mouse->dlt_y += pos - mouse->y;
+               mouse->y = pos;
          }
          break;
 
       case EV_KEY:
          switch (event->code)
          {
-            case BTN_TOUCH:
-               dev->state.touchpad.touch = event->value;
-               dev->state.touchpad.mod_x = 0.0f; /* First ABS event is not a relative one. */
-               dev->state.touchpad.mod_y = 0.0f;
+            case BTN_LEFT:
+               mouse->l = event->value;
                break;
-
-            default:
+            case BTN_MIDDLE:
+               mouse->m = event->value;
                break;
+            case BTN_RIGHT:
+               mouse->r = event->value;
          }
    }
 }
@@ -497,17 +467,20 @@ static void udev_input_poll(void *data)
    for (i = 0; i < udev->num_devices; ++i)
    {
       if (udev->devices[i]->type == UDEV_INPUT_MOUSE)
-      {
-         mouse        = &udev->devices[i]->state.mouse;
-         mouse->x     = x;
-         mouse->y     = y;
-         mouse->dlt_x = 0;
-         mouse->dlt_y = 0;
-         mouse->wu    = false;
-         mouse->wd    = false;
-         mouse->whu   = false;
-         mouse->whd   = false;
-      }
+         mouse = &udev->devices[i]->state.mouse;
+      else if (udev->devices[i]->type == UDEV_INPUT_TOUCHPAD)
+         mouse = &udev->devices[i]->state.touchpad.mouse;
+      else
+         continue;
+
+      mouse->x     = x;
+      mouse->y     = y;
+      mouse->dlt_x = 0;
+      mouse->dlt_y = 0;
+      mouse->wu    = false;
+      mouse->wd    = false;
+      mouse->whu   = false;
+      mouse->whd   = false;
    }
 
    while (udev->monitor && udev_hotplug_available(udev->monitor))
