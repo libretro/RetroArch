@@ -434,7 +434,7 @@ static void retroarch_print_help(const char *arg0)
 
    puts("  -h, --help            Show this help message.");
    puts("  -v, --verbose         Verbose logging.");
-   puts("      --log-file=FILE   Log messages to FILE.");
+   puts("      --log-file FILE   Log messages to FILE.");
    puts("      --version         Show version.");
    puts("      --features        Prints available features compiled into "
          "program.");
