@@ -660,10 +660,14 @@ static int16_t udev_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (BIT_GET(udev_key_state, rarch_keysym_lut[binds[port][id].key]))
-            return true;
-         return input_joypad_pressed(udev->joypad,
-               joypad_info, port, binds[port], id);
+         {
+            int16_t ret = BIT_GET(udev_key_state,
+                  rarch_keysym_lut[binds[port][id].key]);
+            if (!ret)
+               ret = input_joypad_pressed(udev->joypad,
+                     joypad_info, port, binds[port], id);
+            return ret;
+         }
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
          {
