@@ -4130,13 +4130,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_MUSIC_LIST:
          {
             char combined_path[PATH_MAX_LENGTH];
+            const char *ext = NULL;
 
             combined_path[0] = '\0';
 
             fill_pathname_join(combined_path, menu->scratch2_buf,
                   menu->scratch_buf, sizeof(combined_path));
 
-            const char *ext = path_get_extension(combined_path);
+            ext = path_get_extension(combined_path);
 
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 

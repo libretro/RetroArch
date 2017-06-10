@@ -903,6 +903,7 @@ static void gfx_ctx_x_input_driver(void *data,
       const char *joypad_name,
       const input_driver_t **input, void **input_data)
 {
+   void *x_input         = NULL;
 #ifdef HAVE_UDEV
    settings_t *settings = config_get_ptr();
 
@@ -917,9 +918,9 @@ static void gfx_ctx_x_input_driver(void *data,
    }
 #endif
 
-   void *xinput = input_x.init(joypad_name);
-   *input       = xinput ? &input_x : NULL;
-   *input_data  = xinput;
+   x_input      = input_x.init(joypad_name);
+   *input       = x_input ? &input_x : NULL;
+   *input_data  = x_input;
 }
 
 static bool gfx_ctx_x_suppress_screensaver(void *data, bool enable)

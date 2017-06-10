@@ -4330,13 +4330,14 @@ static int action_ok_netplay_enable_client(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
 #ifdef HAVE_NETWORKING
+   menu_input_ctx_line_t line;
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
       command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
    /* If no host was specified in the config, ask for one */
-   menu_input_ctx_line_t line;
    memset(&line, 0, sizeof(line));
+
    line.label = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS);
    line.label_setting = "no_setting";
    line.cb = action_ok_netplay_enable_client_hostname_cb;
