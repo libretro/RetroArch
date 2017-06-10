@@ -215,7 +215,7 @@ static int16_t input_wl_state(void *data,
    {
       case RETRO_DEVICE_JOYPAD:
          if (id < RARCH_BIND_LIST_END)
-            return BIT_GET(wl->key_state, rarch_keysym_lut[binds[id]->key]);
+            return BIT_GET(wl->key_state, rarch_keysym_lut[binds[port][id].key]);
          return input_joypad_pressed(wl->joypad, joypad_info, port, binds[port], id);
       case RETRO_DEVICE_ANALOG:
          ret = input_wl_analog_pressed(wl, binds[port], idx, id);
