@@ -2339,8 +2339,6 @@ static enum runloop_state runloop_check_state(
           input_driver_toggle_button_combo(
              settings->uints.input_menu_toggle_gamepad_combo, last_input)))
       current_input |= (UINT64_C(1) << RARCH_MENU_TOGGLE);
-   if (menu_driver_binding_state)
-      current_input = 0;
 #endif
 
    if (input_driver_flushing_input)
@@ -2356,6 +2354,11 @@ static enum runloop_state runloop_check_state(
    }
 
    video_driver_get_status(&frame_count, &is_alive, &is_focused);
+
+#ifdef HAVE_MENU
+   if (menu_driver_binding_state)
+      current_input = 0;
+#endif
 
 #ifdef HAVE_OVERLAY
    /* Check next overlay */
