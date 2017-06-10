@@ -1256,15 +1256,25 @@ void audio_set_bool(enum audio_action action, bool val)
    }
 }
 
+/**
+ * db_to_gain:
+ * @db          : Decibels.
+ *
+ * Converts decibels to voltage gain.
+ *
+ * Returns: voltage gain value.
+ **/
+#define db_to_gain(db) (powf(10.0f, (db) / 20.0f))
+
 void audio_set_float(enum audio_action action, float val)
 {
    switch (action)
    {
       case AUDIO_ACTION_VOLUME_GAIN:
-         audio_driver_volume_gain = db_to_gain(val);
+         audio_driver_volume_gain        = db_to_gain(val);
          break;
       case AUDIO_ACTION_MIXER_VOLUME_GAIN:
-         audio_driver_mixer_volume_gain = db_to_gain(val);
+         audio_driver_mixer_volume_gain  = db_to_gain(val);
          break;
       case AUDIO_ACTION_RATE_CONTROL_DELTA:
          audio_driver_rate_control_delta = val;

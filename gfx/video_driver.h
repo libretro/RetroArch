@@ -40,6 +40,8 @@
 
 #include "../input/input_driver.h"
 
+#define RARCH_SCALE_BASE 256
+
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL) || defined(HAVE_SLANG)
 #ifndef HAVE_SHADER_MANAGER
 #define HAVE_SHADER_MANAGER

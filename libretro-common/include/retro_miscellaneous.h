@@ -24,7 +24,6 @@
 #define __RARCH_MISCELLANEOUS_H
 
 #include <stdint.h>
-#include <math.h>
 
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
 #include <sys/timer.h>
@@ -52,7 +51,6 @@
 #endif
 
 #include <limits.h>
-#include <math.h>
 
 #ifdef _MSC_VER
 #include <compat/msvc.h>
@@ -82,7 +80,6 @@
 #endif
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
-#define RARCH_SCALE_BASE 256
 
 #ifdef DJGPP
 #define timespec timeval
@@ -170,19 +167,6 @@ static INLINE uint32_t prev_pow2(uint32_t v)
    v |= v >> 8;
    v |= v >> 16;
    return v - (v >> 1);
-}
-
-/**
- * db_to_gain:
- * @db          : Decibels.
- *
- * Converts decibels to voltage gain.
- *
- * Returns: voltage gain value.
- **/
-static INLINE float db_to_gain(float db)
-{
-   return powf(10.0f, db / 20.0f);
 }
 
 static INLINE uint32_t read_le(const uint8_t *data, unsigned size)
