@@ -1585,6 +1585,7 @@ static void config_set_defaults(void)
       settings->uints.input_analog_dpad_mode[i] = ANALOG_DPAD_NONE;
       if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &i))
          input_config_set_device(i, RETRO_DEVICE_JOYPAD);
+      settings->uints.input_mouse_index[i] = 0;
    }
 
    video_driver_reset_custom_viewport();
@@ -2341,6 +2342,9 @@ static bool config_load_file(const char *path, bool set_defaults,
 
       snprintf(buf, sizeof(buf), "input_player%u_analog_dpad_mode", i + 1);
       CONFIG_GET_INT_BASE(conf, settings, uints.input_analog_dpad_mode[i], buf);
+
+      snprintf(buf, sizeof(buf), "input_player%u_mouse_index", i + 1);
+      CONFIG_GET_INT_BASE(conf, settings, uints.input_mouse_index[i], buf);
 
       if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &i))
       {
@@ -3496,6 +3500,8 @@ bool config_save_file(const char *path)
       config_set_int(conf, cfg, input_config_get_device(i));
       snprintf(cfg, sizeof(cfg), "input_player%u_analog_dpad_mode", i + 1);
       config_set_int(conf, cfg, settings->uints.input_analog_dpad_mode[i]);
+      snprintf(cfg, sizeof(cfg), "input_player%u_mouse_index", i + 1);
+      config_set_int(conf, cfg, settings->uints.input_mouse_index[i]);
    }
 
    /* Boolean settings */
