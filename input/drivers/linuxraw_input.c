@@ -103,31 +103,25 @@ static int16_t linuxraw_input_state(void *data,
       const struct retro_keybind **binds, unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {
+   int16_t ret                = 0;
    linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         {
-            int16_t ret = ((id < RARCH_BIND_LIST_END) && binds[port]->valid &&
-                  linuxraw->state[rarch_keysym_lut[(enum retro_key)binds[port][id].key]]
-                  );
-            if (!ret)
-               ret = input_joypad_pressed(linuxraw->joypad, 
-                     joypad_info, port, binds[port], id);
-            return ret;
-         }
-         break;
+         ret = ((id < RARCH_BIND_LIST_END) && binds[port]->valid &&
+               linuxraw->state[rarch_keysym_lut[(enum retro_key)binds[port][id].key]]
+               );
+         if (!ret)
+            ret = input_joypad_pressed(linuxraw->joypad, 
+                  joypad_info, port, binds[port], id);
+         return ret;
       case RETRO_DEVICE_ANALOG:
-         if (binds[port])
-         {
-            int16_t ret = linuxraw_analog_pressed(linuxraw, binds[port], idx, id);
-            if (!ret)
-               ret = input_joypad_analog(linuxraw->joypad,
-                     joypad_info, port, idx, id, binds[port]);
-            return ret;
-         }
-         break;
+         ret = linuxraw_analog_pressed(linuxraw, binds[port], idx, id);
+         if (!ret && binds[port])
+            ret = input_joypad_analog(linuxraw->joypad,
+                  joypad_info, port, idx, id, binds[port]);
+         return ret;
    }
 
    return 0;

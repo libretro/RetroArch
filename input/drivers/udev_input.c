@@ -655,29 +655,24 @@ static int16_t udev_input_state(void *data,
       const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
+   int16_t ret                = 0;
    udev_input_t *udev         = (udev_input_t*)data;
 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         {
-            int16_t ret = BIT_GET(udev_key_state,
-                  rarch_keysym_lut[binds[port][id].key]);
-            if (!ret)
-               ret = input_joypad_pressed(udev->joypad,
-                     joypad_info, port, binds[port], id);
-            return ret;
-         }
+         ret = BIT_GET(udev_key_state,
+               rarch_keysym_lut[binds[port][id].key]);
+         if (!ret)
+            ret = input_joypad_pressed(udev->joypad,
+                  joypad_info, port, binds[port], id);
+         return ret;
       case RETRO_DEVICE_ANALOG:
-         if (binds[port])
-         {
-            int16_t ret = udev_analog_pressed(binds[port], idx, id);
-            if (!ret)
-               ret = input_joypad_analog(udev->joypad,
-                     joypad_info, port, idx, id, binds[port]);
-            return ret;
-         }
-         break;
+         ret = udev_analog_pressed(binds[port], idx, id);
+         if (!ret && binds[port])
+            ret = input_joypad_analog(udev->joypad,
+                  joypad_info, port, idx, id, binds[port]);
+         return ret;
       case RETRO_DEVICE_KEYBOARD:
          return id < RETROK_LAST && BIT_GET(udev_key_state,
                rarch_keysym_lut[(enum retro_key)id]);
