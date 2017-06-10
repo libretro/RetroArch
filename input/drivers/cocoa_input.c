@@ -282,36 +282,43 @@ static int16_t cocoa_input_state(void *data,
       const struct retro_keybind **binds, unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {
-   int16_t ret               = 0;
    cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (id < RARCH_BIND_LIST_END)
-            return apple_key_state[rarch_keysym_lut[binds[port][id].key]];
-         return
-            input_joypad_pressed(apple->joypad, joypad_info, port, binds[port], id)
+         {
+            int16_t ret = id < RARCH_BIND_LIST_END ? 
+               apple_key_state[rarch_keysym_lut[binds[port][id].key]] : 0;
+            if (!ret)
+               ret = input_joypad_pressed(apple->joypad, joypad_info, port, binds[port], id);
 #ifdef HAVE_MFI
-            || input_joypad_pressed(apple->sec_joypad, joypad_info, port, binds[port], id)
+            if (!ret)
+               ret = input_joypad_pressed(apple->sec_joypad, joypad_info, port, binds[port], id);
 #endif
-            ;
+            return ret;
+         }
+         break;
       case RETRO_DEVICE_ANALOG:
-#ifdef HAVE_MFI
          if (binds[port])
+         {
+            int16_t ret = 0;
+#ifdef HAVE_MFI
             ret = input_joypad_analog(apple->sec_joypad, joypad_info, port,
-               idx, id, binds[port]);
-#endif
-         if (!ret && binds[port])
-            ret = input_joypad_analog(apple->joypad, joypad_info, port,
                   idx, id, binds[port]);
-         return ret;
+#endif
+            if (!ret && binds[port])
+               ret = input_joypad_analog(apple->joypad, joypad_info, port,
+                     idx, id, binds[port]);
+            return ret;
+         }
+         break;
       case RETRO_DEVICE_KEYBOARD:
          return (id < RETROK_LAST) && apple_key_state[rarch_keysym_lut[(enum retro_key)id]];
       case RETRO_DEVICE_MOUSE:
          return cocoa_mouse_state(apple, id);
-       case RARCH_DEVICE_MOUSE_SCREEN:
-           return cocoa_mouse_state_screen(apple, id);
+      case RARCH_DEVICE_MOUSE_SCREEN:
+         return cocoa_mouse_state_screen(apple, id);
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
          return cocoa_pointer_state(apple, device, idx, id);

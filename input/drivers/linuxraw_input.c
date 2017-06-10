@@ -108,11 +108,16 @@ static int16_t linuxraw_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return ((id < RARCH_BIND_LIST_END) && binds[port]->valid &&
-               linuxraw->state[rarch_keysym_lut[(enum retro_key)binds[port][id].key]]
-               )
-            || input_joypad_pressed(linuxraw->joypad,
-                  joypad_info, port, binds[port], id);
+         {
+            int16_t ret = ((id < RARCH_BIND_LIST_END) && binds[port]->valid &&
+                  linuxraw->state[rarch_keysym_lut[(enum retro_key)binds[port][id].key]]
+                  );
+            if (!ret)
+               ret = input_joypad_pressed(linuxraw->joypad, 
+                     joypad_info, port, binds[port], id);
+            return ret;
+         }
+         break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
          {
