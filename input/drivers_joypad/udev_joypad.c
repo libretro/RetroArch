@@ -419,18 +419,22 @@ static bool udev_set_rumble(unsigned i,
    return true;
 }
 
+static bool udev_joypad_poll_hotplug_available(struct udev_monitor *dev)
+{
+   struct pollfd fds;		
+
+   fds.fd      = udev_monitor_get_fd(dev);		
+   fds.events  = POLLIN;		
+   fds.revents = 0;		
+
+   return (poll(&fds, 1, 0) == 1) && (fds.revents & POLLIN);
+}
+
 static void udev_joypad_poll(void)
 {
    unsigned p;
-   struct pollfd fds;
-   bool hotplug_avail = false;
 
-   fds.fd             = udev_monitor_get_fd(udev_joypad_mon);
-   fds.events         = POLLIN;
-   fds.revents        = 0;
-   hotplug_avail      = (poll(&fds, 1, 0) == 1) && (fds.revents & POLLIN);
-
-   while (udev_joypad_mon && hotplug_avail)
+   while (udev_joypad_mon && udev_joypad_poll_hotplug_available(udev_joypad_mon))
    {
       struct udev_device *dev = udev_monitor_receive_device(udev_joypad_mon);
 
