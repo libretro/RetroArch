@@ -352,7 +352,11 @@ static bool udev_input_add_device(udev_input_t *udev,
    tmp[udev->num_devices++] = device;
    udev->devices            = tmp;
 
-   epoll_add(&udev->epfd, fd, device);
+   if (!epoll_add(&udev->epfd, fd, device))
+   {
+      RARCH_ERR("Failed to add FD (%d) to epoll list (%s).\n",
+            fd, strerror(errno));
+   }
 
    return true;
 

@@ -107,6 +107,11 @@ static bool linuxraw_joypad_init_pad(const char *path,
 
       if (epoll_add(&linuxraw_epoll, pad->fd, pad))
          return true;
+      else
+      {
+         RARCH_ERR("Failed to add FD (%d) to epoll list (%s).\n",
+               pad->fd, strerror(errno));
+      }
    }
 
    RARCH_ERR("[Device]: Failed to open pad %s (error: %s).\n",
@@ -262,7 +267,11 @@ static bool linuxraw_joypad_init(void *data)
    {
       fcntl(linuxraw_inotify, F_SETFL, fcntl(linuxraw_inotify, F_GETFL) | O_NONBLOCK);
       inotify_add_watch(linuxraw_inotify, "/dev/input", IN_DELETE | IN_CREATE | IN_ATTRIB);
-      epoll_add(&linuxraw_epoll, linuxraw_inotify, NULL);
+      if (!epoll_add(&linuxraw_epoll, linuxraw_inotify, NULL))
+      {
+         RARCH_ERR("Failed to add FD (%d) to epoll list (%s).\n",
+               linuxraw_inotify, strerror(errno));
+      }
    }
 
    linuxraw_hotplug = true;

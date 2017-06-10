@@ -24,8 +24,6 @@
 
 #include "epoll_common.h"
 
-#include "../../verbosity.h"
-
 bool epoll_new(int *epoll_fd)
 {
    *epoll_fd = epoll_create(32);
@@ -52,11 +50,7 @@ bool epoll_add(int *epoll_fd, int fd, void *device)
 
    /* Shouldn't happen, but just check it. */
    if (epoll_ctl(*epoll_fd, EPOLL_CTL_ADD, fd, &event) < 0)
-   {
-      RARCH_ERR("Failed to add FD (%d) to epoll list (%s).\n",
-            fd, strerror(errno));
       return false;
-   }
 
    return true;
 }
