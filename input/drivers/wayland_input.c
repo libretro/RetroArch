@@ -208,15 +208,17 @@ static int16_t input_wl_state(void *data,
       const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
-   int16_t ret;
+   int16_t ret                  = 0;
    input_ctx_wayland_data_t *wl = (input_ctx_wayland_data_t*)data;
 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
          if (id < RARCH_BIND_LIST_END)
-            return BIT_GET(wl->key_state, rarch_keysym_lut[binds[port][id].key]);
-         return input_joypad_pressed(wl->joypad, joypad_info, port, binds[port], id);
+            ret = BIT_GET(wl->key_state, rarch_keysym_lut[binds[port][id].key]);
+         if (!ret && binds[port])
+            ret = input_joypad_pressed(wl->joypad, joypad_info, port, binds[port], id);
+         return ret;
       case RETRO_DEVICE_ANALOG:
          ret = input_wl_analog_pressed(wl, binds[port], idx, id);
          if (!ret && binds[port])
