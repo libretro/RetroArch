@@ -482,14 +482,16 @@ static void udev_input_poll(void *data)
    for (i = 0; i < udev->num_devices; ++i)
    {
       if (udev->devices[i]->type == UDEV_INPUT_MOUSE)
-         mouse = &udev->devices[i]->state.mouse;
+      {
+         mouse    = &udev->devices[i]->state.mouse;
+         mouse->x = x;
+         mouse->y = y;
+      }
       else if (udev->devices[i]->type == UDEV_INPUT_TOUCHPAD)
          mouse = &udev->devices[i]->state.touchpad.mouse;
       else
          continue;
 
-      mouse->x     = x;
-      mouse->y     = y;
       mouse->dlt_x = 0;
       mouse->dlt_y = 0;
       mouse->wu    = false;
