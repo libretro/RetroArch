@@ -1341,14 +1341,17 @@ static int16_t android_input_state(void *data,
       const struct retro_keybind **binds, unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
+   int16_t ret                        = 0;
    android_input_t *android           = (android_input_t*)data;
 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return input_joypad_pressed(android->joypad, joypad_info,
-               port, binds[port], id) ||
-            android_keyboard_port_input_pressed(binds[port],id);
+         ret = input_joypad_pressed(android->joypad, joypad_info,
+               port, binds[port], id);
+         if (!ret)
+            ret = android_keyboard_port_input_pressed(binds[port],id);
+         return ret;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
             return input_joypad_analog(android->joypad, joypad_info,
