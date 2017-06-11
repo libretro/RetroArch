@@ -37,6 +37,9 @@ typedef struct rarch_joypad_driver input_device_driver_t;
 
 typedef struct hid_driver hid_driver_t;
 
+/* Keyboard line reader. Handles textual input in a direct fashion. */
+typedef struct input_keyboard_line input_keyboard_line_t;
+
 enum input_device_type
 {
    INPUT_DEVICE_TYPE_NONE = 0,
@@ -59,6 +62,27 @@ enum input_action
    INPUT_ACTION_NONE = 0,
    INPUT_ACTION_AXIS_THRESHOLD,
    INPUT_ACTION_MAX_USERS
+};
+
+enum rarch_input_keyboard_ctl_state
+{
+   RARCH_INPUT_KEYBOARD_CTL_NONE = 0,
+   RARCH_INPUT_KEYBOARD_CTL_DESTROY,
+   RARCH_INPUT_KEYBOARD_CTL_SET_LINEFEED_ENABLED,
+   RARCH_INPUT_KEYBOARD_CTL_UNSET_LINEFEED_ENABLED,
+   RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED,
+
+   RARCH_INPUT_KEYBOARD_CTL_LINE_FREE,
+
+   /*
+    * Waits for keys to be pressed (used for binding 
+    * keys in the menu).
+    * Callback returns false when all polling is done.
+    **/
+   RARCH_INPUT_KEYBOARD_CTL_START_WAIT_KEYS,
+
+   /* Cancels keyboard wait for keys function callback. */
+   RARCH_INPUT_KEYBOARD_CTL_CANCEL_WAIT_KEYS
 };
 
 struct retro_keybind
@@ -603,6 +627,55 @@ const char* config_get_hid_driver_options(void);
 const hid_driver_t *input_hid_init_first(void);
 
 const void *hid_driver_get_data(void);
+
+/** Line complete callback. 
+ * Calls back after return is pressed with the completed line.
+ * Line can be NULL.
+ **/
+typedef void (*input_keyboard_line_complete_t)(void *userdata,
+      const char *line);
+
+typedef bool (*input_keyboard_press_t)(void *userdata, unsigned code);
+
+typedef struct input_keyboard_ctx_wait
+{
+   void *userdata;
+   input_keyboard_press_t cb;
+} input_keyboard_ctx_wait_t;
+
+/**
+ * input_keyboard_event:
+ * @down                     : Keycode was pressed down?
+ * @code                     : Keycode.
+ * @character                : Character inputted.
+ * @mod                      : TODO/FIXME: ???
+ *
+ * Keyboard event utils. Called by drivers when keyboard events are fired.
+ * This interfaces with the global driver struct and libretro callbacks.
+ **/
+void input_keyboard_event(bool down, unsigned code, uint32_t character,
+      uint16_t mod, unsigned device);
+
+bool input_keyboard_line_append(const char *word);
+
+/**
+ * input_keyboard_start_line:
+ * @userdata                 : Userdata.
+ * @cb                       : Line complete callback function.
+ *
+ * Sets function pointer for keyboard line handle.
+ *
+ * The underlying buffer can be reallocated at any time 
+ * (or be NULL), but the pointer to it remains constant 
+ * throughout the objects lifetime.
+ *
+ * Returns: underlying buffer of the keyboard line.
+ **/
+const char **input_keyboard_start_line(void *userdata,
+      input_keyboard_line_complete_t cb);
+
+
+bool input_keyboard_ctl(enum rarch_input_keyboard_ctl_state state, void *data);
 
 extern input_device_driver_t dinput_joypad;
 extern input_device_driver_t linuxraw_joypad;

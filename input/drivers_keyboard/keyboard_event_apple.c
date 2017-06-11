@@ -23,7 +23,7 @@
 
 #include "../input_config.h"
 #include "../input_keymaps.h"
-#include "../input_keyboard.h"
+#include "../input_driver.h"
 
 #include "../../driver.h"
 #include "../../retroarch.h"

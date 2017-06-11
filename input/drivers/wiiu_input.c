@@ -21,15 +21,15 @@
 #include <libretro.h>
 #include <retro_miscellaneous.h>
 
+#include <wiiu/nsyskbd.h>
+
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
 
 #include "../input_config.h"
 #include "../input_driver.h"
-#include "../input_keyboard.h"
 #include "../input_keymaps.h"
-#include <wiiu/nsyskbd.h>
 
 #include "wiiu_dbg.h"
 

@@ -157,7 +157,6 @@ OBJ += frontend/frontend.o \
        retroarch.o \
 		 dirs.o \
 		 paths.o \
-       input/input_keyboard.o \
        command.o \
        msg_hash.o \
        intl/msg_hash_us.o \

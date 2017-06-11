@@ -27,7 +27,6 @@
 #include "../input_config.h"
 #include "../input_driver.h"
 #include "../input_keymaps.h"
-#include "../input_keyboard.h"
 
 #include "../../gfx/video_driver.h"
 #include "../../verbosity.h"

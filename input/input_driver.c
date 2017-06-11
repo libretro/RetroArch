@@ -18,6 +18,7 @@
 #include <string.h>
 #include <ctype.h>
 
+#include <encodings/utf.h>
 #include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
@@ -30,7 +31,6 @@
 
 #include "input_driver.h"
 #include "input_config.h"
-#include "input_keyboard.h"
 #include "input_remapping.h"
 
 #ifdef HAVE_MENU
@@ -190,6 +190,31 @@ struct turbo_buttons
    uint16_t enable[MAX_USERS];
    unsigned count;
 };
+
+struct input_keyboard_line
+{
+   char *buffer;
+   size_t ptr;
+   size_t size;
+
+   /** Line complete callback. 
+    * Calls back after return is 
+    * pressed with the completed line.
+    * Line can be NULL.
+    **/
+   input_keyboard_line_complete_t cb;
+   void *userdata;
+};
+
+static bool input_driver_keyboard_linefeed_enable = false;
+static input_keyboard_line_t *g_keyboard_line     = NULL;
+
+static void *g_keyboard_press_data                = NULL;
+
+static unsigned osk_last_codepoint                = 0;
+static unsigned osk_last_codepoint_len            = 0;
+
+static input_keyboard_press_t g_keyboard_press_cb;
 
 static turbo_buttons_t input_driver_turbo_btns;
 #ifdef HAVE_COMMAND
@@ -1623,4 +1648,300 @@ const hid_driver_t *input_hid_init_first(void)
    }
 
    return NULL;
+}
+
+static void osk_update_last_codepoint(const char *word)
+{
+   const char *letter = word;
+   const char    *pos = letter;
+
+   for (;;)
+   {
+      unsigned codepoint = utf8_walk(&letter);
+      unsigned       len = (unsigned)(letter - pos);
+
+      if (letter[0] == 0)
+      {
+         osk_last_codepoint     = codepoint;
+         osk_last_codepoint_len = len;
+         break;
+      }
+
+      pos = letter;
+   }
+}
+
+/* Depends on ASCII character values */
+#define ISPRINT(c) (((int)(c) >= ' ' && (int)(c) <= '~') ? 1 : 0)
+
+/**
+ * input_keyboard_line_event:
+ * @state                    : Input keyboard line handle.
+ * @character                : Inputted character.
+ *
+ * Called on every keyboard character event.
+ *
+ * Returns: true (1) on success, otherwise false (0).
+ **/
+static bool input_keyboard_line_event(
+      input_keyboard_line_t *state, uint32_t character)
+{
+   char array[2];
+   bool ret         = false;
+   const char *word = NULL;
+   char c           = character >= 128 ? '?' : character;
+
+   /* Treat extended chars as ? as we cannot support 
+    * printable characters for unicode stuff. */
+
+   if (c == '\r' || c == '\n')
+   {
+      state->cb(state->userdata, state->buffer);
+
+      array[0] = c;
+      array[1] = 0;
+
+      word     = array;
+      ret      = true;
+   }
+   else if (c == '\b' || c == '\x7f') /* 0x7f is ASCII for del */
+   {
+      if (state->ptr)
+      {
+         unsigned i;
+
+         for (i = 0; i < osk_last_codepoint_len; i++)
+         {
+            memmove(state->buffer + state->ptr - 1,
+                  state->buffer + state->ptr,
+                  state->size - state->ptr + 1);
+            state->ptr--;
+            state->size--;
+         }
+
+         word     = state->buffer;
+      }
+   }
+   else if (ISPRINT(c))
+   {
+      /* Handle left/right here when suitable */
+      char *newbuf = (char*)
+         realloc(state->buffer, state->size + 2);
+      if (!newbuf)
+         return false;
+
+      memmove(newbuf + state->ptr + 1,
+            newbuf + state->ptr,
+            state->size - state->ptr + 1);
+      newbuf[state->ptr] = c;
+      state->ptr++;
+      state->size++;
+      newbuf[state->size] = '\0';
+
+      state->buffer = newbuf;
+
+      array[0] = c;
+      array[1] = 0;
+
+      word     = array;
+   }
+
+   if (word != NULL)
+   {
+      /* OSK - update last character */
+      if (word[0] == 0)
+      {
+         osk_last_codepoint     = 0;
+         osk_last_codepoint_len = 0;
+      }
+      else
+         osk_update_last_codepoint(word);
+   }
+
+   return ret;
+}
+
+bool input_keyboard_line_append(const char *word)
+{
+   unsigned i   = 0;
+   unsigned len = (unsigned)strlen(word);
+   char *newbuf = (char*)
+         realloc(g_keyboard_line->buffer,
+               g_keyboard_line->size + len*2);
+
+   if (!newbuf)
+      return false;
+
+   memmove(newbuf + g_keyboard_line->ptr + len,
+         newbuf + g_keyboard_line->ptr,
+         g_keyboard_line->size - g_keyboard_line->ptr + len);
+
+   for (i = 0; i < len; i++)
+   {
+      newbuf[g_keyboard_line->ptr] = word[i];
+      g_keyboard_line->ptr++;
+      g_keyboard_line->size++;
+   }
+
+   newbuf[g_keyboard_line->size] = '\0';
+
+   g_keyboard_line->buffer = newbuf;
+
+   if (word[0] == 0)
+   {
+      osk_last_codepoint     = 0;
+      osk_last_codepoint_len = 0;
+   }
+   else
+      osk_update_last_codepoint(word);
+
+   return false;
+}
+
+/**
+ * input_keyboard_start_line:
+ * @userdata                 : Userdata.
+ * @cb                       : Line complete callback function.
+ *
+ * Sets function pointer for keyboard line handle.
+ *
+ * The underlying buffer can be reallocated at any time 
+ * (or be NULL), but the pointer to it remains constant 
+ * throughout the objects lifetime.
+ *
+ * Returns: underlying buffer of the keyboard line.
+ **/
+const char **input_keyboard_start_line(void *userdata,
+      input_keyboard_line_complete_t cb)
+{
+   input_keyboard_line_t *state = (input_keyboard_line_t*)
+      calloc(1, sizeof(*state));
+   if (!state)
+      return NULL;
+
+   g_keyboard_line           = state;
+   g_keyboard_line->cb       = cb;
+   g_keyboard_line->userdata = userdata;
+
+   /* While reading keyboard line input, we have to block all hotkeys. */
+   input_driver_keyboard_mapping_set_block(true);
+
+   return (const char**)&g_keyboard_line->buffer;
+}
+
+/**
+ * input_keyboard_event:
+ * @down                     : Keycode was pressed down?
+ * @code                     : Keycode.
+ * @character                : Character inputted.
+ * @mod                      : TODO/FIXME: ???
+ *
+ * Keyboard event utils. Called by drivers when keyboard events are fired.
+ * This interfaces with the global system driver struct and libretro callbacks.
+ **/
+void input_keyboard_event(bool down, unsigned code,
+      uint32_t character, uint16_t mod, unsigned device)
+{
+   static bool deferred_wait_keys;
+
+   if (deferred_wait_keys)
+   {
+      if (down)
+         return;
+
+      g_keyboard_press_cb   = NULL;
+      g_keyboard_press_data = NULL;
+      input_driver_keyboard_mapping_set_block(false);
+      deferred_wait_keys    = false;
+   }
+   else if (g_keyboard_press_cb)
+   {
+      if (!down || code == RETROK_UNKNOWN)
+         return;
+      if (g_keyboard_press_cb(g_keyboard_press_data, code))
+         return;
+      deferred_wait_keys = true;
+   }
+   else if (g_keyboard_line)
+   {
+      if (!down)
+         return;
+
+      switch (device)
+      {
+         case RETRO_DEVICE_POINTER:
+            if (code != 0x12d)
+               character = (char)code;
+            /* fall-through */
+         default:
+            if (!input_keyboard_line_event(g_keyboard_line, character))
+               return;
+            break;
+      }
+
+      /* Line is complete, can free it now. */
+      input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_LINE_FREE, NULL);
+
+      /* Unblock all hotkeys. */
+      input_driver_keyboard_mapping_set_block(false);
+   }
+   else
+   {
+      retro_keyboard_event_t *key_event = NULL;
+      rarch_ctl(RARCH_CTL_KEY_EVENT_GET, &key_event);
+
+      if (key_event && *key_event)
+         (*key_event)(down, code, character, mod);
+   }
+}
+
+bool input_keyboard_ctl(enum rarch_input_keyboard_ctl_state state, void *data)
+{
+
+   switch (state)
+   {
+      case RARCH_INPUT_KEYBOARD_CTL_LINE_FREE:
+         if (g_keyboard_line)
+         {
+            free(g_keyboard_line->buffer);
+            free(g_keyboard_line);
+         }
+         g_keyboard_line = NULL;
+         break;
+      case RARCH_INPUT_KEYBOARD_CTL_START_WAIT_KEYS:
+         {
+            input_keyboard_ctx_wait_t *keys = (input_keyboard_ctx_wait_t*)data;
+
+            if (!keys)
+               return false;
+
+            g_keyboard_press_cb   = keys->cb;
+            g_keyboard_press_data = keys->userdata;
+         }
+
+         /* While waiting for input, we have to block all hotkeys. */
+         input_driver_keyboard_mapping_set_block(true);
+         break;
+      case RARCH_INPUT_KEYBOARD_CTL_CANCEL_WAIT_KEYS:
+         g_keyboard_press_cb   = NULL;
+         g_keyboard_press_data = NULL;
+         input_driver_keyboard_mapping_set_block(false);
+         break;
+      case RARCH_INPUT_KEYBOARD_CTL_DESTROY:
+         input_driver_keyboard_linefeed_enable = false;
+         break;
+      case RARCH_INPUT_KEYBOARD_CTL_SET_LINEFEED_ENABLED:
+         input_driver_keyboard_linefeed_enable = true;
+         break;
+      case RARCH_INPUT_KEYBOARD_CTL_UNSET_LINEFEED_ENABLED:
+         input_driver_keyboard_linefeed_enable = false;
+         break;
+      case RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED:
+         return input_driver_keyboard_linefeed_enable;
+      case RARCH_INPUT_KEYBOARD_CTL_NONE:
+      default:
+         break;
+   }
+
+   return true;
 }

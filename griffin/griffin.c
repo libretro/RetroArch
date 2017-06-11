@@ -419,7 +419,6 @@ INPUT
 #include "../input/input_config.c"
 #include "../input/input_keymaps.c"
 #include "../input/input_remapping.c"
-#include "../input/input_keyboard.c"
 
 #ifdef HAVE_OVERLAY
 #include "../input/input_overlay.c"

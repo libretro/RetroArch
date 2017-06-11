@@ -23,7 +23,6 @@
 #include "../menu_driver.h"
 
 #include "../../input/input_driver.h"
-#include "../../input/input_keyboard.h"
 #include "../../input/input_config.h"
 
 #include "../../configuration.h"

@@ -32,8 +32,8 @@
 #include "../verbosity.h"
 #include "../gfx/video_driver.h"
 
+#include "input_driver.h"
 #include "input_overlay.h"
-#include "input_keyboard.h"
 
 #define OVERLAY_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
 #define OVERLAY_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)

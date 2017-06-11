@@ -25,7 +25,6 @@
 
 #include "../input_driver.h"
 #include "../input_keymaps.h"
-#include "../input_keyboard.h"
 #include "../../configuration.h"
 
 #define MOD_MAP_SIZE 5

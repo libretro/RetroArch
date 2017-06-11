@@ -40,7 +40,7 @@
 #include "dbus_common.h"
 
 #include "../../frontend/frontend_driver.h"
-#include "../../input/input_keyboard.h"
+#include "../../input/input_driver.h"
 #include "../../input/input_keymaps.h"
 #include "../../input/common/input_x11_common.h"
 #include "../../verbosity.h"

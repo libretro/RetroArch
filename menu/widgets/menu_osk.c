@@ -30,7 +30,7 @@
 
 #include "menu_osk.h"
 
-#include "../../input/input_keyboard.h"
+#include "../../input/input_driver.h"
 
 static const char *osk_grid[45]  = {NULL};
 
