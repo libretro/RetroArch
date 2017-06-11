@@ -543,7 +543,7 @@ void menu_display_draw_bg(menu_display_ctx_draw_t *draw,
 
    draw->coords      = &coords;
 
-   if (!video_info->libretro_running && !draw->pipeline.active)
+   if (draw->texture)
       add_opacity_to_wallpaper = true;
 
    if (add_opacity_to_wallpaper)
