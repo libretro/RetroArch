@@ -2338,7 +2338,9 @@ static enum runloop_state runloop_check_state(
          ((settings->uints.input_menu_toggle_gamepad_combo != INPUT_TOGGLE_NONE) &&
           input_driver_toggle_button_combo(
              settings->uints.input_menu_toggle_gamepad_combo, last_input)))
-      current_input |= (UINT64_C(1) << RARCH_MENU_TOGGLE);
+   {
+      BIT64_SET(current_input, RARCH_MENU_TOGGLE);
+   }
 #endif
 
    if (input_driver_flushing_input)
