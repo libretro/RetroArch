@@ -1048,7 +1048,7 @@ void input_driver_destroy_data(void)
 
 void input_driver_destroy(void)
 {
-   input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_DESTROY, NULL);
+   input_driver_keyboard_linefeed_enable = false;
    input_driver_block_hotkey             = false;
    input_driver_block_libretro_input     = false;
    input_driver_nonblock_state           = false;
@@ -1947,9 +1947,6 @@ bool input_keyboard_ctl(enum rarch_input_keyboard_ctl_state state, void *data)
          g_keyboard_press_cb   = NULL;
          g_keyboard_press_data = NULL;
          input_driver_keyboard_mapping_set_block(false);
-         break;
-      case RARCH_INPUT_KEYBOARD_CTL_DESTROY:
-         input_driver_keyboard_linefeed_enable = false;
          break;
       case RARCH_INPUT_KEYBOARD_CTL_SET_LINEFEED_ENABLED:
          input_driver_keyboard_linefeed_enable = true;
