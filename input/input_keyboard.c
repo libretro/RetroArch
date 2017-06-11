@@ -17,7 +17,6 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 
 #include <encodings/utf.h>
 
@@ -130,6 +129,9 @@ static input_keyboard_line_t *input_keyboard_line_new(void *userdata,
    return state;
 }
 
+/* Depends on ASCII character values */
+#define ISPRINT(c) (((int)(c) >= ' ' && (int)(c) <= '~') ? 1 : 0)
+
 /**
  * input_keyboard_line_event:
  * @state                    : Input keyboard line handle.
@@ -173,7 +175,7 @@ static bool input_keyboard_line_event(
       }
 
    }
-   else if (isprint((int)c))
+   else if (ISPRINT(c))
    {
       /* Handle left/right here when suitable */
 
