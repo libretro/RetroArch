@@ -43,7 +43,6 @@
 
 #include "../../gfx/video_driver.h"
 #include "../common/linux_common.h"
-#include "../common/epoll_common.h"
 
 #include "../../gfx/common/wayland_common.h"
 

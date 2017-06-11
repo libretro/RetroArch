@@ -33,7 +33,6 @@
 #include "../input_config.h"
 #include "../input_driver.h"
 
-#include "../common/epoll_common.h"
 #include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
 
@@ -97,6 +96,8 @@ static bool linuxraw_joypad_init_pad(const char *path,
 
    if (pad->fd >= 0)
    {
+      struct epoll_event event;
+
       if (ioctl(pad->fd,
                JSIOCGNAME(sizeof(input_device_names[0])), pad->ident) >= 0)
       {
@@ -105,13 +106,16 @@ static bool linuxraw_joypad_init_pad(const char *path,
       else
          RARCH_ERR("[Device]: Didn't find ident of %s.\n", path);
 
-      if (epoll_add(&linuxraw_epoll, pad->fd, pad))
-         return true;
-      else
+      event.events             = EPOLLIN;
+      event.data.ptr           = pad;
+
+      if (epoll_ctl(linuxraw_epoll, EPOLL_CTL_ADD, pad->fd, &event) < 0)
       {
          RARCH_ERR("Failed to add FD (%d) to epoll list (%s).\n",
                pad->fd, strerror(errno));
       }
+      else
+         return true;
    }
 
    RARCH_ERR("[Device]: Failed to open pad %s (error: %s).\n",
@@ -232,9 +236,12 @@ retry:
 static bool linuxraw_joypad_init(void *data)
 {
    unsigned i;
+   int fd = epoll_create(32);
 
-   if (!epoll_new(&linuxraw_epoll))
+   if (fd < 0)
       return false;
+
+   linuxraw_epoll = fd;
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -265,9 +272,16 @@ static bool linuxraw_joypad_init(void *data)
 
    if (linuxraw_inotify >= 0)
    {
+      struct epoll_event event;
+
       fcntl(linuxraw_inotify, F_SETFL, fcntl(linuxraw_inotify, F_GETFL) | O_NONBLOCK);
       inotify_add_watch(linuxraw_inotify, "/dev/input", IN_DELETE | IN_CREATE | IN_ATTRIB);
-      if (!epoll_add(&linuxraw_epoll, linuxraw_inotify, NULL))
+
+      event.events             = EPOLLIN;
+      event.data.ptr           = NULL;
+
+      /* Shouldn't happen, but just check it. */
+      if (epoll_ctl(linuxraw_epoll, EPOLL_CTL_ADD, linuxraw_inotify, &event) < 0)
       {
          RARCH_ERR("Failed to add FD (%d) to epoll list (%s).\n",
                linuxraw_inotify, strerror(errno));
@@ -298,7 +312,9 @@ static void linuxraw_joypad_destroy(void)
       close(linuxraw_inotify);
    linuxraw_inotify = -1;
 
-   epoll_free(&linuxraw_epoll);
+   if (linuxraw_epoll >= 0)
+      close(linuxraw_epoll);
+   linuxraw_epoll = -1;
 
    linuxraw_hotplug = false;
 }
