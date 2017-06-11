@@ -164,6 +164,7 @@ static input_device_driver_t *joypad_drivers[] = {
    NULL,
 };
 
+#ifdef HAVE_HID
 static hid_driver_t *hid_drivers[] = {
 #if defined(HAVE_BTSTACK)
    &btstack_hid,
@@ -180,6 +181,7 @@ static hid_driver_t *hid_drivers[] = {
    &null_hid,
    NULL,
 };
+#endif
 
 typedef struct turbo_buttons turbo_buttons_t;
 
@@ -1577,6 +1579,7 @@ void input_conv_analog_id_to_bind_id(unsigned idx, unsigned ident,
    }
 }
 
+#ifdef HAVE_HID
 /**
  * hid_driver_find_handle:
  * @idx                : index of driver to get handle to.
@@ -1649,6 +1652,7 @@ const hid_driver_t *input_hid_init_first(void)
 
    return NULL;
 }
+#endif
 
 static void osk_update_last_codepoint(const char *word)
 {

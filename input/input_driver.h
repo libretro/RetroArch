@@ -22,6 +22,10 @@
 #include <stddef.h>
 #include <sys/types.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <boolean.h>
 #include <retro_common_api.h>
 #include <retro_inline.h>
@@ -590,6 +594,7 @@ const char *input_joypad_name(const input_device_driver_t *driver,
 
 bool input_config_get_bind_idx(unsigned port, unsigned *joy_idx_real);
 
+#ifdef HAVE_HID
 /**
  * hid_driver_find_handle:
  * @index              : index of driver to get handle to.
@@ -627,6 +632,7 @@ const char* config_get_hid_driver_options(void);
 const hid_driver_t *input_hid_init_first(void);
 
 const void *hid_driver_get_data(void);
+#endif
 
 /** Line complete callback. 
  * Calls back after return is pressed with the completed line.
@@ -717,11 +723,13 @@ extern input_driver_t input_winraw;
 extern input_driver_t input_wayland;
 extern input_driver_t input_null;
 
+#ifdef HAVE_HID
 extern hid_driver_t iohidmanager_hid;
 extern hid_driver_t btstack_hid;
 extern hid_driver_t libusb_hid;
 extern hid_driver_t wiiusb_hid;
 extern hid_driver_t null_hid;
+#endif
 
 RETRO_END_DECLS
 
