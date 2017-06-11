@@ -15,7 +15,6 @@
  */
 
 #include "../../tasks/tasks_internal.h"
-#include "../input_hid_driver.h"
 #include "../input_driver.h"
 
 static const hid_driver_t *generic_hid = NULL;

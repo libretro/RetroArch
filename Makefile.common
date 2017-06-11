@@ -736,8 +736,7 @@ endif
 
 ifeq ($(HAVE_HID), 1)
    DEFINES += -DHAVE_HID
-   OBJ +=      input/input_hid_driver.o \
-               input/drivers_joypad/hid_joypad.o \
+   OBJ +=      input/drivers_joypad/hid_joypad.o \
                input/connect/joypad_connection.o \
                input/connect/connect_ps2adapter.o \
                input/connect/connect_ps3.o \

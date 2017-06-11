@@ -35,6 +35,7 @@ RETRO_BEGIN_DECLS
 
 typedef struct rarch_joypad_driver input_device_driver_t;
 
+typedef struct hid_driver hid_driver_t;
 
 enum input_device_type
 {
@@ -148,6 +149,21 @@ struct rarch_joypad_driver
    void (*poll)(void);
    bool (*set_rumble)(unsigned, enum retro_rumble_effect, uint16_t);
    const char *(*name)(unsigned);
+
+   const char *ident;
+};
+
+struct hid_driver
+{
+   void *(*init)(void);
+   bool (*query_pad)(void *, unsigned);
+   void (*free)(void *);
+   bool (*button)(void *, unsigned, uint16_t);
+   uint64_t (*get_buttons)(void *, unsigned);
+   int16_t (*axis)(void *, unsigned, uint32_t);
+   void (*poll)(void *);
+   bool (*set_rumble)(void *, unsigned, enum retro_rumble_effect, uint16_t);
+   const char *(*name)(void *, unsigned);
 
    const char *ident;
 };
@@ -550,6 +566,44 @@ const char *input_joypad_name(const input_device_driver_t *driver,
 
 bool input_config_get_bind_idx(unsigned port, unsigned *joy_idx_real);
 
+/**
+ * hid_driver_find_handle:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: handle to HID driver at index. Can be NULL
+ * if nothing found.
+ **/
+const void *hid_driver_find_handle(int index);
+
+/**
+ * hid_driver_find_ident:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: Human-readable identifier of HID driver at index. Can be NULL
+ * if nothing found.
+ **/
+const char *hid_driver_find_ident(int index);
+
+/**
+ * config_get_hid_driver_options:
+ *
+ * Get an enumerated list of all HID driver names, separated by '|'.
+ *
+ * Returns: string listing of all HID driver names, separated by '|'.
+ **/
+const char* config_get_hid_driver_options(void);
+
+/**
+ * input_hid_init_first:
+ *
+ * Finds first suitable HID driver and initializes.
+ *
+ * Returns: HID driver if found, otherwise NULL.
+ **/
+const hid_driver_t *input_hid_init_first(void);
+
+const void *hid_driver_get_data(void);
+
 extern input_device_driver_t dinput_joypad;
 extern input_device_driver_t linuxraw_joypad;
 extern input_device_driver_t parport_joypad;
@@ -589,6 +643,12 @@ extern input_driver_t input_dos;
 extern input_driver_t input_winraw;
 extern input_driver_t input_wayland;
 extern input_driver_t input_null;
+
+extern hid_driver_t iohidmanager_hid;
+extern hid_driver_t btstack_hid;
+extern hid_driver_t libusb_hid;
+extern hid_driver_t wiiusb_hid;
+extern hid_driver_t null_hid;
 
 RETRO_END_DECLS
 

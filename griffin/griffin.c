@@ -506,7 +506,6 @@ INPUT
 INPUT (HID)
 ============================================================ */
 #ifdef HAVE_HID
-#include "../input/input_hid_driver.c"
 #include "../input/drivers_joypad/hid_joypad.c"
 #include "../input/drivers_hid/null_hid.c"
 

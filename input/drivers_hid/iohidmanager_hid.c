@@ -25,7 +25,7 @@
 
 #include "../input_config.h"
 #include "../input_defines.h"
-#include "../input_hid_driver.h"
+#include "../input_driver.h"
 
 #include "../connect/joypad_connection.h"
 #include "../../tasks/tasks_internal.h"

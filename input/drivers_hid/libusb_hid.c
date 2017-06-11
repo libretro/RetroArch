@@ -28,7 +28,6 @@
 #include "../../tasks/tasks_internal.h"
 #include "../input_config.h"
 #include "../input_driver.h"
-#include "../input_hid_driver.h"
 #include "../../verbosity.h"
 
 #ifndef LIBUSB_CAP_HAS_HOTPLUG

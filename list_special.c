@@ -48,7 +48,6 @@
 #include "core_info.h"
 #include "gfx/video_driver.h"
 #include "input/input_driver.h"
-#include "input/input_hid_driver.h"
 #include "audio/audio_driver.h"
 #include "record/record_driver.h"
 #include "configuration.h"

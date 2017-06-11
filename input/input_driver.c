@@ -164,6 +164,23 @@ static input_device_driver_t *joypad_drivers[] = {
    NULL,
 };
 
+static hid_driver_t *hid_drivers[] = {
+#if defined(HAVE_BTSTACK)
+   &btstack_hid,
+#endif
+#if defined(__APPLE__) && defined(HAVE_IOHIDMANAGER)
+   &iohidmanager_hid,
+#endif
+#if defined(HAVE_LIBUSB) && defined(HAVE_THREADS)
+   &libusb_hid,
+#endif
+#ifdef HW_RVL
+   &wiiusb_hid,
+#endif
+   &null_hid,
+   NULL,
+};
+
 typedef struct turbo_buttons turbo_buttons_t;
 
 /* Turbo support. */
@@ -190,6 +207,8 @@ bool input_driver_flushing_input                  = false;
 static bool input_driver_data_own                 = false;
 static float input_driver_axis_threshold          = 0.0f;
 static unsigned input_driver_max_users            = 0;
+
+static const void *hid_data                       = NULL;
 
 /**
  * input_driver_find_handle:
@@ -1533,4 +1552,77 @@ void input_conv_analog_id_to_bind_id(unsigned idx, unsigned ident,
          *ident_plus  = RARCH_ANALOG_RIGHT_Y_PLUS;
          break;
    }
+}
+
+/**
+ * hid_driver_find_handle:
+ * @idx                : index of driver to get handle to.
+ *
+ * Returns: handle to HID driver at index. Can be NULL
+ * if nothing found.
+ **/
+const void *hid_driver_find_handle(int idx)
+{
+   const void *drv = hid_drivers[idx];
+   if (!drv)
+      return NULL;
+   return drv;
+}
+
+const void *hid_driver_get_data(void)
+{
+   return hid_data;
+}
+
+/**
+ * hid_driver_find_ident:
+ * @idx                : index of driver to get handle to.
+ *
+ * Returns: Human-readable identifier of HID driver at index. Can be NULL
+ * if nothing found.
+ **/
+const char *hid_driver_find_ident(int idx)
+{
+   const hid_driver_t *drv = hid_drivers[idx];
+   if (!drv)
+      return NULL;
+   return drv->ident;
+}
+
+/**
+ * config_get_hid_driver_options:
+ *
+ * Get an enumerated list of all HID driver names, separated by '|'.
+ *
+ * Returns: string listing of all HID driver names, separated by '|'.
+ **/
+const char* config_get_hid_driver_options(void)
+{
+   return char_list_new_special(STRING_LIST_INPUT_HID_DRIVERS, NULL);
+}
+
+/**
+ * input_hid_init_first:
+ *
+ * Finds first suitable HID driver and initializes.
+ *
+ * Returns: HID driver if found, otherwise NULL.
+ **/
+const hid_driver_t *input_hid_init_first(void)
+{
+   unsigned i;
+
+   for (i = 0; hid_drivers[i]; i++)
+   {
+      hid_data = hid_drivers[i]->init();
+
+      if (hid_data)
+      {
+         RARCH_LOG("Found HID driver: \"%s\".\n",
+               hid_drivers[i]->ident);
+         return hid_drivers[i];
+      }
+   }
+
+   return NULL;
 }
