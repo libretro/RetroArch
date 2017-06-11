@@ -904,7 +904,7 @@ uint64_t input_keys_pressed(void *data, uint64_t last_input)
                0, RETRO_DEVICE_JOYPAD, 0, i)
          )
       {
-         ret |= (UINT64_C(1) << i);
+         BIT64_SET(ret, i);
          continue;
       }
 
@@ -912,7 +912,7 @@ uint64_t input_keys_pressed(void *data, uint64_t last_input)
             current_input->meta_key_pressed(current_input_data, i)
             )
       {
-         ret |= (UINT64_C(1) << i);
+         BIT64_SET(ret, i);
          continue;
       }
 
@@ -920,7 +920,7 @@ uint64_t input_keys_pressed(void *data, uint64_t last_input)
       if (overlay_ptr && 
             input_overlay_key_pressed(overlay_ptr, i))
       {
-         ret |= (UINT64_C(1) << i);
+         BIT64_SET(ret, i);
          continue;
       }
 #endif
@@ -935,7 +935,7 @@ uint64_t input_keys_pressed(void *data, uint64_t last_input)
 
          if (command_get(&handle))
          {
-            ret |= (UINT64_C(1) << i);
+            BIT64_SET(ret, i);
             continue;
          }
       }
@@ -945,7 +945,7 @@ uint64_t input_keys_pressed(void *data, uint64_t last_input)
       if (input_driver_remote && 
             input_remote_key_pressed(i, 0))
       {
-         ret |= (UINT64_C(1) << i);
+         BIT64_SET(ret, i);
          continue;
       }
 #endif
