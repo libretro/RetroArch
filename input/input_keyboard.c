@@ -56,13 +56,6 @@ static void osk_update_last_codepoint(const char *word)
    const char *letter = word;
    const char    *pos = letter;
 
-   if (letter[0] == 0)
-   {
-      osk_last_codepoint     = 0;
-      osk_last_codepoint_len = 0;
-      return;
-   }
-
    for (;;)
    {
       unsigned codepoint = utf8_walk(&letter);
@@ -77,56 +70,6 @@ static void osk_update_last_codepoint(const char *word)
 
       pos = letter;
    }
-}
-
-static void osk_update_last_char(const char c)
-{
-   char array[2];
-
-   array[0] = c;
-   array[1] = 0;
-
-   osk_update_last_codepoint(array);
-}
-
-/**
- * input_keyboard_line_free:
- * @state                    : Input keyboard line handle.
- *
- * Frees input keyboard line handle.
- **/
-static void input_keyboard_line_free(input_keyboard_line_t *state)
-{
-   if (!state)
-      return;
-
-   free(state->buffer);
-   free(state);
-}
-
-/**
- * input_keyboard_line_new:
- * @userdata                 : Userdata.
- * @cb                       : Callback function.
- *
- * Creates and initializes input keyboard line handle.
- * Also sets callback function for keyboard line handle
- * to provided callback @cb.
- *
- * Returns: keyboard handle on success, otherwise NULL.
- **/
-static input_keyboard_line_t *input_keyboard_line_new(void *userdata,
-      input_keyboard_line_complete_t cb)
-{
-   input_keyboard_line_t *state = (input_keyboard_line_t*)
-      calloc(1, sizeof(*state));
-   if (!state)
-      return NULL;
-
-   state->cb       = cb;
-   state->userdata = userdata;
-
-   return state;
 }
 
 /* Depends on ASCII character values */
@@ -144,7 +87,10 @@ static input_keyboard_line_t *input_keyboard_line_new(void *userdata,
 static bool input_keyboard_line_event(
       input_keyboard_line_t *state, uint32_t character)
 {
-   char c = character >= 128 ? '?' : character;
+   char array[2];
+   bool ret         = false;
+   const char *word = NULL;
+   char c           = character >= 128 ? '?' : character;
 
    /* Treat extended chars as ? as we cannot support 
     * printable characters for unicode stuff. */
@@ -152,11 +98,14 @@ static bool input_keyboard_line_event(
    if (c == '\r' || c == '\n')
    {
       state->cb(state->userdata, state->buffer);
-      osk_update_last_char(c);
-      return true;
-   }
 
-   if (c == '\b' || c == '\x7f') /* 0x7f is ASCII for del */
+      array[0] = c;
+      array[1] = 0;
+
+      word     = array;
+      ret      = true;
+   }
+   else if (c == '\b' || c == '\x7f') /* 0x7f is ASCII for del */
    {
       if (state->ptr)
       {
@@ -171,14 +120,12 @@ static bool input_keyboard_line_event(
             state->size--;
          }
 
-         osk_update_last_codepoint(state->buffer);
+         word     = state->buffer;
       }
-
    }
    else if (ISPRINT(c))
    {
       /* Handle left/right here when suitable */
-
       char *newbuf = (char*)
          realloc(state->buffer, state->size + 2);
       if (!newbuf)
@@ -194,10 +141,25 @@ static bool input_keyboard_line_event(
 
       state->buffer = newbuf;
 
-      osk_update_last_char(c);
+      array[0] = c;
+      array[1] = 0;
+
+      word     = array;
    }
 
-   return false;
+   if (word != NULL)
+   {
+      /* OSK - update last character */
+      if (word[0] == 0)
+      {
+         osk_last_codepoint     = 0;
+         osk_last_codepoint_len = 0;
+      }
+      else
+         osk_update_last_codepoint(word);
+   }
+
+   return ret;
 }
 
 bool input_keyboard_line_append(const char *word)
@@ -226,7 +188,13 @@ bool input_keyboard_line_append(const char *word)
 
    g_keyboard_line->buffer = newbuf;
 
-   osk_update_last_codepoint(word);
+   if (word[0] == 0)
+   {
+      osk_last_codepoint     = 0;
+      osk_last_codepoint_len = 0;
+   }
+   else
+      osk_update_last_codepoint(word);
 
    return false;
 }
@@ -247,9 +215,14 @@ bool input_keyboard_line_append(const char *word)
 const char **input_keyboard_start_line(void *userdata,
       input_keyboard_line_complete_t cb)
 {
-   input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_LINE_FREE, NULL);
+   input_keyboard_line_t *state = (input_keyboard_line_t*)
+      calloc(1, sizeof(*state));
+   if (!state)
+      return NULL;
 
-   g_keyboard_line = input_keyboard_line_new(userdata, cb);
+   g_keyboard_line           = state;
+   g_keyboard_line->cb       = cb;
+   g_keyboard_line->userdata = userdata;
 
    /* While reading keyboard line input, we have to block all hotkeys. */
    input_driver_keyboard_mapping_set_block(true);
@@ -330,7 +303,10 @@ bool input_keyboard_ctl(enum rarch_input_keyboard_ctl_state state, void *data)
    {
       case RARCH_INPUT_KEYBOARD_CTL_LINE_FREE:
          if (g_keyboard_line)
-            input_keyboard_line_free(g_keyboard_line);
+         {
+            free(g_keyboard_line->buffer);
+            free(g_keyboard_line);
+         }
          g_keyboard_line = NULL;
          break;
       case RARCH_INPUT_KEYBOARD_CTL_START_WAIT_KEYS:

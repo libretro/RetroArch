@@ -63,7 +63,7 @@ void menu_input_dialog_end(void)
    menu_input_dialog_keyboard_label[0]         = '\0';
    menu_input_dialog_keyboard_label_setting[0] = '\0';
 
-   /* Avoid triggering states on pressing return. */
+   /* Avoid triggering tates on pressing return. */
    input_driver_set_flushing_input();
 }
 
@@ -110,6 +110,9 @@ bool menu_input_dialog_start_search(void)
    menu_input_dialog_display_kb();
    strlcpy(menu_input_dialog_keyboard_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
          sizeof(menu_input_dialog_keyboard_label));
+
+   input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_LINE_FREE, NULL);
+
    menu_input_dialog_keyboard_buffer   =
       input_keyboard_start_line(menu, menu_input_search_cb);
 
@@ -132,6 +135,9 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 
    menu_input_dialog_keyboard_type   = line->type;
    menu_input_dialog_keyboard_idx    = line->idx;
+
+   input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_LINE_FREE, NULL);
+
    menu_input_dialog_keyboard_buffer =
       input_keyboard_start_line(menu, line->cb);
 
