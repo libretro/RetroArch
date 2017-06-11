@@ -642,13 +642,6 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
    const struct retro_keybind *binds_auto       = NULL;
    unsigned max_users                           = input_driver_max_users;
 
-   for (i = 0; i < max_users; i++)
-   {
-      struct retro_keybind *auto_binds          = input_autoconf_binds[i];
-
-      input_push_analog_dpad(auto_binds, ANALOG_DPAD_LSTICK);
-   }
-
    joypad_info.joy_idx                          = settings->uints.input_joypad_map[0];
    joypad_info.auto_binds                       = input_autoconf_binds[joypad_info.joy_idx];
    joypad_info.axis_threshold                   = input_driver_axis_threshold;
@@ -664,7 +657,12 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
    binds_auto = &input_autoconf_binds[0][RARCH_ENABLE_HOTKEY];
 
    for (i = 0; i < max_users; i++)
-      binds[i] = input_config_binds[i];
+   {
+      struct retro_keybind *auto_binds          = input_autoconf_binds[i];
+      binds[i]                                  = input_config_binds[i];
+
+      input_push_analog_dpad(auto_binds, ANALOG_DPAD_LSTICK);
+   }
 
    if (check_input_driver_block_hotkey(binds_norm, binds_auto))
    {
@@ -731,7 +729,7 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
 
             if (pressed)
             {
-               ret |= (UINT64_C(1) << i);
+               BIT64_SET(ret, i);
                continue;
             }
          }
@@ -741,7 +739,7 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
       {
          if (current_input->meta_key_pressed(current_input_data, i))
          {
-            ret |= (UINT64_C(1) << i);
+            BIT64_SET(ret, i);
             continue;
          }
       }
@@ -749,7 +747,7 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
 #ifdef HAVE_OVERLAY
       if (overlay_ptr && input_overlay_key_pressed(overlay_ptr, i))
       {
-         ret |= (UINT64_C(1) << i);
+         BIT64_SET(ret, i);
          continue;
       }
 #endif
@@ -764,7 +762,7 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
 
          if (command_get(&handle))
          {
-            ret |= (UINT64_C(1) << i);
+            BIT64_SET(ret, i);
             continue;
          }
       }
@@ -773,7 +771,7 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
 #ifdef HAVE_NETWORKGAMEPAD
       if (input_driver_remote && input_remote_key_pressed(i, 0))
       {
-         ret |= (UINT64_C(1) << i);
+         BIT64_SET(ret, i);
          continue;
       }
 #endif
