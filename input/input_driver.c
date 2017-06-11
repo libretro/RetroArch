@@ -235,7 +235,9 @@ static bool input_driver_data_own                 = false;
 static float input_driver_axis_threshold          = 0.0f;
 static unsigned input_driver_max_users            = 0;
 
+#ifdef HAVE_HID
 static const void *hid_data                       = NULL;
+#endif
 
 /**
  * input_driver_find_handle:
