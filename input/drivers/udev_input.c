@@ -52,7 +52,6 @@
 
 #include "../../gfx/video_driver.h"
 #include "../common/linux_common.h"
-#include "../common/epoll_common.h"
 #include "../../configuration.h"
 
 #include "../../verbosity.h"
@@ -313,6 +312,7 @@ static bool udev_input_add_device(udev_input_t *udev,
 {
    int fd;
    struct stat st;
+   struct epoll_event event;
    udev_input_device_t **tmp;
    udev_input_device_t *device = NULL;
 
@@ -351,7 +351,11 @@ static bool udev_input_add_device(udev_input_t *udev,
    tmp[udev->num_devices++] = device;
    udev->devices            = tmp;
 
-   if (!epoll_add(&udev->epfd, fd, device))
+   event.events             = EPOLLIN;
+   event.data.ptr           = device;
+
+   /* Shouldn't happen, but just check it. */
+   if (epoll_ctl(udev->epfd, EPOLL_CTL_ADD, fd, &event) < 0)
    {
       RARCH_ERR("Failed to add FD (%d) to epoll list (%s).\n",
             fd, strerror(errno));
@@ -716,7 +720,10 @@ static void udev_input_free(void *data)
    if (udev->joypad)
       udev->joypad->destroy();
 
-   epoll_free(&udev->epfd);
+   if (udev->epfd >= 0)
+      close(udev->epfd);
+
+   udev->epfd = -1;
 
    for (i = 0; i < udev->num_devices; i++)
    {
@@ -783,6 +790,7 @@ static bool open_devices(udev_input_t *udev,
 
 static void *udev_input_init(const char *joypad_driver)
 {
+   int fd;
    udev_input_t *udev   = (udev_input_t*)calloc(1, sizeof(*udev));
 
    if (!udev)
@@ -811,11 +819,14 @@ static void *udev_input_init(const char *joypad_driver)
    udev->xkb_handling = string_is_equal_fast(ctx_ident.ident, "kms", 4);
 #endif
 
-   if (!epoll_new(&udev->epfd))
+   fd = epoll_create(32);
+   if (fd < 0)
    {
       RARCH_ERR("Failed to create epoll FD.\n");
       goto error;
    }
+
+   udev->epfd  = fd;
 
    if (!open_devices(udev, UDEV_INPUT_KEYBOARD, udev_handle_keyboard))
    {
