@@ -1090,7 +1090,6 @@ DEPENDENCIES
 #include "../deps/7zip/Bra86.c"
 #include "../deps/7zip/7zFile.c"
 #include "../deps/7zip/7zStream.c"
-#include "../deps/7zip/7zBuf2.c"
 #include "../deps/7zip/LzmaDec.c"
 #include "../deps/7zip/7zCrcOpt.c"
 #include "../deps/7zip/Bra.c"
