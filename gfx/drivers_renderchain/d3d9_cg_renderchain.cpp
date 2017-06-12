@@ -34,7 +34,6 @@
 #include "../drivers/d3d.h"
 #include "../drivers/d3d_shaders/opaque.cg.d3d9.h"
 
-#include "../video_renderchain_driver.h"
 #include "../video_driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"

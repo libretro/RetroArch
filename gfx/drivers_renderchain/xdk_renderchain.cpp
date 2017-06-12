@@ -16,7 +16,6 @@
 
 #include <string.h>
 #include <retro_inline.h>
-#include "../../video_renderchain_driver.h"
 
 #include "../drivers/d3d.h"
 #include "../common/d3d_common.h"

@@ -301,7 +301,6 @@ VIDEO DRIVER
 #include "../gfx/drivers/drm_gfx.c"
 #endif
 
-#include "../gfx/video_renderchain_driver.c"
 #include "../gfx/drivers_renderchain/null_renderchain.c"
 
 #ifdef HAVE_OPENGL

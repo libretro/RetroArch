@@ -39,7 +39,7 @@
 #include <gfx/video_frame.h>
 
 #include "gl_legacy_renderchain.h"
-#include "../video_renderchain_driver.h"
+#include "../video_driver.h"
 #include "../common/gl_common.h"
 
 #include "../../driver.h"

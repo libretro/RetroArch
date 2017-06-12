@@ -390,6 +390,17 @@ static const shader_backend_t *shader_ctx_drivers[] = {
    NULL
 };
 
+static const renderchain_driver_t *renderchain_drivers[] = {
+#if defined(_WIN32) && defined(HAVE_D3D9) && defined(HAVE_CG)
+   &cg_d3d9_renderchain,
+#endif
+#ifdef _XBOX
+   &xdk_d3d_renderchain,
+#endif
+   &null_renderchain,
+   NULL
+};
+
 /* Stub functions */
 
 static void update_window_title_null(void *data, void *data2)
@@ -3351,4 +3362,24 @@ bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap)
 {
    wrap->type = current_shader->wrap_type(shader_data, wrap->idx);
    return true;
+}
+
+bool renderchain_init_first(const renderchain_driver_t **renderchain_driver,
+	void **renderchain_handle)
+{
+   unsigned i;
+
+   for (i = 0; renderchain_drivers[i]; i++)
+   {
+      void *data = renderchain_drivers[i]->chain_new();
+
+      if (!data)
+         continue;
+
+      *renderchain_driver = renderchain_drivers[i];
+      *renderchain_handle = data;
+      return true;
+   }
+
+   return false;
 }

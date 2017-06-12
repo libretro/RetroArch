@@ -37,6 +37,7 @@
 #include "video_coord_array.h"
 #include "video_filter.h"
 #include "video_shader_parse.h"
+#include "video_state_tracker.h"
 
 #include "../input/input_driver.h"
 
@@ -73,6 +74,20 @@ RETRO_BEGIN_DECLS
 #ifndef MAX_EGLIMAGE_TEXTURES
 #define MAX_EGLIMAGE_TEXTURES 32
 #endif
+
+#define MAX_VARIABLES 64
+
+enum
+{
+   TEXTURES = 8,
+   TEXTURESMASK = TEXTURES - 1
+};
+
+struct LinkInfo
+{
+   unsigned tex_w, tex_h;
+   struct video_shader_pass *pass;
+};
 
 enum gfx_ctx_api
 {
@@ -632,6 +647,22 @@ typedef struct gfx_ctx_ident
    const char *ident;
 } gfx_ctx_ident_t;
 
+typedef struct video_viewport
+{
+   int x;
+   int y;
+   unsigned width;
+   unsigned height;
+   unsigned full_width;
+   unsigned full_height;
+} video_viewport_t;
+
+struct aspect_ratio_elem
+{
+   char name[64];
+   float value;
+};
+
 /* Optionally implemented interface to poke more
  * deeply into video driver. */
 
@@ -678,15 +709,6 @@ typedef struct video_poke_interface
          const struct retro_hw_render_interface **iface);
 } video_poke_interface_t;
 
-typedef struct video_viewport
-{
-   int x;
-   int y;
-   unsigned width;
-   unsigned height;
-   unsigned full_width;
-   unsigned full_height;
-} video_viewport_t;
 
 /* msg is for showing a message on the screen 
  * along with the video frame. */
@@ -770,11 +792,35 @@ typedef struct video_driver
    unsigned (*wrap_type_to_enum)(enum gfx_wrap_type type);
 } video_driver_t;
 
-struct aspect_ratio_elem
+typedef struct renderchain_driver
 {
-   char name[64];
-   float value;
-};
+   void (*chain_free)(void *data);
+   void *(*chain_new)(void);
+   bool (*reinit)(void *data, const void *info_data);
+   bool (*init)(void *data,
+         const void *video_info_data,
+         void *dev_data,
+         const void *final_viewport_data,
+         const void *info_data,
+         bool rgb32);
+   void (*set_final_viewport)(void *data,
+         void *renderchain_data, const void *viewport_data);
+   bool (*add_pass)(void *data, const void *info_data);
+   bool (*add_lut)(void *data,
+         const char *id, const char *path,
+         bool smooth);
+   void (*add_state_tracker)(void *data, void *tracker_data);
+   bool (*render)(void *chain_data, const void *data,
+         unsigned width, unsigned height, unsigned pitch, unsigned rotation);
+   void (*convert_geometry)(void *data, const void *info_data,
+         unsigned *out_width, unsigned *out_height,
+         unsigned width, unsigned height,
+         void *final_viewport);
+   void (*set_font_rect)(void *data, const void *param_data);
+   bool (*read_viewport)(void *data, uint8_t *buffer, bool is_idle);
+   void (*viewport_info)(void *data, struct video_viewport *vp);
+   const char *ident;
+} renderchain_driver_t;
 
 extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 
@@ -1070,53 +1116,6 @@ void video_driver_get_status(uint64_t *frame_count, bool * is_alive,
 
 void video_driver_set_resize(unsigned width, unsigned height);
 
-extern video_driver_t video_gl;
-extern video_driver_t video_vulkan;
-extern video_driver_t video_psp1;
-extern video_driver_t video_vita2d;
-extern video_driver_t video_ctr;
-extern video_driver_t video_d3d;
-extern video_driver_t video_gx;
-extern video_driver_t video_wiiu;
-extern video_driver_t video_xenon360;
-extern video_driver_t video_xvideo;
-extern video_driver_t video_xdk_d3d;
-extern video_driver_t video_sdl;
-extern video_driver_t video_sdl2;
-extern video_driver_t video_vg;
-extern video_driver_t video_omap;
-extern video_driver_t video_exynos;
-extern video_driver_t video_dispmanx;
-extern video_driver_t video_sunxi;
-extern video_driver_t video_drm;
-extern video_driver_t video_xshm;
-extern video_driver_t video_caca;
-extern video_driver_t video_gdi;
-extern video_driver_t video_vga;
-extern video_driver_t video_null;
-
-extern const gfx_ctx_driver_t gfx_ctx_osmesa;
-extern const gfx_ctx_driver_t gfx_ctx_sdl_gl;
-extern const gfx_ctx_driver_t gfx_ctx_x_egl;
-extern const gfx_ctx_driver_t gfx_ctx_wayland;
-extern const gfx_ctx_driver_t gfx_ctx_x;
-extern const gfx_ctx_driver_t gfx_ctx_d3d;
-extern const gfx_ctx_driver_t gfx_ctx_drm;
-extern const gfx_ctx_driver_t gfx_ctx_mali_fbdev;
-extern const gfx_ctx_driver_t gfx_ctx_vivante_fbdev;
-extern const gfx_ctx_driver_t gfx_ctx_android;
-extern const gfx_ctx_driver_t gfx_ctx_ps3;
-extern const gfx_ctx_driver_t gfx_ctx_wgl;
-extern const gfx_ctx_driver_t gfx_ctx_videocore;
-extern const gfx_ctx_driver_t gfx_ctx_qnx;
-extern const gfx_ctx_driver_t gfx_ctx_cgl;
-extern const gfx_ctx_driver_t gfx_ctx_cocoagl;
-extern const gfx_ctx_driver_t gfx_ctx_emscripten;
-extern const gfx_ctx_driver_t gfx_ctx_opendingux_fbdev;
-extern const gfx_ctx_driver_t gfx_ctx_khr_display;
-extern const gfx_ctx_driver_t gfx_ctx_gdi;
-extern const gfx_ctx_driver_t gfx_ctx_null;
-
 /**
  * video_context_driver_init_first:
  * @data                    : Input data.
@@ -1234,15 +1233,70 @@ bool video_shader_driver_compile_program(struct shader_program_info *program_inf
 
 bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap);
 
+bool renderchain_init_first(const renderchain_driver_t **renderchain_driver,
+	void **renderchain_handle);
+
 extern bool (*video_driver_cb_has_focus)(void);
 
 extern shader_backend_t *current_shader;
 extern void *shader_data;
 
+extern video_driver_t video_gl;
+extern video_driver_t video_vulkan;
+extern video_driver_t video_psp1;
+extern video_driver_t video_vita2d;
+extern video_driver_t video_ctr;
+extern video_driver_t video_d3d;
+extern video_driver_t video_gx;
+extern video_driver_t video_wiiu;
+extern video_driver_t video_xenon360;
+extern video_driver_t video_xvideo;
+extern video_driver_t video_xdk_d3d;
+extern video_driver_t video_sdl;
+extern video_driver_t video_sdl2;
+extern video_driver_t video_vg;
+extern video_driver_t video_omap;
+extern video_driver_t video_exynos;
+extern video_driver_t video_dispmanx;
+extern video_driver_t video_sunxi;
+extern video_driver_t video_drm;
+extern video_driver_t video_xshm;
+extern video_driver_t video_caca;
+extern video_driver_t video_gdi;
+extern video_driver_t video_vga;
+extern video_driver_t video_null;
+
+extern const gfx_ctx_driver_t gfx_ctx_osmesa;
+extern const gfx_ctx_driver_t gfx_ctx_sdl_gl;
+extern const gfx_ctx_driver_t gfx_ctx_x_egl;
+extern const gfx_ctx_driver_t gfx_ctx_wayland;
+extern const gfx_ctx_driver_t gfx_ctx_x;
+extern const gfx_ctx_driver_t gfx_ctx_d3d;
+extern const gfx_ctx_driver_t gfx_ctx_drm;
+extern const gfx_ctx_driver_t gfx_ctx_mali_fbdev;
+extern const gfx_ctx_driver_t gfx_ctx_vivante_fbdev;
+extern const gfx_ctx_driver_t gfx_ctx_android;
+extern const gfx_ctx_driver_t gfx_ctx_ps3;
+extern const gfx_ctx_driver_t gfx_ctx_wgl;
+extern const gfx_ctx_driver_t gfx_ctx_videocore;
+extern const gfx_ctx_driver_t gfx_ctx_qnx;
+extern const gfx_ctx_driver_t gfx_ctx_cgl;
+extern const gfx_ctx_driver_t gfx_ctx_cocoagl;
+extern const gfx_ctx_driver_t gfx_ctx_emscripten;
+extern const gfx_ctx_driver_t gfx_ctx_opendingux_fbdev;
+extern const gfx_ctx_driver_t gfx_ctx_khr_display;
+extern const gfx_ctx_driver_t gfx_ctx_gdi;
+extern const gfx_ctx_driver_t gfx_ctx_null;
+
+
 extern const shader_backend_t gl_glsl_backend;
 extern const shader_backend_t hlsl_backend;
 extern const shader_backend_t gl_cg_backend;
 extern const shader_backend_t shader_null_backend;
+
+extern renderchain_driver_t cg_d3d9_renderchain;
+extern renderchain_driver_t xdk_d3d_renderchain;
+extern renderchain_driver_t null_renderchain;
 
 RETRO_END_DECLS
 
