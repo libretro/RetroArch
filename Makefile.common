@@ -1069,7 +1069,6 @@ ifeq ($(HAVE_7ZIP),1)
    HAVE_COMPRESSION = 1
    DEFINES += -DHAVE_7ZIP
    7ZOBJ = $(DEPS_DIR)/7zip/7zIn.o \
-           $(DEPS_DIR)/7zip/7zAlloc.o \
            $(DEPS_DIR)/7zip/Bra86.o \
            $(DEPS_DIR)/7zip/7zFile.o \
            $(DEPS_DIR)/7zip/7zStream.o \

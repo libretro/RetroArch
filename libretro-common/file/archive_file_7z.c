@@ -32,7 +32,6 @@
 #include <file/file_path.h>
 #include <compat/strl.h>
 #include "../../deps/7zip/7z.h"
-#include "../../deps/7zip/7zAlloc.h"
 #include "../../deps/7zip/7zCrc.h"
 #include "../../deps/7zip/7zFile.h"
 
@@ -53,6 +52,27 @@ struct sevenzip_context_t {
    file_archive_file_handle_t *handle;
 };
 
+static void *sevenzip_stream_alloc_impl(void *p, size_t size)
+{
+   if (size == 0)
+      return 0;
+   return malloc(size);
+}
+
+static void sevenzip_stream_free_impl(void *p, void *address)
+{
+   (void)p;
+   free(address);
+}
+
+static void *sevenzip_stream_alloc_tmp_impl(void *p, size_t size)
+{
+   (void)p;
+   if (size == 0)
+      return 0;
+   return malloc(size);
+}
+
 static void* sevenzip_stream_new(void)
 {
    struct sevenzip_context_t *sevenzip_context =
@@ -60,10 +80,10 @@ static void* sevenzip_stream_new(void)
 
    /* These are the allocation routines - currently using
     * the non-standard 7zip choices. */
-   sevenzip_context->allocImp.Alloc     = SzAlloc;
-   sevenzip_context->allocImp.Free      = SzFree;
-   sevenzip_context->allocTempImp.Alloc = SzAllocTemp;
-   sevenzip_context->allocTempImp.Free  = SzFreeTemp;
+   sevenzip_context->allocImp.Alloc     = sevenzip_stream_alloc_impl;
+   sevenzip_context->allocImp.Free      = sevenzip_stream_free_impl;
+   sevenzip_context->allocTempImp.Alloc = sevenzip_stream_alloc_tmp_impl;
+   sevenzip_context->allocTempImp.Free  = sevenzip_stream_free_impl;
    sevenzip_context->block_index        = 0xFFFFFFFF;
    sevenzip_context->output             = NULL;
    sevenzip_context->handle             = NULL;
@@ -109,10 +129,10 @@ static int sevenzip_file_read(
 
    /*These are the allocation routines.
     * Currently using the non-standard 7zip choices. */
-   allocImp.Alloc       = SzAlloc;
-   allocImp.Free        = SzFree;
-   allocTempImp.Alloc   = SzAllocTemp;
-   allocTempImp.Free    = SzFreeTemp;
+   allocImp.Alloc       = sevenzip_stream_alloc_impl;
+   allocImp.Free        = sevenzip_stream_free_impl;
+   allocTempImp.Alloc   = sevenzip_stream_alloc_tmp_impl;
+   allocTempImp.Free    = sevenzip_stream_free_impl;
 
    /* Could not open 7zip archive? */
    if (InFile_Open(&archiveStream.file, path))

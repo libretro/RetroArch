@@ -1087,7 +1087,6 @@ DEPENDENCIES
 
 #ifdef HAVE_7ZIP
 #include "../deps/7zip/7zIn.c"
-#include "../deps/7zip/7zAlloc.c"
 #include "../deps/7zip/Bra86.c"
 #include "../deps/7zip/7zFile.c"
 #include "../deps/7zip/7zStream.c"

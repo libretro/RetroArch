@@ -60,29 +60,10 @@ typedef int Bool;
 #define True 1
 #define False 0
 
-
-#ifdef _WIN32
-#define MY_STD_CALL __stdcall
-#else
-#define MY_STD_CALL
-#endif
-
 #ifdef _MSC_VER
-
-#if _MSC_VER >= 1300
-#define MY_NO_INLINE __declspec(noinline)
-#else
-#define MY_NO_INLINE
-#endif
-
-#define MY_CDECL __cdecl
 #define MY_FAST_CALL __fastcall
-
 #else
-
-#define MY_CDECL
 #define MY_FAST_CALL
-
 #endif
 
 
