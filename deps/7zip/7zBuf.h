@@ -20,18 +20,6 @@ void Buf_Init(CBuf *p);
 int Buf_Create(CBuf *p, size_t size, ISzAlloc *alloc);
 void Buf_Free(CBuf *p, ISzAlloc *alloc);
 
-typedef struct
-{
-  uint8_t *data;
-  size_t size;
-  size_t pos;
-} CDynBuf;
-
-void DynBuf_Construct(CDynBuf *p);
-void DynBuf_SeekToBeg(CDynBuf *p);
-int DynBuf_Write(CDynBuf *p, const uint8_t *buf, size_t size, ISzAlloc *alloc);
-void DynBuf_Free(CDynBuf *p, ISzAlloc *alloc);
-
 #ifdef __cplusplus
 }
 #endif

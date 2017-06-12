@@ -1072,7 +1072,6 @@ ifeq ($(HAVE_7ZIP),1)
            $(DEPS_DIR)/7zip/Bra86.o \
            $(DEPS_DIR)/7zip/7zFile.o \
            $(DEPS_DIR)/7zip/7zStream.o \
-           $(DEPS_DIR)/7zip/7zBuf2.o \
            $(DEPS_DIR)/7zip/LzmaDec.o \
            $(DEPS_DIR)/7zip/7zCrcOpt.o \
            $(DEPS_DIR)/7zip/Bra.o \
