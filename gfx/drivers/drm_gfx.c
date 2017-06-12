@@ -38,6 +38,7 @@
 
 #include "../font_driver.h"
 #include "../../retroarch.h"
+#include "../../verbosity.h"
 
 #include "drm_pixformats.h"
 
