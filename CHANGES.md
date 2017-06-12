@@ -6,6 +6,7 @@
 - SCANNING: Fix PS1 game scanning
 - VITA: Add support for external USB if mounted
 - LOCALIZATION: Update Italian translation
+- LOCALIZATION: Update Japanese translation
 - LOCALIZATION: Update Russian translation
 - WAYLAND: Fix menu mouse input
 - INPUT: Fix 'All Users Control Menu' setting
