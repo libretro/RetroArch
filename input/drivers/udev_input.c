@@ -56,7 +56,7 @@
 
 #include "../../verbosity.h"
 
-#if defined(HAVE_XKBCOMMON) && defined(HAVE_PLAIN_DRM)
+#if defined(HAVE_XKBCOMMON) && defined(HAVE_KMS)
 #define UDEV_XKB_HANDLING
 #endif
 
