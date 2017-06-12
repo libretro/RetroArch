@@ -1149,7 +1149,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
       "Автосохранение")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
-      "Сохранить статистику")
+      "Сохранить состояние")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
       "Сохранить текущую конфигурацию")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
@@ -1159,7 +1159,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
       "Сохранить новую конфигурацию")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_STATE,
-      "Сохранить статистику")
+      "Сохранить состояние")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
       "Сохранить")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY,
@@ -1215,7 +1215,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
       "Запустить видеопроцессор")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STATE_SLOT,
-      "Статистика слота")
+      "Слот состояния")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STATUS,
       "Статус")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE,
@@ -1869,7 +1869,7 @@ MSG_HASH(MSG_FAILED_TO_SEND_NICKNAME_SIZE,
 MSG_HASH(MSG_FAILED_TO_SEND_NICKNAME_TO_CLIENT,
       "Не удалось отправить никнейм клиенту.")
 MSG_HASH(MSG_FAILED_TO_SEND_NICKNAME_TO_HOST,
-      "FНе удалось отправить никнейм на хост.")
+      "Не удалось отправить никнейм на хост.")
 MSG_HASH(MSG_FAILED_TO_SEND_SRAM_DATA_TO_CLIENT,
       "Не удалось отправить данные SRAM клиенту.")
 MSG_HASH(MSG_FAILED_TO_START_AUDIO_DRIVER,
@@ -1991,7 +1991,7 @@ MSG_HASH(MSG_REDIRECTING_SAVEFILE_TO,
 MSG_HASH(MSG_REDIRECTING_SAVESTATE_TO,
       "Файл сохранения перенаправлен в")
 MSG_HASH(MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
-      "Remap file saved successfully.")
+      "Файл перекодировки успешно сохранен.")
 MSG_HASH(MSG_REMOVED_DISK_FROM_TRAY,
       "Диск извлечён.")
 MSG_HASH(MSG_REMOVING_TEMPORARY_CONTENT_FILE,
@@ -2112,7 +2112,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
-      "Влияйте на то, как входной опрос выполняется внутри RetroArch. Установка его на« Early »или« Late »может привести к меньшему времени ожидания в зависимости от вашей конфигурации."
+      "Влияйте на то, как входной опрос выполняется внутри RetroArch. Установка его на «Раньше» или «Позже» может привести к меньшему времени ожидания в зависимости от вашей конфигурации."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
@@ -2148,7 +2148,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ALLOW_ROTATE,
-   "AРазрешить ядрам задавать поворот, при отключении, запросы на поворот игнорируются, что полезно при настройках, когда один из них поворачивает экран вручную."
+   "Разрешить ядрам задавать поворот, при отключении, запросы на поворот игнорируются, что полезно при настройках, когда один из них поворачивает экран вручную."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN,
@@ -2246,9 +2246,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
       "Ограничить количество записей в последнем плейлисте для игр, изображений, музыки и видео.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
-      "Unified Menu Controls")
+      "Унифицировать управление в меню")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
-      "Использовать те же элементы управления в игре, что и в меню (для клавиатуры).")
+      "Использовать управление в меню, такое же как в игре (для клавиатуры).")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
       "Показывать сообщения на экране.")
 MSG_HASH(
