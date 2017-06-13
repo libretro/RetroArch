@@ -75,6 +75,7 @@ endif
 OBJS += $(CORE_DIR)/djb2.o \
 		  $(CORE_DIR)/md5.o \
 		  $(CORE_DIR)/sha1.o \
+		  $(CORE_DIR)/sha1_main.o \
 		  $(CORE_DIR)/crc32.o
 UTILS += djb2$(DYLIB) md5$(DYLIB) sha1$(DYLIB) crc32$(DYLIB)
 
