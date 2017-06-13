@@ -412,6 +412,8 @@ void SHA1PadMessage(SHA1Context *context)
    SHA1ProcessMessageBlock(context);
 }
 
+#ifdef SHA1_BUILD_UTILITY
+
 /*
  *  sha.cpp
  *
@@ -588,3 +590,4 @@ void usage(void)
    printf("\tThis program will display the message digest\n");
    printf("\tfor files using the Secure Hashing Algorithm (SHA-1).\n");
 }
+#endif
