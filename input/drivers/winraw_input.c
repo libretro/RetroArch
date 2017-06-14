@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <Windows.h>
+#include <windows.h>
 
 #include "../configuration.h"
 #include "../input_driver.h"
