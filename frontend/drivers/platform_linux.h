@@ -161,7 +161,6 @@ struct android_app
    jmethodID getPendingIntentDownloadsLocation;
    jmethodID getPendingIntentScreenshotsLocation;
    jmethodID isAndroidTV;
-   jmethodID checkRuntimePermissions;
 };
 
 
