@@ -21,13 +21,13 @@
 #define _WIN32_WINNT 0x0600
 #define WIN32_LEAN_AND_MEAN
 
-#include <Windows.h>
-#include <Winerror.h>
+#include <windows.h>
+#include <winerror.h>
 #include <initguid.h>
-#include <Mmdeviceapi.h>
-#include <Mmreg.h>
-#include <Audioclient.h>
-#include <Propidl.h>
+#include <mmdeviceapi.h>
+#include <mmreg.h>
+#include <audioclient.h>
+#include <propidl.h>
 
 #include <lists/string_list.h>
 #include <queues/fifo_queue.h>
