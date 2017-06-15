@@ -5,6 +5,7 @@
 - SDL2: Fix 'SDL2 driver does not see the hat on wired Xbox 360 controller"
 - SCANNING: Fix PS1 game scanning
 - VITA: Add support for external USB if mounted
+- LOCALIZATION: Update French translation
 - LOCALIZATION: Update Italian translation
 - LOCALIZATION: Update Japanese translation
 - LOCALIZATION: Update Russian translation
