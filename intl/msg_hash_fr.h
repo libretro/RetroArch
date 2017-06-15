@@ -12,31 +12,31 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
-      "Unknown netplay command received"
+      "Commande reçue netplay inconnu"
       )
 MSG_HASH(
       MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
-      "File already exists. Saving to backup buffer"
+      "Le fichier existe déjà. Enregistrement dans la mémoire tampon de sauvegarde"
       )
 MSG_HASH(
       MSG_GOT_CONNECTION_FROM,
-      "Got connection from: \"%s\""
+      "Avoir une connexion de: \"%s\""
       )
 MSG_HASH(
       MSG_GOT_CONNECTION_FROM_NAME,
-      "Got connection from: \"%s (%s)\""
+      "Avoir une connexion de: \"%s (%s)\""
       )
 MSG_HASH(
       MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
-      "No arguments supplied and no menu builtin, displaying help..."
+      "Pas d'arguments fournis et aucun menu intégré, affichant de l'aide..."
       )
 MSG_HASH(
       MSG_NETPLAY_USERS_HAS_FLIPPED,
-      "Netplay users has flipped"
+      "Les utilisateurs de Netplay ont étaient renversé"
       )
 MSG_HASH(
       MSG_SETTING_DISK_IN_TRAY,
-      "Setting disk in tray"
+      "Réglage du disque dans la barre d'état"
       )
 MSG_HASH(
       MSG_WAITING_FOR_CLIENT,
@@ -44,7 +44,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
-      "Give hardware-rendered cores their own private context. Avoids having to assume hardware state changes inbetween frames."
+      "Donner aux noyaux matériels leur propre contexte privé. Evite d'assumer des modifications d'état matériel entre les images."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_SETTINGS,
@@ -88,7 +88,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY,
-      "Sorry, unimplemented: cores that don't demand content cannot participate in netplay."
+      "Désolé, sans mise en œuvre: les noyaux qui n'exigent pas de contenu ne peuvent pas participer au jeu de base."
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
@@ -96,7 +96,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
-      "Accounts Cheevos"
+      "Comptes Cheevos"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
@@ -108,7 +108,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST_END,
-      "Accounts List Endpoint"
+      "Nom de liste des comptes"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS,
@@ -739,7 +739,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_LATE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_NORMAL,
       "Normal")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
-      "Prefer Front Touch")
+      "Préférer le contact avant")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
       "Dossier de remaps d'entrées")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
@@ -879,11 +879,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NEAREST,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY,
       "Jeu en réseau")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
-      "Netplay Check Frames")
+      "Frames de vérification de Netplay")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT,
       "Inverser les entrées du jeu en réseau")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES,
-      "Netplay Delay Frames")
+      "Frames de retard de Netplay")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
       "Déconnexion")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
@@ -893,7 +893,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
       "Commencer l'hébergement")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
-      "Stop netplay host")
+      "Arrêtez l'hôte de netplay")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
       "Adresse IP")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_MODE,
@@ -1731,7 +1731,7 @@ MSG_HASH(MSG_COULD_NOT_FIND_COMPATIBLE_SYSTEM,
 MSG_HASH(MSG_COULD_NOT_FIND_VALID_DATA_TRACK,
       "Impossible de trouver de données valides.")
 MSG_HASH(MSG_COULD_NOT_OPEN_DATA_TRACK,
-      "could not open data track")
+      "Impossible d'ouvrir la piste de données")
 MSG_HASH(MSG_COULD_NOT_READ_CONTENT_FILE,
       "Impossible de lire le contenu du fichier")
 MSG_HASH(MSG_COULD_NOT_READ_MOVIE_HEADER,
