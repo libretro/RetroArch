@@ -63,6 +63,11 @@ menu/driverspzarch.c
 /media/shaders_glsl/
 /obj-w32/
 
+# Wii U
+*.depend
+*.rpx
+wiiu/wut/elf2rpl/elf2rpl
+
 # Ctags
 /tags
 
