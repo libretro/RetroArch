@@ -11,6 +11,7 @@ PC_DEVELOPMENT_TCP_PORT	   ?=
 OBJ :=
 OBJ += wiiu/system/memory.o
 OBJ += wiiu/system/exception_handler.o
+OBJ += wiiu/system/missing_libc_functions.o
 OBJ += wiiu/fs/sd_fat_devoptab.o
 OBJ += wiiu/fs/fs_utils.o
 OBJ += wiiu/controller_patcher/ControllerPatcher.o
