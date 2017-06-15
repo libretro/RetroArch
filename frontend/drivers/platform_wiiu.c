@@ -310,14 +310,14 @@ frontend_ctx_driver_t frontend_ctx_wiiu =
    "wiiu",
 };
 
-static int log_socket = -1;
-static volatile int log_lock = 0;
+static int wiiu_log_socket = -1;
+static volatile int wiiu_log_lock = 0;
 
-void log_init(const char *ipString, int port)
+void wiiu_log_init(const char *ipString, int port)
 {
-   log_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+   wiiu_log_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-   if (log_socket < 0)
+   if (wiiu_log_socket < 0)
       return;
 
    struct sockaddr_in connect_addr;
@@ -326,37 +326,37 @@ void log_init(const char *ipString, int port)
    connect_addr.sin_port = port;
    inet_aton(ipString, &connect_addr.sin_addr);
 
-   if (connect(log_socket, (struct sockaddr *)&connect_addr, sizeof(connect_addr)) < 0)
+   if (connect(wiiu_log_socket, (struct sockaddr *)&connect_addr, sizeof(connect_addr)) < 0)
    {
-      socketclose(log_socket);
-      log_socket = -1;
+      socketclose(wiiu_log_socket);
+      wiiu_log_socket = -1;
    }
 }
 
-void log_deinit(void)
+void wiiu_log_deinit(void)
 {
-   if (log_socket >= 0)
+   if (wiiu_log_socket >= 0)
    {
-      socketclose(log_socket);
-      log_socket = -1;
+      socketclose(wiiu_log_socket);
+      wiiu_log_socket = -1;
    }
 }
-static ssize_t log_write(struct _reent *r, void *fd, const char *ptr, size_t len)
+static ssize_t wiiu_log_write(struct _reent *r, void *fd, const char *ptr, size_t len)
 {
-   if (log_socket < 0)
+   if (wiiu_log_socket < 0)
       return len;
 
-   while (log_lock)
+   while (wiiu_log_lock)
       OSSleepTicks(((248625000 / 4)) / 1000);
 
-   log_lock = 1;
+   wiiu_log_lock = 1;
 
    int ret;
 
    while (len > 0)
    {
       int block = len < 1400 ? len : 1400; // take max 1400 bytes per UDP packet
-      ret = send(log_socket, ptr, block, 0);
+      ret = send(wiiu_log_socket, ptr, block, 0);
 
       if (ret < 0)
          break;
@@ -365,18 +365,18 @@ static ssize_t log_write(struct _reent *r, void *fd, const char *ptr, size_t len
       ptr += ret;
    }
 
-   log_lock = 0;
+   wiiu_log_lock = 0;
 
    return len;
 }
 void net_print(const char *str)
 {
-   log_write(NULL, 0, str, strlen(str));
+   wiiu_log_write(NULL, 0, str, strlen(str));
 }
 
 void net_print_exp(const char *str)
 {
-   send(log_socket, str, strlen(str), 0);
+   send(wiiu_log_socket, str, strlen(str), 0);
 }
 
 static devoptab_t dotab_stdout =
@@ -385,7 +385,7 @@ static devoptab_t dotab_stdout =
    0,            // size of file structure
    NULL,         // device open
    NULL,         // device close
-   log_write,    // device write
+   wiiu_log_write,    // device write
    NULL,
    /* ... */
 };
@@ -420,7 +420,7 @@ int main(int argc, char **argv)
    network_init();
 #endif
 #if defined(PC_DEVELOPMENT_IP_ADDRESS) && defined(PC_DEVELOPMENT_TCP_PORT)
-   log_init(PC_DEVELOPMENT_IP_ADDRESS, PC_DEVELOPMENT_TCP_PORT);
+   wiiu_log_init(PC_DEVELOPMENT_IP_ADDRESS, PC_DEVELOPMENT_TCP_PORT);
    devoptab_list[STD_OUT] = &dotab_stdout;
    devoptab_list[STD_ERR] = &dotab_stdout;
 #endif
@@ -504,7 +504,7 @@ int main(int argc, char **argv)
    ProcUIShutdown();
 
 #if defined(PC_DEVELOPMENT_IP_ADDRESS) && defined(PC_DEVELOPMENT_TCP_PORT)
-   log_deinit();
+   wiiu_log_deinit();
 #endif
 
    /* returning non 0 here can prevent loading a different rpx/elf in the HBL environment */

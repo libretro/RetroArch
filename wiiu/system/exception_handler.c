@@ -81,7 +81,7 @@ static const char exception_print_formats[18][45] =
    "%p:  %08X %08X %08X %08X\n",                         // 17
 };
 void net_print_exp(const char* str);
-void log_deinit(void);
+void wiiu_log_deinit(void);
 
 static unsigned char exception_cb(void* c, unsigned char exception_type)
 {
@@ -182,7 +182,7 @@ static unsigned char exception_cb(void* c, unsigned char exception_type)
    //}
    net_print_exp(gdb_buf);
 //   net_print_exp(buf);
-   log_deinit();
+   wiiu_log_deinit();
    OSFatal(buf);
    return 1;
 }
