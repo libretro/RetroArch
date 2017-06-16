@@ -20,7 +20,6 @@
 #include <lists/string_list.h>
 #include <string/stdstring.h>
 #include <retro_assert.h>
-#include <retro_stat.h>
 
 #include "dirs.h"
 #include "command.h"

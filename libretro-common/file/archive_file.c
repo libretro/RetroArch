@@ -42,7 +42,6 @@
 #include <file/archive_file.h>
 #include <file/file_path.h>
 #include <streams/file_stream.h>
-#include <retro_stat.h>
 #include <retro_miscellaneous.h>
 #include <lists/string_list.h>
 #include <string/stdstring.h>

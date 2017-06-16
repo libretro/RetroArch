@@ -54,7 +54,6 @@
 
 #include <retro_miscellaneous.h>
 #include <streams/file_stream.h>
-#include <retro_stat.h>
 #include <retro_assert.h>
 
 #include <lists/string_list.h>

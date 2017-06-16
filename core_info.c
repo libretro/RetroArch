@@ -21,8 +21,6 @@
 #include <lists/dir_list.h>
 #include <file/archive_file.h>
 
-#include <retro_stat.h>
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

@@ -17,7 +17,6 @@
 #include <retro_assert.h>
 #include <streams/file_stream.h>
 #include <file/file_path.h>
-#include <retro_stat.h>
 #include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H

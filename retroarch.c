@@ -42,7 +42,6 @@
 #include <audio/audio_mixer.h>
 #include <compat/posix_string.h>
 #include <file/file_path.h>
-#include <retro_stat.h>
 #include <retro_assert.h>
 #include <retro_miscellaneous.h>
 #include <queues/message_queue.h>

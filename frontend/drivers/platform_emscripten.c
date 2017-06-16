@@ -20,7 +20,6 @@
 
 #include <file/config_file.h>
 #include <queues/task_queue.h>
-#include <retro_stat.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
 

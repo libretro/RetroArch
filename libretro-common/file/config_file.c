@@ -41,7 +41,6 @@
 #include <compat/msvc.h>
 #include <file/config_file.h>
 #include <file/file_path.h>
-#include <retro_stat.h>
 #include <lists/string_list.h>
 #include <string/stdstring.h>
 #include <rhash.h>

@@ -29,7 +29,6 @@
 #include <string/stdstring.h>
 #include <formats/image.h>
 #include <compat/strl.h>
-#include <retro_stat.h>
 #include <string/stdstring.h>
 
 #include "menu_generic.h"

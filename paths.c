@@ -19,7 +19,6 @@
 #include <lists/string_list.h>
 #include <string/stdstring.h>
 #include <retro_assert.h>
-#include <retro_stat.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

@@ -24,7 +24,6 @@
 #include <lists/dir_list.h>
 #include <file/file_path.h>
 #include <file/archive_file.h>
-#include <retro_stat.h>
 #include <string/stdstring.h>
 #include <features/features_cpu.h>
 

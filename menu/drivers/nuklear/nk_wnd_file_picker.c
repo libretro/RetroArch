@@ -25,7 +25,6 @@
 #include <string/stdstring.h>
 #include <lists/string_list.h>
 #include <lists/dir_list.h>
-#include <retro_stat.h>
 
 #include "nk_menu.h"
 

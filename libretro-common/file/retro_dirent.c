@@ -26,7 +26,7 @@
 #include <retro_common.h>
 
 #include <boolean.h>
-#include <retro_stat.h>
+#include <file/file_path.h>
 #include <retro_dirent.h>
 #include <encodings/utf.h>
 

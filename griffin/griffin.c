@@ -736,7 +736,6 @@ FILE
 #include "../libretro-common/streams/file_stream.c"
 #include "../libretro-common/streams/interface_stream.c"
 #include "../libretro-common/streams/memory_stream.c"
-#include "../libretro-common/file/retro_stat.c"
 #include "../list_special.c"
 #include "../libretro-common/string/stdstring.c"
 #include "../libretro-common/file/nbio/nbio_stdio.c"

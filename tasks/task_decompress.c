@@ -20,7 +20,6 @@
 #include <file/file_path.h>
 #include <file/archive_file.h>
 #include <retro_miscellaneous.h>
-#include <retro_stat.h>
 #include <compat/strl.h>
 
 #include "tasks_internal.h"

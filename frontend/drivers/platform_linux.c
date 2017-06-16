@@ -46,7 +46,6 @@
 #include <retro_inline.h>
 #include <compat/strl.h>
 #include <rhash.h>
-#include <retro_stat.h>
 #include <lists/file_list.h>
 #include <file/file_path.h>
 #include <streams/file_stream.h>

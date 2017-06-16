@@ -37,7 +37,7 @@
 #include <retro_miscellaneous.h>
 #include <gfx/scaler/scaler.h>
 #include <gfx/video_frame.h>
-#include <retro_stat.h>
+#include <file/file_path.h>
 
 #include <compat/strl.h>
 

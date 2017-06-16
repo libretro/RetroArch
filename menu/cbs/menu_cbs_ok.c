@@ -17,7 +17,6 @@
 #include <compat/strl.h>
 #include <file/file_path.h>
 #include <retro_assert.h>
-#include <retro_stat.h>
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <lists/string_list.h>
