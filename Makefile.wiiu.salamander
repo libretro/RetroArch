@@ -25,7 +25,6 @@ OBJ += libretro-common/file/retro_dirent.o
 OBJ += libretro-common/compat/compat_strl.o
 OBJ += libretro-common/file/config_file.o
 OBJ += libretro-common/streams/file_stream.o
-OBJ += libretro-common/file/retro_stat.o
 OBJ += libretro-common/hash/rhash.o
 OBJ += file_path_str.o
 OBJ += verbosity.o
