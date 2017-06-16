@@ -194,7 +194,7 @@ int32_t path_get_size(const char *path)
  *
  * Returns: true (1) if directory could be created, otherwise false (0).
  **/
-bool mkdir_norecurse(const char *dir)
+static bool mkdir_norecurse(const char *dir)
 {
 #if defined(_WIN32)
    int ret = _mkdir(dir);

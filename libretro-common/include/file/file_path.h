@@ -473,16 +473,6 @@ bool path_is_valid(const char *path);
 
 int32_t path_get_size(const char *path);
 
-/**
- * path_mkdir_norecurse:
- * @dir                : directory
- *
- * Create directory on filesystem.
- *
- * Returns: true (1) if directory could be created, otherwise false (0).
- **/
-bool mkdir_norecurse(const char *dir);
-
 RETRO_END_DECLS
 
 #endif
