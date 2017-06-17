@@ -72,7 +72,7 @@ static int16_t hidpad_ps2adapter_get_axis(void *data, unsigned axis)
    int val                               = 0;
    struct hidpad_ps2adapter_data *device = (struct hidpad_ps2adapter_data*)data;
 
-   if (!device || axis >= 2)
+   if (!device || axis >= 4)
       return 0;
    
    switch (axis)
