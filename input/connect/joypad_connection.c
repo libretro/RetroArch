@@ -83,6 +83,7 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
       { "Generic NES USB Controller",  121,   17,     &pad_connection_nesusb },
       { "Wii U GC Controller Adapter", 1406,  823,    &pad_connection_wiiugca },
       { "PS2/PSX Controller Adapter",  2064,  1,      &pad_connection_ps2adapter },
+      { "PSX to PS3 Controller Adapter", 2064, 3,     &pad_connection_psxadapter },
       { 0, 0}
    };
    joypad_connection_t *s = NULL;

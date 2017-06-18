@@ -531,6 +531,7 @@ INPUT (HID)
 #include "../input/connect/connect_nesusb.c"
 #include "../input/connect/connect_wiiugca.c"
 #include "../input/connect/connect_ps2adapter.c"
+#include "../input/connect/connect_psxadapter.c"
 #endif
 
 /*============================================================
