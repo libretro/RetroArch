@@ -29,6 +29,7 @@
 #include "config.h"
 #endif
 
+#include "gfx/video_driver.h"
 #include "input/input_defines.h"
 
 enum override_type
@@ -409,6 +410,8 @@ typedef struct settings
    } paths;
 
    bool modified;
+
+   video_viewport_t video_viewport_custom;
 
    size_t rewind_buffer_size;
 } settings_t;

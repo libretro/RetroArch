@@ -1295,7 +1295,6 @@ static struct config_float_setting *populate_settings_float(settings_t *settings
 static struct config_uint_setting *populate_settings_uint(settings_t *settings, int *size)
 {
    unsigned count                     = 0;
-   struct video_viewport *custom_vp   = video_viewport_get_custom();
    struct config_uint_setting  *tmp   = (struct config_uint_setting*)malloc((*size + 1) * sizeof(struct config_uint_setting));
 
    SETTING_UINT("input_bind_timeout",           &settings->uints.input_bind_timeout,     true, input_bind_timeout, false);
@@ -1337,10 +1336,10 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("menu_shader_pipeline",         &settings->uints.menu_xmb_shader_pipeline, true, menu_shader_pipeline, false);
 #endif
    SETTING_UINT("audio_out_rate",               &settings->uints.audio_out_rate, true, out_rate, false);
-   SETTING_UINT("custom_viewport_width",        &custom_vp->width, false, 0 /* TODO */, false);
-   SETTING_UINT("custom_viewport_height",       &custom_vp->height, false, 0 /* TODO */, false);
-   SETTING_UINT("custom_viewport_x",            (unsigned*)&custom_vp->x, false, 0 /* TODO */, false);
-   SETTING_UINT("custom_viewport_y",            (unsigned*)&custom_vp->y, false, 0 /* TODO */, false);
+   SETTING_UINT("custom_viewport_width",        &settings->video_viewport_custom.width, false, 0 /* TODO */, false);
+   SETTING_UINT("custom_viewport_height",       &settings->video_viewport_custom.height, false, 0 /* TODO */, false);
+   SETTING_UINT("custom_viewport_x",            (unsigned*)&settings->video_viewport_custom.x, false, 0 /* TODO */, false);
+   SETTING_UINT("custom_viewport_y",            (unsigned*)&settings->video_viewport_custom.y, false, 0 /* TODO */, false);
    SETTING_UINT("content_history_size",         &settings->uints.content_history_size,   true, default_content_history_size, false);
    SETTING_UINT("video_hard_sync_frames",       &settings->uints.video_hard_sync_frames, true, hard_sync_frames, false);
    SETTING_UINT("video_frame_delay",            &settings->uints.video_frame_delay,      true, frame_delay, false);
