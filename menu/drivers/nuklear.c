@@ -166,7 +166,7 @@ static void *nk_menu_init(void **userdata, bool video_is_threaded)
       goto error;
 
    *userdata = nk;
-   fill_pathname_join(nk->assets_directory, settings->directory.assets,
+   fill_pathname_join(nk->assets_directory, settings->paths.directory_assets,
          "nuklear", sizeof(nk->assets_directory));
    nk_menu_init_device(nk);
 
@@ -430,15 +430,15 @@ static void nk_menu_context_reset(void *data, bool is_threaded)
    if (!nk || !settings)
       return;
 
-   fill_pathname_join(iconpath, settings->directory.assets,
+   fill_pathname_join(iconpath, settings->paths.directory_assets,
          "nuklear", sizeof(iconpath));
    fill_pathname_slash(iconpath, sizeof(iconpath));
 
    nk_menu_init_device(nk);
    nk_menu_context_load_textures(nk, iconpath);
 
-   if (path_file_exists(settings->path.menu_wallpaper))
-      task_push_image_load(settings->path.menu_wallpaper,
+   if (path_file_exists(settings->paths.path_menu_wallpaper))
+      task_push_image_load(settings->paths.path_menu_wallpaper,
             menu_display_handle_wallpaper_upload, NULL);
 }
 
