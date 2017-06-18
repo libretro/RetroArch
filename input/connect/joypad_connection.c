@@ -110,6 +110,7 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
          }
 
 #if 0
+         RARCH_LOG("name: %s\n", name);
          RARCH_LOG("%d VID, PID %d (config)\n", vid, pid);
          RARCH_LOG("%d VID, PID %d\n", pad_map[i].vid, pad_map[i].pid);
 #endif
