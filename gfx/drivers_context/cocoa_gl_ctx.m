@@ -343,7 +343,7 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
     [g_context setView:g_view];
 #else
     if (g_use_hw_ctx)
-        g_hw_ctx = [[EAGLContext alloc] initWithAPI:kEAGLrenderingAPIOpenGLES2];
+        g_hw_ctx = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
     g_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
     g_view.context = g_context;
 #endif
