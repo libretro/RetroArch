@@ -84,7 +84,7 @@ void nk_wnd_main(nk_menu_handle_t *nk, const char* title)
          out = core;
          strlcpy(picker_title, "Select core", sizeof(picker_title));
          strlcpy(picker_filter, ".dll", sizeof(picker_filter));
-         picker_startup_dir = settings->directory.libretro;
+         picker_startup_dir = settings->paths.directory_libretro;
          nk->window[NK_WND_FILE_PICKER].open = true;
       }
       nk_layout_row_dynamic(ctx, 30, 1);
@@ -96,7 +96,7 @@ void nk_wnd_main(nk_menu_handle_t *nk, const char* title)
          out = content;
          strlcpy(picker_title, "Select content", sizeof(picker_title));
          strlcpy(picker_filter, ".zip", sizeof(picker_filter));
-         picker_startup_dir = settings->directory.menu_content;
+         picker_startup_dir = settings->paths.directory_menu_content;
          nk->window[NK_WND_FILE_PICKER].open = true;
       }
    }
