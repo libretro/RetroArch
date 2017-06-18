@@ -384,12 +384,15 @@ float input_sensor_get_input(unsigned port, unsigned id)
 void input_poll(void)
 {
    size_t i;
+   rarch_joypad_info_t joypad_info;
    settings_t *settings           = config_get_ptr();
    unsigned max_users             = input_driver_max_users;
    
    current_input->poll(current_input_data);
 
    input_driver_turbo_btns.count++;
+
+   joypad_info.axis_threshold = input_driver_axis_threshold;
 
    for (i = 0; i < max_users; i++)
    {
@@ -398,8 +401,6 @@ void input_poll(void)
       if (!input_driver_block_libretro_input && 
             libretro_input_binds[i][RARCH_TURBO_ENABLE].valid)
       {
-         rarch_joypad_info_t joypad_info;
-         joypad_info.axis_threshold = input_driver_axis_threshold;
          joypad_info.joy_idx        = settings->uints.input_joypad_map[i];
          joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
 
