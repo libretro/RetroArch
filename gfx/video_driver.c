@@ -2465,6 +2465,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_driver_threaded_lock(is_threaded);
 #endif
    settings                          = config_get_ptr();
+   video_info->hw_render_ctx         = false; /* TODO/FIXME - might eventually do something here */
    video_info->refresh_rate          = settings->floats.video_refresh_rate;
    video_info->black_frame_insertion = 
       settings->bools.video_black_frame_insertion;
@@ -2725,6 +2726,8 @@ static const gfx_ctx_driver_t *video_context_driver_init(
       void       *ctx_data = NULL;
 
       video_driver_build_info(&video_info);
+
+      video_info.hw_render_ctx = hw_render_ctx;
 
       ctx_data = ctx->init(&video_info, data);
 

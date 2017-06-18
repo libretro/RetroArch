@@ -136,6 +136,9 @@ static void *android_gfx_ctx_init(video_frame_info_t *video_info, void *video_dr
       attribs[1] = EGL_OPENGL_ES3_BIT_KHR;
 #endif
 
+   and->egl.use_hw_ctx = video_info->shared_context 
+      && video_info->hw_render_ctx;
+
    switch (android_api)
    {
       case GFX_CTX_OPENGL_API:
