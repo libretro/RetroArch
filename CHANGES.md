@@ -13,6 +13,7 @@
 - WII: Add support for single-port 'PS1/PS2 to USB controller adapter'
 - INPUT: Fix 'All Users Control Menu' setting
 - INPUT: Add mouse index selection; ability now to select between different mice
+- SETTINGS: Fix regression 'Custom Viewport is no longer overridable per-core or per-game'
 
 # 1.6.0
 - AUTOSAVE/SRAM - Fix bug #3829 / #4820 (https://github.com/libretro/RetroArch/issues/3829)
