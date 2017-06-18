@@ -180,7 +180,7 @@ static const bool video_vfilter = true;
 #endif
 
 /* Smooths picture. */
-static const bool video_smooth = true;
+static const bool video_smooth = false;
 
 /* On resize and fullscreen, rendering area will stay 4:3 */
 static const bool force_aspect = true;
