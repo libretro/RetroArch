@@ -677,6 +677,9 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
 
    input_driver_block_libretro_input            = false;
    input_driver_block_hotkey                    = false;
+   joypad_info.joy_idx                          = 0;
+   joypad_info.auto_binds                       = NULL;
+   joypad_info.joy_idx                          = input_driver_axis_threshold;
 
    if (current_input->keyboard_mapping_is_blocked 
          && current_input->keyboard_mapping_is_blocked(current_input_data))
@@ -701,7 +704,6 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
 
          joypad_info.joy_idx                          = settings->uints.input_joypad_map[port];
          joypad_info.auto_binds                       = input_autoconf_binds[joypad_info.joy_idx];
-         joypad_info.axis_threshold                   = input_driver_axis_threshold;
 
          if (htkey->valid 
                && current_input->input_state(current_input_data, joypad_info,
@@ -742,7 +744,6 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
 
             joypad_info.joy_idx                          = settings->uints.input_joypad_map[port];
             joypad_info.auto_binds                       = input_autoconf_binds[joypad_info.joy_idx];
-            joypad_info.axis_threshold                   = input_driver_axis_threshold;
 
             joykey     = (input_config_binds[port][i].joykey != NO_BTN)
                ? input_config_binds[port][i].joykey : joypad_info.auto_binds[i].joykey;
