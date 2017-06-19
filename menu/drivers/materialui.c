@@ -1845,8 +1845,14 @@ static int mui_list_push(void *data, void *userdata,
             menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 
 #if defined(HAVE_NETWORKING)
-            entry.enum_idx      = MENU_ENUM_LABEL_ONLINE_UPDATER;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            {
+               settings_t *settings      = config_get_ptr();
+               if (settings->bools.menu_show_online_updater)
+               {
+                  entry.enum_idx      = MENU_ENUM_LABEL_ONLINE_UPDATER;
+                  menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+               }
+            }
 
             entry.enum_idx      = MENU_ENUM_LABEL_NETPLAY;
             menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);

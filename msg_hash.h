@@ -653,6 +653,7 @@ enum msg_hash_enums
 
 
    /* Menu settings */
+   MENU_LABEL(MENU_SHOW_ONLINE_UPDATER),
    MENU_LABEL(RUN_MUSIC),
    MENU_LABEL(RUN),
    MENU_LABEL(MENU_WALLPAPER),

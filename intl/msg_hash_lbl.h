@@ -1237,3 +1237,5 @@ MSG_HASH(MENU_ENUM_LABEL_AUDIO_MIXER_VOLUME,
       "audio_mixer_volume")
 MSG_HASH(MENU_ENUM_LABEL_AUDIO_MIXER_MUTE,
       "audio_mixer_mute_enable")
+MSG_HASH(MENU_ENUM_LABEL_MENU_SHOW_ONLINE_UPDATER,
+      "menu_show_online_updater")

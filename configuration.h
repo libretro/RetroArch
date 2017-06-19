@@ -119,6 +119,7 @@ typedef struct settings
       bool menu_show_advanced_settings;
       bool menu_throttle_framerate;
       bool menu_linear_filter;
+      bool menu_show_online_updater;
       bool menu_xmb_shadows_enable;
       bool menu_xmb_show_settings;
       bool menu_xmb_show_images;

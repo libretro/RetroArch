@@ -5134,6 +5134,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_VIDEO_DISABLE_COMPOSITION,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MENU_SHOW_ONLINE_UPDATER,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_UI_COMPANION_ENABLE,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
@@ -6059,9 +6062,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   PARSE_ACTION, false);
 #endif
 #if defined(HAVE_NETWORKING)
-            menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_ONLINE_UPDATER,
-                  PARSE_ACTION, false);
+            if (settings->bools.menu_show_online_updater)
+               menu_displaylist_parse_settings_enum(menu, info,
+                     MENU_ENUM_LABEL_ONLINE_UPDATER,
+                     PARSE_ACTION, false);
 #endif
             menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_SETTINGS, PARSE_ACTION, false);
