@@ -2579,7 +2579,7 @@ static void xmb_draw_bg(
          draw.texture = texture;
          menu_display_set_alpha(draw.color, coord_white[3]);
 
-         if (!running && draw.texture)
+         if (draw.texture)
             draw.color = &coord_white[0];
 
          if (running || video_info->xmb_color_theme == XMB_THEME_WALLPAPER)
