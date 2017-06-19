@@ -2861,6 +2861,6 @@ MSG_HASH(
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
       "Mute/unmute mixer audio.")
 MSG_HASH(MENU_ENUM_LABEL_MENU_SHOW_ONLINE_UPDATER,
-      "Display Online Updater")
+      "Show Online Updater")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
       "Show/hide the 'Online Updater' option.")
