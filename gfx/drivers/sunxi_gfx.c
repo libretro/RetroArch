@@ -36,6 +36,7 @@
 #include "../font_driver.h"
 
 #include "../../retroarch.h"
+#include "../../verbosity.h"
 
 #define NUMPAGES 2
 
