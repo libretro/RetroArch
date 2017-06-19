@@ -45,8 +45,8 @@
 #include "../network/netplay/netplay_discovery.h"
 #endif
 
-#ifdef __linux__
-#include "../frontend/drivers/platform_linux.h"
+#if defined(__linux__) || (defined(BSD) && !defined(__MACH__))
+#include "../frontend/drivers/platform_unix.h"
 #endif
 
 #include "menu_content.h"

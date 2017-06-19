@@ -58,7 +58,7 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../paths.h"
-#include "platform_linux.h"
+#include "platform_unix.h"
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
@@ -95,10 +95,10 @@ static const char *proc_acpi_sysfs_battery_path    = "/sys/class/power_supply";
 static const char *proc_acpi_ac_adapter_path       = "/proc/acpi/ac_adapter";
 #endif
 
-static volatile sig_atomic_t linux_sighandler_quit;
+static volatile sig_atomic_t unix_sighandler_quit;
 
 #ifndef HAVE_DYNAMIC
-static enum frontend_fork linux_fork_mode = FRONTEND_FORK_NONE;
+static enum frontend_fork unix_fork_mode = FRONTEND_FORK_NONE;
 #endif
 
 int system_property_get(const char *command,
@@ -911,7 +911,7 @@ static bool int_string(char *str, int *val)
    return ((*str != '\0') && (*endptr == '\0'));
 }
 
-static bool frontend_linux_powerstate_check_apm(
+static bool frontend_unix_powerstate_check_apm(
       enum frontend_powerstate *state,
       int *seconds, int *percent)
 {
@@ -1000,7 +1000,7 @@ error:
    return false;
 }
 
-static bool frontend_linux_powerstate_check_acpi(
+static bool frontend_unix_powerstate_check_acpi(
       enum frontend_powerstate *state,
       int *seconds, int *percent)
 {
@@ -1045,7 +1045,7 @@ static bool frontend_linux_powerstate_check_acpi(
    return true;
 }
 
-static bool frontend_linux_powerstate_check_acpi_sysfs(
+static bool frontend_unix_powerstate_check_acpi_sysfs(
       enum frontend_powerstate *state,
       int *seconds, int *percent)
 {
@@ -1099,7 +1099,7 @@ error:
 }
 #endif
 
-static int frontend_linux_get_rating(void)
+static int frontend_unix_get_rating(void)
 {
 #ifdef ANDROID
    char device_model[PROP_VALUE_MAX] = {0};
@@ -1117,42 +1117,42 @@ static int frontend_linux_get_rating(void)
    return -1;
 }
 
-static enum frontend_powerstate frontend_linux_get_powerstate(
+static enum frontend_powerstate frontend_unix_get_powerstate(
       int *seconds, int *percent)
 {
    enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
 
 #ifndef ANDROID
-   if (frontend_linux_powerstate_check_acpi_sysfs(&ret, seconds, percent))
+   if (frontend_unix_powerstate_check_acpi_sysfs(&ret, seconds, percent))
       return ret;
 
    ret = FRONTEND_POWERSTATE_NONE;
 
-   if (frontend_linux_powerstate_check_acpi(&ret, seconds, percent))
+   if (frontend_unix_powerstate_check_acpi(&ret, seconds, percent))
       return ret;
 
-   if (frontend_linux_powerstate_check_apm(&ret, seconds, percent))
+   if (frontend_unix_powerstate_check_apm(&ret, seconds, percent))
       return ret;
 #endif
 
    return ret;
 }
 
-#define LINUX_ARCH_X86_64     0x23dea434U
-#define LINUX_ARCH_X86        0x0b88b8cbU
-#define LINUX_ARCH_ARM        0x0b885ea5U
-#define LINUX_ARCH_PPC64      0x1028cf52U
-#define LINUX_ARCH_MIPS       0x7c9aa25eU
-#define LINUX_ARCH_TILE       0x7c9e7873U
-#define LINUX_ARCH_AARCH64    0x191bfc0eU
-#define LINUX_ARCH_ARMV7B     0xf27015f4U
-#define LINUX_ARCH_ARMV7L     0xf27015feU
-#define LINUX_ARCH_ARMV6L     0xf27015ddU
-#define LINUX_ARCH_ARMV6B     0xf27015d3U
-#define LINUX_ARCH_ARMV5TEB   0x28612995U
-#define LINUX_ARCH_ARMV5TEL   0x4ecca435U
+#define UNIX_ARCH_X86_64     0x23dea434U
+#define UNIX_ARCH_X86        0x0b88b8cbU
+#define UNIX_ARCH_ARM        0x0b885ea5U
+#define UNIX_ARCH_PPC64      0x1028cf52U
+#define UNIX_ARCH_MIPS       0x7c9aa25eU
+#define UNIX_ARCH_TILE       0x7c9e7873U
+#define UNIX_ARCH_AARCH64    0x191bfc0eU
+#define UNIX_ARCH_ARMV7B     0xf27015f4U
+#define UNIX_ARCH_ARMV7L     0xf27015feU
+#define UNIX_ARCH_ARMV6L     0xf27015ddU
+#define UNIX_ARCH_ARMV6B     0xf27015d3U
+#define UNIX_ARCH_ARMV5TEB   0x28612995U
+#define UNIX_ARCH_ARMV5TEL   0x4ecca435U
 
-static enum frontend_architecture frontend_linux_get_architecture(void)
+static enum frontend_architecture frontend_unix_get_architecture(void)
 {
    struct utsname buffer;
    uint32_t buffer_hash   = 0;
@@ -1166,34 +1166,34 @@ static enum frontend_architecture frontend_linux_get_architecture(void)
 
    switch (buffer_hash)
    {
-      case LINUX_ARCH_AARCH64:
+      case UNIX_ARCH_AARCH64:
          return FRONTEND_ARCH_ARMV8;
-      case LINUX_ARCH_ARMV7L:
-      case LINUX_ARCH_ARMV7B:
+      case UNIX_ARCH_ARMV7L:
+      case UNIX_ARCH_ARMV7B:
          return FRONTEND_ARCH_ARMV7;
-      case LINUX_ARCH_ARMV6L:
-      case LINUX_ARCH_ARMV6B:
-      case LINUX_ARCH_ARMV5TEB:
-      case LINUX_ARCH_ARMV5TEL:
+      case UNIX_ARCH_ARMV6L:
+      case UNIX_ARCH_ARMV6B:
+      case UNIX_ARCH_ARMV5TEB:
+      case UNIX_ARCH_ARMV5TEL:
          return FRONTEND_ARCH_ARM;
-      case LINUX_ARCH_X86_64:
+      case UNIX_ARCH_X86_64:
          return FRONTEND_ARCH_X86_64;
-      case LINUX_ARCH_X86:
+      case UNIX_ARCH_X86:
          return FRONTEND_ARCH_X86;
-      case LINUX_ARCH_ARM:
+      case UNIX_ARCH_ARM:
          return FRONTEND_ARCH_ARM;
-      case LINUX_ARCH_PPC64:
+      case UNIX_ARCH_PPC64:
          return FRONTEND_ARCH_PPC;
-      case LINUX_ARCH_MIPS:
+      case UNIX_ARCH_MIPS:
          return FRONTEND_ARCH_MIPS;
-      case LINUX_ARCH_TILE:
+      case UNIX_ARCH_TILE:
          return FRONTEND_ARCH_TILE;
    }
 
    return FRONTEND_ARCH_NONE;
 }
 
-static void frontend_linux_get_os(char *s,
+static void frontend_unix_get_os(char *s,
       size_t len, int *major, int *minor)
 {
 #ifdef ANDROID
@@ -1214,7 +1214,7 @@ static void frontend_linux_get_os(char *s,
 }
 
 #ifdef HAVE_LAKKA
-static void frontend_linux_get_lakka_version(char *s,
+static void frontend_unix_get_lakka_version(char *s,
       size_t len)
 {
    char version[128];
@@ -1233,7 +1233,7 @@ static void frontend_linux_get_lakka_version(char *s,
 }
 #endif
 
-static void frontend_linux_get_env(int *argc,
+static void frontend_unix_get_env(int *argc,
       char *argv[], void *data, void *params_data)
 {
    unsigned i;
@@ -1881,7 +1881,7 @@ static void android_app_destroy(struct android_app *android_app)
 }
 #endif
 
-static void frontend_linux_deinit(void *data)
+static void frontend_unix_deinit(void *data)
 {
 #ifdef ANDROID
    struct android_app *android_app = (struct android_app*)data;
@@ -1893,7 +1893,7 @@ static void frontend_linux_deinit(void *data)
 #endif
 }
 
-static void frontend_linux_init(void *data)
+static void frontend_unix_init(void *data)
 {
 #ifdef ANDROID
    JNIEnv                     *env = NULL;
@@ -1928,7 +1928,7 @@ static void frontend_linux_init(void *data)
    {
       if (!android_run_events(android_app))
       {
-         frontend_linux_deinit(android_app);
+         frontend_unix_deinit(android_app);
          frontend_android_shutdown(android_app);
          return;
       }
@@ -1957,7 +1957,7 @@ static void frontend_linux_init(void *data)
 
 }
 
-static int frontend_linux_parse_drive_list(void *data, bool load_content)
+static int frontend_unix_parse_drive_list(void *data, bool load_content)
 {
 #ifdef HAVE_MENU
    file_list_t *list = (file_list_t*)data;
@@ -2016,21 +2016,21 @@ static int frontend_linux_parse_drive_list(void *data, bool load_content)
 
 #ifndef HAVE_DYNAMIC
 
-static bool frontend_linux_set_fork(enum frontend_fork fork_mode)
+static bool frontend_unix_set_fork(enum frontend_fork fork_mode)
 {
    switch (fork_mode)
    {
       case FRONTEND_FORK_CORE:
          RARCH_LOG("FRONTEND_FORK_CORE\n");
-         linux_fork_mode  = fork_mode;
+         unix_fork_mode  = fork_mode;
          break;
       case FRONTEND_FORK_CORE_WITH_ARGS:
          RARCH_LOG("FRONTEND_FORK_CORE_WITH_ARGS\n");
-         linux_fork_mode  = fork_mode;
+         unix_fork_mode  = fork_mode;
          break;
       case FRONTEND_FORK_RESTART:
          RARCH_LOG("FRONTEND_FORK_RESTART\n");
-         linux_fork_mode  = FRONTEND_FORK_CORE;
+         unix_fork_mode  = FRONTEND_FORK_CORE;
 
          {
             char executable_path[PATH_MAX_LENGTH] = {0};
@@ -2048,7 +2048,7 @@ static bool frontend_linux_set_fork(enum frontend_fork fork_mode)
    return true;
 }
 
-static void frontend_linux_exec(const char *path, bool should_load_game)
+static void frontend_unix_exec(const char *path, bool should_load_game)
 {
    char *newargv[]    = { NULL, NULL };
    size_t len         = strlen(path);
@@ -2060,14 +2060,14 @@ static void frontend_linux_exec(const char *path, bool should_load_game)
    execv(path, newargv);
 }
 
-static void frontend_linux_exitspawn(char *core_path, size_t core_path_size)
+static void frontend_unix_exitspawn(char *core_path, size_t core_path_size)
 {
    bool should_load_game = false;
 
-   if (linux_fork_mode == FRONTEND_FORK_NONE)
+   if (unix_fork_mode == FRONTEND_FORK_NONE)
       return;
 
-   switch (linux_fork_mode)
+   switch (unix_fork_mode)
    {
       case FRONTEND_FORK_CORE_WITH_ARGS:
          should_load_game = true;
@@ -2077,11 +2077,11 @@ static void frontend_linux_exitspawn(char *core_path, size_t core_path_size)
          break;
    }
 
-   frontend_linux_exec(core_path, should_load_game);
+   frontend_unix_exec(core_path, should_load_game);
 }
 #endif
 
-static uint64_t frontend_linux_get_mem_total(void)
+static uint64_t frontend_unix_get_mem_total(void)
 {
    char line[256];
    uint64_t total = 0;
@@ -2103,7 +2103,7 @@ static uint64_t frontend_linux_get_mem_total(void)
    return 0;
 }
 
-static uint64_t frontend_linux_get_mem_used(void)
+static uint64_t frontend_unix_get_mem_used(void)
 {
    char line[256];
    uint64_t total    = 0;
@@ -2131,62 +2131,62 @@ static uint64_t frontend_linux_get_mem_used(void)
 }
 
 /*#include <valgrind/valgrind.h>*/
-static void frontend_linux_sighandler(int sig)
+static void frontend_unix_sighandler(int sig)
 {
 #ifdef VALGRIND_PRINTF_BACKTRACE
 VALGRIND_PRINTF_BACKTRACE("SIGINT");
 #endif
    (void)sig;
-   linux_sighandler_quit++;
-   if (linux_sighandler_quit == 1) {}
-   if (linux_sighandler_quit == 2) exit(1);
+   unix_sighandler_quit++;
+   if (unix_sighandler_quit == 1) {}
+   if (unix_sighandler_quit == 2) exit(1);
    /* in case there's a second deadlock in a C++ destructor or something */
-   if (linux_sighandler_quit >= 3) abort(); 
+   if (unix_sighandler_quit >= 3) abort(); 
 }
 
-static void frontend_linux_install_signal_handlers(void)
+static void frontend_unix_install_signal_handlers(void)
 {
    struct sigaction sa;
 
    sa.sa_sigaction = NULL;
-   sa.sa_handler   = frontend_linux_sighandler;
+   sa.sa_handler   = frontend_unix_sighandler;
    sa.sa_flags     = SA_RESTART;
    sigemptyset(&sa.sa_mask);
    sigaction(SIGINT, &sa, NULL);
    sigaction(SIGTERM, &sa, NULL);
 }
 
-static int frontend_linux_get_signal_handler_state(void)
+static int frontend_unix_get_signal_handler_state(void)
 {
-   return (int)linux_sighandler_quit;
+   return (int)unix_sighandler_quit;
 }
 
-static void frontend_linux_set_signal_handler_state(int value)
+static void frontend_unix_set_signal_handler_state(int value)
 {
-   linux_sighandler_quit = value;
+   unix_sighandler_quit = value;
 }
 
-static void frontend_linux_destroy_signal_handler_state(void)
+static void frontend_unix_destroy_signal_handler_state(void)
 {
-   linux_sighandler_quit = 0;
+   unix_sighandler_quit = 0;
 }
 
-frontend_ctx_driver_t frontend_ctx_linux = {
-   frontend_linux_get_env,       /* environment_get */
-   frontend_linux_init,          /* init */
-   frontend_linux_deinit,        /* deinit */
+frontend_ctx_driver_t frontend_ctx_unix = {
+   frontend_unix_get_env,       /* environment_get */
+   frontend_unix_init,          /* init */
+   frontend_unix_deinit,        /* deinit */
 #ifdef HAVE_DYNAMIC
    NULL,                         /* exitspawn */
 #else
-   frontend_linux_exitspawn,     /* exitspawn */
+   frontend_unix_exitspawn,     /* exitspawn */
 #endif
    NULL,                         /* process_args */
 #ifdef HAVE_DYNAMIC
    NULL,                         /* exec */
    NULL,                         /* set_fork */
 #else
-   frontend_linux_exec,          /* exec */
-   frontend_linux_set_fork,      /* set_fork */
+   frontend_unix_exec,          /* exec */
+   frontend_unix_set_fork,      /* set_fork */
 #endif
 #ifdef ANDROID
    frontend_android_shutdown,    /* shutdown */
@@ -2195,26 +2195,26 @@ frontend_ctx_driver_t frontend_ctx_linux = {
    NULL,                         /* shutdown */
    NULL,                         /* get_name */
 #endif
-   frontend_linux_get_os,
-   frontend_linux_get_rating,    /* get_rating */
+   frontend_unix_get_os,
+   frontend_unix_get_rating,    /* get_rating */
    NULL,                         /* load_content */
-   frontend_linux_get_architecture,
-   frontend_linux_get_powerstate,
-   frontend_linux_parse_drive_list,
-   frontend_linux_get_mem_total,
-   frontend_linux_get_mem_used,
-   frontend_linux_install_signal_handlers,
-   frontend_linux_get_signal_handler_state,
-   frontend_linux_set_signal_handler_state,
-   frontend_linux_destroy_signal_handler_state,
+   frontend_unix_get_architecture,
+   frontend_unix_get_powerstate,
+   frontend_unix_parse_drive_list,
+   frontend_unix_get_mem_total,
+   frontend_unix_get_mem_used,
+   frontend_unix_install_signal_handlers,
+   frontend_unix_get_signal_handler_state,
+   frontend_unix_set_signal_handler_state,
+   frontend_unix_destroy_signal_handler_state,
    NULL,                         /* attach_console */
    NULL,                         /* detach_console */
 #ifdef HAVE_LAKKA
-   frontend_linux_get_lakka_version,    /* get_lakka_version */
+   frontend_unix_get_lakka_version,    /* get_lakka_version */
 #endif
 #ifdef ANDROID
    "android"
 #else
-   "linux"
+   "unix"
 #endif
 };

@@ -780,10 +780,8 @@ FRONTEND
 #include "../frontend/drivers/platform_xenon.c"
 #elif defined(__QNX__)
 #include "../frontend/drivers/platform_qnx.c"
-#elif defined(__linux__)
-#include "../frontend/drivers/platform_linux.c"
-#elif defined(BSD) && !defined(__MACH__)
-#include "../frontend/drivers/platform_bsd.c"
+#elif defined(__linux__) || (defined(BSD) && !defined(__MACH__))
+#include "../frontend/drivers/platform_unix.c"
 #elif defined(DJGPP)
 #include "../frontend/drivers/platform_dos.c"
 #endif

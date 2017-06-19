@@ -15,8 +15,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _PLATFORM_LINUX_H
-#define _PLATFORM_LINUX_H
+#ifndef _PLATFORM_UNIX_H
+#define _PLATFORM_UNIX_H
 
 #include <stdint.h>
 #include <sys/cdefs.h>
@@ -336,7 +336,6 @@ extern JNIEnv *jni_thread_getenv(void);
 void android_app_write_cmd(struct android_app *android_app, int8_t cmd);
 
 extern struct android_app *g_android;
-#else
 #endif
 
 #endif

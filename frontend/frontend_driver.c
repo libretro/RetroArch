@@ -46,11 +46,8 @@ static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #if defined(__APPLE__) && defined(__MACH__)
    &frontend_ctx_darwin,
 #endif
-#if defined(__linux__)
-   &frontend_ctx_linux,
-#endif
-#if defined(BSD) && !defined(__MACH__)
-   &frontend_ctx_bsd,
+#if defined(__linux__) || (defined(BSD) && !defined(__MACH__))
+   &frontend_ctx_unix,
 #endif
 #if defined(PSP) || defined(VITA)
    &frontend_ctx_psp,

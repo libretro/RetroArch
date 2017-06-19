@@ -105,7 +105,7 @@ endif
 
 ifneq ($(findstring BSD,$(OS)),)
    BSD_LOCAL_INC += -I/usr/local/include
-   OBJ += frontend/drivers/platform_bsd.o
+	HAVE_UNIX = 1
 endif
 
 ifneq ($(findstring Darwin,$(OS)),)
@@ -119,10 +119,13 @@ ifneq ($(findstring Linux,$(OS)),)
    LIBS += -lrt
    OBJ += input/drivers/linuxraw_input.o \
           input/common/linux_common.o \
-          input/drivers_joypad/linuxraw_joypad.o \
-          frontend/drivers/platform_linux.o
+          input/drivers_joypad/linuxraw_joypad.o
+	HAVE_UNIX = 1
 endif
 
+ifeq ($(HAVE_UNIX), 1)
+	OBJ += frontend/drivers/platform_unix.o
+endif
 
 ifeq ($(findstring Haiku,$(OS)),)
    LIBS += -lm

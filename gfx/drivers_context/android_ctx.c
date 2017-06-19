@@ -36,7 +36,7 @@
 #include "../common/vulkan_common.h"
 #endif
 
-#include "../../frontend/drivers/platform_linux.h"
+#include "../../frontend/drivers/platform_unix.h"
 
 static enum gfx_ctx_api android_api           = GFX_CTX_NONE;
 
