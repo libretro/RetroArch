@@ -392,7 +392,7 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
 {
    device_handle_cb cb;
    enum udev_input_dev_type dev_type = UDEV_INPUT_KEYBOARD;
-   const char *val_keyboard          = NULL;
+   const char *val_key               = NULL;
    const char *val_mouse             = NULL;
    const char *val_touchpad          = NULL;
    const char *action                = NULL;
@@ -403,14 +403,15 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    if (!dev)
       return;
 
-   val_keyboard  = udev_device_get_property_value(dev, "ID_INPUT_KEYBOARD");
+   val_key       = udev_device_get_property_value(dev, "ID_INPUT_KEY");
    val_mouse     = udev_device_get_property_value(dev, "ID_INPUT_MOUSE");
    val_touchpad  = udev_device_get_property_value(dev, "ID_INPUT_TOUCHPAD");
    action        = udev_device_get_action(dev);
    devnode       = udev_device_get_devnode(dev);
 
-   if (val_keyboard && string_is_equal_fast(val_keyboard, "1", 1) && devnode)
+   if (val_key && string_is_equal_fast(val_key, "1", 1) && devnode)
    {
+      /* EV_KEY device, can be a keyboard or a remote control device.  */
       dev_type   = UDEV_INPUT_KEYBOARD;
       cb         = udev_handle_keyboard;
    }

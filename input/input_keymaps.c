@@ -1092,6 +1092,10 @@ const struct rarch_key_map rarch_key_map_linux[] = {
    { KEY_VOLUMEDOWN, RETROK_VOLUMEDOWN },
    { KEY_VOLUMEUP, RETROK_VOLUMEUP },
 
+   /* Extra keys for remote controls.  */
+   { KEY_OK, RETROK_RETURN },
+   { KEY_BACK, RETROK_BACKSPACE },
+
    { 0, RETROK_UNKNOWN },
 };
 #endif
