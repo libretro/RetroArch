@@ -171,9 +171,8 @@ fi
 COUNTER=0
 
 #for f in *_${platform}.${EXT} ; do
-for f in `ls -v ../*_${platform}.${EXT}`; do
+for f in `ls -v *_${platform}.${EXT}`; do
    name=`echo "$f" | sed "s/\(_libretro_${platform}\|\).${EXT}$//"`
-   name=${name#../*}
    async=0
    pthread=0
    lto=0
@@ -336,7 +335,7 @@ for f in `ls -v ../*_${platform}.${EXT}`; do
    elif [ $PLATFORM = "ngc" ] ; then
       rm -f ../retroarch_${platform}.dol ../retroarch_${platform}.elf ../retroarch_${platform}.elf.map
    elif [ $PLATFORM = "wii" ] ; then
-      rm -f ../retroarch_${platform}.dol ../retroarch_${platform}.elf ../retroarch_${platform}.elf.map ../libretro_${platform}.a
+      rm -f ../retroarch_${platform}.dol ../retroarch_${platform}.elf ../retroarch_${platform}.elf.map
    elif [ $platform = "emscripten" ] ; then
       rm -f ../${name}_libretro.js
    fi
