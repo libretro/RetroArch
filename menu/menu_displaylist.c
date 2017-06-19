@@ -2944,7 +2944,10 @@ static int menu_displaylist_parse_horizontal_content_actions(
       menu_displaylist_parse_load_content_settings(info);
    else
    {
-      const char *ext = path_get_extension(entry_path);
+      const char *ext = NULL;
+      
+      if (!string_is_empty(entry_path))
+         ext = path_get_extension(entry_path);
 
       if (!string_is_empty(ext) &&
             audio_driver_mixer_extension_supported(ext))
