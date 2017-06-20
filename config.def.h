@@ -232,6 +232,8 @@ static bool default_block_config_read = true;
 
 static bool menu_show_online_updater       = true;
 
+static bool menu_show_core_updater       = true;
+
 #ifdef HAVE_XMB
 static unsigned xmb_scale_factor = 100;
 static unsigned xmb_alpha_factor = 75;

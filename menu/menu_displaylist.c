@@ -3147,6 +3147,7 @@ static int menu_displaylist_parse_options(
       menu_displaylist_info_t *info)
 {
 #ifdef HAVE_NETWORKING
+   settings_t *settings         = config_get_ptr();
 
 #ifdef HAVE_LAKKA
    menu_entries_append_enum(info->list,
@@ -3168,11 +3169,12 @@ static int menu_displaylist_parse_options(
          MENU_SETTING_ACTION, 0, 0);
 #else
 #if !defined(VITA)
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST),
-         msg_hash_to_str(MENU_ENUM_LABEL_CORE_UPDATER_LIST),
-         MENU_ENUM_LABEL_CORE_UPDATER_LIST,
-         MENU_SETTING_ACTION, 0, 0);
+   if (settings->bools.menu_show_core_updater)
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST),
+            msg_hash_to_str(MENU_ENUM_LABEL_CORE_UPDATER_LIST),
+            MENU_ENUM_LABEL_CORE_UPDATER_LIST,
+            MENU_SETTING_ACTION, 0, 0);
 #endif
 
    menu_entries_append_enum(info->list,
@@ -3190,11 +3192,12 @@ static int menu_displaylist_parse_options(
 #endif
 
 #if !defined(VITA)
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES),
-         msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES),
-         MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES,
-         MENU_SETTING_ACTION, 0, 0);
+   if (settings->bools.menu_show_core_updater)
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES),
+            msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES),
+            MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES,
+            MENU_SETTING_ACTION, 0, 0);
 #endif
 
 #ifdef HAVE_UPDATE_ASSETS
@@ -4996,6 +4999,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_MENU_SHOW_ONLINE_UPDATER,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MENU_SHOW_CORE_UPDATER,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_XMB_SHOW_SETTINGS,
