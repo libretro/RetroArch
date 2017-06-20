@@ -3149,6 +3149,13 @@ static int menu_displaylist_parse_options(
 #ifdef HAVE_NETWORKING
    settings_t *settings         = config_get_ptr();
 
+   if (settings->bools.menu_show_core_updater)
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST),
+            msg_hash_to_str(MENU_ENUM_LABEL_CORE_UPDATER_LIST),
+            MENU_ENUM_LABEL_CORE_UPDATER_LIST,
+            MENU_SETTING_ACTION, 0, 0);
+
 #ifdef HAVE_LAKKA
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_LAKKA),
@@ -3167,14 +3174,6 @@ static int menu_displaylist_parse_options(
          msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS),
          MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS,
          MENU_SETTING_ACTION, 0, 0);
-#else
-#if !defined(VITA)
-   if (settings->bools.menu_show_core_updater)
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST),
-            msg_hash_to_str(MENU_ENUM_LABEL_CORE_UPDATER_LIST),
-            MENU_ENUM_LABEL_CORE_UPDATER_LIST,
-            MENU_SETTING_ACTION, 0, 0);
 #endif
 
    menu_entries_append_enum(info->list,
@@ -3191,14 +3190,12 @@ static int menu_displaylist_parse_options(
          MENU_SETTING_ACTION, 0, 0);
 #endif
 
-#if !defined(VITA)
    if (settings->bools.menu_show_core_updater)
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES),
             msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES),
             MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES,
             MENU_SETTING_ACTION, 0, 0);
-#endif
 
 #ifdef HAVE_UPDATE_ASSETS
    menu_entries_append_enum(info->list,

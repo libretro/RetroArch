@@ -228,11 +228,15 @@ static const bool display_keyboard_overlay = false;
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
 
-static bool default_block_config_read = true;
+static bool default_block_config_read    = true;
 
-static bool menu_show_online_updater       = true;
+static bool menu_show_online_updater     = true;
 
+#if defined(HAVE_LAKKA) || defined(VITA)
+static bool menu_show_core_updater       = false;
+#else
 static bool menu_show_core_updater       = true;
+#endif
 
 #ifdef HAVE_XMB
 static unsigned xmb_scale_factor = 100;
