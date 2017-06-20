@@ -5,6 +5,8 @@
 - SDL2: Fix 'SDL2 driver does not see the hat on wired Xbox 360 controller"
 - SCANNING: Fix PS1 game scanning
 - VITA: Add support for external USB if mounted
+- MENU: Add 'User Interface -> Views'. Ability to display/hide online updater and core updater
+options.
 - LOCALIZATION: Update French translation
 - LOCALIZATION: Update Italian translation
 - LOCALIZATION: Update Japanese translation
