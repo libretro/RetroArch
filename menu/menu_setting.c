@@ -2626,7 +2626,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_ACTION(
                list, list_info,
@@ -5665,6 +5664,7 @@ static bool setting_append_list(
 #endif
 
 #if defined(HAVE_NETWORKING)
+#ifndef HAVE_LAKKA
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.menu_show_online_updater,
@@ -5694,6 +5694,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
+#endif
 #endif
 
          if (string_is_not_equal_fast(ui_companion_driver_get_ident(), "null", 4))
