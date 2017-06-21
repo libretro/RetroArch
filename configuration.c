@@ -35,6 +35,7 @@
 #include "configuration.h"
 #include "content.h"
 #include "config.def.h"
+#include "config.features.h"
 #include "input/input_config.h"
 #include "input/input_keymaps.h"
 #include "input/input_remapping.h"
@@ -1959,13 +1960,10 @@ static config_file_t *open_default_config_file(void)
 
          skeleton_conf[0] = '\0';
 
-#if defined(__HAIKU__)
-         fill_pathname_join(skeleton_conf, "/system/settings",
-               file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(skeleton_conf));
-#else
-         fill_pathname_join(skeleton_conf, "/etc",
-               file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(skeleton_conf));
-#endif
+         // Build a retroarch.cfg path from the global config directory (/etc).
+         fill_pathname_join(skeleton_conf, GLOBAL_CONFIG_DIR,
+            file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(skeleton_conf));
+
          conf = config_file_new(skeleton_conf);
          if (conf)
             RARCH_WARN("Config: using skeleton config \"%s\" as base for a new config file.\n", skeleton_conf);
