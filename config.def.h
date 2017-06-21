@@ -220,7 +220,7 @@ static unsigned aspect_ratio_idx = ASPECT_RATIO_CORE;
 /* Save configuration file on exit. */
 static bool config_save_on_exit = true;
 
-static bool show_hidden_files = true;
+static bool show_hidden_files = false;
 
 static const bool overlay_hide_in_menu = true;
 
