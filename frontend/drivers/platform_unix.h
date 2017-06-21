@@ -19,7 +19,6 @@
 #define _PLATFORM_UNIX_H
 
 #include <stdint.h>
-#include <sys/cdefs.h>
 
 #include <boolean.h>
 
