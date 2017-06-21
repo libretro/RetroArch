@@ -3156,14 +3156,6 @@ static int menu_displaylist_parse_options(
             MENU_ENUM_LABEL_CORE_UPDATER_LIST,
             MENU_SETTING_ACTION, 0, 0);
 
-#ifdef HAVE_LAKKA
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_LAKKA),
-         msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_LAKKA),
-         MENU_ENUM_LABEL_UPDATE_LAKKA,
-         MENU_SETTING_ACTION, 0, 0);
-#endif
-
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST),
          msg_hash_to_str(MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST),
@@ -6060,10 +6052,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   PARSE_ACTION, false);
 #endif
 #if defined(HAVE_NETWORKING)
+#ifdef HAVE_LAKKA
+            menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_UPDATE_LAKKA,
+                  PARSE_ACTION, false);
+#else
             if (settings->bools.menu_show_online_updater)
                menu_displaylist_parse_settings_enum(menu, info,
                      MENU_ENUM_LABEL_ONLINE_UPDATER,
                      PARSE_ACTION, false);
+#endif
 #endif
             menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_SETTINGS, PARSE_ACTION, false);
