@@ -2385,6 +2385,8 @@ static enum runloop_state runloop_check_state(
          bool fullscreen_toggled = !runloop_paused
 #ifdef HAVE_MENU
             || menu_is_alive;
+#else
+;
 #endif
 
          if (fullscreen_toggled)
