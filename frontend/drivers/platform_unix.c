@@ -63,6 +63,8 @@
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
 #include "../../menu/menu_entries.h"
+#else
+#include "../../command.h"
 #endif
 
 #ifdef ANDROID
