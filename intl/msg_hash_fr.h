@@ -428,7 +428,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
-      "Mode harcode des trophées"
+      "Mode harcode"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS,
@@ -630,7 +630,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_HELP,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
       "Dépannage audio/vidéo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD,
-      "Modifier l'overlay de la manette virtuelle")
+      "Utiliser un overlay de manette virtuelle")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HELP_CONTROLS,
       "Contrôles de base du menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HELP_LIST,
@@ -870,7 +870,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_ENGLISH,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_ESPERANTO,
       "Esperanto")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_FRENCH,
-      "French")
+      "Français")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_GERMAN,
       "Allemand")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_ITALIAN,
@@ -1746,7 +1746,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
       "Activer/désactiver les trophées non-officiels et/ou les fonctionnalités en beta à des fins de test.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-      "Activer/désactiver les savestates, la triche, le rembobinage, la pause et le ralenti pour tous les jeux.")
+      "En mode hardcode, les savestates, la triche, le rembobinage, la pause et le ralenti seront désactivés.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
       "Modifier les pilotes pour ce système.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
@@ -1764,7 +1764,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
       "Modifier les paramètres de journalisation.")
 MSG_HASH(MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
-      "Modifier les paramètres d'interface utilisateur.")
+      "Modifier les paramètres de l'interface utilisateur.")
 MSG_HASH(MENU_ENUM_SUBLABEL_USER_SETTINGS,
       "Modifier les comptes, pseudos, et langues.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS,
@@ -2451,13 +2451,13 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FILTER,
       "Applique un filtre vidéo qui tourne sur le CPU. NOTE: Peut avoir un coût élevé sur les performances. Certains filtres ne fonctionnent que sur les cœurs utilisant des couleurs 32bit ou 16bit.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_USERNAME,
-      "Input the username of your Retro Achievements account.")
+      "Renseignez l'identifiant de votre compte Retro Achievements.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD,
-      "Input the password of your Retro Achievements account.")
+      "Renseignez le mot de passe de votre compte Retro Achievements.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME,
-      "Input your user name here. This will be used for netplay sessions, among other things.")
+      "Renseignez votre pseudonyme. Il sera utilisé principalement lors du jeu en réseau.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
-      "Capture the image after filters (but not shaders) are applied. Your video will look as fancy as what you see on your screen.")
+      "Capturer l'image après que les filtres (mais pas les shaders) aient été appliqués. Votre vidéo sera aussi jolie que ce que vous voyez à l'écran.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_LIST,
       "Selectionner le cœur à utiliser.")
 MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
@@ -2465,9 +2465,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
       "Affiche les interfaces réseau et adresses IP associées.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
-      "Show information specific to the device.")
+      "Affiche les informations spécifique à votre système.")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-      "Quit the program.")
+      "Quitter le programe.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
       "Set the custom width size for the display window. Leaving it at 0 will attempt to scale the window as large as possible.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
@@ -2481,12 +2481,12 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
       "Specify custom Y axis position for onscreen text.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
-      "Specify the font size in points.")
+      "Spécifier la taille de la police en points.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
-      "Hide the overlay while inside the menu, and show it again when exiting the menu.")
+      "Cacher l'overlay quand vous êtes dans le menu. Il sera actif uniquement dans les jeux.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
-      "Scanned content will appear here."
+      "Les contenus scannés apparaitront ici."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
@@ -2506,7 +2506,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-      "Start in fullscreen. Can be changed at runtime."
+      "Démarrer en plein écran. Peut être changé à n'importe quel moment."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
@@ -2582,11 +2582,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-      "Video driver to use."
+      "Pilote vidéo à utiliser."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-      "Audio driver to use."
+      "Pilote audio à utiliser."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_INPUT_DRIVER,
@@ -2594,7 +2594,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-      "Joypad driver to use."
+      "Pilote manette à utiliser."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
@@ -2602,23 +2602,23 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-      "Camera driver to use."
+      "Pilote de caméra à utiliser."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-      "Location driver to use."
+      "Pilote de géolocalisation à utiliser."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_DRIVER,
-      "Menu driver to use."
+      "Pilote de menu, contrôle l'apparence et le comportement du menu."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-      "Record driver to use."
+      "Pilote d'enregistrement à utiliser."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-      "WiFi driver to use."
+      "Pilote Wi-Fi à utiliser."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
@@ -2626,11 +2626,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
-      "Select an image to set as menu wallpaper."
+      "Sélectionner un fond d'écran pour le menu."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPER,
-      "Dynamically load a new wallpaper depending on context."
+      "Afficher un fond d'écran différent pour chaque onglet."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
@@ -2642,47 +2642,47 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
-      "Audio output sample rate."
+      "Fréquence de la sortie audio."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
-      "Opacity of all UI elements of the overlay."
+      "L'opacité globale de l'overlay."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_OVERLAY_SCALE,
-      "Scale of all UI elements of the overlay."
+      "Échelle globale de l'overlay."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
-      "Enable the overlay."
+      "Activer l'overlay."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
-      "Select an overlay from the file browser."
+      "Sélectionner un overlay depuis le navigateur de fichiers."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
-      "The address of the host to connect to."
+      "L'adresse IP de l'hôte auquel se connecter."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
-      "The port of the host IP address. Can be either a TCP or UDP port."
+      "Le port de l'adresse IP de l'hôte. Peut être un port TCP ou UDP."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_PASSWORD,
-      "The password for connecting to the netplay host. Used only in host mode."
+      "Le mot de passe pour se connecter à l'hôte de jeu en réseau. Utilisé seulement en mode hôte."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
-      "Whether to announce netplay games publicly. If unset, clients must manually connect rather than using the public lobby."
+      "Pour annoncer vos parties en réseau publiquement. Si désactivé, les clients devront se connecter manuellement au lieu de passer par les salons."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
-      "The password for connecting to the netplay host with only spectator privileges. Used only in host mode."
+      "Mot de passe pour les spéctateurs. Utilisé seulement en mode hôte."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
-      "Whether to start netplay in spectator mode."
+      "Utiliser le mode spectateur pour le jeu en réseau."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES,
@@ -2706,44 +2706,44 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
-      "Enable stdin command interface."
+      "Activer les commandes sur l'entrée standard."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
-      "Enable mouse controls inside the menu."
+      "Pour contrôler le menu à la souris."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_POINTER_ENABLE,
-      "Enable touch controls inside the menu."
+      "Pour contrôler le menu au pavé tactile ou à l'écran tactile."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_THUMBNAILS,
-      "Type of thumbnail to display."
+      "Le type de vignettes à afficher."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE,
-      "Shows current date and/or time inside the menu."
+      "Affiche la date et l'heure actuelle dans le menu."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_BATTERY_LEVEL_ENABLE,
-      "Shows current battery level inside the menu."
+      "Affiche le niveau de la batterie et si la batterie est en charge dans le menu."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
-      "Wrap-around to beginning and/or end if boundary of list is reached horizontally or vertically."
+      "Retour du curseur au début ou à la fin de la liste quand les limites sont atteintes."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST,
-      "Enables netplay in host (server) mode."
+      "Utiliser le mode hôte (serveur) pour le jeu en réseau."
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
-      "Enables netplay in client mode.")
+      "Utiliser le mode client pour le jeu en réseau.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
-      "Disconnects an active Netplay connection.")
+      "Se déconnecter de la session de jeu en réseau active.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
-      "Scans a directory for compatible files and add them to the collection.")
+      "Analyse récursivement un dossier pour y trouver des contenus compatibles qui seront ajoutés dans des playlists.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_FILE,
-      "Scans a compatible file and add it to the collection.")
+      "Analyse un fichier pour vérifier s'il est compatible et l'ajouter à une playlist.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
       "Uses a custom swap interval for Vsync. Set this to effectively halve monitor refresh rate."
       )
@@ -2763,15 +2763,15 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
       "After downloading, automatically extract files contained in the downloaded archives."
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
-      "Scan for new rooms.")
+      "Rafraîchir la liste des salons.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DELETE_ENTRY,
-      "Remove this entry from the collection.")
+      "Supprimer cette entrée de la playlist.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION,
-      "View more information about the content.")
+      "En savoir plus sur ce contenu.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RUN,
-      "Start the content.")
+      "Démarrer le contenu.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-      "Adjusts filebrowser settings.")
+      "Ajuster les réglages du navigateur de fichiers.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
       "Enable customized controls by default at startup."
@@ -2882,17 +2882,17 @@ MSG_HASH(MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_FONT,
       "Select a different main font to be used by the menu.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_IMAGES,
-      "Show the image tab inside the main menu.")
+      "Affiche l'onglet des images dans le menu principal.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_MUSIC,
-      "Show the music tab inside the main menu.")
+      "Affiche l'onglet des musiques dans le menu principal.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_VIDEO,
-      "Show the video tab inside the main menu.")
+      "Affiche l'onglet des vidéos dans le menu principal.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_NETPLAY,
-      "Show the netplay tab inside the main menu.")
+      "Affiche l'onglet de jeu en réseau dans le menu principal.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_SETTINGS,
-      "Show the settings tab inside the main menu.")
+      "Affiche l'onglet ces réglages dans le menu principal.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_HISTORY,
-      "Show the recent history tab inside the main menu.")
+      "Affiche l'onglet de l'historique dans le menu principal.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_ADD,
       "Show the import content tab inside the main menu.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
@@ -3038,6 +3038,6 @@ MSG_HASH(MENU_ENUM_LABEL_MENU_SHOW_ONLINE_UPDATER,
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
       "Show/hide the 'Online Updater' option.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
-      "Show Core Updater")
+      "Afficher les mises à jour des cœurs")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
       "Show/hide the ability to update cores (and core info files).")
