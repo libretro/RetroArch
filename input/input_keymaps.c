@@ -189,8 +189,6 @@ const struct input_key_map input_config_key_map[] = {
    { "subtract", RETROK_KP_MINUS },
    { "kp_plus", RETROK_KP_PLUS },
    { "kp_minus", RETROK_KP_MINUS },
-   { "volume-", RETROK_VOLUMEDOWN },
-   { "volume+", RETROK_VOLUMEUP },
    { "f1", RETROK_F1 },
    { "f2", RETROK_F2 },
    { "f3", RETROK_F3 },
@@ -1089,13 +1087,6 @@ const struct rarch_key_map rarch_key_map_linux[] = {
    { KEY_EURO, RETROK_EURO },
 #endif
    { KEY_UNDO, RETROK_UNDO },
-   { KEY_VOLUMEDOWN, RETROK_VOLUMEDOWN },
-   { KEY_VOLUMEUP, RETROK_VOLUMEUP },
-
-   /* Extra keys for remote controls.  */
-   { KEY_OK, RETROK_RETURN },
-   { KEY_BACK, RETROK_BACKSPACE },
-
    { 0, RETROK_UNKNOWN },
 };
 #endif
