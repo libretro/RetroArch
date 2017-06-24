@@ -17,10 +17,12 @@
 
 /* See https://github.com/tinyalsa/tinyalsa */
 
-#include <../../deps/tinyalsa/pcm.h>
 #include <string.h>
 
+#include "../../deps/tinyalsa/pcm.h"
+
 #include "../audio_driver.h"
+#include "../../verbosity.h"
 
 typedef struct tinyalsa {
 	struct pcm     *pcm;
@@ -179,9 +181,8 @@ tinyalsa_free(void *data)
 	}
 }
 
-
-static size_t
-tinyalsa_write_avail(void *data)
+#if 0
+static size_t tinyalsa_write_avail(void *data)
 {
 	/*TODO*/
 	return 0;
@@ -194,6 +195,7 @@ tinyalsa_buffer_size(void *data)
 	
 	return tinyalsa->buffer_size;
 }
+#endif
 
 audio_driver_t audio_tinyalsa = {
 	tinyalsa_init,               /* AUDIO_init              */
