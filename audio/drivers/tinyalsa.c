@@ -15,8 +15,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* See https://github.com/tinyalsa/tinyalsa */
-
 #include <errno.h>
 #include <string.h>
 
@@ -25,7 +23,8 @@
 #include "../audio_driver.h"
 #include "../../verbosity.h"
 
-typedef struct tinyalsa {
+typedef struct tinyalsa
+{
 	struct pcm     *pcm;
 	size_t         buffer_size;
 	bool           nonblock;
@@ -40,51 +39,52 @@ typedef long pcm_sframes_t;
 #define BYTES_TO_FRAMES(bytes, frame_bits)  ((bytes) * 8 / frame_bits)
 #define FRAMES_TO_BYTES(frames, frame_bits) ((frames) * frame_bits / 8)
 
-static void *
-tinyalsa_init(const char *device, unsigned rate,
-               unsigned latency, unsigned block_frames,
-               unsigned *new_rate)
+static void * tinyalsa_init(const char *device, unsigned rate,
+      unsigned latency, unsigned block_frames,
+      unsigned *new_rate)
 {
-	pcm_sframes_t buffer_size;
-	struct pcm_config config;
+   pcm_sframes_t buffer_size;
+   struct pcm_config config;
+   tinyalsa_t *tinyalsa      = (tinyalsa_t*)calloc(1, sizeof(tinyalsa_t));
+   if (!tinyalsa)
+      return NULL;
 
-	tinyalsa_t *tinyalsa = (tinyalsa_t*)calloc(1, sizeof(tinyalsa_t));
-	if (!tinyalsa)
-		return NULL;
+   config.rate               = rate;
+   config.format             = PCM_FORMAT_S16_LE;
+   config.channels           = 2;
+   config.period_size        = 1024;
+   config.period_count       = 2;
+   config.start_threshold    = 1024;
+   config.silence_threshold  = 1024 * 2;
+   config.stop_threshold     = 1024 * 2;
 
-	config.rate              = rate;
-	config.format            = PCM_FORMAT_S16_LE;
-	config.channels          = 2;
-	config.period_size       = 1024;
-	config.period_count      = 2;
-	config.start_threshold   = 1024;
-	config.silence_threshold = 1024 * 2;
-	config.stop_threshold    = 1024 * 2;
+   tinyalsa->pcm = pcm_open(0, 0, PCM_OUT, &config);
 
-	tinyalsa->pcm = pcm_open(0, 0, PCM_OUT, &config);
+   if (tinyalsa->pcm == NULL)
+   {
+      RARCH_ERR("[TINYALSA]: Failed to allocate memory for pcm.\n");
+      goto error;
+   }
+   else if (!pcm_is_ready(tinyalsa->pcm))
+   {
+      RARCH_ERR("[TINYALSA]: Cannot open audio device.\n");
+      goto error;
+   }
 
-	if (tinyalsa->pcm == NULL) {
-		RARCH_ERR("[TINYALSA]: Failed to allocate memory for pcm.\n");
-		goto error;
-	} else if (!pcm_is_ready(tinyalsa->pcm)) {
-		RARCH_ERR("[TINYALSA]: Cannot open audio device.\n");
-		goto error;
-	}
+   buffer_size           = pcm_get_buffer_size(tinyalsa->pcm);
+   tinyalsa->buffer_size = pcm_frames_to_bytes(tinyalsa->pcm, buffer_size);
+   tinyalsa->frame_bits  = pcm_format_to_bits(config.format) * 2;
 
-	buffer_size           = pcm_get_buffer_size(tinyalsa->pcm);
-	tinyalsa->buffer_size = pcm_frames_to_bytes(tinyalsa->pcm, buffer_size);
-	tinyalsa->frame_bits  = pcm_format_to_bits(config.format) * 2;
-	
-	tinyalsa->can_pause   = true;
-	tinyalsa->has_float   = false;
+   tinyalsa->can_pause   = true;
+   tinyalsa->has_float   = false;
 
-	RARCH_LOG("[TINYALSA] %u \n", (unsigned int)tinyalsa->buffer_size);
+   RARCH_LOG("[TINYALSA] %u \n", (unsigned int)tinyalsa->buffer_size);
 
-	return tinyalsa;
+   return tinyalsa;
 
 error:
-	RARCH_ERR("[TINYALSA]: Failed to initialize tinyalsa driver.\n");
-	return NULL;
+   RARCH_ERR("[TINYALSA]: Failed to initialize tinyalsa driver.\n");
+   return NULL;
 }
 
 static ssize_t
@@ -162,7 +162,8 @@ tinyalsa_stop(void *data)
 {
 	tinyalsa_t *tinyalsa = (tinyalsa_t*)data;
 
-	if (tinyalsa->can_pause && !tinyalsa->is_paused) {
+	if (tinyalsa->can_pause && !tinyalsa->is_paused)
+   {
 		int ret = pcm_start(tinyalsa->pcm);
 		if (ret < 0)
 			return false;
@@ -189,10 +190,12 @@ tinyalsa_start(void *data, bool is_shutdown)
 {
 	tinyalsa_t *tinyalsa = (tinyalsa_t*)data;
 
-	if (tinyalsa->can_pause && tinyalsa->is_paused) {
+	if (tinyalsa->can_pause && tinyalsa->is_paused)
+   {
 		int ret = pcm_stop(tinyalsa->pcm);
 
-		if (ret < 0) {
+		if (ret < 0)
+      {
 			RARCH_ERR("[TINYALSA]: Failed to unpause.\n");
 			return false;
 		}
@@ -223,11 +226,11 @@ tinyalsa_free(void *data)
 {
 	tinyalsa_t *tinyalsa = (tinyalsa_t*)data;
 
-	if (tinyalsa) {
-		if (tinyalsa->pcm) {
+	if (tinyalsa)
+   {
+		if (tinyalsa->pcm)
 			pcm_close(tinyalsa->pcm);
-			tinyalsa->pcm = NULL;
-		}
+      tinyalsa->pcm = NULL;
 		free(tinyalsa);
 	}
 }
