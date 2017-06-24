@@ -957,8 +957,12 @@ static void audio_mixer_play_stop_cb(audio_mixer_sound_t *sound, unsigned reason
          if (idx >= 0)
          {
             unsigned i = (unsigned)idx;
+
+#if 0
             if (audio_mixer_streams[i].buf != NULL)
                free(audio_mixer_streams[i].buf);
+#endif
+
             audio_mixer_streams[i].state   = AUDIO_STREAM_STATE_NONE;
             audio_mixer_streams[i].volume  = 0.0f;
             audio_mixer_streams[i].buf     = NULL;
