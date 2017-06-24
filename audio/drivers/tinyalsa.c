@@ -64,6 +64,8 @@
 #define __user
 #include <sound/asound.h>
 
+#include <retro_inline.h>
+
 #include "../audio_driver.h"
 #include "../../verbosity.h"
 
@@ -254,29 +256,29 @@ struct pcm_params;
 #define PARAM_MAX SNDRV_PCM_HW_PARAM_LAST_INTERVAL
 #define SNDRV_PCM_HW_PARAMS_NO_PERIOD_WAKEUP (1<<2)
 
-static inline int param_is_mask(int p)
+static INLINE int param_is_mask(int p)
 {
    return (p >= SNDRV_PCM_HW_PARAM_FIRST_MASK) &&
       (p <= SNDRV_PCM_HW_PARAM_LAST_MASK);
 }
 
-static inline int param_is_interval(int p)
+static INLINE int param_is_interval(int p)
 {
    return (p >= SNDRV_PCM_HW_PARAM_FIRST_INTERVAL) &&
       (p <= SNDRV_PCM_HW_PARAM_LAST_INTERVAL);
 }
 
-static inline const struct snd_interval *param_get_interval(const struct snd_pcm_hw_params *p, int n)
+static INLINE const struct snd_interval *param_get_interval(const struct snd_pcm_hw_params *p, int n)
 {
    return &(p->intervals[n - SNDRV_PCM_HW_PARAM_FIRST_INTERVAL]);
 }
 
-static inline struct snd_interval *param_to_interval(struct snd_pcm_hw_params *p, int n)
+static INLINE struct snd_interval *param_to_interval(struct snd_pcm_hw_params *p, int n)
 {
     return &(p->intervals[n - SNDRV_PCM_HW_PARAM_FIRST_INTERVAL]);
 }
 
-static inline struct snd_mask *param_to_mask(struct snd_pcm_hw_params *p, int n)
+static INLINE struct snd_mask *param_to_mask(struct snd_pcm_hw_params *p, int n)
 {
     return &(p->masks[n - SNDRV_PCM_HW_PARAM_FIRST_MASK]);
 }
@@ -302,9 +304,13 @@ static void param_set_min(struct snd_pcm_hw_params *p, int n, unsigned int val)
     }
 }
 
+#if 0
+/* Unused for now */
+
 static unsigned int param_get_min(const struct snd_pcm_hw_params *p, int n)
 {
-    if (param_is_interval(n)) {
+    if (param_is_interval(n))
+    {
         const struct snd_interval *i = param_get_interval(p, n);
         return i->min;
     }
@@ -319,6 +325,7 @@ static unsigned int param_get_max(const struct snd_pcm_hw_params *p, int n)
     }
     return 0;
 }
+#endif
 
 static void param_set_int(struct snd_pcm_hw_params *p, int n, unsigned int val)
 {
@@ -455,6 +462,9 @@ static unsigned int pcm_get_buffer_size(const struct pcm *pcm)
    return pcm->buffer_size;
 }
 
+#if 0
+/* Unused for now */
+
 /** Gets the channel count of the PCM.
  * @param pcm A PCM handle.
  * @return The channel count of the PCM.
@@ -521,6 +531,27 @@ static const char* pcm_get_error(const struct pcm *pcm)
 {
    return pcm->error;
 }
+
+/** Gets the subdevice on which the pcm has been opened.
+ * @param pcm A PCM handle.
+ * @return The subdevice on which the pcm has been opened */
+static unsigned int pcm_get_subdevice(const struct pcm *pcm)
+{
+    return pcm->subdevice;
+}
+
+/** Determines how many frames of a PCM can fit into a number of bytes.
+ * @param pcm A PCM handle.
+ * @param bytes The number of bytes.
+ * @return The number of frames that may fit into @p bytes
+ * @ingroup libtinyalsa-pcm
+ */
+static unsigned int pcm_bytes_to_frames(const struct pcm *pcm, unsigned int bytes)
+{
+    return bytes / (pcm->config.channels *
+        (pcm_format_to_bits(pcm->config.format) >> 3));
+}
+#endif
 
 /** Determines the number of bits occupied by a @ref pcm_format.
  * @param format A PCM format.
@@ -688,26 +719,6 @@ static int pcm_set_config(struct pcm *pcm, const struct pcm_config *config)
     return 0;
 }
 
-/** Gets the subdevice on which the pcm has been opened.
- * @param pcm A PCM handle.
- * @return The subdevice on which the pcm has been opened */
-static unsigned int pcm_get_subdevice(const struct pcm *pcm)
-{
-    return pcm->subdevice;
-}
-
-/** Determines how many frames of a PCM can fit into a number of bytes.
- * @param pcm A PCM handle.
- * @param bytes The number of bytes.
- * @return The number of frames that may fit into @p bytes
- * @ingroup libtinyalsa-pcm
- */
-static unsigned int pcm_bytes_to_frames(const struct pcm *pcm, unsigned int bytes)
-{
-    return bytes / (pcm->config.channels *
-        (pcm_format_to_bits(pcm->config.format) >> 3));
-}
-
 static int pcm_sync_ptr(struct pcm *pcm, int flags)
 {
     if (pcm->sync_ptr) {
@@ -775,6 +786,9 @@ static void pcm_hw_munmap_status(struct pcm *pcm) {
     pcm->mmap_control = NULL;
 }
 
+#if 0
+/* Unused for now */
+
 static int pcm_areas_copy(struct pcm *pcm, unsigned int pcm_offset,
                           char *buf, unsigned int src_offset,
                           unsigned int frames)
@@ -794,8 +808,9 @@ static int pcm_areas_copy(struct pcm *pcm, unsigned int pcm_offset,
                size_bytes);
     return 0;
 }
+#endif
 
-static inline int pcm_mmap_capture_avail(struct pcm *pcm)
+static INLINE int pcm_mmap_capture_avail(struct pcm *pcm)
 {
     int avail = pcm->mmap_status->hw_ptr - pcm->mmap_control->appl_ptr;
     if (avail < 0)
@@ -803,7 +818,7 @@ static inline int pcm_mmap_capture_avail(struct pcm *pcm)
     return avail;
 }
 
-static inline int pcm_mmap_playback_avail(struct pcm *pcm)
+static INLINE int pcm_mmap_playback_avail(struct pcm *pcm)
 {
     int avail = pcm->mmap_status->hw_ptr + pcm->buffer_size - pcm->mmap_control->appl_ptr;
 
@@ -815,13 +830,16 @@ static inline int pcm_mmap_playback_avail(struct pcm *pcm)
     return avail;
 }
 
-static inline int pcm_mmap_avail(struct pcm *pcm)
+static INLINE int pcm_mmap_avail(struct pcm *pcm)
 {
     pcm_sync_ptr(pcm, SNDRV_PCM_SYNC_PTR_HWSYNC);
     if (pcm->flags & PCM_IN)
         return pcm_mmap_capture_avail(pcm);
     return pcm_mmap_playback_avail(pcm);
 }
+
+#if 0
+/* Unused for now */
 
 static int pcm_mmap_begin(struct pcm *pcm, void **areas, unsigned int *offset,
       unsigned int *frames)
@@ -850,17 +868,6 @@ static int pcm_mmap_begin(struct pcm *pcm, void **areas, unsigned int *offset,
    return 0;
 }
 
-static void pcm_mmap_appl_forward(struct pcm *pcm, int frames)
-{
-    unsigned int appl_ptr = pcm->mmap_control->appl_ptr;
-    appl_ptr += frames;
-
-    /* check for boundary wrap */
-    if (appl_ptr > pcm->boundary)
-         appl_ptr -= pcm->boundary;
-    pcm->mmap_control->appl_ptr = appl_ptr;
-}
-
 static int pcm_mmap_commit(struct pcm *pcm, unsigned int offset, unsigned int frames)
 {
     int ret;
@@ -880,42 +887,15 @@ static int pcm_mmap_commit(struct pcm *pcm, unsigned int offset, unsigned int fr
     return frames;
 }
 
-static int pcm_mmap_transfer_areas(struct pcm *pcm, char *buf,
-                                unsigned int offset, unsigned int size)
+static void pcm_mmap_appl_forward(struct pcm *pcm, int frames)
 {
-    void *pcm_areas;
-    int commit;
-    unsigned int pcm_offset, frames, count = 0;
+    unsigned int appl_ptr = pcm->mmap_control->appl_ptr;
+    appl_ptr += frames;
 
-    while (size > 0) {
-        frames = size;
-        pcm_mmap_begin(pcm, &pcm_areas, &pcm_offset, &frames);
-        pcm_areas_copy(pcm, pcm_offset, buf, offset, frames);
-        commit = pcm_mmap_commit(pcm, pcm_offset, frames);
-        if (commit < 0) {
-            oops(pcm, commit, "failed to commit %d frames\n", frames);
-            return commit;
-        }
-
-        offset += commit;
-        count += commit;
-        size -= commit;
-    }
-    return count;
-}
-
-/** Checks if a PCM file has been opened without error.
- * @param pcm A PCM handle.
- *  May be NULL.
- * @return If a PCM's file descriptor is not valid or the pointer is NULL, it returns zero.
- *  Otherwise, the function returns one.
- * @ingroup libtinyalsa-pcm
- */
-static int pcm_is_ready(const struct pcm *pcm)
-{
-   if (pcm != NULL)
-      return pcm->fd >= 0;
-   return 0;
+    /* check for boundary wrap */
+    if (appl_ptr > pcm->boundary)
+         appl_ptr -= pcm->boundary;
+    pcm->mmap_control->appl_ptr = appl_ptr;
 }
 
 /** Returns available frames in pcm buffer and corresponding time stamp.
@@ -962,6 +942,21 @@ static int pcm_get_htimestamp(struct pcm *pcm, unsigned int *avail,
 
    *avail = (unsigned int)frames;
 
+   return 0;
+}
+#endif
+
+/** Checks if a PCM file has been opened without error.
+ * @param pcm A PCM handle.
+ *  May be NULL.
+ * @return If a PCM's file descriptor is not valid or the pointer is NULL, it returns zero.
+ *  Otherwise, the function returns one.
+ * @ingroup libtinyalsa-pcm
+ */
+static int pcm_is_ready(const struct pcm *pcm)
+{
+   if (pcm != NULL)
+      return pcm->fd >= 0;
    return 0;
 }
 
@@ -1061,6 +1056,8 @@ static int pcm_start(struct pcm *pcm)
    return 0;
 }
 
+#if 0
+/* Unused for now */
 
 /** Reads audio samples from PCM.
  * If the PCM has not been started, it is started in this function.
@@ -1138,10 +1135,14 @@ static int pcm_read(struct pcm *pcm, void *data, unsigned int count)
 {
    return pcm_readi(pcm, data, pcm_bytes_to_frames(pcm, count));
 }
+#endif
 
 static struct pcm bad_pcm = {
     .fd = -1,
 };
+
+#if 0
+/* Unused for now */
 
 /** Gets the hardware parameters of a PCM, without created a PCM handle.
  * @param card The card of the PCM.
@@ -1204,48 +1205,6 @@ static void pcm_params_free(struct pcm_params *pcm_params)
 
    if (params)
       free(params);
-}
-
-static int pcm_param_to_alsa(enum pcm_param param)
-{
-   switch (param)
-   {
-      case PCM_PARAM_ACCESS:
-         return SNDRV_PCM_HW_PARAM_ACCESS;
-      case PCM_PARAM_FORMAT:
-         return SNDRV_PCM_HW_PARAM_FORMAT;
-      case PCM_PARAM_SUBFORMAT:
-         return SNDRV_PCM_HW_PARAM_SUBFORMAT;
-      case PCM_PARAM_SAMPLE_BITS:
-         return SNDRV_PCM_HW_PARAM_SAMPLE_BITS;
-      case PCM_PARAM_FRAME_BITS:
-         return SNDRV_PCM_HW_PARAM_FRAME_BITS;
-      case PCM_PARAM_CHANNELS:
-         return SNDRV_PCM_HW_PARAM_CHANNELS;
-      case PCM_PARAM_RATE:
-         return SNDRV_PCM_HW_PARAM_RATE;
-      case PCM_PARAM_PERIOD_TIME:
-         return SNDRV_PCM_HW_PARAM_PERIOD_TIME;
-      case PCM_PARAM_PERIOD_SIZE:
-         return SNDRV_PCM_HW_PARAM_PERIOD_SIZE;
-      case PCM_PARAM_PERIOD_BYTES:
-         return SNDRV_PCM_HW_PARAM_PERIOD_BYTES;
-      case PCM_PARAM_PERIODS:
-         return SNDRV_PCM_HW_PARAM_PERIODS;
-      case PCM_PARAM_BUFFER_TIME:
-         return SNDRV_PCM_HW_PARAM_BUFFER_TIME;
-      case PCM_PARAM_BUFFER_SIZE:
-         return SNDRV_PCM_HW_PARAM_BUFFER_SIZE;
-      case PCM_PARAM_BUFFER_BYTES:
-         return SNDRV_PCM_HW_PARAM_BUFFER_BYTES;
-      case PCM_PARAM_TICK_TIME:
-         return SNDRV_PCM_HW_PARAM_TICK_TIME;
-
-      default:
-         break;
-   }
-
-   return -1;
 }
 
 /** Gets a mask from a PCM's hardware parameters.
@@ -1313,6 +1272,50 @@ static unsigned int pcm_params_get_max(const struct pcm_params *pcm_params,
 
    return param_get_max(params, p);
 }
+
+static int pcm_param_to_alsa(enum pcm_param param)
+{
+   switch (param)
+   {
+      case PCM_PARAM_ACCESS:
+         return SNDRV_PCM_HW_PARAM_ACCESS;
+      case PCM_PARAM_FORMAT:
+         return SNDRV_PCM_HW_PARAM_FORMAT;
+      case PCM_PARAM_SUBFORMAT:
+         return SNDRV_PCM_HW_PARAM_SUBFORMAT;
+      case PCM_PARAM_SAMPLE_BITS:
+         return SNDRV_PCM_HW_PARAM_SAMPLE_BITS;
+      case PCM_PARAM_FRAME_BITS:
+         return SNDRV_PCM_HW_PARAM_FRAME_BITS;
+      case PCM_PARAM_CHANNELS:
+         return SNDRV_PCM_HW_PARAM_CHANNELS;
+      case PCM_PARAM_RATE:
+         return SNDRV_PCM_HW_PARAM_RATE;
+      case PCM_PARAM_PERIOD_TIME:
+         return SNDRV_PCM_HW_PARAM_PERIOD_TIME;
+      case PCM_PARAM_PERIOD_SIZE:
+         return SNDRV_PCM_HW_PARAM_PERIOD_SIZE;
+      case PCM_PARAM_PERIOD_BYTES:
+         return SNDRV_PCM_HW_PARAM_PERIOD_BYTES;
+      case PCM_PARAM_PERIODS:
+         return SNDRV_PCM_HW_PARAM_PERIODS;
+      case PCM_PARAM_BUFFER_TIME:
+         return SNDRV_PCM_HW_PARAM_BUFFER_TIME;
+      case PCM_PARAM_BUFFER_SIZE:
+         return SNDRV_PCM_HW_PARAM_BUFFER_SIZE;
+      case PCM_PARAM_BUFFER_BYTES:
+         return SNDRV_PCM_HW_PARAM_BUFFER_BYTES;
+      case PCM_PARAM_TICK_TIME:
+         return SNDRV_PCM_HW_PARAM_TICK_TIME;
+
+      default:
+         break;
+   }
+
+   return -1;
+}
+#endif
+
 
 /** Stops a PCM.
  * @param pcm A PCM handle.
@@ -1437,6 +1440,8 @@ fail_close:
     return pcm;
 }
 
+#if 0
+/* Unused for now */
 
 /** Opens a PCM by it's name.
  * @param name The name of the PCM.
@@ -1500,6 +1505,7 @@ static int pcm_unlink(struct pcm *pcm)
       return oops(pcm, errno, "cannot unlink PCM");
    return 0;
 }
+#endif
 
 static int pcm_avail_update(struct pcm *pcm)
 {
@@ -1564,6 +1570,9 @@ static int pcm_wait(struct pcm *pcm, int timeout)
 
    return 1;
 }
+
+#if 0
+/* Unused for now */
 
 static int pcm_mmap_transfer(struct pcm *pcm, const void *buffer, unsigned int bytes)
 {
@@ -1672,6 +1681,33 @@ static long pcm_get_delay(struct pcm *pcm)
 
    return pcm->pcm_delay;
 }
+
+static int pcm_mmap_transfer_areas(struct pcm *pcm, char *buf,
+      unsigned int offset, unsigned int size)
+{
+   void *pcm_areas;
+   int commit;
+   unsigned int pcm_offset, frames, count = 0;
+
+   while (size > 0)
+   {
+      frames = size;
+      pcm_mmap_begin(pcm, &pcm_areas, &pcm_offset, &frames);
+      pcm_areas_copy(pcm, pcm_offset, buf, offset, frames);
+      commit = pcm_mmap_commit(pcm, pcm_offset, frames);
+      if (commit < 0)
+      {
+         oops(pcm, commit, "failed to commit %d frames\n", frames);
+         return commit;
+      }
+
+      offset += commit;
+      count += commit;
+      size -= commit;
+   }
+   return count;
+}
+#endif
 
 /* End of implementation tinyalsa pcm */
 
