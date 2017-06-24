@@ -53,9 +53,9 @@ tinyalsa_init(const char *device, unsigned rate,
 	config.rate              = rate;
 	config.format            = PCM_FORMAT_S16_LE;
 	config.channels          = 2;
-	config.period_size       = 768;
-	config.period_count      = 4;
-	config.start_threshold   = 2048;
+	config.period_size       = 1024;
+	config.period_count      = 2;
+	config.start_threshold   = 1024;
 	config.silence_threshold = 1024 * 2;
 	config.stop_threshold    = 1024 * 2;
 
