@@ -55,6 +55,9 @@ static const audio_driver_t *audio_drivers[] = {
    &audio_alsathread,
 #endif
 #endif
+#ifdef HAVE_TINYALSA
+	&audio_tinyalsa,
+#endif
 #if defined(HAVE_OSS) || defined(HAVE_OSS_BSD)
    &audio_oss,
 #endif

@@ -650,6 +650,10 @@ AUDIO
 #endif
 #endif
 
+#ifdef HAVE_TINYALSA
+#include "../audio/drivers/tinyalsa.c"
+#endif
+
 #ifdef HAVE_AL
 #include "../audio/drivers/openal.c"
 #endif

@@ -134,6 +134,12 @@ static const bool _alsa_supp = true;
 static const bool _alsa_supp = false;
 #endif
 
+#ifdef HAVE_TINYALSA
+static const bool _tinyalsa_supp = true;
+#else
+static const bool _tinyalsa_supp = false;
+#endif
+
 #ifdef HAVE_COREAUDIO
 static const bool _coreaudio_supp = true;
 #else
