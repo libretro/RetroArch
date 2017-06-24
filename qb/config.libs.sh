@@ -227,6 +227,10 @@ check_header OSS sys/soundcard.h
 check_header OSS_BSD soundcard.h
 check_lib OSS_LIB -lossaudio
 
+if [ "$OS" = 'Linux' ]; then
+	HAVE_TINYALSA=yes
+fi
+
 if [ "$OS" = 'Darwin' ]; then
    check_lib AL "-framework OpenAL" alcOpenDevice
    HAVE_SDL=no

@@ -139,6 +139,7 @@ enum audio_driver_enum
    AUDIO_OSS,
    AUDIO_ALSA,
    AUDIO_ALSATHREAD,
+   AUDIO_TINYALSA,
    AUDIO_ROAR,
    AUDIO_AL,
    AUDIO_SL,
@@ -312,6 +313,8 @@ static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PULSE;
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_ALSATHREAD;
 #elif defined(HAVE_ALSA)
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_ALSA;
+#elif defined(HAVE_TINYALSA)
+static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_TINYALSA;
 #elif defined(HAVE_OSS)
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_OSS;
 #elif defined(HAVE_JACK)
@@ -546,6 +549,8 @@ const char *config_get_default_audio(void)
          return "alsa";
       case AUDIO_ALSATHREAD:
          return "alsathread";
+      case AUDIO_TINYALSA:
+         return "tinyalsa";
       case AUDIO_ROAR:
          return "roar";
       case AUDIO_COREAUDIO:
