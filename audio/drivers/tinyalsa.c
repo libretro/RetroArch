@@ -17,6 +17,7 @@
 
 /* See https://github.com/tinyalsa/tinyalsa */
 
+#include <errno.h>
 #include <string.h>
 
 #include "../../deps/tinyalsa/pcm.h"
@@ -37,6 +38,7 @@ typedef struct tinyalsa {
 typedef long pcm_sframes_t;
 
 #define BYTES_TO_FRAMES(bytes, frame_bits)  ((bytes) * 8 / frame_bits)
+#define FRAMES_TO_BYTES(frames, frame_bits) ((frames) * frame_bits / 8)
 
 static void *
 tinyalsa_init(const char *device, unsigned rate,
@@ -90,20 +92,65 @@ tinyalsa_write(void *data, const void *buf_, size_t size_)
 {
    tinyalsa_t *tinyalsa  = (tinyalsa_t*)data;
    const uint8_t *buf    = (const uint8_t*)buf_;
-   pcm_sframes_t written = 0, frames = 0;
+   pcm_sframes_t written = 0;
    pcm_sframes_t size    = BYTES_TO_FRAMES(size_, tinyalsa->frame_bits);
    size_t frames_size    = tinyalsa->has_float ? sizeof(float) : sizeof(int16_t);
 
-   while (size)
+   if (tinyalsa->nonblock)
    {
-      frames   = pcm_writei(tinyalsa->pcm, buf, size);
+      while (size)
+      {
+         pcm_sframes_t frames   = pcm_writei(tinyalsa->pcm, buf, size);
 
-      if (frames < 0)
-         return -1;
+         if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
+         {
+            break;
+         }
+         else if (frames == -EAGAIN)
+            break;
+         if (frames < 0)
+            return -1;
 
-      written += frames;
-      buf     += (frames << 1) * frames_size;
-      size    -= frames;
+         written += frames;
+         buf     += (frames << 1) * frames_size;
+         size    -= frames;
+      }
+   }
+   else
+   {
+      bool eagain_retry         = true;
+
+      while (size)
+      {
+         pcm_sframes_t frames;
+         int rc = pcm_wait(tinyalsa->pcm, -1);
+
+         if (rc == -EPIPE || rc == -ESTRPIPE || rc == -EINTR)
+            continue;
+
+         frames   = pcm_writei(tinyalsa->pcm, buf, size);
+
+         if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
+         {
+            break;
+         }
+         else if (frames == -EAGAIN)
+         {
+            /* Definitely not supposed to happen. */
+            if (eagain_retry)
+            {
+               eagain_retry = false;
+               continue;
+            }
+            break;
+         }
+         else if (frames < 0)
+            return -1;
+
+         written += frames;
+         buf     += (frames << 1) * frames_size;
+         size    -= frames;
+      }
    }
 
    return written;			
@@ -185,21 +232,23 @@ tinyalsa_free(void *data)
 	}
 }
 
-#if 0
 static size_t tinyalsa_write_avail(void *data)
 {
-	/*TODO*/
-	return 0;
+   tinyalsa_t *alsa        = (tinyalsa_t*)data;
+   pcm_sframes_t avail     = pcm_avail_update(alsa->pcm);
+
+   if (avail < 0)
+      return alsa->buffer_size;
+
+   return FRAMES_TO_BYTES(avail, alsa->frame_bits);
 }
 
-static size_t
-tinyalsa_buffer_size(void *data)
+static size_t tinyalsa_buffer_size(void *data)
 {
 	tinyalsa_t *tinyalsa = (tinyalsa_t*)data;
 	
 	return tinyalsa->buffer_size;
 }
-#endif
 
 audio_driver_t audio_tinyalsa = {
 	tinyalsa_init,               /* AUDIO_init              */
@@ -213,6 +262,6 @@ audio_driver_t audio_tinyalsa = {
 	"tinyalsa",                  /* "AUDIO"                 */
 	NULL,                        /* AUDIO_device_list_new   */ /*TODO*/
 	NULL,                        /* AUDIO_device_list_free  */ /*TODO*/
-/*	tinyalsa_write_avail,           AUDIO_write_avail       */ /*TODO*/
-	NULL,                        /* AUDIO_buffer_size       */ /*TODO*/
+   tinyalsa_write_avail,        /* AUDIO_write_avail       */ /*TODO*/
+	tinyalsa_buffer_size,        /* AUDIO_buffer_size       */ /*TODO*/
 };
