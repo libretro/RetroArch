@@ -384,8 +384,7 @@ endif
 endif
 
 ifeq ($(HAVE_TINYALSA), 1)
-	OBJ += audio/drivers/tinyalsa.o\
-	       deps/tinyalsa/pcm.o
+	OBJ += audio/drivers/tinyalsa.o
 	DEFINES += -DHAVE_TINYALSA
 endif
 
