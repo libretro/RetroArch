@@ -721,9 +721,11 @@ static int pcm_set_config(struct pcm *pcm, const struct pcm_config *config)
 
 static int pcm_sync_ptr(struct pcm *pcm, int flags)
 {
-    if (pcm->sync_ptr) {
+    if (pcm->sync_ptr)
+    {
         pcm->sync_ptr->flags = flags;
-        if (ioctl(pcm->fd, SNDRV_PCM_IOCTL_SYNC_PTR, pcm->sync_ptr) < 0) {
+        if (ioctl(pcm->fd, SNDRV_PCM_IOCTL_SYNC_PTR, pcm->sync_ptr) < 0)
+        {
             oops(pcm, errno, "failed to sync mmap ptr");
             return -1;
         }
