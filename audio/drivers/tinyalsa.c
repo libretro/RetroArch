@@ -2144,7 +2144,7 @@ typedef long pcm_sframes_t;
 #define BYTES_TO_FRAMES(bytes, frame_bits)  ((bytes) * 8 / frame_bits)
 #define FRAMES_TO_BYTES(frames, frame_bits) ((frames) * frame_bits / 8)
 
-static void * tinyalsa_init(const char *device, unsigned rate,
+static void * tinyalsa_init(const char *devicestr, unsigned rate,
       unsigned latency, unsigned block_frames,
       unsigned *new_rate)
 {
@@ -2163,7 +2163,15 @@ static void * tinyalsa_init(const char *device, unsigned rate,
    config.silence_threshold  = 1024 * 2;
    config.stop_threshold     = 1024 * 2;
 
-   tinyalsa->pcm = pcm_open(0, 0, PCM_OUT, &config);
+   unsigned int card         = 0;
+   unsigned int device       = 0;
+
+   if (devicestr)
+      sscanf(devicestr, "%u,%u", &card, &device);
+
+   RARCH_LOG("[TINYALSA]: Using card: %u, device: %u.\n", card, device);
+
+   tinyalsa->pcm = pcm_open(card, device, PCM_OUT, &config);
 
    if (tinyalsa->pcm == NULL)
    {
@@ -2183,7 +2191,7 @@ static void * tinyalsa_init(const char *device, unsigned rate,
    tinyalsa->can_pause   = true;
    tinyalsa->has_float   = false;
 
-   RARCH_LOG("[TINYALSA] %u \n", (unsigned int)tinyalsa->buffer_size);
+   RARCH_LOG("[TINYALSA]: Buffer size: %d frames. \n", (int)buffer_size);
 
    return tinyalsa;
 
