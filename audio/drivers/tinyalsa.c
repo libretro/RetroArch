@@ -2207,12 +2207,6 @@ tinyalsa_write(void *data, const void *buf_, size_t size_)
       {
          pcm_sframes_t frames   = pcm_writei(tinyalsa->pcm, buf, size);
 
-         if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
-         {
-            break;
-         }
-         else if (frames == -EAGAIN)
-            break;
          if (frames < 0)
             return -1;
 
@@ -2228,28 +2222,11 @@ tinyalsa_write(void *data, const void *buf_, size_t size_)
       while (size)
       {
          pcm_sframes_t frames;
-         int rc = pcm_wait(tinyalsa->pcm, -1);
-
-         if (rc == -EPIPE || rc == -ESTRPIPE || rc == -EINTR)
-            continue;
+         pcm_wait(tinyalsa->pcm, -1);
 
          frames   = pcm_writei(tinyalsa->pcm, buf, size);
 
-         if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
-         {
-            break;
-         }
-         else if (frames == -EAGAIN)
-         {
-            /* Definitely not supposed to happen. */
-            if (eagain_retry)
-            {
-               eagain_retry = false;
-               continue;
-            }
-            break;
-         }
-         else if (frames < 0)
+         if (frames < 0)
             return -1;
 
          written += frames;
