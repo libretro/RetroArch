@@ -1922,6 +1922,9 @@ static int pcm_avail_update(struct pcm *pcm)
    return pcm_mmap_avail(pcm);
 }
 
+#if 0
+/* No longer used */
+
 static int pcm_state(struct pcm *pcm)
 {
    int err = pcm_sync_ptr(pcm, 0);
@@ -1930,6 +1933,7 @@ static int pcm_state(struct pcm *pcm)
 
    return pcm->mmap_status->state;
 }
+#endif
 
 /** Waits for frames to be available for read or write operations.
  * @param pcm A PCM handle.
@@ -1942,15 +1946,14 @@ static int pcm_state(struct pcm *pcm)
 static int pcm_wait(struct pcm *pcm, int timeout)
 {
    struct pollfd pfd;
-   int err;
 
-   pfd.fd = pcm->fd;
+   pfd.fd     = pcm->fd;
    pfd.events = POLLIN | POLLOUT | POLLERR | POLLNVAL;
 
    do
    {
       /* let's wait for avail or timeout */
-      err = poll(&pfd, 1, timeout);
+      int err = poll(&pfd, 1, timeout);
       if (err < 0)
          return -errno;
 
@@ -1965,7 +1968,11 @@ static int pcm_wait(struct pcm *pcm, int timeout)
       /* check for any errors */
       if (pfd.revents & (POLLERR | POLLNVAL))
       {
-         switch (pcm_state(pcm))
+         int cond = pcm_sync_ptr(pcm, 0);
+         if (cond >= 0)
+            cond = pcm->mmap_status->state;
+
+         switch (cond)
          {
             case PCM_STATE_XRUN:
                return -EPIPE;
