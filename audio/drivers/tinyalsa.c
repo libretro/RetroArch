@@ -2217,8 +2217,6 @@ tinyalsa_write(void *data, const void *buf_, size_t size_)
    }
    else
    {
-      bool eagain_retry         = true;
-
       while (size)
       {
          pcm_sframes_t frames;
