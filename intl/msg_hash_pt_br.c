@@ -36,7 +36,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
         switch (idx) {
             case RARCH_FAST_FORWARD_KEY:
                 snprintf(s, len,
-                         "Alterna entre Avanço Rápido e \n"
+                         "Alternar entre Avanço Rápido e \n"
                                  "velocidade normal."
                 );
                 break;
@@ -49,7 +49,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                 break;
             case RARCH_PAUSE_TOGGLE:
                 snprintf(s, len,
-                         "Alterna entre estado pausado e não-pausado.");
+                         "Alternar entre estado pausado e não-pausado.");
                 break;
             case RARCH_FRAMEADVANCE:
                 snprintf(s, len,
@@ -57,11 +57,11 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                 break;
             case RARCH_SHADER_NEXT:
                 snprintf(s, len,
-                         "Aplica o próximo Shader no diretório.");
+                         "Aplicar o próximo Shader do diretório.");
                 break;
             case RARCH_SHADER_PREV:
                 snprintf(s, len,
-                         "Aplica o Shader anterior no diretório.");
+                         "Aplicar o Shader anterior do diretório.");
                 break;
             case RARCH_CHEAT_INDEX_PLUS:
             case RARCH_CHEAT_INDEX_MINUS:
@@ -75,7 +75,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                 break;
             case RARCH_SCREENSHOT:
                 snprintf(s, len,
-                         "Captura a tela.");
+                         "Capturar a tela.");
                 break;
             case RARCH_MUTE:
                 snprintf(s, len,
@@ -87,11 +87,11 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                 break;
             case RARCH_NETPLAY_FLIP:
                 snprintf(s, len,
-                         "Inverte usuários do Netplay.");
+                         "Inverter usuários do Netplay.");
                 break;
             case RARCH_NETPLAY_GAME_WATCH:
                 snprintf(s, len,
-                         "Alterna modos jogador/espectador do Netplay.");
+                         "Alternar modos jogador/espectador do Netplay.");
                 break;
             case RARCH_SLOWMOTION:
                 snprintf(s, len,
@@ -113,33 +113,33 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                 break;
             case RARCH_VOLUME_UP:
                 snprintf(s, len,
-                         "Aumenta o volume do áudio.");
+                         "Aumentar o volume do áudio.");
                 break;
             case RARCH_VOLUME_DOWN:
                 snprintf(s, len,
-                         "Diminui o volume do áudio.");
+                         "Diminuir o volume do áudio.");
                 break;
             case RARCH_OVERLAY_NEXT:
                 snprintf(s, len,
-                         "Muda para a próxima Transparência. Circula pelas opções.");
+                         "Mudar para a próxima Transparência. Circula pelas opções.");
                 break;
             case RARCH_DISK_EJECT_TOGGLE:
                 snprintf(s, len,
-                         "Alterna ejeção de disco. \n"
+                         "Alternar ejeção de disco. \n"
                                  " \n"
                                  "Usado para conteúdo em vários discos. ");
                 break;
             case RARCH_DISK_NEXT:
             case RARCH_DISK_PREV:
                 snprintf(s, len,
-                         "Alterna pelas imagens de disco. Utilizado. \n"
+                         "Alternar pelas imagens de disco. Utilizado. \n"
                                  "após a ejeção. \n"
                                  " \n"
                                  "Concluído após alternar novamente a ejeção.");
                 break;
             case RARCH_GRAB_MOUSE_TOGGLE:
                 snprintf(s, len,
-                         "Alterna captura de Mouse. \n"
+                         "Alternar captura de Mouse. \n"
                                  " \n"
                                  "Quando o Mouse é capturado, o RetroArch oculta \n"
                                  "o cursor do Mouse, e mantém o Mouse dentro \n"
@@ -148,21 +148,21 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                 break;
             case RARCH_GAME_FOCUS_TOGGLE:
                 snprintf(s, len,
-                         "Alterna o foco do jogo.\n"
+                         "Alternar o foco do jogo.\n"
                                  " \n"
                                  "Quando um jogo tem foco, o RetroArch irá desabilitar \n"
                                  "as teclas de atalho e manter o cursor do mouse dentro da janela.");
                 break;
             case RARCH_MENU_TOGGLE:
-                snprintf(s, len, "Alterna o menu.");
+                snprintf(s, len, "Alternar o menu.");
                 break;
             case RARCH_LOAD_STATE_KEY:
                 snprintf(s, len,
-                         "Carrega Estado de Jogo.");
+                         "Carregar Estado de Jogo.");
                 break;
             case RARCH_FULLSCREEN_TOGGLE_KEY:
                 snprintf(s, len,
-                         "Alterna tela cheia.");
+                         "Alternar tela cheia.");
                 break;
             case RARCH_QUIT_KEY:
                 snprintf(s, len,
@@ -189,7 +189,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                 break;
             case RARCH_SAVE_STATE_KEY:
                 snprintf(s, len,
-                         "Salva Estado de Jogo.");
+                         "Salvar Estado de Jogo.");
                 break;
             case RARCH_REWIND:
                 snprintf(s, len,
@@ -560,7 +560,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
         case MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X:
         case MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_Y:
             snprintf(s, len,
-                     "Deslocamento da onde as mensagens serão colocadas \n"
+                     "Deslocamento de onde as mensagens serão colocadas \n"
                              "na tela. Os valores são na faixa de [0.0, 1.0].");
             break;
         case MENU_ENUM_LABEL_INPUT_OVERLAY_ENABLE:
@@ -2026,7 +2026,7 @@ const char *msg_hash_to_str_pt_br(enum msg_hash_enums msg) {
 #endif
 
     switch (msg) {
-#include "msg_hash_us.h"
+#include "msg_hash_pt_br.h"
         default:
 #if 0
             RARCH_LOG("Unimplemented: [%d]\n", msg);
