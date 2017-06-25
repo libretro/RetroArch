@@ -73,7 +73,7 @@ static int16_t hidpad_psxadapter_get_axis(void *data, unsigned axis)
    struct hidpad_psxadapter_data *device = (struct hidpad_psxadapter_data*)data;
 
    if (!device || axis >= 4   ||
-       (device->data[2]==0x7F) )//digital mode detection
+       (device->data[2]==0x7F) ) /* digital mode detection */
       return 0;
    
    switch (axis)
@@ -94,7 +94,7 @@ static int16_t hidpad_psxadapter_get_axis(void *data, unsigned axis)
    
    val = (val << 8) - 0x8000;
 
-   return (abs(val) > 0x1000) ? val : 0;//hard coded deadzone
+   return (abs(val) > 0x1000) ? val : 0; /* hard coded deadzone */
 }
 
 #define PSX_H_GET(a) (a & 0x0F) /*HAT MASK = 0x0F */
@@ -143,7 +143,7 @@ static void hidpad_psxadapter_packet_handler(void *data, uint8_t *packet, uint16
       if (button_mapping[i] != NO_BTN)
          device->buttons |= (pressed_keys & (1 << i)) ? (UINT64_C(1) << button_mapping[i]) : 0;
 
-   if (device->data[2]==0x7F) //digital mode detection
+   if (device->data[2]==0x7F) /* digital mode detection */
    {
       /* We're in digital mode, process the dpad values */
       device->buttons |= (device->data[4]==0x00) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;

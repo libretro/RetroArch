@@ -629,35 +629,36 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                      "Bem-vindo ao RetroArch \n"
             );
             break;
-        case MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC: {
-            /* Work around C89 limitations */
-            char u[501];
-            const char *t =
-                    "O RetroArch utiliza uma forma única de \n"
-                            "sincronização de áudio/video aonde ele precisa \n"
-                            "ser calibrado pela taxa de atualização da sua \n"
-                            "tela para um melhor resultado no desempenho.\n"
-                            " \n"
-                            "Se você experimentar qualquer estalido no áudio \n"
-                            "ou rasgo de vídeo, normalmente isto significa que você \n"
-                            "precisa calibrar as configurações. Algumas escolhas abaixo:\n"
-                            " \n";
-            snprintf(u, sizeof(u), /* can't inline this due to the printf arguments */
+        case MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC:
+            {
+               /* Work around C89 limitations */
+               char u[501];
+               const char *t =
+                  "O RetroArch utiliza uma forma única de \n"
+                  "sincronização de áudio/video aonde ele precisa \n"
+                  "ser calibrado pela taxa de atualização da sua \n"
+                  "tela para um melhor resultado no desempenho.\n"
+                  " \n"
+                  "Se você experimentar qualquer estalido no áudio \n"
+                  "ou rasgo de vídeo, normalmente isto significa que você \n"
+                  "precisa calibrar as configurações. Algumas escolhas abaixo:\n"
+                  " \n";
+               snprintf(u, sizeof(u), /* can't inline this due to the printf arguments */
                      "a) Vá para '%s' -> '%s', e habilite \n"
-                             "'Video Paralelizado'. A taxa de atualização não \n"
-                             "vai importar neste modo, a taxa de quadros será maior, \n"
-                             "mas o vídeo será menos fluído. \n"
-                             "b) Vá para '%s' -> '%s', e observe \n"
-                             "'%s'. Deixe executar até \n"
-                             "2048 quadros, então pressione 'OK'.",
+                     "'Video Paralelizado'. A taxa de atualização não \n"
+                     "vai importar neste modo, a taxa de quadros será maior, \n"
+                     "mas o vídeo será menos fluído. \n"
+                     "b) Vá para '%s' -> '%s', e observe \n"
+                     "'%s'. Deixe executar até \n"
+                     "2048 quadros, então pressione 'OK'.",
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO));
-            strlcpy(s, t, len);
-            strlcat(s, u, len);
-        }
+               strlcpy(s, t, len);
+               strlcat(s, u, len);
+            }
             break;
         case MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC:
             snprintf(s, len,
@@ -1151,24 +1152,30 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                              "implementações de núcleo Libretro.");
             break;
         case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
-            snprintf(s, len,
-                     "Taxa de Atualização Automática. \n"
-                             " \n"
-                             "A taxa de atualização precisa da tela (Hz). \n"
-                             "É utilizado para calcular a taxa de entrada \n"
-                             "de áudio com a fórmula: \n"
-                             " \n"
-                             "taxa de entrada de áudio = taxa de entrada do jogo * taxa \n"
-                             "de atualização da tela / taxa de atualização do jogo \n"
-                             " \n"
-                             "Se a implementação não reportar nenhum \n"
-                             "valor, os padrões NTSC serão usados para \n"
-                             "garantir compatibilidade.\n"
-                             " \n"
-                             "Este valor deve ficar próximo de 60Hz para evitar \n"
-                             "mudanças bruscas de timbre de som. Se seu monitor não \n"
-                             "roda a 60Hz, ou próximo disso, \n"
-                             "desative o VSync, e deixe este valor no padrão.");
+            {
+               /* Work around C89 limitations */
+               const char *t =
+                  "Taxa de Atualização Automática. \n"
+                  " \n"
+                  "A taxa de atualização precisa da tela (Hz). \n"
+                  "É utilizado para calcular a taxa de entrada \n"
+                  "de áudio com a fórmula: \n"
+                  " \n"
+                  "taxa de entrada de áudio = taxa de entrada do jogo * taxa \n"
+                  "de atualização da tela / taxa de atualização do jogo \n"
+                  " \n";
+               const char *u = 
+                     "Se a implementação não reportar nenhum \n"
+                     "valor, os padrões NTSC serão usados para \n"
+                     "garantir compatibilidade.\n"
+                     " \n"
+                     "Este valor deve ficar próximo de 60Hz para evitar \n"
+                     "mudanças bruscas de timbre de som. Se seu monitor não \n"
+                     "roda a 60Hz, ou próximo disso, \n"
+                     "desative o VSync, e deixe este valor no padrão.";
+               strlcpy(s, t, len);
+               strlcat(s, u, len);
+            }
             break;
         case MENU_ENUM_LABEL_VIDEO_ROTATION:
             snprintf(s, len,
@@ -1580,20 +1587,26 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                              "haverá oscilação no Netplay. \n");
             break;
         case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
-            snprintf(s, len,
-                     "A frequência em quadros na qual o Netplay \n"
-                             "irá verificar se o hospedeiro e o cliente \n"
-                             "estão sincronizados. \n"
-                             " \n"
-                             "Com a maioria dos núcleos, este valor não terá \n"
-                             "efeito perceptível e pode ser ignorado. Com \n"
-                             "núcleos não determinísticos, este valor define \n"
-                             "quão frequente os pares do Netplay serão colocados \n"
-                             "em sincronia. Com núcleos defeituosos, definir para \n"
-                             "qualquer valor que não zero irá causar problemas \n"
-                             "de desempenho severos. Defina como zero para desativar \n"
-                             "verificações. Este valor é usado somente no \n"
-                             "hospedeiro de Netplay. \n");
+            {
+               /* Work around C89 limitations */
+               const char *t =
+                  "A frequência em quadros na qual o Netplay \n"
+                  "irá verificar se o hospedeiro e o cliente \n"
+                  "estão sincronizados. \n"
+                  " \n"
+                  "Com a maioria dos núcleos, este valor não terá \n"
+                  "efeito perceptível e pode ser ignorado. Com \n";
+               const char *u = 
+                  "núcleos não determinísticos, este valor define \n"
+                  "quão frequente os pares do Netplay serão colocados \n"
+                  "em sincronia. Com núcleos defeituosos, definir para \n"
+                  "qualquer valor que não zero irá causar problemas \n"
+                  "de desempenho severos. Defina como zero para desativar \n"
+                  "verificações. Este valor é usado somente no \n"
+                  "hospedeiro de Netplay. \n";
+               strlcpy(s, t, len);
+               strlcat(s, u, len);
+            }
             break;
         case MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN:
             snprintf(s, len,

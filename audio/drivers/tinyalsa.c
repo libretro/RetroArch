@@ -341,7 +341,7 @@ enum
 {
 	SNDRV_PCM_TSTAMP_NONE = 0,
 	SNDRV_PCM_TSTAMP_ENABLE,
-	SNDRV_PCM_TSTAMP_LAST = SNDRV_PCM_TSTAMP_ENABLE,
+	SNDRV_PCM_TSTAMP_LAST = SNDRV_PCM_TSTAMP_ENABLE
 };
 
 /** Enumeration of a PCM's hardware parameters.
@@ -374,7 +374,7 @@ enum pcm_param
    PCM_PARAM_BUFFER_TIME,
    PCM_PARAM_BUFFER_SIZE,
    PCM_PARAM_BUFFER_BYTES,
-   PCM_PARAM_TICK_TIME,
+   PCM_PARAM_TICK_TIME
 }; /* enum pcm_param */
 
 /* channel positions */
@@ -420,29 +420,25 @@ enum
 	SNDRV_CHMAP_BC,		/* bottom center */
 	SNDRV_CHMAP_BLC,	/* bottom left center */
 	SNDRV_CHMAP_BRC,	/* bottom right center */
-	SNDRV_CHMAP_LAST = SNDRV_CHMAP_BRC,
+	SNDRV_CHMAP_LAST = SNDRV_CHMAP_BRC
 };
 
-enum
-{
-   SNDRV_PCM_MMAP_OFFSET_DATA = 0x00000000,
-   SNDRV_PCM_MMAP_OFFSET_STATUS = 0x80000000,
-   SNDRV_PCM_MMAP_OFFSET_CONTROL = 0x81000000,
-};
+#define SNDRV_PCM_MMAP_OFFSET_DATA     0x00000000
+#define SNDRV_PCM_MMAP_OFFSET_STATUS   0x80000000
+#define SNDRV_PCM_MMAP_OFFSET_CONTROL  0x81000000
 
 enum
 {
    SNDRV_PCM_TSTAMP_TYPE_GETTIMEOFDAY = 0,	/* gettimeofday equivalent */
-   SNDRV_PCM_TSTAMP_TYPE_MONOTONIC,	/* posix_clock_monotonic equivalent */
-   SNDRV_PCM_TSTAMP_TYPE_MONOTONIC_RAW,    /* monotonic_raw (no NTP) */
-   SNDRV_PCM_TSTAMP_TYPE_LAST = SNDRV_PCM_TSTAMP_TYPE_MONOTONIC_RAW,
+   SNDRV_PCM_TSTAMP_TYPE_MONOTONIC,	         /* posix_clock_monotonic equivalent */
+   SNDRV_PCM_TSTAMP_TYPE_MONOTONIC_RAW,      /* monotonic_raw (no NTP) */
+   SNDRV_PCM_TSTAMP_TYPE_LAST = SNDRV_PCM_TSTAMP_TYPE_MONOTONIC_RAW
 };
 
 typedef unsigned long snd_pcm_uframes_t;
 typedef signed long snd_pcm_sframes_t;
 typedef int snd_pcm_hw_param_t;
 typedef int __bitwise snd_pcm_access_t;
-typedef int __bitwise snd_pcm_subformat_t;
 typedef int __bitwise snd_pcm_subformat_t;
 typedef int __bitwise snd_pcm_state_t;
 typedef int __bitwise snd_pcm_format_t;
@@ -1124,42 +1120,44 @@ static int pcm_sync_ptr(struct pcm *pcm, int flags)
 
 static int pcm_hw_mmap_status(struct pcm *pcm)
 {
-    if (pcm->sync_ptr)
-        return 0;
+   int page_size;
+   if (pcm->sync_ptr)
+      return 0;
 
-    int page_size = sysconf(_SC_PAGE_SIZE);
-    pcm->mmap_status = mmap(NULL, page_size, PROT_READ, MAP_FILE | MAP_SHARED,
-                            pcm->fd, SNDRV_PCM_MMAP_OFFSET_STATUS);
-    if (pcm->mmap_status == MAP_FAILED)
-        pcm->mmap_status = NULL;
-    if (!pcm->mmap_status)
-        goto mmap_error;
+   page_size = sysconf(_SC_PAGE_SIZE);
 
-    pcm->mmap_control = mmap(NULL, page_size, PROT_READ | PROT_WRITE,
-                             MAP_FILE | MAP_SHARED, pcm->fd, SNDRV_PCM_MMAP_OFFSET_CONTROL);
-    if (pcm->mmap_control == MAP_FAILED)
-        pcm->mmap_control = NULL;
-    if (!pcm->mmap_control)
-    {
-        munmap(pcm->mmap_status, page_size);
-        pcm->mmap_status = NULL;
-        goto mmap_error;
-    }
-    pcm->mmap_control->avail_min = 1;
+   pcm->mmap_status = mmap(NULL, page_size, PROT_READ, MAP_FILE | MAP_SHARED,
+         pcm->fd, SNDRV_PCM_MMAP_OFFSET_STATUS);
+   if (pcm->mmap_status == MAP_FAILED)
+      pcm->mmap_status = NULL;
+   if (!pcm->mmap_status)
+      goto mmap_error;
 
-    return 0;
+   pcm->mmap_control = mmap(NULL, page_size, PROT_READ | PROT_WRITE,
+         MAP_FILE | MAP_SHARED, pcm->fd, SNDRV_PCM_MMAP_OFFSET_CONTROL);
+   if (pcm->mmap_control == MAP_FAILED)
+      pcm->mmap_control = NULL;
+   if (!pcm->mmap_control)
+   {
+      munmap(pcm->mmap_status, page_size);
+      pcm->mmap_status = NULL;
+      goto mmap_error;
+   }
+   pcm->mmap_control->avail_min = 1;
+
+   return 0;
 
 mmap_error:
 
-    pcm->sync_ptr = calloc(1, sizeof(*pcm->sync_ptr));
-    if (!pcm->sync_ptr)
-        return -ENOMEM;
-    pcm->mmap_status = &pcm->sync_ptr->s.status;
-    pcm->mmap_control = &pcm->sync_ptr->c.control;
-    pcm->mmap_control->avail_min = 1;
-    pcm_sync_ptr(pcm, 0);
+   pcm->sync_ptr = calloc(1, sizeof(*pcm->sync_ptr));
+   if (!pcm->sync_ptr)
+      return -ENOMEM;
+   pcm->mmap_status = &pcm->sync_ptr->s.status;
+   pcm->mmap_control = &pcm->sync_ptr->c.control;
+   pcm->mmap_control->avail_min = 1;
+   pcm_sync_ptr(pcm, 0);
 
-    return 0;
+   return 0;
 }
 
 static void pcm_hw_munmap_status(struct pcm *pcm)
@@ -1541,7 +1539,7 @@ static int pcm_read(struct pcm *pcm, void *data, unsigned int count)
 #endif
 
 static struct pcm bad_pcm = {
-    .fd = -1,
+    -1                       /* fd */
 };
 
 #if 0

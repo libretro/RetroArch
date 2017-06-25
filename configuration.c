@@ -1965,7 +1965,7 @@ static config_file_t *open_default_config_file(void)
 
          skeleton_conf[0] = '\0';
 
-         // Build a retroarch.cfg path from the global config directory (/etc).
+         /* Build a retroarch.cfg path from the global config directory (/etc). */
          fill_pathname_join(skeleton_conf, GLOBAL_CONFIG_DIR,
             file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(skeleton_conf));
 
