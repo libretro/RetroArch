@@ -1126,14 +1126,14 @@ static int pcm_hw_mmap_status(struct pcm *pcm)
 
    page_size = sysconf(_SC_PAGE_SIZE);
 
-   pcm->mmap_status = mmap(NULL, page_size, PROT_READ, MAP_FILE | MAP_SHARED,
+   pcm->mmap_status = (snd_pcm_mmap_status*)mmap(NULL, page_size, PROT_READ, MAP_FILE | MAP_SHARED,
          pcm->fd, SNDRV_PCM_MMAP_OFFSET_STATUS);
    if (pcm->mmap_status == MAP_FAILED)
       pcm->mmap_status = NULL;
    if (!pcm->mmap_status)
       goto mmap_error;
 
-   pcm->mmap_control = mmap(NULL, page_size, PROT_READ | PROT_WRITE,
+   pcm->mmap_control = (snd_pcm_mmap_control*)mmap(NULL, page_size, PROT_READ | PROT_WRITE,
          MAP_FILE | MAP_SHARED, pcm->fd, SNDRV_PCM_MMAP_OFFSET_CONTROL);
    if (pcm->mmap_control == MAP_FAILED)
       pcm->mmap_control = NULL;
@@ -1149,7 +1149,7 @@ static int pcm_hw_mmap_status(struct pcm *pcm)
 
 mmap_error:
 
-   pcm->sync_ptr = calloc(1, sizeof(*pcm->sync_ptr));
+   pcm->sync_ptr = (snd_pcm_sync_ptr*)calloc(1, sizeof(*pcm->sync_ptr));
    if (!pcm->sync_ptr)
       return -ENOMEM;
    pcm->mmap_status = &pcm->sync_ptr->s.status;
@@ -1784,67 +1784,65 @@ static int pcm_close(struct pcm *pcm)
  * @ingroup libtinyalsa-pcm
  */
 static struct pcm *pcm_open(unsigned int card, unsigned int device,
-                     unsigned int flags, const struct pcm_config *config)
+      unsigned int flags, const struct pcm_config *config)
 {
-    struct pcm *pcm;
-    struct snd_pcm_info info;
-    char fn[256];
-    int rc;
+   int rc;
+   char fn[256];
+   struct snd_pcm_info info;
+   struct pcm *pcm = (struct pcm*)calloc(1, sizeof(struct pcm));
+   if (!pcm)
+      return &bad_pcm;
 
-    pcm = calloc(1, sizeof(struct pcm));
-    if (!pcm)
-        return &bad_pcm;
+   snprintf(fn, sizeof(fn), "/dev/snd/pcmC%uD%u%c", card, device,
+         flags & PCM_IN ? 'c' : 'p');
 
-    snprintf(fn, sizeof(fn), "/dev/snd/pcmC%uD%u%c", card, device,
-             flags & PCM_IN ? 'c' : 'p');
+   pcm->flags = flags;
+   pcm->fd    = open(fn, O_RDWR);
+   if (pcm->fd < 0)
+   {
+      oops(pcm, errno, "cannot open device '%s'", fn);
+      return pcm;
+   }
 
-    pcm->flags = flags;
-    pcm->fd    = open(fn, O_RDWR);
-    if (pcm->fd < 0)
-    {
-        oops(pcm, errno, "cannot open device '%s'", fn);
-        return pcm;
-    }
+   if (ioctl(pcm->fd, SNDRV_PCM_IOCTL_INFO, &info))
+   {
+      oops(pcm, errno, "cannot get info");
+      goto fail_close;
+   }
+   pcm->subdevice = info.subdevice;
 
-    if (ioctl(pcm->fd, SNDRV_PCM_IOCTL_INFO, &info))
-    {
-        oops(pcm, errno, "cannot get info");
-        goto fail_close;
-    }
-    pcm->subdevice = info.subdevice;
+   if (pcm_set_config(pcm, config) != 0)
+      goto fail_close;
 
-    if (pcm_set_config(pcm, config) != 0)
-        goto fail_close;
-
-    rc = pcm_hw_mmap_status(pcm);
-    if (rc < 0) {
-        oops(pcm, rc, "mmap status failed");
-        goto fail;
-    }
+   rc = pcm_hw_mmap_status(pcm);
+   if (rc < 0) {
+      oops(pcm, rc, "mmap status failed");
+      goto fail;
+   }
 
 #ifdef SNDRV_PCM_IOCTL_TTSTAMP
-    if (pcm->flags & PCM_MONOTONIC)
-    {
-        int arg = SNDRV_PCM_TSTAMP_TYPE_MONOTONIC;
-        rc      = ioctl(pcm->fd, SNDRV_PCM_IOCTL_TTSTAMP, &arg);
-        if (rc < 0)
-        {
-            oops(pcm, rc, "cannot set timestamp type");
-            goto fail;
-        }
-    }
+   if (pcm->flags & PCM_MONOTONIC)
+   {
+      int arg = SNDRV_PCM_TSTAMP_TYPE_MONOTONIC;
+      rc      = ioctl(pcm->fd, SNDRV_PCM_IOCTL_TTSTAMP, &arg);
+      if (rc < 0)
+      {
+         oops(pcm, rc, "cannot set timestamp type");
+         goto fail;
+      }
+   }
 #endif
 
-    pcm->underruns = 0;
-    return pcm;
+   pcm->underruns = 0;
+   return pcm;
 
 fail:
-    if (flags & PCM_MMAP)
-        munmap(pcm->mmap_buffer, pcm_frames_to_bytes(pcm, pcm->buffer_size));
+   if (flags & PCM_MMAP)
+      munmap(pcm->mmap_buffer, pcm_frames_to_bytes(pcm, pcm->buffer_size));
 fail_close:
-    close(pcm->fd);
-    pcm->fd = -1;
-    return pcm;
+   close(pcm->fd);
+   pcm->fd = -1;
+   return pcm;
 }
 
 #if 0
