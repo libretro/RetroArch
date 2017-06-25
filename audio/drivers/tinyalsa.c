@@ -1402,36 +1402,36 @@ static int pcm_writei(struct pcm *pcm, const void *data, unsigned int frame_coun
    x.frames = frame_count;
    x.result = 0;
 
-   for (;;)
+restart:
+   if (!pcm->running)
    {
-      if (!pcm->running)
-      {
-         int prepare_error = pcm_prepare(pcm);
-         if (prepare_error)
-            return prepare_error;
-         if (ioctl(pcm->fd, SNDRV_PCM_IOCTL_WRITEI_FRAMES, &x))
-            return oops(pcm, errno, "cannot write initial data");
-         pcm->running = 1;
-         return 0;
-      }
+      int prepare_error = pcm_prepare(pcm);
+      if (prepare_error)
+         return prepare_error;
       if (ioctl(pcm->fd, SNDRV_PCM_IOCTL_WRITEI_FRAMES, &x))
-      {
-         pcm->prepared = 0;
-         pcm->running = 0;
-         if (errno == EPIPE)
-         {
-            /* we failed to make our window -- try to restart if we are
-             * allowed to do so.  Otherwise, simply allow the EPIPE error to
-             * propagate up to the app level */
-            pcm->underruns++;
-            if (pcm->flags & PCM_NORESTART)
-               return -EPIPE;
-            continue;
-         }
-         return oops(pcm, errno, "cannot write stream data");
-      }
-      return x.result;
+         return oops(pcm, errno, "cannot write initial data");
+      pcm->running = 1;
+      return 0;
    }
+
+   if (ioctl(pcm->fd, SNDRV_PCM_IOCTL_WRITEI_FRAMES, &x))
+   {
+      pcm->prepared = 0;
+      pcm->running = 0;
+      if (errno == EPIPE)
+      {
+         /* we failed to make our window -- try to restart if we are
+          * allowed to do so.  Otherwise, simply allow the EPIPE error to
+          * propagate up to the app level */
+         pcm->underruns++;
+         if (pcm->flags & PCM_NORESTART)
+            return -EPIPE;
+         goto restart;
+      }
+      return oops(pcm, errno, "cannot write stream data");
+   }
+
+   return x.result;
 }
 
 /** Starts a PCM.
