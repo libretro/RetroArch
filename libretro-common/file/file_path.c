@@ -36,7 +36,6 @@
 #include <compat/posix_string.h>
 #endif
 #include <compat/strcasestr.h>
-#include <retro_assert.h>
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
 
@@ -410,8 +409,7 @@ void fill_pathname(char *out_path, const char *in_path,
 
    tmp_path[0] = '\0';
 
-   retro_assert(strlcpy(tmp_path, in_path,
-            sizeof(tmp_path)) < sizeof(tmp_path));
+   strlcpy(tmp_path, in_path, sizeof(tmp_path));
    if ((tok = (char*)strrchr(path_basename(tmp_path), '.')))
       *tok = '\0';
 
@@ -435,8 +433,8 @@ void fill_pathname(char *out_path, const char *in_path,
 void fill_pathname_noext(char *out_path, const char *in_path,
       const char *replace, size_t size)
 {
-   retro_assert(strlcpy(out_path, in_path, size) < size);
-   retro_assert(strlcat(out_path, replace, size) < size);
+   strlcpy(out_path, in_path, size);
+   strlcat(out_path, replace, size);
 }
 
 char *find_last_slash(const char *str)
@@ -473,10 +471,10 @@ void fill_pathname_slash(char *path, size_t size)
       join_str[0] = '\0';
 
       strlcpy(join_str, last_slash, sizeof(join_str));
-      retro_assert(strlcat(path, join_str, size) < size);
+      strlcat(path, join_str, size);
    }
    else if (!last_slash)
-      retro_assert(strlcat(path, path_default_slash(), size) < size);
+      strlcat(path, path_default_slash(), size);
 }
 
 /**
@@ -503,8 +501,8 @@ void fill_pathname_dir(char *in_dir, const char *in_basename,
 
    fill_pathname_slash(in_dir, size);
    base = path_basename(in_basename);
-   retro_assert(strlcat(in_dir, base, size) < size);
-   retro_assert(strlcat(in_dir, replace, size) < size);
+   strlcat(in_dir, base, size);
+   strlcat(in_dir, replace, size);
 }
 
 /**
@@ -522,7 +520,7 @@ void fill_pathname_base(char *out, const char *in_path, size_t size)
    if (!ptr)
       ptr = in_path;
 
-   retro_assert(strlcpy(out, ptr, size) < size);
+   strlcpy(out, ptr, size);
 }
 
 void fill_pathname_base_noext(char *out, const char *in_path, size_t size)
@@ -552,7 +550,7 @@ void fill_pathname_basedir(char *out_dir,
       const char *in_path, size_t size)
 {
    if (out_dir != in_path)
-      retro_assert(strlcpy(out_dir, in_path, size) < size);
+      strlcpy(out_dir, in_path, size);
    path_basedir(out_dir);
 }
 
@@ -576,7 +574,7 @@ void fill_pathname_parent_dir(char *out_dir,
       const char *in_dir, size_t size)
 {
    if (out_dir != in_dir)
-      retro_assert(strlcpy(out_dir, in_dir, size) < size);
+      strlcpy(out_dir, in_dir, size);
    path_parent_dir(out_dir);
 }
 
@@ -733,7 +731,6 @@ void path_resolve_realpath(char *buf, size_t size)
    if (!_fullpath(buf, tmp, size))
       strlcpy(buf, tmp, size);
 #else
-   retro_assert(size >= PATH_MAX_LENGTH);
 
    /* NOTE: realpath() expects at least PATH_MAX_LENGTH bytes in buf.
     * Technically, PATH_MAX_LENGTH needn't be defined, but we rely on it anyways.
@@ -762,12 +759,12 @@ void fill_pathname_resolve_relative(char *out_path,
 {
    if (path_is_absolute(in_path))
    {
-      retro_assert(strlcpy(out_path, in_path, size) < size);
+      strlcpy(out_path, in_path, size);
       return;
    }
 
    fill_pathname_basedir(out_path, in_refpath, size);
-   retro_assert(strlcat(out_path, in_path, size) < size);
+   strlcat(out_path, in_path, size);
 }
 
 /**
@@ -785,21 +782,12 @@ void fill_pathname_join(char *out_path,
       const char *dir, const char *path, size_t size)
 {
    if (out_path != dir)
-      retro_assert(strlcpy(out_path, dir, size) < size);
+      strlcpy(out_path, dir, size);
 
    if (*out_path)
       fill_pathname_slash(out_path, size);
 
-   retro_assert(strlcat(out_path, path, size) < size);
-}
-
-static void fill_string_join(char *out_path,
-      const char *append, size_t size)
-{
-   if (*out_path)
-      fill_pathname_slash(out_path, size);
-
-   retro_assert(strlcat(out_path, append, size) < size);
+   strlcat(out_path, path, size);
 }
 
 void fill_pathname_join_special_ext(char *out_path,
@@ -808,7 +796,10 @@ void fill_pathname_join_special_ext(char *out_path,
       size_t size)
 {
    fill_pathname_join(out_path, dir, path, size);
-   fill_string_join(out_path, last, size);
+   if (*out_path)
+      fill_pathname_slash(out_path, size);
+
+   strlcat(out_path, last, size);
    strlcat(out_path, ext, size);
 }
 
@@ -843,13 +834,12 @@ void fill_pathname_join_noext(char *out_path,
 void fill_pathname_join_delim(char *out_path, const char *dir,
       const char *path, const char delim, size_t size)
 {
-   size_t copied = strlcpy(out_path, dir, size);
-   retro_assert(copied < size+1);
+   size_t copied      = strlcpy(out_path, dir, size);
 
    out_path[copied]   = delim;
    out_path[copied+1] = '\0';
 
-   retro_assert(strlcat(out_path, path, size) < size);
+   strlcat(out_path, path, size);
 }
 
 void fill_pathname_join_delim_concat(char *out_path, const char *dir,
