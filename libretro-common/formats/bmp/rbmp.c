@@ -161,7 +161,6 @@ static unsigned char *rbmp__convert_format(
                dest[0]=src[0],dest[1]=src[1],dest[2]=src[2];
             break;
          default: 
-            retro_assert(0);
             break;
       }
 
