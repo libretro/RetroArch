@@ -15,10 +15,11 @@
 
 #include <windows.h>
 
-#include "../configuration.h"
 #include "../input_driver.h"
 #include "../input_keymaps.h"
-#include "../video_driver.h"
+
+#include "../../configuration.h"
+#include "../../video_driver.h"
 #include "../../verbosity.h"
 
 #define WINRAW_LOG(msg) RARCH_LOG("[WINRAW]: "msg"\n")
