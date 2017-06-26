@@ -313,17 +313,32 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
         [g_view setWantsBestResolutionOpenGLSurface:YES];
     
     NSOpenGLPixelFormatAttribute attributes [] = {
-        NSOpenGLPFAColorSize, 24,
+        NSOpenGLPFAColorSize,
+        24,
         NSOpenGLPFADoubleBuffer,
         NSOpenGLPFAAllowOfflineRenderers,
         NSOpenGLPFADepthSize,
         (NSOpenGLPixelFormatAttribute)16, // 16 bit depth buffer
-#ifdef MAC_OS_X_VERSION_10_7
-        (g_major || g_minor) ? NSOpenGLPFAOpenGLProfile : 0,
-        (g_major << 12) | (g_minor << 8),
-#endif
+        0,                                /* profile */
+        0,                                /* profile enum */
         (NSOpenGLPixelFormatAttribute)0
     };
+
+#ifdef MAC_OS_X_VERSION_10_7
+    if (g_major == 3 && (g_minor >= 1 && g_minor <= 3))
+    {
+       attributes[6] = NSOpenGLPFAOpenGLProfile;
+       attributes[7] = NSOpenGLProfileVersion3_2Core;
+    }
+#endif
+
+#ifdef MAC_OS_X_VERSION_10_10
+    if (g_major == 4 && g_minor == 1)
+    {
+       attributes[6] = NSOpenGLPFAOpenGLProfile;
+       attributes[7] = NSOpenGLProfileVersion4_1Core;
+    }
+#endif
     
     g_format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
     
