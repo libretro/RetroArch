@@ -324,7 +324,7 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
         (NSOpenGLPixelFormatAttribute)0
     };
 
-#ifdef MAC_OS_X_VERSION_10_7
+#if MAC_OS_X_VERSION_10_7
     if (g_major == 3 && (g_minor >= 1 && g_minor <= 3))
     {
        attributes[6] = NSOpenGLPFAOpenGLProfile;
@@ -332,7 +332,7 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
     }
 #endif
 
-#ifdef MAC_OS_X_VERSION_10_10
+#if MAC_OS_X_VERSION_10_10
     if (g_major == 4 && g_minor == 1)
     {
        attributes[6] = NSOpenGLPFAOpenGLProfile;
