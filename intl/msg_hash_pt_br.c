@@ -647,7 +647,8 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                      "Bem-vindo ao RetroArch \n"
             );
             break;
-        case MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC: {
+        case MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC: 
+            {
             /* Work around C89 limitations */
             char u[501];
             const char *t =
