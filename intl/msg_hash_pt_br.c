@@ -651,7 +651,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
             /* Work around C89 limitations */
             char u[501];
             const char *t =
-                    "O RetroArch utiliza uma forma única de \n"
+                            "O RetroArch utiliza uma forma única de \n"
                             "sincronização de áudio/video aonde ele \n"
                             "precisa ser calibrado pela taxa de \n"
                             "atualização da sua tela para um melhor \n"
@@ -663,7 +663,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                             "as configurações. Algumas escolhas abaixo: \n"
                             " \n";
             snprintf(u, sizeof(u), /* can't inline this due to the printf arguments */
-                     "a) Vá para '%s' -> '%s', e habilite \n"
+                            "a) Vá para '%s' -> '%s', e habilite \n"
                              "'Video Paralelizado'. A taxa de atualização \n"
                              "não irá importar neste modo, a taxa de \n"
                              "quadros será maior, mas o vídeo será \n"
