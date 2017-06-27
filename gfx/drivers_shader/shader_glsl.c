@@ -118,6 +118,7 @@ static const char *glsl_prefixes[] = {
 #include "../drivers/gl_shaders/core_alpha_blend.glsl.frag.h"
 
 #ifdef HAVE_SHADERPIPELINE
+#include "../drivers/gl_shaders/core_pipeline_xmb_ribbon.glsl.frag.h"
 #include "../drivers/gl_shaders/legacy_pipeline_xmb_ribbon_simple.glsl.vert.h"
 #include "../drivers/gl_shaders/modern_pipeline_xmb_ribbon_simple.glsl.vert.h"
 #include "../drivers/gl_shaders/modern_pipeline_snow.glsl.vert.h"
@@ -955,7 +956,7 @@ static void *gl_glsl_init(void *data, const char *path)
    if (gl_query_extension("GL_OES_standard_derivatives"))
    {
       shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_ribbon_modern : stock_vertex_xmb_ribbon_legacy;
-      shader_prog_info.fragment = stock_fragment_xmb;
+      shader_prog_info.fragment = glsl_core ? core_stock_fragment_xmb : stock_fragment_xmb;
    }
    else
    {
@@ -964,7 +965,7 @@ static void *gl_glsl_init(void *data, const char *path)
    }
 #else
       shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_ribbon_modern : stock_vertex_xmb_ribbon_legacy;
-      shader_prog_info.fragment = stock_fragment_xmb;
+      shader_prog_info.fragment = glsl_core ? core_stock_fragment_xmb : stock_fragment_xmb;
 #endif
    shader_prog_info.is_file  = false;
 
