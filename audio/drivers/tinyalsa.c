@@ -1400,7 +1400,10 @@ restart:
             return -EPIPE;
          goto restart;
       }
+#if 0
+      /* This tends to spam a lot */
       RARCH_ERR("[TINYALSA]: Cannot write stream data.\n");
+#endif
       return -1;
    }
 
