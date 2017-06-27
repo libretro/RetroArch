@@ -317,8 +317,6 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
       video_frame_info_t *video_info,
       unsigned width, unsigned height, bool fullscreen)
 {
-   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
-
 #if defined(HAVE_COCOA)
     CocoaView *g_view = (CocoaView*)nsview_get_ptr();
     if ([g_view respondsToSelector: @selector(setWantsBestResolutionOpenGLSurface:)])
@@ -627,8 +625,8 @@ static void cocoagl_gfx_ctx_bind_hw_render(void *data, bool enable)
 
 static uint32_t cocoagl_gfx_ctx_get_flags(void *data)
 {
-   uint32_t flags           = 0;
-   cocoa_ctx_data_t    *drm = (cocoa_ctx_data_t*)data;
+   uint32_t flags                 = 0;
+   cocoa_ctx_data_t    *cocoa_ctx = (cocoa_ctx_data_t*)data;
 
    BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
 
