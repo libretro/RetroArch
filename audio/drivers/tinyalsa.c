@@ -800,22 +800,6 @@ struct pcm
    unsigned int subdevice;
 };
 
-static int oops(struct pcm *pcm, int e, const char *fmt, ...)
-{
-   va_list ap;
-   int sz;
-
-   va_start(ap, fmt);
-   vsnprintf(pcm->error, PCM_ERROR_MAX, fmt, ap);
-   va_end(ap);
-   sz = strlen(pcm->error);
-
-   if (errno)
-      snprintf(pcm->error + sz, PCM_ERROR_MAX - sz,
-            ": %s", strerror(e));
-   return -1;
-}
-
 /** Gets the buffer size of the PCM.
  * @param pcm A PCM handle.
  * @return The buffer size of the PCM.
@@ -1006,7 +990,7 @@ static int pcm_set_config(struct pcm *pcm, const struct pcm_config *config)
     {
         if (!(pcm->flags & PCM_MMAP))
         {
-            oops(pcm, -EINVAL, "noirq only currently supported with mmap().");
+            RARCH_ERR("[TINYALSA]: noirq only currently supported with mmap().");
             return -EINVAL;
         }
 
@@ -1023,9 +1007,8 @@ static int pcm_set_config(struct pcm *pcm, const struct pcm_config *config)
 
     if (ioctl(pcm->fd, SNDRV_PCM_IOCTL_HW_PARAMS, &params))
     {
-        int errno_copy = errno;
-        oops(pcm, -errno, "cannot set hw params");
-        return -errno_copy;
+        RARCH_ERR("[TINYALSA]: cannot set HW params.");
+        return -errno;
     }
 
     /* get our refined hw_params */
@@ -1039,10 +1022,9 @@ static int pcm_set_config(struct pcm *pcm, const struct pcm_config *config)
                                 PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, pcm->fd, 0);
         if (pcm->mmap_buffer == MAP_FAILED)
         {
-            int errno_copy = errno;
-            oops(pcm, -errno, "failed to mmap buffer %d bytes\n",
+            RARCH_ERR("[TINYALSA]: failed to mmap buffer %d bytes\n",
                  pcm_frames_to_bytes(pcm, pcm->buffer_size));
-            return -errno_copy;
+            return -errno;
         }
     }
 
@@ -1084,9 +1066,8 @@ static int pcm_set_config(struct pcm *pcm, const struct pcm_config *config)
 
     if (ioctl(pcm->fd, SNDRV_PCM_IOCTL_SW_PARAMS, &sparams))
     {
-        int errno_copy = errno;
-        oops(pcm, -errno, "cannot set sw params");
-        return -errno_copy;
+        RARCH_ERR("[TINYALSA]: Cannot set HW params.\n");
+        return -errno;
     }
 
     return 0;
@@ -1352,7 +1333,10 @@ static int pcm_prepare(struct pcm *pcm)
       return 0;
 
    if (ioctl(pcm->fd, SNDRV_PCM_IOCTL_PREPARE) < 0)
-      return oops(pcm, errno, "cannot prepare channel");
+   {
+      RARCH_ERR("[TINYALSA]: Cannot prepare channel.\n");
+      return -1;
+   }
 
    pcm->prepared = 1;
    return 0;
@@ -1394,7 +1378,10 @@ restart:
       if (prepare_error)
          return prepare_error;
       if (ioctl(pcm->fd, SNDRV_PCM_IOCTL_WRITEI_FRAMES, &x))
-         return oops(pcm, errno, "cannot write initial data");
+      {
+         RARCH_ERR("[TINYALSA]: Cannot write initial data.\n");
+         return -1;
+      }
       pcm->running = 1;
       return 0;
    }
@@ -1413,7 +1400,8 @@ restart:
             return -EPIPE;
          goto restart;
       }
-      return oops(pcm, errno, "cannot write stream data");
+      RARCH_ERR("[TINYALSA]: Cannot write stream data.\n");
+      return -1;
    }
 
    return x.result;
@@ -1436,7 +1424,10 @@ static int pcm_start(struct pcm *pcm)
       pcm_sync_ptr(pcm, 0);
 
    if (ioctl(pcm->fd, SNDRV_PCM_IOCTL_START) < 0)
-      return oops(pcm, errno, "cannot start channel");
+   {
+      RARCH_ERR("[TINYALSA]: Cannot start channel.\n");
+      return -1;
+   }
 
    pcm->running = 1;
    return 0;
@@ -1487,7 +1478,8 @@ static int pcm_readi(struct pcm *pcm, void *data, unsigned int frame_count)
             pcm->underruns++;
             continue;
          }
-         return oops(pcm, errno, "cannot read stream data");
+         RARCH_ERR("[TINYALSA]: Cannot read stream data.\n");
+         return -1;
       }
       return x.result;
    }
@@ -1716,7 +1708,10 @@ static int pcm_param_to_alsa(enum pcm_param param)
 static int pcm_stop(struct pcm *pcm)
 {
    if (ioctl(pcm->fd, SNDRV_PCM_IOCTL_DROP) < 0)
-      return oops(pcm, errno, "cannot stop channel");
+   {
+      RARCH_ERR("[TINYALSA]: Cannot stop channel.\n");
+      return -1;
+   }
 
    pcm->prepared = 0;
    pcm->running = 0;
@@ -1788,13 +1783,13 @@ static struct pcm *pcm_open(unsigned int card, unsigned int device,
    pcm->fd    = open(fn, O_RDWR);
    if (pcm->fd < 0)
    {
-      oops(pcm, errno, "cannot open device '%s'", fn);
+      RARCH_ERR("[TINYALSA]: cannot open device '%s'\n", fn);
       return pcm;
    }
 
    if (ioctl(pcm->fd, SNDRV_PCM_IOCTL_INFO, &info))
    {
-      oops(pcm, errno, "cannot get info");
+      RARCH_ERR("[TINYALSA]: cannot get info.\n");
       goto fail_close;
    }
    pcm->subdevice = info.subdevice;
@@ -1805,7 +1800,7 @@ static struct pcm *pcm_open(unsigned int card, unsigned int device,
    rc = pcm_hw_mmap_status(pcm);
    if (rc < 0)
    {
-      oops(pcm, rc, "mmap status failed");
+      RARCH_ERR("[TINYALSA]: mmap status failed.\n");
       goto fail;
    }
 
@@ -1816,7 +1811,7 @@ static struct pcm *pcm_open(unsigned int card, unsigned int device,
       rc      = ioctl(pcm->fd, SNDRV_PCM_IOCTL_TTSTAMP, &arg);
       if (rc < 0)
       {
-         oops(pcm, rc, "cannot set timestamp type");
+         RARCH_ERR("[TINYALSA]: Cannot set timestamp type.\n");
          goto fail;
       }
    }
@@ -1882,7 +1877,10 @@ static int pcm_link(struct pcm *pcm1, struct pcm *pcm2)
 {
    int err = ioctl(pcm1->fd, SNDRV_PCM_IOCTL_LINK, pcm2->fd);
    if (err == -1)
-      return oops(pcm1, errno, "cannot link PCM");
+   {
+      RARCH_ERR("[TINYALSA]: Cannot link PCM.\n");
+      return -1;
+   }
    return 0;
 }
 
@@ -1896,7 +1894,10 @@ static int pcm_unlink(struct pcm *pcm)
 {
    int err = ioctl(pcm->fd, SNDRV_PCM_IOCTL_UNLINK);
    if (err == -1)
-      return oops(pcm, errno, "cannot unlink PCM");
+   {
+      RARCH_ERR("[TINYALSA]: Cannot unlink PCM.\n");
+      return -1;
+   }
    return 0;
 }
 #endif
@@ -2114,7 +2115,7 @@ static int pcm_mmap_transfer_areas(struct pcm *pcm, char *buf,
       commit = pcm_mmap_commit(pcm, pcm_offset, frames);
       if (commit < 0)
       {
-         oops(pcm, commit, "failed to commit %d frames\n", frames);
+         RARCH_ERR("[TINYALSA}: failed to commit %d frames.\n", frames);
          return commit;
       }
 
