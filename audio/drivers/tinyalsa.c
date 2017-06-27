@@ -1120,7 +1120,7 @@ static int pcm_hw_mmap_status(struct pcm *pcm)
       goto mmap_error;
 
    pcm->mmap_control = (struct snd_pcm_mmap_control*)
-      mmap(NULL, page_size, PROT_READ | PROT_WRITE,
+      mmap(NULL, (size_t)page_size, PROT_READ | PROT_WRITE,
             MAP_FILE | MAP_SHARED, pcm->fd, SNDRV_PCM_MMAP_OFFSET_CONTROL);
    if (pcm->mmap_control == MAP_FAILED)
       pcm->mmap_control = NULL;
@@ -2207,6 +2207,8 @@ static void * tinyalsa_init(const char *devicestr, unsigned rate,
 
 error:
    RARCH_ERR("[TINYALSA]: Failed to initialize tinyalsa driver.\n");
+   if (tinyalsa)
+      free(tinyalsa);
    return NULL;
 }
 
