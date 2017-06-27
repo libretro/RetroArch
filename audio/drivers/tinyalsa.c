@@ -1780,7 +1780,7 @@ static struct pcm *pcm_open(unsigned int card, unsigned int device,
          flags & PCM_IN ? 'c' : 'p');
 
    pcm->flags = flags;
-   pcm->fd    = open(fn, O_RDWR);
+   pcm->fd    = open(fn, O_RDWR|O_NONBLOCK);
    if (pcm->fd < 0)
    {
       RARCH_ERR("[TINYALSA]: cannot open device '%s'\n", fn);
@@ -2229,7 +2229,7 @@ tinyalsa_write(void *data, const void *buf_, size_t size_)
          snd_pcm_sframes_t frames   = pcm_writei(tinyalsa->pcm, buf, size);
 
          if (frames < 0)
-            return -1;
+            pcm_stop(tinyalsa->pcm);
 
          written += frames;
          buf     += (frames << 1) * frames_size;
