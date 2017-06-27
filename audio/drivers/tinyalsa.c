@@ -2139,8 +2139,6 @@ typedef struct tinyalsa
 	unsigned int   frame_bits;
 } tinyalsa_t;
 
-typedef long pcm_sframes_t;
-
 #define BYTES_TO_FRAMES(bytes, frame_bits)  ((bytes) * 8 / frame_bits)
 #define FRAMES_TO_BYTES(frames, frame_bits) ((frames) * frame_bits / 8)
 
@@ -2148,7 +2146,7 @@ static void * tinyalsa_init(const char *devicestr, unsigned rate,
       unsigned latency, unsigned block_frames,
       unsigned *new_rate)
 {
-   pcm_sframes_t buffer_size;
+   snd_pcm_uframes_t buffer_size;
    struct pcm_config config;
    tinyalsa_t *tinyalsa      = (tinyalsa_t*)calloc(1, sizeof(tinyalsa_t));
    if (!tinyalsa)
@@ -2160,8 +2158,8 @@ static void * tinyalsa_init(const char *devicestr, unsigned rate,
    config.period_size        = 1024;
    config.period_count       = 2;
    config.start_threshold    = 1024;
-   config.silence_threshold  = 1024 * 2;
    config.stop_threshold     = 1024 * 2;
+   config.silence_threshold  = 1024 * 2;
 
    unsigned int card         = 0;
    unsigned int device       = 0;
@@ -2184,14 +2182,26 @@ static void * tinyalsa_init(const char *devicestr, unsigned rate,
       goto error;
    }
 
-   buffer_size           = pcm_get_buffer_size(tinyalsa->pcm);
+   if (latency < 10)
+   {
+      RARCH_WARN("[TINYALSA]: Cannot have a latency less than 10ms. Defaulting to 64ms.\n");
+      latency = 64;
+   }
+
+   latency = latency - 10; /* 10ms is our current delay */
+
+   buffer_size           = pcm_get_buffer_size(tinyalsa->pcm) + (latency * 192);
    tinyalsa->buffer_size = pcm_frames_to_bytes(tinyalsa->pcm, buffer_size);
    tinyalsa->frame_bits  = pcm_format_to_bits(config.format) * 2;
 
    tinyalsa->can_pause   = true;
    tinyalsa->has_float   = false;
 
-   RARCH_LOG("[TINYALSA]: Buffer size: %d frames. \n", (int)buffer_size);
+   RARCH_LOG("[TINYALSA]: Audio rate: %dHz.\n", config.rate);
+   RARCH_LOG("[TINYALSA]: Buffer size: %u frames.\n", buffer_size);
+   RARCH_LOG("[TINYALSA]: Buffer size: %d bytes.\n", tinyalsa->buffer_size);
+   RARCH_LOG("[TINYALSA]: Frame  size: %u bytes.\n", tinyalsa->frame_bits / 8);
+   RARCH_LOG("[TINYALSA]: Latency: %dms.\n", buffer_size * 1000 / (rate * 4));
 
    return tinyalsa;
 
@@ -2203,17 +2213,17 @@ error:
 static ssize_t
 tinyalsa_write(void *data, const void *buf_, size_t size_)
 {
-   tinyalsa_t *tinyalsa  = (tinyalsa_t*)data;
-   const uint8_t *buf    = (const uint8_t*)buf_;
-   pcm_sframes_t written = 0;
-   pcm_sframes_t size    = BYTES_TO_FRAMES(size_, tinyalsa->frame_bits);
-   size_t frames_size    = tinyalsa->has_float ? sizeof(float) : sizeof(int16_t);
+   tinyalsa_t *tinyalsa      = (tinyalsa_t*)data;
+   const uint8_t *buf        = (const uint8_t*)buf_;
+   snd_pcm_sframes_t written = 0;
+   snd_pcm_sframes_t size    = BYTES_TO_FRAMES(size_, tinyalsa->frame_bits);
+   size_t frames_size        = tinyalsa->has_float ? sizeof(float) : sizeof(int16_t);
 
    if (tinyalsa->nonblock)
    {
       while (size)
       {
-         pcm_sframes_t frames   = pcm_writei(tinyalsa->pcm, buf, size);
+         snd_pcm_sframes_t frames   = pcm_writei(tinyalsa->pcm, buf, size);
 
          if (frames < 0)
             return -1;
@@ -2227,7 +2237,7 @@ tinyalsa_write(void *data, const void *buf_, size_t size_)
    {
       while (size)
       {
-         pcm_sframes_t frames;
+         snd_pcm_sframes_t frames;
          pcm_wait(tinyalsa->pcm, -1);
 
          frames   = pcm_writei(tinyalsa->pcm, buf, size);
@@ -2323,7 +2333,7 @@ static void tinyalsa_free(void *data)
 static size_t tinyalsa_write_avail(void *data)
 {
    tinyalsa_t *alsa        = (tinyalsa_t*)data;
-   pcm_sframes_t avail     = pcm_avail_update(alsa->pcm);
+   snd_pcm_sframes_t avail = pcm_avail_update(alsa->pcm);
 
    if (avail < 0)
       return alsa->buffer_size;
