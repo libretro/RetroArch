@@ -1,4 +1,4 @@
-# 1.6.1 (future)
+# 1.6.2 (future)
 - AUDIO: Mute now no longer disables/enables audio but instead properly mutes the audio volume.
   Mute is also independent from the audio mixer volume.
 - AUDIO: Audio mixer's volume can now be independently increased/decreased, and muted.
@@ -7,6 +7,8 @@
 - VITA: Add support for external USB if mounted
 - MENU: Add 'User Interface -> Views'. Ability to display/hide online updater and core updater
 options.
+- LINUX: Add a tinyalsa audio driver. Doesn't require asoundlib, should be self-contained and
+lower-level.
 - LOCALIZATION: Update French translation
 - LOCALIZATION: Update Italian translation
 - LOCALIZATION: Update Japanese translation
