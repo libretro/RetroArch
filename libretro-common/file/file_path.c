@@ -185,44 +185,6 @@ int32_t path_get_size(const char *path)
 }
 
 /**
- * path_mkdir_norecurse:
- * @dir                : directory
- *
- * Create directory on filesystem.
- *
- * Returns: true (1) if directory could be created, otherwise false (0).
- **/
-static bool mkdir_norecurse(const char *dir)
-{
-#if defined(_WIN32)
-   int ret = _mkdir(dir);
-#elif defined(IOS)
-   int ret = mkdir(dir, 0755);
-#elif defined(VITA) || defined(PSP)
-   int ret = sceIoMkdir(dir, 0777);
-#elif defined(__QNX__)
-   int ret = mkdir(dir, 0777);
-#else
-   int ret = mkdir(dir, 0750);
-#endif
-
-   /* Don't treat this as an error. */
-#if defined(VITA)
-   if ((ret == SCE_ERROR_ERRNO_EEXIST) && path_is_directory(dir))
-      ret = 0;
-#elif defined(PSP) || defined(_3DS) || defined(WIIU)
-   if ((ret == -1) && path_is_directory(dir))
-      ret = 0;
-#else 
-   if (ret < 0 && errno == EEXIST && path_is_directory(dir))
-      ret = 0;
-#endif
-   if (ret < 0)
-      printf("mkdir(%s) error: %s.\n", dir, strerror(errno));
-   return ret == 0;
-}
-
-/**
  * path_mkdir:
  * @dir                : directory
  *
@@ -232,10 +194,11 @@ static bool mkdir_norecurse(const char *dir)
  **/
 bool path_mkdir(const char *dir)
 {
-   const char *target = NULL;
    /* Use heap. Real chance of stack overflow if we recurse too hard. */
-   char     *basedir = strdup(dir);
-   bool          ret = false;
+   char     *basedir  = strdup(dir);
+   const char *target = NULL;
+   bool         sret  = false;
+   bool norecurse     = false;
 
    if (!basedir)
       return false;
@@ -246,26 +209,56 @@ bool path_mkdir(const char *dir)
 
    if (path_is_directory(basedir))
    {
-      target = dir;
-      ret    = mkdir_norecurse(dir);
+      target    = dir;
+      norecurse = true;
    }
    else
    {
       target = basedir;
-      ret    = path_mkdir(basedir);
+      sret   = path_mkdir(basedir);
 
-      if (ret)
+      if (sret)
       {
-         target = dir;
-         ret    = mkdir_norecurse(dir);
+         target    = dir;
+         norecurse = true;
       }
    }
 
+   if (norecurse)
+   {
+#if defined(_WIN32)
+      int ret = _mkdir(dir);
+#elif defined(IOS)
+      int ret = mkdir(dir, 0755);
+#elif defined(VITA) || defined(PSP)
+      int ret = sceIoMkdir(dir, 0777);
+#elif defined(__QNX__)
+      int ret = mkdir(dir, 0777);
+#else
+      int ret = mkdir(dir, 0750);
+#endif
+
+      /* Don't treat this as an error. */
+#if defined(VITA)
+      if ((ret == SCE_ERROR_ERRNO_EEXIST) && path_is_directory(dir))
+         ret = 0;
+#elif defined(PSP) || defined(_3DS) || defined(WIIU)
+      if ((ret == -1) && path_is_directory(dir))
+         ret = 0;
+#else 
+      if (ret < 0 && errno == EEXIST && path_is_directory(dir))
+         ret = 0;
+#endif
+      if (ret < 0)
+         printf("mkdir(%s) error: %s.\n", dir, strerror(errno));
+      sret = (ret == 0);
+   }
+
 end:
-   if (target && !ret)
+   if (target && !sret)
       printf("Failed to create directory: \"%s\".\n", target);
    free(basedir);
-   return ret;
+   return sret;
 }
 
 /**

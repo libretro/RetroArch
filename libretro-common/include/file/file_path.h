@@ -31,7 +31,6 @@
 #include <retro_common_api.h>
 
 #include <boolean.h>
-#include <retro_inline.h>
 
 RETRO_BEGIN_DECLS
 
@@ -408,14 +407,11 @@ void fill_pathname_abbreviate_special(char *out_path,
  *
  * Returns: true (1) if character is a slash, otherwise false (0).
  */
-static INLINE bool path_char_is_slash(char c)
-{
 #ifdef _WIN32
-   return (c == '/') || (c == '\\');
+#define path_char_is_slash(c) (((c) == '/') || ((c) == '\\'))
 #else
-   return (c == '/');
+#define path_char_is_slash(c) ((c) == '/')
 #endif
-}
 
 /**
  * path_default_slash:
@@ -424,14 +420,11 @@ static INLINE bool path_char_is_slash(char c)
  *
  * Returns: default slash separator.
  */
-static INLINE const char *path_default_slash(void)
-{
 #ifdef _WIN32
-   return "\\";
+#define path_default_slash() "\\"
 #else
-   return "/";
+#define path_default_slash() "/"
 #endif
-}
 
 /** 
  * fill_pathname_slash:
