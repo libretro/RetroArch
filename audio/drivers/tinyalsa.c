@@ -1531,7 +1531,9 @@ static struct pcm_params *pcm_params_get(unsigned int card, unsigned int device,
       goto err_open;
    }
 
-   params = calloc(1, sizeof(struct snd_pcm_hw_params));
+   params = (struct snd_pcm_hw_params*)
+      calloc(1, sizeof(struct snd_pcm_hw_params));
+
    if (!params)
       goto err_calloc;
 
