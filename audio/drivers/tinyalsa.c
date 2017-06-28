@@ -62,6 +62,7 @@
 #include <linux/types.h>
 
 #include <retro_inline.h>
+#include <retro_endianness.h>
 
 #include "../audio_driver.h"
 #include "../../verbosity.h"
@@ -2193,14 +2194,15 @@ static void * tinyalsa_init(const char *devicestr, unsigned rate,
    if (orig_rate != rate)
       *new_rate = rate;
 
-   config.rate               = rate;
-   config.format             = PCM_FORMAT_S16_LE;
-   config.channels           = 2;
-   config.period_size        = 1024;
-   config.period_count       = 2;
-   config.start_threshold    = 1024;
-   config.stop_threshold     = 1024 * 2;
-   config.silence_threshold  = 1024 * 2;
+   config.rate              = rate;
+   config.format            = is_little_endian() ?\
+                              PCM_FORMAT_S16_LE : PCM_FORMAT_S16_BE;
+   config.channels          = 2;
+   config.period_size       = 1024;
+   config.period_count      = 2;
+   config.start_threshold   = 1024;
+   config.stop_threshold    = 1024 * 2;
+   config.silence_threshold = 1024 * 2;
 
    tinyalsa->pcm = pcm_open(card, device, PCM_OUT, &config);
 
