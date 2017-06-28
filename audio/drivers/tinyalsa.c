@@ -664,30 +664,6 @@ static void param_set_min(struct snd_pcm_hw_params *p, int n, unsigned int val)
     }
 }
 
-#if 0
-/* Unused for now */
-
-static unsigned int param_get_min(const struct snd_pcm_hw_params *p, int n)
-{
-    if (param_is_interval(n))
-    {
-        const struct snd_interval *i = param_get_interval(p, n);
-        return i->min;
-    }
-    return 0;
-}
-
-static unsigned int param_get_max(const struct snd_pcm_hw_params *p, int n)
-{
-    if (param_is_interval(n))
-    {
-        const struct snd_interval *i = param_get_interval(p, n);
-        return i->max;
-    }
-    return 0;
-}
-#endif
-
 static void param_set_int(struct snd_pcm_hw_params *p, int n, unsigned int val)
 {
     if (param_is_interval(n))
@@ -1525,9 +1501,6 @@ static struct pcm bad_pcm = {
     -1                       /* fd */
 };
 
-#if 0
-/* Unused for now */
-
 /** Gets the hardware parameters of a PCM, without created a PCM handle.
  * @param card The card of the PCM.
  *  The default card is zero.
@@ -1593,6 +1566,9 @@ static void pcm_params_free(struct pcm_params *pcm_params)
       free(params);
 }
 
+#if 0
+/* Unused for now */
+
 /** Gets a mask from a PCM's hardware parameters.
  * @param pcm_params A PCM's hardware parameters.
  * @param param The parameter to get.
@@ -1614,50 +1590,7 @@ static const struct pcm_mask *pcm_params_get_mask(const struct pcm_params *pcm_p
 
     return (const struct pcm_mask *)param_to_mask(params, p);
 }
-
-/** Get the minimum of a specified PCM parameter.
- * @param pcm_params A PCM parameters structure.
- * @param param The specified parameter to get the minimum of.
- * @returns On success, the parameter minimum.
- *  On failure, zero.
- */
-static unsigned int pcm_params_get_min(const struct pcm_params *pcm_params,
-      enum pcm_param param)
-{
-   struct snd_pcm_hw_params *params = (struct snd_pcm_hw_params *)pcm_params;
-   int p;
-
-   if (!params)
-      return 0;
-
-   p = pcm_param_to_alsa(param);
-   if (p < 0)
-      return 0;
-
-   return param_get_min(params, p);
-}
-
-/** Get the maximum of a specified PCM parameter.
- * @param pcm_params A PCM parameters structure.
- * @param param The specified parameter to get the maximum of.
- * @returns On success, the parameter maximum.
- *  On failure, zero.
- */
-static unsigned int pcm_params_get_max(const struct pcm_params *pcm_params,
-      enum pcm_param param)
-{
-   const struct snd_pcm_hw_params *params = (const struct snd_pcm_hw_params *)pcm_params;
-   int p;
-
-   if (!params)
-      return 0;
-
-   p = pcm_param_to_alsa(param);
-   if (p < 0)
-      return 0;
-
-   return param_get_max(params, p);
-}
+#endif
 
 static int pcm_param_to_alsa(enum pcm_param param)
 {
@@ -1700,8 +1633,70 @@ static int pcm_param_to_alsa(enum pcm_param param)
 
    return -1;
 }
-#endif
 
+static unsigned int param_get_min(const struct snd_pcm_hw_params *p, int n)
+{
+    if (param_is_interval(n))
+    {
+        const struct snd_interval *i = param_get_interval(p, n);
+        return i->min;
+    }
+    return 0;
+}
+
+/** Get the minimum of a specified PCM parameter.
+ * @param pcm_params A PCM parameters structure.
+ * @param param The specified parameter to get the minimum of.
+ * @returns On success, the parameter minimum.
+ *  On failure, zero.
+ */
+static unsigned int pcm_params_get_min(const struct pcm_params *pcm_params,
+      enum pcm_param param)
+{
+   struct snd_pcm_hw_params *params = (struct snd_pcm_hw_params *)pcm_params;
+   int p;
+
+   if (!params)
+      return 0;
+
+   p = pcm_param_to_alsa(param);
+   if (p < 0)
+      return 0;
+
+   return param_get_min(params, p);
+}
+
+static unsigned int param_get_max(const struct snd_pcm_hw_params *p, int n)
+{
+    if (param_is_interval(n))
+    {
+        const struct snd_interval *i = param_get_interval(p, n);
+        return i->max;
+    }
+    return 0;
+}
+
+/** Get the maximum of a specified PCM parameter.
+ * @param pcm_params A PCM parameters structure.
+ * @param param The specified parameter to get the maximum of.
+ * @returns On success, the parameter maximum.
+ *  On failure, zero.
+ */
+static unsigned int pcm_params_get_max(const struct pcm_params *pcm_params,
+      enum pcm_param param)
+{
+   const struct snd_pcm_hw_params *params = (const struct snd_pcm_hw_params *)pcm_params;
+   int p;
+
+   if (!params)
+      return 0;
+
+   p = pcm_param_to_alsa(param);
+   if (p < 0)
+      return 0;
+
+   return param_get_max(params, p);
+}
 
 /** Stops a PCM.
  * @param pcm A PCM handle.
@@ -2134,13 +2129,14 @@ static int pcm_mmap_transfer_areas(struct pcm *pcm, char *buf,
 
 typedef struct tinyalsa
 {
-	struct pcm     *pcm;
-	size_t         buffer_size;
-	bool           nonblock;
-	bool           has_float;
-	bool           can_pause;
-	bool           is_paused;
-	unsigned int   frame_bits;
+   struct pcm        *pcm;
+   struct pcm_params *params;
+   size_t            buffer_size;
+   bool              nonblock;
+   bool              has_float;
+   bool              can_pause;
+   bool              is_paused;
+   unsigned int      frame_bits;
 } tinyalsa_t;
 
 #define BYTES_TO_FRAMES(bytes, frame_bits)  ((bytes) * 8 / frame_bits)
@@ -2150,11 +2146,52 @@ static void * tinyalsa_init(const char *devicestr, unsigned rate,
       unsigned latency, unsigned block_frames,
       unsigned *new_rate)
 {
-   snd_pcm_uframes_t buffer_size;
-   struct pcm_config config;
+   unsigned int card      = 0;
+   unsigned int device    = 0;
+   unsigned int orig_rate = rate;
+   unsigned int max_rate, min_rate;
+
+   snd_pcm_uframes_t         buffer_size;
+   struct pcm_config         config;
+
    tinyalsa_t *tinyalsa      = (tinyalsa_t*)calloc(1, sizeof(tinyalsa_t));
+
    if (!tinyalsa)
       return NULL;
+
+   if (devicestr)
+      sscanf(devicestr, "%u,%u", &card, &device);
+
+   RARCH_LOG("[TINYALSA]: Using card: %u, device: %u.\n", card, device);
+
+   tinyalsa->params = pcm_params_get(card, device, PCM_OUT);
+   if (tinyalsa->params == NULL)
+   {
+      RARCH_ERR("[TINYALSA]: params: Cannot open audio device.\n");
+      goto error;
+   }
+
+   min_rate = pcm_params_get_min(tinyalsa->params, PCM_PARAM_RATE);
+   max_rate = pcm_params_get_max(tinyalsa->params, PCM_PARAM_RATE);
+
+   if (!(rate >= min_rate && rate <= max_rate))
+   {
+      RARCH_WARN("[TINYALSA]: Sample rate cannot be larger than %uHz "\
+                 "or smaller than %uHz.\n", max_rate, min_rate);
+      RARCH_WARN("[TINYALSA]: Trying the default rate or else max rate.\n");
+      
+      if (max_rate >= 48000)
+      {
+         rate = 48000;
+      }
+      else 
+      {
+         rate = max_rate;
+      }
+   }
+
+   if (orig_rate != rate)
+      *new_rate = rate;
 
    config.rate               = rate;
    config.format             = PCM_FORMAT_S16_LE;
@@ -2164,14 +2201,6 @@ static void * tinyalsa_init(const char *devicestr, unsigned rate,
    config.start_threshold    = 1024;
    config.stop_threshold     = 1024 * 2;
    config.silence_threshold  = 1024 * 2;
-
-   unsigned int card         = 0;
-   unsigned int device       = 0;
-
-   if (devicestr)
-      sscanf(devicestr, "%u,%u", &card, &device);
-
-   RARCH_LOG("[TINYALSA]: Using card: %u, device: %u.\n", card, device);
 
    tinyalsa->pcm = pcm_open(card, device, PCM_OUT, &config);
 
@@ -2329,8 +2358,11 @@ static void tinyalsa_free(void *data)
 
    if (tinyalsa)
    {
+      pcm_params_free(tinyalsa->params);
+
       if (tinyalsa->pcm)
          pcm_close(tinyalsa->pcm);
+
       tinyalsa->pcm = NULL;
       free(tinyalsa);
    }
