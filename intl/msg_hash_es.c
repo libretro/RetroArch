@@ -17,7 +17,6 @@
 #include <stdint.h>
 #include <string.h>
 
-#include <retro_assert.h>
 #include <compat/strl.h>
 #include <string/stdstring.h>
 

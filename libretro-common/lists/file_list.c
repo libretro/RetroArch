@@ -24,7 +24,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <retro_assert.h>
 #include <retro_common.h>
 #include <lists/file_list.h>
 #include <string/stdstring.h>

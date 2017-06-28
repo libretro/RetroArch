@@ -18,14 +18,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <assert.h>
-
 #include <jack/jack.h>
 #include <jack/types.h>
 #include <jack/ringbuffer.h>
 
 #include <boolean.h>
-#include <retro_assert.h>
 #include <rthreads/rthreads.h>
 
 #include "../audio_driver.h"
@@ -76,7 +73,6 @@ static int process_cb(jack_nframes_t nframes, void *data)
       jack_nframes_t f;
       jack_default_audio_sample_t *out = (jack_default_audio_sample_t*)jack_port_get_buffer(jd->ports[i], nframes);
 
-      retro_assert(out);
       jack_ringbuffer_read(jd->buffer[i], (char*)out, min_avail * sizeof(jack_default_audio_sample_t));
 
       for (f = min_avail; f < nframes; f++)

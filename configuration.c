@@ -3130,7 +3130,6 @@ static void save_keybind_hat(config_file_t *conf, const char *key,
          break;
 
       default:
-         retro_assert(0);
          break;
    }
 

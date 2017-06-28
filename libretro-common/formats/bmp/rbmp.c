@@ -29,7 +29,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <retro_assert.h>
 #include <retro_inline.h>
 
 #include <formats/image.h>
@@ -334,7 +333,6 @@ static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
       }
       else
       {
-         retro_assert(hsz == 108 || hsz == 124);
          mr = rbmp__get32le(s);
          mg = rbmp__get32le(s);
          mb = rbmp__get32le(s);
