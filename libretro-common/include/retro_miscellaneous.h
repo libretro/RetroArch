@@ -24,6 +24,16 @@
 #define __RARCH_MISCELLANEOUS_H
 
 #include <stdint.h>
+
+#if defined(_WIN32) && !defined(_XBOX)		
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN		
+#endif
+#include <windows.h>		
+#elif defined(_WIN32) && defined(_XBOX)		
+#include <Xtl.h>		
+#endif
+
 #include <limits.h>
 
 #ifdef _MSC_VER
