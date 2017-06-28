@@ -120,7 +120,9 @@ static bool oss_stop(void *data)
 {
    int *fd = (int*)data;
 
-   ioctl(*fd, SNDCTL_DSP_RESET, 0);
+   if (ioctl(*fd, SNDCTL_DSP_RESET, 0) < 0)
+      return false;
+
    oss_is_paused = true;
    return true;
 }
@@ -155,7 +157,9 @@ static void oss_free(void *data)
 {
    int *fd = (int*)data;
 
-   ioctl(*fd, SNDCTL_DSP_RESET, 0);
+   if (ioctl(*fd, SNDCTL_DSP_RESET, 0) < 0)
+      return;
+
    close(*fd);
    free(fd);
 }
