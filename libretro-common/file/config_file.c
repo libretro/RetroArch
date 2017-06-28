@@ -124,10 +124,11 @@ static char *strip_comment(char *str)
       char *comment = NULL;
       char *literal = strchr(str, '\"');
       if (!literal)
-         literal = string_end;
-      comment = (char*)strchr(str, '#');
+         literal    = string_end;
+      comment       = (char*)strchr(str, '#');
+
       if (!comment)
-         comment = string_end;
+         comment    = string_end;
 
       if (cut_comment && literal < comment)
       {
@@ -139,13 +140,11 @@ static char *strip_comment(char *str)
          cut_comment = true;
          str = literal + 1;
       }
-      else if (comment)
+      else
       {
          *comment = '\0';
          str = comment;
       }
-      else
-         str = string_end;
    }
 
    return str;
@@ -313,12 +312,6 @@ static bool parse_line(config_file_t *conf,
    if (!key)
       return false;
 
-   if (!line || !*line)
-   {
-      free(key);
-      return false;
-   }
-
    comment = strip_comment(line);
 
    /* Starting line with # and include includes config files. */
@@ -328,8 +321,7 @@ static bool parse_line(config_file_t *conf,
       if (strstr(comment, "include ") == comment)
       {
          add_sub_conf(conf, comment + strlen("include "));
-         free(key);
-         return false;
+         goto error;
       }
    }
    else if (conf->include_depth >= MAX_INCLUDE_DEPTH)
@@ -349,10 +341,7 @@ static bool parse_line(config_file_t *conf,
          key_tmp = (char*)realloc(key, cur_size + 1);
 
          if (!key_tmp)
-         {
-            free(key);
-            return false;
-         }
+            goto error;
 
          key = key_tmp;
       }
@@ -367,11 +356,14 @@ static bool parse_line(config_file_t *conf,
    if (!list->value)
    {
       list->key = NULL;
-      free(key);
-      return false;
+      goto error;
    }
 
    return true;
+
+error:
+   free(key);
+   return false;
 }
 
 static config_file_t *config_file_new_internal(
@@ -423,7 +415,7 @@ static config_file_t *config_file_new_internal(
          continue;
       }
 
-      if (parse_line(conf, list, line))
+      if (*line && parse_line(conf, list, line))
       {
          if (conf->entries)
             conf->tail->next = list;
@@ -541,7 +533,7 @@ config_file_t *config_file_new_from_string(const char *from_string)
 
       if (line && conf)
       {
-         if (parse_line(conf, list, line))
+         if (*line && parse_line(conf, list, line))
          {
             if (conf->entries)
                conf->tail->next = list;
