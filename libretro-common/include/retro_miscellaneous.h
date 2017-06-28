@@ -169,18 +169,6 @@ static INLINE uint32_t prev_pow2(uint32_t v)
    return v - (v >> 1);
 }
 
-static INLINE uint32_t read_le(const uint8_t *data, unsigned size)
-{
-   unsigned i;
-   uint32_t val = 0;
-
-   size *= 8;
-   for (i = 0; i < size; i += 8)
-      val |= (uint32_t)*data++ << i;
-
-   return val;
-}
-
 /* Helper macros and struct to keep track of many booleans.
  * To check for multiple bits, use &&, not &.
  * For OR, | can be used. */
