@@ -116,34 +116,34 @@ static char *strip_comment(char *str)
 {
    /* Remove everything after comment.
     * Keep #s inside string literals. */
-   char *string_end = str + strlen(str);
-   bool cut_comment = true;
+   char *string_end  = str + strlen(str);
+   bool cut_comment  = true;
 
    while (!string_is_empty(str))
    {
-      char *comment = NULL;
-      char *literal = strchr(str, '\"');
+      char *comment  = NULL;
+      char *literal  = strchr(str, '\"');
       if (!literal)
-         literal    = string_end;
-      comment       = (char*)strchr(str, '#');
+         literal     = string_end;
+      comment        = (char*)strchr(str, '#');
 
       if (!comment)
-         comment    = string_end;
+         comment     = string_end;
 
       if (cut_comment && literal < comment)
       {
          cut_comment = false;
-         str = literal + 1;
+         str         = literal + 1;
       }
       else if (!cut_comment && literal)
       {
          cut_comment = true;
-         str = literal + 1;
+         str         = literal + 1;
       }
       else
       {
-         *comment = '\0';
-         str = comment;
+         *comment    = '\0';
+         str         = comment;
       }
    }
 
@@ -190,52 +190,35 @@ static char *extract_value(char *line, bool is_value)
    return NULL;
 }
 
-static void add_include_list(config_file_t *conf, const char *path)
-{
-   struct config_include_list *head = conf->includes;
-   struct config_include_list *node = (struct config_include_list*)calloc(1, sizeof(*node));
-
-   if (!node)
-      return;
-
-   node->path = strdup(path);
-
-   if (head)
-   {
-      while (head->next)
-         head = head->next;
-
-      head->next = node;
-   }
-   else
-      conf->includes = node;
-}
-
-static void set_list_readonly(struct config_entry_list *list)
-{
-   while (list)
-   {
-      list->readonly = true;
-      list = list->next;
-   }
-}
-
 /* Move semantics? */
 static void add_child_list(config_file_t *parent, config_file_t *child)
 {
    if (parent->entries)
    {
+      struct config_entry_list *list = child->entries;
       struct config_entry_list *head = parent->entries;
       while (head->next)
          head = head->next;
 
-      set_list_readonly(child->entries);
-      head->next = child->entries;
+      /* set list readonly */
+      while (list)
+      {
+         list->readonly = true;
+         list           = list->next;
+      }
+      head->next        = child->entries;
    }
    else
    {
-      set_list_readonly(child->entries);
-      parent->entries = child->entries;
+      struct config_entry_list *list = child->entries;
+
+      /* set list readonly */
+      while (list)
+      {
+         list->readonly = true;
+         list           = list->next;
+      }
+      parent->entries   = child->entries;
    }
 
    child->entries = NULL;
@@ -254,16 +237,28 @@ static void add_child_list(config_file_t *parent, config_file_t *child)
       parent->tail = NULL;
 }
 
-static void add_sub_conf(config_file_t *conf, char *line)
+static void add_sub_conf(config_file_t *conf, char *path)
 {
    char real_path[PATH_MAX_LENGTH];
-   config_file_t         *sub_conf = NULL;
-   char                      *path = extract_value(line, false);
+   config_file_t         *sub_conf  = NULL;
+   struct config_include_list *head = conf->includes;
+   struct config_include_list *node = (struct config_include_list*)calloc(1, sizeof(*node));
 
-   if (!path)
-      return;
+   if (node)
+   {
+      /* Add include list */
+      node->path = strdup(path);
 
-   add_include_list(conf, path);
+      if (head)
+      {
+         while (head->next)
+            head = head->next;
+
+         head->next = node;
+      }
+      else
+         conf->includes = node;
+   }
 
    real_path[0] = '\0';
 
@@ -320,7 +315,10 @@ static bool parse_line(config_file_t *conf,
       comment++;
       if (strstr(comment, "include ") == comment)
       {
-         add_sub_conf(conf, comment + strlen("include "));
+         char *line = comment + strlen("include ");
+         char *path = extract_value(line, false);
+         if (path)
+            add_sub_conf(conf, path);
          goto error;
       }
    }
