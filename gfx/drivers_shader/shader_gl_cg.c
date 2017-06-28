@@ -1008,7 +1008,9 @@ static void gl_cg_set_program_attributes(void *data, unsigned i)
 static void *gl_cg_init(void *data, const char *path)
 {
    unsigned i;
+#ifdef HAVE_SHADER_PIPELINE
    struct shader_program_info shader_prog_info;
+#endif
    cg_shader_data_t *cg = (cg_shader_data_t*)
       calloc(1, sizeof(cg_shader_data_t));
 
