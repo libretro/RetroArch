@@ -39,7 +39,9 @@ void linux_terminal_restore_input(void)
    if (oldKbmd == 0xffff)
       return;
 
-   ioctl(0, KDSKBMODE, oldKbmd);
+   if (ioctl(0, KDSKBMODE, oldKbmd) < 0)
+      return;
+
    linux_terminal_flush();
    oldKbmd = 0xffff;
 
