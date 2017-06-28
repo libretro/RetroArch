@@ -193,9 +193,9 @@ static char *extract_value(char *line, bool is_value)
 /* Move semantics? */
 static void add_child_list(config_file_t *parent, config_file_t *child)
 {
+   struct config_entry_list *list = child->entries;
    if (parent->entries)
    {
-      struct config_entry_list *list = child->entries;
       struct config_entry_list *head = parent->entries;
       while (head->next)
          head = head->next;
@@ -210,8 +210,6 @@ static void add_child_list(config_file_t *parent, config_file_t *child)
    }
    else
    {
-      struct config_entry_list *list = child->entries;
-
       /* set list readonly */
       while (list)
       {
