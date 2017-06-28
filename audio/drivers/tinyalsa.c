@@ -2147,10 +2147,12 @@ static void * tinyalsa_init(const char *devicestr, unsigned rate,
       unsigned latency, unsigned block_frames,
       unsigned *new_rate)
 {
-   unsigned int card      = 0;
-   unsigned int device    = 0;
-   unsigned int orig_rate = rate;
+   unsigned int card            = 0;
+   unsigned int device          = 0;
+   unsigned int frames_per_ms   = 0;
+   unsigned int orig_rate       = rate;
    unsigned int max_rate, min_rate;
+   float initial_latency;
 
    snd_pcm_uframes_t         buffer_size;
    struct pcm_config         config;
@@ -2217,26 +2219,31 @@ static void * tinyalsa_init(const char *devicestr, unsigned rate,
       goto error;
    }
 
-   if (latency < 10)
+   buffer_size           = pcm_get_buffer_size(tinyalsa->pcm);
+   tinyalsa->buffer_size = pcm_frames_to_bytes(tinyalsa->pcm, buffer_size);
+   tinyalsa->frame_bits  = pcm_format_to_bits(config.format) * 2;
+
+   initial_latency       = (float)(buffer_size * 1000) / (float)(rate * 4);
+   frames_per_ms         = buffer_size / initial_latency;
+
+   if (latency < (unsigned int)initial_latency)
    {
-      RARCH_WARN("[TINYALSA]: Cannot have a latency less than 10ms. Defaulting to 64ms.\n");
+      RARCH_WARN("[TINYALSA]: Cannot have a latency less than %ums. "\
+                 "Defaulting to 64ms.\n", (unsigned int)initial_latency);
       latency = 64;
    }
 
-   latency = latency - 10; /* 10ms is our current delay */
-
-   buffer_size           = pcm_get_buffer_size(tinyalsa->pcm) + (latency * 192);
-   tinyalsa->buffer_size = pcm_frames_to_bytes(tinyalsa->pcm, buffer_size);
-   tinyalsa->frame_bits  = pcm_format_to_bits(config.format) * 2;
+   latency               -= (unsigned int)initial_latency;
+   buffer_size           += latency * frames_per_ms;
 
    tinyalsa->can_pause   = true;
    tinyalsa->has_float   = false;
 
-   RARCH_LOG("[TINYALSA]: Audio rate: %dHz.\n", config.rate);
+   RARCH_LOG("[TINYALSA]: Audio rate: %uHz.\n", config.rate);
    RARCH_LOG("[TINYALSA]: Buffer size: %u frames.\n", buffer_size);
-   RARCH_LOG("[TINYALSA]: Buffer size: %d bytes.\n", tinyalsa->buffer_size);
+   RARCH_LOG("[TINYALSA]: Buffer size: %u bytes.\n", tinyalsa->buffer_size);
    RARCH_LOG("[TINYALSA]: Frame  size: %u bytes.\n", tinyalsa->frame_bits / 8);
-   RARCH_LOG("[TINYALSA]: Latency: %dms.\n", buffer_size * 1000 / (rate * 4));
+   RARCH_LOG("[TINYALSA]: Latency: %ums.\n", buffer_size * 1000 / (rate * 4));
 
    return tinyalsa;
 
