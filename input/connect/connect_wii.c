@@ -22,6 +22,7 @@
 
 #include <retro_endianness.h>
 #include <retro_miscellaneous.h>
+#include <retro_timers.h>
 
 #include "joypad_connection.h"
 

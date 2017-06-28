@@ -19,6 +19,7 @@
 
 #include <encodings/utf.h>
 #include <string/stdstring.h>
+#include <retro_math.h>
 
 #include "../common/gl_common.h"
 #include "../font_driver.h"

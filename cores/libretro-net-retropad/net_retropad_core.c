@@ -22,6 +22,7 @@
 #include <net/net_socket.h>
 
 #include <retro_miscellaneous.h>
+#include <retro_timers.h>
 
 #include <libretro.h>
 

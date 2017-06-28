@@ -21,6 +21,7 @@
 #include <compat/strl.h>
 #include <rhash.h>
 #include <retro_miscellaneous.h>
+#include <retro_math.h>
 #include <net/net_http.h>
 #include <libretro.h>
 

@@ -24,6 +24,7 @@
 #include <file/file_path.h>
 #include <string/stdstring.h>
 #include <queues/task_queue.h>
+#include <retro_timers.h>
 
 #include "cocoa/cocoa_common.h"
 #include "../ui_companion_driver.h"

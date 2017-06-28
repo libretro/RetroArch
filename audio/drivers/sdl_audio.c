@@ -26,6 +26,7 @@
 #include <rthreads/rthreads.h>
 #include <queues/fifo_queue.h>
 #include <retro_inline.h>
+#include <retro_math.h>
 
 #include "../audio_driver.h"
 #include "../../verbosity.h"

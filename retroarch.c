@@ -36,6 +36,7 @@
 #include <boolean.h>
 #include <string/stdstring.h>
 #include <lists/string_list.h>
+#include <retro_timers.h>
 
 #include <compat/strl.h>
 #include <compat/getopt.h>

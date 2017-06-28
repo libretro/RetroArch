@@ -22,6 +22,8 @@
 #include "../config.h"
 #endif
 
+#include <retro_timers.h>
+
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
 #endif

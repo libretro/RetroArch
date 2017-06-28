@@ -20,6 +20,7 @@
 #include <3ds.h>
 
 #include <retro_inline.h>
+#include <retro_math.h>
 #include <formats/image.h>
 
 #ifdef HAVE_CONFIG_H

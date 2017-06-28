@@ -17,6 +17,7 @@
 #define ALSA_PCM_NEW_HW_PARAMS_API
 #define ALSA_PCM_NEW_SW_PARAMS_API
 #include <sys/asoundlib.h>
+#include <retro_math.h>
 
 #include "../audio_driver.h"
 

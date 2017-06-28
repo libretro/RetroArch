@@ -22,6 +22,7 @@
 #include <boolean.h>
 #include <compat/strl.h>
 #include <rhash.h>
+#include <retro_timers.h>
 
 #include "netplay_private.h"
 

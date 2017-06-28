@@ -23,6 +23,7 @@
 #include <features/features_cpu.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
+#include <retro_math.h>
 
 #include <retro_assert.h>
 #include <gfx/scaler/pixconv.h>

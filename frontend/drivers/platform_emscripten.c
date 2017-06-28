@@ -22,6 +22,7 @@
 #include <queues/task_queue.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
+#include <retro_timers.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"

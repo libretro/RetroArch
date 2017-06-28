@@ -22,12 +22,11 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <math.h>
 
 #include <gfx/scaler/filter.h>
 #include <gfx/scaler/scaler_int.h>
-#include <retro_miscellaneous.h>
 #include <retro_inline.h>
+#include <retro_math.h>
 #include <filters.h>
 
 #define FILTER_UNITY (1 << 14)

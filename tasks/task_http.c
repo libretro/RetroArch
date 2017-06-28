@@ -20,6 +20,7 @@
 #include <compat/strl.h>
 #include <file/file_path.h>
 #include <net/net_compat.h>
+#include <retro_timers.h>
 
 #include "../verbosity.h"
 #include "tasks_internal.h"

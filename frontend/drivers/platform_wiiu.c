@@ -22,6 +22,7 @@
 
 #include <file/file_path.h>
 #include <string/stdstring.h>
+#include <retro_timers.h>
 
 #ifndef IS_SALAMANDER
 #include <lists/file_list.h>

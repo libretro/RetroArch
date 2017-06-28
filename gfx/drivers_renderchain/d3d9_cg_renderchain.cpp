@@ -28,6 +28,7 @@
 #include "../include/Cg/cgD3D9.h"
 
 #include <retro_inline.h>
+#include <retro_math.h>
 #include <compat/strl.h>
 #include <string/stdstring.h>
 

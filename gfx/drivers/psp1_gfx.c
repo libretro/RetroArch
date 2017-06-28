@@ -23,6 +23,7 @@
 
 #include <retro_assert.h>
 #include <retro_inline.h>
+#include <retro_math.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"

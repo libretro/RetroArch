@@ -51,6 +51,7 @@
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 #include <queues/task_queue.h>
+#include <retro_timers.h>
 
 #include "../frontend.h"
 #include "../frontend_driver.h"

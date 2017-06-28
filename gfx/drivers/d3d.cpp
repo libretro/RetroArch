@@ -25,6 +25,7 @@
 #include <compat/posix_string.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
+#include <retro_math.h>
 
 #include "d3d.h"
 #include "../video_coord_array.h"

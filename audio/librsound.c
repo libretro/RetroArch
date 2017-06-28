@@ -73,6 +73,7 @@
 #include <retro_inline.h>
 #include <retro_assert.h>
 #include <retro_miscellaneous.h>
+#include <retro_timers.h>
 
 /* 
  ****************************************************************************   

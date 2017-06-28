@@ -33,6 +33,7 @@
 #include <formats/image.h>
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
+#include <retro_math.h>
 #include <string/stdstring.h>
 
 #include <gfx/gl_capabilities.h>

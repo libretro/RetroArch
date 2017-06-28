@@ -30,6 +30,7 @@
 
 #include <net/net_compat.h>
 #include <net/net_socket.h>
+#include <retro_timers.h>
 #include <compat/strl.h>
 
 #if defined(_XBOX)

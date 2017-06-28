@@ -17,7 +17,7 @@
 #include <stdlib.h>
 
 #include <retro_inline.h>
-#include <retro_miscellaneous.h>
+#include <retro_math.h>
 
 #include "video_coord_array.h"
 

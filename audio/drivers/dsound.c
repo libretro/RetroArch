@@ -31,6 +31,7 @@
 
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
+#include <retro_timers.h>
 #include <rthreads/rthreads.h>
 #include <queues/fifo_queue.h>
 

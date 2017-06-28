@@ -21,6 +21,8 @@
 #include <encodings/utf.h>
 #include <3ds.h>
 
+#include <retro_math.h>
+
 #include "../font_driver.h"
 #include "../video_driver.h"
 #include "../common/ctr_common.h"

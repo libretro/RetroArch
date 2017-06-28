@@ -19,6 +19,7 @@
 #include <file/file_path.h>
 #include <compat/strl.h>
 #include <string/stdstring.h>
+#include <retro_math.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"

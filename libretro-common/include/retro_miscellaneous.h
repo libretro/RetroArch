@@ -25,24 +25,6 @@
 
 #include <stdint.h>
 
-#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
-#include <sys/timer.h>
-#elif defined(XENON)
-#include <time/time.h>
-#elif defined(GEKKO) || defined(__PSL1GHT__) || defined(__QNX__)
-#include <unistd.h>
-#elif defined(WIIU)
-#include <wiiu/os/thread.h>
-#elif defined(PSP)
-#include <pspthreadman.h>
-#elif defined(VITA)
-#include <psp2/kernel/threadmgr.h>
-#elif defined(_3DS)
-#include <3ds.h>
-#else
-#include <time.h>
-#endif
-
 #if defined(_WIN32) && !defined(_XBOX)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -55,19 +37,12 @@
 #ifdef _MSC_VER
 #include <compat/msvc.h>
 #endif
-#include <retro_inline.h>
 
 #ifndef PATH_MAX_LENGTH
 #if defined(_XBOX1) || defined(_3DS) || defined(PSP) || defined(GEKKO)|| defined(WIIU)
 #define PATH_MAX_LENGTH 512
 #else
 #define PATH_MAX_LENGTH 4096
-#endif
-#endif
-
-#ifndef M_PI
-#if !defined(_MSC_VER) && !defined(USE_MATH_DEFINES)
-#define M_PI 3.14159265358979323846264338327
 #endif
 #endif
 
@@ -80,102 +55,6 @@
 #endif
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
-
-#ifdef DJGPP
-#define timespec timeval
-#define tv_nsec tv_usec
-#include <unistd.h>
-
-extern int nanosleep(const struct timespec *rqtp, struct timespec *rmtp);
-
-static int nanosleepDOS(const struct timespec *rqtp, struct timespec *rmtp)
-{
-   usleep(1000000 * rqtp->tv_sec + rqtp->tv_nsec / 1000);
-
-   if (rmtp)
-      rmtp->tv_sec = rmtp->tv_nsec=0;
-
-   return 0;
-}
-
-#define nanosleep nanosleepDOS
-#endif
-
-/**
- * retro_sleep:
- * @msec         : amount in milliseconds to sleep
- *
- * Sleeps for a specified amount of milliseconds (@msec).
- **/
-static INLINE void retro_sleep(unsigned msec)
-{
-#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
-   sys_timer_usleep(1000 * msec);
-#elif defined(PSP) || defined(VITA)
-   sceKernelDelayThread(1000 * msec);
-#elif defined(_3DS)
-   svcSleepThread(1000000 * (s64)msec);
-#elif defined(_WIN32)
-   Sleep(msec);
-#elif defined(XENON)
-   udelay(1000 * msec);
-#elif defined(GEKKO) || defined(__PSL1GHT__) || defined(__QNX__)
-   usleep(1000 * msec);
-#elif defined(WIIU)
-   OSSleepTicks(ms_to_ticks(msec));
-#else
-   struct timespec tv = {0};
-   tv.tv_sec = msec / 1000;
-   tv.tv_nsec = (msec % 1000) * 1000000;
-   nanosleep(&tv, NULL);
-#endif
-}
-
-/**
- * next_pow2:
- * @v         : initial value
- *
- * Get next power of 2 value based on  initial value.
- *
- * Returns: next power of 2 value (derived from @v).
- **/
-static INLINE uint32_t next_pow2(uint32_t v)
-{
-   v--;
-   v |= v >> 1;
-   v |= v >> 2;
-   v |= v >> 4;
-   v |= v >> 8;
-   v |= v >> 16;
-   v++;
-   return v;
-}
-
-/**
- * prev_pow2:
- * @v         : initial value
- *
- * Get previous power of 2 value based on initial value.
- *
- * Returns: previous power of 2 value (derived from @v).
- **/
-static INLINE uint32_t prev_pow2(uint32_t v)
-{
-   v |= v >> 1;
-   v |= v >> 2;
-   v |= v >> 4;
-   v |= v >> 8;
-   v |= v >> 16;
-   return v - (v >> 1);
-}
-
-/* Helper macros and struct to keep track of many booleans.
- * To check for multiple bits, use &&, not &.
- * For OR, | can be used. */
-typedef struct
-{
-   uint32_t data[8];
-} retro_bits_t;
 
 #define BIT_SET(a, bit)   ((a)[(bit) >> 3] |=  (1 << ((bit) & 7)))
 #define BIT_CLEAR(a, bit) ((a)[(bit) >> 3] &= ~(1 << ((bit) & 7)))
@@ -200,5 +79,13 @@ typedef struct
 #define BIT128_CLEAR(a, bit) ((a).data[(bit) >> 5] &= ~(1 << ((bit) & 31)))
 #define BIT128_GET(a, bit)   ((a).data[(bit) >> 5] &   (1 << ((bit) & 31)))
 #define BIT128_CLEAR_ALL(a)  memset(&(a), 0, sizeof(a));
+
+/* Helper macros and struct to keep track of many booleans.
+ * To check for multiple bits, use &&, not &.
+ * For OR, | can be used. */
+typedef struct
+{
+   uint32_t data[8];
+} retro_bits_t;
 
 #endif
