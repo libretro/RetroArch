@@ -90,8 +90,10 @@ static void parport_poll_pad(struct parport_joypad *pad)
    char data;
    char status;
 
-   ioctl(pad->fd, PPRDATA, &data);
-   ioctl(pad->fd, PPRSTATUS, &status);
+   if (ioctl(pad->fd, PPRDATA, &data) < 0)
+      return;
+   if (ioctl(pad->fd, PPRSTATUS, &status) < 0)
+      return;
 
    for (i = 0; i < 8; i++)
    {
