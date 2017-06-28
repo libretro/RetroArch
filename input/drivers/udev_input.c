@@ -791,6 +791,9 @@ static bool open_devices(udev_input_t *udev,
 static void *udev_input_init(const char *joypad_driver)
 {
    int fd;
+#ifdef UDEV_XKB_HANDLING
+   gfx_ctx_ident_t ctx_ident;
+#endif
    udev_input_t *udev   = (udev_input_t*)calloc(1, sizeof(*udev));
 
    if (!udev)
@@ -814,7 +817,6 @@ static void *udev_input_init(const char *joypad_driver)
    if (init_xkb(-1, 0) == -1)
       goto error;
 
-   gfx_ctx_ident_t ctx_ident;
    video_context_driver_get_ident(&ctx_ident);
    udev->xkb_handling = string_is_equal_fast(ctx_ident.ident, "kms", 4);
 #endif
