@@ -21,6 +21,7 @@
  */
 
 /* THIS FILE HAS NOT BEEN VALIDATED ON PLATFORMS BESIDES MSVC */
+#ifdef _MSC_VER
 
 #include <retro_common.h>
 
@@ -56,3 +57,4 @@ int c99_snprintf_retro__(char *outBuf, size_t size, const char *format, ...)
 
    return count;
 }
+#endif

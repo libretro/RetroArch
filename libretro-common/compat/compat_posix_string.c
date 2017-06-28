@@ -24,8 +24,6 @@
 
 #include <compat/posix_string.h>
 
-#include <retro_assert.h>
-
 #ifdef _WIN32
 
 #undef strcasecmp

@@ -23,7 +23,6 @@
 #include <ctype.h>
 
 #include <compat/strcasestr.h>
-#include <retro_assert.h>
 
 /* Pretty much strncasecmp. */
 static int casencmp(const char *a, const char *b, size_t n)
