@@ -37,7 +37,6 @@
 #endif
 #include <compat/strcasestr.h>
 #include <retro_miscellaneous.h>
-#include <string/stdstring.h>
 
 #if defined(_WIN32)
 #ifdef _MSC_VER
@@ -242,7 +241,7 @@ bool path_mkdir(const char *dir)
       return false;
 
    path_parent_dir(basedir);
-   if (!*basedir || string_is_equal(basedir, dir))
+   if (!*basedir || !strcmp(basedir, dir))
       goto end;
 
    if (path_is_directory(basedir))
@@ -353,9 +352,9 @@ bool path_is_compressed_file(const char* path)
 {
    const char *ext = path_get_extension(path);
 
-   if (     string_is_equal_noncase(ext, "zip") 
-         || string_is_equal_noncase(ext, "apk")
-         || string_is_equal_noncase(ext, "7z"))
+   if (     strcasestr(ext, "zip") 
+         || strcasestr(ext, "apk")
+         || strcasestr(ext, "7z"))
       return true;
 
    return false;
