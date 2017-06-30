@@ -4005,6 +4005,7 @@ static void wifi_scan_callback(void *task_data,
 bool menu_displaylist_process(menu_displaylist_info_t *info)
 {
    size_t idx   = 0;
+   settings_t *settings         = config_get_ptr();
 
    if (info->need_navigation_clear)
    {
@@ -4022,14 +4023,15 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
       file_list_sort_on_alt(info->list);
 
 #if defined(HAVE_NETWORKING) && !defined(HAVE_LAKKA)
-   if (info->download_core)
-   {
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE),
-            msg_hash_to_str(MENU_ENUM_LABEL_CORE_UPDATER_LIST),
-            MENU_ENUM_LABEL_CORE_UPDATER_LIST,
-            MENU_SETTING_ACTION, 0, 0);
-   }
+   if (settings->bools.menu_show_core_updater)
+      if (info->download_core)
+      {
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE),
+               msg_hash_to_str(MENU_ENUM_LABEL_CORE_UPDATER_LIST),
+               MENU_ENUM_LABEL_CORE_UPDATER_LIST,
+               MENU_SETTING_ACTION, 0, 0);
+      }
 #endif
    
    if (info->push_builtin_cores)
