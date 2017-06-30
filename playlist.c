@@ -187,7 +187,6 @@ void playlist_update(playlist_t *playlist, size_t idx,
    {
       if (entry->path != NULL)
          free(entry->path);
-      entry->path        = NULL;
       entry->path        = strdup(path);
       playlist->modified = true;
    }
@@ -196,7 +195,6 @@ void playlist_update(playlist_t *playlist, size_t idx,
    {
       if (entry->label != NULL)
          free(entry->label);
-      entry->label       = NULL;
       entry->label       = strdup(label);
       playlist->modified = true;
    }
@@ -214,7 +212,6 @@ void playlist_update(playlist_t *playlist, size_t idx,
    {
       if (entry->core_name != NULL)
          free(entry->core_name);
-      entry->core_name   = NULL;
       entry->core_name   = strdup(core_name);
       playlist->modified = true;
    }
@@ -223,7 +220,6 @@ void playlist_update(playlist_t *playlist, size_t idx,
    {
       if (entry->db_name != NULL)
          free(entry->db_name);
-      entry->db_name     = NULL;
       entry->db_name     = strdup(db_name);
       playlist->modified = true;
    }
@@ -232,7 +228,6 @@ void playlist_update(playlist_t *playlist, size_t idx,
    {
       if (entry->crc32 != NULL)
          free(entry->crc32);
-      entry->crc32       = NULL;
       entry->crc32       = strdup(crc32);
       playlist->modified = true;
    }
