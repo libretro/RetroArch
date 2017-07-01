@@ -31,9 +31,43 @@
 #define PLAYLIST_ENTRIES 6
 #endif
 
+struct playlist_entry
+{
+   char *path;
+   char *label;
+   char *core_path;
+   char *core_name;
+   char *db_name;
+   char *crc32;
+};
+
+struct content_playlist
+{
+   struct playlist_entry *entries;
+   size_t size;
+   size_t cap;
+   bool modified;
+
+   char *conf_path;
+};
+
 typedef int (playlist_sort_fun_t)(
       const struct playlist_entry *a,
       const struct playlist_entry *b);
+
+uint32_t playlist_get_size(playlist_t *playlist)
+{
+   if (!playlist)
+      return 0;
+   return (uint32_t)playlist->size;
+}
+
+char *playlist_get_conf_path(playlist_t *playlist)
+{
+   if (!playlist)
+      return NULL;
+   return playlist->conf_path;
+}
 
 /**
  * playlist_get_index:

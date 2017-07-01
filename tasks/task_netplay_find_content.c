@@ -174,23 +174,26 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
          for (i = 0; i < state->lpl_list->size; i++)
          {
             playlist_t *playlist = NULL;
+            unsigned playlist_size = 0;
             const char *lpl_path = state->lpl_list->elems[i].data;
 
             if (!strstr(lpl_path, file_path_str(FILE_PATH_LPL_EXTENSION)))
                continue;
 
-            playlist = playlist_init(lpl_path, 99999);
+            playlist      = playlist_init(lpl_path, 99999);
+            playlist_size = playlist_get_size(playlist);
 
-            for (j = 0; j < playlist->size; j++)
+            for (j = 0; j < playlist_size; j++)
             {
-#if 0
-               RARCH_LOG("[lobby] playlist CRC: %s\n", 
-                  playlist->entries[j].crc32);
-#endif
-               if (string_is_equal(playlist->entries[j].crc32, state->content_crc))
+               const char *playlist_crc32    = NULL;
+               const char *playlist_path     = NULL;
+               playlist_get_index(playlist,
+                     j, &playlist_path, NULL, NULL, NULL, NULL, &playlist_crc32);
+
+               if (string_is_equal(playlist_crc32, state->content_crc))
                {
-                  RARCH_LOG("[lobby] CRC match %s\n", playlist->entries[j].crc32);
-                  strlcpy(state->content_path, playlist->entries[j].path, sizeof(state->content_path));
+                  RARCH_LOG("[lobby] CRC match %s\n", playlist_crc32);
+                  strlcpy(state->content_path, playlist_path, sizeof(state->content_path));
                   state->found = true;
                   task_set_data(task, state);
                   task_set_progress(task, 100);
@@ -202,7 +205,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
                   return;
                }
 
-               task_set_progress(task, (int)(j/playlist->size*100.0));
+               task_set_progress(task, (int)(j / playlist_size * 100.0));
             }
 
             free(playlist);
@@ -222,17 +225,22 @@ filename_matching:
          for (i = 0; i < state->lpl_list->size; i++)
          {
             playlist_t *playlist = NULL;
+            unsigned playlist_size = 0;
             const char *lpl_path = state->lpl_list->elems[i].data;
 
             if (!strstr(lpl_path, file_path_str(FILE_PATH_LPL_EXTENSION)))
                continue;
 
-            playlist = playlist_init(lpl_path, 99999);
+            playlist      = playlist_init(lpl_path, 99999);
+            playlist_size = playlist_get_size(playlist);
 
-            for (j = 0; j < playlist->size; j++)
+            for (j = 0; j < playlist_size; j++)
             {
+               const char *playlist_path     = NULL;
+               playlist_get_index(playlist,
+                     j, &playlist_path, NULL, NULL, NULL, NULL, NULL);
                char entry[PATH_MAX_LENGTH];
-               const char* buf = path_basename(playlist->entries[j].path);
+               const char* buf = path_basename(playlist_path);
 
                entry[0]    = '\0';
 
@@ -240,18 +248,13 @@ filename_matching:
 
                path_remove_extension(entry);
 
-#if 0
-               RARCH_LOG("[lobby] playlist filename: %s\n", 
-                  playlist->entries[j].path);
-#endif
-
                if ( !string_is_empty(entry) && 
                      string_is_equal(entry, state->content_path) &&
-                     strstr(state->core_extensions, path_get_extension(playlist->entries[j].path)))
+                     strstr(state->core_extensions, path_get_extension(playlist_path)))
                {
-                  RARCH_LOG("[lobby] filename match %s\n", playlist->entries[j].path);
+                  RARCH_LOG("[lobby] filename match %s\n", playlist_path);
 
-                  strlcpy(state->content_path, playlist->entries[j].path, sizeof(state->content_path));
+                  strlcpy(state->content_path, playlist_path, sizeof(state->content_path));
                   state->found = true;
                   task_set_data(task, state);
                   task_set_progress(task, 100);
@@ -263,7 +266,7 @@ filename_matching:
                   return;
                }
 
-               task_set_progress(task, (int)(j/playlist->size*100.0));
+               task_set_progress(task, (int)(j / playlist_size * 100.0));
             }
             free(playlist);
          }
